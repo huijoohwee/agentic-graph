@@ -394,7 +394,7 @@ async function main() {
         && snapshot.activeSourceFile?.name === EXPECTED_SOURCE_DOCUMENT
         && snapshot.activeSourceFile?.status === 'parsed'
       ),
-      'Isolated authored source bootstrap',
+      'Authored default source bootstrap',
     )
 
     const chatButton = page.getByRole('button', { name: 'Chat', exact: true })
