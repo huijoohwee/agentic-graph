@@ -17,6 +17,10 @@ export const FLIGHT_SIM_RUN_READY_DEMO_ID = 'flight-sim'
 export const FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-game-flight-sim-demo.md'
 export const FLIGHT_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
 export const FLIGHT_SIM_DEMO_CODEBASE_REL_PATH = `knowgrph/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`
+export const CITY_SIM_RUN_READY_DEMO_ID = 'city-sim'
+export const CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-game-city-building-sim-demo.md'
+export const CITY_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
+export const CITY_SIM_DEMO_CODEBASE_REL_PATH = `knowgrph/${CITY_SIM_DEMO_REPO_REL_PATH}`
 
 export type WorkspaceRunReadyDemoSeed = {
   id: string
@@ -100,6 +104,20 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
       `docs/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
       FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
       FLIGHT_SIM_DEMO_CODEBASE_REL_PATH,
+    ],
+    sourceRoot: 'knowgrph/docs',
+    cleanCanvasRecommended: true,
+  },
+  {
+    id: CITY_SIM_RUN_READY_DEMO_ID,
+    label: 'Knowgrph Local City Simulator',
+    validationSeedRelPath: CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+    seedRelPathCandidates: [
+      CITY_SIM_DEMO_REPO_REL_PATH,
+      `workspace-seeds/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
+      `docs/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
+      CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+      CITY_SIM_DEMO_CODEBASE_REL_PATH,
     ],
     sourceRoot: 'knowgrph/docs',
     cleanCanvasRecommended: true,
@@ -196,6 +214,15 @@ export const diagnoseWorkspaceRunReadyDemoActivation = (
   const pathId = resolveWorkspaceRunReadyDemoIdForDocumentPath(documentPath)
   const sourceId = resolveWorkspaceRunReadyDemoIdForDocumentText(documentText)
   if (sourceId == null) {
+    if (pathId === CITY_SIM_RUN_READY_DEMO_ID) {
+      return Object.freeze({
+        ok: false,
+        errorCode: 'RUN_READY_IDENTITY_UNREGISTERED',
+        message: 'City run-ready activation requires source-authored identity: city-sim.',
+        pathId,
+        sourceId,
+      })
+    }
     return pathId
       ? Object.freeze({ ok: true, id: pathId, pathId, sourceId })
       : Object.freeze({
@@ -253,12 +280,26 @@ export const isFlightSimRunReadyDemoActive = (
   readWorkspaceRunReadyDemoId(documentPath, documentText) === FLIGHT_SIM_RUN_READY_DEMO_ID
 )
 
+export const isCitySimRunReadyDemoActive = (
+  documentPath?: string | null,
+  documentText?: string | null,
+): boolean => {
+  const diagnostic = diagnoseWorkspaceRunReadyDemoActivation(documentPath, documentText)
+  return diagnostic.ok
+    && diagnostic.id === CITY_SIM_RUN_READY_DEMO_ID
+    && diagnostic.sourceId === CITY_SIM_RUN_READY_DEMO_ID
+}
+
 export const isNativeXrRunReadyDemoActive = (
   documentPath?: string | null,
   documentText?: string | null,
 ): boolean => {
   const demoId = readWorkspaceRunReadyDemoId(documentPath, documentText)
-  return demoId === XR_PHYSICS_RUN_READY_DEMO_ID || demoId === FLIGHT_SIM_RUN_READY_DEMO_ID
+  if (demoId === CITY_SIM_RUN_READY_DEMO_ID) {
+    return isCitySimRunReadyDemoActive(documentPath, documentText)
+  }
+  return demoId === XR_PHYSICS_RUN_READY_DEMO_ID
+    || demoId === FLIGHT_SIM_RUN_READY_DEMO_ID
 }
 
 export const resolveWorkspaceRepoLocalRunReadyBootstrap = (args: {

@@ -20,7 +20,9 @@ export function distinctStoryboardOverlayRectsOverlap(
   gap = 0,
   fallbackSize: { width: number; height: number } = { width: 0, height: 0 },
 ): boolean {
-  const normalizeId = (value: string) => String(value || '').replace(/^rich-media:/, '').trim()
+  const normalizeId = (value: string) => String(value || '')
+    .replace(/^(?:rich-media|storyboard-card):/, '')
+    .trim()
   const leftId = normalizeId(left.id)
   const rightId = normalizeId(right.id)
   if (leftId && leftId === rightId) return false

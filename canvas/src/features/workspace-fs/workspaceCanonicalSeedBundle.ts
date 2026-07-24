@@ -3,6 +3,7 @@ import { importNodeFsPromises, importNodePath } from './workspaceSeedNodeModules
 
 export const CANONICAL_WORKSPACE_SEED_BASENAMES = [
   'README.md',
+  'knowgrph-game-city-building-sim-demo.md',
   'knowgrph-game-flight-sim-demo.companion.md',
   'knowgrph-game-flight-sim-demo.md',
   'knowgrph-game-mmorpg-demo.companion.md',
@@ -29,6 +30,7 @@ const BUNDLED_SOURCE_LOADERS: Record<
   () => Promise<RawSourceModule>
 > = {
   'README.md': () => import('../../../../docs/workspace-seeds/README.md?raw'),
+  'knowgrph-game-city-building-sim-demo.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md?raw'),
   'knowgrph-game-flight-sim-demo.companion.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-flight-sim-demo.companion.md?raw'),
   'knowgrph-game-flight-sim-demo.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-flight-sim-demo.md?raw'),
   'knowgrph-game-mmorpg-demo.companion.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-mmorpg-demo.companion.md?raw'),
