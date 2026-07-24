@@ -45,6 +45,25 @@ export function testGraphDocumentMetaKeyStaysStableAcrossSourceRevisions() {
   }
 }
 
+export function testGraphDocumentMetaKeyNormalizesWorkspaceMarkdownPublicationPath() {
+  const loaded: GraphData = {
+    type: 'Graph',
+    context: 'frontmatter-flow',
+    metadata: { kind: 'frontmatter-flow', source: 'markdown:notes/example.md' },
+    nodes: [],
+    edges: [],
+  }
+  const published: GraphData = {
+    ...loaded,
+    metadata: { kind: 'frontmatter-flow', source: 'markdown:workspace:/notes/example.md' },
+  }
+  const loadedKey = buildGraphDocumentMetaKey(loaded)
+  const publishedKey = buildGraphDocumentMetaKey(published)
+  if (loadedKey !== 'frontmatter-flow:markdown:notes/example.md' || loadedKey !== publishedKey) {
+    throw new Error(`expected workspace writeback to retain the loaded document identity, got ${JSON.stringify({ loadedKey, publishedKey })}`)
+  }
+}
+
 export function testActive2dZoomViewKeyIgnoresPendingFlag() {
   const base: Omit<GraphData, 'metadata'> & { metadata: Record<string, unknown> } = {
     type: 'Graph',

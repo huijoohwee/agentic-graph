@@ -19,6 +19,7 @@ import {
   resolveGraphNodeIdByCanonicalId,
   shouldAutoPlaceStoryboardWidget,
 } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
+import { resolveIncrementalStoryboardCardMovableIds2d } from '@/components/StoryboardWidgetCanvas/storyboardIncrementalLayout2d'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { isWorkspaceGraphMutationBlocked, type WorkspaceGraphMutationState } from '@/features/workspace-table/workspaceTableSsot'
 import { getEffectiveZoomStateForKey } from '@/lib/canvas/zoom-effective'
@@ -149,7 +150,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
   viewportW: number
   viewportH: number
   schema: unknown
-  overlayTopologyLayoutSignature: string
+  overlayNodeLayoutSignature: string
   storyboardWidgetLayoutRebalanceRequest?: null | { type: 'balanced-spread'; at: number }
   zoomViewKeyRef: React.MutableRefObject<string | null>
 }) {
@@ -453,6 +454,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
   const lastAutoSeedLayoutSignatureRef = React.useRef<string>('')
   const lastHandledLayoutRebalanceAtRef = React.useRef<number>(0)
   const domCollectiveRecoveryAttemptByScopeRef = React.useRef<Record<string, number>>({})
+  const domCollectiveNodeIdsRef = React.useRef<string[]>([])
   React.useEffect(() => {
     const prev = workspaceMutationBlockedPrevRef.current
     workspaceMutationBlockedPrevRef.current = workspaceMutationBlocked
@@ -483,8 +485,22 @@ export function useStoryboardWidgetRuntimeScene(args: {
     let rafId: number | null = null
     let observer: MutationObserver | null = null
     let readinessAttempts = 0
+    const currentNodeIds = Array.from(new Set(
+      args.openWidgetNodeIds.map(id => String(id || '').trim()).filter(Boolean),
+    ))
+    const previousNodeIds = domCollectiveNodeIdsRef.current
+    const incrementalMovableIds = resolveIncrementalStoryboardCardMovableIds2d({
+      currentCardIds: currentNodeIds,
+      previousCardIds: previousNodeIds,
+    })
+    const preserveExistingCollective =
+      previousNodeIds.length > 0
+      && currentNodeIds.length > previousNodeIds.length
+      && incrementalMovableIds.size < currentNodeIds.length
+    domCollectiveNodeIdsRef.current = currentNodeIds
     const run = (): boolean => {
       if (cancelled) return true
+      if (preserveExistingCollective) return true
       const roots = queryStoryboardWidgetOverlayRootsForSurface({
         surfaceId: args.storyboardWidgetSurfaceId,
         selector: STORYBOARD_WIDGET_OVERLAY_ROOT_SELECTOR,
@@ -584,7 +600,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
         .sort((a, b) => a.localeCompare(b))
         .join(',')
       const scopeKey = [
-        String(args.overlayTopologyLayoutSignature || '').trim(),
+        String(args.overlayNodeLayoutSignature || '').trim(),
         String(args.storyboardWidgetSurfaceId || '').trim(),
         idsKey,
         `${Math.round(visibleViewport.left)}:${Math.round(visibleViewport.top)}:${Math.round(visibleViewport.width)}x${Math.round(visibleViewport.height)}`,
@@ -761,7 +777,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
   }, [
     args.active,
     args.storyboardWidgetSurfaceId,
-    args.overlayTopologyLayoutSignature,
+    args.overlayNodeLayoutSignature,
     args.viewportH,
     args.viewportW,
     flowWidgetPinnedCount,
@@ -1197,7 +1213,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
         return `${bucketId}:${minX},${minY},${maxX},${maxY}`
       })
       .join('|')
-    const currentLayoutSignature = `${args.overlayTopologyLayoutSignature}|${visibleViewport.left},${visibleViewport.top},${visibleViewport.width}x${visibleViewport.height}|${bucketSignature}`
+    const currentLayoutSignature = `${args.overlayNodeLayoutSignature}|${visibleViewport.left},${visibleViewport.top},${visibleViewport.width}x${visibleViewport.height}|${bucketSignature}`
     const visibleViewportState: VisibleFlowViewport = {
       left: visibleViewport.left,
       top: visibleViewport.top,
@@ -1363,7 +1379,6 @@ export function useStoryboardWidgetRuntimeScene(args: {
       !initialCollectiveCenteringPass
       && !layoutRebalanceRequested
       && !forceSceneEmptyReseed
-      && !isFrontmatterFlow
       && pendingRaw.length > 0
     ) ? pendingRaw : []
     let pending = (
@@ -1530,7 +1545,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
     args.storyboardWidgetSurfaceId,
     args.storyboardWidgetLayoutRebalanceRequest,
     args.openWidgetNodeIds,
-    args.overlayTopologyLayoutSignature,
+    args.overlayNodeLayoutSignature,
     args.schema,
     args.viewportH,
     args.viewportW,
