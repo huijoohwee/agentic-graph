@@ -7,6 +7,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames, waitForTasks } from '@/tests/lib/reactRootHarness'
 import { resolveRepoTestDataPath } from '@/tests/lib/repoTestData'
 import { readFileSync } from 'node:fs'
+import { emitStoryboardCardProvenanceFocus } from '@/lib/storyboardWidget/storyboardCardProvenanceFocus'
 
 export async function testRichMediaWorkspaceViewerRetainsCommittedDraftUntilParentPersistence() {
   const { dom, restore } = initJsdomHarness()
@@ -190,6 +191,67 @@ export async function testRichMediaWorkspaceViewerCommitsListOptionAgainstCanoni
     }
     if (!panelChanges.at(-1)?.text?.includes(`   1. ${editedOption}`)) {
       throw new Error(`expected the parent persistence payload to commit the list option against canonical markdown, got ${JSON.stringify(panelChanges)}`)
+    }
+
+    await unmountReactRoot(root, { window: dom.window })
+  } finally {
+    restore()
+  }
+}
+
+export async function testRichMediaWorkspaceViewerRevealsCanonicalProvenanceSelection() {
+  const { dom, restore } = initJsdomHarness()
+  try {
+    await import('@/features/markdown/ui/MarkdownPreview')
+    const container = dom.window.document.createElement('section')
+    dom.window.document.body.appendChild(container)
+    const root = createRoot(container)
+    const markdown = readFileSync(resolveRepoTestDataPath('probe-tree-rich-media-edit-parity.md'), 'utf8')
+    const model = {
+      panelTextEditable: true,
+      panelDisplayText: markdown,
+      panelMarkdownDocumentPath: '/fixtures/probe-tree-rich-media-edit-parity.md',
+      setPanelDraftText: () => void 0,
+    } as unknown as RichMediaPanelModel
+    const props = {
+      overlayId: 'source-rich-media',
+      title: 'Probe-Tree Branches',
+      url: '',
+      kind: 'iframe',
+    } as RichMediaPanelProps
+
+    await mountReactRoot(
+      root,
+      <RichMediaPanelWorkspaceViewerSurface model={model} props={props} />,
+      { window: dom.window, frames: 24 },
+    )
+    emitStoryboardCardProvenanceFocus({
+      sourceNodeId: 'source-rich-media',
+      edgeId: 'selection-source-target',
+      documentPath: '/fixtures/probe-tree-rich-media-edit-parity.md',
+      selectedText: '优先批发库存以实现规模效应',
+      startLine: 15,
+      endLine: 15,
+    })
+    await waitForTasks(2)
+    await waitForFrames(dom.window, 4)
+
+    const focusedViewer = container.querySelector(
+      '[data-kg-provenance-focus-edge-id="selection-source-target"]',
+    ) as HTMLElement | null
+    if (!focusedViewer
+      || focusedViewer.dataset.kgProvenanceFocusSourceNodeId !== 'source-rich-media'
+      || focusedViewer.dataset.kgProvenanceFocusStartLine !== '15'
+      || focusedViewer.dataset.kgProvenanceFocusEndLine !== '15') {
+      throw new Error(`expected the source Viewer to expose the activated canonical provenance, html=${container.innerHTML}`)
+    }
+    const highlightedBlock = container.querySelector(
+      '.kg-semantic-highlight-markdown-text-highlight[data-start-line][data-end-line]',
+    ) as HTMLElement | null
+    const highlightedStart = Number(highlightedBlock?.dataset.startLine)
+    const highlightedEnd = Number(highlightedBlock?.dataset.endLine)
+    if (!highlightedBlock || highlightedStart > 15 || highlightedEnd < 15) {
+      throw new Error(`expected the canonical provenance line to be visibly highlighted, html=${container.innerHTML}`)
     }
 
     await unmountReactRoot(root, { window: dom.window })
