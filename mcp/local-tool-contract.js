@@ -2,7 +2,7 @@ import { BROWSER_API_TOOL } from "./browser-api-runtime.js"; import { buildOsSta
 import { buildLocalAgentRuntimeToolDefinition } from "./local-agent-tool-contract.js";
 import { KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID, KNOWGRPH_AGENT_READY_TOOL_IDS, buildKnowgrphAgentReadyToolContracts } from "../canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs";
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES as SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
-import { buildKnowgrphMcpAppsToolMeta, buildKnowgrphMcpNoauthSecuritySchemes } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
+import { buildKnowgrphMcpNoauthSecuritySchemes } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
 import { KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES, MEMORY_ADD_INPUT_SCHEMA, MEMORY_ADD_OUTPUT_SCHEMA, MEMORY_SEARCH_INPUT_SCHEMA, MEMORY_SEARCH_OUTPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_INPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_OUTPUT_SCHEMA, PROMPT_ASSEMBLER_INPUT_SCHEMA, PROMPT_ASSEMBLER_OUTPUT_SCHEMA, USER_MODEL_MATERIALIZE_INPUT_SCHEMA, USER_MODEL_MATERIALIZE_OUTPUT_SCHEMA } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
 import { AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION } from "./agentic-canvas-os-docs-contract.mjs";
 import { buildExternalToolGatewayDefinitions } from "./external-tool-gateway-contract.js";
@@ -13,22 +13,9 @@ import { EXPORT_PUBLISH_INPUT_SCHEMA, EXPORT_PUBLISH_OUTPUT_SCHEMA } from "./exp
 import { buildEcsLocalToolDefinitions } from "./ecs-tool-contract.js";
 import { buildImplementationRunToolDefinitions } from "./implementation-run-tool-contract.js"; import { buildAgentApplicationToolDefinitions } from "./agent-application-tool-contract.js";
 import { buildSkillEvolutionToolDefinition } from "./skill-evolution-tool-contract.js";
+import { buildStorageSyncLocalToolDefinitions } from "./storage-sync-local-tool-contract.mjs";
+import { buildVdeoxplnLocalToolDefinition } from "./vdeoxpln-tool-contract.js";
 export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES;
-
-const VDEOXPLN_LIST_OUTPUT_SCHEMA = Object.freeze({
-  type: "object",
-  additionalProperties: true,
-  required: ["contractVersion", "validation", "vdeoxplnEntries", "routingPlan"],
-  properties: {
-    contractVersion: { type: "string" },
-    validation: { type: "object", additionalProperties: true },
-    vdeoxplnEntries: {
-      type: "array",
-      items: { type: "object", additionalProperties: true },
-    },
-    routingPlan: { type: "object", additionalProperties: true },
-  },
-});
 
 const VIDEO_REMIX_RUN_OUTPUT_SCHEMA = Object.freeze({
   type: "object",
@@ -354,6 +341,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       },
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults(BROWSER_API_TOOL, BROWSER_API_TOOL_ANNOTATIONS),
+    ...buildStorageSyncLocalToolDefinitions().map((tool) => withLocalMcpDescriptorDefaults(tool)),
     withLocalMcpDescriptorDefaults({ name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, description: "Use this when a local MCP host needs SEA-LION sidecar language, regional variant, register, and code-switching detection before routing Southeast Asian language work.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_TEXT_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({ name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, description: "Use this when a local MCP host needs SEA-LION sidecar translation plus Southeast Asian localization notes from the hosted API.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_TRANSLATE_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults({ name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck, description: "Use this when a local MCP host needs SEA-LION sidecar advisory SEA-Guard safety classification for Southeast Asian language or culture-sensitive content.", outputSchema: SEALION_TOOL_OUTPUT_SCHEMA, inputSchema: SEALION_SAFETY_INPUT_SCHEMA }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
@@ -529,69 +517,11 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
     }, READ_ONLY_TOOL_ANNOTATIONS),
     ...buildAgentSandboxPolicyToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS }),
     ...buildEcsLocalToolDefinitions({ withDefaults: withLocalMcpDescriptorDefaults, annotations: LOCAL_PROCESS_TOOL_ANNOTATIONS }),
-    withLocalMcpDescriptorDefaults(buildOsStatusToolDefinition(), READ_ONLY_TOOL_ANNOTATIONS), withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList,
-      description:
-        "Use this when a local MCP host needs to list the canonical Knowgrph vdeoxpln registry with semantic keys, source owners, tool projections, and optional generated skill markdown.",
-      securitySchemes: buildKnowgrphMcpNoauthSecuritySchemes(),
-      _meta: buildKnowgrphMcpAppsToolMeta(),
-      outputSchema: VDEOXPLN_LIST_OUTPUT_SCHEMA,
-      inputSchema: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          includeMarkdown: {
-            type: "boolean",
-            default: false,
-            description: "If true, include generated SKILL.md-style markdown for each vdeoxpln.",
-          },
-          vdeoxplnId: {
-            type: "string",
-            description: "Optional vdeoxpln id filter, e.g. knowgrph-source-files.",
-          },
-          intentText: {
-            type: "string",
-            description: "Optional neutral user intent to route against the canonical vdeoxpln registry. Route names and file paths are ignored.",
-          },
-          contentTypes: {
-            type: "array",
-            items: { type: "string" },
-            description: "Optional neutral content types, such as kgc markdown, source evidence, workspace document, or media metadata.",
-          },
-          requestedOutputs: {
-            type: "array",
-            items: { type: "string" },
-            description: "Optional artifact families requested by the user, such as workspace artifact, GraphData, report, or canvas topology snapshot.",
-          },
-          stateSignals: {
-            type: "array",
-            items: { type: "string" },
-            description: "Optional current-state signals from the host workspace; do not pass absolute paths or route-only labels.",
-          },
-          chatStorageTarget: {
-            type: "string",
-            enum: ["chatHistory", "chatKnowgrph"],
-            description: "Optional chat storage target used as a state signal for chat-backed vdeoxpln planning.",
-          },
-          sourceFileCount: {
-            type: "number",
-            description: "Optional count of active source files in the current workspace.",
-          },
-          hasGraphData: {
-            type: "boolean",
-            description: "Optional current-state signal indicating the host has graph topology available.",
-          },
-          hasSelection: {
-            type: "boolean",
-            description: "Optional current-state signal indicating there is a current canvas or document selection.",
-          },
-          hasWorkspaceDocument: {
-            type: "boolean",
-            description: "Optional current-state signal indicating there is an active workspace document.",
-          },
-        },
-      },
-    }, READ_ONLY_TOOL_ANNOTATIONS),
+    withLocalMcpDescriptorDefaults(buildOsStatusToolDefinition(), READ_ONLY_TOOL_ANNOTATIONS),
+    withLocalMcpDescriptorDefaults(
+      buildVdeoxplnLocalToolDefinition(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList),
+      READ_ONLY_TOOL_ANNOTATIONS,
+    ),
     ...buildAgentApplicationToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     buildSkillEvolutionToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
   ];

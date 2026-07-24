@@ -228,6 +228,7 @@ export async function listProcessRegistry({ rootDir = process.cwd() } = {}) {
 
 function owningHarnessForTool(toolId, fallback = "unknown") {
   if (toolId === OS_STATUS_TOOL_NAME) return "agentic_os";
+  if (toolId.startsWith("knowgrph.git.") || toolId.startsWith("knowgrph.file.")) return "storage_sync";
   if (toolId.startsWith("knowgrph.showrunner.")) return "showrunner";
   if (toolId.startsWith("knowgrph.sandbox.policy.")) return "agent_sandbox_policy";
   if (toolId.startsWith("knowgrph.video_remix.")) return "video_remix";

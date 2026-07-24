@@ -69,13 +69,14 @@ traceability:
 
 The document family is invocable through `knowgrph.agentic_canvas_os.docs.invoke`, which resolves the authored `/`, `@`, and `#` tokens from Agentic Canvas OS. The `search`/`fetch` MCP pair and `knowgrph.list_source_files`/`knowgrph.read_source_file` WebMCP pair provide read-only document access only after a source is present in the configured published Source Files workspace. Invocation lookup does not execute storage mutations, authorize deployment, or turn this Markdown into a second tool registry.
 
-The 2026-07-23 enhancement makes Dexie/IndexedDB the durable local-first cache and outbox, bounds push/pull and conflict recovery, enforces path-derived GitHub authority, and keeps PocketBase/Yjs an optional collaboration relay rather than storage authority. `huijoohwee/docs/workspace-seeds` is absent; the byte-identical Agentic physics projection remains read-only only while bootstrap requires it. The local/Dev proof runs 39 independent `fast-check` properties 100 times each and authorizes no Production or Cloudflare mutation; implementation detail lives in the companion, schema, ADR, spreadsheet, and import references.
+The 2026-07-24 enhancement makes Dexie/IndexedDB the durable local-first cache and outbox, adds browser Git plus provider-neutral file/directory sync through loopback Worker relays, bounds transfer/conflict recovery, and enforces path-derived GitHub authority. PocketBase/Yjs remains an optional collaboration relay rather than storage authority; `huijoohwee/docs/workspace-seeds` remains forbidden. The local/Dev proof covers Properties 1–56 with at least 100 generated `fast-check` cases per property and authorizes no Production or Cloudflare mutation; implementation detail lives in the companion and runtime API references.
 
 ## Companion Files
 
 | File | Scope |
 |---|---|
 | `knowgrph-storage-sync-document.companion.md` | PRD summary, TAD runtime layers, conflict resolution, ADRs, deployment phases, quality attributes, token economics, validation |
+| `knowgrph-storage-git-file-sync-runtime-api.md` | Browser Git, provider sync, Worker relay, WebMCP/stdio tools, exact invocation grammar, and Dev-only proof boundaries |
 | `knowgrph-storage-schemas-document.md` | D1 SQL, browser cache shapes, contract types, route contracts |
 | `knowgrph-local-storage-document.md` | Browser LocalStorage keys (UI state, not sync) |
 | `knowgrph-source-files-import-document.md` | Import workflows, format routing, geo layer registration |
@@ -347,7 +348,7 @@ The collaboration readiness harness uses `/docs/workspace-seeds/knowgrph-physics
 3. A hard-drive icon means the saved local text is not verified in the Cloudflare projection
 4. User clicks the icon
 5. The shared authority resolver selects `knowgrph-docs` for `knowgrph/docs/**` and `/docs/workspace-seeds/**`, selects `workspace-docs` for collaborative workspace paths, and rejects `agentic-canvas-os/**` writes
-6. POST /api/storage/collab/save verifies the supplied `repositoryTarget`, writes `docs/{path}` in the selected GitHub repository, and treats byte-identical canonical content as success without creating a no-op commit
+6. Local/Dev POST /api/storage/collab/save requires an active bearer session plus editor/owner/provider-admin membership, verifies the supplied `repositoryTarget` and optional target-bound `gitRemoteId`, writes `docs/{path}` in the selected GitHub repository, and treats byte-identical canonical content as success without creating a no-op commit
 7. Only after GitHub succeeds, the client queues the same text under `knowgrph/docs/{path}` or `huijoohwee/docs/{path}` and pushes D1
 8. GET /api/storage/doc/:workspaceId/:canonicalPath must return the exact saved text
 9. The row changes to a cloud icon only after that read-back; GitHub failure skips D1, and partial/read-back failure stays visible as retryable failure
@@ -549,7 +550,7 @@ flowchart TB
 | Collaboration | Markdown Workspace collaboration runtime | `features/source-files/useSourceFilesPocketBaseYjsCollaborationRuntime.ts` + `lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx` | Built; gated by MainPanel online mode and `VITE_KNOWGRPH_COLLAB_POCKETBASE_URL` |
 | Repository authority | Path-scoped GitHub target resolver | `grph-shared/src/collaboration/documentRepositoryAuthority.ts` | Built; routes product/seeds to `knowgrph-docs`, workspace docs to `workspace-docs`, and rejects Agentic Canvas OS writes |
 | Source Files ownership | Canonical roots ledger and seed authority marker | `features/markdown-workspace/SourceFilesOwnershipSummary.tsx` + `MarkdownFileTree.tsx` | Built; consumes shared repository root constants and keeps IndexedDB visible as offline fallback |
-| Collaboration | GitHub save bridge with server-owned token/App identity | `POST /api/storage/collab/save` in `workers/knowgrph-storage/index.ts` | Built; requires token, owner, and target-specific Knowgrph/workspace repo config; validates `repositoryTarget` before GitHub access |
+| Collaboration | GitHub save bridge with server-owned token/App identity | `POST /api/storage/collab/save` in `workers/knowgrph-storage/index.ts` | Built; local/Dev and membership gated; requires token, owner, and target-specific repo/remote config; validates `repositoryTarget` and `gitRemoteId` before GitHub access |
 | Settings | Document storage mode, roots, fallback, and manual sync | `features/panels/views/DocumentStorageSyncSettingsRows.tsx` + `features/source-files/documentStorageSyncRuntime.ts` | Built; no browser credential fields |
 | Source Files cloud status/action | `SourceFileCloudSyncIndicator` + `syncWorkspaceEntryToCanonicalCloud` | `features/markdown-workspace/SourceFileCloudSyncIndicator.tsx` + `features/source-files/sourceFileCanonicalCloudSync.ts` | Built in Dev; supports explicit Markdown uploads including empty new files, GitHub-before-D1 ordering, exact D1 read-back, focus/120s status refresh, and retryable failure state |
 | Collaboration | JSON CRDT guardrail | raw JSON editor gate + structured `Y.Map` owner | Built; bridge rejects concurrent JSON saves without Yjs state |
@@ -594,6 +595,4 @@ flowchart TB
 
 PRD summary, TAD runtime layers, conflict resolution, architectural decisions (ADRs), deployment phases, quality attributes, token economics, storage comparison, validation summary, and cross-repo documentation contract continue in [knowgrph-storage-sync-document.companion.md](knowgrph-storage-sync-document.companion.md).
 
-See `knowgrph-storage-schemas-document.md` for D1 SQL, minimal cache shapes, contract type definitions, and route contracts.
-See `knowgrph-local-storage-document.md` for browser LocalStorage key reference (UI state, not sync).
-See `knowgrph-source-files-import-document.md` for import workflows, format routing, and geo layer registration.
+See `knowgrph-storage-schemas-document.md` for D1 and cache contracts, `knowgrph-local-storage-document.md` for browser UI-state keys, and `knowgrph-source-files-import-document.md` for import and geo-routing workflows.

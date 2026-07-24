@@ -1,4 +1,5 @@
 import { isPlainObject } from '@/lib/graph/value'
+import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 
 function normalizeEdgeEndpointId(raw: string): string {
   const value = raw.trim()
@@ -8,10 +9,11 @@ function normalizeEdgeEndpointId(raw: string): string {
 }
 
 export function readEdgeEndpointId(raw: unknown): string {
-  if (typeof raw === 'string') return normalizeEdgeEndpointId(raw)
-  if (typeof raw === 'number') return Number.isFinite(raw) ? String(raw) : ''
-  if (isPlainObject(raw)) {
-    const id = (raw as { id?: unknown }).id
+  const value = unwrapGraphCellValue(raw)
+  if (typeof value === 'string') return normalizeEdgeEndpointId(value)
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : ''
+  if (isPlainObject(value)) {
+    const id = unwrapGraphCellValue((value as { id?: unknown }).id)
     if (typeof id === 'string') return normalizeEdgeEndpointId(id)
     if (typeof id === 'number') return Number.isFinite(id) ? String(id) : ''
   }
