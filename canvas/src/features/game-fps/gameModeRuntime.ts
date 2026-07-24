@@ -8,7 +8,7 @@ import {
 import {
   activateXrSceneSurface,
   isXrGameplaySurfaceView,
-  registerXrSceneGameModeExitHandler,
+  registerXrSceneGameplayExitHandler,
 } from '@/features/three/xrSceneSurfaceRuntime'
 import {
   acknowledgeGameFpsDecisions,
@@ -206,6 +206,7 @@ export function openGameModeSurface(options: Readonly<{
   try {
     const activated = activateXrSceneSurface({
       ...(options.openPanel === false ? {} : { panelView: 'gameMode', openPanel: true }),
+      gameplaySurface: 'gameMode',
       beforePanelCommit: () => {
         if (hasGameFpsMission()) {
           spatialProfileRefreshed = Boolean(refreshGameFpsMissionSpatialProfile())
@@ -497,7 +498,7 @@ export function exitGameModeSurface(options: Readonly<{ restorePreviousSurface?:
   return next
 }
 
-registerXrSceneGameModeExitHandler(() => {
+registerXrSceneGameplayExitHandler('gameMode', () => {
   if (snapshot.active) exitGameModeSurface({ restorePreviousSurface: false })
 })
 

@@ -32,8 +32,8 @@ export function XrPhysicsRunReadyDemoRuntime() {
     readXrNativeControllerDemo,
     readXrNativeControllerDemo,
   )
-  const { flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()
-  const gameplayOverlayActive = flightSimActive || gameFpsActive
+  const { citySimActive, flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()
+  const gameplayOverlayActive = citySimActive || flightSimActive || gameFpsActive
   const phase = runtime.phase
   const revision = runtime.revision
   React.useLayoutEffect(() => {

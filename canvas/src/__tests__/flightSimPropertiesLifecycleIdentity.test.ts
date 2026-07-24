@@ -21,7 +21,7 @@ test('Feature: knowgrph-game-flight-sim, Property 45 - Source-authored activatio
   fc.assert(
     fc.property(
       fc.stringMatching(/^[a-z][a-z0-9-]{0,23}$/)
-        .filter(value => !['flight-sim', 'xr-physics', 'care-agent', 'risk-copilot'].includes(value)),
+        .filter(value => !['flight-sim', 'city-sim', 'xr-physics', 'care-agent', 'risk-copilot'].includes(value)),
       fc.stringMatching(/^[a-z][a-z0-9-]{0,23}\.md$/),
       (unregisteredId, importedBasename) => {
         const importedPath = `/imports/${importedBasename}`

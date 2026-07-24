@@ -52,6 +52,7 @@ export function testXrModeNormalizesAndCanvasViewSelectionActivatesSurface() {
     { floatingPanelOpen: true, floatingPanelView: 'camera', expected: 'camera' },
     { floatingPanelOpen: true, floatingPanelView: 'gameMode', expected: 'motionControl' },
     { floatingPanelOpen: true, floatingPanelView: 'flightSim', expected: 'motionControl' },
+    { floatingPanelOpen: true, floatingPanelView: 'cityBuilder', expected: 'motionControl' },
     { floatingPanelOpen: false, floatingPanelView: 'skillsCommands', expected: 'motionControl' },
     { floatingPanelOpen: true, floatingPanelView: 'help', expected: 'motionControl' },
   ] as const
@@ -446,15 +447,15 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
   const physicsRuntime = readSource('features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
   const canvasSlice = readSource('hooks/store/canvasSlice.ts')
   const surfaceOwnership = readSource('lib/canvas/canvasSurfaceOwnershipRuntime.ts')
-  if (!['media', 'animation', 'motionControl', 'gameMode', 'flightSim', 'camera'].every(view => surfaceRuntime.includes(`'${view}'`))
+  if (!['media', 'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera'].every(view => surfaceRuntime.includes(`'${view}'`))
     || !surfaceRuntime.includes('activateCanvasGraphSurfaceMode')
     || !surfaceRuntime.includes("input.floatingPanelView === 'skillsCommands'")
-    || !surfaceRuntime.includes('registerXrSceneGameModeExitHandler')
+    || !surfaceRuntime.includes('registerXrSceneGameplayExitHandler')
     || !toolbar.includes('routeToolbarXrScenePanel({ view, canvasRenderMode, canvas3dMode })')
     || !toolbarRouting.includes('XR_SCENE_FLOATING_PANEL_VIEWS.find')
     || !toolbarRouting.includes('activateXrSceneSurface({ panelView })')
     || /set(?:Canvas|Floating|Bottom|Media)/.test(toolbarRouting)) {
-    throw new Error('expected one shared XR scene-surface owner for all six FloatingPanel projections')
+    throw new Error('expected one shared XR scene-surface owner for all six companion panels and City Builder')
   }
   const transitionInterceptionCount = canvasSlice.match(/interceptSharedXrSurfaceTransition\(/g)?.length ?? 0
   if (!surfaceRuntime.includes('registerSharedXrActivationHandler(() => activateXrSceneSurface())')

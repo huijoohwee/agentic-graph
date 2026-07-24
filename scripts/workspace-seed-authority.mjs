@@ -8,12 +8,15 @@ export const PHYSICS_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_P
 export const FLIGHT_SEED_BASENAME = 'knowgrph-game-flight-sim-demo.md'
 export const FLIGHT_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${FLIGHT_SEED_BASENAME}`
 export const FLIGHT_COMPANION_BASENAME = 'knowgrph-game-flight-sim-demo.companion.md'
+export const CITY_SIM_SEED_BASENAME = 'knowgrph-game-city-building-sim-demo.md'
+export const CITY_SIM_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${CITY_SIM_SEED_BASENAME}`
 export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze([
   'knowgrph-game-mmorpg-demo.companion.md',
   'knowgrph-game-mmorpg-demo.md',
 ])
 export const KNOWGRPH_WORKSPACE_SEED_INVENTORY = Object.freeze([
   'README.md',
+  CITY_SIM_SEED_BASENAME,
   FLIGHT_COMPANION_BASENAME,
   FLIGHT_SEED_BASENAME,
   ...DRAFT_WORKSPACE_SEED_BASENAMES,
@@ -290,6 +293,67 @@ const requireFlightCompanionIdentity = source => {
   }
 }
 
+const requireCitySimRuntimeIdentity = source => {
+  const frontmatter = parseYamlFrontmatter(CITY_SIM_SEED_BASENAME, source)
+  const runReadyDemo = isRecord(frontmatter.run_ready_demo)
+    ? frontmatter.run_ready_demo
+    : {}
+  const cityRuntime = isRecord(frontmatter.city_runtime)
+    ? frontmatter.city_runtime
+    : {}
+  const missing = []
+  const requireValue = (label, actual, expected) => {
+    if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
+  }
+
+  requireValue('status', frontmatter.status, 'proof-pending')
+  requireValue('runtime_status', frontmatter.runtime_status, 'proof-pending')
+  requireValue('publish_scope', frontmatter.publish_scope, 'local-only')
+  requireValue('kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), 'xr')
+  requireValue('kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d')
+  requireValue('kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), 'xr')
+  requireValue('kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true)
+  requireValue('kgFloatingPanelView', frontmatter.kgFloatingPanelView, 'cityBuilder')
+  requireValue('run_ready_demo.id', runReadyDemo.id, 'city-sim')
+  requireValue('run_ready_demo.activation', runReadyDemo.activation, 'applied-source-document')
+  requireValue(
+    'run_ready_demo.identity_authority',
+    runReadyDemo.identity_authority,
+    'source-authored run_ready_demo.id',
+  )
+  requireValue(
+    'run_ready_demo.identity_conflict',
+    runReadyDemo.identity_conflict,
+    'fail closed when a known path and source identity disagree',
+  )
+  requireValue(
+    'run_ready_demo.canonical_source_file',
+    runReadyDemo.canonical_source_file,
+    `/${CITY_SIM_SEED_RELATIVE_PATH}`,
+  )
+  requireValue('run_ready_demo.source_root', runReadyDemo.source_root, 'knowgrph/docs')
+  requireValue('run_ready_demo.source_backed', readBooleanPreset(runReadyDemo.source_backed), true)
+  requireValue('run_ready_demo.native_runtime', readBooleanPreset(runReadyDemo.native_runtime), true)
+  requireValue('run_ready_demo.auto_start', readBooleanPreset(runReadyDemo.auto_start), false)
+  requireValue(
+    'run_ready_demo.forbid_external_copy_or_dependency',
+    readBooleanPreset(runReadyDemo.forbid_external_copy_or_dependency),
+    true,
+  )
+  if (!Array.isArray(runReadyDemo.external_dependencies) || runReadyDemo.external_dependencies.length !== 0) {
+    missing.push('run_ready_demo.external_dependencies=[]')
+  }
+  requireValue('city_runtime.schema_id', cityRuntime.schema_id, 'knowgrph-city-grid/v1')
+  requireValue('city_runtime.runtime_dependencies_added', cityRuntime.runtime_dependencies_added, 0)
+  requireValue('city_runtime.renderer_rule', cityRuntime.renderer_rule, 'never create a second Canvas or renderer')
+  if (missing.length > 0) {
+    throw new Error(
+      `proof-pending workspace document ${CITY_SIM_SEED_BASENAME} has invalid authority; `
+      + `missing=${JSON.stringify(missing)}`,
+    )
+  }
+}
+
 const requireDraftIdentity = (basename, source) => {
   const frontmatter = parseYamlFrontmatter(basename, source)
   const isCompanion = basename.endsWith('.companion.md')
@@ -359,6 +423,11 @@ export async function verifyWorkspaceSeedAuthority({
     'utf8',
   )
   requireFlightCompanionIdentity(flightCompanionSource)
+  const citySimSource = await readFile(
+    path.resolve(knowgrphRoot, CITY_SIM_SEED_RELATIVE_PATH),
+    'utf8',
+  )
+  requireCitySimRuntimeIdentity(citySimSource)
   for (const basename of DRAFT_WORKSPACE_SEED_BASENAMES) {
     const draftSource = await readFile(
       path.resolve(knowgrphRoot, WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH, basename),
