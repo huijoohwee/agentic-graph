@@ -190,6 +190,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["richMedia.probeTree.editorWorkspaceViewerSurface","@/__tests__/richMediaPanelTextModeRegression.test.tsx","testProbeTreeRichMediaPanelReusesEditorWorkspaceViewerSurface"],
   ["richMedia.probeTree.postEditRetainsCommittedDraft","@/__tests__/richMediaPanelWorkspaceViewerPostEditRegression.test.tsx","testRichMediaWorkspaceViewerRetainsCommittedDraftUntilParentPersistence"],
   ["richMedia.probeTree.listOptionDraftCommitsAgainstCanonicalText","@/__tests__/richMediaPanelWorkspaceViewerPostEditRegression.test.tsx","testRichMediaWorkspaceViewerCommitsListOptionAgainstCanonicalText"],
+  ["richMedia.probeTree.canonicalProvenanceSelectionFocus","@/__tests__/richMediaPanelWorkspaceViewerPostEditRegression.test.tsx","testRichMediaWorkspaceViewerRevealsCanonicalProvenanceSelection"],
   ["richMedia.textOutput.versionSelectorPublishesSelection","@/__tests__/richMediaOutputVersionSelector.test.tsx","testRichMediaPanelTextOutputVersionSelectorPublishesSelection"],
   ["richMedia.textOutput.versionSelectorUsesStoryboardChrome","@/__tests__/richMediaOutputVersionSelector.test.tsx","testRichMediaPanelTextOutputVersionSelectorUsesStoryboardChrome"],
   ["richMedia.textOutput.versionSelectorUsesBubbleToolbar","@/__tests__/richMediaOutputVersionSelector.test.tsx","testRichMediaPanelTextOutputVersionSelectorUsesBubbleToolbar"],

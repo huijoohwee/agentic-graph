@@ -21,6 +21,7 @@ import { mergeStoryboardMediaAlbumItems, toStoryboardMediaAlbumItem } from '@/co
 import { buildStoryboardCardMediaTextareaAttachments } from '@/components/StoryboardCanvas/storyboardCardMediaProjection'
 import { buildStoryboardBoardModel, buildStoryboardInlineMediaCommandContext, type StoryboardCardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import type { StoryboardCardSourceReference } from '@/components/StoryboardCanvas/storyboardCardConnectedSources'
+import { emitStoryboardCardProvenanceFocus } from '@/lib/storyboardWidget/storyboardCardProvenanceFocus'
 import { buildStoryboardToolbarProps } from '@/components/StoryboardCanvas/storyboardToolbarProps'
 import { writeActiveMarkdownDocumentTextIfPresent } from '@/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -416,6 +417,17 @@ export function StoryboardCardOverlayLayer2d(props: {
     setActiveCardId('')
     setSelectionSource('canvas')
     selectNode(nodeId)
+    const provenance = reference.selectionProvenance?.[0]
+    if (provenance) {
+      emitStoryboardCardProvenanceFocus({
+        sourceNodeId: nodeId,
+        edgeId: provenance.edgeId || reference.edgeIds[0] || '',
+        documentPath: provenance.documentPath,
+        selectedText: provenance.selectedText,
+        startLine: provenance.startLine,
+        endLine: provenance.endLine,
+      })
+    }
     requestZoom('selection')
   }, [requestZoom, selectNode, setSelectionSource])
   const runCard = React.useCallback((card: StoryboardCardModel) => {
