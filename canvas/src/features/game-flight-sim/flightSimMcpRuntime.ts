@@ -10,8 +10,21 @@ import {
 } from './flightSimRuntime'
 import {
   FLIGHT_SIM_SAVE_PATH,
+  queueFlightSimDecisions,
   readFlightSimDecisionStore,
 } from './flightSimDecisionStore'
+import {
+  buildFlightSimTrainingOutcomeDecision,
+  enableFlightSimVoiceInstructor,
+  readFlightSimTrainingSnapshot,
+  speakFlightSimTrainingCue,
+} from './flightSimTrainingRuntime'
+import {
+  selectFlightSimTrainingFailure,
+  selectFlightSimTrainingMission,
+  type FlightSimTrainingFailureId,
+  type FlightSimTrainingMissionId,
+} from './flightSimTrainingScenario'
 import {
   FLIGHT_SIM_INVOCATION_BINDINGS,
   FLIGHT_SIM_INVOCATION_COMMANDS,
@@ -27,6 +40,16 @@ export type FlightSimOperation =
   | 'stop'
   | 'restart'
   | 'throttle'
+  | 'mission-foundation'
+  | 'mission-night'
+  | 'mission-systems'
+  | 'failure-none'
+  | 'failure-engine'
+  | 'failure-instruments'
+  | 'failure-controls'
+  | 'voice-on'
+  | 'voice-off'
+  | 'coach'
   | 'save'
   | 'exit'
 
@@ -343,6 +366,7 @@ export function inspectLocalFlightSim() {
     },
     invocationGrammar: buildInvocationGrammar(),
     flightSim,
+    training: readFlightSimTrainingSnapshot(),
     decisions: {
       ...readFlightSimDecisionStore(),
       path: FLIGHT_SIM_SAVE_PATH,
@@ -483,11 +507,69 @@ export async function controlLocalFlightSim(
       control.operation,
     )
   }
+  const missionSelection: Partial<Record<FlightSimOperation, FlightSimTrainingMissionId>> = {
+    'mission-foundation': 'circuit-foundation',
+    'mission-night': 'night-circuit',
+    'mission-systems': 'systems-recovery',
+  }
+  const selectedMission = missionSelection[control.operation]
+  if (selectedMission) {
+    if (before.phase === 'ready' || before.phase === 'flying') {
+      return controlResult(
+        false,
+        'Training mission selection requires a stopped or inactive Flight Sim.',
+        control.operation,
+      )
+    }
+    selectFlightSimTrainingMission(selectedMission)
+    return controlResult(true, `Flight training mission selected: ${selectedMission}.`, control.operation)
+  }
+  const failureSelection: Partial<Record<FlightSimOperation, FlightSimTrainingFailureId>> = {
+    'failure-none': 'none',
+    'failure-engine': 'engine-power-loss',
+    'failure-instruments': 'instrument-uncertainty',
+    'failure-controls': 'control-bias',
+  }
+  const selectedFailure = failureSelection[control.operation]
+  if (selectedFailure) {
+    if (before.phase === 'ready' || before.phase === 'flying') {
+      return controlResult(
+        false,
+        'Practice failure selection requires a stopped or inactive Flight Sim.',
+        control.operation,
+      )
+    }
+    selectFlightSimTrainingFailure(selectedFailure)
+    return controlResult(true, `Flight training failure selected: ${selectedFailure}.`, control.operation)
+  }
+  if (control.operation === 'voice-on' || control.operation === 'voice-off') {
+    const enabled = control.operation === 'voice-on'
+    const spoken = enableFlightSimVoiceInstructor(enabled)
+    return controlResult(
+      true,
+      enabled && !spoken
+        ? 'Voice instructor enabled with text coaching fallback on this browser.'
+        : `Voice instructor ${enabled ? 'enabled' : 'disabled'}.`,
+      control.operation,
+    )
+  }
+  if (control.operation === 'coach') {
+    const spoken = speakFlightSimTrainingCue()
+    return controlResult(
+      true,
+      spoken
+        ? 'Current Flight training coaching cue spoken.'
+        : `Current Flight training coaching cue: ${readFlightSimTrainingSnapshot().coachingCue}`,
+      control.operation,
+    )
+  }
   if (control.operation === 'save') {
     if (before.phase !== 'completed' && before.phase !== 'crashed') {
       return controlResult(false, 'Save requires a completed or crashed Flight Sim mission.', control.operation)
     }
     if (!isFlightSimControlCurrent(fence)) return cancelled()
+    const outcome = buildFlightSimTrainingOutcomeDecision(before)
+    if (outcome) queueFlightSimDecisions([outcome])
     const saved = await persistFlightSimPendingDecisions(
       fence ? { signal: fence.signal } : {},
     )

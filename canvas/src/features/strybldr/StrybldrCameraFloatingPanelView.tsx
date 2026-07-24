@@ -2,6 +2,7 @@ import { Camera } from 'lucide-react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import { FloatingPanelCatalogHeader } from '@/lib/ui/floatingPanelCatalogLayout'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
@@ -124,6 +125,7 @@ export function StrybldrCameraFloatingPanelView() {
         >
           <CameraMcpInvocationSection />
         </CollapsibleSection>
+        <FlightSimTrainingSurfaceProjection surface="camera" />
       </section>
     </section>
   )

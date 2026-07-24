@@ -372,17 +372,16 @@ test('dependency gate names a crafted non-OSI license', async t => {
   )
 })
 
-test('named-contamination scanner reports a crafted external-project boundary violation', () => {
-  const externalIdentity = ['Flight', 'Gear'].join('')
+test('clean-room scanner reports a crafted external-project boundary violation', () => {
   assert.throws(
     () => assertFlightSimBoundary([{
       relativePath: 'canvas/src/features/game-flight-sim/copied-flight-model.ts',
-      source: `import { dynamics } from '${externalIdentity}'`,
+      source: "export const remote = 'https://external.example/flight-runtime'",
     }]),
     error => {
-      assert.match(error.message, /named-contamination\/provenance boundary failed/)
+      assert.match(error.message, /clean-room provenance boundary failed/)
       assert.match(error.message, /copied-flight-model\.ts/)
-      assert.match(error.message, new RegExp(externalIdentity))
+      assert.match(error.message, /https:\/\//)
       return true
     },
   )

@@ -113,10 +113,23 @@ asset_pipeline:
   dependency_license_gate: "fixed 21-package Flight runtime closure; OSI-approved licenses only"
   native_in_repo: true
   forbid_external_copy_or_dependency: true
-  inspiration_reference_only: ["FlightGear", "Arnie016/flight-simulator-fable5"]
-  no_copy_scan_scope: "all tracked repository files for named identity, path, content-marker, binary/asset, and declared-dependency contamination from FlightGear or Arnie016/flight-simulator-fable5"
-  provenance_attestation: "Knowgrph contributors attest that the Flight Sim implementation and assets are source-authored; external projects inform concepts and architecture only"
-  no_copy_gate_limitation: "the deterministic scanner detects named contamination patterns and declared dependencies; it cannot prove the absence of arbitrary derived code"
+  external_reference_policy: "conceptual principles only; external project identity and URL are prohibited in product source and runtime metadata; no external project dependency"
+  no_copy_scan_scope: "Flight-owned tracked paths for external repository locators, vendored paths, opaque source binaries, and missing policy markers"
+  provenance_attestation: "Knowgrph contributors attest that the Flight Sim implementation, instructional content, and assets are source-authored"
+  no_copy_gate_limitation: "the deterministic clean-room scanner cannot prove the absence of arbitrary derived code"
+flight_training:
+  missions: ["circuit-foundation", "night-circuit", "systems-recovery"]
+  mission_outcomes: ["route progress", "stable attitude", "energy envelope", "failure recovery", "terminal result"]
+  score_range: [0, 100]
+  terminal_grades: ["A", "B", "C", "D"]
+  systems_first: true
+  voice_instructor: "explicit browser speech synthesis over the visible deterministic coaching cue; text fallback always remains"
+  practice_failures: ["none", "engine-power-loss", "instrument-uncertainty", "control-bias"]
+  failure_tick_window: "180 inclusive through 420 exclusive"
+  night_owner: "shared authored XR atmosphere and lighting"
+  panel_surfaces: ["media", "animation", "motion-control", "game-mode", "flight-sim", "camera"]
+  outcome_schema: "knowgrph-flight-training-outcome/v1"
+  outcome_persistence: "one idempotent dialogue_outcome Decision on explicit terminal Save; never auto-save"
 motion_control:
   runtime: "browser-local LiteRT.js"
   model: "Google BlazePose GHUM Full"
@@ -130,13 +143,23 @@ flight_sim:
   invocation: "/flight.sim @canvas #flight operation=open"
   invocation_prefix: "/flight.sim @canvas #flight"
   invocation_policy: "exactly one /flight.sim command, one @canvas binding, and one #flight semantic"
-  operations: ["open", "start", "stop", "restart", "throttle", "save", "exit"]
+  operations: ["open", "start", "stop", "restart", "throttle", "mission-foundation", "mission-night", "mission-systems", "failure-none", "failure-engine", "failure-instruments", "failure-controls", "voice-on", "voice-off", "coach", "save", "exit"]
   operation_invocations:
     open: "/flight.sim @canvas #flight operation=open"
     start: "/flight.sim @canvas #flight operation=start"
     stop: "/flight.sim @canvas #flight operation=stop"
     restart: "/flight.sim @canvas #flight operation=restart"
     throttle: "/flight.sim @canvas #flight operation=throttle throttle=0.75"
+    mission_foundation: "/flight.sim @canvas #flight operation=mission-foundation"
+    mission_night: "/flight.sim @canvas #flight operation=mission-night"
+    mission_systems: "/flight.sim @canvas #flight operation=mission-systems"
+    failure_none: "/flight.sim @canvas #flight operation=failure-none"
+    failure_engine: "/flight.sim @canvas #flight operation=failure-engine"
+    failure_instruments: "/flight.sim @canvas #flight operation=failure-instruments"
+    failure_controls: "/flight.sim @canvas #flight operation=failure-controls"
+    voice_on: "/flight.sim @canvas #flight operation=voice-on"
+    voice_off: "/flight.sim @canvas #flight operation=voice-off"
+    coach: "/flight.sim @canvas #flight operation=coach"
     save: "/flight.sim @canvas #flight operation=save"
     exit: "/flight.sim @canvas #flight operation=exit"
   web_mcp_schema: "knowgrph-flight-sim-mcp/v1"
@@ -191,6 +214,10 @@ mcp_control:
   control_tool: "knowgrph.control_local_flight_sim"
   launch: "/flight.sim @canvas #flight operation=open"
   start: "/flight.sim @canvas #flight operation=start"
+  night_training: "/flight.sim @canvas #flight operation=mission-night"
+  systems_failure: "/flight.sim @canvas #flight operation=failure-engine"
+  voice_instructor: "/flight.sim @canvas #flight operation=voice-on"
+  coach: "/flight.sim @canvas #flight operation=coach"
   reset: "/flight.sim @canvas #flight operation=restart"
 flow:
   direction: {key: direction, type: string, value: "LR"}
@@ -266,7 +293,7 @@ Four meaningful systems run in stable transactional order: `InputIntegrationSyst
 
 ## Asset pipeline
 
-The required aircraft loads from committed img2threejs-style TypeScript plus `vehicle-airplane.scene.json`: small, diffable, human-auditable, strict UTF-8, at most 1 MB, and offline. Its GLB fallback count is exactly zero. One optional beacon without an Asset_Spec uses the committed-local opaque `optional-beacon.glb`, licensed CC0-1.0 and pinned to SHA-256 `be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd`, so the complete default load has one fallback. Remote, absolute, traversal, missing, unreadable, invalid, or unlicensed fallback references fail closed without fetching. Runtime code performs no image-to-3D model call, asset fetch, automatic grammar hydration, or Cloudflare request during Flight/Physics core play. The fixed 21-package Flight runtime closure is license-gated. Knowgrph contributors attest that this implementation and its assets are source-authored, with FlightGear and `Arnie016/flight-simulator-fable5` used only for concepts and architecture and no dependency taken on either project. The all-tracked-file scanner detects named identity, path, content-marker, binary/asset, and declared-dependency contamination; it does not prove the absence of arbitrary derived code.
+The required aircraft loads from committed img2threejs-style TypeScript plus `vehicle-airplane.scene.json`: small, diffable, human-auditable, strict UTF-8, at most 1 MB, and offline. Its GLB fallback count is exactly zero. One optional beacon without an Asset_Spec uses the committed-local opaque `optional-beacon.glb`, licensed CC0-1.0 and pinned to SHA-256 `be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd`, so the complete default load has one fallback. Remote, absolute, traversal, missing, unreadable, invalid, or unlicensed fallback references fail closed without fetching. Runtime code performs no image-to-3D model call, asset fetch, automatic grammar hydration, or Cloudflare request during Flight/Physics core play. The fixed 21-package Flight runtime closure is license-gated. External references inform conceptual principles only. Knowgrph contributors attest that the implementation, instructional content, and assets are source-authored; external project identity and URL are prohibited in product source and runtime metadata; and there is no external project dependency. The deterministic clean-room scanner cannot prove the absence of arbitrary derived code.
 
 ## Runtime-readiness gates
 

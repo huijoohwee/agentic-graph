@@ -38,6 +38,11 @@ import {
   readFlightSimSnapshot,
   subscribeFlightSimSnapshot,
 } from './flightSimRuntime'
+import { FlightSimTrainingSurfaceProjection } from './FlightSimTrainingSurfaceProjection'
+import {
+  readFlightSimTrainingSnapshot,
+  subscribeFlightSimTrainingSnapshot,
+} from './flightSimTrainingRuntime'
 
 type PendingOperation = FlightSimOperation | 'reset-save'
 
@@ -78,6 +83,11 @@ export function FlightSimFloatingPanelView() {
     subscribeFlightSimSnapshot,
     readFlightSimSnapshot,
     readFlightSimSnapshot,
+  )
+  const training = React.useSyncExternalStore(
+    subscribeFlightSimTrainingSnapshot,
+    readFlightSimTrainingSnapshot,
+    readFlightSimTrainingSnapshot,
   )
   const decisions = React.useSyncExternalStore(
     subscribeFlightSimDecisionStore,
@@ -207,7 +217,10 @@ export function FlightSimFloatingPanelView() {
           aria-label="Flight Sim telemetry"
         >
           <span><b>Mission</b><br />{flight.phase}</span>
-          <span><b>Airspeed</b><br />{airspeed(flight.aircraft.velocity)} m/s</span>
+          <span>
+            <b>Airspeed</b><br />
+            {training.airspeedReliable ? `${airspeed(flight.aircraft.velocity)} m/s` : 'UNRELIABLE'}
+          </span>
           <span><b>Throttle</b><br />{Math.round(flight.aircraft.throttle * 100)}%</span>
           <span><b>Heading</b><br />{degrees(flight.aircraft.yaw)}</span>
           <span><b>Pitch</b><br />{degrees(flight.aircraft.pitch)}</span>
@@ -222,6 +235,8 @@ export function FlightSimFloatingPanelView() {
           <span><b>Tick</b><br />{flight.tick}</span>
           <span><b>Decisions</b><br />{decisions.savedCount} saved</span>
         </section>
+
+        <FlightSimTrainingSurfaceProjection surface="flight-sim" />
 
         <section
           className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
