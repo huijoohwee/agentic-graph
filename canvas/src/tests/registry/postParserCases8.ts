@@ -1,6 +1,9 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["chat.responseContract.widgetPalette.reusesPropsPanelLayouts","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseContractReusesPropsPanelWidgetLayouts"],
+  ["chat.responseContract.widgetPalette.reusesCanonicalSeeds","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseWidgetsReuseCanonicalLayoutSeedsDeterministically"],
+  ["chat.responseContract.widgetPalette.projectorByteIdempotent","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseStructuredProjectorIsByteIdempotentForPaletteWidgets"],
   ["storage.enhancement.property.01.durableWriteBeforeTransport","@/__tests__/knowgrphStorageEnhancementPropertiesPersistence.test","testStorageEnhancementProperty01DurableWritePrecedesTransport"],
   ["storage.enhancement.property.02.offlineRetention","@/__tests__/knowgrphStorageEnhancementPropertiesPersistence.test","testStorageEnhancementProperty02OfflineRetentionPreservesAllLocalWork"],
   ["storage.enhancement.property.03.reloadRoundTrip","@/__tests__/knowgrphStorageEnhancementPropertiesPersistence.test","testStorageEnhancementProperty03ReloadRestoreRoundTrip"],
