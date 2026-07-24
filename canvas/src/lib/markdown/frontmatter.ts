@@ -221,6 +221,7 @@ export function readFloatingPanelViewPreset(value: unknown): FloatingPanelView |
     raw === 'motionControl' ||
     raw === 'gameMode' ||
     raw === 'flightSim' ||
+    raw === 'cityBuilder' ||
     raw === 'camera' ||
     raw === 'design' ||
     raw === 'chat' ||

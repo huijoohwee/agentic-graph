@@ -132,6 +132,8 @@ export function ToolbarMenuLauncher({
             ? 'gameMode'
           : tab === 'flightSim'
             ? 'flightSim'
+          : tab === 'cityBuilder'
+            ? 'cityBuilder'
           : tab === 'camera'
             ? 'camera'
           : tab === 'chat'
