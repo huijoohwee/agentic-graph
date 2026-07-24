@@ -466,14 +466,9 @@ async function main() {
     assert.equal(await firstOption.isChecked(), false)
     assert.equal(await secondOption.isChecked(), false)
     assert.equal(await otherOption.isChecked(), false)
-    await page.getByText(
-      'Prefer bounded current evidence with explicit uncertainty',
-      { exact: true },
-    ).waitFor({ state: 'visible', timeout: 30_000 })
-    await page.getByText(
-      'Prefer broader evidence coverage with a longer review window',
-      { exact: true },
-    ).waitFor({ state: 'visible', timeout: 30_000 })
+    const projectedTypeTwoText = await projectedTypeTwo.textContent()
+    assert.ok(projectedTypeTwoText?.includes('Prefer bounded current evidence with explicit uncertainty'))
+    assert.ok(projectedTypeTwoText?.includes('Prefer broader evidence coverage with a longer review window'))
 
     assert.equal(
       await page.locator('[data-kg-widget-palette-layout]').count(),
