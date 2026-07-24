@@ -1,6 +1,16 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["chat.responseContract.widgetPalette.reusesPropsPanelLayouts","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseContractReusesPropsPanelWidgetLayouts"],
+  ["chat.responseContract.widgetPalette.reusesCanonicalSeeds","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseWidgetsReuseCanonicalLayoutSeedsDeterministically"],
+  ["chat.responseContract.widgetPalette.rejectsProviderRuntimeAuthority","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseCanonicalLayoutsRejectProviderRuntimeAuthority"],
+  ["chat.responseContract.widgetPalette.respectsStructuredRoles","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseCanonicalLayoutsRespectStructuredRoles"],
+  ["chat.responseContract.widgetPalette.literalMcpParity","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseCanonicalLayoutMatchesLiteralMcpProjection"],
+  ["chat.responseContract.widgetPalette.literalMcpTypeTwoParity","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseCanonicalProbeTreeTypeTwoPreservesValidatedLiteralMcpInputs"],
+  ["chat.responseContract.widgetPalette.projectorByteIdempotent","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseStructuredProjectorIsByteIdempotentForPaletteWidgets"],
+  ["chat.responseContract.structuredContent.neutralCardResponseOnly","@/__tests__/chatResponseStructuredClassification.test","testChatResponseNeutralCardRemainsResponseOnly"],
+  ["chat.responseContract.structuredContent.executablePanelPipeline","@/__tests__/chatResponseStructuredClassification.test","testChatResponseExecutablePanelUsesPipeline"],
+  ["chat.responseContract.structuredContent.rejectsForgedLiteralMcpAuthority","@/__tests__/chatResponseStructuredProvenance.test","testChatResponseStructuredContentRejectsForgedLiteralMcpAuthority"],
   ["city.sim.core.authoredDefault","@/__tests__/citySimCoreContract.test","testCitySimAuthoredDefaultMatchesWorkspaceSeedFixture"],
   ["city.sim.core.tickAtomic","@/__tests__/citySimCoreContract.test","testCitySimTickIsDeterministicAndAtomicOnOverflow"],
   ["city.sim.core.invalidZoning","@/__tests__/citySimCoreContract.test","testCitySimInvalidZoningDoesNotMutate"],

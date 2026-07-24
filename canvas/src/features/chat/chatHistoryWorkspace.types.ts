@@ -1,3 +1,5 @@
+import type { ChatResponseStructuredSource } from './chatResponseWidgetPaletteContract'
+
 export type ChatHistoryWorkspaceAppendArgs = {
   requestedPath: string | null
   onResolvedPath?: (path: string) => void
@@ -9,6 +11,7 @@ export type ChatHistoryWorkspaceAppendArgs = {
   defaultLocalRootPath?: string | null
   title?: string
   traceId?: string | null
+  structuredResponseSource?: ChatResponseStructuredSource
 }
 
 export type ChatHistoryWorkspaceDraftArgs = {
@@ -22,5 +25,5 @@ export type ChatHistoryWorkspaceDraftArgs = {
   defaultLocalRootPath?: string | null
   title?: string
   traceId?: string | null
+  structuredResponseSource?: ChatResponseStructuredSource
 }
-
