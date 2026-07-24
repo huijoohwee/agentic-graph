@@ -27,7 +27,10 @@ import { resolveCanvasViewportMeasureElement } from '@/lib/canvas/viewportMeasur
 import { buildDataflowWidgetRegistry } from '@/lib/storyboardWidget/widgetRegistryDataflow'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import { isFrontmatterOnlyPolicyActive } from '@/lib/config.render'
-import { buildOverlayTopologyLayoutSignature } from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
+import {
+  buildOverlayNodeLayoutSignature,
+  buildOverlayTopologyLayoutSignature,
+} from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
 import { hashSignatureParts } from '@/lib/hash/signature'
 import { buildCanvasAppliedMarkdownDocumentIdentityKey, useCanvasAppliedMarkdownDocument } from '@/features/canvas/useCanvasAppliedMarkdownDocument'
 import { resolveRichMediaWidgetKind } from '@/features/chat/richMediaRun'
@@ -330,6 +333,15 @@ export default function StoryboardWidgetCanvasRuntime(
       || null
     return buildOverlayTopologyLayoutSignature(graphDataForOverlayRuntime)
   }, [baseGraphData, draftGraphData, storyboardWidgetBaseGraphData, overlayRenderGraphDataOverride])
+  const overlayNodeLayoutSignature = React.useMemo(() => {
+    const graphDataForOverlayRuntime =
+      draftGraphData
+      || overlayRenderGraphDataOverride
+      || storyboardWidgetBaseGraphData
+      || baseGraphData
+      || null
+    return buildOverlayNodeLayoutSignature(graphDataForOverlayRuntime)
+  }, [baseGraphData, draftGraphData, storyboardWidgetBaseGraphData, overlayRenderGraphDataOverride])
 
   const {
     emitStoryboardWidgetInteractionFrame,
@@ -346,7 +358,7 @@ export default function StoryboardWidgetCanvasRuntime(
     viewportW,
     viewportH,
     schema,
-    overlayTopologyLayoutSignature,
+    overlayNodeLayoutSignature,
     storyboardWidgetLayoutRebalanceRequest,
     zoomViewKeyRef,
   })
@@ -433,7 +445,7 @@ export default function StoryboardWidgetCanvasRuntime(
     setOverlayNodeIdOverride,
   })
 
-  const { appendDraftNode, beginAddEdgeFromNode, cancelPendingEdge, finalizePendingEdge } = useStoryboardWidgetGraphActions({
+  const { appendDraftEdge, appendDraftNode, beginAddEdgeFromNode, cancelPendingEdge, finalizePendingEdge } = useStoryboardWidgetGraphActions({
     active,
     draftGraphData,
     draftGraphDataRef, setDraftGraphData,
@@ -474,6 +486,7 @@ export default function StoryboardWidgetCanvasRuntime(
     zoomViewKeyRef,
     getLiveZoomTransform,
     appendDraftNode,
+    appendDraftEdge,
     updateNode,
     shouldDedupeWidgetDrop,
     scheduleForceSelect,

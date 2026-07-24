@@ -1,5 +1,14 @@
 import { toMetadataRecord } from '@/lib/graph/documentMetadata'
 
+function normalizeGraphDocumentSource(rawSource: unknown): string {
+  const source = String(rawSource ?? '').trim()
+  const workspaceMarkdownPrefix = 'markdown:workspace:/'
+  if (source.startsWith(workspaceMarkdownPrefix)) {
+    return `markdown:${source.slice(workspaceMarkdownPrefix.length)}`
+  }
+  return source
+}
+
 export function buildGraphMetaKey(graph: { metadata?: unknown } | null): string {
   const rec = toMetadataRecord(graph?.metadata)
   const kind = String(rec.kind ?? '')
@@ -22,7 +31,7 @@ export function buildGraphMetaKeyIgnoringPending(graph: { metadata?: unknown } |
 export function buildGraphDocumentMetaKey(graph: { metadata?: unknown } | null): string {
   const rec = toMetadataRecord(graph?.metadata)
   const kind = String(rec.kind ?? '')
-  const source = String(rec.source ?? '')
+  const source = normalizeGraphDocumentSource(rec.source)
   if (!kind && !source) return ''
   return `${kind}:${source}`
 }

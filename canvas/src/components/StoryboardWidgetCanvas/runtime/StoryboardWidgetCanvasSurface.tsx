@@ -37,6 +37,7 @@ import { buildRichMediaPanelOverlayExcludeNodeIdSet } from '@/lib/render/richMed
 import { isRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
 import { readFiniteRuntimeZoomTransform } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetRuntimeScene'
+import { resolveCollectiveCameraFollowBaselineRef } from '@/lib/canvas/overlayWidgetZoom'
 
 export default function StoryboardWidgetCanvasSurface(props: {
   rootRef: React.RefObject<HTMLElement | null>
@@ -113,13 +114,10 @@ export default function StoryboardWidgetCanvasSurface(props: {
     () => resolveFlowWidgetStateGraphKey({ graphData: props.storyboardSourceGraphData || null }),
     [props.storyboardSourceGraphData],
   )
-  const storyboardCollectiveZoomBaselineKRef = React.useRef<number | null>(null)
-  const storyboardCollectiveZoomBaselineKeyRef = React.useRef('')
   const storyboardCollectiveZoomBaselineKey = `${props.storyboardWidgetSurfaceId}|${flowWidgetStateGraphKey || ''}`
-  if (storyboardCollectiveZoomBaselineKeyRef.current !== storyboardCollectiveZoomBaselineKey) {
-    storyboardCollectiveZoomBaselineKeyRef.current = storyboardCollectiveZoomBaselineKey
-    storyboardCollectiveZoomBaselineKRef.current = null
-  }
+  const storyboardCollectiveZoomBaselineKRef = resolveCollectiveCameraFollowBaselineRef(
+    storyboardCollectiveZoomBaselineKey,
+  )
   const effectiveFlowWidgetPinnedByNodeId = React.useMemo(() => resolveScopedFlowWidgetNodeMap({
     graphMetaKey: flowWidgetStateGraphKey,
     keyedByGraphMetaKey: flowWidgetPinnedByNodeIdByGraphMetaKey,

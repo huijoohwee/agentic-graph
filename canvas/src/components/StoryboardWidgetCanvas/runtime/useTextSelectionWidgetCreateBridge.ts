@@ -30,6 +30,7 @@ export function useTextSelectionWidgetCreateBridge(args: {
     x: number
     y: number
   }) => string
+  appendDraftEdge?: (edge: GraphData['edges'][number]) => boolean
   authoringGraphDataRef?: React.MutableRefObject<GraphData | null>
   baseGraphData?: GraphData | null
 }) {
@@ -38,6 +39,7 @@ export function useTextSelectionWidgetCreateBridge(args: {
     widgetRegistryRef,
     resolveRegistryEntry,
     addNodeFromRegistryAtWorld,
+    appendDraftEdge,
     authoringGraphDataRef,
     baseGraphData,
   } = args
@@ -76,7 +78,10 @@ export function useTextSelectionWidgetCreateBridge(args: {
           sourceNodeId: sourceNode.id,
         },
         targetNodeId,
-        addEdge: edge => useGraphStore.getState().addEdge(edge),
+        addEdge: edge => {
+          if (appendDraftEdge) appendDraftEdge(edge)
+          else useGraphStore.getState().addEdge(edge)
+        },
         waitForGraphMutation,
       }).then(result => {
         if (result.kind === 'unresolved') {
@@ -111,6 +116,7 @@ export function useTextSelectionWidgetCreateBridge(args: {
   }, [
     active,
     addNodeFromRegistryAtWorld,
+    appendDraftEdge,
     authoringGraphDataRef,
     baseGraphData,
     resolveRegistryEntry,

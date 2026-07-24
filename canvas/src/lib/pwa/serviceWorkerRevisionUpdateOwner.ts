@@ -1,4 +1,5 @@
 export const SERVICE_WORKER_UPDATE_MIN_INTERVAL_MS = 5 * 60 * 1000
+export const SERVICE_WORKER_CONVERGENCE_RETRY_DELAYS_MS = [1_000, 5_000, 15_000, 30_000] as const
 
 type EventListenerTarget = {
   addEventListener(type: string, listener: EventListener): void
@@ -19,6 +20,8 @@ type ServiceWorkerRevisionUpdateOwnerOptions = {
   windowTarget: EventListenerTarget
   now?: () => number
   minIntervalMs?: number
+  convergenceRetryDelaysMs?: readonly number[]
+  isExpectedRevisionActive?: () => Promise<boolean>
   onUpdateSettled?: () => void
   onError?: (error: unknown) => void
 }
@@ -28,9 +31,34 @@ export function installServiceWorkerRevisionUpdateOwner(
 ): () => void {
   const now = options.now ?? Date.now
   const minIntervalMs = options.minIntervalMs ?? SERVICE_WORKER_UPDATE_MIN_INTERVAL_MS
+  const convergenceRetryDelaysMs = options.convergenceRetryDelaysMs
+    ?? SERVICE_WORKER_CONVERGENCE_RETRY_DELAYS_MS
   let disposed = false
   let lastSuccessfulUpdateAt = Number.NEGATIVE_INFINITY
   let updateInFlight: Promise<void> | null = null
+  let convergenceRetryIndex = 0
+  let convergenceRetryTimer: ReturnType<typeof setTimeout> | null = null
+
+  const scheduleConvergenceRetry = async () => {
+    if (
+      disposed
+      || !options.isExpectedRevisionActive
+      || convergenceRetryTimer !== null
+    ) return
+    try {
+      if (await options.isExpectedRevisionActive()) return
+    } catch (error) {
+      options.onError?.(error)
+    }
+    if (disposed) return
+    const retryDelayMs = convergenceRetryDelaysMs[convergenceRetryIndex]
+    if (!Number.isFinite(retryDelayMs) || retryDelayMs < 0) return
+    convergenceRetryIndex += 1
+    convergenceRetryTimer = setTimeout(() => {
+      convergenceRetryTimer = null
+      void requestUpdate(true)
+    }, retryDelayMs)
+  }
 
   const requestUpdate = (force = false): Promise<void> => {
     if (disposed) return Promise.resolve()
@@ -51,6 +79,7 @@ export function installServiceWorkerRevisionUpdateOwner(
         } catch (error) {
           options.onError?.(error)
         }
+        void scheduleConvergenceRetry()
       })
     return updateInFlight
   }
@@ -68,6 +97,8 @@ export function installServiceWorkerRevisionUpdateOwner(
 
   return () => {
     disposed = true
+    if (convergenceRetryTimer !== null) clearTimeout(convergenceRetryTimer)
+    convergenceRetryTimer = null
     options.documentTarget.removeEventListener('visibilitychange', handleForeground)
     options.windowTarget.removeEventListener('online', handleOnline)
   }

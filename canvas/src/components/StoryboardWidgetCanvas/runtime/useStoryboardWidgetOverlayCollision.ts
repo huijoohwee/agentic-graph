@@ -7,7 +7,7 @@ import {
   type VisibleFlowViewport,
 } from '@/components/FlowCanvas/workspaceVisibleViewportRecovery'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { buildOverlayTopologyLayoutSignature } from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
+import { buildOverlayNodeLayoutSignature } from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
 import { isWorkspaceEditorOverlayOpen, isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { hashScopedStringArraySignature, hashSignatureParts, normalizeStringArrayForSignature } from '@/lib/hash/signature'
 import { readGraphDataRevision } from '@/lib/graph/documentMetadata'
@@ -180,9 +180,9 @@ export function useStoryboardWidgetOverlayCollision(args: {
   const overlayCollisionBestUnresolvedRef = React.useRef<number>(Number.POSITIVE_INFINITY)
   const overlayCollisionRecentSigRef = React.useRef<string[]>([])
   const workspaceOverlayOpenRef = React.useRef(false)
-  const overlayTopologyLayoutSignature = React.useMemo(() => {
+  const overlayNodeLayoutSignature = React.useMemo(() => {
     const graphDataForOverlayRuntime = draftGraphDataRef.current || renderGraphDataOverride || null
-    return buildOverlayTopologyLayoutSignature(graphDataForOverlayRuntime)
+    return buildOverlayNodeLayoutSignature(graphDataForOverlayRuntime)
   }, [draftGraphDataRef, renderGraphDataOverride])
 
   const queryActiveSurfaceOverlays = React.useCallback((selector: string): HTMLElement[] => {
@@ -1134,8 +1134,7 @@ export function useStoryboardWidgetOverlayCollision(args: {
     canvasWindowOffset.top,
     runtimeActive,
     overlayOnlyModeEnabled,
-    overlayTopologyLayoutSignature,
-    args.graphContentRevision,
+    overlayNodeLayoutSignature,
     viewportH,
     viewportW,
     resetOverlayCollisionTransientState,

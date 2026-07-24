@@ -4,15 +4,21 @@ import { createRoot } from 'react-dom/client'
 import {
   beginTextSelectionWidgetLinkSession,
   buildTextSelectionWidgetEdge,
+  buildTextSelectionWidgetEdgePersistenceProperties,
   clearTextSelectionWidgetLinkSession,
   TEXT_SELECTION_WIDGET_CREATE_EVENT,
   getTextSelectionWidgetLinkSnapshot,
   isTextSelectionWidgetEdgePersisted,
   persistTextSelectionWidgetEdgeAfterTargetCreation,
+  readTextSelectionWidgetEdgeProvenance,
   resolveTextSelectionWidgetTargetPosition,
   TEXT_SELECTION_WIDGET_LINK_SCHEMA,
   type TextSelectionWidgetCreateDetail,
 } from '@/lib/storyboardWidget/textSelectionWidgetLink'
+import {
+  buildStoryboardWidgetInsertionPlacement,
+  captureStoryboardWidgetInsertionPlacement,
+} from '@/lib/storyboardWidget/widgetInsertionPlacement'
 import type { GraphData } from '@/lib/graph/types'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import WidgetPalette from '@/features/toolbar/WidgetPalette'
@@ -76,8 +82,26 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
     || edge.properties['selection:text'] !== 'selected source text'
     || edge.properties['selection:startLine'] !== 12
     || edge.properties['selection:endLine'] !== 13
-    || edge.properties['selection:documentPath'] !== 'notes/example.md') {
+    || edge.properties['selection:documentPath'] !== 'notes/example.md'
+    || edge.properties['selection:targetFieldId'] !== 'prompt') {
     throw new Error(`expected persisted selection provenance, got ${JSON.stringify(edge.properties)}`)
+  }
+  const persistedProperties = buildTextSelectionWidgetEdgePersistenceProperties(edge)
+  if (persistedProperties?.schema !== TEXT_SELECTION_WIDGET_LINK_SCHEMA
+    || persistedProperties['selection:text'] !== 'selected source text'
+    || persistedProperties['selection:startLine'] !== 12
+    || persistedProperties['selection:endLine'] !== 13
+    || persistedProperties['selection:targetFieldId'] !== 'prompt') {
+    throw new Error(`expected durable frontmatter selection provenance, got ${JSON.stringify(persistedProperties)}`)
+  }
+  const provenance = readTextSelectionWidgetEdgeProvenance(edge)
+  if (!provenance
+    || provenance.selectedText !== 'selected source text'
+    || provenance.documentPath !== 'notes/example.md'
+    || provenance.startLine !== 12
+    || provenance.endLine !== 13
+    || provenance.targetFieldId !== 'prompt') {
+    throw new Error(`expected canonical selection provenance readback, got ${JSON.stringify(provenance)}`)
   }
 
   graphData.edges.push(edge)
@@ -137,6 +161,54 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
   clearTextSelectionWidgetLinkSession()
   if (getTextSelectionWidgetLinkSnapshot() !== null) {
     throw new Error('expected completing or cancelling the flow to clear the active selection')
+  }
+}
+
+export function testTextSelectionWidgetInsertionPreservesExistingCollectivePlacement() {
+  const graphData: GraphData = {
+    type: 'Graph',
+    metadata: { kind: 'frontmatter-flow', source: 'markdown:notes/example.md' },
+    nodes: [{ id: 'source-panel', type: 'RichMediaPanel', label: 'Source', properties: {} }],
+    edges: [],
+  }
+  const graphKey = 'frontmatter-flow:markdown:notes/example.md'
+  const snapshot = captureStoryboardWidgetInsertionPlacement({
+    graphData,
+    pinnedByGraphMetaKey: {
+      [graphKey]: { 'source-panel': true, 'existing-widget': false },
+    },
+    pinnedByNodeId: { stale: true },
+    screenByGraphMetaKey: {
+      [graphKey]: { 'existing-widget': { left: 44, top: 88 } },
+    },
+    screenByNodeId: { stale: { left: 1, top: 2 } },
+    worldByGraphMetaKey: {
+      [graphKey]: { 'source-panel': { x: 120, y: 240 } },
+    },
+    worldByNodeId: { stale: { x: 3, y: 4 } },
+  })
+  const next = buildStoryboardWidgetInsertionPlacement({
+    snapshot,
+    targetNodeId: 'target-widget',
+    targetWorldPosition: { x: 940, y: 240 },
+    pinTargetInCanvas: true,
+  })
+  if (JSON.stringify(snapshot.pinnedByNodeId) !== JSON.stringify({
+    'source-panel': true,
+    'existing-widget': false,
+  })) {
+    throw new Error(`expected the document-scoped pinned map, got ${JSON.stringify(snapshot.pinnedByNodeId)}`)
+  }
+  if (next.worldByNodeId['source-panel']?.x !== 120 || next.worldByNodeId['source-panel']?.y !== 240) {
+    throw new Error(`expected the source placement to stay unchanged, got ${JSON.stringify(next.worldByNodeId)}`)
+  }
+  if (next.screenByNodeId['existing-widget']?.left !== 44 || next.screenByNodeId['existing-widget']?.top !== 88) {
+    throw new Error(`expected existing floating placement to stay unchanged, got ${JSON.stringify(next.screenByNodeId)}`)
+  }
+  if (next.pinnedByNodeId['target-widget'] !== true
+    || next.worldByNodeId['target-widget']?.x !== 940
+    || next.worldByNodeId['target-widget']?.y !== 240) {
+    throw new Error(`expected only the inserted target to receive a new world anchor, got ${JSON.stringify(next)}`)
   }
 }
 

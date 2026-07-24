@@ -186,7 +186,7 @@ export function testWorkspaceViewUpdateSchedulesStoryboardWidgetCollectiveCollis
   if (!runtimeText.includes('(persistedHasViewportOffset && liveLooksDefault ? persistedZoom : null)')) {
     throw new Error('expected pinned widget auto-seed zoom source to stay independent from Workspace overlay toggles after the read-only guard')
   }
-  if (!runtimeText.includes('const currentLayoutSignature = `${args.overlayTopologyLayoutSignature}|${visibleViewport.left},${visibleViewport.top},${visibleViewport.width}x${visibleViewport.height}|${bucketSignature}`')) {
+  if (!runtimeText.includes('const currentLayoutSignature = `${args.overlayNodeLayoutSignature}|${visibleViewport.left},${visibleViewport.top},${visibleViewport.width}x${visibleViewport.height}|${bucketSignature}`')) {
     throw new Error('expected pinned widget auto-seed layout signature to include shared visible viewport geometry without Editor Workspace pane authority')
   }
   if (!runtimeText.includes('args.storyboardWidgetSurfaceId,')) {
