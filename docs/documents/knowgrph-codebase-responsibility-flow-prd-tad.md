@@ -158,7 +158,7 @@ outputs are byte-identical.
 **Given** any committed Markdown or JSON projection is stale, **When** CI invokes `--check`,
 **Then** it exits non-zero before a generating build runs and leaves every projection unchanged.
 
-> **VCC translation**: `Verify --check compares all three projections, performs zero writes, and precedes every generating or mutating CI build step`
+> **VCC translation**: `Verify --check compares all three projections, performs zero writes, and precedes every CI build step that can generate a projection`
 
 **Given** a concern that has been removed from source, **When** the index is regenerated, **Then**
 the removed concern's row is absent.
@@ -188,7 +188,7 @@ the removed concern's row is absent.
   Range; one row per concern; byte-identical regeneration. High ROI: eliminates repeated manual
   owner-hunting at zero recurring cost.
 - **Must** — a non-mutating `--check` mode that fails when any committed projection is stale and
-  runs in CI before any generating or mutating build step.
+  runs in CI before any build step that can generate a projection.
 - **Could** — grouped views (by backing mechanism, by Area) rendered from the same rows.
 - **Won't (this increment)** — an LLM-summarized or natural-language query layer over the index;
   any hosted service; write-back from the index into source.
@@ -262,7 +262,7 @@ flowchart TB
     Ext(["Responsibility Extractor\ndeterministic transform"])
     Idx(["Responsibility Index File\ngenerated Markdown"])
     Json(["Settings Flow\ngenerated JSON projections"])
-    Chk(["Non-mutating Staleness Check\npre-build merge gate"])
+    Chk(["Non-mutating Staleness Check\npre-projection merge gate"])
   end
   subgraph Consumers["Read-only consumers"]
     Dev1(["Maintainer"])
@@ -453,7 +453,7 @@ projection before a generating build.
 | Source | Settings Registry + Ownership Metadata | code-owned settings and provenance under `canvas/src/` | Authoritative |
 | Generation | Responsibility Extractor | repo extraction tooling (generate / `--check`) | Dev implementation |
 | Artifacts | Responsibility Flow Projections | Markdown plus two JSON output paths defined above | Generated |
-| Gate | Staleness Check | pre-build CI step invoking `--check` | Dev implementation |
+| Gate | Staleness Check | pre-projection CI step invoking `--check` | Dev implementation |
 | Docs | This PRD/TAD | `docs/documents/knowgrph-codebase-responsibility-flow-prd-tad.md` | Dev implementation |
 
 ---

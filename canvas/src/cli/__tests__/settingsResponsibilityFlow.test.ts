@@ -88,14 +88,18 @@ test('integration CI checks projections before any generating build', () => {
   const scripts = rootPackage.scripts ?? {}
   const integration = scripts['ci:integration'] ?? ''
   const checkCommand = 'npm run responsibility-flow:check'
+  const testCommand = 'npm run test:responsibility-flow --workspace=@knowgrph/canvas'
   const mutatingCommand = 'npm run conflict:source'
 
   assert.match(scripts['responsibility-flow:check'] ?? '', /--check/)
+  assert.match(scripts['responsibility-flow:check'] ?? '', /smoke:prepare/)
   assert.notEqual(integration.indexOf(checkCommand), -1)
+  assert.notEqual(integration.indexOf(testCommand), -1)
   assert.notEqual(integration.indexOf(mutatingCommand), -1)
   assert.ok(
-    integration.indexOf(checkCommand) < integration.indexOf(mutatingCommand),
-    'responsibility-flow:check must run before conflict:source can generate projections',
+    integration.indexOf(checkCommand) < integration.indexOf(testCommand)
+      && integration.indexOf(testCommand) < integration.indexOf(mutatingCommand),
+    'the prepared stale check and focused test must run before projection generation',
   )
 })
 

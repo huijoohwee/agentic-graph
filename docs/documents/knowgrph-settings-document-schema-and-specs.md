@@ -44,7 +44,7 @@ parsed as generation inputs.
 
 | Metric                  | Typical Value | Notes                                                  |
 |-------------------------|---------------|--------------------------------------------------------|
-| Total Execution Time    | ≤5s reference ceiling | Bounded local source scan and Node/TSX startup  |
+| Total Execution Time    | ≤10s reference ceiling | Linked-package preparation plus bounded local source scan and Node/TSX startup |
 | Row Derivation Time     | Bounded       | One deterministic pass over declared source scope       |
 | Projection Render Time  | Bounded       | One ordered row set renders all three projections       |
 | Check Write Count       | 0             | `--check` is non-mutating                               |
@@ -374,7 +374,7 @@ Key | Imports | Notes | Line Range
 |---|---|---|
 | Generate | Refresh the three declared projections from authoritative code | Outputs stay synchronized |
 | `--check` | Derive and render in memory; read committed outputs; write nothing | Exit 0 only when all three outputs match exactly |
-| CI | Run `--check` before any generating or mutating build step | Stale outputs fail instead of being silently healed |
+| CI | Build linked package prerequisites, then run `--check` before any projection-generating step | Stale outputs fail instead of being silently healed |
 ---
 
 Release/publish parity treats all three files as generated projections.
@@ -399,7 +399,7 @@ downstream publish copy. This increment stops at Dev review and does not publish
 | Context              | Intent                          | Directive                                                                                   |
 |----------------------|---------------------------------|---------------------------------------------------------------------------------------------|
 | Projection Completeness | Ensure all settings are emitted | - [ ] Verify each output includes all 593 unique registry keys; forbid partial extraction |
-| Performance Bounds   | Keep build fast                 | - [ ] Measure bounded completion against the ≤5s reference ceiling; forbid unbounded source scans |
+| Performance Bounds   | Keep build fast                 | - [ ] Measure bounded completion against the ≤10s reference ceiling; forbid unbounded source scans |
 | CI Ordering          | Detect drift before mutation    | - [ ] Run `--check` before generating builds; forbid pre-check regeneration                 |
 ---
 
@@ -409,7 +409,7 @@ downstream publish copy. This increment stops at Dev review and does not publish
 | Authoritative Inputs | ☐      | - [ ] Registry and code-owned metadata validate; forbid generated files as source          |
 | Projection Output    | ☐      | - [ ] Markdown and both JSON projections are present and fresh; forbid missing output       |
 | Non-mutating Check   | ☐      | - [ ] `--check` leaves all file hashes unchanged; forbid stale-output healing               |
-| Build Performance    | ☐      | - [ ] `build:settings` remains within the ≤5s reference ceiling; forbid unbounded extraction |
+| Build Performance    | ☐      | - [ ] The root responsibility-flow command remains within the ≤10s reference ceiling; forbid unbounded extraction |
 **Settings Quality**:
 | Context              | Status | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
