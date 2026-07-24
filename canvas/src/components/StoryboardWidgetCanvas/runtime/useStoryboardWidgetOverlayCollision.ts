@@ -630,28 +630,6 @@ export function useStoryboardWidgetOverlayCollision(args: {
             && !storedCollectiveViewportState?.balanced
           )
         )
-      const allowPinnedResolve = true
-      const pinnedOverlap = (() => {
-        if (!allowPinnedResolve) return false
-        const pinnedCandidates = overlayNodeIds
-          .map(rawId => {
-            const id = String(rawId || '').trim()
-            if (!id || !isPinnedInCanvasForNode(id)) return null
-            const rect = rectByNodeId.get(id) || null
-            if (!rect) return null
-            return { id, left: rect.left, top: rect.top, width: rect.width, height: rect.height }
-          })
-          .filter((item): item is { id: string; left: number; top: number; width: number; height: number } => !!item)
-        if (pinnedCandidates.some(candidate => pinnedObstacles.some(obstacle => distinctStoryboardOverlayRectsOverlap(candidate, obstacle, gapPx)))) return true
-        if (pinnedCandidates.length < 2) return false
-        for (let i = 0; i < pinnedCandidates.length; i += 1) {
-          for (let j = i + 1; j < pinnedCandidates.length; j += 1) {
-            if (hasOverlap(pinnedCandidates[i]!, pinnedCandidates[j]!, floatingScaled, gapPx)) return true
-          }
-        }
-        return false
-      })()
-
       const items: Array<{ id: string; top: number; left: number; movable: boolean; pinnedInCanvas: boolean; width?: number; height?: number }> = []
       let stack = 0
       for (let i = 0; i < overlayNodeIds.length; i += 1) {
@@ -659,12 +637,12 @@ export function useStoryboardWidgetOverlayCollision(args: {
         if (!id) continue
         const rect = rectByNodeId.get(id) || null
         if (isPinnedInCanvasForNode(id)) {
-          if (!allowPinnedResolve) {
-            if (rect) pinnedObstacles.push({ id, left: rect.left, top: rect.top, width: rect.width, height: rect.height })
-            continue
-          }
           const nodeTypeId = String(nodeById?.get(id)?.type || '').trim()
-          const allowPinnedAutoPlace = pinnedOverlap || shouldAutoPlaceStoryboardWidget({
+          // A pinned world position is authored placement authority. Overlap alone
+          // must not turn it back into a layout candidate after a zoom, pan, drag,
+          // or delayed collision warmup. Newly inserted overlays without authored
+          // placement still enter the resolver through shouldAutoPlace.
+          const allowPinnedAutoPlace = shouldAutoPlaceStoryboardWidget({
             graphMetaKind: graphKind,
             pinnedInCanvas: true,
             worldPos: worldById[id],
@@ -1128,7 +1106,7 @@ export function useStoryboardWidgetOverlayCollision(args: {
   React.useEffect(() => {
     if (!runtimeActive || workspaceOverlayOpenRef.current) return
     resetOverlayCollisionTransientState()
-    scheduleOverlayCollisionResolve()
+    scheduleOverlayCollisionResolveRef.current()
   }, [
     canvasWindowOffset.left,
     canvasWindowOffset.top,
@@ -1138,7 +1116,6 @@ export function useStoryboardWidgetOverlayCollision(args: {
     viewportH,
     viewportW,
     resetOverlayCollisionTransientState,
-    scheduleOverlayCollisionResolve,
   ])
 
   React.useEffect(() => {

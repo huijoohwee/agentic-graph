@@ -75,6 +75,10 @@ export function testFrontmatterGrowthPreservesExistingCollective() {
     || !collisionText.includes('id: `storyboard-card:${id}`')) {
     throw new Error('expected authored Storyboard cards to participate as full-size collision obstacles for Widget/Rich Media cascade placement')
   }
+  if (collisionText.includes('const allowPinnedAutoPlace = pinnedOverlap || shouldAutoPlaceStoryboardWidget({')
+    || !collisionText.includes('const allowPinnedAutoPlace = shouldAutoPlaceStoryboardWidget({')) {
+    throw new Error('expected authored pinned placements to remain authoritative after zoom, pan, and drag interactions')
+  }
   for (const snippet of [
     'const targetAspect = 16 / 9',
     'Math.ceil(Math.sqrt(cardCount * targetAspect / cellAspect))',
