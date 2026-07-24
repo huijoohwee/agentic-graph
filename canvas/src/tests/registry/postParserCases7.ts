@@ -24,6 +24,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["sourceFiles.bootstrap.readiness.rejectsStaleDocumentIntentTransitions","@/__tests__/sourceFilesBootstrapReadiness.test","testSourceFilesBootstrapReadinessRejectsStaleDocumentIntentTransitions"],
   ["sourceFiles.bootstrap.readiness.keepsBaseFailureTerminal","@/__tests__/sourceFilesBootstrapReadiness.test","testSourceFilesBootstrapReadinessKeepsBaseFailureTerminal"],
   ["sourceFiles.bootstrap.readiness.projectsRenderIntentBeforeEffects","@/__tests__/sourceFilesBootstrapReadiness.test","testSourceFilesBootstrapReadinessProjectsNewRenderIntentBeforeEffects"],
+  ["sourceFiles.bootstrap.readiness.retainsRuntimeMountAcrossLaterIntents","@/__tests__/sourceFilesBootstrapReadiness.test","testSourceFilesBootstrapReadinessRetainsRuntimeMountAcrossLaterIntents"],
   ["agenticOs.remoteGrammar.provenance.revisionBound","@/__tests__/agenticOsRemoteGrammarProvenance.test","testAgenticOsRemoteGrammarProvenanceRebasesExactDictionaryFragments"],
   ["agenticOs.remoteGrammar.provenance.fetchFailClosed","@/__tests__/agenticOsRemoteGrammarProvenance.test","testAgenticOsRemoteGrammarFetchRegistersOnlyRevisionBoundProvenance"],
   ["viewport.storyboardWidget.overlay.distinctRichMediaCollision","@/__tests__/storyboardWidgetActiveSurfaceObstacleCollection.test","testStoryboardWidgetPinnedCardTreatsDistinctRichMediaAsCollisionObstacle"],
