@@ -142,6 +142,8 @@ instead of inventing a parallel card shape.
    seed, and the runtime SHALL NOT fuzzy-match by ID or label.
 7. Rich Media output SHALL continue to use existing `panels` or `media` records and
    `RichMediaPanel`; the contract SHALL NOT invent Image Widget or Video Widget palette duplicates.
+8. A canonical layout ID outside `widgets` SHALL NOT change the record's role, except that an exact
+   Probe-Tree Type 2 `cards` record MAY enter the existing specialized Probe-Tree validator.
 
 ### Requirement 5: Reuse the shared Chat Widget adapter
 
@@ -197,6 +199,9 @@ pipeline so KGC, literal MCP results, and saved workspace documents stay consist
    object.
 4. Provider-authored questions and options SHALL remain dynamic semantic content and SHALL not be
    replaced by seed placeholders.
+5. Ordinary LLM output SHALL NOT retain provider-authored lineage, depth, action, or context-anchor
+   authority; only an exact literal MCP result marked trusted by its internal call site MAY retain
+   those inputs after specialized validation, and embedded or recursively nested text SHALL not.
 
 ### Requirement 8: Preserve Props Panel → Widgets as the visible palette owner
 

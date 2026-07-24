@@ -16,9 +16,23 @@ import {
 } from './chatResponseStructuredContent'
 import { hasRecognizedChatRuntimeInvocation } from './chatRuntimeInvocationProfile'
 import { resolveChatRuntimeInvocationQuery } from './chatRuntimeInvocationQuery'
+import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 
 const hasRequestedSections = (profile: ReturnType<typeof analyzeKgcRequest>): boolean =>
   Object.values(profile.requestedSections).some(Boolean)
+
+const hasFlowOwnedStructuredResponse = (
+  surface: ReturnType<typeof extractChatResponseStructuredSurface>,
+): boolean => Boolean(surface && (
+  surface.nodes.some(node => (
+    node.nodeTypeId !== FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID
+    || (
+      typeof node.properties['flow:compute'] === 'string'
+      && String(node.properties['flow:compute'] || '').trim().length > 0
+    )
+  ))
+  || surface.edges.some(edge => edge.source !== 'n-deliver')
+))
 
 const shouldUseResponseOnlyBaseTemplate = (args: {
   profile: ReturnType<typeof analyzeKgcRequest>
@@ -68,10 +82,16 @@ export const buildDeterministicBaseTemplateKgcTurn = (args: BaseFallbackArgs): s
   void args.timestampMs
   const profile = analyzeKgcRequest(args.requestText)
   const assistantText = String(args.assistantText || '')
-  const responseSurface = extractChatResponseStructuredSurface(assistantText)
-  const responseOnly = responseSurface
+  const responseSurface = extractChatResponseStructuredSurface(assistantText, {
+    trustedSource: args.structuredResponseSource,
+  })
+  const responseOnly = hasFlowOwnedStructuredResponse(responseSurface)
     ? false
-    : shouldUseResponseOnlyBaseTemplate({ profile, requestText: args.requestText, assistantText })
+    : shouldUseResponseOnlyBaseTemplate({
+        profile,
+        requestText: args.requestText,
+        assistantText,
+      })
   const outputProfile = responseOnly ? projectResponseOnlyProfile(profile, assistantText) : profile
   const useComputingFlowResponse = !responseSurface && (
     outputProfile.signals.computingFlow ||

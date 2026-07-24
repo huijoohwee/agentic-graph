@@ -85,6 +85,7 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
       storageType: 'chatKnowgrph',
       traceId: 'trace-probe-tree-mcp-apply',
       title: 'Knowledge Graph Canvas Storage',
+      structuredResponseSource: 'literal-mcp',
     })
     const canonicalText = await (await getWorkspaceFs()).readFileText(workspacePath)
     for (const token of [

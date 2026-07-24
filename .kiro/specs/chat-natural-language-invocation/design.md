@@ -248,8 +248,8 @@ FloatingPanel Props Panel Widgets response contract:
   rich-media-deliverables.
 - A widgets record may declare one canonical layoutVariantId plus request-specific semantic fields.
 - The shared extractor supplies TextGeneration/default/textGeneration identity and the palette seed.
-- Request-specific semantic fields may override seed defaults.
-- Do not repeat or contradict structural identity for a canonical layout.
+- Request-specific label/prompt/summary and valid selection content may override seed placeholders.
+- The runtime discards authored identity, handles, runtime configuration, credentials, and geometry.
 - Keep Rich Media output in panels or media records.
 ```
 
@@ -297,24 +297,25 @@ export type ResolvedChatResponseWidgetPaletteLayout = {
   seedLabel: string
   seedProperties: Record<string, unknown>
 }
-
 export function applyChatResponseWidgetPaletteLayout(
   authoredRecord: Record<string, unknown>,
+  role: ChatResponseStructuredRole, source: ChatResponseStructuredSource,
 ): {
   record: Record<string, unknown>
   layout: ResolvedChatResponseWidgetPaletteLayout | null
+  probeTreeValidatorInputs: Record<string, unknown>
 }
 ```
-
 Algorithm:
 
 1. Read and trim canonical `layoutVariantId`.
 2. Resolve with `readWidgetCardLayoutVariantDescriptor`.
-3. If no descriptor exists, return the authored record and `layout: null`.
+3. Accept layouts only for `widgets` or an exact Type 2 `cards` record; otherwise return `layout: null`.
 4. Build the canonical seed with `buildWidgetCardLayoutSeed(descriptor.id)`.
-5. Merge `{ ...seed.properties, ...authoredRecord }` so request-specific semantic fields override
-   placeholders.
-6. Return the descriptor and seed metadata for structural projection.
+5. Retain the semantic/meta allowlist; stage lineage/depth/action/context only when an internal caller
+   marks an exact, direct literal MCP envelope trusted; embedded/near-match text stays provider-owned.
+6. Merge the seed with those safe fields; Type 2 output stays empty and user-owned.
+7. Return the descriptor and seed metadata for structural projection.
 
 There is no label matching, partial-ID matching, or fallback layout selection.
 
@@ -339,12 +340,13 @@ Resolution precedence:
 
 1. A valid canonical layout descriptor owns `nodeTypeId`, `widgetTypeId`, and `formId`.
 2. Without a canonical layout, retain the current generic authored-field and role inference.
-3. Existing explicit handles remain valid for neutral structured records.
+3. Canonical layouts force registry-owned handles; explicit handles remain valid only for neutral
+   structured records.
 4. Existing node-type defaults supply missing handles.
 
-`chatResponseStructuredContent.ts` calls the adapter after merging typed/plain record properties and
-before Probe-Tree detection/node projection. Layout metadata keys are structural and are not copied
-as arbitrary provider properties.
+`chatResponseStructuredContent.ts` calls the adapter with the structured role after merging
+typed/plain record properties and before Probe-Tree detection/node projection. Layout metadata keys
+are structural and are not copied as arbitrary provider properties.
 
 ### 8. Seed and semantic merge precedence
 
@@ -352,13 +354,14 @@ For a canonical layout-backed record:
 
 1. Descriptor identity is authoritative.
 2. Shared seed properties establish layout defaults.
-3. Provider-authored semantic fields override seed placeholders.
+3. Allowlisted provider-authored semantic fields override seed placeholders.
 4. Generic Chat structured metadata is added.
 5. Specialized validators enforce their runtime-owned fields.
 6. Existing Rich Media/table normalization runs.
 
 Provider-authored identity cannot override step 1. Runtime-owned credentials, endpoints, model
-configuration, registry ports, and schema mappings are never accepted from the response record.
+configuration, registry ports/schema mappings, timestamps, media endpoints, and renderer geometry
+are never accepted from a canonical response record.
 
 The `layoutVariantId` need not become a second renderer switch. Visible behavior derives from the
 seeded canonical properties and registry identity.
@@ -474,16 +477,16 @@ the same `buildWidgetCardLayoutSeed` label/properties before request-specific co
 
 ### Property 5: Semantic override with structural identity protection
 
-For any valid canonical layout record, request-specific semantic fields override seed placeholders,
-while changing provider-authored identity fields cannot change descriptor-owned
-`TextGeneration/default/textGeneration`.
+For any valid canonical layout record, safe request-specific semantic fields override seed
+placeholders, while provider-authored identity, handles, credentials, configuration, registry/schema,
+timestamp, media-endpoint, or geometry fields cannot change runtime-owned structure.
 
 **Validates:** Requirements 4.2–4.5, 5.1–5.6
 
 ### Property 6: Probe-Tree Type 2 parity
 
-For any valid provider-authored Probe-Tree response card, Type 2 structural properties equal the
-shared seed while question/options and runtime-owned lineage/action fields remain request-specific.
+For any valid provider-authored Probe-Tree response card, Type 2 structure equals the shared seed,
+semantic fields survive, and runtime lineage/action is derived; only a trusted literal-MCP call may retain it.
 
 **Validates:** Requirements 7.1–7.4
 
@@ -525,10 +528,10 @@ Add or extend focused tests for:
 - Explicit route/provider remaining-query equality.
 - Descriptor, palette, and shared prompt exact order/parity.
 - All four canonical layouts selecting their shared seeds.
-- Provider semantic overrides with protected descriptor identity.
+- Provider semantic overrides with adversarial identity/port/config/credential/geometry stripping.
 - Unknown layout non-selection and no fuzzy aliasing.
 - Probe-Tree Type 2 seed parity.
-- Literal MCP and fenced YAML structured-content parity.
+- Trusted literal-MCP retention, forged/embedded rejection, and cross-role layout rejection.
 - Repeat extraction determinism and projector idempotence.
 
 Use the repo's existing registered `canvas/src/tests/ci.ts` harness and bounded test filters. Do not

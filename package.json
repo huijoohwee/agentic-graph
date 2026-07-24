@@ -69,6 +69,7 @@
     "collaboration:readiness:check": "node ./scripts/check-collaboration-readiness.mjs",
     "collaboration:release:check": "node ./scripts/check-collaboration-release-readiness.mjs",
     "storyboard:readiness:check": "node ./scripts/check-storyboard-readiness.mjs",
+    "chat-natural-language-invocation:readiness:check": "node ./scripts/check-chat-natural-language-invocation-readiness.mjs",
     "ai-gateway:readiness:check": "node ./scripts/check-ai-gateway-readiness.mjs",
     "storage:worker:dev": "npx --yes wrangler@latest dev --config cloudflare/workers/knowgrph-storage/wrangler.toml",
     "storage:worker:deploy": "npx --yes wrangler@latest deploy --config cloudflare/workers/knowgrph-storage/wrangler.toml",

@@ -10,19 +10,148 @@ import {
   FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID,
 } from '@/lib/config.storyboard-widget'
 import {
+  PROBE_TREE_TYPE_TWO_LAYOUT_ID,
   WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS,
   buildWidgetCardLayoutSeed,
   readWidgetCardLayoutVariantDescriptor,
   type WidgetCardLayoutVariantDescriptor,
 } from '@/lib/storyboardWidget/widgetCardLayoutVariants'
+import { normalizeProbeTreeSelectionOptions } from '@/features/agent-ready/probeTreeContract.mjs'
 import { readFirstString, toJsonValue } from './chatResponseStructuredRecord'
 
 export type ChatResponseStructuredRole = 'widget' | 'panel' | 'card' | 'media' | 'table' | 'node'
+export type ChatResponseStructuredSource = 'assistant' | 'literal-mcp'
 export type ChatResponseSurfaceKind = 'text' | 'image' | 'audio' | 'video' | 'html'
 
 export const CHAT_RESPONSE_WIDGET_LAYOUT_META_KEYS = [
   'layoutVariantId',
 ] as const
+
+const CHAT_RESPONSE_WIDGET_PALETTE_RECORD_META_KEYS = new Set([
+  'id',
+  'nodeId',
+  'node_id',
+  'label',
+  'title',
+  'name',
+  ...CHAT_RESPONSE_WIDGET_LAYOUT_META_KEYS,
+])
+
+const CHAT_RESPONSE_WIDGET_PALETTE_SEMANTIC_KEYS = new Set([
+  'prompt',
+  'input',
+  'instructions',
+  'systemPrompt',
+  'system_prompt',
+  'summary',
+  'output',
+  'result',
+  'response',
+  'transcript',
+  'text',
+  'content',
+  'markdown',
+  'description',
+  'question',
+  'rationale',
+  'evidenceNeeded',
+  'evidence_needed',
+  'selectionOptions',
+  'confidence',
+])
+
+const CHAT_RESPONSE_WIDGET_PALETTE_OUTPUT_KEYS = new Set([
+  'output',
+  'result',
+  'response',
+  'transcript',
+  'text',
+  'content',
+  'markdown',
+  'description',
+])
+
+const CHAT_RESPONSE_PROBE_TREE_VALIDATOR_KEYS = new Set([
+  'parentNodeId',
+  'parent_node_id',
+  'parentId',
+  'parent_id',
+  'candidateOptionId',
+  'candidate_option_id',
+  'probeTreeDepth',
+  'probe_tree_depth',
+  'nextAction',
+  'next_action',
+  'contextAnchors',
+])
+
+const pickCanonicalLayoutAuthoredFields = (
+  authoredRecord: Record<string, unknown>,
+  descriptor: WidgetCardLayoutVariantDescriptor,
+): Record<string, unknown> => {
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(authoredRecord)) {
+    if (
+      !CHAT_RESPONSE_WIDGET_PALETTE_RECORD_META_KEYS.has(key)
+      && !CHAT_RESPONSE_WIDGET_PALETTE_SEMANTIC_KEYS.has(key)
+    ) continue
+    if (
+      descriptor.id === PROBE_TREE_TYPE_TWO_LAYOUT_ID
+      && CHAT_RESPONSE_WIDGET_PALETTE_OUTPUT_KEYS.has(key)
+    ) continue
+    if (descriptor.id === PROBE_TREE_TYPE_TWO_LAYOUT_ID && key === 'selectionOptions') {
+      const selectionOptions = normalizeProbeTreeSelectionOptions(value)
+      if (selectionOptions.length >= 2) out[key] = selectionOptions
+      continue
+    }
+    out[key] = value
+  }
+  return out
+}
+
+const pickCanonicalProbeTreeValidatorInputs = (
+  authoredRecord: Record<string, unknown>,
+  descriptor: WidgetCardLayoutVariantDescriptor,
+  role: ChatResponseStructuredRole,
+  source: ChatResponseStructuredSource,
+): Record<string, unknown> => {
+  if (
+    descriptor.id !== PROBE_TREE_TYPE_TWO_LAYOUT_ID
+    || role !== 'card'
+    || source !== 'literal-mcp'
+  ) return {}
+  return Object.fromEntries(
+    Object.entries(authoredRecord)
+      .filter(([key]) => CHAT_RESPONSE_PROBE_TREE_VALIDATOR_KEYS.has(key)),
+  )
+}
+
+const buildCanonicalLayoutRecordSeed = (
+  seedProperties: Record<string, unknown>,
+  descriptor: WidgetCardLayoutVariantDescriptor,
+  role: ChatResponseStructuredRole,
+): Record<string, unknown> => {
+  if (descriptor.id !== PROBE_TREE_TYPE_TWO_LAYOUT_ID || role !== 'card') return seedProperties
+  return Object.fromEntries(
+    Object.entries(seedProperties).filter(([key]) => key !== 'selectionOptions'),
+  )
+}
+
+const discardUntrustedProbeTreeRuntimeInputs = (
+  authoredRecord: Record<string, unknown>,
+  role: ChatResponseStructuredRole,
+  source: ChatResponseStructuredSource,
+): Record<string, unknown> => {
+  if (
+    role !== 'card'
+    || source === 'literal-mcp'
+    || readFirstString(authoredRecord, ['probeTreeCardVariant']) !== PROBE_TREE_TYPE_TWO_LAYOUT_ID
+  ) return authoredRecord
+  return Object.fromEntries(
+    Object.entries(authoredRecord)
+      .filter(([key]) => !CHAT_RESPONSE_PROBE_TREE_VALIDATOR_KEYS.has(key)),
+  )
+}
 
 const PALETTE_LAYOUT_LIST = WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS
   .map(descriptor => `\`${descriptor.id}\` (${descriptor.label})`)
@@ -32,7 +161,8 @@ export const CHAT_RESPONSE_WIDGET_PALETTE_CONTRACT_PROMPT = [
   'FloatingPanel Props Panel Widgets response contract:',
   `- Canonical Widget Card layoutVariantId values, in palette order: ${PALETTE_LAYOUT_LIST}.`,
   '- A widgets record may declare one canonical layoutVariantId plus request-specific semantic fields; the shared extractor supplies its TextGeneration/default/textGeneration identity and palette-owned seed.',
-  '- Request-specific fields override seed defaults. Do not repeat or contradict nodeTypeId, widgetTypeId, or formId for a canonical layout.',
+  '- Request-specific label, prompt, summary, output, question, rationale, evidence, and valid selection content may override seed placeholders. Probe-Tree Type 2 output remains empty and user-owned.',
+  '- The runtime discards provider-authored Widget identity, handles, registry/schema fields, timestamps, credentials, provider configuration, renderer geometry, and media endpoints for a canonical layout.',
   '- Keep Rich Media output in panels or media records so it reuses Rich Media Panel; do not invent Image Widget or Video Widget palette duplicates.',
 ].join('\n')
 
@@ -44,26 +174,36 @@ export type ResolvedChatResponseWidgetPaletteLayout = {
 
 export function applyChatResponseWidgetPaletteLayout(
   authoredRecord: Record<string, unknown>,
+  role: ChatResponseStructuredRole,
+  source: ChatResponseStructuredSource = 'assistant',
 ): {
   record: Record<string, unknown>
   layout: ResolvedChatResponseWidgetPaletteLayout | null
+  probeTreeValidatorInputs: Record<string, unknown>
 } {
+  const authoritySafeRecord = discardUntrustedProbeTreeRuntimeInputs(authoredRecord, role, source)
   const descriptor = readWidgetCardLayoutVariantDescriptor(
-    readFirstString(authoredRecord, CHAT_RESPONSE_WIDGET_LAYOUT_META_KEYS),
+    readFirstString(authoritySafeRecord, CHAT_RESPONSE_WIDGET_LAYOUT_META_KEYS),
   )
-  if (!descriptor) return { record: authoredRecord, layout: null }
+  const roleAcceptsLayout = role === 'widget'
+    || (role === 'card' && descriptor?.id === PROBE_TREE_TYPE_TWO_LAYOUT_ID)
+  if (!descriptor || !roleAcceptsLayout) {
+    return { record: authoritySafeRecord, layout: null, probeTreeValidatorInputs: {} }
+  }
   const seed = buildWidgetCardLayoutSeed(descriptor.id)
-  if (!seed) return { record: authoredRecord, layout: null }
+  if (!seed) return { record: authoritySafeRecord, layout: null, probeTreeValidatorInputs: {} }
+  const authoredFields = pickCanonicalLayoutAuthoredFields(authoritySafeRecord, descriptor)
   return {
     record: {
-      ...seed.properties,
-      ...authoredRecord,
+      ...buildCanonicalLayoutRecordSeed(seed.properties, descriptor, role),
+      ...authoredFields,
     },
     layout: {
       descriptor,
       seedLabel: seed.label,
       seedProperties: seed.properties,
     },
+    probeTreeValidatorInputs: pickCanonicalProbeTreeValidatorInputs(authoredRecord, descriptor, role, source),
   }
 }
 
@@ -135,7 +275,11 @@ export function resolveChatResponseWidgetProjection(args: {
   const widgetTypeId = args.layout?.descriptor.widgetTypeId
     || readFirstString(args.record, ['flow:widgetTypeId', 'widgetTypeId', 'widget_type_id'])
     || (args.nodeTypeId === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID ? FLOW_RICH_MEDIA_PANEL_WIDGET_TYPE_ID : 'default')
-  const targetHandle = readConfiguredHandle(args.record, ['targetHandle', 'target_handle', 'targetPort', 'target_port', 'inputHandle', 'input_handle', 'inputPort', 'input_port'])
+  const targetHandle = (
+    args.layout
+      ? ''
+      : readConfiguredHandle(args.record, ['targetHandle', 'target_handle', 'targetPort', 'target_port', 'inputHandle', 'input_handle', 'inputPort', 'input_port'])
+  )
     || (
       args.nodeTypeId === FLOW_TEXT_GENERATION_NODE_TYPE_ID
       || args.nodeTypeId === FLOW_IMAGE_GENERATION_NODE_TYPE_ID
@@ -145,7 +289,11 @@ export function resolveChatResponseWidgetProjection(args: {
           ? 'sourceUrl_in'
           : resolveChatResponseTargetHandleForKind(args.kind)
     )
-  const sourceHandle = readConfiguredHandle(args.record, ['sourceHandle', 'source_handle', 'sourcePort', 'source_port', 'outputHandle', 'output_handle', 'outputPort', 'output_port'])
+  const sourceHandle = (
+    args.layout
+      ? ''
+      : readConfiguredHandle(args.record, ['sourceHandle', 'source_handle', 'sourcePort', 'source_port', 'outputHandle', 'output_handle', 'outputPort', 'output_port'])
+  )
     || (
       args.hasGeospatialPayload
         ? 'geoJson'

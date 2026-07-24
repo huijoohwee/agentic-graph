@@ -3,6 +3,7 @@ import {
   FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
   FLOW_TEXT_GENERATION_NODE_TYPE_ID,
 } from '@/lib/config.storyboard-widget'
+import { PROBE_TREE_TYPE_TWO_LAYOUT_ID } from '@/lib/storyboardWidget/widgetCardLayoutVariants'
 import {
   appendEmbeddedStructuredTextCandidates,
   collectStructuredTextCandidates,
@@ -34,6 +35,7 @@ import {
   resolveChatResponseWidgetProjection,
   toChatResponseWidgetSeedProperties,
   type ChatResponseStructuredRole,
+  type ChatResponseStructuredSource,
 } from './chatResponseWidgetPaletteContract'
 export { projectChatResponseStructuredSurfaceIntoKgcFrontmatter } from './chatResponseStructuredContentProjector'
 
@@ -60,6 +62,10 @@ export type ChatResponseStructuredSurface = {
   nodes: ChatResponseSurfaceNode[]
   edges: ChatResponseSurfaceEdge[]
   frontmatter?: Record<string, JSONValue>
+}
+
+export type ChatResponseStructuredExtractionOptions = {
+  trustedSource?: ChatResponseStructuredSource
 }
 
 const MAX_RESPONSE_SURFACE_NODES = 12
@@ -146,12 +152,27 @@ const pickRichMediaTab = (kind: ChatResponseSurfaceNode['kind']): JSONValue => {
   return 'text'
 }
 
-const normalizeNodeRecord = (value: unknown, index: number, role: ChatResponseStructuredRole, roleIndex = index): ChatResponseSurfaceNode | null => {
+const normalizeNodeRecord = (
+  value: unknown,
+  index: number,
+  role: ChatResponseStructuredRole,
+  source: ChatResponseStructuredSource,
+  roleIndex = index,
+): ChatResponseSurfaceNode | null => {
   if (!isRecord(value)) return null
   const authoredRecord = mergeStructuredProperties(value)
-  const paletteResolution = applyChatResponseWidgetPaletteLayout(authoredRecord)
-  const record = paletteResolution.record
-  const probeTreeCard = isProbeTreeStructuredResponseCard(record, role)
+  const paletteResolution = applyChatResponseWidgetPaletteLayout(authoredRecord, role, source)
+  const probeTreeValidatorRecord = {
+    ...paletteResolution.record,
+    ...paletteResolution.probeTreeValidatorInputs,
+  }
+  const probeTreeCard = isProbeTreeStructuredResponseCard(probeTreeValidatorRecord, role)
+  if (
+    role === 'card'
+    && paletteResolution.layout?.descriptor.id === PROBE_TREE_TYPE_TWO_LAYOUT_ID
+    && !probeTreeCard
+  ) return null
+  const record = probeTreeCard ? probeTreeValidatorRecord : paletteResolution.record
   const geospatialPayload = readGeospatialStructuredPayload(record)
   const tableMarkdown = probeTreeCard ? '' : readStructuredTableMarkdown(record, role)
   const isTableOutput = containsMarkdownPipeTable(tableMarkdown)
@@ -306,9 +327,30 @@ const readStructuredRoot = (parsed: unknown, allowFallback = true): Record<strin
   return allowFallback ? parsed : null
 }
 
-const parseYamlOrJsonCandidate = (text: string): Record<string, unknown> | null => {
+const readLiteralMcpStructuredRoot = (parsed: unknown): Record<string, unknown> | null => {
+  if (!isRecord(parsed) || readString(parsed.jsonrpc) !== '2.0' || !isRecord(parsed.result)) return null
+  const id = parsed.id
+  if (
+    !Object.prototype.hasOwnProperty.call(parsed, 'id')
+    || !((typeof id === 'string' && id.trim()) || (typeof id === 'number' && Number.isFinite(id)))
+  ) return null
+  const resultStructuredContent = parsed.result.structuredContent
+  if (!isRecord(resultStructuredContent) || !isRecord(resultStructuredContent.response)) return null
+  const responseStructuredContent = resultStructuredContent.response.structuredContent
+  return isRecord(responseStructuredContent) && hasStructuredSurfaceLists(responseStructuredContent)
+    ? responseStructuredContent
+    : null
+}
+
+const parseYamlOrJsonCandidate = (text: string, trustLiteralMcpResult: boolean): {
+  root: Record<string, unknown>
+  source: ChatResponseStructuredSource
+} | null => {
   const parsed = parseYamlOrJsonValue(text)
-  return readStructuredRoot(parsed)
+  const literalMcpRoot = trustLiteralMcpResult ? readLiteralMcpStructuredRoot(parsed) : null
+  if (literalMcpRoot) return { root: literalMcpRoot, source: 'literal-mcp' }
+  const root = readStructuredRoot(parsed)
+  return root ? { root, source: 'assistant' } : null
 }
 
 const collectNodeReferenceKeys = (record: unknown, node: ChatResponseSurfaceNode, fallback: string): string[] => {
@@ -489,8 +531,12 @@ const ensureStructuredSurfaceDataflow = (args: {
   })
 }
 
-export const extractChatResponseStructuredSurface = (assistantText: string): ChatResponseStructuredSurface | null => {
+export const extractChatResponseStructuredSurface = (
+  assistantText: string,
+  options: ChatResponseStructuredExtractionOptions = {},
+): ChatResponseStructuredSurface | null => {
   const candidates = collectStructuredTextCandidates(assistantText, 8)
+  const directCandidateCount = candidates.length
   appendEmbeddedStructuredTextCandidates(candidates, 8)
 
   const frontmatter: Record<string, JSONValue> = {}
@@ -501,15 +547,19 @@ export const extractChatResponseStructuredSurface = (assistantText: string): Cha
   const nodes: ChatResponseSurfaceNode[] = []
   const rawEdges: unknown[] = []
   for (let i = 0; i < candidates.length && nodes.length < MAX_RESPONSE_SURFACE_NODES; i += 1) {
-    const root = parseYamlOrJsonCandidate(candidates[i] || '')
-    if (!root) continue
+    const candidate = parseYamlOrJsonCandidate(
+      candidates[i] || '',
+      options.trustedSource === 'literal-mcp' && i < directCandidateCount,
+    )
+    if (!candidate) continue
+    const { root, source } = candidate
     collectStructuredFrontmatterFields(root, frontmatter)
     const records = collectRecords(root)
     for (let j = 0; j < records.length && nodes.length < MAX_RESPONSE_SURFACE_NODES; j += 1) {
       const record = records[j]
       collectStructuredFrontmatterFields(record.value, frontmatter)
       const roleIndex = nodes.filter(node => node.properties['chat:structuredRole'] === record.role).length
-      const node = normalizeNodeRecord(record.value, nodes.length, record.role, roleIndex)
+      const node = normalizeNodeRecord(record.value, nodes.length, record.role, source, roleIndex)
       if (!node || seenIds.has(node.id)) continue
       seenIds.add(node.id)
       nodeSourceHandleById.set(node.id, node.sourceHandle)
