@@ -57,6 +57,7 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
   const provenanceConnectorInputs = React.useMemo(() => (
     provenanceSelections.map(selection => ({
       edgeId: selection.edgeId,
+      sourceNodeId: selection.sourceNodeId,
       sourcePortKey: selection.sourcePortKey,
       text: selection.selectedText,
       startLine: selection.startLine,

@@ -1,8 +1,30 @@
+import { isCanonicalNodeIdEqual } from '@/lib/graph/canonicalNodeIds'
+
 export type SelectionProvenanceConnectorGeometry = {
   edgeId: string
   path: string
   sourceX: number
   sourceY: number
+}
+
+export const resolveSelectionProvenanceOutputHandle = (args: {
+  root: HTMLElement
+  sourceNodeId: unknown
+  sourcePortKey: unknown
+}): HTMLElement | null => {
+  const sourceNodeId = String(args.sourceNodeId || '').trim()
+  const sourcePortKey = String(args.sourcePortKey || '').trim()
+  if (!sourceNodeId) return null
+  const handles = Array.from(
+    args.root.ownerDocument.querySelectorAll<HTMLElement>(
+      '[data-kg-port-handle="1"][data-kg-port-dir="out"]',
+    ),
+  ).filter(handle => (
+    isCanonicalNodeIdEqual(handle.dataset.kgPortNodeId, sourceNodeId)
+  ))
+  return handles.find(handle => handle.dataset.kgPortKey === sourcePortKey)
+    || handles[0]
+    || null
 }
 
 export const buildSelectionProvenanceConnectorPath = (args: {
