@@ -97,6 +97,7 @@ export const UI_LABELS = {
   motionControl: 'Motion Control',
   gameMode: 'Game Mode',
   flightSim: 'Flight Sim',
+  cityBuilder: 'City Builder',
   samples: 'Samples',
   close: 'Close',
   save: 'Save',
