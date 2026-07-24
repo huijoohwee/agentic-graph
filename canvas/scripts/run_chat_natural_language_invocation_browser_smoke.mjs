@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdir, mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { runLocalViteBrowserSmoke } from './lib/run-local-vite-browser-smoke.mjs'
@@ -9,6 +8,21 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url))
 const canvasRoot = resolve(scriptDirectory, '..')
 const repositoryRoot = resolve(scriptDirectory, '../..')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const isolatedSourceDocument = `---
+title: "Chat Natural Language Invocation Browser Proof"
+doc_type: "Workspace Proof"
+status: "runtime-ready"
+kgCanvasSurfaceMode: "2d"
+kgCanvasRenderMode: "2d"
+kgCanvas2dRenderer: "storyboard"
+kgDocumentSemanticMode: "document"
+kgFrontmatterModeEnabled: true
+---
+
+# Chat Natural Language Invocation Browser Proof
+
+Deterministic local source for the no-slash structured-response browser proof.
+`
 
 function readGitText(args) {
   return String(execFileSync('git', ['-C', repositoryRoot, ...args], { encoding: 'utf8' }) || '').trim()
@@ -42,15 +56,31 @@ async function run() {
   }
   const candidateHead = readGitText(['rev-parse', 'HEAD'])
   const candidateBranch = readGitText(['branch', '--show-current']) || 'detached'
-  const isolatedWorkspaceRoot = await mkdtemp(join(tmpdir(), 'knowgrph-chat-natural-language-smoke-'))
-  const isolatedDocsRoot = join(isolatedWorkspaceRoot, 'docs')
-  const isolatedChatLogRoot = join(isolatedWorkspaceRoot, 'chat-log')
+  const isolatedWorkspaceRoot = await mkdtemp(
+    join(resolve(repositoryRoot, '..'), '.chat-natural-language-smoke-'),
+  )
+  const isolatedRepositoryRoot = join(isolatedWorkspaceRoot, 'repository')
+  const isolatedDocsRoot = join(isolatedRepositoryRoot, 'docs')
+  const isolatedOutputDocsRoot = join(isolatedRepositoryRoot, 'docs_')
+  const isolatedAgenticDocsRoot = join(isolatedWorkspaceRoot, 'agentic-canvas-os', 'docs')
+  const isolatedWorkspaceSeedsRoot = join(isolatedWorkspaceRoot, 'workspace-seeds')
+  const isolatedChatLogRoot = join(isolatedRepositoryRoot, 'chat-log')
   await Promise.all([
     mkdir(isolatedDocsRoot, { recursive: true }),
+    mkdir(isolatedOutputDocsRoot, { recursive: true }),
+    mkdir(isolatedAgenticDocsRoot, { recursive: true }),
+    mkdir(isolatedWorkspaceSeedsRoot, { recursive: true }),
     mkdir(isolatedChatLogRoot, { recursive: true }),
   ])
+  await writeFile(
+    join(isolatedDocsRoot, 'chat-natural-language-invocation-browser-proof.md'),
+    isolatedSourceDocument,
+    'utf8',
+  )
 
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = isolatedDocsRoot
+  process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT = isolatedAgenticDocsRoot
+  process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT = isolatedWorkspaceSeedsRoot
   process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = isolatedChatLogRoot
   process.env.VITE_WORKSPACE_DOCS_MIRROR_STORAGE_FALLBACK_ENABLED = '0'
   process.env.VITE_WORKSPACE_SEED_SYNC_ENABLED = '0'

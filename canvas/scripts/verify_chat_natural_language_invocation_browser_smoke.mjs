@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { accessSync, constants as fsConstants } from 'node:fs'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import yaml from 'js-yaml'
 import { chromium } from 'playwright'
 
 const BASE_URL = String(
@@ -25,7 +26,11 @@ const DIRECT_PROVIDER_HOSTNAMES = new Set([
   'ark.eu-west.bytepluses.com',
   'api.openai.com',
 ])
+const OPTIONAL_MISSING_SOURCE_PATHS = new Set(['/__codebase_file', '/docs/workspace-readme.md'])
 const PROJECTED_NODE_ID = 'mcp-response-runtime-ready-probe'
+const CHAT_LOG_ABS_ROOT = resolve(String(
+  process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT || '',
+).trim())
 const EXPECTED_SOURCE_REVISION = String(
   process.env.KG_CHAT_NATURAL_LANGUAGE_EXPECTED_HEAD || '',
 ).trim()
@@ -152,6 +157,82 @@ function errorText(error) {
   return error instanceof Error ? `${error.name}: ${error.message}` : String(error)
 }
 
+function readUrlParts(url) {
+  try {
+    const parsed = new URL(String(url || ''))
+    return { hostname: parsed.hostname.toLowerCase(), pathname: parsed.pathname }
+  } catch {
+    return { hostname: '', pathname: '' }
+  }
+}
+
+function isAllowedOptionalMissingSourceResponse(response) {
+  return response.status === 404 && OPTIONAL_MISSING_SOURCE_PATHS.has(readUrlParts(response.url).pathname)
+}
+
+function readPersistedWorkspaceProof(workspacePath, markdown) {
+  const normalizedPath = String(workspacePath || '').trim()
+  assert.match(normalizedPath, /^\/chat-log\/.+\.md$/, 'persisted workspace path must stay under /chat-log')
+  const relativePath = normalizedPath.replace(/^\/chat-log\//, '')
+  const hostPath = resolve(CHAT_LOG_ABS_ROOT, relativePath)
+  assert.ok(
+    hostPath.startsWith(`${CHAT_LOG_ABS_ROOT}/`),
+    'persisted workspace path must remain inside the isolated chat-log root',
+  )
+  const match = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(markdown.replace(/\r\n/g, '\n'))
+  assert.ok(match?.[1], 'persisted workspace document must have leading YAML frontmatter')
+  const frontmatter = yaml.load(match[1])
+  assert.ok(frontmatter && typeof frontmatter === 'object' && !Array.isArray(frontmatter))
+  const flow = frontmatter.flow
+  assert.ok(flow && typeof flow === 'object' && !Array.isArray(flow))
+  const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
+  const edges = Array.isArray(flow.edges) ? flow.edges : []
+  const node = nodes.find(candidate => candidate?.id === PROJECTED_NODE_ID)
+  assert.ok(node, 'persisted workspace document must contain the projected Widget node')
+  assert.equal(node.type, 'TextGeneration')
+  const properties = node.properties
+  assert.ok(properties && typeof properties === 'object' && !Array.isArray(properties))
+  assert.equal(properties['flow:widgetTypeId'], 'default')
+  assert.equal(properties['flow:widgetFormId'], 'textGeneration')
+  assert.equal(properties.probeTreeCardVariant, 'probe-tree-type-2')
+  assert.equal(properties.probeTreeTypeLabel, 'Probe-Tree Type 2')
+  assert.equal(properties.selectionMode, 'multiple')
+  assert.equal(properties.allowOther, true)
+  assert.equal(properties.output, '')
+  const rawOptions = typeof properties.selectionOptions === 'string'
+    ? JSON.parse(properties.selectionOptions)
+    : properties.selectionOptions
+  const optionLabels = Array.isArray(rawOptions)
+    ? rawOptions.map(option => String(option?.label || option || ''))
+    : []
+  assert.deepEqual(optionLabels, [
+    'Prefer bounded current evidence with explicit uncertainty',
+    'Prefer broader evidence coverage with a longer review window',
+  ])
+  const edge = edges.find(candidate => candidate?.id === 'e-mcp-response-1')
+  assert.ok(edge, 'persisted workspace document must contain the projected Widget edge')
+  assert.equal(edge.source, 'n-deliver')
+  assert.equal(edge.sourceHandle, 'rendered')
+  assert.equal(edge.target, PROJECTED_NODE_ID)
+  assert.equal(edge.targetHandle, 'prompt_in')
+  return {
+    hostPath,
+    byteLength: Buffer.byteLength(markdown),
+    node: {
+      id: node.id,
+      type: node.type,
+      widgetTypeId: properties['flow:widgetTypeId'],
+      formId: properties['flow:widgetFormId'],
+      probeTreeCardVariant: properties.probeTreeCardVariant,
+      selectionMode: properties.selectionMode,
+      optionLabels,
+      allowOther: properties.allowOther,
+      output: properties.output,
+    },
+    edge,
+  }
+}
+
 async function main() {
   const parsedTargetUrl = new URL(TARGET_URL)
   assert.equal(parsedTargetUrl.pathname, '/', 'browser proof must use the normal root application route')
@@ -162,6 +243,7 @@ async function main() {
     'browser proof requires the runner-owned exact source revision',
   )
   assert.ok(EXPECTED_SOURCE_BRANCH, 'browser proof requires the runner-owned source branch')
+  assert.notEqual(CHAT_LOG_ABS_ROOT, resolve(''), 'browser proof requires an isolated chat-log root')
 
   await mkdir(outputDirectory, { recursive: true })
   const executablePath = findLocalChromiumExecutable()
@@ -178,6 +260,11 @@ async function main() {
   const directProviderRequests = []
   const pageErrors = []
   const consoleErrors = []
+  const applicationConsoleErrors = []
+  const failedResponses = []
+  const criticalFailedResponses = []
+  const failedRequests = []
+  const criticalFailedRequests = []
   const recordDirectProviderRequest = url => {
     const normalizedUrl = String(url || '')
     if (normalizedUrl && !directProviderRequests.includes(normalizedUrl)) {
@@ -187,7 +274,37 @@ async function main() {
 
   page.on('pageerror', error => pageErrors.push(String(error?.message || error)))
   page.on('console', message => {
-    if (message.type() === 'error') consoleErrors.push(message.text())
+    if (message.type() !== 'error') return
+    const text = message.text()
+    consoleErrors.push(text)
+    // Empty isolated workspace roots can report missing optional sources; retain them as evidence.
+    if (!text.startsWith('Failed to load resource:')) applicationConsoleErrors.push(text)
+  })
+  page.on('response', response => {
+    const status = response.status()
+    if (status < 400) return
+    const request = response.request()
+    const failedResponse = {
+      url: response.url(),
+      status,
+      resourceType: request.resourceType(),
+      requestBody: request.postData(),
+    }
+    failedResponses.push(failedResponse)
+    if (!isAllowedOptionalMissingSourceResponse(failedResponse)) {
+      criticalFailedResponses.push(failedResponse)
+    }
+  })
+  page.on('requestfailed', request => {
+    const failedRequest = {
+      url: request.url(),
+      resourceType: request.resourceType(),
+      failure: request.failure()?.errorText || 'unknown request failure',
+    }
+    failedRequests.push(failedRequest)
+    if (!DIRECT_PROVIDER_HOSTNAMES.has(readUrlParts(failedRequest.url).hostname)) {
+      criticalFailedRequests.push(failedRequest)
+    }
   })
   page.on('request', request => {
     try {
@@ -204,6 +321,7 @@ async function main() {
   let runtimeIdentitySnapshot = null
   let paletteLayoutIds = []
   let localStorageSettings = null
+  let persistedWorkspaceProof = null
 
   try {
     for (const providerRoute of DIRECT_PROVIDER_ROUTES) {
@@ -278,19 +396,31 @@ async function main() {
       page,
       'knowgrph.inspect_local_chat_pipeline_state',
       snapshot => (
-        snapshot.isLoading === false
-        && snapshot.kgcValidation?.stage === 'validated'
+        snapshot.available === true
+        && snapshot.isLoading === false
         && snapshot.finalize?.stage === 'applied'
+        && snapshot.finalize?.applied === true
+        && snapshot.finalize?.finalStatus === 'ok'
       ),
       'Chat structured-response finalization',
     )
     assert.equal(chatSnapshot.available, true)
     assert.equal(chatSnapshot.errorText, null)
-    assert.equal(chatSnapshot.connectivity, 'ok')
-    assert.equal(chatSnapshot.kgcValidation.hasStructuredResponseSurface, true)
+    assert.equal(chatSnapshot.chatStorageTarget, 'chatKnowgrph')
     assert.equal(chatSnapshot.finalize.applied, true)
     assert.equal(chatSnapshot.finalize.finalStatus, 'ok')
     assert.ok(chatSnapshot.finalize.persistedKnowgrphPath)
+    assert.equal(
+      chatSnapshot.finalize.message,
+      'Canonical KGC workspace document was persisted and applied to the active canvas graph.',
+    )
+    const persistedRelativePath = chatSnapshot.finalize.persistedKnowgrphPath.replace(/^\/chat-log\//, '')
+    const persistedHostPath = resolve(CHAT_LOG_ABS_ROOT, persistedRelativePath)
+    const persistedWorkspaceDocument = await readFile(persistedHostPath, 'utf8')
+    persistedWorkspaceProof = readPersistedWorkspaceProof(
+      chatSnapshot.finalize.persistedKnowgrphPath,
+      persistedWorkspaceDocument,
+    )
 
     canvasSnapshot = await waitForWebMcpSnapshot(
       page,
@@ -319,7 +449,12 @@ async function main() {
     assert.deepEqual(requestAssertionFailures, [])
     assert.deepEqual(directProviderRequests, [])
     assert.deepEqual(pageErrors, [])
+    assert.deepEqual(criticalFailedResponses, [])
+    assert.deepEqual(criticalFailedRequests, [])
 
+    const workspaceMain = page.getByRole('main', { name: 'Markdown Editor and Viewer', exact: true })
+    await workspaceMain.getByTitle('Close', { exact: true }).click()
+    await workspaceMain.waitFor({ state: 'detached', timeout: 30_000 })
     const projectedTypeTwo = page.locator(
       `[data-node-id="${PROJECTED_NODE_ID}"] [data-kg-probe-tree-type="2"]`,
     ).first()
@@ -376,7 +511,7 @@ async function main() {
     assert.equal(localStorageSettings['kg:chat:storage:target'], JSON.stringify('chatKnowgrph'))
     assert.equal(localStorageSettings['kg:chat:chatKnowgrph:storageMode'], JSON.stringify('local'))
     assert.deepEqual(pageErrors, [])
-    assert.deepEqual(consoleErrors, [])
+    assert.deepEqual(applicationConsoleErrors, [])
   } catch (error) {
     proofFailure = error
   }
@@ -407,6 +542,12 @@ async function main() {
       directProviderRequests,
       pageErrors,
       consoleErrors,
+      applicationConsoleErrors,
+      failedResponses,
+      criticalFailedResponses,
+      failedRequests,
+      criticalFailedRequests,
+      persistedWorkspaceProof,
       chatSnapshot,
       canvasSnapshot,
       runtimeIdentitySnapshot,
