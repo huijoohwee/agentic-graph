@@ -20,7 +20,6 @@ const boundedStage = async (callback, timeoutMs, code) => {
       controller.abort(new Error("Agent-team no-model resolution timed out."));
       reject(Object.assign(new Error("Agent-team no-model resolution timed out."), { code }));
     }, Math.max(100, Number(timeoutMs) || 100));
-    timer.unref?.();
   });
   try {
     return await Promise.race([Promise.resolve().then(() => callback(controller.signal)), timeout]);

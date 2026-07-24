@@ -19,7 +19,6 @@ const verifyWithDeadline = async (verifier, expected, timeoutMs, timeoutCode, re
       controller.abort(new Error(`${label} timed out.`));
       reject(Object.assign(new Error(`${label} timed out.`), { code: timeoutCode }));
     }, timeoutMs);
-    timer.unref?.();
   });
   try {
     return await Promise.race([

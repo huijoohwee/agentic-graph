@@ -4,7 +4,6 @@ export const composeAgentTeamStageSignal = (outerSignal, timeoutMs) => {
     () => controller.abort(new Error("Agent-team stage timed out.")),
     timeoutMs,
   );
-  timeout.unref?.();
   const abort = () => controller.abort(
     outerSignal?.reason || new Error("Agent-team execution was canceled."),
   );

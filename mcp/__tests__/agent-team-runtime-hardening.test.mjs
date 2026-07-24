@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -29,6 +30,70 @@ const controlInput = (state, action, key) => ({
   action,
   idempotencyKey: key,
   reason: `Exercise the exact ${action} race fence.`,
+});
+
+test("awaited correctness deadlines keep an otherwise idle process alive", () => {
+  const stageUrl = new URL("../agent-team-stage.js", import.meta.url).href;
+  const planUrl = new URL("../agent-team-plan-runtime.js", import.meta.url).href;
+  const reviewUrl = new URL("../agent-team-review.js", import.meta.url).href;
+  const source = `
+    const stage = await import(${JSON.stringify(stageUrl)});
+    const composed = stage.composeAgentTeamStageSignal(undefined, 25);
+    const outcome = await stage.settleAgentTeamAdapterCall(
+      () => new Promise(() => {}),
+      composed.signal,
+    );
+    composed.dispose();
+    if (outcome.kind !== "aborted") throw new Error("stage deadline did not settle");
+
+    const { createAgentTeamPlanResolver } = await import(${JSON.stringify(planUrl)});
+    const resolver = createAgentTeamPlanResolver({
+      resolveInvocation: () => new Promise(() => {}),
+      resolveSource: () => new Promise(() => {}),
+      referenceVerifier: () => new Promise(() => {}),
+    });
+    let planCode = null;
+    try {
+      await resolver.resolve({}, {}, 25);
+    } catch (error) {
+      planCode = error?.code;
+    }
+    if (planCode !== "plan_source_resolution_timeout") {
+      throw new Error("plan deadline did not settle");
+    }
+
+    const { authorizeAgentTeamControl } = await import(${JSON.stringify(reviewUrl)});
+    let reviewCode = null;
+    try {
+      await authorizeAgentTeamControl({
+        authorizer: () => new Promise(() => {}),
+        state: {
+          runId: "run",
+          planDigest: "${"a".repeat(64)}",
+          checkpointId: "checkpoint",
+          stateVersion: 1,
+          plan: {
+            bounds: { maxStageTimeMs: 25 },
+            reviewPolicy: { policyId: "review", policyRevision: "1" },
+          },
+        },
+        input: { action: "pause", reason: "liveness regression", reviewReceipt: null },
+      });
+    } catch (error) {
+      reviewCode = error?.code;
+    }
+    if (reviewCode !== "control_authorization_timeout") {
+      throw new Error("review deadline did not settle");
+    }
+    process.stdout.write("deadlines-settled");
+  `;
+  const result = spawnSync(process.execPath, ["--input-type=module", "--eval", source], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    timeout: 5_000,
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(result.stdout, "deadlines-settled");
 });
 
 test("active estimate time cannot be discarded by repeated pause and resume races", async (t) => {
