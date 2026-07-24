@@ -25,6 +25,9 @@ import {
   markKnowgrphCollaborationUpdateAttempt,
 } from '@/lib/storage/knowgrphStorageDb'
 import type { IndexedCollaborationUpdateRecord } from '@/lib/storage/indexedDbCollectionStore'
+import {
+  readKnowgrphStorageChatRelayConfig,
+} from '@/lib/storage/knowgrphStorageChatClient'
 
 type PocketBaseRecord = Record<string, unknown> & { id?: string }
 
@@ -95,6 +98,7 @@ export type KnowgrphPocketBaseYjsRoomOptions = {
   pocketBaseUrl?: string | null
   saveBridgeUrl?: string | null
   storageBaseUrl?: string | null
+  sessionToken?: string | null
   client?: PocketBaseLike | null
   fetchImpl?: typeof fetch
   onRemoteText?: (text: string) => void
@@ -120,6 +124,21 @@ const AWARENESS_HEARTBEAT_MS = 30_000
 export const KNOWGRPH_COLLABORATION_AWARENESS_STALE_MS = 2 * 60_000
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
+
+const resolveCollaborationSaveSessionToken = (
+  explicitToken?: string | null,
+): string => {
+  const token = explicitToken == null
+    ? String(
+        readKnowgrphStorageChatRelayConfig()?.sessionToken
+        || readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', ''),
+      )
+    : String(explicitToken)
+  if (!token || token.length > 8_192 || /\s/.test(token)) {
+    throw new Error('Authenticated storage session is required for collaboration save.')
+  }
+  return token
+}
 
 const readEnvBoolean = (name: string, fallback: boolean): boolean => {
   const raw = normalizeString(readEnvString(name, fallback ? 'true' : 'false')).toLowerCase()
@@ -465,6 +484,9 @@ export const createPocketBaseYjsSourceFileRoom = async (
       if (!authority) throw new Error('Collaboration save is read-only for this document source.')
       const serializedText = snapshot.serializedText
       const yjsStateBase64 = snapshot.yjsStateBase64
+      const sessionToken = resolveCollaborationSaveSessionToken(
+        options.sessionToken,
+      )
       await roomService.update(roomId, {
         yjsStateBase64,
         savedAtMs: nowMs(),
@@ -491,7 +513,10 @@ export const createPocketBaseYjsSourceFileRoom = async (
       })
       const response = await fetchImpl(saveUrl, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          authorization: `Bearer ${sessionToken}`,
+          'content-type': 'application/json',
+        },
         body: JSON.stringify(request),
       })
       const body = await response.json().catch(() => null) as KnowgrphCollaborationSaveResponse | null
