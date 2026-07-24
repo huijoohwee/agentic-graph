@@ -22,6 +22,7 @@ import {
   syncStrybldrStoryboardMarkdownFromParsedGraph,
 } from './graphDataFrontmatterFlowSyncSupport'
 import { syncStructuredResponseEnvelopeFromNodeEdit } from './graphDataStructuredResponseSync'
+import { buildTextSelectionWidgetEdgePersistenceProperties } from '@/lib/storyboardWidget/textSelectionWidgetLink'
 const FLOW_YAML_PLAIN_KEY_RE = /^[A-Za-z0-9_.-]+$/
 const FLOW_EDGE_SOURCE_PORT_KEY = 'flow:sourcePortKey'
 const FLOW_EDGE_TARGET_PORT_KEY = 'flow:targetPortKey'
@@ -241,6 +242,8 @@ function buildFrontmatterFlowBlockLines(graphData: GraphData): string[] {
     if (typeof props.animated === 'boolean') row.animated = props.animated
     const socketType = String(unwrapGraphCellValue(props['flow:socketType']) || '').trim()
     if (socketType) row.type = socketType
+    const selectionProvenance = buildTextSelectionWidgetEdgePersistenceProperties(edge)
+    if (selectionProvenance) row.properties = selectionProvenance
     lines.push(`    - ${flowYamlInlineValue(row)}`)
   }
   return lines

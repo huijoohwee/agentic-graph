@@ -2,6 +2,7 @@ import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["canvas.richMedia.selectionWidgetLink.provenanceEdge","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdge"],
+  ["canvas.richMedia.selectionWidgetLink.preservesCollectivePlacement","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetInsertionPreservesExistingCollectivePlacement"],
   ["canvas.richMedia.selectionWidgetLink.waitsForTargetPublication","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkWaitsForCreatedTargetPublication"],
   ["canvas.richMedia.selectionWidgetLink.paletteCreateTarget","@/__tests__/textSelectionWidgetLink.test","testWidgetPaletteCreatesTargetFromActiveTextSelection"],
   ["canvas.richMedia.selectionWidgetLink.distinctMathAndProvenanceActions","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkKeepsMathAndAddsDistinctProvenanceAction"],
@@ -125,7 +126,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["viewport.storyboardWidget.overlay.probeTreePinDefaultPreservesExplicitState","@/__tests__/storyboardWidgetDefaultsPinnedToNodeRegression.test","testStoryboardWidgetProbeTreeLayoutPinDefaultPreservesExplicitState"],
   ["storyboardWidget.widget.probeTreeReveal.preservesPinsAndViewport","@/__tests__/storyboardWidgetToolbarRestore.test","testStoryboardWidgetProbeTreeRevealPreservesExplicitPinsAndViewport"],
   ["storyboardWidget.widget.drop.restoresCameraWithoutLayoutMutation","@/__tests__/storyboardWidgetDropBalancedCollective.test","testStoryboardWidgetDropRestoresCameraWithoutRebalancingCollective"],
-  ["storyboardWidget.widget.drop.frontmatterGrowthReseedsWholeCollective","@/__tests__/storyboardWidgetDropBalancedCollective.test","testFrontmatterGrowthReseedsWholeBalancedCollective"],
+  ["storyboardWidget.widget.drop.frontmatterGrowthPreservesCollective","@/__tests__/storyboardWidgetDropBalancedCollective.test","testFrontmatterGrowthPreservesExistingCollective"],
   ["storyboardWidget.widget.collectiveCameraMotion.freezesBalancedWorldLayout","@/__tests__/storyboardWidgetDropBalancedCollective.test","testFixedCardProjectionFreezesBalancedWorldLayoutDuringCollectiveCameraMotion"],
   ["zoom.viewKey.storyboardSourceRevisionStable","@/__tests__/graphMetaKeyPending.test","testStoryboardActive2dZoomViewKeyStaysStableAcrossSourceRevisions"],
   ["zoom.pick.storyboardPreservesAcrossRevisions","@/__tests__/zoomStatePick.test","testPickInitialZoomTransformCanPreserveSameDocumentStoryboardZoom"],

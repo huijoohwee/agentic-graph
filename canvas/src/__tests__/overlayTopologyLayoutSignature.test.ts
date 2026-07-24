@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { buildOverlayTopologyLayoutSignature } from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
+import {
+  buildOverlayNodeLayoutSignature,
+  buildOverlayTopologyLayoutSignature,
+} from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
+import type { GraphData } from '@/lib/graph/types'
 
 export const testOverlayTopologyLayoutSignatureReusesSharedNodePropertiesReader = () => {
   const filePath = resolve(process.cwd(), 'src', 'lib', 'storyboardWidget', 'overlayTopologyLayoutSignature.ts')
@@ -56,5 +60,32 @@ export const testOverlayTopologyLayoutSignatureIncludesVisualLayoutProps = () =>
   if (!signature || !changedSignature) throw new Error('expected overlay topology layout signatures to be produced')
   if (signature === changedSignature) {
     throw new Error('expected visual layout property changes to affect the overlay topology layout signature')
+  }
+}
+
+export const testOverlayNodeLayoutSignatureIgnoresProvenanceEdgePublication = () => {
+  const base: GraphData = {
+    type: 'Graph',
+    nodes: [
+      { id: 'source', type: 'RichMediaPanel', label: 'Source', properties: { 'visual:width': 640 } },
+      { id: 'target', type: 'TextGeneration', label: 'Target', properties: { 'visual:width': 400 } },
+    ],
+    edges: [],
+  }
+  const withEdge: GraphData = {
+    ...base,
+    edges: [{
+      id: 'selection-edge',
+      source: 'source',
+      target: 'target',
+      label: 'selection',
+      properties: { schema: 'knowgrph-text-selection-widget-link/v1' },
+    }],
+  }
+  if (buildOverlayNodeLayoutSignature(base) !== buildOverlayNodeLayoutSignature(withEdge)) {
+    throw new Error('expected edge publication not to invalidate authored node placement')
+  }
+  if (buildOverlayTopologyLayoutSignature(base) === buildOverlayTopologyLayoutSignature(withEdge)) {
+    throw new Error('expected the full topology signature to keep invalidating overlay edge rendering')
   }
 }
