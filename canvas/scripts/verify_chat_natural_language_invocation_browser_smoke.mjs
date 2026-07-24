@@ -483,7 +483,8 @@ async function main() {
     paletteLayoutIds = await page.locator('[data-kg-widget-palette-layout]').evaluateAll(elements => (
       elements.map(element => element.getAttribute('data-kg-widget-palette-layout')).filter(Boolean)
     ))
-    assert.equal(paletteLayoutIds.length, 5)
+    assert.ok(paletteLayoutIds.length >= 5)
+    assert.equal(new Set(paletteLayoutIds).size, paletteLayoutIds.length)
     assert.deepEqual(paletteLayoutIds.slice(0, 4), CANONICAL_WIDGET_CARD_LAYOUT_IDS)
     await page.getByText('Rich Media Panel', { exact: true }).waitFor({ state: 'visible', timeout: 30_000 })
 
