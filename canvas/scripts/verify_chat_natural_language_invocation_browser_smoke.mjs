@@ -37,6 +37,9 @@ const EXPECTED_SOURCE_REVISION = String(
 const EXPECTED_SOURCE_BRANCH = String(
   process.env.KG_CHAT_NATURAL_LANGUAGE_EXPECTED_BRANCH || '',
 ).trim()
+const EXPECTED_SOURCE_DOCUMENT = String(
+  process.env.KG_CHAT_NATURAL_LANGUAGE_SOURCE_DOCUMENT || '',
+).trim()
 const CANONICAL_WIDGET_CARD_LAYOUT_IDS = [
   'widget-card-type-0',
   'probe-tree-type-1',
@@ -243,6 +246,7 @@ async function main() {
     'browser proof requires the runner-owned exact source revision',
   )
   assert.ok(EXPECTED_SOURCE_BRANCH, 'browser proof requires the runner-owned source branch')
+  assert.ok(EXPECTED_SOURCE_DOCUMENT, 'browser proof requires the runner-owned source document')
   assert.notEqual(CHAT_LOG_ABS_ROOT, resolve(''), 'browser proof requires an isolated chat-log root')
 
   await mkdir(outputDirectory, { recursive: true })
@@ -319,6 +323,9 @@ async function main() {
   let chatSnapshot = null
   let canvasSnapshot = null
   let runtimeIdentitySnapshot = null
+  let sourceFilesSnapshot = null
+  let postFinalizeSourceFilesSnapshot = null
+  let skippedApplyDiagnostic = null
   let paletteLayoutIds = []
   let localStorageSettings = null
   let persistedWorkspaceProof = null
@@ -379,12 +386,21 @@ async function main() {
     })
     await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 120_000 })
     await page.waitForFunction(() => Boolean(window.__knowgrphFloatingPanelBridge), null, { timeout: 120_000 })
-    await page.evaluate(() => {
-      window.dispatchEvent(new CustomEvent('kg:floatingPanelOpen', {
-        detail: { tab: 'chat', open: true },
-      }))
-    })
+    sourceFilesSnapshot = await waitForWebMcpSnapshot(
+      page,
+      'knowgrph.inspect_local_source_files_snapshot',
+      snapshot => (
+        snapshot.available === true
+        && snapshot.errorSourceFileCount === 0
+        && snapshot.activeSourceFile?.name === EXPECTED_SOURCE_DOCUMENT
+        && snapshot.activeSourceFile?.status === 'parsed'
+      ),
+      'Isolated authored source bootstrap',
+    )
 
+    const chatButton = page.getByRole('button', { name: 'Chat', exact: true })
+    await chatButton.waitFor({ state: 'visible', timeout: 30_000 })
+    await chatButton.click()
     const composer = page.getByRole('textbox', { name: CHAT_INPUT_LABEL, exact: true })
     await composer.waitFor({ state: 'visible', timeout: 120_000 })
     await composer.fill(USER_PROMPT)
@@ -398,21 +414,11 @@ async function main() {
       snapshot => (
         snapshot.available === true
         && snapshot.isLoading === false
-        && snapshot.finalize?.stage === 'applied'
-        && snapshot.finalize?.applied === true
         && snapshot.finalize?.finalStatus === 'ok'
+        && typeof snapshot.finalize?.persistedKnowgrphPath === 'string'
+        && ['applied', 'skipped', 'error'].includes(snapshot.finalize?.stage)
       ),
       'Chat structured-response finalization',
-    )
-    assert.equal(chatSnapshot.available, true)
-    assert.equal(chatSnapshot.errorText, null)
-    assert.equal(chatSnapshot.chatStorageTarget, 'chatKnowgrph')
-    assert.equal(chatSnapshot.finalize.applied, true)
-    assert.equal(chatSnapshot.finalize.finalStatus, 'ok')
-    assert.ok(chatSnapshot.finalize.persistedKnowgrphPath)
-    assert.equal(
-      chatSnapshot.finalize.message,
-      'Canonical KGC workspace document was persisted and applied to the active canvas graph.',
     )
     const persistedRelativePath = chatSnapshot.finalize.persistedKnowgrphPath.replace(/^\/chat-log\//, '')
     const persistedHostPath = resolve(CHAT_LOG_ABS_ROOT, persistedRelativePath)
@@ -420,6 +426,40 @@ async function main() {
     persistedWorkspaceProof = readPersistedWorkspaceProof(
       chatSnapshot.finalize.persistedKnowgrphPath,
       persistedWorkspaceDocument,
+    )
+    postFinalizeSourceFilesSnapshot = await executeWebMcpTool(
+      page,
+      'knowgrph.inspect_local_source_files_snapshot',
+    )
+    if (chatSnapshot.finalize.applied !== true) {
+      await page.waitForTimeout(1_000)
+      skippedApplyDiagnostic = await page.evaluate(async ({ name, text }) => {
+        const command = window.knowgrphWorkspaceCommand
+        if (!command) return { available: false, applied: false }
+        return {
+          available: true,
+          ...(await command.applyMarkdownDocument({
+            name,
+            text,
+            applyToGraph: true,
+            forceApplyToGraph: true,
+            applyViewPreset: true,
+          })),
+        }
+      }, {
+        name: chatSnapshot.finalize.persistedKnowgrphPath,
+        text: persistedWorkspaceDocument,
+      })
+    }
+    assert.equal(chatSnapshot.available, true)
+    assert.equal(chatSnapshot.errorText, null)
+    assert.equal(chatSnapshot.chatStorageTarget, 'chatKnowgrph')
+    assert.equal(chatSnapshot.finalize.applied, true)
+    assert.equal(chatSnapshot.finalize.stage, 'applied')
+    assert.equal(chatSnapshot.finalize.finalStatus, 'ok')
+    assert.equal(
+      chatSnapshot.finalize.message,
+      'Canonical KGC workspace document was persisted and applied to the active canvas graph.',
     )
 
     canvasSnapshot = await waitForWebMcpSnapshot(
@@ -547,6 +587,9 @@ async function main() {
       chatSnapshot,
       canvasSnapshot,
       runtimeIdentitySnapshot,
+      sourceFilesSnapshot,
+      postFinalizeSourceFilesSnapshot,
+      skippedApplyDiagnostic,
       projectedNodeId: PROJECTED_NODE_ID,
       paletteLayoutIds,
       screenshotPath: screenshotCaptureError ? null : screenshotPath,
