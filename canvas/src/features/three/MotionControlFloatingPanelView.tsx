@@ -12,6 +12,7 @@ import { UI_INLINE_CHIP_GROUP_CLASSNAME } from '@/lib/ui/textLayout'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
+import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import { cn } from '@/lib/utils'
 import {
   buildMotionControlBoundingBoxInvocation,
@@ -253,6 +254,8 @@ export function MotionControlFloatingPanelView() {
         <MotionCapturePlatformProjection variant="full" />
 
         <MotionControlTargetCards livePoseActive={Boolean(state.pose)} onOpenTarget={openTarget} />
+
+        <FlightSimTrainingSurfaceProjection surface="motion-control" />
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-invocations="shared-catalog">
           <h3 className="text-[11px] font-semibold">MCP · / · @ · #</h3>

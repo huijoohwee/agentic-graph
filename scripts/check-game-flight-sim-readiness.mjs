@@ -28,6 +28,7 @@ const requiredPaths = [
   `${flightFeatureRoot}/FlightSimFloatingPanelView.tsx`,
   `${flightFeatureRoot}/FlightSimHud.tsx`,
   `${flightFeatureRoot}/FlightSimMissionStage.tsx`,
+  `${flightFeatureRoot}/FlightSimTrainingSurfaceProjection.tsx`,
   `${flightFeatureRoot}/FlightSimWebglUnsupportedState.tsx`,
   `${flightFeatureRoot}/assetSpec/fallbacks/optionalBeaconGlb.generated.ts`,
   `${flightFeatureRoot}/assetSpec/flightSimAssetLoader.ts`,
@@ -51,6 +52,8 @@ const requiredPaths = [
   `${flightFeatureRoot}/flightSimRuntimeState.ts`,
   `${flightFeatureRoot}/flightSimSimulationClock.ts`,
   `${flightFeatureRoot}/flightSimSpatialProfile.ts`, `${flightFeatureRoot}/flightSimStageRuntimeController.ts`,
+  `${flightFeatureRoot}/flightSimTrainingRuntime.ts`,
+  `${flightFeatureRoot}/flightSimTrainingScenario.ts`,
   `${flightFeatureRoot}/index.ts`,
   'canvas/src/App.tsx',
   'canvas/src/features/agentic-os/agenticOsRemoteGrammarClient.ts',
@@ -72,6 +75,8 @@ const requiredPaths = [
   'canvas/src/__tests__/flightSimMcpRuntime.test.ts',
   'canvas/src/__tests__/flightSimRuntime.test.ts',
   'canvas/src/__tests__/flightSimSourceAuthority.test.ts',
+  'canvas/src/__tests__/flightSimTrainingProjection.test.ts',
+  'canvas/src/__tests__/flightSimTrainingRuntime.test.ts',
   'canvas/src/__tests__/flightSimXrAgenticEcsComposition.test.ts',
   'canvas/src/__tests__/xrAgenticEcsComposition.test.ts',
   'ecs/index.js',
@@ -239,7 +244,14 @@ if (
   throw new Error('FlightSimMissionStage must render only Flight actors and objective overlays')
 }
 const missionStageLoaderSource = await readText('canvas/src/lib/three/flightSimMissionStageLoader.ts')
-requireMarkers(missionStageLoaderSource, ["import('@/features/game-flight-sim/FlightSimMissionStage')", 'module.createFlightSimMissionStage(runtimeController)', 'if (cachedPromise === requestedPromise) cachedPromise = null'], 'shared Flight Sim mission-stage loader')
+requireMarkers(missionStageLoaderSource, [
+  "import('@/features/game-flight-sim/FlightSimMissionStage')",
+  'importWithRetry(importMissionStage',
+  'retries: 2',
+  'retryDelayMs: 50',
+  'module.createFlightSimMissionStage(runtimeController)',
+  'if (cachedPromise === requestedPromise) cachedPromise = null',
+], 'shared Flight Sim mission-stage loader')
 const gameplayOverlaySource = await readText('canvas/src/lib/three/ThreeGameplayOverlay.tsx')
 requireMarkers(gameplayOverlaySource, [
   "from './flightSimMissionStageLoader'",
@@ -275,8 +287,8 @@ if (
 requireMarkers(prdSource, [
   'derived implementation/proof projection of the normative repository-tracked Kiro source of truth',
   'root-workspace Kiro copy must remain byte-identical and is not an independent authority',
-  'scanner does not claim to prove the absence of arbitrary derived code',
-], 'Flight Sim PRD/TAD authority and named-contamination boundary')
+  'clean-room scanner cannot prove the absence of arbitrary derived code',
+], 'Flight Sim PRD/TAD authority and clean-room boundary')
 const physicsSeed = parseFrontmatter(await readText(physicsSeedPath), physicsSeedPath)
 const kiroReadiness = await assertFlightSimKiroReadiness({ repositoryRoot })
 await assertFlightSimCameraReadiness({ flightSeed: seed, physicsSeed, readText })
@@ -551,7 +563,7 @@ const boundaryCommand = rootPackage.scripts?.['game-flight-sim:boundary'] || ''
 requireOrderedMarkers(boundaryCommand, [
   'node --test ./scripts/__tests__/game-flight-sim-boundary.test.mjs',
   'node ./scripts/check-game-flight-sim-boundary.mjs',
-], 'Flight Sim tracked named-contamination boundary command')
+], 'Flight Sim tracked clean-room boundary command')
 const prebuildCommand = canvasPackage.scripts?.prebuild || ''
 if (!prebuildCommand.startsWith('npm --prefix .. run game-flight-sim:boundary && ')) {
   throw new Error('Canvas builds must begin with the tracked Flight Sim no-copy boundary')
