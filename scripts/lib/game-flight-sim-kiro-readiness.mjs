@@ -19,10 +19,6 @@ export const FLIGHT_SIM_KIRO_TRACKED_REFERENCES = Object.freeze([
   'docs/workspace-seeds/knowgrph-game-flight-sim-demo.md',
 ])
 
-const FLIGHT_GEAR_REFERENCE = ['Flight', 'Gear'].join('')
-const FABLE_REFERENCE = `${['Arnie', '016'].join('/')}`
-  .replace('/', '') + `/${['flight', 'simulator', 'fable5'].join('-')}`
-
 const REQUIRED_SOURCE_MARKERS = Object.freeze({
   'requirements.md': Object.freeze([
     'repository-tracked Kiro package at `.kiro/specs/knowgrph-game-flight-sim` is the normative requirements/design source of truth',
@@ -30,10 +26,13 @@ const REQUIRED_SOURCE_MARKERS = Object.freeze({
     'byte-identical local projection only, never a second authority',
     'exact fixed timestep of `1 / 60` second (approximately 16.667 milliseconds, 60 ticks per second)',
     'repository-owned deterministic offline generator',
-    'fallback has no TRELLIS.2 or other external-generator dependency',
-    `${FLIGHT_GEAR_REFERENCE} and \`${FABLE_REFERENCE}\` only at the level of concepts and architecture`,
+    'fallback has no external-generator dependency',
+    'External references inform conceptual principles only.',
+    'external project identity and URL are forbidden in product source and runtime metadata',
+    'there is no external project dependency',
     'source-authored provenance attestation remains required',
-    'unable to prove the absence of arbitrary derived code',
+    'cannot prove the absence of arbitrary derived code',
+    '### Requirement 24: Mission-based flight training and measurable outcomes',
   ]),
   'design.md': Object.freeze([
     'repository-tracked design is part of the normative `.kiro/specs/knowgrph-game-flight-sim` source of truth',
@@ -51,6 +50,7 @@ const REQUIRED_SOURCE_MARKERS = Object.freeze({
     'These are required post-system owners, not journaled systems and not no-op aliases.',
     'No TRELLIS.2 or other external-generator dependency is present.',
     'cannot prove the absence of arbitrary derived code',
+    '**Systems-first training.**',
   ]),
   'tasks.md': Object.freeze([
     'repository-tracked Kiro package is the normative source of truth',
@@ -59,6 +59,7 @@ const REQUIRED_SOURCE_MARKERS = Object.freeze({
     'Run exactly four meaningful journaled systems in order',
     'repository-owned deterministic offline GLB generator',
     'Require the tracked Kiro authority inventory and hash it during Flight Sim readiness.',
+    'Add mission-based training across the six existing FloatingPanel owners',
     'no exact-HEAD browser, protected integration, production, or deployment claim follows from source completion alone',
   ]),
 })

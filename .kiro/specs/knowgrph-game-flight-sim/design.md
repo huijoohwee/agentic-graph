@@ -9,7 +9,8 @@ The feature is governed by hard, non-negotiable platform constraints that this d
 - **TCO-zero, zero-infrastructure, offline-first, local-first, mobile-first.** Core gameplay issues zero outbound network requests, requires no sign-in/camera/passkey/Cloudflare service, and mutates no deployed infrastructure. It renders and controls the mission inside a 375×812 device-independent-pixel viewport.
 - **Token economics.** Every `World_Tick` performs zero model-inference calls and zero runtime image-to-3D calls, and emits exactly one honest canonical `$0` `Cost_Log`.
 - **FOSS-only, zero new runtime dependencies.** The flight cluster adds no runtime dependency beyond the existing renderer, Agentic_ECS, WorkspaceFs, and camera owners, and forbids Rapier, Yuka, behavior-tree/navmesh libraries, bitECS, edge-ML, and LLM dependencies.
-- **FlightGear inspiration boundary.** FlightGear (and the framing reference `Arnie016/flight-simulator-fable5`) informs concepts and architecture only. Knowgrph contributors attest that the implementation and assets are source-authored, and zero external-project dependency is declared. The build-time gate scans tracked files for named identity, path, content-marker, binary/asset, and declared-dependency contamination; it cannot prove the absence of arbitrary derived code.
+- **External-reference clean-room boundary.** External references inform conceptual principles only. Knowgrph contributors attest that all implementation, instructional content, and assets are source-authored. External project identity and URL are prohibited in product source and runtime metadata, and there is no external project dependency. The build-time gate scans Flight-owned paths for external repository locators, vendored paths, and opaque binary source content; it cannot prove the absence of arbitrary derived code.
+- **Systems-first training.** Three source-authored missions share one deterministic score projection over route progress, stability, energy management, failure recovery, and terminal state. Browser speech synthesis presents the same visible cue after explicit enablement; it is never a model call.
 - **Native Agentic ECS.** Mission state advances exclusively through the transactional `World_Tick` API, stays ephemeral in memory, and persists only validated `EcsDecision` nodes with deterministic replay.
 - **In-repo physics.** `Flight_Model` (thrust/pitch/roll/yaw + bounded lift/drag/gravity) and `Collision_Resolver` (swept AABB against an authored slab catalog) are in-repo, with no external physics engine and no mesh colliders or navmesh.
 - **img2threejs primary asset pipeline.** The required aircraft is a committed diffable TypeScript + JSON `Asset_Spec`; one optional subject may use an opaque GLB produced by the repository-owned deterministic offline generator and admitted only as a committed, hash-pinned, license-gated local fallback. No TRELLIS.2 or other external-generator dependency is present.
@@ -114,7 +115,7 @@ The stdio ECS server injects no systems (per the ECS design); the four flight sy
 
 ### Lifecycle and clock
 
-`Flight_Runtime` owns a lifecycle state machine over exactly `open`, `start`, `stop`, `restart`, `throttle`, `save`, `exit`. Start performs synchronous WebGL admission (R21.1), prepares a ready frame at tick zero, and holds at tick zero until at least one normalized input arrives (R21.3, R21.8). Blur/hidden and Fixed_Follow pointer-release pause the clock within one fixed tick without changing state; Free_Orbit pointer-lock exit does not pause (R21.4–R21.6). Stop-then-Start resumes the exact in-memory tick and aircraft state (R21.7).
+`Flight_Runtime` owns one lifecycle plus training-control state machine: mission and failure selection are allowed only while stopped or inactive; voice and coaching are browser-local; and `open`, `start`, `stop`, `restart`, `throttle`, `save`, and `exit` retain their established semantics. Start performs synchronous WebGL admission (R21.1), prepares a ready frame at tick zero, and holds at tick zero until at least one normalized input arrives (R21.3, R21.8). Blur/hidden and Fixed_Follow pointer-release pause the clock within one fixed tick without changing state; Free_Orbit pointer-lock exit does not pause (R21.4–R21.6). Stop-then-Start resumes the exact in-memory tick and aircraft state (R21.7).
 
 ### Shared Canvas ownership
 
@@ -542,7 +543,7 @@ All error handling is local, fail-closed, and non-destructive. No error path iss
 | Model-inference call attempted in a tick | Agentic ECS post-systems Cost_Log owner | Block without performing inference; emit one Cost_Log with `incomplete: true` + blocked-inference error; preserve tick state | 2.5 |
 | Missing/invalid Asset_Spec, non-null opaque fallback, unknown field, mismatched identity, non-positive size | Asset_Loader | Fail closed with a local error naming the asset; load no renderer; perform no GLB fetch | 2.6, 9.3, 9.4 |
 | Remote GLB URL / missing-unreadable local GLB | Asset_Loader | Reject without fetch (remote) or surface unavailable error and exclude from count (local) | 10.4, 10.5 |
-| Prohibited/unlicensed/unauthorized dependency, including either inspiration-only project | Build gate | Terminate build with no artifact; name each offending item | 3.4, 3.5, 4.5 |
+| Prohibited/unlicensed/unauthorized dependency or external repository locator in a Flight-owned path | Build gate | Terminate build with no artifact; name each offending item | 3.4, 3.5, 4.5 |
 | System failure in a World_Tick | Agentic_ECS | Roll back only the failing system; preserve prior commits; return structured failure naming system + cause | 5.4 |
 | Out-of-tick mutation attempt | Flight_Runtime | Reject; leave World unchanged; return structured transactional-boundary error | 5.1, 5.7 |
 | Out-of-range / non-finite sampled input | Input_Normalizer / Flight_Model | Clamp finite outliers; map infinities to signed bounds; reuse only NaN fields from the last valid input; record internal out-of-range; continue integration | 7.5, 16.3 |
@@ -572,7 +573,7 @@ The strategy is dual: property-based tests verify universal invariants across la
 
 ### Unit and example tests
 
-- Dependency-gate behavior over crafted dependency sets: fail-with-names on non-OSI/prohibited/unauthorized items or either inspiration-only project; pass on a clean set (R3.4, R3.5, R4.5, R4.6).
+- Dependency and clean-room gate behavior over crafted dependency sets and external repository locators: fail with named files/items; pass on a clean set (R3.4, R3.5, R4.5, R4.6).
 - Configuration/surface facts: exactly two WebMCP tools for the surface (R13.1); exactly three ECS stdio tools (R13.7); exactly two framing options and Fixed_Follow default (R15.1, R15.5); one ordered three-waypoint route + pad with capture radius 50–200 m (R17.1); required aircraft admitted via exactly one committed TS+JSON spec with GLB count zero (R9.5, R9.6); each committed spec is UTF-8 text ≤ 1 MB (R11.2).
 - Authoring-tool behavior: the optional fallback worker aborts before its atomic output commit on a disallowed model/network/Cloudflare op, names the op, and leaves the prior beacon GLB plus generated TypeScript companion unchanged (R11.4).
 - Synchronous WebGL probe returns available/unavailable without deferred resolution (R21.1).
@@ -588,7 +589,7 @@ The strategy is dual: property-based tests verify universal invariants across la
 
 - Zero new deployed infrastructure and no prod/D1/R2/KV/DO/Worker/Pages mutation surface (R1.6).
 - Dependency license and prohibited-library scans, including in-repo-physics boundary (no external physics engine; no mesh colliders/navmesh) (R3.1, R3.2, R3.3, R7.4, R8.6).
-- Named FlightGear or `Arnie016/flight-simulator-fable5` identity/path/content-marker/binary/asset/dependency contamination scan across all tracked repository files, invoked by the build and paired with the source-authored provenance attestation; the gate cannot prove the absence of arbitrary derived code (R4.1–R4.6).
+- External repository locator, vendored-path, and opaque-source-binary scan across Flight-owned tracked paths, invoked by the build and paired with the source-authored provenance attestation; external project identity and URL remain prohibited and the gate cannot prove the absence of arbitrary derived code (R4.1–R4.6).
 - WebMCP surface boundary: zero added stdio tools, HTTP mutation routes, remote gateways, or deployment authority (R13.6).
 - Repository-owned runtime-readiness command (source authority, native ECS, focused tests, TypeScript, production build) and browser-smoke command (Source Files apply, one retained authored XR Canvas, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, mobile HUD), both local-only with zero paid model/image-to-3D/Cloudflare/network and no automatic Git or deployment (R22.1, R22.3, R22.5, R22.6).
 

@@ -30,6 +30,11 @@ import {
 } from './xrNativeControllerDemoRuntime'
 import { readMotionControlSnapshot } from './motionControlRuntime'
 import { motionControlPoseToControllerInput } from './motionControlPose'
+import {
+  readFlightSimTrainingScenario,
+  resolveFlightSimTrainingMission,
+  subscribeFlightSimTrainingScenario,
+} from '@/features/game-flight-sim/flightSimTrainingScenario'
 
 const INTERACTIVE_TARGET_SELECTOR = 'button, a[href], input, textarea, select, [contenteditable="true"], [role="button"], [role="link"]'
 
@@ -56,6 +61,12 @@ export function XrNativeControllerDemoStage({
     readXrNativeControllerDemo,
     readXrNativeControllerDemo,
   )
+  const trainingScenario = React.useSyncExternalStore(
+    subscribeFlightSimTrainingScenario,
+    readFlightSimTrainingScenario,
+    readFlightSimTrainingScenario,
+  )
+  const night = resolveFlightSimTrainingMission(trainingScenario.missionId).night
   const pressedCodesRef = React.useRef(new Set<string>())
   const playerRootRef = React.useRef<Group | null>(null)
   const ballRootRef = React.useRef<Group | null>(null)
@@ -149,12 +160,14 @@ export function XrNativeControllerDemoStage({
     <>
       {stageVisible ? (
         <>
-          <ambientLight intensity={0.4} />
-          <hemisphereLight args={['#dff4ff', '#d9b978', 0.55]} />
+          <ambientLight intensity={night ? 0.13 : 0.4} />
+          <hemisphereLight
+            args={night ? ['#182a56', '#090d17', 0.22] : ['#dff4ff', '#d9b978', 0.55]}
+          />
           <directionalLight
             position={[stageScale * 12, stageScale * 19, stageScale * 10]}
-            intensity={1.8}
-            color="#fff8df"
+            intensity={night ? 0.5 : 1.8}
+            color={night ? '#9db7ff' : '#fff8df'}
             castShadow
             shadow-mapSize-width={2048}
             shadow-mapSize-height={2048}

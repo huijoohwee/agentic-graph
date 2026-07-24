@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type {
   FlightSimStageRuntimeController,
 } from '@/features/game-flight-sim/flightSimStageRuntimeController'
+import { importWithRetry } from '@/lib/react/importWithRetry'
 
 export type FlightSimMissionStageLazyModule = Readonly<{
   default: ComponentType<{ coordinateScale?: number }>
@@ -33,8 +34,10 @@ export function createFlightSimMissionStageLoader(
         new Error('Flight Sim mission-stage preload requires its runtime controller.'),
       )
     }
-    const requestedPromise = Promise.resolve()
-      .then(importMissionStage)
+    const requestedPromise = importWithRetry(importMissionStage, {
+      retries: 2,
+      retryDelayMs: 50,
+    })
       .then(module => Object.freeze({
         default: module.createFlightSimMissionStage(runtimeController),
       }))

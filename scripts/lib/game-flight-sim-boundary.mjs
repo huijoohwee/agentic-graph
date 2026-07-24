@@ -1,15 +1,6 @@
-const EXTERNAL_PROJECT_IDENTIFIERS = Object.freeze([
-  ['Flight', 'Gear'].join(''),
-  ['Sim', 'Gear'].join(''),
-  ['Arnie', '016'].join(''),
-  ['flight', 'simulator', 'fable5'].join('-'),
-])
-
 const KIRO_POLICY_DOCUMENT_PATHS = Object.freeze([
-  '.kiro/specs/knowgrph-game-flight-sim/.config.kiro',
   '.kiro/specs/knowgrph-game-flight-sim/requirements.md',
   '.kiro/specs/knowgrph-game-flight-sim/design.md',
-  '.kiro/specs/knowgrph-game-flight-sim/tasks.md',
 ])
 
 const POLICY_DOCUMENT_PATHS = new Set([
@@ -18,36 +9,40 @@ const POLICY_DOCUMENT_PATHS = new Set([
   ...KIRO_POLICY_DOCUMENT_PATHS,
 ])
 
-function policyDocumentRetainsNoCopyBoundary(source) {
-  const normalized = source.toLowerCase()
-  const inspirationOnly = normalized.includes('inspiration only')
-    || normalized.includes('concepts and architecture')
-  const provenance = normalized.includes('source-authored')
-    && (normalized.includes('attest') || normalized.includes('provenance attestation'))
-  const namedScope = normalized.includes('named')
-    && normalized.includes('identity')
-    && normalized.includes('path')
-    && normalized.includes('content')
-    && normalized.includes('binary/asset')
-    && normalized.includes('dependency')
-  const boundedGate = (
-    normalized.includes('cannot prove the absence of arbitrary derived code')
-    || normalized.includes('unable to prove the absence of arbitrary derived code')
-    || normalized.includes('does not prove the absence of arbitrary derived code')
-    || normalized.includes('does not claim to prove the absence of arbitrary derived code')
+const EXTERNAL_LOCATOR_PATTERN = /(?:https?:\/\/|git\+|github:|gitlab:|bitbucket:)/gi
+const ADMITTED_OPAQUE_ASSET_PATHS = new Set([
+  'canvas/src/features/game-flight-sim/assetSpec/fallbacks/optional-beacon.glb',
+])
+
+function isFlightOwnedPath(relativePath) {
+  return (
+    POLICY_DOCUMENT_PATHS.has(relativePath)
+    || relativePath.startsWith('.kiro/specs/knowgrph-game-flight-sim/')
+    || relativePath.startsWith('canvas/src/features/game-flight-sim/')
+    || relativePath.startsWith('canvas/src/lib/three/flightSim')
   )
-  const noDependency = normalized.includes('forbid any runtime/build dependency')
-    || normalized.includes('no dependency')
-    || normalized.includes('takes no dependency')
-    || normalized.includes('zero external-project dependency')
-    || normalized.includes('zero build-time, external, or runtime dependency')
-  return inspirationOnly && provenance && namedScope && boundedGate && noDependency
 }
 
-function matchingIdentifiers(value) {
-  const normalized = value.toLowerCase()
-  return EXTERNAL_PROJECT_IDENTIFIERS
-    .filter(identifier => normalized.includes(identifier.toLowerCase()))
+function policyDocumentRetainsNoCopyBoundary(source) {
+  const normalized = source.toLowerCase()
+  const conceptualOnly = normalized.includes('conceptual principles only')
+    || normalized.includes('concepts and architecture only')
+  const provenance = normalized.includes('source-authored')
+    && (normalized.includes('attest') || normalized.includes('provenance'))
+  const noMention = normalized.includes('external project identity')
+    && normalized.includes('url')
+    && (normalized.includes('forbidden') || normalized.includes('prohibited'))
+  const boundedGate = normalized.includes('cannot prove the absence of arbitrary derived code')
+    || normalized.includes('unable to prove the absence of arbitrary derived code')
+    || normalized.includes('does not prove the absence of arbitrary derived code')
+  const noDependency = normalized.includes('no external project dependency')
+    || normalized.includes('zero external-project dependency')
+    || normalized.includes('zero build-time, external, or runtime dependency')
+  return conceptualOnly && provenance && noMention && boundedGate && noDependency
+}
+
+function externalLocators(value) {
+  return [...new Set(String(value).match(EXTERNAL_LOCATOR_PATTERN) || [])]
 }
 
 function isBinary(bytes) {
@@ -60,117 +55,48 @@ function isBinary(bytes) {
   }
 }
 
-function isExecutableOrDependencyLine(line, identifiers) {
-  const escaped = identifiers
-    .map(identifier => identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|')
-  const identity = new RegExp(`(?:${escaped})`, 'i')
-  if (!identity.test(line)) return false
-  return (
-    /^\s*(?:import|export)\b/.test(line)
-    || /\brequire\s*\(/.test(line)
-    || /\bimport\s*\(/.test(line)
-    || /\b(?:const|let|var)\b/.test(line)
-    || new RegExp(`(?:${escaped})\\.[A-Za-z_$]`, 'i').test(line)
-    || new RegExp(`(?:${escaped})\\(`, 'i').test(line)
-    || new RegExp(`\\bnew\\s+(?:${escaped})\\b`, 'i').test(line)
-    || new RegExp(`(?:${escaped})\\s*:\\s*["'][^"']+["']`, 'i').test(line)
-    || new RegExp(`["'](?:${escaped})["']\\s*:\\s*["']`, 'i').test(line)
-  )
-}
-
-function isExplicitNeutralPolicyLine(line) {
-  const normalized = line.toLowerCase()
-  return [
-    'inspiration',
-    'concepts and architecture',
-    'source-authored',
-    'provenance',
-    'reference',
-    'boundary',
-    'forbid',
-    'shall not include',
-    'zero build-time',
-    'zero external-project dependency',
-    'named-contamination',
-    'named identity',
-    'scan',
-    'scanner',
-    'dependency-gate',
-    'prohibited',
-  ].some(marker => normalized.includes(marker))
-}
-
-function policyContentViolation(relativePath, bytes, source, contentMatches) {
-  if (!policyDocumentRetainsNoCopyBoundary(source)) {
-    return {
-      relativePath,
-      identifiers: contentMatches,
-      reason: 'canonical policy file lacks honest named-contamination/provenance markers',
-    }
-  }
-  if (isBinary(bytes)) {
-    return {
-      relativePath,
-      identifiers: contentMatches,
-      reason: 'canonical policy file contains binary external-project content',
-    }
-  }
-  for (const line of source.split(/\r?\n/)) {
-    const lineMatches = matchingIdentifiers(line)
-    if (lineMatches.length === 0) continue
-    if (isExecutableOrDependencyLine(line, lineMatches)) {
-      return {
-        relativePath,
-        identifiers: lineMatches,
-        reason: 'canonical policy file contains an executable or package-dependency external-project reference',
-      }
-    }
-    if (!isExplicitNeutralPolicyLine(line)) {
-      return {
-        relativePath,
-        identifiers: lineMatches,
-        reason: 'external-project identity appears outside an explicit neutral policy/reference line',
-      }
-    }
-  }
-  return null
-}
-
 export function findFlightSimBoundaryViolations(entries) {
   const violations = []
   for (const entry of entries) {
     const relativePath = String(entry.relativePath || '').replaceAll('\\', '/')
+    if (!isFlightOwnedPath(relativePath)) continue
     const bytes = Buffer.isBuffer(entry.bytes)
       ? entry.bytes
       : Buffer.from(entry.bytes || entry.source || '', 'utf8')
-    const pathMatches = matchingIdentifiers(relativePath)
-    if (pathMatches.length > 0) {
+    const source = bytes.toString('utf8')
+    const locators = externalLocators(`${relativePath}\n${source}`)
+
+    if (relativePath.includes('/vendor/')) {
       violations.push({
         relativePath,
-        identifiers: pathMatches,
-        reason: 'tracked path names an inspiration-only external project',
+        identifiers: ['vendor'],
+        reason: 'Flight-owned path creates a vendored external-project surface',
       })
     }
-    const source = bytes.toString('utf8')
-    const contentMatches = matchingIdentifiers(source)
-    if (contentMatches.length === 0) continue
-    if (POLICY_DOCUMENT_PATHS.has(relativePath)) {
-      const policyViolation = policyContentViolation(
+    if (isBinary(bytes) && !ADMITTED_OPAQUE_ASSET_PATHS.has(relativePath)) {
+      violations.push({
         relativePath,
-        bytes,
-        source,
-        contentMatches,
-      )
-      if (!policyViolation) continue
-      violations.push(policyViolation)
-      continue
+        identifiers: ['binary'],
+        reason: 'Flight-owned source or policy path contains opaque binary content',
+      })
     }
-    violations.push({
-      relativePath,
-      identifiers: contentMatches,
-      reason: 'tracked content names an inspiration-only external project',
-    })
+    if (locators.length > 0) {
+      violations.push({
+        relativePath,
+        identifiers: locators,
+        reason: 'Flight-owned content or path contains an external repository locator',
+      })
+    }
+    if (
+      POLICY_DOCUMENT_PATHS.has(relativePath)
+      && !policyDocumentRetainsNoCopyBoundary(source)
+    ) {
+      violations.push({
+        relativePath,
+        identifiers: ['policy'],
+        reason: 'canonical policy file lacks the source-authored no-copy, no-mention, no-dependency boundary',
+      })
+    }
   }
   return violations
 }
@@ -182,6 +108,6 @@ export function assertFlightSimBoundary(entries) {
     `${violation.relativePath}: ${violation.reason} (${violation.identifiers.join(', ')})`
   ))
   throw new Error(
-    `Flight Sim named-contamination/provenance boundary failed:\n${details.join('\n')}`,
+    `Flight Sim clean-room provenance boundary failed:\n${details.join('\n')}`,
   )
 }

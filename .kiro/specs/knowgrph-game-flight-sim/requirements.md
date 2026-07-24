@@ -4,14 +4,18 @@
 
 This repository-tracked Kiro package at `.kiro/specs/knowgrph-game-flight-sim` is the normative requirements/design source of truth for the Knowgrph Native Flight Simulator, a browser-based, single-player flight simulation game built on the Knowgrph agentic Entity Component System (ECS) and rendered on the shared Knowgrph XR Canvas. `docs/documents/knowgrph-game-flight-sim-prd-tad.md` and `docs/workspace-seeds/knowgrph-game-flight-sim-demo.md` are derived implementation/proof projections. Any workspace-root Kiro copy is a byte-identical local projection only, never a second authority.
 
-The feature delivers one bounded, offline, deterministic flight mission over a procedural authored terrain, with in-repo flight dynamics and axis-aligned bounding-box collision. It is governed by hard platform constraints: total-cost-of-ownership focus, zero-infrastructure operation, browser-based/mobile-first/local-first/offline-first delivery, token economy discipline, free and open-source software only, minimum-viable-maximum-value scope, and agent invocability through Model Context Protocol (MCP) and the `/`, `@`, `#` invocation conventions.
+The feature delivers bounded, offline, deterministic flight-training missions over procedural authored terrain, with in-repo flight dynamics, scored learning outcomes, a browser-local voice instructor, and axis-aligned bounding-box collision. It is governed by hard platform constraints: total-cost-of-ownership focus, zero-infrastructure operation, browser-based/mobile-first/local-first/offline-first delivery, token economy discipline, free and open-source software only, minimum-viable-maximum-value scope, and agent invocability through Model Context Protocol (MCP) and the `/`, `@`, `#` invocation conventions.
 
-Concepts and architecture take inspiration only from FlightGear (https://gitlab.com/flightgear/flightgear) and the framing reference `Arnie016/flight-simulator-fable5`; copying or deriving source, binaries, or assets from either project and any external, build-time, or runtime dependency on either project are forbidden. The 3D asset pipeline uses `img2threejs` output (small, diffable TypeScript plus a JSON scene spec) as the primary representation. One optional subject may use an opaque-binary GLB produced by the repository-owned deterministic offline generator and admitted only as a committed, hash-pinned, license-gated local fallback; the fallback has no TRELLIS.2 or other external-generator dependency.
+External references inform conceptual principles only. Maintainers attest that the implementation, instructional content, and assets are source-authored. Copying or deriving source, prose, prompts, schemas, algorithms, tests, binaries, or assets is forbidden; external project identity and URL are forbidden in product source and runtime metadata; and there is no external project dependency. The deterministic boundary gate detects external repository locators in Flight-owned paths but cannot prove the absence of arbitrary derived code. The 3D asset pipeline uses `img2threejs` output (small, diffable TypeScript plus a JSON scene spec) as the primary representation. One optional subject may use an opaque-binary GLB produced by the repository-owned deterministic offline generator and admitted only as a committed, hash-pinned, license-gated local fallback; the fallback has no external-generator dependency.
 
 ## Glossary
 
 - **Flight_Sim**: The browser-local flight simulator feature surface, mounted as a FloatingPanel mode on the shared Knowgrph XR Canvas.
-- **Flight_Runtime**: The lifecycle and orchestration owner of Flight_Sim, managing `open`, `start`, `stop`, `restart`, `throttle`, `save`, and `exit` states.
+- **Flight_Runtime**: The lifecycle and orchestration owner of Flight_Sim, managing mission/failure selection, voice coaching, `open`, `start`, `stop`, `restart`, `throttle`, `coach`, `save`, and `exit`.
+- **Training_Mission**: A source-authored objective, terrain/light state, target energy envelope, systems checklist, and measurable score contract.
+- **Practice_Failure**: A bounded deterministic failure injection active only during its declared tick window.
+- **Voice_Instructor**: Browser speech synthesis over the same text coaching cue; text coaching remains available when speech is unavailable.
+- **Training_Outcome**: A terminal, validated `dialogue_outcome` Decision containing score, grade, route progress, stability, energy management, failure recovery, and night state.
 - **Agentic_ECS**: The native Knowgrph Entity Component System runtime that hydrates an opaque World, advances ordered systems through a transactional `World_Tick`, and validates emitted Decisions.
 - **World_Tick**: One deterministic fixed-step advance of the Agentic_ECS World performed by Flight_Runtime.
 - **Flight_Model**: The in-repo deterministic flight-dynamics owner computing thrust, pitch, roll, yaw, and bounded lift, drag, and gravity approximations. No external physics engine.
@@ -73,18 +77,18 @@ Concepts and architecture take inspiration only from FlightGear (https://gitlab.
 4. WHEN dependency resolution runs, IF the resolved dependency set contains any package that lacks an OSI-approved open-source license or that appears in the prohibited-library list defined in criterion 3, THEN THE Flight_Sim SHALL fail the build and produce an error indicating each offending dependency by name.
 5. WHEN dependency resolution runs, IF the resolved runtime dependency set contains any package outside the existing Knowgrph renderer, Agentic_ECS, WorkspaceFs, and camera owners, THEN THE Flight_Sim SHALL fail the build and produce an error identifying each unauthorized runtime dependency by name.
 
-### Requirement 4: External flight-simulator inspiration boundary
+### Requirement 4: External-reference clean-room boundary
 
-**User Story:** As a maintainer, I want FlightGear and `Arnie016/flight-simulator-fable5` used only for conceptual inspiration, so that no source, binary, asset, or dependency from either project enters the repository.
+**User Story:** As a maintainer, I want external references confined to unnamed conceptual principles, so that no external identity, source, content, asset, or dependency enters the product.
 
 #### Acceptance Criteria
 
-1. THE Flight_Sim SHALL reference FlightGear and `Arnie016/flight-simulator-fable5` only at the level of concepts and architecture, and SHALL NOT include source files, binaries, or asset artifacts from either project.
-2. THE Flight_Sim SHALL contain no source code copied or derived from either inspiration-only project, and maintainers SHALL attest that the Flight Sim implementation and assets are source-authored.
-3. THE Flight_Sim SHALL declare zero build-time, external, or runtime dependency on either inspiration-only project.
-4. WHEN a build is initiated, THE build SHALL scan all tracked repository files for named identity, path, content-marker, binary/asset, and declared-dependency contamination from either inspiration-only project.
-5. IF the named-contamination scan detects a marker or declared dependency from either inspiration-only project, THEN THE build SHALL terminate without producing any build artifact and SHALL report a boundary-violation error identifying each detected file or dependency.
-6. IF the named-contamination scan detects no marker or declared dependency from either inspiration-only project, THEN THE build SHALL continue; this deterministic gate SHALL be documented as unable to prove the absence of arbitrary derived code, so the source-authored provenance attestation remains required.
+1. THE Flight_Sim SHALL use external references for conceptual principles only and SHALL NOT include copied or derived source, prose, prompts, schemas, algorithms, tests, binaries, or assets.
+2. THE Flight_Sim SHALL prohibit external project identity and URL in product source, authored specifications, workspace seeds, runtime metadata, and user-facing copy.
+3. THE Flight_Sim SHALL declare zero build-time, external, or runtime dependency on any referenced external project.
+4. WHEN a build is initiated, THE build SHALL scan Flight-owned tracked paths for external repository locators, vendored paths, and opaque binary source content.
+5. IF the clean-room scan detects a prohibited locator, vendored path, opaque source binary, or missing policy marker, THEN THE build SHALL terminate without producing a build artifact and SHALL identify each detected file.
+6. IF the clean-room scan passes, THEN THE build SHALL continue; this deterministic gate SHALL be documented as unable to prove the absence of arbitrary derived code, so the source-authored provenance attestation remains required.
 
 ### Requirement 5: Build on the Knowgrph agentic ECS
 
@@ -329,3 +333,20 @@ Concepts and architecture take inspiration only from FlightGear (https://gitlab.
 1. WHEN activation is requested, THE Flight_Sim SHALL activate through the source-authored `run_ready_demo.id` registered in the known registry, independent of any imported path.
 2. IF the imported path identity and the source-authored identity disagree, THEN THE Flight_Sim SHALL fail closed without activating, reject the request with an identity-conflict error indicating the conflicting identities, and leave the prior activation state unchanged.
 3. IF the source-authored `run_ready_demo.id` is not registered in the known registry, THEN THE Flight_Sim SHALL fail closed without activating and reject the request with an error indicating the identity is unregistered.
+
+### Requirement 24: Mission-based flight training and measurable outcomes
+
+**User Story:** As a learner, I want structured flight lessons, systems practice, coaching, and measurable debriefs, so that each circuit teaches and verifies a specific skill.
+
+#### Acceptance Criteria
+
+1. THE Flight_Sim SHALL offer `circuit-foundation`, `night-circuit`, and `systems-recovery` Training_Missions, each with an objective, procedural terrain description, day/night state, target speed envelope, default Practice_Failure, and systems checklist.
+2. THE Flight_Sim SHALL expose the same Training_Mission state through the Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera FloatingPanel owners without creating a second simulation, terrain, renderer, or persistence owner.
+3. WHILE a mission advances, THE training projection SHALL report route progress, stability percentage, energy-envelope percentage, a score from 0 through 100, and a terminal grade derived only from deterministic browser-local state.
+4. WHEN the selected Practice_Failure is active from tick 180 inclusive through tick 420 exclusive, THE Flight_Runtime SHALL apply the declared bounded power, instrument, or control effect to captured tick input only; outside that window, it SHALL leave input unchanged.
+5. WHEN unreliable-airspeed practice is active, THE Flight Sim telemetry SHALL display `UNRELIABLE` instead of a trusted airspeed value and SHALL retain pitch, power, attitude, and route coaching.
+6. WHEN night training is selected, THE shared authored XR atmosphere and light owners SHALL use the source-authored night palette without adding Flight-owned lights or a second world.
+7. THE Voice_Instructor SHALL use browser speech synthesis only after explicit enablement, SHALL speak the same visible deterministic coaching cue, and SHALL retain visible text coaching when speech is unavailable.
+8. WHEN an Operator explicitly saves a completed or crashed mission, THE Flight_Runtime SHALL persist one idempotent Training_Outcome Decision alongside admitted terminal Decisions; it SHALL never auto-save the debrief.
+9. THE WebMCP control tool and `/flight.sim @canvas #flight` grammar SHALL expose mission selection, failure selection, voice enable/disable, current coaching cue, lifecycle control, and Save while inspect reports the complete training snapshot.
+10. IF the mission-stage dynamic import fails with a transient fetch or dynamic-module error, THE shared loader SHALL retry at most two times with bounded backoff before reporting the existing fail-closed surface-entry error; non-transient errors SHALL not retry.

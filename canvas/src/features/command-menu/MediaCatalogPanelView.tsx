@@ -33,6 +33,7 @@ import {
 } from './mediaCatalogModeRuntime'
 import { XrMediaLibraryPanel } from './XrMediaLibraryPanel'
 import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
+import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import {
   readXrSimulationWorkbenchOpenRevision,
   subscribeXrSimulationWorkbenchOpenRequest,
@@ -314,6 +315,7 @@ export function MediaCatalogPanelView({
         )}
       />
       <section ref={panelRef} className={floatingPanelCatalogBodyClassName(catalogMode === 'media' && previewItem ? 'overflow-hidden' : undefined)} data-kg-floating-panel-catalog-body="media">
+        <FlightSimTrainingSurfaceProjection surface="media" />
         <MotionCapturePlatformProjection variant="media" />
         {catalogMode === 'xr-3d' ? (
           <XrMediaLibraryPanel searchText={normalizedSearchQuery} />

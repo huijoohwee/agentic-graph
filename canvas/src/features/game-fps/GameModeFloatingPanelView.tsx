@@ -15,6 +15,7 @@ import {
 } from '@/features/agentic-os/agenticOsInvocationChips'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
+import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import {
   FloatingPanelCatalogHeader,
   floatingPanelCatalogBodyClassName,
@@ -219,6 +220,8 @@ export function GameModeFloatingPanelView() {
           </div>
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>On XR, Game Mode retains the paused authored scene while its first-person overlay owns camera and gameplay; exit resumes the shared controller owner.</p>
         </section>
+
+        <FlightSimTrainingSurfaceProjection surface="game-mode" />
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-game-mode-invocations="shared-catalog">
           <h3 className="text-[11px] font-semibold">MCP · / · @ · #</h3>

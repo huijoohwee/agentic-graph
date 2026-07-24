@@ -45,13 +45,21 @@ Implement one browser-local, deterministic Flight Sim mission as an overlay on t
   - _Requirements: 1, 2, 12, 13, 21_
 
 - [x] 7. Add source/runtime verification
-  - [x] Cover the 45 named properties, focused source tests, dependency/license checks, named no-copy contamination scan, TypeScript check, and production build.
+  - [x] Cover the 45 named properties, focused source tests, dependency/license checks, generic clean-room boundary scan, TypeScript check, and production build.
   - [x] Run runtime and browser verification in child-owned exact local workspaces so failed tracked/untracked mutations are discarded and prior browser evidence is restored transactionally.
   - [x] Attest source-authored provenance; document that the named scanner cannot prove the absence of arbitrary derived code.
   - [x] Require the tracked Kiro authority inventory and hash it during Flight Sim readiness.
   - _Requirements: 3, 4, 22_
 
-- [ ] 8. Complete final exact-revision evidence and protected integration
+- [x] 8. Add mission-based training across the six existing FloatingPanel owners
+  - [x] Add foundation, night, and systems-recovery missions with deterministic route, stability, energy, recovery, score, and grade outcomes.
+  - [x] Add bounded power-loss, unreliable-instrument, and control-bias practice failures to the captured tick-input owner.
+  - [x] Project one shared training state into Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera without a second Canvas or world.
+  - [x] Add explicit browser voice coaching with visible text fallback, shared-owner night atmosphere, terminal debrief Decisions, and MCP `/` `@` `#` operations.
+  - [x] Retry transient mission-stage dynamic-import fetch failures at the shared loader boundary.
+  - _Requirements: 4, 12, 13, 14, 18, 19, 24_
+
+- [ ] 9. Complete final exact-revision evidence and protected integration
   - [ ] Run the aggregate source/runtime gate on a clean exact candidate revision.
   - [ ] Run two fresh serial browser proofs on that same revision, including mission completion and a touch-control interaction if those are required browser acceptance claims.
   - [ ] Preserve the honest boundary between source proof, browser proof, protected integration, and release/deployment proof.
