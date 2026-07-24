@@ -287,14 +287,38 @@ async function resolveNonGraphActiveWorkspaceSourceFiles(args: {
   })
 }
 
-async function materializeGraphOwningActiveWorkspaceSourceFiles(args: {
+function hasGraphOwningActivePathDrifted(
+  activePath: WorkspacePath,
+  explorerActivePathAtStart: WorkspacePath | null,
+): boolean {
+  const currentExplorerActivePath = resolveMaterializedWorkspaceActivePath({
+    explorerActivePath: useMarkdownExplorerStore.getState().activePath,
+  })
+  // An explicit bootstrap override may legitimately start without an Explorer
+  // selection. Once Explorer owns a different path, the older preset is stale.
+  const activePathStartedStale = (
+    explorerActivePathAtStart !== null
+    && explorerActivePathAtStart !== activePath
+  )
+  return activePathStartedStale || (
+    explorerActivePathAtStart === null
+      ? currentExplorerActivePath !== null && currentExplorerActivePath !== activePath
+      : currentExplorerActivePath !== activePath
+  )
+}
+
+type GraphOwningActiveWorkspaceSourceFilesArgs = {
   activePath: WorkspacePath
   fs: WorkspaceFs
   existingSourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']
   workspaceEntries: WorkspaceEntry[]
   sourcesByPath?: WorkspaceSourceIndex | null
   premergedSourceFiles?: SourceFile[] | null
-}): Promise<void> {
+}
+
+function mergeGraphOwningActiveWorkspaceSourceFiles(
+  args: GraphOwningActiveWorkspaceSourceFilesArgs,
+): void {
   const store = useGraphStore.getState()
   const mergedSourceFiles = args.premergedSourceFiles || mergeWorkspaceEntriesIntoSourceFiles({
     existing: args.existingSourceFiles,
@@ -312,6 +336,22 @@ async function materializeGraphOwningActiveWorkspaceSourceFiles(args: {
   if (mergedSourceFiles !== args.existingSourceFiles) {
     store.setSourceFiles(mergedSourceFiles)
   }
+}
+
+async function materializeGraphOwningActiveWorkspaceSourceFiles(args: GraphOwningActiveWorkspaceSourceFilesArgs): Promise<void> {
+  const explorerActivePathAtStart = resolveMaterializedWorkspaceActivePath({
+    explorerActivePath: useMarkdownExplorerStore.getState().activePath,
+  })
+  mergeGraphOwningActiveWorkspaceSourceFiles(args)
+  // Identity precedes presets so run-ready Exit retains the neutral surface.
+  await reapplyActiveWorkspaceMarkdownDocument({
+    activePathOverride: args.activePath,
+    fs: args.fs,
+    activeWorkspaceEntriesSnapshot: args.workspaceEntries,
+  })
+  if (hasGraphOwningActivePathDrifted(args.activePath, explorerActivePathAtStart)) return
+  const mergedSourceFiles = useGraphStore.getState().sourceFiles
+
   const preserveFrontmatterDrivenLanding = isInitializationWorkspacePath(args.activePath)
   await applyWorkspaceImportToCanvas({
     fs: args.fs,
@@ -407,10 +447,5 @@ export async function materializeActiveWorkspaceEntryIntoSourceFiles(args?: {
     workspaceEntries,
     sourcesByPath: resolveWorkspaceSourceIndexSnapshot(args?.sourcesByPath),
     premergedSourceFiles,
-  })
-  await reapplyActiveWorkspaceMarkdownDocument({
-    activePathOverride: activePath,
-    fs,
-    activeWorkspaceEntriesSnapshot: workspaceEntries,
   })
 }
