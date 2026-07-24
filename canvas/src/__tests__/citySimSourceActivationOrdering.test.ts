@@ -1,7 +1,23 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
+import { CitySimRunReadyDemoRuntime } from '@/features/canvas/CitySimRunReadyDemoRuntime'
+import {
+  exitCitySimSurface,
+  readCitySimSnapshot,
+  resetCitySimRuntimeForTests,
+} from '@/features/game-city-sim/citySimRuntime'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
+import {
+  beginSourceFilesDocumentIntent,
+  clearSourceFilesDocumentIntent,
+  completeSourceFilesBootstrap,
+  completeSourceFilesDocumentIntent,
+  readSourceFilesBootstrapSnapshot,
+  useSourceFilesBootstrapHasReachedReady,
+} from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { materializeActiveWorkspaceEntryIntoSourceFiles } from '@/features/source-files/sourceFilesRuntimeShared'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
@@ -13,6 +29,13 @@ import {
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
+import { MemoryStorage } from '@/tests/lib/memoryStorage'
+import {
+  mountReactRoot,
+  unmountReactRoot,
+  waitForTasks,
+} from '@/tests/lib/reactRootHarness'
+import { initWindowHarness } from '@/tests/lib/windowHarness'
 
 const CITY_SEED_PATH = `/${CITY_SIM_DEMO_REPO_REL_PATH}`
 const NEUTRAL_PATH = '/docs/workspace-seeds/workspace-readme.md'
@@ -72,6 +95,23 @@ async function materializeCityFixture(): Promise<void> {
   })
 }
 
+function CitySimStickyRunReadyHost() {
+  const hasReachedReady = useSourceFilesBootstrapHasReachedReady()
+  return hasReachedReady
+    ? React.createElement(CitySimRunReadyDemoRuntime)
+    : null
+}
+
+async function waitForCitySimLaunch(): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const city = readCitySimSnapshot()
+    if (city.active || city.phase === 'error') return
+    await new Promise<void>(resolveWait => {
+      setTimeout(resolveWait, 20)
+    })
+  }
+}
+
 export async function testCitySimGraphOwningMaterializationCommitsIdentityBeforeCityBuilderPreset() {
   const { restore } = initJsdomHarness()
   const previousStore = useGraphStore.getState()
@@ -124,6 +164,103 @@ export async function testCitySimGraphOwningMaterializationCommitsIdentityBefore
     useGraphStore.setState(previousStore, true)
     useMarkdownExplorerStore.setState(previousExplorerStore, true)
     restore()
+  }
+}
+
+export async function testCitySimLaterSourceIntentRetainsMountedPreviousSurfaceOnExit() {
+  const intentKey = 'test:city-sim-later-source-intent'
+  const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
+  const { dom, restore: restoreDom } = initJsdomHarness(
+    '<!doctype html><html><body><section id="root"></section></body></html>',
+  )
+  const container = dom.window.document.getElementById('root')
+  if (!container) throw new Error('missing City lifecycle test root')
+  dom.window.HTMLCanvasElement.prototype.getContext = (() => ({
+    isContextLost: () => false,
+    getExtension: () => ({ loseContext: () => undefined }),
+  })) as typeof dom.window.HTMLCanvasElement.prototype.getContext
+
+  const previousStore = useGraphStore.getState()
+  const previousExplorerStore = useMarkdownExplorerStore.getState()
+  const previousDemoSelector = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
+  let root: ReturnType<typeof createRoot> | null = null
+  try {
+    delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
+    prepareNeutralCitySourceSelection()
+    resetCitySimRuntimeForTests({ webglSupported: true })
+    completeSourceFilesBootstrap()
+    assert.equal(
+      readSourceFilesBootstrapSnapshot().hasReachedReady,
+      true,
+      'expected initial Source Files authority to admit the run-ready lifecycle host',
+    )
+
+    root = createRoot(container)
+    await mountReactRoot(root, React.createElement(CitySimStickyRunReadyHost), {
+      window: dom.window as unknown as Window,
+      frames: 1,
+      tasks: 1,
+    })
+
+    await act(async () => {
+      beginSourceFilesDocumentIntent(intentKey)
+    })
+    const resolving = readSourceFilesBootstrapSnapshot()
+    assert.equal(resolving.phase, 'resolving')
+    assert.equal(
+      resolving.hasReachedReady,
+      true,
+      'a later Source Files intent must retain the mounted City lifecycle owner',
+    )
+
+    await act(async () => {
+      await materializeCityFixture()
+      completeSourceFilesDocumentIntent(intentKey)
+    })
+    await act(async () => {
+      await waitForCitySimLaunch()
+    })
+
+    const launched = readCitySimSnapshot()
+    assert.equal(launched.active, true, launched.message)
+    assert.equal(launched.phase, 'stopped')
+    assert.equal(useGraphStore.getState().floatingPanelView, 'cityBuilder')
+
+    await act(async () => {
+      exitCitySimSurface()
+      await waitForTasks(2)
+    })
+    const restored = useGraphStore.getState()
+    assert.equal(readCitySimSnapshot().active, false, 'Exit must not relaunch the selected City document')
+    assert.equal(restored.canvasRenderMode, '3d')
+    assert.equal(restored.canvas3dMode, 'xr')
+    assert.equal(restored.floatingPanelOpen, true)
+    assert.equal(restored.floatingPanelView, 'motionControl')
+    assert.equal(restored.markdownDocumentName, CITY_SIM_DEMO_REPO_REL_PATH)
+    assert.equal(
+      isCitySimRunReadyDemoActive(restored.markdownDocumentName, restored.markdownDocumentText),
+      true,
+      'Exit must restore the prior panel without replacing the selected City source',
+    )
+  } finally {
+    exitCitySimSurface({ restorePreviousSurface: false })
+    resetCitySimRuntimeForTests({ webglSupported: true })
+    if (root) {
+      await unmountReactRoot(root, {
+        window: dom.window as unknown as Window,
+        tasks: 1,
+      }).catch(() => undefined)
+    }
+    clearSourceFilesDocumentIntent(intentKey)
+    if (typeof previousDemoSelector === 'string') {
+      process.env[WORKSPACE_RUN_READY_DEMO_ENV] = previousDemoSelector
+    } else {
+      delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
+    }
+    useGraphStore.setState(previousStore, true)
+    useMarkdownExplorerStore.setState(previousExplorerStore, true)
+    restoreDom()
+    restoreWindow()
   }
 }
 

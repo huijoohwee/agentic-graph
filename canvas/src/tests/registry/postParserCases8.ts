@@ -25,6 +25,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["city.sim.source.explicitGameplayClaims","@/__tests__/citySimSourceOwnership.test","testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims"],
   ["city.sim.source.identityFailClosed","@/__tests__/citySimSourceOwnership.test","testCitySimSourceIdentityFailsClosedWithoutAuthoredId"],
   ["city.sim.source.identityBeforePreset","@/__tests__/citySimSourceActivationOrdering.test","testCitySimGraphOwningMaterializationCommitsIdentityBeforeCityBuilderPreset"],
+  ["city.sim.source.laterIntentRetainsPreviousSurface","@/__tests__/citySimSourceActivationOrdering.test","testCitySimLaterSourceIntentRetainsMountedPreviousSurfaceOnExit"],
   ["city.sim.source.identityPathDriftFence","@/__tests__/citySimSourceActivationOrdering.test","testCitySimGraphOwningMaterializationFencesDelayedPathDrift"],
   ["city.sim.source.identityFreshSnapshot","@/__tests__/citySimSourceActivationOrdering.test","testCitySimGraphOwningMaterializationUsesFreshSourceFilesAfterIdentityAwait"],
   ["storage.enhancement.property.01.durableWriteBeforeTransport","@/__tests__/knowgrphStorageEnhancementPropertiesPersistence.test","testStorageEnhancementProperty01DurableWritePrecedesTransport"],
