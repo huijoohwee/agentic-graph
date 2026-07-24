@@ -8,6 +8,7 @@ export const SEMANTIC_HIGHLIGHT_SURFACES = {
   markdownSigil: 'markdown-sigil',
   markdownTextHighlight: 'markdown-text-highlight',
   selectionMatch: 'selection-match',
+  provenanceSelection: 'provenance-selection',
   d3Graph: 'd3-graph',
   keywordMode: 'keyword-mode',
   dashboard: 'dashboard',
