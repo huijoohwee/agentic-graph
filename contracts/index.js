@@ -12,6 +12,7 @@ export * from "./demo-pack.schema.js";
 export * from "./media-artifact.schema.js";
 export * from "./agent-runtime.schema.js";
 export * from "./agent-model-runtime.js";
+export * from "./agent-team.schema.js";
 export * from "./semantic-key.js";
 export * from "./sme-profile.schema.js";
 export * from "./sme-risk-coverage.schema.js";

@@ -11,7 +11,7 @@ import { buildSmeRiskCopilotLocalToolDefinitions } from "./sme-risk-copilot-tool
 import { buildAgentSandboxPolicyToolDefinitions } from "./agent-sandbox-policy-tool-contract.js"; import { VIDEO_WORKFLOW_INPUT_SCHEMA } from "./video-remix/workflow-contract.js";
 import { EXPORT_PUBLISH_INPUT_SCHEMA, EXPORT_PUBLISH_OUTPUT_SCHEMA } from "./export-publish-contract.js";
 import { buildEcsLocalToolDefinitions } from "./ecs-tool-contract.js";
-import { buildImplementationRunToolDefinitions } from "./implementation-run-tool-contract.js"; import { buildAgentApplicationToolDefinitions } from "./agent-application-tool-contract.js";
+import { buildLocalRunToolDefinitions } from "./local-run-tool-contract-registrar.js"; import { buildAgentApplicationToolDefinitions } from "./agent-application-tool-contract.js";
 import { buildSkillEvolutionToolDefinition } from "./skill-evolution-tool-contract.js";
 export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES;
 
@@ -429,7 +429,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       ...AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION,
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke,
     }, READ_ONLY_TOOL_ANNOTATIONS),
-    ...buildImplementationRunToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
+    ...buildLocalRunToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     withLocalMcpDescriptorDefaults({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.exportPublish,
       description: "Use this when a local MCP host needs to publish a frontmatter-first KGC Markdown artifact to a stable Google Sheet/Slides or Microsoft XLSX/PPTX identity; each run may overwrite remote content, create a revision, and append the local ledger.",

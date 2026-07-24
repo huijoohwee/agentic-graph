@@ -30,6 +30,7 @@ test('runtime docs dependency resolves one checkout repository and immutable ref
   assert.ok(contract.docs_dependency.required_files.includes('AGENT-TOOLKIT.md'))
   assert.ok(contract.docs_dependency.required_files.includes('APPLICATION-COMPOSITION.md'))
   assert.ok(contract.docs_dependency.required_files.includes('SKILL-EVOLUTION.md'))
+  assert.ok(contract.docs_dependency.required_files.includes('AGENT-TEAM.md'))
   assert.ok(contract.docs_dependency.required_files.includes('schemas/production-runtime-readiness.v2.schema.json'))
   assert.deepEqual(
     ['/agent.toolkit', '#agent-toolkit', '@agent-toolkit-observer']
@@ -45,6 +46,11 @@ test('runtime docs dependency resolves one checkout repository and immutable ref
     ['/skill.evolve', '#skill-evolution', '@skill-catalog', '@skill-policy', '@runtime-proof', '@operator']
       .map((token) => contract.docs_dependency.proof_tokens.includes(token)),
     [true, true, true, true, true, true],
+  )
+  assert.deepEqual(
+    ['/agent.team', '#role-based-agent-team', '@agent-team']
+      .map((token) => contract.docs_dependency.proof_tokens.includes(token)),
+    [true, true, true],
   )
   assert.deepEqual(dependency, {
     repository: 'huijoohwee/agentic-canvas-os',
