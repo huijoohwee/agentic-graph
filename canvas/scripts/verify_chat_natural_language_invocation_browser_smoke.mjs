@@ -325,7 +325,6 @@ async function main() {
   let runtimeIdentitySnapshot = null
   let sourceFilesSnapshot = null
   let postFinalizeSourceFilesSnapshot = null
-  let skippedApplyDiagnostic = null
   let paletteLayoutIds = []
   let localStorageSettings = null
   let persistedWorkspaceProof = null
@@ -431,26 +430,6 @@ async function main() {
       page,
       'knowgrph.inspect_local_source_files_snapshot',
     )
-    if (chatSnapshot.finalize.applied !== true) {
-      await page.waitForTimeout(1_000)
-      skippedApplyDiagnostic = await page.evaluate(async ({ name, text }) => {
-        const command = window.knowgrphWorkspaceCommand
-        if (!command) return { available: false, applied: false }
-        return {
-          available: true,
-          ...(await command.applyMarkdownDocument({
-            name,
-            text,
-            applyToGraph: true,
-            forceApplyToGraph: true,
-            applyViewPreset: true,
-          })),
-        }
-      }, {
-        name: chatSnapshot.finalize.persistedKnowgrphPath,
-        text: persistedWorkspaceDocument,
-      })
-    }
     assert.equal(chatSnapshot.available, true)
     assert.equal(chatSnapshot.errorText, null)
     assert.equal(chatSnapshot.chatStorageTarget, 'chatKnowgrph')
@@ -589,7 +568,6 @@ async function main() {
       runtimeIdentitySnapshot,
       sourceFilesSnapshot,
       postFinalizeSourceFilesSnapshot,
-      skippedApplyDiagnostic,
       projectedNodeId: PROJECTED_NODE_ID,
       paletteLayoutIds,
       screenshotPath: screenshotCaptureError ? null : screenshotPath,

@@ -7,6 +7,7 @@ import {
 } from '@/features/agent-ready/probeTreeContract.mjs'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
 import { applyChatKgcWorkspaceDocumentToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID, FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
@@ -18,6 +19,7 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
+  let unsubscribeExplorerReset = () => void 0
   try {
     resetWorkspaceFsForTests()
     useGraphStore.getState().clearGraphData()
@@ -100,8 +102,23 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
       if (!canonicalText.includes(token)) throw new Error(`expected canonical KGC to contain ${token}`)
     }
 
+    const originalActivePath = '/authored-source.md'
+    useMarkdownExplorerStore.getState().setActivePath(originalActivePath)
+    let simulatedSelectionResets = 0
+    unsubscribeExplorerReset = useMarkdownExplorerStore.subscribe(state => {
+      if (state.activePath !== workspacePath || simulatedSelectionResets >= 2) return
+      simulatedSelectionResets += 1
+      queueMicrotask(() => {
+        if (useMarkdownExplorerStore.getState().activePath === workspacePath) {
+          useMarkdownExplorerStore.getState().setActivePath(originalActivePath)
+        }
+      })
+    })
     if (!await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)) {
       throw new Error('expected the Probe-Tree MCP KGC to apply to the active Canvas')
+    }
+    if (simulatedSelectionResets !== 2 || useMarkdownExplorerStore.getState().activePath !== workspacePath) {
+      throw new Error('expected Chat KGC apply to retain generated workspace ownership across transient Explorer selection resets')
     }
     const graphData = useGraphStore.getState().graphData
     const source = graphData?.nodes.find(node => node.id === 'mcp-response-care-source')
@@ -134,6 +151,7 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
       if (!node || !overlayIds.has(String(node.id))) throw new Error(`expected ${String(node?.id || 'missing node')} on the visible overlay tree`)
     }
   } finally {
+    unsubscribeExplorerReset()
     useGraphStore.getState().clearGraphData()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch
