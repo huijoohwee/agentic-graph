@@ -2,6 +2,7 @@ import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["canvas.richMedia.selectionWidgetLink.provenanceEdge","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdge"],
+  ["canvas.richMedia.selectionWidgetLink.sourceHighlightConnector","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkProjectsExactSourceHighlightAndConnector"],
   ["canvas.richMedia.selectionWidgetLink.preservesCollectivePlacement","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetInsertionPreservesExistingCollectivePlacement"],
   ["canvas.richMedia.selectionWidgetLink.waitsForTargetPublication","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkWaitsForCreatedTargetPublication"],
   ["canvas.richMedia.selectionWidgetLink.paletteCreateTarget","@/__tests__/textSelectionWidgetLink.test","testWidgetPaletteCreatesTargetFromActiveTextSelection"],
