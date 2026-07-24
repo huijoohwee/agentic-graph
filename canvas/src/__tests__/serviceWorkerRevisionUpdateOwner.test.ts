@@ -95,6 +95,41 @@ test('service worker revision owner retries promptly after an offline registrati
   assert.equal(settledCount, 2, 'failed and successful checks must both release stable active-worker cleanup')
 })
 
+test('service worker revision owner retries until the running build revision is active', async () => {
+  const windowTarget = new EventTarget()
+  const documentTarget = Object.assign(new EventTarget(), {
+    visibilityState: 'visible' as DocumentVisibilityState,
+  })
+  let updateCount = 0
+  let activeRevisionMatches = false
+  let settledCount = 0
+  const dispose = installServiceWorkerRevisionUpdateOwner({
+    registration: {
+      async update() {
+        updateCount += 1
+        if (updateCount === 2) activeRevisionMatches = true
+      },
+    },
+    documentTarget,
+    windowTarget,
+    convergenceRetryDelaysMs: [0],
+    async isExpectedRevisionActive() {
+      return activeRevisionMatches
+    },
+    onUpdateSettled() {
+      settledCount += 1
+    },
+  })
+
+  await new Promise(resolve => setTimeout(resolve, 10))
+  assert.equal(updateCount, 2, 'a stale active worker must receive a bounded forced recheck')
+  assert.equal(settledCount, 2)
+
+  await new Promise(resolve => setTimeout(resolve, 10))
+  assert.equal(updateCount, 2, 'attested convergence must stop the retry sequence')
+  dispose()
+})
+
 test('canonical service worker registration bypasses caches for rapid release convergence', async () => {
   const previousController = Object.assign(new EventTarget(), {
     state: 'activated',

@@ -4,7 +4,10 @@ import { existsSync } from 'node:fs'
 import { chromium, type Page } from 'playwright'
 import { buildKnowgrphStorageCanvasRoomPath } from '../src/lib/storage/knowgrphStorageSyncContract'
 import { KNOWGRPH_STORAGE_DEVICE_ID_KEY } from '../src/lib/storage/knowgrphStorageDeviceIdentity'
-import { QUERY_PARAM_OPEN_EDITOR_WORKSPACE } from '../src/lib/routing/queryParams'
+import {
+  QUERY_PARAM_OPEN_EDITOR_WORKSPACE,
+  QUERY_PARAM_RUNTIME_IDENTITY_PROOF,
+} from '../src/lib/routing/queryParams'
 import { LOCAL_DOC_PARAM } from '../src/features/canvas/canvasDocDeepLink'
 
 const DEFAULT_OWNER_APP_URL = 'http://127.0.0.1:5175/'
@@ -87,6 +90,7 @@ function resolveBrowserLaunchOptions(): Parameters<typeof chromium.launch>[0] {
 
 function buildWorkspaceUrl(rawUrl: string): string {
   const url = new URL(rawUrl)
+  url.searchParams.set(QUERY_PARAM_RUNTIME_IDENTITY_PROOF, '1')
   if (!String(url.searchParams.get(QUERY_PARAM_OPEN_EDITOR_WORKSPACE) || '').trim()) {
     url.searchParams.set(QUERY_PARAM_OPEN_EDITOR_WORKSPACE, '1')
   }

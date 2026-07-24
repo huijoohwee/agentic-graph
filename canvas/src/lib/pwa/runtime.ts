@@ -1,6 +1,8 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { readKnowgrphSourceRevision } from '@/features/runtime-identity/knowgrphRuntimeIdentity'
 import {
   installServiceWorkerCacheRevisionOwner,
+  readActiveServiceWorkerSourceRevision,
   type ServiceWorkerCacheRevisionOwner,
 } from '@/lib/pwa/serviceWorkerCacheRevisionOwner'
 import { registerCanonicalServiceWorker } from '@/lib/pwa/serviceWorkerRegistrationOwner'
@@ -176,6 +178,12 @@ export function installPwaRuntime(): void {
           registration,
           documentTarget: document,
           windowTarget: window,
+          async isExpectedRevisionActive() {
+            const activeWorker = registration.active
+            if (!activeWorker || activeWorker.state !== 'activated') return false
+            return await readActiveServiceWorkerSourceRevision(activeWorker)
+              === readKnowgrphSourceRevision()
+          },
           onUpdateSettled() {
             cacheRevisionOwner?.requestPrune()
           },
