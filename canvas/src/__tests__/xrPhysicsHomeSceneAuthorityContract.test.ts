@@ -87,6 +87,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   const xrSceneStageSource = readSource('features', 'three', 'XrSceneStage.tsx')
   const sceneSource = readSource('lib', 'three', 'Scene.impl.tsx')
   const threeGraphSource = readSource('lib', 'three', 'ThreeGraph.impl.tsx')
+  const threeGraphImmersiveMediaSource = readSource('lib', 'three', 'ThreeGraphImmersiveMedia.tsx')
   const gameMissionSource = readSource('features', 'game-fps', 'GameFpsMissionStage.tsx')
   const staleCompositionPath = resolve(
     process.cwd(),
@@ -211,9 +212,14 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     'data-kg-xr-scene-authority=',
     "'native-controller'",
     "'motion-reference'",
+    "'immersive-media'",
     "'empty-world'",
   ]) {
-    requireSourceMarker(threeGraphSource, marker, 'XR scene owner must be explicit at first mount')
+    requireSourceMarker(
+      `${threeGraphSource}\n${threeGraphImmersiveMediaSource}`,
+      marker,
+      'XR scene owner must be explicit at first mount',
+    )
   }
 
   const forbiddenLegacyMarkers = [

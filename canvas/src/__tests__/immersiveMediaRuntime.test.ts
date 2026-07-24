@@ -1,0 +1,125 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import {
+  buildImmersiveMediaAgentReadyToolContracts,
+  IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS,
+} from '@/features/agent-ready/immersiveMediaAgentReadyContract.mjs'
+import { buildImmersiveMediaWebMcpToolBuilders } from '@/features/agent-ready/immersiveMediaWebMcpTools'
+import {
+  buildImmersiveMediaInvocation,
+  controlLocalImmersiveMedia,
+  inspectLocalImmersiveMedia,
+} from '@/features/immersive-media/immersiveMediaMcpRuntime'
+import {
+  readImmersiveMediaSnapshot,
+  resetImmersiveMediaRuntimeForTests,
+} from '@/features/immersive-media/immersiveMediaRuntime'
+
+export function testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete() {
+  resetImmersiveMediaRuntimeForTests()
+  const inspection = inspectLocalImmersiveMedia()
+  assert.equal(inspection.media.source.kind, 'procedural')
+  assert.equal(inspection.media.source.url, '')
+  assert.equal(inspection.runtime.networkRequiredForDefault, false)
+  assert.deepEqual(inspection.runtime.externalDependencies, [])
+  assert.deepEqual(inspection.capabilities.markerProjections, ['compass', 'map', 'plan'])
+  assert.deepEqual(inspection.capabilities.markerKinds, ['pin', 'element', 'video', 'youtube', 'chroma'])
+  assert.equal(inspection.capabilities.youtubeElement, true)
+  assert.equal(inspection.capabilities.croppedPanorama, true)
+  assert.equal(inspection.capabilities.customNavigation, true)
+  assert.equal(inspection.capabilities.customTooltip, true)
+  assert.equal(inspection.capabilities.partialOverlay, true)
+}
+
+export async function testImmersiveMediaNativeInvocationIsStrict() {
+  resetImmersiveMediaRuntimeForTests()
+  const cropResult = await controlLocalImmersiveMedia({
+    invocation: buildImmersiveMediaInvocation('toggle-crop'),
+  })
+  assert.equal(cropResult.ok, true)
+  assert.equal(readImmersiveMediaSnapshot().crop.horizontalSpanDegrees, 290)
+
+  const layerResult = await controlLocalImmersiveMedia({
+    invocation: buildImmersiveMediaInvocation('layer-toggle', { layerId: 'media' }),
+  })
+  assert.equal(layerResult.ok, true)
+  assert.equal(readImmersiveMediaSnapshot().layers.find(layer => layer.id === 'media')?.visible, false)
+
+  const sourceResult = await controlLocalImmersiveMedia({
+    invocation: buildImmersiveMediaInvocation('source', { sourceKind: 'procedural' }),
+  })
+  assert.equal(sourceResult.ok, true)
+  assert.equal(readImmersiveMediaSnapshot().source.kind, 'procedural')
+  const youtubeResult = await controlLocalImmersiveMedia({
+    operation: 'marker-add',
+    markerId: 'marker-youtube-approved',
+    markerKind: 'youtube',
+    mediaUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  })
+  assert.equal(youtubeResult.ok, true)
+  assert.equal(
+    readImmersiveMediaSnapshot().markers.find(marker => marker.id === 'marker-youtube-approved')?.mediaUrl,
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+  )
+
+  const rejectedInvocations = [
+    '/media.immersive #canvas-media operation=open',
+    '/media.immersive @canvas operation=open',
+    '/media.immersive @canvas @canvas #canvas-media operation=open',
+    '/media.immersive @canvas #canvas-media #canvas-media operation=open',
+    '/media.immersive @canvas #canvas-media operation=open operation=close',
+    '/media.immersive @canvas #canvas-media operation=open unknown=value',
+    '/media.immersive @media-url @canvas #canvas-media operation=source sourceKind=image',
+    '/media.immersive @canvas #canvas-media operation=view url=https%3A%2F%2Fexample.invalid%2Fpano.jpg',
+  ]
+  for (const invocation of rejectedInvocations) {
+    const result = await controlLocalImmersiveMedia({ invocation })
+    assert.equal(result.ok, false, invocation)
+  }
+}
+
+export async function testImmersiveMediaAgentReadyContractsExposeTwoTools() {
+  resetImmersiveMediaRuntimeForTests()
+  const contracts = buildImmersiveMediaAgentReadyToolContracts({
+    buildWebName: (name: string) => `knowgrph.${name}`,
+    readOnlyAnnotations: { readOnlyHint: true },
+    mutationAnnotations: { readOnlyHint: false },
+  })
+  assert.deepEqual(
+    contracts.map(contract => contract.name),
+    [
+      IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS.inspectLocalImmersiveMedia,
+      IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia,
+    ],
+  )
+  assert.equal(contracts[0]?.webName, 'knowgrph.inspect_local_immersive_media')
+  assert.equal(contracts[1]?.webName, 'knowgrph.control_local_immersive_media')
+  const builders = buildImmersiveMediaWebMcpToolBuilders(name => {
+    const contract = contracts.find(candidate => candidate.name === name)
+    if (!contract) throw new Error(`missing test contract: ${name}`)
+    return contract
+  })
+  const inspectTool = builders[IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS.inspectLocalImmersiveMedia]?.()
+  const controlTool = builders[IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS.controlLocalImmersiveMedia]?.()
+  assert.equal(inspectTool?.name, 'knowgrph.inspect_local_immersive_media')
+  assert.equal(controlTool?.name, 'knowgrph.control_local_immersive_media')
+  const inspection = await inspectTool?.execute()
+  assert.equal((inspection as ReturnType<typeof inspectLocalImmersiveMedia>).schema, 'knowgrph-immersive-media-mcp/v1')
+}
+
+export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {
+  resetImmersiveMediaRuntimeForTests()
+  const panelSource = readFileSync(resolve(process.cwd(), 'src/lib/toolbar/FloatingPanelXrSceneViews.tsx'), 'utf8')
+  const graphSource = readFileSync(resolve(process.cwd(), 'src/lib/three/ThreeGraph.impl.tsx'), 'utf8')
+  const controlsSource = readFileSync(resolve(process.cwd(), 'src/features/three/Controls.tsx'), 'utf8')
+  const stageSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaStage.tsx'), 'utf8')
+  for (const surface of ['media', 'animation', 'motionControl', 'gameMode', 'flightSim', 'camera']) {
+    assert.match(panelSource, new RegExp(`view === '${surface}'`))
+  }
+  assert.match(panelSource, /ImmersiveMediaPanelProjectionLazy/)
+  assert.match(graphSource, /<ThreeGraphImmersiveMediaStage \/>/)
+  assert.match(graphSource, /immersiveMediaActive=\{immersiveMediaStageActive\}/)
+  assert.match(controlsSource, /useImmersiveMediaCameraControls/)
+  assert.doesNotMatch(stageSource, /<Canvas[\s>]/)
+}

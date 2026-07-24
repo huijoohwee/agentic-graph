@@ -43,6 +43,7 @@ import { buildXrAnimationWebMcpToolBuilders } from './xrAnimationWebMcpTools'
 import { buildMotionControlWebMcpToolBuilders } from './motionControlWebMcpTools'
 import { buildGameModeWebMcpToolBuilders } from './gameModeWebMcpTools'
 import { buildFlightSimWebMcpToolBuilders } from './flightSimWebMcpTools'
+import { buildImmersiveMediaWebMcpToolBuilders } from './immersiveMediaWebMcpTools'
 import { buildCitySimWebMcpToolBuilders } from './citySimWebMcpTools'
 import { buildStorageSyncWebMcpToolBuilders } from './storageSyncWebMcpTools'
 import type { AgentReadyToolContract, ModelContextLike, ModelContextRegistrationState, WebMcpNavigator, WebMcpRuntimeState, WebMcpTool, WebMcpToolInput } from './webMcpRuntimeTypes'
@@ -65,6 +66,7 @@ const XR_ANIMATION_WEB_MCP_TOOL_BUILDERS = buildXrAnimationWebMcpToolBuilders(fi
 const MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS = buildMotionControlWebMcpToolBuilders(findWebToolContract)
 const GAME_MODE_WEB_MCP_TOOL_BUILDERS = buildGameModeWebMcpToolBuilders(findWebToolContract)
 const FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS = buildFlightSimWebMcpToolBuilders(findWebToolContract)
+const IMMERSIVE_MEDIA_WEB_MCP_TOOL_BUILDERS = buildImmersiveMediaWebMcpToolBuilders(findWebToolContract)
 const CITY_SIM_WEB_MCP_TOOL_BUILDERS = buildCitySimWebMcpToolBuilders(findWebToolContract)
 const STORAGE_SYNC_WEB_MCP_TOOL_BUILDERS = buildStorageSyncWebMcpToolBuilders(findWebToolContract)
 const SEARCH_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.search)
@@ -522,6 +524,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS,
   ...GAME_MODE_WEB_MCP_TOOL_BUILDERS,
   ...FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS,
+  ...IMMERSIVE_MEDIA_WEB_MCP_TOOL_BUILDERS,
   ...CITY_SIM_WEB_MCP_TOOL_BUILDERS,
   ...STORAGE_SYNC_WEB_MCP_TOOL_BUILDERS,
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,

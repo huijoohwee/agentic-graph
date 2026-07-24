@@ -3,8 +3,8 @@ title: "Knowgrph XR Invocation Runtime API"
 id: "md:knowgrph-xr-invocation-runtime-api"
 doc_type: "API Contract And Runtime Evidence"
 date: "2026-07-22"
-updated: "2026-07-22"
-version: "1.0.0"
+updated: "2026-07-24"
+version: "1.1.0"
 status: "runtime-ready"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -14,6 +14,7 @@ source_revision: "df312d72d3e163bbcc3e9f19ca299223f9a54431"
 protected_pull_request: "https://github.com/huijoohwee/knowgrph/pull/307"
 protected_integration_run: "https://github.com/huijoohwee/knowgrph/actions/runs/29895795869"
 deployment: "not authorized"
+candidate_pull_request: "https://github.com/huijoohwee/knowgrph/pull/406"
 ---
 
 # Knowgrph XR Invocation Runtime API
@@ -27,6 +28,31 @@ Repo-local run-ready surfaces hydrate through the same-origin `/knowgrph/control
 FloatingPanel **Media** owns complete dynamic XR invocations. Every visible invocation chip sends the identical displayed string, as the sole `invocation` input field, to `knowgrph.control_local_xr_scene`.
 
 XR scene, Animation, and Camera MCP controls share Source Files document authority. While bootstrap or a document intent is resolving or failed, MCP inspection reports the scene as not ready, Media and Animation controls stay disabled, and Camera choreography rejects mutation without changing runtime state or graph metadata.
+
+## Immersive media candidate extension
+
+FloatingPanel **Media**, **Animation**, **Motion Control**, **Game Mode**, **Flight Sim**, and **Camera** project one browser-local immersive media controller above their existing panel content. The projection never creates a second Canvas, renderer, Camera, scene store, persistence owner, or network route.
+
+The default source is a procedural panorama generated in-browser with zero configuration, zero model calls, and zero network requests. An operator may opt into an approved image, direct video, or privacy-enhanced YouTube marker URL. Remote media is never required for the default runtime.
+
+The strict native invocation is:
+
+```text
+/media.immersive @canvas #canvas-media operation=<operation>
+```
+
+`@media-url` is admitted only for a `source` operation carrying an encoded URL. Duplicate commands, bindings, semantics, parameters, unknown parameters, and cross-operation parameters fail closed.
+
+| Capability | Browser-local owner |
+|---|---|
+| Full or cropped panorama, description, custom navbar, lens strength, intro, and transition | `immersiveMediaRuntime.ts` and the existing R3F Canvas |
+| Pointer look, keyboard actions, wheel and double-click zoom | `useImmersiveMediaCameraControls.ts` under shared `Controls.tsx` ownership |
+| Pin, custom element, direct video, YouTube, and chroma markers | `ImmersiveMediaStage.tsx`; remote media remains opt-in |
+| Compass, map, and plan projections; hover scaling; tooltips; layers; polygon pattern | One immutable browser-local snapshot projected into the six existing panels |
+| Partial overlay and screenshot | `ImmersiveMediaHud.tsx` and the existing `captureCanvasPngSnapshot("3d")` owner |
+| MCP inspection and mutation | `knowgrph.inspect_local_immersive_media` and `knowgrph.control_local_immersive_media` |
+
+The implementation is a protected-review candidate in PR `#406`. TypeScript and focused source/runtime tests are evidence for the candidate; canonical browser proof, protected integration, and any production release remain separate gates.
 
 ## Integrated readiness contract
 

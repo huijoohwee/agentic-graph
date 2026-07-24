@@ -50,6 +50,7 @@ import {
   resolveSceneBackgroundColor,
 } from '@/lib/three/threeGraphSceneLayout'
 import { resolveThreeRendererLifecycleKey, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
+import { resolveThreeGraphXrSceneAuthority, ThreeGraphImmersiveMediaHud, ThreeGraphImmersiveMediaStage, useThreeGraphImmersiveMediaStageActive } from '@/lib/three/ThreeGraphImmersiveMedia'
 const SceneLazy = React.lazy(() =>
   import('@/lib/three/Scene.impl').then(mod => ({
     default: mod.Scene,
@@ -88,6 +89,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
   const flightStageActive = mode === 'xr' && flightSimActive
   const gameFpsStageActive = mode === 'xr' && gameFpsActive
   const gameplayOverlayActive = citySimStageActive || flightStageActive || gameFpsStageActive
+  const immersiveMediaStageActive = useThreeGraphImmersiveMediaStageActive(mode, gameplayOverlayActive)
   const markdownDocumentSourceUrl = useGraphStore(s => s.markdownDocumentSourceUrl)
   const markdownDocumentApplyViewPreset = useGraphStore(s => s.markdownDocumentApplyViewPreset)
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
@@ -200,22 +202,12 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
   const hasGraph = !!sceneGraphForRender
   const hasGlbAsset = !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !!spatialCaptureManifest
-  const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !nativeXrRunReadyDemo
-  const hasRenderableScene = gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld
+  const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !nativeXrRunReadyDemo && !immersiveMediaStageActive
+  const hasRenderableScene = immersiveMediaStageActive || gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld
   const xrGraphStageAuthority = mode === 'xr' && hasGraph
     ? nativeXrRunReadyDemo ? 'native-controller' : 'motion-reference'
     : undefined
-  const xrSceneAuthority = mode !== 'xr'
-    ? undefined
-    : xrGraphStageAuthority
-      ? xrGraphStageAuthority
-      : hasGlbAsset
-        ? 'glb-asset'
-        : hasSpatialCaptureManifest
-          ? 'spatial-capture'
-          : hasXrEmptyWorld
-            ? 'empty-world'
-            : undefined
+  const xrSceneAuthority = resolveThreeGraphXrSceneAuthority({ mode, immersiveMediaActive: immersiveMediaStageActive, xrGraphStageAuthority, hasGlbAsset, hasSpatialCaptureManifest, hasXrEmptyWorld })
   const xrStandaloneFit = hasSpatialCaptureManifest
     ? spatialCaptureFit
     : hasGlbAsset
@@ -252,7 +244,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
   }, [effectiveSchema, mode, theme])
   const rendererClearColor = hasXrEmptyWorld ? '#0b2f4a'
     : hasGraph ? sceneBackgroundColor : '#000000'
-  const rendererDefaultClearAlpha = hasXrEmptyWorld || hasGraph ? 1 : 0
+  const rendererDefaultClearAlpha = immersiveMediaStageActive || hasXrEmptyWorld || hasGraph ? 1 : 0
   const rendererLifecycleKey = resolveThreeRendererLifecycleKey(mode)
   const rendererMounted = shouldMountThreeRenderer({
     mode,
@@ -430,7 +422,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
       className="absolute inset-0 w-full h-full z-0"
       data-kg-xr-document-loaded={mode === 'xr' ? (xrDocumentLoaded ? '1' : '0') : undefined}
       data-kg-xr-scene-authority={xrSceneAuthority}
-      data-kg-xr-exclusive-stage={mode === 'xr' && (hasGraph || hasXrEmptyWorld) ? '1' : undefined}
+      data-kg-xr-exclusive-stage={mode === 'xr' && (immersiveMediaStageActive || hasGraph || hasXrEmptyWorld) ? '1' : undefined}
       data-kg-xr-empty-world={hasXrEmptyWorld ? '1' : undefined}
       data-kg-xr-scene-media-drop={mode === 'xr' ? '1' : undefined}
       data-kg-game-fps-stage={gameFpsStageActive ? 'active' : undefined}
@@ -441,7 +433,8 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
       data-kg-flight-sim-surface={flightSim.active ? flightSim.surfaceMode : undefined}
       data-kg-city-sim-surface={citySim.active ? 'xr' : undefined}
       data-kg-authored-xr-scene-retained={gameplayOverlayActive ? '1' : undefined}
-      data-kg-three-viewport-gestures={gameFpsStageActive ? 'first-person' : citySimStageActive ? 'city-parcel-select' : 'orbit-pan-cursor-zoom'}
+      data-kg-immersive-media-stage={immersiveMediaStageActive ? 'active' : undefined}
+      data-kg-three-viewport-gestures={gameFpsStageActive ? 'first-person' : citySimStageActive ? 'city-parcel-select' : immersiveMediaStageActive ? 'immersive-look-zoom' : 'orbit-pan-cursor-zoom'}
       onDragOver={xrSceneMediaDrop.onDragOver}
       onDrop={xrSceneMediaDrop.onDrop}
       onContextMenu={event => {
@@ -499,6 +492,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
           xrSurface={mode === 'xr'}
         />
         <React.Suspense fallback={null}>
+          {immersiveMediaStageActive ? <ThreeGraphImmersiveMediaStage /> : null}
           <XrWorldPlacement
             active={mode === 'xr'}
             contentScale={xrWorldContentScale}
@@ -557,6 +551,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
             paused={paused}
             mode={mode}
             flightSimActive={flightStageActive}
+            immersiveMediaActive={immersiveMediaStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
             modelAssetRenderKey={spatialCaptureRenderKey || glbAssetRenderKey}
             modelAssetFit={spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit}
@@ -572,8 +567,9 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
           <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} />
         </React.Suspense>
       </Canvas>
-      {mode === 'xr' && xrDocumentLoaded && !gameplayOverlayActive ? <XrCameraAspectMask /> : null}
+      {mode === 'xr' && xrDocumentLoaded && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
       {hasXrEmptyWorld && !gameplayOverlayActive ? <XrEmptyWorldHud /> : null}
+      {immersiveMediaStageActive ? <ThreeGraphImmersiveMediaHud /> : null}
       <CanvasXrEntryPanel
         key={`${rendererLifecycleKey}-session-panel`}
         active={active && mode === 'xr' && !gameplayOverlayActive}
