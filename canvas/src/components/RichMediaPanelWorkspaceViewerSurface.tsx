@@ -10,6 +10,10 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { requestPropsPanelOpen } from '@/features/toolbar/floatingPanelBridge'
 import { beginTextSelectionWidgetLinkSession } from '@/lib/storyboardWidget/textSelectionWidgetLink'
 import { TextSelectionWidgetLinkContext } from '@/lib/storyboardWidget/textSelectionWidgetLinkContext'
+import {
+  subscribeStoryboardCardProvenanceFocus,
+  type StoryboardCardProvenanceFocus,
+} from '@/lib/storyboardWidget/storyboardCardProvenanceFocus'
 import type { RichMediaPanelProps } from './RichMediaPanel.types'
 import type { RichMediaPanelModel } from './useRichMediaPanelModel'
 
@@ -31,6 +35,7 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
 }) {
   const { model, props } = args
   const [viewerDraftText, setViewerDraftText] = React.useState<string | null>(null)
+  const [provenanceFocus, setProvenanceFocus] = React.useState<StoryboardCardProvenanceFocus | null>(null)
   const pendingCommittedTextRef = React.useRef<string | null>(null)
   const viewerText = viewerDraftText ?? model.panelDisplayText
   const selectionWidgetLink = React.useMemo(() => {
@@ -67,6 +72,30 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
     pendingCommittedTextRef.current = null
     setViewerDraftText(null)
   }, [model.panelDisplayText])
+
+  React.useEffect(() => {
+    const sourceNodeId = String(props.overlayId || '').trim()
+    if (!sourceNodeId) return
+    return subscribeStoryboardCardProvenanceFocus(focus => {
+      if (String(focus.sourceNodeId || '').trim() !== sourceNodeId) return
+      setProvenanceFocus(focus)
+    })
+  }, [props.overlayId])
+
+  React.useEffect(() => {
+    if (!provenanceFocus) return
+    const timer = window.setTimeout(() => setProvenanceFocus(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [provenanceFocus])
+
+  const viewerDataAttributes = React.useMemo(() => ({
+    ...RICH_MEDIA_WORKSPACE_VIEWER_DATA_ATTRIBUTES,
+    'data-kg-provenance-focus-edge-id': provenanceFocus?.edgeId || undefined,
+    'data-kg-provenance-focus-source-node-id': provenanceFocus?.sourceNodeId || undefined,
+    'data-kg-provenance-focus-document-path': provenanceFocus?.documentPath || undefined,
+    'data-kg-provenance-focus-start-line': provenanceFocus ? String(provenanceFocus.startLine) : undefined,
+    'data-kg-provenance-focus-end-line': provenanceFocus ? String(provenanceFocus.endLine) : undefined,
+  }), [provenanceFocus])
 
   const commitText = React.useCallback((nextText: string) => {
     if (!model.panelTextEditable) return
@@ -118,14 +147,16 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
         <MarkdownWorkspaceViewerSurface
           markdownText={viewerText}
           activeDocumentPath={model.panelMarkdownDocumentPath}
-          highlightedLineRange={null}
+          highlightedLineRange={provenanceFocus
+            ? { start: provenanceFocus.startLine, end: provenanceFocus.endLine }
+            : null}
           markdownWordWrap
-          markdownTextHighlight={false}
+          markdownTextHighlight={Boolean(provenanceFocus)}
           uiPanelTextFontClass="font-sans"
           uiPanelMonospaceTextClass="font-mono text-xs"
           markdownTokenStoreSync={false}
           markdownViewerWidthMode="wide"
-          dataAttributes={RICH_MEDIA_WORKSPACE_VIEWER_DATA_ATTRIBUTES}
+          dataAttributes={viewerDataAttributes}
           onInlineEditStateChange={model.panelTextEditable ? active => {
             if (!active && pendingCommittedTextRef.current === null) setViewerDraftText(null)
           } : undefined}

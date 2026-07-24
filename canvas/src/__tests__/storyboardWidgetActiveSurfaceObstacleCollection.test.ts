@@ -324,4 +324,11 @@ export function testStoryboardWidgetPinnedCardTreatsDistinctRichMediaAsCollision
   )) {
     throw new Error('expected a Rich Media proxy not to collide with its own canonical overlay')
   }
+  if (distinctStoryboardOverlayRectsOverlap(
+    card,
+    { ...card, id: 'storyboard-card:card-a' },
+    12,
+  )) {
+    throw new Error('expected a Storyboard card not to collide with its own authored-placement obstacle')
+  }
 }
