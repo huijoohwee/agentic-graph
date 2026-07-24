@@ -24,6 +24,28 @@ function readCanonicalOverlayIdentity(rawId: unknown): string {
 export function buildOverlayTopologyLayoutSignature(graphData: GraphData | null | undefined): string {
   const nodes = Array.isArray(graphData?.nodes) ? (graphData!.nodes as GraphNode[]) : []
   const edges = Array.isArray(graphData?.edges) ? (graphData!.edges as GraphEdge[]) : []
+  const nodeLayoutSignature = buildOverlayNodeLayoutSignature({ ...graphData, nodes } as GraphData)
+  const edgeParts = edges
+    .map(edge => {
+      const { src, tgt } = readGraphEdgeEndpoints(edge)
+      const sourcePortKey = readFlowEdgePortKey(edge, 'source') || ''
+      const targetPortKey = readFlowEdgePortKey(edge, 'target') || ''
+      return [
+        readCanonicalOverlayIdentity(edge.id),
+        readCanonicalOverlayIdentity(src),
+        readCanonicalOverlayIdentity(tgt),
+        String(edge.label || '').trim(),
+        sourcePortKey,
+        targetPortKey,
+      ].join(':')
+    })
+    .filter(part => part.replace(/:/g, '').trim())
+    .sort()
+  return hashSignatureParts(['overlay-topology-layout', nodeLayoutSignature, edgeParts.length, ...edgeParts])
+}
+
+export function buildOverlayNodeLayoutSignature(graphData: GraphData | null | undefined): string {
+  const nodes = Array.isArray(graphData?.nodes) ? (graphData!.nodes as GraphNode[]) : []
   const nodeParts = nodes
     .map(node => {
       const id = readCanonicalOverlayIdentity(node?.id)
@@ -42,21 +64,5 @@ export function buildOverlayTopologyLayoutSignature(graphData: GraphData | null 
     })
     .filter(Boolean)
     .sort()
-  const edgeParts = edges
-    .map(edge => {
-      const { src, tgt } = readGraphEdgeEndpoints(edge)
-      const sourcePortKey = readFlowEdgePortKey(edge, 'source') || ''
-      const targetPortKey = readFlowEdgePortKey(edge, 'target') || ''
-      return [
-        readCanonicalOverlayIdentity(edge.id),
-        readCanonicalOverlayIdentity(src),
-        readCanonicalOverlayIdentity(tgt),
-        String(edge.label || '').trim(),
-        sourcePortKey,
-        targetPortKey,
-      ].join(':')
-    })
-    .filter(part => part.replace(/:/g, '').trim())
-    .sort()
-  return hashSignatureParts(['overlay-topology-layout', nodeParts.length, ...nodeParts, edgeParts.length, ...edgeParts])
+  return hashSignatureParts(['overlay-node-layout', nodeParts.length, ...nodeParts])
 }

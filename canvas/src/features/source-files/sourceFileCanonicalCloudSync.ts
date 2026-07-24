@@ -1,4 +1,5 @@
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
+import { readEnvString } from '@/lib/config.env'
 import { normalizeWorkspacePath, workspaceExtLower } from '@/features/workspace-fs/path'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import {
@@ -24,12 +25,30 @@ import {
   type DocumentRepositoryTarget,
 } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
+import {
+  readKnowgrphStorageChatRelayConfig,
+} from '@/lib/storage/knowgrphStorageChatClient'
 
 type FetchLike = NonNullable<KnowgrphStorageSyncNowArgs['fetchImpl']>
 
 const SUPPORTED_MARKDOWN_EXTENSIONS = new Set(['md', 'markdown', 'mdx'])
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
+
+const resolveCollaborationSaveSessionToken = (
+  explicitToken?: string | null,
+): string => {
+  const token = explicitToken == null
+    ? String(
+        readKnowgrphStorageChatRelayConfig()?.sessionToken
+        || readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', ''),
+      )
+    : String(explicitToken)
+  if (!token || token.length > 8_192 || /\s/.test(token)) {
+    throw new Error('Authenticated storage session is required for collaboration save.')
+  }
+  return token
+}
 
 export type SourceFileCanonicalCloudTarget = {
   workspacePath: WorkspacePath
@@ -132,6 +151,7 @@ const saveCanonicalSnapshotToGitHub = async (args: {
   workspaceId: string
   text: string
   baseUrl: string
+  sessionToken: string
   fetchImpl: FetchLike
 }): Promise<KnowgrphCollaborationSaveResponse> => {
   const request: KnowgrphCollaborationSaveRequest = {
@@ -153,6 +173,7 @@ const saveCanonicalSnapshotToGitHub = async (args: {
       method: 'POST',
       headers: {
         accept: 'application/json',
+        authorization: `Bearer ${args.sessionToken}`,
         'content-type': 'application/json; charset=utf-8',
       },
       body: JSON.stringify(request),
@@ -192,6 +213,7 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
   workspaceId?: string | null
   baseUrl?: string | null
   deviceId?: string | null
+  sessionToken?: string | null
   fetchImpl?: FetchLike
 }): Promise<SourceFileCanonicalCloudSyncResult> => {
   if (args.entry.kind !== 'file') throw new Error('Only files can be uploaded to cloud storage.')
@@ -202,12 +224,20 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
   const baseUrl = resolveMutatingKnowgrphStorageBaseUrl(
     normalizeString(args.baseUrl) || readKnowgrphStorageBaseUrl(),
   )
+  const sessionToken = resolveCollaborationSaveSessionToken(args.sessionToken)
   const fetchImpl = getFetch(args.fetchImpl)
   const fs = await getWorkspaceFs()
   const text = String((await fs.readFileText(target.workspacePath)) ?? args.entry.text ?? '')
 
   const github = await retryCloudUploadStage(
-    () => saveCanonicalSnapshotToGitHub({ target, workspaceId, text, baseUrl, fetchImpl }),
+    () => saveCanonicalSnapshotToGitHub({
+      target,
+      workspaceId,
+      text,
+      baseUrl,
+      sessionToken,
+      fetchImpl,
+    }),
   )
   const entry = { ...args.entry, path: target.workspacePath, text }
   const storageResult = await publishWorkspaceEntriesToKnowgrphStorage({

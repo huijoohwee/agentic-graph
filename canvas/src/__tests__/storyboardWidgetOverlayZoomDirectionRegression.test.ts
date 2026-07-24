@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { computeCollectiveCameraFollowScaleFromBaseline, computeCollectiveFollowPinnedScale, computeCollectiveFollowZoomK, computeWidgetScaledSize, projectCollectiveScreenLayoutForZoom, WIDGET_BASE_SIZE } from '@/lib/canvas/overlayWidgetZoom'
+import { computeCollectiveCameraFollowScaleFromBaseline, computeCollectiveFollowPinnedScale, computeCollectiveFollowZoomK, computeWidgetScaledSize, projectCollectiveScreenLayoutForZoom, resolveCollectiveCameraFollowBaselineRef, WIDGET_BASE_SIZE } from '@/lib/canvas/overlayWidgetZoom'
 import { computeMediaOverlaySizing } from '@/lib/render/mediaOverlaySizing'
 import { coerceRichMediaPanelSizePx } from '@/lib/render/richMediaSsot'
 import { computeTransformScaleAboutViewportFrameCenter, screenToWorld } from '@/lib/zoom/viewport'
@@ -181,6 +181,11 @@ export function testStoryboardWidgetRichMediaCollectiveSizingDoesNotReverseZoomD
 }
 
 export function testStoryboardNewCardScaleUsesSharedRichMediaZoomBaseline() {
+  const persistentBaselineRef = resolveCollectiveCameraFollowBaselineRef('storyboard:test-baseline')
+  persistentBaselineRef.current = 0.42
+  if (resolveCollectiveCameraFollowBaselineRef('storyboard:test-baseline') !== persistentBaselineRef) {
+    throw new Error('expected the shared Card/Rich Media zoom baseline to survive a Storyboard surface remount')
+  }
   const sharedArgs = {
     zoomK: 0.55,
     baselineZoomK: 0.42,
@@ -220,9 +225,9 @@ export function testStoryboardNewCardScaleUsesSharedRichMediaZoomBaseline() {
     'storyboardCollectiveZoomBaselineKRef',
   ], 'expected Rich Media overlays to reuse the same baseline-relative overlay zoom owner')
   assertTextIncludes(surfaceText, [
-    'const storyboardCollectiveZoomBaselineKRef = React.useRef<number | null>(null)',
+    'resolveCollectiveCameraFollowBaselineRef(',
     'storyboardCollectiveZoomBaselineKRef={storyboardCollectiveZoomBaselineKRef}',
-  ], 'expected the shared Storyboard surface to own one Card/Rich Media zoom baseline')
+  ], 'expected the shared Storyboard surface to reuse one persistent Card/Rich Media zoom baseline across graph publication remounts')
 }
 
 export function testStoryboardWidgetCollectiveScaleUsesRequestedLayoutAspect() {
@@ -520,7 +525,7 @@ export function testStoryboardWidgetOverlayZoomUsesProportionalScreenProjection(
   if (!runtimeSceneText.includes("if (bucketId === viewportBucketId) return `${bucketId}:visible-viewport`")) {
     throw new Error('expected storyboard widget runtime scene to keep viewport auto-seed signatures stable across zoom changes')
   }
-  if (!runtimeSceneText.includes('const currentLayoutSignature = `${args.overlayTopologyLayoutSignature}|${visibleViewport.left},${visibleViewport.top},${visibleViewport.width}x${visibleViewport.height}|${bucketSignature}`')) {
+  if (!runtimeSceneText.includes('const currentLayoutSignature = `${args.overlayNodeLayoutSignature}|${visibleViewport.left},${visibleViewport.top},${visibleViewport.width}x${visibleViewport.height}|${bucketSignature}`')) {
     throw new Error('expected storyboard widget runtime scene layout signature to exclude zoom-key churn for overlay auto-seeding')
   }
   if (!mediaLoopText.includes('const previousTransform = lastTransform') || !mediaLoopText.includes('const scaleChanged = !!previousTransform && Math.abs(previousTransform.k - rawK) > 1e-6')) {

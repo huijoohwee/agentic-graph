@@ -9,6 +9,7 @@ import { XR_ANIMATION_WEB_MCP_TOOL_IDS } from '../three/xrAnimationMcpContract.m
 import { buildMotionControlAgentReadyToolContracts, MOTION_CONTROL_AGENT_READY_TOOL_IDS } from './motionControlAgentReadyContract.mjs'
 import { buildGameModeAgentReadyToolContracts, GAME_MODE_AGENT_READY_TOOL_IDS } from './gameModeAgentReadyContract.mjs'
 import { buildFlightSimAgentReadyToolContracts, FLIGHT_SIM_AGENT_READY_TOOL_IDS } from './flightSimAgentReadyContract.mjs'
+import { buildStorageSyncAgentReadyToolContracts, STORAGE_SYNC_AGENT_READY_TOOL_IDS } from './storageSyncAgentReadyContract.mjs'
 import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './knowgrphAgentReadyOutputSchemas.mjs'
 
 export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
@@ -34,6 +35,7 @@ export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
   ...MOTION_CONTROL_AGENT_READY_TOOL_IDS,
   ...GAME_MODE_AGENT_READY_TOOL_IDS,
   ...FLIGHT_SIM_AGENT_READY_TOOL_IDS,
+  ...STORAGE_SYNC_AGENT_READY_TOOL_IDS,
   inspectLocal3dLayoutPositions: 'inspect_local_3d_layout_positions',
   inspectLocalXrSceneAssets: XR_SCENE_WEB_MCP_TOOL_IDS.inspect,
   controlLocalXrScene: XR_SCENE_WEB_MCP_TOOL_IDS.control,
@@ -528,7 +530,7 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
           inputSchema: XR_ANIMATION_CONTROL_INPUT_SCHEMA,
           outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
           annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
-        }, ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), {
+        }, ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildStorageSyncAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), {
           name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions,
           webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions),
           title: 'Inspect Local 3D Layout Positions',

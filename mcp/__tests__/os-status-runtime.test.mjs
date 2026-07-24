@@ -77,6 +77,8 @@ test("Feature: knowgrph-agentic-os, capability registry unions local MCP and vde
   assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agentTeamPlan).owningHarness, "agent_team");
   assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyValidate).owningHarness, "agent_sandbox_policy");
   assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyAuthorize).owningHarness, "agent_sandbox_policy");
+  assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.gitRun).owningHarness, "storage_sync");
+  assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.fileSyncRun).owningHarness, "storage_sync");
   assert.ok(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList).sourceCatalogs.includes("local_mcp"));
   assert.ok(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList).sourceCatalogs.includes("vdeoxpln"));
 });
