@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fc from 'fast-check'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import {
+  createFakeKnowgrphStorageWorkerEnv,
+  type FakeKnowgrphStorageD1Database,
+} from '@/__tests__/helpers/fakeKnowgrphStorageD1'
 import { shouldAutoClearKnowgrphStorageConflict } from '@/lib/storage/knowgrphStorageClientSync'
 import {
   hashKnowgrphStorageContent,
@@ -22,9 +25,49 @@ import {
 } from '../../../cloudflare/workers/knowgrph-storage/mutationProcessor'
 
 const PROPERTY_RUNS = 100
+const COLLABORATION_SESSION_TOKEN = 'property-22-session'
 const sourceText = (path: string): string => readFileSync(resolve(process.cwd(), path), 'utf8')
 const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
   if (!condition) throw new Error(message)
+}
+
+const seedCollaborationWriter = async (
+  db: FakeKnowgrphStorageD1Database,
+  workspaceId: string,
+): Promise<void> => {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(COLLABORATION_SESSION_TOKEN),
+  )
+  const sessionHash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
+  const nowIso = '2026-07-24T00:00:00.000Z'
+  db.users.set('user:property-22', {
+    id: 'user:property-22',
+    email: 'property-22@example.test',
+    display_name: 'Property Writer',
+    status: 'active',
+    created_at: nowIso,
+    updated_at: nowIso,
+  })
+  db.authSessions.set('session:property-22', {
+    id: 'session:property-22',
+    user_id: 'user:property-22',
+    session_hash: sessionHash,
+    expires_at: '2036-01-01T00:00:00.000Z',
+    revoked_at: null,
+    created_at: nowIso,
+    updated_at: nowIso,
+  })
+  db.workspaceMemberships.set('membership:property-22', {
+    id: 'membership:property-22',
+    workspace_id: workspaceId,
+    user_id: 'user:property-22',
+    role: 'editor',
+    status: 'active',
+    invited_by_user_id: null,
+    created_at: nowIso,
+    updated_at: nowIso,
+  })
 }
 
 const identifierArbitrary = fc.array(
@@ -274,15 +317,21 @@ export function testStorageEnhancementProperty21AcceptRemoteConvergesAtomically(
 
 // Feature: knowgrph-storage-sync-enhancement, Property 22: Concurrent JSON requires CRDT state
 export async function testStorageEnhancementProperty22ConcurrentJsonRequiresCrdtState() {
+  const workspaceId = 'workspace-property-22'
+  const env = createFakeKnowgrphStorageWorkerEnv()
+  await seedCollaborationWriter(env.DB, workspaceId)
   await fc.assert(fc.asyncProperty(
     fc.integer({ min: 2, max: 30 }),
     async activePeerCount => {
-      const response = await handleCollaborationSave(new Request('https://example.test/api/storage/collab/save', {
+      const response = await handleCollaborationSave(new Request('http://localhost/api/storage/collab/save', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          authorization: `Bearer ${COLLABORATION_SESSION_TOKEN}`,
+          'content-type': 'application/json',
+        },
         body: JSON.stringify({
           apiVersion: '2026-05-04',
-          workspaceId: 'workspace-property-22',
+          workspaceId,
           documentKey: 'docs/collaborative.json',
           documentKind: 'json',
           repositoryTarget: DOCUMENT_REPOSITORY_TARGETS.workspaceDocs,
@@ -293,7 +342,10 @@ export async function testStorageEnhancementProperty22ConcurrentJsonRequiresCrdt
           savedByPeerId: null,
           saveBoundary: 'explicit',
         }),
-      }), {} as never)
+      }), {
+        ...env,
+        KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
+      }, env.DB)
       const body = await response.json() as { code?: string; error?: string }
       return !canEditRawJsonForCollaboration({ documentKind: 'json', activePeerCount })
         && response.status === 409

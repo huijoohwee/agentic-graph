@@ -12,6 +12,8 @@ export {
   buildKnowgrphStorageDefaultDocPath,
   buildKnowgrphStorageDocPath,
   buildKnowgrphStorageExportPath,
+  buildKnowgrphStorageFileSyncRelayPath,
+  buildKnowgrphStorageGitRelayPath,
   buildKnowgrphStorageLlmsPath,
   buildKnowgrphStorageMediaAssetListPath,
   buildKnowgrphStorageMediaAssetPersistPath,
@@ -475,6 +477,7 @@ export type KnowgrphCollaborationSaveRequest = {
   documentKey: string
   documentKind: KnowgrphCollaborationDocumentKind
   repositoryTarget: KnowgrphDocumentRepositoryTarget
+  gitRemoteId?: string
   serializedText: string
   yjsStateBase64: string
   activePeerCount: number
@@ -537,6 +540,17 @@ export type KnowgrphStorageDurableObjectNamespaceLike = {
 export type KnowgrphStorageWorkerEnv = {
   DB: unknown
   KNOWGRPH_STORAGE_SIGNING_SECRET?: string
+  KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string
+  KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID?: string
+  KNOWGRPH_STORAGE_GIT_KNOWGRPH_REMOTE_ID?: string
+  KNOWGRPH_STORAGE_GIT_WORKSPACE_REMOTE_ID?: string
+  KNOWGRPH_STORAGE_GIT_ALLOWED_PATH_PREFIXES?: string
+  KNOWGRPH_STORAGE_GOOGLE_DRIVE_ACCESS_TOKEN?: string
+  KNOWGRPH_STORAGE_GOOGLE_DRIVE_ID?: string
+  KNOWGRPH_STORAGE_GOOGLE_DRIVE_ROOT_ID?: string
+  KNOWGRPH_STORAGE_ONEDRIVE_ACCESS_TOKEN?: string
+  KNOWGRPH_STORAGE_ONEDRIVE_DRIVE_ID?: string
+  KNOWGRPH_STORAGE_ONEDRIVE_ROOT_ID?: string
   KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL?: string
   KNOWGRPH_STORAGE_BLOB_BUCKET?: KnowgrphStorageR2BucketLike
   KNOWGRPH_MEDIA_ACCESS_KV?: KnowgrphStorageKvNamespaceLike

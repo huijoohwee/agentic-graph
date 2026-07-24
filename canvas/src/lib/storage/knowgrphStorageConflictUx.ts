@@ -9,6 +9,7 @@ import {
 const CONFLICT_TOAST_ID_PREFIX = 'knowgrph-storage-conflict'
 const loggedConflictIdsByWorkspace = new Map<string, Set<string>>()
 const loggedTransportErrorByWorkspace = new Map<string, string>()
+const loggedEngineIssueIds = new Set<string>()
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
 
@@ -140,7 +141,44 @@ export const notifyKnowgrphStorageConflictUx = (result: KnowgrphStorageSyncRunRe
   }
 }
 
+export const notifyKnowgrphStorageEngineIssue = (issue: {
+  workspaceId: string
+  operationId: string
+  engine: 'git' | 'file-sync'
+  message: string
+}): void => {
+  const workspaceId = normalizeString(issue.workspaceId)
+  const operationId = normalizeString(issue.operationId)
+  const message = normalizeString(issue.message)
+  if (!workspaceId || !operationId || !message) return
+  const store = useGraphStore.getState()
+  const action = {
+    id: buildKnowgrphStorageConflictReviewLogActionId(workspaceId),
+    label: 'Review Log',
+    tone: 'neutral' as const,
+  }
+  store.upsertUiToast({
+    id: `${buildConflictToastId(workspaceId)}:engine`,
+    kind: 'warning',
+    message,
+    ttlMs: null,
+    dismissible: true,
+    log: false,
+    actions: [action],
+  })
+  const issueId = `${workspaceId}\u0000${operationId}`
+  if (loggedEngineIssueIds.has(issueId)) return
+  loggedEngineIssueIds.add(issueId)
+  store.pushUiLog({
+    kind: 'warning',
+    source: `storage:${issue.engine}`,
+    message,
+    actions: [action],
+  })
+}
+
 export const __resetKnowgrphStorageConflictUxForTests = (): void => {
   loggedConflictIdsByWorkspace.clear()
   loggedTransportErrorByWorkspace.clear()
+  loggedEngineIssueIds.clear()
 }

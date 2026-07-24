@@ -20,6 +20,7 @@ import { buildKnowgrphLocalMcpToolDefinitions } from '../mcp/local-tool-contract
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const documentPaths = Object.freeze([
   'docs/documents/knowgrph-storage-sync-document.md',
+  'docs/documents/knowgrph-storage-git-file-sync-runtime-api.md',
   'docs/documents/knowgrph-storage-sync-document.companion.md',
   'docs/documents/knowgrph-storage-sync-adrs-document.md',
   'docs/documents/knowgrph-storage-schemas-extensions-document.md',
@@ -32,12 +33,25 @@ const requiredRuntimeOwnerPaths = Object.freeze([
   'canvas/src/features/graph-data-table/graphDataTableFilters.ts',
   'canvas/src/features/graph-data-table/graphDataTableSorts.ts',
   'canvas/src/features/panels/views/DocumentStorageSyncSettingsRows.tsx',
+  'canvas/src/features/agent-ready/storageSyncWebMcpTools.ts',
   'canvas/src/features/source-files/documentStorageSyncRuntime.ts',
+  'canvas/src/features/source-files/sourceFileCanonicalCloudSync.ts',
   'canvas/src/features/source-files/sourceFilesGitHubWrite.ts',
   'canvas/src/features/source-files/sourceFilesPocketBaseYjsRoom.ts',
   'canvas/src/features/workspace-fs/workspaceSeedProvider.ts',
   'canvas/src/features/workspace-table/workspaceTableSsot.ts',
   'cloudflare/workers/knowgrph-storage/index.ts',
+  'cloudflare/workers/knowgrph-storage/collaborationBridge.ts',
+  'cloudflare/workers/knowgrph-storage/storageRelayRuntime.ts',
+  'cloudflare/workers/knowgrph-storage/storageGitRemoteAuthority.ts',
+  'canvas/src/lib/storage/file-sync/engine.ts',
+  'canvas/src/lib/storage/git/knowgrphGitEngine.ts',
+  'canvas/src/lib/storage/knowgrphStorageBrowserRuntime.ts',
+  'canvas/src/lib/storage/knowgrphStorageEnginePersistence.ts',
+  'canvas/src/lib/storage/knowgrphStorageFileSyncRelay.ts',
+  'canvas/src/lib/storage/knowgrphStorageGitDocumentAuthority.ts',
+  'canvas/src/lib/storage/knowgrphStorageGitRelay.ts',
+  'canvas/src/lib/storage/knowgrphStorageGitSaveBridge.ts',
   'grph-shared/src/collaboration/documentRepositoryAuthority.ts',
   'grph-shared/src/spreadsheet/types.ts',
   'gympgrph/src/datasets.ts',
@@ -57,6 +71,18 @@ const expectedPublishedTools = Object.freeze(['search', 'fetch'])
 const expectedWebMcpTools = Object.freeze([
   'knowgrph.list_source_files',
   'knowgrph.read_source_file',
+])
+const expectedStorageInspectTools = Object.freeze([
+  'knowgrph.inspect_local_git_repository',
+  'knowgrph.inspect_local_file_sync',
+])
+const expectedStorageControlTools = Object.freeze([
+  'knowgrph.control_local_git_repository',
+  'knowgrph.control_local_file_sync',
+])
+const expectedStorageLocalTools = Object.freeze([
+  'knowgrph.git.run',
+  'knowgrph.file.sync',
 ])
 
 const fail = (message) => {
@@ -201,6 +227,12 @@ for (const toolName of [AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME, ...expectedPublish
     fail(`local MCP tool must exist and remain read-only: ${toolName}`)
   }
 }
+for (const toolName of expectedStorageLocalTools) {
+  const tool = localToolByName.get(toolName)
+  if (!tool || tool.annotations?.readOnlyHint !== false || tool.annotations?.destructiveHint !== true) {
+    fail(`local storage handoff tool must exist and remain mutation-annotated: ${toolName}`)
+  }
+}
 
 const webMcpToolByName = new Map(buildKnowgrphAgentReadyToolContracts({
   defaultWorkspaceId: KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID,
@@ -210,6 +242,18 @@ for (const toolName of expectedWebMcpTools) {
   const tool = webMcpToolByName.get(toolName)
   if (!tool || tool.annotations?.readOnlyHint !== true) {
     fail(`WebMCP tool must exist and remain read-only: ${toolName}`)
+  }
+}
+for (const toolName of expectedStorageInspectTools) {
+  const tool = webMcpToolByName.get(toolName)
+  if (!tool || tool.annotations?.readOnlyHint !== true || tool.annotations?.openWorldHint !== false) {
+    fail(`storage inspection WebMCP tool contract drifted: ${toolName}`)
+  }
+}
+for (const toolName of expectedStorageControlTools) {
+  const tool = webMcpToolByName.get(toolName)
+  if (!tool || tool.annotations?.readOnlyHint !== false || tool.annotations?.openWorldHint !== true) {
+    fail(`storage control WebMCP tool contract drifted: ${toolName}`)
   }
 }
 if (buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles) !== expectedWebMcpTools[0]
@@ -230,4 +274,4 @@ for (const token of uniqueTokens) {
     fail(`MCP grammar invocation failed for ${token}`)
   }
 }
-console.log(`[knowgrph] storage docs runtime passed (${documents.length} docs; ${uniqueTokens.size} invocation tokens; 5 read-only MCP tools)`)
+console.log(`[knowgrph] storage docs runtime passed (${documents.length} docs; ${uniqueTokens.size} invocation tokens; 11 MCP tools)`)

@@ -57,11 +57,16 @@ import {
   readAuthorizedMembership,
   isKnowgrphStorageChatRoute,
 } from './chatAuth'
+import {
+  handleStorageRelayRequest,
+  isKnowgrphStorageRelayRoute,
+} from './storageRelayRuntime'
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET,HEAD,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,x-knowgrph-content-hash,x-knowgrph-content-kind',
+  'access-control-allow-methods': 'GET,HEAD,POST,PUT,OPTIONS',
+  'access-control-allow-headers': 'content-type,authorization,x-client-request-id,x-knowgrph-content-hash,x-knowgrph-content-kind,x-knowgrph-content-sha256,x-knowgrph-file-sync-meta',
+  'access-control-expose-headers': 'x-knowgrph-file-sync-meta',
   'access-control-max-age': '86400',
 }
 
@@ -76,6 +81,16 @@ const json = (status: number, body: unknown): Response =>
 
 const noContent = (): Response =>
   new Response(null, { status: 204, headers: CORS_HEADERS })
+
+const withCorsHeaders = (response: Response): Response => {
+  const headers = new Headers(response.headers)
+  for (const [name, value] of Object.entries(CORS_HEADERS)) headers.set(name, value)
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
+}
 
 const errorResponse = (
   status: number,
@@ -379,11 +394,19 @@ export const createKnowgrphStorageWorker = () => ({
     }
     const url = new URL(request.url)
     try {
-      if (request.method === 'POST' && url.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.collabSave) {
-        return await handleCollaborationSave(request, env)
-      }
       const db = readDb(env)
       if (!db) return errorResponse(500, 'server_error', 'missing Cloudflare D1 binding DB')
+      if (request.method === 'POST' && url.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.collabSave) {
+        return await handleCollaborationSave(request, env, db)
+      }
+      if (isKnowgrphStorageRelayRoute(url.pathname)) {
+        return withCorsHeaders(await handleStorageRelayRequest({
+          request,
+          pathname: url.pathname,
+          env,
+          db,
+        }))
+      }
       if (url.pathname.startsWith(KNOWGRPH_STORAGE_ROUTE_PATHS.canvasRoomPrefix)) {
         return await handleCanvasRoomProxy(request, env, db)
       }

@@ -216,6 +216,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["sourceFiles.cloudSync.canonicalGitHubBeforeCloudflareReadBack","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndVerifiesReadBack"],
   ["sourceFiles.cloudSync.matchingProtectedGitHubContent","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudUploadReusesMatchingProtectedGitHubContent"],
   ["sourceFiles.cloudSync.githubFailureSkipsCloudflare","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudUploadStopsBeforeCloudflareWhenGitHubBridgeFails"],
+  ["sourceFiles.cloudSync.authRequired","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudUploadRejectsMissingSessionBeforeNetwork"],
   ["sourceFiles.cloudSync.localCloudIndicatorClick","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUploadsOnClick"],
   ["sourceFiles.cloudSync.repositoryAuthority","@/__tests__/sourceFileCloudSync.test","testSourceFileCloudTargetsRespectDocumentRepositoryAuthority"],
   ["sourceFiles.ownership.summary.canonicalRoots","@/__tests__/sourceFilesOwnershipProjection.test","testSourceFilesOwnershipSummaryRendersCanonicalRoots"],

@@ -83,7 +83,7 @@ The original gap was a built client-side sync engine with no server-side endpoin
 | Dedupe | Content hashes, semantic chunk keys, zero-byte known-chunk references, no-op D1 write skip | Missing/mismatched hashes and byte-offset chunk keys are rejected |
 | Authority | Knowgrph docs/seeds vs Huijoohwee workspace docs re-derived by browser and Worker | Agentic paths, duplicate Huijoohwee seed roots, and target/path mismatches are rejected before writes |
 | Cloud upload | GitHub first, D1 second, byte-identical read-back in at most 3 attempts | Public/default mutating origin is rejected without an explicit local Worker origin |
-| Validation | 39 independent `fast-check` properties, 100 runs each | No Production or Cloudflare operation is part of the proof |
+| Validation | 56 independent `fast-check` properties, at least 100 runs each | No Production or Cloudflare operation is part of the proof |
 
 The physical ownership audit found six authored files under `knowgrph/docs/workspace-seeds`, no `huijoohwee/docs/workspace-seeds` directory, and one byte-identical Agentic Canvas OS runtime projection. The projection remains only because the current bootstrap authority check requires it; removing it is a separate migration, not part of storage write authority.
 
@@ -212,7 +212,7 @@ Local field names differ from remote to preserve the existing browser-local cont
 - `GET /api/storage/doc/:workspaceId/:canonicalPath*` — public single-document view (text/markdown)
 - `POST /api/storage/blob/:workspaceId/:canonicalPath*` — store generated binary artifacts in R2 under the same workspace/canonical-path identity
 - `GET|HEAD /api/storage/blob/:workspaceId/:canonicalPath*` — read generated binary artifact bodies or metadata from R2
-- `POST /api/storage/collab/save` — GitHub save bridge; accepts saved Yjs snapshots; requires Worker token, owner, `KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO`, and `KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO`; validates the request target against path-derived authority
+- `POST /api/storage/collab/save` — local/Dev GitHub save bridge; requires an active bearer session with editor/owner/provider-admin membership plus Worker token, owner, target repos, and distinct `KNOWGRPH_STORAGE_GIT_{KNOWGRPH,WORKSPACE}_REMOTE_ID` values; validates target/remote against path-derived authority before GitHub access
 - Source Files explicit cloud upload reuses that bridge for saved Markdown, including an empty new `.md`, then pushes the identical document to D1 and requires `GET /api/storage/doc/:workspaceId/:canonicalPath*` byte equality before presenting the row as cloud-synced. A bridge failure must not enqueue or push D1.
 
 **Harness Contract — Client Sync Engine**
@@ -294,7 +294,7 @@ PocketBase owns auth/session state, collaboration room metadata, membership, and
 - Markdown uses `Y.Text`.
 - JSON uses `Y.Map` / nested shared JSON types and serializes to stable formatted JSON only on save.
 - Yjs document updates are exchanged through the PocketBase collaboration relay; Yjs update events are applied with `Y.applyUpdate()`.
-- The GitHub save bridge is server-side only. It accepts saved Yjs snapshots at explicit save/autosave boundaries, derives repository authority from the document path, rejects mismatched `repositoryTarget` values, and writes `docs/{path}` to either `knowgrph-docs` or `workspace-docs` through GitHub Contents API or a GitHub App.
+- The GitHub save bridge is server-side only and local/Dev gated. It authenticates the storage session and workspace write role, accepts saved Yjs snapshots at explicit save/autosave boundaries, derives repository authority from the document path, rejects mismatched `repositoryTarget`/`gitRemoteId` values, and writes `docs/{path}` to either `knowgrph-docs` or `workspace-docs` through GitHub Contents API or a GitHub App.
 - D1 is not a concurrent edit store. It remains a runtime read/export cache.
 
 ### PocketBase Production Gate
