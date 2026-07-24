@@ -236,6 +236,7 @@ function owningHarnessForTool(toolId, fallback = "unknown") {
   if (toolId.startsWith("knowgrph.memory.")) return "memory_layer";
   if (toolId.startsWith("knowgrph.probe.")) return "probe_tree";
   if (toolId.startsWith("knowgrph.agentic_canvas_os.docs.")) return "agentic_canvas_os_docs";
+  if (toolId.startsWith("knowgrph.agent_team.")) return "agent_team";
   if (toolId.startsWith("knowgrph.skill.")) return "skill_evolution";
   if (toolId.startsWith("knowgrph.html_video.")) return "html_video_renderer";
   if (toolId.startsWith("knowgrph.annotate.")) return "visual_annotation_engine";
