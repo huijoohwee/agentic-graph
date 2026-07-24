@@ -4,37 +4,74 @@ import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { normalizeWorkspacePath, workspaceBasename, workspaceDocumentKey } from '@/features/workspace-fs/path'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { requestMarkdownExplorerSourceFilesOpen } from '@/features/markdown/ui/useMarkdownExplorerSectionCollapseState'
-import { readSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import {
+  readSourceFilesBootstrapSnapshot,
+  subscribeSourceFilesBootstrapReady,
+} from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { resolveActivePathMaterializationSourceAuthority } from '@/features/source-files/sourceFilesActivePathAuthority'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { normalizeMermaidMmdToMarkdown } from 'grph-shared/markdown/mermaidInput'
 
-const ACTIVE_PATH_STABILITY_INTERVAL_MS = 25
-const ACTIVE_PATH_STABILITY_CHECKS = 4
-const ACTIVE_PATH_MIN_BROWSER_CHECKS = 10
-const ACTIVE_PATH_MAX_CHECKS = 40
+const ACTIVE_PATH_AUTHORITY_TIMEOUT_MS = 3_000
 
 async function activateChatKgcWorkspacePath(path: string): Promise<boolean> {
   const workspacePath = normalizeWorkspacePath(path)
   if (!workspacePath || workspacePath === '/') return false
   requestMarkdownExplorerSourceFilesOpen(workspacePath)
-  const browserSourceAuthorityReady = readSourceFilesBootstrapSnapshot().basePhase === 'ready'
-  const minimumChecks = browserSourceAuthorityReady ? ACTIVE_PATH_MIN_BROWSER_CHECKS : 1
-  let stableChecks = 0
-  for (let check = 0; check < ACTIVE_PATH_MAX_CHECKS; check += 1) {
-    const explorer = useMarkdownExplorerStore.getState()
-    if (explorer.activePath !== workspacePath) {
-      explorer.setActivePath(workspacePath)
-      stableChecks = 0
-    }
-    await new Promise<void>(resolve => setTimeout(resolve, ACTIVE_PATH_STABILITY_INTERVAL_MS))
-    if (useMarkdownExplorerStore.getState().activePath === workspacePath) {
-      stableChecks += 1
-      if (check + 1 >= minimumChecks && stableChecks >= ACTIVE_PATH_STABILITY_CHECKS) return true
-    } else {
-      stableChecks = 0
-    }
+  if (readSourceFilesBootstrapSnapshot().basePhase !== 'ready') {
+    useMarkdownExplorerStore.getState().setActivePath(workspacePath)
+    await Promise.resolve()
+    return useMarkdownExplorerStore.getState().activePath === workspacePath
   }
-  return false
+
+  const sourceAuthorityIntentKey =
+    resolveActivePathMaterializationSourceAuthority(workspacePath).sourceAuthorityIntentKey
+  return await new Promise<boolean>(resolve => {
+    let settled = false
+    let requestStarted = false
+    let activationYielded = false
+    let unsubscribeSourceAuthority = () => void 0
+    let unsubscribeExplorer = () => void 0
+    const finish = (accepted: boolean) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      unsubscribeSourceAuthority()
+      unsubscribeExplorer()
+      resolve(accepted)
+    }
+    const inspect = () => {
+      if (!requestStarted) return
+      if (useMarkdownExplorerStore.getState().activePath !== workspacePath) {
+        finish(false)
+        return
+      }
+      const snapshot = readSourceFilesBootstrapSnapshot()
+      if (snapshot.documentIntentKey === sourceAuthorityIntentKey) {
+        if (snapshot.documentIntentPhase === 'error') {
+          finish(false)
+          return
+        }
+        if (snapshot.documentIntentPhase === 'resolving') return
+        if (snapshot.documentIntentPhase === 'ready' && activationYielded) {
+          finish(true)
+          return
+        }
+      }
+      // The mounted Source Files owner begins its intent synchronously. No matching
+      // intent after one microtask means this caller is running without that owner.
+      if (activationYielded) finish(true)
+    }
+    const timeout = setTimeout(() => finish(false), ACTIVE_PATH_AUTHORITY_TIMEOUT_MS)
+    unsubscribeSourceAuthority = subscribeSourceFilesBootstrapReady(inspect)
+    unsubscribeExplorer = useMarkdownExplorerStore.subscribe(inspect)
+    requestStarted = true
+    useMarkdownExplorerStore.getState().setActivePath(workspacePath)
+    queueMicrotask(() => {
+      activationYielded = true
+      inspect()
+    })
+  })
 }
 
 export async function applyChatKgcDocumentTextToCanvas({

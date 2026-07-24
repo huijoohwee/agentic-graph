@@ -40,6 +40,7 @@ const EXPECTED_SOURCE_BRANCH = String(
 const EXPECTED_SOURCE_DOCUMENT = String(
   process.env.KG_CHAT_NATURAL_LANGUAGE_SOURCE_DOCUMENT || '',
 ).trim()
+const EXPECTED_SOURCE_PATH = `/docs/workspace-seeds/${EXPECTED_SOURCE_DOCUMENT}`
 const CANONICAL_WIDGET_CARD_LAYOUT_IDS = [
   'widget-card-type-0',
   'probe-tree-type-1',
@@ -391,8 +392,12 @@ async function main() {
       snapshot => (
         snapshot.available === true
         && snapshot.errorSourceFileCount === 0
+        && snapshot.activePath === EXPECTED_SOURCE_PATH
+        && snapshot.activeSourcePath === `workspace:${EXPECTED_SOURCE_PATH}`
         && snapshot.activeSourceFile?.name === EXPECTED_SOURCE_DOCUMENT
         && snapshot.activeSourceFile?.status === 'parsed'
+        && snapshot.activeSourceFile?.hasParsedGraphData === true
+        && snapshot.activeSourceFile?.textLength > 0
       ),
       'Authored default source bootstrap',
     )
@@ -429,6 +434,22 @@ async function main() {
     postFinalizeSourceFilesSnapshot = await executeWebMcpTool(
       page,
       'knowgrph.inspect_local_source_files_snapshot',
+    )
+    assert.equal(postFinalizeSourceFilesSnapshot.available, true)
+    assert.equal(postFinalizeSourceFilesSnapshot.errorSourceFileCount, 0)
+    assert.equal(
+      postFinalizeSourceFilesSnapshot.activePath,
+      chatSnapshot.finalize.persistedKnowgrphPath,
+    )
+    assert.equal(
+      postFinalizeSourceFilesSnapshot.activeSourcePath,
+      `workspace:${chatSnapshot.finalize.persistedKnowgrphPath}`,
+    )
+    assert.equal(postFinalizeSourceFilesSnapshot.activeSourceFile?.status, 'parsed')
+    assert.equal(postFinalizeSourceFilesSnapshot.activeSourceFile?.hasParsedGraphData, true)
+    assert.equal(
+      postFinalizeSourceFilesSnapshot.activeSourceFile?.textLength,
+      persistedWorkspaceDocument.length,
     )
     assert.equal(chatSnapshot.available, true)
     assert.equal(chatSnapshot.errorText, null)

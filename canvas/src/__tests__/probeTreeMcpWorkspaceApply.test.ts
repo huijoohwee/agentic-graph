@@ -104,21 +104,29 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
 
     const originalActivePath = '/authored-source.md'
     useMarkdownExplorerStore.getState().setActivePath(originalActivePath)
-    let simulatedSelectionResets = 0
+    let simulatedConcurrentSelection = false
     unsubscribeExplorerReset = useMarkdownExplorerStore.subscribe(state => {
-      if (state.activePath !== workspacePath || simulatedSelectionResets >= 2) return
-      simulatedSelectionResets += 1
+      if (state.activePath !== workspacePath || simulatedConcurrentSelection) return
+      simulatedConcurrentSelection = true
       queueMicrotask(() => {
         if (useMarkdownExplorerStore.getState().activePath === workspacePath) {
           useMarkdownExplorerStore.getState().setActivePath(originalActivePath)
         }
       })
     })
+    if (await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)) {
+      throw new Error('expected Chat KGC apply to abort when Explorer ownership changes concurrently')
+    }
+    if (!simulatedConcurrentSelection || useMarkdownExplorerStore.getState().activePath !== originalActivePath) {
+      throw new Error('expected Chat KGC apply to preserve a concurrent Explorer selection')
+    }
+    unsubscribeExplorerReset()
+    unsubscribeExplorerReset = () => void 0
     if (!await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)) {
       throw new Error('expected the Probe-Tree MCP KGC to apply to the active Canvas')
     }
-    if (simulatedSelectionResets !== 2 || useMarkdownExplorerStore.getState().activePath !== workspacePath) {
-      throw new Error('expected Chat KGC apply to retain generated workspace ownership across transient Explorer selection resets')
+    if (useMarkdownExplorerStore.getState().activePath !== workspacePath) {
+      throw new Error('expected Chat KGC apply to activate the generated workspace path')
     }
     const graphData = useGraphStore.getState().graphData
     const source = graphData?.nodes.find(node => node.id === 'mcp-response-care-source')
