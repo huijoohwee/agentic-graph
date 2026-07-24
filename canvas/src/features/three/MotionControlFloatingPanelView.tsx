@@ -37,7 +37,7 @@ import {
 } from './motionControlRuntime'
 import { MotionControlTargetCards } from './MotionControlTargetCards'
 import { MotionCapturePlatformProjection } from './MotionCapturePlatformProjection'
-import { readMotionCaptureSessionSnapshot, subscribeMotionCaptureSession } from './motionCaptureSessionRuntime'
+import { motionCapturePlatformUiAdapter } from './motionCapturePlatformUiAdapter'
 import { readMotionCapturePeerSharingSnapshot, subscribeMotionCapturePeerSharing } from './motionCapturePeerRuntime'
 import {
   MOTION_CONTROL_XR_UNAVAILABLE_MESSAGE,
@@ -120,7 +120,11 @@ function drawPoseOverlay(canvas: HTMLCanvasElement, state: MotionControlSnapshot
 export function MotionControlFloatingPanelView() {
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: MOTION_CONTROL_GRAMMAR_SIGILS })
   const state = React.useSyncExternalStore(subscribeMotionControl, readMotionControlSnapshot, readMotionControlSnapshot)
-  const capture = React.useSyncExternalStore(subscribeMotionCaptureSession, readMotionCaptureSessionSnapshot, readMotionCaptureSessionSnapshot)
+  const capture = React.useSyncExternalStore(
+    motionCapturePlatformUiAdapter.subscribeSession,
+    motionCapturePlatformUiAdapter.readSession,
+    motionCapturePlatformUiAdapter.readSession,
+  )
   const peerSharing = React.useSyncExternalStore(subscribeMotionCapturePeerSharing, readMotionCapturePeerSharingSnapshot, readMotionCapturePeerSharingSnapshot)
   const pushUiToast = useGraphStore(store => store.pushUiToast)
   const [backend, setBackend] = React.useState<MotionControlBackendPreference>(state.requestedBackend)

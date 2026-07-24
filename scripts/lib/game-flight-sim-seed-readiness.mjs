@@ -189,7 +189,7 @@ export async function assertFlightSimSeedReadiness({
     'AgenticOsRemoteGrammarAutoHydrationContext = React.createContext(true)',
     'useSourceFilesBootstrapReady()',
     'isNativeXrRunReadyDemoActive(',
-    'return args.sourceFilesReady && !args.offlineNativeXrActive',
+    'args.runtimeIdentityProofRequested || !args.offlineNativeXrActive',
   ], 'offline native XR automatic grammar fence')
   const grammarClientSource = await readText(
     'canvas/src/features/agentic-os/agenticOsRemoteGrammarClient.ts',

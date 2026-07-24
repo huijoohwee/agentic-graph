@@ -64,12 +64,12 @@ const createCacheStorage = (entriesByCache: Record<string, CacheEntry[]>) => {
 
 const workerRevisions = new WeakMap<object, string>()
 const createWorker = (revision: string) => {
-  const worker = {
+  const worker = Object.assign(new EventTarget(), {
     state: 'activated',
     postMessage() {
       throw new Error('test worker postMessage should be replaced by readActiveRevision')
     },
-  }
+  })
   workerRevisions.set(worker, revision)
   return worker
 }
@@ -229,6 +229,49 @@ test('cache revision owner waits for the attested worker to activate before prun
   assert.deepEqual(cacheStorage.readPaths('workbox-precache-v2'), [
     `/knowgrph/assets/${CURRENT_REVISION}/index.js`,
   ])
+  owner.dispose()
+})
+
+test('cache revision owner retries when worker activation outlives a missed controller change', async () => {
+  const previousWorker = createWorker(PREVIOUS_REVISION)
+  const currentWorker = createWorker(CURRENT_REVISION)
+  currentWorker.state = 'installing'
+  const controllerTarget = Object.assign(new EventTarget(), { controller: previousWorker })
+  const registration = {
+    active: previousWorker,
+    installing: currentWorker,
+    waiting: null,
+  }
+  const stalePath = `/knowgrph/assets/${PREVIOUS_REVISION}/old-lazy.js`
+  const cacheStorage = createCacheStorage({
+    'workbox-precache-v2': [
+      `/knowgrph/assets/${PREVIOUS_REVISION}/old.js`,
+      `/knowgrph/assets/${CURRENT_REVISION}/current.js`,
+    ],
+    'kg-assets': [stalePath],
+  })
+  const owner = installServiceWorkerCacheRevisionOwner({
+    cacheStorage,
+    controllerTarget,
+    registration,
+    origin: ORIGIN,
+    readActiveRevision: async worker => workerRevisions.get(worker) ?? '',
+  })
+
+  await flushPromises()
+  assert.deepEqual(cacheStorage.readPaths('kg-assets'), [stalePath])
+
+  registration.installing = null
+  registration.active = currentWorker
+  controllerTarget.controller = currentWorker
+  currentWorker.state = 'activated'
+  currentWorker.dispatchEvent(new Event('statechange'))
+  await flushPromises()
+
+  assert.deepEqual(cacheStorage.readPaths('workbox-precache-v2'), [
+    `/knowgrph/assets/${CURRENT_REVISION}/current.js`,
+  ])
+  assert.deepEqual(cacheStorage.readPaths('kg-assets'), [])
   owner.dispose()
 })
 

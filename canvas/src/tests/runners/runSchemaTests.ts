@@ -20,6 +20,7 @@ const modMotionControlBoundingBox = () => import('@/__tests__/motionControlBound
 const modMotionControlMultiObjectIdentification = () => import('@/__tests__/motionControlMultiObjectIdentification.test')
 const modMotionControlCleanRoomBoundary = () => import('@/__tests__/motionControlCleanRoomBoundary.test')
 const modMotionControlCapturePlatform = () => import('@/__tests__/motionControlCapturePlatform.test')
+const modMotionCaptureSnapshotStability = () => import('@/__tests__/motionCaptureSnapshotStability.test')
 const modMotionCaptureResearchIntegrity = () => import('@/__tests__/motionCaptureResearchIntegrity.test')
 const modMotionControlCaptureInvocation = () => import('@/__tests__/motionControlCaptureInvocation.test')
 const modMotionCapturePeerRuntime = () => import('@/__tests__/motionCapturePeerRuntime.test')
@@ -171,6 +172,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
   await execTest(results, 'canvas.xrMode.motionControlCapturePlatform', async () => {
     const mod = await modMotionControlCapturePlatform()
     await mod.testMotionCapturePlatformIsProviderNeutralBoundedAndEvidenceGraded()
+  })
+  await execTest(results, 'canvas.xrMode.motionCaptureSnapshotStability', async () => {
+    const mod = await modMotionCaptureSnapshotStability()
+    await mod.testMotionCaptureUiSnapshotsStayStableForReactExternalStores()
   })
   await execTest(results, 'canvas.xrMode.motionCaptureLifecycleFailure', async () => {
     const mod = await modMotionCaptureLifecycleFailure()

@@ -18,6 +18,7 @@ import {
   mountReactRoot,
   unmountReactRoot,
 } from '@/tests/lib/reactRootHarness'
+import { QUERY_PARAM_RUNTIME_IDENTITY_PROOF } from '@/lib/routing/queryParams'
 
 const offlineRunReadySource = (id: 'flight-sim' | 'xr-physics'): string => `---
 run_ready_demo:
@@ -40,14 +41,22 @@ test('automatic remote grammar policy fails closed until source identity is read
   assert.equal(resolveAgenticOsRemoteGrammarAutoHydration({
     sourceFilesReady: false,
     offlineNativeXrActive: false,
+    runtimeIdentityProofRequested: true,
   }), false)
   assert.equal(resolveAgenticOsRemoteGrammarAutoHydration({
     sourceFilesReady: true,
     offlineNativeXrActive: true,
+    runtimeIdentityProofRequested: false,
   }), false)
   assert.equal(resolveAgenticOsRemoteGrammarAutoHydration({
     sourceFilesReady: true,
     offlineNativeXrActive: false,
+    runtimeIdentityProofRequested: false,
+  }), true)
+  assert.equal(resolveAgenticOsRemoteGrammarAutoHydration({
+    sourceFilesReady: true,
+    offlineNativeXrActive: true,
+    runtimeIdentityProofRequested: true,
   }), true)
 })
 
@@ -164,6 +173,80 @@ test('ordinary repo-local workspace sources retain automatic remote grammar hydr
       markdownDocumentText: originalDocumentText,
     })
     await unmountReactRoot(root, { window: dom.window as unknown as Window })
+    resetAgenticOsRemoteGrammarCatalogForTests()
+    container.remove()
+    restore()
+  }
+})
+
+test('runtime identity proof explicitly hydrates grammar for an offline native XR source', async () => {
+  const originalFetch = globalThis.fetch
+  const originalRepoLocal = process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+  const originalDocumentName = useGraphStore.getState().markdownDocumentName
+  const originalDocumentText = useGraphStore.getState().markdownDocumentText
+  const methods: string[] = []
+  process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '1'
+  completeSourceFilesBootstrap()
+  useGraphStore.setState({
+    markdownDocumentName: 'knowgrph-physics-playground-demo.md',
+    markdownDocumentText: offlineRunReadySource('xr-physics'),
+  })
+  resetAgenticOsRemoteGrammarCatalogForTests()
+  globalThis.fetch = (async (_input, init) => {
+    const body = JSON.parse(String(init?.body || '{}')) as { id?: unknown, method?: unknown }
+    methods.push(String(body.method || ''))
+    if (body.method === 'initialize') {
+      return new Response(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: { protocolVersion: '2024-11-05' },
+      }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+          'mcp-session-id': 'runtime-identity-proof-session',
+        },
+      })
+    }
+    return new Response(JSON.stringify({
+      jsonrpc: '2.0',
+      id: body.id,
+      result: {
+        structuredContent: {
+          ok: true,
+          sourceRevision: 'a'.repeat(40),
+          catalog: [],
+        },
+      },
+    }), { status: 200, headers: { 'content-type': 'application/json' } })
+  }) as typeof fetch
+
+  const { dom, restore } = initJsdomHarness()
+  dom.window.history.replaceState(
+    {},
+    '',
+    `/?${QUERY_PARAM_RUNTIME_IDENTITY_PROOF}=1`,
+  )
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  try {
+    await mountReactRoot(root, renderRemoteGrammarHydrationHarness(), {
+      window: dom.window as unknown as Window,
+      frames: 3,
+      tasks: 8,
+    })
+    assert.deepEqual(methods, ['initialize', 'tools/call', 'tools/call', 'tools/call'])
+    assert.equal(getAgenticOsRemoteGrammarCatalogSnapshot().hydration.status, 'fresh')
+  } finally {
+    globalThis.fetch = originalFetch
+    if (originalRepoLocal === undefined) delete process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+    else process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = originalRepoLocal
+    await unmountReactRoot(root, { window: dom.window as unknown as Window })
+    useGraphStore.setState({
+      markdownDocumentName: originalDocumentName,
+      markdownDocumentText: originalDocumentText,
+    })
     resetAgenticOsRemoteGrammarCatalogForTests()
     container.remove()
     restore()

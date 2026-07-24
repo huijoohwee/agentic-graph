@@ -28,7 +28,11 @@ test('device lifecycle commands delegate to the canonical Agentic Canvas OS chec
 
 test('collaboration browser gate edits through the canonical active editor owner', () => {
   const smoke = fs.readFileSync(new URL('../../canvas/scripts/verify-multi-user-collaboration-e2e.ts', import.meta.url), 'utf8')
+  const queryParams = fs.readFileSync(new URL('../../canvas/src/lib/routing/queryParams.ts', import.meta.url), 'utf8')
 
+  assert.match(queryParams, /QUERY_PARAM_RUNTIME_IDENTITY_PROOF = 'kgRuntimeIdentityProof'/)
+  assert.match(smoke, /QUERY_PARAM_RUNTIME_IDENTITY_PROOF/)
+  assert.match(smoke, /url\.searchParams\.set\(QUERY_PARAM_RUNTIME_IDENTITY_PROOF, '1'\)/)
   assert.match(smoke, /\.kg-markdown-editor-pane \.view-lines/)
   assert.match(smoke, /editorSurfaceCount !== 1/)
   assert.match(smoke, /editorRoot\?\.contains\(document\.activeElement\)/)

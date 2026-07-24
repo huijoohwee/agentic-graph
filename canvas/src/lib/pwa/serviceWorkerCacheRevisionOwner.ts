@@ -19,12 +19,16 @@ type CacheStorageTarget = {
 type ServiceWorkerTarget = {
   state: string
   postMessage(message: unknown, transfer: Transferable[]): void
+  addEventListener?(type: 'statechange', listener: EventListener): void
+  removeEventListener?(type: 'statechange', listener: EventListener): void
 }
 
 type ServiceWorkerRegistrationTarget = {
   active: ServiceWorkerTarget | null
   installing: ServiceWorkerTarget | null
   waiting: ServiceWorkerTarget | null
+  addEventListener?(type: 'updatefound', listener: EventListener): void
+  removeEventListener?(type: 'updatefound', listener: EventListener): void
 }
 
 type ControllerChangeTarget = {
@@ -223,6 +227,7 @@ export function installServiceWorkerCacheRevisionOwner(
   let disposed = false
   let pruneRequested = false
   let pruneInFlight: Promise<void> | null = null
+  const watchedWorkers = new Set<ServiceWorkerTarget>()
 
   const attemptPrune = async () => {
     const activeWorker = isStableActiveWorker(options.registration, options.controllerTarget)
@@ -264,7 +269,31 @@ export function installServiceWorkerCacheRevisionOwner(
     })
   }
 
-  options.controllerTarget.addEventListener('controllerchange', requestPrune)
+  function watchTransitionWorkers() {
+    for (const worker of [
+      options.registration.active,
+      options.registration.installing,
+      options.registration.waiting,
+    ]) {
+      if (!worker?.addEventListener || watchedWorkers.has(worker)) continue
+      watchedWorkers.add(worker)
+      worker.addEventListener('statechange', handleWorkerStateChange)
+    }
+  }
+
+  function handleWorkerStateChange() {
+    watchTransitionWorkers()
+    requestPrune()
+  }
+
+  function handleRegistrationChange() {
+    watchTransitionWorkers()
+    requestPrune()
+  }
+
+  options.controllerTarget.addEventListener('controllerchange', handleRegistrationChange)
+  options.registration.addEventListener?.('updatefound', handleRegistrationChange)
+  watchTransitionWorkers()
   if (options.runInitially !== false) requestPrune()
 
   return {
@@ -272,7 +301,12 @@ export function installServiceWorkerCacheRevisionOwner(
     dispose() {
       disposed = true
       pruneRequested = false
-      options.controllerTarget.removeEventListener('controllerchange', requestPrune)
+      options.controllerTarget.removeEventListener('controllerchange', handleRegistrationChange)
+      options.registration.removeEventListener?.('updatefound', handleRegistrationChange)
+      for (const worker of watchedWorkers) {
+        worker.removeEventListener?.('statechange', handleWorkerStateChange)
+      }
+      watchedWorkers.clear()
     },
   }
 }
