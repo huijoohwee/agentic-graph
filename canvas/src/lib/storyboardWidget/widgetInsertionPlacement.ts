@@ -70,4 +70,3 @@ export function buildStoryboardWidgetInsertionPlacement(args: {
   }
   return { pinnedByNodeId, screenByNodeId, worldByNodeId }
 }
-
