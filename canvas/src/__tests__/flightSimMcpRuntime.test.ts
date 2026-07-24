@@ -44,6 +44,9 @@ import {
   resetFlightSimDecisionStoreForTests,
 } from '@/features/game-flight-sim/flightSimDecisionStore'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
+import {
+  resetFlightSimTrainingScenarioForTests,
+} from '@/features/game-flight-sim/flightSimTrainingScenario'
 
 const buildWebName = (name: string): string => `knowgrph.${name}`
 const readOnlyAnnotations = Object.freeze({
@@ -73,7 +76,11 @@ test('Flight Sim keeps one canonical invocation tuple and two browser tool ids',
     controlLocalFlightSim: 'control_local_flight_sim',
   })
   assert.deepEqual(FLIGHT_SIM_CONTROL_OPERATIONS, [
-    'open', 'start', 'stop', 'restart', 'throttle', 'save', 'exit',
+    'open', 'start', 'stop', 'restart', 'throttle',
+    'mission-foundation', 'mission-night', 'mission-systems',
+    'failure-none', 'failure-engine', 'failure-instruments', 'failure-controls',
+    'voice-on', 'voice-off', 'coach',
+    'save', 'exit',
   ])
 })
 
@@ -231,6 +238,37 @@ test('Flight Sim builder rejects invalid programmatic invocation values', () => 
     () => buildFlightSimInvocation('unknown' as 'open'),
     /Unsupported Flight Sim operation/,
   )
+})
+
+test('Flight Sim MCP controls training mission, failure, voice, and coaching state', async () => {
+  resetFlightSimRuntimeForTests()
+  resetFlightSimTrainingScenarioForTests()
+  try {
+    assert.equal((await controlLocalFlightSim({ operation: 'mission-night' })).ok, true)
+    assert.equal(inspectLocalFlightSim().training.missionId, 'night-circuit')
+    assert.equal(inspectLocalFlightSim().training.night, true)
+    assert.equal(inspectLocalFlightSim().training.failureId, 'instrument-uncertainty')
+
+    assert.equal((await controlLocalFlightSim({ operation: 'failure-controls' })).ok, true)
+    assert.equal(inspectLocalFlightSim().training.failureId, 'control-bias')
+    assert.equal((await controlLocalFlightSim({ operation: 'voice-on' })).ok, true)
+    assert.equal(inspectLocalFlightSim().training.voiceEnabled, true)
+    assert.match(
+      (await controlLocalFlightSim({ operation: 'coach' })).message,
+      /coaching cue/i,
+    )
+
+    await openFlightSimSurface({ openPanel: false, webglSupported: true })
+    await controlLocalFlightSim({ operation: 'start' })
+    assert.equal(
+      (await controlLocalFlightSim({ operation: 'mission-foundation' })).ok,
+      false,
+    )
+  } finally {
+    if (readFlightSimSnapshot().active) exitFlightSimSurface()
+    resetFlightSimRuntimeForTests()
+    resetFlightSimTrainingScenarioForTests()
+  }
 })
 
 test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/start', async () => {

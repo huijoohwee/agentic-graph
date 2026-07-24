@@ -3,11 +3,6 @@ import {
   requireSourceMarkers as requireMarkers,
 } from './source-readiness-assertions.mjs'
 
-const INSPIRATION_REFERENCE_NAMES = [
-  ['Flight', 'Gear'].join(''),
-  `${['Arnie', '016'].join('')}/${['flight', 'simulator', 'fable5'].join('-')}`,
-].join(' or ')
-
 function exactArray(actual, expected) {
   return Array.isArray(actual)
     && JSON.stringify(actual) === JSON.stringify(expected)
@@ -31,6 +26,7 @@ export async function assertFlightSimSeedReadiness({
   const sharedScene = seed.shared_xr_scene
   const assetPipeline = seed.asset_pipeline
   const flightSim = seed.flight_sim
+  const training = seed.flight_training
   if (
     seed.status !== 'runtime-ready'
     || seed.runtime_status !== 'runtime-ready'
@@ -78,11 +74,42 @@ export async function assertFlightSimSeedReadiness({
     || assetPipeline.optional_glb_license !== 'CC0-1.0'
     || assetPipeline.runtime_model_calls !== 0
     || assetPipeline.runtime_network_calls !== 0
-    || assetPipeline.no_copy_scan_scope !== `all tracked repository files for named identity, path, content-marker, binary/asset, and declared-dependency contamination from ${INSPIRATION_REFERENCE_NAMES}`
-    || assetPipeline.provenance_attestation !== 'Knowgrph contributors attest that the Flight Sim implementation and assets are source-authored; external projects inform concepts and architecture only'
-    || assetPipeline.no_copy_gate_limitation !== 'the deterministic scanner detects named contamination patterns and declared dependencies; it cannot prove the absence of arbitrary derived code'
+    || assetPipeline.external_reference_policy !== 'conceptual principles only; external project identity and URL are prohibited in product source and runtime metadata; no external project dependency'
+    || assetPipeline.no_copy_scan_scope !== 'Flight-owned tracked paths for external repository locators, vendored paths, opaque source binaries, and missing policy markers'
+    || assetPipeline.provenance_attestation !== 'Knowgrph contributors attest that the Flight Sim implementation, instructional content, and assets are source-authored'
+    || assetPipeline.no_copy_gate_limitation !== 'the deterministic clean-room scanner cannot prove the absence of arbitrary derived code'
   ) {
-    throw new Error('Flight Sim seed must retain tracked local asset authority and honest named-contamination proof boundaries')
+    throw new Error('Flight Sim seed must retain tracked local asset authority and honest clean-room proof boundaries')
+  }
+
+  if (
+    !training
+    || !exactArray(
+      training.missions,
+      ['circuit-foundation', 'night-circuit', 'systems-recovery'],
+    )
+    || !exactArray(
+      training.mission_outcomes,
+      ['route progress', 'stable attitude', 'energy envelope', 'failure recovery', 'terminal result'],
+    )
+    || !exactArray(training.score_range, [0, 100])
+    || !exactArray(training.terminal_grades, ['A', 'B', 'C', 'D'])
+    || training.systems_first !== true
+    || training.voice_instructor !== 'explicit browser speech synthesis over the visible deterministic coaching cue; text fallback always remains'
+    || !exactArray(
+      training.practice_failures,
+      ['none', 'engine-power-loss', 'instrument-uncertainty', 'control-bias'],
+    )
+    || training.failure_tick_window !== '180 inclusive through 420 exclusive'
+    || training.night_owner !== 'shared authored XR atmosphere and lighting'
+    || !exactArray(
+      training.panel_surfaces,
+      ['media', 'animation', 'motion-control', 'game-mode', 'flight-sim', 'camera'],
+    )
+    || training.outcome_schema !== 'knowgrph-flight-training-outcome/v1'
+    || training.outcome_persistence !== 'one idempotent dialogue_outcome Decision on explicit terminal Save; never auto-save'
+  ) {
+    throw new Error('Flight Sim seed must retain mission training, scoring, voice, failure, and six-panel projection contracts')
   }
 
   const nativeFlightDemo = seed.native_flight_demo
@@ -105,7 +132,13 @@ export async function assertFlightSimSeedReadiness({
   if (
     !exactArray(
       flightSim.operations,
-      ['open', 'start', 'stop', 'restart', 'throttle', 'save', 'exit'],
+      [
+        'open', 'start', 'stop', 'restart', 'throttle',
+        'mission-foundation', 'mission-night', 'mission-systems',
+        'failure-none', 'failure-engine', 'failure-instruments', 'failure-controls',
+        'voice-on', 'voice-off', 'coach',
+        'save', 'exit',
+      ],
     )
     || flightSim.simulation_clock !== 'exact 1/60-second fixed ticks, at most five catch-up ticks per advance, ready at tick zero until normalized desktop, pointer, touch, gamepad, Motion Control, or MCP input'
     || !exactArray(
@@ -225,4 +258,58 @@ export async function assertFlightSimSeedReadiness({
     'ownsDocumentLaunchRef',
     'exitFlightSimSurface({ restorePreviousSurface: false })',
   ], 'Flight Sim source activation runtime')
+
+  const trainingSource = await readText(
+    'canvas/src/features/game-flight-sim/flightSimTrainingScenario.ts',
+  ) + await readText(
+    'canvas/src/features/game-flight-sim/flightSimTrainingRuntime.ts',
+  ) + await readText(
+    'canvas/src/features/game-flight-sim/FlightSimTrainingSurfaceProjection.tsx',
+  )
+  requireMarkers(trainingSource, [
+    "'circuit-foundation'",
+    "'night-circuit'",
+    "'systems-recovery'",
+    "'engine-power-loss'",
+    "'instrument-uncertainty'",
+    "'control-bias'",
+    'tick >= 180',
+    'tick < 420',
+    'score: training.score',
+    "schema: 'knowgrph-flight-training-outcome/v1'",
+    'window.speechSynthesis.speak(utterance)',
+    'data-kg-flight-training-score',
+  ], 'mission-based Flight training runtime')
+
+  const panelProjectionSource = await Promise.all([
+    'canvas/src/features/command-menu/MediaCatalogPanelView.tsx',
+    'canvas/src/features/three/XrAnimationFloatingPanelView.tsx',
+    'canvas/src/features/three/MotionControlFloatingPanelView.tsx',
+    'canvas/src/features/game-fps/GameModeFloatingPanelView.tsx',
+    'canvas/src/features/game-flight-sim/FlightSimFloatingPanelView.tsx',
+    'canvas/src/features/strybldr/StrybldrCameraFloatingPanelView.tsx',
+  ].map(path => readText(path)))
+  requireMarkers(panelProjectionSource.join('\n'), [
+    'surface="media"',
+    'surface="animation"',
+    'surface="motion-control"',
+    'surface="game-mode"',
+    'surface="flight-sim"',
+    'surface="camera"',
+  ], 'six FloatingPanel Flight training projections')
+
+  const trainingOwners = await readText(
+    'canvas/src/features/three/XrNativeControllerDemoEnvironment.tsx',
+  ) + await readText(
+    'canvas/src/features/three/XrNativeControllerDemoStage.tsx',
+  ) + await readText(
+    'canvas/src/lib/three/flightSimMissionStageLoader.ts',
+  )
+  requireMarkers(trainingOwners, [
+    "night ? '#050a1a'",
+    'intensity={night ? 0.13 : 0.4}',
+    'importWithRetry(importMissionStage',
+    'retries: 2',
+    'retryDelayMs: 50',
+  ], 'shared-owner night presentation and bounded mission-stage retry')
 }

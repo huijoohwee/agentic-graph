@@ -39,3 +39,24 @@ test('mission-stage preload shares in-flight work and retries after rejection', 
   assert.equal(await successfulLoad, await loader.load())
   assert.equal((await successfulLoad).default, MissionStage)
 })
+
+test('mission-stage preload retries a transient dynamic-import fetch failure in one entry', async () => {
+  let attempts = 0
+  const loader = createFlightSimMissionStageLoader(async () => {
+    attempts += 1
+    if (attempts === 1) {
+      throw new TypeError('Failed to fetch dynamically imported module')
+    }
+    return {
+      createFlightSimMissionStage: controller => {
+        assert.equal(controller, runtimeController)
+        return MissionStage
+      },
+    }
+  })
+
+  await loader.preload(runtimeController)
+
+  assert.equal(attempts, 2)
+  assert.equal((await loader.load()).default, MissionStage)
+})
