@@ -5,6 +5,7 @@ import { SourceFilesPersistenceBootstrap } from '@/features/source-files/SourceF
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { XrPhysicsRunReadyDemoRuntime } from '@/features/canvas/XrPhysicsRunReadyDemoRuntime'
 import { FlightSimRunReadyDemoRuntime } from '@/features/canvas/FlightSimRunReadyDemoRuntime'
+import { CitySimRunReadyDemoRuntime } from '@/features/canvas/CitySimRunReadyDemoRuntime'
 
 export function CanvasStartupRuntimes() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
@@ -16,6 +17,7 @@ export function CanvasStartupRuntimes() {
       {sourceFilesBootstrapReady ? <>
         <XrPhysicsRunReadyDemoRuntime />
         <FlightSimRunReadyDemoRuntime />
+        <CitySimRunReadyDemoRuntime />
       </> : null}
     </>
   )
