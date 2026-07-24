@@ -11,6 +11,7 @@ import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-f
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID, FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { deriveFrontmatterFlowOverlayNodeIds } from '@/lib/storyboardWidget/frontmatterOverlayNodeIds'
+import { readStoryboardProbeTreeMultiSelectModel } from '@/components/StoryboardCanvas/storyboardProbeTreeMultiSelectModel'
 
 export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanelTree() {
   const storage = new MemoryStorage()
@@ -119,6 +120,14 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
       || candidateEdges.some(edge => edge.source !== source.id || !cards.some(card => card.id === edge.target))
     ) {
       throw new Error(`expected one visible source Widget, three inferred candidate branches, and one Rich Media panel, got ${JSON.stringify(graphData)}`)
+    }
+    const multiSelectModels = cards.map(card => readStoryboardProbeTreeMultiSelectModel(card.properties || {}))
+    if (
+      multiSelectModels.some(model => !model || model.options.length < 2)
+      || multiSelectModels.flatMap(model => model?.options.map(option => option.label) || []).join('|')
+        !== options.flatMap(option => option.selectionOptions).join('|')
+    ) {
+      throw new Error(`expected applied Probe-Tree cards to retain renderable multi-select options, got ${JSON.stringify(multiSelectModels)}`)
     }
     const overlayIds = new Set(deriveFrontmatterFlowOverlayNodeIds(graphData!))
     for (const node of [source, ...cards, panel]) {

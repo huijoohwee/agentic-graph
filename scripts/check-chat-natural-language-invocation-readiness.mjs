@@ -26,6 +26,7 @@ const focusedTestFilters = [
   'chat.responseContract.structuredContent',
   'canvas.probeTree.llmResponseContract',
   'canvas.probeTree.mcpResponseAdapter',
+  'canvas.probeTree.literalMcpResult.appliesVisibleWidgetCardPanelTree',
   'floatingPropsPanel.widgetPalette',
   'ui.mainPanel.propsPanel.widgetPalette.rendersPaletteOnlySurface',
 ]
