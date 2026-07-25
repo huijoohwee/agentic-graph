@@ -58,29 +58,94 @@ export type ImmersiveMediaControlInput = Readonly<{
   download?: boolean
 }>
 
-type ParsedInvocation = Readonly<{
+type ParsedInvocation = Readonly<Omit<ImmersiveMediaControlInput, 'invocation'>> & Readonly<{
   operation: ImmersiveMediaOperation
-  sourceKind?: ImmersiveMediaSourceKind
-  mediaUrl?: string
-  layerId?: string
 }>
 
 const OPERATION_SET = new Set<ImmersiveMediaOperation>(IMMERSIVE_MEDIA_OPERATIONS)
-const INVOCATION_KEYS = new Set(['operation', 'sourceKind', 'url', 'layer'])
+const INVOCATION_KEYS = new Set([
+  'operation', 'sourceKind', 'url', 'title', 'description', 'cropped', 'lensStrength',
+  'transitionDurationMs', 'doubleClickZoom', 'keyboardActions', 'polygonPattern', 'yaw',
+  'pitch', 'fov', 'markerId', 'markerLabel', 'markerKind', 'markerColor', 'markerTooltip',
+  'markerLayer', 'markerHoverScale', 'markerProjections', 'layer', 'overlayEnabled', 'download',
+])
+const INVOCATION_FIELD_NAMES = Object.freeze({
+  sourceKind: 'sourceKind',
+  mediaUrl: 'url',
+  title: 'title',
+  description: 'description',
+  cropped: 'cropped',
+  lensStrength: 'lensStrength',
+  transitionDurationMs: 'transitionDurationMs',
+  doubleClickZoom: 'doubleClickZoom',
+  keyboardActions: 'keyboardActions',
+  polygonPattern: 'polygonPattern',
+  yawDegrees: 'yaw',
+  pitchDegrees: 'pitch',
+  fieldOfViewDegrees: 'fov',
+  markerId: 'markerId',
+  markerLabel: 'markerLabel',
+  markerKind: 'markerKind',
+  markerColor: 'markerColor',
+  markerTooltip: 'markerTooltip',
+  markerLayerId: 'markerLayer',
+  markerHoverScale: 'markerHoverScale',
+  markerProjections: 'markerProjections',
+  layerId: 'layer',
+  overlayEnabled: 'overlayEnabled',
+  download: 'download',
+})
+
+const OPERATION_FIELDS: Readonly<Record<ImmersiveMediaOperation, readonly string[]>> = Object.freeze({
+  open: [], close: [], 'reset-view': [], 'zoom-in': [], 'zoom-out': [], intro: [], transition: [],
+  'toggle-crop': [], 'toggle-fisheye': [], 'toggle-pattern': [],
+  source: ['sourceKind', 'url'],
+  configure: ['title', 'description', 'cropped', 'lensStrength', 'transitionDurationMs', 'doubleClickZoom', 'keyboardActions', 'polygonPattern'],
+  view: ['yaw', 'pitch', 'fov'],
+  'marker-add': ['url', 'markerId', 'markerLabel', 'markerKind', 'markerColor', 'markerTooltip', 'markerLayer', 'markerHoverScale', 'markerProjections', 'yaw', 'pitch'],
+  'marker-remove': ['markerId'],
+  'layer-toggle': ['layer'],
+  overlay: ['overlayEnabled'],
+  capture: ['download'],
+})
+
+function encodeInvocationValue(value: unknown): string {
+  return encodeURIComponent(Array.isArray(value) ? value.join(',') : String(value))
+}
+
+function parseBoolean(value: string | undefined): boolean | undefined | null {
+  if (value === undefined) return undefined
+  if (value === 'true') return true
+  if (value === 'false') return false
+  return null
+}
+
+function parseNumber(value: string | undefined): number | undefined | null {
+  if (value === undefined) return undefined
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function parseProjectionList(value: string | undefined): readonly ImmersiveMediaProjection[] | undefined | null {
+  if (value === undefined) return undefined
+  const values = value.split(',').filter(Boolean)
+  if (!values.length || new Set(values).size !== values.length) return null
+  if (!values.every(value => ['compass', 'map', 'plan'].includes(value))) return null
+  return values as readonly ImmersiveMediaProjection[]
+}
 
 export function buildImmersiveMediaInvocation(
   operation: ImmersiveMediaOperation,
-  fields: Readonly<{ sourceKind?: ImmersiveMediaSourceKind; mediaUrl?: string; layerId?: string }> = {},
+  fields: Readonly<Omit<ImmersiveMediaControlInput, 'invocation' | 'operation'>> = {},
 ): string {
-  const mediaBinding = operation === 'source' && fields.mediaUrl
+  const mediaBinding = fields.mediaUrl
     ? ` ${IMMERSIVE_MEDIA_INVOCATION.mediaBinding}`
     : ''
-  const pairs = [
-    `operation=${operation}`,
-    ...(fields.sourceKind ? [`sourceKind=${fields.sourceKind}`] : []),
-    ...(fields.mediaUrl ? [`url=${encodeURIComponent(fields.mediaUrl)}`] : []),
-    ...(fields.layerId ? [`layer=${encodeURIComponent(fields.layerId)}`] : []),
-  ]
+  const pairs = [`operation=${operation}`]
+  for (const [field, key] of Object.entries(INVOCATION_FIELD_NAMES)) {
+    const value = fields[field as keyof typeof fields]
+    if (value !== undefined) pairs.push(`${key}=${encodeInvocationValue(value)}`)
+  }
   return `${IMMERSIVE_MEDIA_INVOCATION.command} ${IMMERSIVE_MEDIA_INVOCATION.canvasBinding}${mediaBinding} ${IMMERSIVE_MEDIA_INVOCATION.semantic} ${pairs.join(' ')}`
 }
 
@@ -118,13 +183,47 @@ function parseImmersiveMediaInvocation(value: unknown): ParsedInvocation | null 
   if (sourceKind && !['procedural', 'image', 'video'].includes(sourceKind)) return null
   const mediaBindingPresent = bindings.includes(IMMERSIVE_MEDIA_INVOCATION.mediaBinding)
   if (mediaBindingPresent !== Boolean(pairs.url)) return null
-  if (operation !== 'source' && (sourceKind || pairs.url)) return null
-  if (operation !== 'layer-toggle' && pairs.layer) return null
+  if (Object.keys(pairs).some(key => key !== 'operation' && !OPERATION_FIELDS[operation].includes(key))) return null
+  if (sourceKind && operation !== 'source') return null
+  if (pairs.url && !['source', 'marker-add'].includes(operation)) return null
+  if (pairs.url && operation === 'source' && !sourceKind) return null
+  if (operation === 'source' && sourceKind === 'procedural' && pairs.url) return null
+  const booleanFields = ['cropped', 'doubleClickZoom', 'keyboardActions', 'polygonPattern', 'overlayEnabled', 'download'] as const
+  const parsedBooleans = Object.fromEntries(booleanFields.map(key => [key, parseBoolean(pairs[key])])) as Record<typeof booleanFields[number], boolean | undefined | null>
+  if (Object.values(parsedBooleans).some(value => value === null)) return null
+  const numberFields = ['lensStrength', 'transitionDurationMs', 'yaw', 'pitch', 'fov', 'markerHoverScale'] as const
+  const parsedNumbers = Object.fromEntries(numberFields.map(key => [key, parseNumber(pairs[key])])) as Record<typeof numberFields[number], number | undefined | null>
+  if (Object.values(parsedNumbers).some(value => value === null)) return null
+  const markerProjections = parseProjectionList(pairs.markerProjections)
+  if (markerProjections === null) return null
+  const markerKind = pairs.markerKind as ImmersiveMediaMarkerKind | undefined
+  if (markerKind && !['pin', 'element', 'video', 'youtube', 'chroma'].includes(markerKind)) return null
   return {
     operation,
     ...(sourceKind ? { sourceKind } : {}),
     ...(pairs.url ? { mediaUrl: pairs.url } : {}),
+    ...(pairs.title ? { title: pairs.title } : {}),
+    ...(pairs.description ? { description: pairs.description } : {}),
+    ...(parsedBooleans.cropped !== undefined ? { cropped: parsedBooleans.cropped } : {}),
+    ...(parsedNumbers.lensStrength !== undefined ? { lensStrength: parsedNumbers.lensStrength } : {}),
+    ...(parsedNumbers.transitionDurationMs !== undefined ? { transitionDurationMs: parsedNumbers.transitionDurationMs } : {}),
+    ...(parsedBooleans.doubleClickZoom !== undefined ? { doubleClickZoom: parsedBooleans.doubleClickZoom } : {}),
+    ...(parsedBooleans.keyboardActions !== undefined ? { keyboardActions: parsedBooleans.keyboardActions } : {}),
+    ...(parsedBooleans.polygonPattern !== undefined ? { polygonPattern: parsedBooleans.polygonPattern } : {}),
+    ...(parsedNumbers.yaw !== undefined ? { yawDegrees: parsedNumbers.yaw } : {}),
+    ...(parsedNumbers.pitch !== undefined ? { pitchDegrees: parsedNumbers.pitch } : {}),
+    ...(parsedNumbers.fov !== undefined ? { fieldOfViewDegrees: parsedNumbers.fov } : {}),
+    ...(pairs.markerId ? { markerId: pairs.markerId } : {}),
+    ...(pairs.markerLabel ? { markerLabel: pairs.markerLabel } : {}),
+    ...(markerKind ? { markerKind } : {}),
+    ...(pairs.markerColor ? { markerColor: pairs.markerColor } : {}),
+    ...(pairs.markerTooltip ? { markerTooltip: pairs.markerTooltip } : {}),
+    ...(pairs.markerLayer ? { markerLayerId: pairs.markerLayer } : {}),
+    ...(parsedNumbers.markerHoverScale !== undefined ? { markerHoverScale: parsedNumbers.markerHoverScale } : {}),
+    ...(markerProjections ? { markerProjections } : {}),
     ...(pairs.layer ? { layerId: pairs.layer } : {}),
+    ...(parsedBooleans.overlayEnabled !== undefined ? { overlayEnabled: parsedBooleans.overlayEnabled } : {}),
+    ...(parsedBooleans.download !== undefined ? { download: parsedBooleans.download } : {}),
   }
 }
 
@@ -155,7 +254,12 @@ export function inspectLocalImmersiveMedia() {
       transition: buildImmersiveMediaInvocation('transition'),
       intro: buildImmersiveMediaInvocation('intro'),
       capture: buildImmersiveMediaInvocation('capture'),
-      markers: buildImmersiveMediaInvocation('marker-add'),
+      markers: buildImmersiveMediaInvocation('marker-add', {
+        markerId: 'marker-example',
+        markerKind: 'element',
+        markerLabel: 'Example marker',
+        markerProjections: ['compass', 'map', 'plan'],
+      }),
       layers: buildImmersiveMediaInvocation('layer-toggle', { layerId: 'media' }),
     },
     media,

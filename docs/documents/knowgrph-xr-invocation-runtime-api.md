@@ -41,18 +41,18 @@ The strict native invocation is:
 /media.immersive @canvas #canvas-media operation=<operation>
 ```
 
-`@media-url` is admitted only for a `source` operation carrying an encoded URL. Duplicate commands, bindings, semantics, parameters, unknown parameters, and cross-operation parameters fail closed.
+`@media-url` is admitted only for `source` and `marker-add` operations carrying an encoded URL. Native invocations now carry the same bounded configuration, view, marker, layer, overlay, and capture fields as the structured browser tool; each operation admits only its own fields. Duplicate commands, bindings, semantics, parameters, unknown parameters, and cross-operation parameters fail closed.
 
 | Capability | Browser-local owner |
 |---|---|
-| Full or cropped panorama, description, custom navbar, lens strength, intro, and transition | `immersiveMediaRuntime.ts` and the existing R3F Canvas |
+| Full or cropped panorama, description, custom navbar, radial lens distortion, intro, and transition | `immersiveMediaRuntime.ts`, `ImmersiveMediaStage.tsx`, and the existing R3F Canvas |
 | Pointer look, keyboard actions, wheel and double-click zoom | `useImmersiveMediaCameraControls.ts` under shared `Controls.tsx` ownership |
 | Pin, custom element, direct video, YouTube, and chroma markers | `ImmersiveMediaStage.tsx`; remote media remains opt-in |
-| Compass, map, and plan projections; hover scaling; tooltips; layers; polygon pattern | One immutable browser-local snapshot projected into the six existing panels |
+| Compass, map, and plan projections; hover scaling; tooltips; layers; polygon pattern | `ImmersiveMediaMarkerProjections.tsx` plus one immutable browser-local snapshot projected into the six existing panels |
 | Partial overlay and screenshot | `ImmersiveMediaHud.tsx` and the existing `captureCanvasPngSnapshot("3d")` owner |
 | MCP inspection and mutation | `knowgrph.inspect_local_immersive_media` and `knowgrph.control_local_immersive_media` |
 
-The implementation is a protected-review candidate in PR `#406`. TypeScript and focused source/runtime tests are evidence for the candidate; canonical browser proof, protected integration, and any production release remain separate gates.
+The implementation is an active draft candidate in PR `#406`. TypeScript and focused source/runtime tests are evidence for the candidate; canonical browser proof, protected integration, and any production release remain separate gates.
 
 ## Integrated readiness contract
 

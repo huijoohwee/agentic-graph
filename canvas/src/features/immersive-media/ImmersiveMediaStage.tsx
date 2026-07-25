@@ -12,11 +12,12 @@ import {
   RepeatWrapping,
   SRGBColorSpace,
   SpriteMaterial,
+  ShaderMaterial,
   Texture,
   TextureLoader,
   VideoTexture,
 } from 'three'
-import type { Group, MeshBasicMaterial } from 'three'
+import type { Group } from 'three'
 import {
   completeImmersiveMediaTransition,
   readImmersiveMediaSnapshot,
@@ -316,7 +317,7 @@ export function ImmersiveMediaStage() {
     readImmersiveMediaSnapshot,
   )
   const texture = usePanoramaTexture(snapshot)
-  const materialRef = React.useRef<MeshBasicMaterial | null>(null)
+  const materialRef = React.useRef<ShaderMaterial | null>(null)
   const transitionRef = React.useRef({
     revision: snapshot.transitionRevision,
     startedAt: 0,
@@ -335,7 +336,8 @@ export function ImmersiveMediaStage() {
     if (!transition.startedAt) transition.startedAt = clock.elapsedTime
     const durationSeconds = Math.max(0.001, snapshot.transitionDurationMs / 1000)
     const progress = Math.min(1, (clock.elapsedTime - transition.startedAt) / durationSeconds)
-    materialRef.current.opacity = progress
+    materialRef.current.uniforms.opacity.value = progress
+    materialRef.current.uniforms.lensStrength.value = snapshot.view.lensStrength
     if (progress >= 1 && !transition.completed) {
       transition.completed = true
       completeImmersiveMediaTransition(transition.revision)
@@ -354,12 +356,17 @@ export function ImmersiveMediaStage() {
     <group name="kg_immersive_media_stage">
       <mesh rotation={[0, Math.PI, 0]}>
         <sphereGeometry args={[86, 64, 36, phiStart, phiLength, thetaStart, thetaLength]} />
-        <meshBasicMaterial
+        <shaderMaterial
           ref={materialRef}
-          map={texture}
+          uniforms={{
+            map: { value: texture },
+            opacity: { value: 0 },
+            lensStrength: { value: snapshot.view.lensStrength },
+          }}
+          vertexShader="varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }"
+          fragmentShader="uniform sampler2D map; uniform float opacity; uniform float lensStrength; varying vec2 vUv; void main(){ vec2 centered=vUv-0.5; float radial=dot(centered,centered); vec2 uv=vec2(fract(0.5+centered.x*(1.0+lensStrength*radial*0.72)), clamp(0.5+centered.y*(1.0+lensStrength*radial*0.72),0.001,0.999)); vec4 color=texture2D(map,uv); gl_FragColor=vec4(color.rgb,color.a*opacity); }"
           side={BackSide}
           transparent
-          opacity={0}
           depthWrite={false}
         />
       </mesh>

@@ -12,7 +12,6 @@ import {
   Image,
   Keyboard,
   Layers3,
-  Map,
   MapPinned,
   Maximize2,
   MousePointer2,
@@ -27,6 +26,7 @@ import {
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import type { ImmersiveMediaSourceKind } from './immersiveMediaModel'
+import { ImmersiveMediaMarkerProjections } from './ImmersiveMediaMarkerProjections'
 import {
   captureImmersiveMediaScreenshot,
   closeImmersiveMedia,
@@ -95,36 +95,6 @@ function ToggleButton({
     >
       {children}
     </button>
-  )
-}
-
-function MarkerProjectionStrip() {
-  const snapshot = readImmersiveMediaSnapshot()
-  const projectionRows = [
-    { id: 'compass', label: 'Compass', Icon: Compass },
-    { id: 'map', label: 'Map', Icon: Map },
-    { id: 'plan', label: 'Plan', Icon: MapPinned },
-  ] as const
-  return (
-    <section
-      className="grid grid-cols-3 gap-1"
-      aria-label="Marker projections"
-      data-kg-immersive-media-marker-projections="compass,map,plan"
-    >
-      {projectionRows.map(({ id, label, Icon }) => {
-        const markers = snapshot.markers.filter(marker => marker.projections.includes(id))
-        return (
-          <span
-            key={id}
-            className={cn('rounded border px-1.5 py-1 text-[9px]', UI_THEME_TOKENS.panel.border)}
-            title={markers.map(marker => marker.label).join(', ')}
-          >
-            <b className="flex items-center gap-1"><Icon className="h-3 w-3" aria-hidden="true" />{label}</b>
-            <span className={UI_THEME_TOKENS.text.tertiary}>{markers.length} markers</span>
-          </span>
-        )
-      })}
-    </section>
   )
 }
 
@@ -271,7 +241,7 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> {snapshot.navigation.customElementLabel}
         </button>
       </section>
-      <MarkerProjectionStrip />
+      <ImmersiveMediaMarkerProjections snapshot={snapshot} />
     </>
   )
 }

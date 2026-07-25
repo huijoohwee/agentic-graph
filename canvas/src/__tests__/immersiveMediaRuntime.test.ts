@@ -63,6 +63,38 @@ export async function testImmersiveMediaNativeInvocationIsStrict() {
     'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
   )
 
+  const nativeMarkerResult = await controlLocalImmersiveMedia({
+    invocation: buildImmersiveMediaInvocation('marker-add', {
+      markerId: 'marker-native',
+      markerLabel: 'Native marker',
+      markerKind: 'chroma',
+      markerColor: '#34d399',
+      markerTooltip: 'Native grammar keeps marker metadata.',
+      markerLayerId: 'media',
+      markerHoverScale: 1.6,
+      markerProjections: ['compass', 'plan'],
+      yawDegrees: 64,
+      pitchDegrees: -12,
+    }),
+  })
+  assert.equal(nativeMarkerResult.ok, true)
+  assert.deepEqual(
+    readImmersiveMediaSnapshot().markers.find(marker => marker.id === 'marker-native')?.projections,
+    ['compass', 'plan'],
+  )
+
+  const nativeConfigureResult = await controlLocalImmersiveMedia({
+    invocation: buildImmersiveMediaInvocation('configure', {
+      cropped: true,
+      lensStrength: 0.8,
+      doubleClickZoom: false,
+      keyboardActions: false,
+    }),
+  })
+  assert.equal(nativeConfigureResult.ok, true)
+  assert.equal(readImmersiveMediaSnapshot().view.lensStrength, 0.8)
+  assert.equal(readImmersiveMediaSnapshot().navigation.keyboardActions, false)
+
   const rejectedInvocations = [
     '/media.immersive #canvas-media operation=open',
     '/media.immersive @canvas operation=open',
@@ -114,6 +146,7 @@ export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {
   const graphSource = readFileSync(resolve(process.cwd(), 'src/lib/three/ThreeGraph.impl.tsx'), 'utf8')
   const controlsSource = readFileSync(resolve(process.cwd(), 'src/features/three/Controls.tsx'), 'utf8')
   const stageSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaStage.tsx'), 'utf8')
+  const projectionSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaMarkerProjections.tsx'), 'utf8')
   for (const surface of ['media', 'animation', 'motionControl', 'gameMode', 'flightSim', 'camera']) {
     assert.match(panelSource, new RegExp(`view === '${surface}'`))
   }
@@ -122,4 +155,9 @@ export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {
   assert.match(graphSource, /immersiveMediaActive=\{immersiveMediaStageActive\}/)
   assert.match(controlsSource, /useImmersiveMediaCameraControls/)
   assert.doesNotMatch(stageSource, /<Canvas[\s>]/)
+  assert.match(stageSource, /lensStrength\*radial/)
+  assert.match(projectionSource, /setSelectedImmersiveMediaMarker/)
+  for (const projection of ['compass', 'map', 'plan']) {
+    assert.match(projectionSource, new RegExp(`projection-surface=\{id\}|${projection}`))
+  }
 }
