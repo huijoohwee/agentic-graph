@@ -330,6 +330,7 @@ async function performFlightSimSurfaceOpen(
     throwIfFlightSimOperationAborted(options.signal)
     surfaceActivated = activateXrSceneSurface({
       panelView: 'flightSim',
+      gameplaySurface: 'flightSim',
       ...(options.openPanel === false ? {} : { openPanel: true }),
     })
     if (!surfaceActivated) {

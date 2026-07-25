@@ -14,7 +14,7 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { runVideoRemixAsync } from "./video-remix-runtime.js"; import { runShowrunnerLocalTool } from "./showrunner-runtime.js"; import { runOsStatusTool } from "./os-status-runtime.js"; import { callSealionSidecarTool } from "./sealion-sidecar-runtime.js"; import { callBrowserApiRuntime } from "./browser-api-runtime.js"; import { runProbeTreeTool } from "./probe-tree-runtime.js"; import { runSmeRiskCopilotTool } from "./sme-risk-copilot-runtime.js"; import { handleAnnotateImageTool, handleAnnotateVideoFrameTool } from "./annotation-runtime.js"; import { runAgentSandboxPolicyTool } from "./agent-sandbox-policy-runtime.js"; import { runAgenticCanvasOsDocsInvokeTool } from "./agentic-canvas-os-docs-runtime.js"; import { isExternalToolGatewayToolName } from "./external-tool-gateway-contract.js"; import { getExternalToolGatewayRuntime } from "./external-tool-gateway-runtime.js"; import { createDefaultApplicationAdapterRegistry } from "./agent-application-adapter-registry.js"; import { createAgentApplicationRuntime, isAgentApplicationToolName } from "./agent-application-runtime.js"; import { runExportPublishTool } from "./export-publish-runtime.js"; import { createEcsRuntime } from "./ecs-runtime.js"; import { isEcsToolName } from "./ecs-tool-contract.js"; import { createImplementationRunRuntime, isImplementationRunToolName, runImplementationRunTool } from "./implementation-run-runtime.js"; import { isSkillEvolutionToolName, runSkillEvolutionTool } from "./skill-evolution-runtime.js"; import { createLocalSkillEvolutionRuntime } from "./skill-evolution-local-runtime.js";
+import { runVideoRemixAsync } from "./video-remix-runtime.js"; import { runShowrunnerLocalTool } from "./showrunner-runtime.js"; import { runOsStatusTool } from "./os-status-runtime.js"; import { callSealionSidecarTool } from "./sealion-sidecar-runtime.js"; import { callBrowserApiRuntime } from "./browser-api-runtime.js"; import { runProbeTreeTool } from "./probe-tree-runtime.js"; import { runSmeRiskCopilotTool } from "./sme-risk-copilot-runtime.js"; import { handleAnnotateImageTool, handleAnnotateVideoFrameTool } from "./annotation-runtime.js"; import { runAgentSandboxPolicyTool } from "./agent-sandbox-policy-runtime.js"; import { runAgenticCanvasOsDocsInvokeTool } from "./agentic-canvas-os-docs-runtime.js"; import { isExternalToolGatewayToolName } from "./external-tool-gateway-contract.js"; import { getExternalToolGatewayRuntime } from "./external-tool-gateway-runtime.js"; import { createDefaultApplicationAdapterRegistry } from "./agent-application-adapter-registry.js"; import { createAgentApplicationRuntime, isAgentApplicationToolName } from "./agent-application-runtime.js"; import { runExportPublishTool } from "./export-publish-runtime.js"; import { createEcsRuntime } from "./ecs-runtime.js"; import { isEcsToolName } from "./ecs-tool-contract.js"; import { createLocalRunRuntimeRegistrar } from "./local-run-runtime-registrar.js"; import { isSkillEvolutionToolName, runSkillEvolutionTool } from "./skill-evolution-runtime.js"; import { createLocalSkillEvolutionRuntime } from "./skill-evolution-local-runtime.js";
 import {
   addMemoryLayerMemory,
   assembleMemoryLayerPrompt,
@@ -23,12 +23,13 @@ import {
   searchMemoryLayerMemories,
 } from "./memory-layer-runtime.js";
 import { buildKnowgrphLocalMcpToolDefinitions, KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "./local-tool-contract.js";
+import { isStorageSyncLocalToolName, runStorageSyncLocalTool } from "./storage-sync-local-runtime.js";
+import { runVdeoxplnLocalTool } from "./vdeoxpln-runtime.js";
 import { buildKnowgrphAgentReadyPromptContracts, getKnowgrphAgentReadyPrompt } from "../canvas/src/features/agent-ready/knowgrphAgentReadyPromptContract.mjs";
 import { buildKnowgrphAgentReadyResourceTemplateContracts, buildKnowgrphSourceFileResourceReadResult, parseKnowgrphSourceFileResourceUri } from "../canvas/src/features/agent-ready/knowgrphAgentReadyResourceContract.mjs";
 import { SITE_ORIGIN } from "../cloudflare/pages/knowgrph-agent-ready-shared.mjs";
 import { KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID } from "../canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs";
 import { createPublishedAgentReadyToolExecutors } from "../canvas/src/features/agent-ready/publishedToolExecutors.mjs";
-import { buildKnowgrphVdeoxplnMarkdown, buildKnowgrphVdeoxplnRegistry, buildKnowgrphVdeoxplnRoutingPlan, validateKnowgrphVdeoxplnRegistry } from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
 import { KNOWGRPH_MCP_APP_RESOURCE_URI, buildKnowgrphMcpAppsCapabilities, buildKnowgrphMcpAppsResourceDescriptor, buildKnowgrphMcpAppsResourceReadResult } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
 import { runLocalAgentRuntime } from "./local-agent-runtime.js";
 const MAX_OUTPUT_CHARS = Number(process.env.KNOWGRPH_MCP_MAX_OUTPUT_CHARS ?? "20000"); const DEFAULT_TIMEOUT_MS = Number(process.env.KNOWGRPH_MCP_TIMEOUT_MS ?? "600000"); const KNOWGRPH_HTML_VIDEO_ENGINE = "KNOWGRPH_HTML_VIDEO_ENGINE";
@@ -46,7 +47,7 @@ const ALLOW_EXTERNAL_PATHS =
   (process.env.KNOWGRPH_ALLOW_EXTERNAL_PATHS || "").trim().toLowerCase() === "1";
 const DEFAULT_UI_HOST = process.env.KNOWGRPH_UI_HOST?.trim() || "127.0.0.1";
 const DEFAULT_UI_PORT = Number(process.env.KNOWGRPH_UI_PORT?.trim() || "5173");
-const LOCAL_MCP_TOOLS = buildKnowgrphLocalMcpToolDefinitions({ defaultUiHost: DEFAULT_UI_HOST, defaultUiPort: DEFAULT_UI_PORT }); const ECS_RUNTIME = createEcsRuntime({ rootDir: KNOWGRPH_ROOT }); const IMPLEMENTATION_RUN_RUNTIME = createImplementationRunRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env }); let SKILL_EVOLUTION_RUNTIME; const getSkillEvolutionRuntime = () => SKILL_EVOLUTION_RUNTIME ||= createLocalSkillEvolutionRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env }); let AGENT_APPLICATION_RUNTIME; const getAgentApplicationRuntime = () => AGENT_APPLICATION_RUNTIME ||= createAgentApplicationRuntime({ adapterRegistry: createDefaultApplicationAdapterRegistry({ externalGateway: getExternalToolGatewayRuntime() }) });
+const LOCAL_MCP_TOOLS = buildKnowgrphLocalMcpToolDefinitions({ defaultUiHost: DEFAULT_UI_HOST, defaultUiPort: DEFAULT_UI_PORT }); const ECS_RUNTIME = createEcsRuntime({ rootDir: KNOWGRPH_ROOT }); const LOCAL_RUN_RUNTIME = createLocalRunRuntimeRegistrar({ rootDir: KNOWGRPH_ROOT, env: process.env }); let SKILL_EVOLUTION_RUNTIME; const getSkillEvolutionRuntime = () => SKILL_EVOLUTION_RUNTIME ||= createLocalSkillEvolutionRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env }); let AGENT_APPLICATION_RUNTIME; const getAgentApplicationRuntime = () => AGENT_APPLICATION_RUNTIME ||= createAgentApplicationRuntime({ adapterRegistry: createDefaultApplicationAdapterRegistry({ externalGateway: getExternalToolGatewayRuntime() }) });
 const LOCAL_MCP_PROMPTS = buildKnowgrphAgentReadyPromptContracts();
 const LOCAL_MCP_RESOURCE_TEMPLATES = buildKnowgrphAgentReadyResourceTemplateContracts();
 const LOCAL_PUBLISHED_SOURCE_TOOL_EXECUTORS = createPublishedAgentReadyToolExecutors({
@@ -355,7 +356,45 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const toolName = request.params?.name;
   const args = request.params?.arguments ?? {};
 
-  try { if (isSkillEvolutionToolName(toolName)) { const payload = await runSkillEvolutionTool(args, { runtime: getSkillEvolutionRuntime(), context: { signal: extra?.signal } }); return jsonToolResult(payload, payload.status === "failed"); } if (isAgentApplicationToolName(toolName)) { let payload; try { payload = await getAgentApplicationRuntime().run(toolName, args, { signal: extra?.signal }); } catch { payload = { ok: false, error: { code: "application_runtime_unavailable", message: "Application runtime is unavailable because host-owned configuration did not pass validation." } }; } return jsonToolResult(payload, payload.ok === false); } if (isImplementationRunToolName(toolName)) { const payload = await runImplementationRunTool(toolName, args, { runtime: IMPLEMENTATION_RUN_RUNTIME }); return jsonToolResult(payload, payload.ok === false); } if (isEcsToolName(toolName)) { const payload = await ECS_RUNTIME.run(toolName, args); return jsonToolResult(payload, payload.ok === false); } if (isExternalToolGatewayToolName(toolName)) { const payload = await getExternalToolGatewayRuntime().run(toolName, args); return jsonToolResult(payload, payload.ok === false); }
+  try {
+    if (isStorageSyncLocalToolName(toolName)) {
+      const payload = runStorageSyncLocalTool(toolName, args);
+      return jsonToolResult(payload, true);
+    }
+    if (isSkillEvolutionToolName(toolName)) {
+      const payload = await runSkillEvolutionTool(args, {
+        runtime: getSkillEvolutionRuntime(),
+        context: { signal: extra?.signal },
+      });
+      return jsonToolResult(payload, payload.status === "failed");
+    }
+    if (isAgentApplicationToolName(toolName)) {
+      let payload;
+      try {
+        payload = await getAgentApplicationRuntime().run(toolName, args, { signal: extra?.signal });
+      } catch {
+        payload = {
+          ok: false,
+          error: {
+            code: "application_runtime_unavailable",
+            message: "Application runtime is unavailable because host-owned configuration did not pass validation.",
+          },
+        };
+      }
+      return jsonToolResult(payload, payload.ok === false);
+    }
+    if (LOCAL_RUN_RUNTIME.canHandle(toolName)) {
+      const payload = await LOCAL_RUN_RUNTIME.run(toolName, args, { signal: extra?.signal });
+      return jsonToolResult(payload, payload.ok === false);
+    }
+    if (isEcsToolName(toolName)) {
+      const payload = await ECS_RUNTIME.run(toolName, args);
+      return jsonToolResult(payload, payload.ok === false);
+    }
+    if (isExternalToolGatewayToolName(toolName)) {
+      const payload = await getExternalToolGatewayRuntime().run(toolName, args);
+      return jsonToolResult(payload, payload.ok === false);
+    }
     if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiLaunch) {
       const target = typeof args.target === "string" ? args.target : "canvas";
       const host = typeof args.host === "string" && args.host.trim() ? args.host.trim() : DEFAULT_UI_HOST;
@@ -532,51 +571,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     }
 
     if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList) {
-      const includeMarkdown = args.includeMarkdown === true;
-      const vdeoxplnId = typeof args.vdeoxplnId === "string" ? args.vdeoxplnId.trim() : "";
-      const registry = buildKnowgrphVdeoxplnRegistry();
-      const validation = validateKnowgrphVdeoxplnRegistry(registry);
-      const vdeoxplnEntries = vdeoxplnId ? registry.filter((vdeoxpln) => vdeoxpln.id === vdeoxplnId) : registry;
-      if (vdeoxplnId && vdeoxplnEntries.length === 0) {
-        throw new Error(`Unknown Knowgrph vdeoxpln id: ${vdeoxplnId}`);
-      }
-      const payload = {
-        contractVersion: vdeoxplnEntries[0]?.version || "knowgrph-vdeoxpln/v0.1",
-        validation,
-        vdeoxplnEntries: vdeoxplnEntries.map((vdeoxpln) => ({
-          id: vdeoxpln.id,
-          title: vdeoxpln.title,
-          purpose: vdeoxpln.purpose,
-          scope: vdeoxpln.scope,
-          mutation: vdeoxpln.mutation,
-          semanticKey: vdeoxpln.semanticKey,
-          triggers: vdeoxpln.triggers,
-          owners: vdeoxpln.owners,
-          tools: vdeoxpln.tools,
-          inputs: vdeoxpln.inputs,
-          outputs: vdeoxpln.outputs,
-          workflow: vdeoxpln.workflow,
-          artifactPolicy: vdeoxpln.artifactPolicy,
-          aiPolicy: vdeoxpln.aiPolicy,
-          publish: vdeoxpln.publish,
-          validation: vdeoxpln.validation,
-          markdown: includeMarkdown ? buildKnowgrphVdeoxplnMarkdown(vdeoxpln) : undefined,
-        })),
-        routingPlan: buildKnowgrphVdeoxplnRoutingPlan({
-          intentText: typeof args.intentText === "string" ? args.intentText : "",
-          contentTypes: Array.isArray(args.contentTypes) ? args.contentTypes : [],
-          requestedOutputs: Array.isArray(args.requestedOutputs) ? args.requestedOutputs : [],
-          stateSignals: Array.isArray(args.stateSignals) ? args.stateSignals : [],
-          chatStorageTarget: typeof args.chatStorageTarget === "string" ? args.chatStorageTarget : "",
-          sourceFileCount: Number(args.sourceFileCount || 0),
-          hasSourceFiles: Number(args.sourceFileCount || 0) > 0,
-          hasGraphData: args.hasGraphData === true,
-          hasSelection: args.hasSelection === true,
-          hasWorkspaceDocument: args.hasWorkspaceDocument === true,
-          registry: vdeoxplnEntries,
-        }),
-      };
-      return jsonToolResult(payload, !validation.ok);
+      const payload = runVdeoxplnLocalTool(args);
+      return jsonToolResult(payload, !payload.validation.ok);
     }
 
     throw new Error(`Unknown tool: ${toolName}`);
@@ -588,7 +584,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   }
 });
 async function main() {
-  await IMPLEMENTATION_RUN_RUNTIME.recover();
+  await LOCAL_RUN_RUNTIME.recover();
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

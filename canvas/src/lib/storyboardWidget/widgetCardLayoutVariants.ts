@@ -1,5 +1,6 @@
 import {
   FLOW_TEXT_GENERATION_NODE_LABEL,
+  FLOW_TEXT_GENERATION_NODE_TYPE_ID,
 } from '@/lib/config.storyboard-widget'
 
 export const WIDGET_CARD_TYPE_ZERO_LAYOUT_ID = 'widget-card-type-0' as const
@@ -13,15 +14,59 @@ export type WidgetCardLayoutVariantId =
   | typeof PROBE_TREE_TYPE_TWO_LAYOUT_ID
   | typeof RICH_MEDIA_DELIVERABLES_LAYOUT_ID
 
-export function readWidgetCardLayoutVariantId(value: unknown): WidgetCardLayoutVariantId | null {
+export type WidgetCardLayoutVariantDescriptor = {
+  id: WidgetCardLayoutVariantId
+  label: string
+  layoutKind: 'card-media' | 'card-output' | 'card-multi-select'
+  nodeTypeId: typeof FLOW_TEXT_GENERATION_NODE_TYPE_ID
+  widgetTypeId: 'default'
+  formId: 'textGeneration'
+}
+
+export const WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS: readonly WidgetCardLayoutVariantDescriptor[] = [
+  {
+    id: WIDGET_CARD_TYPE_ZERO_LAYOUT_ID,
+    label: 'Widget Card Type 0',
+    layoutKind: 'card-media',
+    nodeTypeId: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
+    widgetTypeId: 'default',
+    formId: 'textGeneration',
+  },
+  {
+    id: PROBE_TREE_TYPE_ONE_LAYOUT_ID,
+    label: 'Probe-Tree Type 1',
+    layoutKind: 'card-output',
+    nodeTypeId: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
+    widgetTypeId: 'default',
+    formId: 'textGeneration',
+  },
+  {
+    id: PROBE_TREE_TYPE_TWO_LAYOUT_ID,
+    label: 'Probe-Tree Type 2',
+    layoutKind: 'card-multi-select',
+    nodeTypeId: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
+    widgetTypeId: 'default',
+    formId: 'textGeneration',
+  },
+  {
+    id: RICH_MEDIA_DELIVERABLES_LAYOUT_ID,
+    label: 'Deliverables Widget Card',
+    layoutKind: 'card-output',
+    nodeTypeId: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
+    widgetTypeId: 'default',
+    formId: 'textGeneration',
+  },
+] as const
+
+export function readWidgetCardLayoutVariantDescriptor(
+  value: unknown,
+): WidgetCardLayoutVariantDescriptor | null {
   const id = String(value || '').trim()
-  if (
-    id === WIDGET_CARD_TYPE_ZERO_LAYOUT_ID
-    || id === PROBE_TREE_TYPE_ONE_LAYOUT_ID
-    || id === PROBE_TREE_TYPE_TWO_LAYOUT_ID
-    || id === RICH_MEDIA_DELIVERABLES_LAYOUT_ID
-  ) return id
-  return null
+  return WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS.find(descriptor => descriptor.id === id) || null
+}
+
+export function readWidgetCardLayoutVariantId(value: unknown): WidgetCardLayoutVariantId | null {
+  return readWidgetCardLayoutVariantDescriptor(value)?.id || null
 }
 
 export function buildWidgetCardLayoutSeed(variantId: unknown): {

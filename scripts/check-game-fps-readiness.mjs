@@ -306,6 +306,7 @@ if (physicsSeed?.run_ready_demo?.canonical_source_file !== `/${physicsSeedPath}`
 const workspaceSeedPaths = (await listMarkdownFiles(path.join(root, 'docs/workspace-seeds'))).sort()
 const gameOrPhysicsDemoIdPattern = /(?:^|-)(?:game-(?:fps|mode)|(?:fps|mode)-game|xr-physics|physics-(?:xr|playground))(?:-|$)/
 const flightOverlaySeedPath = 'docs/workspace-seeds/knowgrph-game-flight-sim-demo.md'
+const cityOverlaySeedPath = 'docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md'
 for (const relPath of workspaceSeedPaths) {
   if (relPath === physicsSeedPath) continue
   const source = await text(relPath)
@@ -330,6 +331,15 @@ for (const relPath of workspaceSeedPaths) {
     && !Array.isArray(sharedXrScene)
     && sharedXrScene.source_authority === `/${physicsSeedPath}`
     && sharedXrScene.world_ownership === 'overlay-only'
+  const cityRuntime = frontmatter.city_runtime
+  const declaresCanonicalCityOverlay = relPath === cityOverlaySeedPath
+    && runReadyId === 'city-sim'
+    && cityRuntime
+    && typeof cityRuntime === 'object'
+    && !Array.isArray(cityRuntime)
+    && cityRuntime.world_ownership === 'overlay-only'
+    && cityRuntime.stage_owner === 'additive City Stage in the existing shared Canvas'
+    && cityRuntime.renderer_rule === 'never create a second Canvas or renderer'
   const declaresGameOrHomeAuthority = Object.hasOwn(frontmatter, 'game_mode')
     || Object.hasOwn(frontmatter, 'game_mode_xr_fidelity_status')
     || Object.hasOwn(frontmatter, 'home_apex')
@@ -338,7 +348,9 @@ for (const relPath of workspaceSeedPaths) {
     path.basename(relPath, path.extname(relPath)).toLowerCase().replace(/[_\s]+/g, '-'),
   )
   if (gameOrPhysicsDemoIdPattern.test(runReadyId)
-    || (declaresStandaloneXrWorld && !declaresCanonicalFlightOverlay)
+    || (declaresStandaloneXrWorld
+      && !declaresCanonicalFlightOverlay
+      && !declaresCanonicalCityOverlay)
     || declaresGameOrHomeAuthority
     || pathLooksLikeAlternateAuthority) {
     throw new Error(`alternate standalone Game Mode/XR Physics source authority is forbidden: ${relPath}`)
@@ -422,6 +434,7 @@ const sourceAuthorityLifecycleMarkers = [
   "type: 'begin-document-intent'",
   "type: 'complete-document-intent'",
   "type: 'fail-document-intent'",
+  'hasReachedReady',
   "if (current.documentIntent?.key !== normalizedKey) return current",
   "state.basePhase === 'error'",
 ]
@@ -443,7 +456,9 @@ if (!canvasViewport.includes("const sourceFilesBootstrapReady = sourceFilesBoots
   || !threeRendererLifecycle.includes('&& !input.documentSwitchOwnsViewport')
   || !canvasViewport.includes('sourceFilesBootstrapReady && xrPhysicsRunReadyDemo')
   || !canvasViewport.includes('const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady')
-  || !canvasStartupRuntimes.includes('{sourceFilesBootstrapReady ? <>')
+  || !canvasStartupRuntimes.includes('useSourceFilesBootstrapHasReachedReady')
+  || !canvasStartupRuntimes.includes('{sourceFilesBootstrapHasReachedReady ? <>')
+  || canvasStartupRuntimes.includes('{sourceFilesBootstrapReady ? <>')
   || !canvasStartupRuntimes.includes('<XrPhysicsRunReadyDemoRuntime />')
   || !xrRuntimeBridge.includes('if (!sourceFilesBootstrapReady) return')
   || (xrRuntimeBridge.match(/if \(!readSourceFilesBootstrapReady\(\)\) return false/g) || []).length !== 2
@@ -453,7 +468,7 @@ if (!canvasViewport.includes("const sourceFilesBootstrapReady = sourceFilesBoots
   || !canvasSourceAuthorityBoundary.includes('failSourceFilesDocumentIntent')
   || !appSource.includes('<CanvasSourceAuthorityBoundary>')
   || !appSource.includes('<XrMotionReferenceRuntimeBridge />')) {
-  throw new Error('Three, native XR, Game Mode, HUD, and hydration owners must remain fenced behind settled source authority')
+  throw new Error('Three, Game Mode, HUD, and hydration must remain fenced by settled source authority while mounted run-ready lifecycle owners survive later document intents')
 }
 const xrGraphStageAuthority = threeGraph.match(/const xrGraphStageAuthority = mode === 'xr'[\s\S]*?const xrSceneAuthority/)?.[0] || ''
 const xrSceneAuthority = threeGraph.match(/const xrSceneAuthority = mode !== 'xr'[\s\S]*?const xrStandaloneFit/)?.[0] || ''
@@ -485,8 +500,8 @@ if (!threeGameplayOverlay.includes('if (props.gameFpsActive)')
   || !threeGameplayOverlay.includes('return <GameFpsMissionStageLazy coordinateScale={props.coordinateScale} />')) {
   throw new Error('Game-conditioned Three mounts must remain actor-only in the shared gameplay projection')
 }
-if (!threeGraph.includes('{!gameFpsStageActive ? <ControlsLazy')) {
-  throw new Error('Game FPS must suppress the shared OrbitControls owner')
+if (!threeGraph.includes('{!gameFpsStageActive && !citySimStageActive ? <ControlsLazy')) {
+  throw new Error('Game FPS and City overlays must suppress the shared OrbitControls owner')
 }
 const xrWorldPlacement = threeGraph.match(/<XrWorldPlacement\b[\s\S]*?<\/XrWorldPlacement>/)?.[0] || ''
 const authoredWorldTargets = ['SceneLazy', 'GlbAssetModel', 'SpatialCaptureManifestStage']

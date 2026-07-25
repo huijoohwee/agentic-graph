@@ -243,14 +243,14 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   if (!hookText.includes('const graphDataForOverlayRuntime =') || !hookText.includes('draftGraphDataRef.current || renderGraphDataOverride || null')) {
     throw new Error('expected overlay collision runtime to resolve a single upstream graph source before deriving node types and obstacles')
   }
-  if (!hookText.includes('const overlayTopologyLayoutSignature = React.useMemo(() => {')) {
-    throw new Error('expected overlay collision relayout effects to use semantic topology/layout signatures instead of raw graph revisions')
+  if (!hookText.includes('const overlayNodeLayoutSignature = React.useMemo(() => {')) {
+    throw new Error('expected overlay collision relayout effects to use semantic node-layout signatures instead of raw graph revisions or edge publication')
   }
-  if (!hookText.includes("import { buildOverlayTopologyLayoutSignature } from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'")) {
-    throw new Error('expected overlay collision topology/layout signature to reuse the shared Storyboard Widget semantic-key helper')
+  if (!hookText.includes("import { buildOverlayNodeLayoutSignature } from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'")) {
+    throw new Error('expected overlay collision node-layout signature to reuse the shared Storyboard Widget semantic-key helper')
   }
-  if (!hookText.includes("return buildOverlayTopologyLayoutSignature(graphDataForOverlayRuntime)")) {
-    throw new Error('expected overlay collision topology/layout signature to be derived from the resolved graph source')
+  if (!hookText.includes("return buildOverlayNodeLayoutSignature(graphDataForOverlayRuntime)")) {
+    throw new Error('expected overlay collision node-layout signature to be derived from the resolved graph source')
   }
   if (!topologySignatureText.includes("import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'")) {
     throw new Error('expected shared overlay topology/layout signature to reuse graph edge endpoint normalization')
@@ -276,7 +276,7 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   if (topologySignatureText.includes("String(edge.source || '').trim()") || topologySignatureText.includes("String(props.sourcePort || props['flow:sourcePort'] || '').trim()")) {
     throw new Error('expected shared overlay topology/layout signature to avoid raw endpoint and legacy port alias reads')
   }
-  if (!hookText.includes('overlayTopologyLayoutSignature,') || hookText.includes('graphContentRevision,\n    overlayOnlyModeEnabled')) {
+  if (!hookText.includes('overlayNodeLayoutSignature,') || hookText.includes('graphContentRevision,\n    overlayOnlyModeEnabled')) {
     throw new Error('expected run-output graph content revisions to avoid resetting Balanced overlay collision layout')
   }
   if (!runtimeText.includes('const overlayTopologyLayoutSignature = React.useMemo(() => {')) {
@@ -289,13 +289,13 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
   }
   const runtimeSceneCallIndex = runtimeText.indexOf('useStoryboardWidgetRuntimeScene({')
   const runtimeSceneCall = runtimeSceneCallIndex >= 0 ? runtimeText.slice(runtimeSceneCallIndex, runtimeSceneCallIndex + 420) : ''
-  if (!runtimeSceneCall.includes('overlayTopologyLayoutSignature,') || !runtimeSceneCall.includes('draftGraphDataRef,') || runtimeSceneCall.includes('graphContentRevision,')) {
-    throw new Error('expected Storyboard Widget runtime scene seeding to receive semantic topology/layout signature instead of raw graph revision')
+  if (!runtimeSceneCall.includes('overlayNodeLayoutSignature,') || !runtimeSceneCall.includes('draftGraphDataRef,') || runtimeSceneCall.includes('graphContentRevision,')) {
+    throw new Error('expected Storyboard Widget runtime scene seeding to receive semantic node-layout signature instead of raw graph revision or edges')
   }
   if (!surfaceText.includes("'frontmatter-overlay-auto-pins'") || !surfaceText.includes('overlayEditorNodeIdsKey') || !surfaceText.includes("hashScopedStringArraySignature('missing-frontmatter-pins', missingIds)")) {
     throw new Error('expected Storyboard Widget overlay pin seeding to ignore output-only graph revisions')
   }
-  if (!sceneText.includes('args.overlayTopologyLayoutSignature') || sceneText.includes('args.baseGraphDataRevision')) {
+  if (!sceneText.includes('args.overlayNodeLayoutSignature') || sceneText.includes('args.baseGraphDataRevision')) {
     throw new Error('expected Storyboard Widget world-position seeding to ignore output-only graph revisions')
   }
   if (!sceneText.includes('const readPreferredGraphDataForSeeding = React.useCallback(() => {')
@@ -312,7 +312,7 @@ export const testStoryboardWidgetOverlayCollisionRebalancesStoredVerticalCluster
     || !sceneText.includes("nodeTypeById.set(id, String(unwrapGraphCellValue(node?.type) || '').trim())")) {
     throw new Error('expected Storyboard Widget runtime scene to unwrap seeded node ids and types before authoritative-anchor checks')
   }
-  if (sceneText.includes('args.overlayTopologyLayoutSignature, args.renderGraphDataOverride')) {
+  if (sceneText.includes('args.overlayNodeLayoutSignature, args.renderGraphDataOverride')) {
     throw new Error('expected Storyboard Widget world-position seeding deps to avoid raw graph-object identity churn')
   }
   if (!surfaceText.includes('const graphData = renderGraphDataOverrideRef.current')) {

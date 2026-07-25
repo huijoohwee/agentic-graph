@@ -79,19 +79,15 @@ function XrWorldPlacement({
   ) : <>{children}</>
 }
 export default function ThreeGraph({ active = true, mode = '3d' }: { active?: boolean; mode?: Canvas3dModeId }) {
-  const {
-    schema,
-    selectNode,
-    selectEdge,
-    setSelectionSource,
-  } = useGraphStore()
+  const { schema, selectNode, selectEdge, setSelectionSource } = useGraphStore()
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
   const nativeXrRunReadyDemo = isNativeXrRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
-  const { flightSim, flightSimActive, gameMode, gameFpsActive } = useCanvasGameplayOverlayState()
+  const { citySim, citySimActive, flightSim, flightSimActive, gameMode, gameFpsActive } = useCanvasGameplayOverlayState()
+  const citySimStageActive = mode === 'xr' && citySimActive
   const flightStageActive = mode === 'xr' && flightSimActive
   const gameFpsStageActive = mode === 'xr' && gameFpsActive
-  const gameplayOverlayActive = flightStageActive || gameFpsStageActive
+  const gameplayOverlayActive = citySimStageActive || flightStageActive || gameFpsStageActive
   const markdownDocumentSourceUrl = useGraphStore(s => s.markdownDocumentSourceUrl)
   const markdownDocumentApplyViewPreset = useGraphStore(s => s.markdownDocumentApplyViewPreset)
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
@@ -103,9 +99,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
   const threeCameraRef = React.useRef<Camera | null>(null)
   const threeGlRef = React.useRef<WebGLRenderer | null>(null)
   const [webglSupported] = useState(readWebglSupport)
-  const effectiveWebglSupported = gameFpsActive
-    ? gameMode.webglSupported
-    : flightSimActive ? flightSim.webglSupported : webglSupported
+  const effectiveWebglSupported = citySimActive ? citySim.webglSupported : gameFpsActive ? gameMode.webglSupported : flightSimActive ? flightSim.webglSupported : webglSupported
   const paused = !active
   const authoredWorldPaused = resolveAuthoredWorldPaused(paused, gameplayOverlayActive)
   const graph = useActiveGraphRenderData() as GraphData | null
@@ -412,6 +406,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
       >
         {effectiveWebglSupported === false && gameplayOverlayActive ? (
           <ThreeGameplayWebglUnsupportedState
+            citySimActive={citySimStageActive}
             flightSimActive={flightStageActive}
             gameFpsActive={gameFpsStageActive}
           />
@@ -424,6 +419,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
     flightStageActive,
   )
   const gameplayStage = <ThreeGameplayMissionStage
+    citySimActive={citySimStageActive}
     coordinateScale={gameplayCoordinateScale}
     flightSimActive={flightStageActive}
     gameFpsActive={gameFpsStageActive}
@@ -439,11 +435,13 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
       data-kg-xr-scene-media-drop={mode === 'xr' ? '1' : undefined}
       data-kg-game-fps-stage={gameFpsStageActive ? 'active' : undefined}
       data-kg-flight-sim-stage={flightStageActive ? 'active' : undefined}
+      data-kg-city-sim-stage={citySimStageActive ? 'active' : undefined}
       data-kg-game-mode-surface={gameMode.active ? gameMode.surfaceMode : undefined}
       data-kg-game-mode-scene={gameMode.active ? GAME_FPS_SHARED_XR_PROFILE_ID : undefined}
       data-kg-flight-sim-surface={flightSim.active ? flightSim.surfaceMode : undefined}
+      data-kg-city-sim-surface={citySim.active ? 'xr' : undefined}
       data-kg-authored-xr-scene-retained={gameplayOverlayActive ? '1' : undefined}
-      data-kg-three-viewport-gestures={gameFpsStageActive ? 'first-person' : 'orbit-pan-cursor-zoom'}
+      data-kg-three-viewport-gestures={gameFpsStageActive ? 'first-person' : citySimStageActive ? 'city-parcel-select' : 'orbit-pan-cursor-zoom'}
       onDragOver={xrSceneMediaDrop.onDragOver}
       onDrop={xrSceneMediaDrop.onDrop}
       onContextMenu={event => {
@@ -553,7 +551,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
               />
             ) : null}
           </XrWorldPlacement>
-          {!gameFpsStageActive ? <ControlsLazy
+          {!gameFpsStageActive && !citySimStageActive ? <ControlsLazy
             schema={effectiveSchema as GraphSchema}
             positions={positions}
             paused={paused}

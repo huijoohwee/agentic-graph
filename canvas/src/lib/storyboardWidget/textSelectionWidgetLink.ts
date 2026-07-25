@@ -5,9 +5,23 @@ import {
   isCanonicalNodeIdEqual,
   resolveGraphNodeByCanonicalId,
 } from '@/lib/graph/canonicalNodeIds'
+import {
+  readGraphNodeProperties,
+  type GraphNodeCardTextFieldId,
+} from '@/lib/cards/graphNodeCardFields'
+import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
+import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
+import {
+  FLOW_DEFAULT_SOURCE_PORT_KEY,
+  FLOW_EDGE_SOURCE_PORT_KEY,
+  FLOW_EDGE_TARGET_PORT_KEY,
+  readFlowEdgePortKey,
+} from '@/lib/graph/flowPorts'
 
 export const TEXT_SELECTION_WIDGET_LINK_SCHEMA = 'knowgrph-text-selection-widget-link/v1'
 export const TEXT_SELECTION_WIDGET_CREATE_EVENT = 'knowgrph:text-selection-widget-create'
+export const TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY = FLOW_DEFAULT_SOURCE_PORT_KEY
+export const TEXT_SELECTION_WIDGET_TARGET_PORT_KEY = 'selection' as const
 
 export type TextSelectionWidgetLinkSession = {
   sourceNodeId: string
@@ -32,6 +46,23 @@ export type TextSelectionWidgetCreateDetail = {
   claimed: boolean
 }
 
+export type TextSelectionWidgetEdgeProvenance = {
+  selectedText: string
+  startLine: number
+  endLine: number
+  documentPath: string
+  createdAt: string
+  targetFieldId: GraphNodeCardTextFieldId
+}
+
+export type TextSelectionWidgetSourceHighlight = TextSelectionWidgetEdgeProvenance & {
+  edgeId: string
+  sourceNodeId: string
+  targetNodeId: string
+  sourcePortKey: string
+  targetPortKey: string
+}
+
 const listeners = new Set<() => void>()
 let activeSession: TextSelectionWidgetLinkSession | null = null
 
@@ -40,8 +71,118 @@ function notify(): void {
 }
 
 function normalizeLine(value: unknown, fallback: number): number {
-  const parsed = Number(value)
+  const parsed = Number(unwrapGraphCellValue(value))
   return Number.isFinite(parsed) ? Math.max(1, Math.floor(parsed)) : fallback
+}
+
+function readTextSelectionWidgetEdgeProperty(
+  edge: GraphEdge | null | undefined,
+  key: string,
+): unknown {
+  const properties = unwrapGraphCellValue(edge?.properties)
+  if (!properties || typeof properties !== 'object' || Array.isArray(properties)) return undefined
+  return unwrapGraphCellValue((properties as Record<string, unknown>)[key])
+}
+
+function resolveTextSelectionWidgetTargetFieldId(
+  targetNode: GraphNode | null | undefined,
+): GraphNodeCardTextFieldId {
+  const properties = readGraphNodeProperties(targetNode)
+  const cardType = String(
+    properties.cardTypeLabel
+    || properties.probeTreeTypeLabel
+    || properties.probeTreeCardVariant
+    || properties.typeLabel
+    || '',
+  ).trim().toLowerCase()
+  return cardType.includes('probe-tree') || properties.probeTreeMultiSelect === true
+    ? 'summary'
+    : 'prompt'
+}
+
+export function readTextSelectionWidgetEdgeProvenance(
+  edge: GraphEdge | null | undefined,
+): TextSelectionWidgetEdgeProvenance | null {
+  if (String(readTextSelectionWidgetEdgeProperty(edge, 'schema') || '').trim() !== TEXT_SELECTION_WIDGET_LINK_SCHEMA) return null
+  const selectedText = String(readTextSelectionWidgetEdgeProperty(edge, 'selection:text') || '').trim()
+  if (!selectedText) return null
+  const startLine = normalizeLine(readTextSelectionWidgetEdgeProperty(edge, 'selection:startLine'), 1)
+  const endLine = Math.max(startLine, normalizeLine(readTextSelectionWidgetEdgeProperty(edge, 'selection:endLine'), startLine))
+  const targetFieldRaw = String(readTextSelectionWidgetEdgeProperty(edge, 'selection:targetFieldId') || '').trim()
+  const targetFieldId: GraphNodeCardTextFieldId = (
+    targetFieldRaw === 'summary'
+    || targetFieldRaw === 'output'
+    || targetFieldRaw === 'action'
+    || targetFieldRaw === 'dialogue'
+    || targetFieldRaw === 'prompt'
+    || targetFieldRaw === 'style'
+  ) ? targetFieldRaw : 'prompt'
+  return {
+    selectedText,
+    startLine,
+    endLine,
+    documentPath: String(readTextSelectionWidgetEdgeProperty(edge, 'selection:documentPath') || '').trim(),
+    createdAt: String(readTextSelectionWidgetEdgeProperty(edge, 'selection:createdAt') || '').trim(),
+    targetFieldId,
+  }
+}
+
+export function buildTextSelectionWidgetEdgePersistenceProperties(
+  edge: GraphEdge | null | undefined,
+): Record<string, JSONValue> | null {
+  const provenance = readTextSelectionWidgetEdgeProvenance(edge)
+  if (!provenance) return null
+  const sourcePortKey = readFlowEdgePortKey(edge, 'source') || TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY
+  const targetPortKey = readFlowEdgePortKey(edge, 'target') || TEXT_SELECTION_WIDGET_TARGET_PORT_KEY
+  return {
+    schema: TEXT_SELECTION_WIDGET_LINK_SCHEMA,
+    [FLOW_EDGE_SOURCE_PORT_KEY]: sourcePortKey,
+    [FLOW_EDGE_TARGET_PORT_KEY]: targetPortKey,
+    'selection:text': provenance.selectedText,
+    'selection:startLine': provenance.startLine,
+    'selection:endLine': provenance.endLine,
+    'selection:createdAt': provenance.createdAt,
+    'selection:targetFieldId': provenance.targetFieldId,
+    ...(provenance.documentPath
+      ? { 'selection:documentPath': provenance.documentPath }
+      : {}),
+  }
+}
+
+export function readTextSelectionWidgetSourceHighlights(args: {
+  graphData: GraphData | null | undefined
+  sourceNodeId: unknown
+}): TextSelectionWidgetSourceHighlight[] {
+  const graphData = args.graphData
+  const requestedSource = resolveGraphNodeByCanonicalId(graphData, args.sourceNodeId)
+  if (!graphData || !requestedSource) return []
+  const highlights: TextSelectionWidgetSourceHighlight[] = []
+  for (const edge of graphData.edges || []) {
+    const provenance = readTextSelectionWidgetEdgeProvenance(edge)
+    if (!provenance) continue
+    const { src, tgt } = readGraphEdgeEndpoints(edge)
+    const source = resolveGraphNodeByCanonicalId(graphData, src)
+    const target = resolveGraphNodeByCanonicalId(graphData, tgt)
+    if (!source || !target || !isCanonicalNodeIdEqual(source.id, requestedSource.id)) continue
+    const edgeId = String(edge.id || '').trim()
+    if (!edgeId) continue
+    highlights.push({
+      ...provenance,
+      edgeId,
+      sourceNodeId: source.id,
+      targetNodeId: target.id,
+      sourcePortKey: readFlowEdgePortKey(edge, 'source') || TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY,
+      targetPortKey: readFlowEdgePortKey(edge, 'target') || TEXT_SELECTION_WIDGET_TARGET_PORT_KEY,
+    })
+  }
+  return highlights.sort((a, b) => a.edgeId.localeCompare(b.edgeId))
+}
+
+export function hasOutgoingTextSelectionWidgetEdge(args: {
+  graphData: GraphData | null | undefined
+  sourceNodeId: unknown
+}): boolean {
+  return readTextSelectionWidgetSourceHighlights(args).length > 0
 }
 
 export function beginTextSelectionWidgetLinkSession(
@@ -146,10 +287,15 @@ export function buildTextSelectionWidgetEdge(args: {
   )
   const properties: Record<string, JSONValue> = {
     schema: TEXT_SELECTION_WIDGET_LINK_SCHEMA,
+    [FLOW_EDGE_SOURCE_PORT_KEY]: TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY,
+    [FLOW_EDGE_TARGET_PORT_KEY]: TEXT_SELECTION_WIDGET_TARGET_PORT_KEY,
     'selection:text': args.session.selectedText,
     'selection:startLine': args.session.startLine,
     'selection:endLine': args.session.endLine,
     'selection:createdAt': args.session.createdAt,
+    'selection:targetFieldId': resolveTextSelectionWidgetTargetFieldId(
+      resolveGraphNodeByCanonicalId(args.graphData, targetNodeId),
+    ),
   }
   if (args.session.documentPath) properties['selection:documentPath'] = args.session.documentPath
   return {

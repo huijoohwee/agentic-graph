@@ -114,6 +114,13 @@ export function testSelectionAnchorIdsNormalizeSingleAndMultiSelectionInputs() {
   if (directEndpoints.src !== 'node-5' || directEndpoints.tgt !== '6') {
     throw new Error(`expected shared edge endpoint reader to normalize endpoints, got ${directEndpoints.src}:${directEndpoints.tgt}`)
   }
+  const typedCellEndpoints = readGraphEdgeEndpoints({
+    source: { key: 'source', type: 'string', value: 'node-7.output' },
+    target: { key: 'target', type: 'string', value: 'node-8.input' },
+  })
+  if (typedCellEndpoints.src !== 'node-7' || typedCellEndpoints.tgt !== 'node-8') {
+    throw new Error(`expected typed graph-cell endpoints to remain renderable, got ${typedCellEndpoints.src}:${typedCellEndpoints.tgt}`)
+  }
 
   const selectedEndpoints = readSelectedEdgeEndpointsById(
     new Map<string, { source?: unknown; target?: unknown }>([

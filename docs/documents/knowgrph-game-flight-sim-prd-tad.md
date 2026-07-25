@@ -35,8 +35,10 @@ constraints:
   - "browser-local WebMCP only; no new stdio, HTTP gateway, or deployment transport"
   - "no automatic Git operation or production deployment"
   - "one authored scene owner on the single React Three Fiber Canvas; no second renderer, Canvas, rendered XR world, or scene owner"
-constraints_inspiration:
-  - "refer to FlightGear and github.com/Arnie016/flight-simulator-fable5 for inspiration only; FORBID source copy and FORBID any runtime/build dependency on either project"
+clean_room_policy:
+  - "external references inform conceptual principles only; all implementation, instructional content, and assets are source-authored"
+  - "external project identity and URL are prohibited in product source and runtime metadata; no external project dependency"
+  - "the deterministic locator scanner cannot prove the absence of arbitrary derived code"
 source_references:
   agentic_ecs: "docs/documents/knowgrph-agentic-entity-component-system-prd-tad.md"
   sibling_game_fps: "docs/documents/knowgrph-game-fps-prd-tad.md"
@@ -51,7 +53,7 @@ source_references:
   kiro_authority: ".kiro/specs/knowgrph-game-flight-sim/"
   validation_seed: "docs/workspace-seeds/knowgrph-game-flight-sim-demo.md"
   authored_world_source: "docs/workspace-seeds/knowgrph-physics-playground-demo.md"
-  asset_inspiration_reference_only: "github.com/Arnie016/flight-simulator-fable5 (inspiration only; no source copy, no dependency)"
+  clean_room_gate: "scripts/check-game-flight-sim-boundary.mjs"
 ---
 
 # Knowgrph Game Flight Sim PRD/TAD
@@ -64,9 +66,9 @@ This extensioned `.md` PRD/TAD is a derived implementation/proof projection of t
 
 ## Outcome
 
-Knowgrph gains one browser-local FloatingPanel **Flight Sim** mode that runs a bounded single-player flight mission inside the existing React Three Fiber Canvas, over the same authored XR terrain catalog the physics playground already ships (procedural Singapore waterfront, airplane/helicopter subjects). It opens from a source-backed run-ready document, the shared XR surface catalog, browser WebMCP, or the strict `/flight.sim @canvas #flight` invocation. Desktop keyboard/pointer, mobile touch, standard gamepad, and optional Motion Control input arm one deterministic native Agentic ECS flight mission with in-repo flight dynamics, AABB terrain collision, a visible HUD, selectable camera source, and Decisions-only WorkspaceFs persistence.
+Knowgrph gains browser-local mission-based flight training inside the existing React Three Fiber Canvas, over the same authored XR terrain catalog the physics playground already ships. One shared training projection appears in FloatingPanel **Media**, **Animation**, **Motion Control**, **Game Mode**, **Flight Sim**, and **Camera**. It opens from a source-backed run-ready document, the shared XR surface catalog, browser WebMCP, or the strict `/flight.sim @canvas #flight` invocation. Desktop keyboard/pointer, mobile touch, standard gamepad, and optional Motion Control input arm deterministic native Agentic ECS missions with in-repo flight dynamics, AABB terrain collision, procedural day/night presentation, bounded practice failures, visible and spoken coaching, scored outcomes, selectable camera source, and Decisions-only WorkspaceFs persistence.
 
-Core gameplay requires no camera, account, passkey, model, remote asset, gameplay network call, or Cloudflare service. The required aircraft is admitted through an **img2threejs-style TypeScript module plus a small JSON scene spec** containing identity, procedural renderer shape, dimensions, collision size, color, and zero-call metadata. It is git-diffable, human-auditable, offline-loadable, rejects non-null `opaqueBinaryFallback`, and records a required-aircraft GLB fallback count of zero. The distinct optional beacon proves the Kiro opaque-fallback boundary with one self-contained, committed-local, CC0-1.0 GLB; remote references and missing/unreadable local bytes fail closed without a fetch. FlightGear and `Arnie016/flight-simulator-fable5` inform concepts only. The build fence detects named identity, path, content, binary/asset, and dependency contamination; a separate repository-authorship provenance attestation states that this implementation copies or derives no source from either reference. The scanner is not represented as a universal code-similarity proof.
+Core gameplay requires no camera, account, passkey, model, remote asset, gameplay network call, or Cloudflare service. The required aircraft is admitted through an **img2threejs-style TypeScript module plus a small JSON scene spec** containing identity, procedural renderer shape, dimensions, collision size, color, and zero-call metadata. It is git-diffable, human-auditable, offline-loadable, rejects non-null `opaqueBinaryFallback`, and records a required-aircraft GLB fallback count of zero. The distinct optional beacon proves the Kiro opaque-fallback boundary with one self-contained, committed-local, CC0-1.0 GLB; remote references and missing/unreadable local bytes fail closed without a fetch. External references inform conceptual principles only. Contributors attest that all implementation, instructional content, and assets are source-authored; external project identity and URL are prohibited in product source and runtime metadata; and there is no external project dependency. The deterministic clean-room scanner cannot prove the absence of arbitrary derived code.
 
 ## Product Requirements
 
@@ -94,15 +96,18 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 ### Must scope
 
 - One selected authored XR terrain/environment and collider profile from the existing local catalog; Flight Sim owns no replacement environment, manifest, R2, CDN, or runtime asset download.
-- One local single-player flight mission: one flyable aircraft, exactly three ordered 50 m-radius waypoints followed by one marked 50 m-radius landing pad, and one retry/reset path. Entering a later objective early does not advance progress.
-- One FloatingPanel Flight Sim lifecycle: `open`, `start`, `stop`, `restart`, `throttle`, `save`, and `exit`.
+- Three local flight-training missions — circuit foundation, night circuit, and systems recovery — sharing one flyable aircraft, exactly three ordered 50 m-radius waypoints followed by one marked 50 m-radius landing pad, and one retry/reset path.
+- One training state projected into Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera, with mission/failure selection, visible coaching, score, grade, route progress, stability, energy management, and systems checklist.
+- One FloatingPanel Flight Sim lifecycle plus MCP mission/failure/voice coaching operations: `open`, `start`, `stop`, `restart`, `throttle`, `coach`, `save`, and `exit`.
 - Desktop keyboard/pointer, mobile touch, and standard gamepad controls, plus optional reuse of the existing Motion Control pose adapter (input only, never the flight policy).
 - One exact `1 / 60` second (approximately 16.667 ms) fixed-step deterministic simulation using the native Agentic ECS with ephemeral runtime state, no more than five catch-up ticks per rendered frame, canonical replay comparison, and explicit divergence failure.
 - In-repo flight dynamics (thrust, pitch/roll/yaw, lift/drag/gravity approximation) and axis-aligned bounding-box terrain/collision — no external physics engine.
 - One img2threejs-style, diffable TypeScript + JSON required-aircraft spec that resolves the existing procedural airplane renderer; non-null aircraft fallback metadata fails closed and the required-aircraft fallback count is zero.
 - One optional beacon fallback admitted only from the committed local `optional-beacon.glb`, recorded as opaque with CC0-1.0 license and exact SHA-256 `be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd`; remote, missing, unreadable, malformed, or hash-drifted data fails closed.
 - A HUD that reports airspeed, altitude, heading/attitude, throttle, waypoint/objective state, save state, and explicit errors.
-- Browser-local, Decisions-only KGC persistence through an explicit, idempotent Save; terminal results remain pending until that action succeeds.
+- Bounded engine-power-loss, unreliable-airspeed, and control-bias drills active only from tick 180 through tick 419; shared-owner night atmosphere and lighting for night training.
+- Browser speech synthesis for explicitly enabled voice coaching, always backed by the same visible deterministic text cue.
+- Browser-local, Decisions-only KGC persistence through an explicit, idempotent Save; terminal results and the scored training debrief remain pending until that action succeeds.
 - Strict native `/flight.sim @canvas #flight` invocation with typed `errorCode` plus offending `field`/`token` diagnostics, and browser-local `knowgrph.inspect_local_flight_sim` / `knowgrph.control_local_flight_sim` WebMCP with a 2,000 ms deadline and explicit timeout/unavailable results.
 - Stop followed by Start resumes the exact in-memory tick and aircraft state; Restart is the explicit fresh-run action.
 - Synchronous WebGL admission, one existing Canvas, XR pause/restore ownership, entry/restoration transaction failure reporting, Exit disposal of the ephemeral ECS World, and visible fail-closed runtime errors.
@@ -115,7 +120,7 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 - Hosted or local LLMs, agent reasoning, narrative generation, model escalation, edge-ML policy models, ONNX Runtime, and token budgets.
 - Rapier, Yuka, `behaviortree.js`, recastnavigation, bitECS, or another game/ECS/physics engine.
 - Runtime image-to-3D generation, streaming asset generation, or any remote model call to produce assets during play.
-- Any copy of, asset/binary from, or runtime/build dependency on FlightGear or `Arnie016/flight-simulator-fable5` (inspiration only).
+- Any copied or derived external source, prose, prompt, schema, algorithm, test, binary, or asset; any external project identity or URL in product source/runtime metadata; and any external project dependency.
 - Remote assets, D1, R2, KV, Durable Objects, Workers, Pages, or production routes; automatic Git commits, pushes, pull requests, or deployments from the browser runtime.
 
 ### User stories
@@ -128,6 +133,7 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 6. As the maintainer, the required aircraft is a small, diffable TypeScript + JSON spec, while any eligible optional opaque fallback is committed-local, licensed, hash-locked, and never fetched remotely.
 7. As an operator or agent, I can inspect and control the same local Flight Sim through one strict invocation grammar and browser WebMCP contract.
 8. As a maintainer, I can prove the core runtime is model-free, adds no runtime package, remains deterministic, and is Dev-only.
+9. As Mei, I can select a lesson, follow visible or spoken systems coaching, practice a bounded failure, and save a measurable score and debrief.
 
 ### Acceptance criteria
 
@@ -263,6 +269,14 @@ The native ECS journal commits systems in order; if system *k* fails, prior syst
 
 Terrain and obstacle collision uses the authored XR AABB slab catalog plus explicit perimeter and ceiling blockers. The resolver sweeps the previous-to-proposed aircraft cuboid against canonical blockers, chooses the earliest hit with stable blocker-ID tie-breaking, and returns at least `0.001` mission-meter separation. It zeroes velocity along the hit normal within `0.0001` m/s while preserving tangential velocity; a start-overlap de-penetrates along the shallowest axis. There are no mesh colliders, navmesh, or generated collision geometry.
 
+### Training curriculum, scoring, and coaching
+
+`flightSimTrainingScenario.ts` is the sole mission/failure/voice-selection owner. Circuit Foundation teaches the ordered visual circuit; Night Circuit uses the shared atmosphere/light owners and unreliable-airspeed practice; Systems Recovery uses a bounded power-loss drill. A selected failure changes captured tick input only from tick 180 inclusive through tick 420 exclusive, so replay remains deterministic and restarting produces the same drill window.
+
+`flightSimTrainingRuntime.ts` derives route progress, stable-attitude time, target-energy time, failure recovery, terminal score, and grade from the canonical Flight snapshot. It also owns one visible systems-first coaching cue. Explicit voice enablement sends that exact text to browser speech synthesis, while browsers without speech retain the visible cue. Save adds one idempotent `knowgrph-flight-training-outcome/v1` `dialogue_outcome` Decision for a terminal run; it does not create an auto-save path.
+
+`FlightSimTrainingSurfaceProjection.tsx` is reused by the existing Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera panels. Those panels remain projections only: the native flight runtime, shared authored XR world, shared renderer, shared atmosphere/lights, shared camera, and browser-local persistence owners remain singular.
+
 ### Mission coordinate system
 
 The shared Physics playground remains the sole authored XR scene owner. Flight maps its compact authored coordinates into mission meters with the source-controlled transform `20 m / authored world unit` and identifies the profile with `flight-meters-20`. Perimeter, authored colliders, ground, boundaries, ceiling, spawn, exactly three route waypoints, and the landing pad are transformed once into mission meters. Only the Flight overlay and shared camera descriptor apply the inverse render scale; Physics/Game FPS coordinates and the authored scene stay unchanged. This prevents a 50 m capture radius from collapsing the compact scene into an immediate tick-zero objective completion.
@@ -276,7 +290,7 @@ The asset contract has two deliberately separate implemented paths:
 
 The required aircraft therefore retains fallback count zero, while the admitted mixed required-aircraft + optional-beacon load reports one fallback. Readiness gates require all text asset sources to be tracked regular non-symlink UTF-8 files no larger than 1 MB, require exact generated GLB bytes/path/hash/license, and lock the four direct external imports to an audited 21-package runtime dependency closure with the declared MIT/ISC/BSD licenses. The feature adds no new runtime package. The implemented paths invoke no image-to-3D model, network fetch, or Cloudflare resource.
 
-The build begins with a bounded scan over every tracked repository file and fails on named FlightGear or `Arnie016/flight-simulator-fable5`/Fable identity, content marker, binary/asset, path, or declared-dependency contamination. A repository-authorship provenance attestation separately declares that those projects remain inspiration only and that this implementation copies or derives none of their source and takes no dependency on either. The scanner does not claim to prove the absence of arbitrary derived code.
+The build begins with a bounded clean-room scan over Flight-owned tracked paths and fails on external repository locators, vendored paths, opaque source binaries, or missing policy markers. A repository-authorship provenance attestation separately declares that external references inform conceptual principles only, every implementation/content/asset is source-authored, external project identity and URL are prohibited, and no external project dependency is taken. The scanner cannot prove the absence of arbitrary derived code.
 
 ### Persistence and resume
 
@@ -335,7 +349,7 @@ The required aircraft is represented by one **img2threejs-style, diffable TypeSc
 **Consequences:**
 - **Positive:** diffable/auditable required asset, deterministic optional fallback, offline loading, explicit remote/missing rejection, and no runtime model/network dependency.
 - **Negative:** the optional GLB is opaque and therefore requires generator, byte, hash, license, path, and dependency-closure gates.
-- **Neutral:** FlightGear and `Arnie016/flight-simulator-fable5` remain inspiration only; the required aircraft fallback count is zero and the admitted mixed-load total is one.
+- **Neutral:** External references remain conceptual principles only, with no external project identity, URL, or dependency in product source; the required aircraft fallback count is zero and the admitted mixed-load total is one.
 
 ### ADR-5: Persist Decisions through browser-local WorkspaceFs; Dev-only readiness
 
@@ -354,7 +368,7 @@ npm run game-flight-sim:browser-smoke
 
 | Evidence | Result | Boundary |
 |---|---|---|
-| `node scripts/check-game-flight-sim-readiness.mjs` | Mandatory exact-candidate gate | Tracked Kiro authority, source contract, canonical Cost_Log, exact `1/60`, system topology, lifecycle/persistence, asset UTF-8/size/hash/license and 21-package closure, 45-property/4,500-case registration, bounded named-contamination scan, and provenance attestation |
+| `node scripts/check-game-flight-sim-readiness.mjs` | Mandatory exact-candidate gate | Tracked Kiro authority, source contract, canonical Cost_Log, exact `1/60`, system topology, lifecycle/persistence, asset UTF-8/size/hash/license and 21-package closure, 45-property/4,500-case registration, bounded clean-room scan, and provenance attestation |
 | `npm -C canvas run test:smoke:game-flight-sim:source` | Mandatory exact-candidate gate | Focused source suite, including 45 uniquely named fast-check properties at at least 100 runs each (4,500 generated cases) |
 | `npx tsc -b --noEmit` from `canvas/` | Mandatory exact-candidate gate | Focused TypeScript project proof |
 | `npm run game-flight-sim:runtime-ready` | Mandatory final aggregate | Child-isolated `smoke:prepare`, readiness authority, full ECS tests, focused source suite, crafted negative gates, failure/no-mutation orchestration contracts, Canvas check, and production build |

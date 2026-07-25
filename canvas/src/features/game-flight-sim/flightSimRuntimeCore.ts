@@ -22,6 +22,7 @@ import {
 } from './flightSimRuntimeState'
 import { beginFlightSimHudUpdate } from './flightSimDeadlineRuntime'
 import { rejectFlightSimGameplayNetworkAttemptWithinDeadline } from './flightSimDeadlineIntegration'
+import { applyFlightSimTrainingTickModifiers } from './flightSimTrainingScenario'
 
 type Listener = () => void
 
@@ -146,8 +147,11 @@ export function createFlightSimRuntime(options: Readonly<{
   const capturedInput = () => {
     const combined = mergedInput(input, pendingInput)
     pendingInput = FLIGHT_SIM_NEUTRAL_INPUT
-    const throttleSetpoint = throttleTarget
-    return Object.freeze({ input: combined, throttleSetpoint })
+    return applyFlightSimTrainingTickModifiers({
+      flight: snapshot,
+      input: combined,
+      throttleSetpoint: throttleTarget,
+    })
   }
   const advanceCurrentMission = async (
     request: FlightSimAdvanceRequest,

@@ -134,8 +134,8 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
   const xrPhysicsRunReadyDemo = isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const nativeXrRunReadyDemo = isNativeXrRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
-  const { gameFpsActive, flightSimActive } = useCanvasGameplayOverlayState()
-  const gameplayOverlayActive = gameFpsActive || flightSimActive
+  const { citySimActive, gameFpsActive, flightSimActive } = useCanvasGameplayOverlayState()
+  const gameplayOverlayActive = citySimActive || gameFpsActive || flightSimActive
   const sourceFilesBootstrap = useSourceFilesBootstrapSnapshot()
   const sourceFilesBootstrapReady = sourceFilesBootstrap.phase === 'ready'
   const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady
@@ -355,15 +355,15 @@ export function CanvasViewport(props: CanvasViewportProps) {
       }}
       aria-label={sourceFilesBootstrap.phase === 'error'
         ? 'Canvas source initialization error'
-        : gameFpsActive
-          ? 'Deterministic Game Mode'
-          : flightSimActive
-            ? 'Deterministic Flight Sim'
-            : sourceFilesBootstrapReady && nativeXrRunReadyDemo
-              ? 'Interactive XR Physics Playground'
-              : variant === 'embeddedPreview'
-                ? 'Canvas Preview Only'
-                : 'Canvas viewport'}
+        : citySimActive ? 'Deterministic City Simulation'
+          : gameFpsActive ? 'Deterministic Game Mode'
+            : flightSimActive
+              ? 'Deterministic Flight Sim'
+              : sourceFilesBootstrapReady && nativeXrRunReadyDemo
+                ? 'Interactive XR Physics Playground'
+                : variant === 'embeddedPreview'
+                  ? 'Canvas Preview Only'
+                  : 'Canvas viewport'}
     >
       <React.Suspense fallback={null}>
         {liveCanvasHeroVisible && liveCanvasHeroSource ? (

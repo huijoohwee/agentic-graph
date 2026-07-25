@@ -43,7 +43,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'source authority',
     'native Agentic ECS integration',
     'focused Flight Sim source tests',
-    'negative authoring, dependency, license, and named-contamination gates',
+    'negative authoring, dependency, license, and clean-room gates',
     'verification aggregation contracts',
     'Canvas TypeScript',
     'production build',
