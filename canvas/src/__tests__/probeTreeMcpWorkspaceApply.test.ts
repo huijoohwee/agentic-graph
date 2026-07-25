@@ -7,16 +7,19 @@ import {
 } from '@/features/agent-ready/probeTreeContract.mjs'
 import { appendChatHistoryWorkspaceFile } from '@/features/chat/chatHistoryWorkspace'
 import { applyChatKgcWorkspaceDocumentToCanvas } from '@/features/chat/chatKgcCanvasApply'
+import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID, FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { deriveFrontmatterFlowOverlayNodeIds } from '@/lib/storyboardWidget/frontmatterOverlayNodeIds'
+import { readStoryboardProbeTreeMultiSelectModel } from '@/components/StoryboardCanvas/storyboardProbeTreeMultiSelectModel'
 
 export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanelTree() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { restore: restoreDom } = initJsdomHarness()
   const originalFetch = globalThis.fetch
+  let unsubscribeExplorerReset = () => void 0
   try {
     resetWorkspaceFsForTests()
     useGraphStore.getState().clearGraphData()
@@ -85,6 +88,7 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
       storageType: 'chatKnowgrph',
       traceId: 'trace-probe-tree-mcp-apply',
       title: 'Knowledge Graph Canvas Storage',
+      structuredResponseSource: 'literal-mcp',
     })
     const canonicalText = await (await getWorkspaceFs()).readFileText(workspacePath)
     for (const token of [
@@ -98,8 +102,31 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
       if (!canonicalText.includes(token)) throw new Error(`expected canonical KGC to contain ${token}`)
     }
 
+    const originalActivePath = '/authored-source.md'
+    useMarkdownExplorerStore.getState().setActivePath(originalActivePath)
+    let simulatedConcurrentSelection = false
+    unsubscribeExplorerReset = useMarkdownExplorerStore.subscribe(state => {
+      if (state.activePath !== workspacePath || simulatedConcurrentSelection) return
+      simulatedConcurrentSelection = true
+      queueMicrotask(() => {
+        if (useMarkdownExplorerStore.getState().activePath === workspacePath) {
+          useMarkdownExplorerStore.getState().setActivePath(originalActivePath)
+        }
+      })
+    })
+    if (await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)) {
+      throw new Error('expected Chat KGC apply to abort when Explorer ownership changes concurrently')
+    }
+    if (!simulatedConcurrentSelection || useMarkdownExplorerStore.getState().activePath !== originalActivePath) {
+      throw new Error('expected Chat KGC apply to preserve a concurrent Explorer selection')
+    }
+    unsubscribeExplorerReset()
+    unsubscribeExplorerReset = () => void 0
     if (!await applyChatKgcWorkspaceDocumentToCanvas(workspacePath)) {
       throw new Error('expected the Probe-Tree MCP KGC to apply to the active Canvas')
+    }
+    if (useMarkdownExplorerStore.getState().activePath !== workspacePath) {
+      throw new Error('expected Chat KGC apply to activate the generated workspace path')
     }
     const graphData = useGraphStore.getState().graphData
     const source = graphData?.nodes.find(node => node.id === 'mcp-response-care-source')
@@ -119,11 +146,20 @@ export async function testProbeTreeLiteralMcpResultAppliesVisibleWidgetCardPanel
     ) {
       throw new Error(`expected one visible source Widget, three inferred candidate branches, and one Rich Media panel, got ${JSON.stringify(graphData)}`)
     }
+    const multiSelectModels = cards.map(card => readStoryboardProbeTreeMultiSelectModel(card.properties || {}))
+    if (
+      multiSelectModels.some(model => !model || model.options.length < 2)
+      || multiSelectModels.flatMap(model => model?.options.map(option => option.label) || []).join('|')
+        !== options.flatMap(option => option.selectionOptions).join('|')
+    ) {
+      throw new Error(`expected applied Probe-Tree cards to retain renderable multi-select options, got ${JSON.stringify(multiSelectModels)}`)
+    }
     const overlayIds = new Set(deriveFrontmatterFlowOverlayNodeIds(graphData!))
     for (const node of [source, ...cards, panel]) {
       if (!node || !overlayIds.has(String(node.id))) throw new Error(`expected ${String(node?.id || 'missing node')} on the visible overlay tree`)
     }
   } finally {
+    unsubscribeExplorerReset()
     useGraphStore.getState().clearGraphData()
     resetWorkspaceFsForTests()
     globalThis.fetch = originalFetch

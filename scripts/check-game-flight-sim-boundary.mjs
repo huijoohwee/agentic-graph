@@ -24,4 +24,4 @@ for (const relativePath of relativePaths) {
   })
 }
 assertFlightSimBoundary(entries)
-console.log(`OK Flight Sim tracked named-contamination/provenance boundary (${entries.length} files)`)
+console.log(`OK Flight Sim tracked clean-room provenance boundary (${entries.length} files)`)

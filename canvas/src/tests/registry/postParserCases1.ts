@@ -449,6 +449,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["flow.dataflow.runtimeValidation.parsesAndPropagatesCompute","@/__tests__/flowDataflowConnectedValues.test","testRuntimeValidationComputingFlowInputParsesAndPropagatesCompute"],
   ["flow.overlay.topologyLayoutSignature.reusesSharedNodePropertiesReader","@/__tests__/overlayTopologyLayoutSignature.test","testOverlayTopologyLayoutSignatureReusesSharedNodePropertiesReader"],
   ["flow.overlay.topologyLayoutSignature.includesVisualLayoutProps","@/__tests__/overlayTopologyLayoutSignature.test","testOverlayTopologyLayoutSignatureIncludesVisualLayoutProps"],
+  ["flow.overlay.nodeLayoutSignature.ignoresEdgePublication","@/__tests__/overlayTopologyLayoutSignature.test","testOverlayNodeLayoutSignatureIgnoresProvenanceEdgePublication"],
   ["graph.fullStackRadar.reusesSharedPlainObjectGuard","@/__tests__/fullStackRadarGraph.test","testFullStackRadarGraphReusesSharedPlainObjectGuard"],
   ["graph.fullStackRadar.buildsClusteredRadar","@/__tests__/fullStackRadarGraph.test","testFullStackRadarGraphBuildsClusteredRadar"],
   ["render.overlayHalfExtents.reusesSharedNodePropertiesReader","@/__tests__/overlaySizingSharedHelperRegression.test","testOverlayHalfExtentsByNodeId2dReusesSharedNodePropertiesReader"],

@@ -437,6 +437,7 @@ export type FloatingPanelTypeIconView =
   | 'motionControl'
   | 'gameMode'
   | 'flightSim'
+  | 'cityBuilder'
   | 'camera'
   | 'design'
   | 'chat'
@@ -461,6 +462,7 @@ export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
   motionControl: 'floatingPanel.motionControl',
   gameMode: 'floatingPanel.gameMode',
   flightSim: 'floatingPanel.flightSim',
+  cityBuilder: 'floatingPanel.gameMode',
   camera: 'floatingPanel.camera',
   design: 'floatingPanel.design',
   chat: 'floatingPanel.chat',

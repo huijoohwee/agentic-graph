@@ -1,0 +1,65 @@
+# Implementation Tasks
+
+`requirements.md` is normative. A checkbox records repository evidence, not
+intent. Keep every item unchecked until its named proof exists at the active
+candidate SHA.
+
+## 1. Pure city domain
+
+- [ ] Add typed authored default grid and v1 integer coefficients.
+- [ ] Add atomic deterministic tick with safe-integer rejection and replay
+  tests.
+- [ ] Add canonical KGC plus CSV codec and byte-identical round-trip tests.
+- [ ] Add deterministic two-round local advisor and tie/no-mutation tests.
+- [ ] Add strict invocation parser and adversarial reject tests.
+
+## 2. Runtime and persistence
+
+- [ ] Add the single City Runtime snapshot/dispatcher and fixed-step generation
+  fence.
+- [ ] Add WorkspaceFs save/read-back at
+  `/game-city-sim/city-grid.md`, including malformed-byte preservation.
+- [ ] Register exactly the inspect/control MCP tools through existing
+  transports and the existing approval owner.
+- [ ] Add gameplay-overlay mutual exclusion and exact-once prior
+  surface/camera restoration.
+
+## 3. Shared Canvas and FloatingPanel
+
+- [ ] Add the City Stage as an instanced subtree of the existing Canvas, with
+  no `<Canvas>` import.
+- [ ] Add mode-scoped orthographic `isometric-topdown` framing and responsive
+  projection updates through the shared camera owner.
+- [ ] Add `cityBuilder` as the complete control/status view.
+- [ ] Compose one snapshot-backed projection into Media, Animation, Motion
+  Control, Game Mode, Flight Sim, and Camera.
+- [ ] Add pointer, keyboard, and touch normalization with queued snapshot
+  fencing.
+
+## 4. Source activation
+
+- [ ] Register the authored seed in the canonical workspace seed bundle.
+- [ ] Gate `city-sim` admission on Source Files bootstrap readiness and reject
+  known identity/path conflicts.
+- [ ] Compare the runtime default serialization with the seed CSV fixture to
+  prevent drift.
+
+## 5. Evidence gates
+
+- [ ] Focused unit/static/type checks pass at the candidate SHA.
+- [ ] Neutral browser proof starts without a city selector or persisted city
+  state and materializes only after applying the Source File.
+- [ ] Browser proof covers one Canvas, authored metrics, zone/tick/stop,
+  save/read-back, all six projections, console cleanliness, and exit restore.
+- [ ] Candidate is reviewed and integrated through the protected workflow.
+- [ ] Seed proof status and checklist are updated only from captured exact-SHA
+  evidence.
+
+## Explicit exclusions
+
+- No second world, Canvas, renderer, persistence owner, camera catalog,
+  transport, or network service.
+- No autosave, multiplayer, cloud sync, traffic simulation, or model-backed
+  advisor.
+- No production, publish-mirror, or Cloudflare release without a separate
+  explicit instruction.

@@ -48,13 +48,13 @@ export function buildFlightSimAgentReadyToolContracts({
     name: FLIGHT_SIM_AGENT_READY_TOOL_IDS.inspectLocalFlightSim,
     webName: buildWebName(FLIGHT_SIM_AGENT_READY_TOOL_IDS.inspectLocalFlightSim),
     title: 'Inspect Local Flight Sim',
-    description: 'Inspect the browser-local Flight Sim lifecycle, deterministic native Agentic ECS aircraft state, authored XR terrain ownership, input capability, pending Decision persistence, and strict /flight.sim @canvas #flight grammar.',
+    description: 'Inspect the browser-local Flight Sim lifecycle, deterministic aircraft state, authored procedural XR terrain ownership, mission score, systems checklist, night-flight state, practice failure, voice instructor, pending Decision persistence, and strict /flight.sim @canvas #flight grammar.',
     inputSchema: { type: 'object', additionalProperties: false, properties: {} },
     outputSchema: {
       oneOf: [{
         type: 'object',
         additionalProperties: true,
-        required: ['schema', 'webMcpTools', 'invocationGrammar', 'flightSim', 'decisions', 'runtime'],
+        required: ['schema', 'webMcpTools', 'invocationGrammar', 'flightSim', 'training', 'decisions', 'runtime'],
       }, {
         type: 'object',
         additionalProperties: true,
@@ -71,7 +71,7 @@ export function buildFlightSimAgentReadyToolContracts({
     name: FLIGHT_SIM_AGENT_READY_TOOL_IDS.controlLocalFlightSim,
     webName: buildWebName(FLIGHT_SIM_AGENT_READY_TOOL_IDS.controlLocalFlightSim),
     title: 'Control Local Flight Sim',
-    description: 'Open, start, stop, restart, set throttle, save terminal Decisions, or exit the browser-local deterministic Flight Sim through structured fields or /flight.sim @canvas #flight without creating another Canvas, ECS world, persistence owner, network route, or deployment surface. Read-only inspection remains a separate tool.',
+    description: 'Select a scored flight-training mission, choose a bounded practice failure, control voice coaching, open or fly the deterministic Flight Sim, and save a terminal debrief through structured fields or /flight.sim @canvas #flight without creating another Canvas, ECS world, persistence owner, network route, or deployment surface. Read-only inspection remains a separate tool.',
     inputSchema: FLIGHT_SIM_INPUT_SCHEMA,
     outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
     annotations: mutationAnnotations,

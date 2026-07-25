@@ -55,6 +55,7 @@
     "test:smoke:miromind:source": "node --preserve-symlinks --preserve-symlinks-main ../node_modules/tsx/dist/cli.cjs src/tests/subsetMiroMindSmoke.ts",
     "test:smoke:rich-media": "node --preserve-symlinks --preserve-symlinks-main ../node_modules/tsx/dist/cli.cjs src/tests/subsetRichMediaSmoke.ts",
     "test:smoke:rich-media:browser": "node ./scripts/run_rich_media_browser_smoke.mjs",
+    "test:smoke:chat-natural-language-invocation:browser": "node ./scripts/run_chat_natural_language_invocation_browser_smoke.mjs",
     "test:smoke:rich-media:timing-schema": "node --test ./scripts/__tests__/rich-media-catalog-preview-timing-schema.test.mjs",
     "validate:rich-media-catalog-preview-timing": "node ./scripts/validate_rich_media_catalog_preview_timing.mjs",
     "test:smoke:mobile-keyboard:browser": "node ./scripts/run_mobile_keyboard_browser_smoke.mjs",

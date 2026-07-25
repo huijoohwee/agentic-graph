@@ -201,7 +201,7 @@ export function testProbeTreeMcpResponseAdapterBoundsWidgetCardsAndPanel() {
     jsonrpc: '2.0',
     id: 'probe-tree-call',
     result: { structuredContent: { ok: true, response } },
-  }, null, 2))
+  }, null, 2), { trustedSource: 'literal-mcp' })
   const source = surface?.nodes.find(node => node.id === 'mcp-response-care-source')
   const panel = surface?.nodes.find(node => node.id === 'mcp-response-probe-tree-branches-care-source')
   const cards = surface?.nodes.filter(node => node.properties.cardTypeLabel === 'Probe-Tree Card') || []

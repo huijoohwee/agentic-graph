@@ -40,14 +40,21 @@ export function testStoryboardWidgetDropRestoresCameraWithoutRebalancingCollecti
 
   const dropBridgePath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetDropBridge.ts')
   const dropBridgeText = readFileSync(dropBridgePath, 'utf8')
-  if (!dropBridgeText.includes('const preserveDropCameraAfterInsert = React.useCallback(() => {')
-    || !dropBridgeText.includes('preserveDropCameraAfterInsert()')
+  if (!dropBridgeText.includes('const captureInsertionCameraAuthority = React.useCallback(() => {')
+    || !dropBridgeText.includes('const insertionCameraAuthority = captureInsertionCameraAuthority()')
+    || !dropBridgeText.includes('preserveDropCameraAfterInsert(insertionCameraAuthority)')
     || dropBridgeText.includes('preserveDropCameraAndBalanceCollective(true)')) {
-    throw new Error('expected Widget and Rich Media drops to preserve the camera without reseeding existing authored cards')
+    throw new Error('expected Widget and Rich Media drops to capture camera authority before publication and restore it without reseeding existing authored cards')
+  }
+  if (!dropBridgeText.includes('const insertionGraphData =')
+    || !dropBridgeText.includes('args.draftGraphDataRef.current')
+    || !dropBridgeText.includes('graphData: insertionGraphData')
+    || !dropBridgeText.includes('buildGraphDocumentMetaKey(insertionGraphData)')) {
+    throw new Error('expected insertion placement to use the active authored document scope instead of the composed store graph scope')
   }
 }
 
-export function testFrontmatterGrowthReseedsWholeBalancedCollective() {
+export function testFrontmatterGrowthPreservesExistingCollective() {
   const runtimePath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetRuntimeScene.ts')
   const collisionPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetOverlayCollision.ts')
   const projectionPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'useStoryboardCardOverlayProjection2d.ts')
@@ -56,15 +63,21 @@ export function testFrontmatterGrowthReseedsWholeBalancedCollective() {
   const collisionText = readFileSync(collisionPath, 'utf8')
   const projectionText = readFileSync(projectionPath, 'utf8')
   const placementsText = readFileSync(placementsPath, 'utf8')
-  if (!runtimeText.includes('&& !isFrontmatterFlow\n      && pendingRaw.length > 0')) {
-    throw new Error('expected frontmatter Widget/Rich Media growth to bypass single-node incremental placement')
+  if (!runtimeText.includes('const incrementalUnplacedNodeIds = (')
+    || !runtimeText.includes('&& pendingRaw.length > 0')
+    || runtimeText.includes('&& !isFrontmatterFlow\n      && pendingRaw.length > 0')) {
+    throw new Error('expected Widget/Rich Media growth to use single-node incremental placement in frontmatter flows')
   }
-  if (!runtimeText.includes('if (shouldReseedWholeFrontmatterCollective) pending = fullFrontmatterCollectiveIds')) {
-    throw new Error('expected new frontmatter overlays to use the complete collective as balanced-spread layout authority')
+  if (!runtimeText.includes('&& incrementalUnplacedNodeIds.length === 0')) {
+    throw new Error('expected whole-collective frontmatter recovery to stay disabled during incremental growth')
   }
   if (!collisionText.includes('article[aria-label^="Storyboard card"][data-node-id]')
     || !collisionText.includes('id: `storyboard-card:${id}`')) {
     throw new Error('expected authored Storyboard cards to participate as full-size collision obstacles for Widget/Rich Media cascade placement')
+  }
+  if (collisionText.includes('const allowPinnedAutoPlace = pinnedOverlap || shouldAutoPlaceStoryboardWidget({')
+    || !collisionText.includes('const allowPinnedAutoPlace = shouldAutoPlaceStoryboardWidget({')) {
+    throw new Error('expected authored pinned placements to remain authoritative after zoom, pan, and drag interactions')
   }
   for (const snippet of [
     'const targetAspect = 16 / 9',

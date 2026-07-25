@@ -1,5 +1,6 @@
 import { KNOWGRPH_AGENT_READY_TOOL_IDS } from "./knowgrphAgentReadyToolContract.mjs";
 import { KNOWGRPH_PROBE_TREE_TOOL_NAMES } from "./probeTreeContract.mjs";
+import { KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES } from "../../lib/storage/knowgrphStorageEngineMcpContract.mjs";
 
 export const KNOWGRPH_OS_STATUS_TOOL_NAME = "knowgrph.os.status";
 
@@ -13,6 +14,8 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   superagentRun: "knowgrph.superagent.run",
   videoRemixRun: "knowgrph.video_remix.run",
   browserApiRun: "knowgrph.browser_api.run",
+  gitRun: KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES.gitRun,
+  fileSyncRun: KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
   sealionDetectLanguageVariant: "sealion.detect_language_variant",
   sealionTranslateLocalize: "sealion.translate_localize",
   sealionSafetyCheck: "sealion.safety_check",
@@ -39,6 +42,10 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   implementationRunStart: "knowgrph.implementation_run.start",
   implementationRunList: "knowgrph.implementation_run.list",
   implementationRunControl: "knowgrph.implementation_run.control",
+  agentTeamPlan: "knowgrph.agent_team.plan",
+  agentTeamStart: "knowgrph.agent_team.start",
+  agentTeamList: "knowgrph.agent_team.list",
+  agentTeamControl: "knowgrph.agent_team.control",
   exportPublish: "export.publish",
   toolCatalog: "knowgrph.tool.catalog",
   toolSearch: "knowgrph.tool.search",

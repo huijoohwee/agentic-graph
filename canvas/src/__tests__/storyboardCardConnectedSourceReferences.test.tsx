@@ -6,6 +6,7 @@ import { StoryboardCardMetaScrollRail } from '@/components/StoryboardWidgetCanva
 import { buildStoryboardCardTextModel } from '@/components/StoryboardWidgetCanvas/storyboardCardTextModel'
 import type { GraphData } from '@/lib/graph/types'
 import type { FlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
+import { TEXT_SELECTION_WIDGET_LINK_SCHEMA } from '@/lib/storyboardWidget/textSelectionWidgetLink'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { waitForFrames } from '@/tests/lib/reactRootHarness'
 
@@ -125,5 +126,121 @@ export async function testStoryboardCardsRenderConnectedTextAsSourceChipsWithout
   } finally {
     await act(async () => root.unmount())
     restore()
+  }
+}
+
+export async function testStoryboardCardProjectsCanonicalSelectionProvenanceAsSourceChip() {
+  const provenanceGraph: GraphData = {
+    ...graphData,
+    edges: [{
+      id: 'selection-source-target',
+      source: 'source-widget',
+      target: 'target-widget',
+      label: 'selection',
+      properties: {
+        schema: TEXT_SELECTION_WIDGET_LINK_SCHEMA,
+        'selection:text': 'Selected source evidence',
+        'selection:startLine': 21,
+        'selection:endLine': 23,
+        'selection:documentPath': 'notes/provenance.md',
+        'selection:createdAt': '2026-07-24T00:00:00.000Z',
+        'selection:targetFieldId': 'prompt',
+      },
+    }],
+  }
+  const board = buildStoryboardBoardModel({
+    graphData: provenanceGraph,
+    graphRevision: 2,
+    connectedValuesByNodeId: new Map(),
+  })
+  const target = board.lanes.flatMap(lane => lane.cards).find(card => card.id === 'target-widget')
+  if (!target) throw new Error('expected the selection-linked target card')
+  if (target.prompt || target.summary || target.output) {
+    throw new Error(`expected provenance not to mutate target-authored text, got ${JSON.stringify(target)}`)
+  }
+  const reference = target.sourceReferences?.[0]
+  if (!reference
+    || reference.nodeId !== 'source-widget'
+    || reference.edgeIds.join(',') !== 'selection-source-target'
+    || reference.targetFieldIds.join(',') !== 'prompt'
+    || reference.selectionProvenance?.[0]?.selectedText !== 'Selected source evidence') {
+    throw new Error(`expected the canonical selection edge to project as a Source reference, got ${JSON.stringify(reference)}`)
+  }
+
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  try {
+    await act(async () => {
+      root.render(<StoryboardCardMetaScrollRail card={target} />)
+      await waitForFrames(dom.window, 4)
+    })
+    const chip = container.querySelector('[data-kg-storyboard-card-source-reference-chip="1"]')
+    if (!(chip instanceof dom.window.HTMLButtonElement)) {
+      throw new Error('expected a provenance Source chip')
+    }
+    if (chip.dataset.kgStoryboardCardSourceEdgeIds !== 'selection-source-target'
+      || chip.dataset.kgStoryboardCardSourceProvenanceSchema !== TEXT_SELECTION_WIDGET_LINK_SCHEMA
+      || chip.querySelector('[data-kg-storyboard-card-source-selection-range]')?.textContent !== 'L21–23') {
+      throw new Error(`expected edge and line provenance on the Source chip, got ${chip.outerHTML}`)
+    }
+    if (!String(chip.title || '').includes('notes/provenance.md · L21–23')
+      || !String(chip.title || '').includes('Selected source evidence')) {
+      throw new Error(`expected the chip title to expose canonical selection provenance, got ${JSON.stringify(chip.title)}`)
+    }
+  } finally {
+    await act(async () => root.unmount())
+    restore()
+  }
+}
+
+export function testStoryboardCardSelectionProvenanceSupportsWrappedFrontmatterNodeIds() {
+  const wrappedId = (value: string) => ({ key: 'id', type: 'string', value })
+  const wrappedGraph = {
+    type: 'Graph',
+    nodes: [
+      {
+        id: wrappedId('source-node'),
+        type: { key: 'type', type: 'string', value: 'RichMediaPanel' },
+        label: { key: 'label', type: 'string', value: 'Source panel' },
+        properties: {},
+      },
+      {
+        id: wrappedId('target-node'),
+        type: { key: 'type', type: 'string', value: 'TextGeneration' },
+        label: { key: 'label', type: 'string', value: 'Target card' },
+        properties: {},
+      },
+    ],
+    edges: [
+      {
+        id: 'selection-edge',
+        source: wrappedId('source-node'),
+        target: wrappedId('target-node'),
+        label: 'selection',
+        properties: {
+          schema: { key: 'schema', type: 'string', value: TEXT_SELECTION_WIDGET_LINK_SCHEMA },
+          'selection:text': { key: 'selection:text', type: 'string', value: 'Selected source text' },
+          'selection:startLine': { key: 'selection:startLine', type: 'number', value: 4 },
+          'selection:endLine': { key: 'selection:endLine', type: 'number', value: 5 },
+          'selection:targetFieldId': { key: 'selection:targetFieldId', type: 'string', value: 'prompt' },
+        },
+      },
+    ],
+  } as unknown as GraphData
+
+  const board = buildStoryboardBoardModel({
+    graphData: wrappedGraph,
+    graphRevision: 3,
+    connectedValuesByNodeId: new Map(),
+  })
+  const target = board.lanes.flatMap(lane => lane.cards).find(card => card.id === 'target-node')
+  const reference = target?.sourceReferences?.[0]
+  if (!target || !reference
+    || reference.nodeId !== 'source-node'
+    || reference.edgeIds.join(',') !== 'selection-edge'
+    || reference.selectionProvenance?.[0]?.startLine !== 4) {
+    throw new Error(`expected wrapped frontmatter IDs to retain selection provenance, got ${JSON.stringify(target)}`)
   }
 }
