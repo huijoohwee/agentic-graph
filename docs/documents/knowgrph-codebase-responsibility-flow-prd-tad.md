@@ -2,19 +2,20 @@
 title: "Knowgrph Codebase Responsibility Flow PRD/TAD"
 doc_type: "Combined PRD/TAD"
 id: "knowgrph-codebase-responsibility-flow-prd-tad"
-version: "1.0.0"
-status: "dev-implementation"
+version: "1.1.0"
+status: "dev-runtime-ready"
 created: "2026-07-24"
-updated: "2026-07-24"
+updated: "2026-07-25"
 author: "airvio / joohwee"
 domain: "knowgrph"
 lang: "en-US"
 frontmatter_contract: "required"
 deployment_topology: "Dev review only; Prod and Cloudflare require separate authority"
-scope: "existing-repo responsibility-ownership index for the knowgrph canvas source tree"
-source_of_truth: "settings registry plus code-owned ownership metadata"
+scope: "responsibility-ownership index for registered knowgrph canvas settings"
+source_of_truth: "settings registry, deterministic taxonomy, and source-literal provenance"
 generated_outputs:
   - "docs/knowgrph-codebase-responsibility-flow.md"
+  - "docs/knowgrph-codebase-responsibility-flow/part-*.md"
   - "canvas/public/settings-flow.json"
   - "canvas/src/features/settings/settings-flow.schema.json"
 constraints:
@@ -54,8 +55,9 @@ related:
 
 ## Executive Summary
 
-The Codebase Responsibility Flow is a generated ownership index that maps every
-configurable concern in the knowgrph canvas to the source that owns it. Each row records a
+The Codebase Responsibility Flow is a generated ownership index that maps every entry in the
+knowgrph canvas `settingsRegistry` to its source provenance. It does not claim coverage of
+runtime flags or configuration outside that registry. Each row records a
 concern **Area**, its **Responsibility**, the owning **Modules**, the **Functions/Methods** that
 mutate it, the persisted **Key**, the backing mechanism (**Imports**), and the exact source
 **Line Range**. The authoritative registry currently holds 593 unique settings, backed
@@ -64,7 +66,8 @@ number of build-time environment sources.
 
 This document is the PRD/TAD for that artifact. It defines the artifact's user value (locate the
 owner of any concern in one lookup), its generation and consumption contracts, and the
-architecture that keeps it accurate. The three projections are produced by deterministic local
+architecture that keeps it accurate. A compact Markdown index, bounded Markdown shards, and two
+JSON projections are produced by deterministic local
 extraction over the settings registry and code-owned metadata. Generation makes no model calls.
 The artifact's agent-readiness value is as a **read-only ownership surface** that both the solo
 developer and external AI agents consult before editing; an agent can still spend model tokens
@@ -80,7 +83,7 @@ repository owner explicitly instructs it.
 | Directive | Product rule | Technical rule |
 |---|---|---|
 | Source-owned | The index reflects the earliest shared owner of each concern, never a downstream copy. | Rows point at the registry/slice that owns the concern, with a verifiable line range. |
-| Neutral | The index describes concerns by function, not by brand or transient path. | Paths stay repo-relative; the extractor derives ownership from code and never from a generated projection. |
+| Neutral | The index describes registered concerns using stable product taxonomy. | Area and Responsibility are deterministic taxonomy labels; Modules and Line Range are source provenance. Paths stay repo-relative. |
 | Traceable | Every concern maps to exactly one owning module set and one persisted key. | `Area -> Key -> Modules -> Line Range` is a checkable chain. |
 | TCO-zero | The index costs nothing to produce or host. | Deterministic static extraction; committed Markdown; zero egress; no paid backend. |
 | Token-economical | Generating and reading the file locally requires no model service. | The deterministic generator makes no model calls; later agent ingestion is outside the generation budget and can consume model tokens. |
@@ -139,11 +142,11 @@ changes that leave a concern owner-less or double-owned.
 
 ### Acceptance Criteria
 
-**Given** a concern that exists in the source, **When** the index is generated, **Then** the index
-contains exactly one row for that concern with a non-empty Area, Key, owning Modules, and Line
+**Given** a setting registered in `settingsRegistry`, **When** the index is generated, **Then** the index
+contains exactly one row for that setting with a non-empty Area, Key, owning Modules, and Line
 Range.
 
-> **VCC translation**: `Verify the generated index contains exactly one row per source-detected concern and no row has an empty Area, Key, Modules, or Line Range column`
+> **VCC translation**: `Verify the generated index contains exactly one row per settingsRegistry entry and no row has an empty Area, Key, Modules, or Line Range column`
 
 **Given** a persisted concern key, **When** a reader looks it up by Key, **Then** the row resolves
 to the owning module paths and the source line range where the key is defined.
@@ -158,7 +161,7 @@ outputs are byte-identical.
 **Given** any committed Markdown or JSON projection is stale, **When** CI invokes `--check`,
 **Then** it exits non-zero before a generating build runs and leaves every projection unchanged.
 
-> **VCC translation**: `Verify --check compares all three projections, performs zero writes, and precedes every CI build step that can generate a projection`
+> **VCC translation**: `Verify --check compares the exact owned artifact set, performs zero writes, and precedes every CI build step that can generate a projection`
 
 **Given** a concern that has been removed from source, **When** the index is regenerated, **Then**
 the removed concern's row is absent.
@@ -170,11 +173,18 @@ the removed concern's row is absent.
 
 > **VCC translation**: `Verify the index file opens and renders offline with zero network requests`
 
+**Given** the Settings UI cannot import its generated responsibility projection, **When** the
+view opens, **Then** settings remain editable, an unavailable status is visible, and Retry starts
+a fresh import instead of reusing the rejected promise.
+
+> **VCC translation**: `Verify a failed projection import returns an observable unavailable result and a later retry can recover`
+
 ### Success Metrics
 
 | Metric | Baseline | Target | Timeline |
 |--------|----------|--------|----------|
-| Concern rows indexed | 593 unique registry settings | 100% of source-detected concerns | Each regeneration |
+| Concern rows indexed | 593 unique registry settings | 100% of `settingsRegistry` entries | Each regeneration |
+| Markdown shard size | 597 lines in one table | ≤ 200 data rows and ≤ 600 lines per committed Markdown file | Each regeneration |
 | Owner-lookup steps (name → owning file:line) | ~5 manual greps | ≤ 1 lookup | v1.0.0 |
 | Time-to-value (TTV steps) | — | ≤ 2 steps (open file → find row) | v1.0.0 |
 | Time-to-value (TTV elapsed) | — | ≤ 1 min on a clean checkout | v1.0.0 |
@@ -195,13 +205,14 @@ the removed concern's row is absent.
 
 ### Min-Viable Scope
 
-The committed Markdown table with one row per source-detected concern, each carrying a non-empty
-Area, Key, owning Modules, and Line Range, produced by a deterministic extractor and regenerable
-byte-identically. Excludes all Could/Won't items.
+The committed Markdown index and bounded shards with one row per `settingsRegistry` entry, each
+carrying a non-empty Area, Key, owning Modules, and Line Range, produced by a deterministic
+extractor and regenerable byte-identically. Excludes all Could/Won't items.
 
 ### Out of Scope
 
 - Any AI/LLM generation of ownership rows or natural-language retrieval layer over the index.
+- Runtime flags, storage keys, and configuration that are not declared by `settingsRegistry`.
 - Mutating source from the index (the index is read-only intelligence).
 - Deployment of the index or this document to the Prod mirror or Cloudflare (guardrailed until the
   repository owner instructs it).
@@ -226,8 +237,9 @@ byte-identically. Excludes all Could/Won't items.
 ### Overview
 
 **From source tree to ownership projections**: a deterministic extractor scans the settings
-registry and code-owned metadata → normalizes each concern into a fixed-column row → emits one
-Markdown and two JSON projections consumed read-only by the maintainer, Settings UI, AI agents,
+registry and deterministic taxonomy → resolves source-literal provenance → normalizes each
+setting into a fixed-column row → emits a compact Markdown index, bounded Markdown shards, and
+two JSON projections consumed read-only by the maintainer, Settings UI, AI agents,
 and reviewers. No model call participates in local generation. Agent ingestion is a separate
 consumer activity and can consume model tokens.
 
@@ -295,37 +307,52 @@ row unchanged.
 **Component**: Responsibility Extractor
 **Responsibility**: Scan concern sources and emit one normalized row per concern.
 **Interfaces**: CLI/script entry with generate and `--check` modes; input = authoritative source
-tree; outputs = `docs/knowgrph-codebase-responsibility-flow.md`,
+tree; outputs = `docs/knowgrph-codebase-responsibility-flow.md`, bounded parts under
+`docs/knowgrph-codebase-responsibility-flow/`,
 `canvas/public/settings-flow.json`, and
-`canvas/src/features/settings/settings-flow.schema.json`. Generate writes all three; `--check`
-compares all three in memory, performs no writes, and exits non-zero when any projection is stale.
+`canvas/src/features/settings/settings-flow.schema.json`. Generate writes the exact owned set and
+removes obsolete numbered parts; `--check` compares every expected artifact in memory, detects
+unexpected numbered parts, performs no writes, and exits non-zero when any projection is stale.
 **Dependencies**: Settings registry modules, code-owned metadata and source anchors, repo
 extraction tooling.
 **Configuration**: Column set (Area, Responsibility, Modules, Classes/Objects, Functions/Methods,
 Key, Imports, Notes, Line Range); source globs.
 **FOSS / Vendor**: FOSS (Node + repo tooling); no proprietary dependency.
 **VCC Conditions**:
-- `Verify generate emits exactly one row per source-detected concern with no empty Area/Key/Modules/Line Range`
+- `Verify generate emits exactly one row per settingsRegistry entry with no empty Area/Key/Modules/Line Range`
 - `Verify two consecutive generate runs over an unchanged tree produce byte-identical output`
-- `Verify --check performs no writes, exits non-zero when any projection differs from fresh generation, and exits 0 when all three are identical`
+- `Verify --check performs no writes, exits non-zero when any expected or obsolete owned projection differs from fresh generation, and exits 0 when the owned artifact set is identical`
 
 **Component**: Responsibility Index File (`docs/knowgrph-codebase-responsibility-flow.md`)
-**Responsibility**: Serve as the read-only Markdown projection of concern → owner → key → line
+**Responsibility**: Serve as the read-only Markdown projection of setting → owner → key → line
 range. The source registry and code-owned metadata remain authoritative.
-**Interfaces**: Markdown table; addressable by Area and by Key.
+**Interfaces**: Compact Markdown index linking to deterministic 200-row shards; rows are
+addressable by Area and by Key.
 **Dependencies**: Output of the Responsibility Extractor.
 **Configuration**: None at read time.
 **FOSS / Vendor**: FOSS format (Markdown); zero-egress local file.
 **VCC Conditions**:
 - `Verify every Key maps to at least one module path and one existing file:line reference`
+- `Verify every Markdown artifact stays at or below 600 lines as the registry grows`
 - `Verify the file renders offline with zero network requests`
+
+**Component**: Settings Flow Runtime Loader
+**Responsibility**: Load the generated JSON projection without blocking setting reads or writes.
+**Interfaces**: Typed `ready | unavailable` result; successful imports are cached; rejected or
+malformed imports clear the cache so the visible Retry action can start a new attempt.
+**Dependencies**: Bundled `settings-flow.schema.json` projection.
+**Configuration**: None.
+**FOSS / Vendor**: Browser runtime only; no network service.
+**VCC Conditions**:
+- `Verify concurrent successful reads share one import`
+- `Verify a rejected import is observable and the next call retries rather than reusing rejection`
 
 **Component**: Staleness Check
 **Responsibility**: Fail the merge gate when any committed projection no longer matches source,
 without changing the worktree.
 **Interfaces**: CI invokes the extractor `--check` mode before any build step that can regenerate
 or otherwise mutate an output.
-**Dependencies**: Responsibility Extractor, all three committed projections, authoritative source
+**Dependencies**: Responsibility Extractor, all committed projections, authoritative source
 tree.
 **Configuration**: Bounded, terminating scan scope.
 **FOSS / Vendor**: FOSS.
@@ -353,8 +380,9 @@ The index must be trustworthy, cheap, and reproducible. An LLM-summarized index 
 non-deterministic, incur token cost, and risk hallucinated owners or line ranges.
 
 ### Decision
-Generate all three projections by deterministic static extraction over the settings registry and
-code-owned metadata. No model call participates in generation. Agent consumers may independently
+Generate the Markdown index and shards plus two JSON projections by deterministic static
+extraction over the settings registry, taxonomy, and source provenance. No model call participates
+in generation. Agent consumers may independently
 spend tokens when they ingest the projections.
 
 ### Alternatives Considered
@@ -426,7 +454,7 @@ be regenerated from the same rows without introducing a runtime dependency.
 
 | Attribute | Scenario | Pattern | Validation |
 |-----------|----------|---------|------------|
-| Performance | 593 source-owned rows must open and be searchable instantly on a mobile viewport | Static Markdown table; no runtime compute | Open on a 320px viewport; find-in-page returns a row |
+| Performance | 593 registered rows must open and be searchable on a mobile viewport | Compact static index plus bounded 200-row Markdown shards | Open on a 320px viewport; follow a local shard and find a row |
 | Reproducibility | Same source must yield the same index | Deterministic extraction, stable ordering | Byte-identical diff across two generations |
 | Traceability | Every concern resolves to an existing owner and line | Fixed-column contract; `file:line` references | Staleness check verifies references exist |
 | Observability | Drift between source and any projection is detectable | Non-mutating `--check` mode runs before generating CI steps | Non-zero exit on stale output; output hashes unchanged |
@@ -435,10 +463,10 @@ be regenerated from the same rows without introducing a runtime dependency.
 
 ### Deployment Strategy
 
-Authoring and validation occur only in the Dev repository and stop at review. The projections are
+Authoring and validation occur in the Dev repository under protected review. The projections are
 regenerated on demand and committed; the non-mutating staleness check guards drift before any
-generating build can mask it. Rollback is a normal file revert. **This increment does not merge,
-publish to the Prod mirror, or deploy to Cloudflare; each requires separate owner authority.**
+generating build can mask it. Rollback is a normal file revert. Publishing to the Prod mirror or
+deploying to Cloudflare requires separate owner authority.
 
 ### Architecture Diagrams
 
@@ -451,10 +479,11 @@ projection before a generating build.
 | Layer | Component | File / Module | Status |
 |-------|-----------|---------------|--------|
 | Source | Settings Registry + Ownership Metadata | code-owned settings and provenance under `canvas/src/` | Authoritative |
-| Generation | Responsibility Extractor | repo extraction tooling (generate / `--check`) | Dev implementation |
+| Generation | Responsibility Extractor | repo extraction tooling (generate / `--check`) | Dev runtime-ready |
 | Artifacts | Responsibility Flow Projections | Markdown plus two JSON output paths defined above | Generated |
-| Gate | Staleness Check | pre-projection CI step invoking `--check` | Dev implementation |
-| Docs | This PRD/TAD | `docs/documents/knowgrph-codebase-responsibility-flow-prd-tad.md` | Dev implementation |
+| Runtime | Settings Flow Loader | `canvas/src/features/settings/flowDetailsRuntime.ts` | Dev runtime-ready |
+| Gate | Staleness Check | pre-projection CI step invoking `--check` | Dev runtime-ready |
+| Docs | This PRD/TAD | `docs/documents/knowgrph-codebase-responsibility-flow-prd-tad.md` | Dev runtime-ready |
 
 ---
 

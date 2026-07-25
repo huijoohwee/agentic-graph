@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -18,6 +19,10 @@ import {
   findStaleSettingsFlowArtifacts,
   type SettingsFlowArtifact,
 } from '../settings-responsibility-flow'
+import {
+  buildResponsibilityMarkdownArtifacts,
+  RESPONSIBILITY_ROWS_PER_PART,
+} from '../settingsResponsibilityMarkdown'
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(currentDirectory, '../../../..')
@@ -27,6 +32,9 @@ test('responsibility flow generation is complete, traceable, and deterministic',
   const second = buildSettingsFlowArtifacts(repoRoot)
   const expectedPaths = [
     'docs/knowgrph-codebase-responsibility-flow.md',
+    'docs/knowgrph-codebase-responsibility-flow/part-001.md',
+    'docs/knowgrph-codebase-responsibility-flow/part-002.md',
+    'docs/knowgrph-codebase-responsibility-flow/part-003.md',
     'canvas/public/settings-flow.json',
     'canvas/src/features/settings/settings-flow.schema.json',
   ]
@@ -36,7 +44,7 @@ test('responsibility flow generation is complete, traceable, and deterministic',
     first.artifacts.map(artifact => artifact.content),
     second.artifacts.map(artifact => artifact.content),
   )
-  assert.equal(first.artifacts[1]?.content, first.artifacts[2]?.content)
+  assert.equal(first.artifacts.at(-2)?.content, first.artifacts.at(-1)?.content)
 
   const registryKeys = settingsRegistry.map(meta => meta.key)
   const expectedKeys = [...registryKeys].sort((left, right) => (
@@ -65,11 +73,40 @@ test('responsibility flow generation is complete, traceable, and deterministic',
     first.schema['operatorDeploy.mcp.endpoint']?.lineRange ?? '',
     /^canvas\/src\/features\/settings\/operatorDeploySsot\.ts:L/,
   )
+  assert.equal(first.schema.byteplusImageModel?.area, 'BytePlus Image')
+  assert.equal(first.schema.byteplusVideoModel?.area, 'BytePlus Video')
+  assert.equal(first.schema.chatProvider?.area, 'Chat')
 
-  const markdown = first.artifacts[0]?.content ?? ''
-  assert.doesNotMatch(markdown, /<(?:img|script|iframe)\b[^>]+\bsrc\s*=/i)
-  assert.doesNotMatch(markdown, /\bhttps?:\/\//i)
-  assert.equal(markdown.split('\n').length <= 600, true)
+  const markdownArtifacts = first.artifacts.filter(artifact => artifact.relativePath.endsWith('.md'))
+  markdownArtifacts.forEach(artifact => {
+    assert.doesNotMatch(artifact.content, /<(?:img|script|iframe)\b[^>]+\bsrc\s*=/i)
+    assert.doesNotMatch(artifact.content, /\bhttps?:\/\//i)
+    assert.equal(artifact.content.split('\n').length <= 600, true, artifact.relativePath)
+  })
+  const markdownIndex = markdownArtifacts[0]?.content ?? ''
+  assert.match(markdownIndex, /covers the 593 entries declared by `settingsRegistry`/)
+  assert.match(markdownIndex, /does not claim coverage of runtime flags/)
+  assert.match(markdownIndex, /\]\(knowgrph-codebase-responsibility-flow\/part-001\.md\)/)
+})
+
+test('Markdown projection remains bounded as the registry grows', () => {
+  const rows = Array.from({ length: RESPONSIBILITY_ROWS_PER_PART * 5 + 1 }, (_, index) => ({
+    key: `setting-${index}`,
+    area: 'Synthetic',
+    responsibility: 'Prove bounded output',
+    modules: ['canvas/src/synthetic.ts'],
+    classes: [],
+    functions: [],
+    imports: [],
+    notes: '',
+    lineRange: 'canvas/src/synthetic.ts:L1',
+  }))
+  const artifacts = buildResponsibilityMarkdownArtifacts(rows)
+
+  assert.equal(artifacts.length, 7)
+  artifacts.forEach(artifact => {
+    assert.ok(artifact.content.split('\n').length <= 600, artifact.relativePath)
+  })
 })
 
 test('duplicate registry keys fail closed before rendering', () => {
@@ -109,6 +146,10 @@ test('stale detection reports each projection without changing files', t => {
   const currentPath = path.join(temporaryRoot, 'current.md')
   const stalePath = path.join(temporaryRoot, 'stale.json')
   const missingPath = path.join(temporaryRoot, 'missing.json')
+  const partsDirectory = path.join(temporaryRoot, 'docs/knowgrph-codebase-responsibility-flow')
+  const obsoletePartPath = path.join(partsDirectory, 'part-999.md')
+  mkdirSync(partsDirectory, { recursive: true })
+  writeFileSync(obsoletePartPath, 'obsolete\n', 'utf8')
   writeFileSync(currentPath, 'current\n', 'utf8')
   writeFileSync(stalePath, 'old\n', 'utf8')
 
@@ -121,8 +162,8 @@ test('stale detection reports each projection without changing files', t => {
   const staleModifiedBefore = statSync(stalePath).mtimeMs
 
   assert.deepEqual(
-    findStaleSettingsFlowArtifacts(artifacts),
-    ['stale.json', 'missing.json'],
+    findStaleSettingsFlowArtifacts(artifacts, temporaryRoot),
+    ['stale.json', 'missing.json', 'docs/knowgrph-codebase-responsibility-flow/part-999.md'],
   )
   assert.deepEqual(readFileSync(stalePath), staleBytesBefore)
   assert.equal(statSync(stalePath).mtimeMs, staleModifiedBefore)

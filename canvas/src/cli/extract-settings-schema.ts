@@ -21,7 +21,7 @@ function main(): void {
   const build = buildSettingsFlowArtifacts(repoRoot)
 
   if (check) {
-    const staleArtifacts = findStaleSettingsFlowArtifacts(build.artifacts)
+    const staleArtifacts = findStaleSettingsFlowArtifacts(build.artifacts, repoRoot)
     if (staleArtifacts.length > 0) {
       process.stderr.write(
         `Responsibility flow artifacts are stale:\n${staleArtifacts.map(value => `- ${value}`).join('\n')}\n`,
@@ -35,7 +35,7 @@ function main(): void {
     return
   }
 
-  writeSettingsFlowArtifacts(build.artifacts)
+  writeSettingsFlowArtifacts(build.artifacts, repoRoot)
   process.stdout.write(
     `Wrote ${build.artifacts.map(artifact => artifact.relativePath).join(', ')} `
       + `with ${Object.keys(build.schema).length} settings\n`,
