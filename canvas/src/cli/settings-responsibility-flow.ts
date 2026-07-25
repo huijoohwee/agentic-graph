@@ -1,5 +1,6 @@
 import {
   existsSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
   renameSync,
@@ -8,11 +9,18 @@ import {
   writeFileSync,
 } from 'node:fs'
 import path from 'node:path'
-import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
 import { FALLBACK_DETAILS } from '@/features/panels/views/SettingsFallbackDetails'
 import { settingsRegistry } from '@/features/settings/registry'
 import type { SettingMeta } from '@/features/settings/types'
-import { MARKDOWN_DATA_VIEW_COPY } from '@/lib/config-copy/markdownDataViewCopy'
+import {
+  buildResponsibilityMarkdownArtifacts,
+  RESPONSIBILITY_MARKDOWN_DIRECTORY,
+  RESPONSIBILITY_MARKDOWN_PART_PATTERN,
+} from './settingsResponsibilityMarkdown'
+import {
+  resolveSettingsArea,
+  resolveSettingsResponsibility,
+} from './settingsResponsibilityTaxonomy'
 
 export type SettingsFlowRow = {
   area: string
@@ -50,8 +58,7 @@ type SourceLocation = {
   tier: number
 }
 
-const ARTIFACT_PATHS = [
-  'docs/knowgrph-codebase-responsibility-flow.md',
+const JSON_ARTIFACT_PATHS = [
   'canvas/public/settings-flow.json',
   'canvas/src/features/settings/settings-flow.schema.json',
 ] as const
@@ -189,77 +196,6 @@ function importsForSource(source: SettingMeta['source']): string[] {
   return []
 }
 
-function humanize(value: string): string {
-  return value
-    .replace(/[_-]+/g, ' ')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .trim()
-    .toLowerCase()
-}
-
-function titleCase(value: string): string {
-  const acronyms: Record<string, string> = {
-    ai: 'AI',
-    api: 'API',
-    mcp: 'MCP',
-    pdf: 'PDF',
-    ui: 'UI',
-    url: 'URL',
-    xr: 'XR',
-  }
-  return humanize(value)
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(word => acronyms[word] ?? `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
-    .join(' ')
-}
-
-function inferArea(key: string, ownerModule: string): string {
-  if (key.startsWith('graphDataTable.aggregate')) {
-    return `${MARKDOWN_DATA_VIEW_COPY.titleDefault} Aggregation`
-  }
-  if (key.startsWith('graphDataTable.')) return MARKDOWN_DATA_VIEW_COPY.titleDefault
-  if (key.startsWith('graphFields.')) return 'Graph Fields'
-  if (key.startsWith('graphHoverPreview.')) return 'Graph Hover Preview'
-  if (key.startsWith('spotlight.')) return 'Launch Spotlight Layout'
-  if (key === 'enableLaunchSpotlight') return 'Launch Spotlight'
-  if (key.startsWith('schema.behavior.hover.')) return 'Graph Hover Preview'
-
-  const prefixAreas: Record<string, string> = {
-    browser: 'API-Native Browser',
-    feishu: 'Feishu',
-    maps: 'Maps',
-    openai: 'OpenAI MCP',
-    operatorDeploy: 'Operator Deploy MCP',
-    payments: 'Payments',
-    print: 'Workspace',
-    schema: 'Schema',
-    workspace: 'Workspace',
-  }
-  const prefix = key.split('.')[0] ?? ''
-  if (key.includes('.') && prefixAreas[prefix]) return prefixAreas[prefix]
-  if (key.includes('.') && prefix) return titleCase(prefix)
-
-  const basename = path.basename(ownerModule).replace(/\.tsx?$/, '')
-  const parts = basename.split('.')
-  const registryFamily = parts[0]?.replace(/^registry-/, '') ?? ''
-  const areaSource = registryFamily === 'ui' && parts[1] && !parts[1].startsWith('part')
-    ? parts[1]
-    : registryFamily
-  return titleCase(areaSource || 'Settings')
-}
-
-function inferResponsibility(key: string, type: SettingMeta['type']): string {
-  const leaf = key.split('.').at(-1) || key
-  const words = humanize(leaf)
-  if (type === 'boolean') {
-    if (leaf.startsWith('enable')) return `Enable ${words.replace(/^enable\s+/, '')}`.trim()
-    if (leaf.startsWith('show')) return `Show ${words.replace(/^show\s+/, '')}`.trim()
-  }
-  if (leaf.endsWith('Ms')) return `${words.replace(/\sms$/, '')} (ms)`
-  return words || 'Setting value'
-}
-
 export function assertUniqueSettingKeys(registry: readonly SettingMeta[]): void {
   const seen = new Set<string>()
   const duplicates = new Set<string>()
@@ -303,11 +239,11 @@ function buildSchema(
     const setters = extractSetterNames(meta.write)
 
     schema[key] = {
-      area: fallback.area || inferArea(key, owner.modulePath),
+      area: fallback.area || resolveSettingsArea(key, owner.modulePath),
       modules: [owner.modulePath],
       classes: extractClasses(meta),
       functions: setters,
-      responsibility: fallback.responsibility || inferResponsibility(key, meta.type),
+      responsibility: fallback.responsibility || resolveSettingsResponsibility(key, meta.type),
       imports: importsForSource(meta.source),
       notes: fallback.notes || '',
       lineRange: `${owner.modulePath}:L${owner.line}`,
@@ -378,74 +314,72 @@ export function validateSettingsFlow(
   }
 }
 
-function buildMarkdown(schema: SettingsFlowSchema): string {
-  const rows = Object.entries(schema).map(([key, row]) => [
-    row.area,
-    row.responsibility,
-    `\`${row.modules.join(', ')}\``,
-    `\`${row.classes.join(', ')}\``,
-    `\`${row.functions.join(', ')}\``,
-    `\`${key}\``,
-    `\`${row.imports.join(', ')}\``,
-    row.notes,
-    `\`${row.lineRange}\``,
-  ])
-  const table = serializeMarkdownPipeTable({
-    columns: [
-      'Area',
-      'Responsibility',
-      'Modules',
-      'Classes/Objects',
-      'Functions/Methods',
-      'Key',
-      'Imports',
-      'Notes',
-      'Line Range',
-    ],
-    rows,
-  })
-  return ['# Knowgrph Codebase Responsibility Flow', '', ...table, ''].join('\n')
-}
-
 export function buildSettingsFlowArtifacts(repoRoot: string): SettingsFlowBuild {
   const schema = buildSchema(repoRoot)
   validateSettingsFlow(repoRoot, schema)
   const json = `${JSON.stringify(schema, null, 2)}\n`
-  const contentByPath = new Map<string, string>([
-    [ARTIFACT_PATHS[0], buildMarkdown(schema)],
-    [ARTIFACT_PATHS[1], json],
-    [ARTIFACT_PATHS[2], json],
-  ])
-  const artifacts = ARTIFACT_PATHS.map(relativePath => ({
-    relativePath,
-    absolutePath: path.join(repoRoot, relativePath),
-    content: contentByPath.get(relativePath) ?? '',
+  const markdownArtifacts = buildResponsibilityMarkdownArtifacts(
+    Object.entries(schema).map(([key, row]) => ({ key, ...row })),
+  )
+  const artifacts = [
+    ...markdownArtifacts,
+    ...JSON_ARTIFACT_PATHS.map(relativePath => ({ relativePath, content: json })),
+  ].map(artifact => ({
+    ...artifact,
+    absolutePath: path.join(repoRoot, artifact.relativePath),
   }))
   return { schema, artifacts }
 }
 
-export function findStaleSettingsFlowArtifacts(artifacts: SettingsFlowArtifact[]): string[] {
-  return artifacts
+function findUnexpectedMarkdownParts(
+  repoRoot: string,
+  artifacts: readonly SettingsFlowArtifact[],
+): string[] {
+  const directory = path.join(repoRoot, RESPONSIBILITY_MARKDOWN_DIRECTORY)
+  if (!existsSync(directory)) return []
+  const desired = new Set(artifacts.map(artifact => artifact.relativePath))
+  return readdirSync(directory)
+    .filter(filename => RESPONSIBILITY_MARKDOWN_PART_PATTERN.test(filename))
+    .map(filename => `${RESPONSIBILITY_MARKDOWN_DIRECTORY}/${filename}`)
+    .filter(relativePath => !desired.has(relativePath))
+    .sort(compareText)
+}
+
+export function findStaleSettingsFlowArtifacts(
+  artifacts: SettingsFlowArtifact[],
+  repoRoot?: string,
+): string[] {
+  const stale = artifacts
     .filter(artifact => (
       !existsSync(artifact.absolutePath)
       || readFileSync(artifact.absolutePath, 'utf8') !== artifact.content
     ))
     .map(artifact => artifact.relativePath)
+  return repoRoot ? [...stale, ...findUnexpectedMarkdownParts(repoRoot, artifacts)] : stale
 }
 
-export function writeSettingsFlowArtifacts(artifacts: SettingsFlowArtifact[]): void {
+export function writeSettingsFlowArtifacts(
+  artifacts: SettingsFlowArtifact[],
+  repoRoot?: string,
+): void {
   const stagedPaths = artifacts.map((artifact, index) => (
     `${artifact.absolutePath}.tmp-${process.pid}-${index}`
   ))
   try {
     artifacts.forEach((artifact, index) => {
       const directory = path.dirname(artifact.absolutePath)
+      mkdirSync(directory, { recursive: true })
       if (!statSync(directory).isDirectory()) throw new Error(`Missing artifact directory: ${directory}`)
       writeFileSync(stagedPaths[index] ?? '', artifact.content, 'utf8')
     })
     artifacts.forEach((artifact, index) => {
       renameSync(stagedPaths[index] ?? '', artifact.absolutePath)
     })
+    if (repoRoot) {
+      findUnexpectedMarkdownParts(repoRoot, artifacts).forEach(relativePath => {
+        unlinkSync(path.join(repoRoot, relativePath))
+      })
+    }
   } finally {
     stagedPaths.forEach(stagedPath => {
       if (existsSync(stagedPath)) unlinkSync(stagedPath)
