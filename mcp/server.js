@@ -25,6 +25,7 @@ import {
 import { buildKnowgrphLocalMcpToolDefinitions, KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "./local-tool-contract.js";
 import { isStorageSyncLocalToolName, runStorageSyncLocalTool } from "./storage-sync-local-runtime.js";
 import { runVdeoxplnLocalTool } from "./vdeoxpln-runtime.js";
+import { runRepositoryPackTool } from "./repository-pack-runtime.js";
 import { buildKnowgrphAgentReadyPromptContracts, getKnowgrphAgentReadyPrompt } from "../canvas/src/features/agent-ready/knowgrphAgentReadyPromptContract.mjs";
 import { buildKnowgrphAgentReadyResourceTemplateContracts, buildKnowgrphSourceFileResourceReadResult, parseKnowgrphSourceFileResourceUri } from "../canvas/src/features/agent-ready/knowgrphAgentReadyResourceContract.mjs";
 import { SITE_ORIGIN } from "../cloudflare/pages/knowgrph-agent-ready-shared.mjs";
@@ -554,6 +555,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const payload = await runAgenticCanvasOsDocsInvokeTool(args, { rootDir: KNOWGRPH_ROOT, env: process.env });
       return jsonToolResult(payload, payload.ok === false);
     }
+    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack) { const payload = await runRepositoryPackTool(args, { rootDir: KNOWGRPH_ROOT, signal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); }
     if ([KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck].includes(toolName)) return jsonToolResult(await callSealionSidecarTool(toolName, args, { env: process.env }));
     if (typeof toolName === "string" && toolName.startsWith("knowgrph.showrunner.")) return runShowrunnerLocalTool(toolName, args, { rootDir: KNOWGRPH_ROOT });
     if (typeof toolName === "string" && toolName.startsWith("knowgrph.sandbox.policy.")) { const payload = await runAgentSandboxPolicyTool(toolName, args, { rootDir: KNOWGRPH_ROOT }); return jsonToolResult(payload, payload.ok === false); }

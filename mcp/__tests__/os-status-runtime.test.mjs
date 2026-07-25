@@ -73,6 +73,7 @@ test("Feature: knowgrph-agentic-os, capability registry unions local MCP and vde
   assert.ok(byId.has(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.osStatus));
   assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.osStatus).owningHarness, "agentic_os");
   assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke).owningHarness, "agentic_canvas_os_docs");
+  assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack).owningHarness, "repository_pack");
   assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.skillEvolve).owningHarness, "skill_evolution");
   assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agentTeamPlan).owningHarness, "agent_team");
   assert.equal(byId.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sandboxPolicyValidate).owningHarness, "agent_sandbox_policy");
