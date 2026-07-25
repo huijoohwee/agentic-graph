@@ -193,7 +193,9 @@ export function materializeStoryboardWidgetProbeTreeStructuredResponse(args: {
   const graphData = args.graphData
   const anchorNodeId = readNodeId(args.anchorNode)
   if (!graphData || !anchorNodeId) return reject('The graph or selected source card identity was unavailable.')
-  const surface = extractChatResponseStructuredSurface(String(args.responseText || ''))
+  const surface = extractChatResponseStructuredSurface(String(args.responseText || ''), {
+    trustedSource: args.responseSource === 'mcp' ? 'literal-mcp' : 'assistant',
+  })
   const surfaceNodes = surface?.nodes || []
   const sourceWidgets = surfaceNodes.filter(node => node.properties['chat:structuredRole'] === 'widget')
   const panels = surfaceNodes.filter(node => node.properties['chat:structuredRole'] === 'panel')

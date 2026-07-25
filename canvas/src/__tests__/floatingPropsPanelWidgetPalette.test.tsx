@@ -37,17 +37,27 @@ export async function testPropsPanelRendersWidgetPaletteOnlySurface() {
 
     const surface = container.querySelector('[data-kg-props-panel-surface="widget-palette"]')
     if (!surface) throw new Error('expected Floating Props Panel to render the palette-only surface marker')
+    const layouts = surface.querySelectorAll('[data-kg-widget-palette-layout]')
+    if (layouts.length !== 5) {
+      throw new Error(`expected five canonical palette layouts, got ${layouts.length}`)
+    }
 
     const text = String(container.textContent || '')
     for (const expected of [
       'Widgets',
+      'Widget Card Type 0',
+      'Probe-Tree Type 1',
+      'Probe-Tree Type 2',
+      'Deliverables Widget Card',
       'Rich Media Panel',
-      'default/richMediaPanel',
-      'Widget Card',
-      'default/textGeneration',
     ]) {
       if (!text.includes(expected)) {
         throw new Error(`expected Floating Props Panel palette text ${JSON.stringify(expected)}, got ${JSON.stringify(text)}`)
+      }
+    }
+    for (const registryMetadata of ['default/richMediaPanel', 'default/textGeneration']) {
+      if (text.includes(registryMetadata)) {
+        throw new Error(`expected palette previews to hide registry metadata ${JSON.stringify(registryMetadata)}, got ${JSON.stringify(text)}`)
       }
     }
     for (const staleToken of [
@@ -57,7 +67,6 @@ export async function testPropsPanelRendersWidgetPaletteOnlySurface() {
       'Panel layout',
       'Layout',
       'Edge',
-      'Probe-Tree',
       'Discovery Widget',
       'Image Widget',
       'Video Widget',

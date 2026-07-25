@@ -13,10 +13,7 @@ import {
   FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID,
 } from '@/lib/config.storyboard-widget'
 import {
-  PROBE_TREE_TYPE_ONE_LAYOUT_ID,
-  PROBE_TREE_TYPE_TWO_LAYOUT_ID,
-  RICH_MEDIA_DELIVERABLES_LAYOUT_ID,
-  WIDGET_CARD_TYPE_ZERO_LAYOUT_ID,
+  WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS,
 } from '@/lib/storyboardWidget/widgetCardLayoutVariants'
 
 export type WidgetPaletteAspectRatio = '16:9' | '9:16'
@@ -139,36 +136,13 @@ export function listWidgetPaletteLayoutVariants(
 
   for (const entry of orderedEntries) {
     if (isCanonicalWidgetCardEntry(entry)) {
-      variants.push(
-        {
-          id: WIDGET_CARD_TYPE_ZERO_LAYOUT_ID,
-          label: 'Widget Card Type 0',
-          entry,
-          aspectRatio,
-          layoutKind: 'card-media',
-        },
-        {
-          id: PROBE_TREE_TYPE_ONE_LAYOUT_ID,
-          label: 'Probe-Tree Type 1',
-          entry,
-          aspectRatio,
-          layoutKind: 'card-output',
-        },
-        {
-          id: PROBE_TREE_TYPE_TWO_LAYOUT_ID,
-          label: 'Probe-Tree Type 2',
-          entry,
-          aspectRatio,
-          layoutKind: 'card-multi-select',
-        },
-        {
-          id: RICH_MEDIA_DELIVERABLES_LAYOUT_ID,
-          label: 'Deliverables Widget Card',
-          entry,
-          aspectRatio,
-          layoutKind: 'card-output',
-        },
-      )
+      variants.push(...WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS.map(descriptor => ({
+        id: descriptor.id,
+        label: descriptor.label,
+        entry,
+        aspectRatio,
+        layoutKind: descriptor.layoutKind,
+      })))
       continue
     }
     variants.push({

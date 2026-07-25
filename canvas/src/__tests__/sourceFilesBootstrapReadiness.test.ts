@@ -112,3 +112,36 @@ export function testSourceFilesBootstrapReadinessProjectsNewRenderIntentBeforeEf
     }
   }
 }
+
+export function testSourceFilesBootstrapReadinessRetainsRuntimeMountAcrossLaterIntents(): void {
+  const initial = createInitialSourceFilesBootstrapState()
+  const initialIntent = reduceSourceFilesBootstrapState(initial, {
+    type: 'begin-document-intent',
+    key: 'initial-document',
+  })
+  const hydratedInitialIntent = reduceSourceFilesBootstrapState(initialIntent, {
+    type: 'complete-bootstrap',
+  })
+  const pendingInitialSnapshot = deriveSourceFilesBootstrapSnapshot(hydratedInitialIntent)
+  if (pendingInitialSnapshot.phase !== 'resolving' || pendingInitialSnapshot.hasReachedReady) {
+    throw new Error(`initial document authority must resolve before run-ready runtimes mount, got ${JSON.stringify(pendingInitialSnapshot)}`)
+  }
+
+  const initiallyReady = reduceSourceFilesBootstrapState(hydratedInitialIntent, {
+    type: 'complete-document-intent',
+    key: 'initial-document',
+  })
+  const readySnapshot = deriveSourceFilesBootstrapSnapshot(initiallyReady)
+  if (readySnapshot.phase !== 'ready' || !readySnapshot.hasReachedReady) {
+    throw new Error(`completed initial authority must enable run-ready runtimes, got ${JSON.stringify(readySnapshot)}`)
+  }
+
+  const laterIntent = reduceSourceFilesBootstrapState(initiallyReady, {
+    type: 'begin-document-intent',
+    key: 'later-document',
+  })
+  const pendingLaterSnapshot = deriveSourceFilesBootstrapSnapshot(laterIntent)
+  if (pendingLaterSnapshot.phase !== 'resolving' || !pendingLaterSnapshot.hasReachedReady) {
+    throw new Error(`later Source Files switching must retain mounted lifecycle owners, got ${JSON.stringify(pendingLaterSnapshot)}`)
+  }
+}

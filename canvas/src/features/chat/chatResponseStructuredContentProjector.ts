@@ -28,6 +28,15 @@ const appendYamlPropertyLines = (lines: string[], indent: string, key: string, v
     for (const row of value.replace(/\r\n?/g, '\n').split('\n')) lines.push(`${indent}  ${row}`)
     return
   }
+  if (typeof value === 'object' && value !== null) {
+    const block = yaml.dump({ [key]: value }, {
+      lineWidth: -1,
+      noRefs: true,
+      sortKeys: false,
+    }).trimEnd()
+    lines.push(...block.split('\n').map(row => `${indent}${row}`))
+    return
+  }
   lines.push(`${indent}${yamlKey(key)}: ${yamlValue(value)}`)
 }
 
