@@ -38,6 +38,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   smeCareAgentStatus: "sme_care_agent_status",
   agenticCanvasOsDocsInvoke: "knowgrph.agentic_canvas_os.docs.invoke",
   skillEvolve: "knowgrph.skill.evolve",
+  repositoryPack: "knowgrph.repository.pack",
   implementationRunPlan: "knowgrph.implementation_run.plan",
   implementationRunStart: "knowgrph.implementation_run.start",
   implementationRunList: "knowgrph.implementation_run.list",

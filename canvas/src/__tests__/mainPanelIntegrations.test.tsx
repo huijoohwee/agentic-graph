@@ -1331,16 +1331,15 @@ export async function testPropsPanelPaletteOmitsGrabMapsDiscoveryWidgetCopy() {
 
     const text = container.textContent || ''
     ;[
-      'Rich Media Panel',
-      'default/richMediaPanel',
-      'Widget Card',
-      'default/textGeneration',
+      'Widget Card Type 0', 'Probe-Tree Type 1', 'Probe-Tree Type 2', 'Deliverables Widget Card', 'Rich Media Panel',
     ].forEach(token => {
       if (!text.includes(token)) {
         throw new Error(`expected props panel widget palette to include canonical palette token ${JSON.stringify(token)}, got ${JSON.stringify(text)}`)
       }
     })
     ;[
+      'default/richMediaPanel',
+      'default/textGeneration',
       'Discovery Widget',
       'GrabMaps Chat Discovery Widget',
       'grabmaps/grabmaps.discovery',

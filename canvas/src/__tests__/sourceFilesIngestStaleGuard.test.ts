@@ -110,6 +110,12 @@ export function testCanvasStartupRuntimesMountsSourceFilesBootstrapEagerly() {
   if (!text.includes('<SourceFilesPersistenceBootstrap />')) {
     throw new Error('expected canvas startup runtimes to mount SourceFilesPersistenceBootstrap outside the deferred idle loader path')
   }
+  if (!text.includes('useSourceFilesBootstrapHasReachedReady')) {
+    throw new Error('expected run-ready lifecycle owners to remain mounted across later Source Files document intents')
+  }
+  if (text.includes('useSourceFilesBootstrapReady')) {
+    throw new Error('expected transient Source Files document intent readiness to stop unmounting run-ready lifecycle owners')
+  }
   if (!text.includes('<CanvasStartupDebugRuntime />')) {
     throw new Error('expected canvas startup runtimes to delegate startup debug flag ownership through the dedicated debug runtime')
   }
