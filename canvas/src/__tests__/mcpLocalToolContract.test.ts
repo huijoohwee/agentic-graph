@@ -241,6 +241,34 @@ export async function testKnowgrphLocalMcpToolContractStaysSharedAndStable() {
   if (memorySearchTool.outputSchema?.type !== 'object' || !memorySearchTool.outputSchema.required?.includes('results')) {
     throw new Error(`expected memory search output schema to expose results, got ${JSON.stringify(memorySearchTool.outputSchema)}`)
   }
+  const memorySearchInputSchema = memorySearchTool.inputSchema as typeof memorySearchTool.inputSchema & { required?: string[] }
+  if (!memorySearchInputSchema.required?.includes('scope') || memorySearchInputSchema.properties?.user_id) {
+    throw new Error(`expected memory search to require only the exact persistent scope, got ${JSON.stringify(memorySearchTool.inputSchema)}`)
+  }
+
+  const persistentMemoryWrite = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryWrite)
+  const persistentMemoryCompact = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryCompact)
+  const persistentSessionSearch = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sessionSearch)
+  const persistentUserProfile = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.userProfile)
+  const persistentMemoryInvoke = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryInvoke)
+  if (!persistentMemoryWrite || !persistentMemoryCompact || !persistentSessionSearch || !persistentUserProfile || !persistentMemoryInvoke) {
+    throw new Error('expected the complete persistent-memory MCP surface')
+  }
+  assertAnnotations(persistentMemoryWrite, { readOnlyHint: false, destructiveHint: true, openWorldHint: false, idempotentHint: true })
+  assertAnnotations(persistentMemoryCompact, { readOnlyHint: false, destructiveHint: true, openWorldHint: false, idempotentHint: true })
+  assertAnnotations(persistentSessionSearch, { readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true })
+  assertAnnotations(persistentUserProfile, { readOnlyHint: false, destructiveHint: true, openWorldHint: false, idempotentHint: true })
+  assertAnnotations(persistentMemoryInvoke, { readOnlyHint: false, destructiveHint: true, openWorldHint: false, idempotentHint: true })
+  if (
+    !persistentMemoryWrite.inputSchema.properties?.scope
+    || !persistentMemoryWrite.inputSchema.properties?.expected_revision
+    || !persistentMemoryWrite.inputSchema.properties?.authorization_token
+  ) {
+    throw new Error(`expected persistent memory writes to expose scope and revision fences, got ${JSON.stringify(persistentMemoryWrite.inputSchema.properties)}`)
+  }
+  if (!persistentMemoryInvoke.inputSchema.properties?.invocation || !persistentMemoryInvoke.inputSchema.properties?.source_revision) {
+    throw new Error(`expected persistent memory invocation to expose exact grammar and source revision, got ${JSON.stringify(persistentMemoryInvoke.inputSchema.properties)}`)
+  }
 
   const memoryPromptTool = tools.find(tool => tool.name === contract.KNOWGRPH_LOCAL_MCP_TOOL_NAMES.memoryAssemblePrompt)
   if (!memoryPromptTool) throw new Error('expected memory prompt assembly tool')

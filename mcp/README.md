@@ -165,10 +165,15 @@ The private session store uses a finite TTL, maximum count, and lazy expiry swee
    - Native dataset operators load annotation results or frame-box arrays, split/merge/save deterministic JSON datasets, and build frame-ordered zone-count timelines for live panel projection
    - Dev default adds no external dependency and no paid inference path; the browser worker emits runtime-local heuristic annotations while model adapters remain runtime-owned behind the `Annotation_Worker` boundary
 9. Memory layer tools
-   - `knowgrph.memory.add` persists explicitly scoped memory text or messages through the provider-neutral memory harness
-   - `knowgrph.memory.search` returns top-K scoped memory results for prompt augmentation
+   - `knowgrph.memory.write`, `knowgrph.memory.compact`, `knowgrph.memory.search`, `knowgrph.session.search`, and `knowgrph.user.profile` implement the bounded Agentic Canvas OS persistent-memory contract
+   - Mutations require an exact tenant/workspace/agent/subject scope, source evidence, an expected scope-local revision, a durable idempotency key, and a short-lived HMAC authorization bound by the host to the exact tool and request
+   - `knowgrph.memory.invoke` executes only an exact revision-fenced `/`, `#`, and `@` tuple resolved from the canonical Agentic Canvas OS dictionaries; the existing docs resolver remains metadata-only
+   - The local deterministic store lives outside the Git checkout under the host state directory, shards revisions and quotas by exact scope, uses a filesystem ownership lock plus atomic fsync/rename commits, rejects symlink escapes, and returns no machine path
+   - Search is exact-scope, bounded, cited, zero-model, and revision-addressable so an agent can retain a frozen session-start view while later writes remain durable; an authorized remove hard-redacts the entry, lifecycle content, old receipts, and historical snapshots
+   - User profiles accept only explicit allowlisted interaction preferences such as `response_length=concise` or `language=en-SG`; arbitrary prose, sensitive categories, inference, and profile writes through `knowgrph.memory.write` fail closed
+   - `knowgrph.memory.add` remains the legacy provider-neutral harness adapter; callers should use `knowgrph.memory.write` for fenced persistent agent memory
    - `knowgrph.memory.assemble_prompt` injects ranked memory results into a bounded `## Relevant Context` system-message section
-   - Dev default uses local JSON storage at `KNOWGRPH_MEMORY_STORE_PATH` or `data/memory-layer/local-memory-store.json`; Mem0 credentials and provider config remain host-owned runtime inputs
+   - Persistent-memory state can be isolated with `KNOWGRPH_MEMORY_STATE_DIR` and `KNOWGRPH_MEMORY_NAMESPACE`; set a host-only `KNOWGRPH_MEMORY_APPROVAL_HMAC_KEY` of at least 32 bytes and mint exact-request tokens with `mintPersistentMemoryAuthorization` without exposing the key to an agent; legacy harness storage remains separately configured by `KNOWGRPH_MEMORY_STORE_PATH`
 10. Probe-tree tools
    - `knowgrph.probe.generate` recalls scoped resolved-path exemplars and returns 2-4 typed candidate next questions without mutating the current node; `token_budget` is enforced before a local model call, trimming recalled exemplars first, and `recall_top_k: 0` disables recall explicitly. If fewer than 2 query-relevant local-model cards survive, the tool fails closed with `insufficient_user_input_context` instead of restating the source query, synthesizing generic wrapper cards, or converting named entities into templates
    - The same tool result includes `response.structuredContent` with a source Widget, bounded cards, and a Rich Media branch ledger. A literal stdio MCP result can therefore reuse FloatingPanel Chat -> workspace KGC -> Canvas apply directly; no MCP-only graph persistence path is added
@@ -378,7 +383,7 @@ Then you can call:
 - `knowgrph.browser_api.run` with `{ "operation": "cookieImport", "targetUrl": "<TARGET_URL>", "dryRun": false, "confirmCookieImport": true, "confirmUnsafe": true, "confirmThirdPartyTerms": true }`
 - `knowgrph.browser_api.run` with `{ "operation": "click", "sessionId": "session-id", "selector": "#submit", "dryRun": false, "confirmUnsafe": true }`
 - `knowgrph.memory.add` with `{ "text": "Prefer local-first memory and operator-gated deploys.", "user_id": "runtime-user-id", "metadata": { "memory_key": "deployment-boundary" } }`
-- `knowgrph.memory.search` with `{ "query": "Should deploys happen automatically?", "user_id": "runtime-user-id", "top_k": 3 }`
+- `knowgrph.memory.search` with `{ "scope": { "tenant_id": "tenant-id", "workspace_id": "workspace-id", "agent_id": "agent-id", "subject_id": "subject-id" }, "query": "Should deploys happen automatically?", "limit": 3 }`
 - `knowgrph.memory.assemble_prompt` with `{ "base_system_message": "Answer directly.", "memories": [{ "id": "memory-id", "memory": "Prefer local-first memory.", "score": 1, "created_at": "2026-06-13T00:00:00.000Z" }], "max_memory_tokens": 80 }`
 - `knowgrph.showrunner.start_run` with `{ "brief_markdown": "---\\ncontract: knowgrph-showrunner-brief/v1\\n---\\n# Brief\\nDry-run a branching podcast pilot.", "dry_run": true }`
 - `knowgrph.os.status` with `{ "view": "capabilities" }`
