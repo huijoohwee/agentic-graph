@@ -93,6 +93,7 @@ export const WidgetEditorPortHandles = React.memo(function WidgetEditorPortHandl
   edges: ReadonlyArray<GraphEdge>
   forceEnabled?: boolean
   inputOnly?: boolean
+  outputOnly?: boolean
   strictHandleSet?: boolean
   toolMode?: StoryboardWidgetToolMode
   pendingEdgeSourceId?: string | null
@@ -387,7 +388,7 @@ export const WidgetEditorPortHandles = React.memo(function WidgetEditorPortHandl
   const selectOuterHandle = hasSemanticRichMediaPort
     ? selectPreferredFlowPortHandle
     : selectCenteredFlowPortHandle
-  const inputHandles = selectOuterHandle(handles.in)
+  const inputHandles = args.outputOnly === true ? [] : selectOuterHandle(handles.in)
   const outputHandles = args.inputOnly === true ? [] : selectOuterHandle(handles.out)
   const hasAny = (inputHandles?.length || 0) + (outputHandles?.length || 0) > 0
   if (!hasAny) return null

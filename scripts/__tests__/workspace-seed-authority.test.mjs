@@ -5,6 +5,7 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
+  CITY_SIM_SEED_RELATIVE_PATH,
   DRAFT_WORKSPACE_SEED_BASENAMES,
   FLIGHT_COMPANION_BASENAME,
   FLIGHT_SEED_BASENAME,
@@ -82,6 +83,35 @@ note_kind: "projection-contract"
 run_ready_demo_id: "flight-sim"
 ---
 `
+const cityRuntimeSeed = `---
+status: "proof-pending"
+runtime_status: "proof-pending"
+publish_scope: "local-only"
+kgCanvasSurfaceMode: "xr"
+kgCanvasRenderMode: "3d"
+kgCanvas3dMode: "xr"
+kgFloatingPanelOpen: true
+kgFloatingPanelView: "cityBuilder"
+run_ready_demo:
+  id: "city-sim"
+  activation: "applied-source-document"
+  identity_authority: "source-authored run_ready_demo.id"
+  identity_conflict: "fail closed when a known path and source identity disagree"
+  canonical_source_file: "/docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md"
+  source_root: "knowgrph/docs"
+  source_backed: true
+  native_runtime: true
+  auto_start: false
+  external_dependencies: []
+  forbid_external_copy_or_dependency: true
+city_runtime:
+  schema_id: "knowgrph-city-grid/v1"
+  world_ownership: "overlay-only"
+  stage_owner: "additive City Stage in the existing shared Canvas"
+  renderer_rule: "never create a second Canvas or renderer"
+  runtime_dependencies_added: 0
+---
+`
 const safeDraftPresentation = [
   'runtime_claim: "planned-contract-only"',
   'kgCanvasSurfaceMode: "2d"',
@@ -103,6 +133,7 @@ const fixture = async () => {
   await mkdir(publishRoot, { recursive: true })
   await writeFile(path.join(path.dirname(canonicalPath), 'README.md'), '# Workspace Seed Authority\n')
   await writeFile(canonicalPath, canonicalSeed)
+  await writeFile(path.join(knowgrphRoot, CITY_SIM_SEED_RELATIVE_PATH), cityRuntimeSeed)
   await writeFile(path.join(knowgrphRoot, FLIGHT_SEED_RELATIVE_PATH), flightRuntimeSeed)
   await writeFile(
     path.join(knowgrphRoot, 'docs/workspace-seeds', FLIGHT_COMPANION_BASENAME),

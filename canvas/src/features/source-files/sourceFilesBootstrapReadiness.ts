@@ -7,6 +7,7 @@ export type SourceFilesBootstrapSnapshot = Readonly<{
   basePhase: SourceFilesBootstrapPhase
   documentIntentKey: string | null
   documentIntentPhase: SourceFilesDocumentIntentPhase | null
+  hasReachedReady: boolean
   hydrated: boolean
   phase: SourceFilesBootstrapPhase
   error: string | null
@@ -15,6 +16,7 @@ export type SourceFilesBootstrapSnapshot = Readonly<{
 export type SourceFilesBootstrapState = Readonly<{
   basePhase: SourceFilesBootstrapPhase
   baseError: string | null
+  hasReachedReady: boolean
   documentIntent: Readonly<{
     key: string
     phase: SourceFilesDocumentIntentPhase
@@ -33,6 +35,7 @@ export type SourceFilesBootstrapAction =
 const INITIAL_STATE: SourceFilesBootstrapState = Object.freeze({
   basePhase: 'resolving',
   baseError: null,
+  hasReachedReady: false,
   documentIntent: null,
 })
 
@@ -50,50 +53,54 @@ export function reduceSourceFilesBootstrapState(
   action: SourceFilesBootstrapAction,
 ): SourceFilesBootstrapState {
   if (action.type === 'complete-bootstrap') {
-    return current.basePhase === 'resolving'
-      ? { ...current, basePhase: 'ready', baseError: null }
-      : current
+    return retainSourceFilesBootstrapReady(
+      current.basePhase === 'resolving'
+        ? { ...current, basePhase: 'ready', baseError: null }
+        : current,
+    )
   }
   if (action.type === 'fail-bootstrap') {
-    return current.basePhase === 'resolving'
-      ? {
-          ...current,
-          basePhase: 'error',
-          baseError: normalizeError(action.error, 'Canvas source initialization failed'),
-        }
-      : current
+    return retainSourceFilesBootstrapReady(
+      current.basePhase === 'resolving'
+        ? {
+            ...current,
+            basePhase: 'error',
+            baseError: normalizeError(action.error, 'Canvas source initialization failed'),
+          }
+        : current,
+    )
   }
   const normalizedKey = String(action.key || '').trim()
   if (!normalizedKey) return current
   if (action.type === 'begin-document-intent') {
     if (current.documentIntent?.key === normalizedKey && current.documentIntent.phase === 'resolving') return current
-    return {
+    return retainSourceFilesBootstrapReady({
       ...current,
       documentIntent: {
         key: normalizedKey,
         phase: 'resolving',
         error: null,
       },
-    }
+    })
   }
   if (current.documentIntent?.key !== normalizedKey) return current
   if (action.type === 'complete-document-intent') {
-    return {
+    return retainSourceFilesBootstrapReady({
       ...current,
       documentIntent: { key: normalizedKey, phase: 'ready', error: null },
-    }
+    })
   }
   if (action.type === 'fail-document-intent') {
-    return {
+    return retainSourceFilesBootstrapReady({
       ...current,
       documentIntent: {
         key: normalizedKey,
         phase: 'error',
         error: normalizeError(action.error, 'Canvas document activation failed'),
       },
-    }
+    })
   }
-  return { ...current, documentIntent: null }
+  return retainSourceFilesBootstrapReady({ ...current, documentIntent: null })
 }
 
 export function deriveSourceFilesBootstrapSnapshot(state: SourceFilesBootstrapState): SourceFilesBootstrapSnapshot {
@@ -110,10 +117,18 @@ export function deriveSourceFilesBootstrapSnapshot(state: SourceFilesBootstrapSt
     basePhase: state.basePhase,
     documentIntentKey: documentIntent?.key || null,
     documentIntentPhase: documentIntent?.phase || null,
+    hasReachedReady: state.hasReachedReady || phase === 'ready',
     hydrated,
     phase,
     error: state.baseError || documentIntent?.error || null,
   })
+}
+
+function retainSourceFilesBootstrapReady(
+  current: SourceFilesBootstrapState,
+): SourceFilesBootstrapState {
+  if (current.hasReachedReady || deriveSourceFilesBootstrapSnapshot(current).phase !== 'ready') return current
+  return { ...current, hasReachedReady: true }
 }
 
 const INITIAL_SNAPSHOT = deriveSourceFilesBootstrapSnapshot(INITIAL_STATE)
@@ -211,4 +226,8 @@ export function useSourceFilesBootstrapHydrated(): boolean {
 
 export function useSourceFilesBootstrapReady(): boolean {
   return useSourceFilesBootstrapSnapshot().phase === 'ready'
+}
+
+export function useSourceFilesBootstrapHasReachedReady(): boolean {
+  return useSourceFilesBootstrapSnapshot().hasReachedReady
 }

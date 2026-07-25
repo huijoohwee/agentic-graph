@@ -7,6 +7,10 @@ import {
   readGameModeSnapshot,
   subscribeGameModeSnapshot,
 } from '@/features/game-fps/gameModeRuntime'
+import {
+  readCitySimSnapshot,
+  subscribeCitySimSnapshot,
+} from '@/features/game-city-sim/citySimRuntime'
 
 export function useCanvasGameplayOverlayState() {
   const gameMode = React.useSyncExternalStore(
@@ -19,10 +23,17 @@ export function useCanvasGameplayOverlayState() {
     readFlightSimSnapshot,
     readFlightSimSnapshot,
   )
+  const citySim = React.useSyncExternalStore(
+    subscribeCitySimSnapshot,
+    readCitySimSnapshot,
+    readCitySimSnapshot,
+  )
   return {
     gameMode,
     flightSim,
+    citySim,
     gameFpsActive: gameMode.active,
     flightSimActive: flightSim.active,
+    citySimActive: citySim.active,
   } as const
 }

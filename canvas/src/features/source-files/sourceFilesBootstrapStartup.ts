@@ -148,7 +148,7 @@ export async function materializeBootstrapWorkspaceSourceFiles(
         markdownDocumentText: store.markdownDocumentText,
         markdownDocumentApplyViewPreset: store.markdownDocumentApplyViewPreset,
       }),
-      sourceFiles: context.mergedSourceFiles,
+      sourceFiles: store.sourceFiles,
       sourcesByPath: context.startupSourcesByPath,
       workspaceEntries,
       workspaceFs: context.workspaceFs,

@@ -245,8 +245,8 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (bottomTypes.includes("| 'xr'") || bottomPanel.includes('XrPanelViewLazy') || bottomPanel.includes("view === 'xr'") || viewport.includes('xrBottomPanelVisible')) {
     throw new Error('expected legacy BottomPanel XR types, toggle, mount, and viewport routing to be removed')
   }
-  if (!floatingTypes.includes("| 'camera'") || !floatingTypes.includes("| 'animation'") || !floatingTypes.includes("| 'motionControl'") || !floatingTypes.includes("| 'gameMode'") || !floatingTypes.includes("| 'flightSim'") || !floatingTypes.includes("| 'media'") || floatingTypes.includes("| 'xr'") || !uiInitialState.includes("view === 'camera'") || !uiInitialState.includes("view === 'animation'") || !uiInitialState.includes("view === 'motionControl'") || !uiInitialState.includes("view === 'gameMode'") || !uiInitialState.includes("view === 'flightSim'") || !uiInitialState.includes("view === 'media'") || uiInitialState.includes("view === 'xr'")) {
-    throw new Error('expected Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera to remain first-class FloatingPanel panels with the duplicate XR route removed')
+  if (!floatingTypes.includes("| 'camera'") || !floatingTypes.includes("| 'animation'") || !floatingTypes.includes("| 'motionControl'") || !floatingTypes.includes("| 'gameMode'") || !floatingTypes.includes("| 'flightSim'") || !floatingTypes.includes("| 'cityBuilder'") || !floatingTypes.includes("| 'media'") || floatingTypes.includes("| 'xr'") || !uiInitialState.includes("view === 'camera'") || !uiInitialState.includes("view === 'animation'") || !uiInitialState.includes("view === 'motionControl'") || !uiInitialState.includes("view === 'gameMode'") || !uiInitialState.includes("view === 'flightSim'") || !uiInitialState.includes("view === 'cityBuilder'") || !uiInitialState.includes("view === 'media'") || uiInitialState.includes("view === 'xr'")) {
+    throw new Error('expected the six XR companion panels and City Builder to remain first-class FloatingPanel panels with the duplicate XR route removed')
   }
   if (
     !floatingXrSceneViews.includes('StrybldrCameraFloatingPanelViewLazy') ||
@@ -264,35 +264,34 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     !floatingXrSceneViews.includes("view === 'flightSim'") ||
     !floatingPanel.includes("{ view: 'flightSim'") ||
     !floatingXrSceneViews.includes('FlightSimFloatingPanelViewLazy') ||
+    !floatingXrSceneViews.includes("view === 'cityBuilder'") || !floatingPanel.includes("{ view: 'cityBuilder'") || !floatingXrSceneViews.includes('CitySimFloatingPanelViewLazy') ||
     !floatingXrSceneViews.includes("view === 'media'") ||
     floatingPanel.includes('XrPanelViewLazy') ||
     floatingPanel.includes("{ view: 'xr'")
   ) {
-    throw new Error('expected FloatingPanel Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera to own canonical projections without a duplicate XR panel')
+    throw new Error('expected the six XR companion panels and City Builder to own canonical projections without a duplicate XR panel')
   }
-  const mediaViewIndex = floatingPanel.indexOf("{ view: 'media'")
-  const animationViewIndex = floatingPanel.indexOf("{ view: 'animation'")
-  const motionControlViewIndex = floatingPanel.indexOf("{ view: 'motionControl'")
+  const mediaViewIndex = floatingPanel.indexOf("{ view: 'media'"), animationViewIndex = floatingPanel.indexOf("{ view: 'animation'"), motionControlViewIndex = floatingPanel.indexOf("{ view: 'motionControl'")
   const gameModeViewIndex = floatingPanel.indexOf("{ view: 'gameMode'")
   const flightSimViewIndex = floatingPanel.indexOf("{ view: 'flightSim'")
-  const cameraViewIndex = floatingPanel.indexOf("{ view: 'camera'")
-  if (!(mediaViewIndex >= 0 && mediaViewIndex < animationViewIndex && animationViewIndex < motionControlViewIndex && motionControlViewIndex < gameModeViewIndex && gameModeViewIndex < flightSimViewIndex && flightSimViewIndex < cameraViewIndex)
-    || !floatingPanel.includes("'animation', 'motionControl', 'gameMode', 'flightSim', 'camera'")) {
-    throw new Error('expected full-height Motion Control, Game Mode, and Flight Sim between Animation and Camera')
+  const cityBuilderViewIndex = floatingPanel.indexOf("{ view: 'cityBuilder'"), cameraViewIndex = floatingPanel.indexOf("{ view: 'camera'")
+  if (!(mediaViewIndex >= 0 && mediaViewIndex < animationViewIndex && animationViewIndex < motionControlViewIndex && motionControlViewIndex < gameModeViewIndex && gameModeViewIndex < flightSimViewIndex && flightSimViewIndex < cityBuilderViewIndex && cityBuilderViewIndex < cameraViewIndex)
+    || !floatingPanel.includes("'animation', 'motionControl', 'gameMode', 'flightSim', 'cityBuilder', 'camera'")) {
+    throw new Error('expected full-height Motion Control, Game Mode, Flight Sim, and City Builder between Animation and Camera')
   }
   if (
     !floatingBridge.includes("| 'camera'") ||
     !floatingBridge.includes("| 'animation'") ||
     !floatingBridge.includes("| 'motionControl'") ||
     !floatingBridge.includes("| 'gameMode'") ||
-    !floatingBridge.includes("| 'flightSim'") ||
+    !floatingBridge.includes("| 'flightSim'") || !floatingBridge.includes("| 'cityBuilder'") ||
     !floatingBridge.includes("| 'media'") ||
     floatingBridge.includes("| 'xr'") ||
     !toolbarLauncher.includes("tab === 'camera'") ||
     !toolbarLauncher.includes("tab === 'animation'") ||
     !toolbarLauncher.includes("tab === 'motionControl'") ||
     !toolbarLauncher.includes("tab === 'gameMode'") ||
-    !toolbarLauncher.includes("tab === 'flightSim'") ||
+    !toolbarLauncher.includes("tab === 'flightSim'") || !toolbarLauncher.includes("tab === 'cityBuilder'") ||
     toolbarLauncher.includes("tab === 'xr'") ||
     !iconLibrary.includes("'floatingPanel.camera'") ||
     !iconLibrary.includes("'floatingPanel.animation'") ||
@@ -301,10 +300,10 @@ export function testXrModeUsesCanonicalFloatingPanel() {
     !iconLibrary.includes("'floatingPanel.flightSim'") ||
     iconLibrary.includes("'floatingPanel.xr'")
   ) {
-    throw new Error('expected the six XR scene panels to share the FloatingPanel bridge, launcher, and help registry without aliases')
+    throw new Error('expected the six XR companion panels and City Builder to share the FloatingPanel bridge, launcher, and help registry without aliases')
   }
-  if (!floatingPanelPresetSource.includes("raw === 'camera'") || !floatingPanelPresetSource.includes("raw === 'animation'") || !floatingPanelPresetSource.includes("raw === 'motionControl'") || !floatingPanelPresetSource.includes("raw === 'gameMode'") || !floatingPanelPresetSource.includes("raw === 'flightSim'") || !floatingPanelPresetSource.includes("raw === 'media'") || floatingPanelPresetSource.includes("raw === 'xr'") || !appliedFrontmatter.includes('readFloatingPanelViewPreset')) {
-    throw new Error('expected FloatingPanel frontmatter routing to use Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera without the stale XR projection')
+  if (!floatingPanelPresetSource.includes("raw === 'camera'") || !floatingPanelPresetSource.includes("raw === 'animation'") || !floatingPanelPresetSource.includes("raw === 'motionControl'") || !floatingPanelPresetSource.includes("raw === 'gameMode'") || !floatingPanelPresetSource.includes("raw === 'flightSim'") || !floatingPanelPresetSource.includes("raw === 'cityBuilder'") || !floatingPanelPresetSource.includes("raw === 'media'") || floatingPanelPresetSource.includes("raw === 'xr'") || !appliedFrontmatter.includes('readFloatingPanelViewPreset')) {
+    throw new Error('expected FloatingPanel frontmatter routing to use the six companion panels and City Builder without the stale XR projection')
   }
   for (const marker of ['data-kg-media-mode-switcher="header-icons"', 'data-kg-media-library-toggle="1"', 'data-kg-media-3d-toggle="1"', 'title="Media"', 'title="3D for XR"', 'subscribeMediaCatalogMode', 'readMediaCatalogMode', '<XrMediaLibraryPanel']) {
     if (!mediaCatalog.includes(marker)) throw new Error(`expected Media to own the canonical 3D entry through ${marker}`)
