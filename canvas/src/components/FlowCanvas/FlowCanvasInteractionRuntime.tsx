@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { applyZoomRequestNative } from '@/components/FlowCanvas/applyZoomRequestNative'
 import { EMPTY_STRING_ARRAY, type FlowCanvasInteractionRuntimeProps } from '@/components/FlowCanvas/shared'
 import { CanvasArrangeActionBar } from '@/components/canvas/CanvasArrangeActionBar'
+import { useSelectionGrouping } from '@/components/canvas/useSelectionGrouping'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { computeArrangeCenters, type ArrangeAction2d } from '@/lib/canvas/arrange2d'
@@ -103,6 +104,7 @@ export default React.memo(function FlowCanvasInteractionRuntime(
     }
     return Array.from(set)
   }, [selectedNodeId, selectedNodeIds])
+  const grouping = useSelectionGrouping({ active, allowMutations })
 
   const applyArrange = React.useMemo(() => {
     return (action: ArrangeAction2d) => {
@@ -251,13 +253,17 @@ export default React.memo(function FlowCanvasInteractionRuntime(
     zoomRequest,
   ])
 
-  if (!(active && allowMutations && selectedIds.length >= 2)) return null
+  if (!(active && allowMutations && (selectedIds.length >= 2 || grouping.canUngroup))) return null
   return (
     <CanvasArrangeActionBar
       active={active}
       selectedCount={selectedIds.length}
       onArrange={applyArrange}
-      ariaLabel="Arrange selected flow nodes"
+      canGroupNodes={grouping.canGroupNodes}
+      canUngroup={grouping.canUngroup}
+      onGroupNodes={grouping.groupNodes}
+      onUngroup={grouping.ungroup}
+      ariaLabel="Selected flow node actions"
     />
   )
 })

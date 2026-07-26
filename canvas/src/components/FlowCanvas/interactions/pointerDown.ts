@@ -155,21 +155,24 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
     if (hit) {
       const state = storeStateAtDown
       state.setSelectionSource('canvas')
-      state.selectEdge(null)
       const mode = ctx.readEffectiveSelectMode(state, storyboardWidgetMode)
-      const wantsToggle = (mode === 'multi' || mode === 'lasso') && (e.shiftKey === true || e.metaKey === true || e.ctrlKey === true)
+      const wantsShiftToggle = e.shiftKey === true
+      const wantsModeToggle = (mode === 'multi' || mode === 'lasso') && (e.metaKey === true || e.ctrlKey === true)
+      const wantsToggle = wantsShiftToggle || wantsModeToggle
       const selectedAtDownRaw = Array.isArray(state.selectedNodeIds) ? state.selectedNodeIds : []
       const selectedAtDown = selectedAtDownRaw.map(v => String(v || '').trim()).filter(Boolean)
       const isHitSelected = selectedAtDown.includes(hit)
       if (wantsToggle) {
-        state.selectNode(hit)
+        state.toggleNodeSelectionAdditive(hit)
       } else if (mode === 'multi' || mode === 'lasso') {
+        state.selectEdge(null)
         if (isHitSelected && selectedAtDown.length > 1) {
           state.selectNodesExpanded({ nodeIds: selectedAtDown, activeNodeId: hit })
         } else {
           state.selectNodesExpanded({ nodeIds: [hit], activeNodeId: hit })
         }
       } else {
+        state.selectEdge(null)
         state.selectNode(hit)
       }
 

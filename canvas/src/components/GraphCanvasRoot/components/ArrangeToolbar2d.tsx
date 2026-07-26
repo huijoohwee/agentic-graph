@@ -1,4 +1,5 @@
 import { CanvasArrangeActionBar } from '@/components/canvas/CanvasArrangeActionBar'
+import { useSelectionGrouping } from '@/components/canvas/useSelectionGrouping'
 import type { ArrangeAction2d } from '@/lib/canvas/arrange2d'
 
 export function ArrangeToolbar2d(props: {
@@ -7,12 +8,17 @@ export function ArrangeToolbar2d(props: {
   onArrange: (action: ArrangeAction2d) => void
 }) {
   const { active, selectedCount, onArrange } = props
+  const grouping = useSelectionGrouping({ active })
   return (
     <CanvasArrangeActionBar
       active={active}
       selectedCount={selectedCount}
       onArrange={onArrange}
-      ariaLabel="Arrange selected graph nodes"
+      canGroupNodes={grouping.canGroupNodes}
+      canUngroup={grouping.canUngroup}
+      onGroupNodes={grouping.groupNodes}
+      onUngroup={grouping.ungroup}
+      ariaLabel="Selected graph node actions"
     />
   )
 }

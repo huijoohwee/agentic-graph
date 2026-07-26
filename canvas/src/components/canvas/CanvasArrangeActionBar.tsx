@@ -16,10 +16,24 @@ export function CanvasArrangeActionBar(props: {
   active: boolean
   selectedCount: number
   onArrange: (action: ArrangeAction2d) => void
+  canGroupNodes?: boolean
+  canUngroup?: boolean
+  onGroupNodes?: () => void
+  onUngroup?: () => void
   ariaLabel?: string
 }) {
-  const { active, selectedCount, onArrange, ariaLabel = 'Arrange selected items' } = props
-  if (!active || selectedCount < 2) return null
+  const {
+    active,
+    selectedCount,
+    onArrange,
+    canGroupNodes = false,
+    canUngroup = false,
+    onGroupNodes,
+    onUngroup,
+    ariaLabel = 'Selection actions',
+  } = props
+  const showArrange = !canUngroup && selectedCount >= 2
+  if (!active || (!showArrange && !canUngroup)) return null
 
   return (
     <section
@@ -29,16 +43,40 @@ export function CanvasArrangeActionBar(props: {
       ].join(' ')}
       aria-label={ariaLabel}
     >
-      {CANVAS_ARRANGE_ACTION_BUTTONS.map(button => (
+      {canUngroup && onUngroup ? (
         <button
-          key={button.action}
           type="button"
-          className="shrink-0 rounded border border-[var(--kg-border)] px-2 py-1"
-          onClick={() => onArrange(button.action)}
+          className="shrink-0 rounded border border-violet-500 bg-violet-600 px-2 py-1 font-medium text-white hover:bg-violet-500"
+          data-kg-selection-action="ungroup"
+          onClick={onUngroup}
         >
-          {button.label}
+          Ungroup
         </button>
-      ))}
+      ) : null}
+      {showArrange ? (
+        <>
+          {canGroupNodes && onGroupNodes ? (
+            <button
+              type="button"
+              className="shrink-0 rounded border border-violet-500 bg-violet-600 px-2 py-1 font-medium text-white hover:bg-violet-500"
+              data-kg-selection-action="group-nodes"
+              onClick={onGroupNodes}
+            >
+              Group Nodes
+            </button>
+          ) : null}
+          {CANVAS_ARRANGE_ACTION_BUTTONS.map(button => (
+            <button
+              key={button.action}
+              type="button"
+              className="shrink-0 rounded border border-[var(--kg-border)] px-2 py-1 hover:bg-[var(--kg-hover)]"
+              onClick={() => onArrange(button.action)}
+            >
+              {button.label}
+            </button>
+          ))}
+        </>
+      ) : null}
     </section>
   )
 }
