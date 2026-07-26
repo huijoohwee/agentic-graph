@@ -2,51 +2,20 @@ import {
   extractProbeTreeClarificationContextText,
   extractProbeTreeUserInputText,
 } from "../canvas/src/features/agent-ready/probeTreeUserInputRelevance.mjs";
+import {
+  callLocalOllamaChat,
+  readLocalOllamaConfig,
+} from "./local-ollama-client.js";
 
-const PROVIDER_OLLAMA = "ollama";
-const DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434";
 const DEFAULT_TIMEOUT_MS = 20000;
 
 const normalizeString = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
-const isLoopbackHost = (hostname) => (
-  hostname === "localhost"
-  || hostname === "127.0.0.1"
-  || hostname === "::1"
-  || hostname.endsWith(".localhost")
-);
-
-const parseEndpoint = ({ endpoint, allowRemote }) => {
-  let url;
-  try {
-    url = new URL(normalizeString(endpoint) || DEFAULT_OLLAMA_URL);
-  } catch {
-    throw new Error("KNOWGRPH_PROBE_TREE_MODEL_URL must be a valid URL.");
-  }
-  if (!["http:", "https:"].includes(url.protocol)) {
-    throw new Error("KNOWGRPH_PROBE_TREE_MODEL_URL must use http or https.");
-  }
-  if (url.username || url.password) {
-    throw new Error("KNOWGRPH_PROBE_TREE_MODEL_URL must not include embedded credentials.");
-  }
-  if (!allowRemote && !isLoopbackHost(url.hostname)) {
-    throw new Error("Probe-tree model URL must be loopback unless KNOWGRPH_PROBE_TREE_MODEL_ALLOW_REMOTE=1.");
-  }
-  return url;
-};
-
 export function readProbeTreeModelConfig(env = process.env) {
-  const model = normalizeString(env.KNOWGRPH_PROBE_TREE_MODEL);
-  const provider = normalizeString(env.KNOWGRPH_PROBE_TREE_MODEL_PROVIDER || (model ? PROVIDER_OLLAMA : ""));
-  if (!provider && !model) return { configured: false, provider: "", model: "" };
-  if (provider !== PROVIDER_OLLAMA) {
-    return { configured: false, provider, model, disabledReason: "unsupported_model_provider" };
-  }
-  if (!model) return { configured: false, provider, model, disabledReason: "missing_model" };
-  const allowRemote = normalizeString(env.KNOWGRPH_PROBE_TREE_MODEL_ALLOW_REMOTE).toLowerCase() === "1";
-  const endpoint = parseEndpoint({ endpoint: env.KNOWGRPH_PROBE_TREE_MODEL_URL, allowRemote });
-  const timeoutMs = Math.max(1000, Math.min(120000, Math.floor(Number(env.KNOWGRPH_PROBE_TREE_MODEL_TIMEOUT_MS) || DEFAULT_TIMEOUT_MS)));
-  return { configured: true, provider, model, endpoint: endpoint.toString().replace(/\/$/, ""), timeoutMs };
+  return readLocalOllamaConfig(env, {
+    envPrefix: "KNOWGRPH_PROBE_TREE_MODEL",
+    defaultTimeoutMs: DEFAULT_TIMEOUT_MS,
+  });
 }
 
 const optionFormatSchema = Object.freeze({
@@ -124,43 +93,29 @@ const parseOptionsJson = (text) => {
 export async function generateProbeOptionsWithLocalModel({ contextText, recalledExemplars = [], k, env = process.env, fetchImpl = fetch }) {
   const config = readProbeTreeModelConfig(env);
   if (!config.configured) return { configured: false, reason: config.disabledReason || "model_not_configured", options: [], costLog: null };
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), config.timeoutMs);
-  try {
-    const response = await fetchImpl(`${config.endpoint}/api/chat`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: config.model,
-        stream: false,
-        format: optionFormatSchema,
-        options: { temperature: 0 },
-        messages: [
-          { role: "system", content: "You produce strict JSON for a local Knowgrph probe-tree agent." },
-          { role: "user", content: buildProbeModelPrompt({ contextText, recalledExemplars, k }) },
-        ],
-      }),
-    });
-    if (!response.ok) throw new Error(`ollama_http_${response.status}`);
-    const payload = await response.json();
-    const content = normalizeString(payload?.message?.content || payload?.response);
+  const result = await callLocalOllamaChat({
+    config,
+    format: optionFormatSchema,
+    messages: [
+      { role: "system", content: "You produce strict JSON for a local Knowgrph probe-tree agent." },
+      { role: "user", content: buildProbeModelPrompt({ contextText, recalledExemplars, k }) },
+    ],
+    fetchImpl,
+  });
+  const content = result.content;
     const options = parseOptionsJson(content).slice(0, k);
     if (!options.length) throw new Error("model_returned_no_valid_options");
     return {
       configured: true,
       provider: config.provider,
-      model: normalizeString(payload?.model) || config.model,
+      model: result.model,
       options,
       costLog: {
-        model: normalizeString(payload?.model) || config.model,
-        prompt_tokens: Math.max(0, Number(payload?.prompt_eval_count) || 0),
-        completion_tokens: Math.max(0, Number(payload?.eval_count) || 0),
+        model: result.model,
+        prompt_tokens: result.promptTokens,
+        completion_tokens: result.outputTokens,
         cache_hits: 0,
         estimated_cost_usd: 0,
       },
     };
-  } finally {
-    clearTimeout(timer);
-  }
 }
