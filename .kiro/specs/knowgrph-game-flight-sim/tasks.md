@@ -64,7 +64,8 @@ Implement one browser-local, deterministic Flight Sim mission as an overlay on t
   - [x] Add a deterministic low-speed nose-down tendency below the authored stall threshold.
   - [x] Project unreliable-instrument, stall, attitude, and mission-relative energy states into the HUD and all six existing training surfaces.
   - [x] Preserve the single shared camera/Canvas owners and the generic clean-room, zero-dependency boundary.
-  - _Requirements: 4, 6, 7, 12, 14, 24_
+  - [x] Route each Media environment kit through canonical XR stage selection into FloatingPanel Geo and project the selected authored world in Geo and Flight.
+  - _Requirements: 4, 6, 7, 12, 14, 24, 25_
 
 - [ ] 10. Complete final exact-revision evidence and protected integration
   - [ ] Run the aggregate source/runtime gate on a clean exact candidate revision.

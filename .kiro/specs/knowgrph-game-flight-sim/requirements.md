@@ -353,3 +353,14 @@ External references inform conceptual principles only. Maintainers attest that t
 8. WHEN an Operator explicitly saves a completed or crashed mission, THE Flight_Runtime SHALL persist one idempotent Training_Outcome Decision alongside admitted terminal Decisions; it SHALL never auto-save the debrief.
 9. THE WebMCP control tool and `/flight.sim @canvas #flight` grammar SHALL expose mission selection, failure selection, voice enable/disable, current coaching cue, lifecycle control, and Save while inspect reports the complete training snapshot.
 10. IF the mission-stage dynamic import fails with a transient fetch or dynamic-module error, THE shared loader SHALL retry at most two times with bounded backoff before reporting the existing fail-closed surface-entry error; non-transient errors SHALL not retry.
+
+### Requirement 25: Authored environment selection and Geo handoff
+
+**User Story:** As a player, I want to choose an authored environment from Media and inspect it through Geo before reopening Flight, so that the mission world is deliberate and visible.
+
+#### Acceptance Criteria
+
+1. WHEN an Operator selects Geo on a Terrain / Environment Kit card, THE Media surface SHALL stage that exact existing XR environment through the canonical XR scene-control owner before requesting FloatingPanel Geo.
+2. IF XR environment staging is rejected, THEN the Media surface SHALL keep the current panel and environment unchanged and SHALL NOT request FloatingPanel Geo.
+3. WHEN FloatingPanel Geo opens after a successful environment selection, THE Geo surface SHALL visibly project the selected environment identifier, label, kind, and authored dimensions from the shared XR runtime.
+4. WHEN Flight_Sim is next opened, THE Flight_Runtime SHALL derive its spatial profile, collision envelope, route, navigation, and visible World label from that selected authored XR environment without adding a renderer, camera, map provider, network request, token, copied asset, or external runtime dependency.
