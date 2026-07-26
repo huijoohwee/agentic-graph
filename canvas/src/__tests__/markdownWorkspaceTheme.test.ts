@@ -47,6 +47,14 @@ export const testMarkdownPreviewViewerForcesPrimaryTextColor = () => {
   }
 }
 
+export const testMarkdownPanelLayoutLetsPreviewOwnVerticalOverflow = () => {
+  const layoutPath = path.resolve(process.cwd(), 'src', 'features', 'markdown', 'ui', 'MarkdownPanelLayout.tsx')
+  const layout = readUtf8(layoutPath)
+  if (!layout.includes('relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden')) {
+    throw new Error('Markdown panel content must be allowed to shrink so its preview can own vertical scrolling')
+  }
+}
+
 export const testMarkdownWorkspaceToolbarAutoRoutesImageModeWithoutManualSelector = () => {
   const toolbarPath = path.resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'MarkdownWorkspaceToolbar.tsx')
   const toolbar = readUtf8(toolbarPath)
