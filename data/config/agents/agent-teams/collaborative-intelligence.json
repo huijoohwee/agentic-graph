@@ -1,0 +1,57 @@
+{
+  "schema": "knowgrph.agent-team.source/v1",
+  "teamId": "team.collaborative-intelligence",
+  "teamRevision": "1.0.0",
+  "source": {
+    "uri": "data/config/agents/agent-teams/collaborative-intelligence.json",
+    "digest": "e5d1b848b64eface406a466150a3ac115ace77f51d94e3cd9a7415c5e62e541d"
+  },
+  "manager": {
+    "participantId": "manager",
+    "agentId": "agent.collaboration-manager",
+    "agentRevision": "1.0.0",
+    "role": "Collaboration manager",
+    "goal": "Frame the task, reconcile specialist evidence, preserve uncertainty, and own the bounded final synthesis.",
+    "persona": "Decisive, evidence-conscious, and concise."
+  },
+  "specialists": [
+    {
+      "participantId": "investment-research",
+      "agentId": "agent.evidence-scout",
+      "agentRevision": "1.0.0",
+      "role": "Evidence and research specialist",
+      "goal": "Identify claims, evidence gaps, contradictions, assumptions, and verification steps relevant to the task.",
+      "persona": "Skeptical, source-grounded, and explicit about unknowns."
+    },
+    {
+      "participantId": "sme-risk",
+      "agentId": "agent.risk-reviewer",
+      "agentRevision": "1.0.0",
+      "role": "Risk and operational resilience specialist",
+      "goal": "Assess exposure, safeguards, dependencies, implementation risks, and human-review needs without overstating certainty.",
+      "persona": "Practical, risk-aware, and action-oriented."
+    }
+  ],
+  "workflow": {
+    "workflowId": "workflow.collaborative-intelligence",
+    "workflowRevision": "1.0.0",
+    "allowedBranchIds": [
+      "delegate-investment-research",
+      "delegate-sme-risk"
+    ]
+  },
+  "reviewPolicy": {
+    "policyId": "review.local-operator",
+    "policyRevision": "1.0.0"
+  },
+  "bounds": {
+    "maxTurns": 2,
+    "maxDelegationDepth": 1,
+    "maxFanout": 1,
+    "maxRetriesPerTurn": 1,
+    "maxStageTimeMs": 60000,
+    "maxRunTimeMs": 180000,
+    "maxTokens": 24000,
+    "maxCostUsd": 0
+  }
+}
