@@ -362,6 +362,13 @@ export async function testProbeTreeRichMediaPanelReusesEditorWorkspaceViewerSurf
     if (!UI_VIEW_EDIT_SURFACE_VIEWER_CLASS_NAME.split(/\s+/).includes('flex-col') || !workspaceViewer.classList.contains('flex-col')) {
       throw new Error(`expected the shared Workspace Viewer surface to stack its preview vertically so narrow panes do not preserve the preview's intrinsic width, html=${container.innerHTML}`)
     }
+    const workspaceScrollFrame = workspaceViewer.closest('[data-kg-rich-media-card-text-scroll="1"]')
+    if (!workspaceScrollFrame?.classList.contains('flex')
+      || !workspaceScrollFrame.classList.contains('min-h-0')
+      || !workspaceScrollFrame.classList.contains('flex-1')
+      || !workspaceScrollFrame.classList.contains('overflow-hidden')) {
+      throw new Error(`expected the Probe-Tree Viewer frame to constrain the Viewer preview so its internal markdown scroller remains reachable, html=${container.innerHTML}`)
+    }
     if (workspaceViewer.querySelector('[data-kg-card-inline-edit="1"], [data-kg-card-markdown-viewer="1"]')) {
       throw new Error('expected Probe-Tree output to avoid the compact Card markdown read/edit renderer')
     }

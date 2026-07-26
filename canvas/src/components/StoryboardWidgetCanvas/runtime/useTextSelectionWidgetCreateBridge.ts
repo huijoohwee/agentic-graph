@@ -79,8 +79,10 @@ export function useTextSelectionWidgetCreateBridge(args: {
         },
         targetNodeId,
         addEdge: edge => {
-          if (appendDraftEdge) appendDraftEdge(edge)
-          else useGraphStore.getState().addEdge(edge)
+          // The authoring draft can lag one render behind the newly-created target.
+          // Preserve the normal draft path, but never drop the selection edge when
+          // that writer declines the just-created target.
+          if (appendDraftEdge?.(edge) !== true) useGraphStore.getState().addEdge(edge)
         },
         waitForGraphMutation,
       }).then(result => {

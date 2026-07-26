@@ -5,6 +5,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["canvas.richMedia.selectionWidgetLink.sourceHighlightConnector","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkProjectsExactSourceHighlightAndConnector"],
   ["canvas.richMedia.selectionWidgetLink.preservesCollectivePlacement","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetInsertionPreservesExistingCollectivePlacement"],
   ["canvas.richMedia.selectionWidgetLink.waitsForTargetPublication","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkWaitsForCreatedTargetPublication"],
+  ["canvas.richMedia.selectionWidgetLink.fallsBackWhenDraftWriterLags","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkFallsBackWhenDraftEdgeWriterLagsTargetCreation"],
   ["canvas.richMedia.selectionWidgetLink.paletteCreateTarget","@/__tests__/textSelectionWidgetLink.test","testWidgetPaletteCreatesTargetFromActiveTextSelection"],
   ["canvas.richMedia.selectionWidgetLink.distinctMathAndProvenanceActions","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkKeepsMathAndAddsDistinctProvenanceAction"],
   ["canvas.probeTree.richMediaProjection.preservesNamedWorkflowOutput","@/__tests__/probeTreeRichMediaProjection.test","testProbeTreeWorkflowPanelPreservesPublishedTextAcrossEmptyLineageValue"],
