@@ -192,8 +192,6 @@ const BASE_CHAT_INVOCATION_OPTIONS: readonly ChatInvocationOption[] = [
   },
 ] as const
 
-const BASE_CHAT_INVOCATION_TOKENS = new Set(BASE_CHAT_INVOCATION_OPTIONS.map(option => option.token.toLowerCase()))
-
 export const CHAT_INVOCATION_OPTIONS: readonly ChatInvocationOption[] = [
   ...BASE_CHAT_INVOCATION_OPTIONS,
 ]
@@ -210,7 +208,6 @@ export const getChatInvocationOptions = (): readonly ChatInvocationOption[] => {
     atToken: doc.atToken,
   }))
   const liveSemanticOptions = getAgenticOsSemanticInvocations()
-    .filter(invocation => !BASE_CHAT_INVOCATION_TOKENS.has(invocation.token.toLowerCase()))
     .map(invocation => ({
       id: invocation.id as ChatInvocationId,
       token: invocation.token as `#${string}`,
@@ -226,14 +223,43 @@ export const getChatInvocationOptions = (): readonly ChatInvocationOption[] => {
   ]
 }
 
+const isSourceBackedDictionaryEntry = (entry: ChatInvocationCatalogEntry): boolean => (
+  ['command', 'semantic', 'binding'].includes(entry.kind)
+  && /DICTIONARY-(?:COMMAND|SEMANTIC|BINDING)\.md/i.test(String(entry.sourcePath || ''))
+)
+
+const mergeCatalogEntryBehavior = (
+  canonical: ChatInvocationCatalogEntry,
+  behaviorSource: ChatInvocationCatalogEntry,
+): ChatInvocationCatalogEntry => ({
+  ...canonical,
+  keywords: [...new Set([...canonical.keywords, ...behaviorSource.keywords])],
+  promptPresetId: canonical.promptPresetId || behaviorSource.promptPresetId,
+  insertionText: canonical.insertionText || behaviorSource.insertionText,
+  invocationModes: canonical.invocationModes || behaviorSource.invocationModes,
+  chatRoute: canonical.chatRoute || behaviorSource.chatRoute,
+  mcpTool: canonical.mcpTool || behaviorSource.mcpTool,
+  mcpToken: canonical.mcpToken || behaviorSource.mcpToken,
+})
+
 const dedupeCatalogEntriesByToken = (entries: readonly ChatInvocationCatalogEntry[]): readonly ChatInvocationCatalogEntry[] => {
-  const seen = new Set<string>()
-  return entries.filter(entry => {
+  const entriesByToken = new Map<string, ChatInvocationCatalogEntry>()
+  entries.forEach(entry => {
     const token = entry.token.toLowerCase()
-    if (seen.has(token)) return false
-    seen.add(token)
-    return true
+    const previous = entriesByToken.get(token)
+    if (!previous) {
+      entriesByToken.set(token, entry)
+      return
+    }
+    if (isSourceBackedDictionaryEntry(entry)) {
+      entriesByToken.set(token, mergeCatalogEntryBehavior(entry, previous))
+      return
+    }
+    if (isSourceBackedDictionaryEntry(previous)) {
+      entriesByToken.set(token, mergeCatalogEntryBehavior(previous, entry))
+    }
   })
+  return [...entriesByToken.values()]
 }
 
 export const resolveChatInvocationCatalogEntryInsertionText = (entry: ChatInvocationCatalogEntry): string => (

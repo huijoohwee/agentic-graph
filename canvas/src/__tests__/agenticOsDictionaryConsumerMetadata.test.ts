@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { load as parseYaml } from 'js-yaml'
+import { resolveAgenticCanvasOsDocsRoot } from '../../../mcp/agentic-canvas-os-docs-runtime.js'
 
 type DictionarySpec = {
   fileName: string
@@ -36,7 +37,9 @@ const SHARED_METADATA_FIELDS = ['token', 'label', 'summary', 'group', 'sourcePat
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value))
 
 const readDictionary = (fileName: string): { text: string; frontmatter: Record<string, unknown> } => {
-  const dictionaryPath = resolve(process.cwd(), '..', '..', 'agentic-canvas-os', 'docs', fileName)
+  const docsRoot = String(process.env.KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT || '').trim()
+    || resolveAgenticCanvasOsDocsRoot({ rootDir: resolve(process.cwd(), '..'), env: process.env })
+  const dictionaryPath = resolve(docsRoot, fileName)
   const text = readFileSync(dictionaryPath, 'utf8')
   const match = text.match(/^---\n([\s\S]*?)\n---/)
   if (!match?.[1]) throw new Error(`Expected ${fileName} to have YAML frontmatter`)
@@ -56,7 +59,7 @@ export function testAgenticOsDictionariesExposeConsumerMetadata() {
 
   for (const spec of DICTIONARY_SPECS) {
     const { text, frontmatter } = readDictionary(spec.fileName)
-    if (frontmatter.date !== '2026-07-09') {
+    if (frontmatter.date !== '2026-07-26') {
       throw new Error(`Expected ${spec.fileName} date to reflect the consumer metadata update`)
     }
     if (frontmatter.prefix !== spec.prefix) {
@@ -76,11 +79,14 @@ export function testAgenticOsDictionariesExposeConsumerMetadata() {
         if (!String(consumer[key] || '').trim()) throw new Error(`Expected ${spec.fileName} ${expectedConsumer}.${key} metadata`)
       }
       const fields = new Set(readArray(consumer.metadata_fields, `${spec.fileName} ${expectedConsumer}.metadata_fields`).map(String))
-      for (const field of expectedConsumer === 'mcp' ? ['token', 'prefix', 'publish_policy', 'source_docs', ...spec.mcpFields] : SHARED_METADATA_FIELDS) {
+      for (const field of expectedConsumer === 'mcp' ? ['token', 'prefix', 'publish_policy', 'source_docs', 'catalog_digest', ...spec.mcpFields] : SHARED_METADATA_FIELDS) {
         if (!fields.has(field)) throw new Error(`Expected ${spec.fileName} ${expectedConsumer}.metadata_fields to include ${field}`)
       }
       if (expectedConsumer === 'mcp' && !String(consumer.behavior || '').includes('no standalone MCP tool execution')) {
         throw new Error(`Expected ${spec.fileName} MCP metadata to stay reference-only`)
+      }
+      if (expectedConsumer === 'mcp' && !String(consumer.behavior || '').includes('deterministic full-catalog digest')) {
+        throw new Error(`Expected ${spec.fileName} MCP metadata to bind the deterministic full-catalog digest`)
       }
     }
 
