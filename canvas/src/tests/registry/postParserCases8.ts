@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["graph.selectionGrouping.interactionContract","@/__tests__/selectionGrouping.test","testSelectionGroupingInteractionContract"],
   ["voice.studio.invocation.exactRoutes","@/__tests__/voiceStudioRuntime.test","testVoiceStudioExactInvocationRoutes"],
   ["voice.studio.profile.consentMetadataOnly","@/__tests__/voiceStudioRuntime.test","testVoiceStudioProfileManifestConsentAndMetadataOnly"],
   ["voice.studio.browser.failClosed","@/__tests__/voiceStudioRuntime.test","testVoiceStudioBrowserCapabilitiesFailClosed"],

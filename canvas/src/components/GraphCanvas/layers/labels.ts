@@ -10,6 +10,7 @@ import { getNodeLabelColor } from '@/components/GraphCanvas/helpers'
 import { isTooltipRelatedTarget } from '@/features/panels/ui/tooltipUtils'
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
 import { compareNodeZKey, type NodeZKey } from '@/lib/canvas/groupZOrder'
+import { useGraphStore } from '@/hooks/useGraphStore'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>;
 
@@ -142,8 +143,14 @@ export const createLabelsLayer = (args: {
   const onClick = (event: MouseEvent, d: GraphNode) => {
     event.stopPropagation();
     setSelectionSource('canvas');
+    const id = String(d.id || '').trim()
+    if (!id) return
+    if (event.shiftKey) {
+      useGraphStore.getState().toggleNodeSelectionAdditive(id)
+      return
+    }
     selectEdge(null);
-    selectNode(String(d.id));
+    selectNode(id);
   }
 
   const onMouseOver = (event: MouseEvent, d: GraphNode) => {
