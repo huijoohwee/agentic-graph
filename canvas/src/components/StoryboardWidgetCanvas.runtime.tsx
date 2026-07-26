@@ -217,6 +217,7 @@ export default function StoryboardWidgetCanvasRuntime(
 
   const [toolMode, setToolMode] = React.useState<ToolMode>('select')
   const [pendingEdgeSourceId, setPendingEdgeSourceId] = React.useState<string | null>(null)
+  const [pendingEdgeSourceIds, setPendingEdgeSourceIds] = React.useState<string[]>([])
   const [pendingEdgeSourcePortKey, setPendingEdgeSourcePortKey] = React.useState<string | null>(null)
   const pendingSelectNodeIdRef = React.useRef<string | null>(null)
   const pendingOpenWidgetNodeIdRef = React.useRef<string | null>(null)
@@ -406,6 +407,7 @@ export default function StoryboardWidgetCanvasRuntime(
     schema,
     toolMode,
     pendingEdgeSourceId,
+    pendingEdgeSourceIds,
     pendingEdgeSourcePortKey,
     frontmatterFlowRenderSettings,
   })
@@ -452,8 +454,10 @@ export default function StoryboardWidgetCanvasRuntime(
     baseGraphData: (baseGraphData || null) as GraphData | null,
     schema,
     selectedNodeId,
+    selectedNodeIds,
     toolMode,
     pendingEdgeSourceId,
+    pendingEdgeSourceIds,
     pendingEdgeSourcePortKey, extraGraphNodesById: pendingOverlayNodesById,
     pendingSelectNodeIdRef,
     setSelectionSource: setSelectionSourceForActions,
@@ -464,6 +468,7 @@ export default function StoryboardWidgetCanvasRuntime(
     persistDraftGraphData: persistPublishedStoryboardCardMediaGraphForSurface,
     setToolMode,
     setPendingEdgeSourceId,
+    setPendingEdgeSourceIds,
     setPendingEdgeSourcePortKey,
     upsertUiToast,
   })
@@ -850,6 +855,7 @@ export default function StoryboardWidgetCanvasRuntime(
       noGraphLoaded={surfaceNoGraphLoaded}
       toolMode={toolMode}
       pendingEdgeSourceId={pendingEdgeSourceId}
+      pendingEdgeSourceIds={pendingEdgeSourceIds}
       beginAddEdgeFromNode={beginAddEdgeFromNode} cancelPendingEdge={cancelPendingEdge} finalizePendingEdge={finalizePendingEdge} runWorkflowNode={runWorkflowNode}
       inspectorPortalHost={inspectorPortalHost}
       inspectorElement={inspectorElement}

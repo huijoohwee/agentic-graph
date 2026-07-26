@@ -194,7 +194,7 @@ export interface GraphStateStructure {
   addNodesToUserSubgraph: (id: string, nodeIds: string[]) => { ok: true } | { ok: false; message: string };
   removeNodesFromUserSubgraph: (id: string, nodeIds: string[]) => { ok: true } | { ok: false; message: string };
   selectNode: (id: string | null) => void;
-  selectNodesExpanded: (args: { nodeIds: string[]; edgeIds?: string[]; groupIds?: string[]; activeNodeId?: string | null }) => void;
+  selectNodesExpanded: (args: { nodeIds: string[]; edgeIds?: string[]; groupIds?: string[]; activeNodeId?: string | null; forceMulti?: boolean }) => void;
   selectEdge: (id: string | null) => void;
   selectGroup: (id: string | null) => void;
   selectGroupExpanded: (args: { id: string; nodeIds: string[]; edgeIds: string[] }) => void;

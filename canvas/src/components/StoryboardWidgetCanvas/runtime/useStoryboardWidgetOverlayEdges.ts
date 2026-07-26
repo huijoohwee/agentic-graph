@@ -55,6 +55,7 @@ import { FRONTMATTER_COLLECTIVE_ROLE_INDEX_KEY, buildFrontmatterOverlayNodeLooku
 import { resolveStoryboardWidgetFocusedEdgeIds } from '@/lib/storyboardWidget/storyboardWidgetPortRows'
 import { FLOW_PORT_HANDLE_PREVIEW_EVENT, type FlowPortHandlePreviewDetail } from '@/components/StoryboardWidget/flowPortHandlePointerDrag'
 import { resolveStoryboardWidgetOverlayEdgeGraphAuthority } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetOverlayEdgeGraphAuthority'
+import { normalizeStoryboardWidgetPendingSourceIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetMultiSourceEdgeSession'
 
 function removeAllPaths(ref: React.MutableRefObject<Map<string, SVGPathElement>>) {
   for (const el of ref.current.values()) {
@@ -72,6 +73,7 @@ function collectRequestedOverlayIdentityIds(args: {
   openWidgetNodeIds: ReadonlyArray<string> | null | undefined
   pendingOverlayNodeId: string | null | undefined
   pendingEdgeSourceId: string | null | undefined
+  pendingEdgeSourceIds: ReadonlyArray<string> | null | undefined
   pendingPreviewSourceId: string | null | undefined
   domOverlayRootEntries: ReadonlyArray<{ id: string }> | null | undefined
 }): string[] {
@@ -85,6 +87,7 @@ function collectRequestedOverlayIdentityIds(args: {
   for (let i = 0; i < (args.domOverlayRootEntries || []).length; i += 1) pushId(args.domOverlayRootEntries?.[i]?.id)
   pushId(args.pendingOverlayNodeId)
   pushId(args.pendingEdgeSourceId)
+  for (let i = 0; i < (args.pendingEdgeSourceIds || []).length; i += 1) pushId(args.pendingEdgeSourceIds?.[i])
   pushId(args.pendingPreviewSourceId)
   return Array.from(ids).sort((a, b) => a.localeCompare(b))
 }
@@ -278,6 +281,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
   schema: unknown
   toolMode: ToolMode
   pendingEdgeSourceId: string | null
+  pendingEdgeSourceIds: ReadonlyArray<string>
   pendingEdgeSourcePortKey: string | null
   frontmatterFlowRenderSettings: { rankdir?: string } | null
 }) {
@@ -286,7 +290,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
   const storyboardWidgetSelectedPortRowKey = useGraphStore(s => s.storyboardWidgetSelectedPortRowKey || '')
   const overlayEdgesSvgRef = React.useRef<SVGSVGElement | null>(null)
   const overlayEdgePathByIdRef = React.useRef<Map<string, SVGPathElement>>(new Map())
-  const overlayPendingEdgePathRef = React.useRef<SVGPathElement | null>(null)
+  const overlayPendingEdgePathBySourceIdRef = React.useRef<Map<string, SVGPathElement>>(new Map())
   const overlayEdgeRafRef = React.useRef<number | null>(null)
   const overlayElByNodeIdRef = React.useRef<Map<string, HTMLElement>>(new Map())
   const lastStableOverlayRectByNodeIdRef = React.useRef<Map<string, StableOverlayRectSnapshot>>(new Map())
@@ -307,9 +311,15 @@ export function useStoryboardWidgetOverlayEdges(args: {
     map: Map<string, Map<string, number>>
   } | null>(null)
   const overlayEdgeTraceStateRef = React.useRef<{ key: string; ts: number } | null>(null)
-  const pendingEdgePreviewRef = React.useRef<{ toolMode: ToolMode; sourceId: string | null; sourcePortKey: string | null }>({
+  const pendingEdgePreviewRef = React.useRef<{
+    toolMode: ToolMode
+    sourceId: string | null
+    sourceIds: string[]
+    sourcePortKey: string | null
+  }>({
     toolMode: 'select',
     sourceId: null,
+    sourceIds: [],
     sourcePortKey: null,
   })
   const pendingEdgeCursorRef = React.useRef<null | { x: number; y: number; ts: number }>(null)
@@ -402,13 +412,14 @@ export function useStoryboardWidgetOverlayEdges(args: {
         }
       }
     }
-    const pendingPathEl = overlayPendingEdgePathRef.current
-    if (pendingPathEl && pendingPathEl.parentNode !== svg) {
-      try {
-        svg.appendChild(pendingPathEl)
-        restored += 1
-      } catch {
-        void 0
+    for (const pendingPathEl of overlayPendingEdgePathBySourceIdRef.current.values()) {
+      if (pendingPathEl.parentNode !== svg) {
+        try {
+          svg.appendChild(pendingPathEl)
+          restored += 1
+        } catch {
+          void 0
+        }
       }
     }
     return restored
@@ -504,9 +515,11 @@ export function useStoryboardWidgetOverlayEdges(args: {
   }, [args.active, args.storyboardWidgetSurfaceId, args.overlayEdgesEnabledRef, args.overlayOnlyModeEnabled, args.rootRef, pushOverlayEdgeTrace])
 
   React.useEffect(() => {
+    const sourceId = args.pendingEdgeSourceId ? String(args.pendingEdgeSourceId || '').trim() : null
     const nextPendingEdgePreview = {
       toolMode: args.toolMode,
-      sourceId: args.pendingEdgeSourceId ? String(args.pendingEdgeSourceId || '').trim() : null,
+      sourceId,
+      sourceIds: normalizeStoryboardWidgetPendingSourceIds(args.pendingEdgeSourceIds, sourceId),
       sourcePortKey: args.pendingEdgeSourcePortKey ? String(args.pendingEdgeSourcePortKey || '').trim() : null,
     }
     pendingEdgePreviewRef.current = nextPendingEdgePreview
@@ -514,17 +527,10 @@ export function useStoryboardWidgetOverlayEdges(args: {
     if (!args.active) return
     if (nextPendingEdgePreview.toolMode !== 'addEdge' || !nextPendingEdgePreview.sourceId) {
       pendingEdgeStartPointRef.current = null
-      if (overlayPendingEdgePathRef.current) {
-        try {
-          overlayPendingEdgePathRef.current.remove()
-        } catch {
-          void 0
-        }
-        overlayPendingEdgePathRef.current = null
-      }
+      removeAllPaths(overlayPendingEdgePathBySourceIdRef)
     }
     scheduleOverlayEdgeUpdateRef.current()
-  }, [args.active, args.pendingEdgeSourceId, args.pendingEdgeSourcePortKey, args.toolMode])
+  }, [args.active, args.pendingEdgeSourceId, args.pendingEdgeSourceIds, args.pendingEdgeSourcePortKey, args.toolMode])
 
   const scheduleTransientOverlayEdgeRetry = React.useCallback((parts: string[]): boolean => {
     const retryKey = hashSignatureParts(['transient-overlay-edges', ...parts.map(part => String(part || '').trim()).filter(Boolean).sort((a, b) => a.localeCompare(b))])
@@ -674,6 +680,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
         openWidgetNodeIds: args.openWidgetNodeIdsRef.current,
         pendingOverlayNodeId: args.pendingOverlayNodeIdRef.current,
         pendingEdgeSourceId: args.pendingEdgeSourceId,
+        pendingEdgeSourceIds: args.pendingEdgeSourceIds,
         pendingPreviewSourceId: pendingEdgePreviewRef.current.sourceId,
         domOverlayRootEntries,
       })
@@ -776,14 +783,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
         removeAllPaths(overlayEdgePathByIdRef)
         overlayEdgeLayoutSigRef.current = ''
         overlayEdgeAnchorCacheRef.current.clear()
-        if (overlayPendingEdgePathRef.current) {
-          try {
-            overlayPendingEdgePathRef.current.remove()
-          } catch {
-            void 0
-          }
-          overlayPendingEdgePathRef.current = null
-        }
+        removeAllPaths(overlayPendingEdgePathBySourceIdRef)
         return
       }
 
@@ -1133,7 +1133,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
         const cursor = pendingEdgeCursorRef.current
         const pendingSig =
           pending.toolMode === 'addEdge' && pending.sourceId && cursor
-            ? `${pending.toolMode}:${pending.sourceId}:${String(pending.sourcePortKey || '')}:${round2(cursor.x)}:${round2(cursor.y)}`
+            ? `${pending.toolMode}:${pending.sourceIds.join(',')}:${pending.sourceId}:${String(pending.sourcePortKey || '')}:${round2(cursor.x)}:${round2(cursor.y)}`
             : ''
         const focusSig = focusedEdges.active
           ? `focus:${storyboardWidgetSelectedPortRowKey}:${focusedEdges.edgeIds.join(',')}`
@@ -1217,44 +1217,38 @@ export function useStoryboardWidgetOverlayEdges(args: {
       const transientMissingEdgeAnchorParts: string[] = []
       const pending = pendingEdgePreviewRef.current
       const cursor = pendingEdgeCursorRef.current
-      const wantsPending = pending.toolMode === 'addEdge' && !!pending.sourceId && !!cursor && Date.now() - cursor.ts < 4000
-      let cachedStartPoint: PendingEdgeStartPointSnapshot | null = null
+      const pendingSourceIds = normalizeStoryboardWidgetPendingSourceIds(pending.sourceIds, pending.sourceId)
+      const wantsPending = pending.toolMode === 'addEdge' && pendingSourceIds.length > 0 && !!cursor && Date.now() - cursor.ts < 4000
       if (!wantsPending) {
-        if (overlayPendingEdgePathRef.current) {
-          try {
-            overlayPendingEdgePathRef.current.remove()
-          } catch {
-            void 0
-          }
-          overlayPendingEdgePathRef.current = null
-        }
+        removeAllPaths(overlayPendingEdgePathBySourceIdRef)
       } else {
-        const sourceId = readCanonicalStoryboardWidgetOverlayIdentity(pending.sourceId)
-        const cachedSourceRect = sourceId
-          ? (() => {
-              const snapshot = lastStableOverlayRectByNodeIdRef.current.get(sourceId) || null
-              if (!snapshot) return null
-              return Date.now() - snapshot.ts <= 1500 ? snapshot.rect : null
-            })()
-          : null
-        cachedStartPoint = sourceId
-          ? (() => {
-              const snapshot = pendingEdgeStartPointRef.current
-              if (!snapshot) return null
-              if (readCanonicalStoryboardWidgetOverlayIdentity(snapshot.sourceId) !== sourceId) return null
-              return Date.now() - snapshot.ts <= 4000 ? snapshot : null
-            })()
-          : null
-        const sRect = sourceId ? overlayRectsByNodeId.get(sourceId) || cachedSourceRect : null
-        if ((sRect || cachedStartPoint) && cursor) {
+        const keepPendingSourceIds = new Set<string>()
+        for (const rawSourceId of pendingSourceIds) {
+          const sourceId = readCanonicalStoryboardWidgetOverlayIdentity(rawSourceId)
+          if (!sourceId) continue
+          const stableRectSnapshot = lastStableOverlayRectByNodeIdRef.current.get(sourceId) || null
+          const cachedSourceRect = stableRectSnapshot && Date.now() - stableRectSnapshot.ts <= 1500
+            ? stableRectSnapshot.rect
+            : null
+          const startPointSnapshot = pendingEdgeStartPointRef.current
+          const cachedStartPoint = sourceId === readCanonicalStoryboardWidgetOverlayIdentity(pending.sourceId)
+            && startPointSnapshot
+            && readCanonicalStoryboardWidgetOverlayIdentity(startPointSnapshot.sourceId) === sourceId
+            && Date.now() - startPointSnapshot.ts <= 4000
+            ? startPointSnapshot
+            : null
+          const sRect = overlayRectsByNodeId.get(sourceId) || cachedSourceRect
+          if (!sRect && !cachedStartPoint) continue
           const handleKey = String(
-            pending.sourcePortKey
+            (sourceId === readCanonicalStoryboardWidgetOverlayIdentity(pending.sourceId)
+              ? pending.sourcePortKey
+              : null)
             || defaultPortKeyByNodeId.get(sourceId)?.out
             || FLOW_HANDLE_DEFAULT_EDGE_ID,
           ).trim()
           const outHandleId = buildFlowHandleId({ dir: 'out', edgeId: handleKey })
-          const sPct = sourceId ? topPctByNodeAndHandle.get(sourceId)?.get(outHandleId) ?? 50 : 50
-          const a = sourceId && sRect ? readAnchor({ nodeId: sourceId, dir: 'out', portKey: handleKey, fallbackRect: sRect, fallbackPct: sPct }) : null
+          const sPct = topPctByNodeAndHandle.get(sourceId)?.get(outHandleId) ?? 50
+          const a = sRect ? readAnchor({ nodeId: sourceId, dir: 'out', portKey: handleKey, fallbackRect: sRect, fallbackPct: sPct }) : null
           const sx = a
             ? a.x - baseLeft
             : sRect
@@ -1269,7 +1263,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
           const ty = cursor.y
           if (Number.isFinite(sx) && Number.isFinite(sy) && Number.isFinite(tx) && Number.isFinite(ty)) {
             const d = buildEdgePathD({ edgeType: globalEdgeType, sx, sy, tx, ty, rankdir })
-            const existing = overlayPendingEdgePathRef.current
+            const existing = overlayPendingEdgePathBySourceIdRef.current.get(sourceId)
             const pathEl = existing || document.createElementNS('http://www.w3.org/2000/svg', 'path')
             if (!existing) {
               pathEl.setAttribute('fill', 'none')
@@ -1279,19 +1273,27 @@ export function useStoryboardWidgetOverlayEdges(args: {
               pathEl.setAttribute('stroke-linecap', 'round')
               pathEl.setAttribute('stroke-dasharray', edgeAnimated ? '7 5' : '4 4')
               pathEl.style.animation = edgeAnimated ? 'kg-edge-dash-flow 1.25s linear infinite' : ''
-              pathEl.setAttribute('opacity', '0.75')
               pathEl.setAttribute('pointer-events', 'none')
               pathEl.setAttribute('data-kg-overlay-pending-edge', 'true')
+              pathEl.setAttribute('data-kg-overlay-pending-edge-source-id', sourceId)
               svg.appendChild(pathEl)
-              overlayPendingEdgePathRef.current = pathEl
+              overlayPendingEdgePathBySourceIdRef.current.set(sourceId, pathEl)
             }
             const pendingDash = edgeAnimated ? '7 5' : '4 4'
+            const pendingOpacity = sourceId === readCanonicalStoryboardWidgetOverlayIdentity(pending.sourceId) ? '0.78' : '0.52'
             if (pathEl.getAttribute('stroke') !== globalEdgeColor) pathEl.setAttribute('stroke', globalEdgeColor)
             if (pathEl.getAttribute('stroke-width') !== String(globalEdgeThickness)) pathEl.setAttribute('stroke-width', String(globalEdgeThickness))
             if (pathEl.getAttribute('stroke-dasharray') !== pendingDash) pathEl.setAttribute('stroke-dasharray', pendingDash)
+            if (pathEl.getAttribute('opacity') !== pendingOpacity) pathEl.setAttribute('opacity', pendingOpacity)
             pathEl.style.animation = edgeAnimated ? 'kg-edge-dash-flow 1.25s linear infinite' : ''
             if (pathEl.getAttribute('d') !== d) pathEl.setAttribute('d', d)
+            keepPendingSourceIds.add(sourceId)
           }
+        }
+        for (const [sourceId, pathEl] of overlayPendingEdgePathBySourceIdRef.current) {
+          if (keepPendingSourceIds.has(sourceId)) continue
+          try { pathEl.remove() } catch { void 0 }
+          overlayPendingEdgePathBySourceIdRef.current.delete(sourceId)
         }
       }
 
@@ -1414,7 +1416,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
         missingAnchorCount: transientMissingEdgeAnchorParts.length,
         keptEdgeCount: keep.size,
         existingPathCount: overlayEdgePathByIdRef.current.size,
-        cachedStartPointAvailable: !!cachedStartPoint,
+        cachedStartPointAvailable: !!pendingEdgeStartPointRef.current,
         svgWidth: svgWidth,
         svgHeight: svgHeight,
         svgWidthAttr: svg.getAttribute('width') || '',
@@ -1428,7 +1430,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
     }
     if (immediate) updateOverlayEdges()
     else overlayEdgeRafRef.current = requestAnimationFrame(updateOverlayEdges)
-  }, [args.active, args.draftGraphDataRef, args.fixedCardsOwnGraphAuthority, args.storyboardWidgetSurfaceId, args.openWidgetNodeIdsRef, args.overlayEdgesEnabledRef, args.overlayEditorNodeIdsRef, args.pendingOverlayNodeIdRef, args.renderGraphDataOverride, args.rootRef, args.widgetRegistryRef, cacheFrozenOverlayEdgePaths, storyboardWidgetSelectedPortRowKey, pushOverlayEdgeTrace, rankdir, restoreFrozenOverlayEdgePaths, scheduleOverlayEdgeReadinessRetry, scheduleTransientOverlayEdgeRetry, schema])
+  }, [args.active, args.draftGraphDataRef, args.fixedCardsOwnGraphAuthority, args.storyboardWidgetSurfaceId, args.openWidgetNodeIdsRef, args.overlayEdgesEnabledRef, args.overlayEditorNodeIdsRef, args.pendingEdgeSourceId, args.pendingEdgeSourceIds, args.pendingOverlayNodeIdRef, args.renderGraphDataOverride, args.rootRef, args.widgetRegistryRef, cacheFrozenOverlayEdgePaths, storyboardWidgetSelectedPortRowKey, pushOverlayEdgeTrace, rankdir, restoreFrozenOverlayEdgePaths, scheduleOverlayEdgeReadinessRetry, scheduleTransientOverlayEdgeRetry, schema])
   scheduleOverlayEdgeUpdateRef.current = scheduleOverlayEdgeUpdate
 
   React.useEffect(() => {
@@ -1507,7 +1509,17 @@ export function useStoryboardWidgetOverlayEdges(args: {
       if (!root) return
       const rect = root.getBoundingClientRect()
       if (!Number.isFinite(rect.left) || !Number.isFinite(rect.top)) return
-      if (source) pendingEdgePreviewRef.current = source.phase === 'cancel' ? { toolMode: 'select', sourceId: null, sourcePortKey: null } : { toolMode: 'addEdge', sourceId: source.id, sourcePortKey: source.portKey }
+      if (source) {
+        const currentSourceIds = pendingEdgePreviewRef.current.sourceIds
+        pendingEdgePreviewRef.current = source.phase === 'cancel'
+          ? { toolMode: 'select', sourceId: null, sourceIds: [], sourcePortKey: null }
+          : {
+              toolMode: 'addEdge',
+              sourceId: source.id,
+              sourceIds: currentSourceIds.includes(source.id) ? currentSourceIds : [source.id],
+              sourcePortKey: source.portKey,
+            }
+      }
       const x = (Number.isFinite(clientX) ? clientX : rect.left) - rect.left
       const y = (Number.isFinite(clientY) ? clientY : rect.top) - rect.top
       if (source?.phase === 'start' && source.id && Number.isFinite(x) && Number.isFinite(y)) {
@@ -1579,14 +1591,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
       overlayEdgeAnchorCache.clear()
       lastStableOverlayRectByNodeIdRef.current.clear()
       lastStableOverlayEdgeNodeIdsRef.current = []
-      if (overlayPendingEdgePathRef.current) {
-        try {
-          overlayPendingEdgePathRef.current.remove()
-        } catch {
-          void 0
-        }
-        overlayPendingEdgePathRef.current = null
-      }
+      removeAllPaths(overlayPendingEdgePathBySourceIdRef)
       cancelOverlayEdgeUpdate()
     }
   }, [args.active, args.rootRef, cancelOverlayEdgeUpdate, scheduleOverlayEdgeUpdate])

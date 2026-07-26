@@ -45,13 +45,12 @@ import type { GraphData, GraphNode, JSONValue } from '@/lib/graph/types'
 import { RICH_MEDIA_PANEL_DEFAULT_CSS_VARS } from '@/lib/render/richMediaPanelDefaults'
 import type { MediaDragPayload } from '@/lib/ui/mediaDragPayload'
 import { screenToWorld } from '@/lib/zoom/viewport'
-const STORYBOARD_CARD_OVERLAY_Z_INDEX = 60
-const ignoreStoryboardCardAction = () => void 0
+const STORYBOARD_CARD_OVERLAY_Z_INDEX = 60; const ignoreStoryboardCardAction = () => void 0
 function StoryboardCardOverlayItem(props: {
   card: StoryboardCardModel; node: GraphNode; pendingMedia: StoryboardCardModel['media']; storyboardWidgetSurfaceId: string
   cardMoveEnabled: boolean
   register: (id: string, el: HTMLElement | null) => void; selected: boolean
-  onDuplicate: (card: StoryboardCardModel) => void; onOpenInSidepane: (card: StoryboardCardModel) => void; onProbeTree: (card: StoryboardCardModel) => void; onRemove: (card: StoryboardCardModel) => void; onRun: (card: StoryboardCardModel) => void; onSelect: (card: StoryboardCardModel) => void
+  onDuplicate: (card: StoryboardCardModel) => void; onOpenInSidepane: (card: StoryboardCardModel) => void; onProbeTree: (card: StoryboardCardModel) => void; onRemove: (card: StoryboardCardModel) => void; onRun: (card: StoryboardCardModel) => void; onSelect: (card: StoryboardCardModel, additive?: boolean) => void
   onCommitLane: (card: StoryboardCardModel, nextValue: string) => void; onCommitPrimaryText: (card: StoryboardCardModel, field: GraphNodeCardTextFieldSpec, nextValue: string) => void; onCommitTitle: (card: StoryboardCardModel, nextValue: string) => void; onCommitType: (card: StoryboardCardModel, nextValue: string) => void
   onDropMedia: (card: StoryboardCardModel, payload: MediaDragPayload) => void
   onSourceReferenceActivate: (reference: StoryboardCardSourceReference) => void
@@ -61,6 +60,7 @@ function StoryboardCardOverlayItem(props: {
   onResizePointerDown: (event: React.PointerEvent<HTMLButtonElement>, node: GraphNode) => void
 }) {
   const { card, cardMoveEnabled, storyboardWidgetSurfaceId, headerPinProps, node, onCommitLane, onCommitPrimaryText, onCommitTitle, onCommitType, onDropMedia, onDuplicate, onHeaderPointerDown, onOpenInSidepane, onProbeTree, onRemove, onResizePointerDown, onRun, onSelect, onSourceReferenceActivate, pendingMedia, readCardSize, register, selected } = props
+  const suppressNextClickSelectionRef = React.useRef(false)
   const { width, height } = readCardSize(node)
   const textModel = buildStoryboardCardTextModel(card)
   const displayMedia = pendingMedia || card.media
@@ -113,7 +113,8 @@ function StoryboardCardOverlayItem(props: {
         const target = event.target instanceof Element ? event.target : null
         if (target && isStoryboardHeaderDragBlockedTarget(target)) return
         if (shouldStoryboardCardOverlayYieldToTextEditTarget(target)) return
-        onSelect(card)
+        if (suppressNextClickSelectionRef.current) { suppressNextClickSelectionRef.current = false; return }
+        onSelect(card, event.shiftKey || event.metaKey || event.ctrlKey)
       }}
       onPointerDownCapture={event => {
         const target = event.target instanceof Element ? event.target : null
@@ -121,11 +122,12 @@ function StoryboardCardOverlayItem(props: {
         if (target && isStoryboardHeaderDragBlockedTarget(target)) return
         if (shouldStoryboardCardOverlayYieldToTextEditTarget(target)) return
         if (target?.closest('[data-kg-rich-media-storyboard-widget-header="1"]') && !isStoryboardHeaderDragBlockedTarget(target)) {
-          onSelect(card)
+          suppressNextClickSelectionRef.current = true
+          onSelect(card, event.shiftKey || event.metaKey || event.ctrlKey)
           if (cardMoveEnabled) onHeaderPointerDown(event, node)
           return
         }
-        onSelect(card)
+        suppressNextClickSelectionRef.current = true; onSelect(card, event.shiftKey || event.metaKey || event.ctrlKey)
       }}
       style={{
         width,
@@ -233,6 +235,7 @@ export function StoryboardCardOverlayLayer2d(props: {
   const addHistory = useGraphStore(s => s.addHistory); const upsertUiToast = useGraphStore(s => s.upsertUiToast)
   const removeNode = useGraphStore(s => s.removeNode)
   const selectNode = useGraphStore(s => s.selectNode)
+  const selectNodesExpanded = useGraphStore(s => s.selectNodesExpanded)
   const selectedNodeId = useGraphStore(s => String(s.selectedNodeId || '').trim())
   const selectedNodeIds = useGraphStore(s => s.selectedNodeIds)
   const scopedFlowWidgetPinnedByNodeId = useGraphStore(s => resolveScopedFlowWidgetNodeMap({
@@ -406,11 +409,13 @@ export function StoryboardCardOverlayLayer2d(props: {
       propertyKeys: field.propertyKeys,
     })
   }, [commitNodeCanonicalProperty])
-  const selectCard = React.useCallback((card: StoryboardCardModel) => {
+  const selectCard = React.useCallback((card: StoryboardCardModel, additive = false) => {
     setActiveCardId(card.id)
     setSelectionSource('canvas')
-    selectNode(card.id)
-  }, [selectNode, setSelectionSource])
+    if (additive) {
+      selectNodesExpanded({ nodeIds: [...(useGraphStore.getState().selectedNodeIds || []), card.id], activeNodeId: card.id, forceMulti: true })
+    } else selectNode(card.id)
+  }, [selectNode, selectNodesExpanded, setSelectionSource])
   const focusSourceReference = React.useCallback((reference: StoryboardCardSourceReference) => {
     const nodeId = String(reference.nodeId || '').trim()
     if (!nodeId) return
