@@ -1,6 +1,13 @@
 import type { GetGraph, SetGraph } from './graphDataSliceAccess'
 import { persistGraphDataToLocalStorage } from '@/hooks/store/graphDataPersistence'
-import { createSubgraph, readSubgraphs, removeSubgraph as removeSubgraphFromGraphData, subgraphGroupId, updateSubgraph as updateSubgraphInGraphData } from '@/lib/graph/subgraphs'
+import {
+  createSubgraph,
+  readSubgraphs,
+  removeSubgraph as removeSubgraphFromGraphData,
+  subgraphGroupId,
+  updateSubgraph as updateSubgraphInGraphData,
+  writeSubgraphs,
+} from '@/lib/graph/subgraphs'
 import {
   applyLayoutAutosuggestFromMetadata,
   applyWidgetRegistryFromMetadata,
@@ -144,6 +151,72 @@ export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
     const removeSet = new Set((rawNodeIds || []).map(v => String(v || '').trim()).filter(Boolean))
     const filtered = (sg.memberNodeIds || []).filter(nid => !removeSet.has(nid))
     return get().updateUserSubgraph(id, { memberNodeIds: filtered })
+  },
+
+  attachNodeToUserSubgraph: (rawId: string, rawNodeId: string): { ok: true } | { ok: false; message: string } => {
+    const id = String(rawId || '').trim()
+    const nodeId = String(rawNodeId || '').trim()
+    if (!id) return { ok: false, message: 'Missing subgraph id.' }
+    if (!nodeId) return { ok: false, message: 'Missing node id.' }
+    const { graphData } = get()
+    if (!graphData) return { ok: false, message: 'No graph loaded.' }
+    if (!(graphData.nodes || []).some(node => String(node.id || '').trim() === nodeId)) {
+      return { ok: false, message: 'Node not found.' }
+    }
+    const current = readSubgraphs(graphData)
+    if (!current.some(subgraph => subgraph.id === id)) {
+      return { ok: false, message: 'Subgraph not found.' }
+    }
+    const alreadyExclusive =
+      current.some(subgraph => subgraph.id === id && subgraph.memberNodeIds.includes(nodeId)) &&
+      current.every(subgraph => subgraph.id === id || !subgraph.memberNodeIds.includes(nodeId))
+    if (alreadyExclusive) return { ok: true }
+
+    const nextSubgraphs = current.map(subgraph => {
+      const withoutNode = subgraph.memberNodeIds.filter(memberId => memberId !== nodeId)
+      if (subgraph.id !== id) return { ...subgraph, memberNodeIds: withoutNode }
+      return { ...subgraph, memberNodeIds: Array.from(new Set([...withoutNode, nodeId])) }
+    })
+    const nextGraphDataBase = writeSubgraphs(graphData, nextSubgraphs)
+    const nextRevision = (get().graphDataRevision || 0) + 1
+    const nextGraphData = withGraphDataRevision(nextGraphDataBase, nextRevision)
+    set({ graphData: nextGraphData, graphDataRevision: nextRevision, graphValidationStatus: null, graphValidationTimestamp: null })
+    set({ lifecycleStage: 'committed' })
+    try {
+      const nextWorkflowText = readGraphRagWorkflowJsonTextFromGraphData(nextGraphData)
+      const currentWorkflowText = get().graphRagWorkflowJsonText
+      if (nextWorkflowText !== currentWorkflowText) set({ graphRagWorkflowJsonText: nextWorkflowText })
+    } catch { void 0 }
+    try {
+      applyLayoutAutosuggestFromMetadata(get, nextGraphData.metadata)
+    } catch { void 0 }
+    try {
+      applyWidgetRegistryFromMetadata(get, nextGraphData.metadata, nextGraphData)
+    } catch { void 0 }
+    try {
+      persistGraphDataToLocalStorage(nextGraphData)
+    } catch {
+      void 0
+    }
+    get().scheduleHistory(`Attach Node to Subgraph: ${nodeId} -> ${id}`)
+    return { ok: true }
+  },
+
+  detachNodeFromUserSubgraph: (rawId: string, rawNodeId: string): { ok: true } | { ok: false; message: string } => {
+    const id = String(rawId || '').trim()
+    const nodeId = String(rawNodeId || '').trim()
+    if (!id) return { ok: false, message: 'Missing subgraph id.' }
+    if (!nodeId) return { ok: false, message: 'Missing node id.' }
+    const { graphData } = get()
+    if (!graphData) return { ok: false, message: 'No graph loaded.' }
+    const subgraph = readSubgraphs(graphData).find(candidate => candidate.id === id) || null
+    if (!subgraph) return { ok: false, message: 'Subgraph not found.' }
+    if (!subgraph.memberNodeIds.includes(nodeId)) {
+      return { ok: false, message: 'Node is not attached to this subgraph.' }
+    }
+    return get().updateUserSubgraph(id, {
+      memberNodeIds: subgraph.memberNodeIds.filter(memberId => memberId !== nodeId),
+    })
   },
 
   removeUserSubgraph: (rawId: string) => {

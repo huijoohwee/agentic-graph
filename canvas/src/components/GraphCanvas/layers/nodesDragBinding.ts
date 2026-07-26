@@ -8,6 +8,13 @@ import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsType
 import { getNodeAabbHalfExtentsWithLabel } from '@/components/GraphCanvas/layout/overlap'
 import { clampNodeCenterToRect } from '@/lib/canvas/groupContainment'
 import { buildDeepestGroupRectByNodeId, buildGroupRectByIdFromSchemaOverrides } from '@/lib/canvas/groupExplicitBounds'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import {
+  preserveAbsolutePositionForParent,
+  selectParentDropTarget,
+  type ParentDropCandidate,
+} from '@/lib/canvas/parentChildRelation'
+import { subgraphIdFromGroupId } from '@/lib/graph/subgraphs'
 
 export function bindNodeDraggingWithGroupContainment(args: {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -33,13 +40,71 @@ export function bindNodeDraggingWithGroupContainment(args: {
     },
     onNodeDragEnd: (d) => {
       const id = String(d.id || '').trim()
-      const x = typeof d.x === 'number' && Number.isFinite(d.x) ? d.x : null
-      const y = typeof d.y === 'number' && Number.isFinite(d.y) ? d.y : null
+      let x = typeof d.x === 'number' && Number.isFinite(d.x) ? d.x : null
+      let y = typeof d.y === 'number' && Number.isFinite(d.y) ? d.y : null
       if (!id || x == null || y == null) return
+      const candidates: ParentDropCandidate[] = []
+      args.g
+        .selectAll<SVGGraphicsElement, GraphGroup>('g[data-kg-layer="groups"] > g[data-kg-group-id]')
+        .each(function (group) {
+          if (group?.source !== 'userSubgraph') return
+          const groupId = String(group.id || '').trim()
+          const subgraphId = subgraphIdFromGroupId(groupId)
+          if (!groupId || !subgraphId) return
+          try {
+            const bounds = this.getBBox()
+            if (!(bounds.width > 0 && bounds.height > 0)) return
+            candidates.push({
+              groupId,
+              subgraphId,
+              depth: group.depth,
+              memberNodeIds: group.memberNodeIds,
+              bounds: {
+                minX: bounds.x,
+                minY: bounds.y,
+                maxX: bounds.x + bounds.width,
+                maxY: bounds.y + bounds.height,
+              },
+            })
+          } catch {
+            void 0
+          }
+        })
+      const ext = getNodeAabbHalfExtentsWithLabel(d, args.schema)
+      const target = selectParentDropTarget({
+        nodeId: id,
+        nodeBounds: {
+          minX: x - ext.halfW,
+          minY: y - ext.halfH,
+          maxX: x + ext.halfW,
+          maxY: y + ext.halfH,
+        },
+        candidates,
+      })
+      const position = target
+        ? preserveAbsolutePositionForParent({ x, y }, target.bounds)
+        : null
+      if (target && position) {
+        x = position.absolute.x
+        y = position.absolute.y
+        d.x = x
+        d.y = y
+      }
       try {
         args.onCommitNodePosition?.({ id, x, y })
       } catch {
         void 0
+      }
+      if (target && position) {
+        const state = useGraphStore.getState()
+        const result = state.attachNodeToUserSubgraph(target.subgraphId, id)
+        if (result.ok === false) {
+          state.pushUiToast({
+            id: 'parent-child-attach-error',
+            kind: 'error',
+            message: result.message,
+          })
+        }
       }
     },
   })
