@@ -256,12 +256,18 @@ export async function testKnowgrphStorageFileSyncRelayPullReadLogicalPaths() {
 
   const second = await provider.list('', null, signal)
   assert.equal(second.snapshotVersion, first.snapshotVersion)
+  const scansBeforePointReads = relay.actions.filter(action => action === 'providers').length
   const stat = await provider.stat('docs/note.md', signal)
   assert.equal(stat?.key, 'docs/note.md')
   const read = await provider.read('docs/note.md', signal)
   assert.deepEqual(read.bytes, noteBytes)
   assert.equal(read.entry.key, 'docs/note.md')
   assert.match(relay.lastReadEntryKey, new RegExp(`^entry:${relay.generation}:`))
+  assert.equal(
+    relay.actions.filter(action => action === 'providers').length,
+    scansBeforePointReads,
+    'stat and read must reuse the complete listing snapshot',
+  )
   const publicResult = JSON.stringify({ stat, read: read.entry })
   assert.equal(publicResult.includes(SESSION_BEARER), false)
   assert.equal(publicResult.includes('entry:'), false)
@@ -309,14 +315,19 @@ export async function testKnowgrphStorageFileSyncRelayPushWriteAndFencedDelete()
   }, signal)
   assert.deepEqual(relay.nodes.get('alpha/beta/note.md')?.bytes, updatedBytes)
   assert.equal(relay.lastWriteMetadata?.expectedVersion, written.revision)
-  assert.match(String(relay.lastWriteMetadata?.entryKey), /^entry:2:/)
+  assert.match(String(relay.lastWriteMetadata?.entryKey), /^entry:1:/)
 
   await provider.delete('alpha/beta/note.md', signal, updated.revision)
   assert.equal(relay.nodes.has('alpha/beta/note.md'), false)
   assert.ok(relay.lastTrashPayload)
   assert.match(
     String(relay.lastTrashPayload?.listingFence),
-    /^fence:3:alpha\/beta$/,
+    /^fence:2:alpha\/beta$/,
+  )
+  assert.equal(
+    relay.actions.filter(action => action === 'providers').length,
+    2,
+    'sequential writes reuse one snapshot and delete refreshes only to acquire a new-directory fence',
   )
 }
 

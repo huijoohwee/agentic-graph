@@ -66,13 +66,22 @@ function readLocalServiceConfig(rawUrl, fallbackUrl) {
   return { hostname, port };
 }
 
-async function waitForServerReady(url, timeoutMs) {
+async function waitForServerReady(url, timeoutMs, options = {}) {
   const startedAt = Date.now();
   let lastError = null;
   while (Date.now() - startedAt < timeoutMs) {
     try {
-      const response = await fetch(url, { redirect: "manual" });
+      const response = await fetch(url, {
+        redirect: "manual",
+        headers: options.headers,
+      });
       if (response.ok || (response.status >= 300 && response.status < 400)) {
+        if (options.schema) {
+          const body = await response.json().catch(() => null);
+          if (body?.schema !== options.schema) {
+            throw new Error(`unexpected readiness schema at ${url}`);
+          }
+        }
         return `ready (${response.status})`;
       }
       lastError = new Error(`unexpected HTTP ${response.status}`);
@@ -84,9 +93,9 @@ async function waitForServerReady(url, timeoutMs) {
   throw new Error(lastError instanceof Error ? lastError.message : `timed out waiting for ${url}`);
 }
 
-async function isServerReady(url, timeoutMs) {
+async function isServerReady(url, timeoutMs, options) {
   try {
-    const reason = await waitForServerReady(url, timeoutMs);
+    const reason = await waitForServerReady(url, timeoutMs, options);
     return { ok: true, reason };
   } catch (error) {
     return {
@@ -209,7 +218,7 @@ function startBrowserService(service, config) {
 
 function waitForStartedService(service, child, timeoutMs) {
   return Promise.race([
-    waitForServerReady(service.readyUrl, timeoutMs),
+    waitForServerReady(service.readyUrl, timeoutMs, service.readyOptions),
     new Promise((_, reject) => {
       child.once("exit", (code) => reject(new Error(`${service.id} exited before ready with code ${code ?? "null"}`)));
       child.once("error", reject);
@@ -282,7 +291,11 @@ export function resolveLocalCollaborationStackConfig({
       },
       {
         id: "storage-worker",
-        readyUrl: `${normalizedWorkerBaseUrl}/api/storage/source-files`,
+        readyUrl: `${normalizedWorkerBaseUrl}/api/storage/relay/capabilities`,
+        readyOptions: {
+          headers: { authorization: `Bearer ${ownerSessionToken}` },
+          schema: "knowgrph-storage-relay-capabilities/v1",
+        },
         envVar: "KG_COLLABORATION_E2E_WORKER_URL",
         startupCommand: "npm run storage:worker:dev -- --port 8787",
         kind: "worker",
@@ -307,7 +320,7 @@ export function buildLocalCollaborationBrowserEnv(config, env = process.env) {
 export async function ensureLocalCollaborationStack(config, { log } = {}) {
   emit(log, "\n[collaboration-readiness] browser smoke stack\n");
   const results = await Promise.all(config.services.map(async (service) => {
-    const status = await isServerReady(service.readyUrl, 1500);
+    const status = await isServerReady(service.readyUrl, 1500, service.readyOptions);
     return {
       ...service,
       ok: status.ok,

@@ -13,10 +13,8 @@ import {
   type KnowgrphGitRemoteRequest,
   type KnowgrphGitStorageMode,
 } from './knowgrphGitContracts'
-import {
-  decodeGitBytesBase64,
-  normalizeGitObjectId,
-} from './knowgrphGitObjectCodec'
+import { decodeGitBytesBase64, normalizeGitObjectId } from './knowgrphGitObjectCodec'
+import { resolveKnowgrphGitDocumentDeletions } from './knowgrphGitDeletion'
 import {
   buildKnowgrphGitCommitObjects,
   buildKnowgrphGitRefRecordId,
@@ -224,6 +222,14 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
       repositoryPathScope: snapshot.repositoryPathScope,
       nowMs: now(),
     })
+    const deletions = await resolveKnowgrphGitDocumentDeletions({
+      authority: dependencies.authority,
+      request,
+      documents,
+      parentObjectId,
+      parentObjects,
+      repositoryPathScope: snapshot.repositoryPathScope,
+    })
     if (previouslyDispatched && built.treeObjectId !== record.commitTreeObjectId) {
       throw new GitOperationIntegrityError('Dispatched Git commit no longer rebuilds deterministically')
     }
@@ -309,6 +315,7 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
         author: request.author,
         committer,
         documents,
+        deletions,
         signal,
       })
     })
@@ -547,6 +554,7 @@ export const createKnowgrphGitEngine = (dependencies: KnowgrphGitEngineDependenc
     const existing = drainByWorkspace.get(normalizedWorkspaceId)
     if (existing) return existing
     const run = (async () => {
+      await dependencies.cache.requeueFailedOutbox(normalizedWorkspaceId, deviceId, now())
       const results: KnowgrphGitOperationResult[] = []
       for (;;) {
         const claim = await dependencies.cache.claimNextOutbox({

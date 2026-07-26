@@ -83,6 +83,21 @@ export class FileSyncOutbox {
     return cloneRecord(updated);
   }
 
+  async requeueFailed(): Promise<number> {
+    const failed = (await this.store.list()).filter(record => record.state === "failed");
+    for (const record of failed) {
+      await this.store.update({
+        ...record,
+        attempts: 0,
+        state: "queued",
+        lastReason: undefined,
+        lastMessage: undefined,
+        updatedAtMs: this.now(),
+      });
+    }
+    return failed.length;
+  }
+
   remove(id: string): Promise<void> {
     return this.store.remove(id);
   }

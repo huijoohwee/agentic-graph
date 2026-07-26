@@ -16,7 +16,12 @@ import {
   type KnowgrphGitIdentity,
   type KnowgrphGitOperationResult,
 } from './git'
-import { buildKnowgrphStorageAbsoluteUrl, readKnowgrphStorageChatRelayConfig } from './knowgrphStorageChatClient'
+import {
+  buildKnowgrphStorageAbsoluteUrl,
+  buildKnowgrphStorageChatAuthHeaders,
+  readKnowgrphStorageChatRelayConfig,
+  type KnowgrphStorageChatRelayConfig,
+} from './knowgrphStorageChatClient'
 import { notifyKnowgrphStorageEngineIssue } from './knowgrphStorageConflictUx'
 import { getKnowgrphStorageDeviceId } from './knowgrphStorageDeviceIdentity'
 import {
@@ -45,7 +50,10 @@ import {
 } from './knowgrphStorageGitDocumentAuthority'
 import { createKnowgrphStorageGitRelay } from './knowgrphStorageGitRelay'
 import { getKnowgrphStoragePersistenceState } from './knowgrphStorageDb'
-import { buildKnowgrphStorageFileSyncRelayPath } from './knowgrphStorageRoutePaths'
+import {
+  buildKnowgrphStorageFileSyncRelayPath,
+  buildKnowgrphStorageRelayCapabilitiesPath,
+} from './knowgrphStorageRoutePaths'
 import { readWorkspaceCloudSyncEnabledSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 
 const REPOSITORY_TARGETS: readonly DocumentRepositoryTarget[] = [
@@ -53,6 +61,19 @@ const REPOSITORY_TARGETS: readonly DocumentRepositoryTarget[] = [
   'workspace-docs',
 ]
 const registeredFileSyncProviderIds = new Set<string>()
+
+type RelayCapabilityState = {
+  status: 'unconfigured' | 'ready' | 'unavailable'
+  relayEnabled: boolean
+  gitRemotes: Array<{ remoteId: string; branch: string; fetchPolicy: string }>
+  fileProviders: Array<{
+    providerId: string
+    label: string
+    providerType: string
+    credentialMode: string
+  }>
+  fileSigningReady: boolean
+}
 
 type GitControl = {
   operation: 'clone' | 'fetch' | 'commit' | 'push'
@@ -105,6 +126,69 @@ const safePersistenceState = (state: { mode: string; status: string }) => ({
   mode: state.mode,
   status: state.status,
 })
+
+const readCapabilityText = (value: unknown): string =>
+  typeof value === 'string' && value.length <= 256 ? value : ''
+
+const readRelayCapabilities = async (
+  relay: KnowgrphStorageChatRelayConfig | null,
+): Promise<RelayCapabilityState> => {
+  const empty = {
+    relayEnabled: false,
+    gitRemotes: [],
+    fileProviders: [],
+    fileSigningReady: false,
+  }
+  if (!relay) return { status: 'unconfigured', ...empty }
+  const url = buildKnowgrphStorageAbsoluteUrl(
+    relay.baseUrl,
+    buildKnowgrphStorageRelayCapabilitiesPath(),
+  )
+  if (!url) return { status: 'unavailable', ...empty }
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: buildKnowgrphStorageChatAuthHeaders(relay.sessionToken),
+    })
+    if (!response.ok) return { status: 'unavailable', ...empty }
+    const body = await response.json() as Record<string, unknown>
+    if (body.schema !== 'knowgrph-storage-relay-capabilities/v1') {
+      return { status: 'unavailable', ...empty }
+    }
+    const gitRemotes = Array.isArray(body.gitRemotes)
+      ? body.gitRemotes.flatMap(value => {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) return []
+          const record = value as Record<string, unknown>
+          const remoteId = readCapabilityText(record.remoteId)
+          const branch = readCapabilityText(record.branch)
+          const fetchPolicy = readCapabilityText(record.fetchPolicy)
+          return remoteId && branch && fetchPolicy ? [{ remoteId, branch, fetchPolicy }] : []
+        })
+      : []
+    const fileProviders = Array.isArray(body.fileProviders)
+      ? body.fileProviders.flatMap(value => {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) return []
+          const record = value as Record<string, unknown>
+          const providerId = readCapabilityText(record.providerId)
+          const label = readCapabilityText(record.label)
+          const providerType = readCapabilityText(record.providerType)
+          const credentialMode = readCapabilityText(record.credentialMode)
+          return providerId && providerType && credentialMode
+            ? [{ providerId, label, providerType, credentialMode }]
+            : []
+        })
+      : []
+    return {
+      status: 'ready',
+      relayEnabled: body.relayEnabled === true,
+      gitRemotes,
+      fileProviders,
+      fileSigningReady: body.fileSigningReady === true,
+    }
+  } catch {
+    return { status: 'unavailable', ...empty }
+  }
+}
 
 const assertRuntimePersistenceActive = async (
   context: Pick<RuntimeContext, 'persistence'>,
@@ -202,16 +286,20 @@ export const inspectLocalGitRepository = async (): Promise<Record<string, unknow
       })
     }
   }
-  const [primaryState, queuedOperations] = await Promise.all([
+  const [primaryState, queuedOperations, relayCapabilities] = await Promise.all([
     getKnowgrphStoragePersistenceState(),
     workspaceId ? persistence.outbox.count('git-operation', workspaceId) : Promise.resolve(0),
+    readRelayCapabilities(relay),
   ])
   const engineState = persistence.persistence.getState()
   return {
     schema: 'knowgrph-storage-git-inspection/v1',
     ok: true,
     workspaceId,
-    relayConfigured: Boolean(relay),
+    relayConfigured: relayCapabilities.status === 'ready'
+      && relayCapabilities.relayEnabled
+      && relayCapabilities.gitRemotes.length > 0,
+    relayCapabilities,
     runtime: readRuntime(),
     persistence: {
       primary: safePersistenceState(primaryState),
@@ -381,18 +469,23 @@ export const inspectLocalFileSync = async (): Promise<Record<string, unknown>> =
   const persistence = await getKnowgrphStorageEnginePersistence()
   const relay = readKnowgrphStorageChatRelayConfig()
   const workspaceId = relay?.workspaceId || null
-  const [primaryState, cacheEntries, ledgerEntries, queuedTransfers] = await Promise.all([
+  const [primaryState, cacheEntries, ledgerEntries, queuedTransfers, relayCapabilities] = await Promise.all([
     getKnowgrphStoragePersistenceState(),
     workspaceId ? persistence.records.list(`file-sync:entry:${workspaceId}`) : Promise.resolve([]),
     workspaceId ? persistence.records.list('file-sync:ledger') : Promise.resolve([]),
     workspaceId ? persistence.outbox.count('file-transfer', workspaceId) : Promise.resolve(0),
+    readRelayCapabilities(relay),
   ])
   const engineState = persistence.persistence.getState()
   return {
     schema: 'knowgrph-storage-file-sync-inspection/v1',
     ok: true,
     workspaceId,
-    relayConfigured: Boolean(relay),
+    relayConfigured: relayCapabilities.status === 'ready'
+      && relayCapabilities.relayEnabled
+      && relayCapabilities.fileSigningReady
+      && relayCapabilities.fileProviders.length > 0,
+    relayCapabilities,
     runtime: readRuntime(),
     persistence: {
       primary: safePersistenceState(primaryState),
@@ -400,7 +493,10 @@ export const inspectLocalFileSync = async (): Promise<Record<string, unknown>> =
       mutationsReady: primaryState.mode === 'indexeddb' && primaryState.status === 'active'
         && engineState.mode === 'indexeddb' && engineState.status === 'active',
     },
-    providerIds: [...registeredFileSyncProviderIds].sort(),
+    providerIds: Array.from(new Set([
+      ...registeredFileSyncProviderIds,
+      ...relayCapabilities.fileProviders.map(provider => provider.providerId),
+    ])).sort(),
     cacheEntryCount: cacheEntries.length,
     ledgerEntryCount: ledgerEntries.filter(entry => entry.workspaceId === workspaceId).length,
     queuedTransfers,

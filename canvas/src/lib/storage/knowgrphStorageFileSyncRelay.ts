@@ -12,7 +12,6 @@ import {
   FILE_SYNC_RELAY_PATH,
   RelayByteBudget,
   RelayByteBudgetRegistry,
-  assertRelayEntry,
   awaitRelaySignal,
   computeQuickXor,
   decodeRelayJsonHeader,
@@ -24,14 +23,25 @@ import {
   relayFailure,
   sha256Hex,
   throwRelayResponseError,
-  type RelayEntry,
 } from './knowgrphStorageFileSyncRelaySupport'
 import {
-  loadRelaySnapshot,
+  RelaySnapshotCache,
   toRelayFileSyncEntry,
   type RelayMapping,
   type RelaySnapshot,
 } from './knowgrphStorageFileSyncRelaySnapshot'
+import {
+  assertRelayExpectedRevision as assertExpectedRevision,
+  assertRelayEnvelope as assertEnvelope,
+  assertRelayWorkspaceId as assertWorkspaceId,
+  cloneRelayFileSyncEntry as cloneEntry,
+  isRelayRecord as isRecord,
+  readRelayJsonEntry as readJsonEntry,
+  readRelayMetadataEntry as readMetadataEntry,
+  relayBasename as basename,
+  relayParentPath as parentOf,
+  unsupportedRelayEntry as unsupportedEntry,
+} from './knowgrphStorageFileSyncRelayProtocol'
 
 export type KnowgrphStorageFileSyncRelayFetch = (
   input: RequestInfo | URL,
@@ -54,6 +64,7 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
   private readonly fetcher: KnowgrphStorageFileSyncRelayFetch
   private readonly readSessionBearer: () => string | null
   private readonly transferBudgets = new RelayByteBudgetRegistry()
+  private readonly snapshots = new RelaySnapshotCache()
 
   constructor(options: KnowgrphStorageFileSyncRelayOptions) {
     this.workspaceId = assertWorkspaceId(options.workspaceId)
@@ -71,7 +82,7 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
     return this.run(signal, async (operationSignal, budget) => {
       if (cursor !== null) throw relayFailure('failed')
       const normalizedPrefix = normalizeFileSyncKey(prefix, { allowRoot: true })
-      const snapshot = await this.refresh(operationSignal, budget)
+      const snapshot = await this.refresh(operationSignal, budget, true)
       return {
         entries: [...snapshot.entries.values()]
           .map(mapping => cloneEntry(mapping.entry))
@@ -153,7 +164,7 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
         }
         hashes.push(responseEntry.hash)
       }
-      return {
+      const entry = {
         entry: {
           ...mapping.entry,
           sizeBytes: bytes.byteLength,
@@ -162,6 +173,8 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
         },
         bytes,
       }
+      mapping.entry = cloneEntry(entry.entry)
+      return entry
     })
   }
 
@@ -262,7 +275,7 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
         throw relayFailure('failed')
       }
       const responseHashes = written.hash ? [written.hash] : []
-      return {
+      const entry = {
         key,
         kind: 'file' as const,
         entryType: 'standard' as const,
@@ -274,6 +287,13 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
         revision: written.versionTag,
         modifiedAtMs: null,
       }
+      snapshot.entries.set(key, {
+        logicalKey: key,
+        parentPath,
+        relay: written,
+        entry,
+      })
+      return cloneEntry(entry)
     })
   }
 
@@ -284,8 +304,8 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
   ) {
     return this.run(signal, async (operationSignal, budget) => {
       const normalizedKey = normalizeFileSyncKey(key)
-      const snapshot = await this.refresh(operationSignal, budget)
-      const mapping = snapshot.entries.get(normalizedKey)
+      let snapshot = await this.refresh(operationSignal, budget)
+      let mapping = snapshot.entries.get(normalizedKey)
       if (!mapping) {
         if (typeof expectedRevision === 'string') throw relayFailure('conflict')
         return
@@ -296,6 +316,11 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
         || expectedRevision !== mapping.relay.versionTag
       ) {
         throw relayFailure('conflict')
+      }
+      if (!snapshot.fences.has(mapping.parentPath)) {
+        snapshot = await this.refresh(operationSignal, budget, true)
+        mapping = snapshot.entries.get(normalizedKey)
+        if (!mapping) throw relayFailure('conflict')
       }
       const listingFence = snapshot.fences.get(mapping.parentPath)
       if (!listingFence) throw relayFailure('failed')
@@ -315,21 +340,27 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
       ) {
         throw relayFailure('failed')
       }
+      for (const candidate of snapshot.entries.keys()) {
+        if (candidate === normalizedKey || candidate.startsWith(`${normalizedKey}/`)) {
+          snapshot.entries.delete(candidate)
+        }
+      }
     })
   }
 
   private async refresh(
     signal: AbortSignal,
     budget: RelayByteBudget,
+    force = false,
   ): Promise<RelaySnapshot> {
-    return loadRelaySnapshot({
+    return this.snapshots.load({
       workspaceId: this.workspaceId,
       providerId: this.providerId,
       postJson: (payload, operationSignal, operationBudget) =>
         this.postJson(payload, operationSignal, operationBudget),
       signal,
       budget,
-    })
+    }, force)
   }
 
   private async ensureDirectory(
@@ -526,74 +557,3 @@ class KnowgrphStorageFileSyncRelayProvider implements FileSyncProvider {
 export const createKnowgrphStorageFileSyncRelayProvider = (
   options: KnowgrphStorageFileSyncRelayOptions,
 ): FileSyncProvider => new KnowgrphStorageFileSyncRelayProvider(options)
-
-const assertWorkspaceId = (value: string): string => {
-  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/.test(value)) {
-    throw relayFailure('failed')
-  }
-  return value
-}
-
-const assertEnvelope = (value: unknown): void => {
-  if (
-    !isRecord(value)
-    || value.ok !== true
-    || value.apiVersion !== FILE_SYNC_RELAY_API_VERSION
-  ) {
-    throw relayFailure('failed')
-  }
-}
-
-const readJsonEntry = (value: unknown, providerId: string): RelayEntry => {
-  assertEnvelope(value)
-  if (!isRecord(value) || value.providerId !== providerId) {
-    throw relayFailure('failed')
-  }
-  return assertRelayEntry(value.entry)
-}
-
-const readMetadataEntry = (value: unknown, providerId: string): RelayEntry => {
-  if (!isRecord(value) || value.providerId !== providerId) {
-    throw relayFailure('failed')
-  }
-  return assertRelayEntry(value.entry)
-}
-
-const assertExpectedRevision = (
-  existing: RelayMapping | null,
-  expectedRevision: string | null | undefined,
-): void => {
-  if (
-    (existing && (
-      typeof expectedRevision !== 'string'
-      || expectedRevision !== existing.relay.versionTag
-    ))
-    || (!existing && expectedRevision !== null)
-  ) {
-    throw relayFailure('conflict')
-  }
-}
-
-const unsupportedEntry = (): FileSyncOperationError =>
-  new FileSyncOperationError(
-    'unsupported-entry',
-    'Unsupported file-sync entry',
-  )
-
-const parentOf = (key: string): string => {
-  const separator = key.lastIndexOf('/')
-  return separator < 0 ? '' : key.slice(0, separator)
-}
-
-const basename = (key: string): string => {
-  const separator = key.lastIndexOf('/')
-  return separator < 0 ? key : key.slice(separator + 1)
-}
-
-const cloneEntry = (entry: FileSyncEntry): FileSyncEntry => ({
-  ...entry,
-  hashes: entry.hashes.map(hash => ({ ...hash })),
-})
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)

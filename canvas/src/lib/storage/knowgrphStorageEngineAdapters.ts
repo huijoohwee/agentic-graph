@@ -127,6 +127,33 @@ export const createKnowgrphGitPersistedCache = (
         .filter((record): record is KnowgrphGitOperationOutboxRecord =>
           Boolean(record) && record.deviceId === deviceId)
     },
+    async requeueFailedOutbox(workspaceId, deviceId, updatedAtMs) {
+      const envelopes = await persistence.outbox.list('git-operation', workspaceId)
+      let requeued = 0
+      for (const envelope of envelopes) {
+        const current = readGitOutboxRecord(envelope)
+        if (!current || current.deviceId !== deviceId || current.lastStatus === 'queued') continue
+        const record = {
+          ...current,
+          attemptCount: 0,
+          lastStatus: 'queued' as const,
+          lastMessage: null,
+          updatedAtMs,
+        }
+        await persistence.outbox.update({
+          ...envelope,
+          claimToken: null,
+          claimOwner: null,
+          claimExpiresAtMs: null,
+          payload: { record: toJsonRecord(record) },
+          attemptCount: 0,
+          lastErrorCode: null,
+          updatedAtMs,
+        })
+        requeued += 1
+      }
+      return requeued
+    },
     async claimNextOutbox(args) {
       const claim = await persistence.outbox.claimNext({
         kind: 'git-operation',

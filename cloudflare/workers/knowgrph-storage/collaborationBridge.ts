@@ -80,6 +80,7 @@ const isCollaborationSaveRequest = (value: unknown): value is KnowgrphCollaborat
   const record = value as Record<string, unknown>
   return (
     record.apiVersion === KNOWGRPH_STORAGE_API_VERSION
+    && (record.operation === 'upsert' || record.operation === 'delete')
     && typeof record.workspaceId === 'string'
     && typeof record.documentKey === 'string'
     && (record.documentKind === 'markdown' || record.documentKind === 'json')
@@ -262,6 +263,60 @@ const commitCollaborationSnapshotToGitHub = async (args: {
   }
 }
 
+const deleteCollaborationSnapshotFromGitHub = async (args: {
+  env: KnowgrphStorageWorkerEnv
+  gitAuthority: StorageGitRemoteAuthority
+  githubPath: string
+}): Promise<{ commitSha: string | null; contentSha: null }> => {
+  const config = readGitHubBridgeConfig(args.env, args.gitAuthority)
+  if (!config.token) throw new Error('missing GitHub bridge token')
+  if (!config.owner || !config.repo) {
+    throw new Error(`missing GitHub bridge repository config for ${args.gitAuthority.repositoryTarget}`)
+  }
+  const apiUrl = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${args.githubPath}`
+  const headers = {
+    accept: 'application/vnd.github+json',
+    authorization: `Bearer ${config.token}`,
+    'content-type': 'application/json',
+    'user-agent': 'knowgrph-storage-collaboration-bridge',
+    'x-github-api-version': '2022-11-28',
+  }
+  const currentResponse = await fetch(`${apiUrl}?ref=${encodeURIComponent(config.branch)}`, { headers })
+  if (currentResponse.status === 404) return { commitSha: null, contentSha: null }
+  if (!currentResponse.ok) {
+    throw new Error(`GitHub contents read failed (${currentResponse.status})`)
+  }
+  const currentJson = await readJsonObject(currentResponse)
+  const currentSha = readNestedString(currentJson, ['sha'])
+  if (!currentSha) throw new Error('GitHub contents read returned no content SHA')
+  const body: Record<string, unknown> = {
+    message: `chore(sync): delete ${args.githubPath.replace(/^docs\//, '')} from ${args.gitAuthority.repositoryTarget} collaboration bridge`,
+    sha: currentSha,
+    branch: config.branch,
+  }
+  if (config.committerName && config.committerEmail) {
+    body.committer = {
+      name: config.committerName,
+      email: config.committerEmail,
+    }
+  }
+  const deleteResponse = await fetch(apiUrl, {
+    method: 'DELETE',
+    headers,
+    body: JSON.stringify(body),
+  })
+  const deleteJson = await readJsonObject(deleteResponse)
+  if (!deleteResponse.ok) {
+    const message = readNestedString(deleteJson, ['message'])
+      || `GitHub contents delete failed (${deleteResponse.status})`
+    throw new Error(message)
+  }
+  return {
+    commitSha: readNestedString(deleteJson, ['commit', 'sha']) || null,
+    contentSha: null,
+  }
+}
+
 const quotePocketBaseFilterValue = (value: string): string => JSON.stringify(String(value || ''))
 
 const readPocketBaseCollaborationSnapshot = async (args: {
@@ -367,25 +422,35 @@ export const handleCollaborationSave = async (
     return errorResponse(400, 'bad_request', 'Git remote does not match collaboration repository target')
   }
   try {
-    const pocketBaseSnapshot = await readPocketBaseCollaborationSnapshot({
-      env,
-      roomId: body.pocketBaseRoomId,
-    })
-    const canonical = readCanonicalCollaborationSaveTextWithState({
-      documentKey,
-      documentKind: body.documentKind,
-      serializedText: body.serializedText,
-      activePeerCount: pocketBaseSnapshot?.activePeerCount ?? body.activePeerCount,
-      yjsStateBase64: body.yjsStateBase64 || pocketBaseSnapshot?.yjsStateBase64 || '',
-    })
-    if (canonical.error) return errorResponse(409, 'conflict', canonical.error)
-    const result = await commitCollaborationSnapshotToGitHub({
-      env,
-      gitAuthority,
-      githubPath: authority.githubPath,
-      text: canonical.text,
-    })
+    let result: { commitSha: string | null; contentSha: string | null }
+    if (body.operation === 'delete') {
+      result = await deleteCollaborationSnapshotFromGitHub({
+        env,
+        gitAuthority,
+        githubPath: authority.githubPath,
+      })
+    } else {
+      const pocketBaseSnapshot = await readPocketBaseCollaborationSnapshot({
+        env,
+        roomId: body.pocketBaseRoomId,
+      })
+      const canonical = readCanonicalCollaborationSaveTextWithState({
+        documentKey,
+        documentKind: body.documentKind,
+        serializedText: body.serializedText,
+        activePeerCount: pocketBaseSnapshot?.activePeerCount ?? body.activePeerCount,
+        yjsStateBase64: body.yjsStateBase64 || pocketBaseSnapshot?.yjsStateBase64 || '',
+      })
+      if (canonical.error) return errorResponse(409, 'conflict', canonical.error)
+      result = await commitCollaborationSnapshotToGitHub({
+        env,
+        gitAuthority,
+        githubPath: authority.githubPath,
+        text: canonical.text,
+      })
+    }
     return okCollaborationSaveResponse({
+      operation: body.operation,
       workspaceId,
       documentKey,
       repositoryTarget: authority.repositoryTarget,
