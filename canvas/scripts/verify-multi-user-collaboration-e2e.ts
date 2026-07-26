@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { basename, join, resolve, sep } from 'node:path'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { chromium, type Page } from 'playwright'
 import { buildKnowgrphStorageCanvasRoomPath } from '../src/lib/storage/knowgrphStorageSyncContract'
 import { KNOWGRPH_STORAGE_DEVICE_ID_KEY } from '../src/lib/storage/knowgrphStorageDeviceIdentity'
@@ -35,6 +35,7 @@ const MARKER = process.env.KG_COLLABORATION_E2E_MARKER || `SMOKE_REMOTE_APPLY_MA
 const SCREENSHOT_PREFIX = process.env.KG_COLLABORATION_E2E_SCREENSHOT_PREFIX || join(tmpdir(), 'knowgrph-collaboration-e2e')
 const OWNER_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.owner.png`
 const GUEST_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.guest.png`
+const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
 const MACOS_BROWSER_CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
@@ -66,6 +67,28 @@ type RuntimeIdentityProof = {
   catalogRevision: string
   catalogHydrationStatus: string
   catalogHydrationAttempts: number
+}
+
+type LocalDocumentSnapshot = {
+  filePath: string
+  text: string
+}
+
+function captureLocalDocumentSnapshot(): LocalDocumentSnapshot | null {
+  const filePath = resolve(REPO_ROOT, DOC_PATH.replace(/^\/+/, ''))
+  if (!filePath.startsWith(`${REPO_ROOT}${sep}`) || !existsSync(filePath)) return null
+  return { filePath, text: readFileSync(filePath, 'utf8') }
+}
+
+function restoreLocalDocumentSnapshot(snapshot: LocalDocumentSnapshot | null): void {
+  if (!snapshot) return
+  const currentText = readFileSync(snapshot.filePath, 'utf8')
+  if (currentText === snapshot.text) return
+  const expectedSmokeText = `${snapshot.text}\n${MARKER}\n`
+  if (currentText !== expectedSmokeText) {
+    throw new Error(`refusing to overwrite unexpected concurrent document changes at ${snapshot.filePath}`)
+  }
+  writeFileSync(snapshot.filePath, snapshot.text, 'utf8')
 }
 
 function requireClientDeviceId(name: string, value: unknown): string {
@@ -333,6 +356,7 @@ async function assertRoomStatus(workerUrl: string, docPath: string): Promise<voi
 }
 
 async function main(): Promise<void> {
+  const localDocumentSnapshot = captureLocalDocumentSnapshot()
   const browser = await chromium.launch(resolveBrowserLaunchOptions())
   const ownerContext = await browser.newContext({ viewport: { width: 1440, height: 950 } })
   const guestContext = await browser.newContext({ viewport: { width: 1440, height: 950 } })
@@ -467,6 +491,7 @@ async function main(): Promise<void> {
     await failWithScreenshots(ownerPage, guestPage, `${message}${suffix}`)
   } finally {
     await browser.close()
+    restoreLocalDocumentSnapshot(localDocumentSnapshot)
   }
 }
 
