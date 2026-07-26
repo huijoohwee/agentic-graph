@@ -9,6 +9,7 @@ const baseUrl = String(
 ).replace(/\/+$/, '')
 const expectedHead = String(process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_HEAD || '').trim()
 const expectedBranch = String(process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_BRANCH || '').trim()
+const expectedMain = String(process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_MAIN || '').trim()
 const outputDirectory = resolve(process.cwd(), '../data/outputs')
 const evidencePath = resolve(outputDirectory, 'motion-control-litert-browser-smoke.json')
 
@@ -33,7 +34,13 @@ function findLocalChromiumExecutable() {
 
 async function main() {
   assert.match(expectedHead, /^[0-9a-f]{40}$/, 'smoke requires the runner-owned exact source revision')
-  assert.ok(expectedBranch, 'smoke requires the runner-owned source branch')
+  assert.match(expectedMain, /^[0-9a-f]{40}$/, 'smoke requires the exact origin/main revision')
+  const sourceState = expectedBranch ? 'task-branch' : 'detached-main'
+  if (expectedBranch) {
+    assert.match(expectedBranch, /^agent\/[^/]+\/[^/]+$/, 'smoke task branch must be runner-owned')
+  } else {
+    assert.equal(expectedHead, expectedMain, 'detached smoke must run from exact origin/main')
+  }
   const executablePath = findLocalChromiumExecutable()
   const browser = await chromium.launch({
     headless: process.env.KG_MOTION_CONTROL_LITERT_HEADLESS !== '0',
@@ -94,7 +101,8 @@ async function main() {
       ...evidence,
       schema: 'knowgrph-motion-control-litert-browser-smoke/v1',
       sourceRevision: expectedHead,
-      sourceBranch: expectedBranch,
+      sourceBranch: expectedBranch || null,
+      sourceState,
       route: `${baseUrl}/`,
       cameraRequests: result.cameraRequests,
       assetResponses,

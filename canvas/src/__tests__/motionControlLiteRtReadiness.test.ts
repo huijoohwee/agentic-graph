@@ -30,6 +30,10 @@ export function testMotionControlLiteRtReadinessUsesProductionModelOwner() {
   }
   if (!runner.includes("existingServerPolicy: 'forbid'")
     || !runner.includes('KG_MOTION_CONTROL_LITERT_EXPECTED_HEAD')
+    || !runner.includes('KG_MOTION_CONTROL_LITERT_EXPECTED_MAIN')
+    || !verifier.includes("expectedHead, expectedMain, 'detached smoke must run from exact origin/main'")
+    || !verifier.includes("/^agent\\/[^/]+\\/[^/]+$/")
+    || !verifier.includes("sourceState = expectedBranch ? 'task-branch' : 'detached-main'")
     || !verifier.includes('cameraRequests, 0')
     || !verifier.includes("endsWith('.wasm')")) {
     throw new Error('expected fresh exact-revision browser proof with camera-free model and Wasm evidence')

@@ -11,6 +11,11 @@ process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_BRANCH = execFileSync(
   ['branch', '--show-current'],
   { encoding: 'utf8' },
 ).trim()
+process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_MAIN = execFileSync(
+  'git',
+  ['rev-parse', 'refs/remotes/origin/main'],
+  { encoding: 'utf8' },
+).trim()
 
 runLocalViteBrowserSmoke({
   logLabel: 'motion-control-litert-browser-smoke',
