@@ -1,16 +1,31 @@
-import type * as d3 from 'd3'
 import { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { GraphSchema } from '@/lib/graph/schema'
 import { finalizeEdgeAuthoring } from '@/features/edge-creation/authoring'
+import {
+  hidePendingEdgeVisual,
+  movePendingEdgeEnd,
+  showPendingEdgeVisual,
+  type PendingLink,
+  type TempLinkSelection,
+} from '@/features/edge-creation/temporaryEdge'
 
-export type PendingLink = {
-  mode: 'create' | 'update-source' | 'update-target'
-  fromId: string
-  fromPortKey?: string | null
-  start?: { x: number; y: number } | null
+export {
+  freezePendingEdgeAt,
+  movePendingEdgeEnd,
+  nudgePendingEdgeEnd,
+  readPendingLinkPhase,
+  readTemporaryEdgeEndpointElement,
+  resumeTemporaryEdge,
+  type PendingLink,
+  type TempLinkSelection,
+} from '@/features/edge-creation/temporaryEdge'
+
+export function resolveEdgeCreationGraphData(
+  renderedGraphData: GraphData | null | undefined,
+  fallbackGraphData: GraphData | null | undefined,
+): GraphData | null {
+  return renderedGraphData || fallbackGraphData || null
 }
-
-export type TempLinkSelection = d3.Selection<SVGLineElement, unknown, SVGGElement, unknown> | null
 
 export function startEdgeFromNode(
   node: GraphNode,
@@ -25,6 +40,8 @@ export function startEdgeFromNode(
     fromId: node.id,
     fromPortKey: typeof opts?.portKey === 'string' && opts.portKey.trim() ? opts.portKey.trim() : null,
     start: { x: startX, y: startY },
+    end: { x: startX, y: startY },
+    phase: 'drawing',
   }
   if (tempLinkSelRef.current) {
     tempLinkSelRef.current
@@ -32,7 +49,8 @@ export function startEdgeFromNode(
       .attr('y1', startY)
       .attr('x2', startX)
       .attr('y2', startY)
-      .style('display', null)
+    movePendingEdgeEnd(tempLinkSelRef, linkDragRef, { x: startX, y: startY })
+    showPendingEdgeVisual(tempLinkSelRef, linkDragRef.current)
   }
 }
 
@@ -45,14 +63,21 @@ export function startUpdateEdgeEndpoint(
   selectEdge: (id: string) => void,
   setSelectionSource: (src: 'menu' | 'canvas' | 'toolbar' | 'editor' | 'unknown') => void,
 ) {
-  linkDragRef.current = { mode, fromId: endpointNode.id, fromPortKey: null, start: { x: endpointNode.x || 0, y: endpointNode.y || 0 } }
+  linkDragRef.current = {
+    mode,
+    fromId: endpointNode.id,
+    fromPortKey: null,
+    start: { x: endpointNode.x || 0, y: endpointNode.y || 0 },
+    end: { x: endpointNode.x || 0, y: endpointNode.y || 0 },
+    phase: 'drawing',
+  }
   if (tempLinkSelRef.current) {
     tempLinkSelRef.current
       .attr('x1', endpointNode.x || 0)
       .attr('y1', endpointNode.y || 0)
       .attr('x2', endpointNode.x || 0)
       .attr('y2', endpointNode.y || 0)
-      .style('display', null)
+    showPendingEdgeVisual(tempLinkSelRef, linkDragRef.current)
   }
   setSelectionSource('menu')
   selectEdge(edge.id)
@@ -98,7 +123,7 @@ export function finalizePendingEdge(
   opts?: { label?: string },
 ) {
   if (!linkDragRef.current) return false
-  if (tempLinkSelRef.current) tempLinkSelRef.current.style('display', 'none')
+  hidePendingEdgeVisual(tempLinkSelRef)
   const { mode, fromId, fromPortKey } = linkDragRef.current
   linkDragRef.current = null
   const label = String(opts?.label || '').trim() || 'link'
@@ -139,9 +164,13 @@ export function finalizePendingEdge(
 }
 
 export function hideTempLink(tempLinkSelRef: { current: TempLinkSelection }) {
-  if (tempLinkSelRef.current) tempLinkSelRef.current.style('display', 'none')
+  hidePendingEdgeVisual(tempLinkSelRef)
 }
 
-export function cancelPendingEdge(linkDragRef: { current: PendingLink | null }) {
+export function cancelPendingEdge(
+  linkDragRef: { current: PendingLink | null },
+  tempLinkSelRef?: { current: TempLinkSelection },
+) {
+  if (tempLinkSelRef) hidePendingEdgeVisual(tempLinkSelRef)
   linkDragRef.current = null
 }
