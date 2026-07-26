@@ -1,14 +1,9 @@
 import type { JSONValue } from '@/lib/graph/types'
 import {
-  FLOW_IMAGE_GENERATION_NODE_TYPE_ID,
-  FLOW_RICH_MEDIA_PANEL_FORM_ID,
   FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
-  FLOW_RICH_MEDIA_PANEL_WIDGET_TYPE_ID,
   FLOW_TEXT_GENERATION_NODE_TYPE_ID,
-  FLOW_VIDEO_GENERATION_NODE_TYPE_ID,
-  FLOW_VIDEO_TRANSCRIBER_FORM_ID,
-  FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID,
 } from '@/lib/config.storyboard-widget'
+import { PROBE_TREE_TYPE_TWO_LAYOUT_ID } from '@/lib/storyboardWidget/widgetCardLayoutVariants'
 import {
   appendEmbeddedStructuredTextCandidates,
   collectStructuredTextCandidates,
@@ -32,9 +27,17 @@ import {
   GENERATED_MARKDOWN_PIPE_TABLE_MIME_TYPE,
   normalizeGeneratedRichMediaTableProperties,
 } from '@/features/rich-media/richMediaTablePersistence'
+import {
+  CHAT_RESPONSE_WIDGET_LAYOUT_META_KEYS,
+  applyChatResponseWidgetPaletteLayout,
+  inferChatResponseWidgetNodeTypeId,
+  resolveChatResponseTargetHandleForKind,
+  resolveChatResponseWidgetProjection,
+  toChatResponseWidgetSeedProperties,
+  type ChatResponseStructuredRole,
+  type ChatResponseStructuredSource,
+} from './chatResponseWidgetPaletteContract'
 export { projectChatResponseStructuredSurfaceIntoKgcFrontmatter } from './chatResponseStructuredContentProjector'
-
-type ChatResponseStructuredRole = 'widget' | 'panel' | 'card' | 'media' | 'table' | 'node'
 
 export type ChatResponseSurfaceNode = {
   id: string
@@ -59,6 +62,10 @@ export type ChatResponseStructuredSurface = {
   nodes: ChatResponseSurfaceNode[]
   edges: ChatResponseSurfaceEdge[]
   frontmatter?: Record<string, JSONValue>
+}
+
+export type ChatResponseStructuredExtractionOptions = {
+  trustedSource?: ChatResponseStructuredSource
 }
 
 const MAX_RESPONSE_SURFACE_NODES = 12
@@ -104,6 +111,7 @@ const STRUCTURED_NODE_META_KEYS = new Set([
   'output_handle',
   'outputPort',
   'output_port',
+  ...CHAT_RESPONSE_WIDGET_LAYOUT_META_KEYS,
   'properties',
   'columns',
   'column',
@@ -138,94 +146,33 @@ const normalizeKind = (value: unknown, props: Record<string, unknown>): ChatResp
   return 'text'
 }
 
-const readTargetHandle = (kind: ChatResponseSurfaceNode['kind']): ChatResponseSurfaceNode['targetHandle'] => {
-  if (kind === 'image') return 'imageUrl'
-  if (kind === 'audio') return 'audioUrl'
-  if (kind === 'video') return 'videoUrl'
-  if (kind === 'html') return 'outputSrcDoc'
-  return 'output'
-}
-
-const isKnownWidgetNodeType = (value: string): boolean =>
-  value === FLOW_TEXT_GENERATION_NODE_TYPE_ID
-  || value === FLOW_IMAGE_GENERATION_NODE_TYPE_ID
-  || value === FLOW_VIDEO_GENERATION_NODE_TYPE_ID
-  || value === FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID
-  || value === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID
-
-const readWidgetFormId = (record: Record<string, unknown>): string =>
-  readFirstString(record, [FLOW_WIDGET_FORM_ID_KEY, 'widgetFormId', 'widget_form_id', 'formId', 'form_id'])
-
-const readWidgetTypeId = (record: Record<string, unknown>, nodeTypeId: string): string => {
-  const explicit = readFirstString(record, [FLOW_WIDGET_TYPE_ID_KEY, 'widgetTypeId', 'widget_type_id'])
-  if (explicit) return explicit
-  if (nodeTypeId === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID) return FLOW_RICH_MEDIA_PANEL_WIDGET_TYPE_ID
-  return 'default'
-}
-
-const defaultWidgetFormIdForNodeType = (nodeTypeId: string): string => {
-  if (nodeTypeId === FLOW_TEXT_GENERATION_NODE_TYPE_ID) return 'textGeneration'
-  if (nodeTypeId === FLOW_IMAGE_GENERATION_NODE_TYPE_ID) return 'imageGeneration'
-  if (nodeTypeId === FLOW_VIDEO_GENERATION_NODE_TYPE_ID) return 'videoGeneration'
-  if (nodeTypeId === FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID) return FLOW_VIDEO_TRANSCRIBER_FORM_ID
-  if (nodeTypeId === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID) return FLOW_RICH_MEDIA_PANEL_FORM_ID
-  return ''
-}
-
-const inferWidgetNodeTypeId = (record: Record<string, unknown>, role: ChatResponseStructuredRole): string => {
-  const explicit = readFirstString(record, ['nodeTypeId', 'node_type_id', 'nodeType', 'widgetNodeType', 'widget_node_type'])
-  if (isKnownWidgetNodeType(explicit)) return explicit
-  const rawType = readFirstString(record, ['type'])
-  if (isKnownWidgetNodeType(rawType)) return rawType
-  const formId = readWidgetFormId(record)
-  const normalized = formId.toLowerCase()
-  if (normalized === FLOW_RICH_MEDIA_PANEL_FORM_ID.toLowerCase()) return FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID
-  if (normalized === FLOW_VIDEO_TRANSCRIBER_FORM_ID.toLowerCase()) return FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID
-  if (normalized.startsWith('textgeneration') || normalized.startsWith('videoscript')) return FLOW_TEXT_GENERATION_NODE_TYPE_ID
-  if (normalized.startsWith('imagegeneration')) return FLOW_IMAGE_GENERATION_NODE_TYPE_ID
-  if (normalized.startsWith('videogeneration')) return FLOW_VIDEO_GENERATION_NODE_TYPE_ID
-  return role === 'widget' && formId ? FLOW_TEXT_GENERATION_NODE_TYPE_ID : FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID
-}
-
-const readConfiguredHandle = (record: Record<string, unknown>, keys: readonly string[]): string =>
-  readFirstString(record, keys)
-
-const defaultSourceHandleForNode = (args: {
-  nodeTypeId: string
-  targetHandle: string
-  record: Record<string, unknown>
-}): string => {
-  const explicit = readConfiguredHandle(args.record, ['sourceHandle', 'source_handle', 'sourcePort', 'source_port', 'outputHandle', 'output_handle', 'outputPort', 'output_port'])
-  if (explicit) return explicit
-  if (typeof readGeospatialStructuredPayload(args.record) !== 'undefined') return 'geoJson'
-  if (args.nodeTypeId === FLOW_TEXT_GENERATION_NODE_TYPE_ID || args.nodeTypeId === FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID) return 'text_out'
-  if (args.nodeTypeId === FLOW_IMAGE_GENERATION_NODE_TYPE_ID) return 'imageUrl'
-  if (args.nodeTypeId === FLOW_VIDEO_GENERATION_NODE_TYPE_ID) return 'videoUrl'
-  return args.targetHandle
-}
-
-const defaultTargetHandleForNode = (args: {
-  nodeTypeId: string
-  kind: ChatResponseSurfaceNode['kind']
-  record: Record<string, unknown>
-}): string => {
-  const explicit = readConfiguredHandle(args.record, ['targetHandle', 'target_handle', 'targetPort', 'target_port', 'inputHandle', 'input_handle', 'inputPort', 'input_port'])
-  if (explicit) return explicit
-  if (args.nodeTypeId === FLOW_TEXT_GENERATION_NODE_TYPE_ID || args.nodeTypeId === FLOW_IMAGE_GENERATION_NODE_TYPE_ID || args.nodeTypeId === FLOW_VIDEO_GENERATION_NODE_TYPE_ID) return 'prompt_in'
-  if (args.nodeTypeId === FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID) return 'sourceUrl_in'
-  return readTargetHandle(args.kind)
-}
-
 const pickRichMediaTab = (kind: ChatResponseSurfaceNode['kind']): JSONValue => {
   if (kind === 'image' || kind === 'audio' || kind === 'video') return kind
   if (kind === 'html') return 'html'
   return 'text'
 }
 
-const normalizeNodeRecord = (value: unknown, index: number, role: ChatResponseStructuredRole, roleIndex = index): ChatResponseSurfaceNode | null => {
+const normalizeNodeRecord = (
+  value: unknown,
+  index: number,
+  role: ChatResponseStructuredRole,
+  source: ChatResponseStructuredSource,
+  roleIndex = index,
+): ChatResponseSurfaceNode | null => {
   if (!isRecord(value)) return null
-  const record = mergeStructuredProperties(value)
-  const probeTreeCard = isProbeTreeStructuredResponseCard(record, role)
+  const authoredRecord = mergeStructuredProperties(value)
+  const paletteResolution = applyChatResponseWidgetPaletteLayout(authoredRecord, role, source)
+  const probeTreeValidatorRecord = {
+    ...paletteResolution.record,
+    ...paletteResolution.probeTreeValidatorInputs,
+  }
+  const probeTreeCard = isProbeTreeStructuredResponseCard(probeTreeValidatorRecord, role)
+  if (
+    role === 'card'
+    && paletteResolution.layout?.descriptor.id === PROBE_TREE_TYPE_TWO_LAYOUT_ID
+    && !probeTreeCard
+  ) return null
+  const record = probeTreeCard ? probeTreeValidatorRecord : paletteResolution.record
   const geospatialPayload = readGeospatialStructuredPayload(record)
   const tableMarkdown = probeTreeCard ? '' : readStructuredTableMarkdown(record, role)
   const isTableOutput = containsMarkdownPipeTable(tableMarkdown)
@@ -240,10 +187,20 @@ const normalizeNodeRecord = (value: unknown, index: number, role: ChatResponseSt
   const nodeTypeId = resolveProbeTreeStructuredResponseNodeTypeId({
     record,
     role,
-    fallbackNodeTypeId: inferWidgetNodeTypeId(record, role),
+    fallbackNodeTypeId: inferChatResponseWidgetNodeTypeId({
+      record,
+      role,
+      layout: paletteResolution.layout,
+    }),
   })
-  const targetHandle = defaultTargetHandleForNode({ nodeTypeId, kind, record })
-  const sourceHandle = defaultSourceHandleForNode({ nodeTypeId, targetHandle: readTargetHandle(kind), record })
+  const widgetProjection = resolveChatResponseWidgetProjection({
+    record,
+    nodeTypeId,
+    kind,
+    hasGeospatialPayload: typeof geospatialPayload !== 'undefined',
+    layout: paletteResolution.layout,
+  })
+  const { formId, widgetTypeId, sourceHandle, targetHandle } = widgetProjection
   const output = probeTreeCard ? '' : tableMarkdown || readFirstString(record, ['output', 'result', 'response', 'transcript', 'text', 'content', 'markdown', 'description'])
   const probeTreeQuestion = probeTreeCard ? readFirstString(record, ['question']) : ''
   const imageUrl = readFirstString(record, ['imageUrl', 'image_url', 'image', 'mediaUrl', 'media_url'])
@@ -252,19 +209,24 @@ const normalizeNodeRecord = (value: unknown, index: number, role: ChatResponseSt
   const outputSrcDoc = isTableOutput ? '' : readFirstString(record, ['outputSrcDoc', 'srcDoc', 'srcdoc', 'html'])
   const hasRenderableContent = Boolean(probeTreeQuestion || output || imageUrl || audioUrl || videoUrl || outputSrcDoc || typeof geospatialPayload !== 'undefined')
   const hasDeclaredWidgetInput = nodeTypeId !== FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID
-    && Boolean(readWidgetFormId(record) || readFirstString(record, ['prompt', 'input', 'instructions', 'systemPrompt', 'system_prompt']))
+    && Boolean(formId || readFirstString(record, ['prompt', 'input', 'instructions', 'systemPrompt', 'system_prompt']))
   const hasDeclaredPanelTarget = nodeTypeId === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID && (role === 'panel' || role === 'media')
   if (!hasRenderableContent && !hasDeclaredWidgetInput && !hasDeclaredPanelTarget) return null
 
-  const label = probeTreeQuestion || readFirstString(record, ['label', 'title', 'name']) || `Response ${index + 1}`
+  const label = probeTreeQuestion
+    || readFirstString(record, ['label', 'title', 'name'])
+    || paletteResolution.layout?.seedLabel
+    || `Response ${index + 1}`
   const rawId = readFirstString(record, ['id', 'nodeId', 'node_id']) || label
   const nodeId = normalizeNodeId(rawId, String(index + 1))
   const properties: Record<string, JSONValue> = {
+    ...toChatResponseWidgetSeedProperties(paletteResolution.layout),
     'chat:structuredContent': true,
     'chat:structuredRole': role,
-    [FLOW_WIDGET_FORM_ID_KEY]: readWidgetFormId(record) || defaultWidgetFormIdForNodeType(nodeTypeId),
-    [FLOW_WIDGET_TYPE_ID_KEY]: readWidgetTypeId(record, nodeTypeId),
+    [FLOW_WIDGET_FORM_ID_KEY]: formId,
+    [FLOW_WIDGET_TYPE_ID_KEY]: widgetTypeId,
   }
+  if (paletteResolution.layout) properties.title = label
   if (nodeTypeId === FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID) {
     properties.richMediaActiveTab = pickRichMediaTab(kind)
     properties.media_interactive = kind === 'audio' || kind === 'video' || kind === 'html'
@@ -283,8 +245,11 @@ const normalizeNodeRecord = (value: unknown, index: number, role: ChatResponseSt
   if (outputSrcDoc) properties.outputSrcDoc = outputSrcDoc
   if (typeof geospatialPayload !== 'undefined') properties.geoJson = geospatialPayload
   for (const [key, raw] of Object.entries(record)) {
-    if (Object.prototype.hasOwnProperty.call(properties, key)) continue
     if (STRUCTURED_NODE_META_KEYS.has(key)) continue
+    if (
+      Object.prototype.hasOwnProperty.call(properties, key)
+      && !Object.prototype.hasOwnProperty.call(authoredRecord, key)
+    ) continue
     const nextValue = toJsonValue(readFieldValue(record, key))
     if (typeof nextValue !== 'undefined') properties[key] = nextValue
   }
@@ -362,9 +327,30 @@ const readStructuredRoot = (parsed: unknown, allowFallback = true): Record<strin
   return allowFallback ? parsed : null
 }
 
-const parseYamlOrJsonCandidate = (text: string): Record<string, unknown> | null => {
+const readLiteralMcpStructuredRoot = (parsed: unknown): Record<string, unknown> | null => {
+  if (!isRecord(parsed) || readString(parsed.jsonrpc) !== '2.0' || !isRecord(parsed.result)) return null
+  const id = parsed.id
+  if (
+    !Object.prototype.hasOwnProperty.call(parsed, 'id')
+    || !((typeof id === 'string' && id.trim()) || (typeof id === 'number' && Number.isFinite(id)))
+  ) return null
+  const resultStructuredContent = parsed.result.structuredContent
+  if (!isRecord(resultStructuredContent) || !isRecord(resultStructuredContent.response)) return null
+  const responseStructuredContent = resultStructuredContent.response.structuredContent
+  return isRecord(responseStructuredContent) && hasStructuredSurfaceLists(responseStructuredContent)
+    ? responseStructuredContent
+    : null
+}
+
+const parseYamlOrJsonCandidate = (text: string, trustLiteralMcpResult: boolean): {
+  root: Record<string, unknown>
+  source: ChatResponseStructuredSource
+} | null => {
   const parsed = parseYamlOrJsonValue(text)
-  return readStructuredRoot(parsed)
+  const literalMcpRoot = trustLiteralMcpResult ? readLiteralMcpStructuredRoot(parsed) : null
+  if (literalMcpRoot) return { root: literalMcpRoot, source: 'literal-mcp' }
+  const root = readStructuredRoot(parsed)
+  return root ? { root, source: 'assistant' } : null
 }
 
 const collectNodeReferenceKeys = (record: unknown, node: ChatResponseSurfaceNode, fallback: string): string[] => {
@@ -477,7 +463,7 @@ const computeInputHandleForSource = (node: ChatResponseSurfaceNode): string => {
 const computeOutputHandleForPanel = (node: ChatResponseSurfaceNode): string => {
   const targetHandle = String(node.targetHandle || '').trim()
   if (targetHandle) return targetHandle
-  return readTargetHandle(node.kind)
+  return resolveChatResponseTargetHandleForKind(node.kind)
 }
 
 const uniqueSurfaceNodeId = (baseId: string, usedIds: ReadonlySet<string>): string => {
@@ -521,7 +507,7 @@ const ensureStructuredSurfaceDataflow = (args: {
   })
 
   sources.forEach((source, index) => {
-    const sourceHandle = String(source.sourceHandle || readTargetHandle(source.kind) || 'output').trim()
+    const sourceHandle = String(source.sourceHandle || resolveChatResponseTargetHandleForKind(source.kind) || 'output').trim()
     args.edges.push({
       id: `e-mcp-response-${slugify(`${source.id}-${sourceHandle}-${computeId}-input`, String(index + 1))}`,
       source: source.id,
@@ -545,8 +531,12 @@ const ensureStructuredSurfaceDataflow = (args: {
   })
 }
 
-export const extractChatResponseStructuredSurface = (assistantText: string): ChatResponseStructuredSurface | null => {
+export const extractChatResponseStructuredSurface = (
+  assistantText: string,
+  options: ChatResponseStructuredExtractionOptions = {},
+): ChatResponseStructuredSurface | null => {
   const candidates = collectStructuredTextCandidates(assistantText, 8)
+  const directCandidateCount = candidates.length
   appendEmbeddedStructuredTextCandidates(candidates, 8)
 
   const frontmatter: Record<string, JSONValue> = {}
@@ -557,15 +547,19 @@ export const extractChatResponseStructuredSurface = (assistantText: string): Cha
   const nodes: ChatResponseSurfaceNode[] = []
   const rawEdges: unknown[] = []
   for (let i = 0; i < candidates.length && nodes.length < MAX_RESPONSE_SURFACE_NODES; i += 1) {
-    const root = parseYamlOrJsonCandidate(candidates[i] || '')
-    if (!root) continue
+    const candidate = parseYamlOrJsonCandidate(
+      candidates[i] || '',
+      options.trustedSource === 'literal-mcp' && i < directCandidateCount,
+    )
+    if (!candidate) continue
+    const { root, source } = candidate
     collectStructuredFrontmatterFields(root, frontmatter)
     const records = collectRecords(root)
     for (let j = 0; j < records.length && nodes.length < MAX_RESPONSE_SURFACE_NODES; j += 1) {
       const record = records[j]
       collectStructuredFrontmatterFields(record.value, frontmatter)
       const roleIndex = nodes.filter(node => node.properties['chat:structuredRole'] === record.role).length
-      const node = normalizeNodeRecord(record.value, nodes.length, record.role, roleIndex)
+      const node = normalizeNodeRecord(record.value, nodes.length, record.role, source, roleIndex)
       if (!node || seenIds.has(node.id)) continue
       seenIds.add(node.id)
       nodeSourceHandleById.set(node.id, node.sourceHandle)

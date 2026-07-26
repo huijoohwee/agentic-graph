@@ -6,14 +6,18 @@ import {
   buildTextSelectionWidgetEdge,
   buildTextSelectionWidgetEdgePersistenceProperties,
   clearTextSelectionWidgetLinkSession,
+  hasOutgoingTextSelectionWidgetEdge,
   TEXT_SELECTION_WIDGET_CREATE_EVENT,
   getTextSelectionWidgetLinkSnapshot,
   isTextSelectionWidgetEdgePersisted,
   persistTextSelectionWidgetEdgeAfterTargetCreation,
   readTextSelectionWidgetEdgeProvenance,
+  readTextSelectionWidgetSourceHighlights,
   resolveTextSelectionWidgetTargetPosition,
   TEXT_SELECTION_WIDGET_LINK_SCHEMA,
   type TextSelectionWidgetCreateDetail,
+  TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY,
+  TEXT_SELECTION_WIDGET_TARGET_PORT_KEY,
 } from '@/lib/storyboardWidget/textSelectionWidgetLink'
 import {
   buildStoryboardWidgetInsertionPlacement,
@@ -27,6 +31,17 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { installDeterministicRaf, mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
+import {
+  collectTextSelectionProvenanceHighlightRects,
+} from '@/lib/ui/textSelectionProvenanceHighlights'
+import {
+  buildSelectionProvenanceConnectorPath,
+  resolveSelectionProvenanceOutputHandle,
+} from '@/lib/ui/selectionProvenanceConnectorGeometry'
+import {
+  FLOW_EDGE_SOURCE_PORT_KEY,
+  FLOW_EDGE_TARGET_PORT_KEY,
+} from '@/lib/graph/flowPorts'
 
 export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdge() {
   clearTextSelectionWidgetLinkSession()
@@ -83,7 +98,9 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
     || edge.properties['selection:startLine'] !== 12
     || edge.properties['selection:endLine'] !== 13
     || edge.properties['selection:documentPath'] !== 'notes/example.md'
-    || edge.properties['selection:targetFieldId'] !== 'prompt') {
+    || edge.properties['selection:targetFieldId'] !== 'prompt'
+    || edge.properties[FLOW_EDGE_SOURCE_PORT_KEY] !== TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY
+    || edge.properties[FLOW_EDGE_TARGET_PORT_KEY] !== TEXT_SELECTION_WIDGET_TARGET_PORT_KEY) {
     throw new Error(`expected persisted selection provenance, got ${JSON.stringify(edge.properties)}`)
   }
   const persistedProperties = buildTextSelectionWidgetEdgePersistenceProperties(edge)
@@ -91,7 +108,9 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
     || persistedProperties['selection:text'] !== 'selected source text'
     || persistedProperties['selection:startLine'] !== 12
     || persistedProperties['selection:endLine'] !== 13
-    || persistedProperties['selection:targetFieldId'] !== 'prompt') {
+    || persistedProperties['selection:targetFieldId'] !== 'prompt'
+    || persistedProperties[FLOW_EDGE_SOURCE_PORT_KEY] !== TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY
+    || persistedProperties[FLOW_EDGE_TARGET_PORT_KEY] !== TEXT_SELECTION_WIDGET_TARGET_PORT_KEY) {
     throw new Error(`expected durable frontmatter selection provenance, got ${JSON.stringify(persistedProperties)}`)
   }
   const provenance = readTextSelectionWidgetEdgeProvenance(edge)
@@ -105,6 +124,18 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
   }
 
   graphData.edges.push(edge)
+  const sourceHighlights = readTextSelectionWidgetSourceHighlights({
+    graphData,
+    sourceNodeId: 'source-panel',
+  })
+  if (sourceHighlights.length !== 1
+    || sourceHighlights[0]?.edgeId !== edge.id
+    || sourceHighlights[0]?.selectedText !== 'selected source text'
+    || sourceHighlights[0]?.sourcePortKey !== TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY
+    || sourceHighlights[0]?.targetPortKey !== TEXT_SELECTION_WIDGET_TARGET_PORT_KEY
+    || !hasOutgoingTextSelectionWidgetEdge({ graphData, sourceNodeId: 'source-panel' })) {
+    throw new Error(`expected the source highlight to reuse canonical edge provenance, got ${JSON.stringify(sourceHighlights)}`)
+  }
   const duplicate = buildTextSelectionWidgetEdge({
     graphData,
     session,
@@ -161,6 +192,97 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
   clearTextSelectionWidgetLinkSession()
   if (getTextSelectionWidgetLinkSnapshot() !== null) {
     throw new Error('expected completing or cancelling the flow to clear the active selection')
+  }
+}
+
+export function testTextSelectionWidgetLinkProjectsExactSourceHighlightAndConnector() {
+  const { dom, restore } = initJsdomHarness()
+  try {
+    const root = dom.window.document.createElement('section')
+    root.innerHTML = [
+      '<p data-start-line="1" data-end-line="1">selected source text outside the provenance range</p>',
+      '<p data-start-line="12" data-end-line="13"><strong>selected source text</strong> inside the provenance range</p>',
+    ].join('')
+    dom.window.document.body.appendChild(root)
+    Object.defineProperties(root, {
+      clientWidth: { configurable: true, value: 400 },
+      clientHeight: { configurable: true, value: 200 },
+    })
+    root.getBoundingClientRect = () => ({
+      x: 10,
+      y: 20,
+      left: 10,
+      top: 20,
+      right: 410,
+      bottom: 220,
+      width: 400,
+      height: 200,
+      toJSON: () => ({}),
+    })
+    Object.defineProperty(dom.window.Range.prototype, 'getClientRects', {
+      configurable: true,
+      value() {
+        return [{
+          x: 50,
+          y: 60,
+          left: 50,
+          top: 60,
+          right: 170,
+          bottom: 78,
+          width: 120,
+          height: 18,
+          toJSON: () => ({}),
+        }]
+      },
+    })
+
+    const rects = collectTextSelectionProvenanceHighlightRects({
+      root,
+      selections: [{
+        edgeId: 'selection-edge',
+        text: 'selected source text',
+        startLine: 12,
+        endLine: 13,
+      }],
+    })
+    if (rects.length !== 1
+      || rects[0]?.edgeId !== 'selection-edge'
+      || rects[0]?.left !== 40
+      || rects[0]?.top !== 40
+      || rects[0]?.width !== 120
+      || rects[0]?.height !== 18) {
+      throw new Error(`expected one exact, line-scoped provenance highlight, got ${JSON.stringify(rects)}`)
+    }
+    const innerNodeOwner = dom.window.document.createElement('section')
+    innerNodeOwner.setAttribute('data-node-id', 'n2')
+    innerNodeOwner.appendChild(root)
+    dom.window.document.body.appendChild(innerNodeOwner)
+    const outerOverlayOwner = dom.window.document.createElement('section')
+    outerOverlayOwner.setAttribute('data-node-id', 'workspace-layer::n2')
+    const outputHandle = dom.window.document.createElement('button')
+    outputHandle.setAttribute('data-kg-port-handle', '1')
+    outputHandle.setAttribute('data-kg-port-dir', 'out')
+    outputHandle.setAttribute('data-kg-port-node-id', 'workspace-layer::n2')
+    outputHandle.setAttribute('data-kg-port-key', 'output')
+    outerOverlayOwner.appendChild(outputHandle)
+    dom.window.document.body.appendChild(outerOverlayOwner)
+    const resolvedHandle = resolveSelectionProvenanceOutputHandle({
+      root,
+      sourceNodeId: 'n2',
+      sourcePortKey: 'output',
+    })
+    if (resolvedHandle !== outputHandle) {
+      throw new Error('expected the connector to resolve the canonical output handle across nested Rich Media overlay owners')
+    }
+    const path = buildSelectionProvenanceConnectorPath({
+      source: { x: 170, y: 69 },
+      target: { x: 400, y: 100 },
+    })
+    if (path !== 'M 170.00 69.00 C 266.60 69.00 303.40 100.00 400.00 100.00') {
+      throw new Error(`expected a stable highlight-to-output-port connector, got ${JSON.stringify(path)}`)
+    }
+  } finally {
+    restore()
   }
 }
 

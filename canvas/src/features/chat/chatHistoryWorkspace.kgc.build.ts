@@ -11,12 +11,14 @@ import { buildResolvableVarKeySet, validateChatMarkdown } from './chatMarkdownVa
 import { sanitizeChatHistoryTraceUserText } from './chatStreamArtifactSanitizers'
 import { hasRecognizedChatRuntimeInvocation } from './chatRuntimeInvocationProfile'
 import { analyzeKgcRequest } from './chatKgcRequestProfile'
+import type { ChatResponseStructuredSource } from './chatResponseWidgetPaletteContract'
 
 type KgcStorageNormalizeArgs = {
   timestampMs: number
   workspacePath?: string
   requestText: string
   assistantText: string
+  structuredResponseSource?: ChatResponseStructuredSource
 }
 
 const pad2 = (n: number): string => String(n).padStart(2, '0')
@@ -39,10 +41,15 @@ const wrapFence = (content: string, lang: string): string => {
   return [`${ticks}${safeLang}`, safe, ticks].join('\n')
 }
 
-const projectStructuredContentIntoKgcMarkdown = (markdown: string): string => {
+const projectStructuredContentIntoKgcMarkdown = (
+  markdown: string,
+  structuredResponseSource?: ChatResponseStructuredSource,
+): string => {
   const parsed = splitLeadingFrontmatterAndBody(markdown)
   if (!parsed) return markdown
-  const surface = extractChatResponseStructuredSurface(markdown)
+  const surface = extractChatResponseStructuredSurface(markdown, {
+    trustedSource: structuredResponseSource,
+  })
   if (!surface) return markdown
   const frontmatter = projectChatResponseStructuredSurfaceIntoKgcFrontmatter({
     frontmatter: parsed.frontmatter,
@@ -79,7 +86,10 @@ export const normalizeKgcAssistantBodyForStorage = (args: KgcStorageNormalizeArg
       workspacePath: args.workspacePath,
       assistantText: args.assistantText,
     })
-    const normalized = sanitizeComputingFlowMarkdown(projectStructuredContentIntoKgcMarkdown(ensureKgcBaseTemplateRequiredBodyScaffold(queryResponsive)))
+    const normalized = sanitizeComputingFlowMarkdown(projectStructuredContentIntoKgcMarkdown(
+      ensureKgcBaseTemplateRequiredBodyScaffold(queryResponsive),
+      args.structuredResponseSource,
+    ))
     if (isValidatedStorageKgc(normalized)) return normalized
   }
   const fileName = String(args.workspacePath || '').split('/').filter(Boolean).slice(-1)[0] || ''
@@ -88,6 +98,7 @@ export const normalizeKgcAssistantBodyForStorage = (args: KgcStorageNormalizeArg
     fileName,
     requestText: args.requestText,
     assistantText: args.assistantText,
+    structuredResponseSource: args.structuredResponseSource,
   })
   return sanitizeComputingFlowMarkdown(ensureKgcBaseTemplateRequiredBodyScaffold(enforceKgcQueryResponsiveContent({
     markdown: fallback,

@@ -416,7 +416,7 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
     materialized = materializeStoryboardWidgetProbeTreeStructuredResponse({
       graphData: graphForInvocation,
       anchorNode: node,
-      responseText: JSON.stringify({ result: mcpResult }, null, 2),
+      responseText: JSON.stringify({ jsonrpc: '2.0', id: `probe-tree-${currentNodeId}`, result: mcpResult }, null, 2),
       contextText,
       responseSource: 'mcp',
       model: mcpModel,

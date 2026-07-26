@@ -15,6 +15,7 @@ import {
   type FlowPortHandleCancelDetail,
   type FlowPortHandleFinalizeDetail,
 } from '@/components/StoryboardWidget/flowPortHandlePointerDrag'
+import { hasOutgoingTextSelectionWidgetEdge } from '@/lib/storyboardWidget/textSelectionWidgetLink'
 
 type PortHandleInteractionContextValue = {
   active: boolean
@@ -102,7 +103,18 @@ export function StoryboardWidgetOverlayPortHandles(props: {
   const isPendingTarget = interaction?.toolMode === 'addEdge'
     && Boolean(pendingSourceId)
     && !isCanonicalNodeIdEqual(pendingSourceId, nodeId)
-  if (!interaction || !interaction.active || (!props.selected && !isPendingTarget) || !node) return null
+  const hasPersistentProvenanceOutput = hasOutgoingTextSelectionWidgetEdge({
+    graphData: interaction?.graphData,
+    sourceNodeId: nodeId,
+  })
+  const isUnselectedAndNotPendingTarget = (!props.selected && !isPendingTarget)
+  const persistentOutputOnly = isUnselectedAndNotPendingTarget && hasPersistentProvenanceOutput
+  if (
+    !interaction
+    || !interaction.active
+    || (isUnselectedAndNotPendingTarget && !hasPersistentProvenanceOutput)
+    || !node
+  ) return null
 
   return (
     <WidgetEditorPortHandles
@@ -113,6 +125,7 @@ export function StoryboardWidgetOverlayPortHandles(props: {
       edges={interaction.graphData?.edges || []}
       forceEnabled
       inputOnly={isPendingTarget && !props.selected}
+      outputOnly={persistentOutputOnly}
       toolMode={interaction.toolMode}
       pendingEdgeSourceId={interaction.pendingEdgeSourceId}
       onBeginAddEdgeFromNode={interaction.beginEdge}

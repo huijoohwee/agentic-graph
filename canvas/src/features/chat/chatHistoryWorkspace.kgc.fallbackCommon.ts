@@ -10,12 +10,14 @@ import {
   fallbackObjective,
   fallbackProduct,
 } from './chatHistoryWorkspace.kgc.fallbackSections'
+import type { ChatResponseStructuredSource } from './chatResponseWidgetPaletteContract'
 
 export type BaseFallbackArgs = {
   timestampMs: number
   fileName: string
   requestText: string
   assistantText?: string
+  structuredResponseSource?: ChatResponseStructuredSource
 }
 
 export const slugify = (raw: string): string => {

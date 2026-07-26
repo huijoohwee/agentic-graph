@@ -8,7 +8,10 @@ import {
 } from '@/lib/ui/surfaceClasses'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { requestPropsPanelOpen } from '@/features/toolbar/floatingPanelBridge'
-import { beginTextSelectionWidgetLinkSession } from '@/lib/storyboardWidget/textSelectionWidgetLink'
+import {
+  beginTextSelectionWidgetLinkSession,
+  readTextSelectionWidgetSourceHighlights,
+} from '@/lib/storyboardWidget/textSelectionWidgetLink'
 import { TextSelectionWidgetLinkContext } from '@/lib/storyboardWidget/textSelectionWidgetLinkContext'
 import {
   subscribeStoryboardCardProvenanceFocus,
@@ -16,6 +19,7 @@ import {
 } from '@/lib/storyboardWidget/storyboardCardProvenanceFocus'
 import type { RichMediaPanelProps } from './RichMediaPanel.types'
 import type { RichMediaPanelModel } from './useRichMediaPanelModel'
+import { RichMediaPanelSelectionProvenanceConnector } from './RichMediaPanelSelectionProvenanceConnector'
 
 const MarkdownWorkspaceViewerSurface = React.lazy(() =>
   import('@/features/markdown-workspace/main/viewer/MarkdownWorkspaceViewerSurface')
@@ -37,7 +41,29 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
   const [viewerDraftText, setViewerDraftText] = React.useState<string | null>(null)
   const [provenanceFocus, setProvenanceFocus] = React.useState<StoryboardCardProvenanceFocus | null>(null)
   const pendingCommittedTextRef = React.useRef<string | null>(null)
+  const viewerShellRef = React.useRef<HTMLElement | null>(null)
+  const graphData = useGraphStore(state => state.graphData)
   const viewerText = viewerDraftText ?? model.panelDisplayText
+  const provenanceSelections = React.useMemo(() => (
+    readTextSelectionWidgetSourceHighlights({
+      graphData,
+      sourceNodeId: props.overlayId,
+    }).filter(selection => (
+      !selection.documentPath
+      || !model.panelMarkdownDocumentPath
+      || selection.documentPath === model.panelMarkdownDocumentPath
+    ))
+  ), [graphData, model.panelMarkdownDocumentPath, props.overlayId])
+  const provenanceConnectorInputs = React.useMemo(() => (
+    provenanceSelections.map(selection => ({
+      edgeId: selection.edgeId,
+      sourceNodeId: selection.sourceNodeId,
+      sourcePortKey: selection.sourcePortKey,
+      text: selection.selectedText,
+      startLine: selection.startLine,
+      endLine: selection.endLine,
+    }))
+  ), [provenanceSelections])
   const selectionWidgetLink = React.useMemo(() => {
     const sourceNodeId = String(props.overlayId || '').trim()
     if (!sourceNodeId) return null
@@ -95,7 +121,10 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
     'data-kg-provenance-focus-document-path': provenanceFocus?.documentPath || undefined,
     'data-kg-provenance-focus-start-line': provenanceFocus ? String(provenanceFocus.startLine) : undefined,
     'data-kg-provenance-focus-end-line': provenanceFocus ? String(provenanceFocus.endLine) : undefined,
-  }), [provenanceFocus])
+    'data-kg-selection-provenance-count': provenanceSelections.length > 0
+      ? String(provenanceSelections.length)
+      : undefined,
+  }), [provenanceFocus, provenanceSelections.length])
 
   const commitText = React.useCallback((nextText: string) => {
     if (!model.panelTextEditable) return
@@ -144,28 +173,38 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
       />
     )}>
       <TextSelectionWidgetLinkContext.Provider value={selectionWidgetLink}>
-        <MarkdownWorkspaceViewerSurface
-          markdownText={viewerText}
-          activeDocumentPath={model.panelMarkdownDocumentPath}
-          highlightedLineRange={provenanceFocus
-            ? { start: provenanceFocus.startLine, end: provenanceFocus.endLine }
-            : null}
-          markdownWordWrap
-          markdownTextHighlight={Boolean(provenanceFocus)}
-          uiPanelTextFontClass="font-sans"
-          uiPanelMonospaceTextClass="font-mono text-xs"
-          markdownTokenStoreSync={false}
-          markdownViewerWidthMode="wide"
-          dataAttributes={viewerDataAttributes}
-          onInlineEditStateChange={model.panelTextEditable ? active => {
-            if (!active && pendingCommittedTextRef.current === null) setViewerDraftText(null)
-          } : undefined}
-          onInlineDraftTextChange={model.panelTextEditable ? (nextText, options) => {
-            if (options?.reflectInViewer === false) return
-            setViewerDraftText(nextText)
-          } : undefined}
-          onReplaceLineRange={model.panelTextEditable ? handleReplaceLineRange : undefined}
-        />
+        <section
+          ref={viewerShellRef}
+          className="relative flex min-h-0 min-w-0 flex-1 overflow-visible"
+          data-kg-selection-provenance-source-surface="1"
+        >
+          <MarkdownWorkspaceViewerSurface
+            markdownText={viewerText}
+            activeDocumentPath={model.panelMarkdownDocumentPath}
+            highlightedLineRange={provenanceFocus
+              ? { start: provenanceFocus.startLine, end: provenanceFocus.endLine }
+              : null}
+            markdownWordWrap
+            markdownTextHighlight={Boolean(provenanceFocus)}
+            uiPanelTextFontClass="font-sans"
+            uiPanelMonospaceTextClass="font-mono text-xs"
+            markdownTokenStoreSync={false}
+            markdownViewerWidthMode="wide"
+            dataAttributes={viewerDataAttributes}
+            onInlineEditStateChange={model.panelTextEditable ? active => {
+              if (!active && pendingCommittedTextRef.current === null) setViewerDraftText(null)
+            } : undefined}
+            onInlineDraftTextChange={model.panelTextEditable ? (nextText, options) => {
+              if (options?.reflectInViewer === false) return
+              setViewerDraftText(nextText)
+            } : undefined}
+            onReplaceLineRange={model.panelTextEditable ? handleReplaceLineRange : undefined}
+          />
+          <RichMediaPanelSelectionProvenanceConnector
+            rootRef={viewerShellRef}
+            selections={provenanceConnectorInputs}
+          />
+        </section>
       </TextSelectionWidgetLinkContext.Provider>
     </React.Suspense>
   )

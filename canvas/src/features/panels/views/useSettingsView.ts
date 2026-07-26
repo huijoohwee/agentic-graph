@@ -1,7 +1,6 @@
 import React from 'react'
-import { settingsRegistry, loadFlowDetails } from '@/features/settings/registry'
+import { settingsRegistry } from '@/features/settings/registry'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import type { FlowDetails } from '@/features/settings/types'
 import { loadSettingsCollapsedByArea, persistSettingsCollapsedByArea } from '@/features/panels/utils/settingsCollapsedStorage'
 import { normalized as normalizeText } from '@/features/panels/utils/json'
 import { getLocalStorage } from '@/lib/persistence'
@@ -153,6 +152,7 @@ import {
   type SettingsEntry,
 } from './useSettingsView.helpers'
 import type { SettingsViewMode } from './settingsView.constants'
+import { useSettingsFlowDetails } from './useSettingsFlowDetails'
 
 const getSettingsSearchHints = (key: string): string[] => {
   if (key === 'chatContextScope') {
@@ -543,7 +543,8 @@ export function useSettingsView({
     return false
   }, [])
 
-  const [flow, setFlow] = React.useState<Record<string, FlowDetails>>({})
+  const flowDetailsRuntime = useSettingsFlowDetails()
+  const { flow } = flowDetailsRuntime
   const [expanded, setExpanded] = React.useState<string | null>(null)
   const [values, setValues] = React.useState<Record<string, string | number | boolean>>(() => {
     const v: Record<string, string | number | boolean> = {}
@@ -575,12 +576,6 @@ export function useSettingsView({
   )
   const uiPanelMonospaceTextClass = useGraphStore(s => s.uiPanelMonospaceTextClass || 'font-mono text-xs')
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME)
-
-  React.useEffect(() => {
-    let alive = true
-    loadFlowDetails().then(d => { if (alive) setFlow(d || {}) })
-    return () => { alive = false }
-  }, [])
 
   const applyAll = React.useCallback(() => {
     const dirty = Array.from(dirtyRef.current)
@@ -1350,7 +1345,7 @@ export function useSettingsView({
   }, [onRegisterActions, applyAll, resetToDefaults, onGlobalReset, collapseAll, expandAll, allCollapsed])
 
   return {
-    flow,
+    flowDetailsRuntime,
     expanded,
     setExpanded,
     values,

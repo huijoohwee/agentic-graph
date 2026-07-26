@@ -3,8 +3,10 @@ import { buildLocalAgentRuntimeToolDefinition } from "./local-agent-tool-contrac
 import { KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID, KNOWGRPH_AGENT_READY_TOOL_IDS, buildKnowgrphAgentReadyToolContracts } from "../canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs";
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES as SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
 import { buildKnowgrphMcpNoauthSecuritySchemes } from "../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs";
-import { KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES, MEMORY_ADD_INPUT_SCHEMA, MEMORY_ADD_OUTPUT_SCHEMA, MEMORY_SEARCH_INPUT_SCHEMA, MEMORY_SEARCH_OUTPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_INPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_OUTPUT_SCHEMA, PROMPT_ASSEMBLER_INPUT_SCHEMA, PROMPT_ASSEMBLER_OUTPUT_SCHEMA, USER_MODEL_MATERIALIZE_INPUT_SCHEMA, USER_MODEL_MATERIALIZE_OUTPUT_SCHEMA } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
+import { KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES, MEMORY_ADD_INPUT_SCHEMA, MEMORY_ADD_OUTPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_INPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_OUTPUT_SCHEMA, PROMPT_ASSEMBLER_INPUT_SCHEMA, PROMPT_ASSEMBLER_OUTPUT_SCHEMA, USER_MODEL_MATERIALIZE_INPUT_SCHEMA, USER_MODEL_MATERIALIZE_OUTPUT_SCHEMA } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
 import { AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION } from "./agentic-canvas-os-docs-contract.mjs";
+import { buildPersistentMemoryToolDefinitions } from "./persistent-memory-tool-contract.js";
+import { REPOSITORY_PACK_TOOL_DEFINITION } from "./repository-pack-contract.js";
 import { buildExternalToolGatewayDefinitions } from "./external-tool-gateway-contract.js";
 import { buildProbeTreeLocalToolDefinitions } from "./probe-tree-tool-contract.js";
 import { buildSmeRiskCopilotLocalToolDefinitions } from "./sme-risk-copilot-tool-contract.js";
@@ -125,6 +127,13 @@ const LOCAL_PROCESS_TOOL_ANNOTATIONS = Object.freeze({
 const LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS = Object.freeze({
   readOnlyHint: false,
   destructiveHint: false,
+  openWorldHint: false,
+  idempotentHint: true,
+});
+
+const LOCAL_IDEMPOTENT_MUTATION_TOOL_ANNOTATIONS = Object.freeze({
+  readOnlyHint: false,
+  destructiveHint: true,
   openWorldHint: false,
   idempotentHint: true,
 });
@@ -374,13 +383,12 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       outputSchema: MEMORY_ADD_OUTPUT_SCHEMA,
       inputSchema: MEMORY_ADD_INPUT_SCHEMA,
     }, LOCAL_PROCESS_TOOL_ANNOTATIONS),
-    withLocalMcpDescriptorDefaults({
-      name: KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.search,
-      description:
-        "Use this when a local MCP host needs to retrieve top-K explicitly scoped memories through the Knowgrph memory harness before agent prompt assembly.",
-      outputSchema: MEMORY_SEARCH_OUTPUT_SCHEMA,
-      inputSchema: MEMORY_SEARCH_INPUT_SCHEMA,
-    }, READ_ONLY_TOOL_ANNOTATIONS),
+    ...buildPersistentMemoryToolDefinitions({
+      toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
+      withDefaults: withLocalMcpDescriptorDefaults,
+      readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS,
+      mutationAnnotations: LOCAL_IDEMPOTENT_MUTATION_TOOL_ANNOTATIONS,
+    }),
     withLocalMcpDescriptorDefaults({
       name: KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES.assemblePrompt,
       description:
@@ -418,6 +426,11 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       ...AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION,
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke,
     }, READ_ONLY_TOOL_ANNOTATIONS),
+    buildSkillEvolutionToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
+    withLocalMcpDescriptorDefaults({
+      ...REPOSITORY_PACK_TOOL_DEFINITION,
+      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
+    }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     ...buildLocalRunToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     withLocalMcpDescriptorDefaults({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.exportPublish,
@@ -525,6 +538,5 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
     ),
     ...buildAgentApplicationToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     buildVoiceStudioLocalToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
-    buildSkillEvolutionToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
   ];
 };
