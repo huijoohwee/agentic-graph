@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { FLIGHT_SIM_AIRCRAFT_ASSET_SPEC } from '@/features/game-flight-sim/assetSpec/flightSimAssetSpec'
 import {
   cycleFlightSimCameraView,
   FLIGHT_SIM_CAMERA_VIEW_OPTIONS,
@@ -97,13 +98,24 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
     resetKey: 7,
     sequence: 42,
   })
-  assert.deepEqual(resolveFlightSimFollowTarget(flight, 2, 'cockpit'), {
-    position: [2, 5.3, 3.6],
-    target: [2, 5.3, -22],
-    fovDegrees: 72,
+  const cockpit = resolveFlightSimFollowTarget(flight, 2, 'cockpit')
+  assert.deepEqual(cockpit, {
+    position: [2, 6.1, 1.5999999999999996],
+    target: [2, 6.1, -30],
+    fovDegrees: 68,
     resetKey: 7,
     sequence: 42,
   })
+  assert.ok(
+    Math.abs(cockpit.position[2] - flight.aircraft.position[2] * 2)
+      > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2] * 2,
+    'cockpit eye must remain beyond the scaled forward collision envelope',
+  )
+  assert.ok(
+    cockpit.position[1] - flight.aircraft.position[1] * 2
+      > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1] * 2,
+    'cockpit eye must remain above the scaled vertical collision envelope',
+  )
   assert.deepEqual(resolveFlightSimFollowTarget(flight, 2, 'survey'), {
     position: [2, 40, 14],
     target: [2, 5.6, -4],

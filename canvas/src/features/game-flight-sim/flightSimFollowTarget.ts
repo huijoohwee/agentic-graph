@@ -1,6 +1,12 @@
-import { flightSimForwardVector } from './flightModel'
+import { FLIGHT_SIM_AIRCRAFT_ASSET_SPEC } from './assetSpec/flightSimAssetSpec'
 import type { FlightSimCameraView } from './flightSimCameraRuntime'
 import type { FlightSimSnapshot } from './flightSimModel'
+import { flightSimForwardVector } from './flightModel'
+
+const COCKPIT_FORWARD_CLEARANCE_METERS = 0.55
+const COCKPIT_VERTICAL_CLEARANCE_METERS = 0.45
+const COCKPIT_LOOK_AHEAD_METERS = 18
+const COCKPIT_FOV_DEGREES = 68
 
 export type FlightSimFollowTarget = Readonly<{
   position: readonly [number, number, number]
@@ -38,8 +44,16 @@ export function resolveFlightSimFollowTarget(
     chaseTarget[1] - forward[1] * 2 * scale + 3.2 * scale,
     chaseTarget[2] - forward[2] * 8 * scale,
   ] as const)
+  const cockpitForwardDistance = FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2]
+    + COCKPIT_FORWARD_CLEARANCE_METERS
+  const cockpitHeight = FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1]
+    + COCKPIT_VERTICAL_CLEARANCE_METERS
   const framing = view === 'cockpit'
-    ? Object.freeze({ position: vector(1.2, 0.65), target: vector(14, 0.65), fovDegrees: 72 })
+    ? Object.freeze({
+        position: vector(cockpitForwardDistance, cockpitHeight),
+        target: vector(COCKPIT_LOOK_AHEAD_METERS, cockpitHeight),
+        fovDegrees: COCKPIT_FOV_DEGREES,
+      })
     : view === 'survey'
       ? Object.freeze({ position: vector(-4, 18), target: vector(5, 0.8), fovDegrees: 64 })
       : Object.freeze({ position: chasePosition, target: chaseTarget, fovDegrees: 58 })
