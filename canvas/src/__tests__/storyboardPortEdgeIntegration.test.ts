@@ -312,7 +312,7 @@ export function testStoryboardRichMediaOverlaySelectionMountsSharedPortHandles()
   const cursorEffect = cursorEffectStart >= 0 && cursorEffectEnd > cursorEffectStart
     ? overlayEdges.slice(cursorEffectStart, cursorEffectEnd)
     : ''
-  if (!overlayEdges.includes('FLOW_PORT_HANDLE_PREVIEW_EVENT') || !overlayEdges.includes("toolMode: 'addEdge', sourceId: source.id, sourcePortKey: source.portKey")) {
+  if (!overlayEdges.includes('FLOW_PORT_HANDLE_PREVIEW_EVENT') || !overlayEdges.includes('sourceIds: currentSourceIds.includes(source.id) ? currentSourceIds : [source.id]') || !overlayEdges.includes('data-kg-overlay-pending-edge-source-id')) {
     throw new Error('expected shared overlay edge preview to consume immediate port-handle preview events')
   }
   if (!overlayEdges.includes('document.addEventListener(FLOW_PORT_HANDLE_PREVIEW_EVENT, onPreview)') || !overlayEdges.includes('pendingEdgeCursorRef.current')) {
@@ -339,16 +339,16 @@ export function testStoryboardRichMediaOverlaySelectionMountsSharedPortHandles()
   if (!overlayEdges.includes('stableRects.set(id, { rect: cloneDomRect(rect), ts: nextTs })')) {
     throw new Error('expected shared overlay edge preview to snapshot stable overlay rect geometry for active nodes')
   }
-  if (!overlayEdges.includes('const sRect = sourceId ? overlayRectsByNodeId.get(sourceId) || cachedSourceRect : null')) {
+  if (!overlayEdges.includes('const sRect = overlayRectsByNodeId.get(sourceId) || cachedSourceRect')) {
     throw new Error('expected shared overlay edge preview to fall back to a recent stable source rect when the live overlay root briefly disappears')
   }
   if (!overlayEdges.includes("if (source?.phase === 'start' && source.id && Number.isFinite(x) && Number.isFinite(y))")) {
     throw new Error('expected shared overlay edge preview to snapshot the source handle drag-start point')
   }
-  if (!overlayEdges.includes('cachedStartPointAvailable: !!cachedStartPoint')) {
+  if (!overlayEdges.includes('cachedStartPointAvailable: !!pendingEdgeStartPointRef.current')) {
     throw new Error('expected pending-edge debug state to expose drag-start fallback availability')
   }
-  if (!overlayEdges.includes('if ((sRect || cachedStartPoint) && cursor) {')) {
+  if (!overlayEdges.includes('if (!sRect && !cachedStartPoint) continue')) {
     throw new Error('expected pending-edge preview to render from either the overlay rect or the cached drag-start anchor')
   }
   if (!overlayEdges.includes('const nextPendingEdgePreview = {') || !overlayEdges.includes('if (nextPendingEdgePreview.toolMode !== \'addEdge\' || !nextPendingEdgePreview.sourceId) {') || !overlayEdges.includes('scheduleOverlayEdgeUpdate()')) {

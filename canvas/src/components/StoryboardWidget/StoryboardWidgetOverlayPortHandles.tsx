@@ -21,6 +21,7 @@ type PortHandleInteractionContextValue = {
   active: boolean
   graphData: GraphData | null
   pendingEdgeSourceId: string | null
+  pendingEdgeSourceIds: ReadonlyArray<string>
   registryEntries: ReadonlyArray<WidgetRegistryEntry>
   schema: GraphSchema | null
   toolMode: 'select' | 'addEdge'
@@ -100,12 +101,14 @@ export function StoryboardWidgetOverlayPortHandles(props: {
   const nodeId = String(props.node?.id || props.nodeId || '').trim()
   const node = props.node || resolveGraphNodeByCanonicalId(interaction?.graphData, nodeId)
   const pendingSourceId = String(interaction?.pendingEdgeSourceId || '').trim()
+  const pendingSourceIds = interaction?.pendingEdgeSourceIds?.length
+    ? interaction.pendingEdgeSourceIds
+    : pendingSourceId ? [pendingSourceId] : []
   const isPendingSource = interaction?.toolMode === 'addEdge'
-    && Boolean(pendingSourceId)
-    && isCanonicalNodeIdEqual(pendingSourceId, nodeId)
+    && pendingSourceIds.some(sourceId => isCanonicalNodeIdEqual(sourceId, nodeId))
   const isPendingTarget = interaction?.toolMode === 'addEdge'
-    && Boolean(pendingSourceId)
-    && !isCanonicalNodeIdEqual(pendingSourceId, nodeId)
+    && pendingSourceIds.length > 0
+    && !isPendingSource
   const hasPersistentProvenanceOutput = hasOutgoingTextSelectionWidgetEdge({
     graphData: interaction?.graphData,
     sourceNodeId: nodeId,

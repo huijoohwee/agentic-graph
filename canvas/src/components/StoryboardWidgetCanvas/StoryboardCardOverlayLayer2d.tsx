@@ -29,7 +29,6 @@ import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/w
 import type { StoryboardWidgetOverlayDragTransform } from '@/lib/storyboardWidget/overlayWorldDrag'
 import type { FlowWidgetPinnedById } from '@/lib/storyboardWidget/flowWidgetPinnedState'
 import { readCanvasBoardLayoutMode } from '@/lib/canvas/canvasBoardLayoutDisplayControls'
-import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 import { isFlowWidgetHeaderDragAllowedByPin } from '@/lib/storyboardWidget/flowWidgetPinMovement'
 import { collectGroupPanelContainedNodeIds, isGroupPanelContainedNode } from '@/lib/storyboardWidget/groupPanelContainment'
 import { readStoryboardWidgetContainmentGroupAabb } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeGroupLookup'
@@ -49,8 +48,7 @@ import type { GraphData, GraphNode, JSONValue } from '@/lib/graph/types'
 import { RICH_MEDIA_PANEL_DEFAULT_CSS_VARS } from '@/lib/render/richMediaPanelDefaults'
 import type { MediaDragPayload } from '@/lib/ui/mediaDragPayload'
 import { screenToWorld } from '@/lib/zoom/viewport'
-const STORYBOARD_CARD_OVERLAY_Z_INDEX = 60
-const ignoreStoryboardCardAction = () => void 0
+const STORYBOARD_CARD_OVERLAY_Z_INDEX = 60; const ignoreStoryboardCardAction = () => void 0
 function StoryboardCardOverlayItem(props: {
   card: StoryboardCardModel; node: GraphNode; pendingMedia: StoryboardCardModel['media']; storyboardWidgetSurfaceId: string
   cardMoveEnabled: boolean
@@ -65,6 +63,7 @@ function StoryboardCardOverlayItem(props: {
   onResizePointerDown: (event: React.PointerEvent<HTMLButtonElement>, node: GraphNode) => void
 }) {
   const { card, cardMoveEnabled, storyboardWidgetSurfaceId, headerPinProps, node, onCommitLane, onCommitPrimaryText, onCommitTitle, onCommitType, onDropMedia, onDuplicate, onHeaderPointerDown, onOpenInSidepane, onProbeTree, onRemove, onResizePointerDown, onRun, onSelect, onSourceReferenceActivate, pendingMedia, readCardSize, register, selected } = props
+  const suppressNextClickSelectionRef = React.useRef(false)
   const { width, height } = readCardSize(node)
   const suppressShiftActivationClickRef = React.useRef(false)
   const activateCard = React.useCallback(() => {
@@ -122,6 +121,10 @@ function StoryboardCardOverlayItem(props: {
       data-node-id={card.id}
       data-kg-storyboard-widget-surface={storyboardWidgetSurfaceId}
       onClickCapture={event => {
+        if (suppressNextClickSelectionRef.current) {
+          suppressNextClickSelectionRef.current = false
+          return
+        }
         if (!suppressShiftActivationClickRef.current && !event.shiftKey) return
         event.preventDefault()
         event.stopPropagation()
@@ -144,6 +147,7 @@ function StoryboardCardOverlayItem(props: {
         if (target && isStoryboardHeaderDragBlockedTarget(target)) return
         if (shouldStoryboardCardOverlayYieldToTextEditTarget(target)) return
         if (target?.closest('[data-kg-rich-media-storyboard-widget-header="1"]') && !isStoryboardHeaderDragBlockedTarget(target)) {
+          suppressNextClickSelectionRef.current = true
           onSelect(card, {
             shiftKey: event.shiftKey,
             metaKey: event.metaKey,
@@ -152,6 +156,7 @@ function StoryboardCardOverlayItem(props: {
           if (cardMoveEnabled) onHeaderPointerDown(event, node)
           return
         }
+        suppressNextClickSelectionRef.current = true
         onSelect(card, {
           shiftKey: event.shiftKey,
           metaKey: event.metaKey,
@@ -449,14 +454,8 @@ export function StoryboardCardOverlayLayer2d(props: {
     modifiers: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean } = {},
   ) => {
     const state = useGraphStore.getState()
-    const mode = activateMultiNodeSelectModeForShift({
-      mode: state.schema?.behavior?.selectMode || 'single',
-      shiftKey: modifiers.shiftKey,
-      setSelectMode: state.setSelectMode,
-    })
     setSelectionSource('canvas')
-    const gesture = resolveNodeSelectionGesture({ mode, ...modifiers })
-    if (gesture === 'toggle') {
+    if (modifiers.shiftKey || modifiers.metaKey || modifiers.ctrlKey) {
       state.toggleNodeSelectionAdditive(card.id)
       const nextState = useGraphStore.getState()
       const remainsSelected = String(nextState.selectedNodeId || '').trim() === card.id
@@ -465,6 +464,7 @@ export function StoryboardCardOverlayLayer2d(props: {
       return
     }
     setActiveCardId(card.id)
+    const mode = state.schema?.behavior?.selectMode || 'single'
     if (mode === 'multi' || mode === 'lasso') {
       state.selectNodesExpanded({ nodeIds: [card.id], activeNodeId: card.id })
       return

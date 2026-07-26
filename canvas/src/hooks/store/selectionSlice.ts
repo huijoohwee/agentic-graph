@@ -150,7 +150,7 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       void 0
     }
   },
-  selectNodesExpanded: (args: { nodeIds: string[]; edgeIds?: string[]; groupIds?: string[]; activeNodeId?: string | null }) => {
+  selectNodesExpanded: (args: { nodeIds: string[]; edgeIds?: string[]; groupIds?: string[]; activeNodeId?: string | null; forceMulti?: boolean }) => {
     const state = get()
     const mode = state.schema.behavior?.selectMode || 'single'
     const rawNodeIds = Array.isArray(args.nodeIds) ? args.nodeIds : []
@@ -173,7 +173,7 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
     }
     const activeRaw = typeof args.activeNodeId === 'string' ? args.activeNodeId : null
     const activeNodeId = activeRaw && nodeIdSet.has(activeRaw) ? activeRaw : nodeIds[nodeIds.length - 1] || null
-    if (mode === 'single') {
+    if (mode === 'single' && args.forceMulti !== true) {
       if (!activeNodeId && groupIds.length > 0) {
         const selectedGroupId = groupIds[groupIds.length - 1]
         set({
