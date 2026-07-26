@@ -239,6 +239,10 @@ export function resolveLocalCollaborationStackConfig({
   const guestRuntimeDevice = env.KG_COLLABORATION_E2E_GUEST_DEVICE || DEFAULT_GUEST_RUNTIME_DEVICE;
   const ownerClientDeviceId = env.KG_COLLABORATION_E2E_OWNER_DEVICE_ID || DEFAULT_OWNER_CLIENT_DEVICE_ID;
   const guestClientDeviceId = env.KG_COLLABORATION_E2E_GUEST_DEVICE_ID || DEFAULT_GUEST_CLIENT_DEVICE_ID;
+  const configuredPersistencePath = String(env.KG_COLLABORATION_E2E_PERSISTENCE_PATH || "").trim();
+  const storagePersistencePath = configuredPersistencePath
+    ? path.resolve(repoRoot, configuredPersistencePath)
+    : path.join(repoRoot, "cloudflare", "workers", "knowgrph-storage", ".wrangler", "state");
   if (!ownerRuntimeDevice || !guestRuntimeDevice || ownerRuntimeDevice === guestRuntimeDevice) {
     throw new Error("local collaboration runtime devices must be distinct non-empty identities");
   }
@@ -259,7 +263,7 @@ export function resolveLocalCollaborationStackConfig({
     guestAppUrl,
     workerUrl,
     normalizedWorkerBaseUrl,
-    storagePersistencePath: path.join(repoRoot, "cloudflare", "workers", "knowgrph-storage", ".wrangler", "state"),
+    storagePersistencePath,
     workspaceId,
     ownerSessionToken,
     guestSessionToken,
@@ -272,7 +276,7 @@ export function resolveLocalCollaborationStackConfig({
         id: "owner-app",
         readyUrl: ownerAppUrl,
         envVar: "KG_COLLABORATION_E2E_OWNER_URL",
-        startupCommand: "npm --prefix canvas run dev -- --port 5175 --strictPort",
+        startupCommand: `npm --prefix canvas run dev -- --port ${readLocalServiceConfig(ownerAppUrl, DEFAULT_OWNER_APP_URL)?.port || 5175} --strictPort`,
         kind: "vite",
         runtimeDevice: ownerRuntimeDevice,
         local: readLocalServiceConfig(ownerAppUrl, DEFAULT_OWNER_APP_URL),
@@ -281,7 +285,7 @@ export function resolveLocalCollaborationStackConfig({
         id: "guest-app",
         readyUrl: guestAppUrl,
         envVar: "KG_COLLABORATION_E2E_GUEST_URL",
-        startupCommand: "npm --prefix canvas run dev -- --port 5174 --strictPort",
+        startupCommand: `npm --prefix canvas run dev -- --port ${readLocalServiceConfig(guestAppUrl, DEFAULT_GUEST_APP_URL)?.port || 5174} --strictPort`,
         kind: "vite",
         runtimeDevice: guestRuntimeDevice,
         local: readLocalServiceConfig(guestAppUrl, DEFAULT_GUEST_APP_URL),
@@ -294,7 +298,7 @@ export function resolveLocalCollaborationStackConfig({
           schema: "knowgrph-storage-relay-capabilities/v1",
         },
         envVar: "KG_COLLABORATION_E2E_WORKER_URL",
-        startupCommand: "npm run storage:worker:dev -- --port 8787",
+        startupCommand: `npm run storage:worker:dev -- --port ${readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL)?.port || 8787}`,
         kind: "worker",
         local: readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL),
       },

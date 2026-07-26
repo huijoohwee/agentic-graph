@@ -299,7 +299,7 @@ Prepare the shared runtime required by repository smoke checks:
 npm run smoke:prepare
 ```
 
-The collaboration readiness gate runs this preparation automatically before its focused and browser smoke checks.
+The collaboration readiness gate runs this preparation automatically before its focused and browser smoke checks. Agentic Canvas OS supplies run-scoped owner, guest, and worker URLs plus `KG_COLLABORATION_E2E_PERSISTENCE_PATH` and `KG_COLLABORATION_E2E_RESULT_PATH`, so concurrent proofs do not reuse canonical ports or repository-local Wrangler state.
 
 ## Local development
 

@@ -45,6 +45,8 @@ test('collaboration browser gate edits through the canonical active editor owner
   assert.match(smoke, /collaboration panel did not acknowledge the bounded open request/)
   assert.match(smoke, /markdownWorkspaceIndexingInFlight/)
   assert.match(smoke, /await waitForActiveDocumentReady\(page\)[\s\S]*await closeFloatingPanelIfOpen\(page\)[\s\S]*await connectButton\.click/)
+  assert.match(smoke, /KG_COLLABORATION_E2E_RESULT_PATH/)
+  assert.match(smoke, /renameSync\(temporaryPath, RESULT_PATH\)/)
   assert.doesNotMatch(smoke, /\.click\(\{[^}]*force:\s*true/)
   assert.doesNotMatch(smoke, /graphState\.setActiveMarkdownDocument/)
 })
@@ -85,6 +87,28 @@ test('local collaboration browser identities remain stable across repeated gate 
   ])
   assert.equal(workerArgs.includes(config.storagePersistencePath), true)
   assert.notEqual(config.ownerClientDeviceId, config.guestClientDeviceId)
+})
+
+test('local collaboration stack accepts run-scoped ports and persistence outside the repository', () => {
+  const config = resolveLocalCollaborationStackConfig({
+    repoRoot: '/tmp/knowgrph-test',
+    env: {
+      KG_COLLABORATION_E2E_OWNER_URL: 'http://127.0.0.1:15174/',
+      KG_COLLABORATION_E2E_GUEST_URL: 'http://127.0.0.1:15175/',
+      KG_COLLABORATION_E2E_WORKER_URL: 'http://127.0.0.1:15176',
+      KG_COLLABORATION_E2E_PERSISTENCE_PATH: '/tmp/agentic-gates/run-1/wrangler',
+    },
+  })
+
+  assert.equal(config.storagePersistencePath, '/tmp/agentic-gates/run-1/wrangler')
+  assert.deepEqual(config.services.map(service => service.local?.port), [15174, 15175, 15176])
+  assert.match(config.services[0].startupCommand, /--port 15174 --strictPort/)
+  assert.match(config.services[1].startupCommand, /--port 15175 --strictPort/)
+  assert.match(config.services[2].startupCommand, /--port 15176$/)
+  assert.deepEqual(buildLocalCollaborationPersistenceArgs(config), [
+    '--persist-to',
+    '/tmp/agentic-gates/run-1/wrangler',
+  ])
 })
 
 test('collaboration smoke preparation builds linked packages before readiness checks', () => {

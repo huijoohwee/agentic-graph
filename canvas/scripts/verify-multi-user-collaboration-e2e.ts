@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
+import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs'
 import { chromium, type Page } from 'playwright'
 import { buildKnowgrphStorageCanvasRoomPath } from '../src/lib/storage/knowgrphStorageSyncContract'
 import { KNOWGRPH_STORAGE_DEVICE_ID_KEY } from '../src/lib/storage/knowgrphStorageDeviceIdentity'
@@ -35,6 +35,7 @@ const MARKER = process.env.KG_COLLABORATION_E2E_MARKER || `SMOKE_REMOTE_APPLY_MA
 const SCREENSHOT_PREFIX = process.env.KG_COLLABORATION_E2E_SCREENSHOT_PREFIX || join(tmpdir(), 'knowgrph-collaboration-e2e')
 const OWNER_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.owner.png`
 const GUEST_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.guest.png`
+const RESULT_PATH = String(process.env.KG_COLLABORATION_E2E_RESULT_PATH || '').trim()
 const MACOS_BROWSER_CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
@@ -66,6 +67,16 @@ type RuntimeIdentityProof = {
   catalogRevision: string
   catalogHydrationStatus: string
   catalogHydrationAttempts: number
+}
+
+function emitProof(proof: Record<string, unknown>): void {
+  if (RESULT_PATH) {
+    mkdirSync(dirname(RESULT_PATH), { recursive: true })
+    const temporaryPath = `${RESULT_PATH}.${process.pid}.tmp`
+    writeFileSync(temporaryPath, `${JSON.stringify(proof)}\n`, { mode: 0o600 })
+    renameSync(temporaryPath, RESULT_PATH)
+  }
+  console.log(JSON.stringify(proof))
 }
 
 function requireClientDeviceId(name: string, value: unknown): string {
@@ -434,8 +445,7 @@ async function main(): Promise<void> {
 
     await ownerPage.screenshot({ path: OWNER_SCREENSHOT_PATH, fullPage: true })
     await guestPage.screenshot({ path: GUEST_SCREENSHOT_PATH, fullPage: true })
-    console.log(
-      JSON.stringify({
+    emitProof({
         ok: true,
         ownerAppUrl: buildWorkspaceUrl(OWNER_APP_URL),
         guestAppUrl: buildWorkspaceUrl(GUEST_APP_URL),
@@ -459,8 +469,7 @@ async function main(): Promise<void> {
         },
         ownerScreenshotPath: OWNER_SCREENSHOT_PATH,
         guestScreenshotPath: GUEST_SCREENSHOT_PATH,
-      }),
-    )
+      })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const suffix = pageErrors.length ? `\nPage errors:\n${pageErrors.join('\n')}` : ''
