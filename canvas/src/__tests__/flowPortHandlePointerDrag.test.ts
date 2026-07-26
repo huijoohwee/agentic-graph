@@ -40,7 +40,7 @@ export async function testFlowPortHandlePointerDragCompletesOnSemanticInputHandl
   try {
     target.disabled = true
     startFlowPortHandlePointerDrag({
-      event: { button: 0, pointerId: 42, preventDefault: () => { defaultPrevented = true } } as React.PointerEvent<HTMLButtonElement>,
+      event: { button: 0, pointerId: 42, clientX: 0, clientY: 0, preventDefault: () => { defaultPrevented = true } } as React.PointerEvent<HTMLButtonElement>,
       sourceNodeId: 'source-node',
       sourcePortKey: 'imageUrl',
     })
@@ -128,7 +128,7 @@ export async function testFlowPortHandleMouseDragCompletesOnSemanticInputHandle(
 
   try {
     startFlowPortHandleMouseDrag({
-      event: { button: 0, preventDefault: () => undefined } as React.MouseEvent<HTMLButtonElement>,
+      event: { button: 0, clientX: 0, clientY: 0, preventDefault: () => undefined } as React.MouseEvent<HTMLButtonElement>,
       sourceNodeId: 'source-node',
     })
     const mouseUp = new dom.window.MouseEvent('mouseup', { clientX: 10, clientY: 20 })
@@ -167,7 +167,7 @@ export async function testFlowPortHandlePointerDragCompletesNearSemanticInputHan
 
   try {
     startFlowPortHandlePointerDrag({
-      event: { button: 0, pointerId: 7, preventDefault: () => undefined } as React.PointerEvent<HTMLButtonElement>,
+      event: { button: 0, pointerId: 7, clientX: 0, clientY: 0, preventDefault: () => undefined } as React.PointerEvent<HTMLButtonElement>,
       sourceNodeId: 'source-node',
     })
     const pointerUp = new dom.window.Event('pointerup')
@@ -203,7 +203,7 @@ export async function testFlowPortHandlePointerDragCancelsWhenReleasedWithoutTar
 
   try {
     startFlowPortHandlePointerDrag({
-      event: { button: 0, pointerId: 9, preventDefault: () => undefined } as React.PointerEvent<HTMLButtonElement>,
+      event: { button: 0, pointerId: 9, clientX: 10, clientY: 20, preventDefault: () => undefined } as React.PointerEvent<HTMLButtonElement>,
       sourceNodeId: 'source-node',
       sourcePortKey: 'imageUrl',
     })
@@ -221,6 +221,75 @@ export async function testFlowPortHandlePointerDragCancelsWhenReleasedWithoutTar
     if (!previewDetails.some(detail => detail.phase === 'cancel' && detail.clientX === 300 && detail.clientY === 400)) {
       throw new Error(`expected preview cancel on missed target release, got ${JSON.stringify(previewDetails)}`)
     }
+  } finally {
+    Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: originalElementFromPoint })
+    dom.window.close()
+    if (previousDocumentDescriptor) Object.defineProperty(globalThis, 'document', previousDocumentDescriptor)
+    else delete (globalThis as { document?: Document }).document
+  }
+}
+
+export async function testFlowPortHandlePointerClickKeepsPendingConnectionWithoutTarget() {
+  const dom = new JSDOM('<!doctype html><html><body><section id="miss"></section></body></html>')
+  const previousDocumentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  Object.defineProperty(globalThis, 'document', { configurable: true, writable: true, value: dom.window.document })
+  const miss = document.getElementById('miss')
+  const originalElementFromPoint = document.elementFromPoint
+  Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => miss })
+
+  let cancelCount = 0
+  const previewDetails: FlowPortHandlePreviewDetail[] = []
+  document.addEventListener(FLOW_PORT_HANDLE_CANCEL_EVENT, () => { cancelCount += 1 })
+  document.addEventListener(FLOW_PORT_HANDLE_PREVIEW_EVENT, event => {
+    previewDetails.push((event as CustomEvent<FlowPortHandlePreviewDetail>).detail)
+  })
+
+  try {
+    startFlowPortHandlePointerDrag({
+      event: { button: 0, pointerId: 10, clientX: 120, clientY: 80, preventDefault: () => undefined } as React.PointerEvent<HTMLButtonElement>,
+      sourceNodeId: 'source-node',
+      sourcePortKey: 'output',
+    })
+    const pointerUp = new dom.window.Event('pointerup')
+    Object.defineProperties(pointerUp, {
+      pointerId: { value: 10 },
+      clientX: { value: 123 },
+      clientY: { value: 83 },
+    })
+    document.dispatchEvent(pointerUp)
+    await new Promise(resolve => setTimeout(resolve, 5))
+    if (cancelCount !== 0) throw new Error(`expected click-sized release to preserve pending connection mode, got ${cancelCount} cancel events`)
+    if (!previewDetails.some(detail => detail.phase === 'cancel' && detail.clientX === 123 && detail.clientY === 83)) {
+      throw new Error(`expected transient preview cleanup without cancelling click-to-connect, got ${JSON.stringify(previewDetails)}`)
+    }
+  } finally {
+    Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: originalElementFromPoint })
+    dom.window.close()
+    if (previousDocumentDescriptor) Object.defineProperty(globalThis, 'document', previousDocumentDescriptor)
+    else delete (globalThis as { document?: Document }).document
+  }
+}
+
+export async function testFlowPortHandleMouseClickKeepsPendingConnectionWithoutTarget() {
+  const dom = new JSDOM('<!doctype html><html><body><section id="miss"></section></body></html>')
+  const previousDocumentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  Object.defineProperty(globalThis, 'document', { configurable: true, writable: true, value: dom.window.document })
+  const miss = document.getElementById('miss')
+  const originalElementFromPoint = document.elementFromPoint
+  Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => miss })
+
+  let cancelCount = 0
+  document.addEventListener(FLOW_PORT_HANDLE_CANCEL_EVENT, () => { cancelCount += 1 })
+
+  try {
+    startFlowPortHandleMouseDrag({
+      event: { button: 0, clientX: 40, clientY: 50, preventDefault: () => undefined } as React.MouseEvent<HTMLButtonElement>,
+      sourceNodeId: 'source-node',
+      sourcePortKey: 'output',
+    })
+    document.dispatchEvent(new dom.window.MouseEvent('mouseup', { clientX: 42, clientY: 54 }))
+    await new Promise(resolve => setTimeout(resolve, 5))
+    if (cancelCount !== 0) throw new Error(`expected mouse click-sized release to preserve pending connection mode, got ${cancelCount} cancel events`)
   } finally {
     Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: originalElementFromPoint })
     dom.window.close()
@@ -254,12 +323,12 @@ export async function testFlowPortHandleMouseFallbackDoesNotStartDuringActivePoi
 
   try {
     const pointerStarted = startFlowPortHandlePointerDrag({
-      event: { button: 0, pointerId: 11, preventDefault: () => undefined } as React.PointerEvent<HTMLButtonElement>,
+      event: { button: 0, pointerId: 11, clientX: 0, clientY: 0, preventDefault: () => undefined } as React.PointerEvent<HTMLButtonElement>,
       sourceNodeId: 'source-node',
       sourcePortKey: 'imageUrl',
     })
     const mouseStarted = startFlowPortHandleMouseDrag({
-      event: { button: 0, preventDefault: () => undefined } as React.MouseEvent<HTMLButtonElement>,
+      event: { button: 0, clientX: 0, clientY: 0, preventDefault: () => undefined } as React.MouseEvent<HTMLButtonElement>,
       sourceNodeId: 'source-node',
       sourcePortKey: 'imageUrl',
     })
