@@ -30,6 +30,26 @@ export type RelaySnapshot = {
   version: string
 }
 
+export class RelaySnapshotCache {
+  private snapshot: RelaySnapshot | null = null
+  private inFlight: Promise<RelaySnapshot> | null = null
+
+  async load(
+    args: Parameters<typeof loadRelaySnapshot>[0],
+    force = false,
+  ): Promise<RelaySnapshot> {
+    if (!force && this.snapshot) return this.snapshot
+    if (this.inFlight) return this.inFlight
+    this.inFlight = loadRelaySnapshot(args).then(snapshot => {
+      this.snapshot = snapshot
+      return snapshot
+    }).finally(() => {
+      this.inFlight = null
+    })
+    return this.inFlight
+  }
+}
+
 type RelayListResponse = {
   ok?: unknown
   apiVersion?: unknown

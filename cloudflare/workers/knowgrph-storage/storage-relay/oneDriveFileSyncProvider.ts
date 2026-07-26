@@ -17,6 +17,10 @@ import {
   StorageRelayError,
   type StorageRelayOperation,
 } from './storageRelaySafety'
+import {
+  normalizeStorageRelayAccessTokenSource,
+  type StorageRelayAccessTokenSource,
+} from './storageRelayAccessToken'
 
 const GRAPH_ORIGIN = 'https://graph.microsoft.com'
 const DRIVE_ITEM_SELECT = 'id,name,size,eTag,file,folder,package,remoteItem,parentReference,deleted'
@@ -201,15 +205,16 @@ const encodeGraphPathName = (name: string): string =>
 
 export class OneDriveFileSyncProvider implements FileSyncProvider {
   readonly providerType = 'one-drive' as const
-  private readonly accessToken: string
+  private readonly accessToken: StorageRelayAccessTokenSource
   private readonly driveId: string
 
-  constructor(args: { accessToken: string; driveId: string }) {
-    this.accessToken = String(args.accessToken || '')
+  constructor(args: { accessToken: string | StorageRelayAccessTokenSource; driveId: string }) {
+    this.accessToken = normalizeStorageRelayAccessTokenSource(args.accessToken)
     this.driveId = assertFileSyncResourceId(args.driveId)
-    if (!this.accessToken) {
-      throw new StorageRelayError({ code: 'provider_not_configured', status: 503 })
-    }
+  }
+
+  private async headers(operation: StorageRelayOperation, includeContentType = false): Promise<Headers> {
+    return graphHeaders(await this.accessToken.read(operation), includeContentType)
   }
 
   async listPage(args: {
@@ -224,7 +229,7 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
     url.searchParams.set('$select', DRIVE_ITEM_SELECT)
     url.searchParams.set('$top', String(Math.max(1, Math.min(200, Math.floor(args.limit)))))
     if (args.cursor) url.searchParams.set('$skiptoken', args.cursor)
-    const response = await args.operation.fetch(url, { headers: graphHeaders(this.accessToken) })
+    const response = await args.operation.fetch(url, { headers: await this.headers(args.operation) })
     const body = await readSuccessfulJson<GraphChildrenResponse>(response, args.operation, [200])
     if (!Array.isArray(body.value)) {
       throw new StorageRelayError({ code: 'invalid_response', status: 502 })
@@ -255,7 +260,7 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
     }
     const response = await args.operation.fetch(
       `${this.itemUrl(metadata.entry.resourceId)}/content`,
-      { headers: graphHeaders(this.accessToken), redirect: 'manual' },
+      { headers: await this.headers(args.operation), redirect: 'manual' },
     )
     if (response.status !== 302) return discardAndThrowStatus(response)
     const downloadUrl = assertPreauthenticatedUrl(response.headers.get('location'))
@@ -289,7 +294,7 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
     }
     const response = await args.operation.fetch(`${this.itemUrl(args.parentResourceId)}/children`, {
       method: 'POST',
-      headers: graphHeaders(this.accessToken, true),
+      headers: await this.headers(args.operation, true),
       body: JSON.stringify({
         name: args.name,
         folder: {},
@@ -332,10 +337,16 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
         return existing
       }
     }
+    if (args.bytes.byteLength === 0) {
+      return this.writeEmptyFile({
+        ...args,
+        currentEtag,
+      })
+    }
     const sessionUrl = args.resourceId
       ? `${this.itemUrl(args.resourceId)}/createUploadSession`
       : `${this.itemUrl(args.parentResourceId)}:/${encodeGraphPathName(args.name)}:/createUploadSession`
-    const sessionHeaders = graphHeaders(this.accessToken, true)
+    const sessionHeaders = await this.headers(args.operation, true)
     if (currentEtag) sessionHeaders.set('if-match', currentEtag)
     const sessionResponse = await args.operation.fetch(sessionUrl, {
       method: 'POST',
@@ -355,20 +366,15 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
     const uploadUrl = assertPreauthenticatedUrl(session.uploadUrl)
     let uploadResponse: Response
     try {
-      uploadResponse = args.bytes.byteLength === 0
-        ? await args.operation.fetch(uploadUrl, {
-            method: 'POST',
-            headers: { 'content-length': '0' },
-          })
-        : await args.operation.fetch(uploadUrl, {
-            method: 'PUT',
-            headers: {
-              'content-length': String(args.bytes.byteLength),
-              'content-range': `bytes 0-${args.bytes.byteLength - 1}/${args.bytes.byteLength}`,
-              'content-type': 'application/octet-stream',
-            },
-            body: args.bytes,
-          })
+      uploadResponse = await args.operation.fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'content-length': String(args.bytes.byteLength),
+          'content-range': `bytes 0-${args.bytes.byteLength - 1}/${args.bytes.byteLength}`,
+          'content-type': 'application/octet-stream',
+        },
+        body: args.bytes,
+      })
     } catch (error) {
       if (!args.operation.signal.aborted) {
         await args.operation.fetch(uploadUrl, { method: 'DELETE' }).catch(() => undefined)
@@ -393,6 +399,32 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
     return uploaded
   }
 
+  private async writeEmptyFile(
+    args: FileSyncWriteRequest & { currentEtag: string | null },
+  ): Promise<FileSyncProviderEntry> {
+    const url = args.resourceId
+      ? new URL(`${this.itemUrl(args.resourceId)}/content`)
+      : new URL(`${this.itemUrl(args.parentResourceId)}:/${encodeGraphPathName(args.name)}:/content`)
+    url.searchParams.set('$select', DRIVE_ITEM_SELECT)
+    const headers = await this.headers(args.operation)
+    headers.set('content-type', args.mimeType)
+    headers.set('content-length', '0')
+    headers.set(args.currentEtag ? 'if-match' : 'if-none-match', args.currentEtag || '*')
+    const response = await args.operation.fetch(url, {
+      method: 'PUT',
+      headers,
+      body: args.bytes,
+    })
+    const uploaded = mapGraphEntry(
+      await readSuccessfulJson<GraphDriveItem>(response, args.operation, [200, 201]),
+    )
+    if (uploaded.kind !== 'file' || uploaded.size !== 0) {
+      throw new StorageRelayError({ code: 'invalid_response', status: 502 })
+    }
+    assertMatchingFileSyncHash(args.expectedHash, uploaded.hash)
+    return uploaded
+  }
+
   async trash(args: {
     resourceId: string
     expectedVersion: string
@@ -402,7 +434,7 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
     if (metadata.entry.versionTag !== args.expectedVersion) {
       throw new StorageRelayError({ code: 'conflict', status: 409 })
     }
-    const headers = graphHeaders(this.accessToken)
+    const headers = await this.headers(args.operation)
     headers.set('if-match', metadata.etag)
     const response = await args.operation.fetch(this.itemUrl(args.resourceId), {
       method: 'DELETE',
@@ -422,7 +454,7 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
   ): Promise<{ entry: FileSyncProviderEntry; etag: string }> {
     const url = new URL(this.itemUrl(resourceId))
     url.searchParams.set('$select', DRIVE_ITEM_SELECT)
-    const response = await operation.fetch(url, { headers: graphHeaders(this.accessToken) })
+    const response = await operation.fetch(url, { headers: await this.headers(operation) })
     const body = await readSuccessfulJson<GraphDriveItem>(response, operation, [200])
     const { etag } = readGraphVersion(body.eTag)
     return { entry: mapGraphEntry(body), etag }
@@ -435,7 +467,7 @@ export class OneDriveFileSyncProvider implements FileSyncProvider {
   ): Promise<FileSyncProviderEntry | null> {
     const url = new URL(`${this.itemUrl(parentResourceId)}:/${encodeGraphPathName(name)}`)
     url.searchParams.set('$select', DRIVE_ITEM_SELECT)
-    const response = await operation.fetch(url, { headers: graphHeaders(this.accessToken) })
+    const response = await operation.fetch(url, { headers: await this.headers(operation) })
     if (response.status === 404) {
       await discardStorageRelayResponse(response)
       return null

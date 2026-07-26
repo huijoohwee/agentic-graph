@@ -70,6 +70,7 @@ const writeCommit = (
   author: identity,
   committer: identity,
   documents,
+  deletions: [],
   signal: new AbortController().signal,
 })
 
@@ -94,6 +95,7 @@ export async function testKnowgrphGitDocumentAuthorityWritesCanonicalSnapshotThr
         return Response.json({
           ok: true,
           apiVersion: '2026-05-04',
+          operation: 'upsert',
           workspaceId: WORKSPACE_ID,
           documentKey: body.documentKey,
           repositoryTarget: body.repositoryTarget,

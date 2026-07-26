@@ -9,6 +9,7 @@ import {
   type KnowgrphGitDocumentKind,
   type KnowgrphGitDocumentWriteAuthority,
   type KnowgrphGitResolvedDocument,
+  type KnowgrphGitResolvedDocumentDeletion,
 } from './git/knowgrphGitContracts'
 import { normalizeKnowgrphGitPath } from './git/knowgrphGitRepository'
 import {
@@ -132,6 +133,7 @@ const assertCurrentSnapshot = (
   scope: string,
   repositoryId: DocumentRepositoryTarget,
   documents: readonly KnowgrphGitResolvedDocument[],
+  deletions: readonly KnowgrphGitResolvedDocumentDeletion[],
 ): void => {
   const current = new Map(
     collectScopedDocuments(scope).map(document => [document.path, document]),
@@ -162,6 +164,25 @@ const assertCurrentSnapshot = (
     }
     attestedPaths.add(document.canonicalPath)
   }
+  for (const deletion of deletions) {
+    const authority = resolveScopedDocument({
+      scope,
+      repositoryId,
+      path: deletion.canonicalPath,
+      kind: deletion.kind,
+    })
+    if (
+      authority.ok === false
+      || authority.document.canonicalPath !== deletion.canonicalPath
+      || authority.document.repositoryPath !== deletion.repositoryPath
+      || authority.document.repositoryId !== deletion.repositoryId
+      || current.has(deletion.canonicalPath)
+      || attestedPaths.has(deletion.canonicalPath)
+    ) {
+      throw new Error('Git commit authority snapshot changed before persistence.')
+    }
+    attestedPaths.add(deletion.canonicalPath)
+  }
 }
 
 export const createSaveBridgeDocumentAuthority = (options: {
@@ -191,13 +212,14 @@ export const createSaveBridgeDocumentAuthority = (options: {
       ) {
         throw new Error('Git commit authority binding does not match.')
       }
-      assertCurrentSnapshot(scope, options.repositoryId, args.documents)
+      assertCurrentSnapshot(scope, options.repositoryId, args.documents, args.deletions)
       const saved = await saveKnowgrphGitDocumentsThroughBridge({
         workspaceId: options.workspaceId,
         remoteId: options.remoteId,
         baseRequestUrl: options.baseRequestUrl,
         sessionToken: options.sessionToken,
         documents: args.documents,
+        deletions: args.deletions,
         signal: args.signal,
         fetcher: options.fetcher,
       })

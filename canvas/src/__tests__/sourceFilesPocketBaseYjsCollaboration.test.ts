@@ -289,6 +289,7 @@ export async function testCollaborationSaveBridgeCommitsFormattedJsonThroughGitH
     })
     const body: KnowgrphCollaborationSaveRequest = {
       apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      operation: 'upsert',
       workspaceId: 'kgws:test',
       documentKey: '/docs/shared.json',
       documentKind: 'json',
@@ -331,6 +332,7 @@ export async function testCollaborationSaveBridgeRejectsConcurrentJsonWithoutCrd
   const response = await readStorageWorker().fetch(
     collaborationSaveRequest({
       apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      operation: 'upsert',
       workspaceId: 'kgws:test',
       documentKey: '/docs/shared.json',
       documentKind: 'json',
@@ -356,6 +358,7 @@ export async function testCollaborationSaveBridgeRejectsRepositoryTargetMismatch
   const response = await readStorageWorker().fetch(
     collaborationSaveRequest({
       apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      operation: 'upsert',
       workspaceId: 'kgws:test',
       documentKey: '/docs/team-note.md',
       documentKind: 'markdown',
@@ -397,6 +400,7 @@ export async function testCollaborationSaveBridgeIgnoresStalePocketBaseAwareness
     const response = await readStorageWorker().fetch(
       collaborationSaveRequest({
         apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        operation: 'upsert',
         workspaceId: 'kgws:test',
         documentKey: '/docs/shared.json',
         documentKind: 'json',
@@ -458,6 +462,7 @@ export async function testCollaborationSaveBridgePrefersRequestYjsStateOverStale
     const response = await readStorageWorker().fetch(
       collaborationSaveRequest({
         apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        operation: 'upsert',
         workspaceId: 'kgws:test',
         documentKey: '/docs/shared.json',
         documentKind: 'json',

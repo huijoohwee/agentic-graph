@@ -217,6 +217,41 @@ test(
   testKnowgrphGitRemoteSaveRejectsMissingDeletion,
 )
 
+export async function testKnowgrphGitCommitReportsVerifiedDocumentDeletion() {
+  const parent = await buildGitRemoteFixture('repo', 'alpha')
+  const current = await buildGitRemoteFixtureAfter({
+    parent,
+    names: ['alpha', 'beta'],
+  })
+  const fixture = {
+    ...current,
+    objects: Array.from(new Map(
+      [...parent.objects, ...current.objects].map(object => [object.objectId, object]),
+    ).values()),
+  }
+  const writes: Array<Parameters<KnowgrphGitDocumentWriteAuthority['writeCommit']>[0]> = []
+  const cache = new MemoryGitCache()
+  const engine = createKnowgrphGitEngine({
+    cache,
+    authority: createGitTestAuthority(writes),
+    relay: gitTestRelay(async () => copyGitTestValue(fixture)),
+    deviceId: 'device',
+  })
+  await engine.clone(repositoryRequest, 'online')
+  const result = await engine.commit(gitTestCommitRequest(['alpha']), 'online')
+  assert.equal(result.status, 'complete')
+  assert.deepEqual(writes[0]?.deletions, [{
+    kind: 'markdown',
+    canonicalPath: 'knowgrph/docs/beta.md',
+    repositoryPath: 'docs/beta.md',
+    repositoryId: 'repo',
+  }])
+}
+test(
+  'commit authority receives deletions derived from the verified parent tree',
+  testKnowgrphGitCommitReportsVerifiedDocumentDeletion,
+)
+
 class CrashOnceGitCache extends MemoryGitCache {
   private crashNextAcknowledgement = false
   private crashFailurePatch = false
@@ -354,4 +389,40 @@ export async function testKnowgrphGitAuthorityTransportClassification() {
 test(
   'typed Save Bridge transport failures map to retry and authentication outcomes',
   testKnowgrphGitAuthorityTransportClassification,
+)
+
+export async function testKnowgrphGitRetainedFailureRequeuesOnLaterDrain() {
+  let failing = true
+  let writes = 0
+  const cache = new MemoryGitCache()
+  const engine = createKnowgrphGitEngine({
+    cache,
+    authority: {
+      ...createGitTestAuthority(),
+      async writeCommit(args) {
+        writes += 1
+        if (failing) throw new KnowgrphGitAuthorityError('retryable')
+        return { kind: 'local-attestation', commitObjectId: args.expectedCommitObjectId }
+      },
+    },
+    relay: gitTestRelay(async () => ({
+      objects: [],
+      refs: [],
+      headRefName: 'HEAD',
+      transferBytes: 0,
+    })),
+    deviceId: 'device',
+    sleep: async () => undefined,
+  })
+  assert.equal((await engine.commit(gitTestCommitRequest(['alpha']), 'online')).status, 'retry-exhausted')
+  assert.equal(writes, 3)
+  failing = false
+  const resumed = await engine.drain('workspace')
+  assert.equal(resumed[0]?.status, 'complete')
+  assert.equal(writes, 4)
+  assert.equal(cache.outbox.size, 0)
+}
+test(
+  'retained Git failure is requeued only by a later drain and can recover',
+  testKnowgrphGitRetainedFailureRequeuesOnLaterDrain,
 )

@@ -163,7 +163,6 @@ export const preflightKnowgrphGitDocuments = async (
   request: KnowgrphGitCommitRequest,
   dependencies: KnowgrphGitEngineDependencies,
 ): Promise<{ documents: KnowgrphGitResolvedDocument[]; repositoryPathScope: string }> => {
-  if (request.documents.length === 0) throw new GitOperationIntegrityError('Empty repositories are unsupported')
   const rawPaths = new Set<string>()
   const repositoryPaths = new Set<string>()
   const canonicalPaths = new Set<string>()
@@ -208,6 +207,25 @@ export const preflightKnowgrphGitDocuments = async (
       canonicalPath,
       repositoryId: authority.document.repositoryId,
     })
+  }
+  if (resolved.length === 0) {
+    const path = `${normalizeKnowgrphGitPath(request.canonicalPathScope)}/__knowgrph_git_scope__.md`
+    const authority = await dependencies.authority.resolveDocument({ path, kind: 'markdown' })
+    if (authority.ok === false || authority.document.repositoryId !== request.repositoryId) {
+      throw new UnsupportedGitPathError(path)
+    }
+    const sentinel: KnowgrphGitResolvedDocument = {
+      path,
+      kind: 'markdown',
+      text: '',
+      canonicalPath: authority.document.canonicalPath,
+      repositoryPath: authority.document.repositoryPath,
+      repositoryId: authority.document.repositoryId,
+    }
+    return {
+      documents: [],
+      repositoryPathScope: deriveKnowgrphGitRepositoryPathScope(request.canonicalPathScope, [sentinel]),
+    }
   }
   return {
     documents: resolved,

@@ -54,6 +54,13 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.equal(config.guestAppUrl, 'http://127.0.0.1:5174/')
   assert.notEqual(config.ownerAppUrl, 'http://127.0.0.1:5173/')
   assert.notEqual(config.ownerAppUrl, config.guestAppUrl)
+  const storageWorker = config.services.find(service => service.id === 'storage-worker')
+  assert.equal(storageWorker?.readyUrl, 'http://127.0.0.1:8787/api/storage/relay/capabilities')
+  assert.equal(
+    storageWorker?.readyOptions?.headers?.authorization,
+    `Bearer ${config.ownerSessionToken}`,
+  )
+  assert.equal(storageWorker?.readyOptions?.schema, 'knowgrph-storage-relay-capabilities/v1')
   assert.equal(config.ownerClientDeviceId, 'dev:collaboration-owner-local')
   assert.equal(config.guestClientDeviceId, 'dev:collaboration-guest-local')
   assert.equal(browserEnv.KG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)

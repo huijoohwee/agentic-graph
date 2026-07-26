@@ -8,6 +8,7 @@ import { buildKnowgrphStorageAbsoluteUrl } from './knowgrphStorageChatClient'
 import {
   KnowgrphGitAuthorityError,
   type KnowgrphGitResolvedDocument,
+  type KnowgrphGitResolvedDocumentDeletion,
 } from './git'
 
 type SaveBridgeFetch = (
@@ -89,6 +90,7 @@ export const saveKnowgrphGitDocumentsThroughBridge = async (args: {
   baseRequestUrl: string
   sessionToken: string
   documents: readonly KnowgrphGitResolvedDocument[]
+  deletions: readonly KnowgrphGitResolvedDocumentDeletion[]
   signal: AbortSignal
   fetcher: SaveBridgeFetch
 }): Promise<{ commitObjectId: string | null }> => {
@@ -100,7 +102,12 @@ export const saveKnowgrphGitDocumentsThroughBridge = async (args: {
   const sessionToken = normalizeSessionToken(args.sessionToken)
   const remoteId = normalizeRemoteId(args.remoteId)
   let commitObjectId: string | null = null
-  for (const document of args.documents) {
+  const changes = [
+    ...args.deletions.map(document => ({ operation: 'delete' as const, document })),
+    ...args.documents.map(document => ({ operation: 'upsert' as const, document })),
+  ]
+  for (const change of changes) {
+    const document = change.document
     if (args.signal.aborted) throw new Error('Git save bridge was aborted.')
     const repositoryTarget = document.repositoryId
     if (repositoryTarget !== 'knowgrph-docs' && repositoryTarget !== 'workspace-docs') {
@@ -108,12 +115,13 @@ export const saveKnowgrphGitDocumentsThroughBridge = async (args: {
     }
     const request: KnowgrphCollaborationSaveRequest = {
       apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      operation: change.operation,
       workspaceId: args.workspaceId,
       documentKey: document.canonicalPath,
       documentKind: document.kind,
       repositoryTarget,
       gitRemoteId: remoteId,
-      serializedText: document.text,
+      serializedText: 'text' in document ? document.text : '',
       yjsStateBase64: '',
       activePeerCount: 1,
       pocketBaseRoomId: null,
@@ -137,6 +145,7 @@ export const saveKnowgrphGitDocumentsThroughBridge = async (args: {
     if (
       !response.ok
       || body.ok !== true
+      || body.operation !== change.operation
       || body.workspaceId !== args.workspaceId
       || body.documentKey !== document.canonicalPath
       || body.repositoryTarget !== document.repositoryId

@@ -36,6 +36,7 @@ export async function testKnowgrphGitSaveBridgeWritesEveryCanonicalDocument(): P
     baseRequestUrl: 'http://127.0.0.1:8787',
     sessionToken: 'browser-session',
     documents,
+    deletions: [],
     signal: new AbortController().signal,
     fetcher: async (input, init) => {
       const request = new Request(input, init)
@@ -45,6 +46,7 @@ export async function testKnowgrphGitSaveBridgeWritesEveryCanonicalDocument(): P
       return Response.json({
         ok: true,
         apiVersion: '2026-05-04',
+        operation: 'upsert',
         workspaceId: 'kgws:canonical-docs',
         documentKey: body.documentKey,
         repositoryTarget: body.repositoryTarget,
@@ -76,10 +78,12 @@ export async function testKnowgrphGitSaveBridgeFailsClosedOnMismatchedAuthority(
       baseRequestUrl: 'http://127.0.0.1:8787',
       sessionToken: 'browser-session',
       documents: [documents[0]!],
+      deletions: [],
       signal: new AbortController().signal,
       fetcher: async () => Response.json({
         ok: true,
         apiVersion: '2026-05-04',
+        operation: 'upsert',
         workspaceId: 'kgws:canonical-docs',
         remoteId: 'origin',
         documentKey: 'agentic-canvas-os/docs/forbidden.md',
@@ -109,6 +113,7 @@ export async function testKnowgrphGitSaveBridgeClassifiesTransportFailures(): Pr
         baseRequestUrl: 'http://127.0.0.1:8787',
         sessionToken: 'browser-session',
         documents: [documents[0]!],
+        deletions: [],
         signal: new AbortController().signal,
         fetcher: async () => new Response(null, { status: testCase.status }),
       }),

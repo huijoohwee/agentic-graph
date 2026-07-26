@@ -25,6 +25,7 @@ import {
 } from './knowgrphGitObjectCodec'
 import {
   isForbiddenKnowgrphGitPath,
+  isSupportedKnowgrphGitDocumentPath,
   joinKnowgrphGitPath as joinPath,
   normalizeKnowgrphGitPath,
 } from './knowgrphGitPath'
@@ -422,6 +423,25 @@ const flattenGitTree = (
   visiting.delete(tree.objectId)
 }
 
+const pathWithinRepositoryScope = (path: string, scope: string): boolean =>
+  !scope || path === scope || path.startsWith(`${scope}/`)
+
+export const listKnowgrphGitCommitDocumentPaths = (args: {
+  commitObjectId: string
+  objects: KnowgrphGitObjectRecord[]
+  repositoryPathScope: string
+}): string[] => {
+  const objects = new Map(args.objects.map(record => [record.objectId, record]))
+  const commit = readRequiredObject(objects, args.commitObjectId)
+  if (commit.objectType !== 'commit') throw new Error('Parent Git object is not a commit')
+  const files = new Map<string, { objectId: string; mode: '100644' | '100755' }>()
+  flattenGitTree(objects, parseGitCommitHeader(readObjectBody(commit)).treeObjectId, '', files, new Set())
+  return [...files.keys()]
+    .filter(path => pathWithinRepositoryScope(path, args.repositoryPathScope))
+    .filter(isSupportedKnowgrphGitDocumentPath)
+    .sort()
+}
+
 const addTreeFile = (
   root: TreeNode,
   repositoryPath: string,
@@ -457,7 +477,6 @@ export const buildKnowgrphGitCommitObjects = async (args: {
   treeObjectId: string
   commitObjectId: string
 }> => {
-  if (args.documents.length === 0) throw new Error('Empty Git repositories are not supported')
   const root: TreeNode = { blobs: new Map(), directories: new Map() }
   const objects = new Map<string, KnowgrphGitObjectRecord>()
   const files = new Map<string, { objectId: string; mode: '100644' | '100755' }>()
@@ -472,7 +491,9 @@ export const buildKnowgrphGitCommitObjects = async (args: {
     flattenGitTree(parentObjects, parentHeader.treeObjectId, '', files, new Set())
     const scope = args.repositoryPathScope
     for (const path of files.keys()) {
-      if (!scope || path === scope || path.startsWith(`${scope}/`)) files.delete(path)
+      if (pathWithinRepositoryScope(path, scope) && isSupportedKnowgrphGitDocumentPath(path)) {
+        files.delete(path)
+      }
     }
   }
   for (const document of args.documents) {

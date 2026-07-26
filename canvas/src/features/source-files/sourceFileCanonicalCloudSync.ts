@@ -156,6 +156,7 @@ const saveCanonicalSnapshotToGitHub = async (args: {
 }): Promise<KnowgrphCollaborationSaveResponse> => {
   const request: KnowgrphCollaborationSaveRequest = {
     apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+    operation: 'upsert',
     workspaceId: args.workspaceId,
     documentKey: args.target.workspacePath,
     documentKind: args.target.documentKind,

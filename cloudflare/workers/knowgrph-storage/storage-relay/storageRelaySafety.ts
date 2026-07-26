@@ -70,6 +70,10 @@ export const assertDevStorageRelayRequest = (
   if (env.KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED !== 'true') {
     throw new StorageRelayError({ code: 'membership_forbidden', status: 403 })
   }
+  assertLoopbackStorageRelayRequest(request)
+}
+
+export const assertLoopbackStorageRelayRequest = (request: Request): void => {
   let requestUrl: URL
   try {
     requestUrl = new URL(request.url)
