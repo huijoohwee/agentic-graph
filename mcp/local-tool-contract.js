@@ -6,6 +6,7 @@ import { buildKnowgrphMcpNoauthSecuritySchemes } from "../canvas/src/features/ag
 import { KNOWGRPH_MEMORY_LAYER_MCP_TOOL_NAMES, MEMORY_ADD_INPUT_SCHEMA, MEMORY_ADD_OUTPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_INPUT_SCHEMA, PROCEDURAL_MEMORY_EXTRACT_OUTPUT_SCHEMA, PROMPT_ASSEMBLER_INPUT_SCHEMA, PROMPT_ASSEMBLER_OUTPUT_SCHEMA, USER_MODEL_MATERIALIZE_INPUT_SCHEMA, USER_MODEL_MATERIALIZE_OUTPUT_SCHEMA } from "../canvas/src/features/memory/aiAgentsMemoryLayerContract.mjs";
 import { AGENTIC_CANVAS_OS_DOCS_TOOL_DEFINITION } from "./agentic-canvas-os-docs-contract.mjs";
 import { buildPersistentMemoryToolDefinitions } from "./persistent-memory-tool-contract.js";
+import { REPOSITORY_PACK_TOOL_DEFINITION } from "./repository-pack-contract.js";
 import { buildExternalToolGatewayDefinitions } from "./external-tool-gateway-contract.js";
 import { buildProbeTreeLocalToolDefinitions } from "./probe-tree-tool-contract.js";
 import { buildSmeRiskCopilotLocalToolDefinitions } from "./sme-risk-copilot-tool-contract.js";
@@ -425,6 +426,10 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.agenticCanvasOsDocsInvoke,
     }, READ_ONLY_TOOL_ANNOTATIONS),
     buildSkillEvolutionToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
+    withLocalMcpDescriptorDefaults({
+      ...REPOSITORY_PACK_TOOL_DEFINITION,
+      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.repositoryPack,
+    }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
     ...buildLocalRunToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
     withLocalMcpDescriptorDefaults({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.exportPublish,

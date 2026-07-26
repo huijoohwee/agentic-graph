@@ -6,7 +6,7 @@
 
 | Layer/Subsystem       | Path/Module                                   | Component                   | Interface/Method            | Responsibility (S-V-O)                                                                        | Dependencies                          | Contracts                                         | LOC    |
 |-----------------------|-----------------------------------------------|-----------------------------|-----------------------------|-----------------------------------------------------------------------------------------------|---------------------------------------|---------------------------------------------------|--------|
-| Settings Extraction   | `canvas/src/cli/extract-settings-schema.ts`   | Settings Flow Builder       | `deriveFromCode`, `buildFromMarkdown` | Script → derives setting responsibilities and module traces → writes Settings flow artifacts | `canvas/src/features/settings/registry.ts`, `SettingsFallbackDetails.ts` | Outputs `knowgrph-codebase-responsibility-flow.md`, `settings-flow.json`, `settings-flow.schema.json` | ~300 |
+| Settings Extraction   | `canvas/src/cli/extract-settings-schema.ts`   | Settings Flow Builder       | generate, `--check` | Script → derives setting responsibilities and source provenance → renders or verifies three Settings flow projections | `canvas/src/features/settings/registry.ts`, code-owned metadata and source anchors | Outputs `docs/knowgrph-codebase-responsibility-flow.md`, `canvas/public/settings-flow.json`, `canvas/src/features/settings/settings-flow.schema.json` | <600 |
 | Settings Registry     | `canvas/src/features/settings/registry.ts`    | Settings Registry           | `settingsRegistry`, `loadFlowDetails` | Registry → enumerates all setting keys → provides flow metadata to Settings UI               | `registry-ui*`, `registry-three`, `registry-presets` | Single settings list used for docs, UI, and JSON-LD export | ~40 |
 | Settings Store        | `canvas/src/hooks/useGraphStore.ts`           | Graph Store (Zustand)       | `set*` setters              | Store → owns runtime setting state → persists when needed                                    | Zustand, localStorage helpers         | Stable setting setter APIs consumed by registry and UI | ~800+ |
 | Settings UI           | `canvas/src/features/panels/views/SettingsView.tsx` | MainPanel Settings View  | `SettingsView`, `useSettingsView` | UI → renders key/type/value rows → batches updates via Apply/Reset                           | Tooltip builders, registry, flow schema | Hover tooltips + click-to-expand modules/classes/functions | ~300 |
@@ -20,59 +20,68 @@
 
 **Command**: `npm run build:settings`
 
-**Source Document**: `knowgrph-codebase-responsibility-flow.md` at repository root (build script bootstraps/rewrites it from code-derived defaults; markdown rows can override inferred fields)
+**Authoritative inputs**: the 593 unique keys in `settingsRegistry` plus code-owned responsibility
+metadata and source anchors. The generated Markdown and JSON files are outputs only and are never
+parsed as generation inputs.
+
+**Generated outputs**:
+
+- `docs/knowgrph-codebase-responsibility-flow.md`
+- `canvas/public/settings-flow.json`
+- `canvas/src/features/settings/settings-flow.schema.json`
 
 **Processing Flow**:
 
-| Stage              | Input                          | Output                         | Responsibility                                              | Performance Consideration                    |
-|--------------------|--------------------------------|--------------------------------|-------------------------------------------------------------|----------------------------------------------|
-| Document Reading   | Markdown file path             | Markdown text                  | Read settings flow table from responsibility doc (optional) | O(n) file read, typically <100 KB            |
-| Code Derivation    | Settings registry + store code | Inferred flow rows             | Derive areas/modules/functions from runtime settings code   | O(files) scan over settings + store slices   |
-| Merge              | Markdown rows + inferred rows  | Final flow rows                | Prefer non-placeholder markdown overrides over inferred rows | O(settings) merge                             |
-| File Writing       | Final flow rows                | Disk files                     | Write flow doc + JSON artifacts used by Settings UI         | O(1) JSON serialization + disk I/O           |
+| Stage | Input | Output | Responsibility | Performance Consideration |
+|---|---|---|---|---|
+| Code Derivation | Settings registry + code-owned metadata | Normalized flow rows | Derive areas, responsibilities, modules, functions, and exact source anchors | Bounded deterministic scan of `canvas/src/` |
+| Validation | Normalized rows + source files | Validated row set | Reject duplicate keys, empty ownership fields, missing modules, and invalid line anchors | O(settings + referenced files) |
+| Rendering | Validated rows | Markdown + two JSON byte strings | Render every projection from the same ordered row set | O(settings) serialization |
+| Generate | Rendered bytes | Three disk files | Write all projections together | Three bounded file writes |
+| Check | Rendered bytes + committed files | Pass/fail status | Compare all projections without writing | Three bounded file reads; hashes remain unchanged |
 
 **Performance Metrics** (macOS dev machine):
 
 | Metric                  | Typical Value | Notes                                                  |
 |-------------------------|---------------|--------------------------------------------------------|
-| Total Execution Time    | 0.4-0.7s      | Most time spent in Node/TSX startup, not parsing      |
-| Markdown Parse Time     | <50ms         | Regex-based table extraction                           |
-| Schema Generation Time  | <20ms         | JSON object construction                               |
-| File Write Time         | <10ms         | Two small JSON files to disk                           |
+| Total Execution Time    | ≤10s reference ceiling | Linked-package preparation plus bounded local source scan and Node/TSX startup |
+| Row Derivation Time     | Bounded       | One deterministic pass over declared source scope       |
+| Projection Render Time  | Bounded       | One ordered row set renders all three projections       |
+| Check Write Count       | 0             | `--check` is non-mutating                               |
 
 **Configuration Schema**:
 
 ```yaml
-buildSettings.sourceDoc:
+buildSettings.authoritativeInputs:
   scope: build_global
-  type: string (file path)
-  mutability: deployment_configurable
-  validation: must exist as markdown file at repo root
-  impact: source of truth for settings schema
+  type: settings registry plus code-owned metadata
+  mutability: source_owned
+  validation: unique keys and valid ownership provenance
+  impact: single source of truth for all responsibility-flow projections
 
-buildSettings.outputDir:
+buildSettings.outputs:
   scope: build_global
-  type: string (directory path)
-  mutability: deployment_configurable
-  validation: must be writable directory
-  impact: location for generated settings schema files
+  type: fixed path list
+  mutability: source_owned
+  validation: exactly the three declared generated outputs
+  impact: committed Markdown and Settings UI JSON projections
 
-buildSettings.fallbackBehavior:
+buildSettings.mode:
   scope: build_global
-  type: string (enum: "warn" | "error" | "defaults")
-  mutability: deployment_configurable
-  validation: valid fallback strategy
-  impact: behavior when source doc missing (current: "defaults" with stdout warning)
+  type: string (enum: "generate" | "check")
+  mutability: invocation_configurable
+  validation: check mode performs no writes
+  impact: generate refreshes all outputs; check fails on any stale output
 ```
 
 **Design Compliance**:
 
-| Context               | Intent                        | Directive                                                                                   | Module/Component          | Function/Method      | Input                     | Output                | Decision Logic                          |
-|-----------------------|-------------------------------|---------------------------------------------------------------------------------------------|---------------------------|----------------------|---------------------------|-----------------------|-----------------------------------------|
-| Source Doc Detection  | Check file existence          | - [ ] Check for markdown file; fallback to defaults if missing; forbid silent failure      | Settings builder          | `loadSourceDoc`      | file path                 | markdown text or null | fs.existsSync + conditional fs.readFileSync|
-| Table Extraction      | Parse settings table          | - [ ] Extract table rows via regex; skip header; forbid partial table parsing               | Settings builder          | `extractTable`       | markdown text             | table rows array      | regex match + line filtering            |
-| Setting Parsing       | Build setting descriptors     | - [ ] Parse each row into structured object; validate fields; forbid malformed rows         | Settings builder          | `parseSettingRow`    | table row string          | setting object        | column split + type inference           |
-| Schema Generation     | Create JSON Schema            | - [ ] Build schema with types, bounds, descriptions; forbid missing required fields        | Settings builder          | `generateSchema`     | setting objects           | JSON Schema object    | schema template + setting iteration     |
+| Context | Intent | Directive | Module/Component | Interface | Input | Output | Decision Logic |
+|---|---|---|---|---|---|---|---|
+| Source Derivation | Build canonical rows | - [ ] Read registry and code metadata; forbid generated-output input | Settings builder | derive | authoritative source | normalized rows | unique registry key per row |
+| Provenance Validation | Guarantee traceability | - [ ] Require non-empty ownership and valid `file:line`; forbid dangling anchors | Settings builder | validate | normalized rows + source | validated rows | fail before render/write |
+| Projection Rendering | Keep outputs in lockstep | - [ ] Render all three outputs from one ordered row set; forbid hand-merged output | Settings builder | render | validated rows | three byte strings | stable key/path ordering |
+| Stale Check | Detect drift without healing it | - [ ] Compare in memory and exit non-zero; forbid writes in `--check` | Settings builder | `--check` | rendered + committed bytes | pass/fail | exact byte comparison |
 
 ---
 
@@ -329,101 +338,78 @@ graphHoverPreview.showEdgeProperties:
 
 ## Settings Extraction Flow
 
-### Markdown Source → JSON Schema Pipeline
+### Source Owners → Generated Projections Pipeline
 
-**Source Document Structure**:
+The registry key set and code-owned metadata form the only generation input. The builder produces
+one normalized row per unique setting and renders the Markdown and JSON projections from that
+same in-memory row set.
 
-```markdown
-| Setting Name              | Type    | Default | Bounds        | Description                          |
-|---------------------------|---------|---------|---------------|--------------------------------------|
-| themeMode                 | string  | "light" | light/dark/system | Global color theme                 |
-| selectionFlashDurationMs  | number  | 800     | 100-2000      | Flash duration in milliseconds       |
-| selectionFlashOpacity     | number  | 0.18    | 0.0-1.0       | Flash overlay opacity                |
-| graphHoverPreview.showNodeId | boolean | false | true/false  | Show node ID in tooltip              |
+**Normalized responsibility row**:
+
+```text
+Area | Responsibility | Modules | Classes/Objects | Functions/Methods |
+Key | Imports | Notes | Line Range
 ```
 
-**Extraction Logic**:
+**Projection contract**:
 
-| Column          | Parsing Rule                                      | Schema Mapping                           |
-|-----------------|---------------------------------------------------|------------------------------------------|
-| Setting Name    | Extract as `name`; support dot notation for nested| `properties[name]` or nested object      |
-| Type            | Map to JSON Schema type (`string`, `number`, `boolean`, `object`, `array`) | `type` field |
-| Default         | Parse as literal value; infer type if ambiguous   | `default` field                          |
-| Bounds          | Parse range (X-Y), enum (A/B/C), or constraint    | `minimum`, `maximum`, `enum` fields      |
-| Description     | Extract as documentation string                   | `description` field                      |
-
-**Generated Schema Example**:
-
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "properties": {
-    "themeMode": {
-      "type": "string",
-      "enum": ["light", "dark", "system"],
-      "default": "light",
-      "description": "Global color theme"
-    },
-    "selectionFlashDurationMs": {
-      "type": "number",
-      "minimum": 100,
-      "maximum": 2000,
-      "default": 800,
-      "description": "Flash duration in milliseconds"
-    }
-  }
-}
-```
+| Projection | Consumer | Contract |
+|---|---|---|
+| `docs/knowgrph-codebase-responsibility-flow.md` | Maintainers, reviewers, agents | Deterministic Markdown table with one row per unique key |
+| `canvas/public/settings-flow.json` | Public Settings UI route | Deterministic JSON serialization of the normalized rows |
+| `canvas/src/features/settings/settings-flow.schema.json` | Source-owned Settings UI import | Byte-equivalent JSON data to the public projection |
 
 **Design Compliance**:
 
-| Context               | Intent                        | Directive                                                                                   | Module/Component          | Function/Method      | Input                     | Output                | Decision Logic                          |
-|-----------------------|-------------------------------|---------------------------------------------------------------------------------------------|---------------------------|----------------------|---------------------------|-----------------------|-----------------------------------------|
-| Type Inference        | Derive JSON Schema type       | - [ ] Infer from default value or explicit type column; forbid ambiguous types              | Settings builder          | `inferType`          | setting descriptor        | schema type string    | default value type or explicit column   |
-| Bounds Parsing        | Extract constraints           | - [ ] Parse range/enum syntax; apply to schema; forbid unparseable bounds                  | Settings builder          | `parseBounds`        | bounds string             | constraint object     | regex match + conditional schema fields |
-| Nested Property Handling | Support dot notation       | - [ ] Split on `.`; create nested objects; forbid flat keys for nested settings            | Settings builder          | `buildNestedSchema`  | property path             | nested schema object  | path.split('.').reduce nesting          |
+| Context | Intent | Directive | Module/Component | Input | Output | Decision Logic |
+|---|---|---|---|---|---|---|
+| Unique Keys | Preserve registry cardinality | - [ ] Emit exactly 593 unique rows at the current baseline; forbid duplicate or missing keys | Settings builder | registry entries | normalized rows | reject duplicate keys before rendering |
+| Ownership | Keep every row actionable | - [ ] Require Area, Responsibility, Modules, Key, and Line Range; forbid placeholders that hide missing ownership | Settings builder | code metadata + anchors | validated row | fail with setting-specific diagnostic |
+| Determinism | Make diffs trustworthy | - [ ] Sort keys, paths, and references consistently; forbid filesystem-order dependence | Settings builder | validated rows | ordered rows | stable code-point ordering |
 ---
 
-## Bootstrap Behavior
-### Source Document Missing
-**Condition**: `knowgrph-codebase-responsibility-flow.md` not found at repo root
-**Behavior**:
-| Action                     | Implementation                                      | Output                                             |
-|----------------------------|-----------------------------------------------------|----------------------------------------------------|
-| Bootstrap from code         | Derive flow rows from `settingsRegistry` + store setters | Flow rows with modules/classes/functions populated |
-| Write source doc            | Emit `knowgrph-codebase-responsibility-flow.md`      | Canonical flow doc created at repo root            |
-| Write JSON artifacts        | Emit Settings UI flow JSON files                     | `canvas/public/settings-flow.json` + `canvas/src/features/settings/settings-flow.schema.json` |
-| Proceed with build          | Do not fail build process                            | Settings UI always has flow metadata               |
+## Generate and Check Behavior
+
+| Mode | Filesystem behavior | Result |
+|---|---|---|
+| Generate | Refresh the three declared projections from authoritative code | Outputs stay synchronized |
+| `--check` | Derive and render in memory; read committed outputs; write nothing | Exit 0 only when all three outputs match exactly |
+| CI | Build linked package prerequisites, then run `--check` before any projection-generating step | Stale outputs fail instead of being silently healed |
 ---
 
-Release/publish parity treats those generated JSON artifacts as canonical output: `canvas/public/settings-flow.json` feeds the generated public-route compatibility surface `huijoohwee/knowgrph/settings-flow.json`, while `canvas/src/features/settings/settings-flow.schema.json` stays the source-owned schema companion. Refresh them through the code-derived builder only; never hand-patch the publish copy downstream.
+Release/publish parity treats all three files as generated projections.
+`canvas/public/settings-flow.json` can feed the downstream public-route compatibility surface,
+while `canvas/src/features/settings/settings-flow.schema.json` remains the source-repository
+companion. Refresh them through the code-derived builder only; never hand-patch a projection or a
+downstream publish copy. This increment stops at Dev review and does not publish or deploy.
 
 ## Testing & Quality Standards
 
 **Test Coverage Metrics**
 | Context              | Intent                          | Directive                                                                                   |
 |----------------------|---------------------------------|---------------------------------------------------------------------------------------------|
-| Schema Extraction    | Validate markdown parsing       | - [ ] Test table extraction; verify all rows parsed; forbid missing settings               |
-| Type Inference       | Ensure correct schema types     | - [ ] Test string/number/boolean inference; forbid type mismatches                          |
-| Bounds Parsing       | Validate constraint extraction  | - [ ] Test range, enum, boolean bounds; forbid unparsed constraints                        |
+| Source Derivation    | Validate authoritative inputs   | - [ ] Test unique registry keys and complete ownership; forbid generated-output input      |
+| Provenance           | Validate source anchors         | - [ ] Test module paths and line bounds; forbid missing or dangling references              |
+| Determinism          | Validate stable rendering       | - [ ] Generate twice in memory; require byte-identical Markdown and JSON                    |
+| Stale Check          | Validate non-mutation           | - [ ] Test fresh/stale cases and unchanged output hashes; forbid check-time writes          |
 **Test Categories**:
-- **Unit Tests**: Table parsing, type inference, bounds extraction, nested property handling.
-- **Integration Tests**: Full markdown → JSON Schema → TypeScript types pipeline.
+- **Unit Tests**: row derivation, validation, stable ordering, and projection rendering.
+- **Integration Tests**: authoritative code → three projections → non-mutating stale check.
 **Quality Gates**:
 | Context              | Intent                          | Directive                                                                                   |
 |----------------------|---------------------------------|---------------------------------------------------------------------------------------------|
-| Schema Completeness  | Ensure all settings extracted   | - [ ] Verify output schema includes all table rows; forbid partial extraction               |
-| Performance Bounds   | Keep build fast                 | - [ ] Assert build completes in <1s; forbid slow regex or I/O operations                   |
-| Fallback Safety      | Handle missing source gracefully| - [ ] Test fallback to defaults; verify warning logged; forbid build failure               |
+| Projection Completeness | Ensure all settings are emitted | - [ ] Verify each output includes all 593 unique registry keys; forbid partial extraction |
+| Performance Bounds   | Keep build fast                 | - [ ] Measure bounded completion against the ≤10s reference ceiling; forbid unbounded source scans |
+| CI Ordering          | Detect drift before mutation    | - [ ] Run `--check` before generating builds; forbid pre-check regeneration                 |
 ---
 
 **Build Health**:
 | Context              | Status | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
-| Source Doc Presence  | ☐      | - [ ] `knowgrph-codebase-responsibility-flow.md` exists at repo root; forbid missing source|
-| Schema Output        | ☐      | - [ ] `canvas/public/settings-flow.json` and `canvas/src/features/settings/settings-flow.schema.json` generated; forbid missing output|
-| Build Performance    | ☐      | - [ ] `build:settings` completes in <1s; forbid slow extraction                            |
+| Authoritative Inputs | ☐      | - [ ] Registry and code-owned metadata validate; forbid generated files as source          |
+| Projection Output    | ☐      | - [ ] Markdown and both JSON projections are present and fresh; forbid missing output       |
+| Non-mutating Check   | ☐      | - [ ] `--check` leaves all file hashes unchanged; forbid stale-output healing               |
+| Build Performance    | ☐      | - [ ] The root responsibility-flow command remains within the ≤10s reference ceiling; forbid unbounded extraction |
 **Settings Quality**:
 | Context              | Status | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
@@ -435,7 +421,8 @@ Release/publish parity treats those generated JSON artifacts as canonical output
 ## Anti-Patterns (Forbidden)
 | Context              | Intent                          | Directive                                                                                   |
 |----------------------|---------------------------------|---------------------------------------------------------------------------------------------|
-| Manual Schema Sync   | Automate schema generation      | - [ ] Prefer build script output; forbid hand-editing generated JSON artifacts              |
+| Manual Projection Sync | Automate projection generation | - [ ] Prefer build output; forbid hand-editing Markdown or JSON projections                 |
 | Hardcoded Settings   | Externalize configuration       | - [ ] Keep settings in registry + store setters; forbid ad-hoc settings in random modules  |
 | Unbounded Values     | Enforce validation              | - [ ] Apply min/max/enum constraints; forbid accepting arbitrary values                     |
-| Silent Fallbacks     | Make bootstrap explicit         | - [ ] When source doc is missing, regenerate it; forbid silent empty-flow output            |
+| Generated Input      | Preserve source authority       | - [ ] Derive from code and metadata; forbid parsing a generated projection as input          |
+| Check-time Mutation  | Preserve drift evidence         | - [ ] Compare only in `--check`; forbid writing or invoking a generating prerequisite        |

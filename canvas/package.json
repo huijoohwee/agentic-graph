@@ -10,6 +10,7 @@
     "prepare:linked-packages": "npm run build:grph-shared && npm run build:gympgrph",
     "prepare:litert-assets": "node ./scripts/prepare-litert-assets.mjs",
     "build:settings": "tsx src/cli/extract-settings-schema.ts",
+    "test:responsibility-flow": "node --import tsx --test src/cli/__tests__/settingsResponsibilityFlow.test.ts src/features/settings/__tests__/flowDetailsRuntime.test.ts",
     "doc:generate-byteplus-chat-reference": "tsx src/cli/generate-byteplus-chat-reference.ts",
     "doc:generate-byteplus-chat-codebase-index": "tsx src/cli/generate-byteplus-modelark-chat-codebase-index.ts",
     "doc:generate-byteplus-image-reference": "tsx src/cli/generate-byteplus-image-reference.ts",

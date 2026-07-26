@@ -6,6 +6,7 @@ import {
 } from '@/lib/canvas/storyboard-widget-overlay-proxy'
 import {
   buildSelectionProvenanceConnectorPath,
+  resolveSelectionProvenanceOutputHandle,
   type SelectionProvenanceConnectorGeometry,
 } from '@/lib/ui/selectionProvenanceConnectorGeometry'
 import {
@@ -20,6 +21,7 @@ import {
 } from '@/lib/ui/semanticHighlight'
 
 export type RichMediaSelectionProvenanceConnectorInput = TextSelectionProvenanceHighlightInput & {
+  sourceNodeId: string
   sourcePortKey: string
 }
 
@@ -41,12 +43,7 @@ const readConnectorGeometry = (args: {
   root: HTMLElement
   selections: ReadonlyArray<RichMediaSelectionProvenanceConnectorInput>
 }): SelectionProvenanceConnectorGeometry[] => {
-  const sourceCard = args.root.closest<HTMLElement>('[data-node-id]')
-  if (!sourceCard) return []
   const rootRect = args.root.getBoundingClientRect()
-  const handles = Array.from(
-    sourceCard.querySelectorAll<HTMLElement>('[data-kg-port-handle="1"][data-kg-port-dir="out"]'),
-  )
   const geometries: SelectionProvenanceConnectorGeometry[] = []
   for (const selection of args.selections) {
     const edgeId = String(selection.edgeId || '').trim()
@@ -55,9 +52,11 @@ const readConnectorGeometry = (args: {
       args.root.querySelectorAll<HTMLElement>('[data-kg-selection-provenance-highlight="1"]'),
     ).filter(element => element.dataset.kgSelectionProvenanceEdgeId === edgeId)
     if (highlights.length <= 0) continue
-    const handle = handles.find(element => (
-      element.dataset.kgPortKey === selection.sourcePortKey
-    )) || handles[0]
+    const handle = resolveSelectionProvenanceOutputHandle({
+      root: args.root,
+      sourceNodeId: selection.sourceNodeId,
+      sourcePortKey: selection.sourcePortKey,
+    })
     if (!handle) continue
     const handleSurface = handle.querySelector<HTMLElement>('[aria-hidden="true"]') || handle
     const handleRect = handleSurface.getBoundingClientRect()
@@ -105,7 +104,7 @@ export function RichMediaPanelSelectionProvenanceConnector(props: {
     selections: props.selections,
   })
   const selectionSignature = props.selections.map(selection => (
-    `${selection.edgeId}:${selection.sourcePortKey}:${selection.startLine}:${selection.endLine}:${selection.text}`
+    `${selection.edgeId}:${selection.sourceNodeId}:${selection.sourcePortKey}:${selection.startLine}:${selection.endLine}:${selection.text}`
   )).join('|')
   const [geometries, setGeometries] = React.useState<SelectionProvenanceConnectorGeometry[]>([])
   const signatureRef = React.useRef('')
