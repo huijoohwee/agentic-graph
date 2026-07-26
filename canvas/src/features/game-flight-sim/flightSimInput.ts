@@ -192,6 +192,7 @@ export function installFlightSimDesktopInput(
 ): FlightSimInputBinding {
   const pressedCodes = new Set<string>()
   let pointerInput = FLIGHT_SIM_NEUTRAL_INPUT
+  let ownedPointerLock = document.pointerLockElement === element
   const currentInput = () => mergeFlightSimInputs([
     flightSimInputFromPressedCodes(pressedCodes),
     pointerInput,
@@ -224,15 +225,19 @@ export function installFlightSimDesktopInput(
     options.onInput(currentInput())
   }
   const onPointerLockChange = () => {
-    element.dataset.kgFlightSimPointerLock = document.pointerLockElement === element ? 'locked' : 'released'
-    if (document.pointerLockElement === element) {
+    const ownsPointerLock = document.pointerLockElement === element
+    if (ownsPointerLock) {
+      ownedPointerLock = true
+      element.dataset.kgFlightSimPointerLock = 'locked'
       delete element.dataset.kgFlightSimPointerLockError
+      return
     }
-    if (document.pointerLockElement !== element) {
-      release(options.shouldPauseOnPointerRelease?.() === false
-        ? undefined
-        : 'Flight Sim paused when pointer control was released.')
-    }
+    if (!ownedPointerLock) return
+    ownedPointerLock = false
+    element.dataset.kgFlightSimPointerLock = 'released'
+    release(options.shouldPauseOnPointerRelease?.() === false
+      ? undefined
+      : 'Flight Sim paused when pointer control was released.')
   }
   const requestPointerLock = async () => {
     if (options.shouldRequestPointerLock?.() === false) return
@@ -276,6 +281,7 @@ export function installFlightSimDesktopInput(
       document.removeEventListener('visibilitychange', onVisibilityChange)
       element.removeEventListener('click', onCanvasPointerLockRequest)
       if (document.pointerLockElement === element) void document.exitPointerLock()
+      ownedPointerLock = false
       delete element.dataset.kgFlightSimPointerLock
       delete element.dataset.kgFlightSimPointerLockError
       release()
