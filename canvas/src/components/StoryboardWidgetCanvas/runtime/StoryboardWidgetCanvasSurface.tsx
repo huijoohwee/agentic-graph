@@ -38,6 +38,7 @@ import { isRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
 import { readFiniteRuntimeZoomTransform } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetRuntimeScene'
 import { resolveCollectiveCameraFollowBaselineRef } from '@/lib/canvas/overlayWidgetZoom'
+import { StoryboardEdgeNodeInsertionMenu } from '@/components/StoryboardWidgetCanvas/runtime/StoryboardEdgeNodeInsertionMenu'
 
 export default function StoryboardWidgetCanvasSurface(props: {
   rootRef: React.RefObject<HTMLElement | null>
@@ -490,6 +491,16 @@ export default function StoryboardWidgetCanvasSurface(props: {
           aria-hidden={true}
         />
       )}
+
+      <StoryboardEdgeNodeInsertionMenu
+        active={props.active}
+        canEdit={props.canEdit}
+        rootRef={props.rootRef}
+        graphData={storyboardSourceGraphData || storyboardEdgeGraphData}
+        commitGraphData={props.commitStoryboardCardMediaGraph}
+        readWorldPoint={readSurfaceDrop}
+        upsertUiToast={props.upsertUiToast}
+      />
 
       {props.overlayEditorElements}
       <StoryboardCardOverlayLayer2d
