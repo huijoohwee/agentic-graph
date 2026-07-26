@@ -50,6 +50,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["storyboardWidget.outputWiring.existingTextOutputVersionedOnRerun","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testExistingTextOutputBecomesSelectableVersionOnRerun"],
   ["storyboardWidget.outputWiring.deliverablesOwnedOutputs","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testDeliverablesOwnedOutputsStayDistinctAndIdempotent"],
   ["storyboardWidget.outputWiring.explicitMultiTargets","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testExplicitMultiEdgesTargetWidgetCardAndRichMediaPanels"],
+  ["storyboardWidget.edgeAuthoring.manyToOne","@/__tests__/storyboardManyToOneEdgeAuthoring.test","testStoryboardManyToOneAuthoringRetainsEveryInboundEdge"],
   ["storyboardWidget.outputWiring.standaloneUntilExplicit","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testGeneratedOutputsStayStandaloneUntilExplicitlyWired"],
   ["storyboardWidget.outputWiring.probeTreeBranchesLedgerConnected","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testProbeTreeBranchesLedgerConnectsSourceIdempotently"],
   ["storyboardWidget.outputGrouping.adoptsExistingCollectiveGroupPanel","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testWorkflowMaterializationAdoptsExistingCollectiveGroupPanel"],
