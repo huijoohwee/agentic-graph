@@ -177,7 +177,7 @@ export function testXrModeRendersGlbAssetDocumentsWithoutWebxrSessionGate() {
   if (!threeGraph.includes('parseGlbAssetDocument(canvasMarkdownDocument.text)')) {
     throw new Error('Expected ThreeGraph to detect model asset documents from the Canvas-applied markdown render context')
   }
-  if (!threeGraph.includes('const hasRenderableScene = gameFpsActive || hasGraph || hasGlbAsset')) {
+  if (!threeGraph.includes('const hasRenderableScene = gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld')) {
     throw new Error('Expected ThreeGraph to keep the canvas mounted for model asset documents without graph nodes')
   }
   if (!threeGraph.includes('const sceneGraphForRender = useMemo<GraphData | null>(() => {') || !threeGraph.includes(': { ...sceneGraph, edges: [] }')) {

@@ -10,8 +10,8 @@ const wasmSourceRoot = path.resolve(canvasRoot, '../node_modules/@litertjs/core/
 const publicAssetRoot = path.resolve(canvasRoot, 'public/litert')
 const modelTarget = path.resolve(publicAssetRoot, 'pose_landmarks_detector.tflite')
 
-const POSE_TASK_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task'
-const POSE_TASK_SHA256 = '4eaa5eb7a98365221087693fcc286334cf0858e2eb6e15b506aa4a7ecdcec4ad'
+const POSE_TASK_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task'
+const POSE_TASK_SHA256 = '5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1'
 const POSE_MODEL_ENTRY = 'pose_landmarks_detector.tflite'
 const POSE_MODEL_SHA256 = '82be6d591b9dad7d29fe21dc9fd892bf8b9602c458fb05209283de8282a0c488'
 const MAX_POSE_TASK_BYTES = 32 * 1024 * 1024

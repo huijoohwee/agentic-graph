@@ -131,6 +131,7 @@ test('service worker revision owner retries until the running build revision is 
 })
 
 test('canonical service worker registration bypasses caches for rapid release convergence', async () => {
+  const sourceRevision = '0123456789abcdef0123456789abcdef01234567'
   const previousController = Object.assign(new EventTarget(), {
     state: 'activated',
     postMessage() {},
@@ -156,6 +157,7 @@ test('canonical service worker registration bypasses caches for rapid release co
   let registeredCount = 0
   const owner = await registerCanonicalServiceWorker({
     serviceWorkerTarget,
+    sourceRevision,
     reload() {
       reloadCount += 1
     },
@@ -165,7 +167,7 @@ test('canonical service worker registration bypasses caches for rapid release co
   })
 
   assert.deepEqual(serviceWorkerTarget.registerCalls, [{
-    scriptUrl: '/knowgrph/sw.js',
+    scriptUrl: `/knowgrph/sw.js?revision=${sourceRevision}`,
     options: {
       scope: '/knowgrph/',
       type: 'classic',
@@ -183,6 +185,23 @@ test('canonical service worker registration bypasses caches for rapid release co
   serviceWorkerTarget.controller = previousController
   serviceWorkerTarget.dispatchEvent(new Event('controllerchange'))
   assert.equal(reloadCount, 1, 'disposed registration owners must release controller listeners')
+})
+
+test('canonical service worker registration rejects a non-commit revision', async () => {
+  const serviceWorkerTarget = Object.assign(new EventTarget(), {
+    controller: null,
+    async register() {
+      throw new Error('must not register')
+    },
+  })
+
+  await assert.rejects(
+    registerCanonicalServiceWorker({
+      serviceWorkerTarget,
+      sourceRevision: 'latest',
+    }),
+    /source revision must be an exact commit SHA/,
+  )
 })
 
 test('canonical service worker registration reports a first install without reloading', async () => {

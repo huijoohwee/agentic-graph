@@ -13,6 +13,8 @@ const modXrCameraMoves = () => import('@/__tests__/xrCameraMoves.test')
 const modXrShootWorkflow = () => import('@/__tests__/xrShootWorkflow.test')
 const modXrAnimationRuntime = () => import('@/__tests__/xrAnimationRuntime.test')
 const modMotionControlRuntime = () => import('@/__tests__/motionControlRuntime.test')
+const modMotionControlLiteRtReadiness = () => import('@/__tests__/motionControlLiteRtReadiness.test')
+const modMotionControlLiveCameraReadiness = () => import('@/__tests__/motionControlLiveCameraReadiness.test')
 const modMotionControlStartStopRace = () => import('@/__tests__/motionControlStartStopRace.test')
 const modMotionCaptureLifecycleFailure = () => import('@/__tests__/motionCaptureLifecycleFailure.test')
 const modMotionControlSmoothing = () => import('@/__tests__/motionControlSmoothing.test')
@@ -140,6 +142,14 @@ export const runSchemaTests = async (results: TestResult[]) => {
   await execTest(results, 'canvas.xrMode.motionControlRuntime', async () => {
     const mod = await modMotionControlRuntime()
     await mod.testMotionControlRuntimeIsLiteRtInvocableAndXrReady()
+  })
+  await execTest(results, 'canvas.xrMode.motionControlLiteRtReadiness', async () => {
+    const mod = await modMotionControlLiteRtReadiness()
+    await mod.testMotionControlLiteRtReadinessUsesProductionModelOwner()
+  })
+  await execTest(results, 'canvas.xrMode.motionControlLiveCameraReadiness', async () => {
+    const mod = await modMotionControlLiveCameraReadiness()
+    await mod.testMotionControlLiveCameraProofUsesProductionCaptureLifecycle()
   })
   await execTest(results, 'canvas.xrMode.motionControlStartStopRace', async () => {
     const mod = await modMotionControlStartStopRace()

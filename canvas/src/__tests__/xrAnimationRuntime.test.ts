@@ -295,6 +295,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   const agentReadyContractSource = readSource('features', 'agent-ready', 'knowgrphAgentReadyToolContract.mjs')
   const animationWebMcpSource = readSource('features', 'agent-ready', 'xrAnimationWebMcpTools.ts')
   const toolbarSource = readSource('lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
+  const xrPanelRoutingSource = readSource('lib', 'toolbar', 'FloatingPanelXrSceneViews.tsx')
   const bridgeSource = readSource('features', 'three', 'XrMotionReferenceRuntimeBridge.tsx')
   const appSource = readSource('App.tsx')
   const stageSource = readSource('features', 'three', 'XrMotionReferenceStage.tsx')
@@ -344,8 +345,8 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   const animationIndex = toolbarSource.indexOf("{ view: 'animation'")
   const cameraIndex = toolbarSource.indexOf("{ view: 'camera'")
   if (!(mediaIndex >= 0 && mediaIndex < animationIndex && animationIndex < cameraIndex)
-    || !toolbarSource.includes('XrAnimationFloatingPanelViewLazy')
-    || !toolbarSource.includes("floatingPanelView === 'animation'")) {
+    || !xrPanelRoutingSource.includes('XrAnimationFloatingPanelViewLazy')
+    || !xrPanelRoutingSource.includes("view === 'animation'")) {
     throw new Error('expected first-class FloatingPanel Animation immediately to the right of Media and before Camera')
   }
   if (!bridgeSource.includes('hydrateXrMotionReferenceRuntime({')
