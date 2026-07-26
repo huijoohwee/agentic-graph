@@ -166,13 +166,17 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   assert.ok(opened < preparedStage)
   assert.ok(preparedStage < readyDeadline)
   assert.match(missionStage, /addAfterEffect\(\(\) => \{/)
-  assert.match(
+  assert.doesNotMatch(
     missionStage,
-    /React\.useState\(\s*readCurrentFlightSimStagePreparationRequest,\s*\)/,
+    /React\.useState\(\s*readCurrentFlightSimStagePreparationRequest/,
   )
   assert.match(
     missionStage,
-    /completeFlightSimStagePreparation\(\s*stagePreparationRequestId,\s*\)/,
+    /addAfterEffect\(\(\) => \{[\s\S]*const stagePreparationRequestId =\s*readCurrentFlightSimStagePreparationRequest\(\)/,
+  )
+  assert.match(
+    missionStage,
+    /completeFlightSimStagePreparation\(\s*stagePreparationRequestId\s*\)/,
   )
   assert.match(missionStage, /&& actorRef\.current/)
   const afterRender = missionStage.indexOf('addAfterEffect(() => {')

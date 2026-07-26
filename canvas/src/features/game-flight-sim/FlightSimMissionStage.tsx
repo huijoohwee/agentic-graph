@@ -73,9 +73,6 @@ export function FlightSimMissionStage({
     runId: 0,
     tick: 0,
   })
-  const [stagePreparationRequestId] = React.useState(
-    readCurrentFlightSimStagePreparationRequest,
-  )
   const profile = React.useMemo(
     () => runtimeController.readSpatialProfile(),
     [runtimeController],
@@ -146,22 +143,20 @@ export function FlightSimMissionStage({
       shouldPauseOnPointerRelease: () => readXrNativeControllerCamera().mode === 'fixed-follow',
       shouldRequestPointerLock: () => readXrNativeControllerCamera().mode === 'fixed-follow',
     }) : null
-    let stagePreparationCompleted = false
     const removeAfterRender = addAfterEffect(() => {
       if (!inputClaimedRef.current) return
       const snapshot = runtimeController.readSnapshot()
+      const stagePreparationRequestId =
+        readCurrentFlightSimStagePreparationRequest()
       if (
-        !stagePreparationCompleted
-        && stagePreparationRequestId !== null
+        stagePreparationRequestId !== null
         && snapshot.active
         && snapshot.phase === 'stopped'
         && !runtimeController.isHydrationPending()
         && !snapshot.runtimeError
         && actorRef.current
       ) {
-        stagePreparationCompleted = completeFlightSimStagePreparation(
-          stagePreparationRequestId,
-        )
+        completeFlightSimStagePreparation(stagePreparationRequestId)
       }
       const presentation = framePresentationRef.current
       if (!presentation.playable) {
@@ -184,7 +179,7 @@ export function FlightSimMissionStage({
       delete canvas.dataset.kgFlightSimSpatialProfile
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [gl, profile.id, runtimeController, stagePreparationRequestId])
+  }, [gl, profile.id, runtimeController])
 
   React.useEffect(() => {
     const clock = createFlightSimSimulationClock({
