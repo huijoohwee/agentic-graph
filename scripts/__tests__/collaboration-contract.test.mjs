@@ -60,7 +60,12 @@ test('local collaboration browser identities remain stable across repeated gate 
     storageWorker?.readyOptions?.headers?.authorization,
     `Bearer ${config.ownerSessionToken}`,
   )
+  assert.equal(storageWorker?.readyOptions?.headers?.origin, 'http://127.0.0.1:5175')
   assert.equal(storageWorker?.readyOptions?.schema, 'knowgrph-storage-relay-capabilities/v1')
+  assert.deepEqual(storageWorker?.runtimeArgs, ['--local-upstream', '127.0.0.1'])
+  assert.deepEqual(storageWorker?.runtimeVars, {
+    KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
+  })
   assert.equal(config.ownerClientDeviceId, 'dev:collaboration-owner-local')
   assert.equal(config.guestClientDeviceId, 'dev:collaboration-guest-local')
   assert.equal(browserEnv.KG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)

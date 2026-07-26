@@ -209,6 +209,11 @@ function startBrowserService(service, config) {
     "--",
     "--port",
     String(service.local.port),
+    ...(service.runtimeArgs || []),
+    ...Object.entries(service.runtimeVars || {}).flatMap(([key, value]) => [
+      "--var",
+      `${key}:${value}`,
+    ]),
   ], {
     cwd: config.repoRoot,
     stdio: "inherit",
@@ -293,12 +298,19 @@ export function resolveLocalCollaborationStackConfig({
         id: "storage-worker",
         readyUrl: `${normalizedWorkerBaseUrl}/api/storage/relay/capabilities`,
         readyOptions: {
-          headers: { authorization: `Bearer ${ownerSessionToken}` },
+          headers: {
+            authorization: `Bearer ${ownerSessionToken}`,
+            origin: new URL(ownerAppUrl).origin,
+          },
           schema: "knowgrph-storage-relay-capabilities/v1",
         },
         envVar: "KG_COLLABORATION_E2E_WORKER_URL",
         startupCommand: "npm run storage:worker:dev -- --port 8787",
         kind: "worker",
+        runtimeArgs: ["--local-upstream", new URL(workerUrl).hostname],
+        runtimeVars: {
+          KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: workspaceId,
+        },
         local: readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL),
       },
     ],

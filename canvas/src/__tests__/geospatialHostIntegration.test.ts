@@ -575,11 +575,9 @@ export const testHostEnableDoesNotForce2dViewMode = () => {
 }
 
 export const testHostTailwindScansGympgrphClasses = () => {
-  const tailwindConfigPath = path.resolve(process.cwd(), 'tailwind.config.js')
-  const text = readUtf8(tailwindConfigPath)
-  if (!text.includes('../gympgrph/src/**/*.{js,ts,jsx,tsx}')) {
-    throw new Error('Expected knowgrph host Tailwind config to scan gympgrph sources for class generation')
-  }
+  const text = readUtf8(path.resolve(process.cwd(), 'src', 'styles', 'tailwind-theme.css'))
+  if (!text.includes('@source "../../../gympgrph/src"')) throw new Error('Expected Tailwind to scan gympgrph runtime sources')
+  if (!text.includes('@source not "../__tests__"')) throw new Error('Expected Tailwind to exclude non-runtime test fixtures')
 }
 
 export const testGeospatialModeEventContractIsShared = () => {

@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge'
 import { VitePWA } from 'vite-plugin-pwa'
 import { Buffer } from 'node:buffer'
@@ -7006,7 +7006,7 @@ export default defineConfig(({ command, mode }) => {
     }
   },
   plugins: [
-    stripEntitiesBadSourcemapsPlugin,
+    tailwindcss(), stripEntitiesBadSourcemapsPlugin,
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),

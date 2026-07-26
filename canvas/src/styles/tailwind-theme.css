@@ -1,0 +1,15 @@
+@source "../../../gympgrph/src";
+@source not "../__tests__";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --color-kg-app: var(--kg-app-bg);
+  --color-kg-surface: var(--kg-surface-bg);
+  --color-kg-panel: var(--kg-panel-bg);
+  --color-kg-border: var(--kg-border);
+  --color-kg-text-primary: var(--kg-text-primary);
+  --color-kg-text-secondary: var(--kg-text-secondary);
+  --color-kg-accent: var(--kg-canvas-accent);
+}
