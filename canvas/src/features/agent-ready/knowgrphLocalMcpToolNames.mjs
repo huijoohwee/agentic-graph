@@ -73,6 +73,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   applicationCatalog: "knowgrph.application.catalog",
   applicationPlan: "knowgrph.application.plan",
   applicationExecute: "knowgrph.application.execute",
+  voiceStudio: "knowgrph.voice.studio",
 });
 
 export const buildKnowgrphLocalMcpToolNameList = () => Object.values(KNOWGRPH_LOCAL_MCP_TOOL_NAMES);

@@ -72,6 +72,17 @@ if (!localToolNames.includes(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList)) {
 for (const name of [KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationCatalog, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationPlan, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.applicationExecute]) {
   if (!localToolNames.includes(name)) fail(`local MCP tool contract must expose ${name}`)
 }
+if (!localToolNames.includes(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.voiceStudio)) fail('local MCP tool contract must expose knowgrph.voice.studio')
+const voiceStudio = registry.find((entry) => entry.id === KNOWGRPH_VDEOXPLN_IDS.voiceStudio)
+const canonicalVoiceRoutes = [
+  ['/voice.studio', '#voice-clone', '@audio', '@voice-profile', '@approval-gate', '@cost-log', '@runtime-proof'],
+  ['/voice.studio', '#speech-to-text', '@audio', '@text', '@approval-gate', '@cost-log', '@runtime-proof'],
+  ['/voice.studio', '#text-to-speech', '@text', '@voice-profile', '@audio', '@approval-gate', '@cost-log', '@runtime-proof'],
+]
+const canonicalVoiceTriggerTokens = [...new Set(canonicalVoiceRoutes.flat())]
+if (!voiceStudio || canonicalVoiceTriggerTokens.some(token => !voiceStudio.triggers.includes(token))) {
+  fail('voice studio vdeoxpln aggregate triggers must contain the canonical command, semantics, and bindings; route ordering is parser-test-owned')
+}
 const applicationComposition = registry.find((entry) => entry.id === KNOWGRPH_VDEOXPLN_IDS.applicationComposition)
 const canonicalApplicationInvocation = ['/application.compose', '#application-composition', '@application-manifest', '@component-catalog', '@integration-profile', '@runtime-proof']
 if (!applicationComposition || canonicalApplicationInvocation.some((token) => !applicationComposition.triggers.includes(token))) fail('application composition vdeoxpln must expose the exact canonical / # @ invocation')

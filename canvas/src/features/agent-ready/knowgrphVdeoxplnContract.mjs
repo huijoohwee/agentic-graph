@@ -8,7 +8,7 @@ export const KNOWGRPH_VDEOXPLN_IDS = Object.freeze({
   chatToCanvas: "knowgrph-chat-to-canvas",
   strybldr: "knowgrph-strybldr",
   researchVisual: "knowgrph-research-visual",
-  memoryLayer: "knowgrph-memory-layer", aiShowrunner: "knowgrph-ai-showrunner", htmlVideoRenderer: "knowgrph-html-video-renderer", videoAgent: "knowgrph-video-agent", visualAnnotationEngine: "knowgrph-visual-annotation-engine", applicationComposition: "knowgrph-application-composition", commerceReadiness: "knowgrph-commerce-readiness",
+  memoryLayer: "knowgrph-memory-layer", aiShowrunner: "knowgrph-ai-showrunner", htmlVideoRenderer: "knowgrph-html-video-renderer", videoAgent: "knowgrph-video-agent", visualAnnotationEngine: "knowgrph-visual-annotation-engine", voiceStudio: "knowgrph-ai-voice-studio", applicationComposition: "knowgrph-application-composition", commerceReadiness: "knowgrph-commerce-readiness",
 });
 const normalizeString = (value) => String(value || "").trim();
 

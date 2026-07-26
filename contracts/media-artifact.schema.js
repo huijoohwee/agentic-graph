@@ -43,7 +43,7 @@ export const KNOWGRPH_MEDIA_ROUTE_PREFIX = "/api/storage/media/";
 export const KNOWGRPH_MEDIA_KEY_PREFIX = "runs";
 
 /** Artifact kinds the canvas renders as widgets/panels. */
-export const MEDIA_ARTIFACT_KINDS = Object.freeze(["text", "image", "video"]);
+export const MEDIA_ARTIFACT_KINDS = Object.freeze(["text", "image", "audio", "video"]);
 
 /** The five required responsive proof classes (R1.2). `[width, height]`. */
 export const RESPONSIVE_PROOF_CLASSES = Object.freeze([
