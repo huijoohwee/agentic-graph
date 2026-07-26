@@ -36,6 +36,7 @@ import {
 } from '@/lib/ui/textSelectionProvenanceHighlights'
 import {
   buildSelectionProvenanceConnectorPath,
+  resolveSelectionProvenanceOutputHandle,
 } from '@/lib/ui/selectionProvenanceConnectorGeometry'
 import {
   FLOW_EDGE_SOURCE_PORT_KEY,
@@ -251,6 +252,27 @@ export function testTextSelectionWidgetLinkProjectsExactSourceHighlightAndConnec
       || rects[0]?.width !== 120
       || rects[0]?.height !== 18) {
       throw new Error(`expected one exact, line-scoped provenance highlight, got ${JSON.stringify(rects)}`)
+    }
+    const innerNodeOwner = dom.window.document.createElement('section')
+    innerNodeOwner.setAttribute('data-node-id', 'n2')
+    innerNodeOwner.appendChild(root)
+    dom.window.document.body.appendChild(innerNodeOwner)
+    const outerOverlayOwner = dom.window.document.createElement('section')
+    outerOverlayOwner.setAttribute('data-node-id', 'workspace-layer::n2')
+    const outputHandle = dom.window.document.createElement('button')
+    outputHandle.setAttribute('data-kg-port-handle', '1')
+    outputHandle.setAttribute('data-kg-port-dir', 'out')
+    outputHandle.setAttribute('data-kg-port-node-id', 'workspace-layer::n2')
+    outputHandle.setAttribute('data-kg-port-key', 'output')
+    outerOverlayOwner.appendChild(outputHandle)
+    dom.window.document.body.appendChild(outerOverlayOwner)
+    const resolvedHandle = resolveSelectionProvenanceOutputHandle({
+      root,
+      sourceNodeId: 'n2',
+      sourcePortKey: 'output',
+    })
+    if (resolvedHandle !== outputHandle) {
+      throw new Error('expected the connector to resolve the canonical output handle across nested Rich Media overlay owners')
     }
     const path = buildSelectionProvenanceConnectorPath({
       source: { x: 170, y: 69 },
