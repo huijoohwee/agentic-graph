@@ -13,7 +13,11 @@ import { resolveCanvas3dMode } from '@/lib/canvas/canvas3dMode'
 import { isNativeXrRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useCanvasGameplayOverlayState } from '@/features/canvas/useCanvasGameplayOverlayState'
 import { XrNativeControllerDemoHud } from '@/features/three/XrNativeControllerDemoHud'
-import { resolveThreeCanvasSurfaceLifecycle, retainThreeCanvasSourceAdmission } from '@/lib/three/threeRendererLifecycle'
+import {
+  resolveCanvasSurfaceOwnership,
+  resolveThreeCanvasSurfaceLifecycle,
+  retainThreeCanvasSourceAdmission,
+} from '@/lib/three/threeRendererLifecycle'
 import { getCanvas2dSurfaceId, isCanvas2dRendererId, isStoryboardCanvas2dRenderer, supportsCanvas2dMinimap } from '@/lib/config.render'
 import { shouldRenderTimelineSurface } from '@/lib/timeline/timelineVisibility'
 import { resolvePreferredEnabledComposedSourceFile } from '@/features/source-files/composedSourceSelection'
@@ -207,8 +211,13 @@ export function CanvasViewport(props: CanvasViewportProps) {
     geospatialEnabled: geospatialModeEnabled,
     schema,
   })
-  const activeSurface = geospatialModeEnabled ? 'geo' : canvasRenderMode === '3d' ? '3d' : '2d'
-  const geospatialOverlayOwnsViewport = geospatialModeEnabled && !(workspaceEditorOverlayOpen && active2dSurface === 'storyboard')
+  const { activeSurface, geospatialOverlayOwnsViewport } = resolveCanvasSurfaceOwnership({
+    canvasRenderMode,
+    gameplayOverlayActive,
+    geospatialModeEnabled,
+    workspaceEditorOverlayOpen,
+    workspaceStoryboardSurfaceActive: active2dSurface === 'storyboard',
+  })
   const strybldrTimelineBottomPanelVisible = canvas2dRenderer === 'storyboard'
     && (
       isStrybldrStoryboardGraphData(activeGraphData)

@@ -3,6 +3,7 @@ import test from 'node:test'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
+  resolveCanvasSurfaceOwnership,
   resolveThreeRendererLifecycleKey,
   resolveThreeCanvasSurfaceLifecycle,
   shouldMountThreeRenderer,
@@ -100,6 +101,43 @@ test('Flight Sim keeps one XR renderer through the document transition', async (
     })
     harness.restore()
   }
+})
+
+test('Flight Sim takes shared XR viewport ownership from Geo without clearing Geo mode', () => {
+  const ownership = resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: true,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  })
+  assert.deepEqual(ownership, {
+    activeSurface: '3d',
+    geospatialOverlayOwnsViewport: false,
+  })
+
+  const surface = resolveThreeCanvasSurfaceLifecycle({
+    sourceFilesBootstrapAdmitted: true,
+    sourceFilesBootstrapReady: true,
+    geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
+    liveCanvasHeroVisible: false,
+    canvasRenderMode: '3d',
+    heavyRuntimeIntentBlocked: false,
+    activeSurface: ownership.activeSurface,
+    documentSwitchOwnsViewport: false,
+  })
+  assert.deepEqual(surface, { mounted: true, active: true })
+
+  assert.deepEqual(resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    gameplayOverlayActive: false,
+    geospatialModeEnabled: true,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  }), {
+    activeSurface: 'geo',
+    geospatialOverlayOwnsViewport: true,
+  })
 })
 
 test('Three renderer lifecycle still rejects unsupported and empty non-XR surfaces', () => {

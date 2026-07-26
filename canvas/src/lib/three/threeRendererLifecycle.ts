@@ -20,6 +20,37 @@ export type ThreeCanvasSurfaceLifecycleInput = ThreeCanvasSurfaceMountInput & Re
   documentSwitchOwnsViewport: boolean
 }>
 
+export type CanvasSurfaceOwnershipInput = Readonly<{
+  canvasRenderMode: '2d' | '3d'
+  gameplayOverlayActive: boolean
+  geospatialModeEnabled: boolean
+  workspaceEditorOverlayOpen: boolean
+  workspaceStoryboardSurfaceActive: boolean
+}>
+
+export function resolveCanvasSurfaceOwnership(
+  input: CanvasSurfaceOwnershipInput,
+): Readonly<{
+  activeSurface: '2d' | '3d' | 'geo'
+  geospatialOverlayOwnsViewport: boolean
+}> {
+  if (input.gameplayOverlayActive) {
+    return {
+      activeSurface: '3d',
+      geospatialOverlayOwnsViewport: false,
+    }
+  }
+  return {
+    activeSurface: input.geospatialModeEnabled
+      ? 'geo'
+      : input.canvasRenderMode === '3d'
+        ? '3d'
+        : '2d',
+    geospatialOverlayOwnsViewport: input.geospatialModeEnabled
+      && !(input.workspaceEditorOverlayOpen && input.workspaceStoryboardSurfaceActive),
+  }
+}
+
 export function shouldMountThreeCanvasSurface(input: ThreeCanvasSurfaceMountInput): boolean {
   return input.sourceFilesBootstrapAdmitted
     && !input.geospatialOverlayOwnsViewport

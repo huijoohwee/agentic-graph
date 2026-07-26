@@ -68,6 +68,7 @@ Implement one browser-local, deterministic Flight Sim mission as an overlay on t
   - [x] Retry shared viewport input acquisition after the prior camera owner releases it, read the live mission-stage preparation request after render, and invalidate the shared Canvas demand loop so Geo and connected Motion Control handoffs cannot lose Flight entry to mount ordering.
   - [x] Decouple committed Flight render readiness from desktop input ownership so Motion, touch, and gamepad remain playable while the desktop claim retries after Geo or camera handoff.
   - [x] Derive Cockpit eye clearance from the admitted aircraft collision envelope so the forward view remains above and beyond committed airframe geometry.
+  - [x] Give active gameplay temporary shared-viewport precedence over Geo while retaining and restoring the selected Geo environment.
   - _Requirements: 4, 6, 7, 12, 14, 24, 25_
 
 - [ ] 10. Complete final exact-revision evidence and protected integration
