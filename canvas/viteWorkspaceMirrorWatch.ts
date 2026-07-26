@@ -13,6 +13,7 @@ export const buildWorkspaceMirrorWatchIgnoredRoots = (args: {
   workspaceRoot: string
   docsRoot?: unknown
   chatLogRoot?: unknown
+  mutableSourcePath?: unknown
 }): string[] => {
   const docsRoot = normalizeViteFsPath(args.docsRoot)
   const explicitChatLogRoot = normalizeViteFsPath(args.chatLogRoot)
@@ -30,6 +31,7 @@ export const buildWorkspaceMirrorWatchIgnoredRoots = (args: {
   if (explicitChatLogRoot) push(explicitChatLogRoot)
   else if (baseRoot) push(path.join(baseRoot, 'chat-log'))
   if (baseRoot && docsBasename) push(path.join(baseRoot, `${docsBasename}_`))
+  push(String(args.mutableSourcePath || ''))
   return [...roots].sort((left, right) => left.localeCompare(right))
 }
 
