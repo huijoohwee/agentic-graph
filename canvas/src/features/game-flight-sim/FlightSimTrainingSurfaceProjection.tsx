@@ -3,6 +3,7 @@ import { Headphones, Plane, Volume2 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
+import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
 import { openFlightSimSurface } from './flightSimRuntime'
 import {
   enableFlightSimVoiceInstructor,
@@ -52,7 +53,7 @@ export function FlightSimTrainingSurfaceProjection({
 
   const openTrainer = React.useCallback(async () => {
     if (training.flightActive) {
-      useGraphStore.setState({ floatingPanelOpen: true, floatingPanelView: 'flightSim' })
+      activateXrSceneSurface({ panelView: 'flightSim', openPanel: true, timeline: true })
       return
     }
     setOpening(true)
@@ -116,6 +117,17 @@ export function FlightSimTrainingSurfaceProjection({
       <p className={cn('text-[10px]', UI_THEME_TOKENS.text.secondary)}>
         {training.coachingCue}
       </p>
+
+      {surface === 'motion-control' ? (
+        <p
+          className={cn('text-[9px]', UI_THEME_TOKENS.text.secondary)}
+          data-kg-flight-training-motion-controls="connected-handoff"
+        >
+          Start Motion Control, then return to Flight Sim: lean forward/back for pitch,
+          lean side-to-side for roll, raise both hands for power, and hold hands wide
+          while leaning to yaw. Camera tracking remains live across the handoff.
+        </p>
+      ) : null}
 
       <section className="grid grid-cols-3 gap-1 text-[9px]" aria-label="Flight training outcomes">
         <span><b>Route</b><br />{training.routeProgress}%</span>

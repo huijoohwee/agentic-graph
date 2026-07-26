@@ -35,6 +35,7 @@ type ReadyFrameRequest = Readonly<{
 }>
 
 const pendingHudUpdates = new Map<number, number>()
+let mountedHudOwnerCount = 0
 let readyFrameRequestSequence = 0
 let pendingReadyFrame: ReadyFrameRequest | null = null
 let deadlineSnapshot: FlightSimDeadlineSnapshot = Object.freeze({
@@ -178,6 +179,22 @@ export function beginFlightSimHudUpdate(
   if (!pendingHudUpdates.has(revision)) pendingHudUpdates.set(revision, now())
 }
 
+export function registerFlightSimHudDeadlineOwner(
+  mountedRevision: number,
+): () => void {
+  mountedHudOwnerCount += 1
+  for (const revision of pendingHudUpdates.keys()) {
+    if (revision <= mountedRevision) pendingHudUpdates.delete(revision)
+  }
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    mountedHudOwnerCount = Math.max(0, mountedHudOwnerCount - 1)
+    if (mountedHudOwnerCount === 0) pendingHudUpdates.clear()
+  }
+}
+
 export function completeFlightSimHudUpdate(
   revision: number,
   now: MonotonicNow = monotonicNow,
@@ -224,6 +241,7 @@ export function measureFlightSimGameplayNetworkBlock(
 
 export function resetFlightSimDeadlineRuntimeForTests(): void {
   pendingHudUpdates.clear()
+  mountedHudOwnerCount = 0
   readyFrameRequestSequence = 0
   pendingReadyFrame = null
   deadlineSnapshot = Object.freeze({

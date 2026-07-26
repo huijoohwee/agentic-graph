@@ -14,6 +14,7 @@ import {
   measureFlightSimGameplayNetworkBlock,
   measureFlightSimWebglAdmission,
   readFlightSimDeadlineSnapshot,
+  registerFlightSimHudDeadlineOwner,
   resetFlightSimDeadlineRuntimeForTests,
 } from '../features/game-flight-sim/flightSimDeadlineRuntime'
 import {
@@ -199,6 +200,22 @@ test('a newer HUD completion cannot hide an older overdue revision', () => {
   assert.equal(laterOnTimeCompletion?.revision, 11)
   assert.equal(laterOnTimeCompletion?.withinLimit, false)
   assert.equal(readFlightSimDeadlineSnapshot().hudUpdate?.revision, 11)
+})
+
+test('HUD ownership discards pre-mount and post-unmount deadline work', () => {
+  resetFlightSimDeadlineRuntimeForTests()
+  beginFlightSimHudUpdate(20, () => 100)
+  const release = registerFlightSimHudDeadlineOwner(20)
+  assert.equal(completeFlightSimHudUpdate(20, () => 500), null)
+
+  beginFlightSimHudUpdate(21, () => 510)
+  const mounted = completeFlightSimHudUpdate(21, () => 511)
+  assert.equal(mounted?.revision, 21)
+  assert.equal(mounted?.withinLimit, true)
+
+  beginFlightSimHudUpdate(22, () => 520)
+  release()
+  assert.equal(completeFlightSimHudUpdate(22, () => 900), null)
 })
 
 test('production runtime blocks a gameplay network attempt within 1 s and retains mission state', () => {

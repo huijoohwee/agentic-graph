@@ -284,6 +284,8 @@ async function readValidatedRunEvidence({
     || evidence?.inputProof?.touchInteraction?.exercised !== true
     || evidence?.inputProof?.touchInteraction?.runId
       !== evidence?.missionProof?.runId
+    || evidence?.inputProof?.motionControlPanelHandoff?.flightPreservedWhileMotionPanelOpen !== true
+    || evidence?.inputProof?.motionControlPanelHandoff?.captureSurfacePreservedAfterFlightReturn !== true
     || evidence?.missionProof?.phase !== 'completed'
     || evidence?.missionProof?.waypointIndex !== 3
     || evidence?.missionProof?.transitions?.length !== 3

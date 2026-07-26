@@ -24,7 +24,10 @@ import {
   subscribeFlightSimDecisionStore,
 } from './flightSimDecisionStore'
 import { projectFlightSimHud } from './flightSimHudProjection'
-import { completeFlightSimHudUpdate } from './flightSimDeadlineRuntime'
+import {
+  completeFlightSimHudUpdate,
+  registerFlightSimHudDeadlineOwner,
+} from './flightSimDeadlineRuntime'
 import {
   readFlightSimTrainingSnapshot,
   subscribeFlightSimTrainingSnapshot,
@@ -55,6 +58,7 @@ export function FlightSimHud() {
     readFlightSimTrainingSnapshot,
   )
   const heldTouches = React.useRef(new Map<number, FlightSimTouchControl>())
+  const mountedRevision = React.useRef(flight.revision)
   const publishTouches = React.useCallback(() => {
     setFlightSimTouchInput(flightSimInputFromHeldTouches(heldTouches.current))
   }, [])
@@ -108,6 +112,10 @@ export function FlightSimHud() {
     savePath: FLIGHT_SIM_SAVE_PATH,
     hydrationPending,
   })
+  React.useLayoutEffect(
+    () => registerFlightSimHudDeadlineOwner(mountedRevision.current),
+    [],
+  )
   React.useLayoutEffect(() => {
     completeFlightSimHudUpdate(flight.revision)
   }, [flight.revision])

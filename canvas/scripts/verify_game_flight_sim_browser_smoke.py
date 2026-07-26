@@ -375,6 +375,7 @@ def main() -> None:
                     "desktopInteractionExercised": True,
                     "desktopTickBefore": initial["tick"],
                     "desktopTickAfter": moved["tick"],
+                    "motionControlPanelHandoff": state["motionControl"],
                     "webMcpThrottleExercised": True,
                     "touchInteraction": state["touch"],
                 },

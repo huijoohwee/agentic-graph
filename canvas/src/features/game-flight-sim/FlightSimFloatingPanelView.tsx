@@ -12,6 +12,10 @@ import {
   renderAgenticOsInvocationKeywordChip,
 } from '@/features/agentic-os/agenticOsInvocationChips'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
+import {
+  readMotionControlSnapshot,
+  subscribeMotionControl,
+} from '@/features/three/motionControlRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   FloatingPanelCatalogHeader,
@@ -98,6 +102,11 @@ export function FlightSimFloatingPanelView() {
     subscribeFlightSimDecisionStore,
     readFlightSimDecisionStore,
     readFlightSimDecisionStore,
+  )
+  const motionControl = React.useSyncExternalStore(
+    subscribeMotionControl,
+    readMotionControlSnapshot,
+    readMotionControlSnapshot,
   )
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const [pendingOperation, setPendingOperation] = React.useState<PendingOperation | null>(null)
@@ -267,6 +276,22 @@ export function FlightSimFloatingPanelView() {
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
             One existing R3F Canvas · fixed native ECS ticks · swept AABB collision · zero runtime network or model calls.
           </p>
+          <p
+            className={cn(
+              'text-[10px]',
+              motionControl.phase === 'running'
+                ? UI_THEME_TOKENS.status.success
+                : UI_THEME_TOKENS.text.tertiary,
+            )}
+            data-kg-flight-sim-motion-control={motionControl.phase}
+            data-kg-flight-sim-motion-pose={motionControl.pose ? 'tracked' : 'waiting'}
+          >
+            Motion Control · {motionControl.phase === 'running'
+              ? motionControl.pose
+                ? 'connected · pose driving aircraft'
+                : 'connected · waiting for a full-body pose'
+              : 'off · open Motion Control to connect'}
+          </p>
           {flight.runtimeError ? (
             <p
               className={cn('text-[10px]', UI_THEME_TOKENS.status.error)}
@@ -395,7 +420,7 @@ export function FlightSimFloatingPanelView() {
             </button>
           </div>
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
-            Switching companions exits the aircraft overlay and restores the shared authored scene controller.
+            Motion Control keeps the aircraft and camera capture live across the panel handoff. XR Mode exits the aircraft overlay and restores the authored scene controller.
           </p>
         </section>
 

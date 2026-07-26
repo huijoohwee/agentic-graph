@@ -20,6 +20,7 @@ const EXPECTED_MODULE_KEYS = Object.freeze([
   'graphStore',
   'knowgrphRuntimeIdentity',
   'markdownExplorerStore',
+  'motionControlSurfaceRuntime',
   'sourceFilesBootstrapReadiness',
   'sourceFilesRuntimeMaterialization',
   'workspaceCanonicalSeedBundle',
@@ -33,6 +34,7 @@ const EXPECTED_MODULE_KEYS = Object.freeze([
   'xrNativeControllerDemoRuntime',
   'xrNativeControllerPresentation',
   'xrPhysicsRuntime',
+  'xrSceneSurfaceRuntime',
 ])
 
 test('Flight browser proof bridge exposes only its exact production module inventory', async () => {
