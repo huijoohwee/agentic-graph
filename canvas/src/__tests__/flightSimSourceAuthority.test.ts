@@ -166,21 +166,54 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   assert.ok(opened < preparedStage)
   assert.ok(preparedStage < readyDeadline)
   assert.match(missionStage, /addAfterEffect\(\(\) => \{/)
-  assert.match(
+  assert.doesNotMatch(
     missionStage,
-    /React\.useState\(\s*readCurrentFlightSimStagePreparationRequest,\s*\)/,
+    /React\.useState\(\s*readCurrentFlightSimStagePreparationRequest/,
   )
   assert.match(
     missionStage,
-    /completeFlightSimStagePreparation\(\s*stagePreparationRequestId,\s*\)/,
+    /addAfterEffect\(\(\) => \{[\s\S]*const stagePreparationRequestId =\s*readCurrentFlightSimStagePreparationRequest\(\)/,
+  )
+  assert.match(
+    missionStage,
+    /completeFlightSimStagePreparation\(\s*stagePreparationRequestId\s*\)/,
+  )
+  assert.match(
+    missionStage,
+    /import \{ addAfterEffect, invalidate, useFrame, useThree \} from '@react-three\/fiber'/,
+  )
+  assert.match(missionStage, /const \{ gl \} = useThree\(\)/)
+  assert.match(
+    missionStage,
+    /const syncRuntimeSnapshot = \(\) => \{[\s\S]*snapshotRef\.current = runtimeController\.readSnapshot\(\)[\s\S]*invalidate\(\)/,
+  )
+  assert.match(
+    missionStage,
+    /syncRuntimeSnapshot\(\)[\s\S]*return runtimeController\.subscribe\(syncRuntimeSnapshot\)/,
+  )
+  assert.match(
+    missionStage,
+    /subscribeThreeViewportInputOwnership\(acquireInput\)/,
+  )
+  assert.match(
+    missionStage,
+    /const acquireInput = \(\) => \{[\s\S]*claimThreeViewportInputOwnership\(INPUT_OWNER_ID,[\s\S]*installFlightSimDesktopInput\(canvas,[\s\S]*invalidate\(\)/,
   )
   assert.match(missionStage, /&& actorRef\.current/)
+  const demandFrameSubscription = missionStage.indexOf(
+    'const syncRuntimeSnapshot = () => {',
+  )
   const afterRender = missionStage.indexOf('addAfterEffect(() => {')
+  const inputOwnershipRetry = missionStage.indexOf(
+    'subscribeThreeViewportInputOwnership(acquireInput)',
+  )
   const deadlineCompletion = missionStage.indexOf(
     'completeFlightSimReadyFrame(presentation.runId, presentation.tick)',
   )
   const frameSubscriber = missionStage.indexOf('useFrame(() => {')
-  assert.ok(afterRender >= 0 && deadlineCompletion > afterRender)
+  assert.ok(demandFrameSubscription >= 0 && afterRender > demandFrameSubscription)
+  assert.ok(inputOwnershipRetry >= 0 && afterRender > inputOwnershipRetry)
+  assert.ok(deadlineCompletion > afterRender)
   assert.ok(frameSubscriber > deadlineCompletion)
 })
 

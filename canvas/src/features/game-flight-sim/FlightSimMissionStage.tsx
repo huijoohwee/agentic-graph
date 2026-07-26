@@ -1,11 +1,12 @@
 import React from 'react'
-import { addAfterEffect, useFrame, useThree } from '@react-three/fiber'
+import { addAfterEffect, invalidate, useFrame, useThree } from '@react-three/fiber'
 import { type Group, type Mesh } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
 import {
   claimThreeViewportInputOwnership,
   releaseThreeViewportInputOwnership,
+  subscribeThreeViewportInputOwnership,
 } from '@/features/three/threeViewportInputOwnership'
 import { readMotionControlSnapshot } from '@/features/three/motionControlRuntime'
 import {
@@ -73,9 +74,6 @@ export function FlightSimMissionStage({
     runId: 0,
     tick: 0,
   })
-  const [stagePreparationRequestId] = React.useState(
-    readCurrentFlightSimStagePreparationRequest,
-  )
   const profile = React.useMemo(
     () => runtimeController.readSpatialProfile(),
     [runtimeController],
@@ -122,46 +120,65 @@ export function FlightSimMissionStage({
     }
   }, [assetCatalog, runtimeController])
 
-  React.useEffect(() => runtimeController.subscribe(() => {
-    snapshotRef.current = runtimeController.readSnapshot()
-  }), [runtimeController])
+  React.useEffect(() => {
+    const syncRuntimeSnapshot = () => {
+      snapshotRef.current = runtimeController.readSnapshot()
+      // The shared XR Canvas pauses on a demand loop while authored controls are
+      // suspended. Request a committed frame so stage readiness is observable.
+      invalidate()
+    }
+    syncRuntimeSnapshot()
+    return runtimeController.subscribe(syncRuntimeSnapshot)
+  }, [invalidate, runtimeController])
 
   React.useEffect(() => {
     const canvas = gl.domElement
-    const claimed = claimThreeViewportInputOwnership(INPUT_OWNER_ID, {
-      blocksProgrammaticCamera: false,
-    })
-    inputClaimedRef.current = claimed
-    canvas.dataset.kgFlightSimInputOwner = claimed ? INPUT_OWNER_ID : 'blocked'
     canvas.dataset.kgFlightSimSpatialProfile = profile.id
-    const desktop = claimed ? installFlightSimDesktopInput(canvas, {
-      onInput: value => {
-        desktopInputRef.current = value
-      },
-      onCycleCamera: cycleFlightSimCameraView,
-      onPause: () => {
-        setFlightSimTouchInput({})
-        runtimeController.stop()
-      },
-      shouldPauseOnPointerRelease: () => readXrNativeControllerCamera().mode === 'fixed-follow',
-      shouldRequestPointerLock: () => readXrNativeControllerCamera().mode === 'fixed-follow',
-    }) : null
-    let stagePreparationCompleted = false
+    let acquiringInput = false
+    let disposed = false
+    let desktop: FlightSimInputBinding | null = null
+    const acquireInput = () => {
+      if (disposed || acquiringInput || inputClaimedRef.current) return
+      acquiringInput = true
+      const claimed = claimThreeViewportInputOwnership(INPUT_OWNER_ID, {
+        blocksProgrammaticCamera: false,
+      })
+      acquiringInput = false
+      canvas.dataset.kgFlightSimInputOwner = claimed ? INPUT_OWNER_ID : 'blocked'
+      if (!claimed) return
+      inputClaimedRef.current = true
+      desktop = installFlightSimDesktopInput(canvas, {
+        onInput: value => {
+          desktopInputRef.current = value
+        },
+        onCycleCamera: cycleFlightSimCameraView,
+        onPause: () => {
+          setFlightSimTouchInput({})
+          runtimeController.stop()
+        },
+        shouldPauseOnPointerRelease: () => readXrNativeControllerCamera().mode === 'fixed-follow',
+        shouldRequestPointerLock: () => readXrNativeControllerCamera().mode === 'fixed-follow',
+      })
+      desktopBindingRef.current = desktop
+      invalidate()
+    }
+    const unsubscribeInputOwnership =
+      subscribeThreeViewportInputOwnership(acquireInput)
+    acquireInput()
     const removeAfterRender = addAfterEffect(() => {
       if (!inputClaimedRef.current) return
       const snapshot = runtimeController.readSnapshot()
+      const stagePreparationRequestId =
+        readCurrentFlightSimStagePreparationRequest()
       if (
-        !stagePreparationCompleted
-        && stagePreparationRequestId !== null
+        stagePreparationRequestId !== null
         && snapshot.active
         && snapshot.phase === 'stopped'
         && !runtimeController.isHydrationPending()
         && !snapshot.runtimeError
         && actorRef.current
       ) {
-        stagePreparationCompleted = completeFlightSimStagePreparation(
-          stagePreparationRequestId,
-        )
+        completeFlightSimStagePreparation(stagePreparationRequestId)
       }
       const presentation = framePresentationRef.current
       if (!presentation.playable) {
@@ -173,8 +190,9 @@ export function FlightSimMissionStage({
         completeFlightSimReadyFrame(presentation.runId, presentation.tick)
       }
     })
-    desktopBindingRef.current = desktop
     return () => {
+      disposed = true
+      unsubscribeInputOwnership()
       removeAfterRender()
       inputClaimedRef.current = false
       if (desktopBindingRef.current === desktop) desktopBindingRef.current = null
@@ -184,7 +202,7 @@ export function FlightSimMissionStage({
       delete canvas.dataset.kgFlightSimSpatialProfile
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [gl, profile.id, runtimeController, stagePreparationRequestId])
+  }, [gl, invalidate, profile.id, runtimeController])
 
   React.useEffect(() => {
     const clock = createFlightSimSimulationClock({
