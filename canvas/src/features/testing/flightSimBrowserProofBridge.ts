@@ -12,6 +12,7 @@ const MODULE_IMPORTERS = Object.freeze({
   graphStore: () => import('@/hooks/useGraphStore'),
   knowgrphRuntimeIdentity: () => import('@/features/runtime-identity/knowgrphRuntimeIdentity'),
   markdownExplorerStore: () => import('@/features/markdown-explorer/store'),
+  motionControlSurfaceRuntime: () => import('@/features/three/motionControlSurfaceRuntime'),
   sourceFilesBootstrapReadiness: () => import('@/features/source-files/sourceFilesBootstrapReadiness'),
   sourceFilesRuntimeMaterialization: () => import('@/features/source-files/sourceFilesRuntimeMaterialization'),
   workspaceCanonicalSeedBundle: () => import('@/features/workspace-fs/workspaceCanonicalSeedBundle'),
@@ -25,6 +26,7 @@ const MODULE_IMPORTERS = Object.freeze({
   xrNativeControllerDemoRuntime: () => import('@/features/three/xrNativeControllerDemoRuntime'),
   xrNativeControllerPresentation: () => import('@/features/three/xrNativeControllerPresentation'),
   xrPhysicsRuntime: () => import('@/features/three/xrPhysicsRuntime'),
+  xrSceneSurfaceRuntime: () => import('@/features/three/xrSceneSurfaceRuntime'),
 })
 
 export const FLIGHT_SIM_BROWSER_PROOF_BRIDGE_SCHEMA =

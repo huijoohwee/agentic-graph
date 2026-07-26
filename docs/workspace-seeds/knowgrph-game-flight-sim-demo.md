@@ -137,6 +137,8 @@ motion_control:
   frame_upload: false
   frame_persistence: false
   flight_role: "optional normalized player input only; never the flight control policy"
+  panel_handoff: "opening Motion Control preserves the active Flight mission; returning to Flight Sim preserves camera capture and the calibrated pose input"
+  gestures: "lean forward/back for pitch; lean side-to-side for roll; raise both hands for positive throttle; hold hands wide while leaning for yaw"
   invocation: "/motion.control @canvas #pose operation=start backend=auto"
 flight_sim:
   companion_view: "flightSim"
@@ -284,6 +286,8 @@ The browser-local control contract uses `knowgrph.control_local_flight_sim` and 
 **FloatingPanel → Flight Sim** controls Open, Start, Stop, Restart, Throttle, Save, and Exit. The panel projects runtime state only; the aircraft stage remains actor-only inside the shared renderer.
 
 Camera source is independent of aircraft selection. In **FloatingPanel Camera → SHOOT**, choose the catalog's only two modes: **Fixed Follow** for stage-aware aircraft tracking or **Free Orbit** for direct pan, rotate, and zoom. The same shared catalog is invocable through `knowgrph.control_local_camera` with `/camera.select @camera #camera camera=fixed-follow` or `camera=free-orbit`. Flight supplies a pure aircraft follow/framing descriptor; the Physics controller hook alone mutates the camera and OrbitControls. Timeline camera-mark playback temporarily takes framing ownership, then returns to the selected source. Motion Control is optional normalized player input only and never becomes flight policy. Conflicting device commands resolve independently per axis to the value with the largest absolute magnitude.
+
+For pose control, open and start **Motion Control** from the active Flight panel, then use **Flight Sim** in the training card to return to the aircraft. The mission and camera capture remain live across that panel handoff. Lean forward/back for pitch, lean side-to-side for roll, raise both hands for power, and hold hands wide while leaning to yaw; the Flight panel reports whether capture is connected and whether a full-body pose is currently driving the aircraft.
 
 Terminal results remain pending and never auto-save. **Save** is the only operation that persists validated gameplay Decisions through browser-local WorkspaceFs at `/game-flight-sim/mission-1-decisions.md`; explicit **Reset local save** is a separate recovery write of the canonical empty KGC document. Successful hydration preserves the validated active run identifier and ordered waypoint history, Start continues that run, and only Restart mints a fresh run. Malformed bytes remain intact and block Start and Restart until Reset succeeds.
 

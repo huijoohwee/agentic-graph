@@ -19,6 +19,9 @@ from lib.game_flight_sim_smoke_mobile import (
     verify_mobile_flight_hud,
     verify_mobile_touch_interaction,
 )
+from lib.game_flight_sim_smoke_motion_control import (
+    verify_motion_control_panel_handoff,
+)
 from lib.game_flight_sim_smoke_mission import complete_authored_flight_mission
 from lib.game_flight_sim_smoke_scene import (
     FLIGHT_MISSION_NODE,
@@ -255,6 +258,11 @@ def run_flight_runtime_verifications(
         lambda: verify_stop_start_lifecycle(page, web_mcp_calls),
         depends_on=("strict browser WebMCP",),
     )
+    state["motionControl"] = ledger.verify(
+        "Motion Control panel handoff",
+        lambda: verify_motion_control_panel_handoff(page),
+        depends_on=("stop and Start lifecycle",),
+    )
 
     def desktop_input() -> dict[str, Any]:
         initial = state["playable"]["initial"]
@@ -300,7 +308,7 @@ def run_flight_runtime_verifications(
     state["desktop"] = ledger.verify(
         "desktop playable input and HUD telemetry",
         desktop_input,
-        depends_on=("stop and Start lifecycle",),
+        depends_on=("Motion Control panel handoff",),
     )
     state["blur"] = ledger.verify(
         "blur lifecycle",

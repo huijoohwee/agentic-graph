@@ -544,6 +544,8 @@ registerXrSceneGameplayExitHandler('flightSim', () => {
   if (defaultRuntime.read().active || flightSimSurfaceOpenTail) {
     exitFlightSimSurface({ restorePreviousSurface: false })
   }
+}, {
+  preserveWhenPanelOnly: ['motionControl', 'camera'],
 })
 
 export function resetFlightSimRuntimeForTests(
