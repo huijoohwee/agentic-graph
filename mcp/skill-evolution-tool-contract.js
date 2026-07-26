@@ -265,6 +265,12 @@ const STATUS_SCHEMA = Object.freeze({
 
 export const SKILL_EVOLUTION_TOOL_INPUT_SCHEMA = Object.freeze({
   type: "object",
+  additionalProperties: false,
+  properties: {
+    ...PLAN_START_PROPERTIES,
+    runId: RUN_ID,
+    expectedRevision: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
+  },
   oneOf: [PLAN_OR_START_SCHEMA, STEP_OR_CANCEL_SCHEMA, STATUS_SCHEMA],
 });
 
@@ -560,7 +566,7 @@ export function buildSkillEvolutionToolDefinition({ withDefaults = (definition) 
   if (typeof withDefaults !== "function") throw new TypeError("withDefaults must be a function");
   const definition = {
     name: SKILL_EVOLUTION_TOOL_NAME,
-    description: "Use this to plan or advance bounded skill-text evolution with deterministic training batches, held-out validation gates, revision fencing, and no model-weight updates.",
+    description: "Use this when a local MCP host needs to plan or advance bounded skill-text evolution with deterministic training batches, held-out validation gates, revision fencing, and no model-weight updates.",
     inputSchema: SKILL_EVOLUTION_TOOL_INPUT_SCHEMA,
     outputSchema: SKILL_EVOLUTION_TOOL_OUTPUT_SCHEMA,
     annotations: ANNOTATIONS,

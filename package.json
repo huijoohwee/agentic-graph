@@ -61,6 +61,7 @@
     "application-composition:check": "node scripts/check-application-composition-independence.mjs && node --test contracts/__tests__/agent-application-contract.test.mjs mcp/__tests__/agent-application-component-packs.test.mjs mcp/__tests__/agent-application-hardening.test.mjs mcp/__tests__/agent-application-runtime.test.mjs mcp/__tests__/agent-application-stdio-e2e.test.mjs && npm run vdeoxpln:check",
     "agent-team:check": "node --test contracts/__tests__/agent-team-contract.test.mjs mcp/__tests__/agent-team-clean-room.test.mjs mcp/__tests__/agent-team-output-contract.test.mjs mcp/__tests__/agent-team-runtime.test.mjs mcp/__tests__/agent-team-runtime-safety.test.mjs mcp/__tests__/agent-team-runtime-lifecycle.test.mjs mcp/__tests__/agent-team-runtime-integrity.test.mjs mcp/__tests__/agent-team-runtime-hardening.test.mjs mcp/__tests__/agent-team-stdio-e2e.test.mjs",
     "skill-evolution:check": "node --test mcp/__tests__/skill-evolution-*.test.mjs",
+    "persistent-memory:check": "node --test --test-concurrency=1 mcp/__tests__/persistent-memory-*.test.mjs && npm -C canvas run test:ci:unit -- mcp.server.localToolContract.sharedAndStable",
     "auth-md:check": "node ./scripts/check-auth-md.mjs",
     "dns-aid:contract": "node ./scripts/check-dns-aid-contract.mjs",
     "dns-aid:check": "node ./scripts/check-dns-aid-cloudflare.mjs",
