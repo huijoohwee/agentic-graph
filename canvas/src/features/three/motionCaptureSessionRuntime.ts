@@ -8,10 +8,8 @@ import {
   isMotionCaptureSha256,
   type MotionCaptureCalibrationInput,
   type MotionCaptureClockAlignmentInput,
-  type MotionCaptureDerivedLandmark,
   type MotionCaptureExportArtifact,
   type MotionCaptureExportFormat,
-  type MotionCaptureLimits,
   type MotionCaptureObservationInput,
   type MotionCaptureRecordedSample,
   type MotionCaptureRecording,
@@ -35,7 +33,7 @@ import {
   createMutableMotionCaptureSourceQuality,
   freezeMotionCaptureSourceQuality,
   resetMotionCaptureSourceResearchEvidence,
-  type MutableMotionCaptureSourceQuality,
+  type MutableMotionCaptureSource,
 } from './motionCaptureSourceQualityRuntime'
 import {
   buildMotionCaptureResearchEvidenceEpoch,
@@ -43,93 +41,40 @@ import {
   recordMotionCaptureSourceRejection,
   type MutableMotionCaptureSourceRejections,
 } from './motionCaptureResearchEpochRuntime'
-
-type RuntimeListener = (snapshot: MotionCaptureSessionSnapshot) => void
-type IdKind = 'session' | 'source' | 'recording' | 'reconstruction'
-export type MotionCaptureSessionRuntimeOptions = Readonly<{
-  now?: () => number
-  idFactory?: (kind: IdKind) => string
-  limits?: Partial<MotionCaptureLimits>
-}>
-
-export type MotionCaptureSessionRuntime = Readonly<{
-  getSnapshot: () => MotionCaptureSessionSnapshot
-  subscribe: (listener: RuntimeListener) => () => void
-  registerSource: (input: MotionCaptureSourceRegistration) => MotionCaptureSourceState
-  removeSource: (sourceId: string) => MotionCaptureSessionSnapshot
-  releaseAllSources: () => MotionCaptureSessionSnapshot
-  setSourceClockAlignment: (sourceId: string, input: MotionCaptureClockAlignmentInput) => MotionCaptureSourceState
-  setSourceCalibration: (sourceId: string, input: MotionCaptureCalibrationInput) => MotionCaptureSourceState
-  setSharedReconstructionEvidence: (input: MotionCaptureSharedReconstructionInput) => MotionCaptureSessionSnapshot
-  clearSharedReconstructionEvidence: () => MotionCaptureSessionSnapshot
-  ingestObservation: (sourceId: string, input: MotionCaptureObservationInput) => MotionCaptureSessionSnapshot
-  startRecording: () => MotionCaptureSessionSnapshot
-  stopRecording: () => MotionCaptureSessionSnapshot
-  clearRecording: () => MotionCaptureSessionSnapshot
-  readRecording: () => MotionCaptureRecording | null
-  exportRecording: (format: MotionCaptureExportFormat) => Promise<MotionCaptureExportArtifact>
-}>
-
-type InternalSource = {
-  state: MotionCaptureSourceState
-  quality: MutableMotionCaptureSourceQuality
-  previousCaptureTimestampMs: number | null
-  previousSequence: number | null
-  researchEvidenceEpoch: number
-}
-
-let fallbackIdCounter = 0
-
-function defaultIdFactory(kind: IdKind): string {
-  const randomUuid = globalThis.crypto?.randomUUID?.()
-  fallbackIdCounter += 1
-  return randomUuid || `${kind}-${Date.now().toString(36)}-${fallbackIdCounter.toString(36)}`
-}
-
-function createOpaqueId(kind: IdKind, factory: (kind: IdKind) => string): string {
-  const token = factory(kind).trim().replace(/[^A-Za-z0-9_-]/gu, '').slice(0, 96)
-  if (!token) throw new Error('motion-capture-empty-opaque-id')
-  return `${kind}-${token}`
-}
-
-function freezeLandmarks(
-  landmarks: readonly MotionCaptureDerivedLandmark[],
-  limit: number,
-): readonly MotionCaptureDerivedLandmark[] {
-  if (!Array.isArray(landmarks)) throw new Error('motion-capture-invalid-landmarks-shape')
-  if (landmarks.length > limit) throw new Error('motion-capture-landmark-budget-exceeded')
-  return Object.freeze(Array.from(landmarks, (landmark) => {
-    assertStrictRecord(landmark, STRICT_INPUT_KEYS.landmark, 'landmark')
-    return Object.freeze({
-      x: finiteNumber(landmark.x, 'landmark-x'),
-      y: finiteNumber(landmark.y, 'landmark-y'),
-      z: finiteNumber(landmark.z, 'landmark-z'),
-      visibility: boundedNumber(landmark.visibility, 'landmark-visibility', 0, 1),
-      presence: boundedNumber(landmark.presence, 'landmark-presence', 0, 1),
-    })
-  }))
-}
-
+import {
+  buildMotionCaptureResearchEvidenceBinding,
+  validateMotionCaptureResearchEvidenceManifest,
+  type MotionCaptureResearchEvidenceManifest,
+  type ValidatedMotionCaptureResearchEvidence,
+} from './motionCaptureResearchEvidence'
+import {
+  createMotionCaptureOpaqueId,
+  defaultMotionCaptureIdFactory,
+  freezeMotionCaptureLandmarks,
+  validateMotionCaptureRuntimeOptions,
+} from './motionCaptureSessionPrimitives'
+import type {
+  MotionCaptureRuntimeListener,
+  MotionCaptureSessionRuntime,
+  MotionCaptureSessionRuntimeOptions,
+} from './motionCaptureSessionTypes'
+export type { MotionCaptureSessionRuntime, MotionCaptureSessionRuntimeOptions } from './motionCaptureSessionTypes'
 export function createMotionCaptureSessionRuntime(
   options: MotionCaptureSessionRuntimeOptions = {},
 ): MotionCaptureSessionRuntime {
-  assertStrictRecord(options, STRICT_INPUT_KEYS.runtimeOptions, 'runtime-options')
-  if (options.limits !== undefined) assertStrictRecord(options.limits, STRICT_INPUT_KEYS.runtimeLimits, 'runtime-limits')
-  if ((options.now !== undefined && typeof options.now !== 'function')
-    || (options.idFactory !== undefined && typeof options.idFactory !== 'function')) {
-    throw new Error('motion-capture-invalid-runtime-options-shape')
-  }
+  validateMotionCaptureRuntimeOptions(options)
   const now = options.now || Date.now
-  const idFactory = options.idFactory || defaultIdFactory
+  const idFactory = options.idFactory || defaultMotionCaptureIdFactory
   const limits = mergeMotionCaptureLimits(options.limits)
   const readNow = (): number => boundedNumber(now(), 'runtime-time', 0, MOTION_CAPTURE_MAX_TIME_MS)
-  const sessionId = createOpaqueId('session', idFactory)
-  const sources = new Map<string, InternalSource>()
-  const listeners = new Set<RuntimeListener>()
+  const sessionId = createMotionCaptureOpaqueId('session', idFactory)
+  const sources = new Map<string, MutableMotionCaptureSource>()
+  const listeners = new Set<MotionCaptureRuntimeListener>()
   let freshnessTimer: ReturnType<typeof setTimeout> | null = null
   let lastEvidenceSignature = ''
   let revision = 0
   let sharedReconstruction: MotionCaptureSharedReconstructionEvidence | null = null
+  let activeResearchEvidence: ValidatedMotionCaptureResearchEvidence | null = null
   let recordingRevision = 0
   let recordingStatus: 'idle' | 'recording' | 'stopped' = 'idle'
   let recordingId: string | null = null
@@ -138,6 +83,7 @@ export function createMotionCaptureSessionRuntime(
   let recordedLandmarkCount = 0
   let droppedByBudget = 0
   const sourceRejections: MutableMotionCaptureSourceRejections = new Map()
+  const recordingResearchEvidenceManifests = new Map<string, MotionCaptureResearchEvidenceManifest>()
   let recordedSamples: MotionCaptureRecordedSample[] = []
 
   const sourceStates = (): readonly MotionCaptureSourceState[] => Object.freeze(
@@ -199,22 +145,26 @@ export function createMotionCaptureSessionRuntime(
     return snapshot
   }
 
-  const getSource = (sourceId: string): InternalSource => {
+  const getSource = (sourceId: string): MutableMotionCaptureSource => {
     const source = sources.get(sourceId)
     if (!source) throw new Error('motion-capture-source-not-found')
     return source
   }
 
-  const replaceSourceState = (source: InternalSource, patch: Partial<MotionCaptureSourceState>): MotionCaptureSourceState => {
+  const replaceSourceState = (source: MutableMotionCaptureSource, patch: Partial<MotionCaptureSourceState>): MotionCaptureSourceState => {
     source.state = Object.freeze({ ...source.state, ...patch })
     notify()
     return source.state
   }
 
-  const resetSourceResearchEvidenceCohort = (source: InternalSource): void => {
+  const resetSourceResearchEvidenceCohort = (source: MutableMotionCaptureSource): void => {
     const bound = sharedReconstruction?.sourceBindings.some(binding => binding.sourceId === source.state.sourceId)
     const sourceIds = bound ? sharedReconstruction!.sourceBindings.map(binding => binding.sourceId) : [source.state.sourceId]
     sourceIds.forEach(sourceId => resetMotionCaptureSourceResearchEvidence(getSource(sourceId)))
+  }
+
+  const invalidateActiveResearchEvidence = (): void => {
+    activeResearchEvidence = null
   }
 
   const registerSource = (input: MotionCaptureSourceRegistration): MotionCaptureSourceState => {
@@ -236,7 +186,7 @@ export function createMotionCaptureSessionRuntime(
     const nominalFps = input.nominalFps === undefined
       ? null
       : boundedNumber(input.nominalFps, 'source-fps', 0.1, 1_000)
-    const sourceId = createOpaqueId('source', idFactory)
+    const sourceId = createMotionCaptureOpaqueId('source', idFactory)
     if (sources.has(sourceId)) throw new Error('motion-capture-duplicate-opaque-id')
     const quality = createMutableMotionCaptureSourceQuality()
     const state: MotionCaptureSourceState = Object.freeze({
@@ -261,6 +211,7 @@ export function createMotionCaptureSessionRuntime(
   const removeSource = (sourceId: string): MotionCaptureSessionSnapshot => {
     if (!sources.delete(sourceId)) throw new Error('motion-capture-source-not-found')
     if (sharedReconstruction?.sourceBindings.some(binding => binding.sourceId === sourceId)) sharedReconstruction = null
+    invalidateActiveResearchEvidence()
     return notify()
   }
 
@@ -268,6 +219,7 @@ export function createMotionCaptureSessionRuntime(
     if (sources.size === 0) return getSnapshot()
     sources.clear()
     sharedReconstruction = null
+    invalidateActiveResearchEvidence()
     return notify()
   }
 
@@ -288,7 +240,9 @@ export function createMotionCaptureSessionRuntime(
       measuredAtMs,
       evidenceDigestSha256: input.evidenceDigestSha256,
       provenance: 'measured-alignment' as const,
+      researchManifestDigestSha256: null,
     })
+    invalidateActiveResearchEvidence()
     resetSourceResearchEvidenceCohort(source)
     return replaceSourceState(source, { clockAlignment })
   }
@@ -331,8 +285,10 @@ export function createMotionCaptureSessionRuntime(
         evidenceDigestSha256: input.provenance.evidenceDigestSha256,
       }) : null,
       reprojectionErrorPx,
+      researchValidation: null,
     })
     if (sharedReconstruction?.sourceBindings.some(binding => binding.sourceId === sourceId)) sharedReconstruction = null
+    invalidateActiveResearchEvidence()
     resetMotionCaptureSourceResearchEvidence(source)
     return replaceSourceState(source, { calibration })
   }
@@ -369,16 +325,18 @@ export function createMotionCaptureSessionRuntime(
       })
     })
     const nextSharedReconstruction = Object.freeze({
-      reconstructionId: createOpaqueId('reconstruction', idFactory),
+      reconstructionId: createMotionCaptureOpaqueId('reconstruction', idFactory),
       referenceFrame: 'shared-metric-session' as const,
       coordinateSpace: 'metric-world' as const,
       method: 'measured' as const,
       measuredAtMs,
       evidenceDigestSha256: input.evidenceDigestSha256,
+      researchValidation: null,
       sourceBindings: Object.freeze(sourceBindings),
     })
     sourceIds.forEach(sourceId => resetMotionCaptureSourceResearchEvidence(getSource(sourceId)))
     sharedReconstruction = nextSharedReconstruction
+    invalidateActiveResearchEvidence()
     return notify()
   }
 
@@ -386,7 +344,33 @@ export function createMotionCaptureSessionRuntime(
     if (!sharedReconstruction) return getSnapshot()
     const sourceIds = sharedReconstruction.sourceBindings.map(binding => binding.sourceId)
     sharedReconstruction = null
+    invalidateActiveResearchEvidence()
     sourceIds.forEach(sourceId => resetMotionCaptureSourceResearchEvidence(getSource(sourceId)))
+    return notify()
+  }
+
+  const applyResearchEvidenceManifest = async (input: unknown): Promise<MotionCaptureSessionSnapshot> => {
+    if (motionCapturePlatformTeardownActive()) throw new Error('motion-capture-platform-teardown-active')
+    if (recordingStatus === 'recording') throw new Error('motion-capture-research-evidence-recording-active')
+    const evidenceFence = revision
+    const validated = await validateMotionCaptureResearchEvidenceManifest(input, {
+      sources: sourceStates(), limits, nowMs: readNow(),
+    })
+    if (revision !== evidenceFence) throw new Error('motion-capture-research-evidence-invalidated')
+    const binding = buildMotionCaptureResearchEvidenceBinding(
+      validated, createMotionCaptureOpaqueId('reconstruction', idFactory),
+    )
+    binding.sourcePatches.forEach((patch) => {
+      const source = getSource(patch.sourceId)
+      resetMotionCaptureSourceResearchEvidence(source)
+      source.state = Object.freeze({
+        ...source.state,
+        clockAlignment: patch.clockAlignment,
+        calibration: patch.calibration,
+      })
+    })
+    sharedReconstruction = binding.sharedReconstruction
+    activeResearchEvidence = validated
     return notify()
   }
 
@@ -408,7 +392,7 @@ export function createMotionCaptureSessionRuntime(
       ? null
       : integerNumber(input.sequence, 'sequence', 0, Number.MAX_SAFE_INTEGER)
     const missing = input.missing === true
-    const landmarks = freezeLandmarks(input.landmarks, limits.maxLandmarksPerObservation)
+    const landmarks = freezeMotionCaptureLandmarks(input.landmarks, limits.maxLandmarksPerObservation)
     if (missing !== (landmarks.length === 0)) throw new Error('motion-capture-missing-sample-shape-mismatch')
     const confidence = boundedNumber(input.confidence, 'confidence', 0, 1)
     const researchLandmarkCount = landmarks.filter(landmark => (
@@ -453,7 +437,12 @@ export function createMotionCaptureSessionRuntime(
     if (missing) source.quality.missingSamples += 1
     else {
       source.quality.usableSamples += 1
-      if (researchEvidenceQualified) source.quality.researchUsableSamples += 1
+      if (researchEvidenceQualified) {
+        source.quality.researchUsableSamples += 1
+        const researchTimestampMs = alignedTimestampMs ?? captureTimestampMs
+        source.quality.firstResearchTimestampMs ??= researchTimestampMs
+        source.quality.lastResearchTimestampMs = researchTimestampMs
+      }
       else source.quality.lowEvidenceSamples += 1
     }
     const quality = freezeMotionCaptureSourceQuality(source.quality)
@@ -495,7 +484,13 @@ export function createMotionCaptureSessionRuntime(
           sharedReconstructionId: evaluation.sharedReconstructionId,
           researchSourceIds: evaluation.researchSourceIds,
           researchEvidenceEpoch,
+          researchManifestDigestSha256: activeResearchEvidence?.manifestDigestSha256 || null,
         }))
+        if (activeResearchEvidence) {
+          recordingResearchEvidenceManifests.set(
+            activeResearchEvidence.manifestDigestSha256, activeResearchEvidence.manifest,
+          )
+        }
         recordedLandmarkCount += landmarks.length
       }
     }
@@ -506,12 +501,17 @@ export function createMotionCaptureSessionRuntime(
     if (motionCapturePlatformTeardownActive()) throw new Error('motion-capture-platform-teardown-active')
     if (recordingStatus === 'recording') return getSnapshot()
     if (recordingStatus === 'stopped') throw new Error('motion-capture-recording-must-be-cleared')
+    if (sources.size === 0) throw new Error('motion-capture-recording-source-required')
     recordingStatus = 'recording'
     recordingRevision += 1
-    recordingId = createOpaqueId('recording', idFactory)
+    recordingId = createMotionCaptureOpaqueId('recording', idFactory)
     recordingStartedAtMs = readNow()
     recordingFinishedAtMs = null
     sourceRejections.clear()
+    recordingResearchEvidenceManifests.clear()
+    if (activeResearchEvidence) {
+      recordingResearchEvidenceManifests.set(activeResearchEvidence.manifestDigestSha256, activeResearchEvidence.manifest)
+    }
     return notify()
   }
 
@@ -533,10 +533,10 @@ export function createMotionCaptureSessionRuntime(
     recordedLandmarkCount = 0
     droppedByBudget = 0
     sourceRejections.clear()
+    recordingResearchEvidenceManifests.clear()
     recordedSamples = []
     return notify()
   }
-
   const readRecording = (): MotionCaptureRecording | null => {
     if (recordingStatus === 'idle' || !recordingId || recordingStartedAtMs === null) return null
     return Object.freeze({
@@ -549,10 +549,12 @@ export function createMotionCaptureSessionRuntime(
       droppedByBudget,
       researchLimits: limits,
       sourceRejections: freezeMotionCaptureSourceRejections(sourceRejections),
+      researchEvidenceManifests: Object.freeze([...recordingResearchEvidenceManifests.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([, manifest]) => manifest)),
       samples: Object.freeze([...recordedSamples]),
     })
   }
-
   const exportRecording = async (format: MotionCaptureExportFormat): Promise<MotionCaptureExportArtifact> => {
     const recording = readRecording()
     if (!recording || recording.status !== 'stopped') throw new Error('motion-capture-recording-not-finished')
@@ -566,7 +568,7 @@ export function createMotionCaptureSessionRuntime(
 
   return Object.freeze({
     getSnapshot,
-    subscribe: (listener: RuntimeListener) => {
+    subscribe: (listener: MotionCaptureRuntimeListener) => {
       listeners.add(listener)
       if (lastEvidenceSignature !== JSON.stringify(getSnapshot().evidence)) notify()
       else scheduleFreshnessExpiry()
@@ -583,6 +585,7 @@ export function createMotionCaptureSessionRuntime(
     setSourceCalibration,
     setSharedReconstructionEvidence,
     clearSharedReconstructionEvidence,
+    applyResearchEvidenceManifest,
     ingestObservation,
     startRecording,
     stopRecording,
@@ -593,4 +596,4 @@ export function createMotionCaptureSessionRuntime(
 }
 export const motionCaptureSessionRuntime = createMotionCaptureSessionRuntime()
 export const readMotionCaptureSessionSnapshot = (): MotionCaptureSessionSnapshot => motionCaptureSessionRuntime.getSnapshot()
-export const subscribeMotionCaptureSession = (listener: RuntimeListener): (() => void) => motionCaptureSessionRuntime.subscribe(listener)
+export const subscribeMotionCaptureSession = (listener: MotionCaptureRuntimeListener): (() => void) => motionCaptureSessionRuntime.subscribe(listener)

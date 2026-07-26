@@ -14,6 +14,7 @@ type RecordingLocalSourceQuality = Readonly<{
   researchUsableSamples: number
   lowEvidenceSamples: number
   researchEvidenceFailureRate: number
+  researchDurationMs: number
   missingSamples: number
   droppedSequenceSamples: number
   unsequencedSamples: number
@@ -79,6 +80,11 @@ function gradeSourceSamples(
   const unsequencedSamples = samples.filter(sample => sample.sequence === null).length
   const usableSamples = samples.length - missingSamples
   const researchUsableSamples = samples.filter(sample => sampleSupportsResearch(sample, limits)).length
+  const researchTimestamps = samples.filter(sample => sampleSupportsResearch(sample, limits))
+    .map(sample => sample.alignedTimestampMs ?? sample.captureTimestampMs)
+  const researchDurationMs = researchTimestamps.length < 2
+    ? 0
+    : Math.max(...researchTimestamps) - Math.min(...researchTimestamps)
   const lowEvidenceSamples = usableSamples - researchUsableSamples
   const expectedSamples = samples.length + droppedSequenceSamples
   const dropRate = expectedSamples > 0 ? (missingSamples + droppedSequenceSamples) / expectedSamples : 0
@@ -86,9 +92,10 @@ function gradeSourceSamples(
     ? (missingSamples + lowEvidenceSamples + droppedSequenceSamples) / expectedSamples
     : 0
   return Object.freeze({
-    sourceId, usableSamples, researchUsableSamples, lowEvidenceSamples, researchEvidenceFailureRate,
+    sourceId, usableSamples, researchUsableSamples, lowEvidenceSamples, researchEvidenceFailureRate, researchDurationMs,
     missingSamples, droppedSequenceSamples, unsequencedSamples, outOfOrderSamples, jitterMs, dropRate,
     researchReady: researchUsableSamples >= limits.minimumResearchSamplesPerSource
+      && researchDurationMs >= limits.minimumResearchDurationMs
       && jitterMs <= limits.maxJitterMs
       && researchEvidenceFailureRate <= limits.maxDropRate
       && unsequencedSamples === 0
@@ -112,7 +119,10 @@ function gradeRecordingLocalSourceQuality(
   )))
 }
 
-function gradeRecordingResearchEvidence(recording: MotionCaptureRecording): RecordingResearchGrade {
+function gradeRecordingResearchEvidence(
+  recording: MotionCaptureRecording,
+  manifestDigests: ReadonlySet<string>,
+): RecordingResearchGrade {
   const limits = mergeMotionCaptureLimits(recording.researchLimits)
   const sourceQuality = gradeRecordingLocalSourceQuality(recording, limits)
   const allSamples = sortedSamples(recording)
@@ -123,8 +133,14 @@ function gradeRecordingResearchEvidence(recording: MotionCaptureRecording): Reco
   }>()
   for (const sample of allSamples) {
     const sourceIds = Object.freeze([...sample.researchSourceIds].sort())
-    if (sourceIds.length < 2 || sample.sharedReconstructionId === null || sample.researchEvidenceEpoch === null) continue
-    const cohortKey = JSON.stringify([sample.sharedReconstructionId, sourceIds, sample.researchEvidenceEpoch])
+    if (sourceIds.length < 2
+      || sample.sharedReconstructionId === null
+      || sample.researchEvidenceEpoch === null
+      || sample.researchManifestDigestSha256 === null
+      || !manifestDigests.has(sample.researchManifestDigestSha256)) continue
+    const cohortKey = JSON.stringify([
+      sample.sharedReconstructionId, sourceIds, sample.researchEvidenceEpoch, sample.researchManifestDigestSha256,
+    ])
     const cohort = cohorts.get(cohortKey)
     if (cohort) cohort.samples.push(sample)
     else cohorts.set(cohortKey, {
@@ -177,6 +193,7 @@ function gradeRecordingResearchEvidence(recording: MotionCaptureRecording): Reco
   }
   return Object.freeze({
     researchReady: recording.droppedByBudget === 0
+      && manifestDigests.size > 0
       && researchReadyGroupCount >= limits.minimumResearchSamplesPerSource,
     researchReadyGroupCount,
     sourceQuality,
@@ -206,7 +223,8 @@ function buildJsonContent(recording: MotionCaptureRecording, grade: RecordingRes
     sessionEvidence: sample.sessionEvidence,
     sharedReconstructionId: sample.sharedReconstructionId,
     researchSourceIds: sample.researchSourceIds,
-    researchEvidenceEpoch: sample.researchEvidenceEpoch,
+      researchEvidenceEpoch: sample.researchEvidenceEpoch,
+      researchManifestDigestSha256: sample.researchManifestDigestSha256,
   }))
   return `${JSON.stringify({
     schema: EXPORT_SCHEMA,
@@ -220,6 +238,7 @@ function buildJsonContent(recording: MotionCaptureRecording, grade: RecordingRes
       droppedByBudget: recording.droppedByBudget,
       researchLimits: recording.researchLimits,
       sourceRejections: recording.sourceRejections,
+      researchEvidenceManifests: recording.researchEvidenceManifests,
       sampleCount: recording.samples.length,
       landmarkCount: recording.samples.reduce((total, sample) => total + sample.landmarks.length, 0),
       researchReady: grade.researchReady,
@@ -247,10 +266,12 @@ const CSV_COLUMNS = Object.freeze([
   'recording_research_limits',
   'recording_research_ready',
   'research_ready_group_count',
+  'research_evidence_manifest_count',
   'recording_source_usable_samples',
   'recording_source_research_usable_samples',
   'recording_source_low_evidence_samples',
   'recording_source_research_evidence_failure_rate',
+  'recording_source_research_duration_ms',
   'recording_source_missing_samples',
   'recording_source_dropped_sequence_samples',
   'recording_source_unsequenced_samples',
@@ -270,6 +291,7 @@ const CSV_COLUMNS = Object.freeze([
   'shared_reconstruction_id',
   'research_source_ids',
   'research_evidence_epoch',
+  'research_manifest_digest_sha256',
   'landmark_index',
   'x',
   'y',
@@ -305,10 +327,12 @@ function buildCsvContent(recording: MotionCaptureRecording, grade: RecordingRese
       JSON.stringify(recording.researchLimits),
       grade.researchReady,
       grade.researchReadyGroupCount,
+      recording.researchEvidenceManifests.length,
       recordingSourceQuality.usableSamples,
       recordingSourceQuality.researchUsableSamples,
       recordingSourceQuality.lowEvidenceSamples,
       recordingSourceQuality.researchEvidenceFailureRate,
+      recordingSourceQuality.researchDurationMs,
       recordingSourceQuality.missingSamples,
       recordingSourceQuality.droppedSequenceSamples,
       recordingSourceQuality.unsequencedSamples,
@@ -328,6 +352,7 @@ function buildCsvContent(recording: MotionCaptureRecording, grade: RecordingRese
       sample.sharedReconstructionId,
       JSON.stringify(sample.researchSourceIds),
       sample.researchEvidenceEpoch,
+      sample.researchManifestDigestSha256,
       landmarkIndex,
       landmark?.x ?? null,
       landmark?.y ?? null,
@@ -367,7 +392,10 @@ export async function buildMotionCaptureExport(
   if (recording.status !== 'stopped' || recording.finishedAtMs === null) {
     throw new Error('motion-capture-recording-not-finished')
   }
-  const grade = gradeRecordingResearchEvidence(recording)
+  const manifestDigests = new Set(await Promise.all(
+    recording.researchEvidenceManifests.map(manifest => sha256(JSON.stringify(manifest))),
+  ))
+  const grade = gradeRecordingResearchEvidence(recording, manifestDigests)
   const content = format === 'json' ? buildJsonContent(recording, grade) : buildCsvContent(recording, grade)
   const sampleCount = recording.samples.length
   const landmarkCount = recording.samples.reduce((total, sample) => total + sample.landmarks.length, 0)
@@ -386,5 +414,6 @@ export async function buildMotionCaptureExport(
     landmarkCount,
     researchReady: grade.researchReady,
     researchReadyGroupCount: grade.researchReadyGroupCount,
+    researchEvidenceManifestCount: recording.researchEvidenceManifests.length,
   })
 }

@@ -73,6 +73,7 @@ export async function testMotionCaptureInvocationAndWebMcpConvergeWithoutPayload
     if ('content' in exported.export
       || exported.export.format !== 'json'
       || exported.export.researchReadyGroupCount !== 0
+      || exported.export.researchEvidenceManifestCount !== 0
       || !/^[a-f0-9]{64}$/u.test(exported.export.sha256)) {
       throw new Error('expected WebMCP export to return deterministic metadata without recording bytes')
     }
@@ -96,7 +97,7 @@ export async function testMotionCaptureInvocationAndWebMcpConvergeWithoutPayload
       || captureSchema?.additionalProperties !== false
       || peerSchema?.additionalProperties !== false
       || !['"throttled"', '"backpressure"'].every(status => inspectSchema.includes(status))
-      || !['"researchUsableSamples"', '"lowEvidenceSamples"'].every(field => inspectSchema.includes(field))
+      || !['"researchUsableSamples"', '"researchDurationMs"', '"researchManifestDigestSha256"', '"providerApi"'].every(field => inspectSchema.includes(field))
       || inspectSchema.includes('"content"')) {
       throw new Error('expected strict v2 WebMCP capture input and redacted inspection schemas')
     }

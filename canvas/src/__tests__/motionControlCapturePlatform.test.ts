@@ -14,11 +14,19 @@ import {
   startMotionControlCapturePlatformSource,
   stopMotionControlCapturePlatformSource,
 } from '@/features/three/motionControlCapturePlatformBridge'
+import {
+  applyResearchEvidenceManifest,
+  buildResearchEvidenceManifest,
+} from '@/__tests__/helpers/motionCaptureResearchEvidenceFixture'
+import {
+  MOTION_CAPTURE_PROVIDER_API_SCHEMA,
+  motionCaptureProviderApi,
+} from '@/features/three/motionCaptureProviderRuntime'
 
 const EVIDENCE_A = 'a'.repeat(64)
 const EVIDENCE_B = 'b'.repeat(64)
 const SHARED_RECONSTRUCTION_EVIDENCE = 'c'.repeat(64)
-
+const RESEARCH_GROUP_COUNT = 31
 const landmark = (offset = 0): MotionCaptureDerivedLandmark => Object.freeze({
   x: 0.25 + offset,
   y: 0.5,
@@ -26,7 +34,6 @@ const landmark = (offset = 0): MotionCaptureDerivedLandmark => Object.freeze({
   visibility: 0.98,
   presence: 0.99,
 })
-
 function deterministicIds() {
   let sequence = 0
   return (kind: 'session' | 'source' | 'recording' | 'reconstruction') => `${kind}_${++sequence}`
@@ -143,7 +150,7 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
   })
 
   const ingestSynchronizedPair = (index: number): void => {
-    nowMs = 1_033 + index * 33
+    nowMs += 34
     runtime.ingestObservation(first.sourceId, {
       captureTimestampMs: nowMs,
       sequence: index + 1,
@@ -186,6 +193,18 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
     evidenceDigestSha256: SHARED_RECONSTRUCTION_EVIDENCE,
   })
   for (let index = 3; index < 6; index += 1) ingestSynchronizedPair(index)
+  if (runtime.getSnapshot().evidence.researchReady) {
+    throw new Error('expected caller-supplied SHA metadata never to qualify as research evidence')
+  }
+  const strictManifest = buildResearchEvidenceManifest(runtime, [first.sourceId, second.sourceId], nowMs)
+  await expectFailure(() => runtime.applyResearchEvidenceManifest({
+    ...strictManifest,
+    sources: strictManifest.sources.map((source, index) => index === 0
+      ? { ...source, calibrationSampleCount: '60' }
+      : source),
+  }), 'motion-capture-invalid-research-calibration-sample-count')
+  await runtime.applyResearchEvidenceManifest(strictManifest)
+  for (let index = 0; index < RESEARCH_GROUP_COUNT; index += 1) ingestSynchronizedPair(index)
   const research = runtime.getSnapshot()
   if (research.schema !== MOTION_CAPTURE_PLATFORM_SCHEMA
     || research.evidence.tier !== 'calibrated-metric-reconstruction'
@@ -239,25 +258,13 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
     coordinateSpace: 'metric-world',
     clockDomain: 'session-monotonic',
   })
-  groupedRuntime.setSourceCalibration(groupedFirst.sourceId, {
-    status: 'calibrated',
-    coordinateSpace: 'metric-world',
-    provenance: { kind: 'measured', measuredAtMs: nowMs, evidenceDigestSha256: EVIDENCE_A },
-  })
-  groupedRuntime.setSourceCalibration(groupedSecond.sourceId, {
-    status: 'calibrated',
-    coordinateSpace: 'metric-world',
-    provenance: { kind: 'measured', measuredAtMs: nowMs, evidenceDigestSha256: EVIDENCE_B },
-  })
-  groupedRuntime.setSharedReconstructionEvidence({
-    sourceIds: [groupedFirst.sourceId, groupedSecond.sourceId],
-    method: 'measured',
-    measuredAtMs: nowMs,
-    evidenceDigestSha256: SHARED_RECONSTRUCTION_EVIDENCE,
-  })
+  await applyResearchEvidenceManifest(groupedRuntime, [groupedFirst.sourceId, groupedSecond.sourceId], nowMs)
   groupedRuntime.startRecording()
-  for (let index = 0; index < 3; index += 1) {
-    nowMs = 3_000 + index * 33
+  await expectFailure(() => applyResearchEvidenceManifest(
+    groupedRuntime, [groupedFirst.sourceId, groupedSecond.sourceId], nowMs,
+  ), 'motion-capture-research-evidence-recording-active')
+  for (let index = 0; index < RESEARCH_GROUP_COUNT; index += 1) {
+    nowMs = 3_000 + index * 34
     for (const source of [groupedFirst, groupedSecond]) groupedRuntime.ingestObservation(source.sourceId, {
       captureTimestampMs: nowMs,
       sequence: index + 1,
@@ -268,8 +275,8 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
   }
   groupedRuntime.stopRecording()
   const researchExport = await groupedRuntime.exportRecording('json')
-  if (!researchExport.researchReady || researchExport.researchReadyGroupCount !== 3) {
-    throw new Error('expected an immediate three-pair recording to qualify without session pre-roll')
+  if (!researchExport.researchReady || researchExport.researchReadyGroupCount !== RESEARCH_GROUP_COUNT) {
+    throw new Error('expected a one-second, thirty-one-pair recording to qualify without session pre-roll')
   }
   const researchRecording = groupedRuntime.readRecording()
   if (!researchRecording) throw new Error('expected the research recording to remain available')
@@ -299,18 +306,20 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
     nowMs += 33
     for (const source of [groupedFirst, groupedSecond]) groupedRuntime.ingestObservation(source.sourceId, {
       captureTimestampMs: nowMs,
-      sequence: index + 4,
+      sequence: index + RESEARCH_GROUP_COUNT + 1,
       coordinateSpace: 'metric-world',
       confidence: 0.98,
       landmarks: [landmark()],
     })
   }
   groupedRuntime.startRecording()
-  for (const [index, interval] of [1, 99, 1].entries()) {
+  for (const [index, interval] of Array.from({ length: RESEARCH_GROUP_COUNT }, (_, itemIndex) => (
+    itemIndex % 2 === 0 ? 20 : 48
+  )).entries()) {
     nowMs += interval
     for (const source of [groupedFirst, groupedSecond]) groupedRuntime.ingestObservation(source.sourceId, {
       captureTimestampMs: nowMs,
-      sequence: index + 104,
+      sequence: index + RESEARCH_GROUP_COUNT + 101,
       coordinateSpace: 'metric-world',
       confidence: 0.98,
       landmarks: [landmark()],
@@ -318,7 +327,7 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
   }
   groupedRuntime.stopRecording()
   if (!groupedRuntime.getSnapshot().evidence.researchReady) {
-    throw new Error('expected long clean pre-roll to demonstrate cumulative session-quality dilution')
+    throw new Error(`expected long clean pre-roll to demonstrate cumulative session-quality dilution: ${JSON.stringify(groupedRuntime.getSnapshot())}`)
   }
   const badWindowExport = await groupedRuntime.exportRecording('json')
   const badWindowPayload = JSON.parse(badWindowExport.content) as {
@@ -333,8 +342,8 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
   }
   groupedRuntime.clearRecording()
   groupedRuntime.startRecording()
-  for (let index = 0; index < 3; index += 1) {
-    nowMs += 33
+  for (let index = 0; index < RESEARCH_GROUP_COUNT; index += 1) {
+    nowMs += 34
     for (const source of [groupedFirst, groupedSecond]) groupedRuntime.ingestObservation(source.sourceId, {
       captureTimestampMs: nowMs,
       coordinateSpace: 'metric-world',
@@ -363,21 +372,12 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
     captureKind: 'landmark-stream', coordinateSpace: 'metric-world', clockDomain: 'session-monotonic',
   })
   const freshnessMeasuredAt = Date.now()
-  freshnessRuntime.setSourceCalibration(freshnessFirst.sourceId, {
-    status: 'calibrated', coordinateSpace: 'metric-world',
-    provenance: { kind: 'measured', measuredAtMs: freshnessMeasuredAt, evidenceDigestSha256: EVIDENCE_A },
-  })
-  freshnessRuntime.setSourceCalibration(freshnessSecond.sourceId, {
-    status: 'calibrated', coordinateSpace: 'metric-world',
-    provenance: { kind: 'measured', measuredAtMs: freshnessMeasuredAt, evidenceDigestSha256: EVIDENCE_B },
-  })
-  freshnessRuntime.setSharedReconstructionEvidence({
-    sourceIds: [freshnessFirst.sourceId, freshnessSecond.sourceId],
-    method: 'measured', measuredAtMs: freshnessMeasuredAt, evidenceDigestSha256: SHARED_RECONSTRUCTION_EVIDENCE,
-  })
-  for (let index = 0; index < 3; index += 1) {
+  await applyResearchEvidenceManifest(
+    freshnessRuntime, [freshnessFirst.sourceId, freshnessSecond.sourceId], freshnessMeasuredAt,
+  )
+  for (let index = 0; index < RESEARCH_GROUP_COUNT; index += 1) {
     for (const source of [freshnessFirst, freshnessSecond]) freshnessRuntime.ingestObservation(source.sourceId, {
-      captureTimestampMs: 10_000 + index * 33,
+      captureTimestampMs: 10_000 + index * 34,
       sequence: index + 1,
       coordinateSpace: 'metric-world', confidence: 0.98, landmarks: [landmark()],
     })
@@ -541,24 +541,32 @@ export async function testMotionCapturePlatformIsProviderNeutralBoundedAndEviden
     throw new Error('expected XR exit to finish and retain recording, disable sharing, and tolerate an already-off camera')
   }
 
-  const externalProvider = motionCaptureSessionRuntime.registerSource({
+  const providerHandle = motionCaptureProviderApi.connect({
+    providerId: 'test-provider', label: 'Test provider', transport: 'host-bridge',
+  })
+  const externalProvider = providerHandle.registerSource({
     captureKind: 'landmark-stream', coordinateSpace: 'model-relative', clockDomain: 'session-monotonic',
   })
   try {
+    await expectFailure(() => providerHandle.ingestObservation('unowned-source', {
+      captureTimestampMs: nowMs, sequence: 1, coordinateSpace: 'model-relative', confidence: 1, landmarks: [landmark()],
+    }), 'motion-capture-provider-source-not-owned')
     if (!startMotionControlCapturePlatformSource()) throw new Error('expected the built-in source to coexist with a provider source')
     motionCaptureSessionRuntime.startRecording()
     stopMotionControlCapturePlatformSource({ releaseRegisteredSources: false })
     if (!motionCaptureSessionRuntime.getSnapshot().sources.some(source => source.sourceId === externalProvider.sourceId)
       || inspectMotionControlCapturePlatform().bridge.builtInSourceActive
+      || inspectMotionControlCapturePlatform().bridge.providerApi.schema !== MOTION_CAPTURE_PROVIDER_API_SCHEMA
+      || inspectMotionControlCapturePlatform().bridge.providerApi.connectedProviderCount !== 1
       || motionCaptureSessionRuntime.getSnapshot().recording.status !== 'recording') {
-      throw new Error('expected a built-in restart to release only its owned source and preserve provider recording')
+      throw new Error('expected a capability-scoped provider source to survive built-in source teardown')
     }
   } finally {
     stopMotionControlCapturePlatformSource({ releaseRegisteredSources: false })
     if (motionCaptureSessionRuntime.getSnapshot().recording.status === 'recording') motionCaptureSessionRuntime.stopRecording()
     motionCaptureSessionRuntime.clearRecording()
-    if (motionCaptureSessionRuntime.getSnapshot().sources.some(source => source.sourceId === externalProvider.sourceId)) {
-      motionCaptureSessionRuntime.removeSource(externalProvider.sourceId)
+    if (motionCaptureProviderApi.inspect().providers.some(provider => provider.providerId === 'test-provider')) {
+      providerHandle.disconnect()
     }
   }
 
