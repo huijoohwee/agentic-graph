@@ -1,4 +1,4 @@
-export type MediaCatalogMode = 'media' | 'xr-3d'
+export type MediaCatalogMode = 'media' | 'xr-3d' | 'voice-studio'
 
 type Listener = () => void
 

@@ -1,6 +1,13 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["voice.studio.invocation.exactRoutes","@/__tests__/voiceStudioRuntime.test","testVoiceStudioExactInvocationRoutes"],
+  ["voice.studio.profile.consentMetadataOnly","@/__tests__/voiceStudioRuntime.test","testVoiceStudioProfileManifestConsentAndMetadataOnly"],
+  ["voice.studio.browser.failClosed","@/__tests__/voiceStudioRuntime.test","testVoiceStudioBrowserCapabilitiesFailClosed"],
+  ["voice.studio.ui.stopAndDisclosure","@/__tests__/voiceStudioRuntime.test","testVoiceStudioUiProvidesStopAndDisclosure"],
+  ["voice.studio.ui.recordingEvidence","@/__tests__/voiceStudioPanelLifecycle.test","testVoiceStudioPanelRequiresRecordingEvidenceAndRecognitionOptIn"],
+  ["voice.studio.ui.lifecycleTabs","@/__tests__/voiceStudioPanelLifecycle.test","testVoiceStudioPanelSwitchStopsOnceAndTabsAreAccessible"],
+  ["voice.studio.source.cleanRoom","@/__tests__/voiceStudioRuntime.test","testVoiceStudioCleanRoomDependencyBoundary"],
   ["chat.responseContract.widgetPalette.reusesPropsPanelLayouts","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseContractReusesPropsPanelWidgetLayouts"],
   ["chat.responseContract.widgetPalette.reusesCanonicalSeeds","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseWidgetsReuseCanonicalLayoutSeedsDeterministically"],
   ["chat.responseContract.widgetPalette.rejectsProviderRuntimeAuthority","@/__tests__/chatResponseWidgetPaletteContract.test","testChatResponseCanonicalLayoutsRejectProviderRuntimeAuthority"],
