@@ -52,6 +52,11 @@ test('runtime docs dependency resolves one checkout repository and immutable ref
       .map((token) => contract.docs_dependency.proof_tokens.includes(token)),
     [true, true, true],
   )
+  assert.deepEqual(
+    ['/motion.control', '#pose', '@canvas']
+      .map((token) => contract.docs_dependency.proof_tokens.includes(token)),
+    [true, true, true],
+  )
   assert.deepEqual(dependency, {
     repository: 'huijoohwee/agentic-canvas-os',
     ref: contract.docs_dependency.ref,
