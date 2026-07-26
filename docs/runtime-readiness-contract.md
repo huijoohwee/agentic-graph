@@ -13,7 +13,7 @@ stage_contract:
   order: ["research", "storyboard", "render", "edit", "publish", "checkout"]
 docs_dependency:
   repository: "https://github.com/huijoohwee/agentic-canvas-os.git"
-  ref: "771959da6f8ac55a11e11e282f5dade01a7d9db9"
+  ref: "14a9b5486b63b830c7ff3776d8b33d568ef0b046"
   root_env: "KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT"
   default_relative_root: "../agentic-canvas-os/docs"
   required_files: ["FACTS.md", "DICTIONARY-COMMAND.md", "DICTIONARY-SEMANTIC.md", "DICTIONARY-BINDING.md", "START-WORKFLOW.md", "RELEASE-WORKFLOW.md", "CANONICAL-LIFECYCLE.md", "RUNTIME-PROOF.md", "REPOSITORY-PACKING.md", "LIVE-AGENT-PROVIDER-PROOF.md", "PROGRESSIVE-AGENTS.md", "PROMPT-PRESETS.md", "AGENT-TOOLKIT.md", "APPLICATION-COMPOSITION.md", "SKILL-EVOLUTION.md", "AGENT-TEAM.md", "VOICE-STUDIO.md", "SKILLS.md", "schemas/production-runtime-readiness.v2.schema.json"]
@@ -143,6 +143,8 @@ The Agentic ECS tokens resolve from the pinned Agentic Canvas OS dictionaries, w
 The deployed agent runtime requires only the `knowgrph-mcp` Worker, its Agents SDK Durable Objects, the `AI` Workers AI binding, the `KNOWGRPH_AGENT_RUNTIME_BEARER_TOKEN` Worker secret, and an operator-selected `KNOWGRPH_AGENT_MODEL_ID`. The model identifier has no repository default. Agent definitions, schemas, plans, policies, and renderer contracts are bundled from `data/config/agents/agent-definitions.json`; request handling does not read another repository or call an external orchestration service.
 
 The pinned Agentic Canvas OS documentation is a source-time governance dependency checked before promotion. It is not a request-time infrastructure dependency. BytePlus, Exa, StryTree, payment, and media services remain optional adapters for their existing specialized stages and are not required for `/investment-research-agent`, `/sme-care-agent`, or `/video-agent` to compile and dry-run.
+
+Invocation-catalog readiness additionally requires every read-only `/`, `#`, and `@` docs MCP response to carry the same exact source revision, full-catalog counts, and deterministic SHA-256 `catalogDigest`. The browser replaces each sigil slice, rejects provenance, membership, count, or digest drift, recomputes the digest from the assembled source metadata, and only then publishes `fresh`. FloatingPanel Skills & Commands and the canonical runtime identity expose that digest; peer attestation compares it directly, while local executable behavior may enrich but never shadow dictionary-owned metadata.
 
 The reviewed Function Calling proof uses the separate `env.dev` Worker named `knowgrph-mcp-dev`. That environment repeats the MCP and Run Manifest Durable Object bindings, keeps `KNOWGRPH_LIVE_CLIENTS="0"`, serves only a `workers.dev` hostname, and declares no `airvio.co` route. Its Dev-only bearer authenticates both the Agentic service client and the proof manifest read-back. The top-level production routes and deploy command remain a separate gate.
 

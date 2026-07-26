@@ -5,6 +5,7 @@ import { useAgenticOsRemoteGrammarAutoHydration } from './useAgenticOsRemoteGram
 import {
   AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH,
   AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
+  serializeAgenticCanvasOsDocsCatalogForDigest,
 } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
 import {
   emptyProgressiveAgentsReadiness,
@@ -13,6 +14,11 @@ import {
 } from './agenticOsProgressiveAgentsReadiness'
 import { normalizeAgenticOsRemoteGrammarCatalogProvenance } from './agenticOsRemoteGrammarProvenance'
 import { extractAgenticOsRemoteGrammarMcpPayload, parseAgenticOsRemoteGrammarMcpResponse } from './agenticOsRemoteGrammarMcpPayload'
+import {
+  emptyLiveProviderProof,
+  normalizeLiveProviderProof,
+  type AgenticOsLiveProviderProofSummary,
+} from './agenticOsLiveProviderProof'
 
 export type AgenticOsRemoteGrammarCatalogEntry = {
   token: string
@@ -30,6 +36,8 @@ type AgenticOsRemoteGrammarPayload = {
   ok?: boolean
   catalog?: AgenticOsRemoteGrammarCatalogEntry[]
   sourceRevision?: string
+  catalogDigest?: string
+  counts?: Partial<Record<'command' | 'semantic' | 'binding', number>>
   liveAgentProviderProof?: unknown
   progressiveAgentsReadiness?: unknown
 }
@@ -114,34 +122,11 @@ export type AgenticOsRemoteGrammarCatalogCounts = {
   at: number
 }
 
-export type AgenticOsLiveProviderProofSummary = {
-  schema: 'agent-live-provider-proof-summary/v1'
-  status: 'verified-bounded-live' | 'unavailable'
-  evidenceSchema: string
-  sourceStatus: string
-  sourceRevision: string
-  proofRevision: string
-  sourcePath: string
-  sourceUrl: string
-  model: string
-  reasoningEffort: string
-  providerCalls: number
-  inputTokens: number
-  outputTokens: number
-  cachedInputTokens: number
-  estimatedCostUsd: number
-  finalAnswerOwners: {
-    delegation: string
-    handoff: string
-  }
-  continuationContext: string
-  defaultWorkerConfigured: boolean
-}
-
 export type AgenticOsRemoteGrammarSnapshot = {
   version: number
   entries: readonly AgenticOsRemoteGrammarCatalogEntry[]
   sourceRevision: string
+  catalogDigest: string
   hydration: {
     status: AgenticOsRemoteGrammarHydrationStatus
     attempts: number
@@ -152,94 +137,11 @@ export type AgenticOsRemoteGrammarSnapshot = {
   progressiveAgentsReadiness: AgenticOsProgressiveAgentsReadinessSummary
 }
 
-const emptyLiveProviderProof = (sourceRevision = ''): AgenticOsLiveProviderProofSummary => ({
-  schema: 'agent-live-provider-proof-summary/v1',
-  status: 'unavailable',
-  evidenceSchema: '',
-  sourceStatus: '',
-  sourceRevision,
-  proofRevision: '',
-  sourcePath: 'docs/LIVE-AGENT-PROVIDER-PROOF.md',
-  sourceUrl: '',
-  model: '',
-  reasoningEffort: '',
-  providerCalls: 0,
-  inputTokens: 0,
-  outputTokens: 0,
-  cachedInputTokens: 0,
-  estimatedCostUsd: 0,
-  finalAnswerOwners: { delegation: '', handoff: '' },
-  continuationContext: '',
-  defaultWorkerConfigured: false,
-})
-
-const normalizeLiveProviderProof = (value: unknown, sourceRevision: string): AgenticOsLiveProviderProofSummary => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return emptyLiveProviderProof(sourceRevision)
-  const proof = value as Record<string, unknown>
-  const owners = proof.finalAnswerOwners && typeof proof.finalAnswerOwners === 'object' && !Array.isArray(proof.finalAnswerOwners)
-    ? proof.finalAnswerOwners as Record<string, unknown>
-    : {}
-  const numberValue = (candidate: unknown): number => Number.isFinite(Number(candidate)) ? Number(candidate) : 0
-  const proofRevision = normalizeString(proof.proofRevision)
-  const proofSourceRevision = normalizeString(proof.sourceRevision)
-  const evidenceSchema = normalizeString(proof.evidenceSchema)
-  const sourceStatus = normalizeString(proof.sourceStatus)
-  const model = normalizeString(proof.model)
-  const reasoningEffort = normalizeString(proof.reasoningEffort)
-  const providerCalls = numberValue(proof.providerCalls)
-  const inputTokens = numberValue(proof.inputTokens)
-  const outputTokens = numberValue(proof.outputTokens)
-  const cachedInputTokens = numberValue(proof.cachedInputTokens)
-  const estimatedCostUsd = numberValue(proof.estimatedCostUsd)
-  const delegationOwner = normalizeString(owners.delegation)
-  const handoffOwner = normalizeString(owners.handoff)
-  const continuationContext = normalizeString(proof.continuationContext)
-  const verified = proof.schema === 'agent-live-provider-proof-summary/v1'
-    && proof.status === 'verified-bounded-live'
-    && proofSourceRevision === sourceRevision
-    && /^[0-9a-f]{40}$/.test(proofRevision)
-    && evidenceSchema === 'agent-live-provider-proof-contract/v1'
-    && sourceStatus === 'runtime-ready-dev'
-    && Boolean(model && reasoningEffort)
-    && Number.isInteger(providerCalls) && providerCalls > 0
-    && Number.isInteger(inputTokens) && inputTokens >= 0
-    && Number.isInteger(outputTokens) && outputTokens >= 0
-    && Number.isInteger(cachedInputTokens) && cachedInputTokens >= 0
-    && estimatedCostUsd >= 0
-    && delegationOwner === 'manager'
-    && handoffOwner === 'specialist'
-    && continuationContext === 'all_turns'
-    && proof.defaultWorkerConfigured === false
-  return {
-    schema: 'agent-live-provider-proof-summary/v1',
-    status: verified ? 'verified-bounded-live' : 'unavailable',
-    evidenceSchema,
-    sourceStatus,
-    sourceRevision: proofSourceRevision || sourceRevision,
-    proofRevision,
-    sourcePath: 'docs/LIVE-AGENT-PROVIDER-PROOF.md',
-    sourceUrl: /^[0-9a-f]{40}$/.test(proofRevision)
-      ? `https://github.com/huijoohwee/agentic-canvas-os/blob/${proofRevision}/docs/LIVE-AGENT-PROVIDER-PROOF.md`
-      : '',
-    model,
-    reasoningEffort,
-    providerCalls,
-    inputTokens,
-    outputTokens,
-    cachedInputTokens,
-    estimatedCostUsd,
-    finalAnswerOwners: {
-      delegation: delegationOwner,
-      handoff: handoffOwner,
-    },
-    continuationContext,
-    defaultWorkerConfigured: proof.defaultWorkerConfigured === true,
-  }
-}
-
 let remoteGrammarVersion = 0
 let remoteGrammarEntriesByToken = new Map<string, AgenticOsRemoteGrammarCatalogEntry>()
 let remoteGrammarSourceRevision = ''
+let remoteGrammarCatalogDigest = ''
+let remoteGrammarExpectedCounts: AgenticOsRemoteGrammarCatalogCounts | null = null
 let remoteGrammarHydrationStatus: AgenticOsRemoteGrammarHydrationStatus = 'idle'
 let remoteGrammarHydrationAttempts = 0
 let remoteGrammarHydrationError = ''
@@ -253,6 +155,7 @@ let remoteGrammarSnapshot: AgenticOsRemoteGrammarSnapshot = {
   version: remoteGrammarVersion,
   entries: [],
   sourceRevision: '',
+  catalogDigest: '',
   hydration: { status: 'idle', attempts: 0, error: '' },
   counts: emptyCounts(),
   liveAgentProviderProof: remoteGrammarLiveAgentProviderProof,
@@ -276,6 +179,33 @@ const countRemoteGrammarEntries = (entries: readonly AgenticOsRemoteGrammarCatal
   return counts
 }, emptyCounts())
 
+const countsEqual = (
+  left: AgenticOsRemoteGrammarCatalogCounts,
+  right: AgenticOsRemoteGrammarCatalogCounts,
+): boolean => left.slash === right.slash && left.hash === right.hash && left.at === right.at
+
+const normalizePayloadCounts = (
+  value: AgenticOsRemoteGrammarPayload['counts'],
+): AgenticOsRemoteGrammarCatalogCounts | null => {
+  const command = Number(value?.command)
+  const semantic = Number(value?.semantic)
+  const binding = Number(value?.binding)
+  return [command, semantic, binding].every(count => Number.isInteger(count) && count >= 0)
+    ? { slash: command, hash: semantic, at: binding }
+    : null
+}
+
+const digestCatalogEntries = async (
+  entries: readonly AgenticOsRemoteGrammarCatalogEntry[],
+): Promise<string> => {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Agentic OS catalog digest verification requires Web Crypto')
+  }
+  const bytes = new TextEncoder().encode(serializeAgenticCanvasOsDocsCatalogForDigest(entries))
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes)
+  return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('')
+}
+
 const emitRemoteGrammarSnapshot = (): void => {
   remoteGrammarVersion += 1
   const entries = [...remoteGrammarEntriesByToken.values()].sort((left, right) => left.token.localeCompare(right.token))
@@ -283,6 +213,7 @@ const emitRemoteGrammarSnapshot = (): void => {
     version: remoteGrammarVersion,
     entries,
     sourceRevision: remoteGrammarSourceRevision,
+    catalogDigest: remoteGrammarCatalogDigest,
     hydration: {
       status: remoteGrammarHydrationStatus,
       attempts: remoteGrammarHydrationAttempts,
@@ -295,17 +226,35 @@ const emitRemoteGrammarSnapshot = (): void => {
   remoteGrammarListeners.forEach(listener => listener())
 }
 
-const finalizeRemoteGrammarHydration = (hydrationEpoch: number): void => {
+const finalizeRemoteGrammarHydration = async (hydrationEpoch: number): Promise<void> => {
   if (hydrationEpoch !== remoteGrammarHydrationEpoch) return
   if ([...remoteGrammarHydrationPromises.keys()].some(key => key.startsWith(`${hydrationEpoch}:`))) return
   const missingSigils = REMOTE_GRAMMAR_SIGIL_ORDER.filter(
     sigil => remoteGrammarSuccessfulSigils.get(sigil) !== remoteGrammarSourceRevision,
   )
-  const fresh = /^[0-9a-f]{40}$/.test(remoteGrammarSourceRevision) && missingSigils.length === 0
+  const entries = [...remoteGrammarEntriesByToken.values()]
+  const actualCounts = countRemoteGrammarEntries(entries)
+  let verifiedDigest = ''
+  if (missingSigils.length === 0 && remoteGrammarExpectedCounts && countsEqual(actualCounts, remoteGrammarExpectedCounts)) {
+    try {
+      verifiedDigest = await digestCatalogEntries(entries)
+    } catch (error) {
+      remoteGrammarHydrationError = error instanceof Error ? error.message : 'Agentic OS catalog digest verification failed'
+    }
+  }
+  const fresh = /^[0-9a-f]{40}$/.test(remoteGrammarSourceRevision)
+    && /^[0-9a-f]{64}$/.test(remoteGrammarCatalogDigest)
+    && missingSigils.length === 0
+    && Boolean(remoteGrammarExpectedCounts && countsEqual(actualCounts, remoteGrammarExpectedCounts))
+    && verifiedDigest === remoteGrammarCatalogDigest
   remoteGrammarHydrationStatus = fresh ? 'fresh' : remoteGrammarEntriesByToken.size > 0 ? 'stale' : 'blocked'
   if (fresh) remoteGrammarHydrationError = ''
   else if (!remoteGrammarHydrationError) {
-    remoteGrammarHydrationError = `Agentic OS remote grammar hydration incomplete for ${missingSigils.join(' ') || 'unknown sigils'}`
+    remoteGrammarHydrationError = missingSigils.length > 0
+      ? `Agentic OS remote grammar hydration incomplete for ${missingSigils.join(' ')}`
+      : !remoteGrammarExpectedCounts || !countsEqual(actualCounts, remoteGrammarExpectedCounts)
+        ? 'Agentic OS remote grammar catalog counts do not match the MCP source catalog'
+        : 'Agentic OS remote grammar catalog digest does not match the MCP source catalog'
   }
   emitRemoteGrammarSnapshot()
 }
@@ -328,7 +277,7 @@ const hydrateRemoteGrammarSigilsBounded = async (
     return true
   })
   await Promise.all(rolloverSigils.map(sigil => primeAgenticOsRemoteGrammarCatalogBySigil(sigil, { force: true, maxAttempts: 1 })))
-  finalizeRemoteGrammarHydration(hydrationEpoch)
+  await finalizeRemoteGrammarHydration(hydrationEpoch)
 }
 
 const mergeCatalogEntry = (
@@ -369,14 +318,32 @@ export function registerAgenticOsRemoteGrammarCatalogEntries(
       changed = true
     }
   })
-  if (changed) emitRemoteGrammarSnapshot()
+  if (changed) {
+    if (remoteGrammarCatalogDigest && remoteGrammarHydrationStatus === 'fresh') {
+      remoteGrammarHydrationStatus = 'stale'
+      remoteGrammarHydrationError = 'Agentic OS catalog changed outside the verified MCP hydration cycle'
+    }
+    emitRemoteGrammarSnapshot()
+  }
   return normalizedEntries
+}
+
+const replaceRemoteGrammarCatalogSigilEntries = (
+  sigil: AgenticOsRemoteGrammarSigil,
+  entries: readonly AgenticOsRemoteGrammarCatalogEntry[],
+): readonly AgenticOsRemoteGrammarCatalogEntry[] => {
+  for (const token of remoteGrammarEntriesByToken.keys()) {
+    if (normalizeSigil(token) === sigil) remoteGrammarEntriesByToken.delete(token)
+  }
+  return registerAgenticOsRemoteGrammarCatalogEntries(entries)
 }
 
 export function resetAgenticOsRemoteGrammarCatalogForTests(): void {
   beginRemoteGrammarHydrationCycle()
   remoteGrammarEntriesByToken = new Map()
   remoteGrammarSourceRevision = ''
+  remoteGrammarCatalogDigest = ''
+  remoteGrammarExpectedCounts = null
   remoteGrammarHydrationStatus = 'idle'
   remoteGrammarHydrationAttempts = 0
   remoteGrammarHydrationError = ''
@@ -472,6 +439,8 @@ export function createAgenticOsRemoteGrammarClient(options: AgenticOsRemoteGramm
   const searchCatalogSnapshot = async (query: string, { signal }: { signal?: AbortSignal } = {}): Promise<{
     catalog: AgenticOsRemoteGrammarCatalogEntry[]
     sourceRevision: string
+    catalogDigest: string
+    counts: AgenticOsRemoteGrammarPayload['counts']
     liveAgentProviderProof: unknown
     progressiveAgentsReadiness: unknown
   }> => {
@@ -479,6 +448,8 @@ export function createAgenticOsRemoteGrammarClient(options: AgenticOsRemoteGramm
       if (!normalizedQuery) return {
         catalog: [],
         sourceRevision: '',
+        catalogDigest: '',
+        counts: undefined,
         liveAgentProviderProof: null,
         progressiveAgentsReadiness: null,
       }
@@ -499,6 +470,8 @@ export function createAgenticOsRemoteGrammarClient(options: AgenticOsRemoteGramm
       return {
         catalog: Array.isArray(payload.catalog) ? payload.catalog : [],
         sourceRevision: normalizeString(payload.sourceRevision),
+        catalogDigest: normalizeString(payload.catalogDigest),
+        counts: payload.counts,
         liveAgentProviderProof: payload.liveAgentProviderProof,
         progressiveAgentsReadiness: payload.progressiveAgentsReadiness,
       }
@@ -520,26 +493,53 @@ export async function fetchAgenticOsRemoteGrammarCatalog(
   if (!/^[0-9a-f]{40}$/.test(payload.sourceRevision)) {
     throw new Error('Agentic OS remote grammar response is missing an exact docs revision')
   }
+  if (!/^[0-9a-f]{64}$/.test(payload.catalogDigest)) {
+    throw new Error('Agentic OS remote grammar response is missing an exact catalog digest')
+  }
+  const expectedCounts = normalizePayloadCounts(payload.counts)
+  if (!expectedCounts) {
+    throw new Error('Agentic OS remote grammar response is missing exact catalog counts')
+  }
   const sourceBoundCatalog = normalizeAgenticOsRemoteGrammarCatalogProvenance(
     payload.catalog,
     payload.sourceRevision,
   )
   if (remoteGrammarSourceRevision && remoteGrammarSourceRevision !== payload.sourceRevision) {
     remoteGrammarEntriesByToken = new Map()
+    remoteGrammarCatalogDigest = ''
+    remoteGrammarExpectedCounts = null
     remoteGrammarLiveAgentProviderProof = emptyLiveProviderProof(payload.sourceRevision)
     remoteGrammarProgressiveAgentsReadiness = emptyProgressiveAgentsReadiness(payload.sourceRevision)
   }
+  if (remoteGrammarCatalogDigest && remoteGrammarCatalogDigest !== payload.catalogDigest) {
+    throw new Error('Agentic OS remote grammar responses disagree on the catalog digest')
+  }
+  if (remoteGrammarExpectedCounts && !countsEqual(remoteGrammarExpectedCounts, expectedCounts)) {
+    throw new Error('Agentic OS remote grammar responses disagree on the catalog counts')
+  }
   remoteGrammarSourceRevision = payload.sourceRevision
+  remoteGrammarCatalogDigest = payload.catalogDigest
+  remoteGrammarExpectedCounts = expectedCounts
   remoteGrammarLiveAgentProviderProof = normalizeLiveProviderProof(payload.liveAgentProviderProof, payload.sourceRevision)
   remoteGrammarProgressiveAgentsReadiness = normalizeProgressiveAgentsReadiness(
     payload.progressiveAgentsReadiness,
     payload.sourceRevision,
   )
-  const entries = [...registerAgenticOsRemoteGrammarCatalogEntries(sourceBoundCatalog)]
   const normalizedQuery = normalizeString(args.query)
   const sigil = REMOTE_GRAMMAR_SIGIL_ORDER.includes(normalizedQuery as AgenticOsRemoteGrammarSigil)
     ? normalizedQuery as AgenticOsRemoteGrammarSigil
     : null
+  const expectedSigilCount = sigil === '/' ? expectedCounts.slash : sigil === '#' ? expectedCounts.hash : expectedCounts.at
+  if (sigil && (
+    sourceBoundCatalog.length !== expectedSigilCount
+    || new Set(sourceBoundCatalog.map(entry => entry.token)).size !== sourceBoundCatalog.length
+    || sourceBoundCatalog.some(entry => normalizeSigil(entry.token) !== sigil)
+  )) {
+    throw new Error(`Agentic OS remote grammar ${sigil} catalog does not match the MCP source count`)
+  }
+  const entries = [...(sigil
+    ? replaceRemoteGrammarCatalogSigilEntries(sigil, sourceBoundCatalog)
+    : registerAgenticOsRemoteGrammarCatalogEntries(sourceBoundCatalog))]
   if (sigil) remoteGrammarSuccessfulSigils.set(sigil, payload.sourceRevision)
   remoteGrammarHydrationError = ''
   remoteGrammarHydrationStatus = REMOTE_GRAMMAR_SIGIL_ORDER.every(value => remoteGrammarSuccessfulSigils.get(value) === payload.sourceRevision)

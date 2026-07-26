@@ -62,6 +62,7 @@ export function CrossDeviceIdentitySettingsRowsContent({
             data-kg-runtime-knowgrph-revision={identity.knowgrphRevision}
             data-kg-runtime-agentic-canvas-os-revision={identity.agenticCanvasOsRevision}
             data-kg-runtime-catalog-revision={identity.catalogRevision}
+            data-kg-runtime-catalog-digest={identity.catalogDigest}
           >
             {identity.catalogHydration.status} · attempt {identity.catalogHydration.attempts}/2
           </span>
@@ -72,6 +73,12 @@ export function CrossDeviceIdentitySettingsRowsContent({
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Knowgrph SHA" typeNode="git SHA" valueNode={revisionValue(identity.knowgrphRevision)} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Docs SHA" typeNode="git SHA" valueNode={revisionValue(identity.agenticCanvasOsRevision)} />
       <KeyTypeValueStaticRow {...staticRowProps} keyNode="Catalog SHA" typeNode="git SHA" valueNode={revisionValue(identity.catalogRevision)} />
+      <KeyTypeValueStaticRow
+        {...staticRowProps}
+        keyNode="Catalog digest"
+        typeNode="SHA-256"
+        valueNode={<code className="min-w-0 break-all">{revisionText(identity.catalogDigest)}</code>}
+      />
       <KeyTypeValueStaticRow
         {...staticRowProps}
         keyNode={<span className="font-semibold">Agent proof</span>}
