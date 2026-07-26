@@ -59,7 +59,14 @@ Implement one browser-local, deterministic Flight Sim mission as an overlay on t
   - [x] Retry transient mission-stage dynamic-import fetch failures at the shared loader boundary.
   - _Requirements: 4, 12, 13, 14, 18, 19, 24_
 
-- [ ] 9. Complete final exact-revision evidence and protected integration
+- [x] 9. Add deterministic flight-envelope guidance
+  - [x] Scale pitch, roll, yaw, and bank-turn authority from true airspeed with a bounded non-zero minimum.
+  - [x] Add a deterministic low-speed nose-down tendency below the authored stall threshold.
+  - [x] Project unreliable-instrument, stall, attitude, and mission-relative energy states into the HUD and all six existing training surfaces.
+  - [x] Preserve the single shared camera/Canvas owners and the generic clean-room, zero-dependency boundary.
+  - _Requirements: 4, 6, 7, 12, 14, 24_
+
+- [ ] 10. Complete final exact-revision evidence and protected integration
   - [ ] Run the aggregate source/runtime gate on a clean exact candidate revision.
   - [ ] Run two fresh serial browser proofs on that same revision, including mission completion and a touch-control interaction if those are required browser acceptance claims.
   - [ ] Preserve the honest boundary between source proof, browser proof, protected integration, and release/deployment proof.

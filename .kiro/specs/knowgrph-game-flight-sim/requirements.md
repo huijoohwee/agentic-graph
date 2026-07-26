@@ -129,6 +129,9 @@ External references inform conceptual principles only. Maintainers attest that t
 4. THE Flight_Model SHALL compute flight dynamics without an external physics engine.
 5. WHEN a sampled pitch, roll, yaw, or `throttleDelta` value is finite but outside -1.0 to 1.0, THE Input_Normalizer SHALL clamp it to the nearest bound; WHEN it is positive or negative infinity, THE Input_Normalizer SHALL use the corresponding signed bound; WHEN it is NaN, THE Input_Normalizer SHALL reuse that field from the last valid input frame; in every case THE Input_Normalizer SHALL record an internal out-of-range indication and the Flight_Model SHALL continue integration with the normalized frame. IF an explicit absolute throttle setpoint is non-finite or outside 0.0 to 1.0, THEN THE Flight_Runtime SHALL reject it without changing the aircraft throttle state.
 
+6. WHEN true airspeed falls below the configured full-control threshold, THE Flight_Model SHALL reduce pitch, roll, yaw, and bank-turn authority monotonically to a non-zero configured minimum; WHEN true airspeed falls below the configured stall threshold, THE Flight_Model SHALL add a deterministic nose-down recovery tendency with no random, wall-clock, or display-frame input.
+7. THE shared training projection SHALL classify unreliable instrumentation, stall risk, attitude limits, and mission-relative low/on-target/high energy in a stable priority order, and SHALL expose the same target-speed band, control-authority percentage, label, and recovery cue to the HUD and all six existing training surfaces.
+
 ### Requirement 8: In-repo AABB terrain collision
 
 **User Story:** As a player, I want the aircraft to collide with terrain and boundaries realistically, so that the mission has physical limits.

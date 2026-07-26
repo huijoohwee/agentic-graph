@@ -230,6 +230,12 @@ export function FlightSimFloatingPanelView() {
           <span><b>Heading</b><br />{heading(flight.aircraft.yaw)}</span>
           <span><b>Pitch</b><br />{degrees(flight.aircraft.pitch)}</span>
           <span><b>Roll</b><br />{degrees(flight.aircraft.roll)}</span>
+          <span data-kg-flight-sim-panel-envelope={training.envelope.status}>
+            <b>Envelope</b><br />{training.envelope.label}
+          </span>
+          <span>
+            <b>Control</b><br />{Math.round(training.envelope.controlAuthority * 100)}%
+          </span>
           <span>
             <b>{flight.waypointIndex >= flight.waypointCount ? 'Landing pad' : 'Waypoint'}</b>
             <br />

@@ -105,6 +105,7 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 - One img2threejs-style, diffable TypeScript + JSON required-aircraft spec that resolves the existing procedural airplane renderer; non-null aircraft fallback metadata fails closed and the required-aircraft fallback count is zero.
 - One optional beacon fallback admitted only from the committed local `optional-beacon.glb`, recorded as opaque with CC0-1.0 license and exact SHA-256 `be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd`; remote, missing, unreadable, malformed, or hash-drifted data fails closed.
 - A HUD that reports airspeed, altitude, heading/attitude, throttle, waypoint/objective state, save state, and explicit errors.
+- Deterministic speed-sensitive pitch/roll/yaw authority with a non-zero low-speed floor, a bounded stall nose-down tendency, and one shared flight-envelope projection that reports instrument uncertainty, stall risk, attitude limits, mission target-speed band, control authority, and recovery cues without owning the camera.
 - Bounded engine-power-loss, unreliable-airspeed, and control-bias drills active only from tick 180 through tick 419; shared-owner night atmosphere and lighting for night training.
 - Browser speech synthesis for explicitly enabled voice coaching, always backed by the same visible deterministic text cue.
 - Browser-local, Decisions-only KGC persistence through an explicit, idempotent Save; terminal results and the scored training debrief remain pending until that action succeeds.
@@ -148,6 +149,8 @@ Given the same mission seed and normalized input frames, when two fresh runtimes
 #### AC-3: in-repo flight dynamics and terrain collision
 
 Given control input, when a tick advances, then in-repo flight integration updates attitude and velocity within bounded stable limits, and the AABB resolver returns a bounded non-penetrating position with at least `0.001` mission-meter separation against the authored terrain slabs, zeroes normal velocity within `0.0001` m/s, and preserves tangential velocity — without a second renderer, physics engine, or floating dependency fallback.
+
+Below the authored full-control airspeed, pitch, roll, yaw, and bank-turn response decreases monotonically to a non-zero floor. Below the authored stall threshold, the model adds a deterministic nose-down recovery tendency. HUD and training surfaces consume one immutable envelope projection with stable warning priority and never infer, randomize, or mutate flight or camera state.
 
 #### AC-4: primary aircraft spec and optional committed-local GLB boundary
 

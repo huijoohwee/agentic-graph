@@ -177,6 +177,7 @@ function integrateFlightModel(
 
 Guarantees: sampled control fields use `[-1,1]`; aircraft throttle state remains in `[0,1]` and changes from `throttleDelta` or an explicit absolute setpoint; finite outliers clamp, infinities become signed bounds, and NaN reuses only the corresponding last valid input field while recording internal `outOfRange`, after which integration continues (R7.5); internal output attitude is stored as scalar pitch/roll/yaw radians bounded to `[-π,π]` per axis, with visible HUD angles derived in degrees, velocity components bounded to configured min/max, and all outputs finite — never NaN/Infinity (R7.1); lift/drag/gravity applied deterministically each tick (R7.2, R7.3); no external physics engine (R7.4, R3.3).
 
+`flightSimEnvelope.ts` is the single clean-room owner for speed-sensitive control authority and live envelope guidance. Authority decreases monotonically below the authored 12 m/s full-control threshold but never reaches zero; below 7 m/s the model adds a bounded deterministic nose-down tendency. The same pure projection prioritizes unreliable instrumentation, stall risk, pitch/bank limits, and mission-relative energy, then supplies one label, recovery cue, target-speed band, and authority percentage to the HUD and the existing six-surface training projection. It uses only aircraft state and authored mission constants, and introduces no random input, external asset, package, camera mutation, or second render owner.
 ### Collision_Resolver (`flightModel.ts` / spatial profile)
 
 Pure swept-AABB resolver used by `CollisionResolverSystem`.
@@ -594,5 +595,4 @@ The strategy is dual: property-based tests verify universal invariants across la
 - Repository-owned runtime-readiness command (source authority, native ECS, focused tests, TypeScript, production build) and browser-smoke command (Source Files apply, one retained authored XR Canvas, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, mobile HUD), both local-only with zero paid model/image-to-3D/Cloudflare/network and no automatic Git or deployment (R22.1, R22.3, R22.5, R22.6).
 
 ### Proof boundary
-
 Consistent with the Agentic ECS and Flight Sim PRD/TAD proof layers, this design's tests establish local Dev correctness only. Protected integration, production, and Cloudflare deployment remain separate, operator-authorized workflows and are out of scope for these tests.

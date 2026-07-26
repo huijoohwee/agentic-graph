@@ -388,7 +388,36 @@ def run_flight_runtime_verifications(
         )
         if float(hud.get_attribute("data-kg-flight-sim-airspeed") or "0") <= 0:
             raise AssertionError("Flight HUD did not publish live airspeed")
-        return {"advanced": advanced, "camera": camera}
+        envelope_status = hud.get_attribute("data-kg-flight-sim-envelope") or ""
+        if envelope_status not in {
+            "instrument-uncertain",
+            "stall-risk",
+            "pitch-limit",
+            "bank-limit",
+            "low-energy",
+            "high-energy",
+            "on-target",
+        }:
+            raise AssertionError(f"Flight HUD published invalid envelope status: {envelope_status}")
+        control_authority = float(
+            hud.get_attribute("data-kg-flight-sim-control-authority") or "-1"
+        )
+        if control_authority < 0.3 or control_authority > 1:
+            raise AssertionError(
+                f"Flight HUD published invalid control authority: {control_authority}"
+            )
+        target_speed = hud.get_attribute("data-kg-flight-sim-target-speed") or ""
+        if target_speed != "8:22":
+            raise AssertionError(f"Flight HUD target-speed projection drifted: {target_speed}")
+        return {
+            "advanced": advanced,
+            "camera": camera,
+            "envelope": {
+                "status": envelope_status,
+                "controlAuthority": control_authority,
+                "targetSpeed": target_speed,
+            },
+        }
 
     state["camera"] = ledger.verify(
         "Timeline camera round-trip",

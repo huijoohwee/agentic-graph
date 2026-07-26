@@ -19,6 +19,9 @@ import {
   unmountReactRoot,
 } from '@/tests/lib/reactRootHarness'
 import { QUERY_PARAM_RUNTIME_IDENTITY_PROOF } from '@/lib/routing/queryParams'
+import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
+
+const emptyRemoteGrammarCatalogMetadata = buildAgenticOsTestCatalogMetadata([])
 
 const offlineRunReadySource = (id: 'flight-sim' | 'xr-physics'): string => `---
 run_ready_demo:
@@ -147,6 +150,7 @@ test('ordinary repo-local workspace sources retain automatic remote grammar hydr
           ok: true,
           sourceRevision: 'a'.repeat(40),
           catalog: [],
+          ...emptyRemoteGrammarCatalogMetadata,
         },
       },
     }), { status: 200, headers: { 'content-type': 'application/json' } })
@@ -216,6 +220,7 @@ test('runtime identity proof explicitly hydrates grammar for an offline native X
           ok: true,
           sourceRevision: 'a'.repeat(40),
           catalog: [],
+          ...emptyRemoteGrammarCatalogMetadata,
         },
       },
     }), { status: 200, headers: { 'content-type': 'application/json' } })
