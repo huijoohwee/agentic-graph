@@ -47,6 +47,7 @@ test('collaboration browser gate edits through the canonical active editor owner
   assert.match(smoke, /await waitForActiveDocumentReady\(page\)[\s\S]*await closeFloatingPanelIfOpen\(page\)[\s\S]*await connectButton\.click/)
   assert.doesNotMatch(smoke, /\.click\(\{[^}]*force:\s*true/)
   assert.doesNotMatch(smoke, /graphState\.setActiveMarkdownDocument/)
+  assert.match(smoke, /restoreLocalDocumentSnapshot\(localDocumentSnapshot\)/)
 })
 
 test('local collaboration browser identities remain stable across repeated gate runs', () => {
@@ -71,6 +72,9 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.equal(config.guestClientDeviceId, 'dev:collaboration-guest-local')
   assert.equal(browserEnv.KG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)
   assert.equal(browserEnv.KG_COLLABORATION_E2E_GUEST_DEVICE_ID, config.guestClientDeviceId)
+  assert.equal(browserEnv.KG_COLLABORATION_E2E_DOC_PATH, config.documentPath)
+  assert.equal(config.mutableSourcePath, '/tmp/knowgrph-test/docs/workspace-seeds/knowgrph-physics-playground-demo.md')
+  assert.equal(config.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH, config.mutableSourcePath)
   assert.equal(workerEnv.KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
   assert.equal(workerEnv.KNOWGRPH_STORAGE_LOCAL_RUNTIME, 'true')
   assert.deepEqual(workerArgs.slice(-4), [
