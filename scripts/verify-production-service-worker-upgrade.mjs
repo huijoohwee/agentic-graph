@@ -27,7 +27,8 @@ const normalizeOrigin = value => {
 const profileOriginInput = String(process.env.PRODUCTION_SW_PROFILE_ORIGIN || '').trim()
 if (!profileOriginInput) throw new Error('PRODUCTION_SW_PROFILE_ORIGIN is required')
 const profileOrigin = normalizeOrigin(profileOriginInput)
-const canonicalWorkerScriptUrl = `${profileOrigin}/knowgrph/sw.js`
+const canonicalWorkerScriptUrl = sourceRevision =>
+  `${profileOrigin}/knowgrph/sw.js?revision=${sourceRevision}`
 const canonicalWorkerScope = `${profileOrigin}/knowgrph/`
 const profileDirectory = path.resolve(String(process.env.PRODUCTION_SW_PROFILE_DIR || '').trim())
 const evidencePath = path.resolve(String(process.env.PRODUCTION_SW_EVIDENCE_PATH || '').trim())
@@ -313,10 +314,10 @@ const isExpectedServiceWorkerRevision = (
   return registration.scope === canonicalWorkerScope
     && (!requireNetworkOnlyRegistration || registration.updateViaCache === 'none')
     && registration.activeState === 'activated'
-    && registration.activeScriptUrl === canonicalWorkerScriptUrl
+    && registration.activeScriptUrl === canonicalWorkerScriptUrl(expectedRevision)
     && registration.installingScriptUrl === ''
     && registration.waitingScriptUrl === ''
-    && evidence.controllerScriptUrl === canonicalWorkerScriptUrl
+    && evidence.controllerScriptUrl === canonicalWorkerScriptUrl(expectedRevision)
     && evidence.controllerMatchesActive
     && (!requireActiveAttestation || (
       evidence.activeAttestedRevision === expectedRevision

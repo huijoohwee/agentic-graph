@@ -143,6 +143,7 @@ export function installPwaRuntime(): void {
     void registerCanonicalServiceWorker({
       serviceWorkerTarget: window.navigator.serviceWorker,
       scopePath: import.meta.env.BASE_URL,
+      sourceRevision: readKnowgrphSourceRevision(),
       reload: () => window.location.reload(),
       onOfflineReady() {
         swState.offlineReady = true

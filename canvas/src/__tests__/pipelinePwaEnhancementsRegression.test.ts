@@ -115,6 +115,12 @@ export function testPwaRuntimeTracksStandaloneInstallAndUpdateState() {
   if (!registrationOwnerText.includes("updateViaCache: 'none'")) {
     throw new Error('Expected canonical worker registration to bypass caches for rapid release convergence')
   }
+  if (!registrationOwnerText.includes('sw.js?revision=${normalizedRevision}')) {
+    throw new Error('Expected canonical worker registration to bind the top-level worker URL to the exact release revision')
+  }
+  if (!runtimeText.includes('sourceRevision: readKnowgrphSourceRevision()')) {
+    throw new Error('Expected PWA runtime to register the worker with its exact build revision')
+  }
   if (!runtimeText.includes('installServiceWorkerRevisionUpdateOwner({')) {
     throw new Error('Expected PWA runtime to refresh the canonical worker on registration and bounded recovery events')
   }
