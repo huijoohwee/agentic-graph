@@ -1,7 +1,7 @@
 ---
 title: "Knowgrph Role-Based Agent Team Runtime"
 doc_type: "Runtime Contract"
-status: "registered-local-stdio-host-configuration-required"
+status: "runtime-ready-dev-local-model-configuration-required"
 schema: "knowgrph-agent-team-runtime-doc/v1"
 invocation: "/agent.team #role-based-agent-team @agent-team"
 runtime_owner: "mcp/agent-team-runtime.js"
@@ -23,8 +23,10 @@ Planning resolves all three invocation tokens through that source-revision-fence
 catalog and fails closed when the requested revision or token kind differs. A
 host-owned verifier must also resolve every exact Agent Definition, workflow,
 branch, and review-policy revision before a plan is admitted. The canonical
-stdio construction intentionally supplies no reference verifier, execution
-adapter, control authorizer, or review-receipt verifier.
+stdio construction supplies that verifier, a local control authorizer, a
+file-backed review-receipt verifier, and a durable local Ollama execution
+adapter. Execution remains disabled until the operator selects an exact local
+model through host environment configuration.
 
 ## Source Contract
 
@@ -53,25 +55,32 @@ instructions, identity, tools, models, credentials, approval, branch routing,
 conversation ownership, or final-answer ownership. The runtime passes
 `personaAuthority: false` to the host adapter.
 
+The checked-in runtime-ready source is
+`data/config/agents/agent-teams/collaborative-intelligence.json`. It binds one
+collaboration manager, one evidence scout, and one risk reviewer to the exact
+`workflow.collaborative-intelligence@1.0.0` two-branch workflow and
+`review.local-operator@1.0.0`. The owner registry lives at
+`data/config/agents/agent-team-workflows.json`; callers cannot alter or extend
+it through MCP.
+
 ## Lifecycle
 
 `plan` is read-only, zero-model, and zero-spend. It resolves the exact
 invocation and local source, applies the lowest source/caller/hard bound, and
 returns a deterministic ephemeral `planId` and immutable `planDigest`. A
-different request cannot reuse the same plan idempotency key. Without an
-injected host reference verifier it returns `reference_verifier_unavailable`
-before admitting or caching a plan.
+different request cannot reuse the same plan idempotency key. The canonical
+local host resolves only exact checked-in Agent Definition, workflow, branch,
+and review-policy revisions. Drift fails before admitting or caching a plan.
 
 `start` accepts only the planned id, digest, team revision, planned state
 version, and a new idempotency key. It does not accept a provider, model,
-adapter, reference verifier, role, workflow, or tool override. An embedding
-host must construct the registrar or runtime with an exact reference verifier,
-a revisioned replay-safe adapter whose estimate is explicitly zero-spend, a
-control authorizer, and a review-receipt verifier. These are private host
-dependencies, never MCP arguments. With a
-verifier but without an exact configured adapter, start returns
-`execution_adapter_unavailable` before creating durable state or spending
-tokens.
+adapter, reference verifier, role, workflow, or tool override. The canonical
+registrar privately installs an exact reference verifier, a revisioned
+replay-safe local Ollama adapter whose estimate is explicitly zero-spend, a
+local control authorizer, and a file-backed review-receipt verifier. These are
+host dependencies, never MCP arguments. Without an exact configured model,
+start returns `execution_adapter_unavailable` before creating durable state or
+spending tokens.
 
 `list` returns sanitized summaries. An exact `list({runId})` additionally
 returns the final public answer after completion, including completion reached
@@ -108,12 +117,20 @@ defers live claims; if an expired uncertain effect cannot pass its adapter or
 reference fence, recovery clears the claim and branch together, marks cost
 unreported, and records the exact settled start receipt.
 
+Before the local adapter sends a model request, it writes a separate
+`.knowgrph-workspace/agent-team-effects/<effectId>.json` pending receipt. A
+completed response is atomically replaced with the exact settled result.
+Restart replay returns only a completed receipt; a prior pending receipt blocks
+as `local_model_effect_unsettled` rather than repeating a model side effect
+whose outcome is unknown.
+
 ## Execution And Ownership
 
-Knowgrph does not define another Agent Definition registry, orchestration
-workflow registry, model router, tool gateway, or Agent Swarm scheduler. The
-host adapter resolves and executes each allowlisted branch through the existing
-Agent Orchestration owner.
+Knowgrph reuses its existing Agent Definition registry and adds one narrow
+host-owned workflow/review registry for this runtime. It does not add an
+external model router, tool gateway, Agent Swarm scheduler, or caller-extensible
+registry. The local adapter resolves and executes each allowlisted branch
+through those exact owners.
 
 Branches run in their source-declared order. The adapter declares
 `estimateZeroSpend: true`; estimation is local/model-free and receives the
@@ -158,16 +175,45 @@ Unknown filesystem, lock, adapter, or host exceptions are reduced to a fixed
 typed public error projection. Raw exception messages and absolute local paths
 are never reflected through MCP.
 
+## Local Host Configuration
+
+The canonical local stdio MCP server is executable with an operator-selected
+Ollama model:
+
+```sh
+export KNOWGRPH_AGENT_TEAM_MODEL="<exact-local-model-name>"
+# Optional; defaults to http://127.0.0.1:11434
+export KNOWGRPH_AGENT_TEAM_MODEL_URL="http://127.0.0.1:11434"
+```
+
+`KNOWGRPH_AGENT_TEAM_MODEL_PROVIDER` may be omitted or set to `ollama`.
+`KNOWGRPH_AGENT_TEAM_MODEL_TIMEOUT_MS` is clamped to 1–28 seconds, and
+`KNOWGRPH_AGENT_TEAM_MODEL_MAX_OUTPUT_TOKENS` is clamped to 128–4096 per model
+call. Non-loopback URLs fail closed unless the host explicitly sets
+`KNOWGRPH_AGENT_TEAM_MODEL_ALLOW_REMOTE=1`; no request can opt into remote
+egress. No model is hard-coded or downloaded by this runtime.
+
+When a run is `review_pending`, the local host owner can issue a short-lived
+checkpoint-bound review receipt:
+
+```sh
+npm run agent-team:review-receipt -- \
+  --run-id=<exact-run-id> \
+  --decision=approve \
+  --repository=<KNOWGRPH_ROOT>
+```
+
+The command emits the exact `expectedStateVersion` and `reviewReceipt` fields
+for `knowgrph.agent_team.control`. Receipts are stored with mode `0600`, expire
+closed, and are valid only for one run, plan, checkpoint, state version,
+policy revision, and decision.
+
 ## Current Surface Boundary
 
-This change registers the four descriptors and fail-closed dispatcher on the
-canonical local stdio MCP server. That default server injects no reference
-verifier, execution adapter, control authorizer, or review-receipt verifier: it
-can list the tools and durable runs, but it cannot admit a plan, start
-execution, authorize a new control, or validate review continuation. An
-embedding host must construct `createLocalRunRuntimeRegistrar` or
-`createAgentTeamRuntime` with all four dependencies through the private
-initialization API; MCP callers cannot configure any of them.
+The canonical local stdio MCP server now admits exact plans, executes starts
+through the configured local model, authorizes new controls, and validates
+host-issued review continuation. All four dependencies are installed only
+through the private registrar; MCP callers cannot replace or configure them.
 
 Remote Cloudflare Worker parity is intentionally not claimed. Adding partial
 registration would make local and remote execution appear equivalent when no
@@ -175,8 +221,9 @@ durable Worker adapter or store exists. A future remote change needs its own
 durable owner, exact verifier, replay-safe adapter, control authorization,
 review-receipt verification, lifecycle tests, and surface-equivalence proof.
 
-No Canvas UI execution path is added. Existing `/`, `#`, and `@` discovery and
-prompt behavior remains unchanged.
+No new Canvas UI execution path is added. Invocation remains available through
+the source-revision-fenced `/agent.team #role-based-agent-team @agent-team`
+grammar and the four MCP tools.
 
 ## Clean-Room Note
 
@@ -198,9 +245,9 @@ npm run hygiene:check
 ```
 
 The focused proof is deterministic, validates the closed operation-specific
-output schemas, uses temporary local state, and injects
-fake verifier, adapter, control-authorizer, and review-verifier dependencies
-only in-process. It makes no provider or network call and does not mutate
-Cloudflare or production. Its canonical stdio case proves registration plus
-typed refusal while those dependencies are absent; it does not claim
-executable start by default.
+output schemas, uses temporary local state, and starts a loopback fake Ollama
+endpoint. Through the canonical stdio MCP server it resolves the checked-in
+team, executes both delegated specialist branches plus manager synthesis,
+reports zero cost, completes with the manager-owned public answer, and replays
+without another model request. It makes no external provider call and does not
+mutate Cloudflare or production.
