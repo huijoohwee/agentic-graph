@@ -7,6 +7,7 @@ from playwright.sync_api import Page
 
 FLIGHT_MISSION_NODE = "kg_flight_sim_mission"
 FLIGHT_AIRCRAFT_NODE = "kg_flight_sim_aircraft"
+FLIGHT_AIRCRAFT_ORIENTATION_NODE = "kg_flight_sim_aircraft_model_orientation"
 FLIGHT_ASSET_NODE = "kg_xr_procedural_airplane"
 FLIGHT_OPTIONAL_BEACON_NODE = "kg_flight_sim_optional_beacon"
 FLIGHT_OPTIONAL_BEACON_PATH = (
@@ -249,6 +250,9 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
           const optionalBeaconNode = descendants.find(
             node => node?.name === 'kg_flight_sim_optional_beacon',
           )
+          const aircraftOrientationNode = descendants.find(
+            node => node?.name === 'kg_flight_sim_aircraft_model_orientation',
+          )
           const optionalBeaconNodes = descendants.filter(
             node => String(node?.name || '').startsWith(
               'kg_flight_sim_optional_beacon',
@@ -378,6 +382,14 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
                 ),
               ).length,
             },
+            aircraftOrientation: {
+              matrix: aircraftOrientationNode?.matrix || null,
+              rotation: aircraftOrientationNode?.rotation || null,
+              flightForward:
+                aircraftOrientationNode?.extras?.flightForward || null,
+              proceduralForward:
+                aircraftOrientationNode?.extras?.proceduralForward || null,
+            },
             optionalBeacon: {
               assetKind: optionalBeaconNode?.extras?.assetKind ?? null,
               assetPath: optionalBeaconNode?.extras?.assetPath ?? null,
@@ -461,11 +473,55 @@ def assert_active_flight_scene(
     expected_once = (
         FLIGHT_MISSION_NODE,
         FLIGHT_AIRCRAFT_NODE,
+        FLIGHT_AIRCRAFT_ORIENTATION_NODE,
         FLIGHT_ASSET_NODE,
         FLIGHT_OPTIONAL_BEACON_NODE,
     )
     if any(counts.get(name) != 1 for name in expected_once):
         raise AssertionError(f"Flight actor-only stage was duplicated or missing: {counts}")
+    orientation = scene.get("aircraftOrientation") or {}
+    matrix = orientation.get("matrix")
+    rotation = orientation.get("rotation")
+    procedural_forward = orientation.get("proceduralForward")
+    flight_forward = orientation.get("flightForward")
+    if (
+        (
+            (not isinstance(rotation, list) or len(rotation) != 4)
+            and (not isinstance(matrix, list) or len(matrix) != 16)
+        )
+        or procedural_forward != [0, -1, 0]
+        or flight_forward != [0, 0, -1]
+    ):
+        raise AssertionError(
+            "Flight aircraft model orientation contract was missing: "
+            f"{orientation}"
+        )
+    vx, vy, vz = (float(value) for value in procedural_forward)
+    if isinstance(rotation, list) and len(rotation) == 4:
+        qx, qy, qz, qw = (float(value) for value in rotation)
+        tx = 2 * (qy * vz - qz * vy)
+        ty = 2 * (qz * vx - qx * vz)
+        tz = 2 * (qx * vy - qy * vx)
+        rendered_forward = [
+            vx + qw * tx + qy * tz - qz * ty,
+            vy + qw * ty + qz * tx - qx * tz,
+            vz + qw * tz + qx * ty - qy * tx,
+        ]
+    else:
+        values = [float(value) for value in matrix]
+        rendered_forward = [
+            values[0] * vx + values[4] * vy + values[8] * vz,
+            values[1] * vx + values[5] * vy + values[9] * vz,
+            values[2] * vx + values[6] * vy + values[10] * vz,
+        ]
+    if any(
+        abs(actual - expected) > 1e-6
+        for actual, expected in zip(rendered_forward, flight_forward)
+    ):
+        raise AssertionError(
+            "Flight aircraft nose did not align with model/camera forward: "
+            f"rendered={rendered_forward} expected={flight_forward}"
+        )
     optional_beacon = scene.get("optionalBeacon") or {}
     if (
         optional_beacon.get("assetKind") != "glb-fallback"
@@ -515,7 +571,11 @@ def assert_active_flight_scene(
     unexpected = sorted(
         name
         for name in mission.get("descendantNames") or []
-        if name not in {FLIGHT_AIRCRAFT_NODE, FLIGHT_ASSET_NODE}
+        if name not in {
+            FLIGHT_AIRCRAFT_NODE,
+            FLIGHT_AIRCRAFT_ORIENTATION_NODE,
+            FLIGHT_ASSET_NODE,
+        }
         and not name.startswith("kg_xr_airplane_")
         and not name.startswith("kg_flight_sim_optional_beacon")
         and not name.startswith("kg_flight-sim_waypoint_")
