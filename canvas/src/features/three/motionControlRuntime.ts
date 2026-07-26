@@ -176,7 +176,7 @@ function installTrackLifecycleStops(stream: MediaStream, generation: number): vo
   trackLifecycleCleanup = () => tracks.forEach(track => track.removeEventListener('ended', onEnded))
 }
 
-async function loadLiteRtModule(): Promise<LiteRtModule> {
+export async function loadMotionControlLiteRt(): Promise<LiteRtModule> {
   if (liteRtLoadPromise) return liteRtLoadPromise
   liteRtLoadPromise = import('@litertjs/core').then(async module => {
     const jspi = await module.supportsFeature('jspi').catch(() => false)
@@ -189,12 +189,12 @@ async function loadLiteRtModule(): Promise<LiteRtModule> {
   return liteRtLoadPromise
 }
 
-async function compilePoseModel(preference: MotionControlBackendPreference): Promise<{
+export async function compileMotionControlPoseModel(preference: MotionControlBackendPreference): Promise<{
   model: CompiledModel
   effectiveBackend: Exclude<MotionControlEffectiveBackend, 'none'>
   fallbackReason: string
 }> {
-  const liteRt = await loadLiteRtModule()
+  const liteRt = await loadMotionControlLiteRt()
   const canUseWebGpu = liteRt.isWebGPUSupported()
   const requested = preference === 'wasm' ? 'wasm' : preference === 'webgpu' || canUseWebGpu ? 'webgpu' : 'wasm'
   if (requested === 'wasm') {
@@ -227,7 +227,7 @@ async function compilePoseModel(preference: MotionControlBackendPreference): Pro
   }
 }
 
-function validateModel(model: CompiledModel): void {
+export function validateMotionControlPoseModel(model: CompiledModel): void {
   const inputs = model.getInputDetails()
   const outputs = model.getOutputDetails()
   const expectedInputElements = MOTION_CONTROL_INPUT_SIZE * MOTION_CONTROL_INPUT_SIZE * 3
@@ -302,7 +302,7 @@ async function inferPose(generation: number): Promise<void> {
   const inputValues = pixelsForCurrentRoi(video)
   if (!inputValues) return
   const currentRoi = { ...roi }
-  const liteRt = await loadLiteRtModule()
+  const liteRt = await loadMotionControlLiteRt()
   const input = new liteRt.Tensor(inputValues, [1, MOTION_CONTROL_INPUT_SIZE, MOTION_CONTROL_INPUT_SIZE, 3])
   let outputs: Tensor[] = []
   const startedAt = performance.now()
@@ -460,7 +460,7 @@ export async function startMotionControl(preference: MotionControlBackendPrefere
     const captureSettings = requestedStream.getVideoTracks()[0]?.getSettings()
     if (!startMotionControlCapturePlatformSource({ width: requestedVideo.videoWidth, height: requestedVideo.videoHeight, nominalFps: captureSettings?.frameRate })) throw new Error('Canonical motion capture source registration failed.')
     publish({ phase: 'loading-model', cameraActive: true, permission: 'granted', message: 'Loading the official Google pose model with LiteRT.js.' })
-    const compileRequest = compilePoseModel(preference)
+    const compileRequest = compileMotionControlPoseModel(preference)
     const compileResult = await waitForMotionControlStart(compileRequest, startAbortController.signal)
     if (compileResult === MOTION_CONTROL_START_CANCELLED) {
       void compileRequest.then(compiled => compiled.model.delete(), () => undefined)
@@ -481,7 +481,7 @@ export async function startMotionControl(preference: MotionControlBackendPrefere
       stopForCaptureLoss(generation)
       return snapshot
     }
-    validateModel(compiledCandidate)
+    validateMotionControlPoseModel(compiledCandidate)
     compiledModel = compiledCandidate
     compiledCandidate = null
     roi = { x: 0, y: 0, size: 1 }
