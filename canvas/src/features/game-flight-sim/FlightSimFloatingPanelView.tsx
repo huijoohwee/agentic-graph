@@ -32,6 +32,7 @@ import {
   controlLocalFlightSim,
   type FlightSimOperation,
 } from './flightSimMcpRuntime'
+import { flightSimHeadingDegrees } from './flightModel'
 import {
   resetFlightSimLocalPersistence,
   isFlightSimHydrationPending,
@@ -72,6 +73,10 @@ function Invocation({
 
 function degrees(radians: number): string {
   return `${Math.round((radians * 180) / Math.PI)}°`
+}
+
+function heading(radians: number): string {
+  return `${Math.round(flightSimHeadingDegrees(radians))}°`
 }
 
 function airspeed(velocity: readonly number[]): string {
@@ -222,7 +227,7 @@ export function FlightSimFloatingPanelView() {
             {training.airspeedReliable ? `${airspeed(flight.aircraft.velocity)} m/s` : 'UNRELIABLE'}
           </span>
           <span><b>Throttle</b><br />{Math.round(flight.aircraft.throttle * 100)}%</span>
-          <span><b>Heading</b><br />{degrees(flight.aircraft.yaw)}</span>
+          <span><b>Heading</b><br />{heading(flight.aircraft.yaw)}</span>
           <span><b>Pitch</b><br />{degrees(flight.aircraft.pitch)}</span>
           <span><b>Roll</b><br />{degrees(flight.aircraft.roll)}</span>
           <span>

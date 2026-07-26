@@ -15,6 +15,12 @@ import {
 import { readXrNativeControllerCamera } from '@/features/three/xrNativeControllerCameraRuntime'
 import { readFlightSimDefaultAssetLoadReport } from './assetSpec/flightSimDefaultAssets'
 import {
+  FLIGHT_SIM_AIRCRAFT_FORWARD,
+  FLIGHT_SIM_AIRCRAFT_MODEL_ROTATION,
+  FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE,
+  FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
+} from './flightSimAircraftPresentation'
+import {
   installFlightSimDesktopInput,
   mergeFlightSimInputs,
   readFlightSimTouchInput,
@@ -263,7 +269,14 @@ export function FlightSimMissionStage({
           representation: assetCatalog.aircraft.assetSpec.representation,
         }}
       >
-        <group rotation={[-Math.PI / 2, 0, 0]}>
+        <group
+          name={FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE}
+          rotation={[...FLIGHT_SIM_AIRCRAFT_MODEL_ROTATION]}
+          userData={{
+            flightForward: FLIGHT_SIM_AIRCRAFT_FORWARD,
+            proceduralForward: FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
+          }}
+        >
           <XrProceduralVehicleGeometry
             kind="airplane"
             color={assetCatalog.aircraft.assetSpec.defaultColor}
