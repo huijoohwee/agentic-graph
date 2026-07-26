@@ -9,6 +9,7 @@ export function testMotionControlLiteRtReadinessUsesProductionModelOwner() {
   const acquisition = readSource('scripts', 'prepare-litert-assets.mjs')
   const captureRuntime = readSource('src', 'features', 'three', 'motionControlRuntime.ts')
   const readiness = readSource('src', 'features', 'three', 'motionControlLiteRtReadiness.ts')
+  const provenance = readSource('scripts', 'lib', 'exact-browser-smoke-source.mjs')
   const runner = readSource('scripts', 'run_motion_control_litert_browser_smoke.mjs')
   const verifier = readSource('scripts', 'verify_motion_control_litert_browser_smoke.mjs')
 
@@ -29,18 +30,18 @@ export function testMotionControlLiteRtReadinessUsesProductionModelOwner() {
     if (!readiness.includes(marker)) throw new Error(`expected readiness probe to execute and release a real model through ${marker}`)
   }
   if (!runner.includes("existingServerPolicy: 'forbid'")
-    || !runner.includes('KG_MOTION_CONTROL_LITERT_EXPECTED_HEAD')
-    || !runner.includes('KG_MOTION_CONTROL_LITERT_EXPECTED_MAIN')
-    || !verifier.includes("expectedHead, expectedMain, 'detached smoke must run from exact origin/main'")
-    || !verifier.includes("/^agent\\/[^/]+\\/[^/]+$/")
-    || !verifier.includes("sourceState = expectedBranch ? 'task-branch' : 'detached-main'")
+    || !runner.includes("publishExactBrowserSmokeSource('KG_MOTION_CONTROL_LITERT')")
+    || !verifier.includes("readExactBrowserSmokeSource('KG_MOTION_CONTROL_LITERT')")
+    || !provenance.includes("assert.equal(sourceRevision, mainRevision, 'detached smoke must run from exact origin/main')")
+    || !provenance.includes("assert.match(sourceBranch, /^agent\\/[^/]+\\/[^/]+$/")
+    || !provenance.includes("sourceState: sourceBranch ? 'task-branch' : 'detached-main'")
     || !verifier.includes('cameraRequests, 0')
     || !verifier.includes("endsWith('.wasm')")) {
     throw new Error('expected fresh exact-revision browser proof with camera-free model and Wasm evidence')
   }
   const forbiddenOwner = ['andris', 'gauracs'].join('')
   const forbiddenRepository = ['LiteRT.js', 'Mocap'].join('-')
-  for (const productionSource of [captureRuntime, readiness, runner, verifier]) {
+  for (const productionSource of [captureRuntime, readiness, provenance, runner, verifier]) {
     if (productionSource.includes(forbiddenOwner) || productionSource.includes(forbiddenRepository)) {
       throw new Error('expected camera-free LiteRT readiness to stay inside the clean-room production boundary')
     }

@@ -1,21 +1,7 @@
-import { execFileSync } from 'node:child_process'
+import { publishExactBrowserSmokeSource } from './lib/exact-browser-smoke-source.mjs'
 import { runLocalViteBrowserSmoke } from './lib/run-local-vite-browser-smoke.mjs'
 
-process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_HEAD = execFileSync(
-  'git',
-  ['rev-parse', 'HEAD'],
-  { encoding: 'utf8' },
-).trim()
-process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_BRANCH = execFileSync(
-  'git',
-  ['branch', '--show-current'],
-  { encoding: 'utf8' },
-).trim()
-process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_MAIN = execFileSync(
-  'git',
-  ['rev-parse', 'refs/remotes/origin/main'],
-  { encoding: 'utf8' },
-).trim()
+publishExactBrowserSmokeSource('KG_MOTION_CONTROL_LITERT')
 
 runLocalViteBrowserSmoke({
   logLabel: 'motion-control-litert-browser-smoke',

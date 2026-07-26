@@ -1,47 +1,21 @@
 import assert from 'node:assert/strict'
-import { accessSync, constants as fsConstants } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { chromium } from 'playwright'
+import { readExactBrowserSmokeSource } from './lib/exact-browser-smoke-source.mjs'
+import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const baseUrl = String(
   process.env.KG_MOTION_CONTROL_LITERT_SMOKE_BASE_URL || 'http://localhost:4189',
 ).replace(/\/+$/, '')
-const expectedHead = String(process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_HEAD || '').trim()
-const expectedBranch = String(process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_BRANCH || '').trim()
-const expectedMain = String(process.env.KG_MOTION_CONTROL_LITERT_EXPECTED_MAIN || '').trim()
 const outputDirectory = resolve(process.cwd(), '../data/outputs')
 const evidencePath = resolve(outputDirectory, 'motion-control-litert-browser-smoke.json')
 
-function findLocalChromiumExecutable() {
-  const explicit = String(process.env.KG_MOTION_CONTROL_LITERT_CHROMIUM_EXECUTABLE || '').trim()
-  const candidates = [
-    explicit,
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-  ].filter(Boolean)
-  for (const candidate of candidates) {
-    try {
-      accessSync(candidate, fsConstants.X_OK)
-      return candidate
-    } catch {
-      // Playwright may still have a compatible bundled browser.
-    }
-  }
-  return null
-}
-
 async function main() {
-  assert.match(expectedHead, /^[0-9a-f]{40}$/, 'smoke requires the runner-owned exact source revision')
-  assert.match(expectedMain, /^[0-9a-f]{40}$/, 'smoke requires the exact origin/main revision')
-  const sourceState = expectedBranch ? 'task-branch' : 'detached-main'
-  if (expectedBranch) {
-    assert.match(expectedBranch, /^agent\/[^/]+\/[^/]+$/, 'smoke task branch must be runner-owned')
-  } else {
-    assert.equal(expectedHead, expectedMain, 'detached smoke must run from exact origin/main')
-  }
-  const executablePath = findLocalChromiumExecutable()
+  const source = readExactBrowserSmokeSource('KG_MOTION_CONTROL_LITERT')
+  const executablePath = findLocalChromiumExecutable(
+    process.env.KG_MOTION_CONTROL_LITERT_CHROMIUM_EXECUTABLE,
+  )
   const browser = await chromium.launch({
     headless: process.env.KG_MOTION_CONTROL_LITERT_HEADLESS !== '0',
     ...(executablePath ? { executablePath } : {}),
@@ -100,9 +74,9 @@ async function main() {
     const fullEvidence = {
       ...evidence,
       schema: 'knowgrph-motion-control-litert-browser-smoke/v1',
-      sourceRevision: expectedHead,
-      sourceBranch: expectedBranch || null,
-      sourceState,
+      sourceRevision: source.sourceRevision,
+      sourceBranch: source.sourceBranch,
+      sourceState: source.sourceState,
       route: `${baseUrl}/`,
       cameraRequests: result.cameraRequests,
       assetResponses,
