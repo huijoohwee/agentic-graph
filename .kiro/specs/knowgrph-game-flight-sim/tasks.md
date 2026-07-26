@@ -66,6 +66,7 @@ Implement one browser-local, deterministic Flight Sim mission as an overlay on t
   - [x] Preserve the single shared camera/Canvas owners and the generic clean-room, zero-dependency boundary.
   - [x] Route each Media environment kit through canonical XR stage selection into FloatingPanel Geo and project the selected authored world in Geo and Flight.
   - [x] Retry shared viewport input acquisition after the prior camera owner releases it, read the live mission-stage preparation request after render, and invalidate the shared Canvas demand loop so Geo and connected Motion Control handoffs cannot lose Flight entry to mount ordering.
+  - [x] Decouple committed Flight render readiness from desktop input ownership so Motion, touch, and gamepad remain playable while the desktop claim retries after Geo or camera handoff.
   - _Requirements: 4, 6, 7, 12, 14, 24, 25_
 
 - [ ] 10. Complete final exact-revision evidence and protected integration
