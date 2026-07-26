@@ -5,8 +5,28 @@ import {
   refreshAgenticOsRemoteGrammarCatalog,
   resetAgenticOsRemoteGrammarCatalogForTests,
 } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
+import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
 
 type GrammarSigil = '/' | '#' | '@'
+
+type GrammarEntry = {
+  token: string
+  kind: string
+  label: string
+  sourcePath: string
+}
+
+const catalogEntry = (sigil: GrammarSigil, suffix: string): GrammarEntry => {
+  const kind = sigil === '/' ? 'command' : sigil === '#' ? 'semantic' : 'binding'
+  const dictionary = kind === 'command' ? 'COMMAND' : kind === 'semantic' ? 'SEMANTIC' : 'BINDING'
+  const token = `${sigil}${suffix}`
+  return {
+    token,
+    kind,
+    label: `Revision ${suffix}`,
+    sourcePath: `DICTIONARY-${dictionary}.md#${token}`,
+  }
+}
 
 const rpcResponse = (id: unknown, result: Record<string, unknown>, sessionId = '') => new Response(
   JSON.stringify({ jsonrpc: '2.0', id, result }),
@@ -21,19 +41,16 @@ const rpcResponse = (id: unknown, result: Record<string, unknown>, sessionId = '
 
 const catalogResponse = (id: unknown, query: string, sourceRevision: string) => {
   const sigil = query[0] as GrammarSigil
-  const kind = sigil === '/' ? 'command' : sigil === '#' ? 'semantic' : 'binding'
-  const dictionary = kind === 'command' ? 'COMMAND' : kind === 'semantic' ? 'SEMANTIC' : 'BINDING'
-  const token = `${query}revision-${sourceRevision[0]}`
+  const catalog = (['/', '#', '@'] as const).map(value => catalogEntry(value, `revision-${sourceRevision[0]}`))
+  const entry = query.length === 1
+    ? catalog.find(candidate => candidate.token.startsWith(sigil))!
+    : catalogEntry(sigil, `${query.slice(1)}revision-${sourceRevision[0]}`)
   return rpcResponse(id, {
     structuredContent: {
       ok: true,
       sourceRevision,
-      catalog: [{
-        token,
-        kind,
-        label: `Revision ${sourceRevision[0]}`,
-        sourcePath: `DICTIONARY-${dictionary}.md#${token}`,
-      }],
+      ...buildAgenticOsTestCatalogMetadata(catalog),
+      catalog: [entry],
     },
   })
 }
@@ -68,18 +85,14 @@ export async function testRemoteGrammarRejectsStaleEpochFailureAfterFreshRefresh
       staleRetryCalls += 1
       throw new Error('stale request retried after the fresh cycle')
     }
-    const kind = query === '/' ? 'command' : query === '#' ? 'semantic' : 'binding'
-    const dictionary = kind === 'command' ? 'COMMAND' : kind === 'semantic' ? 'SEMANTIC' : 'BINDING'
+    const catalog = (['/', '#', '@'] as const).map(sigil => catalogEntry(sigil, 'epoch-fresh'))
+    const entry = catalog.find(candidate => candidate.token.startsWith(query))!
     return rpcResponse(body.id, {
       structuredContent: {
         ok: true,
         sourceRevision,
-        catalog: [{
-          token: `${query}epoch-fresh`,
-          kind,
-          label: `Fresh ${kind}`,
-          sourcePath: `DICTIONARY-${dictionary}.md#${query}epoch-fresh`,
-        }],
+        ...buildAgenticOsTestCatalogMetadata(catalog),
+        catalog: [entry],
       },
     })
   }) as typeof fetch
@@ -126,18 +139,14 @@ export async function testRemoteGrammarReconcilesRevisionRolloverWithinBoundedRe
     callsBySigil.set(query, calls)
     if (query !== '/') await new Promise(resolve => setTimeout(resolve, 5))
     const sourceRevision = query === '/' && calls === 1 ? oldRevision : currentRevision
-    const kind = query === '/' ? 'command' : query === '#' ? 'semantic' : 'binding'
-    const dictionary = kind === 'command' ? 'COMMAND' : kind === 'semantic' ? 'SEMANTIC' : 'BINDING'
+    const catalog = (['/', '#', '@'] as const).map(sigil => catalogEntry(sigil, 'revision-ready'))
+    const entry = catalog.find(candidate => candidate.token.startsWith(query))!
     return rpcResponse(body.id, {
       structuredContent: {
         ok: true,
         sourceRevision,
-        catalog: [{
-          token: `${query}revision-ready`,
-          kind,
-          label: `Revision ${kind}`,
-          sourcePath: `DICTIONARY-${dictionary}.md#${query}revision-ready`,
-        }],
+        ...buildAgenticOsTestCatalogMetadata(catalog),
+        catalog: [entry],
       },
     })
   }) as typeof fetch
@@ -216,6 +225,42 @@ export async function testRemoteGrammarDirectQueryReconcilesRevisionRollover() {
     if (settled.hydration.status !== 'fresh' || settled.sourceRevision !== sourceRevision
       || settled.entries.some(entry => entry.token.endsWith('revision-a')) || toolCalls !== 7) {
       throw new Error(`expected direct query rollover to await exact-revision reconciliation, calls=${toolCalls} snapshot=${JSON.stringify(settled)}`)
+    }
+  } finally {
+    resetAgenticOsRemoteGrammarCatalogForTests()
+    globalThis.fetch = originalFetch
+  }
+}
+
+export async function testRemoteGrammarRejectsCatalogDigestDrift() {
+  const originalFetch = globalThis.fetch
+  const sourceRevision = 'f'.repeat(40)
+  const catalog = (['/', '#', '@'] as const).map(sigil => catalogEntry(sigil, 'digest-drift'))
+  resetAgenticOsRemoteGrammarCatalogForTests()
+
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body || '{}')) as Record<string, unknown>
+    if (body.method === 'initialize') {
+      return rpcResponse(body.id, { protocolVersion: '2024-11-05' }, 'digest-drift-session')
+    }
+    const query = readQuery(body) as GrammarSigil
+    return rpcResponse(body.id, {
+      structuredContent: {
+        ok: true,
+        sourceRevision,
+        ...buildAgenticOsTestCatalogMetadata(catalog),
+        catalogDigest: '0'.repeat(64),
+        catalog: catalog.filter(entry => entry.token.startsWith(query)),
+      },
+    })
+  }) as typeof fetch
+
+  try {
+    const settled = await refreshAgenticOsRemoteGrammarCatalog()
+    if (settled.hydration.status !== 'stale'
+      || !/digest does not match/i.test(settled.hydration.error)
+      || settled.catalogDigest !== '0'.repeat(64)) {
+      throw new Error(`expected catalog digest drift to fail closed, got ${JSON.stringify(settled)}`)
     }
   } finally {
     resetAgenticOsRemoteGrammarCatalogForTests()

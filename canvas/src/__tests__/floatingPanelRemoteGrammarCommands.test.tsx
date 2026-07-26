@@ -18,6 +18,10 @@ import {
 } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames, waitForTasks } from '@/tests/lib/reactRootHarness'
+import {
+  buildAgenticOsTestCatalogMetadata,
+  type AgenticOsTestCatalogEntry,
+} from '@/__tests__/helpers/agenticOsCatalogDigest'
 
 export async function testCameraInvocationSurfaceReactsToRemoteGrammarHydration() {
   const originalFetch = globalThis.fetch
@@ -34,6 +38,28 @@ export async function testCameraInvocationSurfaceReactsToRemoteGrammarHydration(
   if (partialSnapshot.hydration.status !== 'idle') {
     throw new Error(`expected partial Camera registration to remain idle before mount, got ${JSON.stringify(partialSnapshot.hydration)}`)
   }
+  const sourceCatalog: AgenticOsTestCatalogEntry[] = [
+    {
+      token: '/camera.hydration',
+      kind: 'command',
+      label: 'Camera hydration proof',
+      summary: 'Source-backed Camera metadata registered before the surface mounted.',
+      sourcePath: 'DICTIONARY-COMMAND.md#/camera.hydration',
+      keywords: ['camera', 'hydration'],
+    },
+    ...CAMERA_REQUIRED_METADATA_TOKENS.map(required => {
+      const dictionary = required.kind === 'command'
+        ? 'COMMAND'
+        : required.kind === 'semantic'
+          ? 'SEMANTIC'
+          : 'BINDING'
+      return {
+        ...required,
+        label: `Complete ${required.token}`,
+        sourcePath: `DICTIONARY-${dictionary}.md#${required.token}`,
+      }
+    }),
+  ]
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body || '{}')) as Record<string, unknown>
     if (body.method === 'initialize') {
@@ -42,10 +68,19 @@ export async function testCameraInvocationSurfaceReactsToRemoteGrammarHydration(
         headers: { 'content-type': 'application/json', 'mcp-session-id': 'camera-hydration-session' },
       })
     }
+    const query = String((body.params as { arguments?: { query?: string } })?.arguments?.query || '')
+    const catalog = sourceCatalog.filter(entry => entry.token.startsWith(query))
     return new Response(JSON.stringify({
       jsonrpc: '2.0',
       id: body.id,
-      result: { structuredContent: { ok: true, sourceRevision: 'c'.repeat(40), catalog: [] } },
+      result: {
+        structuredContent: {
+          ok: true,
+          sourceRevision: 'c'.repeat(40),
+          ...buildAgenticOsTestCatalogMetadata(sourceCatalog),
+          catalog,
+        },
+      },
     }), { status: 200, headers: { 'content-type': 'application/json' } })
   }) as typeof fetch
 
@@ -60,29 +95,14 @@ export async function testCameraInvocationSurfaceReactsToRemoteGrammarHydration(
     const hydratedSurface = container.querySelector('[data-kg-camera-webmcp-invocations="1"]')
     const partialFreshVersion = Number(hydratedSurface?.getAttribute('data-kg-camera-metadata-version') || '-1')
     const metadataStatus = hydratedSurface?.getAttribute('data-kg-camera-metadata-status') || ''
-    const metadataMessage = container.querySelector('[data-kg-camera-metadata-not-fresh="1"]')
     if (!hydratedSurface || !hydratedCard || partialFreshVersion <= partialSnapshot.version) {
       throw new Error(`expected mounted Camera metadata to react to the catalog snapshot, html=${container.innerHTML}`)
     }
-    if (metadataStatus !== 'fresh' || !metadataMessage || !/unavailable/i.test(metadataMessage.textContent || '')) {
-      throw new Error(`expected fresh-but-incomplete Camera metadata to retain its warning, html=${container.innerHTML}`)
+    if (metadataStatus !== 'fresh' || container.querySelector('[data-kg-camera-metadata-not-fresh="1"]')) {
+      throw new Error(`expected digest-verified Camera metadata to be complete, html=${container.innerHTML}`)
     }
-    if (!hydratedCard.getAttribute('data-kg-camera-invocation-source')?.includes('DICTIONARY-COMMAND.md#camera-hydration')) {
+    if (!hydratedCard.getAttribute('data-kg-camera-invocation-source')?.includes('DICTIONARY-COMMAND.md#/camera.hydration')) {
       throw new Error(`expected hydrated Camera card to retain ACOS source ownership, html=${container.innerHTML}`)
-    }
-
-    await React.act(async () => {
-      registerAgenticOsRemoteGrammarCatalogEntries(CAMERA_REQUIRED_METADATA_TOKENS.map(required => ({
-        ...required,
-        label: `Complete ${required.token}`,
-        sourcePath: `https://github.com/huijoohwee/agentic-canvas-os/blob/${'c'.repeat(40)}/docs/DICTIONARY-${required.kind.toUpperCase()}.md`,
-      })))
-      await waitForFrames(dom.window as unknown as Window, 2)
-    })
-    const completeSurface = container.querySelector('[data-kg-camera-webmcp-invocations="1"]')
-    const completeVersion = Number(completeSurface?.getAttribute('data-kg-camera-metadata-version') || '-1')
-    if (completeVersion <= partialFreshVersion || container.querySelector('[data-kg-camera-metadata-not-fresh="1"]')) {
-      throw new Error(`expected the complete source-backed Camera token set to clear the metadata warning, html=${container.innerHTML}`)
     }
   } finally {
     globalThis.fetch = originalFetch
@@ -120,6 +140,16 @@ export async function testFloatingPanelChatComposerWiresRemoteAgenticOsGrammar()
       })
     }
     if (body.method === 'tools/call') {
+      const query = String((body.params as { arguments?: { query?: string } })?.arguments?.query || '')
+      const sourceCatalog: AgenticOsTestCatalogEntry[] = [{
+        token: '/remote.only',
+        kind: 'command',
+        label: 'Remote only',
+        summary: 'Live remote grammar suggestion',
+        sourcePath: 'DICTIONARY-COMMAND.md#/remote.only',
+        keywords: ['remote', 'live'],
+      }]
+      const catalog = query.startsWith('#') || query.startsWith('@') ? [] : sourceCatalog
       return new Response(JSON.stringify({
         jsonrpc: '2.0',
         id: body.id,
@@ -127,16 +157,8 @@ export async function testFloatingPanelChatComposerWiresRemoteAgenticOsGrammar()
           structuredContent: {
             ok: true,
             sourceRevision: 'a'.repeat(40),
-            catalog: [
-              {
-                token: '/remote.only',
-                kind: 'command',
-                label: 'Remote only',
-                summary: 'Live remote grammar suggestion',
-                sourcePath: 'DICTIONARY-COMMAND.md#/remote.only',
-                keywords: ['remote', 'live'],
-              },
-            ],
+            ...buildAgenticOsTestCatalogMetadata(sourceCatalog),
+            catalog,
           },
         },
       }), {
@@ -294,6 +316,7 @@ export async function testRemoteAgenticOsGrammarIgnoresBareLocalhostOriginWithou
         },
       })
     }
+    const catalog: AgenticOsTestCatalogEntry[] = []
     return new Response(JSON.stringify({
       jsonrpc: '2.0',
       id: body.id,
@@ -301,7 +324,8 @@ export async function testRemoteAgenticOsGrammarIgnoresBareLocalhostOriginWithou
         structuredContent: {
           ok: true,
           sourceRevision: 'a'.repeat(40),
-          catalog: [],
+          ...buildAgenticOsTestCatalogMetadata(catalog),
+          catalog,
         },
       },
     }), {
@@ -330,6 +354,17 @@ export async function testRepoLocalSkillsCommandsHydratesSameOriginGrammar() {
   const previousAgentReadyBaseUrl = process.env.VITE_KNOWGRPH_AGENT_READY_BASE_URL
   const sourceRevision = 'c'.repeat(40)
   const calls: Array<{ url: string, method: string, query: string }> = []
+  const sourceCatalog: AgenticOsTestCatalogEntry[] = (['/', '#', '@'] as const).map(sigil => {
+    const kind = sigil === '/' ? 'command' : sigil === '#' ? 'semantic' : 'binding'
+    const fileName = kind === 'command'
+      ? 'DICTIONARY-COMMAND.md'
+      : kind === 'semantic'
+        ? 'DICTIONARY-SEMANTIC.md'
+        : 'DICTIONARY-BINDING.md'
+    const token = `${sigil}repo-local-xr`
+    return { token, kind, label: `Repo-local ${kind}`, sourcePath: `${fileName}#${token}` }
+  })
+  const expectedCatalogDigest = buildAgenticOsTestCatalogMetadata(sourceCatalog).catalogDigest
   resetAgenticOsRemoteGrammarCatalogForTests()
   process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '1'
   delete process.env.VITE_KNOWGRPH_AGENT_READY_BASE_URL
@@ -359,6 +394,7 @@ export async function testRepoLocalSkillsCommandsHydratesSameOriginGrammar() {
         structuredContent: {
           ok: true,
           sourceRevision,
+          ...buildAgenticOsTestCatalogMetadata(sourceCatalog),
           catalog: [{ token, kind, label: `Repo-local ${kind}`, sourcePath: `${fileName}#${token}` }],
         },
       },
@@ -383,7 +419,9 @@ export async function testRepoLocalSkillsCommandsHydratesSameOriginGrammar() {
     const missingTokens = expectedTokens.filter(token => !container.querySelector(`[data-kg-skill-command-token="${token}"]`))
     if (missingTokens.length > 0
       || panel?.getAttribute('data-kg-floating-panel-skills-commands-metadata-status') !== 'fresh'
-      || panel?.getAttribute('data-kg-floating-panel-skills-commands-source-revision') !== sourceRevision) {
+      || panel?.getAttribute('data-kg-floating-panel-skills-commands-source-revision') !== sourceRevision
+      || panel?.getAttribute('data-kg-floating-panel-skills-commands-catalog-digest') !== expectedCatalogDigest
+      || panel?.getAttribute('data-kg-floating-panel-skills-commands-catalog-counts') !== '1/1/1') {
       throw new Error(`expected repo-local Skills & Commands to hydrate exact-revision / # @ grammar, missing=${missingTokens.join(',')} html=${container.innerHTML}`)
     }
     const toolCalls = calls.filter(call => call.method === 'tools/call')
@@ -448,6 +486,23 @@ export async function testRemoteAgenticOsGrammarHydrationIsRevisionKeyedAndBound
         ? 'DICTIONARY-SEMANTIC.md'
         : 'DICTIONARY-BINDING.md'
     const sourcePath = `${dictionaryFileName}#${token}`
+    const sourceCatalog: AgenticOsTestCatalogEntry[] = (['/', '#', '@'] as const).map(sigil => {
+      const entryKind = sigil === '/' ? 'command' : sigil === '#' ? 'semantic' : 'binding'
+      const entryFileName = entryKind === 'command'
+        ? 'DICTIONARY-COMMAND.md'
+        : entryKind === 'semantic'
+          ? 'DICTIONARY-SEMANTIC.md'
+          : 'DICTIONARY-BINDING.md'
+      const entryToken = `${sigil}revision-${sourceRevision[0]}`
+      const entrySourcePath = `${entryFileName}#${entryToken}`
+      return {
+        token: entryToken,
+        kind: entryKind,
+        label: `Revision ${sourceRevision[0]}`,
+        sourcePath: entrySourcePath,
+        sourceUrl: `https://github.com/huijoohwee/agentic-canvas-os/blob/${sourceRevision}/docs/${entrySourcePath}`,
+      }
+    })
     return new Response(JSON.stringify({
       jsonrpc: '2.0',
       id: body.id,
@@ -455,6 +510,7 @@ export async function testRemoteAgenticOsGrammarHydrationIsRevisionKeyedAndBound
         structuredContent: {
           ok: true,
           sourceRevision,
+          ...buildAgenticOsTestCatalogMetadata(sourceCatalog),
           liveAgentProviderProof: {
             schema: 'agent-live-provider-proof-summary/v1',
             status: 'verified-bounded-live',

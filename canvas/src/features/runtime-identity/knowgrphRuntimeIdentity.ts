@@ -7,6 +7,7 @@ declare const __KNOWGRPH_RUNTIME_DEVICE__: string | undefined
 declare const __KNOWGRPH_SOURCE_BRANCH__: string | undefined
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
+const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const EMPTY_CATALOG_COUNTS = { slash: 0, hash: 0, at: 0 } as const
 const EMPTY_LIVE_PROVIDER_PROOF: AgenticOsRemoteGrammarSnapshot['liveAgentProviderProof'] = {
   schema: 'agent-live-provider-proof-summary/v1',
@@ -38,6 +39,7 @@ export type KnowgrphRuntimeIdentity = {
   knowgrphRevision: string
   agenticCanvasOsRevision: string
   catalogRevision: string
+  catalogDigest: string
   catalogHydration: {
     status: AgenticOsRemoteGrammarSnapshot['hydration']['status']
     attempts: number
@@ -66,6 +68,7 @@ const buildBaseKnowgrphRuntimeIdentity = (): KnowgrphRuntimeIdentity => ({
   knowgrphRevision: readKnowgrphSourceRevision(),
   agenticCanvasOsRevision: '',
   catalogRevision: '',
+  catalogDigest: '',
   catalogHydration: { status: 'idle', attempts: 0 },
   catalogCounts: EMPTY_CATALOG_COUNTS,
   agentLiveProviderProof: EMPTY_LIVE_PROVIDER_PROOF,
@@ -77,6 +80,7 @@ export function buildKnowgrphRuntimeIdentity(snapshot: AgenticOsRemoteGrammarSna
     ...buildBaseKnowgrphRuntimeIdentity(),
     agenticCanvasOsRevision: snapshot.sourceRevision,
     catalogRevision: snapshot.sourceRevision,
+    catalogDigest: snapshot.catalogDigest,
     catalogHydration: {
       status: snapshot.hydration.status,
       attempts: snapshot.hydration.attempts,
@@ -139,6 +143,7 @@ export function isKnowgrphRuntimeIdentityFresh(identity: KnowgrphRuntimeIdentity
   return SHA_PATTERN.test(identity.knowgrphRevision)
     && SHA_PATTERN.test(identity.agenticCanvasOsRevision)
     && identity.catalogRevision === identity.agenticCanvasOsRevision
+    && SHA256_PATTERN.test(identity.catalogDigest)
     && identity.catalogHydration.status === 'fresh'
     && identity.catalogHydration.attempts >= 0
     && identity.catalogHydration.attempts <= 2
