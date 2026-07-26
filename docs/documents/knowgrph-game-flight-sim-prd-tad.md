@@ -3,8 +3,8 @@ title: "Knowgrph Game Flight Sim PRD/TAD"
 id: "md:knowgrph-game-flight-sim-prd-tad"
 author: "airvio / joohwee"
 date: "2026-07-22"
-updated: "2026-07-24"
-version: "1.3.0"
+updated: "2026-07-26"
+version: "1.3.1"
 status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
 evidence_status: "exact-head source and browser proof required at every handoff"
@@ -104,7 +104,7 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 - In-repo flight dynamics (thrust, pitch/roll/yaw, lift/drag/gravity approximation) and axis-aligned bounding-box terrain/collision — no external physics engine.
 - One img2threejs-style, diffable TypeScript + JSON required-aircraft spec that resolves the existing procedural airplane renderer; non-null aircraft fallback metadata fails closed and the required-aircraft fallback count is zero.
 - One optional beacon fallback admitted only from the committed local `optional-beacon.glb`, recorded as opaque with CC0-1.0 license and exact SHA-256 `be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd`; remote, missing, unreadable, malformed, or hash-drifted data fails closed.
-- A HUD that reports airspeed, altitude, heading/attitude, throttle, waypoint/objective state, save state, and explicit errors.
+- A pointer-transparent HUD that reports airspeed, altitude, heading/attitude, throttle, waypoint/objective state, save state, and explicit errors while sharing the FloatingPanel responsive-width policy on wide layouts, retaining the established full-viewport mobile choreography, and keeping mobile flight controls above bottom choreography surfaces so Motion Control actions stay operable during flight.
 - Deterministic speed-sensitive pitch/roll/yaw authority with a non-zero low-speed floor, a bounded stall nose-down tendency, and one shared flight-envelope projection that reports instrument uncertainty, stall risk, attitude limits, mission target-speed band, control authority, and recovery cues without owning the camera.
 - Bounded engine-power-loss, unreliable-airspeed, and control-bias drills active only from tick 180 through tick 419; shared-owner night atmosphere and lighting for night training.
 - Browser speech synthesis for explicitly enabled voice coaching, always backed by the same visible deterministic text cue.
@@ -176,7 +176,7 @@ Given an invocation, exactly one `/flight.sim`, one `@canvas`, and one `#flight`
 
 #### AC-9: shared Canvas and XR ownership
 
-Given a running XR surface, entering Flight Sim keeps the authored atmosphere, terrain, and scene graph visibly mounted inside the same Canvas and overlays the aircraft and waypoint/objective actors plus the HUD. No fallback scene, second renderer, alternate rendered XR world, renderer branch, or Flight-owned camera is introduced. The Flight presentation adapter converts the shared procedural aircraft's `-Y` nose axis to the flight model's `-Z` forward axis before applying pitch, yaw, and roll, so the visible nose, simulated velocity, waypoint travel, and Fixed Follow view direction remain aligned. The shared Camera catalog supplies exactly `fixed-follow` / `free-orbit`, the canonical Physics-controller camera hook consumes the pure aircraft follow/framing descriptor and alone mutates the camera and OrbitControls, and Timeline camera-marks may temporarily take framing ownership before returning to the last selected option; immersive first-person entry is not required to fly. Every telemetry surface renders normalized compass heading from the same flight-model projection instead of displaying raw signed yaw.
+Given a running XR surface, entering Flight Sim keeps the authored atmosphere, terrain, and scene graph visibly mounted inside the same Canvas and overlays the aircraft and waypoint/objective actors plus the HUD. No fallback scene, second renderer, alternate rendered XR world, renderer branch, or Flight-owned camera is introduced. The Flight presentation adapter converts the shared procedural aircraft's `-Y` nose axis to the flight model's `-Z` forward axis before applying pitch, yaw, and roll, so the visible nose, simulated velocity, waypoint travel, and Fixed Follow view direction remain aligned. The shared Camera catalog supplies exactly `fixed-follow` / `free-orbit`, the canonical Physics-controller camera hook consumes the pure aircraft follow/framing descriptor and alone mutates the camera and OrbitControls, and Timeline camera-marks may temporarily take framing ownership before returning to the last selected option; immersive first-person entry is not required to fly. Every telemetry surface renders normalized compass heading from the same flight-model projection instead of displaying raw signed yaw. While FloatingPanel is open at its default top-right position, the pointer-transparent HUD uses the same responsive width expression to clear the panel for top telemetry, navigation, and bottom lifecycle actions, while retaining the established layer that keeps mobile flight controls above bottom choreography surfaces.
 
 #### AC-10: synchronous admission and resumable lifecycle
 
