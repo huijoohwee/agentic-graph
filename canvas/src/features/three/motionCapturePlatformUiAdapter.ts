@@ -29,6 +29,7 @@ export type MotionCapturePlatformUiAdapter = Readonly<{
   startRecording: () => MotionCaptureSessionSnapshot
   stopRecording: () => MotionCaptureSessionSnapshot
   clearRecording: () => MotionCaptureSessionSnapshot
+  applyResearchEvidenceManifest: (input: unknown) => Promise<MotionCaptureSessionSnapshot>
   exportRecording: (format: MotionCaptureExportFormat) => Promise<MotionCaptureExportArtifact>
 }>
 
@@ -71,5 +72,6 @@ export const motionCapturePlatformUiAdapter: MotionCapturePlatformUiAdapter = Ob
   startRecording: motionCaptureSessionRuntime.startRecording,
   stopRecording: motionCaptureSessionRuntime.stopRecording,
   clearRecording: motionCaptureSessionRuntime.clearRecording,
+  applyResearchEvidenceManifest: motionCaptureSessionRuntime.applyResearchEvidenceManifest,
   exportRecording: motionCaptureSessionRuntime.exportRecording,
 })

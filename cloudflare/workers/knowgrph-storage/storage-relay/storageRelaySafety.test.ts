@@ -3,6 +3,7 @@ import { test } from 'node:test'
 
 import {
   assertDevStorageRelayRequest,
+  assertLoopbackStorageRelayRequest,
   authorizeStorageRelayRequest,
   readStorageRelayBytes,
   StorageRelayByteBudget,
@@ -47,6 +48,28 @@ test('Dev relay guard requires the explicit sentinel and loopback request and Or
     }),
     enabledEnv,
   ))
+})
+
+test('local runtime sentinel explicitly admits Wrangler route rewriting', () => {
+  const rewrittenRequest = new Request('https://airvio.co/api/storage/relay/capabilities')
+  assert.throws(
+    () => assertLoopbackStorageRelayRequest(rewrittenRequest),
+    (error: unknown) => error instanceof StorageRelayError
+      && error.code === 'membership_forbidden',
+  )
+  assert.doesNotThrow(() => assertLoopbackStorageRelayRequest(rewrittenRequest, {
+    KNOWGRPH_STORAGE_LOCAL_RUNTIME: 'true',
+  }))
+
+  assert.throws(
+    () => assertLoopbackStorageRelayRequest(new Request(rewrittenRequest, {
+      headers: { origin: 'https://attacker.example' },
+    }), {
+      KNOWGRPH_STORAGE_LOCAL_RUNTIME: 'true',
+    }),
+    (error: unknown) => error instanceof StorageRelayError
+      && error.code === 'membership_forbidden',
+  )
 })
 
 test('authorization uses bearer-only active workspace roles', async () => {

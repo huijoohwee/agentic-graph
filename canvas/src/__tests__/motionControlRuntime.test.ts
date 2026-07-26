@@ -370,7 +370,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   for (const marker of ['POSE_TASK_SHA256', 'MAX_POSE_TASK_BYTES', 'AbortSignal.timeout(', 'storage.googleapis.com/mediapipe-models/', 'copyFile(', 'pose_landmarks_detector.tflite', 'readBoundedResponseBytes(']) {
     if (!assetScript.includes(marker)) throw new Error(`expected same-origin licensed LiteRT asset preparation marker ${marker}`)
   }
-  for (const marker of ['floatingPanelCatalogSurfaceClassName()', 'floatingPanelCatalogBodyClassName(', 'data-kg-motion-control-start', 'data-kg-motion-control-invocation-chip-renderer="shared-markdown-sigil"', 'disabled={!captureSurfaceActive || session.sources.length === 0', 'disabled={!captureSurfaceActive || !peerSharing.available']) {
+  for (const marker of ['floatingPanelCatalogSurfaceClassName()', 'floatingPanelCatalogBodyClassName(', 'data-kg-motion-control-start', 'data-kg-motion-control-invocation-chip-renderer="shared-markdown-sigil"', 'disabled={!captureSurfaceActive || session.sources.length === 0', 'disabled={!captureSurfaceActive || !peerSharing.available', 'useAgenticOsRemoteGrammarAutoHydration()', "sourceMetadataDeferred ? 'deferred-offline'", 'data-kg-motion-capture-research-evidence="import"', 'applyResearchEvidenceManifest']) {
     if (!panelSource.includes(marker)) throw new Error(`expected shared FloatingPanel Motion Control layout marker ${marker}`)
   }
   for (const marker of ['MotionControlTargetCards', "openMotionControlSurface(target)"]) {

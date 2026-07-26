@@ -1,3 +1,5 @@
+import type { MotionCaptureResearchEvidenceManifest } from './motionCaptureResearchEvidence'
+
 export const MOTION_CAPTURE_PLATFORM_SCHEMA = 'knowgrph.motion-capture-platform/v1' as const
 export const MOTION_CAPTURE_RECORDING_SCHEMA = 'knowgrph.motion-capture-recording/v1' as const
 export const MOTION_CAPTURE_MAX_TIME_MS = 2 ** 43
@@ -12,7 +14,14 @@ export type MotionCaptureLimits = Readonly<{
   maxJitterMs: number
   maxDropRate: number
   maxCalibrationReprojectionErrorPx: number
+  maxMetricMeasurementErrorMeters: number
+  maxScaleRelativeError: number
+  minimumCalibrationSamples: number
+  minimumCalibrationPoses: number
+  minimumClockAlignmentSamples: number
+  minimumTriangulatedSamples: number
   minimumResearchSamplesPerSource: number
+  minimumResearchDurationMs: number
   minimumObservationConfidence: number
   minimumLandmarkVisibility: number
   minimumLandmarkPresence: number
@@ -29,7 +38,14 @@ export const MOTION_CAPTURE_DEFAULT_LIMITS: MotionCaptureLimits = Object.freeze(
   maxJitterMs: 10,
   maxDropRate: 0.02,
   maxCalibrationReprojectionErrorPx: 5,
-  minimumResearchSamplesPerSource: 3,
+  maxMetricMeasurementErrorMeters: 0.02,
+  maxScaleRelativeError: 0.02,
+  minimumCalibrationSamples: 30,
+  minimumCalibrationPoses: 5,
+  minimumClockAlignmentSamples: 30,
+  minimumTriangulatedSamples: 30,
+  minimumResearchSamplesPerSource: 30,
+  minimumResearchDurationMs: 1_000,
   minimumObservationConfidence: 0.5,
   minimumLandmarkVisibility: 0.5,
   minimumLandmarkPresence: 0.5,
@@ -80,6 +96,7 @@ export type MotionCaptureClockAlignment = Readonly<{
   measuredAtMs: number | null
   evidenceDigestSha256: string | null
   provenance: 'session-clock' | 'measured-alignment' | null
+  researchManifestDigestSha256: string | null
 }>
 
 export type MotionCaptureCalibrationProvenance = Readonly<{
@@ -100,6 +117,17 @@ export type MotionCaptureCalibration = Readonly<{
   coordinateSpace: MotionCaptureCoordinateSpace
   provenance: MotionCaptureCalibrationProvenance | null
   reprojectionErrorPx: number | null
+  researchValidation: MotionCaptureCalibrationResearchValidation | null
+}>
+
+export type MotionCaptureCalibrationResearchValidation = Readonly<{
+  schema: 'knowgrph.motion-capture-calibration-validation/v1'
+  researchManifestDigestSha256: string
+  referenceFrame: 'metric-si-right-up-forward'
+  measurementErrorMeters: number
+  reprojectionP95Px: number | null
+  calibrationSampleCount: number
+  calibrationPoseCount: number
 }>
 
 export type MotionCaptureSharedReconstructionInput = Readonly<{
@@ -116,10 +144,19 @@ export type MotionCaptureSharedReconstructionEvidence = Readonly<{
   method: 'measured'
   measuredAtMs: number
   evidenceDigestSha256: string
+  researchValidation: MotionCaptureReconstructionResearchValidation | null
   sourceBindings: readonly Readonly<{
     sourceId: string
     calibrationEvidenceDigestSha256: string
   }>[]
+}>
+
+export type MotionCaptureReconstructionResearchValidation = Readonly<{
+  schema: 'knowgrph.motion-capture-reconstruction-validation/v1'
+  researchManifestDigestSha256: string
+  referenceFrame: 'metric-si-right-up-forward'
+  scaleRelativeError: number
+  triangulatedSampleCount: number
 }>
 
 export type MotionCaptureObservationInput = Readonly<{
@@ -151,6 +188,7 @@ export type MotionCaptureSourceQuality = Readonly<{
   droppedSequenceSamples: number
   unsequencedSamples: number
   outOfOrderSamples: number
+  researchDurationMs: number
   jitterMs: number
   dropRate: number
 }>
@@ -224,6 +262,7 @@ export type MotionCaptureRecordedSample = Readonly<{
   sharedReconstructionId: string | null
   researchSourceIds: readonly string[]
   researchEvidenceEpoch: string | null
+  researchManifestDigestSha256: string | null
 }>
 
 export type MotionCaptureRecordingSourceRejection = Readonly<{
@@ -242,6 +281,7 @@ export type MotionCaptureRecording = Readonly<{
   droppedByBudget: number
   researchLimits: MotionCaptureLimits
   sourceRejections: readonly MotionCaptureRecordingSourceRejection[]
+  researchEvidenceManifests: readonly MotionCaptureResearchEvidenceManifest[]
   samples: readonly MotionCaptureRecordedSample[]
 }>
 
@@ -259,6 +299,7 @@ export type MotionCaptureExportArtifact = Readonly<{
   landmarkCount: number
   researchReady: boolean
   researchReadyGroupCount: number
+  researchEvidenceManifestCount: number
 }>
 
 export const isMotionCaptureSha256 = (value: string): boolean => /^[a-f0-9]{64}$/u.test(value)
@@ -309,10 +350,18 @@ function motionCaptureCalibrationEvidenceSupportsResearch(
     || calibration.coordinateSpace !== 'metric-world'
     || !calibration.provenance
     || calibration.provenance.kind !== 'measured'
-    || !isMotionCaptureSha256(calibration.provenance.evidenceDigestSha256)) return false
+    || !isMotionCaptureSha256(calibration.provenance.evidenceDigestSha256)
+    || !calibration.researchValidation
+    || !isMotionCaptureSha256(calibration.researchValidation.researchManifestDigestSha256)
+    || calibration.researchValidation.referenceFrame !== 'metric-si-right-up-forward'
+    || calibration.researchValidation.measurementErrorMeters > limits.maxMetricMeasurementErrorMeters
+    || calibration.researchValidation.calibrationSampleCount < limits.minimumCalibrationSamples
+    || calibration.researchValidation.calibrationPoseCount < limits.minimumCalibrationPoses) return false
   if (source.captureKind === 'video' && calibration.reprojectionErrorPx === null) return false
-  return calibration.reprojectionErrorPx === null
-    || calibration.reprojectionErrorPx <= limits.maxCalibrationReprojectionErrorPx
+  return (calibration.reprojectionErrorPx === null
+      || calibration.reprojectionErrorPx <= limits.maxCalibrationReprojectionErrorPx)
+    && (calibration.researchValidation.reprojectionP95Px === null
+      || calibration.researchValidation.reprojectionP95Px <= limits.maxCalibrationReprojectionErrorPx)
 }
 
 function motionCaptureCalibrationSupportsResearch(
@@ -327,6 +376,7 @@ function validSharedReconstructionEvidence(
   evidence: MotionCaptureSharedReconstructionEvidence | null,
   sources: readonly MotionCaptureSourceState[],
   nowMs: number,
+  limits: MotionCaptureLimits,
 ): evidence is MotionCaptureSharedReconstructionEvidence {
   if (!evidence
     || evidence.referenceFrame !== 'shared-metric-session'
@@ -335,15 +385,23 @@ function validSharedReconstructionEvidence(
     || evidence.measuredAtMs < 0
     || evidence.measuredAtMs > nowMs
     || !isMotionCaptureSha256(evidence.evidenceDigestSha256)
-    || evidence.sourceBindings.length < 2) return false
+    || evidence.sourceBindings.length < 2
+    || !evidence.researchValidation
+    || evidence.researchValidation.referenceFrame !== 'metric-si-right-up-forward'
+    || evidence.researchValidation.scaleRelativeError > limits.maxScaleRelativeError
+    || evidence.researchValidation.triangulatedSampleCount < limits.minimumTriangulatedSamples
+    || evidence.researchValidation.researchManifestDigestSha256 !== evidence.evidenceDigestSha256) return false
   const sourceById = new Map(sources.map(source => [source.sourceId, source]))
   const uniqueIds = new Set(evidence.sourceBindings.map(binding => binding.sourceId))
   if (uniqueIds.size !== evidence.sourceBindings.length) return false
   return evidence.sourceBindings.every((binding) => {
     const calibrationDigest = sourceById.get(binding.sourceId)?.calibration.provenance?.evidenceDigestSha256
+    const source = sourceById.get(binding.sourceId)
     return isMotionCaptureSha256(binding.calibrationEvidenceDigestSha256)
       && binding.calibrationEvidenceDigestSha256 === calibrationDigest
       && binding.calibrationEvidenceDigestSha256 !== evidence.evidenceDigestSha256
+      && source?.calibration.researchValidation?.researchManifestDigestSha256 === evidence.evidenceDigestSha256
+      && source?.clockAlignment.researchManifestDigestSha256 === evidence.evidenceDigestSha256
   })
 }
 
@@ -382,7 +440,7 @@ export function evaluateMotionCaptureSessionEvidence(
   const dropRate = receivedSamples + droppedSamples > 0
     ? (missingSamples + droppedSamples) / (receivedSamples + droppedSamples)
     : 0
-  const reconstructionValid = validSharedReconstructionEvidence(sharedReconstruction, sources, nowMs)
+  const reconstructionValid = validSharedReconstructionEvidence(sharedReconstruction, sources, nowMs, limits)
   const boundSourceIds = new Set(sharedReconstruction?.sourceBindings.map(binding => binding.sourceId) || [])
   const configuredReconstructionSources = reconstructionValid ? sources.filter(source => (
     boundSourceIds.has(source.sourceId)
@@ -401,6 +459,7 @@ export function evaluateMotionCaptureSessionEvidence(
   }
   const researchSources = synchronizedMotionCaptureCluster(reconstructionSources.filter(source => (
     source.quality.researchUsableSamples >= limits.minimumResearchSamplesPerSource
+    && source.quality.researchDurationMs >= limits.minimumResearchDurationMs
     && source.quality.jitterMs <= limits.maxJitterMs
     && researchEvidenceFailureRate(source) <= limits.maxDropRate
     && source.quality.unsequencedSamples === 0
@@ -440,6 +499,10 @@ export function evaluateMotionCaptureSessionEvidence(
     && synchronized.some(source => source.quality.researchUsableSamples < limits.minimumResearchSamplesPerSource)) {
     warnings.push('capture-research-sample-window-insufficient')
   }
+  if (synchronized.length >= 2
+    && synchronized.some(source => source.quality.researchDurationMs < limits.minimumResearchDurationMs)) {
+    warnings.push('capture-research-duration-insufficient')
+  }
   if (synchronized.length >= 2 && !sharedReconstruction) warnings.push('capture-shared-reconstruction-evidence-required')
   else if (sharedReconstruction && !reconstructionValid) warnings.push('capture-shared-reconstruction-evidence-invalid')
   else if (reconstructionValid && synchronized.length >= 2 && researchSources.length < 2) {
@@ -474,6 +537,7 @@ export function createMotionCaptureClockAlignment(clockDomain: MotionCaptureCloc
       measuredAtMs: null,
       evidenceDigestSha256: null,
       provenance: 'session-clock' as const,
+      researchManifestDigestSha256: null,
     })
     : Object.freeze({
       status: 'unaligned' as const,
@@ -482,6 +546,7 @@ export function createMotionCaptureClockAlignment(clockDomain: MotionCaptureCloc
       measuredAtMs: null,
       evidenceDigestSha256: null,
       provenance: null,
+      researchManifestDigestSha256: null,
     })
 }
 
@@ -491,5 +556,6 @@ export function createMotionCaptureCalibration(coordinateSpace: MotionCaptureCoo
     coordinateSpace,
     provenance: null,
     reprojectionErrorPx: null,
+    researchValidation: null,
   })
 }

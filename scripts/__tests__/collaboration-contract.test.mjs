@@ -16,6 +16,9 @@ import {
 import { fetchOpenPullRequests } from '../github-active-scope-client.mjs'
 import {
   buildLocalCollaborationBrowserEnv,
+  buildLocalCollaborationPersistenceArgs,
+  buildLocalCollaborationWorkerArgs,
+  buildLocalCollaborationWorkerEnv,
   resolveLocalCollaborationStackConfig,
 } from '../lib/collaboration-local-stack.js'
 
@@ -49,6 +52,9 @@ test('collaboration browser gate edits through the canonical active editor owner
 test('local collaboration browser identities remain stable across repeated gate runs', () => {
   const config = resolveLocalCollaborationStackConfig({ repoRoot: '/tmp/knowgrph-test', env: {} })
   const browserEnv = buildLocalCollaborationBrowserEnv(config, {})
+  const workerEnv = buildLocalCollaborationWorkerEnv(config, {})
+  const workerArgs = buildLocalCollaborationWorkerArgs(config, 8877)
+  const persistenceArgs = buildLocalCollaborationPersistenceArgs(config)
 
   assert.equal(config.ownerAppUrl, 'http://127.0.0.1:5175/')
   assert.equal(config.guestAppUrl, 'http://127.0.0.1:5174/')
@@ -65,6 +71,19 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.equal(config.guestClientDeviceId, 'dev:collaboration-guest-local')
   assert.equal(browserEnv.KG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)
   assert.equal(browserEnv.KG_COLLABORATION_E2E_GUEST_DEVICE_ID, config.guestClientDeviceId)
+  assert.equal(workerEnv.KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
+  assert.equal(workerEnv.KNOWGRPH_STORAGE_LOCAL_RUNTIME, 'true')
+  assert.deepEqual(workerArgs.slice(-4), [
+    '--var',
+    `KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
+    '--var',
+    'KNOWGRPH_STORAGE_LOCAL_RUNTIME:true',
+  ])
+  assert.deepEqual(persistenceArgs, [
+    '--persist-to',
+    '/tmp/knowgrph-test/cloudflare/workers/knowgrph-storage/.wrangler/state',
+  ])
+  assert.equal(workerArgs.includes(config.storagePersistencePath), true)
   assert.notEqual(config.ownerClientDeviceId, config.guestClientDeviceId)
 })
 
