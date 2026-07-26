@@ -19,6 +19,16 @@ export const STORYBOARD_EDGE_INSERTION_OPTIONS: ReadonlyArray<{
   { kind: 'branch', label: 'Branch Node', nodeType: 'BranchNode' },
 ]
 
+export function selectStoryboardEdgeInsertionAnchor<T extends { edgeId: string }>(
+  anchors: ReadonlyArray<T>,
+  selectedEdgeId: string | null | undefined,
+): T[] {
+  const edgeId = String(selectedEdgeId || '').trim()
+  if (!edgeId) return []
+  const selectedAnchor = anchors.find(anchor => String(anchor.edgeId || '').trim() === edgeId)
+  return selectedAnchor ? [selectedAnchor] : []
+}
+
 function readRecord(value: unknown): Record<string, JSONValue> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? { ...(value as Record<string, JSONValue>) }
