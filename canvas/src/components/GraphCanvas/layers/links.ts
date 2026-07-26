@@ -358,5 +358,18 @@ export const createTempLink = (g: GSelection, tempLinkSelRef: MutableRefObject<T
     .attr('stroke-dasharray', '4,2')
     .style('pointer-events', 'none')
     .style('display', 'none');
+  g
+    .append('circle')
+    .attr('data-kg-layer', 'temp-link-endpoint')
+    .attr('role', 'button')
+    .attr('tabindex', -1)
+    .attr('aria-label', 'Resume temporary edge')
+    .attr('aria-hidden', 'true')
+    .attr('r', 5)
+    .attr('fill', 'var(--kg-canvas-bg, #ffffff)')
+    .attr('stroke', readGlobalEdgeColor(schema || null))
+    .attr('stroke-width', 2.5)
+    .style('pointer-events', 'none')
+    .style('display', 'none');
   tempLinkSelRef.current = tempLink;
 };
