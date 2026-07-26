@@ -1,4 +1,14 @@
-import { finalizePendingEdge } from '@/features/edge-creation'
+import { JSDOM } from 'jsdom'
+import { select } from 'd3'
+import {
+  cancelPendingEdge,
+  finalizePendingEdge,
+  freezePendingEdgeAt,
+  movePendingEdgeEnd,
+  nudgePendingEdgeEnd,
+  resolveEdgeCreationGraphData,
+  resumeTemporaryEdge,
+} from '@/features/edge-creation'
 import type { GraphData, GraphEdge } from '@/lib/graph/types'
 import type { PendingLink, TempLinkSelection } from '@/features/edge-creation'
 
@@ -141,4 +151,87 @@ export const testFinalizeUpdateTarget = () => {
     throw new Error('should update target to c')
   }
   if (selected !== 'e1') throw new Error('should select updated edge')
+}
+
+export const testTemporaryEdgeFreezeResumeLifecycle = () => {
+  const dom = new JSDOM('<!doctype html><html><body><svg><g><line></line><circle data-kg-layer="temp-link-endpoint"></circle></g></svg></body></html>')
+  const line = dom.window.document.querySelector<SVGLineElement>('line')
+  const endpoint = dom.window.document.querySelector<SVGCircleElement>('circle')
+  if (!line || !endpoint) throw new Error('expected temporary edge fixtures')
+  const temp: { current: TempLinkSelection } = {
+    current: select(line) as unknown as NonNullable<TempLinkSelection>,
+  }
+  const linkRef: { current: PendingLink | null } = {
+    current: {
+      mode: 'create',
+      fromId: 'a',
+      start: { x: 10, y: 20 },
+      end: { x: 10, y: 20 },
+      phase: 'drawing',
+    },
+  }
+
+  if (!freezePendingEdgeAt(temp, linkRef, { x: 30, y: 40 })) {
+    throw new Error('expected a new connection to freeze as a temporary edge')
+  }
+  if (linkRef.current?.phase !== 'temporary') throw new Error('expected temporary phase')
+  if (line.getAttribute('data-kg-temporary-edge') !== 'true') throw new Error('expected temporary edge marker')
+  if (line.style.pointerEvents !== 'stroke') throw new Error('expected frozen edge to be resumable')
+  if (endpoint.getAttribute('cx') !== '30' || endpoint.getAttribute('cy') !== '40') {
+    throw new Error('expected endpoint at the release position')
+  }
+  if (endpoint.getAttribute('aria-hidden') !== 'false' || endpoint.getAttribute('tabindex') !== '0') {
+    throw new Error('expected accessible temporary endpoint')
+  }
+  if (!nudgePendingEdgeEnd(temp, linkRef, { x: 12, y: -8 })) {
+    throw new Error('expected keyboard endpoint nudge')
+  }
+  if (endpoint.getAttribute('cx') !== '42' || endpoint.getAttribute('cy') !== '32') {
+    throw new Error('expected keyboard endpoint nudge position')
+  }
+
+  if (!resumeTemporaryEdge(temp, linkRef)) throw new Error('expected temporary edge to resume')
+  if (String(linkRef.current?.phase || '') !== 'drawing') throw new Error('expected drawing phase after resume')
+  if (!movePendingEdgeEnd(temp, linkRef, { x: 50, y: 60 })) throw new Error('expected resumed endpoint to follow')
+  if (endpoint.getAttribute('cx') !== '50' || endpoint.getAttribute('cy') !== '60') {
+    throw new Error('expected resumed endpoint position')
+  }
+
+  cancelPendingEdge(linkRef, temp)
+  if (linkRef.current !== null) throw new Error('expected cancellation to clear pending state')
+  if (line.style.display !== 'none' || endpoint.style.display !== 'none') {
+    throw new Error('expected cancellation to clear temporary visuals')
+  }
+}
+
+export const testTemporaryEdgeRejectsEndpointUpdateFreeze = () => {
+  const temp: { current: TempLinkSelection } = { current: null }
+  const linkRef: { current: PendingLink | null } = {
+    current: { mode: 'update-target', fromId: 'b', phase: 'drawing' },
+  }
+  if (freezePendingEdgeAt(temp, linkRef, { x: 30, y: 40 })) {
+    throw new Error('expected endpoint updates to cancel instead of becoming temporary edges')
+  }
+  if (String(linkRef.current?.phase || '') === 'temporary') throw new Error('unexpected temporary endpoint update')
+}
+
+export const testEdgeCreationPrefersRenderedGraphData = () => {
+  const rendered: GraphData = {
+    context: 'rendered',
+    type: 'Graph',
+    nodes: [{ id: 'rendered-node', label: 'Rendered', type: 'entity', properties: {} }],
+    edges: [],
+  }
+  const fallback: GraphData = {
+    context: 'fallback',
+    type: 'Graph',
+    nodes: [{ id: 'fallback-node', label: 'Fallback', type: 'entity', properties: {} }],
+    edges: [],
+  }
+  if (resolveEdgeCreationGraphData(rendered, fallback) !== rendered) {
+    throw new Error('expected edge creation to resolve nodes from the rendered graph')
+  }
+  if (resolveEdgeCreationGraphData(null, fallback) !== fallback) {
+    throw new Error('expected edge creation to fall back to the store graph')
+  }
 }
