@@ -132,6 +132,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["zoom.viewKey.storyboardSourceRevisionStable","@/__tests__/graphMetaKeyPending.test","testStoryboardActive2dZoomViewKeyStaysStableAcrossSourceRevisions"],
   ["zoom.pick.storyboardPreservesAcrossRevisions","@/__tests__/zoomStatePick.test","testPickInitialZoomTransformCanPreserveSameDocumentStoryboardZoom"],
   ["canvas.storyboardWidget.probeTree.run.typedFrontmatterIdentity","@/__tests__/probeTreeWidgetRunTypedGraph.test","testProbeTreeWidgetRunResolvesTypedFrontmatterNodeIdentity"],
+  ["canvas.storyboardWidget.probeTree.run.genericCardInvocationRouting","@/__tests__/probeTreeWidgetRunTypedGraph.test","testProbeTreeInvocationRoutesGenericCardBeforeSourceBackedFallback"],
   ["canvas.storyboardWidget.run.composedOverlayInnerDraftIdentity","@/__tests__/probeTreeWidgetRunTypedGraph.test","testStoryboardWidgetWorkflowRunTargetResolvesComposedOverlayIdAgainstInnerDraftNode"],
   ["canvas.probeTree.llmResponseContract.projectsEditableBranches","@/__tests__/probeTreeStructuredResponseContract.test","testProbeTreeLlmResponseContractProjectsEditableBranches"],
   ["canvas.probeTree.mcpResponseAdapter.projectsWidgetCardsPanelTree","@/__tests__/probeTreeStructuredResponseContract.test","testProbeTreeMcpResponseAdapterBoundsWidgetCardsAndPanel"],

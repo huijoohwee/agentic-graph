@@ -8,15 +8,13 @@ import { ensureEditorCanvasLandingForDuration } from '@/lib/toolbar/workspaceLan
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { UI_COPY, FLOW_SWARM_PREDICTION_NODE_TYPE_ID, FLOW_TEXT_GENERATION_NODE_LABEL, FLOW_TEXT_GENERATION_NODE_TYPE_ID, FLOW_VIDEO_TRANSCRIBER_NODE_LABEL, FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID } from '@/lib/config'
 import { readGraphDataRevision } from '@/lib/graph/documentMetadata'
-import { resolveWidgetRegistryEntry, FLOW_WIDGET_FORM_ID_KEY } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
+import { resolveWidgetRegistryEntry } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
 import { buildTextWidgetOutputPatch, clearRichMediaOutputProperties, resolveRichMediaWidgetKind, writeTextWidgetRunOutputArtifact } from '@/features/chat/richMediaRun'
 import { fetchYouTubeTranscriptMarkdown } from '@/features/transcription/youtubeTranscriptMarkdown'
-import { resolveEffectiveTextGenerationWidgetProperties } from '@/features/storyboard-widget-manager/registryTemplates'
-import { inferTextGenerationProviderFamily } from '@/features/storyboard-widget-manager/textGenerationProviderFamily'
 import { runSwarmPredictionWidgetProperties } from '@/features/swarm-prediction/swarmPredictionWidget'
 import { FLOW_SHOWRUNNER_NODE_TYPE_ID, runShowrunnerWidgetProperties } from '@/features/ai-showrunner/showrunnerFlowNode'
 import { getCachedStoryboardWidgetWorkflowNodeResolutionContext, resolveStoryboardWidgetWorkflowNodeByIdAcrossGraphs, resolveStoryboardWidgetWorkflowRunTarget } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
-import { buildStoryboardWidgetInlineComputeOutputPatch, resolveStoryboardWidgetTextGenerationPrompts, resolveStoryboardWidgetWorkflowConnectedValuesInput } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs'
+import { buildStoryboardWidgetInlineComputeOutputPatch, resolveStoryboardWidgetWorkflowConnectedValuesInput } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs'
 import { isStoryboardWidgetWorkflowRunnableNode, resolveStoryboardWidgetWorkflowDownstreamRunTargetIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowDownstreamRunTargets'
 import { publishStoryboardWidgetSourceBackedRunOutput } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetSourceBackedRunOutput'
 import { setStoryboardWidgetWorkflowRunLoadingStateForKnownNodeIds, updateStoryboardWidgetWorkflowOutputForKnownNodeIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowWriteback'
@@ -34,6 +32,7 @@ import { runStoryboardWidgetNativeCrawlerInvocation } from './storyboardWidgetWo
 import { runStoryboardWidgetRichMediaDeliverables } from './storyboardWidgetWorkflowRichMediaDeliverablesRun'
 import { generateStoryboardWidgetTextWithProvider } from './storyboardWidgetWorkflowTextGenerationProvider'
 import { buildStoryboardWidgetTextRunSourceState } from './storyboardWidgetTextRunSourceState'
+import { resolveStoryboardWidgetTextGenerationRunContext, type StoryboardWidgetTextGenerationRunContext } from './storyboardWidgetTextGenerationRunContext'
 import type { StoryboardWidgetWorkflowNodeRunner, StoryboardWidgetWorkflowNodeRunnerArgs } from './storyboardWidgetWorkflowRunTypes'
 export { resolveStoryboardWidgetBaseGraphKind } from './storyboardWidgetWorkflowRunTypes'
 export type { StoryboardWidgetWorkflowNodeRunner, StoryboardWidgetWorkflowNodeRunnerArgs } from './storyboardWidgetWorkflowRunTypes'
@@ -408,52 +407,43 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
       })
       if (mediaNodeHandled) return
 
-      if (String(unwrapGraphCellValue(node.type) || '').trim() === FLOW_TEXT_GENERATION_NODE_TYPE_ID) {
-        const resolvedTextRegistryEntry = resolveWidgetRegistryEntry({ node, registry: args.widgetRegistry, graphMetaKind: args.baseGraphKind })
-        const providerFamily = inferTextGenerationProviderFamily({
-          provider: unwrapGraphCellValue(rawNodeProperties.chatProvider) || store.chatProvider, endpointUrl: unwrapGraphCellValue(rawNodeProperties.chatEndpointUrl) || store.chatEndpointUrl,
-          model: unwrapGraphCellValue(rawNodeProperties.chatModel) || store.chatModel, widgetTypeId: resolvedTextRegistryEntry?.widgetTypeId,
-          formId: resolvedTextRegistryEntry?.formId || rawNodeProperties[FLOW_WIDGET_FORM_ID_KEY],
-        })
-        const properties = resolveEffectiveTextGenerationWidgetProperties({
-          providerFamily,
-          localProperties: rawNodeProperties,
-          globalProperties: {
-            chatProvider: store.chatProvider,
-            chatAuthMode: store.chatAuthMode,
-            chatEndpointUrl: store.chatEndpointUrl,
-            chatModel: store.chatModel,
-            chatTemperature: store.chatTemperature,
-            chatMaxCompletionTokens: store.chatMaxCompletionTokens,
-            chatServiceTier: store.chatServiceTier,
-            chatStream: store.chatStream,
-            chatMessagesJson: store.chatMessagesJson,
-            chatReasoningEffort: store.chatReasoningEffort,
-            chatThinkingType: store.chatThinkingType,
-            chatThinkingJson: store.chatThinkingJson,
-            chatFrequencyPenalty: store.chatFrequencyPenalty,
-            chatPresencePenalty: store.chatPresencePenalty,
-            chatTopP: store.chatTopP,
-            chatLogprobs: store.chatLogprobs,
-            chatTopLogprobs: store.chatTopLogprobs,
-            chatParallelToolCalls: store.chatParallelToolCalls,
-            chatStopJson: store.chatStopJson,
-            chatStreamOptionsJson: store.chatStreamOptionsJson,
-            chatResponseFormatJson: store.chatResponseFormatJson,
-            chatLogitBiasJson: store.chatLogitBiasJson,
-            chatToolsJson: store.chatToolsJson,
-            chatToolChoiceJson: store.chatToolChoiceJson,
+      const resolveTextGenerationRunContext = () => resolveStoryboardWidgetTextGenerationRunContext({
+        node,
+        rawNodeProperties,
+        runtimeProperties: store as unknown as Record<string, unknown>,
+        context: workflowNodeResolutionContext,
+        graphForRun,
+        writableNodeId,
+        widgetRegistry: args.widgetRegistry,
+        baseGraphKind: args.baseGraphKind,
+      })
+      const runProbeTreeInvocation = async (textGeneration: StoryboardWidgetTextGenerationRunContext): Promise<boolean> => {
+        const probeTreeOutput = await runStoryboardWidgetProbeTreeTextGenerationInvocation({
+          graphForRun, nodeIds: [writableNodeId, resolvedNodeId, id, String(node.id || '')], requestedNodeId: id, fallbackNode: node, resolutionContext: workflowNodeResolutionContext,
+          textGeneration: {
+            prompt: textGeneration.prompt,
+            formId: textGeneration.formId,
+            localProperties: rawNodeProperties,
+            resolvedProperties: textGeneration.properties,
+            runtimeProperties: store,
           },
+          onInvocationStart: () => disableAutoZoomModesForUserGesture(useGraphStore.getState()),
+          onMaterialized: nodeIds => { revealProbeTreeBranchCardsOnCanvas(nodeIds); scheduleRunOutputEdgeRefresh() },
+          publishOutput: publishTextRunOutputToRichMediaPanel,
+          setLoading: loading => setRunLoadingStateForKnownNodeIds(loading ? { loading: true, kind: 'text' } : { loading: false }),
         })
-        const connectedValuesInput = resolveStoryboardWidgetWorkflowConnectedValuesInput({
-          context: workflowNodeResolutionContext,
-          graphForRun,
-          writableNodeId,
-          registry: args.widgetRegistry,
-        })
-        const connectedValuesBySchemaPath = connectedValuesInput?.connectedValuesByNodeId.get(connectedValuesInput.targetNodeId)
-        const { authoredPrompt, connectedPrompt, prompt } = resolveStoryboardWidgetTextGenerationPrompts({ authoredPrompt: properties.prompt, connectedValue: connectedValuesBySchemaPath?.['properties.prompt']?.value })
-        const textProviderBase = { properties, store, formId: resolvedTextRegistryEntry?.formId || rawNodeProperties[FLOW_WIDGET_FORM_ID_KEY], localProperties: rawNodeProperties }
+        if (!probeTreeOutput) return false
+        publishedRunGraphData = probeTreeOutput.graphData
+        args.upsertUiToast({ id: `storyboard-widget-run-${id}`, kind: probeTreeOutput.kind, message: probeTreeOutput.message, ttlMs: probeTreeOutput.kind === 'success' ? 3000 : 4200 })
+        return true
+      }
+      if (String(unwrapGraphCellValue(node.type) || '').trim() !== FLOW_TEXT_GENERATION_NODE_TYPE_ID
+        && await runProbeTreeInvocation(resolveTextGenerationRunContext())) return
+
+      if (String(unwrapGraphCellValue(node.type) || '').trim() === FLOW_TEXT_GENERATION_NODE_TYPE_ID) {
+        const textGeneration = resolveTextGenerationRunContext()
+        const { properties, formId, authoredPrompt, connectedPrompt, connectedSourceNodeId, prompt } = textGeneration
+        const textProviderBase = { properties, store, formId, localProperties: rawNodeProperties }
         const generateTextWithProvider = (generationPrompt: string, onText?: (nextText: string) => void) => generateStoryboardWidgetTextWithProvider({
           ...textProviderBase,
           prompt: generationPrompt,
@@ -466,7 +456,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           rawNodeProperties,
           authoredPrompt,
           connectedPrompt,
-          connectedSourceNodeId: connectedValuesBySchemaPath?.['properties.prompt']?.sources?.[0]?.nodeId || '',
+          connectedSourceNodeId,
           workspacePath: activeWorkspacePath || null, requireDurablePersistence: runOptions?.requireDurableMediaPersistence === true,
           model: properties.chatModel || store.chatModel,
           generateText: generateTextWithProvider,
@@ -477,19 +467,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           upsertToast: args.upsertUiToast,
         })
         if (deliverablesRun.handled) return void (publishedRunGraphData = deliverablesRun.graphData || args.readDraftGraphData())
-        const probeTreeOutput = await runStoryboardWidgetProbeTreeTextGenerationInvocation({
-          graphForRun, nodeIds: [writableNodeId, resolvedNodeId, id, String(node.id || '')], requestedNodeId: id, fallbackNode: node, resolutionContext: workflowNodeResolutionContext,
-          textGeneration: { prompt, formId: resolvedTextRegistryEntry?.formId || rawNodeProperties[FLOW_WIDGET_FORM_ID_KEY], localProperties: rawNodeProperties, resolvedProperties: properties, runtimeProperties: store },
-          onInvocationStart: () => disableAutoZoomModesForUserGesture(useGraphStore.getState()),
-          onMaterialized: nodeIds => { revealProbeTreeBranchCardsOnCanvas(nodeIds); scheduleRunOutputEdgeRefresh() },
-          publishOutput: publishTextRunOutputToRichMediaPanel,
-          setLoading: loading => setRunLoadingStateForKnownNodeIds(loading ? { loading: true, kind: 'text' } : { loading: false }),
-        })
-        if (probeTreeOutput) {
-          publishedRunGraphData = probeTreeOutput.graphData
-          args.upsertUiToast({ id: `storyboard-widget-run-${id}`, kind: probeTreeOutput.kind, message: probeTreeOutput.message, ttlMs: probeTreeOutput.kind === 'success' ? 3000 : 4200 })
-          return
-        }
+        if (await runProbeTreeInvocation(textGeneration)) return
         if (!prompt) {
           reportNodeRunFailure('Add a prompt before running the Widget Card.', 2400)
           return
