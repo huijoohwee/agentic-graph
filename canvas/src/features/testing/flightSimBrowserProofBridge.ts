@@ -1,6 +1,7 @@
 const MODULE_IMPORTERS = Object.freeze({
   cameraMcpRuntime: () => import('@/features/strybldr/cameraMcpRuntime'),
   cameraSourceMcpRuntime: () => import('@/features/strybldr/cameraSourceMcpRuntime'),
+  flightSimCameraRuntime: () => import('@/features/game-flight-sim/flightSimCameraRuntime'),
   flightSimDeadlineRuntime: () => import('@/features/game-flight-sim/flightSimDeadlineRuntime'),
   flightSimInput: () => import('@/features/game-flight-sim/flightSimInput'),
   flightSimMcpRuntime: () => import('@/features/game-flight-sim/flightSimMcpRuntime'),

@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import { load as loadYaml } from 'js-yaml'
+import { FLIGHT_SIM_CAMERA_VIEW_OPTIONS } from '@/features/game-flight-sim/flightSimCameraRuntime'
 import {
   XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE,
   XR_NATIVE_CONTROLLER_CAMERA_OPTIONS,
@@ -449,6 +450,26 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
     flightCamera.available,
   )
   assert.equal(XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE, flightCamera.default)
+  assert.deepEqual(
+    FLIGHT_SIM_CAMERA_VIEW_OPTIONS.map(option => option.id),
+    flightCamera.flight_views,
+  )
+  assert.equal(
+    flightCamera.flight_view_owner,
+    'canvas/src/features/game-flight-sim/flightSimCameraRuntime.ts',
+  )
+  assert.deepEqual(
+    (meta.native_flight_demo as {
+      navigation_inset?: Record<string, unknown>
+    }).navigation_inset,
+    {
+      orientation: 'north-up',
+      source: 'authored mission spawn, ordered waypoints, landing pad, and aircraft snapshot',
+      projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
+      runtime_network_calls: 0,
+      external_map_or_token_required: false,
+    },
+  )
   const controls = readFileSync(
     resolve(repoRoot, 'canvas/src/features/three/Controls.tsx'),
     'utf8',

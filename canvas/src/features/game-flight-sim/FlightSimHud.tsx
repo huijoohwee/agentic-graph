@@ -24,6 +24,13 @@ import {
   subscribeFlightSimDecisionStore,
 } from './flightSimDecisionStore'
 import { projectFlightSimHud } from './flightSimHudProjection'
+import { FlightSimNavigationInset } from './FlightSimNavigationInset'
+import {
+  cycleFlightSimCameraView,
+  FLIGHT_SIM_CAMERA_VIEW_OPTIONS,
+  readFlightSimCameraSnapshot,
+  subscribeFlightSimCamera,
+} from './flightSimCameraRuntime'
 import {
   completeFlightSimHudUpdate,
   registerFlightSimHudDeadlineOwner,
@@ -56,6 +63,11 @@ export function FlightSimHud() {
     subscribeFlightSimTrainingSnapshot,
     readFlightSimTrainingSnapshot,
     readFlightSimTrainingSnapshot,
+  )
+  const camera = React.useSyncExternalStore(
+    subscribeFlightSimCamera,
+    readFlightSimCameraSnapshot,
+    readFlightSimCameraSnapshot,
   )
   const heldTouches = React.useRef(new Map<number, FlightSimTouchControl>())
   const mountedRevision = React.useRef(flight.revision)
@@ -146,6 +158,7 @@ export function FlightSimHud() {
       data-kg-flight-sim-control-authority={training.envelope.controlAuthority.toFixed(4)}
       data-kg-flight-sim-airspeed-reliable={training.airspeedReliable ? '1' : '0'}
       data-kg-flight-sim-target-speed={training.envelope.targetSpeedMetersPerSecond.join(':')}
+      data-kg-flight-sim-camera-view={camera.view}
     >
       <header className="absolute left-3 right-3 top-3 grid grid-cols-1 gap-2 pt-[env(safe-area-inset-top)] sm:flex sm:items-start sm:justify-between sm:gap-3">
         <section className="max-w-none rounded-xl border border-white/20 bg-slate-950/75 px-3 py-2 shadow-lg backdrop-blur-sm sm:max-w-[58vw]">
@@ -178,6 +191,23 @@ export function FlightSimHud() {
             {' · '}Control {Math.round(training.envelope.controlAuthority * 100)}%
           </p>
         </section>
+      ) : null}
+
+      {flight.active ? (
+        <aside
+          className="pointer-events-auto absolute bottom-32 right-3 grid w-32 gap-1 sm:bottom-auto sm:top-36 sm:w-40"
+          aria-label="Flight navigation HUD"
+        >
+          <FlightSimNavigationInset className="hidden sm:grid" flight={flight} />
+          <button
+            className={buttonClass}
+            type="button"
+            onClick={cycleFlightSimCameraView}
+            data-kg-flight-sim-cycle-camera="1"
+          >
+            Camera · {FLIGHT_SIM_CAMERA_VIEW_OPTIONS.find(option => option.id === camera.view)?.label}
+          </button>
+        </aside>
       ) : null}
 
       <section className="pointer-events-auto absolute bottom-32 left-3 grid grid-cols-3 gap-1 pb-[env(safe-area-inset-bottom)] sm:bottom-3" aria-label="Touch flight controls">

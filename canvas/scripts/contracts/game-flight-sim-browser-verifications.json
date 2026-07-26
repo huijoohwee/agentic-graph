@@ -9,6 +9,7 @@
   "desktop playable input and HUD telemetry",
   "blur lifecycle",
   "strict throttle and restart",
+  "Flight camera views and local navigation",
   "Timeline camera round-trip",
   "mobile HUD",
   "mobile touch control",

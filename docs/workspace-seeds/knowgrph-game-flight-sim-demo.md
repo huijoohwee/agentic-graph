@@ -69,6 +69,15 @@ native_flight_demo:
     selection_owner: "canvas/src/features/three/xrNativeControllerCameraRuntime.ts"
     driver_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
     follow_target: "Flight supplies a pure aircraft follow/framing descriptor; the shared Physics controller hook alone mutates the camera and OrbitControls"
+    flight_views: ["chase", "cockpit", "survey"]
+    flight_view_owner: "canvas/src/features/game-flight-sim/flightSimCameraRuntime.ts"
+    flight_view_control: "Flight panel, HUD, or C key while Fixed Follow owns framing"
+  navigation_inset:
+    orientation: "north-up"
+    source: "authored mission spawn, ordered waypoints, landing pad, and aircraft snapshot"
+    projection_owner: "canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts"
+    runtime_network_calls: 0
+    external_map_or_token_required: false
   scene: "procedural Singapore waterfront terrain"
   terrain:
     default: "singapore"
@@ -86,6 +95,7 @@ native_flight_demo:
       throttle_up: "Shift"
       throttle_down: "Control"
       yaw: ["Q", "E"]
+      camera_cycle: "C"
     touch: "direction buttons + throttle slider"
     gamepad:
       pitch_roll: "standard left stick"
@@ -279,13 +289,16 @@ From the repository root, run `npm run dev`. In Knowgrph, open **Explorer → So
 | Pitch / roll | W/A/S/D or arrow keys | Discrete Pitch/Roll buttons | Left stick |
 | Yaw | Q / E | Discrete Yaw buttons | Shoulder buttons |
 | Throttle up / down | Shift / Control | Throttle slider | Triggers |
+| Camera view | C cycles Chase / Cockpit / Survey | HUD or FloatingPanel camera buttons | HUD or FloatingPanel camera buttons |
 | Pause / Resume / Reset | HUD or FloatingPanel controls | HUD or FloatingPanel controls | HUD or FloatingPanel controls |
 
 The browser-local control contract uses `knowgrph.control_local_flight_sim` and strict `/flight.sim @canvas #flight`, with schema `knowgrph-flight-sim-mcp/v1`. Throttle is explicit: `/flight.sim @canvas #flight operation=throttle throttle=0.75`. Duplicate sigils, unknown keys, mixed native/structured input, missing tokens, and invalid lifecycle operations fail closed with a named diagnostic and offending token or field. Inspect and control return deterministic timeout, unavailable, execution, or validation envelopes within a hard 2,000 ms deadline.
 
 **FloatingPanel → Flight Sim** controls Open, Start, Stop, Restart, Throttle, Save, and Exit. The panel projects runtime state only; the aircraft stage remains actor-only inside the shared renderer.
 
-Camera source is independent of aircraft selection. In **FloatingPanel Camera → SHOOT**, choose the catalog's only two modes: **Fixed Follow** for stage-aware aircraft tracking or **Free Orbit** for direct pan, rotate, and zoom. The same shared catalog is invocable through `knowgrph.control_local_camera` with `/camera.select @camera #camera camera=fixed-follow` or `camera=free-orbit`. Flight supplies a pure aircraft follow/framing descriptor; the Physics controller hook alone mutates the camera and OrbitControls. Timeline camera-mark playback temporarily takes framing ownership, then returns to the selected source. Motion Control is optional normalized player input only and never becomes flight policy. Conflicting device commands resolve independently per axis to the value with the largest absolute magnitude.
+Camera source is independent of aircraft selection. In **FloatingPanel Camera → SHOOT**, choose the catalog's only two modes: **Fixed Follow** for stage-aware aircraft tracking or **Free Orbit** for direct pan, rotate, and zoom. While Fixed Follow is active, the Flight panel, HUD, or `C` key selects a repository-owned **Chase**, **Cockpit**, or **Survey** framing descriptor. These Flight views remain data supplied to the shared Physics controller camera; Flight never mounts or mutates another camera. Timeline camera-mark playback temporarily takes framing ownership, then returns to the selected source.
+
+The north-up local navigation inset projects the authored mission spawn, ordered waypoint rings, landing pad, aircraft position, heading, objective distance, and bearing. It is deterministic SVG over the existing HUD and panel: no map tiles, geocoder, token, network request, alternate terrain, or external runtime dependency. Motion Control is optional normalized player input only and never becomes flight policy. Conflicting device commands resolve independently per axis to the value with the largest absolute magnitude.
 
 For pose control, open and start **Motion Control** from the active Flight panel, then use **Flight Sim** in the training card to return to the aircraft. The mission and camera capture remain live across that panel handoff. Lean forward/back for pitch, lean side-to-side for roll, raise both hands for power, and hold hands wide while leaning to yaw; the Flight panel reports whether capture is connected and whether a full-body pose is currently driving the aircraft.
 
@@ -304,6 +317,7 @@ The required aircraft loads from committed img2threejs-style TypeScript plus `ve
 - [x] Source identity is `flight-sim`, independent of import path, with conflict rejection.
 - [x] Flight is an XR Mode overlay on the Physics source-authored world; it owns no second rendered XR world, scene owner, or Canvas.
 - [x] Fixed Follow and Free Orbit come from the shared Camera catalog, and the Physics controller hook is the sole camera/OrbitControls mutator for the pure Flight framing descriptor.
+- [x] Chase, Cockpit, and Survey vary only Flight's pure framing descriptor; the north-up route inset derives entirely from authored local mission state with zero map or token dependency.
 - [x] The default load is spec-primary for the required aircraft and contains exactly one committed-local optional opaque GLB; remote and unavailable fallbacks fail closed.
 - [x] Exactly 45 named fast-check properties are registered for at least 100 cases each (4,500 generated cases), alongside at least 127 focused source checks.
 - [x] Browser proof enforces a clean exact branch/HEAD/tree and authored-seed SHA-256 before each of two fresh serial runs, including the ≤3 s first-frame, 375×812 HUD, lifecycle, camera, persistence-failure, pointer-lock contract, and zero-network fences.

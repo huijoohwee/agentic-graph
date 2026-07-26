@@ -291,6 +291,7 @@ test('Flight browser proof activates only after applying the authored source', (
     'game_flight_sim_smoke_mission.py',
     'game_flight_sim_smoke_mobile.py',
     'game_flight_sim_smoke_mobile_surface.py',
+    'game_flight_sim_smoke_navigation.py',
     'game_flight_sim_smoke_runtime_phases.py',
     'game_flight_sim_smoke_scene.py',
     'game_flight_sim_smoke_source.py',

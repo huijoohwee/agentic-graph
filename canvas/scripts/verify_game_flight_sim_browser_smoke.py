@@ -302,6 +302,7 @@ def main() -> None:
             stop_start = state["stopStart"]
             desktop = state["desktop"]
             restart = state["restart"]
+            navigation_state = state["navigation"]
             camera_state = state["camera"]
             _, inactive_inspection, post_exit = state["exit"]
             initial = playable_state["initial"]
@@ -404,6 +405,7 @@ def main() -> None:
                     **camera_state["camera"],
                     "tickAfter": camera_state["advanced"]["tick"],
                 },
+                "navigation": navigation_state,
                 "mobileHud": state["mobileHud"],
                 "throttle": 0.75,
                 "verificationLedger": ledger.evidence(),

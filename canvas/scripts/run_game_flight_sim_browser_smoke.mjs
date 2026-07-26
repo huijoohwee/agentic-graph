@@ -286,6 +286,18 @@ async function readValidatedRunEvidence({
       !== evidence?.missionProof?.runId
     || evidence?.inputProof?.motionControlPanelHandoff?.flightPreservedWhileMotionPanelOpen !== true
     || evidence?.inputProof?.motionControlPanelHandoff?.captureSurfacePreservedAfterFlightReturn !== true
+    || JSON.stringify(evidence?.navigation?.views)
+      !== JSON.stringify(['chase', 'cockpit', 'survey'])
+    || evidence?.navigation?.buttonSelection !== 'cockpit'
+    || evidence?.navigation?.keyboardCycle !== 'survey'
+    || evidence?.navigation?.restored !== 'chase'
+    || evidence?.navigation?.routePointCount !== 5
+    || evidence?.navigation?.activeRoutePointCount !== 1
+    || evidence?.navigation?.sharedCameraSourceRetained !== true
+    || evidence?.navigation?.singleCanvasRetained !== true
+    || evidence?.navigation?.tickAfter <= evidence?.navigation?.tickBefore
+    || !Object.values(evidence?.navigation?.forwardAlignment || {})
+      .every(value => Number.isFinite(value) && value > 0.2)
     || evidence?.missionProof?.phase !== 'completed'
     || evidence?.missionProof?.waypointIndex !== 3
     || evidence?.missionProof?.transitions?.length !== 3
@@ -307,7 +319,7 @@ async function readValidatedRunEvidence({
   ) {
     throw new Error(
       `Browser proof run ${runIndex} did not preserve identity, trusted touch, `
-      + 'ordered mission completion, blocked transports, deadlines, and named '
+      + 'local navigation, ordered mission completion, blocked transports, deadlines, and named '
       + 'verifications',
     )
   }
