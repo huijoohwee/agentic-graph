@@ -37,6 +37,13 @@ import {
   type FlightSimOperation,
 } from './flightSimMcpRuntime'
 import { flightSimHeadingDegrees } from './flightModel'
+import { FlightSimNavigationInset } from './FlightSimNavigationInset'
+import {
+  FLIGHT_SIM_CAMERA_VIEW_OPTIONS,
+  readFlightSimCameraSnapshot,
+  selectFlightSimCameraView,
+  subscribeFlightSimCamera,
+} from './flightSimCameraRuntime'
 import {
   resetFlightSimLocalPersistence,
   isFlightSimHydrationPending,
@@ -107,6 +114,11 @@ export function FlightSimFloatingPanelView() {
     subscribeMotionControl,
     readMotionControlSnapshot,
     readMotionControlSnapshot,
+  )
+  const camera = React.useSyncExternalStore(
+    subscribeFlightSimCamera,
+    readFlightSimCameraSnapshot,
+    readFlightSimCameraSnapshot,
   )
   const pushUiToast = useGraphStore(state => state.pushUiToast)
   const [pendingOperation, setPendingOperation] = React.useState<PendingOperation | null>(null)
@@ -181,6 +193,7 @@ export function FlightSimFloatingPanelView() {
       data-kg-flight-sim-active={flight.active ? '1' : '0'}
       data-kg-flight-sim-phase={flight.phase}
       data-kg-flight-sim-mcp="knowgrph.control_local_flight_sim"
+      data-kg-flight-sim-camera-view={camera.view}
       data-kg-flight-sim-hydration={hydrationPending ? 'loading' : decisions.hydrationBlocked ? 'blocked' : 'ready'}
     >
       <FloatingPanelCatalogHeader
@@ -254,6 +267,35 @@ export function FlightSimFloatingPanelView() {
           </span>
           <span><b>Tick</b><br />{flight.tick}</span>
           <span><b>Decisions</b><br />{decisions.savedCount} saved</span>
+        </section>
+
+        <section
+          className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+          aria-label="Flight camera and navigation"
+        >
+          <p className="flex items-center gap-1 text-[11px] font-semibold">
+            <View className="h-3.5 w-3.5" aria-hidden="true" />
+            Camera view · {FLIGHT_SIM_CAMERA_VIEW_OPTIONS.find(option => option.id === camera.view)?.label}
+          </p>
+          <div className="grid grid-cols-3 gap-1" role="group" aria-label="Flight camera views">
+            {FLIGHT_SIM_CAMERA_VIEW_OPTIONS.map(option => (
+              <button
+                key={option.id}
+                type="button"
+                className={cn('App-toolbar__btn', option.id === camera.view && 'font-bold')}
+                aria-pressed={option.id === camera.view}
+                onClick={() => selectFlightSimCameraView(option.id)}
+                data-kg-flight-sim-camera-option={option.id}
+                title={option.description}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <FlightSimNavigationInset flight={flight} />
+          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+            Press C to cycle views · north-up route is derived from the authored local mission only.
+          </p>
         </section>
 
         <FlightSimTrainingSurfaceProjection surface="flight-sim" />

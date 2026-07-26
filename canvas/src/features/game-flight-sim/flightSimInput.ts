@@ -21,6 +21,8 @@ export type FlightSimInputBinding = Readonly<{
   dispose: () => void
 }>
 
+const CAMERA_CYCLE_CODE = 'KeyC'
+
 const CONTROL_CODES = new Set([
   'ArrowDown',
   'ArrowLeft',
@@ -73,6 +75,10 @@ export function updateFlightSimPressedCode(
     return pressedCodes.size !== previousSize
   }
   return pressedCodes.delete(code)
+}
+
+export function isFlightSimCameraCycleCode(code: string): boolean {
+  return code === CAMERA_CYCLE_CODE
 }
 
 export function flightSimInputFromPressedCodes(codes: ReadonlySet<string>): FlightSimTickInput {
@@ -185,6 +191,7 @@ export function installFlightSimDesktopInput(
   element: HTMLCanvasElement,
   options: Readonly<{
     onInput: (input: FlightSimTickInput) => void
+    onCycleCamera?: () => void
     onPause?: (reason: string) => void
     shouldPauseOnPointerRelease?: () => boolean
     shouldRequestPointerLock?: () => boolean
@@ -205,7 +212,13 @@ export function installFlightSimDesktopInput(
     if (reason) options.onPause?.(reason)
   }
   const onKeyDown = (event: KeyboardEvent) => {
-    if (isEditableTarget(event.target) || !CONTROL_CODES.has(event.code)) return
+    if (isEditableTarget(event.target)) return
+    if (isFlightSimCameraCycleCode(event.code)) {
+      if (!event.repeat) options.onCycleCamera?.()
+      event.preventDefault()
+      return
+    }
+    if (!CONTROL_CODES.has(event.code)) return
     updateFlightSimPressedCode(pressedCodes, event.code, true)
     publishKeyboard()
     event.preventDefault()

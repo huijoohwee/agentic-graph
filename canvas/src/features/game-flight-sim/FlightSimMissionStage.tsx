@@ -20,6 +20,7 @@ import {
   FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE,
   FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
 } from './flightSimAircraftPresentation'
+import { cycleFlightSimCameraView } from './flightSimCameraRuntime'
 import {
   installFlightSimDesktopInput,
   mergeFlightSimInputs,
@@ -137,6 +138,7 @@ export function FlightSimMissionStage({
       onInput: value => {
         desktopInputRef.current = value
       },
+      onCycleCamera: cycleFlightSimCameraView,
       onPause: () => {
         setFlightSimTouchInput({})
         runtimeController.stop()

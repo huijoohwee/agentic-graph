@@ -9,6 +9,7 @@ import {
 const EXPECTED_MODULE_KEYS = Object.freeze([
   'cameraMcpRuntime',
   'cameraSourceMcpRuntime',
+  'flightSimCameraRuntime',
   'flightSimDeadlineRuntime',
   'flightSimInput',
   'flightSimMcpRuntime',

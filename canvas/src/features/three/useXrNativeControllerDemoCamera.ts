@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Vector3, type PerspectiveCamera, type WebGLRenderer } from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { resolveFlightSimFollowTarget } from '@/features/game-flight-sim/flightSimFollowTarget'
+import { readFlightSimCameraSnapshot } from '@/features/game-flight-sim/flightSimCameraRuntime'
 import { readFlightSimSnapshot } from '@/features/game-flight-sim/flightSimRuntime'
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -94,7 +95,11 @@ function readFlightFollowTarget(
   if (!active || renderer.xr.isPresenting) return null
   const snapshot = readFlightSimSnapshot()
   if (!snapshot.active || !snapshot.webglSupported || snapshot.runtimeError) return null
-  const target = resolveFlightSimFollowTarget(snapshot, coordinateScale)
+  const target = resolveFlightSimFollowTarget(
+    snapshot,
+    coordinateScale,
+    readFlightSimCameraSnapshot().view,
+  )
   return Object.freeze({
     owner: 'flight',
     ...target,

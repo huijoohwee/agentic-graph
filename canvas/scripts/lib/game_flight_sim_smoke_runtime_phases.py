@@ -22,6 +22,9 @@ from lib.game_flight_sim_smoke_mobile import (
 from lib.game_flight_sim_smoke_motion_control import (
     verify_motion_control_panel_handoff,
 )
+from lib.game_flight_sim_smoke_navigation import (
+    verify_flight_navigation_runtime,
+)
 from lib.game_flight_sim_smoke_mission import complete_authored_flight_mission
 from lib.game_flight_sim_smoke_scene import (
     FLIGHT_MISSION_NODE,
@@ -377,6 +380,11 @@ def run_flight_runtime_verifications(
         throttle_restart,
         depends_on=("blur lifecycle",),
     )
+    state["navigation"] = ledger.verify(
+        "Flight camera views and local navigation",
+        lambda: verify_flight_navigation_runtime(page),
+        depends_on=("strict throttle and restart",),
+    )
 
     def camera_round_trip() -> dict[str, Any]:
         camera = verify_flight_camera_runtime(page)
@@ -430,7 +438,7 @@ def run_flight_runtime_verifications(
     state["camera"] = ledger.verify(
         "Timeline camera round-trip",
         camera_round_trip,
-        depends_on=("strict throttle and restart",),
+        depends_on=("Flight camera views and local navigation",),
     )
     state["mobileHud"] = ledger.verify(
         "mobile HUD",
