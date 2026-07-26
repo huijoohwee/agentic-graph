@@ -166,7 +166,6 @@ export function FlightSimMissionStage({
       subscribeThreeViewportInputOwnership(acquireInput)
     acquireInput()
     const removeAfterRender = addAfterEffect(() => {
-      if (!inputClaimedRef.current) return
       const snapshot = runtimeController.readSnapshot()
       const stagePreparationRequestId =
         readCurrentFlightSimStagePreparationRequest()
@@ -190,6 +189,9 @@ export function FlightSimMissionStage({
         completeFlightSimReadyFrame(presentation.runId, presentation.tick)
       }
     })
+    // Stage readiness belongs to the committed mission render, while desktop
+    // input ownership is an independent claim that may still be changing hands.
+    invalidate()
     return () => {
       disposed = true
       unsubscribeInputOwnership()
@@ -266,7 +268,6 @@ export function FlightSimMissionStage({
     const presentation = framePresentationRef.current
     presentation.playable = snapshot.active
       && playable
-      && inputClaimedRef.current
       && !snapshot.runtimeError
     presentation.readyAtTickZero = snapshot.phase === 'ready'
       && snapshot.tick === 0

@@ -178,6 +178,29 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     missionStage,
     /completeFlightSimStagePreparation\(\s*stagePreparationRequestId\s*\)/,
   )
+  const afterRenderStart = missionStage.indexOf(
+    'const removeAfterRender = addAfterEffect',
+  )
+  const afterRenderCleanup = missionStage.indexOf(
+    'return () => {',
+    afterRenderStart,
+  )
+  const stagePreparationAfterRender = missionStage.slice(
+    afterRenderStart,
+    afterRenderCleanup,
+  )
+  assert.doesNotMatch(
+    stagePreparationAfterRender,
+    /if \(!inputClaimedRef\.current\) return/,
+  )
+  assert.match(
+    stagePreparationAfterRender,
+    /completeFlightSimStagePreparation[\s\S]*invalidate\(\)/,
+  )
+  assert.doesNotMatch(
+    missionStage,
+    /presentation\.playable\s*=[\s\S]{0,160}inputClaimedRef\.current/,
+  )
   assert.match(
     missionStage,
     /import \{ addAfterEffect, invalidate, useFrame, useThree \} from '@react-three\/fiber'/,
