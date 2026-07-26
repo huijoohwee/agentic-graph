@@ -1,4 +1,5 @@
 const DEFAULT_SCOPE_PATH = '/knowgrph/'
+const SOURCE_REVISION_PATTERN = /^[0-9a-f]{40}$/
 
 type EventListenerTarget = {
   addEventListener(type: string, listener: EventListener): void
@@ -28,6 +29,7 @@ type ServiceWorkerContainerTarget = EventListenerTarget & {
 type CanonicalServiceWorkerRegistrationOptions = {
   serviceWorkerTarget: ServiceWorkerContainerTarget
   scopePath?: string
+  sourceRevision?: string
   reload?: () => void
   onOfflineReady?: () => void
   onRegistered?: (registration: ServiceWorkerRegistrationTarget) => void
@@ -45,10 +47,20 @@ const normalizeScopePath = (scopePath: string): string => {
   return scopePath
 }
 
+const buildCanonicalWorkerScriptUrl = (scopePath: string, sourceRevision?: string): string => {
+  const normalizedRevision = String(sourceRevision || '').trim()
+  if (!normalizedRevision) return `${scopePath}sw.js`
+  if (!SOURCE_REVISION_PATTERN.test(normalizedRevision)) {
+    throw new Error('service-worker registration source revision must be an exact commit SHA')
+  }
+  return `${scopePath}sw.js?revision=${normalizedRevision}`
+}
+
 export async function registerCanonicalServiceWorker(
   options: CanonicalServiceWorkerRegistrationOptions,
 ): Promise<CanonicalServiceWorkerRegistrationOwner> {
   const scopePath = normalizeScopePath(options.scopePath ?? DEFAULT_SCOPE_PATH)
+  const scriptUrl = buildCanonicalWorkerScriptUrl(scopePath, options.sourceRevision)
   const previousController = options.serviceWorkerTarget.controller
   let reloaded = false
   let installingWorker: ServiceWorkerStateTarget | null = null
@@ -72,7 +84,7 @@ export async function registerCanonicalServiceWorker(
   options.serviceWorkerTarget.addEventListener('controllerchange', handleControllerChange)
   try {
     const registration = await options.serviceWorkerTarget.register(
-      `${scopePath}sw.js`,
+      scriptUrl,
       {
         scope: scopePath,
         type: 'classic',
