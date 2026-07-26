@@ -8,6 +8,7 @@ import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes
 import { normalizeInvocationTokenSpacing } from '@/lib/markdown/invocationTokens'
 import { tryActivateVideoAgentDemoPreset } from './videoAgentDemoPresetSubmit'
 import { tryActivateNativeCrawlerInvocation } from '../nativeCrawlerInvocation'
+import { tryActivateVoiceStudioInvocation } from '@/features/voice-studio/voiceStudioInvocation'
 
 export type FloatingPanelChatSubmitHookDeps = {
   resolveRequestUrlOrSetError?: typeof resolveChatSubmitRequestUrlOrSetError
@@ -30,6 +31,7 @@ export const useFloatingPanelChatSubmit = (
     const trimmed = normalizeInvocationTokenSpacing(args.input.trim())
     if (!trimmed || args.isLoading) return
     if (await tryActivateVideoAgentDemoPreset({ input: trimmed, submitArgs: args })) return
+    if (await tryActivateVoiceStudioInvocation({ input: trimmed, submitArgs: args })) return
     if (await tryActivateNativeCrawlerInvocation({ input: trimmed, submitArgs: args })) return
     const requestUrl = resolveRequestUrlOrSetError({
       chatModel: args.chatModel,

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Grid2X2, Image as ImageIcon, List, Plus, Rows3 } from 'lucide-react'
+import { Box, Grid2X2, Image as ImageIcon, List, Mic2, Plus, Rows3 } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { CommandMenuRichMediaItem } from '@/lib/command-menu/commandMenuRichMediaInventory'
 import { readCommandMenuMediaNameDraft, type CommandMenuMediaNameDrafts } from '@/lib/command-menu/commandMenuMediaNameSync'
@@ -34,6 +34,7 @@ import {
 import { XrMediaLibraryPanel } from './XrMediaLibraryPanel'
 import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
 import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
+import { VoiceStudioPanel } from '@/features/voice-studio/VoiceStudioPanel'
 import {
   readXrSimulationWorkbenchOpenRevision,
   subscribeXrSimulationWorkbenchOpenRequest,
@@ -206,7 +207,7 @@ export function MediaCatalogPanelView({
       />
       <FloatingPanelCatalogHeader
         title="Media"
-        subtitle={catalogMode === 'xr-3d' ? '3D for XR · environments, subjects, and props' : '@ image, audio, video, and rich media'}
+        subtitle={catalogMode === 'voice-studio' ? '/voice.studio · clone, dictate, create' : catalogMode === 'xr-3d' ? '3D for XR · environments, subjects, and props' : '@ image, audio, video, and rich media'}
         actionsLabel="Media actions"
         dataAttributes={{ 'data-kg-media-catalog-header': '1' }}
         actions={(
@@ -261,6 +262,17 @@ export function MediaCatalogPanelView({
               >
                 <Box className="size-3.5" strokeWidth={1.7} aria-hidden />
               </button>
+              <button
+                type="button"
+                className={cn('inline-flex h-full w-6 items-center justify-center border-0 border-l px-0', UI_THEME_TOKENS.panel.border, catalogMode === 'voice-studio' ? UI_THEME_TOKENS.button.activeBg : UI_THEME_TOKENS.button.hoverBg)}
+                title="AI Voice Studio"
+                aria-label="Show AI Voice Studio"
+                aria-pressed={catalogMode === 'voice-studio'}
+                data-kg-media-voice-toggle="1"
+                onClick={() => setMediaCatalogMode('voice-studio')}
+              >
+                <Mic2 className="size-3.5" strokeWidth={1.7} aria-hidden />
+              </button>
             </nav>
             {catalogMode === 'media' ? <section className={cn('inline-flex h-6 items-center overflow-hidden rounded border', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.input.bg)} role="group" aria-label="Media layout" data-kg-media-layout-selector="1">
               {([
@@ -291,7 +303,7 @@ export function MediaCatalogPanelView({
             </section> : null}
           </>
         )}
-        searchControl={(
+        searchControl={catalogMode === 'voice-studio' ? null : (
           <FloatingPanelCatalogSearchControl
             state={search}
             id="kg-media-catalog-search"
@@ -315,9 +327,10 @@ export function MediaCatalogPanelView({
         )}
       />
       <section ref={panelRef} className={floatingPanelCatalogBodyClassName(catalogMode === 'media' && previewItem ? 'overflow-hidden' : undefined)} data-kg-floating-panel-catalog-body="media">
-        <FlightSimTrainingSurfaceProjection surface="media" />
-        <MotionCapturePlatformProjection variant="media" />
-        {catalogMode === 'xr-3d' ? (
+        {catalogMode !== 'voice-studio' ? <><FlightSimTrainingSurfaceProjection surface="media" /><MotionCapturePlatformProjection variant="media" /></> : null}
+        {catalogMode === 'voice-studio' ? (
+          <VoiceStudioPanel />
+        ) : catalogMode === 'xr-3d' ? (
           <XrMediaLibraryPanel searchText={normalizedSearchQuery} />
         ) : previewItem ? (
           <MediaCatalogRichMediaPreview

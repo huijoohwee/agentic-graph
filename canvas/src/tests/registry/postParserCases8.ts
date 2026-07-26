@@ -1,6 +1,13 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["voice.studio.invocation.exactRoutes","@/__tests__/voiceStudioRuntime.test","testVoiceStudioExactInvocationRoutes"],
+  ["voice.studio.profile.consentMetadataOnly","@/__tests__/voiceStudioRuntime.test","testVoiceStudioProfileManifestConsentAndMetadataOnly"],
+  ["voice.studio.browser.failClosed","@/__tests__/voiceStudioRuntime.test","testVoiceStudioBrowserCapabilitiesFailClosed"],
+  ["voice.studio.ui.stopAndDisclosure","@/__tests__/voiceStudioRuntime.test","testVoiceStudioUiProvidesStopAndDisclosure"],
+  ["voice.studio.ui.recordingEvidence","@/__tests__/voiceStudioPanelLifecycle.test","testVoiceStudioPanelRequiresRecordingEvidenceAndRecognitionOptIn"],
+  ["voice.studio.ui.lifecycleTabs","@/__tests__/voiceStudioPanelLifecycle.test","testVoiceStudioPanelSwitchStopsOnceAndTabsAreAccessible"],
+  ["voice.studio.source.cleanRoom","@/__tests__/voiceStudioRuntime.test","testVoiceStudioCleanRoomDependencyBoundary"],
   ["city.sim.core.authoredDefault","@/__tests__/citySimCoreContract.test","testCitySimAuthoredDefaultMatchesWorkspaceSeedFixture"],
   ["city.sim.core.tickAtomic","@/__tests__/citySimCoreContract.test","testCitySimTickIsDeterministicAndAtomicOnOverflow"],
   ["city.sim.core.invalidZoning","@/__tests__/citySimCoreContract.test","testCitySimInvalidZoningDoesNotMutate"],

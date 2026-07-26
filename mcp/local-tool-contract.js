@@ -15,6 +15,7 @@ import { buildLocalRunToolDefinitions } from "./local-run-tool-contract-registra
 import { buildSkillEvolutionToolDefinition } from "./skill-evolution-tool-contract.js";
 import { buildStorageSyncLocalToolDefinitions } from "./storage-sync-local-tool-contract.mjs";
 import { buildVdeoxplnLocalToolDefinition } from "./vdeoxpln-tool-contract.js";
+import { buildVoiceStudioLocalToolDefinition } from "./voice-studio-tool-contract.js";
 export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES;
 
 const VIDEO_REMIX_RUN_OUTPUT_SCHEMA = Object.freeze({
@@ -523,6 +524,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
       READ_ONLY_TOOL_ANNOTATIONS,
     ),
     ...buildAgentApplicationToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults }),
+    buildVoiceStudioLocalToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
     buildSkillEvolutionToolDefinition({ withDefaults: withLocalMcpDescriptorDefaults }),
   ];
 };

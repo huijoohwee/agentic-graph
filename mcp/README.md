@@ -383,8 +383,48 @@ Then you can call:
 - `knowgrph.showrunner.start_run` with `{ "brief_markdown": "---\\ncontract: knowgrph-showrunner-brief/v1\\n---\\n# Brief\\nDry-run a branching podcast pilot.", "dry_run": true }`
 - `knowgrph.os.status` with `{ "view": "capabilities" }`
 - `knowgrph.vdeoxpln.list` with `{ "includeMarkdown": true }`
+- `knowgrph.voice.studio` dry-run clone with `{ "schemaVersion": "knowgrph-voice-studio-request/v1", "operation": "clone", "mode": "dry-run", "requestId": "voice-clone-request", "idempotencyKey": "voice-clone-0001", "approvalReceiptId": "approval-clone-0001", "costPolicy": { "currency": "USD", "maxActualCostUsd": 0, "maxProviderCalls": 0, "maxNetworkCalls": 0 }, "limits": { "maxDurationMs": 300000, "maxBytes": 100000000, "maxTextCharacters": 20000, "timeoutMs": 120000 }, "sourceAudio": { "artifactId": "sample-1", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "mediaType": "audio/webm", "bytes": 1024, "durationMs": 20000 }, "speakerAuthorization": { "consentReceiptId": "consent-owner-0001", "rightsReceiptId": "rights-owner-0001", "permittedUses": ["private studio creation"], "disclosureRequired": true, "retentionPolicy": "session-only" }, "profileIntent": { "profileId": "owner-voice", "displayName": "Owner voice" } }`
 - `export.publish` with `{ "artifact_id": "docs/documents/example-financial-plan.md", "kind": "spreadsheet" }`
 - `export.publish` with `{ "artifact_id": "docs/documents/example-deck.md", "kind": "slides", "target_provider": "microsoft" }`
+
+## AI Voice Studio
+
+`knowgrph.voice.studio` is one local stdio facade for `clone`, `dictate`, and
+`create`. Its canonical token routes are:
+
+- `/voice.studio #voice-clone @audio @voice-profile @approval-gate @cost-log @runtime-proof`
+- `/voice.studio #speech-to-text @audio @text @approval-gate @cost-log @runtime-proof`
+- `/voice.studio #text-to-speech @text @voice-profile @audio @approval-gate @cost-log @runtime-proof`
+
+Dry-run is deterministic, idempotent, and zero-call. It returns a profile
+manifest or an honest operation plan without claiming that a provider artifact
+exists. Live mode requires separate host-owned exact-request approval,
+voice-rights, immutable-source resolution, a zero-spend estimate/execution
+adapter, an independent settled-cost verifier, and output read-back owners.
+Approval binds the exact USD cost and provider/network-call ceilings. A
+verified estimate over any ceiling blocks before dispatch; a verified settled
+overage is terminal and reconciliation-required.
+Exact concurrent retries share one in-flight effect; changed requests under the
+same idempotency key conflict. Cancellation after external dispatch requires
+reconciliation and reports incomplete cost. The canonical stdio server injects
+none of these live owners and is provider-unconfigured, so canonical live
+requests fail closed before provider egress.
+
+The browser Media panel adds an AI Voice Studio mode for session-only,
+metadata-only profile manifests; recording-rights-gated, duration/byte-bounded,
+visible/stoppable microphone capture; browser-managed speech recognition that
+is off until a separate explicit opt-in; and an explicitly requested disclosed
+system-voice preview. Profile manifests remain only in React state—there is no
+voice-specific localStorage registry—and sample/capture bytes are not durably
+stored. Stop, workflow changes, and unmount teardown stop tracks and
+recognition, cancel speech, clear timers, and revoke object URLs.
+
+This is `runtime-ready-dev` only for a reviewed embedding host that injects and
+tests the live owners. It does not claim a configured provider, provider-backed
+cloning, speaker similarity or output quality, Prod, remote Worker parity, or
+Cloudflare readiness. See
+`docs/documents/knowgrph-ai-voice-studio-prd-tad.md` and run
+`npm run voice-studio:check`.
 
 ## Relationship to MainPanel MCP
 
