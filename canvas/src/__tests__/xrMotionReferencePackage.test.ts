@@ -490,9 +490,9 @@ export async function testXrMotionReferencePackageIsNativeDeterministicAndGraphB
     || !xrCameraMotionSource.includes('data-kg-xr-timeline-document-loaded=')) {
     throw new Error('expected the Camera motion projection to reject retained graph data when no document is loaded')
   }
-  if (!threeGraphSource.includes("active: active && mode !== 'xr' && !gameFpsActive")
-    || !threeGraphSource.includes("sceneGraph: mode === 'xr' || gameFpsActive ? null : sceneGraphForRender")
-    || !threeGraphSource.includes("{mode !== 'xr' && !gameFpsActive ? overlayLayer : null}")
+  if (!threeGraphSource.includes("active: active && mode !== 'xr' && !gameplayOverlayActive")
+    || !threeGraphSource.includes("sceneGraph: mode === 'xr' || gameplayOverlayActive ? null : sceneGraphForRender")
+    || !threeGraphSource.includes("{mode !== 'xr' && !gameplayOverlayActive ? overlayLayer : null}")
     || !threeGraphSource.includes('data-kg-xr-exclusive-stage=')) {
     throw new Error('expected XR graph staging to exclude the standard rich-media overlay projection')
   }
