@@ -17,6 +17,11 @@ import { readEdgeOpacity2d } from '@/lib/graph/layoutDefaults'
 import { readLabelPresentation2d } from '@/lib/canvas/labelPresentation2d'
 import { isFlowchartCrossEdge } from '@/lib/flowchart/source'
 import { readNodeLabelFontSize2d } from '@/components/GraphCanvas/labelLayout2d'
+import {
+  applyEdgeMarkerAttributes,
+  edgeUsesAuthoredArrowPath,
+  ensureEdgeMarkerRegistry,
+} from '@/lib/graph/edgeMarkers'
 
 type UseGraphCanvasStylesProps = {
   gRef?: MutableRefObject<d3.Selection<SVGGElement, unknown, null, undefined> | null>;
@@ -133,15 +138,15 @@ export function applyGraphCanvasStyles2d({
     linksSelRef.current.attr('stroke-width', (d: GraphEdge) => {
       return getEdgeStrokeWidth(d as EdgeWithRuntime, schema);
     });
-    linksSelRef.current.attr(
-      'marker-end',
-      (d: GraphEdge) => {
-        const label = d && typeof d === 'object' && typeof (d as { label?: unknown }).label === 'string'
-          ? (d as { label: string }).label
-          : ''
-        return schema.edgeStyles[label]?.arrow ? 'url(#arrowhead)' : null
-      },
-    );
+    const ownerSvg = linksSelRef.current.node()?.ownerSVGElement || null
+    if (ownerSvg) {
+      const markerRegistry = ensureEdgeMarkerRegistry(ownerSvg)
+      linksSelRef.current.each(function (d: GraphEdge) {
+        applyEdgeMarkerAttributes(this, d, schema, markerRegistry, {
+          suppressEnd: edgeUsesAuthoredArrowPath(d),
+        })
+      })
+    }
   }
 
   if (labelsSelRef.current) {
