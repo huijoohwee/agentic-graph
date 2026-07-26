@@ -578,7 +578,9 @@ export default function StoryboardWidgetCanvasSurface(props: {
         <aside className="absolute top-16 left-3 z-[220]" aria-label="Add edge hint">
           <section className={`rounded-lg border px-3 py-2 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border}`}>
             <p className={`text-xs ${UI_THEME_TOKENS.text.secondary}`}>
-              {props.pendingEdgeSourceId ? `Select target node (from ${props.pendingEdgeSourceId}).` : 'Select source node.'}
+              {props.pendingEdgeSourceId
+                ? `Multi-connect from ${props.pendingEdgeSourceId}: choose inputs for fan-out or another output for fan-in. Click canvas or press Escape to finish.`
+                : 'Select source node.'}
             </p>
           </section>
         </aside>

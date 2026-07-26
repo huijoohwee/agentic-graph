@@ -19,6 +19,7 @@ import {
   buildFloatingPropsPanelAddedNode,
   commitFloatingPropsPanelAddedNode,
 } from '@/lib/toolbar/floatingPropsPanelAddNode'
+import { continueStoryboardWidgetMultiConnectSession } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetMultiConnectSession'
 
 function readDraftRevisionFloor(graphData: GraphData | null | undefined): number {
   const raw = (graphData?.metadata || {}) as Record<string, unknown>
@@ -293,12 +294,17 @@ export function useStoryboardWidgetGraphActions(args: {
 
       if (result.kind === 'select-existing') {
         disableAutoZoomModesForUserGesture(useGraphStore.getState())
-        args.setSelectionSource('canvas')
-        args.selectEdge(String(result.edgeId || ''))
-        args.selectNode(null)
-        args.setPendingEdgeSourceId(null)
-        args.setPendingEdgeSourcePortKey(null)
-        args.setToolMode('select')
+        continueStoryboardWidgetMultiConnectSession({
+          edgeId: String(result.edgeId || ''),
+          sourceNodeId: requestedSourceId,
+          sourcePortKey: sourcePort,
+          setSelectionSource: args.setSelectionSource,
+          selectEdge: args.selectEdge,
+          selectNode: args.selectNode,
+          setPendingEdgeSourceId: args.setPendingEdgeSourceId,
+          setPendingEdgeSourcePortKey: args.setPendingEdgeSourcePortKey,
+          setToolMode: args.setToolMode,
+        })
         return
       }
 
@@ -310,12 +316,17 @@ export function useStoryboardWidgetGraphActions(args: {
         publishDraftEdge(authoringGraphData, result.edge)
         materializeConnectedMediaValue({ sourceNode, targetNode, sourcePort, targetPort })
         disableAutoZoomModesForUserGesture(useGraphStore.getState())
-        args.setSelectionSource('canvas')
-        args.selectEdge(String(result.edge.id || ''))
-        args.selectNode(null)
-        args.setPendingEdgeSourceId(null)
-        args.setPendingEdgeSourcePortKey(null)
-        args.setToolMode('select')
+        continueStoryboardWidgetMultiConnectSession({
+          edgeId: String(result.edge.id || ''),
+          sourceNodeId: requestedSourceId,
+          sourcePortKey: sourcePort,
+          setSelectionSource: args.setSelectionSource,
+          selectEdge: args.selectEdge,
+          selectNode: args.selectNode,
+          setPendingEdgeSourceId: args.setPendingEdgeSourceId,
+          setPendingEdgeSourcePortKey: args.setPendingEdgeSourcePortKey,
+          setToolMode: args.setToolMode,
+        })
       }
     },
     [args, materializeConnectedMediaValue, publishDraftEdge, readAuthoringGraphData, readCommittedNodeIds],
