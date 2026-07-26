@@ -99,11 +99,15 @@ export function RichMediaOverlayLayer2d(props: {
   }), [flowWidgetPinnedByNodeId, flowWidgetPinnedByNodeIdByGraphMetaKey, flowWidgetStateGraphKey])
   const [activePanelId, setActivePanelId] = React.useState('')
 
-  const selectPanel = React.useCallback((id: string) => {
+  const selectPanel = React.useCallback((id: string, additive = false) => {
     const key = String(id || '').trim()
     if (!key) return
     setActivePanelId(key)
     setSelectionSource('canvas')
+    if (additive) {
+      useGraphStore.getState().toggleNodeSelectionAdditive(key)
+      return
+    }
     selectNode(key)
   }, [selectNode, setSelectionSource])
 
@@ -335,7 +339,7 @@ export function RichMediaOverlayLayer2d(props: {
               onResize={({ pointerId, dx, dy }) => moveResize(n.id, { pointerId, dx, dy })}
               onResizeEnd={({ pointerId }) => endResize(n.id, pointerId)}
               onClickCapture={(event) => {
-                selectPanel(n.id)
+                selectPanel(n.id, event.shiftKey)
                 stopEvent(event)
               }}
               onDoubleClickCapture={stopEvent}

@@ -117,6 +117,39 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       void 0
     }
   },
+  toggleNodeSelectionAdditive: (rawId: string) => {
+    const id = String(rawId || '').trim()
+    if (!id) return
+    const state = get()
+    const previousIds = new Set<string>(
+      (state.selectedNodeIds || []).map(value => String(value || '').trim()).filter(Boolean),
+    )
+    if (state.selectedNodeId) previousIds.add(String(state.selectedNodeId))
+    if (previousIds.has(id)) previousIds.delete(id)
+    else previousIds.add(id)
+    const nextIds = Array.from(previousIds)
+    const nextActiveId = nextIds.includes(id) ? id : nextIds[nextIds.length - 1] || null
+    set({
+      selectedNodeId: nextActiveId,
+      selectedEdgeId: null,
+      selectedGroupId: null,
+      selectedNodeIds: nextIds,
+      selectedEdgeIds: [],
+      selectedGroupIds: [],
+    })
+    if (!nextActiveId) return
+    try {
+      const graphData = get().graphData
+      const node = (graphData?.nodes || []).find(item => String(item.id || '') === nextActiveId) || null
+      if (isFlowWidgetOverlayEligibleNode(node)) {
+        get().updateOpenWidgetNodeIds?.(previous => (
+          previous.includes(nextActiveId) ? previous : [...previous, nextActiveId]
+        ))
+      }
+    } catch {
+      void 0
+    }
+  },
   selectNodesExpanded: (args: { nodeIds: string[]; edgeIds?: string[]; groupIds?: string[]; activeNodeId?: string | null }) => {
     const state = get()
     const mode = state.schema.behavior?.selectMode || 'single'
