@@ -95,6 +95,8 @@ export function FlightSimTrainingSurfaceProjection({
       data-kg-flight-training-night={training.night ? '1' : '0'}
       data-kg-flight-training-failure={training.failureId}
       data-kg-flight-training-voice={training.voiceEnabled ? 'enabled' : 'text'}
+      data-kg-flight-training-envelope={training.envelope.status}
+      data-kg-flight-training-control-authority={training.envelope.controlAuthority.toFixed(4)}
     >
       <header className="flex items-start justify-between gap-2">
         <section className="min-w-0">
@@ -120,6 +122,21 @@ export function FlightSimTrainingSurfaceProjection({
         <span><b>Stable</b><br />{training.stabilityPercent}%</span>
         <span><b>Energy</b><br />{training.energyPercent}%</span>
       </section>
+
+      <output
+        className={cn(
+          'rounded border px-2 py-1 text-[9px] font-semibold',
+          training.envelope.severity === 'warning'
+            ? 'border-rose-400/40 text-rose-300'
+            : training.envelope.severity === 'caution'
+              ? 'border-amber-400/40 text-amber-300'
+              : 'border-cyan-400/40 text-cyan-300',
+        )}
+        aria-label="Flight envelope status"
+      >
+        {training.envelope.label} · target {training.envelope.targetSpeedMetersPerSecond[0]}–{training.envelope.targetSpeedMetersPerSecond[1]} m/s
+        {' · '}control {Math.round(training.envelope.controlAuthority * 100)}%
+      </output>
 
       <label className="grid gap-1 text-[9px]">
         <span>Training mission</span>
