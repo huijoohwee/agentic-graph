@@ -81,8 +81,10 @@ native_flight_demo:
   scene: "procedural Singapore waterfront terrain"
   terrain:
     default: "singapore"
-    selector: "XR Terrain / Environment catalog"
-    available: ["singapore", "tropical-playground"]
+    selector: "FloatingPanel Media Terrain / Environment Kits; the Media Geo action stages the selected authored environment before opening FloatingPanel Geo"
+    available: ["singapore", "tropical-playground", "neutral-volume", "street-grid", "loading-bay", "downtown", "residential-street", "supermarket", "movie-theater", "train-car", "backyard-pool", "aerial-sky"]
+    geo_handoff: "successful stage selection opens the shared Geo panel, which projects the same XR environment; rejected selection remains in Media"
+    flight_entry: "the next Flight open derives its local collision profile, route, navigation, and World label from the selected authored environment"
   objective: "capture exactly three ordered waypoints, then the marked landing pad"
   waypoint_count: 3
   landing_pad_count: 1

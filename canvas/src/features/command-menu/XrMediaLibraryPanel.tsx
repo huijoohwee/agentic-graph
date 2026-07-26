@@ -64,6 +64,7 @@ import {
   startMediaPointerDrag,
 } from './mediaCatalogShared'
 import { XrCatalogThumb } from './XrMediaCatalogThumbs'
+import { XrEnvironmentGeoButton } from './XrEnvironmentGeoButton'
 import { XrMediaLibrarySummary } from './XrMediaLibraryHeader'
 import { isXrMediaInvocationMetadataReady } from './xrMediaInvocationMetadata'
 import { buildXrMediaLibraryProjection } from './xrMediaLibrarySearch'
@@ -432,7 +433,10 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                   dragPayload={buildXrStageMediaDragPayload(stage)}
                   active={active}
                   dataAttributes={{ 'data-kg-media-xr-environment': stage.id }}
-                  footer={<XrInvocationButton invocation={buildXrStageInvocation(stage.id)} disabled={!sceneReady} onInvoke={runInvocation} />}
+                  footer={<>
+                    <XrEnvironmentGeoButton stageId={stage.id} stageLabel={stage.label} disabled={!sceneReady} onSelect={stageId => runInvocation(buildXrStageInvocation(stageId))} />
+                    <XrInvocationButton invocation={buildXrStageInvocation(stage.id)} disabled={!sceneReady} onInvoke={runInvocation} />
+                  </>}
                 />
               )
             })}

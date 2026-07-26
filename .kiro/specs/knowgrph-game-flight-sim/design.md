@@ -119,7 +119,7 @@ The stdio ECS server injects no systems (per the ECS design); the four flight sy
 
 ### Shared Canvas ownership
 
-`Flight_Runtime` mounts overlay actors and the HUD inside the single existing R3F Canvas, keeping the authored atmosphere/terrain/scene graph mounted (R14.1, R14.2). It never introduces a second renderer, Canvas, alternate world, or Flight-owned camera. On exit it restores the previous surface controller and simulation state; entry or restoration failure leaves the existing Canvas and prior controller unchanged and surfaces a local error (R14.3–R14.5). `Camera_Source` supplies a pure follow/framing descriptor consumed by the shared controller hook; Fixed_Follow is the default, Free_Orbit is selectable, and Timeline camera-marks temporarily own framing then return to the last selected option (R15).
+`Flight_Runtime` mounts overlay actors and the HUD inside the single existing R3F Canvas, keeping the authored atmosphere/terrain/scene graph mounted (R14.1, R14.2). It never introduces a second renderer, Canvas, alternate world, or Flight-owned camera. The existing Media environment cards stage through XR scene control before the shared FloatingPanel bridge opens Geo; Geo projects that same runtime selection, and the next Flight entry derives its spatial profile and World label from it without a map-provider or network owner (R25). On exit Flight restores the previous surface controller and simulation state; entry or restoration failure leaves the existing Canvas and prior controller unchanged and surfaces a local error (R14.3–R14.5). `Camera_Source` supplies a pure follow/framing descriptor consumed by the shared controller hook; Fixed_Follow is the default, Free_Orbit is selectable, and Timeline camera-marks temporarily own framing then return to the last selected option (R15).
 
 ## Components and Interfaces
 
@@ -584,7 +584,7 @@ The strategy is dual: property-based tests verify universal invariants across la
 
 - Time-to-first-playable-frame under 3 s from seed application without sign-in/permission/fetch/Cloudflare (R1.1).
 - Rendering/control at 375×812 without clipping or scrolling (R1.4).
-- Shared-Canvas ownership: entering Flight_Sim keeps the authored atmosphere/terrain/scene graph mounted in exactly one Canvas/renderer/camera owner with overlay actors and HUD (R14.1, R14.2).
+- Shared-Canvas and environment ownership: selecting a Media terrain kit stages it before Geo opens, Geo projects the same selection, and entering Flight_Sim keeps that authored atmosphere/terrain/scene graph mounted in exactly one Canvas/renderer/camera owner with matching spatial profile, overlay actors, and HUD (R14.1, R14.2, R25).
 
 ### Smoke and scan checks (single execution)
 

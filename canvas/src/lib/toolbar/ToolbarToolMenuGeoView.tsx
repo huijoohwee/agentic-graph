@@ -8,6 +8,8 @@ import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
+import { resolveXrMotionReferenceStage } from '@/features/three/xrSceneLibrary'
+import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
 import {
   MainPanelTypeIcon,
   getMainPanelTypeIconMeta,
@@ -51,6 +53,12 @@ export const GeoView = React.memo(function GeoView(props: {
     onEnableGeospatial,
   } = props
   const activeGraphData = useActiveGraphRenderData()
+  const xrRuntime = React.useSyncExternalStore(
+    subscribeXrMotionReferenceRuntime,
+    readXrMotionReferenceRuntime,
+    readXrMotionReferenceRuntime,
+  )
+  const selectedEnvironment = resolveXrMotionReferenceStage(xrRuntime.plan.stageId)
   const panelTypography = usePanelTypography()
   const uiIconScale = useGraphStore(state => state.uiIconScale)
   const uiIconStrokeWidth = useGraphStore(state => state.uiIconStrokeWidth)
@@ -95,6 +103,18 @@ export const GeoView = React.memo(function GeoView(props: {
 
   return (
     <section className="h-full flex flex-col" aria-label="Geospatial panel">
+      <section
+        className={cn('grid gap-0.5 border-b px-3 py-2 text-[10px]', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+        aria-label="Selected XR environment"
+        data-kg-geo-xr-environment={selectedEnvironment.id}
+        data-kg-geo-xr-environment-source="xr-motion-reference-runtime"
+      >
+        <span className={UI_THEME_TOKENS.text.tertiary}>XR environment</span>
+        <strong className="text-xs">{selectedEnvironment.label}</strong>
+        <span className={UI_THEME_TOKENS.text.secondary}>
+          {selectedEnvironment.environmentKind} · {selectedEnvironment.sizeMeters.join(' × ')} m · local authored stage
+        </span>
+      </section>
       {geospatialModeEnabled ? (
         <ErrorBoundary>
           <React.Suspense
@@ -104,7 +124,7 @@ export const GeoView = React.memo(function GeoView(props: {
               </section>
             }
           >
-            <section className={UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME}>
+            <section className={cn('min-h-0 flex-1', UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME)}>
               <GeospatialPanelHostLazy
                 active
                 showDatasetsManager={false}
@@ -133,7 +153,7 @@ export const GeoView = React.memo(function GeoView(props: {
           </React.Suspense>
         </ErrorBoundary>
       ) : (
-        <section className="flex h-full flex-col items-start justify-center gap-3 p-3">
+        <section className="flex min-h-0 flex-1 flex-col items-start justify-center gap-3 p-3">
           <p className={cn('text-sm', UI_THEME_TOKENS.text.secondary)}>
             {isEnablingGeospatial
               ? 'Enabling Geospatial Mode...'

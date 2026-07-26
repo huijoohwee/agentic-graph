@@ -13,6 +13,11 @@ import {
 } from '@/features/agentic-os/agenticOsInvocationChips'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
 import {
+  XR_MOTION_REFERENCE_DEFAULT_STAGE_ID,
+  XR_MOTION_REFERENCE_STAGE_PRESETS,
+  resolveXrMotionReferenceStage,
+} from '@/features/three/xrSceneLibrary'
+import {
   readMotionControlSnapshot,
   subscribeMotionControl,
 } from '@/features/three/motionControlRuntime'
@@ -47,6 +52,7 @@ import {
 import {
   resetFlightSimLocalPersistence,
   isFlightSimHydrationPending,
+  readFlightSimSpatialProfile,
   readFlightSimSnapshot,
   subscribeFlightSimSnapshot,
 } from './flightSimRuntime'
@@ -121,6 +127,9 @@ export function FlightSimFloatingPanelView() {
     readFlightSimCameraSnapshot,
   )
   const pushUiToast = useGraphStore(state => state.pushUiToast)
+  const spatialProfile = readFlightSimSpatialProfile()
+  const environment = XR_MOTION_REFERENCE_STAGE_PRESETS.find(stage => spatialProfile.sourceKey.includes(`:${stage.id}:`))
+    || resolveXrMotionReferenceStage(XR_MOTION_REFERENCE_DEFAULT_STAGE_ID)
   const [pendingOperation, setPendingOperation] = React.useState<PendingOperation | null>(null)
   const [throttle, setThrottle] = React.useState(flight.aircraft.throttle)
 
@@ -194,6 +203,7 @@ export function FlightSimFloatingPanelView() {
       data-kg-flight-sim-phase={flight.phase}
       data-kg-flight-sim-mcp="knowgrph.control_local_flight_sim"
       data-kg-flight-sim-camera-view={camera.view}
+      data-kg-flight-sim-environment={environment.id}
       data-kg-flight-sim-hydration={hydrationPending ? 'loading' : decisions.hydrationBlocked ? 'blocked' : 'ready'}
     >
       <FloatingPanelCatalogHeader
@@ -252,6 +262,7 @@ export function FlightSimFloatingPanelView() {
           <span><b>Heading</b><br />{heading(flight.aircraft.yaw)}</span>
           <span><b>Pitch</b><br />{degrees(flight.aircraft.pitch)}</span>
           <span><b>Roll</b><br />{degrees(flight.aircraft.roll)}</span>
+          <span><b>World</b><br />{environment.label}</span>
           <span data-kg-flight-sim-panel-envelope={training.envelope.status}>
             <b>Envelope</b><br />{training.envelope.label}
           </span>
@@ -313,7 +324,7 @@ export function FlightSimFloatingPanelView() {
               ? `Proceed to ${flight.currentWaypointId}.`
               : flight.phase === 'completed'
                 ? 'Mission complete. Save the validated Decisions locally.'
-                : 'The authored XR terrain remains the only world owner.'}
+                : `The ${environment.label} XR terrain remains the only world owner.`}
           </p>
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
             One existing R3F Canvas · fixed native ECS ticks · swept AABB collision · zero runtime network or model calls.
