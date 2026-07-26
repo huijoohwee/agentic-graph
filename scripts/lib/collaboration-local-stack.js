@@ -142,6 +142,7 @@ async function bootstrapLocalCollaborationAuth(config, log) {
     "--local",
     "--config",
     "cloudflare/workers/knowgrph-storage/wrangler.toml",
+    ...buildLocalCollaborationPersistenceArgs(config),
   ], config.repoRoot);
   await runCommand("npx", [
     "--yes",
@@ -152,6 +153,7 @@ async function bootstrapLocalCollaborationAuth(config, log) {
     "--local",
     "--config",
     "cloudflare/workers/knowgrph-storage/wrangler.toml",
+    ...buildLocalCollaborationPersistenceArgs(config),
     "--command",
     buildLocalCollaborationSeedSql(config),
   ], config.repoRoot);
@@ -203,16 +205,10 @@ function startBrowserService(service, config) {
       env: serviceEnv,
     });
   }
-  return spawn(config.npmCommand, [
-    "run",
-    "storage:worker:dev",
-    "--",
-    "--port",
-    String(service.local.port),
-  ], {
+  return spawn(config.npmCommand, buildLocalCollaborationWorkerArgs(config, service.local.port), {
     cwd: config.repoRoot,
     stdio: "inherit",
-    env: config.env,
+    env: buildLocalCollaborationWorkerEnv(config),
   });
 }
 
@@ -263,6 +259,7 @@ export function resolveLocalCollaborationStackConfig({
     guestAppUrl,
     workerUrl,
     normalizedWorkerBaseUrl,
+    storagePersistencePath: path.join(repoRoot, "cloudflare", "workers", "knowgrph-storage", ".wrangler", "state"),
     workspaceId,
     ownerSessionToken,
     guestSessionToken,
@@ -315,6 +312,33 @@ export function buildLocalCollaborationBrowserEnv(config, env = process.env) {
     KG_COLLABORATION_E2E_OWNER_DEVICE_ID: config.ownerClientDeviceId,
     KG_COLLABORATION_E2E_GUEST_DEVICE_ID: config.guestClientDeviceId,
   };
+}
+
+export function buildLocalCollaborationWorkerEnv(config, env = config.env || process.env) {
+  return {
+    ...env,
+    KNOWGRPH_STORAGE_LOCAL_RUNTIME: "true",
+    KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: config.workspaceId,
+  };
+}
+
+export function buildLocalCollaborationWorkerArgs(config, port) {
+  return [
+    "run",
+    "storage:worker:dev",
+    "--",
+    "--port",
+    String(port),
+    ...buildLocalCollaborationPersistenceArgs(config),
+    "--var",
+    `KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
+    "--var",
+    "KNOWGRPH_STORAGE_LOCAL_RUNTIME:true",
+  ];
+}
+
+export function buildLocalCollaborationPersistenceArgs(config) {
+  return ["--persist-to", config.storagePersistencePath];
 }
 
 export async function ensureLocalCollaborationStack(config, { log } = {}) {

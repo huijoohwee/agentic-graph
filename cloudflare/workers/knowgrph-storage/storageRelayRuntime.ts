@@ -229,7 +229,7 @@ export const handleStorageRelayRequest = async (args: {
   try {
     const authHooks = createAuthHooks(args.db)
     if (args.pathname === KNOWGRPH_STORAGE_ROUTE_PATHS.relayCapabilities) {
-      assertLoopbackStorageRelayRequest(args.request)
+      assertLoopbackStorageRelayRequest(args.request, args.env)
       return handleRelayCapabilities({
         request: args.request,
         env: args.env,
