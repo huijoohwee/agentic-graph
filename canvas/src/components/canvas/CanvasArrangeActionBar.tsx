@@ -18,8 +18,10 @@ export function CanvasArrangeActionBar(props: {
   onArrange: (action: ArrangeAction2d) => void
   canGroupNodes?: boolean
   canUngroup?: boolean
+  canDetach?: boolean
   onGroupNodes?: () => void
   onUngroup?: () => void
+  onDetach?: () => void
   ariaLabel?: string
 }) {
   const {
@@ -28,12 +30,14 @@ export function CanvasArrangeActionBar(props: {
     onArrange,
     canGroupNodes = false,
     canUngroup = false,
+    canDetach = false,
     onGroupNodes,
     onUngroup,
+    onDetach,
     ariaLabel = 'Selection actions',
   } = props
-  const showArrange = !canUngroup && selectedCount >= 2
-  if (!active || (!showArrange && !canUngroup)) return null
+  const showArrange = !canUngroup && !canDetach && selectedCount >= 2
+  if (!active || (!showArrange && !canUngroup && !canDetach)) return null
 
   return (
     <section
@@ -51,6 +55,16 @@ export function CanvasArrangeActionBar(props: {
           onClick={onUngroup}
         >
           Ungroup
+        </button>
+      ) : null}
+      {canDetach && onDetach ? (
+        <button
+          type="button"
+          className="shrink-0 rounded border border-violet-500 bg-violet-600 px-2 py-1 font-medium text-white hover:bg-violet-500"
+          data-kg-selection-action="detach"
+          onClick={onDetach}
+        >
+          Detach
         </button>
       ) : null}
       {showArrange ? (

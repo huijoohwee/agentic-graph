@@ -193,6 +193,8 @@ export interface GraphStateStructure {
   removeUserSubgraph: (id: string) => void;
   addNodesToUserSubgraph: (id: string, nodeIds: string[]) => { ok: true } | { ok: false; message: string };
   removeNodesFromUserSubgraph: (id: string, nodeIds: string[]) => { ok: true } | { ok: false; message: string };
+  attachNodeToUserSubgraph: (subgraphId: string, nodeId: string) => { ok: true } | { ok: false; message: string };
+  detachNodeFromUserSubgraph: (subgraphId: string, nodeId: string) => { ok: true } | { ok: false; message: string };
   selectNode: (id: string | null) => void;
   toggleNodeSelectionAdditive: (id: string) => void;
   selectNodesExpanded: (args: { nodeIds: string[]; edgeIds?: string[]; groupIds?: string[]; activeNodeId?: string | null }) => void;

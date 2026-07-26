@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { applyZoomRequestNative } from '@/components/FlowCanvas/applyZoomRequestNative'
 import { EMPTY_STRING_ARRAY, type FlowCanvasInteractionRuntimeProps } from '@/components/FlowCanvas/shared'
 import { CanvasArrangeActionBar } from '@/components/canvas/CanvasArrangeActionBar'
+import { useParentChildRelation } from '@/components/canvas/useParentChildRelation'
 import { useSelectionGrouping } from '@/components/canvas/useSelectionGrouping'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -105,6 +106,7 @@ export default React.memo(function FlowCanvasInteractionRuntime(
     return Array.from(set)
   }, [selectedNodeId, selectedNodeIds])
   const grouping = useSelectionGrouping({ active, allowMutations })
+  const parentChild = useParentChildRelation({ active, allowMutations })
 
   const applyArrange = React.useMemo(() => {
     return (action: ArrangeAction2d) => {
@@ -253,7 +255,7 @@ export default React.memo(function FlowCanvasInteractionRuntime(
     zoomRequest,
   ])
 
-  if (!(active && allowMutations && (selectedIds.length >= 2 || grouping.canUngroup))) return null
+  if (!(active && allowMutations && (selectedIds.length >= 2 || grouping.canUngroup || parentChild.canDetach))) return null
   return (
     <CanvasArrangeActionBar
       active={active}
@@ -261,8 +263,10 @@ export default React.memo(function FlowCanvasInteractionRuntime(
       onArrange={applyArrange}
       canGroupNodes={grouping.canGroupNodes}
       canUngroup={grouping.canUngroup}
+      canDetach={parentChild.canDetach}
       onGroupNodes={grouping.groupNodes}
       onUngroup={grouping.ungroup}
+      onDetach={parentChild.detach}
       ariaLabel="Selected flow node actions"
     />
   )

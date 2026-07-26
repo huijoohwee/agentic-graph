@@ -18,6 +18,11 @@ export const subgraphGroupId = (id: string): string => {
   return v ? `subgraph:${v}` : ''
 }
 
+export const subgraphIdFromGroupId = (groupId: string): string => {
+  const value = String(groupId || '').trim()
+  return value.startsWith('subgraph:') ? value.slice('subgraph:'.length).trim() : ''
+}
+
 const normalizeIds = (ids: unknown): string[] => {
   const out: string[] = []
   const seen = new Set<string>()

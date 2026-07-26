@@ -1,9 +1,15 @@
 import * as d3 from 'd3'
 
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { requestFlowNativeDraw } from '@/components/FlowCanvas/nativeRuntime'
+import { computeFlowGroupAabb, requestFlowNativeDraw } from '@/components/FlowCanvas/nativeRuntime'
 import { commitGroupBoundsOverrideToStore } from '@/lib/canvas/groupBoundsOverridesStore'
 import { unlockGlobalUserSelect } from '@/lib/canvas/interaction-user-select'
+import {
+  preserveAbsolutePositionForParent,
+  selectParentDropTarget,
+  type ParentDropCandidate,
+} from '@/lib/canvas/parentChildRelation'
+import { subgraphIdFromGroupId } from '@/lib/graph/subgraphs'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 
@@ -126,6 +132,62 @@ export function createFlowNativePointerUpHandler(ctx: FlowNativeInteractionsCont
         void 0
       }
       return
+    }
+
+    if (drag.type === 'node' && e.type !== 'pointercancel') {
+      const scene = runtime.scene
+      const node = scene?.nodeById.get(drag.nodeId) || null
+      if (scene && node) {
+        const groupsPresentation = runtime.presentation.groups
+        const candidates: ParentDropCandidate[] = []
+        const groups = groupsPresentation.enabled && Array.isArray(scene.groups) ? scene.groups : []
+        for (let i = 0; i < groups.length; i += 1) {
+          const group = groups[i]!
+          if (group.source !== 'userSubgraph') continue
+          const subgraphId = subgraphIdFromGroupId(group.id)
+          if (!subgraphId) continue
+          const bounds = computeFlowGroupAabb({
+            scene,
+            group,
+            paddingPx: groupsPresentation.paddingPx,
+            labelTopExtraPx: groupsPresentation.labelTopExtraPx,
+          })
+          if (!bounds) continue
+          candidates.push({
+            groupId: group.id,
+            subgraphId,
+            depth: group.depth,
+            memberNodeIds: group.memberNodeIds,
+            bounds,
+          })
+        }
+        const target = selectParentDropTarget({
+          nodeId: drag.nodeId,
+          nodeBounds: {
+            minX: node.x,
+            minY: node.y,
+            maxX: node.x + node.width,
+            maxY: node.y + node.height,
+          },
+          candidates,
+        })
+        const position = target
+          ? preserveAbsolutePositionForParent({ x: node.x, y: node.y }, target.bounds)
+          : null
+        if (target && position) {
+          node.x = position.absolute.x
+          node.y = position.absolute.y
+          const state = useGraphStore.getState()
+          const result = state.attachNodeToUserSubgraph(target.subgraphId, drag.nodeId)
+          if (result.ok === false) {
+            state.pushUiToast({
+              id: 'parent-child-attach-error',
+              kind: 'error',
+              message: result.message,
+            })
+          }
+        }
+      }
     }
 
     ctx.args.dragRef.current = null
