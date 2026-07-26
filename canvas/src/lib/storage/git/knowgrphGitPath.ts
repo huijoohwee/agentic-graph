@@ -64,3 +64,6 @@ export const isForbiddenKnowgrphGitPath = (value: unknown): boolean => {
     || path === 'huijoohwee/docs/workspace-seeds'
     || path.startsWith('huijoohwee/docs/workspace-seeds/')
 }
+
+export const isSupportedKnowgrphGitDocumentPath = (path: string): boolean =>
+  /\.(?:json|md|markdown|mdx)$/iu.test(path)

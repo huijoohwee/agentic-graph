@@ -10,6 +10,7 @@ import { FileSyncProviderRegistry } from './fileSyncProviderRegistry'
 import { createFileSyncRelayHandler } from './fileSyncRelay'
 import { GoogleDriveFileSyncProvider } from './googleDriveFileSyncProvider'
 import { OneDriveFileSyncProvider } from './oneDriveFileSyncProvider'
+import { createGoogleStorageRelayAccessToken } from './storageRelayAccessToken'
 import { StorageRelayOpaqueTokenCodec } from './storageRelayOpaqueToken'
 import {
   StorageRelayError,
@@ -114,6 +115,46 @@ test('Google Drive incompleteSearch fails without issuing a complete page', asyn
       (error: unknown) => error instanceof StorageRelayError
         && error.code === 'limit_exceeded',
     )
+  } finally {
+    operation.dispose()
+  }
+})
+
+test('Google Drive refresh credentials stay server-side and reuse one renewed token per relay request', async () => {
+  let refreshCalls = 0
+  let providerCalls = 0
+  const operation = new StorageRelayOperation({
+    fetcher: async (input, init = {}) => {
+      const url = String(input)
+      if (url === 'https://oauth2.googleapis.com/token') {
+        refreshCalls += 1
+        const body = new URLSearchParams(String(init.body))
+        assert.equal(body.get('client_id'), 'google-client')
+        assert.equal(body.get('client_secret'), 'google-client-secret')
+        assert.equal(body.get('refresh_token'), 'google-refresh-secret')
+        return jsonResponse(200, {
+          access_token: 'renewed-google-access',
+          expires_in: 3600,
+          token_type: 'Bearer',
+        })
+      }
+      providerCalls += 1
+      assert.equal(new Headers(init.headers).get('authorization'), 'Bearer renewed-google-access')
+      return jsonResponse(200, { incompleteSearch: false, files: [] })
+    },
+  })
+  try {
+    const provider = new GoogleDriveFileSyncProvider({
+      accessToken: createGoogleStorageRelayAccessToken({
+        clientId: 'google-client',
+        clientSecret: 'google-client-secret',
+        refreshToken: 'google-refresh-secret',
+      }),
+    })
+    await provider.listPage({ parentResourceId: 'root-id', cursor: null, limit: 100, operation })
+    await provider.listPage({ parentResourceId: 'root-id', cursor: null, limit: 100, operation })
+    assert.equal(refreshCalls, 1)
+    assert.equal(providerCalls, 2)
   } finally {
     operation.dispose()
   }
@@ -325,6 +366,60 @@ test('OneDrive download and upload session URLs never receive Worker authorizati
     assert.equal(writeCall, 3)
   } finally {
     writeOperation.dispose()
+  }
+})
+
+test('OneDrive zero-byte writes use the simple content endpoint with create-only preconditions', async () => {
+  const bytes = new Uint8Array()
+  const expectedHash = computeFileSyncQuickXor(bytes)
+  let calls = 0
+  const operation = new StorageRelayOperation({
+    fetcher: async (input, init = {}) => {
+      calls += 1
+      const url = String(input)
+      if (calls === 1) {
+        assert.match(url, /items\/root-id:\/empty\.txt/)
+        return new Response(null, { status: 404 })
+      }
+      assert.equal(calls, 2)
+      assert.match(url, /items\/root-id:\/empty\.txt:\/content/)
+      assert.equal(url.includes('createUploadSession'), false)
+      assert.equal(init.method, 'PUT')
+      const headers = new Headers(init.headers)
+      assert.equal(headers.get('if-none-match'), '*')
+      assert.equal(headers.get('content-length'), '0')
+      return jsonResponse(201, {
+        id: 'empty-file-id',
+        name: 'empty.txt',
+        size: 0,
+        eTag: '"empty-etag"',
+        file: {
+          mimeType: 'text/plain',
+          hashes: { quickXorHash: expectedHash.value },
+        },
+        parentReference: { id: 'root-id' },
+      })
+    },
+  })
+  try {
+    const result = await new OneDriveFileSyncProvider({
+      accessToken: 'graph-secret',
+      driveId: 'drive-id',
+    }).writeFile({
+      resourceId: null,
+      parentResourceId: 'root-id',
+      name: 'empty.txt',
+      expectedVersion: null,
+      mimeType: 'text/plain',
+      bytes,
+      expectedHash,
+      idempotencyKey: 'empty-file-write',
+      operation,
+    })
+    assert.equal(result.size, 0)
+    assert.equal(calls, 2)
+  } finally {
+    operation.dispose()
   }
 })
 

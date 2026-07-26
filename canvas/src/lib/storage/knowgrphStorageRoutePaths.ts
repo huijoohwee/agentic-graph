@@ -5,6 +5,7 @@ export const KNOWGRPH_STORAGE_ROUTE_PATHS = {
   canvasRoomPrefix: '/api/storage/canvas-room/',
   chatSession: '/api/storage/chat/session',
   chatRelay: '/api/storage/chat/relay',
+  relayCapabilities: '/api/storage/relay/capabilities',
   gitRelay: '/api/storage/git/relay',
   fileSyncRelay: '/api/storage/file-sync/relay',
   chatPoliciesPrefix: '/api/storage/chat/policies/',
@@ -32,6 +33,9 @@ export const buildKnowgrphStorageChatSessionPath = (): string =>
 
 export const buildKnowgrphStorageChatRelayPath = (): string =>
   KNOWGRPH_STORAGE_ROUTE_PATHS.chatRelay
+
+export const buildKnowgrphStorageRelayCapabilitiesPath = (): string =>
+  KNOWGRPH_STORAGE_ROUTE_PATHS.relayCapabilities
 
 export const buildKnowgrphStorageGitRelayPath = (): string =>
   KNOWGRPH_STORAGE_ROUTE_PATHS.gitRelay

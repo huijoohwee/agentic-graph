@@ -7,6 +7,7 @@ import {
   buildKnowgrphCollaborationSavePath,
   buildKnowgrphStorageFileSyncRelayPath,
   buildKnowgrphStorageGitRelayPath,
+  buildKnowgrphStorageRelayCapabilitiesPath,
   type KnowgrphCollaborationSaveRequest,
   type KnowgrphStorageWorkerEnv,
 } from './contract'
@@ -106,7 +107,8 @@ const collaborationSaveRequest = (args: {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      operation: 'upsert',
         workspaceId: KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID,
         documentKey: 'docs/team-note.md',
         documentKind: 'markdown',
@@ -178,6 +180,54 @@ test('Worker assembles only explicitly configured file-sync providers', async ()
     { providerId: 'google-drive', label: 'Google Drive', providerType: 'google-drive' },
     { providerId: 'one-drive', label: 'OneDrive', providerType: 'one-drive' },
   ])
+})
+
+test('authenticated capability inspection reports exact configured remotes and renewable providers', async () => {
+  const db = new FakeKnowgrphStorageD1Database()
+  await seedAuthorizedWorkspace(db)
+  const request = new Request(`http://localhost${buildKnowgrphStorageRelayCapabilitiesPath()}`, {
+    headers: { authorization: `Bearer ${SESSION_TOKEN}` },
+  })
+  const response = await handleStorageRelayRequest({
+    request,
+    pathname: buildKnowgrphStorageRelayCapabilitiesPath(),
+    env: createEnv(db, {
+      KNOWGRPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
+      KNOWGRPH_STORAGE_GITHUB_OWNER: 'knowgrph-owner',
+      KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO: 'knowgrph-repository',
+      KNOWGRPH_STORAGE_GITHUB_BRANCH: 'dev/storage',
+      KNOWGRPH_STORAGE_GOOGLE_DRIVE_CLIENT_ID: 'google-client',
+      KNOWGRPH_STORAGE_GOOGLE_DRIVE_CLIENT_SECRET: 'google-client-secret',
+      KNOWGRPH_STORAGE_GOOGLE_DRIVE_REFRESH_TOKEN: 'google-refresh-secret',
+      KNOWGRPH_STORAGE_GOOGLE_DRIVE_ROOT_ID: 'google-root-id',
+    }),
+    db,
+  })
+  assert.equal(response.status, 200)
+  const body = await response.json() as Record<string, unknown>
+  assert.equal(body.schema, 'knowgrph-storage-relay-capabilities/v1')
+  assert.equal(body.relayEnabled, true)
+  assert.deepEqual(body.gitRemotes, [{
+    remoteId: 'origin',
+    branch: 'dev/storage',
+    fetchPolicy: 'normalized-commits',
+  }])
+  assert.deepEqual(body.fileProviders, [{
+    providerId: 'google-drive',
+    label: 'Google Drive',
+    providerType: 'google-drive',
+    credentialMode: 'oauth-refresh',
+  }])
+  assert.equal(JSON.stringify(body).includes('secret'), false)
+
+  const disabled = await handleStorageRelayRequest({
+    request,
+    pathname: buildKnowgrphStorageRelayCapabilitiesPath(),
+    env: { ...createEnv(db), KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'false' },
+    db,
+  })
+  assert.equal(disabled.status, 200)
+  assert.equal((await disabled.json() as { relayEnabled?: boolean }).relayEnabled, false)
 })
 
 test('Git relay requires an explicit branch and keeps upstream authority in Worker env', async () => {
@@ -309,6 +359,44 @@ test('collaboration save rejects non-loopback and mismatched Git origin before u
     assert.equal(mismatchedOrigin.status, 400)
     assert.equal((await mismatchedOrigin.json() as { code?: string }).code, 'bad_request')
     assert.equal(upstreamCalls, 0)
+  } finally {
+    globalThis.fetch = previousFetch
+  }
+})
+
+test('collaboration delete reads the current SHA and issues one serialized GitHub delete', async () => {
+  const db = new FakeKnowgrphStorageD1Database()
+  await seedAuthorizedWorkspace(db)
+  const worker = createKnowgrphStorageWorker()
+  const env = createEnv(db, {
+    KNOWGRPH_STORAGE_GITHUB_TOKEN: 'server-github-token',
+    KNOWGRPH_STORAGE_GITHUB_OWNER: 'knowgrph-owner',
+    KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'workspace-repository',
+    KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
+  })
+  const previousFetch = globalThis.fetch
+  const methods: string[] = []
+  globalThis.fetch = (async (input, init = {}) => {
+    methods.push(String(init.method || 'GET'))
+    assert.match(String(input), /repos\/knowgrph-owner\/workspace-repository\/contents\/docs\/team-note\.md/)
+    assert.equal(new Headers(init.headers).get('authorization'), 'Bearer server-github-token')
+    if (!init.method) return new Response(JSON.stringify({ sha: 'a'.repeat(40) }), { status: 200 })
+    assert.equal(init.method, 'DELETE')
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>
+    assert.equal(body.sha, 'a'.repeat(40))
+    assert.equal(body.branch, 'main')
+    return new Response(JSON.stringify({ commit: { sha: COMMIT_OID } }), { status: 200 })
+  }) as typeof fetch
+  try {
+    const response = await worker.fetch(collaborationSaveRequest({
+      overrides: { operation: 'delete' },
+    }), env)
+    assert.equal(response.status, 200)
+    const body = await response.json() as Record<string, unknown>
+    assert.equal(body.operation, 'delete')
+    assert.equal(body.commitSha, COMMIT_OID)
+    assert.equal(body.contentSha, null)
+    assert.deepEqual(methods, ['GET', 'DELETE'])
   } finally {
     globalThis.fetch = previousFetch
   }

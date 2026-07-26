@@ -331,6 +331,7 @@ export async function testStorageEnhancementProperty22ConcurrentJsonRequiresCrdt
         },
         body: JSON.stringify({
           apiVersion: '2026-05-04',
+          operation: 'upsert',
           workspaceId,
           documentKey: 'docs/collaborative.json',
           documentKind: 'json',

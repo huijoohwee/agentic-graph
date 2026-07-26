@@ -142,6 +142,7 @@ export class FileSyncEngine {
   }
 
   async drainOutbox(): Promise<FileSyncTransferResult[]> {
+    await this.outbox.requeueFailed();
     const outcomes: FileSyncTransferResult[] = [];
     for (;;) {
       const claim = await this.outbox.claimNext(this.workspaceId);
