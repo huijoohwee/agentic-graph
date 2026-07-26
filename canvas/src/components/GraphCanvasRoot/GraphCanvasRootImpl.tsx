@@ -424,7 +424,7 @@ export default function GraphCanvas({ active = true }: { active?: boolean }) {
 
   useZoomEffects({ svgRef, zoomRef, width, height, paused: !active, graphDataOverride: sceneGraphData })
   useAutoZoomModes2d({ viewportW: width, viewportH: height, paused: !active, getGraph: readAutoZoomGraph })
-  useEdgeCreationEffect({ paused: !active, tempLinkSelRef, linkDragRef })
+  useEdgeCreationEffect({ paused: !active, graphData: sceneGraphData, tempLinkSelRef, linkDragRef })
   useEffect(() => {
     if (!active) return
     registerCanvasSnapshotFns('2d', svgRef.current ? create2dSvgSnapshotFns(svgRef) : null)
