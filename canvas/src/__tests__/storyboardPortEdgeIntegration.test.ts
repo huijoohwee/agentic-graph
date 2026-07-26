@@ -243,9 +243,9 @@ export function testStoryboardPortEdgeKeepsPendingRichMediaPanelInDraft() {
     throw new Error(`expected authored Storyboard draft revision to outrun live/base reset, got ${revision}`)
   }
 }
-
 export function testStoryboardPortEdgeSelectsAuthoredEdgeAfterCreate() {
   const actions = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetGraphActions.ts'), 'utf8')
+  const multiConnect = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetMultiConnectSession.ts'), 'utf8')
   const edgeActions = readFileSync(resolve(process.cwd(), 'src/hooks/store/graph-data-slice/graphDataEdgeActions.ts'), 'utf8')
   if (!actions.includes("import { disableAutoZoomModesForUserGesture } from '@/lib/canvas/auto-zoom-modes'")) {
     throw new Error('expected Storyboard/Storyboard Widget port edge authoring to reuse the shared auto-zoom disable helper')
@@ -254,14 +254,14 @@ export function testStoryboardPortEdgeSelectsAuthoredEdgeAfterCreate() {
   if (!createBranch.includes('disableAutoZoomModesForUserGesture(useGraphStore.getState())')) {
     throw new Error('expected authored Storyboard edge creation to suppress auto-zoom side effects before selecting the new edge')
   }
-  if (!createBranch.includes("args.selectEdge(String(result.edge.id || ''))") || !createBranch.includes('args.selectNode(null)')) {
-    throw new Error('expected Storyboard/Storyboard Widget port edge creation to select the authored edge so it remains visible after pending preview clears')
+  if (!createBranch.includes('continueStoryboardWidgetMultiConnectSession({')) {
+    throw new Error('expected authored Storyboard edges to continue the shared multi-connect session')
   }
-  if (createBranch.indexOf('disableAutoZoomModesForUserGesture(useGraphStore.getState())') > createBranch.indexOf("args.selectEdge(String(result.edge.id || ''))")) {
-    throw new Error('expected authored edge creation to disable auto-zoom before selecting the new edge')
+  if (!multiConnect.includes('args.selectEdge(edgeId)') || !multiConnect.includes('args.setPendingEdgeSourceId(sourceNodeId)') || !multiConnect.includes("args.setToolMode('addEdge')")) {
+    throw new Error('expected multi-connect continuation to select the edge while preserving its source and add-edge mode')
   }
-  if (createBranch.indexOf("args.selectEdge(String(result.edge.id || ''))") > createBranch.indexOf("args.setToolMode('select')")) {
-    throw new Error('expected authored edge selection before leaving addEdge mode')
+  if (createBranch.indexOf('disableAutoZoomModesForUserGesture(useGraphStore.getState())') > createBranch.indexOf('continueStoryboardWidgetMultiConnectSession({')) {
+    throw new Error('expected authored edge creation to disable auto-zoom before continuing multi-connect')
   }
   if (!edgeActions.includes('get().setGraphDataPreservingLayout(nextGraphData)')) {
     throw new Error('expected composed Storyboard edge commits to preserve widget layout when source-layer recomposition rewrites the graph after edge creation')
@@ -289,8 +289,8 @@ export function testStoryboardRichMediaOverlaySelectionMountsSharedPortHandles()
   if (!headerToolbar.includes('st.updateOpenWidgetNodeIds(prev => (prev.includes(nodeId) ? prev : [...prev, nodeId]))')) {
     throw new Error('expected Rich Media overlay reselection on Storyboard to reopen the panel in shared open-widget state')
   }
-  if (!overlayHandles.includes('resolveGraphNodeByCanonicalId(interaction?.graphData, nodeId)') || !overlayHandles.includes('(!props.selected && !isPendingTarget)') || !overlayHandles.includes('inputOnly={isPendingTarget && !props.selected}')) {
-    throw new Error('expected shared overlay handles to expose input-only targets during an explicit edge drag')
+  if (!overlayHandles.includes('resolveGraphNodeByCanonicalId(interaction?.graphData, nodeId)') || !overlayHandles.includes('const isPendingSource =') || !overlayHandles.includes('outputOnly={persistentOutputOnly || pendingSourceOutputOnly}')) {
+    throw new Error('expected multi-connect overlays to preserve the source output while exposing both directions on alternate endpoints')
   }
   if (!overlayHandles.includes('FLOW_PORT_HANDLE_FINALIZE_EVENT') || !overlayHandles.includes('value.finalizeEdge(targetNodeId, detail.targetPortKey, {')) {
     throw new Error('expected shared overlay port handles to consume semantic drag-finalize events')

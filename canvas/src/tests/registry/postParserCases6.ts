@@ -22,6 +22,8 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["storyboardWidget.outputWiring.deliverablesOwnedOutputs","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testDeliverablesOwnedOutputsStayDistinctAndIdempotent"],
   ["storyboardWidget.outputWiring.explicitMultiTargets","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testExplicitMultiEdgesTargetWidgetCardAndRichMediaPanels"],
   ["storyboardWidget.edgeAuthoring.manyToOne","@/__tests__/storyboardManyToOneEdgeAuthoring.test","testStoryboardManyToOneAuthoringRetainsEveryInboundEdge"],
+  ["storyboardWidget.edgeAuthoring.multiConnectContinuation","@/__tests__/storyboardWidgetMultiConnectSession.test","testStoryboardMultiConnectSessionKeepsSourceArmedAfterEdge"],
+  ["storyboardWidget.edgeAuthoring.multiConnectInvalidEndpoint","@/__tests__/storyboardWidgetMultiConnectSession.test","testStoryboardMultiConnectSessionRejectsMissingEndpoint"],
   ["storyboardWidget.outputWiring.standaloneUntilExplicit","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testGeneratedOutputsStayStandaloneUntilExplicitlyWired"],
   ["storyboardWidget.outputWiring.probeTreeBranchesLedgerConnected","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testProbeTreeBranchesLedgerConnectsSourceIdempotently"],
   ["storyboardWidget.outputWiring.selectedChildCanonicalTarget","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testSelectedChildRunRestoresExplicitTargetFromCanonicalGraph"],

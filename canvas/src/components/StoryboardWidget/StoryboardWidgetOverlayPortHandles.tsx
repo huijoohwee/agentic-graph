@@ -100,6 +100,9 @@ export function StoryboardWidgetOverlayPortHandles(props: {
   const nodeId = String(props.node?.id || props.nodeId || '').trim()
   const node = props.node || resolveGraphNodeByCanonicalId(interaction?.graphData, nodeId)
   const pendingSourceId = String(interaction?.pendingEdgeSourceId || '').trim()
+  const isPendingSource = interaction?.toolMode === 'addEdge'
+    && Boolean(pendingSourceId)
+    && isCanonicalNodeIdEqual(pendingSourceId, nodeId)
   const isPendingTarget = interaction?.toolMode === 'addEdge'
     && Boolean(pendingSourceId)
     && !isCanonicalNodeIdEqual(pendingSourceId, nodeId)
@@ -107,12 +110,13 @@ export function StoryboardWidgetOverlayPortHandles(props: {
     graphData: interaction?.graphData,
     sourceNodeId: nodeId,
   })
-  const isUnselectedAndNotPendingTarget = (!props.selected && !isPendingTarget)
-  const persistentOutputOnly = isUnselectedAndNotPendingTarget && hasPersistentProvenanceOutput
+  const isUnselectedAndNotPendingEndpoint = !props.selected && !isPendingSource && !isPendingTarget
+  const persistentOutputOnly = isUnselectedAndNotPendingEndpoint && hasPersistentProvenanceOutput
+  const pendingSourceOutputOnly = isPendingSource && !props.selected
   if (
     !interaction
     || !interaction.active
-    || (isUnselectedAndNotPendingTarget && !hasPersistentProvenanceOutput)
+    || (isUnselectedAndNotPendingEndpoint && !hasPersistentProvenanceOutput)
     || !node
   ) return null
 
@@ -124,8 +128,7 @@ export function StoryboardWidgetOverlayPortHandles(props: {
       registryEntries={interaction.registryEntries}
       edges={interaction.graphData?.edges || []}
       forceEnabled
-      inputOnly={isPendingTarget && !props.selected}
-      outputOnly={persistentOutputOnly}
+      outputOnly={persistentOutputOnly || pendingSourceOutputOnly}
       toolMode={interaction.toolMode}
       pendingEdgeSourceId={interaction.pendingEdgeSourceId}
       onBeginAddEdgeFromNode={interaction.beginEdge}
