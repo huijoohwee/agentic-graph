@@ -8,6 +8,7 @@ import {
   isImplementationRunToolName,
   runImplementationRunTool,
 } from "./implementation-run-runtime.js";
+import { createLocalAgentTeamHost } from "./agent-team-local-host.js";
 
 export function createLocalRunRuntimeRegistrar({
   rootDir,
@@ -15,6 +16,7 @@ export function createLocalRunRuntimeRegistrar({
   agentTeamOptions = {},
   implementationRunOptions = {},
 } = {}) {
+  const agentTeamHost = createLocalAgentTeamHost({ rootDir, env });
   const implementationRun = createImplementationRunRuntime({
     rootDir,
     env,
@@ -23,6 +25,7 @@ export function createLocalRunRuntimeRegistrar({
   const agentTeam = createAgentTeamRuntime({
     rootDir,
     env,
+    ...agentTeamHost.options,
     ...agentTeamOptions,
   });
   return Object.freeze({
@@ -53,5 +56,6 @@ export function createLocalRunRuntimeRegistrar({
     },
     implementationRun,
     agentTeam,
+    agentTeamHostReadiness: agentTeamHost.readiness,
   });
 }

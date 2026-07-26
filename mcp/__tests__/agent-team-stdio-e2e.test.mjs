@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
+import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -12,10 +13,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import {
   AGENT_TEAM_HARD_BOUNDS,
   AGENT_TEAM_INVOCATION,
-  AGENT_TEAM_SOURCE_SCHEMA,
   AGENT_TEAM_TOOL_NAMES,
 } from "../../contracts/agent-team.schema.js";
-import { digestAgentTeamSourceDocument } from "../agent-team-source.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -40,50 +39,56 @@ async function createDocsFixture(rootDir) {
     "commit", "-qm", "agent team docs fixture",
   ], { cwd: repositoryRoot });
   const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+  execFileSync("git", [
+    "remote", "add", "origin", "https://github.com/huijoohwee/agentic-canvas-os.git",
+  ], { cwd: repositoryRoot });
+  execFileSync("git", ["update-ref", "refs/remotes/origin/main", revision], { cwd: repositoryRoot });
   return { docsRoot, revision };
 }
 
 async function createTeamFixture(rootDir) {
-  const uri = "teams/stdio-team.json";
-  const document = {
-    schema: AGENT_TEAM_SOURCE_SCHEMA,
-    teamId: "team.stdio",
-    teamRevision: "team-revision-1",
-    source: { uri, digest: "0".repeat(64) },
-    manager: {
-      participantId: "lead",
-      agentId: "agent.lead",
-      agentRevision: "agent-revision-1",
-      role: "Coordinator",
-      goal: "Own the exact workflow result.",
-      persona: "Concise.",
-    },
-    specialists: [{
-      participantId: "research",
-      agentId: "agent.research",
-      agentRevision: "agent-revision-1",
-      role: "Research specialist",
-      goal: "Return evidence.",
-      persona: "Precise.",
-    }],
-    workflow: {
-      workflowId: "workflow.stdio",
-      workflowRevision: "workflow-revision-1",
-      allowedBranchIds: ["delegate-research"],
-    },
-    reviewPolicy: {
-      policyId: "review.standard",
-      policyRevision: "review-revision-1",
-    },
-    bounds: { ...AGENT_TEAM_HARD_BOUNDS },
-  };
-  document.source.digest = digestAgentTeamSourceDocument(document);
-  await fs.mkdir(path.join(rootDir, "teams"), { recursive: true });
-  await fs.writeFile(path.join(rootDir, uri), `${JSON.stringify(document, null, 2)}\n`);
+  const sourcePath = path.join(
+    repoRoot,
+    "data/config/agents/agent-teams/collaborative-intelligence.json",
+  );
+  const document = JSON.parse(await fs.readFile(sourcePath, "utf8"));
+  const targetPath = path.join(rootDir, document.source.uri);
+  await fs.mkdir(path.dirname(targetPath), { recursive: true });
+  await fs.writeFile(targetPath, `${JSON.stringify(document, null, 2)}\n`);
   return document;
 }
 
-test("canonical local stdio MCP registers all four tools but fails plan without a host reference verifier", async (t) => {
+const startFakeOllama = async () => {
+  const requests = [];
+  const server = http.createServer(async (request, response) => {
+    let raw = "";
+    for await (const chunk of request) raw += String(chunk);
+    requests.push(JSON.parse(raw));
+    const call = requests.length;
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({
+      model: "agent-team-test-model",
+      message: {
+        content: JSON.stringify({
+          output: call === 4
+            ? "Manager final synthesis from both specialists."
+            : `Bounded local role output ${call}.`,
+        }),
+      },
+      prompt_eval_count: 20,
+      eval_count: 10,
+    }));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  return {
+    requests,
+    url: `http://127.0.0.1:${address.port}`,
+    close: () => new Promise((resolve) => server.close(resolve)),
+  };
+};
+
+test("canonical local stdio MCP plans and completes the registered team through the host-owned local model adapter", async (t) => {
   const runtimeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-agent-team-stdio-"));
   const docsFixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-agent-team-docs-"));
   t.after(() => fs.rm(runtimeRoot, { recursive: true, force: true }));
@@ -92,6 +97,8 @@ test("canonical local stdio MCP registers all four tools but fails plan without 
     createDocsFixture(docsFixtureRoot),
     createTeamFixture(runtimeRoot),
   ]);
+  const ollama = await startFakeOllama();
+  t.after(() => ollama.close());
   const client = new Client({ name: "knowgrph-agent-team-e2e", version: "0.0.0" });
   const transport = new StdioClientTransport({
     command: process.execPath,
@@ -105,7 +112,10 @@ test("canonical local stdio MCP registers all four tools but fails plan without 
       KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot,
       KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_REVISION: revision,
       KNOWGRPH_AGENTIC_CANVAS_OS_LIVE_PROOF_REVISION: revision,
-      KNOWGRPH_AGENT_TEAM_ADAPTER_ID: "",
+      KNOWGRPH_AGENT_TEAM_MODEL: "agent-team-test-model",
+      KNOWGRPH_AGENT_TEAM_MODEL_URL: ollama.url,
+      KNOWGRPH_AGENT_TEAM_MODEL_TIMEOUT_MS: "5000",
+      KNOWGRPH_AGENT_TEAM_MODEL_MAX_OUTPUT_TOKENS: "256",
     },
     stderr: "pipe",
   });
@@ -138,17 +148,50 @@ test("canonical local stdio MCP registers all four tools but fails plan without 
       name: AGENT_TEAM_TOOL_NAMES.plan,
       arguments: planInput,
     }, undefined, { timeout: 10_000 });
-    assert.equal(planned.isError, true, stderrText);
-    assert.equal(planned.structuredContent.ok, false);
-    assert.equal(planned.structuredContent.error.code, "reference_verifier_unavailable");
+    assert.equal(planned.isError, false, `${JSON.stringify(planned.structuredContent)}\n${stderrText}`);
+    assert.equal(planned.structuredContent.ok, true);
     assert.equal(planned.structuredContent.usage.turns, 0);
+
+    const started = await client.callTool({
+      name: AGENT_TEAM_TOOL_NAMES.start,
+      arguments: {
+        planId: planned.structuredContent.result.planId,
+        planDigest: planned.structuredContent.planDigest,
+        teamRevision: planned.structuredContent.teamRevision,
+        expectedStateVersion: 1,
+        idempotencyKey: "stdio-start-idempotency",
+      },
+    }, undefined, { timeout: 20_000 });
+    assert.equal(started.isError, false, stderrText);
+    assert.equal(started.structuredContent.state, "completed");
+    assert.equal(
+      started.structuredContent.result.finalAnswer,
+      "Manager final synthesis from both specialists.",
+    );
+    assert.equal(started.structuredContent.usage.turns, 2);
+    assert.equal(started.structuredContent.usage.costUsd, 0);
+    assert.equal(ollama.requests.length, 4);
+
+    const replayed = await client.callTool({
+      name: AGENT_TEAM_TOOL_NAMES.start,
+      arguments: {
+        planId: planned.structuredContent.result.planId,
+        planDigest: planned.structuredContent.planDigest,
+        teamRevision: planned.structuredContent.teamRevision,
+        expectedStateVersion: 1,
+        idempotencyKey: "stdio-start-idempotency",
+      },
+    }, undefined, { timeout: 10_000 });
+    assert.deepEqual(replayed.structuredContent, started.structuredContent);
+    assert.equal(ollama.requests.length, 4);
 
     const runs = await client.callTool({
       name: AGENT_TEAM_TOOL_NAMES.list,
       arguments: {},
     }, undefined, { timeout: 10_000 });
     assert.equal(runs.isError, false, stderrText);
-    assert.deepEqual(runs.structuredContent.result.runs, []);
+    assert.equal(runs.structuredContent.result.runs.length, 1);
+    assert.equal(runs.structuredContent.result.runs[0].state, "completed");
   } finally {
     await client.close().catch(() => undefined);
   }
