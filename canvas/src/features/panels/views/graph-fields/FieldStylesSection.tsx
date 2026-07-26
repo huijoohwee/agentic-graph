@@ -1,9 +1,8 @@
 import React from 'react'
-import type { GraphSchema } from '@/lib/graph/schema'
+import type { EdgeMarkerShape, GraphSchema } from '@/lib/graph/schema'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useCanvasKeyTypeValueStaticRowProps } from '@/features/panels/ui/canvasKeyTypeValueRuntime'
-import { GraphFieldsCompactCheckbox } from '@/features/panels/views/graph-fields/GraphFieldsPanelControls'
-import { PanelTextInput } from '@/lib/ui/panelFormControls'
+import { PanelSelect, PanelTextInput } from '@/lib/ui/panelFormControls'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { PANEL_TYPOGRAPHY_DEFAULTS } from 'grph-shared/ui/panelTypography'
 import { UI_RESPONSIVE_COLOR_SWATCH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
@@ -40,7 +39,6 @@ export default function FieldStylesSection({
     updateNodeStroke,
     setLabelStyles,
     setLabelOffset,
-    setEdgeArrow,
   } = useGraphStore()
   const uiPanelKeyValueInputClass = useGraphStore(
     s =>
@@ -60,6 +58,10 @@ export default function FieldStylesSection({
 
   const edgeColorRaw = scope === 'edge' ? String(schema.edgeStyles[ownerKey]?.color ?? '') : ''
   const edgeColorNormalized = edgeColorRaw.trim() || '#999999'
+  const edgeStyle = scope === 'edge' ? schema.edgeStyles[ownerKey] || {} : {}
+  const edgeMarkerStart = edgeStyle.markerStart || 'none'
+  const edgeMarkerEnd = edgeStyle.markerEnd || (edgeStyle.arrow ? 'arrow' : 'none')
+  const edgeMarkerSize = edgeStyle.markerSize || 'medium'
 
   const labelColorRaw = String(schema.labelStyles?.color ?? '')
   const labelColorNormalized = labelColorRaw.trim() || '#111111'
@@ -225,14 +227,71 @@ export default function FieldStylesSection({
           <KeyTypeValueRow
             layout="keyValue"
             align="start"
-            keyNode={<span className={keyLabelClassName}>Arrow</span>}
+            keyNode={<span className={keyLabelClassName}>Start marker</span>}
             valueNode={(
               <RightAlignedValueCell>
-                <GraphFieldsCompactCheckbox
-                  checked={!!schema.edgeStyles[ownerKey]?.arrow}
+                <PanelSelect
+                  aria-label="Edge start marker"
                   disabled={!hasOwner}
-                  onChange={e => setEdgeArrow(ownerKey, e.target.checked)}
-                />
+                  value={edgeMarkerStart}
+                  onChange={e => updateEdgeStyle(ownerKey, { markerStart: e.target.value as EdgeMarkerShape })}
+                  className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
+                >
+                  <option value="none">None</option>
+                  <option value="arrow">Arrow</option>
+                  <option value="arrow-open">Open arrow</option>
+                  <option value="circle">Circle</option>
+                  <option value="diamond">Diamond</option>
+                  <option value="bar">Bar</option>
+                </PanelSelect>
+              </RightAlignedValueCell>
+            )}
+          />
+          <KeyTypeValueRow
+            layout="keyValue"
+            align="start"
+            keyNode={<span className={keyLabelClassName}>End marker</span>}
+            valueNode={(
+              <RightAlignedValueCell>
+                <PanelSelect
+                  aria-label="Edge end marker"
+                  disabled={!hasOwner}
+                  value={edgeMarkerEnd}
+                  onChange={e => {
+                    const markerEnd = e.target.value as EdgeMarkerShape
+                    updateEdgeStyle(ownerKey, { markerEnd, arrow: markerEnd === 'arrow' })
+                  }}
+                  className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
+                >
+                  <option value="none">None</option>
+                  <option value="arrow">Arrow</option>
+                  <option value="arrow-open">Open arrow</option>
+                  <option value="circle">Circle</option>
+                  <option value="diamond">Diamond</option>
+                  <option value="bar">Bar</option>
+                </PanelSelect>
+              </RightAlignedValueCell>
+            )}
+          />
+          <KeyTypeValueRow
+            layout="keyValue"
+            align="start"
+            keyNode={<span className={keyLabelClassName}>Marker size</span>}
+            valueNode={(
+              <RightAlignedValueCell>
+                <PanelSelect
+                  aria-label="Edge marker size"
+                  disabled={!hasOwner}
+                  value={edgeMarkerSize}
+                  onChange={e => updateEdgeStyle(ownerKey, {
+                    markerSize: e.target.value as GraphSchema['edgeStyles'][string]['markerSize'],
+                  })}
+                  className={`${uiPanelKeyValueInputClass} disabled:opacity-50`}
+                >
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </PanelSelect>
               </RightAlignedValueCell>
             )}
           />

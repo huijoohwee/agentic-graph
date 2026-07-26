@@ -1,6 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
+  ["canvas.edgeMarkers.legacyAndKeywordDirection","@/__tests__/edgeMarkers.test","testEdgeMarkersPreserveLegacyAndKeywordDirectionContracts"],
+  ["canvas.edgeMarkers.endpointShapeAndSize","@/__tests__/edgeMarkers.test","testEdgeMarkersResolveStartEndShapeAndSizeOverrides"],
+  ["canvas.edgeMarkers.svgScopedDefinitions","@/__tests__/edgeMarkers.test","testEdgeMarkerRegistryIsSvgScopedAndContextColored"],
+  ["canvas.edgeMarkers.attributesApplyAndClear","@/__tests__/edgeMarkers.test","testEdgeMarkerAttributesApplyAndClearBothEndpoints"],
   ["canvas.richMedia.selectionWidgetLink.provenanceEdge","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdge"],
   ["canvas.richMedia.selectionWidgetLink.sourceHighlightConnector","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetLinkProjectsExactSourceHighlightAndConnector"],
   ["canvas.richMedia.selectionWidgetLink.preservesCollectivePlacement","@/__tests__/textSelectionWidgetLink.test","testTextSelectionWidgetInsertionPreservesExistingCollectivePlacement"],

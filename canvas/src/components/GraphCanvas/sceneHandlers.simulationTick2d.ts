@@ -20,6 +20,7 @@ import { renderLabels2d, type LabelRelaxState2d } from '@/components/GraphCanvas
 import { buildEdgePathD, readEdgePathCurveOptions, readEffectiveEdgeTypeFor2dRenderer, type GlobalEdgeType } from '@/lib/graph/edgeTypes'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { readRadarForceConfig } from '@/lib/graph/radarForces'
+import { readEdgeMarkerPresentation } from '@/lib/graph/edgeMarkers'
 
 type OrbitMode = 'flat' | 'solar' | 'atomic'
 
@@ -486,6 +487,7 @@ export const attachSimulationTick = (args: {
       ty: number
       curve: boolean
       arrow: boolean
+      markerStart: boolean
       orbital: boolean
       arrowLength: number
       arrowHalfWidth: number
@@ -499,6 +501,7 @@ export const attachSimulationTick = (args: {
       bend: number
       phase: -1 | 1
       arrow: boolean
+      markerStart: boolean
       orbitShift: number
       arrowLength: number
       arrowHalfWidth: number
@@ -525,13 +528,16 @@ export const attachSimulationTick = (args: {
       const arrowHalfWidth = Number.isFinite(arrowHalfN)
         ? Math.max(2, Math.min(14, arrowHalfN))
         : radarForceCfg.flowArrowHalfWidthPx
-      const arrow = Boolean(schema.edgeStyles?.[String(d.label || '')]?.arrow) || (props?.['kg:radarFlow'] === true)
+      const edgeMarkers = readEdgeMarkerPresentation(d, schema)
+      const arrow = edgeMarkers.end !== 'none' || props?.['kg:radarFlow'] === true
+      const markerStart = edgeMarkers.start !== 'none'
       const allowCurveByType = globalEdgeType === 'bezier'
       return {
         curve: allowCurveByType ? curve : false,
         bend,
         phase: curveOptions ? curveOptions.phase : 1,
         arrow,
+        markerStart,
         orbitShift,
         arrowLength,
         arrowHalfWidth,
@@ -553,6 +559,7 @@ export const attachSimulationTick = (args: {
       ty: number
       curve: boolean
       arrow: boolean
+      markerStart: boolean
       orbital: boolean
       arrowLength: number
       arrowHalfWidth: number
@@ -578,6 +585,7 @@ export const attachSimulationTick = (args: {
           ty: 0,
           curve: presentation.curve,
           arrow: presentation.arrow,
+          markerStart: presentation.markerStart,
           orbital: presentation.orbital,
           arrowLength: presentation.arrowLength,
           arrowHalfWidth: presentation.arrowHalfWidth,
@@ -586,7 +594,7 @@ export const attachSimulationTick = (args: {
         edgeGeometryCache.set(d, fallback)
         return fallback
       }
-      const p1 = endpoint(src, tgt, 3)
+      const p1 = endpoint(src, tgt, presentation.markerStart ? 9 : 3)
       const p2 = endpoint(tgt, src, presentation.arrow ? 9 : 3)
       const mx = (p1.x + p2.x) / 2
       const my = (p1.y + p2.y) / 2
@@ -618,6 +626,7 @@ export const attachSimulationTick = (args: {
         ty,
         curve: presentation.curve,
         arrow: presentation.arrow,
+        markerStart: presentation.markerStart,
         orbital: presentation.orbital,
         arrowLength: presentation.arrowLength,
         arrowHalfWidth: presentation.arrowHalfWidth,

@@ -101,7 +101,7 @@ export interface GraphStateCanvasRuntime {
   computeMinimapPreviewAsync: () => void;
   setSchema: (schema: GraphSchema) => void;
   updateNodeStyle: (type: string, style: Partial<{ color: string }>) => void;
-  updateEdgeStyle: (label: string, style: Partial<{ color: string; width: number }>) => void;
+  updateEdgeStyle: (label: string, style: Partial<GraphSchema['edgeStyles'][string]>) => void;
   setBehavior: (b: Partial<GraphBehavior>) => void;
   updateNodeSize: (type: string, size: Partial<{ radius: number }>) => void;
   updateNodeStroke: (type: string, stroke: Partial<{ color: string; width: number }>) => void;

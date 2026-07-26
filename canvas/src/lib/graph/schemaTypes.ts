@@ -63,9 +63,20 @@ export interface PropertySpec {
 
 export type CompactPropertyBadge = { badge: string; label: string };
 
+export type EdgeMarkerShape = 'none' | 'arrow' | 'arrow-open' | 'circle' | 'diamond' | 'bar';
+export type EdgeMarkerSize = 'small' | 'medium' | 'large';
+export type EdgeStyle = {
+  color?: string;
+  width?: number;
+  arrow?: boolean;
+  markerStart?: EdgeMarkerShape;
+  markerEnd?: EdgeMarkerShape;
+  markerSize?: EdgeMarkerSize;
+};
+
 export interface GraphSchema {
   nodeStyles: Record<string, { color?: string }>;
-  edgeStyles: Record<string, { color?: string; width?: number; arrow?: boolean }>;
+  edgeStyles: Record<string, EdgeStyle>;
   metadata?: Record<string, JSONValue>;
   nodeSizes?: Record<string, { radius?: number }>;
   nodeStroke?: Record<string, { color?: string; width?: number }>;

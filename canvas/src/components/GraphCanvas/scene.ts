@@ -200,7 +200,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     .style('pointer-events', 'none')
   gRef.current = g
 
-  createDefs(svg)
+  const edgeMarkerRegistry = createDefs(svg)
 
   const display = deriveSceneDisplayGraph({ graphData, edges: Array.isArray(edgesForSim) ? edgesForSim : null })
   const graphDataForDisplay = display?.displayGraphData || graphData
@@ -795,6 +795,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
     edgesForDisplay,
     schema,
     nodeById: displayNodeById,
+    edgeMarkerRegistry,
   })
   linksSelRef.current = linkSel
 
