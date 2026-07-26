@@ -11,6 +11,7 @@ import type { GraphData } from '@/lib/graph/types'
 import {
   STORYBOARD_EDGE_INSERTION_OPTIONS,
   insertStoryboardWorkflowNodeOnEdge,
+  selectStoryboardEdgeInsertionAnchor,
   type StoryboardEdgeInsertionKind,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardEdgeNodeInsertion'
 
@@ -55,6 +56,63 @@ function readOverlayEdgeAnchors(root: HTMLElement): EdgeAnchor[] {
   return anchors
 }
 
+function squaredDistanceToSegment(
+  point: { x: number; y: number },
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+): number {
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  if (dx === 0 && dy === 0) return (point.x - start.x) ** 2 + (point.y - start.y) ** 2
+  const offsetX = point.x - start.x
+  const offsetY = point.y - start.y
+  const projection = Math.max(0, Math.min(1, (offsetX * dx + offsetY * dy) / (dx * dx + dy * dy)))
+  const nearestX = start.x + projection * dx
+  const nearestY = start.y + projection * dy
+  return (point.x - nearestX) ** 2 + (point.y - nearestY) ** 2
+}
+
+function readOverlayEdgeAtClientPoint(
+  root: HTMLElement,
+  clientX: number,
+  clientY: number,
+): string | null {
+  const pointer = { x: clientX, y: clientY }
+  const paths = root.querySelectorAll<SVGPathElement>('path[data-kg-overlay-edge-id]')
+  let closest: { edgeId: string; distanceSquared: number } | null = null
+  paths.forEach(path => {
+    const edgeId = String(path.getAttribute('data-kg-overlay-edge-id') || '').trim()
+    if (!edgeId) return
+    try {
+      const length = path.getTotalLength()
+      const matrix = path.getScreenCTM()
+      if (!matrix || !Number.isFinite(length) || length <= 0) return
+      const sampleCount = Math.max(1, Math.min(500, Math.ceil(length / 12)))
+      let point = path.getPointAtLength(0)
+      let previous = {
+        x: matrix.a * point.x + matrix.c * point.y + matrix.e,
+        y: matrix.b * point.x + matrix.d * point.y + matrix.f,
+      }
+      let distanceSquared = Number.POSITIVE_INFINITY
+      for (let index = 1; index <= sampleCount; index += 1) {
+        point = path.getPointAtLength(length * index / sampleCount)
+        const current = {
+          x: matrix.a * point.x + matrix.c * point.y + matrix.e,
+          y: matrix.b * point.x + matrix.d * point.y + matrix.f,
+        }
+        distanceSquared = Math.min(distanceSquared, squaredDistanceToSegment(pointer, previous, current))
+        previous = current
+      }
+      if (distanceSquared <= 100 && (!closest || distanceSquared < closest.distanceSquared)) {
+        closest = { edgeId, distanceSquared }
+      }
+    } catch {
+      // Ignore a path while its geometry is being replaced.
+    }
+  })
+  return closest?.edgeId || null
+}
+
 export function StoryboardEdgeNodeInsertionMenu(props: {
   active: boolean
   canEdit: boolean
@@ -65,6 +123,7 @@ export function StoryboardEdgeNodeInsertionMenu(props: {
   upsertUiToast: (args: { id: string; kind: 'neutral' | 'warning' | 'success' | 'error'; message: string; ttlMs?: number }) => void
 }) {
   const selectedEdgeId = useGraphStore(state => state.selectedEdgeId)
+  const selectEdge = useGraphStore(state => state.selectEdge)
   const selectNode = useGraphStore(state => state.selectNode)
   const setSelectionSource = useGraphStore(state => state.setSelectionSource)
   const [anchors, setAnchors] = React.useState<EdgeAnchor[]>([])
@@ -78,9 +137,9 @@ export function StoryboardEdgeNodeInsertionMenu(props: {
       setAnchors([])
       return
     }
-    const next = readOverlayEdgeAnchors(root)
     const selectedId = String(selectedEdgeId || '').trim()
-    if (selectedId && !next.some(anchor => anchor.edgeId === selectedId)) {
+    const next = selectStoryboardEdgeInsertionAnchor(readOverlayEdgeAnchors(root), selectedId)
+    if (selectedId && next.length === 0) {
       const pointer = lastPointerRef.current
       const rect = root.getBoundingClientRect()
       if (pointer
@@ -103,10 +162,17 @@ export function StoryboardEdgeNodeInsertionMenu(props: {
     if (!root || !props.active || !props.canEdit) return
     const recordPointer = (event: PointerEvent) => {
       lastPointerRef.current = { clientX: event.clientX, clientY: event.clientY }
+      if (event.button !== 0 || (event.target as Element | null)?.closest?.('[data-kg-edge-node-insert-trigger]')) return
+      const edgeId = readOverlayEdgeAtClientPoint(root, event.clientX, event.clientY)
+      if (!edgeId) return
+      event.preventDefault()
+      event.stopPropagation()
+      setSelectionSource('canvas')
+      selectEdge(edgeId)
     }
     root.addEventListener('pointerdown', recordPointer, true)
     return () => root.removeEventListener('pointerdown', recordPointer, true)
-  }, [props.active, props.canEdit, props.rootRef])
+  }, [props.active, props.canEdit, props.rootRef, selectEdge, setSelectionSource])
 
   React.useEffect(() => {
     if (!props.active || !props.canEdit) return
@@ -131,6 +197,12 @@ export function StoryboardEdgeNodeInsertionMenu(props: {
       window.removeEventListener('scroll', schedule, true)
     }
   }, [props.active, props.canEdit, refreshAnchors])
+
+  React.useEffect(() => {
+    if (activeEdgeId && activeEdgeId !== String(selectedEdgeId || '').trim()) {
+      setActiveEdgeId(null)
+    }
+  }, [activeEdgeId, selectedEdgeId])
 
   React.useEffect(() => {
     if (!activeEdgeId) return

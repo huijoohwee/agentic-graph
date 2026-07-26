@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { insertStoryboardWorkflowNodeOnEdge } from '@/components/StoryboardWidgetCanvas/runtime/storyboardEdgeNodeInsertion'
+import {
+  insertStoryboardWorkflowNodeOnEdge,
+  selectStoryboardEdgeInsertionAnchor,
+} from '@/components/StoryboardWidgetCanvas/runtime/storyboardEdgeNodeInsertion'
 import type { GraphData } from '@/lib/graph/types'
 
 const buildGraph = (): GraphData => ({
@@ -21,6 +24,16 @@ const buildGraph = (): GraphData => ({
       retained: true,
     },
   }],
+})
+
+test('only exposes an insertion anchor for the selected edge', () => {
+  const anchors = [
+    { edgeId: 'edge-1', left: 10, top: 20 },
+    { edgeId: 'edge-2', left: 30, top: 40 },
+  ]
+  assert.deepEqual(selectStoryboardEdgeInsertionAnchor(anchors, null), [])
+  assert.deepEqual(selectStoryboardEdgeInsertionAnchor(anchors, 'missing'), [])
+  assert.deepEqual(selectStoryboardEdgeInsertionAnchor(anchors, 'edge-2'), [anchors[1]])
 })
 
 for (const [kind, expectedType, expectedLabel] of [
