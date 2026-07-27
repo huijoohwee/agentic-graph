@@ -2,7 +2,13 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  clearFlightGeoOverlay,
+  setFlightGeoOverlay,
+  type FlightGeoOverlaySnapshot,
+} from '../../../gympgrph/src/flightGeoOverlay.js'
+import {
   disposeMapLibreFlightBootstrap,
+  markMapLibreFlightBootstrapApplied,
   markMapLibreFlightReadyFramePresented,
   reconcileMapLibreFlightBootstrap,
 } from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
@@ -14,6 +20,54 @@ import {
 
 const flushMicrotasks = async () => {
   await new Promise<void>(resolve => setImmediate(resolve))
+}
+
+function readyFlightOverlay(
+  revision: string,
+  readyFrameRequestId: number,
+): FlightGeoOverlaySnapshot {
+  return {
+    active: true,
+    aircraft: {
+      coordinate: [103.82, 1.35],
+      altitudeMeters: 400,
+      headingDegrees: 0,
+    },
+    camera: {
+      centerCoordinate: [103.82, 1.35],
+      cockpitClearance: {
+        forwardMeters: 2,
+        verticalMeters: 1,
+      },
+      effectiveOwner: 'fixed-follow',
+      source: 'fixed-follow',
+      timeline: null,
+      view: 'chase',
+    },
+    night: false,
+    phase: 'ready',
+    profileId: 'singapore',
+    readyFrameRequestId,
+    revision,
+    route: [
+      {
+        id: 'spawn',
+        coordinate: [103.82, 1.35],
+        altitudeMeters: 400,
+        kind: 'spawn',
+        state: 'visited',
+      },
+      {
+        id: 'landing',
+        coordinate: [103.83, 1.36],
+        altitudeMeters: 0,
+        kind: 'landing',
+        state: 'active',
+      },
+    ],
+    runId: 1,
+    tick: 0,
+  }
 }
 
 test('native Geo lease ignores inline Markdown maps and fences stale releases', () => {
@@ -60,7 +114,11 @@ test('native Geo lease ignores inline Markdown maps and fences stale releases', 
   assert.equal(captureNativeGeospatialMapLibreLease(), null)
 })
 
-test('Flight activation swaps a mounted Geo map to local bootstrap then promotes in place', async () => {
+test('Flight activation swaps a mounted Geo map to local bootstrap then promotes in place', async context => {
+  const readyOverlay = readyFlightOverlay('ready:local', 1)
+  clearFlightGeoOverlay()
+  setFlightGeoOverlay(readyOverlay)
+  context.after(clearFlightGeoOverlay)
   const canvas = {} as HTMLCanvasElement
   const renderListeners = new Set<() => void>()
   const calls: string[] = []
@@ -122,7 +180,11 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
   ])
   assert.equal(renderListeners.size, 1)
 
-  markMapLibreFlightReadyFramePresented(map)
+  markMapLibreFlightReadyFramePresented(
+    map,
+    readyOverlay.revision,
+    readyOverlay.readyFrameRequestId!,
+  )
   assert.equal(calls.at(-1), 'repaint')
   for (const listener of [...renderListeners]) listener()
   await flushMicrotasks()
@@ -141,6 +203,159 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
   await flushMicrotasks()
   assert.equal(calls.at(-1), 'style:https://provider.test/style.json:retained')
   disposeMapLibreFlightBootstrap(map)
+})
+
+test('stale ready identity cannot authorize provider promotion', async context => {
+  const readyOverlay = readyFlightOverlay('ready:current', 31)
+  clearFlightGeoOverlay()
+  setFlightGeoOverlay(readyOverlay)
+  context.after(clearFlightGeoOverlay)
+  const renderListeners = new Set<() => void>()
+  const applied: string[] = []
+  const map = {
+    off: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.delete(listener)
+    },
+    on: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.add(listener)
+    },
+    setStyle: (style: string | Readonly<Record<string, unknown>>) => {
+      applied.push(typeof style === 'string' ? style : String(style.name))
+    },
+    triggerRepaint: () => void 0,
+  }
+  reconcileMapLibreFlightBootstrap({
+    bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => 'provider:stale',
+    map,
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+  })
+  markMapLibreFlightReadyFramePresented(map, 'ready:stale', 30)
+  for (const listener of [...renderListeners]) listener()
+  await flushMicrotasks()
+
+  assert.deepEqual(applied, ['local-flight-bootstrap'])
+  disposeMapLibreFlightBootstrap(map)
+})
+
+test('a ready Flight activation follows native MapLibre view replacements and resets on Exit', async context => {
+  const bootstrapStyle = { version: 8, name: 'local-flight-bootstrap' }
+  const createMap = (providerStyle: string) => {
+    const renderListeners = new Set<() => void>()
+    const applied: string[] = []
+    const map = {
+      off: (event: string, listener: () => void) => {
+        if (event === 'render') renderListeners.delete(listener)
+      },
+      on: (event: string, listener: () => void) => {
+        if (event === 'render') renderListeners.add(listener)
+      },
+      setStyle: (
+        style: string | Readonly<Record<string, unknown>>,
+        options?: Readonly<Record<string, unknown>>,
+      ) => {
+        applied.push(
+          typeof style === 'string'
+            ? `${style}:${options?.transformStyle ? 'retained' : 'plain'}`
+            : String(style.name || 'local'),
+        )
+      },
+      triggerRepaint: () => void 0,
+    }
+    const reconcile = () => reconcileMapLibreFlightBootstrap({
+      bootstrapStyle,
+      hasExactFlightOverlay: () => true,
+      loadProviderStyle: async () => providerStyle,
+      map,
+      retainFlightOverlay: (_previous, next) => ({ ...next }),
+    })
+    return {
+      applied,
+      emitRender: () => {
+        for (const listener of [...renderListeners]) listener()
+      },
+      map,
+      reconcile,
+    }
+  }
+  context.after(() => {
+    clearFlightGeoOverlay()
+  })
+
+  const firstReady = readyFlightOverlay('ready:activation-1', 41)
+  setFlightGeoOverlay(firstReady)
+  const firstView = createMap('provider:first')
+  firstView.reconcile()
+  firstView.emitRender()
+  await flushMicrotasks()
+  assert.deepEqual(firstView.applied, ['local-flight-bootstrap'])
+
+  markMapLibreFlightReadyFramePresented(
+    firstView.map,
+    firstReady.revision,
+    firstReady.readyFrameRequestId!,
+  )
+  firstView.emitRender()
+  await flushMicrotasks()
+  assert.deepEqual(firstView.applied, [
+    'local-flight-bootstrap',
+    'provider:first:retained',
+  ])
+
+  reconcileMapLibreFlightBootstrap({
+    bootstrapStyle,
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => 'provider:first-modern',
+    map: firstView.map,
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+  })
+  firstView.emitRender()
+  await flushMicrotasks()
+  assert.deepEqual(firstView.applied, [
+    'local-flight-bootstrap',
+    'provider:first:retained',
+    'provider:first-modern:retained',
+  ])
+
+  const replacementView = createMap('provider:replacement')
+  markMapLibreFlightBootstrapApplied(replacementView.map)
+  reconcileMapLibreFlightBootstrap({
+    bootstrapStyle,
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => 'provider:replacement',
+    map: replacementView.map,
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+  })
+  replacementView.emitRender()
+  await flushMicrotasks()
+  assert.deepEqual(replacementView.applied, [
+    'provider:replacement:retained',
+  ])
+
+  disposeMapLibreFlightBootstrap(firstView.map)
+  disposeMapLibreFlightBootstrap(replacementView.map)
+  clearFlightGeoOverlay()
+  const secondReady = readyFlightOverlay('ready:activation-2', 42)
+  setFlightGeoOverlay(secondReady)
+  const freshActivationView = createMap('provider:fresh')
+  freshActivationView.reconcile()
+  freshActivationView.emitRender()
+  await flushMicrotasks()
+  assert.deepEqual(freshActivationView.applied, ['local-flight-bootstrap'])
+
+  markMapLibreFlightReadyFramePresented(
+    freshActivationView.map,
+    secondReady.revision,
+    secondReady.readyFrameRequestId!,
+  )
+  freshActivationView.emitRender()
+  await flushMicrotasks()
+  assert.deepEqual(freshActivationView.applied, [
+    'local-flight-bootstrap',
+    'provider:fresh:retained',
+  ])
+  disposeMapLibreFlightBootstrap(freshActivationView.map)
 })
 
 test('Flight deactivation restores the provider without waiting for overlay presentation', async () => {

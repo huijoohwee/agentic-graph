@@ -229,8 +229,16 @@ export function createFlightGeoOverlayPresentationGate(
         tick: current.tick,
       })
       onPresented?.(presentation)
-      if (current.phase === 'ready' && current.tick === 0) {
-        markMapLibreFlightReadyFramePresented(map)
+      if (
+        current.phase === 'ready'
+        && current.tick === 0
+        && current.readyFrameRequestId !== null
+      ) {
+        markMapLibreFlightReadyFramePresented(
+          map,
+          current.revision,
+          current.readyFrameRequestId,
+        )
       }
       const root = readRoot()
       if (root) {

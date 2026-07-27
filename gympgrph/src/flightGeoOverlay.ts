@@ -84,6 +84,7 @@ const EMPTY_FLIGHT_GEO_OVERLAY: FlightGeoOverlaySnapshot = Object.freeze({
 })
 
 let snapshot = EMPTY_FLIGHT_GEO_OVERLAY
+let readyFramePresented = false
 const listeners = new Set<Listener>()
 
 function publish(): void {
@@ -100,14 +101,38 @@ export function subscribeFlightGeoOverlay(listener: Listener): () => void {
 }
 
 export function setFlightGeoOverlay(next: FlightGeoOverlaySnapshot): void {
+  if (!snapshot.active && next.active) readyFramePresented = false
+  if (!next.active) readyFramePresented = false
   snapshot = next
   publish()
 }
 
 export function clearFlightGeoOverlay(): void {
+  readyFramePresented = false
   if (snapshot === EMPTY_FLIGHT_GEO_OVERLAY) return
   snapshot = EMPTY_FLIGHT_GEO_OVERLAY
   publish()
+}
+
+export function readFlightGeoOverlayReadyFramePresented(): boolean {
+  return snapshot.active && readyFramePresented
+}
+
+export function markFlightGeoOverlayReadyFramePresented(
+  expectedRevision: string,
+  expectedReadyFrameRequestId: number,
+): boolean {
+  if (
+    !snapshot.active
+    || snapshot.phase !== 'ready'
+    || snapshot.tick !== 0
+    || snapshot.readyFrameRequestId !== expectedReadyFrameRequestId
+    || snapshot.revision !== expectedRevision
+  ) {
+    return false
+  }
+  readyFramePresented = true
+  return true
 }
 
 export function flightGeoOverlayFeatureCollection(

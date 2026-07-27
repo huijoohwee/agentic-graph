@@ -44,7 +44,9 @@ export type {
 export {
   clearFlightGeoOverlay,
   flightGeoOverlayFeatureCollection,
+  markFlightGeoOverlayReadyFramePresented,
   readFlightGeoOverlay,
+  readFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
   subscribeFlightGeoOverlay,
 } from './flightGeoOverlay.js'

@@ -182,6 +182,32 @@ test('surface presentation waits for its stage acknowledgement and next frame op
   }
 })
 
+test('a MapLibre committed-frame acknowledgement does not wait for a redundant browser frame', async () => {
+  const animationFrame = installControlledAnimationFrameWindow()
+  try {
+    resetFlightSimStagePreparationForTests()
+    const requestId = beginFlightSimStagePreparation()
+    let resolved = false
+    const waiting = waitForFlightSimStagePresentation(requestId, {
+      limitMs: 1_000,
+    }).then(() => {
+      resolved = true
+    })
+
+    assert.equal(completeFlightSimStagePreparation(requestId, {
+      framePresented: true,
+    }), true)
+    await waiting
+    assert.equal(resolved, true)
+    assert.equal(animationFrame.callbacks.size, 0)
+    assert.deepEqual(animationFrame.cancelled, [])
+    cancelFlightSimStagePreparation(requestId)
+    resetFlightSimStagePreparationForTests()
+  } finally {
+    animationFrame.restore()
+  }
+})
+
 test('aborting a frame-opportunity wait cancels its pending browser frame', async () => {
   const animationFrame = installControlledAnimationFrameWindow()
   try {

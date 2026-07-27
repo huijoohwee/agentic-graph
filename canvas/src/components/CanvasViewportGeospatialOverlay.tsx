@@ -484,7 +484,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     if (presentation.phase === 'stopped') {
       const requestId = readCurrentFlightSimStagePreparationRequest()
       if (requestId !== null && !isFlightSimHydrationPending()) {
-        completeFlightSimStagePreparation(requestId)
+        // MapLibre fires `render` after its painter commits this exact overlay,
+        // so this acknowledgement already includes the frame opportunity.
+        completeFlightSimStagePreparation(requestId, {
+          framePresented: true,
+        })
       }
       return
     }

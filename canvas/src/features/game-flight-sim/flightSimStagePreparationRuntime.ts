@@ -10,6 +10,7 @@ type StagePreparationWaitOptions = Readonly<{
 }>
 
 type StagePreparationRequest = Readonly<{
+  framePresented: boolean
   requestId: number
   status: 'pending' | 'prepared'
 }>
@@ -49,6 +50,7 @@ export function beginFlightSimStagePreparation(): number {
   }
   requestSequence += 1
   currentRequest = Object.freeze({
+    framePresented: false,
     requestId: requestSequence,
     status: 'pending',
   })
@@ -61,7 +63,10 @@ export function readCurrentFlightSimStagePreparationRequest(): number | null {
     : null
 }
 
-export function completeFlightSimStagePreparation(requestId: number): boolean {
+export function completeFlightSimStagePreparation(
+  requestId: number,
+  options: Readonly<{ framePresented?: boolean }> = {},
+): boolean {
   if (
     currentRequest?.requestId !== requestId
     || currentRequest.status !== 'pending'
@@ -69,6 +74,7 @@ export function completeFlightSimStagePreparation(requestId: number): boolean {
     return false
   }
   currentRequest = Object.freeze({
+    framePresented: options.framePresented === true,
     requestId,
     status: 'prepared',
   })
@@ -232,6 +238,7 @@ export async function waitForFlightSimStagePresentation(
   ) {
     throw stagePreparationError(`preparation request ${requestId} is stale.`)
   }
+  if (currentRequest.framePresented) return
   const remainingMs =
     limitMs - Math.max(0, stagePreparationClockMs() - startedAt)
   if (remainingMs <= 0) {

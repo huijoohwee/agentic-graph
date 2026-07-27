@@ -1,3 +1,8 @@
+import {
+  markFlightGeoOverlayReadyFramePresented,
+  readFlightGeoOverlayReadyFramePresented,
+} from '../../flightGeoOverlay.js'
+
 type MapLibreFlightBootstrapState = {
   bootstrapApplied: boolean
   disposed: boolean
@@ -79,7 +84,6 @@ async function promoteProviderStyle(options: Readonly<{
         : { diff: true },
     )
     state.bootstrapApplied = false
-    state.readyFramePresented = false
   } catch (error) {
     reportError(state, generation, onError, error)
   }
@@ -89,10 +93,14 @@ export function markMapLibreFlightBootstrapApplied(map: any): void {
   const state = readState(map)
   if (!state) return
   state.bootstrapApplied = true
-  state.readyFramePresented = false
+  state.readyFramePresented = readFlightGeoOverlayReadyFramePresented()
 }
 
-export function markMapLibreFlightReadyFramePresented(map: any): void {
+export function markMapLibreFlightReadyFramePresented(
+  map: any,
+  expectedRevision: string,
+  expectedReadyFrameRequestId: number,
+): void {
   const state = readState(map)
   if (
     !state
@@ -100,6 +108,10 @@ export function markMapLibreFlightReadyFramePresented(map: any): void {
     || !state.bootstrapApplied
     || state.readyFramePresented
   ) return
+  if (!markFlightGeoOverlayReadyFramePresented(
+    expectedRevision,
+    expectedReadyFrameRequestId,
+  )) return
   state.readyFramePresented = true
   try {
     // Provider promotion begins on the render after the local ready frame was
@@ -127,6 +139,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   removeRenderBinding(state)
 
   if (!options.bootstrapStyle) {
+    state.readyFramePresented = false
     if (!state.bootstrapApplied) return
     void promoteProviderStyle({
       ...options,
@@ -137,7 +150,11 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
     return
   }
 
-  if (!state.bootstrapApplied) {
+  if (readFlightGeoOverlayReadyFramePresented()) {
+    state.readyFramePresented = true
+  }
+
+  if (!state.bootstrapApplied && !state.readyFramePresented) {
     try {
       // The source-owned style is installed before provider resolution starts,
       // so the first playable Flight frame never waits on remote style I/O.

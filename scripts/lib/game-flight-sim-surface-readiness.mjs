@@ -69,7 +69,8 @@ export async function assertFlightSimSurfaceReadiness({
     'module.clearFlightGeoOverlay?.()',
     'readCurrentFlightSimReadyFrameRequestId()',
     'completeFlightSimMapLibreReadyFrame(',
-    'completeFlightSimStagePreparation(requestId)',
+    'completeFlightSimStagePreparation(requestId, {',
+    'framePresented: true',
     'onFlightOverlayPresented={handleFlightOverlayPresented}',
     "data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}",
   ], 'Flight Sim Geo projection bridge')
