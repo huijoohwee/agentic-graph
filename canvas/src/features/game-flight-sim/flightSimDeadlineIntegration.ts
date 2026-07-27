@@ -7,6 +7,7 @@ import {
   cancelFlightSimReadyFrame,
   measureFlightSimGameplayNetworkBlock,
   measureFlightSimWebglAdmission,
+  readCurrentFlightSimReadyFrameRequestId,
 } from './flightSimDeadlineRuntime'
 import {
   blockFlightSimGameplayNetworkAttempt,
@@ -44,6 +45,14 @@ export function startFlightSimWithReadyFrame(
     && currentSnapshot.tick === 0
     && !currentSnapshot.runtimeError
   ) {
+    const pendingRequestId = readCurrentFlightSimReadyFrameRequestId()
+    if (pendingRequestId !== null) {
+      armFlightSimReadyFrame(
+        pendingRequestId,
+        currentSnapshot.runId,
+        currentSnapshot.tick,
+      )
+    }
     return currentSnapshot
   }
   const requestId = beginFlightSimReadyFrame()

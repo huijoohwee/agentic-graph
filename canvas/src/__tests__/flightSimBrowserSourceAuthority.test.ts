@@ -475,6 +475,10 @@ test('Flight browser proof activates only after applying the authored source', (
     touchVerifier,
     /dispatchEvent\(new (?:PointerEvent|TouchEvent|MouseEvent)/,
   )
+  assert.match(
+    touchVerifier,
+    /\[data-kg-three-canvas-owner="1"\]/,
+  )
   assert.ok(
     touchVerifier.indexOf('"Emulation.setTouchEmulationEnabled"')
       < touchVerifier.indexOf('box = control.bounding_box()'),
@@ -483,11 +487,12 @@ test('Flight browser proof activates only after applying the authored source', (
     touchVerifier.indexOf('box = control.bounding_box()')
       < touchVerifier.indexOf('"Input.dispatchTouchEvent"'),
   )
-  assert.match(sceneVerifier, /expected_landing_pad_count = \(/)
+  assert.match(sceneVerifier, /expected_landing_state = \(/)
   assert.match(
     sceneVerifier,
-    /map_overlay\.get\("activeLandingCount"\)/,
+    /map_overlay\.get\("landingStates"\)/,
   )
+  assert.match(sceneVerifier, /mission_phase == "completed"/)
   assert.match(
     sceneVerifier,
     /map_overlay\.get\("pendingWaypointCount"\)/,

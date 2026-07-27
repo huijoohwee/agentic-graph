@@ -360,10 +360,11 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
                 feature?.properties?.kgFlightRouteKind === 'waypoint'
                 && feature?.properties?.kgFlightRouteState !== 'visited'
               )).length,
-              activeLandingCount: routePoints.filter(feature => (
-                feature?.properties?.kgFlightRouteKind === 'landing'
-                && feature?.properties?.kgFlightRouteState === 'active'
-              )).length,
+              landingStates: routePoints
+                .filter(feature => (
+                  feature?.properties?.kgFlightRouteKind === 'landing'
+                ))
+                .map(feature => feature?.properties?.kgFlightRouteState),
             },
             exclusivePlainGeoOverlayCount: document.querySelectorAll(
               '[data-kg-flight-sim-geo-overlay="1"]',
@@ -459,6 +460,7 @@ def assert_active_flight_scene(
     *,
     completed_waypoint_count: int = 0,
     waypoint_count: int = 3,
+    mission_phase: str | None = None,
 ) -> None:
     assert_authored_scene(scene)
     root = scene.get("root") or {}
@@ -485,14 +487,19 @@ def assert_active_flight_scene(
             f"identity: {optional_beacon}"
         )
     map_overlay = scene.get("mapOverlay") or {}
-    expected_landing_pad_count = (
-        1 if completed_waypoint_count >= waypoint_count else 0
+    expected_landing_state = (
+        "visited"
+        if mission_phase == "completed"
+        else "active"
+        if completed_waypoint_count >= waypoint_count
+        else "pending"
     )
-    if map_overlay.get("activeLandingCount") != expected_landing_pad_count:
+    if map_overlay.get("landingStates") != [expected_landing_state]:
         raise AssertionError(
-            "Flight landing-pad visibility did not match route progress: "
-            f"count={map_overlay.get('activeLandingCount')}, "
-            f"completed={completed_waypoint_count}/{waypoint_count}"
+            "Flight landing-pad state did not match route progress: "
+            f"states={map_overlay.get('landingStates')}, "
+            f"completed={completed_waypoint_count}/{waypoint_count}, "
+            f"phase={mission_phase}"
         )
     expected_visible_waypoints = max(
         0,

@@ -26,8 +26,10 @@ def verify_mobile_flight_hud(page: Page) -> dict[str, Any]:
           const xrRoot = document.querySelector(
             '[data-kg-xr-scene-media-drop="1"]',
           )
-          const canvas = xrRoot?.querySelector('canvas') || null
-          const canvasOwner = canvas?.parentElement || xrRoot
+          const canvasOwner = xrRoot?.querySelector(
+            '[data-kg-three-canvas-owner="1"]',
+          ) || null
+          const canvas = canvasOwner?.querySelector('canvas') || null
           const header = hud?.querySelector(':scope > header') || null
           const objective = header?.querySelector(':scope > section:first-child') || null
           const telemetry = header?.querySelector(':scope > section:last-child') || null

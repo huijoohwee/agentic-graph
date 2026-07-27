@@ -226,6 +226,7 @@ test('idempotent Start preserves a fresh Restart ready-frame request', () => {
   armFlightSimReadyFrame(restartRequest, 5, 0)
   const ready = {
     phase: 'ready',
+    runId: 5,
     runtimeError: null,
     tick: 0,
   } as FlightSimSnapshot
@@ -241,6 +242,30 @@ test('idempotent Start preserves a fresh Restart ready-frame request', () => {
   assert.equal(startedAgain, false)
   assert.equal(readCurrentFlightSimReadyFrameRequestId(), restartRequest)
   assert.equal(isFlightSimReadyFramePresentationPending(5, 0), true)
+})
+
+test('idempotent Start re-arms a Restart request interrupted after publish', () => {
+  resetFlightSimDeadlineRuntimeForTests()
+  const restartRequest = beginFlightSimReadyFrame(() => 100)
+  const ready = {
+    phase: 'ready',
+    runId: 7,
+    runtimeError: null,
+    tick: 0,
+  } as FlightSimSnapshot
+
+  assert.equal(startFlightSimWithReadyFrame(() => ready, ready), ready)
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), restartRequest)
+  assert.equal(isFlightSimReadyFramePresentationPending(7, 0), true)
+  assert.equal(
+    completeFlightSimMapLibreReadyFrame(
+      restartRequest,
+      ready.runId,
+      ready.tick,
+      () => 150,
+    )?.withinLimit,
+    true,
+  )
 })
 
 test('a newer HUD completion cannot hide an older overdue revision', () => {

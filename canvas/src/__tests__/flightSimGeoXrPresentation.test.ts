@@ -22,6 +22,10 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     path.resolve(process.cwd(), 'src/lib/three/ThreeGraph.impl.tsx'),
     'utf8',
   )
+  const canvasCss = readFileSync(
+    path.resolve(process.cwd(), 'src/index.css'),
+    'utf8',
+  )
   const xrStage = readFileSync(
     path.resolve(
       process.cwd(),
@@ -62,6 +66,11 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     threeGraph,
     /style=\{geospatialComposite \? \{ pointerEvents: 'none' \} : undefined\}/,
   )
+  assert.match(threeGraph, /data-kg-three-canvas-owner="1"/)
+  assert.match(
+    canvasCss,
+    /\[data-kg-three-canvas-owner="1"\] canvas \{[\s\S]*?width: 100% !important;[\s\S]*?height: 100% !important;/,
+  )
 })
 
 test('Flight local mission coordinates project deterministically around Singapore', () => {
@@ -88,6 +97,19 @@ test('Flight local mission coordinates project deterministically around Singapor
   assert.ok(overlay.aircraft.headingDegrees < 360)
   assert.equal(overlay.night, true)
   assert.equal(overlay.camera.effectiveOwner, 'fixed-follow')
+
+  const completedOverlay = projectFlightSimToGeospatialOverlay(
+    {
+      ...runtime.read(),
+      phase: 'completed' as const,
+      waypointIndex: profile.waypoints.length,
+    },
+    profile,
+    { source: 'fixed-follow', view: 'chase' },
+    false,
+  )
+  assert.equal(completedOverlay.route.at(-1)?.kind, 'landing')
+  assert.equal(completedOverlay.route.at(-1)?.state, 'visited')
 
   const cockpit = projectFlightSimToGeospatialOverlay(
     runtime.read(),

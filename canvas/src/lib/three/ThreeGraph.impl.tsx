@@ -453,6 +453,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     >
       <Canvas
         key={rendererLifecycleKey}
+        data-kg-three-canvas-owner="1"
         frameloop={paused ? 'demand' : 'always'}
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows

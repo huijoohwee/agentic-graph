@@ -487,8 +487,8 @@ def run_flight_runtime_verifications(
                     "pendingWaypointCount"
                 ) == 0
                 and (value.get("mapOverlay") or {}).get(
-                    "activeLandingCount"
-                ) == 1
+                    "landingStates"
+                ) == ["visited"]
             ),
             label="post-mission MapLibre Flight projection",
         )
@@ -496,6 +496,7 @@ def run_flight_runtime_verifications(
             scene,
             completed_waypoint_count=mission["waypointIndex"],
             waypoint_count=mission["waypointCount"],
+            mission_phase=mission["phase"],
         )
         if (
             scene["visibleSceneSignature"]
