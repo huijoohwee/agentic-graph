@@ -367,3 +367,14 @@ External references inform conceptual principles only. Maintainers attest that t
 5. WHEN Flight_Sim entry follows Geo inspection or a live Motion_Control handoff, THE mission stage SHALL retry shared viewport input ownership independently, invalidate the shared Canvas demand loop after installing its render observer, and acknowledge the current preparation request from its committed aircraft/runtime render without waiting for desktop input ownership, so a mount-order or camera-owner race cannot reject a playable Motion, touch, gamepad, or later-reclaimed desktop session.
 6. WHEN Cockpit view is selected, THE Camera_Source SHALL place the eye beyond the aircraft's forward collision envelope and above its vertical collision envelope while aiming along the aircraft forward vector, so committed aircraft geometry cannot obstruct the playable forward view.
 7. WHEN any gameplay overlay becomes active while Geo mode remains selected, THE shared canvas owner SHALL give that gameplay overlay the active 3D viewport and suspend the Geo overlay without clearing the selected environment, then restore Geo ownership after gameplay exits.
+
+### Requirement 26: FloatingPanel and Flight HUD coexistence
+
+**User Story:** As a player, I want Motion Control and the Flight HUD to remain usable together, so that camera-pose input can control the live mission without hidden or intercepted controls.
+
+#### Acceptance Criteria
+
+1. WHILE the shared FloatingPanel is open at its default top-right position on layouts at or above the shared small-screen breakpoint, THE Flight HUD SHALL reserve the same responsive panel width and right-safe-area clearance for its top instrumentation, navigation controls, and bottom lifecycle controls; below that breakpoint THE mobile HUD SHALL retain its full viewport layout and existing occluder choreography.
+2. THE Flight HUD SHALL retain its established layer above bottom choreography surfaces while its root remains pointer-transparent and every pointer-owning Flight control clears the default FloatingPanel footprint, so neither surface intercepts the other's visible actions.
+3. WHEN the shared FloatingPanel width preference is non-finite or outside its supported range, THE FloatingPanel and Flight HUD SHALL use the same default or clamped width expression without duplicating width policy.
+4. WHEN Motion Control is explicitly started while Flight is active, THE existing normalized pose adapter SHALL remain able to contribute pitch and roll input to the same deterministic fixed-step mission without changing Canvas, camera, or flight-policy ownership.
