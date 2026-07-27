@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { useShallow } from 'zustand/react/shallow'
 
 import { applyZoomRequestNative } from '@/components/FlowCanvas/applyZoomRequestNative'
@@ -256,7 +257,7 @@ export default React.memo(function FlowCanvasInteractionRuntime(
   ])
 
   if (!(active && allowMutations && (selectedIds.length >= 2 || grouping.canUngroup || parentChild.canDetach))) return null
-  return (
+  const actionBar = (
     <CanvasArrangeActionBar
       active={active}
       selectedCount={selectedIds.length}
@@ -268,6 +269,13 @@ export default React.memo(function FlowCanvasInteractionRuntime(
       onUngroup={grouping.ungroup}
       onDetach={parentChild.detach}
       ariaLabel="Selected flow node actions"
+      offsetBelowWorkspaceToolbar={Boolean(storyboardWidgetSurfaceId)}
     />
   )
+  if (storyboardWidgetSurfaceId && typeof document !== 'undefined') {
+    const portalHost = Array.from(document.querySelectorAll<HTMLElement>('[data-kg-storyboard-widget-surface-root]'))
+      .find(element => element.getAttribute('data-kg-storyboard-widget-surface-root') === storyboardWidgetSurfaceId)
+    if (portalHost) return createPortal(actionBar, portalHost)
+  }
+  return actionBar
 })

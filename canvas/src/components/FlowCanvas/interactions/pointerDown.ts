@@ -34,7 +34,7 @@ import {
 } from '@/components/FlowCanvas/groupContainment'
 import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
 import { readHelperLinesDisplayControlActive } from '@/lib/canvas/canvasGridDisplayControls'
-import { isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
+import { activateMultiNodeSelectModeForShift, isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 import type { FlowCanvasDrag } from '@/components/FlowCanvas/interactions/types'
@@ -162,7 +162,11 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
     if (hit) {
       const state = storeStateAtDown
       state.setSelectionSource('canvas')
-      const mode = ctx.readEffectiveSelectMode(state, storyboardWidgetMode)
+      const mode = activateMultiNodeSelectModeForShift({
+        mode: ctx.readEffectiveSelectMode(state, storyboardWidgetMode),
+        shiftKey: e.shiftKey,
+        setSelectMode: state.setSelectMode,
+      })
       const wantsToggle = resolveNodeSelectionGesture({
         mode,
         shiftKey: e.shiftKey,
