@@ -1,5 +1,7 @@
 import React from 'react'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { subscribeGlobalCancelEvents } from '@/lib/browser/globalCancelEvents'
+import { resolveFloatingPanelRightClearanceCss } from '@/lib/ui/floatingPanelGeometry'
 import {
   flightSimInputFromHeldTouches,
   releaseFlightSimHeldTouch,
@@ -49,6 +51,8 @@ function envelopeClassName(severity: 'nominal' | 'caution' | 'warning'): string 
 }
 
 export function FlightSimHud() {
+  const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen === true)
+  const floatingPanelWidthRatio = useGraphStore(state => state.floatingPanelWidthRatio)
   const flight = React.useSyncExternalStore(
     subscribeFlightSimSnapshot,
     readFlightSimSnapshot,
@@ -124,6 +128,12 @@ export function FlightSimHud() {
     savePath: FLIGHT_SIM_SAVE_PATH,
     hydrationPending,
   })
+  const floatingPanelRightClearance = floatingPanelOpen
+    ? resolveFloatingPanelRightClearanceCss(floatingPanelWidthRatio)
+    : undefined
+  const floatingPanelClearanceVariables = floatingPanelRightClearance
+    ? { '--kg-flight-sim-panel-clearance': floatingPanelRightClearance } as React.CSSProperties
+    : undefined
   React.useLayoutEffect(
     () => registerFlightSimHudDeadlineOwner(mountedRevision.current),
     [],
@@ -159,8 +169,12 @@ export function FlightSimHud() {
       data-kg-flight-sim-airspeed-reliable={training.airspeedReliable ? '1' : '0'}
       data-kg-flight-sim-target-speed={training.envelope.targetSpeedMetersPerSecond.join(':')}
       data-kg-flight-sim-camera-view={camera.view}
+      data-kg-flight-sim-panel-clearance={floatingPanelOpen ? 'reserved' : 'none'}
+      style={floatingPanelClearanceVariables}
     >
-      <header className="absolute left-3 right-3 top-3 grid grid-cols-1 gap-2 pt-[env(safe-area-inset-top)] sm:flex sm:items-start sm:justify-between sm:gap-3">
+      <header
+        className={`absolute left-3 right-3 top-3 grid grid-cols-1 gap-2 pt-[env(safe-area-inset-top)] ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : 'sm:flex sm:items-start sm:justify-between sm:gap-3'}`}
+      >
         <section className="max-w-none rounded-xl border border-white/20 bg-slate-950/75 px-3 py-2 shadow-lg backdrop-blur-sm sm:max-w-[58vw]">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Local deterministic flight mission</p>
           <p className="mt-1 text-sm font-semibold">{projection.objective}</p>
@@ -168,7 +182,7 @@ export function FlightSimHud() {
           {flight.runtimeError ? <p className="mt-1 text-[11px] text-rose-200" role="alert">{flight.runtimeError}</p> : null}
           {save.error ? <p className="mt-1 text-[11px] text-rose-200" role="alert">{save.error}</p> : null}
         </section>
-        <section className="grid min-w-0 grid-cols-3 gap-2 rounded-xl border border-white/20 bg-slate-950/75 px-2 py-2 text-center shadow-lg backdrop-blur-sm sm:min-w-[22rem] sm:grid-cols-6">
+        <section className={`grid min-w-0 grid-cols-3 gap-2 rounded-xl border border-white/20 bg-slate-950/75 px-2 py-2 text-center shadow-lg backdrop-blur-sm sm:grid-cols-6 ${floatingPanelOpen ? '' : 'sm:min-w-[22rem]'}`}>
           <span className="text-[10px] text-slate-300">KTS<strong className="block text-sm text-white">{training.airspeedReliable ? (projection.airspeed * 1.94384).toFixed(0) : '---'}</strong></span>
           <span className="text-[10px] text-slate-300">ALT<strong className="block text-sm text-white">{flight.aircraft.position[1].toFixed(1)}</strong></span>
           <span className="text-[10px] text-slate-300">HDG<strong className="block text-sm text-white">{projection.headingDegrees.toFixed(0)}°</strong></span>
@@ -195,7 +209,7 @@ export function FlightSimHud() {
 
       {flight.active ? (
         <aside
-          className="pointer-events-auto absolute bottom-32 right-3 grid w-32 gap-1 sm:bottom-auto sm:top-36 sm:w-40"
+          className={`pointer-events-auto absolute bottom-32 right-3 grid w-32 gap-1 sm:bottom-auto sm:top-36 sm:w-40 ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : ''}`}
           aria-label="Flight navigation HUD"
         >
           <FlightSimNavigationInset className="hidden sm:grid" flight={flight} />
@@ -219,7 +233,9 @@ export function FlightSimHud() {
         <button className={buttonClass} type="button" disabled={!flightControlsEnabled} {...touchHandlers('roll-right')}>Roll ▶</button>
       </section>
 
-      <section className="pointer-events-auto absolute bottom-3 left-3 right-3 flex max-w-none flex-wrap items-center justify-end gap-1 pb-[env(safe-area-inset-bottom)] sm:left-auto sm:max-w-[56vw]">
+      <section
+        className={`pointer-events-auto absolute bottom-3 left-3 right-3 flex max-w-none flex-wrap items-center justify-end gap-1 pb-[env(safe-area-inset-bottom)] sm:left-auto sm:max-w-[56vw] ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : ''}`}
+      >
         <button className={buttonClass} type="button" disabled={!flightControlsEnabled} {...touchHandlers('yaw-left')}>Yaw ◀</button>
         <button className={buttonClass} type="button" disabled={!flightControlsEnabled} {...touchHandlers('yaw-right')}>Yaw ▶</button>
         <label className="rounded-xl border border-white/25 bg-slate-950/75 px-2 py-1 text-[10px] font-semibold">
