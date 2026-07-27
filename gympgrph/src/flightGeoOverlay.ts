@@ -35,9 +35,21 @@ export type FlightGeoOverlaySnapshot = Readonly<{
     view: 'chase' | 'cockpit' | 'survey'
   }>
   night: boolean
+  phase: 'stopped' | 'ready' | 'flying' | 'completed' | 'crashed'
   profileId: string
+  readyFrameRequestId: number | null
   revision: string
   route: readonly FlightGeoRoutePoint[]
+  runId: number
+  tick: number
+}>
+
+export type FlightGeoOverlayPresentation = Readonly<{
+  phase: FlightGeoOverlaySnapshot['phase']
+  profileId: string
+  readyFrameRequestId: number | null
+  revision: string
+  runId: number
   tick: number
 }>
 
@@ -62,9 +74,12 @@ const EMPTY_FLIGHT_GEO_OVERLAY: FlightGeoOverlaySnapshot = Object.freeze({
     view: 'chase',
   }),
   night: false,
+  phase: 'stopped',
   profileId: '',
+  readyFrameRequestId: null,
   revision: 'inactive',
   route: Object.freeze([]),
+  runId: 0,
   tick: 0,
 })
 

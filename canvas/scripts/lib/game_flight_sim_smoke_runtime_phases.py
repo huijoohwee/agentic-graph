@@ -166,10 +166,12 @@ def run_flight_runtime_verifications(
               const end = Number(proof.firstFrameAtMs)
               const start = Number(proof.startedAtMs)
               return {
+                className: String(proof.firstFrameClassName || ''),
                 startMs: start,
                 endMs: end,
                 durationMs: end - start,
                 preExisting: Boolean(proof.preExisting),
+                surface: String(proof.firstFrameSurface || ''),
               }
             }
             """
@@ -181,6 +183,8 @@ def run_flight_runtime_verifications(
             or proof["durationMs"] != proof["durationMs"]
             or proof["durationMs"] > first_frame_limit_ms
             or proof.get("preExisting") is True
+            or proof.get("surface") != "maplibre"
+            or "maplibregl-canvas" not in str(proof.get("className") or "")
         ):
             raise AssertionError(
                 "Flight first playable frame was not newly produced within "

@@ -286,18 +286,25 @@ def _apply_exact_authored_source(
                 const proof = {
                   startedAtMs: performance.now(),
                   firstFrameAtMs: null,
+                  firstFrameClassName: null,
+                  firstFrameSurface: null,
                   preExisting: Boolean(document.querySelector(
                     'canvas[data-kg-flight-sim-first-frame="1"]',
                   )),
                 }
                 const captureFirstFrame = () => {
+                  const firstFrameCanvas = document.querySelector(
+                    'canvas[data-kg-flight-sim-first-frame="1"]',
+                  )
                   if (
                     proof.firstFrameAtMs === null
-                    && document.querySelector(
-                      'canvas[data-kg-flight-sim-first-frame="1"]',
-                    )
+                    && firstFrameCanvas instanceof HTMLCanvasElement
                   ) {
                     proof.firstFrameAtMs = performance.now()
+                    proof.firstFrameClassName = firstFrameCanvas.className
+                    proof.firstFrameSurface =
+                      firstFrameCanvas.dataset.kgFlightSimFirstFrameSurface
+                      || null
                     window.__kgFlightSimFirstFrameObserver?.disconnect()
                   }
                 }

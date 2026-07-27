@@ -288,7 +288,10 @@ async function performFlightSimSurfaceOpen(
         false,
       )
     }
-    defaultRuntime.setProfile(readFlightSimXrSpatialProfile())
+    const nextProfile = readFlightSimXrSpatialProfile()
+    const profileChanged =
+      defaultRuntime.profile().sourceKey !== nextProfile.sourceKey
+    defaultRuntime.setProfile(nextProfile)
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     const hydrated = defaultRuntime.hydrate(decisions)
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
@@ -325,7 +328,14 @@ async function performFlightSimSurfaceOpen(
     suspendAuthoredRuntime()
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
-    if (hasFlightSimBrowserPresentationRuntime()) {
+    // An already-active mission with the same profile retains its presented
+    // state. First entry and profile changes require a fresh renderer
+    // preparation handshake even though profile replacement keeps the surface
+    // active.
+    if (
+      (entering || profileChanged)
+      && hasFlightSimBrowserPresentationRuntime()
+    ) {
       stagePreparationRequestId = beginFlightSimStagePreparation()
     }
     const opened = defaultRuntime.open(true)
@@ -425,7 +435,7 @@ export function restartFlightSim(): FlightSimSnapshot {
       || 'Flight Sim Decisions are unreadable; reset the local save before restarting.',
     )
   }
-  return defaultRuntime.restart()
+  return startFlightSimWithReadyFrame(() => defaultRuntime.restart())
 }
 
 export function setFlightSimInput(patch: FlightSimInputPatch): FlightSimSnapshot {

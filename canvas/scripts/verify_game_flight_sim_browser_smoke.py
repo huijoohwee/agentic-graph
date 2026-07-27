@@ -147,7 +147,7 @@ def main() -> None:
         def route_request(route: Any, request: Any) -> None:
             if (
                 request_is_proof_local_read(request, local_origin)
-                or request_is_geo_provider_read(request)
+                or request_is_geo_provider_read(request, local_origin)
             ):
                 route.continue_()
                 return
@@ -238,7 +238,8 @@ def main() -> None:
                         SimpleNamespace(
                             method=request["method"],
                             url=request["url"],
-                        )
+                        ),
+                        local_origin,
                     )
                 }
             )
@@ -251,7 +252,8 @@ def main() -> None:
                         SimpleNamespace(
                             method=request["method"],
                             url=request["url"],
-                        )
+                        ),
+                        local_origin,
                     )
                 }
             )

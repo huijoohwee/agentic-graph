@@ -1,5 +1,6 @@
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import type { FlightGeoOverlayPresentation } from 'gympgrph'
 import type { GraphData } from '@/lib/graph/types'
 import type { ViewportControlsPreset } from '@/lib/config.viewport-controls'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -23,10 +24,19 @@ import { buildRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { buildSourceFilesGeospatialSelectionSignature } from '@/features/source-files/sourceFilesSignatures'
 import { useCanvasAppliedMarkdownDocument } from '@/features/canvas/useCanvasAppliedMarkdownDocument'
 import {
+  isFlightSimHydrationPending,
   readFlightSimSnapshot,
   readFlightSimSpatialProfile,
   subscribeFlightSimSnapshot,
 } from '@/features/game-flight-sim/flightSimRuntime'
+import {
+  completeFlightSimMapLibreReadyFrame,
+  readCurrentFlightSimReadyFrameRequestId,
+} from '@/features/game-flight-sim/flightSimDeadlineRuntime'
+import {
+  completeFlightSimStagePreparation,
+  readCurrentFlightSimStagePreparationRequest,
+} from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
 import {
   projectFlightSimTimelineCameraToGeospatial,
   projectFlightSimToGeospatialOverlay,
@@ -58,6 +68,9 @@ type GeospatialOverlayHostProps = {
   active?: boolean
   snapshot?: unknown
   handlers?: unknown
+  onFlightOverlayPresented?: (
+    presentation: FlightGeoOverlayPresentation,
+  ) => void
 }
 
 type GympgrphStoreState = {
@@ -402,6 +415,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
                 view: readFlightSimCameraSnapshot().view,
               },
               readFlightSimTrainingSnapshot().night,
+              readCurrentFlightSimReadyFrameRequestId(),
             ),
           )
         }
@@ -435,6 +449,40 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     }
   }, [active, composedWithXr])
 
+  const handleFlightOverlayPresented = React.useCallback((
+    presentation: FlightGeoOverlayPresentation,
+  ) => {
+    if (!active || !composedWithXr) return
+    const flight = readFlightSimSnapshot()
+    if (
+      !flight.active
+      || readFlightSimSpatialProfile().id !== presentation.profileId
+      || flight.phase !== presentation.phase
+      || flight.runId !== presentation.runId
+      || flight.tick !== presentation.tick
+      || flight.runtimeError
+    ) return
+    if (presentation.phase === 'stopped') {
+      const requestId = readCurrentFlightSimStagePreparationRequest()
+      if (requestId !== null && !isFlightSimHydrationPending()) {
+        completeFlightSimStagePreparation(requestId)
+      }
+      return
+    }
+    if (
+      presentation.phase === 'ready'
+      && presentation.tick === 0
+      && presentation.runId > 0
+      && presentation.readyFrameRequestId !== null
+    ) {
+      completeFlightSimMapLibreReadyFrame(
+        presentation.readyFrameRequestId,
+        presentation.runId,
+        presentation.tick,
+      )
+    }
+  }, [active, composedWithXr])
+
   return (
     <section
       className={`absolute inset-0 ${composedWithXr ? 'z-[5] pointer-events-none' : 'z-[20] pointer-events-auto'} ${active ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
@@ -444,6 +492,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
         active={active}
         snapshot={snapshot}
         handlers={handlers}
+        onFlightOverlayPresented={handleFlightOverlayPresented}
       />
     </section>
   )

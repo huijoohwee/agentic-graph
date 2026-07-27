@@ -1,4 +1,7 @@
-export const FLIGHT_SIM_STAGE_PREPARATION_LIMIT_MS = 1_000
+// Initial native-map preparation belongs to the end-to-end first-playable
+// surface budget. The separate Start-to-ready-frame budget begins only after
+// this preparation has committed.
+export const FLIGHT_SIM_STAGE_PREPARATION_LIMIT_MS = 3_000
 
 type StagePreparationRequest = Readonly<{
   requestId: number

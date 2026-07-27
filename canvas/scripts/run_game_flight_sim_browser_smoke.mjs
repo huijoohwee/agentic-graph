@@ -208,7 +208,7 @@ async function readValidatedRunEvidence({
     },
     readyFrame: {
       limitMs: 100,
-      source: 'shared-flight-surface-ready-frame',
+      source: 'native-maplibre-flight-ready-frame',
       synchronous: false,
     },
     hudUpdate: {

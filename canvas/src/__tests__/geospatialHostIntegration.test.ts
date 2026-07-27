@@ -259,12 +259,14 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
 export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
+  const presentationPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useFlightGeoOverlayMapLibrePresentation.ts')
   const xrStagePath = path.resolve(process.cwd(), 'src', 'features', 'three', 'XrCanonicalPhysicsStage.tsx')
   const threeGraphPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGraph.impl.tsx')
   const gameplayOverlayPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGameplayOverlay.tsx')
   const flightOverlayPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibre.ts')
   const viewportText = readUtf8(viewportPath)
   const hostText = readUtf8(hostPath)
+  const presentationText = readUtf8(presentationPath)
   const xrStageText = readUtf8(xrStagePath)
   const threeGraphText = readUtf8(threeGraphPath)
   const gameplayOverlayText = readUtf8(gameplayOverlayPath)
@@ -277,12 +279,13 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
     throw new Error('Expected Geo+XR to publish the deterministic Flight projection to the Geo owner')
   }
   if (!hostText.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')
-    || !hostText.includes('applyFlightGeoOverlayToMap(map, overlay)')) {
+    || !hostText.includes('useFlightGeoOverlayMapLibrePresentation({')
+    || !presentationText.includes('applyFlightGeoOverlayToMap(map, overlay)')) {
     throw new Error('Expected the native MapLibre runtime to own Geo+XR basemap and Flight projection layers')
   }
-  const overlayApplyIndex = hostText.indexOf('const applied = applyFlightGeoOverlayToMap(map, overlay)')
-  const overlayFitIndex = hostText.indexOf('fitMapToFlightGeoOverlay(map, overlay)')
-  const overlayCameraIndex = hostText.indexOf('applyFlightGeoOverlayCameraToMap(map, overlay)')
+  const overlayApplyIndex = presentationText.indexOf('const applied = applyFlightGeoOverlayToMap(map, overlay)')
+  const overlayFitIndex = presentationText.indexOf('fitMapToFlightGeoOverlay(map, overlay)')
+  const overlayCameraIndex = presentationText.indexOf('applyFlightGeoOverlayCameraToMap(map, overlay)')
   if (
     overlayApplyIndex < 0
     || overlayFitIndex < overlayApplyIndex
@@ -290,9 +293,9 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   ) {
     throw new Error('Expected route fit to complete before the final Fixed Follow camera write')
   }
-  const fitKeyStart = hostText.indexOf('const fitKey = [', overlayApplyIndex)
-  const fitKeyEnd = hostText.indexOf("].join(':')", fitKeyStart)
-  const fitKeySource = hostText.slice(fitKeyStart, fitKeyEnd)
+  const fitKeyStart = presentationText.indexOf('const fitKey = [', overlayApplyIndex)
+  const fitKeyEnd = presentationText.indexOf("].join(':')", fitKeyStart)
+  const fitKeySource = presentationText.slice(fitKeyStart, fitKeyEnd)
   if (
     fitKeyStart < 0
     || fitKeyEnd < 0
@@ -300,13 +303,34 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   ) {
     throw new Error('Expected route fit to stay stable when Flight camera source or view changes')
   }
-  if (!hostText.includes("root.dataset.kgFlightGeospatialOverlay = 'active'")) {
+  if (!presentationText.includes("root.dataset.kgFlightGeospatialOverlay = 'active'")) {
     throw new Error('Expected the Geo host to expose live Flight overlay browser proof')
   }
-  if (!hostText.includes('scheduleFinalApply')
-    || !hostText.includes("map?.on?.('load', scheduleFinalApply)")
-    || !hostText.includes('applyFlightGeoOverlayCameraToMap(map, overlay)')) {
+  if (!presentationText.includes('scheduleFinalApply')
+    || !presentationText.includes("map?.on?.('load', scheduleFinalApply)")
+    || !presentationText.includes('applyFlightGeoOverlayCameraToMap(map, overlay)')) {
     throw new Error('Expected MapLibre initialization to finish with the Flight camera owner')
+  }
+  const renderAcknowledgeIndex = presentationText.indexOf("map.on('render', listener)")
+  const firstFrameMarkerIndex = presentationText.indexOf("canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'")
+  const presentationCallbackIndex = presentationText.indexOf('onPresented?.(presentation)')
+  if (
+    renderAcknowledgeIndex < 0
+    || firstFrameMarkerIndex < 0
+    || presentationCallbackIndex < firstFrameMarkerIndex
+  ) {
+    throw new Error('Expected only the rendered native MapLibre overlay to acknowledge Geo+XR Flight presentation')
+  }
+  if (!presentationText.includes("overlay.phase !== 'stopped'")
+    || !presentationText.includes('pending.attempts += 1')
+    || !presentationText.includes('FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT')
+    || !presentationText.includes('FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT')) {
+    throw new Error('Expected stopped re-preparation and transient MapLibre renders to use bounded, exact presentation retries')
+  }
+  if (!viewportText.includes('completeFlightSimMapLibreReadyFrame(')
+    || !viewportText.includes('completeFlightSimStagePreparation(requestId)')
+    || !viewportText.includes('onFlightOverlayPresented={handleFlightOverlayPresented}')) {
+    throw new Error('Expected the Geo+XR bridge to route exact MapLibre presentation into Flight preparation and tick-zero readiness')
   }
   if (!xrStageText.includes('environmentVisible={!geospatialComposite}')
     || !xrStageText.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')) {

@@ -153,19 +153,68 @@ export function cancelFlightSimReadyFrame(requestId: number): void {
   if (pendingReadyFrame?.requestId === requestId) pendingReadyFrame = null
 }
 
+export function isFlightSimReadyFramePresentationPending(
+  runId: number,
+  tick: number,
+): boolean {
+  return (
+    pendingReadyFrame?.runId === runId
+    && pendingReadyFrame.tick === tick
+  )
+}
+
+export function readCurrentFlightSimReadyFrameRequestId(): number | null {
+  return pendingReadyFrame?.requestId ?? null
+}
+
 export function completeFlightSimReadyFrame(
   runId: number,
   tick: number,
   now: MonotonicNow = monotonicNow,
 ): FlightSimDeadlineObservation | null {
+  return completeFlightSimReadyFrameFromPresenter(
+    runId,
+    tick,
+    'shared-flight-surface-ready-frame',
+    now,
+  )
+}
+
+export function completeFlightSimMapLibreReadyFrame(
+  requestId: number,
+  runId: number,
+  tick: number,
+  now: MonotonicNow = monotonicNow,
+): FlightSimDeadlineObservation | null {
+  return completeFlightSimReadyFrameFromPresenter(
+    runId,
+    tick,
+    'native-maplibre-flight-ready-frame',
+    now,
+    requestId,
+  )
+}
+
+function completeFlightSimReadyFrameFromPresenter(
+  runId: number,
+  tick: number,
+  source: 'shared-flight-surface-ready-frame' | 'native-maplibre-flight-ready-frame',
+  now: MonotonicNow,
+  requestId?: number,
+): FlightSimDeadlineObservation | null {
   const pending = pendingReadyFrame
-  if (!pending || pending.runId !== runId || pending.tick !== tick) return null
+  if (
+    !pending
+    || (requestId !== undefined && pending.requestId !== requestId)
+    || pending.runId !== runId
+    || pending.tick !== tick
+  ) return null
   pendingReadyFrame = null
   return publishDeadline('readyFrame', elapsedObservation({
     startedAtMs: pending.startedAtMs,
     completedAtMs: now(),
     limitMs: FLIGHT_SIM_READY_FRAME_LIMIT_MS,
-    source: 'shared-flight-surface-ready-frame',
+    source,
     synchronous: false,
     runId,
     tick,

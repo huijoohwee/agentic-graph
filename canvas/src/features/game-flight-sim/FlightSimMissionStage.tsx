@@ -112,6 +112,10 @@ export function FlightSimMissionStage({
       ? 'r3f'
       : 'maplibre'
     const removeAfterRender = addAfterEffect(() => {
+      if (!actorsVisible) {
+        delete canvas.dataset.kgFlightSimFirstFrame
+        return
+      }
       const snapshot = runtimeController.readSnapshot()
       const stagePreparationRequestId =
         readCurrentFlightSimStagePreparationRequest()

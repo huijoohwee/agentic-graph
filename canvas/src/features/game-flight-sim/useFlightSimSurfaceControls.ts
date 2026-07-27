@@ -24,6 +24,7 @@ import {
   FLIGHT_SIM_FIXED_STEP_SECONDS,
   FLIGHT_SIM_NEUTRAL_INPUT,
 } from './flightSimModel'
+import { isFlightSimReadyFramePresentationPending } from './flightSimDeadlineRuntime'
 import type { FlightSimStageRuntimeController } from './flightSimStageRuntimeController'
 import {
   createFlightSimSimulationClock,
@@ -91,6 +92,18 @@ export function useFlightSimSurfaceControls(args: Readonly<{
     const clock = createFlightSimSimulationClock({
       minimumStepIntervalMs: CLOCK_INTERVAL_MS,
       runStep: async () => {
+        const flight = runtimeController.readSnapshot()
+        if (
+          flight.phase === 'ready'
+          && flight.tick === 0
+          && isFlightSimReadyFramePresentationPending(
+            flight.runId,
+            flight.tick,
+          )
+        ) {
+          requestPresentationFrame()
+          return
+        }
         const pose = readMotionControlSnapshot().pose
         const motionInput = flightSimInputFromMotionController(
           motionControlPoseToControllerInput(pose),
@@ -118,5 +131,5 @@ export function useFlightSimSurfaceControls(args: Readonly<{
       clock.dispose()
       runtimeController.setInput(FLIGHT_SIM_NEUTRAL_INPUT)
     }
-  }, [runtimeController])
+  }, [requestPresentationFrame, runtimeController])
 }

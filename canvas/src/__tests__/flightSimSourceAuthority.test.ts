@@ -133,6 +133,14 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     'utf8',
   )
   const geoSurface = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx'), 'utf8')
+  const geospatialBridge = readFileSync(resolve(repoRoot, 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'), 'utf8')
+  const geospatialPresentation = readFileSync(
+    resolve(
+      repoRoot,
+      'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
+    ),
+    'utf8',
+  )
   const surfaceControls = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'), 'utf8')
   assert.doesNotMatch(missionStage, /from '\.\/flightSimRuntime'/)
   assert.match(missionStage, /runtimeController\.readSnapshot\(\)/)
@@ -166,6 +174,14 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   assert.ok(activation < preparationRequest)
   assert.ok(preparationRequest < opened)
   assert.ok(opened < preparedStage)
+  assert.match(
+    runtime,
+    /const profileChanged =\s*defaultRuntime\.profile\(\)\.sourceKey !== nextProfile\.sourceKey/,
+  )
+  assert.match(
+    runtime,
+    /if \(\s*\(entering \|\| profileChanged\)\s*&& hasFlightSimBrowserPresentationRuntime\(\)\s*\)/,
+  )
   assert.ok(preparedStage < readyDeadline)
   assert.match(missionStage, /addAfterEffect\(\(\) => \{/)
   assert.doesNotMatch(
@@ -190,6 +206,21 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   const stagePreparationAfterRender = missionStage.slice(
     afterRenderStart,
     afterRenderCleanup,
+  )
+  const hiddenProjectionGate = stagePreparationAfterRender.indexOf(
+    'if (!actorsVisible)',
+  )
+  const r3fPreparationCompletion = stagePreparationAfterRender.indexOf(
+    'completeFlightSimStagePreparation(stagePreparationRequestId)',
+  )
+  assert.ok(hiddenProjectionGate >= 0)
+  assert.ok(r3fPreparationCompletion > hiddenProjectionGate)
+  assert.match(
+    stagePreparationAfterRender.slice(
+      hiddenProjectionGate,
+      r3fPreparationCompletion,
+    ),
+    /delete canvas\.dataset\.kgFlightSimFirstFrame[\s\S]*return/,
   )
   assert.doesNotMatch(
     stagePreparationAfterRender,
@@ -242,6 +273,40 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   assert.ok(inputOwnershipRetry >= 0)
   assert.ok(deadlineCompletion > afterRender)
   assert.ok(frameSubscriber > deadlineCompletion)
+  const readyPresentationGate = surfaceControls.indexOf(
+    'isFlightSimReadyFramePresentationPending(',
+  )
+  const desktopInputConsumption = surfaceControls.indexOf(
+    'desktopBindingRef.current?.consumeInput()',
+  )
+  assert.ok(
+    readyPresentationGate >= 0
+    && desktopInputConsumption > readyPresentationGate,
+  )
+  assert.match(
+    geospatialPresentation,
+    /map\.on\('render', listener\)[\s\S]*map\.triggerRepaint\?\.\(\)/,
+  )
+  assert.match(
+    geospatialPresentation,
+    /canvas\.dataset\.kgFlightSimFirstFrameSurface = 'maplibre'/,
+  )
+  assert.match(
+    geospatialPresentation,
+    /onPresented\?\.\(presentation\)/,
+  )
+  assert.match(
+    geospatialBridge,
+    /onFlightOverlayPresented=\{handleFlightOverlayPresented\}/,
+  )
+  assert.match(
+    geospatialBridge,
+    /presentation\.phase === 'stopped'[\s\S]*completeFlightSimStagePreparation\(requestId\)/,
+  )
+  assert.match(
+    geospatialBridge,
+    /presentation\.phase === 'ready'[\s\S]*presentation\.tick === 0[\s\S]*completeFlightSimMapLibreReadyFrame\(/,
+  )
 })
 
 test('Flight surface fencing drains and restores both workspace seed-sync owners', () => {

@@ -65,7 +65,7 @@ def verify_flight_deadline_contracts(
             f"Flight WebGL admission was not synchronous within 100 ms: {webgl}"
         )
     if (
-        ready.get("source") != "shared-flight-surface-ready-frame"
+        ready.get("source") != "native-maplibre-flight-ready-frame"
         or ready.get("synchronous") is not False
         or ready.get("withinLimit") is not True
         or ready.get("tick") != 0
@@ -74,7 +74,8 @@ def verify_flight_deadline_contracts(
         or float(ready.get("limitMs", 0)) != 100
     ):
         raise AssertionError(
-            f"Flight ready frame was not presented within 100 ms: {ready}"
+            "Flight ready frame was not presented by native MapLibre "
+            f"within 100 ms: {ready}"
         )
 
     observed_probe_transport: list[str] = []

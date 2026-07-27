@@ -336,7 +336,30 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
         def request(method: str, url: str) -> SimpleNamespace:
             return SimpleNamespace(method=method, url=url)
 
+        local_origin = "localhost:4187"
+        proxied_style = (
+            "http://localhost:4187/__grabmaps_proxy?"
+            "url=https%3A%2F%2Fmaps.grab.com%2Fapi%2Fstyle.json"
+            "%3Ftheme%3Dlight"
+        )
+        proxied_tile = (
+            "http://localhost:4187/__grabmaps_proxy?"
+            "url=https%3A%2F%2Fmaps.grab.com%2Fapi%2Fmaps%2Ftiles"
+            "%2Fv2%2Fvector%2F12%2F3251%2F2040.pbf"
+        )
+        double_encoded_traversal = (
+            "https://maps.grab.com/api/maps/tiles/v2/"
+            "%252e%252e/%252e%252e/api/v1/mcp"
+        )
+        proxied_double_encoded_traversal = (
+            "http://localhost:4187/__grabmaps_proxy?"
+            "url=https%3A%2F%2Fmaps.grab.com%2Fapi%2Fmaps%2Ftiles"
+            "%2Fv2%2F%25252e%25252e%2F%25252e%25252e"
+            "%2Fapi%2Fv1%2Fmcp"
+        )
         for url in (
+            "https://maps.grab.com/api/style.json?theme=light",
+            "https://maps.grab.com/api/maps/tiles/v2/vector/12/3251/2040.pbf",
             "https://demotiles.maplibre.org/style.json",
             "https://demotiles.maplibre.org/tiles/2/1/1.pbf",
             "https://tiles.openfreemap.org/styles/liberty",
@@ -346,17 +369,77 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
                 self.assertTrue(
                     request_is_geo_provider_read(request("GET", url))
                 )
+        for url in (proxied_style, proxied_tile):
+            with self.subTest(url=url):
+                self.assertTrue(
+                    request_is_geo_provider_read(
+                        request("GET", url),
+                        local_origin,
+                    )
+                )
         for method, url in (
             ("POST", "https://demotiles.maplibre.org/style.json"),
             ("GET", "http://demotiles.maplibre.org/style.json"),
             ("GET", "https://demotiles.maplibre.org.example/style.json"),
+            ("GET", "https://maps.grab.com:not-a-port/api/style.json"),
             ("GET", "https://demotiles.maplibre.org/admin"),
+            ("GET", "https://maps.grab.com/api/v1/mcp"),
+            ("GET", "https://maps.grab.com/api/v1/maps/poi/v1/search"),
+            (
+                "GET",
+                "https://maps.grab.com/api/maps/tiles/v2/%2e%2e/%2e%2e/v1/mcp",
+            ),
+            ("GET", double_encoded_traversal),
             ("GET", "https://tiles.openfreemap.org/account"),
             ("GET", "https://airvio.co/api/storage"),
         ):
             with self.subTest(method=method, url=url):
                 self.assertFalse(
                     request_is_geo_provider_read(request(method, url))
+                )
+        for method, url, origin in (
+            ("GET", proxied_style, None),
+            ("POST", proxied_style, local_origin),
+            ("GET", proxied_style, "localhost:4188"),
+            (
+                "GET",
+                proxied_style + "&url=https%3A%2F%2Fmaps.grab.com%2Fapi%2Fstyle.json",
+                local_origin,
+            ),
+            ("GET", proxied_style + "&extra=1", local_origin),
+            (
+                "GET",
+                proxied_style.replace("https%3A", "http%3A"),
+                local_origin,
+            ),
+            (
+                "GET",
+                proxied_style.replace(
+                    "maps.grab.com",
+                    "maps.grab.com.example",
+                ),
+                local_origin,
+            ),
+            (
+                "GET",
+                proxied_style.replace(
+                    "%2Fapi%2Fstyle.json",
+                    "%2Fapi%2Fv1%2Fmcp",
+                ),
+                local_origin,
+            ),
+            (
+                "GET",
+                proxied_double_encoded_traversal,
+                local_origin,
+            ),
+        ):
+            with self.subTest(method=method, url=url, origin=origin):
+                self.assertFalse(
+                    request_is_geo_provider_read(
+                        request(method, url),
+                        origin,
+                    )
                 )
 
         assert_transport_ownership(

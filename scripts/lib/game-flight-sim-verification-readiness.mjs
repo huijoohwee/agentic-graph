@@ -207,7 +207,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'websocket_probe_events: list[str],',
     'websocket_probe_route_hits: list[str],',
     'Flight WebGL admission was not synchronous within 100 ms',
-    'Flight ready frame was not presented within 100 ms',
+    'Flight ready frame was not presented by native MapLibre',
     'Flight gameplay network attempt was not blocked within 1 s',
     'Flight WebSocket attempt was not synchronously blocked before',
     'Flight HUD did not reflect its runtime update within 100 ms',
@@ -447,7 +447,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'PROOF_LOCAL_STATIC_SUFFIXES',
     'GEO_PROVIDER_READ_PATHS',
     'def request_is_proof_local_read(request: Any, local_origin: str) -> bool:',
-    'def request_is_geo_provider_read(request: Any) -> bool:',
+    'def request_is_geo_provider_read(',
     'def summarize_websocket_attempts(',
     'def assert_transport_ownership(',
   ], 'Flight Sim browser transport ownership classifier')

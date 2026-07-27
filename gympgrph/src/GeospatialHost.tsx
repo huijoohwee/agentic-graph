@@ -9,16 +9,12 @@ import {
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { useGympgrphStore } from './store.js'
 import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
+import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
 import {
   readFlightGeoOverlay,
   subscribeFlightGeoOverlay,
+  type FlightGeoOverlayPresentation,
 } from './flightGeoOverlay.js'
-import {
-  applyFlightGeoOverlayCameraToMap,
-  applyFlightGeoOverlayToMap,
-  clearFlightGeoOverlayFromMap,
-  fitMapToFlightGeoOverlay,
-} from './flightGeoOverlayMapLibre.js'
 import { LS_KEYS } from './lib/config.js'
 import { onGeospatialModeChanged, type GeospatialViewMode } from 'grph-shared/geospatial/events'
 import { GEOSPATIAL_POINT_STYLE_CHANGED_EVENT, GEOSPATIAL_STYLE_URL_CHANGED_EVENT } from 'grph-shared/geospatial/constants'
@@ -53,6 +49,9 @@ type GeospatialOverlayHostProps = {
   active?: boolean
   snapshot?: unknown
   handlers?: unknown
+  onFlightOverlayPresented?: (
+    presentation: FlightGeoOverlayPresentation,
+  ) => void
 }
 
 type RichMediaPoiDetail = {
@@ -830,10 +829,6 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     onPoiClick: handlePoiClick,
   })
   const activeBasemap = show3d ? basemap3d : basemap2d
-  const flightOverlayFitRef = React.useRef<{
-    key: string
-    map: any | null
-  }>({ key: '', map: null })
   const enhancedLayerBounds = useEnhancedGeospatialHostLayers({
     enabled: active && mapLibreRuntimeEnabled,
     map: activeBasemap.map,
@@ -853,6 +848,18 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const graphDataAppliedRef = React.useRef<{ map2d: string; map3d: string }>({ map2d: '', map3d: '' })
   const debugToastMessageRef = React.useRef<string>('')
   const [basemapGraphRevision, setBasemapGraphRevision] = React.useState(0)
+
+  useFlightGeoOverlayMapLibrePresentation({
+    active,
+    enhancedLayerBounds,
+    graphRevision: basemapGraphRevision,
+    map: activeBasemap.map,
+    mapLibreRuntimeEnabled,
+    onPresented: props.onFlightOverlayPresented,
+    rootRef,
+    styleRevision: activeBasemap.styleRevision,
+    viewMode: geospatialViewMode,
+  })
 
   const applyFeatureCollectionToBasemap = React.useCallback(
     (args: { basemapMap: any | null; styleRevision: number; viewMode: 'map2d' | 'map3d' }) => {
@@ -919,86 +926,6 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     if (!show3d) return
     applyFeatureCollectionToBasemap({ basemapMap: basemap3d.map, styleRevision: basemap3d.styleRevision, viewMode: 'map3d' })
   }, [applyFeatureCollectionToBasemap, basemap3d.map, basemap3d.styleRevision, show3d])
-
-  React.useEffect(() => {
-    const map = activeBasemap.map
-    let pendingCameraFrame = 0
-    const apply = () => {
-      const overlay = readFlightGeoOverlay()
-      const visible = active && overlay.active
-      const root = rootRef.current
-      if (root) {
-        if (visible) {
-          root.dataset.kgFlightGeospatialOverlay = 'active'
-          root.dataset.kgFlightGeospatialRevision = overlay.revision
-        } else {
-          delete root.dataset.kgFlightGeospatialOverlay
-          delete root.dataset.kgFlightGeospatialRevision
-        }
-      }
-      if (!map || !mapLibreRuntimeEnabled) return
-      if (visible) {
-        const applied = applyFlightGeoOverlayToMap(map, overlay)
-        const fitKey = [
-          activeBasemap.styleRevision,
-          geospatialViewMode,
-          overlay.profileId,
-        ].join(':')
-        if (
-          applied
-          && (
-            flightOverlayFitRef.current.map !== map
-            || flightOverlayFitRef.current.key !== fitKey
-          )
-          && fitMapToFlightGeoOverlay(map, overlay)
-        ) {
-          flightOverlayFitRef.current = { key: fitKey, map }
-        }
-        if (applied) {
-          applyFlightGeoOverlayCameraToMap(map, overlay)
-        }
-      } else {
-        flightOverlayFitRef.current = { key: '', map: null }
-        clearFlightGeoOverlayFromMap(map)
-      }
-    }
-    const scheduleFinalApply = () => {
-      if (typeof window === 'undefined') return
-      if (pendingCameraFrame) window.cancelAnimationFrame(pendingCameraFrame)
-      pendingCameraFrame = window.requestAnimationFrame(() => {
-        pendingCameraFrame = 0
-        apply()
-      })
-    }
-    apply()
-    scheduleFinalApply()
-    const unsubscribe = subscribeFlightGeoOverlay(apply)
-    map?.on?.('load', scheduleFinalApply)
-    return () => {
-      unsubscribe()
-      map?.off?.('load', scheduleFinalApply)
-      if (pendingCameraFrame && typeof window !== 'undefined') {
-        window.cancelAnimationFrame(pendingCameraFrame)
-      }
-    }
-  }, [
-    active,
-    activeBasemap.map,
-    activeBasemap.styleRevision,
-    basemapGraphRevision,
-    enhancedLayerBounds,
-    geospatialViewMode,
-    mapLibreRuntimeEnabled,
-  ])
-
-  React.useEffect(() => {
-    const map = activeBasemap.map
-    return () => {
-      if (map && mapLibreRuntimeEnabled) {
-        clearFlightGeoOverlayFromMap(map)
-      }
-    }
-  }, [activeBasemap.map, mapLibreRuntimeEnabled])
 
   React.useEffect(() => {
     const map = activeBasemap.map

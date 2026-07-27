@@ -31,6 +31,7 @@ export type {
 } from './enhancedLayerPersistence.js'
 export type {
   FlightGeoCoordinate,
+  FlightGeoOverlayPresentation,
   FlightGeoOverlaySnapshot,
   FlightGeoRoutePoint,
 } from './flightGeoOverlay.js'

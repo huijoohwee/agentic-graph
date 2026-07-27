@@ -38,9 +38,12 @@ export type FlightSimGeospatialOverlay = Readonly<{
     view: 'chase' | 'cockpit' | 'survey'
   }>
   night: boolean
+  phase: FlightSimSnapshot['phase']
   profileId: string
+  readyFrameRequestId: number | null
   revision: string
   route: readonly FlightSimGeospatialRoutePoint[]
+  runId: number
   tick: number
 }>
 
@@ -119,6 +122,7 @@ export function projectFlightSimToGeospatialOverlay(
   profile: FlightSimSpatialProfile,
   camera: FlightSimGeospatialCameraInput,
   night: boolean,
+  readyFrameRequestId: number | null = null,
 ): FlightSimGeospatialOverlay {
   const routeSeeds = [
     Object.freeze({
@@ -186,10 +190,13 @@ export function projectFlightSimToGeospatialOverlay(
       view: camera.view,
     }),
     night,
+    phase: flight.phase,
     profileId: profile.id,
+    readyFrameRequestId,
     revision: [
       flight.runId,
       flight.tick,
+      flight.phase,
       flight.waypointIndex,
       profile.id,
       camera.source,
@@ -198,6 +205,7 @@ export function projectFlightSimToGeospatialOverlay(
       night ? 'night' : 'day',
     ].join(':'),
     route,
+    runId: flight.runId,
     tick: flight.tick,
   })
 }

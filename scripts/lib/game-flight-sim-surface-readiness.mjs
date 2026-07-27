@@ -14,6 +14,7 @@ export async function assertFlightSimSurfaceReadiness({
     'useFlightSimSurfaceControls({',
     "snapshot.phase === 'ready' || snapshot.phase === 'flying'",
     'const removeAfterRender = addAfterEffect(() => {',
+    'if (!actorsVisible) {',
     "canvas.dataset.kgFlightSimFirstFrame = '1'",
     'completeFlightSimReadyFrame(presentation.runId, presentation.tick)',
   ], 'Flight Sim actor stage')
@@ -31,6 +32,7 @@ export async function assertFlightSimSurfaceReadiness({
     'readFlightSimTouchInput()',
     'readStandardFlightSimGamepad()',
     'flightSimInputFromMotionController(',
+    'isFlightSimReadyFramePresentationPending(',
     'runFlightSimStageSimulationStep({',
   ], 'shared Flight Sim surface controls')
 
@@ -65,6 +67,10 @@ export async function assertFlightSimSurfaceReadiness({
     'projectFlightSimToGeospatialOverlay',
     'module.setFlightGeoOverlay?.(',
     'module.clearFlightGeoOverlay?.()',
+    'readCurrentFlightSimReadyFrameRequestId()',
+    'completeFlightSimMapLibreReadyFrame(',
+    'completeFlightSimStagePreparation(requestId)',
+    'onFlightOverlayPresented={handleFlightOverlayPresented}',
     "data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}",
   ], 'Flight Sim Geo projection bridge')
   if (geospatialOverlaySource.includes('shared-xr-stage')) {
@@ -74,6 +80,7 @@ export async function assertFlightSimSurfaceReadiness({
   const flightGeoOverlaySource = await readText('gympgrph/src/flightGeoOverlay.ts')
   requireSourceMarkers(flightGeoOverlaySource, [
     'export type FlightGeoOverlaySnapshot',
+    'export type FlightGeoOverlayPresentation',
     'export function setFlightGeoOverlay(',
     'export function flightGeoOverlayFeatureCollection(',
     "kgFlightOverlayKind: 'aircraft'",
@@ -89,12 +96,27 @@ export async function assertFlightSimSurfaceReadiness({
   ], 'Flight Sim native MapLibre layers')
 
   const geospatialHostSource = await readText('gympgrph/src/GeospatialHost.tsx')
+  const geospatialPresentationSource = await readText(
+    'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
+  )
   requireSourceMarkers(geospatialHostSource, [
+    'useFlightGeoOverlayMapLibrePresentation({',
+  ], 'Flight Sim native MapLibre host composition')
+  requireSourceMarkers(geospatialPresentationSource, [
     'applyFlightGeoOverlayToMap(map, overlay)',
+    "map.on('render', listener)",
+    "canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'",
+    'onPresented?.(presentation)',
+    'readyFrameRequestId',
+    "overlay.phase !== 'stopped'",
+    'pending.attempts += 1',
     "root.dataset.kgFlightGeospatialOverlay = 'active'",
     'root.dataset.kgFlightGeospatialRevision = overlay.revision',
-  ], 'Flight Sim native MapLibre host composition')
-  if (geospatialHostSource.includes('shared-xr-stage')) {
+  ], 'Flight Sim native MapLibre presentation lifecycle')
+  if (
+    geospatialHostSource.includes('shared-xr-stage')
+    || geospatialPresentationSource.includes('shared-xr-stage')
+  ) {
     throw new Error('Gympgrph must not replace native MapLibre with an XR-local stage')
   }
 
