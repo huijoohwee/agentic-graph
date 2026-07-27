@@ -3,8 +3,8 @@ title: "Knowgrph Game Flight Sim PRD/TAD"
 id: "md:knowgrph-game-flight-sim-prd-tad"
 author: "airvio / joohwee"
 date: "2026-07-22"
-updated: "2026-07-26"
-version: "1.3.1"
+updated: "2026-07-27"
+version: "1.3.2"
 status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
 evidence_status: "exact-head source and browser proof required at every handoff"
@@ -68,7 +68,7 @@ This extensioned `.md` PRD/TAD is a derived implementation/proof projection of t
 
 Knowgrph gains browser-local mission-based flight training inside the existing React Three Fiber Canvas, over the same authored XR terrain catalog the physics playground already ships. One shared training projection appears in FloatingPanel **Media**, **Animation**, **Motion Control**, **Game Mode**, **Flight Sim**, and **Camera**. Media environment cards stage their existing authored XR environment before opening the shared **Geo** panel; Geo visibly projects the same selection, and the next Flight entry derives its collision profile, route, navigation, and World label from it. It opens from a source-backed run-ready document, the shared XR surface catalog, browser WebMCP, or the strict `/flight.sim @canvas #flight` invocation. Desktop keyboard/pointer, mobile touch, standard gamepad, and optional Motion Control input arm deterministic native Agentic ECS missions with in-repo flight dynamics, AABB terrain collision, procedural day/night presentation, bounded practice failures, visible and spoken coaching, scored outcomes, selectable camera source, and Decisions-only WorkspaceFs persistence.
 
-Core gameplay requires no camera, account, passkey, model, remote asset, gameplay network call, or Cloudflare service. The required aircraft is admitted through an **img2threejs-style TypeScript module plus a small JSON scene spec** containing identity, procedural renderer shape, dimensions, collision size, color, and zero-call metadata. It is git-diffable, human-auditable, offline-loadable, rejects non-null `opaqueBinaryFallback`, and records a required-aircraft GLB fallback count of zero. The distinct optional beacon proves the Kiro opaque-fallback boundary with one self-contained, committed-local, CC0-1.0 GLB; remote references and missing/unreadable local bytes fail closed without a fetch. External references inform conceptual principles only. Contributors attest that all implementation, instructional content, and assets are source-authored; external project identity and URL are prohibited in product source and runtime metadata; and there is no external project dependency. The deterministic clean-room scanner cannot prove the absence of arbitrary derived code.
+Core gameplay requires no camera, account, passkey, model, remote asset, gameplay network call, or Cloudflare service. If optional Motion Control is explicitly started, the Flight network fence admits only same-origin `GET`/`HEAD` reads of the nine repository-prepared LiteRT JavaScript, Wasm, and pose-detector model files under `/litert/`; that exact static-asset path is not a gameplay-network capability or external dependency, and all non-member requests remain blocked. The required aircraft is admitted through an **img2threejs-style TypeScript module plus a small JSON scene spec** containing identity, procedural renderer shape, dimensions, collision size, color, and zero-call metadata. It is git-diffable, human-auditable, offline-loadable, rejects non-null `opaqueBinaryFallback`, and records a required-aircraft GLB fallback count of zero. The distinct optional beacon proves the Kiro opaque-fallback boundary with one self-contained, committed-local, CC0-1.0 GLB; remote references and missing/unreadable local bytes fail closed without a fetch. External references inform conceptual principles only. Contributors attest that all implementation, instructional content, and assets are source-authored; external project identity and URL are prohibited in product source and runtime metadata; and there is no external project dependency. The deterministic clean-room scanner cannot prove the absence of arbitrary derived code.
 
 ## Product Requirements
 
@@ -182,6 +182,8 @@ Given a running XR surface, entering Flight Sim keeps the authored atmosphere, t
 
 WebGL support is resolved synchronously before mission start; unsupported WebGL or unreadable Decisions keeps the mission stopped with a local error. Start prepares a healthy ready frame at tick zero and waits for normalized desktop, pointer, touch, gamepad, Motion Control, or MCP input before fixed ticks begin. Blur and document hide always pause the clock without changing state. Fixed-follow pointer release pauses; free-orbit exits pointer lock without pausing. Stop then Start resumes the exact in-memory mission; malformed hydration blocks Start and Restart until **Reset local save** succeeds. Entry failure restores the previously captured surface/controller state without presenting an active Flight surface; restoration failure is reported and never presented as successful. Exit disposes the Flight mission’s ECS World, clears pending ephemeral run state, and restores prior ownership.
 
+While Flight is active, optional Motion Control initialization reuses only the checked-in LiteRT runtime assets already prepared by the repository. The Flight network fence shares one exact allow predicate across fetch and XMLHttpRequest: effective method `GET` or `HEAD`, current browser origin, and a normalized pathname matching one of the nine immutable `/litert/` entries. Different origins, mutation methods, and non-member paths are blocked before transport, and WebSocket, EventSource, sendBeacon, and durable Service Worker starts remain blocked. After initialization, pose continues through the existing normalized input adapter; it does not gain Canvas, camera, renderer, flight-policy, persistence, or gameplay-network ownership.
+
 ### Success metrics
 
 | Metric | Must target |
@@ -219,6 +221,7 @@ WebGL support is resolved synchronously before mission start; unsupported WebGL 
 | Asset representation | `canvas/src/features/game-flight-sim/assetSpec/` and `scripts/generate-game-flight-sim-optional-prop-glb.mjs` | Prefer/validate the TypeScript+JSON required-aircraft spec; admit only the generated, hash-locked committed-local optional beacon GLB when no spec exists; reject remote/missing/unreadable fallback references |
 | Rendering | `canvas/src/lib/three/ThreeGraph.impl.tsx` plus the canonical XR stage owners | Reuse the single React Three Fiber Canvas, authored XR world, Camera catalog, and Physics controller camera; add the aircraft and waypoint/objective actors plus the HUD |
 | Camera/input arbitration | `xrNativeControllerCameraCatalog.ts`, `xrNativeControllerCameraRuntime.ts`, `useXrNativeControllerDemoCamera.ts`, Timeline camera-marks, and Motion Control adapter | Flight supplies a pure aircraft follow/framing descriptor; the shared Physics controller hook alone mutates the camera and OrbitControls for Fixed Follow / Free Orbit, Timeline playback may temporarily override it, and Motion Control contributes normalized input only |
+| Flight transport fence | `flightSimExternalCallGuard.ts` plus repository-prepared `canvas/public/litert/` assets | Block gameplay/external transport; admit only exact same-origin `GET`/`HEAD` reads of the nine checked-in Motion Control runtime assets |
 | Browser persistence | `canvas/src/features/workspace-fs/` | Use WorkspaceFs and its existing source-file bridge; add no storage or Git owner |
 | Cost truth | Agentic ECS `worldTick` post-systems harness plus `contracts/cost-log.schema.js` | Emit/validate one canonical zero record for a model-free tick or one `incomplete: true`, `error: "blocked_inference"` record for a blocked attempt |
 | Activation | `docs/workspace-seeds/knowgrph-game-flight-sim-demo.md` with Physics as `shared_xr_scene.source_authority` | Source-backed run-ready activation; overlay-only world ownership |
@@ -315,6 +318,7 @@ The local save path is owned by the flight adapter under WorkspaceFs. A terminal
 | Surface entry failure | Dispose any provisional mission, restore the captured Canvas/controller ownership, and report a local entry error |
 | Surface restoration failure | Report the failed owner restoration and never return a successful Exit result |
 | WebMCP deadline or inactive inspection | Return `FLIGHT_SIM_WEB_MCP_TIMEOUT` by 2,000 ms or `FLIGHT_SIM_STATE_UNAVAILABLE`; leave mission state unchanged |
+| Flight-fenced request outside the local Motion Control asset set | Report `FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED` before transport; keep sockets, event streams, beacons, and durable starts blocked |
 
 ## Architecture Decisions
 
