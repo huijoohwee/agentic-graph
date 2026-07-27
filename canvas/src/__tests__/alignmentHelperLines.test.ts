@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import {
   alignmentGuideScreenPosition,
   alignmentRectFromTopLeft,
@@ -5,6 +6,15 @@ import {
   translateAlignmentRect,
   unionAlignmentRects,
 } from '@/lib/canvas/alignmentGuides'
+import {
+  HELPER_LINES_DISPLAY_CONTROL_DESCRIPTION,
+  HELPER_LINES_DISPLAY_CONTROL_ID,
+  HELPER_LINES_DISPLAY_CONTROL_LABEL,
+  HELPER_LINES_DISPLAY_CONTROL_TITLE,
+  buildHelperLinesBehaviorPatch,
+  readHelperLinesDisplayControlActive,
+} from '@/lib/canvas/canvasGridDisplayControls'
+import { defaultSchema, type GraphSchema } from '@/lib/graph/schema'
 
 export function testAlignmentHelperLinesInteractionContract() {
   const target = alignmentRectFromTopLeft({
@@ -118,5 +128,63 @@ export function testAlignmentHelperLinesInteractionContract() {
     alignmentGuideScreenPosition(yGuide, { x: -40, y: 20, k: 2.5 }) !== 520
   ) {
     throw new Error('expected guide projection to honor viewport pan and scale')
+  }
+}
+
+export function testAlignmentHelperLinesDisplayControlContract() {
+  if (
+    HELPER_LINES_DISPLAY_CONTROL_ID !== 'control:helperLines' ||
+    HELPER_LINES_DISPLAY_CONTROL_TITLE !== 'Helper Lines' ||
+    HELPER_LINES_DISPLAY_CONTROL_LABEL !== 'Guides' ||
+    HELPER_LINES_DISPLAY_CONTROL_DESCRIPTION !== 'Show alignment guides and snap nodes to nearby nodes'
+  ) {
+    throw new Error('expected stable Helper Lines display-control metadata')
+  }
+  if (!readHelperLinesDisplayControlActive(defaultSchema)) {
+    throw new Error('expected Helper Lines to be enabled by default')
+  }
+  const legacySchema: GraphSchema = {
+    ...defaultSchema,
+    behavior: {
+      ...defaultSchema.behavior,
+      helperLines: undefined,
+    },
+  }
+  if (!readHelperLinesDisplayControlActive(legacySchema)) {
+    throw new Error('expected schemas without Helper Lines state to preserve existing enabled behavior')
+  }
+  const disabledPatch = buildHelperLinesBehaviorPatch(legacySchema)
+  if (
+    disabledPatch.helperLines?.enabled !== false ||
+    Object.keys(disabledPatch).join(',') !== 'helperLines'
+  ) {
+    throw new Error(`expected behavior-only Helper Lines disable patch, got ${JSON.stringify(disabledPatch)}`)
+  }
+  const disabledSchema: GraphSchema = {
+    ...legacySchema,
+    behavior: {
+      ...legacySchema.behavior,
+      ...disabledPatch,
+    },
+  }
+  if (readHelperLinesDisplayControlActive(disabledSchema)) {
+    throw new Error('expected explicit Helper Lines false state to disable alignment guides')
+  }
+  if (buildHelperLinesBehaviorPatch(disabledSchema).helperLines?.enabled !== true) {
+    throw new Error('expected Helper Lines behavior patch to toggle back on')
+  }
+
+  const graphDragSource = readFileSync(new URL('../components/GraphCanvas/layers/nodesDragBinding.ts', import.meta.url), 'utf8')
+  const flowDownSource = readFileSync(new URL('../components/FlowCanvas/interactions/pointerDown.ts', import.meta.url), 'utf8')
+  const flowMoveSource = readFileSync(new URL('../components/FlowCanvas/interactions/pointerMove.ts', import.meta.url), 'utf8')
+  if (!graphDragSource.includes('disableSnap || !helperLinesEnabled')) {
+    throw new Error('expected SVG node dragging to bypass alignment guides and snapping when Helper Lines are disabled')
+  }
+  if (
+    !flowDownSource.includes('const helperLinesEnabled = readHelperLinesDisplayControlActive(storeStateAtDown.schema)') ||
+    !flowDownSource.includes('helperLinesEnabled,') ||
+    !flowMoveSource.includes('drag.helperLinesEnabled && e.altKey !== true')
+  ) {
+    throw new Error('expected native node dragging to snapshot and honor Helper Lines behavior')
   }
 }

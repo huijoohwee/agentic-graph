@@ -300,7 +300,7 @@ export function createFlowNativePointerMoveHandler(ctx: FlowNativeInteractionsCo
       const snappedDelta = allowSnap ? snapDeltaToGridByAnchor({ anchorStart, rawDelta: { dx, dy }, gridSize: grid }) : { dx, dy }
       let clampedDelta = drag.deltaClamp ? clampFlowDelta({ clamp: drag.deltaClamp, dx: snappedDelta.dx, dy: snappedDelta.dy }) : snappedDelta
       let guides: AlignmentGuide[] = []
-      if (e.altKey !== true) {
+      if (drag.helperLinesEnabled && e.altKey !== true) {
         const memberIds = new Set(drag.memberNodeIds)
         const movingRect = unionAlignmentRects(drag.memberNodeIds.flatMap((id) => {
           const node = scene.nodeById.get(id)
@@ -404,7 +404,7 @@ export function createFlowNativePointerMoveHandler(ctx: FlowNativeInteractionsCo
       nextY = clamped.y
     }
     let guides: AlignmentGuide[] = []
-    if (e.altKey !== true) {
+    if (drag.helperLinesEnabled && e.altKey !== true) {
       const snapped = resolveAlignmentSnap({
         moving: alignmentRectFromTopLeft({
           id: node.id,

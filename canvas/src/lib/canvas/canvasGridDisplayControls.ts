@@ -15,6 +15,7 @@ import { SNAP_GRID_SIZE_DEFAULT, coerceSnapGridTuple, type SnapGridTuple } from 
 
 export const CANVAS_GRID_DISPLAY_CONTROL_ID = 'control:grid' as const
 export const SNAP_GRID_DISPLAY_CONTROL_ID = 'control:snapGrid' as const
+export const HELPER_LINES_DISPLAY_CONTROL_ID = 'control:helperLines' as const
 
 export const CANVAS_GRID_DISPLAY_CONTROL_TITLE = 'Grid'
 export const CANVAS_GRID_DISPLAY_CONTROL_LABEL = 'Grid'
@@ -23,6 +24,10 @@ export const CANVAS_GRID_DISPLAY_CONTROL_DESCRIPTION = 'Show canvas grid'
 export const SNAP_GRID_DISPLAY_CONTROL_TITLE = 'Snap to Grid'
 export const SNAP_GRID_DISPLAY_CONTROL_LABEL = 'Snap'
 export const SNAP_GRID_DISPLAY_CONTROL_DESCRIPTION = 'Align drag and keyboard movement to grid'
+
+export const HELPER_LINES_DISPLAY_CONTROL_TITLE = 'Helper Lines'
+export const HELPER_LINES_DISPLAY_CONTROL_LABEL = 'Guides'
+export const HELPER_LINES_DISPLAY_CONTROL_DESCRIPTION = 'Show alignment guides and snap nodes to nearby nodes'
 
 export type CanvasGridDisplayControlId =
   | typeof CANVAS_GRID_DISPLAY_CONTROL_ID
@@ -80,6 +85,9 @@ export const readCanvasGridDisplayControlActive = (schema: GraphSchema | null | 
 export const readSnapGridDisplayControlActive = (schema: GraphSchema | null | undefined): boolean =>
   readBehavior(schema).snapGrid?.enabled === true
 
+export const readHelperLinesDisplayControlActive = (schema: GraphSchema | null | undefined): boolean =>
+  readBehavior(schema).helperLines?.enabled !== false
+
 export const buildCanvasGridVisibilityBehaviorPatch = (
   schema: GraphSchema | null | undefined,
 ): Partial<GraphSchema['behavior']> => {
@@ -103,3 +111,11 @@ export const buildSnapGridBehaviorPatch = (
     },
   }
 }
+
+export const buildHelperLinesBehaviorPatch = (
+  schema: GraphSchema | null | undefined,
+): Partial<GraphSchema['behavior']> => ({
+  helperLines: {
+    enabled: !readHelperLinesDisplayControlActive(schema),
+  },
+})

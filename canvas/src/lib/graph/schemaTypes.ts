@@ -7,6 +7,7 @@ export interface GraphBehavior {
   nodeShapeMode?: 'circle' | 'rect' | 'diamond' | 'hex';
   dragConstraint?: 'free' | 'axis-x' | 'axis-y' | 'none';
   snapGrid?: { enabled: boolean; size: number | SnapGridTuple };
+  helperLines?: { enabled: boolean };
   canvasGrid?: {
     enabled: boolean
     variant?: 'lines' | 'dots'
