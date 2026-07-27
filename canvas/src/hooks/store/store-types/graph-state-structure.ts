@@ -188,7 +188,7 @@ export interface GraphStateStructure {
   removeNode: (id: string) => void;
   addEdge: (edge: GraphEdge) => void;
   removeEdge: (id: string) => void;
-  createUserSubgraph: (args: { label?: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }) => { ok: true; id: string } | { ok: false; message: string };
+  createUserSubgraph: (args: { label?: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster'; autoBounds?: boolean }) => { ok: true; id: string } | { ok: false; message: string };
   updateUserSubgraph: (id: string, patch: { label?: string; memberNodeIds?: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }) => { ok: true } | { ok: false; message: string };
   removeUserSubgraph: (id: string) => void;
   addNodesToUserSubgraph: (id: string, nodeIds: string[]) => { ok: true } | { ok: false; message: string };

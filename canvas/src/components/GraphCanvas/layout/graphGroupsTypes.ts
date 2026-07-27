@@ -18,6 +18,7 @@ export type GraphGroup = {
   parentGroupId?: string | null
   containChildren?: boolean
   connectable?: boolean
+  autoBounds?: boolean
   style: {
     fill?: string
     stroke?: string

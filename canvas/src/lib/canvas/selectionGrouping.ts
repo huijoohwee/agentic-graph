@@ -30,3 +30,12 @@ export function createSelectionGroupLabel(graphData: GraphData | null | undefine
   while (labels.has(`group ${suffix}`)) suffix += 1
   return `Group ${suffix}`
 }
+
+export function reselectDetachedNodeIds(
+  memberNodeIds: readonly string[],
+  toggleSelection: (nodeId: string) => void,
+): string[] {
+  const ids = collectSelectedNodeIds(null, memberNodeIds)
+  for (let index = 0; index < ids.length; index += 1) toggleSelection(ids[index])
+  return ids
+}

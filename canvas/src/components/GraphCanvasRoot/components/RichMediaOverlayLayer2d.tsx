@@ -108,6 +108,12 @@ export function RichMediaOverlayLayer2d(props: {
       useGraphStore.getState().toggleNodeSelectionAdditive(key)
       return
     }
+    const state = useGraphStore.getState()
+    const mode = state.schema?.behavior?.selectMode || 'single'
+    if (mode === 'multi' || mode === 'lasso') {
+      state.selectNodesExpanded({ nodeIds: [key], activeNodeId: key })
+      return
+    }
     selectNode(key)
   }, [selectNode, setSelectionSource])
 
