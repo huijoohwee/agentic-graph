@@ -1,8 +1,10 @@
 import type { GraphData } from '@/lib/graph/types'
-import { createSubgraph, updateSubgraph } from '@/lib/graph/subgraphs'
+import { buildSubgraphsKey, createSubgraph, updateSubgraph } from '@/lib/graph/subgraphs'
 import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
 import { filterGroupsByCollapsedAncestors } from '@/lib/graph/groupVisibility'
+import { deriveSceneGroups } from '@/lib/scene/sceneDerivation'
+import { buildFlowGroupSceneKey } from '@/components/FlowCanvas/flowCanvasNativeSceneKey'
 
 export const testDeriveGraphGroupsIncludesUserSubgraphs = () => {
   const base: GraphData = {
@@ -80,4 +82,36 @@ export const testFilterGroupsByCollapsedAncestorsHidesDescendants = () => {
   const ids = filtered.map(g => g.id).sort((a, b) => a.localeCompare(b))
   const expected = ['layer:0', 'subgraph:parent'].sort((a, b) => a.localeCompare(b))
   if (ids.join('|') !== expected.join('|')) throw new Error(`unexpected filtered ids: ${ids.join(',')}`)
+}
+
+export const testSubgraphChangesInvalidateSceneCachesWithoutRevisionChange = () => {
+  const base: GraphData = {
+    type: 'Graph',
+    context: '',
+    nodes: [
+      { id: 'a', label: 'A', type: 'entity', properties: {} },
+      { id: 'b', label: 'B', type: 'entity', properties: {} },
+    ],
+    edges: [],
+    metadata: {},
+  }
+  const created = createSubgraph(base, { nodeIds: ['a', 'b'], label: 'Visible group', autoBounds: true })
+  if (buildSubgraphsKey(base) === buildSubgraphsKey(created.graphData)) {
+    throw new Error('expected user subgraph metadata to have a distinct semantic key')
+  }
+
+  const args = {
+    graphDataRevision: 7,
+    schema: {} as any,
+    documentSemanticMode: 'document',
+    frontmatterModeEnabled: false,
+  }
+  const before = deriveSceneGroups({ ...args, graphData: base })
+  const after = deriveSceneGroups({ ...args, graphData: created.graphData })
+  if ((before?.allGroups.length || 0) !== 0 || (after?.allGroups.length || 0) !== 1) {
+    throw new Error('expected group derivation cache to invalidate when only subgraph metadata changes')
+  }
+  if (buildFlowGroupSceneKey(before?.allGroups) === buildFlowGroupSceneKey(after?.allGroups)) {
+    throw new Error('expected native scene key to invalidate when rendered groups change')
+  }
 }
