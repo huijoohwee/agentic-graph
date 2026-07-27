@@ -38,7 +38,13 @@ export function resolveCanvasSurfaceOwnership(
   const flightSimGeoOverlayActive = input.gameplayOverlayActive
     && input.flightSimActive
     && input.geospatialModeEnabled
-  if (input.gameplayOverlayActive && !flightSimGeoOverlayActive) {
+  if (flightSimGeoOverlayActive) {
+    return {
+      activeSurface: 'geo',
+      geospatialOverlayOwnsViewport: true,
+    }
+  }
+  if (input.gameplayOverlayActive) {
     return {
       activeSurface: '3d',
       geospatialOverlayOwnsViewport: false,

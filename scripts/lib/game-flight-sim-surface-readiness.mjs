@@ -44,6 +44,11 @@ export async function assertFlightSimSurfaceReadiness({
     'data-kg-flight-sim-geo-overlay="1"',
     'data-kg-flight-sim-geo-aircraft="1"',
   ], 'Flight Sim Geo surface overlay')
+  const environmentGeoButtonSource = await readText(`${flightFeatureRoot}/FlightSimEnvironmentGeoButton.tsx`)
+  requireSourceMarkers(environmentGeoButtonSource, [
+    'selectFlightSimGeoEnvironment(',
+    "setGeospatialViewMode('2d-svg')",
+  ], 'Flight Sim local Geo handoff')
 
   const canvasViewportSource = await readText('canvas/src/components/CanvasViewport.tsx')
   requireSourceMarkers(canvasViewportSource, [
@@ -56,6 +61,9 @@ export async function assertFlightSimSurfaceReadiness({
   requireSourceMarkers(rendererLifecycleSource, [
     'input.flightSimActive',
     'input.geospatialModeEnabled',
-    'if (input.gameplayOverlayActive && !flightSimGeoOverlayActive)',
+    'if (flightSimGeoOverlayActive)',
+    "activeSurface: 'geo'",
+    'geospatialOverlayOwnsViewport: true',
+    'if (input.gameplayOverlayActive)',
   ], 'Flight Sim Geo renderer ownership')
 }

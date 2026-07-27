@@ -29,6 +29,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   }
   if (!mediaLibrary.includes('<FlightSimEnvironmentGeoButton')
     || !flightGeoButton.includes("openFlightSimSurface({ openPanel: false })")
+    || !flightGeoButton.includes("setGeospatialViewMode('2d-svg')")
     || !flightGeoButton.includes('await settleWorkspaceSourceTextWrites()')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-overlay="1"')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-aircraft="1"')
