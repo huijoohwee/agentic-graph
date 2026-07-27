@@ -14,3 +14,16 @@ export const resolveNodeSelectionGesture = (args: {
   if (isMultiNodeSelectMode(args.mode) && (args.metaKey === true || args.ctrlKey === true)) return 'toggle'
   return 'replace'
 }
+
+export const activateMultiNodeSelectModeForShift = (args: {
+  mode: NodeSelectMode | null | undefined
+  shiftKey?: boolean
+  setSelectMode: (mode: NodeSelectMode) => void
+}): NodeSelectMode => {
+  const mode = args.mode || 'single'
+  if (args.shiftKey === true && !isMultiNodeSelectMode(mode)) {
+    args.setSelectMode('multi')
+    return 'multi'
+  }
+  return mode
+}

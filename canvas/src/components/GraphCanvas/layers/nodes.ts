@@ -26,7 +26,7 @@ import { bindNodeDraggingWithGroupContainment } from '@/components/GraphCanvas/l
 import { createNodeGroupChevronSel } from '@/components/GraphCanvas/layers/nodesGroupChevrons'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { hashScopedStringArraySignature } from '@/lib/hash/signature'
-import { isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
+import { activateMultiNodeSelectModeForShift, isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>;
 
@@ -340,7 +340,12 @@ export const createNodesLayer = (args: {
     event.stopPropagation();
     const id = String(d.id || '').trim()
     if (!id) return
-    const mode = schema?.behavior?.selectMode || 'single'
+    const state = useGraphStore.getState()
+    const mode = activateMultiNodeSelectModeForShift({
+      mode: schema?.behavior?.selectMode || 'single',
+      shiftKey: event.shiftKey,
+      setSelectMode: state.setSelectMode,
+    })
     const selectionGesture = resolveNodeSelectionGesture({
       mode,
       shiftKey: event.shiftKey,
@@ -349,7 +354,7 @@ export const createNodesLayer = (args: {
     })
     if (selectionGesture === 'toggle') {
       setSelectionSource('canvas')
-      useGraphStore.getState().toggleNodeSelectionAdditive(id)
+      state.toggleNodeSelectionAdditive(id)
       return
     }
     const editorGestures = enableEditorGestures === true

@@ -1,5 +1,6 @@
 import type { ArrangeAction2d } from '@/lib/canvas/arrange2d'
 import { UI_RESPONSIVE_CANVAS_FLOATING_ACTION_ROW_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
+import { Z_INDEX_GRAPH_OVERLAY_SELECTED } from '@/lib/ui/zIndex'
 
 const CANVAS_ARRANGE_ACTION_BUTTONS: ReadonlyArray<{ action: ArrangeAction2d; label: string }> = [
   { action: 'align-left', label: 'Align L' },
@@ -23,6 +24,7 @@ export function CanvasArrangeActionBar(props: {
   onUngroup?: () => void
   onDetach?: () => void
   ariaLabel?: string
+  offsetBelowWorkspaceToolbar?: boolean
 }) {
   const {
     active,
@@ -35,6 +37,7 @@ export function CanvasArrangeActionBar(props: {
     onUngroup,
     onDetach,
     ariaLabel = 'Selection actions',
+    offsetBelowWorkspaceToolbar = false,
   } = props
   const showArrange = !canUngroup && !canDetach && selectedCount >= 2
   if (!active || (!showArrange && !canUngroup && !canDetach)) return null
@@ -42,10 +45,12 @@ export function CanvasArrangeActionBar(props: {
   return (
     <section
       className={[
-        'pointer-events-auto absolute right-3 top-3 z-50 flex flex-nowrap gap-1 rounded-md border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-2 text-xs text-[var(--kg-text)] shadow',
+        `pointer-events-auto absolute right-3 ${offsetBelowWorkspaceToolbar ? 'top-14' : 'top-3'} flex max-w-[calc(100%-1.5rem)] flex-nowrap gap-1 overflow-x-auto rounded-md border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] p-2 text-xs text-[var(--kg-text)] shadow`,
         UI_RESPONSIVE_CANVAS_FLOATING_ACTION_ROW_CLASSNAME,
       ].join(' ')}
       aria-label={ariaLabel}
+      data-kg-selection-action-bar="1"
+      style={{ zIndex: Z_INDEX_GRAPH_OVERLAY_SELECTED + 12 }}
     >
       {canUngroup && onUngroup ? (
         <button
