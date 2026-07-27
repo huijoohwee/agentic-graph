@@ -147,6 +147,28 @@ test('Agentic ECS source always selects the runtime gate', async () => {
   assert.deepEqual(plan.commands, [['npm', 'run', 'runtime:check']])
 })
 
+test('surface policy owners always select the focused readiness gate', async () => {
+  const contract = await readContract()
+  const ownerPaths = [
+    'config/surface-registry.json',
+    'config/license-registry.json',
+    'schemas/surface-registry.v1.schema.json',
+    'scripts/surface/publication-gate.mjs',
+    'data/surface/ledger/README.md',
+    'docs/discoverability-ip-protection-runtime.md',
+  ]
+
+  for (const ownerPath of ownerPaths) {
+    const plan = selectAffectedCommands([ownerPath], contract)
+    assert.ok(plan.scopes.includes('surface_policy'), ownerPath)
+    assert.deepEqual(plan.unmatchedPaths, [], ownerPath)
+    assert.ok(
+      plan.commands.some(command => command.join(' ') === 'npm run surface:verify'),
+      ownerPath,
+    )
+  }
+})
+
 test('Rich Media preview timing owners always select schema and browser contract gates', async () => {
   const contract = await readContract()
   const timingOwnerPaths = [

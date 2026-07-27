@@ -1,0 +1,47 @@
+{
+  "schema": "knowgrph-license-registry/v1",
+  "version": "1.0.0",
+  "declarationFile": "REUSE.md",
+  "licenses": [
+    {
+      "licenseId": "CC-BY-4.0",
+      "category": "permissive",
+      "notice": "Published prose may be reused under Creative Commons Attribution 4.0 with attribution."
+    },
+    {
+      "licenseId": "Apache-2.0",
+      "category": "permissive",
+      "notice": "Machine-readable discovery and capability metadata may be reused under Apache-2.0."
+    },
+    {
+      "licenseId": "LicenseRef-airvio-no-reuse-1.0",
+      "category": "no-reuse",
+      "notice": "Served browser bundles and explicitly allowlisted distribution artifacts are provided for use by Airvio surfaces; no separate reuse grant is made."
+    },
+    {
+      "licenseId": "NONE-private",
+      "category": "unlicensed-private",
+      "notice": "Private implementation material is not published and carries no public reuse grant."
+    }
+  ],
+  "classMappings": [
+    { "artifactClass": "application-source", "licenseId": "NONE-private", "category": "unlicensed-private" },
+    { "artifactClass": "prompt-internal", "licenseId": "NONE-private", "category": "unlicensed-private" },
+    { "artifactClass": "orchestration-wiring", "licenseId": "NONE-private", "category": "unlicensed-private" },
+    { "artifactClass": "credential-material", "licenseId": "NONE-private", "category": "unlicensed-private" },
+    { "artifactClass": "unpublished-spec", "licenseId": "NONE-private", "category": "unlicensed-private" },
+    { "artifactClass": "runtime-config", "licenseId": "NONE-private", "category": "unlicensed-private" },
+    { "artifactClass": "local-convenience", "licenseId": "NONE-private", "category": "unlicensed-private" },
+    { "artifactClass": "bundled-build-output", "licenseId": "LicenseRef-airvio-no-reuse-1.0", "category": "no-reuse" },
+    { "artifactClass": "dist-module", "licenseId": "LicenseRef-airvio-no-reuse-1.0", "category": "no-reuse" },
+    { "artifactClass": "published-document", "licenseId": "CC-BY-4.0", "category": "permissive" },
+    { "artifactClass": "guideline", "licenseId": "CC-BY-4.0", "category": "permissive" },
+    { "artifactClass": "specification", "licenseId": "CC-BY-4.0", "category": "permissive" },
+    { "artifactClass": "machine-readable-metadata", "licenseId": "Apache-2.0", "category": "permissive" },
+    { "artifactClass": "capability-description", "licenseId": "Apache-2.0", "category": "permissive" },
+    { "artifactClass": "service-description", "licenseId": "Apache-2.0", "category": "permissive" },
+    { "artifactClass": "routed-path", "licenseId": "NONE-private", "category": "unlicensed-private" },
+    { "artifactClass": "mcp-endpoint", "licenseId": "Apache-2.0", "category": "permissive" },
+    { "artifactClass": "invocation-token", "licenseId": "Apache-2.0", "category": "permissive" }
+  ]
+}

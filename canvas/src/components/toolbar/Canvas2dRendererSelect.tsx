@@ -141,6 +141,19 @@ export function Canvas2dRendererSelect({
           geospatialEnabled,
           onOpenGeospatialMode,
           onOpenShared3dPanel: mode => {
+            if (mode === 'geo-xr') {
+              const current = useGraphStore.getState()
+              if (!activateXrSceneSurface({ geospatialComposite: true, preserveGameplay: true })) {
+                current.pushUiToast({
+                  id: 'canvas-view:geo-xr:unavailable',
+                  kind: 'error',
+                  message: 'The shared Geo+XR Mode surface is unavailable for this document.',
+                })
+                return
+              }
+              onOpenGeospatialMode()
+              return
+            }
             if (mode === 'xr') {
               const current = useGraphStore.getState()
               const panelView = resolveXrSurfaceEntryPanelView(current)

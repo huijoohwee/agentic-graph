@@ -30,6 +30,7 @@ type GeospatialOverlayHostProps = {
   active?: boolean
   snapshot?: unknown
   handlers?: unknown
+  renderPolicy?: 'default' | 'local-only'
 }
 
 type GympgrphStoreState = {
@@ -45,6 +46,7 @@ type GympgrphModule = {
 
 export type CanvasViewportGeospatialOverlayProps = {
   active: boolean
+  composedWithXr: boolean
   geospatialModeEnabled: boolean
   graphData: GraphData
   storyboardWidgetPanelsActive: boolean
@@ -82,7 +84,7 @@ const GeospatialOverlayHostLazy = React.lazy(async (): Promise<{ default: React.
 export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewportGeospatialOverlay(
   props: CanvasViewportGeospatialOverlayProps,
 ) {
-  const { active, geospatialModeEnabled, graphData, storyboardWidgetPanelsActive } = props
+  const { active, composedWithXr, geospatialModeEnabled, graphData, storyboardWidgetPanelsActive } = props
   const gympgrphBridge = useGraphStore(
     useShallow(s => ({
       zoomState: s.zoomState,
@@ -329,11 +331,15 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   }, [geospatialModeEnabled, selectedEdgeId, selectedNodeId, selectedNodeIds, viewPinned, zoomToSelectionMode])
 
   return (
-    <section className={`absolute inset-0 z-[20] ${active ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+    <section
+      className={`absolute inset-0 ${composedWithXr ? 'z-[5] pointer-events-none' : 'z-[20] pointer-events-auto'} ${active ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+      data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}
+    >
       <GeospatialOverlayHostLazy
         active={active}
         snapshot={snapshot}
         handlers={handlers}
+        renderPolicy={composedWithXr ? 'local-only' : 'default'}
       />
     </section>
   )

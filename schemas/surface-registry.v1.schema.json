@@ -1,0 +1,586 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://knowgrph.dev/schemas/surface-registry.v1.schema.json",
+  "title": "Knowgrph Surface Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "publicOrigin", "policy", "permittedRepositories", "distributionAllowlist", "catalogDigest", "invocationRegistry", "catalogSources", "entries"],
+  "properties": {
+    "schema": {
+      "const": "knowgrph-surface-registry/v1"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "publicOrigin": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fetchProxyRateLimit", "noReuseLicenseId", "contentSignals", "unknownArtifactTier", "promotionMode"],
+      "properties": {
+        "fetchProxyRateLimit": {
+          "$ref": "#/$defs/rateLimit"
+        },
+        "noReuseLicenseId": {
+          "const": "LicenseRef-airvio-no-reuse-1.0"
+        },
+        "contentSignals": {
+          "const": "ai-train=no, search=yes, ai-input=yes"
+        },
+        "unknownArtifactTier": {
+          "const": "private"
+        },
+        "promotionMode": {
+          "const": "fixture-only"
+        }
+      }
+    },
+    "permittedRepositories": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["private", "gated", "public-artifact", "public-discoverable"],
+      "properties": {
+        "private": {
+          "$ref": "#/$defs/repositoryList"
+        },
+        "gated": {
+          "$ref": "#/$defs/repositoryList"
+        },
+        "public-artifact": {
+          "$ref": "#/$defs/repositoryList"
+        },
+        "public-discoverable": {
+          "$ref": "#/$defs/repositoryList"
+        }
+      }
+    },
+    "distributionAllowlist": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "catalogDigest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "invocationRegistry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalogId", "entries"],
+      "properties": {
+        "catalogId": {
+          "const": "mcp"
+        },
+        "entries": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/invocationCatalogEntry"
+          }
+        }
+      }
+    },
+    "catalogSources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["catalogId", "repository", "path"],
+        "properties": {
+          "catalogId": {
+            "type": "string",
+            "maxLength": 80,
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "repository": {
+            "enum": ["dev", "worker"]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+          },
+          "approvalInstructionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,126}[A-Za-z0-9])?$"
+          }
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "$defs": {
+    "repositoryList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["dev", "worker", "public-origin", "site"]
+      }
+    },
+    "rateLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requests", "windowSeconds"],
+      "properties": {
+        "requests": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "windowSeconds": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "invocation": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["token", "prefixRole", "label", "intentSummary", "sourceCatalogs"],
+      "properties": {
+        "token": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "prefixRole": {
+          "enum": ["action", "semantic", "binding"]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "intentSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]+$"
+        },
+        "sourceCatalogs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "invocationCatalogEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["token", "prefixRole", "label", "intentSummary", "executionRouteTier", "ingressRoute", "targetExecutionRoute", "spendBearing", "readOnly"],
+      "properties": {
+        "token": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[A-Za-z0-9_.:-]+$"
+        },
+        "prefixRole": {
+          "const": "mcp-tool-id"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "intentSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[^\\r\\n]+$"
+        },
+        "executionRouteTier": {
+          "const": "public-discoverable"
+        },
+        "ingressRoute": {
+          "const": "public-read-mcp"
+        },
+        "targetExecutionRoute": {
+          "const": "public-read-mcp"
+        },
+        "spendBearing": {
+          "const": false
+        },
+        "readOnly": {
+          "const": true
+        }
+      }
+    },
+    "service": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "transport",
+        "trustBoundary"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "GET",
+            "POST"
+          ]
+        },
+        "transport": {
+          "enum": [
+            "static",
+            "http",
+            "mcp"
+          ]
+        },
+        "trustBoundary": {
+          "enum": [
+            "public",
+            "credentialed"
+          ]
+        },
+        "requestSchemaUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "responseSchemaUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "authorizationMetadataUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "targetToolId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactId",
+        "path",
+        "pathKind",
+        "artifactClass",
+        "surfaceTier",
+        "licenseId",
+        "publishPolicy",
+        "owningRepository",
+        "repositoryVisibility",
+        "artifactClassCategory",
+        "canonicalUrl",
+        "representingPage",
+        "title",
+        "summary",
+        "readOnly",
+        "ingressRoute",
+        "targetExecutionRoute",
+        "spendBearing",
+        "rateLimit",
+        "lastModified",
+        "invocation",
+        "service",
+        "notes"
+      ],
+      "properties": {
+        "artifactId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pathKind": {
+          "enum": [
+            "exact",
+            "glob"
+          ]
+        },
+        "artifactClass": {
+          "enum": [
+            "application-source",
+            "prompt-internal",
+            "orchestration-wiring",
+            "credential-material",
+            "unpublished-spec",
+            "runtime-config",
+            "local-convenience",
+            "bundled-build-output",
+            "dist-module",
+            "published-document",
+            "guideline",
+            "specification",
+            "machine-readable-metadata",
+            "capability-description",
+            "service-description",
+            "routed-path",
+            "mcp-endpoint",
+            "invocation-token"
+          ]
+        },
+        "surfaceTier": {
+          "enum": [
+            "private",
+            "gated",
+            "public-artifact",
+            "public-discoverable"
+          ]
+        },
+        "licenseId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "publishPolicy": {
+          "enum": [
+            "never",
+            "generated-only",
+            "operator-approved"
+          ]
+        },
+        "owningRepository": {
+          "enum": [
+            "dev",
+            "worker",
+            "public-origin",
+            "site"
+          ]
+        },
+        "repositoryVisibility": {
+          "enum": [
+            "private",
+            "public"
+          ]
+        },
+        "artifactClassCategory": {
+          "enum": [
+            "permissive",
+            "no-reuse",
+            "unlicensed-private"
+          ]
+        },
+        "canonicalUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "representingPage": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[^\\r\\n]+$"
+        },
+        "readOnly": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "ingressRoute": {
+          "enum": [
+            "none",
+            "static-edge",
+            "public-read-mcp",
+            "control-plane-mcp",
+            "invocation-forwarder"
+          ]
+        },
+        "targetExecutionRoute": {
+          "enum": [
+            "none",
+            "public-read-mcp",
+            "control-plane-mcp"
+          ]
+        },
+        "spendBearing": {
+          "type": "boolean"
+        },
+        "rateLimit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/rateLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastModified": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "invocation": {
+          "$ref": "#/$defs/invocation"
+        },
+        "service": {
+          "$ref": "#/$defs/service"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "surfaceTier": {
+                "const": "public-discoverable"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "canonicalUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "pattern": "^[^\\r\\n]+$"
+              },
+              "lastModified": {
+                "type": "string",
+                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "surfaceTier": {
+                "const": "public-artifact"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "representingPage": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "spendBearing": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "targetExecutionRoute": {
+                "const": "control-plane-mcp"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactClass": {
+                "const": "mcp-endpoint"
+              },
+              "ingressRoute": {
+                "const": "public-read-mcp"
+              }
+            },
+            "required": [
+              "artifactClass",
+              "ingressRoute"
+            ]
+          },
+          "then": {
+            "properties": {
+              "readOnly": {
+                "const": true
+              },
+              "service": {
+                "type": "object",
+                "properties": {
+                  "authorizationMetadataUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "authorizationMetadataUrl"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

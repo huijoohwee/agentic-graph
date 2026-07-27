@@ -536,7 +536,7 @@ export function testCanvasViewMenuKeepsMobileFirstGroupedOrder() {
   }
   const surfaceMode = options.find(option => option.id === 'surface:menu')
   const surfaceChildIds = surfaceMode?.children?.map(child => child.id).join('|')
-  const expectedSurfaceChildIds = 'surface:2d|surface:3d|surface:xr|surface:voxel|surface:geospatial'
+  const expectedSurfaceChildIds = 'surface:2d|surface:3d|surface:xr|surface:geo-xr|surface:voxel|surface:geospatial'
   if (surfaceChildIds !== expectedSurfaceChildIds) {
     throw new Error(`Expected Surface Mode to own ${expectedSurfaceChildIds}, got ${String(surfaceChildIds)}`)
   }
