@@ -12,6 +12,7 @@ import { toMetadataRecord } from '@/lib/graph/documentMetadata'
 import { readDocumentViewModeContext } from '@/lib/graph/documentViewMode'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { isPlainObject } from '@/lib/graph/value'
+import { buildSubgraphsKey } from '@/lib/graph/subgraphs'
 
 export type SceneGroupsDerivation = {
   key: string
@@ -56,6 +57,7 @@ const buildKey = (args: {
   const revKey = `rev:${String(args.graphDataRevision || 0)}`
   const layerKey = layerHash ? `h:${layerHash}` : ''
   const schemaGroupsKey = JSON.stringify(args.schema?.layout?.groups || null)
+  const subgraphsKey = buildSubgraphsKey(g)
   const boundsOverridesKey = (() => {
     const schemaMeta = toMetadataRecord((args.schema as unknown as { metadata?: unknown })?.metadata)
     const raw = schemaMeta[SCHEMA_META_KEY_GROUP_BOUNDS_OVERRIDES]
@@ -82,6 +84,7 @@ const buildKey = (args: {
     `view:${semanticViewModeKey}`,
     `theme:${String(args.resolvedThemeMode || '')}`,
     `groups:${schemaGroupsKey}`,
+    `subgraphs:${subgraphsKey}`,
     boundsOverridesKey ? `groupBounds:${boundsOverridesKey}` : '',
   ].filter(Boolean).join('|')
 }

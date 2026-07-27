@@ -37,7 +37,7 @@ export async function assertFlightSimSeedReadiness({
     || seed.authority_role !== 'derived runtime activation/proof projection'
     || seed.normative_kiro_authority !== '/.kiro/specs/knowgrph-game-flight-sim/'
     || seed.workspace_root_kiro_projection !== 'byte-identical local projection only; never a second authority'
-    || seed.kgCanvasSurfaceMode !== 'xr'
+    || seed.kgCanvasSurfaceMode !== 'geo-xr'
     || seed.kgCanvasRenderMode !== '3d'
     || seed.kgCanvas3dMode !== 'xr'
     || !runReadyDemo
@@ -45,13 +45,13 @@ export async function assertFlightSimSeedReadiness({
     || runReadyDemo.activation !== 'applied-source-document'
     || runReadyDemo.identity_conflict !== 'fail closed when path and source identity disagree'
     || runReadyDemo.canonical_source_file !== `/${flightSeedPath}`
-    || runReadyDemo.presentation !== 'shared-xr-gameplay-overlay'
+    || runReadyDemo.presentation !== 'shared-geo-xr-gameplay-overlay'
     || !Array.isArray(runReadyDemo.external_dependencies)
     || runReadyDemo.external_dependencies.length !== 0
     || !sharedScene
     || sharedScene.source_authority !== `/${physicsSeedPath}`
     || sharedScene.world_ownership !== 'overlay-only'
-    || sharedScene.surface_owner !== 'XR Mode'
+    || sharedScene.surface_owner !== 'Geo+XR Mode'
     || sharedScene.renderer_owner !== 'canvas/src/lib/three/ThreeGraph.impl.tsx'
     || sharedScene.collider_owner !== 'canvas/src/features/three/xrCanonicalSceneSpatialSource.ts'
     || sharedScene.camera_owner !== 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts'
@@ -59,17 +59,18 @@ export async function assertFlightSimSeedReadiness({
     || !geoFlightOverlay
     || geoFlightOverlay.activation !== 'selected authored environment plus source-authored Flight identity'
     || geoFlightOverlay.renderer_owner !== 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'
-    || geoFlightOverlay.overlay_owner !== 'canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx'
+    || geoFlightOverlay.overlay_owner !== 'canvas/src/lib/three/ThreeGraph.impl.tsx'
     || geoFlightOverlay.control_owner !== 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'
     || geoFlightOverlay.route_projection_owner !== 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts'
-    || geoFlightOverlay.xr_canvas_mounted !== false
-    || geoFlightOverlay.map_interaction_preserved !== true
+    || geoFlightOverlay.xr_canvas_mounted !== true
+    || geoFlightOverlay.map_interaction_preserved !== false
+    || geoFlightOverlay.composition !== 'Geo is the visible background below one transparent shared XR Canvas; Flight controls own pointer input'
     || !flightSim
     || flightSim.invocation !== '/flight.sim @canvas #flight operation=open'
     || flightSim.inspect_tool !== 'knowgrph.inspect_local_flight_sim'
     || flightSim.control_tool !== 'knowgrph.control_local_flight_sim'
   ) {
-    throw new Error('Flight Sim seed must remain a source-authored overlay on the canonical XR or Geo surface')
+    throw new Error('Flight Sim seed must remain a source-authored composition on the canonical Geo+XR surface')
   }
   if (
     !assetPipeline

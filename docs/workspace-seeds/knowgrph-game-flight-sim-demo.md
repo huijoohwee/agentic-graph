@@ -9,7 +9,7 @@ publish_scope: "local-only"
 authority_role: "derived runtime activation/proof projection"
 normative_kiro_authority: "/.kiro/specs/knowgrph-game-flight-sim/"
 workspace_root_kiro_projection: "byte-identical local projection only; never a second authority"
-kgCanvasSurfaceMode: "xr"
+kgCanvasSurfaceMode: "geo-xr"
 kgCanvasRenderMode: "3d"
 kgCanvas3dMode: "xr"
 kgFloatingPanelOpen: true
@@ -26,7 +26,7 @@ run_ready_demo:
   identity_authority: "source-authored run_ready_demo.id"
   imported_path_alias_required: false
   identity_conflict: "fail closed when path and source identity disagree"
-  canonical_consumers: ["workspace", "xr-mode"]
+  canonical_consumers: ["workspace", "geo-xr-mode"]
   dev_command: "npm run dev"
   canonical_source_file: "/docs/workspace-seeds/knowgrph-game-flight-sim-demo.md"
   env_selector: "VITE_KNOWGRPH_RUN_READY_DEMO=flight-sim"
@@ -35,7 +35,7 @@ run_ready_demo:
   source_backed: true
   clean_canvas_recommended: true
   native_runtime: true
-  presentation: "shared-xr-gameplay-overlay"
+  presentation: "shared-geo-xr-gameplay-overlay"
   document_presentation: "runtime-ready-workspace-demo"
   auto_start: true
   external_dependencies: []
@@ -43,7 +43,7 @@ run_ready_demo:
 shared_xr_scene:
   source_authority: "/docs/workspace-seeds/knowgrph-physics-playground-demo.md"
   world_ownership: "overlay-only"
-  surface_owner: "XR Mode"
+  surface_owner: "Geo+XR Mode"
   renderer_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
   collider_owner: "canvas/src/features/three/xrCanonicalSceneSpatialSource.ts"
   camera_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
@@ -51,11 +51,12 @@ shared_xr_scene:
 geo_flight_overlay:
   activation: "selected authored environment plus source-authored Flight identity"
   renderer_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  overlay_owner: "canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx"
+  overlay_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
   control_owner: "canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts"
   route_projection_owner: "canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts"
-  xr_canvas_mounted: false
-  map_interaction_preserved: true
+  xr_canvas_mounted: true
+  map_interaction_preserved: false
+  composition: "Geo is the visible background below one transparent shared XR Canvas; Flight controls own pointer input"
 native_flight_demo:
   runtime_owner: "Flight Sim projection on the active shared XR or Geo Canvas surface"
   default_aircraft: "vehicle-airplane"
@@ -195,8 +196,8 @@ flight_sim:
   entry_failure: "leave the existing Canvas, scene graph, and prior controller unchanged; surface a local error"
   restoration_failure: "retain the existing single Canvas without a second renderer; surface a local error"
   controller_handoff: "supply a pure aircraft follow/framing descriptor to the shared Physics controller camera; never mount a Flight-owned camera"
-  renderer_owner: "the existing React Three Fiber Canvas in shared XR Mode; never a second Canvas"
-  scene_composition: "authored XR atmosphere, terrain, and props plus Flight aircraft and waypoint/objective actors with the HUD overlay; no fallback arena or Flight-owned camera"
+  renderer_owner: "the existing transparent React Three Fiber Canvas in shared Geo+XR Mode; never a second Canvas"
+  scene_composition: "local Geo background plus authored XR subjects and Flight aircraft and waypoint/objective actors with the HUD overlay; no XR atmosphere, duplicate terrain, fallback arena, or Flight-owned camera"
   simulation_clock: "exact 1/60-second fixed ticks, at most five catch-up ticks per advance, ready at tick zero until normalized desktop, pointer, touch, gamepad, Motion Control, or MCP input"
   replay_guard: "validate source, seed, input count/order/bytes; halt on the first byte divergence and preserve the last byte-equivalent committed World"
   transactional_system_order: ["InputIntegrationSystem", "FlightModelSystem", "CollisionResolverSystem", "ObjectiveSystem"]
@@ -284,9 +285,9 @@ flow:
   edges:
 ---
 
-# Native Flight Sim in XR Mode
+# Native Flight Sim in Geo+XR Mode
 
-This Source Files document is the local XR Mode runtime authority for one deterministic, browser-local flight mission. Applying it opens **Flight Sim** on the canonical Physics-authored XR world, prepares a healthy mission at tick zero, and waits for normalized input. It does not create another Canvas, renderer, terrain, collider catalog, camera driver, rendered XR world or scene owner, persistence owner, or deployment surface.
+This Source Files document is the local Geo+XR Mode runtime authority for one deterministic, browser-local flight mission. Applying it opens **Flight Sim** on the local Geo background with the canonical Physics-authored XR subjects in the existing transparent shared Canvas, prepares a healthy mission at tick zero, and waits for normalized input. It does not create another Canvas, renderer, terrain, collider catalog, camera driver, rendered XR world or scene owner, persistence owner, network map dependency, or deployment surface.
 
 ## Run locally
 
@@ -325,7 +326,7 @@ The required aircraft loads from committed img2threejs-style TypeScript plus `ve
 ## Runtime-readiness gates
 
 - [x] Source identity is `flight-sim`, independent of import path, with conflict rejection.
-- [x] Flight is an XR Mode overlay on the Physics source-authored world; it owns no second rendered XR world, scene owner, or Canvas.
+- [x] Flight is a Geo+XR Mode composition: local Geo owns the background and the Physics source-authored XR stage owns one transparent Canvas; Flight owns no second rendered XR world, scene owner, or Canvas.
 - [x] Fixed Follow and Free Orbit come from the shared Camera catalog, and the Physics controller hook is the sole camera/OrbitControls mutator for the pure Flight framing descriptor.
 - [x] Chase, Cockpit, and Survey vary only Flight's pure framing descriptor; the north-up route inset derives entirely from authored local mission state with zero map or token dependency.
 - [x] The default load is spec-primary for the required aircraft and contains exactly one committed-local optional opaque GLB; remote and unavailable fallbacks fail closed.

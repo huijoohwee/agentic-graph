@@ -5,7 +5,7 @@ import { openFloatingPanelChat } from '@/features/chat/floatingPanelChat/floatin
 import { UI_COPY } from '@/lib/config'
 import { getNextThemeMode, type ThemeMode } from '@/lib/ui/theme'
 import { type GraphSchema } from '@/lib/graph/schema'
-import { toggleGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
+import { setGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
 import { togglePortHandlesEnabledInSchema } from '@/lib/graph/portHandlesBehavior'
 import type { MainPanelTabKey } from '@/features/toolbar/hooks/useMainPanelDrag'
 
@@ -168,7 +168,7 @@ export function useToolbarActions(
   }, [])
 
   const handleOpenGeospatialMode = useCallback(() => {
-    void toggleGeospatialModeEnabled()
+    void setGeospatialModeEnabled(true)
       .then(nextEnabled => {
         onGeospatialEnabledChange?.(nextEnabled)
         if (nextEnabled) emitFloatingPanelOpen({ tab: 'geo', open: true })

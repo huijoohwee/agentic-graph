@@ -2,7 +2,7 @@ import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 
-export const CANVAS_SURFACE_MODE_IDS = ['2d', '3d', 'xr', 'voxel', 'geospatial'] as const
+export const CANVAS_SURFACE_MODE_IDS = ['2d', '3d', 'xr', 'geo-xr', 'voxel', 'geospatial'] as const
 
 export type CanvasSurfaceModeId = (typeof CANVAS_SURFACE_MODE_IDS)[number]
 
@@ -20,6 +20,7 @@ const CANVAS_SURFACE_MODE_SPECS: Record<CanvasSurfaceModeId, CanvasSurfaceModeSp
   '2d': { id: '2d', title: '2D Mode', label: '2D' },
   '3d': { id: '3d', title: '3D Mode', label: '3D' },
   xr: { id: 'xr', title: 'XR Mode', label: 'XR' },
+  'geo-xr': { id: 'geo-xr', title: 'Geo+XR Mode', label: 'Geo+XR' },
   voxel: { id: 'voxel', title: 'Voxel Mode', label: 'Voxel' },
   geospatial: { id: 'geospatial', title: 'Geospatial Mode', label: 'Geo' },
 }
@@ -154,6 +155,14 @@ export function getCanvasSurfaceModeDisabledCopy(
     }
     return null
   }
+  if (mode === 'geo-xr') {
+    return (args.layoutMode ?? args.schema?.layout?.mode) === 'radial'
+      ? {
+        reason: 'Geo+XR Mode is disabled in Radial Layout',
+        hint: 'Switch layout mode to Block',
+      }
+      : null
+  }
   if (!args.schema) {
     return {
       reason: 'Graph schema is not ready yet',
@@ -194,6 +203,13 @@ export function applyCanvasSurfaceModeSelection(params: CanvasSurfaceModeSelecti
     return true
   }
   if (mode === 'geospatial') {
+    setCanvasRenderMode('2d')
+    onOpenGeospatialMode()
+    return true
+  }
+  if (mode === 'geo-xr') {
+    if ((params.layoutMode ?? schema?.layout?.mode) === 'radial') return false
+    activateCanvasGraphSurfaceMode({ mode: 'xr', setCanvas3dMode, setCanvasRenderMode })
     onOpenGeospatialMode()
     return true
   }

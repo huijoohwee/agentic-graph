@@ -106,6 +106,7 @@ const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOptio
   '2d': Columns2,
   '3d': Box,
   xr: Glasses,
+  'geo-xr': Glasses,
   voxel: Cuboid,
   geospatial: Map,
 }
@@ -522,6 +523,10 @@ export const getCanvasViewTriggerState = (
   state: CanvasViewModelState,
   rendererOptions: CanvasViewRendererOption[],
 ): { id: CanvasViewOptionId; title: string; label: string } => {
+  if (state.geospatialEnabled && state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr') {
+    const spec = getCanvasSurfaceModeSpec('geo-xr')
+    return { id: 'surface:geo-xr', title: spec.title, label: spec.label }
+  }
   if (state.geospatialEnabled) {
     const spec = getCanvasSurfaceModeSpec('geospatial')
     return { id: 'surface:geospatial', title: spec.title, label: spec.label }

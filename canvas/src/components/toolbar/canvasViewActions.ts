@@ -41,7 +41,7 @@ type CanvasViewActionParams = {
   ensureBaselineUnlocked: () => boolean
   geospatialEnabled: boolean
   onOpenGeospatialMode: () => void
-  onOpenShared3dPanel?: (mode: '3d' | 'xr') => void
+  onOpenShared3dPanel?: (mode: '3d' | 'xr' | 'geo-xr') => void
   canvas2dRenderer: Canvas2dRendererId
   canvas3dMode: string
   canvasRenderMode: '2d' | '3d'
@@ -214,8 +214,8 @@ export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
   }
   if (id.startsWith('surface:')) {
     const mode = id.slice('surface:'.length) as CanvasSurfaceModeId
-    if (mode === 'xr') {
-      onOpenShared3dPanel?.('xr')
+    if (mode === 'xr' || mode === 'geo-xr') {
+      onOpenShared3dPanel?.(mode)
       return
     }
     const activated = applyCanvasSurfaceModeSelection({

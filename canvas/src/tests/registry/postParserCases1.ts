@@ -385,6 +385,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["graph.groups.subgraphs.depthFromParent","@/__tests__/subgraphs.test","testDeriveGraphGroupsComputesNestedDepthFromParentId"],
   ["graph.groups.subgraphs.parentIncludesDescendants","@/__tests__/subgraphs.test","testDeriveGraphGroupsNestedParentIncludesDescendantMembers"],
   ["graph.groups.visibility.collapsedAncestors","@/__tests__/subgraphs.test","testFilterGroupsByCollapsedAncestorsHidesDescendants"],
+  ["graph.groups.subgraphs.sceneCacheInvalidation","@/__tests__/subgraphs.test","testSubgraphChangesInvalidateSceneCachesWithoutRevisionChange"],
   ["zoom.invariants.semanticMode.carriesZoomState","@/__tests__/semanticModeZoomInvariants.test","testSemanticModeSwitchCarriesZoomStateAcrossKeys"],
   ["zoom.invariants.schemaUpdate.carriesZoomState","@/__tests__/semanticModeZoomInvariants.test","testSchemaUpdateCarriesZoomStateAcrossLayoutKey"],
   ["zoom.invariants.storyboardWidget.ignoresDocumentModeCoupling","@/__tests__/semanticModeZoomInvariants.test","testStoryboardWidgetZoomKeyIgnoresDocumentModeCoupling"],

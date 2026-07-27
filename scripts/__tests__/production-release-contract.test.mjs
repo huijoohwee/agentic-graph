@@ -245,8 +245,14 @@ test('verified production mirror is published only after live smoke', () => {
   )
   assert.match(deployJob, /PRODUCTION_BROWSER_HEADLESS: 'false'/)
   assert.match(deployJob, /xvfb-run --auto-servernum npm run production:fidelity:check/)
-  assert.match(deployJob, /xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm/)
-  assert.match(deployJob, /xvfb-run --auto-servernum npm run production:sw-upgrade:verify/)
+  assert.match(
+    deployJob,
+    /timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm/,
+  )
+  assert.match(
+    deployJob,
+    /timeout --foreground --kill-after=30s 12m xvfb-run --auto-servernum npm run production:sw-upgrade:verify/,
+  )
   assert.match(deployJob, /PRODUCTION_SW_PROFILE_DIR: \$\{\{ runner\.temp \}\}\/knowgrph-production-sw-profile/)
   assert.match(deployJob, /PRODUCTION_SW_EVIDENCE_PATH: \$\{\{ runner\.temp \}\}\/knowgrph-production-sw-evidence\.json/)
   assert.match(productionServiceWorkerUpgradeScript, /chromium\.launchPersistentContext\(profileDirectory/)

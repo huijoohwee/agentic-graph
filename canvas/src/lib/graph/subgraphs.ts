@@ -71,6 +71,16 @@ export const readSubgraphs = (data: GraphData | null | undefined): UserSubgraph[
   return out
 }
 
+export const buildSubgraphsKey = (data: GraphData | null | undefined): string =>
+  JSON.stringify(readSubgraphs(data).map(subgraph => ({
+    id: subgraph.id,
+    label: subgraph.label,
+    memberNodeIds: subgraph.memberNodeIds,
+    parentId: subgraph.parentId ?? null,
+    kind: subgraph.kind ?? 'subgraph',
+    autoBounds: subgraph.autoBounds === true,
+  })))
+
 export const writeSubgraphs = (data: GraphData, subgraphs: UserSubgraph[]): GraphData => {
   const meta = ((data.metadata || {}) as Record<string, JSONValue>) || {}
   const next: UserSubgraph[] = []

@@ -28,7 +28,25 @@ const reportGeospatialDeepLinkError = (error: unknown): void => {
   console.error(`[kg-geo] ${message}`)
 }
 
+export function shouldEnsureCanvasGeospatialMode(
+  floatingPanelOpen: boolean,
+  floatingPanelView: string,
+): boolean {
+  return floatingPanelOpen && floatingPanelView === 'geo'
+}
+
+export function resolveCanvasGeospatialModeEnabled(
+  persistedEnabled: boolean,
+  floatingPanelOpen: boolean,
+  floatingPanelView: string,
+): boolean {
+  return persistedEnabled
+    || shouldEnsureCanvasGeospatialMode(floatingPanelOpen, floatingPanelView)
+}
+
 export function useCanvasGeospatialRuntime(): boolean {
+  const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen === true)
+  const floatingPanelView = useGraphStore(state => state.floatingPanelView)
   const geospatialHostViewportSnapshotRef = React.useRef<null | {
     zoomState: null | { k: number; x: number; y: number; graphDataRevision?: number; viewportW?: number; viewportH?: number }
     zoomStateByKey: Record<string, { k: number; x: number; y: number; graphDataRevision?: number; viewportW?: number; viewportH?: number }>
@@ -97,6 +115,23 @@ export function useCanvasGeospatialRuntime(): boolean {
   }, [])
 
   React.useEffect(() => {
+    if (!shouldEnsureCanvasGeospatialMode(floatingPanelOpen, floatingPanelView)) return
+    let cancelled = false
+    void setGeospatialModeEnabledThroughBridge(true)
+      .then(enabled => {
+        if (cancelled) return
+        lastHandledGeospatialModeEnabledRef.current = enabled
+        setGeospatialModeEnabled(previous => (
+          previous === enabled ? previous : enabled
+        ))
+      })
+      .catch(reportGeospatialDeepLinkError)
+    return () => {
+      cancelled = true
+    }
+  }, [floatingPanelOpen, floatingPanelView])
+
+  React.useEffect(() => {
     return onGeospatialModeChanged(detail => {
       const enabled = typeof detail.enabled === 'boolean' ? detail.enabled : null
       if (enabled == null) return
@@ -139,5 +174,9 @@ export function useCanvasGeospatialRuntime(): boolean {
     })
   }, [])
 
-  return geospatialModeEnabled
+  return resolveCanvasGeospatialModeEnabled(
+    geospatialModeEnabled,
+    floatingPanelOpen,
+    floatingPanelView,
+  )
 }

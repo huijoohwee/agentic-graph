@@ -1122,6 +1122,7 @@ export const resolveFlowGroupPaintVisibility = (args: {
   fill: string
   fillOpacity: number
   fontSizePx: number
+  selected?: boolean
   strokeWidthPx: number
   zoom: number
 }) => {
@@ -1130,14 +1131,19 @@ export const resolveFlowGroupPaintVisibility = (args: {
     ? Math.max(0, Math.min(1, args.fillOpacity))
     : 1
   const fillOwnsAlpha = CSS_COLOR_WITH_ALPHA_RE.test(String(args.fill || '').trim())
+  const selected = args.selected === true
   return {
-    fillGlobalAlpha: fillOwnsAlpha ? 1 : fillOpacity,
-    fontSizePx: Math.max(Math.max(0, args.fontSizePx), 11 / zoom),
-    strokeWidthPx: Math.max(Math.max(0, args.strokeWidthPx), 1.5 / zoom),
+    fillGlobalAlpha: selected ? Math.max(0.16, fillOpacity) : fillOwnsAlpha ? 1 : fillOpacity,
+    fontSizePx: Math.max(Math.max(0, args.fontSizePx), (selected ? 13 : 11) / zoom),
+    strokeWidthPx: Math.max(Math.max(0, args.strokeWidthPx), (selected ? 3 : 1.5) / zoom),
   }
 }
 
-const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupAabb> | null) => {
+const drawGroups = (
+  rt: FlowNativeRuntime,
+  groupAabbById: Map<string, FlowGroupAabb> | null,
+  selectedGroupId: string,
+) => {
   const cfg = rt.presentation.groups
   if (!cfg.enabled) return
   const scene = rt.scene
@@ -1190,7 +1196,8 @@ const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupA
     const h = Math.max(1, maxY - minY)
 
     const gStroke = resolveColor(rt, g.style?.stroke, stroke)
-    const gFill = resolveColor(rt, g.style?.fill, fill)
+    const selected = String(g.id || '') === selectedGroupId
+    const gFill = selected ? gStroke : resolveColor(rt, g.style?.fill, fill)
     const depth = typeof g.depth === 'number' && Number.isFinite(g.depth) ? Math.max(0, Math.floor(g.depth)) : 0
     const depthStyle = computeGroupDepthStyle({
       depth,
@@ -1205,6 +1212,7 @@ const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupA
       fill: gFill,
       fillOpacity: depthStyle.fillOpacity,
       fontSizePx: Math.max(10, rt.presentation.labels?.groupFontSizePx ?? 12),
+      selected,
       strokeWidthPx: gStrokeWidth,
       zoom: rt.transform.k,
     })
@@ -1461,7 +1469,7 @@ export const drawFlowNative = (rt: FlowNativeRuntime, args: FlowNativeDrawArgs) 
     return m
   })()
 
-  drawGroups(rt, groupAabbById)
+  drawGroups(rt, groupAabbById, selectedGroupId)
 
   const normalEdges: FlowNativeEdge[] = []
   const overlayEdges: FlowNativeEdge[] = []
