@@ -71,3 +71,32 @@ export function testFlowGroupAabbExpandsToContainPinnedWidgetOverlayExtents() {
     throw new Error('expected group aabb to expand to pinned widget overlay extents')
   }
 }
+
+export function testFlowGroupAabbUsesOverlayOnlyMemberBounds() {
+  const scene: FlowNativeScene = {
+    nodes: [],
+    edges: [],
+    nodeById: new Map(),
+    overlayAabbByNodeId: {
+      card: { minX: 100, minY: 120, maxX: 420, maxY: 300 },
+      panel: { minX: 520, minY: 80, maxX: 980, maxY: 640 },
+    },
+    groups: [],
+    groupIdsByNodeId: new Map(),
+  }
+  const group: GraphGroup = {
+    id: 'subgraph:overlay-only',
+    label: 'Overlay group',
+    source: 'userSubgraph',
+    depth: 0,
+    memberNodeIds: ['card', 'panel'],
+    style: {},
+    autoBounds: true,
+  }
+
+  const aabb = computeFlowGroupAabb({ scene, group, paddingPx: 20, labelTopExtraPx: 12 })
+  if (!aabb) throw new Error('expected overlay-only members to produce a visible group aabb')
+  if (aabb.minX !== 80 || aabb.minY !== 48 || aabb.maxX !== 1000 || aabb.maxY !== 660) {
+    throw new Error(`expected overlay-only group bounds with padding, got ${JSON.stringify(aabb)}`)
+  }
+}

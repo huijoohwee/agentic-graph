@@ -160,6 +160,10 @@ export const runMarkdownTests = async (results: TestResult[]) => {
     const mod = await modFlowGroupAabbIncludesMembersWhenBoundsExplicit()
     await mod.testFlowGroupAabbExpandsExplicitBoundsToContainMembers()
   })
+  await execTest(results, 'flow.groupAabb.overlayOnlyMembersRemainVisible', async () => {
+    const mod = await modFlowGroupAabbIncludesMembersWhenBoundsExplicit()
+    await mod.testFlowGroupAabbUsesOverlayOnlyMemberBounds()
+  })
   await execTest(results, 'flow.frontmatterFlow.portHandles.enabled', async () => {
     const mod = await modFlowCanvasFrontmatterFlowPortHandlesEnabledRegression()
     await mod.testFlowCanvasFrontmatterFlowEnablesPortHandles()

@@ -1,6 +1,6 @@
 import type React from 'react'
 
-import type { FlowNativeDrawArgs, FlowNativeRuntime } from '@/components/FlowCanvas/nativeRuntime'
+import type { FlowNativeDrawArgs, FlowNativeRuntime, FlowOverlayNodeAabb } from '@/components/FlowCanvas/nativeRuntime'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
@@ -52,6 +52,7 @@ export type FlowCanvasProps = {
   hidePortHandleNodeIds?: string[]
   excludeRichMediaOverlayNodeIds?: string[]
   excludeNativeSceneNodeIds?: string[]
+  overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb>
   flowWidgetPinnedByNodeIdOverride?: Record<string, boolean>
   flowWidgetStateGraphKeyOverride?: string | null
   storyboardCollectiveZoomBaselineKRef?: React.MutableRefObject<number | null>
