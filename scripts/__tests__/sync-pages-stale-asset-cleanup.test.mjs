@@ -55,7 +55,15 @@ test("publish sync includes the published agent-ready dependency closure", () =>
   assert.match(syncScript, /cameraMcpContract\.mjs/);
   assert.match(syncScript, /richMediaTextMarkdownContractSource/);
   assert.match(syncScript, /\[richMediaTextMarkdownContractSource, richMediaTextMarkdownContractTarget\]/);
+  assert.match(syncScript, /groupPanelContractSource/);
+  assert.match(syncScript, /\[groupPanelContractSource, groupPanelContractTarget\]/);
   assert.match(syncScript, /\.map\(filename => \[agentReadyFeatureSource\(filename\), agentReadyFeatureTarget\(filename\)\]\)/);
+});
+
+test("publish sync includes the Group Panel tool contract dependency", () => {
+  assert.match(syncScript, /groupPanelContractSource = path\.resolve\(knowgrphRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract\.mjs'\)/);
+  assert.match(syncScript, /groupPanelContractTarget = path\.resolve\(mirrorRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract\.mjs'\)/);
+  assert.match(syncScript, /\[groupPanelContractSource, groupPanelContractTarget\]/);
 });
 
 test("publish sync includes the cross-root semantic-key dependency", () => {
