@@ -16,7 +16,13 @@ import { inferTextGenerationProviderFamily } from '@/features/storyboard-widget-
 import { runSwarmPredictionWidgetProperties } from '@/features/swarm-prediction/swarmPredictionWidget'
 import { FLOW_SHOWRUNNER_NODE_TYPE_ID, runShowrunnerWidgetProperties } from '@/features/ai-showrunner/showrunnerFlowNode'
 import { getCachedStoryboardWidgetWorkflowNodeResolutionContext, resolveStoryboardWidgetWorkflowNodeByIdAcrossGraphs, resolveStoryboardWidgetWorkflowRunTarget } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
-import { buildStoryboardWidgetInlineComputeOutputPatch, resolveStoryboardWidgetTextGenerationPrompts, resolveStoryboardWidgetWorkflowConnectedValuesInput } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs'
+import {
+  buildStoryboardWidgetInlineComputeOutputPatch,
+  resolveStoryboardWidgetTextGenerationPrompts,
+  resolveStoryboardWidgetTextSourceContexts,
+  resolveStoryboardWidgetWorkflowConnectedValuesInput,
+  serializeStoryboardWidgetTextSourceProvenance,
+} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs'
 import { isStoryboardWidgetWorkflowRunnableNode, resolveStoryboardWidgetWorkflowDownstreamRunTargetIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowDownstreamRunTargets'
 import { publishStoryboardWidgetSourceBackedRunOutput } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetSourceBackedRunOutput'
 import { setStoryboardWidgetWorkflowRunLoadingStateForKnownNodeIds, updateStoryboardWidgetWorkflowOutputForKnownNodeIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowWriteback'
@@ -454,7 +460,18 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           registry: args.widgetRegistry,
         })
         const connectedValuesBySchemaPath = connectedValuesInput?.connectedValuesByNodeId.get(connectedValuesInput.targetNodeId)
-        const { authoredPrompt, connectedPrompt, prompt } = resolveStoryboardWidgetTextGenerationPrompts({ authoredPrompt: properties.prompt, connectedValue: connectedValuesBySchemaPath?.['properties.prompt']?.value })
+        const connectedPromptValue = connectedValuesBySchemaPath?.['properties.prompt']
+        const sourceContexts = resolveStoryboardWidgetTextSourceContexts({
+          graphData: connectedValuesInput?.graphData,
+          connectedValue: connectedPromptValue,
+          targetPath: 'properties.prompt',
+        })
+        const outputSourceProvenanceJson = serializeStoryboardWidgetTextSourceProvenance(sourceContexts)
+        const { authoredPrompt, connectedPrompt, prompt } = resolveStoryboardWidgetTextGenerationPrompts({
+          authoredPrompt: properties.prompt,
+          connectedValue: connectedPromptValue?.value,
+          sourceContexts,
+        })
         const textProviderBase = { properties, store, formId: resolvedTextRegistryEntry?.formId || rawNodeProperties[FLOW_WIDGET_FORM_ID_KEY], localProperties: rawNodeProperties }
         const generateTextWithProvider = (generationPrompt: string, onText?: (nextText: string) => void) => generateStoryboardWidgetTextWithProvider({
           ...textProviderBase,
@@ -520,6 +537,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
             outputPath,
             loading, versionId: `text-run-${textRunStartedAt}`, versionCreatedAt: textRunStartedAt,
             connectCreatedOutputToAnchor: true,
+            panelProperties: { outputSourceProvenanceJson: outputSourceProvenanceJson || undefined },
           })
         }
         try {
