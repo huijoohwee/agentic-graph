@@ -1,4 +1,4 @@
-import { Box, ChartGantt, Circle, CircleDot, Columns2, Cuboid, Diamond, FileText, Frame, GitGraph, GitMerge, Glasses, Grid3x3, Hexagon, History, Image as ImageIcon, Images, LayoutPanelTop, Magnet, Map, MonitorPlay, Network, Palette, PanelsTopLeft, Pencil, Share2, Square, Table, Tags, Workflow } from 'lucide-react'
+import { AlignCenter, Box, ChartGantt, Circle, CircleDot, Columns2, Cuboid, Diamond, FileText, Frame, GitGraph, GitMerge, Glasses, Grid3x3, Hexagon, History, Image as ImageIcon, Images, LayoutPanelTop, Magnet, Map, MonitorPlay, Network, Palette, PanelsTopLeft, Pencil, Share2, Square, Table, Tags, Workflow } from 'lucide-react'
 import type { Canvas2dRendererId } from '@/lib/config'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import {
@@ -15,11 +15,16 @@ import {
   CANVAS_GRID_DISPLAY_CONTROL_ID,
   CANVAS_GRID_DISPLAY_CONTROL_LABEL,
   CANVAS_GRID_DISPLAY_CONTROL_TITLE,
+  HELPER_LINES_DISPLAY_CONTROL_DESCRIPTION,
+  HELPER_LINES_DISPLAY_CONTROL_ID,
+  HELPER_LINES_DISPLAY_CONTROL_LABEL,
+  HELPER_LINES_DISPLAY_CONTROL_TITLE,
   SNAP_GRID_DISPLAY_CONTROL_DESCRIPTION,
   SNAP_GRID_DISPLAY_CONTROL_ID,
   SNAP_GRID_DISPLAY_CONTROL_LABEL,
   SNAP_GRID_DISPLAY_CONTROL_TITLE,
   readCanvasGridDisplayControlActive,
+  readHelperLinesDisplayControlActive,
   readSnapGridDisplayControlActive,
 } from '@/lib/canvas/canvasGridDisplayControls'
 import {
@@ -101,6 +106,7 @@ const CANVAS_VIEW_SURFACE_MODE_ICON: Record<CanvasSurfaceModeId, CanvasViewOptio
   '2d': Columns2,
   '3d': Box,
   xr: Glasses,
+  'geo-xr': Glasses,
   voxel: Cuboid,
   geospatial: Map,
 }
@@ -141,10 +147,11 @@ export const buildCanvasViewOptions = (
   const getSurfaceModeDisabledCopy = (mode: CanvasSurfaceModeId) => getCanvasSurfaceModeDisabledCopy(surfaceModeArgs, mode)
   const surfaceModeChildren = listCanvasSurfaceModeSpecs().map(spec => {
     const disabledCopy = spec.id === 'geospatial' ? null : getSurfaceModeDisabledCopy(spec.id)
+    const isGeospatialExit = state.geospatialEnabled && spec.id === '2d'
     return {
       id: `surface:${spec.id}` as const,
-      title: spec.title,
-      label: spec.label,
+      title: isGeospatialExit ? 'Canvas View Mode' : spec.title,
+      label: isGeospatialExit ? 'Canvas' : spec.label,
       Icon: CANVAS_VIEW_SURFACE_MODE_ICON[spec.id],
       disabled: !!disabledCopy,
       disabledReason: disabledCopy?.reason,
@@ -411,6 +418,14 @@ export const buildCanvasViewOptions = (
           isActive: readSnapGridDisplayControlActive(state.schema),
         },
         {
+          id: HELPER_LINES_DISPLAY_CONTROL_ID,
+          title: HELPER_LINES_DISPLAY_CONTROL_TITLE,
+          label: HELPER_LINES_DISPLAY_CONTROL_LABEL,
+          Icon: AlignCenter,
+          description: HELPER_LINES_DISPLAY_CONTROL_DESCRIPTION,
+          isActive: readHelperLinesDisplayControlActive(state.schema),
+        },
+        {
           id: CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_ID,
           title: readCanvasAspectRatioDisplayControlTitle(state.aspectRatioMode),
           label: CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_LABEL,
@@ -509,6 +524,10 @@ export const getCanvasViewTriggerState = (
   state: CanvasViewModelState,
   rendererOptions: CanvasViewRendererOption[],
 ): { id: CanvasViewOptionId; title: string; label: string } => {
+  if (state.geospatialEnabled && state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr') {
+    const spec = getCanvasSurfaceModeSpec('geo-xr')
+    return { id: 'surface:geo-xr', title: spec.title, label: spec.label }
+  }
   if (state.geospatialEnabled) {
     const spec = getCanvasSurfaceModeSpec('geospatial')
     return { id: 'surface:geospatial', title: spec.title, label: spec.label }

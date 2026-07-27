@@ -34,7 +34,11 @@ test('night training changes atmosphere and lights only at shared XR owners', ()
   )
   assert.match(environment, /resolveFlightSimTrainingMission/)
   assert.match(environment, /night \? '#050a1a'/)
-  assert.match(stage, /intensity=\{night \? 0\.13 : 0\.4\}/)
+  assert.match(
+    stage,
+    /const ambientIntensity = environmentPresentation\?\.ambientIntensity\s*\?\? \(night \? 0\.13 : 0\.4\)/,
+  )
+  assert.match(stage, /<ambientLight intensity=\{ambientIntensity\}/)
   assert.doesNotMatch(missionStage, /ambientLight|directionalLight|hemisphereLight/)
 })
 

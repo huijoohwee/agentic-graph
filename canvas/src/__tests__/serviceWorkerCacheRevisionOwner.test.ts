@@ -14,20 +14,21 @@ const ORIGIN = 'https://airvio.co'
 type CacheEntry = string | { path: string; contentType: string | null }
 
 const createCacheStorage = (entriesByCache: Record<string, CacheEntry[]>) => {
+  const createEntry = (entry: CacheEntry) => {
+    const normalized = typeof entry === 'string'
+      ? { path: entry, contentType: 'text/javascript' }
+      : entry
+    return {
+      request: new Request(`${ORIGIN}${normalized.path}`),
+      response: normalized.contentType === null
+        ? undefined
+        : new Response('', { headers: { 'Content-Type': normalized.contentType } }),
+    }
+  }
   const entries = new Map(
     Object.entries(entriesByCache).map(([cacheName, cacheEntries]) => [
       cacheName,
-      cacheEntries.map(entry => {
-        const normalized = typeof entry === 'string'
-          ? { path: entry, contentType: 'text/javascript' }
-          : entry
-        return {
-          request: new Request(`${ORIGIN}${normalized.path}`),
-          response: normalized.contentType === null
-            ? undefined
-            : new Response('', { headers: { 'Content-Type': normalized.contentType } }),
-        }
-      }),
+      cacheEntries.map(createEntry),
     ]),
   )
   return {
@@ -58,6 +59,11 @@ const createCacheStorage = (entriesByCache: Record<string, CacheEntry[]>) => {
         const url = new URL(entry.request.url)
         return `${url.pathname}${url.search}`
       })
+    },
+    add(cacheName: string, entry: CacheEntry) {
+      const cacheEntries = entries.get(cacheName) ?? []
+      cacheEntries.push(createEntry(entry))
+      entries.set(cacheName, cacheEntries)
     },
   }
 }
@@ -190,6 +196,39 @@ test('cache revision owner does not treat a missing current precache response as
 
   assert.deepEqual(result, { ready: false, deletedPaths: [] })
   assert.deepEqual(cacheStorage.readPaths('kg-assets'), [stalePath])
+})
+
+test('cache revision owner retries until the current precache becomes observable', async () => {
+  const currentWorker = createWorker(CURRENT_REVISION)
+  const controllerTarget = Object.assign(new EventTarget(), { controller: currentWorker })
+  const registration = { active: currentWorker, installing: null, waiting: null }
+  const stalePath = `/knowgrph/assets/${PREVIOUS_REVISION}/old-lazy.js`
+  const cacheStorage = createCacheStorage({
+    'workbox-precache-v2': [`/knowgrph/assets/${PREVIOUS_REVISION}/old.js`],
+    'kg-assets': [stalePath],
+  })
+  const owner = installServiceWorkerCacheRevisionOwner({
+    cacheStorage,
+    controllerTarget,
+    registration,
+    origin: ORIGIN,
+    readActiveRevision: async worker => workerRevisions.get(worker) ?? '',
+    pruneRetryDelaysMs: [10],
+  })
+
+  await flushPromises()
+  assert.deepEqual(cacheStorage.readPaths('kg-assets'), [stalePath])
+  cacheStorage.add(
+    'workbox-precache-v2',
+    `/knowgrph/assets/${CURRENT_REVISION}/current.js`,
+  )
+  await new Promise(resolve => setTimeout(resolve, 20))
+
+  assert.deepEqual(cacheStorage.readPaths('workbox-precache-v2'), [
+    `/knowgrph/assets/${CURRENT_REVISION}/current.js`,
+  ])
+  assert.deepEqual(cacheStorage.readPaths('kg-assets'), [])
+  owner.dispose()
 })
 
 test('cache revision owner waits for the attested worker to activate before pruning', async () => {

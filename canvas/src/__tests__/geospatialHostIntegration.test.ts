@@ -248,11 +248,49 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   if (!text.includes('const show2dMapLibreModern = active && geospatialViewMode === \'2d-modern\'')) {
     throw new Error('Expected GeospatialOverlayHost to expose a dedicated 2D MapLibre Modern mode')
   }
-  if (!text.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')) {
+  if (!text.includes('const mapLibreRuntimeEnabled = !sharedXrStage && (show2dMapLibre || show3d)')) {
     throw new Error('Expected GeospatialOverlayHost runtime to enable MapLibre only for explicit 2D/3D MapLibre modes')
   }
   if (!text.includes('<SvgGeospatialFallback')) {
     throw new Error('Expected GeospatialOverlayHost to render the SVG fallback basemap')
+  }
+}
+
+export const testGeoXrUsesSharedXrStageWithoutScreenSpaceBasemap = () => {
+  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
+  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
+  const xrStagePath = path.resolve(process.cwd(), 'src', 'features', 'three', 'XrCanonicalPhysicsStage.tsx')
+  const presentationPath = path.resolve(process.cwd(), 'src', 'features', 'three', 'xrGeoEnvironmentPresentation.ts')
+  const viewportText = readUtf8(viewportPath)
+  const hostText = readUtf8(hostPath)
+  const xrStageText = readUtf8(xrStagePath)
+  const presentationText = readUtf8(presentationPath)
+  if (!viewportText.includes("renderPolicy={composedWithXr ? 'shared-xr-stage' : 'default'}")) {
+    throw new Error('Expected Geo+XR composition to delegate rendering to the shared XR stage')
+  }
+  if (!hostText.includes("const sharedXrStage = props.renderPolicy === 'shared-xr-stage'")) {
+    throw new Error('Expected GeospatialOverlayHost to recognize shared XR stage ownership')
+  }
+  if (!hostText.includes('const mapLibreRuntimeEnabled = !sharedXrStage && (show2dMapLibre || show3d)')) {
+    throw new Error('Expected shared-stage Geo+XR to keep MapLibre style and tile requests disabled')
+  }
+  if (!hostText.includes('{sharedXrStage ? null : (')
+    || hostText.includes('data-kg-geospatial-local-basemap')) {
+    throw new Error('Expected Geo+XR to suppress the screen-space world SVG instead of restyling it')
+  }
+  if (!hostText.includes("data-kg-geospatial-projection-owner={sharedXrStage ? 'shared-r3f-stage' : undefined}")
+    || !hostText.includes('data-kg-geospatial-xr-stage-view={sharedXrStage ? geospatialViewMode : undefined}')) {
+    throw new Error('Expected the Geo host to expose shared-stage browser proof markers')
+  }
+  if (!xrStageText.includes('environmentVisible')
+    || !xrStageText.includes('environmentPresentation={environmentPresentation}')
+    || !xrStageText.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')) {
+    throw new Error('Expected Geo+XR to retain one selected environment while suppressing only XR atmosphere')
+  }
+  for (const presentation of ['2d-classic', '2d-modern', '3d-classic', '3d-modern']) {
+    if (!presentationText.includes(`'${presentation}'`)) {
+      throw new Error(`Expected the shared environment resolver to include ${presentation}`)
+    }
   }
 }
 

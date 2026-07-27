@@ -1,47 +1,24 @@
 import React from 'react'
-import { addAfterEffect, useFrame, useThree } from '@react-three/fiber'
+import { addAfterEffect, invalidate, useFrame, useThree } from '@react-three/fiber'
 import { type Group, type Mesh } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
-import {
-  claimThreeViewportInputOwnership,
-  releaseThreeViewportInputOwnership,
-} from '@/features/three/threeViewportInputOwnership'
-import { readMotionControlSnapshot } from '@/features/three/motionControlRuntime'
-import {
-  isMotionControlPoseTracked,
-  motionControlPoseToControllerInput,
-} from '@/features/three/motionControlPose'
-import { readXrNativeControllerCamera } from '@/features/three/xrNativeControllerCameraRuntime'
 import { readFlightSimDefaultAssetLoadReport } from './assetSpec/flightSimDefaultAssets'
 import {
-  installFlightSimDesktopInput,
-  mergeFlightSimInputs,
-  readFlightSimTouchInput,
-  readStandardFlightSimGamepad,
-  setFlightSimTouchInput,
-  type FlightSimInputBinding,
-} from './flightSimInput'
-import { flightSimInputFromMotionController } from './flightSimMotionControlAdapter'
-import {
-  FLIGHT_SIM_FIXED_STEP_SECONDS,
-  FLIGHT_SIM_NEUTRAL_INPUT,
-} from './flightSimModel'
+  FLIGHT_SIM_AIRCRAFT_FORWARD,
+  FLIGHT_SIM_AIRCRAFT_MODEL_ROTATION,
+  FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE,
+  FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
+} from './flightSimAircraftPresentation'
 import type {
   FlightSimStageRuntimeController,
 } from './flightSimStageRuntimeController'
-import {
-  createFlightSimSimulationClock,
-  runFlightSimStageSimulationStep,
-} from './flightSimSimulationClock'
 import { completeFlightSimReadyFrame } from './flightSimDeadlineRuntime'
 import {
   completeFlightSimStagePreparation,
   readCurrentFlightSimStagePreparationRequest,
 } from './flightSimStagePreparationRuntime'
-
-const INPUT_OWNER_ID = 'flight-sim:aircraft'
-const CLOCK_INTERVAL_MS = FLIGHT_SIM_FIXED_STEP_SECONDS * 1000
+import { useFlightSimSurfaceControls } from './useFlightSimSurfaceControls'
 
 export type FlightSimMissionStageProps = Readonly<{
   coordinateScale?: number
@@ -57,18 +34,12 @@ export function FlightSimMissionStage({
   const waypointRefs = React.useRef(new Map<string, Mesh>())
   const landingPadRef = React.useRef<Mesh | null>(null)
   const snapshotRef = React.useRef(runtimeController.readSnapshot())
-  const desktopInputRef = React.useRef(FLIGHT_SIM_NEUTRAL_INPUT)
-  const desktopBindingRef = React.useRef<FlightSimInputBinding | null>(null)
-  const inputClaimedRef = React.useRef(false)
   const framePresentationRef = React.useRef({
     playable: false,
     readyAtTickZero: false,
     runId: 0,
     tick: 0,
   })
-  const [stagePreparationRequestId] = React.useState(
-    readCurrentFlightSimStagePreparationRequest,
-  )
   const profile = React.useMemo(
     () => runtimeController.readSpatialProfile(),
     [runtimeController],
@@ -115,45 +86,39 @@ export function FlightSimMissionStage({
     }
   }, [assetCatalog, runtimeController])
 
-  React.useEffect(() => runtimeController.subscribe(() => {
-    snapshotRef.current = runtimeController.readSnapshot()
-  }), [runtimeController])
+  useFlightSimSurfaceControls({
+    inputElement: gl.domElement,
+    requestPresentationFrame: invalidate,
+    runtimeController,
+  })
+
+  React.useEffect(() => {
+    const syncRuntimeSnapshot = () => {
+      snapshotRef.current = runtimeController.readSnapshot()
+      // The shared XR Canvas pauses on a demand loop while authored controls are
+      // suspended. Request a committed frame so stage readiness is observable.
+      invalidate()
+    }
+    syncRuntimeSnapshot()
+    return runtimeController.subscribe(syncRuntimeSnapshot)
+  }, [invalidate, runtimeController])
 
   React.useEffect(() => {
     const canvas = gl.domElement
-    const claimed = claimThreeViewportInputOwnership(INPUT_OWNER_ID, {
-      blocksProgrammaticCamera: false,
-    })
-    inputClaimedRef.current = claimed
-    canvas.dataset.kgFlightSimInputOwner = claimed ? INPUT_OWNER_ID : 'blocked'
     canvas.dataset.kgFlightSimSpatialProfile = profile.id
-    const desktop = claimed ? installFlightSimDesktopInput(canvas, {
-      onInput: value => {
-        desktopInputRef.current = value
-      },
-      onPause: () => {
-        setFlightSimTouchInput({})
-        runtimeController.stop()
-      },
-      shouldPauseOnPointerRelease: () => readXrNativeControllerCamera().mode === 'fixed-follow',
-      shouldRequestPointerLock: () => readXrNativeControllerCamera().mode === 'fixed-follow',
-    }) : null
-    let stagePreparationCompleted = false
     const removeAfterRender = addAfterEffect(() => {
-      if (!inputClaimedRef.current) return
       const snapshot = runtimeController.readSnapshot()
+      const stagePreparationRequestId =
+        readCurrentFlightSimStagePreparationRequest()
       if (
-        !stagePreparationCompleted
-        && stagePreparationRequestId !== null
+        stagePreparationRequestId !== null
         && snapshot.active
         && snapshot.phase === 'stopped'
         && !runtimeController.isHydrationPending()
         && !snapshot.runtimeError
         && actorRef.current
       ) {
-        stagePreparationCompleted = completeFlightSimStagePreparation(
-          stagePreparationRequestId,
-        )
+        completeFlightSimStagePreparation(stagePreparationRequestId)
       }
       const presentation = framePresentationRef.current
       if (!presentation.playable) {
@@ -165,51 +130,15 @@ export function FlightSimMissionStage({
         completeFlightSimReadyFrame(presentation.runId, presentation.tick)
       }
     })
-    desktopBindingRef.current = desktop
+    // Stage readiness belongs to the committed mission render, while desktop
+    // input ownership is an independent claim that may still be changing hands.
+    invalidate()
     return () => {
       removeAfterRender()
-      inputClaimedRef.current = false
-      if (desktopBindingRef.current === desktop) desktopBindingRef.current = null
-      desktop?.dispose()
-      releaseThreeViewportInputOwnership(INPUT_OWNER_ID)
-      delete canvas.dataset.kgFlightSimInputOwner
       delete canvas.dataset.kgFlightSimSpatialProfile
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [gl, profile.id, runtimeController, stagePreparationRequestId])
-
-  React.useEffect(() => {
-    const clock = createFlightSimSimulationClock({
-      minimumStepIntervalMs: CLOCK_INTERVAL_MS,
-      runStep: async () => {
-        const pose = readMotionControlSnapshot().pose
-        const motionInput = flightSimInputFromMotionController(
-          motionControlPoseToControllerInput(pose),
-          isMotionControlPoseTracked(pose),
-        )
-        const input = mergeFlightSimInputs([
-          desktopBindingRef.current?.consumeInput() ?? desktopInputRef.current,
-          readFlightSimTouchInput(),
-          readStandardFlightSimGamepad(),
-          motionInput,
-        ])
-        await runFlightSimStageSimulationStep({
-          input,
-          stageInput: runtimeController.setInput,
-          advanceFixedStep: runtimeController.advanceByFixedStep,
-        })
-      },
-      onStepError: () => {
-        runtimeController.stop()
-      },
-    })
-    const timer = window.setInterval(clock.requestStep, CLOCK_INTERVAL_MS)
-    return () => {
-      window.clearInterval(timer)
-      clock.dispose()
-      runtimeController.setInput(FLIGHT_SIM_NEUTRAL_INPUT)
-    }
-  }, [runtimeController])
+  }, [gl, invalidate, profile.id, runtimeController])
 
   useFrame(() => {
     const snapshot = runtimeController.readSnapshot()
@@ -240,7 +169,6 @@ export function FlightSimMissionStage({
     const presentation = framePresentationRef.current
     presentation.playable = snapshot.active
       && playable
-      && inputClaimedRef.current
       && !snapshot.runtimeError
     presentation.readyAtTickZero = snapshot.phase === 'ready'
       && snapshot.tick === 0
@@ -263,7 +191,14 @@ export function FlightSimMissionStage({
           representation: assetCatalog.aircraft.assetSpec.representation,
         }}
       >
-        <group rotation={[-Math.PI / 2, 0, 0]}>
+        <group
+          name={FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE}
+          rotation={[...FLIGHT_SIM_AIRCRAFT_MODEL_ROTATION]}
+          userData={{
+            flightForward: FLIGHT_SIM_AIRCRAFT_FORWARD,
+            proceduralForward: FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
+          }}
+        >
           <XrProceduralVehicleGeometry
             kind="airplane"
             color={assetCatalog.aircraft.assetSpec.defaultColor}

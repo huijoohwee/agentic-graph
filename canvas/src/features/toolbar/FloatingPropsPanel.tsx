@@ -6,6 +6,7 @@ import { isPropsPanelWidgetPaletteEntry } from '@/features/storyboard-widget-man
 import WidgetPalette from '@/features/toolbar/WidgetPalette'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
+import { GroupPanelPaletteAction } from '@/features/toolbar/GroupPanelPaletteAction'
 
 const EMPTY_WIDGET_REGISTRY: WidgetRegistryEntry[] = []
 
@@ -31,6 +32,7 @@ export function FloatingPropsPanel() {
           Switch Canvas View Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.
         </p>
       ) : null}
+      <GroupPanelPaletteAction active={storyboardRendererActive} />
       <WidgetPalette entries={widgetPaletteEntries} dragEnabled={widgetDragEnabled} />
     </section>
   )

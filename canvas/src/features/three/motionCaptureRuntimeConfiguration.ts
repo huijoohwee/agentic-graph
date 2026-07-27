@@ -9,7 +9,9 @@ export function mergeMotionCaptureLimits(overrides: Partial<MotionCaptureLimits>
   for (const [field, value] of Object.entries(limits)) finiteNumber(value, `limit-${field}`, 0)
   const integerLimits = [
     limits.maxSources, limits.maxLandmarksPerObservation,
-    limits.maxRecordingSamples, limits.minimumResearchSamplesPerSource,
+    limits.maxRecordingSamples, limits.minimumCalibrationSamples,
+    limits.minimumCalibrationPoses, limits.minimumClockAlignmentSamples,
+    limits.minimumTriangulatedSamples, limits.minimumResearchSamplesPerSource,
   ]
   const probabilityLimits = [
     limits.minimumObservationConfidence,

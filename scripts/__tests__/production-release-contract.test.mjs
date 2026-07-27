@@ -19,6 +19,7 @@ const productionReadinessBuild = fs.readFileSync(path.resolve(repoRoot, 'scripts
 const pagesDeploymentScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'pages-production-deployment.mjs'), 'utf8')
 const productionFidelityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-fidelity.mjs'), 'utf8')
 const productionServiceWorkerUpgradeScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-service-worker-upgrade.mjs'), 'utf8')
+const productionServiceWorkerRegistrationProof = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-service-worker-registration-proof.mjs'), 'utf8')
 const serviceWorkerUpgradeCacheProofScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'service-worker-upgrade-cache-proof.mjs'), 'utf8')
 const productionMirrorArtifactScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-mirror-artifact.mjs'), 'utf8')
 const gameModeSourceAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'check-game-fps-readiness.mjs'), 'utf8')
@@ -244,8 +245,14 @@ test('verified production mirror is published only after live smoke', () => {
   )
   assert.match(deployJob, /PRODUCTION_BROWSER_HEADLESS: 'false'/)
   assert.match(deployJob, /xvfb-run --auto-servernum npm run production:fidelity:check/)
-  assert.match(deployJob, /xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm/)
-  assert.match(deployJob, /xvfb-run --auto-servernum npm run production:sw-upgrade:verify/)
+  assert.match(
+    deployJob,
+    /timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm/,
+  )
+  assert.match(
+    deployJob,
+    /timeout --foreground --kill-after=30s 12m xvfb-run --auto-servernum npm run production:sw-upgrade:verify/,
+  )
   assert.match(deployJob, /PRODUCTION_SW_PROFILE_DIR: \$\{\{ runner\.temp \}\}\/knowgrph-production-sw-profile/)
   assert.match(deployJob, /PRODUCTION_SW_EVIDENCE_PATH: \$\{\{ runner\.temp \}\}\/knowgrph-production-sw-evidence\.json/)
   assert.match(productionServiceWorkerUpgradeScript, /chromium\.launchPersistentContext\(profileDirectory/)
@@ -260,7 +267,8 @@ test('verified production mirror is published only after live smoke', () => {
   assert.match(productionServiceWorkerUpgradeScript, /navigator\.serviceWorker\.getRegistrations\(\)/)
   assert.match(productionServiceWorkerUpgradeScript, /registrations\.length !== 1/)
   assert.match(productionServiceWorkerUpgradeScript, /canonicalWorkerScope/)
-  assert.match(productionServiceWorkerUpgradeScript, /canonicalWorkerScriptUrl/)
+  assert.match(productionServiceWorkerRegistrationProof, /canonicalWorkerScriptUrl/)
+  assert.match(productionServiceWorkerUpgradeScript, /requireRevisionBoundRegistration: true/)
   assert.match(productionServiceWorkerUpgradeScript, /registration\.updateViaCache === 'none'/)
   assert.match(productionServiceWorkerUpgradeScript, /registration\.activeState === 'activated'/)
   assert.match(productionServiceWorkerUpgradeScript, /registration\.installingScriptUrl === ''/)

@@ -8,6 +8,7 @@ from playwright.sync_api import Page, expect
 
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
 from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
+from lib.game_flight_sim_smoke_geo_xr import verify_geo_xr_four_view_presentation
 from lib.game_flight_sim_smoke_ledger import BrowserVerificationLedger
 from lib.game_flight_sim_smoke_lifecycle import (
     verify_blur_lifecycle,
@@ -18,6 +19,12 @@ from lib.game_flight_sim_smoke_lifecycle import (
 from lib.game_flight_sim_smoke_mobile import (
     verify_mobile_flight_hud,
     verify_mobile_touch_interaction,
+)
+from lib.game_flight_sim_smoke_motion_control import (
+    verify_motion_control_panel_handoff,
+)
+from lib.game_flight_sim_smoke_navigation import (
+    verify_flight_navigation_runtime,
 )
 from lib.game_flight_sim_smoke_mission import complete_authored_flight_mission
 from lib.game_flight_sim_smoke_scene import (
@@ -240,13 +247,18 @@ def run_flight_runtime_verifications(
         authored_scene,
         depends_on=("first playable frame",),
     )
+    state["geoXrPresentation"] = ledger.verify(
+        "Geo+XR four-view presentation",
+        lambda: verify_geo_xr_four_view_presentation(page),
+        depends_on=("retained authored XR Canvas",),
+    )
     state["webMcp"] = ledger.verify(
         "strict browser WebMCP",
         lambda: verify_flight_web_mcp(
             page,
             state["playable"]["initial"],
         ),
-        depends_on=("first playable frame",),
+        depends_on=("Geo+XR four-view presentation",),
     )
     if state["webMcp"]:
         web_mcp_calls.extend(state["webMcp"]["calls"])
@@ -254,6 +266,11 @@ def run_flight_runtime_verifications(
         "stop and Start lifecycle",
         lambda: verify_stop_start_lifecycle(page, web_mcp_calls),
         depends_on=("strict browser WebMCP",),
+    )
+    state["motionControl"] = ledger.verify(
+        "Motion Control panel handoff",
+        lambda: verify_motion_control_panel_handoff(page),
+        depends_on=("stop and Start lifecycle",),
     )
 
     def desktop_input() -> dict[str, Any]:
@@ -300,7 +317,7 @@ def run_flight_runtime_verifications(
     state["desktop"] = ledger.verify(
         "desktop playable input and HUD telemetry",
         desktop_input,
-        depends_on=("stop and Start lifecycle",),
+        depends_on=("Motion Control panel handoff",),
     )
     state["blur"] = ledger.verify(
         "blur lifecycle",
@@ -369,6 +386,11 @@ def run_flight_runtime_verifications(
         throttle_restart,
         depends_on=("blur lifecycle",),
     )
+    state["navigation"] = ledger.verify(
+        "Flight camera views and local navigation",
+        lambda: verify_flight_navigation_runtime(page),
+        depends_on=("strict throttle and restart",),
+    )
 
     def camera_round_trip() -> dict[str, Any]:
         camera = verify_flight_camera_runtime(page)
@@ -388,12 +410,41 @@ def run_flight_runtime_verifications(
         )
         if float(hud.get_attribute("data-kg-flight-sim-airspeed") or "0") <= 0:
             raise AssertionError("Flight HUD did not publish live airspeed")
-        return {"advanced": advanced, "camera": camera}
+        envelope_status = hud.get_attribute("data-kg-flight-sim-envelope") or ""
+        if envelope_status not in {
+            "instrument-uncertain",
+            "stall-risk",
+            "pitch-limit",
+            "bank-limit",
+            "low-energy",
+            "high-energy",
+            "on-target",
+        }:
+            raise AssertionError(f"Flight HUD published invalid envelope status: {envelope_status}")
+        control_authority = float(
+            hud.get_attribute("data-kg-flight-sim-control-authority") or "-1"
+        )
+        if control_authority < 0.3 or control_authority > 1:
+            raise AssertionError(
+                f"Flight HUD published invalid control authority: {control_authority}"
+            )
+        target_speed = hud.get_attribute("data-kg-flight-sim-target-speed") or ""
+        if target_speed != "8:22":
+            raise AssertionError(f"Flight HUD target-speed projection drifted: {target_speed}")
+        return {
+            "advanced": advanced,
+            "camera": camera,
+            "envelope": {
+                "status": envelope_status,
+                "controlAuthority": control_authority,
+                "targetSpeed": target_speed,
+            },
+        }
 
     state["camera"] = ledger.verify(
         "Timeline camera round-trip",
         camera_round_trip,
-        depends_on=("strict throttle and restart",),
+        depends_on=("Flight camera views and local navigation",),
     )
     state["mobileHud"] = ledger.verify(
         "mobile HUD",

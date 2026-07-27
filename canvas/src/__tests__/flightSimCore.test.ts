@@ -303,7 +303,7 @@ test('releasing one touch pointer preserves every other held flight control', ()
   assert.equal(held.size, 0)
 })
 
-test('mounted desktop input clears held controls and reports pointer-lock rejection', async () => {
+test('mounted desktop input keeps fallback controls live after pointer-lock rejection', async () => {
   const dom = new JSDOM('<!doctype html><html><body><canvas></canvas></body></html>', {
     url: 'http://localhost',
   })
@@ -339,6 +339,9 @@ test('mounted desktop input clears held controls and reports pointer-lock reject
       canvas.dataset.kgFlightSimPointerLockError,
       'WrongDocumentError: The root document of this element is not valid for pointer lock.',
     )
+    dom.window.document.dispatchEvent(new dom.window.Event('pointerlockchange'))
+    assert.deepEqual(pauses, [])
+    assert.equal(canvas.dataset.kgFlightSimPointerLock, 'unavailable')
     dom.window.dispatchEvent(new dom.window.KeyboardEvent('keydown', { code: 'KeyW' }))
     assert.equal(inputs.at(-1)?.pitch, 1)
     dom.window.dispatchEvent(new dom.window.Event('blur'))

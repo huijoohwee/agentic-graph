@@ -154,6 +154,10 @@ const flightSimStageRuntimeController: FlightSimStageRuntimeController =
     subscribe: listener => subscribeFlightSimSnapshot(listener),
   })
 
+export function readFlightSimStageRuntimeController(): FlightSimStageRuntimeController {
+  return flightSimStageRuntimeController
+}
+
 function restoreSurfaceOwnership(
   previous: FlightSimPreviousCanvasSurface | null,
   restorePreviousSurface: boolean,
@@ -329,9 +333,10 @@ async function performFlightSimSurfaceOpen(
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
     surfaceActivated = activateXrSceneSurface({
-      panelView: 'flightSim',
       gameplaySurface: 'flightSim',
-      ...(options.openPanel === false ? {} : { openPanel: true }),
+      ...(options.openPanel === false
+        ? {}
+        : { panelView: 'flightSim', openPanel: true }),
     })
     if (!surfaceActivated) {
       return failFlightSimSurfaceEntry('The shared XR Canvas is unavailable.', entering, false)
@@ -544,6 +549,8 @@ registerXrSceneGameplayExitHandler('flightSim', () => {
   if (defaultRuntime.read().active || flightSimSurfaceOpenTail) {
     exitFlightSimSurface({ restorePreviousSurface: false })
   }
+}, {
+  preserveWhenPanelOnly: ['motionControl', 'camera'],
 })
 
 export function resetFlightSimRuntimeForTests(

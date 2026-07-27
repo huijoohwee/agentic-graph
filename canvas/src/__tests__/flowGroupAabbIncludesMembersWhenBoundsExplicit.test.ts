@@ -1,4 +1,8 @@
-import { computeFlowGroupAabb, type FlowNativeScene } from '@/components/FlowCanvas/nativeRuntime'
+import {
+  computeFlowGroupAabb,
+  resolveFlowGroupPaintVisibility,
+  type FlowNativeScene,
+} from '@/components/FlowCanvas/nativeRuntime'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
 
 export function testFlowGroupAabbExpandsExplicitBoundsToContainMembers() {
@@ -69,5 +73,82 @@ export function testFlowGroupAabbExpandsToContainPinnedWidgetOverlayExtents() {
 
   if (aabb.minX !== 60 || aabb.minY !== 70 || aabb.maxX !== 520 || aabb.maxY !== 620) {
     throw new Error('expected group aabb to expand to pinned widget overlay extents')
+  }
+}
+
+export function testFlowGroupAabbUsesOverlayOnlyMemberBounds() {
+  const scene: FlowNativeScene = {
+    nodes: [],
+    edges: [],
+    nodeById: new Map(),
+    overlayAabbByNodeId: {
+      card: { minX: 100, minY: 120, maxX: 420, maxY: 300 },
+      panel: { minX: 520, minY: 80, maxX: 980, maxY: 640 },
+    },
+    groups: [],
+    groupIdsByNodeId: new Map(),
+  }
+  const group: GraphGroup = {
+    id: 'subgraph:overlay-only',
+    label: 'Overlay group',
+    source: 'userSubgraph',
+    depth: 0,
+    memberNodeIds: ['card', 'panel'],
+    style: {},
+    autoBounds: true,
+  }
+
+  const aabb = computeFlowGroupAabb({ scene, group, paddingPx: 20, labelTopExtraPx: 12 })
+  if (!aabb) throw new Error('expected overlay-only members to produce a visible group aabb')
+  if (aabb.minX !== 80 || aabb.minY !== 48 || aabb.maxX !== 1000 || aabb.maxY !== 660) {
+    throw new Error(`expected overlay-only group bounds with padding, got ${JSON.stringify(aabb)}`)
+  }
+}
+
+export function testFlowGroupPaintRemainsVisibleAtFittedZoom() {
+  const translucent = resolveFlowGroupPaintVisibility({
+    fill: 'rgba(124,58,237,0.08)',
+    fillOpacity: 0.08,
+    fontSizePx: 12,
+    strokeWidthPx: 2,
+    zoom: 0.44,
+  })
+  if (translucent.fillGlobalAlpha !== 1) {
+    throw new Error('expected an alpha-bearing group fill to avoid a second opacity multiplier')
+  }
+  if (Math.abs(translucent.strokeWidthPx * 0.44 - 1.5) > 0.0001) {
+    throw new Error('expected group stroke to remain at least 1.5 screen pixels')
+  }
+  if (Math.abs(translucent.fontSizePx * 0.44 - 11) > 0.0001) {
+    throw new Error('expected group label to remain at least 11 screen pixels')
+  }
+
+  const opaque = resolveFlowGroupPaintVisibility({
+    fill: '#7c3aed',
+    fillOpacity: 0.08,
+    fontSizePx: 12,
+    strokeWidthPx: 2,
+    zoom: 2,
+  })
+  if (opaque.fillGlobalAlpha !== 0.08 || opaque.strokeWidthPx !== 2 || opaque.fontSizePx !== 12) {
+    throw new Error('expected opaque fills and readable zoom levels to retain configured presentation')
+  }
+
+  const selected = resolveFlowGroupPaintVisibility({
+    fill: '#7c3aed',
+    fillOpacity: 0.08,
+    fontSizePx: 12,
+    selected: true,
+    strokeWidthPx: 2,
+    zoom: 0.44,
+  })
+  if (selected.fillGlobalAlpha !== 0.16) {
+    throw new Error('expected selected group fill to use a clearly visible accent opacity')
+  }
+  if (Math.abs(selected.strokeWidthPx * 0.44 - 3) > 0.0001) {
+    throw new Error('expected selected group outline to remain at least 3 screen pixels')
+  }
+  if (Math.abs(selected.fontSizePx * 0.44 - 13) > 0.0001) {
+    throw new Error('expected selected group label to remain at least 13 screen pixels')
   }
 }

@@ -18,7 +18,15 @@ import { buildCanonicalNodeLookup, getCanonicalNodeLookupValue } from '@/lib/gra
 export const nodeDragBehavior = (
   simulation: d3.Simulation<GraphNode, GraphEdge>,
   schema: GraphSchema,
-  opts?: { onNodeDragEnd?: (node: GraphNode) => void; clampNodePosition?: (args: { node: GraphNode; x: number; y: number }) => { x: number; y: number } },
+  opts?: {
+    onNodeDragEnd?: (node: GraphNode) => void
+    clampNodePosition?: (args: {
+      node: GraphNode
+      x: number
+      y: number
+      disableSnap: boolean
+    }) => { x: number; y: number }
+  },
 ) =>
   (() => {
     let locked = false
@@ -221,7 +229,7 @@ export const nodeDragBehavior = (
 
       if (opts?.clampNodePosition) {
         try {
-          const clamped = opts.clampNodePosition({ node: d, x: nx, y: ny })
+          const clamped = opts.clampNodePosition({ node: d, x: nx, y: ny, disableSnap: altDown })
           nx = clamped.x
           ny = clamped.y
         } catch {

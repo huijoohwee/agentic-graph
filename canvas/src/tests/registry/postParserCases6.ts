@@ -236,6 +236,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["ui.floatingPanelChat.composer.remoteGrammarRevisionReconcile","@/__tests__/agenticOsRemoteGrammarEpoch.test","testRemoteGrammarReconcilesRevisionRolloverWithinBoundedRefresh"],
   ["ui.floatingPanelChat.composer.remoteGrammarPartialTerminal","@/__tests__/agenticOsRemoteGrammarEpoch.test","testRemoteGrammarTerminalizesPartialHydrationFailure"],
   ["ui.floatingPanelChat.composer.remoteGrammarDirectRollover","@/__tests__/agenticOsRemoteGrammarEpoch.test","testRemoteGrammarDirectQueryReconcilesRevisionRollover"],
+  ["ui.floatingPanelChat.composer.remoteGrammarDigestDrift","@/__tests__/agenticOsRemoteGrammarEpoch.test","testRemoteGrammarRejectsCatalogDigestDrift"],
   ["util.rafValueScheduler.activeWindowFallback","@/__tests__/rafSchedulerFallback.test","testRafValueSchedulerFallsBackWhenActiveWindowLacksRaf"],
   ["ui.floatingPanelChat.message.mediaChip","@/__tests__/floatingPanelChatSourceFileLink.test","testFloatingPanelChatRendersUserMediaMarkdownAsInlineChip"],
   ["ui.floatingPanelChat.relayStatus.visibleSeparateFromConnectivity","@/__tests__/floatingPanelChatFooterSelect.test","testFloatingPanelChatFooterShowsRelayStatusSeparatelyFromEndpointConnectivity"],

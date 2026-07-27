@@ -9,6 +9,7 @@ export type UserSubgraph = {
   memberNodeIds: string[]
   parentId?: string | null
   kind?: UserSubgraphKind
+  autoBounds?: boolean
 }
 
 export const KG_SUBGRAPHS_KEY = 'kg:subgraphs'
@@ -16,6 +17,11 @@ export const KG_SUBGRAPHS_KEY = 'kg:subgraphs'
 export const subgraphGroupId = (id: string): string => {
   const v = String(id || '').trim()
   return v ? `subgraph:${v}` : ''
+}
+
+export const subgraphIdFromGroupId = (groupId: string): string => {
+  const value = String(groupId || '').trim()
+  return value.startsWith('subgraph:') ? value.slice('subgraph:'.length).trim() : ''
 }
 
 const normalizeIds = (ids: unknown): string[] => {
@@ -44,7 +50,8 @@ const coerceSubgraph = (raw: unknown): UserSubgraph | null => {
   const parentId = parentRaw == null ? null : String(parentRaw || '').trim() || null
   const rawKind = typeof r.kind === 'string' ? r.kind.trim() : ''
   const kind: UserSubgraphKind = rawKind === 'cluster' ? 'cluster' : 'subgraph'
-  return { id, label, memberNodeIds, parentId, kind }
+  const autoBounds = r.autoBounds === true
+  return { id, label, memberNodeIds, parentId, kind, ...(autoBounds ? { autoBounds: true } : {}) }
 }
 
 export const readSubgraphs = (data: GraphData | null | undefined): UserSubgraph[] => {
@@ -64,6 +71,16 @@ export const readSubgraphs = (data: GraphData | null | undefined): UserSubgraph[
   return out
 }
 
+export const buildSubgraphsKey = (data: GraphData | null | undefined): string =>
+  JSON.stringify(readSubgraphs(data).map(subgraph => ({
+    id: subgraph.id,
+    label: subgraph.label,
+    memberNodeIds: subgraph.memberNodeIds,
+    parentId: subgraph.parentId ?? null,
+    kind: subgraph.kind ?? 'subgraph',
+    autoBounds: subgraph.autoBounds === true,
+  })))
+
 export const writeSubgraphs = (data: GraphData, subgraphs: UserSubgraph[]): GraphData => {
   const meta = ((data.metadata || {}) as Record<string, JSONValue>) || {}
   const next: UserSubgraph[] = []
@@ -79,6 +96,7 @@ export const writeSubgraphs = (data: GraphData, subgraphs: UserSubgraph[]): Grap
       memberNodeIds: normalizeIds(sg.memberNodeIds),
       parentId: sg.parentId == null ? null : String(sg.parentId || '').trim() || null,
       kind: sg.kind === 'cluster' ? 'cluster' : 'subgraph',
+      ...(sg.autoBounds === true ? { autoBounds: true } : {}),
     })
   }
   next.sort((a, b) => a.label.localeCompare(b.label))
@@ -99,13 +117,22 @@ export const filterSubgraphsByRetainedNodeIds = (data: GraphData, retainedNodeId
     const id = String(rawId || '').trim()
     if (id) retained.add(id)
   })
-  const nextBase: UserSubgraph[] = []
-  for (let i = 0; i < subgraphs.length; i += 1) {
-    const sg = subgraphs[i]
-    const memberNodeIds = normalizeIds(sg.memberNodeIds).filter(id => retained.has(id))
-    if (memberNodeIds.length === 0) continue
-    nextBase.push({ ...sg, memberNodeIds })
+  const candidates = subgraphs.map(sg => ({
+    ...sg,
+    memberNodeIds: normalizeIds(sg.memberNodeIds).filter(id => retained.has(id)),
+  }))
+  const retainedSubgraphIds = new Set(candidates.filter(sg => sg.memberNodeIds.length > 0).map(sg => sg.id))
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const subgraph of candidates) {
+      if (retainedSubgraphIds.has(subgraph.id)) continue
+      if (!candidates.some(child => child.parentId === subgraph.id && retainedSubgraphIds.has(child.id))) continue
+      retainedSubgraphIds.add(subgraph.id)
+      changed = true
+    }
   }
+  const nextBase = candidates.filter(sg => retainedSubgraphIds.has(sg.id))
   if (nextBase.length === 0) return writeSubgraphs(data, [])
 
   const nextIdSet = new Set(nextBase.map(sg => sg.id))
@@ -118,7 +145,7 @@ export const filterSubgraphsByRetainedNodeIds = (data: GraphData, retainedNodeId
 
 export const createSubgraph = (
   data: GraphData,
-  args: { nodeIds: string[]; label?: string; parentId?: string | null; kind?: UserSubgraphKind },
+  args: { nodeIds: string[]; label?: string; parentId?: string | null; kind?: UserSubgraphKind; autoBounds?: boolean },
 ) => {
   const subgraphs = readSubgraphs(data)
   const used = new Set<string>(subgraphs.map(s => s.id))
@@ -127,7 +154,7 @@ export const createSubgraph = (
   const memberNodeIds = normalizeIds(args.nodeIds)
   const parentId = args.parentId == null ? null : String(args.parentId || '').trim() || null
   const kind: UserSubgraphKind = args.kind === 'cluster' ? 'cluster' : 'subgraph'
-  const sg: UserSubgraph = { id, label, memberNodeIds, parentId, kind }
+  const sg: UserSubgraph = { id, label, memberNodeIds, parentId, kind, ...(args.autoBounds === true ? { autoBounds: true } : {}) }
   return { subgraph: sg, graphData: writeSubgraphs(data, [...subgraphs, sg]) }
 }
 
@@ -142,7 +169,8 @@ export const updateSubgraph = (data: GraphData, id: string, patch: Partial<UserS
     const parentId = patch.parentId === undefined ? sg.parentId : patch.parentId == null ? null : String(patch.parentId || '').trim() || null
     const kind: UserSubgraphKind =
       patch.kind === undefined ? (sg.kind === 'cluster' ? 'cluster' : 'subgraph') : patch.kind === 'cluster' ? 'cluster' : 'subgraph'
-    return { ...sg, label, memberNodeIds, parentId, kind }
+    const autoBounds = patch.autoBounds === undefined ? sg.autoBounds === true : patch.autoBounds === true
+    return { ...sg, label, memberNodeIds, parentId, kind, ...(autoBounds ? { autoBounds: true } : { autoBounds: undefined }) }
   })
   return writeSubgraphs(data, next)
 }

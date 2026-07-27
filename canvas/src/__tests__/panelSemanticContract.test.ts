@@ -1463,7 +1463,7 @@ export const testWorkflowManagerReusesWorkspaceTableSsotForMultiDimView = () => 
 
 export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsolidation = () => {
   const root = process.cwd()
-  const filePath = path.resolve(root, 'src', 'lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
+  const filePath = path.resolve(root, 'src', 'lib', 'toolbar', 'ToolbarToolMenu.impl.tsx'), xrSceneViewsPath = path.resolve(root, 'src', 'lib', 'toolbar', 'FloatingPanelXrSceneViews.tsx')
   const iconLibraryPath = path.resolve(root, 'src', 'features', 'panels', 'ui', 'mainPanelHelpIconLibrary.tsx')
   const floatingPanelTypesPath = path.resolve(root, 'src', 'hooks', 'store', 'store-types', 'graph-state-chat-import.ts')
   const uiSliceInitialStatePath = path.resolve(root, 'src', 'hooks', 'store', 'uiSliceInitialState.ts')
@@ -1484,7 +1484,7 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   const helpCloudflareMediaSectionPath = path.resolve(root, 'src', 'features', 'panels', 'views', 'HelpCloudflareMediaSection.tsx')
   const launcherPath = path.resolve(root, 'src', 'features', 'toolbar', 'ToolbarMenuLauncher.tsx')
   const typesPath = path.resolve(root, 'src', 'features', 'toolbar', 'ToolbarToolMenuTypes.ts')
-  const text = readUtf8(filePath)
+  const text = readUtf8(filePath), xrSceneViewsText = readUtf8(xrSceneViewsPath)
   const iconLibraryText = readUtf8(iconLibraryPath)
   const floatingPanelTypesText = readUtf8(floatingPanelTypesPath)
   const uiSliceInitialStateText = readUtf8(uiSliceInitialStatePath)
@@ -1531,15 +1531,15 @@ export const testFloatingPanelRemovesDesignLayersViewAfterWorkflowManagerConsoli
   if (!text.includes("floatingPanelView === 'view' && <WorkspaceDataViewFloatingPanelView />")) {
     throw new Error('Expected FloatingPanel to render the dedicated View settings surface')
   }
-  if (!text.includes("floatingPanelView === 'media'") || !text.includes('<MediaCatalogPanelLazy />')) {
+  if (!xrSceneViewsText.includes("view === 'media'") || !xrSceneViewsText.includes('<MediaCatalogPanelLazy />')) {
     throw new Error('Expected FloatingPanel to render the Media view')
   }
   const mediaViewIndex = text.indexOf("view: 'media'")
   const animationViewIndex = text.indexOf("view: 'animation'")
   const cameraViewIndex = text.indexOf("view: 'camera'")
   if (!(mediaViewIndex >= 0 && mediaViewIndex < animationViewIndex && animationViewIndex < cameraViewIndex)
-    || !text.includes("floatingPanelView === 'animation'")
-    || !text.includes('<XrAnimationFloatingPanelViewLazy />')) {
+    || !xrSceneViewsText.includes("view === 'animation'")
+    || !xrSceneViewsText.includes('<XrAnimationFloatingPanelViewLazy />')) {
     throw new Error('Expected FloatingPanel Animation immediately after Media and before Camera with a lazy first-class render branch')
   }
   if (!iconLibraryText.includes('floatingPanel.media') || !iconLibraryText.includes('media: \'floatingPanel.media\'') || !iconLibraryText.includes('floatingPanel.animation') || !iconLibraryText.includes('animation: \'floatingPanel.animation\'')) {

@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import { load as loadYaml } from 'js-yaml'
+import { FLIGHT_SIM_CAMERA_VIEW_OPTIONS } from '@/features/game-flight-sim/flightSimCameraRuntime'
 import {
   XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE,
   XR_NATIVE_CONTROLLER_CAMERA_OPTIONS,
@@ -131,6 +132,8 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     ),
     'utf8',
   )
+  const geoSurface = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx'), 'utf8')
+  const surfaceControls = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'), 'utf8')
   assert.doesNotMatch(missionStage, /from '\.\/flightSimRuntime'/)
   assert.match(missionStage, /runtimeController\.readSnapshot\(\)/)
   const opening = runtime.indexOf('async function performFlightSimSurfaceOpen')
@@ -165,21 +168,79 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   assert.ok(opened < preparedStage)
   assert.ok(preparedStage < readyDeadline)
   assert.match(missionStage, /addAfterEffect\(\(\) => \{/)
-  assert.match(
+  assert.doesNotMatch(
     missionStage,
-    /React\.useState\(\s*readCurrentFlightSimStagePreparationRequest,\s*\)/,
+    /React\.useState\(\s*readCurrentFlightSimStagePreparationRequest/,
   )
   assert.match(
     missionStage,
-    /completeFlightSimStagePreparation\(\s*stagePreparationRequestId,\s*\)/,
+    /addAfterEffect\(\(\) => \{[\s\S]*const stagePreparationRequestId =\s*readCurrentFlightSimStagePreparationRequest\(\)/,
   )
+  assert.match(
+    missionStage,
+    /completeFlightSimStagePreparation\(\s*stagePreparationRequestId\s*\)/,
+  )
+  const afterRenderStart = missionStage.indexOf(
+    'const removeAfterRender = addAfterEffect',
+  )
+  const afterRenderCleanup = missionStage.indexOf(
+    'return () => {',
+    afterRenderStart,
+  )
+  const stagePreparationAfterRender = missionStage.slice(
+    afterRenderStart,
+    afterRenderCleanup,
+  )
+  assert.doesNotMatch(
+    stagePreparationAfterRender,
+    /if \(!inputClaimedRef\.current\) return/,
+  )
+  assert.match(
+    stagePreparationAfterRender,
+    /completeFlightSimStagePreparation[\s\S]*invalidate\(\)/,
+  )
+  assert.doesNotMatch(
+    missionStage,
+    /presentation\.playable\s*=[\s\S]{0,160}inputClaimedRef\.current/,
+  )
+  assert.match(
+    missionStage,
+    /import \{ addAfterEffect, invalidate, useFrame, useThree \} from '@react-three\/fiber'/,
+  )
+  assert.match(missionStage, /const \{ gl \} = useThree\(\)/)
+  assert.match(
+    missionStage,
+    /const syncRuntimeSnapshot = \(\) => \{[\s\S]*snapshotRef\.current = runtimeController\.readSnapshot\(\)[\s\S]*invalidate\(\)/,
+  )
+  assert.match(
+    missionStage,
+    /syncRuntimeSnapshot\(\)[\s\S]*return runtimeController\.subscribe\(syncRuntimeSnapshot\)/,
+  )
+  assert.match(
+    surfaceControls,
+    /subscribeThreeViewportInputOwnership\(acquireInput\)/,
+  )
+  assert.match(
+    surfaceControls,
+    /const acquireInput = \(\) => \{[\s\S]*claimThreeViewportInputOwnership\(INPUT_OWNER_ID,[\s\S]*installFlightSimDesktopInput\(element,[\s\S]*requestPresentationFrame\(\)/,
+  )
+  assert.match(missionStage, /useFlightSimSurfaceControls\(\{/)
+  assert.match(geoSurface, /useFlightSimSurfaceControls\(\{/)
   assert.match(missionStage, /&& actorRef\.current/)
+  const demandFrameSubscription = missionStage.indexOf(
+    'const syncRuntimeSnapshot = () => {',
+  )
   const afterRender = missionStage.indexOf('addAfterEffect(() => {')
+  const inputOwnershipRetry = surfaceControls.indexOf(
+    'subscribeThreeViewportInputOwnership(acquireInput)',
+  )
   const deadlineCompletion = missionStage.indexOf(
     'completeFlightSimReadyFrame(presentation.runId, presentation.tick)',
   )
   const frameSubscriber = missionStage.indexOf('useFrame(() => {')
-  assert.ok(afterRender >= 0 && deadlineCompletion > afterRender)
+  assert.ok(demandFrameSubscription >= 0 && afterRender > demandFrameSubscription)
+  assert.ok(inputOwnershipRetry >= 0)
+  assert.ok(deadlineCompletion > afterRender)
   assert.ok(frameSubscriber > deadlineCompletion)
 })
 
@@ -356,7 +417,7 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
   )
 })
 
-test('Flight Sim source declares an overlay on the canonical XR world', () => {
+test('Flight Sim source declares the canonical Geo+XR composition', () => {
   const meta = frontmatter(seedSource)
   assert.equal(meta.status, 'runtime-ready')
   assert.equal(meta.runtime_status, 'runtime-ready')
@@ -366,7 +427,7 @@ test('Flight Sim source declares an overlay on the canonical XR world', () => {
     'exact-head source and browser proof required at every handoff',
   )
   assert.equal(meta.publish_scope, 'local-only')
-  assert.equal(meta.kgCanvasSurfaceMode, 'xr')
+  assert.equal(meta.kgCanvasSurfaceMode, 'geo-xr')
   assert.equal(meta.kgCanvasRenderMode, '3d')
   assert.equal(meta.kgCanvas3dMode, 'xr')
   assert.equal(meta.kgCanvas2dRenderer, undefined)
@@ -382,7 +443,7 @@ test('Flight Sim source declares an overlay on the canonical XR world', () => {
     identity_authority: 'source-authored run_ready_demo.id',
     imported_path_alias_required: false,
     identity_conflict: 'fail closed when path and source identity disagree',
-    canonical_consumers: ['workspace', 'xr-mode'],
+    canonical_consumers: ['workspace', 'geo-xr-mode'],
     dev_command: 'npm run dev',
     canonical_source_file: '/docs/workspace-seeds/knowgrph-game-flight-sim-demo.md',
     env_selector: 'VITE_KNOWGRPH_RUN_READY_DEMO=flight-sim',
@@ -391,7 +452,7 @@ test('Flight Sim source declares an overlay on the canonical XR world', () => {
     source_backed: true,
     clean_canvas_recommended: true,
     native_runtime: true,
-    presentation: 'shared-xr-gameplay-overlay',
+    presentation: 'shared-geo-xr-gameplay-overlay',
     document_presentation: 'runtime-ready-workspace-demo',
     auto_start: true,
     external_dependencies: [],
@@ -400,11 +461,27 @@ test('Flight Sim source declares an overlay on the canonical XR world', () => {
   assert.deepEqual(meta.shared_xr_scene, {
     source_authority: '/docs/workspace-seeds/knowgrph-physics-playground-demo.md',
     world_ownership: 'overlay-only',
-    surface_owner: 'XR Mode',
+    surface_owner: 'Geo+XR Mode',
     renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
     collider_owner: 'canvas/src/features/three/xrCanonicalSceneSpatialSource.ts',
     camera_owner: 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
     second_canvas_forbidden: true,
+  })
+  assert.deepEqual(meta.geo_flight_overlay, {
+    activation: 'selected authored environment plus source-authored Flight identity',
+    renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
+    geo_policy_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+    presentation_owner: 'canvas/src/features/three/xrGeoEnvironmentPresentation.ts',
+    render_policy: 'shared-xr-stage while composed in Geo+XR; standalone Geo retains its selected provider',
+    shared_environment_presentations: ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
+    screen_space_basemap: 'suppressed',
+    maplibre_runtime_started: false,
+    remote_style_or_tile_requests: 0,
+    control_owner: 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts',
+    route_projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
+    xr_canvas_mounted: true,
+    map_interaction_preserved: false,
+    composition: 'the selected authored environment, Flight actors, and HUD share one R3F world; Geo supplies presentation state and paints no second world',
   })
   const authority = readFileSync(resolve(repoRoot, 'scripts/workspace-seed-authority.mjs'), 'utf8')
   const projectionStart = authority.indexOf('AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY')
@@ -449,6 +526,26 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
     flightCamera.available,
   )
   assert.equal(XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE, flightCamera.default)
+  assert.deepEqual(
+    FLIGHT_SIM_CAMERA_VIEW_OPTIONS.map(option => option.id),
+    flightCamera.flight_views,
+  )
+  assert.equal(
+    flightCamera.flight_view_owner,
+    'canvas/src/features/game-flight-sim/flightSimCameraRuntime.ts',
+  )
+  assert.deepEqual(
+    (meta.native_flight_demo as {
+      navigation_inset?: Record<string, unknown>
+    }).navigation_inset,
+    {
+      orientation: 'north-up',
+      source: 'authored mission spawn, ordered waypoints, landing pad, and aircraft snapshot',
+      projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
+      runtime_network_calls: 0,
+      external_map_or_token_required: false,
+    },
+  )
   const controls = readFileSync(
     resolve(repoRoot, 'canvas/src/features/three/Controls.tsx'),
     'utf8',
@@ -484,7 +581,36 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
     controllerCamera,
     /readXrNativeControllerCamera\(\)\.mode === 'fixed-follow'/,
   )
-  assert.match(controllerCamera, /flightSimActive\s*\?\s*readFlightFollowTarget\(true,/)
+  assert.match(
+    controllerCamera,
+    /flightSimActive\s*\?\s*planarFlightPresentation\s*\?\s*readFlightPlanTarget\(true,/,
+  )
+  assert.match(
+    controllerCamera,
+    /:\s*readFlightFollowTarget\(true,\s*coordinateScale,\s*renderer\)/,
+  )
+  assert.match(
+    controllerCamera,
+    /const planarFollowActive = flightSimActive && planarFlightPresentation/,
+  )
+  assert.match(
+    controllerCamera,
+    /suspended \|\| \(!fixedFollow && !planarFollowActive\)/,
+  )
+  assert.match(
+    controllerCamera,
+    /follow\.owner === 'flight-plan'\s*&& previousOwner !== 'flight-plan'/,
+  )
+  assert.match(
+    controllerCamera,
+    /follow\.owner !== 'flight-plan'\s*&& previousOwner === 'flight-plan'/,
+  )
+  assert.match(controllerCamera, /planRestorePoseRef/)
+  assert.doesNotMatch(
+    controllerCamera,
+    /if \(fixedFollow\)\s+planRestorePoseRef\.current = null/,
+  )
+  assert.doesNotMatch(controllerCamera, /camera\.up\.(?:copy|set)/)
   assert.match(controllerCamera, /renderer\.xr\.isPresenting/)
   assert.match(flightTarget, /resolveFlightSimFollowTarget/)
   assert.match(

@@ -3,7 +3,7 @@ import type { MutableRefObject } from 'react';
 import type { GraphNode, GraphEdge, GraphData } from '@/lib/graph/types';
 import type { GraphSchema } from '@/lib/graph/schema';
 import type { PendingLink, TempLinkSelection } from '@/features/edge-creation';
-import { finalizePendingEdge, startEdgeFromNode } from '@/features/edge-creation'
+import { finalizePendingEdge } from '@/features/edge-creation'
 import { emitPropsPanelOpen } from '@/features/canvas/utils';
 import {
   getNodeBaseFill,
@@ -26,6 +26,7 @@ import { bindNodeDraggingWithGroupContainment } from '@/components/GraphCanvas/l
 import { createNodeGroupChevronSel } from '@/components/GraphCanvas/layers/nodesGroupChevrons'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { hashScopedStringArraySignature } from '@/lib/hash/signature'
+import { activateMultiNodeSelectModeForShift, isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>;
 
@@ -337,16 +338,28 @@ export const createNodesLayer = (args: {
     const btn = (event as unknown as { button?: unknown }).button
     if (typeof btn === 'number' && btn !== 0) return
     event.stopPropagation();
+    const id = String(d.id || '').trim()
+    if (!id) return
+    const state = useGraphStore.getState()
+    const mode = activateMultiNodeSelectModeForShift({
+      mode: schema?.behavior?.selectMode || 'single',
+      shiftKey: event.shiftKey,
+      setSelectMode: state.setSelectMode,
+    })
+    const selectionGesture = resolveNodeSelectionGesture({
+      mode,
+      shiftKey: event.shiftKey,
+      metaKey: (event as unknown as { metaKey?: boolean }).metaKey,
+      ctrlKey: (event as unknown as { ctrlKey?: boolean }).ctrlKey,
+    })
+    if (selectionGesture === 'toggle') {
+      setSelectionSource('canvas')
+      state.toggleNodeSelectionAdditive(id)
+      return
+    }
     const editorGestures = enableEditorGestures === true
     const allowEdgeCreation = schema?.behavior?.allowEdgeCreation !== false
     if (editorGestures && allowEdgeCreation) {
-      if (event.shiftKey && !args.linkDragRef.current) {
-        setSelectionSource('editor')
-        selectEdge(null)
-        selectNode(String(d.id))
-        startEdgeFromNode(d, args.tempLinkSelRef, args.linkDragRef)
-        return
-      }
       if (args.linkDragRef.current) {
         finalizePendingEdge(
           String(d.id),
@@ -367,15 +380,7 @@ export const createNodesLayer = (args: {
     }
     setSelectionSource('canvas');
     selectEdge(null);
-    const id = String(d.id || '').trim()
-    if (!id) return
-    const mode = schema?.behavior?.selectMode || 'single'
-    const wantsToggle = (mode === 'multi' || mode === 'lasso') && (event.shiftKey || (event as unknown as { metaKey?: boolean }).metaKey || (event as unknown as { ctrlKey?: boolean }).ctrlKey)
-    if (wantsToggle) {
-      selectNode(id)
-      return
-    }
-    if (mode === 'multi' || mode === 'lasso') {
+    if (isMultiNodeSelectMode(mode)) {
       try {
         useGraphStore.getState().selectNodesExpanded({ nodeIds: [id], activeNodeId: id })
       } catch {

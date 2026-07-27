@@ -16,9 +16,57 @@ export type ThreeRendererMountInput = Readonly<{
 
 export type ThreeCanvasSurfaceLifecycleInput = ThreeCanvasSurfaceMountInput & Readonly<{
   sourceFilesBootstrapReady: boolean
-  activeSurface: '2d' | '3d' | 'geo'
+  activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
   documentSwitchOwnsViewport: boolean
 }>
+
+export type CanvasSurfaceOwnershipInput = Readonly<{
+  canvasRenderMode: '2d' | '3d'
+  flightSimActive: boolean
+  gameplayOverlayActive: boolean
+  geospatialModeEnabled: boolean
+  geospatialXrModeEnabled: boolean
+  workspaceEditorOverlayOpen: boolean
+  workspaceStoryboardSurfaceActive: boolean
+}>
+
+export function resolveCanvasSurfaceOwnership(
+  input: CanvasSurfaceOwnershipInput,
+): Readonly<{
+  activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
+  geospatialOverlayOwnsViewport: boolean
+}> {
+  if (input.geospatialModeEnabled && input.geospatialXrModeEnabled) {
+    return {
+      activeSurface: 'geo-xr',
+      geospatialOverlayOwnsViewport: false,
+    }
+  }
+  const flightSimGeoOverlayActive = input.gameplayOverlayActive
+    && input.flightSimActive
+    && input.geospatialModeEnabled
+  if (flightSimGeoOverlayActive) {
+    return {
+      activeSurface: 'geo',
+      geospatialOverlayOwnsViewport: true,
+    }
+  }
+  if (input.gameplayOverlayActive) {
+    return {
+      activeSurface: '3d',
+      geospatialOverlayOwnsViewport: false,
+    }
+  }
+  return {
+    activeSurface: input.geospatialModeEnabled
+      ? 'geo'
+      : input.canvasRenderMode === '3d'
+        ? '3d'
+        : '2d',
+    geospatialOverlayOwnsViewport: input.geospatialModeEnabled
+      && !(input.workspaceEditorOverlayOpen && input.workspaceStoryboardSurfaceActive),
+  }
+}
 
 export function shouldMountThreeCanvasSurface(input: ThreeCanvasSurfaceMountInput): boolean {
   return input.sourceFilesBootstrapAdmitted
@@ -31,12 +79,12 @@ export function shouldMountThreeCanvasSurface(input: ThreeCanvasSurfaceMountInpu
 export function shouldActivateThreeCanvasSurface(input: Readonly<{
   surfaceMounted: boolean
   sourceFilesBootstrapReady: boolean
-  activeSurface: '2d' | '3d' | 'geo'
+  activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
   documentSwitchOwnsViewport: boolean
 }>): boolean {
   return input.surfaceMounted
     && input.sourceFilesBootstrapReady
-    && input.activeSurface === '3d'
+    && (input.activeSurface === '3d' || input.activeSurface === 'geo-xr')
     && !input.documentSwitchOwnsViewport
 }
 

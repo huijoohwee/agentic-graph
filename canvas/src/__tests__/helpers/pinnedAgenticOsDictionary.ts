@@ -6,6 +6,7 @@ import {
   type AgenticOsDictionaryInvocationKind,
 } from '@/features/agentic-os/agenticOsDocInvocations'
 import {
+  getAgenticOsRemoteGrammarCatalogEntries,
   registerAgenticOsRemoteGrammarCatalogEntries,
   type AgenticOsRemoteGrammarCatalogEntry,
 } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
@@ -143,6 +144,19 @@ export function registerPinnedAgenticOsDictionaryCatalogForTest(): string {
   const { catalog, revision } = readPinnedCatalog()
   registerAgenticOsRemoteGrammarCatalogEntries(catalog)
   return revision
+}
+
+export function assertPinnedAgenticOsCatalogMetadataWinsForTest(): void {
+  const catalog = resolveChatInvocationCatalogEntries('all', '')
+  for (const sourceEntry of getAgenticOsRemoteGrammarCatalogEntries()) {
+    const matches = catalog.filter(entry => entry.token.toLowerCase() === sourceEntry.token.toLowerCase())
+    assert(
+      matches.length === 1
+        && matches[0]?.kind === sourceEntry.kind
+        && matches[0]?.sourcePath === (sourceEntry.sourceUrl || sourceEntry.sourcePath),
+      `expected one source-backed Skills & Commands entry for ${sourceEntry.token}, got ${JSON.stringify(matches)}`,
+    )
+  }
 }
 
 export function registerPinnedAgenticOsDictionaryTokensForTest(spec: PinnedAgenticOsTokenSpec): string {

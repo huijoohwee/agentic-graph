@@ -78,7 +78,7 @@ function XrWorldPlacement({
     </XrArPlacementStage>
   ) : <>{children}</>
 }
-export default function ThreeGraph({ active = true, mode = '3d' }: { active?: boolean; mode?: Canvas3dModeId }) {
+export default function ThreeGraph({ active = true, geospatialComposite = false, mode = '3d' }: { active?: boolean; geospatialComposite?: boolean; mode?: Canvas3dModeId }) {
   const { schema, selectNode, selectEdge, setSelectionSource } = useGraphStore()
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
@@ -252,7 +252,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
   }, [effectiveSchema, mode, theme])
   const rendererClearColor = hasXrEmptyWorld ? '#0b2f4a'
     : hasGraph ? sceneBackgroundColor : '#000000'
-  const rendererDefaultClearAlpha = hasXrEmptyWorld || hasGraph ? 1 : 0
+  const rendererDefaultClearAlpha = geospatialComposite ? 0 : hasXrEmptyWorld || hasGraph ? 1 : 0
   const rendererLifecycleKey = resolveThreeRendererLifecycleKey(mode)
   const rendererMounted = shouldMountThreeRenderer({
     mode,
@@ -429,6 +429,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
       ref={containerRef}
       className="absolute inset-0 w-full h-full z-0"
       data-kg-xr-document-loaded={mode === 'xr' ? (xrDocumentLoaded ? '1' : '0') : undefined}
+      data-kg-geo-xr-surface={geospatialComposite ? 'active' : undefined}
       data-kg-xr-scene-authority={xrSceneAuthority}
       data-kg-xr-exclusive-stage={mode === 'xr' && (hasGraph || hasXrEmptyWorld) ? '1' : undefined}
       data-kg-xr-empty-world={hasXrEmptyWorld ? '1' : undefined}
@@ -529,6 +530,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
                 mode={mode}
                 xrGraphStageAuthority={xrGraphStageAuthority}
                 backgroundColor={sceneBackgroundColor}
+                geospatialComposite={geospatialComposite}
               />
             ) : null}
             {glbAsset && shouldRenderGlbAsset ? (
@@ -558,6 +560,7 @@ export default function ThreeGraph({ active = true, mode = '3d' }: { active?: bo
             mode={mode}
             flightSimActive={flightStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
+            geospatialComposite={geospatialComposite}
             modelAssetRenderKey={spatialCaptureRenderKey || glbAssetRenderKey}
             modelAssetFit={spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit}
             xrEmptyWorld={hasXrEmptyWorld}

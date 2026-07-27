@@ -12,6 +12,8 @@ import {
   XrNativeControllerRocketVisual,
 } from './XrNativeControllerDemoVehicles'
 import { XrNativeControllerAuthoredSubjects } from './XrNativeControllerAuthoredSubjects'
+import { XrGeoEnvironmentPresentationSurface } from './XrGeoEnvironmentPresentationSurface'
+import type { GeoXrEnvironmentPresentation } from './xrGeoEnvironmentPresentation'
 import {
   createXrNativeControllerInput,
   mergeXrNativeControllerInputs,
@@ -44,12 +46,16 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
 }
 
 export function XrNativeControllerDemoStage({
+  environmentPresentation = null,
+  environmentVisible = true,
   inputEnabled = true,
   stageScale,
   groundY,
   retainStage = false,
   stage,
 }: {
+  environmentPresentation?: GeoXrEnvironmentPresentation | null
+  environmentVisible?: boolean
   inputEnabled?: boolean
   stageScale: number
   groundY: number
@@ -67,6 +73,21 @@ export function XrNativeControllerDemoStage({
     readFlightSimTrainingScenario,
   )
   const night = resolveFlightSimTrainingMission(trainingScenario.missionId).night
+  const ambientIntensity = environmentPresentation?.ambientIntensity
+    ?? (night ? 0.13 : 0.4)
+  const hemisphereArgs: [string, string, number] = environmentPresentation
+    ? [
+        environmentPresentation.hemisphereSkyColor,
+        environmentPresentation.hemisphereGroundColor,
+        environmentPresentation.hemisphereIntensity,
+      ]
+    : night
+      ? ['#182a56', '#090d17', 0.22]
+      : ['#dff4ff', '#d9b978', 0.55]
+  const directionalIntensity = environmentPresentation?.directionalIntensity
+    ?? (night ? 0.5 : 1.8)
+  const directionalColor = environmentPresentation?.directionalColor
+    ?? (night ? '#9db7ff' : '#fff8df')
   const pressedCodesRef = React.useRef(new Set<string>())
   const playerRootRef = React.useRef<Group | null>(null)
   const ballRootRef = React.useRef<Group | null>(null)
@@ -160,14 +181,12 @@ export function XrNativeControllerDemoStage({
     <>
       {stageVisible ? (
         <>
-          <ambientLight intensity={night ? 0.13 : 0.4} />
-          <hemisphereLight
-            args={night ? ['#182a56', '#090d17', 0.22] : ['#dff4ff', '#d9b978', 0.55]}
-          />
+          <ambientLight intensity={ambientIntensity} />
+          <hemisphereLight args={hemisphereArgs} />
           <directionalLight
             position={[stageScale * 12, stageScale * 19, stageScale * 10]}
-            intensity={night ? 0.5 : 1.8}
-            color={night ? '#9db7ff' : '#fff8df'}
+            intensity={directionalIntensity}
+            color={directionalColor}
             castShadow
             shadow-mapSize-width={2048}
             shadow-mapSize-height={2048}
@@ -192,11 +211,36 @@ export function XrNativeControllerDemoStage({
           objective: runtime.objective,
           input: inputEnabled ? 'keyboard-gamepad-motion' : 'game-mode-suspended',
           followCamera: runtime.followCamera,
+          environment: environmentVisible
+            ? environmentPresentation
+              ? 'geo-xr-shared-stage'
+              : 'xr'
+            : 'hidden',
+          environmentPresentation: environmentPresentation?.id || 'xr',
           stageScale,
           terrainId: runtime.terrainId,
         }}
       >
-        <XrNativeControllerDemoEnvironment objective={runtime.objective} stage={stage} />
+        {environmentVisible ? (
+          <group
+            name="kg_xr_native_controller_environment"
+            userData={{
+              environmentId: stage.id,
+              presentation: environmentPresentation?.id || 'xr',
+            }}
+          >
+            {environmentPresentation ? (
+              <XrGeoEnvironmentPresentationSurface
+                presentation={environmentPresentation}
+                stage={stage}
+              />
+            ) : null}
+            <XrNativeControllerDemoEnvironment
+              objective={runtime.objective}
+              stage={stage}
+            />
+          </group>
+        ) : null}
         <XrNativeControllerAuthoredSubjects />
         <group ref={playerRootRef} name="kg_xr_native_controller_player">
           <XrNativeControllerBallVisual rootRef={ballRootRef} />

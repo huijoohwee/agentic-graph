@@ -1,6 +1,6 @@
 import { hashStringToIndex } from 'grph-shared/hash/stringHash'
 import { LS_KEYS } from './lib/config.js'
-import { applyMediaProxySrc, coerceFetchUrl, MEDIA_PROXY_ENDPOINT } from './lib/url.js'
+import { applyDevCrossOriginProxy, applyMediaProxySrc, coerceFetchUrl, MEDIA_PROXY_ENDPOINT } from './lib/url.js'
 import { parseGeoJsonFromText, coerceGeoJsonToFeatureCollection } from './geojson.js'
 import { addGeospatialDatasetUrl, loadDatasetFeatureCollection } from './datasets.js'
 import { useGympgrphStore } from './store.js'
@@ -13,12 +13,25 @@ import { GeospatialOverlayHost as GeospatialOverlayHostComponent } from './Geosp
 import { GeospatialPanelHost } from './GeospatialPanelHost.js'
 import { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection } from './geospatialFit.js'
 import { setGeospatialModeEnabled as setGeospatialModeEnabledViaHostBridge } from './hostBridge.js'
+import {
+  clearEnhancedLayerConfigOverride,
+  onEnhancedLayerPersistenceChanged,
+  readEnhancedLayerConfig,
+  readEnhancedLayerEditorState,
+  setEnhancedLayerVisibility,
+  setEnhancedTagVisibility,
+  writeEnhancedLayerConfig,
+} from './enhancedLayerPersistence.js'
+export type {
+  EnhancedLayerEditorState,
+  EnhancedLayerPersistenceChange,
+} from './enhancedLayerPersistence.js'
 
 export { LS_KEYS }
 export { useGympgrphStore }
 export { hashStringToIndex }
 
-export { applyMediaProxySrc, coerceFetchUrl, MEDIA_PROXY_ENDPOINT }
+export { applyDevCrossOriginProxy, applyMediaProxySrc, coerceFetchUrl, MEDIA_PROXY_ENDPOINT }
 
 export { parseGeoJsonFromText, coerceGeoJsonToFeatureCollection }
 export { addGeospatialDatasetUrl, loadDatasetFeatureCollection }
@@ -55,3 +68,17 @@ export function requestGeospatialTraversalRun(_args?: { edgeIds?: string[] | nul
 }
 
 export { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection }
+
+export {
+  clearEnhancedLayerConfigOverride,
+  onEnhancedLayerPersistenceChanged,
+  readEnhancedLayerConfig,
+  readEnhancedLayerEditorState,
+  setEnhancedLayerVisibility,
+  setEnhancedTagVisibility,
+  writeEnhancedLayerConfig,
+}
+
+export function requestGeospatialFitToBounds(bounds: readonly [number, number, number, number]): void {
+  useGympgrphStore.getState().requestGeospatialFitToBounds(bounds)
+}

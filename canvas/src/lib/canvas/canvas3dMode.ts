@@ -2,7 +2,7 @@ import type { Canvas2dRendererId, Canvas3dModeId } from '@/lib/config'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 
-export const CANVAS_SURFACE_MODE_IDS = ['2d', '3d', 'xr', 'voxel', 'geospatial'] as const
+export const CANVAS_SURFACE_MODE_IDS = ['2d', '3d', 'xr', 'geo-xr', 'voxel', 'geospatial'] as const
 
 export type CanvasSurfaceModeId = (typeof CANVAS_SURFACE_MODE_IDS)[number]
 
@@ -20,6 +20,7 @@ const CANVAS_SURFACE_MODE_SPECS: Record<CanvasSurfaceModeId, CanvasSurfaceModeSp
   '2d': { id: '2d', title: '2D Mode', label: '2D' },
   '3d': { id: '3d', title: '3D Mode', label: '3D' },
   xr: { id: 'xr', title: 'XR Mode', label: 'XR' },
+  'geo-xr': { id: 'geo-xr', title: 'Geo+XR Mode', label: 'Geo+XR' },
   voxel: { id: 'voxel', title: 'Voxel Mode', label: 'Voxel' },
   geospatial: { id: 'geospatial', title: 'Geospatial Mode', label: 'Geo' },
 }
@@ -57,6 +58,7 @@ export type CanvasSurfaceModeApplicabilityArgs = VoxelModeApplicabilityArgs & {
 export type CanvasSurfaceModeSelectionParams = CanvasSurfaceModeApplicabilityArgs & {
   mode: CanvasSurfaceModeId
   onOpenGeospatialMode: () => void
+  onExitGeospatialMode?: () => void
   setCanvas2dRenderer: (id: Canvas2dRendererId) => void
   setCanvasRenderMode: (mode: '2d' | '3d') => void
   setCanvas3dMode: (mode: Canvas3dModeId) => void
@@ -132,12 +134,7 @@ export function getCanvasSurfaceModeDisabledCopy(
 ): CanvasSurfaceModeDisabledCopy {
   const geospatialEnabled = (args.geospatialEnabled ?? readGeospatialOverlayEnabled()) === true
   if (mode === '2d') {
-    return geospatialEnabled
-      ? {
-        reason: 'Disabled in Geospatial Mode',
-        hint: 'Switch to Document Mode to enable',
-      }
-      : null
+    return null
   }
   if (mode === '3d' || mode === 'xr') {
     if (geospatialEnabled) {
@@ -153,6 +150,14 @@ export function getCanvasSurfaceModeDisabledCopy(
       }
     }
     return null
+  }
+  if (mode === 'geo-xr') {
+    return (args.layoutMode ?? args.schema?.layout?.mode) === 'radial'
+      ? {
+        reason: 'Geo+XR Mode is disabled in Radial Layout',
+        hint: 'Switch layout mode to Block',
+      }
+      : null
   }
   if (!args.schema) {
     return {
@@ -181,6 +186,7 @@ export function applyCanvasSurfaceModeSelection(params: CanvasSurfaceModeSelecti
     mode,
     geospatialEnabled,
     onOpenGeospatialMode,
+    onExitGeospatialMode,
     canvas2dRenderer,
     schema,
     setCanvas2dRenderer,
@@ -189,11 +195,18 @@ export function applyCanvasSurfaceModeSelection(params: CanvasSurfaceModeSelecti
     setSchema,
   } = params
   if (mode === '2d') {
-    if (geospatialEnabled) return false
+    if (geospatialEnabled) onExitGeospatialMode?.()
     setCanvasRenderMode('2d')
     return true
   }
   if (mode === 'geospatial') {
+    setCanvasRenderMode('2d')
+    onOpenGeospatialMode()
+    return true
+  }
+  if (mode === 'geo-xr') {
+    if ((params.layoutMode ?? schema?.layout?.mode) === 'radial') return false
+    activateCanvasGraphSurfaceMode({ mode: 'xr', setCanvas3dMode, setCanvasRenderMode })
     onOpenGeospatialMode()
     return true
   }

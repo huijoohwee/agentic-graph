@@ -106,8 +106,8 @@ def _read_source_identity(
               /^runtime_claim:\\s*["']local-runtime-ready["']\\s*$/m.test(sourceText),
             exactHeadEvidenceRequired:
               /^evidence_status:\\s*["']exact-head source and browser proof required at every handoff["']\\s*$/m.test(sourceText),
-            surfaceXr:
-              /^kgCanvasSurfaceMode:\\s*["']xr["']\\s*$/m.test(sourceText),
+            surfaceGeoXr:
+              /^kgCanvasSurfaceMode:\\s*["']geo-xr["']\\s*$/m.test(sourceText),
             render3d:
               /^kgCanvasRenderMode:\\s*["']3d["']\\s*$/m.test(sourceText),
             stageXr:
@@ -515,7 +515,7 @@ def apply_and_verify_exact_authored_source(
             and EXPECTED_SOURCE_NODE_IDS.issubset(
                 set(value.get("graphNodeIds") or [])
             )
-            and value.get("surfaceMode") == "xr"
+            and value.get("surfaceMode") == "geo-xr"
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
         ),

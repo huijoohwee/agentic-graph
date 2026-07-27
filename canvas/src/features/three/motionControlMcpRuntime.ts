@@ -252,6 +252,7 @@ export async function controlLocalMotionControl(input: MotionControlInput) {
         landmarkCount: artifact.landmarkCount,
         researchReady: artifact.researchReady,
         researchReadyGroupCount: artifact.researchReadyGroupCount,
+        researchEvidenceManifestCount: artifact.researchEvidenceManifestCount,
       }
       return { ok: true, message: `Deterministic ${control.format!.toUpperCase()} export prepared locally.`, operation: control.operation, export: metadata, motionControl: inspectLocalMotionControl() }
     } catch (error) {

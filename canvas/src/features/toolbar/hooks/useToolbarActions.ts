@@ -5,7 +5,7 @@ import { openFloatingPanelChat } from '@/features/chat/floatingPanelChat/floatin
 import { UI_COPY } from '@/lib/config'
 import { getNextThemeMode, type ThemeMode } from '@/lib/ui/theme'
 import { type GraphSchema } from '@/lib/graph/schema'
-import { toggleGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
+import { setGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
 import { togglePortHandlesEnabledInSchema } from '@/lib/graph/portHandlesBehavior'
 import type { MainPanelTabKey } from '@/features/toolbar/hooks/useMainPanelDrag'
 
@@ -168,7 +168,7 @@ export function useToolbarActions(
   }, [])
 
   const handleOpenGeospatialMode = useCallback(() => {
-    void toggleGeospatialModeEnabled()
+    void setGeospatialModeEnabled(true)
       .then(nextEnabled => {
         onGeospatialEnabledChange?.(nextEnabled)
         if (nextEnabled) emitFloatingPanelOpen({ tab: 'geo', open: true })
@@ -181,6 +181,25 @@ export function useToolbarActions(
             id: 'geospatial-mode-toggle-error',
             kind: 'error',
             message: `Geospatial Mode failed to load: ${msg || 'Unknown error'}`,
+          })
+        } catch {
+          void 0
+        }
+      })
+  }, [onGeospatialEnabledChange])
+
+  const handleExitGeospatialMode = useCallback(() => {
+    emitFloatingPanelOpen({ tab: 'geo', open: false })
+    void setGeospatialModeEnabled(false)
+      .then(nextEnabled => onGeospatialEnabledChange?.(nextEnabled))
+      .catch((err: unknown) => {
+        try {
+          const msg =
+            err && typeof err === 'object' && 'message' in err ? String((err as { message?: unknown }).message || '').trim() : ''
+          useGraphStore.getState().pushUiToast({
+            id: 'geospatial-mode-exit-error',
+            kind: 'error',
+            message: `Canvas View Mode failed to restore: ${msg || 'Unknown error'}`,
           })
         } catch {
           void 0
@@ -210,6 +229,7 @@ export function useToolbarActions(
     handleToggle3DMode,
     handleOpenChat,
     handleOpenGeospatialMode,
+    handleExitGeospatialMode,
     handleToggleTheme,
   }
 }

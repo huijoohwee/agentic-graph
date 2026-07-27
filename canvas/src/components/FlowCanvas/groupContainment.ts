@@ -1,6 +1,11 @@
 import type { FlowNativeRuntime, FlowNativeScene } from '@/components/FlowCanvas/nativeRuntime'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
-import { clampNumber, clampDelta, computeDeltaClampForTopLeftNodes } from '@/lib/canvas/groupContainment'
+import {
+  clampNumber,
+  clampDelta,
+  computeDeltaClampForRectWithinRect,
+  computeDeltaClampForTopLeftNodes,
+} from '@/lib/canvas/groupContainment'
 import { computeFlowGroupAabb } from '@/components/FlowCanvas/nativeRuntime'
 
 export type FlowNodeClamp = { minX: number; maxX: number; minY: number; maxY: number }
@@ -128,6 +133,33 @@ export const computeFlowDeltaClampForNodes = (args: {
     sizeById.set(id, { w: n.width, h: n.height })
   }
   return computeDeltaClampForTopLeftNodes({ nodeIds: args.nodeIds, startPosById: args.startPosById, sizeById, rectByNodeId })
+}
+
+export const computeFlowGroupDeltaClamp = (args: {
+  runtime: FlowNativeRuntime
+  groupId: string
+}): FlowDeltaClamp | null => {
+  const groupId = String(args.groupId || '').trim()
+  const scene = args.runtime.scene
+  if (!groupId || !scene) return null
+  const groups = (scene.groups || []) as GraphGroup[]
+  const groupById = new Map<string, GraphGroup>()
+  for (const group of groups) {
+    const id = String(group?.id || '').trim()
+    if (id) groupById.set(id, group)
+  }
+  const group = groupById.get(groupId) || null
+  const parentGroupId = String(group?.parentGroupId || '').trim()
+  const parent = parentGroupId ? groupById.get(parentGroupId) || null : null
+  if (!group || group.containChildren === false || !parent || parent.containChildren === false) return null
+  const subject = readRectForGroup({ runtime: args.runtime, scene, group })
+  const container = readRectForGroup({ runtime: args.runtime, scene, group: parent })
+  if (!subject || !container) return null
+  return computeDeltaClampForRectWithinRect({
+    subject,
+    container,
+    inset: readContainmentInsetPx(args.runtime),
+  })
 }
 
 export const clampFlowDelta = (args: { clamp: FlowDeltaClamp; dx: number; dy: number }) => {

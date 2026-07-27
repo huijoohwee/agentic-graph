@@ -3,9 +3,11 @@ import { useFrame } from '@react-three/fiber'
 import { Vector3, type PerspectiveCamera, type WebGLRenderer } from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { resolveFlightSimFollowTarget } from '@/features/game-flight-sim/flightSimFollowTarget'
+import { readFlightSimCameraSnapshot } from '@/features/game-flight-sim/flightSimCameraRuntime'
 import { readFlightSimSnapshot } from '@/features/game-flight-sim/flightSimRuntime'
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useGympgrphExternalStore } from '@/lib/gympgrph/externalStore'
 import { resolveXrMotionReferenceStage } from './xrSceneLibrary'
 import { XR_MOTION_STAGE_SPAN } from './xrMotionReferenceCoordinates'
 import { readXrMotionReferenceRuntime } from './xrMotionReferenceRuntime'
@@ -16,11 +18,14 @@ import {
 } from './xrNativeControllerDemoRuntime'
 import { resolveXrNativeControllerFollowFraming } from './xrNativeControllerCameraFraming'
 import { readXrNativeControllerCamera } from './xrNativeControllerCameraRuntime'
+import {
+  resolveGeoXrEnvironmentPresentation,
+  resolveGeoXrPlanCameraFraming,
+} from './xrGeoEnvironmentPresentation'
 
 const AERIAL_ALTITUDE_START_METERS = 3
 const AERIAL_ALTITUDE_RANGE_METERS = 17
-
-type FollowOwner = 'flight' | 'physics'
+type FollowOwner = 'flight' | 'flight-plan' | 'physics'
 type FollowTarget = Readonly<{
   owner: FollowOwner
   position: readonly [number, number, number]
@@ -35,6 +40,10 @@ type ControlsCapabilities = Readonly<{
   enablePan: boolean
   enableRotate: boolean
   enableZoom: boolean
+}>
+type PlanRestorePose = Readonly<{
+  position: Vector3
+  target: Vector3
 }>
 
 function clamp01(value: number): number {
@@ -94,10 +103,43 @@ function readFlightFollowTarget(
   if (!active || renderer.xr.isPresenting) return null
   const snapshot = readFlightSimSnapshot()
   if (!snapshot.active || !snapshot.webglSupported || snapshot.runtimeError) return null
-  const target = resolveFlightSimFollowTarget(snapshot, coordinateScale)
+  const target = resolveFlightSimFollowTarget(
+    snapshot,
+    coordinateScale,
+    readFlightSimCameraSnapshot().view,
+  )
   return Object.freeze({
     owner: 'flight',
     ...target,
+    interpolate: true,
+    snapDistance: Number.POSITIVE_INFINITY,
+  })
+}
+
+function readFlightPlanTarget(
+  active: boolean,
+  aspect: number,
+  coordinateScale: number,
+  renderer: WebGLRenderer,
+): FollowTarget | null {
+  if (!active || renderer.xr.isPresenting) return null
+  const snapshot = readFlightSimSnapshot()
+  if (!snapshot.active || !snapshot.webglSupported || snapshot.runtimeError) return null
+  const motionRuntime = readXrMotionReferenceRuntime()
+  const stage = resolveXrMotionReferenceStage(motionRuntime.plan.stageId)
+  const framing = resolveGeoXrPlanCameraFraming({
+    aircraftPosition: snapshot.aircraft.position,
+    aspect,
+    coordinateScale,
+    stageSizeMeters: stage.sizeMeters,
+  })
+  return Object.freeze({
+    owner: 'flight-plan',
+    position: framing.position,
+    target: framing.target,
+    fovDegrees: framing.fovDegrees,
+    resetKey: snapshot.runId,
+    sequence: snapshot.tick,
     interpolate: true,
     snapDistance: Number.POSITIVE_INFINITY,
   })
@@ -108,6 +150,7 @@ export function useXrNativeControllerDemoCamera({
   controls,
   coordinateScale,
   flightSimActive,
+  geospatialComposite,
   renderer,
   suspended,
 }: {
@@ -115,6 +158,7 @@ export function useXrNativeControllerDemoCamera({
   controls: OrbitControls
   coordinateScale: number
   flightSimActive: boolean
+  geospatialComposite: boolean
   renderer: WebGLRenderer
   suspended: boolean
 }) {
@@ -124,11 +168,17 @@ export function useXrNativeControllerDemoCamera({
     markdownDocumentName,
     markdownDocumentText,
   )
+  const geospatialViewMode = useGympgrphExternalStore(
+    state => state.geospatialViewMode,
+  )
+  const planarFlightPresentation = geospatialComposite
+    && resolveGeoXrEnvironmentPresentation(geospatialViewMode).dimension === 'planar'
   const ownerRef = React.useRef<FollowOwner | null>(null)
   const controlsCapabilitiesRef = React.useRef<ControlsCapabilities | null>(null)
   const desiredTargetRef = React.useRef(new Vector3())
   const desiredCameraRef = React.useRef(new Vector3())
   const previousFovRef = React.useRef<number | null>(null)
+  const planRestorePoseRef = React.useRef<PlanRestorePose | null>(null)
   const resetKeyRef = React.useRef(-1)
   const sequenceRef = React.useRef(-1)
 
@@ -142,6 +192,13 @@ export function useXrNativeControllerDemoCamera({
       Object.assign(controls, controlsCapabilitiesRef.current)
       controlsCapabilitiesRef.current = null
     }
+    if (planRestorePoseRef.current) {
+      camera.position.copy(planRestorePoseRef.current.position)
+      controls.target.copy(planRestorePoseRef.current.target)
+      camera.lookAt(controls.target)
+      controls.update()
+      planRestorePoseRef.current = null
+    }
     ownerRef.current = null
     resetKeyRef.current = -1
     sequenceRef.current = -1
@@ -151,6 +208,7 @@ export function useXrNativeControllerDemoCamera({
 
   useFrame((_state, deltaSecondsValue) => {
     const fixedFollow = readXrNativeControllerCamera().mode === 'fixed-follow'
+    const planarFollowActive = flightSimActive && planarFlightPresentation
     if (
       flightSimActive
       && !fixedFollow
@@ -158,10 +216,12 @@ export function useXrNativeControllerDemoCamera({
     ) {
       void document.exitPointerLock()
     }
-    const follow = suspended || !fixedFollow
+    const follow = suspended || (!fixedFollow && !planarFollowActive)
       ? null
       : flightSimActive
-        ? readFlightFollowTarget(true, coordinateScale, renderer)
+        ? planarFlightPresentation
+          ? readFlightPlanTarget(true, camera.aspect, coordinateScale, renderer)
+          : readFlightFollowTarget(true, coordinateScale, renderer)
         : readPhysicsFollowTarget(camera.aspect, runReadyDemo)
     if (!follow) {
       if (ownerRef.current) releaseFollow()
@@ -179,7 +239,21 @@ export function useXrNativeControllerDemoCamera({
     controls.enableRotate = false
     controls.enableZoom = false
     if (previousFovRef.current === null) previousFovRef.current = camera.fov
-
+    const previousOwner = ownerRef.current
+    if (
+      follow.owner === 'flight-plan'
+      && previousOwner !== 'flight-plan'
+    ) {
+      planRestorePoseRef.current = {
+        position: camera.position.clone(),
+        target: controls.target.clone(),
+      }
+    } else if (
+      follow.owner !== 'flight-plan'
+      && previousOwner === 'flight-plan'
+    ) {
+      planRestorePoseRef.current = null
+    }
     const target = desiredTargetRef.current.set(...follow.target)
     const desiredCamera = desiredCameraRef.current.set(...follow.position)
     const ownerChanged = ownerRef.current !== follow.owner

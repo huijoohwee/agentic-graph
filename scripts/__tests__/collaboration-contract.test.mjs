@@ -16,6 +16,9 @@ import {
 import { fetchOpenPullRequests } from '../github-active-scope-client.mjs'
 import {
   buildLocalCollaborationBrowserEnv,
+  buildLocalCollaborationPersistenceArgs,
+  buildLocalCollaborationWorkerArgs,
+  buildLocalCollaborationWorkerEnv,
   resolveLocalCollaborationStackConfig,
 } from '../lib/collaboration-local-stack.js'
 
@@ -44,11 +47,15 @@ test('collaboration browser gate edits through the canonical active editor owner
   assert.match(smoke, /await waitForActiveDocumentReady\(page\)[\s\S]*await closeFloatingPanelIfOpen\(page\)[\s\S]*await connectButton\.click/)
   assert.doesNotMatch(smoke, /\.click\(\{[^}]*force:\s*true/)
   assert.doesNotMatch(smoke, /graphState\.setActiveMarkdownDocument/)
+  assert.match(smoke, /restoreLocalDocumentSnapshot\(localDocumentSnapshot\)/)
 })
 
 test('local collaboration browser identities remain stable across repeated gate runs', () => {
   const config = resolveLocalCollaborationStackConfig({ repoRoot: '/tmp/knowgrph-test', env: {} })
   const browserEnv = buildLocalCollaborationBrowserEnv(config, {})
+  const workerEnv = buildLocalCollaborationWorkerEnv(config, {})
+  const workerArgs = buildLocalCollaborationWorkerArgs(config, 8877)
+  const persistenceArgs = buildLocalCollaborationPersistenceArgs(config)
 
   assert.equal(config.ownerAppUrl, 'http://127.0.0.1:5175/')
   assert.equal(config.guestAppUrl, 'http://127.0.0.1:5174/')
@@ -65,6 +72,22 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.equal(config.guestClientDeviceId, 'dev:collaboration-guest-local')
   assert.equal(browserEnv.KG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)
   assert.equal(browserEnv.KG_COLLABORATION_E2E_GUEST_DEVICE_ID, config.guestClientDeviceId)
+  assert.equal(browserEnv.KG_COLLABORATION_E2E_DOC_PATH, config.documentPath)
+  assert.equal(config.mutableSourcePath, '/tmp/knowgrph-test/docs/workspace-seeds/knowgrph-physics-playground-demo.md')
+  assert.equal(config.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH, config.mutableSourcePath)
+  assert.equal(workerEnv.KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
+  assert.equal(workerEnv.KNOWGRPH_STORAGE_LOCAL_RUNTIME, 'true')
+  assert.deepEqual(workerArgs.slice(-4), [
+    '--var',
+    `KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
+    '--var',
+    'KNOWGRPH_STORAGE_LOCAL_RUNTIME:true',
+  ])
+  assert.deepEqual(persistenceArgs, [
+    '--persist-to',
+    '/tmp/knowgrph-test/cloudflare/workers/knowgrph-storage/.wrangler/state',
+  ])
+  assert.equal(workerArgs.includes(config.storagePersistencePath), true)
   assert.notEqual(config.ownerClientDeviceId, config.guestClientDeviceId)
 })
 
@@ -122,6 +145,28 @@ test('Agentic ECS source always selects the runtime gate', async () => {
   assert.deepEqual(plan.scopes, ['runtime'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.deepEqual(plan.commands, [['npm', 'run', 'runtime:check']])
+})
+
+test('surface policy owners always select the focused readiness gate', async () => {
+  const contract = await readContract()
+  const ownerPaths = [
+    'config/surface-registry.json',
+    'config/license-registry.json',
+    'schemas/surface-registry.v1.schema.json',
+    'scripts/surface/publication-gate.mjs',
+    'data/surface/ledger/README.md',
+    'docs/discoverability-ip-protection-runtime.md',
+  ]
+
+  for (const ownerPath of ownerPaths) {
+    const plan = selectAffectedCommands([ownerPath], contract)
+    assert.ok(plan.scopes.includes('surface_policy'), ownerPath)
+    assert.deepEqual(plan.unmatchedPaths, [], ownerPath)
+    assert.ok(
+      plan.commands.some(command => command.join(' ') === 'npm run surface:verify'),
+      ownerPath,
+    )
+  }
 })
 
 test('Rich Media preview timing owners always select schema and browser contract gates', async () => {

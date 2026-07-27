@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Knowgrph Native Flight Simulator (`Flight_Sim`) is a browser-local, single-player, offline, deterministic flight mission that mounts as a `FloatingPanel` mode on the single existing Knowgrph React Three Fiber XR Canvas. It composes existing repository owners — the Knowgrph renderer, the native Agentic ECS, browser-local WorkspaceFs, and the shared camera catalog — with a small cluster of new, in-repo flight owners: an in-repo `Flight_Model`, an in-repo AABB `Collision_Resolver`, an `Asset_Loader` over `img2threejs`-style diffable specs, a strict `Invocation_Parser`, two browser-local WebMCP tools, and a Decisions-only persistence path.
+The Knowgrph Native Flight Simulator (`Flight_Sim`) is a browser-local, single-player, offline, deterministic flight mission that mounts as a `FloatingPanel` mode over the composed Geo+XR Canvas surface: Geo supplies presentation state to the selected authored environment, Flight actors, and HUD in the one existing React Three Fiber XR Canvas. It composes existing repository owners — the Knowgrph renderers, the native Agentic ECS, browser-local WorkspaceFs, and the shared camera catalog — with a small cluster of new, in-repo flight owners: an in-repo `Flight_Model`, an in-repo AABB `Collision_Resolver`, an `Asset_Loader` over `img2threejs`-style diffable specs, a strict `Invocation_Parser`, two browser-local WebMCP tools, and a Decisions-only persistence path.
 
 The feature is governed by hard, non-negotiable platform constraints that this design treats as invariants rather than goals:
 
@@ -15,7 +15,7 @@ The feature is governed by hard, non-negotiable platform constraints that this d
 - **In-repo physics.** `Flight_Model` (thrust/pitch/roll/yaw + bounded lift/drag/gravity) and `Collision_Resolver` (swept AABB against an authored slab catalog) are in-repo, with no external physics engine and no mesh colliders or navmesh.
 - **img2threejs primary asset pipeline.** The required aircraft is a committed diffable TypeScript + JSON `Asset_Spec`; one optional subject may use an opaque GLB produced by the repository-owned deterministic offline generator and admitted only as a committed, hash-pinned, license-gated local fallback. No TRELLIS.2 or other external-generator dependency is present.
 - **Strict invocation and bounded MCP surface.** Exactly `/flight.sim @canvas #flight`; browser-local tools `knowgrph.inspect_local_flight_sim` and `knowgrph.control_local_flight_sim`; the private Agentic ECS stdio lane stays at exactly three tools.
-- **Shared single Canvas.** One R3F XR Canvas, one renderer, one camera owner; `Camera_Source` offers Fixed_Follow and Free_Orbit; `Motion_Control` is optional input only, never the flight policy.
+- **Shared composed Canvas surface.** One selected authored environment plus Flight actors in one existing R3F XR Canvas and one camera/input authority; Geo changes its four presentation policies without painting another world; `Camera_Source` offers Fixed_Follow and Free_Orbit; `Motion_Control` is optional input only, never the flight policy.
 - **Deterministic loop.** Exact fixed `1 / 60` second (approximately 16.667 ms, 60 Hz) timestep with a bounded catch-up accumulator, synchronous WebGL admission, a resumable lifecycle, fail-closed hydration/retry, repository-owned runtime-readiness and browser-smoke gates, and source-authored activation identity.
 
 This repository-tracked design is part of the normative `.kiro/specs/knowgrph-game-flight-sim` source of truth. It grounds those constraints in the tracked Agentic ECS contract (`docs/documents/knowgrph-agentic-entity-component-system-prd-tad.md`), the canonical `contracts/cost-log.schema.js`, and the source module cluster under `canvas/src/features/game-flight-sim/`. The Flight Sim PRD/TAD (`docs/documents/knowgrph-game-flight-sim-prd-tad.md`) and workspace seed (`docs/workspace-seeds/knowgrph-game-flight-sim-demo.md`) are derived implementation/proof projections; any workspace-root Kiro copy is a byte-identical local projection only.
@@ -25,7 +25,7 @@ This repository-tracked design is part of the normative `.kiro/specs/knowgrph-ga
 | Concern | Reused existing owner | Flight_Sim addition |
 |---|---|---|
 | Entity/component state, transactional tick | `ecs/` five-function API (`createWorld`, `allocateEntity`, `registerComponent`, `query`, `worldTick`) | Flight components + ordered flight systems injected at `createWorld` |
-| Rendering | Single R3F Canvas (`ThreeGraph.impl.tsx`) + authored XR stage | Aircraft/waypoint/objective actors + HUD overlay only |
+| Rendering | Shared surface policy over the existing R3F Canvas (`ThreeGraph.impl.tsx`) and Geo state owner | One authored environment with four Geo presentation policies + Flight actors + shared HUD |
 | Camera/input arbitration | Shared camera catalog + XR controller hook + Timeline camera-marks + Motion Control adapter | Pure follow/framing descriptor; no Flight-owned camera |
 | Browser persistence | WorkspaceFs source-file bridge + KGC decision document | Decisions-only flight save adapter |
 | Cost truth | `contracts/cost-log.schema.js` | Canonical model-free zero record per tick |
@@ -63,7 +63,7 @@ flowchart TB
     GLB["GLB_Fallback (opaque, local)"]
   end
   subgraph Shared["Existing shared owners"]
-    CANVAS["Single R3F XR Canvas"]
+    CANVAS["One composed Canvas surface\nselected authored environment + Flight"]
     CAM["Camera_Source\nFixed_Follow / Free_Orbit"]
     HUD["HUD overlay"]
     FS["WorkspaceFs_Adapter"]
@@ -119,7 +119,7 @@ The stdio ECS server injects no systems (per the ECS design); the four flight sy
 
 ### Shared Canvas ownership
 
-`Flight_Runtime` mounts overlay actors and the HUD inside the single existing R3F Canvas, keeping the authored atmosphere/terrain/scene graph mounted (R14.1, R14.2). It never introduces a second renderer, Canvas, alternate world, or Flight-owned camera. On exit it restores the previous surface controller and simulation state; entry or restoration failure leaves the existing Canvas and prior controller unchanged and surfaces a local error (R14.3–R14.5). `Camera_Source` supplies a pure follow/framing descriptor consumed by the shared controller hook; Fixed_Follow is the default, Free_Orbit is selectable, and Timeline camera-marks temporarily own framing then return to the last selected option (R15).
+`Flight_Runtime` projects aircraft and navigation on the composed Geo+XR surface. The one existing R3F Canvas retains the selected authored environment, authored subjects, lights, mission actors, camera, and physics; only the XR atmosphere is suppressed for this composition, while the Geo DOM host paints no terrain or screen-space world (R14.1, R14.2, R14.7). Plain Geo remains a separate exclusive interactive surface with the existing DOM/SVG Flight projection and no mounted R3F Canvas (R14.6). Flight never introduces a second Canvas, alternate world, or camera owner. The existing Media environment cards stage through XR scene control before the shared FloatingPanel bridge opens Geo; Geo preserves that runtime selection, and the source-authored Flight document selects Geo+XR in the same handoff without replacing the Geo panel, deriving its spatial profile and World label without a map-provider or network owner (R25). The Geo+XR bridge explicitly selects the Geo host's `shared-xr-stage` policy: MapLibre and the screen-space SVG world remain unmounted, while `2d-classic`, `2d-modern`, `3d-classic`, and `3d-modern` select planar/volumetric and Classic/Modern presentation state for the same environment geometry. The two planar modes use a north-up plan framing branch in the sole shared camera owner; volumetric modes preserve the player's selected Chase, Cockpit, or Survey view under Fixed Follow. The camera owner captures the volumetric position and target before planar ownership changes the camera, retains that return pose if Free Orbit is selected while still planar, restores it and the prior field of view and OrbitControls capabilities on a direct planar-to-volumetric Free Orbit transition, and discards it when another non-planar follow owner takes control. Terrain geometry and collision remain byte-identical across all four policies. Standalone Geo retains its provider-backed path (R25.8). Graph-metadata source-text writes enter the shared Workspace seed-sync task owner, whose settlement barrier also flushes and awaits the persisted workspace layer's debounced local host-mirror tail. Flight entry crosses that barrier before installing its gameplay network fence. In Geo+XR, Flight/XR owns pointer input while Geo supplies presentation state; City and FPS gameplay retain established 3D precedence, and the selected environment remains intact (R25.7). One shared Flight surface-control hook owns desktop, touch, gamepad, and Motion Control sampling. The XR mission stage invalidates its demand loop and acknowledges preparation after its committed R3F render; the exclusive Geo overlay acknowledges preparation after its committed DOM render. Both are independent of desktop input ownership. On exit Flight restores the previous surface controller and simulation state; entry or restoration failure leaves the existing Canvas and prior controller unchanged and surfaces a local error (R14.3–R14.5). `Camera_Source` supplies a pure follow/framing descriptor consumed by the shared controller hook; Fixed_Follow is the default, Free_Orbit is selectable, and Timeline camera-marks temporarily take framing ownership before returning to the last selected option (R15). The Cockpit descriptor derives its eye clearance from the admitted aircraft collision envelope. The HUD consumes the shared FloatingPanel width policy, reserves that panel's default right-side footprint, stays pointer-transparent, and retains the established layer above bottom choreography surfaces (R26).
 
 ## Components and Interfaces
 
@@ -177,6 +177,7 @@ function integrateFlightModel(
 
 Guarantees: sampled control fields use `[-1,1]`; aircraft throttle state remains in `[0,1]` and changes from `throttleDelta` or an explicit absolute setpoint; finite outliers clamp, infinities become signed bounds, and NaN reuses only the corresponding last valid input field while recording internal `outOfRange`, after which integration continues (R7.5); internal output attitude is stored as scalar pitch/roll/yaw radians bounded to `[-π,π]` per axis, with visible HUD angles derived in degrees, velocity components bounded to configured min/max, and all outputs finite — never NaN/Infinity (R7.1); lift/drag/gravity applied deterministically each tick (R7.2, R7.3); no external physics engine (R7.4, R3.3).
 
+`flightSimEnvelope.ts` is the single clean-room owner for speed-sensitive control authority and live envelope guidance. Authority decreases monotonically below the authored 12 m/s full-control threshold but never reaches zero; below 7 m/s the model adds a bounded deterministic nose-down tendency. The same pure projection prioritizes unreliable instrumentation, stall risk, pitch/bank limits, and mission-relative energy, then supplies one label, recovery cue, target-speed band, and authority percentage to the HUD and the existing six-surface training projection. It uses only aircraft state and authored mission constants, and introduces no random input, external asset, package, camera mutation, or second render owner.
 ### Collision_Resolver (`flightModel.ts` / spatial profile)
 
 Pure swept-AABB resolver used by `CollisionResolverSystem`.
@@ -230,7 +231,7 @@ Decisions-only gameplay persistence over the existing WorkspaceFs KGC decision d
 
 ### HUD (`FlightSimHud.tsx`)
 
-Displays airspeed, altitude, heading, attitude, throttle (normalized `[0,1]`), waypoint/objective state, save state, and errors, refreshing each value within 100 ms of an underlying change (R18.1, R18.2); shows local error indications with the affected local path (R18.3); reflects pending/retryable/successful and non-retryable save states (R18.4, R18.5).
+Displays airspeed, altitude, heading, attitude, throttle (normalized `[0,1]`), waypoint/objective state, save state, and errors, refreshing each value within 100 ms of an underlying change (R18.1, R18.2); shows local error indications with the affected local path (R18.3); reflects pending/retryable/successful and non-retryable save states (R18.4, R18.5). At and above the shared small-screen breakpoint, an open FloatingPanel's default responsive width expression is also the HUD's right-side safe clearance for top telemetry, navigation, and bottom lifecycle controls. Mobile retains its full-viewport HUD and established occluder choreography. The pointer-transparent HUD remains above bottom choreography surfaces, while its pointer-owning wide-layout controls stay outside the FloatingPanel footprint (R26.1–R26.3).
 
 ## Data Models
 
@@ -273,18 +274,13 @@ Invariants: every `halfSize` axis is positive and finite; every center axis is f
 
 ```ts
 interface FlightSimAircraftAssetSpec {
-  schema: "knowgrph.img2threejs-scene/v1";
-  id: "vehicle-airplane";
-  label: string;
-  representation: "typescript-json";
-  renderer: "xr-procedural-vehicle";
-  shape: "airplane";
-  dimensionsMeters: SpatialVector;
-  collisionHalfSizeMeters: SpatialVector;
+  schema: "knowgrph.img2threejs-scene/v1"; id: "vehicle-airplane";
+  label: string; representation: "typescript-json";
+  renderer: "xr-procedural-vehicle"; shape: "airplane";
+  dimensionsMeters: SpatialVector; collisionHalfSizeMeters: SpatialVector;
   defaultColor: string;
   opaqueBinaryFallback: null;
-  runtimeModelCalls: 0;
-  runtimeNetworkCalls: 0;
+  runtimeModelCalls: 0; runtimeNetworkCalls: 0;
 }
 ```
 
@@ -329,8 +325,7 @@ Constraints: only these three types accepted (R19.1); merged idempotently by `de
 ```ts
 interface MissionObjective {
   waypoints: [Waypoint, Waypoint, Waypoint];  // exactly 3, ordered
-  landingPad: Waypoint;
-  captureRadiusM: number;                      // 50..200 per point
+  landingPad: Waypoint; captureRadiusM: number; // radius 50..200 per point
 }
 interface MissionProgress { capturedCount: 0 | 1 | 2 | 3; landed: boolean; terminal: "pending" | "success" | null; }
 ```
@@ -344,6 +339,10 @@ interface ActivationIdentity { runReadyDemoId: string; importedPath?: string; }
 ```
 
 Activation keys on the source-authored `run_ready_demo.id` in the known registry independent of imported path (R23.1); path/source disagreement fails closed with an identity-conflict error (R23.2); an unregistered id fails closed (R23.3).
+
+### Motion Control local runtime asset transport
+
+The Flight gameplay network fence remains the single transport policy owner while Motion Control is live. Its only read-through path is an immutable set of the nine LiteRT JavaScript, Wasm, and pose-detector model files prepared under `canvas/public/litert/`. A request is admitted only when its effective method is `GET` or `HEAD`, its URL resolves to the current browser origin, and its normalized pathname exactly equals a member of that set. Fetch and XMLHttpRequest share this predicate; every non-member request reports the existing `FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED` error before the original transport is invoked. WebSocket, EventSource, sendBeacon, and durable Service Worker start/attach retain their unconditional blocks. This exception is a local static-asset read, not a gameplay-network capability. It introduces no package, external repository content, remote model, map provider, renderer, camera, flight policy, or persistence owner. The existing Motion Control runtime alone consumes the prepared assets and its normalized pose adapter continues through the shared Flight input owner (R27).
 
 ## Correctness Properties
 
@@ -556,6 +555,7 @@ All error handling is local, fail-closed, and non-destructive. No error path iss
 | WebGL unavailable / unreadable Decisions at Start | WebGL_Probe / Flight_Runtime | Keep mission stopped; retain in-memory data; local on-screen error; no remote call; no second renderer | 21.2 |
 | Entry / restoration failure on shared Canvas | Flight_Runtime | Leave Canvas/scene/prior controller unchanged (entry) or retain single Canvas (exit); surface local error | 14.4, 14.5 |
 | Activation identity conflict / unregistered id | Activation | Fail closed without activating; identity-conflict or unregistered error; leave prior activation unchanged | 23.2, 23.3 |
+| Non-member request while the Flight network fence is installed | Flight_Runtime | Block before transport; permit only exact same-origin `GET`/`HEAD` reads of the nine prepared LiteRT runtime assets | 27.1, 27.2, 27.3 |
 
 Structured error envelopes reuse the Agentic ECS convention `{ ok: false, errorCode, message }` with optional non-secret details, and never leak source bytes, credentials, prompts, or unrestricted absolute paths (consistent with the ECS error model). HUD surfaces the affected local path only where one is associated with the error (R18.3).
 
@@ -583,7 +583,7 @@ The strategy is dual: property-based tests verify universal invariants across la
 
 - Time-to-first-playable-frame under 3 s from seed application without sign-in/permission/fetch/Cloudflare (R1.1).
 - Rendering/control at 375×812 without clipping or scrolling (R1.4).
-- Shared-Canvas ownership: entering Flight_Sim keeps the authored atmosphere/terrain/scene graph mounted in exactly one Canvas/renderer/camera owner with overlay actors and HUD (R14.1, R14.2).
+- Shared-Canvas and environment ownership: selecting a Media terrain kit stages it before Geo opens; a source-authored Flight document immediately selects Geo+XR with that environment and Flight in one retained R3F Canvas, no competing world or Canvas, and the matching selected spatial profile. The four Geo policies are distinct, planar framing is north-up, volumetric framing preserves the player camera view, and only duplicate atmosphere is suppressed (R14, R25).
 
 ### Smoke and scan checks (single execution)
 
@@ -591,8 +591,8 @@ The strategy is dual: property-based tests verify universal invariants across la
 - Dependency license and prohibited-library scans, including in-repo-physics boundary (no external physics engine; no mesh colliders/navmesh) (R3.1, R3.2, R3.3, R7.4, R8.6).
 - External repository locator, vendored-path, and opaque-source-binary scan across Flight-owned tracked paths, invoked by the build and paired with the source-authored provenance attestation; external project identity and URL remain prohibited and the gate cannot prove the absence of arbitrary derived code (R4.1–R4.6).
 - WebMCP surface boundary: zero added stdio tools, HTTP mutation routes, remote gateways, or deployment authority (R13.6).
-- Repository-owned runtime-readiness command (source authority, native ECS, focused tests, TypeScript, production build) and browser-smoke command (Source Files apply, one retained authored XR Canvas, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, mobile HUD), both local-only with zero paid model/image-to-3D/Cloudflare/network and no automatic Git or deployment (R22.1, R22.3, R22.5, R22.6).
+- Flight network-fence boundary: exact same-origin `GET`/`HEAD` reads reach only the nine prepared LiteRT runtime paths; cross-origin, mutation-method, and non-member requests plus sockets, event streams, beacons, and durable starts remain blocked (R27).
+- Repository-owned runtime-readiness command (source authority, native ECS, focused tests, TypeScript, production build) and browser-smoke command (Source Files apply, one selected authored environment in one XR Canvas, all four Geo policies, no screen-space world or MapLibre, north-up planar framing, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, mobile HUD), both local-only with zero paid model/image-to-3D/Cloudflare/network and no automatic Git or deployment (R22.1, R22.3, R22.5, R22.6).
 
 ### Proof boundary
-
 Consistent with the Agentic ECS and Flight Sim PRD/TAD proof layers, this design's tests establish local Dev correctness only. Protected integration, production, and Cloudflare deployment remain separate, operator-authorized workflows and are out of scope for these tests.

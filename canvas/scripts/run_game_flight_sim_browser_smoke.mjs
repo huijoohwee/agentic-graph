@@ -29,6 +29,7 @@ import {
   assertGitVerificationWorkspace,
 } from '../../scripts/lib/git-verification-workspace.mjs'
 import {
+  normalizeGameFlightSimCandidateBranch,
   resolveGameFlightSimBrowserPaths,
 } from './lib/game-flight-sim-browser-paths.mjs'
 
@@ -103,7 +104,9 @@ async function assertCandidateState({
   }
   const actualHead = readGitValue(['rev-parse', 'HEAD'])
   const actualTree = readGitValue(['rev-parse', 'HEAD^{tree}'])
-  const actualBranch = readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'])
+  const actualBranch = normalizeGameFlightSimCandidateBranch(
+    readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
+  )
   const diskSource = await readFile(sourcePath)
   const committedSource = readGitBytes([
     'show',
@@ -205,7 +208,7 @@ async function readValidatedRunEvidence({
     },
     readyFrame: {
       limitMs: 100,
-      source: 'shared-r3f-ready-frame',
+      source: 'shared-flight-surface-ready-frame',
       synchronous: false,
     },
     hudUpdate: {
@@ -284,6 +287,20 @@ async function readValidatedRunEvidence({
     || evidence?.inputProof?.touchInteraction?.exercised !== true
     || evidence?.inputProof?.touchInteraction?.runId
       !== evidence?.missionProof?.runId
+    || evidence?.inputProof?.motionControlPanelHandoff?.flightPreservedWhileMotionPanelOpen !== true
+    || evidence?.inputProof?.motionControlPanelHandoff?.captureSurfacePreservedAfterFlightReturn !== true
+    || JSON.stringify(evidence?.navigation?.views)
+      !== JSON.stringify(['chase', 'cockpit', 'survey'])
+    || evidence?.navigation?.buttonSelection !== 'cockpit'
+    || evidence?.navigation?.keyboardCycle !== 'survey'
+    || evidence?.navigation?.restored !== 'chase'
+    || evidence?.navigation?.routePointCount !== 5
+    || evidence?.navigation?.activeRoutePointCount !== 1
+    || evidence?.navigation?.sharedCameraSourceRetained !== true
+    || evidence?.navigation?.singleCanvasRetained !== true
+    || evidence?.navigation?.tickAfter <= evidence?.navigation?.tickBefore
+    || !Object.values(evidence?.navigation?.forwardAlignment || {})
+      .every(value => Number.isFinite(value) && value > 0.2)
     || evidence?.missionProof?.phase !== 'completed'
     || evidence?.missionProof?.waypointIndex !== 3
     || evidence?.missionProof?.transitions?.length !== 3
@@ -305,7 +322,7 @@ async function readValidatedRunEvidence({
   ) {
     throw new Error(
       `Browser proof run ${runIndex} did not preserve identity, trusted touch, `
-      + 'ordered mission completion, blocked transports, deadlines, and named '
+      + 'local navigation, ordered mission completion, blocked transports, deadlines, and named '
       + 'verifications',
     )
   }
@@ -315,7 +332,9 @@ async function readValidatedRunEvidence({
 async function runCandidateProof() {
   const candidateHead = readGitValue(['rev-parse', 'HEAD'])
   const candidateTree = readGitValue(['rev-parse', 'HEAD^{tree}'])
-  const candidateBranch = readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'])
+  const candidateBranch = normalizeGameFlightSimCandidateBranch(
+    readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
+  )
   const sourceSha256 = sha256(await readFile(sourcePath))
   const candidate = {
     expectedBranch: candidateBranch,

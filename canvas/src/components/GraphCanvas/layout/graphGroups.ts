@@ -215,7 +215,7 @@ export const deriveGraphGroups = (
     const subgraphs = readSubgraphs(data)
     if (subgraphs.length === 0) return [] as GraphGroup[]
 
-    const byId = new Map<string, { parentId: string | null; memberNodeIds: string[]; label: string; kind: 'subgraph' | 'cluster' }>()
+    const byId = new Map<string, { parentId: string | null; memberNodeIds: string[]; label: string; kind: 'subgraph' | 'cluster'; autoBounds: boolean }>()
     for (let i = 0; i < subgraphs.length; i += 1) {
       const sg = subgraphs[i]
       byId.set(sg.id, {
@@ -223,6 +223,7 @@ export const deriveGraphGroups = (
         memberNodeIds: Array.from(new Set(sg.memberNodeIds.map(x => String(x || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
         label: String(sg.label || sg.id).trim() || sg.id,
         kind: sg.kind === 'cluster' ? 'cluster' : 'subgraph',
+        autoBounds: sg.autoBounds === true,
       })
     }
 
@@ -247,6 +248,9 @@ export const deriveGraphGroups = (
         depth,
         memberNodeIds,
         parentGroupId,
+        containChildren: true,
+        connectable: false,
+        autoBounds: row.autoBounds,
         style:
           row.kind === 'cluster'
             ? {
