@@ -35,6 +35,15 @@ export function shouldEnsureCanvasGeospatialMode(
   return floatingPanelOpen && floatingPanelView === 'geo'
 }
 
+export function resolveCanvasGeospatialModeEnabled(
+  persistedEnabled: boolean,
+  floatingPanelOpen: boolean,
+  floatingPanelView: string,
+): boolean {
+  return persistedEnabled
+    || shouldEnsureCanvasGeospatialMode(floatingPanelOpen, floatingPanelView)
+}
+
 export function useCanvasGeospatialRuntime(): boolean {
   const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen === true)
   const floatingPanelView = useGraphStore(state => state.floatingPanelView)
@@ -165,5 +174,9 @@ export function useCanvasGeospatialRuntime(): boolean {
     })
   }, [])
 
-  return geospatialModeEnabled
+  return resolveCanvasGeospatialModeEnabled(
+    geospatialModeEnabled,
+    floatingPanelOpen,
+    floatingPanelView,
+  )
 }
