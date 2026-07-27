@@ -2,7 +2,7 @@ import React from 'react'
 import { UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import FlowCanvas from '@/components/FlowCanvas'
 import { StoryboardCardOverlayLayer2d } from '@/components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d'
-import { applyFixedStoryboardCardPlacementsToGraphData2d, readStoryboardWidgetPlacementSize2d } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
+import { applyFixedStoryboardCardPlacementsToGraphData2d, readStoryboardCardSize2d, readStoryboardWidgetPlacementSize2d } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
 import { readResolvedStoryboardWidgetDropTransform } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -240,6 +240,60 @@ export default function StoryboardWidgetCanvasSurface(props: {
     () => Array.from(new Set(openRichMediaPanelNodeIds)),
     [openRichMediaPanelNodeIds],
   )
+  const flowCanvasOverlayAabbByNodeId = React.useMemo(() => {
+    if (!storyboardSharedSurfaceActive) return undefined
+    const out: Record<string, { minX: number; minY: number; maxX: number; maxY: number }> = {}
+    const readFinitePoint = (node: GraphNode | undefined) => {
+      const x = typeof node?.x === 'number' && Number.isFinite(node.x) ? node.x : null
+      const y = typeof node?.y === 'number' && Number.isFinite(node.y) ? node.y : null
+      return x == null || y == null ? null : { x, y }
+    }
+    for (const nodeId of storyboardFixedCardNodeIds) {
+      const node = storyboardNodeById.get(nodeId)
+      const center = readFinitePoint(node)
+      if (!node || !center) continue
+      const size = readStoryboardCardSize2d(node, strybldrStoryboardCardAspectMode)
+      out[nodeId] = {
+        minX: center.x - size.width / 2,
+        minY: center.y - size.height / 2,
+        maxX: center.x + size.width / 2,
+        maxY: center.y + size.height / 2,
+      }
+    }
+    for (const nodeId of storyboardOpenWidgetNodeIds) {
+      if (out[nodeId]) continue
+      const node = storyboardNodeById.get(nodeId)
+      const center = readFinitePoint(node)
+      if (!node || !center) continue
+      const size = readStoryboardWidgetPlacementSize2d(node, strybldrStoryboardCardAspectMode)
+      out[nodeId] = {
+        minX: center.x - size.width / 2,
+        minY: center.y - size.height / 2,
+        maxX: center.x + size.width / 2,
+        maxY: center.y + size.height / 2,
+      }
+    }
+    for (const nodeId of openRichMediaPanelNodeIds) {
+      const node = storyboardNodeById.get(nodeId)
+      const topLeft = readFinitePoint(node)
+      if (!node || !topLeft) continue
+      const size = readStoryboardWidgetPlacementSize2d(node, strybldrStoryboardCardAspectMode)
+      out[nodeId] = {
+        minX: topLeft.x,
+        minY: topLeft.y,
+        maxX: topLeft.x + size.width,
+        maxY: topLeft.y + size.height,
+      }
+    }
+    return Object.keys(out).length > 0 ? out : undefined
+  }, [
+    openRichMediaPanelNodeIds,
+    storyboardFixedCardNodeIds,
+    storyboardNodeById,
+    storyboardOpenWidgetNodeIds,
+    storyboardSharedSurfaceActive,
+    strybldrStoryboardCardAspectMode,
+  ])
   const storyboardSurfaceGraphSignature = React.useMemo(() => {
     return [
       String(storyboardSharedSurfaceActive),
@@ -462,6 +516,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
           mutationSourceGraphDataOverride={storyboardSourceGraphData || flowCanvasGraphDataOverride}
           graphDataRevisionOverride={props.storyboardWidgetViewActive ? props.draftGraphDataRevision : props.baseGraphDataRevision}
           excludeNativeSceneNodeIds={flowCanvasNativeSceneExcludedNodeIds}
+          overlayAabbByNodeId={flowCanvasOverlayAabbByNodeId}
           excludeRichMediaOverlayNodeIds={flowCanvasRichMediaOverlayExcludedNodeIds}
           flowWidgetPinnedByNodeIdOverride={effectiveFlowWidgetPinnedByNodeId}
           flowWidgetStateGraphKeyOverride={flowWidgetStateGraphKey}

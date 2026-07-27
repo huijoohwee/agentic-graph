@@ -64,9 +64,12 @@ export type FlowNativeScene = {
   nodes: FlowNativeNode[]
   edges: FlowNativeEdge[]
   nodeById: Map<string, FlowNativeNode>
+  overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb>
   groups?: GraphGroup[]
   groupIdsByNodeId?: Map<string, string[]>
 }
+
+export type FlowOverlayNodeAabb = { minX: number; minY: number; maxX: number; maxY: number }
 
 export type FlowNativePortHandlesPresentation = {
   enabled: boolean
@@ -325,7 +328,7 @@ export const computeFlowGroupAabb = (args: {
   group: GraphGroup
   paddingPx: number
   labelTopExtraPx: number
-  overlayAabbByNodeId?: Record<string, { minX: number; minY: number; maxX: number; maxY: number }> | null
+  overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb> | null
 }): { minX: number; minY: number; maxX: number; maxY: number } | null => {
   const explicit = args.group.autoBounds === true ? undefined : (args.group as unknown as { bounds?: unknown }).bounds
   const explicitAabb = (() => {
@@ -351,26 +354,28 @@ export const computeFlowGroupAabb = (args: {
     const id = String(memberIds[j] || '').trim()
     if (!id) continue
     const n = args.scene.nodeById.get(id)
-    if (!n) continue
-    const x0 = n.x - padding
-    const y0 = n.y - padding
-    const x1 = n.x + n.width + padding
-    const y1 = n.y + n.height + padding
-    minX = Math.min(minX, x0)
-    minY = Math.min(minY, y0)
-    maxX = Math.max(maxX, x1)
-    maxY = Math.max(maxY, y1)
-    const overlayAabb = args.overlayAabbByNodeId?.[id]
+    if (n) {
+      const x0 = n.x - padding
+      const y0 = n.y - padding
+      const x1 = n.x + n.width + padding
+      const y1 = n.y + n.height + padding
+      minX = Math.min(minX, x0)
+      minY = Math.min(minY, y0)
+      maxX = Math.max(maxX, x1)
+      maxY = Math.max(maxY, y1)
+    }
+    const overlayAabb = args.scene.overlayAabbByNodeId?.[id] || args.overlayAabbByNodeId?.[id]
     if (overlayAabb) {
       const ox0 = Number(overlayAabb.minX)
       const oy0 = Number(overlayAabb.minY)
       const ox1 = Number(overlayAabb.maxX)
       const oy1 = Number(overlayAabb.maxY)
       if (Number.isFinite(ox0) && Number.isFinite(oy0) && Number.isFinite(ox1) && Number.isFinite(oy1) && ox1 > ox0 && oy1 > oy0) {
-        minX = Math.min(minX, ox0)
-        minY = Math.min(minY, oy0)
-        maxX = Math.max(maxX, ox1)
-        maxY = Math.max(maxY, oy1)
+        const overlayPadding = n ? 0 : padding
+        minX = Math.min(minX, ox0 - overlayPadding)
+        minY = Math.min(minY, oy0 - overlayPadding)
+        maxX = Math.max(maxX, ox1 + overlayPadding)
+        maxY = Math.max(maxY, oy1 + overlayPadding)
       }
     }
   }

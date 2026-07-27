@@ -6,7 +6,7 @@ import {
 } from '@/components/FlowCanvas/handles'
 import { parseFlowHandleKey } from '@/components/FlowCanvas/handles'
 import { coerceFlowNativeNodeShape } from '@/components/FlowCanvas/shape'
-import { setFlowNativeScene, setFlowNativeRankdir, type FlowNativeRuntime, type FlowNativeScene } from '@/components/FlowCanvas/nativeRuntime'
+import { setFlowNativeScene, setFlowNativeRankdir, type FlowNativeRuntime, type FlowNativeScene, type FlowOverlayNodeAabb } from '@/components/FlowCanvas/nativeRuntime'
 import { getNodeRenderShape2d } from '@/components/GraphCanvas/nodeSizing2d'
 import { getNodeLabelFullText2d } from '@/components/GraphCanvas/labelLayout2d'
 import { getEdgeLabelForDisplay } from '@/components/GraphCanvas/edgeDisplay'
@@ -34,6 +34,7 @@ export function buildAndSetFlowNativeScene(args: {
   sceneGroups: GraphGroup[]
   rankdir: 'TB' | 'LR'
   widgetRegistry?: ReadonlyArray<WidgetRegistryEntry> | null
+  overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb>
 }): { nodeCount: number; graphKeyParts: { nodeCount: number; edgeCount: number } } {
   const g = args.graphData
   const nodeList = Array.isArray(g?.nodes) ? g?.nodes : []
@@ -531,6 +532,13 @@ export function buildAndSetFlowNativeScene(args: {
     return m
   })()
 
-  setFlowNativeScene(args.runtime, { nodes, edges, nodeById, groups, groupIdsByNodeId })
+  setFlowNativeScene(args.runtime, {
+    nodes,
+    edges,
+    nodeById,
+    ...(args.overlayAabbByNodeId ? { overlayAabbByNodeId: args.overlayAabbByNodeId } : {}),
+    groups,
+    groupIdsByNodeId,
+  })
   return { nodeCount: nodes.length, graphKeyParts: { nodeCount: nodeList.length, edgeCount: edgeList.length } }
 }
