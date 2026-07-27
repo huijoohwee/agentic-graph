@@ -154,7 +154,7 @@ test('ready-frame and HUD deadlines record asynchronous presentation semantics',
   )
   assert.equal(ready?.withinLimit, true)
   assert.equal(ready?.synchronous, false)
-  assert.equal(ready?.source, 'shared-r3f-ready-frame')
+  assert.equal(ready?.source, 'shared-flight-surface-ready-frame')
 
   const lateReadyRequest = beginFlightSimReadyFrame(() => 40)
   armFlightSimReadyFrame(lateReadyRequest, 5, 0)

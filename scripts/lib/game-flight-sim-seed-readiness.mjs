@@ -24,6 +24,7 @@ export async function assertFlightSimSeedReadiness({
 }) {
   const runReadyDemo = seed.run_ready_demo
   const sharedScene = seed.shared_xr_scene
+  const geoFlightOverlay = seed.geo_flight_overlay
   const assetPipeline = seed.asset_pipeline
   const flightSim = seed.flight_sim
   const training = seed.flight_training
@@ -55,12 +56,20 @@ export async function assertFlightSimSeedReadiness({
     || sharedScene.collider_owner !== 'canvas/src/features/three/xrCanonicalSceneSpatialSource.ts'
     || sharedScene.camera_owner !== 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts'
     || sharedScene.second_canvas_forbidden !== true
+    || !geoFlightOverlay
+    || geoFlightOverlay.activation !== 'selected authored environment plus source-authored Flight identity'
+    || geoFlightOverlay.renderer_owner !== 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'
+    || geoFlightOverlay.overlay_owner !== 'canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx'
+    || geoFlightOverlay.control_owner !== 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'
+    || geoFlightOverlay.route_projection_owner !== 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts'
+    || geoFlightOverlay.xr_canvas_mounted !== false
+    || geoFlightOverlay.map_interaction_preserved !== true
     || !flightSim
     || flightSim.invocation !== '/flight.sim @canvas #flight operation=open'
     || flightSim.inspect_tool !== 'knowgrph.inspect_local_flight_sim'
     || flightSim.control_tool !== 'knowgrph.control_local_flight_sim'
   ) {
-    throw new Error('Flight Sim seed must remain a source-authored overlay on the canonical XR world')
+    throw new Error('Flight Sim seed must remain a source-authored overlay on the canonical XR or Geo surface')
   }
   if (
     !assetPipeline

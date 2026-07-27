@@ -37,39 +37,26 @@ import {
   installEmbeddedCanvasChatCommandBridge,
 } from '@/features/canvas/embeddedCanvasChatCommand'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
-const CanvasViewportGeospatialOverlayLazy = React.lazy(() =>
-  import('@/components/CanvasViewportGeospatialOverlay').then(mod => ({ default: mod.CanvasViewportGeospatialOverlay })),
-)
-const LiveCanvasHeroLazy = React.lazy(() =>
-  import('@/components/LiveCanvasHero').then(mod => ({ default: mod.LiveCanvasHero })),
-)
+const CanvasViewportGeospatialOverlayLazy = React.lazy(() => import('@/components/CanvasViewportGeospatialOverlay').then(mod => ({ default: mod.CanvasViewportGeospatialOverlay })))
+const LiveCanvasHeroLazy = React.lazy(() => import('@/components/LiveCanvasHero').then(mod => ({ default: mod.LiveCanvasHero })))
 const SharedGraphCanvasLazy = React.lazy(() => import('@/components/GraphCanvas'))
 const DashboardCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/DashboardCanvas'), { retries: 2, retryDelayMs: 50 }))
 const GalleryCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/GalleryCanvas'), { retries: 2, retryDelayMs: 50 }))
 const MediaCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/MediaCanvas'), { retries: 2, retryDelayMs: 50 }))
-const MultiDimTableSurfaceLazy = React.lazy(() =>
-  importWithRetry(() => import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface'), { retries: 2, retryDelayMs: 50 })
-    .then(mod => ({ default: mod.MultiDimTableSurface })),
-)
-const CanvasWorkspaceDataViewFloatingRegistrationBridgeLazy = React.lazy(() =>
-  importWithRetry(() => import('@/features/markdown-workspace/main/viewer/CanvasWorkspaceDataViewFloatingRegistrationBridge'), { retries: 2, retryDelayMs: 50 })
-    .then(mod => ({ default: mod.CanvasWorkspaceDataViewFloatingRegistrationBridge })),
-)
+const MultiDimTableSurfaceLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.MultiDimTableSurface })))
+const CanvasWorkspaceDataViewFloatingRegistrationBridgeLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/CanvasWorkspaceDataViewFloatingRegistrationBridge'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.CanvasWorkspaceDataViewFloatingRegistrationBridge })))
 const MermaidGitGraphCanvasLazy = React.lazy(() => import('@/components/MermaidGitGraphCanvas'))
 const MermaidGanttCanvasLazy = React.lazy(() => import('@/components/MermaidGanttCanvas'))
 const FlowCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/FlowCanvas'), { retries: 2, retryDelayMs: 50 }))
 const AnimaticCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/AnimaticCanvas'), { retries: 2, retryDelayMs: 50 }))
 const StoryboardWidgetCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/StoryboardWidgetCanvas'), { retries: 2, retryDelayMs: 50 }))
 const StoryboardWidgetDropBridgeLazy = React.lazy(() => importWithRetry(() => import('@/components/StoryboardWidgetDropBridge'), { retries: 2, retryDelayMs: 50 }))
-const MarkdownMetricsDevOverlayLazy = React.lazy(() =>
-  import('@/components/CanvasViewportMarkdownMetricsDevOverlay').then(mod => ({ default: mod.CanvasViewportMarkdownMetricsDevOverlay })),
-)
+const MarkdownMetricsDevOverlayLazy = React.lazy(() => import('@/components/CanvasViewportMarkdownMetricsDevOverlay').then(mod => ({ default: mod.CanvasViewportMarkdownMetricsDevOverlay })))
 const DesignCanvasLazy = React.lazy(() => import('@/components/DesignCanvas'))
 const ThreeGraphLazy = React.lazy(() => import('@/lib/three/ThreeGraph.impl'))
-const GameFpsHudLazy = React.lazy(() =>
-  import('@/features/game-fps/GameFpsHud').then(mod => ({ default: mod.GameFpsHud })),
-)
+const GameFpsHudLazy = React.lazy(() => import('@/features/game-fps/GameFpsHud').then(mod => ({ default: mod.GameFpsHud })))
 const FlightSimHudLazy = React.lazy(() => import('@/features/game-flight-sim/FlightSimHud').then(mod => ({ default: mod.FlightSimHud })))
+const FlightSimGeoSurfaceOverlayLazy = React.lazy(() => import('@/features/game-flight-sim/FlightSimGeoSurfaceOverlay').then(mod => ({ default: mod.FlightSimGeoSurfaceOverlay })))
 const MinimapLazy = React.lazy(() => import('@/features/minimap/Minimap'))
 const StrybldrTimelineBottomPanelLazy = React.lazy(() =>
   import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })),
@@ -213,6 +200,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   })
   const { activeSurface, geospatialOverlayOwnsViewport } = resolveCanvasSurfaceOwnership({
     canvasRenderMode,
+    flightSimActive,
     gameplayOverlayActive,
     geospatialModeEnabled,
     workspaceEditorOverlayOpen,
@@ -506,6 +494,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
             storyboardWidgetPanelsActive={geospatialModeEnabled && active2dSurface === 'storyboard'}
           />
         ) : null}
+        {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && flightSimHudVisible ? <FlightSimGeoSurfaceOverlayLazy /> : null}
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (
           <section
             className="absolute inset-0 z-[35] flex items-center justify-center bg-[var(--kg-canvas-bg)]/96 px-4"

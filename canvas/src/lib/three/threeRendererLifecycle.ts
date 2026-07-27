@@ -22,6 +22,7 @@ export type ThreeCanvasSurfaceLifecycleInput = ThreeCanvasSurfaceMountInput & Re
 
 export type CanvasSurfaceOwnershipInput = Readonly<{
   canvasRenderMode: '2d' | '3d'
+  flightSimActive: boolean
   gameplayOverlayActive: boolean
   geospatialModeEnabled: boolean
   workspaceEditorOverlayOpen: boolean
@@ -34,7 +35,10 @@ export function resolveCanvasSurfaceOwnership(
   activeSurface: '2d' | '3d' | 'geo'
   geospatialOverlayOwnsViewport: boolean
 }> {
-  if (input.gameplayOverlayActive) {
+  const flightSimGeoOverlayActive = input.gameplayOverlayActive
+    && input.flightSimActive
+    && input.geospatialModeEnabled
+  if (input.gameplayOverlayActive && !flightSimGeoOverlayActive) {
     return {
       activeSurface: '3d',
       geospatialOverlayOwnsViewport: false,

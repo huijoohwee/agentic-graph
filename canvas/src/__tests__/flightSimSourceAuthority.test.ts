@@ -132,6 +132,8 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     ),
     'utf8',
   )
+  const geoSurface = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx'), 'utf8')
+  const surfaceControls = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'), 'utf8')
   assert.doesNotMatch(missionStage, /from '\.\/flightSimRuntime'/)
   assert.match(missionStage, /runtimeController\.readSnapshot\(\)/)
   const opening = runtime.indexOf('async function performFlightSimSurfaceOpen')
@@ -215,19 +217,21 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     /syncRuntimeSnapshot\(\)[\s\S]*return runtimeController\.subscribe\(syncRuntimeSnapshot\)/,
   )
   assert.match(
-    missionStage,
+    surfaceControls,
     /subscribeThreeViewportInputOwnership\(acquireInput\)/,
   )
   assert.match(
-    missionStage,
-    /const acquireInput = \(\) => \{[\s\S]*claimThreeViewportInputOwnership\(INPUT_OWNER_ID,[\s\S]*installFlightSimDesktopInput\(canvas,[\s\S]*invalidate\(\)/,
+    surfaceControls,
+    /const acquireInput = \(\) => \{[\s\S]*claimThreeViewportInputOwnership\(INPUT_OWNER_ID,[\s\S]*installFlightSimDesktopInput\(element,[\s\S]*requestPresentationFrame\(\)/,
   )
+  assert.match(missionStage, /useFlightSimSurfaceControls\(\{/)
+  assert.match(geoSurface, /useFlightSimSurfaceControls\(\{/)
   assert.match(missionStage, /&& actorRef\.current/)
   const demandFrameSubscription = missionStage.indexOf(
     'const syncRuntimeSnapshot = () => {',
   )
   const afterRender = missionStage.indexOf('addAfterEffect(() => {')
-  const inputOwnershipRetry = missionStage.indexOf(
+  const inputOwnershipRetry = surfaceControls.indexOf(
     'subscribeThreeViewportInputOwnership(acquireInput)',
   )
   const deadlineCompletion = missionStage.indexOf(
@@ -235,7 +239,7 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   )
   const frameSubscriber = missionStage.indexOf('useFrame(() => {')
   assert.ok(demandFrameSubscription >= 0 && afterRender > demandFrameSubscription)
-  assert.ok(inputOwnershipRetry >= 0 && afterRender > inputOwnershipRetry)
+  assert.ok(inputOwnershipRetry >= 0)
   assert.ok(deadlineCompletion > afterRender)
   assert.ok(frameSubscriber > deadlineCompletion)
 })
@@ -413,7 +417,7 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
   )
 })
 
-test('Flight Sim source declares an overlay on the canonical XR world', () => {
+test('Flight Sim source declares projections on the canonical XR world and Geo surface', () => {
   const meta = frontmatter(seedSource)
   assert.equal(meta.status, 'runtime-ready')
   assert.equal(meta.runtime_status, 'runtime-ready')
@@ -462,6 +466,15 @@ test('Flight Sim source declares an overlay on the canonical XR world', () => {
     collider_owner: 'canvas/src/features/three/xrCanonicalSceneSpatialSource.ts',
     camera_owner: 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
     second_canvas_forbidden: true,
+  })
+  assert.deepEqual(meta.geo_flight_overlay, {
+    activation: 'selected authored environment plus source-authored Flight identity',
+    renderer_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+    overlay_owner: 'canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx',
+    control_owner: 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts',
+    route_projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
+    xr_canvas_mounted: false,
+    map_interaction_preserved: true,
   })
   const authority = readFileSync(resolve(repoRoot, 'scripts/workspace-seed-authority.mjs'), 'utf8')
   const projectionStart = authority.indexOf('AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY')
