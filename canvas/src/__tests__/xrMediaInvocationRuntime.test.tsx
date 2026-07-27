@@ -95,6 +95,7 @@ export async function testXrEnvironmentGeoHandoffSelectsBeforeRouting() {
           order.push(`select:${stageId}`)
           return { ok: true }
         },
+        onAfterRoute: () => order.push('overlay'),
       }),
       React.createElement(XrEnvironmentGeoButton, {
         disabled: false,
@@ -104,6 +105,7 @@ export async function testXrEnvironmentGeoHandoffSelectsBeforeRouting() {
           order.push(`blocked:${stageId}`)
           return { ok: false }
         },
+        onAfterRoute: () => order.push('blocked-overlay'),
       }),
     ), { window: dom.window as unknown as Window, frames: 2 })
     const geoButtons = Array.from(container.querySelectorAll('[data-kg-media-xr-environment-geo]')) as HTMLButtonElement[]
@@ -117,7 +119,7 @@ export async function testXrEnvironmentGeoHandoffSelectsBeforeRouting() {
       geoButtons[1]?.click()
       await waitForNextFrame(dom.window)
     })
-    if (order.join('|') !== 'select:street-grid|route|blocked:loading-bay') {
+    if (order.join('|') !== 'select:street-grid|route|overlay|blocked:loading-bay') {
       throw new Error(`expected successful stage selection before Geo routing and blocked selection to stay in Media, got ${order.join('|')}`)
     }
     if (routeDetails.length !== 1 || routeDetails[0]?.tab !== 'geo' || routeDetails[0]?.open !== true) {

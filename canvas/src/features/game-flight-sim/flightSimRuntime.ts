@@ -329,9 +329,10 @@ async function performFlightSimSurfaceOpen(
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
     surfaceActivated = activateXrSceneSurface({
-      panelView: 'flightSim',
       gameplaySurface: 'flightSim',
-      ...(options.openPanel === false ? {} : { openPanel: true }),
+      ...(options.openPanel === false
+        ? {}
+        : { panelView: 'flightSim', openPanel: true }),
     })
     if (!surfaceActivated) {
       return failFlightSimSurfaceEntry('The shared XR Canvas is unavailable.', entering, false)
