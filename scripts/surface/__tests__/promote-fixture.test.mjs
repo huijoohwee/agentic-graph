@@ -272,7 +272,7 @@ test('gate authority is accepted only through the strict trusted dependency shap
 
 test('real repository roots are rejected before any filesystem dependency is invoked', async () => {
   let invoked = false
-  const repositoryPath = '/Users/huijoohwee/Documents/GitHub/knowgrph'
+  const repositoryPath = '/Users/example/Documents/GitHub/knowgrph'
   const result = await promoteFixture({
     permittedTempRoot: repositoryPath,
     stagingRoot: path.join(repositoryPath, 'staging'),

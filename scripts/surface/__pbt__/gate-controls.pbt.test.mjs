@@ -23,7 +23,7 @@ const categoryCases = {
     `url=https://public.example/object?X-Amz-Signature=${String(index).padStart(32, 'a')}`
   ),
   'private-host': index => `endpoint=http://10.20.30.${1 + (index % 200)}/v1`,
-  'local-absolute-path': index => `config=/Users/property-${index}/private/config.json`,
+  'local-absolute-path': index => `config=/Users/example/private/config-${index}.json`,
 }
 
 const candidateArbitrary = fc.array(
