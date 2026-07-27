@@ -5,6 +5,7 @@ import {
 
 type MapLibreFlightBootstrapState = {
   bootstrapApplied: boolean
+  cancelProviderStyleApply: (() => void) | null
   disposed: boolean
   generation: number
   map: any
@@ -13,6 +14,9 @@ type MapLibreFlightBootstrapState = {
 }
 
 type MapLibreStyle = string | Readonly<Record<string, unknown>>
+type ProviderStyleApplyScheduler = (apply: () => void) => () => void
+
+const MAPLIBRE_FLIGHT_PROVIDER_PROMOTION_IDLE_TIMEOUT_MS = 1_000
 
 const bootstrapStateByMap = new WeakMap<object, MapLibreFlightBootstrapState>()
 
@@ -22,6 +26,7 @@ function readState(map: any): MapLibreFlightBootstrapState | null {
   if (!state) {
     state = {
       bootstrapApplied: false,
+      cancelProviderStyleApply: null,
       disposed: false,
       generation: 0,
       map,
@@ -40,6 +45,67 @@ function removeRenderBinding(state: MapLibreFlightBootstrapState): void {
     void 0
   }
   state.removeRenderBinding = null
+}
+
+function cancelProviderStyleApply(state: MapLibreFlightBootstrapState): void {
+  try {
+    state.cancelProviderStyleApply?.()
+  } catch {
+    void 0
+  }
+  state.cancelProviderStyleApply = null
+}
+
+function scheduleProviderStyleApply(apply: () => void): () => void {
+  if (typeof globalThis.requestIdleCallback === 'function') {
+    const requestId = globalThis.requestIdleCallback(apply, {
+      timeout: MAPLIBRE_FLIGHT_PROVIDER_PROMOTION_IDLE_TIMEOUT_MS,
+    })
+    return () => globalThis.cancelIdleCallback(requestId)
+  }
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    let secondFrame: number | null = null
+    const firstFrame = globalThis.requestAnimationFrame(() => {
+      secondFrame = globalThis.requestAnimationFrame(apply)
+    })
+    return () => {
+      globalThis.cancelAnimationFrame(firstFrame)
+      if (secondFrame !== null) globalThis.cancelAnimationFrame(secondFrame)
+    }
+  }
+  const timeout = setTimeout(apply, 0)
+  return () => clearTimeout(timeout)
+}
+
+function waitForProviderStyleApplyOpportunity(options: Readonly<{
+  generation: number
+  schedule: ProviderStyleApplyScheduler
+  state: MapLibreFlightBootstrapState
+}>): Promise<boolean> {
+  const { generation, schedule, state } = options
+  cancelProviderStyleApply(state)
+  return new Promise(resolve => {
+    let settled = false
+    let cancelScheduled: () => void = () => void 0
+    const settle = (scheduled: boolean) => {
+      if (settled) return
+      settled = true
+      if (state.cancelProviderStyleApply === cancel) {
+        state.cancelProviderStyleApply = null
+      }
+      resolve(
+        scheduled
+        && !state.disposed
+        && state.generation === generation,
+      )
+    }
+    const cancel = () => {
+      cancelScheduled()
+      settle(false)
+    }
+    state.cancelProviderStyleApply = cancel
+    cancelScheduled = schedule(() => settle(true))
+  })
 }
 
 function reportError(
@@ -61,6 +127,7 @@ async function promoteProviderStyle(options: Readonly<{
     nextStyle: Readonly<Record<string, any>>,
   ) => Record<string, any>
   retainOverlay: boolean
+  scheduleProviderApply: ProviderStyleApplyScheduler
   state: MapLibreFlightBootstrapState
 }>): Promise<void> {
   const {
@@ -69,11 +136,20 @@ async function promoteProviderStyle(options: Readonly<{
     onError,
     retainFlightOverlay,
     retainOverlay,
+    scheduleProviderApply,
     state,
   } = options
   try {
     const providerStyle = await loadProviderStyle()
     if (state.disposed || state.generation !== generation) return
+    if (
+      retainOverlay
+      && !await waitForProviderStyleApplyOpportunity({
+        generation,
+        schedule: scheduleProviderApply,
+        state,
+      })
+    ) return
     state.map.setStyle?.(
       providerStyle,
       retainOverlay
@@ -128,6 +204,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   loadProviderStyle: () => Promise<MapLibreStyle>
   map: any
   onError?: (error: unknown) => void
+  scheduleProviderStyleApply?: ProviderStyleApplyScheduler
   retainFlightOverlay: (
     previousStyle: Readonly<Record<string, any>> | undefined,
     nextStyle: Readonly<Record<string, any>>,
@@ -136,7 +213,12 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   const state = readState(options.map)
   if (!state || state.disposed) return
   const generation = ++state.generation
+  cancelProviderStyleApply(state)
   removeRenderBinding(state)
+  const scheduleProviderApply = (
+    options.scheduleProviderStyleApply
+    || scheduleProviderStyleApply
+  )
 
   if (!options.bootstrapStyle) {
     state.readyFramePresented = false
@@ -145,6 +227,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
       ...options,
       generation,
       retainOverlay: false,
+      scheduleProviderApply,
       state,
     })
     return
@@ -182,6 +265,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
       ...options,
       generation,
       retainOverlay: true,
+      scheduleProviderApply,
       state,
     })
   }
@@ -200,6 +284,7 @@ export function disposeMapLibreFlightBootstrap(map: any): void {
   if (!state) return
   state.disposed = true
   state.generation += 1
+  cancelProviderStyleApply(state)
   removeRenderBinding(state)
   bootstrapStateByMap.delete(map)
 }

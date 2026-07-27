@@ -22,6 +22,11 @@ const flushMicrotasks = async () => {
   await new Promise<void>(resolve => setImmediate(resolve))
 }
 
+const applyProviderStyleImmediately = (apply: () => void) => {
+  apply()
+  return () => void 0
+}
+
 function readyFlightOverlay(
   revision: string,
   readyFrameRequestId: number,
@@ -158,6 +163,7 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
         return 'https://provider.test/style.json'
       },
       map,
+      scheduleProviderStyleApply: applyProviderStyleImmediately,
       retainFlightOverlay: (_previous, next) => ({ ...next }),
     })
   }
@@ -229,6 +235,7 @@ test('stale ready identity cannot authorize provider promotion', async context =
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => 'provider:stale',
     map,
+    scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
   })
   markMapLibreFlightReadyFramePresented(map, 'ready:stale', 30)
@@ -236,6 +243,78 @@ test('stale ready identity cannot authorize provider promotion', async context =
   await flushMicrotasks()
 
   assert.deepEqual(applied, ['local-flight-bootstrap'])
+  disposeMapLibreFlightBootstrap(map)
+})
+
+test('provider promotion yields to an idle opportunity and fences stale scheduled style work', async context => {
+  const readyOverlay = readyFlightOverlay('ready:idle-promotion', 32)
+  clearFlightGeoOverlay()
+  setFlightGeoOverlay(readyOverlay)
+  context.after(clearFlightGeoOverlay)
+  const renderListeners = new Set<() => void>()
+  const pendingStyleApplies = new Set<() => void>()
+  const applied: string[] = []
+  let cancelledStyleApplies = 0
+  const map = {
+    off: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.delete(listener)
+    },
+    on: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.add(listener)
+    },
+    setStyle: (style: string | Readonly<Record<string, unknown>>) => {
+      applied.push(typeof style === 'string' ? style : String(style.name))
+    },
+    triggerRepaint: () => void 0,
+  }
+  const scheduleProviderStyleApply = (apply: () => void) => {
+    pendingStyleApplies.add(apply)
+    let cancelled = false
+    return () => {
+      if (cancelled) return
+      cancelled = true
+      if (pendingStyleApplies.delete(apply)) cancelledStyleApplies += 1
+    }
+  }
+  const reconcile = (providerStyle: string) => {
+    reconcileMapLibreFlightBootstrap({
+      bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
+      hasExactFlightOverlay: () => true,
+      loadProviderStyle: async () => providerStyle,
+      map,
+      scheduleProviderStyleApply,
+      retainFlightOverlay: (_previous, next) => ({ ...next }),
+    })
+  }
+  const emitRender = () => {
+    for (const listener of [...renderListeners]) listener()
+  }
+
+  reconcile('provider:stale')
+  markMapLibreFlightReadyFramePresented(
+    map,
+    readyOverlay.revision,
+    readyOverlay.readyFrameRequestId!,
+  )
+  emitRender()
+  await flushMicrotasks()
+  assert.deepEqual(applied, ['local-flight-bootstrap'])
+  assert.equal(pendingStyleApplies.size, 1)
+
+  reconcile('provider:current')
+  emitRender()
+  await flushMicrotasks()
+  assert.equal(cancelledStyleApplies, 1)
+  assert.equal(pendingStyleApplies.size, 1)
+
+  const [applyCurrentStyle] = [...pendingStyleApplies]
+  pendingStyleApplies.delete(applyCurrentStyle!)
+  applyCurrentStyle?.()
+  await flushMicrotasks()
+  assert.deepEqual(applied, [
+    'local-flight-bootstrap',
+    'provider:current',
+  ])
   disposeMapLibreFlightBootstrap(map)
 })
 
@@ -268,6 +347,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
       hasExactFlightOverlay: () => true,
       loadProviderStyle: async () => providerStyle,
       map,
+      scheduleProviderStyleApply: applyProviderStyleImmediately,
       retainFlightOverlay: (_previous, next) => ({ ...next }),
     })
     return {
@@ -308,6 +388,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => 'provider:first-modern',
     map: firstView.map,
+    scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
   })
   firstView.emitRender()
@@ -325,6 +406,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => 'provider:replacement',
     map: replacementView.map,
+    scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
   })
   replacementView.emitRender()

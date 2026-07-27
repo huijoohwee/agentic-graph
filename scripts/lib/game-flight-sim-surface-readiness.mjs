@@ -100,6 +100,9 @@ export async function assertFlightSimSurfaceReadiness({
   const geospatialPresentationSource = await readText(
     'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
   )
+  const mapLibreFlightBootstrapSource = await readText(
+    'gympgrph/src/features/geospatial/mapLibreFlightBootstrap.ts',
+  )
   requireSourceMarkers(geospatialHostSource, [
     'useFlightGeoOverlayMapLibrePresentation({',
   ], 'Flight Sim native MapLibre host composition')
@@ -114,6 +117,12 @@ export async function assertFlightSimSurfaceReadiness({
     "root.dataset.kgFlightGeospatialOverlay = 'active'",
     'root.dataset.kgFlightGeospatialRevision = overlay.revision',
   ], 'Flight Sim native MapLibre presentation lifecycle')
+  requireSourceMarkers(mapLibreFlightBootstrapSource, [
+    'requestIdleCallback',
+    'scheduleProviderStyleApply',
+    'cancelProviderStyleApply(state)',
+    'retainOverlay',
+  ], 'Flight Sim non-blocking MapLibre provider promotion')
   if (
     geospatialHostSource.includes('shared-xr-stage')
     || geospatialPresentationSource.includes('shared-xr-stage')
