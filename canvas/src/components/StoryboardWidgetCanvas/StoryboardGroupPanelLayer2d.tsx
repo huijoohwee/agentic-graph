@@ -36,6 +36,7 @@ export function StoryboardGroupPanelLayer2d(props: {
   flowWidgetStateGraphKey: string | null
   graphData: GraphData | null
   getRuntime: () => FlowNativeRuntime | null
+  onNodeChange: (nodeId: string, patch: Partial<GraphNode>, sourceGraphData?: GraphData | null) => void
   storyboardWidgetSurfaceId: string
 }) {
   const getRuntimeRef = React.useRef(props.getRuntime)
@@ -176,12 +177,11 @@ export function StoryboardGroupPanelLayer2d(props: {
     if (startByNodeId.size === 0) return
     let moved = false
     const moveScheduler = createRafValueScheduler((delta: { worldDx: number; worldDy: number }) => {
-      const liveState = useGraphStore.getState()
       startByNodeId.forEach((start, nodeId) => {
-        liveState.updateNode(nodeId, {
+        props.onNodeChange(nodeId, {
           x: Number(start.x) + delta.worldDx,
           y: Number(start.y) + delta.worldDy,
-        })
+        }, props.graphData)
       })
     })
     const started = startRichMediaPanelHeaderDrag(event.nativeEvent, {
@@ -203,7 +203,7 @@ export function StoryboardGroupPanelLayer2d(props: {
     selectGroupPanel(subgraphGroupId(group.id), event)
     event.preventDefault()
     event.stopPropagation()
-  }, [collectNestedMemberNodeIds, selectGroupPanel])
+  }, [collectNestedMemberNodeIds, props.graphData, props.onNodeChange, selectGroupPanel])
 
   if (!props.active || groups.length === 0) return null
   return (

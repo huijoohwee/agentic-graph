@@ -31,6 +31,7 @@ import type { FlowWidgetPinnedById } from '@/lib/storyboardWidget/flowWidgetPinn
 import { readCanvasBoardLayoutMode } from '@/lib/canvas/canvasBoardLayoutDisplayControls'
 import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 import { isFlowWidgetHeaderDragAllowedByPin } from '@/lib/storyboardWidget/flowWidgetPinMovement'
+import { collectGroupPanelContainedNodeIds, isGroupPanelContainedNode } from '@/lib/storyboardWidget/groupPanelContainment'
 import { resolveScopedFlowWidgetNodeMap } from '@/lib/storyboardWidget/widgetStateScope'
 import { CardInlineTextEditor } from '@/lib/cards/CardInlineTextEditor'
 import { buildGraphNodeCanonicalTextPatch, GRAPH_NODE_CARD_TITLE_PROPERTY_KEYS, type GraphNodeCardTextFieldSpec } from '@/lib/cards/graphNodeCardFields'
@@ -302,6 +303,10 @@ export function StoryboardCardOverlayLayer2d(props: {
       .flatMap(lane => lane.cards)
       .filter(card => isStoryboardFixedCardOwnedNode(nodeById.get(card.id))),
     [board.lanes, nodeById],
+  )
+  const groupPanelContainedNodeIds = React.useMemo(
+    () => collectGroupPanelContainedNodeIds(graphData),
+    [graphData],
   )
   const { dropCardMedia, pendingMediaByCardId } = useStoryboardCardMediaDrop2d({
     cards,
@@ -598,6 +603,7 @@ export function StoryboardCardOverlayLayer2d(props: {
       {cards.map(card => {
         const node = nodeById.get(card.id)
         if (!node) return null
+        const containedByGroupPanel = isGroupPanelContainedNode(groupPanelContainedNodeIds, card.id)
         const selected = isCanonicalNodeIdEqual(activeCardId, card.id)
           || isCanonicalNodeIdEqual(selectedNodeId, card.id)
           || (Array.isArray(selectedNodeIds) && selectedNodeIds.some(id => isCanonicalNodeIdEqual(id, card.id)))
@@ -613,7 +619,7 @@ export function StoryboardCardOverlayLayer2d(props: {
           <StoryboardCardOverlayItem
             key={card.id}
             card={card}
-            cardMoveEnabled={isFlowWidgetHeaderDragAllowedByPin({
+            cardMoveEnabled={!containedByGroupPanel && isFlowWidgetHeaderDragAllowedByPin({
               pinnedInCanvas: headerPinProps.headerPinned === true,
             })}
             storyboardWidgetSurfaceId={storyboardWidgetSurfaceId}
