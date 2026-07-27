@@ -417,7 +417,7 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
   )
 })
 
-test('Flight Sim source declares projections on the canonical XR world and Geo surface', () => {
+test('Flight Sim source declares the canonical Geo+XR composition', () => {
   const meta = frontmatter(seedSource)
   assert.equal(meta.status, 'runtime-ready')
   assert.equal(meta.runtime_status, 'runtime-ready')
@@ -427,7 +427,7 @@ test('Flight Sim source declares projections on the canonical XR world and Geo s
     'exact-head source and browser proof required at every handoff',
   )
   assert.equal(meta.publish_scope, 'local-only')
-  assert.equal(meta.kgCanvasSurfaceMode, 'xr')
+  assert.equal(meta.kgCanvasSurfaceMode, 'geo-xr')
   assert.equal(meta.kgCanvasRenderMode, '3d')
   assert.equal(meta.kgCanvas3dMode, 'xr')
   assert.equal(meta.kgCanvas2dRenderer, undefined)
@@ -443,7 +443,7 @@ test('Flight Sim source declares projections on the canonical XR world and Geo s
     identity_authority: 'source-authored run_ready_demo.id',
     imported_path_alias_required: false,
     identity_conflict: 'fail closed when path and source identity disagree',
-    canonical_consumers: ['workspace', 'xr-mode'],
+    canonical_consumers: ['workspace', 'geo-xr-mode'],
     dev_command: 'npm run dev',
     canonical_source_file: '/docs/workspace-seeds/knowgrph-game-flight-sim-demo.md',
     env_selector: 'VITE_KNOWGRPH_RUN_READY_DEMO=flight-sim',
@@ -452,7 +452,7 @@ test('Flight Sim source declares projections on the canonical XR world and Geo s
     source_backed: true,
     clean_canvas_recommended: true,
     native_runtime: true,
-    presentation: 'shared-xr-gameplay-overlay',
+    presentation: 'shared-geo-xr-gameplay-overlay',
     document_presentation: 'runtime-ready-workspace-demo',
     auto_start: true,
     external_dependencies: [],
@@ -461,7 +461,7 @@ test('Flight Sim source declares projections on the canonical XR world and Geo s
   assert.deepEqual(meta.shared_xr_scene, {
     source_authority: '/docs/workspace-seeds/knowgrph-physics-playground-demo.md',
     world_ownership: 'overlay-only',
-    surface_owner: 'XR Mode',
+    surface_owner: 'Geo+XR Mode',
     renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
     collider_owner: 'canvas/src/features/three/xrCanonicalSceneSpatialSource.ts',
     camera_owner: 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
@@ -470,11 +470,12 @@ test('Flight Sim source declares projections on the canonical XR world and Geo s
   assert.deepEqual(meta.geo_flight_overlay, {
     activation: 'selected authored environment plus source-authored Flight identity',
     renderer_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
-    overlay_owner: 'canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx',
+    overlay_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
     control_owner: 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts',
     route_projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
-    xr_canvas_mounted: false,
-    map_interaction_preserved: true,
+    xr_canvas_mounted: true,
+    map_interaction_preserved: false,
+    composition: 'Geo is the visible background below one transparent shared XR Canvas; Flight controls own pointer input',
   })
   const authority = readFileSync(resolve(repoRoot, 'scripts/workspace-seed-authority.mjs'), 'utf8')
   const projectionStart = authority.indexOf('AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY')

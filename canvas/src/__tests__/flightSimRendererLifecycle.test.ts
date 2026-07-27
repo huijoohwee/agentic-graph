@@ -118,12 +118,13 @@ test('an open Geo panel synchronizes the canvas Geo owner', () => {
   assert.equal(resolveCanvasGeospatialModeEnabled(true, false, 'media'), true)
 })
 
-test('Flight Sim overlays Geo without mounting a competing XR viewport', () => {
+test('Flight Sim keeps exclusive Geo available without mounting a competing XR viewport', () => {
   const ownership = resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
     flightSimActive: true,
     gameplayOverlayActive: true,
     geospatialModeEnabled: true,
+    geospatialXrModeEnabled: false,
     workspaceEditorOverlayOpen: true,
     workspaceStoryboardSurfaceActive: true,
   })
@@ -149,6 +150,7 @@ test('Flight Sim overlays Geo without mounting a competing XR viewport', () => {
     flightSimActive: false,
     gameplayOverlayActive: true,
     geospatialModeEnabled: true,
+    geospatialXrModeEnabled: false,
     workspaceEditorOverlayOpen: false,
     workspaceStoryboardSurfaceActive: false,
   }), {
@@ -161,12 +163,39 @@ test('Flight Sim overlays Geo without mounting a competing XR viewport', () => {
     flightSimActive: false,
     gameplayOverlayActive: false,
     geospatialModeEnabled: true,
+    geospatialXrModeEnabled: false,
     workspaceEditorOverlayOpen: true,
     workspaceStoryboardSurfaceActive: true,
   }), {
     activeSurface: 'geo',
     geospatialOverlayOwnsViewport: false,
   })
+})
+
+test('Geo+XR mounts one transparent shared XR viewport over the Geo owner', () => {
+  const ownership = resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    flightSimActive: true,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: true,
+    geospatialXrModeEnabled: true,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  })
+  assert.deepEqual(ownership, {
+    activeSurface: 'geo-xr',
+    geospatialOverlayOwnsViewport: false,
+  })
+  assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
+    sourceFilesBootstrapAdmitted: true,
+    sourceFilesBootstrapReady: true,
+    geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
+    liveCanvasHeroVisible: false,
+    canvasRenderMode: '3d',
+    heavyRuntimeIntentBlocked: false,
+    activeSurface: ownership.activeSurface,
+    documentSwitchOwnsViewport: false,
+  }), { mounted: true, active: true })
 })
 
 test('Three renderer lifecycle still rejects unsupported and empty non-XR surfaces', () => {
