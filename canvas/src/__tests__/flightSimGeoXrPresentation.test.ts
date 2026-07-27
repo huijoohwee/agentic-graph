@@ -73,6 +73,37 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
   )
 })
 
+test('Flight Geo bootstrap retains one map owner and stages pre-document ownership', () => {
+  const basemapHook = readFileSync(
+    path.resolve(
+      process.cwd(),
+      '../gympgrph/src/features/geospatial/useMapLibreBasemap.ts',
+    ),
+    'utf8',
+  )
+  const basemapEffectDependencies = basemapHook.match(
+    /\}, \[enabled, rootRef, containerRef, targetStyleUrl,[^\]]+\]\)/,
+  )?.[0] || ''
+  assert.ok(basemapEffectDependencies)
+  assert.doesNotMatch(basemapEffectDependencies, /initialStyleOverride/)
+  assert.match(basemapHook, /override is an activation bootstrap, not live map state/)
+  assert.match(basemapHook, /reconcileMapLibreFlightBootstrap\(\{/)
+
+  const startupRuntimes = readFileSync(
+    path.resolve(
+      process.cwd(),
+      'src/features/canvas/CanvasStartupRuntimes.tsx',
+    ),
+    'utf8',
+  )
+  const flightOwnerIndex = startupRuntimes.indexOf('<FlightSimRunReadyDemoRuntime />')
+  const deferredOwnerGateIndex = startupRuntimes.indexOf(
+    'sourceFilesBootstrapHasReachedReady ?',
+  )
+  assert.ok(flightOwnerIndex > 0)
+  assert.ok(deferredOwnerGateIndex > flightOwnerIndex)
+})
+
 test('Flight local mission coordinates project deterministically around Singapore', () => {
   const profile = readFlightSimXrSpatialProfile()
   const runtime = createFlightSimRuntime({

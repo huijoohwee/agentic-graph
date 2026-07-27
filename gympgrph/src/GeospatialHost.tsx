@@ -9,6 +9,7 @@ import {
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { useGympgrphStore } from './store.js'
 import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
+import { NATIVE_GEOSPATIAL_MAPLIBRE_OWNER } from './features/geospatial/mapLibreHostLease.js'
 import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
 import {
   readFlightGeoOverlay,
@@ -820,6 +821,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     containerRef: map2dContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
+    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
     canvasRenderMode: '2d',
     projectionMode: 'mercator',
     viewportSizingMode: 'fit',
@@ -833,6 +835,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     containerRef: map3dContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
+    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
     canvasRenderMode: '3d',
     projectionMode: 'globe',
     viewportSizingMode: 'fit',

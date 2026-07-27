@@ -100,9 +100,11 @@ export function testCanvasStartupRuntimesMountsSourceFilesBootstrapEagerly() {
   const startupPath = resolve(process.cwd(), 'src', 'features', 'canvas', 'CanvasStartupRuntimes.tsx')
   const startupDebugPath = resolve(process.cwd(), 'src', 'features', 'canvas', 'CanvasStartupDebugRuntime.tsx')
   const startupSsotBridgePath = resolve(process.cwd(), 'src', 'features', 'canvas', 'CanvasStartupSsotBridgeRuntime.tsx')
+  const flightOwnerPath = resolve(process.cwd(), 'src', 'features', 'canvas', 'FlightSimRunReadyDemoRuntime.tsx')
   const text = readFileSync(startupPath, 'utf8')
   const debugText = readFileSync(startupDebugPath, 'utf8')
   const ssotBridgeText = readFileSync(startupSsotBridgePath, 'utf8')
+  const flightOwnerText = readFileSync(flightOwnerPath, 'utf8')
 
   if (!text.includes("import { SourceFilesPersistenceBootstrap } from '@/features/source-files/SourceFilesPersistenceBootstrap'")) {
     throw new Error('expected canvas startup runtimes to import SourceFilesPersistenceBootstrap eagerly at module scope')
@@ -115,6 +117,12 @@ export function testCanvasStartupRuntimesMountsSourceFilesBootstrapEagerly() {
   }
   if (text.includes('useSourceFilesBootstrapReady')) {
     throw new Error('expected transient Source Files document intent readiness to stop unmounting run-ready lifecycle owners')
+  }
+  if (!flightOwnerText.includes('useSourceFilesBootstrapReady')) {
+    throw new Error('expected the mounted Flight owner to gate persisted launch on current Source Files intent readiness')
+  }
+  if (!flightOwnerText.includes('if (!sourceFilesBootstrapReady || ownsDocumentLaunchRef.current) return')) {
+    throw new Error('expected Flight launch to wait without replacing its captured pre-active surface')
   }
   if (!text.includes('<CanvasStartupDebugRuntime />')) {
     throw new Error('expected canvas startup runtimes to delegate startup debug flag ownership through the dedicated debug runtime')

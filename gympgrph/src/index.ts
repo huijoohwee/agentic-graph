@@ -13,6 +13,11 @@ import {
   readActiveMapLibreMap,
   useMapLibreBasemap,
 } from './features/geospatial/useMapLibreBasemap.js'
+import {
+  captureNativeGeospatialMapLibreLease,
+  claimMapLibreMapLease,
+  NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+} from './features/geospatial/mapLibreHostLease.js'
 import { GeospatialOverlayHost as GeospatialOverlayHostComponent } from './GeospatialHost.js'
 import { GeospatialPanelHost } from './GeospatialPanelHost.js'
 import { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection } from './geospatialFit.js'
@@ -67,6 +72,15 @@ export { colorForDataset }
 export { useMapLibreBasemap }
 export { preloadMapLibreBasemapRuntime }
 export { readActiveMapLibreMap }
+export {
+  captureNativeGeospatialMapLibreLease,
+  claimMapLibreMapLease,
+  NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+}
+export type {
+  MapLibreMapOwnerScope,
+  NativeGeospatialMapLibreLease,
+} from './features/geospatial/mapLibreHostLease.js'
 
 export const GeospatialOverlayHost = GeospatialOverlayHostComponent
 

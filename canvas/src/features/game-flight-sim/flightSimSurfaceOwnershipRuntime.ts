@@ -97,20 +97,49 @@ function flightSimSurfaceRestorationError(error: unknown): string {
     : String(error || 'Flight Sim surface restoration failed.')
 }
 
-async function waitForFlightSimGeospatialDisposal(): Promise<void> {
+function waitForFlightSimSurfaceFrame(deadline: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const remainingMs = deadline - Date.now()
+    if (remainingMs <= 0) {
+      reject(new Error('MapLibre did not release the restored non-Geo Canvas surface.'))
+      return
+    }
+    let settled = false
+    let frameId = 0
+    const timeoutId = window.setTimeout(() => {
+      if (settled) return
+      settled = true
+      if (frameId !== 0) window.cancelAnimationFrame(frameId)
+      reject(new Error('MapLibre did not release the restored non-Geo Canvas surface.'))
+    }, remainingMs)
+    frameId = window.requestAnimationFrame(() => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeoutId)
+      resolve()
+    })
+  })
+}
+
+async function waitForFlightSimGeospatialDisposal(
+  ownedLease: Readonly<{ isCurrent: () => boolean }> | null,
+  ownedCanvas: HTMLCanvasElement | null,
+): Promise<void> {
   if (
     typeof window === 'undefined'
     || typeof document === 'undefined'
     || typeof window.requestAnimationFrame !== 'function'
   ) return
-  const gympgrph = await importGympgrph()
   const deadline = Date.now() + FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS
   let stableFrames = 0
   while (Date.now() <= deadline) {
-    await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()))
-    const mapDisposed = gympgrph.readActiveMapLibreMap?.() == null
-    const canvasDisposed = document.querySelector('canvas.maplibregl-canvas') == null
-    if (mapDisposed && canvasDisposed) {
+    await waitForFlightSimSurfaceFrame(deadline)
+    const mapReleased = ownedLease == null || !ownedLease.isCurrent()
+    const ownedCanvasReleased = ownedCanvas == null || !ownedCanvas.isConnected
+    const geoCanvasReleased = document.querySelector(
+      '[data-kg-geo-xr-layer="geo-background"] canvas.maplibregl-canvas',
+    ) == null
+    if (mapReleased && ownedCanvasReleased && geoCanvasReleased) {
       stableFrames += 1
       if (stableFrames >= FLIGHT_SIM_SURFACE_STABLE_FRAME_COUNT) return
     } else {
@@ -124,11 +153,33 @@ async function restoreFlightSimGeospatialSurface(
   enabled: boolean,
 ): Promise<string | null> {
   try {
+    const gympgrph = await importGympgrph()
+    const ownedLease =
+      gympgrph.captureNativeGeospatialMapLibreLease?.() ?? null
+    const ownedCanvas = ownedLease?.canvas ?? (
+      typeof document === 'undefined'
+        ? null
+        : document.querySelector<HTMLCanvasElement>(
+            '[data-kg-geo-xr-layer="geo-background"] canvas.maplibregl-canvas',
+          )
+    )
     const restored = await setGeospatialModeEnabled(enabled)
     if (restored !== enabled) {
       throw new Error(`Geo mode restored ${String(restored)} instead of ${String(enabled)}.`)
     }
-    if (!enabled) await waitForFlightSimGeospatialDisposal()
+    const ownedCanvasElement = (
+      ownedCanvas
+      && typeof ownedCanvas === 'object'
+      && 'isConnected' in ownedCanvas
+    )
+      ? ownedCanvas as HTMLCanvasElement
+      : null
+    if (!enabled) {
+      await waitForFlightSimGeospatialDisposal(
+        ownedLease,
+        ownedCanvasElement,
+      )
+    }
     return null
   } catch (error) {
     return flightSimSurfaceRestorationError(error)

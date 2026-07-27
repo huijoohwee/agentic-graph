@@ -589,7 +589,7 @@ export async function controlLocalFlightSim(
   exitFlightSim()
   const exited = await waitForFlightSimSurfaceRestoration()
   if (!isFlightSimControlCurrent(fence)) return cancelled()
-  const ok = !exited.active && exited.phase === 'stopped'
+  const ok = !exited.active && exited.phase === 'stopped' && !exited.runtimeError
   return controlResult(
     ok,
     ok ? 'Flight Sim exited and restored the previous Canvas surface.' : runtimeFailureMessage(exited, 'Flight Sim could not exit.'),

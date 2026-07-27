@@ -48,6 +48,7 @@ import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import {
   resetFlightSimTrainingScenarioForTests,
 } from '@/features/game-flight-sim/flightSimTrainingScenario'
+import { useGraphStore } from '@/hooks/useGraphStore'
 
 const buildWebName = (name: string): string => `knowgrph.${name}`
 const readOnlyAnnotations = Object.freeze({
@@ -319,6 +320,26 @@ test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/
   } finally {
     if (readFlightSimSnapshot().active) await controlLocalFlightSim({ operation: 'exit' })
     assert.equal(globalThis.fetch, hostFetch)
+  }
+})
+
+test('Flight Sim MCP reports a failed Canvas restoration instead of a successful Exit', async () => {
+  resetFlightSimRuntimeForTests()
+  await openFlightSimSurface({ openPanel: false, webglSupported: true })
+  const originalSetCanvas3dMode = useGraphStore.getState().setCanvas3dMode
+  useGraphStore.setState({
+    setCanvas3dMode: () => {
+      throw new Error('MCP restoration failure')
+    },
+  } as never)
+  try {
+    const result = await controlLocalFlightSim({ operation: 'exit' })
+    assert.equal(result.ok, false)
+    assert.match(result.message, /restoration did not complete/i)
+    assert.match(readFlightSimSnapshot().runtimeError || '', /MCP restoration failure/)
+  } finally {
+    useGraphStore.setState({ setCanvas3dMode: originalSetCanvas3dMode } as never)
+    resetFlightSimRuntimeForTests()
   }
 })
 

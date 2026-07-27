@@ -8,6 +8,7 @@ import {
   type FlightSimPreviousCanvasSurface,
 } from '@/features/game-flight-sim/flightSimSurfaceOwnershipRuntime'
 import { onGeospatialModeChanged } from '@/features/geospatial/events'
+import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
 import { isFlightSimRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
@@ -17,6 +18,7 @@ const subscribeGeospatialMode = (listener: () => void): (() => void) => (
 )
 
 export function FlightSimRunReadyDemoRuntime() {
+  const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
   const canvasRenderMode = useGraphStore(state => state.canvasRenderMode)
@@ -56,7 +58,7 @@ export function FlightSimRunReadyDemoRuntime() {
       }
       return
     }
-    if (ownsDocumentLaunchRef.current) return
+    if (!sourceFilesBootstrapReady || ownsDocumentLaunchRef.current) return
     ownsDocumentLaunchRef.current = true
     void startFlightSim({
       openPanel: true,
@@ -91,6 +93,7 @@ export function FlightSimRunReadyDemoRuntime() {
     floatingPanelOpen,
     floatingPanelView,
     geospatialModeEnabled,
+    sourceFilesBootstrapReady,
   ])
 
   React.useLayoutEffect(() => () => {

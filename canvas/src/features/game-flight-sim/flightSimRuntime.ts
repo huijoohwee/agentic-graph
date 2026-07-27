@@ -123,11 +123,9 @@ function restoreAuthoredRuntime(): void {
   authoredRuntimeOwnership = null
   restoreFlightSimAuthoredRuntime(ownership)
 }
-
 export function readFlightSimSnapshot(): FlightSimSnapshot {
   return defaultRuntime.read()
 }
-
 export function readFlightSimSpatialProfile(): FlightSimSpatialProfile {
   return defaultRuntime.profile()
 }
@@ -162,18 +160,27 @@ function restoreSurfaceOwnership(
 ): string[] {
   const failures: string[] = []
   flightSimSurfaceRestorationTail = Promise.resolve(null)
+  if (restorePreviousSurface && previous) {
+    try {
+      flightSimSurfaceRestorationTail = restoreFlightSimPreviousCanvasSurface(previous)
+        .then(surfaceFailure => {
+          if (surfaceFailure) return surfaceFailure
+          try {
+            restoreAuthoredRuntime()
+            return null
+          } catch (error) {
+            return flightSimRuntimeErrorMessage(error)
+          }
+        })
+    } catch (error) {
+      failures.push(flightSimRuntimeErrorMessage(error))
+    }
+    return failures
+  }
   try {
     restoreAuthoredRuntime()
   } catch (error) {
     failures.push(flightSimRuntimeErrorMessage(error))
-  }
-  if (restorePreviousSurface && previous) {
-    try {
-      flightSimSurfaceRestorationTail =
-        restoreFlightSimPreviousCanvasSurface(previous)
-    } catch (error) {
-      failures.push(flightSimRuntimeErrorMessage(error))
-    }
   }
   return failures
 }
@@ -190,46 +197,52 @@ function restoreDurableChatStreamTransportOwnership(): void {
   release?.()
 }
 
-function failFlightSimSurfaceEntry(
+async function failFlightSimSurfaceEntry(
   error: unknown,
   entering: boolean,
-  surfaceActivated: boolean,
-): FlightSimSnapshot {
+): Promise<FlightSimSnapshot> {
   const failures = [flightSimRuntimeErrorMessage(error)]
+  let restoration: Promise<string | null> | null = null
   if (entering) {
     defaultRuntime.exit()
-    if (surfaceActivated) {
+    if (previousCanvasSurface) {
       failures.push(...restoreSurfaceOwnership(previousCanvasSurface, true))
+      restoration = flightSimSurfaceRestorationTail
     }
     restoreDurableChatStreamTransportOwnership()
     restoreWorkspaceSeedSyncOwnership()
     previousCanvasSurface = null
   }
+  const restorationFailure = await restoration
+  if (restorationFailure) failures.push(restorationFailure)
   const message = `Flight Sim surface entry did not complete: ${failures.join('; ')}`
   reportFlightSimSurfaceEntryFailure(message)
   return defaultRuntime.fail(message)
 }
 
-function abortFlightSimSurfaceEntry(
+async function abortFlightSimSurfaceEntry(
   hydrationFinished: boolean,
   hydrationToken: number,
   entering: boolean,
-  surfaceActivated: boolean,
-): FlightSimSnapshot {
+): Promise<FlightSimSnapshot> {
   if (!hydrationFinished) finishFlightSimHydration(hydrationToken)
   cancelFlightSimHydration()
   const restorationFailures: string[] = []
+  let restoration: Promise<string | null> | null = null
   if (entering) {
     defaultRuntime.exit()
-    if (surfaceActivated) {
+    if (previousCanvasSurface) {
       restorationFailures.push(
         ...restoreSurfaceOwnership(previousCanvasSurface, true),
       )
+      restoration = flightSimSurfaceRestorationTail
     }
     restoreDurableChatStreamTransportOwnership()
     restoreWorkspaceSeedSyncOwnership()
     previousCanvasSurface = null
   }
+  const restorationFailure = await restoration
+  if (restorationFailure) restorationFailures.push(restorationFailure)
   if (restorationFailures.length > 0) {
     const message = (
       'Flight Sim surface restoration did not complete after aborted entry: '
@@ -269,7 +282,6 @@ async function performFlightSimSurfaceOpen(
       return failFlightSimSurfaceEntry(
         webglAdmission.failureReason || 'WebGL is unavailable.',
         entering,
-        false,
       )
     }
     if (
@@ -293,7 +305,6 @@ async function performFlightSimSurfaceOpen(
         readFlightSimDecisionStore().error
         || 'Flight Sim Decisions remain blocked until Reset local save succeeds.',
         entering,
-        false,
       )
     }
     const nextProfile = readFlightSimXrSpatialProfile()
@@ -307,7 +318,6 @@ async function performFlightSimSurfaceOpen(
       return failFlightSimSurfaceEntry(
         reportFlightSimDecisionLoadFailure(hydrated.runtimeError).error,
         entering,
-        false,
       )
     }
     throwIfFlightSimOperationAborted(options.signal)
@@ -329,7 +339,7 @@ async function performFlightSimSurfaceOpen(
         : { panelView: 'flightSim', openPanel: true }),
     })
     if (!surfaceActivated) {
-      return failFlightSimSurfaceEntry('The shared XR Canvas is unavailable.', entering, false)
+      return failFlightSimSurfaceEntry('The shared XR Canvas is unavailable.', entering)
     }
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
@@ -368,14 +378,13 @@ async function performFlightSimSurfaceOpen(
         hydrationFinished,
         hydrationToken,
         entering,
-        surfaceActivated,
       )
     }
     if (!hydrationFinished && !finishFlightSimHydration(hydrationToken)) {
       return defaultRuntime.read()
     }
     const localError = readFlightSimDecisionStore().error || error
-    return failFlightSimSurfaceEntry(localError, entering, surfaceActivated)
+    return failFlightSimSurfaceEntry(localError, entering)
   } finally {
     if (stagePreparationRequestId !== null) {
       cancelFlightSimStagePreparation(stagePreparationRequestId)
@@ -389,15 +398,18 @@ export function openFlightSimSurface(
 ): Promise<FlightSimSnapshot> {
   const expectedGeneration = readFlightSimSurfaceLifecycleGeneration()
   const openController = createFlightSimSurfaceOpenController(options.signal)
+  const priorRestoration = flightSimSurfaceRestorationTail
   const operationOptions = {
     ...options,
     signal: openController.controller.signal,
   }
+  const performOpen = async () => {
+    await priorRestoration
+    return performFlightSimSurfaceOpen(operationOptions, expectedGeneration)
+  }
   const opening = flightSimSurfaceOpenTail
-    ? flightSimSurfaceOpenTail.then(() => (
-        performFlightSimSurfaceOpen(operationOptions, expectedGeneration)
-      ))
-    : performFlightSimSurfaceOpen(operationOptions, expectedGeneration)
+    ? flightSimSurfaceOpenTail.then(performOpen)
+    : performOpen()
   const tail = opening.then(() => undefined, () => undefined)
   flightSimSurfaceOpenTail = tail
   void tail.then(() => {
@@ -540,7 +552,12 @@ export function exitFlightSimSurface(
 export const exitFlightSim = exitFlightSimSurface
 
 export async function waitForFlightSimSurfaceRestoration(): Promise<FlightSimSnapshot> {
-  const failure = await flightSimSurfaceRestorationTail
+  const restoration = flightSimSurfaceRestorationTail
+  const failure = await restoration
+  if (
+    restoration !== flightSimSurfaceRestorationTail
+    || defaultRuntime.read().active
+  ) return defaultRuntime.read()
   if (!failure) return defaultRuntime.read()
   const message = `Flight Sim surface restoration did not complete: ${failure}`
   reportFlightSimSurfaceRestorationFailure(message)
