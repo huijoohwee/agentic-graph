@@ -58,13 +58,22 @@ export async function assertFlightSimSeedReadiness({
     || sharedScene.second_canvas_forbidden !== true
     || !geoFlightOverlay
     || geoFlightOverlay.activation !== 'selected authored environment plus source-authored Flight identity'
-    || geoFlightOverlay.renderer_owner !== 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'
-    || geoFlightOverlay.overlay_owner !== 'canvas/src/lib/three/ThreeGraph.impl.tsx'
+    || geoFlightOverlay.renderer_owner !== 'canvas/src/lib/three/ThreeGraph.impl.tsx'
+    || geoFlightOverlay.geo_policy_owner !== 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'
+    || geoFlightOverlay.presentation_owner !== 'canvas/src/features/three/xrGeoEnvironmentPresentation.ts'
+    || geoFlightOverlay.render_policy !== 'shared-xr-stage while composed in Geo+XR; standalone Geo retains its selected provider'
+    || !exactArray(
+      geoFlightOverlay.shared_environment_presentations,
+      ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
+    )
+    || geoFlightOverlay.screen_space_basemap !== 'suppressed'
+    || geoFlightOverlay.maplibre_runtime_started !== false
+    || geoFlightOverlay.remote_style_or_tile_requests !== 0
     || geoFlightOverlay.control_owner !== 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'
     || geoFlightOverlay.route_projection_owner !== 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts'
     || geoFlightOverlay.xr_canvas_mounted !== true
     || geoFlightOverlay.map_interaction_preserved !== false
-    || geoFlightOverlay.composition !== 'Geo is the visible background below one transparent shared XR Canvas; Flight controls own pointer input'
+    || geoFlightOverlay.composition !== 'the selected authored environment, Flight actors, and HUD share one R3F world; Geo supplies presentation state and paints no second world'
     || !flightSim
     || flightSim.invocation !== '/flight.sim @canvas #flight operation=open'
     || flightSim.inspect_tool !== 'knowgrph.inspect_local_flight_sim'
@@ -317,7 +326,9 @@ export async function assertFlightSimSeedReadiness({
   )
   requireMarkers(trainingOwners, [
     "night ? '#050a1a'",
-    'intensity={night ? 0.13 : 0.4}',
+    'const ambientIntensity = environmentPresentation?.ambientIntensity',
+    '?? (night ? 0.13 : 0.4)',
+    '<ambientLight intensity={ambientIntensity}',
     'importWithRetry(importMissionStage',
     'retries: 2',
     'retryDelayMs: 50',

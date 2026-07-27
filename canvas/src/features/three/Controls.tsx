@@ -31,6 +31,7 @@ import { useXrNativeControllerDemoCamera } from './useXrNativeControllerDemoCame
 export function Controls({
   schema, positions, paused, mode = '3d', modelAssetRenderKey, modelAssetFit,
   xrEmptyWorld = false, flightSimActive = false, gameplayCoordinateScale = 1,
+  geospatialComposite = false,
   onControlsChange,
 }: {
   schema: GraphSchema
@@ -42,6 +43,7 @@ export function Controls({
   xrEmptyWorld?: boolean
   flightSimActive?: boolean
   gameplayCoordinateScale?: number
+  geospatialComposite?: boolean
   onControlsChange?: () => void
 }) {
   const { camera, gl, size } = useThree()
@@ -93,6 +95,7 @@ export function Controls({
     controls,
     coordinateScale: gameplayCoordinateScale,
     flightSimActive,
+    geospatialComposite,
     renderer: gl,
     suspended: !!paused || mode !== 'xr' || xrEmptyWorld
       || choreographyOwnsCamera || objectInputOwnership.active,

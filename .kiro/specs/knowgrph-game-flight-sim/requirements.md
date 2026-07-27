@@ -11,7 +11,7 @@ External references inform conceptual principles only. Maintainers attest that t
 ## Glossary
 
 - **Flight_Sim**: The browser-local flight simulator feature surface, mounted as a FloatingPanel mode on the shared Knowgrph XR Canvas.
-- **Geo_XR_Mode**: The composed Canvas surface that keeps the local Geo renderer visible below the one transparent shared React Three Fiber XR Canvas.
+- **Geo_XR_Mode**: The composed Canvas surface where Geo supplies planar/volumetric and Classic/Modern presentation state to the selected authored environment in the one shared React Three Fiber XR Canvas, without painting a second world.
 - **Flight_Runtime**: The lifecycle and orchestration owner of Flight_Sim, managing mission/failure selection, voice coaching, `open`, `start`, `stop`, `restart`, `throttle`, `coach`, `save`, and `exit`.
 - **Training_Mission**: A source-authored objective, terrain/light state, target energy envelope, systems checklist, and measurable score contract.
 - **Practice_Failure**: A bounded deterministic failure injection active only during its declared tick window.
@@ -216,13 +216,13 @@ External references inform conceptual principles only. Maintainers attest that t
 
 #### Acceptance Criteria
 
-1. WHEN Flight_Sim is entered through Geo_XR_Mode, THE Flight_Runtime SHALL keep the local Geo renderer visible below the single existing transparent React Three Fiber Canvas, SHALL keep authored XR subjects and the mission stage in that Canvas, and SHALL suppress duplicate XR atmosphere and terrain.
+1. WHEN Flight_Sim is entered through Geo_XR_Mode, THE Flight_Runtime SHALL retain the selected authored environment, authored XR subjects, and mission stage in the single existing React Three Fiber Canvas, SHALL suppress only the duplicate XR atmosphere, and SHALL prevent the Geo DOM host from painting a second terrain, screen-space world, or MapLibre surface.
 2. THE Flight_Runtime SHALL project the aircraft, route or waypoint actors, objective actors, and HUD on the active shared Canvas surface without introducing a second renderer, a second Canvas, an alternate rendered world, or a Flight-owned camera.
 3. WHEN Flight_Sim exits, THE Flight_Runtime SHALL restore the previous surface controller input and simulation state.
 4. IF entry into Flight_Sim from a running XR surface fails, THEN THE Flight_Runtime SHALL leave the existing Canvas, scene graph, and prior surface controller unchanged and SHALL surface a local error indicating that entry did not complete.
 5. IF restoring the previous surface controller input or simulation state on exit fails, THEN THE Flight_Runtime SHALL retain the existing single Canvas without a second renderer and SHALL surface a local error indicating that restoration did not complete.
 6. WHEN Geo owns the active shared Canvas surface, THE Flight_Runtime SHALL keep the existing Geo renderer mounted and interactive, SHALL project the Flight route and aircraft as a transparent local overlay above it, and SHALL NOT mount the React Three Fiber Canvas for that Flight presentation.
-7. WHEN Geo_XR_Mode owns the active surface, THE Flight_Runtime SHALL mount exactly one transparent React Three Fiber Canvas above the Geo background, SHALL give Flight/XR input ownership precedence over map interaction, and SHALL NOT mount the exclusive plain-Geo Flight overlay.
+7. WHEN Geo_XR_Mode owns the active surface, THE Flight_Runtime SHALL mount exactly one React Three Fiber Canvas containing the selected authored environment and Flight actors, SHALL give Flight/XR input ownership precedence over Geo panel interaction, and SHALL NOT mount the exclusive plain-Geo Flight overlay or a second Geo background.
 
 ### Requirement 15: Camera source selection
 
@@ -325,7 +325,7 @@ External references inform conceptual principles only. Maintainers attest that t
 
 1. THE Flight_Sim SHALL register a repository-owned runtime-readiness command that verifies source authority, native ECS integration, focused tests, TypeScript checks, and a production build, where a run is deemed successful only when every one of these five verifications passes.
 2. IF any verification performed by the runtime-readiness command does not pass, THEN THE Flight_Sim SHALL terminate the command with a non-success result that identifies each failed verification and SHALL make no repository change as a result of the run.
-3. THE Flight_Sim SHALL register a repository-owned browser-smoke command that verifies Source Files apply, visible Geo below one transparent retained authored XR Canvas, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, and the mobile HUD, where a run is deemed successful only when every one of these verifications passes.
+3. THE Flight_Sim SHALL register a repository-owned browser-smoke command that verifies Source Files apply, one selected authored environment in one retained XR Canvas, four distinct Geo presentation policies, north-up planar framing, absence of a screen-space Geo world and MapLibre runtime, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, and the mobile HUD, where a run is deemed successful only when every one of these verifications passes.
 4. IF any verification performed by the browser-smoke command does not pass, THEN THE Flight_Sim SHALL terminate the command with a non-success result that identifies each failed verification and SHALL make no repository change as a result of the run.
 5. THE runtime-readiness and browser-smoke commands SHALL run using only locally available source, dependency, build, and test artifacts, and SHALL invoke zero paid model, image-to-3D, or Cloudflare service and zero other network resource.
 6. THE Flight_Sim SHALL NOT perform an automatic Git operation or production deployment from the browser runtime.
@@ -369,8 +369,8 @@ External references inform conceptual principles only. Maintainers attest that t
 4. WHEN Flight_Sim is activated by the Geo handoff or opened elsewhere, THE Flight_Runtime SHALL derive its spatial profile, collision envelope, route, navigation, and visible World label from that selected authored XR environment without adding a renderer, camera, map provider, network request, token, copied asset, or external runtime dependency.
 5. WHEN Flight_Sim entry follows Geo inspection or a live Motion_Control handoff, THE shared Flight surface controller SHALL retry viewport input ownership independently and acknowledge the current preparation request from its committed Geo+XR or exclusive Geo aircraft projection without waiting for desktop input ownership; the XR projection SHALL also invalidate its demand loop after installing its render observer, so a mount-order or camera-owner race cannot reject a playable Motion, touch, gamepad, or later-reclaimed desktop session.
 6. WHEN Cockpit view is selected, THE Camera_Source SHALL place the eye beyond the aircraft's forward collision envelope and above its vertical collision envelope while aiming along the aircraft forward vector, so committed aircraft geometry cannot obstruct the playable forward view.
-7. WHEN the source-authored Flight workspace seed is applied, THE shared canvas owner SHALL select Geo_XR_Mode, keep Geo visible as the background, mount exactly one transparent shared XR Canvas containing the Flight route, aircraft, HUD, and input owners above it, retain existing 3D precedence for other gameplay overlays, and never clear the selected environment.
-8. WHILE Geo_XR_Mode is active, THE Geo background SHALL render each selected 2D or 3D Classic/Modern view from the committed local basemap geometry, SHALL keep 3D Classic and 3D Modern visibly distinct beneath the Flight overlay, and SHALL disable MapLibre runtime startup so no remote style or tile request can cross the Flight gameplay network fence; standalone Geo SHALL retain its existing provider-backed behavior.
+7. WHEN the source-authored Flight workspace seed is applied, THE shared canvas owner SHALL select Geo_XR_Mode, retain exactly one selected authored environment and the Flight route, aircraft, HUD, and input owners in one shared XR Canvas, retain existing 3D precedence for other gameplay overlays, and prevent the Geo DOM host from painting another world.
+8. WHILE Geo_XR_Mode is active, THE shared environment SHALL map 2D Classic, 2D Modern, 3D Classic, and 3D Modern to the distinct `2d-classic`, `2d-modern`, `3d-classic`, and `3d-modern` presentation policies; both 2D policies SHALL use north-up planar framing from the existing camera owner, both 3D policies SHALL preserve the selected Chase, Cockpit, or Survey framing, terrain geometry and colliders SHALL remain identical, and MapLibre plus the screen-space SVG world SHALL remain unmounted so no remote style or tile request can cross the Flight gameplay network fence; standalone Geo SHALL retain its existing provider-backed behavior.
 
 ### Requirement 26: FloatingPanel and Flight HUD coexistence
 

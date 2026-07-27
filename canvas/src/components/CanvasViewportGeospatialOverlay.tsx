@@ -30,7 +30,7 @@ type GeospatialOverlayHostProps = {
   active?: boolean
   snapshot?: unknown
   handlers?: unknown
-  renderPolicy?: 'default' | 'local-only'
+  renderPolicy?: 'default' | 'shared-xr-stage'
 }
 
 type GympgrphStoreState = {
@@ -339,7 +339,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
         active={active}
         snapshot={snapshot}
         handlers={handlers}
-        renderPolicy={composedWithXr ? 'local-only' : 'default'}
+        renderPolicy={composedWithXr ? 'shared-xr-stage' : 'default'}
       />
     </section>
   )

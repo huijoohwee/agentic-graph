@@ -47,8 +47,11 @@ export async function assertFlightSimSurfaceReadiness({
   const environmentGeoButtonSource = await readText(`${flightFeatureRoot}/FlightSimEnvironmentGeoButton.tsx`)
   requireSourceMarkers(environmentGeoButtonSource, [
     'selectFlightSimGeoEnvironment(',
-    "setGeospatialViewMode('2d-svg')",
+    'openFlightSimSurface({ openPanel: false })',
   ], 'Flight Sim local Geo handoff')
+  if (environmentGeoButtonSource.includes('setGeospatialViewMode(')) {
+    throw new Error('Flight environment handoff must preserve the selected Geo presentation')
+  }
 
   const canvasViewportSource = await readText('canvas/src/components/CanvasViewport.tsx')
   requireSourceMarkers(canvasViewportSource, [
