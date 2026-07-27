@@ -66,6 +66,7 @@ function createNetworkHost(transportOperations: string[]) {
     WebSocket: TestWebSocket,
     XMLHttpRequest: TestXmlHttpRequest,
     fetch: originalFetch,
+    location: { origin: 'http://127.0.0.1:5173' },
     navigator: { sendBeacon: originalSendBeacon },
   } as unknown as FlightSimNetworkFenceHost
 
@@ -169,6 +170,70 @@ test('installed gameplay network fence blocks every browser transport surface', 
     'eventsource:/local-events',
     'service-worker-message:KG_CHAT_STREAM_START',
     'sendBeacon:/local-beacon',
+  ])
+})
+
+test('gameplay network fence admits only exact same-origin local Motion Control assets', async (t) => {
+  const transportOperations: string[] = []
+  const blockedOperations: string[] = []
+  const { host } = createNetworkHost(transportOperations)
+  t.after(uninstallFlightSimGameplayNetworkFence)
+
+  installFlightSimGameplayNetworkFence(
+    operation => blockedOperations.push(operation),
+    host,
+  )
+
+  await host.fetch(
+    '/litert/litert_wasm_jspi_internal.wasm?revision=checked-in',
+  )
+  await host.fetch(
+    new URL(
+      'http://127.0.0.1:5173/litert/pose_landmarks_detector.tflite',
+    ),
+    { method: 'HEAD' },
+  )
+  new host.XMLHttpRequest!().open(
+    'GET',
+    '/litert/litert_wasm_threaded_internal.wasm',
+  )
+
+  await assert.rejects(
+    host.fetch(
+      'https://example.invalid/litert/litert_wasm_jspi_internal.wasm',
+    ),
+    assertBlockedOperation(
+      'fetch:GET:https://example.invalid/litert/litert_wasm_jspi_internal.wasm',
+    ),
+  )
+  await assert.rejects(
+    host.fetch('/litert/litert_wasm_jspi_internal.wasm', { method: 'POST' }),
+    assertBlockedOperation(
+      'fetch:POST:/litert/litert_wasm_jspi_internal.wasm',
+    ),
+  )
+  await assert.rejects(
+    host.fetch('/litert/untracked-runtime.wasm'),
+    assertBlockedOperation('fetch:GET:/litert/untracked-runtime.wasm'),
+  )
+  const request = new host.XMLHttpRequest!()
+  assert.throws(
+    () => request.open('GET', '/api/litert/pose_landmarks_detector.tflite'),
+    assertBlockedOperation(
+      'xhr:GET:/api/litert/pose_landmarks_detector.tflite',
+    ),
+  )
+
+  assert.deepEqual(transportOperations, [
+    'fetch:GET:/litert/litert_wasm_jspi_internal.wasm?revision=checked-in',
+    'fetch:HEAD:http://127.0.0.1:5173/litert/pose_landmarks_detector.tflite',
+    'xhr:GET:/litert/litert_wasm_threaded_internal.wasm',
+  ])
+  assert.deepEqual(blockedOperations, [
+    'fetch:GET:https://example.invalid/litert/litert_wasm_jspi_internal.wasm',
+    'fetch:POST:/litert/litert_wasm_jspi_internal.wasm',
+    'fetch:GET:/litert/untracked-runtime.wasm',
+    'xhr:GET:/api/litert/pose_landmarks_detector.tflite',
   ])
 })
 

@@ -378,3 +378,14 @@ External references inform conceptual principles only. Maintainers attest that t
 2. THE Flight HUD SHALL retain its established layer above bottom choreography surfaces while its root remains pointer-transparent and every pointer-owning Flight control clears the default FloatingPanel footprint, so neither surface intercepts the other's visible actions.
 3. WHEN the shared FloatingPanel width preference is non-finite or outside its supported range, THE FloatingPanel and Flight HUD SHALL use the same default or clamped width expression without duplicating width policy.
 4. WHEN Motion Control is explicitly started while Flight is active, THE existing normalized pose adapter SHALL remain able to contribute pitch and roll input to the same deterministic fixed-step mission without changing Canvas, camera, or flight-policy ownership.
+
+### Requirement 27: Motion Control local runtime asset coexistence
+
+**User Story:** As a player, I want the existing local Motion Control runtime to initialize while Flight is active, so that camera pose can steer the mission without weakening the offline gameplay boundary.
+
+#### Acceptance Criteria
+
+1. WHILE the Flight gameplay network fence is installed, THE fence SHALL admit only `GET` or `HEAD` reads whose resolved origin equals the current browser origin and whose normalized pathname exactly matches one of the nine repository-prepared LiteRT JavaScript, Wasm, or pose-detector model assets under `/litert/`.
+2. IF a fetch or XMLHttpRequest has a different origin, a method other than `GET` or `HEAD`, or a pathname outside that immutable asset set, THEN THE fence SHALL block it through the existing local blocked-operation reporter without invoking the underlying transport.
+3. THE fence SHALL continue blocking every WebSocket, EventSource, sendBeacon, and durable Service Worker start or attach operation while Flight is active.
+4. WHEN Motion Control starts while Flight is active, THE existing LiteRT runtime SHALL load only those checked-in local assets and SHALL contribute normalized pose input through the shared input owner without becoming a gameplay-network, renderer, camera, flight-policy, or external-dependency owner.
