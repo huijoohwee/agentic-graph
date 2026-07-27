@@ -65,7 +65,7 @@ def verify_flight_deadline_contracts(
             f"Flight WebGL admission was not synchronous within 100 ms: {webgl}"
         )
     if (
-        ready.get("source") != "shared-r3f-ready-frame"
+        ready.get("source") != "shared-flight-surface-ready-frame"
         or ready.get("synchronous") is not False
         or ready.get("withinLimit") is not True
         or ready.get("tick") != 0

@@ -208,7 +208,7 @@ async function readValidatedRunEvidence({
     },
     readyFrame: {
       limitMs: 100,
-      source: 'shared-r3f-ready-frame',
+      source: 'shared-flight-surface-ready-frame',
       synchronous: false,
     },
     hudUpdate: {
