@@ -20,3 +20,15 @@ export function enqueueWorkspaceSourceTextWrite(workspacePath: string, text: str
   void next.finally(() => { if (pendingWorkspaceSourceTextWrites.get(workspacePath) === next) pendingWorkspaceSourceTextWrites.delete(workspacePath) })
   return next
 }
+
+export async function settleWorkspaceSourceTextWrites(): Promise<void> {
+  while (true) {
+    const pendingWrites = [...pendingWorkspaceSourceTextWrites.values()]
+    if (pendingWrites.length > 0) await Promise.all(pendingWrites)
+    const { flushPendingWorkspaceDocsMirrorTextUpserts } = await import(
+      '@/features/workspace-fs/workspaceDocsMirrorTextUpsertQueue'
+    )
+    await flushPendingWorkspaceDocsMirrorTextUpserts()
+    if (pendingWorkspaceSourceTextWrites.size === 0) return
+  }
+}

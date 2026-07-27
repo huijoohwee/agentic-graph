@@ -12,7 +12,7 @@ export function requestXrEnvironmentGeoHandoff(
   const result = selectEnvironment(stageId)
   if (!result.ok) return false
   emitFloatingPanelOpen({ tab: 'geo', open: true })
-  onAfterRoute?.()
+  void onAfterRoute?.()
   return true
 }
 
