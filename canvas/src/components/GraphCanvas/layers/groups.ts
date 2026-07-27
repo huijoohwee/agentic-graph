@@ -12,10 +12,6 @@ import { isDisplayNode } from '@/components/GraphCanvas/displayFilter'
 import { collapsedGroupNodeIdFor } from '@/components/GraphCanvas/viewDerivation'
 import { UI_THEME_COLORS_CSS } from '@/lib/ui/theme-tokens'
 import { computeGroupDepthStyle } from '@/lib/graph/groupDepthStyle'
-import { readLayoutMode } from '@/components/GraphCanvas/layout/fitConfig'
-import { DEFAULT_DRAG_ALPHA_TARGET, DEFAULT_DRAG_ALPHA_TARGET_HARD_CAP } from '@/lib/graph/layoutDefaults'
-import { beginDragForceTuning } from '@/components/GraphCanvas/dragForceTuning'
-import { markGraphCanvasUserInteracted } from '@/components/GraphCanvas/userInteractionFlag'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { DEFAULT_GROUP_NESTED_PADDING_STEP } from '@/lib/graph/layoutDefaults'
 import { readLabelPresentation2d } from '@/lib/canvas/labelPresentation2d'
@@ -28,11 +24,11 @@ import { createGroupsLayoutEngine } from '@/components/GraphCanvas/layers/groups
 import { bindGroupsResizeHandle } from '@/components/GraphCanvas/layers/groupsResizeHandle'
 import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
 import { filterGroupsByCollapsedAncestors } from '@/lib/graph/groupVisibility'
-import { readCanvasDragIntentThresholdPx } from '@/lib/canvas/dragIntent'
 import { readDocumentViewModeContext } from '@/lib/graph/documentViewMode'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
+import { bindGroupsDrag } from '@/components/GraphCanvas/layers/groupsDrag'
 type GroupDatum = GraphGroup
 const readMouseEventDetail = (event: MouseEvent): number => {
   const detail = (event as unknown as { detail?: unknown }).detail
@@ -509,229 +505,6 @@ export const createGroupsLayer = (args: {
   chevronSel.on('click', toggleOrExpandGroup)
   chevronHitSel.on('click', toggleOrExpandGroup)
 
-  const allowDrag = (() => {
-    const behavior = schema.behavior as unknown as { allowGroupDrag?: unknown }
-    if (behavior && behavior.allowGroupDrag === false) return false
-    const cfgDrag = cfg as unknown as { draggable?: unknown }
-    if (cfgDrag && cfgDrag.draggable === false) return false
-    return true
-  })()
-  if (allowDrag) {
-    let dragNodes: GraphNode[] = []
-    let frozen = false
-    let dragBoundsOnly = false
-    let dragActivated = false
-    let dragThresholdPx = 0
-    let dragStartClientX = Number.NaN
-    let dragStartClientY = Number.NaN
-    let dragBoundsRef: { x: number; y: number; width: number; height: number; labelX?: number; labelY?: number } | null = null
-    let dragZoomK = 1
-    let endForceTune: null | (() => void) = null
-    const activateGroupDrag = (event: d3.D3DragEvent<SVGElement, GroupDatum, GroupDatum>, d: GroupDatum) => {
-      if (dragActivated) return
-      dragActivated = true
-
-      const svgEl = (event?.sourceEvent?.target as SVGElement | null)?.ownerSVGElement
-      markGraphCanvasUserInteracted(svgEl)
-      frozen = svgEl?.getAttribute('data-kg-layout-frozen') === '1'
-      try {
-        const k = d3.zoomTransform(svgEl as unknown as SVGSVGElement).k
-        dragZoomK = typeof k === 'number' && Number.isFinite(k) && k > 0 ? k : 1
-      } catch {
-        dragZoomK = 1
-      }
-
-      dragBoundsOnly = false
-      dragBoundsRef = null
-
-      const explicit = readExplicitBounds(d)
-      if (explicit) {
-        dragBoundsOnly = true
-        dragBoundsRef = { ...explicit }
-        ;(d as unknown as { bounds?: unknown }).bounds = dragBoundsRef as any
-        return
-      }
-
-      dragNodes = []
-      for (let i = 0; i < d.memberNodeIds.length; i += 1) {
-        const n = nodeById.get(String(d.memberNodeIds[i]))
-        if (n) dragNodes.push(n)
-      }
-      const structured = readLayoutMode(schema) === 'radial'
-      if (simulation && !structured && !frozen && !event.active) {
-        const alphaTarget = (() => {
-          try {
-            const v = useGraphStore.getState().graphDragAlphaTarget2d
-            return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(0.6, v)) : DEFAULT_DRAG_ALPHA_TARGET
-          } catch {
-            return DEFAULT_DRAG_ALPHA_TARGET
-          }
-        })()
-        endForceTune = beginDragForceTuning(simulation)
-        simulation.alphaTarget(Math.min(alphaTarget, DEFAULT_DRAG_ALPHA_TARGET_HARD_CAP)).restart()
-      }
-      for (let i = 0; i < dragNodes.length; i += 1) {
-        const n = dragNodes[i]!
-        n.fx = n.x ?? 0
-        n.fy = n.y ?? 0
-      }
-    }
-    const dragBehavior = d3
-      .drag<SVGElement, GroupDatum>()
-      .on('start', (event, d) => {
-        const srcEv = (event as unknown as { sourceEvent?: { stopPropagation?: () => void } }).sourceEvent
-        if (srcEv && typeof srcEv.stopPropagation === 'function') srcEv.stopPropagation()
-        setSelectionSource('canvas')
-        selectGroup(d.id)
-        const srcRecord = srcEv && typeof srcEv === 'object' ? (srcEv as Record<string, unknown>) : null
-        dragActivated = false
-        dragThresholdPx = readCanvasDragIntentThresholdPx(srcRecord?.pointerType)
-        dragStartClientX = typeof srcRecord?.clientX === 'number' ? srcRecord.clientX : Number.NaN
-        dragStartClientY = typeof srcRecord?.clientY === 'number' ? srcRecord.clientY : Number.NaN
-        dragBoundsOnly = false
-        dragBoundsRef = null
-        dragNodes = []
-        frozen = false
-        dragZoomK = 1
-
-        const se = event?.sourceEvent as unknown as { altKey?: unknown; shiftKey?: unknown } | undefined
-        const altDown = !!(se && (se as any).altKey)
-        const shiftDown = !!(se && (se as any).shiftKey)
-        if (altDown && typeof args.updateNode === 'function') {
-          const id = String(d.id || '').trim()
-          const depth = typeof d.depth === 'number' && Number.isFinite(d.depth) ? Math.max(0, Math.floor(d.depth)) : 0
-          const zRaw = (d as unknown as { zIndex?: unknown }).zIndex
-          const curZ = typeof zRaw === 'number' && Number.isFinite(zRaw) ? Math.floor(zRaw) : 0
-          let minZ = curZ
-          let maxZ = curZ
-          for (let i = 0; i < visibleGroups.length; i += 1) {
-            const gg = visibleGroups[i]!
-            const dd = typeof gg.depth === 'number' && Number.isFinite(gg.depth) ? Math.max(0, Math.floor(gg.depth)) : 0
-            if (dd !== depth) continue
-            const zr = (gg as unknown as { zIndex?: unknown }).zIndex
-            const z = typeof zr === 'number' && Number.isFinite(zr) ? Math.floor(zr) : 0
-            minZ = Math.min(minZ, z)
-            maxZ = Math.max(maxZ, z)
-          }
-          const nextZ = shiftDown ? minZ - 1 : maxZ + 1
-          const subgraphNode = graphNodeById.get(id) || null
-          if (subgraphNode) {
-            const props = ((subgraphNode as unknown as { properties?: unknown })?.properties || {}) as Record<string, unknown>
-            const nextProps = { ...props, 'visual:zIndex': nextZ }
-            try {
-              args.updateNode(id, { properties: nextProps as never })
-            } catch {
-              void 0
-            }
-          }
-          return
-        }
-        if (!(dragThresholdPx > 0)) activateGroupDrag(event, d)
-      })
-      .on('drag', (event, d) => {
-        if (!dragActivated && dragThresholdPx > 0) {
-          const srcEv = (event as unknown as { sourceEvent?: unknown }).sourceEvent
-          const srcRecord = srcEv && typeof srcEv === 'object' ? (srcEv as Record<string, unknown>) : null
-          const clientX = typeof srcRecord?.clientX === 'number' ? srcRecord.clientX : Number.NaN
-          const clientY = typeof srcRecord?.clientY === 'number' ? srcRecord.clientY : Number.NaN
-          if (Number.isFinite(clientX) && Number.isFinite(clientY) && Number.isFinite(dragStartClientX) && Number.isFinite(dragStartClientY)) {
-            const distancePx = Math.hypot(clientX - dragStartClientX, clientY - dragStartClientY)
-            if (!(distancePx >= dragThresholdPx)) return
-          }
-          activateGroupDrag(event, d)
-        } else if (!dragActivated) {
-          activateGroupDrag(event, d)
-        }
-        const dx0 = typeof event.dx === 'number' && Number.isFinite(event.dx) ? event.dx : 0
-        const dy0 = typeof event.dy === 'number' && Number.isFinite(event.dy) ? event.dy : 0
-        const k = typeof dragZoomK === 'number' && Number.isFinite(dragZoomK) && dragZoomK > 0 ? dragZoomK : 1
-        const dx = dx0 / k
-        const dy = dy0 / k
-        if (dx === 0 && dy === 0) return
-        if (dragBoundsOnly && dragBoundsRef) {
-          dragBoundsRef.x += dx
-          dragBoundsRef.y += dy
-          if (typeof dragBoundsRef.labelX === 'number' && Number.isFinite(dragBoundsRef.labelX)) dragBoundsRef.labelX += dx
-          if (typeof dragBoundsRef.labelY === 'number' && Number.isFinite(dragBoundsRef.labelY)) dragBoundsRef.labelY += dy
-          const d = event.subject as unknown as GroupDatum
-          const computed = computeBoundsAndLabel(d)
-          applyComputedToGroup(d, computed, String(d.id || '').trim())
-          return
-        }
-        const structured = readLayoutMode(schema) === 'radial'
-        for (let i = 0; i < dragNodes.length; i += 1) {
-          const n = dragNodes[i]!
-          const x = typeof n.x === 'number' && Number.isFinite(n.x) ? n.x : 0
-          const y = typeof n.y === 'number' && Number.isFinite(n.y) ? n.y : 0
-          const nx = x + dx
-          const ny = y + dy
-          n.fx = nx
-          n.fy = ny
-          if (structured || frozen) {
-            n.x = nx
-            n.y = ny
-          }
-        }
-        if ((structured || frozen) && simulation) {
-          const tickHandler = simulation.on('tick')
-          if (typeof tickHandler === 'function') {
-            ;(tickHandler as unknown as () => void)()
-          }
-        }
-      })
-      .on('end', (event) => {
-        if (dragActivated && dragBoundsOnly && dragBoundsRef) {
-          const d = event.subject as unknown as GroupDatum
-          const id = String(d.id || '').trim()
-          if (id) commitGroupBounds(id, dragBoundsRef)
-          dragBoundsOnly = false
-          dragBoundsRef = null
-          dragNodes = []
-          frozen = false
-          dragActivated = false
-          dragThresholdPx = 0
-          dragStartClientX = Number.NaN
-          dragStartClientY = Number.NaN
-          return
-        }
-        const structured = readLayoutMode(schema) === 'radial'
-        if (dragActivated && simulation && !structured && !frozen && !event.active) {
-          simulation.alphaTarget(0)
-        }
-        if (endForceTune) {
-          try {
-            endForceTune()
-          } catch {
-            void 0
-          } finally {
-            endForceTune = null
-          }
-        }
-        if (dragActivated) {
-          for (let i = 0; i < dragNodes.length; i += 1) {
-            const n = dragNodes[i]!
-            if (!structured && !frozen) {
-              n.fx = null
-              n.fy = null
-            }
-            n.vx = 0
-            n.vy = 0
-          }
-          if (structured && simulation) simulation.stop()
-        }
-        dragNodes = []
-        frozen = false
-        dragBoundsOnly = false
-        dragBoundsRef = null
-        dragActivated = false
-        dragThresholdPx = 0
-        dragStartClientX = Number.NaN
-        dragStartClientY = Number.NaN
-      })
-    
-    labelSel.call(dragBehavior as unknown as d3.DragBehavior<SVGTextElement, GroupDatum, unknown>)
-  }
-
   const eps = 0.5
 
   const { layoutCache, computeBoundsAndLabel, applyComputedToGroup, readExplicitBounds } =
@@ -780,6 +553,23 @@ export const createGroupsLayer = (args: {
     if (!id) return
     commitGroupBoundsOverrideToStore(id, bounds)
   }
+
+  bindGroupsDrag({
+    labelSelection: labelSel,
+    visibleGroups,
+    parentGroupIdById,
+    nodeById,
+    graphNodeById,
+    schema,
+    simulation,
+    updateNode: args.updateNode,
+    setSelectionSource,
+    selectGroup,
+    readExplicitBounds,
+    computeBoundsAndLabel,
+    applyComputedToGroup,
+    commitGroupBounds,
+  })
 
   bindGroupsResizeHandle<GroupDatum>({
     resizeHandleHitSel,

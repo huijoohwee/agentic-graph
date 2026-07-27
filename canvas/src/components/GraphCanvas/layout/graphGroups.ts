@@ -247,6 +247,8 @@ export const deriveGraphGroups = (
         depth,
         memberNodeIds,
         parentGroupId,
+        containChildren: true,
+        connectable: false,
         style:
           row.kind === 'cluster'
             ? {

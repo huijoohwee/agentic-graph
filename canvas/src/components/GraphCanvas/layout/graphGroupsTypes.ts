@@ -16,6 +16,8 @@ export type GraphGroup = {
   yIndex?: number
   memberNodeIds: string[]
   parentGroupId?: string | null
+  containChildren?: boolean
+  connectable?: boolean
   style: {
     fill?: string
     stroke?: string
