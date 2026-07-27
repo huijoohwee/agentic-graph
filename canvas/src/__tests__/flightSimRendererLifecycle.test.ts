@@ -10,7 +10,10 @@ import {
   retainThreeCanvasSourceAdmission,
   type ThreeRendererMountInput,
 } from '@/lib/three/threeRendererLifecycle'
-import { shouldEnsureCanvasGeospatialMode } from '@/features/canvas/useCanvasGeospatialRuntime'
+import {
+  resolveCanvasGeospatialModeEnabled,
+  shouldEnsureCanvasGeospatialMode,
+} from '@/features/canvas/useCanvasGeospatialRuntime'
 import { selectFlightSimGeoEnvironment } from '@/features/game-flight-sim/FlightSimEnvironmentGeoButton'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
@@ -109,6 +112,10 @@ test('an open Geo panel synchronizes the canvas Geo owner', () => {
   assert.equal(shouldEnsureCanvasGeospatialMode(true, 'geo'), true)
   assert.equal(shouldEnsureCanvasGeospatialMode(false, 'geo'), false)
   assert.equal(shouldEnsureCanvasGeospatialMode(true, 'media'), false)
+  assert.equal(resolveCanvasGeospatialModeEnabled(false, true, 'geo'), true)
+  assert.equal(resolveCanvasGeospatialModeEnabled(false, false, 'geo'), false)
+  assert.equal(resolveCanvasGeospatialModeEnabled(false, true, 'media'), false)
+  assert.equal(resolveCanvasGeospatialModeEnabled(true, false, 'media'), true)
 })
 
 test('Flight Sim overlays Geo without mounting a competing XR viewport', () => {
