@@ -91,6 +91,8 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["ui.storyboard.canvasGraphAuthority.prefersLiveDraft","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityPrefersLiveNonEmptyDraft"],
   ["ui.storyboard.canvasGraphAuthority.rejectsEmptyDraft","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityRejectsEmptyTransientDraft"],
   ["ui.storyboard.canvasGraphAuthority.honorsPendingEmptyMarkdownDraft","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityHonorsPendingEmptyMarkdownDraft"],
+  ["ui.storyboard.canvasGraphAuthority.projectsCanonicalSubgraphs","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityProjectsCanonicalSubgraphs"],
+  ["ui.storyboard.canvasGraphAuthority.clearsCanonicalSubgraphs","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityClearsCanonicalSubgraphs"],
   ["ui.flowCanvas.overlays.nativeScenePartition","@/__tests__/flowCanvasOverlayNativeScenePartitionRegression.test","testFlowCanvasPartitionsOverlayOwnedNodesBeforeNativeSceneBuild"],
   ["aiShowrunner.briefScript.roundTrip","@/__tests__/aiShowrunner.test","testAiShowrunnerBriefAndScriptRoundTrip"],
   ["aiShowrunner.stateBusToken.contracts","@/__tests__/aiShowrunner.test","testAiShowrunnerStateBusAndTokenContracts"],
