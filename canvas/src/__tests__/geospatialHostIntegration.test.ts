@@ -248,7 +248,7 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   if (!text.includes('const show2dMapLibreModern = active && geospatialViewMode === \'2d-modern\'')) {
     throw new Error('Expected GeospatialOverlayHost to expose a dedicated 2D MapLibre Modern mode')
   }
-  if (!text.includes('const mapLibreRuntimeEnabled = !localOnly && (show2dMapLibre || show3d)')) {
+  if (!text.includes('const mapLibreRuntimeEnabled = !sharedXrStage && (show2dMapLibre || show3d)')) {
     throw new Error('Expected GeospatialOverlayHost runtime to enable MapLibre only for explicit 2D/3D MapLibre modes')
   }
   if (!text.includes('<SvgGeospatialFallback')) {
@@ -256,28 +256,41 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   }
 }
 
-export const testGeoXrUsesVisibleLocalOnlyBasemapsWithoutMapLibreNetwork = () => {
+export const testGeoXrUsesSharedXrStageWithoutScreenSpaceBasemap = () => {
   const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
+  const xrStagePath = path.resolve(process.cwd(), 'src', 'features', 'three', 'XrCanonicalPhysicsStage.tsx')
+  const presentationPath = path.resolve(process.cwd(), 'src', 'features', 'three', 'xrGeoEnvironmentPresentation.ts')
   const viewportText = readUtf8(viewportPath)
   const hostText = readUtf8(hostPath)
-  if (!viewportText.includes("renderPolicy={composedWithXr ? 'local-only' : 'default'}")) {
-    throw new Error('Expected Geo+XR composition to request the local-only geospatial render policy')
+  const xrStageText = readUtf8(xrStagePath)
+  const presentationText = readUtf8(presentationPath)
+  if (!viewportText.includes("renderPolicy={composedWithXr ? 'shared-xr-stage' : 'default'}")) {
+    throw new Error('Expected Geo+XR composition to delegate rendering to the shared XR stage')
   }
-  if (!hostText.includes("const localOnly = props.renderPolicy === 'local-only'")) {
-    throw new Error('Expected GeospatialOverlayHost to recognize the local-only Geo+XR policy')
+  if (!hostText.includes("const sharedXrStage = props.renderPolicy === 'shared-xr-stage'")) {
+    throw new Error('Expected GeospatialOverlayHost to recognize shared XR stage ownership')
   }
-  if (!hostText.includes('const mapLibreRuntimeEnabled = !localOnly && (show2dMapLibre || show3d)')) {
-    throw new Error('Expected local-only Geo+XR to keep MapLibre style and tile requests disabled')
+  if (!hostText.includes('const mapLibreRuntimeEnabled = !sharedXrStage && (show2dMapLibre || show3d)')) {
+    throw new Error('Expected shared-stage Geo+XR to keep MapLibre style and tile requests disabled')
   }
-  if (!hostText.includes("data-kg-geospatial-local-basemap={isLocal3d ? presentation : undefined}")) {
-    throw new Error('Expected local 3D Classic and Modern basemaps to expose visible runtime proof markers')
+  if (!hostText.includes('{sharedXrStage ? null : (')
+    || hostText.includes('data-kg-geospatial-local-basemap')) {
+    throw new Error('Expected Geo+XR to suppress the screen-space world SVG instead of restyling it')
   }
-  if (!hostText.includes("show3dModern ? '3d-modern' : show3dClassic ? '3d-classic' : 'flat'")) {
-    throw new Error('Expected local-only Geo+XR to preserve distinct 3D Classic and Modern presentations')
+  if (!hostText.includes("data-kg-geospatial-projection-owner={sharedXrStage ? 'shared-r3f-stage' : undefined}")
+    || !hostText.includes('data-kg-geospatial-xr-stage-view={sharedXrStage ? geospatialViewMode : undefined}')) {
+    throw new Error('Expected the Geo host to expose shared-stage browser proof markers')
   }
-  if (!hostText.includes("data-kg-geospatial-render-policy={localOnly ? 'local-only' : 'default'}")) {
-    throw new Error('Expected the geospatial host to expose its active render policy for browser validation')
+  if (!xrStageText.includes('environmentVisible')
+    || !xrStageText.includes('environmentPresentation={environmentPresentation}')
+    || !xrStageText.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')) {
+    throw new Error('Expected Geo+XR to retain one selected environment while suppressing only XR atmosphere')
+  }
+  for (const presentation of ['2d-classic', '2d-modern', '3d-classic', '3d-modern']) {
+    if (!presentationText.includes(`'${presentation}'`)) {
+      throw new Error(`Expected the shared environment resolver to include ${presentation}`)
+    }
   }
 }
 

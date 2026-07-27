@@ -50,16 +50,19 @@ shared_xr_scene:
   second_canvas_forbidden: true
 geo_flight_overlay:
   activation: "selected authored environment plus source-authored Flight identity"
-  renderer_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  overlay_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
-  basemap_render_policy: "local-only while composed in Geo+XR; standalone Geo retains its selected provider"
-  visible_local_basemap_views: ["2D Classic", "2D Modern", "3D Classic", "3D Modern"]
+  renderer_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
+  geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
+  presentation_owner: "canvas/src/features/three/xrGeoEnvironmentPresentation.ts"
+  render_policy: "shared-xr-stage while composed in Geo+XR; standalone Geo retains its selected provider"
+  shared_environment_presentations: ["2d-classic", "2d-modern", "3d-classic", "3d-modern"]
+  screen_space_basemap: "suppressed"
+  maplibre_runtime_started: false
   remote_style_or_tile_requests: 0
   control_owner: "canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts"
   route_projection_owner: "canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts"
   xr_canvas_mounted: true
   map_interaction_preserved: false
-  composition: "Geo is the visible background below one transparent shared XR Canvas; Flight controls own pointer input"
+  composition: "the selected authored environment, Flight actors, and HUD share one R3F world; Geo supplies presentation state and paints no second world"
 native_flight_demo:
   runtime_owner: "Flight Sim projection on the active shared XR or Geo Canvas surface"
   default_aircraft: "vehicle-airplane"
@@ -95,8 +98,8 @@ native_flight_demo:
     default: "singapore"
     selector: "FloatingPanel Media Terrain / Environment Kits; the Media Geo action stages the selected authored environment before opening FloatingPanel Geo"
     available: ["singapore", "tropical-playground", "neutral-volume", "street-grid", "loading-bay", "downtown", "residential-street", "supermarket", "movie-theater", "train-car", "backyard-pool", "aerial-sky"]
-    geo_handoff: "successful stage selection opens the shared Geo panel and keeps the Geo renderer visible and interactive beneath one transparent Flight route and aircraft overlay; rejected selection remains in Media"
-    flight_entry: "the next Flight open derives its local collision profile, route, navigation, and World label from the selected authored environment without mounting the XR Canvas over Geo"
+    geo_handoff: "successful stage selection opens the shared Geo panel, preserves its selected Classic/Modern view, and projects that view through the one authored XR environment; rejected selection remains in Media"
+    flight_entry: "the next Flight open derives its local collision profile, route, navigation, and World label from the selected authored environment in the existing shared XR Canvas"
   objective: "capture exactly three ordered waypoints, then the marked landing pad"
   waypoint_count: 3
   landing_pad_count: 1
@@ -200,7 +203,7 @@ flight_sim:
   restoration_failure: "retain the existing single Canvas without a second renderer; surface a local error"
   controller_handoff: "supply a pure aircraft follow/framing descriptor to the shared Physics controller camera; never mount a Flight-owned camera"
   renderer_owner: "the existing transparent React Three Fiber Canvas in shared Geo+XR Mode; never a second Canvas"
-  scene_composition: "local Geo background plus authored XR subjects and Flight aircraft and waypoint/objective actors with the HUD overlay; no XR atmosphere, duplicate terrain, fallback arena, or Flight-owned camera"
+  scene_composition: "one selected authored environment plus authored XR subjects and Flight aircraft and waypoint/objective actors with the HUD overlay; no XR atmosphere, screen-space basemap, duplicate terrain, fallback arena, or Flight-owned camera"
   simulation_clock: "exact 1/60-second fixed ticks, at most five catch-up ticks per advance, ready at tick zero until normalized desktop, pointer, touch, gamepad, Motion Control, or MCP input"
   replay_guard: "validate source, seed, input count/order/bytes; halt on the first byte divergence and preserve the last byte-equivalent committed World"
   transactional_system_order: ["InputIntegrationSystem", "FlightModelSystem", "CollisionResolverSystem", "ObjectiveSystem"]
@@ -290,7 +293,7 @@ flow:
 
 # Native Flight Sim in Geo+XR Mode
 
-This Source Files document is the local Geo+XR Mode runtime authority for one deterministic, browser-local flight mission. Applying it opens **Flight Sim** on the local Geo background with the canonical Physics-authored XR subjects in the existing transparent shared Canvas, prepares a healthy mission at tick zero, and waits for normalized input. It does not create another Canvas, renderer, terrain, collider catalog, camera driver, rendered XR world or scene owner, persistence owner, network map dependency, or deployment surface.
+This Source Files document is the local Geo+XR Mode runtime authority for one deterministic, browser-local flight mission. Applying it opens **Flight Sim** with the selected Physics-authored environment, canonical subjects, and Flight actors in the existing shared Canvas, prepares a healthy mission at tick zero, and waits for normalized input. Geo view selection changes that environment's planar/volumetric and Classic/Modern presentation without painting a screen-space world beneath it. It does not create another Canvas, renderer, terrain, collider catalog, camera driver, rendered XR world or scene owner, persistence owner, network map dependency, or deployment surface.
 
 ## Run locally
 
@@ -329,7 +332,7 @@ The required aircraft loads from committed img2threejs-style TypeScript plus `ve
 ## Runtime-readiness gates
 
 - [x] Source identity is `flight-sim`, independent of import path, with conflict rejection.
-- [x] Flight is a Geo+XR Mode composition: local Geo owns the background and the Physics source-authored XR stage owns one transparent Canvas; Flight owns no second rendered XR world, scene owner, or Canvas.
+- [x] Flight is a Geo+XR Mode composition: the Physics source-authored environment is the sole shared R3F world, Geo owns its four presentation policies, and Flight owns no second rendered XR world, scene owner, or Canvas.
 - [x] Fixed Follow and Free Orbit come from the shared Camera catalog, and the Physics controller hook is the sole camera/OrbitControls mutator for the pure Flight framing descriptor.
 - [x] Chase, Cockpit, and Survey vary only Flight's pure framing descriptor; the north-up route inset derives entirely from authored local mission state with zero map or token dependency.
 - [x] The default load is spec-primary for the required aircraft and contains exactly one committed-local optional opaque GLB; remote and unavailable fallbacks fail closed.

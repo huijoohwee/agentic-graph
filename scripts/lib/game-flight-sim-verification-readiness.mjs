@@ -416,6 +416,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'runtime deadline contracts',
     'first playable frame',
     'retained authored XR Canvas',
+    'Geo+XR four-view presentation',
     'strict browser WebMCP',
     'stop and Start lifecycle',
     'Motion Control panel handoff',

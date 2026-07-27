@@ -409,7 +409,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["geospatial.host.enablePreservesViewMode","@/__tests__/geospatialHostIntegration.test","testHostEnableDoesNotForce2dViewMode"],
   ["geospatial.host.supportsMapLibreGlobeRenderer","@/__tests__/geospatialHostIntegration.test","testGeospatialOverlayHostSupportsMapLibreGlobeRenderer"],
   ["geospatial.host.svgFallbackBasemap.defaultRuntime","@/__tests__/geospatialHostIntegration.test","testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefaultMapLibreRuntime"],
-  ["geospatial.host.geoXr.localOnlyBasemaps","@/__tests__/geospatialHostIntegration.test","testGeoXrUsesVisibleLocalOnlyBasemapsWithoutMapLibreNetwork"],
+  ["geospatial.host.geoXr.sharedXrStage","@/__tests__/geospatialHostIntegration.test","testGeoXrUsesSharedXrStageWithoutScreenSpaceBasemap"],
   ["geospatial.host.svgFallbackBasemap.highFidelitySvg","@/__tests__/geospatialHostIntegration.test","testGeospatialOverlayHostSvgFallbackRendersHighFidelitySvgBasemap"],
   ["geospatial.host.svgFallbackBasemap.maplikeVisualPolish","@/__tests__/geospatialHostIntegration.test","testGeospatialOverlayHostSvgFallbackAppliesMaplikeVisualPolish"],
   ["geospatial.host.globeRenderer.avoidsClusteredGeoJson","@/__tests__/geospatialHostIntegration.test","testGeospatialOverlayHostAvoidsClusteredGeoJsonOnGlobeRenderer"],

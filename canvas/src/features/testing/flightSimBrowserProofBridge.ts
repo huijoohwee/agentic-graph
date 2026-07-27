@@ -11,6 +11,7 @@ const MODULE_IMPORTERS = Object.freeze({
   flightSimSurfaceOwnershipStatus: () => import('@/features/game-flight-sim/flightSimSurfaceOwnershipStatus'),
   flightSimWebMcpTools: () => import('@/features/agent-ready/flightSimWebMcpTools'),
   graphStore: () => import('@/hooks/useGraphStore'),
+  gympgrphStore: () => import('@/lib/gympgrph/api'),
   knowgrphRuntimeIdentity: () => import('@/features/runtime-identity/knowgrphRuntimeIdentity'),
   markdownExplorerStore: () => import('@/features/markdown-explorer/store'),
   motionControlSurfaceRuntime: () => import('@/features/three/motionControlSurfaceRuntime'),
