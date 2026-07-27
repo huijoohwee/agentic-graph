@@ -1,6 +1,12 @@
 import * as d3 from 'd3'
 
-import { computeFlowGroupAabb, hitTestGroup, requestFlowNativeDraw, setFlowNativeTransform } from '@/components/FlowCanvas/nativeRuntime'
+import {
+  computeFlowGroupAabb,
+  hitTestGroup,
+  requestFlowNativeDraw,
+  setFlowNativeTransform,
+  type FlowNativeScene,
+} from '@/components/FlowCanvas/nativeRuntime'
 import { unlockGlobalUserSelect } from '@/lib/canvas/interaction-user-select'
 import { readCanvasLocalPoint } from '@/lib/canvas/canvas-event-coords'
 import { computePinchZoomTransform } from '@/lib/canvas/viewport-transform'
@@ -9,8 +15,24 @@ import { clampFlowDelta, clampFlowNodeTopLeft } from '@/components/FlowCanvas/gr
 import { snapDeltaToGridByAnchor, snapScalarToGrid } from '@/lib/canvas/gridSnap'
 import { computeGroupResizeBottomRight } from '@/lib/canvas/groupResizeMath2d'
 import { applyGroupResizeDragSensitivity, computeDynamicGroupResizeHandlePx, pxToWorld } from '@/lib/canvas/groupResizeHandleConfig'
+import {
+  alignmentRectFromTopLeft,
+  resolveAlignmentSnap,
+  unionAlignmentRects,
+  type AlignmentGuide,
+} from '@/lib/canvas/alignmentGuides'
+import {
+  cancelFlowAlignmentGuideFrame,
+  scheduleFlowAlignmentGuides,
+} from '@/components/FlowCanvas/alignmentGuides'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
+
+const stationaryAlignmentRects = (scene: FlowNativeScene, excludedIds: Set<string>) => (
+  scene.nodes
+    .filter(node => !excludedIds.has(node.id))
+    .map(node => alignmentRectFromTopLeft(node))
+)
 
 export function createFlowNativePointerMoveHandler(ctx: FlowNativeInteractionsContext) {
   const canvasEl = ctx.canvasEl
@@ -99,6 +121,9 @@ export function createFlowNativePointerMoveHandler(ctx: FlowNativeInteractionsCo
       ctx.args.dragRef.current = null
       ctx.edgeScroll.reset()
       ctx.args.setSelectionBox(null)
+      cancelFlowAlignmentGuideFrame(runtime)
+      runtime.dirty = true
+      requestFlowNativeDraw(runtime, ctx.args.buildDrawArgs())
       ctx.args.requestCommit()
       return
     }
@@ -273,7 +298,43 @@ export function createFlowNativePointerMoveHandler(ctx: FlowNativeInteractionsCo
       const anchorId = drag.memberNodeIds[0] || ''
       const anchorStart = anchorId ? drag.startNodePosById[anchorId] : null
       const snappedDelta = allowSnap ? snapDeltaToGridByAnchor({ anchorStart, rawDelta: { dx, dy }, gridSize: grid }) : { dx, dy }
-      const clampedDelta = drag.deltaClamp ? clampFlowDelta({ clamp: drag.deltaClamp, dx: snappedDelta.dx, dy: snappedDelta.dy }) : snappedDelta
+      let clampedDelta = drag.deltaClamp ? clampFlowDelta({ clamp: drag.deltaClamp, dx: snappedDelta.dx, dy: snappedDelta.dy }) : snappedDelta
+      let guides: AlignmentGuide[] = []
+      if (e.altKey !== true) {
+        const memberIds = new Set(drag.memberNodeIds)
+        const movingRect = unionAlignmentRects(drag.memberNodeIds.flatMap((id) => {
+          const node = scene.nodeById.get(id)
+          const start = drag.startNodePosById[id]
+          if (!node || !start) return []
+          return [alignmentRectFromTopLeft({
+            id,
+            x: start.x + clampedDelta.dx,
+            y: start.y + clampedDelta.dy,
+            width: node.width,
+            height: node.height,
+          })]
+        }))
+        if (movingRect) {
+          const snapped = resolveAlignmentSnap({
+            moving: movingRect,
+            stationary: stationaryAlignmentRects(scene, memberIds),
+            scale: t0.k,
+          })
+          const aligned = {
+            dx: clampedDelta.dx + snapped.dx,
+            dy: clampedDelta.dy + snapped.dy,
+          }
+          const finalDelta = drag.deltaClamp
+            ? clampFlowDelta({ clamp: drag.deltaClamp, dx: aligned.dx, dy: aligned.dy })
+            : aligned
+          guides = snapped.guides.filter(guide => (
+            guide.axis === 'x'
+              ? Math.abs(finalDelta.dx - aligned.dx) < 1e-6
+              : Math.abs(finalDelta.dy - aligned.dy) < 1e-6
+          ))
+          clampedDelta = finalDelta
+        }
+      }
       for (let i = 0; i < drag.memberNodeIds.length; i += 1) {
         const id = drag.memberNodeIds[i]
         const node = scene.nodeById.get(id)
@@ -286,6 +347,7 @@ export function createFlowNativePointerMoveHandler(ctx: FlowNativeInteractionsCo
       ctx.args.positionsDirtySinceCommitRef.current = true
       ctx.scheduleDragRelax()
       requestFlowNativeDraw(runtime, ctx.args.buildDrawArgs())
+      scheduleFlowAlignmentGuides(runtime, guides)
       ctx.args.onInteractionFrame?.()
       return
     }
@@ -341,12 +403,38 @@ export function createFlowNativePointerMoveHandler(ctx: FlowNativeInteractionsCo
       nextX = clamped.x
       nextY = clamped.y
     }
+    let guides: AlignmentGuide[] = []
+    if (e.altKey !== true) {
+      const snapped = resolveAlignmentSnap({
+        moving: alignmentRectFromTopLeft({
+          id: node.id,
+          x: nextX,
+          y: nextY,
+          width: node.width,
+          height: node.height,
+        }),
+        stationary: stationaryAlignmentRects(scene, new Set([node.id])),
+        scale: t0.k,
+      })
+      const aligned = { x: nextX + snapped.dx, y: nextY + snapped.dy }
+      const finalPosition = drag.clamp
+        ? clampFlowNodeTopLeft({ clamp: drag.clamp, x: aligned.x, y: aligned.y })
+        : aligned
+      guides = snapped.guides.filter(guide => (
+        guide.axis === 'x'
+          ? Math.abs(finalPosition.x - aligned.x) < 1e-6
+          : Math.abs(finalPosition.y - aligned.y) < 1e-6
+      ))
+      nextX = finalPosition.x
+      nextY = finalPosition.y
+    }
     node.x = nextX
     node.y = nextY
     runtime.dirty = true
     ctx.args.positionsDirtySinceCommitRef.current = true
     ctx.scheduleDragRelax()
     requestFlowNativeDraw(runtime, ctx.args.buildDrawArgs())
+    scheduleFlowAlignmentGuides(runtime, guides)
     ctx.args.onInteractionFrame?.()
     try {
       e.preventDefault()

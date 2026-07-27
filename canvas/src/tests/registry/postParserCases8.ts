@@ -1,6 +1,7 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["graph.alignmentHelperLines.interactionContract","@/__tests__/alignmentHelperLines.test","testAlignmentHelperLinesInteractionContract"],
   ["graph.subFlow.interactionContract","@/__tests__/subFlow.test","testSubFlowInteractionContract"],
   ["ui.flowCanvas.containment.nestedGroupClampsToParent","@/__tests__/flowContainmentMultiGroupNoClamp.test","testFlowContainmentNestedGroupClampsToParent"],
   ["graph.parentChildRelation.interactionContract","@/__tests__/parentChildRelation.test","testParentChildRelationInteractionContract"],
