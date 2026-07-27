@@ -7,7 +7,6 @@ const MODULE_IMPORTERS = Object.freeze({
   flightSimMcpRuntime: () => import('@/features/game-flight-sim/flightSimMcpRuntime'),
   flightSimModel: () => import('@/features/game-flight-sim/flightSimModel'),
   flightSimRuntime: () => import('@/features/game-flight-sim/flightSimRuntime'),
-  flightSimSpatialScale: () => import('@/features/game-flight-sim/flightSimSpatialScale'),
   flightSimSurfaceOwnershipStatus: () => import('@/features/game-flight-sim/flightSimSurfaceOwnershipStatus'),
   flightSimWebMcpTools: () => import('@/features/agent-ready/flightSimWebMcpTools'),
   graphStore: () => import('@/hooks/useGraphStore'),

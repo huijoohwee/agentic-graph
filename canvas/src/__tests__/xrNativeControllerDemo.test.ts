@@ -253,8 +253,6 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   const camera = source('features', 'three', 'useXrNativeControllerDemoCamera.ts')
   const cameraFraming = source('features', 'three', 'xrNativeControllerCameraFraming.ts')
   const cameraRuntime = source('features', 'three', 'xrNativeControllerCameraRuntime.ts')
-  const geoPresentation = source('features', 'three', 'xrGeoEnvironmentPresentation.ts')
-  const geoPresentationSurface = source('features', 'three', 'XrGeoEnvironmentPresentationSurface.tsx')
   const threeControls = source('features', 'three', 'Controls.tsx')
   const environment = source('features', 'three', 'XrNativeControllerDemoEnvironment.tsx')
   const aerialSetpieces = source('features', 'three', 'XrNativeControllerDemoAerialSetpieces.tsx')
@@ -271,15 +269,10 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   assert(graphStage.includes('setSharedXrNativeControllerDemoTerrain(stage.id)')
     && stage.includes('terrainId: runtime.terrainId')
     && environment.includes('kg_xr_native_terrain_'), 'native controller stage must project the selected canonical terrain instead of a metadata-only change')
-  assert(graphStage.includes('environmentVisible')
-    && graphStage.includes('environmentPresentation={environmentPresentation}')
+  assert(graphStage.includes('environmentVisible={!geospatialComposite}')
     && graphStage.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')
-    && stage.includes("'geo-xr-shared-stage'"), 'Geo+XR must suppress only atmosphere and retain the selected environment in the shared stage')
-  for (const presentationId of ['2d-classic', '2d-modern', '3d-classic', '3d-modern']) {
-    assert(geoPresentation.includes(`'${presentationId}'`), `Geo+XR must expose ${presentationId}`)
-  }
-  assert(geoPresentationSurface.includes('kg_geo_xr_environment_presentation')
-    && geoPresentationSurface.includes('kg_geo_xr_environment_grid'), 'Geo+XR presentation must decorate the existing environment without replacing its terrain')
+    && stage.includes("environment: environmentVisible ? 'xr' : 'geo-background'"),
+  'Geo+XR must suppress the duplicate R3F environment and leave the native Geo world visible')
   assert(stage.includes('navigator.getGamepads()') && stage.includes('readXrNativeControllerKeyboardInput'), 'stage runtime must unify standard gamepad and keyboard input')
   assert(stage.includes('closest(INTERACTIVE_TARGET_SELECTOR)') && stage.includes('frame.bodyRotations'), 'stage must preserve native button activation and consume deterministic prop presentation state')
   assert(stage.includes('<XrNativeControllerAuthoredSubjects')
@@ -291,13 +284,11 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
     && camera.includes('resolveFlightSimFollowTarget')
     && cameraFraming.includes('PLAYGROUND_FOV_DEGREES')
     && threeControls.includes('useXrNativeControllerDemoCamera'), 'shared camera owner must provide smooth Physics and Flight following with aspect-aware full-frame optics')
-  assert(camera.includes("owner: 'flight-plan'")
-    && camera.includes('planRestorePoseRef')
-    && camera.includes("previousOwner !== 'flight-plan'")
-    && camera.includes("previousOwner === 'flight-plan'")
-    && camera.includes('resolveGeoXrPlanCameraFraming')
+  assert(camera.includes("type FollowOwner = 'flight' | 'physics'")
+    && !camera.includes('flight-plan')
+    && !camera.includes('planRestorePoseRef')
     && !camera.includes('camera.up.copy')
-    && !camera.includes('camera.up.set'), 'shared camera owner must provide north-up planar framing and restore the prior Free Orbit pose without mutating the cached camera axis')
+    && !camera.includes('camera.up.set'), 'shared R3F camera owner must remain Flight-relative while MapLibre owns geospatial framing')
   assert(camera.includes('controls.enableRotate = false') && !camera.includes('frame.player.velocity'), 'world-relative controller input must retain a fixed-yaw hero camera')
   assert(cameraFraming.includes('AERIAL_FOV_DEGREES') && camera.includes('aerialFactor') && camera.includes('XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE'), 'Rocket altitude must widen one fixed-scale camera owner into the aerial island view')
   assert(camera.includes("readXrNativeControllerCamera().mode === 'fixed-follow'")
@@ -349,8 +340,6 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
     ['features', 'three', 'XrProceduralVehicleGeometry.tsx'],
     ['features', 'three', 'XrNativeControllerDemoHud.tsx'],
     ['features', 'three', 'useXrNativeControllerDemoCamera.ts'],
-    ['features', 'three', 'xrGeoEnvironmentPresentation.ts'],
-    ['features', 'three', 'XrGeoEnvironmentPresentationSurface.tsx'],
     ['features', 'three', 'xrNativeControllerCameraCatalog.ts'],
     ['features', 'three', 'xrNativeControllerCameraFraming.ts'],
     ['features', 'three', 'xrNativeControllerCameraRuntime.ts'],

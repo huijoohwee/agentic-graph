@@ -5,14 +5,15 @@ from typing import Any
 from playwright.sync_api import Page
 
 from lib.game_flight_sim_smoke_camera_tracking import (
-    hit_tested_flight_canvas_point,
+    fixed_map_camera_matches_overlay,
+    map_camera_changed as _map_camera_changed,
     poll as _poll,
-    pose_changed as _pose_changed,
     read_camera_state as _read_camera_state,
     select_camera_via_catalog,
-    vector_distance as _vector_distance,
+    timeline_map_camera_matches_overlay,
     verify_camera_pointer_transitions,
     verify_live_fixed_follow_tracking,
+    verify_map_pointer_drag,
 )
 
 
@@ -27,9 +28,10 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
         for item in initial["source"]["available"]
     ]
     if (
-        initial.get("pose") is None
+        initial.get("mapCamera") is None
         or initial["source"]["selected"] != "fixed-follow"
         or initial["source"]["effectiveOwner"] != "fixed-follow"
+        or not fixed_map_camera_matches_overlay(initial)
         or catalog != expected_catalog
     ):
         raise AssertionError(
@@ -46,17 +48,11 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
         "fixedFollow": fixed_selection,
         "freeOrbit": free_selection,
     }
-    if not free_orbit_before_drag.get("pose"):
+    if not free_orbit_before_drag.get("mapCamera"):
         raise AssertionError(
-            f"Free Orbit did not expose a camera pose: {transition_setup}"
+            f"Free Orbit did not expose the visible map camera: {transition_setup}"
         )
-    drag_start = hit_tested_flight_canvas_point(page)
-    start_x = drag_start["x"]
-    start_y = drag_start["y"]
-    page.mouse.move(start_x, start_y)
-    page.mouse.down()
-    page.mouse.move(start_x + 96, start_y + 36, steps=8)
-    page.mouse.up()
+    map_interaction = verify_map_pointer_drag(page)
     free_orbit = _poll(
         page,
         lambda: _read_camera_state(page),
@@ -64,13 +60,9 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
             value.get("pose") is not None
             and value["source"]["selected"] == "free-orbit"
             and value["source"]["effectiveOwner"] == "free-orbit"
-            and _vector_distance(
-                free_orbit_before_drag["pose"]["position"],
-                value["pose"]["position"],
-            ) > 0.25
             and value["flight"]["tick"] > before["flight"]["tick"]
         ),
-        label="Free Orbit camera rotation",
+        label="Free Orbit MapLibre interaction",
     )
     restored_selection = select_camera_via_catalog(page, "fixed-follow")
     restored = restored_selection["state"]
@@ -251,9 +243,10 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
     timeline_start = _poll(
         page,
         lambda: _read_camera_state(page),
-        lambda value: value.get("pose") is not None
+        lambda value: value.get("mapCamera") is not None
         and value["source"]["selected"] == "free-orbit"
-        and value["source"]["effectiveOwner"] == "timeline-playback",
+        and value["source"]["effectiveOwner"] == "timeline-playback"
+        and timeline_map_camera_matches_overlay(value),
         label="Timeline camera ownership at the first mark",
     )
     page.evaluate(
@@ -275,9 +268,13 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
         page,
         lambda: _read_camera_state(page),
         lambda value: (
-            value.get("pose") is not None
+            value.get("mapCamera") is not None
             and value["source"]["effectiveOwner"] == "timeline-playback"
-            and _pose_changed(timeline_start["pose"], value["pose"])
+            and _map_camera_changed(
+                timeline_start["mapCamera"],
+                value["mapCamera"],
+            )
+            and timeline_map_camera_matches_overlay(value)
             and value["flight"]["tick"] > timeline_start["flight"]["tick"]
         ),
         label="Timeline camera position, target, and Flight tick change",
@@ -384,7 +381,7 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
         "default": {
             "selected": initial["source"]["selected"],
             "effectiveOwner": initial["source"]["effectiveOwner"],
-            "pose": initial["pose"],
+            "mapCamera": initial["mapCamera"],
         },
         "before": before["source"]["selected"],
         "during": free_orbit["source"]["selected"],
@@ -401,8 +398,9 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
         "pointerLocked": free_orbit_before_drag["pointerLocked"],
         "pointerLockContract": pointer_transitions["pointerLockContract"],
         "freeOrbit": {
-            "poseBefore": free_orbit_before_drag["pose"],
-            "poseAfter": free_orbit["pose"],
+            "mapCameraBefore": free_orbit_before_drag["mapCamera"],
+            "mapCameraAfter": free_orbit["mapCamera"],
+            "mapInteraction": map_interaction,
         },
         "pointerTransitions": {
             "fixedFollow": {
@@ -450,8 +448,10 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
             "anchorIds": timeline_setup["anchorIds"],
             "cameraMarks": timeline_setup["cameraMarks"],
             "effectiveOwner": timeline_end["source"]["effectiveOwner"],
-            "startPose": timeline_start["pose"],
-            "endPose": timeline_end["pose"],
+            "startMapCamera": timeline_start["mapCamera"],
+            "endMapCamera": timeline_end["mapCamera"],
+            "startOverlay": timeline_start["overlay"]["camera"]["timeline"],
+            "endOverlay": timeline_end["overlay"]["camera"]["timeline"],
             "tickBefore": timeline_start["flight"]["tick"],
             "tickAfter": timeline_end["flight"]["tick"],
             "cleanedUp": cleaned_up,
@@ -459,18 +459,18 @@ def verify_flight_camera_runtime(page: Page) -> dict[str, Any]:
         "returned": {
             "selected": returned["source"]["selected"],
             "effectiveOwner": returned["source"]["effectiveOwner"],
-            "pose": returned["pose"],
+            "mapCamera": returned["mapCamera"],
             "tickAfterResume": resumed_state["flight"]["tick"],
             "liveTracking": {
                 "first": {
                     "tick": live_start["flight"]["tick"],
-                    "pose": live_start["pose"],
-                    "expectedPose": live_start["expectedPose"],
+                    "mapCamera": live_start["mapCamera"],
+                    "overlayCamera": live_start["overlay"]["camera"],
                 },
                 "second": {
                     "tick": live_end["flight"]["tick"],
-                    "pose": live_end["pose"],
-                    "expectedPose": live_end["expectedPose"],
+                    "mapCamera": live_end["mapCamera"],
+                    "overlayCamera": live_end["overlay"]["camera"],
                 },
             },
         },

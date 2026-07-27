@@ -28,7 +28,6 @@ from lib.game_flight_sim_smoke_navigation import (
 )
 from lib.game_flight_sim_smoke_mission import complete_authored_flight_mission
 from lib.game_flight_sim_smoke_scene import (
-    FLIGHT_MISSION_NODE,
     FLIGHT_OPTIONAL_BEACON_PATH,
     FLIGHT_OPTIONAL_BEACON_SHA256,
     assert_active_flight_scene,
@@ -114,7 +113,7 @@ def run_flight_runtime_verifications(
         prepare_stable_candidate_page(page, target_url)
         prepare_source_files_selection_surface(page)
         physics_baseline = prepare_authored_physics_surface(page)
-        # Flight's zero-network evidence begins from the stable, visible
+        # Flight/Geo transport evidence begins from the stable, visible
         # Physics XR baseline after optional Editor Workspace bootstrap settles.
         reset_observed_errors()
         source_application, source = apply_and_verify_exact_authored_source(page)
@@ -206,7 +205,8 @@ def run_flight_runtime_verifications(
             page,
             lambda: read_flight_scene(page),
             lambda value: (
-                FLIGHT_MISSION_NODE in set(value.get("names") or [])
+                value.get("visualProjection") == "maplibre"
+                and (value.get("mapOverlay") or {}).get("layersReady") is True
                 and (value.get("optionalBeacon") or {}).get("assetPath")
                 == FLIGHT_OPTIONAL_BEACON_PATH
                 and (value.get("optionalBeacon") or {}).get("assetSha256")
@@ -220,7 +220,7 @@ def run_flight_runtime_verifications(
                 )
                 >= 1
             ),
-            label="Flight actor-only scene",
+            label="MapLibre Flight projection and transparent runtime Canvas",
             timeout_ms=120_000,
         )
         assert_active_flight_scene(scene)
@@ -243,14 +243,14 @@ def run_flight_runtime_verifications(
         depends_on=("runtime deadline contracts",),
     )
     state["activeScene"] = ledger.verify(
-        "retained authored XR Canvas",
+        "transparent Flight runtime Canvas",
         authored_scene,
         depends_on=("first playable frame",),
     )
     state["geoXrPresentation"] = ledger.verify(
         "Geo+XR four-view presentation",
         lambda: verify_geo_xr_four_view_presentation(page),
-        depends_on=("retained authored XR Canvas",),
+        depends_on=("transparent Flight runtime Canvas",),
     )
     state["webMcp"] = ledger.verify(
         "strict browser WebMCP",
@@ -471,10 +471,14 @@ def run_flight_runtime_verifications(
             page,
             lambda: read_flight_scene(page),
             lambda value: (
-                value.get("visibleWaypointCount") == 0
-                and value.get("visibleLandingPadCount") == 1
+                (value.get("mapOverlay") or {}).get(
+                    "pendingWaypointCount"
+                ) == 0
+                and (value.get("mapOverlay") or {}).get(
+                    "activeLandingCount"
+                ) == 1
             ),
-            label="post-mission Flight scene projection",
+            label="post-mission MapLibre Flight projection",
         )
         assert_active_flight_scene(
             scene,
@@ -482,20 +486,20 @@ def run_flight_runtime_verifications(
             waypoint_count=mission["waypointCount"],
         )
         if (
-            scene["authoredSceneSignature"]
-            != state["activeScene"]["authoredSceneSignature"]
+            scene["visibleSceneSignature"]
+            != state["activeScene"]["visibleSceneSignature"]
         ):
             raise AssertionError(
-                "authored XR scene identity changed across the Flight lifecycle"
+                "suppressed R3F scene contract changed across the Flight lifecycle"
             )
         page.screenshot(path=str(screenshot_path), full_page=False)
         return scene
 
     state["finalScene"] = ledger.verify(
-        "retained XR scene after mission",
+        "Geo+XR Flight layer after mission",
         final_scene,
         depends_on=(
-            "retained authored XR Canvas",
+            "transparent Flight runtime Canvas",
             "ordered mission completion",
         ),
     )
@@ -506,7 +510,7 @@ def run_flight_runtime_verifications(
             web_mcp_calls,
             state["source"]["sourceApplication"]["priorSurface"],
         ),
-        depends_on=("retained XR scene after mission",),
+        depends_on=("Geo+XR Flight layer after mission",),
     )
     state["surfaceFailures"] = ledger.verify(
         "surface failure restoration",

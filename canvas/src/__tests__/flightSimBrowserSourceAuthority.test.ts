@@ -371,7 +371,7 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.doesNotMatch(verifier, /\.connect_to_server\(/)
   assert.match(verifier, /"webSocketAttempts": \{/)
   assert.match(verifier, /"optionalBeacon": active_scene\["optionalBeacon"\]/)
-  assert.match(runner, /assertExactFlightSimRendererOptionalBeacon\(/)
+  assert.match(runner, /assertExactFlightSimOptionalBeaconAdmission\(/)
   assert.match(touchVerifier, /chromium-cdp-emulated-touch/)
   assert.match(touchVerifier, /pointer_down\.get\("isTrusted"\) is not True/)
   assert.match(missionVerifier, /accelerated-public-production-runtime/)
@@ -382,12 +382,14 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     cameraTrackingVerifier,
-    /page\.mouse\.click\(point\["x"\], point\["y"\]\)/,
+    /get_by_label\("Capture flight pointer", exact=True\)/,
   )
   assert.match(
     cameraVerifier,
-    /drag_start = hit_tested_flight_canvas_point\(page\)/,
+    /map_interaction = verify_map_pointer_drag\(page\)/,
   )
+  assert.match(cameraTrackingVerifier, /hit_tested_map_canvas_point\(page\)/)
+  assert.match(cameraTrackingVerifier, /page\.mouse\.down\(\)/)
   assert.doesNotMatch(cameraVerifier, /canvas\.bounding_box\(\)/)
   assert.doesNotMatch(
     cameraTrackingVerifier,
@@ -437,15 +439,16 @@ test('Flight browser proof activates only after applying the authored source', (
     touchVerifier.indexOf('box = control.bounding_box()')
       < touchVerifier.indexOf('"Input.dispatchTouchEvent"'),
   )
-  assert.match(sceneVerifier, /expected_landing_pad_count = 1/)
+  assert.match(sceneVerifier, /expected_landing_pad_count = \(/)
   assert.match(
     sceneVerifier,
-    /visibleWaypointCount = Object\.entries\(namedNodeCounts\)/,
+    /map_overlay\.get\("activeLandingCount"\)/,
   )
   assert.match(
     sceneVerifier,
-    /visibleLandingPadCount =[\s\S]*namedNodeCounts\.kg_flight_sim_landing_pad/,
+    /map_overlay\.get\("pendingWaypointCount"\)/,
   )
+  assert.match(sceneVerifier, /scene\.get\("flightVisualCount"\) != 0/)
   assert.match(
     serverOwner,
     /refusing responsive pre-existing server/,

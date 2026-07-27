@@ -63,7 +63,8 @@ native_flight_demo:
     timeline_override: "camera-mark playback temporarily owns framing"
     catalog_owner: "canvas/src/features/three/xrNativeControllerCameraCatalog.ts"
     selection_owner: "canvas/src/features/three/xrNativeControllerCameraRuntime.ts"
-    driver_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
+    driver_owner: "gympgrph/src/flightGeoOverlayMapLibre.ts"
+    runtime_canvas_driver_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
 flight_sim:
   invocation: "/flight.sim @canvas #flight operation=open"
   inspect_tool: "knowgrph.inspect_local_flight_sim"

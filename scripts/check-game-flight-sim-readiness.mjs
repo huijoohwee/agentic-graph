@@ -39,6 +39,7 @@ const requiredPaths = [
   `${flightFeatureRoot}/assetSpec/vehicle-airplane.scene.json`,
   `${flightFeatureRoot}/flightModel.ts`,
   `${flightFeatureRoot}/flightSimFollowTarget.ts`,
+  `${flightFeatureRoot}/flightSimGeospatialProjection.ts`,
   `${flightFeatureRoot}/flightSimDecisionAdmission.ts`,
   `${flightFeatureRoot}/flightSimDecisionStore.ts`,
   `${flightFeatureRoot}/flightSimHydrationGate.ts`,
@@ -60,6 +61,7 @@ const requiredPaths = [
   `${flightFeatureRoot}/index.ts`,
   'canvas/src/App.tsx',
   'canvas/src/components/CanvasViewport.tsx',
+  'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
   'canvas/src/features/agentic-os/agenticOsRemoteGrammarClient.ts',
   'canvas/src/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration.tsx',
   'canvas/src/features/agent-ready/flightSimAgentReadyContract.mjs',
@@ -75,6 +77,9 @@ const requiredPaths = [
   'canvas/src/lib/three/flightSimMissionStageLoader.ts', 'canvas/src/lib/three/ThreeGameplayOverlay.tsx',
   'canvas/src/lib/three/threeRendererLifecycle.ts',
   'canvas/src/lib/three/ThreeGraph.impl.tsx',
+  'gympgrph/src/flightGeoOverlay.ts',
+  'gympgrph/src/flightGeoOverlayMapLibre.ts',
+  'gympgrph/src/GeospatialHost.tsx',
   'canvas/src/__tests__/flightSimCore.test.ts',
   'canvas/src/__tests__/flightSimDecisionStore.test.ts',
   'canvas/src/__tests__/flightSimMcpRuntime.test.ts',
@@ -212,7 +217,7 @@ if (
   || threeOwners[0] !== `${flightFeatureRoot}/FlightSimMissionStage.tsx`
 ) {
   throw new Error(
-    `Flight Sim Three ownership must remain actor-only in FlightSimMissionStage.tsx, received ${threeOwners.join(', ')}`,
+    `Flight Sim Three runtime ownership must remain isolated in FlightSimMissionStage.tsx, received ${threeOwners.join(', ')}`,
   )
 }
 
@@ -242,7 +247,9 @@ const gameplayOverlaySource = await readText('canvas/src/lib/three/ThreeGameplay
 requireMarkers(gameplayOverlaySource, [
   "from './flightSimMissionStageLoader'",
   'if (props.flightSimActive)',
-  '<FlightSimMissionStageLazy coordinateScale={props.coordinateScale} />',
+  '<FlightSimMissionStageLazy',
+  'actorsVisible={!props.geospatialComposite}',
+  'coordinateScale={props.coordinateScale}',
 ], 'shared Three gameplay overlay')
 const threeGraphSource = await readText('canvas/src/lib/three/ThreeGraph.impl.tsx')
 requireMarkers(threeGraphSource, [
@@ -354,8 +361,9 @@ requireMarkers(runtimeSource, [
   'tickQueue.then(() => advanceCurrentMission(request))',
   'flightSimSurfaceOpenTail.then(() => (', 'performFlightSimSurfaceOpen(operationOptions, expectedGeneration)',
   'readFlightSimDefaultAssetLoadReport()',
-  'installFlightSimGameplayNetworkFence(operation => (',
-  'uninstallFlightSimGameplayNetworkFence()',
+  'suspendAuthoredRuntime()',
+  'restoreDurableChatStreamTransportOwnership()',
+  'restoreWorkspaceSeedSyncOwnership()',
   'readFlightSimDecisionStore().hydrationBlocked', 'reportFlightSimDecisionLoadFailure(hydrated.runtimeError)',
   'defaultRuntime.resetPersistence()',
   'export async function persistFlightSimPendingDecisions',

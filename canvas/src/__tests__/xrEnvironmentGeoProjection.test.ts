@@ -16,8 +16,12 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   const geoView = readSource('lib', 'toolbar', 'ToolbarToolMenuGeoView.tsx')
   const flightPanel = readSource('features', 'game-flight-sim', 'FlightSimFloatingPanelView.tsx')
   const xrStage = readSource('features', 'three', 'XrCanonicalPhysicsStage.tsx')
-  const presentation = readSource('features', 'three', 'xrGeoEnvironmentPresentation.ts')
+  const geoOverlayBridge = readSource('components', 'CanvasViewportGeospatialOverlay.tsx')
   const viewport = readSource('components', 'CanvasViewport.tsx')
+  const geospatialHost = readFileSync(
+    resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx'),
+    'utf8',
+  )
 
   for (const marker of [
     'requestXrEnvironmentGeoHandoff',
@@ -37,12 +41,12 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-aircraft="1"')
     || !geoView.includes('data-kg-geo-xr-environment={selectedEnvironment.id}')
     || !flightPanel.includes('data-kg-flight-sim-environment={environment.id}')
-    || !xrStage.includes('environmentPresentation={environmentPresentation}')
-    || !xrStage.includes('environmentVisible')
-    || !presentation.includes("dimension: 'planar'")
-    || !presentation.includes("dimension: 'volumetric'")
+    || !xrStage.includes('environmentVisible={!geospatialComposite}')
+    || !geoOverlayBridge.includes('setFlightGeoOverlay')
+    || !geoOverlayBridge.includes('projectFlightSimToGeospatialOverlay')
+    || !geospatialHost.includes('applyFlightGeoOverlayToMap(map, overlay)')
     || !viewport.includes('<FlightSimGeoSurfaceOverlayLazy />')) {
-    throw new Error('expected Media selection, settled source persistence, shared-stage Geo projection, and Flight to retain one authored environment')
+    throw new Error('expected Media selection, settled source persistence, native MapLibre projection, and transparent Flight composition')
   }
   const flightSource = [
     '---',

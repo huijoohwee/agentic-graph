@@ -60,6 +60,56 @@ export async function assertFlightSimSurfaceReadiness({
     '<FlightSimGeoSurfaceOverlayLazy />',
   ], 'Flight Sim Geo viewport composition')
 
+  const geospatialOverlaySource = await readText('canvas/src/components/CanvasViewportGeospatialOverlay.tsx')
+  requireSourceMarkers(geospatialOverlaySource, [
+    'projectFlightSimToGeospatialOverlay',
+    'module.setFlightGeoOverlay?.(',
+    'module.clearFlightGeoOverlay?.()',
+    "data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}",
+  ], 'Flight Sim Geo projection bridge')
+  if (geospatialOverlaySource.includes('shared-xr-stage')) {
+    throw new Error('Geo+XR must retain the native MapLibre provider surface')
+  }
+
+  const flightGeoOverlaySource = await readText('gympgrph/src/flightGeoOverlay.ts')
+  requireSourceMarkers(flightGeoOverlaySource, [
+    'export type FlightGeoOverlaySnapshot',
+    'export function setFlightGeoOverlay(',
+    'export function flightGeoOverlayFeatureCollection(',
+    "kgFlightOverlayKind: 'aircraft'",
+  ], 'Flight Sim geospatial overlay contract')
+
+  const flightGeoMapLibreSource = await readText('gympgrph/src/flightGeoOverlayMapLibre.ts')
+  requireSourceMarkers(flightGeoMapLibreSource, [
+    "FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'",
+    'export function applyFlightGeoOverlayToMap(',
+    'FLIGHT_GEO_OVERLAY_LAYER_IDS.route',
+    'FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints',
+    'FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft',
+  ], 'Flight Sim native MapLibre layers')
+
+  const geospatialHostSource = await readText('gympgrph/src/GeospatialHost.tsx')
+  requireSourceMarkers(geospatialHostSource, [
+    'applyFlightGeoOverlayToMap(map, overlay)',
+    "root.dataset.kgFlightGeospatialOverlay = 'active'",
+    'root.dataset.kgFlightGeospatialRevision = overlay.revision',
+  ], 'Flight Sim native MapLibre host composition')
+  if (geospatialHostSource.includes('shared-xr-stage')) {
+    throw new Error('Gympgrph must not replace native MapLibre with an XR-local stage')
+  }
+
+  const xrCanonicalPhysicsStageSource = await readText('canvas/src/features/three/XrCanonicalPhysicsStage.tsx')
+  requireSourceMarkers(xrCanonicalPhysicsStageSource, [
+    'environmentVisible={!geospatialComposite}',
+  ], 'Flight Sim transparent environment suppression')
+  const threeGameplayOverlaySource = await readText('canvas/src/lib/three/ThreeGameplayOverlay.tsx')
+  requireSourceMarkers(threeGameplayOverlaySource, [
+    'const FlightSimMissionStageLazy = React.lazy(loadFlightSimMissionStage)',
+    '<FlightSimMissionStageLazy',
+    'actorsVisible={!props.geospatialComposite}',
+    'coordinateScale={props.coordinateScale}',
+  ], 'Flight Sim transparent runtime layer')
+
   const rendererLifecycleSource = await readText('canvas/src/lib/three/threeRendererLifecycle.ts')
   requireSourceMarkers(rendererLifecycleSource, [
     'input.flightSimActive',

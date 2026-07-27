@@ -56,6 +56,19 @@ const GRABMAPS_RUNTIME_NAVIGATION_GRACE_MS = 1200
 const GRABMAPS_IDLE_SERVICE_ERROR_FALLBACK_THRESHOLD = 3
 const BASEMAP_SOURCE_ACTIVITY_GRACE_MS = 12_000
 const HOST_GRAPH_SOURCE_PREFIX = 'kg-host-graph:nodes'
+let activeMapLibreMap: any | null = null
+
+export function readActiveMapLibreMap(): any | null {
+  return activeMapLibreMap
+}
+
+function registerActiveMapLibreMap(map: any): void {
+  activeMapLibreMap = map
+}
+
+function unregisterActiveMapLibreMap(map: any): void {
+  if (activeMapLibreMap === map) activeMapLibreMap = null
+}
 
 const resolveBasemapStyle = (rawStyleUrl: string | null | undefined) => {
   const trimmed = String(rawStyleUrl || '').trim()
@@ -848,6 +861,7 @@ export function useMapLibreBasemap(args: {
             void 0
           }
         }
+        registerActiveMapLibreMap(map)
 
         if (typeof map?.on === 'function' && typeof map?.queryRenderedFeatures === 'function') {
           const onMapClick = (ev: any) => {
@@ -1170,13 +1184,14 @@ export function useMapLibreBasemap(args: {
       } catch (err) {
         if (cancelled) return
         const msg = err instanceof Error ? err.message : String(err || '')
+        unregisterActiveMapLibreMap(map)
+        try {
+          map?.remove?.()
+        } catch {
+          void 0
+        }
+        map = null
         if (isKnownUnsafeMapLibreRuntimeError(msg)) {
-          try {
-            map?.remove?.()
-          } catch {
-            void 0
-          }
-          map = null
           setRuntimeProjectionMode('mercator')
           setState((prev: BasemapResult) => ({ ...prev, map: null, basemapUnavailable: false, mapError: null, styleRevision: 0 }))
           return
@@ -1222,6 +1237,7 @@ export function useMapLibreBasemap(args: {
         }
         removePoiClickBinding = null
       }
+      unregisterActiveMapLibreMap(map)
       try {
         map?.remove?.()
       } catch {

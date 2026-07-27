@@ -376,28 +376,24 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     'surfaceActivated = activateXrSceneSurface',
     surfaceOpen,
   )
-  const installFence = runtime.indexOf(
-    'installFlightSimGameplayNetworkFence',
+  const suspendRuntime = runtime.indexOf(
+    'suspendAuthoredRuntime()',
     activateSurface,
   )
   assert.ok(surfaceOpen >= 0 && acquireSyncSuspension > surfaceOpen)
   assert.ok(acquireSyncSuspension < activateSurface)
-  assert.ok(activateSurface < installFence)
+  assert.ok(activateSurface < suspendRuntime)
+  assert.doesNotMatch(runtime, /installFlightSimGameplayNetworkFence/)
   const exitSurface = runtime.indexOf('export function exitFlightSimSurface')
-  const uninstallFence = runtime.indexOf(
-    'const failures = restoreGameplayNetworkOwnership()',
+  const restorePreviousSurface = runtime.indexOf(
+    '...restoreSurfaceOwnership(',
     exitSurface,
   )
   const releaseSyncSuspension = runtime.indexOf(
     'restoreWorkspaceSeedSyncOwnership()',
-    uninstallFence,
+    restorePreviousSurface,
   )
-  const restorePreviousSurface = runtime.indexOf(
-    '...restoreSurfaceOwnership(',
-    uninstallFence,
-  )
-  assert.ok(exitSurface >= 0 && uninstallFence > exitSurface)
-  assert.ok(uninstallFence < restorePreviousSurface)
+  assert.ok(exitSurface >= 0 && restorePreviousSurface > exitSurface)
   assert.ok(restorePreviousSurface < releaseSyncSuspension)
   assert.match(
     runtime,
@@ -465,23 +461,24 @@ test('Flight Sim source declares the canonical Geo+XR composition', () => {
     renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
     collider_owner: 'canvas/src/features/three/xrCanonicalSceneSpatialSource.ts',
     camera_owner: 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
-    second_canvas_forbidden: true,
+    second_r3f_canvas_forbidden: true,
   })
   assert.deepEqual(meta.geo_flight_overlay, {
     activation: 'selected authored environment plus source-authored Flight identity',
-    renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
+    renderer_owner: 'native MapLibre Geo host',
     geo_policy_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
-    presentation_owner: 'canvas/src/features/three/xrGeoEnvironmentPresentation.ts',
-    render_policy: 'shared-xr-stage while composed in Geo+XR; standalone Geo retains its selected provider',
-    shared_environment_presentations: ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
-    screen_space_basemap: 'suppressed',
-    maplibre_runtime_started: false,
-    remote_style_or_tile_requests: 0,
+    presentation_owner: 'gympgrph/src/GeospatialHost.tsx',
+    render_policy: 'native MapLibre under transparent Flight R3F overlay',
+    maplibre_views: ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
+    basemap: 'selected native MapLibre provider view',
+    maplibre_runtime_started: true,
+    provider_transport_owner: 'gympgrph Geo runtime; independent from Flight gameplay',
+    flight_gameplay_transport: 'none',
     control_owner: 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts',
-    route_projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
+    route_projection_owner: 'canvas/src/features/game-flight-sim/flightSimGeospatialProjection.ts',
     xr_canvas_mounted: true,
-    map_interaction_preserved: false,
-    composition: 'the selected authored environment, Flight actors, and HUD share one R3F world; Geo supplies presentation state and paints no second world',
+    duplicate_r3f_environment_mounted: false,
+    composition: 'MapLibre owns the geospatial world plus all visible Flight route/waypoint/aircraft geometry; the existing transparent R3F Canvas retains simulation/input/readiness and paints no Flight or XR geometry',
   })
   const authority = readFileSync(resolve(repoRoot, 'scripts/workspace-seed-authority.mjs'), 'utf8')
   const projectionStart = authority.indexOf('AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY')
@@ -519,6 +516,10 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   )
   assert.equal(
     flightCamera.driver_owner,
+    'gympgrph/src/flightGeoOverlayMapLibre.ts',
+  )
+  assert.equal(
+    flightCamera.runtime_canvas_driver_owner,
     'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
   )
   assert.deepEqual(
@@ -583,33 +584,10 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   )
   assert.match(
     controllerCamera,
-    /flightSimActive\s*\?\s*planarFlightPresentation\s*\?\s*readFlightPlanTarget\(true,/,
+    /flightSimActive\s*\?\s*readFlightFollowTarget\(true,\s*coordinateScale,\s*renderer\)/,
   )
-  assert.match(
-    controllerCamera,
-    /:\s*readFlightFollowTarget\(true,\s*coordinateScale,\s*renderer\)/,
-  )
-  assert.match(
-    controllerCamera,
-    /const planarFollowActive = flightSimActive && planarFlightPresentation/,
-  )
-  assert.match(
-    controllerCamera,
-    /suspended \|\| \(!fixedFollow && !planarFollowActive\)/,
-  )
-  assert.match(
-    controllerCamera,
-    /follow\.owner === 'flight-plan'\s*&& previousOwner !== 'flight-plan'/,
-  )
-  assert.match(
-    controllerCamera,
-    /follow\.owner !== 'flight-plan'\s*&& previousOwner === 'flight-plan'/,
-  )
-  assert.match(controllerCamera, /planRestorePoseRef/)
-  assert.doesNotMatch(
-    controllerCamera,
-    /if \(fixedFollow\)\s+planRestorePoseRef\.current = null/,
-  )
+  assert.match(controllerCamera, /suspended \|\| !fixedFollow/)
+  assert.doesNotMatch(controllerCamera, /flight-plan|planRestorePoseRef|planarFlightPresentation/)
   assert.doesNotMatch(controllerCamera, /camera\.up\.(?:copy|set)/)
   assert.match(controllerCamera, /renderer\.xr\.isPresenting/)
   assert.match(flightTarget, /resolveFlightSimFollowTarget/)

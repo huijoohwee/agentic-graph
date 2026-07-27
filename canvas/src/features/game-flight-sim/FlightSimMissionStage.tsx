@@ -21,11 +21,13 @@ import {
 import { useFlightSimSurfaceControls } from './useFlightSimSurfaceControls'
 
 export type FlightSimMissionStageProps = Readonly<{
+  actorsVisible?: boolean
   coordinateScale?: number
   runtimeController: FlightSimStageRuntimeController
 }>
 
 export function FlightSimMissionStage({
+  actorsVisible = true,
   coordinateScale = 1,
   runtimeController,
 }: FlightSimMissionStageProps) {
@@ -106,6 +108,9 @@ export function FlightSimMissionStage({
   React.useEffect(() => {
     const canvas = gl.domElement
     canvas.dataset.kgFlightSimSpatialProfile = profile.id
+    canvas.dataset.kgFlightSimVisualProjection = actorsVisible
+      ? 'r3f'
+      : 'maplibre'
     const removeAfterRender = addAfterEffect(() => {
       const snapshot = runtimeController.readSnapshot()
       const stagePreparationRequestId =
@@ -136,9 +141,36 @@ export function FlightSimMissionStage({
     return () => {
       removeAfterRender()
       delete canvas.dataset.kgFlightSimSpatialProfile
+      delete canvas.dataset.kgFlightSimVisualProjection
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [gl, invalidate, profile.id, runtimeController])
+  }, [actorsVisible, gl, invalidate, profile.id, runtimeController])
+
+  React.useEffect(() => {
+    const canvas = gl.domElement
+    if (!optionalBeaconScene) {
+      delete canvas.dataset.kgFlightSimOptionalBeacon
+      return
+    }
+    const partNames: string[] = []
+    let meshDescendantCount = 0
+    optionalBeaconScene.traverse(object => {
+      if (object === optionalBeaconScene) return
+      if (object.name) partNames.push(object.name)
+      if ('isMesh' in object && object.isMesh === true) meshDescendantCount += 1
+    })
+    canvas.dataset.kgFlightSimOptionalBeacon = JSON.stringify({
+      assetKind: assetCatalog.optionalBeacon.kind,
+      assetPath: assetCatalog.optionalBeacon.path,
+      assetSha256: assetCatalog.optionalBeacon.sha256,
+      meshDescendantCount,
+      opaque: assetCatalog.optionalBeacon.opaque,
+      partNames: partNames.sort(),
+    })
+    return () => {
+      delete canvas.dataset.kgFlightSimOptionalBeacon
+    }
+  }, [assetCatalog, gl, optionalBeaconScene])
 
   useFrame(() => {
     const snapshot = runtimeController.readSnapshot()
@@ -180,7 +212,14 @@ export function FlightSimMissionStage({
     <group
       name="kg_flight_sim_mission"
       scale={coordinateScale}
-      userData={{ actorOnly: true, coordinateScale, spatialProfile: profile.id }}
+      visible={actorsVisible}
+      userData={{
+        actorOnly: true,
+        coordinateScale,
+        mapProjectionOnly: !actorsVisible,
+        spatialProfile: profile.id,
+        visualProjection: actorsVisible ? 'r3f' : 'maplibre',
+      }}
     >
       <group
         ref={actorRef}
@@ -265,7 +304,10 @@ export function FlightSimMissionStage({
 
 export function createFlightSimMissionStage(
   runtimeController: FlightSimStageRuntimeController,
-): React.ComponentType<{ coordinateScale?: number }> {
+): React.ComponentType<{
+  actorsVisible?: boolean
+  coordinateScale?: number
+}> {
   return function BoundFlightSimMissionStage(props) {
     return (
       <FlightSimMissionStage

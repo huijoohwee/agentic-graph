@@ -333,7 +333,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'gameplayWebSocketTransportObserved === false',
     'gameplayWebSocketRouteHits?.length === 0',
     'assertExactFlightSimBrowserVerificationLedger(',
-    'assertExactFlightSimRendererOptionalBeacon(',
+    'assertExactFlightSimOptionalBeaconAdmission(',
     'runIsolatedBrowserProof({',
     'prepareEvidence: prepareIsolatedEvidence',
     'assertGitVerificationWorkspace({',
@@ -415,7 +415,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'Source Files apply',
     'runtime deadline contracts',
     'first playable frame',
-    'retained authored XR Canvas',
+    'transparent Flight runtime Canvas',
     'Geo+XR four-view presentation',
     'strict browser WebMCP',
     'stop and Start lifecycle',
@@ -428,10 +428,10 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'mobile HUD',
     'mobile touch control',
     'ordered mission completion',
-    'retained XR scene after mission',
+    'Geo+XR Flight layer after mission',
     'Exit lifecycle and World disposal',
     'surface failure restoration',
-    'zero-network fence',
+    'Geo provider transport ownership',
     'workspace seed authority',
     'browser error surface',
   ], 'Flight Sim browser verification inventory')
@@ -445,26 +445,31 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'PROOF_LOCAL_WORKSPACE_LIST_PATH = "/__kg_fs_list"',
     'PROOF_LOCAL_STATIC_PATH_PREFIXES',
     'PROOF_LOCAL_STATIC_SUFFIXES',
+    'GEO_PROVIDER_READ_PATHS',
     'def request_is_proof_local_read(request: Any, local_origin: str) -> bool:',
+    'def request_is_geo_provider_read(request: Any) -> bool:',
     'def summarize_websocket_attempts(',
-    'def assert_zero_network(',
-  ], 'Flight Sim browser zero-network classifier')
+    'def assert_transport_ownership(',
+  ], 'Flight Sim browser transport ownership classifier')
   forbidMarkers(browserNetworkSource, [
     '"/src/"',
     '"/node_modules/"',
     '"/@vite/"',
     '"/@vite/client"',
-  ], 'Flight Sim browser zero-network classifier')
+  ], 'Flight Sim browser transport ownership classifier')
   const browserSceneSource = await readText(
     'canvas/scripts/lib/game_flight_sim_smoke_scene.py',
   )
   requireMarkers(browserSceneSource, [
     'FLIGHT_OPTIONAL_BEACON_PATH',
     'FLIGHT_OPTIONAL_BEACON_SHA256',
-    'const visibleWaypointCount = Object.entries(namedNodeCounts)',
-    'const visibleLandingPadCount =',
+    'rendererCanvas?.dataset.kgFlightSimOptionalBeacon',
+    'kgFlightOverlayKind',
+    '"pendingWaypointCount"',
+    'activeLandingCount',
+    'flightVisualNames,',
     '"meshDescendantCount"',
-    'Flight optional beacon did not retain its admitted rendered GLB',
+    'Flight optional beacon did not retain its admitted local GLB',
   ], 'Flight Sim rendered fallback identity proof')
   const browserEvidenceSource = await readText(
     'scripts/lib/game-flight-sim-browser-evidence.mjs',
@@ -472,8 +477,8 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
   requireMarkers(browserEvidenceSource, [
     'game-flight-sim-browser-verifications.json',
     'assertExactFlightSimBrowserVerificationLedger',
-    'assertExactFlightSimRendererOptionalBeacon',
+    'assertExactFlightSimOptionalBeaconAdmission',
     'beacon path, SHA-256, opacity, and mesh identity',
-    'did not match the exact required',
+    'did not retain the exact admitted optional',
   ], 'Flight Sim exact browser verification inventory')
 }

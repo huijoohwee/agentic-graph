@@ -52,6 +52,22 @@ PROOF_LOCAL_STATIC_SUFFIXES = (
     ".woff",
     ".woff2",
 )
+GEO_PROVIDER_READ_PATHS = {
+    "demotiles.maplibre.org": {
+        "exact": {"/style.json", "/globe.json"},
+        "prefixes": ("/font/", "/fonts/", "/terrain/", "/tiles/"),
+    },
+    "tiles.openfreemap.org": {
+        "exact": {"/styles/liberty"},
+        "prefixes": (
+            "/fonts/",
+            "/natural_earth/",
+            "/planet/",
+            "/sprites/liberty",
+            "/styles/liberty/",
+        ),
+    },
+}
 
 
 def request_is_proof_local_read(request: Any, local_origin: str) -> bool:
@@ -101,6 +117,22 @@ def request_is_proof_local_read(request: Any, local_origin: str) -> bool:
     return root_asset
 
 
+def request_is_geo_provider_read(request: Any) -> bool:
+    parsed = urlparse(str(request.url))
+    paths = GEO_PROVIDER_READ_PATHS.get(str(parsed.hostname or ""))
+    if paths is None:
+        return False
+    path = parsed.path
+    return (
+        parsed.scheme == "https"
+        and str(request.method).upper() in {"GET", "HEAD"}
+        and (
+            path in paths["exact"]
+            or path.startswith(paths["prefixes"])
+        )
+    )
+
+
 def summarize_websocket_attempts(
     expected_probe_url: str,
     websocket_events: list[str],
@@ -122,23 +154,32 @@ def summarize_websocket_attempts(
     }
 
 
-def assert_zero_network(
+def assert_transport_ownership(
     *,
-    non_local_requests: list[str],
+    geo_provider_requests: list[str],
+    unexpected_non_local_requests: list[str],
     blocked_requests: list[dict[str, str]],
     websocket_events: list[str],
     websocket_route_hits: list[str],
 ) -> None:
-    if not (
-        non_local_requests
-        or blocked_requests
-        or websocket_events
-        or websocket_route_hits
-    ):
-        return
-    raise AssertionError(
-        "Flight runtime attempted non-read-only or non-local requests: "
-        f"nonLocal={non_local_requests}, blocked={blocked_requests}, "
-        f"webSocketEvents={websocket_events}, "
-        f"webSocketRouteHits={websocket_route_hits}"
-    )
+    failures: list[str] = []
+    if not geo_provider_requests:
+        failures.append(
+            "native MapLibre did not request its existing Geo provider"
+        )
+    if unexpected_non_local_requests:
+        failures.append(
+            "unexpected non-local requests="
+            f"{unexpected_non_local_requests}"
+        )
+    if blocked_requests:
+        failures.append(f"blocked requests={blocked_requests}")
+    if websocket_events or websocket_route_hits:
+        failures.append(
+            f"webSocketEvents={websocket_events}, "
+            f"webSocketRouteHits={websocket_route_hits}"
+        )
+    if failures:
+        raise AssertionError(
+            "Flight/Geo transport ownership failed: " + "; ".join(failures)
+        )

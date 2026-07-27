@@ -21,6 +21,7 @@ export function XrSceneStage({
   geospatialComposite?: boolean
   paused: boolean
 }) {
+  if (geospatialComposite && authority !== 'native-controller') return null
   if (authority === 'native-controller') return <XrCanonicalPhysicsStage geospatialComposite={geospatialComposite} paused={paused} />
   if (authority === 'motion-reference') return <XrMotionReferenceGraphStageLazy data={data} paused={paused} />
   return null

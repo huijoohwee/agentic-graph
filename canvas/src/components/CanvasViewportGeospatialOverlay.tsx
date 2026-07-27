@@ -22,6 +22,34 @@ import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
 import { buildRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { buildSourceFilesGeospatialSelectionSignature } from '@/features/source-files/sourceFilesSignatures'
 import { useCanvasAppliedMarkdownDocument } from '@/features/canvas/useCanvasAppliedMarkdownDocument'
+import {
+  readFlightSimSnapshot,
+  readFlightSimSpatialProfile,
+  subscribeFlightSimSnapshot,
+} from '@/features/game-flight-sim/flightSimRuntime'
+import {
+  projectFlightSimTimelineCameraToGeospatial,
+  projectFlightSimToGeospatialOverlay,
+} from '@/features/game-flight-sim/flightSimGeospatialProjection'
+import {
+  readFlightSimCameraSnapshot,
+  subscribeFlightSimCamera,
+} from '@/features/game-flight-sim/flightSimCameraRuntime'
+import {
+  readFlightSimTrainingSnapshot,
+  subscribeFlightSimTrainingSnapshot,
+} from '@/features/game-flight-sim/flightSimTrainingRuntime'
+import {
+  readXrNativeControllerCamera,
+  subscribeXrNativeControllerCamera,
+} from '@/features/three/xrNativeControllerCameraRuntime'
+import {
+  sampleXrMotionReferenceCameraPose,
+} from '@/features/three/xrMotionReferenceModel'
+import {
+  readXrMotionReferenceRuntime,
+  subscribeXrMotionReferenceRuntime,
+} from '@/features/three/xrMotionReferenceRuntime'
 
 const EMPTY_STRING_ARRAY: string[] = []
 const EMPTY_OPEN_WIDGETS_BY_RENDERER: Record<string, string[]> = {}
@@ -30,7 +58,6 @@ type GeospatialOverlayHostProps = {
   active?: boolean
   snapshot?: unknown
   handlers?: unknown
-  renderPolicy?: 'default' | 'shared-xr-stage'
 }
 
 type GympgrphStoreState = {
@@ -38,6 +65,8 @@ type GympgrphStoreState = {
 }
 
 type GympgrphModule = {
+  clearFlightGeoOverlay?: () => void
+  setFlightGeoOverlay?: (overlay: ReturnType<typeof projectFlightSimToGeospatialOverlay>) => void
   useGympgrphStore?: { getState?: () => GympgrphStoreState }
   requestGeospatialFitToData?: () => void
   requestGeospatialFitToSelection?: () => void
@@ -330,6 +359,82 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       .catch(() => void 0)
   }, [geospatialModeEnabled, selectedEdgeId, selectedNodeId, selectedNodeIds, viewPinned, zoomToSelectionMode])
 
+  React.useEffect(() => {
+    let disposed = false
+    let unsubscribeFlight = () => void 0
+    let unsubscribeFlightCamera = () => void 0
+    let unsubscribeFlightTraining = () => void 0
+    let unsubscribeCameraSource = () => void 0
+    let unsubscribeTimelineRuntime = () => void 0
+    let unsubscribeTimelineTransport = () => void 0
+    void loadGympgrphModule()
+      .then(module => {
+        if (disposed) return
+        const publish = () => {
+          const flight = readFlightSimSnapshot()
+          if (!active || !composedWithXr || !flight.active) {
+            module.clearFlightGeoOverlay?.()
+            return
+          }
+          const spatialProfile = readFlightSimSpatialProfile()
+          const motionRuntime = readXrMotionReferenceRuntime()
+          const timelinePose = useGraphStore.getState().timelineTransportPlaying
+            ? sampleXrMotionReferenceCameraPose(
+                motionRuntime.plan.camera,
+                motionRuntime.playheadSeconds,
+                motionRuntime.plan.cast,
+                motionRuntime.plan.subjects,
+              )
+            : null
+          module.setFlightGeoOverlay?.(
+            projectFlightSimToGeospatialOverlay(
+              flight,
+              spatialProfile,
+              {
+                source: readXrNativeControllerCamera().mode,
+                timeline: timelinePose
+                  ? projectFlightSimTimelineCameraToGeospatial(
+                      timelinePose,
+                      spatialProfile,
+                      motionRuntime.playheadSeconds,
+                    )
+                  : null,
+                view: readFlightSimCameraSnapshot().view,
+              },
+              readFlightSimTrainingSnapshot().night,
+            ),
+          )
+        }
+        unsubscribeFlight = subscribeFlightSimSnapshot(publish)
+        unsubscribeFlightCamera = subscribeFlightSimCamera(publish)
+        unsubscribeFlightTraining = subscribeFlightSimTrainingSnapshot(publish)
+        unsubscribeCameraSource = subscribeXrNativeControllerCamera(publish)
+        unsubscribeTimelineRuntime = subscribeXrMotionReferenceRuntime(publish)
+        unsubscribeTimelineTransport = useGraphStore.subscribe(
+          (state, previousState) => {
+            if (
+              state.timelineTransportPlaying
+              !== previousState.timelineTransportPlaying
+            ) publish()
+          },
+        )
+        publish()
+      })
+      .catch(() => void 0)
+    return () => {
+      disposed = true
+      unsubscribeFlight()
+      unsubscribeFlightCamera()
+      unsubscribeFlightTraining()
+      unsubscribeCameraSource()
+      unsubscribeTimelineRuntime()
+      unsubscribeTimelineTransport()
+      void loadGympgrphModule()
+        .then(module => module.clearFlightGeoOverlay?.())
+        .catch(() => void 0)
+    }
+  }, [active, composedWithXr])
+
   return (
     <section
       className={`absolute inset-0 ${composedWithXr ? 'z-[5] pointer-events-none' : 'z-[20] pointer-events-auto'} ${active ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
@@ -339,7 +444,6 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
         active={active}
         snapshot={snapshot}
         handlers={handlers}
-        renderPolicy={composedWithXr ? 'shared-xr-stage' : 'default'}
       />
     </section>
   )

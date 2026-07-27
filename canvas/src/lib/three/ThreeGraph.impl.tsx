@@ -423,6 +423,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     coordinateScale={gameplayCoordinateScale}
     flightSimActive={flightStageActive}
     gameFpsActive={gameFpsStageActive}
+    geospatialComposite={geospatialComposite}
   />
   return (
     <section
@@ -506,7 +507,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             contentOffset={xrWorldContentOffset}
           >
             {gameplayStage}
-            {hasXrEmptyWorld ? (
+            {!geospatialComposite && hasXrEmptyWorld ? (
               <group name="kg_xr_empty_world">
                 <XrEmptyWorldStage />
               </group>
@@ -533,7 +534,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
                 geospatialComposite={geospatialComposite}
               />
             ) : null}
-            {glbAsset && shouldRenderGlbAsset ? (
+            {!geospatialComposite && glbAsset && shouldRenderGlbAsset ? (
               <GlbAssetModel
                 key={glbAssetRenderKey}
                 asset={glbAsset}
@@ -543,7 +544,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
                 onFitChange={handleGlbAssetFitChange}
               />
             ) : null}
-            {spatialCaptureManifest ? (
+            {!geospatialComposite && spatialCaptureManifest ? (
               <SpatialCaptureManifestStage
                 manifest={spatialCaptureManifest}
                 paused={authoredWorldPaused}
@@ -560,7 +561,6 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             mode={mode}
             flightSimActive={flightStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
-            geospatialComposite={geospatialComposite}
             modelAssetRenderKey={spatialCaptureRenderKey || glbAssetRenderKey}
             modelAssetFit={spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit}
             xrEmptyWorld={hasXrEmptyWorld}

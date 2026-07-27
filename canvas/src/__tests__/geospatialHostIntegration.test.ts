@@ -248,7 +248,7 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   if (!text.includes('const show2dMapLibreModern = active && geospatialViewMode === \'2d-modern\'')) {
     throw new Error('Expected GeospatialOverlayHost to expose a dedicated 2D MapLibre Modern mode')
   }
-  if (!text.includes('const mapLibreRuntimeEnabled = !sharedXrStage && (show2dMapLibre || show3d)')) {
+  if (!text.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')) {
     throw new Error('Expected GeospatialOverlayHost runtime to enable MapLibre only for explicit 2D/3D MapLibre modes')
   }
   if (!text.includes('<SvgGeospatialFallback')) {
@@ -256,41 +256,84 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   }
 }
 
-export const testGeoXrUsesSharedXrStageWithoutScreenSpaceBasemap = () => {
+export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const xrStagePath = path.resolve(process.cwd(), 'src', 'features', 'three', 'XrCanonicalPhysicsStage.tsx')
-  const presentationPath = path.resolve(process.cwd(), 'src', 'features', 'three', 'xrGeoEnvironmentPresentation.ts')
+  const threeGraphPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGraph.impl.tsx')
+  const gameplayOverlayPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGameplayOverlay.tsx')
+  const flightOverlayPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibre.ts')
   const viewportText = readUtf8(viewportPath)
   const hostText = readUtf8(hostPath)
   const xrStageText = readUtf8(xrStagePath)
-  const presentationText = readUtf8(presentationPath)
-  if (!viewportText.includes("renderPolicy={composedWithXr ? 'shared-xr-stage' : 'default'}")) {
-    throw new Error('Expected Geo+XR composition to delegate rendering to the shared XR stage')
+  const threeGraphText = readUtf8(threeGraphPath)
+  const gameplayOverlayText = readUtf8(gameplayOverlayPath)
+  const flightOverlayText = readUtf8(flightOverlayPath)
+  if (viewportText.includes('shared-xr-stage') || hostText.includes('sharedXrStage')) {
+    throw new Error('Expected Geo+XR to avoid the conflicting shared-R3F provider policy')
   }
-  if (!hostText.includes("const sharedXrStage = props.renderPolicy === 'shared-xr-stage'")) {
-    throw new Error('Expected GeospatialOverlayHost to recognize shared XR stage ownership')
+  if (!viewportText.includes('setFlightGeoOverlay')
+    || !viewportText.includes('projectFlightSimToGeospatialOverlay')) {
+    throw new Error('Expected Geo+XR to publish the deterministic Flight projection to the Geo owner')
   }
-  if (!hostText.includes('const mapLibreRuntimeEnabled = !sharedXrStage && (show2dMapLibre || show3d)')) {
-    throw new Error('Expected shared-stage Geo+XR to keep MapLibre style and tile requests disabled')
+  if (!hostText.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')
+    || !hostText.includes('applyFlightGeoOverlayToMap(map, overlay)')) {
+    throw new Error('Expected the native MapLibre runtime to own Geo+XR basemap and Flight projection layers')
   }
-  if (!hostText.includes('{sharedXrStage ? null : (')
-    || hostText.includes('data-kg-geospatial-local-basemap')) {
-    throw new Error('Expected Geo+XR to suppress the screen-space world SVG instead of restyling it')
+  const overlayApplyIndex = hostText.indexOf('const applied = applyFlightGeoOverlayToMap(map, overlay)')
+  const overlayFitIndex = hostText.indexOf('fitMapToFlightGeoOverlay(map, overlay)')
+  const overlayCameraIndex = hostText.indexOf('applyFlightGeoOverlayCameraToMap(map, overlay)')
+  if (
+    overlayApplyIndex < 0
+    || overlayFitIndex < overlayApplyIndex
+    || overlayCameraIndex < overlayFitIndex
+  ) {
+    throw new Error('Expected route fit to complete before the final Fixed Follow camera write')
   }
-  if (!hostText.includes("data-kg-geospatial-projection-owner={sharedXrStage ? 'shared-r3f-stage' : undefined}")
-    || !hostText.includes('data-kg-geospatial-xr-stage-view={sharedXrStage ? geospatialViewMode : undefined}')) {
-    throw new Error('Expected the Geo host to expose shared-stage browser proof markers')
+  const fitKeyStart = hostText.indexOf('const fitKey = [', overlayApplyIndex)
+  const fitKeyEnd = hostText.indexOf("].join(':')", fitKeyStart)
+  const fitKeySource = hostText.slice(fitKeyStart, fitKeyEnd)
+  if (
+    fitKeyStart < 0
+    || fitKeyEnd < 0
+    || fitKeySource.includes('overlay.camera')
+  ) {
+    throw new Error('Expected route fit to stay stable when Flight camera source or view changes')
   }
-  if (!xrStageText.includes('environmentVisible')
-    || !xrStageText.includes('environmentPresentation={environmentPresentation}')
+  if (!hostText.includes("root.dataset.kgFlightGeospatialOverlay = 'active'")) {
+    throw new Error('Expected the Geo host to expose live Flight overlay browser proof')
+  }
+  if (!hostText.includes('scheduleFinalApply')
+    || !hostText.includes("map?.on?.('load', scheduleFinalApply)")
+    || !hostText.includes('applyFlightGeoOverlayCameraToMap(map, overlay)')) {
+    throw new Error('Expected MapLibre initialization to finish with the Flight camera owner')
+  }
+  if (!xrStageText.includes('environmentVisible={!geospatialComposite}')
     || !xrStageText.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')) {
-    throw new Error('Expected Geo+XR to retain one selected environment while suppressing only XR atmosphere')
+    throw new Error('Expected Geo+XR to hide duplicate R3F terrain and atmosphere')
   }
-  for (const presentation of ['2d-classic', '2d-modern', '3d-classic', '3d-modern']) {
-    if (!presentationText.includes(`'${presentation}'`)) {
-      throw new Error(`Expected the shared environment resolver to include ${presentation}`)
+  if (!threeGraphText.includes('const rendererDefaultClearAlpha = geospatialComposite ? 0')) {
+    throw new Error('Expected the Flight R3F canvas to stay transparent above MapLibre')
+  }
+  if (!gameplayOverlayText.includes('actorsVisible={!props.geospatialComposite}')) {
+    throw new Error('Expected Geo+XR to suppress competing R3F Flight geometry')
+  }
+  for (const layer of ['route', 'routePoints', 'aircraft', 'aircraftOutline']) {
+    if (!flightOverlayText.includes(`${layer}:`)) {
+      throw new Error(`Expected the MapLibre Flight projection to include ${layer}`)
     }
+  }
+  for (const marker of [
+    "overlay.camera.effectiveOwner === 'timeline-playback'",
+    'center: [...overlay.camera.centerCoordinate]',
+    'FLIGHT_GEO_NIGHT_EXPRESSION',
+  ]) {
+    if (!flightOverlayText.includes(marker)) {
+      throw new Error(`Expected visible MapLibre Flight camera/palette contract to include ${marker}`)
+    }
+  }
+  if (flightOverlayText.includes('overlay.tick <= 0')) {
+    throw new Error('Expected Fixed Follow camera framing to apply at stopped/ready tick zero')
   }
 }
 

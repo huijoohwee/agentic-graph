@@ -17,7 +17,8 @@ from lib.game_flight_sim_smoke_ledger import (
     REQUIRED_BROWSER_VERIFICATION_NAMES,
 )
 from lib.game_flight_sim_smoke_network import (
-    assert_zero_network,
+    assert_transport_ownership,
+    request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
 )
@@ -217,21 +218,21 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
                 0.62,
             )
 
-    def test_optional_beacon_reader_uses_active_descendant_scope(self) -> None:
+    def test_optional_beacon_reader_uses_active_runtime_canvas_metadata(
+        self,
+    ) -> None:
         scene_source = (
             SCRIPTS_ROOT / "lib" / "game_flight_sim_smoke_scene.py"
         ).read_text(encoding="utf-8")
         baseline_source, active_reader_source = scene_source.split(
             "def read_flight_scene", maxsplit=1
         )
-        lookup = "const optionalBeaconNode = descendants.find"
-        descendants = "const descendants = []"
+        lookup = (
+            "rendererCanvas?.dataset.kgFlightSimOptionalBeacon || 'null'"
+        )
         self.assertNotIn(lookup, baseline_source)
         self.assertEqual(active_reader_source.count(lookup), 1)
-        self.assertLess(
-            active_reader_source.index(descendants),
-            active_reader_source.index(lookup),
-        )
+        self.assertNotIn("const optionalBeaconNode = descendants.find", scene_source)
 
     def test_exact_required_inventory_rejects_an_all_passed_subset(self) -> None:
         complete = BrowserVerificationLedger()
@@ -331,6 +332,43 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             )
         )
 
+    def test_geo_provider_classifier_allows_only_exact_read_hosts(self) -> None:
+        def request(method: str, url: str) -> SimpleNamespace:
+            return SimpleNamespace(method=method, url=url)
+
+        for url in (
+            "https://demotiles.maplibre.org/style.json",
+            "https://demotiles.maplibre.org/tiles/2/1/1.pbf",
+            "https://tiles.openfreemap.org/styles/liberty",
+            "https://tiles.openfreemap.org/planet/20250702/2/1/1.pbf",
+        ):
+            with self.subTest(url=url):
+                self.assertTrue(
+                    request_is_geo_provider_read(request("GET", url))
+                )
+        for method, url in (
+            ("POST", "https://demotiles.maplibre.org/style.json"),
+            ("GET", "http://demotiles.maplibre.org/style.json"),
+            ("GET", "https://demotiles.maplibre.org.example/style.json"),
+            ("GET", "https://demotiles.maplibre.org/admin"),
+            ("GET", "https://tiles.openfreemap.org/account"),
+            ("GET", "https://airvio.co/api/storage"),
+        ):
+            with self.subTest(method=method, url=url):
+                self.assertFalse(
+                    request_is_geo_provider_read(request(method, url))
+                )
+
+        assert_transport_ownership(
+            geo_provider_requests=[
+                "https://demotiles.maplibre.org/style.json"
+            ],
+            unexpected_non_local_requests=[],
+            blocked_requests=[],
+            websocket_events=[],
+            websocket_route_hits=[],
+        )
+
     def test_wildcard_websocket_route_blocks_unexpected_local_transport(
         self,
     ) -> None:
@@ -393,8 +431,11 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
         self.assertEqual(summary["probeRouteHits"], [])
         self.assertEqual(summary["unexpectedRouteHits"], [unexpected_url])
         with self.assertRaisesRegex(AssertionError, "crafted-unexpected"):
-            assert_zero_network(
-                non_local_requests=[],
+            assert_transport_ownership(
+                geo_provider_requests=[
+                    "https://demotiles.maplibre.org/style.json"
+                ],
+                unexpected_non_local_requests=[],
                 blocked_requests=[],
                 websocket_events=[],
                 websocket_route_hits=route_hits,
@@ -525,8 +566,11 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             AssertionError,
             "service-worker-unexpected",
         ):
-            assert_zero_network(
-                non_local_requests=[
+            assert_transport_ownership(
+                geo_provider_requests=[
+                    "https://demotiles.maplibre.org/style.json"
+                ],
+                unexpected_non_local_requests=[
                     request["url"] for request in target_requests
                 ],
                 blocked_requests=blocked_requests,
@@ -551,9 +595,9 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             dependent_called = True
 
         ledger.verify("Source Files apply", fail_source)
-        ledger.verify("zero-network fence", fail_network)
+        ledger.verify("Geo provider transport ownership", fail_network)
         ledger.verify(
-            "retained authored XR Canvas",
+            "transparent Flight runtime Canvas",
             dependent,
             depends_on=("Source Files apply",),
         )
@@ -562,8 +606,8 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             ledger.assert_success()
         message = str(raised.exception)
         self.assertIn("FAILED Source Files apply", message)
-        self.assertIn("FAILED zero-network fence", message)
-        self.assertIn("SKIPPED retained authored XR Canvas", message)
+        self.assertIn("FAILED Geo provider transport ownership", message)
+        self.assertIn("SKIPPED transparent Flight runtime Canvas", message)
         self.assertFalse(dependent_called)
         self.assertEqual(
             [record["status"] for record in ledger.evidence()],

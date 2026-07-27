@@ -249,6 +249,11 @@ const requireFlightRuntimeIdentity = (source, physicsSource) => {
   requireValue(
     'native_flight_demo.camera.driver_owner',
     camera.driver_owner,
+    'gympgrph/src/flightGeoOverlayMapLibre.ts',
+  )
+  requireValue(
+    'native_flight_demo.camera.runtime_canvas_driver_owner',
+    camera.runtime_canvas_driver_owner,
     'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
   )
   requireValue('flight_sim.invocation', flightSim.invocation, '/flight.sim @canvas #flight operation=open')

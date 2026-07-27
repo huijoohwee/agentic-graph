@@ -35,6 +35,7 @@ import {
   isFlightSimHydrationPending,
   openFlightSimSurface,
   readFlightSimSnapshot,
+  rejectFlightSimGameplayNetworkAttempt,
   resetFlightSimLocalPersistence,
   resetFlightSimRuntimeForTests,
   startFlightSim,
@@ -276,7 +277,7 @@ test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/
   const hostFetch = globalThis.fetch
   try {
     await openFlightSimSurface({ openPanel: false, webglSupported: true })
-    assert.notEqual(globalThis.fetch, hostFetch)
+    assert.equal(globalThis.fetch, hostFetch)
     assert.equal(inspectLocalFlightSim().flightSim.active, true)
     assert.equal((await controlLocalFlightSim({ operation: 'inspect' })).errorCode, 'FLIGHT_SIM_CONTROL_UNSUPPORTED_OPERATION')
     assert.equal((await controlLocalFlightSim({ operation: 'open' })).ok, false)
@@ -301,10 +302,16 @@ test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/
     assert.equal(readFlightSimSnapshot().tick, 0)
     assert.equal((await controlLocalFlightSim({ operation: 'save' })).ok, false)
 
-    await assert.rejects(
-      globalThis.fetch('https://airvio.co/api/storage'),
-      (error: Error & { code?: string }) => error.code === 'FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED',
+    let gameplayTransportExecuted = false
+    const rejected = rejectFlightSimGameplayNetworkAttempt(
+      'fetch:GET:https://airvio.co/api/storage',
+      () => {
+        gameplayTransportExecuted = true
+      },
     )
+    assert.equal(gameplayTransportExecuted, false)
+    assert.match(rejected.runtimeError || '', /blocked gameplay network operation/)
+    assert.equal(globalThis.fetch, hostFetch)
     assert.equal((await controlLocalFlightSim({ operation: 'exit' })).ok, true)
     assert.equal(globalThis.fetch, hostFetch)
     assert.equal(readFlightSimSnapshot().active, false)

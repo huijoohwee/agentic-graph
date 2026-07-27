@@ -21,10 +21,6 @@ import {
 } from './flightSimDeadlineIntegration'
 import { resetFlightSimDeadlineRuntimeForTests } from './flightSimDeadlineRuntime'
 import {
-  installFlightSimGameplayNetworkFence,
-  uninstallFlightSimGameplayNetworkFence,
-} from './flightSimExternalCallGuard'
-import {
   beginFlightSimHydration, cancelFlightSimHydration,
   finishFlightSimHydration, readFlightSimHydrationPending,
 } from './flightSimHydrationGate'
@@ -178,15 +174,6 @@ function restoreSurfaceOwnership(
   return failures
 }
 
-function restoreGameplayNetworkOwnership(): string[] {
-  try {
-    uninstallFlightSimGameplayNetworkFence()
-    return []
-  } catch (error) {
-    return [flightSimRuntimeErrorMessage(error)]
-  }
-}
-
 function restoreWorkspaceSeedSyncOwnership(): void {
   const release = releaseFlightSimWorkspaceSeedSyncSuspension
   releaseFlightSimWorkspaceSeedSyncSuspension = null
@@ -206,16 +193,12 @@ function failFlightSimSurfaceEntry(
 ): FlightSimSnapshot {
   const failures = [flightSimRuntimeErrorMessage(error)]
   if (entering) {
-    const networkFailures = restoreGameplayNetworkOwnership()
-    failures.push(...networkFailures)
     defaultRuntime.exit()
     if (surfaceActivated) {
       failures.push(...restoreSurfaceOwnership(previousCanvasSurface, true))
     }
-    if (networkFailures.length === 0) {
-      restoreDurableChatStreamTransportOwnership()
-      restoreWorkspaceSeedSyncOwnership()
-    }
+    restoreDurableChatStreamTransportOwnership()
+    restoreWorkspaceSeedSyncOwnership()
     previousCanvasSurface = null
   }
   const message = `Flight Sim surface entry did not complete: ${failures.join('; ')}`
@@ -233,18 +216,14 @@ function abortFlightSimSurfaceEntry(
   cancelFlightSimHydration()
   const restorationFailures: string[] = []
   if (entering) {
-    const networkFailures = restoreGameplayNetworkOwnership()
-    restorationFailures.push(...networkFailures)
     defaultRuntime.exit()
     if (surfaceActivated) {
       restorationFailures.push(
         ...restoreSurfaceOwnership(previousCanvasSurface, true),
       )
     }
-    if (networkFailures.length === 0) {
-      restoreDurableChatStreamTransportOwnership()
-      restoreWorkspaceSeedSyncOwnership()
-    }
+    restoreDurableChatStreamTransportOwnership()
+    restoreWorkspaceSeedSyncOwnership()
     previousCanvasSurface = null
   }
   if (restorationFailures.length > 0) {
@@ -345,9 +324,6 @@ async function performFlightSimSurfaceOpen(
     throwIfFlightSimOperationAborted(options.signal)
     suspendAuthoredRuntime()
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
-    installFlightSimGameplayNetworkFence(operation => (
-      defaultRuntime.rejectGameplayNetworkAttempt(operation, () => undefined)
-    ))
     throwIfFlightSimOperationAborted(options.signal)
     if (hasFlightSimBrowserPresentationRuntime()) {
       stagePreparationRequestId = beginFlightSimStagePreparation()
@@ -519,8 +495,7 @@ export function exitFlightSimSurface(
     new FlightSimSurfaceOpenStaleError(),
   )
   cancelFlightSimHydration()
-  const failures = restoreGameplayNetworkOwnership()
-  const networkOwnershipRestored = failures.length === 0
+  const failures: string[] = []
   const previous = previousCanvasSurface
   previousCanvasSurface = null
   const next = defaultRuntime.exit()
@@ -530,10 +505,8 @@ export function exitFlightSimSurface(
       options.restorePreviousSurface !== false,
     ),
   )
-  if (networkOwnershipRestored) {
-    restoreDurableChatStreamTransportOwnership()
-    restoreWorkspaceSeedSyncOwnership()
-  }
+  restoreDurableChatStreamTransportOwnership()
+  restoreWorkspaceSeedSyncOwnership()
   if (failures.length > 0) {
     const message = `Flight Sim surface restoration did not complete: ${failures.join('; ')}`
     reportFlightSimSurfaceRestorationFailure(message)
@@ -558,7 +531,6 @@ export function resetFlightSimRuntimeForTests(
 ): FlightSimSnapshot {
   invalidateFlightSimSurfaceOpens()
   cancelFlightSimHydration()
-  uninstallFlightSimGameplayNetworkFence()
   flightSimSurfaceOpenTail = null
   previousCanvasSurface = null
   restoreAuthoredRuntime()
