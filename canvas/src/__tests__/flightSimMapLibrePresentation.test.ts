@@ -1,7 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  clearFlightGeoOverlay,
   flightGeoOverlayFeatureCollection,
+  readFlightGeoOverlay,
+  setFlightGeoOverlay,
+  subscribeFlightGeoOverlay,
   type FlightGeoOverlayPresentation,
   type FlightGeoOverlaySnapshot,
 } from '../../../gympgrph/src/flightGeoOverlay'
@@ -14,6 +18,24 @@ import {
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   retainFlightGeoOverlayDuringStyleSwap,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+import {
+  beginFlightSimReadyFrame,
+  cancelCurrentFlightSimReadyFrame,
+  completeFlightSimMapLibreReadyFrame,
+  coordinateFlightSimReadyPublication,
+  isFlightSimReadyFramePresentationPending,
+  readCurrentFlightSimReadyFrameRequestId,
+  readFlightSimDeadlineSnapshot,
+  resetFlightSimDeadlineRuntimeForTests,
+} from '../features/game-flight-sim/flightSimDeadlineRuntime'
+import { createFlightSimRuntime } from '../features/game-flight-sim/flightSimRuntime'
+import {
+  FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS,
+  type FlightSimSpatialProfile,
+} from '../features/game-flight-sim/flightSimModel'
+import {
+  projectFlightSimToGeospatialOverlay,
+} from '../features/game-flight-sim/flightSimGeospatialProjection'
 
 function flightOverlay(
   phase: FlightGeoOverlaySnapshot['phase'],
@@ -64,7 +86,10 @@ function flightOverlay(
   }
 }
 
-function presentationHarness(initial: FlightGeoOverlaySnapshot) {
+function presentationHarness(
+  initial: FlightGeoOverlaySnapshot,
+  afterPresented?: (presentation: FlightGeoOverlayPresentation) => void,
+) {
   let current = initial
   let width = 0
   let repaintCount = 0
@@ -85,6 +110,7 @@ function presentationHarness(initial: FlightGeoOverlaySnapshot) {
     }),
   }
   const map = {
+    style: { _loaded: true },
     getCanvas: () => canvas,
     getLayer: (id: string) => (
       Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS).some(layerId => layerId === id)
@@ -93,9 +119,19 @@ function presentationHarness(initial: FlightGeoOverlaySnapshot) {
     ),
     getSource: (id: string) => (
       id === FLIGHT_GEO_OVERLAY_SOURCE_ID
-        ? { id, serialize: () => ({ data: sourceData }) }
+        ? {
+            id,
+            serialize: () => ({ data: sourceData }),
+            setData: (data: ReturnType<typeof flightGeoOverlayFeatureCollection>) => {
+              sourceData = data
+            },
+          }
         : undefined
     ),
+    getStyle: () => ({
+      layers: Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS).map(id => ({ id })),
+    }),
+    moveLayer: () => undefined,
     off: (type: string, listener: () => void) => {
       if (type === 'render') listeners.delete(listener)
     },
@@ -107,20 +143,22 @@ function presentationHarness(initial: FlightGeoOverlaySnapshot) {
     },
   }
   const presentations: FlightGeoOverlayPresentation[] = []
+  const presented = {
+    current: {
+      map: null,
+      readyFrameRequestId: null,
+      revision: '',
+    },
+  }
   const gate = createFlightGeoOverlayPresentationGate({
     active: () => true,
     isCanvasElement: (value): value is HTMLCanvasElement => value === canvas,
     map,
     onPresented: presentation => {
       presentations.push(presentation)
+      afterPresented?.(presentation)
     },
-    presented: {
-      current: {
-        map: null,
-        readyFrameRequestId: null,
-        revision: '',
-      },
-    },
+    presented,
     readOverlay: () => current,
     readRoot: () => null,
   })
@@ -130,7 +168,9 @@ function presentationHarness(initial: FlightGeoOverlaySnapshot) {
       for (const listener of [...listeners]) listener()
     },
     gate,
+    map,
     listenerCount: () => listeners.size,
+    presentedRevision: () => presented.current.revision,
     presentations,
     repaintCount: () => repaintCount,
     replaceSourceData: (next: FlightGeoOverlaySnapshot | null) => {
@@ -147,6 +187,129 @@ function presentationHarness(initial: FlightGeoOverlaySnapshot) {
     },
   }
 }
+
+function runtimeProfile(): FlightSimSpatialProfile {
+  const radiusMeters = FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS
+  return Object.freeze({
+    id: 'flight-sim:maplibre-ready-order',
+    sourceKey: 'authored:maplibre-ready-order',
+    aircraftHalfSize: Object.freeze([0.5, 0.5, 0.5] as const),
+    spawn: Object.freeze({
+      position: Object.freeze([0, 20, 0] as const),
+      velocity: Object.freeze([0, 0, -10] as const),
+      pitch: 0,
+      roll: 0,
+      yaw: 0,
+      throttle: 0.6,
+    }),
+    blockers: Object.freeze([]),
+    waypoints: Object.freeze([
+      ...[1, 2, 3].map(index => Object.freeze({
+        id: `waypoint-${index}`,
+        position: Object.freeze([0, 20, -200 * index] as const),
+        radiusMeters,
+      })),
+    ]),
+    landingPad: Object.freeze({
+      id: 'landing-pad',
+      position: Object.freeze([0, 0, -400] as const),
+      radiusMeters,
+    }),
+  })
+}
+
+test('native MapLibre presents ready tick zero before expensive store followers', async context => {
+  resetFlightSimDeadlineRuntimeForTests()
+  let clockMs = 0
+  const events: string[] = []
+  const initial = flightOverlay('stopped', 'stopped:0', null)
+  const harness = presentationHarness(initial, presentation => {
+    if (
+      presentation.phase === 'ready'
+      && presentation.readyFrameRequestId !== null
+    ) {
+      completeFlightSimMapLibreReadyFrame(
+        presentation.readyFrameRequestId,
+        presentation.runId,
+        presentation.tick,
+        () => clockMs,
+      )
+    }
+  })
+  harness.setWidth(100)
+  const spatialProfile = runtimeProfile()
+  const releaseOverlay = subscribeFlightGeoOverlay(() => {
+    const overlay = readFlightGeoOverlay()
+    harness.setCurrent(overlay)
+    assert.equal(applyFlightGeoOverlayToMap(harness.map, overlay), true)
+    harness.gate.request(overlay)
+  })
+  context.after(() => {
+    releaseOverlay()
+    clearFlightGeoOverlay()
+    resetFlightSimDeadlineRuntimeForTests()
+  })
+  const runtime = createFlightSimRuntime({
+    profile: spatialProfile,
+    active: true,
+    webglSupported: true,
+    cancelReadyPublication: cancelCurrentFlightSimReadyFrame,
+    coordinateReadyPublication: coordinateFlightSimReadyPublication,
+  })
+  runtime.subscribePresenter('maplibre', () => {
+    const snapshot = runtime.read()
+    const requestId = readCurrentFlightSimReadyFrameRequestId()
+    assert.notEqual(requestId, null)
+    assert.equal(
+      isFlightSimReadyFramePresentationPending(snapshot.runId, snapshot.tick),
+      true,
+    )
+    setFlightGeoOverlay(projectFlightSimToGeospatialOverlay(
+      snapshot,
+      spatialProfile,
+      { source: 'fixed-follow', view: 'chase' },
+      false,
+      requestId,
+    ))
+    events.push('maplibre')
+  })
+  runtime.subscribePresenter('surface', () => {
+    events.push('surface')
+  })
+  runtime.subscribe(() => {
+    clockMs += 336
+    events.push('follower')
+  })
+
+  const requestId = beginFlightSimReadyFrame(() => clockMs)
+  const ready = runtime.start()
+  assert.equal(ready.phase, 'ready')
+  assert.deepEqual(events, ['maplibre'])
+  assert.equal(clockMs, 0)
+  assert.equal(harness.listenerCount(), 1)
+  assert.ok(harness.repaintCount() > 0)
+
+  clockMs = 16
+  harness.emitRender()
+  const observation = readFlightSimDeadlineSnapshot().readyFrame
+  assert.equal(observation?.source, 'native-maplibre-flight-ready-frame')
+  assert.equal(observation?.elapsedMs, 16)
+  assert.equal(observation?.withinLimit, true)
+  assert.equal(observation?.runId, ready.runId)
+  assert.equal(observation?.tick, ready.tick)
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), null)
+  assert.equal(requestId, harness.presentations.at(-1)?.readyFrameRequestId)
+  assert.equal(harness.listenerCount(), 0)
+  assert.equal(
+    harness.presentedRevision(),
+    `${ready.runId}:${ready.tick}:ready:0:${spatialProfile.id}:fixed-follow:chase:operator:day`,
+  )
+  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
+  assert.deepEqual(events, ['maplibre'])
+  await Promise.resolve()
+  assert.deepEqual(events, ['maplibre', 'surface', 'follower'])
+  assert.equal(clockMs, 352)
+})
 
 test('same-revision stopped presentation can acknowledge a fresh preparation', () => {
   const stopped = flightOverlay('stopped', 'same-stopped-revision')

@@ -27,9 +27,10 @@ import {
   isFlightSimHydrationPending,
   readFlightSimSnapshot,
   readFlightSimSpatialProfile,
-  subscribeFlightSimSnapshot,
+  subscribeFlightSimPresentation,
 } from '@/features/game-flight-sim/flightSimRuntime'
 import {
+  claimFlightSimReadyPresenter,
   completeFlightSimMapLibreReadyFrame,
   readCurrentFlightSimReadyFrameRequestId,
 } from '@/features/game-flight-sim/flightSimDeadlineRuntime'
@@ -375,6 +376,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       .catch(() => void 0)
   }, [geospatialModeEnabled, selectedEdgeId, selectedNodeId, selectedNodeIds, viewPinned, zoomToSelectionMode])
 
+  React.useLayoutEffect(() => {
+    if (!active || !composedWithXr) return
+    return claimFlightSimReadyPresenter('maplibre')
+  }, [active, composedWithXr])
+
   React.useEffect(() => {
     const publisherLease = claimFlightGeoOverlayPublisherLease()
     let disposed = false
@@ -424,7 +430,12 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
             ),
           )
         }
-        unsubscribeFlight = subscribeFlightSimSnapshot(publish)
+        if (active && composedWithXr) {
+          unsubscribeFlight = subscribeFlightSimPresentation(
+            'maplibre',
+            publish,
+          )
+        }
         unsubscribeFlightCamera = subscribeFlightSimCamera(publish)
         unsubscribeFlightTraining = subscribeFlightSimTrainingSnapshot(publish)
         unsubscribeCameraSource = subscribeXrNativeControllerCamera(publish)

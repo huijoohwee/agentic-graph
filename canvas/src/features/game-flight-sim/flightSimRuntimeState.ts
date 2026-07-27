@@ -16,11 +16,22 @@ export type FlightSimAdvanceRequest = Readonly<{
 }>
 
 type Listener = () => void
+export type FlightSimPresenterKind = 'maplibre' | 'surface'
+export type FlightSimReadyPublication = Readonly<{
+  snapshot: FlightSimSnapshot
+  hasPresenter: (kind: FlightSimPresenterKind) => boolean
+  notifyPresenter: (kind: FlightSimPresenterKind) => void
+  notifyFollowers: (presenter: FlightSimPresenterKind) => void
+}>
 
 export type FlightSimRuntime = Readonly<{
   profile: () => FlightSimSpatialProfile
   read: () => FlightSimSnapshot
   subscribe: (listener: Listener) => () => void
+  subscribePresenter: (
+    kind: FlightSimPresenterKind,
+    listener: Listener,
+  ) => () => void
   open: (webglSupported?: boolean) => FlightSimSnapshot
   start: () => FlightSimSnapshot
   stop: () => FlightSimSnapshot

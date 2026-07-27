@@ -244,6 +244,17 @@ test('idempotent Start preserves a fresh Restart ready-frame request', () => {
   assert.equal(isFlightSimReadyFramePresentationPending(5, 0), true)
 })
 
+test('a thrown Start cancels its ready-frame request before propagating', () => {
+  resetFlightSimDeadlineRuntimeForTests()
+  assert.throws(
+    () => startFlightSimWithReadyFrame(() => {
+      throw new Error('mission construction failed')
+    }),
+    /mission construction failed/,
+  )
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), null)
+})
+
 test('idempotent Start re-arms a Restart request interrupted after publish', () => {
   resetFlightSimDeadlineRuntimeForTests()
   const restartRequest = beginFlightSimReadyFrame(() => 100)

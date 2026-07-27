@@ -56,7 +56,13 @@ export function startFlightSimWithReadyFrame(
     return currentSnapshot
   }
   const requestId = beginFlightSimReadyFrame()
-  const snapshot = start()
+  let snapshot: FlightSimSnapshot
+  try {
+    snapshot = start()
+  } catch (error) {
+    cancelFlightSimReadyFrame(requestId)
+    throw error
+  }
   if (snapshot.phase === 'ready' && snapshot.tick === 0 && !snapshot.runtimeError) {
     armFlightSimReadyFrame(requestId, snapshot.runId, snapshot.tick)
   } else {

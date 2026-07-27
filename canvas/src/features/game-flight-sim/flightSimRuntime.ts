@@ -28,8 +28,11 @@ import {
   FLIGHT_SIM_FIXED_STEP_SECONDS,
   type FlightSimInputPatch, type FlightSimSnapshot, type FlightSimSpatialProfile,
 } from './flightSimModel'
-import { createFlightSimRuntime } from './flightSimRuntimeCore'
-import { flightSimRuntimeErrorMessage } from './flightSimRuntimeState'
+import {
+  flightSimDefaultRuntime as defaultRuntime,
+  resetFlightSimDefaultRuntime,
+} from './flightSimDefaultRuntime'
+import { flightSimRuntimeErrorMessage, type FlightSimPresenterKind } from './flightSimRuntimeState'
 import { readFlightSimXrSpatialProfile } from './flightSimSpatialProfile'
 import type { FlightSimStageRuntimeController } from './flightSimStageRuntimeController'
 import {
@@ -59,7 +62,6 @@ import {
   reportFlightSimSurfaceRestorationFailure,
   resetFlightSimSurfaceOwnershipStatusForTests,
 } from './flightSimSurfaceOwnershipStatus'
-
 export { createFlightSimRuntime } from './flightSimRuntimeCore'
 export type { FlightSimRuntime } from './flightSimRuntimeState'
 
@@ -74,11 +76,6 @@ type FlightSimSurfaceOpenOptions = FlightSimOperationOptions & Readonly<{
   webglSupported?: boolean
 }>
 
-let defaultRuntime = createFlightSimRuntime({
-  profile: readFlightSimXrSpatialProfile(),
-  active: false,
-  webglSupported: false,
-})
 let previousCanvasSurface: FlightSimPreviousCanvasSurface | null = null
 let authoredRuntimeOwnership: FlightSimAuthoredRuntimeOwnership | null = null
 let flightSimSurfaceOpenTail: Promise<void> | null = null
@@ -136,6 +133,10 @@ export function subscribeFlightSimSnapshot(listener: Listener): () => void {
   return defaultRuntime.subscribe(listener)
 }
 
+export function subscribeFlightSimPresentation(kind: FlightSimPresenterKind, listener: Listener): () => void {
+  return defaultRuntime.subscribePresenter(kind, listener)
+}
+
 export function isFlightSimHydrationPending(): boolean {
   return readFlightSimHydrationPending()
 }
@@ -149,7 +150,7 @@ const flightSimStageRuntimeController: FlightSimStageRuntimeController =
     reportRenderFailure: error => reportFlightSimRenderFailure(error),
     setInput: patch => setFlightSimInput(patch),
     stop: () => stopFlightSim(),
-    subscribe: listener => subscribeFlightSimSnapshot(listener),
+    subscribe: listener => subscribeFlightSimPresentation('surface', listener),
   })
 
 export function readFlightSimStageRuntimeController(): FlightSimStageRuntimeController {
@@ -593,6 +594,5 @@ export function resetFlightSimRuntimeForTests(
   resetFlightSimDeadlineRuntimeForTests()
   resetFlightSimStagePreparationForTests()
   resetFlightSimMissionStageLoaderForTests()
-  defaultRuntime = createFlightSimRuntime({ profile, active: false, webglSupported: false })
-  return defaultRuntime.read()
+  return resetFlightSimDefaultRuntime(profile).read()
 }
