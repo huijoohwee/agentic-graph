@@ -11,7 +11,7 @@ import {
   reselectDetachedNodeIds,
 } from '@/lib/canvas/selectionGrouping'
 import { applySchemaGroupBoundsOverrides } from '@/lib/canvas/groupBoundsOverrides'
-import { resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
+import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 import { subgraphGroupId } from '@/lib/graph/subgraphs'
 
 export function testSelectionGroupingInteractionContract() {
@@ -49,6 +49,17 @@ export function testSelectionGroupingInteractionContract() {
       resolveNodeSelectionGesture({ mode: 'single', metaKey: true }) !== 'replace'
     ) {
       throw new Error('expected renderer-independent modifier selection policy')
+    }
+    let activatedMode = ''
+    const effectiveMode = activateMultiNodeSelectModeForShift({
+      mode: 'single',
+      shiftKey: true,
+      setSelectMode: mode => {
+        activatedMode = mode
+      },
+    })
+    if (effectiveMode !== 'multi' || activatedMode !== 'multi') {
+      throw new Error('expected Shift selection to activate Multi-select Mode')
     }
 
     const created = store.createUserSubgraph({
@@ -106,6 +117,7 @@ export function testSelectionGroupingInteractionContract() {
       canGroupNodes: true,
       onGroupNodes: () => undefined,
       onArrange: () => undefined,
+      offsetBelowWorkspaceToolbar: true,
     }))
     const ungroupMarkup = renderToStaticMarkup(createElement(CanvasArrangeActionBar, {
       active: true,
@@ -116,6 +128,13 @@ export function testSelectionGroupingInteractionContract() {
     }))
     if (!groupMarkup.includes('data-kg-selection-action="group-nodes"') || !groupMarkup.includes('Group Nodes')) {
       throw new Error('expected the multi-selection toolbar to expose Group Nodes')
+    }
+    if (
+      !groupMarkup.includes('data-kg-selection-action-bar="1"') ||
+      !groupMarkup.includes('z-index:90') ||
+      !groupMarkup.includes('top-14')
+    ) {
+      throw new Error('expected selection actions to render above storyboard overlays and below the workspace toolbar')
     }
     if (!ungroupMarkup.includes('data-kg-selection-action="ungroup"') || !ungroupMarkup.includes('Ungroup')) {
       throw new Error('expected a selected user group to expose Ungroup')
