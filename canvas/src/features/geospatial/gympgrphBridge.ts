@@ -105,3 +105,33 @@ export async function requestGeospatialCurrentLocation(args: { lat: number; lng:
   }
   m.requestGeospatialCurrentLocation(args)
 }
+
+export async function setEnhancedGeospatialLayerVisibility(
+  kind: 'extrusion' | 'asset',
+  id: string,
+  visible: boolean,
+): Promise<boolean> {
+  const m = await importGympgrph()
+  if (typeof m.setEnhancedLayerVisibility !== 'function') {
+    throw new Error('Enhanced geospatial layer API is unavailable')
+  }
+  return m.setEnhancedLayerVisibility(kind, id, visible)
+}
+
+export async function setEnhancedGeospatialTagVisibility(tag: string, visible: boolean): Promise<readonly string[]> {
+  const m = await importGympgrph()
+  if (typeof m.setEnhancedTagVisibility !== 'function') {
+    throw new Error('Enhanced geospatial tag API is unavailable')
+  }
+  return m.setEnhancedTagVisibility(tag, visible)
+}
+
+export async function requestGeospatialFitToBounds(
+  bounds: readonly [number, number, number, number],
+): Promise<void> {
+  const m = await importGympgrph()
+  if (typeof m.requestGeospatialFitToBounds !== 'function') {
+    throw new Error('Geospatial bounds fit API is unavailable')
+  }
+  m.requestGeospatialFitToBounds(bounds)
+}

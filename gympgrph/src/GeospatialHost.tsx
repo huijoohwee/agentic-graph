@@ -36,6 +36,8 @@ import {
   HIGH_FIDELITY_WORLD_SVG_INNER,
   HIGH_FIDELITY_WORLD_SVG_WIDTH,
 } from './features/geospatial/worldSvgBasemap.js'
+import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLayers.js'
+import { applyGeospatialFitRequest } from './geospatialFitRuntime.js'
 
 type GeospatialOverlayHostProps = {
   active?: boolean
@@ -800,6 +802,18 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     onPoiClick: handlePoiClick,
   })
   const activeBasemap = show3d ? basemap3d : basemap2d
+  const enhancedLayerBounds = useEnhancedGeospatialHostLayers({
+    enabled: active && mapLibreRuntimeEnabled,
+    map: activeBasemap.map,
+    styleRevision: activeBasemap.styleRevision,
+    snapshot: props.snapshot,
+    handlers: props.handlers,
+    autoFitEnabled: geospatialAutoFitEnabled,
+    show3d,
+    fitPadding,
+    selectedBounds,
+    graphBounds,
+  })
 
   const graphSourceIdBase = 'kg-host-graph:nodes'
   const graphSourceIdClustered = `${graphSourceIdBase}:clustered`
@@ -1211,56 +1225,17 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
 
   React.useEffect(() => {
     const map = activeBasemap.map
-    if (!map) return
-    if (!active) return
-    if (!geospatialFitRequest) return
-    if (geospatialFitRequest.mode === 'currentLocation') {
-      const zoom = Number.isFinite(geospatialFitRequest.zoom) ? geospatialFitRequest.zoom : Math.max(12, Number(map.getZoom?.() || 0))
-      try {
-        map.flyTo?.({
-          center: [geospatialFitRequest.lng, geospatialFitRequest.lat],
-          zoom,
-          duration: 0,
-        })
-      } catch {
-        try {
-          map.jumpTo?.({
-            center: [geospatialFitRequest.lng, geospatialFitRequest.lat],
-            zoom,
-          })
-        } catch {
-          void 0
-        }
-      }
-      clearGeospatialFitRequest()
-      return
-    }
-    if (geospatialFitRequest.mode === 'selection') {
-      if (selectedBounds) {
-        try {
-          map.fitBounds(selectedBounds, { padding: fitPadding, duration: 0 })
-        } catch {
-          void 0
-        }
-      } else if (graphBounds) {
-        try {
-          map.fitBounds(graphBounds, { padding: fitPadding, duration: 0 })
-        } catch {
-          void 0
-        }
-      }
-      clearGeospatialFitRequest()
-      return
-    }
-    if (graphBounds) {
-      try {
-        map.fitBounds(graphBounds, { padding: fitPadding, duration: 0 })
-      } catch {
-        void 0
-      }
-    }
+    if (!map || !active || !geospatialFitRequest) return
+    applyGeospatialFitRequest({
+      map,
+      request: geospatialFitRequest,
+      selectedBounds,
+      graphBounds,
+      enhancedBounds: enhancedLayerBounds,
+      padding: fitPadding,
+    })
     clearGeospatialFitRequest()
-  }, [active, activeBasemap.map, clearGeospatialFitRequest, fitPadding, geospatialFitRequest, graphBounds, selectedBounds])
+  }, [active, activeBasemap.map, clearGeospatialFitRequest, enhancedLayerBounds, fitPadding, geospatialFitRequest, graphBounds, selectedBounds])
 
   const debug = React.useMemo(() => {
     if (typeof window === 'undefined') return false
@@ -1341,6 +1316,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
             zoom: {activeBasemap.probe.zoom.toFixed(2)} center: {activeBasemap.probe.lng.toFixed(4)},{activeBasemap.probe.lat.toFixed(4)}
           </p>
           <p>features: {Array.isArray(graphFeatureCollection.features) ? graphFeatureCollection.features.length : 0}</p>
+          <p>enhancedBounds: {enhancedLayerBounds ? enhancedLayerBounds.map(value => value.toFixed(3)).join(',') : 'none'}</p>
           {basemapGraphDebug ? (
             <>
               <p>styleReady: {basemapGraphDebug.styleReady ? 'yes' : 'no'} source: {basemapGraphDebug.activeSourceId}</p>

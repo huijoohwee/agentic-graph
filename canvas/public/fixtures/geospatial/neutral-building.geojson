@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "neutral-building",
+      "properties": {
+        "height_m": 120
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [103.80, 1.26],
+            [103.88, 1.26],
+            [103.88, 1.34],
+            [103.80, 1.34],
+            [103.80, 1.26]
+          ]
+        ]
+      }
+    }
+  ]
+}
