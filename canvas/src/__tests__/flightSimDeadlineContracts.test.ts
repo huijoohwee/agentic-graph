@@ -24,6 +24,9 @@ import {
   createFlightSimRuntime,
 } from '../features/game-flight-sim/flightSimRuntime'
 import {
+  startFlightSimWithReadyFrame,
+} from '../features/game-flight-sim/flightSimDeadlineIntegration'
+import {
   FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS,
   type FlightSimSnapshot,
   type FlightSimSpatialProfile,
@@ -215,6 +218,29 @@ test('ready-frame and HUD deadlines record asynchronous presentation semantics',
     () => 80 + FLIGHT_SIM_HUD_UPDATE_LIMIT_MS + 0.001,
   )
   assert.equal(lateHud?.withinLimit, false)
+})
+
+test('idempotent Start preserves a fresh Restart ready-frame request', () => {
+  resetFlightSimDeadlineRuntimeForTests()
+  const restartRequest = beginFlightSimReadyFrame(() => 100)
+  armFlightSimReadyFrame(restartRequest, 5, 0)
+  const ready = {
+    phase: 'ready',
+    runtimeError: null,
+    tick: 0,
+  } as FlightSimSnapshot
+  let startedAgain = false
+
+  assert.equal(
+    startFlightSimWithReadyFrame(() => {
+      startedAgain = true
+      return ready
+    }, ready),
+    ready,
+  )
+  assert.equal(startedAgain, false)
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), restartRequest)
+  assert.equal(isFlightSimReadyFramePresentationPending(5, 0), true)
 })
 
 test('a newer HUD completion cannot hide an older overdue revision', () => {

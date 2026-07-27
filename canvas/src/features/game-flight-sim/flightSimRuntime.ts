@@ -418,7 +418,10 @@ export function startFlightSim(
       || 'Flight Sim Decisions are unreadable; reset the local save before starting.',
     )
   }
-  return startFlightSimWithReadyFrame(() => defaultRuntime.start())
+  return startFlightSimWithReadyFrame(
+    () => defaultRuntime.start(),
+    defaultRuntime.read(),
+  )
 }
 
 export function stopFlightSim(): FlightSimSnapshot {

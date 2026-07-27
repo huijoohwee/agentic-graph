@@ -35,7 +35,17 @@ export function readFlightSimWebglAdmission(
 
 export function startFlightSimWithReadyFrame(
   start: () => FlightSimSnapshot,
+  currentSnapshot?: FlightSimSnapshot,
 ): FlightSimSnapshot {
+  // A no-op Start immediately after Restart must not replace the request that
+  // the native presenter is about to acknowledge for the same ready frame.
+  if (
+    currentSnapshot?.phase === 'ready'
+    && currentSnapshot.tick === 0
+    && !currentSnapshot.runtimeError
+  ) {
+    return currentSnapshot
+  }
   const requestId = beginFlightSimReadyFrame()
   const snapshot = start()
   if (snapshot.phase === 'ready' && snapshot.tick === 0 && !snapshot.runtimeError) {
