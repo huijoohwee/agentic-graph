@@ -3,12 +3,30 @@ import { LS_KEYS } from '@/lib/config'
 import { resolveBrowserStorageKey } from '@/lib/persistence'
 import { onGeospatialModeChanged } from '@/features/geospatial/events'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { readGeospatialOverlayEnabledPreference, writeGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
+import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 import {
-  applyGeoCommand,
-  parseGeoCommandEnvelope,
-} from '@/features/geospatial/geoInvocationDispatcher'
-import type { NormalizedEnhancedConfig } from 'grph-shared/geospatial/enhancedLayerContract'
+  buildConsumedGeoCommandUrl,
+  claimGeoCommandDeepLink,
+  type GeoCommandDeepLinkClaimState,
+} from '@/features/geospatial/geoCommandDeepLink'
+import { applyGeoCommandFromGraph } from '@/features/geospatial/geoInvocationRuntime'
+import { setGeospatialModeEnabled as setGeospatialModeEnabledThroughBridge } from '@/features/geospatial/gympgrphBridge'
+
+const reportGeospatialDeepLinkError = (error: unknown): void => {
+  const rawMessage = error instanceof Error ? error.message : String(error || 'Geospatial deep link failed.')
+  const message = (rawMessage.trim() || 'Geospatial deep link failed.').slice(0, 140)
+  try {
+    useGraphStore.getState().upsertUiToast({
+      id: 'geospatial-deep-link-error',
+      kind: 'error',
+      message,
+      ttlMs: 6_000,
+    })
+  } catch {
+    void 0
+  }
+  console.error(`[kg-geo] ${message}`)
+}
 
 export function useCanvasGeospatialRuntime(): boolean {
   const geospatialHostViewportSnapshotRef = React.useRef<null | {
@@ -21,6 +39,7 @@ export function useCanvasGeospatialRuntime(): boolean {
 
   const [geospatialModeEnabled, setGeospatialModeEnabled] = React.useState<boolean>(() => readGeospatialOverlayEnabledPreference())
   const lastHandledGeospatialModeEnabledRef = React.useRef(geospatialModeEnabled)
+  const geospatialDeepLinkClaimRef = React.useRef<GeoCommandDeepLinkClaimState>({ handled: false })
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return
@@ -44,44 +63,37 @@ export function useCanvasGeospatialRuntime(): boolean {
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return
-    try {
-      const params = new URLSearchParams(String(window.location.search || ''))
-      if (params.get('kgGeo') !== '1') return
-      void import('gympgrph')
-        .then(async m => {
-          const gm = m as unknown as { setGeospatialModeEnabled?: (enabled: boolean) => void }
-          if (typeof gm.setGeospatialModeEnabled === 'function') {
-            gm.setGeospatialModeEnabled(true)
-          } else {
-            writeGeospatialOverlayEnabledPreference(true)
-            lastHandledGeospatialModeEnabledRef.current = true
-            setGeospatialModeEnabled(prev => (prev === true ? prev : true))
-          }
-          const commandRaw = params.get('kgGeoCommand')
-          if (!commandRaw) return
-          let parsedRaw: unknown = null
-          try {
-            parsedRaw = JSON.parse(commandRaw)
-          } catch {
-            return
-          }
-          const envelope = parseGeoCommandEnvelope(parsedRaw)
-          const readConfig = (m as unknown as { readEnhancedLayerConfig?: () => NormalizedEnhancedConfig }).readEnhancedLayerConfig
-          if (!envelope || typeof readConfig !== 'function') return
-          await applyGeoCommand(envelope.command, {
-            config: readConfig(),
-            resolveNodeBounds: () => null,
-          })
-        })
-        .catch(error => {
-          writeGeospatialOverlayEnabledPreference(false)
-          lastHandledGeospatialModeEnabledRef.current = false
-          setGeospatialModeEnabled(prev => (prev === false ? prev : false))
-          console.error('[kg-geo] Geospatial runtime unavailable; Canvas remains active.', error)
-        })
-    } catch {
-      void 0
+    const claim = claimGeoCommandDeepLink(
+      window.location.search,
+      geospatialDeepLinkClaimRef.current,
+    )
+    if (!claim) return
+    if (claim.kind !== 'enable') {
+      try {
+        window.history.replaceState(
+          window.history.state,
+          '',
+          buildConsumedGeoCommandUrl(window.location.href),
+        )
+      } catch {
+        void 0
+      }
     }
+    if (claim.kind === 'invalid') {
+      reportGeospatialDeepLinkError(claim.message)
+      return
+    }
+    void (async () => {
+      if (claim.kind === 'enable') {
+        await setGeospatialModeEnabledThroughBridge(true)
+        return
+      }
+      const result = await applyGeoCommandFromGraph({
+        command: claim.envelope.command,
+        graphData: useGraphStore.getState().graphData,
+      })
+      if (result.ok === false) throw new Error(result.rejection.message)
+    })().catch(reportGeospatialDeepLinkError)
   }, [])
 
   React.useEffect(() => {

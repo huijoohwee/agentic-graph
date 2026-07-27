@@ -1,4 +1,5 @@
 import { createCostLog, validateCostLog } from '../../../../contracts/cost-log.schema.js'
+import { createDisabledGeoAuthoringFallbackDraft } from './geoAuthoringFallback.js'
 
 export type GeoAuthoringInput = {
   intent: string
@@ -37,6 +38,17 @@ export type GeoAuthoringModelCall = (
   input: GeoAuthoringInput,
   iteration: number,
 ) => Promise<GeoAuthoringModelResult>
+
+const modelUnavailableResult = (
+  input: GeoAuthoringInput,
+  upstream: string,
+  costLogs: readonly object[],
+): HarnessResult => ({
+  ok: false,
+  draft: createDisabledGeoAuthoringFallbackDraft(input),
+  costLogs,
+  error: { code: 'model-unavailable', upstream },
+})
 
 const finiteNumber = (value: unknown): number | null => {
   const numberValue = Number(value)
@@ -113,12 +125,11 @@ export async function runGeoAuthoring(
   const normalized = normalizeGeoAuthoringInput(rawInput)
   if (normalized.ok === false) return { ok: false, draft: null, costLogs: [], error: normalized.error }
   if (!options?.callModel) {
-    return {
-      ok: false,
-      draft: null,
-      costLogs: [],
-      error: { code: 'model-unavailable', upstream: 'No geo authoring model adapter is configured.' },
-    }
+    return modelUnavailableResult(
+      normalized.input,
+      'No geo authoring model adapter is configured.',
+      [],
+    )
   }
   const costLogs: object[] = []
   let estimatedCostUsd = 0
@@ -130,17 +141,10 @@ export async function runGeoAuthoring(
         normalized.input.modelTimeoutMs,
       )
     } catch (error) {
-      return {
-        ok: false,
-        draft: null,
-        costLogs,
-        error: {
-          code: 'model-unavailable',
-          upstream: error instanceof Error && error.message === 'model-timeout'
-            ? `Model call exceeded ${normalized.input.modelTimeoutMs} ms.`
-            : 'Geo authoring model call failed.',
-        },
-      }
+      const upstream = error instanceof Error && error.message === 'model-timeout'
+        ? `Model call exceeded ${normalized.input.modelTimeoutMs} ms.`
+        : 'Geo authoring model call failed.'
+      return modelUnavailableResult(normalized.input, upstream, costLogs)
     }
     const costLog = createCostLog({
       model: String(response.model || 'unknown'),

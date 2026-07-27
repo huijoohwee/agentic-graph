@@ -18,17 +18,29 @@
   unchanged.
 - The browser bundle adds no GIS engine, model loader, or runtime dependency.
   The clean pre-enhancement baseline is **6,023,998 gzipped JavaScript bytes**;
-  the final enhanced candidate is **6,030,856 bytes** (**+6,858 bytes**).
+  the deterministic readiness baseline is **6,027,959 bytes**; and the final
+  enhanced candidate is **6,041,082 bytes**, a **13,123-byte** measured delta.
   `npm run geospatial-mode:check` enforces a maximum **250 KiB** measured delta.
 
 ## Enhanced-layer runtime contract
 
-Enhanced entries are stored under
-`kg:ui:geospatial:enhancedLayers`. The runtime reads no compiled dataset or
-asset URL. Both `timeoutMs` and `maxBytes` are mandatory for every enhanced
-request; missing bounds abort before `fetch`. Bodies are read incrementally,
-cancelled when the byte limit is crossed, and cached resources can render
-without a network request.
+Enhanced entries use deterministic source precedence: a present
+`kg:ui:geospatial:enhancedLayers` local value, otherwise
+`VITE_GEOSPATIAL_DATASETS_JSON`, otherwise an empty catalog. A present local
+value—including `[]`—wins. Invalid environment JSON fails closed with an
+`invalid-config` diagnostic naming the environment key. The runtime reads no
+compiled dataset or asset URL.
+
+Both `timeoutMs` and `maxBytes` are mandatory for every enhanced request;
+missing bounds abort before `fetch`. The effective deadline is
+`min(timeoutMs, 10_000)`. Bodies are read incrementally and cancelled when the
+deadline or byte limit is crossed; partial payloads and late cache writes are
+discarded.
+
+Cached resources can render without a network request. The current-tab cache is
+a byte-accounted LRU bounded to 32 MiB and 32 entries, returns copies, and
+rechecks each caller's current `maxBytes`. Eviction or page reload may require a
+new request; this is not persistent offline storage.
 
 ```jsonc
 [
@@ -83,11 +95,17 @@ The asset descriptor is intentionally small and source-authored:
 ```
 
 Positions are model-space meters. The custom layer anchors each asset with
-MapLibre-compatible Mercator coordinates, multiplies the current-frame
-projection and model matrices during every draw, shares MapLibre's WebGL
-context, and releases
-all buffers/programs on teardown. Invalid coordinates or mesh descriptors skip
-only the affected asset.
+MapLibre's active projection. Every draw composes
+`defaultProjectionData.mainMatrix`,
+`map.transform.getMatrixForModel([lng, lat], altitudeMeters)`, and the
+source-mesh z-up local transform. This single per-frame path follows globe,
+globe-to-Mercator transition, and camera changes; no manual flat-Mercator
+fallback remains.
+
+The layer shares MapLibre's WebGL context, restores host program/buffer/vertex
+array state, releases owned buffers/programs/vertex arrays on teardown, and
+recreates them after context restoration. Invalid coordinates, matrices, or
+mesh descriptors skip only the affected asset.
 
 ### Invocation and optional authoring
 
@@ -106,28 +124,42 @@ Unknown actions, targets, unbounded nodes, and unmatched tags return actionable
 errors without state mutation. Successful writes synchronously emit the
 documented geospatial change event.
 
+The chat activator runs before generic provider preflight, so valid local
+commands require no chat endpoint. `/geo` and `/geospatial` are claimed only at
+a command boundary; `#` requires explicit `show|hide`; and `@` is claimed only
+for an existing graph node. Unrelated invocation tokens retain their existing
+meaning. MCP envelopes are validated, consumed once, and executed through the
+same graph-aware bridge. Failed on-demand package loading restores the prior
+mode preference without changing the view mode.
+
 The optional geo-authoring harness is off by default. When explicitly invoked,
 it validates input before any model call, clamps loops to 1–50 iterations and
 timeouts to 1–300 seconds, validates every draft and canonical cost log, applies
 no partial configuration, and returns typed timeout, budget, iteration, input,
-or output errors.
+or output errors. An absent adapter, timeout, or transport failure returns a
+typed `model-unavailable` error plus a deterministic disabled draft. The
+fallback has an empty URL, remains invisible, and is never passed to
+`applyDraft` automatically.
 
 ### Runtime-readiness proof
 
 `npm run geospatial-mode:check` owns the focused proof:
 
 - shared and extracted-package TypeScript builds;
-- property tests at 120 runs for height totality and no-mutation rejection;
-- bounded streaming, proxy-routing, configuration, invocation, and harness
-  examples;
-- MCP catalog/envelope tests;
-- dependency, hardcoded-URL, file-size, document, and gzip-delta guards.
+- generative tests at 120 runs plus deterministic projection, GL lifecycle,
+  bounded streaming, LRU, deadline, progress, configuration, invocation, fit,
+  and authoring-fallback tests;
+- MCP catalog/envelope tests and filtered Canvas geospatial-invocation
+  integration tests;
+- an ordered evidence manifest for all **38 correctness properties**;
+- a production build followed by dependency, hardcoded-URL, file-size,
+  document, property-manifest, and gzip-delta guards.
 
-Owned Dev browser proof on the task runtime covered both MapLibre paths after a
-clean reload: the 2D fixture rendered as a native extrusion, and the 3D path
-mounted one configured extrusion layer plus one source-authored asset WebGL
-context at a 2560×1440 backing resolution. The debug bounds were
-`103.800,1.260,103.880,1.340`. This is deterministic virtual-camera proof, not
+Owned Dev browser proof is a separate gate and must start from a clean browser
+profile with enhanced entries supplied by the environment catalog. It asserts
+the native extrusion ready ID, one source-authored asset context, a nonzero
+MapLibre canvas, the 3D/globe view, mobile viewport behavior, and no critical
+page/request failure. This is deterministic desktop-browser proof, not
 physical-device or production proof.
 
 The production/Cloudflare route remains outside this implementation authority;
@@ -241,7 +273,9 @@ source readiness does not claim deployment or physical-device proof.
 
 ## Configuration & Persistence
 
-- The extracted module keeps the original persistence/config design (LS-backed settings + optional env overrides) for future reuse.
+- Enhanced declarations use local-key-present → Vite environment → empty
+  precedence. The environment initializes a clean profile; subsequent
+  localStorage authoring remains operator-owned.
 - Knowgrph defines and reads the Geospatial Mode persistence keys so the host can gate rendering and keep embedded previews in sync, but the write-path lives in `gympgrph`’s store actions (e.g. `setGeospatialOverlayEnabled`).
 - Runtime sync uses a shared UI event contract in `grph-shared`:
   - Event name: `GEOSPATIAL_MODE_CHANGED_EVENT`
@@ -265,12 +299,16 @@ source readiness does not claim deployment or physical-device proof.
 ### Dataset Fetch Limits (UI)
 
 - Dataset fetch is always bounded by `timeoutMs` and `maxBytes` (user-configurable).
+- Enhanced-layer fetches apply `min(timeoutMs, 10_000)` as their readiness
+  deadline even when an operator configures a longer general dataset timeout.
 - In Knowgrph, the host UI surfaces these controls in **MainPanel Workflow → Step 3 (Ingest) → Dataset fetch limits** to avoid duplicating configuration in the Geo floating panel.
 - The Geo floating panel does not render fetch-limit inputs; it only provides geospatial overlay configuration and a small icon hint pointing users to Source Files for dataset add/import.
 - Default `maxBytes` is sized to handle common public GeoJSON datasets (for example ~20MB city datasets) while still remaining bounded.
 - If a dataset is too large (based on Content-Length when available), loading fails early with an actionable error instead of streaming indefinitely.
 - Basemap style/tiles are fetched via the local `/__fetch_remote` proxy when running on localhost to avoid CORS issues; binary tile responses are served with a corrected Content-Length to prevent truncated PBF parsing errors.
 - Dataset status shows streaming progress when Content-Length is available (bytes + %), and datasets can be reloaded via an icon action without remove/re-add.
+- Enhanced network failures use the literal `network-unavailable` status and
+  retain already-loaded sibling layers.
 
 ### Graph POI Styling (UI)
 
