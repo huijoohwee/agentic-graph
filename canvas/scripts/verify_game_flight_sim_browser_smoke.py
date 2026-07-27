@@ -340,7 +340,7 @@ def main() -> None:
             initial = playable_state["initial"]
             moved = desktop["moved"]
             evidence = {
-                "schema": "knowgrph-flight-sim-browser-run/v4",
+                "schema": "knowgrph-flight-sim-browser-run/v5",
                 "runIndex": RUN_INDEX,
                 "runCount": RUN_COUNT,
                 "candidate": {

@@ -63,12 +63,12 @@ GEO_PROVIDER_READ_PATHS = {
         "prefixes": ("/font/", "/fonts/", "/terrain/", "/tiles/"),
     },
     "tiles.openfreemap.org": {
-        "exact": {"/styles/liberty"},
+        "exact": {"/planet", "/styles/liberty"},
         "prefixes": (
             "/fonts/",
             "/natural_earth/",
             "/planet/",
-            "/sprites/liberty",
+            "/sprites/",
             "/styles/liberty/",
         ),
     },

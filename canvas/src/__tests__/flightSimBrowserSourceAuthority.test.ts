@@ -66,6 +66,13 @@ test('Flight browser proof activates only after applying the authored source', (
     ),
     'utf8',
   )
+  const deadlineVerifier = readFileSync(
+    resolve(
+      repoRoot,
+      'canvas/scripts/lib/game_flight_sim_smoke_deadlines.py',
+    ),
+    'utf8',
+  )
   const serverOwner = readFileSync(
     resolve(
       repoRoot,
@@ -153,6 +160,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /indexSource\.includes\('\/@vite\/client'\)/)
   assert.match(runner, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(runner, /productionBuild,/)
+  assert.match(runner, /knowgrph-flight-sim-browser-run\/v5/)
+  assert.match(runner, /knowgrph-flight-sim-browser-proof\/v5/)
   assert.match(
     verifier,
     /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/,
@@ -342,7 +351,17 @@ test('Flight browser proof activates only after applying the authored source', (
     runner,
     /gameplayNetworkBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/,
   )
+  assert.match(
+    deadlineVerifier,
+    /runtime\.rejectFlightSimGameplayNetworkAttempt\(/,
+  )
+  assert.match(deadlineVerifier, /networkExecutorInvoked = true/)
+  assert.match(deadlineVerifier, /websocketExecutorInvoked = true/)
+  assert.doesNotMatch(deadlineVerifier, /await window\.fetch\(attemptPath\)/)
   assert.match(runner, /gameplayWebSocketBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/)
+  assert.match(runner, /gameplayNetworkExecutorInvoked === false/)
+  assert.match(runner, /gameplayNetworkMissionStateRetained === true/)
+  assert.match(runner, /gameplayWebSocketExecutorInvoked === false/)
   assert.match(runner, /gameplayWebSocketTransportObserved === false/)
   assert.match(runner, /assertExactFlightSimBrowserVerificationLedger/)
   assert.match(verifier, /page\.on\("websocket", record_websocket\)/)

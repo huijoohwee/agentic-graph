@@ -363,7 +363,10 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             "https://demotiles.maplibre.org/style.json",
             "https://demotiles.maplibre.org/tiles/2/1/1.pbf",
             "https://tiles.openfreemap.org/styles/liberty",
+            "https://tiles.openfreemap.org/planet",
             "https://tiles.openfreemap.org/planet/20250702/2/1/1.pbf",
+            "https://tiles.openfreemap.org/sprites/ofm_f384/ofm.json",
+            "https://tiles.openfreemap.org/sprites/ofm_f384/ofm.png",
         ):
             with self.subTest(url=url):
                 self.assertTrue(

@@ -244,15 +244,16 @@ async function readValidatedRunEvidence({
     && evidence?.deadlines?.readyFrame?.tick === 0
     && evidence?.deadlines?.gameplayNetworkBlock?.operation
       === 'fetch:GET:/api/storage/flight-sim-browser-deadline-proof'
-    && evidence?.deadlines?.gameplayNetworkBlockedError?.code
-      === 'FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED'
+    && evidence?.deadlines?.gameplayNetworkExecutorInvoked === false
+    && evidence?.deadlines?.gameplayNetworkMissionStateRetained === true
+    && evidence?.deadlines?.gameplayNetworkBlockedSnapshot?.runtimeError
+      === 'Flight Sim blocked gameplay network operation: fetch:GET:/api/storage/flight-sim-browser-deadline-proof'
     && evidence?.deadlines?.gameplayNetworkTransportObserved === false
     && evidence?.deadlines?.gameplayWebSocketBlock?.operation
       === expectedWebSocketOperation
-    && evidence?.deadlines?.gameplayWebSocketBlockedError?.code
-      === 'FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED'
-    && evidence?.deadlines?.gameplayWebSocketBlockedError?.operation
-      === expectedWebSocketOperation
+    && evidence?.deadlines?.gameplayWebSocketExecutorInvoked === false
+    && evidence?.deadlines?.gameplayWebSocketBlockedSnapshot?.runtimeError
+      === `Flight Sim blocked gameplay network operation: ${expectedWebSocketOperation}`
     && evidence?.deadlines?.gameplayWebSocketFlightActive === true
     && evidence?.deadlines?.gameplayWebSocketMissionStateRetained === true
     && evidence?.deadlines?.gameplayWebSocketTransportObserved === false
@@ -347,7 +348,7 @@ async function readValidatedRunEvidence({
     },
   )
   if (
-    evidence?.schema !== 'knowgrph-flight-sim-browser-run/v4'
+    evidence?.schema !== 'knowgrph-flight-sim-browser-run/v5'
     || evidence?.candidate?.head !== candidateHead
     || evidence?.candidate?.tree !== candidateTree
     || evidence?.candidate?.branch !== candidateBranch
@@ -468,7 +469,7 @@ async function runCandidateProof() {
   })
 
   const aggregate = {
-    schema: 'knowgrph-flight-sim-browser-proof/v4',
+    schema: 'knowgrph-flight-sim-browser-proof/v5',
     candidate: {
       head: candidateHead,
       tree: candidateTree,

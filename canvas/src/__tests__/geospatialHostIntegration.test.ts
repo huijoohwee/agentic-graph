@@ -800,8 +800,8 @@ export const testGympgrphGeospatialStyleStorageNormalizesUnsafeRemoteStyles = ()
   if (!helperText.includes('normalizePersistedGeospatialStyleUrl')) {
     throw new Error('Expected a shared geospatial basemap style normalization helper')
   }
-  if (!helperText.includes("if (!trimmed) return MAPLIBRE_DEFAULT_STYLE_URL")) {
-    throw new Error('Expected blank persisted style URLs to normalize to the MapLibre default path')
+  if (!helperText.includes("if (!trimmed) return ''")) {
+    throw new Error('Expected blank persisted style URLs to defer to the selected MapLibre view default')
   }
   if (!helperText.includes("if (lower.startsWith('http://') || lower.startsWith('https://')) return trimmed")) {
     throw new Error('Expected persisted remote style URLs to stay available for explicit MapLibre mode usage')
@@ -812,8 +812,8 @@ export const testGympgrphGeospatialStyleStorageNormalizesUnsafeRemoteStyles = ()
   if (!hostText.includes('normalizePersistedGeospatialStyleUrl(raw)')) {
     throw new Error('Expected GeospatialHost to normalize persisted style URLs when reading runtime basemap state')
   }
-  if (!hostText.includes('MAPLIBRE_MODERN_DEFAULT_STYLE_URL')) {
-    throw new Error('Expected GeospatialHost to distinguish MapLibre modern built-in default styling')
+  if (!hostText.includes('resolveEffectiveGeospatialStyleUrl(geospatialViewMode, targetStyleUrl)')) {
+    throw new Error('Expected GeospatialHost to resolve a blank stored style against the active MapLibre view')
   }
 }
 

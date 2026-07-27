@@ -96,11 +96,11 @@ export const resolveEffectiveGeospatialStyleUrl = (
 
 export const normalizePersistedGeospatialStyleUrl = (raw: string | null | undefined): string => {
   const trimmed = String(raw || '').trim()
-  if (!trimmed) return GRABMAPS_DEFAULT_STYLE_URL
+  if (!trimmed) return ''
   if (trimmed === SAFE_SVG_FALLBACK_STYLE_SENTINEL) return SAFE_SVG_FALLBACK_STYLE_SENTINEL
 
   const lower = trimmed.toLowerCase()
-  if (lower.startsWith('kg:style:')) return GRABMAPS_DEFAULT_STYLE_URL
+  if (lower.startsWith('kg:style:')) return ''
 
   // Allow explicit remote style URLs for MapLibre runtime paths.
   if (lower.startsWith('http://') || lower.startsWith('https://')) return trimmed
