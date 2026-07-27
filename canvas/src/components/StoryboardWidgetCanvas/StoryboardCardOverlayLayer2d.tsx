@@ -32,6 +32,8 @@ import { readCanvasBoardLayoutMode } from '@/lib/canvas/canvasBoardLayoutDisplay
 import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 import { isFlowWidgetHeaderDragAllowedByPin } from '@/lib/storyboardWidget/flowWidgetPinMovement'
 import { collectGroupPanelContainedNodeIds, isGroupPanelContainedNode } from '@/lib/storyboardWidget/groupPanelContainment'
+import { readStoryboardWidgetContainmentGroupAabb } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeGroupLookup'
+import type { FlowNativeRuntime } from '@/components/FlowCanvas/nativeRuntime'
 import { resolveScopedFlowWidgetNodeMap } from '@/lib/storyboardWidget/widgetStateScope'
 import { CardInlineTextEditor } from '@/lib/cards/CardInlineTextEditor'
 import { buildGraphNodeCanonicalTextPatch, GRAPH_NODE_CARD_TITLE_PROPERTY_KEYS, type GraphNodeCardTextFieldSpec } from '@/lib/cards/graphNodeCardFields'
@@ -246,6 +248,7 @@ export function StoryboardCardOverlayLayer2d(props: {
   removeNodeById: (nodeId: string) => void
   removePendingNodeById: (nodeId: string) => void
   getTransform: () => StoryboardWidgetOverlayDragTransform | null
+  getRuntime: () => FlowNativeRuntime | null
   getWheelForwardTarget?: () => Element | null
   runWorkflowNode?: (nodeId: string) => Promise<void> | void
   schema: GraphSchema | null
@@ -341,6 +344,7 @@ export function StoryboardCardOverlayLayer2d(props: {
   const interactions = useStoryboardCardOverlayInteractions2d({
     addHistory,
     getTransform,
+    readContainmentBounds: id => readStoryboardWidgetContainmentGroupAabb(props.getRuntime(), id),
     readNodeCenter: readCardCenter,
     readNodeSize: readCardSize,
     schema,
@@ -619,7 +623,7 @@ export function StoryboardCardOverlayLayer2d(props: {
           <StoryboardCardOverlayItem
             key={card.id}
             card={card}
-            cardMoveEnabled={!containedByGroupPanel && isFlowWidgetHeaderDragAllowedByPin({
+            cardMoveEnabled={containedByGroupPanel || isFlowWidgetHeaderDragAllowedByPin({
               pinnedInCanvas: headerPinProps.headerPinned === true,
             })}
             storyboardWidgetSurfaceId={storyboardWidgetSurfaceId}

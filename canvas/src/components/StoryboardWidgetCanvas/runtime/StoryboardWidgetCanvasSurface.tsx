@@ -529,6 +529,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
       {props.overlayEditorElements}
       <StoryboardGroupPanelLayer2d
         active={storyboardSharedSurfaceActive}
+        fallbackNodePositions={stableStoryboardCardPlacements}
         flowWidgetPinnedByNodeId={effectiveFlowWidgetPinnedByNodeId}
         flowWidgetStateGraphKey={flowWidgetStateGraphKey}
         graphData={storyboardGraphData}
@@ -545,6 +546,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
         storyboardCollectiveZoomBaselineKRef={storyboardCollectiveZoomBaselineKRef}
         getTransform={getSynchronizedStoryboardCameraTransform}
+        getRuntime={() => props.flowRuntimeRefRef.current?.current || null}
         getWheelForwardTarget={() => props.rootRef.current?.querySelector('[data-kg-canvas-interactive="1"]') || null}
         graphData={storyboardGraphData}
         graphRevision={graphContentRevision || graphDataRevision || 0}
