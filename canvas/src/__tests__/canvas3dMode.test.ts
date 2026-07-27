@@ -571,20 +571,21 @@ export function testCanvasViewTimelineToggleUsesSharedViewModeOption() {
   const timelineToggle = displayControls?.children?.find(child => child.id === 'control:timeline')
   const gridToggle = displayControls?.children?.find(child => child.id === 'control:grid')
   const snapGridToggle = displayControls?.children?.find(child => child.id === 'control:snapGrid')
+  const helperLinesToggle = displayControls?.children?.find(child => child.id === 'control:helperLines')
   const gitGraphToggle = displayControls?.children?.find(child => child.id === 'control:gitGraph')
   const ganttToggle = displayControls?.children?.find(child => child.id === 'control:gantt')
-  if (!displayControls || !timelineToggle || !gridToggle || !snapGridToggle || !gitGraphToggle || !ganttToggle) {
+  if (!displayControls || !timelineToggle || !gridToggle || !snapGridToggle || !helperLinesToggle || !gitGraphToggle || !ganttToggle) {
     throw new Error(
-      'Expected Display Controls to own Grid, Snap to Grid, Timeline, Flowchart, GitGraph, Gantt, Architecture, and Event Model toggles',
+      'Expected Display Controls to own Grid, Snap to Grid, Helper Lines, Timeline, Flowchart, GitGraph, Gantt, Architecture, and Event Model toggles',
     )
   }
   const childIds = displayControls.children?.map(child => child.id).join('|')
   if (
     childIds !==
-      'control:richMedia|control:nodeShape|control:clusterShape|control:portHandles|control:minimap|control:grid|control:snapGrid|control:aspectRatio|control:boardLayout|control:card|control:widget|control:timeline|control:flowchart|control:gitGraph|control:gantt|control:architecture|control:eventModeling'
+      'control:richMedia|control:nodeShape|control:clusterShape|control:portHandles|control:minimap|control:grid|control:snapGrid|control:helperLines|control:aspectRatio|control:boardLayout|control:card|control:widget|control:timeline|control:flowchart|control:gitGraph|control:gantt|control:architecture|control:eventModeling'
   ) {
     throw new Error(
-      `Expected Minimap, Grid, Snap to Grid, Card, Widget, Timeline, Flowchart, GitGraph, Gantt, Architecture, and Event Model to sit beside each other in Display Controls, got ${childIds}`,
+      `Expected Minimap, Grid, Snap to Grid, Helper Lines, Card, Widget, Timeline, Flowchart, GitGraph, Gantt, Architecture, and Event Model to sit beside each other in Display Controls, got ${childIds}`,
     )
   }
   if (timelineToggle.children?.length) {
@@ -598,10 +599,11 @@ export function testCanvasViewTimelineToggleUsesSharedViewModeOption() {
     gitGraphToggle.isActive !== true ||
     ganttToggle.isActive === true ||
     gridToggle.isActive === true ||
-    snapGridToggle.isActive === true
+    snapGridToggle.isActive === true ||
+    helperLinesToggle.isActive !== true
   ) {
     throw new Error(
-      'Expected GitGraph to be the active bottom-surface toggle while Timeline, Gantt, Grid, and Snap to Grid remain inactive under Display Controls',
+      'Expected GitGraph and Helper Lines to be active while Timeline, Gantt, Grid, and Snap to Grid remain inactive under Display Controls',
     )
   }
   const calls: string[] = []
