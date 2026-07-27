@@ -4,6 +4,7 @@ const KNOWGRPH_RUNTIME_CACHE_NAMES = new Set(['kg-assets', 'kg-static', 'kg-data
 const REVISION_REQUEST = 'KG_SERVICE_WORKER_SOURCE_REVISION_REQUEST'
 const REVISION_RESPONSE = 'KG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE'
 const REVISION_RESPONSE_TIMEOUT_MS = 2_000
+export const SERVICE_WORKER_CACHE_PRUNE_RETRY_DELAYS_MS = [250, 1_000, 5_000, 15_000, 30_000] as const
 
 type CacheTarget = {
   keys(): Promise<readonly Request[]>
@@ -57,6 +58,7 @@ type ServiceWorkerCacheRevisionOptions = {
   scopePath?: string
   readActiveRevision?: (worker: ServiceWorkerTarget) => Promise<string>
   runInitially?: boolean
+  pruneRetryDelaysMs?: readonly number[]
   onError?: (error: unknown) => void
 }
 
@@ -227,17 +229,19 @@ export function installServiceWorkerCacheRevisionOwner(
   let disposed = false
   let pruneRequested = false
   let pruneInFlight: Promise<void> | null = null
+  let pruneRetryIndex = 0
+  let pruneRetryTimer: ReturnType<typeof setTimeout> | null = null
   const watchedWorkers = new Set<ServiceWorkerTarget>()
 
-  const attemptPrune = async () => {
+  const attemptPrune = async (): Promise<boolean> => {
     const activeWorker = isStableActiveWorker(options.registration, options.controllerTarget)
-    if (!activeWorker) return
+    if (!activeWorker) return false
     const sourceRevision = await readActiveRevision(activeWorker)
     if (!SOURCE_REVISION_PATTERN.test(sourceRevision)) {
       throw new Error('active service worker did not attest an exact source revision')
     }
-    if (isStableActiveWorker(options.registration, options.controllerTarget) !== activeWorker) return
-    await pruneStaleServiceWorkerCacheEntries({
+    if (isStableActiveWorker(options.registration, options.controllerTarget) !== activeWorker) return false
+    const result = await pruneStaleServiceWorkerCacheEntries({
       cacheStorage: options.cacheStorage,
       origin: options.origin,
       sourceRevision,
@@ -246,16 +250,32 @@ export function installServiceWorkerCacheRevisionOwner(
         !disposed
         && isStableActiveWorker(options.registration, options.controllerTarget) === activeWorker,
     })
+    return result.ready
+  }
+
+  const schedulePruneRetry = () => {
+    if (disposed || pruneRetryTimer !== null) return
+    const retryDelays = options.pruneRetryDelaysMs ?? SERVICE_WORKER_CACHE_PRUNE_RETRY_DELAYS_MS
+    const delayMs = retryDelays[pruneRetryIndex]
+    if (!Number.isFinite(delayMs) || delayMs < 0) return
+    pruneRetryIndex += 1
+    pruneRetryTimer = setTimeout(() => {
+      pruneRetryTimer = null
+      requestPrune()
+    }, delayMs)
   }
 
   const drainPruneRequests = async () => {
     while (!disposed && pruneRequested) {
       pruneRequested = false
+      let ready = false
       try {
-        await attemptPrune()
+        ready = await attemptPrune()
       } catch (error) {
         options.onError?.(error)
       }
+      if (ready) pruneRetryIndex = 0
+      else schedulePruneRetry()
     }
   }
 
@@ -301,6 +321,8 @@ export function installServiceWorkerCacheRevisionOwner(
     dispose() {
       disposed = true
       pruneRequested = false
+      if (pruneRetryTimer !== null) clearTimeout(pruneRetryTimer)
+      pruneRetryTimer = null
       options.controllerTarget.removeEventListener('controllerchange', handleRegistrationChange)
       options.registration.removeEventListener?.('updatefound', handleRegistrationChange)
       for (const worker of watchedWorkers) {
