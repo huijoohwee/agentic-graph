@@ -30,18 +30,25 @@ test('workspace source text writes wait behind the Flight seed-sync suspension',
     text: 'before',
   })
   const releaseSuspension = await acquireWorkspaceSeedSyncSuspension()
-  let settled = false
-  const queuedWrite = enqueueWorkspaceSourceTextWrite(filePath, 'after')
+  let firstWriteSettled = false
+  let secondWriteSettled = false
+  const firstQueuedWrite = enqueueWorkspaceSourceTextWrite(filePath, 'after')
     .finally(() => {
-      settled = true
+      firstWriteSettled = true
+    })
+  const secondQueuedWrite = enqueueWorkspaceSourceTextWrite(filePath, 'final')
+    .finally(() => {
+      secondWriteSettled = true
     })
 
   await Promise.resolve()
   await Promise.resolve()
-  assert.equal(settled, false)
+  assert.equal(firstWriteSettled, false)
+  assert.equal(secondWriteSettled, false)
   assert.equal(await workspaceFs.readFileText(filePath), 'before')
 
   releaseSuspension()
-  assert.equal(await queuedWrite, true)
-  assert.equal(await workspaceFs.readFileText(filePath), 'after')
+  assert.equal(await firstQueuedWrite, true)
+  assert.equal(await secondQueuedWrite, true)
+  assert.equal(await workspaceFs.readFileText(filePath), 'final')
 })
