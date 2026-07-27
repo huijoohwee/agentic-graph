@@ -6,8 +6,48 @@ import {
   completeFlightSimStagePreparation,
   readCurrentFlightSimStagePreparationRequest,
   resetFlightSimStagePreparationForTests,
+  waitForFlightSimStageFrameOpportunity,
+  waitForFlightSimStagePresentation,
   waitForFlightSimStagePreparation,
 } from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
+
+type ControlledAnimationFrameWindow = Readonly<{
+  cancelAnimationFrame: (frameId: number) => void
+  requestAnimationFrame: (callback: FrameRequestCallback) => number
+}>
+
+function installControlledAnimationFrameWindow() {
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const callbacks = new Map<number, FrameRequestCallback>()
+  const cancelled: number[] = []
+  let frameSequence = 0
+  const controlledWindow: ControlledAnimationFrameWindow = {
+    cancelAnimationFrame: frameId => {
+      callbacks.delete(frameId)
+      cancelled.push(frameId)
+    },
+    requestAnimationFrame: callback => {
+      frameSequence += 1
+      callbacks.set(frameSequence, callback)
+      return frameSequence
+    },
+  }
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: controlledWindow,
+  })
+  return {
+    callbacks,
+    cancelled,
+    restore: () => {
+      if (originalWindow) {
+        Object.defineProperty(globalThis, 'window', originalWindow)
+      } else {
+        Reflect.deleteProperty(globalThis, 'window')
+      }
+    },
+  }
+}
 
 test('surface preparation waits for its exact committed mission-stage request', async () => {
   resetFlightSimStagePreparationForTests()
@@ -107,4 +147,100 @@ test('a timed-out request stays stale across reset and a monotonic next token', 
   await currentWait
   cancelFlightSimStagePreparation(currentRequestId)
   resetFlightSimStagePreparationForTests()
+})
+
+test('surface presentation waits for its stage acknowledgement and next frame opportunity', async () => {
+  const animationFrame = installControlledAnimationFrameWindow()
+  try {
+    resetFlightSimStagePreparationForTests()
+    const requestId = beginFlightSimStagePreparation()
+    let resolved = false
+    const waiting = waitForFlightSimStagePresentation(requestId, {
+      limitMs: 1_000,
+    })
+      .then(() => {
+        resolved = true
+      })
+    await Promise.resolve()
+    assert.equal(resolved, false)
+    assert.equal(animationFrame.callbacks.size, 0)
+
+    assert.equal(completeFlightSimStagePreparation(requestId), true)
+    await Promise.resolve()
+    assert.equal(animationFrame.callbacks.size, 1)
+
+    const [[frameId, presentFrame]] = [...animationFrame.callbacks]
+    animationFrame.callbacks.delete(frameId)
+    presentFrame(16)
+    await waiting
+    assert.equal(resolved, true)
+    assert.deepEqual(animationFrame.cancelled, [])
+    cancelFlightSimStagePreparation(requestId)
+    resetFlightSimStagePreparationForTests()
+  } finally {
+    animationFrame.restore()
+  }
+})
+
+test('aborting a frame-opportunity wait cancels its pending browser frame', async () => {
+  const animationFrame = installControlledAnimationFrameWindow()
+  try {
+    const controller = new AbortController()
+    const waiting = waitForFlightSimStageFrameOpportunity({
+      limitMs: 1_000,
+      signal: controller.signal,
+    })
+    assert.equal(animationFrame.callbacks.size, 1)
+
+    controller.abort(new Error('injected frame-opportunity abort'))
+    await assert.rejects(waiting, /injected frame-opportunity abort/)
+    assert.equal(animationFrame.callbacks.size, 0)
+    assert.deepEqual(animationFrame.cancelled, [1])
+  } finally {
+    animationFrame.restore()
+  }
+})
+
+test('a frame-opportunity wait fails closed when the browser never presents', async () => {
+  const animationFrame = installControlledAnimationFrameWindow()
+  try {
+    await assert.rejects(
+      waitForFlightSimStageFrameOpportunity({ limitMs: 0 }),
+      /frame opportunity did not complete within 0 ms/,
+    )
+    assert.equal(animationFrame.callbacks.size, 0)
+    assert.deepEqual(animationFrame.cancelled, [1])
+  } finally {
+    animationFrame.restore()
+  }
+})
+
+test('presentation keeps one absolute budget and rejects a stale prepared request', async () => {
+  const animationFrame = installControlledAnimationFrameWindow()
+  try {
+    resetFlightSimStagePreparationForTests()
+    const expiredRequestId = beginFlightSimStagePreparation()
+    assert.equal(completeFlightSimStagePreparation(expiredRequestId), true)
+    await assert.rejects(
+      waitForFlightSimStagePresentation(expiredRequestId, { limitMs: 0 }),
+      /presentation request .* did not complete within 0 ms/,
+    )
+    assert.equal(animationFrame.callbacks.size, 0)
+
+    const staleRequestId = beginFlightSimStagePreparation()
+    const waiting = waitForFlightSimStagePresentation(staleRequestId, {
+      limitMs: 1_000,
+    })
+    assert.equal(completeFlightSimStagePreparation(staleRequestId), true)
+    await Promise.resolve()
+    assert.equal(animationFrame.callbacks.size, 1)
+    resetFlightSimStagePreparationForTests()
+    const [[frameId, presentFrame]] = [...animationFrame.callbacks]
+    animationFrame.callbacks.delete(frameId)
+    presentFrame(16)
+    await assert.rejects(waiting, /preparation request .* is stale/)
+  } finally {
+    resetFlightSimStagePreparationForTests()
+    animationFrame.restore()
+  }
 })

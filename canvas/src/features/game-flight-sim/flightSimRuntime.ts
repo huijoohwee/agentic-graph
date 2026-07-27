@@ -37,7 +37,7 @@ import {
   cancelFlightSimStagePreparation,
   cancelCurrentFlightSimStagePreparation,
   resetFlightSimStagePreparationForTests,
-  waitForFlightSimStagePreparation,
+  waitForFlightSimStagePresentation,
 } from './flightSimStagePreparationRuntime'
 import {
   createFlightSimSurfaceOpenController,
@@ -365,7 +365,7 @@ async function performFlightSimSurfaceOpen(
     suspendAuthoredRuntime()
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     if (stagePreparationRequestId !== null) {
-      await waitForFlightSimStagePreparation(stagePreparationRequestId, {
+      await waitForFlightSimStagePresentation(stagePreparationRequestId, {
         signal: options.signal,
       })
       throwIfFlightSimSurfaceOpenStale(expectedGeneration)

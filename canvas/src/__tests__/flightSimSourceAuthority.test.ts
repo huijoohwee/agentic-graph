@@ -162,7 +162,7 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     opening,
   )
   const preparedStage = runtime.indexOf(
-    'await waitForFlightSimStagePreparation',
+    'await waitForFlightSimStagePresentation',
     opening,
   )
   const readyDeadline = runtime.indexOf(
