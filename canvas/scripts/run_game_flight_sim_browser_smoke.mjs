@@ -29,6 +29,7 @@ import {
   assertGitVerificationWorkspace,
 } from '../../scripts/lib/git-verification-workspace.mjs'
 import {
+  normalizeGameFlightSimCandidateBranch,
   resolveGameFlightSimBrowserPaths,
 } from './lib/game-flight-sim-browser-paths.mjs'
 
@@ -103,7 +104,9 @@ async function assertCandidateState({
   }
   const actualHead = readGitValue(['rev-parse', 'HEAD'])
   const actualTree = readGitValue(['rev-parse', 'HEAD^{tree}'])
-  const actualBranch = readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'])
+  const actualBranch = normalizeGameFlightSimCandidateBranch(
+    readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
+  )
   const diskSource = await readFile(sourcePath)
   const committedSource = readGitBytes([
     'show',
@@ -329,7 +332,9 @@ async function readValidatedRunEvidence({
 async function runCandidateProof() {
   const candidateHead = readGitValue(['rev-parse', 'HEAD'])
   const candidateTree = readGitValue(['rev-parse', 'HEAD^{tree}'])
-  const candidateBranch = readGitValue(['rev-parse', '--abbrev-ref', 'HEAD'])
+  const candidateBranch = normalizeGameFlightSimCandidateBranch(
+    readGitValue(['rev-parse', '--abbrev-ref', 'HEAD']),
+  )
   const sourceSha256 = sha256(await readFile(sourcePath))
   const candidate = {
     expectedBranch: candidateBranch,
