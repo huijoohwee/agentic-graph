@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   disposeMapLibreFlightBootstrap,
+  markMapLibreFlightReadyFramePresented,
   reconcileMapLibreFlightBootstrap,
 } from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
 import {
@@ -115,9 +116,19 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
   overlayPresented = true
   for (const listener of [...renderListeners]) listener()
   await flushMicrotasks()
-
   assert.deepEqual(calls, [
     'style:local-flight-bootstrap:plain',
+    'repaint',
+  ])
+  assert.equal(renderListeners.size, 1)
+
+  markMapLibreFlightReadyFramePresented(map)
+  assert.equal(calls.at(-1), 'repaint')
+  for (const listener of [...renderListeners]) listener()
+  await flushMicrotasks()
+  assert.deepEqual(calls, [
+    'style:local-flight-bootstrap:plain',
+    'repaint',
     'repaint',
     'provider:resolve',
     'style:https://provider.test/style.json:retained',

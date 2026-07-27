@@ -111,10 +111,12 @@ function admitDefaultAssets(): void {
   }
 }
 
+function captureAuthoredRuntimeOwnership(): void {
+  authoredRuntimeOwnership ??= captureFlightSimAuthoredRuntimeOwnership()
+}
+
 function suspendAuthoredRuntime(): void {
-  if (!authoredRuntimeOwnership) {
-    authoredRuntimeOwnership = captureFlightSimAuthoredRuntimeOwnership()
-  }
+  captureAuthoredRuntimeOwnership()
   suspendFlightSimAuthoredRuntime()
 }
 
@@ -343,7 +345,10 @@ async function performFlightSimSurfaceOpen(
     }
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
-    suspendAuthoredRuntime()
+    // Capture before Flight publishes active, then pause in that same turn so
+    // stopped MapLibre preparation absorbs the React commit before the separate
+    // ready-frame deadline starts.
+    captureAuthoredRuntimeOwnership()
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
     // An already-active mission with the same profile retains its presented
@@ -357,6 +362,7 @@ async function performFlightSimSurfaceOpen(
       stagePreparationRequestId = beginFlightSimStagePreparation()
     }
     const opened = defaultRuntime.open(true)
+    suspendAuthoredRuntime()
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     if (stagePreparationRequestId !== null) {
       await waitForFlightSimStagePreparation(stagePreparationRequestId, {

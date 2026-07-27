@@ -3,6 +3,7 @@ type MapLibreFlightBootstrapState = {
   disposed: boolean
   generation: number
   map: any
+  readyFramePresented: boolean
   removeRenderBinding: (() => void) | null
 }
 
@@ -19,6 +20,7 @@ function readState(map: any): MapLibreFlightBootstrapState | null {
       disposed: false,
       generation: 0,
       map,
+      readyFramePresented: false,
       removeRenderBinding: null,
     }
     bootstrapStateByMap.set(map, state)
@@ -77,6 +79,7 @@ async function promoteProviderStyle(options: Readonly<{
         : { diff: true },
     )
     state.bootstrapApplied = false
+    state.readyFramePresented = false
   } catch (error) {
     reportError(state, generation, onError, error)
   }
@@ -84,7 +87,27 @@ async function promoteProviderStyle(options: Readonly<{
 
 export function markMapLibreFlightBootstrapApplied(map: any): void {
   const state = readState(map)
-  if (state) state.bootstrapApplied = true
+  if (!state) return
+  state.bootstrapApplied = true
+  state.readyFramePresented = false
+}
+
+export function markMapLibreFlightReadyFramePresented(map: any): void {
+  const state = readState(map)
+  if (
+    !state
+    || state.disposed
+    || !state.bootstrapApplied
+    || state.readyFramePresented
+  ) return
+  state.readyFramePresented = true
+  try {
+    // Provider promotion begins on the render after the local ready frame was
+    // acknowledged, so its style swap cannot consume the playable deadline.
+    state.map.triggerRepaint?.()
+  } catch {
+    void 0
+  }
 }
 
 export function reconcileMapLibreFlightBootstrap(options: Readonly<{
@@ -120,6 +143,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
       // so the first playable Flight frame never waits on remote style I/O.
       state.map.setStyle?.(options.bootstrapStyle, { diff: true })
       state.bootstrapApplied = true
+      state.readyFramePresented = false
     } catch (error) {
       reportError(state, generation, options.onError, error)
       return
@@ -132,6 +156,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
       promotionStarted
       || state.disposed
       || state.generation !== generation
+      || !state.readyFramePresented
       || !options.hasExactFlightOverlay(state.map)
     ) return
     promotionStarted = true

@@ -14,6 +14,9 @@ import {
   fitMapToFlightGeoOverlay,
 } from '../../flightGeoOverlayMapLibre.js'
 import { readGeoJsonSourceData } from '../../maplibreLayers.js'
+import {
+  markMapLibreFlightReadyFramePresented,
+} from './mapLibreFlightBootstrap.js'
 
 export const FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT = 8
 export const FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT = 180
@@ -226,6 +229,9 @@ export function createFlightGeoOverlayPresentationGate(
         tick: current.tick,
       })
       onPresented?.(presentation)
+      if (current.phase === 'ready' && current.tick === 0) {
+        markMapLibreFlightReadyFramePresented(map)
+      }
       const root = readRoot()
       if (root) {
         root.dataset.kgFlightGeospatialPresentedRevision = current.revision
