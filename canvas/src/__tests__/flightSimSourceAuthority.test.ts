@@ -469,16 +469,19 @@ test('Flight Sim source declares the canonical Geo+XR composition', () => {
   })
   assert.deepEqual(meta.geo_flight_overlay, {
     activation: 'selected authored environment plus source-authored Flight identity',
-    renderer_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
-    overlay_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
-    basemap_render_policy: 'local-only while composed in Geo+XR; standalone Geo retains its selected provider',
-    visible_local_basemap_views: ['2D Classic', '2D Modern', '3D Classic', '3D Modern'],
+    renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
+    geo_policy_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+    presentation_owner: 'canvas/src/features/three/xrGeoEnvironmentPresentation.ts',
+    render_policy: 'shared-xr-stage while composed in Geo+XR; standalone Geo retains its selected provider',
+    shared_environment_presentations: ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
+    screen_space_basemap: 'suppressed',
+    maplibre_runtime_started: false,
     remote_style_or_tile_requests: 0,
     control_owner: 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts',
     route_projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
     xr_canvas_mounted: true,
     map_interaction_preserved: false,
-    composition: 'Geo is the visible background below one transparent shared XR Canvas; Flight controls own pointer input',
+    composition: 'the selected authored environment, Flight actors, and HUD share one R3F world; Geo supplies presentation state and paints no second world',
   })
   const authority = readFileSync(resolve(repoRoot, 'scripts/workspace-seed-authority.mjs'), 'utf8')
   const projectionStart = authority.indexOf('AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY')
@@ -578,7 +581,36 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
     controllerCamera,
     /readXrNativeControllerCamera\(\)\.mode === 'fixed-follow'/,
   )
-  assert.match(controllerCamera, /flightSimActive\s*\?\s*readFlightFollowTarget\(true,/)
+  assert.match(
+    controllerCamera,
+    /flightSimActive\s*\?\s*planarFlightPresentation\s*\?\s*readFlightPlanTarget\(true,/,
+  )
+  assert.match(
+    controllerCamera,
+    /:\s*readFlightFollowTarget\(true,\s*coordinateScale,\s*renderer\)/,
+  )
+  assert.match(
+    controllerCamera,
+    /const planarFollowActive = flightSimActive && planarFlightPresentation/,
+  )
+  assert.match(
+    controllerCamera,
+    /suspended \|\| \(!fixedFollow && !planarFollowActive\)/,
+  )
+  assert.match(
+    controllerCamera,
+    /follow\.owner === 'flight-plan'\s*&& previousOwner !== 'flight-plan'/,
+  )
+  assert.match(
+    controllerCamera,
+    /follow\.owner !== 'flight-plan'\s*&& previousOwner === 'flight-plan'/,
+  )
+  assert.match(controllerCamera, /planRestorePoseRef/)
+  assert.doesNotMatch(
+    controllerCamera,
+    /if \(fixedFollow\)\s+planRestorePoseRef\.current = null/,
+  )
+  assert.doesNotMatch(controllerCamera, /camera\.up\.(?:copy|set)/)
   assert.match(controllerCamera, /renderer\.xr\.isPresenting/)
   assert.match(flightTarget, /resolveFlightSimFollowTarget/)
   assert.match(

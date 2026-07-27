@@ -8,6 +8,7 @@ from playwright.sync_api import Page, expect
 
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
 from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
+from lib.game_flight_sim_smoke_geo_xr import verify_geo_xr_four_view_presentation
 from lib.game_flight_sim_smoke_ledger import BrowserVerificationLedger
 from lib.game_flight_sim_smoke_lifecycle import (
     verify_blur_lifecycle,
@@ -246,13 +247,18 @@ def run_flight_runtime_verifications(
         authored_scene,
         depends_on=("first playable frame",),
     )
+    state["geoXrPresentation"] = ledger.verify(
+        "Geo+XR four-view presentation",
+        lambda: verify_geo_xr_four_view_presentation(page),
+        depends_on=("retained authored XR Canvas",),
+    )
     state["webMcp"] = ledger.verify(
         "strict browser WebMCP",
         lambda: verify_flight_web_mcp(
             page,
             state["playable"]["initial"],
         ),
-        depends_on=("first playable frame",),
+        depends_on=("Geo+XR four-view presentation",),
     )
     if state["webMcp"]:
         web_mcp_calls.extend(state["webMcp"]["calls"])

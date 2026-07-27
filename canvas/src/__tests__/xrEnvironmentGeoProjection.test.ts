@@ -15,6 +15,8 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   const flightGeoOverlay = readSource('features', 'game-flight-sim', 'FlightSimGeoSurfaceOverlay.tsx')
   const geoView = readSource('lib', 'toolbar', 'ToolbarToolMenuGeoView.tsx')
   const flightPanel = readSource('features', 'game-flight-sim', 'FlightSimFloatingPanelView.tsx')
+  const xrStage = readSource('features', 'three', 'XrCanonicalPhysicsStage.tsx')
+  const presentation = readSource('features', 'three', 'xrGeoEnvironmentPresentation.ts')
   const viewport = readSource('components', 'CanvasViewport.tsx')
 
   for (const marker of [
@@ -29,14 +31,18 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   }
   if (!mediaLibrary.includes('<FlightSimEnvironmentGeoButton')
     || !flightGeoButton.includes("openFlightSimSurface({ openPanel: false })")
-    || !flightGeoButton.includes("setGeospatialViewMode('2d-svg')")
+    || flightGeoButton.includes('setGeospatialViewMode(')
     || !flightGeoButton.includes('await settleWorkspaceSourceTextWrites()')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-overlay="1"')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-aircraft="1"')
     || !geoView.includes('data-kg-geo-xr-environment={selectedEnvironment.id}')
     || !flightPanel.includes('data-kg-flight-sim-environment={environment.id}')
+    || !xrStage.includes('environmentPresentation={environmentPresentation}')
+    || !xrStage.includes('environmentVisible')
+    || !presentation.includes("dimension: 'planar'")
+    || !presentation.includes("dimension: 'volumetric'")
     || !viewport.includes('<FlightSimGeoSurfaceOverlayLazy />')) {
-    throw new Error('expected Media selection, settled source persistence, Geo projection, and Flight overlay to share one authored environment')
+    throw new Error('expected Media selection, settled source persistence, shared-stage Geo projection, and Flight to retain one authored environment')
   }
   const flightSource = [
     '---',

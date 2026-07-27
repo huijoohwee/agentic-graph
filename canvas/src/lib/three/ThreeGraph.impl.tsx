@@ -560,6 +560,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             mode={mode}
             flightSimActive={flightStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
+            geospatialComposite={geospatialComposite}
             modelAssetRenderKey={spatialCaptureRenderKey || glbAssetRenderKey}
             modelAssetFit={spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit}
             xrEmptyWorld={hasXrEmptyWorld}

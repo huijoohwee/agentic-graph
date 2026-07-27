@@ -211,26 +211,22 @@ test('Three renderer lifecycle still rejects unsupported and empty non-XR surfac
   }), false)
 })
 
-test('Flight environment handoff selects the local Geo renderer before routing', () => {
+test('Flight environment handoff preserves the selected Geo presentation', () => {
   const order: string[] = []
   const result = selectFlightSimGeoEnvironment(
     'singapore',
-    true,
     stageId => {
       order.push(`stage:${stageId}`)
       return { ok: true }
     },
-    () => order.push('geo:2d-svg'),
   )
   assert.deepEqual(result, { ok: true })
-  assert.deepEqual(order, ['stage:singapore', 'geo:2d-svg'])
+  assert.deepEqual(order, ['stage:singapore'])
 
   const blocked = selectFlightSimGeoEnvironment(
     'street-grid',
-    true,
     () => ({ ok: false }),
-    () => order.push('forbidden'),
   )
   assert.deepEqual(blocked, { ok: false })
-  assert.equal(order.includes('forbidden'), false)
+  assert.deepEqual(order, ['stage:singapore'])
 })
