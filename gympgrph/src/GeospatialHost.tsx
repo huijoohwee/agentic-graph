@@ -19,7 +19,13 @@ import { LS_KEYS } from './lib/config.js'
 import { onGeospatialModeChanged, type GeospatialViewMode } from 'grph-shared/geospatial/events'
 import { GEOSPATIAL_POINT_STYLE_CHANGED_EVENT, GEOSPATIAL_STYLE_URL_CHANGED_EVENT } from 'grph-shared/geospatial/constants'
 import { computeBoundsFromCollections } from './geo.js'
-import { clearGeoJsonSourceData, ensureDatasetLayer, isMapLibreStyleReady, setGeoJsonSourceData } from './maplibreLayers.js'
+import {
+  clearGeoJsonSourceData,
+  ensureDatasetLayer,
+  isMapLibreStyleReady,
+  readGeoJsonSourceData,
+  setGeoJsonSourceData,
+} from './maplibreLayers.js'
 import { colorForDataset } from './colors.js'
 import { isPointOnlyFeatureCollection } from './selection.js'
 import {
@@ -1031,9 +1037,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     const readSourceFeatureCount = (sourceId: string): number | null => {
       if (!styleReady) return null
       try {
-        const src = basemapMap.getSource?.(sourceId) as { _data?: { features?: unknown[] } } | null
-        const features = src && src._data && Array.isArray(src._data.features) ? src._data.features : null
-        return features ? features.length : null
+        const sourceData = readGeoJsonSourceData(
+          basemapMap.getSource?.(sourceId),
+        )
+        return sourceData ? sourceData.features.length : null
       } catch {
         return null
       }

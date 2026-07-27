@@ -42,6 +42,9 @@ import {
   projectFlightSimToGeospatialOverlay,
 } from '@/features/game-flight-sim/flightSimGeospatialProjection'
 import {
+  claimFlightGeoOverlayPublisherLease,
+} from '@/features/game-flight-sim/flightGeoOverlayPublisherLease'
+import {
   readFlightSimCameraSnapshot,
   subscribeFlightSimCamera,
 } from '@/features/game-flight-sim/flightSimCameraRuntime'
@@ -373,6 +376,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   }, [geospatialModeEnabled, selectedEdgeId, selectedNodeId, selectedNodeIds, viewPinned, zoomToSelectionMode])
 
   React.useEffect(() => {
+    const publisherLease = claimFlightGeoOverlayPublisherLease()
     let disposed = false
     let unsubscribeFlight = () => void 0
     let unsubscribeFlightCamera = () => void 0
@@ -382,8 +386,9 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     let unsubscribeTimelineTransport = () => void 0
     void loadGympgrphModule()
       .then(module => {
-        if (disposed) return
+        if (disposed || !publisherLease.isCurrent()) return
         const publish = () => {
+          if (!publisherLease.isCurrent()) return
           const flight = readFlightSimSnapshot()
           if (!active || !composedWithXr || !flight.active) {
             module.clearFlightGeoOverlay?.()
@@ -444,7 +449,10 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       unsubscribeTimelineRuntime()
       unsubscribeTimelineTransport()
       void loadGympgrphModule()
-        .then(module => module.clearFlightGeoOverlay?.())
+        .then(module => {
+          if (!publisherLease.isCurrent()) return
+          module.clearFlightGeoOverlay?.()
+        })
         .catch(() => void 0)
     }
   }, [active, composedWithXr])

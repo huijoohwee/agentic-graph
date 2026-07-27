@@ -211,6 +211,14 @@ def run_flight_runtime_verifications(
             lambda value: (
                 value.get("visualProjection") == "maplibre"
                 and (value.get("mapOverlay") or {}).get("layersReady") is True
+                and (value.get("mapOverlay") or {}).get(
+                    "aircraftFeatureCount"
+                )
+                == 1
+                and (value.get("mapOverlay") or {}).get(
+                    "routeFeatureCount"
+                )
+                == 1
                 and (value.get("optionalBeacon") or {}).get("assetPath")
                 == FLIGHT_OPTIONAL_BEACON_PATH
                 and (value.get("optionalBeacon") or {}).get("assetSha256")

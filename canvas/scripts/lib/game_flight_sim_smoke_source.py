@@ -282,47 +282,6 @@ def _apply_exact_authored_source(
         lambda: page.evaluate(
             """
             async expectedSourceText => {
-              if (!window.__kgFlightSimFirstFrameProof) {
-                const proof = {
-                  startedAtMs: performance.now(),
-                  firstFrameAtMs: null,
-                  firstFrameClassName: null,
-                  firstFrameSurface: null,
-                  preExisting: Boolean(document.querySelector(
-                    'canvas[data-kg-flight-sim-first-frame="1"]',
-                  )),
-                }
-                const captureFirstFrame = () => {
-                  const firstFrameCanvas = document.querySelector(
-                    'canvas[data-kg-flight-sim-first-frame="1"]',
-                  )
-                  if (
-                    proof.firstFrameAtMs === null
-                    && firstFrameCanvas instanceof HTMLCanvasElement
-                  ) {
-                    proof.firstFrameAtMs = performance.now()
-                    proof.firstFrameClassName = firstFrameCanvas.className
-                    proof.firstFrameSurface =
-                      firstFrameCanvas.dataset.kgFlightSimFirstFrameSurface
-                      || null
-                    window.__kgFlightSimFirstFrameObserver?.disconnect()
-                  }
-                }
-                window.__kgFlightSimFirstFrameProof = proof
-                window.__kgFlightSimFirstFrameObserver = new MutationObserver(
-                  captureFirstFrame,
-                )
-                window.__kgFlightSimFirstFrameObserver.observe(
-                  document.documentElement,
-                  {
-                    attributes: true,
-                    attributeFilter: ['data-kg-flight-sim-first-frame'],
-                    childList: true,
-                    subtree: true,
-                  },
-                )
-                captureFirstFrame()
-              }
               const explorer = await window.__kgFlightSimBrowserProof.importModule('markdownExplorerStore')
               const materialization = await window.__kgFlightSimBrowserProof.importModule('sourceFilesRuntimeMaterialization')
               const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
@@ -428,6 +387,46 @@ def _apply_exact_authored_source(
               }
               let applied = false
               if (hasSourceText) {
+                if (!window.__kgFlightSimFirstFrameProof) {
+                  const proof = {
+                    startedAtMs: performance.now(),
+                    firstFrameAtMs: null,
+                    firstFrameClassName: null,
+                    firstFrameSurface: null,
+                    preExisting: Boolean(document.querySelector(
+                      'canvas[data-kg-flight-sim-first-frame="1"]',
+                    )),
+                  }
+                  const captureFirstFrame = () => {
+                    const firstFrameCanvas = document.querySelector(
+                      'canvas[data-kg-flight-sim-first-frame="1"]',
+                    )
+                    if (
+                      proof.firstFrameAtMs === null
+                      && firstFrameCanvas instanceof HTMLCanvasElement
+                    ) {
+                      proof.firstFrameAtMs = performance.now()
+                      proof.firstFrameClassName = firstFrameCanvas.className
+                      proof.firstFrameSurface =
+                        firstFrameCanvas.dataset.kgFlightSimFirstFrameSurface
+                        || null
+                      window.__kgFlightSimFirstFrameObserver?.disconnect()
+                    }
+                  }
+                  window.__kgFlightSimFirstFrameProof = proof
+                  window.__kgFlightSimFirstFrameObserver =
+                    new MutationObserver(captureFirstFrame)
+                  window.__kgFlightSimFirstFrameObserver.observe(
+                    document.documentElement,
+                    {
+                      attributes: true,
+                      attributeFilter: ['data-kg-flight-sim-first-frame'],
+                      childList: true,
+                      subtree: true,
+                    },
+                  )
+                  captureFirstFrame()
+                }
                 explorer.useMarkdownExplorerStore.getState()
                   .setActivePath(sourcePath)
                 applied = await materialization

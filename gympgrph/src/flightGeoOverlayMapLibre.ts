@@ -241,6 +241,7 @@ export function applyFlightGeoOverlayToMap(
       layout: {
         'text-allow-overlap': true,
         'text-field': '▲',
+        'text-font': ['Noto Sans Regular'],
         'text-ignore-placement': true,
         'text-rotate': ['get', 'headingDegrees'],
         'text-rotation-alignment': 'map',

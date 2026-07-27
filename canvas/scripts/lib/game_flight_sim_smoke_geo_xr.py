@@ -114,8 +114,16 @@ def _read_view(page: Page) -> dict[str, Any]:
           const aircraftLayer = map?.getLayer?.(
             `${sourceId}:aircraft`,
           ) || null
-          const sourceFeatures = Array.isArray(source?._data?.features)
-            ? source._data.features
+          let sourceData = null
+          try {
+            sourceData = typeof source?.getData === 'function'
+              ? await source.getData()
+              : source?.serialize?.()?.data || null
+          } catch {
+            sourceData = null
+          }
+          const sourceFeatures = Array.isArray(sourceData?.features)
+            ? sourceData.features
             : []
           const mapStyle = map?.getStyle?.() || null
           const styleLayerIds = Array.isArray(mapStyle?.layers)

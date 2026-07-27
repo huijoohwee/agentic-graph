@@ -278,8 +278,16 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
           const map = gympgrph.readActiveMapLibreMap?.() || null
           const sourceId = 'kg-flight-sim:geo-overlay'
           const source = map?.getSource?.(sourceId) || null
-          const sourceFeatures = Array.isArray(source?._data?.features)
-            ? source._data.features
+          let sourceData = null
+          try {
+            sourceData = typeof source?.getData === 'function'
+              ? await source.getData()
+              : source?.serialize?.()?.data || null
+          } catch {
+            sourceData = null
+          }
+          const sourceFeatures = Array.isArray(sourceData?.features)
+            ? sourceData.features
             : []
           const routePoints = sourceFeatures.filter(
             feature => feature?.properties?.kgFlightOverlayKind === 'route-point',

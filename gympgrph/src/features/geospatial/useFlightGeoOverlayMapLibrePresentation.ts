@@ -13,6 +13,7 @@ import {
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   fitMapToFlightGeoOverlay,
 } from '../../flightGeoOverlayMapLibre.js'
+import { readGeoJsonSourceData } from '../../maplibreLayers.js'
 
 export const FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT = 8
 export const FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT = 180
@@ -22,6 +23,13 @@ type PresentedFlightOverlay = {
   readyFrameRequestId: number | null
   revision: string
 }
+
+type FlightOverlayFeature = Readonly<{
+  properties?: Readonly<{
+    kgFlightOverlayKind?: unknown
+    kgFlightOverlayRevision?: unknown
+  }>
+}>
 
 type FlightOverlayPresentationGateOptions = Readonly<{
   active: () => boolean
@@ -47,9 +55,29 @@ function defaultIsCanvasElement(value: unknown): value is HTMLCanvasElement {
   )
 }
 
-function mapHasExactFlightOverlay(map: any): boolean {
+function mapHasExactFlightOverlay(
+  map: any,
+  overlay: FlightGeoOverlaySnapshot,
+): boolean {
   try {
-    return Boolean(map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID))
+    const source = map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)
+    const sourceData = readGeoJsonSourceData(source)
+    const features = (
+      sourceData?.features || []
+    ) as readonly FlightOverlayFeature[]
+    const exactRevision = features.every(
+      feature => (
+        feature?.properties?.kgFlightOverlayRevision === overlay.revision
+      ),
+    )
+    const kindCount = (kind: string) => features.filter(
+      feature => feature?.properties?.kgFlightOverlayKind === kind,
+    ).length
+    return features.length === overlay.route.length + 2
+      && exactRevision
+      && kindCount('route') === 1
+      && kindCount('route-point') === overlay.route.length
+      && kindCount('aircraft') === 1
       && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
         .every(layerId => Boolean(map.getLayer?.(layerId)))
   } catch {
@@ -166,7 +194,7 @@ export function createFlightGeoOverlayPresentationGate(
           canvasVisible = false
         }
       }
-      if (!mapHasExactFlightOverlay(map) || !canvas || !canvasVisible) {
+      if (!mapHasExactFlightOverlay(map, current) || !canvas || !canvasVisible) {
         if (!pending) return
         pending.attempts += 1
         if (pending.attempts >= pending.limit) {
@@ -351,13 +379,4 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     options.styleRevision,
     options.viewMode,
   ])
-
-  React.useEffect(() => {
-    const map = options.map
-    return () => {
-      if (map && options.mapLibreRuntimeEnabled) {
-        clearFlightGeoOverlayFromMap(map)
-      }
-    }
-  }, [options.map, options.mapLibreRuntimeEnabled])
 }

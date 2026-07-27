@@ -122,6 +122,13 @@ test('Flight browser proof activates only after applying the authored source', (
     ),
     'utf8',
   )
+  const geoXrVerifier = readFileSync(
+    resolve(
+      repoRoot,
+      'canvas/scripts/lib/game_flight_sim_smoke_geo_xr.py',
+    ),
+    'utf8',
+  )
   const cameraTrackingVerifier = readFileSync(
     resolve(
       repoRoot,
@@ -252,6 +259,24 @@ test('Flight browser proof activates only after applying the authored source', (
         'application = _apply_exact_authored_source(page, expected_source_text)',
       ),
   )
+  assert.ok(
+    sourceVerifier.indexOf('physicsSourceSha256:')
+      < sourceVerifier.indexOf('startedAtMs: performance.now()'),
+    'expected proof-only imports and baseline reads before the frame clock',
+  )
+  const frameClockIndex = sourceVerifier.indexOf(
+    'startedAtMs: performance.now()',
+  )
+  assert.ok(
+    frameClockIndex
+      < sourceVerifier.indexOf('.setActivePath(sourcePath)', frameClockIndex),
+    'expected the frame clock immediately before source application',
+  )
+  for (const sourceReader of [sceneVerifier, geoXrVerifier]) {
+    assert.match(sourceReader, /await source\.getData\(\)/)
+    assert.match(sourceReader, /source\?\.serialize\?\.\(\)\?\.data/)
+    assert.doesNotMatch(sourceReader, /source\?\._data\?\.features/)
+  }
   assert.ok(
     runtimePhases.indexOf('prepare_source_files_selection_surface(page)')
       < runtimePhases.indexOf('prepare_authored_physics_surface(page)'),
