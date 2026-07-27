@@ -10,6 +10,7 @@ import {
   retainThreeCanvasSourceAdmission,
   type ThreeRendererMountInput,
 } from '@/lib/three/threeRendererLifecycle'
+import { selectFlightSimGeoEnvironment } from '@/features/game-flight-sim/FlightSimEnvironmentGeoButton'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 type RendererTransitionPhase = ThreeRendererMountInput & Readonly<{
@@ -109,8 +110,8 @@ test('Flight Sim overlays Geo without mounting a competing XR viewport', () => {
     flightSimActive: true,
     gameplayOverlayActive: true,
     geospatialModeEnabled: true,
-    workspaceEditorOverlayOpen: false,
-    workspaceStoryboardSurfaceActive: false,
+    workspaceEditorOverlayOpen: true,
+    workspaceStoryboardSurfaceActive: true,
   })
   assert.deepEqual(ownership, {
     activeSurface: 'geo',
@@ -146,11 +147,11 @@ test('Flight Sim overlays Geo without mounting a competing XR viewport', () => {
     flightSimActive: false,
     gameplayOverlayActive: false,
     geospatialModeEnabled: true,
-    workspaceEditorOverlayOpen: false,
-    workspaceStoryboardSurfaceActive: false,
+    workspaceEditorOverlayOpen: true,
+    workspaceStoryboardSurfaceActive: true,
   }), {
     activeSurface: 'geo',
-    geospatialOverlayOwnsViewport: true,
+    geospatialOverlayOwnsViewport: false,
   })
 })
 
@@ -165,4 +166,28 @@ test('Three renderer lifecycle still rejects unsupported and empty non-XR surfac
     hasRenderableScene: false,
     webglSupported: true,
   }), false)
+})
+
+test('Flight environment handoff selects the local Geo renderer before routing', () => {
+  const order: string[] = []
+  const result = selectFlightSimGeoEnvironment(
+    'singapore',
+    true,
+    stageId => {
+      order.push(`stage:${stageId}`)
+      return { ok: true }
+    },
+    () => order.push('geo:2d-svg'),
+  )
+  assert.deepEqual(result, { ok: true })
+  assert.deepEqual(order, ['stage:singapore', 'geo:2d-svg'])
+
+  const blocked = selectFlightSimGeoEnvironment(
+    'street-grid',
+    true,
+    () => ({ ok: false }),
+    () => order.push('forbidden'),
+  )
+  assert.deepEqual(blocked, { ok: false })
+  assert.equal(order.includes('forbidden'), false)
 })

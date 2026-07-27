@@ -7,6 +7,7 @@ import {
   FLIGHT_SIM_RUN_READY_DEMO_ID,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { useGympgrphStore } from '@/lib/gympgrph/api'
 
 type FlightSimEnvironmentGeoButtonProps = Omit<
   React.ComponentProps<typeof XrEnvironmentGeoButton>,
@@ -30,6 +31,17 @@ function failureMessage(error: unknown): string {
   if (error instanceof Error) return error.message
   const message = String(error || '').trim()
   return message || 'Flight Sim remained inactive.'
+}
+
+export function selectFlightSimGeoEnvironment(
+  stageId: string,
+  sourceAuthoredFlight: boolean,
+  selectEnvironment: FlightSimEnvironmentGeoButtonProps['onSelect'],
+  selectLocalGeo: () => void,
+): ReturnType<FlightSimEnvironmentGeoButtonProps['onSelect']> {
+  const result = selectEnvironment(stageId)
+  if (result.ok && sourceAuthoredFlight) selectLocalGeo()
+  return result
 }
 
 export function FlightSimEnvironmentGeoButton(
@@ -65,10 +77,20 @@ export function FlightSimEnvironmentGeoButton(
       })
     }
   }, [pushUiToast, sourceAuthoredFlight])
+  const selectEnvironmentForGeo = React.useCallback(
+    (stageId: string) => selectFlightSimGeoEnvironment(
+      stageId,
+      sourceAuthoredFlight,
+      props.onSelect,
+      () => useGympgrphStore.getState().setGeospatialViewMode('2d-svg'),
+    ),
+    [props.onSelect, sourceAuthoredFlight],
+  )
 
   return (
     <XrEnvironmentGeoButton
       {...props}
+      onSelect={selectEnvironmentForGeo}
       onAfterRoute={openFlightOverlay}
     />
   )
