@@ -23,6 +23,7 @@ type Canvas2dRendererSelectProps = {
   ensureBaselineUnlocked: () => boolean
   geospatialEnabled: boolean
   onOpenGeospatialMode: () => void
+  onExitGeospatialMode: () => void
 }
 
 export function Canvas2dRendererSelect({
@@ -31,6 +32,7 @@ export function Canvas2dRendererSelect({
   ensureBaselineUnlocked,
   geospatialEnabled,
   onOpenGeospatialMode,
+  onExitGeospatialMode,
 }: Canvas2dRendererSelectProps) {
   const [minimapCollapsed, setMinimapCollapsed] = useMinimapCollapsed()
   const state = useGraphStore(
@@ -140,6 +142,7 @@ export function Canvas2dRendererSelect({
           ensureBaselineUnlocked,
           geospatialEnabled,
           onOpenGeospatialMode,
+          onExitGeospatialMode,
           onOpenShared3dPanel: mode => {
             if (mode === 'geo-xr') {
               const current = useGraphStore.getState()
