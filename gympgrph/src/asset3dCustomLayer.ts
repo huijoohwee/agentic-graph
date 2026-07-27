@@ -19,6 +19,7 @@ export type Asset3DLayerHandle = {
   readonly id: string
   readonly contextId: string
   setVisible(assetId: string, visible: boolean): void
+  remove(assetId: string): void
   dispose(): void
 }
 
@@ -261,6 +262,7 @@ export function createAsset3DCustomLayer(args: {
     try {
       if (vertexArrayApi && vertexArray) vertexArrayApi.bind(vertexArray)
       for (const asset of renderableAssets) {
+        if (!visibility.has(asset.id)) continue
         const mesh = args.meshes.get(asset.id)
         if (!mesh) continue
         const positionBuffer = gl.createBuffer()
@@ -361,6 +363,17 @@ export function createAsset3DCustomLayer(args: {
     setVisible(assetId, visible) {
       if (!visibility.has(assetId)) return
       visibility.set(assetId, visible)
+      map?.triggerRepaint?.()
+    },
+    remove(assetId) {
+      if (!visibility.delete(assetId)) return
+      const resource = resources.get(assetId)
+      resources.delete(assetId)
+      const context = glContext
+      if (resource && context && !isContextLost(context)) {
+        context.deleteBuffer(resource.positionBuffer)
+        context.deleteBuffer(resource.indexBuffer)
+      }
       map?.triggerRepaint?.()
     },
     dispose() {

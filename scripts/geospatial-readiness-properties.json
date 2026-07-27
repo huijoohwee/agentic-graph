@@ -380,6 +380,78 @@
           "contains": "fit requests follow selection then graph then enhanced bounds"
         }
       ]
+    },
+    {
+      "id": 39,
+      "name": "The effective catalog is reachable in the Geo panel",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-layer-editor-ui-readiness.test.ts",
+          "contains": "catalog renders source, accessible live toggle, edit, remove, add, and reset controls"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "name": "Add, edit, and remove are atomic and persistent",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-layer-editor-ui-readiness.test.ts",
+          "contains": "editor add, edit, remove, and serialization preserve siblings"
+        },
+        {
+          "file": "scripts/__tests__/geospatial-enhanced-layer-persistence.test.ts",
+          "contains": "catalog writes are atomic on validation, prune stale visibility"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "name": "Reset restores source precedence",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-enhanced-layer-persistence.test.ts",
+          "contains": "clear override removes catalog and visibility keys"
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "name": "Per-layer toggle is live and isolated",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-enhanced-layer-reconciliation.test.ts",
+          "contains": "targeted visibility reconciliation changes only the requested asset"
+        },
+        {
+          "file": "scripts/__tests__/geospatial-enhanced-layer-persistence.test.ts",
+          "contains": "visibility writes publish a visibility-only change for the exact configured target"
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "name": "Invalid editor input is visible and mutation-free",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-layer-editor-ui-readiness.test.ts",
+          "contains": "validates duplicate ids, URLs, fetch bounds, paint, and coordinates without mutation"
+        },
+        {
+          "file": "scripts/__tests__/geospatial-enhanced-layer-persistence.test.ts",
+          "contains": "every normalization diagnostic and every malformed entry rejects without mutation"
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Runtime readiness requires exact-main browser proof",
+      "evidence": [
+        {
+          "file": "docs/documents/knowgrph-geospatial-mode-document.md",
+          "contains": "The protected exact-main pass is the"
+        }
+      ]
     }
   ]
 }

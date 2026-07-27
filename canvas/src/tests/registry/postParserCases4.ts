@@ -430,6 +430,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["workspaceRuntime.missingActiveEntry.skipsLoadUntilPathRecovery","@/__tests__/workspaceSwitchStaleGuard.test","testMarkdownWorkspaceSkipsMissingActiveEntryLoadsUntilPathRecovery"],
   ["workspaceMain.loading.defersHiddenPaneHeavyDerivations","@/__tests__/workspacePaneDerivationGuard.test","testMarkdownWorkspaceMainDefersHiddenPaneHeavyDerivations"],
   ["workspaceRuntime.effectiveContent.sharedSsot","@/__tests__/workspacePaneDerivationGuard.test","testMarkdownWorkspaceRuntimeKeepsEffectiveContentInSharedSsot"],
+  ["geospatial.panel.composition.srpAndCatalogSeam","@/__tests__/geospatialPanelComposition.test","testGeospatialPanelCompositionSplit"],
   ["geospatial.host.tailwindScansGympgrph","@/__tests__/geospatialHostIntegration.test","testHostTailwindScansGympgrphClasses"],
   ["geospatial.host.remoteFetchProxy.noAbortOrTruncate","@/__tests__/geospatialHostIntegration.test","testRemoteFetchProxyDoesNotAbortOnCloseOrTruncate"],
   ["geospatial.gympgrphMapLibre.globeProjection","@/__tests__/geospatialHostIntegration.test","testGympgrphMapLibreBasemapSupportsGlobeProjection"],

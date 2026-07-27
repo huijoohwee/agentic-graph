@@ -9,27 +9,22 @@ import {
   ENHANCED_LAYER_ENV_KEY,
   readBundledEnhancedLayerEnvironmentValue,
   resolveEnhancedLayerConfigSource,
+  type EnhancedLayerConfigSource,
 } from './enhancedLayerConfigSource.js'
 
-const readJson = (key: string, fallback: unknown): unknown => {
-  if (typeof window === 'undefined') return fallback
-  try {
-    const raw = window.localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : fallback
-  } catch {
-    return fallback
-  }
+export type EnhancedLayerEditorState = {
+  source: EnhancedLayerConfigSource['source']
+  raw: unknown
+  normalized: NormalizedEnhancedConfig
+  invalidEnvironmentValue?: string
 }
 
-const writeJson = (key: string, value: unknown): boolean => {
-  if (typeof window === 'undefined') return false
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value))
-    return true
-  } catch {
-    return false
-  }
+export type EnhancedLayerPersistenceChange = {
+  kind: 'catalog' | 'visibility'
+  ids: readonly string[]
 }
+
+const persistenceListeners = new Set<(change: EnhancedLayerPersistenceChange) => void>()
 
 const readRaw = (key: string): string | null => {
   if (typeof window === 'undefined') return null
@@ -40,8 +35,41 @@ const readRaw = (key: string): string | null => {
   }
 }
 
+const parseJson = (raw: string | null, fallback: unknown): unknown => {
+  if (!raw) return fallback
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return fallback
+  }
+}
+
+const restoreRaw = (key: string, raw: string | null): void => {
+  if (typeof window === 'undefined') return
+  if (raw == null) window.localStorage.removeItem(key)
+  else window.localStorage.setItem(key, raw)
+}
+
+const applyStorageMutation = (mutate: () => void): boolean => {
+  if (typeof window === 'undefined') return false
+  const previousCatalog = readRaw(LS_KEYS.geospatialEnhancedLayers)
+  const previousVisibility = readRaw(LS_KEYS.geospatialEnhancedLayerVisibility)
+  try {
+    mutate()
+    return true
+  } catch {
+    try {
+      restoreRaw(LS_KEYS.geospatialEnhancedLayers, previousCatalog)
+      restoreRaw(LS_KEYS.geospatialEnhancedLayerVisibility, previousVisibility)
+    } catch {
+      void 0
+    }
+    return false
+  }
+}
+
 const readVisibility = (): Record<string, boolean> => {
-  const value = readJson(LS_KEYS.geospatialEnhancedLayerVisibility, {})
+  const value = parseJson(readRaw(LS_KEYS.geospatialEnhancedLayerVisibility), {})
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>)
@@ -49,45 +77,122 @@ const readVisibility = (): Record<string, boolean> => {
   ) as Record<string, boolean>
 }
 
-export const readEnhancedLayerConfig = (): NormalizedEnhancedConfig => {
+const configIds = (config: NormalizedEnhancedConfig): readonly string[] => {
+  return [...config.extrusions, ...config.assets].map(entry => entry.id)
+}
+
+const unionIds = (
+  previous: NormalizedEnhancedConfig,
+  next: NormalizedEnhancedConfig,
+): readonly string[] => {
+  return [...new Set([...configIds(previous), ...configIds(next)])]
+}
+
+const withVisibility = (
+  normalized: NormalizedEnhancedConfig,
+  visibility: Readonly<Record<string, boolean>>,
+): NormalizedEnhancedConfig => ({
+  ...normalized,
+  extrusions: normalized.extrusions.map(layer => ({
+    ...layer,
+    visible: visibility[layer.id] ?? layer.visible,
+  })),
+  assets: normalized.assets.map(asset => ({
+    ...asset,
+    visible: visibility[asset.id] ?? asset.visible,
+  })),
+})
+
+const publishPersistenceChange = (change: EnhancedLayerPersistenceChange): void => {
+  emitGeospatialEnhancedLayersChanged(change.ids)
+  persistenceListeners.forEach(listener => {
+    try {
+      listener(change)
+    } catch {
+      void 0
+    }
+  })
+}
+
+export const onEnhancedLayerPersistenceChanged = (
+  listener: (change: EnhancedLayerPersistenceChange) => void,
+): (() => void) => {
+  persistenceListeners.add(listener)
+  return () => persistenceListeners.delete(listener)
+}
+
+export const readEnhancedLayerEditorState = (): EnhancedLayerEditorState => {
   const source = resolveEnhancedLayerConfigSource(
     readRaw(LS_KEYS.geospatialEnhancedLayers),
     readBundledEnhancedLayerEnvironmentValue(),
   )
   const normalized = normalizeEnhancedConfig(source.raw)
-  const visibility = readVisibility()
+  const diagnostics: NormalizedEnhancedConfig['diagnostics'] = source.invalidEnvironmentValue
+    ? [
+        ...normalized.diagnostics,
+        {
+          code: 'invalid-config',
+          target: 'environment',
+          field: ENHANCED_LAYER_ENV_KEY,
+          value: source.invalidEnvironmentValue,
+        },
+      ]
+    : normalized.diagnostics
   return {
-    ...normalized,
-    diagnostics: source.invalidEnvironmentValue
-      ? [
-          ...normalized.diagnostics,
-          {
-            code: 'invalid-config',
-            target: 'environment',
-            field: ENHANCED_LAYER_ENV_KEY,
-            value: source.invalidEnvironmentValue,
-          } as const,
-        ]
-      : normalized.diagnostics,
-    extrusions: normalized.extrusions.map(layer => ({
-      ...layer,
-      visible: visibility[layer.id] ?? layer.visible,
-    })),
-    assets: normalized.assets.map(asset => ({
-      ...asset,
-      visible: visibility[asset.id] ?? asset.visible,
-    })),
+    source: source.source,
+    raw: source.raw,
+    normalized: withVisibility({ ...normalized, diagnostics }, readVisibility()),
+    ...(source.invalidEnvironmentValue
+      ? { invalidEnvironmentValue: source.invalidEnvironmentValue }
+      : {}),
   }
+}
+
+export const readEnhancedLayerConfig = (): NormalizedEnhancedConfig => {
+  return readEnhancedLayerEditorState().normalized
+}
+
+const isCompleteCatalog = (raw: unknown, normalized: NormalizedEnhancedConfig): raw is readonly unknown[] => {
+  if (!Array.isArray(raw) || normalized.diagnostics.length > 0) return false
+  const entries = [...normalized.extrusions, ...normalized.assets]
+  if (entries.length !== raw.length) return false
+  return new Set(entries.map(entry => entry.id)).size === entries.length
 }
 
 export const writeEnhancedLayerConfig = (raw: unknown): boolean => {
   const normalized = normalizeEnhancedConfig(raw)
-  if (
-    normalized.diagnostics.some(diagnostic => diagnostic.code === 'missing-fetch-bound' || diagnostic.code === 'invalid-config')
-  ) return false
-  if (!writeJson(LS_KEYS.geospatialEnhancedLayers, raw)) return false
-  const ids = [...normalized.extrusions, ...normalized.assets].map(entry => entry.id)
-  emitGeospatialEnhancedLayersChanged(ids)
+  if (!isCompleteCatalog(raw, normalized)) return false
+  const previous = readEnhancedLayerConfig()
+  const retainedIds = new Set(configIds(normalized))
+  const nextVisibility = Object.fromEntries(
+    Object.entries(readVisibility()).filter(([id]) => retainedIds.has(id)),
+  )
+  const written = applyStorageMutation(() => {
+    window.localStorage.setItem(LS_KEYS.geospatialEnhancedLayers, JSON.stringify(raw))
+    if (Object.keys(nextVisibility).length === 0) {
+      window.localStorage.removeItem(LS_KEYS.geospatialEnhancedLayerVisibility)
+    } else {
+      window.localStorage.setItem(
+        LS_KEYS.geospatialEnhancedLayerVisibility,
+        JSON.stringify(nextVisibility),
+      )
+    }
+  })
+  if (!written) return false
+  publishPersistenceChange({ kind: 'catalog', ids: unionIds(previous, normalized) })
+  return true
+}
+
+export const clearEnhancedLayerConfigOverride = (): boolean => {
+  if (typeof window === 'undefined') return false
+  const previous = readEnhancedLayerConfig()
+  const cleared = applyStorageMutation(() => {
+    window.localStorage.removeItem(LS_KEYS.geospatialEnhancedLayers)
+    window.localStorage.removeItem(LS_KEYS.geospatialEnhancedLayerVisibility)
+  })
+  if (!cleared) return false
+  const next = readEnhancedLayerConfig()
+  publishPersistenceChange({ kind: 'catalog', ids: unionIds(previous, next) })
   return true
 }
 
@@ -100,8 +205,11 @@ export const setEnhancedLayerVisibility = (
   const entries = kind === 'extrusion' ? config.extrusions : config.assets
   if (!entries.some(entry => entry.id === id)) return false
   const next = { ...readVisibility(), [id]: visible === true }
-  if (!writeJson(LS_KEYS.geospatialEnhancedLayerVisibility, next)) return false
-  emitGeospatialEnhancedLayersChanged([id])
+  const written = applyStorageMutation(() => {
+    window.localStorage.setItem(LS_KEYS.geospatialEnhancedLayerVisibility, JSON.stringify(next))
+  })
+  if (!written) return false
+  publishPersistenceChange({ kind: 'visibility', ids: [id] })
   emitGeospatialModeChanged({})
   return true
 }
@@ -118,8 +226,11 @@ export const setEnhancedTagVisibility = (tag: string, visible: boolean): readonl
   ids.forEach(id => {
     next[id] = visible === true
   })
-  if (!writeJson(LS_KEYS.geospatialEnhancedLayerVisibility, next)) return []
-  emitGeospatialEnhancedLayersChanged(ids)
+  const written = applyStorageMutation(() => {
+    window.localStorage.setItem(LS_KEYS.geospatialEnhancedLayerVisibility, JSON.stringify(next))
+  })
+  if (!written) return []
+  publishPersistenceChange({ kind: 'visibility', ids })
   emitGeospatialModeChanged({})
   return ids
 }

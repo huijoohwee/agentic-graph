@@ -14,10 +14,17 @@ import { GeospatialPanelHost } from './GeospatialPanelHost.js'
 import { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection } from './geospatialFit.js'
 import { setGeospatialModeEnabled as setGeospatialModeEnabledViaHostBridge } from './hostBridge.js'
 import {
+  clearEnhancedLayerConfigOverride,
+  onEnhancedLayerPersistenceChanged,
   readEnhancedLayerConfig,
+  readEnhancedLayerEditorState,
   setEnhancedLayerVisibility,
   setEnhancedTagVisibility,
   writeEnhancedLayerConfig,
+} from './enhancedLayerPersistence.js'
+export type {
+  EnhancedLayerEditorState,
+  EnhancedLayerPersistenceChange,
 } from './enhancedLayerPersistence.js'
 
 export { LS_KEYS }
@@ -62,7 +69,15 @@ export function requestGeospatialTraversalRun(_args?: { edgeIds?: string[] | nul
 
 export { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection }
 
-export { readEnhancedLayerConfig, setEnhancedLayerVisibility, setEnhancedTagVisibility, writeEnhancedLayerConfig }
+export {
+  clearEnhancedLayerConfigOverride,
+  onEnhancedLayerPersistenceChanged,
+  readEnhancedLayerConfig,
+  readEnhancedLayerEditorState,
+  setEnhancedLayerVisibility,
+  setEnhancedTagVisibility,
+  writeEnhancedLayerConfig,
+}
 
 export function requestGeospatialFitToBounds(bounds: readonly [number, number, number, number]): void {
   useGympgrphStore.getState().requestGeospatialFitToBounds(bounds)

@@ -1,11 +1,13 @@
 import React from 'react'
 import type { FeatureCollection } from 'geojson'
-import { onGeospatialEnhancedLayersChanged } from 'grph-shared/geospatial/events'
 import type { GeospatialBounds } from 'grph-shared/geospatial/enhancedLayerContract'
 import { computeBoundsFromCollections } from './geo.js'
 import { coerceGeoJsonToFeatureCollection } from './geojson.js'
 import { LS_KEYS } from './lib/config.js'
-import { readEnhancedLayerConfig } from './enhancedLayerPersistence.js'
+import {
+  onEnhancedLayerPersistenceChanged,
+  readEnhancedLayerConfig,
+} from './enhancedLayerPersistence.js'
 import { loadBoundedResource, type LoadFailure, type LoadProgress } from './enhancedLayerLoad.js'
 import { normalizeExtrusionFeatures } from './extrusionHeight.js'
 import {
@@ -13,6 +15,11 @@ import {
   isMapLibreStyleReady,
   setGeoJsonSourceData,
 } from './maplibreLayers.js'
+import {
+  applyEnhancedLayerVisibility,
+  reconcileRemovedEnhancedLayerResources,
+  type RenderedExtrusionResource,
+} from './enhancedLayerMapReconciliation.js'
 import {
   createAsset3DCustomLayer,
   parseAssetMesh,
@@ -61,11 +68,18 @@ export function useEnhancedGeospatialLayers(args: {
   notify: (toast: Toast) => void
 }): GeospatialBounds | null {
   const [configRevision, setConfigRevision] = React.useState(0)
+  const [visibilityChange, setVisibilityChange] = React.useState<{
+    revision: number
+    ids: readonly string[]
+  }>({ revision: 0, ids: [] })
   const [mapReadinessRevision, setMapReadinessRevision] = React.useState(0)
   const [loadedBounds, setLoadedBounds] = React.useState<GeospatialBounds | null>(null)
   const assetHandleRef = React.useRef<Asset3DLayerHandle | null>(null)
+  const loadedAssetIdsRef = React.useRef(new Set<string>())
+  const renderedExtrusionsRef = React.useRef(new Map<string, RenderedExtrusionResource>())
   const boundsByIdRef = React.useRef(new Map<string, GeospatialBounds>())
   const enableCycleRef = React.useRef(0)
+  const assetReplacementRef = React.useRef(0)
   const wasEnabledRef = React.useRef(false)
 
   React.useEffect(() => {
@@ -91,20 +105,36 @@ export function useEnhancedGeospatialLayers(args: {
   React.useEffect(() => {
     if (args.enabled && !wasEnabledRef.current) enableCycleRef.current += 1
     wasEnabledRef.current = args.enabled
+  }, [args.enabled])
+
+  React.useEffect(() => {
     if (typeof window === 'undefined') return
-    const unsubscribe = onGeospatialEnhancedLayersChanged(() => setConfigRevision(value => value + 1))
+    const unsubscribe = onEnhancedLayerPersistenceChanged(change => {
+      if (change.kind === 'catalog') {
+        setConfigRevision(value => value + 1)
+        return
+      }
+      setVisibilityChange(current => ({
+        revision: current.revision + 1,
+        ids: change.ids,
+      }))
+    })
     const onStorage = (event: StorageEvent) => {
-      if (
-        event.key === LS_KEYS.geospatialEnhancedLayers
-        || event.key === LS_KEYS.geospatialEnhancedLayerVisibility
-      ) setConfigRevision(value => value + 1)
+      if (event.key === LS_KEYS.geospatialEnhancedLayers) {
+        setConfigRevision(value => value + 1)
+      } else if (event.key === LS_KEYS.geospatialEnhancedLayerVisibility) {
+        setVisibilityChange(current => ({
+          revision: current.revision + 1,
+          ids: [],
+        }))
+      }
     }
     window.addEventListener('storage', onStorage)
     return () => {
       unsubscribe()
       window.removeEventListener('storage', onStorage)
     }
-  }, [args.enabled])
+  }, [])
 
   React.useEffect(() => {
     if (!args.enabled || typeof window === 'undefined') return
@@ -118,10 +148,25 @@ export function useEnhancedGeospatialLayers(args: {
 
   React.useEffect(() => {
     if (args.enabled) return
+    const container = (() => {
+      try {
+        return args.map?.getContainer?.() as HTMLElement | null
+      } catch {
+        return null
+      }
+    })()
+    reconcileRemovedEnhancedLayerResources({
+      map: args.map,
+      container,
+      renderedExtrusions: renderedExtrusionsRef.current,
+      configuredExtrusionIds: new Set(),
+      assetHandle: assetHandleRef.current,
+      loadedAssetIds: loadedAssetIdsRef.current,
+      configuredAssetIds: new Set(),
+    })
     assetHandleRef.current?.dispose()
     assetHandleRef.current = null
     try {
-      const container = args.map?.getContainer?.() as HTMLElement | undefined
       if (container) delete container.dataset.kgEnhancedLayerIds
     } catch {
       void 0
@@ -131,19 +176,53 @@ export function useEnhancedGeospatialLayers(args: {
   }, [args.enabled, args.map])
 
   React.useEffect(() => {
+    if (!args.enabled || !args.map || !isMapLibreStyleReady(args.map)) return
+    applyEnhancedLayerVisibility({
+      map: args.map,
+      assetHandle: assetHandleRef.current,
+      config: readEnhancedLayerConfig(),
+      ids: visibilityChange.ids.length > 0 ? visibilityChange.ids : undefined,
+    })
+  }, [
+    args.enabled,
+    args.map,
+    args.styleRevision,
+    mapReadinessRevision,
+    visibilityChange,
+  ])
+
+  React.useEffect(() => {
     const map = args.map
     if (!args.enabled || !map || !isMapLibreStyleReady(map)) return
     const config = readEnhancedLayerConfig()
     let cancelled = false
-    const configuredIds = new Set([...config.extrusions, ...config.assets].map(entry => entry.id))
+    const configuredExtrusionIds = new Set(config.extrusions.map(entry => entry.id))
+    const configuredAssetIds = new Set(config.assets.map(entry => entry.id))
+    const configuredIds = new Set([...configuredExtrusionIds, ...configuredAssetIds])
+    const container = (() => {
+      try {
+        return map.getContainer?.() as HTMLElement | null
+      } catch {
+        return null
+      }
+    })()
+    reconcileRemovedEnhancedLayerResources({
+      map,
+      container,
+      renderedExtrusions: renderedExtrusionsRef.current,
+      configuredExtrusionIds,
+      assetHandle: assetHandleRef.current,
+      loadedAssetIds: loadedAssetIdsRef.current,
+      configuredAssetIds,
+    })
     for (const id of boundsByIdRef.current.keys()) {
       if (!configuredIds.has(id)) boundsByIdRef.current.delete(id)
     }
     if (config.extrusions.length === 0 && config.assets.length === 0) {
       assetHandleRef.current?.dispose()
       assetHandleRef.current = null
+      loadedAssetIdsRef.current.clear()
       try {
-        const container = map.getContainer?.() as HTMLElement | undefined
         if (container) delete container.dataset.kgEnhancedLayerIds
       } catch {
         void 0
@@ -207,9 +286,9 @@ export function useEnhancedGeospatialLayers(args: {
           notifyFailure(layer.id, { code: 'parse-failed', target: `${layer.id} render layer` })
           return
         }
+        renderedExtrusionsRef.current.set(layer.id, { sourceId })
         setGeoJsonSourceData(map, sourceId, normalized.featureCollection)
         try {
-          const container = map.getContainer?.() as HTMLElement | undefined
           if (container) {
             const readyIds = new Set(String(container.dataset.kgEnhancedLayerIds || '').split(',').filter(Boolean))
             readyIds.add(layer.id)
@@ -218,6 +297,12 @@ export function useEnhancedGeospatialLayers(args: {
         } catch {
           void 0
         }
+        applyEnhancedLayerVisibility({
+          map,
+          assetHandle: assetHandleRef.current,
+          config: readEnhancedLayerConfig(),
+          ids: [layer.id],
+        })
         const bounds = computeBoundsFromCollections([normalized.featureCollection])
         if (bounds) boundsByIdRef.current.set(layer.id, bounds as GeospatialBounds)
         args.notify({
@@ -233,6 +318,7 @@ export function useEnhancedGeospatialLayers(args: {
       if (config.assets.length === 0) {
         assetHandleRef.current?.dispose()
         assetHandleRef.current = null
+        loadedAssetIdsRef.current.clear()
         return
       }
       const meshes = new Map<string, AssetMesh>()
@@ -257,8 +343,9 @@ export function useEnhancedGeospatialLayers(args: {
         boundsByIdRef.current.set(asset.id, [asset.lng, asset.lat, asset.lng, asset.lat])
       }))
       if (cancelled || meshes.size === 0) return
+      assetReplacementRef.current += 1
       const created = createAsset3DCustomLayer({
-        contextId: `${enableCycleRef.current}:${args.styleRevision}`,
+        contextId: `${enableCycleRef.current}:${args.styleRevision}:${assetReplacementRef.current}`,
         assets: config.assets,
         meshes,
       })
@@ -272,8 +359,14 @@ export function useEnhancedGeospatialLayers(args: {
         notifyFailure('3D assets', { code: 'network-unavailable', target: '3D asset layer' })
         return
       }
+      applyEnhancedLayerVisibility({
+        map,
+        assetHandle: created.handle,
+        config: readEnhancedLayerConfig(),
+      })
       const previous = assetHandleRef.current
       assetHandleRef.current = created.handle
+      loadedAssetIdsRef.current = new Set(meshes.keys())
       previous?.dispose()
     }
 
@@ -288,6 +381,7 @@ export function useEnhancedGeospatialLayers(args: {
   React.useEffect(() => () => {
     assetHandleRef.current?.dispose()
     assetHandleRef.current = null
+    loadedAssetIdsRef.current.clear()
   }, [])
 
   return loadedBounds

@@ -10,6 +10,7 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { resolveXrMotionReferenceStage } from '@/features/three/xrSceneLibrary'
 import { readXrMotionReferenceRuntime, subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
+import { EnhancedLayerCatalogPanel } from '@/features/geospatial/EnhancedLayerCatalogPanel'
 import {
   MainPanelTypeIcon,
   getMainPanelTypeIconMeta,
@@ -18,7 +19,7 @@ import {
 
 type GeospatialPanelHostProps = {
   active?: boolean
-  showDatasetsManager?: boolean
+  enhancedLayerCatalog?: React.ReactNode
   panelTypography?: unknown
   renderTypeIcon?: (args: { typeLabel: string }) => React.ReactNode
   snapshot?: unknown
@@ -127,7 +128,7 @@ export const GeoView = React.memo(function GeoView(props: {
             <section className={cn('min-h-0 flex-1', UI_RESPONSIVE_FLOATING_PANEL_SCROLL_CLASSNAME)}>
               <GeospatialPanelHostLazy
                 active
-                showDatasetsManager={false}
+                enhancedLayerCatalog={<EnhancedLayerCatalogPanel />}
                 panelTypography={panelTypography}
                 renderTypeIcon={renderGeospatialTypeIcon}
                 snapshot={{

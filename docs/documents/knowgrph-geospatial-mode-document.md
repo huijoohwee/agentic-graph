@@ -8,6 +8,11 @@
 
 ## Status (2026-07-27)
 
+- **Implementation state: candidate-ready; protected exact-main proof
+  pending.** Structured operator controls, focused source proof, and the owned
+  task-worktree browser diagnostic pass. This document does not claim
+  `runtime-ready-dev` until the same controls pass on the exact protected-main
+  revision produced by integration.
 - Knowgrph keeps Geospatial Mode logic out of its codebase and loads it on-demand from the sibling repo `gympgrph` (implementation lives in `gympgrph/src/`).
 - Knowgrph exposes a toolbar entrypoint (**Geospatial Mode**, right of **3D Mode**) that opens the Floating Panel **Geo** view and toggles the gympgrph overlay.
 - **3D render mode uses MapLibre exclusively** (Cesium has been removed). The 3D overlay renders via the same MapLibre runtime path with deterministic startup camera defaults (Singapore center, zoom `2.8`, pitch `0`, bearing `0`) and bounded fit behavior.
@@ -18,8 +23,10 @@
   unchanged.
 - The browser bundle adds no GIS engine, model loader, or runtime dependency.
   The clean pre-enhancement baseline is **6,023,998 gzipped JavaScript bytes**;
-  the deterministic readiness baseline is **6,027,959 bytes**; and the final
-  enhanced candidate is **6,041,082 bytes**, a **13,123-byte** measured delta.
+  the deterministic readiness baseline is **6,027,959 bytes**; and a previously
+  measured renderer candidate was **6,041,082 bytes**. The current
+  operator-control candidate measures **6,050,442 bytes**, a
+  **22,483-byte** delta from the deterministic readiness baseline.
   `npm run geospatial-mode:check` enforces a maximum **250 KiB** measured delta.
 
 ## Enhanced-layer runtime contract
@@ -30,6 +37,37 @@ Enhanced entries use deterministic source precedence: a present
 value—including `[]`—wins. Invalid environment JSON fails closed with an
 `invalid-config` diagnostic naming the environment key. The runtime reads no
 compiled dataset or asset URL.
+
+### Enhanced layers operator control surface
+
+The Floating Panel **Geo** view owns a structured **Enhanced layers** catalog.
+It is the user-facing path for configuring the enhanced entries described
+below; environment configuration and direct localStorage mutation are not
+acceptable substitutes.
+
+- A source badge reports **Environment**, **Local**, or **Empty** for the
+  effective catalog and exposes `data-kg-geo-enhanced-config-source` for
+  deterministic proof.
+- The catalog lists every building extrusion, road extrusion, and 3D asset with
+  its stable ID, kind, visibility status, **Edit**, **Remove**, and
+  keyboard-operable visible/hidden **Toggle** controls. Accessible action names are
+  `Toggle enhanced layer <id>`, `Edit enhanced layer <id>`, and
+  `Remove enhanced layer <id>`.
+- **Add enhanced layer** and **Edit** expose the URL, mandatory `timeoutMs` and
+  `maxBytes`, and kind-specific render fields. A successful save atomically
+  persists the complete local catalog and updates the mounted map in the same
+  tab without reload.
+- **Remove** deletes exactly one entry, clears that entry's stale visibility
+  override, retains siblings, and persists `[]` when the operator intentionally
+  removes the final local entry.
+- **Reset to environment defaults** removes the local catalog and all enhanced
+  visibility overrides; it never writes `[]`. The runtime then resolves the
+  environment catalog, or the empty catalog when no environment value exists,
+  and updates without reload.
+- Invalid drafts show field-level, actionable errors and perform no storage,
+  event, or runtime mutation. The previously rendered catalog remains active.
+- The catalog and forms remain usable by keyboard at desktop and mobile panel
+  widths.
 
 Both `timeoutMs` and `maxBytes` are mandatory for every enhanced request;
 missing bounds abort before `fetch`. The effective deadline is
@@ -141,25 +179,38 @@ typed `model-unavailable` error plus a deterministic disabled draft. The
 fallback has an empty URL, remains invisible, and is never passed to
 `applyDraft` automatically.
 
-### Runtime-readiness proof
+### Source and runtime-readiness proof
 
-`npm run geospatial-mode:check` owns the focused proof:
+`npm run geospatial-mode:check` owns the focused source/build proof:
 
 - shared and extracted-package TypeScript builds;
 - generative tests at 120 runs plus deterministic projection, GL lifecycle,
   bounded streaming, LRU, deadline, progress, configuration, invocation, fit,
-  and authoring-fallback tests;
+  authoring-fallback, catalog editor, persistence, validation, and live-toggle
+  tests;
 - MCP catalog/envelope tests and filtered Canvas geospatial-invocation
   integration tests;
-- an ordered evidence manifest for all **38 correctness properties**;
+- an ordered evidence manifest for all **44 correctness properties**;
 - a production build followed by dependency, hardcoded-URL, file-size,
   document, property-manifest, and gzip-delta guards.
 
-Owned Dev browser proof is a separate gate and must start from a clean browser
-profile with enhanced entries supplied by the environment catalog. It asserts
-the native extrusion ready ID, one source-authored asset context, a nonzero
-MapLibre canvas, the 3D/globe view, mobile viewport behavior, and no critical
-page/request failure. This is deterministic desktop-browser proof, not
+Browser proof has two mandatory, separately recorded gates:
+
+1. **Owned task-worktree diagnostic:** start from a fresh candidate origin with
+   environment extrusion and asset entries. From the Geo panel, verify the
+   Environment source badge; Add, Edit, Remove, and reload a local entry; hide
+   and show one layer without reload; submit an invalid draft without mutation;
+   then **Reset to environment defaults** and confirm the original environment
+   entries and visibility return without reload. This pre-integration
+   diagnostic is deliberately unsealed and cannot establish runtime readiness.
+2. **Exact main SHA:** after protected integration, repeat the source-badge,
+   local persistence/reload, per-layer Toggle, invalid-draft, and reset flow on
+   the exact integrated revision.
+
+Both passes assert native extrusion and asset readiness markers, a nonzero
+MapLibre canvas, the 3D/globe view, keyboard operation, a mobile viewport, and
+no critical page or request failure. The protected exact-main pass is the
+runtime-readiness gate. This is deterministic desktop-browser proof, not
 physical-device or production proof.
 
 The production/Cloudflare route remains outside this implementation authority;
@@ -266,7 +317,19 @@ source readiness does not claim deployment or physical-device proof.
   - Basemap lifecycle: `gympgrph/src/features/geospatial/useMapLibreBasemap.ts`
   - Dataset URL loading + layer creation: `gympgrph/src/features/geospatial/geospatialOverlayUtils.ts`
   - POI selection mapping: `gympgrph/src/features/geospatial/geospatialPoiSelection.ts`
-  - UI controls: `gympgrph/src/features/geospatial/GeospatialPanel.tsx` (host may hide the dataset importer and consolidate import into Source Files)
+  - Geo panel composition: `gympgrph/src/GeospatialPanelHost.tsx`
+  - Geo panel display, dataset section, and shared UI:
+    `gympgrph/src/GeospatialPanelDisplayControls.tsx`,
+    `gympgrph/src/GeospatialPanelDatasetControls.tsx`, and
+    `gympgrph/src/geospatialPanelUi.tsx`
+  - Enhanced catalog UI:
+    `canvas/src/features/geospatial/EnhancedLayerCatalogPanel.tsx`
+  - Enhanced form, editor model, and catalog controller:
+    `canvas/src/features/geospatial/EnhancedLayerEditorForm.tsx`,
+    `canvas/src/features/geospatial/enhancedLayerEditorModel.ts`, and
+    `canvas/src/features/geospatial/useEnhancedLayerCatalog.ts`
+  - Host-to-package mutation bridge:
+    `canvas/src/features/geospatial/gympgrphBridge.ts`
   - Geo derivation helpers: `gympgrph/src/lib/graph/geo/*` and `gympgrph/src/lib/geospatial/*`
 
 ---
@@ -276,6 +339,17 @@ source readiness does not claim deployment or physical-device proof.
 - Enhanced declarations use local-key-present → Vite environment → empty
   precedence. The environment initializes a clean profile; subsequent
   localStorage authoring remains operator-owned.
+- The Geo panel reads the effective catalog and source, then routes Add, Edit,
+  Remove, Toggle, and Reset through the extracted package's persistence owner.
+  UI components never write localStorage directly.
+- Add/Edit/Remove atomically write `kg:ui:geospatial:enhancedLayers`.
+  Per-layer Toggle writes only
+  `kg:ui:geospatial:enhancedLayerVisibility`. Successful actions synchronously
+  publish the enhanced-layer change event so the same tab updates without
+  reload.
+- **Reset to environment defaults** removes both local keys before re-resolving
+  environment → empty precedence. It is distinct from intentionally saving an
+  empty local catalog.
 - Knowgrph defines and reads the Geospatial Mode persistence keys so the host can gate rendering and keep embedded previews in sync, but the write-path lives in `gympgrph`’s store actions (e.g. `setGeospatialOverlayEnabled`).
 - Runtime sync uses a shared UI event contract in `grph-shared`:
   - Event name: `GEOSPATIAL_MODE_CHANGED_EVENT`
@@ -301,8 +375,11 @@ source readiness does not claim deployment or physical-device proof.
 - Dataset fetch is always bounded by `timeoutMs` and `maxBytes` (user-configurable).
 - Enhanced-layer fetches apply `min(timeoutMs, 10_000)` as their readiness
   deadline even when an operator configures a longer general dataset timeout.
-- In Knowgrph, the host UI surfaces these controls in **MainPanel Workflow → Step 3 (Ingest) → Dataset fetch limits** to avoid duplicating configuration in the Geo floating panel.
-- The Geo floating panel does not render fetch-limit inputs; it only provides geospatial overlay configuration and a small icon hint pointing users to Source Files for dataset add/import.
+- General dataset defaults remain available in **MainPanel Workflow → Step 3
+  (Ingest) → Dataset fetch limits** and in the Geo panel Dataset section.
+- Every enhanced catalog Add/Edit form separately exposes its mandatory
+  per-entry `timeoutMs` and `maxBytes`; global defaults never silently replace
+  missing enhanced bounds.
 - Default `maxBytes` is sized to handle common public GeoJSON datasets (for example ~20MB city datasets) while still remaining bounded.
 - If a dataset is too large (based on Content-Length when available), loading fails early with an actionable error instead of streaming indefinitely.
 - Basemap style/tiles are fetched via the local `/__fetch_remote` proxy when running on localhost to avoid CORS issues; binary tile responses are served with a corrected Content-Length to prevent truncated PBF parsing errors.
@@ -335,11 +412,16 @@ source readiness does not claim deployment or physical-device proof.
 
 ---
 
-## Multi-Dataset Demo (Airports + Countries + Cities)
+## Ordinary Multi-Dataset Demo (Airports + Countries + Cities)
 
-**Purpose**: Show how to configure three independent Geo layers (Airports, Countries, Cities) via Source Files / Geo panel without hardcoding dataset URLs into production code.
+**Purpose**: Show how to register three ordinary point/polygon Geo layers via
+Source Files without hardcoding dataset URLs into production code. This is
+separate from the structured **Enhanced layers** catalog for extrusions and 3D
+assets.
 
-> These are documentation-only examples. The application must not ship with hardcoded dataset URLs; users configure them via environment or UI.
+> These are documentation-only examples. The application must not ship with
+> hardcoded dataset URLs; users configure ordinary layers through Source Files
+> and enhanced layers through the structured catalog or its environment seed.
 
 ### Step 1 — Prepare dataset URLs (outside of code)
 
@@ -347,52 +429,34 @@ source readiness does not claim deployment or physical-device proof.
 - **Countries (GeoJSON)**: country polygons in GeoJSON.
 - **Cities (records)**: city records (with coordinates) in JSON.
 
-Store these URLs in environment configuration (for example `VITE_GEOSPATIAL_DATASETS_JSON` in your host) or paste them at runtime into the Geo panel “Dataset URL” inputs. Do not embed them inside source files.
+Import these URLs through Source Files. Do not embed them in compiled runtime
+source.
 
 ### Step 2 — Register datasets as layers
 
-There are two host-level paths to register Geo layers:
-
-1. **Via environment catalog (recommended for demos)**
-   - Set `VITE_GEOSPATIAL_DATASETS_JSON` to a JSON array that describes Airports / Countries / Cities.
-   - Example (pseudo-structure):
-
-```jsonc
-[
-  { "id": "layer-airports",  "label": "Airports",  "url": "<AIRPORTS_URL>",  "format": "records", "enabled": true },
-  { "id": "layer-countries", "label": "Countries", "url": "<COUNTRIES_URL>", "format": "geojson", "enabled": true },
-  { "id": "layer-cities",    "label": "Cities",    "url": "<CITIES_URL>",    "format": "records", "enabled": true }
-]
-```
-
-   - At runtime, the geospatial slice reads this JSON, normalizes `blob` URLs to `raw` (via `normalizeGitHubBlobLikeUrl`), and stores them in `geospatialDatasets`.
-
-2. **Via Geo panel UI (per-session configuration)**
-   - In Knowgrph, open **MainPanel Workflow → Step 3 (Ingest) → Source Files**.
-   - Add or select three Source File rows (for example “Airports”, “Countries”, “Cities”).
-   - For each row:
-     - Use the URL import control to enter the dataset URL.
-     - Use the Geo toggle/checkbox to register it as a geospatial dataset (the host calls `addGeospatialDatasetUrl` with `{ label, url, format: 'auto' }`).
-
-Both approaches use the same underlying dataset model and helpers (`addGeospatialDatasetUrl(s)`, `parseGeospatialDatasetFormat`, `loadDatasetFeatureCollection`).
+In Knowgrph, open **MainPanel Workflow → Step 3 (Ingest) → Source Files**.
+Add or select three Source File rows, import each URL, and use the Geo
+toggle/checkbox to register it as an ordinary geospatial dataset. This path uses
+the existing dataset model and helpers (`addGeospatialDatasetUrl(s)`,
+`parseGeospatialDatasetFormat`, `loadDatasetFeatureCollection`).
 
 ### Step 3 — Enable Geospatial Mode (MapLibre overlay)
 
 1. In the Canvas toolbar, click **Geospatial Mode** (Geo button) to open the Geo floating-panel tab.
-2. Ensure Geospatial Mode is **enabled** (overlay toggle ON) and interaction mode is `Always` (default).
+2. Ensure the toolbar Geospatial Mode selection is active and interaction mode
+   is `Always` (default).
 3. Verify that the MapLibre basemap (default: OpenFreeMap Liberty) is visible as a translucent overlay on top of the 2D canvas.
 
 At this point, Document Mode (graph canvases) and Geospatial Mode share the same GraphData and selection state, but the host enforces **mutual exclusivity**: when Geospatial Mode is enabled, graph canvases are unmounted so they cannot run background rendering/recalculation or consume shared requests.
 
 ### Step 4 — Observe multi-layer overlay + clustering
 
-1. In the Geo panel, confirm that all three datasets appear in the dataset list with their labels (“Airports”, “Countries”, “Cities”).
-2. Ensure each dataset is **enabled**:
+1. In Source Files, confirm that all three rows remain registered for Geo.
+2. Ensure each Source File Geo toggle is **enabled**:
    - Countries (GeoJSON polygons) should render as polygon/line layers (fill + outline).
    - Airports / Cities (records) should render as point layers derived from record coordinates.
-3. Enable clustering (if not already enabled) via the Geo panel cluster controls:
-   - `geospatialClusterEnabled = true`
-   - Adjust `geospatialClusterRadius` and `geospatialClusterMaxZoom` as needed.
+3. Clustering is optional for ordinary point datasets and is not part of the
+   enhanced-layer catalog acceptance gate.
 
 The MapLibre overlay now shows three simultaneous layers:
 
@@ -410,7 +474,9 @@ The MapLibre overlay now shows three simultaneous layers:
 
 ### Step 6 — Keep configuration neutral and bounded
 
-- Dataset URLs live in environment config or user input, not in compiled code.
+- Ordinary dataset URLs come from Source Files user input. Enhanced extrusion
+  and asset URLs come from the structured catalog or its environment seed.
+  Neither is compiled into runtime source.
 - Fetch behavior remains bounded:
   - `geospatialDatasetTimeoutMs` and `geospatialDatasetMaxBytes` control timeout and max bytes.
   - Oversized or slow datasets fail with clear, actionable messages (no infinite fetch loops).

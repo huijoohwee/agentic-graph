@@ -20,29 +20,46 @@ const prohibitedDependencies = [
 const runtimeFiles = [
   "gympgrph/src/enhancedLayerConfig.ts",
   "gympgrph/src/enhancedLayerConfigSource.ts",
+  "gympgrph/src/enhancedLayerPersistence.ts",
   "gympgrph/src/extrusionHeight.ts",
   "gympgrph/src/enhancedLayerLoad.ts",
   "gympgrph/src/enhancedResourceCache.ts",
   "gympgrph/src/asset3dCustomLayer.ts",
   "gympgrph/src/asset3dProjection.ts",
+  "gympgrph/src/enhancedLayerMapReconciliation.ts",
+  "gympgrph/src/maplibreLayers.ts",
   "gympgrph/src/useEnhancedGeospatialLayers.ts",
   "gympgrph/src/useEnhancedGeospatialHostLayers.ts",
   "gympgrph/src/geospatialFitRuntime.ts",
+  "gympgrph/src/GeospatialPanelHost.tsx",
+  "gympgrph/src/GeospatialPanelDisplayControls.tsx",
+  "gympgrph/src/GeospatialPanelDatasetControls.tsx",
+  "gympgrph/src/geospatialPanelUi.tsx",
   "canvas/src/features/geospatial/geoInvocationDispatcher.ts",
   "canvas/src/features/geospatial/geoInvocationRuntime.ts",
   "canvas/src/features/geospatial/geoCommandDeepLink.ts",
   "canvas/src/features/geospatial/geoNodeBounds.ts",
   "canvas/src/features/geospatial/geoAuthoringHarness.ts",
   "canvas/src/features/geospatial/geoAuthoringFallback.ts",
+  "canvas/src/features/geospatial/enhancedLayerEditorModel.ts",
+  "canvas/src/features/geospatial/useEnhancedLayerCatalog.ts",
+  "canvas/src/features/geospatial/EnhancedLayerEditorForm.tsx",
+  "canvas/src/features/geospatial/EnhancedLayerCatalogPanel.tsx",
+  "canvas/src/features/geospatial/gympgrphBridge.ts",
   "canvas/src/features/chat/floatingPanelChat/geospatialInvocationSubmit.ts",
   "canvas/src/features/canvas/useCanvasGeospatialRuntime.ts",
+  "canvas/src/lib/toolbar/ToolbarToolMenuGeoView.tsx",
 ];
 const focusedTestFiles = [
   "scripts/__tests__/geospatial-mode-enhancement.test.ts",
   "scripts/__tests__/geospatial-asset3d-projection.test.ts",
   "scripts/__tests__/geospatial-bounded-loading-readiness.test.ts",
   "scripts/__tests__/geospatial-config-source.test.ts",
+  "scripts/__tests__/geospatial-enhanced-layer-persistence.test.ts",
+  "scripts/__tests__/geospatial-enhanced-layer-reconciliation.test.ts",
+  "scripts/__tests__/geospatial-layer-editor-ui-readiness.test.ts",
   "scripts/__tests__/geo-authoring-fallback-readiness.test.ts",
+  "canvas/src/__tests__/geospatialPanelComposition.test.ts",
   "canvas/src/__tests__/geospatialInvocationRuntime.test.ts",
   "mcp/__tests__/geospatial-layer-runtime.test.mjs",
 ];
@@ -90,10 +107,10 @@ try {
   if (manifest.schemaId !== "knowgrph-geospatial-readiness-properties/v1") {
     failures.push("geospatial readiness property manifest has an unknown schema");
   }
-  const expectedIds = Array.from({ length: 38 }, (_value, index) => index + 1);
+  const expectedIds = Array.from({ length: 44 }, (_value, index) => index + 1);
   const propertyIds = properties.map(property => property.id);
   if (JSON.stringify(propertyIds) !== JSON.stringify(expectedIds)) {
-    failures.push("geospatial readiness property manifest must contain ordered properties 1-38");
+    failures.push("geospatial readiness property manifest must contain ordered properties 1-44");
   }
   for (const property of properties) {
     const evidence = Array.isArray(property.evidence) ? property.evidence : [];
@@ -133,7 +150,12 @@ for (const requiredText of [
   "VITE_GEOSPATIAL_DATASETS_JSON",
   "getMatrixForModel",
   "network-unavailable",
-  "38 correctness properties",
+  "44 correctness properties",
+  "Enhanced layers",
+  "Reset to environment defaults",
+  "kg:ui:geospatial:enhancedLayerVisibility",
+  "without reload",
+  "field-level",
   "6,023,998",
 ]) {
   if (!documentText.includes(requiredText)) failures.push(`geospatial document is missing ${requiredText}`);
