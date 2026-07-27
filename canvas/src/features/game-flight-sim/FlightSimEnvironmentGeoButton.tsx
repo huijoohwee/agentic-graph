@@ -45,21 +45,25 @@ export function FlightSimEnvironmentGeoButton(
     ),
     [markdownDocumentName, markdownDocumentText],
   )
-  const openFlightOverlay = React.useCallback(() => {
+  const openFlightOverlay = React.useCallback(async () => {
     if (!sourceAuthoredFlight) return
-    void import('./flightSimRuntime')
-      .then(({ openFlightSimSurface }) => openFlightSimSurface({ openPanel: false }))
-      .then(snapshot => {
-        if (snapshot.active && !snapshot.runtimeError) return
+    try {
+      const [{ settleWorkspaceSourceTextWrites }, { openFlightSimSurface }] = await Promise.all([
+        import('@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'),
+        import('./flightSimRuntime'),
+      ])
+      await settleWorkspaceSourceTextWrites()
+      const snapshot = await openFlightSimSurface({ openPanel: false })
+      if (!snapshot.active || snapshot.runtimeError) {
         throw new Error(snapshot.runtimeError || 'Flight Sim remained inactive.')
+      }
+    } catch (error) {
+      pushUiToast({
+        id: 'flight-sim:geo-overlay:error',
+        kind: 'error',
+        message: `Flight overlay could not open in Geo: ${failureMessage(error)}`,
       })
-      .catch(error => {
-        pushUiToast({
-          id: 'flight-sim:geo-overlay:error',
-          kind: 'error',
-          message: `Flight overlay could not open in Geo: ${failureMessage(error)}`,
-        })
-      })
+    }
   }, [pushUiToast, sourceAuthoredFlight])
 
   return (

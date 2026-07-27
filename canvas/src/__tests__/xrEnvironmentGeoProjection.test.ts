@@ -27,9 +27,10 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   }
   if (!mediaLibrary.includes('<FlightSimEnvironmentGeoButton')
     || !flightGeoButton.includes("openFlightSimSurface({ openPanel: false })")
+    || !flightGeoButton.includes('await settleWorkspaceSourceTextWrites()')
     || !geoView.includes('data-kg-geo-xr-environment={selectedEnvironment.id}')
     || !flightPanel.includes('data-kg-flight-sim-environment={environment.id}')) {
-    throw new Error('expected Media selection, Geo projection, and Flight world projection to share one authored XR environment')
+    throw new Error('expected Media selection, settled source persistence, Geo projection, and Flight world projection to share one authored XR environment')
   }
   const flightSource = [
     '---',
