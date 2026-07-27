@@ -531,6 +531,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         active={storyboardSharedSurfaceActive}
         graphData={storyboardGraphData}
         getRuntime={() => props.flowRuntimeRefRef.current?.current || null}
+        storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
       />
       <StoryboardCardOverlayLayer2d
         active={storyboardCardsActive}
