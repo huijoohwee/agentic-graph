@@ -9,6 +9,10 @@ import {
 } from '@/features/group-panel/groupPanelContract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
+  collectGroupPanelContainedNodeIds,
+  isGroupPanelContainedNode,
+} from '@/lib/storyboardWidget/groupPanelContainment'
+import {
   resolveStoryboardWidgetOverlayProxyTarget,
   shouldUseCanvasOverlayBodyPan,
 } from '@/lib/canvas/storyboard-widget-overlay-proxy'
@@ -16,6 +20,9 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
   const surfaceText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/StoryboardGroupPanelLayer2d.tsx'), 'utf8')
+  const surfaceRuntimeText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/StoryboardWidgetCanvasSurface.tsx'), 'utf8')
+  const cardOverlayText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d.tsx'), 'utf8')
+  const richMediaOverlayText = readFileSync(resolve(process.cwd(), 'src/components/FlowCanvas/FlowCanvasMediaOverlays.tsx'), 'utf8')
   for (const expected of [
     'getStoryboardWidgetPanelSurfaceChromeClassName',
     'StoryboardWidgetPanelChromeHeader',
@@ -41,6 +48,44 @@ export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
   }
   if (surfaceText.includes('ariaHidden')) {
     throw new Error('expected Group Panel wrapper to remain visible to accessibility and selection tooling')
+  }
+  if (
+    !surfaceText.includes('props.onNodeChange(nodeId, {')
+    || !surfaceText.includes('}, props.graphData)')
+    || !surfaceRuntimeText.includes('onNodeChange={props.patchNodeById}')
+  ) {
+    throw new Error('expected Group Panel drag to write through the canonical Storyboard document mutation owner')
+  }
+  for (const [name, text] of [
+    ['Storyboard card', cardOverlayText],
+    ['Rich Media panel', richMediaOverlayText],
+  ] as const) {
+    if (
+      !text.includes('collectGroupPanelContainedNodeIds')
+      || !text.includes('isGroupPanelContainedNode')
+      || !text.includes('!containedByGroupPanel')
+    ) {
+      throw new Error(`expected grouped ${name} movement to yield to its Group Panel`)
+    }
+  }
+
+  const containedNodeIds = collectGroupPanelContainedNodeIds({
+    type: 'Graph',
+    nodes: [],
+    edges: [],
+    metadata: {
+      'kg:subgraphs': [
+        { id: 'g1', label: 'Group 1', memberNodeIds: ['n1', 'n2'] },
+        { id: 'g2', label: 'Group 2', memberNodeIds: ['n3'], parentId: 'g1' },
+      ],
+    },
+  } as never)
+  if (
+    !isGroupPanelContainedNode(containedNodeIds, 'n1')
+    || !isGroupPanelContainedNode(containedNodeIds, 'n3')
+    || isGroupPanelContainedNode(containedNodeIds, 'n4')
+  ) {
+    throw new Error('expected direct and nested Group Panel children to share containment movement ownership')
   }
 
   const { dom, restore } = initJsdomHarness('<!doctype html><html><body></body></html>')

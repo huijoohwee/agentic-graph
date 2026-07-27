@@ -533,6 +533,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         flowWidgetStateGraphKey={flowWidgetStateGraphKey}
         graphData={storyboardGraphData}
         getRuntime={() => props.flowRuntimeRefRef.current?.current || null}
+        onNodeChange={props.patchNodeById}
         storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
       />
       <StoryboardCardOverlayLayer2d
