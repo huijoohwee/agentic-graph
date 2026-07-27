@@ -9,6 +9,8 @@ import {
 } from '@/features/group-panel/groupPanelContract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
+  clampGroupPanelChildCenter,
+  clampGroupPanelChildTopLeft,
   collectGroupPanelContainedNodeIds,
   isGroupPanelContainedNode,
 } from '@/lib/storyboardWidget/groupPanelContainment'
@@ -22,6 +24,7 @@ export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
   const surfaceText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/StoryboardGroupPanelLayer2d.tsx'), 'utf8')
   const surfaceRuntimeText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/StoryboardWidgetCanvasSurface.tsx'), 'utf8')
   const cardOverlayText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d.tsx'), 'utf8')
+  const cardInteractionsText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/storyboardCardOverlayInteractions2d.ts'), 'utf8')
   const richMediaOverlayText = readFileSync(resolve(process.cwd(), 'src/components/FlowCanvas/FlowCanvasMediaOverlays.tsx'), 'utf8')
   for (const expected of [
     'getStoryboardWidgetPanelSurfaceChromeClassName',
@@ -56,17 +59,29 @@ export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
   ) {
     throw new Error('expected Group Panel drag to write through the canonical Storyboard document mutation owner')
   }
-  for (const [name, text] of [
-    ['Storyboard card', cardOverlayText],
-    ['Rich Media panel', richMediaOverlayText],
+  for (const [name, text, movementContract] of [
+    ['Storyboard card', cardOverlayText, 'containedByGroupPanel || isFlowWidgetHeaderDragAllowedByPin'],
+    ['Rich Media panel', richMediaOverlayText, 'containedByGroupPanel || richMediaPanelPinAllowsMovement'],
   ] as const) {
     if (
       !text.includes('collectGroupPanelContainedNodeIds')
       || !text.includes('isGroupPanelContainedNode')
-      || !text.includes('!containedByGroupPanel')
+      || !text.includes(movementContract)
     ) {
-      throw new Error(`expected grouped ${name} movement to yield to its Group Panel`)
+      throw new Error(`expected grouped ${name} movement to remain enabled within its Group Panel`)
     }
+  }
+  if (
+    !cardInteractionsText.includes('clampGroupPanelChildCenter')
+    || !richMediaOverlayText.includes('clampGroupPanelChildTopLeft')
+  ) {
+    throw new Error('expected grouped child movement to share Group Panel containment clamping')
+  }
+  if (
+    !surfaceText.includes('props.fallbackNodePositions.get(nodeId)')
+    || !surfaceRuntimeText.includes('fallbackNodePositions={stableStoryboardCardPlacements}')
+  ) {
+    throw new Error('expected Group Panel drag to initialize excluded fixed cards from stable Storyboard placements')
   }
 
   const containedNodeIds = collectGroupPanelContainedNodeIds({
@@ -86,6 +101,25 @@ export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
     || isGroupPanelContainedNode(containedNodeIds, 'n4')
   ) {
     throw new Error('expected direct and nested Group Panel children to share containment movement ownership')
+  }
+  const containmentBounds = { minX: 0, minY: 0, maxX: 100, maxY: 100 }
+  const clampedTopLeft = clampGroupPanelChildTopLeft({
+    bounds: containmentBounds,
+    point: { x: -100, y: -100 },
+    size: { width: 20, height: 10 },
+  })
+  const clampedCenter = clampGroupPanelChildCenter({
+    bounds: containmentBounds,
+    center: { x: 1000, y: 1000 },
+    size: { width: 20, height: 10 },
+  })
+  if (
+    clampedTopLeft.x !== 8
+    || clampedTopLeft.y !== 8
+    || clampedCenter.x !== 82
+    || clampedCenter.y !== 87
+  ) {
+    throw new Error('expected grouped child movement to remain inside the drag-start Group Panel bounds')
   }
 
   const { dom, restore } = initJsdomHarness('<!doctype html><html><body></body></html>')

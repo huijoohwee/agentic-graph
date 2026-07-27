@@ -34,6 +34,7 @@ export function StoryboardGroupPanelLayer2d(props: {
   active: boolean
   flowWidgetPinnedByNodeId: FlowWidgetPinnedById
   flowWidgetStateGraphKey: string | null
+  fallbackNodePositions: ReadonlyMap<string, { x: number; y: number }>
   graphData: GraphData | null
   getRuntime: () => FlowNativeRuntime | null
   onNodeChange: (nodeId: string, patch: Partial<GraphNode>, sourceGraphData?: GraphData | null) => void
@@ -170,8 +171,17 @@ export function StoryboardGroupPanelLayer2d(props: {
     memberNodeIds.forEach(nodeId => {
       const graphNode = graphNodes.get(nodeId)
       const runtimeNode = runtimeNodes?.get(nodeId)
-      const x = Number.isFinite(graphNode?.x) ? Number(graphNode?.x) : Number(runtimeNode?.x)
-      const y = Number.isFinite(graphNode?.y) ? Number(graphNode?.y) : Number(runtimeNode?.y)
+      const fallbackPosition = props.fallbackNodePositions.get(nodeId)
+      const x = Number.isFinite(graphNode?.x)
+        ? Number(graphNode?.x)
+        : Number.isFinite(runtimeNode?.x)
+          ? Number(runtimeNode?.x)
+          : Number(fallbackPosition?.x)
+      const y = Number.isFinite(graphNode?.y)
+        ? Number(graphNode?.y)
+        : Number.isFinite(runtimeNode?.y)
+          ? Number(runtimeNode?.y)
+          : Number(fallbackPosition?.y)
       if (Number.isFinite(x) && Number.isFinite(y)) startByNodeId.set(nodeId, { x, y })
     })
     if (startByNodeId.size === 0) return
@@ -203,7 +213,7 @@ export function StoryboardGroupPanelLayer2d(props: {
     selectGroupPanel(subgraphGroupId(group.id), event)
     event.preventDefault()
     event.stopPropagation()
-  }, [collectNestedMemberNodeIds, props.graphData, props.onNodeChange, selectGroupPanel])
+  }, [collectNestedMemberNodeIds, props.fallbackNodePositions, props.graphData, props.onNodeChange, selectGroupPanel])
 
   if (!props.active || groups.length === 0) return null
   return (
