@@ -5,6 +5,8 @@ import { computeFlowGroupAabb, type FlowNativeScene } from '@/components/FlowCan
 import { CanvasArrangeActionBar } from '@/components/canvas/CanvasArrangeActionBar'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
+  buildSelectionGroupingPlan,
+  collectSelectedGroupIds,
   collectSelectedNodeIds,
   createSelectionGroupLabel,
   findSelectedUserSubgraph,
@@ -138,6 +140,24 @@ export function testSelectionGroupingInteractionContract() {
     }
     if (!ungroupMarkup.includes('data-kg-selection-action="ungroup"') || !ungroupMarkup.includes('Ungroup')) {
       throw new Error('expected a selected user group to expose Ungroup')
+    }
+    const mixedGroupMarkup = renderToStaticMarkup(createElement(CanvasArrangeActionBar, {
+      active: true,
+      selectedCount: 1,
+      canGroupNodes: true,
+      onGroupNodes: () => undefined,
+      onArrange: () => undefined,
+    }))
+    if (!mixedGroupMarkup.includes('data-kg-selection-action="group-nodes"')) {
+      throw new Error('expected mixed node and Group Panel selection to expose Group Nodes')
+    }
+    const groupingPlan = buildSelectionGroupingPlan({
+      graphData: useGraphStore.getState().graphData,
+      nodeIds: ['n1'],
+      groupIds: collectSelectedGroupIds(groupId, [groupId]),
+    })
+    if (groupingPlan.entityCount !== 1 || groupingPlan.memberNodeIds.length !== 0) {
+      throw new Error('expected selected child nodes to be deduplicated against their selected Group Panel')
     }
 
     store.selectGroup(groupId)

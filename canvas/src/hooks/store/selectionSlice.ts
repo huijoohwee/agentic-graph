@@ -71,10 +71,10 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       set({
         selectedNodeId: nextActiveId,
         selectedEdgeId: state.selectedEdgeId,
-        selectedGroupId: null,
+        selectedGroupId: state.selectedGroupId,
         selectedNodeIds: nextIds,
         selectedEdgeIds: state.selectedEdgeIds || [],
-        selectedGroupIds: [],
+        selectedGroupIds: state.selectedGroupIds || [],
       })
       if (nextActiveId) {
         try {
@@ -132,10 +132,10 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
     set({
       selectedNodeId: nextActiveId,
       selectedEdgeId: null,
-      selectedGroupId: null,
+      selectedGroupId: state.selectedGroupId,
       selectedNodeIds: nextIds,
       selectedEdgeIds: [],
-      selectedGroupIds: [],
+      selectedGroupIds: state.selectedGroupIds || [],
     })
     if (!nextActiveId) return
     try {
@@ -156,7 +156,11 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
     const rawNodeIds = Array.isArray(args.nodeIds) ? args.nodeIds : []
     const nodeIdSet = new Set<string>(rawNodeIds.map(v => String(v)).filter(Boolean))
     const nodeIds = Array.from(nodeIdSet)
-    if (nodeIds.length === 0) {
+    const rawEdgeIds = Array.isArray(args.edgeIds) ? args.edgeIds : []
+    const edgeIds = rawEdgeIds.map(v => String(v)).filter(Boolean)
+    const rawGroupIds = Array.isArray(args.groupIds) ? args.groupIds : []
+    const groupIds = rawGroupIds.map(v => String(v)).filter(Boolean)
+    if (nodeIds.length === 0 && edgeIds.length === 0 && groupIds.length === 0) {
       set({
         selectedNodeId: null,
         selectedEdgeId: null,
@@ -168,17 +172,37 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       return
     }
     const activeRaw = typeof args.activeNodeId === 'string' ? args.activeNodeId : null
-    const activeNodeId = activeRaw && nodeIdSet.has(activeRaw) ? activeRaw : nodeIds[nodeIds.length - 1]
-    const rawEdgeIds = Array.isArray(args.edgeIds) ? args.edgeIds : []
-    const edgeIds = rawEdgeIds.map(v => String(v)).filter(Boolean)
-    const rawGroupIds = Array.isArray(args.groupIds) ? args.groupIds : []
-    const groupIds = rawGroupIds.map(v => String(v)).filter(Boolean)
+    const activeNodeId = activeRaw && nodeIdSet.has(activeRaw) ? activeRaw : nodeIds[nodeIds.length - 1] || null
     if (mode === 'single') {
+      if (!activeNodeId && groupIds.length > 0) {
+        const selectedGroupId = groupIds[groupIds.length - 1]
+        set({
+          selectedNodeId: null,
+          selectedEdgeId: null,
+          selectedGroupId,
+          selectedNodeIds: [],
+          selectedEdgeIds: [],
+          selectedGroupIds: [selectedGroupId],
+        })
+        return
+      }
+      if (!activeNodeId && edgeIds.length > 0) {
+        const selectedEdgeId = edgeIds[edgeIds.length - 1]
+        set({
+          selectedNodeId: null,
+          selectedEdgeId,
+          selectedGroupId: null,
+          selectedNodeIds: [],
+          selectedEdgeIds: [selectedEdgeId],
+          selectedGroupIds: [],
+        })
+        return
+      }
       set({
         selectedNodeId: activeNodeId,
         selectedEdgeId: null,
         selectedGroupId: null,
-        selectedNodeIds: [activeNodeId],
+        selectedNodeIds: activeNodeId ? [activeNodeId] : [],
         selectedEdgeIds: [],
         selectedGroupIds: [],
       })
@@ -277,10 +301,10 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       const nextIds = exists ? prevIds.filter(x => x !== id) : [...prevIds, id]
       const nextActiveId = nextIds.length > 0 ? (nextIds.includes(id) ? id : nextIds[nextIds.length - 1]) : null
       set({
-        selectedNodeId: null,
+        selectedNodeId: state.selectedNodeId,
         selectedEdgeId: null,
         selectedGroupId: nextActiveId,
-        selectedNodeIds: [],
+        selectedNodeIds: state.selectedNodeIds || [],
         selectedEdgeIds: [],
         selectedGroupIds: nextIds,
       })
