@@ -56,6 +56,30 @@ export async function readEnhancedGeospatialConfig(): Promise<NormalizedEnhanced
   return m.readEnhancedLayerConfig()
 }
 
+export async function readEnhancedGeospatialEditorState() {
+  const m = await importGympgrph()
+  if (typeof m.readEnhancedLayerEditorState !== 'function') {
+    throw new Error('Enhanced geospatial editor API is unavailable')
+  }
+  return m.readEnhancedLayerEditorState()
+}
+
+export async function writeEnhancedGeospatialConfig(raw: unknown): Promise<boolean> {
+  const m = await importGympgrph()
+  if (typeof m.writeEnhancedLayerConfig !== 'function') {
+    throw new Error('Enhanced geospatial configuration write API is unavailable')
+  }
+  return m.writeEnhancedLayerConfig(raw)
+}
+
+export async function clearEnhancedGeospatialConfigOverride(): Promise<boolean> {
+  const m = await importGympgrph()
+  if (typeof m.clearEnhancedLayerConfigOverride !== 'function') {
+    throw new Error('Enhanced geospatial configuration reset API is unavailable')
+  }
+  return m.clearEnhancedLayerConfigOverride()
+}
+
 export async function toggleGeospatialModeEnabled(): Promise<boolean> {
   const m = await importGympgrph()
   if (typeof m.isGeospatialModeEnabled !== 'function') {

@@ -211,6 +211,21 @@ export function buildExtrusionPaint(config: ExtrusionLayerConfig): Record<string
   }
 }
 
+export function applyExtrusionLayerPaint(
+  map: any,
+  layerId: string,
+  config: ExtrusionLayerConfig,
+): void {
+  if (!map || !layerId || !map.getLayer?.(layerId)) return
+  for (const [property, value] of Object.entries(buildExtrusionPaint(config))) {
+    try {
+      map.setPaintProperty?.(layerId, property, value)
+    } catch {
+      void 0
+    }
+  }
+}
+
 export function ensureExtrusionLayer(
   map: any,
   sourceId: string,
@@ -244,6 +259,7 @@ export function ensureExtrusionLayer(
       return false
     }
   }
+  applyExtrusionLayerPaint(map, config.id, config)
   setExtrusionLayerVisibility(map, config.id, config.visible)
   return !!map.getLayer?.(config.id)
 }
@@ -252,6 +268,20 @@ export function setExtrusionLayerVisibility(map: any, layerId: string, visible: 
   if (!map || !layerId || !map.getLayer?.(layerId)) return
   try {
     map.setLayoutProperty?.(layerId, 'visibility', visible ? 'visible' : 'none')
+  } catch {
+    void 0
+  }
+}
+
+export function removeExtrusionLayer(map: any, layerId: string, sourceId: string): void {
+  if (!map) return
+  try {
+    if (map.getLayer?.(layerId)) map.removeLayer?.(layerId)
+  } catch {
+    void 0
+  }
+  try {
+    if (map.getSource?.(sourceId)) map.removeSource?.(sourceId)
   } catch {
     void 0
   }
