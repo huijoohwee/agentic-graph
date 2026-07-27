@@ -303,13 +303,16 @@ export function createFlowNativePointerMoveHandler(ctx: FlowNativeInteractionsCo
       const anchorId = drag.memberNodeIds[0] || ''
       const anchorStart = anchorId ? drag.startNodePosById[anchorId] : null
       const snappedDelta = allowSnap ? snapDeltaToGridByAnchor({ anchorStart, rawDelta: { dx, dy }, gridSize: grid }) : { dx, dy }
+      const clampedDelta = drag.deltaClamp
+        ? clampFlowDelta({ clamp: drag.deltaClamp, dx: snappedDelta.dx, dy: snappedDelta.dy })
+        : snappedDelta
       for (let i = 0; i < drag.memberNodeIds.length; i += 1) {
         const id = drag.memberNodeIds[i]
         const node = scene.nodeById.get(id)
         const start = drag.startNodePosById[id]
         if (!node || !start) continue
-        node.x = start.x + snappedDelta.dx
-        node.y = start.y + snappedDelta.dy
+        node.x = start.x + clampedDelta.dx
+        node.y = start.y + clampedDelta.dy
       }
       runtime.dirty = true
       ctx.args.positionsDirtySinceCommitRef.current = true

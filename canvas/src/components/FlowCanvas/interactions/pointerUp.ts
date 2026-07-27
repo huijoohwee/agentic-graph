@@ -9,7 +9,11 @@ import {
   selectParentDropTarget,
   type ParentDropCandidate,
 } from '@/lib/canvas/parentChildRelation'
-import { subgraphIdFromGroupId } from '@/lib/graph/subgraphs'
+import { readSubgraphs, subgraphIdFromGroupId } from '@/lib/graph/subgraphs'
+import {
+  selectSubFlowParentDropTarget,
+  type SubFlowDropCandidate,
+} from '@/lib/canvas/subFlow'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 
@@ -185,6 +189,68 @@ export function createFlowNativePointerUpHandler(ctx: FlowNativeInteractionsCont
               kind: 'error',
               message: result.message,
             })
+          }
+        }
+      }
+    }
+
+    const groupMoved = drag.type === 'group' && drag.memberNodeIds.some(nodeId => {
+      const node = runtime.scene?.nodeById.get(nodeId) || null
+      const start = drag.startNodePosById[nodeId]
+      return !!node && !!start && (Math.abs(node.x - start.x) > 0.01 || Math.abs(node.y - start.y) > 0.01)
+    })
+    if (drag.type === 'group' && groupMoved && e.type !== 'pointercancel') {
+      const scene = runtime.scene
+      const group = scene?.groups?.find(candidate => String(candidate.id || '').trim() === String(drag.groupId || '').trim()) || null
+      const childSubgraphId = group?.source === 'userSubgraph' ? subgraphIdFromGroupId(group.id) : ''
+      if (scene && group && childSubgraphId) {
+        const presentation = runtime.presentation.groups
+        const groupBounds = computeFlowGroupAabb({
+          scene,
+          group,
+          paddingPx: presentation.paddingPx,
+          labelTopExtraPx: presentation.labelTopExtraPx,
+        })
+        const candidates: SubFlowDropCandidate[] = []
+        for (const candidate of scene.groups || []) {
+          if (candidate.source !== 'userSubgraph') continue
+          const subgraphId = subgraphIdFromGroupId(candidate.id)
+          if (!subgraphId) continue
+          const bounds = computeFlowGroupAabb({
+            scene,
+            group: candidate,
+            paddingPx: presentation.paddingPx,
+            labelTopExtraPx: presentation.labelTopExtraPx,
+          })
+          if (!bounds) continue
+          candidates.push({
+            groupId: candidate.id,
+            subgraphId,
+            parentGroupId: candidate.parentGroupId,
+            depth: candidate.depth,
+            bounds,
+          })
+        }
+        const target = groupBounds
+          ? selectSubFlowParentDropTarget({
+            groupId: group.id,
+            groupBounds,
+            candidates,
+          })
+          : null
+        if (target) {
+          const state = useGraphStore.getState()
+          const currentParentId = readSubgraphs(state.graphData)
+            .find(subgraph => subgraph.id === childSubgraphId)?.parentId || null
+          if (currentParentId !== target.subgraphId) {
+            const result = state.updateUserSubgraph(childSubgraphId, { parentId: target.subgraphId })
+            if (result.ok === false) {
+              state.pushUiToast({
+                id: 'sub-flow-attach-error',
+                kind: 'error',
+                message: result.message,
+              })
+            }
           }
         }
       }
