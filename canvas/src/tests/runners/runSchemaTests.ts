@@ -495,6 +495,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modCanvas3dMode()
     await mod.testCanvasViewMenuKeepsMobileFirstGroupedOrder()
   })
+  await execTest(results, 'canvas.viewSelection.geospatialReturnsToCanvasView', async () => {
+    const mod = await modCanvas3dMode()
+    await mod.testGeospatialSurfaceModeReturnsToCanvasView()
+  })
   await execTest(results, 'canvas.viewSelection.timelineDisplayControl', async () => {
     const mod = await modCanvas3dMode()
     await mod.testCanvasViewTimelineToggleUsesSharedViewModeOption()

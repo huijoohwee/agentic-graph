@@ -542,6 +542,69 @@ export function testCanvasViewMenuKeepsMobileFirstGroupedOrder() {
   }
 }
 
+export function testGeospatialSurfaceModeReturnsToCanvasView() {
+  const options = buildCanvasViewOptions(
+    {
+      canvas2dRenderer: 'storyboard',
+      canvas3dMode: '3d',
+      canvasRenderMode: '2d',
+      documentSemanticMode: 'document',
+      frontmatterModeEnabled: false,
+      multiDimTableModeEnabled: false,
+      renderMediaAsNodes: false,
+      timelineEnabled: true,
+      bottomSurfaceCollapsed: true,
+      bottomSurfaceTab: 'stats',
+      geospatialEnabled: true,
+      layoutMode: 'block',
+      schema: BLOCK_SCHEMA,
+      frontmatterOnlyAllowed: false,
+      isD3Like2dLayoutToggle: false,
+    },
+    getCanvasViewRendererOptions(),
+  )
+  const canvasViewOption = options
+    .find(option => option.id === 'surface:menu')
+    ?.children?.find(option => option.id === 'surface:2d')
+  if (canvasViewOption?.title !== 'Canvas View Mode' || canvasViewOption.disabled) {
+    throw new Error('Expected Geospatial Mode to expose an enabled Canvas View Mode return action')
+  }
+
+  let exitCalls = 0
+  const renderModes: Array<'2d' | '3d'> = []
+  applyCanvasViewSelection({
+    id: 'surface:2d',
+    ensureBaselineUnlocked: () => true,
+    geospatialEnabled: true,
+    onOpenGeospatialMode: () => {
+      throw new Error('Expected Canvas View Mode to leave Geospatial Mode instead of reopening it')
+    },
+    onExitGeospatialMode: () => { exitCalls += 1 },
+    canvas2dRenderer: 'storyboard',
+    canvas3dMode: '3d',
+    canvasRenderMode: '2d',
+    documentSemanticMode: 'document',
+    frontmatterModeEnabled: false,
+    multiDimTableModeEnabled: false,
+    renderMediaAsNodes: false,
+    timelineEnabled: true,
+    ...NOOP_BOTTOM_SURFACE_ACTIONS,
+    schema: BLOCK_SCHEMA,
+    setCanvas2dRenderer: () => {},
+    setCanvasRenderMode: mode => { renderModes.push(mode) },
+    setCanvas3dMode: () => {},
+    setSchema: () => {},
+    setRenderMediaAsNodes: () => {},
+    setTimelineEnabled: () => {},
+    setDocumentSemanticMode: () => {},
+    setFrontmatterModeEnabled: () => {},
+    setMultiDimTableModeEnabled: () => {},
+  })
+  if (exitCalls !== 1 || renderModes.join('|') !== '2d') {
+    throw new Error(`Expected Canvas View Mode to exit Geospatial Mode and restore 2D, got ${JSON.stringify({ exitCalls, renderModes })}`)
+  }
+}
+
 export function testCanvasViewTimelineToggleUsesSharedViewModeOption() {
   const options = buildCanvasViewOptions(
     {
