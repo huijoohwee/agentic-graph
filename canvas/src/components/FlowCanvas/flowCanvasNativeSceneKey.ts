@@ -5,6 +5,16 @@ import { buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import type { GraphData } from '@/lib/graph/types'
 
+export const buildFlowGroupSceneKey = (groups: ReadonlyArray<GraphGroup> | null | undefined): string =>
+  JSON.stringify((groups || []).map(group => ({
+    id: String(group.id || ''),
+    parentGroupId: String(group.parentGroupId || ''),
+    autoBounds: group.autoBounds === true,
+    memberNodeIds: Array.isArray(group.memberNodeIds) ? group.memberNodeIds.map(String) : [],
+    bounds: group.bounds || null,
+    style: group.style || null,
+  })))
+
 export function buildFlowCanvasNativeSceneKey(args: {
   sceneGraphData: GraphData | null
   layoutVariant: string
@@ -26,7 +36,7 @@ export function buildFlowCanvasNativeSceneKey(args: {
     `rankdir=${args.rankdir}`,
     `node=${Math.round(args.flowConfig.node.widthPx)}x${Math.round(args.flowConfig.node.heightPx)}`,
     `forbidCircle=${args.forbidCircleNodes ? 1 : 0}`,
-    `groups=${Array.isArray(args.sceneGroups) ? args.sceneGroups.length : 0}`,
+    `groups=${buildFlowGroupSceneKey(args.sceneGroups)}`,
   ].join('|')
   return buildScopedGraphSemanticKey('flow-canvas-native-scene', { graphSemanticKey: nativeSceneKey })
 }
