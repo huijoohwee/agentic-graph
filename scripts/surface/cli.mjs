@@ -261,10 +261,10 @@ async function loadAuthority(options = {}) {
 }
 
 function authoritySummary(authority) {
-  const tierCounts = Object.groupBy(
-    authority.registry?.entries ?? [],
-    entry => entry.surfaceTier,
-  )
+  const tierCounts = (authority.registry?.entries ?? []).reduce((counts, entry) => {
+    counts[entry.surfaceTier] = (counts[entry.surfaceTier] ?? 0) + 1
+    return counts
+  }, {})
   return {
     schema: RUNTIME_REPORT_SCHEMA,
     status: authority.generationReady ? 'valid' : 'invalid',
@@ -272,9 +272,7 @@ function authoritySummary(authority) {
     generationStatus: authority.generationReady ? 'ready' : 'blocked',
     publicEstateStatus: authority.estateReady ? 'ready' : 'blocked',
     registryEntries: authority.registry?.entries?.length ?? 0,
-    tierCounts: Object.fromEntries(
-      Object.entries(tierCounts).map(([tier, entries]) => [tier, entries.length]),
-    ),
+    tierCounts,
     licenses: authority.licenseRegistry?.licenses?.length ?? 0,
     routedPaths: authority.routeClassification.routes.length,
     fetchProxyRateLimit: authority.registry?.policy?.fetchProxyRateLimit ?? null,
