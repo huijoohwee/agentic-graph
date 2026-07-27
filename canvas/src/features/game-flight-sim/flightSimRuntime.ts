@@ -154,6 +154,10 @@ const flightSimStageRuntimeController: FlightSimStageRuntimeController =
     subscribe: listener => subscribeFlightSimSnapshot(listener),
   })
 
+export function readFlightSimStageRuntimeController(): FlightSimStageRuntimeController {
+  return flightSimStageRuntimeController
+}
+
 function restoreSurfaceOwnership(
   previous: FlightSimPreviousCanvasSurface | null,
   restorePreviousSurface: boolean,

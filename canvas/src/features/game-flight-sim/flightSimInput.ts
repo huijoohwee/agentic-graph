@@ -188,7 +188,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 export function installFlightSimDesktopInput(
-  element: HTMLCanvasElement,
+  element: HTMLElement,
   options: Readonly<{
     onInput: (input: FlightSimTickInput) => void
     onCycleCamera?: () => void

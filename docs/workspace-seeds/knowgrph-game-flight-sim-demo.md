@@ -48,8 +48,16 @@ shared_xr_scene:
   collider_owner: "canvas/src/features/three/xrCanonicalSceneSpatialSource.ts"
   camera_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
   second_canvas_forbidden: true
+geo_flight_overlay:
+  activation: "selected authored environment plus source-authored Flight identity"
+  renderer_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
+  overlay_owner: "canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx"
+  control_owner: "canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts"
+  route_projection_owner: "canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts"
+  xr_canvas_mounted: false
+  map_interaction_preserved: true
 native_flight_demo:
-  runtime_owner: "Flight Sim surface on the shared XR Canvas"
+  runtime_owner: "Flight Sim projection on the active shared XR or Geo Canvas surface"
   default_aircraft: "vehicle-airplane"
   deterministic_step: true
   fixed_step: "exactly 1/60 second (approximately 16.667 ms, 60 Hz)"
@@ -83,8 +91,8 @@ native_flight_demo:
     default: "singapore"
     selector: "FloatingPanel Media Terrain / Environment Kits; the Media Geo action stages the selected authored environment before opening FloatingPanel Geo"
     available: ["singapore", "tropical-playground", "neutral-volume", "street-grid", "loading-bay", "downtown", "residential-street", "supermarket", "movie-theater", "train-car", "backyard-pool", "aerial-sky"]
-    geo_handoff: "successful stage selection opens the shared Geo panel, which projects the same XR environment; rejected selection remains in Media"
-    flight_entry: "the next Flight open derives its local collision profile, route, navigation, and World label from the selected authored environment"
+    geo_handoff: "successful stage selection opens the shared Geo panel and keeps the Geo renderer visible and interactive beneath one transparent Flight route and aircraft overlay; rejected selection remains in Media"
+    flight_entry: "the next Flight open derives its local collision profile, route, navigation, and World label from the selected authored environment without mounting the XR Canvas over Geo"
   objective: "capture exactly three ordered waypoints, then the marked landing pad"
   waypoint_count: 3
   landing_pad_count: 1

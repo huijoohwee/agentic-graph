@@ -165,7 +165,7 @@ export function completeFlightSimReadyFrame(
     startedAtMs: pending.startedAtMs,
     completedAtMs: now(),
     limitMs: FLIGHT_SIM_READY_FRAME_LIMIT_MS,
-    source: 'shared-r3f-ready-frame',
+    source: 'shared-flight-surface-ready-frame',
     synchronous: false,
     runId,
     tick,

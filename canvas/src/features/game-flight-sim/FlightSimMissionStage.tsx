@@ -3,17 +3,6 @@ import { addAfterEffect, invalidate, useFrame, useThree } from '@react-three/fib
 import { type Group, type Mesh } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
-import {
-  claimThreeViewportInputOwnership,
-  releaseThreeViewportInputOwnership,
-  subscribeThreeViewportInputOwnership,
-} from '@/features/three/threeViewportInputOwnership'
-import { readMotionControlSnapshot } from '@/features/three/motionControlRuntime'
-import {
-  isMotionControlPoseTracked,
-  motionControlPoseToControllerInput,
-} from '@/features/three/motionControlPose'
-import { readXrNativeControllerCamera } from '@/features/three/xrNativeControllerCameraRuntime'
 import { readFlightSimDefaultAssetLoadReport } from './assetSpec/flightSimDefaultAssets'
 import {
   FLIGHT_SIM_AIRCRAFT_FORWARD,
@@ -21,35 +10,15 @@ import {
   FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE,
   FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
 } from './flightSimAircraftPresentation'
-import { cycleFlightSimCameraView } from './flightSimCameraRuntime'
-import {
-  installFlightSimDesktopInput,
-  mergeFlightSimInputs,
-  readFlightSimTouchInput,
-  readStandardFlightSimGamepad,
-  setFlightSimTouchInput,
-  type FlightSimInputBinding,
-} from './flightSimInput'
-import { flightSimInputFromMotionController } from './flightSimMotionControlAdapter'
-import {
-  FLIGHT_SIM_FIXED_STEP_SECONDS,
-  FLIGHT_SIM_NEUTRAL_INPUT,
-} from './flightSimModel'
 import type {
   FlightSimStageRuntimeController,
 } from './flightSimStageRuntimeController'
-import {
-  createFlightSimSimulationClock,
-  runFlightSimStageSimulationStep,
-} from './flightSimSimulationClock'
 import { completeFlightSimReadyFrame } from './flightSimDeadlineRuntime'
 import {
   completeFlightSimStagePreparation,
   readCurrentFlightSimStagePreparationRequest,
 } from './flightSimStagePreparationRuntime'
-
-const INPUT_OWNER_ID = 'flight-sim:aircraft'
-const CLOCK_INTERVAL_MS = FLIGHT_SIM_FIXED_STEP_SECONDS * 1000
+import { useFlightSimSurfaceControls } from './useFlightSimSurfaceControls'
 
 export type FlightSimMissionStageProps = Readonly<{
   coordinateScale?: number
@@ -65,9 +34,6 @@ export function FlightSimMissionStage({
   const waypointRefs = React.useRef(new Map<string, Mesh>())
   const landingPadRef = React.useRef<Mesh | null>(null)
   const snapshotRef = React.useRef(runtimeController.readSnapshot())
-  const desktopInputRef = React.useRef(FLIGHT_SIM_NEUTRAL_INPUT)
-  const desktopBindingRef = React.useRef<FlightSimInputBinding | null>(null)
-  const inputClaimedRef = React.useRef(false)
   const framePresentationRef = React.useRef({
     playable: false,
     readyAtTickZero: false,
@@ -120,6 +86,12 @@ export function FlightSimMissionStage({
     }
   }, [assetCatalog, runtimeController])
 
+  useFlightSimSurfaceControls({
+    inputElement: gl.domElement,
+    requestPresentationFrame: invalidate,
+    runtimeController,
+  })
+
   React.useEffect(() => {
     const syncRuntimeSnapshot = () => {
       snapshotRef.current = runtimeController.readSnapshot()
@@ -134,37 +106,6 @@ export function FlightSimMissionStage({
   React.useEffect(() => {
     const canvas = gl.domElement
     canvas.dataset.kgFlightSimSpatialProfile = profile.id
-    let acquiringInput = false
-    let disposed = false
-    let desktop: FlightSimInputBinding | null = null
-    const acquireInput = () => {
-      if (disposed || acquiringInput || inputClaimedRef.current) return
-      acquiringInput = true
-      const claimed = claimThreeViewportInputOwnership(INPUT_OWNER_ID, {
-        blocksProgrammaticCamera: false,
-      })
-      acquiringInput = false
-      canvas.dataset.kgFlightSimInputOwner = claimed ? INPUT_OWNER_ID : 'blocked'
-      if (!claimed) return
-      inputClaimedRef.current = true
-      desktop = installFlightSimDesktopInput(canvas, {
-        onInput: value => {
-          desktopInputRef.current = value
-        },
-        onCycleCamera: cycleFlightSimCameraView,
-        onPause: () => {
-          setFlightSimTouchInput({})
-          runtimeController.stop()
-        },
-        shouldPauseOnPointerRelease: () => readXrNativeControllerCamera().mode === 'fixed-follow',
-        shouldRequestPointerLock: () => readXrNativeControllerCamera().mode === 'fixed-follow',
-      })
-      desktopBindingRef.current = desktop
-      invalidate()
-    }
-    const unsubscribeInputOwnership =
-      subscribeThreeViewportInputOwnership(acquireInput)
-    acquireInput()
     const removeAfterRender = addAfterEffect(() => {
       const snapshot = runtimeController.readSnapshot()
       const stagePreparationRequestId =
@@ -193,51 +134,11 @@ export function FlightSimMissionStage({
     // input ownership is an independent claim that may still be changing hands.
     invalidate()
     return () => {
-      disposed = true
-      unsubscribeInputOwnership()
       removeAfterRender()
-      inputClaimedRef.current = false
-      if (desktopBindingRef.current === desktop) desktopBindingRef.current = null
-      desktop?.dispose()
-      releaseThreeViewportInputOwnership(INPUT_OWNER_ID)
-      delete canvas.dataset.kgFlightSimInputOwner
       delete canvas.dataset.kgFlightSimSpatialProfile
       delete canvas.dataset.kgFlightSimFirstFrame
     }
   }, [gl, invalidate, profile.id, runtimeController])
-
-  React.useEffect(() => {
-    const clock = createFlightSimSimulationClock({
-      minimumStepIntervalMs: CLOCK_INTERVAL_MS,
-      runStep: async () => {
-        const pose = readMotionControlSnapshot().pose
-        const motionInput = flightSimInputFromMotionController(
-          motionControlPoseToControllerInput(pose),
-          isMotionControlPoseTracked(pose),
-        )
-        const input = mergeFlightSimInputs([
-          desktopBindingRef.current?.consumeInput() ?? desktopInputRef.current,
-          readFlightSimTouchInput(),
-          readStandardFlightSimGamepad(),
-          motionInput,
-        ])
-        await runFlightSimStageSimulationStep({
-          input,
-          stageInput: runtimeController.setInput,
-          advanceFixedStep: runtimeController.advanceByFixedStep,
-        })
-      },
-      onStepError: () => {
-        runtimeController.stop()
-      },
-    })
-    const timer = window.setInterval(clock.requestStep, CLOCK_INTERVAL_MS)
-    return () => {
-      window.clearInterval(timer)
-      clock.dispose()
-      runtimeController.setInput(FLIGHT_SIM_NEUTRAL_INPUT)
-    }
-  }, [runtimeController])
 
   useFrame(() => {
     const snapshot = runtimeController.readSnapshot()

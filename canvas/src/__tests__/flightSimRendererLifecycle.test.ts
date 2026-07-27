@@ -103,17 +103,18 @@ test('Flight Sim keeps one XR renderer through the document transition', async (
   }
 })
 
-test('Flight Sim takes shared XR viewport ownership from Geo without clearing Geo mode', () => {
+test('Flight Sim overlays Geo without mounting a competing XR viewport', () => {
   const ownership = resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
+    flightSimActive: true,
     gameplayOverlayActive: true,
     geospatialModeEnabled: true,
     workspaceEditorOverlayOpen: false,
     workspaceStoryboardSurfaceActive: false,
   })
   assert.deepEqual(ownership, {
-    activeSurface: '3d',
-    geospatialOverlayOwnsViewport: false,
+    activeSurface: 'geo',
+    geospatialOverlayOwnsViewport: true,
   })
 
   const surface = resolveThreeCanvasSurfaceLifecycle({
@@ -126,10 +127,23 @@ test('Flight Sim takes shared XR viewport ownership from Geo without clearing Ge
     activeSurface: ownership.activeSurface,
     documentSwitchOwnsViewport: false,
   })
-  assert.deepEqual(surface, { mounted: true, active: true })
+  assert.deepEqual(surface, { mounted: false, active: false })
 
   assert.deepEqual(resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
+    flightSimActive: false,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: true,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  }), {
+    activeSurface: '3d',
+    geospatialOverlayOwnsViewport: false,
+  })
+
+  assert.deepEqual(resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    flightSimActive: false,
     gameplayOverlayActive: false,
     geospatialModeEnabled: true,
     workspaceEditorOverlayOpen: false,
