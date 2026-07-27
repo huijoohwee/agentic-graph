@@ -41,7 +41,7 @@ type ControlsCapabilities = Readonly<{
   enableRotate: boolean
   enableZoom: boolean
 }>
-type FreeOrbitPlanPose = Readonly<{
+type PlanRestorePose = Readonly<{
   position: Vector3
   target: Vector3
 }>
@@ -178,7 +178,7 @@ export function useXrNativeControllerDemoCamera({
   const desiredTargetRef = React.useRef(new Vector3())
   const desiredCameraRef = React.useRef(new Vector3())
   const previousFovRef = React.useRef<number | null>(null)
-  const freeOrbitPlanPoseRef = React.useRef<FreeOrbitPlanPose | null>(null)
+  const planRestorePoseRef = React.useRef<PlanRestorePose | null>(null)
   const resetKeyRef = React.useRef(-1)
   const sequenceRef = React.useRef(-1)
 
@@ -192,11 +192,12 @@ export function useXrNativeControllerDemoCamera({
       Object.assign(controls, controlsCapabilitiesRef.current)
       controlsCapabilitiesRef.current = null
     }
-    if (freeOrbitPlanPoseRef.current) {
-      camera.position.copy(freeOrbitPlanPoseRef.current.position)
-      controls.target.copy(freeOrbitPlanPoseRef.current.target)
+    if (planRestorePoseRef.current) {
+      camera.position.copy(planRestorePoseRef.current.position)
+      controls.target.copy(planRestorePoseRef.current.target)
       camera.lookAt(controls.target)
-      freeOrbitPlanPoseRef.current = null
+      controls.update()
+      planRestorePoseRef.current = null
     }
     ownerRef.current = null
     resetKeyRef.current = -1
@@ -208,7 +209,6 @@ export function useXrNativeControllerDemoCamera({
   useFrame((_state, deltaSecondsValue) => {
     const fixedFollow = readXrNativeControllerCamera().mode === 'fixed-follow'
     const planarFollowActive = flightSimActive && planarFlightPresentation
-    if (fixedFollow) freeOrbitPlanPoseRef.current = null
     if (
       flightSimActive
       && !fixedFollow
@@ -239,15 +239,20 @@ export function useXrNativeControllerDemoCamera({
     controls.enableRotate = false
     controls.enableZoom = false
     if (previousFovRef.current === null) previousFovRef.current = camera.fov
+    const previousOwner = ownerRef.current
     if (
       follow.owner === 'flight-plan'
-      && !fixedFollow
-      && !freeOrbitPlanPoseRef.current
+      && previousOwner !== 'flight-plan'
     ) {
-      freeOrbitPlanPoseRef.current = {
+      planRestorePoseRef.current = {
         position: camera.position.clone(),
         target: controls.target.clone(),
       }
+    } else if (
+      follow.owner !== 'flight-plan'
+      && previousOwner === 'flight-plan'
+    ) {
+      planRestorePoseRef.current = null
     }
     const target = desiredTargetRef.current.set(...follow.target)
     const desiredCamera = desiredCameraRef.current.set(...follow.position)

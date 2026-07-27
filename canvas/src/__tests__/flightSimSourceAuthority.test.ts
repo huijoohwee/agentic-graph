@@ -597,7 +597,19 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
     controllerCamera,
     /suspended \|\| \(!fixedFollow && !planarFollowActive\)/,
   )
-  assert.match(controllerCamera, /freeOrbitPlanPoseRef/)
+  assert.match(
+    controllerCamera,
+    /follow\.owner === 'flight-plan'\s*&& previousOwner !== 'flight-plan'/,
+  )
+  assert.match(
+    controllerCamera,
+    /follow\.owner !== 'flight-plan'\s*&& previousOwner === 'flight-plan'/,
+  )
+  assert.match(controllerCamera, /planRestorePoseRef/)
+  assert.doesNotMatch(
+    controllerCamera,
+    /if \(fixedFollow\)\s+planRestorePoseRef\.current = null/,
+  )
   assert.doesNotMatch(controllerCamera, /camera\.up\.(?:copy|set)/)
   assert.match(controllerCamera, /renderer\.xr\.isPresenting/)
   assert.match(flightTarget, /resolveFlightSimFollowTarget/)
