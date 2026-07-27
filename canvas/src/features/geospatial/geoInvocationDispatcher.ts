@@ -13,8 +13,12 @@ import {
   setGeospatialModeEnabled,
 } from './gympgrphBridge'
 
-type ParseResult =
+export type GeoInvocationParseResult =
   | { ok: true; command: GeoCommand }
+  | { ok: false; rejection: GeoCommandRejection }
+
+export type GeoCommandApplyResult =
+  | { ok: true; changed: boolean }
   | { ok: false; rejection: GeoCommandRejection }
 
 const reject = (
@@ -31,30 +35,45 @@ const parseVisibility = (value: string): boolean | null => {
   return null
 }
 
-export function parseGeoInvocation(raw: string): ParseResult {
+export function parseGeoInvocation(raw: string): GeoInvocationParseResult {
   const text = String(raw || '').trim()
   if (!text) return reject('unknown-action', 'Enter /geo, @node-id, or #tag followed by show or hide.')
   if (text.startsWith('@')) {
-    const nodeId = text.slice(1).trim()
+    const nodeId = /^@(\S+)$/.exec(text)?.[1] || ''
     return nodeId
       ? { ok: true, command: { kind: 'fit.node', nodeId } }
-      : reject('unknown-target', 'Add a geo-capable node id after @.')
+      : reject('unknown-target', 'Use one geo-capable node id after @.')
   }
   if (text.startsWith('#')) {
-    const [tagValue, action = 'show'] = text.split(/\s+/)
-    const visible = parseVisibility(action.toLowerCase())
-    if (visible == null) return reject('unknown-action', 'Use #tag show or #tag hide.')
+    const [tagValue, action, extra] = text.split(/\s+/)
+    const normalizedAction = String(action || '').toLowerCase()
+    const visible = normalizedAction === 'show' ? true : normalizedAction === 'hide' ? false : null
+    if (!tagValue || extra || visible == null) return reject('unknown-action', 'Use #tag show or #tag hide.')
     return { ok: true, command: { kind: 'tag.visibility', tag: tagValue.toLowerCase(), visible } }
   }
-  const tokens = text.replace(/^\/geo(?:spatial)?(?:[.\s]+)?/i, '').trim().split(/\s+/).filter(Boolean)
+  const slashPrefix = /^\/geo(?:spatial)?(?:\s+|$)/i.exec(text)?.[0]
+  if (!slashPrefix) {
+    return reject('unknown-action', 'Use /geo on|off, @<geo-node-id>, or #<tag> show|hide.')
+  }
+  const tokens = text.slice(slashPrefix.length).trim().split(/\s+/).filter(Boolean)
   const action = (tokens[0] || '').toLowerCase()
-  if (['on', 'enable', 'show'].includes(action)) return { ok: true, command: { kind: 'mode.set', enabled: true } }
-  if (['off', 'disable', 'hide'].includes(action)) return { ok: true, command: { kind: 'mode.set', enabled: false } }
+  if (['on', 'enable', 'show'].includes(action)) {
+    return tokens.length === 1
+      ? { ok: true, command: { kind: 'mode.set', enabled: true } }
+      : reject('unknown-target', 'Use /geo on without an additional target.')
+  }
+  if (['off', 'disable', 'hide'].includes(action)) {
+    return tokens.length === 1
+      ? { ok: true, command: { kind: 'mode.set', enabled: false } }
+      : reject('unknown-target', 'Use /geo off without an additional target.')
+  }
   if (action === 'extrusion' || action === 'asset') {
     const id = String(tokens[1] || '').trim()
     const visible = parseVisibility(String(tokens[2] || '').toLowerCase())
     if (!id) return reject('unknown-target', `Add a ${action} id.`)
-    if (visible == null) return reject('unknown-action', `Use /geo ${action} <id> show or hide.`)
+    if (visible == null || tokens.length !== 3) {
+      return reject('unknown-action', `Use /geo ${action} <id> show or hide.`)
+    }
     return {
       ok: true,
       command: action === 'extrusion'
@@ -120,7 +139,7 @@ export async function applyGeoCommand(
     resolveNodeBounds: (id: string) => GeospatialBounds | null
     bridge?: GeoCommandBridge
   },
-): Promise<{ ok: true; changed: boolean } | { ok: false; rejection: GeoCommandRejection }> {
+): Promise<GeoCommandApplyResult> {
   const bridge = context.bridge || defaultBridge
   if (command.kind === 'mode.set') {
     await bridge.setMode(command.enabled)

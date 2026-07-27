@@ -1,0 +1,385 @@
+{
+  "schemaId": "knowgrph-geospatial-readiness-properties/v1",
+  "properties": [
+    {
+      "id": 1,
+      "name": "Zero-configuration baseline equivalence",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "zero enhanced configuration is additive and empty"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Failed on-demand load rolls back mode state",
+      "evidence": [
+        {
+          "file": "canvas/src/__tests__/geospatialInvocationRuntime.test.ts",
+          "contains": "testGeospatialModeBridgeRollsBackFailedRuntimeImport"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Extrusions use native MapLibre layers",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "native MapLibre fill-extrusion paint"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Height resolution is total and feature-preserving",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "height normalization is total and preserves every generated feature"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Road and building height normalization share one owner",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "road and building extrusions share height normalization semantics"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Paint values follow configuration and defaults",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "extrusion paint is native MapLibre fill-extrusion paint"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Asset coordinates use the active geographic model transform",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-asset3d-projection.test.ts",
+          "contains": "getMatrixForModel"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Camera changes reproject assets every frame",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-asset3d-projection.test.ts",
+          "contains": "active map transform and frame matrix on every draw"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Asset failure retains other layers",
+      "evidence": [
+        {
+          "file": "gympgrph/src/useEnhancedGeospatialLayers.ts",
+          "contains": "meshes.set(asset.id, mesh)"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Invalid asset coordinates are isolated",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-asset3d-projection.test.ts",
+          "contains": "rejects unsafe coordinates before allocating a GL context"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "One custom layer context is owned per enable cycle",
+      "evidence": [
+        {
+          "file": "gympgrph/src/useEnhancedGeospatialLayers.ts",
+          "contains": "enableCycleRef.current"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "Prohibited runtime dependencies fail readiness",
+      "evidence": [
+        {
+          "file": "scripts/check-geospatial-mode-readiness.mjs",
+          "contains": "prohibitedDependencies"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "Cached resources avoid refetch",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-bounded-loading-readiness.test.ts",
+          "contains": "without refetching"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Same-origin paths stay same-origin",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "same-origin enhanced paths remain same-origin"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "Partial availability renders the available subset",
+      "evidence": [
+        {
+          "file": "gympgrph/src/useEnhancedGeospatialLayers.ts",
+          "contains": "Promise.all(config.extrusions.map"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Unavailable status is bounded and explicit",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-bounded-loading-readiness.test.ts",
+          "contains": "network failures expose the literal bounded status reason"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Every retrieval carries both fetch bounds",
+      "evidence": [
+        {
+          "file": "gympgrph/src/enhancedLayerConfig.ts",
+          "contains": "resolveFetchBound"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Missing bounds abort before fetch",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-bounded-loading-readiness.test.ts",
+          "contains": "missing fetch bounds abort before any network request"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Oversized streams discard partial payloads",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "bounded streaming aborts and discards an oversized payload"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Slow resources stop at the readiness deadline",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-bounded-loading-readiness.test.ts",
+          "contains": "bounded loading returns at the configured deadline"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Proxy routing depends on origin",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "localhost remote URLs use the dev proxy"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Invocation writes use the gated bridge",
+      "evidence": [
+        {
+          "file": "canvas/src/__tests__/geospatialInvocationRuntime.test.ts",
+          "contains": "mode command should use only the bridge"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "name": "At references fit exact geo-node bounds",
+      "evidence": [
+        {
+          "file": "canvas/src/__tests__/geospatialInvocationRuntime.test.ts",
+          "contains": "expected exact geo-node bounds"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Hash actions affect exactly tagged layers",
+      "evidence": [
+        {
+          "file": "canvas/src/__tests__/geospatialInvocationRuntime.test.ts",
+          "contains": "tag command should load config once and use the bridge"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Successful changes publish the shared event",
+      "evidence": [
+        {
+          "file": "gympgrph/src/enhancedLayerPersistence.ts",
+          "contains": "emitGeospatialModeChanged({})"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Rejected invocations do not mutate runtime state",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "rejected invocation performs zero bridge writes"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Invalid authoring input spends no model calls",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "geo harness validates before model calls"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Every completed model call emits a validated cost log",
+      "evidence": [
+        {
+          "file": "canvas/src/features/geospatial/geoAuthoringHarness.ts",
+          "contains": "validateCostLog(costLog)"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Invalid authoring output is never applied",
+      "evidence": [
+        {
+          "file": "canvas/src/features/geospatial/geoAuthoringHarness.ts",
+          "contains": "Model draft does not match the enhanced layer schema."
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Authoring iteration bounds are clamped and enforced",
+      "evidence": [
+        {
+          "file": "canvas/src/features/geospatial/geoAuthoringHarness.ts",
+          "contains": "iteration-limit"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Cost budget stops without partial application",
+      "evidence": [
+        {
+          "file": "canvas/src/features/geospatial/geoAuthoringHarness.ts",
+          "contains": "budget-exceeded"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Model timeout is typed and falls back deterministically",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geo-authoring-fallback-readiness.test.ts",
+          "contains": "model timeout returns a typed fallback"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Transport failure is typed and redacted",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geo-authoring-fallback-readiness.test.ts",
+          "contains": "transport failure returns the deterministic typed fallback"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Load failure is visible and retains loaded layers",
+      "evidence": [
+        {
+          "file": "gympgrph/src/useEnhancedGeospatialLayers.ts",
+          "contains": "formatEnhancedLayerFailure"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Progress is determinate or explicitly indeterminate",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-bounded-loading-readiness.test.ts",
+          "contains": "loading progress is monotonic and explicitly indeterminate"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "name": "Enabled overlay opacity cannot remain zero",
+      "evidence": [
+        {
+          "file": "gympgrph/src/useEnhancedGeospatialLayers.ts",
+          "contains": "if (opacity === 0)"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Map host maintains a drawable viewport",
+      "evidence": [
+        {
+          "file": "gympgrph/src/features/geospatial/useMapLibreBasemap.ts",
+          "contains": "map.resize?.()"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Fit target follows selection precedence",
+      "evidence": [
+        {
+          "file": "scripts/__tests__/geospatial-mode-enhancement.test.ts",
+          "contains": "fit requests follow selection then graph then enhanced bounds"
+        }
+      ]
+    }
+  ]
+}
