@@ -291,6 +291,7 @@ def _apply_exact_authored_source(
               const controller = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
               const camera = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime')
               const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
+              const gympgrph = await window.__kgFlightSimBrowserProof.importModule('gympgrphStore')
               const workspace = await workspaceModule.getWorkspaceFs()
               await workspace.ensureSeed()
               const sourcePath =
@@ -348,6 +349,10 @@ def _apply_exact_authored_source(
                   priorState.canvasRenderModeIsAuto,
                 floatingPanelOpen: priorState.floatingPanelOpen,
                 floatingPanelView: priorState.floatingPanelView,
+                geospatialModeEnabled:
+                  gympgrph.isGeospatialModeEnabled(),
+                mapLibreActive:
+                  gympgrph.readActiveMapLibreMap?.() != null,
                 timelinePlaying: priorState.timelineTransportPlaying === true,
                 physicsPhase: physics.readXrPhysicsRuntime().phase,
                 physics: physicsSnapshot,
