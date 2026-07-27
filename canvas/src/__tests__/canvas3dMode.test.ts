@@ -566,8 +566,8 @@ export function testGeospatialSurfaceModeReturnsToCanvasView() {
   const canvasViewOption = options
     .find(option => option.id === 'surface:menu')
     ?.children?.find(option => option.id === 'surface:2d')
-  if (canvasViewOption?.title !== 'Canvas View Mode' || canvasViewOption.disabled) {
-    throw new Error('Expected Geospatial Mode to expose an enabled Canvas View Mode return action')
+  if (canvasViewOption?.title !== '2D Mode' || canvasViewOption.disabled) {
+    throw new Error('Expected Geospatial Mode to expose an enabled 2D Mode return action')
   }
 
   let exitCalls = 0

@@ -13,6 +13,7 @@ import {
   isWorkspace2dRendererPresetStaleForDocument,
   isWorkspaceGraphSourceStaleForDocument,
   isWorkspaceDocumentSwitchApplySettled,
+  resolveWorkspaceDocumentSwitchCanvasPreset,
   shouldApplyStableWorkspaceSelectionToCanvas,
 } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceSelection'
 import { readWorkspaceActiveDocumentResolvedText } from '@/features/source-files/sourceFilesRuntimeActive'
@@ -389,6 +390,21 @@ export function testSourceFilesStableHydratedSelectionStillAppliesStaleCanvasDoc
 }
 
 export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
+  const defaultNotePreset = resolveWorkspaceDocumentSwitchCanvasPreset({
+    activeDocumentKey: 'notes/note_20260727T225041Z.md',
+    text: '---\nflow:\n  nodes: []\n---\n',
+  })
+  if (defaultNotePreset?.canvasSurfaceMode !== '2d' || defaultNotePreset.canvasRenderMode !== '2d') {
+    throw new Error(`expected authored notes without an explicit surface to default to 2D Mode, got ${JSON.stringify(defaultNotePreset)}`)
+  }
+  const authoredXrNotePreset = resolveWorkspaceDocumentSwitchCanvasPreset({
+    activeDocumentKey: '/notes/xr-playground.md',
+    text: '---\nkgCanvasSurfaceMode: "xr"\nkgCanvasRenderMode: "3d"\n---\n',
+  })
+  if (authoredXrNotePreset?.canvasSurfaceMode !== 'xr' || authoredXrNotePreset.canvasRenderMode !== '3d') {
+    throw new Error(`expected explicit authored note surface frontmatter to remain authoritative, got ${JSON.stringify(authoredXrNotePreset)}`)
+  }
+
   const settled = isWorkspaceDocumentSwitchApplySettled({
     activeDocumentKey: 'docs/knowgrph-storyboard-widget-demo.md',
     text: '# Storyboard Widget',

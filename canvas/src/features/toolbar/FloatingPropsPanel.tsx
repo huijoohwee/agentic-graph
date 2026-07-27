@@ -29,7 +29,7 @@ export function FloatingPropsPanel() {
     >
       {!storyboardRendererActive ? (
         <p className={`px-3 py-2 text-xs ${UI_THEME_TOKENS.text.secondary}`} role="status">
-          Switch Canvas View Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.
+          Switch 2D Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.
         </p>
       ) : null}
       <GroupPanelPaletteAction active={storyboardRendererActive} />
