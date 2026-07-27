@@ -58,6 +58,10 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     threeGraph,
     /!geospatialComposite && spatialCaptureManifest/,
   )
+  assert.match(
+    threeGraph,
+    /style=\{geospatialComposite \? \{ pointerEvents: 'none' \} : undefined\}/,
+  )
 })
 
 test('Flight local mission coordinates project deterministically around Singapore', () => {

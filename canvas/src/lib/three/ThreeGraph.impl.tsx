@@ -457,6 +457,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={{ antialias: true, alpha: true }}
+        style={geospatialComposite ? { pointerEvents: 'none' } : undefined}
         onCreated={({ gl, scene, camera }) => {
           gl.xr.enabled = mode === 'xr'
           try {
