@@ -8,20 +8,66 @@ import {
   GROUP_PANEL_INVOCATION,
 } from '@/features/group-panel/groupPanelContract.mjs'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import {
+  resolveStoryboardWidgetOverlayProxyTarget,
+  shouldUseCanvasOverlayBodyPan,
+} from '@/lib/canvas/storyboard-widget-overlay-proxy'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
   const surfaceText = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/StoryboardGroupPanelLayer2d.tsx'), 'utf8')
   for (const expected of [
     'getStoryboardWidgetPanelSurfaceChromeClassName',
     'StoryboardWidgetPanelChromeHeader',
+    'buildFlowCanvasHeaderPinProps',
+    'isFlowWidgetHeaderDragAllowedByPin',
+    'startRichMediaPanelHeaderDrag',
+    'createRafValueScheduler',
+    'computeStoryboardWidgetOverlayScreenBox',
+    'applyVectorPaintedOverlayBox',
     'data-kg-group-panel="1"',
     'data-kg-canvas-selectable-surface="group-panel"',
+    "data-kg-group-panel-pinned={headerPinProps.headerPinned === true ? '1' : '0'}",
+    'data-kg-overlay-pan-owner="canvas"',
+    'data-kg-storyboard-widget-surface={props.storyboardWidgetSurfaceId}',
+    "showPinToggle={selected && typeof headerPinProps.onHeaderTogglePinned === 'function'}",
+    'onPinnedPointerDown={headerPinProps.onHeaderPinnedPointerDown}',
+    'onTogglePinned={headerPinProps.onHeaderTogglePinned}',
+    "addHistory('Group panel move')",
+    'if (event.shiftKey || event.metaKey || event.ctrlKey)',
     'role="group"',
   ]) {
     if (!surfaceText.includes(expected)) throw new Error(`expected first-class Group Panel surface contract ${expected}`)
   }
   if (surfaceText.includes('ariaHidden')) {
     throw new Error('expected Group Panel wrapper to remain visible to accessibility and selection tooling')
+  }
+
+  const { dom, restore } = initJsdomHarness('<!doctype html><html><body></body></html>')
+  try {
+    const canvas = dom.window.document.createElement('canvas')
+    const groupPanel = dom.window.document.createElement('article')
+    const panelBody = dom.window.document.createElement('p')
+    canvas.setAttribute('data-kg-storyboard-widget-surface', 'storyboard')
+    groupPanel.setAttribute('data-node-id', 'group:1')
+    groupPanel.setAttribute('data-kg-storyboard-widget-surface', 'storyboard')
+    groupPanel.setAttribute('data-kg-overlay-pan-owner', 'canvas')
+    groupPanel.appendChild(panelBody)
+    dom.window.document.body.append(canvas, groupPanel)
+
+    const overlay = resolveStoryboardWidgetOverlayProxyTarget({
+      target: panelBody,
+      canvasEl: canvas,
+      storyboardWidgetSurfaceId: 'storyboard',
+    })
+    if (overlay.kind !== 'overlay' || overlay.overlayRoot !== groupPanel) {
+      throw new Error('expected Group Panel to resolve as a semantic canvas overlay')
+    }
+    if (!shouldUseCanvasOverlayBodyPan({ target: panelBody, overlayRoot: groupPanel })) {
+      throw new Error('expected a Group Panel body to use the shared canvas-owned pan path')
+    }
+  } finally {
+    restore()
   }
 
   const [contract] = buildGroupPanelAgentReadyToolContracts({
