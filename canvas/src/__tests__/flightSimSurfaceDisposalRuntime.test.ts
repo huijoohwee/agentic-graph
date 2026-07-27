@@ -11,12 +11,20 @@ import {
 } from '@/features/game-flight-sim/flightSimRuntime'
 import {
   captureFlightSimPreviousCanvasSurface,
+  FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS,
   restoreFlightSimPreviousCanvasSurface,
   type FlightSimPreviousCanvasSurface,
 } from '@/features/game-flight-sim/flightSimSurfaceOwnershipRuntime'
 import {
   readFlightSimSurfaceOwnershipStatus,
 } from '@/features/game-flight-sim/flightSimSurfaceOwnershipStatus'
+import {
+  developAndRunXrNativeControllerDemo,
+  exitXrNativeControllerDemo,
+  readSharedXrNativeControllerDemoFrame,
+  readXrNativeControllerDemo,
+  stepSharedXrNativeControllerDemo,
+} from '@/features/three/xrNativeControllerDemoRuntime'
 import {
   resetFlightSimDecisionStoreForTests,
 } from '@/features/game-flight-sim/flightSimDecisionStore'
@@ -83,7 +91,9 @@ function installControlledRaf(window: TestWindow): ControlledRaf {
     },
     pendingCount: () => frames.size,
     waitForPending: async () => {
-      for (let attempt = 0; attempt < 50; attempt += 1) {
+      const deadline =
+        performance.now() + FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS
+      while (performance.now() < deadline) {
         if (frames.size > 0) return
         await new Promise<void>(resolve => setImmediate(resolve))
       }
@@ -95,17 +105,24 @@ function installControlledRaf(window: TestWindow): ControlledRaf {
 function holdWindowTimeouts(window: TestWindow): HeldTimeouts {
   const originalSetTimeout = window.setTimeout.bind(window)
   const originalClearTimeout = window.clearTimeout.bind(window)
-  let nextTimeoutId = 1
+  let nextTimeoutId = 1_000_000
   const timeouts = new Map<number, () => void>()
-  window.setTimeout = ((handler: TimerHandler, _timeout?: number) => {
+  window.setTimeout = ((handler: TimerHandler, timeout?: number) => {
     assert.equal(typeof handler, 'function')
+    const surfaceDeadlineThreshold =
+      FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS * 0.9
+    if (typeof timeout === 'number' && timeout < surfaceDeadlineThreshold) {
+      return originalSetTimeout(handler, timeout)
+    }
     const timeoutId = nextTimeoutId
     nextTimeoutId += 1
     timeouts.set(timeoutId, handler as () => void)
     return timeoutId
   }) as typeof window.setTimeout
   window.clearTimeout = (timeoutId?: number) => {
-    if (typeof timeoutId === 'number') timeouts.delete(timeoutId)
+    if (typeof timeoutId !== 'number') return
+    if (timeouts.delete(timeoutId)) return
+    originalClearTimeout(timeoutId)
   }
   return {
     fireNext: () => {
@@ -151,6 +168,7 @@ async function withSurfaceDom(
   } finally {
     resetFlightSimDecisionStoreForTests()
     resetFlightSimRuntimeForTests()
+    exitXrNativeControllerDemo()
     writeGeospatialOverlayEnabledPreference(false)
     setGympgrphGeospatialModeEnabled(false)
     useGraphStore.getState().resetAll()
@@ -210,6 +228,62 @@ test('non-Geo restoration requires two consecutive released animation frames', a
     assert.equal(settled, true)
     assert.equal(isGeospatialModeEnabled(), false)
     assert.equal(readActiveMapLibreMap(), null)
+  })
+})
+
+test('native controller resumes after Geo disposal without advancing its Exit frame', async () => {
+  await withSurfaceDom(GEO_CANVAS_MARKUP, async (window, document) => {
+    const ownedCanvas = document.querySelector<HTMLCanvasElement>('#owned-geo-map')
+    assert.ok(ownedCanvas)
+    const releaseOwnedLease = claimMapLibreMapLease({
+      map: { getCanvas: () => ownedCanvas },
+      ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+      root: ownedCanvas.parentElement,
+    })
+    try {
+      const previous = stageGeoRestorationTarget()
+      developAndRunXrNativeControllerDemo()
+      stepSharedXrNativeControllerDemo(0.05)
+      const authoredFrame = readSharedXrNativeControllerDemoFrame()
+
+      const opened = await openFlightSimSurface({
+        previousCanvasSurface: previous,
+        webglSupported: true,
+        workspace: EMPTY_WORKSPACE,
+      })
+      assert.equal(opened.active, true, opened.runtimeError || undefined)
+      assert.equal(readXrNativeControllerDemo().phase, 'paused')
+      const pausedFrame = {
+        ...authoredFrame,
+        phase: 'paused' as const,
+      }
+      assert.deepEqual(readSharedXrNativeControllerDemoFrame(), pausedFrame)
+
+      const controlledRaf = installControlledRaf(window)
+      exitFlightSimSurface()
+      const restoration = waitForFlightSimSurfaceRestoration()
+      ownedCanvas.remove()
+      releaseOwnedLease()
+      for (let frame = 0; frame < 2; frame += 1) {
+        stepSharedXrNativeControllerDemo(0.05)
+        assert.deepEqual(readSharedXrNativeControllerDemoFrame(), pausedFrame)
+        await controlledRaf.waitForPending()
+        await controlledRaf.flushNext()
+      }
+      const exited = await restoration
+
+      assert.equal(exited.active, false)
+      assert.equal(exited.runtimeError, null)
+      assert.equal(readXrNativeControllerDemo().phase, 'running')
+      assert.deepEqual(readSharedXrNativeControllerDemoFrame(), authoredFrame)
+      stepSharedXrNativeControllerDemo(0.05)
+      assert.ok(
+        readSharedXrNativeControllerDemoFrame().stepCount > authoredFrame.stepCount,
+        'the restored authored controller must advance on its next frame',
+      )
+    } finally {
+      releaseOwnedLease()
+    }
   })
 })
 

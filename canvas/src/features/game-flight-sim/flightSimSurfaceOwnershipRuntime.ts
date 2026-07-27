@@ -10,6 +10,11 @@ import {
   playXrPhysicsRuntime,
   readXrPhysicsRuntime,
 } from '@/features/three/xrPhysicsRuntime'
+import {
+  pauseXrNativeControllerDemo,
+  readXrNativeControllerDemo,
+  resumeXrNativeControllerDemo,
+} from '@/features/three/xrNativeControllerDemoRuntime'
 import { isXrGameplaySurfaceView } from '@/features/three/xrSceneSurfaceRuntime'
 
 type GraphStoreState = ReturnType<typeof useGraphStore.getState>
@@ -29,6 +34,7 @@ export type FlightSimPreviousCanvasSurface = Readonly<
 >
 
 export type FlightSimAuthoredRuntimeOwnership = Readonly<{
+  nativeControllerWasRunning: boolean
   physicsWasPlaying: boolean
   timelineWasPlaying: boolean
 }>
@@ -50,12 +56,17 @@ export function captureFlightSimPreviousCanvasSurface(): FlightSimPreviousCanvas
 
 export function captureFlightSimAuthoredRuntimeOwnership(): FlightSimAuthoredRuntimeOwnership {
   return Object.freeze({
+    nativeControllerWasRunning:
+      readXrNativeControllerDemo().phase === 'running',
     physicsWasPlaying: readXrPhysicsRuntime().phase === 'playing',
     timelineWasPlaying: useGraphStore.getState().timelineTransportPlaying === true,
   })
 }
 
 export function suspendFlightSimAuthoredRuntime(): void {
+  if (readXrNativeControllerDemo().phase === 'running') {
+    pauseXrNativeControllerDemo()
+  }
   pauseXrPhysicsRuntime()
   useGraphStore.getState().setTimelineTransportState({ playing: false })
 }
@@ -69,6 +80,9 @@ export function restoreFlightSimAuthoredRuntime(
   useGraphStore.getState().setTimelineTransportState({
     playing: ownership.timelineWasPlaying,
   })
+  if (ownership.nativeControllerWasRunning) {
+    resumeXrNativeControllerDemo()
+  }
 }
 
 export function restoreFlightSimPreviousCanvasSurface(
@@ -88,7 +102,7 @@ export function restoreFlightSimPreviousCanvasSurface(
   return restoreFlightSimGeospatialSurface(previous.geospatialModeEnabled)
 }
 
-const FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS = 1_000
+export const FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS = 1_000
 const FLIGHT_SIM_SURFACE_STABLE_FRAME_COUNT = 2
 
 function flightSimSurfaceRestorationError(error: unknown): string {
