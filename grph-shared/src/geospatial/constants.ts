@@ -2,6 +2,7 @@ export const GEOSPATIAL_MODE_CHANGED_EVENT = 'kg:geospatialModeChanged' as const
 
 export const GEOSPATIAL_STYLE_URL_CHANGED_EVENT = 'kg:geospatialStyleUrlChanged' as const
 export const GEOSPATIAL_POINT_STYLE_CHANGED_EVENT = 'kg:geospatialPointStyleChanged' as const
+export const GEOSPATIAL_ENHANCED_LAYERS_CHANGED_EVENT = 'kg:geospatialEnhancedLayersChanged' as const
 
 export const DEFAULT_GEOSPATIAL_OVERLAY_ENABLED = false as const
 export const GEOSPATIAL_OVERLAY_PREFERENCE_VERSION = 'neutral-v1' as const
@@ -32,4 +33,8 @@ export const GEOSPATIAL_LS_KEYS = {
   geospatialClusterEnabled: 'kg:ui:geospatial:clusterEnabled',
   geospatialClusterRadius: 'kg:ui:geospatial:clusterRadius',
   geospatialClusterMaxZoom: 'kg:ui:geospatial:clusterMaxZoom',
+  geospatialEnhancedLayers: 'kg:ui:geospatial:enhancedLayers',
+  geospatialEnhancedLayerVisibility: 'kg:ui:geospatial:enhancedLayerVisibility',
+  geospatialGeoHarnessEnabled: 'kg:ui:geospatial:geoHarnessEnabled',
+  geospatialGeoHarnessBudgetUsd: 'kg:ui:geospatial:geoHarnessBudgetUsd',
 } as const

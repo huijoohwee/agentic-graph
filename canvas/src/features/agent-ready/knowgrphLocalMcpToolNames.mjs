@@ -9,6 +9,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   fetch: KNOWGRPH_AGENT_READY_TOOL_IDS.fetch,
   uiLaunch: "knowgrph.ui.launch",
   uiStop: "knowgrph.ui.stop",
+  geospatialCommand: "knowgrph.geospatial.command",
   pipeline: "knowgrph.pipeline",
   graphragPipeline: "knowgrph.graphrag_pipeline",
   superagentRun: "knowgrph.superagent.run",

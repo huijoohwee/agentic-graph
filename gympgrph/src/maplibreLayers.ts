@@ -1,4 +1,5 @@
 import type { FeatureCollection } from 'geojson'
+import type { ExtrusionLayerConfig } from 'grph-shared/geospatial/enhancedLayerContract'
 import type { GeospatialPointStyleConfig } from './features/geospatial/pointStyleConfig.js'
 
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = { type: 'FeatureCollection', features: [] }
@@ -57,9 +58,14 @@ const isStyleReady = (map: any): boolean => {
   if (!map) return false
   if (!hasStyleAttached(map)) return false
   try {
-    if (typeof map.isStyleLoaded === 'function' && map.isStyleLoaded() === true) return true
+    if (map.style && typeof map.style._loaded === 'boolean') return map.style._loaded === true
   } catch {
-    void 0
+    return false
+  }
+  try {
+    if (typeof map.isStyleLoaded === 'function') return map.isStyleLoaded() === true
+  } catch {
+    return false
   }
   try {
     if (typeof map.loaded === 'function' && map.loaded() === true) return true
@@ -194,4 +200,59 @@ export function ensureDatasetLayer(
       'circle-blur': 0.05,
     },
   })
+}
+
+export function buildExtrusionPaint(config: ExtrusionLayerConfig): Record<string, unknown> {
+  return {
+    'fill-extrusion-height': ['get', 'kgExtrusionHeightM'],
+    'fill-extrusion-base': ['min', config.baseHeightMeters, ['get', 'kgExtrusionHeightM']],
+    'fill-extrusion-color': config.fillColor,
+    'fill-extrusion-opacity': config.fillOpacity,
+  }
+}
+
+export function ensureExtrusionLayer(
+  map: any,
+  sourceId: string,
+  config: ExtrusionLayerConfig,
+): boolean {
+  if (!map || !sourceId || !isStyleReady(map)) return false
+  if (!map.getSource?.(sourceId)) {
+    try {
+      map.addSource?.(sourceId, { type: 'geojson', data: EMPTY_FEATURE_COLLECTION })
+    } catch (error) {
+      console.error(`[kg-geo] Could not create extrusion source ${sourceId}.`, error)
+      return false
+    }
+  }
+  if (!map.getLayer?.(config.id)) {
+    try {
+      map.addLayer?.({
+        id: config.id,
+        type: 'fill-extrusion',
+        source: sourceId,
+        filter: [
+          'any',
+          ['==', ['geometry-type'], 'Polygon'],
+          ['==', ['geometry-type'], 'MultiPolygon'],
+        ],
+        layout: { visibility: config.visible ? 'visible' : 'none' },
+        paint: buildExtrusionPaint(config),
+      })
+    } catch (error) {
+      console.error(`[kg-geo] Could not create extrusion layer ${config.id}.`, error)
+      return false
+    }
+  }
+  setExtrusionLayerVisibility(map, config.id, config.visible)
+  return !!map.getLayer?.(config.id)
+}
+
+export function setExtrusionLayerVisibility(map: any, layerId: string, visible: boolean): void {
+  if (!map || !layerId || !map.getLayer?.(layerId)) return
+  try {
+    map.setLayoutProperty?.(layerId, 'visibility', visible ? 'visible' : 'none')
+  } catch {
+    void 0
+  }
 }

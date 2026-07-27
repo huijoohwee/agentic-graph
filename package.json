@@ -36,6 +36,7 @@
     "demo:xr-physics": "npm run dev:xr-physics --workspace=@knowgrph/canvas --",
     "dev:all": "bash scripts/dev-all.sh",
     "build": "npm run build --workspace=@knowgrph/canvas",
+    "geospatial-mode:check": "npm run build --workspace=grph-shared && npm run build --workspace=gympgrph && npm -C canvas run check && TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test scripts/__tests__/geospatial-mode-enhancement.test.ts && node --test mcp/__tests__/geospatial-layer-runtime.test.mjs && KG_SKIP_DOCS_UPDATE=1 npm run build && node scripts/check-geospatial-mode-readiness.mjs",
     "smoke:prepare": "npm -C canvas run prepare:linked-packages",
     "pages:build": "KG_SKIP_DOCS_UPDATE=1 VITE_BASE_PATH=/knowgrph/ npm run build --workspace=@knowgrph/canvas && npm run pwa:build-authority:check",
     "pages:check-sync": "node ./scripts/sync-pages-knowgrph.mjs --check",

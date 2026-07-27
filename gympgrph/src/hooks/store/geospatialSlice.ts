@@ -93,6 +93,7 @@ export type GympgrphGeospatialState = {
   requestGeospatialFitToData: () => void
   requestGeospatialFitToSelection: () => void
   requestGeospatialCurrentLocation: (coords: { lat: number; lng: number; zoom?: number }) => void
+  requestGeospatialFitToBounds: (bounds: readonly [number, number, number, number]) => void
   clearGeospatialFitRequest: () => void
 }
 
@@ -242,6 +243,17 @@ export const buildGympgrphGeospatialActions = (set: (updater: (prev: GympgrphGeo
     }))
   }
 
+  const requestGeospatialFitToBounds = (bounds: readonly [number, number, number, number]) => {
+    const values = bounds.map(Number)
+    if (values.length !== 4 || values.some(value => !Number.isFinite(value))) return
+    const [west, south, east, north] = values
+    if (west < -180 || east > 180 || south < -90 || north > 90 || west > east || south > north) return
+    set(prev => ({
+      ...prev,
+      geospatialFitRequest: { mode: 'bounds', bounds: [west, south, east, north] },
+    }))
+  }
+
   const clearGeospatialFitRequest = () => {
     set(prev => {
       if (!prev.geospatialFitRequest) return prev
@@ -260,6 +272,7 @@ export const buildGympgrphGeospatialActions = (set: (updater: (prev: GympgrphGeo
     requestGeospatialFitToData,
     requestGeospatialFitToSelection,
     requestGeospatialCurrentLocation,
+    requestGeospatialFitToBounds,
     clearGeospatialFitRequest,
   }
 }
