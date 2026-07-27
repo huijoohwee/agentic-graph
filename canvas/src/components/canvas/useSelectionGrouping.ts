@@ -6,6 +6,7 @@ import {
   collectSelectedNodeIds,
   createSelectionGroupLabel,
   findSelectedUserSubgraph,
+  reselectDetachedNodeIds,
 } from '@/lib/canvas/selectionGrouping'
 import { subgraphGroupId } from '@/lib/graph/subgraphs'
 
@@ -39,6 +40,7 @@ export function useSelectionGrouping(args: { active: boolean; allowMutations?: b
     const result = store.createUserSubgraph({
       label: createSelectionGroupLabel(store.graphData),
       memberNodeIds: nextNodeIds,
+      autoBounds: true,
     })
     if (result.ok === false) {
       store.pushUiToast({
@@ -57,8 +59,10 @@ export function useSelectionGrouping(args: { active: boolean; allowMutations?: b
     const store = useGraphStore.getState()
     const subgraph = findSelectedUserSubgraph(store.graphData, store.selectedGroupId)
     if (!subgraph) return
+    const memberNodeIds = [...subgraph.memberNodeIds]
     store.setSelectionSource('toolbar')
     store.removeUserSubgraph(subgraph.id)
+    reselectDetachedNodeIds(memberNodeIds, nodeId => store.toggleNodeSelectionAdditive(nodeId))
   }, [allowMutations, args.active])
 
   return {

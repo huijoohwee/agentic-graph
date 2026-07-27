@@ -327,7 +327,7 @@ export const computeFlowGroupAabb = (args: {
   labelTopExtraPx: number
   overlayAabbByNodeId?: Record<string, { minX: number; minY: number; maxX: number; maxY: number }> | null
 }): { minX: number; minY: number; maxX: number; maxY: number } | null => {
-  const explicit = (args.group as unknown as { bounds?: unknown }).bounds
+  const explicit = args.group.autoBounds === true ? undefined : (args.group as unknown as { bounds?: unknown }).bounds
   const explicitAabb = (() => {
     if (!explicit || typeof explicit !== 'object' || Array.isArray(explicit)) return null
     const x = typeof (explicit as any).x === 'number' ? (explicit as any).x : Number.NaN
@@ -1241,6 +1241,8 @@ const drawGroupResizeHandleOverlay = (rt: FlowNativeRuntime, args: { groupAabbBy
   if (!id) return
   const scene = rt.scene
   if (!scene?.groups || scene.groups.length === 0) return
+  const selectedGroup = scene.groups.find(group => String(group.id || '').trim() === id) || null
+  if (selectedGroup?.autoBounds === true) return
   const aabb = (args.groupAabbById ? args.groupAabbById.get(id) || null : null) || null
   if (!aabb) return
   const ctx = rt.ctx

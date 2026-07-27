@@ -34,6 +34,7 @@ import {
 } from '@/components/FlowCanvas/groupContainment'
 import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
 import { readHelperLinesDisplayControlActive } from '@/lib/canvas/canvasGridDisplayControls'
+import { isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 import type { FlowCanvasDrag } from '@/components/FlowCanvas/interactions/types'
@@ -162,15 +163,18 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
       const state = storeStateAtDown
       state.setSelectionSource('canvas')
       const mode = ctx.readEffectiveSelectMode(state, storyboardWidgetMode)
-      const wantsShiftToggle = e.shiftKey === true
-      const wantsModeToggle = (mode === 'multi' || mode === 'lasso') && (e.metaKey === true || e.ctrlKey === true)
-      const wantsToggle = wantsShiftToggle || wantsModeToggle
+      const wantsToggle = resolveNodeSelectionGesture({
+        mode,
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+      }) === 'toggle'
       const selectedAtDownRaw = Array.isArray(state.selectedNodeIds) ? state.selectedNodeIds : []
       const selectedAtDown = selectedAtDownRaw.map(v => String(v || '').trim()).filter(Boolean)
       const isHitSelected = selectedAtDown.includes(hit)
       if (wantsToggle) {
         state.toggleNodeSelectionAdditive(hit)
-      } else if (mode === 'multi' || mode === 'lasso') {
+      } else if (isMultiNodeSelectMode(mode)) {
         state.selectEdge(null)
         if (isHitSelected && selectedAtDown.length > 1) {
           state.selectNodesExpanded({ nodeIds: selectedAtDown, activeNodeId: hit })
@@ -198,7 +202,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
       const wy = (sy - t0.y) / t0.k
       const scene = runtime.scene
       if (scene) {
-        const selectedForDrag = (mode === 'multi' || mode === 'lasso') && !wantsToggle && isHitSelected && selectedAtDown.length > 1
+        const selectedForDrag = isMultiNodeSelectMode(mode) && !wantsToggle && isHitSelected && selectedAtDown.length > 1
         if (selectedForDrag) {
           const memberNodeIds = selectedAtDown.map(v => String(v || '').trim()).filter(id => id && scene.nodeById.has(id))
           const startNodePosById: Record<string, { x: number; y: number }> = {}
@@ -285,7 +289,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
       if (allowGroupResize) {
         const scene = runtime.scene
         const group = scene?.groups?.find(g => String(g.id || '').trim() === String(groupHit || '').trim()) || null
-        if (scene && group) {
+        if (scene && group && group.autoBounds !== true) {
           const gCfg = runtime.presentation.groups
           const paddingPx = Math.max(0, gCfg.paddingPx)
           const labelTopExtraPx = Math.max(0, gCfg.labelTopExtraPx)

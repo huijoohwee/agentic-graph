@@ -26,6 +26,7 @@ import { bindNodeDraggingWithGroupContainment } from '@/components/GraphCanvas/l
 import { createNodeGroupChevronSel } from '@/components/GraphCanvas/layers/nodesGroupChevrons'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
 import { hashScopedStringArraySignature } from '@/lib/hash/signature'
+import { isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>;
 
@@ -339,7 +340,14 @@ export const createNodesLayer = (args: {
     event.stopPropagation();
     const id = String(d.id || '').trim()
     if (!id) return
-    if (event.shiftKey) {
+    const mode = schema?.behavior?.selectMode || 'single'
+    const selectionGesture = resolveNodeSelectionGesture({
+      mode,
+      shiftKey: event.shiftKey,
+      metaKey: (event as unknown as { metaKey?: boolean }).metaKey,
+      ctrlKey: (event as unknown as { ctrlKey?: boolean }).ctrlKey,
+    })
+    if (selectionGesture === 'toggle') {
       setSelectionSource('canvas')
       useGraphStore.getState().toggleNodeSelectionAdditive(id)
       return
@@ -367,13 +375,7 @@ export const createNodesLayer = (args: {
     }
     setSelectionSource('canvas');
     selectEdge(null);
-    const mode = schema?.behavior?.selectMode || 'single'
-    const wantsToggle = (mode === 'multi' || mode === 'lasso') && (event.shiftKey || (event as unknown as { metaKey?: boolean }).metaKey || (event as unknown as { ctrlKey?: boolean }).ctrlKey)
-    if (wantsToggle) {
-      selectNode(id)
-      return
-    }
-    if (mode === 'multi' || mode === 'lasso') {
+    if (isMultiNodeSelectMode(mode)) {
       try {
         useGraphStore.getState().selectNodesExpanded({ nodeIds: [id], activeNodeId: id })
       } catch {

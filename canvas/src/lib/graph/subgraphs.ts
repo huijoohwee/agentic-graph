@@ -9,6 +9,7 @@ export type UserSubgraph = {
   memberNodeIds: string[]
   parentId?: string | null
   kind?: UserSubgraphKind
+  autoBounds?: boolean
 }
 
 export const KG_SUBGRAPHS_KEY = 'kg:subgraphs'
@@ -49,7 +50,8 @@ const coerceSubgraph = (raw: unknown): UserSubgraph | null => {
   const parentId = parentRaw == null ? null : String(parentRaw || '').trim() || null
   const rawKind = typeof r.kind === 'string' ? r.kind.trim() : ''
   const kind: UserSubgraphKind = rawKind === 'cluster' ? 'cluster' : 'subgraph'
-  return { id, label, memberNodeIds, parentId, kind }
+  const autoBounds = r.autoBounds === true
+  return { id, label, memberNodeIds, parentId, kind, ...(autoBounds ? { autoBounds: true } : {}) }
 }
 
 export const readSubgraphs = (data: GraphData | null | undefined): UserSubgraph[] => {
@@ -84,6 +86,7 @@ export const writeSubgraphs = (data: GraphData, subgraphs: UserSubgraph[]): Grap
       memberNodeIds: normalizeIds(sg.memberNodeIds),
       parentId: sg.parentId == null ? null : String(sg.parentId || '').trim() || null,
       kind: sg.kind === 'cluster' ? 'cluster' : 'subgraph',
+      ...(sg.autoBounds === true ? { autoBounds: true } : {}),
     })
   }
   next.sort((a, b) => a.label.localeCompare(b.label))
@@ -123,7 +126,7 @@ export const filterSubgraphsByRetainedNodeIds = (data: GraphData, retainedNodeId
 
 export const createSubgraph = (
   data: GraphData,
-  args: { nodeIds: string[]; label?: string; parentId?: string | null; kind?: UserSubgraphKind },
+  args: { nodeIds: string[]; label?: string; parentId?: string | null; kind?: UserSubgraphKind; autoBounds?: boolean },
 ) => {
   const subgraphs = readSubgraphs(data)
   const used = new Set<string>(subgraphs.map(s => s.id))
@@ -132,7 +135,7 @@ export const createSubgraph = (
   const memberNodeIds = normalizeIds(args.nodeIds)
   const parentId = args.parentId == null ? null : String(args.parentId || '').trim() || null
   const kind: UserSubgraphKind = args.kind === 'cluster' ? 'cluster' : 'subgraph'
-  const sg: UserSubgraph = { id, label, memberNodeIds, parentId, kind }
+  const sg: UserSubgraph = { id, label, memberNodeIds, parentId, kind, ...(args.autoBounds === true ? { autoBounds: true } : {}) }
   return { subgraph: sg, graphData: writeSubgraphs(data, [...subgraphs, sg]) }
 }
 
@@ -147,7 +150,8 @@ export const updateSubgraph = (data: GraphData, id: string, patch: Partial<UserS
     const parentId = patch.parentId === undefined ? sg.parentId : patch.parentId == null ? null : String(patch.parentId || '').trim() || null
     const kind: UserSubgraphKind =
       patch.kind === undefined ? (sg.kind === 'cluster' ? 'cluster' : 'subgraph') : patch.kind === 'cluster' ? 'cluster' : 'subgraph'
-    return { ...sg, label, memberNodeIds, parentId, kind }
+    const autoBounds = patch.autoBounds === undefined ? sg.autoBounds === true : patch.autoBounds === true
+    return { ...sg, label, memberNodeIds, parentId, kind, ...(autoBounds ? { autoBounds: true } : { autoBounds: undefined }) }
   })
   return writeSubgraphs(data, next)
 }

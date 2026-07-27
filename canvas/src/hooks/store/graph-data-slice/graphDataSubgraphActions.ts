@@ -18,7 +18,7 @@ import {
 export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
   return ({
   createUserSubgraph: (
-    args: { label?: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' },
+    args: { label?: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster'; autoBounds?: boolean },
   ): { ok: true; id: string } | { ok: false; message: string } => {
     let { graphData } = get()
     if (!graphData) {
@@ -41,6 +41,7 @@ export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
       label: args.label,
       parentId,
       kind: args.kind === 'cluster' ? 'cluster' : 'subgraph',
+      autoBounds: args.autoBounds === true,
     })
     const nextRevision = (get().graphDataRevision || 0) + 1
     const nextGraphData = withGraphDataRevision(nextGraphDataBase, nextRevision)

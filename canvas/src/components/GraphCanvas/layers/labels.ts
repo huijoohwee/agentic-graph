@@ -11,6 +11,7 @@ import { isTooltipRelatedTarget } from '@/features/panels/ui/tooltipUtils'
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
 import { compareNodeZKey, type NodeZKey } from '@/lib/canvas/groupZOrder'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>;
 
@@ -145,11 +146,22 @@ export const createLabelsLayer = (args: {
     setSelectionSource('canvas');
     const id = String(d.id || '').trim()
     if (!id) return
-    if (event.shiftKey) {
+    const mode = schema?.behavior?.selectMode || 'single'
+    const gesture = resolveNodeSelectionGesture({
+      mode,
+      shiftKey: event.shiftKey,
+      metaKey: event.metaKey,
+      ctrlKey: event.ctrlKey,
+    })
+    if (gesture === 'toggle') {
       useGraphStore.getState().toggleNodeSelectionAdditive(id)
       return
     }
     selectEdge(null);
+    if (isMultiNodeSelectMode(mode)) {
+      useGraphStore.getState().selectNodesExpanded({ nodeIds: [id], activeNodeId: id })
+      return
+    }
     selectNode(id);
   }
 

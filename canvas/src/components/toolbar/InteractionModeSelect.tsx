@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ToolbarDropdownSelect } from '@/components/toolbar/ToolbarDropdownSelect'
+import { isMultiNodeSelectMode } from '@/lib/canvas/nodeSelectionGesture'
 
 type InteractionModeSelectProps = {
   iconSizeClass: string
@@ -80,7 +81,7 @@ export function InteractionModeSelect({ iconSizeClass, iconStrokeWidth, ensureBa
           Icon: Play,
         },
       ] satisfies InteractionOption[],
-    [canvasRunMode, documentStructureBaselineLock, infiniteCanvasInteractionMode, selectMode],
+    [canvasRunMode, documentStructureBaselineLock, infiniteCanvasInteractionMode],
   )
 
   const selectedOptionKey: InteractionOption['key'] = 'navigate'
@@ -109,7 +110,7 @@ export function InteractionModeSelect({ iconSizeClass, iconStrokeWidth, ensureBa
         setCanvasRunMode(canvasRunMode === 'auto' ? 'manual' : 'auto')
         return
       }
-      setSelectMode(selectMode === 'multi' || selectMode === 'lasso' ? 'single' : 'multi')
+      setSelectMode(isMultiNodeSelectMode(selectMode) ? 'single' : 'multi')
     },
     [
       ensureBaselineUnlocked,
@@ -138,7 +139,7 @@ export function InteractionModeSelect({ iconSizeClass, iconStrokeWidth, ensureBa
           option.key === 'lock'
             ? documentStructureBaselineLock
             : option.key === 'multi'
-              ? selectMode === 'multi' || selectMode === 'lasso'
+              ? isMultiNodeSelectMode(selectMode)
               : option.key === 'canvasInteraction'
                 ? infiniteCanvasInteractionMode === 'interactive'
                 : option.key === 'runMode'
@@ -149,8 +150,7 @@ export function InteractionModeSelect({ iconSizeClass, iconStrokeWidth, ensureBa
       tooltipContent={UI_COPY.interactionModeTooltip}
       isButtonActive={
         documentStructureBaselineLock ||
-        selectMode === 'multi' ||
-        selectMode === 'lasso' ||
+        isMultiNodeSelectMode(selectMode) ||
         infiniteCanvasInteractionMode === 'interactive' ||
         canvasRunMode === 'auto'
       }

@@ -8,7 +8,10 @@ import {
   collectSelectedNodeIds,
   createSelectionGroupLabel,
   findSelectedUserSubgraph,
+  reselectDetachedNodeIds,
 } from '@/lib/canvas/selectionGrouping'
+import { applySchemaGroupBoundsOverrides } from '@/lib/canvas/groupBoundsOverrides'
+import { resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 import { subgraphGroupId } from '@/lib/graph/subgraphs'
 
 export function testSelectionGroupingInteractionContract() {
@@ -40,16 +43,27 @@ export function testSelectionGroupingInteractionContract() {
     if (selected.length !== 2 || !selected.includes('n1') || !selected.includes('n2')) {
       throw new Error(`expected Shift-style additive selection in single mode, got ${selected.join(',')}`)
     }
+    if (
+      resolveNodeSelectionGesture({ mode: 'single', shiftKey: true }) !== 'toggle' ||
+      resolveNodeSelectionGesture({ mode: 'multi', metaKey: true }) !== 'toggle' ||
+      resolveNodeSelectionGesture({ mode: 'single', metaKey: true }) !== 'replace'
+    ) {
+      throw new Error('expected renderer-independent modifier selection policy')
+    }
 
     const created = store.createUserSubgraph({
       label: createSelectionGroupLabel(useGraphStore.getState().graphData),
       memberNodeIds: selected,
+      autoBounds: true,
     })
     if (created.ok === false) throw new Error(created.message)
     const groupId = subgraphGroupId(created.id)
     const selectedSubgraph = findSelectedUserSubgraph(useGraphStore.getState().graphData, groupId)
     if (!selectedSubgraph || selectedSubgraph.label !== 'Group 1') {
       throw new Error('expected the selected nodes to resolve to a newly named user group')
+    }
+    if (selectedSubgraph.autoBounds !== true) {
+      throw new Error('expected selection-created groups to persist automatic bounds')
     }
 
     const nodeById = new Map([
@@ -69,7 +83,15 @@ export function testSelectionGroupingInteractionContract() {
       source: 'userSubgraph' as const,
       depth: 0,
       memberNodeIds: selectedSubgraph.memberNodeIds,
+      autoBounds: selectedSubgraph.autoBounds,
       style: {},
+    }
+    const [groupWithIgnoredOverride] = applySchemaGroupBoundsOverrides(
+      [graphGroup],
+      { [groupId]: { x: 0, y: 0, width: 12, height: 12 } },
+    )
+    if (groupWithIgnoredOverride.bounds) {
+      throw new Error('expected automatic groups to ignore stale manual bounds')
     }
     const beforeMove = computeFlowGroupAabb({ scene, group: graphGroup, paddingPx: 10, labelTopExtraPx: 0 })
     nodeById.get('n2')!.x = 180
@@ -101,8 +123,16 @@ export function testSelectionGroupingInteractionContract() {
 
     store.selectGroup(groupId)
     store.removeUserSubgraph(created.id)
+    reselectDetachedNodeIds(selectedSubgraph.memberNodeIds, nodeId => store.toggleNodeSelectionAdditive(nodeId))
     if (findSelectedUserSubgraph(useGraphStore.getState().graphData, groupId)) {
       throw new Error('expected ungrouping to detach the group metadata from its child nodes')
+    }
+    const detachedSelection = collectSelectedNodeIds(
+      useGraphStore.getState().selectedNodeId,
+      useGraphStore.getState().selectedNodeIds,
+    )
+    if (detachedSelection.length !== 2 || !detachedSelection.includes('n1') || !detachedSelection.includes('n2')) {
+      throw new Error('expected ungrouping to keep detached child nodes selected')
     }
   } finally {
     useGraphStore.getState().setSchema(previousSchema)

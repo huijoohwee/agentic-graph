@@ -29,6 +29,7 @@ const readFiniteAttrNumber = (el: Element | null, attrName: string): number | nu
 }
 
 const readExplicitBounds = (g: GraphGroup): GraphGroup['bounds'] | null => {
+  if (g.autoBounds === true) return null
   const explicit = (g as unknown as { bounds?: unknown }).bounds
   if (!explicit || typeof explicit !== 'object' || Array.isArray(explicit)) return null
   const x = typeof (explicit as any).x === 'number' ? (explicit as any).x : Number.NaN
@@ -133,7 +134,7 @@ export const createGroupsLayoutEngine = <T extends GraphGroup>(args: {
   }
 
   const computeBoundsAndLabel = (d: T): GroupLayoutCacheEntry => {
-    const explicit = (d as unknown as { bounds?: unknown }).bounds
+    const explicit = d.autoBounds === true ? undefined : (d as unknown as { bounds?: unknown }).bounds
     if (explicit && typeof explicit === 'object' && !Array.isArray(explicit)) {
       const bx = typeof (explicit as any).x === 'number' ? (explicit as any).x : Number.NaN
       const by = typeof (explicit as any).y === 'number' ? (explicit as any).y : Number.NaN
@@ -366,7 +367,7 @@ export const createGroupsLayoutEngine = <T extends GraphGroup>(args: {
       }
       const hitEl = handleEl.querySelector('circle[data-kg-group-resize-hit="1"]') as SVGCircleElement | null
       if (hitEl) hitEl.setAttribute('r', String(handleScale.hitRadiusPx))
-      const canResize = args.allowResize && (isActiveResize || (!activeResizeGroupId && isSelected))
+      const canResize = d.autoBounds !== true && args.allowResize && (isActiveResize || (!activeResizeGroupId && isSelected))
       if (canResize) {
         handleEl.style.removeProperty('display')
         try {
