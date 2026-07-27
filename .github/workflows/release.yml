@@ -22,6 +22,7 @@ jobs:
       manifest_digest: ${{ steps.immutable_manifest.outputs.digest }}
       mirror_revision: ${{ steps.mirror_revision.outputs.revision }}
     env:
+      NODE_OPTIONS: --max-old-space-size=4096
       RELEASE_SHA: ${{ github.sha }}
       KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
 
