@@ -47,6 +47,19 @@ export const applyMediaProxySrc = (rawSrc: string): string => {
   return `${MEDIA_PROXY_ENDPOINT}?url=${encodeURIComponent(src)}`
 }
 
+export const applyDevCrossOriginProxy = (rawSrc: string): string => {
+  const src = String(rawSrc || '').trim()
+  if (!src || !shouldProxyUrlOnLocalhost(src)) return src
+  const origin = getOrigin()
+  if (!origin) return src
+  try {
+    if (new URL(src, origin).origin === origin) return src
+  } catch {
+    return src
+  }
+  return `${MEDIA_PROXY_ENDPOINT}?url=${encodeURIComponent(src)}`
+}
+
 export const coerceFetchUrl = (rawUrl: string): string | null => {
   const u = String(rawUrl || '').trim()
   if (!u) return null

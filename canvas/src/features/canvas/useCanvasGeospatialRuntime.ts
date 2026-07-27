@@ -4,6 +4,11 @@ import { resolveBrowserStorageKey } from '@/lib/persistence'
 import { onGeospatialModeChanged } from '@/features/geospatial/events'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readGeospatialOverlayEnabledPreference, writeGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
+import {
+  applyGeoCommand,
+  parseGeoCommandEnvelope,
+} from '@/features/geospatial/geoInvocationDispatcher'
+import type { NormalizedEnhancedConfig } from 'grph-shared/geospatial/enhancedLayerContract'
 
 export function useCanvasGeospatialRuntime(): boolean {
   const geospatialHostViewportSnapshotRef = React.useRef<null | {
@@ -38,14 +43,12 @@ export function useCanvasGeospatialRuntime(): boolean {
   }, [])
 
   React.useEffect(() => {
-    const anyImportMeta = import.meta as unknown as { env?: { DEV?: boolean } }
-    if (!anyImportMeta.env?.DEV) return
     if (typeof window === 'undefined') return
     try {
       const params = new URLSearchParams(String(window.location.search || ''))
       if (params.get('kgGeo') !== '1') return
       void import('gympgrph')
-        .then(m => {
+        .then(async m => {
           const gm = m as unknown as { setGeospatialModeEnabled?: (enabled: boolean) => void }
           if (typeof gm.setGeospatialModeEnabled === 'function') {
             gm.setGeospatialModeEnabled(true)
@@ -54,11 +57,27 @@ export function useCanvasGeospatialRuntime(): boolean {
             lastHandledGeospatialModeEnabledRef.current = true
             setGeospatialModeEnabled(prev => (prev === true ? prev : true))
           }
+          const commandRaw = params.get('kgGeoCommand')
+          if (!commandRaw) return
+          let parsedRaw: unknown = null
+          try {
+            parsedRaw = JSON.parse(commandRaw)
+          } catch {
+            return
+          }
+          const envelope = parseGeoCommandEnvelope(parsedRaw)
+          const readConfig = (m as unknown as { readEnhancedLayerConfig?: () => NormalizedEnhancedConfig }).readEnhancedLayerConfig
+          if (!envelope || typeof readConfig !== 'function') return
+          await applyGeoCommand(envelope.command, {
+            config: readConfig(),
+            resolveNodeBounds: () => null,
+          })
         })
-        .catch(() => {
-          writeGeospatialOverlayEnabledPreference(true)
-          lastHandledGeospatialModeEnabledRef.current = true
-          setGeospatialModeEnabled(prev => (prev === true ? prev : true))
+        .catch(error => {
+          writeGeospatialOverlayEnabledPreference(false)
+          lastHandledGeospatialModeEnabledRef.current = false
+          setGeospatialModeEnabled(prev => (prev === false ? prev : false))
+          console.error('[kg-geo] Geospatial runtime unavailable; Canvas remains active.', error)
         })
     } catch {
       void 0

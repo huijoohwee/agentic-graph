@@ -22,6 +22,7 @@ import { buildKnowgrphLocalMcpToolDefinitions, KNOWGRPH_LOCAL_MCP_TOOL_NAMES } f
 import { isStorageSyncLocalToolName, runStorageSyncLocalTool } from "./storage-sync-local-runtime.js";
 import { runVdeoxplnLocalTool } from "./vdeoxpln-runtime.js";
 import { runRepositoryPackTool } from "./repository-pack-runtime.js";
+import { runGeospatialLayerTool } from "./geospatial-layer-runtime.js";
 import { buildKnowgrphAgentReadyPromptContracts, getKnowgrphAgentReadyPrompt } from "../canvas/src/features/agent-ready/knowgrphAgentReadyPromptContract.mjs";
 import { buildKnowgrphAgentReadyResourceTemplateContracts, buildKnowgrphSourceFileResourceReadResult, parseKnowgrphSourceFileResourceUri } from "../canvas/src/features/agent-ready/knowgrphAgentReadyResourceContract.mjs";
 import { SITE_ORIGIN } from "../cloudflare/pages/knowgrph-agent-ready-shared.mjs";
@@ -421,6 +422,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         content: [{ type: "text", text: ok ? `Stopped Canvas dev server (PID ${pid}).` : `Failed to stop PID ${pid}.` }],
         isError: !ok,
       };
+    }
+
+    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.geospatialCommand) {
+      const payload = runGeospatialLayerTool(args, { host: DEFAULT_UI_HOST, port: DEFAULT_UI_PORT });
+      return jsonToolResult(payload, payload.ok === false);
     }
 
     if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.pipeline) {

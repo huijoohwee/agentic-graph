@@ -6,11 +6,132 @@
 
 ---
 
-## Status (2026-04-14)
+## Status (2026-07-27)
 
 - Knowgrph keeps Geospatial Mode logic out of its codebase and loads it on-demand from the sibling repo `gympgrph` (implementation lives in `gympgrph/src/`).
 - Knowgrph exposes a toolbar entrypoint (**Geospatial Mode**, right of **3D Mode**) that opens the Floating Panel **Geo** view and toggles the gympgrph overlay.
 - **3D render mode uses MapLibre exclusively** (Cesium has been removed). The 3D overlay renders via the same MapLibre runtime path with deterministic startup camera defaults (Singapore center, zoom `2.8`, pitch `0`, bearing `0`) and bounded fit behavior.
+- Enhanced layers are additive and configuration-driven: polygon datasets may
+  opt into native MapLibre `fill-extrusion`, while source-authored bounded mesh
+  descriptors may opt into the MapLibre custom-layer path. With no enhanced
+  configuration, the existing SVG, 2D MapLibre, and 3D MapLibre behavior is
+  unchanged.
+- The browser bundle adds no GIS engine, model loader, or runtime dependency.
+  The clean pre-enhancement baseline is **6,023,998 gzipped JavaScript bytes**;
+  the final enhanced candidate is **6,030,856 bytes** (**+6,858 bytes**).
+  `npm run geospatial-mode:check` enforces a maximum **250 KiB** measured delta.
+
+## Enhanced-layer runtime contract
+
+Enhanced entries are stored under
+`kg:ui:geospatial:enhancedLayers`. The runtime reads no compiled dataset or
+asset URL. Both `timeoutMs` and `maxBytes` are mandatory for every enhanced
+request; missing bounds abort before `fetch`. Bodies are read incrementally,
+cancelled when the byte limit is crossed, and cached resources can render
+without a network request.
+
+```jsonc
+[
+  {
+    "id": "configured-buildings",
+    "url": "<SAME_ORIGIN_OR_OPERATOR_URL>",
+    "enabled": true,
+    "render": {
+      "kind": "extrusion",
+      "extrusionKind": "building",
+      "heightProperty": "height_m",
+      "defaultHeightMeters": 8,
+      "baseHeightMeters": 0,
+      "fillColor": "#9aa5b1",
+      "fillOpacity": 0.85,
+      "tags": ["#city"]
+    },
+    "fetchBounds": { "timeoutMs": 20000, "maxBytes": 26214400 }
+  },
+  {
+    "id": "configured-landmark",
+    "url": "<SAME_ORIGIN_OR_OPERATOR_URL>",
+    "render": {
+      "kind": "asset3d",
+      "lat": 1.3,
+      "lng": 103.8,
+      "altitudeMeters": 0,
+      "scale": 1,
+      "rotationDegrees": 0,
+      "tags": ["#landmarks"]
+    },
+    "fetchBounds": { "timeoutMs": 20000, "maxBytes": 2097152 }
+  }
+]
+```
+
+Extrusion heights come from the configured property only. Missing, non-numeric,
+negative, or above-10,000-meter values use the configured fallback and produce
+a diagnostic without dropping the feature. Both building and road polygons use
+the same normalizer. Base height is clamped by the effective height; color and
+opacity remain configuration-owned.
+
+The asset descriptor is intentionally small and source-authored:
+
+```json
+{
+  "schemaId": "knowgrph-geo-asset-mesh/v1",
+  "positions": [0, 0, 0, 1, 0, 0, 0, 1, 0],
+  "indices": [0, 1, 2],
+  "color": [0.6, 0.65, 0.7, 1]
+}
+```
+
+Positions are model-space meters. The custom layer anchors each asset with
+MapLibre-compatible Mercator coordinates, multiplies the current-frame
+projection and model matrices during every draw, shares MapLibre's WebGL
+context, and releases
+all buffers/programs on teardown. Invalid coordinates or mesh descriptors skip
+only the affected asset.
+
+### Invocation and optional authoring
+
+All writes converge on `gympgrphBridge`; invocation surfaces never receive a map
+reference.
+
+- `/geo on|off`
+- `/geo extrusion <id> show|hide`
+- `/geo asset <id> show|hide`
+- `@<geo-node-id>` fits validated node bounds
+- `#<tag> show|hide` changes exactly the matching enhanced layers
+- MCP tool `knowgrph.geospatial.command` produces the same validated command
+  envelope and a local Canvas deep link
+
+Unknown actions, targets, unbounded nodes, and unmatched tags return actionable
+errors without state mutation. Successful writes synchronously emit the
+documented geospatial change event.
+
+The optional geo-authoring harness is off by default. When explicitly invoked,
+it validates input before any model call, clamps loops to 1–50 iterations and
+timeouts to 1–300 seconds, validates every draft and canonical cost log, applies
+no partial configuration, and returns typed timeout, budget, iteration, input,
+or output errors.
+
+### Runtime-readiness proof
+
+`npm run geospatial-mode:check` owns the focused proof:
+
+- shared and extracted-package TypeScript builds;
+- property tests at 120 runs for height totality and no-mutation rejection;
+- bounded streaming, proxy-routing, configuration, invocation, and harness
+  examples;
+- MCP catalog/envelope tests;
+- dependency, hardcoded-URL, file-size, document, and gzip-delta guards.
+
+Owned Dev browser proof on the task runtime covered both MapLibre paths after a
+clean reload: the 2D fixture rendered as a native extrusion, and the 3D path
+mounted one configured extrusion layer plus one source-authored asset WebGL
+context at a 2560×1440 backing resolution. The debug bounds were
+`103.800,1.260,103.880,1.340`. This is deterministic virtual-camera proof, not
+physical-device or production proof.
+
+The production/Cloudflare route remains outside this implementation authority;
+source readiness does not claim deployment or physical-device proof.
 
 ## Current Status (Runtime Overlay)
 

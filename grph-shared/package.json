@@ -213,6 +213,11 @@
       "import": "./dist/geospatial/events.js",
       "default": "./dist/geospatial/events.js"
     },
+    "./geospatial/enhancedLayerContract": {
+      "types": "./dist/geospatial/enhancedLayerContract.d.ts",
+      "import": "./dist/geospatial/enhancedLayerContract.js",
+      "default": "./dist/geospatial/enhancedLayerContract.js"
+    },
     "./geospatial/grabMapsAuth": {
       "types": "./dist/geospatial/grabMapsAuth.d.ts",
       "import": "./dist/geospatial/grabMapsAuth.js",
