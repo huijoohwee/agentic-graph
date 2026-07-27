@@ -17,10 +17,11 @@ import {
 } from '../../canvas/src/features/geospatial/geoInvocationDispatcher.ts'
 import { normalizeGeoAuthoringInput, runGeoAuthoring } from '../../canvas/src/features/geospatial/geoAuthoringHarness.ts'
 import {
-  computeAssetModelMatrix,
   createAsset3DCustomLayer,
   parseAssetMesh,
 } from '../../gympgrph/src/asset3dCustomLayer.ts'
+import { computeAssetFrameMatrix } from '../../gympgrph/src/asset3dProjection.ts'
+import { applyGeospatialFitRequest } from '../../gympgrph/src/geospatialFitRuntime.ts'
 import type {
   ExtrusionLayerConfig,
   NormalizedEnhancedConfig,
@@ -107,6 +108,29 @@ test('height normalization is total and preserves every generated feature', () =
   ), { numRuns: 120 })
 })
 
+test('road and building extrusions share height normalization semantics', () => {
+  fc.assert(fc.property(
+    fc.oneof(fc.double({ noNaN: true }), fc.string(), fc.constant(null)),
+    value => {
+      const collection: FeatureCollection = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]],
+          },
+          properties: { height_m: value },
+        }],
+      }
+      const building = normalizeExtrusionFeatures(collection, extrusionConfig)
+      const road = normalizeExtrusionFeatures(collection, { ...extrusionConfig, kind: 'road' })
+      assert.deepEqual(road.featureCollection, building.featureCollection)
+      assert.deepEqual(road.diagnostics, building.diagnostics)
+    },
+  ), { numRuns: 120 })
+})
+
 test('valid heights resolve directly and invalid heights use the configured fallback', () => {
   fc.assert(fc.property(fc.double({ min: 0, max: 10_000, noNaN: true }), height => {
     assert.equal(resolveExtrusionHeight({ height_m: height }, extrusionConfig).heightMeters, height)
@@ -157,25 +181,45 @@ test('source-authored asset meshes validate and empty asset sets allocate no con
   assert.equal(createAsset3DCustomLayer({ contextId: 'empty', assets: [], meshes: new Map() }), null)
 })
 
-test('asset model matrices remain finite across valid geographic coordinates', () => {
+test('asset frame matrices remain finite across valid geographic coordinates', () => {
+  const identityMatrix = new Float64Array([
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+  ])
+  const frame = {
+    defaultProjectionData: { mainMatrix: identityMatrix },
+  } as unknown as Parameters<typeof computeAssetFrameMatrix>[1]
   fc.assert(fc.property(
     fc.double({ min: -180, max: 180, noNaN: true }),
-    fc.double({ min: -85, max: 85, noNaN: true }),
+    fc.double({ min: -90, max: 90, noNaN: true }),
     fc.double({ min: -1_000, max: 100_000, noNaN: true }),
     (lng, lat, altitudeMeters) => {
-      const matrix = computeAssetModelMatrix({
+      const matrix = computeAssetFrameMatrix({
+        transform: { getMatrixForModel: () => identityMatrix },
+      }, frame, {
         lng,
         lat,
         altitudeMeters,
         scale: 1,
         rotationDegrees: 0,
       })
-      assert.equal(matrix.length, 16)
+      assert.ok(matrix)
       assert.ok([...matrix].every(Number.isFinite))
-      assert.ok(matrix[12] >= 0 && matrix[12] <= 1)
-      assert.ok(matrix[13] >= 0 && matrix[13] <= 1)
     },
   ), { numRuns: 120 })
+  for (const lat of [-90, 90]) {
+    assert.ok(computeAssetFrameMatrix({
+      transform: { getMatrixForModel: () => identityMatrix },
+    }, frame, {
+      lng: 0,
+      lat,
+      altitudeMeters: 0,
+      scale: 1,
+      rotationDegrees: 0,
+    }))
+  }
 })
 
 test('same-origin enhanced paths remain same-origin and localhost remote URLs use the dev proxy', () => {
@@ -249,6 +293,41 @@ test('rejected invocation performs zero bridge writes across generated target id
       assert.equal(writes, 0)
     }
   }), { numRuns: 120 })
+})
+
+test('fit requests follow selection then graph then enhanced bounds', () => {
+  const fitted: unknown[] = []
+  const map = {
+    fitBounds: (bounds: unknown) => fitted.push(bounds),
+  }
+  const selection = [1, 2, 3, 4] as const
+  const graph = [5, 6, 7, 8] as const
+  const enhanced = [9, 10, 11, 12] as const
+  applyGeospatialFitRequest({
+    map,
+    request: { mode: 'selection' },
+    selectedBounds: selection,
+    graphBounds: graph,
+    enhancedBounds: enhanced,
+    padding: 12,
+  })
+  applyGeospatialFitRequest({
+    map,
+    request: { mode: 'selection' },
+    selectedBounds: null,
+    graphBounds: graph,
+    enhancedBounds: enhanced,
+    padding: 12,
+  })
+  applyGeospatialFitRequest({
+    map,
+    request: { mode: 'data' },
+    selectedBounds: selection,
+    graphBounds: null,
+    enhancedBounds: enhanced,
+    padding: 12,
+  })
+  assert.deepEqual(fitted, [selection, graph, enhanced])
 })
 
 test('geo harness validates before model calls and emits schema-valid bounded output', async () => {

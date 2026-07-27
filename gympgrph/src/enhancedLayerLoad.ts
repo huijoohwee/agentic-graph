@@ -1,5 +1,10 @@
 import type { FetchBound } from 'grph-shared/geospatial/enhancedLayerContract'
 import { applyDevCrossOriginProxy, coerceFetchUrl } from './lib/url.js'
+import {
+  clearEnhancedResourceCache,
+  readEnhancedResourceCache,
+  writeEnhancedResourceCache,
+} from './enhancedResourceCache.js'
 
 export type LoadProgress =
   | { kind: 'determinate'; receivedBytes: number; totalBytes: number; percent: number }
@@ -16,9 +21,13 @@ export type BoundedResourceResult =
   | { ok: true; bytes: Uint8Array; fromCache: boolean }
   | { ok: false; failure: LoadFailure }
 
-const resourceCache = new Map<string, Uint8Array>()
+export const MAX_ENHANCED_LAYER_READINESS_MS = 10_000
 
-export const clearEnhancedResourceCache = (): void => resourceCache.clear()
+export { clearEnhancedResourceCache }
+
+export const resolveEffectiveResourceTimeoutMs = (configuredTimeoutMs: number): number => (
+  Math.min(configuredTimeoutMs, MAX_ENHANCED_LAYER_READINESS_MS)
+)
 
 export const resolveEnhancedFetchUrl = (rawUrl: string): string | null => {
   const fetchUrl = coerceFetchUrl(rawUrl)
@@ -58,57 +67,79 @@ export async function loadBoundedResource(args: {
   }
   const fetchUrl = resolveEnhancedFetchUrl(args.url)
   if (!fetchUrl) return { ok: false, failure: { code: 'network-unavailable', target: args.target } }
-  const cached = resourceCache.get(fetchUrl)
-  if (cached) {
-    reportProgress(args.onProgress, cached.byteLength, cached.byteLength)
-    return { ok: true, bytes: cached.slice(), fromCache: true }
+  const cached = readEnhancedResourceCache(fetchUrl, args.bound.maxBytes)
+  if (cached.kind === 'max-bytes-exceeded') {
+    return {
+      ok: false,
+      failure: {
+        code: 'max-bytes-exceeded',
+        target: args.target,
+        maxBytes: args.bound.maxBytes,
+      },
+    }
+  }
+  if (cached.kind === 'hit') {
+    reportProgress(args.onProgress, cached.bytes.byteLength, cached.bytes.byteLength)
+    return { ok: true, bytes: cached.bytes, fromCache: true }
   }
   if (args.cacheOnly) return { ok: false, failure: { code: 'network-unavailable', target: args.target } }
 
   const controller = new AbortController()
   let timedOut = false
+  let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
+  const effectiveTimeoutMs = resolveEffectiveResourceTimeoutMs(args.bound.timeoutMs)
+  let rejectDeadline: ((reason: Error) => void) | null = null
+  const deadline = new Promise<never>((_resolve, reject) => {
+    rejectDeadline = reject
+  })
   const timeout = setTimeout(() => {
     timedOut = true
     controller.abort()
-  }, args.bound.timeoutMs)
+    void reader?.cancel().catch(() => undefined)
+    rejectDeadline?.(new Error('enhanced-resource-timeout'))
+  }, effectiveTimeoutMs)
   try {
-    const response = await fetch(fetchUrl, { signal: controller.signal })
-    if (!response.ok || !response.body) {
-      return { ok: false, failure: { code: 'network-unavailable', target: args.target } }
-    }
-    const contentLength = Number(response.headers.get('content-length'))
-    const totalBytes = Number.isFinite(contentLength) && contentLength >= 0 ? contentLength : null
-    if (totalBytes != null && totalBytes > args.bound.maxBytes) {
-      controller.abort()
-      return { ok: false, failure: { code: 'max-bytes-exceeded', target: args.target, maxBytes: args.bound.maxBytes } }
-    }
-    const chunks: Uint8Array[] = []
-    let receivedBytes = 0
-    reportProgress(args.onProgress, 0, totalBytes)
-    const reader = response.body.getReader()
-    while (true) {
-      const next = await reader.read()
-      if (next.done) break
-      receivedBytes += next.value.byteLength
-      if (receivedBytes > args.bound.maxBytes) {
-        await reader.cancel()
+    const networkLoad = (async (): Promise<BoundedResourceResult> => {
+      const response = await fetch(fetchUrl, { signal: controller.signal })
+      if (!response.ok || !response.body) {
+        return { ok: false, failure: { code: 'network-unavailable', target: args.target } }
+      }
+      const contentLength = Number(response.headers.get('content-length'))
+      const totalBytes = Number.isFinite(contentLength) && contentLength >= 0 ? contentLength : null
+      if (totalBytes != null && totalBytes > args.bound.maxBytes) {
+        controller.abort()
         return { ok: false, failure: { code: 'max-bytes-exceeded', target: args.target, maxBytes: args.bound.maxBytes } }
       }
-      chunks.push(next.value)
-      reportProgress(args.onProgress, receivedBytes, totalBytes)
-    }
-    const bytes = new Uint8Array(receivedBytes)
-    let offset = 0
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset)
-      offset += chunk.byteLength
-    }
-    resourceCache.set(fetchUrl, bytes.slice())
-    reportProgress(args.onProgress, receivedBytes, receivedBytes)
-    return { ok: true, bytes, fromCache: false }
+      const chunks: Uint8Array[] = []
+      let receivedBytes = 0
+      reportProgress(args.onProgress, 0, totalBytes)
+      reader = response.body.getReader()
+      while (true) {
+        const next = await reader.read()
+        if (next.done) break
+        receivedBytes += next.value.byteLength
+        if (receivedBytes > args.bound.maxBytes) {
+          await reader.cancel()
+          return { ok: false, failure: { code: 'max-bytes-exceeded', target: args.target, maxBytes: args.bound.maxBytes } }
+        }
+        chunks.push(next.value)
+        reportProgress(args.onProgress, receivedBytes, totalBytes)
+      }
+      if (controller.signal.aborted) throw new Error('enhanced-resource-aborted')
+      const bytes = new Uint8Array(receivedBytes)
+      let offset = 0
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset)
+        offset += chunk.byteLength
+      }
+      writeEnhancedResourceCache(fetchUrl, bytes)
+      reportProgress(args.onProgress, receivedBytes, receivedBytes)
+      return { ok: true, bytes, fromCache: false }
+    })()
+    return await Promise.race([networkLoad, deadline])
   } catch {
     if (timedOut) {
-      return { ok: false, failure: { code: 'timeout', target: args.target, timeoutMs: args.bound.timeoutMs } }
+      return { ok: false, failure: { code: 'timeout', target: args.target, timeoutMs: effectiveTimeoutMs } }
     }
     return { ok: false, failure: { code: 'network-unavailable', target: args.target } }
   } finally {

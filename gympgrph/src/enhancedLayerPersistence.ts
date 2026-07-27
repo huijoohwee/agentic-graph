@@ -5,6 +5,11 @@ import {
   emitGeospatialModeChanged,
 } from 'grph-shared/geospatial/events'
 import type { NormalizedEnhancedConfig } from 'grph-shared/geospatial/enhancedLayerContract'
+import {
+  ENHANCED_LAYER_ENV_KEY,
+  readBundledEnhancedLayerEnvironmentValue,
+  resolveEnhancedLayerConfigSource,
+} from './enhancedLayerConfigSource.js'
 
 const readJson = (key: string, fallback: unknown): unknown => {
   if (typeof window === 'undefined') return fallback
@@ -26,6 +31,15 @@ const writeJson = (key: string, value: unknown): boolean => {
   }
 }
 
+const readRaw = (key: string): string | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    return window.localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
 const readVisibility = (): Record<string, boolean> => {
   const value = readJson(LS_KEYS.geospatialEnhancedLayerVisibility, {})
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
@@ -36,10 +50,25 @@ const readVisibility = (): Record<string, boolean> => {
 }
 
 export const readEnhancedLayerConfig = (): NormalizedEnhancedConfig => {
-  const normalized = normalizeEnhancedConfig(readJson(LS_KEYS.geospatialEnhancedLayers, []))
+  const source = resolveEnhancedLayerConfigSource(
+    readRaw(LS_KEYS.geospatialEnhancedLayers),
+    readBundledEnhancedLayerEnvironmentValue(),
+  )
+  const normalized = normalizeEnhancedConfig(source.raw)
   const visibility = readVisibility()
   return {
     ...normalized,
+    diagnostics: source.invalidEnvironmentValue
+      ? [
+          ...normalized.diagnostics,
+          {
+            code: 'invalid-config',
+            target: 'environment',
+            field: ENHANCED_LAYER_ENV_KEY,
+            value: source.invalidEnvironmentValue,
+          } as const,
+        ]
+      : normalized.diagnostics,
     extrusions: normalized.extrusions.map(layer => ({
       ...layer,
       visible: visibility[layer.id] ?? layer.visible,

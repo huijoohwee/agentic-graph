@@ -35,12 +35,12 @@ const progressMessage = (target: string, progress: LoadProgress): string => {
     : boundedMessage(`Loading ${target}: ${progress.receivedBytes.toLocaleString()} bytes`)
 }
 
-const failureMessage = (failure: LoadFailure): string => {
+export const formatEnhancedLayerFailure = (failure: LoadFailure): string => {
   if (failure.code === 'missing-fetch-bound') return `Missing ${failure.key}; layer was not requested.`
   if (failure.code === 'max-bytes-exceeded') return `${failure.target} exceeded ${failure.maxBytes} bytes; prior layers retained.`
   if (failure.code === 'timeout') return `${failure.target} timed out after ${failure.timeoutMs} ms; prior layers retained.`
   if (failure.code === 'parse-failed') return `${failure.target} is not valid geospatial data; prior layers retained.`
-  return `${failure.target} is unavailable; prior layers retained.`
+  return `${failure.target}: network-unavailable; prior layers retained.`
 }
 
 const combineBounds = (boundsById: ReadonlyMap<string, GeospatialBounds>): GeospatialBounds | null => {
@@ -174,7 +174,7 @@ export function useEnhancedGeospatialLayers(args: {
         id: `kg:geo:failed:${target}`,
         kind: 'error',
         ttlMs: 5_000,
-        message: boundedMessage(failureMessage(failure)),
+        message: boundedMessage(formatEnhancedLayerFailure(failure)),
       })
     }
 

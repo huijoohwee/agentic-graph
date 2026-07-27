@@ -1,4 +1,13 @@
+import type {
+  CustomLayerInterface,
+  CustomRenderMethodInput,
+  Map as MapLibreMap,
+} from 'maplibre-gl'
 import type { Asset3DConfig } from 'grph-shared/geospatial/enhancedLayerContract'
+import {
+  computeAssetFrameMatrix,
+  isSafeAssetProjectionInput,
+} from './asset3dProjection.js'
 
 export type AssetMesh = {
   positions: Float32Array
@@ -13,53 +22,34 @@ export type Asset3DLayerHandle = {
   dispose(): void
 }
 
-const EARTH_CIRCUMFERENCE_METERS = 2 * Math.PI * 6_371_008.8
-
-const toMercatorCoordinate = (lng: number, lat: number, altitudeMeters: number) => {
-  const latitudeRadians = lat * Math.PI / 180
-  const circumferenceAtLatitude = EARTH_CIRCUMFERENCE_METERS * Math.cos(latitudeRadians)
-  return {
-    x: (180 + lng) / 360,
-    y: (180 - (180 / Math.PI * Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)))) / 360,
-    z: altitudeMeters / circumferenceAtLatitude,
-    meterScale: 1 / circumferenceAtLatitude,
-  }
-}
-
 type GlResource = {
   positionBuffer: WebGLBuffer
   indexBuffer: WebGLBuffer
   indexCount: number
 }
 
-const multiplyMatrices = (left: ArrayLike<number>, right: ArrayLike<number>): Float32Array => {
-  const result = new Float32Array(16)
-  for (let column = 0; column < 4; column += 1) {
-    for (let row = 0; row < 4; row += 1) {
-      result[column * 4 + row] =
-        left[row] * right[column * 4]
-        + left[4 + row] * right[column * 4 + 1]
-        + left[8 + row] * right[column * 4 + 2]
-        + left[12 + row] * right[column * 4 + 3]
-    }
-  }
-  return result
+type GlProgramState = {
+  program: WebGLProgram
+  positionLocation: number
+  matrixLocation: WebGLUniformLocation
+  colorLocation: WebGLUniformLocation
 }
 
-export function computeAssetModelMatrix(
-  asset: Pick<Asset3DConfig, 'lat' | 'lng' | 'altitudeMeters' | 'scale' | 'rotationDegrees'>,
-): Float64Array {
-  const anchor = toMercatorCoordinate(asset.lng, asset.lat, asset.altitudeMeters)
-  const meterScale = anchor.meterScale * asset.scale
-  const radians = asset.rotationDegrees * Math.PI / 180
-  const cosine = Math.cos(radians)
-  const sine = Math.sin(radians)
-  return new Float64Array([
-    cosine * meterScale, sine * meterScale, 0, 0,
-    -sine * meterScale, cosine * meterScale, 0, 0,
-    0, 0, meterScale, 0,
-    anchor.x, anchor.y, anchor.z, 1,
-  ])
+type VertexArrayApi = {
+  bindingParameter: number
+  create(): unknown
+  bind(value: unknown): void
+  destroy(value: unknown): void
+}
+
+type VertexAttributeState = {
+  enabled: boolean
+  buffer: WebGLBuffer | null
+  size: number
+  type: number
+  normalized: boolean
+  stride: number
+  offset: number
 }
 
 const compileShader = (
@@ -76,7 +66,7 @@ const compileShader = (
   return null
 }
 
-const createProgram = (gl: WebGLRenderingContext | WebGL2RenderingContext): WebGLProgram | null => {
+const createProgram = (gl: WebGLRenderingContext | WebGL2RenderingContext): GlProgramState | null => {
   const vertex = compileShader(gl, gl.VERTEX_SHADER, `
     attribute vec3 a_position;
     uniform mat4 u_matrix;
@@ -93,15 +83,92 @@ const createProgram = (gl: WebGLRenderingContext | WebGL2RenderingContext): WebG
     return null
   }
   const program = gl.createProgram()
-  if (!program) return null
+  if (!program) {
+    gl.deleteShader(vertex)
+    gl.deleteShader(fragment)
+    return null
+  }
   gl.attachShader(program, vertex)
   gl.attachShader(program, fragment)
   gl.linkProgram(program)
   gl.deleteShader(vertex)
   gl.deleteShader(fragment)
-  if (gl.getProgramParameter(program, gl.LINK_STATUS)) return program
+  if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const positionLocation = gl.getAttribLocation(program, 'a_position')
+    const matrixLocation = gl.getUniformLocation(program, 'u_matrix')
+    const colorLocation = gl.getUniformLocation(program, 'u_color')
+    if (positionLocation >= 0 && matrixLocation && colorLocation) {
+      return { program, positionLocation, matrixLocation, colorLocation }
+    }
+  }
   gl.deleteProgram(program)
   return null
+}
+
+const resolveVertexArrayApi = (
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+): VertexArrayApi | null => {
+  const webGl2 = gl as WebGL2RenderingContext
+  if (
+    typeof webGl2.createVertexArray === 'function'
+    && typeof webGl2.bindVertexArray === 'function'
+    && typeof webGl2.deleteVertexArray === 'function'
+  ) {
+    return {
+      bindingParameter: webGl2.VERTEX_ARRAY_BINDING,
+      create: () => webGl2.createVertexArray(),
+      bind: value => webGl2.bindVertexArray(value as WebGLVertexArrayObject | null),
+      destroy: value => webGl2.deleteVertexArray(value as WebGLVertexArrayObject | null),
+    }
+  }
+
+  const extension = gl.getExtension('OES_vertex_array_object')
+  if (!extension) return null
+  return {
+    bindingParameter: extension.VERTEX_ARRAY_BINDING_OES,
+    create: () => extension.createVertexArrayOES(),
+    bind: value => extension.bindVertexArrayOES(value as WebGLVertexArrayObjectOES | null),
+    destroy: value => extension.deleteVertexArrayOES(value as WebGLVertexArrayObjectOES | null),
+  }
+}
+
+const captureVertexAttributeState = (
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  location: number,
+): VertexAttributeState | null => {
+  try {
+    return {
+      enabled: Boolean(gl.getVertexAttrib(location, gl.VERTEX_ATTRIB_ARRAY_ENABLED)),
+      buffer: gl.getVertexAttrib(location, gl.VERTEX_ATTRIB_ARRAY_BUFFER_BINDING) as WebGLBuffer | null,
+      size: Number(gl.getVertexAttrib(location, gl.VERTEX_ATTRIB_ARRAY_SIZE)),
+      type: Number(gl.getVertexAttrib(location, gl.VERTEX_ATTRIB_ARRAY_TYPE)),
+      normalized: Boolean(gl.getVertexAttrib(location, gl.VERTEX_ATTRIB_ARRAY_NORMALIZED)),
+      stride: Number(gl.getVertexAttrib(location, gl.VERTEX_ATTRIB_ARRAY_STRIDE)),
+      offset: gl.getVertexAttribOffset(location, gl.VERTEX_ATTRIB_ARRAY_POINTER),
+    }
+  } catch {
+    return null
+  }
+}
+
+const restoreVertexAttributeState = (
+  gl: WebGLRenderingContext | WebGL2RenderingContext,
+  location: number,
+  state: VertexAttributeState | null,
+): void => {
+  if (state?.buffer) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, state.buffer)
+    gl.vertexAttribPointer(
+      location,
+      state.size,
+      state.type,
+      state.normalized,
+      state.stride,
+      state.offset,
+    )
+  }
+  if (state?.enabled) gl.enableVertexAttribArray(location)
+  else gl.disableVertexAttribArray(location)
 }
 
 export function parseAssetMesh(bytes: Uint8Array): AssetMesh | null {
@@ -131,82 +198,155 @@ export function createAsset3DCustomLayer(args: {
   contextId: string
   assets: readonly Asset3DConfig[]
   meshes: ReadonlyMap<string, AssetMesh>
-}): { layer: unknown; handle: Asset3DLayerHandle } | null {
-  const renderableAssets = args.assets.filter(asset => args.meshes.has(asset.id))
+}): { layer: CustomLayerInterface; handle: Asset3DLayerHandle } | null {
+  const renderableAssets = args.assets.filter(
+    asset => args.meshes.has(asset.id) && isSafeAssetProjectionInput(asset),
+  )
   if (renderableAssets.length === 0) return null
   const layerId = `kg-geo-assets:${args.contextId}`
   const visibility = new Map(renderableAssets.map(asset => [asset.id, asset.visible]))
   const resources = new Map<string, GlResource>()
-  let map: any = null
+  let map: MapLibreMap | null = null
   let glContext: WebGLRenderingContext | WebGL2RenderingContext | null = null
-  let program: WebGLProgram | null = null
+  let programState: GlProgramState | null = null
+  let vertexArrayApi: VertexArrayApi | null = null
+  let vertexArray: unknown = null
   let disposed = false
 
-  const releaseResources = () => {
-    if (!glContext) return
-    for (const resource of resources.values()) {
-      glContext.deleteBuffer(resource.positionBuffer)
-      glContext.deleteBuffer(resource.indexBuffer)
+  const isContextLost = (gl: WebGLRenderingContext | WebGL2RenderingContext): boolean => {
+    try {
+      return gl.isContextLost()
+    } catch {
+      return true
     }
-    resources.clear()
-    if (program) glContext.deleteProgram(program)
-    program = null
   }
 
-  const layer = {
-    id: layerId,
-    type: 'custom' as const,
-    renderingMode: '3d' as const,
-    onAdd(nextMap: any, gl: WebGLRenderingContext | WebGL2RenderingContext) {
-      map = nextMap
-      glContext = gl
-      program = createProgram(gl)
-      if (!program) return
+  const releaseResources = (): void => {
+    const context = glContext
+    const ownedResources = [...resources.values()]
+    resources.clear()
+    const ownedProgram = programState?.program ?? null
+    programState = null
+    const ownedVertexArrayApi = vertexArrayApi
+    const ownedVertexArray = vertexArray
+    vertexArrayApi = null
+    vertexArray = null
+    if (!context || isContextLost(context)) return
+
+    for (const resource of ownedResources) {
+      context.deleteBuffer(resource.positionBuffer)
+      context.deleteBuffer(resource.indexBuffer)
+    }
+    if (ownedProgram) context.deleteProgram(ownedProgram)
+    if (ownedVertexArrayApi && ownedVertexArray) {
+      ownedVertexArrayApi.destroy(ownedVertexArray)
+    }
+  }
+
+  const initializeResources = (
+    gl: WebGLRenderingContext | WebGL2RenderingContext,
+  ): void => {
+    releaseResources()
+    glContext = gl
+    programState = createProgram(gl)
+    if (!programState) return
+    vertexArrayApi = resolveVertexArrayApi(gl)
+    vertexArray = vertexArrayApi?.create() ?? null
+    const previousArrayBuffer = gl.getParameter(gl.ARRAY_BUFFER_BINDING) as WebGLBuffer | null
+    const previousElementBuffer = gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING) as WebGLBuffer | null
+    const previousVertexArray = vertexArrayApi && vertexArray
+      ? gl.getParameter(vertexArrayApi.bindingParameter) as unknown
+      : null
+
+    try {
+      if (vertexArrayApi && vertexArray) vertexArrayApi.bind(vertexArray)
       for (const asset of renderableAssets) {
         const mesh = args.meshes.get(asset.id)
+        if (!mesh) continue
         const positionBuffer = gl.createBuffer()
         const indexBuffer = gl.createBuffer()
-        if (!mesh || !positionBuffer || !indexBuffer) continue
+        if (!positionBuffer || !indexBuffer) {
+          if (positionBuffer) gl.deleteBuffer(positionBuffer)
+          if (indexBuffer) gl.deleteBuffer(indexBuffer)
+          continue
+        }
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer)
         gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW)
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW)
-        resources.set(asset.id, { positionBuffer, indexBuffer, indexCount: mesh.indices.length })
+        resources.set(asset.id, {
+          positionBuffer,
+          indexBuffer,
+          indexCount: mesh.indices.length,
+        })
       }
+    } finally {
+      if (vertexArrayApi && vertexArray) vertexArrayApi.bind(previousVertexArray)
+      gl.bindBuffer(gl.ARRAY_BUFFER, previousArrayBuffer)
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, previousElementBuffer)
+    }
+  }
+
+  const layer: CustomLayerInterface = {
+    id: layerId,
+    type: 'custom',
+    renderingMode: '3d',
+    onAdd(nextMap, gl) {
+      if (disposed) return
+      map = nextMap
+      initializeResources(gl)
     },
-    render(gl: WebGLRenderingContext | WebGL2RenderingContext, options: { modelViewProjectionMatrix?: ArrayLike<number> }) {
-      if (!program || disposed) return
-      const projectionMatrix = options?.modelViewProjectionMatrix
-      if (!projectionMatrix || projectionMatrix.length !== 16) return
+    render(gl, options: CustomRenderMethodInput) {
+      const bindings = programState
+      if (!bindings || disposed || !map || gl !== glContext || isContextLost(gl)) return
       const previousProgram = gl.getParameter(gl.CURRENT_PROGRAM) as WebGLProgram | null
       const previousArrayBuffer = gl.getParameter(gl.ARRAY_BUFFER_BINDING) as WebGLBuffer | null
       const previousElementBuffer = gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING) as WebGLBuffer | null
-      gl.useProgram(program)
-      const positionLocation = gl.getAttribLocation(program, 'a_position')
-      const matrixLocation = gl.getUniformLocation(program, 'u_matrix')
-      const colorLocation = gl.getUniformLocation(program, 'u_color')
-      for (const asset of renderableAssets) {
-        if (!visibility.get(asset.id)) continue
-        const mesh = args.meshes.get(asset.id)
-        const resource = resources.get(asset.id)
-        if (!mesh || !resource) continue
-        gl.bindBuffer(gl.ARRAY_BUFFER, resource.positionBuffer)
-        gl.enableVertexAttribArray(positionLocation)
-        gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0)
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, resource.indexBuffer)
-        gl.uniformMatrix4fv(matrixLocation, false, multiplyMatrices(projectionMatrix, computeAssetModelMatrix(asset)))
-        gl.uniform4f(
-          colorLocation,
-          mesh.color[0] * mesh.color[3],
-          mesh.color[1] * mesh.color[3],
-          mesh.color[2] * mesh.color[3],
-          mesh.color[3],
-        )
-        gl.drawElements(gl.TRIANGLES, resource.indexCount, gl.UNSIGNED_SHORT, 0)
+      const activeVertexArrayApi = vertexArrayApi
+      const activeVertexArray = vertexArray
+      const previousVertexArray = activeVertexArrayApi && activeVertexArray
+        ? gl.getParameter(activeVertexArrayApi.bindingParameter) as unknown
+        : null
+      const previousAttribute = activeVertexArray
+        ? null
+        : captureVertexAttributeState(gl, bindings.positionLocation)
+
+      try {
+        if (activeVertexArrayApi && activeVertexArray) {
+          activeVertexArrayApi.bind(activeVertexArray)
+        }
+        gl.useProgram(bindings.program)
+        for (const asset of renderableAssets) {
+          if (!visibility.get(asset.id)) continue
+          const mesh = args.meshes.get(asset.id)
+          const resource = resources.get(asset.id)
+          if (!mesh || !resource) continue
+          const frameMatrix = computeAssetFrameMatrix(map, options, asset)
+          if (!frameMatrix) continue
+          gl.bindBuffer(gl.ARRAY_BUFFER, resource.positionBuffer)
+          gl.enableVertexAttribArray(bindings.positionLocation)
+          gl.vertexAttribPointer(bindings.positionLocation, 3, gl.FLOAT, false, 0, 0)
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, resource.indexBuffer)
+          gl.uniformMatrix4fv(bindings.matrixLocation, false, frameMatrix)
+          gl.uniform4f(
+            bindings.colorLocation,
+            mesh.color[0] * mesh.color[3],
+            mesh.color[1] * mesh.color[3],
+            mesh.color[2] * mesh.color[3],
+            mesh.color[3],
+          )
+          gl.drawElements(gl.TRIANGLES, resource.indexCount, gl.UNSIGNED_SHORT, 0)
+        }
+      } finally {
+        if (activeVertexArrayApi && activeVertexArray) {
+          activeVertexArrayApi.bind(previousVertexArray)
+        } else {
+          restoreVertexAttributeState(gl, bindings.positionLocation, previousAttribute)
+        }
+        gl.bindBuffer(gl.ARRAY_BUFFER, previousArrayBuffer)
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, previousElementBuffer)
+        gl.useProgram(previousProgram)
       }
-      gl.bindBuffer(gl.ARRAY_BUFFER, previousArrayBuffer)
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, previousElementBuffer)
-      gl.useProgram(previousProgram)
     },
     onRemove() {
       releaseResources()
@@ -235,7 +375,7 @@ export function createAsset3DCustomLayer(args: {
         void 0
       }
       try {
-        if (map?.getLayer?.(layerId)) map.removeLayer(layerId)
+        if (map?.getLayer(layerId)) map.removeLayer(layerId)
         else releaseResources()
       } catch {
         releaseResources()
