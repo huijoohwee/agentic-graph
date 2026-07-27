@@ -64,7 +64,7 @@ Implement one browser-local, deterministic Flight Sim mission as an overlay on t
   - [x] Add a deterministic low-speed nose-down tendency below the authored stall threshold.
   - [x] Project unreliable-instrument, stall, attitude, and mission-relative energy states into the HUD and all six existing training surfaces.
   - [x] Preserve the single shared camera/Canvas owners and the generic clean-room, zero-dependency boundary.
-  - [x] Route each Media environment kit through canonical XR stage selection into FloatingPanel Geo and project the selected authored world in Geo and Flight.
+  - [x] Route each Media environment kit through canonical XR stage selection into FloatingPanel Geo, project the selected authored world in Geo and Flight, and immediately reactivate the source-authored Flight overlay without replacing the Geo panel.
   - [x] Retry shared viewport input acquisition after the prior camera owner releases it, read the live mission-stage preparation request after render, and invalidate the shared Canvas demand loop so Geo and connected Motion Control handoffs cannot lose Flight entry to mount ordering.
   - [x] Decouple committed Flight render readiness from desktop input ownership so Motion, touch, and gamepad remain playable while the desktop claim retries after Geo or camera handoff.
   - [x] Derive Cockpit eye clearance from the admitted aircraft collision envelope so the forward view remains above and beyond committed airframe geometry.
