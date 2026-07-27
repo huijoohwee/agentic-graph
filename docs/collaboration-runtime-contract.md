@@ -2,7 +2,7 @@
 title: "Knowgrph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 24
+contract_version: 25
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 invocation:
@@ -68,6 +68,10 @@ ci_scopes:
     commands:
       - ["npm", "--prefix", "canvas", "run", "test:smoke:rich-media:timing-schema"]
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "richMedia.browserSmokeContract"]
+  surface_policy:
+    roots: ["config/surface-registry.json", "config/license-registry.json", "schemas/surface-registry.v1.schema.json", "scripts/surface/", "data/surface/", "docs/discoverability-ip-protection-runtime.md"]
+    commands:
+      - ["npm", "run", "surface:verify"]
   runtime:
     roots: ["cloudflare/workers/", "contracts/", "ecs/", "mcp/", "web/"]
     commands:
