@@ -15,6 +15,11 @@ export const buildFlowGroupSceneKey = (groups: ReadonlyArray<GraphGroup> | null 
     style: group.style || null,
   })))
 
+export const hasFlowGroupSceneChanged = (
+  previous: ReadonlyArray<GraphGroup> | null | undefined,
+  next: ReadonlyArray<GraphGroup> | null | undefined,
+): boolean => buildFlowGroupSceneKey(previous) !== buildFlowGroupSceneKey(next)
+
 export function buildFlowCanvasNativeSceneKey(args: {
   sceneGraphData: GraphData | null
   layoutVariant: string
