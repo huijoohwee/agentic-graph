@@ -1,0 +1,371 @@
+{
+  "schema": "knowgrph-surface-registry/v1",
+  "version": "1.0.0",
+  "publicOrigin": "https://airvio.co",
+  "policy": {
+    "fetchProxyRateLimit": { "requests": 20, "windowSeconds": 60 },
+    "noReuseLicenseId": "LicenseRef-airvio-no-reuse-1.0",
+    "contentSignals": "ai-train=no, search=yes, ai-input=yes",
+    "unknownArtifactTier": "private",
+    "promotionMode": "fixture-only"
+  },
+  "permittedRepositories": {
+    "private": ["dev", "worker"],
+    "gated": ["public-origin"],
+    "public-artifact": ["public-origin"],
+    "public-discoverable": ["public-origin", "site"]
+  },
+  "distributionAllowlist": [
+    "grph-shared/dist/**",
+    "knowgrph/assets/**"
+  ],
+  "catalogDigest": "b31a83b91337c3715bf74619fe4983dc99604c30804e95ea95f4f7fc9e66beeb",
+  "invocationRegistry": {
+    "catalogId": "mcp",
+    "entries": [
+      {
+        "token": "search",
+        "prefixRole": "mcp-tool-id",
+        "label": "Search Knowgrph Source Files",
+        "intentSummary": "Search published Knowgrph Source Files and return stable document identifiers for read-only retrieval.",
+        "executionRouteTier": "public-discoverable",
+        "ingressRoute": "public-read-mcp",
+        "targetExecutionRoute": "public-read-mcp",
+        "spendBearing": false,
+        "readOnly": true
+      },
+      {
+        "token": "fetch",
+        "prefixRole": "mcp-tool-id",
+        "label": "Fetch Knowgrph Source File",
+        "intentSummary": "Fetch a complete published Knowgrph Source File by a stable search result identifier.",
+        "executionRouteTier": "public-discoverable",
+        "ingressRoute": "public-read-mcp",
+        "targetExecutionRoute": "public-read-mcp",
+        "spendBearing": false,
+        "readOnly": true
+      },
+      {
+        "token": "list_source_files",
+        "prefixRole": "mcp-tool-id",
+        "label": "List Source Files",
+        "intentSummary": "List the published Knowgrph Source Files index as read-only metadata.",
+        "executionRouteTier": "public-discoverable",
+        "ingressRoute": "public-read-mcp",
+        "targetExecutionRoute": "public-read-mcp",
+        "spendBearing": false,
+        "readOnly": true
+      },
+      {
+        "token": "read_source_file",
+        "prefixRole": "mcp-tool-id",
+        "label": "Read Source File",
+        "intentSummary": "Read published workspace Markdown by canonical path without mutating the document.",
+        "executionRouteTier": "public-discoverable",
+        "ingressRoute": "public-read-mcp",
+        "targetExecutionRoute": "public-read-mcp",
+        "spendBearing": false,
+        "readOnly": true
+      },
+      {
+        "token": "read_shared_document",
+        "prefixRole": "mcp-tool-id",
+        "label": "Read Shared Document",
+        "intentSummary": "Read a published shared document from its share token or canonical share URL.",
+        "executionRouteTier": "public-discoverable",
+        "ingressRoute": "public-read-mcp",
+        "targetExecutionRoute": "public-read-mcp",
+        "spendBearing": false,
+        "readOnly": true
+      },
+      {
+        "token": "inspect_shared_document_structure",
+        "prefixRole": "mcp-tool-id",
+        "label": "Inspect Shared Document Structure",
+        "intentSummary": "Inspect published shared-document frontmatter and body structure without mutation.",
+        "executionRouteTier": "public-discoverable",
+        "ingressRoute": "public-read-mcp",
+        "targetExecutionRoute": "public-read-mcp",
+        "spendBearing": false,
+        "readOnly": true
+      },
+      {
+        "token": "inspect_agent_surface",
+        "prefixRole": "mcp-tool-id",
+        "label": "Inspect Agent Surface",
+        "intentSummary": "Inspect public agent discovery, MCP, OpenAPI, and skill metadata without mutation.",
+        "executionRouteTier": "public-discoverable",
+        "ingressRoute": "public-read-mcp",
+        "targetExecutionRoute": "public-read-mcp",
+        "spendBearing": false,
+        "readOnly": true
+      }
+    ]
+  },
+  "catalogSources": [
+    { "catalogId": "action", "repository": "worker", "path": "docs/DICTIONARY-COMMAND.md" },
+    { "catalogId": "binding", "repository": "worker", "path": "docs/DICTIONARY-BINDING.md" },
+    { "catalogId": "semantic", "repository": "worker", "path": "docs/DICTIONARY-SEMANTIC.md" }
+  ],
+  "entries": [
+    {
+      "artifactId": "private.application-source", "path": "canvas/src/**", "pathKind": "glob", "artifactClass": "application-source", "surfaceTier": "private",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "dev", "repositoryVisibility": "private", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "none", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Application source stays private; only approved build output may cross the publication boundary."
+    },
+    {
+      "artifactId": "private.orchestration-wiring", "path": "mcp/**", "pathKind": "glob", "artifactClass": "orchestration-wiring", "surfaceTier": "private",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "dev", "repositoryVisibility": "private", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "none", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "MCP implementation and orchestration wiring are never discovery artifacts."
+    },
+    {
+      "artifactId": "private.worker-source", "path": "cloudflare/workers/**", "pathKind": "glob", "artifactClass": "application-source", "surfaceTier": "private",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "dev", "repositoryVisibility": "private", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "none", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Worker source remains private even when its generated service metadata is public."
+    },
+    {
+      "artifactId": "private.agentic-worker-api-source", "path": "agent-api/src/**", "pathKind": "glob", "artifactClass": "application-source", "surfaceTier": "private",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "worker", "repositoryVisibility": "private", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "none", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Agentic Canvas OS API implementation modules remain within the private Worker Repository."
+    },
+    {
+      "artifactId": "private.agentic-worker-runtime-source", "path": "worker/**", "pathKind": "glob", "artifactClass": "orchestration-wiring", "surfaceTier": "private",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "worker", "repositoryVisibility": "private", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "none", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Worker entrypoints and Durable Object bindings are private orchestration wiring."
+    },
+    {
+      "artifactId": "private.agentic-worker-shared-source", "path": "src/**", "pathKind": "glob", "artifactClass": "application-source", "surfaceTier": "private",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "worker", "repositoryVisibility": "private", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "none", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Shared Agentic Canvas OS runtime modules remain private."
+    },
+    {
+      "artifactId": "private.agentic-worker-config", "path": "wrangler.jsonc", "pathKind": "exact", "artifactClass": "runtime-config", "surfaceTier": "private",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "worker", "repositoryVisibility": "private", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "none", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Cloudflare bindings and the required-secrets declaration are private runtime configuration."
+    },
+    {
+      "artifactId": "private.source-maps", "path": "**/*.map", "pathKind": "glob", "artifactClass": "application-source", "surfaceTier": "private",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "dev", "repositoryVisibility": "private", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "none", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Source maps are withheld because they expose implementation structure."
+    },
+    {
+      "artifactId": "asset.knowgrph-bundles", "path": "knowgrph/assets/**", "pathKind": "glob", "artifactClass": "bundled-build-output", "surfaceTier": "public-artifact",
+      "licenseId": "LicenseRef-airvio-no-reuse-1.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "no-reuse",
+      "canonicalUrl": null, "representingPage": "/knowgrph/", "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Browser bundles are served but omitted from discovery indexes and carry the approved no-reuse declaration."
+    },
+    {
+      "artifactId": "asset.shared-dist", "path": "grph-shared/dist/**", "pathKind": "glob", "artifactClass": "dist-module", "surfaceTier": "public-artifact",
+      "licenseId": "LicenseRef-airvio-no-reuse-1.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "no-reuse",
+      "canonicalUrl": null, "representingPage": "/knowgrph/", "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "Only explicitly allowlisted shared distribution output may be served."
+    },
+    {
+      "artifactId": "product.knowgrph", "path": "/knowgrph/", "pathKind": "exact", "artifactClass": "published-document", "surfaceTier": "public-discoverable",
+      "licenseId": "CC-BY-4.0", "publishPolicy": "operator-approved", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/knowgrph/", "representingPage": null, "title": "Knowgrph", "summary": "Agent-actionable chat-to-canvas knowledge graph workspace.", "readOnly": null,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Human-readable product page representing served browser bundles and shared distribution artifacts."
+    },
+    {
+      "artifactId": "route.knowgrph-assets", "path": "/knowgrph/*", "pathKind": "exact", "artifactClass": "bundled-build-output", "surfaceTier": "public-artifact",
+      "licenseId": "LicenseRef-airvio-no-reuse-1.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "no-reuse",
+      "canonicalUrl": null, "representingPage": "/knowgrph/", "title": null, "summary": null, "readOnly": null,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": null, "invocation": null, "service": null,
+      "notes": "The literal edge include pattern is classified without making every concrete child path discoverable."
+    },
+    {
+      "artifactId": "route.root", "path": "/", "pathKind": "exact", "artifactClass": "published-document", "surfaceTier": "public-discoverable",
+      "licenseId": "CC-BY-4.0", "publishPolicy": "operator-approved", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/", "representingPage": null, "title": "Airvio", "summary": "Public entry point for Airvio products and machine-readable capability discovery.", "readOnly": null,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "The public human entry point is crawlable and contains no implementation material."
+    },
+    {
+      "artifactId": "route.health", "path": "/health", "pathKind": "exact", "artifactClass": "capability-description", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/health", "representingPage": null, "title": "Airvio service health", "summary": "Read-only health response for the public Airvio edge.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "http", "trustBoundary": "public" }, "notes": "Health is public and non-spend-bearing."
+    },
+    {
+      "artifactId": "route.api-graph", "path": "/api/graph", "pathKind": "exact", "artifactClass": "service-description", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/api/graph", "representingPage": "/knowgrph/", "title": "Knowgrph graph read API", "summary": "Read-only graph retrieval surface represented by the Knowgrph product page.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "public-read-mcp", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "http", "trustBoundary": "public" }, "notes": "Advertises read capability only; mutations remain gated."
+    },
+    {
+      "artifactId": "endpoint.mcp-public-read", "path": "/knowgrph/mcp", "pathKind": "exact", "artifactClass": "mcp-endpoint", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/knowgrph/mcp", "representingPage": "/knowgrph/", "title": "Knowgrph public read MCP", "summary": "Unauthenticated MCP transport exposing read-only tools without model invocation during discovery.", "readOnly": true,
+      "ingressRoute": "public-read-mcp", "targetExecutionRoute": "public-read-mcp", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "POST", "transport": "mcp", "trustBoundary": "public", "authorizationMetadataUrl": "https://airvio.co/auth.md" }, "notes": "MCP is the sole inbound agent protocol; only read-only tools may appear here."
+    },
+    {
+      "artifactId": "route.youtube-transcript", "path": "/__youtube_transcript", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "control-plane-mcp", "spendBearing": false, "rateLimit": { "requests": 20, "windowSeconds": 60 }, "lastModified": null, "invocation": null,
+      "service": { "method": "POST", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Fetch-on-behalf proxy; gated at the approved shared rate limit."
+    },
+    {
+      "artifactId": "route.video-frame", "path": "/__video_frame", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "control-plane-mcp", "spendBearing": false, "rateLimit": { "requests": 20, "windowSeconds": 60 }, "lastModified": null, "invocation": null,
+      "service": { "method": "POST", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Fetch-on-behalf proxy; gated at the approved shared rate limit."
+    },
+    {
+      "artifactId": "route.api-oembed", "path": "/api/oembed", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "control-plane-mcp", "spendBearing": false, "rateLimit": { "requests": 20, "windowSeconds": 60 }, "lastModified": null, "invocation": null,
+      "service": { "method": "GET", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Fetch-on-behalf proxy; gated at the approved shared rate limit."
+    },
+    {
+      "artifactId": "route.api-link-proxy", "path": "/api/link-proxy", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "control-plane-mcp", "spendBearing": false, "rateLimit": { "requests": 20, "windowSeconds": 60 }, "lastModified": null, "invocation": null,
+      "service": { "method": "GET", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Fetch-on-behalf proxy; gated at the approved shared rate limit."
+    },
+    {
+      "artifactId": "route.api-link-preview", "path": "/api/link-preview", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "control-plane-mcp", "spendBearing": false, "rateLimit": { "requests": 20, "windowSeconds": 60 }, "lastModified": null, "invocation": null,
+      "service": { "method": "GET", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Fetch-on-behalf proxy; gated at the approved shared rate limit."
+    },
+    {
+      "artifactId": "route.chat-proxy", "path": "/__chat_proxy/*", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "invocation-forwarder", "targetExecutionRoute": "control-plane-mcp", "spendBearing": true, "rateLimit": null, "lastModified": null, "invocation": null,
+      "service": { "method": "POST", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Chat forwarding is spend-bearing and excluded from crawl and agent indexes."
+    },
+    {
+      "artifactId": "route.llm-responses", "path": "/api/llm/responses", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "invocation-forwarder", "targetExecutionRoute": "control-plane-mcp", "spendBearing": true, "rateLimit": null, "lastModified": null, "invocation": null,
+      "service": { "method": "POST", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Model execution is approval-gated and spend-bearing."
+    },
+    {
+      "artifactId": "route.llm-chat-completions", "path": "/api/llm/chat/completions", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "invocation-forwarder", "targetExecutionRoute": "control-plane-mcp", "spendBearing": true, "rateLimit": null, "lastModified": null, "invocation": null,
+      "service": { "method": "POST", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Model execution is approval-gated and spend-bearing."
+    },
+    {
+      "artifactId": "route.llm-models", "path": "/api/llm/models", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "invocation-forwarder", "targetExecutionRoute": "control-plane-mcp", "spendBearing": true, "rateLimit": null, "lastModified": null, "invocation": null,
+      "service": { "method": "GET", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Model catalog access is treated as control-plane capability metadata."
+    },
+    {
+      "artifactId": "route.payment-x402", "path": "/api/payments/commerce/x402", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "invocation-forwarder", "targetExecutionRoute": "control-plane-mcp", "spendBearing": true, "rateLimit": null, "lastModified": null, "invocation": null,
+      "service": { "method": "POST", "transport": "http", "trustBoundary": "credentialed" }, "notes": "Payment execution is gated, spend-bearing, and never publicly indexed."
+    },
+    {
+      "artifactId": "endpoint.mcp-control-plane", "path": "/knowgrph/control-plane/mcp", "pathKind": "exact", "artifactClass": "routed-path", "surfaceTier": "gated",
+      "licenseId": "NONE-private", "publishPolicy": "never", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "unlicensed-private",
+      "canonicalUrl": null, "representingPage": null, "title": null, "summary": null, "readOnly": false,
+      "ingressRoute": "control-plane-mcp", "targetExecutionRoute": "control-plane-mcp", "spendBearing": true, "rateLimit": null, "lastModified": null, "invocation": null,
+      "service": { "method": "POST", "transport": "mcp", "trustBoundary": "credentialed" }, "notes": "Approval-gated, spend-bearing, and orchestration tools terminate only at the control-plane MCP boundary."
+    },
+    {
+      "artifactId": "discovery.structured-data", "path": ".well-known/structured-data/**", "pathKind": "glob", "artifactClass": "machine-readable-metadata", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/.well-known/structured-data/", "representingPage": null, "title": "Knowgrph structured data", "summary": "Generated schema.org metadata for public Knowgrph documents.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "The registry classifies every generated per-document structured-data candidate."
+    },
+    {
+      "artifactId": "discovery.auth", "path": "auth.md", "pathKind": "exact", "artifactClass": "published-document", "surfaceTier": "public-discoverable",
+      "licenseId": "CC-BY-4.0", "publishPolicy": "operator-approved", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/auth.md", "representingPage": null, "title": "Knowgrph authorization metadata", "summary": "Human-readable authorization and registration guidance for Knowgrph agent clients.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "The authorization metadata location is registry-owned and governed as a public discovery surface."
+    },
+    {
+      "artifactId": "discovery.robots", "path": "robots.txt", "pathKind": "exact", "artifactClass": "machine-readable-metadata", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/robots.txt", "representingPage": null, "title": "Airvio crawl policy", "summary": "Generated crawl directives and content-use signals derived from the surface registry.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Generated from registry tiers; private paths are never named."
+    },
+    {
+      "artifactId": "discovery.sitemap", "path": "sitemap.xml", "pathKind": "exact", "artifactClass": "machine-readable-metadata", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/sitemap.xml", "representingPage": null, "title": "Airvio sitemap", "summary": "Canonical URL index containing only registry-approved public discovery surfaces.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Unrouted storage URLs are removed by construction."
+    },
+    {
+      "artifactId": "discovery.llms", "path": "llms.txt", "pathKind": "exact", "artifactClass": "machine-readable-metadata", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/llms.txt", "representingPage": null, "title": "Airvio agent index", "summary": "Machine-readable index of public Airvio documents, services, and capability descriptions.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Every line is derived from a public-discoverable registry entry."
+    },
+    {
+      "artifactId": "discovery.openapi", "path": "openapi.json", "pathKind": "exact", "artifactClass": "service-description", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/openapi.json", "representingPage": null, "title": "Airvio public read service description", "summary": "OpenAPI description limited to registry-approved public read services.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Gated execution routes are deliberately withheld."
+    },
+    {
+      "artifactId": "discovery.api-catalog", "path": ".well-known/api-catalog", "pathKind": "exact", "artifactClass": "machine-readable-metadata", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/.well-known/api-catalog", "representingPage": null, "title": "Airvio API catalog", "summary": "Well-known catalog pointer to the public read service description.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "References the generated OpenAPI document by absolute URL."
+    },
+    {
+      "artifactId": "discovery.agent-card", "path": ".well-known/agent-card.json", "pathKind": "exact", "artifactClass": "capability-description", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/.well-known/agent-card.json", "representingPage": null, "title": "Knowgrph agent card", "summary": "Agent capability card declaring MCP as the sole inbound protocol boundary.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "public-read-mcp", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Advertises only public read capabilities and no direct model route."
+    },
+    {
+      "artifactId": "discovery.mcp-manifest", "path": ".well-known/mcp.json", "pathKind": "exact", "artifactClass": "service-description", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/.well-known/mcp.json", "representingPage": null, "title": "Knowgrph MCP manifest", "summary": "Machine-readable declaration of the public read MCP transport and its trust boundary.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "public-read-mcp", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "The control plane is not enumerated in public discovery metadata."
+    },
+    {
+      "artifactId": "reuse.declaration", "path": "REUSE.md", "pathKind": "exact", "artifactClass": "machine-readable-metadata", "surfaceTier": "public-discoverable",
+      "licenseId": "Apache-2.0", "publishPolicy": "generated-only", "owningRepository": "public-origin", "repositoryVisibility": "public", "artifactClassCategory": "permissive",
+      "canonicalUrl": "https://airvio.co/REUSE.md", "representingPage": null, "title": "Airvio reuse declaration", "summary": "Generated class-to-license declaration for every recorded published artifact class.", "readOnly": true,
+      "ingressRoute": "static-edge", "targetExecutionRoute": "none", "spendBearing": false, "rateLimit": null, "lastModified": "2026-07-27", "invocation": null,
+      "service": { "method": "GET", "transport": "static", "trustBoundary": "public" }, "notes": "Rendered only from the License Registry and staged with the discovery candidate."
+    }
+  ]
+}
