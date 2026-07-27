@@ -47,6 +47,7 @@ export default function FlowCanvas({
   hideSelectedNodePortHandles,
   hideNodeIds,
   hidePortHandleNodeIds,
+  hideGroupIds,
   excludeRichMediaOverlayNodeIds,
   excludeNativeSceneNodeIds,
   overlayAabbByNodeId,
@@ -76,6 +77,7 @@ export default function FlowCanvas({
     showGroupResizeHandle: false,
     hideNodeIds: undefined,
     hidePortHandleNodeIds: undefined,
+    hideGroupIds: undefined,
     grid: null,
     storyboardWidgetOpenNodeIds: undefined,
     storyboardWidgetPinnedByNodeId: undefined,
@@ -335,8 +337,11 @@ export default function FlowCanvas({
     drawArgsRef.current.hidePortHandleNodeIds = hideSelectedNodePortHandles
       ? Array.from(new Set([...(selectedNodeIdsRef.current || []), ...baseHandleIds]))
       : (baseHandleIds.length > 0 ? baseHandleIds : undefined)
+    drawArgsRef.current.hideGroupIds = hideGroupIds?.length
+      ? Array.from(new Set(hideGroupIds.map(String).filter(Boolean)))
+      : undefined
     scheduleFlowDraw()
-  }, [hideNodeIds, hidePortHandleNodeIds, hideSelectedNodeGlyph, hideSelectedNodePortHandles, scheduleFlowDraw])
+  }, [hideGroupIds, hideNodeIds, hidePortHandleNodeIds, hideSelectedNodeGlyph, hideSelectedNodePortHandles, scheduleFlowDraw])
 
   React.useEffect(() => {
     drawArgsRef.current.showGroupResizeHandle = readAllowGroupResize(schema)

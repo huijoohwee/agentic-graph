@@ -3,21 +3,25 @@ import { useShallow } from 'zustand/react/shallow'
 
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
+  buildSelectionGroupingPlan,
+  collectSelectedGroupIds,
   collectSelectedNodeIds,
-  createSelectionGroupLabel,
   findSelectedUserSubgraph,
-  reselectDetachedNodeIds,
 } from '@/lib/canvas/selectionGrouping'
-import { subgraphGroupId } from '@/lib/graph/subgraphs'
+import {
+  groupCurrentCanvasSelection,
+  ungroupCurrentCanvasSelection,
+} from '@/lib/canvas/selectionGroupingRuntime'
 
 export function useSelectionGrouping(args: { active: boolean; allowMutations?: boolean }) {
   const allowMutations = args.allowMutations !== false
-  const { graphData, selectedNodeId, selectedNodeIds, selectedGroupId } = useGraphStore(
+  const { graphData, selectedNodeId, selectedNodeIds, selectedGroupId, selectedGroupIds } = useGraphStore(
     useShallow(state => ({
       graphData: state.graphData,
       selectedNodeId: state.selectedNodeId,
       selectedNodeIds: state.selectedNodeIds,
       selectedGroupId: state.selectedGroupId,
+      selectedGroupIds: state.selectedGroupIds,
     })),
   )
 
@@ -26,43 +30,43 @@ export function useSelectionGrouping(args: { active: boolean; allowMutations?: b
     [selectedNodeId, selectedNodeIds],
   )
   const selectedSubgraph = useMemo(
-    () => findSelectedUserSubgraph(graphData, selectedGroupId),
-    [graphData, selectedGroupId],
+    () => {
+      const groupIds = collectSelectedGroupIds(selectedGroupId, selectedGroupIds)
+      return groupIds.length === 1 ? findSelectedUserSubgraph(graphData, groupIds[0]) : null
+    },
+    [graphData, selectedGroupId, selectedGroupIds],
   )
-  const canGroupNodes = args.active && allowMutations && !selectedSubgraph && nodeIds.length >= 2
-  const canUngroup = args.active && allowMutations && selectedSubgraph != null
+  const groupingPlan = useMemo(() => buildSelectionGroupingPlan({
+    graphData,
+    nodeIds,
+    groupIds: collectSelectedGroupIds(selectedGroupId, selectedGroupIds),
+  }), [graphData, nodeIds, selectedGroupId, selectedGroupIds])
+  const canGroupNodes = args.active && allowMutations && groupingPlan.entityCount >= 2
+  const canUngroup = args.active && allowMutations && selectedSubgraph != null && groupingPlan.entityCount === 1
 
   const groupNodes = useCallback(() => {
     if (!args.active || !allowMutations) return
-    const store = useGraphStore.getState()
-    const nextNodeIds = collectSelectedNodeIds(store.selectedNodeId, store.selectedNodeIds)
-    if (nextNodeIds.length < 2 || findSelectedUserSubgraph(store.graphData, store.selectedGroupId)) return
-    const result = store.createUserSubgraph({
-      label: createSelectionGroupLabel(store.graphData),
-      memberNodeIds: nextNodeIds,
-      autoBounds: true,
-    })
+    const result = groupCurrentCanvasSelection()
     if (result.ok === false) {
+      const store = useGraphStore.getState()
       store.pushUiToast({
         id: 'selection-grouping-error',
         kind: 'error',
         message: result.message,
       })
-      return
     }
-    store.setSelectionSource('toolbar')
-    store.selectGroup(subgraphGroupId(result.id))
   }, [allowMutations, args.active])
 
   const ungroup = useCallback(() => {
     if (!args.active || !allowMutations) return
-    const store = useGraphStore.getState()
-    const subgraph = findSelectedUserSubgraph(store.graphData, store.selectedGroupId)
-    if (!subgraph) return
-    const memberNodeIds = [...subgraph.memberNodeIds]
-    store.setSelectionSource('toolbar')
-    store.removeUserSubgraph(subgraph.id)
-    reselectDetachedNodeIds(memberNodeIds, nodeId => store.toggleNodeSelectionAdditive(nodeId))
+    const result = ungroupCurrentCanvasSelection()
+    if (result.ok === false) {
+      useGraphStore.getState().pushUiToast({
+        id: 'selection-ungroup-error',
+        kind: 'error',
+        message: result.message,
+      })
+    }
   }, [allowMutations, args.active])
 
   return {

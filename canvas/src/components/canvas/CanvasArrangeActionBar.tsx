@@ -40,7 +40,8 @@ export function CanvasArrangeActionBar(props: {
     offsetBelowWorkspaceToolbar = false,
   } = props
   const showArrange = !canUngroup && !canDetach && selectedCount >= 2
-  if (!active || (!showArrange && !canUngroup && !canDetach)) return null
+  const showGroup = !canUngroup && !canDetach && canGroupNodes && !!onGroupNodes
+  if (!active || (!showArrange && !showGroup && !canUngroup && !canDetach)) return null
 
   return (
     <section
@@ -72,18 +73,18 @@ export function CanvasArrangeActionBar(props: {
           Detach
         </button>
       ) : null}
+      {showGroup ? (
+        <button
+          type="button"
+          className="shrink-0 rounded border border-violet-500 bg-violet-600 px-2 py-1 font-medium text-white hover:bg-violet-500"
+          data-kg-selection-action="group-nodes"
+          onClick={onGroupNodes}
+        >
+          Group Nodes
+        </button>
+      ) : null}
       {showArrange ? (
         <>
-          {canGroupNodes && onGroupNodes ? (
-            <button
-              type="button"
-              className="shrink-0 rounded border border-violet-500 bg-violet-600 px-2 py-1 font-medium text-white hover:bg-violet-500"
-              data-kg-selection-action="group-nodes"
-              onClick={onGroupNodes}
-            >
-              Group Nodes
-            </button>
-          ) : null}
           {CANVAS_ARRANGE_ACTION_BUTTONS.map(button => (
             <button
               key={button.action}

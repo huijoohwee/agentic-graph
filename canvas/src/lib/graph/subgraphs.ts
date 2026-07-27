@@ -117,13 +117,22 @@ export const filterSubgraphsByRetainedNodeIds = (data: GraphData, retainedNodeId
     const id = String(rawId || '').trim()
     if (id) retained.add(id)
   })
-  const nextBase: UserSubgraph[] = []
-  for (let i = 0; i < subgraphs.length; i += 1) {
-    const sg = subgraphs[i]
-    const memberNodeIds = normalizeIds(sg.memberNodeIds).filter(id => retained.has(id))
-    if (memberNodeIds.length === 0) continue
-    nextBase.push({ ...sg, memberNodeIds })
+  const candidates = subgraphs.map(sg => ({
+    ...sg,
+    memberNodeIds: normalizeIds(sg.memberNodeIds).filter(id => retained.has(id)),
+  }))
+  const retainedSubgraphIds = new Set(candidates.filter(sg => sg.memberNodeIds.length > 0).map(sg => sg.id))
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const subgraph of candidates) {
+      if (retainedSubgraphIds.has(subgraph.id)) continue
+      if (!candidates.some(child => child.parentId === subgraph.id && retainedSubgraphIds.has(child.id))) continue
+      retainedSubgraphIds.add(subgraph.id)
+      changed = true
+    }
   }
+  const nextBase = candidates.filter(sg => retainedSubgraphIds.has(sg.id))
   if (nextBase.length === 0) return writeSubgraphs(data, [])
 
   const nextIdSet = new Set(nextBase.map(sg => sg.id))

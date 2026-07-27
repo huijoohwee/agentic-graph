@@ -7,6 +7,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["ui.flowCanvas.containment.nestedGroupClampsToParent","@/__tests__/flowContainmentMultiGroupNoClamp.test","testFlowContainmentNestedGroupClampsToParent"],
   ["graph.parentChildRelation.interactionContract","@/__tests__/parentChildRelation.test","testParentChildRelationInteractionContract"],
   ["graph.selectionGrouping.interactionContract","@/__tests__/selectionGrouping.test","testSelectionGroupingInteractionContract"],
+  ["graph.groupPanel.firstClassSurfaceAndInvocation","@/__tests__/groupPanelFirstClass.test","testGroupPanelFirstClassSurfaceAndInvocationContract"],
   ["voice.studio.invocation.exactRoutes","@/__tests__/voiceStudioRuntime.test","testVoiceStudioExactInvocationRoutes"],
   ["voice.studio.profile.consentMetadataOnly","@/__tests__/voiceStudioRuntime.test","testVoiceStudioProfileManifestConsentAndMetadataOnly"],
   ["voice.studio.browser.failClosed","@/__tests__/voiceStudioRuntime.test","testVoiceStudioBrowserCapabilitiesFailClosed"],

@@ -1143,6 +1143,7 @@ const drawGroups = (
   rt: FlowNativeRuntime,
   groupAabbById: Map<string, FlowGroupAabb> | null,
   selectedGroupId: string,
+  hiddenGroupIds: ReadonlySet<string>,
 ) => {
   const cfg = rt.presentation.groups
   if (!cfg.enabled) return
@@ -1168,6 +1169,7 @@ const drawGroups = (
   const depthCfg = cfg.depthStyle
   for (let i = 0; i < groups.length; i += 1) {
     const g = groups[i]
+    if (hiddenGroupIds.has(g.id)) continue
     const memberIds = Array.isArray(g.memberNodeIds) ? g.memberNodeIds : []
     if (memberIds.length === 0) continue
 
@@ -1270,6 +1272,7 @@ export type FlowNativeDrawArgs = {
   showGroupResizeHandle?: boolean
   hideNodeIds?: string[]
   hidePortHandleNodeIds?: string[]
+  hideGroupIds?: string[]
   grid?: { enabled: boolean; size: number; sizeX?: number; sizeY?: number; variant?: 'lines' | 'dots'; majorEvery?: number; dotRadiusPx?: number } | null
   storyboardWidgetOpenNodeIds?: string[]
   storyboardWidgetPinnedByNodeId?: Record<string, boolean>
@@ -1421,6 +1424,7 @@ export const drawFlowNative = (rt: FlowNativeRuntime, args: FlowNativeDrawArgs) 
     return idCache.hidePortHandleNodeIds
   })()
   const selectedGroupId = String(args.selectedGroupId || '').trim()
+  const hiddenGroupIds = new Set((args.hideGroupIds || []).map(String).filter(Boolean))
   const showGroupResizeHandle = args.showGroupResizeHandle === true
   const widgetOverlayAabbByNodeId = (() => {
     const openIds = Array.isArray(args.storyboardWidgetOpenNodeIds) ? args.storyboardWidgetOpenNodeIds : []
@@ -1469,7 +1473,7 @@ export const drawFlowNative = (rt: FlowNativeRuntime, args: FlowNativeDrawArgs) 
     return m
   })()
 
-  drawGroups(rt, groupAabbById, selectedGroupId)
+  drawGroups(rt, groupAabbById, selectedGroupId, hiddenGroupIds)
 
   const normalEdges: FlowNativeEdge[] = []
   const overlayEdges: FlowNativeEdge[] = []

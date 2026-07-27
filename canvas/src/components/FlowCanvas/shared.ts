@@ -50,6 +50,7 @@ export type FlowCanvasProps = {
   hideSelectedNodePortHandles?: boolean
   hideNodeIds?: string[]
   hidePortHandleNodeIds?: string[]
+  hideGroupIds?: string[]
   excludeRichMediaOverlayNodeIds?: string[]
   excludeNativeSceneNodeIds?: string[]
   overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb>
