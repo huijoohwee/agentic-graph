@@ -14,6 +14,7 @@ import {
   selectSubFlowParentDropTarget,
   type SubFlowDropCandidate,
 } from '@/lib/canvas/subFlow'
+import { cancelFlowAlignmentGuideFrame } from '@/components/FlowCanvas/alignmentGuides'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 
@@ -256,6 +257,9 @@ export function createFlowNativePointerUpHandler(ctx: FlowNativeInteractionsCont
       }
     }
 
+    cancelFlowAlignmentGuideFrame(runtime)
+    runtime.dirty = true
+    requestFlowNativeDraw(runtime, ctx.args.buildDrawArgs())
     ctx.args.dragRef.current = null
     ctx.edgeScroll.reset()
     ctx.args.requestCommit()
