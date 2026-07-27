@@ -493,6 +493,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["markdown.workspace.noHardcodedLightTheme","@/__tests__/markdownWorkspaceTheme.test","testMarkdownWorkspaceAvoidsHardcodedLightThemeClasses"],
   ["markdown.workspace.toolbar.autoRoutesImageMode","@/__tests__/markdownWorkspaceTheme.test","testMarkdownWorkspaceToolbarAutoRoutesImageModeWithoutManualSelector"],
   ["markdown.preview.forcesPrimaryTextColor","@/__tests__/markdownWorkspaceTheme.test","testMarkdownPreviewViewerForcesPrimaryTextColor"],
+  ["markdown.preview.layout.ownsVerticalOverflow","@/__tests__/markdownWorkspaceTheme.test","testMarkdownPanelLayoutLetsPreviewOwnVerticalOverflow"],
   ["markdown.preview.missingDocumentPathMessage","@/__tests__/markdownMissingDocumentPathMessage.test","testMarkdownViewerShowsMissingDocumentPathMessage"],
   ["markdown.workspace.folderDoesNotClearMarkdown","@/__tests__/workspaceImportFolderDoesNotClearMarkdownDocument.test","testWorkspaceFolderSelectionDoesNotClearMarkdownDocument"],
   ["markdown.workspace.folderModeContract.opensDocs","@/__tests__/markdownWorkspaceFolderModeContract.test","testMarkdownWorkspaceFolderModeContractOpensDocs"],
