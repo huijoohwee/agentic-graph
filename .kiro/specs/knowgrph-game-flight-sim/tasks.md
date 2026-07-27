@@ -69,6 +69,7 @@ Implement one browser-local, deterministic Flight Sim mission on the composed Kn
   - [x] Decouple committed Flight render readiness from desktop input ownership so Motion, touch, and gamepad remain playable while the desktop claim retries after Geo or camera handoff.
   - [x] Derive Cockpit eye clearance from the admitted aircraft collision envelope so the forward view remains above and beyond committed airframe geometry.
   - [x] Add Geo+XR Mode, make the Flight seed select it, keep Geo visible below exactly one transparent shared XR route/aircraft/input layer, and retain exclusive plain Geo plus existing 3D precedence for City and FPS gameplay.
+  - [x] Route Geo+XR through the Geo host's local-only policy so 3D Classic and 3D Modern render committed basemap geometry visibly beneath Flight without starting MapLibre or crossing the gameplay network fence.
   - [x] Share the responsive FloatingPanel width policy with the pointer-transparent Flight HUD, reserve its default right-side footprint, and retain mobile controls above bottom choreography surfaces so Motion Control remains operable during flight.
   - [x] Admit only the nine exact checked-in same-origin LiteRT runtime assets through the Flight network fence for `GET`/`HEAD`, while retaining every gameplay, external, mutation, socket, event-stream, beacon, and durable-start block so Motion Control can initialize without a new dependency or policy owner.
   - _Requirements: 4, 6, 7, 12, 14, 24, 25, 26, 27_

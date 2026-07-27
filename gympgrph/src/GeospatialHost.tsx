@@ -43,6 +43,7 @@ type GeospatialOverlayHostProps = {
   active?: boolean
   snapshot?: unknown
   handlers?: unknown
+  renderPolicy?: 'default' | 'local-only'
 }
 
 type RichMediaPoiDetail = {
@@ -209,6 +210,7 @@ function SvgGeospatialFallback(args: {
   selectedFeatureCollection: FeatureCollection
   className: string
   insetPadding?: { top?: number; right?: number; bottom?: number; left?: number }
+  presentation?: 'flat' | '3d-classic' | '3d-modern'
   style?: React.CSSProperties
 }): React.ReactElement {
   const width = SVG_FALLBACK_VIEWBOX_WIDTH
@@ -299,10 +301,30 @@ function SvgGeospatialFallback(args: {
     const sy = safeImageBounds.height / HIGH_FIDELITY_WORLD_SVG_HEIGHT
     return `translate(${safeImageBounds.x} ${safeImageBounds.y}) scale(${sx} ${sy})`
   }, [safeImageBounds.height, safeImageBounds.valid, safeImageBounds.width, safeImageBounds.x, safeImageBounds.y])
+  const presentation = args.presentation || 'flat'
+  const isLocal3d = presentation === '3d-classic' || presentation === '3d-modern'
+  const svgStyle = isLocal3d
+    ? {
+        filter: presentation === '3d-modern'
+          ? 'saturate(1.34) contrast(1.08) hue-rotate(8deg)'
+          : 'saturate(0.82) contrast(1.04) sepia(0.08)',
+        transform: 'perspective(900px) rotateX(5deg) scale(0.94)',
+        transformOrigin: '50% 52%',
+      }
+    : undefined
 
   return (
-    <figure className={args.className} style={args.style}>
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" aria-label="Fallback geospatial basemap">
+    <figure
+      className={args.className}
+      style={args.style}
+      data-kg-geospatial-local-basemap={isLocal3d ? presentation : undefined}
+    >
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-full"
+        style={svgStyle}
+        aria-label={isLocal3d ? `Local ${presentation === '3d-modern' ? '3D Modern' : '3D Classic'} geospatial basemap` : 'Fallback geospatial basemap'}
+      >
         <defs>
           <linearGradient id="kg-geo-fallback-bg" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={SVG_FALLBACK_STYLE.oceanGradientStops[0]} />
@@ -391,6 +413,11 @@ function SvgGeospatialFallback(args: {
         <path d={selectedPath} fill={SVG_FALLBACK_STYLE.selectedFill} stroke={SVG_FALLBACK_STYLE.selectedOutline} strokeWidth="3" filter="url(#kg-geo-fallback-point-shadow)" />
         <path d={selectedPath} fill="none" stroke={SVG_FALLBACK_STYLE.selectedStroke} strokeWidth="1.25" />
       </svg>
+      {isLocal3d ? (
+        <figcaption className="absolute left-3 bottom-3 rounded-md border border-white/60 bg-slate-950/70 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-white shadow-sm">
+          Local {presentation === '3d-modern' ? '3D Modern' : '3D Classic'} · deterministic
+        </figcaption>
+      ) : null}
     </figure>
   )
 }
@@ -559,6 +586,7 @@ const readPersistedViewMode = (): GeospatialViewMode => {
 
 export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.ReactElement | null {
   const active = props.active !== false
+  const localOnly = props.renderPolicy === 'local-only'
   const storeGeospatialViewMode = useGympgrphStore(s => s.geospatialViewMode)
   const geospatialAutoFitEnabled = useGympgrphStore(s => s.geospatialAutoFitEnabled)
   const geospatialFitRequest = useGympgrphStore(s => s.geospatialFitRequest)
@@ -613,10 +641,11 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   }, [geospatialViewMode, targetStyleUrl])
   const fitPadding = show3d ? 0 : 24
   const providerLabel = React.useMemo(() => {
+    if (localOnly) return 'local'
     if (isGrabMapsPresetActive(effectiveTargetStyleUrl, geospatialViewMode)) return 'grabmaps'
     if (show2dSvgFallback) return 'svg'
     return 'maplibre'
-  }, [effectiveTargetStyleUrl, geospatialViewMode, show2dSvgFallback])
+  }, [effectiveTargetStyleUrl, geospatialViewMode, localOnly, show2dSvgFallback])
   const snapshotGraphData = getSnapshotGraphData(props.snapshot)
   const snapshotGraphRevision = getSnapshotGraphRevision(props.snapshot)
   const selectedNodeIds = React.useMemo(() => getSnapshotSelectedNodeIds(props.snapshot), [props.snapshot])
@@ -656,7 +685,9 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   }, [graphProjection.featureById, selectedNodeIds, selectedNodeIdsKey])
   const selectedBounds = React.useMemo(() => computeBoundsFromCollections([selectedFeatureCollection]), [selectedFeatureCollection])
   const graphDataKey = React.useMemo(() => graphProjection.signature, [graphProjection.signature])
-  const mapLibreRuntimeEnabled = show2dMapLibre || show3d
+  const mapLibreRuntimeEnabled = !localOnly && (show2dMapLibre || show3d)
+  const localBasemapPresentation = show3dModern ? '3d-modern' : show3dClassic ? '3d-classic' : 'flat'
+  const showLocalOnlyBasemap = localOnly && (show2dMapLibre || show3d)
 
   const notifyGrabMapsFallback = React.useCallback(() => {
     const overlayHandlers = getOverlayHandlers(props.snapshot, props.handlers)
@@ -1038,6 +1069,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
 
   const shouldOverlaySvgFallbackBasemap = React.useMemo(() => {
     if (!active) return false
+    if (localOnly) return false
     if (!show2dMapLibre) return false
     // Only overlay the SVG basemap when MapLibre itself is unavailable/failed.
     // Avoid masking a healthy basemap during transient layer sync windows.
@@ -1049,13 +1081,14 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     if (!hasHardMapUnavailable) return false
     if (!basemapGraphDebug?.styleReady) return true
     return !basemapGraphDebug.pointsLayer && !basemapGraphDebug.routesLayer && !basemapGraphDebug.clusterLayer
-  }, [active, activeBasemap.basemapUnavailable, activeBasemap.map, activeBasemap.mapError, activeBasemap.probe.tilesLoaded, basemapGraphDebug, show2dMapLibre])
+  }, [active, activeBasemap.basemapUnavailable, activeBasemap.map, activeBasemap.mapError, activeBasemap.probe.tilesLoaded, basemapGraphDebug, localOnly, show2dMapLibre])
 
   const shouldShowMapLibreErrorOverlay = React.useMemo(() => {
+    if (localOnly) return false
     if (!activeBasemap.mapError) return false
     if (!show2dMapLibre && !show3d) return true
     return !activeBasemap.map || activeBasemap.basemapUnavailable || !activeBasemap.probe.tilesLoaded
-  }, [activeBasemap.basemapUnavailable, activeBasemap.map, activeBasemap.mapError, activeBasemap.probe.tilesLoaded, show2dMapLibre, show3d])
+  }, [activeBasemap.basemapUnavailable, activeBasemap.map, activeBasemap.mapError, activeBasemap.probe.tilesLoaded, localOnly, show2dMapLibre, show3d])
 
   const [svgOverlayInsetRight, setSvgOverlayInsetRight] = React.useState(12)
   React.useEffect(() => {
@@ -1086,7 +1119,9 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     }
   }, [])
 
-  const svgFallbackClassName = shouldOverlaySvgFallbackBasemap
+  const svgFallbackClassName = showLocalOnlyBasemap
+    ? 'absolute inset-0 z-[5] pointer-events-none overflow-hidden opacity-100'
+    : shouldOverlaySvgFallbackBasemap
     ? 'absolute inset-0 z-[5] pointer-events-none opacity-100'
     : show2dSvgFallback
       ? 'absolute inset-0 pointer-events-none opacity-100'
@@ -1271,24 +1306,30 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   }, [debug, graphFeatureCollection.features, overlayDebugInfo, props.handlers, props.snapshot])
 
   return (
-    <main ref={rootRef} className="relative w-full h-full" style={{ width: '100%', height: '100%' }}>
+    <main
+      ref={rootRef}
+      className="relative w-full h-full"
+      style={{ width: '100%', height: '100%' }}
+      data-kg-geospatial-render-policy={localOnly ? 'local-only' : 'default'}
+    >
       <SvgGeospatialFallback
         featureCollection={graphFeatureCollection}
         selectedFeatureCollection={selectedFeatureCollection}
         className={svgFallbackClassName}
+        presentation={showLocalOnlyBasemap ? localBasemapPresentation : 'flat'}
         insetPadding={shouldOverlaySvgFallbackBasemap ? { top: 12, right: Math.max(220, svgOverlayInsetRight), bottom: 12, left: 12 } : undefined}
         style={shouldOverlaySvgFallbackBasemap ? { transform: 'translateX(-220px)' } : undefined}
       />
       <section
         ref={map2dContainerRef}
-        className={show2dMapLibre ? 'absolute inset-0 pointer-events-auto opacity-100' : 'absolute inset-0 pointer-events-none opacity-0'}
+        className={show2dMapLibre && mapLibreRuntimeEnabled ? 'absolute inset-0 pointer-events-auto opacity-100' : 'absolute inset-0 pointer-events-none opacity-0'}
         style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         aria-label="2D geospatial map host"
       />
 
       <section
         ref={map3dContainerRef}
-        className={show3d ? 'absolute inset-0 pointer-events-auto opacity-100' : 'absolute inset-0 pointer-events-none opacity-0'}
+        className={show3d && mapLibreRuntimeEnabled ? 'absolute inset-0 pointer-events-auto opacity-100' : 'absolute inset-0 pointer-events-none opacity-0'}
         style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         aria-label="3D geospatial map host"
       />

@@ -248,11 +248,36 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   if (!text.includes('const show2dMapLibreModern = active && geospatialViewMode === \'2d-modern\'')) {
     throw new Error('Expected GeospatialOverlayHost to expose a dedicated 2D MapLibre Modern mode')
   }
-  if (!text.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')) {
+  if (!text.includes('const mapLibreRuntimeEnabled = !localOnly && (show2dMapLibre || show3d)')) {
     throw new Error('Expected GeospatialOverlayHost runtime to enable MapLibre only for explicit 2D/3D MapLibre modes')
   }
   if (!text.includes('<SvgGeospatialFallback')) {
     throw new Error('Expected GeospatialOverlayHost to render the SVG fallback basemap')
+  }
+}
+
+export const testGeoXrUsesVisibleLocalOnlyBasemapsWithoutMapLibreNetwork = () => {
+  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
+  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
+  const viewportText = readUtf8(viewportPath)
+  const hostText = readUtf8(hostPath)
+  if (!viewportText.includes("renderPolicy={composedWithXr ? 'local-only' : 'default'}")) {
+    throw new Error('Expected Geo+XR composition to request the local-only geospatial render policy')
+  }
+  if (!hostText.includes("const localOnly = props.renderPolicy === 'local-only'")) {
+    throw new Error('Expected GeospatialOverlayHost to recognize the local-only Geo+XR policy')
+  }
+  if (!hostText.includes('const mapLibreRuntimeEnabled = !localOnly && (show2dMapLibre || show3d)')) {
+    throw new Error('Expected local-only Geo+XR to keep MapLibre style and tile requests disabled')
+  }
+  if (!hostText.includes("data-kg-geospatial-local-basemap={isLocal3d ? presentation : undefined}")) {
+    throw new Error('Expected local 3D Classic and Modern basemaps to expose visible runtime proof markers')
+  }
+  if (!hostText.includes("show3dModern ? '3d-modern' : show3dClassic ? '3d-classic' : 'flat'")) {
+    throw new Error('Expected local-only Geo+XR to preserve distinct 3D Classic and Modern presentations')
+  }
+  if (!hostText.includes("data-kg-geospatial-render-policy={localOnly ? 'local-only' : 'default'}")) {
+    throw new Error('Expected the geospatial host to expose its active render policy for browser validation')
   }
 }
 

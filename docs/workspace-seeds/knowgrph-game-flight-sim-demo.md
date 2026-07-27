@@ -52,6 +52,9 @@ geo_flight_overlay:
   activation: "selected authored environment plus source-authored Flight identity"
   renderer_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   overlay_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
+  basemap_render_policy: "local-only while composed in Geo+XR; standalone Geo retains its selected provider"
+  visible_local_basemap_views: ["2D Classic", "2D Modern", "3D Classic", "3D Modern"]
+  remote_style_or_tile_requests: 0
   control_owner: "canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts"
   route_projection_owner: "canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts"
   xr_canvas_mounted: true
