@@ -4,7 +4,10 @@ import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
 import { filterGroupsByCollapsedAncestors } from '@/lib/graph/groupVisibility'
 import { deriveSceneGroups } from '@/lib/scene/sceneDerivation'
-import { buildFlowGroupSceneKey } from '@/components/FlowCanvas/flowCanvasNativeSceneKey'
+import {
+  buildFlowGroupSceneKey,
+  hasFlowGroupSceneChanged,
+} from '@/components/FlowCanvas/flowCanvasNativeSceneKey'
 
 export const testDeriveGraphGroupsIncludesUserSubgraphs = () => {
   const base: GraphData = {
@@ -113,5 +116,11 @@ export const testSubgraphChangesInvalidateSceneCachesWithoutRevisionChange = () 
   }
   if (buildFlowGroupSceneKey(before?.allGroups) === buildFlowGroupSceneKey(after?.allGroups)) {
     throw new Error('expected native scene key to invalidate when rendered groups change')
+  }
+  if (!hasFlowGroupSceneChanged(before?.allGroups, after?.allGroups)) {
+    throw new Error('expected an explicit group scene mutation to request an immediate native draw')
+  }
+  if (hasFlowGroupSceneChanged(after?.allGroups, after?.allGroups)) {
+    throw new Error('expected an unchanged group scene to preserve deferred draw behavior')
   }
 }

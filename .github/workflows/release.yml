@@ -265,7 +265,7 @@ jobs:
           PRODUCTION_SW_PROFILE_DIR: ${{ runner.temp }}/knowgrph-production-sw-profile
           PRODUCTION_SW_EVIDENCE_PATH: ${{ runner.temp }}/knowgrph-production-sw-evidence.json
           PRODUCTION_BROWSER_HEADLESS: 'false'
-        run: xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm
+        run: timeout --foreground --kill-after=30s 8m xvfb-run --auto-servernum npm run production:sw-upgrade:prewarm
 
       - name: Deploy verified artifact
         id: deploy_pages
@@ -314,7 +314,7 @@ jobs:
           PRODUCTION_SW_PROFILE_DIR: ${{ runner.temp }}/knowgrph-production-sw-profile
           PRODUCTION_SW_EVIDENCE_PATH: ${{ runner.temp }}/knowgrph-production-sw-evidence.json
           PRODUCTION_BROWSER_HEADLESS: 'false'
-        run: xvfb-run --auto-servernum npm run production:sw-upgrade:verify
+        run: timeout --foreground --kill-after=30s 12m xvfb-run --auto-servernum npm run production:sw-upgrade:verify
 
       - name: Publish verified production mirror
         working-directory: huijoohwee
