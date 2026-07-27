@@ -529,6 +529,8 @@ export default function StoryboardWidgetCanvasSurface(props: {
       {props.overlayEditorElements}
       <StoryboardGroupPanelLayer2d
         active={storyboardSharedSurfaceActive}
+        flowWidgetPinnedByNodeId={effectiveFlowWidgetPinnedByNodeId}
+        flowWidgetStateGraphKey={flowWidgetStateGraphKey}
         graphData={storyboardGraphData}
         getRuntime={() => props.flowRuntimeRefRef.current?.current || null}
         storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
