@@ -8,6 +8,7 @@ import { assertFlightSimKiroReadiness } from './lib/game-flight-sim-kiro-readine
 import { assertFlightSimFeatureNetworkBoundary } from './lib/game-flight-sim-network-readiness.mjs'
 import { assertFlightSimPropertyReadiness } from './lib/game-flight-sim-property-readiness.mjs'
 import { assertFlightSimSeedReadiness } from './lib/game-flight-sim-seed-readiness.mjs'
+import { assertFlightSimSurfaceReadiness } from './lib/game-flight-sim-surface-readiness.mjs'
 import { assertFlightSimVerificationReadiness } from './lib/game-flight-sim-verification-readiness.mjs'
 import {
   parseYamlFrontmatter as parseFrontmatter,
@@ -27,6 +28,7 @@ const requiredPaths = [
   `${kiroSpecRoot}/tasks.md`,
   `${flightFeatureRoot}/FlightSimFloatingPanelView.tsx`,
   `${flightFeatureRoot}/FlightSimHud.tsx`,
+  `${flightFeatureRoot}/FlightSimGeoSurfaceOverlay.tsx`,
   `${flightFeatureRoot}/FlightSimMissionStage.tsx`,
   `${flightFeatureRoot}/FlightSimTrainingSurfaceProjection.tsx`,
   `${flightFeatureRoot}/FlightSimWebglUnsupportedState.tsx`,
@@ -54,8 +56,10 @@ const requiredPaths = [
   `${flightFeatureRoot}/flightSimSpatialProfile.ts`, `${flightFeatureRoot}/flightSimStageRuntimeController.ts`,
   `${flightFeatureRoot}/flightSimTrainingRuntime.ts`,
   `${flightFeatureRoot}/flightSimTrainingScenario.ts`,
+  `${flightFeatureRoot}/useFlightSimSurfaceControls.ts`,
   `${flightFeatureRoot}/index.ts`,
   'canvas/src/App.tsx',
+  'canvas/src/components/CanvasViewport.tsx',
   'canvas/src/features/agentic-os/agenticOsRemoteGrammarClient.ts',
   'canvas/src/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration.tsx',
   'canvas/src/features/agent-ready/flightSimAgentReadyContract.mjs',
@@ -69,6 +73,7 @@ const requiredPaths = [
   'canvas/src/features/workspace-fs/workspaceDecisionStore.ts',
   'canvas/src/features/workspace-fs/workspaceRunReadyDemos.ts',
   'canvas/src/lib/three/flightSimMissionStageLoader.ts', 'canvas/src/lib/three/ThreeGameplayOverlay.tsx',
+  'canvas/src/lib/three/threeRendererLifecycle.ts',
   'canvas/src/lib/three/ThreeGraph.impl.tsx',
   'canvas/src/__tests__/flightSimCore.test.ts',
   'canvas/src/__tests__/flightSimDecisionStore.test.ts',
@@ -96,6 +101,7 @@ const requiredPaths = [
   'scripts/lib/game-flight-sim-offline-authoring.mjs',
   'scripts/lib/game-flight-sim-optional-prop-author.mjs',
   'scripts/lib/game-flight-sim-seed-readiness.mjs',
+  'scripts/lib/game-flight-sim-surface-readiness.mjs',
   'scripts/lib/game-flight-sim-verification-readiness.mjs',
   'scripts/__tests__/game-flight-sim-boundary.test.mjs',
   'scripts/__tests__/game-flight-sim-readiness-contract.test.mjs',
@@ -222,27 +228,7 @@ if (
   )
 }
 
-const missionStageSource = await readText(`${flightFeatureRoot}/FlightSimMissionStage.tsx`)
-requireMarkers(missionStageSource, [
-  'export function FlightSimMissionStage',
-  'runtimeController.readSnapshot',
-  'runtimeController.subscribe',
-  'readFlightSimDefaultAssetLoadReport',
-  'kg_flight_sim_optional_beacon',
-  "shouldPauseOnPointerRelease: () => readXrNativeControllerCamera().mode === 'fixed-follow'", 'blocksProgrammaticCamera: false',
-  "snapshot.phase === 'ready' || snapshot.phase === 'flying'",
-  'const removeAfterRender = addAfterEffect(() => {',
-  "canvas.dataset.kgFlightSimFirstFrame = '1'",
-  'completeFlightSimReadyFrame(presentation.runId, presentation.tick)',
-], 'Flight Sim actor stage')
-if (
-  /<(?:Canvas|ambientLight|directionalLight|hemisphereLight|pointLight|spotLight|Environment|Sky|Stars|FlightSimHud)\b/.test(
-    missionStageSource,
-  )
-  || /\b(?:terrain|arena|fallback world)\b/i.test(missionStageSource)
-) {
-  throw new Error('FlightSimMissionStage must render only Flight actors and objective overlays')
-}
+await assertFlightSimSurfaceReadiness({ readText, flightFeatureRoot })
 const missionStageLoaderSource = await readText('canvas/src/lib/three/flightSimMissionStageLoader.ts')
 requireMarkers(missionStageLoaderSource, [
   "import('@/features/game-flight-sim/FlightSimMissionStage')",

@@ -209,17 +209,18 @@ External references inform conceptual principles only. Maintainers attest that t
 6. THE WebMCP_Registry SHALL add zero stdio tools, zero HTTP mutation routes, zero remote gateways, and zero deployment authority.
 7. THE WebMCP_Registry SHALL keep the private Agentic_ECS stdio lane at exactly three tools.
 
-### Requirement 14: Shared Canvas and XR ownership
+### Requirement 14: Shared Canvas surface and renderer ownership
 
 **User Story:** As a player, I want the flight to appear inside the existing world, so that the scene stays coherent with one renderer.
 
 #### Acceptance Criteria
 
 1. WHEN Flight_Sim is entered from a running XR surface, THE Flight_Runtime SHALL keep the authored atmosphere, terrain, and scene graph mounted inside the single existing React Three Fiber Canvas.
-2. THE Flight_Runtime SHALL overlay the aircraft, waypoint actors, objective actors, and HUD on the existing Canvas without introducing a second renderer, a second Canvas, an alternate rendered world, or a Flight-owned camera.
+2. THE Flight_Runtime SHALL project the aircraft, route or waypoint actors, objective actors, and HUD on the active shared Canvas surface without introducing a second renderer, a second Canvas, an alternate rendered world, or a Flight-owned camera.
 3. WHEN Flight_Sim exits, THE Flight_Runtime SHALL restore the previous surface controller input and simulation state.
 4. IF entry into Flight_Sim from a running XR surface fails, THEN THE Flight_Runtime SHALL leave the existing Canvas, scene graph, and prior surface controller unchanged and SHALL surface a local error indicating that entry did not complete.
 5. IF restoring the previous surface controller input or simulation state on exit fails, THEN THE Flight_Runtime SHALL retain the existing single Canvas without a second renderer and SHALL surface a local error indicating that restoration did not complete.
+6. WHEN Geo owns the active shared Canvas surface, THE Flight_Runtime SHALL keep the existing Geo renderer mounted and interactive, SHALL project the Flight route and aircraft as a transparent local overlay above it, and SHALL NOT mount the React Three Fiber Canvas for that Flight presentation.
 
 ### Requirement 15: Camera source selection
 
@@ -364,9 +365,9 @@ External references inform conceptual principles only. Maintainers attest that t
 2. IF XR environment staging is rejected, THEN the Media surface SHALL keep the current panel and environment unchanged and SHALL NOT request FloatingPanel Geo.
 3. WHEN FloatingPanel Geo opens after a successful environment selection, THE Geo surface SHALL visibly project the selected environment identifier, label, kind, and authored dimensions from the shared XR runtime; any source-text write produced by staging, including its debounced local host-mirror request, SHALL settle under shared Workspace seed-sync ownership before the Flight gameplay network fence is installed and SHALL NOT execute through that fence; and IF the active document declares the registered Flight run-ready identity, THEN Flight_Runtime SHALL reactivate the aircraft overlay without replacing the Geo panel.
 4. WHEN Flight_Sim is activated by the Geo handoff or opened elsewhere, THE Flight_Runtime SHALL derive its spatial profile, collision envelope, route, navigation, and visible World label from that selected authored XR environment without adding a renderer, camera, map provider, network request, token, copied asset, or external runtime dependency.
-5. WHEN Flight_Sim entry follows Geo inspection or a live Motion_Control handoff, THE mission stage SHALL retry shared viewport input ownership independently, invalidate the shared Canvas demand loop after installing its render observer, and acknowledge the current preparation request from its committed aircraft/runtime render without waiting for desktop input ownership, so a mount-order or camera-owner race cannot reject a playable Motion, touch, gamepad, or later-reclaimed desktop session.
+5. WHEN Flight_Sim entry follows Geo inspection or a live Motion_Control handoff, THE shared Flight surface controller SHALL retry viewport input ownership independently and acknowledge the current preparation request from its committed Geo or XR aircraft projection without waiting for desktop input ownership; the XR projection SHALL also invalidate its demand loop after installing its render observer, so a mount-order or camera-owner race cannot reject a playable Motion, touch, gamepad, or later-reclaimed desktop session.
 6. WHEN Cockpit view is selected, THE Camera_Source SHALL place the eye beyond the aircraft's forward collision envelope and above its vertical collision envelope while aiming along the aircraft forward vector, so committed aircraft geometry cannot obstruct the playable forward view.
-7. WHEN any gameplay overlay becomes active while Geo mode remains selected, THE shared canvas owner SHALL give that gameplay overlay the active 3D viewport and suspend the Geo overlay without clearing the selected environment, then restore Geo ownership after gameplay exits.
+7. WHEN Flight_Sim becomes active while Geo mode remains selected, THE shared canvas owner SHALL keep Geo as the active renderer and mount exactly one transparent Flight route, aircraft, HUD, and input overlay above it; other gameplay overlays SHALL retain their existing 3D viewport precedence, and no transition SHALL clear the selected environment.
 
 ### Requirement 26: FloatingPanel and Flight HUD coexistence
 

@@ -2,15 +2,15 @@
 
 ## Overview
 
-Implement one browser-local, deterministic Flight Sim mission as an overlay on the authored Knowgrph XR Canvas. This repository-tracked Kiro package is the normative source of truth; the PRD/TAD and workspace seed are derived implementation/proof projections, and any workspace-root Kiro copy is byte-identical local projection only. The source/runtime implementation is complete; final evidence remains a separate exact-revision activity. The plan preserves four journaled `World_Tick` systems, post-system Cost_Log ownership, post-commit projection ownership, Decisions-only persistence, and a deterministic committed-local asset boundary.
+Implement one browser-local, deterministic Flight Sim mission as an overlay on the active shared Knowgrph XR or Geo Canvas surface. This repository-tracked Kiro package is the normative source of truth; the PRD/TAD and workspace seed are derived implementation/proof projections, and any workspace-root Kiro copy is byte-identical local projection only. The source/runtime implementation is complete; final evidence remains a separate exact-revision activity. The plan preserves four journaled `World_Tick` systems, post-system Cost_Log ownership, post-commit projection ownership, Decisions-only persistence, and a deterministic committed-local asset boundary.
 
 ---
 
 ## Tasks
 
-- [x] 1. Establish source identity and shared-XR ownership
+- [x] 1. Establish source identity and shared-surface ownership
   - [x] Register the source-authored `flight-sim` run-ready id with fail-closed identity conflict handling.
-  - [x] Mount Flight actors and HUD on the retained authored XR Canvas without a second Canvas, renderer, camera owner, terrain, or world.
+  - [x] Mount Flight actors and HUD on retained XR, or a transparent route/aircraft/HUD projection over retained Geo, without a second Canvas, renderer, camera owner, terrain, or world.
   - _Requirements: 1, 12, 14, 23_
 
 - [x] 2. Implement deterministic native ECS flight
@@ -65,10 +65,10 @@ Implement one browser-local, deterministic Flight Sim mission as an overlay on t
   - [x] Project unreliable-instrument, stall, attitude, and mission-relative energy states into the HUD and all six existing training surfaces.
   - [x] Preserve the single shared camera/Canvas owners and the generic clean-room, zero-dependency boundary.
   - [x] Route each Media environment kit through canonical XR stage selection into FloatingPanel Geo, project the selected authored world in Geo and Flight, settle graph-metadata source-text writes plus their debounced local host-mirror tail before the shared Flight fence, and immediately reactivate the source-authored Flight overlay without replacing the Geo panel.
-  - [x] Retry shared viewport input acquisition after the prior camera owner releases it, read the live mission-stage preparation request after render, and invalidate the shared Canvas demand loop so Geo and connected Motion Control handoffs cannot lose Flight entry to mount ordering.
+  - [x] Share fixed-step input ownership across XR and Geo, acknowledge the live preparation request from the committed presentation, and invalidate the XR demand loop so Geo and connected Motion Control handoffs cannot lose Flight entry to mount ordering.
   - [x] Decouple committed Flight render readiness from desktop input ownership so Motion, touch, and gamepad remain playable while the desktop claim retries after Geo or camera handoff.
   - [x] Derive Cockpit eye clearance from the admitted aircraft collision envelope so the forward view remains above and beyond committed airframe geometry.
-  - [x] Give active gameplay temporary shared-viewport precedence over Geo while retaining and restoring the selected Geo environment.
+  - [x] Keep Geo as the active renderer for Flight, overlay exactly one transparent route/aircraft/input layer above it, and retain existing 3D precedence for City and FPS gameplay.
   - [x] Share the responsive FloatingPanel width policy with the pointer-transparent Flight HUD, reserve its default right-side footprint, and retain mobile controls above bottom choreography surfaces so Motion Control remains operable during flight.
   - [x] Admit only the nine exact checked-in same-origin LiteRT runtime assets through the Flight network fence for `GET`/`HEAD`, while retaining every gameplay, external, mutation, socket, event-stream, beacon, and durable-start block so Motion Control can initialize without a new dependency or policy owner.
   - _Requirements: 4, 6, 7, 12, 14, 24, 25, 26, 27_
