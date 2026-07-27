@@ -177,11 +177,11 @@ def verify_source_file_button_round_trip(
             and value.get("authoredSeedByteIdentical") is True
             and value.get("workspaceSourceByteIdentical") is True
             and all((value.get("sourceContract") or {}).values())
-            and value.get("surfaceMode") == "xr"
+            and value.get("surfaceMode") == "geo-xr"
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
         ),
-        label="Flight Source Files button XR activation",
+        label="Flight Source Files button Geo+XR activation",
     )
     page.locator('[data-kg-flight-sim-hud="1"]').first.wait_for(
         state="visible", timeout=120_000
