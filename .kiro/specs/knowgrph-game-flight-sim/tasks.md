@@ -70,7 +70,8 @@ Implement one browser-local, deterministic Flight Sim mission as an overlay on t
   - [x] Derive Cockpit eye clearance from the admitted aircraft collision envelope so the forward view remains above and beyond committed airframe geometry.
   - [x] Give active gameplay temporary shared-viewport precedence over Geo while retaining and restoring the selected Geo environment.
   - [x] Share the responsive FloatingPanel width policy with the pointer-transparent Flight HUD, reserve its default right-side footprint, and retain mobile controls above bottom choreography surfaces so Motion Control remains operable during flight.
-  - _Requirements: 4, 6, 7, 12, 14, 24, 25, 26_
+  - [x] Admit only the nine exact checked-in same-origin LiteRT runtime assets through the Flight network fence for `GET`/`HEAD`, while retaining every gameplay, external, mutation, socket, event-stream, beacon, and durable-start block so Motion Control can initialize without a new dependency or policy owner.
+  - _Requirements: 4, 6, 7, 12, 14, 24, 25, 26, 27_
 
 - [ ] 10. Complete final exact-revision evidence and protected integration
   - [ ] Run the aggregate source/runtime gate on a clean exact candidate revision.

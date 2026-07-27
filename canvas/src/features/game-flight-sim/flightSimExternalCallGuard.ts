@@ -20,6 +20,9 @@ type FlightSimNetworkHost = {
   WebSocket?: typeof WebSocket
   XMLHttpRequest?: typeof XMLHttpRequest
   fetch: FlightSimFetch
+  location?: {
+    origin: string
+  }
   navigator?: {
     sendBeacon?: FlightSimSendBeacon
   }
@@ -44,6 +47,18 @@ type InstalledGameplayNetworkFence = Readonly<{
 }>
 
 let installedGameplayNetworkFence: InstalledGameplayNetworkFence | null = null
+
+const FLIGHT_SIM_LOCAL_RUNTIME_ASSET_PATHS = new Set([
+  '/litert/litert_wasm_compat_internal.js',
+  '/litert/litert_wasm_compat_internal.wasm',
+  '/litert/litert_wasm_internal.js',
+  '/litert/litert_wasm_internal.wasm',
+  '/litert/litert_wasm_jspi_internal.js',
+  '/litert/litert_wasm_jspi_internal.wasm',
+  '/litert/litert_wasm_threaded_internal.js',
+  '/litert/litert_wasm_threaded_internal.wasm',
+  '/litert/pose_landmarks_detector.tflite',
+])
 
 export class FlightSimExternalCallBlockedError extends Error {
   readonly code = 'FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED'
@@ -97,6 +112,52 @@ function describeXmlHttpRequestOperation(
   url: string | URL,
 ): string {
   return `xhr:${String(method).toUpperCase()}:${String(url)}`
+}
+
+function requestMethod(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): string {
+  return (
+    init?.method
+    || (
+      typeof Request !== 'undefined'
+      && input instanceof Request
+        ? input.method
+        : 'GET'
+    )
+  ).toUpperCase()
+}
+
+function requestUrl(input: RequestInfo | URL): string {
+  return (
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : input.url
+  )
+}
+
+function isAllowedLocalRuntimeAssetRequest(
+  method: string,
+  url: string | URL,
+  hostOrigin: string | undefined,
+): boolean {
+  const normalizedMethod = method.toUpperCase()
+  if (normalizedMethod !== 'GET' && normalizedMethod !== 'HEAD') return false
+  if (!hostOrigin) return false
+
+  try {
+    const normalizedHostOrigin = new URL(hostOrigin).origin
+    const resolved = new URL(String(url), normalizedHostOrigin)
+    return resolved.origin === normalizedHostOrigin
+      && resolved.username === ''
+      && resolved.password === ''
+      && FLIGHT_SIM_LOCAL_RUNTIME_ASSET_PATHS.has(resolved.pathname)
+  } catch {
+    return false
+  }
 }
 
 function blockedDurableChatStreamMessageType(message: unknown): string | null {
@@ -277,6 +338,15 @@ export function installFlightSimGameplayNetworkFence(
 
   const guardedFetch: FlightSimFetch = (input, init) => {
     const operation = describeFetchOperation(input, init)
+    if (
+      isAllowedLocalRuntimeAssetRequest(
+        requestMethod(input, init),
+        requestUrl(input),
+        host.location?.origin,
+      )
+    ) {
+      return Reflect.apply(originalFetch, host, [input, init])
+    }
     try {
       return Promise.reject(reportBlockedOperation(reportBlocked, operation))
     } catch (error) {
@@ -288,7 +358,17 @@ export function installFlightSimGameplayNetworkFence(
       this: XMLHttpRequest,
       method: string,
       url: string | URL,
-    ): never {
+    ): void {
+      if (
+        isAllowedLocalRuntimeAssetRequest(
+          method,
+          url,
+          host.location?.origin,
+        )
+      ) {
+        Reflect.apply(originalXmlHttpRequestOpen, this, arguments)
+        return
+      }
       throw reportBlockedOperation(
         reportBlocked,
         describeXmlHttpRequestOperation(method, url),
