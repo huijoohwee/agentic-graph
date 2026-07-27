@@ -600,11 +600,12 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
   runWorkflowNode = async (nodeId, runOptions) => {
     const id = String(nodeId || '').trim()
     if (!id || runOptions?.visitedNodeIds?.has(id)) return
+    const runToastId = `storyboard-widget-run-${id}`
     const showRunToast = runOptions?.suppressLayoutMutation !== true
     if (inFlightNodeIds.has(id)) {
       if (showRunToast) {
         args.upsertUiToast({
-          id: `storyboard-widget-run-${id}`,
+          id: runToastId,
           kind: 'neutral',
           message: 'Generating response…',
           ttlMs: null,
@@ -618,7 +619,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
     inFlightNodeIds.add(id)
     if (showRunToast) {
       args.upsertUiToast({
-        id: `storyboard-widget-run-${id}`,
+        id: runToastId,
         kind: 'neutral',
         message: 'Generating response…',
         ttlMs: null,
@@ -634,7 +635,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           ? String((error as { message?: unknown }).message || '').trim()
           : ''
         args.upsertUiToast({
-          id: `storyboard-widget-run-${id}`,
+          id: runToastId,
           kind: 'error',
           message: detail || UI_COPY.storyboardWidgetRunFailedToast,
           ttlMs: 4200,
