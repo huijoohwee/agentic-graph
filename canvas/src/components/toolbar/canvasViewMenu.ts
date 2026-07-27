@@ -147,11 +147,10 @@ export const buildCanvasViewOptions = (
   const getSurfaceModeDisabledCopy = (mode: CanvasSurfaceModeId) => getCanvasSurfaceModeDisabledCopy(surfaceModeArgs, mode)
   const surfaceModeChildren = listCanvasSurfaceModeSpecs().map(spec => {
     const disabledCopy = spec.id === 'geospatial' ? null : getSurfaceModeDisabledCopy(spec.id)
-    const isGeospatialExit = state.geospatialEnabled && spec.id === '2d'
     return {
       id: `surface:${spec.id}` as const,
-      title: isGeospatialExit ? 'Canvas View Mode' : spec.title,
-      label: isGeospatialExit ? 'Canvas' : spec.label,
+      title: spec.title,
+      label: spec.label,
       Icon: CANVAS_VIEW_SURFACE_MODE_ICON[spec.id],
       disabled: !!disabledCopy,
       disabledReason: disabledCopy?.reason,

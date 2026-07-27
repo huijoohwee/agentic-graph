@@ -199,7 +199,7 @@ export function useToolbarActions(
           useGraphStore.getState().pushUiToast({
             id: 'geospatial-mode-exit-error',
             kind: 'error',
-            message: `Canvas View Mode failed to restore: ${msg || 'Unknown error'}`,
+            message: `2D Mode failed to restore: ${msg || 'Unknown error'}`,
           })
         } catch {
           void 0

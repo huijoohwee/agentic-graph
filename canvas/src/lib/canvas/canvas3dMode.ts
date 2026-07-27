@@ -109,7 +109,7 @@ export function getVoxelModeDisabledCopy(reason: VoxelModeInapplicableReason): C
   }
   if (reason === 'renderer') {
     return {
-      reason: 'Requires Canvas View Mode: Flowchart renderer',
+      reason: 'Requires 2D Mode: Flowchart renderer',
       hint: 'Switch renderer to Flowchart',
     }
   }

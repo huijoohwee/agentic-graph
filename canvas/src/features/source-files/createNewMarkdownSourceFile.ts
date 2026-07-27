@@ -8,6 +8,7 @@ import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-
 import { formatWorkspaceUtcSessionTimestamp } from '@/features/workspace-fs/workspaceTimestamp'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceTableSsot'
+import { buildAuthoredMarkdownNoteInitialText } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 
 export type CreateNewMarkdownSourceFileArgs = {
   parentPath?: string | null
@@ -24,7 +25,7 @@ export function buildNewMarkdownSourceFileName(timestampMs: number): string {
 async function createTimestampedMarkdownSourceFile(args: {
   parentPath: WorkspacePath
   timestampMs: number
-  text: string
+  text?: string
 }): Promise<WorkspacePath> {
   const fs = await getWorkspaceFs()
   await fs.ensureSeed()
@@ -35,24 +36,30 @@ async function createTimestampedMarkdownSourceFile(args: {
     const existingPath = normalizeWorkspacePath(`${args.parentPath === '/' ? '' : args.parentPath}/${name}`)
     const existing = await fs.readFileText(existingPath)
     if (existing !== null) continue
-    const createdPath = await fs.createFile({ parentPath: args.parentPath, name, text: args.text })
+    const text = typeof args.text === 'string'
+      ? args.text
+      : buildAuthoredMarkdownNoteInitialText(existingPath)
+    const createdPath = await fs.createFile({ parentPath: args.parentPath, name, text })
     return normalizeWorkspacePath(createdPath)
   }
+  const fallbackName = buildNewMarkdownSourceFileName(Date.now())
+  const fallbackPath = normalizeWorkspacePath(`${args.parentPath === '/' ? '' : args.parentPath}/${fallbackName}`)
   const createdPath = await fs.createFile({
     parentPath: args.parentPath,
-    name: buildNewMarkdownSourceFileName(Date.now()),
-    text: args.text,
+    name: fallbackName,
+    text: typeof args.text === 'string'
+      ? args.text
+      : buildAuthoredMarkdownNoteInitialText(fallbackPath),
   })
   return normalizeWorkspacePath(createdPath)
 }
 
 export async function createNewMarkdownSourceFile(args?: CreateNewMarkdownSourceFileArgs): Promise<WorkspacePath> {
   const parentPath = normalizeWorkspacePath(args?.parentPath || WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH)
-  const text = String(args?.text ?? '')
   const createdPath = await createTimestampedMarkdownSourceFile({
     parentPath,
     timestampMs: Number.isFinite(args?.timestampMs) ? Number(args?.timestampMs) : Date.now(),
-    text,
+    ...(typeof args?.text === 'string' ? { text: args.text } : {}),
   })
   openMarkdownWorkspaceEditorPane(useGraphStore.getState())
   useMarkdownExplorerStore.getState().setActivePath(createdPath)

@@ -10,6 +10,7 @@ import { LS_KEYS } from '@/lib/config'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
+import { parseCanvasWorkspaceFrontmatterPreset, extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
 
 const KG_HUIJOOHWEE_DOCS_ROOT = '/workspace/huijoohwee/docs'
 
@@ -46,8 +47,19 @@ export async function testCreateNewMarkdownSourceFileDefaultsToAuthoredNotesRoot
     const fs = await getWorkspaceFs()
     const firstText = await fs.readFileText(firstPath)
     const secondText = await fs.readFileText(secondPath)
-    if (firstText !== '' || secondText !== '') {
-      throw new Error(`expected new markdown files to start empty, got ${JSON.stringify({ firstText, secondText })}`)
+    const firstFrontmatter = extractYamlFrontmatterBlock(firstText || '')
+    const secondFrontmatter = extractYamlFrontmatterBlock(secondText || '')
+    const firstPreset = parseCanvasWorkspaceFrontmatterPreset(firstText || '')
+    const secondPreset = parseCanvasWorkspaceFrontmatterPreset(secondText || '')
+    if (
+      !firstFrontmatter?.yamlText.includes(`title: ${JSON.stringify(firstName.replace(/\.md$/, ''))}`)
+      || !secondFrontmatter?.yamlText.includes(`title: ${JSON.stringify(secondName.replace(/\.md$/, ''))}`)
+      || firstPreset?.canvasSurfaceMode !== '2d'
+      || firstPreset.canvasRenderMode !== '2d'
+      || secondPreset?.canvasSurfaceMode !== '2d'
+      || secondPreset.canvasRenderMode !== '2d'
+    ) {
+      throw new Error(`expected new authored notes to start with titled 2D YAML frontmatter, got ${JSON.stringify({ firstText, secondText })}`)
     }
 
     const state = useGraphStore.getState()

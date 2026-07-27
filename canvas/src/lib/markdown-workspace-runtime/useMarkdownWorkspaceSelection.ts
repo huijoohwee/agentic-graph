@@ -41,6 +41,7 @@ export {
   isWorkspaceDocumentSwitchApplySettled,
   isWorkspace2dRendererPresetStaleForDocument,
   isWorkspaceGraphSourceStaleForDocument,
+  resolveWorkspaceDocumentSwitchCanvasPreset,
   shouldAcceptWorkspaceDocumentSelectionText,
   shouldApplyStableWorkspaceSelectionToCanvas,
   shouldHydrateStableWorkspaceSelectionText,
