@@ -9,6 +9,7 @@ import { ensureDatasetLayer, setGeoJsonSourceData } from './maplibreLayers.js'
 import { coerceFeatureCollectionIds, isPointOnlyFeatureCollection, pickPoiSelection } from './selection.js'
 import { colorForDataset } from './colors.js'
 import {
+  preloadMapLibreBasemapRuntime,
   readActiveMapLibreMap,
   useMapLibreBasemap,
 } from './features/geospatial/useMapLibreBasemap.js'
@@ -64,6 +65,7 @@ export { ensureDatasetLayer, setGeoJsonSourceData }
 export { coerceFeatureCollectionIds, isPointOnlyFeatureCollection, pickPoiSelection }
 export { colorForDataset }
 export { useMapLibreBasemap }
+export { preloadMapLibreBasemapRuntime }
 export { readActiveMapLibreMap }
 
 export const GeospatialOverlayHost = GeospatialOverlayHostComponent

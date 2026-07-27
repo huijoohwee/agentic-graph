@@ -10,7 +10,12 @@ import { useForbidBrowserZoomWheel } from '@/lib/ui/forbidBrowserZoom'
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import { UI_RESPONSIVE_CANVAS_MINIMAP_OVERLAY_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { resolveCanvas3dMode } from '@/lib/canvas/canvas3dMode'
-import { isNativeXrRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import {
+  FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+  isNativeXrRunReadyDemoActive,
+  isXrPhysicsRunReadyDemoActive,
+} from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { preloadGeospatialMapRuntime } from '@/features/geospatial/gympgrphBridge'
 import { useCanvasGameplayOverlayState } from '@/features/canvas/useCanvasGameplayOverlayState'
 import { XrNativeControllerDemoHud } from '@/features/three/XrNativeControllerDemoHud'
 import {
@@ -132,6 +137,20 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady
   const flightSimHudVisible = flightSimActive && sourceFilesBootstrapReady
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
+  React.useEffect(() => {
+    const activePath = String(explorerActivePath || '').replace(/\\/g, '/')
+    const flightSeedAvailable = sourceFiles.some(file => {
+      const name = String(file?.name || '').replace(/\\/g, '/')
+      const sourcePath = String(file?.source?.path || '').replace(/\\/g, '/')
+      return name === FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME
+        || name.endsWith(`/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`)
+        || sourcePath.endsWith(`/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`)
+    })
+    const flightSeedSelected = activePath === FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME
+      || activePath.endsWith(`/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`)
+    if (!flightSeedAvailable && !flightSeedSelected) return
+    void preloadGeospatialMapRuntime().catch(() => void 0)
+  }, [explorerActivePath, sourceFiles])
   const activeSourceFile = React.useMemo(
     () => resolvePreferredEnabledComposedSourceFile({
       sourceFiles,

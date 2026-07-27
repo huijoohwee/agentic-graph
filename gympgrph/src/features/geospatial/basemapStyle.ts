@@ -9,6 +9,20 @@ export const MAPLIBRE_MODERN_DEFAULT_STYLE_URL = 'https://tiles.openfreemap.org/
 export const MAPLIBRE_GLOBE_DEFAULT_STYLE_URL = 'https://demotiles.maplibre.org/globe.json'
 export const MAPLIBRE_DEFAULT_STYLE_URL = MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL
 export const DEFAULT_GEOSPATIAL_VIEW_MODE: GeospatialViewMode = '2d-modern'
+export const FLIGHT_GEO_BOOTSTRAP_STYLE = Object.freeze({
+  version: 8 as const,
+  name: 'Knowgrph Flight Geo+XR bootstrap',
+  sources: Object.freeze({}),
+  layers: Object.freeze([
+    Object.freeze({
+      id: 'kg-flight-sim:geo-bootstrap-background',
+      type: 'background' as const,
+      paint: Object.freeze({
+        'background-color': '#7dd3fc',
+      }),
+    }),
+  ]),
+})
 export { GRABMAPS_DEFAULT_STYLE_URL }
 
 export const normalizeGeospatialViewMode = (mode: unknown): GeospatialViewMode => {
@@ -33,6 +47,14 @@ export const getBuiltInDefaultStyleUrl = (mode: GeospatialViewMode): string => {
       : mode === '3d-modern'
         ? MAPLIBRE_MODERN_DEFAULT_STYLE_URL
         : MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL
+}
+
+export const resolveCanonicalPersistedGeospatialStyleUrl = (
+  viewMode: GeospatialViewMode,
+  rawStyleUrl: string | null | undefined,
+): string => {
+  return normalizePersistedGeospatialStyleUrl(rawStyleUrl)
+    || getBuiltInDefaultStyleUrl(normalizeGeospatialViewMode(viewMode))
 }
 
 export const isGrabMapsStyleUrl = (rawUrl: string): boolean => {

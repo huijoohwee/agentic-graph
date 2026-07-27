@@ -30,6 +30,38 @@ const FLIGHT_GEO_NIGHT_EXPRESSION = Object.freeze([
   false,
 ])
 
+export function retainFlightGeoOverlayDuringStyleSwap(
+  previousStyle: Readonly<Record<string, any>> | undefined,
+  nextStyle: Readonly<Record<string, any>>,
+): Record<string, any> {
+  const previousSources = previousStyle?.sources
+  const retainedSource = previousSources?.[FLIGHT_GEO_OVERLAY_SOURCE_ID]
+  if (!retainedSource) return { ...nextStyle }
+  const previousLayers = Array.isArray(previousStyle?.layers)
+    ? previousStyle.layers
+    : []
+  const retainedLayers = FLIGHT_GEO_OVERLAY_LAYER_ORDER
+    .map(layerId => previousLayers.find(layer => layer?.id === layerId))
+    .filter(Boolean)
+  if (retainedLayers.length === 0) return { ...nextStyle }
+  const nextLayers = Array.isArray(nextStyle?.layers)
+    ? nextStyle.layers.filter(
+        layer => !FLIGHT_GEO_OVERLAY_LAYER_ID_SET.has(String(layer?.id || '')),
+      )
+    : []
+  return {
+    ...nextStyle,
+    sources: {
+      ...(nextStyle?.sources || {}),
+      [FLIGHT_GEO_OVERLAY_SOURCE_ID]: retainedSource,
+    },
+    layers: [
+      ...nextLayers,
+      ...retainedLayers,
+    ],
+  }
+}
+
 function addLayerOnce(map: any, layer: Record<string, unknown>): void {
   if (map.getLayer?.(layer.id)) return
   try {

@@ -30,6 +30,7 @@ import { colorForDataset } from './colors.js'
 import { isPointOnlyFeatureCollection } from './selection.js'
 import {
   DEFAULT_GEOSPATIAL_VIEW_MODE,
+  FLIGHT_GEO_BOOTSTRAP_STYLE,
   isGrabMapsPresetActive,
   normalizeGeospatialViewMode,
   normalizePersistedGeospatialStyleUrl,
@@ -690,6 +691,9 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const selectedBounds = React.useMemo(() => computeBoundsFromCollections([selectedFeatureCollection]), [selectedFeatureCollection])
   const graphDataKey = React.useMemo(() => graphProjection.signature, [graphProjection.signature])
   const mapLibreRuntimeEnabled = show2dMapLibre || show3d
+  const flightBootstrapStyle = flightOverlayActive
+    ? FLIGHT_GEO_BOOTSTRAP_STYLE
+    : null
 
   const notifyGrabMapsFallback = React.useCallback(() => {
     const overlayHandlers = getOverlayHandlers(props.snapshot, props.handlers)
@@ -815,6 +819,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     rootRef,
     containerRef: map2dContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
+    initialStyleOverride: flightBootstrapStyle,
     canvasRenderMode: '2d',
     projectionMode: 'mercator',
     viewportSizingMode: 'fit',
@@ -827,6 +832,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     rootRef,
     containerRef: map3dContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
+    initialStyleOverride: flightBootstrapStyle,
     canvasRenderMode: '3d',
     projectionMode: 'globe',
     viewportSizingMode: 'fit',

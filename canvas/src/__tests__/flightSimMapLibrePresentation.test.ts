@@ -12,6 +12,7 @@ import {
   applyFlightGeoOverlayToMap,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  retainFlightGeoOverlayDuringStyleSwap,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
 
 function flightOverlay(
@@ -261,4 +262,63 @@ test('aircraft marker uses one provider-served glyph stack and retains heading r
     aircraft?.layout?.['text-rotate'],
     ['get', 'headingDegrees'],
   )
+})
+
+test('provider promotion retains the exact Flight source and ordered layers', () => {
+  const source = {
+    data: {
+      type: 'FeatureCollection',
+      features: [{ id: 'aircraft' }],
+    },
+    type: 'geojson',
+  }
+  const flightLayers = [
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
+  ].map(id => ({ id, source: FLIGHT_GEO_OVERLAY_SOURCE_ID }))
+  const previousStyle = {
+    version: 8,
+    sources: {
+      [FLIGHT_GEO_OVERLAY_SOURCE_ID]: source,
+    },
+    layers: [
+      { id: 'kg-flight-sim:geo-bootstrap-background', type: 'background' },
+      ...flightLayers,
+    ],
+  }
+  const nextStyle = {
+    version: 8,
+    sources: {
+      provider: { type: 'vector' },
+    },
+    layers: [
+      { id: 'provider-background', type: 'background' },
+      { id: FLIGHT_GEO_OVERLAY_LAYER_IDS.route, type: 'line' },
+    ],
+  }
+
+  const promoted = retainFlightGeoOverlayDuringStyleSwap(
+    previousStyle,
+    nextStyle,
+  )
+
+  assert.equal(
+    promoted.sources[FLIGHT_GEO_OVERLAY_SOURCE_ID],
+    source,
+  )
+  assert.equal(promoted.sources.provider.type, 'vector')
+  assert.deepEqual(
+    promoted.layers.map((layer: { id: string }) => layer.id),
+    [
+      'provider-background',
+      FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
+      FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
+      FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
+      FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
+    ],
+  )
+  assert.equal(previousStyle.layers.length, 5)
+  assert.equal(nextStyle.layers.length, 2)
 })

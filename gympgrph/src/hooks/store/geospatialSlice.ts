@@ -1,7 +1,11 @@
 import { emitGeospatialModeChanged } from 'grph-shared/geospatial/events'
 import { DEFAULT_GEOSPATIAL_OVERLAY_ENABLED, GEOSPATIAL_OVERLAY_PREFERENCE_VERSION } from 'grph-shared/geospatial/constants'
 import { LS_KEYS } from '../../lib/config.js'
-import { DEFAULT_GEOSPATIAL_VIEW_MODE, normalizeGeospatialViewMode } from '../../features/geospatial/basemapStyle.js'
+import {
+  DEFAULT_GEOSPATIAL_VIEW_MODE,
+  normalizeGeospatialViewMode,
+  resolveCanonicalPersistedGeospatialStyleUrl,
+} from '../../features/geospatial/basemapStyle.js'
 import type { GeospatialFitRequest, GeospatialInteractionMode, GeospatialViewMode } from './types.js'
 
 const readBool = (key: string, fallback: boolean): boolean => {
@@ -113,6 +117,14 @@ export const createDefaultGympgrphGeospatialState = (): Pick<
     return normalizeGeospatialViewMode(readString(LS_KEYS.geospatialViewMode, DEFAULT_GEOSPATIAL_VIEW_MODE))
   }
   const geospatialViewMode = readPersistedViewMode()
+  const persistedStyleUrl = readString(LS_KEYS.geospatialStyleUrl, '')
+  const canonicalStyleUrl = resolveCanonicalPersistedGeospatialStyleUrl(
+    geospatialViewMode,
+    persistedStyleUrl,
+  )
+  if (canonicalStyleUrl !== persistedStyleUrl.trim()) {
+    writeString(LS_KEYS.geospatialStyleUrl, canonicalStyleUrl)
+  }
   const geospatialInteractionMode = (readString(LS_KEYS.geospatialInteractionMode, 'always') as GeospatialInteractionMode) || 'always'
   const geospatialAutoFitEnabled = readBool(LS_KEYS.geospatialAutoFitEnabled, false)
   const geospatialDatasetTimeoutMs = (() => {
