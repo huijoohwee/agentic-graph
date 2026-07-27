@@ -198,11 +198,13 @@ export function CanvasViewport(props: CanvasViewportProps) {
     geospatialEnabled: geospatialModeEnabled,
     schema,
   })
+  const geospatialXrModeEnabled = geospatialModeEnabled && canvasRenderMode === '3d' && effectiveCanvas3dMode === 'xr'
   const { activeSurface, geospatialOverlayOwnsViewport } = resolveCanvasSurfaceOwnership({
     canvasRenderMode,
     flightSimActive,
     gameplayOverlayActive,
     geospatialModeEnabled,
+    geospatialXrModeEnabled,
     workspaceEditorOverlayOpen,
     workspaceStoryboardSurfaceActive: active2dSurface === 'storyboard',
   })
@@ -476,19 +478,19 @@ export function CanvasViewport(props: CanvasViewportProps) {
         ) : null}
         {threeCanvasSurface.mounted ? (
           <section className={`absolute inset-0 z-[10] ${threeCanvasSurface.active ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
-            <ThreeGraphLazy active={threeCanvasSurface.active} mode={effectiveCanvas3dMode} />
+            <ThreeGraphLazy active={threeCanvasSurface.active} geospatialComposite={geospatialXrModeEnabled} mode={effectiveCanvas3dMode} />
           </section>
         ) : null}
-
         {!documentSwitchOwnsViewport && geospatialModeEnabled && active2dSurface === 'storyboard' ? (
           <section className="absolute inset-0 z-[30] pointer-events-none" aria-hidden="true">
             <StoryboardWidgetDropBridgeLazy active={false} widgetDropCaptureEnabled geospatialWidgetPanelMode />
           </section>
         ) : null}
 
-        {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && !heavyRuntimeIntentBlocked ? (
+        {!documentSwitchOwnsViewport && geospatialModeEnabled && !heavyRuntimeIntentBlocked ? (
           <CanvasViewportGeospatialOverlayLazy
-            active={activeSurface === 'geo'}
+            active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
+            composedWithXr={geospatialXrModeEnabled}
             geospatialModeEnabled={geospatialModeEnabled}
             graphData={safeGraphData}
             storyboardWidgetPanelsActive={geospatialModeEnabled && active2dSurface === 'storyboard'}

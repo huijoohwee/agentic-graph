@@ -19,7 +19,7 @@ type MirrorEntry = {
   authority: WorkspaceDocsMirrorAuthority
 }
 
-test('Flight bundled XR source replaces a stale draft workspace seed', async () => {
+test('Flight bundled Geo+XR source replaces a stale draft workspace seed', async () => {
   const bundled = await readCanonicalWorkspaceSeedBundleEntries()
   const bundledEntries: MirrorEntry[] = bundled.map(entry => ({
     ...entry,
@@ -31,7 +31,7 @@ test('Flight bundled XR source replaces a stale draft workspace seed', async () 
   assert.ok(authoredFlight)
   assert.match(authoredFlight.text, /^status:\s*"runtime-ready"\s*$/m)
   assert.match(authoredFlight.text, /^runtime_status:\s*"runtime-ready"\s*$/m)
-  assert.match(authoredFlight.text, /^kgCanvasSurfaceMode:\s*"xr"\s*$/m)
+  assert.match(authoredFlight.text, /^kgCanvasSurfaceMode:\s*"geo-xr"\s*$/m)
   assert.match(authoredFlight.text, /^kgCanvasRenderMode:\s*"3d"\s*$/m)
   assert.match(authoredFlight.text, /^kgCanvas3dMode:\s*"xr"\s*$/m)
   assert.match(authoredFlight.text, /^\s*id:\s*"flight-sim"\s*$/m)
