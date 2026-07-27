@@ -7,7 +7,11 @@ import { deriveGraphGroups } from '@/components/GraphCanvas/layout/graphGroups'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
 import { getNodeAabbHalfExtentsWithLabel } from '@/components/GraphCanvas/layout/overlap'
 import { clampNodeCenterToRect } from '@/lib/canvas/groupContainment'
-import { buildDeepestGroupRectByNodeId, buildGroupRectByIdFromSchemaOverrides } from '@/lib/canvas/groupExplicitBounds'
+import {
+  buildDeepestGroupRectByNodeId,
+  buildDynamicGroupRectById,
+  buildGroupRectByIdFromSchemaOverrides,
+} from '@/lib/canvas/groupExplicitBounds'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   preserveAbsolutePositionForParent,
@@ -27,7 +31,17 @@ export function bindNodeDraggingWithGroupContainment(args: {
   edgeScroll?: { enabled: () => boolean; panByPx: (dx: number, dy: number) => void }
 }) {
   const groups = deriveGraphGroups(args.graphData)
-  const groupRectById = buildGroupRectByIdFromSchemaOverrides({ groups: groups as GraphGroup[], graphNodes: args.graphData.nodes as GraphNode[], schema: args.schema })
+  const groupRectById = buildDynamicGroupRectById({
+    groups: groups as GraphGroup[],
+    graphNodes: args.graphData.nodes as GraphNode[],
+    schema: args.schema,
+  })
+  const explicitGroupRectById = buildGroupRectByIdFromSchemaOverrides({
+    groups: groups as GraphGroup[],
+    graphNodes: args.graphData.nodes as GraphNode[],
+    schema: args.schema,
+  })
+  explicitGroupRectById.forEach((bounds, groupId) => groupRectById.set(groupId, bounds))
   const nodeGroupBoundsById = buildDeepestGroupRectByNodeId({ groups: groups as GraphGroup[], groupRectById })
 
   const dragBehavior = nodeDragBehavior(args.simulation, args.schema, {

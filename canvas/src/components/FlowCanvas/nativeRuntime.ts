@@ -1,5 +1,4 @@
 import * as d3 from 'd3'
-
 import type { FlowHandleId, FlowNodeHandles } from '@/components/FlowCanvas/handles'
 import { parseFlowHandleKey } from '@/components/FlowCanvas/handles'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
@@ -17,6 +16,7 @@ import { computeDynamicNodePortHandlePx, computeZoomScaledPortHandlePx, shouldRe
 import { drawInfiniteGridInWorldContext } from '@/lib/canvas/infiniteGrid'
 import { readEdgePathCurveOptions, traceEdgePathOnCanvas } from '@/lib/graph/edgeTypes'
 import { computeWidgetScale, computeWidgetScaledSize } from '@/lib/canvas/overlayWidgetZoom'
+import { computeNestedGroupPadding } from '@/lib/canvas/subFlow'
 
 export type FlowNativeNodeShape = 'circle' | 'rect' | 'diamond' | 'hex'
 
@@ -339,7 +339,7 @@ export const computeFlowGroupAabb = (args: {
   })()
   const memberIds = Array.isArray(args.group.memberNodeIds) ? args.group.memberNodeIds : []
   if (memberIds.length === 0) return explicitAabb
-  const padding = Math.max(0, args.paddingPx)
+  const padding = computeNestedGroupPadding({ basePadding: args.paddingPx, group: args.group, groups: args.scene.groups || [] })
   const topExtra = Math.max(0, args.labelTopExtraPx)
 
   let minX = Infinity

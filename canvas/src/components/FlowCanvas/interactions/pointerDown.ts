@@ -27,7 +27,11 @@ import {
 } from '@/lib/canvas/viewport-controls'
 import { computeDynamicGroupResizeHandlePx, pxToWorld, readGroupResizeHandleConfig } from '@/lib/canvas/groupResizeHandleConfig'
 import { computeMinGroupResizeSize } from '@/lib/canvas/groupResizeMath2d'
-import { computeFlowDeltaClampForNodes, computeFlowNodeClamp } from '@/components/FlowCanvas/groupContainment'
+import {
+  computeFlowDeltaClampForNodes,
+  computeFlowGroupDeltaClamp,
+  computeFlowNodeClamp,
+} from '@/components/FlowCanvas/groupContainment'
 import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
@@ -395,6 +399,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
           startWorldX: wx,
           startWorldY: wy,
           startNodePosById,
+          deltaClamp: computeFlowGroupDeltaClamp({ runtime, groupId: groupHit }),
           snapGrid: dragSnapGrid,
           edgeScrollEnabled,
           pointerId,
