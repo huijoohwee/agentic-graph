@@ -133,4 +133,22 @@ export function testFlowGroupPaintRemainsVisibleAtFittedZoom() {
   if (opaque.fillGlobalAlpha !== 0.08 || opaque.strokeWidthPx !== 2 || opaque.fontSizePx !== 12) {
     throw new Error('expected opaque fills and readable zoom levels to retain configured presentation')
   }
+
+  const selected = resolveFlowGroupPaintVisibility({
+    fill: '#7c3aed',
+    fillOpacity: 0.08,
+    fontSizePx: 12,
+    selected: true,
+    strokeWidthPx: 2,
+    zoom: 0.44,
+  })
+  if (selected.fillGlobalAlpha !== 0.16) {
+    throw new Error('expected selected group fill to use a clearly visible accent opacity')
+  }
+  if (Math.abs(selected.strokeWidthPx * 0.44 - 3) > 0.0001) {
+    throw new Error('expected selected group outline to remain at least 3 screen pixels')
+  }
+  if (Math.abs(selected.fontSizePx * 0.44 - 13) > 0.0001) {
+    throw new Error('expected selected group label to remain at least 13 screen pixels')
+  }
 }
