@@ -30,6 +30,7 @@ import {
   ensureGraphAlignmentGuideLayer,
   renderGraphAlignmentGuides,
 } from '@/components/GraphCanvas/alignmentGuides'
+import { readHelperLinesDisplayControlActive } from '@/lib/canvas/canvasGridDisplayControls'
 
 export function bindNodeDraggingWithGroupContainment(args: {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -55,6 +56,7 @@ export function bindNodeDraggingWithGroupContainment(args: {
   explicitGroupRectById.forEach((bounds, groupId) => groupRectById.set(groupId, bounds))
   const nodeGroupBoundsById = buildDeepestGroupRectByNodeId({ groups: groups as GraphGroup[], groupRectById })
   const alignmentLayer = ensureGraphAlignmentGuideLayer(args.g)
+  const helperLinesEnabled = readHelperLinesDisplayControlActive(args.schema)
   const stationaryAlignmentRects = (activeNodeId: string) => args.graphData.nodes.flatMap((candidate) => {
     const id = String(candidate.id || '').trim()
     if (!id || id === activeNodeId) return []
@@ -96,7 +98,7 @@ export function bindNodeDraggingWithGroupContainment(args: {
       const contained = clampToParent(nextX, nextY)
       nextX = contained.x
       nextY = contained.y
-      if (disableSnap) {
+      if (disableSnap || !helperLinesEnabled) {
         clearGraphAlignmentGuides(alignmentLayer)
         return { x: nextX, y: nextY }
       }

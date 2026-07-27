@@ -42,6 +42,7 @@ export type FlowCanvasDrag =
       startNodePosById: Record<string, { x: number; y: number }>
       deltaClamp: null | { minDx: number; maxDx: number; minDy: number; maxDy: number }
       snapGrid: SnapGridConfig
+      helperLinesEnabled: boolean
       edgeScrollEnabled: boolean
       pointerId: number
     }
@@ -54,6 +55,7 @@ export type FlowCanvasDrag =
       startNodeY: number
       clamp: null | { minX: number; maxX: number; minY: number; maxY: number }
       snapGrid: SnapGridConfig
+      helperLinesEnabled: boolean
       edgeScrollEnabled: boolean
       pointerId: number
     }

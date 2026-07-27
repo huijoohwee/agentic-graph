@@ -33,6 +33,7 @@ import {
   computeFlowNodeClamp,
 } from '@/components/FlowCanvas/groupContainment'
 import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
+import { readHelperLinesDisplayControlActive } from '@/lib/canvas/canvasGridDisplayControls'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 import type { FlowCanvasDrag } from '@/components/FlowCanvas/interactions/types'
@@ -51,6 +52,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
     const storeStateAtDown = useGraphStore.getState()
     const storyboardWidgetMode = String(storeStateAtDown.canvas2dRenderer || '') === 'storyboard'
     const dragSnapGrid = readSnapGridConfigFromSchema(storeStateAtDown.schema)
+    const helperLinesEnabled = readHelperLinesDisplayControlActive(storeStateAtDown.schema)
     const panInteractionSpeed = readFlowPanInteractionSpeed(storeStateAtDown)
     const edgeScrollEnabled = storeStateAtDown.viewPinned !== true
     const preset = presetRaw
@@ -222,6 +224,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
             startNodePosById,
             deltaClamp,
             snapGrid: dragSnapGrid,
+            helperLinesEnabled,
             edgeScrollEnabled,
             pointerId,
           })
@@ -238,6 +241,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
               startNodeY: node.y,
               clamp,
               snapGrid: dragSnapGrid,
+              helperLinesEnabled,
               edgeScrollEnabled,
               pointerId,
             })

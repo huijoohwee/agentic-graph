@@ -4,8 +4,10 @@ import type { GraphSchema } from '@/lib/graph/schema'
 import { togglePortHandlesEnabledInSchema } from '@/lib/graph/portHandlesBehavior'
 import {
   CANVAS_GRID_DISPLAY_CONTROL_ID,
+  HELPER_LINES_DISPLAY_CONTROL_ID,
   SNAP_GRID_DISPLAY_CONTROL_ID,
   buildCanvasGridVisibilityBehaviorPatch,
+  buildHelperLinesBehaviorPatch,
   buildSnapGridBehaviorPatch,
 } from '@/lib/canvas/canvasGridDisplayControls'
 import {
@@ -367,6 +369,22 @@ export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
   if (id === SNAP_GRID_DISPLAY_CONTROL_ID) {
     const behavior = schema.behavior
     const nextBehavior = buildSnapGridBehaviorPatch(schema)
+    if (typeof setBehavior === 'function') {
+      setBehavior(nextBehavior)
+      return
+    }
+    setSchema({
+      ...schema,
+      behavior: {
+        ...behavior,
+        ...nextBehavior,
+      },
+    })
+    return
+  }
+  if (id === HELPER_LINES_DISPLAY_CONTROL_ID) {
+    const behavior = schema.behavior
+    const nextBehavior = buildHelperLinesBehaviorPatch(schema)
     if (typeof setBehavior === 'function') {
       setBehavior(nextBehavior)
       return

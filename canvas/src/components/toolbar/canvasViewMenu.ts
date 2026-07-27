@@ -1,4 +1,4 @@
-import { Box, ChartGantt, Circle, CircleDot, Columns2, Cuboid, Diamond, FileText, Frame, GitGraph, GitMerge, Glasses, Grid3x3, Hexagon, History, Image as ImageIcon, Images, LayoutPanelTop, Magnet, Map, MonitorPlay, Network, Palette, PanelsTopLeft, Pencil, Share2, Square, Table, Tags, Workflow } from 'lucide-react'
+import { AlignCenter, Box, ChartGantt, Circle, CircleDot, Columns2, Cuboid, Diamond, FileText, Frame, GitGraph, GitMerge, Glasses, Grid3x3, Hexagon, History, Image as ImageIcon, Images, LayoutPanelTop, Magnet, Map, MonitorPlay, Network, Palette, PanelsTopLeft, Pencil, Share2, Square, Table, Tags, Workflow } from 'lucide-react'
 import type { Canvas2dRendererId } from '@/lib/config'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import {
@@ -15,11 +15,16 @@ import {
   CANVAS_GRID_DISPLAY_CONTROL_ID,
   CANVAS_GRID_DISPLAY_CONTROL_LABEL,
   CANVAS_GRID_DISPLAY_CONTROL_TITLE,
+  HELPER_LINES_DISPLAY_CONTROL_DESCRIPTION,
+  HELPER_LINES_DISPLAY_CONTROL_ID,
+  HELPER_LINES_DISPLAY_CONTROL_LABEL,
+  HELPER_LINES_DISPLAY_CONTROL_TITLE,
   SNAP_GRID_DISPLAY_CONTROL_DESCRIPTION,
   SNAP_GRID_DISPLAY_CONTROL_ID,
   SNAP_GRID_DISPLAY_CONTROL_LABEL,
   SNAP_GRID_DISPLAY_CONTROL_TITLE,
   readCanvasGridDisplayControlActive,
+  readHelperLinesDisplayControlActive,
   readSnapGridDisplayControlActive,
 } from '@/lib/canvas/canvasGridDisplayControls'
 import {
@@ -409,6 +414,14 @@ export const buildCanvasViewOptions = (
           Icon: Magnet,
           description: SNAP_GRID_DISPLAY_CONTROL_DESCRIPTION,
           isActive: readSnapGridDisplayControlActive(state.schema),
+        },
+        {
+          id: HELPER_LINES_DISPLAY_CONTROL_ID,
+          title: HELPER_LINES_DISPLAY_CONTROL_TITLE,
+          label: HELPER_LINES_DISPLAY_CONTROL_LABEL,
+          Icon: AlignCenter,
+          description: HELPER_LINES_DISPLAY_CONTROL_DESCRIPTION,
+          isActive: readHelperLinesDisplayControlActive(state.schema),
         },
         {
           id: CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_ID,
