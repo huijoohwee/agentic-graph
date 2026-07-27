@@ -1116,6 +1116,27 @@ const drawEdgeLabels = (
   }
 }
 
+const CSS_COLOR_WITH_ALPHA_RE = /^(?:rgba|hsla)\s*\(|^#[\da-f]{4}$|^#[\da-f]{8}$/i
+
+export const resolveFlowGroupPaintVisibility = (args: {
+  fill: string
+  fillOpacity: number
+  fontSizePx: number
+  strokeWidthPx: number
+  zoom: number
+}) => {
+  const zoom = typeof args.zoom === 'number' && Number.isFinite(args.zoom) && args.zoom > 0 ? args.zoom : 1
+  const fillOpacity = typeof args.fillOpacity === 'number' && Number.isFinite(args.fillOpacity)
+    ? Math.max(0, Math.min(1, args.fillOpacity))
+    : 1
+  const fillOwnsAlpha = CSS_COLOR_WITH_ALPHA_RE.test(String(args.fill || '').trim())
+  return {
+    fillGlobalAlpha: fillOwnsAlpha ? 1 : fillOpacity,
+    fontSizePx: Math.max(Math.max(0, args.fontSizePx), 11 / zoom),
+    strokeWidthPx: Math.max(Math.max(0, args.strokeWidthPx), 1.5 / zoom),
+  }
+}
+
 const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupAabb> | null) => {
   const cfg = rt.presentation.groups
   if (!cfg.enabled) return
@@ -1180,12 +1201,19 @@ const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupA
     })
     const gStrokeWidth =
       typeof g.style?.strokeWidth === 'number' && Number.isFinite(g.style.strokeWidth) ? Math.max(0, g.style.strokeWidth) : depthStyle.strokeWidthPx
+    const groupPaintVisibility = resolveFlowGroupPaintVisibility({
+      fill: gFill,
+      fillOpacity: depthStyle.fillOpacity,
+      fontSizePx: Math.max(10, rt.presentation.labels?.groupFontSizePx ?? 12),
+      strokeWidthPx: gStrokeWidth,
+      zoom: rt.transform.k,
+    })
 
     ctx.save()
-    ctx.globalAlpha = depthStyle.fillOpacity
+    ctx.globalAlpha = groupPaintVisibility.fillGlobalAlpha
     ctx.fillStyle = gFill
     ctx.strokeStyle = gStroke
-    ctx.lineWidth = gStrokeWidth
+    ctx.lineWidth = groupPaintVisibility.strokeWidthPx
 
     if (cfg.shape === 'geo' && geoPoints.length >= 3) {
       const ring = computeConvexRing(geoPoints)
@@ -1213,7 +1241,7 @@ const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupA
     if (label) {
       ctx.save()
       const paint = readLabelPaint(rt)
-      const fontSizePx = Math.max(10, rt.presentation.labels?.groupFontSizePx ?? 12)
+      const fontSizePx = groupPaintVisibility.fontSizePx
       ctx.font = `600 ${fontSizePx}px ${rt.fontFamily}`
       ctx.textAlign = 'left'
       ctx.textBaseline = 'top'
