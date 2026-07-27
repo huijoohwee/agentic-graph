@@ -21,6 +21,9 @@ from lib.game_flight_sim_smoke_network import (
     request_is_proof_local_read,
     summarize_websocket_attempts,
 )
+from lib.game_flight_sim_smoke_lifecycle import (
+    read_runtime_and_dispatch_blur,
+)
 from lib.game_flight_sim_smoke_throttle import (
     FLIGHT_THROTTLE_PROOF_MESSAGE,
     assert_staged_throttle_response,
@@ -135,6 +138,27 @@ def _start_http_server(server: ThreadingHTTPServer) -> Thread:
 
 
 class BrowserVerificationLedgerTest(unittest.TestCase):
+    def test_blur_probe_captures_runtime_and_dispatches_in_one_browser_task(
+        self,
+    ) -> None:
+        class EvaluatingPage:
+            source = ""
+
+            def evaluate(self, source: str) -> dict[str, int]:
+                self.source = source
+                return {"tick": 7}
+
+        page = EvaluatingPage()
+        self.assertEqual(
+            read_runtime_and_dispatch_blur(page),
+            {"tick": 7},
+        )
+        self.assertLess(
+            page.source.index("runtime.readFlightSimSnapshot()"),
+            page.source.index("window.dispatchEvent(new Event('blur'))"),
+        )
+        self.assertEqual(page.source.count("page.evaluate"), 0)
+
     def test_throttle_proof_waits_for_a_later_committed_world_tick(
         self,
     ) -> None:

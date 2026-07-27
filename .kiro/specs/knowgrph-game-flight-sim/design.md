@@ -274,18 +274,13 @@ Invariants: every `halfSize` axis is positive and finite; every center axis is f
 
 ```ts
 interface FlightSimAircraftAssetSpec {
-  schema: "knowgrph.img2threejs-scene/v1";
-  id: "vehicle-airplane";
-  label: string;
-  representation: "typescript-json";
-  renderer: "xr-procedural-vehicle";
-  shape: "airplane";
-  dimensionsMeters: SpatialVector;
-  collisionHalfSizeMeters: SpatialVector;
+  schema: "knowgrph.img2threejs-scene/v1"; id: "vehicle-airplane";
+  label: string; representation: "typescript-json";
+  renderer: "xr-procedural-vehicle"; shape: "airplane";
+  dimensionsMeters: SpatialVector; collisionHalfSizeMeters: SpatialVector;
   defaultColor: string;
   opaqueBinaryFallback: null;
-  runtimeModelCalls: 0;
-  runtimeNetworkCalls: 0;
+  runtimeModelCalls: 0; runtimeNetworkCalls: 0;
 }
 ```
 
@@ -330,8 +325,7 @@ Constraints: only these three types accepted (R19.1); merged idempotently by `de
 ```ts
 interface MissionObjective {
   waypoints: [Waypoint, Waypoint, Waypoint];  // exactly 3, ordered
-  landingPad: Waypoint;
-  captureRadiusM: number;                      // 50..200 per point
+  landingPad: Waypoint; captureRadiusM: number; // radius 50..200 per point
 }
 interface MissionProgress { capturedCount: 0 | 1 | 2 | 3; landed: boolean; terminal: "pending" | "success" | null; }
 ```
@@ -345,6 +339,10 @@ interface ActivationIdentity { runReadyDemoId: string; importedPath?: string; }
 ```
 
 Activation keys on the source-authored `run_ready_demo.id` in the known registry independent of imported path (R23.1); path/source disagreement fails closed with an identity-conflict error (R23.2); an unregistered id fails closed (R23.3).
+
+### Motion Control local runtime asset transport
+
+The Flight gameplay network fence remains the single transport policy owner while Motion Control is live. Its only read-through path is an immutable set of the nine LiteRT JavaScript, Wasm, and pose-detector model files prepared under `canvas/public/litert/`. A request is admitted only when its effective method is `GET` or `HEAD`, its URL resolves to the current browser origin, and its normalized pathname exactly equals a member of that set. Fetch and XMLHttpRequest share this predicate; every non-member request reports the existing `FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED` error before the original transport is invoked. WebSocket, EventSource, sendBeacon, and durable Service Worker start/attach retain their unconditional blocks. This exception is a local static-asset read, not a gameplay-network capability. It introduces no package, external repository content, remote model, map provider, renderer, camera, flight policy, or persistence owner. The existing Motion Control runtime alone consumes the prepared assets and its normalized pose adapter continues through the shared Flight input owner (R27).
 
 ## Correctness Properties
 
@@ -557,6 +555,7 @@ All error handling is local, fail-closed, and non-destructive. No error path iss
 | WebGL unavailable / unreadable Decisions at Start | WebGL_Probe / Flight_Runtime | Keep mission stopped; retain in-memory data; local on-screen error; no remote call; no second renderer | 21.2 |
 | Entry / restoration failure on shared Canvas | Flight_Runtime | Leave Canvas/scene/prior controller unchanged (entry) or retain single Canvas (exit); surface local error | 14.4, 14.5 |
 | Activation identity conflict / unregistered id | Activation | Fail closed without activating; identity-conflict or unregistered error; leave prior activation unchanged | 23.2, 23.3 |
+| Non-member request while the Flight network fence is installed | Flight_Runtime | Block before transport; permit only exact same-origin `GET`/`HEAD` reads of the nine prepared LiteRT runtime assets | 27.1, 27.2, 27.3 |
 
 Structured error envelopes reuse the Agentic ECS convention `{ ok: false, errorCode, message }` with optional non-secret details, and never leak source bytes, credentials, prompts, or unrestricted absolute paths (consistent with the ECS error model). HUD surfaces the affected local path only where one is associated with the error (R18.3).
 
@@ -592,6 +591,7 @@ The strategy is dual: property-based tests verify universal invariants across la
 - Dependency license and prohibited-library scans, including in-repo-physics boundary (no external physics engine; no mesh colliders/navmesh) (R3.1, R3.2, R3.3, R7.4, R8.6).
 - External repository locator, vendored-path, and opaque-source-binary scan across Flight-owned tracked paths, invoked by the build and paired with the source-authored provenance attestation; external project identity and URL remain prohibited and the gate cannot prove the absence of arbitrary derived code (R4.1–R4.6).
 - WebMCP surface boundary: zero added stdio tools, HTTP mutation routes, remote gateways, or deployment authority (R13.6).
+- Flight network-fence boundary: exact same-origin `GET`/`HEAD` reads reach only the nine prepared LiteRT runtime paths; cross-origin, mutation-method, and non-member requests plus sockets, event streams, beacons, and durable starts remain blocked (R27).
 - Repository-owned runtime-readiness command (source authority, native ECS, focused tests, TypeScript, production build) and browser-smoke command (Source Files apply, one retained authored XR Canvas, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, mobile HUD), both local-only with zero paid model/image-to-3D/Cloudflare/network and no automatic Git or deployment (R22.1, R22.3, R22.5, R22.6).
 
 ### Proof boundary
