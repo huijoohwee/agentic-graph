@@ -88,11 +88,42 @@ def _read_view(page: Page) -> dict[str, Any]:
     )
 
 
+def _horizontal_camera_offset(pose: dict[str, Any]) -> float:
+    position = pose["position"]
+    target = pose["target"]
+    return (
+        (float(position["x"]) - float(target["x"])) ** 2
+        + (float(position["z"]) - float(target["z"])) ** 2
+    ) ** 0.5
+
+
+def _pose_matches_dimension(
+    pose: dict[str, Any],
+    expected_dimension: str,
+) -> bool:
+    position = pose["position"]
+    target = pose["target"]
+    horizontal_offset = _horizontal_camera_offset(pose)
+    if expected_dimension == "volumetric":
+        return horizontal_offset > 0.001
+    quaternion = pose["quaternion"]
+    camera_screen_up_z = 2 * (
+        float(quaternion["y"]) * float(quaternion["z"])
+        + float(quaternion["x"]) * float(quaternion["w"])
+    )
+    return (
+        horizontal_offset <= 0.001
+        and float(position["y"]) > float(target["y"])
+        and camera_screen_up_z <= -0.99
+    )
+
+
 def _wait_for_view(
     page: Page,
     *,
     expected_view: str,
     expected_presentation: str,
+    expected_dimension: str,
 ) -> dict[str, Any]:
     deadline = time.monotonic() + 20
     last: dict[str, Any] = {}
@@ -102,12 +133,13 @@ def _wait_for_view(
             last.get("hostView") == expected_view
             and last.get("presentation") == expected_presentation
             and isinstance(last.get("pose"), dict)
+            and _pose_matches_dimension(last["pose"], expected_dimension)
         ):
             return last
         page.wait_for_timeout(100)
     raise AssertionError(
         "timed out waiting for Geo+XR presentation "
-        f"{expected_presentation}: {last}"
+        f"{expected_presentation} with {expected_dimension} camera: {last}"
     )
 
 
@@ -123,7 +155,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
           )
           const cameraSourceMode = cameraSource
             .readXrNativeControllerCamera().mode
-          cameraSource.selectXrNativeControllerCameraMode('free-orbit')
+          cameraSource.selectXrNativeControllerCameraMode('fixed-follow')
           return {
             cameraPreference: camera.readFlightSimCameraSnapshot().view,
             cameraSourceMode,
@@ -132,7 +164,27 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
         """
     )
     baseline_camera_preference = baseline_camera["cameraPreference"]
-    page.wait_for_timeout(100)
+    _select_view(page, "2d")
+    forced_plan_view = _wait_for_view(
+        page,
+        expected_view="2d",
+        expected_presentation="2d-classic",
+        expected_dimension="planar",
+    )
+    page.evaluate(
+        """
+        () => window.__kgFlightSimBrowserProof
+          .importModule('xrNativeControllerCameraRuntime')
+          .then(cameraSource => cameraSource
+            .selectXrNativeControllerCameraMode('free-orbit'))
+        """
+    )
+    _wait_for_view(
+        page,
+        expected_view="2d",
+        expected_presentation="2d-classic",
+        expected_dimension="planar",
+    )
     results: list[dict[str, Any]] = []
     try:
         for view_mode, presentation, dimension, theme in GEO_XR_VIEW_CASES:
@@ -141,6 +193,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 page,
                 expected_view=view_mode,
                 expected_presentation=presentation,
+                expected_dimension=dimension,
             )
             exact_contract = {
                 "projectionOwner": "shared-r3f-stage",
@@ -164,10 +217,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
             pose = observed["pose"]
             position = pose["position"]
             target = pose["target"]
-            horizontal_offset = (
-                (float(position["x"]) - float(target["x"])) ** 2
-                + (float(position["z"]) - float(target["z"])) ** 2
-            ) ** 0.5
+            horizontal_offset = _horizontal_camera_offset(pose)
             if dimension == "planar":
                 quaternion = pose["quaternion"]
                 camera_screen_up_z = 2 * (
@@ -202,5 +252,6 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
     return {
         "baselineCameraPreference": baseline_camera_preference,
         "baselineCameraSource": baseline_camera["cameraSourceMode"],
+        "forcedPlanPose": forced_plan_view["pose"],
         "views": results,
     }
