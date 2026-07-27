@@ -2,6 +2,7 @@ import type { GraphData, GraphNode } from '@/lib/graph/types'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import type { StoryboardCardMediaGraphPersistenceOptions } from './storyboardCardMediaGraphSource'
+import type { UiToastInput } from '@/hooks/store/types'
 
 export type StoryboardWidgetWorkflowNodeRunner = (nodeId: string, runOptions?: {
   allowCreateRichMediaPanel?: boolean
@@ -26,7 +27,7 @@ export type StoryboardWidgetWorkflowNodeRunnerArgs = {
   widgetRegistry: WidgetRegistryEntry[]
   appendDraftNode: (args: { id?: string | null; type: string; label?: string | null; x: number; y: number; properties?: Record<string, unknown> }) => string
   updateNode: (id: string, patch: Partial<GraphNode>) => void
-  upsertUiToast: (args: { id: string; kind: 'neutral' | 'warning' | 'success' | 'error'; message: string; ttlMs?: number }) => void
+  upsertUiToast: (args: UiToastInput) => void
   scheduleOverlayEdgeUpdate: () => void
 }
 
