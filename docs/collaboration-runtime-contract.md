@@ -126,7 +126,6 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 ## Continuous Integration
 
 - `Integration Gate` is the sole required merge status.
-- `Integration Gate` runs only on the repository-scoped `[self-hosted, Linux, ARM64, knowgrph-zero-cost]` label set. The dedicated runner must be isolated from developer credentials and host mounts; an absent runner leaves the check queued instead of falling back to billable GitHub-hosted compute.
 - `Integration Gate` generates `knowgrph.immutable-release-manifest/v1` from the exact pull-request head, source tree, pinned Agentic Canvas OS commit, and matching catalog revision; it uploads, downloads, and revalidates the exact bytes and digest before the canonical gate. Individually green repository checks do not replace this pair proof.
 - The gate validates this contract, runs source/build conflict compliance, and selects additional commands from `ci_scopes` based on changed paths.
 - Dev CI never writes a Prod mirror. Source-to-mirror parity runs after protected `main` integration when the automatic release workflow creates its ephemeral production artifact.
