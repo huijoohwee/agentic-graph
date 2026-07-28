@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   beginFlightSimStagePreparation,
   cancelFlightSimStagePreparation,
+  completeFlightSimHudStagePreparation,
   completeFlightSimStagePreparation,
   readCurrentFlightSimStagePreparationRequest,
   resetFlightSimStagePreparationForTests,
@@ -182,7 +183,7 @@ test('surface presentation waits for its stage acknowledgement and next frame op
   }
 })
 
-test('a MapLibre committed-frame acknowledgement does not wait for a redundant browser frame', async () => {
+test('MapLibre preparation requires the exact HUD layout and no redundant browser frame', async () => {
   const animationFrame = installControlledAnimationFrameWindow()
   try {
     resetFlightSimStagePreparationForTests()
@@ -194,9 +195,17 @@ test('a MapLibre committed-frame acknowledgement does not wait for a redundant b
       resolved = true
     })
 
+    assert.equal(completeFlightSimHudStagePreparation(requestId, 16), true)
+    await Promise.resolve()
+    assert.equal(resolved, false)
+    assert.equal(readCurrentFlightSimStagePreparationRequest(), requestId)
     assert.equal(completeFlightSimStagePreparation(requestId, {
       framePresented: true,
+      revision: 17,
     }), true)
+    await Promise.resolve()
+    assert.equal(resolved, false)
+    assert.equal(completeFlightSimHudStagePreparation(requestId, 17), true)
     await waiting
     assert.equal(resolved, true)
     assert.equal(animationFrame.callbacks.size, 0)

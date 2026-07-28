@@ -276,6 +276,9 @@ test('native MapLibre presents ready tick zero before expensive store followers'
   runtime.subscribePresenter('surface', () => {
     events.push('surface')
   })
+  runtime.subscribeHud(() => {
+    events.push('hud')
+  })
   runtime.subscribe(() => {
     clockMs += 336
     events.push('follower')
@@ -284,7 +287,7 @@ test('native MapLibre presents ready tick zero before expensive store followers'
   const requestId = beginFlightSimReadyFrame(() => clockMs)
   const ready = runtime.start()
   assert.equal(ready.phase, 'ready')
-  assert.deepEqual(events, ['maplibre'])
+  assert.deepEqual(events, ['maplibre', 'hud'])
   assert.equal(clockMs, 0)
   assert.equal(harness.listenerCount(), 1)
   assert.ok(harness.repaintCount() > 0)
@@ -305,9 +308,9 @@ test('native MapLibre presents ready tick zero before expensive store followers'
     `${ready.runId}:${ready.tick}:ready:0:${spatialProfile.id}:fixed-follow:chase:operator:day`,
   )
   assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
-  assert.deepEqual(events, ['maplibre'])
+  assert.deepEqual(events, ['maplibre', 'hud'])
   await Promise.resolve()
-  assert.deepEqual(events, ['maplibre', 'surface', 'follower'])
+  assert.deepEqual(events, ['maplibre', 'hud', 'surface', 'follower'])
   assert.equal(clockMs, 352)
 })
 

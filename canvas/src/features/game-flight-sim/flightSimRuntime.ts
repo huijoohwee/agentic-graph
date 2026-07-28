@@ -132,6 +132,7 @@ export function readFlightSimSpatialProfile(): FlightSimSpatialProfile {
 export function subscribeFlightSimSnapshot(listener: Listener): () => void {
   return defaultRuntime.subscribe(listener)
 }
+export const subscribeFlightSimHudSnapshot = (listener: Listener): (() => void) => defaultRuntime.subscribeHud(listener)
 
 export function subscribeFlightSimPresentation(kind: FlightSimPresenterKind, listener: Listener): () => void {
   return defaultRuntime.subscribePresenter(kind, listener)

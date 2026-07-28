@@ -11,8 +11,11 @@ type StagePreparationWaitOptions = Readonly<{
 
 type StagePreparationRequest = Readonly<{
   framePresented: boolean
+  hudRevision: number | null
   requestId: number
   status: 'pending' | 'prepared'
+  surfacePrepared: boolean
+  surfaceRevision: number | null
 }>
 
 type StagePreparationWaiter = Readonly<{
@@ -41,6 +44,27 @@ function settleRequestWaiters(
   for (const waiter of [...requestWaiters]) settle(waiter)
 }
 
+function prepareCurrentRequestIfComplete(): void {
+  const request = currentRequest
+  if (
+    !request
+    || request.status !== 'pending'
+    || !request.surfacePrepared
+  ) return
+  if (
+    request.framePresented
+    && (
+      request.surfaceRevision === null
+      || request.hudRevision !== request.surfaceRevision
+    )
+  ) return
+  currentRequest = Object.freeze({
+    ...request,
+    status: 'prepared',
+  })
+  settleRequestWaiters(request.requestId, waiter => waiter.resolve())
+}
+
 export function beginFlightSimStagePreparation(): number {
   if (currentRequest) {
     cancelFlightSimStagePreparation(
@@ -51,8 +75,11 @@ export function beginFlightSimStagePreparation(): number {
   requestSequence += 1
   currentRequest = Object.freeze({
     framePresented: false,
+    hudRevision: null,
     requestId: requestSequence,
     status: 'pending',
+    surfacePrepared: false,
+    surfaceRevision: null,
   })
   return requestSequence
 }
@@ -65,7 +92,10 @@ export function readCurrentFlightSimStagePreparationRequest(): number | null {
 
 export function completeFlightSimStagePreparation(
   requestId: number,
-  options: Readonly<{ framePresented?: boolean }> = {},
+  options: Readonly<{
+    framePresented?: boolean
+    revision?: number
+  }> = {},
 ): boolean {
   if (
     currentRequest?.requestId !== requestId
@@ -73,12 +103,42 @@ export function completeFlightSimStagePreparation(
   ) {
     return false
   }
+  const framePresented = options.framePresented === true
+  const surfaceRevision = framePresented ? options.revision : null
+  if (
+    framePresented
+    && (
+      typeof surfaceRevision !== 'number'
+      || !Number.isSafeInteger(surfaceRevision)
+      || surfaceRevision < 0
+    )
+  ) return false
   currentRequest = Object.freeze({
-    framePresented: options.framePresented === true,
+    ...currentRequest,
+    framePresented,
     requestId,
-    status: 'prepared',
+    surfacePrepared: true,
+    surfaceRevision: surfaceRevision ?? null,
   })
-  settleRequestWaiters(requestId, waiter => waiter.resolve())
+  prepareCurrentRequestIfComplete()
+  return true
+}
+
+export function completeFlightSimHudStagePreparation(
+  requestId: number,
+  revision: number,
+): boolean {
+  if (
+    currentRequest?.requestId !== requestId
+    || currentRequest.status !== 'pending'
+    || !Number.isSafeInteger(revision)
+    || revision < 0
+  ) return false
+  currentRequest = Object.freeze({
+    ...currentRequest,
+    hudRevision: revision,
+  })
+  prepareCurrentRequestIfComplete()
   return true
 }
 

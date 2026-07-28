@@ -13,6 +13,7 @@ import {
 import {
   readFlightSimStageRuntimeController,
 } from './flightSimRuntime'
+import { preloadFlightSimHud } from './flightSimHudLoader'
 
 function isFlightSimSeedPath(value: unknown): boolean {
   const path = String(value || '').replace(/\\/g, '/')
@@ -42,6 +43,7 @@ export function useFlightSimSurfacePreload(args: Readonly<{
     void Promise.allSettled([
       preloadGeospatialMapRuntime(),
       loadCanvasViewportGeospatialOverlay(),
+      preloadFlightSimHud(),
       preloadFlightSimMissionStage(readFlightSimStageRuntimeController()),
     ])
   }, [args.activePath, args.sourceFiles])

@@ -28,6 +28,7 @@ export type FlightSimRuntime = Readonly<{
   profile: () => FlightSimSpatialProfile
   read: () => FlightSimSnapshot
   subscribe: (listener: Listener) => () => void
+  subscribeHud: (listener: Listener) => () => void
   subscribePresenter: (
     kind: FlightSimPresenterKind,
     listener: Listener,

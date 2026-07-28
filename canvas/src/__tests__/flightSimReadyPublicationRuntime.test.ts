@@ -72,6 +72,9 @@ test('ready publication arms one native presenter before releasing followers', a
   runtime.subscribePresenter('surface', () => {
     events.push('surface')
   })
+  runtime.subscribeHud(() => {
+    events.push('hud')
+  })
   runtime.subscribe(() => {
     assert.equal(readFlightSimDeadlineSnapshot().readyFrame?.withinLimit, true)
     events.push('follower')
@@ -80,7 +83,7 @@ test('ready publication arms one native presenter before releasing followers', a
   const requestId = beginFlightSimReadyFrame(() => 100)
   const ready = runtime.start()
   assert.equal(ready.phase, 'ready')
-  assert.deepEqual(events, ['maplibre'])
+  assert.deepEqual(events, ['maplibre', 'hud'])
   assert.equal(completeFlightSimReadyFrame(ready.runId, ready.tick, () => 110), null)
   assert.equal(isFlightSimReadyFramePresentationPending(ready.runId, ready.tick), true)
 
@@ -91,9 +94,9 @@ test('ready publication arms one native presenter before releasing followers', a
     () => 116,
   )
   assert.equal(observation?.elapsedMs, 16)
-  assert.deepEqual(events, ['maplibre'])
+  assert.deepEqual(events, ['maplibre', 'hud'])
   await Promise.resolve()
-  assert.deepEqual(events, ['maplibre', 'surface', 'follower'])
+  assert.deepEqual(events, ['maplibre', 'hud', 'surface', 'follower'])
 })
 
 test('shared XR remains the ready presenter when no native MapLibre owner exists', async () => {

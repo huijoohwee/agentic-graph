@@ -103,6 +103,7 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   const surfaceControls = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'), 'utf8')
   assert.match(surfacePreload, /preloadGeospatialMapRuntime\(\)/)
   assert.match(surfacePreload, /loadCanvasViewportGeospatialOverlay\(\)/)
+  assert.match(surfacePreload, /preloadFlightSimHud\(\)/)
   assert.match(
     surfacePreload,
     /preloadFlightSimMissionStage\(readFlightSimStageRuntimeController\(\)\)/,
@@ -111,6 +112,7 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     viewport,
     /React\.lazy\(loadCanvasViewportGeospatialOverlay\)/,
   )
+  assert.match(viewport, /React\.lazy\(loadFlightSimHud\)/)
   assert.match(
     geospatialBridge,
     /completeFlightSimStagePreparation\(requestId,\s*\{\s*framePresented: true,/,

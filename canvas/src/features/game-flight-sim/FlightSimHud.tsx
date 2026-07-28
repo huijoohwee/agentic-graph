@@ -19,7 +19,7 @@ import {
   setFlightSimThrottle,
   startFlightSim,
   stopFlightSim,
-  subscribeFlightSimSnapshot,
+  subscribeFlightSimHudSnapshot,
 } from './flightSimRuntime'
 import {
   FLIGHT_SIM_SAVE_PATH,
@@ -39,6 +39,10 @@ import {
   registerFlightSimHudDeadlineOwner,
 } from './flightSimDeadlineRuntime'
 import {
+  completeFlightSimHudStagePreparation,
+  readCurrentFlightSimStagePreparationRequest,
+} from './flightSimStagePreparationRuntime'
+import {
   readFlightSimTrainingSnapshot,
   subscribeFlightSimTrainingSnapshot,
 } from './flightSimTrainingRuntime'
@@ -55,7 +59,7 @@ export function FlightSimHud() {
   const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen === true)
   const floatingPanelWidthRatio = useGraphStore(state => state.floatingPanelWidthRatio)
   const flight = React.useSyncExternalStore(
-    subscribeFlightSimSnapshot,
+    subscribeFlightSimHudSnapshot,
     readFlightSimSnapshot,
     readFlightSimSnapshot,
   )
@@ -144,7 +148,21 @@ export function FlightSimHud() {
   )
   React.useLayoutEffect(() => {
     completeFlightSimHudUpdate(flight.revision)
-  }, [flight.revision])
+    const requestId = readCurrentFlightSimStagePreparationRequest()
+    if (
+      requestId !== null
+      && flight.active
+      && flight.phase === 'stopped'
+      && !hydrationPending
+    ) {
+      completeFlightSimHudStagePreparation(requestId, flight.revision)
+    }
+  }, [
+    flight.active,
+    flight.phase,
+    flight.revision,
+    hydrationPending,
+  ])
 
   return (
     <section

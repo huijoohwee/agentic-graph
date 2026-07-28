@@ -123,6 +123,22 @@ export async function assertFlightSimSurfaceReadiness({
     'cancelProviderStyleApply(state)',
     'retainOverlay',
   ], 'Flight Sim non-blocking MapLibre provider promotion')
+  const stagePreparationSource = await readText(
+    'canvas/src/features/game-flight-sim/flightSimStagePreparationRuntime.ts',
+  )
+  const flightHudSource = await readText(
+    'canvas/src/features/game-flight-sim/FlightSimHud.tsx',
+  )
+  requireSourceMarkers(stagePreparationSource, [
+    'completeFlightSimHudStagePreparation',
+    'request.hudRevision !== request.surfaceRevision',
+    'request.surfacePrepared',
+    'surfaceRevision',
+  ], 'Flight Sim MapLibre and HUD preparation barrier')
+  requireSourceMarkers(flightHudSource, [
+    'subscribeFlightSimHudSnapshot',
+    'completeFlightSimHudStagePreparation(requestId, flight.revision)',
+  ], 'Flight Sim deadline-critical HUD ownership')
   if (
     geospatialHostSource.includes('shared-xr-stage')
     || geospatialPresentationSource.includes('shared-xr-stage')

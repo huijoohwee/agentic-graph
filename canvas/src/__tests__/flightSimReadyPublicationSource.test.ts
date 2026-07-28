@@ -38,7 +38,7 @@ test('ready publication reserves native MapLibre before ordinary React followers
   )
   assert.match(
     hud,
-    /useSyncExternalStore\(\s*subscribeFlightSimSnapshot,/,
+    /useSyncExternalStore\(\s*subscribeFlightSimHudSnapshot,/,
   )
   assert.doesNotMatch(hud, /subscribeFlightSimPresentation/)
 

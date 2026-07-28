@@ -45,6 +45,7 @@ export function createFlightSimRuntime(options: Readonly<{
   cancelReadyPublication?: () => void
 }>): FlightSimRuntime {
   const listeners = new Set<Listener>()
+  const hudListeners = new Set<Listener>()
   const presenterListeners: Record<FlightSimPresenterKind, Set<Listener>> = {
     maplibre: new Set<Listener>(),
     surface: new Set<Listener>(),
@@ -110,10 +111,14 @@ export function createFlightSimRuntime(options: Readonly<{
       hasPresenter: kind => presenterListeners[kind].size > 0,
       notifyPresenter,
       notifyFollowers,
-    })) return
+    })) {
+      notifyListeners(hudListeners, publishedRevision)
+      return
+    }
     if (!readyCandidate) options.cancelReadyPublication?.()
     notifyPresenter('maplibre')
     notifyPresenter('surface')
+    notifyListeners(hudListeners, publishedRevision)
     notifyListeners(listeners, publishedRevision)
   }
   const publish = (
@@ -284,6 +289,10 @@ export function createFlightSimRuntime(options: Readonly<{
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)
+    },
+    subscribeHud(listener) {
+      hudListeners.add(listener)
+      return () => hudListeners.delete(listener)
     },
     subscribePresenter(kind, listener) {
       presenterListeners[kind].add(listener)
