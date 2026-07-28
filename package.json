@@ -133,6 +133,7 @@
     "payment:x402:configure": "node ./scripts/configure-x402-payment-worker.mjs",
     "payment:x402:readiness": "node ./scripts/check-agent-ready-commerce.mjs",
     "payment:readiness": "node ./scripts/check-payment-readiness.mjs",
+    "payment:runtime:readiness": "node ./scripts/check-knowgrph-payments-readiness.mjs",
     "payment:d1:migrate:local": "npx --yes wrangler d1 migrations apply knowgrph-storage --local --config cloudflare/workers/knowgrph-payment/wrangler.toml",
     "payment:d1:migrate:remote": "npx --yes wrangler d1 migrations apply knowgrph-storage --remote --config cloudflare/workers/knowgrph-payment/wrangler.toml",
     "storage:d1:migrate:local": "npx --yes wrangler d1 migrations apply knowgrph-storage --local --config cloudflare/workers/knowgrph-storage/wrangler.toml",

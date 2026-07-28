@@ -2,7 +2,7 @@
 title: "Knowgrph Payments - PRD & TAD"
 doc_type: "PRD+TAD"
 doc_id: "KGP-PAYMENTS-001"
-version: "1.0.0"
+version: "1.1.0"
 status: "Proposed"
 date: "2026-07-28"
 authors: ["airvio"]
@@ -19,7 +19,9 @@ tags:
   - "offline-first"
   - "mcp"
 spec_ref: ".kiro/specs/knowgrph-payments/requirements.md"
-spec_version: "0.1.0"
+spec_version: "0.2.0"
+runtime_readiness_command: "npm run payment:runtime:readiness"
+runtime_readiness_status: "implemented; blocked on incomplete source owners and authenticated paid sandbox proof for both rails"
 guidelines: "huijoohwee.github.io/guidelines/prd-tad-guidelines.md"
 topology_version: "1"
 deployment_authority: "Dev authoring only. Production mirror publication and Cloudflare deployment require a separate explicit operator instruction."
@@ -53,7 +55,7 @@ ownership_boundaries:
 
 Proposed. Development authority only.
 
-This document is the PRD/TAD projection of the `knowgrph-payments` spec requirements at `.kiro/specs/knowgrph-payments/requirements.md` version 0.1.0. The spec remains the normative requirements source of truth. Where this document and the spec disagree, the spec wins and this document is the defect.
+This document is the PRD/TAD projection of the `knowgrph-payments` spec requirements at `.kiro/specs/knowgrph-payments/requirements.md` version 0.2.0. The spec remains the normative requirements source of truth. Where this document and the spec disagree, the spec wins and this document is the defect.
 
 ## Authority and Scope
 
@@ -119,7 +121,7 @@ Buyer_Global is the non-SGD variant of the Buyer_SG journey and shares journey J
 | Trigger | Operator decides to accept payment on a new rail | MainPanel Commerce, Payments subsection | Unknown prerequisites | Readiness_Gate names every missing input |
 | Discover | Operator reads which credentials the rail needs | Readiness_Gate output | Secrets leak into visible config | Gate fails when a secret name appears in visible variables |
 | Engage | Operator configures sandbox credentials | Server-side secret store | Manual undocumented steps | One command per rail |
-| Complete | Operator observes a confirmed sandbox payment | Payment_Surface plus Readiness_Gate | No end-to-end proof | Sandbox payment reaches a terminal state |
+| Complete | Operator observes a confirmed sandbox payment | Payment_Surface plus Readiness_Gate | No end-to-end proof | Authenticated sandbox payment reaches `paid` from provider-read state |
 | Return | Operator re-runs the gate after a change | Readiness_Gate output | Silent drift | Gate reports per-rail status and mutates nothing |
 
 ### User Stories
@@ -145,17 +147,17 @@ Each block summarizes one spec requirement in Given-When-Then form and states th
 
 #### R1 - Server-side trust boundary and secret custody
 
-**Given** a browser-first Payment_Client and a server-side Payment_Trust_Boundary, **When** any payment operation runs, **Then** only the trust boundary sends a provider credential, Stripe credentials come from server-side secret storage using a restricted key where the operation permits one, every StraitsX request carries `X-XFERS-APP-API-KEY`, signed-mode requests additionally carry `X-PUBLIC-KEY-ID`, `X-TIMESTAMP` within 300 seconds of provider server time, a per-request UUID `X-NONCE`, and a base64 `X-SIGNATURE`, one Stripe API version is pinned per deployment, and a planted secret in client bundle output or visible Worker variables fails the readiness gate with configuration unchanged.
+**Given** a browser-first Payment_Client and a server-side Payment_Trust_Boundary, **When** any payment operation runs, **Then** only the trust boundary sends a provider credential, Stripe credentials come from server-side secret storage using a restricted key where the operation permits one, every StraitsX request carries `X-XFERS-APP-API-KEY`, signed-mode requests additionally carry `X-PUBLIC-KEY-ID`, `X-TIMESTAMP` within 300 seconds of provider server time, a per-request UUID `X-NONCE`, and a base64 `X-SIGNATURE`, one Stripe API version is pinned per deployment, and a planted credential value in client output or a required credential binding by name or value in visible Worker variables fails the readiness gate with configuration unchanged. Static operator documentation may name required credentials but contains no credential value.
 
-> **VCC translation**: `Verify a repository check reports zero occurrences of Stripe or StraitsX secret names and values in Payment_Client bundle output and in visible Worker vars and exits non-zero when a secret name is planted in either location; verify every outbound StraitsX request carries X-XFERS-APP-API-KEY and the signed-mode builder additionally emits X-PUBLIC-KEY-ID, X-TIMESTAMP, X-NONCE, and X-SIGNATURE with a fresh nonce per request; verify the configured Stripe API version is read from one owner and appears in every outbound Stripe request, with no configuration file mutated by the check`
+> **VCC translation**: `Verify a repository check reports zero credential values in Payment_Client bundle output and zero required credential bindings by name or value in visible Worker vars and exits non-zero when a credential value is planted in the bundle or a required credential is planted in visible vars; verify every outbound StraitsX request carries X-XFERS-APP-API-KEY and the signed-mode builder additionally emits X-PUBLIC-KEY-ID, X-TIMESTAMP, X-NONCE, and X-SIGNATURE with a fresh nonce per request; verify the configured Stripe API version is read from one owner and appears in every outbound Stripe request, with no configuration file mutated by the check`
 
 The header set, the mandatory-header rule, the timestamp window, and the per-request nonce for replay protection are provider-documented ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)). The prohibition on embedding secret or restricted keys in source or client-side applications, the preference for scoped restricted live keys, and the failure of unauthenticated or plain-HTTP requests are Stripe-documented ([Stripe API](https://docs.stripe.com/api)).
 
 #### R2 - Rail selection
 
-**Given** a requested currency, a requested settlement asset, and per-rail readiness, **When** the Rail_Router runs, **Then** exactly one rail is selected before any provider call, `sgd` fiat with a ready StraitsX rail selects `straitsx`, `xsgd` selects `straitsx`, a non-SGD card-settled currency selects `stripe`, a single ready rail is selected with reason `only_ready_rail`, no ready rail returns typed `rail_unavailable` with zero provider objects created, and identical inputs return an identical rail and reason.
+**Given** a requested currency, a requested settlement asset, and per-rail readiness, **When** the Rail_Router runs, **Then** exactly one compatible ready rail or typed `rail_unavailable` is returned before any provider call, `sgd` fiat with a ready StraitsX rail selects `straitsx`, ready `xsgd` selects `straitsx`, a supported non-SGD card currency with a ready Stripe rail selects `stripe`, one ready rail among multiple compatible rails is selected with reason `only_ready_rail`, an incompatible ready rail is never selected, and identical inputs return an identical rail and reason.
 
-> **VCC translation**: `Verify a selection table test covers sgd fiat, xsgd, non-sgd card currency, single-ready-rail, and no-ready-rail and each case returns the documented rail identifier and reason; verify the intent record persisted before any provider call already contains the rail identifier and selection reason; verify repeated selection with identical inputs returns identical output across 100 generated input cases, with no provider call issued during the property run`
+> **VCC translation**: `Verify a selection table test covers sgd fiat, xsgd, non-sgd card currency, single-compatible-ready-rail, incompatible-only-ready-rail, unsupported currency, and no-ready-rail and each case returns the documented rail identifier and reason; verify the intent record persisted before any provider call already contains the rail identifier and selection reason; verify repeated selection with identical inputs returns identical output across 100 generated input cases, with no provider call issued during the property run`
 
 #### R3 - Stripe rail intent creation and idempotency
 
@@ -183,15 +185,15 @@ The signature header, signing secret, and source-address allowlist are carried f
 
 #### R6 - Offline intent queue and reconnect reconciliation
 
-**Given** an unreachable Payment_Trust_Boundary, **When** a buyer requests a payment, **Then** the client persists a queued intent record with a UUID Client_Intent_Key generated once per purchase attempt and displays `queued_offline`, the queue survives a client reload, on reconnect the Reconciler submits queued records in creation order one key at a time, a submission for an already-recorded key returns the existing record with no additional provider object, every submitted record reaches a terminal state only from provider-read state, a record that cannot reach a terminal state within a stated attempt bound is marked `reconciliation_unresolved` and stops retrying with an operator-visible entry, paid capability is withheld while no terminal state exists, and the queue stores no credential and no card or bank identifier.
+**Given** an unreachable Payment_Trust_Boundary, **When** a buyer requests a payment, **Then** the client persists a queued intent record with a UUID Client_Intent_Key generated once per purchase attempt and displays `queued_offline`, the queue survives a client reload, on reconnect the Reconciler submits queued records in creation order one key at a time, a submission for an already-recorded key returns the existing record with no additional provider object, every submitted record reaches a provider terminal state only from provider-read state, a record that cannot reach a provider terminal state within a stated attempt bound is marked with the local stopped state `reconciliation_unresolved` and stops retrying with an operator-visible entry, paid capability is withheld unless provider-read state is `paid`, and the queue stores no credential and no card or bank identifier.
 
-> **VCC translation**: `Verify a payment requested with the trust boundary unreachable persists as queued_offline with a UUID Client_Intent_Key and survives a client reload; verify submitting the same Client_Intent_Key N times creates exactly one provider object across 100 generated interleavings; verify every reconciled record reaches a terminal state only from provider-read state and queue state alone never unlocks capability; verify an unresolvable record stops retrying at the stated attempt bound and is reported as reconciliation_unresolved; verify the persisted queue contains no credential, card, or bank identifier field`
+> **VCC translation**: `Verify a payment requested with the trust boundary unreachable persists as queued_offline with a UUID Client_Intent_Key and survives a client reload; verify submitting the same Client_Intent_Key N times creates exactly one provider object across 100 generated interleavings; verify every reconciled record reaches a provider terminal state only from provider-read state, reconciliation_unresolved remains a local stopped state, and queue or stopped state alone never unlocks capability; verify an unresolvable record stops retrying at the stated attempt bound and is reported as reconciliation_unresolved; verify the persisted queue contains no credential, card, or bank identifier field`
 
 #### R7 - Payment record serialization and receipt round-trip
 
-**Given** an intent record reaching a terminal state, **When** the Record_Serializer runs, **Then** one entry is appended carrying the intent identifier, Client_Intent_Key, selected rail, minor-unit amount, currency, settlement asset, terminal state, provider object identifier, and terminal timestamp, entries are emitted in a stable order with base-10 integer minor units, LF line endings, and a single trailing newline, parsing then re-serializing any valid document is byte-identical, serializing then parsing then serializing any valid record set is byte-identical, a malformed document yields a typed parse error naming the failing line with document bytes unchanged, no entry carries a card number, bank account number, credential, buyer email address, or provider customer identifier, and the offline receipt view renders from local storage with zero network requests.
+**Given** an intent record reaching a terminal state, **When** the Record_Serializer runs, **Then** one entry is appended carrying the intent identifier, Client_Intent_Key, selected rail, minor-unit amount, currency, settlement asset, terminal state, provider object identifier field, and terminal timestamp; the provider identifier is non-null for `paid` and may be null only when no provider object was created; entries are emitted in a stable order with base-10 integer minor units, LF line endings, and a single trailing newline, parsing then re-serializing any valid document is byte-identical, serializing then parsing then serializing any valid record set is byte-identical, a malformed document yields a typed parse error naming the failing line with document bytes unchanged, no entry carries a card number, bank account number, credential, buyer email address, or provider customer identifier, and the offline receipt view renders from local storage with zero network requests.
 
-> **VCC translation**: `Verify every terminal record produces exactly one entry with all nine named fields populated; verify parse then print is byte-identical for 100 generated valid documents; verify print then parse then print is byte-identical for 100 generated record sets; verify a malformed document yields a typed parse error naming the failing line with file bytes unchanged; verify no entry contains a card number, bank account number, credential, email address, or provider customer identifier across 100 generated records; verify the receipt view renders from local state with zero network requests`
+> **VCC translation**: `Verify every terminal record produces exactly one entry with all nine named fields present, a non-null provider object identifier for paid, and null only when no provider object was created; verify parse then print is byte-identical for 100 generated valid documents; verify print then parse then print is byte-identical for 100 generated record sets; verify a malformed document yields a typed parse error naming the failing line with file bytes unchanged; verify no entry contains a card number, bank account number, credential, email address, or provider customer identifier across 100 generated records; verify the receipt view renders from local state with zero network requests`
 
 #### R8 - Buyer payment surface states
 
@@ -217,9 +219,9 @@ The error object exposes `code`, `decline_code`, `message`, `param`, `payment_in
 
 #### R11 - Cost observability, token economics, and readiness gates
 
-**Given** a configured deployment, **When** payments run and the Readiness_Gate is invoked, **Then** one cost log entry per provider call records rail, operation, provider request identifier where available, outcome, and elapsed milliseconds, rail selection, intent creation, event ingestion, reconciliation, and record serialization make zero model calls and report a model cost of `0.00`, any optional payment-adjacent model explanation runs behind a harness with typed input, typed output, a per-call cost log, and a fallback returning the deterministic record unchanged, the gate reports per rail the required credential names, their presence in server-side secret storage, and whether any credential name appears in visible configuration, the gate mutates nothing and exits non-zero when a required input for an enabled rail is missing, a rail is reported ready only after a sandbox payment on that rail has reached a terminal state at least once, the gate names the configured Stripe API version and StraitsX integration model, and the Agentic OS read views expose rail readiness and the cost ledger without mutating state and without a model call.
+**Given** a configured deployment, **When** payments run and the Readiness_Gate is invoked, **Then** one cost log entry per provider call records rail, operation, provider request identifier where available, outcome, and elapsed milliseconds, rail selection, intent creation, event ingestion, reconciliation, and record serialization make zero model calls and report a model cost of `0.00`, any optional payment-adjacent model explanation runs behind a harness with typed input, typed output, a per-call cost log, and a fallback returning the deterministic record unchanged, the gate reports per rail the required credential names, their presence in server-side secret storage, and whether any credential name appears in visible configuration, the gate mutates nothing and exits non-zero when a required input for an enabled rail is missing, a rail is reported ready only after an authenticated sandbox payment reaches `paid`, provider state is read, and its payment record round trip passes, the gate names the configured Stripe API version and StraitsX integration model, and the Agentic OS read views expose rail readiness and the cost ledger without mutating state and without a model call.
 
-> **VCC translation**: `Verify every provider call in a recorded run has exactly one cost log entry with the five named fields; verify a full intent-to-settlement run reports a model cost of 0.00 and zero model calls; verify the gate output lists required credential names per rail, performs zero writes, and exits non-zero when a required input is absent; verify a rail without a terminal sandbox payment is reported as not ready; verify the gate output names the configured Stripe API version and StraitsX integration model; verify the payment read views return typed output with zero state mutation and zero model calls`
+> **VCC translation**: `Verify every provider call in a recorded run has exactly one cost log entry with the five named fields; verify a full intent-to-settlement run reports a model cost of 0.00 and zero model calls; verify the gate output lists required credential names per rail, performs zero writes, and exits non-zero when a required input is absent; verify a rail without authenticated paid sandbox settlement, provider-state read, and record round trip is reported as not ready; verify the gate output names the configured Stripe API version and StraitsX integration model; verify the payment read views return typed output with zero state mutation and zero model calls`
 
 #### R12 - Data minimization, compliance boundary, and release boundary
 
@@ -250,7 +252,7 @@ Provider-side customer profiles, KYC, and bank-account linking are documented pr
 | TTV steps (Buyer_SG, price shown to paid) | 3 steps | 4 steps or fewer | Timed sandbox purchase on a 375 px viewport |
 | TTV elapsed (Buyer_SG) | about 45 s | 90 s or less | Timed sandbox purchase |
 | TTV steps (Buying_Agent, discovery to typed result) | 3 calls | 4 calls or fewer | Scripted agent run against sandbox |
-| First-value action | A sandbox payment reaches a terminal state and the Payment_Surface reflects it | - | Observable state transition plus a Payment_Record_Document entry |
+| First-value action | An authenticated sandbox payment reaches `paid` from provider-read state and the Payment_Surface reflects it | - | Observable state transition plus a Payment_Record_Document entry |
 
 Operator TTV excludes provider account approval time. StraitsX access depends on an approved use case and an assigned integration model ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)); that wait is an Open Question, not TTV. The TTV walk-through has not been executed because it requires operator-provided sandbox credentials. It is a pre-sign-off gate, not a claim.
 
@@ -258,9 +260,9 @@ Operator TTV excludes provider account approval time. StraitsX access depends on
 
 | Metric | Baseline | Target | Timeline |
 |---|---|---|---|
-| Rails reaching a confirmed sandbox payment | 1 (Stripe, implemented elsewhere) | 2 (Stripe plus StraitsX) | Increment 1 |
+| Rails with current source-bound authenticated paid sandbox proof | 0; an earlier Stripe implementation exists, but no proof is bound to this readiness evidence | 2 (Stripe plus StraitsX) | Increment 1 |
 | Duplicate provider objects created per replayed intent | not measured | 0 | Increment 1 |
-| Queued offline intents resolved to a terminal state after reconnect | 0 percent (no queue exists) | 100 percent within 60 s of reconnect | Increment 1 |
+| Queued offline intents resolved to a provider terminal state or bounded local stopped state after reconnect | 0 percent (no queue exists) | 100 percent within 60 s of reconnect | Increment 1 |
 | Provider events applied more than once | not measured | 0 | Increment 1 |
 | Unauthenticated provider events accepted | not measured | 0 | Increment 1 |
 | Payment secrets reachable from the client bundle | 0 asserted, not gated | 0 gated by a check | Increment 1 |
@@ -329,7 +331,7 @@ The ten Must rows: two rails, one selection contract, one replay-safe settlement
 | Existing external-tool Approval_Gate owner | Repository-owned | Spend authorization must not be reimplemented per rail. |
 | Existing MainPanel Commerce surface | Repository-owned | Payments remains a Commerce subsection. |
 | Stripe API and hosted Checkout | Proprietary, justified in ADR-2 | No FOSS alternative provides global card acquiring. Fees are per-transaction and variable; fixed monthly TCO stays 0.00 ([Stripe API](https://docs.stripe.com/api)). |
-| Hosted Stripe MCP server | Proprietary, public preview, justified in ADR-4 | Only first-party MCP surface for the Stripe account; federated behind human confirmation ([Stripe MCP](https://docs.stripe.com/mcp)). |
+| Hosted Stripe MCP server | Proprietary, public preview, justified in ADR-4 | Only first-party MCP surface for the Stripe account; target federation stays behind human confirmation and remains incomplete in the current gap matrix ([Stripe MCP](https://docs.stripe.com/mcp)). |
 | StraitsX API, sandbox first | Proprietary, justified in ADR-2 | Regulated SGD rails, PayNow, and XSGD issuance have no FOSS substitute; access depends on an approved use case and assigned integration model ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). |
 | Browser-local storage for the Intent_Queue | Platform, FOSS | Zero egress while offline; no new service. |
 
@@ -357,8 +359,8 @@ exist only here.
 | OQ-7 | Requirements | StraitsX request-level idempotency semantics are not documented on the referenced pages. | R4 retry design | Until confirmed, a per-attempt reference plus a provider state read is the contract |
 | OQ-8 | Requirements | Which request header the Worker reads to evaluate the StraitsX source address, and whether a shared-secret path segment is warranted as defense in depth. | Provider_Event_Ingress implementation | Design task |
 | OQ-9 | Requirements | XSGD inbound acceptance path and which networks are enabled for the account through the supported-blockchains method. | R4 XSGD scope | Provider confirmation |
-| OQ-10 | Requirements | Exact StraitsX payment method for the first increment: dynamic PayNow QR, persistent PayNow QR, or virtual bank account, all documented as Payment API capabilities ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). | R4 buyer flow | Depends on OQ-2 |
-| OQ-11 | Requirements | Which Stripe API version the existing payment Worker already pins. The reference names `2026-06-24.dahlia` as current at time of writing ([Stripe API](https://docs.stripe.com/api)). | R1 criterion 7 | Read the existing owner before changing anything |
+| OQ-10 | Requirements | Exact StraitsX payment method for the first increment: dynamic PayNow QR or virtual bank account. Persistent PayNow is provider-documented but outside this increment's R4 candidate set. | R4 buyer flow | Depends on OQ-2 |
+| OQ-11 | Requirements | **Resolved:** the existing `stripePaymentSsot` owner pins `2026-05-19`; documentation-page versions do not replace repository configuration. | R1 criterion 7 | Runtime readiness reads and reports the existing owner |
 | OQ-12 | Requirements | Which existing browser-local persistence owner holds the Intent_Queue and what its size bound is. | R6 implementation | Design task |
 | OQ-13 | Design | R11 criterion 3 permits an optional payment-adjacent model explanation while R12 criterion 4 forbids any payment record field in a model prompt, leaving that harness with no record-derived input. | Enabling any payment-adjacent model call | Keep the harness disabled and specified as a contract only until the spec resolves the tension |
 | OQ-14 | Design | The canonical request string construction for the StraitsX `X-SIGNATURE` header is not documented on the referenced pages, which name the header and its base64 encoding but not the string being signed ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)). | Enabling StraitsX HTTP Request Signing mode | Ship key-only mode first; the signed-mode request builder stays gated until the signing string layout is confirmed with the provider |
@@ -372,7 +374,7 @@ exist only here.
 
 ### Overview
 
-**From buyer intent to a locally readable receipt**: Payment_Surface captures an intent with a client-generated key, Intent_Queue holds it when the trust boundary is unreachable, Rail_Router selects exactly one rail, the selected rail adapter creates the provider object inside the Payment_Trust_Boundary, Provider_Event_Ingress authenticates and applies provider events at most once, Reconciler resolves every intent to a terminal state from provider-read state, Payment_Record_Store persists the record, and Receipt_Projection emits a byte-stable document the buyer and operator can read offline.
+**From buyer intent to a locally readable receipt**: Payment_Surface captures an intent with a client-generated key, Intent_Queue holds it when the trust boundary is unreachable, Rail_Router selects exactly one rail, the selected rail adapter creates the provider object inside the Payment_Trust_Boundary, Provider_Event_Ingress authenticates and applies provider events at most once, Reconciler resolves every intent to a provider terminal state from provider-read state or stops locally at `reconciliation_unresolved` after the bounded attempt limit, Payment_Record_Store persists the record, and Receipt_Projection emits a byte-stable document the buyer and operator can read offline.
 
 The payment path performs zero model calls. All provider credentials live server-side. The client holds identity keys and state projections only.
 
@@ -486,19 +488,19 @@ flowchart TB
 |---|---|---|---|
 | PS | Payment_Surface | Browser/Client | Proposed |
 | IQ | Intent_Queue | Browser/Client | Proposed |
-| RP | Receipt_Projection | Browser/Client | Proposed |
+| RP | Receipt_Projection | Shared codec plus Browser/Client integration | Shared codec implemented; local-store append and offline render proposed |
 | API | Payment_API route surface on the existing payment Worker | Payment Trust Boundary | Implemented (owned elsewhere) for Stripe and ACP routes; Proposed for rail-neutral intent routes |
-| RR | Rail_Router | Payment Trust Boundary | Proposed |
+| RR | Rail_Router | Shared pure contract plus Payment Trust Boundary integration | Shared deterministic contract implemented; intent persistence before provider contact proposed |
 | SRA | Stripe_Rail_Adapter | Payment Trust Boundary | Implemented (owned elsewhere) for hosted Checkout; Proposed for the rail-adapter contract |
 | XRA | StraitsX_Rail_Adapter | Payment Trust Boundary | Proposed |
 | PEI | Provider_Event_Ingress | Payment Trust Boundary | Implemented (owned elsewhere) for Stripe webhooks; Proposed for StraitsX callbacks |
 | REC | Reconciler | Payment Trust Boundary | Proposed |
 | CO | Cost_Observer | Payment Trust Boundary | Proposed |
 | ADS | Agent_Discovery_Surface | Payment Trust Boundary | Implemented (owned elsewhere) for ACP and MCP discovery; Proposed for payment capability metadata |
-| RG | Readiness_Gate | Operator Tooling | Implemented (owned elsewhere) for the Stripe readiness gate; Proposed for the StraitsX rail gate |
+| RG | Readiness_Gate | Operator Tooling | Layered structural report implemented; trusted two-rail provider proof and StraitsX provider gate pending |
 | STRIPE, SMCP, XFERS | External providers | Provider | External |
 | D1 | Payment_Record_Store | Storage | Implemented (owned elsewhere) for Stripe and ACP tables; Proposed for rail-neutral intent and cost ledger tables |
-| DOC | Payment_Record_Document | Storage | Proposed |
+| DOC | Payment_Record_Document | Shared codec plus local storage | Canonical codec implemented; local persistence and receipt integration proposed |
 
 **Version notes**: version 1 is the first payments topology. It adds Rail_Router, StraitsX_Rail_Adapter, Intent_Queue, Reconciler, Cost_Observer, Receipt_Projection, and Payment_Record_Document to the existing payment Worker, D1 binding, Stripe adapter, webhook ingress, and MainPanel Commerce surface. It adds no runtime, no second Worker, and no second store.
 
@@ -567,17 +569,17 @@ flowchart TB
 1. Payment_Surface generates the Client_Intent_Key, persists a queued intent record to Intent_Queue, and displays `queued_offline` with the statement that the payment is held locally and will be submitted on reconnect.
 2. On reconnect, Reconciler submits queued records in creation order, one Client_Intent_Key at a time.
 3. Payment_API returns the existing record for an already-recorded key and creates no additional provider object.
-4. Reconciler resolves each record to a terminal state from provider-read state and Receipt_Projection appends the terminal entry.
+4. Reconciler resolves each record to a provider terminal state from provider-read state, or records the local stopped state `reconciliation_unresolved` after the bounded attempt limit; Receipt_Projection appends the resulting entry.
 
 **Alternate paths**:
 - Client reload while offline: the queue and its keys survive and the display remains `queued_offline`.
 - Provider object already created before the disconnection: reconciliation reads provider state and adopts the terminal outcome without creating anything.
 
 **Error paths**:
-- A record that cannot reach a terminal state within the stated attempt bound: marked `reconciliation_unresolved`, retries stop, an operator-visible entry is surfaced.
+- A record that cannot reach a provider terminal state within the stated attempt bound: marked with the local stopped state `reconciliation_unresolved`, retries stop, an operator-visible entry is surfaced.
 - Provider unavailable during reconciliation: bounded retry with the same idempotency key, then typed `provider_unavailable`, and the record stays non-terminal until a later drain.
 
-**Postconditions**: every queued record is either terminal from provider-read state or explicitly `reconciliation_unresolved`. Exactly one provider object exists per Client_Intent_Key. Paid capability was never unlocked from queue state alone. The persisted queue holds no credential and no card or bank identifier.
+**Postconditions**: every queued record is either in a provider terminal state from provider-read state or explicitly in the local stopped state `reconciliation_unresolved`. Exactly one provider object exists per Client_Intent_Key. Paid capability was never unlocked from queue or stopped state. The persisted queue holds no credential and no card or bank identifier.
 
 #### Workflow W4: Receipt projection
 
@@ -613,13 +615,13 @@ flowchart TB
 
 **Actors**: Solo_Operator, Readiness_Gate, secret-store metadata, provider sandbox APIs, Payment_Record_Store.
 
-**Happy path**: the gate reports per rail the required credential names, their presence in server-side secret storage, whether any credential name appears in visible configuration, the configured Stripe API version, and the configured StraitsX integration model. A rail is reported ready only after a sandbox payment on that rail has reached a terminal state at least once.
+**Happy path**: the gate reports per rail the required credential names, their presence in server-side secret storage, whether any required credential is bound in visible configuration, the configured Stripe API version, and the configured StraitsX integration model. A rail is reported ready only after authenticated paid sandbox settlement, a provider-state read, and a record round trip.
 
 **Alternate path**: the reachability probe `GET https://api-sandbox.straitsx.com/v1/authorize/hello` returns `{"msg":"Hello world"}` on 200 and is used as the zero-state reachability check before any credential-dependent assertion ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)).
 
 **Error paths**:
 - A required input for an enabled rail is missing: the gate exits non-zero and mutates nothing.
-- A credential name appears in visible configuration or in client bundle output: the gate reports failure and leaves configuration unchanged.
+- A required credential is bound by name or value in visible configuration, or a credential value appears in client output: the gate reports failure and leaves configuration unchanged. Value-free static operator documentation may name required credentials.
 
 **Postconditions**: the gate wrote nothing, made zero model calls, and produced a per-rail readiness snapshot that the Commerce Payments subsection renders read-only.
 
@@ -703,7 +705,7 @@ flowchart TB
 | Stage | Component | Input Format | Output Format | Persistence | Error Handling |
 |---|---|---|---|---|---|
 | Ingest | Readiness_Gate | Rail identifier plus configuration and secret-store metadata | Required-input checklist per rail | None | A missing input is recorded and nothing is written |
-| Transform | Readiness_Gate | Checklist plus sandbox reachability probe plus terminal sandbox payment history | `{rail, requiredCredentialNames[], presentInSecretStore[], leakedIntoVisibleConfig[], stripeApiVersion, straitsxIntegrationModel, ready: bool}` | None | Non-zero exit when a required input for an enabled rail is missing |
+| Transform | Readiness_Gate | Checklist plus sandbox reachability plus trusted authenticated `paid` settlement, provider-read, and record-round-trip evidence | `{rail, requiredCredentialNames[], presentInSecretStore[], leakedIntoVisibleConfig[], stripeApiVersion, straitsxIntegrationModel, ready: bool}` | None | Missing trusted evidence, missing input, or unprovable credential mode keeps the rail not ready |
 | Store | None | - | - | Read-only, no configuration mutation | - |
 | Serve | MainPanel Commerce Payments subsection | Readiness snapshot | Read-only rendered rows | None | Row marked not ready; no write path exposed |
 
@@ -806,108 +808,79 @@ flowchart LR
   end
 ```
 
-Circuit-breaker conditions restated for the diagram: H0 aborts and reports a defect if any
-view attempts a model call or a state write. H1 aborts to the deterministic record if the
-output schema fails after one retry, or if it is invoked from any selection, creation,
-ingestion, reconciliation, settlement, or serialization path.
+Circuit-breaker conditions restated for the diagram: H0 aborts and reports a defect if any view attempts a model call or a state write. H1 aborts to the deterministic record if the output schema fails after one retry, or if it is invoked from any selection, creation, ingestion, reconciliation, settlement, or serialization path.
 
 ### Component Specifications
 
-VCC identities below are the spec's Verifiable Completion Conditions for the named
-requirement. Criterion text stays in `.kiro/specs/knowgrph-payments/requirements.md`; it is
-not restated here.
+VCC identities below are the spec's Verifiable Completion Conditions for the named requirement. Criterion text stays in `.kiro/specs/knowgrph-payments/requirements.md`; it is not restated here.
 
 ---
 
 **Component**: `Payment_Surface`
-**Responsibility**: The surface renders exactly one payment state and its next action from
-the single client-owned snapshot.
-**Interfaces**: reads the client payment snapshot; posts an intent to `Payment_API`; emits a
-retry that reuses the existing `Client_Intent_Key`.
+**Responsibility**: The surface renders exactly one payment state and its next action from the single client-owned snapshot.
+**Interfaces**: reads the client payment snapshot; posts an intent to `Payment_API`; emits a retry that reuses the existing `Client_Intent_Key`.
 **Dependencies**: `Payment_API`, `Intent_Queue`, `Receipt_Projection`.
 **Configuration**: none. The nine states are enumerated in the shared payment contract.
 **FOSS / Vendor**: FOSS, repository-owned. Extends the existing paywall overlay owner.
-**VCC Conditions**: R8-VCC1 (nine states each render a distinct label and documented next
-action), R8-VCC2 (no horizontal overflow at 375×812; every control keyboard reachable; state
-announced as text), R8-VCC3 (surface holds no local payment state field).
+**VCC Conditions**: R8-VCC1 (nine states each render a distinct label and documented next action), R8-VCC2 (no horizontal overflow at 375×812; every control keyboard reachable; state announced as text), R8-VCC3 (surface holds no local payment state field).
 
 ---
 
 **Component**: `Intent_Queue`
-**Responsibility**: The queue durably holds intents created while `Payment_API` is
-unreachable.
-**Interfaces**: local append, ordered read by creation ordinal, mark-submitted; survives a
-client reload.
+**Responsibility**: The queue durably holds intents created while `Payment_API` is unreachable.
+**Interfaces**: local append, ordered read by creation ordinal, mark-submitted; survives a client reload.
 **Dependencies**: browser-local durable storage.
 **Configuration**: maximum queue depth (bound required, see OQ-12).
 **FOSS / Vendor**: FOSS, browser platform storage. Zero egress while offline.
-**VCC Conditions**: R6-VCC1 (queued record persists with a UUID key and survives reload),
-R6-VCC5 (persisted queue holds no credential, card, or bank identifier field).
+**VCC Conditions**: R6-VCC1 (queued record persists with a UUID key and survives reload), R6-VCC5 (persisted queue holds no credential, card, or bank identifier field).
 
 ---
 
 **Component**: `Reconciler`
-**Responsibility**: The reconciler resolves every submitted intent to a terminal state from
-provider-read state under a bounded retry schedule.
-**Interfaces**: reconnect trigger; ordered submission, one `Client_Intent_Key` at a time;
-bounded retry with a stated maximum attempt count.
+**Responsibility**: The reconciler resolves every submitted intent to a provider terminal state from provider-read state, or stops locally at `reconciliation_unresolved`, under a bounded retry schedule.
+**Interfaces**: reconnect trigger; ordered submission, one `Client_Intent_Key` at a time; bounded retry with a stated maximum attempt count.
 **Dependencies**: `Intent_Queue`, `Payment_API`, both rail adapters, `Payment_Record_Store`.
 **Configuration**: maximum attempt count per record; retry backoff schedule.
 **FOSS / Vendor**: FOSS, repository-owned.
-**VCC Conditions**: R6-VCC2 (one provider object across 100 generated interleavings of the
-same key), R6-VCC3 (terminal state only from provider-read state; queue state alone never
-unlocks capability), R6-VCC4 (stops at the attempt bound and reports
-`reconciliation_unresolved`), R3-VCC5 (expired provider session transitions to `expired`).
+**VCC Conditions**: R6-VCC2 (one provider object across 100 generated interleavings of the same key), R6-VCC3 (provider terminal state only from provider-read state; queue and local stopped state never unlock capability), R6-VCC4 (stops at the attempt bound and reports `reconciliation_unresolved`), R3-VCC5 (expired provider session transitions to `expired`).
 
 ---
 
 **Component**: `Receipt_Projection`
-**Responsibility**: The projection serializes terminal records to a byte-stable document and
-parses that document back without loss.
-**Interfaces**: `serialize(records) → bytes`; `parse(bytes) → records | typed parse error`;
-offline render from local storage.
+**Responsibility**: The projection serializes terminal records to a byte-stable document and parses that document back without loss.
+**Interfaces**: `serialize(records) → bytes`; `parse(bytes) → records | typed parse error`; offline render from local storage.
 **Dependencies**: `Payment_Record_Document`, `Payment_API` (refresh only).
 **Configuration**: document location; entry field order.
 **FOSS / Vendor**: FOSS, repository-owned.
-**VCC Conditions**: R7-VCC1 (one entry per terminal record with all nine fields), R7-VCC2
-(parse-then-print byte-identical across 100 generated documents), R7-VCC3
-(print-parse-print byte-identical across 100 generated record sets), R7-VCC4 (malformed
-document yields a typed error naming the failing line; bytes unchanged), R7-VCC5 (no
-prohibited field across 100 generated records), R7-VCC6 (renders with zero network requests).
+**VCC Conditions**: R7-VCC1 (one entry per terminal record with all nine fields present, a non-null provider identifier for `paid`, and null only when no provider object was created), R7-VCC2 (parse-then-print byte-identical across 100 generated documents), R7-VCC3 (print-parse-print byte-identical across 100 generated record sets), R7-VCC4 (malformed document yields a typed error naming the failing line; bytes unchanged), R7-VCC5 (no prohibited field across 100 generated records), R7-VCC6 (renders with zero network requests).
 
-The two round-trip properties are why this component is trustworthy rather than merely
-present. They are property-based tests, not examples.
+The two round-trip properties are why this component is trustworthy rather than merely present. They are property-based tests, not examples.
 
 ---
 
 **Component**: `Payment_API`
-**Responsibility**: The route surface accepts payment operations, enforces the approval
-precondition for agent-originated calls, and returns rail-neutral typed results.
-**Interfaces**: intent create; public status read returning exactly four fields; refund
-request; read-view route for H0.
+**Responsibility**: The route surface accepts payment operations, enforces the approval precondition for agent-originated calls, and returns rail-neutral typed results.
+**Interfaces**: intent create; public status read returning exactly four fields; refund request; read-view route for H0.
 **Dependencies**: `Rail_Router`, `Payment_Record_Store`, `Approval_Gate`, `Cost_Observer`.
 **Configuration**: sandbox mode flag; per-rail enablement; pinned Stripe API version;
 StraitsX integration model.
 **FOSS / Vendor**: FOSS, repository-owned, on the existing zero-cost Worker runtime.
-**VCC Conditions**: R1-VCC1 (no secret name or value in client bundle output or visible
-Worker variables; a planted secret fails the check), R1-VCC3 (one API-version owner reflected
-in every outbound Stripe request), R9-VCC5 (identical result shape across rails), R12-VCC4
-(public status response carries exactly the four permitted fields).
+**VCC Conditions**: R1-VCC1 (no credential value in client output and no required credential binding by name or value in visible Worker variables; a planted value or binding fails the check), R1-VCC3 (one API-version owner reflected in every outbound Stripe request), R9-VCC5 (identical result shape across rails), R12-VCC4 (public status response carries exactly the four permitted fields).
 
 ---
 
 **Component**: `Rail_Router`
-**Responsibility**: The router selects exactly one rail per intent from currency, settlement
-asset, and per-rail readiness.
-**Interfaces**: pure selection function returning `{rail, reason}`; result persisted before
-any provider call.
+**Responsibility**: The router returns exactly one compatible ready rail or typed
+`rail_unavailable` per intent from currency, settlement asset, and per-rail readiness.
+**Interfaces**: pure selection function returning `{ok, rail, reason}` or typed unavailable;
+successful selection is persisted before any provider call.
 **Dependencies**: readiness state in `Payment_Record_Store`. No network access.
 **Configuration**: per-rail enablement; the card-settled currency set.
 **FOSS / Vendor**: FOSS, repository-owned. No dependency.
 **VCC Conditions**: R2-VCC1 (selection table covers SGD fiat, XSGD, non-SGD card,
-single-ready-rail, no-ready-rail), R2-VCC2 (rail and reason persisted before any provider
-call), R2-VCC3 (identical inputs yield identical output across 100 generated cases with zero
-provider calls during the property run).
+single-compatible-ready, incompatible-only-ready, unsupported-currency, and no-ready cases),
+R2-VCC2 (rail and reason persisted before any provider call), R2-VCC3 (identical inputs yield
+identical output across 100 generated cases with zero provider calls during the property run).
 
 Determinism here is a property, not a convention. It is what makes offline replay and agent
 retry safe to reason about.
@@ -1050,15 +1023,17 @@ account header rather than OAuth ([Stripe MCP](https://docs.stripe.com/mcp)).
 **Responsibility**: The gate reports per-rail configuration completeness and mutates nothing.
 **Interfaces**: per-rail and combined commands; report on stdout plus a process exit code.
 **Dependencies**: secret-store name listing, client bundle output, visible Worker variables,
-provider reachability probe, `Payment_Record_Store` sandbox payment history.
+provider reachability probe, and `Payment_Record_Store` authenticated paid sandbox history
+with provider-read and record-round-trip evidence.
 **Configuration**: required credential names per rail; enabled-rail set.
 **FOSS / Vendor**: FOSS, repository-owned. Extends the existing payment readiness script
 family.
 **VCC Conditions**: R11-VCC3 (lists required credential names per rail, performs zero writes,
-exits non-zero on any missing required input), R11-VCC4 (a rail without a terminal sandbox
-payment is reported not ready), R11-VCC5 (output names the configured Stripe API version and
-StraitsX integration model), R1-VCC1 (leak check), R12-VCC5 (`mode_mismatch` on a live-mode
-credential under sandbox mode).
+exits non-zero on any missing required input), R11-VCC4 (a rail without authenticated paid
+sandbox settlement, provider-state read, and record round trip is reported not ready),
+R11-VCC5 (output names the configured Stripe API version and StraitsX integration model),
+R1-VCC1 (leak check), R12-VCC5 (`mode_mismatch` on a live-mode credential under sandbox
+mode).
 
 The SGD rail's cheapest check is deliberately first: the connection probe proves credential
 validity and reachability without creating any financial object
@@ -1179,16 +1154,16 @@ hosted MCP surface in `knowgrph-stripe-mcp-reference.md`, SGD rail families in
 - **Dependencies**: Payment_Record_Store for terminal records, local storage for the document.
 - **Configuration**: Field order, LF line ending, single trailing newline, minor-unit integer format.
 - **FOSS / Vendor**: FOSS, repository-owned.
-- **VCC Conditions**: one entry per terminal record with all nine fields; parse then print byte-identical across 100 generated documents; print then parse then print byte-identical across 100 generated record sets; malformed input yields a typed parse error naming the line with bytes unchanged; no prohibited field across 100 generated records; the receipt view renders with zero network requests.
+- **VCC Conditions**: one entry per terminal record with all nine fields present and a non-null provider identifier for paid; parse then print byte-identical across 100 generated documents; print then parse then print byte-identical across 100 generated record sets; malformed input yields a typed parse error naming the line with bytes unchanged; no prohibited field across 100 generated records; the receipt view renders with zero network requests.
 
 #### Component: Readiness_Gate
 
 - **Responsibility**: Reports per-rail readiness without mutating configuration, and exits non-zero when a required input for an enabled rail is missing.
 - **Interfaces**: `payment:*` readiness command per rail; JSON snapshot consumed read-only by the Commerce Payments subsection.
-- **Dependencies**: secret-store metadata, visible configuration, provider sandbox reachability probe, terminal sandbox payment history in Payment_Record_Store.
+- **Dependencies**: secret-store metadata, visible configuration, provider sandbox reachability probe, and authenticated paid sandbox payment history with provider-read and record-round-trip evidence in Payment_Record_Store.
 - **Configuration**: Required credential names per rail, enabled rails, Stripe API version, StraitsX integration model.
 - **FOSS / Vendor**: FOSS, repository-owned. Extends the existing Stripe readiness gate rather than replacing it.
-- **VCC Conditions**: output lists required credential names per rail, performs zero writes, and exits non-zero on a missing input; a rail without a terminal sandbox payment is reported not ready; output names the pinned Stripe API version and the configured StraitsX integration model.
+- **VCC Conditions**: output lists required credential names per rail, performs zero writes, and exits non-zero on a missing input; a rail without authenticated paid sandbox settlement, provider-state read, and record round trip is reported not ready; output names the pinned Stripe API version and the configured StraitsX integration model.
 
 #### Component: Agent_Discovery_Surface
 
@@ -1270,7 +1245,7 @@ Dev to Prod to Cloudflare parity is preserved, and this document performs none o
 Rules that bind this increment:
 
 - Prod and Cloudflare deploys are gated on explicit operator instruction and are NOT performed by this document. No deploy, publish, or push command is issued here.
-- Rail enablement is staged. A rail is exposed only after its readiness gate reports ready, which requires a terminal sandbox payment on that rail.
+- Rail enablement is staged. A rail is exposed only after its readiness gate reports ready, which requires authenticated paid sandbox settlement, a provider-state read, and a record round trip on that rail.
 - Live-mode credentials are rejected while sandbox mode is configured, so an accidental live deploy fails closed rather than moving money.
 - Schema changes ride the existing payment migration owner. No second migration path is introduced.
 
@@ -1306,12 +1281,12 @@ flowchart LR
 |---|---|---|---|
 | Intent request | Payment_Surface, Payment_API | R6, R8 | Proposed |
 | Approval_Gate | existing approval owner | R9 | Implemented (owned elsewhere) |
-| Rail_Router | Rail_Router | R2 | Proposed |
+| Rail_Router | Rail_Router | R2 | Shared deterministic contract implemented; trust-boundary persistence proposed |
 | Stripe_Rail_Adapter | Stripe_Rail_Adapter | R3 | Implemented (owned elsewhere) for hosted Checkout; Proposed for the adapter contract |
 | StraitsX_Rail_Adapter | StraitsX_Rail_Adapter | R4 | Proposed |
 | Provider_Event_Ingress | Provider_Event_Ingress | R5 | Implemented (owned elsewhere) for Stripe webhooks; Proposed for StraitsX callbacks |
 | Reconciler | Reconciler | R6 | Proposed |
-| Receipt_Projection | Receipt_Projection | R7 | Proposed |
+| Receipt_Projection | Receipt_Projection | R7 | Shared canonical codec implemented; client local-store append and offline render proposed |
 
 #### Diagram 2: Offline capture to reconnect settlement
 
@@ -1394,11 +1369,11 @@ flowchart LR
 |---|---|---|---|
 | Client | Payment_Surface | canvas payment surface owner, rendered inside the Commerce Payments subsection | Proposed |
 | Client | Intent_Queue | existing browser-local persistence owner, named in design (OQ-12) | Proposed |
-| Client | Receipt_Projection | canvas payment record projection owner | Proposed |
+| Client | Receipt_Projection | shared codec plus canvas payment record projection owner | Shared codec implemented; client local-store append and offline render proposed |
 | Operator surface | Commerce Payments subsection rows | `canvas/src/features/panels/views/CommerceHubView.tsx` delegating to the shared settings pipeline | Implemented (owned elsewhere) |
 | Trust boundary | Payment_API rail-neutral intent routes | `cloudflare/workers/knowgrph-payment` | Proposed |
 | Trust boundary | Existing Stripe hosted Checkout and ACP checkout routes | `cloudflare/workers/knowgrph-payment` | Implemented (owned elsewhere) |
-| Trust boundary | Rail_Router | payment Worker rail routing module | Proposed |
+| Shared / trust boundary | Rail_Router | `grph-shared/src/payments/paymentRailSsot.ts`; payment Worker persistence owner | Pure deterministic contract implemented; Worker persistence before provider contact proposed |
 | Trust boundary | Stripe_Rail_Adapter | payment Worker Stripe adapter over the existing Stripe path | Implemented (owned elsewhere) for hosted Checkout; Proposed for the adapter contract |
 | Trust boundary | StraitsX_Rail_Adapter | payment Worker StraitsX adapter | Proposed |
 | Trust boundary | Provider_Event_Ingress, Stripe webhook path | payment Worker webhook route | Implemented (owned elsewhere) |
@@ -1409,18 +1384,15 @@ flowchart LR
 | Trust boundary | Agent_Discovery_Surface, payment capability metadata | payment capability metadata owner | Proposed |
 | Storage | Payment_Record_Store, existing Stripe and ACP tables | payment Worker D1 binding | Implemented (owned elsewhere) |
 | Storage | Payment_Record_Store, rail-neutral intent and cost ledger tables | payment Worker D1 binding, existing migration owner | Proposed |
-| Storage | Payment_Record_Document | local device or operator workstation | Proposed |
+| Storage | Payment_Record_Document | `grph-shared/src/payments/paymentRecordDocument.ts`; local device or operator workstation | Canonical codec implemented; local persistence integration proposed |
 | Tooling | Stripe readiness gate | existing `payment:stripe:readiness` owner | Implemented (owned elsewhere) |
-| Tooling | StraitsX readiness gate and combined per-rail gate | payment readiness script owner | Proposed |
+| Tooling | Combined layered payments readiness report | `scripts/check-knowgrph-payments-readiness.mjs` | Structural source/proof contract implemented; trusted provider proof and StraitsX provider checks pending |
 | Config SSOT | Stripe route, secret name, and MCP constants | `grph-shared/src/payments/stripePaymentSsot.ts`, `grph-shared/src/payments/stripeMcpSsot.ts` | Implemented (owned elsewhere) |
-| Config SSOT | StraitsX rail constants: base URL, header names, integration model | payment SSOT owner, new module in the same package | Proposed |
+| Config SSOT | StraitsX rail constants: base URL, header names, integration model | `grph-shared/src/payments/straitsxPaymentSsot.ts` | Implemented fail-closed for supported sandbox API-key configuration; provider adapter pending |
 
 ### Architectural Decisions
 
-Figures are at launch scale: 40 payments per month, one selection path, one event ingestion
-path, one small relational store. All costs are monthly unless stated. Provider transaction
-fees are variable cost of revenue and are deliberately absent from the infrastructure rows,
-because including them would hide which alternative actually changes fixed cost.
+Figures are at launch scale: 40 payments per month, one selection path, one event ingestion path, one small relational store. All costs are monthly unless stated. Provider transaction fees are variable cost of revenue and are deliberately absent from the infrastructure rows, because including them would hide which alternative actually changes fixed cost.
 
 ---
 
@@ -1636,7 +1608,8 @@ lost and must not become a second charge when the network returns.
 
 **Decision.** Persist unsent intents in browser-local durable storage keyed by a
 client-generated UUID, submit them in creation order on reconnect, and resolve each to a
-terminal state from provider state under a bounded retry schedule.
+provider terminal state from provider state or the local stopped state
+`reconciliation_unresolved` under a bounded retry schedule.
 
 **Alternatives Considered**
 1. **Fail fast with no queue**: Pros — no client state, simplest implementation. Cons —
@@ -1679,7 +1652,7 @@ intent and never asserts payment.
 | Scalability | Growth to 10× launch reach (400 payments/month) must require no new component | Stateless Worker plus one relational store; per-intent work is constant | Synthetic 400-payment month against sandbox; assert no new binding is required |
 | Scalability | Event redelivery storms must not multiply side effects | Event identity ledger with at-most-once side effects | Replay one identity N times; assert a single side effect |
 | Security | A forged or replayed provider event attempts to unlock a paid capability | Signature verification on the card rail; source allowlist plus mandatory provider state read on the SGD rail; four-way match before `paid` | R5 VCC suite: tampered body, wrong secret, foreign source address, conflicting payload, amount and currency mismatch |
-| Security | A provider secret leaks into the client bundle or visible Worker variables | Secrets only in server-side secret storage; gate fails on any name or value found in a visible surface | R1-VCC1 with a planted secret; the check must exit non-zero |
+| Security | A provider credential leaks into the client bundle or visible Worker variables | Values stay server-side; required credential names are forbidden as visible bindings but may appear in value-free operator documentation | R1-VCC1 with a planted credential value or visible binding; the check must exit non-zero |
 | Security | Regulated data minimization: no card number, CVV, or full bank account number anywhere in Knowgrph | Provider-hosted collection; no schema field capable of holding them; prohibited-field assertion in the serializer | R12 VCC suite across 100 generated records |
 | Security | Agent-initiated spend without authorization | Approval gate before any provider contact; mutating federated tools confirmation-required | R9-VCC2, R9-VCC3 |
 | Observability | Operator must answer "did this settle, on which rail, and what did the provider say" without a provider dashboard | One cost log entry per provider call carrying rail, operation, provider request id, outcome, elapsed ms; provider request id persisted on the intent record | R11-VCC1 over a recorded run; R3-VCC4 |
@@ -1698,7 +1671,7 @@ any task in this spec.
 **Rollout pattern.** Incremental behind per-rail enablement flags, which act as the canary
 mechanism. The card rail is already live-capable and its behaviour is unchanged. The SGD rail
 ships disabled and is enabled only after its readiness gate reports ready, which itself
-requires a terminal sandbox payment.
+requires authenticated paid sandbox settlement, a provider-state read, and a record round trip.
 
 **Order of enablement**
 1. Trust boundary and secret custody gating (R1, R12) — no buyer-visible change.
@@ -1731,8 +1704,9 @@ is reused so in-flight and failed claims stay retryable rather than frozen.
 | Shared | Card rail SSOT (routes, secret names, checkout authority) | `grph-shared/src/payments/stripePaymentSsot.ts` | Exists |
 | Shared | MCP SSOT | `grph-shared/src/payments/stripeMcpSsot.ts` | Exists |
 | Shared | Agentic commerce SSOT | `grph-shared/src/payments/agenticCommerceSsot.ts` | Exists |
-| Shared | Rail registry, selection contract, typed result envelope, record schema | new module under `grph-shared/src/payments/` | New |
-| Shared | SGD rail SSOT (headers, base URLs, integration model, secret names) | new module under `grph-shared/src/payments/` | New |
+| Shared | Rail registry and selection contract | `grph-shared/src/payments/paymentRailSsot.ts` | Implemented; Worker persistence integration pending |
+| Shared | Canonical payment record codec and public projection | `grph-shared/src/payments/paymentRecordDocument.ts` | Implemented; client local-store append and offline receipt integration pending |
+| Shared | SGD rail SSOT (headers, base URLs, integration model, secret names) | `grph-shared/src/payments/straitsxPaymentSsot.ts` | Implemented fail-closed; provider adapter pending |
 | Worker | Trust boundary entry | `cloudflare/workers/knowgrph-payment/index.ts` | Exists |
 | Worker | Card rail adapter and checkout routes | `cloudflare/workers/knowgrph-payment/payments.ts` | Exists; extend |
 | Worker | Settlement match and persistence patterns | `cloudflare/workers/knowgrph-payment/agenticCommerceSettlement.ts`, `agenticCommercePersistence.ts` | Exists; reuse |
@@ -1741,8 +1715,8 @@ is reused so in-flight and failed claims stay retryable rather than frozen.
 | Store | Payment tables | `cloudflare/d1/migrations/0002_stripe_payments.sql` | Exists |
 | Store | Webhook processing state | `cloudflare/d1/migrations/0006_stripe_webhook_processing_state.sql` | Exists; pattern reused |
 | Store | Intent records, rail-neutral event ledger, cost ledger | new additive migration | New |
-| Operator | Readiness gate family | `scripts/check-stripe-payment-readiness.mjs`, `check-agentic-payment-readiness.mjs`, `check-payment-readiness.mjs` | Exists; extend with the SGD rail |
-| Operator | SGD rail configure and readiness | new script under `scripts/` | New |
+| Operator | Readiness gate family | existing payment readiness scripts plus `scripts/check-knowgrph-payments-readiness.mjs` | Layered structural report implemented; trusted two-rail provider evidence and provider-specific SGD checks pending |
+| Operator | SGD rail configure and provider readiness | payment script owner | Pending |
 | Agent | `Agent_Discovery_Surface` capability metadata and tool registration | existing MCP transport owner plus a new capability document | New document, existing transport |
 | Agent | Federated hosted MCP transport | `docs/documents/knowgrph-mcp/knowgrph-stripe-mcp-service.md` | Exists |
 | Reference | Card rail API capture | `docs/documents/knowgrph-api-reference/knowgrph-stripe-api-reference.md` | Exists; Core Request Semantics section added |
@@ -1754,32 +1728,25 @@ is reused so in-flight and failed claims stay retryable rather than frozen.
 
 # PART III - AGENT-PLATFORM READINESS
 
-All three readiness dimensions are in scope. No ambiguous "agent-ready" claim is made: each
-dimension below names its surface, tier, spend boundary, and VCCs.
+All three readiness dimensions are target contracts in scope. Their current implementation is partial: payment-scoped OS views, capability discovery, and complete gateway policy remain blocked in the Readiness Gap Matrix. Each target below names its surface, tier, spend boundary, and VCCs.
 
 ## Agentic OS: Knowgrph Payments
 
-**Tool surface**: one read-only status view on the existing OS status surface owner, taking a
-`view` argument (`rail_readiness`, `cost_summary`). A single tool with a view argument is chosen
-over per-view tools to match the existing OS surface convention and to avoid introducing a new
-tool family; see H0 for the harness contract.
+**Tool surface**: one read-only status view on the existing OS status surface owner, taking a `view` argument (`rail_readiness`, `cost_summary`). A single tool with a view argument is chosen over per-view tools to match the existing OS surface convention and to avoid introducing a new tool family; see H0 for the harness contract.
 **Tier**: Must.
 **Token cost**: `$0.00`, zero model calls per view.
-**Spend boundary**: strictly read-only. The view must not create, mutate, refund, or reconcile
-a payment, and must not issue, verify, or consume an approval token.
+**Spend boundary**: strictly read-only. The view must not create, mutate, refund, or reconcile a payment, and must not issue, verify, or consume an approval token.
 
 | View | Aggregates over | Partial-failure behaviour |
 |---|---|---|
-| `rail_readiness` | Per-rail readiness verdict, required credential names and presence, configured Stripe API version, configured StraitsX integration model, terminal sandbox payment proof | Names every unreachable source in `unavailableSources[]`; never reports ready optimistically |
+| `rail_readiness` | Per-rail readiness verdict, required credential names and presence, configured Stripe API version, configured StraitsX integration model, authenticated paid sandbox settlement, provider-state read, and record-round-trip proof | Names every unreachable source in `unavailableSources[]`; never reports ready optimistically |
 | `cost_summary` | Per-call provider cost log entries, model cost total (expected `0.00`), per-rail counts and outcomes | Reports a log gap explicitly rather than presenting a complete-looking ledger |
 
-**VCCs**: R11-VCC6 (typed output, zero mutation, zero model calls), R11-VCC3 and R11-VCC5
-(readiness content), R11-VCC1 (ledger completeness per recorded run).
+**VCCs**: R11-VCC6 (typed output, zero mutation, zero model calls), R11-VCC3 and R11-VCC5 (readiness content), R11-VCC1 (ledger completeness per recorded run).
 
 ## AI Agent Discovery: Knowgrph Payments
 
-**Surface**: machine-readable payment capability metadata plus typed harness contracts,
-segmented by trust boundary.
+**Surface**: machine-readable payment capability metadata plus typed harness contracts, segmented by trust boundary.
 **Tier**: Must.
 **Token cost**: `$0.00` on discovery; harness-dependent on execution and always logged.
 
@@ -1824,7 +1791,7 @@ and spend safety precedes any live orchestration.
    Must).
 4. Approval-gated intent create and refund tools with a zero-cost rejection proof (spend
    safety, Must).
-5. A terminal sandbox payment driven end-to-end by an agent (live proof, Must).
+5. An authenticated paid sandbox payment with provider-state read and record round trip driven end-to-end by an agent (live proof, Must).
 6. Surfacing the readiness and ledger views inside the MainPanel Commerce Payments subsection
    (Follow-on).
 
@@ -1838,13 +1805,13 @@ refers to the Dev runtime only.
 | Workstream | Current state | Gap | Priority | Exit criteria (VCC) |
 |---|---|---|---|---|
 | Card rail collection | Runtime-ready in Dev: hosted Checkout, webhook processing state, and payment tables exist | No rail-neutral intent record; idempotency key not derived from a client intent key | Must | R3-VCC1, R3-VCC2, R3-VCC4 |
-| Rail selection | Not present; surfaces branch implicitly | No router, no recorded selection reason | Must | R2-VCC1, R2-VCC2, R2-VCC3 |
-| SGD rail collection | Not present | Adapter, integration-model configuration, secret names, sandbox base URL, and readiness gate all absent | Must | R4-VCC1 … R4-VCC5 |
+| Rail selection | Pure shared contract and 100-run determinism proof implemented in Dev | Worker persistence before provider contact is not wired | Must | R2-VCC1, R2-VCC2, R2-VCC3 |
+| SGD rail collection | Sandbox/config/header SSOT implemented fail-closed in Dev | Provider adapter remains blocked by OQ-2 and OQ-10; XSGD remains blocked by OQ-9 | Must | R4-VCC1 … R4-VCC5 |
 | XSGD acceptance | Not present | Deposit-address path and network allowlist absent; inbound path unconfirmed (OQ-9) | Should | R4-VCC3 |
 | Event authenticity | Card rail verified in Dev; SGD rail absent | SGD source-address check and mandatory provider state read absent; signature mechanism unconfirmed (OQ-6) | Must | R5-VCC1, R5-VCC2, R5-VCC6 |
 | Offline continuity | Not present | Queue, reconciler, and bounded retry absent; queue size bound unspecified (OQ-12) | Must | R6-VCC1 … R6-VCC4 |
-| Local audit trail | Not present | Serializer, parser, and round-trip properties absent | Must | R7-VCC1 … R7-VCC6 |
-| Secret custody gating | Asserted by the existing configure and readiness scripts; not gated for the SGD rail | Leak check does not cover SGD secret names; no `mode_mismatch` check | Must | R1-VCC1, R12-VCC5 |
+| Local audit trail | Canonical nine-field JSON Lines serializer/parser and 100-run round-trip proof implemented in Dev | Client local-store append and offline receipt projection absent | Must | R7-VCC1 … R7-VCC6 |
+| Secret custody gating | Visible Worker variables are checked against shared Stripe and StraitsX credential names; built-client value patterns are scanned | StraitsX value-format coverage, outbound-header proof, secret-store presence, and readiness-level `mode_mismatch` enforcement remain incomplete; a generic StraitsX API-key binding cannot independently prove sandbox versus live credential provenance | Must | R1-VCC1, R12-VCC5 |
 | Agentic OS views | Not present as payment-scoped views | `rail_readiness` and `cost_summary` views absent | Must | R11-VCC6, R11-VCC1 |
 | Agent discovery | Agentic commerce discovery exists; payment capability metadata does not | Capability metadata and rail-neutral result schema absent | Must | R9-VCC1, R9-VCC5 |
 | Gateway federation | Hosted transport already documented by the MCP service owner | Per-tool confirmation policy not asserted for payment-mutating tools; tool list not pinned (OQ-4) | Must | R9-VCC3, R9-VCC4 |
@@ -1909,6 +1876,37 @@ than inferred.
 ---
 
 # PART V - VALIDATION STATUS
+
+## Runtime Readiness Implementation
+
+Status: **Implemented — runtime readiness blocked**.
+
+`--provider-proof` accepts unsigned candidate evidence for structural validation only.
+It does not authenticate a provider run, cannot satisfy R11, and cannot make the
+capability ready. A trusted attestation producer or direct provider check must replace
+that candidate boundary before the provider gate can be treated as green.
+
+- [x] One executable, read-only `payment:runtime:readiness` command reports source,
+  provider sandbox, canonical runtime, protected integration, and deployment as
+  separate gates.
+- [x] The report binds a structurally validated provider-proof document to a SHA-256
+  digest of the source evidence inventory and requires the documented paid-sandbox
+  fields. The document alone is not authenticated provider evidence.
+- [x] The pure rail-selection contract is compatibility-first and deterministically
+  returns one rail or typed `rail_unavailable`; an incompatible ready rail is never
+  selected. Trust-boundary persistence before provider contact remains pending.
+- [x] The pure payment-record codec has nine exact fields, canonical LF JSON Lines,
+  typed parse failures, PII-rejecting identifiers, and 100-run round-trip proof.
+  Client local-store append and offline receipt integration remain pending.
+- [x] StraitsX sandbox configuration, credential names, and header names have one
+  shared owner; unresolved integration, method, and signing modes fail closed.
+- [ ] All R1-R12 source owners complete — the machine-readable readiness manifest
+  reports each partial or absent owner.
+- [ ] A trusted producer or immutable run-artifact attestation proves authenticated
+  paid sandbox settlement, provider-state read, and record round-trip evidence for
+  Stripe and StraitsX. Caller-authored JSON cannot close this gate.
+- [ ] Canonical exact-main, protected integration, and deployment proof — intentionally
+  outside this local Dev command and current release authority.
 
 ## Pre-Implementation
 

@@ -263,6 +263,21 @@
       "import": "./dist/payments/stripePaymentSsot.js",
       "default": "./dist/payments/stripePaymentSsot.js"
     },
+    "./payments/paymentRailSsot": {
+      "types": "./dist/payments/paymentRailSsot.d.ts",
+      "import": "./dist/payments/paymentRailSsot.js",
+      "default": "./dist/payments/paymentRailSsot.js"
+    },
+    "./payments/paymentRecordDocument": {
+      "types": "./dist/payments/paymentRecordDocument.d.ts",
+      "import": "./dist/payments/paymentRecordDocument.js",
+      "default": "./dist/payments/paymentRecordDocument.js"
+    },
+    "./payments/straitsxPaymentSsot": {
+      "types": "./dist/payments/straitsxPaymentSsot.d.ts",
+      "import": "./dist/payments/straitsxPaymentSsot.js",
+      "default": "./dist/payments/straitsxPaymentSsot.js"
+    },
     "./payments/agenticCommerceSemanticKey": {
       "types": "./dist/payments/agenticCommerceSemanticKey.d.ts",
       "import": "./dist/payments/agenticCommerceSemanticKey.js",
@@ -433,6 +448,7 @@
     "@types/node": "^22.15.30",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "fast-check": "3.23.2",
     "typescript": "~5.8.3"
   },
   "dependencies": {
