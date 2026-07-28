@@ -163,6 +163,14 @@ test('production release is automatic only for protected main and retains rollba
   assert.match(releaseWorkflow, /if: failure\(\) && steps\.deploy_pages\.outcome == 'success'/)
 })
 
+test('production release bounds same-run artifacts to one day', () => {
+  const retentionDays = [...releaseWorkflow.matchAll(/retention-days:\s*(\d+)/g)]
+    .map(([, days]) => Number(days))
+  assert.deepEqual(retentionDays, [1, 1])
+  assert.match(releaseWorkflow, /name: production-\$\{\{ github\.sha \}\}/)
+  assert.match(releaseWorkflow, /name: immutable-release-manifest-\$\{\{ github\.sha \}\}/)
+})
+
 test('Agentic Canvas OS docs promote automatically through protected Knowgrph integration', () => {
   assert.match(promotionWorkflow, /schedule:\s*\n\s*- cron:/)
   assert.doesNotMatch(promotionWorkflow, /workflow_dispatch:/)
