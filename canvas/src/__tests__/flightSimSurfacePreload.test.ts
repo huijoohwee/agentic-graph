@@ -3,10 +3,13 @@ import test from 'node:test'
 import type { ComponentType } from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
+  advanceFlightSimByFixedStep,
   exitFlightSimSurface,
   openFlightSimSurface,
   readFlightSimSnapshot,
   resetFlightSimRuntimeForTests,
+  setFlightSimInput,
+  startFlightSim,
 } from '@/features/game-flight-sim/flightSimRuntime'
 import {
   readFlightSimDecisionStore,
@@ -15,12 +18,20 @@ import {
 import {
   setFlightSimMissionStageImporterForTests,
 } from '@/lib/three/flightSimMissionStageLoader'
+import {
+  readXrMotionReferenceRuntime,
+  setXrMotionReferenceStage,
+} from '@/features/three/xrMotionReferenceRuntime'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import {
   beginWorkspaceSeedSyncTask,
   readWorkspaceSeedSyncRuntimeSnapshot,
   resetWorkspaceSeedSyncRuntimeForTests,
 } from '@/lib/workspace/workspaceSeedSyncRuntime'
+import {
+  completeFlightSimStagePreparation,
+  readCurrentFlightSimStagePreparationRequest,
+} from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
 
 const EMPTY_WORKSPACE = {
   readFileText: async () => null,
@@ -339,6 +350,97 @@ test('serialized surface opens share one mission-stage import', async () => {
     assert.equal(importAttempts, 1)
   } finally {
     releaseImport()
+    restoreImporter()
+    resetHarness()
+  }
+})
+
+test('active ready and flying surface reopens preserve exact mission state', async () => {
+  configurePriorSurface()
+  const restoreImporter = setFlightSimMissionStageImporterForTests(
+    async () => missionStageModule,
+  )
+  try {
+    await openFlightSimSurface({
+      openPanel: false,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    const ready = startFlightSim()
+    const reopenedReady = await openFlightSimSurface({
+      openPanel: false,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    assert.equal(reopenedReady.phase, ready.phase)
+    assert.equal(reopenedReady.runId, ready.runId)
+    assert.equal(reopenedReady.tick, ready.tick)
+
+    setFlightSimInput({ pitch: 0.25 })
+    const flying = await advanceFlightSimByFixedStep()
+    const reopenedFlying = await openFlightSimSurface({
+      openPanel: false,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    assert.equal(reopenedFlying.phase, flying.phase)
+    assert.equal(reopenedFlying.runId, flying.runId)
+    assert.equal(reopenedFlying.tick, flying.tick)
+    assert.deepEqual(reopenedFlying.aircraft, flying.aircraft)
+  } finally {
+    restoreImporter()
+    resetHarness()
+  }
+})
+
+test('active terrain profile changes require a fresh renderer preparation', async () => {
+  configurePriorSurface()
+  const restoreImporter = setFlightSimMissionStageImporterForTests(
+    async () => missionStageModule,
+  )
+  const previousStageId = readXrMotionReferenceRuntime().plan.stageId
+  const previousGlobals = {
+    document: globalThis.document,
+    window: globalThis.window,
+  }
+  try {
+    await openFlightSimSurface({
+      openPanel: false,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    setXrMotionReferenceStage(
+      previousStageId === 'singapore' ? 'tropical-playground' : 'singapore',
+    )
+    Object.assign(globalThis, {
+      document: {},
+      window: { requestAnimationFrame: () => 1 },
+    })
+
+    const reopening = openFlightSimSurface({
+      openPanel: false,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    let preparationRequestId: number | null = null
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      preparationRequestId = readCurrentFlightSimStagePreparationRequest()
+      if (preparationRequestId !== null) break
+      await new Promise<void>(resolve => {
+        setTimeout(resolve, 0)
+      })
+    }
+    assert.notEqual(preparationRequestId, null)
+    assert.equal(
+      completeFlightSimStagePreparation(preparationRequestId!),
+      true,
+    )
+    const reopened = await reopening
+    assert.equal(reopened.active, true)
+    assert.equal(reopened.phase, 'stopped')
+  } finally {
+    Object.assign(globalThis, previousGlobals)
+    setXrMotionReferenceStage(previousStageId)
     restoreImporter()
     resetHarness()
   }

@@ -423,6 +423,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     coordinateScale={gameplayCoordinateScale}
     flightSimActive={flightStageActive}
     gameFpsActive={gameFpsStageActive}
+    geospatialComposite={geospatialComposite}
   />
   return (
     <section
@@ -452,10 +453,12 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     >
       <Canvas
         key={rendererLifecycleKey}
+        data-kg-three-canvas-owner="1"
         frameloop={paused ? 'demand' : 'always'}
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={{ antialias: true, alpha: true }}
+        style={geospatialComposite ? { pointerEvents: 'none' } : undefined}
         onCreated={({ gl, scene, camera }) => {
           gl.xr.enabled = mode === 'xr'
           try {
@@ -506,7 +509,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             contentOffset={xrWorldContentOffset}
           >
             {gameplayStage}
-            {hasXrEmptyWorld ? (
+            {!geospatialComposite && hasXrEmptyWorld ? (
               <group name="kg_xr_empty_world">
                 <XrEmptyWorldStage />
               </group>
@@ -533,7 +536,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
                 geospatialComposite={geospatialComposite}
               />
             ) : null}
-            {glbAsset && shouldRenderGlbAsset ? (
+            {!geospatialComposite && glbAsset && shouldRenderGlbAsset ? (
               <GlbAssetModel
                 key={glbAssetRenderKey}
                 asset={glbAsset}
@@ -543,7 +546,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
                 onFitChange={handleGlbAssetFitChange}
               />
             ) : null}
-            {spatialCaptureManifest ? (
+            {!geospatialComposite && spatialCaptureManifest ? (
               <SpatialCaptureManifestStage
                 manifest={spatialCaptureManifest}
                 paused={authoredWorldPaused}
@@ -560,7 +563,6 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
             mode={mode}
             flightSimActive={flightStageActive}
             gameplayCoordinateScale={gameplayCoordinateScale}
-            geospatialComposite={geospatialComposite}
             modelAssetRenderKey={spatialCaptureRenderKey || glbAssetRenderKey}
             modelAssetFit={spatialCaptureRenderKey ? spatialCaptureFit : glbAssetFit}
             xrEmptyWorld={hasXrEmptyWorld}

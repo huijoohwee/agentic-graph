@@ -9,7 +9,16 @@ import {
   openFlightSimSurface,
   readFlightSimSnapshot,
   resetFlightSimRuntimeForTests,
+  waitForFlightSimSurfaceRestoration,
 } from '@/features/game-flight-sim/flightSimRuntime'
+import {
+  isGeospatialModeEnabled,
+  setGeospatialModeEnabled as setGympgrphGeospatialModeEnabled,
+} from 'gympgrph'
+import {
+  readGeospatialOverlayEnabledPreference,
+  writeGeospatialOverlayEnabledPreference,
+} from '@/lib/geospatial/geospatialModePreference'
 import {
   resetFlightSimDecisionStoreForTests,
 } from '@/features/game-flight-sim/flightSimDecisionStore'
@@ -18,6 +27,9 @@ import {
   FLIGHT_SIM_SURFACE_RESTORATION_FAILURE_CODE,
   readFlightSimSurfaceOwnershipStatus,
 } from '@/features/game-flight-sim/flightSimSurfaceOwnershipStatus'
+import {
+  captureFlightSimPreviousCanvasSurface,
+} from '@/features/game-flight-sim/flightSimSurfaceOwnershipRuntime'
 import {
   hydrateXrPhysicsRuntime,
   pauseXrPhysicsRuntime,
@@ -48,6 +60,7 @@ type PriorSurfaceCase = Readonly<{
   timelinePlaybackRate: number
   physicsPhase: XrPhysicsRuntimePhase
   cameraMode: XrNativeControllerCameraMode
+  geospatialModeEnabled: boolean
   openPanel: boolean
   graphToken: string
 }>
@@ -71,6 +84,7 @@ const priorSurfaceArbitrary: fc.Arbitrary<PriorSurfaceCase> = fc.record({
   timelinePlaybackRate: fc.constantFrom(0.5, 1, 1.5, 2),
   physicsPhase: fc.constantFrom<XrPhysicsRuntimePhase>('stopped', 'paused', 'playing'),
   cameraMode: fc.constantFrom<XrNativeControllerCameraMode>('fixed-follow', 'free-orbit'),
+  geospatialModeEnabled: fc.boolean(),
   openPanel: fc.boolean(),
   graphToken: fc.string({ minLength: 1, maxLength: 16 }),
 })
@@ -116,6 +130,8 @@ function configurePriorSurface(value: PriorSurfaceCase, scenario: string): void 
   if (value.physicsPhase !== 'stopped') playXrPhysicsRuntime()
   if (value.physicsPhase === 'paused') pauseXrPhysicsRuntime()
   selectXrNativeControllerCameraMode(value.cameraMode)
+  writeGeospatialOverlayEnabledPreference(value.geospatialModeEnabled)
+  setGympgrphGeospatialModeEnabled(value.geospatialModeEnabled)
 }
 
 function capturePriorSurface() {
@@ -138,6 +154,10 @@ function capturePriorSurface() {
       playbackRate: state.timelineTransportPlaybackRate,
     },
     controller: readXrNativeControllerCamera().mode,
+    geospatial: {
+      preference: readGeospatialOverlayEnabledPreference(),
+      runtime: isGeospatialModeEnabled(),
+    },
     physics: {
       phase: physics.phase,
       world: JSON.stringify(physics.world),
@@ -154,22 +174,40 @@ function assertOneCanvas(document: Document): void {
   assert.equal(document.querySelectorAll('canvas').length, 1)
 }
 
+function stageFlightSourceSurfacePreset() {
+  const previousCanvasSurface = captureFlightSimPreviousCanvasSurface()
+  useGraphStore.setState({
+    canvasRenderMode: '3d',
+    canvas3dMode: 'xr',
+    canvasRenderModeLastFree: '3d',
+    canvasRenderModeIsAuto: false,
+    floatingPanelOpen: true,
+    floatingPanelView: 'flightSim',
+  } as never)
+  writeGeospatialOverlayEnabledPreference(true)
+  setGympgrphGeospatialModeEnabled(true)
+  return previousCanvasSurface
+}
+
 async function assertSuccessfulRoundTrip(
   value: PriorSurfaceCase,
   document: Document,
 ): Promise<void> {
   configurePriorSurface(value, 'success')
   const prior = capturePriorSurface()
+  const previousCanvasSurface = stageFlightSourceSurfacePreset()
   const entered = await openFlightSimSurface({
     openPanel: value.openPanel,
+    previousCanvasSurface,
     webglSupported: true,
     workspace: EMPTY_WORKSPACE,
   })
-  assert.equal(entered.active, true)
+  assert.equal(entered.active, true, entered.runtimeError || 'Flight surface did not activate')
   assert.equal(entered.runtimeError, null)
   assert.equal(readFlightSimSurfaceOwnershipStatus().failure, null)
   assertOneCanvas(document)
   const exited = exitFlightSimSurface()
+  await waitForFlightSimSurfaceRestoration()
   assert.equal(exited.active, false)
   assert.equal(exited.runtimeError, null)
   assertPriorSurfaceRestored(prior)
@@ -182,8 +220,10 @@ async function assertEntryFailureIsAtomic(
 ): Promise<void> {
   configurePriorSurface(value, 'entry-failure')
   const prior = capturePriorSurface()
+  const previousCanvasSurface = stageFlightSourceSurfacePreset()
   const failed = await openFlightSimSurface({
     openPanel: value.openPanel,
+    previousCanvasSurface,
     webglSupported: false,
     workspace: EMPTY_WORKSPACE,
   })
@@ -202,12 +242,15 @@ async function assertExitRestorationFailureIsLocal(
 ): Promise<void> {
   configurePriorSurface(value, 'restoration-failure')
   const prior = capturePriorSurface()
+  const previousCanvasSurface = stageFlightSourceSurfacePreset()
   const entered = await openFlightSimSurface({
     openPanel: value.openPanel,
+    previousCanvasSurface,
     webglSupported: true,
     workspace: EMPTY_WORKSPACE,
   })
   assert.equal(entered.active, true)
+  const suspended = capturePriorSurface()
   const originalSetCanvas3dMode = useGraphStore.getState().setCanvas3dMode
   useGraphStore.setState({
     setCanvas3dMode: () => {
@@ -224,8 +267,8 @@ async function assertExitRestorationFailureIsLocal(
     assert.match(failure?.message || '', /property-44 restoration/)
     assert.equal(JSON.stringify(useGraphStore.getState().graphData), prior.graph)
     assert.equal(readXrNativeControllerCamera().mode, prior.controller)
-    assert.deepEqual(capturePriorSurface().timeline, prior.timeline)
-    assert.deepEqual(capturePriorSurface().physics, prior.physics)
+    assert.deepEqual(capturePriorSurface().timeline, suspended.timeline)
+    assert.deepEqual(capturePriorSurface().physics, suspended.physics)
     assertOneCanvas(document)
   } finally {
     useGraphStore.setState({ setCanvas3dMode: originalSetCanvas3dMode } as never)
@@ -234,9 +277,24 @@ async function assertExitRestorationFailureIsLocal(
 
 // Feature: knowgrph-game-flight-sim, Property 44 - Canvas ownership preserved across enter/exit and failures
 test('Feature: knowgrph-game-flight-sim, Property 44 - Canvas ownership preserved across enter/exit and failures', async () => {
-  const dom = new JSDOM('<!doctype html><html><body><canvas id="shared-xr-canvas"></canvas></body></html>')
-  const previousGlobals = { window: globalThis.window, document: globalThis.document }
-  Object.assign(globalThis, { window: dom.window, document: dom.window.document })
+  const dom = new JSDOM(
+    '<!doctype html><html><body><canvas id="shared-xr-canvas"></canvas></body></html>',
+    { url: 'http://127.0.0.1/' },
+  )
+  const previousGlobals = {
+    window: globalThis.window,
+    document: globalThis.document,
+    Event: globalThis.Event,
+    CustomEvent: globalThis.CustomEvent,
+    localStorage: globalThis.localStorage,
+  }
+  Object.assign(globalThis, {
+    window: dom.window,
+    document: dom.window.document,
+    Event: dom.window.Event,
+    CustomEvent: dom.window.CustomEvent,
+    localStorage: dom.window.localStorage,
+  })
   try {
     await fc.assert(
       fc.asyncProperty(priorSurfaceArbitrary, async prior => {
@@ -249,6 +307,8 @@ test('Feature: knowgrph-game-flight-sim, Property 44 - Canvas ownership preserve
           resetFlightSimDecisionStoreForTests()
           resetFlightSimRuntimeForTests()
           stopXrPhysicsRuntime()
+          writeGeospatialOverlayEnabledPreference(false)
+          setGympgrphGeospatialModeEnabled(false)
           useGraphStore.getState().resetAll()
         }
       }),

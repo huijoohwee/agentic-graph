@@ -17,7 +17,7 @@ import {
 } from '../../scripts/lib/game-flight-sim-browser-proof-orchestration.mjs'
 import {
   assertExactFlightSimBrowserVerificationLedger,
-  assertExactFlightSimRendererOptionalBeacon,
+  assertExactFlightSimOptionalBeaconAdmission,
 } from '../../scripts/lib/game-flight-sim-browser-evidence.mjs'
 import {
   prepareFlightSimBrowserEvidencePublication,
@@ -208,7 +208,7 @@ async function readValidatedRunEvidence({
     },
     readyFrame: {
       limitMs: 100,
-      source: 'shared-flight-surface-ready-frame',
+      source: 'native-maplibre-flight-ready-frame',
       synchronous: false,
     },
     hudUpdate: {
@@ -244,15 +244,16 @@ async function readValidatedRunEvidence({
     && evidence?.deadlines?.readyFrame?.tick === 0
     && evidence?.deadlines?.gameplayNetworkBlock?.operation
       === 'fetch:GET:/api/storage/flight-sim-browser-deadline-proof'
-    && evidence?.deadlines?.gameplayNetworkBlockedError?.code
-      === 'FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED'
+    && evidence?.deadlines?.gameplayNetworkExecutorInvoked === false
+    && evidence?.deadlines?.gameplayNetworkMissionStateRetained === true
+    && evidence?.deadlines?.gameplayNetworkBlockedSnapshot?.runtimeError
+      === 'Flight Sim blocked gameplay network operation: fetch:GET:/api/storage/flight-sim-browser-deadline-proof'
     && evidence?.deadlines?.gameplayNetworkTransportObserved === false
     && evidence?.deadlines?.gameplayWebSocketBlock?.operation
       === expectedWebSocketOperation
-    && evidence?.deadlines?.gameplayWebSocketBlockedError?.code
-      === 'FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED'
-    && evidence?.deadlines?.gameplayWebSocketBlockedError?.operation
-      === expectedWebSocketOperation
+    && evidence?.deadlines?.gameplayWebSocketExecutorInvoked === false
+    && evidence?.deadlines?.gameplayWebSocketBlockedSnapshot?.runtimeError
+      === `Flight Sim blocked gameplay network operation: ${expectedWebSocketOperation}`
     && evidence?.deadlines?.gameplayWebSocketFlightActive === true
     && evidence?.deadlines?.gameplayWebSocketMissionStateRetained === true
     && evidence?.deadlines?.gameplayWebSocketTransportObserved === false
@@ -261,10 +262,83 @@ async function readValidatedRunEvidence({
     && evidence?.deadlines?.gameplayWebSocketRouteHits?.length === 0
     && evidence?.deadlines?.hudUpdate?.browserElapsedMs <= 100
   )
+  const expectedGeoXrViews = [
+    {
+      viewMode: '2d',
+      projection: 'mercator',
+      styleUrl: 'https://demotiles.maplibre.org/style.json',
+    },
+    {
+      viewMode: '2d-modern',
+      projection: 'mercator',
+      styleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+    },
+    {
+      viewMode: '3d',
+      projection: 'globe',
+      styleUrl: 'https://demotiles.maplibre.org/globe.json',
+    },
+    {
+      viewMode: '3d-modern',
+      projection: 'globe',
+      styleUrl: 'https://tiles.openfreemap.org/styles/liberty',
+    },
+  ]
+  const geoXrViews = evidence?.geoXrPresentation?.views
+  const geoXrPresentationPassed = (
+    Array.isArray(geoXrViews)
+    && geoXrViews.length === expectedGeoXrViews.length
+    && geoXrViews.every((view, index) => {
+      const expected = expectedGeoXrViews[index]
+      return (
+        view?.viewMode === expected.viewMode
+        && view?.projection === expected.projection
+        && view?.styleUrl === expected.styleUrl
+        && view?.hostActive === true
+        && typeof view?.hostRevision === 'string'
+        && view.hostRevision.length > 0
+        && view?.visibleMapLibreCanvasCount === 1
+        && view?.rendererCanvasCount === 1
+        && view?.rendererAlpha === true
+        && view?.nativeVisualCount === 0
+        && view?.flightR3fVisualCount === 0
+        && view?.visualProjection === 'maplibre'
+        && view?.rendererPointerTransparent === true
+        && view?.exclusivePlainGeoOverlayCount === 0
+        && view?.flightLayersReady === true
+        && view?.flightLayersTopmost === true
+        && view?.aircraftLayerType === 'symbol'
+        && view?.routeInViewport === true
+        && view?.aircraftInViewport === true
+        && Math.max(
+          Number(view?.routeScreenSpan?.x || 0),
+          Number(view?.routeScreenSpan?.y || 0),
+        ) >= 80
+        && JSON.stringify(view?.renderedKinds)
+          === JSON.stringify(['aircraft', 'route', 'route-point'])
+        && Number(view?.renderedFeatureCount || 0) >= 3
+        && Number.isFinite(view?.mapPointerHit?.x)
+        && Number.isFinite(view?.mapPointerHit?.y)
+      )
+    })
+    && evidence?.geoXrPresentation?.sourceView
+      === evidence?.geoXrPresentation?.restoredView?.viewMode
+    && evidence?.geoXrPresentation?.sourceStyleUrl
+      === evidence?.geoXrPresentation?.restoredView?.styleUrl
+    && evidence?.geoXrPresentation?.liveMovement?.after?.flightTick
+      > evidence?.geoXrPresentation?.liveMovement?.before?.flightTick
+    && evidence?.geoXrPresentation?.liveMovement?.after?.overlayRevision
+      !== evidence?.geoXrPresentation?.liveMovement?.before?.overlayRevision
+    && JSON.stringify(
+      evidence?.geoXrPresentation?.liveMovement?.after?.aircraftCoordinate,
+    ) !== JSON.stringify(
+      evidence?.geoXrPresentation?.liveMovement?.before?.aircraftCoordinate,
+    )
+  )
   await assertExactFlightSimBrowserVerificationLedger(
     evidence?.verificationLedger,
   )
-  assertExactFlightSimRendererOptionalBeacon(
+  assertExactFlightSimOptionalBeaconAdmission(
     evidence?.renderer?.optionalBeacon,
     {
       expectedPath: FLIGHT_SIM_OPTIONAL_GLB_PATH,
@@ -274,7 +348,8 @@ async function readValidatedRunEvidence({
     },
   )
   if (
-    evidence?.candidate?.head !== candidateHead
+    evidence?.schema !== 'knowgrph-flight-sim-browser-run/v5'
+    || evidence?.candidate?.head !== candidateHead
     || evidence?.candidate?.tree !== candidateTree
     || evidence?.candidate?.branch !== candidateBranch
     || evidence?.candidate?.runtimeRevision !== candidateHead
@@ -318,6 +393,17 @@ async function readValidatedRunEvidence({
     || evidence?.webSocketAttempts?.routeHits?.length !== 0
     || evidence?.webSocketAttempts?.unexpectedEvents?.length !== 0
     || evidence?.webSocketAttempts?.unexpectedRouteHits?.length !== 0
+    || evidence?.renderer?.mapLibreCanvasCount !== 1
+    || evidence?.renderer?.visibleMapLibreCanvasCount !== 1
+    || evidence?.renderer?.transparentFlightRuntimeCanvas !== true
+    || evidence?.renderer?.mapLibreOwnsVisualProjection !== true
+    || evidence?.renderer?.nativeXrVisualsSuppressed !== true
+    || evidence?.renderer?.r3fFlightVisualsSuppressed !== true
+    || !geoXrPresentationPassed
+    || !Array.isArray(evidence?.geoProviderRequests)
+    || evidence.geoProviderRequests.length === 0
+    || evidence?.unexpectedNonLocalRequests?.length !== 0
+    || evidence?.blockedRequests?.length !== 0
     || !deadlinesPassed
   ) {
     throw new Error(
@@ -383,7 +469,7 @@ async function runCandidateProof() {
   })
 
   const aggregate = {
-    schema: 'knowgrph-flight-sim-browser-proof/v3',
+    schema: 'knowgrph-flight-sim-browser-proof/v5',
     candidate: {
       head: candidateHead,
       tree: candidateTree,

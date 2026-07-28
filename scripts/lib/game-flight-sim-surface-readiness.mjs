@@ -14,6 +14,7 @@ export async function assertFlightSimSurfaceReadiness({
     'useFlightSimSurfaceControls({',
     "snapshot.phase === 'ready' || snapshot.phase === 'flying'",
     'const removeAfterRender = addAfterEffect(() => {',
+    'if (!actorsVisible) {',
     "canvas.dataset.kgFlightSimFirstFrame = '1'",
     'completeFlightSimReadyFrame(presentation.runId, presentation.tick)',
   ], 'Flight Sim actor stage')
@@ -31,6 +32,7 @@ export async function assertFlightSimSurfaceReadiness({
     'readFlightSimTouchInput()',
     'readStandardFlightSimGamepad()',
     'flightSimInputFromMotionController(',
+    'isFlightSimReadyFramePresentationPending(',
     'runFlightSimStageSimulationStep({',
   ], 'shared Flight Sim surface controls')
 
@@ -47,7 +49,8 @@ export async function assertFlightSimSurfaceReadiness({
   const environmentGeoButtonSource = await readText(`${flightFeatureRoot}/FlightSimEnvironmentGeoButton.tsx`)
   requireSourceMarkers(environmentGeoButtonSource, [
     'selectFlightSimGeoEnvironment(',
-    'openFlightSimSurface({ openPanel: false })',
+    'geospatialComposite: true,',
+    'openPanel: false,',
   ], 'Flight Sim local Geo handoff')
   if (environmentGeoButtonSource.includes('setGeospatialViewMode(')) {
     throw new Error('Flight environment handoff must preserve the selected Geo presentation')
@@ -58,7 +61,110 @@ export async function assertFlightSimSurfaceReadiness({
     'flightSimActive,',
     '<CanvasViewportGeospatialOverlayLazy',
     '<FlightSimGeoSurfaceOverlayLazy />',
+    '<FlightSimHud />',
   ], 'Flight Sim Geo viewport composition')
+  if (
+    canvasViewportSource.includes('FlightSimHudLazy')
+    || canvasViewportSource.includes('loadFlightSimHud')
+  ) {
+    throw new Error('The deadline-critical Flight HUD must not suspend its MapLibre viewport owner')
+  }
+
+  const geospatialOverlaySource = await readText('canvas/src/components/CanvasViewportGeospatialOverlay.tsx')
+  requireSourceMarkers(geospatialOverlaySource, [
+    'projectFlightSimToGeospatialOverlay',
+    'module.setFlightGeoOverlay?.(',
+    'module.clearFlightGeoOverlay?.()',
+    'readCurrentFlightSimReadyFrameRequestId()',
+    'completeFlightSimMapLibreReadyFrame(',
+    'completeFlightSimStagePreparation(requestId, {',
+    'framePresented: true',
+    'onFlightOverlayPresented={handleFlightOverlayPresented}',
+    "data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}",
+  ], 'Flight Sim Geo projection bridge')
+  if (geospatialOverlaySource.includes('shared-xr-stage')) {
+    throw new Error('Geo+XR must retain the native MapLibre provider surface')
+  }
+
+  const flightGeoOverlaySource = await readText('gympgrph/src/flightGeoOverlay.ts')
+  requireSourceMarkers(flightGeoOverlaySource, [
+    'export type FlightGeoOverlaySnapshot',
+    'export type FlightGeoOverlayPresentation',
+    'export function setFlightGeoOverlay(',
+    'export function flightGeoOverlayFeatureCollection(',
+    "kgFlightOverlayKind: 'aircraft'",
+  ], 'Flight Sim geospatial overlay contract')
+
+  const flightGeoMapLibreSource = await readText('gympgrph/src/flightGeoOverlayMapLibre.ts')
+  requireSourceMarkers(flightGeoMapLibreSource, [
+    "FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'",
+    'export function applyFlightGeoOverlayToMap(',
+    'FLIGHT_GEO_OVERLAY_LAYER_IDS.route',
+    'FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints',
+    'FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft',
+  ], 'Flight Sim native MapLibre layers')
+
+  const geospatialHostSource = await readText('gympgrph/src/GeospatialHost.tsx')
+  const geospatialPresentationSource = await readText(
+    'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
+  )
+  const mapLibreFlightBootstrapSource = await readText(
+    'gympgrph/src/features/geospatial/mapLibreFlightBootstrap.ts',
+  )
+  requireSourceMarkers(geospatialHostSource, [
+    'useFlightGeoOverlayMapLibrePresentation({',
+  ], 'Flight Sim native MapLibre host composition')
+  requireSourceMarkers(geospatialPresentationSource, [
+    'applyFlightGeoOverlayToMap(map, overlay)',
+    "map.on('render', listener)",
+    "canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'",
+    'onPresented?.(presentation)',
+    'readyFrameRequestId',
+    "overlay.phase !== 'stopped'",
+    'pending.attempts += 1',
+    "root.dataset.kgFlightGeospatialOverlay = 'active'",
+    'root.dataset.kgFlightGeospatialRevision = overlay.revision',
+  ], 'Flight Sim native MapLibre presentation lifecycle')
+  requireSourceMarkers(mapLibreFlightBootstrapSource, [
+    'requestIdleCallback',
+    'scheduleProviderStyleApply',
+    'cancelProviderStyleApply(state)',
+    'retainOverlay',
+  ], 'Flight Sim non-blocking MapLibre provider promotion')
+  const stagePreparationSource = await readText(
+    'canvas/src/features/game-flight-sim/flightSimStagePreparationRuntime.ts',
+  )
+  const flightHudSource = await readText(
+    'canvas/src/features/game-flight-sim/FlightSimHud.tsx',
+  )
+  requireSourceMarkers(stagePreparationSource, [
+    'completeFlightSimHudStagePreparation',
+    'request.hudRevision !== request.surfaceRevision',
+    'request.surfacePrepared',
+    'surfaceRevision',
+  ], 'Flight Sim MapLibre and HUD preparation barrier')
+  requireSourceMarkers(flightHudSource, [
+    'subscribeFlightSimHudSnapshot',
+    'completeFlightSimHudStagePreparation(requestId, flight.revision)',
+  ], 'Flight Sim deadline-critical HUD ownership')
+  if (
+    geospatialHostSource.includes('shared-xr-stage')
+    || geospatialPresentationSource.includes('shared-xr-stage')
+  ) {
+    throw new Error('Gympgrph must not replace native MapLibre with an XR-local stage')
+  }
+
+  const xrCanonicalPhysicsStageSource = await readText('canvas/src/features/three/XrCanonicalPhysicsStage.tsx')
+  requireSourceMarkers(xrCanonicalPhysicsStageSource, [
+    'environmentVisible={!geospatialComposite}',
+  ], 'Flight Sim transparent environment suppression')
+  const threeGameplayOverlaySource = await readText('canvas/src/lib/three/ThreeGameplayOverlay.tsx')
+  requireSourceMarkers(threeGameplayOverlaySource, [
+    'const FlightSimMissionStageLazy = React.lazy(loadFlightSimMissionStage)',
+    '<FlightSimMissionStageLazy',
+    'actorsVisible={!props.geospatialComposite}',
+    'coordinateScale={props.coordinateScale}',
+  ], 'Flight Sim transparent runtime layer')
 
   const rendererLifecycleSource = await readText('canvas/src/lib/three/threeRendererLifecycle.ts')
   requireSourceMarkers(rendererLifecycleSource, [

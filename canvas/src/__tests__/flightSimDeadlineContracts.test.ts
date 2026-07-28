@@ -6,13 +6,16 @@ import {
   beginFlightSimHudUpdate,
   beginFlightSimReadyFrame,
   completeFlightSimHudUpdate,
+  completeFlightSimMapLibreReadyFrame,
   completeFlightSimReadyFrame,
   FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCK_LIMIT_MS,
   FLIGHT_SIM_HUD_UPDATE_LIMIT_MS,
   FLIGHT_SIM_READY_FRAME_LIMIT_MS,
   FLIGHT_SIM_WEBGL_ADMISSION_LIMIT_MS,
+  isFlightSimReadyFramePresentationPending,
   measureFlightSimGameplayNetworkBlock,
   measureFlightSimWebglAdmission,
+  readCurrentFlightSimReadyFrameRequestId,
   readFlightSimDeadlineSnapshot,
   registerFlightSimHudDeadlineOwner,
   resetFlightSimDeadlineRuntimeForTests,
@@ -20,6 +23,9 @@ import {
 import {
   createFlightSimRuntime,
 } from '../features/game-flight-sim/flightSimRuntime'
+import {
+  startFlightSimWithReadyFrame,
+} from '../features/game-flight-sim/flightSimDeadlineIntegration'
 import {
   FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS,
   type FlightSimSnapshot,
@@ -165,6 +171,38 @@ test('ready-frame and HUD deadlines record asynchronous presentation semantics',
   )
   assert.equal(lateReady?.withinLimit, false)
 
+  const mapReadyRequest = beginFlightSimReadyFrame(() => 45)
+  armFlightSimReadyFrame(mapReadyRequest, 6, 0)
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), mapReadyRequest)
+  assert.equal(isFlightSimReadyFramePresentationPending(6, 0), true)
+  assert.equal(isFlightSimReadyFramePresentationPending(6, 1), false)
+  const mapReady = completeFlightSimMapLibreReadyFrame(
+    mapReadyRequest,
+    6,
+    0,
+    () => 45 + FLIGHT_SIM_READY_FRAME_LIMIT_MS,
+  )
+  assert.equal(mapReady?.withinLimit, true)
+  assert.equal(mapReady?.source, 'native-maplibre-flight-ready-frame')
+  assert.equal(mapReady?.runId, 6)
+  assert.equal(mapReady?.tick, 0)
+  assert.equal(isFlightSimReadyFramePresentationPending(6, 0), false)
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), null)
+
+  const staleMapRequest = beginFlightSimReadyFrame(() => 47)
+  armFlightSimReadyFrame(staleMapRequest, 7, 0)
+  const currentMapRequest = beginFlightSimReadyFrame(() => 48)
+  armFlightSimReadyFrame(currentMapRequest, 7, 0)
+  assert.equal(
+    completeFlightSimMapLibreReadyFrame(staleMapRequest, 7, 0, () => 49),
+    null,
+  )
+  assert.equal(
+    completeFlightSimMapLibreReadyFrame(currentMapRequest, 7, 0, () => 49)
+      ?.source,
+    'native-maplibre-flight-ready-frame',
+  )
+
   beginFlightSimHudUpdate(7, () => 50)
   const hud = completeFlightSimHudUpdate(
     7,
@@ -180,6 +218,65 @@ test('ready-frame and HUD deadlines record asynchronous presentation semantics',
     () => 80 + FLIGHT_SIM_HUD_UPDATE_LIMIT_MS + 0.001,
   )
   assert.equal(lateHud?.withinLimit, false)
+})
+
+test('idempotent Start preserves a fresh Restart ready-frame request', () => {
+  resetFlightSimDeadlineRuntimeForTests()
+  const restartRequest = beginFlightSimReadyFrame(() => 100)
+  armFlightSimReadyFrame(restartRequest, 5, 0)
+  const ready = {
+    phase: 'ready',
+    runId: 5,
+    runtimeError: null,
+    tick: 0,
+  } as FlightSimSnapshot
+  let startedAgain = false
+
+  assert.equal(
+    startFlightSimWithReadyFrame(() => {
+      startedAgain = true
+      return ready
+    }, ready),
+    ready,
+  )
+  assert.equal(startedAgain, false)
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), restartRequest)
+  assert.equal(isFlightSimReadyFramePresentationPending(5, 0), true)
+})
+
+test('a thrown Start cancels its ready-frame request before propagating', () => {
+  resetFlightSimDeadlineRuntimeForTests()
+  assert.throws(
+    () => startFlightSimWithReadyFrame(() => {
+      throw new Error('mission construction failed')
+    }),
+    /mission construction failed/,
+  )
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), null)
+})
+
+test('idempotent Start re-arms a Restart request interrupted after publish', () => {
+  resetFlightSimDeadlineRuntimeForTests()
+  const restartRequest = beginFlightSimReadyFrame(() => 100)
+  const ready = {
+    phase: 'ready',
+    runId: 7,
+    runtimeError: null,
+    tick: 0,
+  } as FlightSimSnapshot
+
+  assert.equal(startFlightSimWithReadyFrame(() => ready, ready), ready)
+  assert.equal(readCurrentFlightSimReadyFrameRequestId(), restartRequest)
+  assert.equal(isFlightSimReadyFramePresentationPending(7, 0), true)
+  assert.equal(
+    completeFlightSimMapLibreReadyFrame(
+      restartRequest,
+      ready.runId,
+      ready.tick,
+      () => 150,
+    )?.withinLimit,
+    true,
+  )
 })
 
 test('a newer HUD completion cannot hide an older overdue revision', () => {

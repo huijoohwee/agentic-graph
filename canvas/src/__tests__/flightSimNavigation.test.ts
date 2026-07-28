@@ -101,7 +101,7 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
   const cockpit = resolveFlightSimFollowTarget(flight, 2, 'cockpit')
   assert.deepEqual(cockpit, {
     position: [2, 6.1, 1.5999999999999996],
-    target: [2, 6.1, -30],
+    target: [2, 6.1, -34.4],
     fovDegrees: 68,
     resetKey: 7,
     sequence: 42,
@@ -116,6 +116,36 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
       > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1] * 2,
     'cockpit eye must remain above the scaled vertical collision envelope',
   )
+  for (const pitch of [-0.28 * Math.PI, -0.1, 0, 0.1, 0.28 * Math.PI]) {
+    const pitchedFlight = snapshot({
+      aircraft: Object.freeze({
+        ...flight.aircraft,
+        pitch,
+        yaw: 0.37,
+      }),
+    })
+    const pitchedCockpit = resolveFlightSimFollowTarget(
+      pitchedFlight,
+      2,
+      'cockpit',
+    )
+    const aircraft = pitchedFlight.aircraft.position.map(value => value * 2)
+    const yawForward = [-Math.sin(pitchedFlight.aircraft.yaw), 0, -Math.cos(pitchedFlight.aircraft.yaw)]
+    const eyeOffset = pitchedCockpit.position.map(
+      (value, index) => value - aircraft[index]!,
+    )
+    const horizontalForwardClearance =
+      eyeOffset[0]! * yawForward[0]!
+      + eyeOffset[2]! * yawForward[2]!
+    assert.ok(
+      horizontalForwardClearance
+        > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2] * 2,
+    )
+    assert.ok(
+      eyeOffset[1]!
+        > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1] * 2,
+    )
+  }
   assert.deepEqual(resolveFlightSimFollowTarget(flight, 2, 'survey'), {
     position: [2, 40, 14],
     target: [2, 5.6, -4],

@@ -14,9 +14,9 @@ export function CanvasStartupRuntimes() {
       <CanvasStartupDebugRuntime />
       <SourceFilesPersistenceBootstrap />
       <CanvasStartupSsotBridgeRuntime />
+      <FlightSimRunReadyDemoRuntime />
       {sourceFilesBootstrapHasReachedReady ? <>
         <XrPhysicsRunReadyDemoRuntime />
-        <FlightSimRunReadyDemoRuntime />
         <CitySimRunReadyDemoRuntime />
       </> : null}
     </>

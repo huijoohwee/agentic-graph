@@ -315,7 +315,7 @@ test('canonical offline writer preflights its exact output pair before atomic re
   )
 })
 
-test('network guard is the sole interceptor and cannot invoke captured transports', async () => {
+test('gameplay guard exposes no browser transport ownership', async () => {
   const relativePath =
     'canvas/src/features/game-flight-sim/flightSimExternalCallGuard.ts'
   const source = await readFile(path.join(repositoryRoot, relativePath), 'utf8')
@@ -326,9 +326,9 @@ test('network guard is the sole interceptor and cannot invoke captured transport
   assert.throws(
     () => assertFlightSimFeatureNetworkBoundary({
       relativePath,
-      source: `${source}\noriginalWebSocket('wss://example.invalid')\n`,
+      source: `${source}\nglobalThis.fetch = async () => new Response()\n`,
     }),
-    /must never invoke a captured original transport/,
+    /must not own or replace browser transports/,
   )
   assert.throws(
     () => assertFlightSimFeatureNetworkBoundary({

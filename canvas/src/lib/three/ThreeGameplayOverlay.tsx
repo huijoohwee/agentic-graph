@@ -57,13 +57,19 @@ export function ThreeGameplayMissionStage(props: Readonly<{
   coordinateScale: number
   flightSimActive: boolean
   gameFpsActive: boolean
+  geospatialComposite: boolean
 }>) {
   if (props.citySimActive) return <CitySimMissionStage />
   if (props.gameFpsActive) {
     return <GameFpsMissionStageLazy coordinateScale={props.coordinateScale} />
   }
   if (props.flightSimActive) {
-    return <FlightSimMissionStageLazy coordinateScale={props.coordinateScale} />
+    return (
+      <FlightSimMissionStageLazy
+        actorsVisible={!props.geospatialComposite}
+        coordinateScale={props.coordinateScale}
+      />
+    )
   }
   return null
 }

@@ -5,8 +5,13 @@ import {
   openFlightSimSurface,
   readFlightSimSnapshot,
   resetFlightSimRuntimeForTests,
+  waitForFlightSimSurfaceRestoration,
 } from '@/features/game-flight-sim/flightSimRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import {
+  isGeospatialModeEnabled,
+  setGeospatialModeEnabled,
+} from '@/lib/gympgrph/api'
 
 test('Flight Sim headless entry preserves the visible Geo panel', async () => {
   resetFlightSimRuntimeForTests()
@@ -25,6 +30,32 @@ test('Flight Sim headless entry preserves the visible Geo panel', async () => {
     if (readFlightSimSnapshot().active) {
       exitFlightSimSurface({ restorePreviousSurface: false })
     }
+    resetFlightSimRuntimeForTests()
+  }
+})
+
+test('Geo+XR entry reasserts and restores the native Geo owner', async () => {
+  setGeospatialModeEnabled(false)
+  resetFlightSimRuntimeForTests()
+  try {
+    const opened = await openFlightSimSurface({
+      geospatialComposite: true,
+      openPanel: false,
+      webglSupported: true,
+    })
+    assert.equal(opened.active, true)
+    assert.equal(isGeospatialModeEnabled(), true)
+    assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
+    assert.equal(useGraphStore.getState().canvas3dMode, 'xr')
+
+    exitFlightSimSurface()
+    await waitForFlightSimSurfaceRestoration()
+    assert.equal(isGeospatialModeEnabled(), false)
+  } finally {
+    if (readFlightSimSnapshot().active) {
+      exitFlightSimSurface({ restorePreviousSurface: false })
+    }
+    setGeospatialModeEnabled(false)
     resetFlightSimRuntimeForTests()
   }
 })

@@ -17,7 +17,8 @@ from lib.game_flight_sim_smoke_ledger import (
     REQUIRED_BROWSER_VERIFICATION_NAMES,
 )
 from lib.game_flight_sim_smoke_network import (
-    assert_zero_network,
+    assert_transport_ownership,
+    request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
 )
@@ -217,21 +218,21 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
                 0.62,
             )
 
-    def test_optional_beacon_reader_uses_active_descendant_scope(self) -> None:
+    def test_optional_beacon_reader_uses_active_runtime_canvas_metadata(
+        self,
+    ) -> None:
         scene_source = (
             SCRIPTS_ROOT / "lib" / "game_flight_sim_smoke_scene.py"
         ).read_text(encoding="utf-8")
         baseline_source, active_reader_source = scene_source.split(
             "def read_flight_scene", maxsplit=1
         )
-        lookup = "const optionalBeaconNode = descendants.find"
-        descendants = "const descendants = []"
+        lookup = (
+            "rendererCanvas?.dataset.kgFlightSimOptionalBeacon || 'null'"
+        )
         self.assertNotIn(lookup, baseline_source)
         self.assertEqual(active_reader_source.count(lookup), 1)
-        self.assertLess(
-            active_reader_source.index(descendants),
-            active_reader_source.index(lookup),
-        )
+        self.assertNotIn("const optionalBeaconNode = descendants.find", scene_source)
 
     def test_exact_required_inventory_rejects_an_all_passed_subset(self) -> None:
         complete = BrowserVerificationLedger()
@@ -331,6 +332,129 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             )
         )
 
+    def test_geo_provider_classifier_allows_only_exact_read_hosts(self) -> None:
+        def request(method: str, url: str) -> SimpleNamespace:
+            return SimpleNamespace(method=method, url=url)
+
+        local_origin = "localhost:4187"
+        proxied_style = (
+            "http://localhost:4187/__grabmaps_proxy?"
+            "url=https%3A%2F%2Fmaps.grab.com%2Fapi%2Fstyle.json"
+            "%3Ftheme%3Dlight"
+        )
+        proxied_tile = (
+            "http://localhost:4187/__grabmaps_proxy?"
+            "url=https%3A%2F%2Fmaps.grab.com%2Fapi%2Fmaps%2Ftiles"
+            "%2Fv2%2Fvector%2F12%2F3251%2F2040.pbf"
+        )
+        double_encoded_traversal = (
+            "https://maps.grab.com/api/maps/tiles/v2/"
+            "%252e%252e/%252e%252e/api/v1/mcp"
+        )
+        proxied_double_encoded_traversal = (
+            "http://localhost:4187/__grabmaps_proxy?"
+            "url=https%3A%2F%2Fmaps.grab.com%2Fapi%2Fmaps%2Ftiles"
+            "%2Fv2%2F%25252e%25252e%2F%25252e%25252e"
+            "%2Fapi%2Fv1%2Fmcp"
+        )
+        for url in (
+            "https://maps.grab.com/api/style.json?theme=light",
+            "https://maps.grab.com/api/maps/tiles/v2/vector/12/3251/2040.pbf",
+            "https://demotiles.maplibre.org/style.json",
+            "https://demotiles.maplibre.org/tiles/2/1/1.pbf",
+            "https://tiles.openfreemap.org/styles/liberty",
+            "https://tiles.openfreemap.org/planet",
+            "https://tiles.openfreemap.org/planet/20250702/2/1/1.pbf",
+            "https://tiles.openfreemap.org/sprites/ofm_f384/ofm.json",
+            "https://tiles.openfreemap.org/sprites/ofm_f384/ofm.png",
+        ):
+            with self.subTest(url=url):
+                self.assertTrue(
+                    request_is_geo_provider_read(request("GET", url))
+                )
+        for url in (proxied_style, proxied_tile):
+            with self.subTest(url=url):
+                self.assertTrue(
+                    request_is_geo_provider_read(
+                        request("GET", url),
+                        local_origin,
+                    )
+                )
+        for method, url in (
+            ("POST", "https://demotiles.maplibre.org/style.json"),
+            ("GET", "http://demotiles.maplibre.org/style.json"),
+            ("GET", "https://demotiles.maplibre.org.example/style.json"),
+            ("GET", "https://maps.grab.com:not-a-port/api/style.json"),
+            ("GET", "https://demotiles.maplibre.org/admin"),
+            ("GET", "https://maps.grab.com/api/v1/mcp"),
+            ("GET", "https://maps.grab.com/api/v1/maps/poi/v1/search"),
+            (
+                "GET",
+                "https://maps.grab.com/api/maps/tiles/v2/%2e%2e/%2e%2e/v1/mcp",
+            ),
+            ("GET", double_encoded_traversal),
+            ("GET", "https://tiles.openfreemap.org/account"),
+            ("GET", "https://airvio.co/api/storage"),
+        ):
+            with self.subTest(method=method, url=url):
+                self.assertFalse(
+                    request_is_geo_provider_read(request(method, url))
+                )
+        for method, url, origin in (
+            ("GET", proxied_style, None),
+            ("POST", proxied_style, local_origin),
+            ("GET", proxied_style, "localhost:4188"),
+            (
+                "GET",
+                proxied_style + "&url=https%3A%2F%2Fmaps.grab.com%2Fapi%2Fstyle.json",
+                local_origin,
+            ),
+            ("GET", proxied_style + "&extra=1", local_origin),
+            (
+                "GET",
+                proxied_style.replace("https%3A", "http%3A"),
+                local_origin,
+            ),
+            (
+                "GET",
+                proxied_style.replace(
+                    "maps.grab.com",
+                    "maps.grab.com.example",
+                ),
+                local_origin,
+            ),
+            (
+                "GET",
+                proxied_style.replace(
+                    "%2Fapi%2Fstyle.json",
+                    "%2Fapi%2Fv1%2Fmcp",
+                ),
+                local_origin,
+            ),
+            (
+                "GET",
+                proxied_double_encoded_traversal,
+                local_origin,
+            ),
+        ):
+            with self.subTest(method=method, url=url, origin=origin):
+                self.assertFalse(
+                    request_is_geo_provider_read(
+                        request(method, url),
+                        origin,
+                    )
+                )
+
+        assert_transport_ownership(
+            geo_provider_requests=[
+                "https://demotiles.maplibre.org/style.json"
+            ],
+            unexpected_non_local_requests=[],
+            blocked_requests=[],
+            websocket_events=[],
+            websocket_route_hits=[],
+        )
+
     def test_wildcard_websocket_route_blocks_unexpected_local_transport(
         self,
     ) -> None:
@@ -393,8 +517,11 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
         self.assertEqual(summary["probeRouteHits"], [])
         self.assertEqual(summary["unexpectedRouteHits"], [unexpected_url])
         with self.assertRaisesRegex(AssertionError, "crafted-unexpected"):
-            assert_zero_network(
-                non_local_requests=[],
+            assert_transport_ownership(
+                geo_provider_requests=[
+                    "https://demotiles.maplibre.org/style.json"
+                ],
+                unexpected_non_local_requests=[],
                 blocked_requests=[],
                 websocket_events=[],
                 websocket_route_hits=route_hits,
@@ -525,8 +652,11 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             AssertionError,
             "service-worker-unexpected",
         ):
-            assert_zero_network(
-                non_local_requests=[
+            assert_transport_ownership(
+                geo_provider_requests=[
+                    "https://demotiles.maplibre.org/style.json"
+                ],
+                unexpected_non_local_requests=[
                     request["url"] for request in target_requests
                 ],
                 blocked_requests=blocked_requests,
@@ -551,9 +681,9 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             dependent_called = True
 
         ledger.verify("Source Files apply", fail_source)
-        ledger.verify("zero-network fence", fail_network)
+        ledger.verify("Geo provider transport ownership", fail_network)
         ledger.verify(
-            "retained authored XR Canvas",
+            "transparent Flight runtime Canvas",
             dependent,
             depends_on=("Source Files apply",),
         )
@@ -562,8 +692,8 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
             ledger.assert_success()
         message = str(raised.exception)
         self.assertIn("FAILED Source Files apply", message)
-        self.assertIn("FAILED zero-network fence", message)
-        self.assertIn("SKIPPED retained authored XR Canvas", message)
+        self.assertIn("FAILED Geo provider transport ownership", message)
+        self.assertIn("SKIPPED transparent Flight runtime Canvas", message)
         self.assertFalse(dependent_called)
         self.assertEqual(
             [record["status"] for record in ledger.evidence()],

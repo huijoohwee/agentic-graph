@@ -74,6 +74,11 @@ def complete_authored_flight_mission(
             const prior = snapshot
             snapshot = await runtime.advanceFlightSimByFixedStep()
             executedSteps += 1
+            if (snapshot.runId !== prior.runId) {
+              throw new Error(
+                `Flight run interleaved: ${prior.runId} -> ${snapshot.runId}`,
+              )
+            }
             if (snapshot.tick !== prior.tick + 1) {
               throw new Error(
                 `Flight ticker interleaved: ${prior.tick} -> ${snapshot.tick}`,
@@ -103,15 +108,19 @@ def complete_authored_flight_mission(
             yaw: 0,
             throttleDelta: 0,
           })
-          const waypointDecisions = snapshot.pendingDecisions.filter(
+          const currentRunDecisions = snapshot.pendingDecisions.filter(
+            item => item.payload?.runId === snapshot.runId,
+          )
+          const waypointDecisions = currentRunDecisions.filter(
             item => item.payload?.event === 'waypoint_reached',
           )
-          const terminalDecisions = snapshot.pendingDecisions.filter(
+          const terminalDecisions = currentRunDecisions.filter(
             item => item.payload?.event === 'mission_completed',
           )
           const expectedIds = profile.waypoints.map(item => item.id)
           if (
-            snapshot.phase !== 'completed'
+            snapshot.runId !== expectedRunId
+            || snapshot.phase !== 'completed'
             || snapshot.waypointIndex !== 3
             || snapshot.currentWaypointId !== profile.landingPad.id
             || transitions.map(item => item.waypointId).join('|')

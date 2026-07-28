@@ -6,6 +6,10 @@ export {
   parseGeoJsonFromText,
   coerceGeoJsonToFeatureCollection,
   ensureDatasetLayer,
+  FLIGHT_GEO_OVERLAY_LAYER_IDS,
+  FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  readActiveMapLibreMap,
+  readFlightGeoOverlay,
   setGeospatialModeEnabled,
 } from 'gympgrph'
 export { hashStringToIndex } from 'grph-shared/hash/stringHash'

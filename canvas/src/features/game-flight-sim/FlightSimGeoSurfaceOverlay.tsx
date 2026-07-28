@@ -14,7 +14,7 @@ import {
 import {
   readFlightSimSnapshot,
   readFlightSimStageRuntimeController,
-  subscribeFlightSimSnapshot,
+  subscribeFlightSimPresentation,
 } from './flightSimRuntime'
 import {
   completeFlightSimStagePreparation,
@@ -29,9 +29,13 @@ function markerColor(state: 'active' | 'pending' | 'visited'): string {
   return '#94a3b8'
 }
 
+const subscribeFlightSimSurfacePresentation = (listener: () => void) => (
+  subscribeFlightSimPresentation('surface', listener)
+)
+
 export function FlightSimGeoSurfaceOverlay() {
   const flight = React.useSyncExternalStore(
-    subscribeFlightSimSnapshot,
+    subscribeFlightSimSurfacePresentation,
     readFlightSimSnapshot,
     readFlightSimSnapshot,
   )

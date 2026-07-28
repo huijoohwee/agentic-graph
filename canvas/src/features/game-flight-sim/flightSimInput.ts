@@ -21,6 +21,13 @@ export type FlightSimInputBinding = Readonly<{
   dispose: () => void
 }>
 
+export const FLIGHT_SIM_POINTER_CAPTURE_REQUEST_EVENT =
+  'kg:flight-sim:pointer-capture-request'
+
+export function requestFlightSimPointerCapture(): void {
+  window.dispatchEvent(new Event(FLIGHT_SIM_POINTER_CAPTURE_REQUEST_EVENT))
+}
+
 const CAMERA_CYCLE_CODE = 'KeyC'
 
 const CONTROL_CODES = new Set([
@@ -277,6 +284,10 @@ export function installFlightSimDesktopInput(
   document.addEventListener('pointerlockchange', onPointerLockChange)
   document.addEventListener('visibilitychange', onVisibilityChange)
   element.addEventListener('click', onCanvasPointerLockRequest)
+  window.addEventListener(
+    FLIGHT_SIM_POINTER_CAPTURE_REQUEST_EVENT,
+    onCanvasPointerLockRequest,
+  )
 
   return Object.freeze({
     consumeInput() {
@@ -293,6 +304,10 @@ export function installFlightSimDesktopInput(
       document.removeEventListener('pointerlockchange', onPointerLockChange)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       element.removeEventListener('click', onCanvasPointerLockRequest)
+      window.removeEventListener(
+        FLIGHT_SIM_POINTER_CAPTURE_REQUEST_EVENT,
+        onCanvasPointerLockRequest,
+      )
       if (document.pointerLockElement === element) void document.exitPointerLock()
       ownedPointerLock = false
       delete element.dataset.kgFlightSimPointerLock
