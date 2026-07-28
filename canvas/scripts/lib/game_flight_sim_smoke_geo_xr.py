@@ -381,10 +381,8 @@ def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any]
     page.evaluate(
         """
         async () => {
-          const geo = await window.__kgFlightSimBrowserProof.importModule(
-            'gympgrphStore',
-          )
-          geo.setGeospatialModeEnabled(false)
+          const geo = await window.__kgFlightSimBrowserProof.importModule('geospatialModeBridge')
+          await geo.setGeospatialModeEnabled(false)
         }
         """
     )

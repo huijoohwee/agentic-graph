@@ -9,6 +9,7 @@ const MODULE_IMPORTERS = Object.freeze({
   flightSimRuntime: () => import('@/features/game-flight-sim/flightSimRuntime'),
   flightSimSurfaceOwnershipStatus: () => import('@/features/game-flight-sim/flightSimSurfaceOwnershipStatus'),
   flightSimWebMcpTools: () => import('@/features/agent-ready/flightSimWebMcpTools'),
+  geospatialModeBridge: () => import('@/features/geospatial/gympgrphBridge'),
   graphStore: () => import('@/hooks/useGraphStore'),
   gympgrphStore: () => import('@/lib/gympgrph/api'),
   knowgrphRuntimeIdentity: () => import('@/features/runtime-identity/knowgrphRuntimeIdentity'),

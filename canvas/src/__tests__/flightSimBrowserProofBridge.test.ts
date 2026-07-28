@@ -17,6 +17,7 @@ const EXPECTED_MODULE_KEYS = Object.freeze([
   'flightSimRuntime',
   'flightSimSurfaceOwnershipStatus',
   'flightSimWebMcpTools',
+  'geospatialModeBridge',
   'graphStore',
   'gympgrphStore',
   'knowgrphRuntimeIdentity',
