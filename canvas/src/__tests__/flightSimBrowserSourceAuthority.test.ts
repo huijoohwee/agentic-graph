@@ -561,4 +561,14 @@ test('Flight browser proof activates only after applying the authored source', (
     missionVerifier,
     /const currentRunDecisions = snapshot\.pendingDecisions\.filter\([\s\S]*item => item\.payload\?\.runId === snapshot\.runId/,
   )
+  assert.match(
+    missionVerifier,
+    /const waypointDecisions = currentRunDecisions\.filter/,
+  )
+  assert.match(
+    missionVerifier,
+    /const terminalDecisions = currentRunDecisions\.filter/,
+  )
+  assert.match(missionVerifier, /snapshot\.runId !== prior\.runId/)
+  assert.match(missionVerifier, /snapshot\.runId !== expectedRunId/)
 })
