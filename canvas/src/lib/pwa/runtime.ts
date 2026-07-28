@@ -1,12 +1,10 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { readKnowgrphSourceRevision } from '@/features/runtime-identity/knowgrphRuntimeIdentity'
-import {
-  installServiceWorkerCacheRevisionOwner,
-  readActiveServiceWorkerSourceRevision,
-  type ServiceWorkerCacheRevisionOwner,
-} from '@/lib/pwa/serviceWorkerCacheRevisionOwner'
 import { registerCanonicalServiceWorker } from '@/lib/pwa/serviceWorkerRegistrationOwner'
-import { installServiceWorkerRevisionUpdateOwner } from '@/lib/pwa/serviceWorkerRevisionUpdateOwner'
+import {
+  installServiceWorkerRevisionUpdateOwner,
+  readActiveServiceWorkerSourceRevision,
+} from '@/lib/pwa/serviceWorkerRevisionUpdateOwner'
 
 const DISPLAY_MODE_STANDALONE_MEDIA = '(display-mode: standalone)'
 const DISPLAY_MODE_FULLSCREEN_MEDIA = '(display-mode: fullscreen)'
@@ -21,7 +19,6 @@ type BeforeInstallPromptEvent = Event & {
 }
 
 let deferredInstallPrompt: BeforeInstallPromptEvent | null = null
-let cacheRevisionOwner: ServiceWorkerCacheRevisionOwner | null = null
 let disposeWorkerUpdateOwner: (() => void) | null = null
 
 export function getDeferredInstallPrompt(): BeforeInstallPromptEvent | null {
@@ -157,23 +154,6 @@ export function installPwaRuntime(): void {
         })
       },
       onRegistered(registration) {
-        cacheRevisionOwner?.dispose()
-        cacheRevisionOwner = 'caches' in window
-          ? installServiceWorkerCacheRevisionOwner({
-              cacheStorage: window.caches,
-              controllerTarget: window.navigator.serviceWorker,
-              registration,
-              origin: window.location.origin,
-              runInitially: true,
-              onError(error) {
-                try {
-                  console.warn('[knowgrph] Service worker cache revision cleanup failed.', error)
-                } catch {
-                  void 0
-                }
-              },
-            })
-          : null
         disposeWorkerUpdateOwner?.()
         disposeWorkerUpdateOwner = installServiceWorkerRevisionUpdateOwner({
           registration,
@@ -184,9 +164,6 @@ export function installPwaRuntime(): void {
             if (!activeWorker || activeWorker.state !== 'activated') return false
             return await readActiveServiceWorkerSourceRevision(activeWorker)
               === readKnowgrphSourceRevision()
-          },
-          onUpdateSettled() {
-            cacheRevisionOwner?.requestPrune()
           },
           onError(error) {
             try {
