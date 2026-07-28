@@ -75,7 +75,10 @@ export function XrPhysicsRunReadyDemoRuntime() {
     const state = useGraphStore.getState()
     if (!surfaceInitializedRef.current) {
       const activatesXrSurface = state.canvasRenderMode !== '3d' || state.canvas3dMode !== 'xr'
-      if (!activateXrSceneSurface()) return undefined
+      if (
+        activatesXrSurface
+        && !activateXrSceneSurface({ preserveGameplay: !dedicatedDemo })
+      ) return undefined
       surfaceInitializedRef.current = true
       if (activatesXrSurface) {
         state.setFloatingPanelOpen(false)

@@ -542,8 +542,14 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
       throw new Error('expected Camera activation to leave Game ownership through the shared Camera panel route')
     }
   }
-  if (!physicsRuntime.includes('activateXrSceneSurface()') || physicsRuntime.includes("setCanvas3dMode('xr')")) {
-    throw new Error('expected the XR run-ready bootstrap to reuse the shared scene-surface activation owner')
+  if (
+    !physicsRuntime.includes(
+      'activateXrSceneSurface({ preserveGameplay: !dedicatedDemo })',
+    )
+    || !physicsRuntime.includes('if (\n        activatesXrSurface')
+    || physicsRuntime.includes("setCanvas3dMode('xr')")
+  ) {
+    throw new Error('expected the XR run-ready bootstrap to reuse the shared scene-surface activation owner without replacing an already-active Flight surface')
   }
   const panelProjectionSources = {
     Media: 'features/command-menu/MediaCatalogPanelView.tsx',

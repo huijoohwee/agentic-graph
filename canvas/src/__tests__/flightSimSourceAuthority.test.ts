@@ -630,6 +630,10 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   )
   assert.match(physicsRuntime, /pauseXrNativeControllerDemo\(\)/)
   assert.match(physicsRuntime, /resumeXrNativeControllerDemo\(\)/)
+  assert.match(
+    physicsRuntime,
+    /activatesXrSurface[\s\S]*activateXrSceneSurface\(\{ preserveGameplay: !dedicatedDemo \}\)/,
+  )
   assert.doesNotMatch(
     flightTarget,
     /\b(?:camera|controls)\.(?:position|target|enablePan|enableRotate|enableZoom)/,

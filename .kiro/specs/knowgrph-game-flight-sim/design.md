@@ -125,7 +125,7 @@ The stdio ECS server injects no systems (per the ECS design); the four flight sy
 
 ### Flight_Runtime (`flightSimRuntime.ts`)
 
-The lifecycle and orchestration owner. Holds the ECS World handle, the simulation clock, the pending-decision buffer, and the current lifecycle state.
+The lifecycle and orchestration owner. Holds the ECS World handle, the simulation clock, the pending-decision buffer, and the current lifecycle state. The shared Physics base initializes its controller without re-activating an already-active XR surface; when Flight frontmatter has not yet entered XR, that base uses the canonical surface transaction with gameplay preservation so it cannot invalidate the pending Flight launch.
 
 ```ts
 interface FlightSimRuntime {
