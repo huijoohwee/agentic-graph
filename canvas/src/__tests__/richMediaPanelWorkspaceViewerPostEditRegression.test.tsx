@@ -214,7 +214,7 @@ export async function testRichMediaWorkspaceViewerRevealsCanonicalProvenanceSele
       setPanelDraftText: () => void 0,
     } as unknown as RichMediaPanelModel
     const props = {
-      overlayId: 'source-rich-media',
+      overlayId: 'workspace-layer::source-rich-media',
       title: 'Probe-Tree Branches',
       url: '',
       kind: 'iframe',
