@@ -2,8 +2,10 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { runCanvasSurfaceOwnershipTransaction } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import {
   importGympgrph,
-  setGeospatialModeEnabled,
 } from '@/features/geospatial/gympgrphBridge'
+import {
+  commitCanvasGeospatialModeEnabled,
+} from '@/features/geospatial/geospatialModeCommit'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 import {
   pauseXrPhysicsRuntime,
@@ -180,7 +182,9 @@ async function restoreFlightSimGeospatialSurface(
             '[data-kg-geo-xr-layer="geo-background"] canvas.maplibregl-canvas',
           )
     )
-    const restored = await setGeospatialModeEnabled(enabled)
+    // Commit the event-driven Geo owner before measuring MapLibre disposal.
+    // Persisted and gympgrph state can change before React unmounts its host.
+    const restored = await commitCanvasGeospatialModeEnabled(enabled)
     if (restored !== enabled) {
       throw new Error(`Geo mode restored ${String(restored)} instead of ${String(enabled)}.`)
     }

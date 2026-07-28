@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { performance } from 'node:perf_hooks'
 import test from 'node:test'
 import { JSDOM } from 'jsdom'
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
 import {
   exitFlightSimSurface,
   openFlightSimSurface,
@@ -15,6 +17,12 @@ import {
   restoreFlightSimPreviousCanvasSurface,
   type FlightSimPreviousCanvasSurface,
 } from '@/features/game-flight-sim/flightSimSurfaceOwnershipRuntime'
+import {
+  commitCanvasGeospatialModeEnabled,
+} from '@/features/geospatial/geospatialModeCommit'
+import {
+  onGeospatialModeChanged,
+} from '@/features/geospatial/events'
 import {
   readFlightSimSurfaceOwnershipStatus,
 } from '@/features/game-flight-sim/flightSimSurfaceOwnershipStatus'
@@ -41,6 +49,7 @@ import {
   setGeospatialModeEnabled as setGympgrphGeospatialModeEnabled,
 } from 'gympgrph'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
+import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 const EMPTY_WORKSPACE = {
   readFileText: async () => null,
@@ -196,6 +205,67 @@ function stageGeoRestorationTarget(): FlightSimPreviousCanvasSurface {
   setGympgrphGeospatialModeEnabled(true)
   return previous
 }
+
+function EventDrivenGeoOwner() {
+  const [enabled, setEnabled] = React.useState(true)
+  React.useEffect(() => {
+    return onGeospatialModeChanged(detail => {
+      if (typeof detail.enabled === 'boolean') setEnabled(detail.enabled)
+    })
+  }, [])
+  return enabled
+    ? React.createElement(
+        'section',
+        { 'data-kg-geo-xr-layer': 'geo-background' },
+        React.createElement('canvas', { className: 'maplibregl-canvas' }),
+      )
+    : null
+}
+
+test('shared Geo commit disconnects the event-driven owner before returning', async () => {
+  const { dom, restore } = initJsdomHarness()
+  const previousEvent = globalThis.Event
+  const previousCustomEvent = globalThis.CustomEvent
+  Object.assign(globalThis, {
+    Event: dom.window.Event,
+    CustomEvent: dom.window.CustomEvent,
+  })
+  const container = dom.window.document.createElement('main')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  try {
+    writeGeospatialOverlayEnabledPreference(true)
+    setGympgrphGeospatialModeEnabled(true)
+    await act(async () => {
+      root.render(React.createElement(EventDrivenGeoOwner))
+    })
+    const ownedCanvas = dom.window.document.querySelector<HTMLCanvasElement>(
+      '[data-kg-geo-xr-layer="geo-background"] canvas.maplibregl-canvas',
+    )
+    assert.ok(ownedCanvas?.isConnected)
+
+    let committed: Promise<boolean> | null = null
+    await act(async () => {
+      committed = commitCanvasGeospatialModeEnabled(false)
+      assert.equal(
+        ownedCanvas.isConnected,
+        false,
+        'the Geo owner DOM must commit before disposal observation begins',
+      )
+      assert.equal(await committed, false)
+    })
+    assert.ok(committed)
+  } finally {
+    await act(async () => root.unmount())
+    writeGeospatialOverlayEnabledPreference(false)
+    setGympgrphGeospatialModeEnabled(false)
+    Object.assign(globalThis, {
+      Event: previousEvent,
+      CustomEvent: previousCustomEvent,
+    })
+    restore()
+  }
+})
 
 test('non-Geo restoration requires two consecutive released animation frames', async () => {
   await withSurfaceDom(GEO_CANVAS_MARKUP, async (window, document) => {

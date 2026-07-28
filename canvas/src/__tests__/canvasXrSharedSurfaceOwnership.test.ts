@@ -253,6 +253,8 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
   const canvas2dRendererSelectText = readSource('components/toolbar/Canvas2dRendererSelect.tsx')
   const canvasViewMenuText = readSource('components/toolbar/canvasViewMenu.ts')
   const geoXrActivationText = readSource('features/geospatial/geoXrSurfaceActivation.ts')
+  const geospatialModeCommitText = readSource('features/geospatial/geospatialModeCommit.ts')
+  const flightSurfaceOwnershipText = readSource('features/game-flight-sim/flightSimSurfaceOwnershipRuntime.ts')
   const canvas3dModeText = readSource('lib/canvas/canvas3dMode.ts')
   if (!canvasViewActionsText.includes('applyCanvasSurfaceModeSelection')) {
     throw new Error('Expected Canvas View Surface Mode actions to reuse the shared surface-mode selection owner')
@@ -296,7 +298,9 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
   )
   if (
     !geoXrActivationText.includes('await dependencies.preloadGeospatial()')
-    || !geoXrActivationText.includes('flushSync(() =>')
+    || !geospatialModeCommitText.includes('flushSync(() =>')
+    || !geoXrActivationText.includes('commitCanvasGeospatialModeEnabled')
+    || !flightSurfaceOwnershipText.includes('commitCanvasGeospatialModeEnabled(enabled)')
     || !geoXrActivationText.includes('await dependencies.commitGeospatialEnabled(true)')
     || !geoXrActivationText.includes('geospatialComposite: true')
     || !geoXrActivationText.includes('preserveGameplay: true')

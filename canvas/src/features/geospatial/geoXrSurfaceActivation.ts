@@ -1,8 +1,9 @@
-import { flushSync } from 'react-dom'
 import {
   preloadGeospatialMapRuntime,
-  setGeospatialModeEnabled,
 } from '@/features/geospatial/gympgrphBridge'
+import {
+  commitCanvasGeospatialModeEnabled,
+} from '@/features/geospatial/geospatialModeCommit'
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 
@@ -13,23 +14,10 @@ export type GeoXrSurfaceActivationDependencies = Readonly<{
   activateXr: () => boolean
 }>
 
-const commitGeospatialModeEnabled = (enabled: boolean): Promise<boolean> => {
-  let committed: Promise<boolean> | null = null
-  // The Geo event updates React state; commit that owner before the synchronous
-  // Zustand XR transaction can make a standalone scene visible.
-  flushSync(() => {
-    committed = setGeospatialModeEnabled(enabled)
-  })
-  if (!committed) {
-    return Promise.reject(new Error('The native geospatial Canvas owner did not begin its commit.'))
-  }
-  return committed
-}
-
 const DEFAULT_DEPENDENCIES: GeoXrSurfaceActivationDependencies = {
   readGeospatialEnabled: readGeospatialOverlayEnabledPreference,
   preloadGeospatial: preloadGeospatialMapRuntime,
-  commitGeospatialEnabled: commitGeospatialModeEnabled,
+  commitGeospatialEnabled: commitCanvasGeospatialModeEnabled,
   activateXr: () => activateXrSceneSurface({
     geospatialComposite: true,
     preserveGameplay: true,
