@@ -1,5 +1,6 @@
 import React from 'react'
 import { settingsRegistry } from '@/features/settings/registry'
+import type { SettingMeta } from '@/features/settings/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { loadSettingsCollapsedByArea, persistSettingsCollapsedByArea } from '@/features/panels/utils/settingsCollapsedStorage'
 import { normalized as normalizeText } from '@/features/panels/utils/json'
@@ -88,6 +89,11 @@ import {
   QWEN_API_DOC_ENTRIES,
   getQwenApiRowAnchorId,
 } from './qwenApiDocs'
+import {
+  Z_AI_API_DOC_AREA,
+  Z_AI_API_DOC_ENTRIES,
+  getZaiApiRowAnchorId,
+} from './zAiApiDocs'
 import {
   GOOGLE_CLOUD_API_DOC_AREA,
   GOOGLE_CLOUD_API_DOC_ENTRIES,
@@ -193,6 +199,7 @@ const INTEGRATION_API_DOC_ENTRIES = [
   ...AGNES_API_DOC_ENTRIES,
   ...SEALION_API_DOC_ENTRIES,
   ...QWEN_API_DOC_ENTRIES,
+  ...Z_AI_API_DOC_ENTRIES,
   ...GOOGLE_CLOUD_API_DOC_ENTRIES,
   ...OPENAI_CHAT_API_REQUEST_DOC_ENTRIES,
   ...OPENAI_IMAGES_API_REQUEST_DOC_ENTRIES,
@@ -214,7 +221,8 @@ const SHARED_BYTEPLUS_CREDENTIAL_VALUE_KEYS = [
   'chatEndpointUrl',
 ] as const
 
-function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[number]) {
+function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[number]): SettingMeta {
+  if ('referenceOnly' in entry && entry.referenceOnly) return entry.meta
   if (String(entry.meta.key || '').trim() === 'openaiApi.provider') {
     return {
       ...entry.meta,
@@ -1043,6 +1051,8 @@ export function useSettingsView({
             ? getSealionApiRowAnchorId(entry.meta.key)
           : area === QWEN_API_DOC_AREA
             ? getQwenApiRowAnchorId(entry.meta.key)
+          : area === Z_AI_API_DOC_AREA
+            ? getZaiApiRowAnchorId(entry.meta.key)
           : area === GOOGLE_CLOUD_API_DOC_AREA
             ? getGoogleCloudApiRowAnchorId(entry.meta.key)
           : area === OPENAI_CHAT_API_DOC_AREA
@@ -1218,6 +1228,11 @@ export function useSettingsView({
           title: QWEN_API_DOC_AREA,
           searchIndex: normalizeText('Qwen API Alibaba Cloud Model Studio DashScope OpenAI-compatible chat completions qwen-plus qwen3-max qwen-flash floatingpanel chat markdown yaml frontmatter source files storyboard widget'),
           match: entry => normalizeSettingsAreaLabel(entry.details.area) === QWEN_API_DOC_AREA,
+        },
+        {
+          title: Z_AI_API_DOC_AREA,
+          searchIndex: normalizeText('Z.AI API Z AI Open Platform OpenAI-compatible chat completions glm-5.2 api.z.ai quick start reference-only docs only'),
+          match: entry => normalizeSettingsAreaLabel(entry.details.area) === Z_AI_API_DOC_AREA,
         },
         {
           title: GOOGLE_CLOUD_API_DOC_AREA,
