@@ -23,6 +23,7 @@ type Canvas2dRendererSelectProps = {
   ensureBaselineUnlocked: () => boolean
   geospatialEnabled: boolean
   onOpenGeospatialMode: () => void
+  onActivateGeoXrMode: () => void
 }
 
 export function Canvas2dRendererSelect({
@@ -31,6 +32,7 @@ export function Canvas2dRendererSelect({
   ensureBaselineUnlocked,
   geospatialEnabled,
   onOpenGeospatialMode,
+  onActivateGeoXrMode,
 }: Canvas2dRendererSelectProps) {
   const [minimapCollapsed, setMinimapCollapsed] = useMinimapCollapsed()
   const state = useGraphStore(
@@ -142,16 +144,7 @@ export function Canvas2dRendererSelect({
           onOpenGeospatialMode,
           onOpenShared3dPanel: mode => {
             if (mode === 'geo-xr') {
-              const current = useGraphStore.getState()
-              if (!activateXrSceneSurface({ geospatialComposite: true, preserveGameplay: true })) {
-                current.pushUiToast({
-                  id: 'canvas-view:geo-xr:unavailable',
-                  kind: 'error',
-                  message: 'The shared Geo+XR Mode surface is unavailable for this document.',
-                })
-                return
-              }
-              onOpenGeospatialMode()
+              onActivateGeoXrMode()
               return
             }
             if (mode === 'xr') {

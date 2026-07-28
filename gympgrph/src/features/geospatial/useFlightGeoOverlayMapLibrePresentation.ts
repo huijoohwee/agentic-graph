@@ -15,6 +15,7 @@ import {
 } from '../../flightGeoOverlayMapLibre.js'
 import { readGeoJsonSourceData } from '../../maplibreLayers.js'
 import {
+  markMapLibreFlightOverlayPresented,
   markMapLibreFlightReadyFramePresented,
 } from './mapLibreFlightBootstrap.js'
 
@@ -146,12 +147,14 @@ export function createFlightGeoOverlayPresentationGate(
   }
 
   const request = (overlay: FlightGeoOverlaySnapshot) => {
+    // Provider-style promotion can remount the same ready tick after its
+    // one-shot deadline request was consumed. It still needs visual
+    // acknowledgement, but must not recreate first-frame proof below.
     const presentable = overlay.phase === 'stopped'
       || (
         overlay.phase === 'ready'
         && overlay.tick === 0
         && overlay.runId > 0
-        && overlay.readyFrameRequestId !== null
       )
     if (!presentable || typeof map.on !== 'function') return
     // Stopped presentation is intentionally repeatable: an idempotent surface
@@ -213,10 +216,17 @@ export function createFlightGeoOverlayPresentationGate(
       }
 
       cancel()
-      if (current.phase === 'ready' && current.tick === 0) {
+      const readyTickZero = (
+        current.phase === 'ready'
+        && current.tick === 0
+      )
+      // A consumed ready-frame request may revalidate the provider style.
+      // It neither creates nor erases the one-shot proof already earned by
+      // this same map canvas.
+      if (readyTickZero && current.readyFrameRequestId !== null) {
         canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'
         canvas.dataset.kgFlightSimFirstFrame = '1'
-      } else {
+      } else if (!readyTickZero) {
         delete canvas.dataset.kgFlightSimFirstFrame
         delete canvas.dataset.kgFlightSimFirstFrameSurface
       }
@@ -228,10 +238,11 @@ export function createFlightGeoOverlayPresentationGate(
         runId: current.runId,
         tick: current.tick,
       })
-      onPresented?.(presentation)
+      if (readyTickZero) {
+        markMapLibreFlightOverlayPresented(map, presentation)
+      }
       if (
-        current.phase === 'ready'
-        && current.tick === 0
+        readyTickZero
         && current.readyFrameRequestId !== null
       ) {
         markMapLibreFlightReadyFramePresented(
@@ -240,6 +251,7 @@ export function createFlightGeoOverlayPresentationGate(
           current.readyFrameRequestId,
         )
       }
+      onPresented?.(presentation)
       const root = readRoot()
       if (root) {
         root.dataset.kgFlightGeospatialPresentedRevision = current.revision
@@ -320,6 +332,22 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           readyFrameRequestId: null,
           revision: '',
         }
+      }
+    }
+  }, [
+    options.map,
+    options.rootRef,
+  ])
+
+  React.useEffect(() => {
+    const map = options.map
+    const root = options.rootRef.current
+    if (root) delete root.dataset.kgFlightGeospatialPresentedRevision
+    if (presentedRef.current.map === map) {
+      presentedRef.current = {
+        map: null,
+        readyFrameRequestId: null,
+        revision: '',
       }
     }
   }, [

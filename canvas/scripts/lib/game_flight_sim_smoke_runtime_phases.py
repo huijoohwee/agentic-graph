@@ -8,7 +8,11 @@ from playwright.sync_api import Page, expect
 
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
 from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
-from lib.game_flight_sim_smoke_geo_xr import verify_geo_xr_four_view_presentation
+from lib.game_flight_sim_smoke_geo_xr import (
+    prepare_canvas_view_standalone_flight_xr,
+    verify_geo_xr_four_view_presentation,
+    wait_for_canvas_view_geo_xr_handoff,
+)
 from lib.game_flight_sim_smoke_ledger import BrowserVerificationLedger
 from lib.game_flight_sim_smoke_lifecycle import (
     verify_blur_lifecycle,
@@ -81,6 +85,58 @@ def read_runtime(page: Page) -> dict[str, Any]:
         }
         """
     )
+
+
+def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
+    baseline, source_case, standalone = (
+        prepare_canvas_view_standalone_flight_xr(page)
+    )
+    try:
+        trigger = page.get_by_role(
+            "button", name="Canvas View Mode: XR Mode", exact=True
+        )
+        trigger.wait_for(state="visible", timeout=30_000)
+        trigger.click(timeout=30_000)
+        surface = page.get_by_role("button", name="Surface Mode", exact=True)
+        surface.wait_for(state="visible", timeout=30_000)
+        # XR is the active child, so the shared menu expands Surface Mode on
+        # its next frame. Clicking during that transition can collapse it.
+        expect(surface).to_have_attribute(
+            "aria-expanded", "true", timeout=30_000
+        )
+        parent_expanded = surface.get_attribute("aria-expanded")
+        geo_xr = page.get_by_role("button", name="Geo+XR Mode", exact=True)
+        geo_xr.wait_for(state="visible", timeout=30_000)
+        if geo_xr.is_disabled():
+            raise AssertionError("Geo+XR Mode was disabled in the real menu")
+        geo_xr.click(timeout=30_000)
+        page.get_by_role(
+            "button", name="Canvas View Mode: Geo+XR Mode", exact=True
+        ).wait_for(state="visible", timeout=30_000)
+        handoff = wait_for_canvas_view_geo_xr_handoff(page, source_case)
+    finally:
+        page.evaluate(
+            """
+            async prior => {
+              const graph = await window.__kgFlightSimBrowserProof.importModule(
+                'graphStore',
+              )
+              const state = graph.useGraphStore.getState()
+              state.setFloatingPanelOpen(prior.open)
+              state.setFloatingPanelView(prior.view)
+            }
+            """,
+            {
+                "open": baseline["floatingPanelOpen"],
+                "view": baseline["floatingPanelView"],
+            },
+        )
+    return {
+        "sourceView": source_case[0],
+        "standalone": standalone,
+        "menuSurfaceAriaExpanded": parent_expanded,
+        "handoff": handoff,
+    }
 
 
 def position_distance(left: list[float], right: list[float]) -> float:
@@ -261,10 +317,15 @@ def run_flight_runtime_verifications(
         authored_scene,
         depends_on=("first playable frame",),
     )
+    state["geoXrMenuHandoff"] = ledger.verify(
+        "Canvas View standalone XR to Geo+XR handoff",
+        lambda: verify_canvas_view_xr_to_geo_xr_handoff(page),
+        depends_on=("transparent Flight runtime Canvas",),
+    )
     state["geoXrPresentation"] = ledger.verify(
         "Geo+XR four-view presentation",
         lambda: verify_geo_xr_four_view_presentation(page),
-        depends_on=("transparent Flight runtime Canvas",),
+        depends_on=("Canvas View standalone XR to Geo+XR handoff",),
     )
     state["webMcp"] = ledger.verify(
         "strict browser WebMCP",

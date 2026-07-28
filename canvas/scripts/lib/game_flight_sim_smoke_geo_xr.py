@@ -36,7 +36,7 @@ GEO_XR_VIEW_CASES = (
         "tiles.openfreemap.org",
     ),
 )
-
+GeoXrViewCase = tuple[str, str, str, str, str]
 
 def _select_view(page: Page, button_label: str) -> None:
     page.evaluate(
@@ -75,13 +75,23 @@ def _read_view(page: Page) -> dict[str, Any]:
           const flight = await window.__kgFlightSimBrowserProof.importModule(
             'flightSimRuntime',
           )
-          const blob = await graph.useGraphStore.getState()
-            .captureThreeGltfSnapshot()
+          const graphState = graph.useGraphStore.getState()
+          const gympgrphState = gympgrph.useGympgrphStore.getState()
+          const flightSnapshot = flight.readFlightSimSnapshot()
+          const blob = await graphState.captureThreeGltfSnapshot()
           const gltf = blob ? JSON.parse(await blob.text()) : null
           const nodes = Array.isArray(gltf?.nodes) ? gltf.nodes : []
           const host = document.querySelector(
             '[data-kg-flight-geospatial-overlay="active"]',
           )
+          const hud = document.querySelector('[data-kg-flight-sim-hud="1"]')
+          const isVisible = element => {
+            const rect = element?.getBoundingClientRect()
+            const style = element ? getComputedStyle(element) : null
+            return Boolean(rect?.width > 0 && rect?.height > 0)
+              && style?.display !== 'none' && style?.visibility !== 'hidden'
+              && Number(style?.opacity || '1') > 0
+          }
           const rendererCanvases = Array.from(
             document.querySelectorAll('canvas'),
           ).filter(
@@ -91,15 +101,7 @@ def _read_view(page: Page) -> dict[str, Any]:
           const mapCanvases = host
             ? Array.from(host.querySelectorAll('canvas.maplibregl-canvas'))
             : []
-          const visibleMapCanvases = mapCanvases.filter(canvas => {
-            const rect = canvas.getBoundingClientRect()
-            const style = getComputedStyle(canvas)
-            return rect.width > 0
-              && rect.height > 0
-              && style.display !== 'none'
-              && style.visibility !== 'hidden'
-              && Number(style.opacity || '1') > 0
-          })
+          const visibleMapCanvases = mapCanvases.filter(isVisible)
           const map = gympgrph.readActiveMapLibreMap?.() || null
           const overlay = gympgrph.readFlightGeoOverlay?.() || null
           const sourceId = gympgrph.FLIGHT_GEO_OVERLAY_SOURCE_ID
@@ -228,7 +230,16 @@ def _read_view(page: Page) -> dict[str, Any]:
             hostRevision: host?.getAttribute(
               'data-kg-flight-geospatial-revision',
             ) || '',
-            viewMode: gympgrph.useGympgrphStore.getState().geospatialViewMode,
+            geospatialEnabled: gympgrphState.geospatialModeEnabled === true,
+            viewMode: gympgrphState.geospatialViewMode,
+            renderMode: graphState.canvasRenderMode,
+            canvas3dMode: graphState.canvas3dMode,
+            floatingPanelOpen: graphState.floatingPanelOpen,
+            floatingPanelView: graphState.floatingPanelView,
+            geoXrSurfaceActive: Boolean(document.querySelector(
+              '[data-kg-geo-xr-surface="active"]',
+            )),
+            hudVisible: isVisible(hud),
             styleUrl: localStorage.getItem(
               gympgrph.LS_KEYS.geospatialStyleUrl,
             ) || '',
@@ -284,7 +295,10 @@ def _read_view(page: Page) -> dict[str, Any]:
             ).length,
             overlayRevision: overlay?.revision || '',
             aircraftCoordinate: overlay?.aircraft?.coordinate || null,
-            flightTick: flight.readFlightSimSnapshot().tick,
+            flightActive: flightSnapshot.active,
+            flightPhase: flightSnapshot.phase,
+            flightRuntimeError: flightSnapshot.runtimeError || '',
+            flightTick: flightSnapshot.tick,
             cameraPreference: camera.readFlightSimCameraSnapshot().view,
             cameraSource: cameraSource.readXrNativeControllerCamera().mode,
           }
@@ -332,6 +346,80 @@ def _wait_for_view(
     raise AssertionError(
         "timed out waiting for native MapLibre Geo+XR view "
         f"{expected_view}/{expected_projection}/{expected_style_url}: {last}"
+    )
+
+
+def _wait_for_surface_contract(
+    page: Page, *, label: str, expected: dict[str, Any],
+    require_flight_visuals: bool = False, require_revision_sync: bool = False,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + 30
+    last: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        last = _read_view(page)
+        if (
+            all(last.get(key) == value for key, value in expected.items())
+            and (not require_flight_visuals
+                 or last.get("flightR3fVisualCount", 0) > 0)
+            and (not require_revision_sync or bool(last.get("hostRevision"))
+                 and last.get("hostRevision") == last.get("overlayRevision"))
+        ):
+            return last
+        page.wait_for_timeout(100)
+    raise AssertionError(f"timed out waiting for {label}: {last}")
+
+
+def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any], GeoXrViewCase, dict[str, Any]]:
+    baseline = _read_view(page)
+    source_case = next(
+        (case for case in GEO_XR_VIEW_CASES if case[0] == baseline["viewMode"]
+         and case[3] == baseline["styleUrl"]),
+        None,
+    )
+    if source_case is None:
+        raise AssertionError(f"unsupported source Geo view/style: {baseline}")
+    page.evaluate(
+        """
+        async () => {
+          const geo = await window.__kgFlightSimBrowserProof.importModule(
+            'gympgrphStore',
+          )
+          geo.setGeospatialModeEnabled(false)
+        }
+        """
+    )
+    standalone = _wait_for_surface_contract(
+        page, label="standalone Flight XR surface",
+        expected={
+            "hostActive": False, "geospatialEnabled": False,
+            "renderMode": "3d", "canvas3dMode": "xr", "hudVisible": True,
+            "geoXrSurfaceActive": False, "rendererCanvasCount": 1,
+            "canvasStable": True, "rendererAlpha": True,
+            "visualProjection": "r3f", "rendererPointerTransparent": False,
+            "exclusivePlainGeoOverlayCount": 0, "flightActive": True,
+            "flightPhase": "ready", "flightRuntimeError": "",
+        }, require_flight_visuals=True,
+    )
+    return baseline, source_case, standalone
+
+
+def wait_for_canvas_view_geo_xr_handoff(page: Page, source_case: GeoXrViewCase) -> dict[str, Any]:
+    _wait_for_view(
+        page, expected_provider_host=source_case[4],
+        expected_view=source_case[0], expected_projection=source_case[1],
+        expected_style_url=source_case[3],
+    )
+    return _wait_for_surface_contract(
+        page, label="real-menu Geo+XR Flight ownership handoff",
+        expected={
+            "hostActive": True, "geospatialEnabled": True,
+            "renderMode": "3d", "canvas3dMode": "xr", "hudVisible": True,
+            "geoXrSurfaceActive": True, "rendererCanvasCount": 1,
+            "canvasStable": True, "rendererAlpha": True,
+            "flightR3fVisualCount": 0, "visualProjection": "maplibre",
+            "rendererPointerTransparent": True, "flightActive": True,
+            "exclusivePlainGeoOverlayCount": 0, "flightRuntimeError": "",
+        }, require_revision_sync=True,
     )
 
 

@@ -1,20 +1,35 @@
 import {
   markFlightGeoOverlayReadyFramePresented,
+  readFlightGeoOverlay,
   readFlightGeoOverlayReadyFramePresented,
+  type FlightGeoOverlayPresentation,
 } from '../../flightGeoOverlay.js'
+
+type MapLibreFlightProviderPresentation = Readonly<{
+  profileId: string
+  readyFrameRequestId: number | null
+  revision: string
+  runId: number
+  tick: number
+}>
 
 type MapLibreFlightBootstrapState = {
   bootstrapApplied: boolean
   cancelProviderStyleApply: (() => void) | null
+  deadlineFramePresented: boolean
   disposed: boolean
   generation: number
   map: any
-  readyFramePresented: boolean
+  providerPresentation: MapLibreFlightProviderPresentation | null
   removeRenderBinding: (() => void) | null
 }
 
 type MapLibreStyle = string | Readonly<Record<string, unknown>>
 type ProviderStyleApplyScheduler = (apply: () => void) => () => void
+type ProviderStylePromotionResult =
+  | 'applied'
+  | 'identity-changed'
+  | 'terminated'
 
 const MAPLIBRE_FLIGHT_PROVIDER_PROMOTION_IDLE_TIMEOUT_MS = 1_000
 
@@ -27,15 +42,29 @@ function readState(map: any): MapLibreFlightBootstrapState | null {
     state = {
       bootstrapApplied: false,
       cancelProviderStyleApply: null,
+      deadlineFramePresented: false,
       disposed: false,
       generation: 0,
       map,
-      readyFramePresented: false,
+      providerPresentation: null,
       removeRenderBinding: null,
     }
     bootstrapStateByMap.set(map, state)
   }
   return state
+}
+
+function hasCurrentProviderPresentation(
+  state: MapLibreFlightBootstrapState,
+): boolean {
+  const presentation = state.providerPresentation
+  const current = readFlightGeoOverlay()
+  return Boolean(
+    presentation
+    && current.active
+    && current.profileId === presentation.profileId
+    && current.runId === presentation.runId,
+  )
 }
 
 function removeRenderBinding(state: MapLibreFlightBootstrapState): void {
@@ -54,6 +83,14 @@ function cancelProviderStyleApply(state: MapLibreFlightBootstrapState): void {
     void 0
   }
   state.cancelProviderStyleApply = null
+}
+
+function requestMapRepaint(state: MapLibreFlightBootstrapState): void {
+  try {
+    state.map.triggerRepaint?.()
+  } catch {
+    void 0
+  }
 }
 
 function scheduleProviderStyleApply(apply: () => void): () => void {
@@ -129,7 +166,7 @@ async function promoteProviderStyle(options: Readonly<{
   retainOverlay: boolean
   scheduleProviderApply: ProviderStyleApplyScheduler
   state: MapLibreFlightBootstrapState
-}>): Promise<void> {
+}>): Promise<ProviderStylePromotionResult> {
   const {
     generation,
     loadProviderStyle,
@@ -141,7 +178,10 @@ async function promoteProviderStyle(options: Readonly<{
   } = options
   try {
     const providerStyle = await loadProviderStyle()
-    if (state.disposed || state.generation !== generation) return
+    if (state.disposed || state.generation !== generation) return 'terminated'
+    if (retainOverlay && !hasCurrentProviderPresentation(state)) {
+      return 'identity-changed'
+    }
     if (
       retainOverlay
       && !await waitForProviderStyleApplyOpportunity({
@@ -149,7 +189,10 @@ async function promoteProviderStyle(options: Readonly<{
         schedule: scheduleProviderApply,
         state,
       })
-    ) return
+    ) return 'terminated'
+    if (retainOverlay && !hasCurrentProviderPresentation(state)) {
+      return 'identity-changed'
+    }
     state.map.setStyle?.(
       providerStyle,
       retainOverlay
@@ -160,8 +203,10 @@ async function promoteProviderStyle(options: Readonly<{
         : { diff: true },
     )
     state.bootstrapApplied = false
+    return 'applied'
   } catch (error) {
     reportError(state, generation, onError, error)
+    return 'terminated'
   }
 }
 
@@ -169,7 +214,45 @@ export function markMapLibreFlightBootstrapApplied(map: any): void {
   const state = readState(map)
   if (!state) return
   state.bootstrapApplied = true
-  state.readyFramePresented = readFlightGeoOverlayReadyFramePresented()
+  state.deadlineFramePresented = readFlightGeoOverlayReadyFramePresented()
+  state.providerPresentation = null
+}
+
+export function markMapLibreFlightOverlayPresented(
+  map: any,
+  presentation: FlightGeoOverlayPresentation,
+): void {
+  const state = readState(map)
+  const current = readFlightGeoOverlay()
+  if (
+    !state
+    || state.disposed
+    || presentation.phase !== 'ready'
+    || presentation.tick !== 0
+    || presentation.runId <= 0
+    || !current.active
+    || current.phase !== presentation.phase
+    || current.profileId !== presentation.profileId
+    || current.readyFrameRequestId !== presentation.readyFrameRequestId
+    || current.revision !== presentation.revision
+    || current.runId !== presentation.runId
+    || current.tick !== presentation.tick
+  ) return
+  const previousPresentation = state.providerPresentation
+  state.providerPresentation = {
+    profileId: presentation.profileId,
+    readyFrameRequestId: presentation.readyFrameRequestId,
+    revision: presentation.revision,
+    runId: presentation.runId,
+    tick: presentation.tick,
+  }
+  if (
+    previousPresentation?.profileId === presentation.profileId
+    && previousPresentation.runId === presentation.runId
+  ) return
+  // Provider loading is authorized by this map's exact visual overlay, not
+  // by another surface's one-shot playable-frame deadline.
+  requestMapRepaint(state)
 }
 
 export function markMapLibreFlightReadyFramePresented(
@@ -182,20 +265,13 @@ export function markMapLibreFlightReadyFramePresented(
     !state
     || state.disposed
     || !state.bootstrapApplied
-    || state.readyFramePresented
+    || state.deadlineFramePresented
   ) return
   if (!markFlightGeoOverlayReadyFramePresented(
     expectedRevision,
     expectedReadyFrameRequestId,
   )) return
-  state.readyFramePresented = true
-  try {
-    // Provider promotion begins on the render after the local ready frame was
-    // acknowledged, so its style swap cannot consume the playable deadline.
-    state.map.triggerRepaint?.()
-  } catch {
-    void 0
-  }
+  state.deadlineFramePresented = true
 }
 
 export function reconcileMapLibreFlightBootstrap(options: Readonly<{
@@ -221,7 +297,8 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   )
 
   if (!options.bootstrapStyle) {
-    state.readyFramePresented = false
+    state.deadlineFramePresented = false
+    state.providerPresentation = null
     if (!state.bootstrapApplied) return
     void promoteProviderStyle({
       ...options,
@@ -233,17 +310,14 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
     return
   }
 
-  if (readFlightGeoOverlayReadyFramePresented()) {
-    state.readyFramePresented = true
-  }
-
-  if (!state.bootstrapApplied && !state.readyFramePresented) {
+  if (!state.bootstrapApplied && !hasCurrentProviderPresentation(state)) {
     try {
       // The source-owned style is installed before provider resolution starts,
       // so the first playable Flight frame never waits on remote style I/O.
       state.map.setStyle?.(options.bootstrapStyle, { diff: true })
       state.bootstrapApplied = true
-      state.readyFramePresented = false
+      state.deadlineFramePresented = false
+      state.providerPresentation = null
     } catch (error) {
       reportError(state, generation, options.onError, error)
       return
@@ -256,17 +330,24 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
       promotionStarted
       || state.disposed
       || state.generation !== generation
-      || !state.readyFramePresented
+      || !hasCurrentProviderPresentation(state)
       || !options.hasExactFlightOverlay(state.map)
     ) return
     promotionStarted = true
-    removeRenderBinding(state)
     void promoteProviderStyle({
       ...options,
       generation,
       retainOverlay: true,
       scheduleProviderApply,
       state,
+    }).then(result => {
+      if (state.disposed || state.generation !== generation) return
+      if (result === 'identity-changed') {
+        promotionStarted = false
+        requestMapRepaint(state)
+        return
+      }
+      removeRenderBinding(state)
     })
   }
   if (typeof state.map.on === 'function') {
@@ -275,7 +356,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
       state.map.off?.('render', promoteWhenPresented)
     }
   }
-  state.map.triggerRepaint?.()
+  requestMapRepaint(state)
   queueMicrotask(promoteWhenPresented)
 }
 

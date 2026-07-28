@@ -3,12 +3,14 @@ import test from 'node:test'
 
 import {
   clearFlightGeoOverlay,
+  readFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
   type FlightGeoOverlaySnapshot,
 } from '../../../gympgrph/src/flightGeoOverlay.js'
 import {
   disposeMapLibreFlightBootstrap,
   markMapLibreFlightBootstrapApplied,
+  markMapLibreFlightOverlayPresented,
   markMapLibreFlightReadyFramePresented,
   reconcileMapLibreFlightBootstrap,
 } from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
@@ -29,7 +31,7 @@ const applyProviderStyleImmediately = (apply: () => void) => {
 
 function readyFlightOverlay(
   revision: string,
-  readyFrameRequestId: number,
+  readyFrameRequestId: number | null,
 ): FlightGeoOverlaySnapshot {
   return {
     active: true,
@@ -191,6 +193,7 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
     readyOverlay.revision,
     readyOverlay.readyFrameRequestId!,
   )
+  markMapLibreFlightOverlayPresented(map, readyOverlay)
   assert.equal(calls.at(-1), 'repaint')
   for (const listener of [...renderListeners]) listener()
   await flushMicrotasks()
@@ -211,13 +214,18 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
   disposeMapLibreFlightBootstrap(map)
 })
 
-test('stale ready identity cannot authorize provider promotion', async context => {
+test('stale ready identity and a prior run cannot authorize provider promotion', async context => {
   const readyOverlay = readyFlightOverlay('ready:current', 31)
   clearFlightGeoOverlay()
   setFlightGeoOverlay(readyOverlay)
   context.after(clearFlightGeoOverlay)
   const renderListeners = new Set<() => void>()
   const applied: string[] = []
+  let resolveFirstProvider!: (style: string) => void
+  const firstProvider = new Promise<string>(resolve => {
+    resolveFirstProvider = resolve
+  })
+  let providerLoads = 0
   const map = {
     off: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.delete(listener)
@@ -233,16 +241,59 @@ test('stale ready identity cannot authorize provider promotion', async context =
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
     hasExactFlightOverlay: () => true,
-    loadProviderStyle: async () => 'provider:stale',
+    loadProviderStyle: () => {
+      providerLoads += 1
+      return providerLoads === 1
+        ? firstProvider
+        : Promise.resolve('provider:stale')
+    },
     map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
+  })
+  markMapLibreFlightOverlayPresented(map, {
+    ...readyOverlay,
+    readyFrameRequestId: 30,
+    revision: 'ready:stale',
+  })
+  markMapLibreFlightOverlayPresented(map, {
+    ...readyOverlay,
+    profileId: 'stale-profile',
+  })
+  markMapLibreFlightOverlayPresented(map, {
+    ...readyOverlay,
+    runId: readyOverlay.runId + 1,
   })
   markMapLibreFlightReadyFramePresented(map, 'ready:stale', 30)
   for (const listener of [...renderListeners]) listener()
   await flushMicrotasks()
 
   assert.deepEqual(applied, ['local-flight-bootstrap'])
+
+  markMapLibreFlightOverlayPresented(map, readyOverlay)
+  for (const listener of [...renderListeners]) listener()
+  await flushMicrotasks()
+  assert.equal(providerLoads, 1)
+  const nextRun = {
+    ...readyOverlay,
+    readyFrameRequestId: 32,
+    revision: 'ready:next-run',
+    runId: readyOverlay.runId + 1,
+  }
+  setFlightGeoOverlay(nextRun)
+  resolveFirstProvider('provider:stale')
+  await flushMicrotasks()
+  assert.deepEqual(applied, ['local-flight-bootstrap'])
+  assert.equal(renderListeners.size, 1)
+
+  markMapLibreFlightOverlayPresented(map, nextRun)
+  for (const listener of [...renderListeners]) listener()
+  await flushMicrotasks()
+  assert.deepEqual(applied, [
+    'local-flight-bootstrap',
+    'provider:stale',
+  ])
+  assert.equal(providerLoads, 2)
   disposeMapLibreFlightBootstrap(map)
 })
 
@@ -296,6 +347,7 @@ test('provider promotion yields to an idle opportunity and fences stale schedule
     readyOverlay.revision,
     readyOverlay.readyFrameRequestId!,
   )
+  markMapLibreFlightOverlayPresented(map, readyOverlay)
   emitRender()
   await flushMicrotasks()
   assert.deepEqual(applied, ['local-flight-bootstrap'])
@@ -376,6 +428,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
     firstReady.revision,
     firstReady.readyFrameRequestId!,
   )
+  markMapLibreFlightOverlayPresented(firstView.map, firstReady)
   firstView.emitRender()
   await flushMicrotasks()
   assert.deepEqual(firstView.applied, [
@@ -411,9 +464,12 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   })
   replacementView.emitRender()
   await flushMicrotasks()
-  assert.deepEqual(replacementView.applied, [
-    'provider:replacement:retained',
-  ])
+  assert.deepEqual(replacementView.applied, [])
+
+  markMapLibreFlightOverlayPresented(replacementView.map, firstReady)
+  replacementView.emitRender()
+  await flushMicrotasks()
+  assert.deepEqual(replacementView.applied, ['provider:replacement:retained'])
 
   disposeMapLibreFlightBootstrap(firstView.map)
   disposeMapLibreFlightBootstrap(replacementView.map)
@@ -431,6 +487,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
     secondReady.revision,
     secondReady.readyFrameRequestId!,
   )
+  markMapLibreFlightOverlayPresented(freshActivationView.map, secondReady)
   freshActivationView.emitRender()
   await flushMicrotasks()
   assert.deepEqual(freshActivationView.applied, [
@@ -438,6 +495,48 @@ test('a ready Flight activation follows native MapLibre view replacements and re
     'provider:fresh:retained',
   ])
   disposeMapLibreFlightBootstrap(freshActivationView.map)
+})
+
+test('a consumed ready request authorizes only the exact presenting map', async context => {
+  const readyOverlay = readyFlightOverlay('ready:consumed', null)
+  clearFlightGeoOverlay()
+  setFlightGeoOverlay(readyOverlay)
+  context.after(clearFlightGeoOverlay)
+  const renderListeners = new Set<() => void>()
+  const applied: string[] = []
+  const map = {
+    off: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.delete(listener)
+    },
+    on: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.add(listener)
+    },
+    setStyle: (style: string | Readonly<Record<string, unknown>>) => {
+      applied.push(typeof style === 'string' ? style : String(style.name))
+    },
+    triggerRepaint: () => void 0,
+  }
+  reconcileMapLibreFlightBootstrap({
+    bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => 'provider:consumed',
+    map,
+    scheduleProviderStyleApply: applyProviderStyleImmediately,
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+  })
+  assert.deepEqual(applied, ['local-flight-bootstrap'])
+  assert.equal(readFlightGeoOverlayReadyFramePresented(), false)
+
+  markMapLibreFlightOverlayPresented(map, readyOverlay)
+  for (const listener of [...renderListeners]) listener()
+  await flushMicrotasks()
+
+  assert.equal(readFlightGeoOverlayReadyFramePresented(), false)
+  assert.deepEqual(applied, [
+    'local-flight-bootstrap',
+    'provider:consumed',
+  ])
+  disposeMapLibreFlightBootstrap(map)
 })
 
 test('Flight deactivation restores the provider without waiting for overlay presentation', async () => {

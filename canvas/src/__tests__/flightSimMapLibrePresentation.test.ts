@@ -353,6 +353,62 @@ test('a fresh ready-frame request re-arms the same deterministic revision', () =
   assert.equal(harness.presentations.at(-1)?.readyFrameRequestId, 2)
 })
 
+test('provider style promotion re-presents a consumed ready overlay and retains earned first-frame proof', () => {
+  const revision = 'ready:provider-style-promotion'
+  const initialReady = flightOverlay('ready', revision, 1)
+  const harness = presentationHarness(initialReady)
+  harness.setWidth(100)
+
+  harness.gate.request(initialReady)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
+
+  const consumedReady = flightOverlay('ready', revision, null)
+  harness.setCurrent(consumedReady)
+  harness.gate.resetPresented()
+  harness.gate.request(consumedReady)
+  harness.emitRender()
+
+  assert.equal(harness.presentations.length, 2)
+  assert.equal(harness.presentations.at(-1)?.revision, revision)
+  assert.equal(harness.presentations.at(-1)?.readyFrameRequestId, null)
+  assert.equal(harness.presentedRevision(), revision)
+  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
+  assert.equal(
+    harness.canvas.dataset.kgFlightSimFirstFrameSurface,
+    'maplibre',
+  )
+
+  harness.gate.clearCanvas()
+  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, undefined)
+  assert.equal(
+    harness.canvas.dataset.kgFlightSimFirstFrameSurface,
+    undefined,
+  )
+})
+
+test('a consumed ready overlay cannot manufacture first-frame proof on a fresh canvas', () => {
+  const consumedReady = flightOverlay(
+    'ready',
+    'ready:fresh-provider-canvas',
+    null,
+  )
+  const harness = presentationHarness(consumedReady)
+  harness.setWidth(100)
+
+  harness.gate.request(consumedReady)
+  harness.emitRender()
+
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.presentedRevision(), consumedReady.revision)
+  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, undefined)
+  assert.equal(
+    harness.canvas.dataset.kgFlightSimFirstFrameSurface,
+    undefined,
+  )
+})
+
 test('transient invalid first render retries before exact MapLibre acknowledgement', () => {
   const ready = flightOverlay('ready', 'ready:1:0')
   const harness = presentationHarness(ready)

@@ -6,6 +6,7 @@ import { UI_COPY } from '@/lib/config'
 import { getNextThemeMode, type ThemeMode } from '@/lib/ui/theme'
 import { type GraphSchema } from '@/lib/graph/schema'
 import { setGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
+import { activateGeoXrSurfaceAtomically } from '@/features/geospatial/geoXrSurfaceActivation'
 import { togglePortHandlesEnabledInSchema } from '@/lib/graph/portHandlesBehavior'
 import type { MainPanelTabKey } from '@/features/toolbar/hooks/useMainPanelDrag'
 
@@ -188,6 +189,27 @@ export function useToolbarActions(
       })
   }, [onGeospatialEnabledChange])
 
+  const handleActivateGeoXrMode = useCallback(() => {
+    void activateGeoXrSurfaceAtomically()
+      .then(() => {
+        onGeospatialEnabledChange?.(true)
+        emitFloatingPanelOpen({ tab: 'geo', open: true })
+      })
+      .catch((err: unknown) => {
+        try {
+          const msg =
+            err && typeof err === 'object' && 'message' in err ? String((err as { message?: unknown }).message || '').trim() : ''
+          useGraphStore.getState().pushUiToast({
+            id: 'canvas-view:geo-xr:unavailable',
+            kind: 'error',
+            message: `Geo+XR Mode failed to load: ${msg || 'Unknown error'}`,
+          })
+        } catch {
+          void 0
+        }
+      })
+  }, [onGeospatialEnabledChange])
+
   const handleToggleTheme = useCallback(() => {
     setThemeMode(getNextThemeMode(themeMode))
   }, [setThemeMode, themeMode])
@@ -210,6 +232,7 @@ export function useToolbarActions(
     handleToggle3DMode,
     handleOpenChat,
     handleOpenGeospatialMode,
+    handleActivateGeoXrMode,
     handleToggleTheme,
   }
 }

@@ -35,10 +35,11 @@ export function useFlightSimSurfacePreload(args: Readonly<{
   activePath: string | null
   sourceFiles: readonly Pick<SourceFile, 'name' | 'source'>[]
 }>): void {
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (!resolveFlightSimSurfacePreloadIntent(args)) return
-    // Activation owns admission and retry; these speculative loads only remove
-    // cold module work from the authored source-to-first-frame budget.
+    // Begin the async chunks in the source-selection commit, before passive
+    // effects can trail the layout-owned document launch and its frame budget.
+    // Activation still owns admission, awaiting, retry, and failure handling.
     void Promise.allSettled([
       preloadGeospatialMapRuntime(),
       loadCanvasViewportGeospatialOverlay(),
