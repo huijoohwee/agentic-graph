@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+import re
 import time
 from typing import Any
 
@@ -32,6 +34,9 @@ def verify_mobile_flight_hud(page: Page) -> dict[str, Any]:
           const canvas = canvasOwner?.querySelector('canvas') || null
           const header = hud?.querySelector(':scope > header') || null
           const objective = header?.querySelector(':scope > section:first-child') || null
+          const courseDirector = objective?.querySelector(
+            '[data-kg-flight-sim-course-director="hud"]',
+          ) || null
           const telemetry = header?.querySelector(':scope > section:last-child') || null
           const directional = hud?.querySelector(
             'section[aria-label="Touch flight controls"]',
@@ -58,6 +63,7 @@ def verify_mobile_flight_hud(page: Page) -> dict[str, Any]:
             ['hud', hud],
             ['header', header],
             ['objective', objective],
+            ['course-director', courseDirector],
             ['telemetry', telemetry],
             ['directional-controls', directional],
             ['lower-controls', lowerControls],
@@ -214,6 +220,22 @@ def verify_mobile_flight_hud(page: Page) -> dict[str, Any]:
           return {
             viewport,
             objectiveText: text(objective),
+            courseDirectorText: String(courseDirector?.textContent || '')
+              .replace(/\\s+/g, ' ')
+              .trim(),
+            courseDirectorLabel:
+              courseDirector?.getAttribute('aria-label') || '',
+            courseDirectorAriaLive:
+              courseDirector?.getAttribute('aria-live') || '',
+            courseDirectorRole:
+              courseDirector?.getAttribute('role') || '',
+            courseHeadingError: courseDirector?.hasAttribute(
+              'data-kg-flight-sim-course-heading-error',
+            )
+              ? Number(courseDirector.getAttribute(
+                  'data-kg-flight-sim-course-heading-error',
+                ))
+              : null,
             telemetryText: String(telemetry?.textContent || '')
               .replace(/\\s+/g, ' ')
               .trim(),
@@ -265,6 +287,12 @@ def verify_mobile_flight_hud(page: Page) -> dict[str, Any]:
         "Restart",
     }
     telemetry_text = str(layout.get("telemetryText") or "")
+    course_director_text = str(layout.get("courseDirectorText") or "")
+    course_heading_error = layout.get("courseHeadingError")
+    course_director_exact = re.fullmatch(
+        r"WP1 · \d+ m · (?:HOLD COURSE|TURN [LR] \d+°)",
+        course_director_text,
+    )
     if (
         layout.get("viewport") != MOBILE_VIEWPORT
         or invalid_targets
@@ -273,6 +301,15 @@ def verify_mobile_flight_hud(page: Page) -> dict[str, Any]:
         or layout.get("controlOverlaps")
         or layout.get("controlCount") != len(layout.get("controlLabels") or [])
         or not str(layout.get("objectiveText") or "").strip()
+        or course_director_exact is None
+        or layout.get("courseDirectorLabel")
+        != f"Course director: {course_director_text}"
+        or layout.get("courseDirectorAriaLive") != ""
+        or layout.get("courseDirectorRole") != ""
+        or not isinstance(course_heading_error, (int, float))
+        or not math.isfinite(course_heading_error)
+        or course_heading_error < -180
+        or course_heading_error > 180
         or not required_touch_labels.issubset(set(layout.get("touchLabels") or []))
         or not required_control_labels.issubset(
             set(layout.get("controlLabels") or [])

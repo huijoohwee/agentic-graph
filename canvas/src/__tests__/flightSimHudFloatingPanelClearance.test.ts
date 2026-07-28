@@ -47,4 +47,15 @@ test('Flight HUD announces only objective transitions as one polite status', () 
   assert.match(objectiveStatus, /aria-live="polite"/)
   assert.match(objectiveStatus, /aria-atomic="true"/)
   assert.match(objectiveStatus, /\{projection\.objective\}/)
+
+  const courseDirector = source.match(
+    /<p\s+className="mt-1 text-\[11px\] font-semibold text-amber-200"[\s\S]*?<\/p>/,
+  )?.[0]
+  assert.ok(courseDirector)
+  assert.match(
+    courseDirector,
+    /aria-label=\{`Course director: \$\{courseDirector\.label\}`\}/,
+  )
+  assert.doesNotMatch(courseDirector, /aria-live=/)
+  assert.doesNotMatch(courseDirector, /role="status"/)
 })

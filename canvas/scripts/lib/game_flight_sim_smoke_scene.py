@@ -294,6 +294,7 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
           )
           const mapLayersReady = [
             `${sourceId}:route`,
+            `${sourceId}:objective-guide`,
             `${sourceId}:route-points`,
             `${sourceId}:aircraft-outline`,
             `${sourceId}:aircraft`,
@@ -355,6 +356,10 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
               ).length,
               routeFeatureCount: sourceFeatures.filter(
                 feature => feature?.properties?.kgFlightOverlayKind === 'route',
+              ).length,
+              objectiveGuideFeatureCount: sourceFeatures.filter(
+                feature => feature?.properties?.kgFlightOverlayKind
+                  === 'objective-guide',
               ).length,
               pendingWaypointCount: routePoints.filter(feature => (
                 feature?.properties?.kgFlightRouteKind === 'waypoint'
@@ -500,6 +505,15 @@ def assert_active_flight_scene(
             f"states={map_overlay.get('landingStates')}, "
             f"completed={completed_waypoint_count}/{waypoint_count}, "
             f"phase={mission_phase}"
+        )
+    expected_objective_guide_count = 0 if mission_phase == "completed" else 1
+    if (
+        map_overlay.get("objectiveGuideFeatureCount")
+        != expected_objective_guide_count
+    ):
+        raise AssertionError(
+            "MapLibre Flight objective guide did not match mission phase: "
+            f"{map_overlay}"
         )
     expected_visible_waypoints = max(
         0,
