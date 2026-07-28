@@ -123,6 +123,10 @@ test('Flight local mission coordinates project deterministically around Singapor
   assert.deepEqual(overlay.route[0]?.coordinate, [103.851959, 1.29027])
   assert.equal(overlay.route[0]?.kind, 'spawn')
   assert.equal(overlay.route.at(-1)?.kind, 'landing')
+  assert.ok(overlay.objective)
+  assert.equal(overlay.objective.id, profile.waypoints[0]?.id)
+  assert.equal(overlay.objective.label, 'WP1')
+  assert.ok(Number.isFinite(overlay.objective.headingErrorDegrees))
   assert.ok(overlay.aircraft.coordinate.every(Number.isFinite))
   assert.ok(overlay.aircraft.headingDegrees >= 0)
   assert.ok(overlay.aircraft.headingDegrees < 360)
@@ -141,6 +145,7 @@ test('Flight local mission coordinates project deterministically around Singapor
   )
   assert.equal(completedOverlay.route.at(-1)?.kind, 'landing')
   assert.equal(completedOverlay.route.at(-1)?.state, 'visited')
+  assert.equal(completedOverlay.objective, null)
 
   const cockpit = projectFlightSimToGeospatialOverlay(
     runtime.read(),

@@ -5,12 +5,14 @@ export const FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'
 export const FLIGHT_GEO_OVERLAY_LAYER_IDS = Object.freeze({
   aircraft: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft`,
   aircraftOutline: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft-outline`,
+  objectiveGuide: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:objective-guide`,
   route: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:route`,
   routePoints: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:route-points`,
 })
 
 const FLIGHT_GEO_OVERLAY_LAYER_ORDER = Object.freeze([
   FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
+  FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
   FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
   FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
   FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
@@ -214,6 +216,31 @@ export function applyFlightGeoOverlayToMap(
         'line-opacity': 0.88,
         'line-width': 4,
         'line-dasharray': [1.5, 1.25],
+      },
+    })
+    addLayerOnce(map, {
+      id: FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
+      type: 'line',
+      source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
+      filter: [
+        '==',
+        ['get', 'kgFlightOverlayKind'],
+        'objective-guide',
+      ],
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+      paint: {
+        'line-color': [
+          'case',
+          FLIGHT_GEO_NIGHT_EXPRESSION,
+          '#f5d0fe',
+          '#fde047',
+        ],
+        'line-opacity': 0.94,
+        'line-width': 3,
+        'line-dasharray': [0.75, 1.25],
       },
     })
     addLayerOnce(map, {

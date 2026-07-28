@@ -2,10 +2,10 @@ import type {
   FlightSimSnapshot,
   FlightSimSpatialProfile,
 } from './flightSimModel'
-import { flightSimHeadingDegrees } from './flightModel'
 import type { SpatialVector } from '@/features/physics/spatialPhysicsTypes'
 import type { CameraFramingPose } from '@/lib/camera/cameraFramingPose'
 import { resolveFlightSimFollowTarget } from './flightSimFollowTarget'
+import { projectFlightSimRouteGuidance } from './flightSimRouteGuidance'
 import { flightSimAuthoredWorldUnitsToMeters } from './flightSimSpatialScale'
 
 export type FlightSimGeospatialCoordinate =
@@ -38,6 +38,15 @@ export type FlightSimGeospatialOverlay = Readonly<{
     view: 'chase' | 'cockpit' | 'survey'
   }>
   night: boolean
+  objective: Readonly<{
+    bearingDegrees: number
+    coordinate: FlightSimGeospatialCoordinate
+    distanceMeters: number
+    headingErrorDegrees: number
+    id: string
+    kind: 'waypoint' | 'landing'
+    label: string
+  }> | null
   phase: FlightSimSnapshot['phase']
   profileId: string
   readyFrameRequestId: number | null
@@ -124,24 +133,7 @@ export function projectFlightSimToGeospatialOverlay(
   night: boolean,
   readyFrameRequestId: number | null = null,
 ): FlightSimGeospatialOverlay {
-  const routeSeeds = [
-    Object.freeze({
-      id: 'flight-sim:spawn',
-      position: profile.spawn.position,
-      kind: 'spawn' as const,
-    }),
-    ...profile.waypoints.map(waypoint => Object.freeze({
-      id: waypoint.id,
-      position: waypoint.position,
-      kind: 'waypoint' as const,
-    })),
-    Object.freeze({
-      id: profile.landingPad.id,
-      position: profile.landingPad.position,
-      kind: 'landing' as const,
-    }),
-  ]
-  const landingActive = flight.waypointIndex >= profile.waypoints.length
+  const guidance = projectFlightSimRouteGuidance(flight, profile)
   const fixedFollow = resolveFlightSimFollowTarget(flight, 1, camera.view)
   const cockpitClearance = Object.freeze({
     forwardMeters: Math.hypot(
@@ -155,31 +147,35 @@ export function projectFlightSimToGeospatialOverlay(
     ? Object.freeze([...fixedFollow.target]) as SpatialVector
     : flight.aircraft.position
   const timeline = camera.timeline || null
-  const route = Object.freeze(routeSeeds.map<FlightSimGeospatialRoutePoint>((point, routeIndex) => {
-    const waypointIndex = routeIndex - 1
-    const state = point.kind === 'spawn'
-      ? 'visited'
-      : point.kind === 'landing'
-        ? flight.phase === 'completed'
-          ? 'visited'
-          : landingActive ? 'active' : 'pending'
-        : waypointIndex < flight.waypointIndex
-          ? 'visited'
-          : waypointIndex === flight.waypointIndex ? 'active' : 'pending'
+  const route = Object.freeze(guidance.route.map<FlightSimGeospatialRoutePoint>(point => {
     return Object.freeze({
       id: point.id,
       coordinate: projectPosition(point.position, profile.spawn.position),
       altitudeMeters: point.position[1],
       kind: point.kind,
-      state,
+      state: point.state,
     })
   }))
+  const objective = guidance.objective
+    ? Object.freeze({
+        bearingDegrees: guidance.objective.bearingDegrees,
+        coordinate: projectPosition(
+          guidance.objective.position,
+          profile.spawn.position,
+        ),
+        distanceMeters: guidance.objective.distanceMeters,
+        headingErrorDegrees: guidance.objective.headingErrorDegrees,
+        id: guidance.objective.id,
+        kind: guidance.objective.kind,
+        label: guidance.objective.label,
+      })
+    : null
   return Object.freeze({
     active: flight.active,
     aircraft: Object.freeze({
       coordinate: projectPosition(flight.aircraft.position, profile.spawn.position),
       altitudeMeters: flight.aircraft.position[1],
-      headingDegrees: flightSimHeadingDegrees(flight.aircraft.yaw),
+      headingDegrees: guidance.aircraftHeadingDegrees,
     }),
     camera: Object.freeze({
       centerCoordinate: projectPosition(centerPosition, profile.spawn.position),
@@ -190,6 +186,7 @@ export function projectFlightSimToGeospatialOverlay(
       view: camera.view,
     }),
     night,
+    objective,
     phase: flight.phase,
     profileId: profile.id,
     readyFrameRequestId,

@@ -61,6 +61,15 @@ function flightOverlay(
       view: 'chase',
     },
     night: false,
+    objective: {
+      bearingDegrees: 45,
+      coordinate: [103.83, 1.36],
+      distanceMeters: 120,
+      headingErrorDegrees: 45,
+      id: 'landing',
+      kind: 'landing',
+      label: 'LAND',
+    },
     phase,
     profileId: 'singapore',
     readyFrameRequestId,
@@ -477,6 +486,28 @@ test('flight markers stay viewport-stable and expose route kind and state withou
   const overlay = flightOverlay('ready', 'ready:provider-glyph')
 
   assert.equal(applyFlightGeoOverlayToMap(map, overlay), true)
+  const sourceData = sources.get(FLIGHT_GEO_OVERLAY_SOURCE_ID)?._data as {
+    features?: readonly {
+      geometry?: { coordinates?: unknown }
+      properties?: Record<string, unknown>
+    }[]
+  }
+  const objectiveGuideFeature = sourceData.features?.find(
+    feature => feature.properties?.kgFlightOverlayKind === 'objective-guide',
+  )
+  assert.deepEqual(objectiveGuideFeature?.geometry?.coordinates, [
+    [...overlay.aircraft.coordinate],
+    [...overlay.objective!.coordinate],
+  ])
+  assert.equal(
+    objectiveGuideFeature?.properties?.kgFlightObjectiveHeadingErrorDegrees,
+    45,
+  )
+  const objectiveGuide = layers.get(
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
+  )
+  assert.equal(objectiveGuide?.type, 'line')
+  assert.deepEqual(objectiveGuide?.paint?.['line-dasharray'], [0.75, 1.25])
   const routePoints = layers.get(FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints)
   assert.equal(routePoints?.type, 'circle')
   assert.equal(routePoints?.paint?.['circle-pitch-scale'], 'viewport')
@@ -559,6 +590,7 @@ test('provider promotion retains the exact Flight source and ordered layers', ()
   }
   const flightLayers = [
     FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
     FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
     FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
     FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
@@ -599,11 +631,12 @@ test('provider promotion retains the exact Flight source and ordered layers', ()
     [
       'provider-background',
       FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
+      FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
       FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
       FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
       FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
     ],
   )
-  assert.equal(previousStyle.layers.length, 5)
+  assert.equal(previousStyle.layers.length, 6)
   assert.equal(nextStyle.layers.length, 2)
 })

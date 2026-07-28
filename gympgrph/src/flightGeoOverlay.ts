@@ -35,6 +35,15 @@ export type FlightGeoOverlaySnapshot = Readonly<{
     view: 'chase' | 'cockpit' | 'survey'
   }>
   night: boolean
+  objective: Readonly<{
+    bearingDegrees: number
+    coordinate: FlightGeoCoordinate
+    distanceMeters: number
+    headingErrorDegrees: number
+    id: string
+    kind: 'waypoint' | 'landing'
+    label: string
+  }> | null
   phase: 'stopped' | 'ready' | 'flying' | 'completed' | 'crashed'
   profileId: string
   readyFrameRequestId: number | null
@@ -74,6 +83,7 @@ const EMPTY_FLIGHT_GEO_OVERLAY: FlightGeoOverlaySnapshot = Object.freeze({
     view: 'chase',
   }),
   night: false,
+  objective: null,
   phase: 'stopped',
   profileId: '',
   readyFrameRequestId: null,
@@ -167,6 +177,33 @@ export function flightGeoOverlayFeatureCollection(
       altitudeMeters: point.altitudeMeters,
     },
   }))
+  const objectiveGuide: Feature<LineString> | null = overlay.objective
+    ? {
+        type: 'Feature',
+        id: `${overlay.profileId}:objective-guide`,
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [...overlay.aircraft.coordinate],
+            [...overlay.objective.coordinate],
+          ],
+        },
+        properties: {
+          kgFlightOverlayKind: 'objective-guide',
+          kgFlightObjectiveBearingDegrees:
+            overlay.objective.bearingDegrees,
+          kgFlightObjectiveDistanceMeters:
+            overlay.objective.distanceMeters,
+          kgFlightObjectiveHeadingErrorDegrees:
+            overlay.objective.headingErrorDegrees,
+          kgFlightObjectiveId: overlay.objective.id,
+          kgFlightObjectiveKind: overlay.objective.kind,
+          kgFlightObjectiveLabel: overlay.objective.label,
+          kgFlightNight: overlay.night,
+          kgFlightOverlayRevision: overlay.revision,
+        },
+      }
+    : null
   const aircraft: Feature<Point> = {
     type: 'Feature',
     id: `${overlay.profileId}:aircraft`,
@@ -184,6 +221,11 @@ export function flightGeoOverlayFeatureCollection(
   }
   return {
     type: 'FeatureCollection',
-    features: [route, ...routePoints, aircraft],
+    features: [
+      route,
+      ...(objectiveGuide ? [objectiveGuide] : []),
+      ...routePoints,
+      aircraft,
+    ],
   }
 }

@@ -9,6 +9,13 @@ const POLICY_DOCUMENT_PATHS = new Set([
   ...KIRO_POLICY_DOCUMENT_PATHS,
 ])
 
+const FLIGHT_PRESENTATION_PATHS = new Set([
+  'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+  'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
+  'gympgrph/src/flightGeoOverlay.ts',
+  'gympgrph/src/flightGeoOverlayMapLibre.ts',
+])
+
 const EXTERNAL_LOCATOR_PATTERN = /(?:https?:\/\/|git\+|github:|gitlab:|bitbucket:)/gi
 const ADMITTED_OPAQUE_ASSET_PATHS = new Set([
   'canvas/src/features/game-flight-sim/assetSpec/fallbacks/optional-beacon.glb',
@@ -17,6 +24,7 @@ const ADMITTED_OPAQUE_ASSET_PATHS = new Set([
 function isFlightOwnedPath(relativePath) {
   return (
     POLICY_DOCUMENT_PATHS.has(relativePath)
+    || FLIGHT_PRESENTATION_PATHS.has(relativePath)
     || relativePath.startsWith('.kiro/specs/knowgrph-game-flight-sim/')
     || relativePath.startsWith('canvas/src/features/game-flight-sim/')
     || relativePath.startsWith('canvas/src/lib/three/flightSim')

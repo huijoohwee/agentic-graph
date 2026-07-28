@@ -40,6 +40,7 @@ const requiredPaths = [
   `${flightFeatureRoot}/flightModel.ts`,
   `${flightFeatureRoot}/flightSimFollowTarget.ts`,
   `${flightFeatureRoot}/flightSimGeospatialProjection.ts`,
+  `${flightFeatureRoot}/flightSimRouteGuidance.ts`,
   `${flightFeatureRoot}/flightSimDecisionAdmission.ts`,
   `${flightFeatureRoot}/flightSimDecisionStore.ts`,
   `${flightFeatureRoot}/flightSimHydrationGate.ts`,
@@ -412,11 +413,22 @@ requireMarkers(spatialProfileSource, [
   "'flight-sim:boundary-ceiling'",
   'startedOverlapping?.penetration',
 ], 'canonical XR Flight Sim spatial profile')
+const routeGuidanceSource = await readText(
+  `${flightFeatureRoot}/flightSimRouteGuidance.ts`,
+)
+requireMarkers(routeGuidanceSource, [
+  'export function projectFlightSimRouteGuidance(',
+  'flightSimHeadingDegrees(flight.aircraft.yaw)',
+  'headingErrorDegrees: normalizeHeadingErrorDegrees(',
+  "label: 'LAND'",
+  "if (!objective) return 'COURSE COMPLETE'",
+], 'shared Flight route and course-director guidance')
 const hudSource = await readText(`${flightFeatureRoot}/FlightSimHud.tsx`)
 requireMarkers(hudSource, [
   'data-kg-flight-sim-pitch',
   'data-kg-flight-sim-roll',
   'data-kg-flight-sim-save-status', 'data-kg-flight-sim-effective-save-status',
+  'data-kg-flight-sim-course-director="hud"',
   'grid min-w-0 grid-cols-3', 'disabled={!flightControlsEnabled}',
   "'Retry save'",
 ], 'Flight HUD readiness')

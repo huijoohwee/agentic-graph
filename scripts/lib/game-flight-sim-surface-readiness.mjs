@@ -93,12 +93,14 @@ export async function assertFlightSimSurfaceReadiness({
     'export function setFlightGeoOverlay(',
     'export function flightGeoOverlayFeatureCollection(',
     "kgFlightOverlayKind: 'aircraft'",
+    "kgFlightOverlayKind: 'objective-guide'",
   ], 'Flight Sim geospatial overlay contract')
 
   const flightGeoMapLibreSource = await readText('gympgrph/src/flightGeoOverlayMapLibre.ts')
   requireSourceMarkers(flightGeoMapLibreSource, [
     "FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'",
     'export function applyFlightGeoOverlayToMap(',
+    'FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide',
     'FLIGHT_GEO_OVERLAY_LAYER_IDS.route',
     'FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints',
     'FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft',

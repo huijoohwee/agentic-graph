@@ -108,6 +108,7 @@ def _read_view(page: Page) -> dict[str, Any]:
             || 'kg-flight-sim:geo-overlay'
           const layerIds = [
             `${sourceId}:route`,
+            `${sourceId}:objective-guide`,
             `${sourceId}:route-points`,
             `${sourceId}:aircraft-outline`,
             `${sourceId}:aircraft`,
@@ -250,6 +251,10 @@ def _read_view(page: Page) -> dict[str, Any]:
             mapLibreCanvasCount: mapCanvases.length,
             visibleMapLibreCanvasCount: visibleMapCanvases.length,
             flightSourceFeatures: sourceFeatures.length,
+            objectiveGuideFeatureCount: sourceFeatures.filter(
+              feature => feature?.properties?.kgFlightOverlayKind
+                === 'objective-guide',
+            ).length,
             flightLayersReady: layerIds.every(id => Boolean(map?.getLayer?.(id))),
             flightLayerOrder,
             flightLayersTopmost:
@@ -330,9 +335,10 @@ def _wait_for_view(
             and last.get("flightLayersReady") is True
             and last.get("flightLayersTopmost") is True
             and last.get("aircraftLayerType") == "symbol"
-            and (last.get("flightSourceFeatures") or 0) >= 6
+            and (last.get("flightSourceFeatures") or 0) >= 7
+            and last.get("objectiveGuideFeatureCount") == 1
             and set(last.get("renderedKinds") or [])
-            == {"aircraft", "route", "route-point"}
+            == {"aircraft", "objective-guide", "route", "route-point"}
             and last.get("routeInViewport") is True
             and max(
                 float((last.get("routeScreenSpan") or {}).get("x") or 0),

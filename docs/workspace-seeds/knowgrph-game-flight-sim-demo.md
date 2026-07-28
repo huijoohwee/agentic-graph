@@ -93,6 +93,9 @@ native_flight_demo:
     orientation: "north-up"
     source: "authored mission spawn, ordered waypoints, landing pad, and aircraft snapshot"
     projection_owner: "canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts"
+    route_guidance_owner: "canvas/src/features/game-flight-sim/flightSimRouteGuidance.ts"
+    objective_guide: "one conditional aircraft-to-active-objective segment shared with native MapLibre, exclusive plain Geo, and the HUD"
+    hud_cue: "objective label, rounded distance, and signed left/right heading error; per-tick cue is not a live region"
     runtime_network_calls: 0
     external_map_or_token_required: false
   scene: "procedural Singapore waterfront terrain"
@@ -295,7 +298,7 @@ flow:
 
 # Native Flight Sim in Geo+XR Mode
 
-This Source Files document is the local Geo+XR Mode runtime authority for one deterministic, browser-local flight mission. Applying it opens **Flight Sim**, keeps the selected native MapLibre view visible, projects the route, waypoints, and aircraft through dedicated map layers, prepares a healthy mission at tick zero, and waits for normalized input. The existing R3F Canvas remains mounted only for simulation/input/readiness and paints no Flight or XR world geometry. Geo view selection changes the actual MapLibre 2D/3D Classic/Modern presentation. It does not create another R3F Canvas, terrain, collider catalog, Flight-owned map provider/camera, persistence owner, external dependency, or deployment surface.
+This Source Files document is the local Geo+XR Mode runtime authority for one deterministic, browser-local flight mission. Applying it opens **Flight Sim**, keeps the selected native MapLibre view visible, and projects the route, conditional aircraft-to-active-objective course segment, waypoints, and aircraft through dedicated map layers before preparing a healthy mission at tick zero and waiting for normalized input. The course segment shares one pure route-guidance state with exclusive plain Geo, the north-up inset, and the mobile/desktop HUD, and disappears after mission completion. The existing R3F Canvas remains mounted only for simulation/input/readiness and paints no Flight or XR world geometry. Geo view selection changes the actual MapLibre 2D/3D Classic/Modern presentation. It does not create another R3F Canvas, terrain, collider catalog, Flight-owned map provider/camera, persistence owner, external dependency, or deployment surface.
 
 ## Run locally
 
@@ -317,7 +320,7 @@ The browser-local control contract uses `knowgrph.control_local_flight_sim` and 
 
 Camera source is independent of aircraft selection. In **FloatingPanel Camera → SHOOT**, choose the catalog's only two modes: **Fixed Follow** for aircraft-relative MapLibre framing or **Free Orbit** for direct map pan and zoom. While Fixed Follow is active, the Flight panel, HUD, or `C` key selects **Chase**, **Cockpit**, or **Survey**; the Geo host applies the corresponding visible MapLibre center, bearing, pitch, and zoom. Cockpit uses the canonical collision-clear eye to derive its forward look-ahead map center. Flight never mounts a map or camera. Timeline camera-mark playback temporarily maps the sampled authored pose into visible MapLibre center, bearing, pitch, and zoom, then returns to the selected source.
 
-The north-up local navigation inset projects the authored mission spawn, ordered waypoint rings, landing pad, aircraft position, heading, objective distance, and bearing. It is deterministic SVG over the existing HUD and panel: no map tiles, geocoder, token, network request, alternate terrain, or external runtime dependency. Motion Control is optional normalized player input only and never becomes flight policy. Conflicting device commands resolve independently per axis to the value with the largest absolute magnitude.
+The north-up local navigation inset projects the authored mission spawn, ordered waypoint rings, landing pad, aircraft position, heading, objective distance, bearing, signed heading error, and the same aircraft-to-objective course segment used by MapLibre and exclusive plain Geo. A compact HUD cue names the objective and reports rounded distance plus `HOLD COURSE` or deterministic left/right turn correction; only objective transitions use the polite live region. It is deterministic SVG/DOM over the existing HUD and panel: no map tiles, geocoder, token, network request, alternate terrain, or external runtime dependency. Motion Control is optional normalized player input only and never becomes flight policy. Conflicting device commands resolve independently per axis to the value with the largest absolute magnitude.
 
 For pose control, open and start **Motion Control** from the active Flight panel, then use **Flight Sim** in the training card to return to the aircraft. The mission and camera capture remain live across that panel handoff. Lean forward/back for pitch, lean side-to-side for roll, raise both hands for power, and hold hands wide while leaning to yaw; the Flight panel reports whether capture is connected and whether a full-body pose is currently driving the aircraft.
 

@@ -32,6 +32,12 @@ import {
 import {
   assertFlightSimFeatureNetworkBoundary,
 } from '../lib/game-flight-sim-network-readiness.mjs'
+import {
+  assertFlightSimSeedReadiness,
+} from '../lib/game-flight-sim-seed-readiness.mjs'
+import {
+  parseYamlFrontmatter,
+} from '../lib/source-readiness-assertions.mjs'
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -384,5 +390,40 @@ test('clean-room scanner reports a crafted external-project boundary violation',
       assert.match(error.message, /https:\/\//)
       return true
     },
+  )
+})
+
+test('clean-room scanner covers the native MapLibre Flight presentation owner', () => {
+  assert.throws(
+    () => assertFlightSimBoundary([{
+      relativePath: 'gympgrph/src/flightGeoOverlayMapLibre.ts',
+      source: "export const remote = 'https://external.example/map-runtime'",
+    }]),
+    /flightGeoOverlayMapLibre\.ts/,
+  )
+})
+
+test('seed readiness rejects a missing course-director authority field', async () => {
+  const flightSeedPath =
+    'docs/workspace-seeds/knowgrph-game-flight-sim-demo.md'
+  const source = await readFile(
+    path.join(repositoryRoot, flightSeedPath),
+    'utf8',
+  )
+  const seed = structuredClone(parseYamlFrontmatter(source, flightSeedPath))
+  delete seed.native_flight_demo.navigation_inset.route_guidance_owner
+
+  await assert.rejects(
+    assertFlightSimSeedReadiness({
+      seed,
+      flightSeedPath,
+      physicsSeedPath:
+        'docs/workspace-seeds/knowgrph-physics-playground-demo.md',
+      readText: relativePath => readFile(
+        path.join(repositoryRoot, relativePath),
+        'utf8',
+      ),
+    }),
+    /exact source-authored course-director projection/,
   )
 })
