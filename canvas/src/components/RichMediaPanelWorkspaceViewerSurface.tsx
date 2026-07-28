@@ -8,6 +8,7 @@ import {
 } from '@/lib/ui/surfaceClasses'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { requestPropsPanelOpen } from '@/features/toolbar/floatingPanelBridge'
+import { isCanonicalNodeIdEqual } from '@/lib/graph/canonicalNodeIds'
 import {
   beginTextSelectionWidgetLinkSession,
   readTextSelectionWidgetSourceHighlights,
@@ -122,7 +123,7 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
     const sourceNodeId = String(props.overlayId || '').trim()
     if (!sourceNodeId) return
     return subscribeStoryboardCardProvenanceFocus(focus => {
-      if (String(focus.sourceNodeId || '').trim() !== sourceNodeId) return
+      if (!isCanonicalNodeIdEqual(focus.sourceNodeId, sourceNodeId)) return
       setProvenanceFocus(focus)
     })
   }, [props.overlayId])
