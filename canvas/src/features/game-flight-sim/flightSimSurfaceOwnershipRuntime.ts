@@ -102,7 +102,10 @@ export function restoreFlightSimPreviousCanvasSurface(
   return restoreFlightSimGeospatialSurface(previous.geospatialModeEnabled)
 }
 
-export const FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS = 1_000
+// Cold Geo+XR entry can finish loading MapLibre immediately before rollback.
+// Keep disposal bounded below the stage deadline while allowing that lazy owner
+// to unmount and release its lease before the one permitted retry.
+export const FLIGHT_SIM_SURFACE_DISPOSAL_TIMEOUT_MS = 2_000
 const FLIGHT_SIM_SURFACE_STABLE_FRAME_COUNT = 2
 
 function flightSimSurfaceRestorationError(error: unknown): string {
