@@ -299,6 +299,38 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
 
   React.useEffect(() => {
     const map = options.map
+    return () => {
+      try {
+        const canvas = map?.getCanvas?.()
+        if (
+          typeof HTMLCanvasElement !== 'undefined'
+          && canvas instanceof HTMLCanvasElement
+        ) {
+          delete canvas.dataset.kgFlightSimFirstFrame
+          delete canvas.dataset.kgFlightSimFirstFrameSurface
+        }
+      } catch {
+        void 0
+      }
+      const root = options.rootRef.current
+      if (root) delete root.dataset.kgFlightGeospatialPresentedRevision
+      if (presentedRef.current.map === map) {
+        presentedRef.current = {
+          map: null,
+          readyFrameRequestId: null,
+          revision: '',
+        }
+      }
+    }
+  }, [
+    options.map,
+    options.rootRef,
+    options.styleRevision,
+    options.viewMode,
+  ])
+
+  React.useEffect(() => {
+    const map = options.map
     let pendingCameraFrame = 0
     const gate = map
       ? createFlightGeoOverlayPresentationGate({
@@ -374,10 +406,6 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       unsubscribe()
       map?.off?.('load', scheduleFinalApply)
       gate?.cancel()
-      gate?.clearCanvas()
-      const root = options.rootRef.current
-      if (root) delete root.dataset.kgFlightGeospatialPresentedRevision
-      gate?.resetPresented()
       if (pendingCameraFrame && typeof window !== 'undefined') {
         window.cancelAnimationFrame(pendingCameraFrame)
       }
