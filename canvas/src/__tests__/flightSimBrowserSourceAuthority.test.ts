@@ -557,4 +557,8 @@ test('Flight browser proof activates only after applying the authored source', (
     runtimePhases,
     /"first playable frame"[\s\S]*depends_on=\("runtime deadline contracts",\)/,
   )
+  assert.match(
+    missionVerifier,
+    /const currentRunDecisions = snapshot\.pendingDecisions\.filter\([\s\S]*item => item\.payload\?\.runId === snapshot\.runId/,
+  )
 })

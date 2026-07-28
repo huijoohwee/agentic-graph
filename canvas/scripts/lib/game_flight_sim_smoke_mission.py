@@ -103,10 +103,13 @@ def complete_authored_flight_mission(
             yaw: 0,
             throttleDelta: 0,
           })
-          const waypointDecisions = snapshot.pendingDecisions.filter(
+          const currentRunDecisions = snapshot.pendingDecisions.filter(
+            item => item.payload?.runId === snapshot.runId,
+          )
+          const waypointDecisions = currentRunDecisions.filter(
             item => item.payload?.event === 'waypoint_reached',
           )
-          const terminalDecisions = snapshot.pendingDecisions.filter(
+          const terminalDecisions = currentRunDecisions.filter(
             item => item.payload?.event === 'mission_completed',
           )
           const expectedIds = profile.waypoints.map(item => item.id)
