@@ -11,6 +11,7 @@ import { DEERFLOW_API_DOC_AREA } from './deerflowApiDocs'
 import { MIROMIND_API_DOC_AREA, MIROMIND_API_DOCS_URL } from './miromindApiDocs'
 import { AGNES_API_DOC_AREA, AGNES_API_DOCS_URL } from './agnesApiDocs'
 import { QWEN_API_DOC_AREA, QWEN_API_DOCS_URL } from './qwenApiDocs'
+import { Z_AI_API_DOC_AREA, Z_AI_API_DOCS_URL } from './zAiApiDocs'
 import { GOOGLE_CLOUD_API_DOC_AREA, GOOGLE_CLOUD_API_DOCS_URL } from './googleCloudApiDocs'
 import { BYTEPLUS_IMAGE_GENERATION_API_DOC_AREA, BYTEPLUS_IMAGE_GENERATION_API_DOCS_URL } from '@/features/integrations/byteplusImageGenerationSsot'
 import { BYTEPLUS_VIDEO_GENERATION_API_DOC_AREA, BYTEPLUS_VIDEO_GENERATION_API_DOCS_URL } from '@/features/integrations/byteplusVideoGenerationSsot'
@@ -130,6 +131,12 @@ export const INTEGRATIONS_SECTION_META: Readonly<Record<string, SectionMeta>> = 
     docsUrl: QWEN_API_DOCS_URL,
     docsLabel: 'Open Qwen OpenAI-Compatible Chat Docs',
     panelLabel: 'Open FloatingPanel Chat UI (Qwen)',
+    openPanel: () => openFloatingPanelChat(),
+  },
+  [Z_AI_API_DOC_AREA]: {
+    docsUrl: Z_AI_API_DOCS_URL,
+    docsLabel: 'Open Z.AI Quick Start',
+    panelLabel: 'Open FloatingPanel Chat UI',
     openPanel: () => openFloatingPanelChat(),
   },
   [GOOGLE_CLOUD_API_DOC_AREA]: {
