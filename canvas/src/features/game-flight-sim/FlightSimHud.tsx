@@ -200,7 +200,14 @@ export function FlightSimHud() {
       >
         <section className={`max-w-none rounded-xl border px-3 py-2 shadow-lg backdrop-blur-sm sm:max-w-[58vw] ${hudPanelClassName}`}>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Local deterministic flight mission</p>
-          <p className="mt-1 text-sm font-semibold">{projection.objective}</p>
+          <p
+            className="mt-1 text-sm font-semibold"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {projection.objective}
+          </p>
           <p className="mt-1 text-[11px] text-slate-300">{projection.save.label}</p>
           {flight.runtimeError ? <p className="mt-1 text-[11px] text-rose-200" role="alert">{flight.runtimeError}</p> : null}
           {save.error ? <p className="mt-1 text-[11px] text-rose-200" role="alert">{save.error}</p> : null}

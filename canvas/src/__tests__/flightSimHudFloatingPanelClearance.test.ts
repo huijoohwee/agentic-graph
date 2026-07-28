@@ -32,3 +32,19 @@ test('Flight HUD yields default floating-panel space without lowering touch cont
   assert.doesNotMatch(source, /z-\[80\]/)
   assert.equal((source.match(/sm:right-\[var\(--kg-flight-sim-panel-clearance\)\]/g) || []).length, 3)
 })
+
+test('Flight HUD announces only objective transitions as one polite status', () => {
+  const source = fs.readFileSync(
+    path.join(repoRoot, 'canvas/src/features/game-flight-sim/FlightSimHud.tsx'),
+    'utf8',
+  )
+  const objectiveStatus = source.match(
+    /<p\s+className="mt-1 text-sm font-semibold"[\s\S]*?<\/p>/,
+  )?.[0]
+
+  assert.ok(objectiveStatus)
+  assert.match(objectiveStatus, /role="status"/)
+  assert.match(objectiveStatus, /aria-live="polite"/)
+  assert.match(objectiveStatus, /aria-atomic="true"/)
+  assert.match(objectiveStatus, /\{projection\.objective\}/)
+})
