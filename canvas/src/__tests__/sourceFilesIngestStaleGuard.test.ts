@@ -121,7 +121,12 @@ export function testCanvasStartupRuntimesMountsSourceFilesBootstrapEagerly() {
   if (!flightOwnerText.includes('useSourceFilesBootstrapReady')) {
     throw new Error('expected the mounted Flight owner to gate persisted launch on current Source Files intent readiness')
   }
-  if (!flightOwnerText.includes('if (!sourceFilesBootstrapReady || ownsDocumentLaunchRef.current) return')) {
+  if (
+    !flightOwnerText.includes('|| ownsDocumentLaunchRef.current')
+    || !flightOwnerText.includes(
+      'launchAttempt >= FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT',
+    )
+  ) {
     throw new Error('expected Flight launch to wait without replacing its captured pre-active surface')
   }
   if (!text.includes('<CanvasStartupDebugRuntime />')) {

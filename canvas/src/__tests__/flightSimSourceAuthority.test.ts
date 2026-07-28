@@ -116,13 +116,29 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   assert.match(viewport, /flightSimHudVisible \? <FlightSimHud \/> : null/)
   assert.doesNotMatch(viewport, /FlightSimHudLazy|loadFlightSimHud/)
   const ownedLaunchGuard = runReadyOwner.indexOf(
-    'if (!sourceFilesBootstrapReady || ownsDocumentLaunchRef.current) return',
+    'launchAttempt >= FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT',
   )
   const launchGeneration = runReadyOwner.indexOf(
     'const generation = launchGenerationRef.current + 1',
   )
   assert.ok(ownedLaunchGuard >= 0)
   assert.ok(launchGeneration > ownedLaunchGuard)
+  assert.match(
+    runReadyOwner,
+    /const FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT = 2/,
+  )
+  assert.match(
+    runReadyOwner,
+    /const canRetry = retryable[\s\S]*currentAttempt < FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT/,
+  )
+  assert.match(
+    runReadyOwner,
+    /isFlightSimStagePresentationRetryableFailure\(message\)/,
+  )
+  assert.match(
+    runReadyOwner,
+    /startFlightSim\(\{[\s\S]*geospatialComposite: true,[\s\S]*previousCanvasSurface:/,
+  )
   assert.match(
     geospatialBridge,
     /completeFlightSimStagePreparation\(requestId,\s*\{\s*framePresented: true,/,
@@ -134,8 +150,16 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     'preloadFlightSimMissionStage(flightSimStageRuntimeController)',
     opening,
   )
+  const mapRuntimePreload = runtime.indexOf(
+    'preloadGeospatialMapRuntime()',
+    opening,
+  )
   const activation = runtime.indexOf(
     'surfaceActivated = activateXrSceneSurface',
+    opening,
+  )
+  const geospatialActivation = runtime.indexOf(
+    'await setGeospatialModeEnabled(true)',
     opening,
   )
   const opened = runtime.indexOf(
@@ -154,8 +178,25 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     'return startFlightSimWithReadyFrame',
     opening,
   )
-  assert.ok(opening >= 0 && preload > opening)
-  assert.ok(preload < activation)
+  assert.ok(
+    opening >= 0
+    && preload > opening
+    && mapRuntimePreload > opening,
+  )
+  assert.ok(
+    preload < geospatialActivation
+    && mapRuntimePreload < geospatialActivation
+    && geospatialActivation < activation,
+  )
+  assert.match(runtime, /geospatialComposite\?: boolean/)
+  assert.match(
+    runtime.slice(mapRuntimePreload - 100, preload + 100),
+    /options\.geospatialComposite[\s\S]*preloadGeospatialMapRuntime\(\)/,
+  )
+  assert.match(
+    runtime.slice(activation, preparationRequest),
+    /options\.geospatialComposite[\s\S]*geospatialComposite: true/,
+  )
   assert.ok(activation < preparationRequest)
   assert.ok(preparationRequest < opened)
   assert.ok(opened < preparedStage)

@@ -3,6 +3,10 @@ import {
 } from '@/features/chat/floatingPanelChat/floatingPanelChatDurableStream'
 import { activateXrSceneSurface, registerXrSceneGameplayExitHandler } from '@/features/three/xrSceneSurfaceRuntime'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
+import {
+  preloadGeospatialMapRuntime,
+  setGeospatialModeEnabled,
+} from '@/features/geospatial/gympgrphBridge'
 import { acquireWorkspaceSeedSyncSuspension } from '@/lib/workspace/workspaceSeedSyncRuntime'
 import {
   preloadFlightSimMissionStage,
@@ -71,6 +75,7 @@ type FlightSimOperationOptions = Readonly<{
   signal?: AbortSignal
 }>
 type FlightSimSurfaceOpenOptions = FlightSimOperationOptions & Readonly<{
+  geospatialComposite?: boolean
   openPanel?: boolean
   previousCanvasSurface?: FlightSimPreviousCanvasSurface
   webglSupported?: boolean
@@ -298,6 +303,9 @@ async function performFlightSimSurfaceOpen(
     admitDefaultAssets()
     const [decisions] = await Promise.all([
       loadFlightSimSavedDecisions(options),
+      options.geospatialComposite
+        ? preloadGeospatialMapRuntime()
+        : Promise.resolve(),
       preloadFlightSimMissionStage(flightSimStageRuntimeController),
     ])
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
@@ -336,8 +344,22 @@ async function performFlightSimSurfaceOpen(
     }
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
+    if (options.geospatialComposite) {
+      const geospatialEnabled = await setGeospatialModeEnabled(true)
+      if (!geospatialEnabled) {
+        return failFlightSimSurfaceEntry(
+          'The native geospatial Canvas owner remained disabled.',
+          entering,
+        )
+      }
+      throwIfFlightSimSurfaceOpenStale(expectedGeneration)
+      throwIfFlightSimOperationAborted(options.signal)
+    }
     surfaceActivated = activateXrSceneSurface({
       gameplaySurface: 'flightSim',
+      ...(options.geospatialComposite
+        ? { geospatialComposite: true }
+        : {}),
       ...(options.openPanel === false
         ? {}
         : { panelView: 'flightSim', openPanel: true }),

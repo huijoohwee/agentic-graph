@@ -147,6 +147,128 @@ def _show_workspace_seed_files(
         flight_button.wait_for(state="visible", timeout=120_000)
 
 
+def read_flight_hud_activation(page: Page) -> dict[str, Any]:
+    return page.evaluate(
+        """
+        async () => {
+          const [
+            store,
+            readiness,
+            runtime,
+            ownership,
+            gympgrphStore,
+          ] = await Promise.all([
+            window.__kgFlightSimBrowserProof.importModule('graphStore'),
+            window.__kgFlightSimBrowserProof.importModule(
+              'sourceFilesBootstrapReadiness',
+            ),
+            window.__kgFlightSimBrowserProof.importModule('flightSimRuntime'),
+            window.__kgFlightSimBrowserProof.importModule(
+              'flightSimSurfaceOwnershipStatus',
+            ),
+            window.__kgFlightSimBrowserProof.importModule('gympgrphStore'),
+          ])
+          const state = store.useGraphStore.getState()
+          const hud = document.querySelector(
+            '[data-kg-flight-sim-hud="1"]',
+          )
+          const mapCanvases = Array.from(document.querySelectorAll(
+            'canvas.maplibregl-canvas',
+          ))
+          const geospatialRoot = document.querySelector(
+            '[data-kg-flight-geospatial-overlay="active"]',
+          )
+          const visible = element => {
+            if (!(element instanceof HTMLElement)) return false
+            const rect = element.getBoundingClientRect()
+            if (rect.width <= 0 || rect.height <= 0) return false
+            let current = element
+            while (current instanceof HTMLElement) {
+              const style = window.getComputedStyle(current)
+              if (
+                style.display === 'none'
+                || style.visibility === 'hidden'
+                || Number(style.opacity || '1') <= 0
+              ) return false
+              current = current.parentElement
+            }
+            return true
+          }
+          const visibleMapCanvases = mapCanvases.filter(visible)
+          return {
+            bootstrap: readiness.readSourceFilesBootstrapSnapshot(),
+            canvas3dMode: state.canvas3dMode,
+            documentName: state.markdownDocumentName,
+            flight: runtime.readFlightSimSnapshot(),
+            geospatialModeEnabled:
+              gympgrphStore.isGeospatialModeEnabled() === true,
+            geospatialPresentation: geospatialRoot
+              ? {
+                  overlay: geospatialRoot.dataset.kgFlightGeospatialOverlay
+                    || null,
+                  presentedRevision:
+                    geospatialRoot.dataset.kgFlightGeospatialPresentedRevision
+                    || null,
+                  revision:
+                    geospatialRoot.dataset.kgFlightGeospatialRevision || null,
+                }
+              : null,
+            hudCount: document.querySelectorAll(
+              '[data-kg-flight-sim-hud="1"]',
+            ).length,
+            hudVisible: visible(hud),
+            mapCanvasCount: mapCanvases.length,
+            mapCanvasVisible: visibleMapCanvases.length > 0,
+            visibleMapCanvasCount: visibleMapCanvases.length,
+            ownership: ownership.readFlightSimSurfaceOwnershipStatus(),
+            renderMode: state.canvasRenderMode,
+          }
+        }
+        """
+    )
+
+
+def wait_for_flight_hud_activation(
+    page: Page,
+    *,
+    timeout_ms: int = 10_000,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout_ms / 1000
+    last_value: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        last_value = read_flight_hud_activation(page)
+        flight = last_value.get("flight") or {}
+        presentation = last_value.get("geospatialPresentation") or {}
+        revision = str(presentation.get("revision") or "")
+        presented_revision = str(
+            presentation.get("presentedRevision") or ""
+        )
+        if (
+            last_value.get("hudVisible") is True
+            and last_value.get("geospatialModeEnabled") is True
+            and last_value.get("mapCanvasVisible") is True
+            and last_value.get("visibleMapCanvasCount") == 1
+            and flight.get("active") is True
+            and not flight.get("runtimeError")
+            and presentation.get("overlay") == "active"
+            and revision != ""
+            and presented_revision == revision
+        ):
+            return last_value
+        bootstrap = last_value.get("bootstrap") or {}
+        if bootstrap.get("phase") == "error":
+            raise AssertionError(
+                "Flight Source Files activation failed before HUD mount: "
+                f"{last_value}"
+            )
+        page.wait_for_timeout(50)
+    raise AssertionError(
+        "Flight Source Files activation did not present Flight above the "
+        "visible native geospatial MapLibre surface: "
+        f"{last_value}"
+    )
+
+
 def verify_source_file_button_round_trip(
     page: Page,
     expected_source_text: str,
@@ -183,9 +305,7 @@ def verify_source_file_button_round_trip(
         ),
         label="Flight Source Files button Geo+XR activation",
     )
-    page.locator('[data-kg-flight-sim-hud="1"]').first.wait_for(
-        state="visible", timeout=120_000
-    )
+    wait_for_flight_hud_activation(page)
     flight_surface = page.evaluate(
         """
         () => {

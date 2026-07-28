@@ -31,6 +31,21 @@ function stagePreparationError(message: string): Error {
   return new Error(`Flight Sim mission stage ${message}`)
 }
 
+export function isFlightSimStagePresentationRetryableFailure(
+  error: unknown,
+): boolean {
+  const message = error instanceof Error
+    ? error.message
+    : String(error || '')
+  const entryPrefix = 'Flight Sim surface entry did not complete: '
+  const stageMessage = message.startsWith(entryPrefix)
+    ? message.slice(entryPrefix.length)
+    : message
+  return /^Flight Sim mission stage (?:preparation request \d+|presentation request \d+|frame opportunity) did not complete within \d+ ms\.$/.test(
+    stageMessage,
+  )
+}
+
 function stagePreparationClockMs(): number {
   return typeof performance === 'undefined' ? Date.now() : performance.now()
 }

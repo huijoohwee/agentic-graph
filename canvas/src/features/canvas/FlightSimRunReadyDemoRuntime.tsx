@@ -4,6 +4,9 @@ import {
   startFlightSim,
 } from '@/features/game-flight-sim/flightSimRuntime'
 import {
+  isFlightSimStagePresentationRetryableFailure,
+} from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
+import {
   captureFlightSimPreviousCanvasSurface,
   type FlightSimPreviousCanvasSurface,
 } from '@/features/game-flight-sim/flightSimSurfaceOwnershipRuntime'
@@ -16,6 +19,8 @@ import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospat
 const subscribeGeospatialMode = (listener: () => void): (() => void) => (
   onGeospatialModeChanged(() => listener())
 )
+
+const FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT = 2
 
 export function FlightSimRunReadyDemoRuntime() {
   const sourceFilesBootstrapReady = useSourceFilesBootstrapReady()
@@ -33,6 +38,7 @@ export function FlightSimRunReadyDemoRuntime() {
     readGeospatialOverlayEnabledPreference,
   )
   const active = isFlightSimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+  const [launchAttempt, setLaunchAttempt] = React.useState(0)
   const ownsDocumentLaunchRef = React.useRef(false)
   const launchGenerationRef = React.useRef(0)
   const previousCanvasSurfaceRef = React.useRef<FlightSimPreviousCanvasSurface>(
@@ -42,6 +48,7 @@ export function FlightSimRunReadyDemoRuntime() {
   React.useLayoutEffect(() => {
     if (!active) {
       launchGenerationRef.current += 1
+      if (launchAttempt !== 0) setLaunchAttempt(0)
       previousCanvasSurfaceRef.current = Object.freeze({
         canvasRenderMode,
         canvas3dMode,
@@ -57,33 +64,52 @@ export function FlightSimRunReadyDemoRuntime() {
       }
       return
     }
-    if (!sourceFilesBootstrapReady || ownsDocumentLaunchRef.current) return
+    if (
+      !sourceFilesBootstrapReady
+      || ownsDocumentLaunchRef.current
+      || launchAttempt >= FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT
+    ) return
     const generation = launchGenerationRef.current + 1
+    const currentAttempt = launchAttempt + 1
     launchGenerationRef.current = generation
     ownsDocumentLaunchRef.current = true
+    const settleFailedLaunch = (
+      message: string,
+      retryable: boolean,
+    ) => {
+      if (launchGenerationRef.current !== generation) return
+      ownsDocumentLaunchRef.current = false
+      const canRetry = retryable
+        && currentAttempt < FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT
+      setLaunchAttempt(
+        canRetry
+          ? currentAttempt
+          : FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT,
+      )
+      if (canRetry) return
+      useGraphStore.getState().pushUiToast({
+        id: 'flight-sim:run-ready-launch:error',
+        kind: 'error',
+        message,
+      })
+    }
     void startFlightSim({
+      geospatialComposite: true,
       openPanel: true,
       previousCanvasSurface: previousCanvasSurfaceRef.current,
     })
       .then(result => {
         if (launchGenerationRef.current !== generation) return
         if (result.active && !result.runtimeError) return
-        ownsDocumentLaunchRef.current = false
-        useGraphStore.getState().pushUiToast({
-          id: 'flight-sim:run-ready-launch:error',
-          kind: 'error',
-          message: result.runtimeError || 'Flight Sim launch failed.',
-        })
+        const message = result.runtimeError || 'Flight Sim launch failed.'
+        settleFailedLaunch(
+          message,
+          isFlightSimStagePresentationRetryableFailure(message),
+        )
       })
       .catch(error => {
-        if (launchGenerationRef.current !== generation) return
-        ownsDocumentLaunchRef.current = false
         const message = error instanceof Error ? error.message : String(error || 'Flight Sim launch failed')
-        useGraphStore.getState().pushUiToast({
-          id: 'flight-sim:run-ready-launch:error',
-          kind: 'error',
-          message,
-        })
+        settleFailedLaunch(message, false)
       })
   }, [
     active,
@@ -94,6 +120,7 @@ export function FlightSimRunReadyDemoRuntime() {
     floatingPanelOpen,
     floatingPanelView,
     geospatialModeEnabled,
+    launchAttempt,
     sourceFilesBootstrapReady,
   ])
 

@@ -18,8 +18,16 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   const xrStage = readSource('features', 'three', 'XrCanonicalPhysicsStage.tsx')
   const geoOverlayBridge = readSource('components', 'CanvasViewportGeospatialOverlay.tsx')
   const viewport = readSource('components', 'CanvasViewport.tsx')
-  const geospatialHost = readFileSync(
-    resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx'),
+  const geospatialPresentation = readFileSync(
+    resolve(
+      process.cwd(),
+      '..',
+      'gympgrph',
+      'src',
+      'features',
+      'geospatial',
+      'useFlightGeoOverlayMapLibrePresentation.ts',
+    ),
     'utf8',
   )
 
@@ -34,7 +42,8 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     }
   }
   if (!mediaLibrary.includes('<FlightSimEnvironmentGeoButton')
-    || !flightGeoButton.includes("openFlightSimSurface({ openPanel: false })")
+    || !flightGeoButton.includes('geospatialComposite: true')
+    || !flightGeoButton.includes('openPanel: false')
     || flightGeoButton.includes('setGeospatialViewMode(')
     || !flightGeoButton.includes('await settleWorkspaceSourceTextWrites()')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-overlay="1"')
@@ -44,7 +53,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     || !xrStage.includes('environmentVisible={!geospatialComposite}')
     || !geoOverlayBridge.includes('setFlightGeoOverlay')
     || !geoOverlayBridge.includes('projectFlightSimToGeospatialOverlay')
-    || !geospatialHost.includes('applyFlightGeoOverlayToMap(map, overlay)')
+    || !geospatialPresentation.includes('applyFlightGeoOverlayToMap(map, overlay)')
     || !viewport.includes('<FlightSimGeoSurfaceOverlayLazy />')) {
     throw new Error('expected Media selection, settled source persistence, native MapLibre projection, and transparent Flight composition')
   }

@@ -5,6 +5,7 @@ import {
   cancelFlightSimStagePreparation,
   completeFlightSimHudStagePreparation,
   completeFlightSimStagePreparation,
+  isFlightSimStagePresentationRetryableFailure,
   readCurrentFlightSimStagePreparationRequest,
   resetFlightSimStagePreparationForTests,
   waitForFlightSimStageFrameOpportunity,
@@ -49,6 +50,35 @@ function installControlledAnimationFrameWindow() {
     },
   }
 }
+
+test('only bounded stage-presentation deadlines are retryable', () => {
+  for (const message of [
+    'Flight Sim mission stage preparation request 3 did not complete within 3000 ms.',
+    'Flight Sim mission stage presentation request 4 did not complete within 3000 ms.',
+    'Flight Sim mission stage frame opportunity did not complete within 1000 ms.',
+    'Flight Sim surface entry did not complete: Flight Sim mission stage preparation request 5 did not complete within 3000 ms.',
+  ]) {
+    assert.equal(
+      isFlightSimStagePresentationRetryableFailure(message),
+      true,
+      message,
+    )
+  }
+  for (const message of [
+    'WebGL is unavailable.',
+    'Flight Sim Decisions are unreadable.',
+    'Flight Sim mission stage preparation request 7 is stale.',
+    'Flight Sim mission stage preparation was aborted.',
+    'Flight Sim surface restoration did not complete.',
+    'Flight Sim surface entry did not complete: Flight Sim mission stage preparation request 5 did not complete within 3000 ms.; Geo restoration failed.',
+  ]) {
+    assert.equal(
+      isFlightSimStagePresentationRetryableFailure(message),
+      false,
+      message,
+    )
+  }
+})
 
 test('surface preparation waits for its exact committed mission-stage request', async () => {
   resetFlightSimStagePreparationForTests()

@@ -39,6 +39,7 @@ from lib.game_flight_sim_smoke_source import (
 )
 from lib.game_flight_sim_smoke_source_selection import (
     prepare_source_files_selection_surface,
+    wait_for_flight_hud_activation,
 )
 from lib.game_flight_sim_smoke_throttle import (
     FLIGHT_THROTTLE_PROOF_TARGET,
@@ -117,8 +118,9 @@ def run_flight_runtime_verifications(
         # Physics XR baseline after optional Editor Workspace bootstrap settles.
         reset_observed_errors()
         source_application, source = apply_and_verify_exact_authored_source(page)
+        wait_for_flight_hud_activation(page)
         hud = page.locator('[data-kg-flight-sim-hud="1"]').first
-        expect(hud).to_be_visible(timeout=120_000)
+        expect(hud).to_be_visible(timeout=5_000)
         page.wait_for_selector(
             'canvas[data-kg-flight-sim-first-frame="1"]',
             timeout=120_000,
