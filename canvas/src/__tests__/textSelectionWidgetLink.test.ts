@@ -36,6 +36,7 @@ import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrame
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import {
   collectTextSelectionProvenanceHighlightRects,
+  revealTextSelectionProvenanceMatch,
 } from '@/lib/ui/textSelectionProvenanceHighlights'
 import {
   buildSelectionProvenanceConnectorPath,
@@ -255,6 +256,18 @@ export function testTextSelectionWidgetLinkProjectsExactSourceHighlightAndConnec
       || rects[0]?.width !== 120
       || rects[0]?.height !== 18) {
       throw new Error(`expected one exact, line-scoped provenance highlight, got ${JSON.stringify(rects)}`)
+    }
+    const revealed = revealTextSelectionProvenanceMatch({
+      root,
+      selection: {
+        edgeId: 'selection-edge',
+        text: 'selected source text',
+        startLine: 12,
+        endLine: 13,
+      },
+    })
+    if (revealed?.closest('[data-start-line]')?.getAttribute('data-start-line') !== '12') {
+      throw new Error('expected provenance navigation to reveal only the exact line-scoped text match')
     }
     const innerNodeOwner = dom.window.document.createElement('section')
     innerNodeOwner.setAttribute('data-node-id', 'n2')

@@ -149,6 +149,22 @@ const buildRange = (
   }
 }
 
+export const revealTextSelectionProvenanceMatch = (args: {
+  root: HTMLElement
+  selection: TextSelectionProvenanceHighlightInput
+}): HTMLElement | null => {
+  const text = normalizeText(args.selection.text)
+  if (!text) return null
+  const index = buildNormalizedDomIndex(collectEligibleTextNodes(args.root, args.selection))
+  const start = index.text.indexOf(text)
+  if (start < 0) return null
+  const point = index.points[start]
+  const element = point?.node.parentElement
+  if (!element) return null
+  element.scrollIntoView?.({ block: 'center', inline: 'nearest' })
+  return element
+}
+
 const readRootScale = (root: HTMLElement, rootRect: DOMRect): { x: number; y: number } => ({
   x: root.clientWidth > 0 && rootRect.width > 0 ? rootRect.width / root.clientWidth : 1,
   y: root.clientHeight > 0 && rootRect.height > 0 ? rootRect.height / root.clientHeight : 1,

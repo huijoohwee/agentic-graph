@@ -275,6 +275,7 @@ export function StoryboardCardOverlayLayer2d(props: {
   const setSelectionSource = useGraphStore(s => s.setSelectionSource)
   const updateOpenWidgetNodeIds = useGraphStore(s => s.updateOpenWidgetNodeIds)
   const requestZoom = useGraphStore(s => s.requestZoom)
+  const requestZoomBounds = useGraphStore(s => s.requestZoomBounds)
   const storyboardBoardLayoutMode = readCanvasBoardLayoutMode(strybldrStoryboardBoardLayoutMode)
   const effectiveFlowWidgetPinnedByNodeId = Object.keys(scopedFlowWidgetPinnedByNodeId).length > 0
     ? scopedFlowWidgetPinnedByNodeId
@@ -475,7 +476,6 @@ export function StoryboardCardOverlayLayer2d(props: {
     if (!nodeId) return
     setActiveCardId('')
     setSelectionSource('canvas')
-    selectNode(nodeId)
     const provenance = reference.selectionProvenance?.[0]
     if (provenance) {
       emitStoryboardCardProvenanceFocus({
@@ -486,9 +486,33 @@ export function StoryboardCardOverlayLayer2d(props: {
         startLine: provenance.startLine,
         endLine: provenance.endLine,
       })
+      const sourceNode = resolveGraphNodeByCanonicalId(graphData, nodeId)
+      const sourceProperties = sourceNode?.properties && typeof sourceNode.properties === 'object'
+        ? sourceNode.properties as Record<string, unknown>
+        : {}
+      const readFinite = (value: unknown, fallback: number): number => {
+        const scalar = value && typeof value === 'object' && 'value' in value
+          ? (value as { value?: unknown }).value
+          : value
+        const parsed = typeof scalar === 'number' ? scalar : Number(scalar)
+        return Number.isFinite(parsed) ? parsed : fallback
+      }
+      if (sourceNode) {
+        requestZoomBounds({
+          bounds: {
+            x: readFinite(sourceNode.x ?? sourceNode.fx, 0),
+            y: readFinite(sourceNode.y ?? sourceNode.fy, 0),
+            w: Math.max(1, readFinite(sourceProperties['visual:width'], 640)),
+            h: Math.max(1, readFinite(sourceProperties['visual:height'], 420)),
+          },
+          insetPx: 72,
+        })
+      }
+      return
     }
+    selectNode(nodeId)
     requestZoom('selection')
-  }, [requestZoom, selectNode, setSelectionSource])
+  }, [graphData, requestZoom, requestZoomBounds, selectNode, setSelectionSource])
   const runCard = React.useCallback((card: StoryboardCardModel) => {
     selectCard(card)
     void runWorkflowNode?.(card.id)
