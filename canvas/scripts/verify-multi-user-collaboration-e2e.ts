@@ -179,28 +179,43 @@ async function readRuntimeIdentityProof(page: Page): Promise<RuntimeIdentityProo
   })
 }
 
-async function waitForRuntimeIdentityPass(page: Page, label: string): Promise<RuntimeIdentityProof> {
+function isPassingRuntimeIdentityProof(proof: RuntimeIdentityProof): boolean {
+  const revisionsAreExact = /^[0-9a-f]{40}$/.test(proof.knowgrphRevision)
+    && /^[0-9a-f]{40}$/.test(proof.agenticCanvasOsRevision)
+    && proof.catalogRevision === proof.agenticCanvasOsRevision
+  const hydrationIsFresh = proof.catalogHydrationStatus === 'fresh'
+    && proof.catalogHydrationAttempts <= 2
+  return proof.status === 'pass'
+    && proof.transportStatus === 'connected'
+    && proof.requiredDeviceCount >= 2
+    && proof.observedDeviceCount >= proof.requiredDeviceCount
+    && /^[0-9a-f]{64}$/.test(proof.verificationDigest)
+    && revisionsAreExact
+    && hydrationIsFresh
+}
+
+async function waitForRuntimeIdentityProofConvergence(
+  ownerPage: Page,
+  guestPage: Page,
+): Promise<{ owner: RuntimeIdentityProof; guest: RuntimeIdentityProof }> {
   const startedAt = Date.now()
-  let lastProof = await readRuntimeIdentityProof(page)
+  let [ownerProof, guestProof] = await Promise.all([
+    readRuntimeIdentityProof(ownerPage),
+    readRuntimeIdentityProof(guestPage),
+  ])
   while (Date.now() - startedAt < 60_000) {
-    lastProof = await readRuntimeIdentityProof(page)
-    const revisionsAreExact = /^[0-9a-f]{40}$/.test(lastProof.knowgrphRevision)
-      && /^[0-9a-f]{40}$/.test(lastProof.agenticCanvasOsRevision)
-      && lastProof.catalogRevision === lastProof.agenticCanvasOsRevision
-    const hydrationIsFresh = lastProof.catalogHydrationStatus === 'fresh'
-      && lastProof.catalogHydrationAttempts <= 2
+    ;[ownerProof, guestProof] = await Promise.all([
+      readRuntimeIdentityProof(ownerPage),
+      readRuntimeIdentityProof(guestPage),
+    ])
     if (
-      lastProof.status === 'pass'
-      && lastProof.transportStatus === 'connected'
-      && lastProof.requiredDeviceCount >= 2
-      && lastProof.observedDeviceCount >= lastProof.requiredDeviceCount
-      && /^[0-9a-f]{64}$/.test(lastProof.verificationDigest)
-      && revisionsAreExact
-      && hydrationIsFresh
-    ) return lastProof
-    await page.waitForTimeout(500)
+      isPassingRuntimeIdentityProof(ownerProof)
+      && isPassingRuntimeIdentityProof(guestProof)
+      && ownerProof.verificationDigest === guestProof.verificationDigest
+    ) return { owner: ownerProof, guest: guestProof }
+    await ownerPage.waitForTimeout(500)
   }
-  throw new Error(`${label} runtime identity proof timed out: ${JSON.stringify(lastProof)}`)
+  throw new Error(`runtime identity proofs did not converge: ${JSON.stringify({ owner: ownerProof, guest: guestProof })}`)
 }
 
 async function openCollaborationPanel(page: Page): Promise<void> {
@@ -242,13 +257,13 @@ async function waitForPageCondition(page: Page, label: string, predicate: (snaps
 async function connectAuthenticatedRoom(page: Page): Promise<void> {
   let lastError: Error | null = null
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    await openCollaborationPanel(page)
-    await waitForActiveDocumentReady(page)
-    await closeFloatingPanelIfOpen(page)
-    const connectButton = page.getByRole('button', { name: /Connect Room|Reconnect Room/, exact: false })
-    await connectButton.waitFor({ state: 'visible', timeout: 30_000 })
-    await connectButton.click({ timeout: 30_000 })
     try {
+      await openCollaborationPanel(page)
+      await waitForActiveDocumentReady(page)
+      await closeFloatingPanelIfOpen(page)
+      const connectButton = page.getByRole('button', { name: /Connect Room|Reconnect Room/, exact: false })
+      await connectButton.waitFor({ state: 'visible', timeout: 30_000 })
+      await connectButton.click({ timeout: 30_000 })
       await waitForPageCondition(
         page,
         `workspace room connection attempt ${attempt}`,
@@ -386,10 +401,10 @@ async function main(): Promise<void> {
     await ownerPage.goto(buildWorkspaceUrl(OWNER_APP_URL), { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await guestPage.goto(buildWorkspaceUrl(GUEST_APP_URL), { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
-    const [ownerIdentityProof, guestIdentityProof] = await Promise.all([
-      waitForRuntimeIdentityPass(ownerPage, 'owner'),
-      waitForRuntimeIdentityPass(guestPage, 'guest'),
-    ])
+    const {
+      owner: ownerIdentityProof,
+      guest: guestIdentityProof,
+    } = await waitForRuntimeIdentityProofConvergence(ownerPage, guestPage)
     if (ownerIdentityProof.device === guestIdentityProof.device) {
       throw new Error(`expected distinct runtime devices, got ${JSON.stringify(ownerIdentityProof.device)}`)
     }
@@ -410,11 +425,6 @@ async function main(): Promise<void> {
     await Promise.all([
       closeFloatingPanelIfOpen(ownerPage),
       closeFloatingPanelIfOpen(guestPage),
-    ])
-
-    await Promise.all([
-      openCollaborationPanel(ownerPage),
-      openCollaborationPanel(guestPage),
     ])
 
     await Promise.all([
