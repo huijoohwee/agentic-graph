@@ -11,6 +11,10 @@ import type { GraphNode, JSONValue } from '@/lib/graph/types'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { disableAutoZoomModesForUserGesture } from '@/lib/canvas/auto-zoom-modes'
+import {
+  clampGroupPanelChildCenter,
+  type GroupPanelContainmentBounds,
+} from '@/lib/storyboardWidget/groupPanelContainment'
 
 type CardSize = { width: number; height: number }
 type CardPoint = { x: number; y: number }
@@ -68,6 +72,7 @@ export function useStoryboardCardOverlayWheelForwarding(args: {
 export function useStoryboardCardOverlayInteractions2d(args: {
   addHistory: (label: string) => void
   getTransform: () => StoryboardWidgetOverlayDragTransform | null
+  readContainmentBounds?: (nodeId: string) => GroupPanelContainmentBounds | null
   readNodeCenter?: (node: GraphNode) => CardPoint | null
   readNodeSize: (node: GraphNode) => CardSize
   schema: GraphSchema | null | undefined
@@ -87,6 +92,8 @@ export function useStoryboardCardOverlayInteractions2d(args: {
     const id = String(node.id || '').trim()
     if (!id) return
     const startCenter = args.readNodeCenter?.(node) || readNodeCenter(node)
+    const containmentBounds = args.readContainmentBounds?.(id) || null
+    const nodeSize = args.readNodeSize(node)
     const startWorld = readPointerWorldPoint(args.getTransform(), event.clientX, event.clientY)
     const grab = { x: startWorld.x - startCenter.x, y: startWorld.y - startCenter.y }
     let latest = startCenter
@@ -96,7 +103,11 @@ export function useStoryboardCardOverlayInteractions2d(args: {
       shouldStartHeaderDrag: native => native.button === 0,
       onHeaderDrag: ({ clientX, clientY }) => {
         const world = readPointerWorldPoint(args.getTransform(), clientX, clientY)
-        latest = { x: world.x - grab.x, y: world.y - grab.y }
+        latest = clampGroupPanelChildCenter({
+          bounds: containmentBounds,
+          center: { x: world.x - grab.x, y: world.y - grab.y },
+          size: nodeSize,
+        })
         args.setDragVisualOverride?.(id, latest)
       },
       onHeaderDragEnd: () => {

@@ -225,6 +225,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         geospatialEnabled={geospatialEnabled}
         onOpenGeospatialMode={actions.handleOpenGeospatialMode}
         onActivateGeoXrMode={actions.handleActivateGeoXrMode}
+        onExitGeospatialMode={actions.handleExitGeospatialMode}
       />
       <section className="App-toolbar__divider" />
       <IconButton

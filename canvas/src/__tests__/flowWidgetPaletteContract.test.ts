@@ -100,7 +100,7 @@ export function testFlowWidgetPaletteConsolidatesMediaWidgetsIntoRichMediaPanel(
   }
   if (!floatingPanelText.includes("const storyboardRendererActive = canvasRenderMode === '2d' && canvas2dRenderer === 'storyboard'")
     || !floatingPanelText.includes('const widgetDragEnabled = storyboardRendererActive && widgetPaletteEntries.length > 0')
-    || !floatingPanelText.includes('Switch Canvas View Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.')) {
+    || !floatingPanelText.includes('Switch 2D Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.')) {
     throw new Error('expected floating props panel widget drag to be available only on the 2D Storyboard renderer with explicit guidance elsewhere')
   }
   if (!floatingPanelText.includes('filter(isPropsPanelWidgetPaletteEntry)')) {

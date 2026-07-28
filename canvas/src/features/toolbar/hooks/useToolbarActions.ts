@@ -210,6 +210,25 @@ export function useToolbarActions(
       })
   }, [onGeospatialEnabledChange])
 
+  const handleExitGeospatialMode = useCallback(() => {
+    emitFloatingPanelOpen({ tab: 'geo', open: false })
+    void setGeospatialModeEnabled(false)
+      .then(nextEnabled => onGeospatialEnabledChange?.(nextEnabled))
+      .catch((err: unknown) => {
+        try {
+          const msg =
+            err && typeof err === 'object' && 'message' in err ? String((err as { message?: unknown }).message || '').trim() : ''
+          useGraphStore.getState().pushUiToast({
+            id: 'geospatial-mode-exit-error',
+            kind: 'error',
+            message: `2D Mode failed to restore: ${msg || 'Unknown error'}`,
+          })
+        } catch {
+          void 0
+        }
+      })
+  }, [onGeospatialEnabledChange])
+
   const handleToggleTheme = useCallback(() => {
     setThemeMode(getNextThemeMode(themeMode))
   }, [setThemeMode, themeMode])
@@ -233,6 +252,7 @@ export function useToolbarActions(
     handleOpenChat,
     handleOpenGeospatialMode,
     handleActivateGeoXrMode,
+    handleExitGeospatialMode,
     handleToggleTheme,
   }
 }

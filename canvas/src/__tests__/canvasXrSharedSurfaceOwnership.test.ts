@@ -526,7 +526,7 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
     Animation: 'features/three/xrAnimationMcpRuntime.ts',
     'Motion Control': 'features/three/motionControlSurfaceRuntime.ts',
     'Game Mode': 'features/game-fps/gameModeRuntime.ts',
-    'Flight Sim': 'features/game-flight-sim/flightSimRuntime.ts',
+    'Flight Sim': 'features/game-flight-sim/flightSimSurfacePresentationRuntime.ts',
     Camera: 'features/strybldr/cameraMcpRuntime.ts',
   } as const
   for (const [label, relativePath] of Object.entries(sharedSceneConsumers)) {

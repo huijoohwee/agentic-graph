@@ -41,6 +41,7 @@ type CanvasViewActionParams = {
   ensureBaselineUnlocked: () => boolean
   geospatialEnabled: boolean
   onOpenGeospatialMode: () => void
+  onExitGeospatialMode?: () => void
   onOpenShared3dPanel?: (mode: '3d' | 'xr' | 'geo-xr') => void
   canvas2dRenderer: Canvas2dRendererId
   canvas3dMode: string
@@ -82,6 +83,7 @@ export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
     ensureBaselineUnlocked,
     geospatialEnabled,
     onOpenGeospatialMode,
+    onExitGeospatialMode,
     onOpenShared3dPanel,
     canvas2dRenderer,
     canvas3dMode,
@@ -222,6 +224,7 @@ export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
       mode,
       geospatialEnabled,
       onOpenGeospatialMode,
+      onExitGeospatialMode,
       canvas2dRenderer,
       documentSemanticMode,
       frontmatterModeEnabled,

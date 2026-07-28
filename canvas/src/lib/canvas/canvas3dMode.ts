@@ -58,6 +58,7 @@ export type CanvasSurfaceModeApplicabilityArgs = VoxelModeApplicabilityArgs & {
 export type CanvasSurfaceModeSelectionParams = CanvasSurfaceModeApplicabilityArgs & {
   mode: Exclude<CanvasSurfaceModeId, 'xr' | 'geo-xr'>
   onOpenGeospatialMode: () => void
+  onExitGeospatialMode?: () => void
   setCanvas2dRenderer: (id: Canvas2dRendererId) => void
   setCanvasRenderMode: (mode: '2d' | '3d') => void
   setCanvas3dMode: (mode: Canvas3dModeId) => void
@@ -108,7 +109,7 @@ export function getVoxelModeDisabledCopy(reason: VoxelModeInapplicableReason): C
   }
   if (reason === 'renderer') {
     return {
-      reason: 'Requires Canvas View Mode: Flowchart renderer',
+      reason: 'Requires 2D Mode: Flowchart renderer',
       hint: 'Switch renderer to Flowchart',
     }
   }
@@ -133,12 +134,7 @@ export function getCanvasSurfaceModeDisabledCopy(
 ): CanvasSurfaceModeDisabledCopy {
   const geospatialEnabled = (args.geospatialEnabled ?? readGeospatialOverlayEnabled()) === true
   if (mode === '2d') {
-    return geospatialEnabled
-      ? {
-        reason: 'Disabled in Geospatial Mode',
-        hint: 'Switch to Document Mode to enable',
-      }
-      : null
+    return null
   }
   if (mode === '3d' || mode === 'xr') {
     if (geospatialEnabled) {
@@ -190,6 +186,7 @@ export function applyCanvasSurfaceModeSelection(params: CanvasSurfaceModeSelecti
     mode,
     geospatialEnabled,
     onOpenGeospatialMode,
+    onExitGeospatialMode,
     canvas2dRenderer,
     schema,
     setCanvas2dRenderer,
@@ -198,7 +195,7 @@ export function applyCanvasSurfaceModeSelection(params: CanvasSurfaceModeSelecti
     setSchema,
   } = params
   if (mode === '2d') {
-    if (geospatialEnabled) return false
+    if (geospatialEnabled) onExitGeospatialMode?.()
     setCanvasRenderMode('2d')
     return true
   }

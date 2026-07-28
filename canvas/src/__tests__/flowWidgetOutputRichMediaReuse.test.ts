@@ -390,7 +390,7 @@ export function testRichMediaPanelMarkdownPreviewDisablesGlobalTokenStoreSync() 
   if (!panelText.includes('data-kg-canvas-wheel-ignore="true"')) {
     throw new Error('expected RichMediaPanel markdown preview container to opt into the shared canvas wheel-ignore contract like MainPanel scroll surfaces')
   }
-  if (!panelText.includes('CARD_TEXT_SURFACE_SCROLL_CLASS_NAME') || !panelText.includes("'min-h-0 flex-1 overflow-hidden'")) {
+  if (!panelText.includes('CARD_TEXT_SURFACE_SCROLL_CLASS_NAME') || !panelText.includes("'flex min-h-0 flex-1 overflow-hidden'")) {
     throw new Error('expected compact Card previews to retain the shared vertical scroll owner while Workspace Viewer previews use their canonical internal scroll owner')
   }
   if (!cardTextSurfaceFrameText.includes('overflow-x-hidden')) {

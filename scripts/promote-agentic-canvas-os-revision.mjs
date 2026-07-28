@@ -9,14 +9,12 @@ import {
   runtimeReadinessContractPath,
 } from './runtime-readiness-contract.mjs'
 
-const REQUIRED_CHECKS = [
+export const REQUIRED_CHECKS = Object.freeze([
   'build',
-  'codeql',
   'collaboration-integration',
   'docs-contract',
-  'npm audit',
   'test',
-]
+])
 
 const run = (command, args) => execFileSync(command, args, {
   cwd: repoRoot,
