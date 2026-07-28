@@ -350,6 +350,8 @@ The ten Must rows: two rails, one selection contract, one replay-safe settlement
 | OQ-11 | Which Stripe API version the existing payment Worker already pins. The reference names `2026-06-24.dahlia` as current at time of writing ([Stripe API](https://docs.stripe.com/api)). | R1 criterion 7 | Read the existing owner before changing anything |
 | OQ-12 | Which existing browser-local persistence owner holds the Intent_Queue and what its size bound is. | R6 implementation | Design task |
 | OQ-13 | R11 criterion 3 permits an optional payment-adjacent model explanation while R12 criterion 4 forbids any payment record field in a model prompt, leaving that harness with no record-derived input. | Enabling any payment-adjacent model call | Keep the harness disabled and specified as a contract only until the spec resolves the tension |
+| OQ-14 | The canonical request string construction for the StraitsX `X-SIGNATURE` header is not documented on the referenced pages, which name the header and its base64 encoding but not the string being signed ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)). | Enabling StraitsX HTTP Request Signing mode | Ship key-only mode first; the signed-mode request builder stays gated until the signing string layout is confirmed with the provider |
+| OQ-15 | The StraitsX live-mode base URL is not stated on the referenced pages; only the sandbox base URL `https://api-sandbox.straitsx.com/v1` is documented ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)). | Live-mode operation on the StraitsX rail | Out of scope this increment, which is Sandbox_Mode only; confirm before any live enablement |
 
 ---
 
