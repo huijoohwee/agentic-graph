@@ -351,6 +351,11 @@ test('validation-result CLI accepts a stored artifact and rejects schema drift',
 
 test('integration round-trips the real validation envelope artifact before the canonical gate', async () => {
   const workflowSource = await readFile(path.resolve(repoRoot, '.github/workflows/integration.yml'), 'utf8')
+  assert.match(
+    workflowSource,
+    /runs-on: \[self-hosted, Linux, ARM64, knowgrph-zero-cost\]/,
+  )
+  assert.doesNotMatch(workflowSource, /runs-on: ubuntu-/)
   const orderedProofSteps = [
     'Validate downloaded collaboration contract report',
     'Upload collaboration validation result',

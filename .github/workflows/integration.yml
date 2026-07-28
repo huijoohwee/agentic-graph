@@ -19,7 +19,7 @@ concurrency:
 jobs:
   integration-gate:
     name: Integration Gate
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, ARM64, knowgrph-zero-cost]
     timeout-minutes: 30
     env:
       NODE_OPTIONS: --max-old-space-size=4096
