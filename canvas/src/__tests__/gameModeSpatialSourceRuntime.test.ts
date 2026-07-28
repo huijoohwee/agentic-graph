@@ -228,9 +228,22 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
   const rendererClearOwnership = renderer.match(/const rendererClearColor[\s\S]*?const rendererLifecycleKey/)?.[0] || ''
   assert.notEqual(rendererClearOwnership, '')
   assert.doesNotMatch(rendererClearOwnership, /gameFpsActive/)
-  const activationGuardIndex = xrRuntime.indexOf('if (!activateXrSceneSurface()) return undefined')
+  const activationGuardIndex = xrRuntime.indexOf(
+    "const activatesXrSurface = state.canvasRenderMode !== '3d' || state.canvas3dMode !== 'xr'",
+  )
+  const preserveGameplayActivationIndex = xrRuntime.indexOf(
+    'activateXrSceneSurface({ preserveGameplay: !dedicatedDemo })',
+  )
   const initializedIndex = xrRuntime.indexOf('surfaceInitializedRef.current = true')
-  assert.ok(activationGuardIndex >= 0 && initializedIndex > activationGuardIndex)
+  assert.match(
+    xrRuntime,
+    /if \(\s*activatesXrSurface\s*&& !activateXrSceneSurface\(\{ preserveGameplay: !dedicatedDemo \}\)\s*\)/,
+  )
+  assert.ok(
+    activationGuardIndex >= 0
+    && preserveGameplayActivationIndex > activationGuardIndex
+    && initializedIndex > preserveGameplayActivationIndex,
+  )
 
   const productionSources = [missionStage, model, gameRuntime, modeRuntime, renderer]
   for (const forbiddenMarker of [
