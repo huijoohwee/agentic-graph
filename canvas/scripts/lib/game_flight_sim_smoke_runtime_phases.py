@@ -93,7 +93,7 @@ def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
     )
     try:
         trigger = page.get_by_role(
-            "button", name="Canvas View Mode: XR Mode", exact=True
+            "button", name="2D Mode: XR Mode", exact=True
         )
         trigger.wait_for(state="visible", timeout=30_000)
         trigger.click(timeout=30_000)
@@ -111,7 +111,7 @@ def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
             raise AssertionError("Geo+XR Mode was disabled in the real menu")
         geo_xr.click(timeout=30_000)
         page.get_by_role(
-            "button", name="Canvas View Mode: Geo+XR Mode", exact=True
+            "button", name="2D Mode: Geo+XR Mode", exact=True
         ).wait_for(state="visible", timeout=30_000)
         handoff = wait_for_canvas_view_geo_xr_handoff(page, source_case)
     finally:
