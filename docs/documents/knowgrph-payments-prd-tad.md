@@ -335,23 +335,34 @@ The ten Must rows: two rails, one selection contract, one replay-safe settlement
 
 ### Open Questions
 
-| ID | Question | Blocks | Resolution path |
-|---|---|---|---|
-| OQ-1 | StraitsX commercial pricing (transaction, FX, and network fee schedules) is not published in the referenced documentation ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). | Revenue model and per-transaction cost of revenue | Operator to obtain a commercial schedule from the provider |
-| OQ-2 | Which StraitsX integration model will be approved for a solo operator collecting payments for its own product: First Party Transfer, Third Party Transfer, or Regular Transfer ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). | R4 endpoint selection and the StraitsX_Rail_Adapter fund-flow guard | Provider onboarding outcome |
-| OQ-3 | No StraitsX MCP server is described in the referenced documentation. | Agent-surface parity across rails | Confirm existence before promising parity; otherwise StraitsX stays REST-only behind the Knowgrph tool surface |
-| OQ-4 | The Stripe MCP server is a public preview and its tool surface may change ([Stripe MCP](https://docs.stripe.com/mcp)). | ADR-4 federation stability | Pin the federated tool list and re-verify on each preview change |
-| OQ-5 | Stripe Treasury money-movement, bill-pay, and card tools are access-gated ([Stripe MCP](https://docs.stripe.com/mcp)). | Any future money-movement automation | Out of scope this increment; revisit only with granted access and a new ADR |
-| OQ-6 | StraitsX callback authenticity beyond source-address allowlisting is unconfirmed; no signature header is documented on the referenced pages. | R5 hardening | Until confirmed, settlement requires a provider state read rather than trusting the payload |
-| OQ-7 | StraitsX request-level idempotency semantics are not documented on the referenced pages. | R4 retry design | Until confirmed, a per-attempt reference plus a provider state read is the contract |
-| OQ-8 | Which request header the Worker reads to evaluate the StraitsX source address, and whether a shared-secret path segment is warranted as defense in depth. | Provider_Event_Ingress implementation | Design task |
-| OQ-9 | XSGD inbound acceptance path and which networks are enabled for the account through the supported-blockchains method. | R4 XSGD scope | Provider confirmation |
-| OQ-10 | Exact StraitsX payment method for the first increment: dynamic PayNow QR, persistent PayNow QR, or virtual bank account, all documented as Payment API capabilities ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). | R4 buyer flow | Depends on OQ-2 |
-| OQ-11 | Which Stripe API version the existing payment Worker already pins. The reference names `2026-06-24.dahlia` as current at time of writing ([Stripe API](https://docs.stripe.com/api)). | R1 criterion 7 | Read the existing owner before changing anything |
-| OQ-12 | Which existing browser-local persistence owner holds the Intent_Queue and what its size bound is. | R6 implementation | Design task |
-| OQ-13 | R11 criterion 3 permits an optional payment-adjacent model explanation while R12 criterion 4 forbids any payment record field in a model prompt, leaving that harness with no record-derived input. | Enabling any payment-adjacent model call | Keep the harness disabled and specified as a contract only until the spec resolves the tension |
-| OQ-14 | The canonical request string construction for the StraitsX `X-SIGNATURE` header is not documented on the referenced pages, which name the header and its base64 encoding but not the string being signed ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)). | Enabling StraitsX HTTP Request Signing mode | Ship key-only mode first; the signed-mode request builder stays gated until the signing string layout is confirmed with the provider |
-| OQ-15 | The StraitsX live-mode base URL is not stated on the referenced pages; only the sandbox base URL `https://api-sandbox.straitsx.com/v1` is documented ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)). | Live-mode operation on the StraitsX rail | Out of scope this increment, which is Sandbox_Mode only; confirm before any live enablement |
+Open questions use one shared `OQ-N` identifier space with the requirements authority at
+`.kiro/specs/knowgrph-payments/requirements.md`. An id means the same question in both
+documents, so a resolution recorded against `OQ-7` there closes `OQ-7` here. Ids are
+never reused or renumbered once assigned; a withdrawn question keeps its id and is marked
+resolved.
+
+The `Owner` column names which document is responsible for closing the question.
+`Requirements` questions block acceptance criteria and are mirrored in the requirements
+authority. `Design` questions arise from architecture decisions in this document and
+exist only here.
+
+| ID | Owner | Question | Blocks | Resolution path |
+|---|---|---|---|---|
+| OQ-1 | Requirements | StraitsX commercial pricing (transaction, FX, and network fee schedules) is not published in the referenced documentation ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). | Revenue model and per-transaction cost of revenue | Operator to obtain a commercial schedule from the provider |
+| OQ-2 | Requirements | Which StraitsX integration model will be approved for a solo operator collecting payments for its own product: First Party Transfer, Third Party Transfer, or Regular Transfer ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). | R4 endpoint selection and the StraitsX_Rail_Adapter fund-flow guard | Provider onboarding outcome |
+| OQ-3 | Requirements | No StraitsX MCP server is described in the referenced documentation. | Agent-surface parity across rails | Confirm existence before promising parity; otherwise StraitsX stays REST-only behind the Knowgrph tool surface |
+| OQ-4 | Design | The Stripe MCP server is a public preview and its tool surface may change ([Stripe MCP](https://docs.stripe.com/mcp)). | ADR-4 federation stability | Pin the federated tool list and re-verify on each preview change |
+| OQ-5 | Design | Stripe Treasury money-movement, bill-pay, and card tools are access-gated ([Stripe MCP](https://docs.stripe.com/mcp)). | Any future money-movement automation | Out of scope this increment; revisit only with granted access and a new ADR |
+| OQ-6 | Requirements | StraitsX callback authenticity beyond source-address allowlisting is unconfirmed; no signature header is documented on the referenced pages. | R5 hardening | Until confirmed, settlement requires a provider state read rather than trusting the payload |
+| OQ-7 | Requirements | StraitsX request-level idempotency semantics are not documented on the referenced pages. | R4 retry design | Until confirmed, a per-attempt reference plus a provider state read is the contract |
+| OQ-8 | Requirements | Which request header the Worker reads to evaluate the StraitsX source address, and whether a shared-secret path segment is warranted as defense in depth. | Provider_Event_Ingress implementation | Design task |
+| OQ-9 | Requirements | XSGD inbound acceptance path and which networks are enabled for the account through the supported-blockchains method. | R4 XSGD scope | Provider confirmation |
+| OQ-10 | Requirements | Exact StraitsX payment method for the first increment: dynamic PayNow QR, persistent PayNow QR, or virtual bank account, all documented as Payment API capabilities ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)). | R4 buyer flow | Depends on OQ-2 |
+| OQ-11 | Requirements | Which Stripe API version the existing payment Worker already pins. The reference names `2026-06-24.dahlia` as current at time of writing ([Stripe API](https://docs.stripe.com/api)). | R1 criterion 7 | Read the existing owner before changing anything |
+| OQ-12 | Requirements | Which existing browser-local persistence owner holds the Intent_Queue and what its size bound is. | R6 implementation | Design task |
+| OQ-13 | Design | R11 criterion 3 permits an optional payment-adjacent model explanation while R12 criterion 4 forbids any payment record field in a model prompt, leaving that harness with no record-derived input. | Enabling any payment-adjacent model call | Keep the harness disabled and specified as a contract only until the spec resolves the tension |
+| OQ-14 | Design | The canonical request string construction for the StraitsX `X-SIGNATURE` header is not documented on the referenced pages, which name the header and its base64 encoding but not the string being signed ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)). | Enabling StraitsX HTTP Request Signing mode | Ship key-only mode first; the signed-mode request builder stays gated until the signing string layout is confirmed with the provider |
+| OQ-15 | Design | The StraitsX live-mode base URL is not stated on the referenced pages; only the sandbox base URL `https://api-sandbox.straitsx.com/v1` is documented ([StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello)). | Live-mode operation on the StraitsX rail | Out of scope this increment, which is Sandbox_Mode only; confirm before any live enablement |
 
 ---
 

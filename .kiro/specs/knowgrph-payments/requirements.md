@@ -950,42 +950,50 @@ later.
 
 ## Open Questions
 
-1. **StraitsX callback authenticity beyond source addresses.** The referenced
-   webhook documentation names source IP allowlisting
-   (`52.221.59.197`, `52.77.136.252`) but no signature header
-   ([StraitsX Webhooks](https://docs.straitsx.com/reference/webhooks)). Confirm
-   whether a signed callback mechanism exists. Until confirmed, R5 requires a
-   provider state read before settlement rather than trusting the callback payload.
-2. **StraitsX idempotency semantics.** No idempotency-key header is documented on the
-   referenced pages. Confirm whether StraitsX offers request-level idempotency for
-   payment and payout creation. Until confirmed, R4 relies on a per-attempt reference
-   plus a provider state read.
-3. **Source-address verification inside a Cloudflare Worker.** Confirm which request
-   header the Worker should read to evaluate the StraitsX source address, and whether
-   an additional shared-secret path segment is warranted as defense in depth.
-4. **StraitsX integration model.** Confirm whether Regular Transfer, First Party
-   Transfer, or Third Party Transfer matches a solo-operator collecting payments for
-   its own product
-   ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)).
-5. **XSGD inbound acceptance path.** Confirm whether the Blockchain API
-   deposit-address method is the supported way to accept inbound XSGD for a
-   collection, and which networks are enabled for the account via the
-   supported-blockchains method.
-6. **StraitsX commercial pricing.** Transaction, FX, and network fee schedules are not
-   in the referenced documentation. Required before the revenue model in the companion
-   PRD/TAD can be completed.
-7. **StraitsX MCP surface.** No MCP server is described in the referenced StraitsX
-   documentation. Confirm whether one exists before promising parity with the Stripe
-   MCP transport.
-8. **Exact StraitsX payment method for the first increment.** Dynamic PayNow QR versus
-   persistent PayNow versus virtual bank account. The API reference lists all three
-   ([StraitsX API reference index](https://docs.straitsx.com/reference/say-hello));
-   the choice depends on question 4 and on buyer flow, and is deferred to design.
-9. **Stripe API version to pin.** The reference names `2026-06-24.dahlia` as current
-   ([Stripe versioning](https://docs.stripe.com/api/versioning)). Confirm the version
-   already pinned by the existing payment Worker before changing it.
-10. **Intent_Queue durability medium.** Which existing browser-local persistence owner
-    holds the queue, and what the queue size bound is, is deferred to design.
+Open questions use one shared `OQ-N` identifier space with the companion PRD/TAD at
+`docs/documents/knowgrph-payments-prd-tad.md`. An id means the same question in both
+documents, so a resolution recorded against `OQ-7` here closes `OQ-7` there. Ids are
+never reused or renumbered once assigned; a withdrawn question keeps its id and is
+marked resolved.
+
+This document owns the requirements-layer questions below. `OQ-4`, `OQ-5`, `OQ-13`,
+`OQ-14`, and `OQ-15` are design-layer questions owned by the companion PRD/TAD and are
+intentionally absent here; the gap in the sequence is expected rather than a defect.
+
+- **OQ-1 - StraitsX commercial pricing.** Transaction, FX, and network fee schedules are
+  not in the referenced documentation. Required before the revenue model in the
+  companion PRD/TAD can be completed.
+- **OQ-2 - StraitsX integration model.** Confirm whether Regular Transfer, First Party
+  Transfer, or Third Party Transfer matches a solo-operator collecting payments for its
+  own product ([StraitsX API guides](https://docs.straitsx.com/docs/introduction)).
+- **OQ-3 - StraitsX MCP surface.** No MCP server is described in the referenced StraitsX
+  documentation. Confirm whether one exists before promising parity with the Stripe MCP
+  transport.
+- **OQ-6 - StraitsX callback authenticity beyond source addresses.** The referenced
+  webhook documentation names source IP allowlisting
+  (`52.221.59.197`, `52.77.136.252`) but no signature header
+  ([StraitsX Webhooks](https://docs.straitsx.com/reference/webhooks)). Confirm whether a
+  signed callback mechanism exists. Until confirmed, R5 requires a provider state read
+  before settlement rather than trusting the callback payload.
+- **OQ-7 - StraitsX idempotency semantics.** No idempotency-key header is documented on
+  the referenced pages. Confirm whether StraitsX offers request-level idempotency for
+  payment and payout creation. Until confirmed, R4 relies on a per-attempt reference plus
+  a provider state read.
+- **OQ-8 - Source-address verification inside a Cloudflare Worker.** Confirm which
+  request header the Worker should read to evaluate the StraitsX source address, and
+  whether an additional shared-secret path segment is warranted as defense in depth.
+- **OQ-9 - XSGD inbound acceptance path.** Confirm whether the Blockchain API
+  deposit-address method is the supported way to accept inbound XSGD for a collection,
+  and which networks are enabled for the account via the supported-blockchains method.
+- **OQ-10 - Exact StraitsX payment method for the first increment.** Dynamic PayNow QR
+  versus persistent PayNow versus virtual bank account. The API reference lists all three
+  ([StraitsX API reference index](https://docs.straitsx.com/reference/say-hello)); the
+  choice depends on OQ-2 and on buyer flow, and is deferred to design.
+- **OQ-11 - Stripe API version to pin.** The reference names `2026-06-24.dahlia` as
+  current ([Stripe versioning](https://docs.stripe.com/api/versioning)). Confirm the
+  version already pinned by the existing payment Worker before changing it.
+- **OQ-12 - Intent_Queue durability medium.** Which existing browser-local persistence
+  owner holds the queue, and what the queue size bound is, is deferred to design.
 
 ## Assumptions
 
