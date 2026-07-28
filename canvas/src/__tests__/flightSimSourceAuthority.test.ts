@@ -93,6 +93,7 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   const geospatialBridge = readFileSync(resolve(repoRoot, 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'), 'utf8')
   const surfacePreload = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfacePreload.ts'), 'utf8')
   const viewport = readFileSync(resolve(repoRoot, 'canvas/src/components/CanvasViewport.tsx'), 'utf8')
+  const runReadyOwner = readFileSync(resolve(repoRoot, 'canvas/src/features/canvas/FlightSimRunReadyDemoRuntime.tsx'), 'utf8')
   const geospatialPresentation = readFileSync(
     resolve(
       repoRoot,
@@ -103,7 +104,6 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   const surfaceControls = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'), 'utf8')
   assert.match(surfacePreload, /preloadGeospatialMapRuntime\(\)/)
   assert.match(surfacePreload, /loadCanvasViewportGeospatialOverlay\(\)/)
-  assert.match(surfacePreload, /preloadFlightSimHud\(\)/)
   assert.match(
     surfacePreload,
     /preloadFlightSimMissionStage\(readFlightSimStageRuntimeController\(\)\)/,
@@ -112,7 +112,17 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     viewport,
     /React\.lazy\(loadCanvasViewportGeospatialOverlay\)/,
   )
-  assert.match(viewport, /React\.lazy\(loadFlightSimHud\)/)
+  assert.match(viewport, /import \{ FlightSimHud \} from '@\/features\/game-flight-sim\/FlightSimHud'/)
+  assert.match(viewport, /flightSimHudVisible \? <FlightSimHud \/> : null/)
+  assert.doesNotMatch(viewport, /FlightSimHudLazy|loadFlightSimHud/)
+  const ownedLaunchGuard = runReadyOwner.indexOf(
+    'if (!sourceFilesBootstrapReady || ownsDocumentLaunchRef.current) return',
+  )
+  const launchGeneration = runReadyOwner.indexOf(
+    'const generation = launchGenerationRef.current + 1',
+  )
+  assert.ok(ownedLaunchGuard >= 0)
+  assert.ok(launchGeneration > ownedLaunchGuard)
   assert.match(
     geospatialBridge,
     /completeFlightSimStagePreparation\(requestId,\s*\{\s*framePresented: true,/,

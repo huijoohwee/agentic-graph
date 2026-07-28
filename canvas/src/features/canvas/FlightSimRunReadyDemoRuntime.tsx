@@ -40,9 +40,8 @@ export function FlightSimRunReadyDemoRuntime() {
   )
 
   React.useLayoutEffect(() => {
-    const generation = launchGenerationRef.current + 1
-    launchGenerationRef.current = generation
     if (!active) {
+      launchGenerationRef.current += 1
       previousCanvasSurfaceRef.current = Object.freeze({
         canvasRenderMode,
         canvas3dMode,
@@ -59,6 +58,8 @@ export function FlightSimRunReadyDemoRuntime() {
       return
     }
     if (!sourceFilesBootstrapReady || ownsDocumentLaunchRef.current) return
+    const generation = launchGenerationRef.current + 1
+    launchGenerationRef.current = generation
     ownsDocumentLaunchRef.current = true
     void startFlightSim({
       openPanel: true,

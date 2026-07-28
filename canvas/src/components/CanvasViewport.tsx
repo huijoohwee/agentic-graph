@@ -13,7 +13,7 @@ import { resolveCanvas3dMode } from '@/lib/canvas/canvas3dMode'
 import { isNativeXrRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useCanvasGameplayOverlayState } from '@/features/canvas/useCanvasGameplayOverlayState'
 import { useFlightSimSurfacePreload } from '@/features/game-flight-sim/useFlightSimSurfacePreload'
-import { loadFlightSimHud } from '@/features/game-flight-sim/flightSimHudLoader'
+import { FlightSimHud } from '@/features/game-flight-sim/FlightSimHud'
 import { XrNativeControllerDemoHud } from '@/features/three/XrNativeControllerDemoHud'
 import {
   resolveCanvasSurfaceOwnership,
@@ -61,7 +61,6 @@ const MarkdownMetricsDevOverlayLazy = React.lazy(() => import('@/components/Canv
 const DesignCanvasLazy = React.lazy(() => import('@/components/DesignCanvas'))
 const ThreeGraphLazy = React.lazy(() => import('@/lib/three/ThreeGraph.impl'))
 const GameFpsHudLazy = React.lazy(() => import('@/features/game-fps/GameFpsHud').then(mod => ({ default: mod.GameFpsHud })))
-const FlightSimHudLazy = React.lazy(loadFlightSimHud)
 const FlightSimGeoSurfaceOverlayLazy = React.lazy(() => import('@/features/game-flight-sim/FlightSimGeoSurfaceOverlay').then(mod => ({ default: mod.FlightSimGeoSurfaceOverlay })))
 const MinimapLazy = React.lazy(() => import('@/features/minimap/Minimap'))
 const StrybldrTimelineBottomPanelLazy = React.lazy(() => import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })))
@@ -590,7 +589,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
       </React.Suspense>
       {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
-      {flightSimHudVisible ? <FlightSimHudLazy /> : null}
+      {flightSimHudVisible ? <FlightSimHud /> : null}
       {variant === 'workspace' ? <CanvasEmbedCodePanelHost /> : null}
     </section>
   )

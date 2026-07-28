@@ -60,7 +60,14 @@ export async function assertFlightSimSurfaceReadiness({
     'flightSimActive,',
     '<CanvasViewportGeospatialOverlayLazy',
     '<FlightSimGeoSurfaceOverlayLazy />',
+    '<FlightSimHud />',
   ], 'Flight Sim Geo viewport composition')
+  if (
+    canvasViewportSource.includes('FlightSimHudLazy')
+    || canvasViewportSource.includes('loadFlightSimHud')
+  ) {
+    throw new Error('The deadline-critical Flight HUD must not suspend its MapLibre viewport owner')
+  }
 
   const geospatialOverlaySource = await readText('canvas/src/components/CanvasViewportGeospatialOverlay.tsx')
   requireSourceMarkers(geospatialOverlaySource, [
