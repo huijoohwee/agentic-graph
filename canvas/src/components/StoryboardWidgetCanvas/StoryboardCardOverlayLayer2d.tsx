@@ -265,6 +265,7 @@ export function StoryboardCardOverlayLayer2d(props: {
   const addHistory = useGraphStore(s => s.addHistory); const upsertUiToast = useGraphStore(s => s.upsertUiToast)
   const removeNode = useGraphStore(s => s.removeNode)
   const selectNode = useGraphStore(s => s.selectNode)
+  const selectNodesExpanded = useGraphStore(s => s.selectNodesExpanded)
   const selectedNodeId = useGraphStore(s => String(s.selectedNodeId || '').trim())
   const selectedNodeIds = useGraphStore(s => s.selectedNodeIds)
   const scopedFlowWidgetPinnedByNodeId = useGraphStore(s => resolveScopedFlowWidgetNodeMap({
@@ -477,7 +478,7 @@ export function StoryboardCardOverlayLayer2d(props: {
     setSelectionSource('canvas')
     const provenance = reference.selectionProvenance?.[0]
     if (provenance) {
-      selectNode(nodeId)
+      selectNodesExpanded({ nodeIds: [nodeId], activeNodeId: nodeId })
       requestZoom('selection')
       emitStoryboardCardProvenanceFocus({
         sourceNodeId: nodeId,
@@ -491,7 +492,7 @@ export function StoryboardCardOverlayLayer2d(props: {
     }
     selectNode(nodeId)
     requestZoom('selection')
-  }, [requestZoom, selectNode, setSelectionSource])
+  }, [requestZoom, selectNode, selectNodesExpanded, setSelectionSource])
   const runCard = React.useCallback((card: StoryboardCardModel) => {
     selectCard(card)
     void runWorkflowNode?.(card.id)

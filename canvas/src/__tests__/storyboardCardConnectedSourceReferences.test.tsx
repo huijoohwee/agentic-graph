@@ -198,9 +198,9 @@ export async function testStoryboardCardProjectsCanonicalSelectionProvenanceAsSo
       overlaySource.indexOf('const provenance = reference.selectionProvenance?.[0]'),
       overlaySource.indexOf('const runCard = React.useCallback'),
     )
-    if (!provenanceActivation.includes("selectNode(nodeId)\n      requestZoom('selection')\n      emitStoryboardCardProvenanceFocus({")
+    if (!provenanceActivation.includes("selectNodesExpanded({ nodeIds: [nodeId], activeNodeId: nodeId })\n      requestZoom('selection')\n      emitStoryboardCardProvenanceFocus({")
       || provenanceActivation.includes('requestZoomBounds')) {
-      throw new Error('expected provenance Source chips to select and zoom the canonical source node before revealing its exact text')
+      throw new Error('expected provenance Source chips to exclusively select and zoom the canonical source node before revealing its exact text')
     }
   } finally {
     await act(async () => root.unmount())
