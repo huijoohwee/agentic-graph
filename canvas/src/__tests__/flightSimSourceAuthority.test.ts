@@ -49,6 +49,13 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     ),
     'utf8',
   )
+  const surfacePresentation = readFileSync(
+    resolve(
+      repoRoot,
+      'canvas/src/features/game-flight-sim/flightSimSurfacePresentationRuntime.ts',
+    ),
+    'utf8',
+  )
   const stageImport =
     "import('@/features/game-flight-sim/FlightSimMissionStage')"
   assert.match(
@@ -151,16 +158,21 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     opening,
   )
   const mapRuntimePreload = runtime.indexOf(
-    'preloadGeospatialMapRuntime()',
+    'preloadFlightSimSurfacePresentation(options)',
     opening,
   )
   const activation = runtime.indexOf(
-    'surfaceActivated = activateXrSceneSurface',
+    'surfaceActivated = await activateFlightSimSurfacePresentation',
     opening,
   )
-  const geospatialActivation = runtime.indexOf(
+  const geospatialPreload = surfacePresentation.indexOf(
+    'await preloadGeospatialMapRuntime()',
+  )
+  const geospatialActivation = surfacePresentation.indexOf(
     'await setGeospatialModeEnabled(true)',
-    opening,
+  )
+  const sharedSurfaceActivation = surfacePresentation.indexOf(
+    'return activateXrSceneSurface',
   )
   const opened = runtime.indexOf(
     'const opened = defaultRuntime.open(true)',
@@ -184,17 +196,21 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     && mapRuntimePreload > opening,
   )
   assert.ok(
-    preload < geospatialActivation
-    && mapRuntimePreload < geospatialActivation
-    && geospatialActivation < activation,
+    preload < activation
+    && mapRuntimePreload < activation,
   )
   assert.match(runtime, /geospatialComposite\?: boolean/)
-  assert.match(
-    runtime.slice(mapRuntimePreload - 100, preload + 100),
-    /options\.geospatialComposite[\s\S]*preloadGeospatialMapRuntime\(\)/,
+  assert.ok(
+    geospatialPreload >= 0
+    && geospatialActivation > geospatialPreload
+    && sharedSurfaceActivation > geospatialActivation,
   )
   assert.match(
-    runtime.slice(activation, preparationRequest),
+    surfacePresentation,
+    /if \(!options\.geospatialComposite\) return[\s\S]*await preloadGeospatialMapRuntime\(\)/,
+  )
+  assert.match(
+    surfacePresentation,
     /options\.geospatialComposite[\s\S]*geospatialComposite: true/,
   )
   assert.ok(activation < preparationRequest)
@@ -464,7 +480,7 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     surfaceOpen,
   )
   const activateSurface = runtime.indexOf(
-    'surfaceActivated = activateXrSceneSurface',
+    'surfaceActivated = await activateFlightSimSurfacePresentation',
     surfaceOpen,
   )
   const suspendRuntime = runtime.indexOf(

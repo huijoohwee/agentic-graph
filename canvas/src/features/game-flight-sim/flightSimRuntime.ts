@@ -1,12 +1,8 @@
 import {
   acquireDurableChatStreamTransportSuspension,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatDurableStream'
-import { activateXrSceneSurface, registerXrSceneGameplayExitHandler } from '@/features/three/xrSceneSurfaceRuntime'
+import { registerXrSceneGameplayExitHandler } from '@/features/three/xrSceneSurfaceRuntime'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
-import {
-  preloadGeospatialMapRuntime,
-  setGeospatialModeEnabled,
-} from '@/features/geospatial/gympgrphBridge'
 import { acquireWorkspaceSeedSyncSuspension } from '@/lib/workspace/workspaceSeedSyncRuntime'
 import {
   preloadFlightSimMissionStage,
@@ -56,6 +52,11 @@ import {
   throwIfFlightSimSurfaceOpenStale,
 } from './flightSimSurfaceOpenLifecycle'
 import {
+  activateFlightSimSurfacePresentation,
+  preloadFlightSimSurfacePresentation,
+  throwIfFlightSimOperationAborted,
+} from './flightSimSurfacePresentationRuntime'
+import {
   captureFlightSimAuthoredRuntimeOwnership, captureFlightSimPreviousCanvasSurface,
   restoreFlightSimAuthoredRuntime, restoreFlightSimPreviousCanvasSurface,
   suspendFlightSimAuthoredRuntime, type FlightSimAuthoredRuntimeOwnership,
@@ -87,13 +88,6 @@ let flightSimSurfaceOpenTail: Promise<void> | null = null
 let flightSimSurfaceRestorationTail: Promise<string | null> = Promise.resolve(null)
 let releaseFlightSimDurableChatStreamTransportSuspension: (() => void) | null = null
 let releaseFlightSimWorkspaceSeedSyncSuspension: (() => void) | null = null
-
-function throwIfFlightSimOperationAborted(signal?: AbortSignal): void {
-  if (!signal?.aborted) return
-  throw signal.reason instanceof Error
-    ? signal.reason
-    : new Error('Flight Sim operation was aborted')
-}
 
 function hasFlightSimBrowserPresentationRuntime(): boolean {
   return typeof window !== 'undefined'
@@ -303,9 +297,7 @@ async function performFlightSimSurfaceOpen(
     admitDefaultAssets()
     const [decisions] = await Promise.all([
       loadFlightSimSavedDecisions(options),
-      options.geospatialComposite
-        ? preloadGeospatialMapRuntime()
-        : Promise.resolve(),
+      preloadFlightSimSurfacePresentation(options),
       preloadFlightSimMissionStage(flightSimStageRuntimeController),
     ])
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
@@ -344,26 +336,10 @@ async function performFlightSimSurfaceOpen(
     }
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
-    if (options.geospatialComposite) {
-      const geospatialEnabled = await setGeospatialModeEnabled(true)
-      if (!geospatialEnabled) {
-        return failFlightSimSurfaceEntry(
-          'The native geospatial Canvas owner remained disabled.',
-          entering,
-        )
-      }
-      throwIfFlightSimSurfaceOpenStale(expectedGeneration)
-      throwIfFlightSimOperationAborted(options.signal)
-    }
-    surfaceActivated = activateXrSceneSurface({
-      gameplaySurface: 'flightSim',
-      ...(options.geospatialComposite
-        ? { geospatialComposite: true }
-        : {}),
-      ...(options.openPanel === false
-        ? {}
-        : { panelView: 'flightSim', openPanel: true }),
-    })
+    surfaceActivated = await activateFlightSimSurfacePresentation(
+      options,
+      expectedGeneration,
+    )
     if (!surfaceActivated) {
       return failFlightSimSurfaceEntry('The shared XR Canvas is unavailable.', entering)
     }
