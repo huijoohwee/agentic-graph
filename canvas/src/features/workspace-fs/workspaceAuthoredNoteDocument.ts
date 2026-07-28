@@ -1,4 +1,8 @@
-import { extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
+import {
+  extractYamlFrontmatterBlock,
+  parseCanvasWorkspaceFrontmatterPreset,
+  type CanvasWorkspaceFrontmatterPreset,
+} from '@/lib/markdown/frontmatter'
 import { normalizeWorkspacePath, workspaceBasename } from './path'
 import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from './workspaceSourceRoots'
 
@@ -34,6 +38,20 @@ export function buildAuthoredMarkdownNoteInitialText(documentName: string): stri
     '---',
     '',
   ].join('\n')
+}
+
+export function resolveWorkspaceDocumentCanvasPreset(args: {
+  documentName: string
+  rawText: string
+}): CanvasWorkspaceFrontmatterPreset | null {
+  const authoredPreset = parseCanvasWorkspaceFrontmatterPreset(args.rawText)
+  if (!isWorkspaceAuthoredMarkdownNotePath(args.documentName)) return authoredPreset
+  if (authoredPreset?.canvasSurfaceMode || authoredPreset?.canvasRenderMode) return authoredPreset
+  return {
+    ...(authoredPreset || {}),
+    canvasSurfaceMode: '2d',
+    canvasRenderMode: '2d',
+  }
 }
 
 export function ensureAuthoredMarkdownNoteFrontmatterDefaults(args: {
