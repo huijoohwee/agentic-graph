@@ -115,7 +115,7 @@ jobs:
           name: immutable-release-manifest-${{ github.sha }}
           path: ${{ runner.temp }}/immutable-release-manifest.json
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 1
 
       - name: Reverify exact candidate
         working-directory: knowgrph
@@ -160,7 +160,7 @@ jobs:
             huijoohwee/.knowgrph-production-artifact-manifest.json
           if-no-files-found: error
           include-hidden-files: true
-          retention-days: 30
+          retention-days: 1
 
   deploy:
     name: Deploy, Verify, And Publish Mirror
