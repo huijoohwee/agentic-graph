@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 
@@ -188,6 +189,18 @@ export async function testStoryboardCardProjectsCanonicalSelectionProvenanceAsSo
     if (!String(chip.title || '').includes('notes/provenance.md · L21–23')
       || !String(chip.title || '').includes('Selected source evidence')) {
       throw new Error(`expected the chip title to expose canonical selection provenance, got ${JSON.stringify(chip.title)}`)
+    }
+    const overlaySource = readFileSync(
+      new URL('../components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d.tsx', import.meta.url),
+      'utf8',
+    )
+    const provenanceActivation = overlaySource.slice(
+      overlaySource.indexOf('const provenance = reference.selectionProvenance?.[0]'),
+      overlaySource.indexOf('const runCard = React.useCallback'),
+    )
+    if (!provenanceActivation.includes("selectNode(nodeId)\n      requestZoom('selection')\n      emitStoryboardCardProvenanceFocus({")
+      || provenanceActivation.includes('requestZoomBounds')) {
+      throw new Error('expected provenance Source chips to select and zoom the canonical source node before revealing its exact text')
     }
   } finally {
     await act(async () => root.unmount())
