@@ -5,12 +5,14 @@ export const FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'
 export const FLIGHT_GEO_OVERLAY_LAYER_IDS = Object.freeze({
   aircraft: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft`,
   aircraftOutline: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft-outline`,
+  objectiveGuide: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:objective-guide`,
   route: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:route`,
   routePoints: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:route-points`,
 })
 
 const FLIGHT_GEO_OVERLAY_LAYER_ORDER = Object.freeze([
   FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
+  FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
   FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
   FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
   FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
@@ -217,6 +219,31 @@ export function applyFlightGeoOverlayToMap(
       },
     })
     addLayerOnce(map, {
+      id: FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
+      type: 'line',
+      source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
+      filter: [
+        '==',
+        ['get', 'kgFlightOverlayKind'],
+        'objective-guide',
+      ],
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+      paint: {
+        'line-color': [
+          'case',
+          FLIGHT_GEO_NIGHT_EXPRESSION,
+          '#f5d0fe',
+          '#fde047',
+        ],
+        'line-opacity': 0.94,
+        'line-width': 3,
+        'line-dasharray': [0.75, 1.25],
+      },
+    })
+    addLayerOnce(map, {
       id: FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
       type: 'circle',
       source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
@@ -244,9 +271,54 @@ export function applyFlightGeoOverlayToMap(
             '#f8fafc',
           ],
         ],
-        'circle-radius': 6,
-        'circle-stroke-color': '#0f172a',
-        'circle-stroke-width': 2,
+        'circle-opacity': [
+          'match',
+          ['get', 'kgFlightRouteState'],
+          'active',
+          1,
+          'visited',
+          0.86,
+          0.7,
+        ],
+        'circle-pitch-scale': 'viewport',
+        'circle-radius': [
+          'case',
+          ['==', ['get', 'kgFlightRouteKind'], 'landing'],
+          [
+            'match',
+            ['get', 'kgFlightRouteState'],
+            'active',
+            9,
+            'visited',
+            8,
+            7,
+          ],
+          [
+            'match',
+            ['get', 'kgFlightRouteState'],
+            'active',
+            7.5,
+            'visited',
+            6,
+            5,
+          ],
+        ],
+        'circle-stroke-color': [
+          'case',
+          ['==', ['get', 'kgFlightRouteKind'], 'landing'],
+          '#f59e0b',
+          '#0f172a',
+        ],
+        'circle-stroke-width': [
+          'case',
+          ['==', ['get', 'kgFlightRouteState'], 'active'],
+          3,
+          ['==', ['get', 'kgFlightRouteKind'], 'landing'],
+          2.5,
+          ['==', ['get', 'kgFlightRouteState'], 'visited'],
+          2,
+          1.5,
+        ],
       },
     })
     addLayerOnce(map, {
@@ -262,6 +334,7 @@ export function applyFlightGeoOverlayToMap(
           '#0f172a',
         ],
         'circle-opacity': 0.92,
+        'circle-pitch-scale': 'viewport',
         'circle-radius': 13,
       },
     })
@@ -275,6 +348,7 @@ export function applyFlightGeoOverlayToMap(
         'text-field': '▲',
         'text-font': ['Noto Sans Regular'],
         'text-ignore-placement': true,
+        'text-pitch-alignment': 'viewport',
         'text-rotate': ['get', 'headingDegrees'],
         'text-rotation-alignment': 'map',
         'text-size': 22,

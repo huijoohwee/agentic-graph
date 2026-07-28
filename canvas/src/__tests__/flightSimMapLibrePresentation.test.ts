@@ -61,6 +61,15 @@ function flightOverlay(
       view: 'chase',
     },
     night: false,
+    objective: {
+      bearingDegrees: 45,
+      coordinate: [103.83, 1.36],
+      distanceMeters: 120,
+      headingErrorDegrees: 45,
+      id: 'landing',
+      kind: 'landing',
+      label: 'LAND',
+    },
     phase,
     profileId: 'singapore',
     readyFrameRequestId,
@@ -445,10 +454,11 @@ test('retained layers with stale empty data cannot acknowledge a ready frame', (
   assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
 })
 
-test('aircraft marker uses one provider-served glyph stack and retains heading rotation', () => {
+test('flight markers stay viewport-stable and expose route kind and state without color alone', () => {
   type LayerDefinition = {
     id: unknown
     layout?: Record<string, unknown>
+    paint?: Record<string, unknown>
     type?: unknown
   }
   const sources = new Map<string, { _data: unknown; setData: (data: unknown) => void }>()
@@ -476,14 +486,98 @@ test('aircraft marker uses one provider-served glyph stack and retains heading r
   const overlay = flightOverlay('ready', 'ready:provider-glyph')
 
   assert.equal(applyFlightGeoOverlayToMap(map, overlay), true)
+  const sourceData = sources.get(FLIGHT_GEO_OVERLAY_SOURCE_ID)?._data as {
+    features?: readonly {
+      geometry?: { coordinates?: unknown }
+      properties?: Record<string, unknown>
+    }[]
+  }
+  const objectiveGuideFeature = sourceData.features?.find(
+    feature => feature.properties?.kgFlightOverlayKind === 'objective-guide',
+  )
+  assert.deepEqual(objectiveGuideFeature?.geometry?.coordinates, [
+    [...overlay.aircraft.coordinate],
+    [...overlay.objective!.coordinate],
+  ])
+  assert.equal(
+    objectiveGuideFeature?.properties?.kgFlightObjectiveHeadingErrorDegrees,
+    45,
+  )
+  const objectiveGuide = layers.get(
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
+  )
+  assert.equal(objectiveGuide?.type, 'line')
+  assert.deepEqual(objectiveGuide?.paint?.['line-dasharray'], [0.75, 1.25])
+  const routePoints = layers.get(FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints)
+  assert.equal(routePoints?.type, 'circle')
+  assert.equal(routePoints?.paint?.['circle-pitch-scale'], 'viewport')
+  assert.deepEqual(routePoints?.paint?.['circle-opacity'], [
+    'match',
+    ['get', 'kgFlightRouteState'],
+    'active',
+    1,
+    'visited',
+    0.86,
+    0.7,
+  ])
+  assert.deepEqual(routePoints?.paint?.['circle-radius'], [
+    'case',
+    ['==', ['get', 'kgFlightRouteKind'], 'landing'],
+    [
+      'match',
+      ['get', 'kgFlightRouteState'],
+      'active',
+      9,
+      'visited',
+      8,
+      7,
+    ],
+    [
+      'match',
+      ['get', 'kgFlightRouteState'],
+      'active',
+      7.5,
+      'visited',
+      6,
+      5,
+    ],
+  ])
+  assert.deepEqual(routePoints?.paint?.['circle-stroke-color'], [
+    'case',
+    ['==', ['get', 'kgFlightRouteKind'], 'landing'],
+    '#f59e0b',
+    '#0f172a',
+  ])
+  assert.deepEqual(routePoints?.paint?.['circle-stroke-width'], [
+    'case',
+    ['==', ['get', 'kgFlightRouteState'], 'active'],
+    3,
+    ['==', ['get', 'kgFlightRouteKind'], 'landing'],
+    2.5,
+    ['==', ['get', 'kgFlightRouteState'], 'visited'],
+    2,
+    1.5,
+  ])
+  const aircraftOutline = layers.get(
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
+  )
+  assert.equal(
+    aircraftOutline?.paint?.['circle-pitch-scale'],
+    'viewport',
+  )
   const aircraft = layers.get(FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft)
   assert.equal(aircraft?.type, 'symbol')
   assert.equal(aircraft?.layout?.['text-field'], '▲')
   assert.deepEqual(aircraft?.layout?.['text-font'], ['Noto Sans Regular'])
+  assert.equal(
+    aircraft?.layout?.['text-pitch-alignment'],
+    'viewport',
+  )
   assert.deepEqual(
     aircraft?.layout?.['text-rotate'],
     ['get', 'headingDegrees'],
   )
+  assert.equal(aircraft?.layout?.['text-rotation-alignment'], 'map')
 })
 
 test('provider promotion retains the exact Flight source and ordered layers', () => {
@@ -496,6 +590,7 @@ test('provider promotion retains the exact Flight source and ordered layers', ()
   }
   const flightLayers = [
     FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
     FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
     FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
     FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
@@ -536,11 +631,12 @@ test('provider promotion retains the exact Flight source and ordered layers', ()
     [
       'provider-background',
       FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
+      FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
       FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
       FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
       FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
     ],
   )
-  assert.equal(previousStyle.layers.length, 5)
+  assert.equal(previousStyle.layers.length, 6)
   assert.equal(nextStyle.layers.length, 2)
 })

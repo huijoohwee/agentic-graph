@@ -77,9 +77,11 @@ function mapHasExactFlightOverlay(
     const kindCount = (kind: string) => features.filter(
       feature => feature?.properties?.kgFlightOverlayKind === kind,
     ).length
-    return features.length === overlay.route.length + 2
+    const objectiveGuideCount = overlay.objective ? 1 : 0
+    return features.length === overlay.route.length + 2 + objectiveGuideCount
       && exactRevision
       && kindCount('route') === 1
+      && kindCount('objective-guide') === objectiveGuideCount
       && kindCount('route-point') === overlay.route.length
       && kindCount('aircraft') === 1
       && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)

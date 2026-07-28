@@ -148,6 +148,20 @@ export async function assertFlightSimSeedReadiness({
   ) {
     throw new Error('Flight Sim seed must retain its exact fixed-step mission and lifecycle contract')
   }
+  if (!exactRecord(nativeFlightDemo.navigation_inset, {
+    orientation: 'north-up',
+    source: 'authored mission spawn, ordered waypoints, landing pad, and aircraft snapshot',
+    projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
+    route_guidance_owner: 'canvas/src/features/game-flight-sim/flightSimRouteGuidance.ts',
+    objective_guide: 'one conditional aircraft-to-active-objective segment shared with native MapLibre, exclusive plain Geo, and the HUD',
+    hud_cue: 'objective label, rounded distance, and signed left/right heading error; per-tick cue is not a live region',
+    runtime_network_calls: 0,
+    external_map_or_token_required: false,
+  })) {
+    throw new Error(
+      'Flight Sim seed must retain one exact source-authored course-director projection',
+    )
+  }
 
   if (
     !exactArray(

@@ -308,6 +308,7 @@ async function readValidatedRunEvidence({
         && view?.flightLayersReady === true
         && view?.flightLayersTopmost === true
         && view?.aircraftLayerType === 'symbol'
+        && view?.objectiveGuideFeatureCount === 1
         && view?.routeInViewport === true
         && view?.aircraftInViewport === true
         && Math.max(
@@ -315,8 +316,13 @@ async function readValidatedRunEvidence({
           Number(view?.routeScreenSpan?.y || 0),
         ) >= 80
         && JSON.stringify(view?.renderedKinds)
-          === JSON.stringify(['aircraft', 'route', 'route-point'])
-        && Number(view?.renderedFeatureCount || 0) >= 3
+          === JSON.stringify([
+            'aircraft',
+            'objective-guide',
+            'route',
+            'route-point',
+          ])
+        && Number(view?.renderedFeatureCount || 0) >= 4
         && Number.isFinite(view?.mapPointerHit?.x)
         && Number.isFinite(view?.mapPointerHit?.y)
       )
