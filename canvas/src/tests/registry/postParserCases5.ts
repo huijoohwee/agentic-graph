@@ -232,6 +232,7 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["ui.mainPanel.requestedIntegrationsSearch.miromindApiKeyServerManaged","@/__tests__/mainPanelMiroMindPagesReadiness.test","testMainPanelMiroMindApiKeyUsesServerManagedPagesSecretContract"],
   ["ui.mainPanel.requestedIntegrationsSearch.showsAgnesApiConfigurableValues","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchShowsAgnesApiConfigurableValues"],
   ["ui.mainPanel.requestedIntegrationsSearch.showsQwenApiConfigurableValues","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchShowsQwenApiConfigurableValues"],
+  ["ui.mainPanel.requestedIntegrationsSearch.showsZaiApiReferenceRows","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchShowsZaiApiReferenceRows"],
   ["ui.mainPanel.requestedIntegrationsSearch.showsGoogleCloudApiConfigurableValues","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchShowsGoogleCloudApiConfigurableValues"],
   ["ui.mainPanel.byteplusTooltipCopy.structured","@/__tests__/byteplusTooltipCopy.test","testBytePlusEntriesExposeStructuredTooltipMetadata"],
   ["ui.mainPanel.byteplusTooltipCopy.keyRoleActionsOutcome","@/__tests__/byteplusTooltipCopy.test","testBytePlusMessagesRoleTooltipUsesRoleActionsOutcomeCopy"],
