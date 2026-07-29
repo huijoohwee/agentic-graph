@@ -2,7 +2,7 @@
 title: "Knowgrph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 25
+contract_version: 26
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 invocation:
@@ -48,10 +48,10 @@ local_development:
       task_divergence_allowed: false
 deployment:
   allowed_workflows: [".github/workflows/release.yml"]
-  required_trigger: "push"
+  required_trigger: "workflow_dispatch"
   required_branch: "main"
-  promotion_policy: "protected-green-main"
-  forbidden_triggers: ["pull_request", "workflow_dispatch", "repository_dispatch", "schedule"]
+  promotion_policy: "human-authorized-candidate"
+  forbidden_triggers: ["push", "pull_request", "repository_dispatch", "schedule"]
   command_patterns: ["wrangler(?:@[^ ]+)?\\s+pages\\s+deploy(?:\\s|$)", "npm\\s+run\\s+[^\\n]*deploy(?!ed)[^\\s]*(?:\\s|$)"]
 ci_scopes:
   dependencies:
@@ -80,7 +80,7 @@ ci_scopes:
     roots: ["docs/", "CodeWiki.md", "README.md", "goal.md"]
     commands: []
   collaboration:
-    roots: [".github/", ".githooks/", "AGENTS.md", "docs/branch-protection.md", "docs/collaboration-runtime-contract.md", "docs/conflict-resolution.md", "schemas/collaboration-runtime-report.v1.schema.json", "schemas/collaboration-runtime-validation.v1.schema.json", "schemas/immutable-release-manifest.v1.schema.json", "scripts/collaboration-contract.mjs", "scripts/collaboration-runtime-report.mjs", "scripts/immutable-release-manifest.mjs", "scripts/create-immutable-release-manifest.mjs", "scripts/validate-immutable-release-manifest.mjs", "scripts/publish-immutable.mjs", "scripts/run-pre-push-gate.mjs", "scripts/print-collaboration-runtime-report-example.mjs", "scripts/print-collaboration-runtime-report-schema.mjs", "scripts/print-collaboration-runtime-validation-schema.mjs", "scripts/validate-collaboration-runtime-report.mjs", "scripts/validate-collaboration-runtime-validation.mjs", "scripts/runtime-readiness-contract.mjs", "scripts/runtime-docs-workflow-policy.mjs", "scripts/resolve-runtime-docs-dependency.mjs", "scripts/worktree-policy.mjs", "scripts/check-worktree-policy.mjs", "scripts/dev-source-consistency.mjs", "scripts/check-dev-source-consistency.mjs", "scripts/check-collaboration-runtime.mjs", "scripts/check-pre-push-refs.mjs", "scripts/run-affected-ci.mjs", "scripts/__tests__/collaboration-contract.test.mjs", "scripts/__tests__/collaboration-runtime-report.test.mjs", "scripts/__tests__/dev-source-consistency.test.mjs", "scripts/__tests__/immutable-release-manifest.test.mjs", "scripts/__tests__/runtime-readiness-contract.test.mjs", "scripts/__tests__/worktree-policy.test.mjs"]
+    roots: [".github/", ".githooks/", "AGENTS.md", "docs/branch-protection.md", "docs/collaboration-runtime-contract.md", "docs/conflict-resolution.md", "schemas/collaboration-runtime-report.v1.schema.json", "schemas/collaboration-runtime-validation.v1.schema.json", "schemas/immutable-release-manifest.v1.schema.json", "scripts/collaboration-contract.mjs", "scripts/collaboration-runtime-report.mjs", "scripts/immutable-release-manifest.mjs", "scripts/create-immutable-release-manifest.mjs", "scripts/validate-immutable-release-manifest.mjs", "scripts/publish-immutable.mjs", "scripts/production-release-authorization.mjs", "scripts/run-pre-push-gate.mjs", "scripts/print-collaboration-runtime-report-example.mjs", "scripts/print-collaboration-runtime-report-schema.mjs", "scripts/print-collaboration-runtime-validation-schema.mjs", "scripts/validate-collaboration-runtime-report.mjs", "scripts/validate-collaboration-runtime-validation.mjs", "scripts/runtime-readiness-contract.mjs", "scripts/runtime-docs-workflow-policy.mjs", "scripts/resolve-runtime-docs-dependency.mjs", "scripts/worktree-policy.mjs", "scripts/check-worktree-policy.mjs", "scripts/dev-source-consistency.mjs", "scripts/check-dev-source-consistency.mjs", "scripts/check-collaboration-runtime.mjs", "scripts/check-pre-push-refs.mjs", "scripts/run-affected-ci.mjs", "scripts/__tests__/collaboration-contract.test.mjs", "scripts/__tests__/collaboration-runtime-report.test.mjs", "scripts/__tests__/dev-source-consistency.test.mjs", "scripts/__tests__/immutable-release-manifest.test.mjs", "scripts/__tests__/production-release-authorization.test.mjs", "scripts/__tests__/production-release-contract.test.mjs", "scripts/__tests__/runtime-readiness-contract.test.mjs", "scripts/__tests__/worktree-policy.test.mjs"]
     commands:
       - ["npm", "run", "test:collaboration-contract"]
 fallback_commands:
@@ -128,7 +128,7 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 - `Integration Gate` is the sole required merge status.
 - `Integration Gate` generates `knowgrph.immutable-release-manifest/v1` from the exact pull-request head, source tree, pinned Agentic Canvas OS commit, and matching catalog revision; it uploads, downloads, and revalidates the exact bytes and digest before the canonical gate. Individually green repository checks do not replace this pair proof.
 - The gate validates this contract, runs source/build conflict compliance, and selects additional commands from `ci_scopes` based on changed paths.
-- Dev CI never writes a Prod mirror. Source-to-mirror parity runs after protected `main` integration when the automatic release workflow creates its ephemeral production artifact.
+- Dev CI never writes a Prod mirror. After protected `main` integration and exact localhost review, the release workflow may create one ephemeral production candidate; it cannot deploy or publish before exact-candidate human authorization.
 - Commands are arrays rather than shell strings, preventing shell interpolation and keeping execution provider-neutral.
 - Every affected-scope command has the canonical bounded timeout; non-terminating checks fail closed instead of freezing the gate.
 - Unknown changed paths fail safe through `fallback_commands`.
@@ -185,7 +185,7 @@ The automatic gate passes only with at least two distinct authenticated device p
 - CI never deploys.
 - Only a workflow listed in `deployment.allowed_workflows` may contain deployment commands.
 - The allowed workflow must use the trigger declared by `deployment.required_trigger`, restricted to `deployment.required_branch`.
-- A protected green merge to `main` is standing release authorization. The workflow binds build, deploy, smoke, rollback target, and mirror publication to that exact SHA without a per-run confirmation. Serialized delayed events must still match the current remote `refs/heads/main` immediately before Direct Upload, immediately after deployment, and before mirror publication; stale candidates fail before mutation or trigger the existing exact rollback path.
+- A protected green merge to `main` proves Dev integration only. `turn:end` must converge canonical localhost `main` to that exact fetched revision and emit an `agentic-local-review-candidate/v1` receipt. The workflow starts only through explicit candidate preparation on protected `main`, validates that receipt, builds once, binds source and Agentic Canvas OS commits and trees plus artifact and immutable-manifest digests, and pauses at the protected `production` environment. Forward deployment requires a human reviewer for that exact candidate digest. Every protected mutation revalidates the candidate without rebuilding; any new `main`, tree, dependency, artifact, manifest, or digest invalidates authorization and fails closed.
 - Before release, the controller idempotently disables Cloudflare Pages Git-triggered production and preview deployments and verifies convergence. It fails closed if ownership cannot converge; verified Direct Upload from `Production Release` is the sole deployment owner.
-- The GitHub `production` environment must have no required human reviewers; credentials remain environment-scoped and least-privilege.
-- Prod repositories and Cloudflare resources remain untouched by pull-request CI, local developer commands, schedules, and repository dispatches.
+- The GitHub `production` environment must require an authenticated human reviewer, disable administrator bypass, and restrict deployment to protected branches; credentials remain environment-scoped and least-privilege.
+- Prod repositories and Cloudflare resources remain untouched by pull-request CI, local developer commands, pushes, schedules, and repository dispatches. Automated rollback may restore only the captured immutable last-known-good deployment after a failed authorized forward release.
