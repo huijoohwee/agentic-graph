@@ -8,6 +8,11 @@ import {
   isImplementationRunToolName,
   runImplementationRunTool,
 } from "./implementation-run-runtime.js";
+import {
+  createAgenticSdlcObservabilityRuntime,
+  isAgenticSdlcObserveToolName,
+  runAgenticSdlcObservabilityTool,
+} from "./agentic-sdlc-observability-runtime.js";
 import { createLocalAgentTeamHost } from "./agent-team-local-host.js";
 
 export function createLocalRunRuntimeRegistrar({
@@ -15,12 +20,17 @@ export function createLocalRunRuntimeRegistrar({
   env,
   agentTeamOptions = {},
   implementationRunOptions = {},
+  agenticSdlcObservabilityOptions = {},
 } = {}) {
   const agentTeamHost = createLocalAgentTeamHost({ rootDir, env });
   const implementationRun = createImplementationRunRuntime({
     rootDir,
     env,
     ...implementationRunOptions,
+  });
+  const agenticSdlcObservability = createAgenticSdlcObservabilityRuntime({
+    rootDir,
+    ...agenticSdlcObservabilityOptions,
   });
   const agentTeam = createAgentTeamRuntime({
     rootDir,
@@ -30,9 +40,16 @@ export function createLocalRunRuntimeRegistrar({
   });
   return Object.freeze({
     canHandle(toolName) {
-      return isImplementationRunToolName(toolName) || isAgentTeamToolName(toolName);
+      return isImplementationRunToolName(toolName)
+        || isAgentTeamToolName(toolName)
+        || isAgenticSdlcObserveToolName(toolName);
     },
     async run(toolName, args, { signal } = {}) {
+      if (isAgenticSdlcObserveToolName(toolName)) {
+        return runAgenticSdlcObservabilityTool(toolName, args, {
+          runtime: agenticSdlcObservability,
+        });
+      }
       if (isImplementationRunToolName(toolName)) {
         return runImplementationRunTool(toolName, args, { runtime: implementationRun });
       }
@@ -55,6 +72,7 @@ export function createLocalRunRuntimeRegistrar({
       implementationRun.stopMonitoring?.();
     },
     implementationRun,
+    agenticSdlcObservability,
     agentTeam,
     agentTeamHostReadiness: agentTeamHost.readiness,
   });

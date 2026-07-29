@@ -227,6 +227,7 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
       originUrl: preflight.originUrl,
       originIdentity: preflight.originIdentity,
       acosRevision: preflight.acosRevision,
+      supportedAcosRevision: preflight.supportedAcosRevision,
       acosScriptProof: preflight.acosScriptProof,
       derivedWorktreePath: preflight.worktreePath,
       acosSemanticScope: preflight.acosSemanticScope,

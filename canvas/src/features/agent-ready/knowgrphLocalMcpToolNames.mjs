@@ -49,6 +49,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   implementationRunStart: "knowgrph.implementation_run.start",
   implementationRunList: "knowgrph.implementation_run.list",
   implementationRunControl: "knowgrph.implementation_run.control",
+  agenticSdlcObserve: "knowgrph.agentic_sdlc.observe",
   agentTeamPlan: "knowgrph.agent_team.plan",
   agentTeamStart: "knowgrph.agent_team.start",
   agentTeamList: "knowgrph.agent_team.list",
