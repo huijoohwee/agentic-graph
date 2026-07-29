@@ -677,6 +677,7 @@ export async function testCitySimExitWaitsForPendingGeoClaimRollback() {
     } as never)
     const previous = captureCitySimPreviousCanvasSurface()
     releaseMapLease = claimMapLibreMapLease({
+      isPreparedForDisposal: () => true,
       map: { getCanvas: () => ownedCanvas },
       ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
       root: ownedCanvas.parentElement,

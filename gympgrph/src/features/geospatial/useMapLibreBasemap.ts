@@ -7,7 +7,6 @@ import {
 } from 'grph-shared/geospatial/poiRichMedia'
 import { LS_KEYS } from '../../lib/config.js'
 import {
-  clearFlightGeoOverlayFromMap,
   createFlightGeoOverlayMapLibreCamera,
   mapHasExactFlightGeoOverlay,
   mapHasExactFlightGeoOverlayCamera,
@@ -15,7 +14,6 @@ import {
   retainFlightGeoOverlayDuringStyleSwap,
 } from '../../flightGeoOverlayMapLibre.js'
 import {
-  clearFlightGeoEnvironmentFromMap,
   mapHasExactFlightGeoEnvironment,
 } from '../../flightGeoEnvironmentMapLibre.js'
 import { readFlightGeoOverlay } from '../../flightGeoOverlay.js'
@@ -46,6 +44,10 @@ import {
 import {
   mapHasExactFlightLayerState,
 } from './flightGeoOverlayPresentationContracts.js'
+import {
+  isFlightGeoMapLibreDisposalPrepared,
+  prepareFlightGeoMapLibreForDisposal,
+} from './flightGeoMapLibreDisposal.js'
 import {
   isGrabMapsUrl,
   loadMapLibreProviderStyleDocument,
@@ -416,10 +418,11 @@ export function useMapLibreBasemap(args: {
       if (!map) return true
       releaseMapDisposalPreparation ??=
         acquireMapLibreMapDisposalPreparation(map)
-      const overlayCleared = clearFlightGeoOverlayFromMap(map)
-      const environmentCleared = clearFlightGeoEnvironmentFromMap(map)
-      return overlayCleared && environmentCleared
+      return prepareFlightGeoMapLibreForDisposal(map)
     }
+    const isMapPreparedForDisposal = (): boolean => (
+      !map || isFlightGeoMapLibreDisposalPrepared(map)
+    )
     const applyBasemapStyleWithoutDroppingFlight = (
       style: string | Readonly<Record<string, unknown>>,
     ): boolean => {
@@ -783,6 +786,7 @@ export function useMapLibreBasemap(args: {
         }
         releaseMapLease = claimMapLibreMapLease({
           cancelDisposalPreparation: cancelMapDisposalPreparation,
+          isPreparedForDisposal: isMapPreparedForDisposal,
           map,
           ownerScope,
           prepareForDisposal: prepareMapForDisposal,

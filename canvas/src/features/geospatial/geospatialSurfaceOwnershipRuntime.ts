@@ -34,10 +34,10 @@ function waitForSurfaceFrame(
   })
 }
 
-async function waitForMapLibreStyleSettlement(
+async function waitForFlightSourceSettlement(
   ownedLease: Readonly<{
     isCurrent: () => boolean
-    map: any
+    isPreparedForDisposal: () => boolean
   }> | null,
   deadline: number,
 ): Promise<void> {
@@ -45,13 +45,12 @@ async function waitForMapLibreStyleSettlement(
     !ownedLease
     || typeof window === 'undefined'
     || typeof window.requestAnimationFrame !== 'function'
-    || typeof ownedLease.map?.isStyleLoaded !== 'function'
   ) return
   const timeoutMessage =
-    'MapLibre style did not settle before the exclusive Canvas handoff.'
+    'MapLibre Flight sources did not settle before the exclusive Canvas handoff.'
   while (ownedLease.isCurrent()) {
     try {
-      if (ownedLease.map.isStyleLoaded() === true) return
+      if (ownedLease.isPreparedForDisposal()) return
     } catch {
       throw new Error(timeoutMessage)
     }
@@ -62,13 +61,12 @@ async function waitForMapLibreStyleSettlement(
 async function prepareMapLibreForExclusiveCanvas(
   ownedLease: Readonly<{
     isCurrent: () => boolean
-    map: any
+    isPreparedForDisposal: () => boolean
     prepareForDisposal: () => boolean
   }> | null,
   deadline: number,
 ): Promise<void> {
   if (!ownedLease) return
-  await waitForMapLibreStyleSettlement(ownedLease, deadline)
   // Flight remains active while the first source clear settles. Re-clear once
   // more before committing Geo off so a concurrent overlay publication cannot
   // survive into the exclusive City canvas.
@@ -78,7 +76,7 @@ async function prepareMapLibreForExclusiveCanvas(
         'MapLibre Flight sources could not be cleared before the exclusive Canvas handoff.',
       )
     }
-    await waitForMapLibreStyleSettlement(ownedLease, deadline)
+    await waitForFlightSourceSettlement(ownedLease, deadline)
   }
 }
 

@@ -9,6 +9,7 @@ export type NativeGeospatialMapLibreLease = Readonly<{
   canvas: HTMLCanvasElement | null
   id: number
   isCurrent: () => boolean
+  isPreparedForDisposal: () => boolean
   map: any
   prepareForDisposal: () => boolean
   root: HTMLElement | null
@@ -89,6 +90,7 @@ function readMapCanvas(map: any): HTMLCanvasElement | null {
 
 export function claimMapLibreMapLease(options: Readonly<{
   cancelDisposalPreparation?: () => void
+  isPreparedForDisposal?: () => boolean
   map: any
   ownerScope: MapLibreMapOwnerScope
   prepareForDisposal?: () => boolean
@@ -107,6 +109,8 @@ export function claimMapLibreMapLease(options: Readonly<{
     canvas: readMapCanvas(options.map),
     id: leaseId,
     isCurrent: () => activeNativeLease === lease,
+    isPreparedForDisposal:
+      options.isPreparedForDisposal ?? (() => false),
     map: options.map,
     prepareForDisposal: options.prepareForDisposal ?? (() => true),
     root: options.root,

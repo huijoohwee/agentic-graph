@@ -275,6 +275,7 @@ test('non-Geo restoration requires two consecutive released animation frames', a
     const ownedCanvas = document.querySelector<HTMLCanvasElement>('#owned-geo-map')
     assert.ok(ownedCanvas)
     const releaseOwnedLease = claimMapLibreMapLease({
+      isPreparedForDisposal: () => true,
       map: { getCanvas: () => ownedCanvas },
       ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
       root: ownedCanvas.parentElement,
@@ -308,19 +309,30 @@ test('exclusive Canvas handoff re-clears Flight sources after style settlement',
   await withSurfaceDom(GEO_CANVAS_MARKUP, async (window, document) => {
     const ownedCanvas = document.querySelector<HTMLCanvasElement>('#owned-geo-map')
     assert.ok(ownedCanvas)
-    let styleLoaded = true
+    let providerStyleLoadedReads = 0
     let preparationCount = 0
     let flightSourcesPopulated = true
+    let flightSourcesLoaded = true
+    let settledReadCount = 0
     const releaseOwnedLease = claimMapLibreMapLease({
       map: {
         getCanvas: () => ownedCanvas,
-        isStyleLoaded: () => styleLoaded,
+        isStyleLoaded: () => {
+          providerStyleLoadedReads += 1
+          return false
+        },
       },
       ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
       prepareForDisposal: () => {
         preparationCount += 1
         flightSourcesPopulated = false
-        styleLoaded = false
+        flightSourcesLoaded = false
+        return true
+      },
+      isPreparedForDisposal: () => {
+        if (flightSourcesPopulated || !flightSourcesLoaded) return false
+        settledReadCount += 1
+        if (settledReadCount === 1) flightSourcesPopulated = true
         return true
       },
       root: ownedCanvas.parentElement,
@@ -339,8 +351,7 @@ test('exclusive Canvas handoff re-clears Flight sources after style settlement',
       true,
       'Geo ownership must remain active while cleared sources settle',
     )
-    flightSourcesPopulated = true
-    styleLoaded = true
+    flightSourcesLoaded = true
     await controlledRaf.flushNext()
 
     await controlledRaf.waitForPending()
@@ -351,7 +362,7 @@ test('exclusive Canvas handoff re-clears Flight sources after style settlement',
       'a Flight publication during first settlement must be cleared again',
     )
     assert.equal(isGeospatialModeEnabled(), true)
-    styleLoaded = true
+    flightSourcesLoaded = true
     await controlledRaf.flushNext()
 
     await controlledRaf.waitForPending()
@@ -364,6 +375,11 @@ test('exclusive Canvas handoff re-clears Flight sources after style settlement',
     await handoff
     assert.equal(settled, true)
     assert.equal(isGeospatialModeEnabled(), false)
+    assert.equal(
+      providerStyleLoadedReads,
+      0,
+      'pending provider tiles must not gate owned Flight source disposal',
+    )
   })
 })
 
@@ -552,6 +568,7 @@ test('an unrelated inline MapLibre canvas does not block owned Geo disposal', as
       assert.ok(ownedCanvas)
       assert.ok(inlineCanvas)
       const releaseOwnedLease = claimMapLibreMapLease({
+        isPreparedForDisposal: () => true,
         map: { getCanvas: () => ownedCanvas },
         ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
         root: ownedCanvas.parentElement,

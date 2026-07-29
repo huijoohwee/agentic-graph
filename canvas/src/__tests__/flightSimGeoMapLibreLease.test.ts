@@ -49,6 +49,11 @@ test('native Geo lease ignores inline Markdown maps and fences stale releases', 
   assert.equal(hostLease?.map, hostMap)
   assert.equal(hostLease?.canvas, hostCanvas)
   assert.equal(hostLease?.isCurrent(), true)
+  assert.equal(
+    hostLease?.isPreparedForDisposal(),
+    false,
+    'a native lease without an exact source checker must fail closed',
+  )
 
   const releaseInline = claimMapLibreMapLease({
     map: inlineMap,

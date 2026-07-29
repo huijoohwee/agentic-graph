@@ -11,7 +11,17 @@ import type {
 } from '../../../gympgrph/src/flightGeoOverlay'
 import {
   clearFlightGeoOverlayFromMap,
+  FLIGHT_GEO_OVERLAY_LAYER_ORDER,
+  FLIGHT_GEO_OVERLAY_SOURCE_ID,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+import {
+  FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
+  FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+import {
+  isFlightGeoMapLibreDisposalPrepared,
+  prepareFlightGeoMapLibreForDisposal,
+} from '../../../gympgrph/src/features/geospatial/flightGeoMapLibreDisposal'
 
 test('Flight overlay disposal clear is idempotent and never creates a missing source', () => {
   let sourceData: Readonly<{
@@ -51,6 +61,120 @@ test('Flight overlay disposal clear is idempotent and never creates a missing so
     true,
   )
   assert.equal(sourceAdds, 0, 'disposal must not create a missing source')
+})
+
+test('exclusive disposal waits only for loaded empty Flight sources', () => {
+  const sourceIds = [
+    FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+    FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  ]
+  const sourceData = new Map(sourceIds.map(sourceId => [
+    sourceId,
+    {
+      type: 'FeatureCollection',
+      features: [{ id: `${sourceId}:feature` }],
+    },
+  ]))
+  const sourceLoaded = new Map(sourceIds.map(sourceId => [sourceId, true]))
+  const sourceWrites = new Map(sourceIds.map(sourceId => [sourceId, 0]))
+  const hiddenLayers: string[] = []
+  const sources = Object.fromEntries(sourceIds.map(sourceId => [
+    sourceId,
+    {
+      loaded: () => sourceLoaded.get(sourceId),
+      serialize: () => ({ data: sourceData.get(sourceId) }),
+      setData: (data: { type: string; features: unknown[] }) => {
+        sourceData.set(sourceId, data)
+        sourceLoaded.set(sourceId, false)
+        sourceWrites.set(sourceId, (sourceWrites.get(sourceId) || 0) + 1)
+      },
+    },
+  ]))
+  const map = {
+    getLayer: (layerId: string) => ({ id: layerId }),
+    getSource: (sourceId: string) => sources[sourceId],
+    getStyle: () => ({
+      sources: Object.fromEntries(sourceIds.map(sourceId => [
+        sourceId,
+        { type: 'geojson' },
+      ])),
+    }),
+    isStyleLoaded: () => false,
+    setLayoutProperty: (layerId: string, property: string, value: string) => {
+      assert.equal(property, 'visibility')
+      assert.equal(value, 'none')
+      hiddenLayers.push(layerId)
+    },
+  }
+
+  assert.equal(prepareFlightGeoMapLibreForDisposal(map), true)
+  assert.equal(isFlightGeoMapLibreDisposalPrepared(map), false)
+  assert.deepEqual(
+    hiddenLayers,
+    [
+      ...FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
+      ...FLIGHT_GEO_OVERLAY_LAYER_ORDER,
+    ],
+  )
+  for (const sourceId of sourceIds) {
+    assert.equal(sourceWrites.get(sourceId), 1)
+    sourceLoaded.set(sourceId, true)
+  }
+  assert.equal(
+    isFlightGeoMapLibreDisposalPrepared(map),
+    true,
+    'global provider style loading must not block settled owned sources',
+  )
+
+  sourceData.set(FLIGHT_GEO_OVERLAY_SOURCE_ID, {
+    type: 'FeatureCollection',
+    features: [{ id: 'late' }],
+  })
+  assert.equal(isFlightGeoMapLibreDisposalPrepared(map), false)
+  assert.equal(prepareFlightGeoMapLibreForDisposal(map), true)
+  assert.equal(sourceWrites.get(FLIGHT_GEO_OVERLAY_SOURCE_ID), 2)
+  assert.equal(
+    isFlightGeoMapLibreDisposalPrepared({
+      ...map,
+      getSource: () => null,
+    }),
+    false,
+    'a style-owned source that cannot be inspected must fail closed',
+  )
+  assert.equal(
+    isFlightGeoMapLibreDisposalPrepared({
+      getSource: () => null,
+      getStyle: () => ({ sources: {} }),
+    }),
+    true,
+    'an absent owned source is already disposed',
+  )
+  assert.equal(
+    isFlightGeoMapLibreDisposalPrepared({
+      ...map,
+      getSource: sourceId => ({
+        serialize: () => ({
+          data: {
+            type: 'FeatureCollection',
+            features: [],
+          },
+        }),
+        setData: sources[sourceId].setData,
+      }),
+    }),
+    false,
+    'a present source without loaded() must fail closed',
+  )
+  assert.equal(
+    isFlightGeoMapLibreDisposalPrepared({
+      getSource: () => null,
+      getStyle: () => {
+        throw new Error('style unavailable')
+      },
+    }),
+    false,
+    'an unreadable style cannot prove that an owned source is absent',
+  )
 })
 
 test('a provider style attempt reset preserves the exact stopped settlement audit', () => {
