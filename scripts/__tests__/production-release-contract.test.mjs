@@ -25,6 +25,7 @@ const productionMirrorArtifactScript = fs.readFileSync(path.resolve(repoRoot, 's
 const gameModeSourceAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'check-game-fps-readiness.mjs'), 'utf8')
 const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'assert-protected-main-release-authority.mjs'), 'utf8')
 const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
+const productionLifecycleScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-lifecycle.mjs'), 'utf8')
 const packageScripts = JSON.parse(fs.readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')).scripts
 
 test('integration isolates protected merge and main checks by exact revision', () => {
@@ -172,13 +173,38 @@ test('production release requires an exact reviewed candidate, human environment
   assert.match(releaseWorkflow, /if: failure\(\) && steps\.deploy_pages\.outcome == 'success'/)
 })
 
-test('production release bounds same-run artifacts to one day', () => {
+test('production release bounds transient artifacts and durably retains typed lifecycle receipts', () => {
   const retentionDays = [...releaseWorkflow.matchAll(/retention-days:\s*(\d+)/g)]
     .map(([, days]) => Number(days))
-  assert.deepEqual(retentionDays, [1, 1, 1])
+  assert.deepEqual(retentionDays, [1, 1, 90, 1, 90])
   assert.match(releaseWorkflow, /name: production-\$\{\{ inputs\.source_sha \}\}/)
   assert.match(releaseWorkflow, /name: immutable-release-manifest-\$\{\{ inputs\.source_sha \}\}/)
   assert.match(releaseWorkflow, /name: production-authorization-\$\{\{ inputs\.source_sha \}\}/)
+  assert.match(releaseWorkflow, /name: production-lifecycle-\$\{\{ inputs\.source_sha \}\}-\$\{\{ github\.run_id \}\}/)
+  assert.match(releaseWorkflow, /name: production-lifecycle-complete-\$\{\{ inputs\.source_sha \}\}-\$\{\{ github\.run_id \}\}/)
+})
+
+test('production release records the exact protected-environment human and six neutral receipts', () => {
+  assert.match(releaseWorkflow, /permissions:\s*\n\s*actions: read\s*\n\s*contents: read/)
+  assert.match(releaseWorkflow, /actions\/runs\/\$\{\{ github\.run_id \}\}\/approvals/)
+  assert.match(releaseWorkflow, /name: Create neutral release lifecycle receipts/)
+  assert.match(releaseWorkflow, /name: Record exact human authorization and claim release controller/)
+  assert.match(releaseWorkflow, /name: Record live verification receipt/)
+  assert.match(releaseWorkflow, /name: Record publication receipt/)
+  assert.match(releaseWorkflow, /PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST/)
+  assert.match(productionLifecycleScript, /collaborative-release-lifecycle-contract\.mjs/)
+  assert.match(productionLifecycleScript, /production release requires exactly one authenticated human approval/)
+  assert.match(productionLifecycleScript, /protected environment authorization drifted from the prepared candidate digest/)
+  for (const receipt of [
+    'integration-receipt.json',
+    'runtime-review-receipt.json',
+    'candidate-manifest.json',
+    'human-authorization-receipt.json',
+    'live-verification-receipt.json',
+    'publication-receipt.json',
+  ]) {
+    assert.match(productionLifecycleScript, new RegExp(receipt.replace('.', '\\.')))
+  }
 })
 
 test('Agentic Canvas OS docs promote automatically through protected Knowgrph integration', () => {

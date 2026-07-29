@@ -124,7 +124,7 @@ Publish-mirror and sibling-schema parity are release checks after ephemeral sync
 - [ ] force pushes are disabled
 - [ ] direct pushes to `main` are restricted without bypass
 - [ ] only `Production Release` can deploy, only for an exact `turn:end`-reviewed protected `main` candidate, and only after required human approval in the protected `production` environment
-- [ ] the `production` environment has no required reviewers and exposes only least-privilege deployment credentials
+- [ ] the `production` environment requires an authenticated human reviewer, prevents self-review and administrator bypass, restricts deployment to protected `main`, and exposes only least-privilege deployment credentials
 - [ ] the Cloudflare Pages Git source has production deployments disabled and preview deployment set to `none`; `Production Release` Direct Upload is the sole deploy owner
 
 ---
