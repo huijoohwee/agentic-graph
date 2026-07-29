@@ -35,10 +35,12 @@ import {
   type MapLibreMapOwnerScope,
 } from './mapLibreHostLease.js'
 import {
-  alignMapToSingaporePresentation,
   createSingaporeMapInitialCameraOptions,
   readSingaporeCanvasCameraPolicy,
 } from './singaporeMapPolicy.js'
+import {
+  createMapLibreInitialCameraAlignment,
+} from './mapLibreInitialCameraAlignment.js'
 
 type BasemapProbe = {
   tileSourceId: string
@@ -1118,20 +1120,19 @@ export function useMapLibreBasemap(args: {
           lastNavigationAtMs = Date.now()
         }
 
-        let initial3dCameraAligned = false
-        const align3dViewportCenter = () => {
-          if (cancelled || !map) return
-          if (canvasRenderMode !== '3d') return
-          if (initial3dCameraAligned) return
-          initial3dCameraAligned = true
-          alignMapToSingaporePresentation(map, singaporeCamera)
-          const w = typeof window !== 'undefined' ? window : null
-          if (!w || typeof w.requestAnimationFrame !== 'function') return
-          w.requestAnimationFrame(() => {
-            if (cancelled || !map) return
-            alignMapToSingaporePresentation(map, singaporeCamera)
-          })
-        }
+        const align3dViewportCenter = createMapLibreInitialCameraAlignment({
+          canvasRenderMode,
+          // Flight's local bootstrap has camera ownership before the first
+          // native MapLibre frame. A late generic Singapore fit would overwrite
+          // its stopped fixed-follow camera and strand the presentation gate.
+          flightBootstrapActive: Boolean(initialStyleOverride),
+          isCurrent: () => !cancelled,
+          map: () => map,
+          requestFrame: typeof window === 'undefined'
+            ? undefined
+            : callback => window.requestAnimationFrame(callback),
+          singaporeCamera,
+        })
 
         map.once?.('load', () => {
           if (cancelled) return
@@ -1139,9 +1140,6 @@ export function useMapLibreBasemap(args: {
           align3dViewportCenter()
           setState((prev: BasemapResult) => (prev.styleRevision > 0 ? prev : { ...prev, styleRevision: 1 }))
           scheduleBasemapVisibilityProbe()
-          if (canvasRenderMode === '3d') {
-            alignMapToSingaporePresentation(map, singaporeCamera)
-          }
           updateProbe()
           if (debug) {
             try {
