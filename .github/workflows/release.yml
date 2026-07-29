@@ -190,6 +190,7 @@ jobs:
             echo "- Agentic Canvas OS: \`${{ steps.agentic_canvas_os_docs.outputs.ref }}\`"
             echo "- Candidate digest: \`$(jq -r .candidateDigest "$RUNNER_TEMP/production-release-candidate.json")\`"
             echo "- Immutable manifest: \`${{ steps.immutable_manifest.outputs.digest }}\`"
+            echo "- Authorize from an interactive terminal: \`npm run production:authorize -- --repository ${{ github.repository }} --run-id ${{ github.run_id }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create neutral release lifecycle receipts
@@ -377,6 +378,7 @@ jobs:
             echo "## Human-authorized Production release"
             echo "- Candidate: \`$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST\`"
             echo "- Reviewer: \`$(jq -r .humanActorId "$RUNNER_TEMP/production-lifecycle/human-authorization-receipt.json")\`"
+            echo "- Interaction: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/authorization-interaction-receipt.json")\`"
             echo "- Authorization: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/human-authorization-receipt.json")\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
