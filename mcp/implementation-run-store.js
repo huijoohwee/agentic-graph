@@ -13,6 +13,7 @@ const MAX_STATE_BYTES = 1024 * 1024;
 const MAX_INITIAL_STATE_BYTES = 512 * 1024;
 const MAX_EVENT_BYTES = 256 * 1024;
 const MAX_ARTIFACT_BYTES = 11 * 1024 * 1024;
+const MAX_STATE_READ_ATTEMPTS = 4;
 
 const stableValue = (value) => {
   if (Array.isArray(value)) return value.map(stableValue);
@@ -174,21 +175,28 @@ export class ImplementationRunStore {
     const runDirectory = this.runDir(runId);
     await this.ensureSafeDirectory(runDirectory);
     let content;
-    try {
-      ({ content } = await this.stableFileReader({
-        filePath: this.statePath(runId),
-        containingDirectory: runDirectory,
-        maximumBytes: MAX_STATE_BYTES,
-      }));
-    } catch (error) {
-      if (error?.code === "ENOENT") throw error;
-      const tooLarge = error?.code === "BOUNDED_FILE_TOO_LARGE";
-      throw Object.assign(
-        new Error(tooLarge
-          ? `Durable implementation-run state exceeds its ${MAX_STATE_BYTES}-byte read bound: ${runId}`
-          : `Unsafe or changing implementation-run state file: ${runId}`),
-        { code: tooLarge ? "DURABLE_STATE_TOO_LARGE" : "DURABLE_STATE_UNSAFE" },
-      );
+    for (let attempt = 1; attempt <= MAX_STATE_READ_ATTEMPTS; attempt += 1) {
+      try {
+        ({ content } = await this.stableFileReader({
+          filePath: this.statePath(runId),
+          containingDirectory: runDirectory,
+          maximumBytes: MAX_STATE_BYTES,
+        }));
+        break;
+      } catch (error) {
+        if (error?.code === "BOUNDED_FILE_CHANGED" && attempt < MAX_STATE_READ_ATTEMPTS) {
+          await delay(attempt * 2);
+          continue;
+        }
+        if (error?.code === "ENOENT") throw error;
+        const tooLarge = error?.code === "BOUNDED_FILE_TOO_LARGE";
+        throw Object.assign(
+          new Error(tooLarge
+            ? `Durable implementation-run state exceeds its ${MAX_STATE_BYTES}-byte read bound: ${runId}`
+            : `Unsafe or changing implementation-run state file: ${runId}`),
+          { code: tooLarge ? "DURABLE_STATE_TOO_LARGE" : "DURABLE_STATE_UNSAFE" },
+        );
+      }
     }
     const state = JSON.parse(content.toString("utf8"));
     if (state.schema !== IMPLEMENTATION_RUN_SCHEMA || state.runId !== runId || !Number.isInteger(state.revision)) {
