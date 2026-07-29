@@ -185,4 +185,5 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["storage.enhancement.sourceFiles.mutableTextHash","@/__tests__/sourceFilesStorageSync.test","testSourceFilesStorageSyncTextHashCacheTracksMutableText"],
   ["storage.enhancement.sourceFiles.skipsWorkspaceBacked","@/__tests__/sourceFilesStorageSync.test","testSourceFilesStorageSyncSkipsWorkspaceBackedSourceFiles"],
   ["storage.enhancement.sourceFiles.bootstrapQueueOwner","@/__tests__/sourceFilesStorageSync.test","testSourceFilesPersistenceBootstrapOwnsKnowgrphStorageLoopAndQueueIntegration"],
+  ["ui.panels.ktv.tailwindSharedSource","@/__tests__/tailwindSharedKtvSourceContract.test","testTailwindScansSharedKtvClassOwners"],
 ]
