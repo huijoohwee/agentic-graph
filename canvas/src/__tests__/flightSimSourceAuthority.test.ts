@@ -549,7 +549,7 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   )
   assert.equal(
     flightCamera.driver_owner,
-    'gympgrph/src/flightGeoOverlayMapLibre.ts',
+    'gympgrph/src/flightGeoOverlayMapLibreCamera.ts',
   )
   assert.equal(
     flightCamera.runtime_canvas_driver_owner,

@@ -393,13 +393,13 @@ test('clean-room scanner reports a crafted external-project boundary violation',
   )
 })
 
-test('clean-room scanner covers the native MapLibre Flight presentation owner', () => {
+test('clean-room scanner covers the canonical native MapLibre Flight camera owner', () => {
   assert.throws(
     () => assertFlightSimBoundary([{
-      relativePath: 'gympgrph/src/flightGeoOverlayMapLibre.ts',
+      relativePath: 'gympgrph/src/flightGeoOverlayMapLibreCamera.ts',
       source: "export const remote = 'https://external.example/map-runtime'",
     }]),
-    /flightGeoOverlayMapLibre\.ts/,
+    /flightGeoOverlayMapLibreCamera\.ts/,
   )
 })
 

@@ -48,6 +48,23 @@ test('rejects external repository locators from the native MapLibre Flight owner
   assert.match(violations[0].reason, /external repository locator/)
 })
 
+test('rejects external repository locators from split Flight camera and environment owners', () => {
+  const violations = findFlightSimBoundaryViolations([
+    {
+      relativePath: 'gympgrph/src/flightGeoOverlayMapLibreCamera.ts',
+      source: "export const remote = 'https://external.example/camera-runtime'",
+    },
+    {
+      relativePath: 'gympgrph/src/flightGeoEnvironmentMapLibre.ts',
+      source: "export const remote = 'https://external.example/environment-runtime'",
+    },
+  ])
+  assert.equal(violations.length, 2)
+  assert.ok(violations.every(violation => (
+    violation.reason.includes('external repository locator')
+  )))
+})
+
 test('rejects external repository locators from canonical policy', () => {
   assert.throws(() => assertFlightSimBoundary([{
     relativePath: '.kiro/specs/knowgrph-game-flight-sim/requirements.md',

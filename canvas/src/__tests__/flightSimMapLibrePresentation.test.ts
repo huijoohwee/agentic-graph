@@ -169,7 +169,7 @@ function presentationHarness(
   const images = new Set<string>()
   const listeners = new Set<() => void>()
   const styleLoadListeners = new Set<() => void>()
-  let overlayLayerOrder = [...FLIGHT_GEO_OVERLAY_LAYER_ORDER]
+  let overlayLayerOrder: string[] = [...FLIGHT_GEO_OVERLAY_LAYER_ORDER]
   const layerIds = new Set<string>([
     ...Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS),
     ...(initial.environment
