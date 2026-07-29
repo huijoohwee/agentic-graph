@@ -17,6 +17,15 @@ export const FLIGHT_GEO_ENVIRONMENT_LAYER_IDS = Object.freeze({
   outline: `${FLIGHT_GEO_ENVIRONMENT_SOURCE_ID}:outline`,
 })
 
+// Environment layers always sit below the Flight route and aircraft stack.
+// Keep this order public so a provider-style handoff can retain the complete
+// authored-metre composition rather than briefly dropping it between styles.
+export const FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER = Object.freeze([
+  FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline,
+])
+
 export type FlightGeoEnvironmentFeatureProperties = Readonly<{
   kgBaseHeightMeters: number
   kgColor: string
@@ -278,7 +287,7 @@ function setEnvironmentLayerVisibility(
 }
 
 function hideEnvironmentLayers(map: any): void {
-  for (const layerId of Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS)) {
+  for (const layerId of FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER) {
     setEnvironmentLayerVisibility(map, layerId, 'none')
   }
 }
@@ -370,7 +379,7 @@ export function mapHasExactFlightGeoEnvironment(
     const sourceData = readGeoJsonSourceData(source)
     if (!sourceData || !isEnvironmentSourceLoaded(source)) return false
     if (!overlay.environment) return sourceData.features.length === 0
-    return Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS)
+    return FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER
       .every(layerId => Boolean(map.getLayer?.(layerId)))
       && hasExactFlightGeoEnvironmentFeatureCollection(
         flightGeoEnvironmentMapLibreFeatureCollection(overlay),

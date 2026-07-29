@@ -13,12 +13,15 @@ import {
 } from 'grph-shared/geospatial/poiRichMedia'
 import { LS_KEYS } from '../../lib/config.js'
 import {
-  FLIGHT_GEO_OVERLAY_LAYER_IDS,
-  FLIGHT_GEO_OVERLAY_SOURCE_ID,
   clearFlightGeoOverlayFromMap,
+  mapHasExactFlightGeoOverlay,
   retainFlightGeoOverlayDuringStyleSwap,
 } from '../../flightGeoOverlayMapLibre.js'
-import { clearFlightGeoEnvironmentFromMap } from '../../flightGeoEnvironmentMapLibre.js'
+import {
+  clearFlightGeoEnvironmentFromMap,
+  mapHasExactFlightGeoEnvironment,
+} from '../../flightGeoEnvironmentMapLibre.js'
+import { readFlightGeoOverlay } from '../../flightGeoOverlay.js'
 import {
   MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL,
   MAPLIBRE_DEFAULT_STYLE_URL,
@@ -501,6 +504,11 @@ export function useMapLibreBasemap(args: {
   const singaporeInitialCamera =
     createSingaporeMapInitialCameraOptions(singaporeCamera)
   const mountedMapRef = React.useRef<any | null>(null)
+  // The mount effect intentionally does not depend on the bootstrap override:
+  // Flight takes over the retained map in place. Load and resize callbacks
+  // therefore need the latest ownership rather than their mount-time value.
+  const initialStyleOverrideRef = React.useRef(initialStyleOverride)
+  initialStyleOverrideRef.current = initialStyleOverride
   const requestedOpenFreeMapLibertyRef = React.useRef(false)
   const [runtimeProjectionMode, setRuntimeProjectionMode] = React.useState<'mercator' | 'globe'>(projectionMode)
   const [state, setState] = React.useState<BasemapResult>({
@@ -1125,7 +1133,7 @@ export function useMapLibreBasemap(args: {
           // Flight's local bootstrap has camera ownership before the first
           // native MapLibre frame. A late generic Singapore fit would overwrite
           // its stopped fixed-follow camera and strand the presentation gate.
-          flightBootstrapActive: Boolean(initialStyleOverride),
+          flightBootstrapActive: () => Boolean(initialStyleOverrideRef.current),
           isCurrent: () => !cancelled,
           map: () => map,
           requestFrame: typeof window === 'undefined'
@@ -1295,11 +1303,12 @@ export function useMapLibreBasemap(args: {
     )
     reconcileMapLibreFlightBootstrap({
       bootstrapStyle: initialStyleOverride || null,
-      hasExactFlightOverlay: candidate => (
-        Boolean(candidate?.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID))
-        && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
-          .every(layerId => Boolean(candidate?.getLayer?.(layerId)))
-      ),
+      hasExactFlightOverlay: candidate => {
+        const overlay = readFlightGeoOverlay()
+        return overlay.active
+          && mapHasExactFlightGeoOverlay(candidate, overlay)
+          && mapHasExactFlightGeoEnvironment(candidate, overlay)
+      },
       loadProviderStyle: async () => {
         if (typeof selectedStyle !== 'string') return selectedStyle
         const preflight = await preflightGrabMapsStyle(selectedStyle)

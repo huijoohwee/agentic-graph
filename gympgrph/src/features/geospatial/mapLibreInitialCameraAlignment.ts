@@ -7,7 +7,10 @@ type FrameScheduler = (callback: () => void) => unknown
 
 export type MapLibreInitialCameraAlignmentOptions = Readonly<{
   canvasRenderMode: '2d' | '3d'
-  flightBootstrapActive: boolean
+  // This must be read at each load/resize/rAF boundary. A Flight bootstrap
+  // can claim the already-mounted map while its initial provider style is
+  // still loading, so a construction-time boolean would be stale.
+  flightBootstrapActive: () => boolean
   isCurrent: () => boolean
   map: () => any | null
   requestFrame?: FrameScheduler
@@ -27,7 +30,7 @@ export function createMapLibreInitialCameraAlignment(
   return () => {
     if (
       aligned
-      || options.flightBootstrapActive
+      || options.flightBootstrapActive()
       || options.canvasRenderMode !== '3d'
       || !options.isCurrent()
     ) return false
@@ -39,7 +42,7 @@ export function createMapLibreInitialCameraAlignment(
     if (!applied || !requestFrame) return applied
     requestFrame(() => {
       if (
-        options.flightBootstrapActive
+        options.flightBootstrapActive()
         || !options.isCurrent()
         || options.map() !== map
       ) return

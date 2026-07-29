@@ -14,6 +14,10 @@ import {
   readFlightGeoMapViewportPadding,
   type FlightGeoMapViewportPadding,
 } from './flightGeoMapViewport.js'
+import {
+  FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
+  FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+} from './flightGeoEnvironmentMapLibre.js'
 export {
   applyFlightGeoOverlayCameraToMap,
   canInspectFlightGeoOverlayCamera,
@@ -51,6 +55,9 @@ export const FLIGHT_GEO_OVERLAY_LAYER_ORDER = Object.freeze([
 ])
 const FLIGHT_GEO_OVERLAY_LAYER_ID_SET = new Set<string>(
   FLIGHT_GEO_OVERLAY_LAYER_ORDER,
+)
+const FLIGHT_GEO_ENVIRONMENT_LAYER_ID_SET = new Set<string>(
+  FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
 )
 
 const FLIGHT_GEO_NIGHT_EXPRESSION = Object.freeze([
@@ -195,29 +202,52 @@ export function retainFlightGeoOverlayDuringStyleSwap(
   nextStyle: Readonly<Record<string, any>>,
 ): Record<string, any> {
   const previousSources = previousStyle?.sources
-  const retainedSource = previousSources?.[FLIGHT_GEO_OVERLAY_SOURCE_ID]
-  if (!retainedSource) return { ...nextStyle }
+  const retainedOverlaySource = previousSources?.[FLIGHT_GEO_OVERLAY_SOURCE_ID]
+  const retainedEnvironmentSource = previousSources?.[FLIGHT_GEO_ENVIRONMENT_SOURCE_ID]
   const previousLayers = Array.isArray(previousStyle?.layers)
     ? previousStyle.layers
     : []
-  const retainedLayers = FLIGHT_GEO_OVERLAY_LAYER_ORDER
+  const retainedOverlayLayers = FLIGHT_GEO_OVERLAY_LAYER_ORDER
     .map(layerId => previousLayers.find(layer => layer?.id === layerId))
     .filter(Boolean)
-  if (retainedLayers.length === 0) return { ...nextStyle }
+  const retainedEnvironmentLayers = FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER
+    .map(layerId => previousLayers.find(layer => layer?.id === layerId))
+    .filter(Boolean)
+  const retainOverlay = (
+    Boolean(retainedOverlaySource)
+    && retainedOverlayLayers.length === FLIGHT_GEO_OVERLAY_LAYER_ORDER.length
+  )
+  const retainEnvironment = (
+    Boolean(retainedEnvironmentSource)
+    && retainedEnvironmentLayers.length === FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER.length
+  )
+  if (!retainOverlay && !retainEnvironment) return { ...nextStyle }
   const nextLayers = Array.isArray(nextStyle?.layers)
     ? nextStyle.layers.filter(
-        layer => !FLIGHT_GEO_OVERLAY_LAYER_ID_SET.has(String(layer?.id || '')),
+        layer => {
+          const layerId = String(layer?.id || '')
+          return !(
+            (retainEnvironment && FLIGHT_GEO_ENVIRONMENT_LAYER_ID_SET.has(layerId))
+            || (retainOverlay && FLIGHT_GEO_OVERLAY_LAYER_ID_SET.has(layerId))
+          )
+        },
       )
     : []
   return {
     ...nextStyle,
     sources: {
       ...(nextStyle?.sources || {}),
-      [FLIGHT_GEO_OVERLAY_SOURCE_ID]: retainedSource,
+      ...(retainEnvironment ? {
+        [FLIGHT_GEO_ENVIRONMENT_SOURCE_ID]: retainedEnvironmentSource,
+      } : {}),
+      ...(retainOverlay ? {
+        [FLIGHT_GEO_OVERLAY_SOURCE_ID]: retainedOverlaySource,
+      } : {}),
     },
     layers: [
       ...nextLayers,
-      ...retainedLayers,
+      ...(retainEnvironment ? retainedEnvironmentLayers : []),
+      ...(retainOverlay ? retainedOverlayLayers : []),
     ],
   }
 }
