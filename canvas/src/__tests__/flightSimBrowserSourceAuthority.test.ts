@@ -129,6 +129,13 @@ test('Flight browser proof activates only after applying the authored source', (
     ),
     'utf8',
   )
+  const geoXrPresentationVerifier = readFileSync(
+    resolve(
+      repoRoot,
+      'canvas/scripts/lib/game_flight_sim_smoke_geo_xr_presentation.py',
+    ),
+    'utf8',
+  )
   const cameraTrackingVerifier = readFileSync(
     resolve(
       repoRoot,
@@ -277,6 +284,22 @@ test('Flight browser proof activates only after applying the authored source', (
     assert.match(sourceReader, /source\?\.serialize\?\.\(\)\?\.data/)
     assert.doesNotMatch(sourceReader, /source\?\._data\?\.features/)
   }
+  assert.match(
+    geoXrPresentationVerifier,
+    /def restore_flight_sim_panel\(page: Page\) -> None:/,
+  )
+  assert.match(
+    geoXrPresentationVerifier,
+    /state\.setFloatingPanelView\('flightSim'\)/,
+  )
+  assert.ok(
+    geoXrPresentationVerifier.indexOf('select_geo_xr_view(page, button_label)')
+      < geoXrPresentationVerifier.indexOf(
+        'restore_flight_sim_panel(page)',
+        geoXrPresentationVerifier.indexOf('select_geo_xr_view(page, button_label)'),
+      ),
+    'expected each Geo view control to transition back to Flight Sim before its visual assertion',
+  )
   assert.ok(
     runtimePhases.indexOf('prepare_source_files_selection_surface(page)')
       < runtimePhases.indexOf('prepare_authored_physics_surface(page)'),

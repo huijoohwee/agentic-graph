@@ -18,6 +18,21 @@ from lib.game_flight_sim_smoke_source_selection import (
 )
 
 
+def restore_flight_sim_panel(page: Page) -> None:
+    page.evaluate(
+        """
+        async () => {
+          const graph = await window.__kgFlightSimBrowserProof.importModule(
+            'graphStore',
+          )
+          const state = graph.useGraphStore.getState()
+          state.setFloatingPanelOpen(true)
+          state.setFloatingPanelView('flightSim')
+        }
+        """
+    )
+
+
 def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
     baseline_camera = page.evaluate(
         """
@@ -58,6 +73,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
             provider_host,
         ) in GEO_XR_VIEW_CASES:
             select_geo_xr_view(page, button_label)
+            restore_flight_sim_panel(page)
             observed = _wait_for_view(
                 page,
                 expected_provider_host=provider_host,
@@ -154,6 +170,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 f"contract: {baseline_camera}"
             )
         select_geo_xr_view(page, prior_case[2])
+        restore_flight_sim_panel(page)
         restored_view = _wait_for_view(
             page,
             expected_provider_host=prior_case[4],
