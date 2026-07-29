@@ -9,7 +9,7 @@ import { projectFlightSimRouteGuidance } from './flightSimRouteGuidance'
 import { flightSimAuthoredWorldUnitsToMeters } from './flightSimSpatialScale'
 import {
   projectSingaporeLocalMeters,
-} from 'grph-shared/geospatial/singaporeFlightGeo'
+} from '@/lib/gympgrph/api'
 import type {
   FlightSimGeoEnvironmentProjection,
 } from './flightSimGeoEnvironmentProjection'

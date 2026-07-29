@@ -79,11 +79,11 @@ def _read_view(page: Page) -> dict[str, Any]:
             `${sourceId}:aircraft`,
           ) || null
           const aircraftImage = map?.getImage?.(aircraftImageIds?.day) || null
-          const readSourceData = async candidate => {
+          const readSourceData = async source => {
             try {
-              return typeof candidate?.getData === 'function'
-                ? await candidate.getData()
-                : candidate?.serialize?.()?.data || null
+              return typeof source?.getData === 'function'
+                ? await source.getData()
+                : source?.serialize?.()?.data || null
             } catch { return null }
           }
           const sourceData = await readSourceData(source)

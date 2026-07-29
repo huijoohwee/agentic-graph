@@ -4,7 +4,7 @@ import {
   projectSingaporeLocalRectangle,
   type GeospatialCoordinate,
   type GeospatialPresentationBounds,
-} from 'grph-shared/geospatial/singaporeFlightGeo'
+} from '@/lib/gympgrph/api'
 import type {
   XrMotionReferencePlan,
   XrMotionReferenceSubject,

@@ -67,6 +67,15 @@ export {
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
 } from './flightGeoOverlayMapLibre.js'
+export {
+  SINGAPORE_FLIGHT_GEO_REFERENCE,
+  projectSingaporeLocalMeters,
+  projectSingaporeLocalRectangle,
+} from 'grph-shared/geospatial/singaporeFlightGeo'
+export type {
+  GeospatialCoordinate,
+  GeospatialPresentationBounds,
+} from 'grph-shared/geospatial/singaporeFlightGeo'
 
 export { LS_KEYS }
 export { useGympgrphStore }
