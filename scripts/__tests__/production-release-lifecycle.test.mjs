@@ -57,6 +57,20 @@ const readiness = {
   immutableManifest: { algorithm: 'sha256', digest: '3'.repeat(64) },
   mirror: { repository: 'huijoohwee/huijoohwee' },
 }
+const releaseEvidence = {
+  schema: 'agentic-production-release-candidate/v1',
+  status: 'awaiting-human-authorization',
+  source: localReview.source,
+  agenticCanvasOs: localReview.agenticCanvasOs,
+  catalogRevision: docsRevision,
+  artifact: readiness.artifact,
+  immutableManifest: readiness.immutableManifest,
+  localReviewCandidateDigest: localReview.candidateDigest,
+}
+const releaseCandidate = {
+  ...releaseEvidence,
+  candidateDigest: digest(releaseEvidence),
+}
 const collaboration = {
   actorId: 'github:user:1',
   deviceId: 'github-hosted:linux',
@@ -97,11 +111,15 @@ const approvalsFor = (candidate, runId) => {
     repository: 'huijoohwee/knowgrph',
     runId,
     sourceRevision,
-    candidateDigest: candidate.receiptDigest,
+    candidateDigest: releaseCandidate.candidateDigest,
+    lifecycleCandidateDigest: candidate.receiptDigest,
     targetDigest: candidate.targetDigest,
     humanActorId: 'github-user:7:operator',
     challengeDigest,
-    responseDigest: responseFor({ challengeDigest, candidateDigest: candidate.receiptDigest }),
+    responseDigest: responseFor({
+      challengeDigest,
+      candidateDigest: releaseCandidate.candidateDigest,
+    }),
     recordedAt: '2026-07-29T00:01:30.000Z',
   })
   return [{ ...baseApproval, comment: formatTerminalAuthorizationComment(evidence) }]
@@ -143,6 +161,8 @@ test('authorization accepts one GitHub human approval and is consumed once', () 
   const result = createLifecycleAuthorization({
     contract,
     ...chain,
+    releaseCandidate,
+    localReview,
     approvals: approvalsFor(chain.candidate, '123'),
     repository: 'huijoohwee/knowgrph',
     runId: '123',
@@ -202,6 +222,8 @@ test('source, dependency, policy, target, artifact, and manifest drift fail clos
   const authorized = createLifecycleAuthorization({
     contract,
     ...chain,
+    releaseCandidate,
+    localReview,
     approvals: approvalsFor(chain.candidate, '124'),
     repository: 'huijoohwee/knowgrph',
     runId: '124',

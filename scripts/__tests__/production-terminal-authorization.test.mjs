@@ -10,6 +10,7 @@ import {
   responseFor,
   selectLifecycleCandidateArtifact,
   selectPendingProductionDeployment,
+  selectProductionAuthorizationArtifact,
   validateReleaseRun,
   validateTerminalAuthorizationEvidence,
 } from '../production-terminal-authorization.mjs'
@@ -24,17 +25,22 @@ const run = {
   conclusion: null,
 }
 const candidateDigest = 'b'.repeat(64)
+const lifecycleCandidateDigest = 'd'.repeat(64)
 const targetDigest = 'c'.repeat(64)
+const releaseCandidate = { candidateDigest }
+const lifecycleCandidate = { receiptDigest: lifecycleCandidateDigest, targetDigest }
 const challengeDigest = challengeFor({
   repository: 'owner/repository',
   run,
-  candidate: { receiptDigest: candidateDigest, targetDigest },
+  releaseCandidate,
+  lifecycleCandidate,
 })
 const evidence = buildTerminalAuthorizationEvidence({
   repository: 'owner/repository',
   runId: '123',
   sourceRevision: run.head_sha,
   candidateDigest,
+  lifecycleCandidateDigest,
   targetDigest,
   humanActorId: 'github-user:7:operator',
   challengeDigest,
@@ -51,10 +57,10 @@ test('terminal evidence round-trips exact candidate, target, actor, transport, a
   assert.ok(Buffer.byteLength(comment, 'utf8') <= GITHUB_APPROVAL_COMMENT_MAX_BYTES)
 })
 
-test('terminal evidence parser preserves the already-released uncompressed v1 encoding', () => {
+test('terminal evidence parser accepts the uncompressed v2 transport', () => {
   const encoded = Buffer.from(JSON.stringify(evidence), 'utf8').toString('base64url')
   const parsed = parseTerminalAuthorizationComment(
-    `knowgrph-production-terminal-authorization/v1 ${encoded}`,
+    `knowgrph-production-terminal-authorization/v2 ${encoded}`,
   )
   assert.deepEqual(parsed, evidence)
 })
@@ -104,8 +110,24 @@ test('candidate artifact and pending environment selection are exact and singula
     () => selectLifecycleCandidateArtifact([artifact, { ...artifact, id: 10 }], run),
     /one exact lifecycle candidate artifact/,
   )
+  const authorizationArtifact = {
+    id: 11,
+    name: `production-authorization-${run.head_sha}`,
+    expired: false,
+  }
+  assert.equal(
+    selectProductionAuthorizationArtifact([authorizationArtifact], run),
+    authorizationArtifact,
+  )
+  assert.throws(
+    () => selectProductionAuthorizationArtifact([
+      authorizationArtifact,
+      { ...authorizationArtifact, id: 12 },
+    ], run),
+    /one exact authorization candidate artifact/,
+  )
   const pending = {
-    environment: { id: 11, name: 'production' },
+    environment: { id: 13, name: 'production' },
     current_user_can_approve: true,
   }
   assert.equal(selectPendingProductionDeployment([pending]), pending)
