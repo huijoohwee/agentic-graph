@@ -88,6 +88,10 @@ const approvals = [{
 
 test('adapter creates a joined neutral receipt chain from the exact localhost candidate', () => {
   const chain = buildCandidate()
+  assert.equal(chain.preservation.entries.length, 0)
+  assert.equal(chain.disposition.preservationReceiptDigest, chain.preservation.receiptDigest)
+  assert.equal(chain.integration.preservationReceiptDigest, chain.preservation.receiptDigest)
+  assert.equal(chain.integration.overlapDispositionReceiptDigest, chain.disposition.receiptDigest)
   assert.equal(chain.integration.sourceRevision, sourceRevision)
   assert.equal(chain.review.integrationReceiptDigest, chain.integration.receiptDigest)
   assert.equal(chain.candidate.runtimeReviewReceiptDigest, chain.review.receiptDigest)
@@ -183,6 +187,8 @@ test('source, dependency, policy, target, artifact, and manifest drift fail clos
     issuedAt: '2026-07-29T00:02:00.000Z',
   })
   const current = {
+    preservationReceiptDigest: chain.preservation.receiptDigest,
+    overlapDispositionReceiptDigest: chain.disposition.receiptDigest,
     integrationReceiptDigest: chain.integration.receiptDigest,
     runtimeReviewReceiptDigest: chain.review.receiptDigest,
     candidateDigest: chain.candidate.receiptDigest,
@@ -195,6 +201,8 @@ test('source, dependency, policy, target, artifact, and manifest drift fail clos
     manifestDigest: chain.candidate.manifestDigest,
   }
   for (const field of [
+    'preservationReceiptDigest',
+    'overlapDispositionReceiptDigest',
     'sourceDigest',
     'dependencyClosureDigest',
     'policyDigest',
