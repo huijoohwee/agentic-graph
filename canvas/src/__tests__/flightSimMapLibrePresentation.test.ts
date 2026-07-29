@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   clearFlightGeoOverlay,
   flightGeoOverlayFeatureCollection,
+  markFlightGeoOverlayReadyFramePresented,
   readFlightGeoOverlay,
   setFlightGeoOverlay,
   subscribeFlightGeoOverlay,
@@ -11,6 +12,8 @@ import {
 } from '../../../gympgrph/src/flightGeoOverlay'
 import {
   createFlightGeoOverlayPresentationGate,
+  FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT,
+  FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
 } from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
   applyFlightGeoOverlayToMap,
@@ -438,6 +441,51 @@ test('transient invalid first render retries before exact MapLibre acknowledgeme
   assert.equal(harness.presentations.length, 1)
   assert.equal(harness.canvas.dataset.kgFlightSimFirstFrameSurface, 'maplibre')
   assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
+})
+
+test('previously presented ready overlay waits through provider-style source settlement', context => {
+  const ready = flightOverlay(
+    'ready',
+    'ready:provider-settlement',
+    44,
+  )
+  clearFlightGeoOverlay()
+  setFlightGeoOverlay(ready)
+  context.after(clearFlightGeoOverlay)
+  assert.equal(
+    markFlightGeoOverlayReadyFramePresented(
+      ready.revision,
+      ready.readyFrameRequestId!,
+    ),
+    true,
+  )
+  const harness = presentationHarness(ready)
+  assert.ok(
+    FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT
+      > FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
+  )
+
+  harness.setWidth(100)
+  harness.replaceSourceData(null)
+  harness.gate.request(ready)
+  for (
+    let attempt = 0;
+    attempt <= FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT;
+    attempt += 1
+  ) {
+    harness.emitRender()
+  }
+  assert.equal(
+    harness.listenerCount(),
+    1,
+    'a consumed request must survive beyond the one-shot first-frame budget',
+  )
+
+  harness.replaceSourceData(ready)
+  harness.emitRender()
+  assert.equal(harness.listenerCount(), 0)
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.presentations[0]?.readyFrameRequestId, 44)
 })
 
 test('retained layers with stale empty data cannot acknowledge a ready frame', () => {

@@ -1,6 +1,7 @@
 import React from 'react'
 import {
   readFlightGeoOverlay,
+  readFlightGeoOverlayReadyFramePresented,
   subscribeFlightGeoOverlay,
   type FlightGeoOverlayPresentation,
   type FlightGeoOverlaySnapshot,
@@ -295,9 +296,18 @@ export function createFlightGeoOverlayPresentationGate(
     pending = {
       attempts: 0,
       listener,
-      limit: overlay.phase === 'stopped'
-        ? FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT
-        : FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
+      // A ready overlay which has already earned its first frame is being
+      // re-presented after a provider style swap. Its GeoJSON worker update
+      // can settle after the one-shot 100 ms first-frame retry budget, so keep
+      // that gate alive rather than stranding the provider on bootstrap.
+      limit: (
+        overlay.phase === 'ready'
+        && overlay.tick === 0
+        && overlay.readyFrameRequestId !== null
+        && !readFlightGeoOverlayReadyFramePresented()
+      )
+        ? FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT
+        : FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT,
       readyFrameRequestId: overlay.readyFrameRequestId,
       revision: overlay.revision,
     }
