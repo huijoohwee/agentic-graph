@@ -5,9 +5,10 @@ import os from 'node:os'
 import path from 'node:path'
 import readline from 'node:readline/promises'
 import { parseArgs } from 'node:util'
+import { pathToFileURL } from 'node:url'
 import { deflateRawSync, inflateRawSync } from 'node:zlib'
 
-export const TERMINAL_AUTHORIZATION_EVIDENCE_SCHEMA = 'knowgrph-production-terminal-authorization/v1'
+export const TERMINAL_AUTHORIZATION_EVIDENCE_SCHEMA = 'knowgrph-production-terminal-authorization/v2'
 export const TERMINAL_AUTHORIZATION_RESULT_SCHEMA = 'knowgrph-production-terminal-authorization-result/v1'
 export const INTERACTION_ADAPTER_ID = 'knowgrph-gh-cli-terminal/v1'
 export const INTERACTION_TRANSPORT_CLASS = 'interactive-terminal'
@@ -26,6 +27,7 @@ const evidenceFields = [
   'environment',
   'sourceRevision',
   'candidateDigest',
+  'lifecycleCandidateDigest',
   'targetDigest',
   'humanActorId',
   'interactionAdapterId',
@@ -42,6 +44,7 @@ export const buildTerminalAuthorizationEvidence = ({
   runId,
   sourceRevision,
   candidateDigest,
+  lifecycleCandidateDigest,
   targetDigest,
   humanActorId,
   challengeDigest,
@@ -53,6 +56,7 @@ export const buildTerminalAuthorizationEvidence = ({
   if (!shaPattern.test(String(sourceRevision || ''))) throw new Error('source revision must be an exact commit SHA')
   for (const [value, label] of [
     [candidateDigest, 'candidate digest'],
+    [lifecycleCandidateDigest, 'lifecycle candidate digest'],
     [targetDigest, 'target digest'],
     [challengeDigest, 'challenge digest'],
     [responseDigest, 'response digest'],
@@ -67,6 +71,7 @@ export const buildTerminalAuthorizationEvidence = ({
     environment: 'production',
     sourceRevision,
     candidateDigest,
+    lifecycleCandidateDigest,
     targetDigest,
     humanActorId,
     interactionAdapterId: INTERACTION_ADAPTER_ID,
@@ -96,6 +101,7 @@ export const validateTerminalAuthorizationEvidence = value => {
   requireInstant(value.recordedAt, 'interaction time')
   for (const [entry, label] of [
     [value.candidateDigest, 'candidate digest'],
+    [value.lifecycleCandidateDigest, 'lifecycle candidate digest'],
     [value.targetDigest, 'target digest'],
     [value.challengeDigest, 'challenge digest'],
     [value.responseDigest, 'response digest'],
@@ -173,6 +179,18 @@ export const selectLifecycleCandidateArtifact = (artifacts, run) => {
   return matches[0]
 }
 
+export const selectProductionAuthorizationArtifact = (artifacts, run) => {
+  if (!Array.isArray(artifacts)) throw new Error('workflow artifacts must be an array')
+  const expectedName = `production-authorization-${run.head_sha}`
+  const matches = artifacts.filter(artifact => (
+    artifact?.expired === false && artifact?.name === expectedName
+  ))
+  if (matches.length !== 1) {
+    throw new Error(`Production Release requires one exact authorization candidate artifact; found ${matches.length}`)
+  }
+  return matches[0]
+}
+
 export const selectPendingProductionDeployment = pending => {
   if (!Array.isArray(pending)) throw new Error('pending deployments must be an array')
   const matches = pending.filter(entry => (
@@ -199,14 +217,67 @@ export const validateCandidateManifest = value => {
   return value
 }
 
-export const challengeFor = ({ repository, run, candidate }) => digest({
+export const validateProductionCandidateLink = ({
+  sourceRevision,
+  localReview,
+  releaseCandidate,
+  lifecycleCandidate,
+}) => {
+  validateCandidateManifest(lifecycleCandidate)
+  if (!releaseCandidate || !isExactObject(releaseCandidate, [
+    'schema',
+    'status',
+    'source',
+    'agenticCanvasOs',
+    'catalogRevision',
+    'artifact',
+    'immutableManifest',
+    'localReviewCandidateDigest',
+    'candidateDigest',
+  ]) ||
+      releaseCandidate.schema !== 'agentic-production-release-candidate/v1' ||
+      releaseCandidate.status !== 'awaiting-human-authorization') {
+    throw new Error('production release candidate is malformed')
+  }
+  if (!localReview || !isExactObject(localReview, [
+    'schema',
+    'status',
+    'source',
+    'agenticCanvasOs',
+    'catalogRevision',
+    'runtimeEvidenceDigest',
+    'candidateDigest',
+  ])) {
+    throw new Error('local review candidate is malformed')
+  }
+  requireDigest(releaseCandidate.candidateDigest, 'production release candidate digest')
+  requireDigest(releaseCandidate.localReviewCandidateDigest, 'local review candidate digest')
+  const { candidateDigest: releaseDigest, ...releaseEvidence } = releaseCandidate
+  const { candidateDigest: reviewDigest, ...reviewEvidence } = localReview
+  if (releaseDigest !== digest(releaseEvidence) ||
+      reviewDigest !== digest(reviewEvidence) ||
+      releaseCandidate.source?.revision !== sourceRevision ||
+      localReview?.candidateDigest !== releaseCandidate.localReviewCandidateDigest ||
+      localReview?.source?.revision !== sourceRevision ||
+      localReview?.agenticCanvasOs?.revision !== releaseCandidate.agenticCanvasOs?.revision ||
+      releaseCandidate.catalogRevision !== releaseCandidate.agenticCanvasOs?.revision ||
+      lifecycleCandidate.sourceDigest !== digest(releaseCandidate.source) ||
+      lifecycleCandidate.artifactDigest !== releaseCandidate.artifact?.digest ||
+      lifecycleCandidate.manifestDigest !== releaseCandidate.immutableManifest?.digest) {
+    throw new Error('production and lifecycle candidates are not an exact joined release')
+  }
+  return true
+}
+
+export const challengeFor = ({ repository, run, releaseCandidate, lifecycleCandidate }) => digest({
   schema: 'knowgrph-production-terminal-challenge/v1',
   repository,
   runId: String(run.id),
   environment: 'production',
   sourceRevision: run.head_sha,
-  candidateDigest: candidate.receiptDigest,
-  targetDigest: candidate.targetDigest,
+  candidateDigest: releaseCandidate.candidateDigest,
+  lifecycleCandidateDigest: lifecycleCandidate.receiptDigest,
+  targetDigest: lifecycleCandidate.targetDigest,
 })
 
 export const responseFor = ({ challengeDigest, candidateDigest }) => digest({
@@ -230,7 +301,8 @@ const main = async () => {
   const runId = required(values['run-id'], '--run-id')
   const run = validateReleaseRun(runGhJson(['api', `repos/${repository}/actions/runs/${runId}`]), repository, runId)
   const artifactPayload = runGhJson(['api', `repos/${repository}/actions/runs/${runId}/artifacts?per_page=100`])
-  const artifact = selectLifecycleCandidateArtifact(artifactPayload?.artifacts, run)
+  const lifecycleArtifact = selectLifecycleCandidateArtifact(artifactPayload?.artifacts, run)
+  const authorizationArtifact = selectProductionAuthorizationArtifact(artifactPayload?.artifacts, run)
   const pending = selectPendingProductionDeployment(
     runGhJson(['api', `repos/${repository}/actions/runs/${runId}/pending_deployments`]),
   )
@@ -241,26 +313,70 @@ const main = async () => {
   const humanActorId = `github-user:${actor.id}:${actor.login}`
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'knowgrph-production-authorization-'))
   try {
-    runGhText(['run', 'download', String(run.id), '--repo', repository, '--name', artifact.name, '--dir', temporaryRoot])
-    const candidate = validateCandidateManifest(readJson(path.join(temporaryRoot, 'candidate-manifest.json')))
-    const challengeDigest = challengeFor({ repository, run, candidate })
-    process.stderr.write(
-      `Production target: production\nSource revision: ${run.head_sha}\nCandidate digest: ${candidate.receiptDigest}\n` +
-      `Challenge digest: ${challengeDigest}\n`,
+    const lifecycleRoot = path.join(temporaryRoot, 'lifecycle')
+    const authorizationRoot = path.join(temporaryRoot, 'authorization')
+    runGhText(['run', 'download', String(run.id), '--repo', repository, '--name', lifecycleArtifact.name, '--dir', lifecycleRoot])
+    runGhText(['run', 'download', String(run.id), '--repo', repository, '--name', authorizationArtifact.name, '--dir', authorizationRoot])
+    const lifecycleCandidate = validateCandidateManifest(readJson(path.join(lifecycleRoot, 'candidate-manifest.json')))
+    const localReview = readJson(path.join(authorizationRoot, 'local-review-candidate.json'))
+    const releaseCandidate = readJson(path.join(authorizationRoot, 'production-release-candidate.json'))
+    validateProductionCandidateLink({
+      sourceRevision: run.head_sha,
+      localReview,
+      releaseCandidate,
+      lifecycleCandidate,
+    })
+    const repositoryRoot = path.resolve(import.meta.dirname, '..')
+    const agenticCanvasOsRoot = path.resolve(repositoryRoot, '..', 'agentic-canvas-os')
+    requireCanonicalRevision(repositoryRoot, run.head_sha, 'Knowgrph')
+    requireCanonicalRevision(
+      agenticCanvasOsRoot,
+      releaseCandidate.agenticCanvasOs.revision,
+      'Agentic Canvas OS',
     )
+    const runtime = runCommandJson('npm', [
+      '--prefix',
+      agenticCanvasOsRoot,
+      'run',
+      '--silent',
+      'runtime:local:status',
+      '--',
+      `--repository=${repositoryRoot}`,
+      '--json',
+    ])
+    const promptContract = await import(pathToFileURL(path.join(
+      agenticCanvasOsRoot,
+      'scripts',
+      'production-release-authorization-contract.mjs',
+    )).href)
+    promptContract.validateProductionReleaseCandidate(releaseCandidate)
+    const prompt = promptContract.createProductionAuthorizationPrompt(
+      runtime,
+      localReview,
+      releaseCandidate,
+      { runRef: `run:${run.id}` },
+    )
+    process.stderr.write(`${promptContract.formatProductionAuthorizationPrompt(prompt)}\n`)
+    const challengeDigest = challengeFor({ repository, run, releaseCandidate, lifecycleCandidate })
     const terminal = readline.createInterface({ input: process.stdin, output: process.stdout })
-    const answer = (await terminal.question('Type the exact candidate digest to authorize Production: ')).trim()
+    const answer = (await terminal.question('> ')).trim()
     terminal.close()
-    if (answer !== candidate.receiptDigest) throw new Error('Production authorization challenge response did not match')
+    if (answer !== prompt.authorizationReply) {
+      throw new Error('Production authorization challenge response did not match')
+    }
     const evidence = buildTerminalAuthorizationEvidence({
       repository,
       runId: String(run.id),
       sourceRevision: run.head_sha,
-      candidateDigest: candidate.receiptDigest,
-      targetDigest: candidate.targetDigest,
+      candidateDigest: releaseCandidate.candidateDigest,
+      lifecycleCandidateDigest: lifecycleCandidate.receiptDigest,
+      targetDigest: lifecycleCandidate.targetDigest,
       humanActorId,
       challengeDigest,
-      responseDigest: responseFor({ challengeDigest, candidateDigest: answer }),
+      responseDigest: responseFor({
+        challengeDigest,
+        candidateDigest: releaseCandidate.candidateDigest,
+      }),
       recordedAt: new Date().toISOString(),
     })
     const comment = formatTerminalAuthorizationComment(evidence)
@@ -288,8 +404,9 @@ const main = async () => {
       repository,
       runId: String(run.id),
       sourceRevision: run.head_sha,
-      candidateDigest: candidate.receiptDigest,
-      targetDigest: candidate.targetDigest,
+      candidateDigest: releaseCandidate.candidateDigest,
+      lifecycleCandidateDigest: lifecycleCandidate.receiptDigest,
+      targetDigest: lifecycleCandidate.targetDigest,
       humanActorId,
       interactionEvidenceDigest: evidence.evidenceDigest,
       decisionRef: `${run.html_url}#environment-production`,
@@ -307,7 +424,25 @@ const runGhText = (argumentsList, input) => execFileSync('gh', argumentsList, {
 }).trim()
 
 const runGhJson = argumentsList => JSON.parse(runGhText(argumentsList))
+const runCommandJson = (command, argumentsList) => JSON.parse(execFileSync(command, argumentsList, {
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'pipe'],
+}).trim())
 const readJson = filePath => JSON.parse(fs.readFileSync(filePath, 'utf8'))
+
+const requireCanonicalRevision = (repositoryRoot, expectedRevision, label) => {
+  const git = argumentsList => execFileSync('git', argumentsList, {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim()
+  if (git(['branch', '--show-current']) !== 'main' ||
+      git(['rev-parse', 'HEAD']) !== expectedRevision ||
+      git(['rev-parse', 'origin/main']) !== expectedRevision ||
+      git(['status', '--porcelain'])) {
+    throw new Error(`${label} canonical main drifted from the authorized release input`)
+  }
+}
 
 const required = (value, label) => {
   if (!String(value || '').trim()) throw new Error(`${label} is required`)
@@ -340,6 +475,13 @@ const assertExactObject = (value, keys, label) => {
     throw new Error(`${label} contains missing or unknown fields`)
   }
 }
+
+const isExactObject = (value, keys) => (
+  value &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort())
+)
 
 const digest = value => createHash('sha256').update(canonicalJson(value)).digest('hex')
 

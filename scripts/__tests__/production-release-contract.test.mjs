@@ -198,8 +198,14 @@ test('production release records the exact terminal interaction, protected-envir
   assert.match(productionLifecycleScript, /protected environment authorization drifted from the prepared candidate digest/)
   assert.equal(packageScripts['production:authorize'], 'node ./scripts/production-terminal-authorization.mjs')
   assert.match(productionTerminalAuthorizationScript, /requires an interactive terminal/)
+  assert.match(productionTerminalAuthorizationScript, /createProductionAuthorizationPrompt/)
+  assert.match(productionTerminalAuthorizationScript, /formatProductionAuthorizationPrompt/)
+  assert.match(productionTerminalAuthorizationScript, /runtime:local:status/)
+  assert.match(productionTerminalAuthorizationScript, /lifecycleCandidateDigest/)
   assert.match(productionTerminalAuthorizationScript, /current_user_can_approve === true/)
   assert.match(productionTerminalAuthorizationScript, /pending_deployments/)
+  assert.match(releaseWorkflow, /--release-candidate "\$RUNNER_TEMP\/production-authorization\/production-release-candidate\.json"/)
+  assert.match(releaseWorkflow, /--local-review "\$RUNNER_TEMP\/production-authorization\/local-review-candidate\.json"/)
   assert.doesNotMatch(productionTerminalAuthorizationScript, /execFileSync\(['"]open|gh\s+browse/)
   for (const receipt of [
     'overlap-preservation-receipt.json',

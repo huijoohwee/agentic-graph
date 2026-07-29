@@ -6,7 +6,10 @@ import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 
 import { validateLocalReviewCandidate } from './production-release-authorization.mjs'
-import { parseTerminalAuthorizationComment } from './production-terminal-authorization.mjs'
+import {
+  parseTerminalAuthorizationComment,
+  validateProductionCandidateLink,
+} from './production-terminal-authorization.mjs'
 
 const CONTRACT_MODULE = 'scripts/collaborative-release-lifecycle-contract.mjs'
 const HUMAN_AUTHORIZATION_TTL_MS = 30 * 60 * 1000
@@ -151,6 +154,8 @@ export const createLifecycleAuthorization = ({
   integration,
   review,
   candidate,
+  releaseCandidate,
+  localReview,
   approvals,
   repository,
   runId,
@@ -166,10 +171,17 @@ export const createLifecycleAuthorization = ({
   requireInstant(issuedAt, 'human authorization issue time')
   const humanActorId = `github-user:${approval.user.id}:${approval.user.login}`
   const terminalEvidence = parseTerminalAuthorizationComment(approval.comment)
+  validateProductionCandidateLink({
+    sourceRevision: integration.sourceRevision,
+    localReview,
+    releaseCandidate,
+    lifecycleCandidate: candidate,
+  })
   if (terminalEvidence.repository !== repository ||
       terminalEvidence.runId !== String(runId) ||
       terminalEvidence.sourceRevision !== integration.sourceRevision ||
-      terminalEvidence.candidateDigest !== candidate.receiptDigest ||
+      terminalEvidence.candidateDigest !== releaseCandidate.candidateDigest ||
+      terminalEvidence.lifecycleCandidateDigest !== candidate.receiptDigest ||
       terminalEvidence.targetDigest !== candidate.targetDigest ||
       terminalEvidence.humanActorId !== humanActorId) {
     throw new Error('terminal authorization interaction drifted from the protected release candidate')
@@ -245,6 +257,7 @@ const main = async () => {
       'server-url': { type: 'string' },
       'controller-id': { type: 'string' },
       'candidate-digest': { type: 'string' },
+      'release-candidate': { type: 'string' },
       'receipt-dir': { type: 'string' },
       'output-dir': { type: 'string' },
       'probe-evidence': { type: 'string' },
@@ -308,6 +321,8 @@ const main = async () => {
       integration,
       review,
       candidate,
+      releaseCandidate: readJson(required(values['release-candidate'], '--release-candidate')),
+      localReview: readJson(required(values['local-review'], '--local-review')),
       approvals: readJson(required(values.approvals, '--approvals')),
       repository: required(values.repository, '--repository'),
       runId: required(values['run-id'], '--run-id'),
