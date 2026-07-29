@@ -35,7 +35,7 @@ runtime_status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
 evidence_status: "exact-head source and browser proof required at every handoff"
 publish_scope: "local-only"
-kgCanvasSurfaceMode: "xr"
+kgCanvasSurfaceMode: "geo-xr"
 kgCanvasRenderMode: "3d"
 kgCanvas3dMode: "xr"
 kgFloatingPanelOpen: true
@@ -51,7 +51,7 @@ run_ready_demo:
 shared_xr_scene:
   source_authority: "/docs/workspace-seeds/knowgrph-physics-playground-demo.md"
   world_ownership: "overlay-only"
-  surface_owner: "XR Mode"
+  surface_owner: "Geo+XR Mode"
   camera_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
 native_flight_demo:
   camera_mode: "fixed-follow"
@@ -63,7 +63,8 @@ native_flight_demo:
     timeline_override: "camera-mark playback temporarily owns framing"
     catalog_owner: "canvas/src/features/three/xrNativeControllerCameraCatalog.ts"
     selection_owner: "canvas/src/features/three/xrNativeControllerCameraRuntime.ts"
-    driver_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
+    driver_owner: "gympgrph/src/flightGeoOverlayMapLibre.ts"
+    runtime_canvas_driver_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
 flight_sim:
   invocation: "/flight.sim @canvas #flight operation=open"
   inspect_tool: "knowgrph.inspect_local_flight_sim"

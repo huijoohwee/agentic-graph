@@ -32,7 +32,9 @@ test("agent-team runtime guards forbidden external framework names and dependenc
   const sourceRoots = [
     path.join(repoRoot, "contracts"),
     path.join(repoRoot, "mcp"),
+    path.join(repoRoot, "data", "config", "agents"),
     path.join(repoRoot, "canvas", "src", "features", "agent-ready"),
+    path.join(repoRoot, "scripts", "issue-agent-team-review-receipt.mjs"),
     allowedNote,
   ];
   const dependencyFilePattern = /(?:^|\/)(?:package(?:-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|pyproject\.toml|poetry\.lock|uv\.lock|Pipfile(?:\.lock)?|setup\.(?:py|cfg)|requirements[^/]*\.txt|environment[^/]*\.(?:yml|yaml)|pixi\.(?:toml|lock))$/;

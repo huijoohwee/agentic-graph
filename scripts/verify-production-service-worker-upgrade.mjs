@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from 'playwright'
+import { isAcceptedWorkerScriptUrl } from './production-service-worker-registration-proof.mjs'
 import { seedStaleRuntimeCacheProof } from './service-worker-upgrade-cache-proof.mjs'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
@@ -27,7 +28,6 @@ const normalizeOrigin = value => {
 const profileOriginInput = String(process.env.PRODUCTION_SW_PROFILE_ORIGIN || '').trim()
 if (!profileOriginInput) throw new Error('PRODUCTION_SW_PROFILE_ORIGIN is required')
 const profileOrigin = normalizeOrigin(profileOriginInput)
-const canonicalWorkerScriptUrl = `${profileOrigin}/knowgrph/sw.js`
 const canonicalWorkerScope = `${profileOrigin}/knowgrph/`
 const profileDirectory = path.resolve(String(process.env.PRODUCTION_SW_PROFILE_DIR || '').trim())
 const evidencePath = path.resolve(String(process.env.PRODUCTION_SW_EVIDENCE_PATH || '').trim())
@@ -304,19 +304,25 @@ const readServiceWorkerRevisionEvidence = async page => page.evaluate(async () =
 const isExpectedServiceWorkerRevision = (
   evidence,
   expectedRevision,
-  requireNoCachedHtml,
-  requireActiveAttestation,
-  requireNetworkOnlyRegistration,
+  {
+    requireNoCachedHtml = false,
+    requireActiveAttestation = false,
+    requireNetworkOnlyRegistration = false,
+    requireRevisionBoundRegistration = false,
+  } = {},
 ) => {
   if (evidence.registrations.length !== 1) return false
   const [registration] = evidence.registrations
+  const isAcceptedScriptUrl = scriptUrl => isAcceptedWorkerScriptUrl({
+    scriptUrl, profileOrigin, expectedRevision, requireRevisionBoundRegistration,
+  })
   return registration.scope === canonicalWorkerScope
     && (!requireNetworkOnlyRegistration || registration.updateViaCache === 'none')
     && registration.activeState === 'activated'
-    && registration.activeScriptUrl === canonicalWorkerScriptUrl
+    && isAcceptedScriptUrl(registration.activeScriptUrl)
     && registration.installingScriptUrl === ''
     && registration.waitingScriptUrl === ''
-    && evidence.controllerScriptUrl === canonicalWorkerScriptUrl
+    && isAcceptedScriptUrl(evidence.controllerScriptUrl)
     && evidence.controllerMatchesActive
     && (!requireActiveAttestation || (
       evidence.activeAttestedRevision === expectedRevision
@@ -340,9 +346,7 @@ const isExpectedServiceWorkerRevision = (
 const waitForServiceWorkerRevision = async (
   page,
   expectedRevision,
-  requireNoCachedHtml,
-  requireActiveAttestation,
-  requireNetworkOnlyRegistration = false,
+  requirements = {},
 ) => {
   const deadline = Date.now() + WAIT_TIMEOUT_MS
   let evidence = null
@@ -352,9 +356,7 @@ const waitForServiceWorkerRevision = async (
       if (isExpectedServiceWorkerRevision(
         evidence,
         expectedRevision,
-        requireNoCachedHtml,
-        requireActiveAttestation,
-        requireNetworkOnlyRegistration,
+        requirements,
       )) return evidence
     } catch {
       // The controlled document may reload while the new worker claims it.
@@ -417,7 +419,7 @@ const prewarm = async () => {
     assert.ok(reloadNavigationResponse, 'prewarm requires a controlled reload response')
     const scriptPaths = await waitForDocumentRevision(page, previousRevision)
     const seededCachePaths = await seedStaleRuntimeCacheProof(page, previousRevision)
-    const serviceWorker = await waitForServiceWorkerRevision(page, previousRevision, false, false)
+    const serviceWorker = await waitForServiceWorkerRevision(page, previousRevision)
     await writeSentinels(page, sentinel)
     assert.deepEqual(
       prewarmObservation.poisonedModules,
@@ -487,7 +489,7 @@ const verify = async () => {
     ['/singabldr/', '/singabldr/index.html'],
   )
   assert.ok(
-    isExpectedServiceWorkerRevision(evidence.serviceWorker, evidence.previousRevision, false, false),
+    isExpectedServiceWorkerRevision(evidence.serviceWorker, evidence.previousRevision),
     'prewarm evidence must bind the controlled profile to the previous production worker revision',
   )
   await verifyPublishedWorkerSources(expectedRevision)
@@ -506,9 +508,12 @@ const verify = async () => {
     const upgradeServiceWorker = await waitForServiceWorkerRevision(
       upgradePage,
       expectedRevision,
-      true,
-      true,
-      true,
+      {
+        requireNoCachedHtml: true,
+        requireActiveAttestation: true,
+        requireNetworkOnlyRegistration: true,
+        requireRevisionBoundRegistration: true,
+      },
     )
     assert.deepEqual(
       upgradeServiceWorker.preservedSiblingHtmlPaths,
@@ -543,9 +548,12 @@ const verify = async () => {
     const finalServiceWorker = await waitForServiceWorkerRevision(
       finalPage,
       expectedRevision,
-      true,
-      true,
-      true,
+      {
+        requireNoCachedHtml: true,
+        requireActiveAttestation: true,
+        requireNetworkOnlyRegistration: true,
+        requireRevisionBoundRegistration: true,
+      },
     )
     assert.deepEqual(
       finalServiceWorker.preservedSiblingHtmlPaths,

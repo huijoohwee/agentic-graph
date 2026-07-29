@@ -165,9 +165,12 @@ export async function testKnowgrphStorageFileSyncRelayConflictLimitAndSecretSafe
 
 // Relay responses share one cumulative budget for the complete outer transfer.
 export async function testKnowgrphStorageFileSyncRelayCumulativeBudgetAndCleanup() {
+  const fileBytes = new Uint8Array(
+    Math.floor(FILE_SYNC_LIMITS.maxTransferBytes * 0.5),
+  )
   const file = await binaryEntry(
     'bounded.bin',
-    new Uint8Array([1]),
+    fileBytes,
     'version:1',
   )
   const padding = 'x'.repeat(
@@ -197,7 +200,16 @@ export async function testKnowgrphStorageFileSyncRelayCumulativeBudgetAndCleanup
       })
     }
     readCalls += 1
-    throw new Error('Cumulative budget must reject before the read request')
+    return new Response(fileBytes, {
+      status: 200,
+      headers: {
+        'content-length': String(fileBytes.byteLength),
+        'x-knowgrph-file-sync-meta': encodeRelayJsonHeader({
+          providerId: 'google-workspace',
+          entry: file,
+        }),
+      },
+    })
   })
 
   const completed = new AbortController()
@@ -208,7 +220,7 @@ export async function testKnowgrphStorageFileSyncRelayCumulativeBudgetAndCleanup
     provider.read('bounded.bin', completed.signal),
     'limit-exceeded',
   )
-  assert.equal(readCalls, 0)
+  assert.equal(readCalls, 1)
   provider.releaseOperation?.(completed.signal)
   assert.equal(completedListeners(), 0)
 

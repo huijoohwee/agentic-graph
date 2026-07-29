@@ -149,6 +149,11 @@ export type KnowgrphGitResolvedDocument = KnowgrphGitDocument & {
   repositoryId: string
 }
 
+export type KnowgrphGitResolvedDocumentDeletion = Pick<
+  KnowgrphGitResolvedDocument,
+  'kind' | 'canonicalPath' | 'repositoryPath' | 'repositoryId'
+>
+
 export type KnowgrphGitDocumentAuthorityResult =
   | {
       ok: true
@@ -187,6 +192,7 @@ export type KnowgrphGitDocumentWriteAuthority = {
     author: KnowgrphGitIdentity
     committer: KnowgrphGitIdentity
     documents: KnowgrphGitResolvedDocument[]
+    deletions: KnowgrphGitResolvedDocumentDeletion[]
     signal: AbortSignal
   }): Promise<KnowgrphGitCommitWriteResult>
 }
@@ -248,6 +254,7 @@ export type KnowgrphGitPersistedCache = {
     record: Omit<KnowgrphGitOperationOutboxRecord, 'enqueuedSequence'>,
   ): Promise<KnowgrphGitOperationOutboxRecord>
   listOutbox(workspaceId: string, deviceId: string): Promise<KnowgrphGitOperationOutboxRecord[]>
+  requeueFailedOutbox(workspaceId: string, deviceId: string, updatedAtMs: number): Promise<number>
   claimNextOutbox(args: {
     workspaceId: string
     deviceId: string

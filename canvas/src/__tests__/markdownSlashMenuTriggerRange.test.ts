@@ -3,6 +3,7 @@ import path from 'node:path'
 import {
   buildAgenticOsDictionaryInvocationMarkdown,
   getAgenticOsCommandInvocations,
+  getAgenticOsDictionaryInvocations,
 } from '@/features/agentic-os/agenticOsDocInvocations'
 import { registerAgenticOsRemoteGrammarCatalogEntries, resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { resolveChatInvocationCatalogEntries } from '@/features/chat/chatInvocationRegistry'
@@ -17,6 +18,22 @@ export function testMarkdownSlashMenuActionsReuseTriggerRangeAfterMenuFocus() {
     kind: 'command',
     sourcePath: 'DICTIONARY-COMMAND.md#/prd-tad.create',
   }])
+  try {
+    runMarkdownSlashMenuActionsReuseTriggerRangeAfterMenuFocus()
+  } finally {
+    resetAgenticOsRemoteGrammarCatalogForTests()
+  }
+  if (getAgenticOsDictionaryInvocations().length !== 0) {
+    throw new Error('expected merged Agentic OS dictionary catalog to be empty after remote reset')
+  }
+  const remainingRemoteCommands = resolveChatInvocationCatalogEntries('slash', '')
+    .filter(entry => entry.kind === 'command')
+  if (remainingRemoteCommands.length !== 0) {
+    throw new Error(`expected merged chat consumer catalog to drop remote commands after reset, got ${JSON.stringify(remainingRemoteCommands)}`)
+  }
+}
+
+function runMarkdownSlashMenuActionsReuseTriggerRangeAfterMenuFocus() {
   const root = process.cwd()
   const menuState = toStableSlashMenuState(
     { show: false, leftPx: 0, topPx: 0 },
@@ -53,5 +70,4 @@ export function testMarkdownSlashMenuActionsReuseTriggerRangeAfterMenuFocus() {
   if (catalogEntry.token !== '/prd-tad.create' || /https?:\/\//.test(catalogEntry.token)) {
     throw new Error(`expected shared invocation catalog insertion to persist only /prd-tad.create, got ${JSON.stringify(catalogEntry.token)}`)
   }
-  resetAgenticOsRemoteGrammarCatalogForTests()
 }

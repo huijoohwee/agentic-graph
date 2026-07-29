@@ -1,7 +1,7 @@
 import React from 'react'
-import { settingsRegistry, loadFlowDetails } from '@/features/settings/registry'
+import { settingsRegistry } from '@/features/settings/registry'
+import type { SettingMeta } from '@/features/settings/types'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import type { FlowDetails } from '@/features/settings/types'
 import { loadSettingsCollapsedByArea, persistSettingsCollapsedByArea } from '@/features/panels/utils/settingsCollapsedStorage'
 import { normalized as normalizeText } from '@/features/panels/utils/json'
 import { getLocalStorage } from '@/lib/persistence'
@@ -90,6 +90,11 @@ import {
   getQwenApiRowAnchorId,
 } from './qwenApiDocs'
 import {
+  Z_AI_API_DOC_AREA,
+  Z_AI_API_DOC_ENTRIES,
+  getZaiApiRowAnchorId,
+} from './zAiApiDocs'
+import {
   GOOGLE_CLOUD_API_DOC_AREA,
   GOOGLE_CLOUD_API_DOC_ENTRIES,
   getGoogleCloudApiRowAnchorId,
@@ -153,6 +158,7 @@ import {
   type SettingsEntry,
 } from './useSettingsView.helpers'
 import type { SettingsViewMode } from './settingsView.constants'
+import { useSettingsFlowDetails } from './useSettingsFlowDetails'
 
 const getSettingsSearchHints = (key: string): string[] => {
   if (key === 'chatContextScope') {
@@ -193,6 +199,7 @@ const INTEGRATION_API_DOC_ENTRIES = [
   ...AGNES_API_DOC_ENTRIES,
   ...SEALION_API_DOC_ENTRIES,
   ...QWEN_API_DOC_ENTRIES,
+  ...Z_AI_API_DOC_ENTRIES,
   ...GOOGLE_CLOUD_API_DOC_ENTRIES,
   ...OPENAI_CHAT_API_REQUEST_DOC_ENTRIES,
   ...OPENAI_IMAGES_API_REQUEST_DOC_ENTRIES,
@@ -214,7 +221,8 @@ const SHARED_BYTEPLUS_CREDENTIAL_VALUE_KEYS = [
   'chatEndpointUrl',
 ] as const
 
-function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[number]) {
+function resolveIntegrationEntryMeta(entry: typeof INTEGRATION_API_DOC_ENTRIES[number]): SettingMeta {
+  if ('referenceOnly' in entry && entry.referenceOnly) return entry.meta
   if (String(entry.meta.key || '').trim() === 'openaiApi.provider') {
     return {
       ...entry.meta,
@@ -543,7 +551,8 @@ export function useSettingsView({
     return false
   }, [])
 
-  const [flow, setFlow] = React.useState<Record<string, FlowDetails>>({})
+  const flowDetailsRuntime = useSettingsFlowDetails()
+  const { flow } = flowDetailsRuntime
   const [expanded, setExpanded] = React.useState<string | null>(null)
   const [values, setValues] = React.useState<Record<string, string | number | boolean>>(() => {
     const v: Record<string, string | number | boolean> = {}
@@ -575,12 +584,6 @@ export function useSettingsView({
   )
   const uiPanelMonospaceTextClass = useGraphStore(s => s.uiPanelMonospaceTextClass || 'font-mono text-xs')
   const uiPanelKeyValueTextSizeClass = useGraphStore(s => s.uiPanelKeyValueTextSizeClass || KTV_ROW_TEXT_SIZE_FALLBACK_CLASS_NAME)
-
-  React.useEffect(() => {
-    let alive = true
-    loadFlowDetails().then(d => { if (alive) setFlow(d || {}) })
-    return () => { alive = false }
-  }, [])
 
   const applyAll = React.useCallback(() => {
     const dirty = Array.from(dirtyRef.current)
@@ -1048,6 +1051,8 @@ export function useSettingsView({
             ? getSealionApiRowAnchorId(entry.meta.key)
           : area === QWEN_API_DOC_AREA
             ? getQwenApiRowAnchorId(entry.meta.key)
+          : area === Z_AI_API_DOC_AREA
+            ? getZaiApiRowAnchorId(entry.meta.key)
           : area === GOOGLE_CLOUD_API_DOC_AREA
             ? getGoogleCloudApiRowAnchorId(entry.meta.key)
           : area === OPENAI_CHAT_API_DOC_AREA
@@ -1225,6 +1230,11 @@ export function useSettingsView({
           match: entry => normalizeSettingsAreaLabel(entry.details.area) === QWEN_API_DOC_AREA,
         },
         {
+          title: Z_AI_API_DOC_AREA,
+          searchIndex: normalizeText('Z.AI API Z AI Open Platform OpenAI-compatible chat completions glm-5.2 api.z.ai quick start reference-only docs only'),
+          match: entry => normalizeSettingsAreaLabel(entry.details.area) === Z_AI_API_DOC_AREA,
+        },
+        {
           title: GOOGLE_CLOUD_API_DOC_AREA,
           searchIndex: normalizeText('Google Cloud Vertex AI API GCP Gemini OpenAI-compatible chat completions endpoints openapi google/gemini floatingpanel chat markdown yaml frontmatter source files storyboard widget'),
           match: entry => normalizeSettingsAreaLabel(entry.details.area) === GOOGLE_CLOUD_API_DOC_AREA,
@@ -1350,7 +1360,7 @@ export function useSettingsView({
   }, [onRegisterActions, applyAll, resetToDefaults, onGlobalReset, collapseAll, expandAll, allCollapsed])
 
   return {
-    flow,
+    flowDetailsRuntime,
     expanded,
     setExpanded,
     values,

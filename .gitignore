@@ -2,6 +2,7 @@
 .env
 .env.*
 .dev.vars*
+!cloudflare/workers/knowgrph-storage/.dev.vars.example
 
 node_modules/
 npm-debug.log*

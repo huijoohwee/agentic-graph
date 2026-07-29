@@ -115,14 +115,23 @@ export function testPwaRuntimeTracksStandaloneInstallAndUpdateState() {
   if (!registrationOwnerText.includes("updateViaCache: 'none'")) {
     throw new Error('Expected canonical worker registration to bypass caches for rapid release convergence')
   }
+  if (!registrationOwnerText.includes('sw.js?revision=${normalizedRevision}')) {
+    throw new Error('Expected canonical worker registration to bind the top-level worker URL to the exact release revision')
+  }
+  if (!runtimeText.includes('sourceRevision: readKnowgrphSourceRevision()')) {
+    throw new Error('Expected PWA runtime to register the worker with its exact build revision')
+  }
   if (!runtimeText.includes('installServiceWorkerRevisionUpdateOwner({')) {
     throw new Error('Expected PWA runtime to refresh the canonical worker on registration and bounded recovery events')
   }
-  if (!runtimeText.includes('installServiceWorkerCacheRevisionOwner({')) {
-    throw new Error('Expected PWA runtime to delete cached HTML and prior-revision asset variants')
+  const revisionAuthorityText = readUtf8(
+    path.resolve(process.cwd(), 'viteServiceWorkerRevisionAuthority.mjs'),
+  )
+  if (!revisionAuthorityText.includes("self.addEventListener('activate', event =>")) {
+    throw new Error('Expected worker activation to own stale cache convergence before serving returning sessions')
   }
-  if (!runtimeText.includes('runInitially: true')) {
-    throw new Error('Expected returning PWA sessions to prune stale revision caches immediately after registration')
+  if (runtimeText.includes('installServiceWorkerCacheRevisionOwner')) {
+    throw new Error('Expected cache convergence to have one worker-owned lifecycle path')
   }
   if (!runtimeText.includes("console.warn('[knowgrph] Offline shell registration failed.', error)")) {
     throw new Error('Expected PWA runtime to log offline-shell registration failures without forcing a user warning toast')

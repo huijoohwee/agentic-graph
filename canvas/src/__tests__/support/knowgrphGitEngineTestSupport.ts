@@ -85,6 +85,27 @@ export class MemoryGitCache implements KnowgrphGitPersistedCache {
       .map(copyGitTestValue)
   }
 
+  async requeueFailedOutbox(workspaceId: string, deviceId: string, updatedAtMs: number) {
+    let requeued = 0
+    for (const [id, record] of this.outbox) {
+      if (
+        record.workspaceId !== workspaceId
+        || record.deviceId !== deviceId
+        || record.lastStatus === 'queued'
+      ) continue
+      this.outbox.set(id, {
+        ...record,
+        attemptCount: 0,
+        lastStatus: 'queued',
+        lastMessage: null,
+        updatedAtMs,
+      })
+      this.claims.delete(id)
+      requeued += 1
+    }
+    return requeued
+  }
+
   async claimNextOutbox(args: {
     workspaceId: string
     deviceId: string

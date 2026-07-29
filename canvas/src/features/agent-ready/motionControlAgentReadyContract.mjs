@@ -136,7 +136,7 @@ function buildMotionCaptureSourceOutputSchema() {
       clockAlignment: {
         type: 'object',
         additionalProperties: false,
-        required: ['status', 'offsetMs', 'uncertaintyMs', 'measuredAtMs', 'evidenceDigestSha256', 'provenance'],
+        required: ['status', 'offsetMs', 'uncertaintyMs', 'measuredAtMs', 'evidenceDigestSha256', 'provenance', 'researchManifestDigestSha256'],
         properties: {
           status: { type: 'string', enum: ['aligned', 'unaligned'] },
           offsetMs: nullableNumber(),
@@ -144,12 +144,13 @@ function buildMotionCaptureSourceOutputSchema() {
           measuredAtMs: nullableNumber(),
           evidenceDigestSha256: { type: ['string', 'null'] },
           provenance: { enum: [null, 'session-clock', 'measured-alignment'] },
+          researchManifestDigestSha256: { type: ['string', 'null'], pattern: '^[a-f0-9]{64}$' },
         },
       },
       calibration: {
         type: 'object',
         additionalProperties: false,
-        required: ['status', 'coordinateSpace', 'provenance', 'reprojectionErrorPx'],
+        required: ['status', 'coordinateSpace', 'provenance', 'reprojectionErrorPx', 'researchValidation'],
         properties: {
           status: { type: 'string', enum: ['uncalibrated', 'calibrating', 'calibrated', 'invalid'] },
           coordinateSpace: { type: 'string', enum: ['normalized-image', 'model-relative', 'metric-world'] },
@@ -164,12 +165,26 @@ function buildMotionCaptureSourceOutputSchema() {
             },
           },
           reprojectionErrorPx: nullableNumber(),
+          researchValidation: {
+            type: ['object', 'null'],
+            additionalProperties: false,
+            required: ['schema', 'researchManifestDigestSha256', 'referenceFrame', 'measurementErrorMeters', 'reprojectionP95Px', 'calibrationSampleCount', 'calibrationPoseCount'],
+            properties: {
+              schema: { const: 'knowgrph.motion-capture-calibration-validation/v1' },
+              researchManifestDigestSha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+              referenceFrame: { const: 'metric-si-right-up-forward' },
+              measurementErrorMeters: { type: 'number', minimum: 0 },
+              reprojectionP95Px: nullableNumber(),
+              calibrationSampleCount: { type: 'integer', minimum: 1 },
+              calibrationPoseCount: { type: 'integer', minimum: 1 },
+            },
+          },
         },
       },
       quality: {
         type: 'object',
         additionalProperties: false,
-        required: ['receivedSamples', 'usableSamples', 'researchUsableSamples', 'lowEvidenceSamples', 'missingSamples', 'droppedSequenceSamples', 'unsequencedSamples', 'outOfOrderSamples', 'jitterMs', 'dropRate'],
+        required: ['receivedSamples', 'usableSamples', 'researchUsableSamples', 'lowEvidenceSamples', 'missingSamples', 'droppedSequenceSamples', 'unsequencedSamples', 'outOfOrderSamples', 'researchDurationMs', 'jitterMs', 'dropRate'],
         properties: {
           receivedSamples: { type: 'integer', minimum: 0 },
           usableSamples: { type: 'integer', minimum: 0 },
@@ -179,6 +194,7 @@ function buildMotionCaptureSourceOutputSchema() {
           droppedSequenceSamples: { type: 'integer', minimum: 0 },
           unsequencedSamples: { type: 'integer', minimum: 0 },
           outOfOrderSamples: { type: 'integer', minimum: 0 },
+          researchDurationMs: { type: 'number', minimum: 0 },
           jitterMs: { type: 'number', minimum: 0 },
           dropRate: { type: 'number', minimum: 0 },
         },
@@ -248,8 +264,33 @@ function buildMotionCapturePlatformOutputSchema() {
       bridge: {
         type: 'object',
         additionalProperties: false,
-        required: ['builtInSourceActive', 'lastError'],
-        properties: { builtInSourceActive: { type: 'boolean' }, lastError: { type: 'string' } },
+        required: ['builtInSourceActive', 'lastError', 'providerApi'],
+        properties: {
+          builtInSourceActive: { type: 'boolean' },
+          lastError: { type: 'string' },
+          providerApi: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['schema', 'connectedProviderCount', 'providers'],
+            properties: {
+              schema: { const: 'knowgrph.motion-capture-provider-api/v1' },
+              connectedProviderCount: { type: 'integer', minimum: 0 },
+              providers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['providerId', 'label', 'transport'],
+                  properties: {
+                    providerId: { type: 'string', minLength: 1 },
+                    label: { type: 'string', minLength: 1 },
+                    transport: { type: 'string', enum: ['browser-local', 'host-bridge', 'network-peer'] },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       privacy: {
         type: 'object',

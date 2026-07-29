@@ -234,6 +234,7 @@ export const defaultSchema: GraphSchema = {
     nodeShapeMode: 'circle',
     dragConstraint: 'free',
     snapGrid: { enabled: false, size: 10 },
+    helperLines: { enabled: true },
     canvasGrid: {
       enabled: false,
       variant: 'lines',

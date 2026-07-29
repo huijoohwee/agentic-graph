@@ -42,12 +42,10 @@ export const OPERATOR_DEPLOY_DEFAULT_CLOUD_DEPLOY_APPROVED = false
 
 // --- Setting + storage key strings ------------------------------------------
 
-export const OPERATOR_DEPLOY_KEY_PREFIX = 'operatorDeploy.mcp.'
-
 export const OPERATOR_DEPLOY_SETTING_KEYS = {
-  mcpEndpoint:         `${OPERATOR_DEPLOY_KEY_PREFIX}endpoint`,
-  frontendUrl:         `${OPERATOR_DEPLOY_KEY_PREFIX}frontendUrl`,
-  mode:                `${OPERATOR_DEPLOY_KEY_PREFIX}mode`,
-  liveClientsEnabled:  `${OPERATOR_DEPLOY_KEY_PREFIX}liveClientsEnabled`,
-  cloudDeployApproved: `${OPERATOR_DEPLOY_KEY_PREFIX}cloudDeployApproved`,
+  mcpEndpoint: 'operatorDeploy.mcp.endpoint',
+  frontendUrl: 'operatorDeploy.mcp.frontendUrl',
+  mode: 'operatorDeploy.mcp.mode',
+  liveClientsEnabled: 'operatorDeploy.mcp.liveClientsEnabled',
+  cloudDeployApproved: 'operatorDeploy.mcp.cloudDeployApproved',
 } as const

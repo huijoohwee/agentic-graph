@@ -55,7 +55,7 @@ export async function assertExactFlightSimBrowserVerificationLedger(
   return expectedNames
 }
 
-export function assertExactFlightSimRendererOptionalBeacon(
+export function assertExactFlightSimOptionalBeaconAdmission(
   optionalBeacon,
   { expectedPath, expectedSha256 },
 ) {
@@ -81,7 +81,7 @@ export function assertExactFlightSimRendererOptionalBeacon(
       !== JSON.stringify(['kg_flight_sim_optional_beacon_part_1'])
   ) {
     throw new Error(
-      'Flight browser renderer evidence did not retain the exact optional '
+      'Flight browser evidence did not retain the exact admitted optional '
       + `beacon path, SHA-256, opacity, and mesh identity: ${
         JSON.stringify(optionalBeacon)
       }`,

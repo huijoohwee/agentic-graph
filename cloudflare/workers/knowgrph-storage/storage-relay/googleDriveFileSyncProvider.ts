@@ -17,6 +17,10 @@ import {
   StorageRelayError,
   type StorageRelayOperation,
 } from './storageRelaySafety'
+import {
+  normalizeStorageRelayAccessTokenSource,
+  type StorageRelayAccessTokenSource,
+} from './storageRelayAccessToken'
 
 const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3'
 const DRIVE_UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3'
@@ -165,15 +169,16 @@ const assertGoogleUploadUrl = (value: string | null): string => {
 
 export class GoogleDriveFileSyncProvider implements FileSyncProvider {
   readonly providerType = 'google-drive' as const
-  private readonly accessToken: string
+  private readonly accessToken: StorageRelayAccessTokenSource
   private readonly driveId: string | null
 
-  constructor(args: { accessToken: string; driveId?: string | null }) {
-    this.accessToken = String(args.accessToken || '')
+  constructor(args: { accessToken: string | StorageRelayAccessTokenSource; driveId?: string | null }) {
+    this.accessToken = normalizeStorageRelayAccessTokenSource(args.accessToken)
     this.driveId = args.driveId ? assertFileSyncResourceId(args.driveId) : null
-    if (!this.accessToken) {
-      throw new StorageRelayError({ code: 'provider_not_configured', status: 503 })
-    }
+  }
+
+  private async headers(operation: StorageRelayOperation, includeContentType = false): Promise<Headers> {
+    return driveHeaders(await this.accessToken.read(operation), includeContentType)
   }
 
   async listPage(args: {
@@ -195,7 +200,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
       url.searchParams.set('corpora', 'drive')
       url.searchParams.set('driveId', this.driveId)
     }
-    const response = await args.operation.fetch(url, { headers: driveHeaders(this.accessToken) })
+    const response = await args.operation.fetch(url, { headers: await this.headers(args.operation) })
     const body = await readSuccessfulJson<GoogleDriveListResponse>(response, args.operation, [200])
     if (body.incompleteSearch === true || !Array.isArray(body.files)) {
       throw new StorageRelayError({
@@ -230,7 +235,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
     const url = new URL(`${DRIVE_API_BASE}/files/${encodeURIComponent(metadata.entry.resourceId)}`)
     url.searchParams.set('alt', 'media')
     url.searchParams.set('supportsAllDrives', 'true')
-    const response = await args.operation.fetch(url, { headers: driveHeaders(this.accessToken) })
+    const response = await args.operation.fetch(url, { headers: await this.headers(args.operation) })
     if (response.status !== 200) return discardAndThrowStatus(response)
     const bytes = await readStorageRelayResponseBytes(response, args.operation.budget)
     if (bytes.byteLength !== metadata.entry.size) {
@@ -262,7 +267,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
     url.searchParams.set('fields', FILE_FIELDS)
     const response = await args.operation.fetch(url, {
       method: 'POST',
-      headers: driveHeaders(this.accessToken, true),
+      headers: await this.headers(args.operation, true),
       body: JSON.stringify({
         name: args.name,
         mimeType: GOOGLE_FOLDER_MIME,
@@ -315,7 +320,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
     initiationUrl.searchParams.set('uploadType', 'resumable')
     initiationUrl.searchParams.set('supportsAllDrives', 'true')
     initiationUrl.searchParams.set('fields', FILE_FIELDS)
-    const headers = driveHeaders(this.accessToken, true)
+    const headers = await this.headers(args.operation, true)
     headers.set('x-upload-content-length', String(args.bytes.byteLength))
     headers.set('x-upload-content-type', args.mimeType)
     if (existingEtag) headers.set('if-match', existingEtag)
@@ -365,7 +370,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
     const url = new URL(`${DRIVE_API_BASE}/files/${encodeURIComponent(args.resourceId)}`)
     url.searchParams.set('supportsAllDrives', 'true')
     url.searchParams.set('fields', FILE_FIELDS)
-    const headers = driveHeaders(this.accessToken, true)
+    const headers = await this.headers(args.operation, true)
     headers.set('if-match', metadata.etag)
     const response = await args.operation.fetch(url, {
       method: 'PATCH',
@@ -383,7 +388,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
     const url = new URL(`${DRIVE_API_BASE}/files/${encodeURIComponent(resourceId)}`)
     url.searchParams.set('supportsAllDrives', 'true')
     url.searchParams.set('fields', FILE_FIELDS)
-    const response = await operation.fetch(url, { headers: driveHeaders(this.accessToken) })
+    const response = await operation.fetch(url, { headers: await this.headers(operation) })
     if (response.status !== 200) return discardAndThrowStatus(response)
     const etag = response.headers.get('etag')
     const entry = mapGoogleEntry(await readStorageRelayJsonResponse<GoogleDriveFile>(response, operation.budget))
@@ -416,7 +421,7 @@ export class GoogleDriveFileSyncProvider implements FileSyncProvider {
       url.searchParams.set('corpora', 'drive')
       url.searchParams.set('driveId', this.driveId)
     }
-    const response = await args.operation.fetch(url, { headers: driveHeaders(this.accessToken) })
+    const response = await args.operation.fetch(url, { headers: await this.headers(args.operation) })
     const body = await readSuccessfulJson<GoogleDriveListResponse>(response, args.operation, [200])
     if (body.incompleteSearch === true || !Array.isArray(body.files) || body.files.length > 1) {
       throw new StorageRelayError({

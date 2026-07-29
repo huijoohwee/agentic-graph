@@ -7,8 +7,10 @@ import {
   createMotionCaptureSessionRuntime,
   type MotionCaptureSessionRuntime,
 } from '@/features/three/motionCaptureSessionRuntime'
+import { applyResearchEvidenceManifest } from '@/__tests__/helpers/motionCaptureResearchEvidenceFixture'
 
 const RECONSTRUCTION_EVIDENCE = 'f'.repeat(64)
+const RESEARCH_GROUP_COUNT = 31
 const landmark = Object.freeze({ x: 0.1, y: 0.2, z: 1.3, visibility: 0.99, presence: 0.98 })
 
 type ResearchFixture = Readonly<{
@@ -32,11 +34,11 @@ async function expectFailure(operation: () => unknown | Promise<unknown>, code: 
   throw new Error(`expected ${code}`)
 }
 
-function createResearchFixture(
+async function createResearchFixture(
   sourceCount: number,
   limits?: Partial<MotionCaptureLimits>,
   clockUncertainties?: readonly number[],
-): ResearchFixture {
+): Promise<ResearchFixture> {
   const time = { value: 1_000 }
   const runtime = createMotionCaptureSessionRuntime({
     now: () => time.value,
@@ -55,27 +57,21 @@ function createResearchFixture(
       measuredAtMs: time.value,
       evidenceDigestSha256: `${index + 5}`.repeat(64),
     })
-    runtime.setSourceCalibration(source.sourceId, {
-      status: 'calibrated',
-      coordinateSpace: 'metric-world',
-      provenance: {
-        kind: 'measured',
-        measuredAtMs: time.value,
-        evidenceDigestSha256: String(index + 1).repeat(64),
-      },
-    })
     return source.sourceId
   })
-  runtime.setSharedReconstructionEvidence({
-    sourceIds,
-    method: 'measured',
-    measuredAtMs: time.value,
-    evidenceDigestSha256: RECONSTRUCTION_EVIDENCE,
-  })
+  if (clockUncertainties?.some(uncertainty => uncertainty > 5)) {
+    sourceIds.forEach((sourceId, index) => runtime.setSourceCalibration(sourceId, {
+      status: 'calibrated', coordinateSpace: 'metric-world',
+      provenance: { kind: 'measured', measuredAtMs: time.value, evidenceDigestSha256: String(index + 1).repeat(64) },
+    }))
+    runtime.setSharedReconstructionEvidence({
+      sourceIds, method: 'measured', measuredAtMs: time.value, evidenceDigestSha256: RECONSTRUCTION_EVIDENCE,
+    })
+  } else await applyResearchEvidenceManifest(runtime, sourceIds, time.value)
   return { runtime, sourceIds, time }
 }
 
-function recordGroups(fixture: ResearchFixture, groupCount: number, unsequencedSourceIndex = -1, intervalMs = 33): void {
+function recordGroups(fixture: ResearchFixture, groupCount: number, unsequencedSourceIndex = -1, intervalMs = 34): void {
   for (let groupIndex = 0; groupIndex < groupCount; groupIndex += 1) {
     fixture.time.value += intervalMs
     fixture.sourceIds.forEach((sourceId, sourceIndex) => {
@@ -91,12 +87,12 @@ function recordGroups(fixture: ResearchFixture, groupCount: number, unsequencedS
 }
 
 export async function testMotionCaptureResearchGradePreservesRecordingLocalEvidence(): Promise<void> {
-  const ordered = createResearchFixture(2)
+  const ordered = await createResearchFixture(2)
   ordered.runtime.startRecording()
-  recordGroups(ordered, 3)
+  recordGroups(ordered, RESEARCH_GROUP_COUNT)
   ordered.runtime.ingestObservation(ordered.sourceIds[0]!, {
     captureTimestampMs: ordered.time.value,
-    sequence: 3,
+    sequence: RESEARCH_GROUP_COUNT,
     coordinateSpace: 'metric-world',
     confidence: 0.99,
     landmarks: [landmark],
@@ -117,20 +113,20 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     throw new Error('expected in-window rejected order evidence to downgrade the deterministic export')
   }
 
-  const bounded = createResearchFixture(2, { maxRecordingSamples: 6 })
+  const bounded = await createResearchFixture(2, { maxRecordingSamples: 62 })
   bounded.runtime.startRecording()
-  recordGroups(bounded, 4)
+  recordGroups(bounded, RESEARCH_GROUP_COUNT + 1)
   bounded.runtime.stopRecording()
   const boundedArtifact = await bounded.runtime.exportRecording('json')
   if (boundedArtifact.researchReady
-    || boundedArtifact.researchReadyGroupCount !== 3
+    || boundedArtifact.researchReadyGroupCount !== RESEARCH_GROUP_COUNT
     || bounded.runtime.readRecording()?.droppedByBudget !== 2) {
     throw new Error('expected recording-budget loss to prevent a research-ready artifact claim')
   }
 
-  const stricter = createResearchFixture(2, { minimumResearchSamplesPerSource: 10 })
+  const stricter = await createResearchFixture(2, { minimumResearchSamplesPerSource: 40 })
   stricter.runtime.startRecording()
-  recordGroups(stricter, 3)
+  recordGroups(stricter, RESEARCH_GROUP_COUNT)
   stricter.runtime.stopRecording()
   const stricterArtifact = await stricter.runtime.exportRecording('json')
   if (stricter.runtime.getSnapshot().evidence.researchReady
@@ -139,23 +135,23 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     throw new Error('expected export grading to retain the session owner\'s stricter research limits')
   }
 
-  const optionalThird = createResearchFixture(3)
+  const optionalThird = await createResearchFixture(3)
   optionalThird.runtime.startRecording()
-  recordGroups(optionalThird, 3, 2, 10)
+  recordGroups(optionalThird, RESEARCH_GROUP_COUNT, 2)
   optionalThird.runtime.stopRecording()
   const optionalThirdRecording = optionalThird.runtime.readRecording()
   const optionalThirdArtifact = await optionalThird.runtime.exportRecording('json')
   if (!optionalThirdRecording
-    || optionalThirdRecording.samples.slice(3).some(sample => sample.researchSourceIds.length !== 3)
+    || optionalThirdRecording.samples.slice(-3).some(sample => sample.researchSourceIds.length !== 3)
     || !optionalThird.runtime.getSnapshot().evidence.researchReady
     || !optionalThirdArtifact.researchReady
-    || optionalThirdArtifact.researchReadyGroupCount !== 3) {
+    || optionalThirdArtifact.researchReadyGroupCount !== RESEARCH_GROUP_COUNT) {
     throw new Error('expected a stable cohort to qualify from its locally valid synchronized source pair')
   }
 
-  const tiedClusters = createResearchFixture(4)
+  const tiedClusters = await createResearchFixture(4)
   tiedClusters.runtime.startRecording()
-  for (let groupIndex = 0; groupIndex < 3; groupIndex += 1) {
+  for (let groupIndex = 0; groupIndex < RESEARCH_GROUP_COUNT; groupIndex += 1) {
     tiedClusters.time.value += 200
     tiedClusters.sourceIds.forEach((sourceId, sourceIndex) => {
       tiedClusters.runtime.ingestObservation(sourceId, {
@@ -171,13 +167,13 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
   if (!tiedEvidence.researchReady
     || tiedEvidence.synchronizedSourceCount !== 2
     || !tiedArtifact.researchReady
-    || tiedArtifact.researchReadyGroupCount !== 3) {
+    || tiedArtifact.researchReadyGroupCount !== RESEARCH_GROUP_COUNT) {
     throw new Error('expected research grading to select the qualified pair from tied synchronized clusters')
   }
 
-  const bridgedSkew = createResearchFixture(3)
+  const bridgedSkew = await createResearchFixture(3)
   bridgedSkew.runtime.startRecording()
-  for (let groupIndex = 0; groupIndex < 3; groupIndex += 1) {
+  for (let groupIndex = 0; groupIndex < RESEARCH_GROUP_COUNT; groupIndex += 1) {
     bridgedSkew.time.value += 100
     const timestamps = [bridgedSkew.time.value, bridgedSkew.time.value + 40, bridgedSkew.time.value + 20]
     bridgedSkew.sourceIds.forEach((sourceId, sourceIndex) => bridgedSkew.runtime.ingestObservation(sourceId, {
@@ -194,10 +190,10 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     throw new Error('expected an unqualified midpoint source never to bridge an over-skew qualified pair')
   }
 
-  const lowEvidence = createResearchFixture(2)
+  const lowEvidence = await createResearchFixture(2)
   lowEvidence.runtime.startRecording()
-  for (let groupIndex = 0; groupIndex < 3; groupIndex += 1) {
-    lowEvidence.time.value += 33
+  for (let groupIndex = 0; groupIndex < RESEARCH_GROUP_COUNT; groupIndex += 1) {
+    lowEvidence.time.value += 34
     lowEvidence.sourceIds.forEach(sourceId => lowEvidence.runtime.ingestObservation(sourceId, {
       captureTimestampMs: lowEvidence.time.value,
       sequence: groupIndex + 1,
@@ -213,20 +209,20 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     || !lowEvidence.runtime.getSnapshot().evidence.warnings.includes('capture-observation-evidence-low')
     || lowEvidenceArtifact.researchReady
     || lowEvidenceArtifact.researchReadyGroupCount !== 0
-    || lowEvidenceQuality.some(quality => quality.researchUsableSamples !== 0 || quality.lowEvidenceSamples !== 3)) {
+    || lowEvidenceQuality.some(quality => quality.researchUsableSamples !== 0 || quality.lowEvidenceSamples !== RESEARCH_GROUP_COUNT)) {
     throw new Error('expected low-confidence and low-presence observations to remain non-research evidence')
   }
 
-  const mixedEvidence = createResearchFixture(2)
+  const mixedEvidence = await createResearchFixture(2)
   mixedEvidence.runtime.startRecording()
-  for (let groupIndex = 0; groupIndex < 7; groupIndex += 1) {
-    mixedEvidence.time.value += 33
+  for (let groupIndex = 0; groupIndex < 70; groupIndex += 1) {
+    mixedEvidence.time.value += 34
     mixedEvidence.sourceIds.forEach(sourceId => mixedEvidence.runtime.ingestObservation(sourceId, {
       captureTimestampMs: mixedEvidence.time.value,
       sequence: groupIndex + 1,
       coordinateSpace: 'metric-world',
-      confidence: groupIndex < 4 ? 0 : 0.99,
-      landmarks: [groupIndex < 4 ? { ...landmark, visibility: 0, presence: 0 } : landmark],
+      confidence: groupIndex < 40 ? 0 : 0.99,
+      landmarks: [groupIndex < 40 ? { ...landmark, visibility: 0, presence: 0 } : landmark],
     }))
   }
   mixedEvidence.runtime.stopRecording()
@@ -238,9 +234,9 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     throw new Error('expected a short qualified tail never to launder a mostly low-evidence recording')
   }
 
-  const uncertainClock = createResearchFixture(2, undefined, [1, 100])
+  const uncertainClock = await createResearchFixture(2, undefined, [1, 100])
   uncertainClock.runtime.startRecording()
-  recordGroups(uncertainClock, 3)
+  recordGroups(uncertainClock, RESEARCH_GROUP_COUNT)
   uncertainClock.runtime.stopRecording()
   const uncertainBeforeRealignment = uncertainClock.runtime.getSnapshot()
   uncertainClock.runtime.setSourceClockAlignment(uncertainClock.sourceIds[1]!, {
@@ -261,7 +257,7 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     throw new Error('expected high clock uncertainty and alignment changes to invalidate prior observation evidence')
   }
 
-  const alignmentEpoch = createResearchFixture(2, undefined, [1, 1])
+  const alignmentEpoch = await createResearchFixture(2, undefined, [1, 1])
   alignmentEpoch.runtime.setSourceClockAlignment(alignmentEpoch.sourceIds[1]!, {
     offsetMs: 1_000, uncertaintyMs: 1, measuredAtMs: alignmentEpoch.time.value, evidenceDigestSha256: 'd'.repeat(64),
   })
@@ -290,7 +286,7 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
   alignmentEpoch.runtime.stopRecording()
   const alignmentEpochArtifact = await alignmentEpoch.runtime.exportRecording('json')
   const alignmentEpochPayload = JSON.parse(alignmentEpochArtifact.content) as {
-    samples?: Array<{ researchEvidenceEpoch?: string | null }>
+    samples?: Array<{ researchEvidenceEpoch?: string | null; researchManifestDigestSha256?: string | null }>
   }
   const serializedAlignmentEpochs = new Set(
     alignmentEpochPayload.samples?.map(sample => sample.researchEvidenceEpoch).filter(Boolean),
@@ -299,11 +295,15 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     || alignmentEpoch.runtime.getSnapshot().sources[1]?.quality.researchUsableSamples !== 1
     || alignmentEpochArtifact.researchReady
     || alignmentEpochArtifact.researchReadyGroupCount !== 0
-    || serializedAlignmentEpochs.size !== 2) {
-    throw new Error('expected recording groups never to combine observations from different clock-evidence epochs')
+    || alignmentEpochArtifact.researchEvidenceManifestCount !== 0
+    || serializedAlignmentEpochs.size !== 0
+    || alignmentEpochPayload.samples?.some(sample => sample.researchManifestDigestSha256 !== null)) {
+    throw new Error(`expected a direct clock mutation to invalidate the manifest-bound research cohort before recording: ${JSON.stringify({
+      snapshot: alignmentEpoch.runtime.getSnapshot(), artifact: alignmentEpochArtifact, samples: alignmentEpochPayload.samples,
+    })}`)
   }
 
-  const epochLocalQuality = createResearchFixture(2)
+  const epochLocalQuality = await createResearchFixture(2)
   epochLocalQuality.runtime.startRecording()
   for (let index = 0; index < 120; index += 1) {
     const baseTimestampMs = 100 + index * 100
@@ -336,7 +336,7 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     throw new Error('expected prior-epoch stability never to dilute current-epoch jitter')
   }
 
-  const maximumMatching = createResearchFixture(2)
+  const maximumMatching = await createResearchFixture(2)
   maximumMatching.runtime.ingestObservation(maximumMatching.sourceIds[0]!, {
     captureTimestampMs: 999, sequence: 0, coordinateSpace: 'metric-world', confidence: 0.99, landmarks: [landmark],
   })
@@ -344,8 +344,11 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
     captureTimestampMs: 999, sequence: 0, coordinateSpace: 'metric-world', confidence: 0.99, landmarks: [landmark],
   })
   maximumMatching.runtime.startRecording()
-  const matchingTimestamps = [[1_000, 1_001, 1_002], [1_000, 1_002, 1_003]] as const
-  for (let index = 0; index < 3; index += 1) {
+  const matchingTimestamps = [
+    Array.from({ length: RESEARCH_GROUP_COUNT }, (_, index) => 1_000 + index * 34),
+    Array.from({ length: RESEARCH_GROUP_COUNT }, (_, index) => 1_001 + index * 34),
+  ] as const
+  for (let index = 0; index < RESEARCH_GROUP_COUNT; index += 1) {
     maximumMatching.sourceIds.forEach((sourceId, sourceIndex) => maximumMatching.runtime.ingestObservation(sourceId, {
       captureTimestampMs: matchingTimestamps[sourceIndex]![index]!, sequence: index + 1,
       coordinateSpace: 'metric-world', confidence: 0.99, landmarks: [landmark],
@@ -355,7 +358,7 @@ export async function testMotionCaptureResearchGradePreservesRecordingLocalEvide
   const maximumMatchingArtifact = await maximumMatching.runtime.exportRecording('json')
   if (!maximumMatching.runtime.getSnapshot().evidence.researchReady
     || !maximumMatchingArtifact.researchReady
-    || maximumMatchingArtifact.researchReadyGroupCount !== 3) {
+    || maximumMatchingArtifact.researchReadyGroupCount !== RESEARCH_GROUP_COUNT) {
     throw new Error('expected deterministic interval matching to find the maximum disjoint synchronized groups')
   }
 

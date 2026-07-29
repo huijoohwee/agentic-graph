@@ -8,6 +8,11 @@ from playwright.sync_api import Page, expect
 
 from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
 from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
+from lib.game_flight_sim_smoke_geo_xr import (
+    prepare_canvas_view_standalone_flight_xr,
+    verify_geo_xr_four_view_presentation,
+    wait_for_canvas_view_geo_xr_handoff,
+)
 from lib.game_flight_sim_smoke_ledger import BrowserVerificationLedger
 from lib.game_flight_sim_smoke_lifecycle import (
     verify_blur_lifecycle,
@@ -19,9 +24,14 @@ from lib.game_flight_sim_smoke_mobile import (
     verify_mobile_flight_hud,
     verify_mobile_touch_interaction,
 )
+from lib.game_flight_sim_smoke_motion_control import (
+    verify_motion_control_panel_handoff,
+)
+from lib.game_flight_sim_smoke_navigation import (
+    verify_flight_navigation_runtime,
+)
 from lib.game_flight_sim_smoke_mission import complete_authored_flight_mission
 from lib.game_flight_sim_smoke_scene import (
-    FLIGHT_MISSION_NODE,
     FLIGHT_OPTIONAL_BEACON_PATH,
     FLIGHT_OPTIONAL_BEACON_SHA256,
     assert_active_flight_scene,
@@ -33,6 +43,7 @@ from lib.game_flight_sim_smoke_source import (
 )
 from lib.game_flight_sim_smoke_source_selection import (
     prepare_source_files_selection_surface,
+    wait_for_flight_hud_activation,
 )
 from lib.game_flight_sim_smoke_throttle import (
     FLIGHT_THROTTLE_PROOF_TARGET,
@@ -76,6 +87,58 @@ def read_runtime(page: Page) -> dict[str, Any]:
     )
 
 
+def verify_canvas_view_xr_to_geo_xr_handoff(page: Page) -> dict[str, Any]:
+    baseline, source_case, standalone = (
+        prepare_canvas_view_standalone_flight_xr(page)
+    )
+    try:
+        trigger = page.get_by_role(
+            "button", name="2D Mode: XR Mode", exact=True
+        )
+        trigger.wait_for(state="visible", timeout=30_000)
+        trigger.click(timeout=30_000)
+        surface = page.get_by_role("button", name="Surface Mode", exact=True)
+        surface.wait_for(state="visible", timeout=30_000)
+        # XR is the active child, so the shared menu expands Surface Mode on
+        # its next frame. Clicking during that transition can collapse it.
+        expect(surface).to_have_attribute(
+            "aria-expanded", "true", timeout=30_000
+        )
+        parent_expanded = surface.get_attribute("aria-expanded")
+        geo_xr = page.get_by_role("button", name="Geo+XR Mode", exact=True)
+        geo_xr.wait_for(state="visible", timeout=30_000)
+        if geo_xr.is_disabled():
+            raise AssertionError("Geo+XR Mode was disabled in the real menu")
+        geo_xr.click(timeout=30_000)
+        page.get_by_role(
+            "button", name="2D Mode: Geo+XR Mode", exact=True
+        ).wait_for(state="visible", timeout=30_000)
+        handoff = wait_for_canvas_view_geo_xr_handoff(page, source_case)
+    finally:
+        page.evaluate(
+            """
+            async prior => {
+              const graph = await window.__kgFlightSimBrowserProof.importModule(
+                'graphStore',
+              )
+              const state = graph.useGraphStore.getState()
+              state.setFloatingPanelOpen(prior.open)
+              state.setFloatingPanelView(prior.view)
+            }
+            """,
+            {
+                "open": baseline["floatingPanelOpen"],
+                "view": baseline["floatingPanelView"],
+            },
+        )
+    return {
+        "sourceView": source_case[0],
+        "standalone": standalone,
+        "menuSurfaceAriaExpanded": parent_expanded,
+        "handoff": handoff,
+    }
+
+
 def position_distance(left: list[float], right: list[float]) -> float:
     return sum((a - b) ** 2 for a, b in zip(left, right)) ** 0.5
 
@@ -107,12 +170,13 @@ def run_flight_runtime_verifications(
         prepare_stable_candidate_page(page, target_url)
         prepare_source_files_selection_surface(page)
         physics_baseline = prepare_authored_physics_surface(page)
-        # Flight's zero-network evidence begins from the stable, visible
+        # Flight/Geo transport evidence begins from the stable, visible
         # Physics XR baseline after optional Editor Workspace bootstrap settles.
         reset_observed_errors()
         source_application, source = apply_and_verify_exact_authored_source(page)
+        wait_for_flight_hud_activation(page)
         hud = page.locator('[data-kg-flight-sim-hud="1"]').first
-        expect(hud).to_be_visible(timeout=120_000)
+        expect(hud).to_be_visible(timeout=5_000)
         page.wait_for_selector(
             'canvas[data-kg-flight-sim-first-frame="1"]',
             timeout=120_000,
@@ -160,10 +224,12 @@ def run_flight_runtime_verifications(
               const end = Number(proof.firstFrameAtMs)
               const start = Number(proof.startedAtMs)
               return {
+                className: String(proof.firstFrameClassName || ''),
                 startMs: start,
                 endMs: end,
                 durationMs: end - start,
                 preExisting: Boolean(proof.preExisting),
+                surface: String(proof.firstFrameSurface || ''),
               }
             }
             """
@@ -175,6 +241,8 @@ def run_flight_runtime_verifications(
             or proof["durationMs"] != proof["durationMs"]
             or proof["durationMs"] > first_frame_limit_ms
             or proof.get("preExisting") is True
+            or proof.get("surface") != "maplibre"
+            or "maplibregl-canvas" not in str(proof.get("className") or "")
         ):
             raise AssertionError(
                 "Flight first playable frame was not newly produced within "
@@ -199,7 +267,16 @@ def run_flight_runtime_verifications(
             page,
             lambda: read_flight_scene(page),
             lambda value: (
-                FLIGHT_MISSION_NODE in set(value.get("names") or [])
+                value.get("visualProjection") == "maplibre"
+                and (value.get("mapOverlay") or {}).get("layersReady") is True
+                and (value.get("mapOverlay") or {}).get(
+                    "aircraftFeatureCount"
+                )
+                == 1
+                and (value.get("mapOverlay") or {}).get(
+                    "routeFeatureCount"
+                )
+                == 1
                 and (value.get("optionalBeacon") or {}).get("assetPath")
                 == FLIGHT_OPTIONAL_BEACON_PATH
                 and (value.get("optionalBeacon") or {}).get("assetSha256")
@@ -213,7 +290,7 @@ def run_flight_runtime_verifications(
                 )
                 >= 1
             ),
-            label="Flight actor-only scene",
+            label="MapLibre Flight projection and transparent runtime Canvas",
             timeout_ms=120_000,
         )
         assert_active_flight_scene(scene)
@@ -236,9 +313,19 @@ def run_flight_runtime_verifications(
         depends_on=("runtime deadline contracts",),
     )
     state["activeScene"] = ledger.verify(
-        "retained authored XR Canvas",
+        "transparent Flight runtime Canvas",
         authored_scene,
         depends_on=("first playable frame",),
+    )
+    state["geoXrMenuHandoff"] = ledger.verify(
+        "Canvas View standalone XR to Geo+XR handoff",
+        lambda: verify_canvas_view_xr_to_geo_xr_handoff(page),
+        depends_on=("transparent Flight runtime Canvas",),
+    )
+    state["geoXrPresentation"] = ledger.verify(
+        "Geo+XR four-view presentation",
+        lambda: verify_geo_xr_four_view_presentation(page),
+        depends_on=("Canvas View standalone XR to Geo+XR handoff",),
     )
     state["webMcp"] = ledger.verify(
         "strict browser WebMCP",
@@ -246,7 +333,7 @@ def run_flight_runtime_verifications(
             page,
             state["playable"]["initial"],
         ),
-        depends_on=("first playable frame",),
+        depends_on=("Geo+XR four-view presentation",),
     )
     if state["webMcp"]:
         web_mcp_calls.extend(state["webMcp"]["calls"])
@@ -254,6 +341,11 @@ def run_flight_runtime_verifications(
         "stop and Start lifecycle",
         lambda: verify_stop_start_lifecycle(page, web_mcp_calls),
         depends_on=("strict browser WebMCP",),
+    )
+    state["motionControl"] = ledger.verify(
+        "Motion Control panel handoff",
+        lambda: verify_motion_control_panel_handoff(page),
+        depends_on=("stop and Start lifecycle",),
     )
 
     def desktop_input() -> dict[str, Any]:
@@ -300,7 +392,7 @@ def run_flight_runtime_verifications(
     state["desktop"] = ledger.verify(
         "desktop playable input and HUD telemetry",
         desktop_input,
-        depends_on=("stop and Start lifecycle",),
+        depends_on=("Motion Control panel handoff",),
     )
     state["blur"] = ledger.verify(
         "blur lifecycle",
@@ -369,6 +461,11 @@ def run_flight_runtime_verifications(
         throttle_restart,
         depends_on=("blur lifecycle",),
     )
+    state["navigation"] = ledger.verify(
+        "Flight camera views and local navigation",
+        lambda: verify_flight_navigation_runtime(page),
+        depends_on=("strict throttle and restart",),
+    )
 
     def camera_round_trip() -> dict[str, Any]:
         camera = verify_flight_camera_runtime(page)
@@ -388,12 +485,41 @@ def run_flight_runtime_verifications(
         )
         if float(hud.get_attribute("data-kg-flight-sim-airspeed") or "0") <= 0:
             raise AssertionError("Flight HUD did not publish live airspeed")
-        return {"advanced": advanced, "camera": camera}
+        envelope_status = hud.get_attribute("data-kg-flight-sim-envelope") or ""
+        if envelope_status not in {
+            "instrument-uncertain",
+            "stall-risk",
+            "pitch-limit",
+            "bank-limit",
+            "low-energy",
+            "high-energy",
+            "on-target",
+        }:
+            raise AssertionError(f"Flight HUD published invalid envelope status: {envelope_status}")
+        control_authority = float(
+            hud.get_attribute("data-kg-flight-sim-control-authority") or "-1"
+        )
+        if control_authority < 0.3 or control_authority > 1:
+            raise AssertionError(
+                f"Flight HUD published invalid control authority: {control_authority}"
+            )
+        target_speed = hud.get_attribute("data-kg-flight-sim-target-speed") or ""
+        if target_speed != "8:22":
+            raise AssertionError(f"Flight HUD target-speed projection drifted: {target_speed}")
+        return {
+            "advanced": advanced,
+            "camera": camera,
+            "envelope": {
+                "status": envelope_status,
+                "controlAuthority": control_authority,
+                "targetSpeed": target_speed,
+            },
+        }
 
     state["camera"] = ledger.verify(
         "Timeline camera round-trip",
         camera_round_trip,
-        depends_on=("strict throttle and restart",),
+        depends_on=("Flight camera views and local navigation",),
     )
     state["mobileHud"] = ledger.verify(
         "mobile HUD",
@@ -420,31 +546,36 @@ def run_flight_runtime_verifications(
             page,
             lambda: read_flight_scene(page),
             lambda value: (
-                value.get("visibleWaypointCount") == 0
-                and value.get("visibleLandingPadCount") == 1
+                (value.get("mapOverlay") or {}).get(
+                    "pendingWaypointCount"
+                ) == 0
+                and (value.get("mapOverlay") or {}).get(
+                    "landingStates"
+                ) == ["visited"]
             ),
-            label="post-mission Flight scene projection",
+            label="post-mission MapLibre Flight projection",
         )
         assert_active_flight_scene(
             scene,
             completed_waypoint_count=mission["waypointIndex"],
             waypoint_count=mission["waypointCount"],
+            mission_phase=mission["phase"],
         )
         if (
-            scene["authoredSceneSignature"]
-            != state["activeScene"]["authoredSceneSignature"]
+            scene["visibleSceneSignature"]
+            != state["activeScene"]["visibleSceneSignature"]
         ):
             raise AssertionError(
-                "authored XR scene identity changed across the Flight lifecycle"
+                "suppressed R3F scene contract changed across the Flight lifecycle"
             )
         page.screenshot(path=str(screenshot_path), full_page=False)
         return scene
 
     state["finalScene"] = ledger.verify(
-        "retained XR scene after mission",
+        "Geo+XR Flight layer after mission",
         final_scene,
         depends_on=(
-            "retained authored XR Canvas",
+            "transparent Flight runtime Canvas",
             "ordered mission completion",
         ),
     )
@@ -455,7 +586,7 @@ def run_flight_runtime_verifications(
             web_mcp_calls,
             state["source"]["sourceApplication"]["priorSurface"],
         ),
-        depends_on=("retained XR scene after mission",),
+        depends_on=("Geo+XR Flight layer after mission",),
     )
     state["surfaceFailures"] = ledger.verify(
         "surface failure restoration",

@@ -1,9 +1,20 @@
 import * as d3 from 'd3'
 
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { requestFlowNativeDraw } from '@/components/FlowCanvas/nativeRuntime'
+import { computeFlowGroupAabb, requestFlowNativeDraw } from '@/components/FlowCanvas/nativeRuntime'
 import { commitGroupBoundsOverrideToStore } from '@/lib/canvas/groupBoundsOverridesStore'
 import { unlockGlobalUserSelect } from '@/lib/canvas/interaction-user-select'
+import {
+  preserveAbsolutePositionForParent,
+  selectParentDropTarget,
+  type ParentDropCandidate,
+} from '@/lib/canvas/parentChildRelation'
+import { readSubgraphs, subgraphIdFromGroupId } from '@/lib/graph/subgraphs'
+import {
+  selectSubFlowParentDropTarget,
+  type SubFlowDropCandidate,
+} from '@/lib/canvas/subFlow'
+import { cancelFlowAlignmentGuideFrame } from '@/components/FlowCanvas/alignmentGuides'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 
@@ -128,6 +139,127 @@ export function createFlowNativePointerUpHandler(ctx: FlowNativeInteractionsCont
       return
     }
 
+    if (drag.type === 'node' && e.type !== 'pointercancel') {
+      const scene = runtime.scene
+      const node = scene?.nodeById.get(drag.nodeId) || null
+      if (scene && node) {
+        const groupsPresentation = runtime.presentation.groups
+        const candidates: ParentDropCandidate[] = []
+        const groups = groupsPresentation.enabled && Array.isArray(scene.groups) ? scene.groups : []
+        for (let i = 0; i < groups.length; i += 1) {
+          const group = groups[i]!
+          if (group.source !== 'userSubgraph') continue
+          const subgraphId = subgraphIdFromGroupId(group.id)
+          if (!subgraphId) continue
+          const bounds = computeFlowGroupAabb({
+            scene,
+            group,
+            paddingPx: groupsPresentation.paddingPx,
+            labelTopExtraPx: groupsPresentation.labelTopExtraPx,
+          })
+          if (!bounds) continue
+          candidates.push({
+            groupId: group.id,
+            subgraphId,
+            depth: group.depth,
+            memberNodeIds: group.memberNodeIds,
+            bounds,
+          })
+        }
+        const target = selectParentDropTarget({
+          nodeId: drag.nodeId,
+          nodeBounds: {
+            minX: node.x,
+            minY: node.y,
+            maxX: node.x + node.width,
+            maxY: node.y + node.height,
+          },
+          candidates,
+        })
+        const position = target
+          ? preserveAbsolutePositionForParent({ x: node.x, y: node.y }, target.bounds)
+          : null
+        if (target && position) {
+          node.x = position.absolute.x
+          node.y = position.absolute.y
+          const state = useGraphStore.getState()
+          const result = state.attachNodeToUserSubgraph(target.subgraphId, drag.nodeId)
+          if (result.ok === false) {
+            state.pushUiToast({
+              id: 'parent-child-attach-error',
+              kind: 'error',
+              message: result.message,
+            })
+          }
+        }
+      }
+    }
+
+    const groupMoved = drag.type === 'group' && drag.memberNodeIds.some(nodeId => {
+      const node = runtime.scene?.nodeById.get(nodeId) || null
+      const start = drag.startNodePosById[nodeId]
+      return !!node && !!start && (Math.abs(node.x - start.x) > 0.01 || Math.abs(node.y - start.y) > 0.01)
+    })
+    if (drag.type === 'group' && groupMoved && e.type !== 'pointercancel') {
+      const scene = runtime.scene
+      const group = scene?.groups?.find(candidate => String(candidate.id || '').trim() === String(drag.groupId || '').trim()) || null
+      const childSubgraphId = group?.source === 'userSubgraph' ? subgraphIdFromGroupId(group.id) : ''
+      if (scene && group && childSubgraphId) {
+        const presentation = runtime.presentation.groups
+        const groupBounds = computeFlowGroupAabb({
+          scene,
+          group,
+          paddingPx: presentation.paddingPx,
+          labelTopExtraPx: presentation.labelTopExtraPx,
+        })
+        const candidates: SubFlowDropCandidate[] = []
+        for (const candidate of scene.groups || []) {
+          if (candidate.source !== 'userSubgraph') continue
+          const subgraphId = subgraphIdFromGroupId(candidate.id)
+          if (!subgraphId) continue
+          const bounds = computeFlowGroupAabb({
+            scene,
+            group: candidate,
+            paddingPx: presentation.paddingPx,
+            labelTopExtraPx: presentation.labelTopExtraPx,
+          })
+          if (!bounds) continue
+          candidates.push({
+            groupId: candidate.id,
+            subgraphId,
+            parentGroupId: candidate.parentGroupId,
+            depth: candidate.depth,
+            bounds,
+          })
+        }
+        const target = groupBounds
+          ? selectSubFlowParentDropTarget({
+            groupId: group.id,
+            groupBounds,
+            candidates,
+          })
+          : null
+        if (target) {
+          const state = useGraphStore.getState()
+          const currentParentId = readSubgraphs(state.graphData)
+            .find(subgraph => subgraph.id === childSubgraphId)?.parentId || null
+          if (currentParentId !== target.subgraphId) {
+            const result = state.updateUserSubgraph(childSubgraphId, { parentId: target.subgraphId })
+            if (result.ok === false) {
+              state.pushUiToast({
+                id: 'sub-flow-attach-error',
+                kind: 'error',
+                message: result.message,
+              })
+            }
+          }
+        }
+      }
+    }
+
+    cancelFlowAlignmentGuideFrame(runtime)
+    runtime.dirty = true
+    requestFlowNativeDraw(runtime, ctx.args.buildDrawArgs())
     ctx.args.dragRef.current = null
     ctx.edgeScroll.reset()
     ctx.args.requestCommit()

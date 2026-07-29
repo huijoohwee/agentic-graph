@@ -91,6 +91,7 @@ export default function SettingsView({
   const {
     expanded,
     setExpanded,
+    flowDetailsRuntime,
     chatHealthOk,
     chatHealthDetails,
     isCheckingHealth,
@@ -450,6 +451,23 @@ export default function SettingsView({
           )}
         />
         <KeyTypeValueSectionStack>
+          {flowDetailsRuntime.status === 'unavailable' && (
+            <section
+              role="status"
+              className={`flex items-center justify-between gap-2 p-2 border-b border-amber-400/40 text-xs ${UI_THEME_TOKENS.text.primary}`}
+            >
+              <span title={flowDetailsRuntime.error || undefined}>
+                Responsibility details are unavailable. Settings remain editable.
+              </span>
+              <button
+                type="button"
+                className={`App-toolbar__btn text-xs border ${UI_THEME_TOKENS.panel.border}`}
+                onClick={flowDetailsRuntime.retry}
+              >
+                Retry
+              </button>
+            </section>
+          )}
           {mode === 'payments' && (
             <section className={`p-2 border-b border-white/10 ${UI_THEME_TOKENS.text.secondary}`}>
               <section className="flex flex-wrap items-center gap-1">

@@ -22,6 +22,19 @@ function requireBootstrapGuardBeforeMount(source: string, mountMarker: string, c
   }
 }
 
+function requireStableBootstrapAdmissionBeforeMount(
+  source: string,
+  mountMarker: string,
+  contract: string,
+): void {
+  const mountIndex = source.lastIndexOf(mountMarker)
+  if (mountIndex < 0) throw new Error(`${contract}: missing ${mountMarker}`)
+  const enclosingCondition = source.slice(Math.max(0, mountIndex - 1_200), mountIndex)
+  if (!/sourceFilesBootstrapHasReachedReady\s*\?/.test(enclosingCondition)) {
+    throw new Error(`${contract}: ${mountMarker} must wait for initial source authority and remain mounted across later intents`)
+  }
+}
+
 function requireCentralizedBootstrapActivation(
   viewportSource: string,
   lifecycleSource: string,
@@ -105,6 +118,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     'useSourceFilesBootstrapSnapshot',
     'useSourceFilesBootstrapHydrated',
     'useSourceFilesBootstrapReady',
+    'useSourceFilesBootstrapHasReachedReady',
   ]) {
     requireSourceMarker(bootstrapSource, marker, 'source bootstrap must own a single explicit lifecycle')
   }
@@ -170,7 +184,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     'const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady',
     'Game Mode HUD source authority',
   )
-  requireBootstrapGuardBeforeMount(
+  requireStableBootstrapAdmissionBeforeMount(
     startupRuntimesSource,
     '<XrPhysicsRunReadyDemoRuntime',
     'XR run-ready lifecycle source authority',

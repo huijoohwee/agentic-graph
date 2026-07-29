@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { HelpCircle, Settings, Search as SearchIcon, History as HistoryIcon, SunMoon, Plus, MessageCircle, Play, Download, RotateCcw } from 'lucide-react';
+import { HelpCircle, Settings, Search as SearchIcon, History as HistoryIcon, SunMoon, Plus, Link2, MessageCircle, Play, Download, RotateCcw } from 'lucide-react';
 import IconButton from '@/components/IconButton';
 import { DropdownPanel } from '@/lib/ui/overlay';
 import { UI_LABELS } from '@/lib/config';
@@ -25,6 +25,7 @@ import { isStrybldrStoryboardGraphData } from '@/features/strybldr/strybldrStory
 import { getDeferredInstallPrompt, promptPwaInstall } from '@/lib/pwa/runtime'
 import { setRunAllLayoutMutationLock } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetWorkflowRunAll'
 import { disableAutoZoomModesForUserGesture } from '@/lib/canvas/auto-zoom-modes'
+import { requestStartEdgeFromNodeId } from '@/features/edge-creation'
 import {
   UI_RESPONSIVE_MAIN_PANEL_COLLAPSED_CARD_CLASSNAME,
   UI_RESPONSIVE_MAIN_PANEL_MOBILE_SHEET_CLASSNAME,
@@ -79,8 +80,14 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     toggleFitToScreenMode,
     toolbarNavRef,
     canvas2dRenderer,
+    schema,
   } = useCanvasToolbarContext({ onZoomSelection })
   const pushUiToast = useGraphStore(s => s.pushUiToast)
+  const selectedNodeId = useGraphStore(s => s.selectedNodeId)
+  const workspaceViewMode = useGraphStore(s => s.workspaceViewMode)
+  const activeCanvas2dRenderer = useGraphStore(s => s.canvas2dRenderer)
+  const requestEdgeCreation = useGraphStore(s => s.requestEdgeCreation)
+  const setSelectionSource = useGraphStore(s => s.setSelectionSource)
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchBtnRef = useRef<HTMLButtonElement>(null);
@@ -166,6 +173,10 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
   const shouldUseToolbarRowScroll = isNarrowViewport || isWorkspaceOverlayMode
   const effectiveMainPanelPinned = isNarrowViewport ? true : mainPanelPinned
   const effectiveMainPanelCollapsed = isNarrowViewport ? false : mainPanelCollapsed
+  const canStartEdge = workspaceViewMode === 'editor'
+    && activeCanvas2dRenderer === 'd3'
+    && schema.behavior?.allowEdgeCreation !== false
+    && Boolean(selectedNodeId)
 
   useEffect(() => {
     if (!isMainPanelOpen) return
@@ -213,6 +224,8 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         ensureBaselineUnlocked={ensureBaselineUnlocked}
         geospatialEnabled={geospatialEnabled}
         onOpenGeospatialMode={actions.handleOpenGeospatialMode}
+        onActivateGeoXrMode={actions.handleActivateGeoXrMode}
+        onExitGeospatialMode={actions.handleExitGeospatialMode}
       />
       <section className="App-toolbar__divider" />
       <IconButton
@@ -316,6 +329,23 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
       >
         <Plus className={iconSizeClass} strokeWidth={iconStrokeWidth} />
       </IconButton>
+      {workspaceViewMode === 'editor' && activeCanvas2dRenderer === 'd3' && (
+        <IconButton
+          className="App-toolbar__btn"
+          title={canStartEdge ? 'Create edge from selected node' : 'Select a node to create an edge'}
+          tooltipContent={canStartEdge ? 'Create edge from selected node' : 'Select a node to create an edge'}
+          disabled={!canStartEdge}
+          data-kg-edge-creation-action="true"
+          onClick={() => {
+            const fromId = String(selectedNodeId || '').trim()
+            if (!fromId || !ensureBaselineUnlocked()) return
+            requestStartEdgeFromNodeId(fromId, requestEdgeCreation, setSelectionSource)
+          }}
+          showTooltip
+        >
+          <Link2 className={iconSizeClass} strokeWidth={iconStrokeWidth} />
+        </IconButton>
+      )}
       <IconButton
         className="App-toolbar__btn"
         title={canRunAll ? 'Run all' : 'Run all (Storyboard only)'}

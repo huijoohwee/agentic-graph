@@ -34,9 +34,9 @@ function readNormalizedCanvasWorkspacePreset(meta: Record<string, unknown> | nul
     const text = String(value || '').trim()
     return text === '2d' || text === '3d' ? text : undefined
   }
-  const readSurface = (value: unknown): '2d' | '3d' | 'xr' | 'geospatial' | undefined => {
+  const readSurface = (value: unknown): '2d' | '3d' | 'xr' | 'geo-xr' | 'geospatial' | undefined => {
     const text = String(value || '').trim()
-    return text === '2d' || text === '3d' || text === 'xr' || text === 'geospatial' ? text : undefined
+    return text === '2d' || text === '3d' || text === 'xr' || text === 'geo-xr' || text === 'geospatial' ? text : undefined
   }
   const readSemantic = (value: unknown): 'document' | 'keyword' | undefined => {
     const text = String(value || '').trim()
@@ -122,7 +122,7 @@ function shouldRetainVideoSequenceFloatingPanelView(value: unknown): boolean {
 
 function resolveCanvasSurfacePreset(args: {
   preset: CanvasWorkspaceFrontmatterPreset | null
-  defaultCanvasSurfaceMode?: '2d' | '3d' | 'xr' | 'geospatial'
+  defaultCanvasSurfaceMode?: '2d' | '3d' | 'xr' | 'geo-xr' | 'geospatial'
   defaultCanvasRenderMode?: '2d' | '3d'
   defaultCanvas3dMode?: Canvas3dModeId
 }): {
@@ -136,6 +136,13 @@ function resolveCanvasSurfacePreset(args: {
       geospatialModeEnabled: true,
       canvasRenderMode: '2d',
       canvas3dMode: args.preset?.canvas3dMode ?? args.defaultCanvas3dMode ?? '3d',
+    }
+  }
+  if (canvasSurfaceMode === 'geo-xr') {
+    return {
+      geospatialModeEnabled: true,
+      canvasRenderMode: '3d',
+      canvas3dMode: 'xr',
     }
   }
   if (canvasSurfaceMode === '3d') {
@@ -186,7 +193,7 @@ export function applyCanvasFrontmatterPreset(args: {
   preset?: CanvasWorkspaceFrontmatterPreset | null
   graphData?: GraphData | null
   rawText?: string | null
-  defaultCanvasSurfaceMode?: '2d' | '3d' | 'xr' | 'geospatial'
+  defaultCanvasSurfaceMode?: '2d' | '3d' | 'xr' | 'geo-xr' | 'geospatial'
   defaultCanvasRenderMode?: '2d' | '3d'
   defaultCanvas3dMode?: Canvas3dModeId
   defaultCanvas2dRenderer?: Canvas2dRendererId
@@ -272,6 +279,7 @@ export function applyCanvasFrontmatterPreset(args: {
   if (sharedXrSurfaceRouted) {
     const before = useGraphStore.getState()
     sharedXrSurfaceActivated = activateXrSceneSurface({
+      ...(preset?.canvasSurfaceMode === 'geo-xr' ? { geospatialComposite: true } : {}),
       ...(xrScenePanelView ? { panelView: xrScenePanelView } : {}),
       ...(preset?.floatingPanelOpen === true ? { openPanel: true } : {}),
     })
@@ -280,7 +288,7 @@ export function applyCanvasFrontmatterPreset(args: {
       after.pushUiToast({
         id: 'frontmatter:xr-scene:unavailable',
         kind: 'error',
-        message: 'The document requested a shared XR Mode surface that is unavailable.',
+        message: `The document requested a shared ${preset?.canvasSurfaceMode === 'geo-xr' ? 'Geo+XR' : 'XR'} Mode surface that is unavailable.`,
       })
     }
     if (sharedXrSurfaceActivated && (

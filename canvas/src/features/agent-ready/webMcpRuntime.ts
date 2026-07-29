@@ -46,6 +46,7 @@ import { buildFlightSimWebMcpToolBuilders } from './flightSimWebMcpTools'
 import { buildImmersiveMediaWebMcpToolBuilders } from './immersiveMediaWebMcpTools'
 import { buildCitySimWebMcpToolBuilders } from './citySimWebMcpTools'
 import { buildStorageSyncWebMcpToolBuilders } from './storageSyncWebMcpTools'
+import { buildGroupPanelWebMcpToolBuilders } from '@/features/group-panel/groupPanelWebMcpTools'
 import type { AgentReadyToolContract, ModelContextLike, ModelContextRegistrationState, WebMcpNavigator, WebMcpRuntimeState, WebMcpTool, WebMcpToolInput } from './webMcpRuntimeTypes'
 
 const WEB_MCP_TOOL_CONTRACTS = buildKnowgrphAgentReadyToolContracts({
@@ -69,6 +70,7 @@ const FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS = buildFlightSimWebMcpToolBuilders(findWe
 const IMMERSIVE_MEDIA_WEB_MCP_TOOL_BUILDERS = buildImmersiveMediaWebMcpToolBuilders(findWebToolContract)
 const CITY_SIM_WEB_MCP_TOOL_BUILDERS = buildCitySimWebMcpToolBuilders(findWebToolContract)
 const STORAGE_SYNC_WEB_MCP_TOOL_BUILDERS = buildStorageSyncWebMcpToolBuilders(findWebToolContract)
+const GROUP_PANEL_WEB_MCP_TOOL_BUILDERS = buildGroupPanelWebMcpToolBuilders(findWebToolContract)
 const SEARCH_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.search)
 const FETCH_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.fetch)
 const SOURCE_FILES_TOOL_CONTRACT = findWebToolContract(KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles)
@@ -527,6 +529,7 @@ const WEB_MCP_TOOL_BUILDERS: Record<string, () => WebMcpTool> = {
   ...IMMERSIVE_MEDIA_WEB_MCP_TOOL_BUILDERS,
   ...CITY_SIM_WEB_MCP_TOOL_BUILDERS,
   ...STORAGE_SYNC_WEB_MCP_TOOL_BUILDERS,
+  ...GROUP_PANEL_WEB_MCP_TOOL_BUILDERS,
   ...XR_SCENE_WEB_MCP_TOOL_BUILDERS,
   [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal2dZoomViewport]: buildInspectLocal2dZoomViewportTool,
   [KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalSourceFilesSnapshot]: buildInspectLocalSourceFilesSnapshotTool,

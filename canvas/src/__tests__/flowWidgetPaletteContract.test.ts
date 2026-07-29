@@ -11,6 +11,7 @@ import {
   PROBE_TREE_TYPE_ONE_LAYOUT_ID,
   PROBE_TREE_TYPE_TWO_LAYOUT_ID,
   RICH_MEDIA_DELIVERABLES_LAYOUT_ID,
+  WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS,
   WIDGET_CARD_TYPE_ZERO_LAYOUT_ID,
   buildWidgetCardLayoutSeed,
 } from '@/lib/storyboardWidget/widgetCardLayoutVariants'
@@ -99,7 +100,7 @@ export function testFlowWidgetPaletteConsolidatesMediaWidgetsIntoRichMediaPanel(
   }
   if (!floatingPanelText.includes("const storyboardRendererActive = canvasRenderMode === '2d' && canvas2dRenderer === 'storyboard'")
     || !floatingPanelText.includes('const widgetDragEnabled = storyboardRendererActive && widgetPaletteEntries.length > 0')
-    || !floatingPanelText.includes('Switch Canvas View Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.')) {
+    || !floatingPanelText.includes('Switch 2D Mode to 2D Renderer: Storyboard to drag widgets onto the canvas.')) {
     throw new Error('expected floating props panel widget drag to be available only on the 2D Storyboard renderer with explicit guidance elsewhere')
   }
   if (!floatingPanelText.includes('filter(isPropsPanelWidgetPaletteEntry)')) {
@@ -165,6 +166,13 @@ export function testFlowWidgetPaletteConsolidatesMediaWidgetsIntoRichMediaPanel(
     || layoutVariants[2]?.id !== PROBE_TREE_TYPE_TWO_LAYOUT_ID
     || layoutVariants[3]?.id !== RICH_MEDIA_DELIVERABLES_LAYOUT_ID) {
     throw new Error(`expected stable Type 0/Type 1/Type 2/Deliverables layout identities, got ${layoutVariants.map(variant => variant.id).join(', ')}`)
+  }
+  const sharedCardLayouts = layoutVariants.slice(0, WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS.length)
+    .map(variant => ({ id: variant.id, label: variant.label, layoutKind: variant.layoutKind }))
+  const sharedCardDescriptors = WIDGET_CARD_LAYOUT_VARIANT_DESCRIPTORS
+    .map(descriptor => ({ id: descriptor.id, label: descriptor.label, layoutKind: descriptor.layoutKind }))
+  if (JSON.stringify(sharedCardLayouts) !== JSON.stringify(sharedCardDescriptors)) {
+    throw new Error(`expected Props Panel palette to reuse shared Widget Card descriptors, got ${JSON.stringify(sharedCardLayouts)}`)
   }
   if (!layoutVariants.every(variant => variant.aspectRatio === '16:9')) {
     throw new Error(`expected palette layouts to preserve the selected 16:9 aspect, got ${layoutVariants.map(variant => variant.aspectRatio).join(', ')}`)

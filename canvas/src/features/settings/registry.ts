@@ -1,4 +1,5 @@
-import type { FlowDetails, SettingMeta } from './types'
+import type { SettingMeta } from './types'
+import { createFlowDetailsLoader } from './flowDetailsRuntime'
 import { uiSettingsRegistry } from './registry-ui'
 import { threeSettingsRegistry } from './registry-three'
 import { presetAndEnvSettingsRegistry } from './registry-presets'
@@ -19,14 +20,6 @@ export const settingsRegistry: SettingMeta[] = [
   ...paymentsSettingsRegistry,
 ]
 
-let flowDetailsPromise: Promise<Record<string, FlowDetails>> | null = null
-
-export async function loadFlowDetails(): Promise<Record<string, FlowDetails>> {
-  flowDetailsPromise ??= import('./settings-flow.schema.json').then(module => {
-    const value: unknown = module.default
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? (value as Record<string, FlowDetails>)
-      : {}
-  })
-  return flowDetailsPromise
-}
+export const loadFlowDetails = createFlowDetailsLoader(
+  () => import('./settings-flow.schema.json'),
+)

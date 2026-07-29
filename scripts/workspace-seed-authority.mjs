@@ -71,13 +71,14 @@ const parseYamlFrontmatter = (basename, source) => {
 const normalizePresetToken = value => String(value || '')
   .trim()
   .toLowerCase()
-  .replace(/[\s_-]+/g, '')
+  .replace(/[\s_+-]+/g, '')
 
 const readCanvasSurfaceMode = value => {
   const token = normalizePresetToken(value)
   if (token === '2d' || token === 'mode2d' || token === 'surface2d') return '2d'
   if (token === '3d' || token === 'mode3d' || token === 'surface3d') return '3d'
   if (token === 'xr' || token === 'xrmode' || token === 'surfacexr') return 'xr'
+  if (token === 'geoxr' || token === 'geoxrmode' || token === 'surfacegeoxr') return 'geo-xr'
   if (token === 'geospatial' || token === 'geomode' || token === 'geospatialmode' || token === 'surfacegeospatial') {
     return 'geospatial'
   }
@@ -184,7 +185,7 @@ const requireFlightRuntimeIdentity = (source, physicsSource) => {
     'exact-head source and browser proof required at every handoff',
   )
   requireValue('publish_scope', frontmatter.publish_scope, 'local-only')
-  requireValue('kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), 'xr')
+  requireValue('kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), 'geo-xr')
   requireValue('kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d')
   requireValue('kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), 'xr')
   requireValue('kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true)
@@ -208,7 +209,7 @@ const requireFlightRuntimeIdentity = (source, physicsSource) => {
     `/${PHYSICS_SEED_RELATIVE_PATH}`,
   )
   requireValue('shared_xr_scene.world_ownership', sharedScene.world_ownership, 'overlay-only')
-  requireValue('shared_xr_scene.surface_owner', sharedScene.surface_owner, 'XR Mode')
+  requireValue('shared_xr_scene.surface_owner', sharedScene.surface_owner, 'Geo+XR Mode')
   requireValue(
     'shared_xr_scene.camera_owner',
     sharedScene.camera_owner,
@@ -248,6 +249,11 @@ const requireFlightRuntimeIdentity = (source, physicsSource) => {
   requireValue(
     'native_flight_demo.camera.driver_owner',
     camera.driver_owner,
+    'gympgrph/src/flightGeoOverlayMapLibre.ts',
+  )
+  requireValue(
+    'native_flight_demo.camera.runtime_canvas_driver_owner',
+    camera.runtime_canvas_driver_owner,
     'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
   )
   requireValue('flight_sim.invocation', flightSim.invocation, '/flight.sim @canvas #flight operation=open')

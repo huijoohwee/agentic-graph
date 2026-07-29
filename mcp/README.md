@@ -85,7 +85,7 @@ Canonical local tool inventory owner:
 
 Managed autonomous implementation runs are configured and operated through the four `knowgrph.implementation_run.*` tools. Required host registries, invocation examples, revision-fenced controls, delivery semantics, and the trusted-runner/no-kernel-isolation boundary are documented in `docs/managed-implementation-runs.md`.
 
-Role-based collaboration registers the exact source-backed tuple `/agent.team #role-based-agent-team @agent-team` through `knowgrph.agent_team.plan`, `.start`, `.list`, and `.control`. Planning is read-only and zero-model, but the canonical stdio construction intentionally injects no exact-reference verifier, execution adapter, control authorizer, or review-receipt verifier, so it cannot admit a plan, execute a start, authorize a new control, or validate review continuation by default. An executable embedding host must provide an exact reference verifier, a revisioned replay-safe provider-neutral adapter with a zero-spend estimate, a control authorizer, and a review-receipt verifier only through runtime construction; MCP callers cannot configure them. The local durable runtime sends one immutable digest-bound projection to estimate and execute, persists admitted envelopes on deterministic leased effects, folds a durable active-stage clock across control races, blocks unreported or over-envelope continuation, requires exact delegate-synthesis and final-owner output-acceptance receipts, preserves exact start/control replay snapshots, and verifies a content-digest event/checkpoint chain capped at 64 checkpoints. Each descriptor has a closed operation-specific output schema; only a completed exact run lookup can return a public answer, while broad lists and every control suppress it and all public projections suppress private specialist messages. This is local stdio functionality only; remote Worker parity is an explicit gap. See `docs/agent-team-runtime.md`.
+Role-based collaboration registers the exact source-backed tuple `/agent.team #role-based-agent-team @agent-team` through `knowgrph.agent_team.plan`, `.start`, `.list`, and `.control`. Planning is read-only and zero-model. The canonical stdio host privately installs exact Agent Definition/workflow/review verification, local control authorization, file-backed review-receipt verification, and a durable replay-safe Ollama adapter with a zero-spend estimate; MCP callers cannot configure or replace any owner. Set `KNOWGRPH_AGENT_TEAM_MODEL` to an exact local model name to enable execution (loopback `http://127.0.0.1:11434` by default). The checked-in `team.collaborative-intelligence@1.0.0` source delegates to an evidence scout and risk reviewer, then returns manager-owned synthesis. Durable execution sends one immutable digest-bound projection to estimate and execute, records pending/completed model-effect receipts, persists admitted envelopes on deterministic leased effects, folds a durable active-stage clock across control races, blocks uncertain or over-envelope continuation, requires exact delegate-synthesis and final-owner output-acceptance receipts, preserves exact start/control replay snapshots, and verifies a content-digest event/checkpoint chain capped at 64 checkpoints. Each descriptor has a closed operation-specific output schema; only a completed exact run lookup can return a public answer, while broad lists and every control suppress it and all public projections suppress private specialist messages. This is local stdio functionality only; remote Worker parity is an explicit gap. See `docs/agent-team-runtime.md`.
 
 Provider-neutral agent and LLM applications use the exact host invocation `/application.compose #application-composition @application-manifest @component-catalog @integration-profile @runtime-proof`. `knowgrph.application.catalog` returns authoring schemas and sanitized exact runtime evidence, `knowgrph.application.plan` creates an immutable mode-bound zero-call plan, and `knowgrph.application.execute` replans and delegates bounded steps to existing owners. Live external authorization is host-injected and never accepted as an MCP argument. See `docs/agent-application-composition.md`.
 
@@ -96,6 +96,7 @@ Skill-text optimization uses `/skill.evolve #skill-evolution @skill-catalog @ski
 - `search` — searches published Knowgrph Source Files and returns stable `kgdoc:` ids with citation-ready result URLs
 - `fetch` — fetches the complete published Source File markdown for an id returned by `search`, returning both `content` and `text`
 - `knowgrph.agentic_canvas_os.docs.invoke` — resolves Agentic Canvas OS docs invocation tokens (`/`, `#`, `@`) from the sibling `agentic-canvas-os/docs` SSOT; prompt presets declare this tool through `mcp_tool` and pass their executable `runtime_command` unchanged as `mcp_token`. Local stdio reads `FACTS.md`, the three dictionary files, `LIVE-AGENT-PROVIDER-PROOF.md`, and `PROGRESSIVE-AGENTS.md`; its result includes source-revision-bound `liveAgentProviderProof` and `progressiveAgentsReadiness` summaries, while the Worker registry exposes the same read-only tool identity. Incomplete or revision-mismatched progressive evidence is `unavailable`. This lookup does not submit the loaded Chat prompt, execute its runtime command, configure an agent or provider, repeat proof calls, or authorize spend, mutation, or deployment.
+- `knowgrph.repository.pack` — invokes `/repository.pack #repository-packing @repository-root @runtime-proof` against the host-owned `KNOWGRPH_ROOT`. Its closed seven-field request selects an exact nested Git worktree, output directory, include/exclude prefixes, and caller-tightenable selected-file/source bounds. Policy-excluded paths are counted but never named. Git discovery disables hooks, fsmonitor, inherited Git configuration, prompts, and optional protocols. The runtime rejects traversal, escaping symlinks, sensitive material, revision/index/source drift, and every hard-bound overflow; types uninitialized Gitlinks as submodule omissions; omits binary bytes; and hard-links `<outputDirectory>/<artifactSha256>.md` at an atomic no-replace commit point. The closed MCP result returns metadata only with explicit zero network, model, token, and cost counters. See `docs/repository-packing-runtime.md`.
 - `knowgrph.skill.evolve` — plans and advances one bounded, source-fenced Skill Evolution run. Each `step` performs one training mini-batch update or one isolated validation checkpoint; successful terminal output is review-pending and all apply, model-weight, and deployment flags remain false.
 - `prompts/list` / `prompts/get` — expose read-only prompt templates that guide MCP hosts to use `search`/`fetch` or `inspect_agent_surface`; prompts do not introduce a second execution path
 - `resources/templates/list` — exposes the shared `kgdoc://source-file/{id}` template for Source Files returned by `search`
@@ -165,10 +166,15 @@ The private session store uses a finite TTL, maximum count, and lazy expiry swee
    - Native dataset operators load annotation results or frame-box arrays, split/merge/save deterministic JSON datasets, and build frame-ordered zone-count timelines for live panel projection
    - Dev default adds no external dependency and no paid inference path; the browser worker emits runtime-local heuristic annotations while model adapters remain runtime-owned behind the `Annotation_Worker` boundary
 9. Memory layer tools
-   - `knowgrph.memory.add` persists explicitly scoped memory text or messages through the provider-neutral memory harness
-   - `knowgrph.memory.search` returns top-K scoped memory results for prompt augmentation
+   - `knowgrph.memory.write`, `knowgrph.memory.compact`, `knowgrph.memory.search`, `knowgrph.session.search`, and `knowgrph.user.profile` implement the bounded Agentic Canvas OS persistent-memory contract
+   - Mutations require an exact tenant/workspace/agent/subject scope, source evidence, an expected scope-local revision, a durable idempotency key, and a short-lived HMAC authorization bound by the host to the exact tool and request
+   - `knowgrph.memory.invoke` executes only an exact revision-fenced `/`, `#`, and `@` tuple resolved from the canonical Agentic Canvas OS dictionaries; the existing docs resolver remains metadata-only
+   - The local deterministic store lives outside the Git checkout under the host state directory, shards revisions and quotas by exact scope, uses a filesystem ownership lock plus atomic fsync/rename commits, rejects symlink escapes, and returns no machine path
+   - Search is exact-scope, bounded, cited, zero-model, and revision-addressable so an agent can retain a frozen session-start view while later writes remain durable; an authorized remove hard-redacts the entry, lifecycle content, old receipts, and historical snapshots
+   - User profiles accept only explicit allowlisted interaction preferences such as `response_length=concise` or `language=en-SG`; arbitrary prose, sensitive categories, inference, and profile writes through `knowgrph.memory.write` fail closed
+   - `knowgrph.memory.add` remains the legacy provider-neutral harness adapter; callers should use `knowgrph.memory.write` for fenced persistent agent memory
    - `knowgrph.memory.assemble_prompt` injects ranked memory results into a bounded `## Relevant Context` system-message section
-   - Dev default uses local JSON storage at `KNOWGRPH_MEMORY_STORE_PATH` or `data/memory-layer/local-memory-store.json`; Mem0 credentials and provider config remain host-owned runtime inputs
+   - Persistent-memory state can be isolated with `KNOWGRPH_MEMORY_STATE_DIR` and `KNOWGRPH_MEMORY_NAMESPACE`; set a host-only `KNOWGRPH_MEMORY_APPROVAL_HMAC_KEY` of at least 32 bytes and mint exact-request tokens with `mintPersistentMemoryAuthorization` without exposing the key to an agent; legacy harness storage remains separately configured by `KNOWGRPH_MEMORY_STORE_PATH`
 10. Probe-tree tools
    - `knowgrph.probe.generate` recalls scoped resolved-path exemplars and returns 2-4 typed candidate next questions without mutating the current node; `token_budget` is enforced before a local model call, trimming recalled exemplars first, and `recall_top_k: 0` disables recall explicitly. If fewer than 2 query-relevant local-model cards survive, the tool fails closed with `insufficient_user_input_context` instead of restating the source query, synthesizing generic wrapper cards, or converting named entities into templates
    - The same tool result includes `response.structuredContent` with a source Widget, bounded cards, and a Rich Media branch ledger. A literal stdio MCP result can therefore reuse FloatingPanel Chat -> workspace KGC -> Canvas apply directly; no MCP-only graph persistence path is added
@@ -378,13 +384,53 @@ Then you can call:
 - `knowgrph.browser_api.run` with `{ "operation": "cookieImport", "targetUrl": "<TARGET_URL>", "dryRun": false, "confirmCookieImport": true, "confirmUnsafe": true, "confirmThirdPartyTerms": true }`
 - `knowgrph.browser_api.run` with `{ "operation": "click", "sessionId": "session-id", "selector": "#submit", "dryRun": false, "confirmUnsafe": true }`
 - `knowgrph.memory.add` with `{ "text": "Prefer local-first memory and operator-gated deploys.", "user_id": "runtime-user-id", "metadata": { "memory_key": "deployment-boundary" } }`
-- `knowgrph.memory.search` with `{ "query": "Should deploys happen automatically?", "user_id": "runtime-user-id", "top_k": 3 }`
+- `knowgrph.memory.search` with `{ "scope": { "tenant_id": "tenant-id", "workspace_id": "workspace-id", "agent_id": "agent-id", "subject_id": "subject-id" }, "query": "Should deploys happen automatically?", "limit": 3 }`
 - `knowgrph.memory.assemble_prompt` with `{ "base_system_message": "Answer directly.", "memories": [{ "id": "memory-id", "memory": "Prefer local-first memory.", "score": 1, "created_at": "2026-06-13T00:00:00.000Z" }], "max_memory_tokens": 80 }`
 - `knowgrph.showrunner.start_run` with `{ "brief_markdown": "---\\ncontract: knowgrph-showrunner-brief/v1\\n---\\n# Brief\\nDry-run a branching podcast pilot.", "dry_run": true }`
 - `knowgrph.os.status` with `{ "view": "capabilities" }`
 - `knowgrph.vdeoxpln.list` with `{ "includeMarkdown": true }`
+- `knowgrph.voice.studio` dry-run clone with `{ "schemaVersion": "knowgrph-voice-studio-request/v1", "operation": "clone", "mode": "dry-run", "requestId": "voice-clone-request", "idempotencyKey": "voice-clone-0001", "approvalReceiptId": "approval-clone-0001", "costPolicy": { "currency": "USD", "maxActualCostUsd": 0, "maxProviderCalls": 0, "maxNetworkCalls": 0 }, "limits": { "maxDurationMs": 300000, "maxBytes": 100000000, "maxTextCharacters": 20000, "timeoutMs": 120000 }, "sourceAudio": { "artifactId": "sample-1", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "mediaType": "audio/webm", "bytes": 1024, "durationMs": 20000 }, "speakerAuthorization": { "consentReceiptId": "consent-owner-0001", "rightsReceiptId": "rights-owner-0001", "permittedUses": ["private studio creation"], "disclosureRequired": true, "retentionPolicy": "session-only" }, "profileIntent": { "profileId": "owner-voice", "displayName": "Owner voice" } }`
 - `export.publish` with `{ "artifact_id": "docs/documents/example-financial-plan.md", "kind": "spreadsheet" }`
 - `export.publish` with `{ "artifact_id": "docs/documents/example-deck.md", "kind": "slides", "target_provider": "microsoft" }`
+
+## AI Voice Studio
+
+`knowgrph.voice.studio` is one local stdio facade for `clone`, `dictate`, and
+`create`. Its canonical token routes are:
+
+- `/voice.studio #voice-clone @audio @voice-profile @approval-gate @cost-log @runtime-proof`
+- `/voice.studio #speech-to-text @audio @text @approval-gate @cost-log @runtime-proof`
+- `/voice.studio #text-to-speech @text @voice-profile @audio @approval-gate @cost-log @runtime-proof`
+
+Dry-run is deterministic, idempotent, and zero-call. It returns a profile
+manifest or an honest operation plan without claiming that a provider artifact
+exists. Live mode requires separate host-owned exact-request approval,
+voice-rights, immutable-source resolution, a zero-spend estimate/execution
+adapter, an independent settled-cost verifier, and output read-back owners.
+Approval binds the exact USD cost and provider/network-call ceilings. A
+verified estimate over any ceiling blocks before dispatch; a verified settled
+overage is terminal and reconciliation-required.
+Exact concurrent retries share one in-flight effect; changed requests under the
+same idempotency key conflict. Cancellation after external dispatch requires
+reconciliation and reports incomplete cost. The canonical stdio server injects
+none of these live owners and is provider-unconfigured, so canonical live
+requests fail closed before provider egress.
+
+The browser Media panel adds an AI Voice Studio mode for session-only,
+metadata-only profile manifests; recording-rights-gated, duration/byte-bounded,
+visible/stoppable microphone capture; browser-managed speech recognition that
+is off until a separate explicit opt-in; and an explicitly requested disclosed
+system-voice preview. Profile manifests remain only in React state—there is no
+voice-specific localStorage registry—and sample/capture bytes are not durably
+stored. Stop, workflow changes, and unmount teardown stop tracks and
+recognition, cancel speech, clear timers, and revoke object URLs.
+
+This is `runtime-ready-dev` only for a reviewed embedding host that injects and
+tests the live owners. It does not claim a configured provider, provider-backed
+cloning, speaker similarity or output quality, Prod, remote Worker parity, or
+Cloudflare readiness. See
+`docs/documents/knowgrph-ai-voice-studio-prd-tad.md` and run
+`npm run voice-studio:check`.
 
 ## Relationship to MainPanel MCP
 

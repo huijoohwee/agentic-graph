@@ -13,6 +13,10 @@ import {
 } from '@/features/agent-ready/probeTreeContract.mjs'
 import { FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import type { JSONValue } from '@/lib/graph/types'
+import {
+  PROBE_TREE_TYPE_TWO_LAYOUT_ID,
+  buildWidgetCardLayoutSeed,
+} from '@/lib/storyboardWidget/widgetCardLayoutVariants'
 import { readFieldValue, readFirstString } from './chatResponseStructuredRecord'
 
 export { PROBE_TREE_LLM_RESPONSE_CONTRACT_VERSION } from '@/features/agent-ready/probeTreeContract.mjs'
@@ -105,15 +109,12 @@ export function buildProbeTreeStructuredResponseProperties(args: {
   const action = evidenceNeeded
     ? `Verify ${evidenceNeeded}, then review ${nextAction}.`
     : `Review this branch, then ${nextAction}.`
+  const layoutSeed = buildWidgetCardLayoutSeed(PROBE_TREE_TYPE_TWO_LAYOUT_ID)
   return {
-    cardTypeLabel: 'Probe-Tree Card',
-    probeTreeTypeLabel: 'Probe-Tree Type 2',
-    probeTreeCardVariant: PROBE_TREE_CARD_VARIANTS.boundedMultiSelect,
-    selectionMode: 'multiple',
+    ...(layoutSeed?.properties as Record<string, JSONValue> | undefined),
     selectionOptions,
     contextAnchors,
     probeTreeUserInputAnchors: contextAnchors,
-    allowOther: true,
     lane: 'PROBE',
     index: `P${args.index + 1}`,
     summary: question,

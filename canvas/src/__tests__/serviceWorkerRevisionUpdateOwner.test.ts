@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   installServiceWorkerRevisionUpdateOwner,
+  readActiveServiceWorkerSourceRevision,
   SERVICE_WORKER_UPDATE_MIN_INTERVAL_MS,
 } from '../lib/pwa/serviceWorkerRevisionUpdateOwner'
 import { registerCanonicalServiceWorker } from '../lib/pwa/serviceWorkerRegistrationOwner'
+
+const CURRENT_REVISION = 'b'.repeat(40)
 
 const flushPromises = async (): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 0))
@@ -130,7 +133,91 @@ test('service worker revision owner retries until the running build revision is 
   dispose()
 })
 
+test('active service worker revision attestation validates the response and closes both ports', async () => {
+  let requestType = ''
+  let closedPortCount = 0
+  const port1 = {
+    onmessage: null as ((event: MessageEvent) => void) | null,
+    onmessageerror: null as ((event: MessageEvent) => void) | null,
+    start() {},
+    close() {
+      closedPortCount += 1
+    },
+  }
+  const port2 = {
+    onmessage: null,
+    onmessageerror: null,
+    start() {},
+    close() {
+      closedPortCount += 1
+    },
+  }
+  const revision = await readActiveServiceWorkerSourceRevision({
+    postMessage(message) {
+      requestType = String((message as { type?: string }).type || '')
+      queueMicrotask(() => port1.onmessage?.({
+        data: {
+          type: 'KG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE',
+          sourceRevision: CURRENT_REVISION,
+        },
+      } as MessageEvent))
+    },
+  }, {
+    createMessageChannel: () => ({ port1, port2 }) as never,
+    timeoutMs: 50,
+  })
+
+  assert.equal(requestType, 'KG_SERVICE_WORKER_SOURCE_REVISION_REQUEST')
+  assert.equal(revision, CURRENT_REVISION)
+  assert.equal(closedPortCount, 2)
+})
+
+test('active service worker revision attestation rejects malformed and timed-out responses', async () => {
+  const makeChannel = () => {
+    const port1 = {
+      onmessage: null as ((event: MessageEvent) => void) | null,
+      onmessageerror: null as ((event: MessageEvent) => void) | null,
+      start() {},
+      close() {},
+    }
+    return {
+      channel: {
+        port1,
+        port2: { onmessage: null, onmessageerror: null, start() {}, close() {} },
+      },
+      port1,
+    }
+  }
+
+  const malformed = makeChannel()
+  await assert.rejects(
+    readActiveServiceWorkerSourceRevision({
+      postMessage() {
+        queueMicrotask(() => malformed.port1.onmessage?.({
+          data: { type: 'KG_SERVICE_WORKER_SOURCE_REVISION_RESPONSE', sourceRevision: 'latest' },
+        } as MessageEvent))
+      },
+    }, {
+      createMessageChannel: () => malformed.channel as never,
+      timeoutMs: 50,
+    }),
+    /invalid source revision/,
+  )
+
+  const timedOut = makeChannel()
+  await assert.rejects(
+    readActiveServiceWorkerSourceRevision({
+      postMessage() {},
+    }, {
+      createMessageChannel: () => timedOut.channel as never,
+      timeoutMs: 1,
+    }),
+    /timed out/,
+  )
+})
+
 test('canonical service worker registration bypasses caches for rapid release convergence', async () => {
+  const sourceRevision = '0123456789abcdef0123456789abcdef01234567'
   const previousController = Object.assign(new EventTarget(), {
     state: 'activated',
     postMessage() {},
@@ -156,6 +243,7 @@ test('canonical service worker registration bypasses caches for rapid release co
   let registeredCount = 0
   const owner = await registerCanonicalServiceWorker({
     serviceWorkerTarget,
+    sourceRevision,
     reload() {
       reloadCount += 1
     },
@@ -165,7 +253,7 @@ test('canonical service worker registration bypasses caches for rapid release co
   })
 
   assert.deepEqual(serviceWorkerTarget.registerCalls, [{
-    scriptUrl: '/knowgrph/sw.js',
+    scriptUrl: `/knowgrph/sw.js?revision=${sourceRevision}`,
     options: {
       scope: '/knowgrph/',
       type: 'classic',
@@ -183,6 +271,23 @@ test('canonical service worker registration bypasses caches for rapid release co
   serviceWorkerTarget.controller = previousController
   serviceWorkerTarget.dispatchEvent(new Event('controllerchange'))
   assert.equal(reloadCount, 1, 'disposed registration owners must release controller listeners')
+})
+
+test('canonical service worker registration rejects a non-commit revision', async () => {
+  const serviceWorkerTarget = Object.assign(new EventTarget(), {
+    controller: null,
+    async register() {
+      throw new Error('must not register')
+    },
+  })
+
+  await assert.rejects(
+    registerCanonicalServiceWorker({
+      serviceWorkerTarget,
+      sourceRevision: 'latest',
+    }),
+    /source revision must be an exact commit SHA/,
+  )
 })
 
 test('canonical service worker registration reports a first install without reloading', async () => {

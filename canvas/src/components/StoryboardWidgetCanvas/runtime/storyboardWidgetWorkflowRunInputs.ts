@@ -4,8 +4,10 @@ import { readGraphDataRevision } from '@/lib/graph/documentMetadata'
 import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import { readFlowComputeSource } from '@/lib/storyboardWidget/flowComputeInline'
+import { readTextSelectionWidgetEdgeProvenance } from '@/lib/storyboardWidget/textSelectionWidgetLink'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import type { WidgetRegistryEntry, WidgetRegistryPort } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
+import { resolveWidgetNodeTitle } from '@/components/StoryboardWidget/widgetEditorTitle'
 
 import { type StoryboardWidgetWorkflowNodeResolutionContext } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
 
@@ -15,8 +17,25 @@ export type StoryboardWidgetWorkflowConnectedValuesInput = {
   connectedValuesByNodeId: Map<string, FlowConnectedValuesBySchemaPath>
 }
 
+export const STORYBOARD_WIDGET_TEXT_SOURCE_PROVENANCE_SCHEMA = 'knowgrph-text-generation-source-provenance/v1'
+
+export type StoryboardWidgetTextSourceContext = {
+  reference: string
+  label: string
+  nodeType: string
+  sourcePort: string
+  targetPath: string
+  selection: {
+    documentPath: string
+    startLine: number
+    endLine: number
+  } | null
+  content: string
+}
+
 function cleanString(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : ''
+  const scalar = unwrapGraphCellValue(value)
+  return typeof scalar === 'string' ? scalar.trim() : ''
 }
 
 export function normalizeStoryboardWidgetConnectedTextValue(value: unknown): string {
@@ -30,15 +49,25 @@ export function normalizeStoryboardWidgetConnectedTextValue(value: unknown): str
 export function resolveStoryboardWidgetTextGenerationPrompts(args: {
   authoredPrompt: unknown
   connectedValue: unknown
+  sourceContexts?: readonly StoryboardWidgetTextSourceContext[]
 }): { authoredPrompt: string; connectedPrompt: string; prompt: string } {
   const authoredPrompt = normalizeStoryboardWidgetConnectedTextValue(args.authoredPrompt)
-  const connectedPrompt = normalizeStoryboardWidgetConnectedTextValue(args.connectedValue)
+  const sourceContexts = (args.sourceContexts || []).filter(source => source.content.trim())
+  const connectedPrompt = sourceContexts.length > 0
+    ? sourceContexts.map(source => source.content).join('\n').trim()
+    : normalizeStoryboardWidgetConnectedTextValue(args.connectedValue)
   if (!authoredPrompt || !connectedPrompt) {
     return { authoredPrompt, connectedPrompt, prompt: authoredPrompt || connectedPrompt }
   }
+  const connectedContext = sourceContexts.length > 0
+    ? JSON.stringify({
+        schema: STORYBOARD_WIDGET_TEXT_SOURCE_PROVENANCE_SCHEMA,
+        sources: sourceContexts,
+      }, null, 2)
+    : connectedPrompt
   const prompt = [
     '<connected-source-context>',
-    connectedPrompt,
+    connectedContext,
     '</connected-source-context>',
     '',
     '<user-authored-request>',
@@ -46,6 +75,55 @@ export function resolveStoryboardWidgetTextGenerationPrompts(args: {
     '</user-authored-request>',
   ].join('\n')
   return { authoredPrompt, connectedPrompt, prompt }
+}
+
+export function resolveStoryboardWidgetTextSourceContexts(args: {
+  graphData: GraphData | null | undefined
+  connectedValue: {
+    value: unknown
+    sources: ReadonlyArray<{ edgeId: string; nodeId: string; portKey: string }>
+  } | null | undefined
+  targetPath: string
+}): StoryboardWidgetTextSourceContext[] {
+  const sources = args.connectedValue?.sources || []
+  const scalar = unwrapGraphCellValue(args.connectedValue?.value)
+  const values = Array.isArray(scalar) && scalar.length === sources.length
+    ? scalar
+    : sources.map(() => scalar)
+  const contexts: StoryboardWidgetTextSourceContext[] = []
+  for (let index = 0; index < sources.length; index += 1) {
+    const source = sources[index]!
+    const sourceNode = resolveGraphNodeByCanonicalId(args.graphData, source.nodeId)
+    const edge = (args.graphData?.edges || []).find(candidate => cleanString(candidate.id) === cleanString(source.edgeId))
+    const selection = readTextSelectionWidgetEdgeProvenance(edge)
+    const content = selection?.selectedText || normalizeStoryboardWidgetConnectedTextValue(values[index])
+    if (!content) continue
+    contexts.push({
+      reference: `source-${contexts.length + 1}`,
+      label: sourceNode ? resolveWidgetNodeTitle({ node: sourceNode }) : '',
+      nodeType: cleanString(sourceNode?.type),
+      sourcePort: cleanString(source.portKey),
+      targetPath: cleanString(args.targetPath),
+      selection: selection ? {
+        documentPath: selection.documentPath,
+        startLine: selection.startLine,
+        endLine: selection.endLine,
+      } : null,
+      content,
+    })
+  }
+  return contexts
+}
+
+export function serializeStoryboardWidgetTextSourceProvenance(
+  sourceContexts: readonly StoryboardWidgetTextSourceContext[],
+): string {
+  return sourceContexts.length > 0
+    ? JSON.stringify({
+        schema: STORYBOARD_WIDGET_TEXT_SOURCE_PROVENANCE_SCHEMA,
+        sources: sourceContexts,
+      })
+    : ''
 }
 
 function normalizeWorkflowSchemaPath(schemaPath: unknown, fallbackKey = ''): string {

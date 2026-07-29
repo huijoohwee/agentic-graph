@@ -276,8 +276,11 @@ This repository is the Dev source of truth and the sole production deployment ow
 | `gympgrph/` | Geospatial package consumed by the canvas app. |
 | `cloudflare/` | Pages handlers, Workers (incl. the `knowgrph-mcp` `McpAgent`), storage routes, D1 migrations, and R2-backed binary storage. |
 | `mcp/` | Local stdio MCP server, tool contracts, local runtimes, and service documentation. |
+| `config/surface-registry.json` | Protection-first authority for private, gated, served, and publicly discoverable artifacts and routes. |
+| `config/license-registry.json` | Class-to-terms authority used to validate published artifacts and render the staged reuse declaration. |
 | `data/config/` | Canonical config inputs for GraphRAG, schema, orchestrator, and LLM chat boundaries. |
 | `docs/documents/` | Authored product, API, architecture, and feature documents. |
+| `scripts/surface/` | Deterministic, network-free discovery generation, parsing, scanning, audit, and temp-fixture promotion proof. See [the runtime contract](docs/discoverability-ip-protection-runtime.md). |
 | `scripts/` | Repo checks, sync helpers, docs generation, storage seeding, payment readiness, and release tooling. |
 
 ## Setup
@@ -299,7 +302,7 @@ Prepare the shared runtime required by repository smoke checks:
 npm run smoke:prepare
 ```
 
-The collaboration readiness gate runs this preparation automatically before its focused and browser smoke checks.
+The collaboration readiness gate runs this preparation automatically before its focused and browser smoke checks. Agentic Canvas OS supplies run-scoped owner, guest, and worker URLs plus `KG_COLLABORATION_E2E_PERSISTENCE_PATH` and `KG_COLLABORATION_E2E_RESULT_PATH`, so concurrent proofs do not reuse canonical ports or repository-local Wrangler state.
 
 ## Local development
 

@@ -46,7 +46,12 @@ const validateDeploymentIsolation = (contract, workflowSources) => {
     if (!triggers.includes(requiredTrigger) || triggers.some(trigger => forbiddenTriggers.has(trigger))) {
       throw new Error(`${rel} must use only the protected ${requiredTrigger} deployment trigger`)
     }
-    if (!Array.isArray(configuredBranches) || configuredBranches.length !== 1 || configuredBranches[0] !== requiredBranch) {
+    if (requiredTrigger === 'workflow_dispatch') {
+      const protectedRefCheck = `test "$GITHUB_REF" = "refs/heads/${requiredBranch}"`
+      if (!source.includes(protectedRefCheck)) {
+        throw new Error(`${rel} must restrict ${requiredTrigger} deployment to ${requiredBranch}`)
+      }
+    } else if (!Array.isArray(configuredBranches) || configuredBranches.length !== 1 || configuredBranches[0] !== requiredBranch) {
       throw new Error(`${rel} must restrict ${requiredTrigger} deployment to ${requiredBranch}`)
     }
   }

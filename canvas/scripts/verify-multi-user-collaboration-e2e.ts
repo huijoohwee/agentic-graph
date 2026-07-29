@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { basename, dirname, join, resolve, sep } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { chromium, type Page } from 'playwright'
 import { buildKnowgrphStorageCanvasRoomPath } from '../src/lib/storage/knowgrphStorageSyncContract'
 import { KNOWGRPH_STORAGE_DEVICE_ID_KEY } from '../src/lib/storage/knowgrphStorageDeviceIdentity'
@@ -35,6 +35,8 @@ const MARKER = process.env.KG_COLLABORATION_E2E_MARKER || `SMOKE_REMOTE_APPLY_MA
 const SCREENSHOT_PREFIX = process.env.KG_COLLABORATION_E2E_SCREENSHOT_PREFIX || join(tmpdir(), 'knowgrph-collaboration-e2e')
 const OWNER_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.owner.png`
 const GUEST_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.guest.png`
+const RESULT_PATH = String(process.env.KG_COLLABORATION_E2E_RESULT_PATH || '').trim()
+const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
 const MACOS_BROWSER_CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
@@ -66,6 +68,38 @@ type RuntimeIdentityProof = {
   catalogRevision: string
   catalogHydrationStatus: string
   catalogHydrationAttempts: number
+}
+
+function emitProof(proof: Record<string, unknown>): void {
+  if (RESULT_PATH) {
+    mkdirSync(dirname(RESULT_PATH), { recursive: true })
+    const temporaryPath = `${RESULT_PATH}.${process.pid}.tmp`
+    writeFileSync(temporaryPath, `${JSON.stringify(proof)}\n`, { mode: 0o600 })
+    renameSync(temporaryPath, RESULT_PATH)
+  }
+  console.log(JSON.stringify(proof))
+}
+
+type LocalDocumentSnapshot = {
+  filePath: string
+  text: string
+}
+
+function captureLocalDocumentSnapshot(): LocalDocumentSnapshot | null {
+  const filePath = resolve(REPO_ROOT, DOC_PATH.replace(/^\/+/, ''))
+  if (!filePath.startsWith(`${REPO_ROOT}${sep}`) || !existsSync(filePath)) return null
+  return { filePath, text: readFileSync(filePath, 'utf8') }
+}
+
+function restoreLocalDocumentSnapshot(snapshot: LocalDocumentSnapshot | null): void {
+  if (!snapshot) return
+  const currentText = readFileSync(snapshot.filePath, 'utf8')
+  if (currentText === snapshot.text) return
+  const expectedSmokeText = `${snapshot.text}\n${MARKER}\n`
+  if (currentText !== expectedSmokeText) {
+    throw new Error(`refusing to overwrite unexpected concurrent document changes at ${snapshot.filePath}`)
+  }
+  writeFileSync(snapshot.filePath, snapshot.text, 'utf8')
 }
 
 function requireClientDeviceId(name: string, value: unknown): string {
@@ -156,28 +190,43 @@ async function readRuntimeIdentityProof(page: Page): Promise<RuntimeIdentityProo
   })
 }
 
-async function waitForRuntimeIdentityPass(page: Page, label: string): Promise<RuntimeIdentityProof> {
+function isPassingRuntimeIdentityProof(proof: RuntimeIdentityProof): boolean {
+  const revisionsAreExact = /^[0-9a-f]{40}$/.test(proof.knowgrphRevision)
+    && /^[0-9a-f]{40}$/.test(proof.agenticCanvasOsRevision)
+    && proof.catalogRevision === proof.agenticCanvasOsRevision
+  const hydrationIsFresh = proof.catalogHydrationStatus === 'fresh'
+    && proof.catalogHydrationAttempts <= 2
+  return proof.status === 'pass'
+    && proof.transportStatus === 'connected'
+    && proof.requiredDeviceCount >= 2
+    && proof.observedDeviceCount >= proof.requiredDeviceCount
+    && /^[0-9a-f]{64}$/.test(proof.verificationDigest)
+    && revisionsAreExact
+    && hydrationIsFresh
+}
+
+async function waitForRuntimeIdentityProofConvergence(
+  ownerPage: Page,
+  guestPage: Page,
+): Promise<{ owner: RuntimeIdentityProof; guest: RuntimeIdentityProof }> {
   const startedAt = Date.now()
-  let lastProof = await readRuntimeIdentityProof(page)
+  let [ownerProof, guestProof] = await Promise.all([
+    readRuntimeIdentityProof(ownerPage),
+    readRuntimeIdentityProof(guestPage),
+  ])
   while (Date.now() - startedAt < 60_000) {
-    lastProof = await readRuntimeIdentityProof(page)
-    const revisionsAreExact = /^[0-9a-f]{40}$/.test(lastProof.knowgrphRevision)
-      && /^[0-9a-f]{40}$/.test(lastProof.agenticCanvasOsRevision)
-      && lastProof.catalogRevision === lastProof.agenticCanvasOsRevision
-    const hydrationIsFresh = lastProof.catalogHydrationStatus === 'fresh'
-      && lastProof.catalogHydrationAttempts <= 2
+    ;[ownerProof, guestProof] = await Promise.all([
+      readRuntimeIdentityProof(ownerPage),
+      readRuntimeIdentityProof(guestPage),
+    ])
     if (
-      lastProof.status === 'pass'
-      && lastProof.transportStatus === 'connected'
-      && lastProof.requiredDeviceCount >= 2
-      && lastProof.observedDeviceCount >= lastProof.requiredDeviceCount
-      && /^[0-9a-f]{64}$/.test(lastProof.verificationDigest)
-      && revisionsAreExact
-      && hydrationIsFresh
-    ) return lastProof
-    await page.waitForTimeout(500)
+      isPassingRuntimeIdentityProof(ownerProof)
+      && isPassingRuntimeIdentityProof(guestProof)
+      && ownerProof.verificationDigest === guestProof.verificationDigest
+    ) return { owner: ownerProof, guest: guestProof }
+    await ownerPage.waitForTimeout(500)
   }
-  throw new Error(`${label} runtime identity proof timed out: ${JSON.stringify(lastProof)}`)
+  throw new Error(`runtime identity proofs did not converge: ${JSON.stringify({ owner: ownerProof, guest: guestProof })}`)
 }
 
 async function openCollaborationPanel(page: Page): Promise<void> {
@@ -219,13 +268,13 @@ async function waitForPageCondition(page: Page, label: string, predicate: (snaps
 async function connectAuthenticatedRoom(page: Page): Promise<void> {
   let lastError: Error | null = null
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    await openCollaborationPanel(page)
-    await waitForActiveDocumentReady(page)
-    await closeFloatingPanelIfOpen(page)
-    const connectButton = page.getByRole('button', { name: /Connect Room|Reconnect Room/, exact: false })
-    await connectButton.waitFor({ state: 'visible', timeout: 30_000 })
-    await connectButton.click({ timeout: 30_000 })
     try {
+      await openCollaborationPanel(page)
+      await waitForActiveDocumentReady(page)
+      await closeFloatingPanelIfOpen(page)
+      const connectButton = page.getByRole('button', { name: /Connect Room|Reconnect Room/, exact: false })
+      await connectButton.waitFor({ state: 'visible', timeout: 30_000 })
+      await connectButton.click({ timeout: 30_000 })
       await waitForPageCondition(
         page,
         `workspace room connection attempt ${attempt}`,
@@ -333,6 +382,7 @@ async function assertRoomStatus(workerUrl: string, docPath: string): Promise<voi
 }
 
 async function main(): Promise<void> {
+  const localDocumentSnapshot = captureLocalDocumentSnapshot()
   const browser = await chromium.launch(resolveBrowserLaunchOptions())
   const ownerContext = await browser.newContext({ viewport: { width: 1440, height: 950 } })
   const guestContext = await browser.newContext({ viewport: { width: 1440, height: 950 } })
@@ -362,10 +412,10 @@ async function main(): Promise<void> {
     await ownerPage.goto(buildWorkspaceUrl(OWNER_APP_URL), { waitUntil: 'domcontentloaded', timeout: 60_000 })
     await guestPage.goto(buildWorkspaceUrl(GUEST_APP_URL), { waitUntil: 'domcontentloaded', timeout: 60_000 })
 
-    const [ownerIdentityProof, guestIdentityProof] = await Promise.all([
-      waitForRuntimeIdentityPass(ownerPage, 'owner'),
-      waitForRuntimeIdentityPass(guestPage, 'guest'),
-    ])
+    const {
+      owner: ownerIdentityProof,
+      guest: guestIdentityProof,
+    } = await waitForRuntimeIdentityProofConvergence(ownerPage, guestPage)
     if (ownerIdentityProof.device === guestIdentityProof.device) {
       throw new Error(`expected distinct runtime devices, got ${JSON.stringify(ownerIdentityProof.device)}`)
     }
@@ -386,11 +436,6 @@ async function main(): Promise<void> {
     await Promise.all([
       closeFloatingPanelIfOpen(ownerPage),
       closeFloatingPanelIfOpen(guestPage),
-    ])
-
-    await Promise.all([
-      openCollaborationPanel(ownerPage),
-      openCollaborationPanel(guestPage),
     ])
 
     await Promise.all([
@@ -434,8 +479,7 @@ async function main(): Promise<void> {
 
     await ownerPage.screenshot({ path: OWNER_SCREENSHOT_PATH, fullPage: true })
     await guestPage.screenshot({ path: GUEST_SCREENSHOT_PATH, fullPage: true })
-    console.log(
-      JSON.stringify({
+    emitProof({
         ok: true,
         ownerAppUrl: buildWorkspaceUrl(OWNER_APP_URL),
         guestAppUrl: buildWorkspaceUrl(GUEST_APP_URL),
@@ -459,14 +503,14 @@ async function main(): Promise<void> {
         },
         ownerScreenshotPath: OWNER_SCREENSHOT_PATH,
         guestScreenshotPath: GUEST_SCREENSHOT_PATH,
-      }),
-    )
+      })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const suffix = pageErrors.length ? `\nPage errors:\n${pageErrors.join('\n')}` : ''
     await failWithScreenshots(ownerPage, guestPage, `${message}${suffix}`)
   } finally {
     await browser.close()
+    restoreLocalDocumentSnapshot(localDocumentSnapshot)
   }
 }
 

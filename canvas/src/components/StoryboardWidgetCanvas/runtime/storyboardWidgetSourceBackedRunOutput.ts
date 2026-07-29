@@ -69,7 +69,7 @@ export const publishStoryboardWidgetSourceBackedRunOutput = (args: {
     loading: false,
   })
   args.upsertUiToast({
-    id: `storyboard-widget-run-source-backed-${args.id}`,
+    id: `storyboard-widget-run-${args.id}`,
     kind: 'neutral',
     message: 'Generated source-backed Rich Media output.',
     ttlMs: 2200,

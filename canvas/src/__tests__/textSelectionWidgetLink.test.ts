@@ -6,15 +6,22 @@ import {
   buildTextSelectionWidgetEdge,
   buildTextSelectionWidgetEdgePersistenceProperties,
   clearTextSelectionWidgetLinkSession,
+  dispatchTextSelectionWidgetCreate,
+  hasOutgoingTextSelectionWidgetEdge,
   TEXT_SELECTION_WIDGET_CREATE_EVENT,
   getTextSelectionWidgetLinkSnapshot,
   isTextSelectionWidgetEdgePersisted,
   persistTextSelectionWidgetEdgeAfterTargetCreation,
   readTextSelectionWidgetEdgeProvenance,
+  readTextSelectionWidgetSourceHighlights,
   resolveTextSelectionWidgetTargetPosition,
   TEXT_SELECTION_WIDGET_LINK_SCHEMA,
   type TextSelectionWidgetCreateDetail,
+  TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY,
+  TEXT_SELECTION_WIDGET_TARGET_PORT_KEY,
 } from '@/lib/storyboardWidget/textSelectionWidgetLink'
+import { useTextSelectionWidgetCreateBridge } from '@/components/StoryboardWidgetCanvas/runtime/useTextSelectionWidgetCreateBridge'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   buildStoryboardWidgetInsertionPlacement,
   captureStoryboardWidgetInsertionPlacement,
@@ -25,8 +32,20 @@ import WidgetPalette from '@/features/toolbar/WidgetPalette'
 import { MarkdownInlineSelectionToolbar } from '@/lib/markdown-core/ui/MarkdownInlineSelectionToolbar'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { installDeterministicRaf, mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
+import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
+import {
+  collectTextSelectionProvenanceHighlightRects,
+  revealTextSelectionProvenanceMatch,
+} from '@/lib/ui/textSelectionProvenanceHighlights'
+import {
+  buildSelectionProvenanceConnectorPath,
+  resolveSelectionProvenanceOutputHandle,
+} from '@/lib/ui/selectionProvenanceConnectorGeometry'
+import {
+  FLOW_EDGE_SOURCE_PORT_KEY,
+  FLOW_EDGE_TARGET_PORT_KEY,
+} from '@/lib/graph/flowPorts'
 
 export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdge() {
   clearTextSelectionWidgetLinkSession()
@@ -83,7 +102,9 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
     || edge.properties['selection:startLine'] !== 12
     || edge.properties['selection:endLine'] !== 13
     || edge.properties['selection:documentPath'] !== 'notes/example.md'
-    || edge.properties['selection:targetFieldId'] !== 'prompt') {
+    || edge.properties['selection:targetFieldId'] !== 'prompt'
+    || edge.properties[FLOW_EDGE_SOURCE_PORT_KEY] !== TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY
+    || edge.properties[FLOW_EDGE_TARGET_PORT_KEY] !== TEXT_SELECTION_WIDGET_TARGET_PORT_KEY) {
     throw new Error(`expected persisted selection provenance, got ${JSON.stringify(edge.properties)}`)
   }
   const persistedProperties = buildTextSelectionWidgetEdgePersistenceProperties(edge)
@@ -91,7 +112,9 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
     || persistedProperties['selection:text'] !== 'selected source text'
     || persistedProperties['selection:startLine'] !== 12
     || persistedProperties['selection:endLine'] !== 13
-    || persistedProperties['selection:targetFieldId'] !== 'prompt') {
+    || persistedProperties['selection:targetFieldId'] !== 'prompt'
+    || persistedProperties[FLOW_EDGE_SOURCE_PORT_KEY] !== TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY
+    || persistedProperties[FLOW_EDGE_TARGET_PORT_KEY] !== TEXT_SELECTION_WIDGET_TARGET_PORT_KEY) {
     throw new Error(`expected durable frontmatter selection provenance, got ${JSON.stringify(persistedProperties)}`)
   }
   const provenance = readTextSelectionWidgetEdgeProvenance(edge)
@@ -105,6 +128,18 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
   }
 
   graphData.edges.push(edge)
+  const sourceHighlights = readTextSelectionWidgetSourceHighlights({
+    graphData,
+    sourceNodeId: 'source-panel',
+  })
+  if (sourceHighlights.length !== 1
+    || sourceHighlights[0]?.edgeId !== edge.id
+    || sourceHighlights[0]?.selectedText !== 'selected source text'
+    || sourceHighlights[0]?.sourcePortKey !== TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY
+    || sourceHighlights[0]?.targetPortKey !== TEXT_SELECTION_WIDGET_TARGET_PORT_KEY
+    || !hasOutgoingTextSelectionWidgetEdge({ graphData, sourceNodeId: 'source-panel' })) {
+    throw new Error(`expected the source highlight to reuse canonical edge provenance, got ${JSON.stringify(sourceHighlights)}`)
+  }
   const duplicate = buildTextSelectionWidgetEdge({
     graphData,
     session,
@@ -161,6 +196,109 @@ export function testTextSelectionWidgetLinkBuildsTargetPlacementAndProvenanceEdg
   clearTextSelectionWidgetLinkSession()
   if (getTextSelectionWidgetLinkSnapshot() !== null) {
     throw new Error('expected completing or cancelling the flow to clear the active selection')
+  }
+}
+
+export function testTextSelectionWidgetLinkProjectsExactSourceHighlightAndConnector() {
+  const { dom, restore } = initJsdomHarness()
+  try {
+    const root = dom.window.document.createElement('section')
+    root.innerHTML = [
+      '<p data-start-line="1" data-end-line="1">selected source text outside the provenance range</p>',
+      '<p data-start-line="12" data-end-line="13"><strong>selected source text</strong> inside the provenance range</p>',
+    ].join('')
+    dom.window.document.body.appendChild(root)
+    Object.defineProperties(root, {
+      clientWidth: { configurable: true, value: 400 },
+      clientHeight: { configurable: true, value: 200 },
+    })
+    root.getBoundingClientRect = () => ({
+      x: 10,
+      y: 20,
+      left: 10,
+      top: 20,
+      right: 410,
+      bottom: 220,
+      width: 400,
+      height: 200,
+      toJSON: () => ({}),
+    })
+    Object.defineProperty(dom.window.Range.prototype, 'getClientRects', {
+      configurable: true,
+      value() {
+        return [{
+          x: 50,
+          y: 60,
+          left: 50,
+          top: 60,
+          right: 170,
+          bottom: 78,
+          width: 120,
+          height: 18,
+          toJSON: () => ({}),
+        }]
+      },
+    })
+
+    const rects = collectTextSelectionProvenanceHighlightRects({
+      root,
+      selections: [{
+        edgeId: 'selection-edge',
+        text: 'selected source text',
+        startLine: 12,
+        endLine: 13,
+      }],
+    })
+    if (rects.length !== 1
+      || rects[0]?.edgeId !== 'selection-edge'
+      || rects[0]?.left !== 40
+      || rects[0]?.top !== 40
+      || rects[0]?.width !== 120
+      || rects[0]?.height !== 18) {
+      throw new Error(`expected one exact, line-scoped provenance highlight, got ${JSON.stringify(rects)}`)
+    }
+    const revealed = revealTextSelectionProvenanceMatch({
+      root,
+      selection: {
+        edgeId: 'selection-edge',
+        text: 'selected source text',
+        startLine: 12,
+        endLine: 13,
+      },
+    })
+    if (revealed?.closest('[data-start-line]')?.getAttribute('data-start-line') !== '12') {
+      throw new Error('expected provenance navigation to reveal only the exact line-scoped text match')
+    }
+    const innerNodeOwner = dom.window.document.createElement('section')
+    innerNodeOwner.setAttribute('data-node-id', 'n2')
+    innerNodeOwner.appendChild(root)
+    dom.window.document.body.appendChild(innerNodeOwner)
+    const outerOverlayOwner = dom.window.document.createElement('section')
+    outerOverlayOwner.setAttribute('data-node-id', 'workspace-layer::n2')
+    const outputHandle = dom.window.document.createElement('button')
+    outputHandle.setAttribute('data-kg-port-handle', '1')
+    outputHandle.setAttribute('data-kg-port-dir', 'out')
+    outputHandle.setAttribute('data-kg-port-node-id', 'workspace-layer::n2')
+    outputHandle.setAttribute('data-kg-port-key', 'output')
+    outerOverlayOwner.appendChild(outputHandle)
+    dom.window.document.body.appendChild(outerOverlayOwner)
+    const resolvedHandle = resolveSelectionProvenanceOutputHandle({
+      root,
+      sourceNodeId: 'n2',
+      sourcePortKey: 'output',
+    })
+    if (resolvedHandle !== outputHandle) {
+      throw new Error('expected the connector to resolve the canonical output handle across nested Rich Media overlay owners')
+    }
+    const path = buildSelectionProvenanceConnectorPath({
+      source: { x: 170, y: 69 },
+      target: { x: 400, y: 100 },
+    })
+    if (path !== 'M 170.00 69.00 C 266.60 69.00 303.40 100.00 400.00 100.00') {
+      throw new Error(`expected a stable highlight-to-output-port connector, got ${JSON.stringify(path)}`)
+    }
+  } finally {
+    restore()
   }
 }
 
@@ -278,6 +416,122 @@ export async function testTextSelectionWidgetLinkWaitsForCreatedTargetPublicatio
     )
   }
   clearTextSelectionWidgetLinkSession()
+}
+
+export async function testTextSelectionWidgetLinkFallsBackWhenDraftEdgeWriterLagsTargetCreation() {
+  const { dom, restore } = initJsdomHarness()
+  let root: ReturnType<typeof createRoot> | null = null
+  const previousStore = useGraphStore.getState()
+
+  try {
+    const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
+    anyWindow.requestAnimationFrame = installDeterministicRaf(dom.window)
+    const entry: WidgetRegistryEntry = {
+      id: 'default/textGeneration',
+      isEnabled: true,
+      nodeTypeId: 'TextGeneration',
+      widgetTypeId: 'default',
+      formId: 'textGeneration',
+      fields: [],
+      ports: [],
+      updatedAt: '2026-07-26T00:00:00.000Z',
+    }
+    const sourceGraph: GraphData = {
+      type: 'Graph',
+      nodes: [{
+        id: 'source-panel',
+        type: 'RichMediaPanel',
+        label: 'Source',
+        x: 100,
+        y: 220,
+        properties: {},
+      }],
+      edges: [],
+    }
+    useGraphStore.setState({
+      graphData: sourceGraph,
+      addEdge: edge => {
+        useGraphStore.setState(state => ({
+          graphData: state.graphData
+            ? { ...state.graphData, edges: [...state.graphData.edges, edge] }
+            : state.graphData,
+        }))
+      },
+    } as never)
+    const registryRef = { current: [entry] } as React.MutableRefObject<ReadonlyArray<WidgetRegistryEntry>>
+    const addNodeFromRegistryAtWorld = () => {
+      useGraphStore.setState(state => ({
+        graphData: state.graphData
+          ? {
+              ...state.graphData,
+              nodes: [...state.graphData.nodes, {
+                id: 'target-widget',
+                type: 'TextGeneration',
+                label: 'Target',
+                x: 940,
+                y: 220,
+                properties: {},
+              }],
+            }
+          : state.graphData,
+      }))
+      return 'target-widget'
+    }
+    const container = dom.window.document.createElement('section')
+    dom.window.document.body.appendChild(container)
+    root = createRoot(container as unknown as HTMLElement)
+    const SelectionBridgeHarness = () => {
+      useTextSelectionWidgetCreateBridge({
+        active: true,
+        widgetRegistryRef: registryRef,
+        resolveRegistryEntry: (registry, target) => registry.find(candidate => candidate.id === target.registryEntryId) || null,
+        addNodeFromRegistryAtWorld,
+        // Mirrors the transient stale-draft path that previously left the target
+        // Widget visible but discarded its selection provenance edge.
+        appendDraftEdge: () => false,
+        authoringGraphDataRef: { current: sourceGraph },
+        baseGraphData: sourceGraph,
+      })
+      return null
+    }
+    await mountReactRoot(root, React.createElement(SelectionBridgeHarness), { window: dom.window, frames: 2 })
+
+    const session = beginTextSelectionWidgetLinkSession({
+      sourceNodeId: 'source-panel',
+      selectedText: 'selected source text',
+      startLine: 12,
+      endLine: 12,
+      documentPath: 'notes/example.md',
+    })
+    if (!session) throw new Error('expected an active selection-link session')
+    const claimed = dispatchTextSelectionWidgetCreate({
+      registryEntryId: entry.id,
+      nodeTypeId: entry.nodeTypeId,
+      widgetTypeId: entry.widgetTypeId,
+      formId: entry.formId,
+    })
+    if (!claimed) throw new Error('expected the active selection bridge to claim the Widget create event')
+    await waitForFrames(dom.window, 4)
+
+    const graphAfterCreate = useGraphStore.getState().graphData
+    const selectionEdge = graphAfterCreate?.edges.find(edge => (
+      edge.source === 'source-panel'
+      && edge.target === 'target-widget'
+      && edge.properties?.schema === TEXT_SELECTION_WIDGET_LINK_SCHEMA
+    ))
+    if (!selectionEdge || getTextSelectionWidgetLinkSnapshot() !== null) {
+      throw new Error(`expected the fallback graph write to persist and complete the selection edge, got ${JSON.stringify(graphAfterCreate)}`)
+    }
+  } finally {
+    clearTextSelectionWidgetLinkSession()
+    try {
+      if (root) await unmountReactRoot(root, { window: dom.window })
+    } catch {
+      void 0
+    }
+    useGraphStore.setState(previousStore as never)
+    restore()
+  }
 }
 
 export async function testWidgetPaletteCreatesTargetFromActiveTextSelection() {

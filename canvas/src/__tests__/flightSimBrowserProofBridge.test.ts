@@ -9,17 +9,20 @@ import {
 const EXPECTED_MODULE_KEYS = Object.freeze([
   'cameraMcpRuntime',
   'cameraSourceMcpRuntime',
+  'flightSimCameraRuntime',
   'flightSimDeadlineRuntime',
   'flightSimInput',
   'flightSimMcpRuntime',
   'flightSimModel',
   'flightSimRuntime',
-  'flightSimSpatialScale',
   'flightSimSurfaceOwnershipStatus',
   'flightSimWebMcpTools',
+  'geospatialModeBridge',
   'graphStore',
+  'gympgrphStore',
   'knowgrphRuntimeIdentity',
   'markdownExplorerStore',
+  'motionControlSurfaceRuntime',
   'sourceFilesBootstrapReadiness',
   'sourceFilesRuntimeMaterialization',
   'workspaceCanonicalSeedBundle',
@@ -33,6 +36,7 @@ const EXPECTED_MODULE_KEYS = Object.freeze([
   'xrNativeControllerDemoRuntime',
   'xrNativeControllerPresentation',
   'xrPhysicsRuntime',
+  'xrSceneSurfaceRuntime',
 ])
 
 test('Flight browser proof bridge exposes only its exact production module inventory', async () => {

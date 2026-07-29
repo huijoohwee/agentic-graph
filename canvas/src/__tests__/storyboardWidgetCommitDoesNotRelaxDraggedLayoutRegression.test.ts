@@ -207,6 +207,7 @@ export async function testStoryboardWidgetPointerPanZoomMovesDoNotCommitEveryFra
       startNodeY: 0,
       clamp: null,
       snapGrid: { enabled: false, size: 24, x: 24, y: 24, grid: [24, 24] },
+      helperLinesEnabled: true,
       edgeScrollEnabled: true,
       pointerId: 7,
     }

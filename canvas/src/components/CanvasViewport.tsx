@@ -12,8 +12,14 @@ import { UI_RESPONSIVE_CANVAS_MINIMAP_OVERLAY_CLASSNAME } from '@/lib/ui/respons
 import { resolveCanvas3dMode } from '@/lib/canvas/canvas3dMode'
 import { isNativeXrRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useCanvasGameplayOverlayState } from '@/features/canvas/useCanvasGameplayOverlayState'
+import { useFlightSimSurfacePreload } from '@/features/game-flight-sim/useFlightSimSurfacePreload'
+import { FlightSimHud } from '@/features/game-flight-sim/FlightSimHud'
 import { XrNativeControllerDemoHud } from '@/features/three/XrNativeControllerDemoHud'
-import { resolveThreeCanvasSurfaceLifecycle, retainThreeCanvasSourceAdmission } from '@/lib/three/threeRendererLifecycle'
+import {
+  resolveCanvasSurfaceOwnership,
+  resolveThreeCanvasSurfaceLifecycle,
+  retainThreeCanvasSourceAdmission,
+} from '@/lib/three/threeRendererLifecycle'
 import { getCanvas2dSurfaceId, isCanvas2dRendererId, isStoryboardCanvas2dRenderer, supportsCanvas2dMinimap } from '@/lib/config.render'
 import { shouldRenderTimelineSurface } from '@/lib/timeline/timelineVisibility'
 import { resolvePreferredEnabledComposedSourceFile } from '@/features/source-files/composedSourceSelection'
@@ -23,7 +29,11 @@ import { useKnowgrphLiveCanvasHero } from '@/features/canvas/useKnowgrphLiveCanv
 import { shouldDocumentSwitchOwnCanvasViewport } from '@/features/canvas/liveCanvasHeroVisibility'
 import { deriveLiveCanvasHeroCommandRouteGraph } from '@/features/canvas/liveCanvasHeroProjection'
 import { useSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { resolveCanvasViewportHeavyRuntimeIntentSurface } from '@/components/canvasViewportHeavyRuntimeIntent'
+import {
+  CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY,
+  resolveCanvasViewportHeavyRuntimeIntentSurface,
+} from '@/components/canvasViewportHeavyRuntimeIntent'
+import { loadCanvasViewportGeospatialOverlay } from '@/components/canvasViewportGeospatialOverlayLoader'
 import { CanvasEmbedCodePanelHost } from '@/components/CanvasEmbedCodePanelHost'
 import { CanvasSourceInitializationError } from '@/components/CanvasSourceInitializationError'
 import {
@@ -33,62 +43,32 @@ import {
   installEmbeddedCanvasChatCommandBridge,
 } from '@/features/canvas/embeddedCanvasChatCommand'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
-const CanvasViewportGeospatialOverlayLazy = React.lazy(() =>
-  import('@/components/CanvasViewportGeospatialOverlay').then(mod => ({ default: mod.CanvasViewportGeospatialOverlay })),
-)
-const LiveCanvasHeroLazy = React.lazy(() =>
-  import('@/components/LiveCanvasHero').then(mod => ({ default: mod.LiveCanvasHero })),
-)
+const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
+const LiveCanvasHeroLazy = React.lazy(() => import('@/components/LiveCanvasHero').then(mod => ({ default: mod.LiveCanvasHero })))
 const SharedGraphCanvasLazy = React.lazy(() => import('@/components/GraphCanvas'))
 const DashboardCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/DashboardCanvas'), { retries: 2, retryDelayMs: 50 }))
 const GalleryCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/GalleryCanvas'), { retries: 2, retryDelayMs: 50 }))
 const MediaCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/MediaCanvas'), { retries: 2, retryDelayMs: 50 }))
-const MultiDimTableSurfaceLazy = React.lazy(() =>
-  importWithRetry(() => import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface'), { retries: 2, retryDelayMs: 50 })
-    .then(mod => ({ default: mod.MultiDimTableSurface })),
-)
-const CanvasWorkspaceDataViewFloatingRegistrationBridgeLazy = React.lazy(() =>
-  importWithRetry(() => import('@/features/markdown-workspace/main/viewer/CanvasWorkspaceDataViewFloatingRegistrationBridge'), { retries: 2, retryDelayMs: 50 })
-    .then(mod => ({ default: mod.CanvasWorkspaceDataViewFloatingRegistrationBridge })),
-)
+const MultiDimTableSurfaceLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/MultiDimTableSurface'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.MultiDimTableSurface })))
+const CanvasWorkspaceDataViewFloatingRegistrationBridgeLazy = React.lazy(() => importWithRetry(() => import('@/features/markdown-workspace/main/viewer/CanvasWorkspaceDataViewFloatingRegistrationBridge'), { retries: 2, retryDelayMs: 50 }).then(mod => ({ default: mod.CanvasWorkspaceDataViewFloatingRegistrationBridge })))
 const MermaidGitGraphCanvasLazy = React.lazy(() => import('@/components/MermaidGitGraphCanvas'))
 const MermaidGanttCanvasLazy = React.lazy(() => import('@/components/MermaidGanttCanvas'))
 const FlowCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/FlowCanvas'), { retries: 2, retryDelayMs: 50 }))
 const AnimaticCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/AnimaticCanvas'), { retries: 2, retryDelayMs: 50 }))
 const StoryboardWidgetCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/StoryboardWidgetCanvas'), { retries: 2, retryDelayMs: 50 }))
 const StoryboardWidgetDropBridgeLazy = React.lazy(() => importWithRetry(() => import('@/components/StoryboardWidgetDropBridge'), { retries: 2, retryDelayMs: 50 }))
-const MarkdownMetricsDevOverlayLazy = React.lazy(() =>
-  import('@/components/CanvasViewportMarkdownMetricsDevOverlay').then(mod => ({ default: mod.CanvasViewportMarkdownMetricsDevOverlay })),
-)
+const MarkdownMetricsDevOverlayLazy = React.lazy(() => import('@/components/CanvasViewportMarkdownMetricsDevOverlay').then(mod => ({ default: mod.CanvasViewportMarkdownMetricsDevOverlay })))
 const DesignCanvasLazy = React.lazy(() => import('@/components/DesignCanvas'))
 const ThreeGraphLazy = React.lazy(() => import('@/lib/three/ThreeGraph.impl'))
-const GameFpsHudLazy = React.lazy(() =>
-  import('@/features/game-fps/GameFpsHud').then(mod => ({ default: mod.GameFpsHud })),
-)
-const FlightSimHudLazy = React.lazy(() => import('@/features/game-flight-sim/FlightSimHud').then(mod => ({ default: mod.FlightSimHud })))
+const GameFpsHudLazy = React.lazy(() => import('@/features/game-fps/GameFpsHud').then(mod => ({ default: mod.GameFpsHud })))
+const FlightSimGeoSurfaceOverlayLazy = React.lazy(() => import('@/features/game-flight-sim/FlightSimGeoSurfaceOverlay').then(mod => ({ default: mod.FlightSimGeoSurfaceOverlay })))
 const MinimapLazy = React.lazy(() => import('@/features/minimap/Minimap'))
-const StrybldrTimelineBottomPanelLazy = React.lazy(() =>
-  import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })),
-)
+const StrybldrTimelineBottomPanelLazy = React.lazy(() => import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })))
 const LaunchSpotlightLazy = React.lazy(() => import('@/features/spotlight/LaunchSpotlight'))
 const PaywallOverlayLazy = React.lazy(async (): Promise<{ default: React.ComponentType<{ portalTarget: HTMLElement | null }> }> => ({
   default: (await import('@/features/payments/PaywallOverlay')).PaywallOverlay,
 }))
 const MARKDOWN_METRICS_DEV_ENABLED = Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV)
-const HEAVY_RUNTIME_INTENT_COPY = {
-  '3d': {
-    eyebrow: '3D runtime',
-    title: 'Load 3D canvas on this device',
-    body: '3D stays opt-in on touch viewports so the mobile shell remains lighter until you explicitly open it.',
-    action: 'Load 3D view',
-  },
-  geo: {
-    eyebrow: 'Map runtime',
-    title: 'Load geospatial canvas on this device',
-    body: 'Map rendering stays opt-in on touch viewports so the mobile shell avoids the heavier geospatial runtime until you ask for it.',
-    action: 'Load map view',
-  },
-} as const
 export type CanvasViewportVariant = 'workspace' | 'embeddedPreview'
 export type CanvasViewportProps = {
   variant: CanvasViewportVariant
@@ -141,6 +121,10 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady
   const flightSimHudVisible = flightSimActive && sourceFilesBootstrapReady
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
+  useFlightSimSurfacePreload({
+    activePath: explorerActivePath,
+    sourceFiles,
+  })
   const activeSourceFile = React.useMemo(
     () => resolvePreferredEnabledComposedSourceFile({
       sourceFiles,
@@ -207,8 +191,16 @@ export function CanvasViewport(props: CanvasViewportProps) {
     geospatialEnabled: geospatialModeEnabled,
     schema,
   })
-  const activeSurface = geospatialModeEnabled ? 'geo' : canvasRenderMode === '3d' ? '3d' : '2d'
-  const geospatialOverlayOwnsViewport = geospatialModeEnabled && !(workspaceEditorOverlayOpen && active2dSurface === 'storyboard')
+  const geospatialXrModeEnabled = geospatialModeEnabled && canvasRenderMode === '3d' && effectiveCanvas3dMode === 'xr'
+  const { activeSurface, geospatialOverlayOwnsViewport } = resolveCanvasSurfaceOwnership({
+    canvasRenderMode,
+    flightSimActive,
+    gameplayOverlayActive,
+    geospatialModeEnabled,
+    geospatialXrModeEnabled,
+    workspaceEditorOverlayOpen,
+    workspaceStoryboardSurfaceActive: active2dSurface === 'storyboard',
+  })
   const strybldrTimelineBottomPanelVisible = canvas2dRenderer === 'storyboard'
     && (
       isStrybldrStoryboardGraphData(activeGraphData)
@@ -478,40 +470,45 @@ export function CanvasViewport(props: CanvasViewportProps) {
           </section>
         ) : null}
         {threeCanvasSurface.mounted ? (
-          <section className={`absolute inset-0 z-[10] ${threeCanvasSurface.active ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
-            <ThreeGraphLazy active={threeCanvasSurface.active} mode={effectiveCanvas3dMode} />
+          <section className={`absolute inset-0 z-[10] ${
+            threeCanvasSurface.active
+              ? `${geospatialXrModeEnabled ? 'pointer-events-none' : 'pointer-events-auto'} opacity-100`
+              : 'pointer-events-none opacity-0'
+          }`}>
+            <ThreeGraphLazy active={threeCanvasSurface.active} geospatialComposite={geospatialXrModeEnabled} mode={effectiveCanvas3dMode} />
           </section>
         ) : null}
-
         {!documentSwitchOwnsViewport && geospatialModeEnabled && active2dSurface === 'storyboard' ? (
           <section className="absolute inset-0 z-[30] pointer-events-none" aria-hidden="true">
             <StoryboardWidgetDropBridgeLazy active={false} widgetDropCaptureEnabled geospatialWidgetPanelMode />
           </section>
         ) : null}
 
-        {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && !heavyRuntimeIntentBlocked ? (
+        {!documentSwitchOwnsViewport && geospatialModeEnabled && !heavyRuntimeIntentBlocked ? (
           <CanvasViewportGeospatialOverlayLazy
-            active={activeSurface === 'geo'}
+            active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
+            composedWithXr={geospatialXrModeEnabled}
             geospatialModeEnabled={geospatialModeEnabled}
             graphData={safeGraphData}
             storyboardWidgetPanelsActive={geospatialModeEnabled && active2dSurface === 'storyboard'}
           />
         ) : null}
+        {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && flightSimHudVisible ? <FlightSimGeoSurfaceOverlayLazy /> : null}
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (
           <section
             className="absolute inset-0 z-[35] flex items-center justify-center bg-[var(--kg-canvas-bg)]/96 px-4"
-            aria-label={`${HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title} activation`}
+            aria-label={`${CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title} activation`}
             data-kg-canvas-heavy-runtime-intent={heavyRuntimeIntentSurface}
           >
             <section className="w-full max-w-sm rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-5 py-5 text-left shadow-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]">
-                {HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].eyebrow}
+                {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].eyebrow}
               </p>
               <h2 className="mt-2 text-base font-semibold text-[var(--kg-text-primary)]">
-                {HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title}
+                {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title}
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--kg-text-secondary)]">
-                {HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].body}
+                {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].body}
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
@@ -520,7 +517,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
                   onClick={activateHeavyRuntimeIntentSurface}
                   data-kg-canvas-heavy-runtime-intent-activate={heavyRuntimeIntentSurface}
                 >
-                  {HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].action}
+                  {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].action}
                 </button>
               </div>
             </section>
@@ -592,7 +589,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
       </React.Suspense>
       {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
-      {flightSimHudVisible ? <FlightSimHudLazy /> : null}
+      {flightSimHudVisible ? <FlightSimHud /> : null}
       {variant === 'workspace' ? <CanvasEmbedCodePanelHost /> : null}
     </section>
   )

@@ -14,10 +14,17 @@ import {
   createRunningAgentAdapterRegistry,
 } from "../agent-model-runtime.js";
 
-test("registry exposes the three exact agent invocations without broad aliases", () => {
+test("registry exposes the six exact agent invocations without broad aliases", () => {
   assert.deepEqual(
     listAgentDefinitions().map((definition) => definition.invocation),
-    ["/investment-research-agent", "/sme-care-agent", "/video-agent"],
+    [
+      "/collaboration-manager-agent",
+      "/evidence-scout-agent",
+      "/risk-reviewer-agent",
+      "/investment-research-agent",
+      "/sme-care-agent",
+      "/video-agent",
+    ],
   );
   assert.equal(resolveAgentDefinition("/research-agent"), null);
   assert.equal(resolveAgentDefinition("/care-agent"), null);

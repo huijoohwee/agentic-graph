@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "knowgrph.agent-team-owner-registry/v1",
+  "registryVersion": "2026-07-26",
+  "workflows": [
+    {
+      "workflowId": "workflow.collaborative-intelligence",
+      "workflowRevision": "1.0.0",
+      "branches": [
+        {
+          "branchId": "delegate-investment-research",
+          "mode": "delegate",
+          "sourceParticipantId": "manager",
+          "targetParticipantId": "investment-research"
+        },
+        {
+          "branchId": "delegate-sme-risk",
+          "mode": "delegate",
+          "sourceParticipantId": "manager",
+          "targetParticipantId": "sme-risk"
+        }
+      ]
+    }
+  ],
+  "reviewPolicies": [
+    {
+      "policyId": "review.local-operator",
+      "policyRevision": "1.0.0",
+      "mode": "on-request",
+      "allowedDecisions": ["approve", "revise", "reject"],
+      "receiptOwner": "knowgrph.local-agent-team-review-store"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   fetch: KNOWGRPH_AGENT_READY_TOOL_IDS.fetch,
   uiLaunch: "knowgrph.ui.launch",
   uiStop: "knowgrph.ui.stop",
+  geospatialCommand: "knowgrph.geospatial.command",
   pipeline: "knowgrph.pipeline",
   graphragPipeline: "knowgrph.graphrag_pipeline",
   superagentRun: "knowgrph.superagent.run",
@@ -23,7 +24,12 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   annotateImage: "knowgrph.annotate.image",
   annotateVideoFrame: "knowgrph.annotate.video_frame",
   memoryAdd: "knowgrph.memory.add",
+  memoryWrite: "knowgrph.memory.write",
+  memoryCompact: "knowgrph.memory.compact",
   memorySearch: "knowgrph.memory.search",
+  sessionSearch: "knowgrph.session.search",
+  userProfile: "knowgrph.user.profile",
+  memoryInvoke: "knowgrph.memory.invoke",
   memoryAssemblePrompt: "knowgrph.memory.assemble_prompt",
   memoryExtractProcedural: "knowgrph.memory.extract_procedural",
   memoryMaterializeUserModel: "knowgrph.memory.materialize_user_model",
@@ -38,6 +44,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   smeCareAgentStatus: "sme_care_agent_status",
   agenticCanvasOsDocsInvoke: "knowgrph.agentic_canvas_os.docs.invoke",
   skillEvolve: "knowgrph.skill.evolve",
+  repositoryPack: "knowgrph.repository.pack",
   implementationRunPlan: "knowgrph.implementation_run.plan",
   implementationRunStart: "knowgrph.implementation_run.start",
   implementationRunList: "knowgrph.implementation_run.list",
@@ -67,6 +74,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   applicationCatalog: "knowgrph.application.catalog",
   applicationPlan: "knowgrph.application.plan",
   applicationExecute: "knowgrph.application.execute",
+  voiceStudio: "knowgrph.voice.studio",
 });
 
 export const buildKnowgrphLocalMcpToolNameList = () => Object.values(KNOWGRPH_LOCAL_MCP_TOOL_NAMES);

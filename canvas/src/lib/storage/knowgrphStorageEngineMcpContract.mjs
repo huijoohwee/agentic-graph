@@ -77,6 +77,16 @@ const gitStructuredSchema = (operation, required = []) => Object.freeze({
 })
 
 export const KNOWGRPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    invocation: INVOCATION_SCHEMA,
+    operation: { type: 'string', enum: KNOWGRPH_STORAGE_GIT_OPERATIONS },
+    remoteId: ID_SCHEMA,
+    canonicalPathScope: CANONICAL_PATH_SCHEMA,
+    baseRef: GIT_REF_SCHEMA,
+    message: { type: 'string', minLength: 1, maxLength: 500, pattern: '\\S' },
+  },
   oneOf: [
     {
       type: 'object',
@@ -92,6 +102,14 @@ export const KNOWGRPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA = Object.freeze({
 })
 
 export const KNOWGRPH_FILE_SYNC_CONTROL_INPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    invocation: INVOCATION_SCHEMA,
+    direction: { type: 'string', enum: KNOWGRPH_FILE_SYNC_DIRECTIONS },
+    providerId: ID_SCHEMA,
+    prefix: CANONICAL_PATH_SCHEMA,
+  },
   oneOf: [
     {
       type: 'object',

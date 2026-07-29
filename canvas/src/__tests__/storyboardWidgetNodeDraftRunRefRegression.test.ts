@@ -4,6 +4,10 @@ import { resolveStoryboardWidgetAutoRunNodeIds } from '@/components/StoryboardWi
 import { resolveStoryboardWidgetNodeMutationTarget } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetNodeDraftActions'
 import { IMAGE_TO_THREEJS_COMMAND_TOKEN } from '@/features/image-to-threejs/imageToThreeJsContract'
 import type { GraphData } from '@/lib/graph/types'
+import {
+  commitOpenCardInlineTextEditors,
+  registerOpenCardInlineTextEditor,
+} from '@/lib/cards/CardInlineTextEditorSupport'
 
 export function testStoryboardWidgetNodeDraftUpdatesRefBeforeRunStoreWriteback() {
   const text = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetNodeDraftActions.ts'), 'utf8')
@@ -213,6 +217,8 @@ export function testStoryboardWidgetRunCommitsActiveSharedInlineEditorBeforeRun(
   const renderGraphText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetRenderGraph.ts'), 'utf8')
   const cardInlineText = ['CardInlineTextEditor.tsx', 'CardInlineTextEditorSupport.ts'].map(fileName => readFileSync(resolve(process.cwd(), 'src', 'lib', 'cards', fileName), 'utf8')).join('\n')
   const plainTextInput = readFileSync(resolve(process.cwd(), 'src', 'components', 'ui', 'PlainTextInputEditor.tsx'), 'utf8')
+  const runActionText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts'), 'utf8')
+  const sourceBackedRunText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetSourceBackedRunOutput.ts'), 'utf8')
 
   for (const snippet of [
     'export function commitActiveCardInlineTextEditor(ownerDocument?: Document | null): boolean {',
@@ -251,6 +257,33 @@ export function testStoryboardWidgetRunCommitsActiveSharedInlineEditorBeforeRun(
   }
   if (!overlayElementsText.includes('draftGraphDataRef?: React.MutableRefObject<GraphData | null>')) {
     throw new Error('expected Widget Run to resolve downstream runnable targets from the live draft graph after KTV edits')
+  }
+  for (const snippet of [
+    'const inFlightNodeIds = new Set<string>()',
+    "message: 'Generating response…'",
+    'ttlMs: null',
+    'dismissible: false',
+    'busy: true',
+  ]) {
+    if (!runActionText.includes(snippet)) {
+      throw new Error(`expected first Widget Run press to expose immediate busy Toast feedback: ${snippet}`)
+    }
+  }
+  if (!sourceBackedRunText.includes('id: `storyboard-widget-run-${args.id}`')) {
+    throw new Error('expected source-backed completion to settle the same Widget Run progress Toast')
+  }
+  let committedValue = ''
+  const unregister = registerOpenCardInlineTextEditor(
+    'run-first-press',
+    nextValue => { committedValue = String(nextValue || '') },
+    () => 'first press draft',
+  )
+  try {
+    if (!commitOpenCardInlineTextEditors() || committedValue !== 'first press draft') {
+      throw new Error('expected first Widget Run pointer activation to synchronously commit the registered inline draft before run resolution')
+    }
+  } finally {
+    unregister()
   }
   for (const snippet of [
     "String(draftLookup?.revision ?? args.draftGraphRevision ?? '')",

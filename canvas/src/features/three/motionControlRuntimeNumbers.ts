@@ -7,7 +7,7 @@ export const shapeMatches = (details: TensorDetails, expected: readonly number[]
   const actual = Array.from(details.shape)
   return actual.length === expected.length && actual.every((value, index) => value === expected[index])
 }
-export function valuesAreFinite(values: Float32Array): boolean {
-  for (const value of values) if (!Number.isFinite(value)) return false
+export function valuesAreFinite(values: ArrayLike<number>): boolean {
+  for (let index = 0; index < values.length; index += 1) if (!Number.isFinite(values[index])) return false
   return true
 }

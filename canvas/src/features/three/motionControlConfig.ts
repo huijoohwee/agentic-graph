@@ -25,6 +25,7 @@ export const MOTION_CONTROL_MODEL_PROVENANCE = Object.freeze({
   owner: 'Google AI Edge',
   license: 'Apache-2.0',
   source: 'official-pose-landmarker-full-task',
+  sourceVersion: 'float16/1',
   inputShape: Object.freeze([1, MOTION_CONTROL_INPUT_SIZE, MOTION_CONTROL_INPUT_SIZE, 3]),
   outputLandmarks: MOTION_CONTROL_LANDMARK_COUNT,
 })

@@ -6,6 +6,11 @@ import {
   type FlightSimAircraftState,
   type FlightSimTickInput,
 } from './flightSimModel'
+import {
+  FLIGHT_SIM_STALL_NOSE_DROP_RADIANS_PER_SECOND,
+  flightSimControlAuthority,
+  flightSimStallSeverity,
+} from './flightSimEnvelope'
 
 const MAX_PITCH_RADIANS = Math.PI * 0.28
 const MAX_ROLL_RADIANS = Math.PI * 0.38
@@ -62,8 +67,15 @@ export function integrateFlightModel(
 ): FlightSimAircraftState {
   const stepSeconds = boundedStepSeconds(stepSecondsValue)
   const input = normalizeFlightSimInput(inputValue)
-  const pitchTarget = previous.pitch + input.pitch * PITCH_RATE_RADIANS_PER_SECOND * stepSeconds
-  const rollTarget = previous.roll + input.roll * ROLL_RATE_RADIANS_PER_SECOND * stepSeconds
+  const speed = flightSimAirspeed(previous)
+  const controlAuthority = flightSimControlAuthority(speed)
+  const stallSeverity = flightSimStallSeverity(speed)
+  const pitchTarget = previous.pitch + (
+    input.pitch * PITCH_RATE_RADIANS_PER_SECOND * controlAuthority
+    - stallSeverity * FLIGHT_SIM_STALL_NOSE_DROP_RADIANS_PER_SECOND
+  ) * stepSeconds
+  const rollTarget = previous.roll
+    + input.roll * ROLL_RATE_RADIANS_PER_SECOND * controlAuthority * stepSeconds
   const pitch = clamp(
     input.pitch === 0 ? pitchTarget * Math.exp(-0.28 * stepSeconds) : pitchTarget,
     -MAX_PITCH_RADIANS,
@@ -76,7 +88,10 @@ export function integrateFlightModel(
   )
   const yaw = normalizeFlightSimAngle(
     previous.yaw
-    + (input.yaw * YAW_RATE_RADIANS_PER_SECOND - Math.sin(roll) * BANK_TURN_RATE) * stepSeconds,
+    + (
+      input.yaw * YAW_RATE_RADIANS_PER_SECOND
+      - Math.sin(roll) * BANK_TURN_RATE
+    ) * controlAuthority * stepSeconds,
   )
   const throttle = clamp(
     previous.throttle + input.throttleDelta * THROTTLE_RATE_PER_SECOND * stepSeconds,
@@ -84,7 +99,6 @@ export function integrateFlightModel(
     1,
   )
   const forward = flightSimForwardVector(pitch, yaw)
-  const speed = flightSimAirspeed(previous)
   const forwardSpeed = Math.max(0, (
     previous.velocity[0] * forward[0]
     + previous.velocity[1] * forward[1]

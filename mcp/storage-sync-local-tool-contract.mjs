@@ -52,13 +52,13 @@ export const buildStorageSyncLocalToolDefinitions = () => [
   withDefaults({
     name: KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES.gitRun,
     title: 'Run Browser Git Operation',
-    description: 'Validate a Knowgrph-owned browser Git clone, fetch, commit, or push request. Local stdio cannot access the active IndexedDB repository and returns a typed handoff to knowgrph.control_local_git_repository without performing filesystem or network work.',
+    description: 'Use this when a local MCP host needs to validate a Knowgrph-owned browser Git clone, fetch, commit, or push request. Local stdio cannot access the active IndexedDB repository and returns a typed handoff without performing filesystem or network work.',
     inputSchema: KNOWGRPH_STORAGE_GIT_CONTROL_INPUT_SCHEMA,
   }),
   withDefaults({
     name: KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
     title: 'Run Browser File Sync',
-    description: 'Validate a Knowgrph-owned multi-provider pull or push request. Local stdio cannot access the active IndexedDB cache and returns a typed handoff to knowgrph.control_local_file_sync without performing filesystem or network work.',
+    description: 'Use this when a local MCP host needs to validate a Knowgrph-owned multi-provider pull or push request. Local stdio cannot access the active IndexedDB cache and returns a typed handoff without performing filesystem or network work.',
     inputSchema: KNOWGRPH_FILE_SYNC_CONTROL_INPUT_SCHEMA,
   }),
 ]

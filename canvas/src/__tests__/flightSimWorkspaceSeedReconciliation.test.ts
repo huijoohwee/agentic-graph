@@ -19,7 +19,7 @@ type MirrorEntry = {
   authority: WorkspaceDocsMirrorAuthority
 }
 
-test('Flight bundled XR source replaces a stale draft workspace seed', async () => {
+test('Flight bundled Geo+XR source replaces a stale draft workspace seed', async () => {
   const bundled = await readCanonicalWorkspaceSeedBundleEntries()
   const bundledEntries: MirrorEntry[] = bundled.map(entry => ({
     ...entry,
@@ -31,10 +31,14 @@ test('Flight bundled XR source replaces a stale draft workspace seed', async () 
   assert.ok(authoredFlight)
   assert.match(authoredFlight.text, /^status:\s*"runtime-ready"\s*$/m)
   assert.match(authoredFlight.text, /^runtime_status:\s*"runtime-ready"\s*$/m)
-  assert.match(authoredFlight.text, /^kgCanvasSurfaceMode:\s*"xr"\s*$/m)
+  assert.match(authoredFlight.text, /^kgCanvasSurfaceMode:\s*"geo-xr"\s*$/m)
   assert.match(authoredFlight.text, /^kgCanvasRenderMode:\s*"3d"\s*$/m)
   assert.match(authoredFlight.text, /^kgCanvas3dMode:\s*"xr"\s*$/m)
   assert.match(authoredFlight.text, /^\s*id:\s*"flight-sim"\s*$/m)
+  assert.match(authoredFlight.text, /^\s*render_policy:\s*"native MapLibre under transparent Flight R3F overlay"\s*$/m)
+  assert.match(authoredFlight.text, /^\s*maplibre_views:\s*\["2d-classic", "2d-modern", "3d-classic", "3d-modern"\]\s*$/m)
+  assert.match(authoredFlight.text, /^\s*basemap:\s*"selected native MapLibre provider view"\s*$/m)
+  assert.match(authoredFlight.text, /^\s*maplibre_runtime_started:\s*true\s*$/m)
   assert.doesNotMatch(authoredFlight.text, /\bplanned_run_ready_demo:/)
 
   const staleFlightText = [

@@ -494,6 +494,7 @@ export const createPocketBaseYjsSourceFileRoom = async (
       })
       const request: KnowgrphCollaborationSaveRequest = {
         apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        operation: 'upsert',
         workspaceId,
         documentKey,
         documentKind,

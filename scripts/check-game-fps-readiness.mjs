@@ -435,6 +435,7 @@ const sourceAuthorityLifecycleMarkers = [
   "type: 'begin-document-intent'",
   "type: 'complete-document-intent'",
   "type: 'fail-document-intent'",
+  'hasReachedReady',
   "if (current.documentIntent?.key !== normalizedKey) return current",
   "state.basePhase === 'error'",
 ]
@@ -456,7 +457,9 @@ if (!canvasViewport.includes("const sourceFilesBootstrapReady = sourceFilesBoots
   || !threeRendererLifecycle.includes('&& !input.documentSwitchOwnsViewport')
   || !canvasViewport.includes('sourceFilesBootstrapReady && xrPhysicsRunReadyDemo')
   || !canvasViewport.includes('const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady')
-  || !canvasStartupRuntimes.includes('{sourceFilesBootstrapReady ? <>')
+  || !canvasStartupRuntimes.includes('useSourceFilesBootstrapHasReachedReady')
+  || !canvasStartupRuntimes.includes('{sourceFilesBootstrapHasReachedReady ? <>')
+  || canvasStartupRuntimes.includes('{sourceFilesBootstrapReady ? <>')
   || !canvasStartupRuntimes.includes('<XrPhysicsRunReadyDemoRuntime />')
   || !xrRuntimeBridge.includes('if (!sourceFilesBootstrapReady) return')
   || (xrRuntimeBridge.match(/if \(!readSourceFilesBootstrapReady\(\)\) return false/g) || []).length !== 2
@@ -466,7 +469,7 @@ if (!canvasViewport.includes("const sourceFilesBootstrapReady = sourceFilesBoots
   || !canvasSourceAuthorityBoundary.includes('failSourceFilesDocumentIntent')
   || !appSource.includes('<CanvasSourceAuthorityBoundary>')
   || !appSource.includes('<XrMotionReferenceRuntimeBridge />')) {
-  throw new Error('Three, native XR, Game Mode, HUD, and hydration owners must remain fenced behind settled source authority')
+  throw new Error('Three, Game Mode, HUD, and hydration must remain fenced by settled source authority while mounted run-ready lifecycle owners survive later document intents')
 }
 const xrGraphStageAuthority = threeGraph.match(/const xrGraphStageAuthority = mode === 'xr'[\s\S]*?const xrSceneAuthority/)?.[0] || ''
 if (!/nativeXrRunReadyDemo\s*\? 'native-controller'\s*: 'motion-reference'/.test(xrGraphStageAuthority)

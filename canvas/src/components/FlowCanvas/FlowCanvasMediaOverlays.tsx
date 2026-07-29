@@ -67,6 +67,13 @@ import {
 } from '@/components/FlowCanvas/flowCanvasMediaOverlayWorldPoint'
 import { resolveFlowWidgetStateGraphKey, resolveScopedFlowWidgetNodeMap } from '@/lib/storyboardWidget/widgetStateScope'
 import { isFlowWidgetHeaderDragAllowedByPin } from '@/lib/storyboardWidget/flowWidgetPinMovement'
+import {
+  clampGroupPanelChildTopLeft,
+  collectGroupPanelContainedNodeIds,
+  isGroupPanelContainedNode,
+  type GroupPanelContainmentBounds,
+} from '@/lib/storyboardWidget/groupPanelContainment'
+import { readStoryboardWidgetContainmentGroupAabb } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeGroupLookup'
 import { useFlowCanvasMediaOverlayDebug } from '@/components/FlowCanvas/useFlowCanvasMediaOverlayDebug'
 function escapeSelectorAttrValue(value: string): string {
   const text = String(value || '')
@@ -141,6 +148,10 @@ export default function FlowCanvasMediaOverlays(args: {
     onNodeRemove,
     registerInteractionFrameLayoutScheduler,
   } = args
+  const groupPanelContainedNodeIds = React.useMemo(
+    () => collectGroupPanelContainedNodeIds(sceneGraphData),
+    [sceneGraphData],
+  )
   const storyboardWidgetFrontmatterDocumentModeRequested = React.useMemo(() => {
     return isStoryboardWidgetFrontmatterDocumentModeRequested({
       canvas2dRenderer,
@@ -162,7 +173,18 @@ export default function FlowCanvasMediaOverlays(args: {
   const mediaOverlayWorldPositionOverrideRef = React.useRef<Map<string, { x: number; y: number }>>(new Map())
   const mediaOverlayLayoutScheduleRef = React.useRef<null | (() => void)>(null)
   const mediaOverlayLayoutFlushRef = React.useRef<null | (() => void)>(null)
-  const mediaOverlayHeaderDragRef = React.useRef<null | { id: string; pointerId: number; startX: number; startY: number; startK: number; lastDx: number; lastDy: number }>(null)
+  const mediaOverlayHeaderDragRef = React.useRef<null | {
+    containmentBounds: GroupPanelContainmentBounds | null
+    height: number
+    id: string
+    lastDx: number
+    lastDy: number
+    pointerId: number
+    startK: number
+    startX: number
+    startY: number
+    width: number
+  }>(null)
   const mediaOverlayPanRef = React.useRef<null | { pointerId: number; startTransform: d3.ZoomTransform }>(null)
   const mediaOverlayResizeRef = React.useRef<null | {
     id: string
@@ -424,7 +446,7 @@ export default function FlowCanvasMediaOverlays(args: {
     const node = scene?.nodeById.get(id) || null
     drag.lastDx = queued.dx
     drag.lastDy = queued.dy
-    const next = computeOverlayDraggedPoint2d({
+    const unconstrained = computeOverlayDraggedPoint2d({
       baseX: drag.startX,
       baseY: drag.startY,
       dxClientPx: queued.dx,
@@ -432,6 +454,11 @@ export default function FlowCanvasMediaOverlays(args: {
       zoomK: drag.startK,
       schema: graphSchema,
       snapToGrid: false,
+    })
+    const next = clampGroupPanelChildTopLeft({
+      bounds: drag.containmentBounds,
+      point: unconstrained,
+      size: { width: drag.width, height: drag.height },
     })
     mediaOverlayWorldPositionOverrideRef.current.set(id, next)
     if (node) {
@@ -478,8 +505,25 @@ export default function FlowCanvasMediaOverlays(args: {
     const node = scene?.nodeById.get(id) || null
     const start = readNodeWorldTopLeft2d(node) || mediaOverlayWorldPositionOverrideRef.current.get(id) || readNodeWorldTopLeft2d(mediaNodes.find(node => isCanonicalNodeIdEqual(node?.id, id))) || readNodeWorldTopLeft2d((sceneGraphData?.nodes || []).find(node => isCanonicalNodeIdEqual(node?.id, id))) || readElementWorldTopLeft2d(mediaOverlayElsRef.current.get(id), runtime?.transform)
     if (!start) return
+    const element = mediaOverlayElsRef.current.get(id)
+    const scale = element ? Math.max(0.001, readVectorPaintedOverlayScale(element)) : 1
+    const rect = element?.getBoundingClientRect()
+    const knownSize = mediaOverlayPanelLastKnownWorldSizeRef.current.get(id)
+    const width = knownSize?.w || (rect && Number.isFinite(rect.width) ? rect.width / scale : RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.width)
+    const height = knownSize?.h || (rect && Number.isFinite(rect.height) ? rect.height / scale : RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.height)
     disableAutoZoomModesForUserGesture(useGraphStore.getState())
-    mediaOverlayHeaderDragRef.current = { id, pointerId, startX: start.x, startY: start.y, startK: runtime?.transform?.k || 1, lastDx: 0, lastDy: 0 }
+    mediaOverlayHeaderDragRef.current = {
+      containmentBounds: readStoryboardWidgetContainmentGroupAabb(runtime, id),
+      height,
+      id,
+      pointerId,
+      startX: start.x,
+      startY: start.y,
+      startK: runtime?.transform?.k || 1,
+      lastDx: 0,
+      lastDy: 0,
+      width,
+    }
     useGraphStore.getState().setFlowWidgetDraggingNodeId(id)
   }, [mediaNodes, mediaOverlayDragInteractionMode, runtimeRef, sceneGraphData?.nodes])
   const finishMediaOverlayHeaderDrag = React.useCallback((id: string, pointerId: number) => {
@@ -734,6 +778,7 @@ export default function FlowCanvasMediaOverlays(args: {
       style={{ zIndex: Z_INDEX_GRAPH_MEDIA_LAYER }}
     >
       {mediaNodes.map((node, index) => {
+        const containedByGroupPanel = isGroupPanelContainedNode(groupPanelContainedNodeIds, node.id)
         const hasSelectionChrome =
           canonicalNodeIdSetHas(selectedOverlayNodeIdSet, node.id)
           || isCanonicalNodeIdEqual(selectedNodeId, node.id)
@@ -755,8 +800,8 @@ export default function FlowCanvasMediaOverlays(args: {
           pinnedInCanvas: richMediaPanelPinned,
         })
         const richMediaBodyPanOwnedByCollective = storyboardSharedSurfaceRendererMode
-        const richMediaPanelMoveEnabled = headerDragInteractionActive && richMediaPanelPinAllowsMovement
-        const richMediaPanelOverlayPanEnabled = overlayInteractionEnabled && richMediaPanelPinAllowsMovement && !richMediaBodyPanOwnedByCollective
+        const richMediaPanelMoveEnabled = headerDragInteractionActive && (containedByGroupPanel || richMediaPanelPinAllowsMovement)
+        const richMediaPanelOverlayPanEnabled = overlayInteractionEnabled && (containedByGroupPanel || richMediaPanelPinAllowsMovement) && !richMediaBodyPanOwnedByCollective
         const bodyDragMovesRichMediaPanel = richMediaPanelMoveEnabled
         const resizeHandleVisible = isSelected
         const overlayPanelPointerEventsClass = mediaOverlayInteractionPolicy.panelPointerEventsClassName
@@ -810,6 +855,7 @@ export default function FlowCanvasMediaOverlays(args: {
             data-kg-overlay-pan-owner={richMediaBodyPanOwnedByCollective ? 'canvas' : undefined}
             data-kg-canvas-overlay-pinned={richMediaPanelPinned ? '1' : '0'}
             data-kg-rich-media-storyboard-widget-pinned={richMediaPanelPinned ? '1' : '0'}
+            data-kg-group-panel-contained={containedByGroupPanel ? '1' : '0'}
             data-node-id={node.id}
             data-kg-storyboard-widget-surface={storyboardWidgetOverlaySurfaceId || undefined}
             style={{ zIndex: overlayZIndex }}

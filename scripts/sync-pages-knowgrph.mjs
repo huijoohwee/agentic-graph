@@ -38,9 +38,14 @@ const gameModeMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'f
 const gameModeMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-fps', 'gameModeMcpContract.mjs')
 const flightSimMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract.mjs')
 const flightSimMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract.mjs')
-const immersiveMediaMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs'), immersiveMediaMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs')
+const citySimMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'game-city-sim', 'citySimMcpContract.mjs')
+const citySimMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-city-sim', 'citySimMcpContract.mjs')
+const immersiveMediaMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs')
+const immersiveMediaMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs')
 const richMediaTextMarkdownContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'rich-media', 'richMediaTextMarkdownContract.mjs')
 const richMediaTextMarkdownContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'rich-media', 'richMediaTextMarkdownContract.mjs')
+const groupPanelContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract.mjs')
+const groupPanelContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract.mjs')
 const youtubeTranscriptFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'youtube-transcript.mjs')
 const youtubeTranscriptFunctionTarget = path.resolve(mirrorRoot, 'functions', '__youtube_transcript.js')
 const videoFrameFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'video-frame.mjs')
@@ -408,11 +413,12 @@ const fileExists = async (filePath) => {
 
 const agentReadyRuntimeCopies = [
   [agentReadyCommerceSource, agentReadyCommerceTarget], [agentReadyAppShellSource, agentReadyAppShellTarget], [webMcpHtmlInjectionSource, webMcpHtmlInjectionTarget], [semanticKeyContractSource, semanticKeyContractTarget],
-  [xrSceneMcpContractSource, xrSceneMcpContractTarget], [xrAnimationMcpContractSource, xrAnimationMcpContractTarget], [motionControlMcpContractSource, motionControlMcpContractTarget], [gameModeMcpContractSource, gameModeMcpContractTarget], [flightSimMcpContractSource, flightSimMcpContractTarget], [immersiveMediaMcpContractSource, immersiveMediaMcpContractTarget], [path.resolve(knowgrphRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs'), path.resolve(mirrorRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs')],
+  [xrSceneMcpContractSource, xrSceneMcpContractTarget], [xrAnimationMcpContractSource, xrAnimationMcpContractTarget], [motionControlMcpContractSource, motionControlMcpContractTarget], [gameModeMcpContractSource, gameModeMcpContractTarget], [flightSimMcpContractSource, flightSimMcpContractTarget], [immersiveMediaMcpContractSource, immersiveMediaMcpContractTarget], [citySimMcpContractSource, citySimMcpContractTarget], [path.resolve(knowgrphRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs'), path.resolve(mirrorRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs')],
   [richMediaTextMarkdownContractSource, richMediaTextMarkdownContractTarget],
+  [groupPanelContractSource, groupPanelContractTarget],
   [storageEngineMcpContractSource, storageEngineMcpContractTarget],
   ...agentReadyBrowserRuntimeFilenames.map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
-  ...['knowgrphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'flightSimAgentReadyContract.mjs', 'immersiveMediaAgentReadyContract.mjs', 'storageSyncAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'knowgrphVdeoxplnRegistryData.mjs', 'knowgrphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
+  ...['knowgrphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'flightSimAgentReadyContract.mjs', 'immersiveMediaAgentReadyContract.mjs', 'citySimAgentReadyContract.mjs', 'storageSyncAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'knowgrphVdeoxplnRegistryData.mjs', 'knowgrphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
   ...(await collectGrphSharedRuntimeCopies(agentReadyRuntimeSharedEntries)),
 ]
 const removeEmptyDirs = async (rootDir) => {

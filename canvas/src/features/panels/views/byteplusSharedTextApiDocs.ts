@@ -17,6 +17,7 @@ export type VirtualSettingsEntry = {
   value: string | number | boolean
   typeLabel: string
   valueKey?: string
+  referenceOnly?: boolean
   searchHints?: string[]
   tooltipRole?: string
   tooltipActions?: string[]
