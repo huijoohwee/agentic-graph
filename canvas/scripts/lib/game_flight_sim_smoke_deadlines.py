@@ -29,6 +29,72 @@ def _read_deadlines(page: Page) -> dict[str, Any]:
     )
 
 
+def _read_ready_frame_debug(page: Page) -> dict[str, Any]:
+    return page.evaluate(
+        """
+        async () => {
+          const proof = window.__kgFlightSimBrowserProof
+          const [deadlines, runtime, geo] = await Promise.all([
+            proof.importModule('flightSimDeadlineRuntime'),
+            proof.importModule('flightSimRuntime'),
+            proof.importModule('gympgrphStore'),
+          ])
+          const map = geo.readActiveMapLibreMap?.() || null
+          const readSource = sourceId => {
+            const source = map?.getSource?.(sourceId)
+            let loaded = null
+            let featureCount = null
+            try {
+              loaded = typeof source?.loaded === 'function'
+                ? source.loaded() === true
+                : null
+            } catch {
+              loaded = false
+            }
+            try {
+              const data = source?.serialize?.()?.data
+              featureCount = Array.isArray(data?.features)
+                ? data.features.length
+                : null
+            } catch {
+              featureCount = null
+            }
+            return { present: Boolean(source), loaded, featureCount }
+          }
+          const overlay = geo.readFlightGeoOverlay?.() || null
+          const canvas = map?.getCanvas?.() || null
+          const style = map?.getStyle?.() || null
+          return {
+            deadline: deadlines.readFlightSimDeadlineSnapshot().readyFrame || null,
+            readyFrameRequestId: deadlines.readCurrentFlightSimReadyFrameRequestId?.() ?? null,
+            flight: runtime.readFlightSimSnapshot?.() || null,
+            overlay: overlay ? {
+              active: overlay.active,
+              phase: overlay.phase,
+              readyFrameRequestId: overlay.readyFrameRequestId,
+              revision: overlay.revision,
+              runId: overlay.runId,
+              tick: overlay.tick,
+              environmentRevision: overlay.environment?.revision || null,
+            } : null,
+            map: {
+              canvasCount: document.querySelectorAll('.maplibregl-canvas').length,
+              isStyleLoaded: map?.isStyleLoaded?.() === true,
+              styleName: String(style?.name || ''),
+              styleVersion: Number(style?.version || 0),
+              styleLayers: Array.isArray(style?.layers)
+                ? style.layers.map(layer => String(layer?.id || ''))
+                : [],
+              firstFrame: canvas?.dataset?.kgFlightSimFirstFrame || '',
+              environment: readSource(geo.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID),
+              overlay: readSource(geo.FLIGHT_GEO_OVERLAY_SOURCE_ID),
+            },
+          }
+        }
+        """
+    )
+
+
 def _wait_for_initial_deadlines(page: Page) -> dict[str, Any]:
     deadline = time.monotonic() + 2
     observed: dict[str, Any] = {}
@@ -75,7 +141,7 @@ def verify_flight_deadline_contracts(
     ):
         raise AssertionError(
             "Flight ready frame was not presented by native MapLibre "
-            f"within 100 ms: {ready}"
+            f"within 100 ms: {ready}; debug={_read_ready_frame_debug(page)}"
         )
 
     observed_probe_transport: list[str] = []
