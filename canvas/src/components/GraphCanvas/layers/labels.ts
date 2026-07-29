@@ -10,6 +10,8 @@ import { getNodeLabelColor } from '@/components/GraphCanvas/helpers'
 import { isTooltipRelatedTarget } from '@/features/panels/ui/tooltipUtils'
 import type { HoverInfo } from '@/components/GraphHoverTooltip'
 import { compareNodeZKey, type NodeZKey } from '@/lib/canvas/groupZOrder'
+import { useGraphStore } from '@/hooks/useGraphStore'
+import { activateMultiNodeSelectModeForShift, isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 type GSelection = d3.Selection<SVGGElement, unknown, null, undefined>;
 
@@ -142,8 +144,30 @@ export const createLabelsLayer = (args: {
   const onClick = (event: MouseEvent, d: GraphNode) => {
     event.stopPropagation();
     setSelectionSource('canvas');
+    const id = String(d.id || '').trim()
+    if (!id) return
+    const state = useGraphStore.getState()
+    const mode = activateMultiNodeSelectModeForShift({
+      mode: schema?.behavior?.selectMode || 'single',
+      shiftKey: event.shiftKey,
+      setSelectMode: state.setSelectMode,
+    })
+    const gesture = resolveNodeSelectionGesture({
+      mode,
+      shiftKey: event.shiftKey,
+      metaKey: event.metaKey,
+      ctrlKey: event.ctrlKey,
+    })
+    if (gesture === 'toggle') {
+      state.toggleNodeSelectionAdditive(id)
+      return
+    }
     selectEdge(null);
-    selectNode(String(d.id));
+    if (isMultiNodeSelectMode(mode)) {
+      state.selectNodesExpanded({ nodeIds: [id], activeNodeId: id })
+      return
+    }
+    selectNode(id);
   }
 
   const onMouseOver = (event: MouseEvent, d: GraphNode) => {

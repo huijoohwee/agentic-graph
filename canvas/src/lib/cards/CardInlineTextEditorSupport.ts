@@ -55,6 +55,22 @@ export const CARD_INLINE_TEXT_COMMAND_ROOT_ATTRIBUTE = 'data-kg-card-inline-comm
 export const CARD_INLINE_TEXT_COMMAND_MENU_ATTRIBUTE = 'data-kg-card-inline-command-menu'
 export const EDITOR_PROJECTED_MEDIA_ATTACHMENTS = null
 
+type OpenCardInlineTextEditorEntry = {
+  commit: (forcedValue?: string) => void
+  readValue?: () => string | null
+}
+
+const openCardInlineTextEditorRegistry = new Map<string, OpenCardInlineTextEditorEntry>()
+
+export const commitOpenCardInlineTextEditors = (): boolean => {
+  const entries = Array.from(openCardInlineTextEditorRegistry.values())
+  entries.forEach(entry => {
+    const value = entry.readValue?.()
+    entry.commit(typeof value === 'string' ? value : undefined)
+  })
+  return entries.length > 0
+}
+
 export function commitActiveCardInlineTextEditor(ownerDocument?: Document | null): boolean {
   const doc = ownerDocument || (typeof document !== 'undefined' ? document : null)
   const active = doc?.activeElement
@@ -65,19 +81,14 @@ export function commitActiveCardInlineTextEditor(ownerDocument?: Document | null
     const commandRoot = active.closest(`[${CARD_INLINE_TEXT_COMMAND_ROOT_ATTRIBUTE}]`)
     const commandInput = commandRoot?.querySelector(`input[${CARD_INLINE_TEXT_EDITOR_INPUT_ATTRIBUTE}], textarea[${CARD_INLINE_TEXT_EDITOR_INPUT_ATTRIBUTE}], [contenteditable="true"][${CARD_INLINE_TEXT_EDITOR_INPUT_ATTRIBUTE}]`) as HTMLElement | null
     if (!commandInput) return false
+    if (commitOpenCardInlineTextEditors()) return true
     commandInput.blur()
     return true
   }
+  if (commitOpenCardInlineTextEditors()) return true
   active.blur()
   return true
 }
-
-type OpenCardInlineTextEditorEntry = {
-  commit: (forcedValue?: string) => void
-  readValue?: () => string | null
-}
-
-const openCardInlineTextEditorRegistry = new Map<string, OpenCardInlineTextEditorEntry>()
 
 export const buildCardInlineTextEditorOwnerKey = (args: { id?: string; ariaLabel: string }): string =>
   String(args.id || args.ariaLabel || '').trim()

@@ -50,12 +50,14 @@ import {
 import { readWorkspaceSourceFilesDocsOnlySetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT, normalizeChatLocalStorageRootPath } from '@/features/chat/chatStorageConfig'
 import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
+import {
+  WORKSPACE_DOCS_MIRROR_FLUSH_DEBOUNCE_MS,
+  cancelWorkspaceDocsMirrorTextUpsertsUnderPath,
+  scheduleWorkspaceDocsMirrorTextUpsert,
+} from './workspaceDocsMirrorTextUpsertQueue'
 
 const DB_NAME = 'kg:workspace-fs'
-const WORKSPACE_DOCS_MIRROR_FLUSH_DEBOUNCE_MS = 150
 const docsMirrorFolderFlushTimers = new Map<WorkspacePath, number>()
-const docsMirrorTextFlushTimers = new Map<WorkspacePath, number>()
-const docsMirrorPendingTextByPath = new Map<WorkspacePath, string>()
 
 type WorkspaceRecordMap = { entries: WorkspaceEntry }
 type WorkspaceCollections = PersistedCollectionMap<WorkspaceRecordMap>
@@ -122,27 +124,6 @@ const scheduleWorkspaceDocsMirrorFolderEnsure = (workspacePath: WorkspacePath): 
   docsMirrorFolderFlushTimers.set(workspacePath, timer)
 }
 
-const scheduleWorkspaceDocsMirrorTextUpsert = (workspacePath: WorkspacePath, text: string): void => {
-  if (typeof window === 'undefined') {
-    void upsertWorkspaceDocsMirrorText({ workspacePath, text })
-    return
-  }
-  docsMirrorPendingTextByPath.set(workspacePath, String(text ?? ''))
-  const existingTimer = docsMirrorTextFlushTimers.get(workspacePath)
-  if (existingTimer) window.clearTimeout(existingTimer)
-  const timer = window.setTimeout(() => {
-    docsMirrorTextFlushTimers.delete(workspacePath)
-    const nextText = docsMirrorPendingTextByPath.get(workspacePath)
-    docsMirrorPendingTextByPath.delete(workspacePath)
-    if (typeof nextText !== 'string') return
-    void upsertWorkspaceDocsMirrorText({
-      workspacePath,
-      text: nextText,
-    })
-  }, WORKSPACE_DOCS_MIRROR_FLUSH_DEBOUNCE_MS)
-  docsMirrorTextFlushTimers.set(workspacePath, timer)
-}
-
 const cancelWorkspaceDocsMirrorMutationsUnderPath = (workspacePath: WorkspacePath): void => {
   const path = normalizeWorkspacePath(workspacePath)
   const matches = (candidate: WorkspacePath): boolean => candidate === path || candidate.startsWith(`${path}/`)
@@ -151,12 +132,7 @@ const cancelWorkspaceDocsMirrorMutationsUnderPath = (workspacePath: WorkspacePat
     if (typeof window !== 'undefined') window.clearTimeout(timer)
     docsMirrorFolderFlushTimers.delete(candidate)
   }
-  for (const [candidate, timer] of docsMirrorTextFlushTimers) {
-    if (!matches(candidate)) continue
-    if (typeof window !== 'undefined') window.clearTimeout(timer)
-    docsMirrorTextFlushTimers.delete(candidate)
-    docsMirrorPendingTextByPath.delete(candidate)
-  }
+  cancelWorkspaceDocsMirrorTextUpsertsUnderPath(path)
 }
 
 const getDb = async () => {

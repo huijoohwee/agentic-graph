@@ -21,6 +21,15 @@ export type FlightSimInputBinding = Readonly<{
   dispose: () => void
 }>
 
+export const FLIGHT_SIM_POINTER_CAPTURE_REQUEST_EVENT =
+  'kg:flight-sim:pointer-capture-request'
+
+export function requestFlightSimPointerCapture(): void {
+  window.dispatchEvent(new Event(FLIGHT_SIM_POINTER_CAPTURE_REQUEST_EVENT))
+}
+
+const CAMERA_CYCLE_CODE = 'KeyC'
+
 const CONTROL_CODES = new Set([
   'ArrowDown',
   'ArrowLeft',
@@ -73,6 +82,10 @@ export function updateFlightSimPressedCode(
     return pressedCodes.size !== previousSize
   }
   return pressedCodes.delete(code)
+}
+
+export function isFlightSimCameraCycleCode(code: string): boolean {
+  return code === CAMERA_CYCLE_CODE
 }
 
 export function flightSimInputFromPressedCodes(codes: ReadonlySet<string>): FlightSimTickInput {
@@ -182,9 +195,10 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 export function installFlightSimDesktopInput(
-  element: HTMLCanvasElement,
+  element: HTMLElement,
   options: Readonly<{
     onInput: (input: FlightSimTickInput) => void
+    onCycleCamera?: () => void
     onPause?: (reason: string) => void
     shouldPauseOnPointerRelease?: () => boolean
     shouldRequestPointerLock?: () => boolean
@@ -205,7 +219,13 @@ export function installFlightSimDesktopInput(
     if (reason) options.onPause?.(reason)
   }
   const onKeyDown = (event: KeyboardEvent) => {
-    if (isEditableTarget(event.target) || !CONTROL_CODES.has(event.code)) return
+    if (isEditableTarget(event.target)) return
+    if (isFlightSimCameraCycleCode(event.code)) {
+      if (!event.repeat) options.onCycleCamera?.()
+      event.preventDefault()
+      return
+    }
+    if (!CONTROL_CODES.has(event.code)) return
     updateFlightSimPressedCode(pressedCodes, event.code, true)
     publishKeyboard()
     event.preventDefault()
@@ -264,6 +284,10 @@ export function installFlightSimDesktopInput(
   document.addEventListener('pointerlockchange', onPointerLockChange)
   document.addEventListener('visibilitychange', onVisibilityChange)
   element.addEventListener('click', onCanvasPointerLockRequest)
+  window.addEventListener(
+    FLIGHT_SIM_POINTER_CAPTURE_REQUEST_EVENT,
+    onCanvasPointerLockRequest,
+  )
 
   return Object.freeze({
     consumeInput() {
@@ -280,6 +304,10 @@ export function installFlightSimDesktopInput(
       document.removeEventListener('pointerlockchange', onPointerLockChange)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       element.removeEventListener('click', onCanvasPointerLockRequest)
+      window.removeEventListener(
+        FLIGHT_SIM_POINTER_CAPTURE_REQUEST_EVENT,
+        onCanvasPointerLockRequest,
+      )
       if (document.pointerLockElement === element) void document.exitPointerLock()
       ownedPointerLock = false
       delete element.dataset.kgFlightSimPointerLock

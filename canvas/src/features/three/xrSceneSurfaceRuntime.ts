@@ -53,6 +53,8 @@ export function resolveXrSurfaceEntryPanelView(input: Readonly<{
 export type XrSceneSurfaceActivation = Readonly<{
   panelView?: XrSceneFloatingPanelView
   gameplaySurface?: XrGameplaySurfaceId
+  geospatialComposite?: boolean
+  preserveGameplay?: boolean
   openPanel?: boolean
   timeline?: boolean
   beforePanelCommit?: () => void
@@ -125,7 +127,7 @@ export function activateXrSceneSurface(
     multiDimTableModeEnabled: state.multiDimTableModeEnabled === true,
     layoutMode: state.schema?.layout?.mode,
     schema: state.schema,
-  }, 'xr')) return false
+  }, activation.geospatialComposite ? 'geo-xr' : 'xr')) return false
   const previousSurface = Object.freeze({
     canvasRenderMode: state.canvasRenderMode,
     canvas3dMode: state.canvas3dMode,
@@ -163,11 +165,11 @@ export function activateXrSceneSurface(
         ? activation.panelView
         : undefined
     )
-  if (
+  if (!activation.preserveGameplay && (
     explicitGameplayActivation
     || !activation.panelView
     || !XR_GAMEPLAY_COMPANION_PANEL_VIEWS.has(activation.panelView)
-  ) {
+  )) {
     exitInactiveGameplaySurfaces(
       selectedGameplaySurface,
       activation.panelView,

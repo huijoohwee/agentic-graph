@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Vector3, type PerspectiveCamera, type WebGLRenderer } from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { resolveFlightSimFollowTarget } from '@/features/game-flight-sim/flightSimFollowTarget'
+import { readFlightSimCameraSnapshot } from '@/features/game-flight-sim/flightSimCameraRuntime'
 import { readFlightSimSnapshot } from '@/features/game-flight-sim/flightSimRuntime'
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -19,7 +20,6 @@ import { readXrNativeControllerCamera } from './xrNativeControllerCameraRuntime'
 
 const AERIAL_ALTITUDE_START_METERS = 3
 const AERIAL_ALTITUDE_RANGE_METERS = 17
-
 type FollowOwner = 'flight' | 'physics'
 type FollowTarget = Readonly<{
   owner: FollowOwner
@@ -94,7 +94,11 @@ function readFlightFollowTarget(
   if (!active || renderer.xr.isPresenting) return null
   const snapshot = readFlightSimSnapshot()
   if (!snapshot.active || !snapshot.webglSupported || snapshot.runtimeError) return null
-  const target = resolveFlightSimFollowTarget(snapshot, coordinateScale)
+  const target = resolveFlightSimFollowTarget(
+    snapshot,
+    coordinateScale,
+    readFlightSimCameraSnapshot().view,
+  )
   return Object.freeze({
     owner: 'flight',
     ...target,
@@ -179,7 +183,6 @@ export function useXrNativeControllerDemoCamera({
     controls.enableRotate = false
     controls.enableZoom = false
     if (previousFovRef.current === null) previousFovRef.current = camera.fov
-
     const target = desiredTargetRef.current.set(...follow.target)
     const desiredCamera = desiredCameraRef.current.set(...follow.position)
     const ownerChanged = ownerRef.current !== follow.owner

@@ -232,6 +232,7 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["ui.mainPanel.requestedIntegrationsSearch.miromindApiKeyServerManaged","@/__tests__/mainPanelMiroMindPagesReadiness.test","testMainPanelMiroMindApiKeyUsesServerManagedPagesSecretContract"],
   ["ui.mainPanel.requestedIntegrationsSearch.showsAgnesApiConfigurableValues","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchShowsAgnesApiConfigurableValues"],
   ["ui.mainPanel.requestedIntegrationsSearch.showsQwenApiConfigurableValues","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchShowsQwenApiConfigurableValues"],
+  ["ui.mainPanel.requestedIntegrationsSearch.showsZaiApiReferenceRows","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchShowsZaiApiReferenceRows"],
   ["ui.mainPanel.requestedIntegrationsSearch.showsGoogleCloudApiConfigurableValues","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchShowsGoogleCloudApiConfigurableValues"],
   ["ui.mainPanel.byteplusTooltipCopy.structured","@/__tests__/byteplusTooltipCopy.test","testBytePlusEntriesExposeStructuredTooltipMetadata"],
   ["ui.mainPanel.byteplusTooltipCopy.keyRoleActionsOutcome","@/__tests__/byteplusTooltipCopy.test","testBytePlusMessagesRoleTooltipUsesRoleActionsOutcomeCopy"],
@@ -299,6 +300,8 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["workspace.mirrorReadRoots.taskCanonicalDocs","@/__tests__/workspaceMirrorReadRoots.test","testWorkspaceMirrorReadRootsAdmitConfiguredCanonicalDocsFromTaskWorktree"],
   ["agentReady.rootAlias.appShell","@/__tests__/rootAgentReadyAlias.test","testRootAgentReadyAliasCanonicalizesPublishedAppShellMount"],
   ["ui.floatingPanel.media.xrLiteralInvocation","@/__tests__/xrMediaInvocationRuntime.test","testXrMediaInvocationChipsDispatchDisplayedLiteral"],
+  ["ui.floatingPanel.media.xrEnvironmentGeoRouting","@/__tests__/xrMediaInvocationRuntime.test","testXrEnvironmentGeoHandoffSelectsBeforeRouting"],
+  ["ui.floatingPanel.media.xrEnvironmentGeoProjection","@/__tests__/xrEnvironmentGeoProjection.test","testXrEnvironmentSelectionProjectsThroughGeoAndFlight"],
   ["ui.floatingPanel.skillsCommands.xrInvocationInsertion","@/__tests__/xrSkillsCommandsInvocation.test","testSkillsCommandsXrGrammarInsertsExactTokens"],
   ["canvas.xrMode.cameraPanelContinuity","@/__tests__/cameraMcpPanelContinuity.test","testCameraPanelActivationPreservesOpenXrOperatorPanels"],
 ]

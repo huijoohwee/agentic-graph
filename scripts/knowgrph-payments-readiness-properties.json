@@ -1,0 +1,327 @@
+{
+  "schemaId": "knowgrph-payments-readiness-properties/v1",
+  "runtimeEvidence": [
+    {
+      "file": "package.json",
+      "contains": "\"payment:runtime:readiness\""
+    },
+    {
+      "file": "package-lock.json",
+      "contains": "\"fast-check\": \"3.23.2\""
+    },
+    {
+      "file": "grph-shared/package.json",
+      "contains": "\"./payments/paymentRailSsot\""
+    },
+    {
+      "file": "grph-shared/package.json",
+      "contains": "\"./payments/paymentRecordDocument\""
+    },
+    {
+      "file": "grph-shared/package.json",
+      "contains": "\"./payments/straitsxPaymentSsot\""
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/wrangler.toml",
+      "contains": "STRAITSX_ENABLED = \"false\""
+    },
+    {
+      "file": "scripts/lib/knowgrph-payments-provider-proof.mjs",
+      "contains": "knowgrph-payments-provider-sandbox-proof/v1"
+    },
+    {
+      "file": "docs/documents/knowgrph-api-reference/knowgrph-stripe-api-reference.md",
+      "contains": "Core Request Semantics"
+    },
+    {
+      "file": "docs/documents/knowgrph-api-reference/knowgrph-stripe-mcp-reference.md",
+      "contains": "https://mcp.stripe.com"
+    },
+    {
+      "file": "docs/documents/knowgrph-api-reference/knowgrph-straitsx-api-reference.md",
+      "contains": "Regular Transfer"
+    },
+    {
+      "file": "docs/documents/knowgrph-api-reference/knowgrph-straitsx-authentication-reference.md",
+      "contains": "X-XFERS-APP-API-KEY"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "status": "partial",
+      "detail": "Stripe custody exists and StraitsX credential names are centralized, but the built-client leak proof and every outbound provider header are not yet green.",
+      "evidence": [
+        {
+          "file": "grph-shared/src/payments/stripePaymentSsot.ts",
+          "contains": "STRIPE_PAYMENT_SECRET_ENV_NAMES"
+        },
+        {
+          "file": "grph-shared/src/payments/straitsxPaymentSsot.ts",
+          "contains": "STRAITSX_PAYMENT_SECRET_ENV_NAMES"
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "status": "partial",
+      "detail": "The pure router checks compatibility before readiness and returns one typed selection or rail_unavailable, but the selection is not yet persisted before provider contact.",
+      "evidence": [
+        {
+          "file": "grph-shared/src/payments/paymentRailSsot.ts",
+          "contains": "selectPaymentRail"
+        },
+        {
+          "file": "grph-shared/__tests__/payment-rail-ssot.test.mjs",
+          "contains": "compatibility-first, fail-closed, and deterministic"
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "status": "partial",
+      "detail": "Hosted Stripe Checkout and idempotency exist, but Client_Intent_Key persistence, Request-Id capture, and provider-read expiry reconciliation are incomplete.",
+      "evidence": [
+        {
+          "file": "cloudflare/workers/knowgrph-payment/payments.ts",
+          "contains": "headers['Idempotency-Key']"
+        },
+        {
+          "file": "grph-shared/src/payments/stripePaymentSsot.ts",
+          "contains": "STRIPE_PAYMENT_API_VERSION"
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "status": "partial",
+      "detail": "The StraitsX sandbox/config/header SSOT fails closed, but provider create/read adapters remain blocked on the approved integration model and payment method.",
+      "evidence": [
+        {
+          "file": "grph-shared/src/payments/straitsxPaymentSsot.ts",
+          "contains": "resolveStraitsxRuntimeConfig"
+        },
+        {
+          "file": "grph-shared/__tests__/straitsx-payment-ssot.test.mjs",
+          "contains": "StraitsX SSOT enables only resolved sandbox API-key configuration"
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "status": "partial",
+      "detail": "Stripe raw-body signature and replay state exist; StraitsX source authentication and mandatory provider-read settlement do not.",
+      "evidence": [
+        {
+          "file": "cloudflare/workers/knowgrph-payment/payments.ts",
+          "contains": "stripe-signature"
+        },
+        {
+          "file": "docs/documents/knowgrph-payments-prd-tad.md",
+          "contains": "StraitsX callback is accepted only from the documented source addresses"
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "status": "not_implemented",
+      "detail": "The canonical browser-local store exists, but no bounded payment intent queue or provider-authoritative reconnect reconciler is implemented.",
+      "evidence": [
+        {
+          "file": "canvas/src/lib/storage/knowgrphStorageDb.ts",
+          "contains": "knowgrphStorageDbSingleton"
+        },
+        {
+          "file": "docs/documents/knowgrph-payments-prd-tad.md",
+          "contains": "Offline continuity | Not present"
+        }
+      ]
+    },
+    {
+      "id": "R7",
+      "status": "partial",
+      "detail": "The pure canonical JSON Lines codec validates nine fields, rejects personal data, and enforces byte-identical round trips, but client local-store append and the offline receipt view are not implemented.",
+      "evidence": [
+        {
+          "file": "grph-shared/src/payments/paymentRecordDocument.ts",
+          "contains": "parseKnowgrphPaymentRecordDocument"
+        },
+        {
+          "file": "grph-shared/__tests__/payment-record-document.test.mjs",
+          "contains": "payment record serialization properties hold across 100 generated record sets"
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "status": "not_implemented",
+      "detail": "The current buyer surface owns local checkoutBusy state and does not consume the required shared nine-state snapshot.",
+      "evidence": [
+        {
+          "file": "canvas/src/features/payments/PaywallOverlay.tsx",
+          "contains": "React.useState(false)"
+        },
+        {
+          "file": ".kiro/specs/knowgrph-payments/requirements.md",
+          "contains": "reconciliation_unresolved"
+        }
+      ]
+    },
+    {
+      "id": "R9",
+      "status": "partial",
+      "detail": "The hosted Stripe MCP endpoint and confirmation policy have an SSOT, but rail-neutral discovery and payment-action approval dispatch are incomplete.",
+      "evidence": [
+        {
+          "file": "grph-shared/src/payments/stripeMcpSsot.ts",
+          "contains": "https://mcp.stripe.com"
+        },
+        {
+          "file": "grph-shared/src/payments/stripeMcpSsot.ts",
+          "contains": "human confirmation"
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "status": "not_implemented",
+      "detail": "The rail-neutral typed failure taxonomy, provider request correlation, and idempotent same-rail refund owner are absent.",
+      "evidence": [
+        {
+          "file": ".kiro/specs/knowgrph-payments/requirements.md",
+          "contains": "refund_not_applicable"
+        },
+        {
+          "file": "docs/documents/knowgrph-payments-prd-tad.md",
+          "contains": "Typed failures and refunds"
+        }
+      ]
+    },
+    {
+      "id": "R11",
+      "status": "partial",
+      "detail": "The read-only layered gate and unsigned candidate-proof schema are executable, but a trusted attestation or direct provider check, per-call cost rows, Agentic OS payment views, and authenticated paid sandbox evidence are absent.",
+      "evidence": [
+        {
+          "file": "scripts/check-knowgrph-payments-readiness.mjs",
+          "contains": "inspectKnowgrphPaymentsReadiness"
+        },
+        {
+          "file": "scripts/lib/knowgrph-payments-readiness.mjs",
+          "contains": "KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID"
+        },
+        {
+          "file": "scripts/__tests__/knowgrph-payments-readiness.test.mjs",
+          "contains": "valid provider proof cannot promote incomplete source or local task provenance"
+        }
+      ]
+    },
+    {
+      "id": "R12",
+      "status": "partial",
+      "detail": "The public four-field projection and Dev-only release boundary exist, but the rail-neutral Worker schema and mode-mismatch enforcement are incomplete because a generic StraitsX API-key binding cannot independently prove sandbox or live credential provenance.",
+      "evidence": [
+        {
+          "file": "grph-shared/src/payments/paymentRecordDocument.ts",
+          "contains": "buildKnowgrphPublicPaymentStatus"
+        },
+        {
+          "file": "docs/documents/knowgrph-payments-prd-tad.md",
+          "contains": "Dev authoring only"
+        }
+      ]
+    }
+  ],
+  "openQuestions": [
+    {
+      "id": "OQ-1",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "Commercial pricing does not block sandbox source readiness."
+    },
+    {
+      "id": "OQ-2",
+      "status": "open",
+      "gate": "providerSandbox",
+      "detail": "The provider-approved StraitsX integration model is unknown."
+    },
+    {
+      "id": "OQ-3",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "No StraitsX MCP parity claim is required."
+    },
+    {
+      "id": "OQ-4",
+      "status": "open",
+      "gate": "source",
+      "detail": "The preview Stripe MCP mutating-tool inventory is not pinned."
+    },
+    {
+      "id": "OQ-5",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "Stripe Treasury automation is out of scope."
+    },
+    {
+      "id": "OQ-6",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "Mandatory provider-state reads retain the conservative callback boundary."
+    },
+    {
+      "id": "OQ-7",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "Per-attempt references plus provider-state reads retain the conservative retry boundary."
+    },
+    {
+      "id": "OQ-8",
+      "status": "open",
+      "gate": "source",
+      "detail": "The Worker source-address header owner is unresolved."
+    },
+    {
+      "id": "OQ-9",
+      "status": "open",
+      "gate": "providerSandbox",
+      "detail": "The approved XSGD inbound path and networks are unknown."
+    },
+    {
+      "id": "OQ-10",
+      "status": "open",
+      "gate": "providerSandbox",
+      "detail": "Dynamic PayNow or virtual bank account remains unselected; persistent PayNow is outside this increment."
+    },
+    {
+      "id": "OQ-11",
+      "status": "resolved",
+      "gate": "source",
+      "detail": "The existing Stripe SSOT pins 2026-05-19."
+    },
+    {
+      "id": "OQ-12",
+      "status": "open",
+      "gate": "source",
+      "detail": "The queue owner and maximum depth are unresolved."
+    },
+    {
+      "id": "OQ-13",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "The optional model harness remains disabled."
+    },
+    {
+      "id": "OQ-14",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "HTTP request signing stays fail-closed; API-key sandbox mode remains the only supported mode."
+    },
+    {
+      "id": "OQ-15",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "Live mode and deployment are out of scope."
+    }
+  ]
+}

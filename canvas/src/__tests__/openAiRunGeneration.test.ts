@@ -27,6 +27,9 @@ export async function testGenerateRunMarkdownWithProviderSupportsOpenAiResponses
         || !body.instructions.includes('genuinely ambiguous')
         || !body.instructions.includes('ask one concise clarification')
         || !body.instructions.includes('Do not ask for clarification solely because connected source context uses another language')
+        || !body.instructions.includes('structured source records')
+        || !body.instructions.includes('compact Sources section')
+        || !body.instructions.includes('Never backfill missing evidence')
         || body.instructions.includes('Unicode')
       ) {
         throw new Error(`expected responses instructions to use semantic multilingual clarification without script hardcodes, got ${body.instructions}`)

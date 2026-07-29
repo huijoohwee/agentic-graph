@@ -53,7 +53,7 @@ export const RUNTIME_IDENTITY_OUTPUT_SCHEMA = Object.freeze({
       additionalProperties: true,
       required: [
         'schema', 'device', 'branch', 'knowgrphRevision', 'agenticCanvasOsRevision',
-        'catalogRevision', 'catalogHydration', 'catalogCounts', 'agentLiveProviderProof',
+        'catalogRevision', 'catalogDigest', 'catalogHydration', 'catalogCounts', 'agentLiveProviderProof',
         'progressiveAgentsReadiness',
       ],
     },

@@ -1,9 +1,6 @@
-import fs from 'node:fs'
 import path from 'node:path'
 
-const readUtf8 = (absPath: string): string => {
-  return fs.readFileSync(absPath, { encoding: 'utf8' })
-}
+import { readUtf8 } from './geospatialHostIntegrationTestUtils'
 
 export const testGeospatialOverlayHostNotGatedBySidebar = () => {
   const canvasPath = path.resolve(process.cwd(), 'src', 'pages', 'Canvas.tsx')
@@ -256,6 +253,112 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
   }
 }
 
+export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
+  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
+  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
+  const presentationPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useFlightGeoOverlayMapLibrePresentation.ts')
+  const xrStagePath = path.resolve(process.cwd(), 'src', 'features', 'three', 'XrCanonicalPhysicsStage.tsx')
+  const threeGraphPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGraph.impl.tsx')
+  const gameplayOverlayPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGameplayOverlay.tsx')
+  const flightOverlayPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibre.ts')
+  const viewportText = readUtf8(viewportPath)
+  const hostText = readUtf8(hostPath)
+  const presentationText = readUtf8(presentationPath)
+  const xrStageText = readUtf8(xrStagePath)
+  const threeGraphText = readUtf8(threeGraphPath)
+  const gameplayOverlayText = readUtf8(gameplayOverlayPath)
+  const flightOverlayText = readUtf8(flightOverlayPath)
+  if (viewportText.includes('shared-xr-stage') || hostText.includes('sharedXrStage')) {
+    throw new Error('Expected Geo+XR to avoid the conflicting shared-R3F provider policy')
+  }
+  if (!viewportText.includes('setFlightGeoOverlay')
+    || !viewportText.includes('projectFlightSimToGeospatialOverlay')) {
+    throw new Error('Expected Geo+XR to publish the deterministic Flight projection to the Geo owner')
+  }
+  if (!hostText.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')
+    || !hostText.includes('useFlightGeoOverlayMapLibrePresentation({')
+    || !presentationText.includes('applyFlightGeoOverlayToMap(map, overlay)')) {
+    throw new Error('Expected the native MapLibre runtime to own Geo+XR basemap and Flight projection layers')
+  }
+  const overlayApplyIndex = presentationText.indexOf('const applied = applyFlightGeoOverlayToMap(map, overlay)')
+  const overlayFitIndex = presentationText.indexOf('fitMapToFlightGeoOverlay(map, overlay)')
+  const overlayCameraIndex = presentationText.indexOf('applyFlightGeoOverlayCameraToMap(map, overlay)')
+  if (
+    overlayApplyIndex < 0
+    || overlayFitIndex < overlayApplyIndex
+    || overlayCameraIndex < overlayFitIndex
+  ) {
+    throw new Error('Expected route fit to complete before the final Fixed Follow camera write')
+  }
+  const fitKeyStart = presentationText.indexOf('const fitKey = [', overlayApplyIndex)
+  const fitKeyEnd = presentationText.indexOf("].join(':')", fitKeyStart)
+  const fitKeySource = presentationText.slice(fitKeyStart, fitKeyEnd)
+  if (
+    fitKeyStart < 0
+    || fitKeyEnd < 0
+    || fitKeySource.includes('overlay.camera')
+  ) {
+    throw new Error('Expected route fit to stay stable when Flight camera source or view changes')
+  }
+  if (!presentationText.includes("root.dataset.kgFlightGeospatialOverlay = 'active'")) {
+    throw new Error('Expected the Geo host to expose live Flight overlay browser proof')
+  }
+  if (!presentationText.includes('scheduleFinalApply')
+    || !presentationText.includes("map?.on?.('load', scheduleFinalApply)")
+    || !presentationText.includes('applyFlightGeoOverlayCameraToMap(map, overlay)')) {
+    throw new Error('Expected MapLibre initialization to finish with the Flight camera owner')
+  }
+  const renderAcknowledgeIndex = presentationText.indexOf("map.on('render', listener)")
+  const firstFrameMarkerIndex = presentationText.indexOf("canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'")
+  const presentationCallbackIndex = presentationText.indexOf('onPresented?.(presentation)')
+  if (
+    renderAcknowledgeIndex < 0
+    || firstFrameMarkerIndex < 0
+    || presentationCallbackIndex < firstFrameMarkerIndex
+  ) {
+    throw new Error('Expected only the rendered native MapLibre overlay to acknowledge Geo+XR Flight presentation')
+  }
+  if (!presentationText.includes("overlay.phase !== 'stopped'")
+    || !presentationText.includes('pending.attempts += 1')
+    || !presentationText.includes('FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT')
+    || !presentationText.includes('FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT')) {
+    throw new Error('Expected stopped re-preparation and transient MapLibre renders to use bounded, exact presentation retries')
+  }
+  if (!viewportText.includes('completeFlightSimMapLibreReadyFrame(')
+    || !viewportText.includes('completeFlightSimStagePreparation(requestId, {')
+    || !viewportText.includes('framePresented: true')
+    || !viewportText.includes('onFlightOverlayPresented={handleFlightOverlayPresented}')) {
+    throw new Error('Expected the Geo+XR bridge to route exact MapLibre presentation into Flight preparation and tick-zero readiness')
+  }
+  if (!xrStageText.includes('environmentVisible={!geospatialComposite}')
+    || !xrStageText.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')) {
+    throw new Error('Expected Geo+XR to hide duplicate R3F terrain and atmosphere')
+  }
+  if (!threeGraphText.includes('const rendererDefaultClearAlpha = geospatialComposite ? 0')) {
+    throw new Error('Expected the Flight R3F canvas to stay transparent above MapLibre')
+  }
+  if (!gameplayOverlayText.includes('actorsVisible={!props.geospatialComposite}')) {
+    throw new Error('Expected Geo+XR to suppress competing R3F Flight geometry')
+  }
+  for (const layer of ['route', 'routePoints', 'aircraft', 'aircraftOutline']) {
+    if (!flightOverlayText.includes(`${layer}:`)) {
+      throw new Error(`Expected the MapLibre Flight projection to include ${layer}`)
+    }
+  }
+  for (const marker of [
+    "overlay.camera.effectiveOwner === 'timeline-playback'",
+    'center: [...overlay.camera.centerCoordinate]',
+    'FLIGHT_GEO_NIGHT_EXPRESSION',
+  ]) {
+    if (!flightOverlayText.includes(marker)) {
+      throw new Error(`Expected visible MapLibre Flight camera/palette contract to include ${marker}`)
+    }
+  }
+  if (flightOverlayText.includes('overlay.tick <= 0')) {
+    throw new Error('Expected Fixed Follow camera framing to apply at stopped/ready tick zero')
+  }
+}
+
 export const testGeospatialOverlayHostDoesNotOverlaySvgFallbackOnHealthyMapLibreBasemap = () => {
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const text = readUtf8(hostPath)
@@ -465,636 +568,5 @@ export const testGeospatialOverlayHostClearsStaleDataAndSeparatesClusterSources 
   }
 }
 
-export const testSourceFilesPersistenceUsesContentHashNotLengthOnly = () => {
-  const persistencePath = path.resolve(process.cwd(), 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx')
-  const signaturesPath = path.resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesSignatures.ts')
-  const text = readUtf8(persistencePath)
-  const signaturesText = readUtf8(signaturesPath)
-  if (!text.includes("from '@/features/source-files/sourceFilesSignatures'")) {
-    throw new Error('Expected source-files persistence bootstrap to reuse the shared source-files signature helper module')
-  }
-  if (!text.includes('areSourceFilesEqualByIdAndHash') || !text.includes('buildSourceFilesPersistenceSignature')) {
-    throw new Error('Expected source-files persistence bootstrap to reuse shared persistence equality and signature helpers')
-  }
-  if (!signaturesText.includes('hashStringToHexCached(cacheKey, text)')) {
-    throw new Error('Expected shared source-files persistence hashing to hash canonical text content through the bounded text-hash cache')
-  }
-  if (text.includes("String(x?.text || '').length !== String(y?.text || '').length")) {
-    throw new Error('Source-files persistence must not compare by text length only')
-  }
-  if (signaturesText.includes("String(x?.text || '').length !== String(y?.text || '').length")) {
-    throw new Error('Shared source-files persistence helpers must not compare by text length only')
-  }
-}
-
-export const testSourceFilesDbUsesPersistedCollectionStoreForRuntimeQueries = () => {
-  const dbPath = path.resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesDb.ts')
-  const text = readUtf8(dbPath)
-  if (!text.includes('createPersistedCollectionDb')) {
-    throw new Error('Expected source-files persistence DB to use the shared persisted collection store for runtime find/sort queries')
-  }
-  if (!text.includes("collections.sourceFiles.find().sort({ orderIndex: 'asc' }).exec()")) {
-    throw new Error('Expected source-files persistence DB to keep the shared persisted-store query/sort path for runtime source-file reads')
-  }
-}
-
-export const testGeospatialPanelHostIsNotEmpty = () => {
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialPanelHost.tsx')
-  const text = readUtf8(hostPath)
-  if (!text.includes("from 'grph-shared/ui/keyTypeValueRows'")) throw new Error('Expected GeospatialPanelHost to reuse the shared KTV row class contract')
-  if (!text.includes('coercePanelTypography')) throw new Error('Expected GeospatialPanelHost to derive KTV typography from the shared panel typography contract')
-  if (!text.includes('GeoPanelKtvRow')) throw new Error('Expected GeospatialPanelHost to render geospatial controls as KTV rows')
-  if (!text.includes('KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME')) throw new Error('Expected GeospatialPanelHost KTV rows to share the MainPanel key/type/value grid')
-  if (!text.includes('keyNode="Key"') || !text.includes('typeNode="Type"') || !text.includes('valueNode="Value"')) throw new Error('Expected GeospatialPanelHost to render the KTV header')
-  if (!text.includes('renderTypeIcon?: (args: { typeLabel: string }) => React.ReactNode')) throw new Error('Expected GeospatialPanelHost to accept an upstream KTV Type icon renderer')
-  if (!text.includes('GeoPanelTypeIconRenderContext') || !text.includes('renderTypeIcon({ typeLabel })')) throw new Error('Expected GeospatialPanelHost Type cells to render icons through the upstream MainPanel icon renderer')
-  if (text.includes("from 'lucide-react'")) throw new Error('Expected GeospatialPanelHost to avoid local icon imports and reuse the MainPanel Help icon library renderer')
-  if (!text.includes('GeoPanelSection title="Basemap"') || !text.includes('keyNode="Style URL"')) throw new Error('Expected GeospatialPanelHost to render basemap style controls')
-  if (!text.includes('Fit to data')) throw new Error('Expected GeospatialPanelHost to render fit controls')
-  if (!text.includes('Use current location')) throw new Error('Expected GeospatialPanelHost to render current-location control')
-  if (!text.includes('2D (MapLibre, Classic)')) throw new Error('Expected GeospatialPanelHost to expose explicit 2D MapLibre Classic selection')
-  if (!text.includes('2D (MapLibre, Modern)')) throw new Error('Expected GeospatialPanelHost to expose explicit 2D MapLibre Modern selection')
-  if (!text.includes('3D (MapLibre, Classic)')) throw new Error('Expected GeospatialPanelHost to expose explicit 3D MapLibre Classic selection')
-  if (!text.includes('3D (MapLibre, Modern)')) throw new Error('Expected GeospatialPanelHost to expose explicit 3D MapLibre Modern selection')
-  if (!text.includes('2D (SVG, fallback)')) throw new Error('Expected GeospatialPanelHost to expose explicit 2D SVG fallback selection')
-  if (!text.includes('Apply Point Style')) throw new Error('Expected GeospatialPanelHost to expose point style apply control')
-  if (!text.includes('Reset Point Style')) throw new Error('Expected GeospatialPanelHost to expose point style reset control')
-  if (text.includes('GeoViewModeChoice') || text.includes('geospatialPanelCardClassName') || text.includes('grid grid-cols-1 gap-2 sm:grid-cols-6')) {
-    throw new Error('Expected GeospatialPanelHost to avoid stale card/grid geospatial panel layout paths')
-  }
-}
-
-export const testGeospatialHostSupportsCurrentLocationViewportRequests = () => {
-  const fitPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'geospatialFit.ts')
-  const slicePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'hooks', 'store', 'geospatialSlice.ts')
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const fitText = readUtf8(fitPath)
-  const sliceText = readUtf8(slicePath)
-  const hostText = readUtf8(hostPath)
-  if (!fitText.includes('requestGeospatialCurrentLocation')) {
-    throw new Error('Expected gympgrph fit helpers to expose current-location requests')
-  }
-  if (!sliceText.includes("mode: 'currentLocation'")) {
-    throw new Error('Expected gympgrph geospatial slice to support currentLocation fit requests')
-  }
-  if (!hostText.includes("if (geospatialFitRequest.mode === 'currentLocation')")) {
-    throw new Error('Expected GeospatialHost to handle currentLocation viewport requests')
-  }
-}
-
-export const testGympgrphDefaultInteractionModeIsAlways = () => {
-  const slicePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'hooks', 'store', 'geospatialSlice.ts')
-  const text = readUtf8(slicePath)
-  if (!text.includes("LS_KEYS.geospatialInteractionMode")) throw new Error('Expected geospatialInteractionMode persistence key usage')
-  if (!text.includes("'always'")) throw new Error('Expected default interaction mode to include always')
-}
-
-export const testHoldSpaceKeyHandlingPreventsScrollAndIgnoresInputs = () => {
-  const heldKeyPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useHeldKey.ts')
-  const text = readUtf8(heldKeyPath)
-  if (!text.includes('preventDefault')) throw new Error('Expected Space hold to preventDefault to avoid page scroll')
-  if (!(text.includes('closest(') || text.includes('closest?.('))) {
-    throw new Error('Expected hold-space logic to ignore input/textarea/select/contenteditable')
-  }
-}
-
-export const testHostEnableForcesAlwaysInteractionMode = () => {
-  const hostBridgePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'hostBridge.ts')
-  const text = readUtf8(hostBridgePath)
-  if (!text.includes("s.setGeospatialInteractionMode('always')")) {
-    throw new Error('Expected enabling Geospatial Mode to force interactionMode=always for immediate navigation')
-  }
-}
-
-export const testHostEnableDoesNotForce2dViewMode = () => {
-  const hostBridgePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'hostBridge.ts')
-  const text = readUtf8(hostBridgePath)
-  if (text.includes("s.setGeospatialViewMode('2d')")) {
-    throw new Error('Geospatial host enable must not hard-reset view mode to 2d')
-  }
-}
-
-export const testHostTailwindScansGympgrphClasses = () => {
-  const tailwindConfigPath = path.resolve(process.cwd(), 'tailwind.config.js')
-  const text = readUtf8(tailwindConfigPath)
-  if (!text.includes('../gympgrph/src/**/*.{js,ts,jsx,tsx}')) {
-    throw new Error('Expected knowgrph host Tailwind config to scan gympgrph sources for class generation')
-  }
-}
-
-export const testGeospatialModeEventContractIsShared = () => {
-  const hostEventsPath = path.resolve(process.cwd(), 'src', 'features', 'geospatial', 'events.ts')
-  const hostEventsText = readUtf8(hostEventsPath)
-  if (!hostEventsText.includes("from 'grph-shared/geospatial/events'")) {
-    throw new Error('Expected host geospatial events to re-export from grph-shared/geospatial/events')
-  }
-  if (hostEventsText.includes('export type GeospatialModeChangedDetail')) {
-    throw new Error('Host must not redefine GeospatialModeChangedDetail (cross-repo drift risk)')
-  }
-
-  const canvasPath = path.resolve(process.cwd(), 'src', 'pages', 'Canvas.tsx')
-  const canvasText = readUtf8(canvasPath)
-  const canvasRuntimePath = path.resolve(process.cwd(), 'src', 'features', 'canvas', 'useCanvasGeospatialRuntime.ts')
-  const canvasRuntimeText = readUtf8(canvasRuntimePath)
-  if (!(canvasText.includes('useCanvasGeospatialRuntime') && canvasRuntimeText.includes('onGeospatialModeChanged'))) {
-    throw new Error('Expected Canvas to subscribe via shared geospatial runtime or the onGeospatialModeChanged helper')
-  }
-  if (canvasText.includes('addEventListener(GEOSPATIAL_MODE_CHANGED_EVENT')) {
-    throw new Error('Canvas must not attach raw GEOSPATIAL_MODE_CHANGED_EVENT listener (use helper)')
-  }
-
-  const toolbarPath = path.resolve(process.cwd(), 'src', 'components', 'Toolbar.tsx')
-  const toolbarText = readUtf8(toolbarPath)
-  const toolbarContextPath = path.resolve(process.cwd(), 'src', 'components', 'toolbar', 'useCanvasToolbarContext.ts')
-  const toolbarContextText = readUtf8(toolbarContextPath)
-  if (!(toolbarText.includes('onGeospatialModeChanged') || toolbarContextText.includes('onGeospatialModeChanged'))) {
-    throw new Error('Expected Toolbar or delegated toolbar context to subscribe via onGeospatialModeChanged helper')
-  }
-  if (
-    toolbarText.includes('addEventListener(GEOSPATIAL_MODE_CHANGED_EVENT') ||
-    toolbarContextText.includes('addEventListener(GEOSPATIAL_MODE_CHANGED_EVENT')
-  ) {
-    throw new Error('Toolbar integration must not attach raw GEOSPATIAL_MODE_CHANGED_EVENT listener (use helper)')
-  }
-
-  const slicePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'hooks', 'store', 'geospatialSlice.ts')
-  const sliceText = readUtf8(slicePath)
-  if (!sliceText.includes("emitGeospatialModeChanged({")) {
-    throw new Error('Expected gympgrph geospatialSlice to emit via emitGeospatialModeChanged helper')
-  }
-  if (sliceText.includes('new CustomEvent(UI_EVENTS.geospatialModeChanged')) {
-    throw new Error('gympgrph must not emit raw UI_EVENTS.geospatialModeChanged CustomEvent (drift risk)')
-  }
-}
-
-export const testFloatingPanelRequestedGeoViewEnsuresGeospatialEnabled = () => {
-  const toolbarToolMenuPath = path.resolve(process.cwd(), 'src', 'lib', 'toolbar', 'ToolbarToolMenu.impl.tsx')
-  const text = readUtf8(toolbarToolMenuPath)
-
-  if (!text.includes('setFloatingPanelView(requestedFloatingPanelView)')) {
-    throw new Error('Expected FloatingPanel requested-view handler to set the requested view')
-  }
-  if (!text.includes("requestedFloatingPanelView === 'geo'")) {
-    throw new Error('Expected FloatingPanel requested-view handler to branch on geo view')
-  }
-  if (!text.includes('ensureGeospatialEnabled()')) {
-    throw new Error('Expected FloatingPanel requested-view handler to ensure Geospatial Mode is enabled for geo view')
-  }
-}
-
-export const testRemoteFetchProxyDoesNotAbortOnCloseOrTruncate = () => {
-  const vitePath = path.resolve(process.cwd(), 'vite.config.ts')
-  const text = readUtf8(vitePath)
-  if (!text.includes('function createRemoteFetchHandler')) {
-    throw new Error('Expected vite.config.ts to include createRemoteFetchHandler for /__fetch_remote')
-  }
-  if (text.includes("res.on('close'") || text.includes('res.on("close"')) {
-    throw new Error('Remote fetch proxy must not abort upstream fetch on response close events')
-  }
-  if (text.includes("req.on('close'") || text.includes('req.on("close"')) {
-    throw new Error('Remote fetch proxy must not abort upstream fetch on request close events')
-  }
-  if (!text.includes("res.setHeader('Content-Length', String(buf.byteLength))")) {
-    throw new Error('Expected remote fetch proxy to set Content-Length from full buffered body')
-  }
-}
-
-export const testGympgrphMapLibreBasemapSupportsGlobeProjection = () => {
-  const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const text = readUtf8(hookPath)
-  if (!text.includes("projectionMode: 'mercator' | 'globe'")) throw new Error('Expected basemap hook to support mercator and globe projection modes')
-  if (!text.includes("map.setProjection?.({ type: 'globe' })")) throw new Error('Expected basemap hook to set globe projection in 3D mode')
-  if (!text.includes("canvasRenderMode === '3d'")) throw new Error('Expected basemap hook to apply 3D camera defaults')
-}
-
-export const testGympgrphMapLibreBasemapBlankDefaultStaysOffForSvgFallback = () => {
-  const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const text = readUtf8(hookPath)
-  if (!text.includes("if (!trimmed) return MAPLIBRE_DEFAULT_STYLE_URL")) {
-    throw new Error('Expected empty basemap style URL to resolve to the MapLibre default style')
-  }
-  if (!text.includes("if (trimmed === SAFE_SVG_FALLBACK_STYLE_SENTINEL) return null")) {
-    throw new Error('Expected SVG fallback sentinel to keep MapLibre disabled in explicit SVG mode')
-  }
-  const helperPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'basemapStyle.ts')
-  const helperText = readUtf8(helperPath)
-  if (!helperText.includes("MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL = 'https://demotiles.maplibre.org/style.json'")) {
-    throw new Error('Expected basemap style helper to expose a MapLibre classic default style URL')
-  }
-  if (!helperText.includes("MAPLIBRE_MODERN_DEFAULT_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'")) {
-    throw new Error('Expected basemap style helper to expose a MapLibre modern default style URL')
-  }
-  if (!helperText.includes("SAFE_SVG_FALLBACK_STYLE_SENTINEL = 'kg:style:svg-fallback'")) {
-    throw new Error('Expected basemap style helper to expose an SVG fallback sentinel')
-  }
-}
-
-export const testGympgrphGeospatialStyleStorageNormalizesUnsafeRemoteStyles = () => {
-  const helperPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'basemapStyle.ts')
-  const helperText = readUtf8(helperPath)
-  if (!helperText.includes('normalizePersistedGeospatialStyleUrl')) {
-    throw new Error('Expected a shared geospatial basemap style normalization helper')
-  }
-  if (!helperText.includes("if (!trimmed) return MAPLIBRE_DEFAULT_STYLE_URL")) {
-    throw new Error('Expected blank persisted style URLs to normalize to the MapLibre default path')
-  }
-  if (!helperText.includes("if (lower.startsWith('http://') || lower.startsWith('https://')) return trimmed")) {
-    throw new Error('Expected persisted remote style URLs to stay available for explicit MapLibre mode usage')
-  }
-
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const hostText = readUtf8(hostPath)
-  if (!hostText.includes('normalizePersistedGeospatialStyleUrl(raw)')) {
-    throw new Error('Expected GeospatialHost to normalize persisted style URLs when reading runtime basemap state')
-  }
-  if (!hostText.includes('MAPLIBRE_MODERN_DEFAULT_STYLE_URL')) {
-    throw new Error('Expected GeospatialHost to distinguish MapLibre modern built-in default styling')
-  }
-}
-
-export const testGympgrphGeospatialRuntimeContainsNoRasterFallbackContract = () => {
-  const helperPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'basemapStyle.ts')
-  const helperText = readUtf8(helperPath)
-  const legacyRasterSentinelSnippet = ['raster', 'osm'].join('-')
-  const legacyRasterConstantSnippet = ['SAFE', 'RASTER'].join('_')
-  if (helperText.includes(legacyRasterSentinelSnippet) || helperText.includes(legacyRasterConstantSnippet)) {
-    throw new Error('Expected geospatial basemap style helper to contain no raster fallback contract')
-  }
-
-  const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const hookText = readUtf8(hookPath)
-  const legacyRasterTileSnippet = ['tile', 'openstreetmap', 'org'].join('.')
-  if (hookText.includes(legacyRasterSentinelSnippet) || hookText.includes(legacyRasterTileSnippet)) {
-    throw new Error('Expected MapLibre basemap hook to contain no raster fallback path')
-  }
-}
-
-export const testGympgrphMapLibreBasemapFallsBackFromUnsafeRuntimeErrors = () => {
-  const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const text = readUtf8(hookPath)
-  if (!text.includes('isKnownUnsafeMapLibreRuntimeError')) {
-    throw new Error('Expected basemap hook to classify known unsafe MapLibre runtime errors')
-  }
-  if (!text.includes("cannot access '_' before initialization")) {
-    throw new Error('Expected basemap hook to classify production MapLibre TDZ runtime failures')
-  }
-  if (!text.includes("setRuntimeProjectionMode('mercator')")) {
-    throw new Error('Expected basemap hook to fall back to mercator on known unsafe runtime errors')
-  }
-  if (!text.includes('fallbackUnsafeMapLibreRuntime') || !text.includes('map.setStyle?.(RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL)')) {
-    throw new Error('Expected basemap hook to fall back to the shared safe MapLibre style on known unsafe runtime errors')
-  }
-  if (!text.includes('isKnownUnsafeMapLibreRuntimeError(msg)')) {
-    throw new Error('Expected basemap hook to suppress known unsafe MapLibre construction failures into the fallback surface')
-  }
-}
-
-export const testGympgrphMapLibreLoggerSuppressesAbortNoise = () => {
-  const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const text = readUtf8(hookPath)
-  if (!text.includes('setLogger')) throw new Error('Expected MapLibre logger override to be installed')
-  if (!text.includes('/__fetch_remote')) throw new Error('Expected logger to filter /__fetch_remote abort noise')
-  if (!text.toLowerCase().includes('err_aborted') && !text.toLowerCase().includes('aborterror')) {
-    throw new Error('Expected logger to match aborted request errors')
-  }
-}
-
-export const testGympgrphMapLibreBasemapFallsBackFromOpenFreeMapLibertyAbort = () => {
-  const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const text = readUtf8(hookPath)
-  if (!text.includes('isOpenFreeMapLibertyUrl')) {
-    throw new Error('Expected basemap hook to classify OpenFreeMap liberty style requests')
-  }
-  if (!text.includes('requestedOpenFreeMapLiberty')) {
-    throw new Error('Expected basemap hook to carry OpenFreeMap liberty style state through runtime fallback paths')
-  }
-  if (!text.includes('openFreeMapAbort')) {
-    throw new Error('Expected basemap hook to detect OpenFreeMap liberty abort-style runtime errors')
-  }
-  if (!text.includes('RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL')) {
-    throw new Error('Expected basemap hook to apply resilient style fallback when OpenFreeMap liberty aborts')
-  }
-}
-
-export const testGeospatialPoiClickWiresHostActionAndRichMediaPanel = () => {
-  const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const hookText = readUtf8(hookPath)
-  const viewportText = readUtf8(viewportPath)
-  const hostText = readUtf8(hostPath)
-
-  if (!hookText.includes('onPoiClick?: (detail: BasemapPoiClickDetail) => void')) {
-    throw new Error('Expected basemap hook contract to expose onPoiClick callback')
-  }
-  if (!hookText.includes('queryRenderedFeatures')) {
-    throw new Error('Expected basemap hook POI picking to query rendered features on map click')
-  }
-  if (!hookText.includes('onPoiClick?.({')) {
-    throw new Error('Expected basemap hook to forward picked POI detail to host callback')
-  }
-  if (!hookText.includes('address: readPoiAddressFromFeature(picked)')) {
-    throw new Error('Expected basemap hook to include POI address detail in the upstream callback payload')
-  }
-  if (!viewportText.includes('const renderPoiInRichMediaPanel = React.useCallback')) {
-    throw new Error('Expected CanvasViewport to define the shared POI -> Rich Media Panel handoff')
-  }
-  if (!viewportText.includes('openWidgetNodeIdsByRenderer?.storyboard')) {
-    throw new Error('Expected CanvasViewport to resolve POI targets against Storyboard Widget-panel ids in geospatial mode')
-  }
-  if (!viewportText.includes('const srcDoc = buildGrabMapsPoiRichMediaSrcDoc(normalizedDetail)')) {
-    throw new Error('Expected CanvasViewport to build a single shared POI srcdoc payload for Rich Media rendering')
-  }
-  if (!viewportText.includes("richMediaActiveTab: 'poi'")) {
-    throw new Error('Expected CanvasViewport POI handoff to auto-switch the canonical Rich Media Panel into POI Viewer mode')
-  }
-  if (!viewportText.includes('richMediaPoiLabel: String(detail.label || \'\').trim() || \'POI\'')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist a canonical POI label for Rich Media Panel viewer selection')
-  }
-  if (!viewportText.includes('richMediaPoiAddress: poiAddress')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist resolved POI address metadata for richer Rich Media state')
-  }
-  if (!viewportText.includes('richMediaPoiCategory: poiCategory')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist resolved POI category metadata for richer Rich Media state')
-  }
-  if (!viewportText.includes('richMediaPoiProperties: poiProperties')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist normalized source properties for richer Rich Media state')
-  }
-  if (!viewportText.includes('richMediaPoiCoordinates:')) {
-    throw new Error('Expected CanvasViewport POI handoff to persist normalized POI coordinate metadata')
-  }
-  if (!viewportText.includes('outputSrcDoc: srcDoc')) {
-    throw new Error('Expected CanvasViewport to write the shared POI srcdoc payload into Rich Media Panel output')
-  }
-  if (!viewportText.includes('renderPoiInRichMediaPanel')) {
-    throw new Error('Expected geospatial overlay handlers to expose Rich Media Panel POI rendering upstream')
-  }
-  if (!hostText.includes('typeof overlayHandlers.renderPoiInRichMediaPanel === \'function\'')) {
-    throw new Error('Expected GeospatialHost to reuse the shared Rich Media Panel POI render handler when available')
-  }
-  if (!hostText.includes('renderPoiInRichMediaPanel?.(detail)')) {
-    throw new Error('Expected GeospatialHost POI handler to invoke the shared Rich Media Panel renderer before clipboard fallback')
-  }
-  if (!viewportText.includes('storyboardWidgetOpenWidgetNodeIds')) {
-    throw new Error('Expected CanvasViewport POI resolution to reuse Storyboard Widget ids explicitly')
-  }
-  if (!viewportText.includes('gympgrphBridge.addNode(buildRichMediaPanelNode')) {
-    throw new Error('Expected CanvasViewport POI handoff to auto-create a Rich Media Panel when none exists')
-  }
-}
-
-export const testGympgrphMapLibreLayersGuardWritesUntilStyleReady = () => {
-  const layersPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'maplibreLayers.ts')
-  const text = readUtf8(layersPath)
-  if (!text.includes('isStyleReady')) {
-    throw new Error('Expected maplibre layer helpers to define a style-ready guard')
-  }
-  if (!text.includes('if (!isStyleReady(map)) return')) {
-    throw new Error('Expected maplibre layer helpers to skip source/layer writes before style load')
-  }
-}
-
-export const testGeospatialHostDoesNotMemoizeGraphApplyBeforeStyleReady = () => {
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const layersPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'maplibreLayers.ts')
-  const hostText = readUtf8(hostPath)
-  const layersText = readUtf8(layersPath)
-  if (!layersText.includes('export function isMapLibreStyleReady')) {
-    throw new Error('Expected maplibre layer helpers to expose a style-ready predicate')
-  }
-  if (!hostText.includes('if (!isMapLibreStyleReady(basemapMap))')) {
-    throw new Error('Expected GeospatialHost to skip graph apply memoization until MapLibre style is ready')
-  }
-  if (!hostText.includes("graphDataAppliedRef.current[viewMode] = ''")) {
-    throw new Error('Expected GeospatialHost to clear apply memo when style is not ready')
-  }
-}
-
-export const testMapLibreStyleReadyPredicateAllowsLoadedRenderedMaps = () => {
-  const layersPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'maplibreLayers.ts')
-  const text = readUtf8(layersPath)
-  if (!text.includes("typeof map.isStyleLoaded === 'function' && map.isStyleLoaded() === true")) {
-    throw new Error('Expected MapLibre style-ready predicate to only short-circuit on positive isStyleLoaded')
-  }
-  if (!text.includes("typeof map.loaded === 'function' && map.loaded() === true")) {
-    throw new Error('Expected MapLibre style-ready predicate to accept fully loaded maps')
-  }
-  if (!text.includes("typeof map.areTilesLoaded === 'function' && map.areTilesLoaded() === true")) {
-    throw new Error('Expected MapLibre style-ready predicate to accept tile-loaded maps with a style object')
-  }
-}
-
-export const testGympgrphMapLibrePointLayersUseVisiblePaintStyling = () => {
-  const layersPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'maplibreLayers.ts')
-  const text = readUtf8(layersPath)
-  const required = [
-    'cluster-bubbles',
-    ':routes',
-    "'circle-stroke-color': '#ffffff'",
-    "'circle-stroke-width': 1.5",
-    'pointRadiusByZoomExpression',
-    'pointColorExpression',
-    "['get', 'kgCategory']",
-    "['==', ['geometry-type'], 'Point']",
-    "['==', ['geometry-type'], 'LineString']",
-  ]
-  const missing = required.filter(snippet => !text.includes(snippet))
-  if (missing.length) {
-    throw new Error(`Expected MapLibre point layers to use visibility-safe styling: ${missing.join(', ')}`)
-  }
-}
-
-export const testGeospatialHostProjectsCategoryForPointStyling = () => {
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const text = readUtf8(hostPath)
-  if (!text.includes('kgCategory')) {
-    throw new Error('Expected GeospatialHost projection to include kgCategory property for data-driven point styling')
-  }
-  if (!text.includes("if (v.includes('airport')) return 'airport'")) {
-    throw new Error('Expected GeospatialHost projection to classify airport category')
-  }
-  if (!text.includes("if (v.includes('hotel') || v.includes('hostel') || v.includes('accommodation')) return 'hotel'")) {
-    throw new Error('Expected GeospatialHost projection to classify hotel category')
-  }
-  if (!text.includes("if (v.includes('poi') || v.includes('attraction') || v.includes('landmark')) return 'poi'")) {
-    throw new Error('Expected GeospatialHost projection to classify poi category')
-  }
-}
-
-export const testGeospatialHostRendersInMapLegendFromPointStyleConfig = () => {
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const text = readUtf8(hostPath)
-  const required = [
-    'function GeospatialPointLegend',
-    'Legend',
-    'Airport',
-    'Hotel',
-    'POI',
-    'Route',
-    'pointStyleConfig.colors.airport',
-    'pointStyleConfig.colors.hotel',
-    'pointStyleConfig.colors.poi',
-    'pointStyleConfig.colors.route',
-  ]
-  const missing = required.filter(snippet => !text.includes(snippet))
-  if (missing.length) {
-    throw new Error(`Expected GeospatialHost to render in-map legend from point-style config: ${missing.join(', ')}`)
-  }
-}
-
-export const testGeospatialHostGraphNodeClickCyclesOverlappingFeaturesWithoutHoverPanelChurn = () => {
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const text = readUtf8(hostPath)
-  if (!text.includes('clickedGraphNodeCycleRef')) {
-    throw new Error('Expected GeospatialHost to track click-cycle state for overlapping geodata point hits')
-  }
-  if (!text.includes('const pickFeatureForClick = (features: unknown[], point: unknown): unknown | null => {')) {
-    throw new Error('Expected GeospatialHost click path to resolve a deterministic feature pick for overlapping point hits')
-  }
-  if (!text.includes('const first = Array.isArray(features) ? pickFeatureForClick(features, point) : null')) {
-    throw new Error('Expected GeospatialHost click picking to use click-cycle feature resolution instead of first-hit only')
-  }
-  if (!text.includes('renderGraphNodeClickInRichMediaPanel(first)')) {
-    throw new Error('Expected GeospatialHost click picking to render the selected point into Rich Media Panel')
-  }
-  if (text.includes("map.on('mousemove', onMove)")) {
-    throw new Error('Expected GeospatialHost to avoid hover-driven Rich Media Panel writeback churn')
-  }
-}
-
-export const testGeospatialHostPreservesFeaturePropertiesForRichPoiRendering = () => {
-  const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
-  const basemapPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const richMediaPath = path.resolve(process.cwd(), 'src', 'features', 'geospatial', 'grabMapsPoiRichMedia.ts')
-  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
-  const hostText = readUtf8(hostPath)
-  const basemapText = readUtf8(basemapPath)
-  const richMediaText = readUtf8(richMediaPath)
-  const viewportText = readUtf8(viewportPath)
-
-  if (!hostText.includes("from 'grph-shared/geospatial/poiRichMedia'")) {
-    throw new Error('Expected GeospatialHost to reuse the shared POI rich-media normalization helper')
-  }
-  if (!hostText.includes('const properties = normalizeGeoPoiRichMediaProperties(propsRaw)')) {
-    throw new Error('Expected GeospatialHost graph projection to preserve normalized source properties')
-  }
-  if (!hostText.includes('...properties,') || !hostText.includes('properties,')) {
-    throw new Error('Expected GeospatialHost to carry source properties through map features and Rich Media details')
-  }
-  if (!hostText.includes('resolveGeoPoiAddressFromProperties(properties)') || !hostText.includes('resolveGeoPoiCategoryFromProperties(properties)')) {
-    throw new Error('Expected GeospatialHost to derive address/category via shared POI heuristics')
-  }
-  if (!basemapText.includes('properties: readPoiPropertiesFromFeature(picked)')) {
-    throw new Error('Expected basemap-native POI clicks to forward normalized feature properties upstream')
-  }
-  if (!basemapText.includes('!isGraphOverlayFeature(f) && readPoiLabelFromFeature(f)')) {
-    throw new Error('Expected basemap-native POI picking to avoid duplicate graph-overlay Rich Media writes')
-  }
-  if (!richMediaText.includes('buildGeoPoiRichMediaRows') || !richMediaText.includes('buildGeoPoiRichMediaSemanticKey')) {
-    throw new Error('Expected GrabMaps POI srcdoc rendering to reuse shared metadata rows and semantic keys')
-  }
-  if (!viewportText.includes('normalizeGeoPoiRichMediaProperties(detail.properties)')) {
-    throw new Error('Expected CanvasViewport POI handoff to normalize source properties once before Rich Media writeback')
-  }
-}
-
-export const testLaunchDropdownFallbackActivatesFirstImportedWorkspaceFile = () => {
-  const fallbackPath = path.resolve(process.cwd(), 'src', 'features', 'toolbar', 'launchDropdownFallbacks.ts')
-  const text = readUtf8(fallbackPath)
-  const required = [
-    'async function focusFirstImportedWorkspaceFile',
-    'activateFirstImportedWorkspaceFile',
-    'await focusFirstImportedWorkspaceFile({ fs, createdPaths: res.createdPaths, applyToGraph })',
-  ]
-  const missing = required.filter(snippet => !text.includes(snippet))
-  if (missing.length) {
-    throw new Error(`Expected launch dropdown fallback import to activate first imported workspace file: ${missing.join(', ')}`)
-  }
-
-  const importActionsPath = path.resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'useWorkspaceFileActions', 'importRuntimeActions.ts')
-  const importActionsText = readUtf8(importActionsPath)
-  const sharedRequired = [
-    'export async function activateFirstImportedWorkspaceFile',
-    'useMarkdownExplorerStore.getState().setActivePath',
-    'await state.setActiveMarkdownDocument({',
-  ]
-  const missingShared = sharedRequired.filter(snippet => !importActionsText.includes(snippet))
-  if (missingShared.length) {
-    throw new Error(`Expected shared import action helper to activate first imported workspace file: ${missingShared.join(', ')}`)
-  }
-}
-
-export const testLaunchDropdownFilePickerClosesAfterSelectionNotBefore = () => {
-  const dropdownPath = path.resolve(process.cwd(), 'src', 'lib', 'toolbar', 'LaunchDropdown.impl.tsx')
-  const text = readUtf8(dropdownPath)
-  if (!text.includes('runLaunchImportLocalFiles({') || !text.includes('fallback: importLocalFilesFallback') || !text.includes('onClose()')) {
-    throw new Error('Expected local file picker flow to dispatch import and close dropdown after file selection is handled')
-  }
-  if (text.includes('openFilePicker(fileInputRef.current)\n                onClose()')) {
-    throw new Error('Expected local file picker button to avoid closing dropdown before native file selection returns')
-  }
-  if (text.includes('openFilePicker(folderInputRef.current)\n                onClose()')) {
-    throw new Error('Expected local folder picker button to avoid closing dropdown before native folder selection returns')
-  }
-}
-
-export const testGympgrphBasemapResetsStyleRevisionBeforeRemount = () => {
-  const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
-  const text = readUtf8(hookPath)
-  if (!text.includes('Reset style revision before mounting/re-mounting')) {
-    throw new Error('Expected basemap hook to reset style revision before remount')
-  }
-  if (!text.includes('styleRevision: 0')) {
-    throw new Error('Expected basemap hook remount reset to clear styleRevision')
-  }
-}
-
-export const testGympgrphFitToSelectionRequestExists = () => {
-  const fitPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'geospatialFit.ts')
-  const fitText = readUtf8(fitPath)
-  if (!fitText.includes('requestGeospatialFitToSelection')) {
-    throw new Error('Expected gympgrph to export requestGeospatialFitToSelection')
-  }
-  if (!fitText.includes('store.requestGeospatialFitToSelection')) {
-    throw new Error('Expected requestGeospatialFitToSelection to delegate to store.requestGeospatialFitToSelection')
-  }
-  const typesPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'hooks', 'store', 'types.ts')
-  const typesText = readUtf8(typesPath)
-  if (!typesText.includes("mode: 'data' | 'selection'")) {
-    throw new Error("Expected geospatial fit request mode to include 'selection'")
-  }
-  const slicePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'hooks', 'store', 'geospatialSlice.ts')
-  const sliceText = readUtf8(slicePath)
-  if (!sliceText.includes("mode: 'selection'")) {
-    throw new Error("Expected geospatialSlice requestGeospatialFitToSelection to set mode: 'selection'")
-  }
-}
-
-export const testHostGeoZoomToSelectionCallsGympgrphSelectionFit = () => {
-  const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
-  const viewportText = readUtf8(viewportPath)
-  if (!viewportText.includes('requestGeospatialFitToSelection')) {
-    throw new Error('Expected host CanvasViewport to call requestGeospatialFitToSelection when zoomToSelectionMode changes')
-  }
-  if (!viewportText.includes('setGeospatialAutoFitEnabled')) {
-    throw new Error('Expected host CanvasViewport to sync Fit-to-Screen to setGeospatialAutoFitEnabled')
-  }
-}
-
-export const testZIndexSsotIsUsedForToastsAndFloatingPanels = () => {
-  const zPath = path.resolve(process.cwd(), 'src', 'lib', 'ui', 'zIndex.ts')
-  const zText = readUtf8(zPath)
-  if (!zText.includes('Z_INDEX_FLOATING_PANEL_DEFAULT')) throw new Error('Expected Z_INDEX_FLOATING_PANEL_DEFAULT to exist')
-  if (!zText.includes('Z_INDEX_TOAST')) throw new Error('Expected Z_INDEX_TOAST to exist')
-  const toastPath = path.resolve(process.cwd(), 'src', 'components', 'ui', 'ToastHost.tsx')
-  const toastText = readUtf8(toastPath)
-  if (toastText.includes('z-[2500]') || toastText.includes('z-[5000]')) {
-    throw new Error('ToastHost must not hardcode z-index classes (use zIndex SSOT)')
-  }
-  if (!toastText.includes('Z_INDEX_TOAST')) throw new Error('Expected ToastHost to use Z_INDEX_TOAST')
-  const slicePath = path.resolve(process.cwd(), 'src', 'hooks', 'store', 'panelLayoutUiSlice.ts')
-  const sliceText = readUtf8(slicePath)
-  if (sliceText.includes('floatingPanelZIndex, 5000')) {
-    throw new Error('Expected floatingPanelZIndex default to use SSOT constant, not hardcoded 5000')
-  }
-}
+export * from './geospatialHostControlsIntegration.test'
+export * from './geospatialHostMapLibreInteractionIntegration.test'

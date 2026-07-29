@@ -6,7 +6,21 @@ import { shouldRejectMarkdownDocumentPayload } from '@/lib/markdown/markdownDocu
 import { hashSignatureParts } from '@/lib/hash/signature'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import { normalizeMarkdownWorkspaceSelectionPath } from './markdownWorkspaceSelectionPath'
-import { parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
+import {
+  parseCanvasWorkspaceFrontmatterPreset,
+  type CanvasWorkspaceFrontmatterPreset,
+} from '@/lib/markdown/frontmatter'
+import { resolveWorkspaceDocumentCanvasPreset } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
+
+export function resolveWorkspaceDocumentSwitchCanvasPreset(args: {
+  activeDocumentKey: string
+  text: string
+}): CanvasWorkspaceFrontmatterPreset | null {
+  return resolveWorkspaceDocumentCanvasPreset({
+    documentName: args.activeDocumentKey,
+    rawText: args.text,
+  })
+}
 
 function buildWorkspaceDocumentSwitchSignature(args: {
   activeDocumentKey: string
@@ -271,6 +285,10 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
         applyViewPreset: true,
         applyToGraph: true,
         forceApplyToGraph: true,
+        canvasWorkspacePreset: resolveWorkspaceDocumentSwitchCanvasPreset({
+          activeDocumentKey: applyArgs.activeDocumentKey,
+          text: applyArgs.text,
+        }),
         normalizeWebpageFrontmatterToMarkdown: false,
       })
       if (applied === true) {

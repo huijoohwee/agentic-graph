@@ -50,6 +50,7 @@ export const bindGroupsResizeHandle = <T extends GraphGroup>(args: {
   const dragResize = d3
     .drag<SVGCircleElement, T>()
     .on('start', (event, d) => {
+      if (d.autoBounds === true) return
       const srcEv = (event as unknown as { sourceEvent?: { stopPropagation?: () => void; preventDefault?: () => void } }).sourceEvent
       if (srcEv && typeof srcEv.stopPropagation === 'function') srcEv.stopPropagation()
       if (srcEv && typeof srcEv.preventDefault === 'function') srcEv.preventDefault()

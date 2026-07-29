@@ -53,6 +53,7 @@ export const applySchemaGroupBoundsOverrides = (groups: GraphGroup[], overridesB
   return groups.map(g => {
     const id = String(g.id || '').trim()
     if (!id) return g
+    if (g.autoBounds === true) return { ...g, bounds: undefined }
     if (g.bounds) return g
     const b = overridesById[id]
     if (!b) return g

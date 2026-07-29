@@ -32,6 +32,18 @@ test('device lifecycle commands delegate to the canonical Agentic Canvas OS chec
 test('collaboration browser gate edits through the canonical active editor owner', () => {
   const smoke = fs.readFileSync(new URL('../../canvas/scripts/verify-multi-user-collaboration-e2e.ts', import.meta.url), 'utf8')
   const queryParams = fs.readFileSync(new URL('../../canvas/src/lib/routing/queryParams.ts', import.meta.url), 'utf8')
+  const connectStart = smoke.indexOf('async function connectAuthenticatedRoom')
+  const connectEnd = smoke.indexOf('async function waitForActiveDocumentReady', connectStart)
+  const connectRuntime = smoke.slice(connectStart, connectEnd)
+  const connectionTry = connectRuntime.indexOf('try {')
+  const panelOpen = connectRuntime.indexOf('await openCollaborationPanel(page)')
+  const buttonReady = connectRuntime.indexOf("await connectButton.waitFor({ state: 'visible'")
+  const connectionCatch = connectRuntime.indexOf('} catch (error)')
+  const mainStart = smoke.indexOf('async function main()')
+  const mainEnd = smoke.indexOf('\nmain()', mainStart)
+  const mainRuntime = smoke.slice(mainStart, mainEnd)
+  const mainConnection = mainRuntime.indexOf('connectAuthenticatedRoom(ownerPage)')
+  const mainBeforeConnection = mainRuntime.slice(0, mainConnection)
 
   assert.match(queryParams, /QUERY_PARAM_RUNTIME_IDENTITY_PROOF = 'kgRuntimeIdentityProof'/)
   assert.match(smoke, /QUERY_PARAM_RUNTIME_IDENTITY_PROOF/)
@@ -44,6 +56,18 @@ test('collaboration browser gate edits through the canonical active editor owner
   assert.match(smoke, /for \(let attempt = 0; attempt < 20; attempt \+= 1\)/)
   assert.match(smoke, /collaboration panel did not acknowledge the bounded open request/)
   assert.match(smoke, /markdownWorkspaceIndexingInFlight/)
+  assert.match(smoke, /async function waitForRuntimeIdentityProofConvergence/)
+  assert.match(smoke, /isPassingRuntimeIdentityProof\(ownerProof\)[\s\S]*isPassingRuntimeIdentityProof\(guestProof\)[\s\S]*ownerProof\.verificationDigest === guestProof\.verificationDigest/)
+  assert.match(smoke, /catalogHydrationAttempts <= 2/)
+  assert.doesNotMatch(smoke, /waitForRuntimeIdentityPass/)
+  assert.ok(connectionTry >= 0)
+  assert.ok(connectionTry < panelOpen)
+  assert.ok(panelOpen < buttonReady)
+  assert.ok(buttonReady < connectionCatch)
+  assert.ok(mainStart >= 0)
+  assert.ok(mainEnd > mainStart)
+  assert.ok(mainConnection >= 0)
+  assert.doesNotMatch(mainBeforeConnection, /openCollaborationPanel/)
   assert.match(smoke, /await waitForActiveDocumentReady\(page\)[\s\S]*await closeFloatingPanelIfOpen\(page\)[\s\S]*await connectButton\.click/)
   assert.match(smoke, /KG_COLLABORATION_E2E_RESULT_PATH/)
   assert.match(smoke, /renameSync\(temporaryPath, RESULT_PATH\)/)
@@ -169,6 +193,28 @@ test('Agentic ECS source always selects the runtime gate', async () => {
   assert.deepEqual(plan.scopes, ['runtime'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.deepEqual(plan.commands, [['npm', 'run', 'runtime:check']])
+})
+
+test('surface policy owners always select the focused readiness gate', async () => {
+  const contract = await readContract()
+  const ownerPaths = [
+    'config/surface-registry.json',
+    'config/license-registry.json',
+    'schemas/surface-registry.v1.schema.json',
+    'scripts/surface/publication-gate.mjs',
+    'data/surface/ledger/README.md',
+    'docs/discoverability-ip-protection-runtime.md',
+  ]
+
+  for (const ownerPath of ownerPaths) {
+    const plan = selectAffectedCommands([ownerPath], contract)
+    assert.ok(plan.scopes.includes('surface_policy'), ownerPath)
+    assert.deepEqual(plan.unmatchedPaths, [], ownerPath)
+    assert.ok(
+      plan.commands.some(command => command.join(' ') === 'npm run surface:verify'),
+      ownerPath,
+    )
+  }
 })
 
 test('Rich Media preview timing owners always select schema and browser contract gates', async () => {

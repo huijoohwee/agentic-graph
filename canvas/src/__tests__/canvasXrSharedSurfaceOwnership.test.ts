@@ -14,6 +14,7 @@ import {
   getCanvasSurfaceModeDisabledCopy,
   normalizeCanvas3dMode,
 } from '@/lib/canvas/canvas3dMode'
+import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 import type { GraphSchema } from '@/lib/graph/schema'
 
 const BLOCK_SCHEMA = {
@@ -64,17 +65,12 @@ export function testXrModeNormalizesAndCanvasViewSelectionActivatesSurface() {
   }
 
   const rawSurfaceCalls: string[] = []
-  let sharedXrRequestCount = 0
-  applyCanvasViewSelection({
-    id: 'surface:xr',
+  const sharedModeRequests: string[] = []
+  const sharedSelection = {
     ensureBaselineUnlocked: () => true,
     geospatialEnabled: false,
     onOpenGeospatialMode: () => {
-      throw new Error('Expected XR Mode selection to avoid opening Geospatial Mode when geospatial is disabled')
-    },
-    onOpenShared3dPanel: mode => {
-      if (mode !== 'xr') throw new Error(`Expected the shared XR owner request, got ${mode}`)
-      sharedXrRequestCount += 1
+      throw new Error('Expected delegated surface selection to avoid the raw Geospatial callback')
     },
     canvas2dRenderer: 'd3',
     canvas3dMode: '3d',
@@ -95,9 +91,19 @@ export function testXrModeNormalizesAndCanvasViewSelectionActivatesSurface() {
     setDocumentSemanticMode: () => {},
     setFrontmatterModeEnabled: () => {},
     setMultiDimTableModeEnabled: () => {},
+  } satisfies Omit<Parameters<typeof applyCanvasViewSelection>[0], 'id' | 'onOpenShared3dPanel'>
+  applyCanvasViewSelection({
+    ...sharedSelection,
+    id: 'surface:xr',
+    onOpenShared3dPanel: mode => sharedModeRequests.push(mode),
   })
-  if (sharedXrRequestCount !== 1 || rawSurfaceCalls.length !== 0) {
-    throw new Error(`Expected XR Mode selection to delegate once without raw surface setters, got ${JSON.stringify({ sharedXrRequestCount, rawSurfaceCalls })}`)
+  applyCanvasViewSelection({
+    ...sharedSelection,
+    id: 'surface:geo-xr',
+    onOpenShared3dPanel: mode => sharedModeRequests.push(mode),
+  })
+  if (sharedModeRequests.join('|') !== 'xr|geo-xr' || rawSurfaceCalls.length !== 0) {
+    throw new Error(`Expected XR and Geo+XR selection to delegate without raw surface setters, got ${JSON.stringify({ sharedModeRequests, rawSurfaceCalls })}`)
   }
 
   const previous = useGraphStore.getState()
@@ -246,6 +252,10 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
   const canvasViewActionsText = readSource('components/toolbar/canvasViewActions.ts')
   const canvas2dRendererSelectText = readSource('components/toolbar/Canvas2dRendererSelect.tsx')
   const canvasViewMenuText = readSource('components/toolbar/canvasViewMenu.ts')
+  const geoXrActivationText = readSource('features/geospatial/geoXrSurfaceActivation.ts')
+  const geospatialModeCommitText = readSource('features/geospatial/geospatialModeCommit.ts')
+  const flightSurfaceOwnershipText = readSource('features/game-flight-sim/flightSimSurfaceOwnershipRuntime.ts')
+  const canvas3dModeText = readSource('lib/canvas/canvas3dMode.ts')
   if (!canvasViewActionsText.includes('applyCanvasSurfaceModeSelection')) {
     throw new Error('Expected Canvas View Surface Mode actions to reuse the shared surface-mode selection owner')
   }
@@ -255,7 +265,7 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
   if (canvasViewMenuText.includes('view:geospatial')) {
     throw new Error('Expected Geospatial Mode to be owned by Surface Mode, not a stale view-scoped option id')
   }
-  const xrDelegationStart = canvasViewActionsText.indexOf("if (mode === 'xr') {")
+  const xrDelegationStart = canvasViewActionsText.indexOf("if (mode === 'xr' || mode === 'geo-xr') {")
   const genericActivationStart = canvasViewActionsText.indexOf('const activated = applyCanvasSurfaceModeSelection', xrDelegationStart)
   const xrDelegationBranch = xrDelegationStart >= 0 && genericActivationStart > xrDelegationStart
     ? canvasViewActionsText.slice(xrDelegationStart, genericActivationStart)
@@ -265,15 +275,39 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
   const xrPanelBranch = xrPanelBranchStart >= 0 && plain3dPanelBranchStart > xrPanelBranchStart
     ? canvas2dRendererSelectText.slice(xrPanelBranchStart, plain3dPanelBranchStart)
     : ''
+  const geoXrPanelBranchStart = canvas2dRendererSelectText.indexOf("if (mode === 'geo-xr') {")
+  const xrPanelBranchAfterGeoStart = canvas2dRendererSelectText.indexOf("if (mode === 'xr') {", geoXrPanelBranchStart)
+  const geoXrPanelBranch = geoXrPanelBranchStart >= 0 && xrPanelBranchAfterGeoStart > geoXrPanelBranchStart
+    ? canvas2dRendererSelectText.slice(geoXrPanelBranchStart, xrPanelBranchAfterGeoStart)
+    : ''
   if (canvasViewActionsText.includes("setCanvas3dMode('3d')")
-    || !xrDelegationBranch.includes("onOpenShared3dPanel?.('xr')")
+    || !xrDelegationBranch.includes('onOpenShared3dPanel?.(mode)')
     || !xrDelegationBranch.includes('return')
     || /set(?:Canvas|Floating|Bottom|Media)/.test(xrDelegationBranch)
+    || !geoXrPanelBranch.includes('onActivateGeoXrMode()')
+    || geoXrPanelBranch.includes('activateXrSceneSurface')
+    || geoXrPanelBranch.includes('onOpenGeospatialMode')
     || !xrPanelBranch.includes('resolveXrSurfaceEntryPanelView(current)')
     || !xrPanelBranch.includes("activateXrSceneSurface({ panelView, openPanel: true, timeline: true })")
     || /set(?:Canvas|Floating|Bottom|Media)/.test(xrPanelBranch)
     || !canvas2dRendererSelectText.includes('if (!state.floatingPanelOpen)')) {
     throw new Error('Expected XR selection to route through the shared scene-surface owner while plain 3D retains Camera panel behavior')
+  }
+  const directSurfaceActivation = canvas3dModeText.slice(
+    canvas3dModeText.indexOf('export function applyCanvasSurfaceModeSelection'),
+  )
+  if (
+    !geoXrActivationText.includes('await dependencies.preloadGeospatial()')
+    || !geospatialModeCommitText.includes('flushSync(() =>')
+    || !geoXrActivationText.includes('commitCanvasGeospatialModeEnabled')
+    || !flightSurfaceOwnershipText.includes('commitCanvasGeospatialModeEnabled(enabled)')
+    || !geoXrActivationText.includes('await dependencies.commitGeospatialEnabled(true)')
+    || !geoXrActivationText.includes('geospatialComposite: true')
+    || !geoXrActivationText.includes('preserveGameplay: true')
+    || !geoXrActivationText.includes('restoreGeospatialOwner(previousEnabled, dependencies)')
+    || directSurfaceActivation.includes("mode === 'geo-xr'")
+  ) {
+    throw new Error('Expected one Geo-first atomic owner with rollback and no legacy direct Geo+XR activation path')
   }
 
   const calls: string[] = []
@@ -297,7 +331,6 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
   if (!selected || calls.join('|') !== '3d:3d|render:3d') {
     throw new Error(`Expected shared 3D surface selection to activate 3D exactly once, got selected=${String(selected)} calls=${calls.join('|')}`)
   }
-
   const radialDisabled = getCanvasSurfaceModeDisabledCopy({
     canvas2dRenderer: 'storyboard',
     documentSemanticMode: 'document',
@@ -403,11 +436,13 @@ export async function testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels() 
     const flight = useGraphStore.getState()
     if (flight.canvasRenderMode !== '3d'
       || flight.canvas3dMode !== 'xr'
+      || !readGeospatialOverlayEnabledPreference()
       || flight.floatingPanelOpen !== true
       || flight.floatingPanelView !== 'flightSim') {
-      throw new Error(`expected Flight source activation to reuse native XR with its gameplay panel, got ${JSON.stringify({
+      throw new Error(`expected Flight source activation to compose Geo with native XR and its gameplay panel, got ${JSON.stringify({
         canvasRenderMode: flight.canvasRenderMode,
         canvas3dMode: flight.canvas3dMode,
+        geospatialModeEnabled: readGeospatialOverlayEnabledPreference(),
         floatingPanelOpen: flight.floatingPanelOpen,
         floatingPanelView: flight.floatingPanelView,
       })}`)
@@ -495,7 +530,7 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
     Animation: 'features/three/xrAnimationMcpRuntime.ts',
     'Motion Control': 'features/three/motionControlSurfaceRuntime.ts',
     'Game Mode': 'features/game-fps/gameModeRuntime.ts',
-    'Flight Sim': 'features/game-flight-sim/flightSimRuntime.ts',
+    'Flight Sim': 'features/game-flight-sim/flightSimSurfacePresentationRuntime.ts',
     Camera: 'features/strybldr/cameraMcpRuntime.ts',
   } as const
   for (const [label, relativePath] of Object.entries(sharedSceneConsumers)) {
@@ -507,8 +542,14 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
       throw new Error('expected Camera activation to leave Game ownership through the shared Camera panel route')
     }
   }
-  if (!physicsRuntime.includes('activateXrSceneSurface()') || physicsRuntime.includes("setCanvas3dMode('xr')")) {
-    throw new Error('expected the XR run-ready bootstrap to reuse the shared scene-surface activation owner')
+  if (
+    !physicsRuntime.includes(
+      'activateXrSceneSurface({ preserveGameplay: !dedicatedDemo })',
+    )
+    || !physicsRuntime.includes('if (\n        activatesXrSurface')
+    || physicsRuntime.includes("setCanvas3dMode('xr')")
+  ) {
+    throw new Error('expected the XR run-ready bootstrap to reuse the shared scene-surface activation owner without replacing an already-active Flight surface')
   }
   const panelProjectionSources = {
     Media: 'features/command-menu/MediaCatalogPanelView.tsx',

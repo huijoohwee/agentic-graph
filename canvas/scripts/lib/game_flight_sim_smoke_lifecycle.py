@@ -34,6 +34,19 @@ def read_runtime(page: Page) -> dict[str, Any]:
     )
 
 
+def read_runtime_and_dispatch_blur(page: Page) -> dict[str, Any]:
+    return page.evaluate(
+        """
+        async () => {
+          const runtime = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
+          const beforeBlur = runtime.readFlightSimSnapshot()
+          window.dispatchEvent(new Event('blur'))
+          return beforeBlur
+        }
+        """
+    )
+
+
 def simulation_projection(snapshot: dict[str, Any]) -> dict[str, Any]:
     return {key: snapshot.get(key) for key in SIMULATION_STATE_KEYS}
 
@@ -107,8 +120,7 @@ def verify_blur_lifecycle(
     page: Page,
     calls: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
-    before_blur = read_runtime(page)
-    page.evaluate("window.dispatchEvent(new Event('blur'))")
+    before_blur = read_runtime_and_dispatch_blur(page)
     stopped = _poll(
         page,
         lambda value: value.get("phase") == "stopped",

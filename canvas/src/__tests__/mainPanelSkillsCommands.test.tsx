@@ -11,9 +11,15 @@ import { FloatingPanelSkillsCommandsView } from '@/features/toolbar/FloatingPane
 import SkillsCommandsView from '@/features/panels/views/SkillsCommandsView'
 import { resolveChatInvocationCatalogEntries } from '@/features/chat/chatInvocationRegistry'
 import { buildImageToThreeJsPromptPreset } from '@/features/image-to-threejs/imageToThreeJsPromptPreset'
-import { registerPinnedAgenticOsDictionaryCatalogForTest } from '@/__tests__/helpers/pinnedAgenticOsDictionary'
+import {
+  assertPinnedAgenticOsCatalogMetadataWinsForTest,
+  registerPinnedAgenticOsDictionaryCatalogForTest,
+} from '@/__tests__/helpers/pinnedAgenticOsDictionary'
 import { setActiveCardInlineTextExternalCommandTarget } from '@/lib/cards/cardInlineTextExternalCommands'
-import { registerAgenticOsRemoteGrammarCatalogEntries, resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
+import {
+  registerAgenticOsRemoteGrammarCatalogEntries,
+  resetAgenticOsRemoteGrammarCatalogForTests,
+} from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames, waitForNextFrame } from '@/tests/lib/reactRootHarness'
 
@@ -103,6 +109,7 @@ export async function testFloatingPanelSkillsCommandsViewRendersSlashInvokableSk
     if (slashEntries.length !== expectedSlashCount || hashEntries.length !== expectedHashCount || atEntries.length !== expectedAtCount) {
       throw new Error(`Expected Skills & Commands to render all / # @ entries, got slash=${slashEntries.length}/${expectedSlashCount} hash=${hashEntries.length}/${expectedHashCount} at=${atEntries.length}/${expectedAtCount}`)
     }
+    assertPinnedAgenticOsCatalogMetadataWinsForTest()
     if (!container.querySelector('[data-kg-floating-panel-catalog-list="skills-commands"]') || !container.querySelector('[data-kg-floating-panel-catalog-row-layout="compact-list"]')) {
       throw new Error('Expected Skills & Commands catalog rows to reuse the shared FloatingPanel catalog compact-list layout')
     }

@@ -121,12 +121,16 @@ export function testDashboardRendererGridToggleUsesSharedDisplayControl() {
   ).find(option => option.id === 'control:menu')
   const gridToggle = displayControls?.children?.find(child => child.id === 'control:grid')
   const snapGridToggle = displayControls?.children?.find(child => child.id === 'control:snapGrid')
+  const helperLinesToggle = displayControls?.children?.find(child => child.id === 'control:helperLines')
   const minimapToggle = displayControls?.children?.find(child => child.id === 'control:minimap')
   if (!gridToggle || gridToggle.disabled || gridToggle.isActive === true || gridToggle.children?.length) {
     throw new Error('Expected Dashboard Display Controls to expose Grid as an inactive single-action toggle')
   }
   if (!snapGridToggle || snapGridToggle.disabled || snapGridToggle.isActive === true || snapGridToggle.children?.length || snapGridToggle.title !== 'Snap to Grid') {
     throw new Error('Expected Dashboard Display Controls to expose Snap to Grid as an inactive single-action toggle')
+  }
+  if (!helperLinesToggle || helperLinesToggle.disabled || helperLinesToggle.isActive !== true || helperLinesToggle.children?.length || helperLinesToggle.title !== 'Helper Lines') {
+    throw new Error('Expected Dashboard Display Controls to expose Helper Lines as an active single-action toggle')
   }
   if (!minimapToggle?.disabled) {
     throw new Error('Expected Dashboard renderer to avoid enabling the D3 minimap path')
@@ -209,6 +213,44 @@ export function testDashboardRendererGridToggleUsesSharedDisplayControl() {
   }
   if (unexpectedViewMutations.length > 0) {
     throw new Error(`Expected Dashboard Grid/Snap toggles not to mutate renderer or surface setters, got ${unexpectedViewMutations.join(', ')}`)
+  }
+  nextBehavior = null
+  applyCanvasViewSelection({
+    id: 'control:helperLines',
+    ensureBaselineUnlocked: () => true,
+    geospatialEnabled: false,
+    onOpenGeospatialMode: () => { throw new Error('Expected Helper Lines toggle to avoid opening Geospatial Mode') },
+    canvas2dRenderer: 'dashboard',
+    canvas3dMode: '3d',
+    canvasRenderMode: '2d',
+    documentSemanticMode: 'document',
+    frontmatterModeEnabled: false,
+    multiDimTableModeEnabled: false,
+    renderMediaAsNodes: false,
+    timelineEnabled: false,
+    bottomSurfaceCollapsed: true,
+    bottomSurfaceTab: 'stats',
+    minimapCollapsed: false,
+    schema: BLOCK_SCHEMA,
+    setCanvas2dRenderer: markUnexpected('setCanvas2dRenderer') as any,
+    setCanvasRenderMode: markUnexpected('setCanvasRenderMode') as any,
+    setCanvas3dMode: markUnexpected('setCanvas3dMode'),
+    setSchema: markUnexpected('setSchema') as any,
+    setBehavior: behavior => { nextBehavior = behavior },
+    setRenderMediaAsNodes: markUnexpected('setRenderMediaAsNodes'),
+    setTimelineEnabled: markUnexpected('setTimelineEnabled'),
+    setBottomSurfaceCollapsed: markUnexpected('setBottomSurfaceCollapsed'),
+    setBottomSurfaceTab: markUnexpected('setBottomSurfaceTab') as any,
+    setMinimapCollapsed: markUnexpected('setMinimapCollapsed'),
+    setDocumentSemanticMode: markUnexpected('setDocumentSemanticMode') as any,
+    setFrontmatterModeEnabled: markUnexpected('setFrontmatterModeEnabled'),
+    setMultiDimTableModeEnabled: markUnexpected('setMultiDimTableModeEnabled'),
+  })
+  if (nextBehavior?.helperLines?.enabled !== false || Object.keys(nextBehavior).join(',') !== 'helperLines') {
+    throw new Error(`Expected Dashboard Helper Lines toggle to write only shared helperLines behavior, got ${JSON.stringify(nextBehavior)}`)
+  }
+  if (unexpectedViewMutations.length > 0) {
+    throw new Error(`Expected Dashboard Grid/Snap/Helper Lines toggles not to mutate renderer or surface setters, got ${unexpectedViewMutations.join(', ')}`)
   }
 }
 

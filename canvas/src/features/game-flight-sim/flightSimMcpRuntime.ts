@@ -7,6 +7,7 @@ import {
   setFlightSimThrottle,
   startFlightSim,
   stopFlightSim,
+  waitForFlightSimSurfaceRestoration,
 } from './flightSimRuntime'
 import {
   FLIGHT_SIM_SAVE_PATH,
@@ -585,8 +586,10 @@ export async function controlLocalFlightSim(
     return controlResult(false, 'Exit requires an open Flight Sim surface.', control.operation)
   }
   if (!isFlightSimControlCurrent(fence)) return cancelled()
-  const exited = exitFlightSim()
-  const ok = !exited.active && exited.phase === 'stopped'
+  exitFlightSim()
+  const exited = await waitForFlightSimSurfaceRestoration()
+  if (!isFlightSimControlCurrent(fence)) return cancelled()
+  const ok = !exited.active && exited.phase === 'stopped' && !exited.runtimeError
   return controlResult(
     ok,
     ok ? 'Flight Sim exited and restored the previous Canvas surface.' : runtimeFailureMessage(exited, 'Flight Sim could not exit.'),
