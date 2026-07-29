@@ -408,13 +408,8 @@ async function readValidatedRunEvidence({
           widthMeters: 4.4,
           depthMeters: 4.4,
         })
-        && hasMeterSurface(view, {
-          id: 'helicopter',
-          baseHeightMeters: 2,
-          heightMeters: 5.4,
-          widthMeters: 7.4,
-          depthMeters: 9,
-        })
+        && view?.selectedEnvironmentSubjectsExact === true
+        && view?.environmentSourceExactlyMatchesOverlay === true
         && ['stage-footprint', 'structure', 'subject'].every(kind =>
           view?.renderedEnvironmentKinds?.includes(kind),
         )

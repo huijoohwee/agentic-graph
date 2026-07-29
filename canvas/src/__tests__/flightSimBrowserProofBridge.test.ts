@@ -36,6 +36,7 @@ const EXPECTED_MODULE_KEYS = Object.freeze([
   'xrNativeControllerDemoRuntime',
   'xrNativeControllerPresentation',
   'xrPhysicsRuntime',
+  'xrSceneLibrary',
   'xrSceneSurfaceRuntime',
 ])
 

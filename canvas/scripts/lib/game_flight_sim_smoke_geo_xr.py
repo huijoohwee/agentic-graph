@@ -76,9 +76,16 @@ def _read_view(page: Page) -> dict[str, Any]:
           const flight = await window.__kgFlightSimBrowserProof.importModule(
             'flightSimRuntime',
           )
+          const motion = await window.__kgFlightSimBrowserProof.importModule(
+            'xrMotionReferenceRuntime',
+          )
+          const sceneLibrary = await window.__kgFlightSimBrowserProof.importModule(
+            'xrSceneLibrary',
+          )
           const graphState = graph.useGraphStore.getState()
           const gympgrphState = gympgrph.useGympgrphStore.getState()
           const flightSnapshot = flight.readFlightSimSnapshot()
+          const motionRuntime = motion.readXrMotionReferenceRuntime()
           const blob = await graphState.captureThreeGltfSnapshot()
           const gltf = blob ? JSON.parse(await blob.text()) : null
           const nodes = Array.isArray(gltf?.nodes) ? gltf.nodes : []
@@ -176,6 +183,37 @@ def _read_view(page: Page) -> dict[str, Any]:
           const mapCanvas = visibleMapCanvases[0] || null
           const mapWidth = Number(mapCanvas?.clientWidth || 0)
           const mapHeight = Number(mapCanvas?.clientHeight || 0)
+          const authoredEnvironmentSubjects = Array.isArray(
+            motionRuntime?.plan?.subjects,
+          ) ? motionRuntime.plan.subjects.map(subject => {
+            const asset = sceneLibrary.resolveXrSceneLibraryAsset(subject.assetId)
+            const scale = Number.isFinite(subject.scale) && subject.scale > 0
+              ? subject.scale
+              : 1
+            const baseHeightMeters = Math.max(0, Number(subject.position?.[1]) || 0)
+            return {
+              baseHeightMeters,
+              depthMeters: asset.dimensionsMeters[2] * scale,
+              heightMeters: baseHeightMeters + asset.dimensionsMeters[1] * scale,
+              id: subject.id,
+              widthMeters: asset.dimensionsMeters[0] * scale,
+            }
+          }) : []
+          const measureEdgeMeters = (from, to) => {
+            if (!Array.isArray(from) || !Array.isArray(to)) return NaN
+            const longitudeA = Number(from[0])
+            const latitudeA = Number(from[1])
+            const longitudeB = Number(to[0])
+            const latitudeB = Number(to[1])
+            if (![longitudeA, latitudeA, longitudeB, latitudeB].every(Number.isFinite)) {
+              return NaN
+            }
+            const latitude = (latitudeA + latitudeB) / 2
+            return Math.hypot(
+              (longitudeB - longitudeA) * 111_320 * Math.cos(latitude * Math.PI / 180),
+              (latitudeB - latitudeA) * 111_320,
+            )
+          }
           const environmentSurfaceMeters = environmentFeatures.map(feature => {
             const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
               ? feature.geometry.coordinates[0]
@@ -211,6 +249,8 @@ def _read_view(page: Page) -> dict[str, Any]:
               ))
             return {
               baseHeightMeters: Number(feature?.properties?.kgBaseHeightMeters),
+              edgeDepthMeters: measureEdgeMeters(coordinates[1], coordinates[2]),
+              edgeWidthMeters: measureEdgeMeters(coordinates[0], coordinates[1]),
               heightMeters: Number(feature?.properties?.kgHeightMeters),
               id: String(feature?.properties?.kgSurfaceId || ''),
               kind: String(feature?.properties?.kgSurfaceKind || ''),
@@ -224,6 +264,53 @@ def _read_view(page: Page) -> dict[str, Any]:
               viewportBounded,
             }
           })
+          const close = (actual, expected, tolerance = 0.02) => (
+            Number.isFinite(actual)
+            && Number.isFinite(expected)
+            && Math.abs(actual - expected) <= tolerance
+          )
+          const environmentSurfaces = Array.isArray(overlay?.environment?.surfaces)
+            ? overlay.environment.surfaces
+            : []
+          const environmentSourceExactlyMatchesOverlay = Boolean(
+            overlay?.environment
+            && environmentSurfaces.length === environmentFeatures.length
+            && environmentSurfaces.every((surface, index) => {
+              const feature = environmentFeatures[index]
+              const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
+                ? feature.geometry.coordinates[0]
+                : []
+              return (
+                feature?.id === `${overlay.environment.id}:${surface.id}`
+                && feature?.properties?.kgBaseHeightMeters === surface.baseHeightMeters
+                && feature?.properties?.kgHeightMeters === surface.heightMeters
+                && feature?.properties?.kgSurfaceId === surface.id
+                && feature?.properties?.kgSurfaceKind === surface.kind
+                && Array.isArray(ring)
+                && ring.length === surface.ring.length
+                && ring.every((coordinate, coordinateIndex) => (
+                  Array.isArray(coordinate)
+                  && coordinate[0] === surface.ring[coordinateIndex]?.[0]
+                  && coordinate[1] === surface.ring[coordinateIndex]?.[1]
+                ))
+              )
+            })
+          )
+          const selectedEnvironmentSubjectsExact = authoredEnvironmentSubjects.length
+            === environmentSurfaces.filter(surface => surface.kind === 'subject').length
+            && authoredEnvironmentSubjects.every(expected => {
+              const actual = environmentSurfaceMeters.find(
+                surface => surface.id === expected.id,
+              )
+              return Boolean(
+                actual
+                && actual.kind === 'subject'
+                && close(actual.baseHeightMeters, expected.baseHeightMeters, 0.01)
+                && close(actual.heightMeters, expected.heightMeters, 0.01)
+                && close(actual.edgeWidthMeters, expected.widthMeters)
+                && close(actual.edgeDepthMeters, expected.depthMeters)
+              )
+            })
           const projectedRoute = Array.isArray(overlay?.route)
             ? overlay.route.map(point => {
                 const projected = map?.project?.(point.coordinate)
@@ -354,10 +441,13 @@ def _read_view(page: Page) -> dict[str, Any]:
             environmentSourceFeatures:
               environmentFeatures.length,
             environmentSourcePresent: Boolean(environmentSource),
+            environmentSourceExactlyMatchesOverlay,
+            authoredEnvironmentSubjects,
             environmentSubjectIds: environmentFeatures
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
             environmentSurfaceMeters,
+            selectedEnvironmentSubjectsExact,
             renderedEnvironmentKinds: Array.from(new Set(
               renderedEnvironment.map(
                 feature => feature?.properties?.kgSurfaceKind || '',
@@ -514,14 +604,14 @@ def _unmet_view_requirements(
             width_meters=4.4,
             depth_meters=4.4,
         ),
-        "environment.helicopterAuthoredMeters": _has_authored_environment_surface(
-            last,
-            surface_id="helicopter",
-            base_height_meters=2,
-            height_meters=5.4,
-            width_meters=7.4,
-            depth_meters=9,
-        ),
+        "environment.selectedSubjectsDirectMeters": last.get(
+            "selectedEnvironmentSubjectsExact"
+        )
+        is True,
+        "environment.sourcePassThrough": last.get(
+            "environmentSourceExactlyMatchesOverlay"
+        )
+        is True,
         "renderedEnvironmentKinds": {
             "stage-footprint",
             "structure",
