@@ -90,9 +90,15 @@ def _install_city_map_disposal_audit(page: Page) -> None:
           const readSource = sourceId => {
             const source = map.getSource?.(sourceId) || null
             let data = null
+            let loaded = false
             try { data = source?.serialize?.()?.data || null } catch { data = null }
+            try {
+              loaded = typeof source?.loaded === 'function'
+                && source.loaded() === true
+            } catch { loaded = false }
             return {
               features: Array.isArray(data?.features) ? data.features.length : null,
+              loaded,
               present: Boolean(source),
             }
           }
@@ -181,15 +187,16 @@ def verify_flight_geo_xr_city_handoff(
     )
     if (
         not isinstance(disposal, dict)
-        or disposal.get("styleLoaded") is not True
         or disposal.get("flight", {}).get("present") is not True
         or disposal.get("flight", {}).get("features") != 0
+        or disposal.get("flight", {}).get("loaded") is not True
         or disposal.get("environment", {}).get("present") is not True
         or disposal.get("environment", {}).get("features") != 0
+        or disposal.get("environment", {}).get("loaded") is not True
     ):
         raise AssertionError(
             "City disposed the Flight MapLibre owner before its GeoJSON sources "
-            f"were cleared: {disposal}"
+            f"were cleared and settled: {disposal}"
         )
 
     exit_button = city_panel.locator('[data-kg-city-sim-exit="1"]').first

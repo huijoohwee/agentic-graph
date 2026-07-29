@@ -31,6 +31,17 @@ function hasMeterSurface(view, expected) {
   )
 }
 
+export function hasExactCityDisposalEvidence(disposal) {
+  return (
+    disposal?.flight?.present === true
+    && disposal?.flight?.features === 0
+    && disposal?.flight?.loaded === true
+    && disposal?.environment?.present === true
+    && disposal?.environment?.features === 0
+    && disposal?.environment?.loaded === true
+  )
+}
+
 function hasExactCityHandoffEvidence(handoff) {
   const before = handoff?.before
   const city = handoff?.city
@@ -65,11 +76,7 @@ function hasExactCityHandoffEvidence(handoff) {
     && city?.environmentSourceFeatures === 0
     && city?.renderedFeatureCount === 0
     && city?.renderedEnvironmentFeatureCount === 0
-    && disposal?.styleLoaded === true
-    && disposal?.flight?.present === true
-    && disposal?.flight?.features === 0
-    && disposal?.environment?.present === true
-    && disposal?.environment?.features === 0
+    && hasExactCityDisposalEvidence(disposal)
     && restored?.flightActive === false
     && restored?.cityActive === false
     && restored?.cityPanelVisible === true
@@ -421,4 +428,3 @@ export async function readValidatedFlightSimBrowserRunEvidence({
   }
   return evidence
 }
-
