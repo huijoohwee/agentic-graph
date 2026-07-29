@@ -34,7 +34,8 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   for (const marker of [
     'requestXrEnvironmentGeoHandoff',
     "emitFloatingPanelOpen({ tab: 'geo', open: true })",
-    'onAfterRoute?.()',
+    'await prepareBeforeRoute?.()',
+    'inFlightRef.current',
     'data-kg-media-xr-environment-geo={stageId}',
   ]) {
     if (!geoButton.includes(marker)) {
@@ -46,6 +47,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     || !flightGeoButton.includes('openPanel: false')
     || flightGeoButton.includes('setGeospatialViewMode(')
     || !flightGeoButton.includes('await settleWorkspaceSourceTextWrites()')
+    || !flightGeoButton.includes('Select the source-authored Flight Sim document after Source Files finishes loading.')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-overlay="1"')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-aircraft="1"')
     || !geoView.includes('data-kg-geo-xr-environment={selectedEnvironment.id}')

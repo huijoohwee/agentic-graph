@@ -10,6 +10,28 @@ export type FlightGeoRoutePoint = Readonly<{
   state: 'active' | 'pending' | 'visited'
 }>
 
+export type FlightGeoEnvironmentSurface = Readonly<{
+  baseHeightMeters: number
+  color: string
+  heightMeters: number
+  id: string
+  kind: 'stage-footprint' | 'structure' | 'subject'
+  ring: readonly FlightGeoCoordinate[]
+}>
+
+export type FlightGeoEnvironmentProjection = Readonly<{
+  anchor: FlightGeoCoordinate
+  id: string
+  label: string
+  presentationBounds: readonly [
+    southwest: FlightGeoCoordinate,
+    northeast: FlightGeoCoordinate,
+  ]
+  revision: string
+  stageFootprint: readonly FlightGeoCoordinate[]
+  surfaces: readonly FlightGeoEnvironmentSurface[]
+}>
+
 export type FlightGeoOverlaySnapshot = Readonly<{
   active: boolean
   aircraft: Readonly<{
@@ -34,6 +56,7 @@ export type FlightGeoOverlaySnapshot = Readonly<{
     }> | null
     view: 'chase' | 'cockpit' | 'survey'
   }>
+  environment: FlightGeoEnvironmentProjection | null
   night: boolean
   objective: Readonly<{
     bearingDegrees: number
@@ -82,6 +105,7 @@ const EMPTY_FLIGHT_GEO_OVERLAY: FlightGeoOverlaySnapshot = Object.freeze({
     timeline: null,
     view: 'chase',
   }),
+  environment: null,
   night: false,
   objective: null,
   phase: 'stopped',

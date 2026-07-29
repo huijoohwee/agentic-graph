@@ -13,6 +13,11 @@ import {
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   fitMapToFlightGeoOverlay,
 } from '../../flightGeoOverlayMapLibre.js'
+import {
+  applyFlightGeoEnvironmentToMap,
+  clearFlightGeoEnvironmentFromMap,
+  mapHasExactFlightGeoEnvironment,
+} from '../../flightGeoEnvironmentMapLibre.js'
 import { readGeoJsonSourceData } from '../../maplibreLayers.js'
 import {
   markMapLibreFlightOverlayPresented,
@@ -86,6 +91,7 @@ function mapHasExactFlightOverlay(
       && kindCount('aircraft') === 1
       && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
         .every(layerId => Boolean(map.getLayer?.(layerId)))
+      && mapHasExactFlightGeoEnvironment(map, overlay)
   } catch {
     return false
   }
@@ -327,7 +333,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         void 0
       }
       const root = options.rootRef.current
-      if (root) delete root.dataset.kgFlightGeospatialPresentedRevision
+      if (root) {
+        delete root.dataset.kgFlightGeospatialEnvironment
+        delete root.dataset.kgFlightGeospatialPresentedRevision
+      }
       if (presentedRef.current.map === map) {
         presentedRef.current = {
           map: null,
@@ -344,7 +353,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   React.useEffect(() => {
     const map = options.map
     const root = options.rootRef.current
-    if (root) delete root.dataset.kgFlightGeospatialPresentedRevision
+    if (root) {
+      delete root.dataset.kgFlightGeospatialEnvironment
+      delete root.dataset.kgFlightGeospatialPresentedRevision
+    }
     if (presentedRef.current.map === map) {
       presentedRef.current = {
         map: null,
@@ -379,9 +391,14 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         if (visible) {
           root.dataset.kgFlightGeospatialOverlay = 'active'
           root.dataset.kgFlightGeospatialRevision = overlay.revision
+          if (overlay.environment) {
+            root.dataset.kgFlightGeospatialEnvironment =
+              overlay.environment.id
+          }
         } else {
           delete root.dataset.kgFlightGeospatialOverlay
           delete root.dataset.kgFlightGeospatialRevision
+          delete root.dataset.kgFlightGeospatialEnvironment
           delete root.dataset.kgFlightGeospatialPresentedRevision
         }
       }
@@ -396,10 +413,17 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         gate.resetPresented()
         fitRef.current = { key: '', map: null }
         clearFlightGeoOverlayFromMap(map)
+        clearFlightGeoEnvironmentFromMap(map)
         return
       }
       if (overlay.phase === 'stopped') gate.clearCanvas()
-      const applied = applyFlightGeoOverlayToMap(map, overlay)
+      const environmentApplied = applyFlightGeoEnvironmentToMap(
+        map,
+        overlay,
+        options.viewMode,
+      )
+      const applied = environmentApplied
+        && applyFlightGeoOverlayToMap(map, overlay)
       const fitKey = [
         options.styleRevision,
         options.viewMode,
@@ -417,7 +441,11 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       }
       if (!applied) return
       const cameraApplied = overlay.camera.effectiveOwner === 'free-orbit'
-        || applyFlightGeoOverlayCameraToMap(map, overlay)
+        || applyFlightGeoOverlayCameraToMap(
+          map,
+          overlay,
+          options.viewMode,
+        )
       if (cameraApplied) gate.request(overlay)
     }
     const scheduleFinalApply = () => {

@@ -6,18 +6,13 @@ type AssetProjectionInput = Pick<
   'lat' | 'lng' | 'altitudeMeters' | 'scale' | 'rotationDegrees'
 >
 
-export type AssetProjectionMap = {
-  transform?: {
-    getMatrixForModel?: (
-      location: [lng: number, lat: number],
-      altitudeMeters?: number,
-    ) => ArrayLike<number>
-  }
-}
+export type AssetProjectionMap = object
 
 type AssetFrameProjection = Pick<CustomRenderMethodInput, 'defaultProjectionData'>
 
 const MATRIX_LENGTH = 16
+const MAX_MERCATOR_LATITUDE = 85.051129
+const EARTH_CIRCUMFERENCE_METERS = 2 * Math.PI * 6_371_008.8
 
 const isFiniteMatrix = (matrix: ArrayLike<number> | null | undefined): matrix is ArrayLike<number> => {
   if (!matrix || matrix.length !== MATRIX_LENGTH) return false
@@ -41,13 +36,45 @@ const multiplyMatrices = (left: ArrayLike<number>, right: ArrayLike<number>): Fl
   return result
 }
 
+const createMercatorModelMatrix = (
+  asset: Pick<Asset3DConfig, 'lat' | 'lng' | 'altitudeMeters'>,
+): Float64Array | null => {
+  const latitudeRadians = asset.lat * Math.PI / 180
+  const x = (180 + asset.lng) / 360
+  const y = (
+    180 - 180 / Math.PI
+      * Math.log(Math.tan(Math.PI / 4 + latitudeRadians / 2))
+  ) / 360
+  const meterScale = 1 / (
+    EARTH_CIRCUMFERENCE_METERS * Math.cos(latitudeRadians)
+  )
+  const z = asset.altitudeMeters * meterScale
+  if (
+    !Number.isFinite(x)
+    || !Number.isFinite(y)
+    || !Number.isFinite(z)
+    || !Number.isFinite(meterScale)
+    || meterScale <= 0
+  ) {
+    return null
+  }
+
+  // Convert MapLibre's y-up model meters into normalized, z-up Mercator coordinates.
+  return new Float64Array([
+    meterScale, 0, 0, 0,
+    0, 0, meterScale, 0,
+    0, meterScale, 0, 0,
+    x, y, z, 1,
+  ])
+}
+
 export const isSafeAssetProjectionInput = (asset: AssetProjectionInput): boolean => {
   return Number.isFinite(asset.lng)
     && asset.lng >= -180
     && asset.lng <= 180
     && Number.isFinite(asset.lat)
-    && asset.lat >= -90
-    && asset.lat <= 90
+    && asset.lat >= -MAX_MERCATOR_LATITUDE
+    && asset.lat <= MAX_MERCATOR_LATITUDE
     && Number.isFinite(asset.altitudeMeters)
     && Number.isFinite(asset.scale)
     && asset.scale > 0
@@ -71,27 +98,24 @@ export function computeAssetZUpLocalMatrix(
 }
 
 export function computeAssetFrameMatrix(
-  map: AssetProjectionMap,
+  _map: AssetProjectionMap,
   frame: AssetFrameProjection,
   asset: AssetProjectionInput,
 ): Float32Array | null {
   if (!isSafeAssetProjectionInput(asset)) return null
-  const mainMatrix = frame.defaultProjectionData?.mainMatrix
-  const getMatrixForModel = map.transform?.getMatrixForModel
-  if (!isFiniteMatrix(mainMatrix) || typeof getMatrixForModel !== 'function') return null
-
-  let mapModelMatrix: ArrayLike<number>
-  try {
-    mapModelMatrix = getMatrixForModel.call(
-      map.transform,
-      [asset.lng, asset.lat],
-      asset.altitudeMeters,
-    )
-  } catch {
+  const projectionData = frame.defaultProjectionData
+  const projectionTransition = projectionData?.projectionTransition ?? 0
+  if (
+    !Number.isFinite(projectionTransition)
+    || projectionTransition !== 0
+  ) {
     return null
   }
-  if (!isFiniteMatrix(mapModelMatrix)) return null
+  const mainMatrix = projectionData?.mainMatrix
+  if (!isFiniteMatrix(mainMatrix)) return null
 
+  const mapModelMatrix = createMercatorModelMatrix(asset)
+  if (!mapModelMatrix) return null
   const modelMatrix = multiplyMatrices(mapModelMatrix, computeAssetZUpLocalMatrix(asset))
   const frameMatrix = multiplyMatrices(mainMatrix, modelMatrix)
   if (!isFiniteMatrix(frameMatrix)) return null

@@ -4,56 +4,12 @@ import time
 from typing import Any
 
 from playwright.sync_api import Page
-
-
-GEO_XR_VIEW_CASES = (
-    (
-        "2d",
-        "mercator",
-        "2D (MapLibre, Classic) Demo tiles",
-        "https://demotiles.maplibre.org/style.json",
-        "demotiles.maplibre.org",
-    ),
-    (
-        "2d-modern",
-        "mercator",
-        "2D (MapLibre, Modern) Liberty style",
-        "https://tiles.openfreemap.org/styles/liberty",
-        "tiles.openfreemap.org",
-    ),
-    (
-        "3d",
-        "globe",
-        "3D (MapLibre, Classic) Globe style",
-        "https://demotiles.maplibre.org/globe.json",
-        "demotiles.maplibre.org",
-    ),
-    (
-        "3d-modern",
-        "globe",
-        "3D (MapLibre, Modern) Liberty style",
-        "https://tiles.openfreemap.org/styles/liberty",
-        "tiles.openfreemap.org",
-    ),
+from lib.game_flight_sim_smoke_geo_view_cases import (
+    GEO_XR_VIEW_CASES,
+    GeoXrViewCase,
+    select_geo_xr_view,
+    wait_for_surface_contract,
 )
-GeoXrViewCase = tuple[str, str, str, str, str]
-
-def _select_view(page: Page, button_label: str) -> None:
-    page.evaluate(
-        """
-        async () => {
-          const graph = await window.__kgFlightSimBrowserProof.importModule(
-            'graphStore',
-          )
-          const state = graph.useGraphStore.getState()
-          state.setFloatingPanelOpen(true)
-          state.setFloatingPanelView('geo')
-        }
-        """
-    )
-    button = page.get_by_label(button_label, exact=True)
-    button.wait_for(state="visible", timeout=30_000)
-    button.click(timeout=30_000)
 
 
 def _read_view(page: Page) -> dict[str, Any]:
@@ -106,6 +62,11 @@ def _read_view(page: Page) -> dict[str, Any]:
           const overlay = gympgrph.readFlightGeoOverlay?.() || null
           const sourceId = gympgrph.FLIGHT_GEO_OVERLAY_SOURCE_ID
             || 'kg-flight-sim:geo-overlay'
+          const environmentSourceId = gympgrph.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID
+            || 'kg-flight-geo-environment'
+          const environmentLayerIds = gympgrph.FLIGHT_GEO_ENVIRONMENT_LAYER_IDS
+          const aircraftImageIds = gympgrph.FLIGHT_GEO_AIRCRAFT_IMAGE_IDS
+          const environmentSource = map?.getSource?.(environmentSourceId) || null
           const layerIds = [
             `${sourceId}:route`,
             `${sourceId}:objective-guide`,
@@ -117,14 +78,16 @@ def _read_view(page: Page) -> dict[str, Any]:
           const aircraftLayer = map?.getLayer?.(
             `${sourceId}:aircraft`,
           ) || null
-          let sourceData = null
-          try {
-            sourceData = typeof source?.getData === 'function'
-              ? await source.getData()
-              : source?.serialize?.()?.data || null
-          } catch {
-            sourceData = null
+          const aircraftImage = map?.getImage?.(aircraftImageIds?.day) || null
+          const readSourceData = async candidate => {
+            try {
+              return typeof candidate?.getData === 'function'
+                ? await candidate.getData()
+                : candidate?.serialize?.()?.data || null
+            } catch { return null }
           }
+          const sourceData = await readSourceData(source)
+          const environmentData = await readSourceData(environmentSource)
           const sourceFeatures = Array.isArray(sourceData?.features)
             ? sourceData.features
             : []
@@ -144,6 +107,16 @@ def _read_view(page: Page) -> dict[str, Any]:
           } catch {
             renderedFeatures = []
           }
+          const environment3d = String(gympgrphState.geospatialViewMode)
+            .startsWith('3d')
+          const activeEnvironmentLayer = environment3d
+            ? environmentLayerIds?.extrusion3d : environmentLayerIds?.fill2d
+          let renderedEnvironment = []
+          try {
+            renderedEnvironment = map?.queryRenderedFeatures?.({
+              layers: [activeEnvironmentLayer],
+            }) || []
+          } catch { renderedEnvironment = [] }
           const renderedKinds = Array.from(new Set(
             renderedFeatures.map(
               feature => feature?.properties?.kgFlightOverlayKind || '',
@@ -248,6 +221,7 @@ def _read_view(page: Page) -> dict[str, Any]:
             projection: map?.getProjection?.()?.type || 'mercator',
             center: map?.getCenter?.()?.toArray?.() || null,
             zoom: map?.getZoom?.() ?? null,
+            pitch: map?.getPitch?.() ?? null,
             mapLibreCanvasCount: mapCanvases.length,
             visibleMapLibreCanvasCount: visibleMapCanvases.length,
             flightSourceFeatures: sourceFeatures.length,
@@ -260,6 +234,31 @@ def _read_view(page: Page) -> dict[str, Any]:
             flightLayersTopmost:
               JSON.stringify(topLayerOrder) === JSON.stringify(layerIds),
             aircraftLayerType: aircraftLayer?.type || '',
+            aircraftGeometryType: sourceFeatures.find(
+              feature => feature?.properties?.kgFlightOverlayKind === 'aircraft',
+            )?.geometry?.type || '',
+            aircraftImagesReady: Object.values(aircraftImageIds || {})
+              .every(id => map?.hasImage?.(id)),
+            aircraftImagePixelWidth:
+              aircraftImage?.data?.width || aircraftImage?.width || 0,
+            environmentId: overlay?.environment?.id || '',
+            environmentPresentationBounds:
+              overlay?.environment?.presentationBounds || null,
+            environmentLayersReady: Object.values(environmentLayerIds || {})
+              .every(id => Boolean(map?.getLayer?.(id))),
+            environmentSourceFeatures:
+              environmentData?.features?.length || 0,
+            environmentSubjectIds: (environmentData?.features || [])
+              .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
+              .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
+            renderedEnvironmentKinds: Array.from(new Set(
+              renderedEnvironment.map(
+                feature => feature?.properties?.kgSurfaceKind || '',
+              ).filter(Boolean),
+            )).sort(),
+            renderedEnvironmentSubjectIds: renderedEnvironment
+              .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
+              .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
             renderedKinds,
             renderedFeatureCount: renderedFeatures.length,
             routeInViewport,
@@ -335,6 +334,19 @@ def _wait_for_view(
             and last.get("flightLayersReady") is True
             and last.get("flightLayersTopmost") is True
             and last.get("aircraftLayerType") == "symbol"
+            and last.get("aircraftGeometryType") == "Polygon"
+            and last.get("aircraftImagesReady") is True
+            and (last.get("aircraftImagePixelWidth") or 0) >= 40
+            and last.get("environmentId") == "singapore"
+            and last.get("environmentPresentationBounds")
+            == [[103.605, 1.158], [104.09, 1.48]]
+            and last.get("environmentLayersReady") is True
+            and (last.get("environmentSourceFeatures") or 0) >= 10
+            and {"stage-footprint", "structure", "subject"}.issubset(
+                set(last.get("renderedEnvironmentKinds") or [])
+            )
+            and any("vehicle-" in str(subject_id) for subject_id in
+                    last.get("renderedEnvironmentSubjectIds") or [])
             and (last.get("flightSourceFeatures") or 0) >= 7
             and last.get("objectiveGuideFeatureCount") == 1
             and set(last.get("renderedKinds") or [])
@@ -345,6 +357,11 @@ def _wait_for_view(
                 float((last.get("routeScreenSpan") or {}).get("y") or 0),
             ) >= 80
             and last.get("aircraftInViewport") is True
+            and (
+                float(last.get("pitch") or 0) >= 22
+                if expected_view.startswith("3d")
+                else abs(float(last.get("pitch") or 0)) < 0.01
+            )
             and bool(last.get("mapPointerHit"))
         ):
             return last
@@ -353,26 +370,6 @@ def _wait_for_view(
         "timed out waiting for native MapLibre Geo+XR view "
         f"{expected_view}/{expected_projection}/{expected_style_url}: {last}"
     )
-
-
-def _wait_for_surface_contract(
-    page: Page, *, label: str, expected: dict[str, Any],
-    require_flight_visuals: bool = False, require_revision_sync: bool = False,
-) -> dict[str, Any]:
-    deadline = time.monotonic() + 30
-    last: dict[str, Any] = {}
-    while time.monotonic() < deadline:
-        last = _read_view(page)
-        if (
-            all(last.get(key) == value for key, value in expected.items())
-            and (not require_flight_visuals
-                 or last.get("flightR3fVisualCount", 0) > 0)
-            and (not require_revision_sync or bool(last.get("hostRevision"))
-                 and last.get("hostRevision") == last.get("overlayRevision"))
-        ):
-            return last
-        page.wait_for_timeout(100)
-    raise AssertionError(f"timed out waiting for {label}: {last}")
 
 
 def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any], GeoXrViewCase, dict[str, Any]]:
@@ -392,8 +389,8 @@ def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any]
         }
         """
     )
-    standalone = _wait_for_surface_contract(
-        page, label="standalone Flight XR surface",
+    standalone = wait_for_surface_contract(
+        page, label="standalone Flight XR surface", read_view=_read_view,
         expected={
             "hostActive": False, "geospatialEnabled": False,
             "renderMode": "3d", "canvas3dMode": "xr", "hudVisible": True,
@@ -413,8 +410,9 @@ def wait_for_canvas_view_geo_xr_handoff(page: Page, source_case: GeoXrViewCase) 
         expected_view=source_case[0], expected_projection=source_case[1],
         expected_style_url=source_case[3],
     )
-    return _wait_for_surface_contract(
+    return wait_for_surface_contract(
         page, label="real-menu Geo+XR Flight ownership handoff",
+        read_view=_read_view,
         expected={
             "hostActive": True, "geospatialEnabled": True,
             "renderMode": "3d", "canvas3dMode": "xr", "hudVisible": True,
@@ -467,7 +465,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
             style_url,
             provider_host,
         ) in GEO_XR_VIEW_CASES:
-            _select_view(page, button_label)
+            select_geo_xr_view(page, button_label)
             observed = _wait_for_view(
                 page,
                 expected_provider_host=provider_host,
@@ -561,7 +559,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 "source-authored Geo view/style was outside the four-view "
                 f"contract: {baseline_camera}"
             )
-        _select_view(page, prior_case[2])
+        select_geo_xr_view(page, prior_case[2])
         restored_view = _wait_for_view(
             page,
             expected_provider_host=prior_case[4],

@@ -148,7 +148,7 @@ for (const requiredText of [
   "knowgrph.geospatial.command",
   "knowgrph-geo-asset-mesh/v1",
   "VITE_GEOSPATIAL_DATASETS_JSON",
-  "getMatrixForModel",
+  "defaultProjectionData.mainMatrix",
   "network-unavailable",
   "44 correctness properties",
   "Enhanced layers",

@@ -37,6 +37,8 @@ export type {
 } from './enhancedLayerPersistence.js'
 export type {
   FlightGeoCoordinate,
+  FlightGeoEnvironmentProjection,
+  FlightGeoEnvironmentSurface,
   FlightGeoOverlayPresentation,
   FlightGeoOverlaySnapshot,
   FlightGeoRoutePoint,
@@ -51,9 +53,17 @@ export {
   subscribeFlightGeoOverlay,
 } from './flightGeoOverlay.js'
 export {
+  applyFlightGeoEnvironmentToMap,
+  clearFlightGeoEnvironmentFromMap,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
+  FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+  mapHasExactFlightGeoEnvironment,
+} from './flightGeoEnvironmentMapLibre.js'
+export {
   applyFlightGeoOverlayCameraToMap,
   applyFlightGeoOverlayToMap,
   clearFlightGeoOverlayFromMap,
+  FLIGHT_GEO_AIRCRAFT_IMAGE_IDS,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
 } from './flightGeoOverlayMapLibre.js'

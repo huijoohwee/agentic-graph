@@ -193,12 +193,10 @@ test('asset frame matrices remain finite across valid geographic coordinates', (
   } as unknown as Parameters<typeof computeAssetFrameMatrix>[1]
   fc.assert(fc.property(
     fc.double({ min: -180, max: 180, noNaN: true }),
-    fc.double({ min: -90, max: 90, noNaN: true }),
+    fc.double({ min: -85.051129, max: 85.051129, noNaN: true }),
     fc.double({ min: -1_000, max: 100_000, noNaN: true }),
     (lng, lat, altitudeMeters) => {
-      const matrix = computeAssetFrameMatrix({
-        transform: { getMatrixForModel: () => identityMatrix },
-      }, frame, {
+      const matrix = computeAssetFrameMatrix({}, frame, {
         lng,
         lat,
         altitudeMeters,
@@ -209,16 +207,23 @@ test('asset frame matrices remain finite across valid geographic coordinates', (
       assert.ok([...matrix].every(Number.isFinite))
     },
   ), { numRuns: 120 })
-  for (const lat of [-90, 90]) {
-    assert.ok(computeAssetFrameMatrix({
-      transform: { getMatrixForModel: () => identityMatrix },
-    }, frame, {
+  for (const lat of [-85.051129, 85.051129]) {
+    assert.ok(computeAssetFrameMatrix({}, frame, {
       lng: 0,
       lat,
       altitudeMeters: 0,
       scale: 1,
       rotationDegrees: 0,
     }))
+  }
+  for (const lat of [-90, 90]) {
+    assert.equal(computeAssetFrameMatrix({}, frame, {
+      lng: 0,
+      lat,
+      altitudeMeters: 0,
+      scale: 1,
+      rotationDegrees: 0,
+    }), null)
   }
 })
 

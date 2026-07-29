@@ -32,6 +32,11 @@ import {
   readActiveNativeGeospatialMapLibreMap,
   type MapLibreMapOwnerScope,
 } from './mapLibreHostLease.js'
+import {
+  alignMapToSingaporePresentation,
+  createSingaporeMapInitialCameraOptions,
+  readSingaporeCanvasCameraPolicy,
+} from './singaporeMapPolicy.js'
 
 type BasemapProbe = {
   tileSourceId: string
@@ -61,11 +66,6 @@ type BasemapPoiClickDetail = {
 }
 
 const EMPTY_PROBE: BasemapProbe = { tileSourceId: '', tilesLoaded: false, canvasW: 0, canvasH: 0, zoom: 0, lng: 0, lat: 0 }
-const SINGAPORE_CENTER_LNG = 103.8198
-const SINGAPORE_CENTER_LAT = 1.3521
-const INITIAL_3D_ZOOM = 2.8
-const INITIAL_3D_PITCH = 0
-const INITIAL_3D_BEARING = 0
 const RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL = MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL
 const GRABMAPS_RUNTIME_NAVIGATION_GRACE_MS = 1200
 const GRABMAPS_IDLE_SERVICE_ERROR_FALLBACK_THRESHOLD = 3
@@ -493,6 +493,9 @@ export function useMapLibreBasemap(args: {
     onGrabMapsFallback,
     onPoiClick,
   } = args
+  const singaporeCamera = readSingaporeCanvasCameraPolicy(canvasRenderMode)
+  const singaporeInitialCamera =
+    createSingaporeMapInitialCameraOptions(singaporeCamera)
   const mountedMapRef = React.useRef<any | null>(null)
   const requestedOpenFreeMapLibertyRef = React.useRef(false)
   const [runtimeProjectionMode, setRuntimeProjectionMode] = React.useState<'mercator' | 'globe'>(projectionMode)
@@ -847,11 +850,7 @@ export function useMapLibreBasemap(args: {
             attributionControl: false,
             preserveDrawingBuffer: false,
             transformRequest,
-            center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-            pitch: canvasRenderMode === '3d' ? INITIAL_3D_PITCH : 0,
-            bearing: canvasRenderMode === '3d' ? INITIAL_3D_BEARING : 0,
-            maxPitch: canvasRenderMode === '3d' ? 85 : 60,
-            zoom: canvasRenderMode === '3d' ? INITIAL_3D_ZOOM : 12,
+            ...singaporeInitialCamera,
           })
         } catch (err) {
           if (requestedOpenFreeMapLibertyRef.current) {
@@ -863,11 +862,7 @@ export function useMapLibreBasemap(args: {
                 attributionControl: false,
                 preserveDrawingBuffer: false,
                 transformRequest,
-                center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-                pitch: canvasRenderMode === '3d' ? INITIAL_3D_PITCH : 0,
-                bearing: canvasRenderMode === '3d' ? INITIAL_3D_BEARING : 0,
-                maxPitch: canvasRenderMode === '3d' ? 85 : 60,
-                zoom: canvasRenderMode === '3d' ? INITIAL_3D_ZOOM : 12,
+                ...singaporeInitialCamera,
               })
             } catch {
               void 0
@@ -886,8 +881,8 @@ export function useMapLibreBasemap(args: {
           }
           const fallbackMap = await tryCreateGrabMapsLibraryMap({
             containerEl: el,
-            center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-            zoom: 12,
+            center: [...singaporeCamera.center],
+            zoom: singaporeCamera.zoom,
             enableNavigation: true,
             enableLabels: true,
             enableBuildings: true,
@@ -1127,32 +1122,12 @@ export function useMapLibreBasemap(args: {
           if (canvasRenderMode !== '3d') return
           if (initial3dCameraAligned) return
           initial3dCameraAligned = true
-          try {
-            map.jumpTo?.({
-              center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-              zoom: INITIAL_3D_ZOOM,
-              pitch: INITIAL_3D_PITCH,
-              bearing: INITIAL_3D_BEARING,
-              padding: { top: 0, right: 0, bottom: 0, left: 0 },
-            })
-          } catch {
-            void 0
-          }
+          alignMapToSingaporePresentation(map, singaporeCamera)
           const w = typeof window !== 'undefined' ? window : null
           if (!w || typeof w.requestAnimationFrame !== 'function') return
           w.requestAnimationFrame(() => {
             if (cancelled || !map) return
-            try {
-              map.jumpTo?.({
-                center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-                zoom: INITIAL_3D_ZOOM,
-                pitch: INITIAL_3D_PITCH,
-                bearing: INITIAL_3D_BEARING,
-                padding: { top: 0, right: 0, bottom: 0, left: 0 },
-              })
-            } catch {
-              void 0
-            }
+            alignMapToSingaporePresentation(map, singaporeCamera)
           })
         }
 
@@ -1163,17 +1138,7 @@ export function useMapLibreBasemap(args: {
           setState((prev: BasemapResult) => (prev.styleRevision > 0 ? prev : { ...prev, styleRevision: 1 }))
           scheduleBasemapVisibilityProbe()
           if (canvasRenderMode === '3d') {
-            try {
-              map.jumpTo?.({
-                center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-                zoom: INITIAL_3D_ZOOM,
-                pitch: INITIAL_3D_PITCH,
-                bearing: INITIAL_3D_BEARING,
-                padding: { top: 0, right: 0, bottom: 0, left: 0 },
-              })
-            } catch {
-              void 0
-            }
+            alignMapToSingaporePresentation(map, singaporeCamera)
           }
           updateProbe()
           if (debug) {
