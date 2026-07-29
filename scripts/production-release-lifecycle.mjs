@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util'
 import { pathToFileURL } from 'node:url'
 
 import { validateLocalReviewCandidate } from './production-release-authorization.mjs'
+import { parseTerminalAuthorizationComment } from './production-terminal-authorization.mjs'
 
 const CONTRACT_MODULE = 'scripts/collaborative-release-lifecycle-contract.mjs'
 const HUMAN_AUTHORIZATION_TTL_MS = 30 * 60 * 1000
@@ -163,9 +164,28 @@ export const createLifecycleAuthorization = ({
   requireText(serverUrl, 'GitHub server URL')
   requireText(controllerId, 'release controller ID')
   requireInstant(issuedAt, 'human authorization issue time')
-  const authorization = contract.createHumanAuthorizationReceipt(candidate, {
+  const humanActorId = `github-user:${approval.user.id}:${approval.user.login}`
+  const terminalEvidence = parseTerminalAuthorizationComment(approval.comment)
+  if (terminalEvidence.repository !== repository ||
+      terminalEvidence.runId !== String(runId) ||
+      terminalEvidence.sourceRevision !== integration.sourceRevision ||
+      terminalEvidence.candidateDigest !== candidate.receiptDigest ||
+      terminalEvidence.targetDigest !== candidate.targetDigest ||
+      terminalEvidence.humanActorId !== humanActorId) {
+    throw new Error('terminal authorization interaction drifted from the protected release candidate')
+  }
+  const interaction = contract.createAuthorizationInteractionReceipt(candidate, {
+    humanActorId,
+    interactionAdapterId: terminalEvidence.interactionAdapterId,
+    transportClass: terminalEvidence.transportClass,
+    browserRequired: terminalEvidence.browserRequired,
+    challengeDigest: terminalEvidence.challengeDigest,
+    responseDigest: terminalEvidence.responseDigest,
+    recordedAt: terminalEvidence.recordedAt,
+  })
+  const authorization = contract.createHumanAuthorizationReceipt(candidate, interaction, {
     decisionKind: 'human',
-    humanActorId: `github-user:${approval.user.id}:${approval.user.login}`,
+    humanActorId,
     decisionRef: `${serverUrl}/${repository}/actions/runs/${runId}#environment-production`,
     authorityAdapterId: 'github-actions-protected-environment/v1',
     issuedAt,
@@ -191,7 +211,7 @@ export const createLifecycleAuthorization = ({
     consumedAt: issuedAt,
     controllerId,
   })
-  return { authorization, consumedAuthorization, dispatch }
+  return { interaction, authorization, consumedAuthorization, dispatch }
 }
 
 const main = async () => {
@@ -295,6 +315,7 @@ const main = async () => {
       controllerId: required(values['controller-id'], '--controller-id'),
       issuedAt: required(values['issued-at'], '--issued-at'),
     })
+    writeJson(path.join(outputDir, 'authorization-interaction-receipt.json'), result.interaction)
     writeJson(path.join(outputDir, 'human-authorization-receipt.json'), result.authorization)
     writeJson(path.join(outputDir, 'consumed-human-authorization-receipt.json'), result.consumedAuthorization)
     writeJson(path.join(outputDir, 'release-controller-claim.json'), result.dispatch)

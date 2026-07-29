@@ -26,6 +26,7 @@ const gameModeSourceAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'sc
 const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'assert-protected-main-release-authority.mjs'), 'utf8')
 const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
 const productionLifecycleScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-lifecycle.mjs'), 'utf8')
+const productionTerminalAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-terminal-authorization.mjs'), 'utf8')
 const packageScripts = JSON.parse(fs.readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')).scripts
 
 test('integration isolates protected merge and main checks by exact revision', () => {
@@ -184,7 +185,7 @@ test('production release bounds transient artifacts and durably retains typed li
   assert.match(releaseWorkflow, /name: production-lifecycle-complete-\$\{\{ inputs\.source_sha \}\}-\$\{\{ github\.run_id \}\}/)
 })
 
-test('production release records the exact protected-environment human and eight neutral receipts', () => {
+test('production release records the exact terminal interaction, protected-environment human, and nine neutral receipts', () => {
   assert.match(releaseWorkflow, /permissions:\s*\n\s*actions: read\s*\n\s*contents: read/)
   assert.match(releaseWorkflow, /actions\/runs\/\$\{\{ github\.run_id \}\}\/approvals/)
   assert.match(releaseWorkflow, /name: Create neutral release lifecycle receipts/)
@@ -195,12 +196,18 @@ test('production release records the exact protected-environment human and eight
   assert.match(productionLifecycleScript, /collaborative-release-lifecycle-contract\.mjs/)
   assert.match(productionLifecycleScript, /production release requires exactly one authenticated human approval/)
   assert.match(productionLifecycleScript, /protected environment authorization drifted from the prepared candidate digest/)
+  assert.equal(packageScripts['production:authorize'], 'node ./scripts/production-terminal-authorization.mjs')
+  assert.match(productionTerminalAuthorizationScript, /requires an interactive terminal/)
+  assert.match(productionTerminalAuthorizationScript, /current_user_can_approve === true/)
+  assert.match(productionTerminalAuthorizationScript, /pending_deployments/)
+  assert.doesNotMatch(productionTerminalAuthorizationScript, /execFileSync\(['"]open|gh\s+browse/)
   for (const receipt of [
     'overlap-preservation-receipt.json',
     'overlap-disposition-receipt.json',
     'integration-receipt.json',
     'runtime-review-receipt.json',
     'candidate-manifest.json',
+    'authorization-interaction-receipt.json',
     'human-authorization-receipt.json',
     'live-verification-receipt.json',
     'publication-receipt.json',
