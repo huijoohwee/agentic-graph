@@ -342,6 +342,27 @@ export function controlLocalXrScene(input: XrSceneControlInput): XrSceneControlR
   const control = normalizeXrSceneControl(input)
   if (!control) return { ok: false, message: 'Use a supported XR action or an invocation such as /xr.place @person-adult transition=linear.' }
   if (!hydrateActiveXrScene()) return { ok: false, message: 'Open or create a graph document before controlling the XR scene.' }
+  const requestedStage = control.action === 'stage'
+    ? XR_MOTION_REFERENCE_STAGE_PRESETS.find(candidate => candidate.id === control.stageId)
+    : undefined
+  if (control.action === 'stage' && !requestedStage) {
+    return { ok: false, message: `Unknown XR environment: ${control.stageId || '(empty)'}.` }
+  }
+  const hydratedMotion = readXrMotionReferenceRuntime()
+  if (
+    requestedStage
+    && hydratedMotion.plan.stageId === requestedStage.id
+    && hydratedMotion.dirty === false
+    && readXrPhysicsRuntime().phase === 'stopped'
+  ) {
+    setSharedXrNativeControllerDemoTerrain(requestedStage.id as XrMotionReferenceStageId)
+    return {
+      ok: true,
+      message: `${requestedStage.label} is already staged in XR Mode.`,
+      action: control.action,
+      scene: inspectLocalXrSceneAssets(),
+    }
+  }
   if (!activateXrSceneWorkspace()) {
     return { ok: false, message: 'XR scene control requires an available shared XR Mode surface.' }
   }
@@ -366,8 +387,7 @@ export function controlLocalXrScene(input: XrSceneControlInput): XrSceneControlR
   let subjectId = ''
   let physicsChanged = false
   if (control.action === 'stage') {
-    const stage = XR_MOTION_REFERENCE_STAGE_PRESETS.find(candidate => candidate.id === control.stageId)
-    if (!stage) return { ok: false, message: `Unknown XR environment: ${control.stageId || '(empty)'}.` }
+    const stage = requestedStage!
     setXrMotionReferenceStage(stage.id as XrMotionReferenceStageId)
     if (readXrMotionReferenceRuntime().plan.stageId !== stage.id) {
       return { ok: false, message: `${stage.label} could not be staged without violating XR motion constraints.` }
