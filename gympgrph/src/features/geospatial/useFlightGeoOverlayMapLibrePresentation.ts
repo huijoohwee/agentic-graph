@@ -459,9 +459,11 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     apply()
     scheduleFinalApply()
     const unsubscribe = subscribeFlightGeoOverlay(apply)
+    map?.on?.('style.load', scheduleFinalApply)
     map?.on?.('load', scheduleFinalApply)
     return () => {
       unsubscribe()
+      map?.off?.('style.load', scheduleFinalApply)
       map?.off?.('load', scheduleFinalApply)
       gate?.cancel()
       if (pendingCameraFrame && typeof window !== 'undefined') {

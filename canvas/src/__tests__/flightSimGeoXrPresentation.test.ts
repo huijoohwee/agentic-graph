@@ -75,6 +75,14 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     /applyFlightGeoEnvironmentToMap\(/,
   )
   assert.match(
+    mapLibrePresentation,
+    /map\?\.on\?\.\('style\.load', scheduleFinalApply\)/,
+  )
+  assert.match(
+    mapLibrePresentation,
+    /map\?\.off\?\.\('style\.load', scheduleFinalApply\)/,
+  )
+  assert.match(
     threeGraph,
     /style=\{geospatialComposite \? \{ pointerEvents: 'none' \} : undefined\}/,
   )
@@ -108,12 +116,23 @@ test('Flight Geo bootstrap retains one map owner and stages pre-document ownersh
     ),
     'utf8',
   )
+  const flightRunReadyRuntime = readFileSync(
+    path.resolve(
+      process.cwd(),
+      'src/features/canvas/FlightSimRunReadyDemoRuntime.tsx',
+    ),
+    'utf8',
+  )
   const flightOwnerIndex = startupRuntimes.indexOf('<FlightSimRunReadyDemoRuntime />')
   const deferredOwnerGateIndex = startupRuntimes.indexOf(
     'sourceFilesBootstrapHasReachedReady ?',
   )
   assert.ok(flightOwnerIndex > 0)
   assert.ok(deferredOwnerGateIndex > flightOwnerIndex)
+  assert.match(
+    flightRunReadyRuntime,
+    /if \(!hydrated\) \{[\s\S]*settleFailedLaunch\([\s\S]*true,[\s\S]*\)[\s\S]*return null/,
+  )
 })
 
 test('Flight local mission coordinates project deterministically around Singapore', () => {

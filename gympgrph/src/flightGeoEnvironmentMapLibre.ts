@@ -4,6 +4,7 @@ import type {
   FlightGeoOverlaySnapshot,
 } from './flightGeoOverlay.js'
 import {
+  isMapLibreStyleReady,
   readGeoJsonSourceData,
   setGeoJsonSourceData,
 } from './maplibreLayers.js'
@@ -134,6 +135,7 @@ export function applyFlightGeoEnvironmentToMap(
   overlay: FlightGeoOverlaySnapshot,
   viewMode: string,
 ): boolean {
+  if (!map || !isMapLibreStyleReady(map)) return false
   if (!overlay.environment) {
     clearFlightGeoEnvironmentFromMap(map)
     return true
