@@ -480,21 +480,6 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         clearFlightGeoEnvironmentFromMap(map)
         return
       }
-      // An existing provider map remains mounted while React commits Flight's
-      // bootstrap style. Do not write or acknowledge the stopped frame on that
-      // old style: its sources would be discarded by the imminent handoff.
-      const requiresBootstrapPresentation = (
-        overlay.phase === 'stopped'
-        || (overlay.phase === 'ready' && overlay.tick === 0)
-      )
-      if (
-        requiresBootstrapPresentation
-        && !canMapLibreFlightOverlayPresent(map, overlay)
-      ) {
-        gate.cancel()
-        gate.clearCanvas()
-        return
-      }
       if (overlay.phase === 'stopped') gate.clearCanvas()
       const environmentApplied = applyFlightGeoEnvironmentToMap(
         map,
