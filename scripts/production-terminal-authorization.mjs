@@ -5,15 +5,19 @@ import os from 'node:os'
 import path from 'node:path'
 import readline from 'node:readline/promises'
 import { parseArgs } from 'node:util'
+import { deflateRawSync, inflateRawSync } from 'node:zlib'
 
 export const TERMINAL_AUTHORIZATION_EVIDENCE_SCHEMA = 'knowgrph-production-terminal-authorization/v1'
 export const TERMINAL_AUTHORIZATION_RESULT_SCHEMA = 'knowgrph-production-terminal-authorization-result/v1'
 export const INTERACTION_ADAPTER_ID = 'knowgrph-gh-cli-terminal/v1'
 export const INTERACTION_TRANSPORT_CLASS = 'interactive-terminal'
+export const GITHUB_APPROVAL_COMMENT_MAX_BYTES = 1024
 
 const digestPattern = /^[0-9a-f]{64}$/
 const shaPattern = /^[0-9a-f]{40}$/
 const repositoryPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
+const compressedEvidencePrefix = 'z.'
+const maximumDecodedEvidenceBytes = 16 * 1024
 const evidenceFields = [
   'schema',
   'status',
@@ -108,8 +112,14 @@ export const validateTerminalAuthorizationEvidence = value => {
 
 export const formatTerminalAuthorizationComment = evidence => {
   validateTerminalAuthorizationEvidence(evidence)
-  const encoded = Buffer.from(JSON.stringify(evidence), 'utf8').toString('base64url')
-  return `${TERMINAL_AUTHORIZATION_EVIDENCE_SCHEMA} ${encoded}`
+  const encoded = deflateRawSync(Buffer.from(JSON.stringify(evidence), 'utf8'), {
+    level: 9,
+  }).toString('base64url')
+  const comment = `${TERMINAL_AUTHORIZATION_EVIDENCE_SCHEMA} ${compressedEvidencePrefix}${encoded}`
+  if (Buffer.byteLength(comment, 'utf8') > GITHUB_APPROVAL_COMMENT_MAX_BYTES) {
+    throw new Error('terminal authorization evidence exceeds the GitHub approval comment limit')
+  }
+  return comment
 }
 
 export const parseTerminalAuthorizationComment = comment => {
@@ -119,7 +129,12 @@ export const parseTerminalAuthorizationComment = comment => {
   }
   let value
   try {
-    value = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'))
+    const evidenceBytes = encoded.startsWith(compressedEvidencePrefix)
+      ? inflateRawSync(Buffer.from(encoded.slice(compressedEvidencePrefix.length), 'base64url'), {
+          maxOutputLength: maximumDecodedEvidenceBytes,
+        })
+      : Buffer.from(encoded, 'base64url')
+    value = JSON.parse(evidenceBytes.toString('utf8'))
   } catch {
     throw new Error('production approval terminal authorization evidence is malformed')
   }

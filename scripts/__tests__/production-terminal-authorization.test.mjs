@@ -5,6 +5,7 @@ import {
   buildTerminalAuthorizationEvidence,
   challengeFor,
   formatTerminalAuthorizationComment,
+  GITHUB_APPROVAL_COMMENT_MAX_BYTES,
   parseTerminalAuthorizationComment,
   responseFor,
   selectLifecycleCandidateArtifact,
@@ -42,10 +43,20 @@ const evidence = buildTerminalAuthorizationEvidence({
 })
 
 test('terminal evidence round-trips exact candidate, target, actor, transport, and browser independence', () => {
-  const parsed = parseTerminalAuthorizationComment(formatTerminalAuthorizationComment(evidence))
+  const comment = formatTerminalAuthorizationComment(evidence)
+  const parsed = parseTerminalAuthorizationComment(comment)
   assert.deepEqual(parsed, evidence)
   assert.equal(parsed.transportClass, 'interactive-terminal')
   assert.equal(parsed.browserRequired, false)
+  assert.ok(Buffer.byteLength(comment, 'utf8') <= GITHUB_APPROVAL_COMMENT_MAX_BYTES)
+})
+
+test('terminal evidence parser preserves the already-released uncompressed v1 encoding', () => {
+  const encoded = Buffer.from(JSON.stringify(evidence), 'utf8').toString('base64url')
+  const parsed = parseTerminalAuthorizationComment(
+    `knowgrph-production-terminal-authorization/v1 ${encoded}`,
+  )
+  assert.deepEqual(parsed, evidence)
 })
 
 test('terminal evidence rejects drift, unknown fields, browser dependence, and unjoined comments', () => {
