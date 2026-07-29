@@ -243,6 +243,11 @@ def timeline_map_camera_matches_overlay(value: dict[str, Any]) -> bool:
     if not camera or not timeline:
         return False
     center = timeline.get("centerCoordinate")
+    mode_3d = value.get("viewMode") in {"3d", "3d-modern"}
+    expected_bearing = float(timeline["bearingDegrees"]) if mode_3d else 0
+    expected_pitch = (
+        max(22, float(timeline["pitchDegrees"])) if mode_3d else 0
+    )
     return (
         isinstance(center, list)
         and len(center) == 2
@@ -252,10 +257,9 @@ def timeline_map_camera_matches_overlay(value: dict[str, Any]) -> bool:
         ) < 1e-7
         and _degrees_apart(
             camera["bearing"],
-            timeline["bearingDegrees"],
+            expected_bearing,
         ) < 0.05
-        and abs(float(camera["pitch"]) - float(timeline["pitchDegrees"]))
-        < 0.05
+        and abs(float(camera["pitch"]) - expected_pitch) < 0.05
         and abs(float(camera["zoom"]) - float(timeline["zoom"])) < 0.05
     )
 
