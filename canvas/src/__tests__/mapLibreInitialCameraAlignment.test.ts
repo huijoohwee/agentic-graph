@@ -82,3 +82,30 @@ test('a Flight bootstrap that claims an existing map before load suppresses the 
   assert.equal(harness.fitBoundsCalls.length, 0)
   assert.equal(frames.length, 0)
 })
+
+test('a Flight claim suppresses a generic Singapore alignment already queued for the next frame', () => {
+  const harness = createMapHarness()
+  const frames: Array<() => void> = []
+  let flightBootstrapActive = false
+  const align = createMapLibreInitialCameraAlignment({
+    canvasRenderMode: '3d',
+    flightBootstrapActive: () => flightBootstrapActive,
+    isCurrent: () => true,
+    map: () => harness.map,
+    requestFrame: callback => frames.push(callback),
+    singaporeCamera: readSingaporeCanvasCameraPolicy('3d'),
+  })
+
+  assert.equal(align(), true)
+  assert.equal(harness.fitBoundsCalls.length, 1)
+  assert.equal(frames.length, 1)
+
+  flightBootstrapActive = true
+  frames.shift()?.()
+
+  assert.equal(
+    harness.fitBoundsCalls.length,
+    1,
+    'the queued non-Flight fit cannot overwrite Flight camera ownership',
+  )
+})

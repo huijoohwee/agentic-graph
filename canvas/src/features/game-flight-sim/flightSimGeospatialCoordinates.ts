@@ -7,9 +7,8 @@ export type FlightSimGeospatialCoordinate = readonly [
 ]
 
 /**
- * Places mission-metre coordinates in the same Singapore-local frame used by
- * the aircraft, route, and XR environment.  All Flight callers must subtract
- * the spawn origin so the authored stage cannot drift away from the mission.
+ * Mission route and aircraft positions subtract their converted spawn origin.
+ * XR environment assets are already authored in metres and project directly.
  */
 export function projectFlightSimMissionPositionToGeospatial(
   position: SpatialVector,

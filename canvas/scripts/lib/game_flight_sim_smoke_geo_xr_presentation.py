@@ -294,6 +294,61 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
     source_files_transition: dict[str, Any] | None = None
     reported_handoff: dict[str, Any] | None = None
     city_handoff: dict[str, Any] | None = None
+    restored_view: dict[str, Any] = {}
+
+    def restore_baseline() -> None:
+        nonlocal restored_view, source_files_transition
+        _exit_city_for_cleanup(page)
+        prior_case = next(
+            (
+                case for case in GEO_XR_VIEW_CASES
+                if case[0] == baseline_camera["geospatialViewMode"]
+                and case[3] == baseline_camera["geospatialStyleUrl"]
+            ),
+            None,
+        )
+        if prior_case is None:
+            raise AssertionError(
+                "source-authored Geo view/style was outside the four-view "
+                f"contract: {baseline_camera}"
+            )
+        select_geo_xr_view(page, prior_case[2])
+        _wait_for_view(
+            page,
+            expected_provider_host=prior_case[4],
+            expected_view=prior_case[0],
+            expected_projection=prior_case[1],
+            expected_style_url=prior_case[3],
+        )
+        restore_flight_sim_panel(page)
+        restored_view = _wait_for_view(
+            page,
+            expected_provider_host=prior_case[4],
+            expected_view=prior_case[0],
+            expected_projection=prior_case[1],
+            expected_style_url=prior_case[3],
+            require_visual_layout=source_files_opened,
+        )
+        if source_files_opened:
+            source_files_transition = close_source_files_selection_surface(page)
+        page.evaluate(
+            """
+            async prior => {
+              const graph = await window.__kgFlightSimBrowserProof.importModule(
+                'graphStore',
+              )
+              const state = graph.useGraphStore.getState()
+              state.setFloatingPanelOpen(prior.floatingPanelOpen)
+              state.setFloatingPanelView(prior.floatingPanelView)
+            }
+            """,
+            {
+                "floatingPanelOpen": baseline_camera["floatingPanelOpen"],
+                "floatingPanelView": baseline_camera["floatingPanelView"],
+            },
+        )
+
+    primary_error: BaseException | None = None
     try:
         reported_handoff = prepare_reported_singapore_geo_handoff(page)
         source_files_opened = True
@@ -402,56 +457,15 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 }
                 """
             )
+    except BaseException as error:
+        primary_error = error
+        raise
     finally:
-        _exit_city_for_cleanup(page)
-        prior_case = next(
-            (
-                case for case in GEO_XR_VIEW_CASES
-                if case[0] == baseline_camera["geospatialViewMode"]
-                and case[3] == baseline_camera["geospatialStyleUrl"]
-            ),
-            None,
-        )
-        if prior_case is None:
-            raise AssertionError(
-                "source-authored Geo view/style was outside the four-view "
-                f"contract: {baseline_camera}"
-            )
-        select_geo_xr_view(page, prior_case[2])
-        _wait_for_view(
-            page,
-            expected_provider_host=prior_case[4],
-            expected_view=prior_case[0],
-            expected_projection=prior_case[1],
-            expected_style_url=prior_case[3],
-        )
-        restore_flight_sim_panel(page)
-        restored_view = _wait_for_view(
-            page,
-            expected_provider_host=prior_case[4],
-            expected_view=prior_case[0],
-            expected_projection=prior_case[1],
-            expected_style_url=prior_case[3],
-            require_visual_layout=source_files_opened,
-        )
-        if source_files_opened:
-            source_files_transition = close_source_files_selection_surface(page)
-        page.evaluate(
-            """
-            async prior => {
-              const graph = await window.__kgFlightSimBrowserProof.importModule(
-                'graphStore',
-              )
-              const state = graph.useGraphStore.getState()
-              state.setFloatingPanelOpen(prior.floatingPanelOpen)
-              state.setFloatingPanelView(prior.floatingPanelView)
-            }
-            """,
-            {
-                "floatingPanelOpen": baseline_camera["floatingPanelOpen"],
-                "floatingPanelView": baseline_camera["floatingPanelView"],
-            },
-        )
+        try:
+            restore_baseline()
+        except BaseException:
+            if primary_error is None:
+                raise
     return {
         "baselineCameraPreference": baseline_camera["cameraPreference"],
         "baselineCameraSource": baseline_camera["cameraSourceMode"],

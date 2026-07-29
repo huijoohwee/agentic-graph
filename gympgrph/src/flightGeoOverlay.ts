@@ -135,8 +135,13 @@ export function subscribeFlightGeoOverlay(listener: Listener): () => void {
 }
 
 export function setFlightGeoOverlay(next: FlightGeoOverlaySnapshot): void {
-  if (!snapshot.active && next.active) readyFramePresented = false
-  if (!next.active) readyFramePresented = false
+  if (
+    (!snapshot.active && next.active)
+    || !next.active
+    || next.phase === 'stopped'
+  ) {
+    readyFramePresented = false
+  }
   snapshot = next
   publish()
 }

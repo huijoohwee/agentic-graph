@@ -1,29 +1,28 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { JSDOM } from 'jsdom'
-import type { FlightGeoOverlaySnapshot } from '../../../gympgrph/src/flightGeoOverlay'
 import {
-  applyFlightGeoOverlayCameraToMap,
   applyFlightGeoOverlayToMap,
   flightGeoOverlayMapLibreFeatureCollection,
   FLIGHT_GEO_AIRCRAFT_IMAGE_IDS,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
-  fitMapToFlightGeoOverlay,
+  mapHasExactFlightGeoOverlay,
+  mapHasExactFlightGeoStyleSources,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
-import { readFlightGeoMapViewportPadding } from '../../../gympgrph/src/flightGeoMapViewport'
 import { createFlightSimRuntime } from '../features/game-flight-sim/flightSimRuntimeCore'
 import {
   projectFlightSimToGeospatialOverlay,
 } from '../features/game-flight-sim/flightSimGeospatialProjection'
 import type { FlightSimSpatialProfile } from '../features/game-flight-sim/flightSimModel'
 import type { SpatialVector } from '../features/physics/spatialPhysicsTypes'
+import { flightOverlay } from './helpers/flightSimMapLibreFixtures'
 
 type LayerDefinition = Readonly<{
   filter?: unknown
   id: unknown
   layout?: Readonly<Record<string, unknown>>
   paint?: Readonly<Record<string, unknown>>
+  source?: unknown
   type?: unknown
 }>
 
@@ -33,240 +32,9 @@ type LayerFailure = Readonly<{
   mode: 'omit' | 'throw'
 }>
 
-function flightOverlay(headingDegrees = 0): FlightGeoOverlaySnapshot {
-  return {
-    active: true,
-    aircraft: {
-      coordinate: [103.82, 1.35],
-      altitudeMeters: 400,
-      headingDegrees,
-    },
-    camera: {
-      centerCoordinate: [103.82, 1.35],
-      cockpitClearance: { forwardMeters: 2, verticalMeters: 1 },
-      effectiveOwner: 'fixed-follow',
-      source: 'fixed-follow',
-      timeline: null,
-      view: 'chase',
-    },
-    environment: null,
-    night: false,
-    objective: null,
-    phase: 'ready',
-    profileId: 'singapore',
-    readyFrameRequestId: 1,
-    revision: `ready:aircraft:${headingDegrees}`,
-    route: [
-      {
-        id: 'spawn',
-        coordinate: [103.82, 1.35],
-        altitudeMeters: 400,
-        kind: 'spawn',
-        state: 'visited',
-      },
-      {
-        id: 'landing',
-        coordinate: [103.83, 1.36],
-        altitudeMeters: 0,
-        kind: 'landing',
-        state: 'active',
-      },
-    ],
-    runId: 1,
-    tick: 0,
-  }
-}
-
-test('Flight camera preserves 2D north-up and 3D oblique mode ownership', () => {
-  const calls: Record<string, unknown>[] = []
-  const padding = { top: 24, right: 412, bottom: 48, left: 652 }
-  const map = {
-    jumpTo: (camera: Record<string, unknown>) => calls.push(camera),
-  }
-  const overlay = flightOverlay(72)
-
-  for (const mode of ['2d', '2d-modern']) {
-    assert.equal(
-      applyFlightGeoOverlayCameraToMap(map, overlay, mode, padding),
-      true,
-    )
-    assert.equal(calls.at(-1)?.pitch, 0)
-    assert.equal(calls.at(-1)?.bearing, 0)
-    assert.deepEqual(calls.at(-1)?.padding, padding)
-  }
-  for (const mode of ['3d', '3d-modern']) {
-    assert.equal(
-      applyFlightGeoOverlayCameraToMap(map, overlay, mode, padding),
-      true,
-    )
-    assert.equal(calls.at(-1)?.pitch, 48)
-    assert.equal(calls.at(-1)?.bearing, 72)
-    assert.deepEqual(calls.at(-1)?.padding, padding)
-  }
-  assert.equal(
-    applyFlightGeoOverlayCameraToMap(
-      map,
-      { ...overlay, phase: 'stopped' },
-      '3d',
-      padding,
-    ),
-    false,
-  )
-  assert.equal(calls.length, 4)
-})
-
-test('stopped preparation stages each tick-zero camera so Ready does not jump again', () => {
-  const padding = { top: 24, right: 412, bottom: 48, left: 652 }
-  const calls: Record<string, unknown>[] = []
-  let camera = {
-    bearing: 0,
-    center: [0, 0] as [number, number],
-    padding: { top: 0, right: 0, bottom: 0, left: 0 },
-    pitch: 0,
-    zoom: 0,
-  }
-  const map = {
-    getBearing: () => camera.bearing,
-    getCenter: () => ({ lng: camera.center[0], lat: camera.center[1] }),
-    getPadding: () => camera.padding,
-    getPitch: () => camera.pitch,
-    getZoom: () => camera.zoom,
-    jumpTo: (next: Record<string, unknown>) => {
-      calls.push(next)
-      const center = next.center as [number, number]
-      camera = {
-        bearing: Number(next.bearing),
-        center: [Number(center[0]), Number(center[1])],
-        padding: next.padding as typeof camera.padding,
-        pitch: Number(next.pitch),
-        zoom: Number(next.zoom),
-      }
-    },
-  }
-  for (const mode of ['2d', '2d-modern', '3d', '3d-modern']) {
-    const ready = flightOverlay(72)
-    const stopped = {
-      ...ready,
-      phase: 'stopped' as const,
-      readyFrameRequestId: null,
-      revision: `stopped:aircraft:${mode}`,
-      runId: 0,
-    }
-    const callsBeforeStage = calls.length
-    assert.equal(
-      applyFlightGeoOverlayCameraToMap(
-        map,
-        stopped,
-        mode,
-        padding,
-        { stageStopped: true },
-      ),
-      true,
-    )
-    assert.equal(calls.length, callsBeforeStage + 1)
-    assert.deepEqual(calls.at(-1), {
-      bearing: mode.startsWith('3d') ? 72 : 0,
-      center: [103.82, 1.35],
-      padding,
-      pitch: mode.startsWith('3d') ? 48 : 0,
-      zoom: 15.5,
-    })
-
-    assert.equal(
-      applyFlightGeoOverlayCameraToMap(map, ready, mode, padding),
-      true,
-    )
-    assert.equal(calls.length, callsBeforeStage + 1)
-
-    const moved = {
-      ...ready,
-      aircraft: { ...ready.aircraft, headingDegrees: 18 },
-      camera: {
-        ...ready.camera,
-        centerCoordinate: [103.821, 1.351] as const,
-      },
-    }
-    assert.equal(
-      applyFlightGeoOverlayCameraToMap(map, moved, mode, padding),
-      true,
-    )
-    assert.equal(calls.length, callsBeforeStage + 2)
-  }
-})
-
-test('Flight camera reserves a panel that crosses the compact map centre', () => {
-  const dom = new JSDOM('<main><section id="map"></section><aside aria-label="Floating panel"></aside></main>')
-  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
-  const previousDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
-  Object.defineProperty(globalThis, 'window', { configurable: true, value: dom.window })
-  Object.defineProperty(globalThis, 'document', { configurable: true, value: dom.window.document })
-  try {
-    const mapContainer = dom.window.document.querySelector('#map') as HTMLElement
-    const panel = dom.window.document.querySelector('[aria-label="Floating panel"]') as HTMLElement
-    Object.defineProperties(mapContainer, {
-      clientHeight: { configurable: true, value: 962 },
-      clientWidth: { configurable: true, value: 550 },
-    })
-    mapContainer.getBoundingClientRect = () => ({
-      bottom: 962, height: 962, left: 550, right: 1100, top: 0, width: 550,
-    } as DOMRect)
-    panel.getBoundingClientRect = () => ({
-      bottom: 953, height: 944, left: 747, right: 1091, top: 9, width: 344,
-    } as DOMRect)
-
-    assert.deepEqual(
-      readFlightGeoMapViewportPadding({ getContainer: () => mapContainer }),
-      { bottom: 112, left: 44, right: 369, top: 88 },
-    )
-  } finally {
-    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
-    else delete (globalThis as { window?: Window }).window
-    if (previousDocument) Object.defineProperty(globalThis, 'document', previousDocument)
-    else delete (globalThis as { document?: Document }).document
-    dom.window.close()
-  }
-})
-
-test('Flight fit includes XR surfaces and the visual map aperture', () => {
-  const calls: unknown[][] = []
-  const padding = { top: 24, right: 412, bottom: 48, left: 652 }
-  const overlay: FlightGeoOverlaySnapshot = {
-    ...flightOverlay(),
-    environment: {
-      anchor: [103.851959, 1.29027],
-      id: 'singapore',
-      label: 'Singapore',
-      presentationBounds: [[103.605, 1.158], [104.09, 1.48]],
-      revision: 'stage:exact',
-      stageFootprint: [
-        [103.8, 1.2], [103.9, 1.2], [103.9, 1.3], [103.8, 1.3], [103.8, 1.2],
-      ],
-      surfaces: [{
-        baseHeightMeters: 0,
-        color: '#0f766e',
-        heightMeters: 1.6,
-        id: 'stage-footprint',
-        kind: 'stage-footprint',
-        ring: [
-          [103.8, 1.2], [103.9, 1.2], [103.9, 1.3], [103.8, 1.3], [103.8, 1.2],
-        ],
-      }],
-    },
-  }
-  const map = {
-    fitBounds: (...args: unknown[]) => calls.push(args),
-  }
-
-  assert.equal(fitMapToFlightGeoOverlay(map, overlay, padding), true)
-  assert.deepEqual(calls[0]?.[0], [[103.8, 1.2], [103.9, 1.36]])
-  assert.deepEqual(
-    (calls[0]?.[1] as { padding?: unknown })?.padding,
-    padding,
-  )
-})
-
 function mapHarness(failure?: LayerFailure) {
   const layers = new Map<string, LayerDefinition>()
+  const sourceDefinitions = new Map<string, Record<string, unknown>>()
   const images = new Map<string, {
     data: Uint8Array
     height: number
@@ -295,7 +63,11 @@ function mapHarness(failure?: LayerFailure) {
     ) => {
       images.set(imageId, image)
     },
-    addSource: (sourceId: string, source: { data: unknown }) => {
+    addSource: (
+      sourceId: string,
+      source: Record<string, unknown> & { data: unknown },
+    ) => {
+      sourceDefinitions.set(sourceId, { ...source })
       const stored = {
         data: source.data,
         loaded: () => true,
@@ -303,22 +75,49 @@ function mapHarness(failure?: LayerFailure) {
         setData: (data: unknown) => {
           setDataWrites += 1
           stored.data = data
+          sourceDefinitions.set(sourceId, {
+            ...sourceDefinitions.get(sourceId),
+            data,
+          })
         },
       }
       sources.set(sourceId, stored)
     },
     getLayer: (layerId: string) => layers.get(layerId),
+    getLayoutProperty: (layerId: string, property: string) => (
+      layers.get(layerId)?.layout?.[property]
+    ),
     getImage: (imageId: string) => images.get(imageId),
     getSource: (sourceId: string) => sources.get(sourceId),
-    getStyle: () => ({ layers: [...layers.values()] }),
+    getStyle: () => ({
+      layers: [...layers.values()],
+      sources: Object.fromEntries(sourceDefinitions),
+    }),
     hasImage: (imageId: string) => images.has(imageId),
     moveLayer: () => undefined,
+    removeLayer: (layerId: string) => {
+      layers.delete(layerId)
+    },
+    removeSource: (sourceId: string) => {
+      sources.delete(sourceId)
+      sourceDefinitions.delete(sourceId)
+    },
   }
   return {
     images,
     layers,
     map,
+    mutateSourceOptions: (options: Record<string, unknown>) => {
+      const source = sourceDefinitions.get(FLIGHT_GEO_OVERLAY_SOURCE_ID)
+      assert.ok(source)
+      sourceDefinitions.set(FLIGHT_GEO_OVERLAY_SOURCE_ID, {
+        ...source,
+        ...options,
+      })
+    },
     readSourceData: () => sources.get(FLIGHT_GEO_OVERLAY_SOURCE_ID)?.data,
+    readSourceDefinition: () =>
+      sourceDefinitions.get(FLIGHT_GEO_OVERLAY_SOURCE_ID),
     setDataWrites: () => setDataWrites,
   }
 }
@@ -368,6 +167,16 @@ test('MapLibre aircraft uses pose-derived native geometry without fonts', () => 
   const aircraftLayer = harness.layers.get(
     FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
   )
+  const aircraftOutlineLayer = harness.layers.get(
+    FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
+  )
+  assert.ok(aircraftOutlineLayer)
+  assert.equal(aircraftOutlineLayer?.type, 'symbol')
+  assert.equal(aircraftOutlineLayer?.layout?.['icon-size'], 1.2)
+  assert.deepEqual(aircraftOutlineLayer?.layout?.['icon-rotate'], [
+    'get',
+    'headingDegrees',
+  ])
   assert.equal(aircraftLayer?.type, 'symbol')
   assert.deepEqual(aircraftLayer?.filter, [
     '==',
@@ -387,6 +196,24 @@ test('MapLibre aircraft uses pose-derived native geometry without fonts', () => 
     assert.equal(image?.height, 40)
     assert.ok(image?.data.some(channel => channel > 0))
   }
+
+  harness.layers.set(FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline, {
+    ...aircraftOutlineLayer,
+    layout: undefined,
+    paint: {
+      'fill-color': '#0f172a',
+      'fill-translate': [0, 2],
+    },
+    type: 'fill',
+  })
+  assert.equal(mapHasExactFlightGeoOverlay(harness.map, northbound), false)
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, northbound), true)
+  assert.equal(mapHasExactFlightGeoOverlay(harness.map, northbound), true)
+  assert.equal(
+    harness.layers.get(FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline)?.type,
+    'symbol',
+    'a retained polygon outline must be replaced before it can cover the map',
+  )
 
   const eastbound = flightOverlay(90)
   assert.equal(applyFlightGeoOverlayToMap(harness.map, eastbound), true)
@@ -409,6 +236,23 @@ test('an exact Flight Geo overlay replay does not restart its GeoJSON source', (
     harness.setDataWrites(),
     0,
     'the existing serialized source matches the ordered Flight overlay payload',
+  )
+})
+
+test('Flight rebuilds a GeoJSON source with noncanonical owned options', () => {
+  const harness = mapHarness()
+  const overlay = flightOverlay(28)
+
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, overlay), true)
+  assert.equal(mapHasExactFlightGeoStyleSources(harness.map, overlay), true)
+
+  harness.mutateSourceOptions({ cluster: true })
+  assert.equal(mapHasExactFlightGeoStyleSources(harness.map, overlay), false)
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, overlay), true)
+  assert.equal(mapHasExactFlightGeoStyleSources(harness.map, overlay), true)
+  assert.deepEqual(
+    Object.keys(harness.readSourceDefinition() || {}).sort(),
+    ['data', 'type'],
   )
 })
 

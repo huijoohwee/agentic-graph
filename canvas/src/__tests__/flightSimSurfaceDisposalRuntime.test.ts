@@ -21,6 +21,9 @@ import {
   commitCanvasGeospatialModeEnabled,
 } from '@/features/geospatial/geospatialModeCommit'
 import {
+  commitCanvasGeospatialSurfaceOwnership,
+} from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
+import {
   onGeospatialModeChanged,
 } from '@/features/geospatial/events'
 import {
@@ -298,6 +301,107 @@ test('non-Geo restoration requires two consecutive released animation frames', a
     assert.equal(settled, true)
     assert.equal(isGeospatialModeEnabled(), false)
     assert.equal(readActiveMapLibreMap(), null)
+  })
+})
+
+test('exclusive Canvas handoff re-clears Flight sources after style settlement', async () => {
+  await withSurfaceDom(GEO_CANVAS_MARKUP, async (window, document) => {
+    const ownedCanvas = document.querySelector<HTMLCanvasElement>('#owned-geo-map')
+    assert.ok(ownedCanvas)
+    let styleLoaded = true
+    let preparationCount = 0
+    let flightSourcesPopulated = true
+    const releaseOwnedLease = claimMapLibreMapLease({
+      map: {
+        getCanvas: () => ownedCanvas,
+        isStyleLoaded: () => styleLoaded,
+      },
+      ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+      prepareForDisposal: () => {
+        preparationCount += 1
+        flightSourcesPopulated = false
+        styleLoaded = false
+        return true
+      },
+      root: ownedCanvas.parentElement,
+    })
+    const controlledRaf = installControlledRaf(window)
+    stageGeoRestorationTarget()
+    let settled = false
+    const handoff = commitCanvasGeospatialSurfaceOwnership(false).then(() => {
+      settled = true
+    })
+
+    await controlledRaf.waitForPending()
+    assert.equal(preparationCount, 1)
+    assert.equal(
+      isGeospatialModeEnabled(),
+      true,
+      'Geo ownership must remain active while cleared sources settle',
+    )
+    flightSourcesPopulated = true
+    styleLoaded = true
+    await controlledRaf.flushNext()
+
+    await controlledRaf.waitForPending()
+    assert.equal(preparationCount, 2)
+    assert.equal(
+      flightSourcesPopulated,
+      false,
+      'a Flight publication during first settlement must be cleared again',
+    )
+    assert.equal(isGeospatialModeEnabled(), true)
+    styleLoaded = true
+    await controlledRaf.flushNext()
+
+    await controlledRaf.waitForPending()
+    ownedCanvas.remove()
+    releaseOwnedLease()
+    await controlledRaf.flushNext()
+    await controlledRaf.waitForPending()
+    await controlledRaf.flushNext()
+
+    await handoff
+    assert.equal(settled, true)
+    assert.equal(isGeospatialModeEnabled(), false)
+  })
+})
+
+test('superseded Flight activation retains the original surface until normal Exit', async () => {
+  await withSurfaceDom('', async () => {
+    const previous = stageGeoRestorationTarget()
+    const opened = await openFlightSimSurface({
+      previousCanvasSurface: previous,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    assert.equal(opened.active, true, opened.runtimeError || undefined)
+
+    exitFlightSimSurface({ restorePreviousSurface: false })
+    assert.equal(readFlightSimSnapshot().active, false)
+    assert.equal(isGeospatialModeEnabled(), true)
+    useGraphStore.getState().setFloatingPanelView('cityBuilder')
+    const citySurface = captureFlightSimPreviousCanvasSurface()
+
+    const reopened = await openFlightSimSurface({
+      previousCanvasSurface: citySurface,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    assert.equal(reopened.active, true, reopened.runtimeError || undefined)
+
+    exitFlightSimSurface()
+    await waitForFlightSimSurfaceRestoration()
+    const restored = useGraphStore.getState()
+    assert.equal(isGeospatialModeEnabled(), previous.geospatialModeEnabled)
+    assert.equal(
+      readGeospatialOverlayEnabledPreference(),
+      previous.geospatialModeEnabled,
+    )
+    assert.equal(restored.canvasRenderMode, previous.canvasRenderMode)
+    assert.equal(restored.canvas3dMode, previous.canvas3dMode)
+    assert.equal(restored.floatingPanelOpen, previous.floatingPanelOpen)
+    assert.equal(restored.floatingPanelView, previous.floatingPanelView)
   })
 })
 

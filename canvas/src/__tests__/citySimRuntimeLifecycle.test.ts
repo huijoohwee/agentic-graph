@@ -23,9 +23,11 @@ import {
   saveCitySim,
   startCitySim,
   stopCitySim,
-  waitForCitySimSurfaceRestoration,
   zoneCityParcel,
 } from '@/features/game-city-sim/citySimRuntime'
+import {
+  exitCitySimSurfaceAndWait,
+} from '@/features/game-city-sim/citySimSurfaceExit'
 import {
   activateXrSceneSurface,
 } from '@/features/three/xrSceneSurfaceRuntime'
@@ -98,7 +100,7 @@ function installControlledAnimationFrames(window: Window): ControlledAnimationFr
   }
 }
 
-function createCityWorkspace(initialDocument?: string): WorkspaceFs {
+export function createCityWorkspace(initialDocument?: string): WorkspaceFs {
   const entries = new Map<string, WorkspaceEntry>()
   entries.set('/', {
     path: '/',
@@ -172,7 +174,7 @@ function createCityWorkspace(initialDocument?: string): WorkspaceFs {
   }
 }
 
-function captureStoreState(): Pick<
+export function captureStoreState(): Pick<
   StoreSnapshot,
   | 'canvasRenderMode'
   | 'canvas3dMode'
@@ -202,7 +204,7 @@ function captureStoreState(): Pick<
   }
 }
 
-function prepareCitySurface(): void {
+export function prepareCitySurface(): void {
   useGraphStore.setState({
     canvasRenderMode: '2d',
     canvas3dMode: '3d',
@@ -561,8 +563,7 @@ export async function testCitySimClaimsAndRestoresTheNativeGeoOwner() {
     assert.equal(useGraphStore.getState().floatingPanelView, 'cityBuilder')
     assert.equal(readCitySimSnapshot().active, true)
 
-    exitCitySimSurface()
-    const restored = await waitForCitySimSurfaceRestoration()
+    const restored = await exitCitySimSurfaceAndWait()
     assert.equal(restored.active, false)
     assert.equal(readGeospatialOverlayEnabledPreference(), true)
     assert.equal(isGeospatialModeEnabled(), true)
@@ -571,8 +572,7 @@ export async function testCitySimClaimsAndRestoresTheNativeGeoOwner() {
     assert.equal(useGraphStore.getState().floatingPanelView, 'flightSim')
 
     useGraphStore.getState().setFloatingPanelView('camera')
-    exitCitySimSurface()
-    await waitForCitySimSurfaceRestoration()
+    await exitCitySimSurfaceAndWait()
     assert.equal(
       useGraphStore.getState().floatingPanelView,
       'camera',
@@ -691,9 +691,8 @@ export async function testCitySimExitWaitsForPendingGeoClaimRollback() {
     assert.equal(readGeospatialOverlayEnabledPreference(), false)
     assert.equal(isGeospatialModeEnabled(), false)
 
-    exitCitySimSurface()
     let restorationSettled = false
-    const restoration = waitForCitySimSurfaceRestoration().then(result => {
+    const restoration = exitCitySimSurfaceAndWait().then(result => {
       restorationSettled = true
       return result
     })
@@ -722,8 +721,7 @@ export async function testCitySimExitWaitsForPendingGeoClaimRollback() {
     assert.equal(useGraphStore.getState().floatingPanelView, 'flightSim')
 
     useGraphStore.getState().setFloatingPanelView('camera')
-    exitCitySimSurface()
-    await waitForCitySimSurfaceRestoration()
+    await exitCitySimSurfaceAndWait()
     assert.equal(
       useGraphStore.getState().floatingPanelView,
       'camera',

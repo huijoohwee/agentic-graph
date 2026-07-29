@@ -6,18 +6,36 @@ import {
 } from './flightGeoOverlayMapLibrePayload.js'
 import {
   clearGeoJsonSourceData,
+  hasExactGeoJsonStyleSource,
   isMapLibreStyleReady,
   readGeoJsonSourceData,
+  readMapLibreStyleSource,
   setGeoJsonSourceData,
 } from './maplibreLayers.js'
+import { readFlightGeoMapViewportPadding, type FlightGeoMapViewportPadding } from './flightGeoMapViewport.js'
 import {
-  readFlightGeoMapViewportPadding,
-  type FlightGeoMapViewportPadding,
-} from './flightGeoMapViewport.js'
-import {
+  flightGeoEnvironmentMapLibreFeatureCollection,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+  hasExactFlightGeoEnvironmentFeatureCollection,
+  hasExactFlightGeoEnvironmentStyleLayerDefinitions,
 } from './flightGeoEnvironmentMapLibre.js'
+import {
+  FLIGHT_GEO_AIRCRAFT_IMAGE_IDS,
+  FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS,
+  FLIGHT_GEO_OVERLAY_LAYER_IDS,
+  FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  hasExactFlightGeoOverlayStyleLayerDefinition,
+  hasExactFlightGeoOverlayStyleLayerDefinitions,
+  mapHasExactFlightGeoOverlayLayerDefinitions,
+} from './flightGeoOverlayMapLibreLayers.js'
+export {
+  FLIGHT_GEO_AIRCRAFT_IMAGE_IDS,
+  FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS,
+  FLIGHT_GEO_OVERLAY_LAYER_IDS,
+  FLIGHT_GEO_OVERLAY_SOURCE_ID,
+} from './flightGeoOverlayMapLibreLayers.js'
 export {
   applyFlightGeoOverlayCameraToMap,
   canInspectFlightGeoOverlayCamera,
@@ -29,19 +47,6 @@ export {
 } from './flightGeoOverlayMapLibreCamera.js'
 
 export { flightGeoOverlayMapLibreFeatureCollection }
-
-export const FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'
-export const FLIGHT_GEO_OVERLAY_LAYER_IDS = Object.freeze({
-  aircraft: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft`,
-  aircraftOutline: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft-outline`,
-  objectiveGuide: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:objective-guide`,
-  route: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:route`,
-  routePoints: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:route-points`,
-})
-export const FLIGHT_GEO_AIRCRAFT_IMAGE_IDS = Object.freeze({
-  day: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft-image-day`,
-  night: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft-image-night`,
-})
 
 // This is both the painter order and the exactness contract for the Flight
 // overlay. Keep it public so presentation gates do not accidentally infer a
@@ -60,11 +65,6 @@ const FLIGHT_GEO_ENVIRONMENT_LAYER_ID_SET = new Set<string>(
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
 )
 
-const FLIGHT_GEO_NIGHT_EXPRESSION = Object.freeze([
-  'boolean',
-  ['get', 'kgFlightNight'],
-  false,
-])
 const FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE = 40
 
 type FlightGeoAircraftImage = Readonly<{
@@ -141,11 +141,20 @@ function createFlightGeoAircraftImage(
 const FLIGHT_GEO_AIRCRAFT_IMAGES = Object.freeze({
   day: createFlightGeoAircraftImage([34, 211, 238], [248, 250, 252]),
   night: createFlightGeoAircraftImage([196, 181, 253], [30, 27, 75]),
+  outlineDay: createFlightGeoAircraftImage([15, 23, 42], [15, 23, 42]),
+  outlineNight: createFlightGeoAircraftImage([30, 27, 75], [30, 27, 75]),
 })
 
 function ensureFlightGeoAircraftImages(map: any): boolean {
   try {
-    for (const mode of ['day', 'night'] as const) {
+    for (
+      const mode of [
+        'day',
+        'night',
+        'outlineDay',
+        'outlineNight',
+      ] as const
+    ) {
       const imageId = FLIGHT_GEO_AIRCRAFT_IMAGE_IDS[mode]
       const exists = typeof map.hasImage === 'function'
         ? map.hasImage(imageId)
@@ -172,6 +181,18 @@ function ensureFlightGeoAircraftImages(map: any): boolean {
   }
 }
 
+function mapHasFlightGeoAircraftImages(map: any): boolean {
+  try {
+    return Object.values(FLIGHT_GEO_AIRCRAFT_IMAGE_IDS).every(imageId => (
+      typeof map?.hasImage === 'function'
+        ? map.hasImage(imageId)
+        : Boolean(map?.getImage?.(imageId))
+    ))
+  } catch {
+    return false
+  }
+}
+
 /**
  * A Flight phase or ready-frame token is runtime metadata, not painted GeoJSON.
  * Compare the complete visual payload instead of forcing a source-worker update
@@ -192,15 +213,100 @@ export function mapHasExactFlightGeoOverlay(
     )
       && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
         .every(layerId => Boolean(map?.getLayer?.(layerId)))
+      && mapHasFlightGeoAircraftImages(map)
+      && mapHasExactFlightGeoOverlayLayerDefinitions(map)
   } catch {
     return false
   }
 }
 
+function isStyleLayer(layer: unknown): layer is Record<string, unknown> {
+  return layer !== null && typeof layer === 'object' && !Array.isArray(layer)
+}
+
+function layerVisibility(layer: unknown): 'none' | 'visible' {
+  if (!isStyleLayer(layer)) return 'visible'
+  const layout = (layer as Record<string, unknown>).layout
+  return (
+    layout
+    && typeof layout === 'object'
+    && !Array.isArray(layout)
+    && (layout as Record<string, unknown>).visibility === 'none'
+  ) ? 'none' : 'visible'
+}
+
+function hasExactRetainedFlightLayerState(
+  layers: readonly unknown[],
+  overlay: FlightGeoOverlaySnapshot,
+  viewMode: string,
+  retainEnvironment: boolean,
+): boolean {
+  const expectedOrder = [
+    ...(retainEnvironment ? FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER : []),
+    ...FLIGHT_GEO_OVERLAY_LAYER_ORDER,
+  ]
+  const topOrder = layers
+    .slice(-expectedOrder.length)
+    .map(layer => isStyleLayer(layer) ? String(layer.id || '') : '')
+  if (!expectedOrder.every((id, index) => topOrder[index] === id)) return false
+  const findLayer = (id: string) => layers.find(
+    layer => isStyleLayer(layer) && layer.id === id,
+  )
+  if (
+    !FLIGHT_GEO_OVERLAY_LAYER_ORDER.every(id => (
+      layerVisibility(findLayer(id)) === 'visible'
+    ))
+  ) return false
+  if (!retainEnvironment) return true
+  if (!overlay.environment) {
+    return FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER.every(id => (
+      layerVisibility(findLayer(id)) === 'none'
+    ))
+  }
+  const mode3d = viewMode === '3d' || viewMode === '3d-modern'
+  return layerVisibility(
+    findLayer(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d),
+  ) === (mode3d ? 'none' : 'visible')
+    && layerVisibility(
+      findLayer(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d),
+    ) === (mode3d ? 'visible' : 'none')
+    && layerVisibility(
+      findLayer(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline),
+    ) === 'visible'
+}
+
+export function mapHasExactFlightGeoStyleSources(
+  map: any,
+  overlay: FlightGeoOverlaySnapshot,
+): boolean {
+  const overlaySource = readMapLibreStyleSource(
+    map,
+    FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  )
+  if (!hasExactGeoJsonStyleSource(
+    overlaySource,
+    flightGeoOverlayMapLibreFeatureCollection(overlay),
+    hasExactFlightGeoOverlayFeatureCollection,
+  )) return false
+  const environmentSource = readMapLibreStyleSource(
+    map,
+    FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+  )
+  if (environmentSource === undefined && !overlay.environment) return true
+  return hasExactGeoJsonStyleSource(
+    environmentSource,
+    flightGeoEnvironmentMapLibreFeatureCollection(overlay),
+    hasExactFlightGeoEnvironmentFeatureCollection,
+  )
+}
+
 export function retainFlightGeoOverlayDuringStyleSwap(
   previousStyle: Readonly<Record<string, any>> | undefined,
   nextStyle: Readonly<Record<string, any>>,
+  expectedOverlay: FlightGeoOverlaySnapshot,
+  viewMode: string,
 ): Record<string, any> {
+  if (!expectedOverlay.active) return { ...nextStyle }
   const previousSources = previousStyle?.sources
   const retainedOverlaySource = previousSources?.[FLIGHT_GEO_OVERLAY_SOURCE_ID]
   const retainedEnvironmentSource = previousSources?.[FLIGHT_GEO_ENVIRONMENT_SOURCE_ID]
@@ -213,22 +319,54 @@ export function retainFlightGeoOverlayDuringStyleSwap(
   const retainedEnvironmentLayers = FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER
     .map(layerId => previousLayers.find(layer => layer?.id === layerId))
     .filter(Boolean)
-  const retainOverlay = (
-    Boolean(retainedOverlaySource)
+  const hasEnvironmentFragments = Boolean(retainedEnvironmentSource)
+    || retainedEnvironmentLayers.length > 0
+  const hasExactOverlay = (
+    hasExactGeoJsonStyleSource(
+      retainedOverlaySource,
+      flightGeoOverlayMapLibreFeatureCollection(expectedOverlay),
+      hasExactFlightGeoOverlayFeatureCollection,
+    )
     && retainedOverlayLayers.length === FLIGHT_GEO_OVERLAY_LAYER_ORDER.length
+    && hasExactFlightGeoOverlayStyleLayerDefinitions(retainedOverlayLayers)
   )
-  const retainEnvironment = (
-    Boolean(retainedEnvironmentSource)
-    && retainedEnvironmentLayers.length === FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER.length
+  const hasExactEnvironment = (
+    (!hasEnvironmentFragments && !expectedOverlay.environment)
+    || (
+      hasExactGeoJsonStyleSource(
+        retainedEnvironmentSource,
+        flightGeoEnvironmentMapLibreFeatureCollection(expectedOverlay),
+        hasExactFlightGeoEnvironmentFeatureCollection,
+      )
+      && retainedEnvironmentLayers.length
+        === FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER.length
+      && hasExactFlightGeoEnvironmentStyleLayerDefinitions(
+        retainedEnvironmentLayers,
+      )
+    )
   )
-  if (!retainOverlay && !retainEnvironment) return { ...nextStyle }
+  const hasExactLayerState = hasExactRetainedFlightLayerState(
+    previousLayers,
+    expectedOverlay,
+    viewMode,
+    hasEnvironmentFragments,
+  )
+  // Provider promotion is one visual handoff. Retaining only the route/aircraft
+  // or only the XR environment would expose a partial Flight frame while the
+  // missing half is rebuilt by a later render.
+  if (
+    !hasExactOverlay
+    || !hasExactEnvironment
+    || !hasExactLayerState
+  ) return { ...nextStyle }
+  const retainEnvironment = hasEnvironmentFragments
   const nextLayers = Array.isArray(nextStyle?.layers)
     ? nextStyle.layers.filter(
         layer => {
           const layerId = String(layer?.id || '')
           return !(
             (retainEnvironment && FLIGHT_GEO_ENVIRONMENT_LAYER_ID_SET.has(layerId))
-            || (retainOverlay && FLIGHT_GEO_OVERLAY_LAYER_ID_SET.has(layerId))
+            || FLIGHT_GEO_OVERLAY_LAYER_ID_SET.has(layerId)
           )
         },
       )
@@ -240,28 +378,62 @@ export function retainFlightGeoOverlayDuringStyleSwap(
       ...(retainEnvironment ? {
         [FLIGHT_GEO_ENVIRONMENT_SOURCE_ID]: retainedEnvironmentSource,
       } : {}),
-      ...(retainOverlay ? {
-        [FLIGHT_GEO_OVERLAY_SOURCE_ID]: retainedOverlaySource,
-      } : {}),
+      [FLIGHT_GEO_OVERLAY_SOURCE_ID]: retainedOverlaySource,
     },
     layers: [
       ...nextLayers,
       ...(retainEnvironment ? retainedEnvironmentLayers : []),
-      ...(retainOverlay ? retainedOverlayLayers : []),
+      ...retainedOverlayLayers,
     ],
   }
 }
 
-function addLayerOnce(map: any, layer: Record<string, unknown>): boolean {
+function readFlightGeoOverlayStyleLayer(
+  map: any,
+  layerId: string,
+): Record<string, unknown> | null {
+  const styleLayers = map?.getStyle?.()?.layers
+  if (Array.isArray(styleLayers)) {
+    const layer = styleLayers.find(candidate => candidate?.id === layerId)
+    return layer && typeof layer === 'object' ? layer : null
+  }
+  const layer = map?.getLayer?.(layerId)
+  return layer && typeof layer === 'object' ? layer : null
+}
+
+function ensureFlightGeoOverlayLayer(
+  map: any,
+  layer: typeof FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS[number],
+): boolean {
   const layerId = String(layer.id || '')
   try {
     if (!layerId) throw new Error('Flight overlay layer requires a stable id.')
-    if (map.getLayer?.(layerId)) return true
+    if (map.getLayer?.(layerId)) {
+      if (hasExactFlightGeoOverlayStyleLayerDefinition(
+        readFlightGeoOverlayStyleLayer(map, layerId),
+        layer,
+      )) {
+        return true
+      }
+      if (typeof map.removeLayer !== 'function') {
+        throw new Error('MapLibre removeLayer is unavailable.')
+      }
+      map.removeLayer(layerId)
+      if (map.getLayer?.(layerId)) {
+        throw new Error('MapLibre retained a mutated Flight overlay layer.')
+      }
+    }
     if (typeof map.addLayer !== 'function') {
       throw new Error('MapLibre addLayer is unavailable.')
     }
     map.addLayer(layer)
-    if (map.getLayer?.(layerId)) return true
+    if (
+      map.getLayer?.(layerId)
+      && hasExactFlightGeoOverlayStyleLayerDefinition(
+        readFlightGeoOverlayStyleLayer(map, layerId),
+        layer,
+      )
+    ) return true
     throw new Error(
       'MapLibre did not register the layer; inspect preceding map error events.',
     )
@@ -274,18 +446,26 @@ function addLayerOnce(map: any, layer: Record<string, unknown>): boolean {
   }
 }
 
-function keepFlightGeoOverlayAboveHostLayers(map: any): void {
+function keepFlightGeoOverlayAboveHostLayers(
+  map: any,
+  overlay: FlightGeoOverlaySnapshot,
+): void {
   const styleLayers = map.getStyle?.()?.layers
   if (!Array.isArray(styleLayers)) return
+  const expected = [
+    ...(overlay.environment ? FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER : []),
+    ...FLIGHT_GEO_OVERLAY_LAYER_ORDER,
+  ]
+  const expectedIds = new Set<string>(expected)
   const presentOrder = styleLayers
     .map((layer: { id?: unknown }) => String(layer?.id || ''))
-    .filter((id: string) => FLIGHT_GEO_OVERLAY_LAYER_ID_SET.has(id))
+    .filter((id: string) => expectedIds.has(id))
   const topOrder = styleLayers
-    .slice(-FLIGHT_GEO_OVERLAY_LAYER_ORDER.length)
+    .slice(-expected.length)
     .map((layer: { id?: unknown }) => String(layer?.id || ''))
-  const expected = [...FLIGHT_GEO_OVERLAY_LAYER_ORDER]
   if (
     presentOrder.length === expected.length
+    && presentOrder.every((id: string, index: number) => id === expected[index])
     && topOrder.every((id: string, index: number) => id === expected[index])
   ) return
   for (const layerId of expected) {
@@ -354,6 +534,31 @@ export function applyFlightGeoOverlayToMap(
     }
     if (!ensureFlightGeoAircraftImages(map)) return false
     const expected = flightGeoOverlayMapLibreFeatureCollection(overlay)
+    const styleSource = readMapLibreStyleSource(
+      map,
+      FLIGHT_GEO_OVERLAY_SOURCE_ID,
+    )
+    const source = map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)
+    if (
+      source
+      && styleSource !== undefined
+      && !hasExactGeoJsonStyleSource(
+        styleSource,
+        expected,
+        hasExactFlightGeoOverlayFeatureCollection,
+      )
+    ) {
+      if (
+        typeof map.removeLayer !== 'function'
+        || typeof map.removeSource !== 'function'
+      ) return false
+      for (const layerId of [...FLIGHT_GEO_OVERLAY_LAYER_ORDER].reverse()) {
+        if (map.getLayer?.(layerId)) map.removeLayer(layerId)
+        if (map.getLayer?.(layerId)) return false
+      }
+      map.removeSource(FLIGHT_GEO_OVERLAY_SOURCE_ID)
+      if (map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)) return false
+    }
     const sourceData = readGeoJsonSourceData(
       map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID),
     )
@@ -364,164 +569,10 @@ export function applyFlightGeoOverlayToMap(
         expected,
       )
     }
-    addLayerOnce(map, {
-      id: FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
-      type: 'line',
-      source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
-      filter: ['==', ['get', 'kgFlightOverlayKind'], 'route'],
-      paint: {
-        'line-color': [
-          'case',
-          FLIGHT_GEO_NIGHT_EXPRESSION,
-          '#a78bfa',
-          '#22d3ee',
-        ],
-        'line-opacity': 0.88,
-        'line-width': 4,
-        'line-dasharray': [1.5, 1.25],
-      },
-    })
-    addLayerOnce(map, {
-      id: FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
-      type: 'line',
-      source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
-      filter: [
-        '==',
-        ['get', 'kgFlightOverlayKind'],
-        'objective-guide',
-      ],
-      layout: {
-        'line-cap': 'round',
-        'line-join': 'round',
-      },
-      paint: {
-        'line-color': [
-          'case',
-          FLIGHT_GEO_NIGHT_EXPRESSION,
-          '#f5d0fe',
-          '#fde047',
-        ],
-        'line-opacity': 0.94,
-        'line-width': 3,
-        'line-dasharray': [0.75, 1.25],
-      },
-    })
-    addLayerOnce(map, {
-      id: FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
-      type: 'circle',
-      source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
-      filter: ['==', ['get', 'kgFlightOverlayKind'], 'route-point'],
-      paint: {
-        'circle-color': [
-          'case',
-          FLIGHT_GEO_NIGHT_EXPRESSION,
-          [
-            'match',
-            ['get', 'kgFlightRouteState'],
-            'active',
-            '#a78bfa',
-            'visited',
-            '#34d399',
-            '#e0e7ff',
-          ],
-          [
-            'match',
-            ['get', 'kgFlightRouteState'],
-            'active',
-            '#22d3ee',
-            'visited',
-            '#34d399',
-            '#f8fafc',
-          ],
-        ],
-        'circle-opacity': [
-          'match',
-          ['get', 'kgFlightRouteState'],
-          'active',
-          1,
-          'visited',
-          0.86,
-          0.7,
-        ],
-        'circle-pitch-scale': 'viewport',
-        'circle-radius': [
-          'case',
-          ['==', ['get', 'kgFlightRouteKind'], 'landing'],
-          [
-            'match',
-            ['get', 'kgFlightRouteState'],
-            'active',
-            9,
-            'visited',
-            8,
-            7,
-          ],
-          [
-            'match',
-            ['get', 'kgFlightRouteState'],
-            'active',
-            7.5,
-            'visited',
-            6,
-            5,
-          ],
-        ],
-        'circle-stroke-color': [
-          'case',
-          ['==', ['get', 'kgFlightRouteKind'], 'landing'],
-          '#f59e0b',
-          '#0f172a',
-        ],
-        'circle-stroke-width': [
-          'case',
-          ['==', ['get', 'kgFlightRouteState'], 'active'],
-          3,
-          ['==', ['get', 'kgFlightRouteKind'], 'landing'],
-          2.5,
-          ['==', ['get', 'kgFlightRouteState'], 'visited'],
-          2,
-          1.5,
-        ],
-      },
-    })
-    addLayerOnce(map, {
-      id: FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
-      type: 'fill',
-      source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
-      filter: ['==', ['get', 'kgFlightOverlayKind'], 'aircraft'],
-      paint: {
-        'fill-color': [
-          'case',
-          FLIGHT_GEO_NIGHT_EXPRESSION,
-          '#312e81',
-          '#0f172a',
-        ],
-        'fill-opacity': 0.88,
-        'fill-translate': [0, 2],
-        'fill-translate-anchor': 'viewport',
-      },
-    })
-    addLayerOnce(map, {
-      id: FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
-      type: 'symbol',
-      source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
-      filter: ['==', ['get', 'kgFlightOverlayKind'], 'aircraft'],
-      layout: {
-        'icon-allow-overlap': true,
-        'icon-ignore-placement': true,
-        'icon-image': [
-          'case',
-          FLIGHT_GEO_NIGHT_EXPRESSION,
-          FLIGHT_GEO_AIRCRAFT_IMAGE_IDS.night,
-          FLIGHT_GEO_AIRCRAFT_IMAGE_IDS.day,
-        ],
-        'icon-pitch-alignment': 'viewport',
-        'icon-rotate': ['get', 'headingDegrees'],
-        'icon-rotation-alignment': 'map',
-        'icon-size': 1,
-      },
-    })
-    keepFlightGeoOverlayAboveHostLayers(map)
+    if (!FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS.every(layer => (
+      ensureFlightGeoOverlayLayer(map, layer)
+    ))) return false
+    keepFlightGeoOverlayAboveHostLayers(map, overlay)
     return Boolean(map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID))
       && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
         .every(layerId => Boolean(map.getLayer?.(layerId)))
@@ -533,6 +584,11 @@ export function applyFlightGeoOverlayToMap(
 export function clearFlightGeoOverlayFromMap(map: any): boolean {
   try {
     if (!map || !isMapLibreStyleReady(map)) return false
+    const source = map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)
+    if (!source) return true
+    const sourceData = readGeoJsonSourceData(source)
+    if (!sourceData) return false
+    if (sourceData.features.length === 0) return true
     clearGeoJsonSourceData(map, FLIGHT_GEO_OVERLAY_SOURCE_ID)
     return true
   } catch {

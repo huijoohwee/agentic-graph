@@ -39,6 +39,10 @@ import {
   readCurrentFlightSimStagePreparationRequest,
 } from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
 import {
+  readFlightSimGeospatialBootstrapRequested,
+  subscribeFlightSimGeospatialBootstrapRequest,
+} from '@/features/game-flight-sim/flightSimSurfaceOpenLifecycle'
+import {
   projectFlightSimTimelineCameraToGeospatial,
   projectFlightSimToGeospatialOverlay,
 } from '@/features/game-flight-sim/flightSimGeospatialProjection'
@@ -73,6 +77,7 @@ const EMPTY_OPEN_WIDGETS_BY_RENDERER: Record<string, string[]> = {}
 
 type GeospatialOverlayHostProps = {
   active?: boolean
+  flightBootstrapRequested?: boolean
   snapshot?: unknown
   handlers?: unknown
   onFlightOverlayPresented?: (
@@ -134,6 +139,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   props: CanvasViewportGeospatialOverlayProps,
 ) {
   const { active, composedWithXr, geospatialModeEnabled, graphData, storyboardWidgetPanelsActive } = props
+  const flightBootstrapRequested = React.useSyncExternalStore(
+    subscribeFlightSimGeospatialBootstrapRequest,
+    readFlightSimGeospatialBootstrapRequested,
+    readFlightSimGeospatialBootstrapRequested,
+  )
   const gympgrphBridge = useGraphStore(
     useShallow(s => ({
       zoomState: s.zoomState,
@@ -430,10 +440,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
               },
               readFlightSimTrainingSnapshot().night,
               readCurrentFlightSimReadyFrameRequestId(),
-              projectXrEnvironmentToFlightGeo(
-                motionRuntime.plan,
-                spatialProfile,
-              ),
+              projectXrEnvironmentToFlightGeo(motionRuntime.plan),
             ),
           )
         }
@@ -521,6 +528,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     >
       <GeospatialOverlayHostLazy
         active={active}
+        flightBootstrapRequested={flightBootstrapRequested}
         snapshot={snapshot}
         handlers={handlers}
         onFlightOverlayPresented={handleFlightOverlayPresented}

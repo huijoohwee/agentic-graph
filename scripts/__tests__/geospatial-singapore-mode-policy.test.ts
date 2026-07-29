@@ -105,6 +105,7 @@ test('MapLibre basemap construction and realignment consume the shared Singapore
   )
   assert.match(source, /readSingaporeCanvasCameraPolicy\(canvasRenderMode\)/)
   assert.match(source, /createSingaporeMapInitialCameraOptions\(singaporeCamera\)/)
-  assert.match(source, /alignMapToSingaporePresentation\(map, singaporeCamera\)/)
+  assert.match(source, /createMapLibreInitialCameraAlignment\(\{/)
+  assert.match(source, /singaporeCamera,/)
   assert.doesNotMatch(source, /INITIAL_3D_ZOOM|INITIAL_3D_PITCH/)
 })

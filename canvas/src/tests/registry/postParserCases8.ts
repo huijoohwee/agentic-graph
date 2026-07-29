@@ -47,6 +47,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["city.sim.runtime.surfaceExclusivity","@/__tests__/citySimRuntimeLifecycle.test","testCitySimPanelProjectionPreservationAndGameplayExclusivity"],
   ["city.sim.runtime.geoOwnership","@/__tests__/citySimRuntimeLifecycle.test","testCitySimClaimsAndRestoresTheNativeGeoOwner"],
   ["city.sim.runtime.geoRollback","@/__tests__/citySimRuntimeLifecycle.test","testCitySimFailedEntryRestoresTheCapturedGeoOwner"],
+  ["city.sim.runtime.geoExitFailure","@/__tests__/citySimGeoExitFailure.test","testCitySimExitSurfacesGeoRestorationFailure"],
   ["city.sim.runtime.geoClaimRace","@/__tests__/citySimRuntimeLifecycle.test","testCitySimExitWaitsForPendingGeoClaimRollback"],
   ["city.sim.mcp.exactTwo","@/__tests__/citySimMcpContract.test","testCitySimMcpPublishesExactlyTwoCanonicalTools"],
   ["city.sim.mcp.inspectPurity","@/__tests__/citySimMcpContract.test","testCitySimMcpInspectIsPureAndReportsZeroCostOwnership"],

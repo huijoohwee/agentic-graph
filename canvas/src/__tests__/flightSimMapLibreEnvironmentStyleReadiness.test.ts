@@ -138,7 +138,17 @@ function environmentMapHarness() {
     getLayoutProperty: (layerId: string, property: string) => (
       property === 'visibility' ? visibility.get(layerId) : undefined
     ),
+    getPaintProperty: (layerId: string, property: string) => {
+      const paint = layers.get(layerId)?.paint
+      return paint && typeof paint === 'object'
+        ? (paint as Record<string, unknown>)[property]
+        : undefined
+    },
     getSource: (sourceId: string) => sources.get(sourceId),
+    removeLayer: (layerId: string) => {
+      layers.delete(layerId)
+      visibility.delete(layerId)
+    },
     setLayoutProperty: (
       layerId: string,
       property: string,
@@ -303,6 +313,89 @@ test('XR environment defers until each MapLibre style is ready', () => {
     console.error = originalConsoleError
   }
   assert.deepEqual(diagnostics, [])
+})
+
+test('XR environment rebuilds retained layers with mutated extrusion contracts', () => {
+  const overlay = environmentOverlay()
+  const harness = environmentMapHarness()
+  harness.setStyleReady(true)
+  assert.equal(
+    applyFlightGeoEnvironmentToMap(harness.map, overlay, '3d'),
+    true,
+  )
+  assert.equal(harness.completeSourceUpdate(), true)
+  assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
+
+  const replaceLayer = (
+    layerId: string,
+    change: (layer: Record<string, unknown>) => Record<string, unknown>,
+    label: string,
+  ) => {
+    const current = harness.layers.get(layerId)
+    assert.ok(current)
+    harness.layers.set(layerId, change(current))
+    assert.equal(
+      mapHasExactFlightGeoEnvironment(harness.map, overlay),
+      false,
+      `${label} must fail exact presentation`,
+    )
+    assert.equal(
+      applyFlightGeoEnvironmentToMap(harness.map, overlay, '3d'),
+      true,
+      `${label} must be rebuilt from the source-owned definition`,
+    )
+    assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
+  }
+
+  replaceLayer(
+    FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d,
+    layer => ({ ...layer, source: 'mutated-source' }),
+    'a retained foreign source',
+  )
+  replaceLayer(
+    FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline,
+    layer => ({ ...layer, type: 'fill-extrusion' }),
+    'a retained foreign layer type',
+  )
+  replaceLayer(
+    FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
+    layer => ({
+      ...layer,
+      paint: {
+        ...(layer.paint as Record<string, unknown>),
+        'fill-extrusion-base': ['get', 'kgBaseHeightMeters'],
+      },
+    }),
+    'a mutated extrusion base expression',
+  )
+  replaceLayer(
+    FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
+    layer => ({
+      ...layer,
+      paint: {
+        ...(layer.paint as Record<string, unknown>),
+        'fill-extrusion-height': ['get', 'kgHeightMeters'],
+      },
+    }),
+    'a mutated extrusion height expression',
+  )
+
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(
+      {
+        ...harness.map,
+        getLayer: (layerId: string) => {
+          const layer = harness.layers.get(layerId)
+          return layer
+            ? { id: layer.id, source: layer.source, type: layer.type }
+            : undefined
+        },
+      },
+      overlay,
+    ),
+    false,
+    'a map without serializable paint cannot claim exact extrusion readiness',
+  )
 })
 
 test('XR environment clear never probes MapLibre before its style attaches', () => {

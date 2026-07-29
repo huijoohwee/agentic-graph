@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { projectFlightSimToGeospatialOverlay } from '@/features/game-flight-sim/flightSimGeospatialProjection'
-import { projectFlightSimMissionPositionToGeospatial } from '@/features/game-flight-sim/flightSimGeospatialCoordinates'
 import { projectXrEnvironmentToFlightGeo } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import { createFlightSimRuntime } from '@/features/game-flight-sim/flightSimRuntimeCore'
 import { readFlightSimXrSpatialProfile } from '@/features/game-flight-sim/flightSimSpatialProfile'
+import { projectSingaporeLocalMeters } from '@/lib/gympgrph/api'
 
 const METERS_PER_LATITUDE_DEGREE = 111_320
 
@@ -152,9 +152,13 @@ test('Flight Geo bootstrap retains one map owner and stages pre-document ownersh
     basemapHook,
     /onGrabMapsFallbackRef\.current = onGrabMapsFallback/,
   )
+  assert.match(
+    basemapHook,
+    /flightBootstrapActive: \(\) => Boolean\(initialStyleOverrideRef\.current\)/,
+  )
   assert.doesNotMatch(basemapHook, /onGrabMapsFallback\?\.\(\)/)
   const bootstrapReconciliationDependencies = basemapHook.match(
-    /\}, \[\n    enabled,\n    initialStyleOverride,[\s\S]*?\n  \]\)\n\n  return state/,
+    /\}, \[\n[ ]{4}enabled,\n[ ]{4}initialStyleOverride,[\s\S]*?\n[ ]{2}\]\)\n\n[ ]{2}return state/,
   )?.[0] || ''
   assert.ok(bootstrapReconciliationDependencies)
   assert.doesNotMatch(
@@ -208,7 +212,7 @@ test('Flight local mission coordinates project deterministically around Singapor
       rotationYDegrees: 0,
       scale: 1,
     }],
-  }, profile)
+  })
   const overlay = projectFlightSimToGeospatialOverlay(
     runtime.read(),
     profile,
@@ -252,10 +256,7 @@ test('Flight local mission coordinates project deterministically around Singapor
   const stageFootprint = environment.stageFootprint
   assert.deepEqual(
     stageFootprint[0],
-    projectFlightSimMissionPositionToGeospatial(
-      Object.freeze([-16, 0, -12]),
-      profile.spawn.position,
-    ),
+    projectSingaporeLocalMeters(-16, 12),
     'the first Singapore stage corner must remain the authored [-16, 0, -12] metre corner',
   )
   const stageFootprintMeters = projectedRingSizeMeters(stageFootprint)

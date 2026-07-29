@@ -55,7 +55,7 @@ import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLaye
 import { applyGeospatialFitRequest } from './geospatialFitRuntime.js'
 
 type GeospatialOverlayHostProps = {
-  active?: boolean
+  active?: boolean; flightBootstrapRequested?: boolean
   snapshot?: unknown
   handlers?: unknown
   onFlightOverlayPresented?: (
@@ -693,7 +693,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const selectedBounds = React.useMemo(() => computeBoundsFromCollections([selectedFeatureCollection]), [selectedFeatureCollection])
   const graphDataKey = React.useMemo(() => graphProjection.signature, [graphProjection.signature])
   const mapLibreRuntimeEnabled = show2dMapLibre || show3d
-  const flightBootstrapStyle = flightOverlayActive
+  const flightBootstrapStyle = flightOverlayActive || props.flightBootstrapRequested === true
     ? FLIGHT_GEO_BOOTSTRAP_STYLE
     : null
 

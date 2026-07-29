@@ -14,7 +14,7 @@ type ViewportRect = Readonly<{
   width: number
 }>
 
-const OCCLUDING_PANEL_SELECTOR = [
+export const FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR = [
   '[aria-label="Markdown Workspace"]',
   '[aria-label="Floating panel"]',
   '[aria-label="Geospatial panel"]',
@@ -26,11 +26,100 @@ function readVisibleRect(element: Element): ViewportRect | null {
   const htmlElement = element as HTMLElement
   const rect = htmlElement.getBoundingClientRect?.()
   if (!rect || rect.width <= 0 || rect.height <= 0) return null
-  if (typeof window !== 'undefined') {
-    const style = window.getComputedStyle?.(htmlElement)
+  const ownerWindow = htmlElement.ownerDocument?.defaultView
+  if (ownerWindow) {
+    const style = ownerWindow.getComputedStyle?.(htmlElement)
     if (style?.display === 'none' || style?.visibility === 'hidden') return null
   }
   return rect
+}
+
+function nodeContainsOccludingPanel(node: Node): boolean {
+  if (node.nodeType !== 1) return false
+  const element = node as Element
+  return (
+    element.matches(FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR)
+    || !!element.querySelector(FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR)
+  )
+}
+
+/**
+ * Observes the map viewport and panels that change its visual aperture.
+ * Workspace panels can mount after MapLibre, so child-list discovery is
+ * required in addition to element resize observation.
+ */
+export function observeFlightGeoMapOcclusionChanges(
+  viewport: HTMLElement | null,
+  onChange: () => void,
+): () => void {
+  if (!viewport) return () => void 0
+  const ownerDocument = viewport.ownerDocument
+  const ownerWindow = ownerDocument.defaultView as
+    | (Window & typeof globalThis)
+    | null
+  const ResizeObserverRuntime = ownerWindow?.ResizeObserver
+    ?? (typeof ResizeObserver === 'undefined' ? null : ResizeObserver)
+  const MutationObserverRuntime = ownerWindow?.MutationObserver
+    ?? (typeof MutationObserver === 'undefined' ? null : MutationObserver)
+  const resizeObserver = ResizeObserverRuntime
+    ? new ResizeObserverRuntime(onChange)
+    : null
+  const observedPanels = new Set<Element>()
+
+  const refreshPanels = () => {
+    const currentPanels = new Set(Array.from(
+      ownerDocument.querySelectorAll(FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR),
+    ))
+    for (const panel of observedPanels) {
+      if (currentPanels.has(panel)) continue
+      resizeObserver?.unobserve(panel)
+      observedPanels.delete(panel)
+    }
+    for (const panel of currentPanels) {
+      if (panel === viewport || observedPanels.has(panel)) continue
+      observedPanels.add(panel)
+      resizeObserver?.observe(panel)
+    }
+  }
+
+  resizeObserver?.observe(viewport)
+  refreshPanels()
+  const mutationObserver = MutationObserverRuntime && ownerDocument.body
+    ? new MutationObserverRuntime(records => {
+        const relevant = records.some(record => (
+          (
+            record.type === 'attributes'
+            && (
+              record.attributeName === 'aria-label'
+              || nodeContainsOccludingPanel(record.target)
+            )
+          )
+          || Array.from(record.addedNodes).some(nodeContainsOccludingPanel)
+          || Array.from(record.removedNodes).some(nodeContainsOccludingPanel)
+        ))
+        if (!relevant) return
+        refreshPanels()
+        onChange()
+      })
+    : null
+  mutationObserver?.observe(ownerDocument.body, {
+    attributeFilter: [
+      'aria-hidden',
+      'aria-label',
+      'class',
+      'hidden',
+      'style',
+    ],
+    attributes: true,
+    childList: true,
+    subtree: true,
+  })
+
+  return () => {
+    mutationObserver?.disconnect()
+    resizeObserver?.disconnect()
+    observedPanels.clear()
+  }
 }
 
 function overlaps(viewport: ViewportRect, candidate: ViewportRect): boolean {
@@ -49,14 +138,17 @@ export function readFlightGeoMapOcclusionPadding(
   viewport: HTMLElement | null,
 ): FlightGeoMapViewportPadding {
   const viewportRect = viewport ? readVisibleRect(viewport) : null
-  if (!viewportRect || typeof document === 'undefined') {
+  const ownerDocument = viewport?.ownerDocument
+  if (!viewportRect || !ownerDocument) {
     return Object.freeze({ bottom: 0, left: 0, right: 0, top: 0 })
   }
   const horizontalCenter = viewportRect.left + viewportRect.width / 2
   let left = 0
   let right = 0
   for (const candidate of Array.from(
-    document.querySelectorAll(OCCLUDING_PANEL_SELECTOR),
+    ownerDocument.querySelectorAll(
+      FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR,
+    ),
   )) {
     if (candidate === viewport) continue
     const candidateRect = readVisibleRect(candidate)

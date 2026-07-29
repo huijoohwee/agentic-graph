@@ -1,12 +1,23 @@
 import type { FlightGeoOverlaySnapshot } from '../../flightGeoOverlay.js'
 
-export function clearFlightGeoPresentationDebug(root: HTMLElement): void {
+export function clearFlightGeoPresentationAttemptDebug(
+  root: HTMLElement,
+): void {
   for (const key of Object.keys(root.dataset)) {
     if (
       key.startsWith('kgFlightGeospatialPresentation')
-      || key.startsWith('kgFlightGeospatialStopped')
       || key === 'kgFlightGeospatialPresentedRevision'
+      || key === 'kgFlightGeospatialRenderAttempts'
     ) delete root.dataset[key]
+  }
+}
+
+export function clearFlightGeoPresentationDebug(root: HTMLElement): void {
+  clearFlightGeoPresentationAttemptDebug(root)
+  for (const key of Object.keys(root.dataset)) {
+    if (key.startsWith('kgFlightGeospatialStopped')) {
+      delete root.dataset[key]
+    }
   }
 }
 

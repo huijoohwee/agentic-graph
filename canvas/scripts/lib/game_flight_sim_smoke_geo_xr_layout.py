@@ -172,6 +172,40 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
           const activeEnvironmentLayerDefinition = map?.getLayer?.(
             activeEnvironmentLayer,
           ) || null
+          const extrusionEnvironmentLayerDefinition = map?.getLayer?.(
+            environmentLayerIds.extrusion3d,
+          ) || null
+          const environmentExtrusionContractExact = (
+            extrusionEnvironmentLayerDefinition?.type === 'fill-extrusion'
+            && extrusionEnvironmentLayerDefinition?.source === environmentSourceId
+            && JSON.stringify(map?.getPaintProperty?.(
+              environmentLayerIds.extrusion3d,
+              'fill-extrusion-base',
+            )) === JSON.stringify(['get', 'kgRenderBaseHeightMeters'])
+            && JSON.stringify(map?.getPaintProperty?.(
+              environmentLayerIds.extrusion3d,
+              'fill-extrusion-height',
+            )) === JSON.stringify(['get', 'kgRenderHeightMeters'])
+          )
+          const overlayLayerIds = gympgrph.FLIGHT_GEO_OVERLAY_LAYER_IDS || {}
+          const aircraftOutlineLayer = map?.getLayer?.(
+            overlayLayerIds.aircraftOutline,
+          ) || null
+          const aircraftOutlineContractExact = (
+            aircraftOutlineLayer?.type === 'symbol'
+            && aircraftOutlineLayer?.source === (
+              gympgrph.FLIGHT_GEO_OVERLAY_SOURCE_ID
+              || 'kg-flight-sim:geo-overlay'
+            )
+            && map?.getLayoutProperty?.(
+              overlayLayerIds.aircraftOutline,
+              'icon-size',
+            ) === 1.2
+            && JSON.stringify(map?.getLayoutProperty?.(
+              overlayLayerIds.aircraftOutline,
+              'icon-rotate',
+            )) === JSON.stringify(['get', 'headingDegrees'])
+          )
           const activeEnvironmentVisible = map?.getLayoutProperty?.(
             activeEnvironmentLayer, 'visibility',
           ) !== 'none'
@@ -196,10 +230,12 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
             '[data-kg-flight-geospatial-overlay="active"]',
           )
           return {
+            aircraftOutlineContractExact,
             aircraftUnoccluded: exposed(toScreen(overlay?.aircraft?.coordinate)),
             cameraPadding: host?.getAttribute(
               'data-kg-flight-geospatial-camera-padding',
             ) || '',
+            environmentExtrusionContractExact,
             environmentExtrusionVisible: !mode3d || (
               activeEnvironmentLayerDefinition?.type === 'fill-extrusion'
               && activeEnvironmentVisible
@@ -279,7 +315,7 @@ def prepare_reported_singapore_geo_handoff(page: Page) -> dict[str, Any]:
         '[data-kg-floating-panel-view-trigger="flightSim"]'
     ).first
     flight_trigger.click(timeout=30_000)
-    page.locator('[aria-label="Flight Sim"]').wait_for(
+    page.locator('[data-kg-flight-sim-floating-panel="1"]').wait_for(
         state="visible", timeout=30_000
     )
     return observed

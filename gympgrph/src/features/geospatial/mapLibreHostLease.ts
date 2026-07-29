@@ -5,15 +5,76 @@ export type MapLibreMapOwnerScope =
   | 'embedded-preview'
 
 export type NativeGeospatialMapLibreLease = Readonly<{
+  cancelDisposalPreparation: () => void
   canvas: HTMLCanvasElement | null
   id: number
   isCurrent: () => boolean
   map: any
+  prepareForDisposal: () => boolean
   root: HTMLElement | null
 }>
 
 let leaseSequence = 0
 let activeNativeLease: NativeGeospatialMapLibreLease | null = null
+const disposalStateByMap = new WeakMap<
+  object,
+  { count: number; listeners: Set<() => void> }
+>()
+
+function readMapObject(map: any): object | null {
+  return map && (typeof map === 'object' || typeof map === 'function')
+    ? map as object
+    : null
+}
+
+function readDisposalState(map: any) {
+  const mapObject = readMapObject(map)
+  if (!mapObject) return null
+  let state = disposalStateByMap.get(mapObject)
+  if (!state) {
+    state = { count: 0, listeners: new Set() }
+    disposalStateByMap.set(mapObject, state)
+  }
+  return state
+}
+
+function notifyDisposalState(state: { listeners: Set<() => void> }): void {
+  for (const listener of state.listeners) {
+    try {
+      listener()
+    } catch {
+      void 0
+    }
+  }
+}
+
+export function acquireMapLibreMapDisposalPreparation(map: any): () => void {
+  const state = readDisposalState(map)
+  if (!state) return () => void 0
+  state.count += 1
+  if (state.count === 1) notifyDisposalState(state)
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    state.count = Math.max(0, state.count - 1)
+    if (state.count === 0) notifyDisposalState(state)
+  }
+}
+
+export function isMapLibreMapPreparingForDisposal(map: any): boolean {
+  return (readDisposalState(map)?.count ?? 0) > 0
+}
+
+export function subscribeMapLibreMapDisposalPreparation(
+  map: any,
+  listener: () => void,
+): () => void {
+  const state = readDisposalState(map)
+  if (!state) return () => void 0
+  state.listeners.add(listener)
+  return () => state.listeners.delete(listener)
+}
 
 function readMapCanvas(map: any): HTMLCanvasElement | null {
   try {
@@ -27,8 +88,10 @@ function readMapCanvas(map: any): HTMLCanvasElement | null {
 }
 
 export function claimMapLibreMapLease(options: Readonly<{
+  cancelDisposalPreparation?: () => void
   map: any
   ownerScope: MapLibreMapOwnerScope
+  prepareForDisposal?: () => boolean
   root: HTMLElement | null
 }>): () => void {
   if (
@@ -39,10 +102,13 @@ export function claimMapLibreMapLease(options: Readonly<{
   }
   const leaseId = ++leaseSequence
   const lease: NativeGeospatialMapLibreLease = Object.freeze({
+    cancelDisposalPreparation:
+      options.cancelDisposalPreparation ?? (() => void 0),
     canvas: readMapCanvas(options.map),
     id: leaseId,
     isCurrent: () => activeNativeLease === lease,
     map: options.map,
+    prepareForDisposal: options.prepareForDisposal ?? (() => true),
     root: options.root,
   })
   activeNativeLease = lease

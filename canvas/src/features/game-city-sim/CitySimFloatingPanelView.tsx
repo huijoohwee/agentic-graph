@@ -35,7 +35,6 @@ import {
 import { CityParcelCoordinateControls } from './CityParcelCoordinateControls'
 import {
   applyCityAdvice,
-  exitCitySimSurface,
   openCitySimSurface,
   readCitySimSnapshot,
   requestCityAdvice,
@@ -46,6 +45,7 @@ import {
   stopCitySim,
   subscribeCitySimSnapshot,
 } from './citySimRuntime'
+import { exitCitySimSurfaceAndWait } from './citySimSurfaceExit'
 
 type PendingAction =
   | 'open'
@@ -519,7 +519,7 @@ export function CitySimFloatingPanelView() {
               type="button"
               className="App-toolbar__btn"
               disabled={busy || !snapshot.active}
-              onClick={() => void runAction('exit', exitCitySimSurface)}
+              onClick={() => void runAction('exit', exitCitySimSurfaceAndWait)}
               data-kg-city-sim-exit="1"
             >
               Exit

@@ -16,13 +16,50 @@ import {
  */
 export type FlightGeoStoppedFrameProof = Readonly<{
   canvas: HTMLCanvasElement
+  canvasDimensions: readonly [
+    bitmapWidth: number,
+    bitmapHeight: number,
+    cssWidth: number,
+    cssHeight: number,
+  ]
   cameraSignature: string | null
   environmentPayload: FlightGeoEnvironmentFeatureCollection
   map: any
   overlayPayload: ReturnType<typeof flightGeoOverlayMapLibreFeatureCollection>
   profileId: string
+  styleSignature: string
   viewMode: string
 }>
+
+function readMapStyleSignature(map: any): string | null {
+  try {
+    const style = map?.getStyle?.()
+    if (!style || typeof style !== 'object') return null
+    const signature = JSON.stringify(style)
+    return typeof signature === 'string' ? signature : null
+  } catch {
+    return null
+  }
+}
+
+function readCanvasDimensions(
+  canvas: HTMLCanvasElement,
+): FlightGeoStoppedFrameProof['canvasDimensions'] | null {
+  try {
+    const rect = canvas.getBoundingClientRect()
+    const dimensions = [
+      Number(canvas.width),
+      Number(canvas.height),
+      Number(rect.width),
+      Number(rect.height),
+    ] as const
+    return dimensions.every(value => Number.isFinite(value) && value > 0)
+      ? dimensions
+      : null
+  } catch {
+    return null
+  }
+}
 
 export function createFlightGeoStoppedFrameProof(
   map: any,
@@ -32,13 +69,18 @@ export function createFlightGeoStoppedFrameProof(
   viewMode: string,
 ): FlightGeoStoppedFrameProof | null {
   if (overlay.phase !== 'stopped') return null
+  const canvasDimensions = readCanvasDimensions(canvas)
+  const styleSignature = readMapStyleSignature(map)
+  if (!canvasDimensions || styleSignature === null) return null
   return Object.freeze({
     canvas,
+    canvasDimensions,
     cameraSignature,
     environmentPayload: flightGeoEnvironmentMapLibreFeatureCollection(overlay),
     map,
     overlayPayload: flightGeoOverlayMapLibreFeatureCollection(overlay),
     profileId: overlay.profileId,
+    styleSignature,
     viewMode,
   })
 }
@@ -51,12 +93,21 @@ export function hasEquivalentStoppedFrameVisuals(
   cameraSignature: string | null,
   viewMode: string,
 ): boolean {
+  const canvasDimensions = readCanvasDimensions(canvas)
+  const styleSignature = readMapStyleSignature(map)
   if (
     !proof
     || proof.map !== map
     || proof.canvas !== canvas
+    || !canvasDimensions
+    || styleSignature === null
+    || proof.canvasDimensions.some((
+      dimension,
+      index,
+    ) => !Object.is(dimension, canvasDimensions[index]))
     || proof.profileId !== overlay.profileId
     || proof.cameraSignature !== cameraSignature
+    || proof.styleSignature !== styleSignature
     || proof.viewMode !== viewMode
   ) return false
   return hasExactFlightGeoOverlayFeatureCollection(

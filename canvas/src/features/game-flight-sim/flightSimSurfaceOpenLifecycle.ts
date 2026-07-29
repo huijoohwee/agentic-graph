@@ -1,5 +1,7 @@
 let flightSimSurfaceLifecycleGeneration = 0
 const flightSimSurfaceOpenControllers = new Set<AbortController>()
+const flightSimGeospatialBootstrapListeners = new Set<() => void>()
+let flightSimGeospatialBootstrapRequestCount = 0
 
 export class FlightSimSurfaceOpenStaleError extends Error {
   constructor() {
@@ -19,6 +21,46 @@ export type FlightSimSurfaceOpenController = Readonly<{
   controller: AbortController
   detachCallerSignal: () => void
 }>
+
+function notifyFlightSimGeospatialBootstrapListeners(): void {
+  for (const listener of flightSimGeospatialBootstrapListeners) {
+    try {
+      listener()
+    } catch {
+      void 0
+    }
+  }
+}
+
+export function acquireFlightSimGeospatialBootstrapRequest(): () => void {
+  flightSimGeospatialBootstrapRequestCount += 1
+  if (flightSimGeospatialBootstrapRequestCount === 1) {
+    notifyFlightSimGeospatialBootstrapListeners()
+  }
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    flightSimGeospatialBootstrapRequestCount = Math.max(
+      0,
+      flightSimGeospatialBootstrapRequestCount - 1,
+    )
+    if (flightSimGeospatialBootstrapRequestCount === 0) {
+      notifyFlightSimGeospatialBootstrapListeners()
+    }
+  }
+}
+
+export function readFlightSimGeospatialBootstrapRequested(): boolean {
+  return flightSimGeospatialBootstrapRequestCount > 0
+}
+
+export function subscribeFlightSimGeospatialBootstrapRequest(
+  listener: () => void,
+): () => void {
+  flightSimGeospatialBootstrapListeners.add(listener)
+  return () => flightSimGeospatialBootstrapListeners.delete(listener)
+}
 
 export function readFlightSimSurfaceLifecycleGeneration(): number {
   return flightSimSurfaceLifecycleGeneration

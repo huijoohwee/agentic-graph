@@ -4,14 +4,9 @@ import {
   projectXrEnvironmentToFlightGeo,
 } from '../../canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts'
 import {
-  projectFlightSimMissionPositionToGeospatial,
-} from '../../canvas/src/features/game-flight-sim/flightSimGeospatialCoordinates.ts'
-import {
-  createFlightSimSpatialProfile,
-} from '../../canvas/src/features/game-flight-sim/flightSimSpatialProfile.ts'
-import {
-  resolveXrCanonicalSceneSpatialSource,
-} from '../../canvas/src/features/three/xrCanonicalSceneSpatialSource.ts'
+  projectSingaporeLocalMeters,
+  type GeospatialCoordinate,
+} from '../../canvas/src/lib/gympgrph/api.ts'
 import {
   resolveXrSceneLibraryAsset,
 } from '../../canvas/src/features/three/xrSceneLibrary.ts'
@@ -38,7 +33,13 @@ function createFakeMap() {
   const map = {
     style: { _loaded: true },
     addLayer(layer: Record<string, unknown>) {
-      layers.set(String(layer.id), layer)
+      const id = String(layer.id)
+      layers.set(id, layer)
+      const layout = layer.layout as Record<string, unknown> | undefined
+      visibility.set(
+        id,
+        layout?.visibility === 'none' ? 'none' : 'visible',
+      )
     },
     addSource(id: string, input: { data: unknown }) {
       const source: FakeSource = {
@@ -51,8 +52,21 @@ function createFakeMap() {
       sources.set(id, source)
     },
     getLayer: (id: string) => layers.get(id),
+    getLayoutProperty(id: string, property: string) {
+      return property === 'visibility' ? visibility.get(id) : undefined
+    },
+    getPaintProperty(id: string, property: string) {
+      const paint = layers.get(id)?.paint
+      return paint && typeof paint === 'object'
+        ? (paint as Record<string, unknown>)[property]
+        : undefined
+    },
     getSource: (id: string) => sources.get(id),
     isStyleLoaded: () => true,
+    removeLayer(id: string) {
+      layers.delete(id)
+      visibility.delete(id)
+    },
     setLayoutProperty(id: string, property: string, value: string) {
       if (property === 'visibility') visibility.set(id, value)
     },
@@ -91,22 +105,12 @@ function createOverlay(
   }
 }
 
-function singaporeFlightProfile() {
-  return createFlightSimSpatialProfile(
-    resolveXrCanonicalSceneSpatialSource({
-      projection: 'authored',
-      stageId: 'singapore',
-    }),
-  )
-}
-
 function projectLocalRectangle(
   centerX: number,
   centerZ: number,
   widthMeters: number,
   depthMeters: number,
   rotationDegrees: number,
-  profile: ReturnType<typeof singaporeFlightProfile>,
 ) {
   const rotationRadians = rotationDegrees * Math.PI / 180
   const cosine = Math.cos(rotationRadians)
@@ -119,19 +123,48 @@ function projectLocalRectangle(
     [halfWidth, halfDepth],
     [-halfWidth, halfDepth],
   ] as const
-  const ring = corners.map(([offsetX, offsetZ]) => projectFlightSimMissionPositionToGeospatial(
-    Object.freeze([
-      centerX + offsetX * cosine + offsetZ * sine,
-      0,
-      centerZ - offsetX * sine + offsetZ * cosine,
-    ]),
-    profile.spawn.position,
-  ))
+  const ring = corners.map(([offsetX, offsetZ]) => {
+    const x = centerX + offsetX * cosine + offsetZ * sine
+    const z = centerZ - offsetX * sine + offsetZ * cosine
+    return projectSingaporeLocalMeters(x, -z)
+  })
   return [...ring, ring[0]]
 }
 
+const METERS_PER_LATITUDE_DEGREE = 111_320
+
+function projectedDistanceMeters(
+  first: GeospatialCoordinate,
+  second: GeospatialCoordinate,
+): number {
+  const latitudeRadians = (first[1] + second[1]) / 2 * Math.PI / 180
+  const eastMeters = (second[0] - first[0]) *
+    METERS_PER_LATITUDE_DEGREE * Math.cos(latitudeRadians)
+  const northMeters = (second[1] - first[1]) * METERS_PER_LATITUDE_DEGREE
+  return Math.hypot(eastMeters, northMeters)
+}
+
+function assertApproximately(
+  actual: number,
+  expected: number,
+  message: string,
+): void {
+  assert.ok(
+    Math.abs(actual - expected) < 0.001,
+    `${message}: expected ${expected}, received ${actual}`,
+  )
+}
+
+function assertCoordinateApproximately(
+  actual: GeospatialCoordinate,
+  expected: GeospatialCoordinate,
+  message: string,
+): void {
+  assertApproximately(actual[0], expected[0], `${message} longitude`)
+  assertApproximately(actual[1], expected[1], `${message} latitude`)
+}
+
 test('Singapore XR environment projects its stage, structures, and selected asset to one geographic anchor', () => {
-  const profile = singaporeFlightProfile()
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [{
@@ -144,7 +177,7 @@ test('Singapore XR environment projects its stage, structures, and selected asse
       rotationYDegrees: 35,
       scale: 1,
     }],
-  }, profile)
+  })
 
   assert.equal(environment.id, 'singapore')
   assert.deepEqual(environment.anchor, [103.851959, 1.29027])
@@ -165,7 +198,17 @@ test('Singapore XR environment projects its stage, structures, and selected asse
   assert.equal(helicopter?.ring.length, 5)
   assert.deepEqual(
     helicopter?.ring,
-    projectLocalRectangle(4, -3, 7.4, 9, 35, profile),
+    projectLocalRectangle(4, -3, 7.4, 9, 35),
+  )
+  assertApproximately(
+    projectedDistanceMeters(helicopter!.ring[0], helicopter!.ring[1]),
+    7.4,
+    'helicopter footprint keeps its authored metre width',
+  )
+  assertApproximately(
+    projectedDistanceMeters(helicopter!.ring[1], helicopter!.ring[2]),
+    9,
+    'helicopter footprint keeps its authored metre depth',
   )
   const stageFootprint = environment.surfaces.find(
     surface => surface.kind === 'stage-footprint',
@@ -174,24 +217,56 @@ test('Singapore XR environment projects its stage, structures, and selected asse
   assert.equal(stageFootprint?.heightMeters, 0.08)
   assert.deepEqual(
     environment.stageFootprint,
-    projectLocalRectangle(0, 0, 32, 24, 0, profile),
+    projectLocalRectangle(0, 0, 32, 24, 0),
   )
   assert.deepEqual(
     environment.stageFootprint[0],
-    projectFlightSimMissionPositionToGeospatial(
-      Object.freeze([-16, 0, -12]),
-      profile.spawn.position,
-    ),
+    projectSingaporeLocalMeters(-16, 12),
   )
-  assert.deepEqual(environment.anchor, projectFlightSimMissionPositionToGeospatial(
-    profile.spawn.position,
-    profile.spawn.position,
-  ))
+  assert.deepEqual(
+    environment.stageFootprint[2],
+    projectSingaporeLocalMeters(16, -12),
+  )
+  assertCoordinateApproximately(
+    Object.freeze([
+      (environment.stageFootprint[0][0] + environment.stageFootprint[2][0]) / 2,
+      (environment.stageFootprint[0][1] + environment.stageFootprint[2][1]) / 2,
+    ]) as GeospatialCoordinate,
+    projectSingaporeLocalMeters(0, 0),
+    'stage footprint keeps its authored local-metre centre',
+  )
+  assertApproximately(
+    projectedDistanceMeters(
+      environment.stageFootprint[0],
+      environment.stageFootprint[1],
+    ),
+    32,
+    'stage footprint keeps its authored 32 metre width',
+  )
+  assertApproximately(
+    projectedDistanceMeters(
+      environment.stageFootprint[1],
+      environment.stageFootprint[2],
+    ),
+    24,
+    'stage footprint keeps its authored 24 metre depth',
+  )
+  assert.deepEqual(environment.anchor, projectSingaporeLocalMeters(0, 0))
   const skylineCenter = environment.surfaces.find(
     surface => surface.id === 'skyline-center',
   )
   assert.equal(skylineCenter?.baseHeightMeters, 0)
   assert.equal(skylineCenter?.heightMeters, 12)
+  assertApproximately(
+    projectedDistanceMeters(skylineCenter!.ring[0], skylineCenter!.ring[1]),
+    4.4,
+    'skyline footprint keeps its authored metre width',
+  )
+  assertApproximately(
+    projectedDistanceMeters(skylineCenter!.ring[1], skylineCenter!.ring[2]),
+    4.4,
+    'skyline footprint keeps its authored metre depth',
+  )
 
   const recolored = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
@@ -205,7 +280,7 @@ test('Singapore XR environment projects its stage, structures, and selected asse
       rotationYDegrees: 35,
       scale: 1,
     }],
-  }, profile)
+  })
   assert.notEqual(
     recolored.revision,
     environment.revision,
@@ -214,11 +289,10 @@ test('Singapore XR environment projects its stage, structures, and selected asse
 })
 
 test('four MapLibre modes keep planar 2D footprints and native 3D extrusions on the same source revision', () => {
-  const profile = singaporeFlightProfile()
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [],
-  }, profile)
+  })
   const overlay = createOverlay(environment)
   const { layers, map, sources, visibility } = createFakeMap()
 
@@ -257,11 +331,10 @@ test('four MapLibre modes keep planar 2D footprints and native 3D extrusions on 
 })
 
 test('environment layer creation fails closed when the active style rejects a required layer', () => {
-  const profile = singaporeFlightProfile()
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [],
-  }, profile)
+  })
   const overlay = createOverlay(environment)
   const { map } = createFakeMap()
   map.addLayer = () => {
