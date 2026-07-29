@@ -92,6 +92,8 @@ test("Feature: knowgrph-agentic-os, local MCP descriptor exposes knowgrph.os.sta
   assert.deepEqual(descriptor.inputSchema.properties.view.enum, [
     "process_list",
     "capabilities",
+    "rail_readiness",
+    "agentic_purchase_readiness",
     "cost_summary",
     "gate_catalog",
     "circuit_breakers",

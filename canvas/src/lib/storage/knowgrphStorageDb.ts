@@ -17,6 +17,11 @@ import type {
   KnowgrphStorageCursorRecord,
   KnowgrphStorageOutboxRecord,
 } from '@/lib/storage/knowgrphStorageSyncContract'
+import type { PaymentRailId, PaymentSettlementAsset } from 'grph-shared/payments/paymentRailSsot'
+import type {
+  PaymentOrigin,
+  PaymentSurfaceState,
+} from 'grph-shared/payments/paymentRuntimeContract'
 
 export type KgDocumentLocalRecord = {
   id: string
@@ -35,12 +40,41 @@ export type KgDocumentLocalRecord = {
   isDeleted: boolean
 }
 
-type KnowgrphStorageRecordMap = {
+export type KgPaymentIntentQueueRecord = {
+  id: string
+  clientIntentKey: string
+  parameterFingerprint: string
+  amountMinor: number
+  currency: string
+  settlementAsset: PaymentSettlementAsset
+  origin: PaymentOrigin
+  state: Exclude<PaymentSurfaceState, 'idle'>
+  rail: PaymentRailId | null
+  serverIntentId: string | null
+  attemptCount: number
+  nextAttemptAtMs: number
+  creationOrdinal: number
+  createdAtMs: number
+  updatedAtMs: number
+  lastAttemptAtMs: number | null
+  buyerSafeReason: string | null
+}
+
+export type KgPaymentReceiptDocumentRecord = {
+  id: string
+  schemaVersion: 1
+  document: string
+  updatedAtMs: number
+}
+
+export type KnowgrphStorageRecordMap = {
   documents: KgDocumentLocalRecord
   documentChunks: KgDocumentChunkRecord
   graphSnapshots: KgGraphSnapshotRecord
   syncOutbox: KnowgrphStorageOutboxRecord
   syncCursor: KnowgrphStorageCursorRecord
+  paymentIntentQueue: KgPaymentIntentQueueRecord
+  paymentReceiptDocuments: KgPaymentReceiptDocumentRecord
 }
 
 export type KnowgrphStorageCollections = PersistedCollectionMap<KnowgrphStorageRecordMap>
@@ -51,6 +85,15 @@ export type KnowgrphStorageDb = PersistedCollectionDb<KnowgrphStorageRecordMap> 
 
 export const KNOWGRPH_STORAGE_DB_NAME = 'kg:knowgrph-storage'
 export const KNOWGRPH_STORAGE_PERSISTENCE_EVENT = 'kg:knowgrph-storage-persistence-state'
+export const KNOWGRPH_STORAGE_COLLECTION_NAMES = Object.freeze([
+  'documents',
+  'documentChunks',
+  'graphSnapshots',
+  'syncOutbox',
+  'syncCursor',
+  'paymentIntentQueue',
+  'paymentReceiptDocuments',
+] satisfies Array<keyof KnowgrphStorageRecordMap>)
 
 let knowgrphStorageDbSingleton: Promise<KnowgrphStorageDb> | null = null
 
@@ -73,7 +116,7 @@ export const getKnowgrphStorageDb = async (): Promise<KnowgrphStorageDb> => {
     if (!testMode) {
       return createIndexedDbCollectionDb<KnowgrphStorageRecordMap>({
         databaseName: KNOWGRPH_STORAGE_DB_NAME,
-        collectionNames: ['documents', 'documentChunks', 'graphSnapshots', 'syncOutbox', 'syncCursor'],
+        collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
         onPersistenceStateChanged(state) {
           try {
             window.dispatchEvent(new CustomEvent(KNOWGRPH_STORAGE_PERSISTENCE_EVENT, { detail: state }))
@@ -86,7 +129,7 @@ export const getKnowgrphStorageDb = async (): Promise<KnowgrphStorageDb> => {
     return createPersistedCollectionDb<KnowgrphStorageRecordMap>({
       storageKey: KNOWGRPH_STORAGE_DB_NAME,
       persistent: false,
-      collectionNames: ['documents', 'documentChunks', 'graphSnapshots', 'syncOutbox', 'syncCursor'],
+      collectionNames: [...KNOWGRPH_STORAGE_COLLECTION_NAMES],
     })
   })()
   return knowgrphStorageDbSingleton.catch(err => {

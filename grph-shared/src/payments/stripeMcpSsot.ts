@@ -23,7 +23,7 @@ export const STRIPE_MCP_DEFAULT_LOCAL_ARGS = [
 
 export const STRIPE_MCP_SECRET_ENV_KEY = 'STRIPE_SECRET_KEY'
 
-export const STRIPE_MCP_RESTRICTED_KEY_ENV_REF = '${STRIPE_RESTRICTED_KEY}'
+export const STRIPE_MCP_RESTRICTED_KEY_ENV_REF = '${PAYMENT_STRIPE_MCP_SANDBOX_RESTRICTED_KEY}'
 
 export const STRIPE_MCP_DEFAULT_LOCAL_ENV_TEMPLATE = {
   [STRIPE_MCP_SECRET_ENV_KEY]: STRIPE_MCP_RESTRICTED_KEY_ENV_REF,
@@ -35,19 +35,26 @@ export const STRIPE_MCP_DEFAULT_REQUIRE_CONFIRMATION = true
 
 export const STRIPE_MCP_PAYMENT_READINESS_POLICY = [
   'accept payment checkout handoff',
-  'Payment-mutating MCP tools stay behind human confirmation and least-privilege authorization.',
+  'Every hosted Stripe MCP tool requires human confirmation.',
+  'State-changing and spend-bearing tools additionally require the Knowgrph Approval Gate.',
+  'OAuth, autonomous restricted-key, connected-account, sandbox, and live sessions remain separate.',
 ].join('; ')
 
 export const STRIPE_MCP_PAYMENT_TOOL_NAMES = [
-  'create_payment_link',
-  'create_product',
-  'create_price',
-  'create_customer',
-  'create_invoice',
-  'create_invoice_item',
-  'finalize_invoice',
-  'list_payment_intents',
+  'stripe_api_search',
+  'stripe_api_details',
+  'stripe_api_read',
+  'stripe_api_write',
+  'get_stripe_account_info',
   'create_refund',
+  'search_stripe_documentation',
+  'stripe_implementation_planner',
+  'send_stripe_mcp_feedback',
+  'stripe_report',
+] as const
+
+export const STRIPE_MCP_EXCLUDED_TOOL_NAMES = [
+  'get_balance_summary',
 ] as const
 
 export const STRIPE_MCP_DEFAULT_LOCAL_ARGS_JSON = JSON.stringify(STRIPE_MCP_DEFAULT_LOCAL_ARGS, null, 2)

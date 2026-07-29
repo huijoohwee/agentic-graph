@@ -15,6 +15,7 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { runVideoRemixAsync } from "./video-remix-runtime.js"; import { runShowrunnerLocalTool } from "./showrunner-runtime.js"; import { runOsStatusTool } from "./os-status-runtime.js"; import { callSealionSidecarTool } from "./sealion-sidecar-runtime.js"; import { callBrowserApiRuntime } from "./browser-api-runtime.js"; import { runProbeTreeTool } from "./probe-tree-runtime.js"; import { runSmeRiskCopilotTool } from "./sme-risk-copilot-runtime.js"; import { handleAnnotateImageTool, handleAnnotateVideoFrameTool } from "./annotation-runtime.js"; import { runAgentSandboxPolicyTool } from "./agent-sandbox-policy-runtime.js"; import { runAgenticCanvasOsDocsInvokeTool } from "./agentic-canvas-os-docs-runtime.js"; import { isExternalToolGatewayToolName } from "./external-tool-gateway-contract.js"; import { getExternalToolGatewayRuntime } from "./external-tool-gateway-runtime.js"; import { createDefaultApplicationAdapterRegistry } from "./agent-application-adapter-registry.js"; import { createAgentApplicationRuntime, isAgentApplicationToolName } from "./agent-application-runtime.js"; import { runExportPublishTool } from "./export-publish-runtime.js"; import { createEcsRuntime } from "./ecs-runtime.js"; import { isEcsToolName } from "./ecs-tool-contract.js"; import { createLocalRunRuntimeRegistrar } from "./local-run-runtime-registrar.js"; import { isSkillEvolutionToolName, runSkillEvolutionTool } from "./skill-evolution-runtime.js"; import { createLocalSkillEvolutionRuntime } from "./skill-evolution-local-runtime.js"; import { createVoiceStudioRuntime } from "./voice-studio-runtime.js";
+import { createPaymentRuntime } from "./payment-runtime.js";
 import {
   createLocalMemoryToolRuntime,
 } from "./memory-local-runtime.js";
@@ -46,6 +47,7 @@ const ALLOW_EXTERNAL_PATHS =
 const DEFAULT_UI_HOST = process.env.KNOWGRPH_UI_HOST?.trim() || "127.0.0.1";
 const DEFAULT_UI_PORT = Number(process.env.KNOWGRPH_UI_PORT?.trim() || "5173");
 const LOCAL_MCP_TOOLS = buildKnowgrphLocalMcpToolDefinitions({ defaultUiHost: DEFAULT_UI_HOST, defaultUiPort: DEFAULT_UI_PORT }); const ECS_RUNTIME = createEcsRuntime({ rootDir: KNOWGRPH_ROOT }); const LOCAL_RUN_RUNTIME = createLocalRunRuntimeRegistrar({ rootDir: KNOWGRPH_ROOT, env: process.env }); const VOICE_STUDIO_RUNTIME = createVoiceStudioRuntime(); let SKILL_EVOLUTION_RUNTIME; const getSkillEvolutionRuntime = () => SKILL_EVOLUTION_RUNTIME ||= createLocalSkillEvolutionRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env }); let AGENT_APPLICATION_RUNTIME; const getAgentApplicationRuntime = () => AGENT_APPLICATION_RUNTIME ||= createAgentApplicationRuntime({ adapterRegistry: createDefaultApplicationAdapterRegistry({ externalGateway: getExternalToolGatewayRuntime() }) });
+const PAYMENT_RUNTIME = createPaymentRuntime({ env: process.env });
 const MEMORY_RUNTIME = createLocalMemoryToolRuntime({ rootDir: KNOWGRPH_ROOT, env: process.env });
 const LOCAL_MCP_PROMPTS = buildKnowgrphAgentReadyPromptContracts();
 const LOCAL_MCP_RESOURCE_TEMPLATES = buildKnowgrphAgentReadyResourceTemplateContracts();
@@ -348,6 +350,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
   const args = request.params?.arguments ?? {};
 
   try {
+    if (PAYMENT_RUNTIME.canHandle(toolName)) {
+      const payload = await PAYMENT_RUNTIME.run(toolName, args, { signal: extra?.signal });
+      return jsonToolResult(payload, payload.ok === false);
+    }
     if (isStorageSyncLocalToolName(toolName)) {
       const payload = runStorageSyncLocalTool(toolName, args);
       return jsonToolResult(payload, true);
@@ -554,7 +560,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     if ([KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionDetectLanguageVariant, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionTranslateLocalize, KNOWGRPH_LOCAL_MCP_TOOL_NAMES.sealionSafetyCheck].includes(toolName)) return jsonToolResult(await callSealionSidecarTool(toolName, args, { env: process.env }));
     if (typeof toolName === "string" && toolName.startsWith("knowgrph.showrunner.")) return runShowrunnerLocalTool(toolName, args, { rootDir: KNOWGRPH_ROOT });
     if (typeof toolName === "string" && toolName.startsWith("knowgrph.sandbox.policy.")) { const payload = await runAgentSandboxPolicyTool(toolName, args, { rootDir: KNOWGRPH_ROOT }); return jsonToolResult(payload, payload.ok === false); }
-    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.osStatus) return runOsStatusTool(args.view, args, { rootDir: KNOWGRPH_ROOT }).then((payload) => jsonToolResult(payload, payload.ok === false));
+    if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.osStatus) return runOsStatusTool(args.view, args, { rootDir: KNOWGRPH_ROOT, env: process.env }).then((payload) => jsonToolResult(payload, payload.ok === false));
     if (
       toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.search
       || toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.fetch

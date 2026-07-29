@@ -278,6 +278,26 @@
       "import": "./dist/payments/paymentRecordDocument.js",
       "default": "./dist/payments/paymentRecordDocument.js"
     },
+    "./payments/paymentRuntimeContract": {
+      "types": "./dist/payments/paymentRuntimeContract.d.ts",
+      "import": "./dist/payments/paymentRuntimeContract.js",
+      "default": "./dist/payments/paymentRuntimeContract.js"
+    },
+    "./payments/agenticPurchaseRuntimeContract": {
+      "types": "./dist/payments/agenticPurchaseRuntimeContract.d.ts",
+      "import": "./dist/payments/agenticPurchaseRuntimeContract.js",
+      "default": "./dist/payments/agenticPurchaseRuntimeContract.js"
+    },
+    "./payments/agenticPurchaseReadinessContract": {
+      "types": "./dist/payments/agenticPurchaseReadinessContract.d.ts",
+      "import": "./dist/payments/agenticPurchaseReadinessContract.js",
+      "default": "./dist/payments/agenticPurchaseReadinessContract.js"
+    },
+    "./payments/paymentBuyerProductSsot": {
+      "types": "./dist/payments/paymentBuyerProductSsot.d.ts",
+      "import": "./dist/payments/paymentBuyerProductSsot.js",
+      "default": "./dist/payments/paymentBuyerProductSsot.js"
+    },
     "./payments/straitsxPaymentSsot": {
       "types": "./dist/payments/straitsxPaymentSsot.d.ts",
       "import": "./dist/payments/straitsxPaymentSsot.js",

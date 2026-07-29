@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -5,10 +6,18 @@ export const STRIPE_PAYMENT_SSOT_PATH =
   'grph-shared/src/payments/stripePaymentSsot.ts'
 export const STRAITSX_PAYMENT_SSOT_PATH =
   'grph-shared/src/payments/straitsxPaymentSsot.ts'
+export const PAYMENT_BUYER_PRODUCT_SSOT_PATH =
+  'grph-shared/src/payments/paymentBuyerProductSsot.ts'
 
 const REQUIREMENT_STATUSES = new Set(['implemented', 'partial', 'not_implemented'])
 const OPEN_QUESTION_STATUSES = new Set(['open', 'resolved'])
-const OPEN_QUESTION_GATES = new Set(['source', 'providerSandbox', 'non_blocking'])
+const OPEN_QUESTION_GATES = new Set([
+  'source',
+  'providerSandbox',
+  'browser',
+  'protectedIntegration',
+  'non_blocking',
+])
 
 const isRecord = value =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -111,22 +120,67 @@ const readExportedObjectString = (source, exportName, propertyName) => {
 export function readTrackedPaymentContracts(root) {
   const stripeSource = readFileSync(path.join(root, STRIPE_PAYMENT_SSOT_PATH), 'utf8')
   const straitsxSource = readFileSync(path.join(root, STRAITSX_PAYMENT_SSOT_PATH), 'utf8')
+  const buyerProductSource = readFileSync(
+    path.join(root, PAYMENT_BUYER_PRODUCT_SSOT_PATH),
+    'utf8',
+  )
   return {
-    stripeApiVersion: readExportedString(stripeSource, 'STRIPE_PAYMENT_API_VERSION'),
+    stripeRequestApiVersion:
+      readExportedString(stripeSource, 'STRIPE_PAYMENT_REQUEST_API_VERSION'),
+    stripeWebhookApiVersion:
+      readExportedString(stripeSource, 'STRIPE_PAYMENT_WEBHOOK_API_VERSION'),
     stripeSecretNames: [
+      readExportedObjectString(stripeSource, 'STRIPE_PAYMENT_ENV_KEYS', 'runtimeRestrictedKey'),
+      readExportedObjectString(stripeSource, 'STRIPE_PAYMENT_ENV_KEYS', 'mcpRestrictedKey'),
+      readExportedObjectString(stripeSource, 'STRIPE_PAYMENT_ENV_KEYS', 'runtimeWebhookSecret'),
       readExportedObjectString(stripeSource, 'STRIPE_PAYMENT_ENV_KEYS', 'restrictedKey'),
       readExportedObjectString(stripeSource, 'STRIPE_PAYMENT_ENV_KEYS', 'secretKey'),
       readExportedObjectString(stripeSource, 'STRIPE_PAYMENT_ENV_KEYS', 'webhookSecret'),
     ],
     straitsxSecretNames: [
-      readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'apiKey'),
-      readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'signingPrivateKey'),
+      readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'sandboxApiKey'),
+      readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'sandboxPublicKeyId'),
+      readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'sandboxSigningPrivateKey'),
+      readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'sandboxCallbackSecret'),
     ],
     straitsxIntegrationModelKey:
       readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'integrationModel'),
+    straitsxFundFlowKey:
+      readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'fundFlow'),
     straitsxAuthModeKey:
       readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'authMode'),
+    straitsxGrantedProductsKey:
+      readExportedObjectString(straitsxSource, 'STRAITSX_ENV_KEYS', 'grantedProducts'),
+    buyerProductEnvironmentNames: [
+      readExportedObjectString(
+        buyerProductSource,
+        'PAYMENT_BUYER_PRODUCT_ENV_KEYS',
+        'amountMinor',
+      ),
+      readExportedObjectString(
+        buyerProductSource,
+        'PAYMENT_BUYER_PRODUCT_ENV_KEYS',
+        'currency',
+      ),
+      readExportedObjectString(
+        buyerProductSource,
+        'PAYMENT_BUYER_PRODUCT_ENV_KEYS',
+        'settlementAsset',
+      ),
+    ],
   }
+}
+
+export const buildKnowgrphPaymentsEvidenceDigest = (root, evidencePaths) => {
+  const digest = createHash('sha256')
+  for (const relativePath of [...evidencePaths].sort()) {
+    const bytes = readFileSync(path.join(root, relativePath))
+    digest.update(relativePath)
+    digest.update('\0')
+    digest.update(createHash('sha256').update(bytes).digest('hex'))
+    digest.update('\n')
+  }
+  return digest.digest('hex')
 }
 
 const parseTomlScalar = value => {

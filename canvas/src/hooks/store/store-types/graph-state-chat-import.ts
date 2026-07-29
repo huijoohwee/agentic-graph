@@ -220,8 +220,8 @@ export interface GraphStateChatImport {
   pushChatExchangeLog: (entry: ChatExchangeLogEntryInput) => void;
   clearChatExchangeLogs: () => void;
   mediaNodeOpacity: number;
-  paymentsStripePaywallEnabled: boolean;
-  setPaymentsStripePaywallEnabled: (enabled: boolean) => void;
+  paymentsPaywallEnabled: boolean;
+  setPaymentsPaywallEnabled: (enabled: boolean) => void;
   paymentsStripeCheckoutUrl: string;
   setPaymentsStripeCheckoutUrl: (url: string) => void;
   chatProvider: string;

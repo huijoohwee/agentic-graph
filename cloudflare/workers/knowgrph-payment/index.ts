@@ -1,4 +1,5 @@
 import { handleAgenticCommerceRoute, isAgenticCommerceRoute, isAgenticCommerceRouteDbBacked } from './agenticCommerce'
+import { handlePaymentRuntimeRoute, isPaymentRuntimeRoute } from './paymentRuntimeRoutes'
 import { handleStripePaymentRoute, isStripePaymentRoute } from './payments'
 import { handleStrytreeRoute, isStrytreeRoute, processStrytreeQueueMessage } from './strytreeApi'
 import { execute, normalizeNumber, normalizeString, queryFirst, readDb, type D1DatabaseLike } from '../shared/d1'
@@ -47,7 +48,7 @@ type StrytreeLedgerMutationPayload = {
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,POST,OPTIONS',
-  'access-control-allow-headers': 'content-type,authorization,stripe-signature,strytree-signature,idempotency-key,api-version',
+  'access-control-allow-headers': 'content-type,authorization,stripe-signature,xfers-signature,strytree-signature,idempotency-key,api-version',
   'access-control-max-age': '86400',
 }
 
@@ -210,6 +211,13 @@ const handlePaymentRequest = async (
   if (strytreeResponse) return strytreeResponse
   const agenticCommerceResponse = await handleAgenticCommerceRoute(request, env, db, CORS_HEADERS)
   if (agenticCommerceResponse) return agenticCommerceResponse
+  const runtimeResponse = await handlePaymentRuntimeRoute({
+    request,
+    env,
+    db,
+    corsHeaders: CORS_HEADERS,
+  })
+  if (runtimeResponse) return runtimeResponse
   const paymentResponse = await handleStripePaymentRoute(request, env, db, CORS_HEADERS)
   if (paymentResponse) return paymentResponse
   return paymentWorkerError(404, 'payment route not found')
@@ -219,7 +227,12 @@ export const createKnowgrphPaymentWorker = () => ({
   async fetch(request: Request, env: KnowgrphPaymentWorkerEnv): Promise<Response> {
     if (request.method === 'OPTIONS') return noContent()
     const url = new URL(request.url)
-    if (!isStrytreeRoute(url.pathname) && !isAgenticCommerceRoute(url.pathname) && !isStripePaymentRoute(url.pathname)) {
+    if (
+      !isStrytreeRoute(url.pathname)
+      && !isAgenticCommerceRoute(url.pathname)
+      && !isPaymentRuntimeRoute(url.pathname)
+      && !isStripePaymentRoute(url.pathname)
+    ) {
       return paymentWorkerError(404, 'payment route not found')
     }
     if (isAgenticCommerceRoute(url.pathname) && !isAgenticCommerceRouteDbBacked(url.pathname)) {
