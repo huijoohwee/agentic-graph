@@ -1,7 +1,9 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { TextDecoder } from "node:util";
 
+import { readStableBoundedFile } from "./bounded-file-reader.js";
 import { IMPLEMENTATION_RUN_SCHEMA } from "./implementation-run-tool-contract.js";
 
 const RUN_ID = /^ir_[a-f0-9]{24}$/;
@@ -38,10 +40,15 @@ const redactEvent = (value, key = "") => {
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 export class ImplementationRunStore {
-  constructor({ rootDir, now = () => new Date() }) {
+  constructor({
+    rootDir,
+    now = () => new Date(),
+    stableFileReader = readStableBoundedFile,
+  }) {
     this.rootDir = path.resolve(rootDir);
     this.baseDir = path.join(this.rootDir, ".knowgrph-workspace", "implementation-runs");
     this.now = now;
+    this.stableFileReader = stableFileReader;
   }
 
   runDir(runId) {
@@ -166,10 +173,24 @@ export class ImplementationRunStore {
     await this.assertBaseDirectory();
     const runDirectory = this.runDir(runId);
     await this.ensureSafeDirectory(runDirectory);
-    const stateStat = await fs.lstat(this.statePath(runId));
-    if (!stateStat.isFile() || stateStat.isSymbolicLink()) throw new Error(`Unsafe implementation-run state file: ${runId}`);
-    if (stateStat.size > MAX_STATE_BYTES) throw Object.assign(new Error(`Durable implementation-run state exceeds its ${MAX_STATE_BYTES}-byte read bound: ${runId}`), { code: "DURABLE_STATE_TOO_LARGE" });
-    const state = JSON.parse(await fs.readFile(this.statePath(runId), "utf8"));
+    let content;
+    try {
+      ({ content } = await this.stableFileReader({
+        filePath: this.statePath(runId),
+        containingDirectory: runDirectory,
+        maximumBytes: MAX_STATE_BYTES,
+      }));
+    } catch (error) {
+      if (error?.code === "ENOENT") throw error;
+      const tooLarge = error?.code === "BOUNDED_FILE_TOO_LARGE";
+      throw Object.assign(
+        new Error(tooLarge
+          ? `Durable implementation-run state exceeds its ${MAX_STATE_BYTES}-byte read bound: ${runId}`
+          : `Unsafe or changing implementation-run state file: ${runId}`),
+        { code: tooLarge ? "DURABLE_STATE_TOO_LARGE" : "DURABLE_STATE_UNSAFE" },
+      );
+    }
+    const state = JSON.parse(content.toString("utf8"));
     if (state.schema !== IMPLEMENTATION_RUN_SCHEMA || state.runId !== runId || !Number.isInteger(state.revision)) {
       throw new Error(`Invalid durable implementation-run state: ${runId}`);
     }
@@ -210,19 +231,35 @@ export class ImplementationRunStore {
     let bytes = 0;
     for (const entry of entries) {
       const filePath = path.join(this.eventsDir(runId), entry.name);
-      const stat = await fs.lstat(filePath);
-      if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Unsafe implementation-run event: ${entry.name}`);
-      if (stat.size > MAX_EVENT_BYTES) throw Object.assign(new Error(`Durable implementation-run event exceeds its ${MAX_EVENT_BYTES}-byte read bound.`), { code: "DURABLE_EVENT_TOO_LARGE" });
-      if (bytes + stat.size > 1024 * 1024) break;
-      bytes += stat.size;
-      output.push(JSON.parse(await fs.readFile(filePath, "utf8")));
+      let content;
+      try {
+        ({ content } = await this.stableFileReader({
+          filePath,
+          containingDirectory: this.eventsDir(runId),
+          maximumBytes: MAX_EVENT_BYTES,
+        }));
+      } catch (error) {
+        const tooLarge = error?.code === "BOUNDED_FILE_TOO_LARGE";
+        throw Object.assign(
+          new Error(tooLarge
+            ? `Durable implementation-run event exceeds its ${MAX_EVENT_BYTES}-byte read bound.`
+            : `Unsafe or changing implementation-run event: ${entry.name}`),
+          { code: tooLarge ? "DURABLE_EVENT_TOO_LARGE" : "DURABLE_EVENT_UNSAFE" },
+        );
+      }
+      if (bytes + content.byteLength > 1024 * 1024) break;
+      bytes += content.byteLength;
+      output.push(JSON.parse(content.toString("utf8")));
     }
     return output;
   }
 
   async writeArtifact(runId, fileName, content, { supervisorToken = "" } = {}) {
     if (!/^[a-z0-9][a-z0-9._-]{0,119}$/.test(String(fileName))) throw new Error("Implementation-run artifact name is invalid.");
-    if (Buffer.byteLength(String(content)) > MAX_ARTIFACT_BYTES) throw Object.assign(new Error(`Implementation-run artifact exceeds its ${MAX_ARTIFACT_BYTES}-byte bound.`), { code: "ARTIFACT_TOO_LARGE" });
+    const bytes = Buffer.isBuffer(content)
+      ? content
+      : Buffer.from(String(content), "utf8");
+    if (bytes.byteLength > MAX_ARTIFACT_BYTES) throw Object.assign(new Error(`Implementation-run artifact exceeds its ${MAX_ARTIFACT_BYTES}-byte bound.`), { code: "ARTIFACT_TOO_LARGE" });
     const write = async () => {
       await this.ensureSafeDirectory(this.runDir(runId));
       if (supervisorToken) {
@@ -231,7 +268,7 @@ export class ImplementationRunStore {
       }
       const filePath = path.join(this.runDir(runId), fileName);
       const temporary = `${filePath}.tmp-${process.pid}-${crypto.randomUUID()}`;
-      await fs.writeFile(temporary, String(content), { encoding: "utf8", flag: "wx", mode: 0o600 });
+      await fs.writeFile(temporary, bytes, { flag: "wx", mode: 0o600 });
       try {
         await fs.link(temporary, filePath);
       } catch (error) {
@@ -247,6 +284,93 @@ export class ImplementationRunStore {
       return filePath;
     };
     return supervisorToken ? this.withLock(runId, write) : write();
+  }
+
+  async readArtifact(runId, fileName, {
+    expectedDigest = "",
+    expectedBytes,
+    maximumBytes = MAX_ARTIFACT_BYTES,
+    requireUtf8 = false,
+  } = {}) {
+    if (!/^[a-z0-9][a-z0-9._-]{0,119}$/.test(String(fileName))) {
+      throw Object.assign(
+        new Error("Implementation-run artifact name is invalid."),
+        { code: "ARTIFACT_NAME_INVALID" },
+      );
+    }
+    if (
+      !Number.isSafeInteger(maximumBytes)
+      || maximumBytes < 1
+      || maximumBytes > MAX_ARTIFACT_BYTES
+    ) {
+      throw new Error(`Implementation-run artifact read bound must be from 1 to ${MAX_ARTIFACT_BYTES} bytes.`);
+    }
+    if (
+      expectedDigest
+      && !/^sha256:[0-9a-f]{64}$/.test(String(expectedDigest))
+    ) {
+      throw new Error("Expected implementation-run artifact digest must be a lowercase sha256 identity.");
+    }
+    if (
+      expectedBytes !== undefined
+      && (!Number.isSafeInteger(expectedBytes) || expectedBytes < 0)
+    ) {
+      throw new Error("Expected implementation-run artifact bytes must be a non-negative integer.");
+    }
+    if (typeof requireUtf8 !== "boolean") {
+      throw new Error("Implementation-run artifact UTF-8 policy must be boolean.");
+    }
+
+    await this.assertBaseDirectory();
+    const runDirectory = this.runDir(runId);
+    await this.ensureSafeDirectory(runDirectory);
+    const filePath = path.join(runDirectory, fileName);
+    let content;
+    try {
+      ({ content } = await this.stableFileReader({
+        filePath,
+        containingDirectory: runDirectory,
+        maximumBytes,
+      }));
+    } catch (error) {
+      const tooLarge = error?.code === "BOUNDED_FILE_TOO_LARGE";
+      throw Object.assign(
+        new Error(tooLarge
+          ? `Implementation-run artifact exceeds its ${maximumBytes}-byte read bound.`
+          : `Unsafe or changing implementation-run artifact: ${fileName}`),
+        { code: tooLarge ? "ARTIFACT_TOO_LARGE" : "ARTIFACT_UNSAFE" },
+      );
+    }
+    if (expectedBytes !== undefined && content.byteLength !== expectedBytes) {
+      throw Object.assign(
+        new Error(`Implementation-run artifact byte count does not match its receipt: ${fileName}`),
+        { code: "ARTIFACT_BYTES_MISMATCH" },
+      );
+    }
+    const digest = `sha256:${crypto.createHash("sha256").update(content).digest("hex")}`;
+    if (expectedDigest && digest !== expectedDigest) {
+      throw Object.assign(
+        new Error(`Implementation-run artifact digest does not match its receipt: ${fileName}`),
+        { code: "ARTIFACT_DIGEST_MISMATCH" },
+      );
+    }
+    let decoded;
+    try {
+      decoded = requireUtf8
+        ? new TextDecoder("utf-8", { fatal: true }).decode(content)
+        : content.toString("utf8");
+    } catch {
+      throw Object.assign(
+        new Error(`Implementation-run artifact is not valid UTF-8: ${fileName}`),
+        { code: "ARTIFACT_UTF8_INVALID" },
+      );
+    }
+    return Object.freeze({
+      artifact: fileName,
+      bytes: content.byteLength,
+      digest,
+      content: decoded,
+    });
   }
 
   async runIdPage({ afterRunId = "", limit = 200 } = {}) {

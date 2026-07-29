@@ -119,6 +119,17 @@ test("implementation-run plan is non-mutating and validates exact catalog member
   const traversal = await runtime.plan({ ...fx.spec, allowedPaths: ["../outside"] });
   assert.equal(traversal.ok, false);
   assert.equal(traversal.error.code, "invalid_arguments");
+  const withLedger = await runtime.plan({
+    ...fx.spec,
+    agenticSdlcLedgerPath: "src/evidence/agentic-sdlc-run.json",
+  });
+  assert.equal(withLedger.ok, true, JSON.stringify(withLedger.diagnostics));
+  const ledgerOutsideScope = await runtime.plan({
+    ...fx.spec,
+    agenticSdlcLedgerPath: "evidence/agentic-sdlc-run.json",
+  });
+  assert.equal(ledgerOutsideScope.ok, false);
+  assert.equal(ledgerOutsideScope.error.code, "invalid_arguments");
 });
 
 test("token-complete ACOS at an older revision is rejected before durable or worktree mutation", async (t) => {
