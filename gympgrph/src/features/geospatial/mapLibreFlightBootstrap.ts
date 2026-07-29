@@ -218,6 +218,50 @@ export function markMapLibreFlightBootstrapApplied(map: any): void {
   state.providerPresentation = null
 }
 
+/**
+ * The Flight publisher can synchronously request a stopped presentation while
+ * React is still committing the bootstrap-style handoff for an already-mounted
+ * provider map. Do not let that old map acknowledge the preparation frame: the
+ * bootstrap style would immediately discard its source and make ready wait for
+ * another GeoJSON worker settlement.
+ *
+ * A provider style is still an allowed presenter after this map earned the
+ * exact ready frame. Provider promotion deliberately clears `bootstrapApplied`,
+ * so retain that narrower ready-only path without allowing a new stopped run to
+ * prepare against the provider map.
+ */
+export function canMapLibreFlightOverlayPresent(
+  map: any,
+  presentation: FlightGeoOverlayPresentation,
+): boolean {
+  if (!map || (typeof map !== 'object' && typeof map !== 'function')) {
+    return false
+  }
+  const state = bootstrapStateByMap.get(map)
+  const providerPresentation = state?.providerPresentation
+  return Boolean(
+    state
+    && !state.disposed
+    && (
+      state.bootstrapApplied
+      || (
+        presentation.phase === 'ready'
+        && state.deadlineFramePresented
+        && providerPresentation
+        && presentation.profileId === providerPresentation.profileId
+        && presentation.revision === providerPresentation.revision
+        && presentation.runId === providerPresentation.runId
+        && presentation.tick === providerPresentation.tick
+        && (
+          presentation.readyFrameRequestId
+            === providerPresentation.readyFrameRequestId
+          || presentation.readyFrameRequestId === null
+        )
+      )
+    ),
+  )
+}
+
 export function markMapLibreFlightOverlayPresented(
   map: any,
   presentation: FlightGeoOverlayPresentation,

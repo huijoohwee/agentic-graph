@@ -8,6 +8,7 @@ import {
   type FlightGeoOverlaySnapshot,
 } from '../../../gympgrph/src/flightGeoOverlay.js'
 import {
+  canMapLibreFlightOverlayPresent,
   disposeMapLibreFlightBootstrap,
   markMapLibreFlightBootstrapApplied,
   markMapLibreFlightOverlayPresented,
@@ -217,6 +218,90 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
   reconcile(null)
   await flushMicrotasks()
   assert.equal(calls.at(-1), 'style:https://provider.test/style.json:retained')
+  disposeMapLibreFlightBootstrap(map)
+})
+
+test('only the bootstrap style can prepare a stopped Flight frame on a mounted provider map', async context => {
+  const readyOverlay = readyFlightOverlay('ready:bootstrap-presenter', 21)
+  const stoppedPresentation = {
+    ...readyOverlay,
+    phase: 'stopped' as const,
+    readyFrameRequestId: null,
+    revision: 'stopped:bootstrap-presenter',
+    runId: 0,
+  }
+  clearFlightGeoOverlay()
+  setFlightGeoOverlay(readyOverlay)
+  context.after(clearFlightGeoOverlay)
+  const renderListeners = new Set<() => void>()
+  const map = {
+    off: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.delete(listener)
+    },
+    on: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.add(listener)
+    },
+    setStyle: () => void 0,
+    triggerRepaint: () => void 0,
+  }
+
+  assert.equal(canMapLibreFlightOverlayPresent(map, stoppedPresentation), false)
+  assert.equal(canMapLibreFlightOverlayPresent(map, readyOverlay), false)
+
+  reconcileMapLibreFlightBootstrap({
+    bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => 'provider:bootstrap-presenter',
+    map,
+    scheduleProviderStyleApply: applyProviderStyleImmediately,
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+  })
+  assert.equal(canMapLibreFlightOverlayPresent(map, stoppedPresentation), true)
+  assert.equal(canMapLibreFlightOverlayPresent(map, readyOverlay), true)
+
+  markMapLibreFlightReadyFramePresented(
+    map,
+    readyOverlay.revision,
+    readyOverlay.readyFrameRequestId!,
+  )
+  markMapLibreFlightOverlayPresented(map, readyOverlay)
+  for (const listener of [...renderListeners]) listener()
+  await flushMicrotasks()
+
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, stoppedPresentation),
+    false,
+    'a promoted provider cannot prepare a later stopped run',
+  )
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, readyOverlay),
+    true,
+    'the same map may re-present an already-earned ready frame after promotion',
+  )
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, {
+      ...readyOverlay,
+      readyFrameRequestId: null,
+    }),
+    true,
+    'the consumed form of that exact ready frame may re-present after promotion',
+  )
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, {
+      ...readyOverlay,
+      readyFrameRequestId: readyOverlay.readyFrameRequestId! + 1,
+    }),
+    false,
+    'a later ready request cannot borrow a prior provider presentation',
+  )
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, {
+      ...readyOverlay,
+      revision: 'ready:bootstrap-presenter:stale',
+    }),
+    false,
+    'a later ready revision cannot borrow a prior provider presentation',
+  )
   disposeMapLibreFlightBootstrap(map)
 })
 

@@ -16,6 +16,9 @@ import {
   FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
 } from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
+  markMapLibreFlightBootstrapApplied,
+} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap'
+import {
   applyFlightGeoOverlayToMap,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
@@ -102,6 +105,7 @@ function flightOverlay(
 function presentationHarness(
   initial: FlightGeoOverlaySnapshot,
   afterPresented?: (presentation: FlightGeoOverlayPresentation) => void,
+  options?: Readonly<{ bootstrapApplied?: boolean }>,
 ) {
   let current = initial
   let width = 0
@@ -157,6 +161,9 @@ function presentationHarness(
     triggerRepaint: () => {
       repaintCount += 1
     },
+  }
+  if (options?.bootstrapApplied !== false) {
+    markMapLibreFlightBootstrapApplied(map)
   }
   const presentations: FlightGeoOverlayPresentation[] = []
   const presented = {
@@ -343,6 +350,28 @@ test('same-revision stopped presentation can acknowledge a fresh preparation', (
   assert.equal(harness.listenerCount(), 1)
   harness.emitRender()
   assert.equal(harness.presentations.length, 2)
+})
+
+test('a stopped Flight frame waits for the local bootstrap before acknowledging a mounted provider map', () => {
+  const stopped = flightOverlay('stopped', 'stopped:bootstrap-fence')
+  const harness = presentationHarness(stopped, undefined, {
+    bootstrapApplied: false,
+  })
+  harness.setWidth(100)
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(
+    harness.presentations.length,
+    0,
+    'the retained provider map cannot satisfy stopped-stage preparation',
+  )
+  assert.equal(harness.listenerCount(), 1)
+
+  markMapLibreFlightBootstrapApplied(harness.map)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
 })
 
 test('a fresh ready-frame request re-arms the same deterministic revision', () => {

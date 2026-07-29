@@ -26,6 +26,7 @@ import {
 } from '../../flightGeoEnvironmentMapLibre.js'
 import { readGeoJsonSourceData } from '../../maplibreLayers.js'
 import {
+  canMapLibreFlightOverlayPresent,
   markMapLibreFlightOverlayPresented,
   markMapLibreFlightReadyFramePresented,
 } from './mapLibreFlightBootstrap.js'
@@ -230,7 +231,12 @@ export function createFlightGeoOverlayPresentationGate(
           canvasVisible = false
         }
       }
-      if (!mapHasExactFlightOverlay(map, current) || !canvas || !canvasVisible) {
+      if (
+        !canMapLibreFlightOverlayPresent(map, current)
+        || !mapHasExactFlightOverlay(map, current)
+        || !canvas
+        || !canvasVisible
+      ) {
         if (!pending) return
         pending.attempts += 1
         if (pending.attempts >= pending.limit) {
@@ -472,6 +478,21 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         restoreMapPadding(map)
         clearFlightGeoOverlayFromMap(map)
         clearFlightGeoEnvironmentFromMap(map)
+        return
+      }
+      // An existing provider map remains mounted while React commits Flight's
+      // bootstrap style. Do not write or acknowledge the stopped frame on that
+      // old style: its sources would be discarded by the imminent handoff.
+      const requiresBootstrapPresentation = (
+        overlay.phase === 'stopped'
+        || (overlay.phase === 'ready' && overlay.tick === 0)
+      )
+      if (
+        requiresBootstrapPresentation
+        && !canMapLibreFlightOverlayPresent(map, overlay)
+      ) {
+        gate.cancel()
+        gate.clearCanvas()
         return
       }
       if (overlay.phase === 'stopped') gate.clearCanvas()
