@@ -1321,6 +1321,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       ref={rootRef}
       className="relative w-full h-full"
       style={{ width: '100%', height: '100%' }}
+      data-kg-flight-sim-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}
     >
       <SvgGeospatialFallback
         featureCollection={graphFeatureCollection}

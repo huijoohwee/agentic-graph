@@ -30,6 +30,10 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     ),
     'utf8',
   )
+  const geospatialHost = readFileSync(
+    resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx'),
+    'utf8',
+  )
 
   for (const marker of [
     'requestXrEnvironmentGeoHandoff',
@@ -58,6 +62,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     || !geoOverlayBridge.includes('setFlightGeoOverlay')
     || !geoOverlayBridge.includes('projectFlightSimToGeospatialOverlay')
     || !geospatialPresentation.includes('applyFlightGeoOverlayToMap(map, overlay)')
+    || !geospatialHost.includes("data-kg-flight-sim-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}")
     || !viewport.includes('<FlightSimGeoSurfaceOverlayLazy />')) {
     throw new Error('expected Media selection, settled source persistence, native MapLibre projection, and transparent Flight composition')
   }
