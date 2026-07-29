@@ -12,8 +12,11 @@ def read_camera_state(page: Page) -> dict[str, Any]:
         async () => {
           const source = await window.__kgFlightSimBrowserProof.importModule('cameraSourceMcpRuntime')
           const flight = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
+          const motion = await window.__kgFlightSimBrowserProof.importModule('xrMotionReferenceRuntime')
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
           const geo = await window.__kgFlightSimBrowserProof.importModule('gympgrphStore')
+          const graphState = store.useGraphStore.getState()
+          const motionRuntime = motion.readXrMotionReferenceRuntime()
           const canvas = document.querySelector(
             '[data-kg-xr-scene-media-drop="1"] canvas',
           )
@@ -24,6 +27,19 @@ def read_camera_state(page: Page) -> dict[str, Any]:
             flight: flight.readFlightSimSnapshot(),
             overlay: geo.readFlightGeoOverlay(),
             viewMode: geo.useGympgrphStore.getState().geospatialViewMode,
+            timeline: {
+              cameraMarks: motionRuntime.plan.camera.length,
+              dirty: motionRuntime.dirty,
+              documentKey: graphState.timelineTransportDocumentKey,
+              playheadSeconds: motionRuntime.playheadSeconds,
+              playing: graphState.timelineTransportPlaying,
+              position: graphState.timelineTransportPosition,
+              sceneKey: motionRuntime.sceneKey,
+            },
+            canvasMode: {
+              renderMode: graphState.canvasRenderMode,
+              threeMode: graphState.canvas3dMode,
+            },
             mapCamera: map && center
               ? {
                   bearing: map.getBearing(),
@@ -33,7 +49,7 @@ def read_camera_state(page: Page) -> dict[str, Any]:
                   zoom: map.getZoom(),
                 }
               : null,
-            pose: store.useGraphStore.getState().captureThreeCameraPose(),
+            pose: graphState.captureThreeCameraPose(),
             pointerLocked: document.pointerLockElement === canvas,
             pointerState: canvas?.dataset.kgFlightSimPointerLock || '',
             pointerLockError:
@@ -45,7 +61,7 @@ def read_camera_state(page: Page) -> dict[str, Any]:
                     window.__kgFlightSimPointerLockHarness.nativeError,
                 }
               : { mode: 'native', nativeError: null },
-            panelView: store.useGraphStore.getState().floatingPanelView,
+            panelView: graphState.floatingPanelView,
           }
         }
         """
