@@ -10,9 +10,6 @@ import {
   createFlightSimSpatialProfile,
 } from '../../canvas/src/features/game-flight-sim/flightSimSpatialProfile.ts'
 import {
-  flightSimAuthoredWorldUnitsToMeters,
-} from '../../canvas/src/features/game-flight-sim/flightSimSpatialScale.ts'
-import {
   resolveXrCanonicalSceneSpatialSource,
 } from '../../canvas/src/features/three/xrCanonicalSceneSpatialSource.ts'
 import {
@@ -103,6 +100,36 @@ function singaporeFlightProfile() {
   )
 }
 
+function projectLocalRectangle(
+  centerX: number,
+  centerZ: number,
+  widthMeters: number,
+  depthMeters: number,
+  rotationDegrees: number,
+  profile: ReturnType<typeof singaporeFlightProfile>,
+) {
+  const rotationRadians = rotationDegrees * Math.PI / 180
+  const cosine = Math.cos(rotationRadians)
+  const sine = Math.sin(rotationRadians)
+  const halfWidth = widthMeters / 2
+  const halfDepth = depthMeters / 2
+  const corners = [
+    [-halfWidth, -halfDepth],
+    [halfWidth, -halfDepth],
+    [halfWidth, halfDepth],
+    [-halfWidth, halfDepth],
+  ] as const
+  const ring = corners.map(([offsetX, offsetZ]) => projectFlightSimMissionPositionToGeospatial(
+    Object.freeze([
+      centerX + offsetX * cosine + offsetZ * sine,
+      0,
+      centerZ - offsetX * sine + offsetZ * cosine,
+    ]),
+    profile.spawn.position,
+  ))
+  return [...ring, ring[0]]
+}
+
 test('Singapore XR environment projects its stage, structures, and selected asset to one geographic anchor', () => {
   const profile = singaporeFlightProfile()
   const environment = projectXrEnvironmentToFlightGeo({
@@ -132,25 +159,27 @@ test('Singapore XR environment projects its stage, structures, and selected asse
   assert.equal(helicopter?.kind, 'subject')
   assert.equal(helicopter?.color, '#f59e0b')
   const helicopterAsset = resolveXrSceneLibraryAsset('vehicle-helicopter')
-  assert.equal(helicopter?.baseHeightMeters, 40)
-  assert.equal(
-    helicopter?.heightMeters,
-    40 + flightSimAuthoredWorldUnitsToMeters(
-      helicopterAsset.dimensionsMeters[1],
-    ),
-  )
+  assert.deepEqual(helicopterAsset.dimensionsMeters, [7.4, 3.4, 9])
+  assert.equal(helicopter?.baseHeightMeters, 2)
+  assert.equal(helicopter?.heightMeters, 5.4)
   assert.equal(helicopter?.ring.length, 5)
+  assert.deepEqual(
+    helicopter?.ring,
+    projectLocalRectangle(4, -3, 7.4, 9, 35, profile),
+  )
   const stageFootprint = environment.surfaces.find(
     surface => surface.kind === 'stage-footprint',
   )
-  assert.equal(
-    stageFootprint?.heightMeters,
-    flightSimAuthoredWorldUnitsToMeters(0.08),
+  assert.equal(stageFootprint?.baseHeightMeters, 0)
+  assert.equal(stageFootprint?.heightMeters, 0.08)
+  assert.deepEqual(
+    environment.stageFootprint,
+    projectLocalRectangle(0, 0, 32, 24, 0, profile),
   )
   assert.deepEqual(
     environment.stageFootprint[0],
     projectFlightSimMissionPositionToGeospatial(
-      Object.freeze([-320, 0, -240]),
+      Object.freeze([-16, 0, -12]),
       profile.spawn.position,
     ),
   )
@@ -162,7 +191,7 @@ test('Singapore XR environment projects its stage, structures, and selected asse
     surface => surface.id === 'skyline-center',
   )
   assert.equal(skylineCenter?.baseHeightMeters, 0)
-  assert.equal(skylineCenter?.heightMeters, 240)
+  assert.equal(skylineCenter?.heightMeters, 12)
 
   const recolored = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',

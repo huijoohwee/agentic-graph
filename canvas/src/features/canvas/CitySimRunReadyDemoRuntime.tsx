@@ -9,6 +9,7 @@ import {
 } from '@/features/game-city-sim/citySimSurfaceOwnership'
 import { isCitySimRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 
 export function CitySimRunReadyDemoRuntime() {
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
@@ -37,6 +38,7 @@ export function CitySimRunReadyDemoRuntime() {
         canvasRenderModeIsAuto,
         floatingPanelOpen,
         floatingPanelView,
+        geospatialModeEnabled: readGeospatialOverlayEnabledPreference(),
       })
       if (ownsDocumentLaunchRef.current) {
         ownsDocumentLaunchRef.current = false

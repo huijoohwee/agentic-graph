@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, Callable
 
 from playwright.sync_api import Page
 
@@ -36,6 +36,173 @@ def restore_flight_sim_panel(page: Page) -> None:
     )
 
 
+def _wait_for_browser_contract(
+    page: Page,
+    *,
+    label: str,
+    accepted: Callable[[dict[str, Any]], bool],
+) -> dict[str, Any]:
+    deadline = time.monotonic() + 30
+    observed: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        observed = _read_view(page)
+        if accepted(observed):
+            return observed
+        page.wait_for_timeout(100)
+    raise AssertionError(
+        f"timed out waiting for {label}: {observed}"
+    )
+
+
+def _exit_city_for_cleanup(page: Page) -> None:
+    observed = _read_view(page)
+    if observed.get("cityActive") is not True:
+        return
+    city_panel = page.locator('[data-kg-city-sim-floating-panel="1"]').first
+    exit_button = city_panel.locator('[data-kg-city-sim-exit="1"]').first
+    if exit_button.count() != 1 or not exit_button.is_visible():
+        return
+    exit_button.click(timeout=30_000)
+    _wait_for_browser_contract(
+        page,
+        label="City cleanup restoration",
+        accepted=lambda value: value.get("cityActive") is False
+        and value.get("geospatialEnabled") is True
+        and value.get("geospatialPreferenceEnabled") is True,
+    )
+
+
+def verify_flight_geo_xr_city_handoff(
+    page: Page,
+    *,
+    expected_provider_host: str,
+    expected_view: str,
+    expected_projection: str,
+    expected_style_url: str,
+) -> dict[str, Any]:
+    before = _read_view(page)
+    if (
+        before.get("flightActive") is not True
+        or before.get("hudVisible") is not True
+        or before.get("geospatialEnabled") is not True
+        or before.get("geospatialPreferenceEnabled") is not True
+    ):
+        raise AssertionError(
+            "City handoff requires an active Flight Geo+XR surface: "
+            f"{before}"
+        )
+
+    city_trigger = page.locator(
+        '[data-kg-floating-panel-view-trigger="cityBuilder"]',
+    ).first
+    city_trigger.wait_for(state="visible", timeout=30_000)
+    city_trigger.click(timeout=30_000)
+    city_panel = page.locator('[data-kg-city-sim-floating-panel="1"]').first
+    city_panel.wait_for(state="visible", timeout=30_000)
+    open_button = city_panel.locator('[data-kg-city-sim-open="1"]').first
+    open_button.wait_for(state="visible", timeout=30_000)
+    if open_button.is_disabled():
+        raise AssertionError("City Builder Open was disabled during Flight handoff")
+    open_button.click(timeout=30_000)
+
+    city = _wait_for_browser_contract(
+        page,
+        label="exclusive City XR surface after Flight Geo+XR",
+        accepted=lambda value: (
+            value.get("flightActive") is False
+            and value.get("cityActive") is True
+            and value.get("cityPanelVisible") is True
+            and value.get("cityStageActive") is True
+            and value.get("floatingPanelOpen") is True
+            and value.get("floatingPanelView") == "cityBuilder"
+            and value.get("renderMode") == "3d"
+            and value.get("canvas3dMode") == "xr"
+            and value.get("geospatialEnabled") is False
+            and value.get("geospatialPreferenceEnabled") is False
+            and value.get("geoXrSurfaceActive") is False
+            and value.get("geoXrLayerCount") == 0
+            and value.get("mapLibreCanvasCount") == 0
+            and value.get("visibleMapLibreCanvasCount") == 0
+            and value.get("threeCanvasOwnerCount") == 1
+            and value.get("hudVisible") is False
+            and value.get("flightHudCount") == 0
+            and value.get("flightSourceFeatures") == 0
+            and value.get("environmentSourceFeatures") == 0
+            and value.get("renderedFeatureCount") == 0
+            and value.get("renderedEnvironmentFeatureCount") == 0
+        ),
+    )
+
+    exit_button = city_panel.locator('[data-kg-city-sim-exit="1"]').first
+    exit_button.wait_for(state="visible", timeout=30_000)
+    if exit_button.is_disabled():
+        raise AssertionError("City Builder Exit was disabled during handoff proof")
+    exit_button.click(timeout=30_000)
+    restored = _wait_for_browser_contract(
+        page,
+        label="awaited City Geo+XR preference restoration",
+        accepted=lambda value: (
+            value.get("flightActive") is False
+            and value.get("cityActive") is False
+            and value.get("cityPanelVisible") is True
+            and value.get("cityStageActive") is False
+            and value.get("floatingPanelOpen") is True
+            and value.get("floatingPanelView") == "cityBuilder"
+            and value.get("renderMode") == "3d"
+            and value.get("canvas3dMode") == "xr"
+            and value.get("geospatialEnabled") is True
+            and value.get("geospatialPreferenceEnabled") is True
+            and value.get("geoXrSurfaceActive") is True
+            and value.get("geoXrLayerCount") == 1
+            and value.get("mapLibreCanvasCount") == 1
+            and value.get("visibleMapLibreCanvasCount") == 1
+            and value.get("threeCanvasOwnerCount") == 1
+            and value.get("hudVisible") is False
+            and value.get("flightHudCount") == 0
+            and value.get("flightSourceFeatures") == 0
+            and value.get("environmentSourceFeatures") == 0
+            and value.get("renderedFeatureCount") == 0
+            and value.get("renderedEnvironmentFeatureCount") == 0
+        ),
+    )
+
+    flight_trigger = page.locator(
+        '[data-kg-floating-panel-view-trigger="flightSim"]',
+    ).first
+    flight_trigger.wait_for(state="visible", timeout=30_000)
+    flight_trigger.click(timeout=30_000)
+    flight_panel = page.locator('[data-kg-flight-sim-floating-panel="1"]').first
+    flight_panel.wait_for(state="visible", timeout=30_000)
+    reopen_button = flight_panel.locator('[data-kg-flight-sim-open="1"]').first
+    reopen_button.wait_for(state="visible", timeout=30_000)
+    if reopen_button.is_disabled():
+        raise AssertionError("Flight Sim Open was disabled after City exit")
+    reopen_button.click(timeout=30_000)
+    reopened = _wait_for_view(
+        page,
+        expected_provider_host=expected_provider_host,
+        expected_view=expected_view,
+        expected_projection=expected_projection,
+        expected_style_url=expected_style_url,
+        require_visual_layout=True,
+    )
+    if (
+        reopened.get("cityActive") is not False
+        or reopened.get("cityStageActive") is not False
+        or reopened.get("hudVisible") is not True
+    ):
+        raise AssertionError(
+            "normal Flight reopen did not restore the Flight-only Geo+XR view: "
+            f"{reopened}"
+        )
+    return {
+        "before": before,
+        "city": city,
+        "restored": restored,
+        "reopened": reopened,
+    }
+
+
 def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
     baseline_camera = page.evaluate(
         """
@@ -65,6 +232,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
     source_files_opened = False
     source_files_transition: dict[str, Any] | None = None
     reported_handoff: dict[str, Any] | None = None
+    city_handoff: dict[str, Any] | None = None
     try:
         reported_handoff = prepare_reported_singapore_geo_handoff(page)
         source_files_opened = True
@@ -118,6 +286,14 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                     f"{observed}"
                 )
             results.append(observed)
+        current_case = GEO_XR_VIEW_CASES[-1]
+        city_handoff = verify_flight_geo_xr_city_handoff(
+            page,
+            expected_provider_host=current_case[4],
+            expected_view=current_case[0],
+            expected_projection=current_case[1],
+            expected_style_url=current_case[3],
+        )
         before_movement = _read_view(page)
         page.evaluate(
             """
@@ -166,6 +342,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 """
             )
     finally:
+        _exit_city_for_cleanup(page)
         prior_case = next(
             (
                 case for case in GEO_XR_VIEW_CASES
@@ -218,6 +395,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
         "baselineCameraPreference": baseline_camera["cameraPreference"],
         "baselineCameraSource": baseline_camera["cameraSourceMode"],
         "reportedSingaporeGeoHandoff": reported_handoff,
+        "cityHandoff": city_handoff,
         "sourceFilesTransition": source_files_transition,
         "sourceView": baseline_camera["geospatialViewMode"],
         "sourceStyleUrl": baseline_camera["geospatialStyleUrl"],

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import time
 from typing import Any
 
@@ -13,6 +14,47 @@ from lib.game_flight_sim_smoke_geo_view_cases import (
 from lib.game_flight_sim_smoke_geo_xr_layout import (
     read_geo_xr_layout_occlusion,
 )
+
+
+def _has_authored_environment_surface(
+    last: dict[str, Any],
+    *,
+    surface_id: str,
+    base_height_meters: float,
+    height_meters: float,
+    width_meters: float,
+    depth_meters: float,
+    require_viewport_bounds: bool = False,
+) -> bool:
+    surfaces = last.get("environmentSurfaceMeters") or []
+    surface = next(
+        (
+            candidate
+            for candidate in surfaces
+            if isinstance(candidate, dict)
+            and candidate.get("id") == surface_id
+        ),
+        None,
+    )
+    if not isinstance(surface, dict):
+        return False
+
+    def close(key: str, expected: float, tolerance: float = 0.12) -> bool:
+        value = surface.get(key)
+        return isinstance(value, (int, float)) and math.isclose(
+            float(value), expected, abs_tol=tolerance,
+        )
+
+    return (
+        close("baseHeightMeters", base_height_meters, tolerance=0.01)
+        and close("heightMeters", height_meters, tolerance=0.01)
+        and close("widthMeters", width_meters)
+        and close("depthMeters", depth_meters)
+        and (
+            not require_viewport_bounds
+            or surface.get("viewportBounded") is True
+        )
+    )
 
 
 def _read_view(page: Page) -> dict[str, Any]:
@@ -57,9 +99,12 @@ def _read_view(page: Page) -> dict[str, Any]:
             canvas => String(canvas.dataset.engine || '').startsWith('three.js'),
           )
           const rendererCanvas = rendererCanvases[0] || null
+          const allMapCanvases = Array.from(
+            document.querySelectorAll('canvas.maplibregl-canvas'),
+          )
           const mapCanvases = host
             ? Array.from(host.querySelectorAll('canvas.maplibregl-canvas'))
-            : []
+            : allMapCanvases
           const visibleMapCanvases = mapCanvases.filter(isVisible)
           const map = gympgrph.readActiveMapLibreMap?.() || null
           const overlay = gympgrph.readFlightGeoOverlay?.() || null
@@ -93,6 +138,9 @@ def _read_view(page: Page) -> dict[str, Any]:
           const environmentData = await readSourceData(environmentSource)
           const sourceFeatures = Array.isArray(sourceData?.features)
             ? sourceData.features
+            : []
+          const environmentFeatures = Array.isArray(environmentData?.features)
+            ? environmentData.features
             : []
           const mapStyle = map?.getStyle?.() || null
           const styleLayerIds = Array.isArray(mapStyle?.layers)
@@ -128,6 +176,54 @@ def _read_view(page: Page) -> dict[str, Any]:
           const mapCanvas = visibleMapCanvases[0] || null
           const mapWidth = Number(mapCanvas?.clientWidth || 0)
           const mapHeight = Number(mapCanvas?.clientHeight || 0)
+          const environmentSurfaceMeters = environmentFeatures.map(feature => {
+            const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
+              ? feature.geometry.coordinates[0]
+              : []
+            const coordinates = ring.filter(coordinate => (
+              Array.isArray(coordinate)
+              && Number.isFinite(Number(coordinate[0]))
+              && Number.isFinite(Number(coordinate[1]))
+            )).map(coordinate => [
+              Number(coordinate[0]),
+              Number(coordinate[1]),
+            ])
+            const latitude = coordinates.length > 0
+              ? coordinates.reduce((sum, coordinate) => sum + coordinate[1], 0)
+                / coordinates.length
+              : NaN
+            const metersPerLongitudeDegree = 111_320
+              * Math.cos(latitude * Math.PI / 180)
+            const longitudes = coordinates.map(coordinate => coordinate[0])
+            const latitudes = coordinates.map(coordinate => coordinate[1])
+            const projected = coordinates.map(coordinate => map?.project?.(coordinate))
+            const viewportBounded = coordinates.length >= 4
+              && mapWidth > 0
+              && mapHeight > 0
+              && projected.length === coordinates.length
+              && projected.every(point => (
+                Number.isFinite(point?.x)
+                && Number.isFinite(point?.y)
+                && point.x >= 0
+                && point.y >= 0
+                && point.x <= mapWidth
+                && point.y <= mapHeight
+              ))
+            return {
+              baseHeightMeters: Number(feature?.properties?.kgBaseHeightMeters),
+              heightMeters: Number(feature?.properties?.kgHeightMeters),
+              id: String(feature?.properties?.kgSurfaceId || ''),
+              kind: String(feature?.properties?.kgSurfaceKind || ''),
+              depthMeters: latitudes.length > 0
+                ? (Math.max(...latitudes) - Math.min(...latitudes)) * 111_320
+                : NaN,
+              widthMeters: longitudes.length > 0
+                ? (Math.max(...longitudes) - Math.min(...longitudes))
+                  * metersPerLongitudeDegree
+                : NaN,
+              viewportBounded,
+            }
+          })
           const projectedRoute = Array.isArray(overlay?.route)
             ? overlay.route.map(point => {
                 const projected = map?.project?.(point.coordinate)
@@ -184,12 +280,23 @@ def _read_view(page: Page) -> dict[str, Any]:
               ?.getContext('webgl')
               ?.getContextAttributes?.()
             || null
+          const cityPanel = document.querySelector(
+            '[data-kg-city-sim-floating-panel="1"]',
+          )
+          const cityStage = document.querySelector(
+            '[data-kg-city-sim-stage="active"]',
+          )
           return {
             hostActive: Boolean(host),
             hostRevision: host?.getAttribute(
               'data-kg-flight-geospatial-revision',
             ) || '',
             geospatialEnabled: gympgrphState.geospatialModeEnabled === true,
+            geospatialPreferenceEnabled: ['1', 'true'].includes(
+              String(localStorage.getItem(
+                gympgrph.LS_KEYS.geospatialOverlayEnabled,
+              ) || '').toLowerCase(),
+            ),
             viewMode: gympgrphState.geospatialViewMode,
             renderMode: graphState.canvasRenderMode,
             canvas3dMode: graphState.canvas3dMode,
@@ -198,7 +305,18 @@ def _read_view(page: Page) -> dict[str, Any]:
             geoXrSurfaceActive: Boolean(document.querySelector(
               '[data-kg-geo-xr-surface="active"]',
             )),
+            geoXrLayerCount: document.querySelectorAll(
+              '[data-kg-geo-xr-layer]',
+            ).length,
             hudVisible: isVisible(hud),
+            flightHudCount: document.querySelectorAll(
+              '[data-kg-flight-sim-hud="1"]',
+            ).length,
+            cityActive: cityPanel?.getAttribute('data-kg-city-sim-active')
+              === '1',
+            cityPanelVisible: isVisible(cityPanel),
+            cityPhase: cityPanel?.getAttribute('data-kg-city-sim-phase') || '',
+            cityStageActive: Boolean(cityStage),
             styleUrl: localStorage.getItem(
               gympgrph.LS_KEYS.geospatialStyleUrl,
             ) || '',
@@ -207,8 +325,8 @@ def _read_view(page: Page) -> dict[str, Any]:
             center: map?.getCenter?.()?.toArray?.() || null,
             zoom: map?.getZoom?.() ?? null,
             pitch: map?.getPitch?.() ?? null,
-            mapLibreCanvasCount: mapCanvases.length,
-            visibleMapLibreCanvasCount: visibleMapCanvases.length,
+            mapLibreCanvasCount: allMapCanvases.length,
+            visibleMapLibreCanvasCount: allMapCanvases.filter(isVisible).length,
             flightSourceFeatures: sourceFeatures.length,
             objectiveGuideFeatureCount: sourceFeatures.filter(
               feature => feature?.properties?.kgFlightOverlayKind
@@ -232,10 +350,11 @@ def _read_view(page: Page) -> dict[str, Any]:
             environmentLayersReady: Object.values(environmentLayerIds || {})
               .every(id => Boolean(map?.getLayer?.(id))),
             environmentSourceFeatures:
-              environmentData?.features?.length || 0,
-            environmentSubjectIds: (environmentData?.features || [])
+              environmentFeatures.length,
+            environmentSubjectIds: environmentFeatures
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
+            environmentSurfaceMeters,
             renderedEnvironmentKinds: Array.from(new Set(
               renderedEnvironment.map(
                 feature => feature?.properties?.kgSurfaceKind || '',
@@ -246,6 +365,7 @@ def _read_view(page: Page) -> dict[str, Any]:
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
             renderedKinds,
             renderedFeatureCount: renderedFeatures.length,
+            renderedEnvironmentFeatureCount: renderedEnvironment.length,
             routeInViewport,
             routeScreenSpan,
             aircraftInViewport,
@@ -253,6 +373,9 @@ def _read_view(page: Page) -> dict[str, Any]:
               ? { x: aircraftProjected.x, y: aircraftProjected.y }
               : null,
             rendererCanvasCount: rendererCanvases.length,
+            threeCanvasOwnerCount: document.querySelectorAll(
+              '[data-kg-three-canvas-owner="1"]',
+            ).length,
             canvasStable: Boolean(rendererCanvas)
               && rendererCanvas === window.__kgFlightSimCanvas,
             rendererAlpha: contextAttributes?.alpha === true,
@@ -343,13 +466,21 @@ def _unmet_view_requirements(
         == "not-rendered",
     }
     checks = {
+        "flightActive": last.get("flightActive") is True,
+        "hudVisible": last.get("hudVisible") is True,
+        "geospatialEnabled": last.get("geospatialEnabled") is True,
+        "geospatialPreferenceEnabled": (
+            last.get("geospatialPreferenceEnabled") is True
+        ),
         "viewMode": last.get("viewMode") == expected_view,
         "styleUrl": last.get("styleUrl") == expected_style_url,
         "styleFingerprint": expected_provider_host
         in str(last.get("styleFingerprint") or ""),
         "projection": last.get("projection") == expected_projection,
+        "mapLibreCanvasCount": last.get("mapLibreCanvasCount", 0) == 1,
         "visibleMapLibreCanvasCount": last.get("visibleMapLibreCanvasCount", 0)
-        >= 1,
+        == 1,
+        "threeCanvasOwnerCount": last.get("threeCanvasOwnerCount", 0) == 1,
         "flightLayersReady": last.get("flightLayersReady") is True,
         "flightLayersTopmost": last.get("flightLayersTopmost") is True,
         "aircraftLayerType": last.get("aircraftLayerType") == "symbol",
@@ -363,6 +494,23 @@ def _unmet_view_requirements(
         "environmentLayersReady": last.get("environmentLayersReady") is True,
         "environmentSourceFeatures": (last.get("environmentSourceFeatures") or 0)
         >= 10,
+        "environment.stageFootprintAuthoredMeters": _has_authored_environment_surface(
+            last,
+            surface_id="singapore:footprint",
+            base_height_meters=0,
+            height_meters=0.08,
+            width_meters=32,
+            depth_meters=24,
+            require_viewport_bounds=True,
+        ),
+        "environment.skylineAuthoredMeters": _has_authored_environment_surface(
+            last,
+            surface_id="skyline-center",
+            base_height_meters=0,
+            height_meters=12,
+            width_meters=4.4,
+            depth_meters=4.4,
+        ),
         "renderedEnvironmentKinds": {
             "stage-footprint",
             "structure",

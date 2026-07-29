@@ -8,9 +8,6 @@ import type { FlightSimSpatialProfile } from './flightSimModel'
 import {
   projectFlightSimMissionPositionToGeospatial,
 } from './flightSimGeospatialCoordinates'
-import {
-  flightSimAuthoredWorldUnitsToMeters,
-} from './flightSimSpatialScale'
 import type {
   XrMotionReferencePlan,
   XrMotionReferenceSubject,
@@ -51,15 +48,15 @@ const TONE_COLORS: Readonly<Record<XrGreyBoxStructure['tone'], string>> =
 function projectLocalRectangle(input: Readonly<{
   centerX: number
   centerZ: number
-  depthWorldUnits: number
+  depthMeters: number
   rotationDegrees?: number
-  widthWorldUnits: number
+  widthMeters: number
 }>, profile: Pick<FlightSimSpatialProfile, 'spawn'>): readonly GeospatialCoordinate[] {
   const rotationRadians = (input.rotationDegrees || 0) * Math.PI / 180
   const cosine = Math.cos(rotationRadians)
   const sine = Math.sin(rotationRadians)
-  const halfWidth = input.widthWorldUnits / 2
-  const halfDepth = input.depthWorldUnits / 2
+  const halfWidth = input.widthMeters / 2
+  const halfDepth = input.depthMeters / 2
   const corners = [
     [-halfWidth, -halfDepth],
     [halfWidth, -halfDepth],
@@ -71,9 +68,9 @@ function projectLocalRectangle(input: Readonly<{
     const z = input.centerZ - offsetX * sine + offsetZ * cosine
     return projectFlightSimMissionPositionToGeospatial(
       Object.freeze([
-        flightSimAuthoredWorldUnitsToMeters(x),
+        x,
         0,
-        flightSimAuthoredWorldUnitsToMeters(z),
+        z,
       ]) as SpatialVector,
       profile.spawn.position,
     )
@@ -85,27 +82,25 @@ function projectStructure(
   structure: XrGreyBoxStructure,
   profile: Pick<FlightSimSpatialProfile, 'spawn'>,
 ): FlightSimGeoEnvironmentSurface {
-  const baseHeightWorldUnits = Math.max(
+  const baseHeightMeters = Math.max(
     0,
     structure.position[1] - structure.size[1] / 2,
   )
-  const heightWorldUnits = Math.max(
-    baseHeightWorldUnits + 0.08,
+  const heightMeters = Math.max(
+    baseHeightMeters + 0.08,
     structure.position[1] + structure.size[1] / 2,
   )
   return Object.freeze({
-    baseHeightMeters: flightSimAuthoredWorldUnitsToMeters(
-      baseHeightWorldUnits,
-    ),
+    baseHeightMeters,
     color: TONE_COLORS[structure.tone],
-    heightMeters: flightSimAuthoredWorldUnitsToMeters(heightWorldUnits),
+    heightMeters,
     id: structure.id,
     kind: 'structure',
     ring: projectLocalRectangle({
       centerX: structure.position[0],
       centerZ: structure.position[2],
-      depthWorldUnits: structure.size[2],
-      widthWorldUnits: structure.size[0],
+      depthMeters: structure.size[2],
+      widthMeters: structure.size[0],
     }, profile),
   })
 }
@@ -118,28 +113,24 @@ function projectSubject(
   const scale = Number.isFinite(subject.scale) && subject.scale > 0
     ? subject.scale
     : 1
-  const widthWorldUnits = asset.dimensionsMeters[0] * scale
-  const heightWorldUnits = asset.dimensionsMeters[1] * scale
-  const depthWorldUnits = asset.dimensionsMeters[2] * scale
-  const baseHeightMeters = flightSimAuthoredWorldUnitsToMeters(
-    Math.max(0, subject.position[1]),
-  )
+  const widthMeters = asset.dimensionsMeters[0] * scale
+  const heightMeters = asset.dimensionsMeters[1] * scale
+  const depthMeters = asset.dimensionsMeters[2] * scale
+  const baseHeightMeters = Math.max(0, subject.position[1])
   return Object.freeze({
     baseHeightMeters,
     color: /^#[0-9a-f]{6}$/i.test(subject.color)
       ? subject.color
       : asset.defaultColor,
-    heightMeters: baseHeightMeters + flightSimAuthoredWorldUnitsToMeters(
-      heightWorldUnits,
-    ),
+    heightMeters: baseHeightMeters + heightMeters,
     id: subject.id,
     kind: 'subject',
     ring: projectLocalRectangle({
       centerX: subject.position[0],
       centerZ: subject.position[2],
-      depthWorldUnits,
+      depthMeters,
       rotationDegrees: subject.rotationYDegrees,
-      widthWorldUnits,
+      widthMeters,
     }, profile),
   })
 }
@@ -152,13 +143,13 @@ export function projectXrEnvironmentToFlightGeo(
   const stageFootprint = projectLocalRectangle({
     centerX: 0,
     centerZ: 0,
-    depthWorldUnits: stage.sizeMeters[1],
-    widthWorldUnits: stage.sizeMeters[0],
+    depthMeters: stage.sizeMeters[1],
+    widthMeters: stage.sizeMeters[0],
   }, profile)
   const footprintSurface: FlightSimGeoEnvironmentSurface = Object.freeze({
     baseHeightMeters: 0,
     color: '#0f766e',
-    heightMeters: flightSimAuthoredWorldUnitsToMeters(0.08),
+    heightMeters: 0.08,
     id: `${stage.id}:footprint`,
     kind: 'stage-footprint',
     ring: stageFootprint,

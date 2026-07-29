@@ -136,6 +136,13 @@ test('Flight browser proof activates only after applying the authored source', (
     ),
     'utf8',
   )
+  const geoXrLayoutVerifier = readFileSync(
+    resolve(
+      repoRoot,
+      'canvas/scripts/lib/game_flight_sim_smoke_geo_xr_layout.py',
+    ),
+    'utf8',
+  )
   const cameraTrackingVerifier = readFileSync(
     resolve(
       repoRoot,
@@ -293,6 +300,13 @@ test('Flight browser proof activates only after applying the authored source', (
     /view\["mapPointerHit"\] = layout_occlusion\.get\("mapPointerHit"\)/,
   )
   assert.doesNotMatch(geoXrVerifier, /const candidates = \[/)
+  assert.match(geoXrVerifier, /environment\.stageFootprintAuthoredMeters/)
+  assert.match(geoXrVerifier, /environment\.skylineAuthoredMeters/)
+  assert.match(geoXrVerifier, /height_meters=0\.08/)
+  assert.match(geoXrVerifier, /width_meters=32/)
+  assert.match(geoXrVerifier, /height_meters=12/)
+  assert.doesNotMatch(geoXrLayoutVerifier, /heightMeters >= 20/)
+  assert.match(geoXrLayoutVerifier, /proof\.id === 'skyline-center'/)
   assert.match(
     geoXrPresentationVerifier,
     /def restore_flight_sim_panel\(page: Page\) -> None:/,
@@ -305,6 +319,26 @@ test('Flight browser proof activates only after applying the authored source', (
     geoXrPresentationVerifier,
     /\[data-kg-flight-sim-floating-panel="1"\]'.*wait_for\(/s,
   )
+  assert.match(
+    geoXrPresentationVerifier,
+    /def verify_flight_geo_xr_city_handoff\(/,
+  )
+  for (const cityProofRequirement of [
+    'data-kg-floating-panel-view-trigger="cityBuilder"',
+    'data-kg-city-sim-open="1"',
+    'data-kg-city-sim-exit="1"',
+    'data-kg-flight-sim-open="1"',
+    'geospatialPreferenceEnabled',
+    'mapLibreCanvasCount',
+    'threeCanvasOwnerCount',
+    'environmentSourceFeatures',
+    'renderedEnvironmentFeatureCount',
+  ]) {
+    assert.ok(
+      geoXrPresentationVerifier.includes(cityProofRequirement),
+      `expected City handoff browser proof requirement: ${cityProofRequirement}`,
+    )
+  }
   const selectGeoViewIndex = geoXrPresentationVerifier.indexOf(
     'select_geo_xr_view(page, button_label)',
   )

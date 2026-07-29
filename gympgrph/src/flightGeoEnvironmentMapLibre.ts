@@ -6,7 +6,6 @@ import type {
 import {
   isMapLibreStyleReady,
   readGeoJsonSourceData,
-  setGeoJsonSourceData,
 } from './maplibreLayers.js'
 
 export const FLIGHT_GEO_ENVIRONMENT_SOURCE_ID =
@@ -31,6 +30,17 @@ type EnvironmentFeatureProperties = Readonly<{
 }>
 
 const GLOBE_GROUND_CLEARANCE_METERS = 0.15
+const ENVIRONMENT_PROPERTY_KEYS = Object.freeze([
+  'kgBaseHeightMeters',
+  'kgColor',
+  'kgEnvironmentId',
+  'kgEnvironmentRevision',
+  'kgHeightMeters',
+  'kgRenderBaseHeightMeters',
+  'kgRenderHeightMeters',
+  'kgSurfaceId',
+  'kgSurfaceKind',
+] as const)
 
 function resolveRenderHeightRange(
   baseHeightMeters: number,
@@ -76,6 +86,95 @@ function environmentFeatureCollection(
     } satisfies Feature<Polygon, EnvironmentFeatureProperties>
   })
   return { type: 'FeatureCollection', features }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * MapLibre can retain an older source payload while every layer is still
+ * present. Compare the authored feature shape in order so a stale coordinate
+ * or extrusion-height mutation cannot be treated as an exact presentation.
+ */
+function hasExactEnvironmentRing(
+  expected: readonly (readonly number[])[],
+  actual: unknown,
+): boolean {
+  return Array.isArray(actual)
+    && actual.length === expected.length
+    && expected.every((coordinate, index) => {
+      const actualCoordinate = actual[index]
+      return Array.isArray(actualCoordinate)
+        && actualCoordinate.length === coordinate.length
+        && coordinate.every((value, coordinateIndex) => (
+          typeof actualCoordinate[coordinateIndex] === 'number'
+          && Number.isFinite(actualCoordinate[coordinateIndex])
+          && Object.is(value, actualCoordinate[coordinateIndex])
+        ))
+    })
+}
+
+function hasExactEnvironmentFeature(
+  expected: Feature<Polygon, EnvironmentFeatureProperties>,
+  actual: unknown,
+): boolean {
+  if (!isPlainRecord(actual)) return false
+  if (actual.id !== expected.id || actual.type !== expected.type) return false
+  const geometry = actual.geometry
+  if (!isPlainRecord(geometry) || geometry.type !== 'Polygon') return false
+  const coordinates = geometry.coordinates
+  if (
+    !Array.isArray(coordinates)
+    || coordinates.length !== expected.geometry.coordinates.length
+    || !coordinates.every((ring, index) => (
+      hasExactEnvironmentRing(expected.geometry.coordinates[index], ring)
+    ))
+  ) {
+    return false
+  }
+  const properties = actual.properties
+  return isPlainRecord(properties)
+    && ENVIRONMENT_PROPERTY_KEYS.every(key => (
+      Object.is(properties[key], expected.properties[key])
+    ))
+}
+
+function hasExactEnvironmentFeatureCollection(
+  expected: FeatureCollection<Polygon, EnvironmentFeatureProperties>,
+  actual: unknown,
+): boolean {
+  if (!isPlainRecord(actual) || actual.type !== expected.type) return false
+  const features = actual.features
+  return Array.isArray(features)
+    && features.length === expected.features.length
+    && expected.features.every((feature, index) => (
+      hasExactEnvironmentFeature(feature, features[index])
+    ))
+}
+
+function isEnvironmentSourceLoaded(source: unknown): boolean {
+  if (!source || typeof source !== 'object') return false
+  try {
+    const loaded = (source as { loaded?: () => unknown }).loaded
+    return typeof loaded !== 'function' || loaded.call(source) === true
+  } catch {
+    return false
+  }
+}
+
+function scheduleEnvironmentSourceData(
+  map: any,
+  data: FeatureCollection<Polygon, EnvironmentFeatureProperties>,
+): boolean {
+  const source = map?.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
+  if (!source || typeof source.setData !== 'function') return false
+  try {
+    source.setData(data)
+    return true
+  } catch {
+    return false
+  }
 }
 
 function is3dViewMode(viewMode: string): boolean {
@@ -141,17 +240,40 @@ function ensureEnvironmentLayers(map: any): boolean {
   return fill2d && extrusion3d && outline
 }
 
+function setEnvironmentLayerVisibility(
+  map: any,
+  layerId: string,
+  visibility: 'none' | 'visible',
+): void {
+  try {
+    map.setLayoutProperty?.(layerId, 'visibility', visibility)
+  } catch {
+    void 0
+  }
+}
+
+function hideEnvironmentLayers(map: any): void {
+  for (const layerId of Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS)) {
+    setEnvironmentLayerVisibility(map, layerId, 'none')
+  }
+}
+
 function applyModeVisibility(map: any, viewMode: string): void {
   const mode3d = is3dViewMode(viewMode)
-  map.setLayoutProperty?.(
+  setEnvironmentLayerVisibility(
+    map,
     FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d,
-    'visibility',
     mode3d ? 'none' : 'visible',
   )
-  map.setLayoutProperty?.(
+  setEnvironmentLayerVisibility(
+    map,
     FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
-    'visibility',
     mode3d ? 'visible' : 'none',
+  )
+  setEnvironmentLayerVisibility(
+    map,
+    FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline,
+    'visible',
   )
 }
 
@@ -162,8 +284,7 @@ export function applyFlightGeoEnvironmentToMap(
 ): boolean {
   if (!map || !isMapLibreStyleReady(map)) return false
   if (!overlay.environment) {
-    clearFlightGeoEnvironmentFromMap(map)
-    return true
+    return clearFlightGeoEnvironmentFromMap(map)
   }
   try {
     if (!ensureEnvironmentSource(map)) {
@@ -173,12 +294,14 @@ export function applyFlightGeoEnvironmentToMap(
       throw new Error('MapLibre did not register every XR environment layer.')
     }
     applyModeVisibility(map, viewMode)
-    setGeoJsonSourceData(
-      map,
-      FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
-      environmentFeatureCollection(overlay.environment),
+    const expected = environmentFeatureCollection(overlay.environment)
+    const sourceData = readGeoJsonSourceData(
+      map.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID),
     )
-    return mapHasExactFlightGeoEnvironment(map, overlay)
+    if (hasExactEnvironmentFeatureCollection(expected, sourceData)) {
+      return true
+    }
+    return scheduleEnvironmentSourceData(map, expected)
   } catch (error) {
     console.error(
       `[kg-flight] Could not project XR environment "${overlay.environment.id}" into MapLibre mode "${viewMode}".`,
@@ -188,37 +311,35 @@ export function applyFlightGeoEnvironmentToMap(
   }
 }
 
-export function clearFlightGeoEnvironmentFromMap(map: any): void {
-  setGeoJsonSourceData(
-    map,
-    FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
-    { type: 'FeatureCollection', features: [] },
-  )
+export function clearFlightGeoEnvironmentFromMap(map: any): boolean {
+  hideEnvironmentLayers(map)
+  const source = map?.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
+  if (!source) return true
+  const sourceData = readGeoJsonSourceData(source)
+  if (!sourceData) return false
+  if (sourceData.features.length === 0) return true
+  return scheduleEnvironmentSourceData(map, {
+    type: 'FeatureCollection',
+    features: [],
+  })
 }
 
 export function mapHasExactFlightGeoEnvironment(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
 ): boolean {
-  if (!overlay.environment) return true
   try {
-    const sourceData = readGeoJsonSourceData(
-      map.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID),
-    )
-    if (
-      sourceData?.features?.length !== overlay.environment.surfaces.length
-    ) {
-      return false
-    }
+    const source = map?.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
+    if (!source) return !overlay.environment
+    const sourceData = readGeoJsonSourceData(source)
+    if (!sourceData || !isEnvironmentSourceLoaded(source)) return false
+    if (!overlay.environment) return sourceData.features.length === 0
     return Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS)
       .every(layerId => Boolean(map.getLayer?.(layerId)))
-      && sourceData.features.every(feature => {
-      const properties = feature?.properties as Record<string, unknown> | null
-      return (
-        properties?.kgEnvironmentId === overlay.environment?.id
-        && properties?.kgEnvironmentRevision === overlay.environment?.revision
+      && hasExactEnvironmentFeatureCollection(
+        environmentFeatureCollection(overlay.environment),
+        sourceData,
       )
-      })
   } catch {
     return false
   }

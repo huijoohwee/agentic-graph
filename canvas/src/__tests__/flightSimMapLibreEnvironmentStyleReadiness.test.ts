@@ -3,10 +3,22 @@ import test from 'node:test'
 import type { FlightGeoOverlaySnapshot } from '../../../gympgrph/src/flightGeoOverlay'
 import {
   applyFlightGeoEnvironmentToMap,
+  clearFlightGeoEnvironmentFromMap,
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
   mapHasExactFlightGeoEnvironment,
 } from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+
+type EnvironmentSourceFeature = {
+  geometry?: { coordinates?: number[][][] }
+  id?: string
+  properties?: Record<string, unknown>
+}
+
+type EnvironmentSourceData = {
+  features?: EnvironmentSourceFeature[]
+  type?: string
+}
 
 function environmentOverlay(): FlightGeoOverlaySnapshot {
   return {
@@ -87,11 +99,14 @@ function environmentMapHarness() {
   const layers = new Map<string, Record<string, unknown>>()
   const sources = new Map<string, {
     data: unknown
+    complete: () => void
+    loaded: () => boolean
     serialize: () => { data: unknown }
     setData: (data: unknown) => void
   }>()
   const visibility = new Map<string, unknown>()
   let addSourceCalls = 0
+  let setDataCalls = 0
   const style = { _loaded: false }
   const map = {
     style,
@@ -104,9 +119,16 @@ function environmentMapHarness() {
       if (!style._loaded) throw new Error('Style is not done loading.')
       const stored = {
         data: source.data,
+        complete: () => {
+          stored.sourceLoaded = true
+        },
+        loaded: () => stored.sourceLoaded,
         serialize: () => ({ data: stored.data }),
+        sourceLoaded: true,
         setData: (data: unknown) => {
           stored.data = data
+          stored.sourceLoaded = false
+          setDataCalls += 1
         },
       }
       sources.set(sourceId, stored)
@@ -123,6 +145,12 @@ function environmentMapHarness() {
   }
   return {
     addSourceCalls: () => addSourceCalls,
+    completeSourceUpdate: () => {
+      const source = sources.get(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
+      if (!source) return false
+      source.complete()
+      return true
+    },
     layers,
     map,
     resetStyle: (loaded: boolean) => {
@@ -134,14 +162,11 @@ function environmentMapHarness() {
     setStyleReady: (ready: boolean) => {
       style._loaded = ready
     },
-    sourceData: () => (
-      sources.get(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)?.data as {
-        features?: {
-          id?: string
-          properties?: Record<string, unknown>
-        }[]
-      } | undefined
-    ),
+    setDataCalls: () => setDataCalls,
+    sourceData: (): EnvironmentSourceData | undefined => {
+      const data = sources.get(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)?.data
+      return data as EnvironmentSourceData | undefined
+    },
     visibility,
   }
 }
@@ -164,6 +189,22 @@ test('XR environment defers until each MapLibre style is ready', () => {
       applyFlightGeoEnvironmentToMap(harness.map, overlay, '2d-modern'),
       true,
     )
+    assert.equal(
+      mapHasExactFlightGeoEnvironment(harness.map, overlay),
+      false,
+      'setData schedules a source update; the render gate owns completion',
+    )
+    assert.equal(harness.setDataCalls(), 1)
+    assert.equal(
+      applyFlightGeoEnvironmentToMap(harness.map, overlay, '2d-modern'),
+      true,
+    )
+    assert.equal(
+      harness.setDataCalls(),
+      1,
+      'an unchanged serialized payload must not reset a pending source load',
+    )
+    assert.equal(harness.completeSourceUpdate(), true)
     assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
     assert.equal(harness.addSourceCalls(), 1)
     assert.equal(harness.layers.size, 3)
@@ -174,6 +215,10 @@ test('XR environment defers until each MapLibre style is ready', () => {
     assert.equal(
       harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d),
       'none',
+    )
+    assert.equal(
+      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline),
+      'visible',
     )
     assert.equal(
       harness.sourceData()?.features?.every(feature => (
@@ -194,6 +239,7 @@ test('XR environment defers until each MapLibre style is ready', () => {
     )
     assert.equal(projectedSubject?.properties?.kgRenderBaseHeightMeters, 0.5)
     assert.equal(projectedSubject?.properties?.kgRenderHeightMeters, 12.5)
+    const planarPayload = JSON.parse(JSON.stringify(harness.sourceData()))
     const extrusionLayer = harness.layers.get(
       FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
     ) as { paint?: Record<string, unknown> }
@@ -218,7 +264,14 @@ test('XR environment defers until each MapLibre style is ready', () => {
       applyFlightGeoEnvironmentToMap(harness.map, overlay, '3d-modern'),
       true,
     )
+    assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), false)
+    assert.equal(harness.completeSourceUpdate(), true)
     assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
+    assert.deepEqual(
+      harness.sourceData(),
+      planarPayload,
+      'changing only between 2D and 3D must preserve the GeoJSON payload',
+    )
     assert.equal(harness.addSourceCalls(), 2)
     assert.equal(
       harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d),
@@ -228,8 +281,114 @@ test('XR environment defers until each MapLibre style is ready', () => {
       harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d),
       'visible',
     )
+    assert.equal(
+      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline),
+      'visible',
+    )
   } finally {
     console.error = originalConsoleError
   }
   assert.deepEqual(diagnostics, [])
+})
+
+test('XR environment exactness rejects mutated or retained MapLibre source payloads', () => {
+  const overlay = environmentOverlay()
+  const harness = environmentMapHarness()
+  const withoutEnvironment: FlightGeoOverlaySnapshot = {
+    ...overlay,
+    environment: null,
+  }
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(harness.map, withoutEnvironment),
+    true,
+    'an absent environment is exact when the MapLibre source is absent',
+  )
+  harness.setStyleReady(true)
+
+  assert.equal(
+    applyFlightGeoEnvironmentToMap(harness.map, overlay, '2d'),
+    true,
+  )
+  assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), false)
+  assert.equal(harness.completeSourceUpdate(), true)
+  assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
+  const projectedStage = harness.sourceData()?.features?.find(
+    feature => feature.properties?.kgSurfaceId === 'stage',
+  )
+  const firstCoordinate = projectedStage?.geometry?.coordinates?.[0]?.[0]
+  assert.ok(firstCoordinate)
+  firstCoordinate[0] += 0.000001
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(harness.map, overlay),
+    false,
+    'a stale coordinate must not pass environment identity checks',
+  )
+
+  assert.equal(
+    applyFlightGeoEnvironmentToMap(harness.map, overlay, '2d'),
+    true,
+  )
+  assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), false)
+  assert.equal(harness.completeSourceUpdate(), true)
+  assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
+  const reprojectedStage = harness.sourceData()?.features?.find(
+    feature => feature.properties?.kgSurfaceId === 'stage',
+  )
+  assert.ok(reprojectedStage?.properties)
+  reprojectedStage.properties.kgHeightMeters = 99
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(harness.map, overlay),
+    false,
+    'a stale extrusion height must not pass environment identity checks',
+  )
+
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(harness.map, withoutEnvironment),
+    false,
+    'an absent environment is not exact while its prior source features remain',
+  )
+
+  const clearSetDataCalls = harness.setDataCalls()
+  assert.equal(clearFlightGeoEnvironmentFromMap(harness.map), true)
+  assert.equal(
+    harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d),
+    'none',
+  )
+  assert.equal(
+    harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d),
+    'none',
+  )
+  assert.equal(
+    harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline),
+    'none',
+  )
+  assert.equal(harness.sourceData()?.features?.length, 0)
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(harness.map, withoutEnvironment),
+    false,
+    'a scheduled clear is not exact until MapLibre reports the source loaded',
+  )
+  assert.equal(clearFlightGeoEnvironmentFromMap(harness.map), true)
+  assert.equal(
+    harness.setDataCalls(),
+    clearSetDataCalls + 1,
+    'an already empty serialized payload must not reset the pending clear',
+  )
+  assert.equal(harness.completeSourceUpdate(), true)
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(harness.map, withoutEnvironment),
+    true,
+  )
+
+  assert.equal(
+    applyFlightGeoEnvironmentToMap(harness.map, overlay, '3d'),
+    true,
+  )
+  assert.equal(
+    harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline),
+    'visible',
+    'the next environment must restore its outline after an immediate clear hide',
+  )
+  assert.equal(harness.completeSourceUpdate(), true)
+  assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
 })

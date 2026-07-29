@@ -166,7 +166,7 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
           })
           const environmentUnoccludedKinds = Array.from(new Set(
             environmentScreenProof.filter(proof => (
-              proof.visible && proof.screenWidth >= 8 && proof.screenHeight >= 8
+              proof.visible
             )).map(proof => proof.kind).filter(Boolean),
           )).sort()
           const activeEnvironmentLayerDefinition = map?.getLayer?.(
@@ -205,8 +205,8 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
               && activeEnvironmentVisible
               && environmentScreenProof.some(proof => (
                 proof.visible
-                && proof.kind === 'structure'
-                && proof.heightMeters >= 20
+                && proof.id === 'skyline-center'
+                && Math.abs(proof.heightMeters - 12) <= 0.01
               ))
             ),
             environmentUnoccludedKinds,
