@@ -6,6 +6,7 @@ import {
 
 export const KNOWGRPH_PAYMENT_TERMINAL_STATES = Object.freeze([
   'paid',
+  'refunded',
   'no_payment_required',
   'failed',
   'expired',
@@ -116,7 +117,11 @@ export function validateKnowgrphTerminalPaymentRecord(
     return 'providerObjectId must be null or a non-personal opaque identifier.'
   }
   if (
-    (record.terminalState === 'paid' || record.terminalState === 'expired')
+    (
+      record.terminalState === 'paid'
+      || record.terminalState === 'refunded'
+      || record.terminalState === 'expired'
+    )
     && record.providerObjectId === null
   ) {
     return `providerObjectId must be present for a ${record.terminalState} record.`
@@ -181,7 +186,7 @@ const fromDocumentEntry = (value: unknown): KnowgrphTerminalPaymentRecord | null
     currency: entry.currency,
     settlementAsset: entry.settlement_asset as PaymentSettlementAsset,
     terminalState: entry.terminal_state as KnowgrphPaymentTerminalState,
-    providerObjectId: entry.provider_object_id,
+    providerObjectId: entry.provider_object_id as string | null,
     terminalTimestamp: entry.terminal_timestamp,
   }
 }
@@ -279,7 +284,7 @@ export function appendKnowgrphPaymentRecordDocument(
   record: KnowgrphTerminalPaymentRecord,
 ): KnowgrphPaymentRecordAppendResult {
   const parsed = parseKnowgrphPaymentRecordDocument(document)
-  if (!parsed.ok) return parsed
+  if (parsed.ok === false) return parsed
   const validationError = validateKnowgrphTerminalPaymentRecord(record)
   if (validationError) return parseError(parsed.records.length + 1, 'invalid_record', validationError)
   if (parsed.records.some(existing => existing.intentId === record.intentId)) {
@@ -298,7 +303,7 @@ export function appendKnowgrphPaymentRecordDocument(
   }
   const documentWithRecord = serializeKnowgrphPaymentRecordDocument([...parsed.records, record])
   const canonical = parseKnowgrphPaymentRecordDocument(documentWithRecord)
-  if (!canonical.ok) return canonical
+  if (canonical.ok === false) return canonical
   return {
     ok: true,
     records: canonical.records,

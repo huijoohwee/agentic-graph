@@ -13,10 +13,18 @@ import { mintPersistentMemoryAuthorization } from "../persistent-memory-authoriz
 import { PERSISTENT_MEMORY_TOOL_NAMES } from "../persistent-memory-contract.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const docsEnvironment = process.env.KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT
+  ? {
+      KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: path.resolve(
+        process.env.KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT,
+      ),
+    }
+  : {};
 let docsRoot = "";
 try {
-  docsRoot = resolveAgenticCanvasOsDocsRoot({ rootDir: repoRoot, env: {} });
-} catch {
+  docsRoot = resolveAgenticCanvasOsDocsRoot({ rootDir: repoRoot, env: docsEnvironment });
+} catch (error) {
+  if (docsEnvironment.KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT) throw error;
   docsRoot = "";
 }
 const docsAvailable = Boolean(docsRoot)

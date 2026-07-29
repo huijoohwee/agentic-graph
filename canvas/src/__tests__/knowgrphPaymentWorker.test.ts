@@ -7,6 +7,7 @@ import {
   STRIPE_CHECKOUT_METADATA_READINESS_SMOKE,
   STRIPE_CHECKOUT_METADATA_WORKSPACE_ID,
   STRIPE_CHECKOUT_SESSION_ID_TOKEN,
+  STRIPE_PAYMENT_WEBHOOK_API_VERSION,
   STRIPE_PAYMENT_ROUTE_PATHS,
 } from 'grph-shared/payments/stripePaymentSsot'
 
@@ -604,6 +605,7 @@ export async function testKnowgrphPaymentWorkerAcceptsStripeWebhookAndStoresComp
   const env = createPaymentsEnv()
   const payload = JSON.stringify({
     id: 'evt_accept_payment_1',
+    api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
     type: 'checkout.session.completed',
     livemode: false,
     data: {
@@ -660,6 +662,7 @@ export async function testKnowgrphPaymentWorkerSkipsDuplicateStripeWebhookEventI
   const env = createPaymentsEnv()
   const payload = JSON.stringify({
     id: 'evt_accept_payment_duplicate_1',
+    api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
     type: 'checkout.session.completed',
     livemode: false,
     data: {
@@ -720,6 +723,7 @@ export async function testKnowgrphPaymentWorkerRejectsDuplicateStripeWebhookEven
   const env = createPaymentsEnv()
   const buildPayload = (paymentStatus: 'unpaid' | 'paid') => JSON.stringify({
     id: 'evt_accept_payment_conflict_1',
+    api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
     type: 'checkout.session.completed',
     livemode: false,
     data: {
@@ -797,6 +801,7 @@ export async function testKnowgrphPaymentWorkerRetriesFailedStripeWebhookEventPr
   }) as typeof env.DB.prepare
   const payload = JSON.stringify({
     id: 'evt_accept_payment_retry_1',
+    api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
     type: 'checkout.session.completed',
     livemode: false,
     data: {
@@ -875,6 +880,7 @@ export async function testKnowgrphPaymentWorkerReclaimsStaleStripeWebhookProcess
   })
   const payload = JSON.stringify({
     id: 'evt_accept_payment_stale_processing_1',
+    api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
     type: 'checkout.session.completed',
     livemode: false,
     data: {

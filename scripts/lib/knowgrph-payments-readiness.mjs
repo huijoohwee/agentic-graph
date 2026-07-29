@@ -1,19 +1,33 @@
 import { execFileSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
 import {
   existsSync,
   readFileSync,
-  readdirSync,
 } from 'node:fs'
 import path from 'node:path'
 
 import { parseYamlFrontmatter } from './source-readiness-assertions.mjs'
+import {
+  inspectKnowgrphPaymentsClientBundleSecrets,
+  PAYMENT_SECRET_VALUE_PATTERNS,
+} from './knowgrph-payments-bundle-secrets.mjs'
+import {
+  runKnowgrphPaymentsLocalVcc,
+} from './knowgrph-payments-local-vcc.mjs'
+import {
+  inspectKnowgrphPaymentsCanonicalRuntime,
+  inspectKnowgrphPaymentsSourceIdentity,
+} from './knowgrph-payments-delivery-gates.mjs'
+import {
+  inspectKnowgrphAgenticPurchaseReadiness,
+} from './knowgrph-agentic-purchase-readiness.mjs'
 import {
   inspectKnowgrphPaymentsProviderCandidate,
   KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID,
   validateKnowgrphPaymentsProviderProof,
 } from './knowgrph-payments-provider-proof.mjs'
 import {
+  buildKnowgrphPaymentsEvidenceDigest,
+  PAYMENT_BUYER_PRODUCT_SSOT_PATH,
   readTrackedPaymentContracts,
   readVisibleWranglerVars,
   STRAITSX_PAYMENT_SSOT_PATH,
@@ -35,18 +49,11 @@ const MANIFEST_PATH = 'scripts/knowgrph-payments-readiness-properties.json'
 const WRANGLER_CONFIG_PATH = 'cloudflare/workers/knowgrph-payment/wrangler.toml'
 const SOURCE_EVIDENCE_HELPER_PATH =
   'scripts/lib/knowgrph-payments-source-evidence.mjs'
-const EXPECTED_REQUIREMENT_IDS = Array.from({ length: 12 }, (_value, index) => `R${index + 1}`)
-const EXPECTED_OPEN_QUESTION_IDS = Array.from({ length: 15 }, (_value, index) => `OQ-${index + 1}`)
-const HEX_40_PATTERN = /^[0-9a-f]{40}$/
-const PAYMENT_SECRET_VALUE_PATTERNS = [
-  /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g,
-  /\bwhsec_[A-Za-z0-9]{16,}\b/g,
-  /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/g,
-]
+const CLIENT_BUNDLE_SECRET_CHECK_ID = 'client-bundle-secret-values'
+const EXPECTED_REQUIREMENT_IDS = Array.from({ length: 17 }, (_value, index) => `R${index + 1}`)
+const EXPECTED_OPEN_QUESTION_IDS = Array.from({ length: 25 }, (_value, index) => `OQ-${index + 1}`)
 
 const readText = (root, relativePath) => readFileSync(path.join(root, relativePath), 'utf8')
-const sha256 = value => createHash('sha256').update(value).digest('hex')
-
 const runGit = (root, args, fallback = '') => {
   try {
     return execFileSync('git', args, {
@@ -57,22 +64,6 @@ const runGit = (root, args, fallback = '') => {
   } catch {
     return fallback
   }
-}
-
-const listTextFiles = directory => {
-  if (!existsSync(directory)) return []
-  const files = []
-  const visit = currentDirectory => {
-    for (const entry of readdirSync(currentDirectory, { withFileTypes: true })) {
-      const absolutePath = path.join(currentDirectory, entry.name)
-      if (entry.isDirectory()) visit(absolutePath)
-      else if (entry.isFile() && /\.(?:css|html|js|json|map|mjs|txt)$/i.test(entry.name)) {
-        files.push(absolutePath)
-      }
-    }
-  }
-  visit(directory)
-  return files.sort()
 }
 
 const addCheck = (checks, id, status, detail, evidence = []) => {
@@ -109,10 +100,16 @@ const failedSourceInspection = (checks, id, detail, evidence = []) => {
     }],
     evidencePaths: [],
     evidenceDigest: null,
-    stripeApiVersion: null,
+    stripeRequestApiVersion: null,
+    stripeWebhookApiVersion: null,
     straitsxIntegrationModel: null,
+    straitsxFundFlow: null,
     straitsxAuthMode: null,
+    straitsxGrantedProducts: [],
+    buyerProductEnvironmentNames: [],
+    buyerProductConfigured: false,
     secretNames: [],
+    localVcc: { status: 'fail', attestation: null },
   }
 }
 
@@ -135,25 +132,14 @@ const collectEvidencePaths = manifest => uniqueSorted([
   SOURCE_EVIDENCE_HELPER_PATH,
   STRIPE_PAYMENT_SSOT_PATH,
   STRAITSX_PAYMENT_SSOT_PATH,
+  PAYMENT_BUYER_PRODUCT_SSOT_PATH,
   ...manifest.runtimeEvidence.map(item => item.file),
   ...manifest.requirements.flatMap(requirement =>
     requirement.evidence.map(item => item.file),
   ),
 ])
 
-const buildEvidenceDigest = (root, evidencePaths) => {
-  const hash = createHash('sha256')
-  for (const relativePath of [...evidencePaths].sort()) {
-    const bytes = readFileSync(path.join(root, relativePath))
-    hash.update(relativePath)
-    hash.update('\0')
-    hash.update(sha256(bytes))
-    hash.update('\n')
-  }
-  return hash.digest('hex')
-}
-
-const inspectSource = async ({ root, requireTracked }) => {
+const inspectSource = async ({ root, requireTracked, executeLocalVcc }) => {
   const checks = []
   const blockers = []
   let manifest = null
@@ -222,8 +208,8 @@ const inspectSource = async ({ root, requireTracked }) => {
     'requirement-inventory',
     requirementsComplete ? 'pass' : 'fail',
     requirementsComplete
-      ? 'Manifest covers R1 through R12 exactly once and in order.'
-      : 'Manifest must cover R1 through R12 exactly once and in order.',
+      ? 'Manifest covers R1 through R17 exactly once and in order.'
+      : 'Manifest must cover R1 through R17 exactly once and in order.',
     [MANIFEST_PATH],
   )
 
@@ -238,8 +224,8 @@ const inspectSource = async ({ root, requireTracked }) => {
     'open-question-inventory',
     openQuestionsComplete ? 'pass' : 'fail',
     openQuestionsComplete
-      ? 'Every OQ-1 through OQ-15 is classified exactly once.'
-      : 'Every documented OQ-1 through OQ-15 must be classified exactly once.',
+      ? 'Every OQ-1 through OQ-25 is classified exactly once.'
+      : 'Every documented OQ-1 through OQ-25 must be classified exactly once.',
     [REQUIREMENTS_PATH, PRD_PATH, MANIFEST_PATH],
   )
 
@@ -311,13 +297,19 @@ const inspectSource = async ({ root, requireTracked }) => {
     )
   }
 
-  let stripeApiVersion = null
+  let stripeRequestApiVersion = null
+  let stripeWebhookApiVersion = null
   let straitsxIntegrationModel = null
+  let straitsxFundFlow = null
   let straitsxAuthMode = null
+  let straitsxGrantedProducts = []
+  let buyerProductEnvironmentNames = []
+  let buyerProductConfigured = false
   let secretNames = []
   try {
     const contracts = readTrackedPaymentContracts(root)
-    stripeApiVersion = contracts.stripeApiVersion
+    stripeRequestApiVersion = contracts.stripeRequestApiVersion
+    stripeWebhookApiVersion = contracts.stripeWebhookApiVersion
     secretNames = uniqueSorted([
       ...contracts.stripeSecretNames,
       ...contracts.straitsxSecretNames,
@@ -331,8 +323,31 @@ const inspectSource = async ({ root, requireTracked }) => {
     )
     straitsxIntegrationModel =
       String(defaultVars.get(contracts.straitsxIntegrationModelKey) || '').trim() || null
+    straitsxFundFlow =
+      String(defaultVars.get(contracts.straitsxFundFlowKey) || '').trim() || null
     straitsxAuthMode =
       String(defaultVars.get(contracts.straitsxAuthModeKey) || '').trim() || null
+    straitsxGrantedProducts =
+      String(defaultVars.get(contracts.straitsxGrantedProductsKey) || '')
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean)
+        .sort()
+    buyerProductEnvironmentNames = [...contracts.buyerProductEnvironmentNames]
+    const [amountName, currencyName, settlementAssetName] =
+      buyerProductEnvironmentNames
+    const amountText = String(defaultVars.get(amountName) || '').trim()
+    const amountMinor = /^[1-9]\d*$/.test(amountText)
+      ? Number(amountText)
+      : Number.NaN
+    buyerProductConfigured =
+      Number.isSafeInteger(amountMinor)
+      && /^[a-z]{3}$/.test(
+        String(defaultVars.get(currencyName) || '').trim().toLowerCase(),
+      )
+      && ['fiat', 'xsgd'].includes(
+        String(defaultVars.get(settlementAssetName) || '').trim().toLowerCase(),
+      )
     const visibleSecretNames = visibleVars
       .filter(entry => secretNames.includes(entry.name))
       .map(entry => `${entry.section}:${entry.name}`)
@@ -359,46 +374,25 @@ const inspectSource = async ({ root, requireTracked }) => {
       'tracked-payment-ssot',
       'pass',
       'Payment readiness derives configuration names from tracked TypeScript SSOT sources without executing generated dist.',
-      [STRIPE_PAYMENT_SSOT_PATH, STRAITSX_PAYMENT_SSOT_PATH],
+      [
+        STRIPE_PAYMENT_SSOT_PATH,
+        STRAITSX_PAYMENT_SSOT_PATH,
+        PAYMENT_BUYER_PRODUCT_SSOT_PATH,
+      ],
     )
 
-    const bundleDirectory = path.join(root, 'canvas/dist')
-    const bundleFiles = listTextFiles(bundleDirectory)
-    if (bundleFiles.length === 0) {
-      addCheck(
-        checks,
-        'client-bundle-secret-values',
-        'fail',
-        'canvas/dist is absent; run the focused build before evaluating bundle leakage.',
-      )
-    } else {
-      const leaks = []
-      for (const bundleFile of bundleFiles) {
-        const source = readFileSync(bundleFile, 'utf8')
-        for (const pattern of PAYMENT_SECRET_VALUE_PATTERNS) {
-          pattern.lastIndex = 0
-          if (pattern.test(source)) {
-            leaks.push(path.relative(root, bundleFile))
-          }
-        }
-      }
-      addCheck(
-        checks,
-        'client-bundle-secret-values',
-        leaks.length === 0 ? 'pass' : 'fail',
-        leaks.length === 0
-          ? `Scanned ${bundleFiles.length} built client files with no payment secret value pattern present.`
-          : `Payment secret value patterns appear in the built client: ${uniqueSorted(leaks).join(', ')}`,
-        leaks.length === 0 ? ['canvas/dist'] : uniqueSorted(leaks),
-      )
-    }
   } catch (error) {
     addCheck(
       checks,
       'payment-ssot-and-secret-boundary',
       'fail',
       error.message,
-      [STRIPE_PAYMENT_SSOT_PATH, STRAITSX_PAYMENT_SSOT_PATH, WRANGLER_CONFIG_PATH],
+      [
+        STRIPE_PAYMENT_SSOT_PATH,
+        STRAITSX_PAYMENT_SSOT_PATH,
+        PAYMENT_BUYER_PRODUCT_SSOT_PATH,
+        WRANGLER_CONFIG_PATH,
+      ],
     )
   }
 
@@ -408,22 +402,15 @@ const inspectSource = async ({ root, requireTracked }) => {
     'source-coverage',
     declaredCoverageComplete ? 'pass' : 'blocked',
     declaredCoverageComplete
-      ? 'The manifest declares all R1-R12 source owners implemented with no source-owned question open.'
+      ? 'The manifest declares all R1-R17 deterministic source owners implemented with no source-owned question open.'
       : `${blockers.length} source implementation or decision blocker(s) remain.`,
     [MANIFEST_PATH],
-  )
-  addCheck(
-    checks,
-    'trusted-executed-vcc-attestation',
-    'blocked',
-    'No trusted executed VCC attestation is configured; editable manifest status and source markers cannot establish source readiness.',
-    [REQUIREMENTS_PATH, MANIFEST_PATH],
   )
 
   let evidenceDigest = null
   if (evidenceFilesPresent) {
     try {
-      evidenceDigest = buildEvidenceDigest(root, evidencePaths)
+      evidenceDigest = buildKnowgrphPaymentsEvidenceDigest(root, evidencePaths)
     } catch (error) {
       addCheck(
         checks,
@@ -434,6 +421,65 @@ const inspectSource = async ({ root, requireTracked }) => {
       )
     }
   }
+  let localVcc = { status: 'blocked', attestation: null }
+  if (!executeLocalVcc) {
+    addCheck(
+      checks,
+      'executed-local-vcc-attestation',
+      'blocked',
+      'Local VCCs were not executed; source markers and editable manifest claims cannot establish the local rung.',
+      [REQUIREMENTS_PATH, MANIFEST_PATH],
+    )
+  } else if (!evidenceDigest) {
+    addCheck(
+      checks,
+      'executed-local-vcc-attestation',
+      'fail',
+      'Local VCCs cannot execute without a complete source-evidence digest.',
+      evidencePaths,
+    )
+    localVcc = { status: 'fail', attestation: null }
+  } else {
+    try {
+      const result = await runKnowgrphPaymentsLocalVcc({
+        root,
+        sourceEvidenceDigest: evidenceDigest,
+      })
+      const stableDigest = buildKnowgrphPaymentsEvidenceDigest(root, evidencePaths)
+      const digestStable = stableDigest === evidenceDigest
+      const passed = result.ok && digestStable
+      addCheck(
+        checks,
+        'executed-local-vcc-attestation',
+        passed ? 'pass' : 'fail',
+        passed
+          ? `Executed ${result.attestation.suites.length} allowlisted local VCC suites against the inspected source digest.`
+          : [
+              ...result.validation.failures,
+              ...(digestStable ? [] : ['Source evidence changed while local VCCs executed.']),
+            ].join(' '),
+        [MANIFEST_PATH, 'scripts/lib/knowgrph-payments-local-vcc.mjs'],
+      )
+      localVcc = {
+        status: passed ? 'pass' : 'fail',
+        attestation: result.attestation,
+      }
+    } catch (error) {
+      addCheck(
+        checks,
+        'executed-local-vcc-attestation',
+        'fail',
+        `Local VCC execution failed: ${error.message}`,
+        ['scripts/lib/knowgrph-payments-local-vcc.mjs'],
+      )
+      localVcc = { status: 'fail', attestation: null }
+    }
+  }
+  inspectKnowgrphPaymentsClientBundleSecrets(
+    checks,
+    root,
+    CLIENT_BUNDLE_SECRET_CHECK_ID,
+  )
 
   const failedChecks = checks.filter(check => check.status === 'fail')
   const blockedChecks = checks.filter(check => check.status === 'blocked')
@@ -453,40 +499,16 @@ const inspectSource = async ({ root, requireTracked }) => {
     blockers,
     evidencePaths,
     evidenceDigest,
-    stripeApiVersion,
+    stripeRequestApiVersion,
+    stripeWebhookApiVersion,
     straitsxIntegrationModel,
+    straitsxFundFlow,
     straitsxAuthMode,
+    straitsxGrantedProducts,
+    buyerProductEnvironmentNames,
+    buyerProductConfigured,
     secretNames,
-  }
-}
-
-const inspectSourceIdentity = root => {
-  const revision = runGit(root, ['rev-parse', 'HEAD'], null)
-  const tree = runGit(root, ['rev-parse', 'HEAD^{tree}'], null)
-  const branch = runGit(root, ['symbolic-ref', '--quiet', '--short', 'HEAD'], 'DETACHED')
-  const status = runGit(root, ['status', '--porcelain=v1', '--untracked-files=all'], null)
-  return {
-    revision: HEX_40_PATTERN.test(revision || '') ? revision : null,
-    tree: HEX_40_PATTERN.test(tree || '') ? tree : null,
-    branch,
-    clean: status === '',
-  }
-}
-
-const inspectCanonicalRuntime = (root, sourceIdentity) => {
-  const originMain = runGit(root, ['rev-parse', 'refs/remotes/origin/main'], null)
-  const exactMainSourceIdentity =
-    sourceIdentity.branch === 'main'
-    && sourceIdentity.clean
-    && sourceIdentity.revision !== null
-    && sourceIdentity.revision === originMain
-  return {
-    status: 'not-proven',
-    requiredForExit: false,
-    sourceIdentityExactMain: exactMainSourceIdentity,
-    detail: exactMainSourceIdentity
-      ? 'Clean main equals refs/remotes/origin/main, but source identity alone does not prove the supervised Agentic Canvas OS canonical runtime.'
-      : 'This local task checkout does not prove exact-main source identity or the supervised Agentic Canvas OS canonical runtime.',
+    localVcc,
   }
 }
 
@@ -495,27 +517,42 @@ export async function inspectKnowgrphPaymentsReadiness({
   providerProof = null,
   providerProofError = null,
   requireTracked = true,
+  executeLocalVcc = false,
 }) {
-  const sourceIdentity = inspectSourceIdentity(root)
-  const source = await inspectSource({ root, requireTracked })
+  const sourceIdentity = inspectKnowgrphPaymentsSourceIdentity(root)
+  const source = await inspectSource({ root, requireTracked, executeLocalVcc })
   sourceIdentity.evidenceDigest = source.evidenceDigest
   const providerSandbox = inspectKnowgrphPaymentsProviderCandidate({
     proof: providerProof,
     proofError: providerProofError,
     source,
   })
-  const canonicalRuntime = inspectCanonicalRuntime(root, sourceIdentity)
+  const agenticPurchase = inspectKnowgrphAgenticPurchaseReadiness(source)
+  const canonicalRuntime = inspectKnowgrphPaymentsCanonicalRuntime(root, sourceIdentity)
   const protectedIntegration = {
     status: 'not-proven',
     requiredForExit: false,
     detail: 'Requires authenticated protected GitHub evidence; local source cannot prove it.',
+  }
+  const browserRuntime = {
+    status: 'not-proven',
+    requiredForExit: false,
+    detail: 'No browser acceptance run is executed by the local source gate.',
+  }
+  const productionMirror = {
+    status: 'not-authorized',
+    requiredForExit: false,
+    detail: 'No production mirror mutation is authorized by this development task.',
   }
   const deployment = {
     status: 'not-authorized',
     requiredForExit: false,
     detail: 'Dev-only authority; no production mirror or Cloudflare mutation is authorized.',
   }
-  const ok = source.status === 'pass' && providerSandbox.status === 'pass'
+  const ok =
+    source.status === 'pass'
+    && providerSandbox.status === 'pass'
+    && agenticPurchase.status === 'pass'
   const gates = {
     source: {
       status: source.status,
@@ -523,19 +560,32 @@ export async function inspectKnowgrphPaymentsReadiness({
       checks: source.checks,
       blockers: source.blockers,
     },
+    localVcc: {
+      status: source.localVcc.status,
+      requiredForExit: true,
+      attestation: source.localVcc.attestation,
+    },
     providerSandbox,
+    agenticPurchase,
+    browserRuntime,
     canonicalRuntime,
     protectedIntegration,
+    productionMirror,
     deployment,
   }
   return {
     schemaId: KNOWGRPH_PAYMENTS_READINESS_SCHEMA_ID,
     scope: 'development-sandbox',
     ok,
+    localDevelopmentReady: source.status === 'pass',
     verdict: ok ? 'ready-for-protected-integration' : 'implemented-runtime-readiness-blocked',
     sourceIdentity,
     gates,
-    blockers: [...source.blockers, ...providerSandbox.blockers],
+    blockers: [
+      ...source.blockers,
+      ...providerSandbox.blockers,
+      ...agenticPurchase.blockers,
+    ],
   }
 }
 

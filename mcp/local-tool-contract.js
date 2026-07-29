@@ -19,6 +19,7 @@ import { buildStorageSyncLocalToolDefinitions } from "./storage-sync-local-tool-
 import { buildVdeoxplnLocalToolDefinition } from "./vdeoxpln-tool-contract.js";
 import { buildVoiceStudioLocalToolDefinition } from "./voice-studio-tool-contract.js";
 import { buildGeospatialLayerToolDefinition } from "./geospatial-layer-tool-contract.js";
+import { buildPaymentToolDefinitions } from "./payment-tool-contract.js";
 export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES;
 
 const VIDEO_REMIX_RUN_OUTPUT_SCHEMA = Object.freeze({
@@ -536,6 +537,7 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
     }, READ_ONLY_TOOL_ANNOTATIONS),
     ...buildAgentSandboxPolicyToolDefinitions({ toolNames: KNOWGRPH_LOCAL_MCP_TOOL_NAMES, withDefaults: withLocalMcpDescriptorDefaults, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS }),
     ...buildEcsLocalToolDefinitions({ withDefaults: withLocalMcpDescriptorDefaults, annotations: LOCAL_PROCESS_TOOL_ANNOTATIONS }),
+    ...buildPaymentToolDefinitions().map((definition) => withLocalMcpDescriptorDefaults(definition, definition.annotations)),
     withLocalMcpDescriptorDefaults(buildOsStatusToolDefinition(), READ_ONLY_TOOL_ANNOTATIONS),
     withLocalMcpDescriptorDefaults(
       buildVdeoxplnLocalToolDefinition(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.vdeoxplnList),

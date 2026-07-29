@@ -150,6 +150,7 @@ test('payment record serialization properties hold across 100 generated record s
           settlementAsset: fc.constantFrom('fiat', 'xsgd'),
           terminalState: fc.constantFrom(
             'paid',
+            'refunded',
             'no_payment_required',
             'failed',
             'expired',
@@ -174,6 +175,7 @@ test('payment record serialization properties hold across 100 generated record s
             terminalState: item.terminalState,
             providerObjectId:
               item.terminalState === 'paid'
+                || item.terminalState === 'refunded'
                 || item.terminalState === 'expired'
                 || item.hasProviderObject
                 ? `provider_${index + 1}`

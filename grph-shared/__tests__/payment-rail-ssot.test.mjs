@@ -17,8 +17,18 @@ test('rail selection is compatibility-first, fail-closed, and deterministic', ()
       expected: { ok: true, rail: 'straitsx', reason: 'sgd_fiat' },
     },
     {
-      input: { currency: 'sgd', settlementAsset: 'xsgd', readiness: { stripe: true, straitsx: true }, cardSettledCurrencies: ['usd', 'eur'] },
+      input: { currency: 'sgd', settlementAsset: 'xsgd', readiness: { stripe: true, straitsx: true, xsgd: true }, cardSettledCurrencies: ['usd', 'eur'] },
       expected: { ok: true, rail: 'straitsx', reason: 'xsgd' },
+    },
+    {
+      input: { currency: 'sgd', settlementAsset: 'xsgd', readiness: { stripe: true, straitsx: true, xsgd: false }, cardSettledCurrencies: ['usd', 'eur'] },
+      expected: {
+        ok: false,
+        rail: null,
+        code: 'rail_unavailable',
+        reason: 'no_ready_compatible_rail',
+        compatibleRails: ['straitsx'],
+      },
     },
     {
       input: { currency: 'usd', settlementAsset: 'fiat', readiness: { stripe: true, straitsx: true }, cardSettledCurrencies: ['usd', 'eur'] },
@@ -76,11 +86,12 @@ test('rail selection is compatibility-first, fail-closed, and deterministic', ()
       fc.constantFrom('fiat', 'xsgd', 'unsupported'),
       fc.boolean(),
       fc.boolean(),
-      (currency, settlementAsset, stripe, straitsx) => {
+      fc.boolean(),
+      (currency, settlementAsset, stripe, straitsx, xsgd) => {
         const input = {
           currency,
           settlementAsset,
-          readiness: { stripe, straitsx },
+          readiness: { stripe, straitsx, xsgd },
           cardSettledCurrencies: ['usd', 'eur'],
         }
         assert.deepEqual(selectPaymentRail(input), selectPaymentRail(input))

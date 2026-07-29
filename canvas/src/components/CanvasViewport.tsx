@@ -180,7 +180,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const mermaidEventModelingBottomPanelVisible = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'eventModeling'
   const { paywallEnabled, floatingPanelOpen, floatingPanelView } = useGraphStore(
     useShallow(s => ({
-      paywallEnabled: s.paymentsStripePaywallEnabled === true,
+      paywallEnabled: s.paymentsPaywallEnabled === true,
       floatingPanelOpen: s.floatingPanelOpen === true,
       floatingPanelView: s.floatingPanelView,
     })),

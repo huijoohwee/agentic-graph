@@ -104,8 +104,8 @@ const STRIPE_DOC_ROWS: ReadonlyArray<StripeApiDocRow> = [
     typeLabel: 'boolean',
     value: 'false',
     responsibility: 'Toggles the in-canvas Paywall panel for Chat UI features (centered overlay).',
-    valueKey: 'payments.stripe.paywallEnabled',
-    searchHints: ['paywall', 'chat ui', 'stripe'],
+    valueKey: 'payments.paywallEnabled',
+    searchHints: ['paywall', 'chat ui', 'payments'],
   },
   {
     key: 'stripeApi.auth.secret_key',
