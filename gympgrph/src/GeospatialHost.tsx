@@ -11,6 +11,7 @@ import { useGympgrphStore } from './store.js'
 import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
 import { NATIVE_GEOSPATIAL_MAPLIBRE_OWNER } from './features/geospatial/mapLibreHostLease.js'
 import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
+import { readFlightGeoMapOcclusionPadding } from './flightGeoMapViewport.js'
 import {
   readFlightGeoOverlay,
   subscribeFlightGeoOverlay,
@@ -1115,22 +1116,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const [svgOverlayInsetRight, setSvgOverlayInsetRight] = React.useState(12)
   React.useEffect(() => {
     const measure = () => {
-      const rootRect = rootRef.current?.getBoundingClientRect?.()
-      if (!rootRect || typeof document === 'undefined') {
-        setSvgOverlayInsetRight(12)
-        return
-      }
-      const panels = Array.from(document.querySelectorAll('[aria-label="Floating panel"], [aria-label="Geospatial panel"]'))
-      let nextInsetRight = 12
-      for (const panel of panels) {
-        const rect = (panel as HTMLElement).getBoundingClientRect?.()
-        if (!rect) continue
-        const overlapWidth = Math.min(rootRect.right, rect.right) - Math.max(rootRect.left, rect.left)
-        const overlapHeight = Math.min(rootRect.bottom, rect.bottom) - Math.max(rootRect.top, rect.top)
-        if (overlapWidth <= 0 || overlapHeight <= 0) continue
-        if (rect.left < rootRect.left + rootRect.width * 0.35) continue
-        nextInsetRight = Math.max(nextInsetRight, Math.min(rootRect.width * 0.45, rootRect.right - rect.left + 16))
-      }
+      const nextInsetRight = Math.max(
+        12,
+        readFlightGeoMapOcclusionPadding(rootRef.current).right,
+      )
       setSvgOverlayInsetRight(prev => (Math.abs(prev - nextInsetRight) > 1 ? nextInsetRight : prev))
     }
     measure()

@@ -281,8 +281,8 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
     throw new Error('Expected the native MapLibre runtime to own Geo+XR basemap and Flight projection layers')
   }
   const overlayApplyIndex = presentationText.indexOf('const applied = applyFlightGeoOverlayToMap(map, overlay)')
-  const overlayFitIndex = presentationText.indexOf('fitMapToFlightGeoOverlay(map, overlay)')
-  const overlayCameraIndex = presentationText.indexOf('applyFlightGeoOverlayCameraToMap(map, overlay)')
+  const overlayFitIndex = presentationText.indexOf('fitMapToFlightGeoOverlay(map, overlay, cameraPadding)')
+  const overlayCameraIndex = presentationText.indexOf('applyFlightGeoOverlayCameraToMap(')
   if (
     overlayApplyIndex < 0
     || overlayFitIndex < overlayApplyIndex
@@ -305,7 +305,8 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   }
   if (!presentationText.includes('scheduleFinalApply')
     || !presentationText.includes("map?.on?.('load', scheduleFinalApply)")
-    || !presentationText.includes('applyFlightGeoOverlayCameraToMap(map, overlay)')) {
+    || !presentationText.includes('readFlightGeoMapViewportPadding(map)')
+    || !presentationText.includes('applyFlightGeoOverlayCameraToMap(')) {
     throw new Error('Expected MapLibre initialization to finish with the Flight camera owner')
   }
   const renderAcknowledgeIndex = presentationText.indexOf("map.on('render', listener)")

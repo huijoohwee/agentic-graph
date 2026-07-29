@@ -14,6 +14,11 @@ import {
   fitMapToFlightGeoOverlay,
 } from '../../flightGeoOverlayMapLibre.js'
 import {
+  flightGeoMapViewportPaddingKey,
+  readFlightGeoMapViewportPadding,
+  type FlightGeoMapViewportPadding,
+} from '../../flightGeoMapViewport.js'
+import {
   applyFlightGeoEnvironmentToMap,
   clearFlightGeoEnvironmentFromMap,
   mapHasExactFlightGeoEnvironment,
@@ -32,6 +37,11 @@ type PresentedFlightOverlay = {
   readyFrameRequestId: number | null
   revision: string
 }
+
+type SavedMapPadding = Readonly<{
+  map: any | null
+  padding: FlightGeoMapViewportPadding | null
+}>
 
 type FlightOverlayFeature = Readonly<{
   properties?: Readonly<{
@@ -62,6 +72,17 @@ function defaultIsCanvasElement(value: unknown): value is HTMLCanvasElement {
     typeof HTMLCanvasElement !== 'undefined'
     && value instanceof HTMLCanvasElement
   )
+}
+
+function readSavedMapPadding(map: any): FlightGeoMapViewportPadding | null {
+  const padding = map?.getPadding?.()
+  if (!padding || typeof padding !== 'object') return null
+  const bottom = Number(padding.bottom)
+  const left = Number(padding.left)
+  const right = Number(padding.right)
+  const top = Number(padding.top)
+  if (![bottom, left, right, top].every(Number.isFinite)) return null
+  return Object.freeze({ bottom, left, right, top })
 }
 
 function mapHasExactFlightOverlay(
@@ -316,6 +337,25 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     readyFrameRequestId: null,
     revision: '',
   })
+  const savedMapPaddingRef = React.useRef<SavedMapPadding>({
+    map: null,
+    padding: null,
+  })
+
+  const restoreMapPadding = React.useCallback((map: any | null) => {
+    if (savedMapPaddingRef.current.map !== map) return
+    const padding = savedMapPaddingRef.current.padding
+    if (padding) map?.setPadding?.(padding)
+    savedMapPaddingRef.current = { map: null, padding: null }
+  }, [])
+
+  const captureMapPadding = React.useCallback((map: any) => {
+    if (savedMapPaddingRef.current.map === map) return
+    savedMapPaddingRef.current = {
+      map,
+      padding: readSavedMapPadding(map),
+    }
+  }, [])
 
   React.useEffect(() => {
     const map = options.map
@@ -335,8 +375,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       const root = options.rootRef.current
       if (root) {
         delete root.dataset.kgFlightGeospatialEnvironment
+        delete root.dataset.kgFlightGeospatialCameraPadding
         delete root.dataset.kgFlightGeospatialPresentedRevision
       }
+      restoreMapPadding(map)
       if (presentedRef.current.map === map) {
         presentedRef.current = {
           map: null,
@@ -348,6 +390,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   }, [
     options.map,
     options.rootRef,
+    restoreMapPadding,
   ])
 
   React.useEffect(() => {
@@ -355,8 +398,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     const root = options.rootRef.current
     if (root) {
       delete root.dataset.kgFlightGeospatialEnvironment
+      delete root.dataset.kgFlightGeospatialCameraPadding
       delete root.dataset.kgFlightGeospatialPresentedRevision
     }
+    restoreMapPadding(map)
     if (presentedRef.current.map === map) {
       presentedRef.current = {
         map: null,
@@ -367,6 +412,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   }, [
     options.map,
     options.rootRef,
+    restoreMapPadding,
     options.styleRevision,
     options.viewMode,
   ])
@@ -399,6 +445,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           delete root.dataset.kgFlightGeospatialOverlay
           delete root.dataset.kgFlightGeospatialRevision
           delete root.dataset.kgFlightGeospatialEnvironment
+          delete root.dataset.kgFlightGeospatialCameraPadding
           delete root.dataset.kgFlightGeospatialPresentedRevision
         }
       }
@@ -412,6 +459,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         gate.clearCanvas()
         gate.resetPresented()
         fitRef.current = { key: '', map: null }
+        restoreMapPadding(map)
         clearFlightGeoOverlayFromMap(map)
         clearFlightGeoEnvironmentFromMap(map)
         return
@@ -424,10 +472,17 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       )
       const applied = environmentApplied
         && applyFlightGeoOverlayToMap(map, overlay)
+      const cameraPadding = readFlightGeoMapViewportPadding(map)
+      if (root) {
+        root.dataset.kgFlightGeospatialCameraPadding =
+          flightGeoMapViewportPaddingKey(cameraPadding)
+      }
       const fitKey = [
         options.styleRevision,
         options.viewMode,
         overlay.profileId,
+        overlay.environment?.revision || 'no-environment',
+        flightGeoMapViewportPaddingKey(cameraPadding),
       ].join(':')
       if (
         applied
@@ -435,18 +490,27 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           fitRef.current.map !== map
           || fitRef.current.key !== fitKey
         )
-        && fitMapToFlightGeoOverlay(map, overlay)
+        && fitMapToFlightGeoOverlay(map, overlay, cameraPadding)
       ) {
         fitRef.current = { key: fitKey, map }
       }
       if (!applied) return
       const cameraApplied = overlay.camera.effectiveOwner === 'free-orbit'
-        || applyFlightGeoOverlayCameraToMap(
-          map,
-          overlay,
-          options.viewMode,
-        )
-      if (cameraApplied) gate.request(overlay)
+        || (() => {
+          if (overlay.phase === 'stopped') return false
+          captureMapPadding(map)
+          return applyFlightGeoOverlayCameraToMap(
+            map,
+            overlay,
+            options.viewMode,
+            cameraPadding,
+          )
+        })()
+      // A stopped mission deliberately retains its padded union fit instead
+      // of issuing a fixed-follow jump. It still has to acknowledge the
+      // rendered MapLibre frame so source-authored stage preparation can
+      // complete before Flight becomes playable.
+      if (cameraApplied || overlay.phase === 'stopped') gate.request(overlay)
     }
     const scheduleFinalApply = () => {
       if (typeof window === 'undefined') return
@@ -461,10 +525,24 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     const unsubscribe = subscribeFlightGeoOverlay(apply)
     map?.on?.('style.load', scheduleFinalApply)
     map?.on?.('load', scheduleFinalApply)
+    map?.on?.('resize', scheduleFinalApply)
+    const root = options.rootRef.current
+    const panelResizeObserver = typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(scheduleFinalApply)
+    const observedRoot = root || map?.getContainer?.()
+    if (observedRoot) panelResizeObserver?.observe(observedRoot)
+    for (const panel of Array.from(document.querySelectorAll(
+      '[aria-label="Markdown Workspace"], [aria-label="Floating panel"], [aria-label="Geospatial panel"]',
+    ))) {
+      panelResizeObserver?.observe(panel)
+    }
     return () => {
       unsubscribe()
       map?.off?.('style.load', scheduleFinalApply)
       map?.off?.('load', scheduleFinalApply)
+      map?.off?.('resize', scheduleFinalApply)
+      panelResizeObserver?.disconnect()
       gate?.cancel()
       if (pendingCameraFrame && typeof window !== 'undefined') {
         window.cancelAnimationFrame(pendingCameraFrame)
@@ -478,6 +556,8 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     options.mapLibreRuntimeEnabled,
     options.onPresented,
     options.rootRef,
+    captureMapPadding,
+    restoreMapPadding,
     options.styleRevision,
     options.viewMode,
   ])

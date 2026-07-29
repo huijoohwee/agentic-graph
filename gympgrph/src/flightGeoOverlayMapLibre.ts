@@ -1,6 +1,10 @@
 import type { Feature, FeatureCollection, Polygon } from 'geojson'
 import { flightGeoOverlayFeatureCollection, type FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
 import { clearGeoJsonSourceData, isMapLibreStyleReady, setGeoJsonSourceData } from './maplibreLayers.js'
+import {
+  readFlightGeoMapViewportPadding,
+  type FlightGeoMapViewportPadding,
+} from './flightGeoMapViewport.js'
 
 export const FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'
 export const FLIGHT_GEO_OVERLAY_LAYER_IDS = Object.freeze({
@@ -294,12 +298,14 @@ function keepFlightGeoOverlayAboveHostLayers(map: any): void {
 export function fitMapToFlightGeoOverlay(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
+  padding: FlightGeoMapViewportPadding = readFlightGeoMapViewportPadding(map),
 ): boolean {
   try {
     if (!map || !overlay.active || overlay.route.length < 2) return false
     const coordinates = [
       ...overlay.route.map(point => point.coordinate),
       overlay.aircraft.coordinate,
+      ...(overlay.environment?.surfaces.flatMap(surface => surface.ring) || []),
     ]
     let minLongitude = Number.POSITIVE_INFINITY
     let minLatitude = Number.POSITIVE_INFINITY
@@ -325,25 +331,12 @@ export function fitMapToFlightGeoOverlay(
       minLatitude = latitudeCenter - minimumSpanDegrees / 2
       maxLatitude = latitudeCenter + minimumSpanDegrees / 2
     }
-    const container = map.getContainer?.()
-    const width = Math.max(1, Number(container?.clientWidth) || 1)
-    const height = Math.max(1, Number(container?.clientHeight) || 1)
-    const horizontalBase = Math.max(16, Math.min(72, width * 0.08))
-    const floatingPanelClearance = width >= 760
-      ? Math.min(360, width * 0.32)
-      : horizontalBase
-    const verticalBase = Math.max(16, Math.min(88, height * 0.1))
     map.fitBounds?.(
       [[minLongitude, minLatitude], [maxLongitude, maxLatitude]],
       {
         duration: 0,
         maxZoom: 16,
-        padding: {
-          top: verticalBase,
-          right: floatingPanelClearance,
-          bottom: Math.max(verticalBase, Math.min(112, height * 0.14)),
-          left: horizontalBase,
-        },
+        padding,
       },
     )
     return true
@@ -356,9 +349,11 @@ export function applyFlightGeoOverlayCameraToMap(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
   viewMode: string = '3d',
+  padding: FlightGeoMapViewportPadding = readFlightGeoMapViewportPadding(map),
 ): boolean {
   if (typeof map?.jumpTo !== 'function') return false
   try {
+    if (overlay.phase === 'stopped') return false
     const mode3d = viewMode === '3d' || viewMode === '3d-modern'
     if (
       overlay.camera.effectiveOwner === 'timeline-playback'
@@ -372,6 +367,7 @@ export function applyFlightGeoOverlayCameraToMap(
         pitch: mode3d
           ? Math.max(22, overlay.camera.timeline.pitchDegrees)
           : 0,
+        padding,
         zoom: overlay.camera.timeline.zoom,
       })
       return true
@@ -383,6 +379,7 @@ export function applyFlightGeoOverlayCameraToMap(
         ? overlay.aircraft.headingDegrees
         : 0,
       center: [...overlay.camera.centerCoordinate],
+      padding,
       pitch: mode3d ? preset.pitch : 0,
       zoom: preset.zoom,
     })

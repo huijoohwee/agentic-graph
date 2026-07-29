@@ -262,7 +262,7 @@ export function FlightSimFloatingPanelView() {
           <span><b>Heading</b><br />{heading(flight.aircraft.yaw)}</span>
           <span><b>Pitch</b><br />{degrees(flight.aircraft.pitch)}</span>
           <span><b>Roll</b><br />{degrees(flight.aircraft.roll)}</span>
-          <span><b>World</b><br />{environment.label}</span>
+          <span><b>World</b><br />{environment.label} local stage</span>
           <span data-kg-flight-sim-panel-envelope={training.envelope.status}>
             <b>Envelope</b><br />{training.envelope.label}
           </span>
@@ -328,6 +328,12 @@ export function FlightSimFloatingPanelView() {
           </p>
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
             One existing R3F Canvas · fixed native ECS ticks · swept AABB collision · zero runtime network or model calls.
+          </p>
+          <p
+            className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}
+            data-kg-flight-sim-geography-boundary="not-rendered"
+          >
+            The local XR stage is aligned to Singapore’s Flight anchor; it is not a Singapore geographic boundary.
           </p>
           <p
             className={cn(

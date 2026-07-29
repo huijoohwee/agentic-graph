@@ -484,7 +484,7 @@ export const GRABMAPS_DOC_ROWS: ReadonlyArray<GrabMapsApiDocRow> = [
     typeLabel: 'projection',
     value: 'Singapore XR environment + Flight alignment',
     keyDescription: 'Geo+XR environment projection -> transform the selected source-authored stage, structures, and placed subjects through the Singapore reference shared with Flight -> keep 2D footprints and 3D native extrusions aligned with the route and aircraft without a second world renderer.',
-    valueDescription: 'Default: Singapore Marina Bay local-stage anchor and non-legal Singapore presentation bounds; 2D is north-up, 3D is oblique; no Cesium, copied boundary, remote asset, token, or external simulator dependency.',
+    valueDescription: 'Default: the shared Flight profile converts authored XR units into mission metres at the Marina Bay local-stage anchor. The stage footprint is a local scene overlay, never a Singapore geographic boundary; 2D is north-up, 3D is oblique; no Cesium, copied boundary, remote asset, token, or external simulator dependency.',
     ssot: 'https://maplibre.org/maplibre-style-spec/layers/#fill-extrusion',
     module: ['grph-shared/src/geospatial/singaporeFlightGeo.ts', 'canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts', 'gympgrph/src/flightGeoEnvironmentMapLibre.ts'],
     className: ['CanvasViewportGeospatialOverlay', 'GeospatialHost'],

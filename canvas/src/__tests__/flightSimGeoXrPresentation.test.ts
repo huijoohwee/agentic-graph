@@ -83,6 +83,10 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     /map\?\.off\?\.\('style\.load', scheduleFinalApply\)/,
   )
   assert.match(
+    mapLibrePresentation,
+    /cameraApplied \|\| overlay\.phase === 'stopped'\) gate\.request\(overlay\)/,
+  )
+  assert.match(
     threeGraph,
     /style=\{geospatialComposite \? \{ pointerEvents: 'none' \} : undefined\}/,
   )
@@ -154,7 +158,7 @@ test('Flight local mission coordinates project deterministically around Singapor
       rotationYDegrees: 0,
       scale: 1,
     }],
-  })
+  }, profile)
   const overlay = projectFlightSimToGeospatialOverlay(
     runtime.read(),
     profile,

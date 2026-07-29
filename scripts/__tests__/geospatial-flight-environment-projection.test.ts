@@ -4,6 +4,21 @@ import {
   projectXrEnvironmentToFlightGeo,
 } from '../../canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts'
 import {
+  projectFlightSimMissionPositionToGeospatial,
+} from '../../canvas/src/features/game-flight-sim/flightSimGeospatialCoordinates.ts'
+import {
+  createFlightSimSpatialProfile,
+} from '../../canvas/src/features/game-flight-sim/flightSimSpatialProfile.ts'
+import {
+  flightSimAuthoredWorldUnitsToMeters,
+} from '../../canvas/src/features/game-flight-sim/flightSimSpatialScale.ts'
+import {
+  resolveXrCanonicalSceneSpatialSource,
+} from '../../canvas/src/features/three/xrCanonicalSceneSpatialSource.ts'
+import {
+  resolveXrSceneLibraryAsset,
+} from '../../canvas/src/features/three/xrSceneLibrary.ts'
+import {
   applyFlightGeoEnvironmentToMap,
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
@@ -79,7 +94,17 @@ function createOverlay(
   }
 }
 
+function singaporeFlightProfile() {
+  return createFlightSimSpatialProfile(
+    resolveXrCanonicalSceneSpatialSource({
+      projection: 'authored',
+      stageId: 'singapore',
+    }),
+  )
+}
+
 test('Singapore XR environment projects its stage, structures, and selected asset to one geographic anchor', () => {
+  const profile = singaporeFlightProfile()
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [{
@@ -92,7 +117,7 @@ test('Singapore XR environment projects its stage, structures, and selected asse
       rotationYDegrees: 35,
       scale: 1,
     }],
-  })
+  }, profile)
 
   assert.equal(environment.id, 'singapore')
   assert.deepEqual(environment.anchor, [103.851959, 1.29027])
@@ -106,8 +131,38 @@ test('Singapore XR environment projects its stage, structures, and selected asse
   )
   assert.equal(helicopter?.kind, 'subject')
   assert.equal(helicopter?.color, '#f59e0b')
-  assert.ok((helicopter?.heightMeters || 0) > 3)
+  const helicopterAsset = resolveXrSceneLibraryAsset('vehicle-helicopter')
+  assert.equal(helicopter?.baseHeightMeters, 40)
+  assert.equal(
+    helicopter?.heightMeters,
+    40 + flightSimAuthoredWorldUnitsToMeters(
+      helicopterAsset.dimensionsMeters[1],
+    ),
+  )
   assert.equal(helicopter?.ring.length, 5)
+  const stageFootprint = environment.surfaces.find(
+    surface => surface.kind === 'stage-footprint',
+  )
+  assert.equal(
+    stageFootprint?.heightMeters,
+    flightSimAuthoredWorldUnitsToMeters(0.08),
+  )
+  assert.deepEqual(
+    environment.stageFootprint[0],
+    projectFlightSimMissionPositionToGeospatial(
+      Object.freeze([-320, 0, -240]),
+      profile.spawn.position,
+    ),
+  )
+  assert.deepEqual(environment.anchor, projectFlightSimMissionPositionToGeospatial(
+    profile.spawn.position,
+    profile.spawn.position,
+  ))
+  const skylineCenter = environment.surfaces.find(
+    surface => surface.id === 'skyline-center',
+  )
+  assert.equal(skylineCenter?.baseHeightMeters, 0)
+  assert.equal(skylineCenter?.heightMeters, 240)
 
   const recolored = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
@@ -121,7 +176,7 @@ test('Singapore XR environment projects its stage, structures, and selected asse
       rotationYDegrees: 35,
       scale: 1,
     }],
-  })
+  }, profile)
   assert.notEqual(
     recolored.revision,
     environment.revision,
@@ -130,10 +185,11 @@ test('Singapore XR environment projects its stage, structures, and selected asse
 })
 
 test('four MapLibre modes keep planar 2D footprints and native 3D extrusions on the same source revision', () => {
+  const profile = singaporeFlightProfile()
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [],
-  })
+  }, profile)
   const overlay = createOverlay(environment)
   const { layers, map, sources, visibility } = createFakeMap()
 
@@ -172,10 +228,11 @@ test('four MapLibre modes keep planar 2D footprints and native 3D extrusions on 
 })
 
 test('environment layer creation fails closed when the active style rejects a required layer', () => {
+  const profile = singaporeFlightProfile()
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [],
-  })
+  }, profile)
   const overlay = createOverlay(environment)
   const { map } = createFakeMap()
   map.addLayer = () => {

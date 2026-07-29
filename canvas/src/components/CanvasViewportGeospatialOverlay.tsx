@@ -430,7 +430,10 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
               },
               readFlightSimTrainingSnapshot().night,
               readCurrentFlightSimReadyFrameRequestId(),
-              projectXrEnvironmentToFlightGeo(motionRuntime.plan),
+              projectXrEnvironmentToFlightGeo(
+                motionRuntime.plan,
+                spatialProfile,
+              ),
             ),
           )
         }

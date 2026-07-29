@@ -10,10 +10,13 @@ from lib.game_flight_sim_smoke_geo_view_cases import (
     select_geo_xr_view,
     wait_for_surface_contract,
 )
+from lib.game_flight_sim_smoke_geo_xr_layout import (
+    read_geo_xr_layout_occlusion,
+)
 
 
 def _read_view(page: Page) -> dict[str, Any]:
-    return page.evaluate(
+    view = page.evaluate(
         """
         async () => {
           const graph = await window.__kgFlightSimBrowserProof.importModule(
@@ -309,6 +312,8 @@ def _read_view(page: Page) -> dict[str, Any]:
         }
         """
     )
+    view["layoutOcclusion"] = read_geo_xr_layout_occlusion(page)
+    return view
 
 
 def _wait_for_view(
@@ -318,11 +323,28 @@ def _wait_for_view(
     expected_view: str,
     expected_projection: str,
     expected_style_url: str,
+    require_visual_layout: bool = False,
 ) -> dict[str, Any]:
     deadline = time.monotonic() + 30
     last: dict[str, Any] = {}
     while time.monotonic() < deadline:
         last = _read_view(page)
+        layout = last.get("layoutOcclusion") or {}
+        layout_ready = not require_visual_layout or (
+            layout.get("viewport") == {"width": 1100, "height": 962}
+            and layout.get("sourceFilesVisible") is True
+            and layout.get("workspacePaneVisible") is True
+            and layout.get("floatingPanelVisible") is True
+            and layout.get("floatingPanelView") == "flightSim"
+            and layout.get("routeUnoccluded") is True
+            and layout.get("aircraftUnoccluded") is True
+            and {"stage-footprint", "structure", "subject"}.issubset(
+                set(layout.get("environmentUnoccludedKinds") or [])
+            )
+            and layout.get("environmentExtrusionVisible") is True
+            and bool(layout.get("cameraPadding"))
+            and layout.get("geographyBoundaryStatus") == "not-rendered"
+        )
         if (
             last.get("viewMode") == expected_view
             and last.get("styleUrl") == expected_style_url
@@ -362,7 +384,12 @@ def _wait_for_view(
                 if expected_view.startswith("3d")
                 else abs(float(last.get("pitch") or 0)) < 0.01
             )
-            and bool(last.get("mapPointerHit"))
+            and (
+                bool((layout.get("mapPointerHit")))
+                if require_visual_layout
+                else bool(last.get("mapPointerHit"))
+            )
+            and layout_ready
         ):
             return last
         page.wait_for_timeout(100)
@@ -370,7 +397,6 @@ def _wait_for_view(
         "timed out waiting for native MapLibre Geo+XR view "
         f"{expected_view}/{expected_projection}/{expected_style_url}: {last}"
     )
-
 
 def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any], GeoXrViewCase, dict[str, Any]]:
     baseline = _read_view(page)
@@ -423,175 +449,3 @@ def wait_for_canvas_view_geo_xr_handoff(page: Page, source_case: GeoXrViewCase) 
             "exclusivePlainGeoOverlayCount": 0, "flightRuntimeError": "",
         }, require_revision_sync=True,
     )
-
-
-def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
-    baseline_camera = page.evaluate(
-        """
-        async () => {
-          const camera = await window.__kgFlightSimBrowserProof.importModule(
-            'flightSimCameraRuntime',
-          )
-          const cameraSource = await window.__kgFlightSimBrowserProof.importModule(
-            'xrNativeControllerCameraRuntime',
-          )
-          const graph = await window.__kgFlightSimBrowserProof.importModule(
-            'graphStore',
-          )
-          const gympgrph = await window.__kgFlightSimBrowserProof.importModule(
-            'gympgrphStore',
-          )
-          const state = graph.useGraphStore.getState()
-          return {
-            cameraPreference: camera.readFlightSimCameraSnapshot().view,
-            cameraSourceMode: cameraSource.readXrNativeControllerCamera().mode,
-            floatingPanelOpen: state.floatingPanelOpen,
-            floatingPanelView: state.floatingPanelView,
-            geospatialViewMode:
-              gympgrph.useGympgrphStore.getState().geospatialViewMode,
-            geospatialStyleUrl: localStorage.getItem(
-              gympgrph.LS_KEYS.geospatialStyleUrl,
-            ) || '',
-          }
-        }
-        """
-    )
-    results: list[dict[str, Any]] = []
-    try:
-        for (
-            view_mode,
-            projection,
-            button_label,
-            style_url,
-            provider_host,
-        ) in GEO_XR_VIEW_CASES:
-            select_geo_xr_view(page, button_label)
-            observed = _wait_for_view(
-                page,
-                expected_provider_host=provider_host,
-                expected_view=view_mode,
-                expected_projection=projection,
-                expected_style_url=style_url,
-            )
-            exact_contract = {
-                "hostActive": True,
-                "rendererCanvasCount": 1,
-                "canvasStable": True,
-                "rendererAlpha": True,
-                "terrainCount": 0,
-                "nativeVisualCount": 0,
-                "flightR3fVisualCount": 0,
-                "visualProjection": "maplibre",
-                "rendererPointerTransparent": True,
-                "exclusivePlainGeoOverlayCount": 0,
-                "cameraPreference": baseline_camera["cameraPreference"],
-                "cameraSource": baseline_camera["cameraSourceMode"],
-            }
-            for key, expected in exact_contract.items():
-                if observed.get(key) != expected:
-                    raise AssertionError(
-                        f"Geo+XR {view_mode} violated {key}: "
-                        f"expected={expected!r} observed={observed}"
-                    )
-            if not observed.get("hostRevision"):
-                raise AssertionError(
-                    f"Geo+XR {view_mode} did not publish a Flight revision: "
-                    f"{observed}"
-                )
-            results.append(observed)
-        before_movement = _read_view(page)
-        page.evaluate(
-            """
-            async () => {
-              const flight = await window.__kgFlightSimBrowserProof.importModule(
-                'flightSimRuntime',
-              )
-              flight.restartFlightSim()
-              return flight.startFlightSim()
-            }
-            """
-        )
-        page.keyboard.down("KeyW")
-        try:
-            movement_deadline = time.monotonic() + 15
-            after_movement: dict[str, Any] = {}
-            while time.monotonic() < movement_deadline:
-                after_movement = _read_view(page)
-                if (
-                    after_movement.get("flightTick", 0)
-                    > before_movement.get("flightTick", 0)
-                    and after_movement.get("overlayRevision")
-                    != before_movement.get("overlayRevision")
-                    and after_movement.get("aircraftCoordinate")
-                    != before_movement.get("aircraftCoordinate")
-                    and after_movement.get("aircraftInViewport") is True
-                ):
-                    break
-                page.wait_for_timeout(100)
-            else:
-                raise AssertionError(
-                    "MapLibre Flight aircraft did not move with gameplay: "
-                    f"before={before_movement} after={after_movement}"
-                )
-        finally:
-            page.keyboard.up("KeyW")
-            page.evaluate(
-                """
-                async () => {
-                  const flight = await window.__kgFlightSimBrowserProof.importModule(
-                    'flightSimRuntime',
-                  )
-                  flight.restartFlightSim()
-                }
-                """
-            )
-    finally:
-        prior_case = next(
-            (
-                case for case in GEO_XR_VIEW_CASES
-                if case[0] == baseline_camera["geospatialViewMode"]
-                and case[3] == baseline_camera["geospatialStyleUrl"]
-            ),
-            None,
-        )
-        if prior_case is None:
-            raise AssertionError(
-                "source-authored Geo view/style was outside the four-view "
-                f"contract: {baseline_camera}"
-            )
-        select_geo_xr_view(page, prior_case[2])
-        restored_view = _wait_for_view(
-            page,
-            expected_provider_host=prior_case[4],
-            expected_view=prior_case[0],
-            expected_projection=prior_case[1],
-            expected_style_url=prior_case[3],
-        )
-        page.evaluate(
-            """
-            async prior => {
-              const graph = await window.__kgFlightSimBrowserProof.importModule(
-                'graphStore',
-              )
-              const state = graph.useGraphStore.getState()
-              state.setFloatingPanelOpen(prior.floatingPanelOpen)
-              state.setFloatingPanelView(prior.floatingPanelView)
-            }
-            """,
-            {
-                "floatingPanelOpen": baseline_camera["floatingPanelOpen"],
-                "floatingPanelView": baseline_camera["floatingPanelView"],
-            },
-        )
-    return {
-        "baselineCameraPreference": baseline_camera["cameraPreference"],
-        "baselineCameraSource": baseline_camera["cameraSourceMode"],
-        "sourceView": baseline_camera["geospatialViewMode"],
-        "sourceStyleUrl": baseline_camera["geospatialStyleUrl"],
-        "restoredView": restored_view,
-        "liveMovement": {
-            "before": before_movement,
-            "after": after_movement,
-        },
-        "views": results,
-    }
