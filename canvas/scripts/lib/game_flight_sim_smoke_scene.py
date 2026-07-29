@@ -196,10 +196,10 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
         """
         async () => {
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+          const gympgrph = await window.__kgFlightSimBrowserProof.importModule('gympgrphStore')
           const controller = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
           const camera = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime')
           const catalog = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraCatalog')
-          const presentation = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerPresentation')
           const blob = await store.useGraphStore.getState().captureThreeGltfSnapshot()
           if (!blob) return { ready: false }
           const gltf = JSON.parse(await blob.text())
@@ -216,86 +216,39 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
           const rendererCanvases = documentCanvases.filter(
             canvas => String(canvas.dataset.engine || '').startsWith('three.js'),
           )
+          const mapLibreCanvases = documentCanvases.filter(
+            canvas => canvas.classList.contains('maplibregl-canvas'),
+          )
           const auxiliaryCanvases = documentCanvases.filter(
-            canvas => !rendererCanvases.includes(canvas),
+            canvas => (
+              !rendererCanvases.includes(canvas)
+              && !mapLibreCanvases.includes(canvas)
+            ),
           )
           const auxiliaryCanvasesLocalOnly = auxiliaryCanvases.every(
             canvas => Boolean(canvas.closest(
               '[data-kg-motion-control-preview="local-only"], .monaco-editor',
             )),
           )
-          const missionIndex = nodes.findIndex(
-            node => node.name === 'kg_flight_sim_mission',
-          )
-          const missionNode = missionIndex >= 0 ? nodes[missionIndex] : null
-          const pending = Array.isArray(missionNode?.children)
-            ? [...missionNode.children]
-            : []
-          const descendants = []
-          const visited = new Set()
-          while (pending.length > 0) {
-            const index = pending.shift()
-            if (!Number.isInteger(index) || visited.has(index) || !nodes[index]) continue
-            visited.add(index)
-            descendants.push(nodes[index])
-            if (Array.isArray(nodes[index].children)) {
-              pending.push(...nodes[index].children)
-            }
-          }
           const namedNodeCounts = nodes.reduce((counts, node) => {
             const name = String(node?.name || '').trim()
             if (name) counts[name] = (counts[name] || 0) + 1
             return counts
           }, {})
-          const optionalBeaconNode = descendants.find(
-            node => node?.name === 'kg_flight_sim_optional_beacon',
-          )
-          const aircraftOrientationNode = descendants.find(
-            node => node?.name === 'kg_flight_sim_aircraft_model_orientation',
-          )
-          const optionalBeaconNodes = descendants.filter(
-            node => String(node?.name || '').startsWith(
-              'kg_flight_sim_optional_beacon',
-            ),
-          )
-          const visibleWaypointCount = Object.entries(namedNodeCounts)
-            .filter(([name, count]) => (
-              name.startsWith('kg_flight-sim_waypoint_')
-              && count > 0
-            )).length
-          const visibleLandingPadCount =
-            namedNodeCounts.kg_flight_sim_landing_pad || 0
-          const authoredTransforms = [
-            'kg_graph_xr_stage',
-            'kg_xr_native_controller_demo',
-            'kg_xr_stage_preset_singapore',
-            'kg_xr_playground_treasure',
-            'kg_xr_native_terrain_singapore',
-          ].sort().map(name => {
-            const node = nodes.find(candidate => candidate.name === name)
-            return {
-              name,
-              translation: node?.translation || null,
-              rotation: node?.rotation || null,
-              scale: node?.scale || null,
-              matrix: node?.matrix || null,
-              stageId: node?.extras?.stageId ?? null,
-              terrainId: node?.extras?.terrainId ?? null,
-              stageScale: node?.extras?.stageScale ?? null,
-            }
-          })
+          const names = Object.keys(namedNodeCounts).sort()
+          const nativeVisualNames = names.filter(name => (
+            name.startsWith('kg_xr_native_controller_')
+            || name.startsWith('kg_xr_native_terrain_')
+            || name.startsWith('kg_xr_stage_preset_')
+            || name.startsWith('kg_xr_playground_')
+          ))
+          const flightVisualNames = names.filter(name => (
+            name.startsWith('kg_flight_sim_')
+            || name.startsWith('kg_flight-sim_')
+          ))
           const nativeController = controller.readXrNativeControllerDemo()
           const baselineIdentity =
             window.__kgFlightSimBaselineSceneIdentity || {}
-          const authoredSceneSignature = JSON.stringify(authoredTransforms)
-          const atmosphereTerrainSignature = JSON.stringify({
-            skyColor: presentation.XR_NATIVE_CONTROLLER_SKY_COLOR,
-            fogColor: presentation.XR_NATIVE_CONTROLLER_FOG_COLOR,
-            terrainId: nativeController.terrainId,
-            terrainNode: authoredTransforms.find(
-              node => node.name === 'kg_xr_native_terrain_singapore',
-            ),
-          })
           const cameraAuthoritySignature = JSON.stringify({
             modes: [...catalog.XR_NATIVE_CONTROLLER_CAMERA_MODES],
             defaultMode: catalog.XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE,
@@ -306,12 +259,63 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
             mode: nativeController.mode,
             followCamera: nativeController.followCamera,
           })
+          const rendererCanvas = rendererCanvases[0] || null
+          const contextAttributes = rendererCanvas
+            ?.getContext('webgl2')
+            ?.getContextAttributes?.()
+            || rendererCanvas
+              ?.getContext('webgl')
+              ?.getContextAttributes?.()
+            || null
+          let optionalBeacon = null
+          try {
+            optionalBeacon = JSON.parse(
+              rendererCanvas?.dataset.kgFlightSimOptionalBeacon || 'null',
+            )
+          } catch {
+            optionalBeacon = null
+          }
+          const map = gympgrph.readActiveMapLibreMap?.() || null
+          const sourceId = 'kg-flight-sim:geo-overlay'
+          const source = map?.getSource?.(sourceId) || null
+          let sourceData = null
+          try {
+            sourceData = typeof source?.getData === 'function'
+              ? await source.getData()
+              : source?.serialize?.()?.data || null
+          } catch {
+            sourceData = null
+          }
+          const sourceFeatures = Array.isArray(sourceData?.features)
+            ? sourceData.features
+            : []
+          const routePoints = sourceFeatures.filter(
+            feature => feature?.properties?.kgFlightOverlayKind === 'route-point',
+          )
+          const mapLayersReady = [
+            `${sourceId}:route`,
+            `${sourceId}:objective-guide`,
+            `${sourceId}:route-points`,
+            `${sourceId}:aircraft-outline`,
+            `${sourceId}:aircraft`,
+          ].every(id => Boolean(map?.getLayer?.(id)))
+          const visibleMapLibreCanvases = mapLibreCanvases.filter(canvas => {
+            const rect = canvas.getBoundingClientRect()
+            const style = getComputedStyle(canvas)
+            return rect.width > 0
+              && rect.height > 0
+              && style.display !== 'none'
+              && style.visibility !== 'hidden'
+              && Number(style.opacity || '1') > 0
+          })
           return {
             ready: true,
             rootCount: roots.length,
             canvasCount: canvases.length,
             documentCanvasCount: documentCanvases.length,
             rendererCanvasCount: rendererCanvases.length,
+            mapLibreCanvasCount: mapLibreCanvases.length,
+            visibleMapLibreCanvasCount: visibleMapLibreCanvases.length,
             auxiliaryCanvasCount: auxiliaryCanvases.length,
             auxiliaryCanvasesLocalOnly,
             canvasIdentityCaptured: Boolean(window.__kgFlightSimCanvas),
@@ -321,6 +325,9 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
               && rendererCanvases[0] === canvases[0]
               && auxiliaryCanvasesLocalOnly
               && window.__kgFlightSimCanvas === canvases[0],
+            rendererAlpha: contextAttributes?.alpha === true,
+            visualProjection:
+              rendererCanvas?.dataset.kgFlightSimVisualProjection || '',
             root: {
               documentLoaded: roots[0]?.getAttribute('data-kg-xr-document-loaded') || '',
               flightStage: roots[0]?.getAttribute('data-kg-flight-sim-stage') || '',
@@ -328,24 +335,45 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
               authoredRetained: roots[0]?.getAttribute('data-kg-authored-xr-scene-retained') || '',
               emptyWorld: roots[0]?.getAttribute('data-kg-xr-empty-world') || '',
             },
-            names: Object.keys(namedNodeCounts).sort(),
+            names,
             namedNodeCounts,
-            visibleWaypointCount,
-            visibleLandingPadCount,
-            authoredSceneSignature,
-            baselineAuthoredSceneSignature:
-              baselineIdentity.authoredSceneSignature || null,
-            authoredSceneStable:
-              Boolean(baselineIdentity.authoredSceneSignature)
-              && baselineIdentity.authoredSceneSignature
-                === authoredSceneSignature,
-            atmosphereTerrainSignature,
-            baselineAtmosphereTerrainSignature:
-              baselineIdentity.atmosphereTerrainSignature || null,
-            atmosphereTerrainStable:
-              Boolean(baselineIdentity.atmosphereTerrainSignature)
-              && baselineIdentity.atmosphereTerrainSignature
-                === atmosphereTerrainSignature,
+            nativeVisualNames,
+            nativeVisualCount: nativeVisualNames.length,
+            flightVisualNames,
+            flightVisualCount: flightVisualNames.length,
+            visibleSceneSignature: JSON.stringify({
+              nativeVisualNames,
+              flightVisualNames,
+            }),
+            mapOverlay: {
+              active: Boolean(document.querySelector(
+                '[data-kg-flight-geospatial-overlay="active"]',
+              )),
+              sourceFeatureCount: sourceFeatures.length,
+              layersReady: mapLayersReady,
+              aircraftFeatureCount: sourceFeatures.filter(
+                feature => feature?.properties?.kgFlightOverlayKind === 'aircraft',
+              ).length,
+              routeFeatureCount: sourceFeatures.filter(
+                feature => feature?.properties?.kgFlightOverlayKind === 'route',
+              ).length,
+              objectiveGuideFeatureCount: sourceFeatures.filter(
+                feature => feature?.properties?.kgFlightOverlayKind
+                  === 'objective-guide',
+              ).length,
+              pendingWaypointCount: routePoints.filter(feature => (
+                feature?.properties?.kgFlightRouteKind === 'waypoint'
+                && feature?.properties?.kgFlightRouteState !== 'visited'
+              )).length,
+              landingStates: routePoints
+                .filter(feature => (
+                  feature?.properties?.kgFlightRouteKind === 'landing'
+                ))
+                .map(feature => feature?.properties?.kgFlightRouteState),
+            },
+            exclusivePlainGeoOverlayCount: document.querySelectorAll(
+              '[data-kg-flight-sim-geo-overlay="1"]',
+            ).length,
             camera: {
               mode: camera.readXrNativeControllerCamera().mode,
               authoritySignature: cameraAuthoritySignature,
@@ -368,44 +396,7 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
                 && baselineIdentity.controllerAuthoritySignature
                   === controllerAuthoritySignature,
             },
-            mission: {
-              actorOnly: missionNode?.extras?.actorOnly === true,
-              descendantNames: descendants
-                .map(node => String(node?.name || '').trim())
-                .filter(Boolean)
-                .sort(),
-              unnamedDescendantCount: descendants
-                .filter(node => !String(node?.name || '').trim()).length,
-              lightDescendantCount: descendants.filter(
-                node => Number.isInteger(
-                  node?.extensions?.KHR_lights_punctual?.light,
-                ),
-              ).length,
-            },
-            aircraftOrientation: {
-              matrix: aircraftOrientationNode?.matrix || null,
-              rotation: aircraftOrientationNode?.rotation || null,
-              flightForward:
-                aircraftOrientationNode?.extras?.flightForward || null,
-              proceduralForward:
-                aircraftOrientationNode?.extras?.proceduralForward || null,
-            },
-            optionalBeacon: {
-              assetKind: optionalBeaconNode?.extras?.assetKind ?? null,
-              assetPath: optionalBeaconNode?.extras?.assetPath ?? null,
-              assetSha256: optionalBeaconNode?.extras?.assetSha256 ?? null,
-              opaque: optionalBeaconNode?.extras?.opaque === true,
-              meshDescendantCount: optionalBeaconNodes.filter(
-                node => Number.isInteger(node?.mesh),
-              ).length,
-              partNames: optionalBeaconNodes
-                .map(node => String(node?.name || '').trim())
-                .filter(name => (
-                  name
-                  && name !== 'kg_flight_sim_optional_beacon'
-                ))
-                .sort(),
-            },
+            optionalBeacon,
           }
         }
         """
@@ -419,31 +410,47 @@ def assert_authored_scene(scene: dict[str, Any]) -> None:
         scene.get("rootCount") != 1
         or scene.get("canvasCount") != 1
         or scene.get("rendererCanvasCount") != 1
+        or scene.get("mapLibreCanvasCount") != 1
+        or scene.get("visibleMapLibreCanvasCount") != 1
         or scene.get("auxiliaryCanvasesLocalOnly") is not True
     ):
-        raise AssertionError(f"expected one shared authored XR Canvas: {scene}")
+        raise AssertionError(
+            f"expected one MapLibre canvas and one retained Flight runtime Canvas: {scene}"
+        )
     if (
         scene.get("canvasIdentityCaptured") is not True
         or scene.get("canvasStable") is not True
     ):
-        raise AssertionError("Flight Sim replaced the shared authored XR Canvas")
-    if scene.get("authoredSceneStable") is not True:
-        raise AssertionError("Flight Sim changed the authored XR scene identity")
-    if scene.get("atmosphereTerrainStable") is not True:
-        raise AssertionError("Flight Sim changed the authored atmosphere or terrain")
+        raise AssertionError("Flight Sim replaced the retained runtime Canvas")
+    if scene.get("rendererAlpha") is not True:
+        raise AssertionError("Flight runtime Canvas was not transparent")
+    if scene.get("visualProjection") != "maplibre":
+        raise AssertionError("Flight runtime Canvas still owned the visible projection")
     camera = scene.get("camera") or {}
     if camera.get("authorityStable") is not True:
         raise AssertionError("Flight Sim replaced the Physics camera catalog")
     controller = scene.get("controller") or {}
     if controller.get("authorityStable") is not True:
         raise AssertionError("Flight Sim changed the authored Physics controller")
+    if scene.get("nativeVisualCount") != 0:
+        raise AssertionError(
+            f"native XR visuals remained visible: {scene.get('nativeVisualNames')}"
+        )
+    if scene.get("flightVisualCount") != 0:
+        raise AssertionError(
+            f"R3F Flight visuals remained visible: {scene.get('flightVisualNames')}"
+        )
+    map_overlay = scene.get("mapOverlay") or {}
+    if (
+        map_overlay.get("active") is not True
+        or map_overlay.get("layersReady") is not True
+        or map_overlay.get("aircraftFeatureCount") != 1
+        or map_overlay.get("routeFeatureCount") != 1
+    ):
+        raise AssertionError(f"MapLibre Flight projection was incomplete: {map_overlay}")
+    if scene.get("exclusivePlainGeoOverlayCount") != 0:
+        raise AssertionError("exclusive plain-Geo Flight overlay mounted in Geo+XR")
     names = set(scene.get("names") or [])
-    missing = sorted(AUTHORED_XR_NODES - names)
-    if missing:
-        raise AssertionError(f"authored XR nodes were missing: {missing}")
-    counts = scene.get("namedNodeCounts") or {}
-    if counts.get(CANONICAL_XR_TERRAIN_NODE) != 1:
-        raise AssertionError("Flight Sim did not retain exactly one canonical XR terrain")
     forbidden = sorted(
         name
         for name in names
@@ -458,6 +465,7 @@ def assert_active_flight_scene(
     *,
     completed_waypoint_count: int = 0,
     waypoint_count: int = 3,
+    mission_phase: str | None = None,
 ) -> None:
     assert_authored_scene(scene)
     root = scene.get("root") or {}
@@ -469,59 +477,6 @@ def assert_active_flight_scene(
         "emptyWorld": "",
     }:
         raise AssertionError(f"Flight Sim XR surface contract was not active: {root}")
-    counts = scene.get("namedNodeCounts") or {}
-    expected_once = (
-        FLIGHT_MISSION_NODE,
-        FLIGHT_AIRCRAFT_NODE,
-        FLIGHT_AIRCRAFT_ORIENTATION_NODE,
-        FLIGHT_ASSET_NODE,
-        FLIGHT_OPTIONAL_BEACON_NODE,
-    )
-    if any(counts.get(name) != 1 for name in expected_once):
-        raise AssertionError(f"Flight actor-only stage was duplicated or missing: {counts}")
-    orientation = scene.get("aircraftOrientation") or {}
-    matrix = orientation.get("matrix")
-    rotation = orientation.get("rotation")
-    procedural_forward = orientation.get("proceduralForward")
-    flight_forward = orientation.get("flightForward")
-    if (
-        (
-            (not isinstance(rotation, list) or len(rotation) != 4)
-            and (not isinstance(matrix, list) or len(matrix) != 16)
-        )
-        or procedural_forward != [0, -1, 0]
-        or flight_forward != [0, 0, -1]
-    ):
-        raise AssertionError(
-            "Flight aircraft model orientation contract was missing: "
-            f"{orientation}"
-        )
-    vx, vy, vz = (float(value) for value in procedural_forward)
-    if isinstance(rotation, list) and len(rotation) == 4:
-        qx, qy, qz, qw = (float(value) for value in rotation)
-        tx = 2 * (qy * vz - qz * vy)
-        ty = 2 * (qz * vx - qx * vz)
-        tz = 2 * (qx * vy - qy * vx)
-        rendered_forward = [
-            vx + qw * tx + qy * tz - qz * ty,
-            vy + qw * ty + qz * tx - qx * tz,
-            vz + qw * tz + qx * ty - qy * tx,
-        ]
-    else:
-        values = [float(value) for value in matrix]
-        rendered_forward = [
-            values[0] * vx + values[4] * vy + values[8] * vz,
-            values[1] * vx + values[5] * vy + values[9] * vz,
-            values[2] * vx + values[6] * vy + values[10] * vz,
-        ]
-    if any(
-        abs(actual - expected) > 1e-6
-        for actual, expected in zip(rendered_forward, flight_forward)
-    ):
-        raise AssertionError(
-            "Flight aircraft nose did not align with model/camera forward: "
-            f"rendered={rendered_forward} expected={flight_forward}"
-        )
     optional_beacon = scene.get("optionalBeacon") or {}
     if (
         optional_beacon.get("assetKind") != "glb-fallback"
@@ -533,55 +488,39 @@ def assert_active_flight_scene(
         or not optional_beacon.get("partNames")
     ):
         raise AssertionError(
-            "Flight optional beacon did not retain its admitted rendered GLB "
+            "Flight optional beacon did not retain its admitted local GLB "
             f"identity: {optional_beacon}"
         )
-    waypoint_names = [
-        name for name in counts if name.startswith("kg_flight-sim_waypoint_")
-    ]
-    landing_pad_name = "kg_flight_sim_landing_pad"
-    expected_landing_pad_count = 1 if completed_waypoint_count >= waypoint_count else 0
-    if counts.get(landing_pad_name, 0) != expected_landing_pad_count:
+    map_overlay = scene.get("mapOverlay") or {}
+    expected_landing_state = (
+        "visited"
+        if mission_phase == "completed"
+        else "active"
+        if completed_waypoint_count >= waypoint_count
+        else "pending"
+    )
+    if map_overlay.get("landingStates") != [expected_landing_state]:
         raise AssertionError(
-            "Flight landing-pad visibility did not match route progress: "
-            f"count={counts.get(landing_pad_name, 0)}, "
-            f"completed={completed_waypoint_count}/{waypoint_count}"
+            "Flight landing-pad state did not match route progress: "
+            f"states={map_overlay.get('landingStates')}, "
+            f"completed={completed_waypoint_count}/{waypoint_count}, "
+            f"phase={mission_phase}"
+        )
+    expected_objective_guide_count = 0 if mission_phase == "completed" else 1
+    if (
+        map_overlay.get("objectiveGuideFeatureCount")
+        != expected_objective_guide_count
+    ):
+        raise AssertionError(
+            "MapLibre Flight objective guide did not match mission phase: "
+            f"{map_overlay}"
         )
     expected_visible_waypoints = max(
         0,
         waypoint_count - completed_waypoint_count,
     )
-    exact_waypoint_visibility = all(
-        sum(
-            name.startswith(f"kg_flight-sim_waypoint_{index}_")
-            for name in waypoint_names
-        )
-        == (1 if index > completed_waypoint_count else 0)
-        for index in range(1, waypoint_count + 1)
-    )
-    if (
-        len(waypoint_names) != expected_visible_waypoints
-        or any(counts[name] != 1 for name in waypoint_names)
-        or not exact_waypoint_visibility
-    ):
-        raise AssertionError(f"Flight waypoint actors were not exact: {waypoint_names}")
-    mission = scene.get("mission") or {}
-    if mission.get("actorOnly") is not True or mission.get("lightDescendantCount") != 0:
-        raise AssertionError(f"Flight mission mounted a world or light owner: {mission}")
-    unexpected = sorted(
-        name
-        for name in mission.get("descendantNames") or []
-        if name not in {
-            FLIGHT_AIRCRAFT_NODE,
-            FLIGHT_AIRCRAFT_ORIENTATION_NODE,
-            FLIGHT_ASSET_NODE,
-        }
-        and not name.startswith("kg_xr_airplane_")
-        and not name.startswith("kg_flight_sim_optional_beacon")
-        and not name.startswith("kg_flight-sim_waypoint_")
-        and name != landing_pad_name
-    )
-    if unexpected:
+    if map_overlay.get("pendingWaypointCount") != expected_visible_waypoints:
         raise AssertionError(
-            f"Flight mission subtree contained non-actor scene nodes: {unexpected}"
+            "MapLibre Flight waypoint projection was not exact: "
+            f"{map_overlay}"
         )

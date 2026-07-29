@@ -38,6 +38,11 @@ export async function importGympgrph(): Promise<typeof import('gympgrph')> {
   }
 }
 
+export async function preloadGeospatialMapRuntime(): Promise<void> {
+  const module = await importGympgrph()
+  await module.preloadMapLibreBasemapRuntime()
+}
+
 export async function readGeospatialModeEnabled(): Promise<boolean> {
   const m = await importGympgrph()
   if (typeof m.isGeospatialModeEnabled !== 'function') return false

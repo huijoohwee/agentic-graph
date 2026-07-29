@@ -60,7 +60,10 @@ export function FlightSimEnvironmentGeoButton(
         import('./flightSimRuntime'),
       ])
       await settleWorkspaceSourceTextWrites()
-      const snapshot = await openFlightSimSurface({ openPanel: false })
+      const snapshot = await openFlightSimSurface({
+        geospatialComposite: true,
+        openPanel: false,
+      })
       if (!snapshot.active || snapshot.runtimeError) {
         throw new Error(snapshot.runtimeError || 'Flight Sim remained inactive.')
       }

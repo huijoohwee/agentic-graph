@@ -399,6 +399,7 @@ def verify_flight_exit(
           const camera = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime')
           const controller = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+          const gympgrph = await window.__kgFlightSimBrowserProof.importModule('gympgrphStore')
           const withoutRevision = value => {
             const copy = JSON.parse(JSON.stringify(value))
             delete copy.revision
@@ -425,6 +426,10 @@ def verify_flight_exit(
                 canvasRenderModeIsAuto: state.canvasRenderModeIsAuto,
                 floatingPanelOpen: state.floatingPanelOpen,
                 floatingPanelView: state.floatingPanelView,
+                geospatialModeEnabled:
+                  gympgrph.isGeospatialModeEnabled(),
+                mapLibreActive:
+                  gympgrph.readActiveMapLibreMap?.() != null,
                 timelinePlaying:
                   state.timelineTransportPlaying === true,
               },
@@ -522,6 +527,8 @@ def verify_flight_exit(
                 "canvasRenderModeIsAuto",
                 "floatingPanelOpen",
                 "floatingPanelView",
+                "geospatialModeEnabled",
+                "mapLibreActive",
                 "timelinePlaying",
             )
         },

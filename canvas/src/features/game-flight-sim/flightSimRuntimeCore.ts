@@ -18,7 +18,8 @@ import {
   boundedFlightSimDeltaSeconds, createIdleFlightSimSnapshot,
   flightSimRuntimeErrorMessage, freezeFlightSimDecision,
   maximumFlightSimDecisionRunId,
-  type FlightSimAdvanceRequest, type FlightSimRuntime,
+  type FlightSimAdvanceRequest, type FlightSimPresenterKind,
+  type FlightSimReadyPublication, type FlightSimRuntime,
 } from './flightSimRuntimeState'
 import { beginFlightSimHudUpdate } from './flightSimDeadlineRuntime'
 import { rejectFlightSimGameplayNetworkAttemptWithinDeadline } from './flightSimDeadlineIntegration'
@@ -38,8 +39,17 @@ export function createFlightSimRuntime(options: Readonly<{
   active?: boolean
   webglSupported?: boolean
   onMissionCreated?: (mission: FlightSimMission) => void
+  coordinateReadyPublication?: (
+    publication: FlightSimReadyPublication,
+  ) => boolean
+  cancelReadyPublication?: () => void
 }>): FlightSimRuntime {
   const listeners = new Set<Listener>()
+  const hudListeners = new Set<Listener>()
+  const presenterListeners: Record<FlightSimPresenterKind, Set<Listener>> = {
+    maplibre: new Set<Listener>(),
+    surface: new Set<Listener>(),
+  }
   const pendingDecisions = createFlightSimPendingDecisionIndex(freezeFlightSimDecision)
   let profile = options.profile
   let mission: FlightSimMission | null = null
@@ -58,15 +68,65 @@ export function createFlightSimRuntime(options: Readonly<{
     options.active ?? true,
     options.webglSupported ?? true,
   )
-  const notify = () => {
-    for (const listener of [...listeners]) listener()
+  const notifyListeners = (
+    targets: Set<Listener>,
+    publishedRevision: number,
+    failures?: unknown[],
+  ) => {
+    for (const listener of [...targets]) {
+      if (snapshot.revision !== publishedRevision) return
+      try {
+        listener()
+      } catch (error) {
+        if (!failures) throw error
+        failures.push(error)
+      }
+    }
+  }
+  const notifyPublishedSnapshot = (publishedRevision: number) => {
+    const notifyPresenter = (kind: FlightSimPresenterKind) => {
+      notifyListeners(presenterListeners[kind], publishedRevision)
+    }
+    const notifyFollowers = (presenter: FlightSimPresenterKind) => {
+      const failures: unknown[] = []
+      notifyListeners(
+        presenterListeners[presenter === 'maplibre' ? 'surface' : 'maplibre'],
+        publishedRevision,
+        failures,
+      )
+      notifyListeners(listeners, publishedRevision, failures)
+      if (failures.length > 0) {
+        throw new AggregateError(
+          failures,
+          'Flight Sim ready follower publication failed',
+        )
+      }
+    }
+    const readyCandidate = snapshot.phase === 'ready'
+      && snapshot.tick === 0
+      && snapshot.runId > 0
+      && !snapshot.runtimeError
+    if (readyCandidate && options.coordinateReadyPublication?.({
+      snapshot,
+      hasPresenter: kind => presenterListeners[kind].size > 0,
+      notifyPresenter,
+      notifyFollowers,
+    })) {
+      notifyListeners(hudListeners, publishedRevision)
+      return
+    }
+    if (!readyCandidate) options.cancelReadyPublication?.()
+    notifyPresenter('maplibre')
+    notifyPresenter('surface')
+    notifyListeners(hudListeners, publishedRevision)
+    notifyListeners(listeners, publishedRevision)
   }
   const publish = (
     update: Partial<Omit<FlightSimSnapshot, 'revision'>>,
   ): FlightSimSnapshot => {
     beginFlightSimHudUpdate(snapshot.revision + 1)
     snapshot = Object.freeze({ ...snapshot, ...update, revision: snapshot.revision + 1 })
-    notify()
+    notifyPublishedSnapshot(snapshot.revision)
     return snapshot
   }
   const publishCapture = (
@@ -102,7 +162,7 @@ export function createFlightSimRuntime(options: Readonly<{
       ...createIdleFlightSimSnapshot(profile, active, snapshot.webglSupported),
       revision: snapshot.revision + 1,
     })
-    notify()
+    notifyPublishedSnapshot(snapshot.revision)
     return snapshot
   }
   const replaceMission = (replayHydratedDecisions = false) => {
@@ -229,6 +289,14 @@ export function createFlightSimRuntime(options: Readonly<{
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)
+    },
+    subscribeHud(listener) {
+      hudListeners.add(listener)
+      return () => hudListeners.delete(listener)
+    },
+    subscribePresenter(kind, listener) {
+      presenterListeners[kind].add(listener)
+      return () => presenterListeners[kind].delete(listener)
     },
     open(webglSupported = true) {
       return publish({

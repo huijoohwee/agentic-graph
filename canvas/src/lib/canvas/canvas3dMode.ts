@@ -56,7 +56,7 @@ export type CanvasSurfaceModeApplicabilityArgs = VoxelModeApplicabilityArgs & {
 }
 
 export type CanvasSurfaceModeSelectionParams = CanvasSurfaceModeApplicabilityArgs & {
-  mode: CanvasSurfaceModeId
+  mode: Exclude<CanvasSurfaceModeId, 'xr' | 'geo-xr'>
   onOpenGeospatialMode: () => void
   onExitGeospatialMode?: () => void
   setCanvas2dRenderer: (id: Canvas2dRendererId) => void
@@ -201,12 +201,6 @@ export function applyCanvasSurfaceModeSelection(params: CanvasSurfaceModeSelecti
   }
   if (mode === 'geospatial') {
     setCanvasRenderMode('2d')
-    onOpenGeospatialMode()
-    return true
-  }
-  if (mode === 'geo-xr') {
-    if ((params.layoutMode ?? schema?.layout?.mode) === 'radial') return false
-    activateCanvasGraphSurfaceMode({ mode: 'xr', setCanvas3dMode, setCanvasRenderMode })
     onOpenGeospatialMode()
     return true
   }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implement one browser-local, deterministic Flight Sim mission on the composed Knowgrph Geo+XR Canvas surface: one selected authored environment and Flight in the shared XR Canvas, with Geo supplying four presentation policies and no second world. This repository-tracked Kiro package is the normative source of truth; the PRD/TAD and workspace seed are derived implementation/proof projections, and any workspace-root Kiro copy is byte-identical local projection only. The source/runtime implementation is complete; final evidence remains a separate exact-revision activity. The plan preserves four journaled `World_Tick` systems, post-system Cost_Log ownership, post-commit projection ownership, Decisions-only persistence, and a deterministic committed-local asset boundary.
+Implement one browser-local, deterministic Flight Sim mission on the composed Knowgrph Geo+XR surface: native MapLibre renders the selected geospatial world and georeferenced Flight layers while one transparent existing XR Canvas retains simulation/input/readiness and paints no competing geometry. This repository-tracked Kiro package is the normative source of truth; the PRD/TAD and workspace seed are derived implementation/proof projections, and any workspace-root Kiro copy is byte-identical local projection only. The source/runtime implementation is complete; final evidence remains a separate exact-revision activity. The plan preserves four journaled `World_Tick` systems, post-system Cost_Log ownership, post-commit projection ownership, Decisions-only persistence, and a deterministic committed-local asset boundary.
 
 ---
 
@@ -10,7 +10,7 @@ Implement one browser-local, deterministic Flight Sim mission on the composed Kn
 
 - [x] 1. Establish source identity and shared-surface ownership
   - [x] Register the source-authored `flight-sim` run-ready id with fail-closed identity conflict handling.
-  - [x] Keep the selected authored environment, Flight actors, and HUD in one retained XR Canvas while Geo supplies presentation state, preserving the exclusive plain-Geo projection without a second Canvas, camera owner, terrain, or world.
+  - [x] Keep native MapLibre as the Geo world and visible Flight projection owner, retain simulation/input/readiness plus the HUD with one transparent visual-free XR Canvas, and preserve the exclusive plain-Geo projection without a second R3F Canvas.
   - _Requirements: 1, 12, 14, 23_
 
 - [x] 2. Implement deterministic native ECS flight
@@ -55,7 +55,7 @@ Implement one browser-local, deterministic Flight Sim mission on the composed Kn
   - [x] Add foundation, night, and systems-recovery missions with deterministic route, stability, energy, recovery, score, and grade outcomes.
   - [x] Add bounded power-loss, unreliable-instrument, and control-bias practice failures to the captured tick-input owner.
   - [x] Project one shared training state into Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera without a second Canvas or world.
-  - [x] Add explicit browser voice coaching with visible text fallback, shared-owner night atmosphere, terminal debrief Decisions, and MCP `/` `@` `#` operations.
+  - [x] Add explicit browser voice coaching with visible text fallback, MapLibre/HUD night palette ownership, terminal debrief Decisions, and MCP `/` `@` `#` operations.
   - [x] Retry transient mission-stage dynamic-import fetch failures at the shared loader boundary.
   - _Requirements: 4, 12, 13, 14, 18, 19, 24_
 
@@ -64,14 +64,16 @@ Implement one browser-local, deterministic Flight Sim mission on the composed Kn
   - [x] Add a deterministic low-speed nose-down tendency below the authored stall threshold.
   - [x] Project unreliable-instrument, stall, attitude, and mission-relative energy states into the HUD and all six existing training surfaces.
   - [x] Preserve the single shared camera/Canvas owners and the generic clean-room, zero-dependency boundary.
-  - [x] Route each Media environment kit through canonical XR stage selection into FloatingPanel Geo, retain the selected authored world as the sole Geo+XR environment, settle graph-metadata source-text writes plus their debounced local host-mirror tail before the shared Flight fence, and immediately reactivate the source-authored Flight overlay without replacing the Geo panel.
-  - [x] Share fixed-step input ownership across XR and Geo, acknowledge the live preparation request from the committed presentation, and invalidate the XR demand loop so Geo and connected Motion Control handoffs cannot lose Flight entry to mount ordering.
+  - [x] Route each Media environment kit through canonical XR stage selection into FloatingPanel Geo, retain the selected native MapLibre view as the Geo+XR world, settle graph-metadata source-text writes plus their debounced local host-mirror tail before Flight activation, and immediately reactivate the source-authored Flight overlay without replacing the Geo panel.
+  - [x] Share fixed-step input ownership across XR and Geo, acknowledge Geo+XR preparation only from a committed native MapLibre render (or exclusive Geo from its committed DOM projection), and forbid the visually suppressed XR demand loop from marking or completing visible presentation readiness.
   - [x] Decouple committed Flight render readiness from desktop input ownership so Motion, touch, and gamepad remain playable while the desktop claim retries after Geo or camera handoff.
   - [x] Derive Cockpit eye clearance from the admitted aircraft collision envelope so the forward view remains above and beyond committed airframe geometry.
-  - [x] Add Geo+XR Mode, make the Flight seed select it, retain exactly one selected authored environment with the shared XR route/aircraft/input layer, and retain exclusive plain Geo plus existing 3D precedence for City and FPS gameplay.
-  - [x] Route Geo+XR through the Geo host's shared-XR-stage policy so its screen-space world and MapLibre stay unmounted; map 2D Classic/Modern and 3D Classic/Modern to four distinct presentation policies for the same terrain, with north-up planar framing and preserved 3D camera choice.
+  - [x] Add Geo+XR Mode, make the Flight seed select it, retain native MapLibre with topmost georeferenced route/aircraft layers plus the transparent XR simulation/input/readiness layer, and retain exclusive plain Geo plus existing 3D precedence for City and FPS gameplay.
+  - [x] Keep native MapLibre mounted for 2D Classic/Modern and 3D Classic/Modern, suppress competing R3F environment and Flight visuals, drive the visible MapLibre camera from Fixed Follow Chase/Cockpit/Survey, and yield pan/zoom to MapLibre in Free Orbit.
+  - [x] Derive route state and signed active-objective guidance once, then project its conditional aircraft-to-objective course segment through all four native MapLibre views, exclusive plain Geo, the navigation inset, and a non-live mobile/desktop HUD cue.
+  - [x] Prevent the shared Physics base from re-activating an already-active Flight XR surface, and preserve the pending Flight gameplay owner when that base must enter XR.
   - [x] Share the responsive FloatingPanel width policy with the pointer-transparent Flight HUD, reserve its default right-side footprint, and retain mobile controls above bottom choreography surfaces so Motion Control remains operable during flight.
-  - [x] Admit only the nine exact checked-in same-origin LiteRT runtime assets through the Flight network fence for `GET`/`HEAD`, while retaining every gameplay, external, mutation, socket, event-stream, beacon, and durable-start block so Motion Control can initialize without a new dependency or policy owner.
+  - [x] Remove Flight's global browser-network replacement, retain explicit gameplay transport rejection at the bounded call seam, and leave existing Geo provider and checked-in Motion Control asset transport with their independent owners.
   - _Requirements: 4, 6, 7, 12, 14, 24, 25, 26, 27_
 
 - [ ] 10. Complete final exact-revision evidence and protected integration

@@ -86,6 +86,29 @@ export function isMapLibreStyleReady(map: any): boolean {
   return isStyleReady(map)
 }
 
+export function readGeoJsonSourceData(source: unknown): FeatureCollection | null {
+  if (!source || typeof source !== 'object') return null
+  try {
+    const serialize = (source as {
+      serialize?: () => { data?: unknown }
+    }).serialize
+    const data = typeof serialize === 'function'
+      ? serialize.call(source)?.data
+      : null
+    if (
+      data
+      && typeof data === 'object'
+      && (data as { type?: unknown }).type === 'FeatureCollection'
+      && Array.isArray((data as { features?: unknown }).features)
+    ) {
+      return data as FeatureCollection
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 export function setGeoJsonSourceData(map: any, sourceId: string, fc: FeatureCollection): void {
   if (!map || !sourceId) return
   if (!isStyleReady(map)) return

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from urllib.parse import urlparse
 
@@ -16,7 +17,8 @@ from lib.game_flight_sim_smoke_ledger import (
     REQUIRED_BROWSER_VERIFICATION_NAMES,
 )
 from lib.game_flight_sim_smoke_network import (
-    assert_zero_network,
+    assert_transport_ownership,
+    request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
 )
@@ -143,7 +145,10 @@ def main() -> None:
             websocket_route_hits.append(str(websocket_route.url))
 
         def route_request(route: Any, request: Any) -> None:
-            if request_is_proof_local_read(request, local_origin):
+            if (
+                request_is_proof_local_read(request, local_origin)
+                or request_is_geo_provider_read(request, local_origin)
+            ):
                 route.continue_()
                 return
             blocked_requests.append(request_record(request))
@@ -179,6 +184,7 @@ def main() -> None:
             )
 
         def reset_observed_errors() -> None:
+            requests.clear()
             blocked_requests.clear()
             console_errors.clear()
             page_errors.clear()
@@ -224,11 +230,31 @@ def main() -> None:
                 websocket_probe_events=websocket_events,
                 websocket_probe_route_hits=websocket_route_hits,
             )
-            non_local_requests = sorted(
+            geo_provider_requests = sorted(
+                {
+                    request["url"]
+                    for request in requests
+                    if request_is_geo_provider_read(
+                        SimpleNamespace(
+                            method=request["method"],
+                            url=request["url"],
+                        ),
+                        local_origin,
+                    )
+                }
+            )
+            unexpected_non_local_requests = sorted(
                 {
                     request["url"]
                     for request in requests
                     if urlparse(request["url"]).netloc != local_origin
+                    and not request_is_geo_provider_read(
+                        SimpleNamespace(
+                            method=request["method"],
+                            url=request["url"],
+                        ),
+                        local_origin,
+                    )
                 }
             )
             local_runtime_paths = sorted(
@@ -259,9 +285,12 @@ def main() -> None:
                 websocket_route_hits,
             )
 
-            def verify_zero_network() -> None:
-                assert_zero_network(
-                    non_local_requests=non_local_requests,
+            def verify_transport_ownership() -> None:
+                assert_transport_ownership(
+                    geo_provider_requests=geo_provider_requests,
+                    unexpected_non_local_requests=(
+                        unexpected_non_local_requests
+                    ),
                     blocked_requests=blocked_requests,
                     websocket_events=websocket_events,
                     websocket_route_hits=websocket_route_hits,
@@ -283,7 +312,10 @@ def main() -> None:
                         f"responses={failed_responses}"
                     )
 
-            ledger.verify("zero-network fence", verify_zero_network)
+            ledger.verify(
+                "Geo provider transport ownership",
+                verify_transport_ownership,
+            )
             ledger.verify(
                 "workspace seed authority",
                 verify_workspace_seed_authority,
@@ -308,7 +340,7 @@ def main() -> None:
             initial = playable_state["initial"]
             moved = desktop["moved"]
             evidence = {
-                "schema": "knowgrph-flight-sim-browser-run/v3",
+                "schema": "knowgrph-flight-sim-browser-run/v5",
                 "runIndex": RUN_INDEX,
                 "runCount": RUN_COUNT,
                 "candidate": {
@@ -337,23 +369,31 @@ def main() -> None:
                         active_scene["documentCanvasCount"],
                     "rendererCanvasCount":
                         active_scene["rendererCanvasCount"],
+                    "mapLibreCanvasCount":
+                        active_scene["mapLibreCanvasCount"],
+                    "visibleMapLibreCanvasCount":
+                        active_scene["visibleMapLibreCanvasCount"],
                     "auxiliaryCanvasCount":
                         active_scene["auxiliaryCanvasCount"],
                     "auxiliaryCanvasesLocalOnly":
                         active_scene["auxiliaryCanvasesLocalOnly"],
                     "preFlightCanvasIdentityRetained":
                         active_scene["canvasStable"],
-                    "authoredXrSceneRetained": True,
+                    "transparentFlightRuntimeCanvas":
+                        active_scene["rendererAlpha"],
+                    "mapLibreOwnsVisualProjection":
+                        active_scene["visualProjection"] == "maplibre",
+                    "nativeXrVisualsSuppressed":
+                        active_scene["nativeVisualCount"] == 0,
+                    "r3fFlightVisualsSuppressed":
+                        active_scene["flightVisualCount"] == 0,
                     "physicsSourceSha256":
                         source_state["physicsBaseline"]["sourceSha256"],
-                    "authoredSceneSignature":
-                        active_scene["authoredSceneSignature"],
-                    "atmosphereTerrainSignature":
-                        active_scene["atmosphereTerrainSignature"],
-                    "actorOnlyMission": True,
-                    "authoredSceneStableAcrossLifecycle": True,
+                    "visibleSceneSignature":
+                        active_scene["visibleSceneSignature"],
                     "optionalBeacon": active_scene["optionalBeacon"],
                 },
+                "geoXrPresentation": state["geoXrPresentation"],
                 "playableFrame": {
                     "firstFrame": True,
                     **playable_state["firstFrame"],
@@ -409,7 +449,10 @@ def main() -> None:
                 "mobileHud": state["mobileHud"],
                 "throttle": 0.75,
                 "verificationLedger": ledger.evidence(),
-                "nonLocalRequests": non_local_requests,
+                "geoProviderRequests": geo_provider_requests,
+                "unexpectedNonLocalRequests": (
+                    unexpected_non_local_requests
+                ),
                 "blockedRequests": blocked_requests,
                 "serviceWorkerRequests": [
                     request

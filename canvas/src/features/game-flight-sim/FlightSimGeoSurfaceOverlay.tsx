@@ -14,7 +14,7 @@ import {
 import {
   readFlightSimSnapshot,
   readFlightSimStageRuntimeController,
-  subscribeFlightSimSnapshot,
+  subscribeFlightSimPresentation,
 } from './flightSimRuntime'
 import {
   completeFlightSimStagePreparation,
@@ -29,9 +29,13 @@ function markerColor(state: 'active' | 'pending' | 'visited'): string {
   return '#94a3b8'
 }
 
+const subscribeFlightSimSurfacePresentation = (listener: () => void) => (
+  subscribeFlightSimPresentation('surface', listener)
+)
+
 export function FlightSimGeoSurfaceOverlay() {
   const flight = React.useSyncExternalStore(
-    subscribeFlightSimSnapshot,
+    subscribeFlightSimSurfacePresentation,
     readFlightSimSnapshot,
     readFlightSimSnapshot,
   )
@@ -113,6 +117,20 @@ export function FlightSimGeoSurfaceOverlay() {
           vectorEffect="non-scaling-stroke"
           data-kg-flight-sim-geo-route="1"
         />
+        {navigation.objective ? (
+          <line
+            x1={navigation.aircraft.x * 100}
+            y1={navigation.aircraft.y * 100}
+            x2={navigation.objective.x * 100}
+            y2={navigation.objective.y * 100}
+            stroke="#fde047"
+            strokeDasharray="1.2 1.4"
+            strokeLinecap="round"
+            strokeWidth="0.9"
+            vectorEffect="non-scaling-stroke"
+            data-kg-flight-sim-geo-objective-guide={navigation.objective.id}
+          />
+        ) : null}
         {navigation.route.map(point => (
           <circle
             key={point.id}

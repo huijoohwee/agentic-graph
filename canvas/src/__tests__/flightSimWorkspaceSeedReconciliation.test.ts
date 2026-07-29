@@ -35,10 +35,10 @@ test('Flight bundled Geo+XR source replaces a stale draft workspace seed', async
   assert.match(authoredFlight.text, /^kgCanvasRenderMode:\s*"3d"\s*$/m)
   assert.match(authoredFlight.text, /^kgCanvas3dMode:\s*"xr"\s*$/m)
   assert.match(authoredFlight.text, /^\s*id:\s*"flight-sim"\s*$/m)
-  assert.match(authoredFlight.text, /^\s*render_policy:\s*"shared-xr-stage while composed in Geo\+XR; standalone Geo retains its selected provider"\s*$/m)
-  assert.match(authoredFlight.text, /^\s*shared_environment_presentations:\s*\["2d-classic", "2d-modern", "3d-classic", "3d-modern"\]\s*$/m)
-  assert.match(authoredFlight.text, /^\s*screen_space_basemap:\s*"suppressed"\s*$/m)
-  assert.match(authoredFlight.text, /^\s*maplibre_runtime_started:\s*false\s*$/m)
+  assert.match(authoredFlight.text, /^\s*render_policy:\s*"native MapLibre under transparent Flight R3F overlay"\s*$/m)
+  assert.match(authoredFlight.text, /^\s*maplibre_views:\s*\["2d-classic", "2d-modern", "3d-classic", "3d-modern"\]\s*$/m)
+  assert.match(authoredFlight.text, /^\s*basemap:\s*"selected native MapLibre provider view"\s*$/m)
+  assert.match(authoredFlight.text, /^\s*maplibre_runtime_started:\s*true\s*$/m)
   assert.doesNotMatch(authoredFlight.text, /\bplanned_run_ready_demo:/)
 
   const staleFlightText = [

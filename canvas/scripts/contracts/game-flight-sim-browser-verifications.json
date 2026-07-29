@@ -2,7 +2,8 @@
   "Source Files apply",
   "runtime deadline contracts",
   "first playable frame",
-  "retained authored XR Canvas",
+  "transparent Flight runtime Canvas",
+  "Canvas View standalone XR to Geo+XR handoff",
   "Geo+XR four-view presentation",
   "strict browser WebMCP",
   "stop and Start lifecycle",
@@ -15,10 +16,10 @@
   "mobile HUD",
   "mobile touch control",
   "ordered mission completion",
-  "retained XR scene after mission",
+  "Geo+XR Flight layer after mission",
   "Exit lifecycle and World disposal",
   "surface failure restoration",
-  "zero-network fence",
+  "Geo provider transport ownership",
   "workspace seed authority",
   "browser error surface"
 ]

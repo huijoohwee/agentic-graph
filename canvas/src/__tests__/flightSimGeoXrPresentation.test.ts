@@ -1,58 +1,168 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import test from 'node:test'
-import {
-  GEO_XR_ENVIRONMENT_PRESENTATION_IDS,
-  resolveGeoXrEnvironmentPresentation,
-  resolveGeoXrPlanCameraFraming,
-} from '@/features/three/xrGeoEnvironmentPresentation'
+import { projectFlightSimToGeospatialOverlay } from '@/features/game-flight-sim/flightSimGeospatialProjection'
+import { createFlightSimRuntime } from '@/features/game-flight-sim/flightSimRuntimeCore'
+import { readFlightSimXrSpatialProfile } from '@/features/game-flight-sim/flightSimSpatialProfile'
 
-test('Geo+XR maps each selectable Geo view to one distinct shared-stage presentation', () => {
-  const cases = [
-    ['2d', '2d-classic', 'planar', 'classic'],
-    ['2d-modern', '2d-modern', 'planar', 'modern'],
-    ['3d', '3d-classic', 'volumetric', 'classic'],
-    ['3d-modern', '3d-modern', 'volumetric', 'modern'],
-  ] as const
-  assert.deepEqual(
-    cases.map(([viewMode]) => resolveGeoXrEnvironmentPresentation(viewMode).id),
-    GEO_XR_ENVIRONMENT_PRESENTATION_IDS,
+test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
+  const viewport = readFileSync(
+    path.resolve(process.cwd(), 'src/components/CanvasViewport.tsx'),
+    'utf8',
   )
-  for (const [viewMode, id, dimension, theme] of cases) {
-    const presentation = resolveGeoXrEnvironmentPresentation(viewMode)
-    assert.equal(presentation.id, id)
-    assert.equal(presentation.dimension, dimension)
-    assert.equal(presentation.theme, theme)
-  }
-  assert.equal(resolveGeoXrEnvironmentPresentation('2d-svg').id, '2d-classic')
+  const geospatialOverlay = readFileSync(
+    path.resolve(
+      process.cwd(),
+      'src/components/CanvasViewportGeospatialOverlay.tsx',
+    ),
+    'utf8',
+  )
+  const threeGraph = readFileSync(
+    path.resolve(process.cwd(), 'src/lib/three/ThreeGraph.impl.tsx'),
+    'utf8',
+  )
+  const canvasCss = readFileSync(
+    path.resolve(process.cwd(), 'src/index.css'),
+    'utf8',
+  )
+  const xrStage = readFileSync(
+    path.resolve(
+      process.cwd(),
+      'src/features/three/XrCanonicalPhysicsStage.tsx',
+    ),
+    'utf8',
+  )
+  const xrSceneStage = readFileSync(
+    path.resolve(
+      process.cwd(),
+      'src/features/three/XrSceneStage.tsx',
+    ),
+    'utf8',
+  )
+
+  assert.match(viewport, /z-\[10\]/)
+  assert.match(geospatialOverlay, /z-\[5\]/)
+  assert.doesNotMatch(geospatialOverlay, /shared-xr-stage/)
+  assert.match(threeGraph, /geospatialComposite\s*\?\s*0/)
+  assert.match(xrStage, /environmentVisible=\{!geospatialComposite\}/)
+  assert.match(
+    xrSceneStage,
+    /geospatialComposite && authority !== 'native-controller'/,
+  )
+  assert.match(
+    threeGraph,
+    /!geospatialComposite && hasXrEmptyWorld/,
+  )
+  assert.match(
+    threeGraph,
+    /!geospatialComposite && glbAsset && shouldRenderGlbAsset/,
+  )
+  assert.match(
+    threeGraph,
+    /!geospatialComposite && spatialCaptureManifest/,
+  )
+  assert.match(
+    threeGraph,
+    /style=\{geospatialComposite \? \{ pointerEvents: 'none' \} : undefined\}/,
+  )
+  assert.match(threeGraph, /data-kg-three-canvas-owner="1"/)
+  assert.match(
+    canvasCss,
+    /\[data-kg-three-canvas-owner="1"\] canvas \{[\s\S]*?width: 100% !important;[\s\S]*?height: 100% !important;/,
+  )
 })
 
-test('Geo+XR planar framing is north-up and uses the existing camera above Flight', () => {
-  const framing = resolveGeoXrPlanCameraFraming({
-    aircraftPosition: [3, 8, -5],
-    aspect: 16 / 9,
-    coordinateScale: 0.05,
-    stageSizeMeters: [32, 24],
-  })
-  assert.ok(Math.abs(framing.target[0] - 0.15) < Number.EPSILON)
-  assert.equal(framing.target[1], 0.4)
-  assert.equal(framing.target[2], -0.25)
-  assert.equal(framing.position[0], framing.target[0])
-  assert.ok(framing.position[1] > framing.target[1])
-  assert.ok(framing.position[2] > framing.target[2])
-  assert.ok(
-    framing.position[2] - framing.target[2]
-      < (framing.position[1] - framing.target[1]) * 0.001,
+test('Flight Geo bootstrap retains one map owner and stages pre-document ownership', () => {
+  const basemapHook = readFileSync(
+    path.resolve(
+      process.cwd(),
+      '../gympgrph/src/features/geospatial/useMapLibreBasemap.ts',
+    ),
+    'utf8',
   )
-  assert.equal(framing.fovDegrees, 50)
+  const basemapEffectDependencies = basemapHook.match(
+    /\}, \[enabled, rootRef, containerRef, targetStyleUrl,[^\]]+\]\)/,
+  )?.[0] || ''
+  assert.ok(basemapEffectDependencies)
+  assert.doesNotMatch(basemapEffectDependencies, /initialStyleOverride/)
+  assert.match(basemapHook, /override is an activation bootstrap, not live map state/)
+  assert.match(basemapHook, /reconcileMapLibreFlightBootstrap\(\{/)
 
-  const portrait = resolveGeoXrPlanCameraFraming({
-    aircraftPosition: [3, 8, -5],
-    aspect: 9 / 16,
-    coordinateScale: 0.05,
-    stageSizeMeters: [32, 24],
+  const startupRuntimes = readFileSync(
+    path.resolve(
+      process.cwd(),
+      'src/features/canvas/CanvasStartupRuntimes.tsx',
+    ),
+    'utf8',
+  )
+  const flightOwnerIndex = startupRuntimes.indexOf('<FlightSimRunReadyDemoRuntime />')
+  const deferredOwnerGateIndex = startupRuntimes.indexOf(
+    'sourceFilesBootstrapHasReachedReady ?',
+  )
+  assert.ok(flightOwnerIndex > 0)
+  assert.ok(deferredOwnerGateIndex > flightOwnerIndex)
+})
+
+test('Flight local mission coordinates project deterministically around Singapore', () => {
+  const profile = readFlightSimXrSpatialProfile()
+  const runtime = createFlightSimRuntime({
+    profile,
+    active: true,
+    webglSupported: true,
   })
+  const overlay = projectFlightSimToGeospatialOverlay(
+    runtime.read(),
+    profile,
+    { source: 'fixed-follow', view: 'chase' },
+    true,
+  )
+
+  assert.equal(overlay.active, true)
+  assert.equal(overlay.route.length, profile.waypoints.length + 2)
+  assert.deepEqual(overlay.route[0]?.coordinate, [103.851959, 1.29027])
+  assert.equal(overlay.route[0]?.kind, 'spawn')
+  assert.equal(overlay.route.at(-1)?.kind, 'landing')
+  assert.ok(overlay.objective)
+  assert.equal(overlay.objective.id, profile.waypoints[0]?.id)
+  assert.equal(overlay.objective.label, 'WP1')
+  assert.ok(Number.isFinite(overlay.objective.headingErrorDegrees))
+  assert.ok(overlay.aircraft.coordinate.every(Number.isFinite))
+  assert.ok(overlay.aircraft.headingDegrees >= 0)
+  assert.ok(overlay.aircraft.headingDegrees < 360)
+  assert.equal(overlay.night, true)
+  assert.equal(overlay.camera.effectiveOwner, 'fixed-follow')
+
+  const completedOverlay = projectFlightSimToGeospatialOverlay(
+    {
+      ...runtime.read(),
+      phase: 'completed' as const,
+      waypointIndex: profile.waypoints.length,
+    },
+    profile,
+    { source: 'fixed-follow', view: 'chase' },
+    false,
+  )
+  assert.equal(completedOverlay.route.at(-1)?.kind, 'landing')
+  assert.equal(completedOverlay.route.at(-1)?.state, 'visited')
+  assert.equal(completedOverlay.objective, null)
+
+  const cockpit = projectFlightSimToGeospatialOverlay(
+    runtime.read(),
+    profile,
+    { source: 'fixed-follow', view: 'cockpit' },
+    false,
+  )
+  assert.notDeepEqual(
+    cockpit.camera.centerCoordinate,
+    cockpit.aircraft.coordinate,
+  )
   assert.ok(
-    portrait.position[1] - portrait.target[1]
-      > framing.position[1] - framing.target[1],
+    cockpit.camera.cockpitClearance.forwardMeters
+      > profile.aircraftHalfSize[2],
+  )
+  assert.ok(
+    cockpit.camera.cockpitClearance.verticalMeters
+      > profile.aircraftHalfSize[1],
   )
 })

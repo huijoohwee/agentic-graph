@@ -17,6 +17,7 @@ import {
   type FlightSimSpatialProfile,
 } from '@/features/game-flight-sim/flightSimModel'
 import { projectFlightSimNavigation } from '@/features/game-flight-sim/flightSimNavigationProjection'
+import { formatFlightSimCourseDirector } from '@/features/game-flight-sim/flightSimRouteGuidance'
 
 function snapshot(overrides: Partial<FlightSimSnapshot> = {}): FlightSimSnapshot {
   return Object.freeze({
@@ -101,7 +102,7 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
   const cockpit = resolveFlightSimFollowTarget(flight, 2, 'cockpit')
   assert.deepEqual(cockpit, {
     position: [2, 6.1, 1.5999999999999996],
-    target: [2, 6.1, -30],
+    target: [2, 6.1, -34.4],
     fovDegrees: 68,
     resetKey: 7,
     sequence: 42,
@@ -116,6 +117,36 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
       > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1] * 2,
     'cockpit eye must remain above the scaled vertical collision envelope',
   )
+  for (const pitch of [-0.28 * Math.PI, -0.1, 0, 0.1, 0.28 * Math.PI]) {
+    const pitchedFlight = snapshot({
+      aircraft: Object.freeze({
+        ...flight.aircraft,
+        pitch,
+        yaw: 0.37,
+      }),
+    })
+    const pitchedCockpit = resolveFlightSimFollowTarget(
+      pitchedFlight,
+      2,
+      'cockpit',
+    )
+    const aircraft = pitchedFlight.aircraft.position.map(value => value * 2)
+    const yawForward = [-Math.sin(pitchedFlight.aircraft.yaw), 0, -Math.cos(pitchedFlight.aircraft.yaw)]
+    const eyeOffset = pitchedCockpit.position.map(
+      (value, index) => value - aircraft[index]!,
+    )
+    const horizontalForwardClearance =
+      eyeOffset[0]! * yawForward[0]!
+      + eyeOffset[2]! * yawForward[2]!
+    assert.ok(
+      horizontalForwardClearance
+        > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2] * 2,
+    )
+    assert.ok(
+      eyeOffset[1]!
+        > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1] * 2,
+    )
+  }
   assert.deepEqual(resolveFlightSimFollowTarget(flight, 2, 'survey'), {
     position: [2, 40, 14],
     target: [2, 5.6, -4],
@@ -139,11 +170,48 @@ test('north-up navigation projects authored route progress and objective guidanc
   assert.equal(projection.objective?.id, 'waypoint-1')
   assert.equal(projection.objective?.distanceMeters, 20)
   assert.equal(projection.objective?.bearingDegrees, 0)
+  assert.equal(projection.objective?.headingErrorDegrees, 0)
+  assert.equal(projection.objective?.label, 'WP1')
+  assert.equal(
+    formatFlightSimCourseDirector(projection.objective),
+    'WP1 · 20 m · HOLD COURSE',
+  )
   assert.equal(projection.aircraft.headingDegrees, 0)
-  for (const point of [...projection.route, projection.aircraft]) {
+  for (const point of [
+    ...projection.route,
+    projection.aircraft,
+    projection.objective!,
+  ]) {
     assert.ok(point.x >= 0.08 && point.x <= 0.92)
     assert.ok(point.y >= 0.08 && point.y <= 0.92)
   }
+
+  const turnLeft = projectFlightSimNavigation(snapshot({
+    aircraft: Object.freeze({
+      ...profile.spawn,
+      yaw: -Math.PI / 2,
+    }),
+  }), profile)
+  assert.equal(turnLeft.objective?.headingErrorDegrees, -90)
+  assert.equal(
+    formatFlightSimCourseDirector(turnLeft.objective),
+    'WP1 · 20 m · TURN L 90°',
+  )
+
+  const verticallyAligned = projectFlightSimNavigation(snapshot({
+    aircraft: Object.freeze({
+      ...profile.spawn,
+      position: Object.freeze([0, 0, 0] as const),
+      yaw: -Math.PI / 2,
+    }),
+  }), profile)
+  assert.equal(verticallyAligned.objective?.distanceMeters, 10)
+  assert.equal(verticallyAligned.objective?.bearingDegrees, 90)
+  assert.equal(verticallyAligned.objective?.headingErrorDegrees, 0)
+  assert.equal(
+    formatFlightSimCourseDirector(verticallyAligned.objective),
+    'WP1 · 10 m · HOLD COURSE',
+  )
 
   const complete = projectFlightSimNavigation(snapshot({
     aircraft: profile.spawn,
@@ -152,5 +220,6 @@ test('north-up navigation projects authored route progress and objective guidanc
     currentWaypointId: null,
   }), profile)
   assert.equal(complete.objective, null)
+  assert.equal(formatFlightSimCourseDirector(complete.objective), 'COURSE COMPLETE')
   assert.equal(complete.route.at(-1)?.state, 'visited')
 })

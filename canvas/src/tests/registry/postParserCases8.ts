@@ -1,6 +1,10 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["immersive.media.defaults.zeroConfig","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete"],
+  ["immersive.media.invocation.strict","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaNativeInvocationIsStrict"],
+  ["immersive.media.mcp.exactTwo","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaAgentReadyContractsExposeTwoTools"],
+  ["immersive.media.source.sharedOwners","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaReusesPanelRendererAndCameraOwnership"],
   ["graph.alignmentHelperLines.interactionContract","@/__tests__/alignmentHelperLines.test","testAlignmentHelperLinesInteractionContract"],
   ["graph.alignmentHelperLines.displayControlContract","@/__tests__/alignmentHelperLines.test","testAlignmentHelperLinesDisplayControlContract"],
   ["graph.subFlow.interactionContract","@/__tests__/subFlow.test","testSubFlowInteractionContract"],

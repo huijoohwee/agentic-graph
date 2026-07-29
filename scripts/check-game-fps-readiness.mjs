@@ -429,6 +429,7 @@ const canvasViewport = await text('canvas/src/components/CanvasViewport.tsx')
 const threeRendererLifecycle = await text('canvas/src/lib/three/threeRendererLifecycle.ts')
 const deepLinkRuntime = await text('canvas/src/features/canvas/CanvasDocDeepLinkRuntime.tsx')
 const persistedWorkspaceFs = await text('canvas/src/features/workspace-fs/workspaceFsPersisted.ts')
+const threeGraphImmersiveMedia = await text('canvas/src/lib/three/ThreeGraphImmersiveMedia.tsx')
 const sourceAuthorityLifecycleMarkers = [
   "export type SourceFilesBootstrapPhase = 'resolving' | 'ready' | 'error'",
   "type: 'begin-document-intent'",
@@ -471,12 +472,12 @@ if (!canvasViewport.includes("const sourceFilesBootstrapReady = sourceFilesBoots
   throw new Error('Three, Game Mode, HUD, and hydration must remain fenced by settled source authority while mounted run-ready lifecycle owners survive later document intents')
 }
 const xrGraphStageAuthority = threeGraph.match(/const xrGraphStageAuthority = mode === 'xr'[\s\S]*?const xrSceneAuthority/)?.[0] || ''
-const xrSceneAuthority = threeGraph.match(/const xrSceneAuthority = mode !== 'xr'[\s\S]*?const xrStandaloneFit/)?.[0] || ''
 if (!/nativeXrRunReadyDemo\s*\? 'native-controller'\s*: 'motion-reference'/.test(xrGraphStageAuthority)
-  || !xrSceneAuthority.includes(': xrGraphStageAuthority')
-  || !xrSceneAuthority.includes('? xrGraphStageAuthority')
-  || !xrSceneAuthority.includes("? 'empty-world'")
-  || !threeGraph.includes("const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !nativeXrRunReadyDemo")
+  || !threeGraph.includes('resolveThreeGraphXrSceneAuthority({ mode, immersiveMediaActive: immersiveMediaStageActive, xrGraphStageAuthority, hasGlbAsset, hasSpatialCaptureManifest, hasXrEmptyWorld })')
+  || !threeGraphImmersiveMedia.includes("if (input.immersiveMediaActive) return 'immersive-media'")
+  || !threeGraphImmersiveMedia.includes('if (input.xrGraphStageAuthority) return input.xrGraphStageAuthority')
+  || !threeGraphImmersiveMedia.includes("return input.hasXrEmptyWorld ? 'empty-world' : undefined")
+  || !threeGraph.includes("const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !nativeXrRunReadyDemo && !immersiveMediaStageActive")
   || !threeGraph.includes('xrGraphStageAuthority={xrGraphStageAuthority}')
   || (threeGraph.match(/data-kg-xr-scene-authority=\{xrSceneAuthority\}/g) || []).length !== 2) {
   throw new Error('canonical XR Physics must first mount native-controller; authored motion-reference and settled empty-world must remain disjoint')

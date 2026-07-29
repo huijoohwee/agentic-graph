@@ -55,25 +55,26 @@ export async function assertFlightSimSeedReadiness({
     || sharedScene.renderer_owner !== 'canvas/src/lib/three/ThreeGraph.impl.tsx'
     || sharedScene.collider_owner !== 'canvas/src/features/three/xrCanonicalSceneSpatialSource.ts'
     || sharedScene.camera_owner !== 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts'
-    || sharedScene.second_canvas_forbidden !== true
+    || sharedScene.second_r3f_canvas_forbidden !== true
     || !geoFlightOverlay
     || geoFlightOverlay.activation !== 'selected authored environment plus source-authored Flight identity'
-    || geoFlightOverlay.renderer_owner !== 'canvas/src/lib/three/ThreeGraph.impl.tsx'
+    || geoFlightOverlay.renderer_owner !== 'native MapLibre Geo host'
     || geoFlightOverlay.geo_policy_owner !== 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'
-    || geoFlightOverlay.presentation_owner !== 'canvas/src/features/three/xrGeoEnvironmentPresentation.ts'
-    || geoFlightOverlay.render_policy !== 'shared-xr-stage while composed in Geo+XR; standalone Geo retains its selected provider'
+    || geoFlightOverlay.presentation_owner !== 'gympgrph/src/GeospatialHost.tsx'
+    || geoFlightOverlay.render_policy !== 'native MapLibre under transparent Flight R3F overlay'
     || !exactArray(
-      geoFlightOverlay.shared_environment_presentations,
+      geoFlightOverlay.maplibre_views,
       ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
     )
-    || geoFlightOverlay.screen_space_basemap !== 'suppressed'
-    || geoFlightOverlay.maplibre_runtime_started !== false
-    || geoFlightOverlay.remote_style_or_tile_requests !== 0
+    || geoFlightOverlay.basemap !== 'selected native MapLibre provider view'
+    || geoFlightOverlay.maplibre_runtime_started !== true
+    || geoFlightOverlay.provider_transport_owner !== 'gympgrph Geo runtime; independent from Flight gameplay'
+    || geoFlightOverlay.flight_gameplay_transport !== 'none'
     || geoFlightOverlay.control_owner !== 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'
-    || geoFlightOverlay.route_projection_owner !== 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts'
+    || geoFlightOverlay.route_projection_owner !== 'canvas/src/features/game-flight-sim/flightSimGeospatialProjection.ts'
     || geoFlightOverlay.xr_canvas_mounted !== true
-    || geoFlightOverlay.map_interaction_preserved !== false
-    || geoFlightOverlay.composition !== 'the selected authored environment, Flight actors, and HUD share one R3F world; Geo supplies presentation state and paints no second world'
+    || geoFlightOverlay.duplicate_r3f_environment_mounted !== false
+    || geoFlightOverlay.composition !== 'MapLibre owns the geospatial world plus all visible Flight route/waypoint/aircraft geometry; the existing transparent R3F Canvas retains simulation/input/readiness and paints no Flight or XR geometry'
     || !flightSim
     || flightSim.invocation !== '/flight.sim @canvas #flight operation=open'
     || flightSim.inspect_tool !== 'knowgrph.inspect_local_flight_sim'
@@ -120,7 +121,7 @@ export async function assertFlightSimSeedReadiness({
       ['none', 'engine-power-loss', 'instrument-uncertainty', 'control-bias'],
     )
     || training.failure_tick_window !== '180 inclusive through 420 exclusive'
-    || training.night_owner !== 'shared authored XR atmosphere and lighting'
+    || training.night_owner !== 'MapLibre Flight-layer and shared HUD palette'
     || !exactArray(
       training.panel_surfaces,
       ['media', 'animation', 'motion-control', 'game-mode', 'flight-sim', 'camera'],
@@ -146,6 +147,20 @@ export async function assertFlightSimSeedReadiness({
     )
   ) {
     throw new Error('Flight Sim seed must retain its exact fixed-step mission and lifecycle contract')
+  }
+  if (!exactRecord(nativeFlightDemo.navigation_inset, {
+    orientation: 'north-up',
+    source: 'authored mission spawn, ordered waypoints, landing pad, and aircraft snapshot',
+    projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
+    route_guidance_owner: 'canvas/src/features/game-flight-sim/flightSimRouteGuidance.ts',
+    objective_guide: 'one conditional aircraft-to-active-objective segment shared with native MapLibre, exclusive plain Geo, and the HUD',
+    hud_cue: 'objective label, rounded distance, and signed left/right heading error; per-tick cue is not a live region',
+    runtime_network_calls: 0,
+    external_map_or_token_required: false,
+  })) {
+    throw new Error(
+      'Flight Sim seed must retain one exact source-authored course-director projection',
+    )
   }
 
   if (
@@ -326,9 +341,8 @@ export async function assertFlightSimSeedReadiness({
   )
   requireMarkers(trainingOwners, [
     "night ? '#050a1a'",
-    'const ambientIntensity = environmentPresentation?.ambientIntensity',
-    '?? (night ? 0.13 : 0.4)',
-    '<ambientLight intensity={ambientIntensity}',
+    '<ambientLight intensity={night ? 0.13 : 0.4}',
+    "args={night ? ['#182a56', '#090d17', 0.22] : ['#dff4ff', '#d9b978', 0.55]}",
     'importWithRetry(importMissionStage',
     'retries: 2',
     'retryDelayMs: 50',

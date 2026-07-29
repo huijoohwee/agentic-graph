@@ -12,6 +12,8 @@ import { UI_RESPONSIVE_CANVAS_MINIMAP_OVERLAY_CLASSNAME } from '@/lib/ui/respons
 import { resolveCanvas3dMode } from '@/lib/canvas/canvas3dMode'
 import { isNativeXrRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useCanvasGameplayOverlayState } from '@/features/canvas/useCanvasGameplayOverlayState'
+import { useFlightSimSurfacePreload } from '@/features/game-flight-sim/useFlightSimSurfacePreload'
+import { FlightSimHud } from '@/features/game-flight-sim/FlightSimHud'
 import { XrNativeControllerDemoHud } from '@/features/three/XrNativeControllerDemoHud'
 import {
   resolveCanvasSurfaceOwnership,
@@ -27,7 +29,11 @@ import { useKnowgrphLiveCanvasHero } from '@/features/canvas/useKnowgrphLiveCanv
 import { shouldDocumentSwitchOwnCanvasViewport } from '@/features/canvas/liveCanvasHeroVisibility'
 import { deriveLiveCanvasHeroCommandRouteGraph } from '@/features/canvas/liveCanvasHeroProjection'
 import { useSourceFilesBootstrapSnapshot } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { resolveCanvasViewportHeavyRuntimeIntentSurface } from '@/components/canvasViewportHeavyRuntimeIntent'
+import {
+  CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY,
+  resolveCanvasViewportHeavyRuntimeIntentSurface,
+} from '@/components/canvasViewportHeavyRuntimeIntent'
+import { loadCanvasViewportGeospatialOverlay } from '@/components/canvasViewportGeospatialOverlayLoader'
 import { CanvasEmbedCodePanelHost } from '@/components/CanvasEmbedCodePanelHost'
 import { CanvasSourceInitializationError } from '@/components/CanvasSourceInitializationError'
 import {
@@ -37,7 +43,7 @@ import {
   installEmbeddedCanvasChatCommandBridge,
 } from '@/features/canvas/embeddedCanvasChatCommand'
 import { useEmbeddedCanvasChatCommandReceiver } from '@/features/canvas/useEmbeddedCanvasChatCommandReceiver'
-const CanvasViewportGeospatialOverlayLazy = React.lazy(() => import('@/components/CanvasViewportGeospatialOverlay').then(mod => ({ default: mod.CanvasViewportGeospatialOverlay })))
+const CanvasViewportGeospatialOverlayLazy = React.lazy(loadCanvasViewportGeospatialOverlay)
 const LiveCanvasHeroLazy = React.lazy(() => import('@/components/LiveCanvasHero').then(mod => ({ default: mod.LiveCanvasHero })))
 const SharedGraphCanvasLazy = React.lazy(() => import('@/components/GraphCanvas'))
 const DashboardCanvasLazy = React.lazy(() => importWithRetry(() => import('@/components/DashboardCanvas'), { retries: 2, retryDelayMs: 50 }))
@@ -55,31 +61,14 @@ const MarkdownMetricsDevOverlayLazy = React.lazy(() => import('@/components/Canv
 const DesignCanvasLazy = React.lazy(() => import('@/components/DesignCanvas'))
 const ThreeGraphLazy = React.lazy(() => import('@/lib/three/ThreeGraph.impl'))
 const GameFpsHudLazy = React.lazy(() => import('@/features/game-fps/GameFpsHud').then(mod => ({ default: mod.GameFpsHud })))
-const FlightSimHudLazy = React.lazy(() => import('@/features/game-flight-sim/FlightSimHud').then(mod => ({ default: mod.FlightSimHud })))
 const FlightSimGeoSurfaceOverlayLazy = React.lazy(() => import('@/features/game-flight-sim/FlightSimGeoSurfaceOverlay').then(mod => ({ default: mod.FlightSimGeoSurfaceOverlay })))
 const MinimapLazy = React.lazy(() => import('@/features/minimap/Minimap'))
-const StrybldrTimelineBottomPanelLazy = React.lazy(() =>
-  import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })),
-)
+const StrybldrTimelineBottomPanelLazy = React.lazy(() => import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })))
 const LaunchSpotlightLazy = React.lazy(() => import('@/features/spotlight/LaunchSpotlight'))
 const PaywallOverlayLazy = React.lazy(async (): Promise<{ default: React.ComponentType<{ portalTarget: HTMLElement | null }> }> => ({
   default: (await import('@/features/payments/PaywallOverlay')).PaywallOverlay,
 }))
 const MARKDOWN_METRICS_DEV_ENABLED = Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV)
-const HEAVY_RUNTIME_INTENT_COPY = {
-  '3d': {
-    eyebrow: '3D runtime',
-    title: 'Load 3D canvas on this device',
-    body: '3D stays opt-in on touch viewports so the mobile shell remains lighter until you explicitly open it.',
-    action: 'Load 3D view',
-  },
-  geo: {
-    eyebrow: 'Map runtime',
-    title: 'Load geospatial canvas on this device',
-    body: 'Map rendering stays opt-in on touch viewports so the mobile shell avoids the heavier geospatial runtime until you ask for it.',
-    action: 'Load map view',
-  },
-} as const
 export type CanvasViewportVariant = 'workspace' | 'embeddedPreview'
 export type CanvasViewportProps = {
   variant: CanvasViewportVariant
@@ -132,6 +121,10 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady
   const flightSimHudVisible = flightSimActive && sourceFilesBootstrapReady
   const explorerActivePath = useMarkdownExplorerStore(s => s.activePath)
+  useFlightSimSurfacePreload({
+    activePath: explorerActivePath,
+    sourceFiles,
+  })
   const activeSourceFile = React.useMemo(
     () => resolvePreferredEnabledComposedSourceFile({
       sourceFiles,
@@ -477,7 +470,11 @@ export function CanvasViewport(props: CanvasViewportProps) {
           </section>
         ) : null}
         {threeCanvasSurface.mounted ? (
-          <section className={`absolute inset-0 z-[10] ${threeCanvasSurface.active ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}>
+          <section className={`absolute inset-0 z-[10] ${
+            threeCanvasSurface.active
+              ? `${geospatialXrModeEnabled ? 'pointer-events-none' : 'pointer-events-auto'} opacity-100`
+              : 'pointer-events-none opacity-0'
+          }`}>
             <ThreeGraphLazy active={threeCanvasSurface.active} geospatialComposite={geospatialXrModeEnabled} mode={effectiveCanvas3dMode} />
           </section>
         ) : null}
@@ -500,18 +497,18 @@ export function CanvasViewport(props: CanvasViewportProps) {
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (
           <section
             className="absolute inset-0 z-[35] flex items-center justify-center bg-[var(--kg-canvas-bg)]/96 px-4"
-            aria-label={`${HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title} activation`}
+            aria-label={`${CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title} activation`}
             data-kg-canvas-heavy-runtime-intent={heavyRuntimeIntentSurface}
           >
             <section className="w-full max-w-sm rounded-2xl border border-[var(--kg-border)] bg-[var(--kg-panel-bg)] px-5 py-5 text-left shadow-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]">
-                {HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].eyebrow}
+                {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].eyebrow}
               </p>
               <h2 className="mt-2 text-base font-semibold text-[var(--kg-text-primary)]">
-                {HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title}
+                {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].title}
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--kg-text-secondary)]">
-                {HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].body}
+                {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].body}
               </p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
@@ -520,7 +517,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
                   onClick={activateHeavyRuntimeIntentSurface}
                   data-kg-canvas-heavy-runtime-intent-activate={heavyRuntimeIntentSurface}
                 >
-                  {HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].action}
+                  {CANVAS_VIEWPORT_HEAVY_RUNTIME_INTENT_COPY[heavyRuntimeIntentSurface].action}
                 </button>
               </div>
             </section>
@@ -592,7 +589,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
       </React.Suspense>
       {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
-      {flightSimHudVisible ? <FlightSimHudLazy /> : null}
+      {flightSimHudVisible ? <FlightSimHud /> : null}
       {variant === 'workspace' ? <CanvasEmbedCodePanelHost /> : null}
     </section>
   )

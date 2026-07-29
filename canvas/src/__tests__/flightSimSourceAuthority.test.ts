@@ -9,13 +9,8 @@ import {
   XR_NATIVE_CONTROLLER_CAMERA_OPTIONS,
 } from '@/features/three/xrNativeControllerCameraCatalog'
 import {
-  diagnoseWorkspaceRunReadyDemoActivation,
   FLIGHT_SIM_DEMO_REPO_REL_PATH,
-  FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
-  FLIGHT_SIM_RUN_READY_DEMO_ID,
   XR_PHYSICS_DEMO_REPO_REL_PATH,
-  resolveWorkspaceRunReadyDemoIdForDocument,
-  resolveWorkspaceRunReadyDemoSeed,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 const repoRoot = resolve(process.cwd(), '..')
@@ -34,44 +29,6 @@ function frontmatter(source: string): Record<string, unknown> {
   return parsed as Record<string, unknown>
 }
 
-test('Flight Sim activation is source-authored and path conflicts fail closed', () => {
-  assert.equal(
-    resolveWorkspaceRunReadyDemoSeed(FLIGHT_SIM_RUN_READY_DEMO_ID)?.validationSeedRelPath,
-    FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
-  )
-  assert.equal(
-    resolveWorkspaceRunReadyDemoIdForDocument('/imports/local-flight.md', seedSource),
-    FLIGHT_SIM_RUN_READY_DEMO_ID,
-  )
-  assert.equal(
-    resolveWorkspaceRunReadyDemoIdForDocument(FLIGHT_SIM_DEMO_REPO_REL_PATH, seedSource),
-    FLIGHT_SIM_RUN_READY_DEMO_ID,
-  )
-  assert.equal(
-    resolveWorkspaceRunReadyDemoIdForDocument(XR_PHYSICS_DEMO_REPO_REL_PATH, seedSource),
-    '',
-  )
-  const conflict = diagnoseWorkspaceRunReadyDemoActivation(
-    XR_PHYSICS_DEMO_REPO_REL_PATH,
-    seedSource,
-  )
-  assert.equal(conflict.ok, false)
-  if (conflict.ok === false) {
-    assert.equal(conflict.errorCode, 'RUN_READY_IDENTITY_CONFLICT')
-    assert.match(conflict.message, /xr-physics/)
-    assert.match(conflict.message, /flight-sim/)
-  }
-  const unregistered = diagnoseWorkspaceRunReadyDemoActivation(
-    '/imports/unknown.md',
-    seedSource.replace('id: "flight-sim"', 'id: "unregistered-flight"'),
-  )
-  assert.equal(unregistered.ok, false)
-  if (unregistered.ok === false) {
-    assert.equal(unregistered.errorCode, 'RUN_READY_IDENTITY_UNREGISTERED')
-    assert.match(unregistered.message, /unregistered-flight/)
-  }
-})
-
 test('Flight surface opening preloads the existing lazy mission stage before activation', () => {
   const viteConfig = readFileSync(
     resolve(repoRoot, 'canvas/vite.config.ts'),
@@ -89,6 +46,13 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     resolve(
       repoRoot,
       'canvas/src/features/game-flight-sim/flightSimRuntime.ts',
+    ),
+    'utf8',
+  )
+  const surfacePresentation = readFileSync(
+    resolve(
+      repoRoot,
+      'canvas/src/features/game-flight-sim/flightSimSurfacePresentationRuntime.ts',
     ),
     'utf8',
   )
@@ -133,7 +97,60 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     'utf8',
   )
   const geoSurface = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx'), 'utf8')
+  const geospatialBridge = readFileSync(resolve(repoRoot, 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'), 'utf8')
+  const surfacePreload = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfacePreload.ts'), 'utf8')
+  const viewport = readFileSync(resolve(repoRoot, 'canvas/src/components/CanvasViewport.tsx'), 'utf8')
+  const runReadyOwner = readFileSync(resolve(repoRoot, 'canvas/src/features/canvas/FlightSimRunReadyDemoRuntime.tsx'), 'utf8')
+  const geospatialPresentation = readFileSync(
+    resolve(
+      repoRoot,
+      'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
+    ),
+    'utf8',
+  )
   const surfaceControls = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts'), 'utf8')
+  assert.match(surfacePreload, /preloadGeospatialMapRuntime\(\)/)
+  assert.match(surfacePreload, /loadCanvasViewportGeospatialOverlay\(\)/)
+  assert.match(surfacePreload, /React\.useLayoutEffect\(\(\) =>/)
+  assert.match(
+    surfacePreload,
+    /preloadFlightSimMissionStage\(readFlightSimStageRuntimeController\(\)\)/,
+  )
+  assert.match(
+    viewport,
+    /React\.lazy\(loadCanvasViewportGeospatialOverlay\)/,
+  )
+  assert.match(viewport, /import \{ FlightSimHud \} from '@\/features\/game-flight-sim\/FlightSimHud'/)
+  assert.match(viewport, /flightSimHudVisible \? <FlightSimHud \/> : null/)
+  assert.doesNotMatch(viewport, /FlightSimHudLazy|loadFlightSimHud/)
+  const ownedLaunchGuard = runReadyOwner.indexOf(
+    'launchAttempt >= FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT',
+  )
+  const launchGeneration = runReadyOwner.indexOf(
+    'const generation = launchGenerationRef.current + 1',
+  )
+  assert.ok(ownedLaunchGuard >= 0)
+  assert.ok(launchGeneration > ownedLaunchGuard)
+  assert.match(
+    runReadyOwner,
+    /const FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT = 2/,
+  )
+  assert.match(
+    runReadyOwner,
+    /const canRetry = retryable[\s\S]*currentAttempt < FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT/,
+  )
+  assert.match(
+    runReadyOwner,
+    /isFlightSimStagePresentationRetryableFailure\(message\)/,
+  )
+  assert.match(
+    runReadyOwner,
+    /startFlightSim\(\{[\s\S]*geospatialComposite: true,[\s\S]*previousCanvasSurface:/,
+  )
+  assert.match(
+    geospatialBridge,
+    /completeFlightSimStagePreparation\(requestId,\s*\{\s*framePresented: true,/,
+  )
   assert.doesNotMatch(missionStage, /from '\.\/flightSimRuntime'/)
   assert.match(missionStage, /runtimeController\.readSnapshot\(\)/)
   const opening = runtime.indexOf('async function performFlightSimSurfaceOpen')
@@ -141,9 +158,22 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     'preloadFlightSimMissionStage(flightSimStageRuntimeController)',
     opening,
   )
-  const activation = runtime.indexOf(
-    'surfaceActivated = activateXrSceneSurface',
+  const mapRuntimePreload = runtime.indexOf(
+    'preloadFlightSimSurfacePresentation(options)',
     opening,
+  )
+  const activation = runtime.indexOf(
+    'surfaceActivated = await activateFlightSimSurfacePresentation',
+    opening,
+  )
+  const geospatialPreload = surfacePresentation.indexOf(
+    'await preloadGeospatialMapRuntime()',
+  )
+  const geospatialActivation = surfacePresentation.indexOf(
+    'await setGeospatialModeEnabled(true)',
+  )
+  const sharedSurfaceActivation = surfacePresentation.indexOf(
+    'return activateXrSceneSurface',
   )
   const opened = runtime.indexOf(
     'const opened = defaultRuntime.open(true)',
@@ -154,18 +184,47 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     opening,
   )
   const preparedStage = runtime.indexOf(
-    'await waitForFlightSimStagePreparation',
+    'await waitForFlightSimStagePresentation',
     opening,
   )
   const readyDeadline = runtime.indexOf(
     'return startFlightSimWithReadyFrame',
     opening,
   )
-  assert.ok(opening >= 0 && preload > opening)
-  assert.ok(preload < activation)
+  assert.ok(
+    opening >= 0
+    && preload > opening
+    && mapRuntimePreload > opening,
+  )
+  assert.ok(
+    preload < activation
+    && mapRuntimePreload < activation,
+  )
+  assert.match(runtime, /geospatialComposite\?: boolean/)
+  assert.ok(
+    geospatialPreload >= 0
+    && geospatialActivation > geospatialPreload
+    && sharedSurfaceActivation > geospatialActivation,
+  )
+  assert.match(
+    surfacePresentation,
+    /if \(!options\.geospatialComposite\) return[\s\S]*await preloadGeospatialMapRuntime\(\)/,
+  )
+  assert.match(
+    surfacePresentation,
+    /options\.geospatialComposite[\s\S]*geospatialComposite: true/,
+  )
   assert.ok(activation < preparationRequest)
   assert.ok(preparationRequest < opened)
   assert.ok(opened < preparedStage)
+  assert.match(
+    runtime,
+    /const profileChanged =\s*defaultRuntime\.profile\(\)\.sourceKey !== nextProfile\.sourceKey/,
+  )
+  assert.match(
+    runtime,
+    /if \(\s*\(entering \|\| profileChanged\)\s*&& hasFlightSimBrowserPresentationRuntime\(\)\s*\)/,
+  )
   assert.ok(preparedStage < readyDeadline)
   assert.match(missionStage, /addAfterEffect\(\(\) => \{/)
   assert.doesNotMatch(
@@ -190,6 +249,21 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   const stagePreparationAfterRender = missionStage.slice(
     afterRenderStart,
     afterRenderCleanup,
+  )
+  const hiddenProjectionGate = stagePreparationAfterRender.indexOf(
+    'if (!actorsVisible)',
+  )
+  const r3fPreparationCompletion = stagePreparationAfterRender.indexOf(
+    'completeFlightSimStagePreparation(stagePreparationRequestId)',
+  )
+  assert.ok(hiddenProjectionGate >= 0)
+  assert.ok(r3fPreparationCompletion > hiddenProjectionGate)
+  assert.match(
+    stagePreparationAfterRender.slice(
+      hiddenProjectionGate,
+      r3fPreparationCompletion,
+    ),
+    /delete canvas\.dataset\.kgFlightSimFirstFrame[\s\S]*return/,
   )
   assert.doesNotMatch(
     stagePreparationAfterRender,
@@ -242,6 +316,40 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   assert.ok(inputOwnershipRetry >= 0)
   assert.ok(deadlineCompletion > afterRender)
   assert.ok(frameSubscriber > deadlineCompletion)
+  const readyPresentationGate = surfaceControls.indexOf(
+    'isFlightSimReadyFramePresentationPending(',
+  )
+  const desktopInputConsumption = surfaceControls.indexOf(
+    'desktopBindingRef.current?.consumeInput()',
+  )
+  assert.ok(
+    readyPresentationGate >= 0
+    && desktopInputConsumption > readyPresentationGate,
+  )
+  assert.match(
+    geospatialPresentation,
+    /map\.on\('render', listener\)[\s\S]*map\.triggerRepaint\?\.\(\)/,
+  )
+  assert.match(
+    geospatialPresentation,
+    /canvas\.dataset\.kgFlightSimFirstFrameSurface = 'maplibre'/,
+  )
+  assert.match(
+    geospatialPresentation,
+    /onPresented\?\.\(presentation\)/,
+  )
+  assert.match(
+    geospatialBridge,
+    /onFlightOverlayPresented=\{handleFlightOverlayPresented\}/,
+  )
+  assert.match(
+    geospatialBridge,
+    /presentation\.phase === 'stopped'[\s\S]*completeFlightSimStagePreparation\(requestId,\s*\{\s*framePresented: true,/,
+  )
+  assert.match(
+    geospatialBridge,
+    /presentation\.phase === 'ready'[\s\S]*presentation\.tick === 0[\s\S]*completeFlightSimMapLibreReadyFrame\(/,
+  )
 })
 
 test('Flight surface fencing drains and restores both workspace seed-sync owners', () => {
@@ -373,31 +481,27 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     surfaceOpen,
   )
   const activateSurface = runtime.indexOf(
-    'surfaceActivated = activateXrSceneSurface',
+    'surfaceActivated = await activateFlightSimSurfacePresentation',
     surfaceOpen,
   )
-  const installFence = runtime.indexOf(
-    'installFlightSimGameplayNetworkFence',
+  const suspendRuntime = runtime.indexOf(
+    'suspendAuthoredRuntime()',
     activateSurface,
   )
   assert.ok(surfaceOpen >= 0 && acquireSyncSuspension > surfaceOpen)
   assert.ok(acquireSyncSuspension < activateSurface)
-  assert.ok(activateSurface < installFence)
+  assert.ok(activateSurface < suspendRuntime)
+  assert.doesNotMatch(runtime, /installFlightSimGameplayNetworkFence/)
   const exitSurface = runtime.indexOf('export function exitFlightSimSurface')
-  const uninstallFence = runtime.indexOf(
-    'const failures = restoreGameplayNetworkOwnership()',
+  const restorePreviousSurface = runtime.indexOf(
+    '...restoreSurfaceOwnership(',
     exitSurface,
   )
   const releaseSyncSuspension = runtime.indexOf(
     'restoreWorkspaceSeedSyncOwnership()',
-    uninstallFence,
+    restorePreviousSurface,
   )
-  const restorePreviousSurface = runtime.indexOf(
-    '...restoreSurfaceOwnership(',
-    uninstallFence,
-  )
-  assert.ok(exitSurface >= 0 && uninstallFence > exitSurface)
-  assert.ok(uninstallFence < restorePreviousSurface)
+  assert.ok(exitSurface >= 0 && restorePreviousSurface > exitSurface)
   assert.ok(restorePreviousSurface < releaseSyncSuspension)
   assert.match(
     runtime,
@@ -415,80 +519,6 @@ test('Flight surface fencing drains and restores both workspace seed-sync owners
     surfaceOpenLifecycle,
     /openController\.controller\.abort\(new FlightSimSurfaceOpenSettledError\(\)\)/,
   )
-})
-
-test('Flight Sim source declares the canonical Geo+XR composition', () => {
-  const meta = frontmatter(seedSource)
-  assert.equal(meta.status, 'runtime-ready')
-  assert.equal(meta.runtime_status, 'runtime-ready')
-  assert.equal(meta.runtime_claim, 'local-runtime-ready')
-  assert.equal(
-    meta.evidence_status,
-    'exact-head source and browser proof required at every handoff',
-  )
-  assert.equal(meta.publish_scope, 'local-only')
-  assert.equal(meta.kgCanvasSurfaceMode, 'geo-xr')
-  assert.equal(meta.kgCanvasRenderMode, '3d')
-  assert.equal(meta.kgCanvas3dMode, 'xr')
-  assert.equal(meta.kgCanvas2dRenderer, undefined)
-  assert.equal(meta.kgFloatingPanelOpen, true)
-  assert.equal(meta.kgFloatingPanelView, 'flightSim')
-  assert.equal(
-    Object.keys(meta).some(key => key.startsWith('planned_')),
-    false,
-  )
-  assert.deepEqual(meta.run_ready_demo, {
-    id: 'flight-sim',
-    activation: 'applied-source-document',
-    identity_authority: 'source-authored run_ready_demo.id',
-    imported_path_alias_required: false,
-    identity_conflict: 'fail closed when path and source identity disagree',
-    canonical_consumers: ['workspace', 'geo-xr-mode'],
-    dev_command: 'npm run dev',
-    canonical_source_file: '/docs/workspace-seeds/knowgrph-game-flight-sim-demo.md',
-    env_selector: 'VITE_KNOWGRPH_RUN_READY_DEMO=flight-sim',
-    validation_seed_path: '/knowgrph-game-flight-sim-demo.md',
-    source_root: 'knowgrph/docs',
-    source_backed: true,
-    clean_canvas_recommended: true,
-    native_runtime: true,
-    presentation: 'shared-geo-xr-gameplay-overlay',
-    document_presentation: 'runtime-ready-workspace-demo',
-    auto_start: true,
-    external_dependencies: [],
-    forbid_external_copy_or_dependency: true,
-  })
-  assert.deepEqual(meta.shared_xr_scene, {
-    source_authority: '/docs/workspace-seeds/knowgrph-physics-playground-demo.md',
-    world_ownership: 'overlay-only',
-    surface_owner: 'Geo+XR Mode',
-    renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
-    collider_owner: 'canvas/src/features/three/xrCanonicalSceneSpatialSource.ts',
-    camera_owner: 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
-    second_canvas_forbidden: true,
-  })
-  assert.deepEqual(meta.geo_flight_overlay, {
-    activation: 'selected authored environment plus source-authored Flight identity',
-    renderer_owner: 'canvas/src/lib/three/ThreeGraph.impl.tsx',
-    geo_policy_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
-    presentation_owner: 'canvas/src/features/three/xrGeoEnvironmentPresentation.ts',
-    render_policy: 'shared-xr-stage while composed in Geo+XR; standalone Geo retains its selected provider',
-    shared_environment_presentations: ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
-    screen_space_basemap: 'suppressed',
-    maplibre_runtime_started: false,
-    remote_style_or_tile_requests: 0,
-    control_owner: 'canvas/src/features/game-flight-sim/useFlightSimSurfaceControls.ts',
-    route_projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
-    xr_canvas_mounted: true,
-    map_interaction_preserved: false,
-    composition: 'the selected authored environment, Flight actors, and HUD share one R3F world; Geo supplies presentation state and paints no second world',
-  })
-  const authority = readFileSync(resolve(repoRoot, 'scripts/workspace-seed-authority.mjs'), 'utf8')
-  const projectionStart = authority.indexOf('AGENTIC_WORKSPACE_SEED_PROJECTION_INVENTORY')
-  const projectionEnd = authority.indexOf('])', projectionStart)
-  const projectionInventory = authority.slice(projectionStart, projectionEnd + 2)
-  assert.match(projectionInventory, /PHYSICS_SEED_BASENAME/)
-  assert.doesNotMatch(projectionInventory, /FLIGHT_SEED_BASENAME/)
 })
 
 test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', () => {
@@ -519,6 +549,10 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   )
   assert.equal(
     flightCamera.driver_owner,
+    'gympgrph/src/flightGeoOverlayMapLibre.ts',
+  )
+  assert.equal(
+    flightCamera.runtime_canvas_driver_owner,
     'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
   )
   assert.deepEqual(
@@ -542,6 +576,9 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
       orientation: 'north-up',
       source: 'authored mission spawn, ordered waypoints, landing pad, and aircraft snapshot',
       projection_owner: 'canvas/src/features/game-flight-sim/flightSimNavigationProjection.ts',
+      route_guidance_owner: 'canvas/src/features/game-flight-sim/flightSimRouteGuidance.ts',
+      objective_guide: 'one conditional aircraft-to-active-objective segment shared with native MapLibre, exclusive plain Geo, and the HUD',
+      hud_cue: 'objective label, rounded distance, and signed left/right heading error; per-tick cue is not a live region',
       runtime_network_calls: 0,
       external_map_or_token_required: false,
     },
@@ -583,33 +620,10 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   )
   assert.match(
     controllerCamera,
-    /flightSimActive\s*\?\s*planarFlightPresentation\s*\?\s*readFlightPlanTarget\(true,/,
+    /flightSimActive\s*\?\s*readFlightFollowTarget\(true,\s*coordinateScale,\s*renderer\)/,
   )
-  assert.match(
-    controllerCamera,
-    /:\s*readFlightFollowTarget\(true,\s*coordinateScale,\s*renderer\)/,
-  )
-  assert.match(
-    controllerCamera,
-    /const planarFollowActive = flightSimActive && planarFlightPresentation/,
-  )
-  assert.match(
-    controllerCamera,
-    /suspended \|\| \(!fixedFollow && !planarFollowActive\)/,
-  )
-  assert.match(
-    controllerCamera,
-    /follow\.owner === 'flight-plan'\s*&& previousOwner !== 'flight-plan'/,
-  )
-  assert.match(
-    controllerCamera,
-    /follow\.owner !== 'flight-plan'\s*&& previousOwner === 'flight-plan'/,
-  )
-  assert.match(controllerCamera, /planRestorePoseRef/)
-  assert.doesNotMatch(
-    controllerCamera,
-    /if \(fixedFollow\)\s+planRestorePoseRef\.current = null/,
-  )
+  assert.match(controllerCamera, /suspended \|\| !fixedFollow/)
+  assert.doesNotMatch(controllerCamera, /flight-plan|planRestorePoseRef|planarFlightPresentation/)
   assert.doesNotMatch(controllerCamera, /camera\.up\.(?:copy|set)/)
   assert.match(controllerCamera, /renderer\.xr\.isPresenting/)
   assert.match(flightTarget, /resolveFlightSimFollowTarget/)
@@ -619,6 +633,10 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   )
   assert.match(physicsRuntime, /pauseXrNativeControllerDemo\(\)/)
   assert.match(physicsRuntime, /resumeXrNativeControllerDemo\(\)/)
+  assert.match(
+    physicsRuntime,
+    /activatesXrSurface[\s\S]*activateXrSceneSurface\(\{ preserveGameplay: !dedicatedDemo \}\)/,
+  )
   assert.doesNotMatch(
     flightTarget,
     /\b(?:camera|controls)\.(?:position|target|enablePan|enableRotate|enableZoom)/,

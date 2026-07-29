@@ -92,9 +92,14 @@ export function GeospatialPanelHost(props: GeospatialPanelHostProps): React.Reac
   const setGeospatialAutoFitEnabled = useGympgrphStore(s => s.setGeospatialAutoFitEnabled)
   const setGeospatialDatasetTimeoutMs = useGympgrphStore(s => s.setGeospatialDatasetTimeoutMs)
   const setGeospatialDatasetMaxBytes = useGympgrphStore(s => s.setGeospatialDatasetMaxBytes)
+  const builtInStyleUrl = getBuiltInDefaultStyleUrl(geospatialViewMode)
 
-  const [styleUrlDraft, setStyleUrlDraft] = React.useState<string>(() => readLsString(LS_KEYS.geospatialStyleUrl, GRABMAPS_DEFAULT_STYLE_URL))
-  const [committedStyleUrl, setCommittedStyleUrl] = React.useState<string>(() => readLsString(LS_KEYS.geospatialStyleUrl, GRABMAPS_DEFAULT_STYLE_URL))
+  const [styleUrlDraft, setStyleUrlDraft] = React.useState<string>(
+    () => readLsString(LS_KEYS.geospatialStyleUrl, builtInStyleUrl),
+  )
+  const [committedStyleUrl, setCommittedStyleUrl] = React.useState<string>(
+    () => readLsString(LS_KEYS.geospatialStyleUrl, builtInStyleUrl),
+  )
   const [pointStyleDraft, setPointStyleDraft] = React.useState<GeospatialPointStyleConfig>(() => readGeospatialPointStyleConfig())
   const modeCommitTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const styleCommitTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -116,7 +121,7 @@ export function GeospatialPanelHost(props: GeospatialPanelHostProps): React.Reac
   React.useEffect(() => {
     if (typeof window === 'undefined') return
     const onChanged = () => {
-      const next = readLsString(LS_KEYS.geospatialStyleUrl, GRABMAPS_DEFAULT_STYLE_URL)
+      const next = readLsString(LS_KEYS.geospatialStyleUrl, builtInStyleUrl)
       setCommittedStyleUrl(next)
       setStyleUrlDraft(prev => (
         prev === MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL ||
@@ -131,7 +136,7 @@ export function GeospatialPanelHost(props: GeospatialPanelHostProps): React.Reac
     return () => {
       window.removeEventListener(GEOSPATIAL_STYLE_URL_CHANGED_EVENT, onChanged)
     }
-  }, [])
+  }, [builtInStyleUrl])
 
   const selectGeospatialViewMode = React.useCallback(
     (nextMode: GeospatialViewMode) => {
@@ -141,9 +146,9 @@ export function GeospatialPanelHost(props: GeospatialPanelHostProps): React.Reac
         if (typeof window !== 'undefined' && next !== '2d-svg') {
           const nextBuiltInStyle = resolveStandardViewModeStyleUrl(
             next,
-            readLsString(LS_KEYS.geospatialStyleUrl, GRABMAPS_DEFAULT_STYLE_URL),
+            readLsString(LS_KEYS.geospatialStyleUrl, builtInStyleUrl),
           )
-          const currentStyle = readLsString(LS_KEYS.geospatialStyleUrl, GRABMAPS_DEFAULT_STYLE_URL)
+          const currentStyle = readLsString(LS_KEYS.geospatialStyleUrl, builtInStyleUrl)
           if (currentStyle !== nextBuiltInStyle) {
             writeLsString(LS_KEYS.geospatialStyleUrl, nextBuiltInStyle)
             setCommittedStyleUrl(nextBuiltInStyle)
@@ -161,7 +166,7 @@ export function GeospatialPanelHost(props: GeospatialPanelHostProps): React.Reac
         setGeospatialViewMode(next)
       }, GEOSPATIAL_COMMIT_DEBOUNCE_MS)
     },
-    [setGeospatialViewMode],
+    [builtInStyleUrl, setGeospatialViewMode],
   )
 
   const applyStyleUrl = React.useCallback(() => {
@@ -171,10 +176,11 @@ export function GeospatialPanelHost(props: GeospatialPanelHostProps): React.Reac
         : normalizePersistedGeospatialStyleUrl(styleUrlDraft)
     if (styleCommitTimerRef.current) clearTimeout(styleCommitTimerRef.current)
     styleCommitTimerRef.current = setTimeout(() => {
-      writeLsString(LS_KEYS.geospatialStyleUrl, next || GRABMAPS_DEFAULT_STYLE_URL)
-      if (next) persistPreferredGrabMapsStyleUrl(next)
-      setCommittedStyleUrl(next || GRABMAPS_DEFAULT_STYLE_URL)
-      setStyleUrlDraft(next || GRABMAPS_DEFAULT_STYLE_URL)
+      const resolvedNext = next || builtInStyleUrl
+      writeLsString(LS_KEYS.geospatialStyleUrl, resolvedNext)
+      persistPreferredGrabMapsStyleUrl(resolvedNext)
+      setCommittedStyleUrl(resolvedNext)
+      setStyleUrlDraft(resolvedNext)
       if (typeof window !== 'undefined') {
         try {
           window.dispatchEvent(new Event(GEOSPATIAL_STYLE_URL_CHANGED_EVENT))
@@ -183,7 +189,7 @@ export function GeospatialPanelHost(props: GeospatialPanelHostProps): React.Reac
         }
       }
     }, GEOSPATIAL_COMMIT_DEBOUNCE_MS)
-  }, [geospatialViewMode, styleUrlDraft])
+  }, [builtInStyleUrl, geospatialViewMode, styleUrlDraft])
 
   const resetStyleUrl = React.useCallback(() => {
     const next = getBuiltInDefaultStyleUrl(geospatialViewMode)

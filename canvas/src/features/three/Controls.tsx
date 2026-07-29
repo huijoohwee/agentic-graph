@@ -28,11 +28,10 @@ import { xrChoreographyCanDriveCamera, xrChoreographyOwnsCamera } from './xrCame
 import { readThreeObjectInputOwnership, useThreeObjectInputOwnership } from './threeObjectInputOwnership'
 import { useThreeObjectCameraInputOwnership } from './useThreeObjectCameraInputOwnership'
 import { useXrNativeControllerDemoCamera } from './useXrNativeControllerDemoCamera'
+import { useImmersiveMediaCameraControls } from '@/features/immersive-media/useImmersiveMediaCameraControls'
 export function Controls({
   schema, positions, paused, mode = '3d', modelAssetRenderKey, modelAssetFit,
-  xrEmptyWorld = false, flightSimActive = false, gameplayCoordinateScale = 1,
-  geospatialComposite = false,
-  onControlsChange,
+  xrEmptyWorld = false, flightSimActive = false, immersiveMediaActive = false, gameplayCoordinateScale = 1, onControlsChange,
 }: {
   schema: GraphSchema
   positions: Record<string, Vec3>
@@ -40,10 +39,8 @@ export function Controls({
   mode?: Canvas3dModeId
   modelAssetRenderKey?: string
   modelAssetFit?: ModelAssetCameraFit | null
-  xrEmptyWorld?: boolean
-  flightSimActive?: boolean
+  xrEmptyWorld?: boolean; flightSimActive?: boolean; immersiveMediaActive?: boolean
   gameplayCoordinateScale?: number
-  geospatialComposite?: boolean
   onControlsChange?: () => void
 }) {
   const { camera, gl, size } = useThree()
@@ -88,14 +85,14 @@ export function Controls({
   useThreeObjectCameraInputOwnership({
     camera: perspectiveCamera,
     controls,
-    baseEnabled: !paused && !choreographyOwnsCamera,
+    baseEnabled: !paused && !choreographyOwnsCamera && !immersiveMediaActive,
   })
+  useImmersiveMediaCameraControls({ camera: perspectiveCamera, controls, domElement: gl.domElement, enabled: immersiveMediaActive && !paused && mode === 'xr' })
   useXrNativeControllerDemoCamera({
     camera: perspectiveCamera,
     controls,
     coordinateScale: gameplayCoordinateScale,
     flightSimActive,
-    geospatialComposite,
     renderer: gl,
     suspended: !!paused || mode !== 'xr' || xrEmptyWorld
       || choreographyOwnsCamera || objectInputOwnership.active,

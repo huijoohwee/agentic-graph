@@ -9,6 +9,7 @@ import { XR_ANIMATION_WEB_MCP_TOOL_IDS } from '../three/xrAnimationMcpContract.m
 import { buildMotionControlAgentReadyToolContracts, MOTION_CONTROL_AGENT_READY_TOOL_IDS } from './motionControlAgentReadyContract.mjs'
 import { buildGameModeAgentReadyToolContracts, GAME_MODE_AGENT_READY_TOOL_IDS } from './gameModeAgentReadyContract.mjs'
 import { buildFlightSimAgentReadyToolContracts, FLIGHT_SIM_AGENT_READY_TOOL_IDS } from './flightSimAgentReadyContract.mjs'
+import { buildImmersiveMediaAgentReadyToolContracts, IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS } from './immersiveMediaAgentReadyContract.mjs'
 import { buildCitySimAgentReadyToolContracts, CITY_SIM_AGENT_READY_TOOL_IDS } from './citySimAgentReadyContract.mjs'
 import { buildStorageSyncAgentReadyToolContracts, STORAGE_SYNC_AGENT_READY_TOOL_IDS } from './storageSyncAgentReadyContract.mjs'
 import { buildGroupPanelAgentReadyToolContracts, GROUP_PANEL_AGENT_READY_TOOL_IDS } from '../group-panel/groupPanelContract.mjs'
@@ -36,6 +37,7 @@ export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
   ...MOTION_CONTROL_AGENT_READY_TOOL_IDS,
   ...GAME_MODE_AGENT_READY_TOOL_IDS,
   ...FLIGHT_SIM_AGENT_READY_TOOL_IDS,
+  ...IMMERSIVE_MEDIA_AGENT_READY_TOOL_IDS,
   ...CITY_SIM_AGENT_READY_TOOL_IDS,
   ...STORAGE_SYNC_AGENT_READY_TOOL_IDS,
   ...GROUP_PANEL_AGENT_READY_TOOL_IDS,
@@ -47,7 +49,6 @@ export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
   readLocalRuntimeIdentity: 'read_local_runtime_identity',
   inspectAgentSurface: 'inspect_agent_surface',
 })
-
 export const KNOWGRPH_AGENT_READY_WEB_MCP_NAMESPACE = 'knowgrph'
 export const KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
 
@@ -533,7 +534,7 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
           inputSchema: XR_ANIMATION_CONTROL_INPUT_SCHEMA,
           outputSchema: { type: 'object', additionalProperties: true, required: ['ok', 'message'] },
           annotations: LOCAL_MUTATION_TOOL_ANNOTATIONS,
-        }, ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildCitySimAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildStorageSyncAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildGroupPanelAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), {
+        }, ...buildMotionControlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildGameModeAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildFlightSimAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildImmersiveMediaAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildCitySimAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, readOnlyAnnotations: READ_ONLY_TOOL_ANNOTATIONS, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), ...buildStorageSyncAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildGroupPanelAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName, mutationAnnotations: LOCAL_MUTATION_TOOL_ANNOTATIONS }), {
           name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions,
           webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocal3dLayoutPositions),
           title: 'Inspect Local 3D Layout Positions',

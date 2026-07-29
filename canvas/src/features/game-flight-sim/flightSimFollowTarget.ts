@@ -48,10 +48,29 @@ export function resolveFlightSimFollowTarget(
     + COCKPIT_FORWARD_CLEARANCE_METERS
   const cockpitHeight = FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1]
     + COCKPIT_VERTICAL_CLEARANCE_METERS
+  const horizontalForwardLength = Math.max(
+    0.000001,
+    Math.hypot(forward[0], forward[2]),
+  )
+  const horizontalForward = Object.freeze([
+    forward[0] / horizontalForwardLength,
+    0,
+    forward[2] / horizontalForwardLength,
+  ] as const)
+  const cockpitPosition = Object.freeze([
+    aircraft[0] + horizontalForward[0] * cockpitForwardDistance * scale,
+    aircraft[1] + cockpitHeight * scale,
+    aircraft[2] + horizontalForward[2] * cockpitForwardDistance * scale,
+  ] as const)
+  const cockpitTarget = Object.freeze([
+    cockpitPosition[0] + forward[0] * COCKPIT_LOOK_AHEAD_METERS * scale,
+    cockpitPosition[1] + forward[1] * COCKPIT_LOOK_AHEAD_METERS * scale,
+    cockpitPosition[2] + forward[2] * COCKPIT_LOOK_AHEAD_METERS * scale,
+  ] as const)
   const framing = view === 'cockpit'
     ? Object.freeze({
-        position: vector(cockpitForwardDistance, cockpitHeight),
-        target: vector(COCKPIT_LOOK_AHEAD_METERS, cockpitHeight),
+        position: cockpitPosition,
+        target: cockpitTarget,
         fovDegrees: COCKPIT_FOV_DEGREES,
       })
     : view === 'survey'

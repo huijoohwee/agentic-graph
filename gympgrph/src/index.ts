@@ -8,7 +8,16 @@ import { computeBoundsFromCollections } from './geo.js'
 import { ensureDatasetLayer, setGeoJsonSourceData } from './maplibreLayers.js'
 import { coerceFeatureCollectionIds, isPointOnlyFeatureCollection, pickPoiSelection } from './selection.js'
 import { colorForDataset } from './colors.js'
-import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
+import {
+  preloadMapLibreBasemapRuntime,
+  readActiveMapLibreMap,
+  useMapLibreBasemap,
+} from './features/geospatial/useMapLibreBasemap.js'
+import {
+  captureNativeGeospatialMapLibreLease,
+  claimMapLibreMapLease,
+  NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+} from './features/geospatial/mapLibreHostLease.js'
 import { GeospatialOverlayHost as GeospatialOverlayHostComponent } from './GeospatialHost.js'
 import { GeospatialPanelHost } from './GeospatialPanelHost.js'
 import { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection } from './geospatialFit.js'
@@ -26,6 +35,28 @@ export type {
   EnhancedLayerEditorState,
   EnhancedLayerPersistenceChange,
 } from './enhancedLayerPersistence.js'
+export type {
+  FlightGeoCoordinate,
+  FlightGeoOverlayPresentation,
+  FlightGeoOverlaySnapshot,
+  FlightGeoRoutePoint,
+} from './flightGeoOverlay.js'
+export {
+  clearFlightGeoOverlay,
+  flightGeoOverlayFeatureCollection,
+  markFlightGeoOverlayReadyFramePresented,
+  readFlightGeoOverlay,
+  readFlightGeoOverlayReadyFramePresented,
+  setFlightGeoOverlay,
+  subscribeFlightGeoOverlay,
+} from './flightGeoOverlay.js'
+export {
+  applyFlightGeoOverlayCameraToMap,
+  applyFlightGeoOverlayToMap,
+  clearFlightGeoOverlayFromMap,
+  FLIGHT_GEO_OVERLAY_LAYER_IDS,
+  FLIGHT_GEO_OVERLAY_SOURCE_ID,
+} from './flightGeoOverlayMapLibre.js'
 
 export { LS_KEYS }
 export { useGympgrphStore }
@@ -41,6 +72,17 @@ export { ensureDatasetLayer, setGeoJsonSourceData }
 export { coerceFeatureCollectionIds, isPointOnlyFeatureCollection, pickPoiSelection }
 export { colorForDataset }
 export { useMapLibreBasemap }
+export { preloadMapLibreBasemapRuntime }
+export { readActiveMapLibreMap }
+export {
+  captureNativeGeospatialMapLibreLease,
+  claimMapLibreMapLease,
+  NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+}
+export type {
+  MapLibreMapOwnerScope,
+  NativeGeospatialMapLibreLease,
+} from './features/geospatial/mapLibreHostLease.js'
 
 export const GeospatialOverlayHost = GeospatialOverlayHostComponent
 
