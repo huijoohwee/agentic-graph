@@ -111,10 +111,12 @@ function presentationHarness(
   afterPresented?: (presentation: FlightGeoOverlayPresentation) => void,
   options?: Readonly<{
     bootstrapApplied?: boolean
+    cameraExact?: boolean
     overlaySourceLoaded?: boolean
   }>,
 ) {
   let current = initial
+  let cameraExact = options?.cameraExact ?? true
   let overlaySourceLoaded = options?.overlaySourceLoaded ?? true
   let width = 0
   let repaintCount = 0
@@ -138,12 +140,19 @@ function presentationHarness(
   const map = {
     style: { _loaded: true },
     addImage: (id: string) => images.add(id),
+    getBearing: () => cameraExact ? current.aircraft.headingDegrees : 180,
     getCanvas: () => canvas,
+    getCenter: () => ({
+      lng: cameraExact ? current.camera.centerCoordinate[0] : 0,
+      lat: cameraExact ? current.camera.centerCoordinate[1] : 0,
+    }),
     getLayer: (id: string) => (
       Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS).some(layerId => layerId === id)
         ? { id }
         : undefined
     ),
+    getPadding: () => ({ top: 16, right: 16, bottom: 16, left: 16 }),
+    getPitch: () => cameraExact ? 48 : 0,
     hasImage: (id: string) => images.has(id),
     getSource: (id: string) => (
       id === FLIGHT_GEO_OVERLAY_SOURCE_ID
@@ -160,6 +169,7 @@ function presentationHarness(
     getStyle: () => ({
       layers: Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS).map(id => ({ id })),
     }),
+    getZoom: () => cameraExact ? 15.5 : 0,
     moveLayer: () => undefined,
     off: (type: string, listener: () => void) => {
       if (type === 'render') listeners.delete(listener)
@@ -193,6 +203,7 @@ function presentationHarness(
     presented,
     readOverlay: () => current,
     readRoot: () => null,
+    viewMode: '3d',
   })
   return {
     canvas,
@@ -213,6 +224,9 @@ function presentationHarness(
     setCurrent: (next: FlightGeoOverlaySnapshot) => {
       current = next
       sourceData = flightGeoOverlayMapLibreFeatureCollection(next)
+    },
+    setCameraExact: (exact: boolean) => {
+      cameraExact = exact
     },
     setOverlaySourceLoaded: (loaded: boolean) => {
       overlaySourceLoaded = loaded
@@ -408,10 +422,28 @@ test('a stopped Flight frame waits for the settled overlay source before prepara
   assert.equal(harness.listenerCount(), 0)
 })
 
+test('a stopped Flight frame waits for its staged tick-zero camera', () => {
+  const stopped = flightOverlay('stopped', 'stopped:camera-pending')
+  const harness = presentationHarness(stopped, undefined, {
+    cameraExact: false,
+  })
+  harness.setWidth(100)
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 0)
+  assert.equal(harness.listenerCount(), 1)
+
+  harness.setCameraExact(true)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+})
+
 test('a new stopped Flight request clears prior settlement proof before recording its own', () => {
   const root = { dataset: {} as DOMStringMap } as HTMLElement
   const priorStopped = flightOverlay('stopped', 'stopped:prior')
-  recordFlightGeoStoppedPresentation(root, priorStopped)
+  recordFlightGeoStoppedPresentation(root, priorStopped, 'prior-camera')
 
   const currentStopped = {
     ...priorStopped,
@@ -427,6 +459,7 @@ test('a new stopped Flight request clears prior settlement proof before recordin
     'stopped:current',
   )
   assert.equal(root.dataset.kgFlightGeospatialStoppedRunId, '0')
+  assert.equal(root.dataset.kgFlightGeospatialStoppedCameraSignature, undefined)
 })
 
 test('a fresh ready-frame request re-arms the same deterministic revision', () => {

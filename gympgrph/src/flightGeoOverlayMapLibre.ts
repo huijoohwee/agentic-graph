@@ -14,6 +14,15 @@ import {
   readFlightGeoMapViewportPadding,
   type FlightGeoMapViewportPadding,
 } from './flightGeoMapViewport.js'
+export {
+  applyFlightGeoOverlayCameraToMap,
+  canInspectFlightGeoOverlayCamera,
+  createFlightGeoOverlayMapLibreCamera,
+  flightGeoOverlayMapLibreCameraSignature,
+  mapHasExactFlightGeoOverlayCamera,
+  type FlightGeoMapCamera,
+  type FlightGeoOverlayCameraApplicationOptions,
+} from './flightGeoOverlayMapLibreCamera.js'
 
 export { flightGeoOverlayMapLibreFeatureCollection }
 
@@ -41,11 +50,6 @@ const FLIGHT_GEO_OVERLAY_LAYER_ID_SET = new Set<string>(
   FLIGHT_GEO_OVERLAY_LAYER_ORDER,
 )
 
-const FLIGHT_GEO_CAMERA_PRESETS = Object.freeze({
-  chase: Object.freeze({ pitch: 48, zoom: 15.5 }),
-  cockpit: Object.freeze({ pitch: 68, zoom: 17 }),
-  survey: Object.freeze({ pitch: 22, zoom: 14.25 }),
-})
 const FLIGHT_GEO_NIGHT_EXPRESSION = Object.freeze([
   'boolean',
   ['get', 'kgFlightNight'],
@@ -300,50 +304,6 @@ export function fitMapToFlightGeoOverlay(
         padding,
       },
     )
-    return true
-  } catch {
-    return false
-  }
-}
-
-export function applyFlightGeoOverlayCameraToMap(
-  map: any,
-  overlay: FlightGeoOverlaySnapshot,
-  viewMode: string = '3d',
-  padding: FlightGeoMapViewportPadding = readFlightGeoMapViewportPadding(map),
-): boolean {
-  if (typeof map?.jumpTo !== 'function') return false
-  try {
-    if (overlay.phase === 'stopped') return false
-    const mode3d = viewMode === '3d' || viewMode === '3d-modern'
-    if (
-      overlay.camera.effectiveOwner === 'timeline-playback'
-      && overlay.camera.timeline
-    ) {
-      map.jumpTo({
-        bearing: mode3d
-          ? overlay.camera.timeline.bearingDegrees
-          : 0,
-        center: [...overlay.camera.timeline.centerCoordinate],
-        pitch: mode3d
-          ? Math.max(22, overlay.camera.timeline.pitchDegrees)
-          : 0,
-        padding,
-        zoom: overlay.camera.timeline.zoom,
-      })
-      return true
-    }
-    if (overlay.camera.source !== 'fixed-follow') return false
-    const preset = FLIGHT_GEO_CAMERA_PRESETS[overlay.camera.view]
-    map.jumpTo?.({
-      bearing: mode3d && overlay.camera.view !== 'survey'
-        ? overlay.aircraft.headingDegrees
-        : 0,
-      center: [...overlay.camera.centerCoordinate],
-      padding,
-      pitch: mode3d ? preset.pitch : 0,
-      zoom: preset.zoom,
-    })
     return true
   } catch {
     return false

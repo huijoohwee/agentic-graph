@@ -155,6 +155,10 @@ function hasExactInitialReadyFrameEvidence(initialReadyFrame) {
     && presentation?.stoppedRunId === '0'
     && typeof presentation?.stoppedRevision === 'string'
     && presentation.stoppedRevision.length > 0
+    && typeof presentation?.stoppedCameraSignature === 'string'
+    && presentation.stoppedCameraSignature.length > 0
+    && presentation.stoppedCameraSignature
+      === presentation?.cameraSignature
     && /^\d+$/.test(String(presentation?.attempts || ''))
   )
 }

@@ -109,6 +109,85 @@ test('Flight camera preserves 2D north-up and 3D oblique mode ownership', () => 
   assert.equal(calls.length, 4)
 })
 
+test('stopped preparation stages each tick-zero camera so Ready does not jump again', () => {
+  const padding = { top: 24, right: 412, bottom: 48, left: 652 }
+  const calls: Record<string, unknown>[] = []
+  let camera = {
+    bearing: 0,
+    center: [0, 0] as [number, number],
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    pitch: 0,
+    zoom: 0,
+  }
+  const map = {
+    getBearing: () => camera.bearing,
+    getCenter: () => ({ lng: camera.center[0], lat: camera.center[1] }),
+    getPadding: () => camera.padding,
+    getPitch: () => camera.pitch,
+    getZoom: () => camera.zoom,
+    jumpTo: (next: Record<string, unknown>) => {
+      calls.push(next)
+      const center = next.center as [number, number]
+      camera = {
+        bearing: Number(next.bearing),
+        center: [Number(center[0]), Number(center[1])],
+        padding: next.padding as typeof camera.padding,
+        pitch: Number(next.pitch),
+        zoom: Number(next.zoom),
+      }
+    },
+  }
+  for (const mode of ['2d', '2d-modern', '3d', '3d-modern']) {
+    const ready = flightOverlay(72)
+    const stopped = {
+      ...ready,
+      phase: 'stopped' as const,
+      readyFrameRequestId: null,
+      revision: `stopped:aircraft:${mode}`,
+      runId: 0,
+    }
+    const callsBeforeStage = calls.length
+    assert.equal(
+      applyFlightGeoOverlayCameraToMap(
+        map,
+        stopped,
+        mode,
+        padding,
+        { stageStopped: true },
+      ),
+      true,
+    )
+    assert.equal(calls.length, callsBeforeStage + 1)
+    assert.deepEqual(calls.at(-1), {
+      bearing: mode.startsWith('3d') ? 72 : 0,
+      center: [103.82, 1.35],
+      padding,
+      pitch: mode.startsWith('3d') ? 48 : 0,
+      zoom: 15.5,
+    })
+
+    assert.equal(
+      applyFlightGeoOverlayCameraToMap(map, ready, mode, padding),
+      true,
+    )
+    assert.equal(calls.length, callsBeforeStage + 1)
+
+    const moved = {
+      ...ready,
+      aircraft: { ...ready.aircraft, headingDegrees: 18 },
+      camera: {
+        ...ready.camera,
+        centerCoordinate: [103.821, 1.351] as const,
+      },
+    }
+    assert.equal(
+      applyFlightGeoOverlayCameraToMap(map, moved, mode, padding),
+      true,
+    )
+    assert.equal(calls.length, callsBeforeStage + 2)
+  }
+})
+
 test('Flight camera reserves a panel that crosses the compact map centre', () => {
   const dom = new JSDOM('<main><section id="map"></section><aside aria-label="Floating panel"></aside></main>')
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')

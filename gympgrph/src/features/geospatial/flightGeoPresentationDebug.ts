@@ -14,6 +14,7 @@ export function writeFlightGeoPresentationDebug(
   root: HTMLElement,
   overlay: FlightGeoOverlaySnapshot,
   attempts: number,
+  cameraSignature: string | null = null,
 ): void {
   const sameStoppedPresentation = (
     root.dataset.kgFlightGeospatialStoppedProfileId === overlay.profileId
@@ -32,15 +33,26 @@ export function writeFlightGeoPresentationDebug(
   )
   root.dataset.kgFlightGeospatialPresentationRevision = overlay.revision
   root.dataset.kgFlightGeospatialRenderAttempts = String(attempts)
+  if (cameraSignature) {
+    root.dataset.kgFlightGeospatialPresentationCameraSignature = cameraSignature
+  } else {
+    delete root.dataset.kgFlightGeospatialPresentationCameraSignature
+  }
 }
 
 export function recordFlightGeoStoppedPresentation(
   root: HTMLElement,
   overlay: FlightGeoOverlaySnapshot,
+  cameraSignature: string | null = null,
 ): void {
   root.dataset.kgFlightGeospatialStoppedEnvironmentLoaded = '1'
   root.dataset.kgFlightGeospatialStoppedOverlayLoaded = '1'
   root.dataset.kgFlightGeospatialStoppedProfileId = overlay.profileId
   root.dataset.kgFlightGeospatialStoppedRevision = overlay.revision
   root.dataset.kgFlightGeospatialStoppedRunId = String(overlay.runId)
+  if (cameraSignature) {
+    root.dataset.kgFlightGeospatialStoppedCameraSignature = cameraSignature
+  } else {
+    delete root.dataset.kgFlightGeospatialStoppedCameraSignature
+  }
 }

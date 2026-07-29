@@ -36,20 +36,17 @@ import {
   recordFlightGeoStoppedPresentation,
   writeFlightGeoPresentationDebug,
 } from './flightGeoPresentationDebug.js'
+import {
+  readFlightGeoOverlayPresentationCamera,
+  readSavedFlightGeoMapPadding,
+} from './flightGeoOverlayPresentationCamera.js'
 
 export const FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT = 8
 export const FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT = 180
 
-type PresentedFlightOverlay = {
-  map: any | null
-  readyFrameRequestId: number | null
-  revision: string
-}
+type PresentedFlightOverlay = { map: any | null; readyFrameRequestId: number | null; revision: string }
 
-type SavedMapPadding = Readonly<{
-  map: any | null
-  padding: FlightGeoMapViewportPadding | null
-}>
+type SavedMapPadding = Readonly<{ map: any | null; padding: FlightGeoMapViewportPadding | null }>
 
 type FlightOverlayPresentationGateOptions = Readonly<{
   active: () => boolean
@@ -58,32 +55,17 @@ type FlightOverlayPresentationGateOptions = Readonly<{
   presented: { current: PresentedFlightOverlay }
   readOverlay?: () => FlightGeoOverlaySnapshot
   readRoot: () => HTMLElement | null
+  viewMode: string
   isCanvasElement?: (value: unknown) => value is HTMLCanvasElement
 }>
 
-export type FlightOverlayPresentationGate = Readonly<{
-  cancel: () => void
-  clearCanvas: () => void
-  request: (overlay: FlightGeoOverlaySnapshot) => void
-  resetPresented: () => void
-}>
+export type FlightOverlayPresentationGate = Readonly<{ cancel: () => void; clearCanvas: () => void; request: (overlay: FlightGeoOverlaySnapshot) => void; resetPresented: () => void }>
 
 function defaultIsCanvasElement(value: unknown): value is HTMLCanvasElement {
   return (
     typeof HTMLCanvasElement !== 'undefined'
     && value instanceof HTMLCanvasElement
   )
-}
-
-function readSavedMapPadding(map: any): FlightGeoMapViewportPadding | null {
-  const padding = map?.getPadding?.()
-  if (!padding || typeof padding !== 'object') return null
-  const bottom = Number(padding.bottom)
-  const left = Number(padding.left)
-  const right = Number(padding.right)
-  const top = Number(padding.top)
-  if (![bottom, left, right, top].every(Number.isFinite)) return null
-  return Object.freeze({ bottom, left, right, top })
 }
 
 function mapHasExactFlightOverlay(
@@ -104,6 +86,7 @@ export function createFlightGeoOverlayPresentationGate(
     presented,
     readOverlay = readFlightGeoOverlay,
     readRoot,
+    viewMode,
     isCanvasElement = defaultIsCanvasElement,
   } = options
   let pending: {
@@ -196,8 +179,18 @@ export function createFlightGeoOverlayPresentationGate(
         return
       }
       const root = readRoot()
+      const camera = readFlightGeoOverlayPresentationCamera(
+        map,
+        current,
+        viewMode,
+      )
       if (root) {
-        writeFlightGeoPresentationDebug(root, current, pending.attempts)
+        writeFlightGeoPresentationDebug(
+          root,
+          current,
+          pending.attempts,
+          camera.signature,
+        )
       }
       const canvas = readCanvas()
       let canvasVisible = false
@@ -212,13 +205,19 @@ export function createFlightGeoOverlayPresentationGate(
       if (
         !canMapLibreFlightOverlayPresent(map, current)
         || !mapHasExactFlightOverlay(map, current)
+        || !camera.exact
         || !canvas
         || !canvasVisible
       ) {
         if (!pending) return
         pending.attempts += 1
         if (root) {
-          writeFlightGeoPresentationDebug(root, current, pending.attempts)
+          writeFlightGeoPresentationDebug(
+            root,
+            current,
+            pending.attempts,
+            camera.signature,
+          )
         }
         if (pending.attempts >= pending.limit) {
           cancel()
@@ -273,7 +272,11 @@ export function createFlightGeoOverlayPresentationGate(
       if (settledRoot) {
         settledRoot.dataset.kgFlightGeospatialPresentedRevision = current.revision
         if (current.phase === 'stopped') {
-          recordFlightGeoStoppedPresentation(settledRoot, current)
+          recordFlightGeoStoppedPresentation(
+            settledRoot,
+            current,
+            camera.signature,
+          )
         }
       }
       presented.current = {
@@ -302,7 +305,14 @@ export function createFlightGeoOverlayPresentationGate(
       revision: overlay.revision,
     }
     const root = readRoot()
-    if (root) writeFlightGeoPresentationDebug(root, overlay, pending.attempts)
+    if (root) {
+      writeFlightGeoPresentationDebug(
+        root,
+        overlay,
+        pending.attempts,
+        readFlightGeoOverlayPresentationCamera(map, overlay, viewMode).signature,
+      )
+    }
     try {
       map.on('render', listener)
       map.triggerRepaint?.()
@@ -355,7 +365,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     if (savedMapPaddingRef.current.map === map) return
     savedMapPaddingRef.current = {
       map,
-      padding: readSavedMapPadding(map),
+      padding: readSavedFlightGeoMapPadding(map),
     }
   }, [])
 
@@ -429,6 +439,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           onPresented: options.onPresented,
           presented: presentedRef,
           readRoot: () => options.rootRef.current,
+          viewMode: options.viewMode,
         })
       : null
     const apply = () => {
@@ -514,20 +525,20 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       if (!applied) return
       const cameraApplied = overlay.camera.effectiveOwner === 'free-orbit'
         || (() => {
-          if (overlay.phase === 'stopped') return false
           captureMapPadding(map)
           return applyFlightGeoOverlayCameraToMap(
             map,
             overlay,
             options.viewMode,
             cameraPadding,
+            { stageStopped: overlay.phase === 'stopped' },
           )
         })()
-      // A stopped mission deliberately retains its padded union fit instead
-      // of issuing a fixed-follow jump. It still has to acknowledge the
-      // rendered MapLibre frame so source-authored stage preparation can
-      // complete before Flight becomes playable.
-      if (cameraApplied || overlay.phase === 'stopped') gate.request(overlay)
+      // Stopped preparation first fits the full local environment, then stages
+      // the deterministic tick-zero follow camera and waits for that painter
+      // frame. Ready can therefore re-arm its request without another camera
+      // transform or GeoJSON worker update.
+      if (cameraApplied) gate.request(overlay)
     }
     const scheduleFinalApply = () => {
       if (typeof window === 'undefined') return

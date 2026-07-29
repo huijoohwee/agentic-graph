@@ -96,6 +96,10 @@ def _read_ready_frame_debug(page: Page) -> dict[str, Any]:
                 root.dataset.kgFlightGeospatialStoppedRevision || null,
               stoppedRunId:
                 root.dataset.kgFlightGeospatialStoppedRunId || null,
+              stoppedCameraSignature:
+                root.dataset.kgFlightGeospatialStoppedCameraSignature || null,
+              cameraSignature:
+                root.dataset.kgFlightGeospatialPresentationCameraSignature || null,
             } : null,
             map: {
               canvasCount: document.querySelectorAll('.maplibregl-canvas').length,
@@ -177,6 +181,9 @@ def verify_flight_deadline_contracts(
         != initial_overlay.get("profileId")
         or not str(initial_presentation.get("stoppedRevision") or "").strip()
         or initial_presentation.get("stoppedRunId") != "0"
+        or not str(initial_presentation.get("stoppedCameraSignature") or "").strip()
+        or initial_presentation.get("stoppedCameraSignature")
+        != initial_presentation.get("cameraSignature")
         or not str(initial_presentation.get("attempts") or "").isdigit()
     ):
         raise AssertionError(

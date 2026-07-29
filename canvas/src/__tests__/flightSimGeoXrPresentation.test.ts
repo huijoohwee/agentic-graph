@@ -116,7 +116,11 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
   )
   assert.match(
     mapLibrePresentation,
-    /cameraApplied \|\| overlay\.phase === 'stopped'\) gate\.request\(overlay\)/,
+    /\{ stageStopped: overlay\.phase === 'stopped' \}/,
+  )
+  assert.match(
+    mapLibrePresentation,
+    /if \(cameraApplied\) gate\.request\(overlay\)/,
   )
   assert.match(
     threeGraph,
