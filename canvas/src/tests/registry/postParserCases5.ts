@@ -299,6 +299,8 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["ui.mainPanel.settings.canvasEmbedImportWorkflow","@/__tests__/mainPanelCanvasEmbedSettings.test","testMainPanelCanvasEmbedSettingsReuseSharedImportPanel"],
   ["ui.canvas.liveHero.embeddedChatSubmitInteraction","@/__tests__/liveCanvasHeroInteraction.test","testLiveCanvasHeroInteractionSubmitsToEmbeddedChat"],
   ["workspace.mirrorReadRoots.taskCanonicalDocs","@/__tests__/workspaceMirrorReadRoots.test","testWorkspaceMirrorReadRootsAdmitConfiguredCanonicalDocsFromTaskWorktree"],
+  ["workspace.initializationDocsRoot.taskCanonicalDocs","@/__tests__/workspaceInitializationDocsRoot.test","testWorkspaceInitializationDocsRootFindsCanonicalSiblingFromTaskWorktree"],
+  ["workspace.initializationDocsRoot.prefersDirectSibling","@/__tests__/workspaceInitializationDocsRoot.test","testWorkspaceInitializationDocsRootPrefersDirectSibling"],
   ["agentReady.rootAlias.appShell","@/__tests__/rootAgentReadyAlias.test","testRootAgentReadyAliasCanonicalizesPublishedAppShellMount"],
   ["ui.floatingPanel.media.xrLiteralInvocation","@/__tests__/xrMediaInvocationRuntime.test","testXrMediaInvocationChipsDispatchDisplayedLiteral"],
   ["ui.floatingPanel.media.xrEnvironmentGeoRouting","@/__tests__/xrMediaInvocationRuntime.test","testXrEnvironmentGeoHandoffSelectsBeforeRouting"],
