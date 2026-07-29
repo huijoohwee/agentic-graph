@@ -70,7 +70,7 @@ This policy is application authorization, not enforcement isolation. Durable sta
 
 ## Invocation and tools
 
-Every specification declares the exact ACOS vocabulary `/implementation.run`, `#managed-implementation-run`, `@work-item`, and `@implementation-run`. The four local tools are:
+Every specification declares the exact ACOS vocabulary `/implementation.run`, `#managed-implementation-run`, `@work-item`, and `@implementation-run`. The local run surface exposes five tools:
 
 | Tool | Effect |
 |---|---|
@@ -78,6 +78,7 @@ Every specification declares the exact ACOS vocabulary `/implementation.run`, `#
 | `knowgrph.implementation_run.start` | Idempotently persists the plan and starts its detached durable supervisor. |
 | `knowgrph.implementation_run.list` | Lists bounded work-item projections, current revisions, coordination, evidence summaries, and next actions. |
 | `knowgrph.implementation_run.control` | Uses revision compare-and-swap for `pause`, `cancel`, `retry`, or `review`. |
+| `knowgrph.agentic_sdlc.observe` | Read-only projection of one exact immutable `agentic-sdlc-run/v1` ledger into deterministic paged GraphData and source-backed KGC Markdown for the existing Canvas owner. |
 
 Minimal plan/start arguments:
 
@@ -99,7 +100,8 @@ Minimal plan/start arguments:
   "semanticScope": "issue-142",
   "runnerId": "team_runner",
   "sandboxPolicyPath": "policy.json",
-  "allowedPaths": ["src", "tests"],
+  "agenticSdlcLedgerPath": "evidence/agentic-sdlc-run.json",
+  "allowedPaths": ["src", "tests", "evidence"],
   "verification": [{"profileId": "unit_tests"}],
   "idempotencyKey": "project-issue-142-v1",
   "bounds": {
@@ -112,6 +114,79 @@ Minimal plan/start arguments:
 ```
 
 Call `plan` first and inspect `ready`, diagnostics, the pinned target/ACOS revisions, run-owned ACOS semantic scope, 96-bit-suffixed worktree, policy proof, exact verifier profile digest, executable SHA-256 proofs, and containment declaration. Send the same specification to `start`. Reusing its idempotency key with identical content returns the existing run; different content fails closed. Specifications, registries, profile argv/environment sets, plans, durable state, events, process configuration, and child argv/environment all have explicit aggregate UTF-8 byte limits. State creation reserves half of the hard state-file limit for coordination and evidence growth.
+
+`agenticSdlcLedgerPath` is optional for backwards compatibility, but it is
+required for full Agentic SDLC observation. It must be a safe
+repository-relative path contained by `allowedPaths`. When configured, the
+runner request names that path explicitly. After the host-owned verification
+profiles pass, the supervisor loads the ledger through the exact clean ACOS
+revision pinned by the run, applies the canonical schema and independent
+evaluator, copies the original bytes into the run's immutable artifact
+directory, and records:
+
+```json
+{
+  "schema": "agentic-sdlc-ledger-receipt/v1",
+  "artifact": "agentic-sdlc-run.a0001.0123456789abcdef.json",
+  "digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "bytes": 12345,
+  "canonicalRunId": "run-001",
+  "ledgerRevision": 27,
+  "acosRevision": "0123456789abcdef0123456789abcdef01234567"
+}
+```
+
+The receipt is stored only at `state.result.agenticSdlcLedger`. A missing
+receipt returns `canonical_ledger_unavailable`; the observer never reconstructs
+VCCs, roles, grants, budgets, transitions, findings, Evidence References,
+consumption, or receipts from the operational run summary.
+
+## Agentic SDLC Canvas observation
+
+The canonical invocation is:
+
+```text
+/sdlc.observe #agentic-sdlc-observability @implementation-run @canvas @runtime-proof
+```
+
+Call `knowgrph.agentic_sdlc.observe` with that exact token tuple, the
+implementation-run ID, its current `expectedRevision`, the receipt's
+`expectedLedgerDigest`, and one view: `overview`, `plan`, `execution`,
+`evidence`, `economics`, `recovery`, `receipts`, or `full`. `limit` is bounded
+from 1 to 200. A returned cursor is bound to the projection digest, view, and
+offset; any revision or ledger change makes it stale.
+
+The observer rechecks the run revision, durable binding-event revision, receipt,
+byte count, SHA-256, ledger schema, canonical run ID, and clean ACOS evaluator
+revision before projecting. The evaluator's installed Ajv dependency closure
+must also match the exact lockfile-SRI tarballs in the OS user's local npm
+content cache; missing cache evidence or any installed-byte drift fails closed
+without a network fallback.
+Nodes and edges use stable type/identity ordering. GraphData and KGC Markdown
+come from the same normalized record set; KGC frontmatter selects the existing
+Storyboard renderer. The existing Source Files/active-graph/Canvas owners
+decide whether to display or persist that returned document. The MCP tool does
+not write a document, create a second graph store, or introduce another
+renderer. A small content-addressed in-memory LRU caches derived pages only.
+
+The status fields are deliberately separate:
+
+- `runtimeReady` is the canonical independent evaluator verdict.
+- `verified` additionally requires every verified task to join an evaluator-owned
+  verified transition to its own passed, in-task Evidence Reference.
+- `deliveryReady` means the managed implementation run reached its review-ready
+  pull-request handoff.
+- `deployed` is observed only when exact digest-valid Candidate, Authorization
+  Interaction, consumed Human Authorization v2, and Live Verification receipts
+  join on the same candidate, target, human actor, controller, deployed artifact,
+  and rollback target.
+- `deployBoundary` is always `closed`: observing an existing release receipt
+  chain grants no action authority.
+
+Every observation reports exact zero model calls, network calls, prompt tokens,
+completion tokens, estimated cost, and provider spend. It neither authorizes a
+merge nor creates Human Authorization, Live Verification, Publication, Prod,
+or Cloudflare evidence.
 
 ## State and controls
 

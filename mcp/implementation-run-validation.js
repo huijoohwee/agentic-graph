@@ -12,7 +12,7 @@ import { readRuntimeReadinessContract, resolveRuntimeDocsDependency } from "../s
 const execFileAsync = promisify(execFile);
 const REQUIRED_BINDINGS = Object.freeze(["@work-item", "@implementation-run"]);
 const REQUIRED_TOKENS = Object.freeze(["/implementation.run", "#managed-implementation-run", ...REQUIRED_BINDINGS]);
-const SPEC_KEYS = new Set(["invocation", "workItem", "repoRoot", "worktreeRoot", "agenticCanvasOsRoot", "semanticScope", "runnerId", "sandboxPolicyPath", "allowedPaths", "verification", "idempotencyKey", "bounds"]);
+const SPEC_KEYS = new Set(["invocation", "workItem", "repoRoot", "worktreeRoot", "agenticCanvasOsRoot", "semanticScope", "runnerId", "sandboxPolicyPath", "agenticSdlcLedgerPath", "allowedPaths", "verification", "idempotencyKey", "bounds"]);
 const INVOCATION_KEYS = new Set(["action", "semantic", "bindings"]);
 const WORK_KEYS = new Set(["id", "objective", "acceptance"]);
 const BOUNDS_KEYS = new Set(["maxAttempts", "maxRuntimeMs", "maxOutputBytes", "leaseTtlSeconds"]);
@@ -94,6 +94,20 @@ export function validateImplementationRunSpec(raw) {
   if (!text(raw?.sandboxPolicyPath) || path.isAbsolute(text(raw?.sandboxPolicyPath)) || !safeRelativePath(raw?.sandboxPolicyPath)) errors.push("sandboxPolicyPath must be a safe repository-relative path.");
   const allowedPaths = Array.isArray(raw?.allowedPaths) ? [...new Set(raw.allowedPaths.map(safeRelativePath).filter(Boolean))] : [];
   if (!Array.isArray(raw?.allowedPaths) || allowedPaths.length !== raw.allowedPaths.length || allowedPaths.length < 1 || allowedPaths.length > 100) errors.push("allowedPaths must contain 1-100 unique safe repository-relative paths outside .git and runtime state.");
+  const ledgerPath = raw?.agenticSdlcLedgerPath === undefined
+    ? ""
+    : safeRelativePath(raw.agenticSdlcLedgerPath);
+  if (raw?.agenticSdlcLedgerPath !== undefined && !ledgerPath) {
+    errors.push("agenticSdlcLedgerPath must be a safe repository-relative path.");
+  }
+  if (
+    ledgerPath
+    && !allowedPaths.some((allowed) => (
+      ledgerPath === allowed || ledgerPath.startsWith(`${allowed}/`)
+    ))
+  ) {
+    errors.push("agenticSdlcLedgerPath must be contained by allowedPaths.");
+  }
 
   const verification = Array.isArray(raw?.verification) ? raw.verification : [];
   if (verification.length < 1 || verification.length > 25) errors.push("verification must contain 1-25 host-owned verifier profiles.");
@@ -120,7 +134,9 @@ export function validateImplementationRunSpec(raw) {
       worktreeRoot: path.resolve(raw.worktreeRoot),
       agenticCanvasOsRoot: path.resolve(raw.agenticCanvasOsRoot),
       semanticScope: text(raw.semanticScope), runnerId: text(raw.runnerId),
-      sandboxPolicyPath: safeRelativePath(raw.sandboxPolicyPath), allowedPaths,
+      sandboxPolicyPath: safeRelativePath(raw.sandboxPolicyPath),
+      ...(ledgerPath ? { agenticSdlcLedgerPath: ledgerPath } : {}),
+      allowedPaths,
       verification: normalizedVerification, idempotencyKey: text(raw.idempotencyKey),
       bounds: { ...bounds },
     },
