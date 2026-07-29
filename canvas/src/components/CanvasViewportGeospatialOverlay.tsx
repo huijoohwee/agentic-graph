@@ -43,6 +43,9 @@ import {
   projectFlightSimToGeospatialOverlay,
 } from '@/features/game-flight-sim/flightSimGeospatialProjection'
 import {
+  projectXrEnvironmentToFlightGeo,
+} from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
+import {
   claimFlightGeoOverlayPublisherLease,
 } from '@/features/game-flight-sim/flightGeoOverlayPublisherLease'
 import {
@@ -427,6 +430,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
               },
               readFlightSimTrainingSnapshot().night,
               readCurrentFlightSimReadyFrameRequestId(),
+              projectXrEnvironmentToFlightGeo(motionRuntime.plan),
             ),
           )
         }

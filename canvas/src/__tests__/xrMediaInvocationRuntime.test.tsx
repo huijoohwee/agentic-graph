@@ -79,6 +79,10 @@ export async function testXrEnvironmentGeoHandoffSelectsBeforeRouting() {
   const root = createRoot(container as unknown as HTMLElement)
   const order: string[] = []
   const routeDetails: FloatingPanelOpenEventDetail[] = []
+  let releasePending: (() => void) | null = null
+  const pendingPreparation = new Promise<void>(resolve => {
+    releasePending = resolve
+  })
   const onRoute = (event: Event) => {
     order.push('route')
     routeDetails.push((event as CustomEvent<FloatingPanelOpenEventDetail>).detail)
@@ -95,7 +99,9 @@ export async function testXrEnvironmentGeoHandoffSelectsBeforeRouting() {
           order.push(`select:${stageId}`)
           return { ok: true }
         },
-        onAfterRoute: () => order.push('overlay'),
+        prepareBeforeRoute: () => {
+          order.push('overlay')
+        },
       }),
       React.createElement(XrEnvironmentGeoButton, {
         disabled: false,
@@ -105,11 +111,35 @@ export async function testXrEnvironmentGeoHandoffSelectsBeforeRouting() {
           order.push(`blocked:${stageId}`)
           return { ok: false }
         },
-        onAfterRoute: () => order.push('blocked-overlay'),
+        prepareBeforeRoute: () => {
+          order.push('blocked-overlay')
+        },
+      }),
+      React.createElement(XrEnvironmentGeoButton, {
+        disabled: false,
+        stageId: 'aerial-sky',
+        stageLabel: 'Sky for Aerials',
+        onSelect: stageId => {
+          order.push(`pending:${stageId}`)
+          return { ok: true }
+        },
+        prepareBeforeRoute: () => {
+          order.push('pending-overlay')
+          return pendingPreparation
+        },
+      }),
+      React.createElement(XrEnvironmentGeoButton, {
+        disabled: false,
+        stageId: 'downtown',
+        stageLabel: 'Downtown',
+        onSelect: () => {
+          order.push('throwing-select')
+          throw new Error('synthetic selection failure')
+        },
       }),
     ), { window: dom.window as unknown as Window, frames: 2 })
     const geoButtons = Array.from(container.querySelectorAll('[data-kg-media-xr-environment-geo]')) as HTMLButtonElement[]
-    if (geoButtons.length !== 2
+    if (geoButtons.length !== 4
       || geoButtons[0]?.getAttribute('aria-label') !== 'Select Street Grid and open Geo') {
       throw new Error('expected each environment kit to expose one accessible Geo handoff')
     }
@@ -119,11 +149,37 @@ export async function testXrEnvironmentGeoHandoffSelectsBeforeRouting() {
       geoButtons[1]?.click()
       await waitForNextFrame(dom.window)
     })
-    if (order.join('|') !== 'select:street-grid|route|overlay|blocked:loading-bay') {
-      throw new Error(`expected successful stage selection before Geo routing and blocked selection to stay in Media, got ${order.join('|')}`)
+    if (order.join('|') !== 'select:street-grid|overlay|blocked:loading-bay|route') {
+      throw new Error(`expected the selected stage and overlay to be ready before Geo routing, and blocked selection to stay in Media, got ${order.join('|')}`)
     }
     if (routeDetails.length !== 1 || routeDetails[0]?.tab !== 'geo' || routeDetails[0]?.open !== true) {
       throw new Error(`expected one canonical FloatingPanel Geo request, got ${JSON.stringify(routeDetails)}`)
+    }
+
+    await act(async () => {
+      geoButtons[2]?.click()
+      geoButtons[2]?.click()
+      geoButtons[3]?.click()
+      await Promise.resolve()
+    })
+    if (order.filter(item => item === 'pending:aerial-sky').length !== 1
+      || order.filter(item => item === 'pending-overlay').length !== 1
+      || order.filter(item => item === 'throwing-select').length !== 1
+      || geoButtons[2]?.disabled !== true
+      || geoButtons[2]?.getAttribute('aria-busy') !== 'true'
+      || routeDetails.length !== 1) {
+      throw new Error(`expected one pending handoff and a contained synchronous failure, got ${order.join('|')}`)
+    }
+
+    await act(async () => {
+      releasePending?.()
+      await pendingPreparation
+      await waitForNextFrame(dom.window)
+    })
+    if (routeDetails.map(detail => detail.tab).length !== 2
+      || geoButtons[2]?.disabled
+      || geoButtons[2]?.getAttribute('aria-busy') !== 'false') {
+      throw new Error(`expected one routed handoff after pending preparation settled, got ${JSON.stringify(routeDetails)}`)
     }
   } finally {
     dom.window.removeEventListener(FLOATING_PANEL_OPEN_EVENT, onRoute)

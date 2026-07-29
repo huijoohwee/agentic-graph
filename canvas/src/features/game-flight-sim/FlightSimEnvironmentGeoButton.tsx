@@ -10,7 +10,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 
 type FlightSimEnvironmentGeoButtonProps = Omit<
   React.ComponentProps<typeof XrEnvironmentGeoButton>,
-  'onAfterRoute'
+  'prepareBeforeRoute'
 >
 
 export function isSourceAuthoredFlightSimGeoOverlayDocument(
@@ -53,8 +53,12 @@ export function FlightSimEnvironmentGeoButton(
     [markdownDocumentName, markdownDocumentText],
   )
   const openFlightOverlay = React.useCallback(async () => {
-    if (!sourceAuthoredFlight) return
     try {
+      if (!sourceAuthoredFlight) {
+        throw new Error(
+          'Select the source-authored Flight Sim document after Source Files finishes loading.',
+        )
+      }
       const [{ settleWorkspaceSourceTextWrites }, { openFlightSimSurface }] = await Promise.all([
         import('@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'),
         import('./flightSimRuntime'),
@@ -73,6 +77,7 @@ export function FlightSimEnvironmentGeoButton(
         kind: 'error',
         message: `Flight overlay could not open in Geo: ${failureMessage(error)}`,
       })
+      throw error
     }
   }, [pushUiToast, sourceAuthoredFlight])
   const selectEnvironmentForGeo = React.useCallback(
@@ -87,7 +92,7 @@ export function FlightSimEnvironmentGeoButton(
     <XrEnvironmentGeoButton
       {...props}
       onSelect={selectEnvironmentForGeo}
-      onAfterRoute={openFlightOverlay}
+      prepareBeforeRoute={openFlightOverlay}
     />
   )
 }

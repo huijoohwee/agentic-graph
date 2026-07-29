@@ -4,6 +4,9 @@ import {
   startFlightSim,
 } from '@/features/game-flight-sim/flightSimRuntime'
 import {
+  hydrateFlightSimSharedXrSceneSource,
+} from '@/features/game-flight-sim/flightSimSharedXrSceneSource'
+import {
   isFlightSimStagePresentationRetryableFailure,
 } from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
 import {
@@ -93,12 +96,33 @@ export function FlightSimRunReadyDemoRuntime() {
         message,
       })
     }
-    void startFlightSim({
-      geospatialComposite: true,
-      openPanel: true,
-      previousCanvasSurface: previousCanvasSurfaceRef.current,
-    })
+    void hydrateFlightSimSharedXrSceneSource()
+      .then(hydrated => {
+        const current = useGraphStore.getState()
+        if (
+          launchGenerationRef.current !== generation
+          || !isFlightSimRunReadyDemoActive(
+            current.markdownDocumentName,
+            current.markdownDocumentText,
+          )
+        ) {
+          return null
+        }
+        if (!hydrated) {
+          settleFailedLaunch(
+            'Flight Sim shared XR source changed before launch.',
+            true,
+          )
+          return null
+        }
+        return startFlightSim({
+          geospatialComposite: true,
+          openPanel: true,
+          previousCanvasSurface: previousCanvasSurfaceRef.current,
+        })
+      })
       .then(result => {
+        if (!result) return
         if (launchGenerationRef.current !== generation) return
         if (result.active && !result.runtimeError) return
         const message = result.runtimeError || 'Flight Sim launch failed.'

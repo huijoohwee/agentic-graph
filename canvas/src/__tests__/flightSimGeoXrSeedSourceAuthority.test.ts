@@ -12,10 +12,33 @@ import {
   resolveWorkspaceRunReadyDemoIdForDocument,
   resolveWorkspaceRunReadyDemoSeed,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import {
+  FLIGHT_SIM_SHARED_XR_SOURCE_AUTHORITY,
+  hydrateFlightSimSharedXrSceneSource,
+  resolveCanonicalFlightSimXrPersistedValue,
+  resolveFlightSimSharedXrMotionReferenceSource,
+} from '@/features/game-flight-sim/flightSimSharedXrSceneSource'
+import {
+  readXrMotionReferencePlan,
+} from '@/features/three/xrMotionReferenceModel'
+import {
+  readXrMotionReferenceRuntime,
+} from '@/features/three/xrMotionReferenceRuntime'
+import {
+  hydrateCanonicalXrMotionReferenceRuntime,
+} from '@/features/three/XrMotionReferenceRuntimeBridge'
+import {
+  controlLocalXrScene,
+} from '@/features/three/xrSceneMcpRuntime'
+import { useGraphStore } from '@/hooks/useGraphStore'
 
 const repoRoot = resolve(process.cwd(), '..')
 const seedSource = readFileSync(
   resolve(repoRoot, FLIGHT_SIM_DEMO_REPO_REL_PATH),
+  'utf8',
+)
+const physicsSeedSource = readFileSync(
+  resolve(repoRoot, XR_PHYSICS_DEMO_REPO_REL_PATH),
   'utf8',
 )
 
@@ -143,4 +166,277 @@ test('Flight Sim source declares the canonical Geo+XR composition', () => {
   const projectionInventory = authority.slice(projectionStart, projectionEnd + 2)
   assert.match(projectionInventory, /PHYSICS_SEED_BASENAME/)
   assert.doesNotMatch(projectionInventory, /FLIGHT_SEED_BASENAME/)
+})
+
+test('Flight resolves subjects from its declared Physics authority without a copied fallback', () => {
+  const resolved = resolveFlightSimSharedXrMotionReferenceSource({
+    activeDocumentText: seedSource,
+    currentPersistedValue: undefined,
+    physicsSourceText: physicsSeedSource,
+  })
+  assert.equal(resolved.ok, true)
+  if (!resolved.ok) return
+  assert.equal(resolved.authority, 'physics-source')
+  const plan = readXrMotionReferencePlan(resolved.persistedValue)
+  assert.equal(plan.stageId, 'singapore')
+  assert.deepEqual(
+    plan.subjects.map(subject => subject.assetId),
+    ['vehicle-helicopter', 'vehicle-airplane', 'vehicle-sedan'],
+  )
+
+  const explicitEmptyPlan = {
+    schema: 'knowgrph-xr-motion-reference/v1',
+    stageId: 'singapore',
+    durationSeconds: 6,
+    fps: 12,
+    subjects: [],
+    cast: [],
+    camera: [],
+  }
+  const explicit = resolveFlightSimSharedXrMotionReferenceSource({
+    activeDocumentText: seedSource,
+    currentPersistedValue: explicitEmptyPlan,
+    physicsSourceText: '',
+  })
+  assert.equal(explicit.ok, true)
+  if (explicit.ok) {
+    assert.equal(explicit.authority, 'active-document')
+    assert.equal(explicit.persistedValue, explicitEmptyPlan)
+    assert.equal(
+      readXrMotionReferencePlan(explicit.persistedValue).subjects.length,
+      0,
+    )
+  }
+  const physicsPlan =
+    frontmatter(physicsSeedSource).kgXrMotionReference as Record<string, unknown>
+  const physicsCast = physicsPlan.cast as unknown[]
+
+  const mismatchedAuthority =
+    resolveFlightSimSharedXrMotionReferenceSource({
+      activeDocumentText: seedSource.replace(
+        FLIGHT_SIM_SHARED_XR_SOURCE_AUTHORITY,
+        '/docs/workspace-seeds/not-the-physics-authority.md',
+      ),
+      currentPersistedValue: undefined,
+      physicsSourceText: physicsSeedSource,
+    })
+  assert.equal(mismatchedAuthority.ok, false)
+
+  const unrelatedDocument =
+    resolveFlightSimSharedXrMotionReferenceSource({
+      activeDocumentText: physicsSeedSource,
+      currentPersistedValue: undefined,
+      physicsSourceText: physicsSeedSource,
+    })
+  assert.equal(unrelatedDocument.ok, false)
+
+  for (const malformed of [
+    null,
+    'invalid',
+    {
+      ...explicitEmptyPlan,
+      schema: 'wrong/v9',
+    },
+    {
+      ...explicitEmptyPlan,
+      subjects: [{}],
+    },
+    {
+      ...explicitEmptyPlan,
+      durationSeconds: 999,
+    },
+    {
+      ...explicitEmptyPlan,
+      cast: [{ actorId: 'orphan', marks: [] }],
+    },
+    {
+      ...explicitEmptyPlan,
+      camera: [{}],
+    },
+    {
+      ...physicsPlan,
+      cast: [...physicsCast, physicsCast[0]],
+    },
+  ]) {
+    const result = resolveFlightSimSharedXrMotionReferenceSource({
+      activeDocumentText: seedSource,
+      currentPersistedValue: malformed,
+      physicsSourceText: physicsSeedSource,
+    })
+    assert.equal(result.ok, false)
+  }
+
+  const wrongPhysicsSchema =
+    resolveFlightSimSharedXrMotionReferenceSource({
+      activeDocumentText: seedSource,
+      currentPersistedValue: undefined,
+      physicsSourceText: physicsSeedSource.replace(
+        'schema: "knowgrph-xr-motion-reference/v1"',
+        'schema: "wrong/v9"',
+      ),
+    })
+  assert.equal(wrongPhysicsSchema.ok, false)
+
+  const emptyPhysicsSubjects =
+    resolveFlightSimSharedXrMotionReferenceSource({
+      activeDocumentText: seedSource,
+      currentPersistedValue: undefined,
+      physicsSourceText: physicsSeedSource.replace(
+        /  subjects:\n[\s\S]*?\n  cast:/,
+        '  subjects: []\n  cast:',
+      ),
+    })
+  assert.equal(emptyPhysicsSubjects.ok, false)
+
+  const invalidFlightIdentity = resolveCanonicalFlightSimXrPersistedValue({
+    activeDocumentName: FLIGHT_SIM_DEMO_REPO_REL_PATH,
+    activeDocumentText: seedSource.replace(
+      'id: "flight-sim"',
+      'id: "unregistered-flight"',
+    ),
+    currentPersistedValue: undefined,
+    graphData: {
+      type: 'Graph',
+      nodes: [{
+        id: 'flight-route',
+        label: 'Flight route',
+        type: 'Route',
+        properties: {},
+      }],
+      edges: [],
+      metadata: {},
+    },
+  })
+  assert.equal(invalidFlightIdentity.applies, true)
+  if (invalidFlightIdentity.applies) {
+    assert.equal(invalidFlightIdentity.ok, false)
+  }
+})
+
+test('canonical XR controls preserve the verified Flight Physics subjects', async () => {
+  const previous = useGraphStore.getState()
+  useGraphStore.setState({
+    graphData: {
+      type: 'Graph',
+      nodes: [
+        {
+          id: 'flight_demo_entry',
+          label: 'Launch and Fly',
+          type: 'FlightDemoControl',
+          properties: {},
+        },
+        {
+          id: 'flight_aircraft',
+          label: 'Airplane',
+          type: 'FlightDemoAircraft',
+          properties: {},
+        },
+        {
+          id: 'flight_asset_spec',
+          label: 'Asset Spec (img2threejs-style)',
+          type: 'FlightDemoAssetSpec',
+          properties: {},
+        },
+        {
+          id: 'flight_runtime_gate',
+          label: 'Runtime Readiness',
+          type: 'FlightDemoValidation',
+          properties: {},
+        },
+      ],
+      edges: [],
+      metadata: {},
+    },
+    markdownDocumentName: FLIGHT_SIM_DEMO_REPO_REL_PATH,
+    markdownDocumentText: seedSource,
+  } as never)
+  try {
+    const revisionBeforeVerification = readXrMotionReferenceRuntime().revision
+    assert.equal(hydrateCanonicalXrMotionReferenceRuntime(), false)
+    assert.equal(
+      readXrMotionReferenceRuntime().revision,
+      revisionBeforeVerification,
+    )
+
+    assert.equal(await hydrateFlightSimSharedXrSceneSource(), true)
+    const expectedAssetIds = [
+      'vehicle-helicopter',
+      'vehicle-airplane',
+      'vehicle-sedan',
+    ]
+    const expectedGraphActorIds = [
+      'flight_demo_entry',
+      'flight_aircraft',
+      'flight_asset_spec',
+      'flight_runtime_gate',
+    ]
+    const expectedCastActorIds = [
+      ...expectedGraphActorIds,
+      ...readXrMotionReferenceRuntime().plan.subjects
+        .map(subject => subject.id),
+    ]
+    assert.deepEqual(
+      readXrMotionReferenceRuntime().plan.subjects
+        .map(subject => subject.assetId),
+      expectedAssetIds,
+    )
+    assert.deepEqual(
+      readXrMotionReferenceRuntime().plan.cast
+        .map(track => track.actorId),
+      expectedCastActorIds,
+    )
+
+    const beforeSceneIdentityChange =
+      readXrMotionReferenceRuntime().revision
+    useGraphStore.setState(state => ({
+      graphData: state.graphData
+        ? {
+            ...state.graphData,
+            metadata: {
+              ...state.graphData.metadata,
+              sourcePath: '/imports/flight-sim-copy.md',
+            },
+          }
+        : null,
+    }) as never)
+    assert.equal(hydrateCanonicalXrMotionReferenceRuntime(), false)
+    assert.equal(
+      readXrMotionReferenceRuntime().revision,
+      beforeSceneIdentityChange,
+    )
+    assert.equal(await hydrateFlightSimSharedXrSceneSource(), true)
+
+    assert.equal(hydrateCanonicalXrMotionReferenceRuntime(), true)
+    assert.deepEqual(
+      readXrMotionReferenceRuntime().plan.subjects
+        .map(subject => subject.assetId),
+      expectedAssetIds,
+    )
+
+    const stageResult = controlLocalXrScene({
+      action: 'stage',
+      stageId: 'singapore',
+    })
+    assert.equal(stageResult.ok, true)
+    assert.equal(hydrateCanonicalXrMotionReferenceRuntime(), true)
+    const persistedPlan = readXrMotionReferencePlan(
+      useGraphStore.getState().graphData?.metadata?.kgXrMotionReference,
+      useGraphStore.getState().graphData?.nodes,
+    )
+    assert.deepEqual(
+      persistedPlan.subjects.map(subject => subject.assetId),
+      expectedAssetIds,
+    )
+    assert.deepEqual(
+      persistedPlan.cast.map(track => track.actorId),
+      expectedCastActorIds,
+    )
+  } finally {
+    useGraphStore.setState({
+      graphData: previous.graphData,
+      markdownDocumentName: previous.markdownDocumentName,
+      markdownDocumentText: previous.markdownDocumentText,
+    } as never)
+    hydrateCanonicalXrMotionReferenceRuntime()
+  }
 })

@@ -63,21 +63,21 @@
     },
     {
       "id": 7,
-      "name": "Asset coordinates use the active geographic model transform",
+      "name": "Asset coordinates use public Mercator inputs",
       "evidence": [
         {
           "file": "scripts/__tests__/geospatial-asset3d-projection.test.ts",
-          "contains": "getMatrixForModel"
+          "contains": "public Mercator inputs"
         }
       ]
     },
     {
       "id": 8,
-      "name": "Camera changes reproject assets every frame",
+      "name": "Camera changes consume the active frame matrix on every draw",
       "evidence": [
         {
           "file": "scripts/__tests__/geospatial-asset3d-projection.test.ts",
-          "contains": "active map transform and frame matrix on every draw"
+          "contains": "active frame matrix on every draw"
         }
       ]
     },

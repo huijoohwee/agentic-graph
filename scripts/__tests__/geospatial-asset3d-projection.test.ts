@@ -29,6 +29,13 @@ const translationMatrix = (x: number, y: number, z: number): Float64Array => {
   return matrix
 }
 
+const assertClose = (actual: number, expected: number, tolerance = 1e-6): void => {
+  assert.ok(
+    Math.abs(actual - expected) <= tolerance,
+    `Expected ${String(actual)} to be within ${String(tolerance)} of ${String(expected)}`,
+  )
+}
+
 const transformDirection = (
   matrix: ArrayLike<number>,
   direction: readonly [number, number, number],
@@ -58,8 +65,11 @@ const createAsset = (overrides: Partial<Asset3DConfig> = {}): Asset3DConfig => (
   ...overrides,
 })
 
-const frameInput = (mainMatrix: ArrayLike<number>): CustomRenderMethodInput => ({
-  defaultProjectionData: { mainMatrix },
+const frameInput = (
+  mainMatrix: ArrayLike<number>,
+  projectionTransition = 0,
+): CustomRenderMethodInput => ({
+  defaultProjectionData: { mainMatrix, projectionTransition },
 } as unknown as CustomRenderMethodInput)
 
 test('z-up source axes become MapLibre y-up axes before geographic projection', () => {
@@ -77,60 +87,82 @@ test('z-up source axes become MapLibre y-up axes before geographic projection', 
   assert.deepEqual(rotatedX.slice(1), [0, 1])
 })
 
-test('asset projection consumes the active map transform and frame matrix on every draw', () => {
-  let modelMatrix = translationMatrix(10, 20, 30)
-  const calls: Array<{ location: [number, number]; altitude: number | undefined }> = []
-  const map = {
-    transform: {
-      getMatrixForModel(location: [number, number], altitude?: number) {
-        calls.push({ location, altitude })
-        return modelMatrix
-      },
+test('asset projection uses public Mercator inputs and the active frame matrix on every draw', () => {
+  let transformReads = 0
+  const map = Object.defineProperty({}, 'transform', {
+    get() {
+      transformReads += 1
+      throw new Error('Private map transform must not be read')
     },
-  }
-  const asset = createAsset({ scale: 1 })
+  })
+  const asset = createAsset({ rotationDegrees: 90 })
   const first = computeAssetFrameMatrix(map, frameInput(identityMatrix()), asset)
   assert.ok(first)
-  assert.deepEqual(calls[0], {
-    location: [asset.lng, asset.lat],
-    altitude: asset.altitudeMeters,
-  })
-  assert.deepEqual([...first.slice(12, 15)], [10, 20, 30])
+  assert.equal(transformReads, 0)
 
-  modelMatrix = translationMatrix(40, 50, 60)
+  const latitudeRadians = asset.lat * Math.PI / 180
+  const earthCircumference = 2 * Math.PI * 6_371_008.8
+  const expectedX = (180 + asset.lng) / 360
+  const expectedY = (
+    180 - 180 / Math.PI * Math.log(Math.tan(Math.PI / 4 + latitudeRadians / 2))
+  ) / 360
+  const expectedMeterScale = 1 / (earthCircumference * Math.cos(latitudeRadians))
+  const expectedZ = asset.altitudeMeters * expectedMeterScale
+  assertClose(first[12], expectedX)
+  assertClose(first[13], expectedY)
+  assertClose(first[14], expectedZ, 1e-12)
+
+  const expectedAssetScale = expectedMeterScale * asset.scale
+  const projectedX = transformDirection(first, [1, 0, 0])
+  const projectedY = transformDirection(first, [0, 1, 0])
+  const projectedZ = transformDirection(first, [0, 0, 1])
+  assertClose(projectedX[0], 0, 1e-12)
+  assertClose(projectedX[1], expectedAssetScale, 1e-12)
+  assertClose(projectedY[0], -expectedAssetScale, 1e-12)
+  assertClose(projectedY[1], 0, 1e-12)
+  assertClose(projectedZ[2], expectedAssetScale, 1e-12)
+
   const mainMatrix = translationMatrix(1, 2, 3)
   const second = computeAssetFrameMatrix(map, frameInput(mainMatrix), asset)
   assert.ok(second)
-  assert.equal(calls.length, 2)
-  assert.deepEqual([...second.slice(12, 15)], [41, 52, 63])
+  assert.equal(transformReads, 0)
+  assertClose(second[12], expectedX + 1)
+  assertClose(second[13], expectedY + 2)
+  assertClose(second[14], expectedZ + 3)
 })
 
-test('projection validates inputs and rejects non-finite active-transform output', () => {
-  let calls = 0
-  const map = {
-    transform: {
-      getMatrixForModel() {
-        calls += 1
-        return identityMatrix()
-      },
-    },
-  }
-  const polarAsset = createAsset({ lat: 90 })
-  assert.ok(computeAssetFrameMatrix(map, frameInput(identityMatrix()), polarAsset))
-  assert.equal(calls, 1)
+test('projection validates inputs and rejects a non-finite public frame matrix', () => {
+  const map = {}
+  const mercatorEdgeAsset = createAsset({ lat: 85.051129 })
+  assert.ok(computeAssetFrameMatrix(map, frameInput(identityMatrix()), mercatorEdgeAsset))
 
+  for (const lat of [-90, 90]) {
+    assert.equal(
+      computeAssetFrameMatrix(map, frameInput(identityMatrix()), createAsset({ lat })),
+      null,
+    )
+  }
+
+  const unsafeFrameMatrix = identityMatrix()
+  unsafeFrameMatrix[0] = Number.NaN
+  assert.equal(computeAssetFrameMatrix(map, frameInput(unsafeFrameMatrix), createAsset()), null)
+})
+
+test('custom asset projection fails closed during true-globe projection', () => {
+  const asset = createAsset()
+  assert.ok(computeAssetFrameMatrix(
+    {},
+    frameInput(identityMatrix(), 0),
+    asset,
+  ))
   assert.equal(
-    computeAssetFrameMatrix(map, frameInput(identityMatrix()), createAsset({ lat: 90.000_1 })),
+    computeAssetFrameMatrix({}, frameInput(identityMatrix(), 0.25), asset),
     null,
   )
-  assert.equal(calls, 1)
-
-  map.transform.getMatrixForModel = () => {
-    const unsafeMatrix = identityMatrix()
-    unsafeMatrix[0] = Number.NaN
-    return unsafeMatrix
-  }
-  assert.equal(computeAssetFrameMatrix(map, frameInput(identityMatrix()), createAsset()), null)
+  assert.equal(
+    computeAssetFrameMatrix({}, frameInput(identityMatrix(), 1), asset),
+    null,
+  )
 })
 
 type FakeGlState = {
@@ -267,7 +299,6 @@ test('custom asset layer restores host GL state and recreates resources after co
   })
   assert.ok(created)
   const map = {
-    transform: { getMatrixForModel: () => identityMatrix() },
     triggerRepaint: () => undefined,
   } as unknown as MapLibreMap
   const first = createFakeGl()

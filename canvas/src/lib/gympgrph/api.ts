@@ -6,11 +6,21 @@ export {
   parseGeoJsonFromText,
   coerceGeoJsonToFeatureCollection,
   ensureDatasetLayer,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
+  FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+  FLIGHT_GEO_AIRCRAFT_IMAGE_IDS,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  SINGAPORE_FLIGHT_GEO_REFERENCE,
+  projectSingaporeLocalMeters,
+  projectSingaporeLocalRectangle,
   readActiveMapLibreMap,
   readFlightGeoOverlay,
   setGeospatialModeEnabled,
+} from 'gympgrph'
+export type {
+  GeospatialCoordinate,
+  GeospatialPresentationBounds,
 } from 'gympgrph'
 export { hashStringToIndex } from 'grph-shared/hash/stringHash'
 

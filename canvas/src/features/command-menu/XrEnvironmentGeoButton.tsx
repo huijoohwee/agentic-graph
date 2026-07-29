@@ -7,37 +7,54 @@ type EnvironmentSelectionResult = Readonly<{ ok: boolean }>
 export function requestXrEnvironmentGeoHandoff(
   stageId: string,
   selectEnvironment: (requestedStageId: string) => EnvironmentSelectionResult,
-  onAfterRoute?: () => void,
-): boolean {
-  const result = selectEnvironment(stageId)
-  if (!result.ok) return false
-  emitFloatingPanelOpen({ tab: 'geo', open: true })
-  void onAfterRoute?.()
-  return true
+  prepareBeforeRoute?: () => void | Promise<void>,
+): Promise<boolean> {
+  return Promise.resolve().then(async () => {
+    const result = selectEnvironment(stageId)
+    if (!result.ok) return false
+    await prepareBeforeRoute?.()
+    emitFloatingPanelOpen({ tab: 'geo', open: true })
+    return true
+  }).catch(() => false)
 }
 
 export function XrEnvironmentGeoButton({
   disabled,
-  onAfterRoute,
   onSelect,
+  prepareBeforeRoute,
   stageId,
   stageLabel,
 }: {
   disabled: boolean
-  onAfterRoute?: () => void
   onSelect: (stageId: string) => EnvironmentSelectionResult
+  prepareBeforeRoute?: () => void | Promise<void>
   stageId: string
   stageLabel: string
 }) {
+  const inFlightRef = React.useRef(false)
+  const [pending, setPending] = React.useState(false)
   const label = `Select ${stageLabel} and open Geo`
   return (
     <button
       type="button"
       className="App-toolbar__btn inline-flex shrink-0 items-center gap-1"
-      disabled={disabled}
+      aria-busy={pending}
+      disabled={disabled || pending}
       title={label}
       aria-label={label}
-      onClick={() => requestXrEnvironmentGeoHandoff(stageId, onSelect, onAfterRoute)}
+      onClick={() => {
+        if (inFlightRef.current) return
+        inFlightRef.current = true
+        setPending(true)
+        void requestXrEnvironmentGeoHandoff(
+          stageId,
+          onSelect,
+          prepareBeforeRoute,
+        ).finally(() => {
+          inFlightRef.current = false
+          setPending(false)
+        })
+      }}
       data-kg-media-xr-environment-geo={stageId}
     >
       <MapPinned className="size-3" aria-hidden="true" />
