@@ -366,6 +366,8 @@ jobs:
             --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" \
             --docs-sha "${{ needs.verify.outputs.docs_revision }}" \
             --receipt-dir "$RUNNER_TEMP/production-lifecycle" \
+            --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" \
+            --release-candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" \
             --approvals "$RUNNER_TEMP/production-approvals.json" \
             --repository "${{ github.repository }}" \
             --run-id "${{ github.run_id }}" \
