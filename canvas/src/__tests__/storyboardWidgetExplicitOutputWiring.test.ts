@@ -91,6 +91,7 @@ export function testGenericTextRunPreservesSourceAndMaterializesConnectedPanel()
     properties: source.properties as Record<string, unknown>,
     loading: false,
     runAt: '2026-07-19T02:00:00.000Z',
+    responseText: generatedVersions[1], title: source.label, model: 'test-model',
   })
   const published = harness.readGraph()
   const outputPanels = published.nodes.filter(node => node.type === 'RichMediaPanel')
@@ -99,14 +100,14 @@ export function testGenericTextRunPreservesSourceAndMaterializesConnectedPanel()
   if (
     sourceProperties.prompt !== 'Generate a financial response for restaurant startup'
     || sourceProperties.summary !== 'Keep this authored brief.'
-    || 'output' in sourceProperties
-    || 'outputModel' in sourceProperties
+    || sourceProperties.output !== generatedVersions[1]
+    || sourceProperties.outputModel !== 'test-model'
     || sourceProperties.lastRunAt !== '2026-07-19T02:00:00.000Z'
     || published.nodes.length !== 2
     || outputPanels.length !== 1
     || outputPanels[0]?.properties.output !== generatedVersions[1]
-    || outputVersions?.length !== 2
-    || outputVersions[0]?.id !== 'run-1'
+    || outputPanels[0]?.properties.workflowOutputAnchorNodeId !== source.id || outputPanels[0]?.properties.workflowOutputKey !== 'output'
+    || outputVersions?.length !== 2 || outputVersions[0]?.id !== 'run-1'
     || outputVersions[0]?.output !== generatedVersions[0]
     || outputVersions[1]?.id !== 'run-2'
     || outputVersions[1]?.output !== generatedVersions[1]

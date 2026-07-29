@@ -22,5 +22,6 @@ export type StoryboardWidgetTextRunOutputPublisher = (args: {
   allowCreateStandaloneOutput?: boolean
   connectCreatedOutputToAnchor?: boolean
   ownedOutputOnly?: boolean
+  suppressOwnedOutputFallback?: boolean
   deferPublishedGraphCommit?: boolean
 }) => GraphData | null

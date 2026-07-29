@@ -713,7 +713,7 @@ const extractVideoUrl = (payload: unknown): string => {
 
 export async function generateRunMarkdownWithProvider(args: {
   config: RunGenerationConfig
-  prompt: string
+  prompt: string; systemMessages?: ReadonlyArray<{ role: 'system'; content: string }>
   options?: RunTextGenerationOptions
 }): Promise<string | null> {
   const endpoint = resolveChatEndpointForRequest(args.config.endpointUrl)
@@ -751,7 +751,7 @@ export async function generateRunMarkdownWithProvider(args: {
   const baseMessages = [
     {
       role: 'system',
-      content: readRunTextResponseInstructions(),
+      content: [readRunTextResponseInstructions(), ...(args.systemMessages || []).map(message => String(message?.content || '').trim())].filter(Boolean).join('\n\n'),
     },
     {
       role: 'user',

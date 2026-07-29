@@ -81,7 +81,7 @@ function readOutgoingEdgeTargetIds(args: { node: GraphNode; graphData: GraphData
   return out
 }
 
-function isSystemOwnedWorkflowEdge(edge: GraphEdge): boolean {
+export function isStoryboardWidgetSystemOwnedWorkflowEdge(edge: GraphEdge): boolean {
   const properties = readPlainRecord(unwrapGraphCellValue(edge.properties))
   return unwrapGraphCellValue(properties?.workflowOutputEdge) === true
     || unwrapGraphCellValue(properties?.imageThreeJsOutputEdge) === true
@@ -106,7 +106,7 @@ export function mergeStoryboardWidgetExplicitRunTargetTopology(args: {
     const endpoints = readGraphEdgeEndpoints(edge)
     return isCanonicalNodeIdEqual(endpoints.src, sourceNodeId)
       && cleanString(edge.label) !== 'candidateOption'
-      && !isSystemOwnedWorkflowEdge(edge)
+      && !isStoryboardWidgetSystemOwnedWorkflowEdge(edge)
   })
   if (authoredEdges.length === 0) return args.graphData
 

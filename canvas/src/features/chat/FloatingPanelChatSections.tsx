@@ -13,8 +13,9 @@ import { ChatModelCredentialControls } from '@/features/chat/ChatModelCredential
 import { FloatingPanelChatComposer } from '@/features/chat/floatingPanelChat/FloatingPanelChatComposer'
 import { renderFloatingPanelChatMessageContent } from '@/features/chat/floatingPanelChat/FloatingPanelChatMessageContent'
 import { FloatingPanelChatQuickActionGrid } from '@/features/chat/floatingPanelChat/FloatingPanelChatQuickActionGrid'
+import type { HeadlessResponseRunReceipt } from '@/features/chat/headlessResponseCoordinator'
 
-export type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string }
+export type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string; headlessResponseRun?: HeadlessResponseRunReceipt }
 export type StreamingAssistantState = {
   id: string
   text: string

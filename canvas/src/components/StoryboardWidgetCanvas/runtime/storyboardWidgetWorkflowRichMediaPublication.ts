@@ -17,9 +17,7 @@ import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { bumpStoryboardWidgetDraftGraphDataRevision } from '@/lib/storyboardWidget/storyboardWidgetDraftGraphData'
-import {
-  resolveStoryboardWidgetWorkflowDownstreamRunTargetIds,
-} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowDownstreamRunTargets'
+import { resolveStoryboardWidgetWorkflowDownstreamRunTargetIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowDownstreamRunTargets'
 import {
   applyStoryboardWidgetWorkflowRichMediaPanelDraftPatch,
   ensureStoryboardWidgetImageToGlbOutputEdge,
@@ -37,6 +35,7 @@ import { createStoryboardWidgetWorkflowPublicationTransaction } from '@/componen
 import { areStoryboardWidgetWorkflowRecordValuesEqual } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowWriteback'
 import { PROBE_TREE_OUTPUT_KEY } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeLayout'
 import { buildStoryboardWidgetTextPublicationGraph } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetTextPublicationGraph'
+import { resolveStoryboardWidgetTextProjectionTargets } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetTextProjectionTargets'
 import {
   buildRichMediaTextOutputBaselinePatch,
   buildRichMediaTextOutputVersionPatch,
@@ -293,19 +292,20 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
         scheduleWorkflowOutputEdgeRefresh: args.scheduleWorkflowOutputEdgeRefresh,
       })
       if (!transaction) return null
+      const projectionTargets = resolveStoryboardWidgetTextProjectionTargets({
+        anchorNode: panelArgs.anchorNode,
+        graphData: publicationGraphData,
+        resolveNodeById: args.resolveNodeByIdAcrossGraphs,
+      })
       const explicitPanelNodeIds = panelArgs.ownedOutputOnly === true
         ? []
-        : resolveStoryboardWidgetWorkflowDownstreamRunTargetIds({
-            node: panelArgs.anchorNode,
-            graphData: publicationGraphData,
-          }).filter(targetId => {
-            const targetNode = args.resolveNodeByIdAcrossGraphs(targetId)
-              || publicationGraphData?.nodes.find(node => readWorkflowString(node.id) === targetId)
-            return isRichMediaOutputTargetNode(targetNode)
-          })
+        : projectionTargets.explicitPanelNodeIds
+      const suppressOwnedOutputFallback = panelArgs.suppressOwnedOutputFallback === true
+        || (panelArgs.ownedOutputOnly !== true && projectionTargets.hasExplicitWidgetTarget)
       const createdPanelNodeId = explicitPanelNodeIds.length > 0 ? null : ensureStoryboardWidgetWorkflowRichMediaPanelNodeId({
         context: args.context, graphForRun: args.graphForRun,
-        allowCreateRichMediaPanel: args.allowCreateRichMediaPanel || panelArgs.allowCreateStandaloneOutput === true,
+        allowCreateRichMediaPanel: !suppressOwnedOutputFallback
+          && (args.allowCreateRichMediaPanel || panelArgs.allowCreateStandaloneOutput === true),
         anchorNode: panelArgs.anchorNode, readLiveDraftGraphData: transaction.readDraftGraphData, outputKey,
         outputGroupId: panelArgs.outputGroupId, outputThreadRootId: panelArgs.outputThreadRootId,
         outputLabel: panelArgs.panelLabel, outputIndex: panelArgs.outputIndex, appendDraftNode: transaction.appendDraftNode,
