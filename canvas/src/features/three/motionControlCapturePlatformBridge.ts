@@ -4,6 +4,7 @@ import {
   readMotionCaptureSessionSnapshot,
 } from './motionCaptureSessionRuntime'
 import { publishMotionCapturePeerObservation, setMotionCapturePeerSharingEnabled } from './motionCapturePeerRuntime'
+import { motionCaptureProviderApi } from './motionCaptureProviderRuntime'
 
 type LocalCaptureSourceInput = Readonly<{
   width?: number
@@ -134,6 +135,7 @@ export function inspectMotionControlCapturePlatform() {
     bridge: {
       builtInSourceActive: localSourceId !== null,
       lastError: lastBridgeError,
+      providerApi: motionCaptureProviderApi.inspect(),
     },
     privacy: {
       frameUpload: false,

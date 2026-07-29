@@ -22,7 +22,7 @@ import {
 } from '../lib/game-flight-sim-browser-evidence-publication.mjs'
 import {
   assertExactFlightSimBrowserVerificationLedger,
-  assertExactFlightSimRendererOptionalBeacon,
+  assertExactFlightSimOptionalBeaconAdmission,
   readFlightSimBrowserVerificationNames,
 } from '../lib/game-flight-sim-browser-evidence.mjs'
 import {
@@ -507,7 +507,7 @@ test('browser evidence requires the exact rendered optional-beacon identity', ()
     partNames: ['kg_flight_sim_optional_beacon_part_1'],
   }
   assert.equal(
-    assertExactFlightSimRendererOptionalBeacon(expected, {
+    assertExactFlightSimOptionalBeaconAdmission(expected, {
       expectedPath: expected.assetPath,
       expectedSha256: expected.assetSha256,
     }),
@@ -519,14 +519,14 @@ test('browser evidence requires the exact rendered optional-beacon identity', ()
     { partNames: ['kg_flight_sim_optional_beacon_part_2'] },
   ]) {
     assert.throws(
-      () => assertExactFlightSimRendererOptionalBeacon(
+      () => assertExactFlightSimOptionalBeaconAdmission(
         { ...expected, ...mutation },
         {
           expectedPath: expected.assetPath,
           expectedSha256: expected.assetSha256,
         },
       ),
-      /exact optional beacon path, SHA-256, opacity, and mesh identity/,
+      /exact admitted optional beacon path, SHA-256, opacity, and mesh identity/,
     )
   }
 })

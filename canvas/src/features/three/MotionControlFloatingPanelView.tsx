@@ -12,6 +12,7 @@ import { UI_INLINE_CHIP_GROUP_CLASSNAME } from '@/lib/ui/textLayout'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
+import { useAgenticOsRemoteGrammarAutoHydration } from '@/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration'
 import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import { cn } from '@/lib/utils'
 import {
@@ -119,6 +120,7 @@ function drawPoseOverlay(canvas: HTMLCanvasElement, state: MotionControlSnapshot
 }
 
 export function MotionControlFloatingPanelView() {
+  const grammarAutoHydrationAllowed = useAgenticOsRemoteGrammarAutoHydration()
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: MOTION_CONTROL_GRAMMAR_SIGILS })
   const state = React.useSyncExternalStore(subscribeMotionControl, readMotionControlSnapshot, readMotionControlSnapshot)
   const capture = React.useSyncExternalStore(
@@ -184,7 +186,9 @@ export function MotionControlFloatingPanelView() {
   const inspection = inspectLocalMotionControl()
   const sourceMetadataReady = grammarCatalog.hydration.status === 'fresh'
     && MOTION_CONTROL_REQUIRED_METADATA_TOKENS.every(required => grammarCatalog.entries.some(entry => entry.token === required.token && entry.kind === required.kind))
-  const sourceMetadataLoading = grammarCatalog.hydration.status === 'idle' || grammarCatalog.hydration.status === 'loading'
+  const sourceMetadataDeferred = !grammarAutoHydrationAllowed && grammarCatalog.hydration.status === 'idle'
+  const sourceMetadataLoading = !sourceMetadataDeferred
+    && (grammarCatalog.hydration.status === 'idle' || grammarCatalog.hydration.status === 'loading')
   const nativeInvocationReady = Boolean(inspection.invocationGrammar)
   const runtimeBusy = state.phase === 'requesting-camera' || state.phase === 'loading-model' || state.phase === 'running'
   const canStop = startPending || runtimeBusy || state.cameraActive
@@ -196,7 +200,7 @@ export function MotionControlFloatingPanelView() {
       data-kg-motion-control-floating-panel="1"
       data-kg-motion-control-mcp="knowgrph.control_local_motion_control"
       data-kg-motion-control-runtime={state.phase}
-      data-kg-motion-control-metadata-status={grammarCatalog.hydration.status}
+      data-kg-motion-control-metadata-status={sourceMetadataDeferred ? 'deferred-offline' : grammarCatalog.hydration.status}
       data-kg-motion-control-metadata-version={String(grammarCatalog.version)}
     >
       <FloatingPanelCatalogHeader
@@ -261,7 +265,9 @@ export function MotionControlFloatingPanelView() {
           <h3 className="text-[11px] font-semibold">MCP · / · @ · #</h3>
           {!sourceMetadataReady ? (
             <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
-              {sourceMetadataLoading
+              {sourceMetadataDeferred
+                ? `ACOS Motion Control invocation metadata is deferred for offline XR.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`
+                : sourceMetadataLoading
                 ? `ACOS Motion Control invocation metadata is loading.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`
                 : `ACOS Motion Control invocation metadata is unavailable.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`}
             </p>

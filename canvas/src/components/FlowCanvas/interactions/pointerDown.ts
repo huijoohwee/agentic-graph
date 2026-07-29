@@ -27,8 +27,14 @@ import {
 } from '@/lib/canvas/viewport-controls'
 import { computeDynamicGroupResizeHandlePx, pxToWorld, readGroupResizeHandleConfig } from '@/lib/canvas/groupResizeHandleConfig'
 import { computeMinGroupResizeSize } from '@/lib/canvas/groupResizeMath2d'
-import { computeFlowDeltaClampForNodes, computeFlowNodeClamp } from '@/components/FlowCanvas/groupContainment'
+import {
+  computeFlowDeltaClampForNodes,
+  computeFlowGroupDeltaClamp,
+  computeFlowNodeClamp,
+} from '@/components/FlowCanvas/groupContainment'
 import { readSnapGridConfigFromSchema } from '@/lib/canvas/gridSnap'
+import { readHelperLinesDisplayControlActive } from '@/lib/canvas/canvasGridDisplayControls'
+import { activateMultiNodeSelectModeForShift, isMultiNodeSelectMode, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 
 import type { FlowNativeInteractionsContext } from '@/components/FlowCanvas/interactions/context'
 import type { FlowCanvasDrag } from '@/components/FlowCanvas/interactions/types'
@@ -47,6 +53,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
     const storeStateAtDown = useGraphStore.getState()
     const storyboardWidgetMode = String(storeStateAtDown.canvas2dRenderer || '') === 'storyboard'
     const dragSnapGrid = readSnapGridConfigFromSchema(storeStateAtDown.schema)
+    const helperLinesEnabled = readHelperLinesDisplayControlActive(storeStateAtDown.schema)
     const panInteractionSpeed = readFlowPanInteractionSpeed(storeStateAtDown)
     const edgeScrollEnabled = storeStateAtDown.viewPinned !== true
     const preset = presetRaw
@@ -155,21 +162,31 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
     if (hit) {
       const state = storeStateAtDown
       state.setSelectionSource('canvas')
-      state.selectEdge(null)
-      const mode = ctx.readEffectiveSelectMode(state, storyboardWidgetMode)
-      const wantsToggle = (mode === 'multi' || mode === 'lasso') && (e.shiftKey === true || e.metaKey === true || e.ctrlKey === true)
+      const mode = activateMultiNodeSelectModeForShift({
+        mode: ctx.readEffectiveSelectMode(state, storyboardWidgetMode),
+        shiftKey: e.shiftKey,
+        setSelectMode: state.setSelectMode,
+      })
+      const wantsToggle = resolveNodeSelectionGesture({
+        mode,
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+      }) === 'toggle'
       const selectedAtDownRaw = Array.isArray(state.selectedNodeIds) ? state.selectedNodeIds : []
       const selectedAtDown = selectedAtDownRaw.map(v => String(v || '').trim()).filter(Boolean)
       const isHitSelected = selectedAtDown.includes(hit)
       if (wantsToggle) {
-        state.selectNode(hit)
-      } else if (mode === 'multi' || mode === 'lasso') {
+        state.toggleNodeSelectionAdditive(hit)
+      } else if (isMultiNodeSelectMode(mode)) {
+        state.selectEdge(null)
         if (isHitSelected && selectedAtDown.length > 1) {
           state.selectNodesExpanded({ nodeIds: selectedAtDown, activeNodeId: hit })
         } else {
           state.selectNodesExpanded({ nodeIds: [hit], activeNodeId: hit })
         }
       } else {
+        state.selectEdge(null)
         state.selectNode(hit)
       }
 
@@ -189,7 +206,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
       const wy = (sy - t0.y) / t0.k
       const scene = runtime.scene
       if (scene) {
-        const selectedForDrag = (mode === 'multi' || mode === 'lasso') && !wantsToggle && isHitSelected && selectedAtDown.length > 1
+        const selectedForDrag = isMultiNodeSelectMode(mode) && !wantsToggle && isHitSelected && selectedAtDown.length > 1
         if (selectedForDrag) {
           const memberNodeIds = selectedAtDown.map(v => String(v || '').trim()).filter(id => id && scene.nodeById.has(id))
           const startNodePosById: Record<string, { x: number; y: number }> = {}
@@ -215,6 +232,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
             startNodePosById,
             deltaClamp,
             snapGrid: dragSnapGrid,
+            helperLinesEnabled,
             edgeScrollEnabled,
             pointerId,
           })
@@ -231,6 +249,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
               startNodeY: node.y,
               clamp,
               snapGrid: dragSnapGrid,
+              helperLinesEnabled,
               edgeScrollEnabled,
               pointerId,
             })
@@ -274,7 +293,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
       if (allowGroupResize) {
         const scene = runtime.scene
         const group = scene?.groups?.find(g => String(g.id || '').trim() === String(groupHit || '').trim()) || null
-        if (scene && group) {
+        if (scene && group && group.autoBounds !== true) {
           const gCfg = runtime.presentation.groups
           const paddingPx = Math.max(0, gCfg.paddingPx)
           const labelTopExtraPx = Math.max(0, gCfg.labelTopExtraPx)
@@ -392,6 +411,7 @@ export function createFlowNativePointerDownHandler(ctx: FlowNativeInteractionsCo
           startWorldX: wx,
           startWorldY: wy,
           startNodePosById,
+          deltaClamp: computeFlowGroupDeltaClamp({ runtime, groupId: groupHit }),
           snapGrid: dragSnapGrid,
           edgeScrollEnabled,
           pointerId,

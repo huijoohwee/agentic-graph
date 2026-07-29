@@ -32,6 +32,7 @@ export type CanvasViewOptionId =
   | 'control:minimap'
   | 'control:grid'
   | 'control:snapGrid'
+  | 'control:helperLines'
   | 'control:aspectRatio'
   | 'control:boardLayout'
   | 'control:card'

@@ -6,6 +6,7 @@ import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import {
   startEdgeFromNode,
   startUpdateEdgeEndpoint,
+  resolveEdgeCreationGraphData,
   PendingLink,
   TempLinkSelection,
 } from '@/features/edge-creation'
@@ -13,12 +14,14 @@ import { isStoryboardCanvas2dRenderer } from '@/lib/config.render'
 
 interface UseEdgeCreationEffectProps {
   paused?: boolean
+  graphData?: GraphData | null
   tempLinkSelRef: React.MutableRefObject<TempLinkSelection>
   linkDragRef: React.MutableRefObject<PendingLink | null>
 }
 
 export function useEdgeCreationEffect({
   paused,
+  graphData: renderedGraphData,
   tempLinkSelRef,
   linkDragRef,
 }: UseEdgeCreationEffectProps) {
@@ -28,7 +31,7 @@ export function useEdgeCreationEffect({
       s => s.edgeCreationRequest,
       edgeCreationRequest => {
         const state = useGraphStore.getState()
-        const graphData = state.graphData as GraphData | null
+        const graphData = resolveEdgeCreationGraphData(renderedGraphData, state.graphData as GraphData | null)
         if (!edgeCreationRequest || !graphData) return
         // Storyboard cards and rich-media panels use the shared Storyboard Widget
         // overlay authoring state so their semantic port handles remain the
@@ -78,5 +81,5 @@ export function useEdgeCreationEffect({
     return () => {
       unsub()
     }
-  }, [paused, tempLinkSelRef, linkDragRef])
+  }, [linkDragRef, paused, renderedGraphData, tempLinkSelRef])
 }

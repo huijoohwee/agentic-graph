@@ -204,7 +204,7 @@ export function Scene({
   hiddenNodeIdSet,
   mode = '3d',
   xrGraphStageAuthority,
-  backgroundColor,
+  backgroundColor, geospatialComposite,
 }: {
   data: GraphData;
   schema: GraphSchema;
@@ -222,7 +222,7 @@ export function Scene({
   hiddenNodeIdSet?: Set<string>;
   mode?: Canvas3dModeId;
   xrGraphStageAuthority?: XrGraphStageAuthority;
-  backgroundColor: string;
+  backgroundColor: string; geospatialComposite?: boolean;
 }) {
   const selectedNodeId = useGraphStore(s => s.selectedNodeId)
   const selectedEdgeId = useGraphStore(s => s.selectedEdgeId)
@@ -788,7 +788,7 @@ export function Scene({
           paused={paused}
         />
       ) : null}
-      {mode === 'xr' ? <XrSceneStage authority={xrGraphStageAuthority} data={data} paused={Boolean(paused)} /> : null}
+      {mode === 'xr' ? <XrSceneStage authority={xrGraphStageAuthority} data={data} geospatialComposite={geospatialComposite} paused={Boolean(paused)} /> : null}
       {mode !== 'xr' ? <group ref={sceneGroupRef}>
         <Physics3D positions={positions} nodes={data.nodes} edges={data.edges} schema={schema} dragOverrides={dragRef} paused={paused} mode={mode} />
         {mode === 'voxel' ? (

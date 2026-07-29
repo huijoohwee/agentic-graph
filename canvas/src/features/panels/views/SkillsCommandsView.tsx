@@ -193,6 +193,8 @@ export default function SkillsCommandsView({
       data-kg-floating-panel-skills-commands-metadata-status={grammarCatalog.hydration.status}
       data-kg-floating-panel-skills-commands-metadata-version={String(grammarCatalog.version)}
       data-kg-floating-panel-skills-commands-source-revision={grammarCatalog.sourceRevision}
+      data-kg-floating-panel-skills-commands-catalog-digest={grammarCatalog.catalogDigest}
+      data-kg-floating-panel-skills-commands-catalog-counts={`${grammarCatalog.counts.slash}/${grammarCatalog.counts.hash}/${grammarCatalog.counts.at}`}
       aria-label="Skills & Commands"
     >
       <section className="grid min-w-0 gap-1" data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}>

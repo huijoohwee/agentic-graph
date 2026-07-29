@@ -5,13 +5,19 @@ import type {
 import { importWithRetry } from '@/lib/react/importWithRetry'
 
 export type FlightSimMissionStageLazyModule = Readonly<{
-  default: ComponentType<{ coordinateScale?: number }>
+  default: ComponentType<{
+    actorsVisible?: boolean
+    coordinateScale?: number
+  }>
 }>
 
 type FlightSimMissionStageModule = Readonly<{
   createFlightSimMissionStage: (
     runtimeController: FlightSimStageRuntimeController,
-  ) => ComponentType<{ coordinateScale?: number }>
+  ) => ComponentType<{
+    actorsVisible?: boolean
+    coordinateScale?: number
+  }>
 }>
 
 type FlightSimMissionStageImporter = () => Promise<FlightSimMissionStageModule>

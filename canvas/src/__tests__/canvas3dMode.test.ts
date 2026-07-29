@@ -536,9 +536,72 @@ export function testCanvasViewMenuKeepsMobileFirstGroupedOrder() {
   }
   const surfaceMode = options.find(option => option.id === 'surface:menu')
   const surfaceChildIds = surfaceMode?.children?.map(child => child.id).join('|')
-  const expectedSurfaceChildIds = 'surface:2d|surface:3d|surface:xr|surface:voxel|surface:geospatial'
+  const expectedSurfaceChildIds = 'surface:2d|surface:3d|surface:xr|surface:geo-xr|surface:voxel|surface:geospatial'
   if (surfaceChildIds !== expectedSurfaceChildIds) {
     throw new Error(`Expected Surface Mode to own ${expectedSurfaceChildIds}, got ${String(surfaceChildIds)}`)
+  }
+}
+
+export function testGeospatialSurfaceModeReturnsToCanvasView() {
+  const options = buildCanvasViewOptions(
+    {
+      canvas2dRenderer: 'storyboard',
+      canvas3dMode: '3d',
+      canvasRenderMode: '2d',
+      documentSemanticMode: 'document',
+      frontmatterModeEnabled: false,
+      multiDimTableModeEnabled: false,
+      renderMediaAsNodes: false,
+      timelineEnabled: true,
+      bottomSurfaceCollapsed: true,
+      bottomSurfaceTab: 'stats',
+      geospatialEnabled: true,
+      layoutMode: 'block',
+      schema: BLOCK_SCHEMA,
+      frontmatterOnlyAllowed: false,
+      isD3Like2dLayoutToggle: false,
+    },
+    getCanvasViewRendererOptions(),
+  )
+  const canvasViewOption = options
+    .find(option => option.id === 'surface:menu')
+    ?.children?.find(option => option.id === 'surface:2d')
+  if (canvasViewOption?.title !== '2D Mode' || canvasViewOption.disabled) {
+    throw new Error('Expected Geospatial Mode to expose an enabled 2D Mode return action')
+  }
+
+  let exitCalls = 0
+  const renderModes: Array<'2d' | '3d'> = []
+  applyCanvasViewSelection({
+    id: 'surface:2d',
+    ensureBaselineUnlocked: () => true,
+    geospatialEnabled: true,
+    onOpenGeospatialMode: () => {
+      throw new Error('Expected Canvas View Mode to leave Geospatial Mode instead of reopening it')
+    },
+    onExitGeospatialMode: () => { exitCalls += 1 },
+    canvas2dRenderer: 'storyboard',
+    canvas3dMode: '3d',
+    canvasRenderMode: '2d',
+    documentSemanticMode: 'document',
+    frontmatterModeEnabled: false,
+    multiDimTableModeEnabled: false,
+    renderMediaAsNodes: false,
+    timelineEnabled: true,
+    ...NOOP_BOTTOM_SURFACE_ACTIONS,
+    schema: BLOCK_SCHEMA,
+    setCanvas2dRenderer: () => {},
+    setCanvasRenderMode: mode => { renderModes.push(mode) },
+    setCanvas3dMode: () => {},
+    setSchema: () => {},
+    setRenderMediaAsNodes: () => {},
+    setTimelineEnabled: () => {},
+    setDocumentSemanticMode: () => {},
+    setFrontmatterModeEnabled: () => {},
+    setMultiDimTableModeEnabled: () => {},
+  })
+  if (exitCalls !== 1 || renderModes.join('|') !== '2d') {
+    throw new Error(`Expected Canvas View Mode to exit Geospatial Mode and restore 2D, got ${JSON.stringify({ exitCalls, renderModes })}`)
   }
 }
 
@@ -571,20 +634,21 @@ export function testCanvasViewTimelineToggleUsesSharedViewModeOption() {
   const timelineToggle = displayControls?.children?.find(child => child.id === 'control:timeline')
   const gridToggle = displayControls?.children?.find(child => child.id === 'control:grid')
   const snapGridToggle = displayControls?.children?.find(child => child.id === 'control:snapGrid')
+  const helperLinesToggle = displayControls?.children?.find(child => child.id === 'control:helperLines')
   const gitGraphToggle = displayControls?.children?.find(child => child.id === 'control:gitGraph')
   const ganttToggle = displayControls?.children?.find(child => child.id === 'control:gantt')
-  if (!displayControls || !timelineToggle || !gridToggle || !snapGridToggle || !gitGraphToggle || !ganttToggle) {
+  if (!displayControls || !timelineToggle || !gridToggle || !snapGridToggle || !helperLinesToggle || !gitGraphToggle || !ganttToggle) {
     throw new Error(
-      'Expected Display Controls to own Grid, Snap to Grid, Timeline, Flowchart, GitGraph, Gantt, Architecture, and Event Model toggles',
+      'Expected Display Controls to own Grid, Snap to Grid, Helper Lines, Timeline, Flowchart, GitGraph, Gantt, Architecture, and Event Model toggles',
     )
   }
   const childIds = displayControls.children?.map(child => child.id).join('|')
   if (
     childIds !==
-      'control:richMedia|control:nodeShape|control:clusterShape|control:portHandles|control:minimap|control:grid|control:snapGrid|control:aspectRatio|control:boardLayout|control:card|control:widget|control:timeline|control:flowchart|control:gitGraph|control:gantt|control:architecture|control:eventModeling'
+      'control:richMedia|control:nodeShape|control:clusterShape|control:portHandles|control:minimap|control:grid|control:snapGrid|control:helperLines|control:aspectRatio|control:boardLayout|control:card|control:widget|control:timeline|control:flowchart|control:gitGraph|control:gantt|control:architecture|control:eventModeling'
   ) {
     throw new Error(
-      `Expected Minimap, Grid, Snap to Grid, Card, Widget, Timeline, Flowchart, GitGraph, Gantt, Architecture, and Event Model to sit beside each other in Display Controls, got ${childIds}`,
+      `Expected Minimap, Grid, Snap to Grid, Helper Lines, Card, Widget, Timeline, Flowchart, GitGraph, Gantt, Architecture, and Event Model to sit beside each other in Display Controls, got ${childIds}`,
     )
   }
   if (timelineToggle.children?.length) {
@@ -598,10 +662,11 @@ export function testCanvasViewTimelineToggleUsesSharedViewModeOption() {
     gitGraphToggle.isActive !== true ||
     ganttToggle.isActive === true ||
     gridToggle.isActive === true ||
-    snapGridToggle.isActive === true
+    snapGridToggle.isActive === true ||
+    helperLinesToggle.isActive !== true
   ) {
     throw new Error(
-      'Expected GitGraph to be the active bottom-surface toggle while Timeline, Gantt, Grid, and Snap to Grid remain inactive under Display Controls',
+      'Expected GitGraph and Helper Lines to be active while Timeline, Gantt, Grid, and Snap to Grid remain inactive under Display Controls',
     )
   }
   const calls: string[] = []

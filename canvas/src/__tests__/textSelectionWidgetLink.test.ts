@@ -6,6 +6,7 @@ import {
   buildTextSelectionWidgetEdge,
   buildTextSelectionWidgetEdgePersistenceProperties,
   clearTextSelectionWidgetLinkSession,
+  dispatchTextSelectionWidgetCreate,
   hasOutgoingTextSelectionWidgetEdge,
   TEXT_SELECTION_WIDGET_CREATE_EVENT,
   getTextSelectionWidgetLinkSnapshot,
@@ -19,6 +20,8 @@ import {
   TEXT_SELECTION_WIDGET_SOURCE_PORT_KEY,
   TEXT_SELECTION_WIDGET_TARGET_PORT_KEY,
 } from '@/lib/storyboardWidget/textSelectionWidgetLink'
+import { useTextSelectionWidgetCreateBridge } from '@/components/StoryboardWidgetCanvas/runtime/useTextSelectionWidgetCreateBridge'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   buildStoryboardWidgetInsertionPlacement,
   captureStoryboardWidgetInsertionPlacement,
@@ -29,10 +32,11 @@ import WidgetPalette from '@/features/toolbar/WidgetPalette'
 import { MarkdownInlineSelectionToolbar } from '@/lib/markdown-core/ui/MarkdownInlineSelectionToolbar'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
-import { installDeterministicRaf, mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
+import { installDeterministicRaf, mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import {
   collectTextSelectionProvenanceHighlightRects,
+  revealTextSelectionProvenanceMatch,
 } from '@/lib/ui/textSelectionProvenanceHighlights'
 import {
   buildSelectionProvenanceConnectorPath,
@@ -253,6 +257,18 @@ export function testTextSelectionWidgetLinkProjectsExactSourceHighlightAndConnec
       || rects[0]?.height !== 18) {
       throw new Error(`expected one exact, line-scoped provenance highlight, got ${JSON.stringify(rects)}`)
     }
+    const revealed = revealTextSelectionProvenanceMatch({
+      root,
+      selection: {
+        edgeId: 'selection-edge',
+        text: 'selected source text',
+        startLine: 12,
+        endLine: 13,
+      },
+    })
+    if (revealed?.closest('[data-start-line]')?.getAttribute('data-start-line') !== '12') {
+      throw new Error('expected provenance navigation to reveal only the exact line-scoped text match')
+    }
     const innerNodeOwner = dom.window.document.createElement('section')
     innerNodeOwner.setAttribute('data-node-id', 'n2')
     innerNodeOwner.appendChild(root)
@@ -400,6 +416,122 @@ export async function testTextSelectionWidgetLinkWaitsForCreatedTargetPublicatio
     )
   }
   clearTextSelectionWidgetLinkSession()
+}
+
+export async function testTextSelectionWidgetLinkFallsBackWhenDraftEdgeWriterLagsTargetCreation() {
+  const { dom, restore } = initJsdomHarness()
+  let root: ReturnType<typeof createRoot> | null = null
+  const previousStore = useGraphStore.getState()
+
+  try {
+    const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
+    anyWindow.requestAnimationFrame = installDeterministicRaf(dom.window)
+    const entry: WidgetRegistryEntry = {
+      id: 'default/textGeneration',
+      isEnabled: true,
+      nodeTypeId: 'TextGeneration',
+      widgetTypeId: 'default',
+      formId: 'textGeneration',
+      fields: [],
+      ports: [],
+      updatedAt: '2026-07-26T00:00:00.000Z',
+    }
+    const sourceGraph: GraphData = {
+      type: 'Graph',
+      nodes: [{
+        id: 'source-panel',
+        type: 'RichMediaPanel',
+        label: 'Source',
+        x: 100,
+        y: 220,
+        properties: {},
+      }],
+      edges: [],
+    }
+    useGraphStore.setState({
+      graphData: sourceGraph,
+      addEdge: edge => {
+        useGraphStore.setState(state => ({
+          graphData: state.graphData
+            ? { ...state.graphData, edges: [...state.graphData.edges, edge] }
+            : state.graphData,
+        }))
+      },
+    } as never)
+    const registryRef = { current: [entry] } as React.MutableRefObject<ReadonlyArray<WidgetRegistryEntry>>
+    const addNodeFromRegistryAtWorld = () => {
+      useGraphStore.setState(state => ({
+        graphData: state.graphData
+          ? {
+              ...state.graphData,
+              nodes: [...state.graphData.nodes, {
+                id: 'target-widget',
+                type: 'TextGeneration',
+                label: 'Target',
+                x: 940,
+                y: 220,
+                properties: {},
+              }],
+            }
+          : state.graphData,
+      }))
+      return 'target-widget'
+    }
+    const container = dom.window.document.createElement('section')
+    dom.window.document.body.appendChild(container)
+    root = createRoot(container as unknown as HTMLElement)
+    const SelectionBridgeHarness = () => {
+      useTextSelectionWidgetCreateBridge({
+        active: true,
+        widgetRegistryRef: registryRef,
+        resolveRegistryEntry: (registry, target) => registry.find(candidate => candidate.id === target.registryEntryId) || null,
+        addNodeFromRegistryAtWorld,
+        // Mirrors the transient stale-draft path that previously left the target
+        // Widget visible but discarded its selection provenance edge.
+        appendDraftEdge: () => false,
+        authoringGraphDataRef: { current: sourceGraph },
+        baseGraphData: sourceGraph,
+      })
+      return null
+    }
+    await mountReactRoot(root, React.createElement(SelectionBridgeHarness), { window: dom.window, frames: 2 })
+
+    const session = beginTextSelectionWidgetLinkSession({
+      sourceNodeId: 'source-panel',
+      selectedText: 'selected source text',
+      startLine: 12,
+      endLine: 12,
+      documentPath: 'notes/example.md',
+    })
+    if (!session) throw new Error('expected an active selection-link session')
+    const claimed = dispatchTextSelectionWidgetCreate({
+      registryEntryId: entry.id,
+      nodeTypeId: entry.nodeTypeId,
+      widgetTypeId: entry.widgetTypeId,
+      formId: entry.formId,
+    })
+    if (!claimed) throw new Error('expected the active selection bridge to claim the Widget create event')
+    await waitForFrames(dom.window, 4)
+
+    const graphAfterCreate = useGraphStore.getState().graphData
+    const selectionEdge = graphAfterCreate?.edges.find(edge => (
+      edge.source === 'source-panel'
+      && edge.target === 'target-widget'
+      && edge.properties?.schema === TEXT_SELECTION_WIDGET_LINK_SCHEMA
+    ))
+    if (!selectionEdge || getTextSelectionWidgetLinkSnapshot() !== null) {
+      throw new Error(`expected the fallback graph write to persist and complete the selection edge, got ${JSON.stringify(graphAfterCreate)}`)
+    }
+  } finally {
+    clearTextSelectionWidgetLinkSession()
+    try {
+      if (root) await unmountReactRoot(root, { window: dom.window })
+    } catch {
+      void 0
+    }
+    useGraphStore.setState(previousStore as never)
+    restore()
+  }
 }
 
 export async function testWidgetPaletteCreatesTargetFromActiveTextSelection() {

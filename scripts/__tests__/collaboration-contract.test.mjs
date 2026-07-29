@@ -16,6 +16,9 @@ import {
 import { fetchOpenPullRequests } from '../github-active-scope-client.mjs'
 import {
   buildLocalCollaborationBrowserEnv,
+  buildLocalCollaborationPersistenceArgs,
+  buildLocalCollaborationWorkerArgs,
+  buildLocalCollaborationWorkerEnv,
   resolveLocalCollaborationStackConfig,
 } from '../lib/collaboration-local-stack.js'
 
@@ -29,6 +32,18 @@ test('device lifecycle commands delegate to the canonical Agentic Canvas OS chec
 test('collaboration browser gate edits through the canonical active editor owner', () => {
   const smoke = fs.readFileSync(new URL('../../canvas/scripts/verify-multi-user-collaboration-e2e.ts', import.meta.url), 'utf8')
   const queryParams = fs.readFileSync(new URL('../../canvas/src/lib/routing/queryParams.ts', import.meta.url), 'utf8')
+  const connectStart = smoke.indexOf('async function connectAuthenticatedRoom')
+  const connectEnd = smoke.indexOf('async function waitForActiveDocumentReady', connectStart)
+  const connectRuntime = smoke.slice(connectStart, connectEnd)
+  const connectionTry = connectRuntime.indexOf('try {')
+  const panelOpen = connectRuntime.indexOf('await openCollaborationPanel(page)')
+  const buttonReady = connectRuntime.indexOf("await connectButton.waitFor({ state: 'visible'")
+  const connectionCatch = connectRuntime.indexOf('} catch (error)')
+  const mainStart = smoke.indexOf('async function main()')
+  const mainEnd = smoke.indexOf('\nmain()', mainStart)
+  const mainRuntime = smoke.slice(mainStart, mainEnd)
+  const mainConnection = mainRuntime.indexOf('connectAuthenticatedRoom(ownerPage)')
+  const mainBeforeConnection = mainRuntime.slice(0, mainConnection)
 
   assert.match(queryParams, /QUERY_PARAM_RUNTIME_IDENTITY_PROOF = 'kgRuntimeIdentityProof'/)
   assert.match(smoke, /QUERY_PARAM_RUNTIME_IDENTITY_PROOF/)
@@ -41,14 +56,32 @@ test('collaboration browser gate edits through the canonical active editor owner
   assert.match(smoke, /for \(let attempt = 0; attempt < 20; attempt \+= 1\)/)
   assert.match(smoke, /collaboration panel did not acknowledge the bounded open request/)
   assert.match(smoke, /markdownWorkspaceIndexingInFlight/)
+  assert.match(smoke, /async function waitForRuntimeIdentityProofConvergence/)
+  assert.match(smoke, /isPassingRuntimeIdentityProof\(ownerProof\)[\s\S]*isPassingRuntimeIdentityProof\(guestProof\)[\s\S]*ownerProof\.verificationDigest === guestProof\.verificationDigest/)
+  assert.match(smoke, /catalogHydrationAttempts <= 2/)
+  assert.doesNotMatch(smoke, /waitForRuntimeIdentityPass/)
+  assert.ok(connectionTry >= 0)
+  assert.ok(connectionTry < panelOpen)
+  assert.ok(panelOpen < buttonReady)
+  assert.ok(buttonReady < connectionCatch)
+  assert.ok(mainStart >= 0)
+  assert.ok(mainEnd > mainStart)
+  assert.ok(mainConnection >= 0)
+  assert.doesNotMatch(mainBeforeConnection, /openCollaborationPanel/)
   assert.match(smoke, /await waitForActiveDocumentReady\(page\)[\s\S]*await closeFloatingPanelIfOpen\(page\)[\s\S]*await connectButton\.click/)
+  assert.match(smoke, /KG_COLLABORATION_E2E_RESULT_PATH/)
+  assert.match(smoke, /renameSync\(temporaryPath, RESULT_PATH\)/)
   assert.doesNotMatch(smoke, /\.click\(\{[^}]*force:\s*true/)
   assert.doesNotMatch(smoke, /graphState\.setActiveMarkdownDocument/)
+  assert.match(smoke, /restoreLocalDocumentSnapshot\(localDocumentSnapshot\)/)
 })
 
 test('local collaboration browser identities remain stable across repeated gate runs', () => {
   const config = resolveLocalCollaborationStackConfig({ repoRoot: '/tmp/knowgrph-test', env: {} })
   const browserEnv = buildLocalCollaborationBrowserEnv(config, {})
+  const workerEnv = buildLocalCollaborationWorkerEnv(config, {})
+  const workerArgs = buildLocalCollaborationWorkerArgs(config, 8877)
+  const persistenceArgs = buildLocalCollaborationPersistenceArgs(config)
 
   assert.equal(config.ownerAppUrl, 'http://127.0.0.1:5175/')
   assert.equal(config.guestAppUrl, 'http://127.0.0.1:5174/')
@@ -70,7 +103,45 @@ test('local collaboration browser identities remain stable across repeated gate 
   assert.equal(config.guestClientDeviceId, 'dev:collaboration-guest-local')
   assert.equal(browserEnv.KG_COLLABORATION_E2E_OWNER_DEVICE_ID, config.ownerClientDeviceId)
   assert.equal(browserEnv.KG_COLLABORATION_E2E_GUEST_DEVICE_ID, config.guestClientDeviceId)
+  assert.equal(browserEnv.KG_COLLABORATION_E2E_DOC_PATH, config.documentPath)
+  assert.equal(config.mutableSourcePath, '/tmp/knowgrph-test/docs/workspace-seeds/knowgrph-physics-playground-demo.md')
+  assert.equal(config.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH, config.mutableSourcePath)
+  assert.equal(workerEnv.KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID, config.workspaceId)
+  assert.equal(workerEnv.KNOWGRPH_STORAGE_LOCAL_RUNTIME, 'true')
+  assert.deepEqual(workerArgs.slice(-4), [
+    '--var',
+    `KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID:${config.workspaceId}`,
+    '--var',
+    'KNOWGRPH_STORAGE_LOCAL_RUNTIME:true',
+  ])
+  assert.deepEqual(persistenceArgs, [
+    '--persist-to',
+    '/tmp/knowgrph-test/cloudflare/workers/knowgrph-storage/.wrangler/state',
+  ])
+  assert.equal(workerArgs.includes(config.storagePersistencePath), true)
   assert.notEqual(config.ownerClientDeviceId, config.guestClientDeviceId)
+})
+
+test('local collaboration stack accepts run-scoped ports and persistence outside the repository', () => {
+  const config = resolveLocalCollaborationStackConfig({
+    repoRoot: '/tmp/knowgrph-test',
+    env: {
+      KG_COLLABORATION_E2E_OWNER_URL: 'http://127.0.0.1:15174/',
+      KG_COLLABORATION_E2E_GUEST_URL: 'http://127.0.0.1:15175/',
+      KG_COLLABORATION_E2E_WORKER_URL: 'http://127.0.0.1:15176',
+      KG_COLLABORATION_E2E_PERSISTENCE_PATH: '/tmp/agentic-gates/run-1/wrangler',
+    },
+  })
+
+  assert.equal(config.storagePersistencePath, '/tmp/agentic-gates/run-1/wrangler')
+  assert.deepEqual(config.services.map(service => service.local?.port), [15174, 15175, 15176])
+  assert.match(config.services[0].startupCommand, /--port 15174 --strictPort/)
+  assert.match(config.services[1].startupCommand, /--port 15175 --strictPort/)
+  assert.match(config.services[2].startupCommand, /--port 15176$/)
+  assert.deepEqual(buildLocalCollaborationPersistenceArgs(config), [
+    '--persist-to',
+    '/tmp/agentic-gates/run-1/wrangler',
+  ])
 })
 
 test('collaboration smoke preparation builds linked packages before readiness checks', () => {
@@ -127,6 +198,28 @@ test('Agentic ECS source always selects the runtime gate', async () => {
   assert.deepEqual(plan.scopes, ['runtime'])
   assert.deepEqual(plan.unmatchedPaths, [])
   assert.deepEqual(plan.commands, [['npm', 'run', 'runtime:check']])
+})
+
+test('surface policy owners always select the focused readiness gate', async () => {
+  const contract = await readContract()
+  const ownerPaths = [
+    'config/surface-registry.json',
+    'config/license-registry.json',
+    'schemas/surface-registry.v1.schema.json',
+    'scripts/surface/publication-gate.mjs',
+    'data/surface/ledger/README.md',
+    'docs/discoverability-ip-protection-runtime.md',
+  ]
+
+  for (const ownerPath of ownerPaths) {
+    const plan = selectAffectedCommands([ownerPath], contract)
+    assert.ok(plan.scopes.includes('surface_policy'), ownerPath)
+    assert.deepEqual(plan.unmatchedPaths, [], ownerPath)
+    assert.ok(
+      plan.commands.some(command => command.join(' ') === 'npm run surface:verify'),
+      ownerPath,
+    )
+  }
 })
 
 test('Rich Media preview timing owners always select schema and browser contract gates', async () => {

@@ -6,7 +6,10 @@ import { dirname, join, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { resolveGameFlightSimBrowserPaths } from '../lib/game-flight-sim-browser-paths.mjs'
+import {
+  normalizeGameFlightSimCandidateBranch,
+  resolveGameFlightSimBrowserPaths,
+} from '../lib/game-flight-sim-browser-paths.mjs'
 import { runLocalViteBrowserSmoke } from '../lib/run-local-vite-browser-smoke.mjs'
 
 const canvasRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -25,6 +28,18 @@ test('Flight browser smoke owns build output from the Canvas package root', () =
   assert.notEqual(
     paths.distIndexPath,
     join(canvasRoot, 'scripts', 'dist', 'index.html'),
+  )
+})
+
+test('Flight browser smoke normalizes detached Git identity without weakening named branches', () => {
+  assert.equal(normalizeGameFlightSimCandidateBranch('HEAD'), 'detached')
+  assert.equal(
+    normalizeGameFlightSimCandidateBranch('agent/device/flight-proof'),
+    'agent/device/flight-proof',
+  )
+  assert.throws(
+    () => normalizeGameFlightSimCandidateBranch(''),
+    /candidate branch is required/,
   )
 })
 

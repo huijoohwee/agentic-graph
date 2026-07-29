@@ -287,7 +287,7 @@ export function MarkdownPanelLayout(props: MarkdownPanelLayoutProps) {
           className="relative z-20 flex-shrink-0 self-stretch pointer-events-auto"
         />
       ) : null}
-      <main className="relative z-0 flex-1 flex flex-col min-w-0 overflow-hidden">{children}</main>
+      <main className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{children}</main>
       {sidebarPosition === 'right' && showSidebar ? (
         <VerticalResizeSeparatorHr
           ariaLabel="Resize explorer"

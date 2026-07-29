@@ -13,12 +13,25 @@ def read_camera_state(page: Page) -> dict[str, Any]:
           const source = await window.__kgFlightSimBrowserProof.importModule('cameraSourceMcpRuntime')
           const flight = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
           const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
+          const geo = await window.__kgFlightSimBrowserProof.importModule('gympgrphStore')
           const canvas = document.querySelector(
             '[data-kg-xr-scene-media-drop="1"] canvas',
           )
+          const map = geo.readActiveMapLibreMap()
+          const center = map?.getCenter?.()
           return {
             source: source.inspectLocalCameraSource(),
             flight: flight.readFlightSimSnapshot(),
+            overlay: geo.readFlightGeoOverlay(),
+            mapCamera: map && center
+              ? {
+                  bearing: map.getBearing(),
+                  center: { lng: center.lng, lat: center.lat },
+                  pitch: map.getPitch(),
+                  projection: map.getProjection()?.type || '',
+                  zoom: map.getZoom(),
+                }
+              : null,
             pose: store.useGraphStore.getState().captureThreeCameraPose(),
             pointerLocked: document.pointerLockElement === canvas,
             pointerState: canvas?.dataset.kgFlightSimPointerLock || '',
@@ -77,9 +90,13 @@ def select_camera_via_catalog(
         page,
         lambda: read_camera_state(page),
         lambda value: (
-            value.get("pose") is not None
+            value.get("mapCamera") is not None
             and value["source"]["selected"] == camera_id
             and value["source"]["effectiveOwner"] == camera_id
+            and (
+                camera_id != "fixed-follow"
+                or fixed_map_camera_matches_overlay(value)
+            )
         ),
         label=f"{camera_id} Camera catalog selection",
         timeout_ms=1_000,
@@ -134,45 +151,97 @@ def pose_changed(
     )
 
 
-def read_fixed_follow_state(page: Page) -> dict[str, Any]:
-    return page.evaluate(
-        """
-        async () => {
-          const source = await window.__kgFlightSimBrowserProof.importModule('cameraSourceMcpRuntime')
-          const flight = await window.__kgFlightSimBrowserProof.importModule('flightSimRuntime')
-          const native = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
-          const coordinates = await window.__kgFlightSimBrowserProof.importModule('flightSimSpatialScale')
-          const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
-          const snapshot = flight.readFlightSimSnapshot()
-          const scale = coordinates.resolveFlightSimGameplayCoordinateScale(
-            native.XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE,
-            true,
-          )
-          const horizontal = Math.cos(snapshot.aircraft.pitch)
-          const forward = [
-            -Math.sin(snapshot.aircraft.yaw) * horizontal,
-            Math.sin(snapshot.aircraft.pitch),
-            -Math.cos(snapshot.aircraft.yaw) * horizontal,
-          ]
-          const target = {
-            x: snapshot.aircraft.position[0] * scale,
-            y: (snapshot.aircraft.position[1] + 0.8) * scale,
-            z: snapshot.aircraft.position[2] * scale,
-          }
-          const position = {
-            x: target.x - forward[0] * 8 * scale,
-            y: target.y - forward[1] * 2 * scale + 3.2 * scale,
-            z: target.z - forward[2] * 8 * scale,
-          }
-          return {
-            source: source.inspectLocalCameraSource(),
-            flight: snapshot,
-            pose: store.useGraphStore.getState().captureThreeCameraPose(),
-            expectedPose: { position, target },
-          }
-        }
-        """
+def map_coordinate_distance(
+    left: dict[str, float],
+    right: dict[str, float],
+) -> float:
+    return (
+        (float(left["lng"]) - float(right["lng"])) ** 2
+        + (float(left["lat"]) - float(right["lat"])) ** 2
+    ) ** 0.5
+
+
+def map_camera_changed(
+    left: dict[str, Any] | None,
+    right: dict[str, Any] | None,
+    *,
+    minimum_coordinate_distance: float = 1e-8,
+) -> bool:
+    if not left or not right:
+        return False
+    return (
+        map_coordinate_distance(left["center"], right["center"])
+        > minimum_coordinate_distance
+        or abs(float(left["bearing"]) - float(right["bearing"])) > 0.01
+        or abs(float(left["pitch"]) - float(right["pitch"])) > 0.01
+        or abs(float(left["zoom"]) - float(right["zoom"])) > 0.01
     )
+
+
+def _degrees_apart(left: float, right: float) -> float:
+    return abs((float(left) - float(right) + 180) % 360 - 180)
+
+
+def fixed_map_camera_matches_overlay(value: dict[str, Any]) -> bool:
+    camera = value.get("mapCamera")
+    overlay = value.get("overlay") or {}
+    overlay_camera = overlay.get("camera") or {}
+    if not camera or not overlay.get("active"):
+        return False
+    if overlay_camera.get("effectiveOwner") != "fixed-follow":
+        return False
+    presets = {
+        "chase": {"pitch": 48, "zoom": 15.5},
+        "cockpit": {"pitch": 68, "zoom": 17},
+        "survey": {"pitch": 22, "zoom": 14.25},
+    }
+    view = overlay_camera.get("view")
+    preset = presets.get(view)
+    center = overlay_camera.get("centerCoordinate")
+    aircraft = overlay.get("aircraft") or {}
+    if not preset or not isinstance(center, list) or len(center) != 2:
+        return False
+    expected_bearing = (
+        0 if view == "survey" else float(aircraft.get("headingDegrees", 0))
+    )
+    return (
+        map_coordinate_distance(
+            camera["center"],
+            {"lng": center[0], "lat": center[1]},
+        ) < 1e-7
+        and _degrees_apart(camera["bearing"], expected_bearing) < 0.05
+        and abs(float(camera["pitch"]) - preset["pitch"]) < 0.05
+        and abs(float(camera["zoom"]) - preset["zoom"]) < 0.05
+    )
+
+
+def timeline_map_camera_matches_overlay(value: dict[str, Any]) -> bool:
+    camera = value.get("mapCamera")
+    timeline = ((value.get("overlay") or {}).get("camera") or {}).get(
+        "timeline"
+    )
+    if not camera or not timeline:
+        return False
+    center = timeline.get("centerCoordinate")
+    return (
+        isinstance(center, list)
+        and len(center) == 2
+        and map_coordinate_distance(
+            camera["center"],
+            {"lng": center[0], "lat": center[1]},
+        ) < 1e-7
+        and _degrees_apart(
+            camera["bearing"],
+            timeline["bearingDegrees"],
+        ) < 0.05
+        and abs(float(camera["pitch"]) - float(timeline["pitchDegrees"]))
+        < 0.05
+        and abs(float(camera["zoom"]) - float(timeline["zoom"])) < 0.05
+    )
+
+
+def read_fixed_follow_state(page: Page) -> dict[str, Any]:
+    return read_camera_state(page)
 
 
 def verify_live_fixed_follow_tracking(
@@ -193,19 +262,12 @@ def verify_live_fixed_follow_tracking(
             page,
             lambda: read_fixed_follow_state(page),
             lambda value: (
-                value.get("pose") is not None
+                value.get("mapCamera") is not None
                 and value["source"]["selected"] == "fixed-follow"
                 and value["source"]["effectiveOwner"] == "fixed-follow"
                 and value["flight"]["phase"] == "flying"
                 and value["flight"]["tick"] > fresh_run["tick"]
-                and vector_distance(
-                    value["pose"]["position"],
-                    value["expectedPose"]["position"],
-                ) < 4.5
-                and vector_distance(
-                    value["pose"]["target"],
-                    value["expectedPose"]["target"],
-                ) < 3
+                and fixed_map_camera_matches_overlay(value)
             ),
             label="first running fixed-follow sample",
         )
@@ -217,24 +279,11 @@ def verify_live_fixed_follow_tracking(
                 and value["source"]["effectiveOwner"] == "fixed-follow"
                 and value["flight"]["phase"] == "flying"
                 and value["flight"]["tick"] >= live_start["flight"]["tick"] + 8
-                and pose_changed(
-                    live_start["expectedPose"],
-                    value["expectedPose"],
-                    minimum_distance=0.75,
+                and map_camera_changed(
+                    live_start["mapCamera"],
+                    value["mapCamera"],
                 )
-                and pose_changed(
-                    live_start["pose"],
-                    value["pose"],
-                    minimum_distance=0.5,
-                )
-                and vector_distance(
-                    value["pose"]["position"],
-                    value["expectedPose"]["position"],
-                ) < 5
-                and vector_distance(
-                    value["pose"]["target"],
-                    value["expectedPose"]["target"],
-                ) < 3.5
+                and fixed_map_camera_matches_overlay(value)
             ),
             label="second running fixed-follow sample",
         )
@@ -337,9 +386,10 @@ def _install_pointer_lock_contract_harness(
     )
 
 
-def hit_tested_flight_canvas_point(page: Page) -> dict[str, float]:
+def hit_tested_map_canvas_point(page: Page) -> dict[str, float]:
     canvas = page.locator(
-        '[data-kg-xr-scene-media-drop="1"] canvas'
+        '[data-kg-flight-geospatial-overlay="active"] '
+        'canvas.maplibregl-canvas'
     ).first
     canvas.scroll_into_view_if_needed()
     point = canvas.evaluate(
@@ -362,7 +412,7 @@ def hit_tested_flight_canvas_point(page: Page) -> dict[str, float]:
     )
     if not point:
         raise AssertionError(
-            "Flight canvas exposed no hit-testable interaction point"
+            "MapLibre canvas exposed no hit-testable interaction point"
         )
     return {
         "x": float(point["x"]),
@@ -370,13 +420,65 @@ def hit_tested_flight_canvas_point(page: Page) -> dict[str, float]:
     }
 
 
-def _click_hit_tested_flight_canvas(page: Page) -> None:
-    point = hit_tested_flight_canvas_point(page)
-    page.mouse.click(point["x"], point["y"])
+def verify_map_pointer_drag(page: Page) -> dict[str, Any]:
+    point = hit_tested_map_canvas_point(page)
+    before = page.evaluate(
+        """
+        async () => {
+          const gympgrph = await window.__kgFlightSimBrowserProof.importModule(
+            'gympgrphStore',
+          )
+          return gympgrph.readActiveMapLibreMap?.()
+            ?.getCenter?.()
+            ?.toArray?.() || null
+        }
+        """
+    )
+    page.mouse.move(point["x"], point["y"])
+    page.mouse.down()
+    page.mouse.move(point["x"] + 72, point["y"] + 28, steps=8)
+    page.mouse.up()
+    after = poll(
+        page,
+        lambda: {
+            "center": page.evaluate(
+                """
+                async () => {
+                  const gympgrph = await window.__kgFlightSimBrowserProof.importModule(
+                    'gympgrphStore',
+                  )
+                  return gympgrph.readActiveMapLibreMap?.()
+                    ?.getCenter?.()
+                    ?.toArray?.() || null
+                }
+                """
+            )
+        },
+        lambda value: (
+            isinstance(before, list)
+            and isinstance(value.get("center"), list)
+            and sum(
+                abs(float(left) - float(right))
+                for left, right in zip(before, value["center"])
+            ) > 1e-6
+        ),
+        label="MapLibre pointer drag",
+    )
+    return {
+        "hitPoint": point,
+        "centerBefore": before,
+        "centerAfter": after["center"],
+    }
+
+
+def _click_flight_pointer_capture(page: Page) -> None:
+    capture = page.get_by_label("Capture flight pointer", exact=True)
+    capture.wait_for(state="visible", timeout=15_000)
+    capture.click(timeout=15_000)
 
 
 def _lock_flight_canvas(page: Page) -> dict[str, Any]:
-    _click_hit_tested_flight_canvas(page)
+    _click_flight_pointer_capture(page)
     native = poll(
         page,
         lambda: read_camera_state(page),
@@ -402,7 +504,7 @@ def _lock_flight_canvas(page: Page) -> dict[str, Any]:
             f"contract: {native}"
         )
     _install_pointer_lock_contract_harness(page, native_error)
-    _click_hit_tested_flight_canvas(page)
+    _click_flight_pointer_capture(page)
     return poll(
         page,
         lambda: read_camera_state(page),

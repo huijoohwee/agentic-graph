@@ -12,6 +12,16 @@ export type MutableMotionCaptureSourceQuality = {
   intervalCount: number
   intervalMeanMs: number
   intervalM2: number
+  firstResearchTimestampMs: number | null
+  lastResearchTimestampMs: number | null
+}
+
+export type MutableMotionCaptureSource = {
+  state: MotionCaptureSourceState
+  quality: MutableMotionCaptureSourceQuality
+  previousCaptureTimestampMs: number | null
+  previousSequence: number | null
+  researchEvidenceEpoch: number
 }
 
 export function createMutableMotionCaptureSourceQuality(): MutableMotionCaptureSourceQuality {
@@ -27,6 +37,8 @@ export function createMutableMotionCaptureSourceQuality(): MutableMotionCaptureS
     intervalCount: 0,
     intervalMeanMs: 0,
     intervalM2: 0,
+    firstResearchTimestampMs: null,
+    lastResearchTimestampMs: null,
   }
 }
 
@@ -46,6 +58,9 @@ export function freezeMotionCaptureSourceQuality(
     droppedSequenceSamples: quality.droppedSequenceSamples,
     unsequencedSamples: quality.unsequencedSamples,
     outOfOrderSamples: quality.outOfOrderSamples,
+    researchDurationMs: quality.firstResearchTimestampMs === null || quality.lastResearchTimestampMs === null
+      ? 0
+      : Math.max(0, quality.lastResearchTimestampMs - quality.firstResearchTimestampMs),
     jitterMs,
     dropRate: expectedSamples > 0
       ? (quality.missingSamples + quality.droppedSequenceSamples) / expectedSamples
@@ -53,13 +68,7 @@ export function freezeMotionCaptureSourceQuality(
   })
 }
 
-export function resetMotionCaptureSourceResearchEvidence(source: {
-  state: MotionCaptureSourceState
-  quality: MutableMotionCaptureSourceQuality
-  previousCaptureTimestampMs: number | null
-  previousSequence: number | null
-  researchEvidenceEpoch: number
-}): void {
+export function resetMotionCaptureSourceResearchEvidence(source: MutableMotionCaptureSource): void {
   source.quality = createMutableMotionCaptureSourceQuality()
   source.previousCaptureTimestampMs = null
   source.previousSequence = null

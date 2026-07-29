@@ -65,22 +65,29 @@ const OPERATION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/
 
 export const assertDevStorageRelayRequest = (
   request: Request,
-  env: { KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string },
+  env: {
+    KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED?: string
+    KNOWGRPH_STORAGE_LOCAL_RUNTIME?: string
+  },
 ): void => {
   if (env.KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED !== 'true') {
     throw new StorageRelayError({ code: 'membership_forbidden', status: 403 })
   }
-  assertLoopbackStorageRelayRequest(request)
+  assertLoopbackStorageRelayRequest(request, env)
 }
 
-export const assertLoopbackStorageRelayRequest = (request: Request): void => {
+export const assertLoopbackStorageRelayRequest = (
+  request: Request,
+  env: { KNOWGRPH_STORAGE_LOCAL_RUNTIME?: string } = {},
+): void => {
   let requestUrl: URL
   try {
     requestUrl = new URL(request.url)
   } catch {
     throw new StorageRelayError({ code: 'invalid_request', status: 400 })
   }
-  if (!LOOPBACK_HOSTS.has(requestUrl.hostname.toLowerCase())) {
+  const isExplicitLocalRuntime = env.KNOWGRPH_STORAGE_LOCAL_RUNTIME === 'true'
+  if (!LOOPBACK_HOSTS.has(requestUrl.hostname.toLowerCase()) && !isExplicitLocalRuntime) {
     throw new StorageRelayError({ code: 'membership_forbidden', status: 403 })
   }
   const originValue = request.headers.get('origin')

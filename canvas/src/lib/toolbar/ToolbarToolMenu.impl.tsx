@@ -24,10 +24,8 @@ import { uiPrimaryPillActiveClassName, uiToolbarRowScrollClassName, uiToolbarRow
 import { cn } from '@/lib/utils'
 import { Z_INDEX_FLOATING_PANEL_DEFAULT } from '@/lib/ui/zIndex'
 import {
-  FLOATING_PANEL_CANVAS_INLINE_CLEARANCE_CSS,
   FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
-  FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS,
-  FLOATING_PANEL_DEFAULT_WIDTH_RATIO,
+  resolveFloatingPanelWidthCss,
 } from '@/lib/ui/floatingPanelGeometry'
 import { LS_KEYS, UI_LABELS, UI_SELECTORS } from '@/lib/config'
 import HeaderActions from '@/features/panels/ui/HeaderActions'
@@ -275,10 +273,8 @@ export function ToolbarToolMenu({
   }, [floatingPanelPinned, floatingPanelZIndex, workspaceEditorOverlayOpen])
 
   const floatingPanelSizeStyle = React.useMemo(() => {
-    const widthRatio = Number.isFinite(floatingPanelWidthRatio) ? floatingPanelWidthRatio : FLOATING_PANEL_DEFAULT_WIDTH_RATIO
-    const safeWidth = Math.max(0.15, Math.min(0.6, widthRatio))
     return {
-      width: `min(calc(100vw - ${FLOATING_PANEL_CANVAS_INLINE_CLEARANCE_CSS}), max(${FLOATING_PANEL_DEFAULT_MIN_WIDTH_CSS}, ${Math.round(safeWidth * 100)}vw))`,
+      width: resolveFloatingPanelWidthCss(floatingPanelWidthRatio),
       height: FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
       maxHeight: FLOATING_PANEL_CANVAS_PANEL_HEIGHT_CSS,
     }

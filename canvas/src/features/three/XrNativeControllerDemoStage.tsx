@@ -44,17 +44,21 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
 }
 
 export function XrNativeControllerDemoStage({
+  environmentVisible = true,
   inputEnabled = true,
   stageScale,
   groundY,
   retainStage = false,
   stage,
+  visualsVisible = true,
 }: {
+  environmentVisible?: boolean
   inputEnabled?: boolean
   stageScale: number
   groundY: number
   retainStage?: boolean
   stage: XrMotionReferenceStagePreset
+  visualsVisible?: boolean
 }) {
   const runtime = React.useSyncExternalStore(
     subscribeXrNativeControllerDemo,
@@ -77,7 +81,8 @@ export function XrNativeControllerDemoStage({
     if (node) bodyRefs.current.set(subjectId, node)
     else bodyRefs.current.delete(subjectId)
   }, [])
-  const stageVisible = retainStage || runtime.phase !== 'off'
+  const stageVisible = visualsVisible
+    && (retainStage || runtime.phase !== 'off')
 
   React.useEffect(() => {
     const clearInput = () => {
@@ -192,11 +197,12 @@ export function XrNativeControllerDemoStage({
           objective: runtime.objective,
           input: inputEnabled ? 'keyboard-gamepad-motion' : 'game-mode-suspended',
           followCamera: runtime.followCamera,
+          environment: environmentVisible ? 'xr' : 'geo-background',
           stageScale,
           terrainId: runtime.terrainId,
         }}
       >
-        <XrNativeControllerDemoEnvironment objective={runtime.objective} stage={stage} />
+        {environmentVisible ? <XrNativeControllerDemoEnvironment objective={runtime.objective} stage={stage} /> : null}
         <XrNativeControllerAuthoredSubjects />
         <group ref={playerRootRef} name="kg_xr_native_controller_player">
           <XrNativeControllerBallVisual rootRef={ballRootRef} />

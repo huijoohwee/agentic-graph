@@ -3,12 +3,18 @@ import test from 'node:test'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
+  resolveCanvasSurfaceOwnership,
   resolveThreeRendererLifecycleKey,
   resolveThreeCanvasSurfaceLifecycle,
   shouldMountThreeRenderer,
   retainThreeCanvasSourceAdmission,
   type ThreeRendererMountInput,
 } from '@/lib/three/threeRendererLifecycle'
+import {
+  resolveCanvasGeospatialModeEnabled,
+  shouldEnsureCanvasGeospatialMode,
+} from '@/features/canvas/useCanvasGeospatialRuntime'
+import { selectFlightSimGeoEnvironment } from '@/features/game-flight-sim/FlightSimEnvironmentGeoButton'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 type RendererTransitionPhase = ThreeRendererMountInput & Readonly<{
@@ -102,6 +108,96 @@ test('Flight Sim keeps one XR renderer through the document transition', async (
   }
 })
 
+test('an open Geo panel synchronizes the canvas Geo owner', () => {
+  assert.equal(shouldEnsureCanvasGeospatialMode(true, 'geo'), true)
+  assert.equal(shouldEnsureCanvasGeospatialMode(false, 'geo'), false)
+  assert.equal(shouldEnsureCanvasGeospatialMode(true, 'media'), false)
+  assert.equal(resolveCanvasGeospatialModeEnabled(false, true, 'geo'), true)
+  assert.equal(resolveCanvasGeospatialModeEnabled(false, false, 'geo'), false)
+  assert.equal(resolveCanvasGeospatialModeEnabled(false, true, 'media'), false)
+  assert.equal(resolveCanvasGeospatialModeEnabled(true, false, 'media'), true)
+})
+
+test('Flight Sim keeps exclusive Geo available without mounting a competing XR viewport', () => {
+  const ownership = resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    flightSimActive: true,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: true,
+    geospatialXrModeEnabled: false,
+    workspaceEditorOverlayOpen: true,
+    workspaceStoryboardSurfaceActive: true,
+  })
+  assert.deepEqual(ownership, {
+    activeSurface: 'geo',
+    geospatialOverlayOwnsViewport: true,
+  })
+
+  const surface = resolveThreeCanvasSurfaceLifecycle({
+    sourceFilesBootstrapAdmitted: true,
+    sourceFilesBootstrapReady: true,
+    geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
+    liveCanvasHeroVisible: false,
+    canvasRenderMode: '3d',
+    heavyRuntimeIntentBlocked: false,
+    activeSurface: ownership.activeSurface,
+    documentSwitchOwnsViewport: false,
+  })
+  assert.deepEqual(surface, { mounted: false, active: false })
+
+  assert.deepEqual(resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    flightSimActive: false,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: true,
+    geospatialXrModeEnabled: false,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  }), {
+    activeSurface: '3d',
+    geospatialOverlayOwnsViewport: false,
+  })
+
+  assert.deepEqual(resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    flightSimActive: false,
+    gameplayOverlayActive: false,
+    geospatialModeEnabled: true,
+    geospatialXrModeEnabled: false,
+    workspaceEditorOverlayOpen: true,
+    workspaceStoryboardSurfaceActive: true,
+  }), {
+    activeSurface: 'geo',
+    geospatialOverlayOwnsViewport: false,
+  })
+})
+
+test('Geo+XR mounts one transparent shared XR viewport over the Geo owner', () => {
+  const ownership = resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    flightSimActive: true,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: true,
+    geospatialXrModeEnabled: true,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  })
+  assert.deepEqual(ownership, {
+    activeSurface: 'geo-xr',
+    geospatialOverlayOwnsViewport: false,
+  })
+  assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
+    sourceFilesBootstrapAdmitted: true,
+    sourceFilesBootstrapReady: true,
+    geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
+    liveCanvasHeroVisible: false,
+    canvasRenderMode: '3d',
+    heavyRuntimeIntentBlocked: false,
+    activeSurface: ownership.activeSurface,
+    documentSwitchOwnsViewport: false,
+  }), { mounted: true, active: true })
+})
+
 test('Three renderer lifecycle still rejects unsupported and empty non-XR surfaces', () => {
   assert.equal(shouldMountThreeRenderer({
     mode: 'xr',
@@ -113,4 +209,24 @@ test('Three renderer lifecycle still rejects unsupported and empty non-XR surfac
     hasRenderableScene: false,
     webglSupported: true,
   }), false)
+})
+
+test('Flight environment handoff preserves the selected Geo presentation', () => {
+  const order: string[] = []
+  const result = selectFlightSimGeoEnvironment(
+    'singapore',
+    stageId => {
+      order.push(`stage:${stageId}`)
+      return { ok: true }
+    },
+  )
+  assert.deepEqual(result, { ok: true })
+  assert.deepEqual(order, ['stage:singapore'])
+
+  const blocked = selectFlightSimGeoEnvironment(
+    'street-grid',
+    () => ({ ok: false }),
+  )
+  assert.deepEqual(blocked, { ok: false })
+  assert.deepEqual(order, ['stage:singapore'])
 })

@@ -94,6 +94,12 @@ kgCanvasRenderMode: "XR Mode"
   if (!renderPreset || renderPreset.canvasRenderMode !== '3d' || renderPreset.canvas3dMode !== 'xr') {
     throw new Error(`expected XR render alias to resolve to 3d render surface plus xr mode, got ${JSON.stringify(renderPreset)}`)
   }
+  const geoXrPreset = parseCanvasWorkspaceFrontmatterPreset(`---
+kgCanvasSurfaceMode: "Geo+XR Mode"
+---`)
+  if (!geoXrPreset || geoXrPreset.canvasSurfaceMode !== 'geo-xr' || geoXrPreset.canvas3dMode !== 'xr') {
+    throw new Error(`expected Geo+XR alias to resolve to the composed Geo and XR surface, got ${JSON.stringify(geoXrPreset)}`)
+  }
 }
 
 export const testCanvas2dRendererNormalizationUsesStoryboardFlowSyntaxOwner = () => {

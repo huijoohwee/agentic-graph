@@ -8,6 +8,7 @@ import {
 } from '@/lib/ui/surfaceClasses'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { requestPropsPanelOpen } from '@/features/toolbar/floatingPanelBridge'
+import { isCanonicalNodeIdEqual } from '@/lib/graph/canonicalNodeIds'
 import {
   beginTextSelectionWidgetLinkSession,
   readTextSelectionWidgetSourceHighlights,
@@ -17,6 +18,7 @@ import {
   subscribeStoryboardCardProvenanceFocus,
   type StoryboardCardProvenanceFocus,
 } from '@/lib/storyboardWidget/storyboardCardProvenanceFocus'
+import { revealTextSelectionProvenanceMatch } from '@/lib/ui/textSelectionProvenanceHighlights'
 import type { RichMediaPanelProps } from './RichMediaPanel.types'
 import type { RichMediaPanelModel } from './useRichMediaPanelModel'
 import { RichMediaPanelSelectionProvenanceConnector } from './RichMediaPanelSelectionProvenanceConnector'
@@ -54,8 +56,26 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
       || selection.documentPath === model.panelMarkdownDocumentPath
     ))
   ), [graphData, model.panelMarkdownDocumentPath, props.overlayId])
+  const visibleProvenanceSelections = React.useMemo(() => {
+    if (!provenanceFocus) return provenanceSelections
+    const focused = provenanceSelections.filter(selection => selection.edgeId === provenanceFocus.edgeId)
+    if (focused.length > 0) return focused
+    return [{
+      edgeId: provenanceFocus.edgeId,
+      sourceNodeId: provenanceFocus.sourceNodeId,
+      sourcePortKey: 'output',
+      targetPortKey: 'input',
+      targetNodeId: '',
+      targetFieldId: 'prompt' as const,
+      selectedText: provenanceFocus.selectedText,
+      documentPath: provenanceFocus.documentPath,
+      startLine: provenanceFocus.startLine,
+      endLine: provenanceFocus.endLine,
+      createdAt: '',
+    }]
+  }, [provenanceFocus, provenanceSelections])
   const provenanceConnectorInputs = React.useMemo(() => (
-    provenanceSelections.map(selection => ({
+    visibleProvenanceSelections.map(selection => ({
       edgeId: selection.edgeId,
       sourceNodeId: selection.sourceNodeId,
       sourcePortKey: selection.sourcePortKey,
@@ -63,7 +83,7 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
       startLine: selection.startLine,
       endLine: selection.endLine,
     }))
-  ), [provenanceSelections])
+  ), [visibleProvenanceSelections])
   const selectionWidgetLink = React.useMemo(() => {
     const sourceNodeId = String(props.overlayId || '').trim()
     if (!sourceNodeId) return null
@@ -103,7 +123,7 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
     const sourceNodeId = String(props.overlayId || '').trim()
     if (!sourceNodeId) return
     return subscribeStoryboardCardProvenanceFocus(focus => {
-      if (String(focus.sourceNodeId || '').trim() !== sourceNodeId) return
+      if (!isCanonicalNodeIdEqual(focus.sourceNodeId, sourceNodeId)) return
       setProvenanceFocus(focus)
     })
   }, [props.overlayId])
@@ -114,6 +134,26 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
     return () => window.clearTimeout(timer)
   }, [provenanceFocus])
 
+  React.useLayoutEffect(() => {
+    if (!provenanceFocus) return
+    let frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
+        const root = viewerShellRef.current
+        if (!root) return
+        revealTextSelectionProvenanceMatch({
+          root,
+          selection: {
+            edgeId: provenanceFocus.edgeId,
+            text: provenanceFocus.selectedText,
+            startLine: provenanceFocus.startLine,
+            endLine: provenanceFocus.endLine,
+          },
+        })
+      })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [provenanceFocus])
+
   const viewerDataAttributes = React.useMemo(() => ({
     ...RICH_MEDIA_WORKSPACE_VIEWER_DATA_ATTRIBUTES,
     'data-kg-provenance-focus-edge-id': provenanceFocus?.edgeId || undefined,
@@ -121,10 +161,10 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
     'data-kg-provenance-focus-document-path': provenanceFocus?.documentPath || undefined,
     'data-kg-provenance-focus-start-line': provenanceFocus ? String(provenanceFocus.startLine) : undefined,
     'data-kg-provenance-focus-end-line': provenanceFocus ? String(provenanceFocus.endLine) : undefined,
-    'data-kg-selection-provenance-count': provenanceSelections.length > 0
-      ? String(provenanceSelections.length)
+    'data-kg-selection-provenance-count': visibleProvenanceSelections.length > 0
+      ? String(visibleProvenanceSelections.length)
       : undefined,
-  }), [provenanceFocus, provenanceSelections.length])
+  }), [provenanceFocus, visibleProvenanceSelections.length])
 
   const commitText = React.useCallback((nextText: string) => {
     if (!model.panelTextEditable) return
@@ -181,11 +221,9 @@ export function RichMediaPanelWorkspaceViewerSurface(args: {
           <MarkdownWorkspaceViewerSurface
             markdownText={viewerText}
             activeDocumentPath={model.panelMarkdownDocumentPath}
-            highlightedLineRange={provenanceFocus
-              ? { start: provenanceFocus.startLine, end: provenanceFocus.endLine }
-              : null}
+            highlightedLineRange={null}
             markdownWordWrap
-            markdownTextHighlight={Boolean(provenanceFocus)}
+            markdownTextHighlight={false}
             uiPanelTextFontClass="font-sans"
             uiPanelMonospaceTextClass="font-mono text-xs"
             markdownTokenStoreSync={false}

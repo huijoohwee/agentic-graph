@@ -20,6 +20,7 @@ const buildIdentity = (
   knowgrphRevision: 'b'.repeat(40),
   agenticCanvasOsRevision: 'a'.repeat(40),
   catalogRevision: 'a'.repeat(40),
+  catalogDigest: 'c'.repeat(64),
   catalogHydration: { status: 'fresh', attempts: 1 },
   catalogCounts: { slash: 78, hash: 94, at: 95 },
   agentLiveProviderProof: {
@@ -143,6 +144,24 @@ export async function testRuntimeIdentityAttestationBlocksMismatchReplayAndDupli
     || !proofMismatchResult.differences.includes('agentLiveProviderProof')
   ) {
     throw new Error(`Expected exact provider-proof SHA mismatch to fail closed, got ${JSON.stringify(proofMismatchResult)}`)
+  }
+
+  const catalogDigestMismatch = await buildEnvelope({
+    device: 'device-b',
+    runtimeInstanceId: 'runtime-catalog-digest',
+    identity: buildIdentity('device-b', { catalogDigest: 'e'.repeat(64) }),
+  })
+  const catalogDigestMismatchResult = await verifyKnowgrphRuntimeIdentityAttestations({
+    sessionId: SESSION_ID,
+    challenge: CHALLENGE,
+    attestations: [matching, catalogDigestMismatch],
+    nowMs: NOW_MS + 1_000,
+  })
+  if (
+    catalogDigestMismatchResult.status !== 'mismatch'
+    || !catalogDigestMismatchResult.differences.includes('catalogDigest')
+  ) {
+    throw new Error(`Expected exact catalog digest mismatch to fail closed, got ${JSON.stringify(catalogDigestMismatchResult)}`)
   }
 
   const readinessMismatch = await buildEnvelope({

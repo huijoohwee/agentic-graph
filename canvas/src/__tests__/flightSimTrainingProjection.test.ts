@@ -19,22 +19,33 @@ test('one source-authored training projection reaches all six FloatingPanel owne
   }
 })
 
-test('night training changes atmosphere and lights only at shared XR owners', () => {
-  const environment = readFileSync(
-    'src/features/three/XrNativeControllerDemoEnvironment.tsx',
+test('night training changes the native MapLibre overlay and shared HUD only', () => {
+  const mapLibreOverlay = readFileSync(
+    '../gympgrph/src/flightGeoOverlayMapLibre.ts',
     'utf8',
   )
-  const stage = readFileSync(
-    'src/features/three/XrNativeControllerDemoStage.tsx',
+  const projection = readFileSync(
+    'src/features/game-flight-sim/flightSimGeospatialProjection.ts',
+    'utf8',
+  )
+  const bridge = readFileSync(
+    'src/components/CanvasViewportGeospatialOverlay.tsx',
+    'utf8',
+  )
+  const hud = readFileSync(
+    'src/features/game-flight-sim/FlightSimHud.tsx',
     'utf8',
   )
   const missionStage = readFileSync(
     'src/features/game-flight-sim/FlightSimMissionStage.tsx',
     'utf8',
   )
-  assert.match(environment, /resolveFlightSimTrainingMission/)
-  assert.match(environment, /night \? '#050a1a'/)
-  assert.match(stage, /intensity=\{night \? 0\.13 : 0\.4\}/)
+  assert.match(projection, /night: boolean/)
+  assert.match(bridge, /readFlightSimTrainingSnapshot\(\)\.night/)
+  assert.match(mapLibreOverlay, /FLIGHT_GEO_NIGHT_EXPRESSION/)
+  assert.match(mapLibreOverlay, /#a78bfa/)
+  assert.match(hud, /data-kg-flight-sim-night/)
+  assert.match(hud, /bg-indigo-950\/80/)
   assert.doesNotMatch(missionStage, /ambientLight|directionalLight|hemisphereLight/)
 })
 

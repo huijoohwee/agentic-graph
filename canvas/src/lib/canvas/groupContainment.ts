@@ -70,6 +70,31 @@ export const computeDeltaClampForTopLeftNodes = (args: {
   return { minDx: dxRange.min, maxDx: dxRange.max, minDy: dyRange.min, maxDy: dyRange.max }
 }
 
+export const computeDeltaClampForRectWithinRect = (args: {
+  subject: RectBounds
+  container: RectBounds
+  inset?: number
+}): DeltaClamp | null => {
+  const values = [
+    args.subject.x,
+    args.subject.y,
+    args.subject.width,
+    args.subject.height,
+    args.container.x,
+    args.container.y,
+    args.container.width,
+    args.container.height,
+  ]
+  if (values.some(value => !Number.isFinite(value))) return null
+  if (args.subject.width <= 0 || args.subject.height <= 0 || args.container.width <= 0 || args.container.height <= 0) return null
+  const inset = Number.isFinite(args.inset) ? Math.max(0, args.inset || 0) : 0
+  const minDx = args.container.x + inset - args.subject.x
+  const maxDx = args.container.x + args.container.width - inset - (args.subject.x + args.subject.width)
+  const minDy = args.container.y + inset - args.subject.y
+  const maxDy = args.container.y + args.container.height - inset - (args.subject.y + args.subject.height)
+  return { minDx, maxDx, minDy, maxDy }
+}
+
 export const clampDelta = (args: { clamp: DeltaClamp; dx: number; dy: number }) => {
   return { dx: clampNumber(args.dx, args.clamp.minDx, args.clamp.maxDx), dy: clampNumber(args.dy, args.clamp.minDy, args.clamp.maxDy) }
 }

@@ -12,6 +12,15 @@ import {
   renderAgenticOsInvocationKeywordChip,
 } from '@/features/agentic-os/agenticOsInvocationChips'
 import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
+import {
+  XR_MOTION_REFERENCE_DEFAULT_STAGE_ID,
+  XR_MOTION_REFERENCE_STAGE_PRESETS,
+  resolveXrMotionReferenceStage,
+} from '@/features/three/xrSceneLibrary'
+import {
+  readMotionControlSnapshot,
+  subscribeMotionControl,
+} from '@/features/three/motionControlRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   FloatingPanelCatalogHeader,
@@ -32,9 +41,18 @@ import {
   controlLocalFlightSim,
   type FlightSimOperation,
 } from './flightSimMcpRuntime'
+import { flightSimHeadingDegrees } from './flightModel'
+import { FlightSimNavigationInset } from './FlightSimNavigationInset'
+import {
+  FLIGHT_SIM_CAMERA_VIEW_OPTIONS,
+  readFlightSimCameraSnapshot,
+  selectFlightSimCameraView,
+  subscribeFlightSimCamera,
+} from './flightSimCameraRuntime'
 import {
   resetFlightSimLocalPersistence,
   isFlightSimHydrationPending,
+  readFlightSimSpatialProfile,
   readFlightSimSnapshot,
   subscribeFlightSimSnapshot,
 } from './flightSimRuntime'
@@ -74,6 +92,10 @@ function degrees(radians: number): string {
   return `${Math.round((radians * 180) / Math.PI)}°`
 }
 
+function heading(radians: number): string {
+  return `${Math.round(flightSimHeadingDegrees(radians))}°`
+}
+
 function airspeed(velocity: readonly number[]): string {
   return Math.hypot(...velocity).toFixed(1)
 }
@@ -94,7 +116,20 @@ export function FlightSimFloatingPanelView() {
     readFlightSimDecisionStore,
     readFlightSimDecisionStore,
   )
+  const motionControl = React.useSyncExternalStore(
+    subscribeMotionControl,
+    readMotionControlSnapshot,
+    readMotionControlSnapshot,
+  )
+  const camera = React.useSyncExternalStore(
+    subscribeFlightSimCamera,
+    readFlightSimCameraSnapshot,
+    readFlightSimCameraSnapshot,
+  )
   const pushUiToast = useGraphStore(state => state.pushUiToast)
+  const spatialProfile = readFlightSimSpatialProfile()
+  const environment = XR_MOTION_REFERENCE_STAGE_PRESETS.find(stage => spatialProfile.sourceKey.includes(`:${stage.id}:`))
+    || resolveXrMotionReferenceStage(XR_MOTION_REFERENCE_DEFAULT_STAGE_ID)
   const [pendingOperation, setPendingOperation] = React.useState<PendingOperation | null>(null)
   const [throttle, setThrottle] = React.useState(flight.aircraft.throttle)
 
@@ -167,6 +202,8 @@ export function FlightSimFloatingPanelView() {
       data-kg-flight-sim-active={flight.active ? '1' : '0'}
       data-kg-flight-sim-phase={flight.phase}
       data-kg-flight-sim-mcp="knowgrph.control_local_flight_sim"
+      data-kg-flight-sim-camera-view={camera.view}
+      data-kg-flight-sim-environment={environment.id}
       data-kg-flight-sim-hydration={hydrationPending ? 'loading' : decisions.hydrationBlocked ? 'blocked' : 'ready'}
     >
       <FloatingPanelCatalogHeader
@@ -222,9 +259,16 @@ export function FlightSimFloatingPanelView() {
             {training.airspeedReliable ? `${airspeed(flight.aircraft.velocity)} m/s` : 'UNRELIABLE'}
           </span>
           <span><b>Throttle</b><br />{Math.round(flight.aircraft.throttle * 100)}%</span>
-          <span><b>Heading</b><br />{degrees(flight.aircraft.yaw)}</span>
+          <span><b>Heading</b><br />{heading(flight.aircraft.yaw)}</span>
           <span><b>Pitch</b><br />{degrees(flight.aircraft.pitch)}</span>
           <span><b>Roll</b><br />{degrees(flight.aircraft.roll)}</span>
+          <span><b>World</b><br />{environment.label}</span>
+          <span data-kg-flight-sim-panel-envelope={training.envelope.status}>
+            <b>Envelope</b><br />{training.envelope.label}
+          </span>
+          <span>
+            <b>Control</b><br />{Math.round(training.envelope.controlAuthority * 100)}%
+          </span>
           <span>
             <b>{flight.waypointIndex >= flight.waypointCount ? 'Landing pad' : 'Waypoint'}</b>
             <br />
@@ -234,6 +278,35 @@ export function FlightSimFloatingPanelView() {
           </span>
           <span><b>Tick</b><br />{flight.tick}</span>
           <span><b>Decisions</b><br />{decisions.savedCount} saved</span>
+        </section>
+
+        <section
+          className={cn('grid gap-2 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)}
+          aria-label="Flight camera and navigation"
+        >
+          <p className="flex items-center gap-1 text-[11px] font-semibold">
+            <View className="h-3.5 w-3.5" aria-hidden="true" />
+            Camera view · {FLIGHT_SIM_CAMERA_VIEW_OPTIONS.find(option => option.id === camera.view)?.label}
+          </p>
+          <div className="grid grid-cols-3 gap-1" role="group" aria-label="Flight camera views">
+            {FLIGHT_SIM_CAMERA_VIEW_OPTIONS.map(option => (
+              <button
+                key={option.id}
+                type="button"
+                className={cn('App-toolbar__btn', option.id === camera.view && 'font-bold')}
+                aria-pressed={option.id === camera.view}
+                onClick={() => selectFlightSimCameraView(option.id)}
+                data-kg-flight-sim-camera-option={option.id}
+                title={option.description}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <FlightSimNavigationInset flight={flight} />
+          <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
+            Press C to cycle views · north-up route is derived from the authored local mission only.
+          </p>
         </section>
 
         <FlightSimTrainingSurfaceProjection surface="flight-sim" />
@@ -251,10 +324,26 @@ export function FlightSimFloatingPanelView() {
               ? `Proceed to ${flight.currentWaypointId}.`
               : flight.phase === 'completed'
                 ? 'Mission complete. Save the validated Decisions locally.'
-                : 'The authored XR terrain remains the only world owner.'}
+                : `The ${environment.label} XR terrain remains the only world owner.`}
           </p>
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
             One existing R3F Canvas · fixed native ECS ticks · swept AABB collision · zero runtime network or model calls.
+          </p>
+          <p
+            className={cn(
+              'text-[10px]',
+              motionControl.phase === 'running'
+                ? UI_THEME_TOKENS.status.success
+                : UI_THEME_TOKENS.text.tertiary,
+            )}
+            data-kg-flight-sim-motion-control={motionControl.phase}
+            data-kg-flight-sim-motion-pose={motionControl.pose ? 'tracked' : 'waiting'}
+          >
+            Motion Control · {motionControl.phase === 'running'
+              ? motionControl.pose
+                ? 'connected · pose driving aircraft'
+                : 'connected · waiting for a full-body pose'
+              : 'off · open Motion Control to connect'}
           </p>
           {flight.runtimeError ? (
             <p
@@ -384,7 +473,7 @@ export function FlightSimFloatingPanelView() {
             </button>
           </div>
           <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>
-            Switching companions exits the aircraft overlay and restores the shared authored scene controller.
+            Motion Control keeps the aircraft and camera capture live across the panel handoff. XR Mode exits the aircraft overlay and restores the authored scene controller.
           </p>
         </section>
 

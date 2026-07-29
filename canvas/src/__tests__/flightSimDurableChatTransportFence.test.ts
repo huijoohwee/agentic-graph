@@ -17,9 +17,6 @@ import {
   resetFlightSimDecisionStoreForTests,
 } from '@/features/game-flight-sim/flightSimDecisionStore'
 import {
-  FlightSimExternalCallBlockedError,
-} from '@/features/game-flight-sim/flightSimExternalCallGuard'
-import {
   exitFlightSimSurface,
   openFlightSimSurface,
   readFlightSimSnapshot,
@@ -109,7 +106,7 @@ test('Flight admission rejects an existing durable chat run without clearing it'
   assert.equal(readActiveDurableChatStreamRun()?.runId, DURABLE_RUN.runId)
 })
 
-test('Flight owns both canonical and raw durable-chat Service Worker transport until exit', async t => {
+test('Flight suspends canonical durable chat without replacing raw Service Worker transport', async t => {
   const acceptedWorkerMessages: unknown[] = []
   class TestServiceWorker {
     postMessage(message: unknown): void {
@@ -158,30 +155,16 @@ test('Flight owns both canonical and raw durable-chat Service Worker transport u
   const started = startFlightSim()
   assert.equal(started.active, true)
 
-  assert.throws(
-    () => serviceWorker.postMessage({ type: CHAT_DURABLE_STREAM_START }),
-    (error: unknown) => {
-      assert.ok(error instanceof FlightSimExternalCallBlockedError)
-      assert.equal(
-        error.operation,
-        `service-worker-message:${CHAT_DURABLE_STREAM_START}`,
-      )
-      return true
-    },
-  )
-  assert.deepEqual(acceptedWorkerMessages, [])
-  const blocked = readFlightSimSnapshot()
-  assert.equal(blocked.active, true)
-  assert.equal(blocked.runId, started.runId)
-  assert.match(
-    blocked.runtimeError || '',
-    /blocked gameplay network operation: service-worker-message:KG_CHAT_STREAM_START/,
-  )
-
+  serviceWorker.postMessage({ type: CHAT_DURABLE_STREAM_START })
   serviceWorker.postMessage({ type: CHAT_DURABLE_STREAM_ABORT })
   assert.deepEqual(acceptedWorkerMessages, [
+    { type: CHAT_DURABLE_STREAM_START },
     { type: CHAT_DURABLE_STREAM_ABORT },
   ])
+  const active = readFlightSimSnapshot()
+  assert.equal(active.active, true)
+  assert.equal(active.runId, started.runId)
+  assert.equal(active.runtimeError, null)
   let fallbackCalled = false
   await assert.rejects(
     fetchWithDurableChatStream({
@@ -199,6 +182,7 @@ test('Flight owns both canonical and raw durable-chat Service Worker transport u
   exitFlightSimSurface()
   serviceWorker.postMessage({ type: CHAT_DURABLE_STREAM_START })
   assert.deepEqual(acceptedWorkerMessages, [
+    { type: CHAT_DURABLE_STREAM_START },
     { type: CHAT_DURABLE_STREAM_ABORT },
     { type: CHAT_DURABLE_STREAM_START },
   ])

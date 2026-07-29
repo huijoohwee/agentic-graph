@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { existsSync, createReadStream, readFileSync } from 'node:fs'
@@ -43,11 +43,14 @@ import { WEBPAGE_SHELL_PATTERN_REGEX_SOURCES } from './src/lib/websites/webpageS
 import { isWorkspaceSourceMirrorFileName, shouldEncodeWorkspaceSourceMirrorAsBase64 } from './src/features/workspace-fs/workspaceSourceMirrorFormats'
 import { DEFAULT_VITE_WATCH_IGNORED, buildWorkspaceMirrorWatchIgnoredRoots, createWorkspaceMirrorWatchPathIgnore } from './viteWorkspaceMirrorWatch'
 import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './viteChatProxyEnv'
+import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
 import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { resolveKnowgrphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
+let workspaceInitializationDocsAbsRootForDev = ''
+let workspaceInitializationWorkspaceSeedsAbsRootForDev = ''
 const liveCanvasHeroDocPath = path.resolve(repoRoot, 'docs', 'documents', 'knowgrph-live-canvas-hero.md')
 const mainPanelSectionDescriptionsDocPath = path.resolve(repoRoot, 'docs', 'documents', 'knowgrph-mainpanel-section-descriptions.md')
 const LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH = '/knowgrph-live-canvas-hero.md'
@@ -5209,7 +5212,8 @@ function createKgFsListHandler(): import('vite').Connect.NextHandleFunction {
   const allowedRoots = resolveWorkspaceMirrorReadRoots({
     repoRoot,
     configuredRoots: [
-      process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT,
+      workspaceInitializationDocsAbsRootForDev || process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT,
+      workspaceInitializationWorkspaceSeedsAbsRootForDev,
       process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT,
     ],
   })
@@ -6819,14 +6823,35 @@ function resolveViteCacheDir(command: string): string {
   return path.resolve(__dirname, `node_modules/.vite/dev-${port}`)
 }
 
-function applyWorkspaceInitializationDocsAbsRootDefault(command: string): void {
-  if (command === 'build') return
-  if (String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()) return
-  if (existsSync(siblingDocsRoot)) process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = siblingDocsRoot
+function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string {
+  if (command === 'build') return ''
+  const configuredDocsRoot = String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()
+  if (configuredDocsRoot) {
+    workspaceInitializationDocsAbsRootForDev = configuredDocsRoot
+    workspaceInitializationWorkspaceSeedsAbsRootForDev = path.resolve(configuredDocsRoot, '..', '..', 'knowgrph', 'docs', 'workspace-seeds')
+    return configuredDocsRoot
+  }
+  let gitCommonDir = ''
+  try {
+    gitCommonDir = String(execFileSync('git', ['-C', repoRoot, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' })).trim()
+  } catch {
+    gitCommonDir = ''
+  }
+  const docsRoot = resolveWorkspaceInitializationDocsRoot({
+    siblingDocsRoot,
+    gitCommonDir,
+    exists: existsSync,
+  })
+  if (docsRoot) process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = docsRoot
+  workspaceInitializationDocsAbsRootForDev = docsRoot
+  workspaceInitializationWorkspaceSeedsAbsRootForDev = docsRoot
+    ? path.resolve(docsRoot, '..', '..', 'knowgrph', 'docs', 'workspace-seeds')
+    : ''
+  return docsRoot
 }
 
 export default defineConfig(({ command, mode }) => {
-  applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const knowgrphStorageDevProxyTarget = resolveKnowgrphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
+  const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const knowgrphStorageDevProxyTarget = resolveKnowgrphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
     command === 'serve' ? '../grph-shared/src' : '../grph-shared/dist',
@@ -6842,6 +6867,7 @@ export default defineConfig(({ command, mode }) => {
       })()
     : '/',
   define: { __KNOWGRPH_SOURCE_REVISION__: JSON.stringify(runtimeIdentity.sourceRevision), __KNOWGRPH_RUNTIME_DEVICE__: JSON.stringify(runtimeIdentity.device), __KNOWGRPH_SOURCE_BRANCH__: JSON.stringify(runtimeIdentity.branch),
+    'import.meta.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT': JSON.stringify(workspaceInitializationDocsAbsRoot),
     __KNOWGRPH_LIVE_CANVAS_HERO_MARKDOWN__: JSON.stringify(readLiveCanvasHeroMarkdownSource()),
     __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
   },
@@ -6986,7 +7012,7 @@ export default defineConfig(({ command, mode }) => {
   server: { host: '127.0.0.1',
     port: 5173,
     strictPort: true,
-    watch: { ignored: [...DEFAULT_VITE_WATCH_IGNORED, createWorkspaceMirrorWatchPathIgnore(buildWorkspaceMirrorWatchIgnoredRoots({ repoRoot, canvasRoot: __dirname, workspaceRoot, docsRoot: process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT, chatLogRoot: process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT }))] },
+    watch: { ignored: [...DEFAULT_VITE_WATCH_IGNORED, createWorkspaceMirrorWatchPathIgnore(buildWorkspaceMirrorWatchIgnoredRoots({ repoRoot, canvasRoot: __dirname, workspaceRoot, docsRoot: process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT, chatLogRoot: process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT, mutableSourcePath: process.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH }))] },
     headers: {
       'Cache-Control': 'no-store',
     },

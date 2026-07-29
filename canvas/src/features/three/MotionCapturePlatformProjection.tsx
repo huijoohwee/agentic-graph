@@ -1,5 +1,5 @@
 import React from 'react'
-import { Download, Network, Radio, ShieldCheck } from 'lucide-react'
+import { Download, Network, Radio, ShieldCheck, Upload } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { downloadBlob } from '@/lib/graph/save'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
@@ -18,6 +18,7 @@ import { motionCapturePlatformUiAdapter } from './motionCapturePlatformUiAdapter
 import { motionControlCaptureSurfaceIsOpen } from './motionControlSurfaceRuntime'
 
 export type MotionCapturePlatformProjectionVariant = 'full' | 'skills' | 'media'
+const MAX_RESEARCH_EVIDENCE_BYTES = 256 * 1024
 
 const tierLabel = (tier: string | null): string => {
   if (tier === 'calibrated-metric-reconstruction') return 'Calibrated metric reconstruction'
@@ -128,6 +129,31 @@ export function MotionCapturePlatformProjection({
     }
   }, [pendingAction, pushUiToast])
 
+  const importResearchEvidence = React.useCallback(async (file: File) => {
+    if (pendingAction) return
+    if (file.size > MAX_RESEARCH_EVIDENCE_BYTES) {
+      pushUiToast({ id: 'motion-capture:evidence:size', kind: 'error', message: 'Research evidence exceeds the 256 KiB browser-local limit.' })
+      return
+    }
+    setPendingAction('research-evidence')
+    try {
+      await motionCapturePlatformUiAdapter.applyResearchEvidenceManifest(JSON.parse(await file.text()))
+      pushUiToast({
+        id: 'motion-capture:evidence:applied',
+        kind: 'success',
+        message: 'Metric calibration, clock, scale, and reconstruction evidence were validated and bound.',
+      })
+    } catch (error) {
+      pushUiToast({
+        id: 'motion-capture:evidence:error',
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Research evidence import failed.',
+      })
+    } finally {
+      setPendingAction('')
+    }
+  }, [pendingAction, pushUiToast])
+
   const peerStatus = !captureSurfaceActive
     ? 'Off outside approved XR capture surfaces'
     : peerSharing.lastError
@@ -215,14 +241,30 @@ export function MotionCapturePlatformProjection({
               <span>{source.calibration.status} · {source.clockAlignment.status}</span>
             </span>
             <p className={UI_THEME_TOKENS.text.tertiary}>{sourceDetail(source)}</p>
+            <p className={UI_THEME_TOKENS.text.tertiary}>Research window {source.quality.researchDurationMs.toFixed(0)} ms · manifest {source.calibration.researchValidation ? 'bound' : 'unbound'}</p>
             <span className="flex flex-wrap gap-1">
               <button type="button" className="App-toolbar__btn" disabled={source.calibration.status === 'calibrating'} onClick={() => runAction(`calibrate:${source.sourceId}`, () => { motionCapturePlatformUiAdapter.setCalibrationStatus(source.sourceId, 'begin') }, 'Calibration evidence collection started.')} data-kg-motion-capture-calibration="begin">Begin calibration</button>
               <button type="button" className="App-toolbar__btn" disabled={source.calibration.status === 'uncalibrated'} onClick={() => runAction(`calibration-reset:${source.sourceId}`, () => { motionCapturePlatformUiAdapter.setCalibrationStatus(source.sourceId, 'reset') }, 'Calibration status reset.')} data-kg-motion-capture-calibration="reset">Reset</button>
             </span>
           </article>
         ))}
-        <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Calibrated status requires measured or imported provenance; this UI never fabricates it.</p>
+        <p className={cn('text-[9px]', UI_THEME_TOKENS.text.tertiary)}>Research readiness requires a validated SI-frame manifest; manual calibration status never qualifies it.</p>
       </section>
+
+      <label className={cn('App-toolbar__btn w-fit cursor-pointer', recording.status === 'recording' || Boolean(pendingAction) ? 'pointer-events-none opacity-50' : '')} data-kg-motion-capture-research-evidence="import">
+        <Upload className="h-3 w-3" aria-hidden="true" /> Import research evidence
+        <input
+          type="file"
+          className="sr-only"
+          accept="application/json,.json"
+          disabled={recording.status === 'recording' || Boolean(pendingAction)}
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0]
+            event.currentTarget.value = ''
+            if (file) void importResearchEvidence(file)
+          }}
+        />
+      </label>
 
       <section className="flex flex-wrap gap-1" aria-label="Motion capture recording controls" data-kg-motion-capture-recording={recording.status}>
         <button type="button" className="App-toolbar__btn" disabled={!captureSurfaceActive || session.sources.length === 0 || recording.status !== 'idle'} onClick={() => runAction('record', motionCapturePlatformUiAdapter.startRecording, 'Bounded local recording started.')} data-kg-motion-capture-record="start">Record</button>

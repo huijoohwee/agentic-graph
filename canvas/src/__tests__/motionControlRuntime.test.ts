@@ -234,7 +234,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     || inspection.targets.surfaces.gameMode.webMcpTool !== 'knowgrph.control_local_game_mode') {
     throw new Error('expected Motion Control WebMCP inspection to expose the shared target projection')
   }
-  for (const view of ['motionControl', 'skillsCommands', 'media', 'animation', 'gameMode'] as const) {
+  for (const view of ['motionControl', 'skillsCommands', 'media', 'animation', 'gameMode', 'flightSim'] as const) {
     if (!motionControlCaptureSurfaceIsOpen({
       canvasRenderMode: '3d',
       canvas3dMode: 'xr',
@@ -370,7 +370,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   for (const marker of ['POSE_TASK_SHA256', 'MAX_POSE_TASK_BYTES', 'AbortSignal.timeout(', 'storage.googleapis.com/mediapipe-models/', 'copyFile(', 'pose_landmarks_detector.tflite', 'readBoundedResponseBytes(']) {
     if (!assetScript.includes(marker)) throw new Error(`expected same-origin licensed LiteRT asset preparation marker ${marker}`)
   }
-  for (const marker of ['floatingPanelCatalogSurfaceClassName()', 'floatingPanelCatalogBodyClassName(', 'data-kg-motion-control-start', 'data-kg-motion-control-invocation-chip-renderer="shared-markdown-sigil"', 'disabled={!captureSurfaceActive || session.sources.length === 0', 'disabled={!captureSurfaceActive || !peerSharing.available']) {
+  for (const marker of ['floatingPanelCatalogSurfaceClassName()', 'floatingPanelCatalogBodyClassName(', 'data-kg-motion-control-start', 'data-kg-motion-control-invocation-chip-renderer="shared-markdown-sigil"', 'disabled={!captureSurfaceActive || session.sources.length === 0', 'disabled={!captureSurfaceActive || !peerSharing.available', 'useAgenticOsRemoteGrammarAutoHydration()', "sourceMetadataDeferred ? 'deferred-offline'", 'data-kg-motion-capture-research-evidence="import"', 'applyResearchEvidenceManifest']) {
     if (!panelSource.includes(marker)) throw new Error(`expected shared FloatingPanel Motion Control layout marker ${marker}`)
   }
   for (const marker of ['MotionControlTargetCards', "openMotionControlSurface(target)"]) {
@@ -395,7 +395,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     if (!targetRuntimeSource.includes(marker)) throw new Error(`expected centralized Motion Control target ownership marker ${marker}`)
   }
   for (const marker of [
-    "'motion-control': Object.freeze", "'xr-3d': Object.freeze", 'animation: Object.freeze', 'MOTION_CONTROL_XR_RUNTIME_READY_VIEWS', "'skillsCommands'", 'activateXrSceneSurface({', 'panelView: MOTION_CONTROL_SURFACE_CATALOG[target].view',
+    "'motion-control': Object.freeze", "'xr-3d': Object.freeze", 'animation: Object.freeze', 'MOTION_CONTROL_XR_RUNTIME_READY_VIEWS', "'skillsCommands'", "'flightSim'", 'activateXrSceneSurface({', 'panelView: MOTION_CONTROL_SURFACE_CATALOG[target].view',
   ]) {
     if (!surfaceRuntimeSource.includes(marker)) throw new Error(`expected centralized Motion Control surface ownership marker ${marker}`)
   }

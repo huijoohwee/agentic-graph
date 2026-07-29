@@ -13,10 +13,25 @@ import {
 } from 'grph-shared/geospatial/poiRichMedia'
 import { LS_KEYS } from '../../lib/config.js'
 import {
+  FLIGHT_GEO_OVERLAY_LAYER_IDS,
+  FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  retainFlightGeoOverlayDuringStyleSwap,
+} from '../../flightGeoOverlayMapLibre.js'
+import {
   MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL,
   MAPLIBRE_DEFAULT_STYLE_URL,
   SAFE_SVG_FALLBACK_STYLE_SENTINEL,
 } from './basemapStyle.js'
+import {
+  disposeMapLibreFlightBootstrap,
+  markMapLibreFlightBootstrapApplied,
+  reconcileMapLibreFlightBootstrap,
+} from './mapLibreFlightBootstrap.js'
+import {
+  claimMapLibreMapLease,
+  readActiveNativeGeospatialMapLibreMap,
+  type MapLibreMapOwnerScope,
+} from './mapLibreHostLease.js'
 
 type BasemapProbe = {
   tileSourceId: string
@@ -56,6 +71,26 @@ const GRABMAPS_RUNTIME_NAVIGATION_GRACE_MS = 1200
 const GRABMAPS_IDLE_SERVICE_ERROR_FALLBACK_THRESHOLD = 3
 const BASEMAP_SOURCE_ACTIVITY_GRACE_MS = 12_000
 const HOST_GRAPH_SOURCE_PREFIX = 'kg-host-graph:nodes'
+let mapLibreRuntimePromise: Promise<any> | null = null
+
+const loadMapLibreRuntime = (): Promise<any> => {
+  if (!mapLibreRuntimePromise) {
+    mapLibreRuntimePromise = import('maplibre-gl/dist/maplibre-gl.js')
+      .catch(error => {
+        mapLibreRuntimePromise = null
+        throw error
+      })
+  }
+  return mapLibreRuntimePromise
+}
+
+export async function preloadMapLibreBasemapRuntime(): Promise<void> {
+  await loadMapLibreRuntime()
+}
+
+export function readActiveMapLibreMap(): any | null {
+  return readActiveNativeGeospatialMapLibreMap()
+}
 
 const resolveBasemapStyle = (rawStyleUrl: string | null | undefined) => {
   const trimmed = String(rawStyleUrl || '').trim()
@@ -435,6 +470,8 @@ export function useMapLibreBasemap(args: {
   rootRef: React.RefObject<HTMLElement | null>
   containerRef: React.RefObject<HTMLElement | null>
   targetStyleUrl?: string | null
+  initialStyleOverride?: Readonly<Record<string, unknown>> | null
+  ownerScope?: MapLibreMapOwnerScope
   canvasRenderMode: '2d' | '3d'
   projectionMode: 'mercator' | 'globe'
   viewportSizingMode: 'none' | 'fit'
@@ -442,7 +479,22 @@ export function useMapLibreBasemap(args: {
   onGrabMapsFallback?: () => void
   onPoiClick?: (detail: BasemapPoiClickDetail) => void
 }): BasemapResult {
-  const { enabled, containerRef, targetStyleUrl, canvasRenderMode, projectionMode, viewportSizingMode, vectorFallbackMs, onGrabMapsFallback, onPoiClick } = args
+  const {
+    enabled,
+    rootRef,
+    containerRef,
+    targetStyleUrl,
+    initialStyleOverride,
+    ownerScope = 'embedded-preview',
+    canvasRenderMode,
+    projectionMode,
+    viewportSizingMode,
+    vectorFallbackMs,
+    onGrabMapsFallback,
+    onPoiClick,
+  } = args
+  const mountedMapRef = React.useRef<any | null>(null)
+  const requestedOpenFreeMapLibertyRef = React.useRef(false)
   const [runtimeProjectionMode, setRuntimeProjectionMode] = React.useState<'mercator' | 'globe'>(projectionMode)
   const [state, setState] = React.useState<BasemapResult>({
     map: null,
@@ -534,13 +586,15 @@ export function useMapLibreBasemap(args: {
     let unsafeRuntimeFallbackApplied = false
     let blankBasemapStyleFallbackApplied = false
     let basemapRenderableConfirmationCount = 0
-    let requestedOpenFreeMapLiberty = false
+    requestedOpenFreeMapLibertyRef.current = false
     let lastNavigationAtMs = 0
     let lastBasemapSourceActivityAtMs = 0
     let basemapSourceRenderable = false
     let consecutiveIdleGrabMapsServiceErrors = 0
     let removePoiClickBinding: (() => void) | null = null
-    const requestedGrabMapsStyle = isGrabMapsUrl(resolveBasemapStyle(targetStyleUrl) || '')
+    let releaseMapLease: (() => void) | null = null
+    const selectedStyle = resolveBasemapStyle(targetStyleUrl)
+    const requestedGrabMapsStyle = isGrabMapsUrl(selectedStyle || '')
     const notifyGrabMapsFallback = () => {
       if (grabMapsFallbackApplied) return
       grabMapsFallbackApplied = true
@@ -682,7 +736,7 @@ export function useMapLibreBasemap(args: {
       }
 
       try {
-        const mlRaw = await import('maplibre-gl/dist/maplibre-gl.js')
+        const mlRaw = await loadMapLibreRuntime()
         if (cancelled) return
         const mlAny = mlRaw as unknown as any
         const MapConstructor = mlAny?.Map || mlAny?.default?.Map
@@ -735,8 +789,9 @@ export function useMapLibreBasemap(args: {
           }
         }
 
-        const style = resolveBasemapStyle(targetStyleUrl)
-        requestedOpenFreeMapLiberty = isOpenFreeMapLibertyUrl(style)
+        const style = initialStyleOverride || selectedStyle
+        requestedOpenFreeMapLibertyRef.current = !initialStyleOverride
+          && isOpenFreeMapLibertyUrl(selectedStyle)
 
         if (style == null) {
           setState((prev: BasemapResult) =>
@@ -747,7 +802,9 @@ export function useMapLibreBasemap(args: {
           return
         }
 
-        const preflight = await preflightGrabMapsStyle(style)
+        const preflight = typeof style === 'string'
+          ? await preflightGrabMapsStyle(style)
+          : { style, shouldFallback: false }
         if (cancelled) return
         const styleForMap = preflight.style
         grabMapsBootstrapPending = requestedGrabMapsStyle && !preflight.shouldFallback
@@ -797,7 +854,7 @@ export function useMapLibreBasemap(args: {
             zoom: canvasRenderMode === '3d' ? INITIAL_3D_ZOOM : 12,
           })
         } catch (err) {
-          if (requestedOpenFreeMapLiberty) {
+          if (requestedOpenFreeMapLibertyRef.current) {
             try {
               map = new MapConstructor({
                 container: el,
@@ -848,6 +905,15 @@ export function useMapLibreBasemap(args: {
             void 0
           }
         }
+        mountedMapRef.current = map
+        if (initialStyleOverride) {
+          markMapLibreFlightBootstrapApplied(map)
+        }
+        releaseMapLease = claimMapLibreMapLease({
+          map,
+          ownerScope,
+          root: rootRef.current,
+        })
 
         if (typeof map?.on === 'function' && typeof map?.queryRenderedFeatures === 'function') {
           const onMapClick = (ev: any) => {
@@ -895,7 +961,7 @@ export function useMapLibreBasemap(args: {
           const trimmed = msg.trim()
           if (!trimmed) return
           const openFreeMapAbort =
-            requestedOpenFreeMapLiberty
+            requestedOpenFreeMapLibertyRef.current
             && isAbortLike(err)
             && isOpenFreeMapLibertyUrl(trimmed)
           if (openFreeMapAbort && typeof map?.setStyle === 'function') {
@@ -935,7 +1001,10 @@ export function useMapLibreBasemap(args: {
           const fallbackUnsafeMapLibreRuntime = () => {
             if (unsafeRuntimeFallbackApplied) return false
             unsafeRuntimeFallbackApplied = true
-            if (runtimeProjectionMode === 'globe' && !requestedOpenFreeMapLiberty) {
+            if (
+              runtimeProjectionMode === 'globe'
+              && !requestedOpenFreeMapLibertyRef.current
+            ) {
               setRuntimeProjectionMode('mercator')
               setState((prev: BasemapResult) => ({ ...prev, mapError: null }))
               return true
@@ -1170,13 +1239,17 @@ export function useMapLibreBasemap(args: {
       } catch (err) {
         if (cancelled) return
         const msg = err instanceof Error ? err.message : String(err || '')
+        releaseMapLease?.()
+        releaseMapLease = null
+        if (mountedMapRef.current === map) mountedMapRef.current = null
+        disposeMapLibreFlightBootstrap(map)
+        try {
+          map?.remove?.()
+        } catch {
+          void 0
+        }
+        map = null
         if (isKnownUnsafeMapLibreRuntimeError(msg)) {
-          try {
-            map?.remove?.()
-          } catch {
-            void 0
-          }
-          map = null
           setRuntimeProjectionMode('mercator')
           setState((prev: BasemapResult) => ({ ...prev, map: null, basemapUnavailable: false, mapError: null, styleRevision: 0 }))
           return
@@ -1222,6 +1295,10 @@ export function useMapLibreBasemap(args: {
         }
         removePoiClickBinding = null
       }
+      releaseMapLease?.()
+      releaseMapLease = null
+      if (mountedMapRef.current === map) mountedMapRef.current = null
+      disposeMapLibreFlightBootstrap(map)
       try {
         map?.remove?.()
       } catch {
@@ -1229,7 +1306,62 @@ export function useMapLibreBasemap(args: {
       }
       map = null
     }
-  }, [enabled, containerRef, targetStyleUrl, canvasRenderMode, runtimeProjectionMode, viewportSizingMode, vectorFallbackMs, computeProbe, debug, setProbe, onGrabMapsFallback])
+    // The override is an activation bootstrap, not live map state. Flight may
+    // clear it while handing the same Geo surface back; remounting here would
+    // destroy the provider map instead of retaining its owner and camera.
+  }, [enabled, rootRef, containerRef, targetStyleUrl, ownerScope, canvasRenderMode, runtimeProjectionMode, viewportSizingMode, vectorFallbackMs, computeProbe, debug, setProbe, onGrabMapsFallback])
+
+  React.useEffect(() => {
+    const map = state.map
+    if (!enabled || !map || mountedMapRef.current !== map) return
+    const selectedStyle = resolveBasemapStyle(targetStyleUrl)
+    if (selectedStyle == null) return
+    const requestedGrabMapsStyle = isGrabMapsUrl(
+      typeof selectedStyle === 'string' ? selectedStyle : '',
+    )
+    requestedOpenFreeMapLibertyRef.current = (
+      typeof selectedStyle === 'string'
+      && isOpenFreeMapLibertyUrl(selectedStyle)
+    )
+    reconcileMapLibreFlightBootstrap({
+      bootstrapStyle: initialStyleOverride || null,
+      hasExactFlightOverlay: candidate => (
+        Boolean(candidate?.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID))
+        && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
+          .every(layerId => Boolean(candidate?.getLayer?.(layerId)))
+      ),
+      loadProviderStyle: async () => {
+        if (typeof selectedStyle !== 'string') return selectedStyle
+        const preflight = await preflightGrabMapsStyle(selectedStyle)
+        if (preflight.shouldFallback && requestedGrabMapsStyle) {
+          applyGrabMapsAutomaticFallback()
+          try {
+            onGrabMapsFallback?.()
+          } catch {
+            void 0
+          }
+        }
+        return preflight.style
+      },
+      map,
+      onError: error => {
+        const message = error instanceof Error
+          ? error.message
+          : String(error || '')
+        setState((prev: BasemapResult) => ({
+          ...prev,
+          mapError: message || 'Map style promotion failed',
+        }))
+      },
+      retainFlightOverlay: retainFlightGeoOverlayDuringStyleSwap,
+    })
+  }, [
+    enabled,
+    initialStyleOverride,
+    onGrabMapsFallback,
+    state.map,
+    targetStyleUrl,
+  ])
 
   return state
 }

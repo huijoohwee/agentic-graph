@@ -124,7 +124,7 @@ async function startActiveGame(): Promise<void> {
   assert.equal(state.floatingPanelView, 'gameMode')
 }
 
-function selectCanvasDestination(mode: CanvasGraphSurfaceModeId): boolean {
+function selectCanvasDestination(mode: Exclude<CanvasGraphSurfaceModeId, 'xr'>): boolean {
   const state = useGraphStore.getState()
   return applyCanvasSurfaceModeSelection({
     mode,

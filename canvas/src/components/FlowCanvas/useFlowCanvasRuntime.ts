@@ -23,12 +23,16 @@ import {
   setFlowNativeViewport,
   type FlowNativeDrawArgs,
   type FlowNativeRuntime,
+  type FlowOverlayNodeAabb,
 } from '@/components/FlowCanvas/nativeRuntime'
 import { subscribeFlowResetZoomFloorCache } from '@/components/FlowCanvas/shared'
 import { fitAllTransform } from '@/components/GraphCanvas/fit'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphSchema } from '@/lib/graph/schema'
-import { buildFlowCanvasNativeSceneKey } from '@/components/FlowCanvas/flowCanvasNativeSceneKey'
+import {
+  buildFlowCanvasNativeSceneKey,
+  hasFlowGroupSceneChanged,
+} from '@/components/FlowCanvas/flowCanvasNativeSceneKey'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import type { ViewportControlsPreset } from '@/lib/config.viewport-controls'
 import type { ZoomWheelGuardState } from '@/lib/canvas/zoom-wheel-guard'
@@ -108,6 +112,7 @@ export function useFlowCanvasRuntime(args: {
   zoomViewKey: string
   graphDataRevision: number
   sceneGraphData: any
+  overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb>
   computedPositions: Record<string, { x: number; y: number }> | null
   seededFallbackPositions: Record<string, { x: number; y: number }> | null
   layoutVariant: string
@@ -1180,12 +1185,19 @@ export function useFlowCanvasRuntime(args: {
     if (!active) return
     const runtime = runtimeRef.current
     if (!runtime) return
-    const graphKey = buildFlowCanvasNativeSceneKey({ sceneGraphData, layoutVariant, rankdir, flowConfig: flowConfigEffective, forbidCircleNodes, sceneGroups })
+    const overlayAabbKey = Object.entries(args.overlayAabbByNodeId || {})
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([id, bounds]) => `${id}:${bounds.minX},${bounds.minY},${bounds.maxX},${bounds.maxY}`)
+      .join(';')
+    const graphKey = `${buildFlowCanvasNativeSceneKey({ sceneGraphData, layoutVariant, rankdir, flowConfig: flowConfigEffective, forbidCircleNodes, sceneGroups })}|overlay=${overlayAabbKey}`
     const inputHasNativeSceneContent =
       (Array.isArray(sceneGraphData?.nodes) && sceneGraphData.nodes.length > 0)
       || (Array.isArray(sceneGraphData?.edges) && sceneGraphData.edges.length > 0)
       || (Array.isArray(sceneGroups) && sceneGroups.length > 0)
     const runtimeScene = runtime.scene
+    const groupSceneChangedAfterInitialBuild =
+      lastBuiltGraphKeyRef.current !== ''
+      && hasFlowGroupSceneChanged(runtimeScene?.groups, sceneGroups)
     const runtimeHasNativeSceneContent =
       (Array.isArray(runtimeScene?.nodes) && runtimeScene.nodes.length > 0)
       || (Array.isArray(runtimeScene?.edges) && runtimeScene.edges.length > 0)
@@ -1205,8 +1217,13 @@ export function useFlowCanvasRuntime(args: {
       sceneGroups,
       rankdir,
       widgetRegistry,
+      overlayAabbByNodeId: args.overlayAabbByNodeId,
     })
     __flowCanvasDebug.lastBuiltSceneNodeCount = result.nodeCount
+    if (groupSceneChangedAfterInitialBuild) {
+      requestFlowNativeDraw(runtime, buildDrawArgs())
+      return
+    }
     if (nativeSceneContentRemoved) {
       requestFlowNativeDraw(runtime, buildDrawArgs())
       return
@@ -1223,6 +1240,7 @@ export function useFlowCanvasRuntime(args: {
     graphDataRevision,
     lastBuiltGraphKeyRef,
     layoutVariant,
+    args.overlayAabbByNodeId,
     rankdir,
     runtimeRef,
     sceneGraphData,

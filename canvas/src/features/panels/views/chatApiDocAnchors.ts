@@ -46,6 +46,10 @@ export function getQwenApiRowAnchorId(rowKey: string): string {
   return buildSettingsRowAnchorId('qwen-chat-api-row', rowKey)
 }
 
+export function getZaiApiRowAnchorId(rowKey: string): string {
+  return buildSettingsRowAnchorId('zai-chat-api-row', rowKey)
+}
+
 export function getGoogleCloudApiRowAnchorId(rowKey: string): string {
   return buildSettingsRowAnchorId('google-cloud-chat-api-row', rowKey)
 }

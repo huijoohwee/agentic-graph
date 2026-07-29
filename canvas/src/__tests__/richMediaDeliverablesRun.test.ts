@@ -17,7 +17,12 @@ import {
   buildRichMediaPanelOverlayState,
   resolveRichMediaPanelDisplayText,
 } from '@/lib/render/richMediaPanelState'
-import { resolveStoryboardWidgetTextGenerationPrompts } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs'
+import {
+  resolveStoryboardWidgetTextGenerationPrompts,
+  resolveStoryboardWidgetTextSourceContexts,
+  serializeStoryboardWidgetTextSourceProvenance,
+  STORYBOARD_WIDGET_TEXT_SOURCE_PROVENANCE_SCHEMA,
+} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs'
 import { runStoryboardWidgetRichMediaDeliverables } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaDeliverablesRun'
 
 const structuredDeliverablesResponse = JSON.stringify({
@@ -115,17 +120,58 @@ export function testRichMediaDeliverablesBuildsBoundedMcpBackedGenerationPrompt(
 }
 
 export function testRichMediaDeliverablesRunUsesConnectedSourceAndKeepsAuthoredInstructions() {
+  const connectedValue = {
+    value: 'Whole source text that was not selected.',
+    sources: [{ edgeId: 'edge-neutral', nodeId: 'source-neutral', portKey: 'output' }],
+  }
+  const sourceContexts = resolveStoryboardWidgetTextSourceContexts({
+    graphData: {
+      type: 'GraphData',
+      nodes: [{
+        id: 'source-neutral',
+        type: 'TextSource',
+        label: 'Neutral research note',
+        properties: {},
+      }],
+      edges: [{
+        id: 'edge-neutral',
+        label: 'Source selection',
+        source: 'source-neutral',
+        target: 'target-neutral',
+        properties: {
+          schema: 'knowgrph-text-selection-widget-link/v1',
+          'selection:text': 'Selected evidence only.',
+          'selection:startLine': 12,
+          'selection:endLine': 14,
+          'selection:documentPath': 'notes/research.md',
+          'selection:targetFieldId': 'prompt',
+        },
+      }],
+    },
+    connectedValue,
+    targetPath: 'properties.prompt',
+  })
   const prompts = resolveStoryboardWidgetTextGenerationPrompts({
     authoredPrompt: '/investment-research-agent\nGenerate a slide deck and financial model.',
-    connectedValue: '# Generated Result\n\nRM100,000 budget.',
+    connectedValue: connectedValue.value,
+    sourceContexts,
   })
   if (
     !prompts.authoredPrompt.startsWith('/investment-research-agent')
-    || prompts.connectedPrompt !== '# Generated Result\n\nRM100,000 budget.'
-    || !prompts.prompt.includes('<connected-source-context>\n# Generated Result\n\nRM100,000 budget.\n</connected-source-context>')
+    || prompts.connectedPrompt !== 'Selected evidence only.'
+    || sourceContexts[0]?.content !== 'Selected evidence only.'
+    || sourceContexts[0]?.label !== 'Neutral research note'
+    || sourceContexts[0]?.selection?.startLine !== 12
+    || !prompts.prompt.includes(STORYBOARD_WIDGET_TEXT_SOURCE_PROVENANCE_SCHEMA)
+    || !prompts.prompt.includes('"documentPath": "notes/research.md"')
+    || prompts.prompt.includes('Whole source text that was not selected.')
     || !prompts.prompt.includes('<user-authored-request>\n/investment-research-agent\nGenerate a slide deck and financial model.\n</user-authored-request>')
   ) {
     throw new Error(`expected Widget Card Run to consume the connected Rich Media value without losing authored instructions, got ${JSON.stringify(prompts)}`)
+  }
+  const serialized = serializeStoryboardWidgetTextSourceProvenance(sourceContexts)
+  if (!serialized.includes('Selected evidence only.') || serialized.includes('Whole source text that was not selected.')) {
+    throw new Error(`expected output provenance to preserve only projected source evidence, got ${serialized}`)
   }
 }
 

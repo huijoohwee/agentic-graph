@@ -82,6 +82,7 @@ const snapshotRuntimeIdentity = (identity: KnowgrphRuntimeIdentity): KnowgrphRun
   knowgrphRevision: identity.knowgrphRevision,
   agenticCanvasOsRevision: identity.agenticCanvasOsRevision,
   catalogRevision: identity.catalogRevision,
+  catalogDigest: identity.catalogDigest,
   catalogHydration: { ...identity.catalogHydration },
   catalogCounts: { ...identity.catalogCounts },
   agentLiveProviderProof: {
@@ -102,6 +103,7 @@ const isRuntimeIdentity = (value: unknown): value is KnowgrphRuntimeIdentity => 
     || typeof value.knowgrphRevision !== 'string'
     || typeof value.agenticCanvasOsRevision !== 'string'
     || typeof value.catalogRevision !== 'string'
+    || typeof value.catalogDigest !== 'string'
     || !isRecord(value.catalogHydration)
     || !isRecord(value.catalogCounts)
     || !isRecord(value.agentLiveProviderProof)
@@ -253,10 +255,11 @@ const collectParityDifferences = (
 ): string[] => {
   const identities = attestations.map(entry => entry.attestation.identity)
   const fields: Array<keyof Pick<KnowgrphRuntimeIdentity,
-    'knowgrphRevision' | 'agenticCanvasOsRevision' | 'catalogRevision'>> = [
+    'knowgrphRevision' | 'agenticCanvasOsRevision' | 'catalogRevision' | 'catalogDigest'>> = [
       'knowgrphRevision',
       'agenticCanvasOsRevision',
       'catalogRevision',
+      'catalogDigest',
     ]
   const differences: string[] = fields.filter(field => new Set(identities.map(identity => identity[field])).size !== 1)
   const countFields = ['slash', 'hash', 'at'] as const

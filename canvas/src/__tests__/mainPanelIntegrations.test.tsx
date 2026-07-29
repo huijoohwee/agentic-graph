@@ -2228,6 +2228,75 @@ export async function testMainPanelRequestedIntegrationsSearchShowsQwenApiConfig
   }
 }
 
+export async function testMainPanelRequestedIntegrationsSearchShowsZaiApiReferenceRows() {
+  const storage = new MemoryStorage()
+  const { restore: restoreWindow } = initWindowHarness({ storage })
+  const { dom, restore: restoreDom } = initJsdomHarness()
+  let root: ReturnType<typeof createRoot> | null = null
+
+  try {
+    const anyWindow = dom.window as unknown as { requestAnimationFrame?: (cb: (ts: number) => void) => number }
+    anyWindow.requestAnimationFrame = installDeterministicRaf(dom.window)
+
+    useGraphStore.getState().resetAll()
+
+    const doc = dom.window.document
+    const container = doc.createElement('section')
+    doc.body.appendChild(container)
+    root = createRoot(container as unknown as HTMLElement)
+    await renderAndFlush(
+      root,
+      React.createElement(MainPanel, {
+        requestedTab: 'integrations',
+        requestedSearchQuery: 'zAiApi',
+      } as never),
+      anyWindow.requestAnimationFrame,
+      6,
+    )
+
+    const text = container.textContent || ''
+    ;[
+      'Z.AI API',
+      'zAiApi.provider',
+      'zAiApi.runtime_status',
+      'zAiApi.base_url',
+      'zAiApi.endpoint',
+      'zAiApi.model',
+      'zAiApi.request_fields',
+      'Open Z.AI Quick Start',
+      'reference_only',
+      'https://api.z.ai/api/paas/v4',
+      'glm-5.2',
+    ].forEach(token => {
+      if (!text.includes(token)) {
+        throw new Error(`expected Z.AI integrations search to include ${JSON.stringify(token)}, got ${JSON.stringify(text)}`)
+      }
+    })
+    const runtimeStatusRow = (Array.from(container.querySelectorAll('dl')) as HTMLElement[])
+      .find(row => row.children[0]?.textContent?.includes('zAiApi.runtime_status'))
+    if (!runtimeStatusRow || runtimeStatusRow.children.length !== 3) {
+      throw new Error('expected Z.AI runtime status to use the shared three-column Key-Type-Value row')
+    }
+    const runtimeStatusValue = runtimeStatusRow.children[2] as HTMLElement
+    if (runtimeStatusValue.querySelector('input, select, textarea')) {
+      throw new Error('expected Z.AI reference rows to remain non-editable until a provider runtime owner exists')
+    }
+    const quickStartLink = (Array.from(container.querySelectorAll('a')) as HTMLAnchorElement[])
+      .find(link => link.textContent?.trim() === 'Open Z.AI Quick Start')
+    if (quickStartLink?.getAttribute('href') !== 'https://docs.z.ai/guides/overview/quick-start.md') {
+      throw new Error('expected the Z.AI reference section to link to the requested Quick Start URL')
+    }
+  } finally {
+    try {
+      await unmountAndFlush(root)
+    } catch {
+      void 0
+    }
+    restoreDom()
+    restoreWindow()
+  }
+}
+
 export async function testMainPanelRequestedIntegrationsSearchShowsGoogleCloudApiConfigurableValues() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })

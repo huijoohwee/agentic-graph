@@ -19,6 +19,7 @@ import {
 import {
   buildAgentLiveProviderProofSummary,
   buildAgenticCanvasOsDocsCatalog,
+  buildAgenticCanvasOsDocsCatalogDigest,
   buildAgenticCanvasOsDocsInvokePayload,
   buildProgressiveAgentsReadinessSummary,
   resolveAgentLiveProviderProofRevisionFromGitHub,
@@ -281,6 +282,21 @@ test("standalone docs catalog retains the branch source URL without a revision",
   assert.equal(query?.sourceUrl, `${AGENTIC_CANVAS_OS_DOCS_SOURCE_ROOT_URL}/DICTIONARY-COMMAND.md#/query`);
 });
 
+test("catalog digest is deterministic, order independent, and sensitive to source metadata", () => {
+  const entries = [
+    { token: "#known", kind: "semantic", label: "Known", summary: "Semantic source", sourcePath: "DICTIONARY-SEMANTIC.md##known" },
+    { token: "/known", kind: "command", label: "Known", summary: "Command source", sourcePath: "DICTIONARY-COMMAND.md#/known" },
+  ];
+  const digest = buildAgenticCanvasOsDocsCatalogDigest(entries);
+
+  assert.match(digest, /^[0-9a-f]{64}$/);
+  assert.equal(buildAgenticCanvasOsDocsCatalogDigest([...entries].reverse()), digest);
+  assert.notEqual(
+    buildAgenticCanvasOsDocsCatalogDigest([{ ...entries[0], summary: "Drifted" }, entries[1]]),
+    digest,
+  );
+});
+
 test("docs invocation rejects syntactically valid tokens absent from the source catalog", () => {
   const result = buildAgenticCanvasOsDocsInvokePayload({
     docsContentByFileName: {
@@ -326,6 +342,8 @@ test("local MCP docs invocation catalogs /, #, and @ entries from source docs", 
   assert.equal(result.docsRoot, AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT);
   assert.equal(result.absoluteDocsRoot, DOCS_ROOT);
   assert.match(result.sourceRevision, /^[0-9a-f]{40}$/);
+  assert.match(result.catalogDigest, /^[0-9a-f]{64}$/);
+  assert.equal(result.catalogDigest, buildAgenticCanvasOsDocsCatalogDigest(result.catalog));
   assert.equal(
     result.sourceRootUrl,
     `https://github.com/huijoohwee/agentic-canvas-os/blob/${result.sourceRevision}/docs`,
@@ -388,6 +406,7 @@ test("local MCP docs invocation catalogs /, #, and @ entries from source docs", 
 });
 
 test("local MCP docs invocation treats sigil-only queries as token-prefix filters", { skip: !DOCS_AVAILABLE }, async () => {
+  let catalogDigest = "";
   for (const [query, kind] of [["/", "command"], ["#", "semantic"], ["@", "binding"]]) {
     const result = await runAgenticCanvasOsDocsInvokeTool({ query, limit: 500 }, {
       rootDir: KNOWGRPH_ROOT,
@@ -395,6 +414,9 @@ test("local MCP docs invocation treats sigil-only queries as token-prefix filter
     });
 
     assert.equal(result.ok, true);
+    assert.match(result.catalogDigest, /^[0-9a-f]{64}$/);
+    if (catalogDigest) assert.equal(result.catalogDigest, catalogDigest);
+    catalogDigest = result.catalogDigest;
     assert.equal(result.catalog.length, result.counts[kind]);
     assert.ok(result.catalog.every((entry) => entry.token.startsWith(query)));
   }
