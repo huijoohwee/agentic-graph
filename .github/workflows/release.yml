@@ -14,6 +14,7 @@ on:
         type: string
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -31,6 +32,7 @@ jobs:
       manifest_digest: ${{ steps.immutable_manifest.outputs.digest }}
       mirror_revision: ${{ steps.mirror_revision.outputs.revision }}
       candidate_digest: ${{ steps.production_candidate.outputs.candidate_digest }}
+      lifecycle_candidate_digest: ${{ steps.lifecycle_candidate.outputs.candidate_digest }}
     env:
       NODE_OPTIONS: --max-old-space-size=4096
       RELEASE_SHA: ${{ inputs.source_sha }}
@@ -67,6 +69,11 @@ jobs:
         with:
           repository: huijoohwee/huijoohwee.github.io
           path: huijoohwee.github.io
+
+      - name: Capture execution guideline revision
+        id: guideline_revision
+        working-directory: huijoohwee.github.io
+        run: echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -185,6 +192,38 @@ jobs:
             echo "- Immutable manifest: \`${{ steps.immutable_manifest.outputs.digest }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Create neutral release lifecycle receipts
+        id: lifecycle_candidate
+        working-directory: knowgrph
+        run: |
+          npm run --silent release:lifecycle:receipts -- create \
+            --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" \
+            --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" \
+            --local-review "$RUNNER_TEMP/local-review-candidate.json" \
+            --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" \
+            --source-sha "$RELEASE_SHA" \
+            --source-tree "$(git rev-parse HEAD^{tree})" \
+            --docs-tree "$(git -C ../agentic-canvas-os rev-parse HEAD^{tree})" \
+            --guideline-sha "${{ steps.guideline_revision.outputs.revision }}" \
+            --mirror-revision "${{ steps.mirror_revision.outputs.revision }}" \
+            --actor-id "github:${{ github.actor }}" \
+            --device-id "github-hosted:${{ runner.os }}" \
+            --session-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}" \
+            --worktree-id "github-workspace:${{ github.run_id }}:verify" \
+            --branch-id "refs/heads/main" \
+            --scope-id "production-release:$RELEASE_SHA" \
+            --lease-epoch "${{ github.run_attempt }}" \
+            --fence-revision "$RELEASE_SHA" \
+            --integrated-at "$(git show -s --format=%cI "$RELEASE_SHA")" \
+            --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            --target-id "airvio.co/knowgrph" \
+            --output-dir "$RUNNER_TEMP/production-lifecycle" \
+            --github-output >> "$GITHUB_OUTPUT"
+          {
+            echo "- Neutral candidate receipt: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/candidate-manifest.json")\`"
+            echo "- Guideline policy: \`${{ steps.guideline_revision.outputs.revision }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload production authorization evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -194,6 +233,14 @@ jobs:
             ${{ runner.temp }}/production-release-candidate.json
           if-no-files-found: error
           retention-days: 1
+
+      - name: Persist pre-authorization lifecycle receipts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: production-lifecycle-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/production-lifecycle
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Upload verified release artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -232,6 +279,7 @@ jobs:
       KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
       RELEASE_SHA: ${{ inputs.source_sha }}
       PRODUCTION_CANDIDATE_DIGEST: ${{ needs.verify.outputs.candidate_digest }}
+      PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST: ${{ needs.verify.outputs.lifecycle_candidate_digest }}
 
     steps:
       - name: Checkout exact candidate
@@ -300,6 +348,37 @@ jobs:
         with:
           name: production-authorization-${{ inputs.source_sha }}
           path: ${{ runner.temp }}/production-authorization
+
+      - name: Download neutral lifecycle receipts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: production-lifecycle-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/production-lifecycle
+
+      - name: Record exact human authorization and claim release controller
+        working-directory: knowgrph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/approvals" > "$RUNNER_TEMP/production-approvals.json"
+          npm run --silent release:lifecycle:receipts -- authorize \
+            --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" \
+            --docs-sha "${{ needs.verify.outputs.docs_revision }}" \
+            --receipt-dir "$RUNNER_TEMP/production-lifecycle" \
+            --approvals "$RUNNER_TEMP/production-approvals.json" \
+            --repository "${{ github.repository }}" \
+            --run-id "${{ github.run_id }}" \
+            --server-url "${{ github.server_url }}" \
+            --controller-id "github-actions:${{ github.run_id }}:${{ github.run_attempt }}:deploy" \
+            --candidate-digest "$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST" \
+            --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            --output-dir "$RUNNER_TEMP/production-lifecycle"
+          {
+            echo "## Human-authorized Production release"
+            echo "- Candidate: \`$PRODUCTION_LIFECYCLE_CANDIDATE_DIGEST\`"
+            echo "- Reviewer: \`$(jq -r .humanActorId "$RUNNER_TEMP/production-lifecycle/human-authorization-receipt.json")\`"
+            echo "- Authorization: \`$(jq -r .receiptDigest "$RUNNER_TEMP/production-lifecycle/human-authorization-receipt.json")\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Revalidate immutable manifest and configuration
         working-directory: knowgrph
@@ -392,6 +471,19 @@ jobs:
           PRODUCTION_BROWSER_HEADLESS: 'false'
         run: timeout --foreground --kill-after=30s 12m xvfb-run --auto-servernum npm run production:sw-upgrade:verify
 
+      - name: Record live verification receipt
+        working-directory: knowgrph
+        run: |
+          npm run --silent release:lifecycle:receipts -- live \
+            --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" \
+            --docs-sha "${{ needs.verify.outputs.docs_revision }}" \
+            --receipt-dir "$RUNNER_TEMP/production-lifecycle" \
+            --source-sha "$RELEASE_SHA" \
+            --deployment-url "${{ steps.candidate.outputs.deployment_url }}" \
+            --probe-evidence "$RUNNER_TEMP/knowgrph-production-sw-evidence.json" \
+            --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            --output-dir "$RUNNER_TEMP/production-lifecycle"
+
       - name: Publish verified production mirror
         working-directory: huijoohwee
         run: |
@@ -406,6 +498,26 @@ jobs:
             npm --prefix ../knowgrph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../knowgrph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
             git push origin HEAD:main
           fi
+
+      - name: Record publication receipt
+        working-directory: knowgrph
+        run: |
+          npm run --silent release:lifecycle:receipts -- publish \
+            --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os/docs" \
+            --docs-sha "${{ needs.verify.outputs.docs_revision }}" \
+            --receipt-dir "$RUNNER_TEMP/production-lifecycle" \
+            --publication-revision "$(git -C ../huijoohwee rev-parse HEAD)" \
+            --publication-target "huijoohwee/huijoohwee" \
+            --issued-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+            --output-dir "$RUNNER_TEMP/production-lifecycle"
+
+      - name: Persist completed lifecycle receipts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: production-lifecycle-complete-${{ inputs.source_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/production-lifecycle
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Checkout rollback Knowgrph source
         if: failure() && steps.deploy_pages.outcome == 'success'
