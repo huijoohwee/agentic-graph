@@ -291,6 +291,27 @@ test('XR environment defers until each MapLibre style is ready', () => {
   assert.deepEqual(diagnostics, [])
 })
 
+test('XR environment clear never probes MapLibre before its style attaches', () => {
+  const visibility = new Map<string, unknown>()
+  const map = {
+    getSource: () => {
+      throw new TypeError("Cannot read properties of undefined (reading 'getSource')")
+    },
+    setLayoutProperty: (
+      layerId: string,
+      property: string,
+      value: unknown,
+    ) => {
+      if (property === 'visibility') visibility.set(layerId, value)
+    },
+  }
+  assert.doesNotThrow(() => clearFlightGeoEnvironmentFromMap(map))
+  assert.equal(clearFlightGeoEnvironmentFromMap(map), true)
+  for (const layerId of Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS)) {
+    assert.equal(visibility.get(layerId), 'none')
+  }
+})
+
 test('XR environment exactness rejects mutated or retained MapLibre source payloads', () => {
   const overlay = environmentOverlay()
   const harness = environmentMapHarness()

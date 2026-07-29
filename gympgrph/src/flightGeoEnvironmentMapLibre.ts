@@ -312,16 +312,27 @@ export function applyFlightGeoEnvironmentToMap(
 }
 
 export function clearFlightGeoEnvironmentFromMap(map: any): boolean {
+  if (!map) return false
+  // This runs during mount and style replacement, when MapLibre can expose a
+  // Map instance before its Style is attached. Its getSource() implementation
+  // dereferences that Style, so never probe a source until the style is ready.
+  // Layer visibility is still best-effort and immediate so a retained style
+  // cannot flash an environment while the empty source update settles.
   hideEnvironmentLayers(map)
-  const source = map?.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
-  if (!source) return true
-  const sourceData = readGeoJsonSourceData(source)
-  if (!sourceData) return false
-  if (sourceData.features.length === 0) return true
-  return scheduleEnvironmentSourceData(map, {
-    type: 'FeatureCollection',
-    features: [],
-  })
+  if (!isMapLibreStyleReady(map)) return true
+  try {
+    const source = map.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
+    if (!source) return true
+    const sourceData = readGeoJsonSourceData(source)
+    if (!sourceData) return false
+    if (sourceData.features.length === 0) return true
+    return scheduleEnvironmentSourceData(map, {
+      type: 'FeatureCollection',
+      features: [],
+    })
+  } catch {
+    return false
+  }
 }
 
 export function mapHasExactFlightGeoEnvironment(
