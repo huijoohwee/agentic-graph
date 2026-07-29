@@ -71,7 +71,30 @@ export const createLifecycleCandidate = ({
     throw new Error('production readiness drifted from the reviewed candidate')
   }
 
-  const integration = contract.createIntegrationReceipt({
+  const convergenceBaseDigest = digest({
+    sourceRevision,
+    sourceTree,
+    integrationTarget: 'refs/heads/main',
+  })
+  const protectedTipDigest = digest({
+    sourceRevision,
+    sourceTree,
+  })
+  const preservation = contract.createOverlapPreservationReceipt({
+    convergenceBaseDigest,
+    protectedTipDigest,
+    captureAdapterId: 'github-actions-clean-workspace/v1',
+    entries: [],
+    capturedAt: integratedAt,
+  })
+  const disposition = contract.createOverlapDispositionReceipt(preservation, {
+    preservationReceiptDigest: preservation.receiptDigest,
+    convergenceBaseDigest,
+    protectedTipDigest,
+    observations: [],
+    observedAt: integratedAt,
+  })
+  const integration = contract.createIntegrationReceipt(preservation, disposition, {
     sourceRevision,
     sourceDigest: digest(localReview.source),
     dependencyClosureDigest: digest({
@@ -119,7 +142,7 @@ export const createLifecycleCandidate = ({
     }),
     builtAt: issuedAt,
   })
-  return { integration, review, candidate }
+  return { preservation, disposition, integration, review, candidate }
 }
 
 export const createLifecycleAuthorization = ({
@@ -243,6 +266,8 @@ const main = async () => {
       issuedAt: required(values['issued-at'], '--issued-at'),
       targetId: required(values['target-id'], '--target-id'),
     })
+    writeJson(path.join(outputDir, 'overlap-preservation-receipt.json'), result.preservation)
+    writeJson(path.join(outputDir, 'overlap-disposition-receipt.json'), result.disposition)
     writeJson(path.join(outputDir, 'integration-receipt.json'), result.integration)
     writeJson(path.join(outputDir, 'runtime-review-receipt.json'), result.review)
     writeJson(path.join(outputDir, 'candidate-manifest.json'), result.candidate)
@@ -334,6 +359,8 @@ const loadContract = async (docsRootValue, expectedRevisionValue) => {
 }
 
 const deploymentIdentity = ({ integration, review, candidate, authorization }) => ({
+  preservationReceiptDigest: integration.preservationReceiptDigest,
+  overlapDispositionReceiptDigest: integration.overlapDispositionReceiptDigest,
   integrationReceiptDigest: integration.receiptDigest,
   runtimeReviewReceiptDigest: review.receiptDigest,
   candidateDigest: candidate.receiptDigest,
