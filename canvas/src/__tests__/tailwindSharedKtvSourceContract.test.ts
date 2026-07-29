@@ -10,6 +10,12 @@ export const testTailwindScansSharedKtvClassOwners = () => {
   const sharedKtvRows = readUtf8(
     path.resolve(canvasRoot, '..', 'grph-shared', 'src', 'ui', 'keyTypeValueRows.ts'),
   )
+  const sharedKtvRow = readUtf8(
+    path.resolve(canvasRoot, '..', 'grph-shared', 'src', 'react', 'keyTypeValueRow.tsx'),
+  )
+  const sharedKtvLayout = readUtf8(
+    path.resolve(canvasRoot, '..', 'grph-shared', 'src', 'react', 'keyTypeValueLayout.tsx'),
+  )
   const sharedSourceDirective = '@source "../../../grph-shared/src";'
 
   if (tailwindTheme.split(sharedSourceDirective).length !== 2) {
@@ -24,6 +30,15 @@ export const testTailwindScansSharedKtvClassOwners = () => {
   ) {
     throw new Error(
       'Expected the scanned shared package to remain the source owner for KTV grid-column utilities',
+    )
+  }
+  if (
+    !sharedKtvRow.includes('gridClassName: KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME')
+    || !sharedKtvRow.includes('gridClassName: KTV_KEY_VALUE_GRID_CLASS_NAME')
+    || !sharedKtvLayout.includes('${KTV_KEY_TYPE_VALUE_GRID_CLASS_NAME}')
+  ) {
+    throw new Error(
+      'Expected shared MainPanel and FloatingPanel KTV React owners to consume the scanned grid-column utilities',
     )
   }
 }
