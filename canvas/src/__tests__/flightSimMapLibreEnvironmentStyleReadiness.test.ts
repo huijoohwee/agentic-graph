@@ -56,9 +56,9 @@ function environmentOverlay(): FlightGeoOverlaySnapshot {
           ],
         },
         {
-          baseHeightMeters: 0,
+          baseHeightMeters: 0.5,
           color: '#f59e0b',
-          heightMeters: 12,
+          heightMeters: 12.5,
           id: 'helicopter',
           kind: 'subject',
           ring: [
@@ -136,7 +136,10 @@ function environmentMapHarness() {
     },
     sourceData: () => (
       sources.get(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)?.data as {
-        features?: { properties?: Record<string, unknown> }[]
+        features?: {
+          id?: string
+          properties?: Record<string, unknown>
+        }[]
       } | undefined
     ),
     visibility,
@@ -178,6 +181,29 @@ test('XR environment defers until each MapLibre style is ready', () => {
           === overlay.environment?.revision
       )),
       true,
+    )
+    const projectedStage = harness.sourceData()?.features?.find(
+      feature => feature.properties?.kgSurfaceId === 'stage',
+    )
+    assert.equal(projectedStage?.properties?.kgBaseHeightMeters, 0)
+    assert.equal(projectedStage?.properties?.kgHeightMeters, 0.2)
+    assert.equal(projectedStage?.properties?.kgRenderBaseHeightMeters, 0.15)
+    assert.equal(projectedStage?.properties?.kgRenderHeightMeters, 0.35)
+    const projectedSubject = harness.sourceData()?.features?.find(
+      feature => feature.properties?.kgSurfaceId === 'helicopter',
+    )
+    assert.equal(projectedSubject?.properties?.kgRenderBaseHeightMeters, 0.5)
+    assert.equal(projectedSubject?.properties?.kgRenderHeightMeters, 12.5)
+    const extrusionLayer = harness.layers.get(
+      FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
+    ) as { paint?: Record<string, unknown> }
+    assert.deepEqual(
+      extrusionLayer.paint?.['fill-extrusion-base'],
+      ['get', 'kgRenderBaseHeightMeters'],
+    )
+    assert.deepEqual(
+      extrusionLayer.paint?.['fill-extrusion-height'],
+      ['get', 'kgRenderHeightMeters'],
     )
 
     harness.resetStyle(false)

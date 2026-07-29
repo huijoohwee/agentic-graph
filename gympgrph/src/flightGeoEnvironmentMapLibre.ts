@@ -24,32 +24,57 @@ type EnvironmentFeatureProperties = Readonly<{
   kgEnvironmentId: string
   kgEnvironmentRevision: string
   kgHeightMeters: number
+  kgRenderBaseHeightMeters: number
+  kgRenderHeightMeters: number
   kgSurfaceId: string
   kgSurfaceKind: string
 }>
 
+const GLOBE_GROUND_CLEARANCE_METERS = 0.15
+
+function resolveRenderHeightRange(
+  baseHeightMeters: number,
+  heightMeters: number,
+): readonly [number, number] {
+  if (baseHeightMeters > 0) {
+    return [baseHeightMeters, heightMeters]
+  }
+  // Globe depth testing clips extrusions that start exactly on its surface.
+  return [
+    GLOBE_GROUND_CLEARANCE_METERS,
+    heightMeters + GLOBE_GROUND_CLEARANCE_METERS,
+  ]
+}
+
 function environmentFeatureCollection(
   environment: FlightGeoEnvironmentProjection,
 ): FeatureCollection<Polygon, EnvironmentFeatureProperties> {
-  const features = environment.surfaces.map<
-    Feature<Polygon, EnvironmentFeatureProperties>
-  >(surface => ({
-    type: 'Feature',
-    id: `${environment.id}:${surface.id}`,
-    geometry: {
-      type: 'Polygon',
-      coordinates: [surface.ring.map(coordinate => [...coordinate])],
-    },
-    properties: {
-      kgBaseHeightMeters: surface.baseHeightMeters,
-      kgColor: surface.color,
-      kgEnvironmentId: environment.id,
-      kgEnvironmentRevision: environment.revision,
-      kgHeightMeters: surface.heightMeters,
-      kgSurfaceId: surface.id,
-      kgSurfaceKind: surface.kind,
-    },
-  }))
+  const features = environment.surfaces.map(surface => {
+    const [renderBaseHeightMeters, renderHeightMeters] =
+      resolveRenderHeightRange(
+        surface.baseHeightMeters,
+        surface.heightMeters,
+      )
+    return {
+      type: 'Feature',
+      id: `${environment.id}:${surface.id}`,
+      geometry: {
+        type: 'Polygon',
+        coordinates: [surface.ring.map(coordinate => [...coordinate])],
+      },
+      properties: {
+        kgBaseHeightMeters: surface.baseHeightMeters,
+        kgColor: surface.color,
+        kgEnvironmentId: environment.id,
+        kgEnvironmentRevision: environment.revision,
+        kgHeightMeters: surface.heightMeters,
+        kgRenderBaseHeightMeters: renderBaseHeightMeters,
+        kgRenderHeightMeters: renderHeightMeters,
+        kgSurfaceId: surface.id,
+        kgSurfaceKind: surface.kind,
+      },
+    } satisfies Feature<Polygon, EnvironmentFeatureProperties>
+  })
   return { type: 'FeatureCollection', features }
 }
 
@@ -97,9 +122,9 @@ function ensureEnvironmentLayers(map: any): boolean {
       type: 'fill-extrusion',
       source: FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
       paint: {
-        'fill-extrusion-base': ['get', 'kgBaseHeightMeters'],
+        'fill-extrusion-base': ['get', 'kgRenderBaseHeightMeters'],
         'fill-extrusion-color': ['get', 'kgColor'],
-        'fill-extrusion-height': ['get', 'kgHeightMeters'],
+        'fill-extrusion-height': ['get', 'kgRenderHeightMeters'],
         'fill-extrusion-opacity': 0.86,
       },
     })
