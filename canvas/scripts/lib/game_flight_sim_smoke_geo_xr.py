@@ -165,24 +165,6 @@ def _read_view(page: Page) -> dict[str, Any]:
             && aircraftProjected.y >= 0
             && aircraftProjected.x <= mapWidth
             && aircraftProjected.y <= mapHeight
-          let mapPointerHit = null
-          if (mapCanvas) {
-            const rect = mapCanvas.getBoundingClientRect()
-            const candidates = [
-              [0.32, 0.48],
-              [0.2, 0.62],
-              [0.45, 0.7],
-            ]
-            for (const [ratioX, ratioY] of candidates) {
-              const x = rect.left + rect.width * ratioX
-              const y = rect.top + rect.height * ratioY
-              const hit = document.elementFromPoint(x, y)
-              if (hit === mapCanvas) {
-                mapPointerHit = { x, y }
-                break
-              }
-            }
-          }
           let rendererPointerRoot = rendererCanvas?.parentElement || null
           while (
             rendererPointerRoot
@@ -270,7 +252,6 @@ def _read_view(page: Page) -> dict[str, Any]:
             aircraftScreenPoint: aircraftProjected
               ? { x: aircraftProjected.x, y: aircraftProjected.y }
               : null,
-            mapPointerHit,
             rendererCanvasCount: rendererCanvases.length,
             canvasStable: Boolean(rendererCanvas)
               && rendererCanvas === window.__kgFlightSimCanvas,
@@ -312,8 +293,102 @@ def _read_view(page: Page) -> dict[str, Any]:
         }
         """
     )
-    view["layoutOcclusion"] = read_geo_xr_layout_occlusion(page)
+    layout_occlusion = read_geo_xr_layout_occlusion(page)
+    view["layoutOcclusion"] = layout_occlusion
+    view["mapPointerHit"] = layout_occlusion.get("mapPointerHit")
     return view
+
+
+def _unmet_view_requirements(
+    last: dict[str, Any],
+    *,
+    expected_provider_host: str,
+    expected_view: str,
+    expected_projection: str,
+    expected_style_url: str,
+    require_visual_layout: bool,
+) -> list[str]:
+    layout = last.get("layoutOcclusion") or {}
+    pitch = float(last.get("pitch") or 0)
+    map_pointer_hit = (
+        layout.get("mapPointerHit")
+        if require_visual_layout
+        else last.get("mapPointerHit")
+    )
+    layout_checks = {
+        "layout.viewport": layout.get("viewport") == {
+            "width": 1100,
+            "height": 962,
+        },
+        "layout.sourceFilesVisible": layout.get("sourceFilesVisible") is True,
+        "layout.workspacePaneVisible": layout.get("workspacePaneVisible") is True,
+        "layout.floatingPanelVisible": layout.get("floatingPanelVisible") is True,
+        "layout.floatingPanelView": layout.get("floatingPanelView")
+        == "flightSim",
+        "layout.routeUnoccluded": layout.get("routeUnoccluded") is True,
+        "layout.aircraftUnoccluded": layout.get("aircraftUnoccluded") is True,
+        "layout.environmentUnoccludedKinds": {
+            "stage-footprint",
+            "structure",
+            "subject",
+        }.issubset(set(layout.get("environmentUnoccludedKinds") or [])),
+        "layout.environmentExtrusionVisible": layout.get(
+            "environmentExtrusionVisible",
+        )
+        is True,
+        "layout.cameraPadding": bool(layout.get("cameraPadding")),
+        "layout.geographyBoundaryStatus": layout.get(
+            "geographyBoundaryStatus",
+        )
+        == "not-rendered",
+    }
+    checks = {
+        "viewMode": last.get("viewMode") == expected_view,
+        "styleUrl": last.get("styleUrl") == expected_style_url,
+        "styleFingerprint": expected_provider_host
+        in str(last.get("styleFingerprint") or ""),
+        "projection": last.get("projection") == expected_projection,
+        "visibleMapLibreCanvasCount": last.get("visibleMapLibreCanvasCount", 0)
+        >= 1,
+        "flightLayersReady": last.get("flightLayersReady") is True,
+        "flightLayersTopmost": last.get("flightLayersTopmost") is True,
+        "aircraftLayerType": last.get("aircraftLayerType") == "symbol",
+        "aircraftGeometryType": last.get("aircraftGeometryType") == "Polygon",
+        "aircraftImagesReady": last.get("aircraftImagesReady") is True,
+        "aircraftImagePixelWidth": (last.get("aircraftImagePixelWidth") or 0)
+        >= 40,
+        "environmentId": last.get("environmentId") == "singapore",
+        "environmentPresentationBounds": last.get("environmentPresentationBounds")
+        == [[103.605, 1.158], [104.09, 1.48]],
+        "environmentLayersReady": last.get("environmentLayersReady") is True,
+        "environmentSourceFeatures": (last.get("environmentSourceFeatures") or 0)
+        >= 10,
+        "renderedEnvironmentKinds": {
+            "stage-footprint",
+            "structure",
+            "subject",
+        }.issubset(set(last.get("renderedEnvironmentKinds") or [])),
+        "renderedEnvironmentSubjectIds": any(
+            "vehicle-" in str(subject_id)
+            for subject_id in last.get("renderedEnvironmentSubjectIds") or []
+        ),
+        "flightSourceFeatures": (last.get("flightSourceFeatures") or 0) >= 7,
+        "objectiveGuideFeatureCount": last.get("objectiveGuideFeatureCount") == 1,
+        "renderedKinds": set(last.get("renderedKinds") or [])
+        == {"aircraft", "objective-guide", "route", "route-point"},
+        "routeInViewport": last.get("routeInViewport") is True,
+        "routeScreenSpan": max(
+            float((last.get("routeScreenSpan") or {}).get("x") or 0),
+            float((last.get("routeScreenSpan") or {}).get("y") or 0),
+        )
+        >= 80,
+        "aircraftInViewport": last.get("aircraftInViewport") is True,
+        "pitch": pitch >= 22 if expected_view.startswith("3d") else abs(pitch) < 0.01,
+        "mapPointerHit": bool(map_pointer_hit),
+    }
+    if require_visual_layout:
+        checks.update(layout_checks)
+    return [name for name, passed in checks.items() if not passed]
 
 
 def _wait_for_view(
@@ -329,73 +404,29 @@ def _wait_for_view(
     last: dict[str, Any] = {}
     while time.monotonic() < deadline:
         last = _read_view(page)
-        layout = last.get("layoutOcclusion") or {}
-        layout_ready = not require_visual_layout or (
-            layout.get("viewport") == {"width": 1100, "height": 962}
-            and layout.get("sourceFilesVisible") is True
-            and layout.get("workspacePaneVisible") is True
-            and layout.get("floatingPanelVisible") is True
-            and layout.get("floatingPanelView") == "flightSim"
-            and layout.get("routeUnoccluded") is True
-            and layout.get("aircraftUnoccluded") is True
-            and {"stage-footprint", "structure", "subject"}.issubset(
-                set(layout.get("environmentUnoccludedKinds") or [])
-            )
-            and layout.get("environmentExtrusionVisible") is True
-            and bool(layout.get("cameraPadding"))
-            and layout.get("geographyBoundaryStatus") == "not-rendered"
+        unmet = _unmet_view_requirements(
+            last,
+            expected_provider_host=expected_provider_host,
+            expected_view=expected_view,
+            expected_projection=expected_projection,
+            expected_style_url=expected_style_url,
+            require_visual_layout=require_visual_layout,
         )
-        if (
-            last.get("viewMode") == expected_view
-            and last.get("styleUrl") == expected_style_url
-            and expected_provider_host in str(
-                last.get("styleFingerprint") or ""
-            )
-            and last.get("projection") == expected_projection
-            and last.get("visibleMapLibreCanvasCount", 0) >= 1
-            and last.get("flightLayersReady") is True
-            and last.get("flightLayersTopmost") is True
-            and last.get("aircraftLayerType") == "symbol"
-            and last.get("aircraftGeometryType") == "Polygon"
-            and last.get("aircraftImagesReady") is True
-            and (last.get("aircraftImagePixelWidth") or 0) >= 40
-            and last.get("environmentId") == "singapore"
-            and last.get("environmentPresentationBounds")
-            == [[103.605, 1.158], [104.09, 1.48]]
-            and last.get("environmentLayersReady") is True
-            and (last.get("environmentSourceFeatures") or 0) >= 10
-            and {"stage-footprint", "structure", "subject"}.issubset(
-                set(last.get("renderedEnvironmentKinds") or [])
-            )
-            and any("vehicle-" in str(subject_id) for subject_id in
-                    last.get("renderedEnvironmentSubjectIds") or [])
-            and (last.get("flightSourceFeatures") or 0) >= 7
-            and last.get("objectiveGuideFeatureCount") == 1
-            and set(last.get("renderedKinds") or [])
-            == {"aircraft", "objective-guide", "route", "route-point"}
-            and last.get("routeInViewport") is True
-            and max(
-                float((last.get("routeScreenSpan") or {}).get("x") or 0),
-                float((last.get("routeScreenSpan") or {}).get("y") or 0),
-            ) >= 80
-            and last.get("aircraftInViewport") is True
-            and (
-                float(last.get("pitch") or 0) >= 22
-                if expected_view.startswith("3d")
-                else abs(float(last.get("pitch") or 0)) < 0.01
-            )
-            and (
-                bool((layout.get("mapPointerHit")))
-                if require_visual_layout
-                else bool(last.get("mapPointerHit"))
-            )
-            and layout_ready
-        ):
+        if not unmet:
             return last
         page.wait_for_timeout(100)
+    unmet = _unmet_view_requirements(
+        last,
+        expected_provider_host=expected_provider_host,
+        expected_view=expected_view,
+        expected_projection=expected_projection,
+        expected_style_url=expected_style_url,
+        require_visual_layout=require_visual_layout,
+    )
     raise AssertionError(
         "timed out waiting for native MapLibre Geo+XR view "
-        f"{expected_view}/{expected_projection}/{expected_style_url}: {last}"
+        f"{expected_view}/{expected_projection}/{expected_style_url}; "
+        f"unmet={unmet}: {last}"
     )
 
 def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any], GeoXrViewCase, dict[str, Any]]:

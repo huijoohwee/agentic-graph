@@ -285,6 +285,15 @@ test('Flight browser proof activates only after applying the authored source', (
     assert.doesNotMatch(sourceReader, /source\?\._data\?\.features/)
   }
   assert.match(
+    geoXrVerifier,
+    /layout_occlusion = read_geo_xr_layout_occlusion\(page\)/,
+  )
+  assert.match(
+    geoXrVerifier,
+    /view\["mapPointerHit"\] = layout_occlusion\.get\("mapPointerHit"\)/,
+  )
+  assert.doesNotMatch(geoXrVerifier, /const candidates = \[/)
+  assert.match(
     geoXrPresentationVerifier,
     /def restore_flight_sim_panel\(page: Page\) -> None:/,
   )
@@ -292,11 +301,31 @@ test('Flight browser proof activates only after applying the authored source', (
     geoXrPresentationVerifier,
     /state\.setFloatingPanelView\('flightSim'\)/,
   )
+  assert.match(
+    geoXrPresentationVerifier,
+    /\[aria-label="Flight Sim"\]'.*wait_for\(/s,
+  )
+  const selectGeoViewIndex = geoXrPresentationVerifier.indexOf(
+    'select_geo_xr_view(page, button_label)',
+  )
+  const restoreFlightPanelIndex = geoXrPresentationVerifier.indexOf(
+    'restore_flight_sim_panel(page)',
+    selectGeoViewIndex,
+  )
   assert.ok(
-    geoXrPresentationVerifier.indexOf('select_geo_xr_view(page, button_label)')
+    selectGeoViewIndex
       < geoXrPresentationVerifier.indexOf(
-        'restore_flight_sim_panel(page)',
-        geoXrPresentationVerifier.indexOf('select_geo_xr_view(page, button_label)'),
+        'expected_view=view_mode',
+        selectGeoViewIndex,
+      )
+      && geoXrPresentationVerifier.indexOf(
+        'expected_view=view_mode',
+        selectGeoViewIndex,
+      ) < restoreFlightPanelIndex
+      && restoreFlightPanelIndex
+      < geoXrPresentationVerifier.indexOf(
+        'require_visual_layout=True',
+        restoreFlightPanelIndex,
       ),
     'expected each Geo view control to transition back to Flight Sim before its visual assertion',
   )
