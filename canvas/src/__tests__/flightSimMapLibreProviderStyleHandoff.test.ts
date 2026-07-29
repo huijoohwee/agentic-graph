@@ -18,6 +18,10 @@ import {
 import type {
   FlightGeoOverlaySnapshot,
 } from '../../../gympgrph/src/flightGeoOverlay'
+import {
+  promoteMapLibreFlightProviderStyle,
+  type MapLibreFlightProviderPromotionState,
+} from '../../../gympgrph/src/features/geospatial/mapLibreFlightProviderPromotion'
 
 function exactOverlay(): FlightGeoOverlaySnapshot {
   const ring = [
@@ -167,6 +171,112 @@ test('provider-style handoff retains the complete Flight environment below its r
   )
 })
 
+test('provider promotion atomically applies the exact full Flight style and rejects same-identity mutations', async () => {
+  const overlay = exactOverlay()
+  const previousStyle = {
+    version: 8,
+    sources: {
+      [FLIGHT_GEO_ENVIRONMENT_SOURCE_ID]: {
+        data: flightGeoEnvironmentMapLibreFeatureCollection(overlay),
+        type: 'geojson',
+      },
+      [FLIGHT_GEO_OVERLAY_SOURCE_ID]: {
+        data: flightGeoOverlayMapLibreFeatureCollection(overlay),
+        type: 'geojson',
+      },
+    },
+    layers: [
+      { id: 'kg-flight-sim:geo-bootstrap-background', type: 'background' },
+      ...exactEnvironmentLayers(),
+      ...exactOverlayLayers(),
+    ],
+  }
+  const providerStyle = {
+    version: 8,
+    sources: { provider: { type: 'vector' } },
+    layers: [{ id: 'provider-background', type: 'background' }],
+  }
+  let activePreviousStyle: Record<string, any> = previousStyle
+  const applied: Array<{
+    options: Record<string, unknown>
+    style: Record<string, any>
+  }> = []
+  let appliedMarkers = 0
+  const state: MapLibreFlightProviderPromotionState = {
+    cancelProviderStyleApply: null,
+    cancelProviderStyleLoad: null,
+    disposed: false,
+    generation: 1,
+    map: {
+      getStyle: () => activePreviousStyle,
+      setStyle: (
+        style: Record<string, any>,
+        options: Record<string, unknown>,
+      ) => applied.push({ options, style }),
+    },
+  }
+  const promote = () => promoteMapLibreFlightProviderStyle({
+    generation: state.generation,
+    hasCurrentProviderPresentation: () => true,
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => providerStyle,
+    onApplied: () => {
+      appliedMarkers += 1
+    },
+    retainFlightOverlay: (previous, next) =>
+      retainFlightGeoOverlayDuringStyleSwap(
+        previous,
+        next,
+        overlay,
+        '3d',
+      ),
+    retainOverlay: true,
+    scheduleProviderApply: apply => {
+      apply()
+      return () => void 0
+    },
+    state,
+  })
+
+  assert.equal(await promote(), 'applied')
+  assert.equal(appliedMarkers, 1)
+  assert.equal(applied.length, 1)
+  assert.deepEqual(applied[0]!.options, { diff: true })
+  assert.equal('transformStyle' in applied[0]!.options, false)
+  assert.deepEqual(
+    applied[0]!.style.layers.map((layer: { id: string }) => layer.id),
+    [
+      'provider-background',
+      ...FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
+      ...FLIGHT_GEO_OVERLAY_LAYER_ORDER,
+    ],
+  )
+  assert.deepEqual(
+    applied[0]!.style.sources[FLIGHT_GEO_ENVIRONMENT_SOURCE_ID],
+    previousStyle.sources[FLIGHT_GEO_ENVIRONMENT_SOURCE_ID],
+  )
+  assert.deepEqual(
+    applied[0]!.style.sources[FLIGHT_GEO_OVERLAY_SOURCE_ID],
+    previousStyle.sources[FLIGHT_GEO_OVERLAY_SOURCE_ID],
+  )
+
+  const mutatedPreviousStyle = structuredClone(previousStyle)
+  const mutatedEnvironment =
+    mutatedPreviousStyle.sources[
+      FLIGHT_GEO_ENVIRONMENT_SOURCE_ID
+    ].data as any
+  mutatedEnvironment.features[0].geometry.coordinates[0][0][0] += 0.0001
+  mutatedEnvironment.features[0].properties.kgHeightMeters = 120
+  activePreviousStyle = mutatedPreviousStyle
+  state.generation += 1
+  applied.length = 0
+  appliedMarkers = 0
+
+  assert.equal(await promote(), 'admission-changed')
+  assert.deepEqual(applied, [])
+  assert.equal(appliedMarkers, 0)
+})
+
 test('provider-style handoff refuses mutated extrusion and polygon-outline layers', () => {
   const overlay = exactOverlay()
   const nextStyle = {
@@ -195,42 +305,30 @@ test('provider-style handoff refuses mutated extrusion and polygon-outline layer
         }
       : layer
   ))
-  const environmentRejected = retainFlightGeoOverlayDuringStyleSwap({
-    version: 8,
-    sources,
-    layers: mutatedEnvironmentLayers,
-  }, nextStyle, overlay, '3d')
   assert.equal(
-    environmentRejected.sources[FLIGHT_GEO_ENVIRONMENT_SOURCE_ID],
-    undefined,
+    retainFlightGeoOverlayDuringStyleSwap({
+      version: 8,
+      sources,
+      layers: mutatedEnvironmentLayers,
+    }, nextStyle, overlay, '3d'),
+    null,
+    'a mutated environment rejects the provider transaction',
   )
-  assert.equal(
-    environmentRejected.sources[FLIGHT_GEO_OVERLAY_SOURCE_ID],
-    undefined,
-    'a mutated environment rejects the complete Flight composition',
-  )
-  assert.deepEqual(environmentRejected.layers, nextStyle.layers)
 
   const polygonOutlineLayers = exactOverlayLayers().map(layer => (
     layer.id === FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline
       ? { ...layer, layout: undefined, type: 'fill' }
       : layer
   ))
-  const outlineRejected = retainFlightGeoOverlayDuringStyleSwap({
-    version: 8,
-    sources,
-    layers: polygonOutlineLayers,
-  }, nextStyle, overlay, '3d')
   assert.equal(
-    outlineRejected.sources[FLIGHT_GEO_OVERLAY_SOURCE_ID],
-    undefined,
+    retainFlightGeoOverlayDuringStyleSwap({
+      version: 8,
+      sources,
+      layers: polygonOutlineLayers,
+    }, nextStyle, overlay, '3d'),
+    null,
+    'a mutated overlay rejects the provider transaction',
   )
-  assert.equal(
-    outlineRejected.sources[FLIGHT_GEO_ENVIRONMENT_SOURCE_ID],
-    undefined,
-    'a mutated overlay rejects the complete Flight composition',
-  )
-  assert.deepEqual(outlineRejected.layers, nextStyle.layers)
 })
 
 test('provider-style handoff refuses same-identity source payload mutations', () => {
@@ -277,9 +375,9 @@ test('provider-style handoff refuses same-identity source payload mutations', ()
       ],
     }, nextStyle, overlay, '3d')
 
-    assert.deepEqual(
+    assert.equal(
       rejected,
-      nextStyle,
+      null,
       `${label} mutation rejects the complete provider handoff`,
     )
   }
@@ -292,25 +390,22 @@ test('provider-style handoff refuses a partial environment stack', () => {
     sources: { provider: { type: 'vector' } },
     layers: [{ id: 'provider-background', type: 'background' }],
   }
-  const promoted = retainFlightGeoOverlayDuringStyleSwap({
-    version: 8,
-    sources: {
-      [FLIGHT_GEO_ENVIRONMENT_SOURCE_ID]: {
-        type: 'geojson',
-        data: flightGeoEnvironmentMapLibreFeatureCollection(overlay),
-      },
-    },
-    layers: FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER
-      .slice(0, -1)
-      .map(id => ({ id, source: FLIGHT_GEO_ENVIRONMENT_SOURCE_ID })),
-  }, nextStyle, overlay, '3d')
-
   assert.equal(
-    promoted.sources[FLIGHT_GEO_ENVIRONMENT_SOURCE_ID],
-    undefined,
-    'a later exact application must rebuild instead of retaining stale fragments',
+    retainFlightGeoOverlayDuringStyleSwap({
+      version: 8,
+      sources: {
+        [FLIGHT_GEO_ENVIRONMENT_SOURCE_ID]: {
+          type: 'geojson',
+          data: flightGeoEnvironmentMapLibreFeatureCollection(overlay),
+        },
+      },
+      layers: FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER
+        .slice(0, -1)
+        .map(id => ({ id, source: FLIGHT_GEO_ENVIRONMENT_SOURCE_ID })),
+    }, nextStyle, overlay, '3d'),
+    null,
+    'a partial environment rejects the provider transaction',
   )
-  assert.deepEqual(promoted.layers, nextStyle.layers)
 })
 
 test('provider-style handoff refuses mutated source options and layer visibility', () => {
@@ -355,7 +450,7 @@ test('provider-style handoff refuses mutated source options and layer visibility
       sources,
       layers: exactLayers,
     }, nextStyle, overlay, '3d')
-    assert.deepEqual(rejected, nextStyle, `${label} must not be retained`)
+    assert.equal(rejected, null, `${label} must reject provider admission`)
   }
 
   const hiddenAircraftLayers = exactLayers.map(layer => (
@@ -363,15 +458,15 @@ test('provider-style handoff refuses mutated source options and layer visibility
       ? { ...layer, layout: { ...layer.layout, visibility: 'none' } }
       : layer
   ))
-  assert.deepEqual(
+  assert.equal(
     retainFlightGeoOverlayDuringStyleSwap({
       version: 8,
       sources: exactSources,
       layers: hiddenAircraftLayers,
     }, nextStyle, overlay, '3d'),
-    nextStyle,
+    null,
   )
-  assert.deepEqual(
+  assert.equal(
     retainFlightGeoOverlayDuringStyleSwap({
       version: 8,
       sources: exactSources,
@@ -380,6 +475,6 @@ test('provider-style handoff refuses mutated source options and layer visibility
         ...exactOverlayLayers(),
       ],
     }, nextStyle, overlay, '3d'),
-    nextStyle,
+    null,
   )
 })

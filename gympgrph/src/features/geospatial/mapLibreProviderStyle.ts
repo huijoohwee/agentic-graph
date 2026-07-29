@@ -402,6 +402,42 @@ export async function preflightMapLibreStyle(
   }
 }
 
+/**
+ * Flight provider promotion must be one synchronous style transaction.
+ * MapLibre resolves a URL-backed setStyle call later, after live Flight state
+ * may have changed, so retainable providers are materialized before admission.
+ */
+export async function resolveMapLibreFlightProviderStyle(
+  style: MapLibreProviderStyle,
+  options: Readonly<{
+    fetchStyle?: ProviderStyleFetch
+    signal?: AbortSignal
+  }> = {},
+): Promise<MapLibreStylePreflightResult> {
+  if (typeof style !== 'string') {
+    return { style, shouldFallback: false }
+  }
+  const fetchStyle = options.fetchStyle ?? fetch
+  const preflight = await preflightMapLibreStyle(style, {
+    fetchStyle,
+    signal: options.signal,
+  })
+  if (typeof preflight.style !== 'string') return preflight
+  if (!canFetchMapLibreProviderStyle(preflight.style)) {
+    throw new Error(
+      'Flight provider promotion requires a resolved MapLibre style document.',
+    )
+  }
+  return {
+    ...preflight,
+    style: await loadMapLibreProviderStyleDocument(
+      preflight.style,
+      fetchStyle,
+      options.signal,
+    ),
+  }
+}
+
 export async function resolveInitialMapLibreStyle(options: Readonly<{
   preflight?: typeof preflightMapLibreStyle
   readActivationStyleOverride: (

@@ -31,6 +31,9 @@ import {
   flushMicrotasks,
   readyFlightOverlay,
 } from './helpers/flightSimGeoMapLibreLeaseHarness'
+import {
+  deferFlightGeoPresentationForBootstrapRecovery,
+} from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
 
 test('native Geo lease ignores inline Markdown maps and fences stale releases', () => {
   const hostCanvas = {} as HTMLCanvasElement
@@ -90,8 +93,15 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
   const renderListeners = new Set<() => void>()
   const calls: string[] = []
   let overlayPresented = false
+  let currentStyle: Readonly<Record<string, unknown>> = {
+    version: 8,
+    name: 'initial',
+    sources: {},
+    layers: [],
+  }
   const map = {
     getCanvas: () => canvas,
+    getStyle: () => currentStyle,
     off: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.delete(listener)
     },
@@ -102,6 +112,7 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
       style: string | Readonly<Record<string, unknown>>,
       options?: Readonly<Record<string, unknown>>,
     ) => {
+      if (typeof style !== 'string') currentStyle = style
       calls.push(
         typeof style === 'string'
           ? `style:${style}:${options?.transformStyle ? 'retained' : 'plain'}`
@@ -122,7 +133,12 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
       hasExactFlightOverlay: () => overlayPresented,
       loadProviderStyle: async () => {
         calls.push('provider:resolve')
-        return 'https://provider.test/style.json'
+        return {
+          version: 8,
+          name: 'https://provider.test/style.json',
+          sources: {},
+          layers: [],
+        }
       },
       map,
       scheduleProviderStyleApply: applyProviderStyleImmediately,
@@ -163,7 +179,7 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
     'repaint',
     'repaint',
     'provider:resolve',
-    'style:https://provider.test/style.json:retained',
+    'style:https://provider.test/style.json:plain',
   ])
   assert.equal(renderListeners.size, 1)
   assert.equal(map, mapIdentity)
@@ -171,7 +187,7 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
 
   reconcile(null)
   await flushMicrotasks()
-  assert.equal(calls.at(-1), 'style:https://provider.test/style.json:retained')
+  assert.equal(calls.at(-1), 'style:https://provider.test/style.json:plain')
   disposeMapLibreFlightBootstrap(map)
 })
 
@@ -226,7 +242,7 @@ test('only the bootstrap style can prepare a stopped Flight frame on a mounted p
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle,
     hasExactFlightOverlay: () => true,
-    loadProviderStyle: async () => 'provider:bootstrap-presenter',
+    loadProviderStyle: async () => providerStyle,
     map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
@@ -312,6 +328,24 @@ test('only the bootstrap style can prepare a stopped Flight frame on a mounted p
     false,
     'a later ready revision cannot borrow a prior provider presentation',
   )
+  setFlightGeoOverlay(stoppedPresentation)
+  assert.equal(
+    deferFlightGeoPresentationForBootstrapRecovery(
+      map,
+      stoppedPresentation,
+      false,
+    ),
+    true,
+    'the production presenter branch must defer stopped publication for bootstrap recovery',
+  )
+  assert.equal(currentStyle, bootstrapStyle)
+  styleLoaded = true
+  for (const listener of [...styleLoadListeners]) listener()
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, stoppedPresentation),
+    true,
+    'the settled stopped recovery must become presentable',
+  )
   disposeMapLibreFlightBootstrap(map)
 })
 
@@ -322,8 +356,18 @@ test('stale ready identity and a prior run cannot authorize provider promotion',
   context.after(clearFlightGeoOverlay)
   const renderListeners = new Set<() => void>()
   const applied: string[] = []
-  let resolveFirstProvider!: (style: string) => void
-  const firstProvider = new Promise<string>(resolve => {
+  let currentStyle: Readonly<Record<string, unknown>> = {
+    version: 8,
+    name: 'initial',
+    sources: {},
+    layers: [],
+  }
+  let resolveFirstProvider!: (
+    style: Readonly<Record<string, unknown>>,
+  ) => void
+  const firstProvider = new Promise<
+    Readonly<Record<string, unknown>>
+  >(resolve => {
     resolveFirstProvider = resolve
   })
   let providerLoads = 0
@@ -334,7 +378,9 @@ test('stale ready identity and a prior run cannot authorize provider promotion',
     on: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.add(listener)
     },
+    getStyle: () => currentStyle,
     setStyle: (style: string | Readonly<Record<string, unknown>>) => {
+      if (typeof style !== 'string') currentStyle = style
       applied.push(typeof style === 'string' ? style : String(style.name))
     },
     triggerRepaint: () => void 0,
@@ -346,7 +392,12 @@ test('stale ready identity and a prior run cannot authorize provider promotion',
       providerLoads += 1
       return providerLoads === 1
         ? firstProvider
-        : Promise.resolve('provider:stale')
+        : Promise.resolve({
+            version: 8,
+            name: 'provider:stale',
+            sources: {},
+            layers: [],
+          })
     },
     map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
@@ -383,7 +434,12 @@ test('stale ready identity and a prior run cannot authorize provider promotion',
     runId: readyOverlay.runId + 1,
   }
   setFlightGeoOverlay(nextRun)
-  resolveFirstProvider('provider:stale')
+  resolveFirstProvider({
+    version: 8,
+    name: 'provider:stale',
+    sources: {},
+    layers: [],
+  })
   await flushMicrotasks()
   assert.deepEqual(applied, ['local-flight-bootstrap'])
   assert.equal(renderListeners.size, 1)
@@ -407,8 +463,10 @@ test('a delayed provider load admits the exact latest tick of its presented run'
   const renderListeners = new Set<() => void>()
   const applied: string[] = []
   let retainedFlightData: unknown = null
-  let resolveProvider!: (style: string) => void
-  const provider = new Promise<string>(resolve => {
+  let resolveProvider!: (
+    style: Readonly<Record<string, unknown>>,
+  ) => void
+  const provider = new Promise<Readonly<Record<string, unknown>>>(resolve => {
     resolveProvider = resolve
   })
   const map = {
@@ -418,37 +476,29 @@ test('a delayed provider load admits the exact latest tick of its presented run'
     on: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.add(listener)
     },
+    getStyle: () => {
+      const current = readFlightGeoOverlay()
+      return {
+        version: 8,
+        sources: {
+          [FLIGHT_GEO_OVERLAY_SOURCE_ID]: {
+            type: 'geojson',
+            data: flightGeoOverlayMapLibreFeatureCollection(current),
+          },
+        },
+        layers: FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS.map(layer => ({
+          ...layer,
+        })),
+      }
+    },
     setStyle: (
       style: string | Readonly<Record<string, unknown>>,
-      options?: Readonly<{
-        transformStyle?: (
-          previousStyle: Readonly<Record<string, any>>,
-          nextStyle: Readonly<Record<string, any>>,
-        ) => Readonly<Record<string, any>>
-      }>,
     ) => {
       applied.push(typeof style === 'string' ? style : String(style.name))
-      if (options?.transformStyle) {
-        const current = readFlightGeoOverlay()
-        const transformed = options.transformStyle({
-          version: 8,
-          sources: {
-            [FLIGHT_GEO_OVERLAY_SOURCE_ID]: {
-              type: 'geojson',
-              data: flightGeoOverlayMapLibreFeatureCollection(current),
-            },
-          },
-          layers: FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS.map(layer => ({
-            ...layer,
-          })),
-        }, {
-          version: 8,
-          sources: { provider: { type: 'vector' } },
-          layers: [{ id: 'provider-background', type: 'background' }],
-        })
-        retainedFlightData =
-          transformed.sources?.[FLIGHT_GEO_OVERLAY_SOURCE_ID]?.data
-      }
+      if (typeof style === 'string') return
+      retainedFlightData = (
+        style.sources as Record<string, { data?: unknown }> | undefined
+      )?.[FLIGHT_GEO_OVERLAY_SOURCE_ID]?.data
     },
     triggerRepaint: () => void 0,
   }
@@ -497,7 +547,12 @@ test('a delayed provider load admits the exact latest tick of its presented run'
     tick: 1,
   } as const
   setFlightGeoOverlay(latestOverlay)
-  resolveProvider('provider:delayed')
+  resolveProvider({
+    version: 8,
+    name: 'provider:delayed',
+    sources: { provider: { type: 'vector' } },
+    layers: [{ id: 'provider-background', type: 'background' }],
+  })
   await flushMicrotasks()
 
   assert.deepEqual(applied, [

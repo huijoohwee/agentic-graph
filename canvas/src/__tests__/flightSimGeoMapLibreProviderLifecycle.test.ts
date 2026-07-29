@@ -7,6 +7,8 @@ import {
   setFlightGeoOverlay,
 } from '../../../gympgrph/src/flightGeoOverlay.js'
 import {
+  beginMapLibreFlightBootstrap,
+  canMapLibreFlightOverlayPresent,
   disposeMapLibreFlightBootstrap,
   markMapLibreFlightBootstrapApplied,
   markMapLibreFlightOverlayPresented,
@@ -18,6 +20,9 @@ import {
   flushMicrotasks,
   readyFlightOverlay,
 } from './helpers/flightSimGeoMapLibreLeaseHarness'
+import {
+  deferFlightGeoPresentationForBootstrapRecovery,
+} from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
 
 test('provider promotion yields to an idle opportunity and fences stale scheduled style work', async context => {
   const readyOverlay = readyFlightOverlay('ready:idle-promotion', 32)
@@ -28,6 +33,12 @@ test('provider promotion yields to an idle opportunity and fences stale schedule
   const pendingStyleApplies = new Set<() => void>()
   const applied: string[] = []
   let cancelledStyleApplies = 0
+  let currentStyle: Readonly<Record<string, unknown>> = {
+    version: 8,
+    name: 'initial',
+    sources: {},
+    layers: [],
+  }
   const map = {
     off: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.delete(listener)
@@ -35,7 +46,9 @@ test('provider promotion yields to an idle opportunity and fences stale schedule
     on: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.add(listener)
     },
+    getStyle: () => currentStyle,
     setStyle: (style: string | Readonly<Record<string, unknown>>) => {
+      if (typeof style !== 'string') currentStyle = style
       applied.push(typeof style === 'string' ? style : String(style.name))
     },
     triggerRepaint: () => void 0,
@@ -53,7 +66,12 @@ test('provider promotion yields to an idle opportunity and fences stale schedule
     reconcileMapLibreFlightBootstrap({
       bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
       hasExactFlightOverlay: () => true,
-      loadProviderStyle: async () => providerStyle,
+      loadProviderStyle: async () => ({
+        version: 8,
+        name: providerStyle,
+        sources: {},
+        layers: [],
+      }),
       map,
       scheduleProviderStyleApply,
       retainFlightOverlay: (_previous, next) => ({ ...next }),
@@ -98,6 +116,12 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   const createMap = (providerStyle: string) => {
     const renderListeners = new Set<() => void>()
     const applied: string[] = []
+    let currentStyle: Readonly<Record<string, unknown>> = {
+      version: 8,
+      name: 'initial',
+      sources: {},
+      layers: [],
+    }
     const map = {
       off: (event: string, listener: () => void) => {
         if (event === 'render') renderListeners.delete(listener)
@@ -105,10 +129,12 @@ test('a ready Flight activation follows native MapLibre view replacements and re
       on: (event: string, listener: () => void) => {
         if (event === 'render') renderListeners.add(listener)
       },
+      getStyle: () => currentStyle,
       setStyle: (
         style: string | Readonly<Record<string, unknown>>,
         options?: Readonly<Record<string, unknown>>,
       ) => {
+        if (typeof style !== 'string') currentStyle = style
         applied.push(
           typeof style === 'string'
             ? `${style}:${options?.transformStyle ? 'retained' : 'plain'}`
@@ -120,7 +146,12 @@ test('a ready Flight activation follows native MapLibre view replacements and re
     const reconcile = () => reconcileMapLibreFlightBootstrap({
       bootstrapStyle,
       hasExactFlightOverlay: () => true,
-      loadProviderStyle: async () => providerStyle,
+      loadProviderStyle: async () => ({
+        version: 8,
+        name: providerStyle,
+        sources: {},
+        layers: [],
+      }),
       map,
       scheduleProviderStyleApply: applyProviderStyleImmediately,
       retainFlightOverlay: (_previous, next) => ({ ...next }),
@@ -157,13 +188,18 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   await flushMicrotasks()
   assert.deepEqual(firstView.applied, [
     'local-flight-bootstrap',
-    'provider:first:retained',
+    'provider:first',
   ])
 
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle,
     hasExactFlightOverlay: () => true,
-    loadProviderStyle: async () => 'provider:first-modern',
+    loadProviderStyle: async () => ({
+      version: 8,
+      name: 'provider:first-modern',
+      sources: {},
+      layers: [],
+    }),
     map: firstView.map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
@@ -172,8 +208,8 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   await flushMicrotasks()
   assert.deepEqual(firstView.applied, [
     'local-flight-bootstrap',
-    'provider:first:retained',
-    'provider:first-modern:retained',
+    'provider:first',
+    'provider:first-modern',
   ])
 
   const replacementView = createMap('provider:replacement')
@@ -181,7 +217,12 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle,
     hasExactFlightOverlay: () => true,
-    loadProviderStyle: async () => 'provider:replacement',
+    loadProviderStyle: async () => ({
+      version: 8,
+      name: 'provider:replacement',
+      sources: {},
+      layers: [],
+    }),
     map: replacementView.map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
@@ -193,7 +234,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   markMapLibreFlightOverlayPresented(replacementView.map, firstReady)
   replacementView.emitRender()
   await flushMicrotasks()
-  assert.deepEqual(replacementView.applied, ['provider:replacement:retained'])
+  assert.deepEqual(replacementView.applied, ['provider:replacement'])
 
   disposeMapLibreFlightBootstrap(firstView.map)
   disposeMapLibreFlightBootstrap(replacementView.map)
@@ -217,51 +258,110 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   await flushMicrotasks()
   assert.deepEqual(freshActivationView.applied, [
     'local-flight-bootstrap',
-    'provider:fresh:retained',
+    'provider:fresh',
   ])
   disposeMapLibreFlightBootstrap(freshActivationView.map)
 })
 
 test('a consumed ready request authorizes only the exact presenting map', async context => {
-  const readyOverlay = readyFlightOverlay('ready:consumed', null)
+  const requestId = 41
+  const readyOverlay = readyFlightOverlay('ready:consumed', requestId)
   clearFlightGeoOverlay()
   setFlightGeoOverlay(readyOverlay)
   context.after(clearFlightGeoOverlay)
   const renderListeners = new Set<() => void>()
+  const styleLoadListeners = new Set<() => void>()
   const applied: string[] = []
+  const bootstrapStyle = {
+    version: 8,
+    name: 'local-flight-bootstrap',
+    sources: {},
+    layers: [{
+      id: 'kg-flight-sim:geo-bootstrap-background',
+      type: 'background',
+    }],
+  }
+  let currentStyle: Readonly<Record<string, unknown>> = bootstrapStyle
+  let styleLoaded = true
   const map = {
     off: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.delete(listener)
+      if (event === 'style.load') styleLoadListeners.delete(listener)
     },
     on: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.add(listener)
+      if (event === 'style.load') styleLoadListeners.add(listener)
     },
+    getStyle: () => currentStyle,
+    isStyleLoaded: () => styleLoaded,
     setStyle: (style: string | Readonly<Record<string, unknown>>) => {
+      if (typeof style !== 'string') {
+        currentStyle = style
+        styleLoaded = false
+      }
       applied.push(typeof style === 'string' ? style : String(style.name))
     },
     triggerRepaint: () => void 0,
   }
   reconcileMapLibreFlightBootstrap({
-    bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
+    bootstrapStyle,
     hasExactFlightOverlay: () => true,
-    loadProviderStyle: async () => 'provider:consumed',
+    loadProviderStyle: async () => ({
+      version: 8,
+      name: 'provider:consumed',
+      sources: {},
+      layers: [],
+    }),
     map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
   })
   assert.deepEqual(applied, ['local-flight-bootstrap'])
-  assert.equal(readFlightGeoOverlayReadyFramePresented(), false)
   markMapLibreFlightBootstrapApplied(map)
-
-  markMapLibreFlightOverlayPresented(map, readyOverlay)
+  markMapLibreFlightReadyFramePresented(
+    map,
+    readyOverlay.revision,
+    requestId,
+  )
+  assert.equal(readFlightGeoOverlayReadyFramePresented(), true)
+  const consumedOverlay = {
+    ...readyOverlay,
+    readyFrameRequestId: null,
+  }
+  setFlightGeoOverlay(consumedOverlay)
+  markMapLibreFlightOverlayPresented(map, consumedOverlay)
   for (const listener of [...renderListeners]) listener()
   await flushMicrotasks()
 
-  assert.equal(readFlightGeoOverlayReadyFramePresented(), false)
+  assert.equal(readFlightGeoOverlayReadyFramePresented(), true)
   assert.deepEqual(applied, [
     'local-flight-bootstrap',
     'provider:consumed',
   ])
+  beginMapLibreFlightBootstrap(map, bootstrapStyle)
+  map.setStyle(bootstrapStyle)
+  assert.equal(
+    deferFlightGeoPresentationForBootstrapRecovery(
+      map,
+      consumedOverlay,
+      false,
+    ),
+    true,
+    'the production presenter branch must repair consumed Ready visuals without reusing a deadline',
+  )
+  assert.equal(applied.at(-1), 'local-flight-bootstrap')
+  styleLoaded = true
+  for (const listener of [...styleLoadListeners]) listener()
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, consumedOverlay),
+    true,
+    'the consumed Ready bootstrap must settle before source restoration',
+  )
+  assert.equal(
+    readFlightGeoOverlayReadyFramePresented(),
+    true,
+    'visual bootstrap recovery must preserve the already-consumed Ready deadline',
+  )
   disposeMapLibreFlightBootstrap(map)
 })
 
@@ -338,4 +438,3 @@ test('Flight deactivation restores the provider without waiting for overlay pres
   )
   disposeMapLibreFlightBootstrap(map)
 })
-

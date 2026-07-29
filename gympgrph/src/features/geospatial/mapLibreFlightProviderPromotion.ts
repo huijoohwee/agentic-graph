@@ -111,7 +111,7 @@ export async function promoteMapLibreFlightProviderStyle(
     retainFlightOverlay: (
       previousStyle: Readonly<Record<string, any>> | undefined,
       nextStyle: Readonly<Record<string, any>>,
-    ) => Record<string, any>
+    ) => Record<string, any> | null
     retainOverlay: boolean
     scheduleProviderApply: MapLibreFlightProviderStyleApplyScheduler
     state: MapLibreFlightProviderPromotionState
@@ -156,12 +156,32 @@ export async function promoteMapLibreFlightProviderStyle(
     if (retainOverlay && !hasExactFlightOverlay()) {
       return 'admission-changed'
     }
-    state.map.setStyle?.(
-      providerStyle,
-      retainOverlay
-        ? { diff: true, transformStyle: retainFlightOverlay }
-        : { diff: true },
-    )
+    if (typeof state.map.setStyle !== 'function') {
+      return 'admission-changed'
+    }
+    if (retainOverlay) {
+      // URL-backed MapLibre style swaps fetch before transformStyle runs. Build
+      // and validate the full provider + Flight style synchronously instead so
+      // a later run/phase publication cannot strip either owned source stack.
+      if (typeof providerStyle === 'string') {
+        return 'admission-changed'
+      }
+      let previousStyle: Readonly<Record<string, any>> | undefined
+      try {
+        previousStyle = state.map.getStyle?.()
+      } catch {
+        previousStyle = undefined
+      }
+      if (!previousStyle) return 'admission-changed'
+      const retainedStyle = retainFlightOverlay(
+        previousStyle,
+        providerStyle,
+      )
+      if (!retainedStyle) return 'admission-changed'
+      state.map.setStyle(retainedStyle, { diff: true })
+    } else {
+      state.map.setStyle(providerStyle, { diff: true })
+    }
     onApplied()
     return 'applied'
   } catch (error) {

@@ -68,7 +68,10 @@ test('exclusive disposal waits only for loaded empty Flight sources', () => {
     FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
     FLIGHT_GEO_OVERLAY_SOURCE_ID,
   ]
-  const sourceData = new Map(sourceIds.map(sourceId => [
+  const sourceData = new Map<string, {
+    type: string
+    features: unknown[]
+  }>(sourceIds.map(sourceId => [
     sourceId,
     {
       type: 'FeatureCollection',

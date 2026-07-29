@@ -21,7 +21,7 @@ import {
 } from '../../flightGeoEnvironmentMapLibre.js'
 import {
   canMapLibreFlightOverlayPresent,
-  requestMapLibreFlightReadyBootstrap,
+  requestMapLibreFlightPresentationBootstrap,
   subscribeMapLibreFlightBootstrapSettled,
 } from './mapLibreFlightBootstrap.js'
 import {
@@ -50,6 +50,24 @@ export {
   FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
   type FlightOverlayPresentationGate,
 } from './flightGeoOverlayPresentationContracts.js'
+
+export function deferFlightGeoPresentationForBootstrapRecovery(
+  map: any,
+  overlay: FlightGeoOverlayPresentation,
+  canReuseCommittedStoppedFrame: boolean,
+): boolean {
+  const requiresBootstrapPresentation = (
+    overlay.phase === 'stopped'
+    || (overlay.phase === 'ready' && overlay.tick === 0)
+  )
+  if (
+    !requiresBootstrapPresentation
+    || canMapLibreFlightOverlayPresent(map, overlay)
+    || canReuseCommittedStoppedFrame
+  ) return false
+  requestMapLibreFlightPresentationBootstrap(map, overlay)
+  return true
+}
 
 export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   active: boolean
@@ -203,18 +221,13 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       // A retained provider map stays mounted while Flight installs its local
       // bootstrap style. Only the settled bootstrap may receive the stopped
       // preparation payload; `style.load` replays this apply after handoff.
-      const requiresBootstrapPresentation = (
-        overlay.phase === 'stopped'
-        || (overlay.phase === 'ready' && overlay.tick === 0)
-      )
       const canReuseCommittedStoppedFrame =
         gate.canReuseCommittedStoppedFrame(overlay)
-      if (
-        requiresBootstrapPresentation
-        && !canMapLibreFlightOverlayPresent(map, overlay)
-        && !canReuseCommittedStoppedFrame
-      ) {
-        requestMapLibreFlightReadyBootstrap(map, overlay)
+      if (deferFlightGeoPresentationForBootstrapRecovery(
+        map,
+        overlay,
+        canReuseCommittedStoppedFrame,
+      )) {
         gate.cancel()
         gate.clearCanvas()
         return

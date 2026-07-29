@@ -305,7 +305,7 @@ export function retainFlightGeoOverlayDuringStyleSwap(
   nextStyle: Readonly<Record<string, any>>,
   expectedOverlay: FlightGeoOverlaySnapshot,
   viewMode: string,
-): Record<string, any> {
+): Record<string, any> | null {
   if (!expectedOverlay.active) return { ...nextStyle }
   const previousSources = previousStyle?.sources
   const retainedOverlaySource = previousSources?.[FLIGHT_GEO_OVERLAY_SOURCE_ID]
@@ -358,7 +358,7 @@ export function retainFlightGeoOverlayDuringStyleSwap(
     !hasExactOverlay
     || !hasExactEnvironment
     || !hasExactLayerState
-  ) return { ...nextStyle }
+  ) return null
   const retainEnvironment = hasEnvironmentFragments
   const nextLayers = Array.isArray(nextStyle?.layers)
     ? nextStyle.layers.filter(

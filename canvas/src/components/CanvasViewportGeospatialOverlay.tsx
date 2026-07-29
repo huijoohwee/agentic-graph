@@ -28,6 +28,7 @@ import {
   readFlightSimSnapshot,
   readFlightSimSpatialProfile,
   subscribeFlightSimPresentation,
+  subscribeFlightSimSnapshot,
 } from '@/features/game-flight-sim/flightSimRuntime'
 import {
   claimFlightSimReadyPresenter,
@@ -50,6 +51,7 @@ import {
   projectXrEnvironmentToFlightGeo,
 } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import {
+  clearFlightGeoOverlayAfterPublisherRelease,
   claimActiveFlightGeoOverlayPublisherLease,
 } from '@/features/game-flight-sim/flightGeoOverlayPublisherLease'
 import {
@@ -498,11 +500,12 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       publishCurrent = null
       const shouldClear = publisherLease.release()
       if (!shouldClear) return
-      void loadGympgrphModule()
-        .then(module => {
-          if (!publisherLease.canClearAfterRelease()) return
-          module.clearFlightGeoOverlay?.()
-        })
+      void clearFlightGeoOverlayAfterPublisherRelease(
+        publisherLease,
+        () => readFlightSimSnapshot().active,
+        subscribeFlightSimSnapshot,
+        loadGympgrphModule,
+      )
         .catch(() => void 0)
     }
   }, [active, composedWithXr])

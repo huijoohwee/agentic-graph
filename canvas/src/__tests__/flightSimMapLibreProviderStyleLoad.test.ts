@@ -10,6 +10,7 @@ import {
   canFetchMapLibreProviderStyle,
   preflightMapLibreStyle,
   resolveInitialMapLibreStyle,
+  resolveMapLibreFlightProviderStyle,
 } from '../../../gympgrph/src/features/geospatial/mapLibreProviderStyle.js'
 import {
   cancelMapLibreFlightProviderStyleLoad,
@@ -118,11 +119,22 @@ test('runtime basemap fallbacks cannot bypass exact Flight style retention', () 
 
   assert.match(
     basemap,
-    /const applyBasemapStyleWithoutDroppingFlight[\s\S]*?mapHasExactFlightGeoOverlay\(map, overlay\)[\s\S]*?mapHasExactFlightGeoEnvironment\(map, overlay\)[\s\S]*?retainFlightGeoOverlayDuringStyleSwap\([\s\S]*?overlay,/,
+    /const mapHasExactCurrentFlightPresentation[\s\S]*?mapHasExactFlightGeoOverlay\(candidate, overlay\)[\s\S]*?mapHasExactFlightGeoEnvironment\(candidate, overlay\)/,
   )
-  assert.doesNotMatch(
+  assert.match(
     basemap,
-    /map\.setStyle\?\.\(RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL/,
+    /const requiresFlightStyleRetention[\s\S]*?Boolean\(initialStyleOverrideRef\.current\)[\s\S]*?readFlightGeoOverlay\(\)\.active/,
+  )
+  assert.match(
+    basemap,
+    /createMapLibreFlightRuntimeFallbackRequester\(\{[\s\S]*?hasCurrentProviderPresentation:[\s\S]*?mapHasCurrentFlightProviderPresentation[\s\S]*?resolveMapLibreFlightProviderStyle\(style, \{ signal \}\)[\s\S]*?requiresFlightRetention: requiresFlightStyleRetention/,
+  )
+  assert.equal(
+    [...basemap.matchAll(
+      /requestResolvedBasemapStyleWithoutDroppingFlight\(\s*'[^']+',\s*RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL/g,
+    )].length,
+    4,
+    'every runtime fallback resolves an object before the retained Flight swap',
   )
   assert.match(
     basemap,
@@ -132,37 +144,44 @@ test('runtime basemap fallbacks cannot bypass exact Flight style retention', () 
 
 test('Flight resolves a provider URL to an exact style document before MapLibre promotion', async () => {
   const requests: Array<{ method: string; url: string }> = []
-  const style = await loadMapLibreProviderStyleDocument(
+  const resolution = await resolveMapLibreFlightProviderStyle(
     'https://provider.test/styles/liberty.json',
-    async (input, init) => {
-      requests.push({
-        method: String(init?.method || 'GET'),
-        url: String(input),
-      })
-      return new Response(JSON.stringify({
-        version: 8,
-        sprite: './sprites/liberty',
-        glyphs: './fonts/{fontstack}/{range}.pbf',
-        sources: {
-          provider: {
-            type: 'vector',
-            url: './tiles.json',
+    {
+      fetchStyle: async (input, init) => {
+        requests.push({
+          method: String(init?.method || 'GET'),
+          url: String(input),
+        })
+        return new Response(JSON.stringify({
+          version: 8,
+          sprite: './sprites/liberty',
+          glyphs: './fonts/{fontstack}/{range}.pbf',
+          sources: {
+            provider: {
+              type: 'vector',
+              url: './tiles.json',
+            },
+            raster: {
+              type: 'raster',
+              tiles: ['./tiles/{z}/{x}/{y}.png'],
+            },
           },
-          raster: {
-            type: 'raster',
-            tiles: ['./tiles/{z}/{x}/{y}.png'],
-          },
-        },
-        layers: [{
-          id: 'provider-background',
-          type: 'background',
-        }],
-      }), {
-        headers: { 'content-type': 'application/json' },
-        status: 200,
-      })
+          layers: [{
+            id: 'provider-background',
+            type: 'background',
+          }],
+        }), {
+          headers: { 'content-type': 'application/json' },
+          status: 200,
+        })
+      },
     },
   )
+  assert.notEqual(typeof resolution.style, 'string')
+  if (typeof resolution.style === 'string') {
+    throw new Error('Flight provider resolution returned an unsafe URL.')
+  }
+  const style = resolution.style
 
   assert.deepEqual(requests, [{
     method: 'GET',
@@ -332,10 +351,135 @@ test('provider promotion rechecks exact Flight visuals after its async idle wind
 
 test('Flight keeps its local bootstrap when a provider style cannot be resolved', async () => {
   await assert.rejects(
-    loadMapLibreProviderStyleDocument(
+    resolveMapLibreFlightProviderStyle(
       'https://provider.test/styles/unavailable.json',
-      async () => new Response(null, { status: 503 }),
+      {
+        fetchStyle: async () => new Response(null, { status: 503 }),
+      },
     ),
     /provider style request failed with status 503/,
   )
+})
+
+test('Flight provider promotion never passes a raw URL to MapLibre', async () => {
+  let applied = 0
+  let markedApplied = 0
+  const result = await promoteMapLibreFlightProviderStyle({
+    generation: 1,
+    hasCurrentProviderPresentation: () => true,
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => 'https://provider.test/style.json',
+    onApplied: () => {
+      markedApplied += 1
+    },
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+    retainOverlay: true,
+    scheduleProviderApply: apply => {
+      apply()
+      return () => void 0
+    },
+    state: {
+      cancelProviderStyleApply: null,
+      cancelProviderStyleLoad: null,
+      disposed: false,
+      generation: 1,
+      map: {
+        getStyle: () => ({ layers: [], sources: {}, version: 8 }),
+        setStyle: () => {
+          applied += 1
+        },
+      },
+    },
+  })
+
+  assert.equal(result, 'admission-changed')
+  assert.equal(applied, 0)
+  assert.equal(markedApplied, 0)
+})
+
+test('Flight precomposes and validates the complete provider style before one object swap', async () => {
+  const previousStyle = {
+    layers: [{ id: 'flight-layer', type: 'line' }],
+    sources: { flight: { type: 'geojson' } },
+    version: 8,
+  }
+  const providerStyle = {
+    layers: [{ id: 'provider-layer', type: 'background' }],
+    sources: { provider: { type: 'vector' } },
+    version: 8,
+  }
+  const retainedStyle = {
+    layers: [...providerStyle.layers, ...previousStyle.layers],
+    sources: { ...providerStyle.sources, ...previousStyle.sources },
+    version: 8,
+  }
+  const applied: Array<{
+    options: Readonly<Record<string, unknown>>
+    style: Readonly<Record<string, unknown>>
+  }> = []
+  let markedApplied = 0
+  const state: MapLibreFlightProviderPromotionState = {
+    cancelProviderStyleApply: null,
+    cancelProviderStyleLoad: null,
+    disposed: false,
+    generation: 1,
+    map: {
+      getStyle: () => previousStyle,
+      setStyle: (
+        style: Readonly<Record<string, unknown>>,
+        options: Readonly<Record<string, unknown>>,
+      ) => applied.push({ options, style }),
+    },
+  }
+  const result = await promoteMapLibreFlightProviderStyle({
+    generation: 1,
+    hasCurrentProviderPresentation: () => true,
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => providerStyle,
+    onApplied: () => {
+      markedApplied += 1
+    },
+    retainFlightOverlay: (previous, next) => {
+      assert.equal(previous, previousStyle)
+      assert.equal(next, providerStyle)
+      return retainedStyle
+    },
+    retainOverlay: true,
+    scheduleProviderApply: apply => {
+      apply()
+      return () => void 0
+    },
+    state,
+  })
+
+  assert.equal(result, 'applied')
+  assert.equal(markedApplied, 1)
+  assert.deepEqual(applied, [{
+    options: { diff: true },
+    style: retainedStyle,
+  }])
+  assert.equal('transformStyle' in applied[0]!.options, false)
+
+  state.generation = 2
+  applied.length = 0
+  markedApplied = 0
+  const rejected = await promoteMapLibreFlightProviderStyle({
+    generation: 2,
+    hasCurrentProviderPresentation: () => true,
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => providerStyle,
+    onApplied: () => {
+      markedApplied += 1
+    },
+    retainFlightOverlay: () => null,
+    retainOverlay: true,
+    scheduleProviderApply: apply => {
+      apply()
+      return () => void 0
+    },
+    state,
+  })
+  assert.equal(rejected, 'admission-changed')
+  assert.deepEqual(applied, [])
+  assert.equal(markedApplied, 0)
 })

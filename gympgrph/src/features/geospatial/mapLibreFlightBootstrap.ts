@@ -65,6 +65,15 @@ function hasCurrentProviderPresentation(
   return state.deadlineFramePresented && current.phase !== 'stopped'
 }
 
+export function mapHasCurrentFlightProviderPresentation(map: any): boolean {
+  const state = readMapLibreFlightBootstrapState(map)
+  return Boolean(
+    state
+    && !state.disposed
+    && hasCurrentProviderPresentation(state),
+  )
+}
+
 function hasExactCommittedStoppedFrameProof(
   state: MapLibreFlightBootstrapState,
   current: FlightGeoOverlaySnapshot,
@@ -372,24 +381,33 @@ export function markMapLibreFlightOverlayPresented(
 }
 
 /**
- * A provider map may only accept a fresh ready-frame request after returning to
- * the local Flight bootstrap. This keeps every Start independent while allowing
- * a replacement view to restore its provider after an exact stopped frame.
+ * Recover a bootstrap-required tick-zero presentation after provider style
+ * ownership is no longer exact. This includes stopped preparation and a Ready
+ * request whose deadline marker was already consumed; the latter repairs only
+ * the visual map and never re-acknowledges the old request.
  */
-export function requestMapLibreFlightReadyBootstrap(
+export function requestMapLibreFlightPresentationBootstrap(
   map: any,
   presentation: FlightGeoOverlayPresentation,
 ): boolean {
   const state = ensureMapLibreFlightBootstrapState(map)
   const current = readFlightGeoOverlay()
+  const stoppedPresentation = (
+    presentation.phase === 'stopped'
+    && presentation.readyFrameRequestId === null
+    && presentation.runId === 0
+    && presentation.tick === 0
+  )
+  const readyPresentation = (
+    presentation.phase === 'ready'
+    && presentation.runId > 0
+    && presentation.tick === 0
+  )
   if (
     !state
     || state.disposed
     || !state.bootstrapStyle
-    || presentation.phase !== 'ready'
-    || presentation.readyFrameRequestId === null
-    || presentation.tick !== 0
-    || presentation.runId <= 0
+    || (!stoppedPresentation && !readyPresentation)
     || !current.active
     || current.phase !== presentation.phase
     || current.profileId !== presentation.profileId
@@ -455,7 +473,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   retainFlightOverlay: (
     previousStyle: Readonly<Record<string, any>> | undefined,
     nextStyle: Readonly<Record<string, any>>,
-  ) => Record<string, any>
+  ) => Record<string, any> | null
 }>): void {
   const state = ensureMapLibreFlightBootstrapState(options.map)
   if (!state || state.disposed) return
