@@ -509,6 +509,10 @@ export function useMapLibreBasemap(args: {
   // therefore need the latest ownership rather than their mount-time value.
   const initialStyleOverrideRef = React.useRef(initialStyleOverride)
   initialStyleOverrideRef.current = initialStyleOverride
+  // Toast handlers close over the live Canvas snapshot. Their identity can
+  // change without changing map ownership, so it must not fence a promotion.
+  const onGrabMapsFallbackRef = React.useRef(onGrabMapsFallback)
+  onGrabMapsFallbackRef.current = onGrabMapsFallback
   const requestedOpenFreeMapLibertyRef = React.useRef(false)
   const [runtimeProjectionMode, setRuntimeProjectionMode] = React.useState<'mercator' | 'globe'>(projectionMode)
   const [state, setState] = React.useState<BasemapResult>({
@@ -615,7 +619,7 @@ export function useMapLibreBasemap(args: {
       grabMapsFallbackApplied = true
       grabMapsBootstrapPending = false
       try {
-        onGrabMapsFallback?.()
+        onGrabMapsFallbackRef.current?.()
       } catch {
         void 0
       }
@@ -1287,7 +1291,7 @@ export function useMapLibreBasemap(args: {
     // The override is an activation bootstrap, not live map state. Flight may
     // clear it while handing the same Geo surface back; remounting here would
     // destroy the provider map instead of retaining its owner and camera.
-  }, [enabled, rootRef, containerRef, targetStyleUrl, ownerScope, canvasRenderMode, runtimeProjectionMode, viewportSizingMode, vectorFallbackMs, computeProbe, debug, setProbe, onGrabMapsFallback])
+  }, [enabled, rootRef, containerRef, targetStyleUrl, ownerScope, canvasRenderMode, runtimeProjectionMode, viewportSizingMode, vectorFallbackMs, computeProbe, debug, setProbe])
 
   React.useEffect(() => {
     const map = state.map
@@ -1315,7 +1319,7 @@ export function useMapLibreBasemap(args: {
         if (preflight.shouldFallback && requestedGrabMapsStyle) {
           applyGrabMapsAutomaticFallback()
           try {
-            onGrabMapsFallback?.()
+            onGrabMapsFallbackRef.current?.()
           } catch {
             void 0
           }
@@ -1337,7 +1341,6 @@ export function useMapLibreBasemap(args: {
   }, [
     enabled,
     initialStyleOverride,
-    onGrabMapsFallback,
     state.map,
     targetStyleUrl,
   ])

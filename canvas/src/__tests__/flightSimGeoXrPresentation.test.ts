@@ -146,7 +146,21 @@ test('Flight Geo bootstrap retains one map owner and stages pre-document ownersh
   )?.[0] || ''
   assert.ok(basemapEffectDependencies)
   assert.doesNotMatch(basemapEffectDependencies, /initialStyleOverride/)
+  assert.doesNotMatch(basemapEffectDependencies, /onGrabMapsFallback/)
   assert.match(basemapHook, /override is an activation bootstrap, not live map state/)
+  assert.match(
+    basemapHook,
+    /onGrabMapsFallbackRef\.current = onGrabMapsFallback/,
+  )
+  assert.doesNotMatch(basemapHook, /onGrabMapsFallback\?\.\(\)/)
+  const bootstrapReconciliationDependencies = basemapHook.match(
+    /\}, \[\n    enabled,\n    initialStyleOverride,[\s\S]*?\n  \]\)\n\n  return state/,
+  )?.[0] || ''
+  assert.ok(bootstrapReconciliationDependencies)
+  assert.doesNotMatch(
+    bootstrapReconciliationDependencies,
+    /onGrabMapsFallback/,
+  )
   assert.match(basemapHook, /reconcileMapLibreFlightBootstrap\(\{/)
 
   const startupRuntimes = readFileSync(
