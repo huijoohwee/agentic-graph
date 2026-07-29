@@ -1,4 +1,5 @@
 @source "../../../gympgrph/src";
+@source "../../../grph-shared/src";
 @source not "../__tests__";
 @custom-variant dark (&:where(.dark, .dark *));
 
