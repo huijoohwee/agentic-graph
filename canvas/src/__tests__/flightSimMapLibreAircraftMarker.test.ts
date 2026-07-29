@@ -12,6 +12,12 @@ import {
   fitMapToFlightGeoOverlay,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
 import { readFlightGeoMapViewportPadding } from '../../../gympgrph/src/flightGeoMapViewport'
+import { createFlightSimRuntime } from '../features/game-flight-sim/flightSimRuntimeCore'
+import {
+  projectFlightSimToGeospatialOverlay,
+} from '../features/game-flight-sim/flightSimGeospatialProjection'
+import type { FlightSimSpatialProfile } from '../features/game-flight-sim/flightSimModel'
+import type { SpatialVector } from '../features/physics/spatialPhysicsTypes'
 
 type LayerDefinition = Readonly<{
   filter?: unknown
@@ -434,6 +440,71 @@ test('Ready reuses the loaded stopped Flight payload when its pixels are unchang
     harness.setDataWrites(),
     0,
     'phase and ready request metadata must not reset the settled MapLibre worker',
+  )
+})
+
+test('the authored stopped Flight snapshot projects to the exact Float32 tick-zero payload', () => {
+  const vector = (values: readonly number[]) => (
+    Object.freeze([...values]) as SpatialVector
+  )
+  const profile: FlightSimSpatialProfile = Object.freeze({
+    aircraftHalfSize: vector([0.5, 0.5, 0.5]),
+    blockers: Object.freeze([]),
+    id: 'flight-sim:maplibre-tick-zero-float32',
+    landingPad: Object.freeze({
+      id: 'landing',
+      position: vector([0, 0, -400]),
+      radiusMeters: 50,
+    }),
+    sourceKey: 'maplibre-tick-zero-float32',
+    spawn: Object.freeze({
+      pitch: 0,
+      position: vector([0, 400, 81.60000000000001]),
+      roll: 0,
+      throttle: 0.62,
+      velocity: vector([0, 0, -12]),
+      yaw: 0,
+    }),
+    waypoints: Object.freeze([
+      Object.freeze({ id: 'waypoint-1', position: vector([0, 400, -100]), radiusMeters: 50 }),
+      Object.freeze({ id: 'waypoint-2', position: vector([0, 400, -200]), radiusMeters: 50 }),
+      Object.freeze({ id: 'waypoint-3', position: vector([0, 400, -300]), radiusMeters: 50 }),
+    ]),
+  })
+  const runtime = createFlightSimRuntime({
+    active: true,
+    profile,
+    webglSupported: true,
+  })
+  const stoppedFlight = runtime.read()
+  const readyFlight = runtime.start()
+  assert.notEqual(
+    stoppedFlight.aircraft.position[2],
+    profile.spawn.position[2],
+    'the regression must exercise authored-double versus ECS-Float32 preview storage',
+  )
+  assert.deepEqual(stoppedFlight.aircraft, readyFlight.aircraft)
+
+  const stopped = projectFlightSimToGeospatialOverlay(
+    stoppedFlight,
+    profile,
+    { source: 'fixed-follow', view: 'chase' },
+    false,
+  )
+  const ready = projectFlightSimToGeospatialOverlay(
+    readyFlight,
+    profile,
+    { source: 'fixed-follow', view: 'chase' },
+    false,
+    7,
+  )
+
+  assert.deepEqual(stopped.aircraft.coordinate, ready.aircraft.coordinate)
+  assert.deepEqual(stopped.camera.centerCoordinate, ready.camera.centerCoordinate)
+  assert.deepEqual(
+    flightGeoOverlayMapLibreFeatureCollection(stopped),
+    flightGeoOverlayMapLibreFeatureCollection(ready),
+    'stopped and initial Ready must retain the exact GeoJSON worker payload',
   )
 })
 

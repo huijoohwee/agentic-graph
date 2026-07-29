@@ -11,6 +11,9 @@ const FLIGHT_GEO_CAMERA_PRESETS = Object.freeze({
 })
 
 const CAMERA_COMPARISON_EPSILON = 1e-8
+const CAMERA_SIGNATURE_DECIMAL_PLACES = Math.round(
+  -Math.log10(CAMERA_COMPARISON_EPSILON),
+)
 
 export type FlightGeoOverlayCameraApplicationOptions = Readonly<{
   stageStopped?: boolean
@@ -34,6 +37,23 @@ function anglesMatch(left: number, right: number): boolean {
   if (!Number.isFinite(left) || !Number.isFinite(right)) return false
   const difference = ((left - right + 540) % 360) - 180
   return Math.abs(difference) <= CAMERA_COMPARISON_EPSILON
+}
+
+function cameraSignatureValue(value: number): number {
+  // MapLibre may round-trip an already-committed transform through a tiny
+  // floating-point delta. Canonicalize at the same precision accepted by the
+  // exact camera predicate so a visually unchanged stopped frame can be
+  // reused, while larger transforms still require a fresh render.
+  const canonical = Number(value.toFixed(CAMERA_SIGNATURE_DECIMAL_PLACES))
+  return Object.is(canonical, -0) ? 0 : canonical
+}
+
+function cameraAngleSignatureValue(value: number): number {
+  const normalized = ((value % 360) + 360) % 360
+  // Keep the reuse proof congruent with anglesMatch: bearings within the
+  // existing exact-camera tolerance across the 0/360 seam are unchanged.
+  if (anglesMatch(normalized, 0)) return 0
+  return cameraSignatureValue(normalized)
 }
 
 function readCoordinate(value: unknown): readonly [number, number] | null {
@@ -103,15 +123,15 @@ export function flightGeoOverlayMapLibreCameraSignature(
 ): string | null {
   if (!camera) return null
   return JSON.stringify([
-    camera.center[0],
-    camera.center[1],
-    camera.bearing,
-    camera.pitch,
-    camera.zoom,
-    camera.padding.top,
-    camera.padding.right,
-    camera.padding.bottom,
-    camera.padding.left,
+    cameraSignatureValue(camera.center[0]),
+    cameraSignatureValue(camera.center[1]),
+    cameraAngleSignatureValue(camera.bearing),
+    cameraSignatureValue(camera.pitch),
+    cameraSignatureValue(camera.zoom),
+    cameraSignatureValue(camera.padding.top),
+    cameraSignatureValue(camera.padding.right),
+    cameraSignatureValue(camera.padding.bottom),
+    cameraSignatureValue(camera.padding.left),
   ])
 }
 

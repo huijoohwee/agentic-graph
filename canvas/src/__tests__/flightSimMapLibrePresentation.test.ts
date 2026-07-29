@@ -21,14 +21,21 @@ import {
   applyFlightGeoOverlayToMap,
   flightGeoOverlayMapLibreFeatureCollection,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
+  FLIGHT_GEO_OVERLAY_LAYER_ORDER,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   retainFlightGeoOverlayDuringStyleSwap,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+import {
+  flightGeoEnvironmentMapLibreFeatureCollection,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
+  FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
 import {
   recordFlightGeoStoppedPresentation,
   writeFlightGeoPresentationDebug,
 } from '../../../gympgrph/src/features/geospatial/flightGeoPresentationDebug'
 import {
+  armFlightSimReadyFrame,
   beginFlightSimReadyFrame,
   cancelCurrentFlightSimReadyFrame,
   completeFlightSimMapLibreReadyFrame,
@@ -106,23 +113,74 @@ function flightOverlay(
   }
 }
 
+function withEnvironment(
+  overlay: FlightGeoOverlaySnapshot,
+): FlightGeoOverlaySnapshot {
+  const ring = [
+    [103.8198, 1.3498],
+    [103.8202, 1.3498],
+    [103.8202, 1.3502],
+    [103.8198, 1.3502],
+    [103.8198, 1.3498],
+  ] as const
+  return {
+    ...overlay,
+    environment: {
+      anchor: [103.82, 1.35],
+      id: 'singapore',
+      label: 'Singapore',
+      presentationBounds: [[103.8198, 1.3498], [103.8202, 1.3502]],
+      revision: 'environment:stopped-ready',
+      stageFootprint: ring,
+      surfaces: [{
+        baseHeightMeters: 0,
+        color: '#0f766e',
+        heightMeters: 0.08,
+        id: 'stage-footprint',
+        kind: 'stage-footprint',
+        ring,
+      }],
+    },
+  }
+}
+
 function presentationHarness(
   initial: FlightGeoOverlaySnapshot,
   afterPresented?: (presentation: FlightGeoOverlayPresentation) => void,
   options?: Readonly<{
     bootstrapApplied?: boolean
     cameraExact?: boolean
+    environmentSourceLoaded?: boolean
     overlaySourceLoaded?: boolean
   }>,
 ) {
   let current = initial
   let cameraExact = options?.cameraExact ?? true
+  let environmentSourceLoaded = options?.environmentSourceLoaded ?? true
   let overlaySourceLoaded = options?.overlaySourceLoaded ?? true
   let width = 0
   let repaintCount = 0
   let sourceData = flightGeoOverlayMapLibreFeatureCollection(initial)
+  let environmentSourceData = initial.environment
+    ? flightGeoEnvironmentMapLibreFeatureCollection(initial)
+    : null
+  let sourceDataWrites = 0
+  let jumpToCount = 0
   const images = new Set<string>()
   const listeners = new Set<() => void>()
+  const styleLoadListeners = new Set<() => void>()
+  let overlayLayerOrder = [...FLIGHT_GEO_OVERLAY_LAYER_ORDER]
+  const layerIds = new Set<string>([
+    ...Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS),
+    ...(initial.environment
+      ? Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS)
+      : []),
+  ])
+  const layerVisibility = new Map<string, 'none' | 'visible'>([
+    [FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d, 'none'],
+    [FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d, 'visible'],
+    [FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline, 'visible'],
+  ])
   const canvas = {
     dataset: {} as DOMStringMap,
     getBoundingClientRect: () => ({
@@ -147,9 +205,10 @@ function presentationHarness(
       lat: cameraExact ? current.camera.centerCoordinate[1] : 0,
     }),
     getLayer: (id: string) => (
-      Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS).some(layerId => layerId === id)
-        ? { id }
-        : undefined
+      layerIds.has(id) ? { id } : undefined
+    ),
+    getLayoutProperty: (id: string, property: string) => (
+      property === 'visibility' ? layerVisibility.get(id) : undefined
     ),
     getPadding: () => ({ top: 16, right: 16, bottom: 16, left: 16 }),
     getPitch: () => cameraExact ? 48 : 0,
@@ -161,24 +220,52 @@ function presentationHarness(
             loaded: () => overlaySourceLoaded,
             serialize: () => ({ data: sourceData }),
             setData: (data: ReturnType<typeof flightGeoOverlayMapLibreFeatureCollection>) => {
+              sourceDataWrites += 1
               sourceData = data
             },
           }
+        : id === FLIGHT_GEO_ENVIRONMENT_SOURCE_ID && environmentSourceData
+          ? {
+              id,
+              loaded: () => environmentSourceLoaded,
+              serialize: () => ({ data: environmentSourceData }),
+              setData: (data: ReturnType<typeof flightGeoEnvironmentMapLibreFeatureCollection>) => {
+                sourceDataWrites += 1
+                environmentSourceData = data
+              },
+            }
         : undefined
     ),
     getStyle: () => ({
-      layers: Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS).map(id => ({ id })),
+      layers: [
+        ...(initial.environment
+          ? Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS).map(id => ({ id }))
+          : []),
+        ...overlayLayerOrder.map(id => ({ id })),
+      ],
     }),
     getZoom: () => cameraExact ? 15.5 : 0,
     moveLayer: () => undefined,
     off: (type: string, listener: () => void) => {
       if (type === 'render') listeners.delete(listener)
+      if (type === 'style.load') styleLoadListeners.delete(listener)
     },
     on: (type: string, listener: () => void) => {
       if (type === 'render') listeners.add(listener)
+      if (type === 'style.load') styleLoadListeners.add(listener)
     },
     triggerRepaint: () => {
       repaintCount += 1
+    },
+    jumpTo: () => {
+      jumpToCount += 1
+    },
+    setLayoutProperty: (
+      id: string,
+      property: string,
+      value: 'none' | 'visible',
+    ) => {
+      if (property === 'visibility') layerVisibility.set(id, value)
     },
   }
   if (options?.bootstrapApplied !== false) {
@@ -210,12 +297,16 @@ function presentationHarness(
     emitRender: () => {
       for (const listener of [...listeners]) listener()
     },
+    emitStyleLoad: () => {
+      for (const listener of [...styleLoadListeners]) listener()
+    },
     gate,
     map,
     listenerCount: () => listeners.size,
     presentedRevision: () => presented.current.revision,
     presentations,
     repaintCount: () => repaintCount,
+    jumpToCount: () => jumpToCount,
     replaceSourceData: (next: FlightGeoOverlaySnapshot | null) => {
       sourceData = next
         ? flightGeoOverlayMapLibreFeatureCollection(next)
@@ -224,6 +315,9 @@ function presentationHarness(
     setCurrent: (next: FlightGeoOverlaySnapshot) => {
       current = next
       sourceData = flightGeoOverlayMapLibreFeatureCollection(next)
+      environmentSourceData = next.environment
+        ? flightGeoEnvironmentMapLibreFeatureCollection(next)
+        : null
     },
     setCameraExact: (exact: boolean) => {
       cameraExact = exact
@@ -231,6 +325,20 @@ function presentationHarness(
     setOverlaySourceLoaded: (loaded: boolean) => {
       overlaySourceLoaded = loaded
     },
+    setEnvironmentSourceLoaded: (loaded: boolean) => {
+      environmentSourceLoaded = loaded
+    },
+    setLayerPresent: (id: string, present: boolean) => {
+      if (present) layerIds.add(id)
+      else layerIds.delete(id)
+    },
+    setLayerVisibility: (id: string, visibility: 'none' | 'visible') => {
+      layerVisibility.set(id, visibility)
+    },
+    setOverlayLayerOrder: (next: readonly string[]) => {
+      overlayLayerOrder = [...next]
+    },
+    sourceDataWrites: () => sourceDataWrites,
     setWidth: (next: number) => {
       width = next
     },
@@ -438,6 +546,274 @@ test('a stopped Flight frame waits for its staged tick-zero camera', () => {
   harness.emitRender()
   assert.equal(harness.presentations.length, 1)
   assert.equal(harness.listenerCount(), 0)
+})
+
+test('a stopped Flight frame rejects a noncanonical overlay stack before commit', () => {
+  const stopped = flightOverlay('stopped', 'stopped:layer-order', null)
+  const harness = presentationHarness(stopped)
+  harness.setWidth(100)
+  harness.setOverlayLayerOrder(Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS))
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+
+  assert.equal(harness.presentations.length, 0)
+  assert.equal(harness.listenerCount(), 1)
+
+  harness.setOverlayLayerOrder(FLIGHT_GEO_OVERLAY_LAYER_ORDER)
+  harness.emitRender()
+
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+})
+
+test('initial Ready reuses an exact stopped frame across MapLibre camera precision', () => {
+  const stopped = flightOverlay('stopped', 'stopped:committed', null)
+  const ready = {
+    ...stopped,
+    camera: {
+      ...stopped.camera,
+      centerCoordinate: [103.82, 1.350000000006] as const,
+    },
+    phase: 'ready' as const,
+    readyFrameRequestId: 7,
+    revision: 'ready:committed',
+    runId: 1,
+  }
+  const harness = presentationHarness(stopped)
+  harness.setWidth(100)
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+  const repaintsBeforeReady = harness.repaintCount()
+  const sourceWritesBeforeReady = harness.sourceDataWrites()
+  const jumpsBeforeReady = harness.jumpToCount()
+
+  harness.setCurrent(ready)
+  harness.gate.request(ready)
+
+  assert.equal(harness.presentations.length, 2)
+  assert.equal(harness.presentations.at(-1)?.readyFrameRequestId, 7)
+  assert.equal(harness.listenerCount(), 0)
+  assert.equal(harness.repaintCount(), repaintsBeforeReady)
+  assert.equal(harness.sourceDataWrites(), sourceWritesBeforeReady)
+  assert.equal(harness.jumpToCount(), jumpsBeforeReady)
+  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
+
+  const freshReady = {
+    ...ready,
+    readyFrameRequestId: 8,
+    revision: 'ready:next-request',
+  }
+  harness.setCurrent(freshReady)
+  harness.gate.request(freshReady)
+  assert.equal(
+    harness.listenerCount(),
+    1,
+    'the one-shot stopped proof cannot satisfy a later ready request',
+  )
+})
+
+test('stopped-frame reuse completes the armed native deadline without a second render', context => {
+  resetFlightSimDeadlineRuntimeForTests()
+  context.after(resetFlightSimDeadlineRuntimeForTests)
+  let clockMs = 20
+  const stopped = flightOverlay('stopped', 'stopped:deadline-reuse', null)
+  const requestId = beginFlightSimReadyFrame(
+    () => clockMs,
+    () => () => undefined,
+  )
+  armFlightSimReadyFrame(requestId, 1, 0, 'maplibre')
+  const ready = {
+    ...stopped,
+    phase: 'ready' as const,
+    readyFrameRequestId: requestId,
+    revision: 'ready:deadline-reuse',
+    runId: 1,
+  }
+  const harness = presentationHarness(stopped, presentation => {
+    if (presentation.readyFrameRequestId === null) return
+    completeFlightSimMapLibreReadyFrame(
+      presentation.readyFrameRequestId,
+      presentation.runId,
+      presentation.tick,
+      () => clockMs,
+    )
+  })
+  harness.setWidth(100)
+  harness.gate.request(stopped)
+  harness.emitRender()
+  const repaintsBeforeReady = harness.repaintCount()
+  harness.setCurrent(ready)
+  clockMs = 21
+
+  harness.gate.request(ready)
+
+  assert.equal(harness.listenerCount(), 0)
+  assert.equal(harness.repaintCount(), repaintsBeforeReady)
+  assert.equal(readFlightSimDeadlineSnapshot().readyFrame?.source, 'native-maplibre-flight-ready-frame')
+  assert.equal(readFlightSimDeadlineSnapshot().readyFrame?.elapsedMs, 1)
+  assert.equal(readFlightSimDeadlineSnapshot().readyFrame?.withinLimit, true)
+})
+
+test('a style reload invalidates a stopped frame before Ready can reuse it', () => {
+  const stopped = flightOverlay('stopped', 'stopped:style-reload', null)
+  const ready = {
+    ...stopped,
+    phase: 'ready' as const,
+    readyFrameRequestId: 9,
+    revision: 'ready:style-reload',
+    runId: 1,
+  }
+  const harness = presentationHarness(stopped)
+  harness.setWidth(100)
+  harness.gate.request(stopped)
+  harness.emitRender()
+  harness.emitStyleLoad()
+  harness.setCurrent(ready)
+
+  harness.gate.request(ready)
+  assert.equal(harness.listenerCount(), 1)
+  harness.emitRender()
+  assert.equal(harness.presentations.at(-1)?.readyFrameRequestId, 9)
+})
+
+test('mutated Ready visuals fall back to a new native MapLibre render', () => {
+  const exerciseFallback = (args: Readonly<{
+    label: string
+    prepare: (harness: ReturnType<typeof presentationHarness>) => void
+    ready: FlightGeoOverlaySnapshot
+    restore?: (harness: ReturnType<typeof presentationHarness>) => void
+    stopped: FlightGeoOverlaySnapshot
+  }>) => {
+    const harness = presentationHarness(args.stopped)
+    harness.setWidth(100)
+    harness.gate.request(args.stopped)
+    harness.emitRender()
+    const repaintsBeforeReady = harness.repaintCount()
+    harness.setCurrent(args.ready)
+    args.prepare(harness)
+
+    harness.gate.request(args.ready)
+    assert.equal(
+      harness.listenerCount(),
+      1,
+      `${args.label} must not reuse the stopped painter frame`,
+    )
+    assert.ok(harness.repaintCount() > repaintsBeforeReady)
+    args.restore?.(harness)
+    harness.emitRender()
+    assert.equal(harness.presentations.length, 2)
+    assert.equal(harness.presentations.at(-1)?.revision, args.ready.revision)
+  }
+
+  const stopped = flightOverlay('stopped', 'stopped:mutations', null)
+  exerciseFallback({
+    label: 'aircraft coordinate mutation',
+    stopped,
+    ready: {
+      ...stopped,
+      aircraft: {
+        ...stopped.aircraft,
+        coordinate: [103.821, 1.351],
+      },
+      camera: {
+        ...stopped.camera,
+        centerCoordinate: [103.821, 1.351],
+      },
+      phase: 'ready',
+      readyFrameRequestId: 1,
+      revision: 'ready:coordinate-mutation',
+      runId: 1,
+    },
+    prepare: () => undefined,
+  })
+
+  const stoppedWithEnvironment = withEnvironment({
+    ...stopped,
+    revision: 'stopped:environment-mutation',
+  })
+  exerciseFallback({
+    label: 'environment extrusion-height mutation',
+    stopped: stoppedWithEnvironment,
+    ready: {
+      ...stoppedWithEnvironment,
+      environment: {
+        ...stoppedWithEnvironment.environment!,
+        surfaces: stoppedWithEnvironment.environment!.surfaces.map(surface => ({
+          ...surface,
+          heightMeters: 12,
+        })),
+      },
+      phase: 'ready',
+      readyFrameRequestId: 2,
+      revision: 'ready:environment-height-mutation',
+      runId: 1,
+    },
+    prepare: () => undefined,
+  })
+
+  const ready = {
+    ...stopped,
+    phase: 'ready' as const,
+    readyFrameRequestId: 3,
+    revision: 'ready:layer-mutation',
+    runId: 1,
+  }
+  exerciseFallback({
+    label: 'missing aircraft layer',
+    stopped,
+    ready,
+    prepare: harness => {
+      harness.setLayerPresent(FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft, false)
+    },
+    restore: harness => {
+      harness.setLayerPresent(FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft, true)
+    },
+  })
+  exerciseFallback({
+    label: 'unsettled overlay source',
+    stopped,
+    ready: { ...ready, readyFrameRequestId: 4, revision: 'ready:overlay-pending' },
+    prepare: harness => harness.setOverlaySourceLoaded(false),
+    restore: harness => harness.setOverlaySourceLoaded(true),
+  })
+  exerciseFallback({
+    label: 'unsettled environment source',
+    stopped: stoppedWithEnvironment,
+    ready: {
+      ...stoppedWithEnvironment,
+      phase: 'ready',
+      readyFrameRequestId: 5,
+      revision: 'ready:environment-pending',
+      runId: 1,
+    },
+    prepare: harness => harness.setEnvironmentSourceLoaded(false),
+    restore: harness => harness.setEnvironmentSourceLoaded(true),
+  })
+  exerciseFallback({
+    label: 'camera mutation',
+    stopped,
+    ready: { ...ready, readyFrameRequestId: 6, revision: 'ready:camera-mutation' },
+    prepare: harness => harness.setCameraExact(false),
+    restore: harness => harness.setCameraExact(true),
+  })
+  exerciseFallback({
+    label: 'material camera coordinate mutation',
+    stopped,
+    ready: {
+      ...ready,
+      camera: {
+        ...ready.camera,
+        centerCoordinate: [103.82, 1.35000002],
+      },
+      readyFrameRequestId: 7,
+      revision: 'ready:camera-coordinate-mutation',
+    },
+    prepare: () => undefined,
+  })
 })
 
 test('a new stopped Flight request clears prior settlement proof before recording its own', () => {

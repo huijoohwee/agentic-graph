@@ -39,7 +39,10 @@ export const FLIGHT_GEO_AIRCRAFT_IMAGE_IDS = Object.freeze({
   night: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft-image-night`,
 })
 
-const FLIGHT_GEO_OVERLAY_LAYER_ORDER = Object.freeze([
+// This is both the painter order and the exactness contract for the Flight
+// overlay. Keep it public so presentation gates do not accidentally infer a
+// different order from the object declaration above.
+export const FLIGHT_GEO_OVERLAY_LAYER_ORDER = Object.freeze([
   FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
   FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
   FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,

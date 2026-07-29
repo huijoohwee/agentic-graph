@@ -17,7 +17,7 @@ export const FLIGHT_GEO_ENVIRONMENT_LAYER_IDS = Object.freeze({
   outline: `${FLIGHT_GEO_ENVIRONMENT_SOURCE_ID}:outline`,
 })
 
-type EnvironmentFeatureProperties = Readonly<{
+export type FlightGeoEnvironmentFeatureProperties = Readonly<{
   kgBaseHeightMeters: number
   kgColor: string
   kgEnvironmentId: string
@@ -56,9 +56,14 @@ function resolveRenderHeightRange(
   ]
 }
 
+export type FlightGeoEnvironmentFeatureCollection = FeatureCollection<
+  Polygon,
+  FlightGeoEnvironmentFeatureProperties
+>
+
 function environmentFeatureCollection(
   environment: FlightGeoEnvironmentProjection,
-): FeatureCollection<Polygon, EnvironmentFeatureProperties> {
+): FlightGeoEnvironmentFeatureCollection {
   const features = environment.surfaces.map(surface => {
     const [renderBaseHeightMeters, renderHeightMeters] =
       resolveRenderHeightRange(
@@ -83,9 +88,22 @@ function environmentFeatureCollection(
         kgSurfaceId: surface.id,
         kgSurfaceKind: surface.kind,
       },
-    } satisfies Feature<Polygon, EnvironmentFeatureProperties>
+    } satisfies Feature<Polygon, FlightGeoEnvironmentFeatureProperties>
   })
   return { type: 'FeatureCollection', features }
+}
+
+/**
+ * Flight phase and ready-frame tokens are not painted environment state.
+ * Keeping this projection public lets the readiness gate prove that its
+ * stopped painter frame and first Ready frame have the same authored metres.
+ */
+export function flightGeoEnvironmentMapLibreFeatureCollection(
+  overlay: FlightGeoOverlaySnapshot,
+): FlightGeoEnvironmentFeatureCollection {
+  return overlay.environment
+    ? environmentFeatureCollection(overlay.environment)
+    : { type: 'FeatureCollection', features: [] }
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -116,7 +134,7 @@ function hasExactEnvironmentRing(
 }
 
 function hasExactEnvironmentFeature(
-  expected: Feature<Polygon, EnvironmentFeatureProperties>,
+  expected: Feature<Polygon, FlightGeoEnvironmentFeatureProperties>,
   actual: unknown,
 ): boolean {
   if (!isPlainRecord(actual)) return false
@@ -140,8 +158,8 @@ function hasExactEnvironmentFeature(
     ))
 }
 
-function hasExactEnvironmentFeatureCollection(
-  expected: FeatureCollection<Polygon, EnvironmentFeatureProperties>,
+export function hasExactFlightGeoEnvironmentFeatureCollection(
+  expected: FlightGeoEnvironmentFeatureCollection,
   actual: unknown,
 ): boolean {
   if (!isPlainRecord(actual) || actual.type !== expected.type) return false
@@ -165,7 +183,7 @@ function isEnvironmentSourceLoaded(source: unknown): boolean {
 
 function scheduleEnvironmentSourceData(
   map: any,
-  data: FeatureCollection<Polygon, EnvironmentFeatureProperties>,
+  data: FlightGeoEnvironmentFeatureCollection,
 ): boolean {
   const source = map?.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
   if (!source || typeof source.setData !== 'function') return false
@@ -246,6 +264,13 @@ function setEnvironmentLayerVisibility(
   visibility: 'none' | 'visible',
 ): void {
   try {
+    const current = typeof map.getLayoutProperty === 'function'
+      ? map.getLayoutProperty(layerId, 'visibility')
+      : undefined
+    // MapLibre schedules a painter update for every setLayoutProperty call,
+    // including an identical visibility value. Ready reuses a stopped painter
+    // frame, so it must not dirty that frame merely to restate its mode.
+    if ((current || 'visible') === visibility) return
     map.setLayoutProperty?.(layerId, 'visibility', visibility)
   } catch {
     void 0
@@ -294,11 +319,11 @@ export function applyFlightGeoEnvironmentToMap(
       throw new Error('MapLibre did not register every XR environment layer.')
     }
     applyModeVisibility(map, viewMode)
-    const expected = environmentFeatureCollection(overlay.environment)
+    const expected = flightGeoEnvironmentMapLibreFeatureCollection(overlay)
     const sourceData = readGeoJsonSourceData(
       map.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID),
     )
-    if (hasExactEnvironmentFeatureCollection(expected, sourceData)) {
+    if (hasExactFlightGeoEnvironmentFeatureCollection(expected, sourceData)) {
       return true
     }
     return scheduleEnvironmentSourceData(map, expected)
@@ -347,8 +372,8 @@ export function mapHasExactFlightGeoEnvironment(
     if (!overlay.environment) return sourceData.features.length === 0
     return Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS)
       .every(layerId => Boolean(map.getLayer?.(layerId)))
-      && hasExactEnvironmentFeatureCollection(
-        environmentFeatureCollection(overlay.environment),
+      && hasExactFlightGeoEnvironmentFeatureCollection(
+        flightGeoEnvironmentMapLibreFeatureCollection(overlay),
         sourceData,
       )
   } catch {

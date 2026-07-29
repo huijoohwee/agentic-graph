@@ -107,6 +107,7 @@ function environmentMapHarness() {
   const visibility = new Map<string, unknown>()
   let addSourceCalls = 0
   let setDataCalls = 0
+  let setLayoutPropertyCalls = 0
   const style = { _loaded: false }
   const map = {
     style,
@@ -134,13 +135,19 @@ function environmentMapHarness() {
       sources.set(sourceId, stored)
     },
     getLayer: (layerId: string) => layers.get(layerId),
+    getLayoutProperty: (layerId: string, property: string) => (
+      property === 'visibility' ? visibility.get(layerId) : undefined
+    ),
     getSource: (sourceId: string) => sources.get(sourceId),
     setLayoutProperty: (
       layerId: string,
       property: string,
       value: unknown,
     ) => {
-      if (property === 'visibility') visibility.set(layerId, value)
+      if (property === 'visibility') {
+        setLayoutPropertyCalls += 1
+        visibility.set(layerId, value)
+      }
     },
   }
   return {
@@ -163,6 +170,7 @@ function environmentMapHarness() {
       style._loaded = ready
     },
     setDataCalls: () => setDataCalls,
+    setLayoutPropertyCalls: () => setLayoutPropertyCalls,
     sourceData: (): EnvironmentSourceData | undefined => {
       const data = sources.get(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)?.data
       return data as EnvironmentSourceData | undefined
@@ -195,6 +203,7 @@ test('XR environment defers until each MapLibre style is ready', () => {
       'setData schedules a source update; the render gate owns completion',
     )
     assert.equal(harness.setDataCalls(), 1)
+    const layoutWritesAfterFirstApply = harness.setLayoutPropertyCalls()
     assert.equal(
       applyFlightGeoEnvironmentToMap(harness.map, overlay, '2d-modern'),
       true,
@@ -204,12 +213,17 @@ test('XR environment defers until each MapLibre style is ready', () => {
       1,
       'an unchanged serialized payload must not reset a pending source load',
     )
+    assert.equal(
+      harness.setLayoutPropertyCalls(),
+      layoutWritesAfterFirstApply,
+      'an unchanged view must not dirty the MapLibre painter with visibility rewrites',
+    )
     assert.equal(harness.completeSourceUpdate(), true)
     assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
     assert.equal(harness.addSourceCalls(), 1)
     assert.equal(harness.layers.size, 3)
     assert.equal(
-      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d),
+      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d) ?? 'visible',
       'visible',
     )
     assert.equal(
@@ -217,7 +231,7 @@ test('XR environment defers until each MapLibre style is ready', () => {
       'none',
     )
     assert.equal(
-      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline),
+      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline) ?? 'visible',
       'visible',
     )
     assert.equal(
@@ -278,11 +292,11 @@ test('XR environment defers until each MapLibre style is ready', () => {
       'none',
     )
     assert.equal(
-      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d),
+      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d) ?? 'visible',
       'visible',
     )
     assert.equal(
-      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline),
+      harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline) ?? 'visible',
       'visible',
     )
   } finally {

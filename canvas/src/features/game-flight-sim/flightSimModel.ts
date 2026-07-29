@@ -313,6 +313,29 @@ export function freezeFlightSimAircraftState(value: FlightSimAircraftState): Fli
   })
 }
 
+/**
+ * Flight's ECS stores component scalars as Float32. Canonicalizing a preview
+ * snapshot through the same representation lets a stopped surface show the
+ * exact tick-zero state that a newly created mission will expose.
+ */
+export function canonicalizeFlightSimEcsAircraftState(
+  value: FlightSimAircraftState,
+): FlightSimAircraftState {
+  return freezeFlightSimAircraftState({
+    ...value,
+    pitch: Math.fround(value.pitch),
+    position: Object.freeze(
+      value.position.map(component => Math.fround(component)),
+    ) as SpatialVector,
+    roll: Math.fround(value.roll),
+    throttle: Math.fround(value.throttle),
+    velocity: Object.freeze(
+      value.velocity.map(component => Math.fround(component)),
+    ) as SpatialVector,
+    yaw: Math.fround(value.yaw),
+  })
+}
+
 function validateDecision(value: unknown): FlightSimDecisionRecord {
   const decision = record(value, 'Flight Sim Decision')
   exactKeys(decision, ['decisionId', 'decisionType', 'entityRef', 'payload', 'producedAt'], 'Flight Sim Decision')
