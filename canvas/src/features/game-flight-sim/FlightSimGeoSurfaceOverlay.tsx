@@ -99,7 +99,7 @@ export function FlightSimGeoSurfaceOverlay() {
       aria-label="Flight Sim Geo overlay"
       data-kg-flight-sim-geo-overlay="1"
       data-kg-flight-sim-geo-environment={environment.id}
-      data-kg-flight-sim-geo-geography-boundary="not-rendered"
+      data-kg-flight-sim-geography-boundary="not-rendered"
       data-kg-flight-sim-geo-phase={flight.phase}
     >
       <svg

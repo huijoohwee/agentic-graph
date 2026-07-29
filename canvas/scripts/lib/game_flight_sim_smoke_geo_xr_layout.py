@@ -88,18 +88,38 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
             }
           }
           const pairsInGeometry = geometry => {
-            const pairs = []
+            const rings = []
             const visit = value => {
-              if (Array.isArray(value)
-                && Number.isFinite(Number(value[0]))
-                && Number.isFinite(Number(value[1]))) {
-                pairs.push([Number(value[0]), Number(value[1])])
-              } else if (Array.isArray(value)) {
-                value.forEach(visit)
+              if (!Array.isArray(value)) return
+              if (value.length >= 3 && value.every(pair => (
+                Array.isArray(pair)
+                && Number.isFinite(Number(pair[0]))
+                && Number.isFinite(Number(pair[1]))
+              ))) {
+                rings.push(value.map(pair => [Number(pair[0]), Number(pair[1])]))
+                return
               }
+              value.forEach(visit)
             }
             visit(geometry?.coordinates)
-            return pairs
+            return rings.flatMap(ring => {
+              // A large stage can visibly cross the compact map aperture while
+              // every corner is hidden behind a workspace panel.
+              const first = ring[0]
+              const last = ring[ring.length - 1]
+              const closed = first?.[0] === last?.[0] && first?.[1] === last?.[1]
+              const vertices = closed ? ring.slice(0, -1) : ring
+              if (vertices.length < 3) return vertices
+              const center = vertices.reduce(
+                (sum, point) => [sum[0] + point[0], sum[1] + point[1]],
+                [0, 0],
+              ).map(value => value / vertices.length)
+              const edgeMidpoints = vertices.map((point, index) => {
+                const next = vertices[(index + 1) % vertices.length]
+                return [(point[0] + next[0]) / 2, (point[1] + next[1]) / 2]
+              })
+              return [...vertices, ...edgeMidpoints, center]
+            })
           }
           const environmentSourceId = gympgrph.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID
             || 'kg-flight-geo-environment'
@@ -112,17 +132,36 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
             .startsWith('3d')
           const activeEnvironmentLayer = mode3d
             ? environmentLayerIds.extrusion3d : environmentLayerIds.fill2d
+          const isRenderedEnvironmentPoint = (point, surfaceId) => {
+            if (!mapRect || !point || !exposed(point)
+              || document.elementFromPoint(point.x, point.y) !== mapCanvas) {
+              return false
+            }
+            try {
+              return map?.queryRenderedFeatures?.(
+                [point.x - mapRect.left, point.y - mapRect.top],
+                { layers: [activeEnvironmentLayer] },
+              ).some(feature => (
+                String(feature?.properties?.kgSurfaceId || '') === surfaceId
+              )) || false
+            } catch {
+              return false
+            }
+          }
           const environmentScreenProof = (environmentData?.features || []).map(feature => {
             const points = pairsInGeometry(feature.geometry).map(toScreen).filter(Boolean)
             const xs = points.map(point => point.x)
             const ys = points.map(point => point.y)
+            const surfaceId = String(feature.properties?.kgSurfaceId || '')
             return {
               heightMeters: Number(feature.properties?.kgHeightMeters || 0),
-              id: String(feature.properties?.kgSurfaceId || ''),
+              id: surfaceId,
               kind: String(feature.properties?.kgSurfaceKind || ''),
               screenHeight: ys.length ? Math.max(...ys) - Math.min(...ys) : 0,
               screenWidth: xs.length ? Math.max(...xs) - Math.min(...xs) : 0,
-              visible: points.some(exposed),
+              visible: points.some(point => (
+                isRenderedEnvironmentPoint(point, surfaceId)
+              )),
             }
           })
           const environmentUnoccludedKinds = Array.from(new Set(
@@ -165,7 +204,9 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
               activeEnvironmentLayerDefinition?.type === 'fill-extrusion'
               && activeEnvironmentVisible
               && environmentScreenProof.some(proof => (
-                proof.kind === 'structure' && proof.heightMeters >= 20
+                proof.visible
+                && proof.kind === 'structure'
+                && proof.heightMeters >= 20
               ))
             ),
             environmentUnoccludedKinds,

@@ -50,7 +50,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     || !flightGeoButton.includes('Select the source-authored Flight Sim document after Source Files finishes loading.')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-overlay="1"')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-aircraft="1"')
-    || !flightGeoOverlay.includes('data-kg-flight-sim-geo-geography-boundary="not-rendered"')
+    || !flightGeoOverlay.includes('data-kg-flight-sim-geography-boundary="not-rendered"')
     || !geoView.includes('data-kg-geo-xr-environment={selectedEnvironment.id}')
     || !flightPanel.includes('data-kg-flight-sim-environment={environment.id}')
     || !flightPanel.includes('data-kg-flight-sim-geography-boundary="not-rendered"')
