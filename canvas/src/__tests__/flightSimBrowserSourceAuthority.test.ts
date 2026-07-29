@@ -389,7 +389,7 @@ test('Flight browser proof activates only after applying the authored source', (
       assert.match(source, /\.monaco-editor/)
     }
     for (const match of source.matchAll(
-      /window\.__kgFlightSimBrowserProof\.importModule\('([^']+)'\)/g,
+      /window\.__kgFlightSimBrowserProof\.importModule\(\s*'([^']+)'\s*,?\s*\)/g,
     )) {
       requestedBrowserModuleKeys.add(match[1])
     }
