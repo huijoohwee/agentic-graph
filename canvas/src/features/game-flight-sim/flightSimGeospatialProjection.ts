@@ -7,6 +7,12 @@ import type { CameraFramingPose } from '@/lib/camera/cameraFramingPose'
 import { resolveFlightSimFollowTarget } from './flightSimFollowTarget'
 import { projectFlightSimRouteGuidance } from './flightSimRouteGuidance'
 import { flightSimAuthoredWorldUnitsToMeters } from './flightSimSpatialScale'
+import {
+  projectSingaporeLocalMeters,
+} from '@/lib/gympgrph/api'
+import type {
+  FlightSimGeoEnvironmentProjection,
+} from './flightSimGeoEnvironmentProjection'
 
 export type FlightSimGeospatialCoordinate =
   readonly [longitude: number, latitude: number]
@@ -37,6 +43,7 @@ export type FlightSimGeospatialOverlay = Readonly<{
     timeline: FlightSimGeospatialTimelineCamera | null
     view: 'chase' | 'cockpit' | 'survey'
   }>
+  environment: FlightSimGeoEnvironmentProjection | null
   night: boolean
   objective: Readonly<{
     bearingDegrees: number
@@ -70,11 +77,6 @@ export type FlightSimGeospatialCameraInput = Readonly<{
   view: 'chase' | 'cockpit' | 'survey'
 }>
 
-const SINGAPORE_MARINA_BAY: FlightSimGeospatialCoordinate = Object.freeze([
-  103.851959,
-  1.29027,
-])
-
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value))
 }
@@ -83,12 +85,10 @@ function projectPosition(
   position: SpatialVector,
   origin: SpatialVector,
 ): FlightSimGeospatialCoordinate {
-  const latitudeRadians = SINGAPORE_MARINA_BAY[1] * Math.PI / 180
-  const longitudeScale = 111_320 * Math.cos(latitudeRadians)
-  return Object.freeze([
-    SINGAPORE_MARINA_BAY[0] + (position[0] - origin[0]) / longitudeScale,
-    SINGAPORE_MARINA_BAY[1] - (position[2] - origin[2]) / 111_320,
-  ])
+  return projectSingaporeLocalMeters(
+    position[0] - origin[0],
+    origin[2] - position[2],
+  )
 }
 
 export function projectFlightSimTimelineCameraToGeospatial(
@@ -132,6 +132,7 @@ export function projectFlightSimToGeospatialOverlay(
   camera: FlightSimGeospatialCameraInput,
   night: boolean,
   readyFrameRequestId: number | null = null,
+  environment: FlightSimGeoEnvironmentProjection | null = null,
 ): FlightSimGeospatialOverlay {
   const guidance = projectFlightSimRouteGuidance(flight, profile)
   const fixedFollow = resolveFlightSimFollowTarget(flight, 1, camera.view)
@@ -185,6 +186,7 @@ export function projectFlightSimToGeospatialOverlay(
       timeline,
       view: camera.view,
     }),
+    environment,
     night,
     objective,
     phase: flight.phase,
@@ -199,6 +201,7 @@ export function projectFlightSimToGeospatialOverlay(
       camera.source,
       camera.view,
       timeline?.playheadSeconds ?? 'operator',
+      environment?.revision ?? 'no-environment',
       night ? 'night' : 'day',
     ].join(':'),
     route,

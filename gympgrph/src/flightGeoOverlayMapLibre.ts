@@ -1,3 +1,4 @@
+import type { Feature, FeatureCollection, Polygon } from 'geojson'
 import { flightGeoOverlayFeatureCollection, type FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
 import { clearGeoJsonSourceData, isMapLibreStyleReady, setGeoJsonSourceData } from './maplibreLayers.js'
 
@@ -8,6 +9,10 @@ export const FLIGHT_GEO_OVERLAY_LAYER_IDS = Object.freeze({
   objectiveGuide: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:objective-guide`,
   route: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:route`,
   routePoints: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:route-points`,
+})
+export const FLIGHT_GEO_AIRCRAFT_IMAGE_IDS = Object.freeze({
+  day: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft-image-day`,
+  night: `${FLIGHT_GEO_OVERLAY_SOURCE_ID}:aircraft-image-night`,
 })
 
 const FLIGHT_GEO_OVERLAY_LAYER_ORDER = Object.freeze([
@@ -31,6 +36,187 @@ const FLIGHT_GEO_NIGHT_EXPRESSION = Object.freeze([
   ['get', 'kgFlightNight'],
   false,
 ])
+const METERS_PER_LATITUDE_DEGREE = 111_320
+const FLIGHT_GEO_AIRCRAFT_SHAPE_METERS = Object.freeze([
+  Object.freeze([0, 30] as const),
+  Object.freeze([5, 7] as const),
+  Object.freeze([28, -5] as const),
+  Object.freeze([7, -9] as const),
+  Object.freeze([10, -22] as const),
+  Object.freeze([3, -20] as const),
+  Object.freeze([0, -26] as const),
+  Object.freeze([-3, -20] as const),
+  Object.freeze([-10, -22] as const),
+  Object.freeze([-7, -9] as const),
+  Object.freeze([-28, -5] as const),
+  Object.freeze([-5, 7] as const),
+])
+const FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE = 40
+
+type FlightGeoAircraftImage = Readonly<{
+  data: Uint8Array
+  height: number
+  width: number
+}>
+
+function isPointInsideAircraftShape(x: number, y: number): boolean {
+  let inside = false
+  for (
+    let index = 0, previous = FLIGHT_GEO_AIRCRAFT_SHAPE_METERS.length - 1;
+    index < FLIGHT_GEO_AIRCRAFT_SHAPE_METERS.length;
+    previous = index, index += 1
+  ) {
+    const [currentX, currentY] = FLIGHT_GEO_AIRCRAFT_SHAPE_METERS[index]
+    const [previousX, previousY] =
+      FLIGHT_GEO_AIRCRAFT_SHAPE_METERS[previous]
+    if (
+      (currentY > y) !== (previousY > y)
+      && x < (
+        (previousX - currentX) * (y - currentY)
+        / (previousY - currentY)
+        + currentX
+      )
+    ) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
+function createFlightGeoAircraftImage(
+  fill: readonly [number, number, number],
+  outline: readonly [number, number, number],
+): FlightGeoAircraftImage {
+  const data = new Uint8Array(
+    FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE
+      * FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE
+      * 4,
+  )
+  const pixelToShape = (
+    pixel: number,
+  ): number => (pixel / FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE - 0.5) * 64
+  const inside = (x: number, y: number): boolean =>
+    isPointInsideAircraftShape(pixelToShape(x), -pixelToShape(y))
+  for (let y = 0; y < FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE; y += 1) {
+    for (let x = 0; x < FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE; x += 1) {
+      if (!inside(x + 0.5, y + 0.5)) continue
+      const boundary = [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ].some(([offsetX, offsetY]) => !inside(
+        x + 0.5 + offsetX,
+        y + 0.5 + offsetY,
+      ))
+      const color = boundary ? outline : fill
+      const offset = (y * FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE + x) * 4
+      data[offset] = color[0]
+      data[offset + 1] = color[1]
+      data[offset + 2] = color[2]
+      data[offset + 3] = 255
+    }
+  }
+  return Object.freeze({
+    data,
+    height: FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE,
+    width: FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE,
+  })
+}
+
+const FLIGHT_GEO_AIRCRAFT_IMAGES = Object.freeze({
+  day: createFlightGeoAircraftImage([34, 211, 238], [248, 250, 252]),
+  night: createFlightGeoAircraftImage([196, 181, 253], [30, 27, 75]),
+})
+
+function ensureFlightGeoAircraftImages(map: any): boolean {
+  try {
+    for (const mode of ['day', 'night'] as const) {
+      const imageId = FLIGHT_GEO_AIRCRAFT_IMAGE_IDS[mode]
+      const exists = typeof map.hasImage === 'function'
+        ? map.hasImage(imageId)
+        : Boolean(map.getImage?.(imageId))
+      if (exists) continue
+      if (typeof map.addImage !== 'function') {
+        throw new Error('MapLibre addImage is unavailable.')
+      }
+      map.addImage(imageId, FLIGHT_GEO_AIRCRAFT_IMAGES[mode])
+      const registered = typeof map.hasImage === 'function'
+        ? map.hasImage(imageId)
+        : Boolean(map.getImage?.(imageId))
+      if (!registered) {
+        throw new Error(`MapLibre did not register image "${imageId}".`)
+      }
+    }
+    return true
+  } catch (error) {
+    console.error(
+      '[kg-flight] Could not register the fixed-pixel aircraft images.',
+      error,
+    )
+    return false
+  }
+}
+
+function flightGeoAircraftShapeFeature(
+  overlay: FlightGeoOverlaySnapshot,
+): Feature<Polygon> | null {
+  const [longitude, latitude] = overlay.aircraft.coordinate
+  const headingDegrees = overlay.aircraft.headingDegrees
+  if (![longitude, latitude, headingDegrees].every(Number.isFinite)) return null
+  const headingRadians = headingDegrees * Math.PI / 180
+  const latitudeRadians = latitude * Math.PI / 180
+  const longitudeMetersPerDegree = METERS_PER_LATITUDE_DEGREE
+    * Math.max(0.01, Math.abs(Math.cos(latitudeRadians)))
+  const ring = FLIGHT_GEO_AIRCRAFT_SHAPE_METERS.map(
+    ([rightMeters, forwardMeters]) => {
+      const eastMeters = (
+        rightMeters * Math.cos(headingRadians)
+        + forwardMeters * Math.sin(headingRadians)
+      )
+      const northMeters = (
+        forwardMeters * Math.cos(headingRadians)
+        - rightMeters * Math.sin(headingRadians)
+      )
+      return [
+        longitude + eastMeters / longitudeMetersPerDegree,
+        latitude + northMeters / METERS_PER_LATITUDE_DEGREE,
+      ]
+    },
+  )
+  ring.push([...ring[0]])
+  return {
+    type: 'Feature',
+    id: `${overlay.profileId}:aircraft`,
+    geometry: {
+      type: 'Polygon',
+      coordinates: [ring],
+    },
+    properties: {
+      kgFlightOverlayKind: 'aircraft',
+      kgFlightNight: overlay.night,
+      kgFlightOverlayRevision: overlay.revision,
+      altitudeMeters: overlay.aircraft.altitudeMeters,
+      headingDegrees,
+    },
+  }
+}
+
+function flightGeoOverlayMapLibreFeatureCollection(
+  overlay: FlightGeoOverlaySnapshot,
+): FeatureCollection {
+  const collection = flightGeoOverlayFeatureCollection(overlay)
+  const aircraftShape = flightGeoAircraftShapeFeature(overlay)
+  if (!aircraftShape || collection.features.length === 0) return collection
+  return {
+    ...collection,
+    features: collection.features.map(feature => (
+      feature.properties?.kgFlightOverlayKind === 'aircraft'
+        ? aircraftShape
+        : feature
+    )),
+  }
+}
 
 export function retainFlightGeoOverlayDuringStyleSwap(
   previousStyle: Readonly<Record<string, any>> | undefined,
@@ -64,12 +250,25 @@ export function retainFlightGeoOverlayDuringStyleSwap(
   }
 }
 
-function addLayerOnce(map: any, layer: Record<string, unknown>): void {
-  if (map.getLayer?.(layer.id)) return
+function addLayerOnce(map: any, layer: Record<string, unknown>): boolean {
+  const layerId = String(layer.id || '')
   try {
-    map.addLayer?.(layer)
-  } catch {
-    void 0
+    if (!layerId) throw new Error('Flight overlay layer requires a stable id.')
+    if (map.getLayer?.(layerId)) return true
+    if (typeof map.addLayer !== 'function') {
+      throw new Error('MapLibre addLayer is unavailable.')
+    }
+    map.addLayer(layer)
+    if (map.getLayer?.(layerId)) return true
+    throw new Error(
+      'MapLibre did not register the layer; inspect preceding map error events.',
+    )
+  } catch (error) {
+    console.error(
+      `[kg-flight] Could not add MapLibre Flight overlay layer "${layerId || 'unknown'}".`,
+      error,
+    )
+    return false
   }
 }
 
@@ -156,17 +355,23 @@ export function fitMapToFlightGeoOverlay(
 export function applyFlightGeoOverlayCameraToMap(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
+  viewMode: string = '3d',
 ): boolean {
   if (typeof map?.jumpTo !== 'function') return false
   try {
+    const mode3d = viewMode === '3d' || viewMode === '3d-modern'
     if (
       overlay.camera.effectiveOwner === 'timeline-playback'
       && overlay.camera.timeline
     ) {
       map.jumpTo({
-        bearing: overlay.camera.timeline.bearingDegrees,
+        bearing: mode3d
+          ? overlay.camera.timeline.bearingDegrees
+          : 0,
         center: [...overlay.camera.timeline.centerCoordinate],
-        pitch: overlay.camera.timeline.pitchDegrees,
+        pitch: mode3d
+          ? Math.max(22, overlay.camera.timeline.pitchDegrees)
+          : 0,
         zoom: overlay.camera.timeline.zoom,
       })
       return true
@@ -174,11 +379,11 @@ export function applyFlightGeoOverlayCameraToMap(
     if (overlay.camera.source !== 'fixed-follow') return false
     const preset = FLIGHT_GEO_CAMERA_PRESETS[overlay.camera.view]
     map.jumpTo?.({
-      bearing: overlay.camera.view === 'survey'
-        ? 0
-        : overlay.aircraft.headingDegrees,
+      bearing: mode3d && overlay.camera.view !== 'survey'
+        ? overlay.aircraft.headingDegrees
+        : 0,
       center: [...overlay.camera.centerCoordinate],
-      pitch: preset.pitch,
+      pitch: mode3d ? preset.pitch : 0,
       zoom: preset.zoom,
     })
     return true
@@ -196,10 +401,11 @@ export function applyFlightGeoOverlayToMap(
     if (!overlay.active) {
       return clearFlightGeoOverlayFromMap(map)
     }
+    if (!ensureFlightGeoAircraftImages(map)) return false
     setGeoJsonSourceData(
       map,
       FLIGHT_GEO_OVERLAY_SOURCE_ID,
-      flightGeoOverlayFeatureCollection(overlay),
+      flightGeoOverlayMapLibreFeatureCollection(overlay),
     )
     addLayerOnce(map, {
       id: FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
@@ -323,19 +529,19 @@ export function applyFlightGeoOverlayToMap(
     })
     addLayerOnce(map, {
       id: FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
-      type: 'circle',
+      type: 'fill',
       source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
       filter: ['==', ['get', 'kgFlightOverlayKind'], 'aircraft'],
       paint: {
-        'circle-color': [
+        'fill-color': [
           'case',
           FLIGHT_GEO_NIGHT_EXPRESSION,
           '#312e81',
           '#0f172a',
         ],
-        'circle-opacity': 0.92,
-        'circle-pitch-scale': 'viewport',
-        'circle-radius': 13,
+        'fill-opacity': 0.88,
+        'fill-translate': [0, 2],
+        'fill-translate-anchor': 'viewport',
       },
     })
     addLayerOnce(map, {
@@ -344,29 +550,18 @@ export function applyFlightGeoOverlayToMap(
       source: FLIGHT_GEO_OVERLAY_SOURCE_ID,
       filter: ['==', ['get', 'kgFlightOverlayKind'], 'aircraft'],
       layout: {
-        'text-allow-overlap': true,
-        'text-field': '▲',
-        'text-font': ['Noto Sans Regular'],
-        'text-ignore-placement': true,
-        'text-pitch-alignment': 'viewport',
-        'text-rotate': ['get', 'headingDegrees'],
-        'text-rotation-alignment': 'map',
-        'text-size': 22,
-      },
-      paint: {
-        'text-color': [
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+        'icon-image': [
           'case',
           FLIGHT_GEO_NIGHT_EXPRESSION,
-          '#c4b5fd',
-          '#22d3ee',
+          FLIGHT_GEO_AIRCRAFT_IMAGE_IDS.night,
+          FLIGHT_GEO_AIRCRAFT_IMAGE_IDS.day,
         ],
-        'text-halo-color': [
-          'case',
-          FLIGHT_GEO_NIGHT_EXPRESSION,
-          '#1e1b4b',
-          '#f8fafc',
-        ],
-        'text-halo-width': 1.5,
+        'icon-pitch-alignment': 'viewport',
+        'icon-rotate': ['get', 'headingDegrees'],
+        'icon-rotation-alignment': 'map',
+        'icon-size': 1,
       },
     })
     keepFlightGeoOverlayAboveHostLayers(map)

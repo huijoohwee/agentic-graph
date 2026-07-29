@@ -76,7 +76,16 @@ Implement one browser-local, deterministic Flight Sim mission on the composed Kn
   - [x] Remove Flight's global browser-network replacement, retain explicit gameplay transport rejection at the bounded call seam, and leave existing Geo provider and checked-in Motion Control asset transport with their independent owners.
   - _Requirements: 4, 6, 7, 12, 14, 24, 25, 26, 27_
 
-- [ ] 10. Complete final exact-revision evidence and protected integration
+- [x] 10. Restore the four-mode Singapore Flight/Geo/XR projection
+  - [x] Centralize the Singapore local-stage anchor, non-administrative presentation extent, and north-up 2D versus oblique 3D camera policy.
+  - [x] Project the selected XR stage footprint, authored structures, and placed subjects into native MapLibre fill/line layers for both 2D modes and native fill extrusion for both 3D modes.
+  - [x] Replace the font-dependent aircraft symbol with pose-derived native polygon geometry plus source-generated fixed-pixel day/night icons, and fail closed with exact image/layer diagnostics.
+  - [x] Await Flight publication preparation before the Media-to-Geo route so source or layer failure cannot strand the operator on a blank Geo panel.
+  - [x] Extend focused source contracts and the two-run exact-candidate browser gate across the environment revision, aircraft geometry, four mode cameras, live movement, and map interaction.
+  - [x] Preserve the single MapLibre world/pointer owner, transparent R3F simulation/input/readiness Canvas, zero external simulator dependency, and no-copy boundary.
+  - _Requirements: 14, 22, 25_
+
+- [ ] 11. Complete final exact-revision evidence and protected integration
   - [ ] Run the aggregate source/runtime gate on a clean exact candidate revision.
   - [ ] Run two fresh serial browser proofs on that same revision, including mission completion and a touch-control interaction if those are required browser acceptance claims.
   - [ ] Preserve the honest boundary between source proof, browser proof, protected integration, and release/deployment proof.

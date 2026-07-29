@@ -25,6 +25,9 @@ from lib.game_flight_sim_smoke_network import (
 from lib.game_flight_sim_smoke_lifecycle import (
     read_runtime_and_dispatch_blur,
 )
+from lib.game_flight_sim_smoke_camera_tracking import (
+    timeline_map_camera_matches_overlay,
+)
 from lib.game_flight_sim_smoke_throttle import (
     FLIGHT_THROTTLE_PROOF_MESSAGE,
     assert_staged_throttle_response,
@@ -698,6 +701,67 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
         self.assertEqual(
             [record["status"] for record in ledger.evidence()],
             ["failed", "failed", "skipped"],
+        )
+
+
+class FlightTimelineCameraMatcherTest(unittest.TestCase):
+    def _camera_state(
+        self,
+        view_mode: str,
+        *,
+        bearing: float,
+        pitch: float,
+    ) -> dict[str, object]:
+        return {
+            "viewMode": view_mode,
+            "mapCamera": {
+                "bearing": bearing,
+                "center": {"lng": 103.851959, "lat": 1.29027},
+                "pitch": pitch,
+                "zoom": 15.25,
+            },
+            "overlay": {
+                "camera": {
+                    "timeline": {
+                        "bearingDegrees": 127,
+                        "centerCoordinate": [103.851959, 1.29027],
+                        "pitchDegrees": 14,
+                        "zoom": 15.25,
+                    },
+                },
+            },
+        }
+
+    def test_timeline_camera_matches_flattened_2d_modes(self) -> None:
+        for view_mode in ("2d", "2d-modern"):
+            with self.subTest(view_mode=view_mode):
+                state = self._camera_state(
+                    view_mode,
+                    bearing=0,
+                    pitch=0,
+                )
+                self.assertTrue(timeline_map_camera_matches_overlay(state))
+
+    def test_timeline_camera_matches_clamped_3d_modes(self) -> None:
+        for view_mode in ("3d", "3d-modern"):
+            with self.subTest(view_mode=view_mode):
+                state = self._camera_state(
+                    view_mode,
+                    bearing=127,
+                    pitch=22,
+                )
+                self.assertTrue(timeline_map_camera_matches_overlay(state))
+
+    def test_timeline_camera_rejects_cross_mode_pitch_and_bearing(self) -> None:
+        self.assertFalse(
+            timeline_map_camera_matches_overlay(
+                self._camera_state("2d-modern", bearing=127, pitch=22),
+            ),
+        )
+        self.assertFalse(
+            timeline_map_camera_matches_overlay(
+                self._camera_state("3d-modern", bearing=0, pitch=0),
+            ),
         )
 
 

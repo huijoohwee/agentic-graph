@@ -105,11 +105,15 @@ test("an adapter failure without usage marks spend unreported and blocks continu
 
 test("an adapter that ignores abort still settles at the stage deadline", async (t) => {
   const fixture = await createFixture(t, {
-    bounds: { maxStageTimeMs: 100, maxRunTimeMs: 1_000 },
+    bounds: { maxStageTimeMs: 1_000, maxRunTimeMs: 3_000 },
   });
+  let executions = 0;
   const adapter = adapterRecord({
-    estimate: async () => ({ inputTokens: 1, outputTokens: 1, costUsd: 0, timeMs: 100 }),
-    execute: async () => new Promise(() => {}),
+    estimate: async () => ({ inputTokens: 1, outputTokens: 1, costUsd: 0, timeMs: 1_000 }),
+    execute: async () => {
+      executions += 1;
+      return new Promise(() => {});
+    },
   });
   const runtime = runtimeFor({
     rootDir: fixture.rootDir,
@@ -118,7 +122,8 @@ test("an adapter that ignores abort still settles at the stage deadline", async 
   });
   const before = Date.now();
   const { started } = await planAndStart(runtime, fixture.planInput, "safety-ignored-abort");
-  assert.ok(Date.now() - before < 2_000);
+  assert.ok(Date.now() - before < 2_500);
+  assert.equal(executions, 1);
   assert.equal(started.state, "blocked");
   assert.equal(started.error.code, "branch_usage_unreported");
   assert.equal(started.usage.costStatus, "unreported");

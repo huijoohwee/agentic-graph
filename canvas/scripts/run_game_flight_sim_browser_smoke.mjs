@@ -308,9 +308,32 @@ async function readValidatedRunEvidence({
         && view?.flightLayersReady === true
         && view?.flightLayersTopmost === true
         && view?.aircraftLayerType === 'symbol'
+        && view?.aircraftGeometryType === 'Polygon'
+        && view?.aircraftImagesReady === true
+        && Number(view?.aircraftImagePixelWidth || 0) >= 40
+        && view?.environmentId === 'singapore'
+        && JSON.stringify(view?.environmentPresentationBounds)
+          === JSON.stringify([[103.605, 1.158], [104.09, 1.48]])
+        && view?.environmentLayersReady === true
+        && Number(view?.environmentSourceFeatures || 0) >= 10
+        && ['stage-footprint', 'structure', 'subject'].every(kind =>
+          view?.renderedEnvironmentKinds?.includes(kind),
+        )
+        && view?.renderedEnvironmentSubjectIds?.some(subjectId =>
+          String(subjectId).includes('vehicle-'),
+        )
         && view?.objectiveGuideFeatureCount === 1
         && view?.routeInViewport === true
         && view?.aircraftInViewport === true
+        && Number(view?.center?.[0]) >= 103.605
+        && Number(view?.center?.[0]) <= 104.09
+        && Number(view?.center?.[1]) >= 1.158
+        && Number(view?.center?.[1]) <= 1.48
+        && (
+          expected.viewMode.startsWith('3d')
+            ? Number(view?.pitch || 0) >= 22
+            : Math.abs(Number(view?.pitch || 0)) < 0.01
+        )
         && Math.max(
           Number(view?.routeScreenSpan?.x || 0),
           Number(view?.routeScreenSpan?.y || 0),

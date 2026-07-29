@@ -429,6 +429,14 @@ test('Flight browser proof activates only after applying the authored source', (
     /get_by_label\("Capture flight pointer", exact=True\)/,
   )
   assert.match(
+    cameraTrackingVerifier,
+    /value\.get\("viewMode"\) in \{"3d", "3d-modern"\}/,
+  )
+  assert.match(
+    cameraTrackingVerifier,
+    /expected_pitch = preset\["pitch"\] if mode_3d else 0/,
+  )
+  assert.match(
     cameraVerifier,
     /map_interaction = verify_map_pointer_drag\(page\)/,
   )

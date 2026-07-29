@@ -243,6 +243,11 @@
       "import": "./dist/geospatial/sgpAdministrativeAreas.js",
       "default": "./dist/geospatial/sgpAdministrativeAreas.js"
     },
+    "./geospatial/singaporeFlightGeo": {
+      "types": "./dist/geospatial/singaporeFlightGeo.d.ts",
+      "import": "./dist/geospatial/singaporeFlightGeo.js",
+      "default": "./dist/geospatial/singaporeFlightGeo.js"
+    },
     "./geospatial/poiRichMedia": {
       "types": "./dist/geospatial/poiRichMedia.d.ts",
       "import": "./dist/geospatial/poiRichMedia.js",

@@ -20,13 +20,9 @@ import {
   NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
 } from '../../../gympgrph/src/features/geospatial/mapLibreHostLease.js'
 
-const flushMicrotasks = async () => {
-  await new Promise<void>(resolve => setImmediate(resolve))
-}
-
+const flushMicrotasks = () => new Promise<void>(resolve => setImmediate(resolve))
 const applyProviderStyleImmediately = (apply: () => void) => {
-  apply()
-  return () => void 0
+  apply(); return () => void 0
 }
 
 function readyFlightOverlay(
@@ -51,6 +47,7 @@ function readyFlightOverlay(
       timeline: null,
       view: 'chase',
     },
+    environment: null,
     night: false,
     objective: {
       bearingDegrees: 45,

@@ -26,6 +26,7 @@ type FollowTarget = Readonly<{
   position: readonly [number, number, number]
   target: readonly [number, number, number]
   fovDegrees: number
+  cameraViewRevision: number
   resetKey: number
   sequence: number
   interpolate: boolean
@@ -79,6 +80,7 @@ function readPhysicsFollowTarget(
     ] as const),
     target,
     fovDegrees: framing.fovDegrees,
+    cameraViewRevision: 0,
     resetKey: 0,
     sequence: frame.stepCount,
     interpolate: runtime.phase === 'running',
@@ -94,14 +96,16 @@ function readFlightFollowTarget(
   if (!active || renderer.xr.isPresenting) return null
   const snapshot = readFlightSimSnapshot()
   if (!snapshot.active || !snapshot.webglSupported || snapshot.runtimeError) return null
+  const cameraView = readFlightSimCameraSnapshot()
   const target = resolveFlightSimFollowTarget(
     snapshot,
     coordinateScale,
-    readFlightSimCameraSnapshot().view,
+    cameraView.view,
   )
   return Object.freeze({
     owner: 'flight',
     ...target,
+    cameraViewRevision: cameraView.revision,
     interpolate: true,
     snapDistance: Number.POSITIVE_INFINITY,
   })
@@ -133,6 +137,7 @@ export function useXrNativeControllerDemoCamera({
   const desiredTargetRef = React.useRef(new Vector3())
   const desiredCameraRef = React.useRef(new Vector3())
   const previousFovRef = React.useRef<number | null>(null)
+  const cameraViewRevisionRef = React.useRef(-1)
   const resetKeyRef = React.useRef(-1)
   const sequenceRef = React.useRef(-1)
 
@@ -147,6 +152,7 @@ export function useXrNativeControllerDemoCamera({
       controlsCapabilitiesRef.current = null
     }
     ownerRef.current = null
+    cameraViewRevisionRef.current = -1
     resetKeyRef.current = -1
     sequenceRef.current = -1
   }, [camera, controls])
@@ -187,9 +193,11 @@ export function useXrNativeControllerDemoCamera({
     const desiredCamera = desiredCameraRef.current.set(...follow.position)
     const ownerChanged = ownerRef.current !== follow.owner
     const resetDetected = ownerChanged
+      || cameraViewRevisionRef.current !== follow.cameraViewRevision
       || resetKeyRef.current !== follow.resetKey
       || follow.sequence < sequenceRef.current
     ownerRef.current = follow.owner
+    cameraViewRevisionRef.current = follow.cameraViewRevision
     resetKeyRef.current = follow.resetKey
     sequenceRef.current = follow.sequence
     const externallyDisplaced = (

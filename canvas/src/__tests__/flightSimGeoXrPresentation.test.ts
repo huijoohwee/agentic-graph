@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { projectFlightSimToGeospatialOverlay } from '@/features/game-flight-sim/flightSimGeospatialProjection'
+import { projectXrEnvironmentToFlightGeo } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import { createFlightSimRuntime } from '@/features/game-flight-sim/flightSimRuntimeCore'
 import { readFlightSimXrSpatialProfile } from '@/features/game-flight-sim/flightSimSpatialProfile'
 
@@ -40,6 +41,13 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     ),
     'utf8',
   )
+  const mapLibrePresentation = readFileSync(
+    path.resolve(
+      process.cwd(),
+      '../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
+    ),
+    'utf8',
+  )
 
   assert.match(viewport, /z-\[10\]/)
   assert.match(geospatialOverlay, /z-\[5\]/)
@@ -61,6 +69,18 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
   assert.match(
     threeGraph,
     /!geospatialComposite && spatialCaptureManifest/,
+  )
+  assert.match(
+    mapLibrePresentation,
+    /applyFlightGeoEnvironmentToMap\(/,
+  )
+  assert.match(
+    mapLibrePresentation,
+    /map\?\.on\?\.\('style\.load', scheduleFinalApply\)/,
+  )
+  assert.match(
+    mapLibrePresentation,
+    /map\?\.off\?\.\('style\.load', scheduleFinalApply\)/,
   )
   assert.match(
     threeGraph,
@@ -96,12 +116,23 @@ test('Flight Geo bootstrap retains one map owner and stages pre-document ownersh
     ),
     'utf8',
   )
+  const flightRunReadyRuntime = readFileSync(
+    path.resolve(
+      process.cwd(),
+      'src/features/canvas/FlightSimRunReadyDemoRuntime.tsx',
+    ),
+    'utf8',
+  )
   const flightOwnerIndex = startupRuntimes.indexOf('<FlightSimRunReadyDemoRuntime />')
   const deferredOwnerGateIndex = startupRuntimes.indexOf(
     'sourceFilesBootstrapHasReachedReady ?',
   )
   assert.ok(flightOwnerIndex > 0)
   assert.ok(deferredOwnerGateIndex > flightOwnerIndex)
+  assert.match(
+    flightRunReadyRuntime,
+    /if \(!hydrated\) \{[\s\S]*settleFailedLaunch\([\s\S]*true,[\s\S]*\)[\s\S]*return null/,
+  )
 })
 
 test('Flight local mission coordinates project deterministically around Singapore', () => {
@@ -111,11 +142,26 @@ test('Flight local mission coordinates project deterministically around Singapor
     active: true,
     webglSupported: true,
   })
+  const environment = projectXrEnvironmentToFlightGeo({
+    stageId: 'singapore',
+    subjects: [{
+      id: 'helicopter',
+      assetId: 'vehicle-helicopter',
+      category: 'vehicles',
+      label: 'Helicopter',
+      color: '#f59e0b',
+      position: [4, 2, -3],
+      rotationYDegrees: 0,
+      scale: 1,
+    }],
+  })
   const overlay = projectFlightSimToGeospatialOverlay(
     runtime.read(),
     profile,
     { source: 'fixed-follow', view: 'chase' },
     true,
+    null,
+    environment,
   )
 
   assert.equal(overlay.active, true)
@@ -132,6 +178,11 @@ test('Flight local mission coordinates project deterministically around Singapor
   assert.ok(overlay.aircraft.headingDegrees < 360)
   assert.equal(overlay.night, true)
   assert.equal(overlay.camera.effectiveOwner, 'fixed-follow')
+  assert.equal(overlay.environment?.id, 'singapore')
+  assert.equal(
+    overlay.environment?.surfaces.some(surface => surface.id === 'helicopter'),
+    true,
+  )
 
   const completedOverlay = projectFlightSimToGeospatialOverlay(
     {

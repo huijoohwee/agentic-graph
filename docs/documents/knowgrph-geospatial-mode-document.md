@@ -6,16 +6,22 @@
 
 ---
 
-## Status (2026-07-27)
+## Status (2026-07-29)
 
-- **Implementation state: candidate-ready; protected exact-main proof
-  pending.** Structured operator controls, focused source proof, and the owned
-  task-worktree browser diagnostic pass. This document does not claim
-  `runtime-ready-dev` until the same controls pass on the exact protected-main
-  revision produced by integration.
+- **Implementation state: candidate-ready; exact-candidate browser and protected
+  exact-main proof pending.** The prior enhanced-layer baseline has structured
+  operator controls and focused source proof. This four-mode Flight/Geo/XR
+  candidate does not claim `runtime-ready-dev` until its repository browser
+  gate passes on the sealed candidate and again on the protected-main revision
+  produced by integration.
 - Knowgrph keeps Geospatial Mode logic out of its codebase and loads it on-demand from the sibling repo `gympgrph` (implementation lives in `gympgrph/src/`).
 - Knowgrph exposes a toolbar entrypoint (**Geospatial Mode**, right of **3D Mode**) that opens the Floating Panel **Geo** view and toggles the gympgrph overlay.
-- **3D render mode uses MapLibre exclusively** (Cesium has been removed). The 3D overlay renders via the same MapLibre runtime path with deterministic startup camera defaults (Singapore center, zoom `2.8`, pitch `0`, bearing `0`) and bounded fit behavior.
+- **3D render mode uses MapLibre exclusively** (Cesium has been removed). The
+  3D overlay renders via the same MapLibre runtime path, fits the shared
+  Singapore presentation extent at an oblique city camera capped at zoom
+  `12.8` (pitch `55`, bearing `-18`), and then yields to the selected Flight or
+  operator camera. Both 2D variants fit the same extent north-up with zoom
+  capped at `12`, pitch `0`, and bearing `0`.
 - Enhanced layers are additive and configuration-driven: polygon datasets may
   opt into native MapLibre `fill-extrusion`, while source-authored bounded mesh
   descriptors may opt into the MapLibre custom-layer path. With no enhanced
@@ -132,13 +138,16 @@ The asset descriptor is intentionally small and source-authored:
 }
 ```
 
-Positions are model-space meters. The custom layer anchors each asset with
-MapLibre's active projection. Every draw composes
-`defaultProjectionData.mainMatrix`,
-`map.transform.getMatrixForModel([lng, lat], altitudeMeters)`, and the
-source-mesh z-up local transform. This single per-frame path follows globe,
-globe-to-Mercator transition, and camera changes; no manual flat-Mercator
-fallback remains.
+Positions are model-space meters. The custom layer implements MapLibre's public
+`MercatorCoordinate` equations locally and composes those normalized
+coordinates with `defaultProjectionData.mainMatrix` plus the source-mesh z-up
+transform. It never reads the private `map.transform` object or statically
+imports the MapLibre runtime. The custom-mesh path is Mercator-only and fails
+closed outside the supported latitude range or while MapLibre reports a
+non-zero globe projection transition. Geo+XR stage structures and placed
+subjects use native MapLibre polygon/fill-extrusion layers instead, so the
+selected authored environment remains visible in both 3D globe modes without a
+parallel Three.js world.
 
 The layer shares MapLibre's WebGL context, restores host program/buffer/vertex
 array state, releases owned buffers/programs/vertex arrays on teardown, and
@@ -241,6 +250,9 @@ source readiness does not claim deployment or physical-device proof.
 - When GraphData nodes carry geo fields, the overlay may render both **graph nodes** (points) and **graph edges** (lines) directly on the basemap, as a pure view projection of GraphData (no ingest-time derivation in the overlay).
 - Geo fields are read from `GraphData` node properties when present (the module does not derive geo fields during ingest).
 - “Fit to data” computes a bounded bbox and updates the overlay camera (optional animation).
+- Singapore camera and local-meter projection constants live in `grph-shared/geospatial/singaporeFlightGeo`. Its bounds are presentation framing, not an administrative or legal boundary.
+- In `2d` and `2d-modern`, Singapore starts north-up at pitch `0`; Flight camera changes preserve that planar policy.
+- In `3d` and `3d-modern`, Singapore starts at a local oblique city camera; Flight camera changes retain an oblique pitch so native fill extrusions remain visible.
 - In 3D render mode, the overlay auto-fits to active geo bounds so the globe doesn’t appear “blank” by default.
 - In 3D render mode, when a graph selection contains geo-capable nodes, auto-fit prefers the selection bounds so Zoom-to-Selection stays aligned with the map.
 
