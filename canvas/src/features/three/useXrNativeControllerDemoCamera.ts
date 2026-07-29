@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { Vector3, type PerspectiveCamera, type WebGLRenderer } from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { resolveFlightSimFollowTarget } from '@/features/game-flight-sim/flightSimFollowTarget'
+import { readFlightSimCameraSnapshot } from '@/features/game-flight-sim/flightSimCameraRuntime'
 import { readFlightSimSnapshot } from '@/features/game-flight-sim/flightSimRuntime'
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -19,13 +20,13 @@ import { readXrNativeControllerCamera } from './xrNativeControllerCameraRuntime'
 
 const AERIAL_ALTITUDE_START_METERS = 3
 const AERIAL_ALTITUDE_RANGE_METERS = 17
-
 type FollowOwner = 'flight' | 'physics'
 type FollowTarget = Readonly<{
   owner: FollowOwner
   position: readonly [number, number, number]
   target: readonly [number, number, number]
   fovDegrees: number
+  cameraViewRevision: number
   resetKey: number
   sequence: number
   interpolate: boolean
@@ -79,6 +80,7 @@ function readPhysicsFollowTarget(
     ] as const),
     target,
     fovDegrees: framing.fovDegrees,
+    cameraViewRevision: 0,
     resetKey: 0,
     sequence: frame.stepCount,
     interpolate: runtime.phase === 'running',
@@ -94,10 +96,16 @@ function readFlightFollowTarget(
   if (!active || renderer.xr.isPresenting) return null
   const snapshot = readFlightSimSnapshot()
   if (!snapshot.active || !snapshot.webglSupported || snapshot.runtimeError) return null
-  const target = resolveFlightSimFollowTarget(snapshot, coordinateScale)
+  const cameraView = readFlightSimCameraSnapshot()
+  const target = resolveFlightSimFollowTarget(
+    snapshot,
+    coordinateScale,
+    cameraView.view,
+  )
   return Object.freeze({
     owner: 'flight',
     ...target,
+    cameraViewRevision: cameraView.revision,
     interpolate: true,
     snapDistance: Number.POSITIVE_INFINITY,
   })
@@ -129,6 +137,7 @@ export function useXrNativeControllerDemoCamera({
   const desiredTargetRef = React.useRef(new Vector3())
   const desiredCameraRef = React.useRef(new Vector3())
   const previousFovRef = React.useRef<number | null>(null)
+  const cameraViewRevisionRef = React.useRef(-1)
   const resetKeyRef = React.useRef(-1)
   const sequenceRef = React.useRef(-1)
 
@@ -143,6 +152,7 @@ export function useXrNativeControllerDemoCamera({
       controlsCapabilitiesRef.current = null
     }
     ownerRef.current = null
+    cameraViewRevisionRef.current = -1
     resetKeyRef.current = -1
     sequenceRef.current = -1
   }, [camera, controls])
@@ -179,14 +189,15 @@ export function useXrNativeControllerDemoCamera({
     controls.enableRotate = false
     controls.enableZoom = false
     if (previousFovRef.current === null) previousFovRef.current = camera.fov
-
     const target = desiredTargetRef.current.set(...follow.target)
     const desiredCamera = desiredCameraRef.current.set(...follow.position)
     const ownerChanged = ownerRef.current !== follow.owner
     const resetDetected = ownerChanged
+      || cameraViewRevisionRef.current !== follow.cameraViewRevision
       || resetKeyRef.current !== follow.resetKey
       || follow.sequence < sequenceRef.current
     ownerRef.current = follow.owner
+    cameraViewRevisionRef.current = follow.cameraViewRevision
     resetKeyRef.current = follow.resetKey
     sequenceRef.current = follow.sequence
     const externallyDisplaced = (

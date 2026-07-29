@@ -192,6 +192,18 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
   svg.selectAll('*').remove()
   svg.attr('data-kg-layout-frozen', null)
 
+  svg.append('rect')
+    .attr('data-kg-layer', 'interaction-background')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', '100%')
+    .attr('height', '100%')
+    .attr('fill', 'transparent')
+    .attr('role', 'presentation')
+    .attr('aria-hidden', 'true')
+    .attr('focusable', 'false')
+    .style('pointer-events', 'all')
+
   const g = svg.append('g')
     .attr('data-kg-layer', 'scene-root')
     .attr('role', 'presentation')
@@ -961,7 +973,7 @@ export const setupGraphScene = (args: SetupGraphSceneArgs) => {
       }
     },
     hideTemp: () => hideTempLink(tempLinkSelRef),
-    cancelPending: () => cancelPendingEdge(linkDragRef),
+    cancelPending: () => cancelPendingEdge(linkDragRef, tempLinkSelRef),
   })
 
   return () => {

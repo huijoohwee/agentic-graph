@@ -106,8 +106,8 @@ def _read_source_identity(
               /^runtime_claim:\\s*["']local-runtime-ready["']\\s*$/m.test(sourceText),
             exactHeadEvidenceRequired:
               /^evidence_status:\\s*["']exact-head source and browser proof required at every handoff["']\\s*$/m.test(sourceText),
-            surfaceXr:
-              /^kgCanvasSurfaceMode:\\s*["']xr["']\\s*$/m.test(sourceText),
+            surfaceGeoXr:
+              /^kgCanvasSurfaceMode:\\s*["']geo-xr["']\\s*$/m.test(sourceText),
             render3d:
               /^kgCanvasRenderMode:\\s*["']3d["']\\s*$/m.test(sourceText),
             stageXr:
@@ -282,40 +282,6 @@ def _apply_exact_authored_source(
         lambda: page.evaluate(
             """
             async expectedSourceText => {
-              if (!window.__kgFlightSimFirstFrameProof) {
-                const proof = {
-                  startedAtMs: performance.now(),
-                  firstFrameAtMs: null,
-                  preExisting: Boolean(document.querySelector(
-                    'canvas[data-kg-flight-sim-first-frame="1"]',
-                  )),
-                }
-                const captureFirstFrame = () => {
-                  if (
-                    proof.firstFrameAtMs === null
-                    && document.querySelector(
-                      'canvas[data-kg-flight-sim-first-frame="1"]',
-                    )
-                  ) {
-                    proof.firstFrameAtMs = performance.now()
-                    window.__kgFlightSimFirstFrameObserver?.disconnect()
-                  }
-                }
-                window.__kgFlightSimFirstFrameProof = proof
-                window.__kgFlightSimFirstFrameObserver = new MutationObserver(
-                  captureFirstFrame,
-                )
-                window.__kgFlightSimFirstFrameObserver.observe(
-                  document.documentElement,
-                  {
-                    attributes: true,
-                    attributeFilter: ['data-kg-flight-sim-first-frame'],
-                    childList: true,
-                    subtree: true,
-                  },
-                )
-                captureFirstFrame()
-              }
               const explorer = await window.__kgFlightSimBrowserProof.importModule('markdownExplorerStore')
               const materialization = await window.__kgFlightSimBrowserProof.importModule('sourceFilesRuntimeMaterialization')
               const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
@@ -325,6 +291,7 @@ def _apply_exact_authored_source(
               const controller = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerDemoRuntime')
               const camera = await window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime')
               const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
+              const gympgrph = await window.__kgFlightSimBrowserProof.importModule('gympgrphStore')
               const workspace = await workspaceModule.getWorkspaceFs()
               await workspace.ensureSeed()
               const sourcePath =
@@ -382,6 +349,10 @@ def _apply_exact_authored_source(
                   priorState.canvasRenderModeIsAuto,
                 floatingPanelOpen: priorState.floatingPanelOpen,
                 floatingPanelView: priorState.floatingPanelView,
+                geospatialModeEnabled:
+                  gympgrph.isGeospatialModeEnabled(),
+                mapLibreActive:
+                  gympgrph.readActiveMapLibreMap?.() != null,
                 timelinePlaying: priorState.timelineTransportPlaying === true,
                 physicsPhase: physics.readXrPhysicsRuntime().phase,
                 physics: physicsSnapshot,
@@ -421,6 +392,46 @@ def _apply_exact_authored_source(
               }
               let applied = false
               if (hasSourceText) {
+                if (!window.__kgFlightSimFirstFrameProof) {
+                  const proof = {
+                    startedAtMs: performance.now(),
+                    firstFrameAtMs: null,
+                    firstFrameClassName: null,
+                    firstFrameSurface: null,
+                    preExisting: Boolean(document.querySelector(
+                      'canvas[data-kg-flight-sim-first-frame="1"]',
+                    )),
+                  }
+                  const captureFirstFrame = () => {
+                    const firstFrameCanvas = document.querySelector(
+                      'canvas[data-kg-flight-sim-first-frame="1"]',
+                    )
+                    if (
+                      proof.firstFrameAtMs === null
+                      && firstFrameCanvas instanceof HTMLCanvasElement
+                    ) {
+                      proof.firstFrameAtMs = performance.now()
+                      proof.firstFrameClassName = firstFrameCanvas.className
+                      proof.firstFrameSurface =
+                        firstFrameCanvas.dataset.kgFlightSimFirstFrameSurface
+                        || null
+                      window.__kgFlightSimFirstFrameObserver?.disconnect()
+                    }
+                  }
+                  window.__kgFlightSimFirstFrameProof = proof
+                  window.__kgFlightSimFirstFrameObserver =
+                    new MutationObserver(captureFirstFrame)
+                  window.__kgFlightSimFirstFrameObserver.observe(
+                    document.documentElement,
+                    {
+                      attributes: true,
+                      attributeFilter: ['data-kg-flight-sim-first-frame'],
+                      childList: true,
+                      subtree: true,
+                    },
+                  )
+                  captureFirstFrame()
+                }
                 explorer.useMarkdownExplorerStore.getState()
                   .setActivePath(sourcePath)
                 applied = await materialization
@@ -515,7 +526,7 @@ def apply_and_verify_exact_authored_source(
             and EXPECTED_SOURCE_NODE_IDS.issubset(
                 set(value.get("graphNodeIds") or [])
             )
-            and value.get("surfaceMode") == "xr"
+            and value.get("surfaceMode") == "geo-xr"
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
         ),

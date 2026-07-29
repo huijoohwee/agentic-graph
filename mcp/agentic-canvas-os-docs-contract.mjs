@@ -6,6 +6,7 @@ export const AGENTIC_CANVAS_OS_DOCS_SOURCE_ROOT_URL =
   "https://github.com/huijoohwee/agentic-canvas-os/blob/main/docs";
 export const AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE = "LIVE-AGENT-PROVIDER-PROOF.md";
 export const AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE = "PROGRESSIVE-AGENTS.md";
+export const AGENTIC_CANVAS_OS_DOCS_CATALOG_DIGEST_PATTERN = "^[0-9a-f]{64}$";
 
 export const AGENTIC_CANVAS_OS_DOCS_KIND_FILES = Object.freeze({
   command: "DICTIONARY-COMMAND.md",
@@ -75,13 +76,14 @@ export const AGENTIC_CANVAS_OS_DOCS_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: true,
   required: [
     "ok", "docsRoot", "sourceRootUrl", "sourceRevision",
-    "liveAgentProviderProof", "progressiveAgentsReadiness", "catalog",
+    "catalogDigest", "counts", "liveAgentProviderProof", "progressiveAgentsReadiness", "catalog",
   ],
   properties: {
     ok: { type: "boolean" },
     docsRoot: { type: "string" },
     sourceRootUrl: { type: "string" },
     sourceRevision: { type: "string", pattern: "^[0-9a-f]{40}$" },
+    catalogDigest: { type: "string", pattern: AGENTIC_CANVAS_OS_DOCS_CATALOG_DIGEST_PATTERN },
     liveAgentProviderProof: { type: "object", additionalProperties: true },
     progressiveAgentsReadiness: PROGRESSIVE_AGENTS_READINESS_OUTPUT_SCHEMA,
     absoluteDocsRoot: { type: "string" },
@@ -91,7 +93,16 @@ export const AGENTIC_CANVAS_OS_DOCS_OUTPUT_SCHEMA = Object.freeze({
       type: "array",
       items: { type: "object", additionalProperties: true },
     },
-    counts: { type: "object", additionalProperties: true },
+    counts: {
+      type: "object",
+      additionalProperties: false,
+      required: ["command", "semantic", "binding"],
+      properties: {
+        command: { type: "integer", minimum: 0 },
+        semantic: { type: "integer", minimum: 0 },
+        binding: { type: "integer", minimum: 0 },
+      },
+    },
     truncated: { type: "boolean" },
     error: { type: "object", additionalProperties: true },
   },
@@ -118,3 +129,17 @@ export const dictionaryFileForAgenticCanvasOsToken = (token) => {
   const kind = kindForAgenticCanvasOsToken(token);
   return kind ? AGENTIC_CANVAS_OS_DOCS_KIND_FILES[kind] : "";
 };
+
+const normalizeCatalogDigestText = (value) => String(value || "").trim();
+
+export const serializeAgenticCanvasOsDocsCatalogForDigest = (catalog = []) => `${JSON.stringify(
+  [...catalog]
+    .map((entry) => ({
+      token: normalizeCatalogDigestText(entry?.token),
+      kind: normalizeCatalogDigestText(entry?.kind).toLowerCase(),
+      label: normalizeCatalogDigestText(entry?.label),
+      summary: normalizeCatalogDigestText(entry?.summary),
+      sourcePath: normalizeCatalogDigestText(entry?.sourcePath),
+    }))
+    .sort((left, right) => left.token.localeCompare(right.token)),
+)}\n`;

@@ -18,6 +18,7 @@ import { buildSkillEvolutionToolDefinition } from "./skill-evolution-tool-contra
 import { buildStorageSyncLocalToolDefinitions } from "./storage-sync-local-tool-contract.mjs";
 import { buildVdeoxplnLocalToolDefinition } from "./vdeoxpln-tool-contract.js";
 import { buildVoiceStudioLocalToolDefinition } from "./voice-studio-tool-contract.js";
+import { buildGeospatialLayerToolDefinition } from "./geospatial-layer-tool-contract.js";
 export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = SHARED_KNOWGRPH_LOCAL_MCP_TOOL_NAMES;
 
 const VIDEO_REMIX_RUN_OUTPUT_SCHEMA = Object.freeze({
@@ -225,6 +226,10 @@ export const buildKnowgrphLocalMcpToolDefinitions = (args = {}) => {
         properties: {},
       },
     }, LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS),
+    withLocalMcpDescriptorDefaults(
+      buildGeospatialLayerToolDefinition(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.geospatialCommand),
+      LOCAL_IDEMPOTENT_PROCESS_TOOL_ANNOTATIONS,
+    ),
     withLocalMcpDescriptorDefaults({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.pipeline,
       description:

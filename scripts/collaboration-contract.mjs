@@ -118,8 +118,8 @@ export const validateContract = contract => {
   if (typeof deployment.required_branch !== 'string' || !deployment.required_branch) {
     throw new Error('deployment.required_branch is required')
   }
-  if (deployment.promotion_policy !== 'protected-green-main') {
-    throw new Error('deployment.promotion_policy must be protected-green-main')
+  if (deployment.promotion_policy !== 'human-authorized-candidate') {
+    throw new Error('deployment.promotion_policy must be human-authorized-candidate')
   }
   for (const pattern of deployment.command_patterns) new RegExp(pattern, 'i')
 

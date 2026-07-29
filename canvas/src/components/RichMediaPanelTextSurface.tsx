@@ -61,7 +61,7 @@ export function RichMediaPanelTextSurface(args: {
           />
         ) : null}
         <section
-          className={props.panel?.markdownWorkspaceViewerSurface === true ? 'min-h-0 flex-1 overflow-hidden' : CARD_TEXT_SURFACE_SCROLL_CLASS_NAME}
+          className={props.panel?.markdownWorkspaceViewerSurface === true ? 'flex min-h-0 flex-1 overflow-hidden' : CARD_TEXT_SURFACE_SCROLL_CLASS_NAME}
           data-kg-canvas-pointer-ignore="true"
           data-kg-canvas-wheel-ignore="true"
           data-kg-media-scroll-surface="1"

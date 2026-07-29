@@ -1,5 +1,6 @@
-import type { FlowNativeScene } from '@/components/FlowCanvas/nativeRuntime'
+import type { FlowNativeRuntime, FlowNativeScene } from '@/components/FlowCanvas/nativeRuntime'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
+import type { GroupPanelContainmentBounds } from '@/lib/storyboardWidget/groupPanelContainment'
 
 export type StoryboardWidgetContainmentGroupLookup = {
   groups: GraphGroup[]
@@ -72,4 +73,23 @@ export function getCachedStoryboardWidgetContainmentGroupLookup(scene: FlowNativ
   const next = { groups, groupIdsByNodeId, groupById, readContainmentGroupForNode }
   storyboardWidgetContainmentGroupLookupCache.set(scene, next)
   return next
+}
+
+export function readStoryboardWidgetContainmentGroupAabb(
+  runtime: FlowNativeRuntime | null | undefined,
+  nodeId: string,
+): GroupPanelContainmentBounds | null {
+  const id = String(nodeId || '').trim()
+  if (!runtime || !id) return null
+  const group = getCachedStoryboardWidgetContainmentGroupLookup(runtime.scene)?.readContainmentGroupForNode(id)
+  if (!group) return null
+  const bounds = runtime.groupAabbByIdCache.get(group.id)
+  if (
+    !bounds
+    || !Number.isFinite(bounds.minX)
+    || !Number.isFinite(bounds.minY)
+    || !Number.isFinite(bounds.maxX)
+    || !Number.isFinite(bounds.maxY)
+  ) return null
+  return bounds
 }

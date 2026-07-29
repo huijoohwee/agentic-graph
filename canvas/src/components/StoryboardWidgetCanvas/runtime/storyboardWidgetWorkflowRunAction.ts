@@ -37,12 +37,14 @@ import type { StoryboardWidgetWorkflowNodeRunner, StoryboardWidgetWorkflowNodeRu
 export { resolveStoryboardWidgetBaseGraphKind } from './storyboardWidgetWorkflowRunTypes'
 export type { StoryboardWidgetWorkflowNodeRunner, StoryboardWidgetWorkflowNodeRunnerArgs } from './storyboardWidgetWorkflowRunTypes'
 export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetWorkflowNodeRunnerArgs): StoryboardWidgetWorkflowNodeRunner {
+  const inFlightNodeIds = new Set<string>()
   const scheduleWorkflowOutputEdgeRefresh = () => {
     const run = () => args.scheduleOverlayEdgeUpdate()
     if (typeof requestAnimationFrame === 'function') return void requestAnimationFrame(run)
     run()
   }
-  const runWorkflowNode: StoryboardWidgetWorkflowNodeRunner = async (nodeId, runOptions) => {
+  let runWorkflowNode: StoryboardWidgetWorkflowNodeRunner
+  const executeRunWorkflowNode: StoryboardWidgetWorkflowNodeRunner = async (nodeId, runOptions) => {
     let runAnchorNode: GraphNode | null = null
     let publishedRunGraphData: GraphData | null = null
     const executeWorkflowNode = async () => {
@@ -442,7 +444,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
 
       if (String(unwrapGraphCellValue(node.type) || '').trim() === FLOW_TEXT_GENERATION_NODE_TYPE_ID) {
         const textGeneration = resolveTextGenerationRunContext()
-        const { properties, formId, authoredPrompt, connectedPrompt, connectedSourceNodeId, prompt } = textGeneration
+        const { properties, formId, authoredPrompt, connectedPrompt, connectedSourceNodeId, outputSourceProvenanceJson, prompt } = textGeneration
         const textProviderBase = { properties, store, formId, localProperties: rawNodeProperties }
         const generateTextWithProvider = (generationPrompt: string, onText?: (nextText: string) => void) => generateStoryboardWidgetTextWithProvider({
           ...textProviderBase,
@@ -496,6 +498,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
             outputPath,
             loading, versionId: `text-run-${textRunStartedAt}`, versionCreatedAt: textRunStartedAt,
             connectCreatedOutputToAnchor: true,
+            panelProperties: { outputSourceProvenanceJson: outputSourceProvenanceJson || undefined },
           })
         }
         try {
@@ -536,7 +539,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           })
         }
         args.upsertUiToast({
-          id: `storyboard-widget-run-downstream-${id}`,
+          id: `storyboard-widget-run-${id}`,
           kind: 'neutral',
           message: `Ran ${downstreamRunnableTargetIds.length} downstream node${downstreamRunnableTargetIds.length === 1 ? '' : 's'}.`,
           ttlMs: 2200,
@@ -552,7 +555,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
       } catch (error) {
         if (runOptions?.propagateErrors) throw error
         const detail = error && typeof error === 'object' && 'message' in error ? String((error as { message?: unknown }).message || '').trim() : ''
-        args.upsertUiToast({ id: `storyboard-widget-run-failed-${String(nodeId || '')}`, kind: 'error', message: detail || UI_COPY.storyboardWidgetRunFailedToast, ttlMs: 4200 })
+        args.upsertUiToast({ id: `storyboard-widget-run-${String(nodeId || '')}`, kind: 'error', message: detail || UI_COPY.storyboardWidgetRunFailedToast, ttlMs: 4200 })
       }
     }
     let deferredError: { value: unknown } | null = null
@@ -572,6 +575,57 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
     }
     scheduleWorkflowOutputEdgeRefresh()
     if (deferredError) throw deferredError.value
+  }
+  runWorkflowNode = async (nodeId, runOptions) => {
+    const id = String(nodeId || '').trim()
+    if (!id || runOptions?.visitedNodeIds?.has(id)) return
+    const runToastId = `storyboard-widget-run-${id}`
+    const showRunToast = runOptions?.suppressLayoutMutation !== true
+    if (inFlightNodeIds.has(id)) {
+      if (showRunToast) {
+        args.upsertUiToast({
+          id: runToastId,
+          kind: 'neutral',
+          message: 'Generating response…',
+          ttlMs: null,
+          dismissible: false,
+          busy: true,
+          log: false,
+        })
+      }
+      return
+    }
+    inFlightNodeIds.add(id)
+    if (showRunToast) {
+      args.upsertUiToast({
+        id: runToastId,
+        kind: 'neutral',
+        message: 'Generating response…',
+        ttlMs: null,
+        dismissible: false,
+        busy: true,
+      })
+    }
+    try {
+      await executeRunWorkflowNode(id, runOptions)
+    } catch (error) {
+      if (showRunToast) {
+        const detail = error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: unknown }).message || '').trim()
+          : ''
+        args.upsertUiToast({
+          id: runToastId,
+          kind: 'error',
+          message: detail || UI_COPY.storyboardWidgetRunFailedToast,
+          ttlMs: 4200,
+          dismissible: true,
+          busy: false,
+        })
+      }
+      throw error
+    } finally {
+      inFlightNodeIds.delete(id)
+    }
   }
   return runWorkflowNode
 }

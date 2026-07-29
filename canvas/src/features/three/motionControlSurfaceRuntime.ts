@@ -30,6 +30,7 @@ export const MOTION_CONTROL_XR_RUNTIME_READY_VIEWS = Object.freeze([
   'media',
   'animation',
   'gameMode',
+  'flightSim',
 ] satisfies readonly FloatingPanelView[])
 
 const MOTION_CONTROL_XR_RUNTIME_READY_VIEW_SET = new Set<FloatingPanelView>(MOTION_CONTROL_XR_RUNTIME_READY_VIEWS)

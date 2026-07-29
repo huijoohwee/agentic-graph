@@ -35,6 +35,7 @@ import {
   isFlightSimHydrationPending,
   openFlightSimSurface,
   readFlightSimSnapshot,
+  rejectFlightSimGameplayNetworkAttempt,
   resetFlightSimLocalPersistence,
   resetFlightSimRuntimeForTests,
   startFlightSim,
@@ -47,6 +48,7 @@ import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import {
   resetFlightSimTrainingScenarioForTests,
 } from '@/features/game-flight-sim/flightSimTrainingScenario'
+import { useGraphStore } from '@/hooks/useGraphStore'
 
 const buildWebName = (name: string): string => `knowgrph.${name}`
 const readOnlyAnnotations = Object.freeze({
@@ -276,7 +278,7 @@ test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/
   const hostFetch = globalThis.fetch
   try {
     await openFlightSimSurface({ openPanel: false, webglSupported: true })
-    assert.notEqual(globalThis.fetch, hostFetch)
+    assert.equal(globalThis.fetch, hostFetch)
     assert.equal(inspectLocalFlightSim().flightSim.active, true)
     assert.equal((await controlLocalFlightSim({ operation: 'inspect' })).errorCode, 'FLIGHT_SIM_CONTROL_UNSUPPORTED_OPERATION')
     assert.equal((await controlLocalFlightSim({ operation: 'open' })).ok, false)
@@ -301,10 +303,16 @@ test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/
     assert.equal(readFlightSimSnapshot().tick, 0)
     assert.equal((await controlLocalFlightSim({ operation: 'save' })).ok, false)
 
-    await assert.rejects(
-      globalThis.fetch('https://airvio.co/api/storage'),
-      (error: Error & { code?: string }) => error.code === 'FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED',
+    let gameplayTransportExecuted = false
+    const rejected = rejectFlightSimGameplayNetworkAttempt(
+      'fetch:GET:https://airvio.co/api/storage',
+      () => {
+        gameplayTransportExecuted = true
+      },
     )
+    assert.equal(gameplayTransportExecuted, false)
+    assert.match(rejected.runtimeError || '', /blocked gameplay network operation/)
+    assert.equal(globalThis.fetch, hostFetch)
     assert.equal((await controlLocalFlightSim({ operation: 'exit' })).ok, true)
     assert.equal(globalThis.fetch, hostFetch)
     assert.equal(readFlightSimSnapshot().active, false)
@@ -312,6 +320,26 @@ test('Flight Sim MCP enforces the active tick-zero lifecycle and resumable stop/
   } finally {
     if (readFlightSimSnapshot().active) await controlLocalFlightSim({ operation: 'exit' })
     assert.equal(globalThis.fetch, hostFetch)
+  }
+})
+
+test('Flight Sim MCP reports a failed Canvas restoration instead of a successful Exit', async () => {
+  resetFlightSimRuntimeForTests()
+  await openFlightSimSurface({ openPanel: false, webglSupported: true })
+  const originalSetCanvas3dMode = useGraphStore.getState().setCanvas3dMode
+  useGraphStore.setState({
+    setCanvas3dMode: () => {
+      throw new Error('MCP restoration failure')
+    },
+  } as never)
+  try {
+    const result = await controlLocalFlightSim({ operation: 'exit' })
+    assert.equal(result.ok, false)
+    assert.match(result.message, /restoration did not complete/i)
+    assert.match(readFlightSimSnapshot().runtimeError || '', /MCP restoration failure/)
+  } finally {
+    useGraphStore.setState({ setCanvas3dMode: originalSetCanvas3dMode } as never)
+    resetFlightSimRuntimeForTests()
   }
 })
 

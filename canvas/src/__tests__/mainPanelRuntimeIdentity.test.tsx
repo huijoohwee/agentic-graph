@@ -10,7 +10,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 
 export async function testMainPanelSettingsOwnsGlobalCrossDeviceIdentityGate() {
-  if (CROSS_DEVICE_IDENTITY_SETTINGS_ROW_COUNT !== 19) {
+  if (CROSS_DEVICE_IDENTITY_SETTINGS_ROW_COUNT !== 20) {
     throw new Error('Expected the Settings area count to include all runtime identity and agent-proof KTV rows')
   }
   const settingsViewSource = readFileSync(resolve(process.cwd(), 'src/features/panels/views/SettingsView.tsx'), 'utf8')
@@ -47,6 +47,7 @@ export async function testMainPanelSettingsOwnsGlobalCrossDeviceIdentityGate() {
     knowgrphRevision: 'b'.repeat(40),
     agenticCanvasOsRevision: 'a'.repeat(40),
     catalogRevision: 'a'.repeat(40),
+    catalogDigest: 'c'.repeat(64),
     catalogHydration: { status: 'fresh', attempts: 1 },
     catalogCounts: { slash: 78, hash: 94, at: 95 },
     agentLiveProviderProof: {
@@ -113,6 +114,7 @@ export async function testMainPanelSettingsOwnsGlobalCrossDeviceIdentityGate() {
     if (
       !gate
       || gate.getAttribute('data-kg-runtime-identity-surface') !== 'main-panel-settings'
+      || gate.getAttribute('data-kg-runtime-catalog-digest') !== 'c'.repeat(64)
     ) {
       throw new Error('Expected MainPanel Settings to render the global cross-device identity gate contract')
     }

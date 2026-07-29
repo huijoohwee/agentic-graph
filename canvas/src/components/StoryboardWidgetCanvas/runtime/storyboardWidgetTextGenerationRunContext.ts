@@ -7,7 +7,9 @@ import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/w
 import type { StoryboardWidgetWorkflowNodeResolutionContext } from './storyboardWidgetRenderGraph'
 import {
   resolveStoryboardWidgetTextGenerationPrompts,
+  resolveStoryboardWidgetTextSourceContexts,
   resolveStoryboardWidgetWorkflowConnectedValuesInput,
+  serializeStoryboardWidgetTextSourceProvenance,
 } from './storyboardWidgetWorkflowRunInputs'
 
 export type StoryboardWidgetTextGenerationRunContext = {
@@ -17,6 +19,7 @@ export type StoryboardWidgetTextGenerationRunContext = {
   connectedPrompt: string
   prompt: string
   connectedSourceNodeId: string
+  outputSourceProvenanceJson: string
 }
 
 const TEXT_GENERATION_GLOBAL_PROPERTY_KEYS = [
@@ -84,14 +87,22 @@ export function resolveStoryboardWidgetTextGenerationRunContext(args: {
     registry: args.widgetRegistry,
   })
   const connectedValuesBySchemaPath = connectedValuesInput?.connectedValuesByNodeId.get(connectedValuesInput.targetNodeId)
+  const connectedPromptValue = connectedValuesBySchemaPath?.['properties.prompt']
+  const sourceContexts = resolveStoryboardWidgetTextSourceContexts({
+    graphData: connectedValuesInput?.graphData,
+    connectedValue: connectedPromptValue,
+    targetPath: 'properties.prompt',
+  })
   const prompts = resolveStoryboardWidgetTextGenerationPrompts({
     authoredPrompt: properties.prompt,
-    connectedValue: connectedValuesBySchemaPath?.['properties.prompt']?.value,
+    connectedValue: connectedPromptValue?.value,
+    sourceContexts,
   })
   return {
     properties,
     formId,
     ...prompts,
-    connectedSourceNodeId: connectedValuesBySchemaPath?.['properties.prompt']?.sources?.[0]?.nodeId || '',
+    connectedSourceNodeId: connectedPromptValue?.sources?.[0]?.nodeId || '',
+    outputSourceProvenanceJson: serializeStoryboardWidgetTextSourceProvenance(sourceContexts),
   }
 }

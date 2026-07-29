@@ -10,6 +10,7 @@ export function testUserSubgraphCrudCreateDerivesGroup() {
     nodes: [
       { id: 'n1', type: 'Node', label: 'N1', properties: {}, metadata: {} },
       { id: 'n2', type: 'Node', label: 'N2', properties: {}, metadata: {} },
+      { id: 'n3', type: 'Node', label: 'N3', properties: {}, metadata: {} },
     ],
     edges: [],
     metadata: {},
@@ -29,6 +30,25 @@ export function testUserSubgraphCrudCreateDerivesGroup() {
   const gg = groups.find(x => x.id === gid) || null
   if (!gg) throw new Error('expected derived graph group for subgraph')
   if ((gg.memberNodeIds || []).length !== 2) throw new Error(`expected 2 members, got ${(gg.memberNodeIds || []).length}`)
+
+  const child = store.createUserSubgraph({ label: 'Child Group Panel', memberNodeIds: ['n3'], autoBounds: true })
+  if (child.ok === false) throw new Error(child.message)
+  const parent = store.createUserSubgraph({
+    label: 'Parent Group Panel',
+    memberNodeIds: [],
+    childGroupIds: [res.id, child.id],
+    autoBounds: true,
+  })
+  if (parent.ok === false) throw new Error(parent.message)
+  const nested = readSubgraphs(useGraphStore.getState().graphData)
+  if (nested.filter(group => group.parentId === parent.id).length !== 2) {
+    throw new Error('expected a Group Panel to atomically adopt nested Group Panels')
+  }
+  const parentGroup = deriveGraphGroups(useGraphStore.getState().graphData as never)
+    .find(group => group.id === subgraphGroupId(parent.id))
+  if (!parentGroup || parentGroup.memberNodeIds.length !== 3 || parentGroup.connectable !== false) {
+    throw new Error('expected handle-free parent Group Panel bounds to include all descendant nodes')
+  }
 }
 
 export function testUserSubgraphCrudPreventsParentCycle() {

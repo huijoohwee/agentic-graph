@@ -2,10 +2,10 @@
 title: "Knowgrph Codebase Responsibility Flow PRD/TAD"
 doc_type: "Combined PRD/TAD"
 id: "knowgrph-codebase-responsibility-flow-prd-tad"
-version: "1.1.0"
+version: "1.3.0"
 status: "dev-runtime-ready"
 created: "2026-07-24"
-updated: "2026-07-25"
+updated: "2026-07-26"
 author: "airvio / joohwee"
 domain: "knowgrph"
 lang: "en-US"
@@ -39,6 +39,7 @@ tags:
   - "settings-registry"
   - "zustand"
   - "localStorage"
+  - "tailwindcss-v4"
   - "canvas"
   - "prd"
   - "tad"
@@ -73,6 +74,18 @@ The artifact's agent-readiness value is as a **read-only ownership surface** tha
 developer and external AI agents consult before editing; an agent can still spend model tokens
 when it ingests or reasons over that generated surface. Generated Markdown and JSON are outputs
 only; the extractor never reads them back as ownership inputs.
+
+The recommended tech-stack optimization keeps knowgrph a **single browser-first, local-first SPA**
+(JavaScript, TypeScript, Rust, WASM, WebGL, WebCPU, WebGPU) and adopts **Tailwind v4** as a
+build-time styling backing. **HTMX is deferred** (Won't, this increment): its hypermedia model
+requires a live server round-trip per interaction, which regresses offline-first and adds a second
+runtime and deploy path — unnecessary complexity for a solo team with no present server-rendered
+requirement. As Tailwind v4 lands, some appearance concerns move from `zustand`/`localStorage`
+ownership to **Tailwind v4 CSS-first styling** (`@theme` tokens and utility classes); the
+**Imports** column is the backing taxonomy that must attribute that owner so no concern becomes
+owner-less or double-owned during the migration. This ties to the ownership and
+overlap-elimination requirements in `.kiro/specs/tech-stack-optimization/requirements.md`. See
+ADR-3 for the adopt-Tailwind / defer-HTMX decision and the trigger that would reopen it.
 
 The Dev -> Prod -> Cloudflare rule holds: the index and this document are authored and validated
 in `$GITHUB_ROOT/knowgrph`. No deployment to the Prod mirror or Cloudflare occurs until the
@@ -227,6 +240,12 @@ extractor and regenerable byte-identically. Excludes all Could/Won't items.
 
 - Should build-time env-sourced concerns (`window.__ENV__`, `import.meta.env`) be split into a
   separate section from `zustand`/`localStorage`-backed concerns?
+- When appearance concerns move to Tailwind v4 `@theme`/utility classes, should those CSS-owned
+  concerns be indexed in the same registry-driven table, or tracked in a sibling projection keyed
+  by token rather than by `settingsRegistry` key?
+- If the deferred HTMX decision is reopened for a server-rendered content shell, does its
+  hx-attribute ownership belong in this app-scoped index at all, or in a separate shell-scoped
+  index?
 
 ---
 
@@ -316,7 +335,11 @@ unexpected numbered parts, performs no writes, and exits non-zero when any proje
 **Dependencies**: Settings registry modules, code-owned metadata and source anchors, repo
 extraction tooling.
 **Configuration**: Column set (Area, Responsibility, Modules, Classes/Objects, Functions/Methods,
-Key, Imports, Notes, Line Range); source globs.
+Key, Imports, Notes, Line Range); source globs. The **Imports** backing taxonomy currently
+recognizes `zustand`, `localStorage`, `window.__ENV__`, `import.meta.env`, and `eslint`; it is
+extended with `tailwindcss` (Tailwind v4 `@theme` tokens / utility classes) as styling concerns
+migrate onto that owner. An `htmx` backing is **not** added in this increment; it would be
+introduced only if the deferred HTMX decision is reopened (see ADR-3).
 **FOSS / Vendor**: FOSS (Node + repo tooling); no proprietary dependency.
 **VCC Conditions**:
 - `Verify generate emits exactly one row per settingsRegistry entry with no empty Area/Key/Modules/Line Range`
@@ -368,7 +391,7 @@ tree.
 
 ### Architectural Decisions
 
-See ADR-1 and ADR-2.
+See ADR-1, ADR-2, and ADR-3.
 
 ## ADR-1: Deterministic static extraction, no LLM in the generation path
 
@@ -450,6 +473,70 @@ be regenerated from the same rows without introducing a runtime dependency.
 - **Neutral**: consolidation onto an existing dev server remains an option if live queries are ever
   justified by an ADR.
 
+## ADR-3: Adopt Tailwind v4 as a styling backing; defer HTMX to keep a single-stack SPA
+
+**Status**: Accepted
+**Date**: 2026-07-26
+
+### Context
+The recommended tech-stack optimization lists HTMX and Tailwind v4 alongside the browser-first SPA
+stack. HTMX is a hypermedia model: interactions fetch server-rendered HTML fragments, which makes a
+live server round-trip the interaction primitive. knowgrph is offline-first, local-first,
+zero-infra, and mobile-first, with client-owned state (Zustand) and client compute
+(WebGL/WebGPU/WASM). Adopting HTMX for the app would break offline operation and add a second
+runtime, mental model, and deploy/verify path — ongoing tax for a solo team with no present
+server-rendered requirement. Tailwind v4, by contrast, is build-time CSS with no runtime server and
+no offline penalty. The index must still resolve exactly one owner per concern as styling migrates.
+
+### Decision
+- **Adopt Tailwind v4** as a build-time styling backing and add `tailwindcss` to the **Imports**
+  taxonomy so `@theme`-token and utility-class ownership is attributable. Extraction stays a
+  deterministic static scan; generation remains zero-token.
+- **Defer HTMX** (Won't, this increment). Do not add it to the app or to the `Imports` taxonomy.
+  Public/marketing/docs pages that want fast first paint and SEO are served by **static
+  prerendering** on Cloudflare, not a live hypermedia server.
+- **Reopen trigger**: revisit HTMX only if a concrete need for per-request, crawlable,
+  server-rendered content appears (for example an auth-gated dynamic content shell). If reopened,
+  scope it to a separate shell — never the offline app — and track its ownership in a shell-scoped
+  index (see Open Questions).
+
+### Alternatives Considered
+1. Adopt both HTMX and Tailwind now: Pros — matches the raw stack list; Cons — two runtimes, breaks
+   offline-first, premature for a solo team, no present requirement — overcomplication.
+2. Adopt neither: Pros — zero change; Cons — forgoes Tailwind v4's low-cost styling and CSS-first
+   token ownership that the migration wants.
+3. Adopt Tailwind, defer HTMX behind a trigger (chosen): Pros — one stack, offline-first preserved,
+   min-viable, still gains CSS-first styling ownership; Cons — the deferred option must be
+   documented so it is a deliberate, reversible decision rather than an omission.
+
+### Rationale
+Min-viable-max-value: Tailwind v4 is a pure win (build-time, FOSS, offline-safe), while HTMX's only
+payoff — server-rendered HTML — is not needed today and is achievable for public pages via static
+prerendering at zero idle cost. Keeping one stack maximizes time-to-value and keeps the ownership
+model (TypeScript orchestration, Rust/WASM compute, capability-based render/compute tiers) intact.
+
+### TCO Impact
+
+*Tailwind v4 is a FOSS, build-time library; its TCO is bundle-size and build cost, not egress or
+per-request spend. HTMX's cost is the second runtime and per-interaction server round-trip it
+introduces.*
+
+| Dimension | Adopt Tailwind, defer HTMX (chosen) | Adopt both now | Adopt neither |
+|---|---|---|---|
+| Generator token cost | $0/mo (static scan) | $0/mo | $0/mo |
+| Infra / egress cost | $0/mo (committed file; static-prerendered public pages) | + per-interaction server round-trips | $0/mo |
+| Offline-first | Preserved | Broken by hypermedia interactions | Preserved |
+| Ops burden | Low (one stack, one taxonomy) | High (second runtime + deploy/verify path) | Low |
+| Vendor risk | Low (FOSS, no lock-in) | Low (FOSS) but higher coupling | Low |
+
+### Consequences
+- **Positive**: one stack; offline-first preserved; Tailwind-owned styling gets a correct single
+  owner in the index at $0; time-to-value maximized for a solo team.
+- **Negative**: the `Imports` set gains `tailwindcss`; scanners must recognize CSS-token/utility
+  ownership.
+- **Neutral**: HTMX remains a documented, reversible option gated behind an explicit reopen
+  trigger; if adopted later it is shell-scoped and separately indexed.
+
 ### Quality Attributes
 
 | Attribute | Scenario | Pattern | Validation |
@@ -480,6 +567,8 @@ projection before a generating build.
 |-------|-----------|---------------|--------|
 | Source | Settings Registry + Ownership Metadata | code-owned settings and provenance under `canvas/src/` | Authoritative |
 | Generation | Responsibility Extractor | repo extraction tooling (generate / `--check`) | Dev runtime-ready |
+| Styling Build | Tailwind v4 Vite plugin + CSS-first theme/source directives | `canvas/vite.config.ts`, `canvas/src/index.css` | Dev runtime-ready |
+| Backing Taxonomy | Typed source and styling backing metadata | `canvas/src/features/settings/types.ts`, `registry-ui.ui.ts` | Dev runtime-ready |
 | Artifacts | Responsibility Flow Projections | Markdown plus two JSON output paths defined above | Generated |
 | Runtime | Settings Flow Loader | `canvas/src/features/settings/flowDetailsRuntime.ts` | Dev runtime-ready |
 | Gate | Staleness Check | pre-projection CI step invoking `--check` | Dev runtime-ready |
@@ -495,6 +584,7 @@ PRD-Index-KeyResolvesOwner      ↔ TAD-ResponsibilityIndexFile-row           �
 PRD-Index-Reproducible          ↔ TAD-ResponsibilityExtractor-determinism   ↔ VCC "two generations byte-identical"
 PRD-Index-NoStaleRows           ↔ TAD-StalenessCheck-check                  ↔ VCC "all projections checked without writes before generating CI steps"
 PRD-Index-OfflineRender         ↔ TAD-ResponsibilityIndexFile-offline       ↔ VCC "renders offline, zero network requests"
+PRD-Index-TailwindBacking       ↔ TAD-ResponsibilityExtractor-imports       ↔ VCC "typed tailwindcss backing, no htmx backing"
 ```
 
 ## Time-to-Value: Codebase Responsibility Flow Index

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import {
   AGENTIC_CANVAS_OS_DOCS_KIND_FILES,
   AGENTIC_CANVAS_OS_LIVE_AGENT_PROOF_FILE,
@@ -6,6 +8,7 @@ import {
   AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT,
   dictionaryFileForAgenticCanvasOsToken,
   kindForAgenticCanvasOsToken,
+  serializeAgenticCanvasOsDocsCatalogForDigest,
 } from "./agentic-canvas-os-docs-contract.mjs";
 
 const FRONTMATTER_BOUNDARY = "---";
@@ -328,6 +331,12 @@ export const buildAgenticCanvasOsDocsCatalog = (docsContentByFileName, { sourceR
   return [...catalog.values()].sort((left, right) => left.token.localeCompare(right.token));
 };
 
+export const buildAgenticCanvasOsDocsCatalogDigest = (catalog = []) => (
+  createHash("sha256")
+    .update(serializeAgenticCanvasOsDocsCatalogForDigest(catalog), "utf8")
+    .digest("hex")
+);
+
 export const buildAgenticCanvasOsDocsInvokePayload = ({
   docsContentByFileName = {},
   token = "",
@@ -346,10 +355,11 @@ export const buildAgenticCanvasOsDocsInvokePayload = ({
   const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName, {
     sourceRevision: normalizedSourceRevision,
   });
+  const catalogDigest = buildAgenticCanvasOsDocsCatalogDigest(catalog);
   const counts = catalog.reduce((acc, entry) => {
     acc[entry.kind] = (acc[entry.kind] || 0) + 1;
     return acc;
-  }, {});
+  }, { command: 0, semantic: 0, binding: 0 });
   const normalizedToken = normalizeText(token);
   const normalizedQuery = normalizeText(query).toLowerCase();
   const sigilQuery = ["/", "#", "@"].includes(normalizedQuery) ? normalizedQuery : "";
@@ -395,6 +405,7 @@ export const buildAgenticCanvasOsDocsInvokePayload = ({
     docsRoot: AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT,
     sourceRootUrl,
     sourceRevision: normalizedSourceRevision,
+    catalogDigest,
     liveAgentProviderProof,
     progressiveAgentsReadiness,
     ...(absoluteDocsRoot ? { absoluteDocsRoot } : {}),

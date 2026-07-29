@@ -308,8 +308,8 @@ In development (`!import.meta.env.PROD`), `main.tsx` unregisters all existing se
 
 ## Regression Tests
 
-The static PWA contract remains in `pipelinePwaEnhancementsRegression.test.ts`; the revision
-owner has a direct Node test, and production release carries a persistent browser profile from
+The static PWA contract remains in `pipelinePwaEnhancementsRegression.test.ts`; the generated
+worker activation authority has a direct Node test, and production release carries a persistent browser profile from
 the old Pages production worker through the new protected deployment. The profile origin is the stable
 Cloudflare Pages production alias derived from `CLOUDFLARE_PAGES_PROJECT`; it stays same-origin
 across the deployment and does not depend on custom-domain challenge behavior in hosted CI.
@@ -317,9 +317,9 @@ across the deployment and does not depend on custom-domain challenge behavior in
 | Test | Assertions |
 |------|-----------|
 | `testPwaShellPrecachesHashedAssetsAndCachesLocalJson` | Precache glob, no HTML/navigation fallback, exclusions, runtime cache, shortcuts, apple-touch-icon, share_target |
-| `testPwaRuntimeTracksStandaloneInstallAndUpdateState` | Display modes, appinstalled, DOM attributes, registration-bound revision owner, beforeinstallprompt, deferred install exports |
-| `serviceWorkerRevisionUpdateOwner.test.ts` | Immediate registration update, bounded online/foreground refresh, prompt online retry after a failed update, cleanup release after every settled check, listener disposal |
-| `serviceWorkerCacheRevisionOwner.test.ts` | Active-worker revision attestation, activation fencing, queued controller changes, extensionless/response-typed HTML and poisoned-module deletion, prior-revision cleanup, current/unrelated preservation |
+| `testPwaRuntimeTracksStandaloneInstallAndUpdateState` | Display modes, appinstalled, DOM attributes, registration-bound revision update owner, worker-owned activation cleanup, beforeinstallprompt, deferred install exports |
+| `serviceWorkerRevisionUpdateOwner.test.ts` | Immediate registration update, bounded online/foreground refresh, prompt online retry after a failed update, active-worker revision attestation, listener disposal |
+| `service-worker-import-attestation.test.mjs` | Worker activation removes extensionless/response-typed HTML and prior-revision assets after current-precache admission while preserving current and sibling-app entries; cleanup fails closed when admission is unavailable |
 | `verify-production-service-worker-upgrade.mjs` | Same Chrome profile on the configured stable Pages production origin, deliberately seeded stale runtime/extensionless-HTML entries, revision-bound worker imports, active/controller revision plus chat-schema attestations, singular canonical registration, exact revision across all CacheStorage assets, no cached or module-keyed HTML, no installing/waiting legacy worker, upgrade-tab error capture, preserved localStorage/IndexedDB, network-owned HTML |
 | `testPwaIndexHtmlIncludesInstallMeta` | apple-touch-icon link, manifest link, base-aware manifest path |
 | `testPwaHeadersIncludeSwAndManifestCacheControl` | sw.js headers, Service-Worker-Allowed, manifest headers |
@@ -338,8 +338,8 @@ across the deployment and does not depend on custom-domain challenge behavior in
 | Install | Enable deferred install UX | Capture `beforeinstallprompt`, export `promptPwaInstall()`, render toolbar button conditionally |
 | Manifest | Declare PWA identity and capabilities | Single manifest with name, icons, shortcuts, display override, share_target |
 | Cache | Cache revision-bound assets without an HTML variant | Precache hashed assets; runtime-cache scripts/styles/images/fonts; never cache or fall back to `index.html` |
-| Runtime | Track PWA state and refresh the canonical worker | Publish display/install/asset-cache state; call `registration.update()` at registration and bounded online/foreground recovery; prune cached HTML and prior-revision asset namespaces after current precache admission |
+| Runtime | Track PWA state and refresh the canonical worker | Publish display/install/asset-cache state; call `registration.update()` at registration and bounded online/foreground recovery; let the activating worker prune cached HTML and prior-revision asset namespaces after current-precache admission |
 | Share | Receive shared content via Web Share API | Declare `share_target` in manifest; handle `?share=1` params in bootstrap runtime; show toast; clean URL |
 | iOS | Support Add to Home Screen | Add apple-touch-icon link, mobile-web-app-capable meta, black-translucent status bar |
 | Dev | Prevent stale SW in development | Unregister all SWs on localhost when not in production |
-| Tests | Guard PWA and release convergence | Source regression, direct revision-owner test, and same-profile proof bound to one canonical worker plus one exact-revision precache |
+| Tests | Guard PWA and release convergence | Source regression, generated activation-authority test, and same-profile proof bound to one canonical worker plus one exact-revision precache |

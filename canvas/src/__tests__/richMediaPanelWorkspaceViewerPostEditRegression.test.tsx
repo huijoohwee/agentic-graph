@@ -214,7 +214,7 @@ export async function testRichMediaWorkspaceViewerRevealsCanonicalProvenanceSele
       setPanelDraftText: () => void 0,
     } as unknown as RichMediaPanelModel
     const props = {
-      overlayId: 'source-rich-media',
+      overlayId: 'workspace-layer::source-rich-media',
       title: 'Probe-Tree Branches',
       url: '',
       kind: 'iframe',
@@ -242,16 +242,15 @@ export async function testRichMediaWorkspaceViewerRevealsCanonicalProvenanceSele
     if (!focusedViewer
       || focusedViewer.dataset.kgProvenanceFocusSourceNodeId !== 'source-rich-media'
       || focusedViewer.dataset.kgProvenanceFocusStartLine !== '15'
-      || focusedViewer.dataset.kgProvenanceFocusEndLine !== '15') {
+      || focusedViewer.dataset.kgProvenanceFocusEndLine !== '15'
+      || focusedViewer.dataset.kgSelectionProvenanceCount !== '1') {
       throw new Error(`expected the source Viewer to expose the activated canonical provenance, html=${container.innerHTML}`)
     }
-    const highlightedBlock = container.querySelector(
+    const wholeBlockHighlight = container.querySelector(
       '.kg-semantic-highlight-markdown-text-highlight[data-start-line][data-end-line]',
     ) as HTMLElement | null
-    const highlightedStart = Number(highlightedBlock?.dataset.startLine)
-    const highlightedEnd = Number(highlightedBlock?.dataset.endLine)
-    if (!highlightedBlock || highlightedStart > 15 || highlightedEnd < 15) {
-      throw new Error(`expected the canonical provenance line to be visibly highlighted, html=${container.innerHTML}`)
+    if (wholeBlockHighlight) {
+      throw new Error(`expected provenance focus not to highlight the whole markdown block, html=${container.innerHTML}`)
     }
 
     await unmountReactRoot(root, { window: dom.window })

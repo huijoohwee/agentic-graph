@@ -6378,6 +6378,7 @@
     ],
     "responsibility": "Global color theme (Light, Dark, or System)",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "Controls the application color palette. Light mode follows GitHub Light Tritanopia, Dark mode follows GitHub Dark Tritanopia.",
@@ -8075,6 +8076,7 @@
     ],
     "responsibility": "Responsive class for primary header row min-height",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8091,6 +8093,7 @@
     ],
     "responsibility": "Tailwind class for primary header row padding",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8123,6 +8126,7 @@
     ],
     "responsibility": "Base Tailwind class for small schema/property badge chips",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8139,6 +8143,7 @@
     ],
     "responsibility": "Tailwind class for badge chip text size",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8155,6 +8160,7 @@
     ],
     "responsibility": "Base Tailwind class for icon button padding",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8171,6 +8177,7 @@
     ],
     "responsibility": "Base Tailwind class for icon color",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8203,6 +8210,7 @@
     ],
     "responsibility": "Base Tailwind class for icon hover background",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8219,6 +8227,7 @@
     ],
     "responsibility": "Tailwind class for badge and inline pill text size",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8235,6 +8244,7 @@
     ],
     "responsibility": "Base Tailwind class for icon legend pills (scope, origin, visibility, field types)",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8251,6 +8261,7 @@
     ],
     "responsibility": "Tailwind class for legend pill text size",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8315,6 +8326,7 @@
     ],
     "responsibility": "Tailwind class for panel key/value numeric input shell",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8331,6 +8343,7 @@
     ],
     "responsibility": "Tailwind class for panel key/value text size",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8347,6 +8360,7 @@
     ],
     "responsibility": "Tailwind class for panel micro-label helper text size",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8363,6 +8377,7 @@
     ],
     "responsibility": "Tailwind class for panel monospace text in Graph JSON, Parser, Schema, and Markdown editors",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8395,6 +8410,7 @@
     ],
     "responsibility": "Tailwind class for default panel row padding (density=\"default\")",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8411,6 +8427,7 @@
     ],
     "responsibility": "Tailwind class for panel key/value text font",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8427,6 +8444,7 @@
     ],
     "responsibility": "Responsive class for section header row min-height",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",
@@ -8443,6 +8461,7 @@
     ],
     "responsibility": "Tailwind class for section header row padding",
     "imports": [
+      "tailwindcss",
       "zustand"
     ],
     "notes": "",

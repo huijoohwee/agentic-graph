@@ -20,6 +20,57 @@ The generated Stripe rows below remain the Stripe OpenAPI source map. knowgrph a
 | D1 webhook processing | `cloudflare/d1/migrations/0006_stripe_webhook_processing_state.sql`; `cloudflare/workers/knowgrph-payment/payments.ts` | Remote D1 must include payment tables plus `stripe_webhook_events.processing_status` and `processing_error`; `processed_at` and `processing_error` stay nullable so in-flight and failed Stripe webhook claims are retryable instead of frozen. |
 | Canvas paywall | `canvas/src/features/payments/{PaywallOverlay,stripeCheckout,StripeCheckoutReturnRuntime}.tsx` | Each Open Checkout action creates a fresh server-managed hosted Session and redirects the current browser window. The hosted Checkout URL stays transient runtime state for redirect only; it is not persisted and is not rendered back into the overlay. |
 
+## Core Request Semantics (captured 2026-07-28)
+
+The generated row map below carries object and field shape. It does not carry the cross-cutting
+request rules the payments rail contract depends on, so those are captured here from
+[docs.stripe.com/api](https://docs.stripe.com/api). Content was rephrased for compliance with
+licensing restrictions.
+
+| Concern | Captured rule (paraphrased) | Upstream anchor |
+| --- | --- | --- |
+| Shape | REST with resource-oriented URLs, form-encoded request bodies, JSON responses, standard HTTP codes and verbs. No bulk updates: one object per request. | [API Reference](https://docs.stripe.com/api) |
+| Base URL | `https://api.stripe.com` | [API Reference](https://docs.stripe.com/api) |
+| Mode selection | The API key used to authenticate determines whether a request runs in live mode or in a sandbox. Sandboxes do not touch live data or banking networks. | [Authentication](https://docs.stripe.com/api/authentication), [Sandboxes](https://docs.stripe.com/sandboxes) |
+| Key classes | Test-mode secret keys (`sk_test_`) have unrestricted access to their sandbox. In live mode, prefer a restricted key (`rk_live_`) scoped to needed permissions over the unrestricted live secret key (`sk_live_`). | [Authentication](https://docs.stripe.com/api/authentication) |
+| Key custody | Do not embed secret or restricted keys in source or in client-side applications. Use a server-side secrets vault, or environment variables when no vault exists. | [Authentication](https://docs.stripe.com/api/authentication) |
+| Transport | All requests must use HTTPS. Plain-HTTP calls fail, and unauthenticated requests fail. | [Authentication](https://docs.stripe.com/api/authentication) |
+| Error classes | `2xx` success, `4xx` request-level failure, `5xx` Stripe-side failure. Programmatically handleable `4xx` cases carry an error code. | [Errors](https://docs.stripe.com/api/errors) |
+| Error `type` enum | One of `api_error`, `card_error`, `idempotency_error`, `invalid_request_error`. | [Errors](https://docs.stripe.com/api/errors) |
+| Error fields used by Knowgrph | `code`, `decline_code`, `message` (card-error messages are user-safe), `param`, `payment_intent`, plus `advice_code`, `network_decline_code`, and `request_log_url` in the extended set. | [Errors](https://docs.stripe.com/api/errors) |
+| Idempotency scope | All `POST` requests accept an idempotency key. `GET` and `DELETE` are idempotent by definition and ignore it. | [Idempotent requests](https://docs.stripe.com/api/idempotent_requests) |
+| Idempotency behavior | The status code and body of the first request for a key are saved and replayed for later requests using that key, including `500` responses. | [Idempotent requests](https://docs.stripe.com/api/idempotent_requests) |
+| Idempotency key rules | Client-generated; a V4 UUID or equivalent high-entropy string is suggested; up to 255 characters; avoid sensitive data such as email addresses or personal identifiers. | [Idempotent requests](https://docs.stripe.com/api/idempotent_requests) |
+| Idempotency key lifetime | Keys may be pruned after roughly 24 hours; a key reused after pruning produces a new request. | [Idempotent requests](https://docs.stripe.com/api/idempotent_requests) |
+| Parameter conflict | The idempotency layer compares incoming parameters against the original request and errors when they differ. Requests failing validation, or conflicting with a concurrently executing request, are not stored and may be retried. | [Idempotent requests](https://docs.stripe.com/api/idempotent_requests), [Low-level errors](https://docs.stripe.com/error-low-level#idempotency) |
+| Metadata limits | Up to 50 keys, key names up to 40 characters, values up to 500 characters, square brackets not allowed in keys. Stripe does not use metadata for authorization decisions. | [Metadata](https://docs.stripe.com/api/metadata) |
+| Metadata prohibition | Do not store sensitive data such as bank account numbers or card details in metadata or in `description`. `description` may be user-visible, for example in Stripe-sent receipts. | [Metadata](https://docs.stripe.com/api/metadata) |
+| Request correlation | Every response carries a `Request-Id` header; the same identifier appears in Dashboard request logs. | [Request IDs](https://docs.stripe.com/api/request_ids) |
+| Connected accounts | Act as a connected account by sending a `Stripe-Account` header carrying the `acct_` identifier. Set per request. | [Connected Accounts](https://docs.stripe.com/api/connected-accounts) |
+| Versioning | Named major releases carry non-backward-compatible changes; monthly releases within a major are backward-compatible. Version at capture: `2026-06-24.dahlia`. | [Versioning](https://docs.stripe.com/api/versioning) |
+| Expansion | `expand` is available on all requests, supports dot-nested paths, has a maximum depth of four levels, and starts at `data` for list responses. | [Expanding Responses](https://docs.stripe.com/api/expanding_objects) |
+| Pagination | Cursor-based via `starting_after` and `ending_before` with `limit` between 1 and 100; responses carry `object`, `data`, `has_more`, `url`. The `/v2` namespace paginates differently. | [Pagination](https://docs.stripe.com/api/pagination) |
+| Search | Cursor-based via the `page` request parameter and `next_page` response field; `total_count` is accurate only up to 10,000 and must be expanded to appear. | [Search](https://docs.stripe.com/api/pagination/search) |
+
+### Payments rail bindings
+
+| Requirement anchor | Rule it depends on |
+| --- | --- |
+| R1 (trust boundary, secret custody, version pin) | Key custody, transport, key classes, versioning |
+| R3 (Stripe intent creation and idempotency) | Idempotency scope, behavior, key rules, parameter conflict, request correlation |
+| R10 (typed failures and refunds) | Error classes, `type` enum, error fields |
+| R12 (data minimization) | Idempotency key rules, metadata limits and prohibition |
+
+Invocation surface: `/payment.intent.create`, `/payment.event.settle`, and `/payment.refund` with
+`@payment-provider` and `#payment-idempotency`, owned by
+`agentic-canvas-os/docs/MCP-GATEWAY.md`.
+
+Consumers: `docs/documents/knowgrph-payments-prd-tad.md`,
+`.kiro/specs/knowgrph-payments/requirements.md`,
+`docs/documents/knowgrph-api-reference/knowgrph-stripe-mcp-reference.md`.
+
+## Generated Object and Field Map
+
 | key | type | value | key-description | value-description | ssot | module | class | function |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | account | object |  | For new integrations, we recommend using the [Accounts v2 API](/api/v2/core/accounts), in place of /v1/accounts and /v1/customers to represent a user. This is an object representing a Stripe account. You can retrieve it to see properties on the account like i… |  | https://docs.stripe.com/api :: openapi/spec3.json :: components.schemas.account | canvas/src/features/panels/views/stripePaymentApiDocs.ts |  | getStripePaymentApiRowAnchorId |

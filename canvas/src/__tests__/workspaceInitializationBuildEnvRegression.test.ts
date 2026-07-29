@@ -13,6 +13,12 @@ export function testWorkspaceInitializationDocsAbsRootDefaultStaysOutOfProductio
   if (!text.includes('applyWorkspaceInitializationDocsAbsRootDefault(command)')) {
     throw new Error('expected vite config to apply workspace docs defaults through the command-aware owner')
   }
+  if (!text.includes("'import.meta.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT': JSON.stringify(workspaceInitializationDocsAbsRoot)")) {
+    throw new Error('expected Dev workspace docs root to be exposed to the browser seed reconciler')
+  }
+  if (!text.includes('workspaceInitializationWorkspaceSeedsAbsRootForDev,')) {
+    throw new Error('expected the Dev mirror read policy to admit the derived canonical workspace-seeds root')
+  }
 }
 
 export function testProductionHtmlInlinesGeneratedStylesheetAssets() {

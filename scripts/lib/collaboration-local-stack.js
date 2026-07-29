@@ -7,6 +7,7 @@ const DEFAULT_OWNER_APP_URL = "http://127.0.0.1:5175/";
 const DEFAULT_GUEST_APP_URL = "http://127.0.0.1:5174/";
 const DEFAULT_WORKER_URL = "http://127.0.0.1:8787";
 const DEFAULT_WORKSPACE_ID = "kgws:test-room";
+const DEFAULT_DOC_PATH = "/docs/workspace-seeds/knowgrph-physics-playground-demo.md";
 const DEFAULT_OWNER_TOKEN = "kg_collaboration_owner_local_token";
 const DEFAULT_GUEST_TOKEN = "kg_collaboration_guest_local_token";
 const DEFAULT_OWNER_RUNTIME_DEVICE = "collaboration-owner-local";
@@ -233,12 +234,22 @@ export function resolveLocalCollaborationStackConfig({
   const workerUrl = env.KG_COLLABORATION_E2E_WORKER_URL || DEFAULT_WORKER_URL;
   const normalizedWorkerBaseUrl = String(workerUrl).replace(/\/+$/, "");
   const workspaceId = env.KG_COLLABORATION_E2E_WORKSPACE_ID || DEFAULT_WORKSPACE_ID;
+  const documentPath = env.KG_COLLABORATION_E2E_DOC_PATH || DEFAULT_DOC_PATH;
+  const normalizedRepoRoot = path.resolve(repoRoot);
+  const mutableSourcePath = path.resolve(normalizedRepoRoot, String(documentPath).replace(/^\/+/, ""));
+  if (!mutableSourcePath.startsWith(`${normalizedRepoRoot}${path.sep}`)) {
+    throw new Error("local collaboration document must resolve inside the repository");
+  }
   const ownerSessionToken = env.KG_COLLABORATION_E2E_OWNER_TOKEN || DEFAULT_OWNER_TOKEN;
   const guestSessionToken = env.KG_COLLABORATION_E2E_GUEST_TOKEN || DEFAULT_GUEST_TOKEN;
   const ownerRuntimeDevice = env.KG_COLLABORATION_E2E_OWNER_DEVICE || DEFAULT_OWNER_RUNTIME_DEVICE;
   const guestRuntimeDevice = env.KG_COLLABORATION_E2E_GUEST_DEVICE || DEFAULT_GUEST_RUNTIME_DEVICE;
   const ownerClientDeviceId = env.KG_COLLABORATION_E2E_OWNER_DEVICE_ID || DEFAULT_OWNER_CLIENT_DEVICE_ID;
   const guestClientDeviceId = env.KG_COLLABORATION_E2E_GUEST_DEVICE_ID || DEFAULT_GUEST_CLIENT_DEVICE_ID;
+  const configuredPersistencePath = String(env.KG_COLLABORATION_E2E_PERSISTENCE_PATH || "").trim();
+  const storagePersistencePath = configuredPersistencePath
+    ? path.resolve(repoRoot, configuredPersistencePath)
+    : path.join(repoRoot, "cloudflare", "workers", "knowgrph-storage", ".wrangler", "state");
   if (!ownerRuntimeDevice || !guestRuntimeDevice || ownerRuntimeDevice === guestRuntimeDevice) {
     throw new Error("local collaboration runtime devices must be distinct non-empty identities");
   }
@@ -254,13 +265,18 @@ export function resolveLocalCollaborationStackConfig({
     canvasRoot: path.join(repoRoot, "canvas"),
     viteCliPath: path.join(repoRoot, "node_modules", "vite", "bin", "vite.js"),
     npmCommand,
-    env,
+    env: {
+      ...env,
+      VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH: mutableSourcePath,
+    },
     ownerAppUrl,
     guestAppUrl,
     workerUrl,
     normalizedWorkerBaseUrl,
-    storagePersistencePath: path.join(repoRoot, "cloudflare", "workers", "knowgrph-storage", ".wrangler", "state"),
+    storagePersistencePath,
     workspaceId,
+    documentPath,
+    mutableSourcePath,
     ownerSessionToken,
     guestSessionToken,
     ownerRuntimeDevice,
@@ -272,7 +288,7 @@ export function resolveLocalCollaborationStackConfig({
         id: "owner-app",
         readyUrl: ownerAppUrl,
         envVar: "KG_COLLABORATION_E2E_OWNER_URL",
-        startupCommand: "npm --prefix canvas run dev -- --port 5175 --strictPort",
+        startupCommand: `npm --prefix canvas run dev -- --port ${readLocalServiceConfig(ownerAppUrl, DEFAULT_OWNER_APP_URL)?.port || 5175} --strictPort`,
         kind: "vite",
         runtimeDevice: ownerRuntimeDevice,
         local: readLocalServiceConfig(ownerAppUrl, DEFAULT_OWNER_APP_URL),
@@ -281,7 +297,7 @@ export function resolveLocalCollaborationStackConfig({
         id: "guest-app",
         readyUrl: guestAppUrl,
         envVar: "KG_COLLABORATION_E2E_GUEST_URL",
-        startupCommand: "npm --prefix canvas run dev -- --port 5174 --strictPort",
+        startupCommand: `npm --prefix canvas run dev -- --port ${readLocalServiceConfig(guestAppUrl, DEFAULT_GUEST_APP_URL)?.port || 5174} --strictPort`,
         kind: "vite",
         runtimeDevice: guestRuntimeDevice,
         local: readLocalServiceConfig(guestAppUrl, DEFAULT_GUEST_APP_URL),
@@ -290,12 +306,19 @@ export function resolveLocalCollaborationStackConfig({
         id: "storage-worker",
         readyUrl: `${normalizedWorkerBaseUrl}/api/storage/relay/capabilities`,
         readyOptions: {
-          headers: { authorization: `Bearer ${ownerSessionToken}` },
+          headers: {
+            authorization: `Bearer ${ownerSessionToken}`,
+            origin: new URL(ownerAppUrl).origin,
+          },
           schema: "knowgrph-storage-relay-capabilities/v1",
         },
         envVar: "KG_COLLABORATION_E2E_WORKER_URL",
-        startupCommand: "npm run storage:worker:dev -- --port 8787",
+        startupCommand: `npm run storage:worker:dev -- --port ${readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL)?.port || 8787}`,
         kind: "worker",
+        runtimeArgs: ["--local-upstream", new URL(workerUrl).hostname],
+        runtimeVars: {
+          KNOWGRPH_STORAGE_REMOTE_RELAY_WORKSPACE_ID: workspaceId,
+        },
         local: readLocalServiceConfig(workerUrl, DEFAULT_WORKER_URL),
       },
     ],
@@ -306,6 +329,7 @@ export function buildLocalCollaborationBrowserEnv(config, env = process.env) {
   return {
     ...env,
     KG_COLLABORATION_E2E_WORKSPACE_ID: config.workspaceId,
+    KG_COLLABORATION_E2E_DOC_PATH: config.documentPath,
     KG_COLLABORATION_E2E_WORKER_URL: config.normalizedWorkerBaseUrl,
     KG_COLLABORATION_E2E_OWNER_TOKEN: config.ownerSessionToken,
     KG_COLLABORATION_E2E_GUEST_TOKEN: config.guestSessionToken,

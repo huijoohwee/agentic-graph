@@ -66,6 +66,13 @@ test('Flight browser proof activates only after applying the authored source', (
     ),
     'utf8',
   )
+  const deadlineVerifier = readFileSync(
+    resolve(
+      repoRoot,
+      'canvas/scripts/lib/game_flight_sim_smoke_deadlines.py',
+    ),
+    'utf8',
+  )
   const serverOwner = readFileSync(
     resolve(
       repoRoot,
@@ -115,6 +122,13 @@ test('Flight browser proof activates only after applying the authored source', (
     ),
     'utf8',
   )
+  const geoXrVerifier = readFileSync(
+    resolve(
+      repoRoot,
+      'canvas/scripts/lib/game_flight_sim_smoke_geo_xr.py',
+    ),
+    'utf8',
+  )
   const cameraTrackingVerifier = readFileSync(
     resolve(
       repoRoot,
@@ -153,6 +167,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /indexSource\.includes\('\/@vite\/client'\)/)
   assert.match(runner, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(runner, /productionBuild,/)
+  assert.match(runner, /knowgrph-flight-sim-browser-run\/v5/)
+  assert.match(runner, /knowgrph-flight-sim-browser-proof\/v5/)
   assert.match(
     verifier,
     /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/,
@@ -244,6 +260,24 @@ test('Flight browser proof activates only after applying the authored source', (
       ),
   )
   assert.ok(
+    sourceVerifier.indexOf('physicsSourceSha256:')
+      < sourceVerifier.indexOf('startedAtMs: performance.now()'),
+    'expected proof-only imports and baseline reads before the frame clock',
+  )
+  const frameClockIndex = sourceVerifier.indexOf(
+    'startedAtMs: performance.now()',
+  )
+  assert.ok(
+    frameClockIndex
+      < sourceVerifier.indexOf('.setActivePath(sourcePath)', frameClockIndex),
+    'expected the frame clock immediately before source application',
+  )
+  for (const sourceReader of [sceneVerifier, geoXrVerifier]) {
+    assert.match(sourceReader, /await source\.getData\(\)/)
+    assert.match(sourceReader, /source\?\.serialize\?\.\(\)\?\.data/)
+    assert.doesNotMatch(sourceReader, /source\?\._data\?\.features/)
+  }
+  assert.ok(
     runtimePhases.indexOf('prepare_source_files_selection_surface(page)')
       < runtimePhases.indexOf('prepare_authored_physics_surface(page)'),
     'expected Source Files UI setup before the Physics canvas baseline is pinned',
@@ -287,10 +321,12 @@ test('Flight browser proof activates only after applying the authored source', (
     'game_flight_sim_smoke_camera.py',
     'game_flight_sim_smoke_camera_tracking.py',
     'game_flight_sim_smoke_deadlines.py',
+    'game_flight_sim_smoke_geo_xr.py',
     'game_flight_sim_smoke_lifecycle.py',
     'game_flight_sim_smoke_mission.py',
     'game_flight_sim_smoke_mobile.py',
     'game_flight_sim_smoke_mobile_surface.py',
+    'game_flight_sim_smoke_navigation.py',
     'game_flight_sim_smoke_runtime_phases.py',
     'game_flight_sim_smoke_scene.py',
     'game_flight_sim_smoke_source.py',
@@ -340,7 +376,17 @@ test('Flight browser proof activates only after applying the authored source', (
     runner,
     /gameplayNetworkBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/,
   )
+  assert.match(
+    deadlineVerifier,
+    /runtime\.rejectFlightSimGameplayNetworkAttempt\(/,
+  )
+  assert.match(deadlineVerifier, /networkExecutorInvoked = true/)
+  assert.match(deadlineVerifier, /websocketExecutorInvoked = true/)
+  assert.doesNotMatch(deadlineVerifier, /await window\.fetch\(attemptPath\)/)
   assert.match(runner, /gameplayWebSocketBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/)
+  assert.match(runner, /gameplayNetworkExecutorInvoked === false/)
+  assert.match(runner, /gameplayNetworkMissionStateRetained === true/)
+  assert.match(runner, /gameplayWebSocketExecutorInvoked === false/)
   assert.match(runner, /gameplayWebSocketTransportObserved === false/)
   assert.match(runner, /assertExactFlightSimBrowserVerificationLedger/)
   assert.match(verifier, /page\.on\("websocket", record_websocket\)/)
@@ -369,7 +415,7 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.doesNotMatch(verifier, /\.connect_to_server\(/)
   assert.match(verifier, /"webSocketAttempts": \{/)
   assert.match(verifier, /"optionalBeacon": active_scene\["optionalBeacon"\]/)
-  assert.match(runner, /assertExactFlightSimRendererOptionalBeacon\(/)
+  assert.match(runner, /assertExactFlightSimOptionalBeaconAdmission\(/)
   assert.match(touchVerifier, /chromium-cdp-emulated-touch/)
   assert.match(touchVerifier, /pointer_down\.get\("isTrusted"\) is not True/)
   assert.match(missionVerifier, /accelerated-public-production-runtime/)
@@ -380,12 +426,22 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     cameraTrackingVerifier,
-    /page\.mouse\.click\(point\["x"\], point\["y"\]\)/,
+    /get_by_label\("Capture flight pointer", exact=True\)/,
+  )
+  assert.match(
+    cameraTrackingVerifier,
+    /value\.get\("viewMode"\) in \{"3d", "3d-modern"\}/,
+  )
+  assert.match(
+    cameraTrackingVerifier,
+    /expected_pitch = preset\["pitch"\] if mode_3d else 0/,
   )
   assert.match(
     cameraVerifier,
-    /drag_start = hit_tested_flight_canvas_point\(page\)/,
+    /map_interaction = verify_map_pointer_drag\(page\)/,
   )
+  assert.match(cameraTrackingVerifier, /hit_tested_map_canvas_point\(page\)/)
+  assert.match(cameraTrackingVerifier, /page\.mouse\.down\(\)/)
   assert.doesNotMatch(cameraVerifier, /canvas\.bounding_box\(\)/)
   assert.doesNotMatch(
     cameraTrackingVerifier,
@@ -427,6 +483,10 @@ test('Flight browser proof activates only after applying the authored source', (
     touchVerifier,
     /dispatchEvent\(new (?:PointerEvent|TouchEvent|MouseEvent)/,
   )
+  assert.match(
+    touchVerifier,
+    /\[data-kg-three-canvas-owner="1"\]/,
+  )
   assert.ok(
     touchVerifier.indexOf('"Emulation.setTouchEmulationEnabled"')
       < touchVerifier.indexOf('box = control.bounding_box()'),
@@ -435,15 +495,17 @@ test('Flight browser proof activates only after applying the authored source', (
     touchVerifier.indexOf('box = control.bounding_box()')
       < touchVerifier.indexOf('"Input.dispatchTouchEvent"'),
   )
-  assert.match(sceneVerifier, /expected_landing_pad_count = 1/)
+  assert.match(sceneVerifier, /expected_landing_state = \(/)
   assert.match(
     sceneVerifier,
-    /visibleWaypointCount = Object\.entries\(namedNodeCounts\)/,
+    /map_overlay\.get\("landingStates"\)/,
   )
+  assert.match(sceneVerifier, /mission_phase == "completed"/)
   assert.match(
     sceneVerifier,
-    /visibleLandingPadCount =[\s\S]*namedNodeCounts\.kg_flight_sim_landing_pad/,
+    /map_overlay\.get\("pendingWaypointCount"\)/,
   )
+  assert.match(sceneVerifier, /scene\.get\("flightVisualCount"\) != 0/)
   assert.match(
     serverOwner,
     /refusing responsive pre-existing server/,
@@ -503,4 +565,18 @@ test('Flight browser proof activates only after applying the authored source', (
     runtimePhases,
     /"first playable frame"[\s\S]*depends_on=\("runtime deadline contracts",\)/,
   )
+  assert.match(
+    missionVerifier,
+    /const currentRunDecisions = snapshot\.pendingDecisions\.filter\([\s\S]*item => item\.payload\?\.runId === snapshot\.runId/,
+  )
+  assert.match(
+    missionVerifier,
+    /const waypointDecisions = currentRunDecisions\.filter/,
+  )
+  assert.match(
+    missionVerifier,
+    /const terminalDecisions = currentRunDecisions\.filter/,
+  )
+  assert.match(missionVerifier, /snapshot\.runId !== prior\.runId/)
+  assert.match(missionVerifier, /snapshot\.runId !== expectedRunId/)
 })

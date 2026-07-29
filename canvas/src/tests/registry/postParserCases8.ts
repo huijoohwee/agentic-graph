@@ -1,6 +1,17 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["immersive.media.defaults.zeroConfig","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete"],
+  ["immersive.media.invocation.strict","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaNativeInvocationIsStrict"],
+  ["immersive.media.mcp.exactTwo","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaAgentReadyContractsExposeTwoTools"],
+  ["immersive.media.source.sharedOwners","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaReusesPanelRendererAndCameraOwnership"],
+  ["graph.alignmentHelperLines.interactionContract","@/__tests__/alignmentHelperLines.test","testAlignmentHelperLinesInteractionContract"],
+  ["graph.alignmentHelperLines.displayControlContract","@/__tests__/alignmentHelperLines.test","testAlignmentHelperLinesDisplayControlContract"],
+  ["graph.subFlow.interactionContract","@/__tests__/subFlow.test","testSubFlowInteractionContract"],
+  ["ui.flowCanvas.containment.nestedGroupClampsToParent","@/__tests__/flowContainmentMultiGroupNoClamp.test","testFlowContainmentNestedGroupClampsToParent"],
+  ["graph.parentChildRelation.interactionContract","@/__tests__/parentChildRelation.test","testParentChildRelationInteractionContract"],
+  ["graph.selectionGrouping.interactionContract","@/__tests__/selectionGrouping.test","testSelectionGroupingInteractionContract"],
+  ["graph.groupPanel.firstClassSurfaceAndInvocation","@/__tests__/groupPanelFirstClass.test","testGroupPanelFirstClassSurfaceAndInvocationContract"],
   ["voice.studio.invocation.exactRoutes","@/__tests__/voiceStudioRuntime.test","testVoiceStudioExactInvocationRoutes"],
   ["voice.studio.profile.consentMetadataOnly","@/__tests__/voiceStudioRuntime.test","testVoiceStudioProfileManifestConsentAndMetadataOnly"],
   ["voice.studio.browser.failClosed","@/__tests__/voiceStudioRuntime.test","testVoiceStudioBrowserCapabilitiesFailClosed"],
@@ -174,4 +185,5 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["storage.enhancement.sourceFiles.mutableTextHash","@/__tests__/sourceFilesStorageSync.test","testSourceFilesStorageSyncTextHashCacheTracksMutableText"],
   ["storage.enhancement.sourceFiles.skipsWorkspaceBacked","@/__tests__/sourceFilesStorageSync.test","testSourceFilesStorageSyncSkipsWorkspaceBackedSourceFiles"],
   ["storage.enhancement.sourceFiles.bootstrapQueueOwner","@/__tests__/sourceFilesStorageSync.test","testSourceFilesPersistenceBootstrapOwnsKnowgrphStorageLoopAndQueueIntegration"],
+  ["ui.panels.ktv.tailwindSharedSource","@/__tests__/tailwindSharedKtvSourceContract.test","testTailwindScansSharedKtvClassOwners"],
 ]

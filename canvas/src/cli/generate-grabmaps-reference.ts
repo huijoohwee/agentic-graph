@@ -10,12 +10,21 @@ import {
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '../../..')
-const OUTPUT_PATH = path.join(
-  REPO_ROOT,
-  'docs',
-  'documents',
-  'knowgrph-grabmaps-api-reference.md',
-)
+const OUTPUT_PATHS = [
+  path.join(
+    REPO_ROOT,
+    'docs',
+    'documents',
+    'knowgrph-grabmaps-api-reference.md',
+  ),
+  path.join(
+    REPO_ROOT,
+    'docs',
+    'documents',
+    'knowgrph-api-reference',
+    'knowgrph-grabmaps-api-reference.md',
+  ),
+] as const
 const GRABMAPS_DOCS_URL = 'https://maps.grab.com/developer/documentation'
 
 function formatList(values: readonly string[] | undefined): string {
@@ -68,9 +77,12 @@ function buildMarkdown(): string {
 }
 
 function main(): void {
-  mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true })
-  writeFileSync(OUTPUT_PATH, buildMarkdown(), 'utf8')
-  process.stdout.write(`${OUTPUT_PATH}\n`)
+  const markdown = buildMarkdown()
+  for (const outputPath of OUTPUT_PATHS) {
+    mkdirSync(path.dirname(outputPath), { recursive: true })
+    writeFileSync(outputPath, markdown, 'utf8')
+    process.stdout.write(`${outputPath}\n`)
+  }
 }
 
 main()

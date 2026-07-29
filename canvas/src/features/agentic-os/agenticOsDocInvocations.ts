@@ -43,8 +43,21 @@ export const KNOWGRPH_PROBE_TREE_DOC_INVOCATION = {
   keywords: ['probe tree', 'branching', 'clarification', 'candidate options', 'markdown graph'],
 } as const satisfies AgenticOsDocInvocation
 
+export const KNOWGRPH_GEOSPATIAL_MODE_DOC_INVOCATION = {
+  id: 'knowgrph-geospatial-mode',
+  fileName: 'knowgrph-geospatial-mode-document.md',
+  label: 'Knowgrph Geospatial Mode',
+  summary: 'Control the local geospatial overlay, enhanced layers, geo-node framing, and tagged layer visibility.',
+  slashCommand: '/geo',
+  hashToken: '#geospatial',
+  atToken: '@geospatial',
+  sourcePath: `${KNOWGRPH_DOCS_GITHUB_ROOT_URL}/knowgrph-geospatial-mode-document.md`,
+  keywords: ['geospatial', 'maplibre', 'extrusion', '3d asset', 'layer visibility', 'geo node'],
+} as const satisfies AgenticOsDocInvocation
+
 export const AGENTIC_OS_DOC_INVOCATIONS: readonly AgenticOsDocInvocation[] = [
   KNOWGRPH_PROBE_TREE_DOC_INVOCATION,
+  KNOWGRPH_GEOSPATIAL_MODE_DOC_INVOCATION,
 ]
 
 export const AGENTIC_OS_DOC_INVOCATION_ACTION_ID_PREFIX = 'agentic-os-doc:'

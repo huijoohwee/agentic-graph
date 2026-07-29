@@ -1,12 +1,16 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
+import FloatingPanelChat from '@/features/chat/FloatingPanelChat'
 import IntegrationsHubView from '@/features/panels/views/IntegrationsHubView'
 import {
+  CHAT_BYTEPLUS_EU_WEST_ENDPOINT_URL,
+  CHAT_BYTEPLUS_MODEL_OPTIONS,
   CHAT_AGNES_MODEL_OPTIONS,
   CHAT_GOOGLE_CLOUD_MODEL_OPTIONS,
   CHAT_MIROMIND_MODEL_OPTIONS,
   CHAT_OPENAI_MODEL_OPTIONS,
+  CHAT_PROVIDER_BYTEPLUS,
   CHAT_PROVIDER_OPENAI,
   CHAT_PROVIDER_QWEN,
   CHAT_QWEN_ENDPOINT_OPTIONS,
@@ -86,6 +90,12 @@ const findValueCellSelectForRowKey = (container: HTMLElement, rowKey: string) =>
   const valueRows = Array.from(container.querySelectorAll('dl')) as HTMLElement[]
   const row = valueRows.find(item => item.children[0]?.textContent?.trim() === rowKey)
   return row?.querySelector<HTMLSelectElement>('select') || null
+}
+
+const findValueCellInputForRowKey = (container: HTMLElement, rowKey: string) => {
+  const valueRows = Array.from(container.querySelectorAll('dl')) as HTMLElement[]
+  const row = valueRows.find(item => item.children[0]?.textContent?.trim() === rowKey)
+  return row?.querySelector<HTMLInputElement>('input') || null
 }
 
 export async function testMainPanelRequestedIntegrationsChatProviderValueCellDerivesFromChatModel() {
@@ -294,10 +304,111 @@ export async function testMainPanelRequestedIntegrationsMappedChatModelKeepsUser
   }
 }
 
+export async function testMainPanelChatSettingsCommitOneRouteUsedByFloatingPanel() {
+  const host = createMainPanelHost()
+  const floatingContainer = host.dom.window.document.createElement('section')
+  host.dom.window.document.body.appendChild(floatingContainer)
+  const floatingRoot = createRoot(floatingContainer as unknown as HTMLElement)
+  const modelValueSetter = Object.getOwnPropertyDescriptor(host.dom.window.HTMLSelectElement.prototype, 'value')?.set
+  const inputValueSetter = Object.getOwnPropertyDescriptor(host.dom.window.HTMLInputElement.prototype, 'value')?.set
+
+  if (!modelValueSetter || !inputValueSetter) {
+    throw new Error('expected native control value setters')
+  }
+
+  try {
+    await mountReactRoot(floatingRoot, React.createElement(FloatingPanelChat), { window: host.dom.window as unknown as Window, frames: 2 })
+    await renderRequestedIntegrationsSearch(host.root, 'chatModel')
+
+    const nextModel = CHAT_BYTEPLUS_MODEL_OPTIONS.find(model => model === 'seed-2-0-pro-260328') || CHAT_BYTEPLUS_MODEL_OPTIONS[0]
+    if (!nextModel) throw new Error('expected a BytePlus model option for the settings route regression')
+    const modelSelect = findValueCellSelectForRowKey(host.container, 'chatModel')
+    if (!modelSelect) throw new Error('expected MainPanel chatModel Value cell')
+
+    const routes: Array<{ provider: string; endpointUrl: string | null; model: string | null }> = []
+    const unsubscribe = useGraphStore.subscribe(state => {
+      routes.push({
+        provider: state.chatProvider,
+        endpointUrl: state.chatEndpointUrl,
+        model: state.chatModel,
+      })
+    })
+    try {
+      await act(async () => {
+        modelValueSetter.call(modelSelect, nextModel)
+        Simulate.change(modelSelect)
+        await waitForFrames(3)
+      })
+    } finally {
+      unsubscribe()
+    }
+
+    const chatState = useGraphStore.getState()
+    if (
+      routes.length !== 1
+      || routes[0]?.provider !== chatState.chatProvider
+      || routes[0]?.endpointUrl !== chatState.chatEndpointUrl
+      || routes[0]?.model !== chatState.chatModel
+    ) {
+      throw new Error(`expected MainPanel chatModel to commit one complete provider route, got ${JSON.stringify(routes)}`)
+    }
+    if (chatState.chatProvider !== CHAT_PROVIDER_BYTEPLUS || chatState.chatModel !== nextModel) {
+      throw new Error(`expected MainPanel chatModel to select BytePlus ${JSON.stringify(nextModel)}, got ${JSON.stringify(chatState)}`)
+    }
+
+    const floatingModelSelect = floatingContainer.querySelector<HTMLSelectElement>('[data-kg-chat-model-select="true"]')
+    if (floatingModelSelect?.value !== nextModel) {
+      throw new Error(`expected FloatingPanel model to follow MainPanel settings, got ${JSON.stringify(floatingModelSelect?.value)}`)
+    }
+
+    await renderRequestedIntegrationsSearch(host.root, 'byteplus.auth_mode')
+    const authModeSelect = findValueCellSelectForRowKey(host.container, 'byteplus.auth_mode')
+    if (!authModeSelect) throw new Error('expected BytePlus auth_mode Value cell')
+    await act(async () => {
+      modelValueSetter.call(authModeSelect, 'byok')
+      Simulate.change(authModeSelect)
+      await waitForFrames(2)
+    })
+    if (useGraphStore.getState().chatAuthMode !== 'byok') {
+      throw new Error('expected BytePlus auth_mode Value cell to enable BYOK')
+    }
+
+    await renderRequestedIntegrationsSearch(host.root, 'byteplus.api_key')
+    const apiKeyInput = findValueCellInputForRowKey(host.container, 'byteplus.api_key')
+    if (!apiKeyInput || apiKeyInput.readOnly) throw new Error('expected BytePlus api_key Value cell to be editable in BYOK mode')
+    await act(async () => {
+      inputValueSetter.call(apiKeyInput, 'ephemeral-settings-test-key')
+      Simulate.change(apiKeyInput)
+      await waitForFrames(2)
+    })
+    if (useGraphStore.getState().chatApiKey !== 'ephemeral-settings-test-key') {
+      throw new Error('expected BytePlus api_key Value cell to update the shared chat credential')
+    }
+
+    await renderRequestedIntegrationsSearch(host.root, 'byteplus.endpoint_url')
+    const endpointInput = findValueCellInputForRowKey(host.container, 'byteplus.endpoint_url')
+    if (!endpointInput || endpointInput.readOnly) throw new Error('expected BytePlus endpoint_url Value cell to be editable')
+    await act(async () => {
+      inputValueSetter.call(endpointInput, CHAT_BYTEPLUS_EU_WEST_ENDPOINT_URL)
+      Simulate.change(endpointInput)
+      await waitForFrames(2)
+    })
+    const finalState = useGraphStore.getState()
+    if (finalState.chatEndpointUrl !== CHAT_BYTEPLUS_EU_WEST_ENDPOINT_URL || finalState.chatModel !== nextModel) {
+      throw new Error(`expected BytePlus endpoint_url to retain the selected FloatingPanel model, got ${JSON.stringify(finalState)}`)
+    }
+  } finally {
+    await unmountAndFlush(floatingRoot)
+    floatingContainer.remove()
+    await host.restore()
+  }
+}
+
 export async function testMainPanelRequestedIntegrationsDropdownValuesStayEditableAndUnduplicated() {
   await testMainPanelRequestedIntegrationsChatProviderValueCellDerivesFromChatModel()
   await testMainPanelRequestedIntegrationsChatModelValueCellUsesVisibleModelDropdown()
   await testMainPanelRequestedIntegrationsProviderModelRowsRejectKnownCrossProviderLeak()
   await testMainPanelRequestedIntegrationsMappedDropdownKeepsUserSelection()
   await testMainPanelRequestedIntegrationsMappedChatModelKeepsUserSelection()
+  await testMainPanelChatSettingsCommitOneRouteUsedByFloatingPanel()
 }

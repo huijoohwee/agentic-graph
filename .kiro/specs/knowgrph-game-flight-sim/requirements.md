@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This repository-tracked Kiro package at `.kiro/specs/knowgrph-game-flight-sim` is the normative requirements/design source of truth for the Knowgrph Native Flight Simulator, a browser-based, single-player flight simulation game built on the Knowgrph agentic Entity Component System (ECS) and rendered on the shared Knowgrph XR Canvas. `docs/documents/knowgrph-game-flight-sim-prd-tad.md` and `docs/workspace-seeds/knowgrph-game-flight-sim-demo.md` are derived implementation/proof projections. Any workspace-root Kiro copy is a byte-identical local projection only, never a second authority.
+This repository-tracked Kiro package at `.kiro/specs/knowgrph-game-flight-sim` is the normative requirements/design source of truth for the Knowgrph Native Flight Simulator, a browser-based, single-player flight simulation game built on the Knowgrph agentic Entity Component System (ECS) and rendered on the shared Knowgrph Geo+XR Canvas surface. `docs/documents/knowgrph-game-flight-sim-prd-tad.md` and `docs/workspace-seeds/knowgrph-game-flight-sim-demo.md` are derived implementation/proof projections. Any workspace-root Kiro copy is a byte-identical local projection only, never a second authority.
 
 The feature delivers bounded, offline, deterministic flight-training missions over procedural authored terrain, with in-repo flight dynamics, scored learning outcomes, a browser-local voice instructor, and axis-aligned bounding-box collision. It is governed by hard platform constraints: total-cost-of-ownership focus, zero-infrastructure operation, browser-based/mobile-first/local-first/offline-first delivery, token economy discipline, free and open-source software only, minimum-viable-maximum-value scope, and agent invocability through Model Context Protocol (MCP) and the `/`, `@`, `#` invocation conventions.
 
@@ -11,6 +11,7 @@ External references inform conceptual principles only. Maintainers attest that t
 ## Glossary
 
 - **Flight_Sim**: The browser-local flight simulator feature surface, mounted as a FloatingPanel mode on the shared Knowgrph XR Canvas.
+- **Geo_XR_Mode**: The composed surface where the selected native MapLibre 2D/3D Classic/Modern view renders one Singapore-aligned geospatial world containing the selected XR stage, authored structures, placed subjects, route, waypoints, and aircraft while one transparent React Three Fiber Canvas retains deterministic Flight simulation, input, and readiness without rendering a competing world or aircraft.
 - **Flight_Runtime**: The lifecycle and orchestration owner of Flight_Sim, managing mission/failure selection, voice coaching, `open`, `start`, `stop`, `restart`, `throttle`, `coach`, `save`, and `exit`.
 - **Training_Mission**: A source-authored objective, terrain/light state, target energy envelope, systems checklist, and measurable score contract.
 - **Practice_Failure**: A bounded deterministic failure injection active only during its declared tick window.
@@ -45,12 +46,12 @@ External references inform conceptual principles only. Maintainers attest that t
 #### Acceptance Criteria
 
 1. WHEN the source-backed flight seed is applied in a clean browser-local workspace, THE Flight_Sim SHALL render a playable airborne-capable first frame within 3 seconds without requiring sign-in, camera permission, passkey access, remote asset fetch, or a Cloudflare service request.
-2. THE Flight_Sim SHALL execute all core gameplay using only browser-local runtime resources, issuing zero outbound network requests during core play.
+2. THE Flight_Sim gameplay owners SHALL execute core play using only browser-local runtime resources and SHALL issue zero Flight-owned outbound requests; the independently owned Geo host MAY read only its established MapLibre style, glyph, sprite, terrain, and tile paths.
 3. IF a gameplay network request is attempted during core play, THEN THE Flight_Sim SHALL fail closed within 1 second with a local error indicating the request was blocked, SHALL retain the current mission state without rollback, and SHALL NOT block the mission on a remote response.
 4. THE Flight_Sim SHALL render and control the mission within a viewport of 375 by 812 device-independent pixels without content clipping or scrolling.
 5. WHEN a mission Decision is recorded, THE Flight_Sim SHALL persist it exclusively through the WorkspaceFs_Adapter in browser-local storage.
 6. THE Flight_Sim SHALL require zero new deployed infrastructure and zero production, D1, R2, KV, Durable Object, Worker, or Pages mutation for core gameplay.
-7. WHEN the player supplies control input after the first playable frame, THE Flight_Sim SHALL advance the World_Tick without issuing any network request.
+7. WHEN the player supplies control input after the first playable frame, THE Flight_Sim SHALL advance the World_Tick without issuing any Flight-owned network request.
 
 ### Requirement 2: Token economy and cost truth
 
@@ -129,6 +130,9 @@ External references inform conceptual principles only. Maintainers attest that t
 4. THE Flight_Model SHALL compute flight dynamics without an external physics engine.
 5. WHEN a sampled pitch, roll, yaw, or `throttleDelta` value is finite but outside -1.0 to 1.0, THE Input_Normalizer SHALL clamp it to the nearest bound; WHEN it is positive or negative infinity, THE Input_Normalizer SHALL use the corresponding signed bound; WHEN it is NaN, THE Input_Normalizer SHALL reuse that field from the last valid input frame; in every case THE Input_Normalizer SHALL record an internal out-of-range indication and the Flight_Model SHALL continue integration with the normalized frame. IF an explicit absolute throttle setpoint is non-finite or outside 0.0 to 1.0, THEN THE Flight_Runtime SHALL reject it without changing the aircraft throttle state.
 
+6. WHEN true airspeed falls below the configured full-control threshold, THE Flight_Model SHALL reduce pitch, roll, yaw, and bank-turn authority monotonically to a non-zero configured minimum; WHEN true airspeed falls below the configured stall threshold, THE Flight_Model SHALL add a deterministic nose-down recovery tendency with no random, wall-clock, or display-frame input.
+7. THE shared training projection SHALL classify unreliable instrumentation, stall risk, attitude limits, and mission-relative low/on-target/high energy in a stable priority order, and SHALL expose the same target-speed band, control-authority percentage, label, and recovery cue to the HUD and all six existing training surfaces.
+
 ### Requirement 8: In-repo AABB terrain collision
 
 **User Story:** As a player, I want the aircraft to collide with terrain and boundaries realistically, so that the mission has physical limits.
@@ -206,17 +210,22 @@ External references inform conceptual principles only. Maintainers attest that t
 6. THE WebMCP_Registry SHALL add zero stdio tools, zero HTTP mutation routes, zero remote gateways, and zero deployment authority.
 7. THE WebMCP_Registry SHALL keep the private Agentic_ECS stdio lane at exactly three tools.
 
-### Requirement 14: Shared Canvas and XR ownership
+### Requirement 14: Shared Canvas surface and renderer ownership
 
 **User Story:** As a player, I want the flight to appear inside the existing world, so that the scene stays coherent with one renderer.
 
 #### Acceptance Criteria
 
-1. WHEN Flight_Sim is entered from a running XR surface, THE Flight_Runtime SHALL keep the authored atmosphere, terrain, and scene graph mounted inside the single existing React Three Fiber Canvas.
-2. THE Flight_Runtime SHALL overlay the aircraft, waypoint actors, objective actors, and HUD on the existing Canvas without introducing a second renderer, a second Canvas, an alternate rendered world, or a Flight-owned camera.
-3. WHEN Flight_Sim exits, THE Flight_Runtime SHALL restore the previous surface controller input and simulation state.
+1. WHEN Flight_Sim is entered through Geo_XR_Mode, THE Geo runtime SHALL retain the selected native MapLibre view as the visible geospatial world and SHALL render the Flight route, waypoints, and aircraft through dedicated georeferenced MapLibre layers; THE Flight_Runtime SHALL retain the existing transparent React Three Fiber Canvas for deterministic simulation, input, and readiness while suppressing its aircraft, mission geometry, XR atmosphere, and terrain.
+2. THE Flight_Runtime SHALL publish aircraft, route, waypoint, and objective state into the active MapLibre surface while the HUD remains a shared DOM overlay, without introducing a second React Three Fiber Canvas, a Flight-owned map provider, an alternate rendered world, or duplicate terrain.
+3. WHEN Flight_Sim exits, THE Flight_Runtime SHALL restore the complete pre-document surface ownership snapshot, including Geo enablement, controller input, and simulation state; IF that prior surface was not Geo-enabled, THEN Exit SHALL acknowledge success only after the active MapLibre owner and canvas are disposed for two committed presentation frames.
 4. IF entry into Flight_Sim from a running XR surface fails, THEN THE Flight_Runtime SHALL leave the existing Canvas, scene graph, and prior surface controller unchanged and SHALL surface a local error indicating that entry did not complete.
 5. IF restoring the previous surface controller input or simulation state on exit fails, THEN THE Flight_Runtime SHALL retain the existing single Canvas without a second renderer and SHALL surface a local error indicating that restoration did not complete.
+6. WHEN plain Geo owns the active surface, THE Flight_Runtime SHALL keep the existing Geo renderer mounted and interactive, SHALL project the Flight route and aircraft as a transparent local DOM overlay above it, and SHALL NOT mount the React Three Fiber Canvas for that exclusive plain-Geo presentation.
+7. WHEN Geo_XR_Mode owns the active surface, THE Geo runtime SHALL mount its native MapLibre canvas and THE Flight_Runtime SHALL retain exactly one pointer-transparent React Three Fiber Canvas with all R3F Flight and environment visuals suppressed, SHALL expose a dedicated HUD control for explicit Flight pointer capture while ordinary map pointer interaction remains available, and SHALL NOT mount the exclusive plain-Geo Flight overlay.
+8. WHILE an active mission objective exists, THE Flight_Runtime SHALL derive one source-authored course-director segment from the aircraft to that exact waypoint or landing pad and SHALL project it from the same immutable objective state into native MapLibre across 2D Classic, 2D Modern, 3D Classic, and 3D Modern, the exclusive plain-Geo SVG overlay, and the local navigation inset; WHEN the mission is completed, the segment SHALL be absent; the segment SHALL NOT represent predicted trajectory or create a second renderer, camera, provider, or simulation owner.
+9. WHEN Geo_XR_Mode owns the active surface, THE Geo runtime SHALL project the selected XR stage footprint, every authored stage structure, and every placed subject through the same source-owned Singapore local-meter reference as the Flight route and aircraft; 2D Classic and 2D Modern SHALL render planar native MapLibre footprints north-up, while 3D Classic and 3D Modern SHALL render native MapLibre fill extrusions with an oblique local-city camera; the presentation extent SHALL be explicitly non-administrative viewport framing and SHALL NOT be copied from an external project.
+10. THE Geo runtime SHALL represent the aircraft with source-authored pose-derived native geometry plus a generated fixed-pixel MapLibre icon that remains perceptible across Flight camera zooms and does not require a font glyph, remote image, external asset, access token, Cesium runtime, or external simulator dependency; exact source, image, and layer revisions SHALL fail closed when MapLibre does not register the required environment or Flight presentation.
 
 ### Requirement 15: Camera source selection
 
@@ -269,6 +278,7 @@ External references inform conceptual principles only. Maintainers attest that t
 3. WHEN a runtime error occurs, THE HUD SHALL display an explicit local error indication and, where a local path is associated with the error, the affected local path.
 4. WHEN a save operation enters a pending, retryable, or successful state, THE HUD SHALL display the corresponding save state.
 5. IF a save operation fails and is not retryable, THEN THE HUD SHALL display a non-retryable save-failure state and indicate that unsaved changes are retained.
+6. WHILE an active objective exists, THE HUD SHALL display its label, rounded distance, and deterministic left/right heading-error cue from the shared course-director projection on both mobile and desktop; this per-tick cue SHALL remain outside the polite live region so only objective transitions are announced.
 
 ### Requirement 19: Decision-only local save
 
@@ -319,9 +329,9 @@ External references inform conceptual principles only. Maintainers attest that t
 
 1. THE Flight_Sim SHALL register a repository-owned runtime-readiness command that verifies source authority, native ECS integration, focused tests, TypeScript checks, and a production build, where a run is deemed successful only when every one of these five verifications passes.
 2. IF any verification performed by the runtime-readiness command does not pass, THEN THE Flight_Sim SHALL terminate the command with a non-success result that identifies each failed verification and SHALL make no repository change as a result of the run.
-3. THE Flight_Sim SHALL register a repository-owned browser-smoke command that verifies Source Files apply, one retained authored XR Canvas, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, and the mobile HUD, where a run is deemed successful only when every one of these verifications passes.
+3. THE Flight_Sim SHALL register a repository-owned browser-smoke command that verifies Source Files apply, a visible native MapLibre canvas in each of the four selected Geo views, topmost rendered georeferenced Flight route/course-director/waypoint/aircraft layers, one transparent pointer-neutral runtime Canvas with all R3F world and Flight visuals suppressed, live Flight revision and coordinate movement, map interaction, playable input, strict WebMCP, lifecycle, Timeline camera round-trip, and the mobile HUD course cue, where a run is deemed successful only when every one of these verifications passes.
 4. IF any verification performed by the browser-smoke command does not pass, THEN THE Flight_Sim SHALL terminate the command with a non-success result that identifies each failed verification and SHALL make no repository change as a result of the run.
-5. THE runtime-readiness and browser-smoke commands SHALL run using only locally available source, dependency, build, and test artifacts, and SHALL invoke zero paid model, image-to-3D, or Cloudflare service and zero other network resource.
+5. THE runtime-readiness command SHALL use only locally available source, dependency, build, and test artifacts; THE browser-smoke command MAY exercise the existing Geo provider's style and tile transport while SHALL invoke zero paid model, image-to-3D, or Cloudflare service and SHALL attribute those provider requests to Geo rather than Flight gameplay.
 6. THE Flight_Sim SHALL NOT perform an automatic Git operation or production deployment from the browser runtime.
 
 ### Requirement 23: Source-authored activation identity
@@ -345,8 +355,48 @@ External references inform conceptual principles only. Maintainers attest that t
 3. WHILE a mission advances, THE training projection SHALL report route progress, stability percentage, energy-envelope percentage, a score from 0 through 100, and a terminal grade derived only from deterministic browser-local state.
 4. WHEN the selected Practice_Failure is active from tick 180 inclusive through tick 420 exclusive, THE Flight_Runtime SHALL apply the declared bounded power, instrument, or control effect to captured tick input only; outside that window, it SHALL leave input unchanged.
 5. WHEN unreliable-airspeed practice is active, THE Flight Sim telemetry SHALL display `UNRELIABLE` instead of a trusted airspeed value and SHALL retain pitch, power, attitude, and route coaching.
-6. WHEN night training is selected, THE shared authored XR atmosphere and light owners SHALL use the source-authored night palette without adding Flight-owned lights or a second world.
+6. WHEN night training is selected in Geo_XR_Mode, THE MapLibre Flight layer styling and shared HUD SHALL use the source-authored night palette without mounting R3F atmosphere, Flight-owned lights, or a second world.
 7. THE Voice_Instructor SHALL use browser speech synthesis only after explicit enablement, SHALL speak the same visible deterministic coaching cue, and SHALL retain visible text coaching when speech is unavailable.
 8. WHEN an Operator explicitly saves a completed or crashed mission, THE Flight_Runtime SHALL persist one idempotent Training_Outcome Decision alongside admitted terminal Decisions; it SHALL never auto-save the debrief.
 9. THE WebMCP control tool and `/flight.sim @canvas #flight` grammar SHALL expose mission selection, failure selection, voice enable/disable, current coaching cue, lifecycle control, and Save while inspect reports the complete training snapshot.
 10. IF the mission-stage dynamic import fails with a transient fetch or dynamic-module error, THE shared loader SHALL retry at most two times with bounded backoff before reporting the existing fail-closed surface-entry error; non-transient errors SHALL not retry.
+
+### Requirement 25: Authored environment selection and Geo handoff
+
+**User Story:** As a player, I want to choose an authored environment from Media and inspect it through Geo while source-authored Flight reopens automatically, so that the mission world and aircraft overlay are deliberate and immediately visible.
+
+#### Acceptance Criteria
+
+1. WHEN an Operator selects Geo on a Terrain / Environment Kit card, THE Media surface SHALL stage that exact existing XR environment through the canonical XR scene-control owner before requesting FloatingPanel Geo.
+2. IF XR environment staging is rejected, THEN the Media surface SHALL keep the current panel and environment unchanged and SHALL NOT request FloatingPanel Geo.
+3. WHEN FloatingPanel Geo opens after a successful environment selection, THE Geo surface SHALL visibly project the selected environment identifier, label, kind, and authored dimensions from the shared XR runtime; any source-text write produced by staging, including its debounced local host-mirror request, SHALL settle under shared Workspace seed-sync ownership before Flight activation; and IF the active document declares the registered Flight run-ready identity, THEN Flight_Runtime SHALL activate Geo_XR_Mode without replacing the Geo panel.
+4. WHEN Flight_Sim is activated by the Geo handoff or opened elsewhere, THE Flight_Runtime SHALL derive its spatial profile, collision envelope, route, navigation, and visible World label from that selected authored XR environment without adding a Flight-owned renderer, camera, map provider, transport, token, copied asset, or external runtime dependency; the independent Geo runtime MAY use its established provider transport.
+5. WHEN Flight_Sim entry follows Geo inspection or a live Motion_Control handoff, THE shared Flight surface controller SHALL retry viewport input ownership independently without waiting for desktop input ownership; in Geo_XR_Mode, the native MapLibre owner SHALL acknowledge the current preparation request only after the Flight source, layers, and camera are applied and an actual map render commits, while the visually suppressed XR projection SHALL neither acknowledge preparation nor mark the first frame; the exclusive Geo aircraft projection SHALL separately acknowledge its committed DOM presentation, so a mount-order or camera-owner race cannot reject a playable Motion, touch, gamepad, or later-reclaimed desktop session.
+6. WHEN Cockpit view is selected, THE Camera_Source SHALL derive an eye point beyond the aircraft's forward collision envelope and above its vertical collision envelope, then MapLibre SHALL center the corresponding forward look-ahead coordinate and apply the Cockpit pitch and zoom, so committed aircraft geometry cannot obstruct the playable forward view.
+7. WHEN the source-authored Flight workspace seed is applied, THE shared surface owner SHALL select Geo_XR_Mode, retain the selected native MapLibre world, render the deterministic route and aircraft in MapLibre, retain Flight simulation, HUD, input, and readiness owners with one transparent runtime Canvas, retain existing 3D precedence for other gameplay overlays, and suppress all R3F Flight and environment visuals.
+8. WHILE Geo_XR_Mode is active, THE Geo runtime SHALL map 2D Classic, 2D Modern, 3D Classic, and 3D Modern to the existing native MapLibre `2d`, `2d-modern`, `3d`, and `3d-modern` views; MapLibre SHALL remain the visible camera and projection owner in all four views; Fixed_Follow SHALL drive the MapLibre camera from the Flight aircraft and Chase/Cockpit/Survey preset, Free_Orbit SHALL yield ordinary pan/zoom interaction to MapLibre, the Flight route and aircraft GeoJSON SHALL remain georeferenced through MapLibre pan, zoom, pitch, and globe transforms, and Flight gameplay SHALL neither replace nor intercept the Geo provider transport.
+9. WHEN the Flight source is the active native-XR run-ready document, THE shared Physics base owner SHALL NOT re-activate an already-active XR surface or invoke gameplay departure; IF Flight frontmatter has not yet entered XR, THEN the base owner SHALL enter through the canonical shared surface transaction while preserving the pending Flight gameplay owner.
+10. WHEN a Media environment card requests Geo for a source-authored Flight document, THE Media surface SHALL await source-text settlement, Flight surface activation, and exact publication preparation before requesting FloatingPanel Geo; IF any preparation step rejects, THEN the current Media panel SHALL remain open and SHALL surface the explicit local error without presenting a blank Geo handoff.
+11. THE exact-candidate browser proof SHALL exercise `2d`, `2d-modern`, `3d`, and `3d-modern` serially and SHALL require one native MapLibre canvas, one pointer-transparent R3F simulation Canvas, the same Singapore environment identifier and presentation extent, rendered stage, structure, and placed-subject features, a polygon aircraft feature with both generated fixed-pixel images registered, topmost exact Flight layers, pitch `0` in both 2D modes, oblique pitch in both 3D modes, live aircraft movement, and ordinary map pointer interaction.
+
+### Requirement 26: FloatingPanel and Flight HUD coexistence
+
+**User Story:** As a player, I want Motion Control and the Flight HUD to remain usable together, so that camera-pose input can control the live mission without hidden or intercepted controls.
+
+#### Acceptance Criteria
+
+1. WHILE the shared FloatingPanel is open at its default top-right position on layouts at or above the shared small-screen breakpoint, THE Flight HUD SHALL reserve the same responsive panel width and right-safe-area clearance for its top instrumentation, navigation controls, and bottom lifecycle controls; below that breakpoint THE mobile HUD SHALL retain its full viewport layout and existing occluder choreography.
+2. THE Flight HUD SHALL retain its established layer above bottom choreography surfaces while its root remains pointer-transparent and every pointer-owning Flight control clears the default FloatingPanel footprint, so neither surface intercepts the other's visible actions.
+3. WHEN the shared FloatingPanel width preference is non-finite or outside its supported range, THE FloatingPanel and Flight HUD SHALL use the same default or clamped width expression without duplicating width policy.
+4. WHEN Motion Control is explicitly started while Flight is active, THE existing normalized pose adapter SHALL remain able to contribute pitch and roll input to the same deterministic fixed-step mission without changing Canvas, camera, or flight-policy ownership.
+
+### Requirement 27: Flight transport capability boundary
+
+**User Story:** As a player, I want the existing local Motion Control runtime to initialize while Flight is active, so that camera pose can steer the mission without weakening the offline gameplay boundary.
+
+#### Acceptance Criteria
+
+1. THE Flight runtime SHALL expose no fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, or Service Worker transport capability in its gameplay owners.
+2. IF a Flight gameplay operation explicitly attempts transport through the bounded gameplay-call seam, THEN THE Flight runtime SHALL synchronously reject it through the existing local blocked-operation error before invoking the supplied executor.
+3. WHILE Flight is active, THE independent Geo runtime SHALL retain ownership of its established MapLibre provider transport, and Flight SHALL NOT replace global browser transport functions or classify Geo style and tile requests as gameplay requests.
+4. WHEN Motion Control starts while Flight is active, THE existing LiteRT runtime SHALL load its checked-in local assets and SHALL contribute normalized pose input through the shared input owner without becoming a gameplay-network, renderer, camera, flight-policy, or external-dependency owner.

@@ -16,6 +16,10 @@ import {
   setFlightSimTrainingVoiceEnabled,
   subscribeFlightSimTrainingScenario,
 } from './flightSimTrainingScenario'
+import {
+  projectFlightSimEnvelope,
+  type FlightSimEnvelopeProjection,
+} from './flightSimEnvelope'
 
 export type FlightSimTrainingGrade = 'A' | 'B' | 'C' | 'D' | 'Pending'
 
@@ -38,6 +42,7 @@ export type FlightSimTrainingSnapshot = Readonly<{
   stabilityPercent: number
   energyPercent: number
   airspeedReliable: boolean
+  envelope: FlightSimEnvelopeProjection
   coachingCue: string
   systemsChecklist: readonly string[]
   revision: number
@@ -77,6 +82,7 @@ function coachingCue(
   failureId: ReturnType<typeof readFlightSimTrainingScenario>['failureId'],
   activeFailure: boolean,
   recovered: boolean,
+  envelope: FlightSimEnvelopeProjection,
 ): string {
   if (!flight.active) return `Open Flight Sim for ${mission.label}.`
   if (flight.phase === 'stopped') return `Start ${mission.label} when the systems checklist is complete.`
@@ -91,6 +97,7 @@ function coachingCue(
   if (activeFailure) return 'Control bias detected. Counter gently and keep bank within the stable envelope.'
   if (recovered) return 'Failure recovered. Rejoin the circuit and stabilize the landing.'
   if (flight.phase === 'ready') return 'Advance power smoothly and keep wings level through departure.'
+  if (envelope.status !== 'on-target') return envelope.recoveryCue
   return flight.currentWaypointId
     ? `Track ${flight.currentWaypointId}; keep pitch and bank inside the stable envelope.`
     : 'Settle on the marked landing area and hold the rollout.'
@@ -153,6 +160,12 @@ function synchronize(): FlightSimTrainingSnapshot {
     ? Math.round((flight.waypointIndex / flight.waypointCount) * 100)
     : 0
   const failureActive = isFlightSimTrainingFailureActive(flight)
+  const airspeedReliable = isFlightSimTrainingAirspeedReliable(flight)
+  const envelope = projectFlightSimEnvelope({
+    aircraft: flight.aircraft,
+    targetSpeedMetersPerSecond: mission.targetSpeedMetersPerSecond,
+    airspeedReliable,
+  })
   const routeScore = Math.round(Math.min(1, flight.waypointIndex / Math.max(1, flight.waypointCount)) * 40)
   const terminalScore = flight.phase === 'completed' ? 15 : 0
   const recoveryScore = scenario.failureId === 'none' || failureRecovered ? 10 : 0
@@ -183,13 +196,15 @@ function synchronize(): FlightSimTrainingSnapshot {
     routeProgress,
     stabilityPercent,
     energyPercent,
-    airspeedReliable: isFlightSimTrainingAirspeedReliable(flight),
+    airspeedReliable,
+    envelope,
     coachingCue: coachingCue(
       flight,
       mission,
       scenario.failureId,
       failureActive,
       failureRecovered,
+      envelope,
     ),
     systemsChecklist: mission.systemsChecklist,
     revision: Math.max(flight.revision, scenario.revision),

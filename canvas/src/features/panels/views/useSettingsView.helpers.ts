@@ -10,6 +10,7 @@ import { MIROMIND_API_DOC_AREA } from './miromindApiDocs'
 import { AGNES_API_DOC_AREA } from './agnesApiDocs'
 import { SEALION_API_DOC_AREA } from './sealionApiDocs'
 import { QWEN_API_DOC_AREA } from './qwenApiDocs'
+import { Z_AI_API_DOC_AREA } from './zAiApiDocs'
 import { GOOGLE_CLOUD_API_DOC_AREA } from './googleCloudApiDocs'
 import { STRIPE_PAYMENT_API_DOC_AREA } from './stripePaymentApiDocs'
 import {
@@ -126,6 +127,7 @@ const SETTINGS_AREA_ORDER: readonly string[] = [
   AGNES_API_DOC_AREA,
   SEALION_API_DOC_AREA,
   QWEN_API_DOC_AREA,
+  Z_AI_API_DOC_AREA,
   GOOGLE_CLOUD_API_DOC_AREA,
   OPENAI_CHAT_API_DOC_AREA,
   OPENAI_IMAGES_API_DOC_AREA,
@@ -171,6 +173,7 @@ export function isIntegrationsOwnedSetting(key: string, areaRaw: string): boolea
     || area === AGNES_API_DOC_AREA
     || area === SEALION_API_DOC_AREA
     || area === QWEN_API_DOC_AREA
+    || area === Z_AI_API_DOC_AREA
     || area === GOOGLE_CLOUD_API_DOC_AREA
     || area === OPENAI_CHAT_API_DOC_AREA
     || area === OPENAI_IMAGES_API_DOC_AREA

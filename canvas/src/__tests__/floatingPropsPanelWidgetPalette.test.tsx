@@ -44,6 +44,11 @@ export async function testPropsPanelRendersWidgetPaletteOnlySurface() {
 
     const text = String(container.textContent || '')
     for (const expected of [
+      'Group Panel',
+      '/canvas.node.add',
+      '#canvas-selection',
+      '@canvas',
+      'knowgrph.control_local_group_panel',
       'Widgets',
       'Widget Card Type 0',
       'Probe-Tree Type 1',

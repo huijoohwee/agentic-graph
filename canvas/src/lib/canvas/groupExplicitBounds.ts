@@ -3,6 +3,8 @@ import type { GraphSchema } from '@/lib/graph/schema'
 import type { GraphNode } from '@/lib/graph/types'
 import { readGroupBoundsOverrideSource } from '@/lib/canvas/groupBoundsOverrides'
 import type { RectBounds } from '@/lib/canvas/groupContainment'
+import { getNodeAabbHalfExtentsWithLabel } from '@/components/GraphCanvas/layout/overlap'
+import { DEFAULT_GROUP_NESTED_PADDING_STEP } from '@/lib/graph/layoutDefaults'
 
 const readRectBounds = (g: GraphGroup['bounds'] | null): RectBounds | null => {
   if (!g) return null
@@ -43,6 +45,62 @@ export const buildGroupRectByIdFromGroups = (groups: GraphGroup[] | null | undef
   return out
 }
 
+export const buildDynamicGroupRectById = (args: {
+  groups: GraphGroup[]
+  graphNodes: ReadonlyArray<GraphNode>
+  schema: GraphSchema
+}): Map<string, RectBounds> => {
+  const out = new Map<string, RectBounds>()
+  const nodeById = new Map<string, GraphNode>()
+  for (const node of args.graphNodes) {
+    const id = String(node?.id || '').trim()
+    if (id) nodeById.set(id, node)
+  }
+  const configuredPadding = args.schema.layout?.groups?.padding
+  const padding = typeof configuredPadding === 'number' && Number.isFinite(configuredPadding)
+    ? Math.max(0, configuredPadding)
+    : 24
+  const configuredNestedPadding = args.schema.layout?.groups?.nestedPaddingStep
+  const nestedPaddingStep = typeof configuredNestedPadding === 'number' && Number.isFinite(configuredNestedPadding)
+    ? Math.max(0, configuredNestedPadding)
+    : DEFAULT_GROUP_NESTED_PADDING_STEP
+  const maxDepth = args.groups.reduce((max, group) => {
+    const depth = typeof group.depth === 'number' && Number.isFinite(group.depth)
+      ? Math.max(0, Math.floor(group.depth))
+      : 0
+    return Math.max(max, depth)
+  }, 0)
+  for (const group of args.groups) {
+    const groupId = String(group?.id || '').trim()
+    if (!groupId || group.containChildren !== true) continue
+    const depth = typeof group.depth === 'number' && Number.isFinite(group.depth)
+      ? Math.max(0, Math.floor(group.depth))
+      : 0
+    const effectivePadding = padding + nestedPaddingStep * Math.max(0, maxDepth - depth)
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const rawNodeId of group.memberNodeIds || []) {
+      const node = nodeById.get(String(rawNodeId || '').trim()) || null
+      if (!node || !Number.isFinite(node.x) || !Number.isFinite(node.y)) continue
+      const extents = getNodeAabbHalfExtentsWithLabel(node, args.schema)
+      minX = Math.min(minX, node.x - extents.halfW)
+      maxX = Math.max(maxX, node.x + extents.halfW)
+      minY = Math.min(minY, node.y - extents.halfH)
+      maxY = Math.max(maxY, node.y + extents.halfH)
+    }
+    if (minX === Infinity || minY === Infinity || maxX <= minX || maxY <= minY) continue
+    out.set(groupId, {
+      x: minX - effectivePadding,
+      y: minY - effectivePadding,
+      width: maxX - minX + effectivePadding * 2,
+      height: maxY - minY + effectivePadding * 2,
+    })
+  }
+  return out
+}
+
 export const buildDeepestGroupRectByNodeId = (args: { groups: GraphGroup[]; groupRectById: Map<string, RectBounds> }): Map<string, RectBounds> => {
   const bestDepthByNodeId = new Map<string, number>()
   const boundsByNodeId = new Map<string, RectBounds>()
@@ -65,4 +123,3 @@ export const buildDeepestGroupRectByNodeId = (args: { groups: GraphGroup[]; grou
   }
   return boundsByNodeId
 }
-

@@ -65,8 +65,18 @@ assert.doesNotMatch(
 )
 assert.doesNotMatch(
   revisionAuthority,
-  /addEventListener\(["'](?:install|activate)["']/,
-  'revision authority must not duplicate generated service-worker lifecycle ownership',
+  /addEventListener\(["']install["']/,
+  'revision authority must not duplicate generated service-worker install ownership',
+)
+assert.match(
+  revisionAuthority,
+  /addEventListener\(["']activate["']/,
+  'revision authority must converge runtime caches during worker activation',
+)
+assert.match(
+  revisionAuthority,
+  /Refusing cache cleanup before the current precache is ready/,
+  'revision authority must fail closed before deleting stale cache entries',
 )
 const attestedRevision = revisionAuthority.match(/const sourceRevision = ["']([0-9a-f]{40})["']/)?.[1] || ''
 assert.match(attestedRevision, /^[0-9a-f]{40}$/, 'revision authority must attest one exact source revision')

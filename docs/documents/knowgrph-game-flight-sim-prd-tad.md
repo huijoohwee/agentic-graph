@@ -3,8 +3,8 @@ title: "Knowgrph Game Flight Sim PRD/TAD"
 id: "md:knowgrph-game-flight-sim-prd-tad"
 author: "airvio / joohwee"
 date: "2026-07-22"
-updated: "2026-07-24"
-version: "1.3.0"
+updated: "2026-07-29"
+version: "1.5.0"
 status: "runtime-ready"
 runtime_claim: "local-runtime-ready"
 evidence_status: "exact-head source and browser proof required at every handoff"
@@ -25,8 +25,8 @@ readiness:
   protected_integration: "pending"
   production: "not authorized"
 constraints:
-  - "one bounded offline single-player flight mission on the canonical authored XR scene"
-  - "core gameplay requires no sign-in, camera permission, passkey, model, network, or Cloudflare service"
+  - "one bounded offline single-player flight mission projected into native MapLibre on the composed Geo+XR surface"
+  - "Flight gameplay requires no sign-in, camera permission, passkey, model, outbound request, or Cloudflare service; Geo provider reads retain their independent owner"
   - "native Knowgrph Agentic ECS with ephemeral runtime state; only validated Decisions persist through browser-local WorkspaceFs"
   - "deterministic fixed-step in-repo flight dynamics and AABB collision; reproducible replay"
   - "no Rapier, Yuka, behavior-tree, navmesh, bitECS, edge-ML, or LLM dependency on the flight hot path"
@@ -34,7 +34,7 @@ constraints:
   - "asset authoring is an offline step; no image-to-3D model is called at runtime"
   - "browser-local WebMCP only; no new stdio, HTTP gateway, or deployment transport"
   - "no automatic Git operation or production deployment"
-  - "one authored scene owner on the single React Three Fiber Canvas; no second renderer, Canvas, rendered XR world, or scene owner"
+  - "native MapLibre owns visible Geo+XR Flight geometry; one retained transparent R3F Canvas owns simulation/input/readiness only and paints no competing world"
 clean_room_policy:
   - "external references inform conceptual principles only; all implementation, instructional content, and assets are source-authored"
   - "external project identity and URL are prohibited in product source and runtime metadata; no external project dependency"
@@ -42,7 +42,8 @@ clean_room_policy:
 source_references:
   agentic_ecs: "docs/documents/knowgrph-agentic-entity-component-system-prd-tad.md"
   sibling_game_fps: "docs/documents/knowgrph-game-fps-prd-tad.md"
-  renderer_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
+  renderer_owner: "gympgrph/src/GeospatialHost.tsx"
+  runtime_canvas_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx"
   xr_owner: "canvas/src/features/three/xrNativeControllerDemoRuntime.ts"
   motion_control: "canvas/src/features/three/motionControlRuntime.ts"
   workspace_fs: "canvas/src/features/workspace-fs/workspaceFs.ts"
@@ -66,9 +67,11 @@ This extensioned `.md` PRD/TAD is a derived implementation/proof projection of t
 
 ## Outcome
 
-Knowgrph gains browser-local mission-based flight training inside the existing React Three Fiber Canvas, over the same authored XR terrain catalog the physics playground already ships. One shared training projection appears in FloatingPanel **Media**, **Animation**, **Motion Control**, **Game Mode**, **Flight Sim**, and **Camera**. It opens from a source-backed run-ready document, the shared XR surface catalog, browser WebMCP, or the strict `/flight.sim @canvas #flight` invocation. Desktop keyboard/pointer, mobile touch, standard gamepad, and optional Motion Control input arm deterministic native Agentic ECS missions with in-repo flight dynamics, AABB terrain collision, procedural day/night presentation, bounded practice failures, visible and spoken coaching, scored outcomes, selectable camera source, and Decisions-only WorkspaceFs persistence.
+Knowgrph gains browser-local mission-based flight training on one composed **Geo+XR Mode** surface. The selected native MapLibre 2D/3D Classic/Modern view remains the visible geospatial world and renders the georeferenced Flight route, waypoints, a source-generated fixed-pixel aircraft icon over pose-derived geometry, selected XR stage footprint, authored structures, and placed subjects. The existing React Three Fiber XR Canvas remains mounted above it only as a pointer-transparent simulation/input/readiness surface; its competing Flight and XR geometry are suppressed. The shared DOM HUD remains above both. One shared training projection appears in FloatingPanel **Media**, **Animation**, **Motion Control**, **Game Mode**, **Flight Sim**, and **Camera**. Media environment cards prepare Flight publication before opening the shared **Geo** panel, so a failed source or layer gate cannot strand the operator on a blank map. The Flight workspace seed selects Geo+XR directly without replacing the selected map view. It opens from a source-backed run-ready document, the shared surface catalog, browser WebMCP, or the strict `/flight.sim @canvas #flight` invocation. Desktop keyboard/pointer, mobile touch, standard gamepad, and optional Motion Control input arm deterministic native Agentic ECS missions with in-repo flight dynamics, AABB terrain collision, MapLibre/HUD day/night presentation, bounded practice failures, visible and spoken coaching, scored outcomes, selectable camera source, and Decisions-only WorkspaceFs persistence.
 
-Core gameplay requires no camera, account, passkey, model, remote asset, gameplay network call, or Cloudflare service. The required aircraft is admitted through an **img2threejs-style TypeScript module plus a small JSON scene spec** containing identity, procedural renderer shape, dimensions, collision size, color, and zero-call metadata. It is git-diffable, human-auditable, offline-loadable, rejects non-null `opaqueBinaryFallback`, and records a required-aircraft GLB fallback count of zero. The distinct optional beacon proves the Kiro opaque-fallback boundary with one self-contained, committed-local, CC0-1.0 GLB; remote references and missing/unreadable local bytes fail closed without a fetch. External references inform conceptual principles only. Contributors attest that all implementation, instructional content, and assets are source-authored; external project identity and URL are prohibited in product source and runtime metadata; and there is no external project dependency. The deterministic clean-room scanner cannot prove the absence of arbitrary derived code.
+Core gameplay requires no camera, account, passkey, model, remote asset, Flight-owned transport, token, or Cloudflare service. Flight never replaces global browser transport functions; an explicit gameplay transport attempt is rejected before its executor runs. The independent Geo runtime retains its established MapLibre style/tile provider transport, and Motion Control retains its checked-in LiteRT asset owner. The required aircraft is admitted through an **img2threejs-style TypeScript module plus a small JSON scene spec** containing identity, procedural renderer shape, dimensions, collision size, color, and zero-call metadata. It is git-diffable, human-auditable, offline-loadable, rejects non-null `opaqueBinaryFallback`, and records a required-aircraft GLB fallback count of zero. The distinct optional beacon proves the Kiro opaque-fallback boundary with one self-contained, committed-local, CC0-1.0 GLB; remote references and missing/unreadable local bytes fail closed without a fetch. External references inform conceptual principles only. Contributors attest that all implementation, instructional content, and assets are source-authored; external project identity and URL are prohibited in product source and runtime metadata; and there is no external project dependency. The deterministic clean-room scanner cannot prove the absence of arbitrary derived code.
+
+The four-mode projection uses one source-owned Singapore reference: a Marina Bay local-stage anchor plus an explicitly non-legal viewport extent for Singapore. `2d` and `2d-modern` stay north-up with planar stage/asset footprints. `3d` and `3d-modern` use an oblique local camera with native MapLibre fill extrusions. Flight camera changes preserve that mode policy. Stage structures and placed XR subjects are transformed from authored local meters through the same reference as the route and aircraft; no second geography, copied boundary, Cesium runtime, access token, external asset, or external simulator dependency is admitted.
 
 ## Product Requirements
 
@@ -86,7 +89,7 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 
 | Stage | Player action | Runtime owner | Durable effect |
 |---|---|---|---|
-| Enter | Apply the source-backed flight seed or invoke `/flight.sim @canvas #flight operation=open` | Run-ready activation | Flight Sim mounts on the shared XR Canvas |
+| Enter | Apply the source-backed flight seed or invoke `/flight.sim @canvas #flight operation=open` | Run-ready activation | Geo retains native MapLibre and renders Flight layers while one transparent XR Canvas retains only simulation/input/readiness |
 | Launch | Start and take off with keyboard/pointer/touch/gamepad (optional Motion Control) | Deterministic Agentic ECS `World_Tick` | Airborne aircraft under in-repo flight dynamics |
 | Fly | Pitch, roll, yaw, throttle; pass waypoints; observe HUD | Flight systems + camera source | Waypoint/altitude/attitude state |
 | Complete | Capture exactly three ordered waypoints, then the marked landing pad | Objective evaluator | Terminal result pending explicit Save |
@@ -96,6 +99,7 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 ### Must scope
 
 - One selected authored XR terrain/environment and collider profile from the existing local catalog; Flight Sim owns no replacement environment, manifest, R2, CDN, or runtime asset download.
+- One Geo+XR presentation path that retains native MapLibre 2D Classic/Modern and 3D Classic/Modern as the visible Flight projection while the existing transparent R3F Canvas paints no Flight or XR geometry; plain Geo retains its separate interactive DOM/SVG Flight projection.
 - Three local flight-training missions — circuit foundation, night circuit, and systems recovery — sharing one flyable aircraft, exactly three ordered 50 m-radius waypoints followed by one marked 50 m-radius landing pad, and one retry/reset path.
 - One training state projected into Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera, with mission/failure selection, visible coaching, score, grade, route progress, stability, energy management, and systems checklist.
 - One FloatingPanel Flight Sim lifecycle plus MCP mission/failure/voice coaching operations: `open`, `start`, `stop`, `restart`, `throttle`, `coach`, `save`, and `exit`.
@@ -104,13 +108,14 @@ A secondary user, the solo maintainer, wants the Must aircraft to use a small, d
 - In-repo flight dynamics (thrust, pitch/roll/yaw, lift/drag/gravity approximation) and axis-aligned bounding-box terrain/collision — no external physics engine.
 - One img2threejs-style, diffable TypeScript + JSON required-aircraft spec that resolves the existing procedural airplane renderer; non-null aircraft fallback metadata fails closed and the required-aircraft fallback count is zero.
 - One optional beacon fallback admitted only from the committed local `optional-beacon.glb`, recorded as opaque with CC0-1.0 license and exact SHA-256 `be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd`; remote, missing, unreadable, malformed, or hash-drifted data fails closed.
-- A HUD that reports airspeed, altitude, heading/attitude, throttle, waypoint/objective state, save state, and explicit errors.
-- Bounded engine-power-loss, unreliable-airspeed, and control-bias drills active only from tick 180 through tick 419; shared-owner night atmosphere and lighting for night training.
+- A pointer-transparent HUD that reports airspeed, altitude, heading/attitude, throttle, waypoint/objective state, save state, and explicit errors while sharing the FloatingPanel responsive-width policy on wide layouts, retaining the established full-viewport mobile choreography, and keeping mobile flight controls above bottom choreography surfaces so Motion Control actions stay operable during flight.
+- Deterministic speed-sensitive pitch/roll/yaw authority with a non-zero low-speed floor, a bounded stall nose-down tendency, and one shared flight-envelope projection that reports instrument uncertainty, stall risk, attitude limits, mission target-speed band, control authority, and recovery cues without owning the camera.
+- Bounded engine-power-loss, unreliable-airspeed, and control-bias drills active only from tick 180 through tick 419; MapLibre/HUD palette ownership for night training.
 - Browser speech synthesis for explicitly enabled voice coaching, always backed by the same visible deterministic text cue.
 - Browser-local, Decisions-only KGC persistence through an explicit, idempotent Save; terminal results and the scored training debrief remain pending until that action succeeds.
 - Strict native `/flight.sim @canvas #flight` invocation with typed `errorCode` plus offending `field`/`token` diagnostics, and browser-local `knowgrph.inspect_local_flight_sim` / `knowgrph.control_local_flight_sim` WebMCP with a 2,000 ms deadline and explicit timeout/unavailable results.
 - Stop followed by Start resumes the exact in-memory tick and aircraft state; Restart is the explicit fresh-run action.
-- Synchronous WebGL admission, one existing Canvas, XR pause/restore ownership, entry/restoration transaction failure reporting, Exit disposal of the ephemeral ECS World, and visible fail-closed runtime errors.
+- Synchronous WebGL admission, one active XR or Geo renderer, surface pause/restore ownership, entry/restoration transaction failure reporting, Exit disposal of the ephemeral ECS World, and visible fail-closed runtime errors.
 - Source-authored `run_ready_demo.id` activation through the known registry, independent of an imported path and fail-closed on identity conflict.
 
 ### Deferred scope
@@ -149,6 +154,8 @@ Given the same mission seed and normalized input frames, when two fresh runtimes
 
 Given control input, when a tick advances, then in-repo flight integration updates attitude and velocity within bounded stable limits, and the AABB resolver returns a bounded non-penetrating position with at least `0.001` mission-meter separation against the authored terrain slabs, zeroes normal velocity within `0.0001` m/s, and preserves tangential velocity — without a second renderer, physics engine, or floating dependency fallback.
 
+Below the authored full-control airspeed, pitch, roll, yaw, and bank-turn response decreases monotonically to a non-zero floor. Below the authored stall threshold, the model adds a deterministic nose-down recovery tendency. HUD and training surfaces consume one immutable envelope projection with stable warning priority and never infer, randomize, or mutate flight or camera state.
+
 #### AC-4: primary aircraft spec and optional committed-local GLB boundary
 
 Given the required aircraft, when its spec is admitted, then its exact TypeScript + JSON fields resolve the canonical in-repo procedural airplane renderer and its GLB fallback count remains zero. A non-null `opaqueBinaryFallback`, unknown field, or mismatched scene-library identity fails closed. Given the optional beacon has no spec, the loader may admit only the hash-locked committed-local opaque GLB and reports a total fallback count of one; a remote URL is rejected without fetch, while a missing, unreadable, malformed, unlicensed, or hash-drifted local fallback leaves that subject unloaded and excluded from the count. No image-to-3D model, asset-network fetch, or Cloudflare resource is invoked.
@@ -171,13 +178,17 @@ Given no save document, the runtime may create a fresh mission. Given an existin
 
 Given an invocation, exactly one `/flight.sim`, one `@canvas`, and one `#flight` token is accepted. Missing/mismatched/duplicate sigils, malformed or duplicate pairs, unknown keys, mixed structured/native input, invalid throttle, and unsupported lifecycle operations fail closed with stable `errorCode` and applicable `field`/`token` diagnostics. Browser agent-ready registration exposes only `knowgrph.inspect_local_flight_sim` and `knowgrph.control_local_flight_sim` for this surface; each completes or returns `FLIGHT_SIM_WEB_MCP_TIMEOUT` within 2,000 ms, and inactive inspection returns `FLIGHT_SIM_STATE_UNAVAILABLE` without mutation. It adds no stdio tool, HTTP mutation route, remote gateway, or deployment authority. The private Agentic ECS stdio lane remains exactly three tools.
 
-#### AC-9: shared Canvas and XR ownership
+#### AC-9: shared Canvas surface and renderer ownership
 
-Given a running XR surface, entering Flight Sim keeps the authored atmosphere, terrain, and scene graph visibly mounted inside the same Canvas and overlays the aircraft and waypoint/objective actors plus the HUD. No fallback scene, second renderer, alternate rendered XR world, renderer branch, or Flight-owned camera is introduced. The shared Camera catalog supplies exactly `fixed-follow` / `free-orbit`, the canonical Physics-controller camera hook consumes the pure aircraft follow/framing descriptor and alone mutates the camera and OrbitControls, and Timeline camera-marks may temporarily take framing ownership before returning to the last selected option; immersive first-person entry is not required to fly.
+Given Geo+XR owns the active surface, entering Flight Sim retains the selected native MapLibre world and applies dedicated, topmost GeoJSON layers for the authored route, a conditional aircraft-to-active-objective course segment, waypoint/objective points, and fixed-pixel heading-aware aircraft. The course segment is derived from the same pure route-guidance state as the exclusive plain-Geo SVG overlay, north-up navigation inset, and compact mobile/desktop HUD cue; it exposes objective label, distance, bearing, and signed heading error, disappears after completion, and is guidance rather than predicted trajectory. The existing R3F Canvas remains mounted and pointer-transparent for simulation, input, WebGL readiness, and lifecycle integration, while all of its Flight and XR visual geometry is suppressed. The shared DOM HUD remains above both and keeps per-tick course guidance outside its polite objective-transition live region. No fallback scene, second R3F Canvas, alternate rendered XR world, Flight-owned map provider, or Flight-owned map camera is introduced. A typed deterministic projection converts local mission coordinates into Singapore-anchored GeoJSON. The shared Camera catalog supplies exactly `fixed-follow` / `free-orbit`: Fixed Follow drives MapLibre Chase, Cockpit, or Survey framing, Cockpit derives a collision-clear forward look-ahead from the canonical Flight target, and Free Orbit yields pan and zoom to MapLibre. Timeline camera-marks temporarily map their sampled authored pose into the visible MapLibre center, bearing, pitch, and zoom before returning to the last selected option. Every telemetry surface renders normalized compass heading from the same flight-model projection. While FloatingPanel is open at its default top-right position, the pointer-transparent HUD uses the same responsive width expression to clear the panel while keeping mobile controls above bottom choreography surfaces.
+
+Plain Geospatial Mode remains an exclusive, interactive Geo surface and may use the existing transparent DOM/SVG Flight projection without mounting the XR Canvas. In Geo+XR Mode the Flight/XR input surface owns flight controls while Geo retains its native provider view. `2d`, `2d-modern`, `3d`, and `3d-modern` remain the actual MapLibre modes; the transparent R3F layer paints no environment, grid, wash, or duplicate terrain. City and FPS gameplay retain their existing 3D precedence. A Geo or Geo+XR Flight handoff never clears the selected map view or adds a Flight-owned provider, renderer, map camera, transport, token, copied asset, or external dependency.
 
 #### AC-10: synchronous admission and resumable lifecycle
 
-WebGL support is resolved synchronously before mission start; unsupported WebGL or unreadable Decisions keeps the mission stopped with a local error. Start prepares a healthy ready frame at tick zero and waits for normalized desktop, pointer, touch, gamepad, Motion Control, or MCP input before fixed ticks begin. Blur and document hide always pause the clock without changing state. Fixed-follow pointer release pauses; free-orbit exits pointer lock without pausing. Stop then Start resumes the exact in-memory mission; malformed hydration blocks Start and Restart until **Reset local save** succeeds. Entry failure restores the previously captured surface/controller state without presenting an active Flight surface; restoration failure is reported and never presented as successful. Exit disposes the Flight mission’s ECS World, clears pending ephemeral run state, and restores prior ownership.
+WebGL support is resolved synchronously before mission start; unsupported WebGL or unreadable Decisions keeps the mission stopped with a local error. Geo+XR entry waits for the visible MapLibre owner to apply the Flight layers and camera and commit an actual map render within the source-apply first-playable budget; the hidden R3F stage cannot acknowledge that preparation. Start then prepares a MapLibre-presented ready frame at tick zero within 100 milliseconds and waits for normalized desktop, pointer, touch, gamepad, Motion Control, or MCP input before fixed ticks begin. Blur and document hide always pause the clock without changing state. Fixed-follow pointer release pauses; free-orbit exits pointer lock without pausing. Stop then Start resumes the exact in-memory mission; malformed hydration blocks Start and Restart until **Reset local save** succeeds. The run-ready lifecycle captures the complete pre-document surface, including Geo enablement, before the Flight preset applies. The shared Physics base initializes beneath Flight without re-activating an already-active XR surface; if Flight frontmatter has not yet entered XR, the base uses the canonical surface transaction while preserving the pending Flight gameplay owner. Entry failure restores that surface without presenting an active Flight surface; restoration failure is reported and never presented as successful. Exit disposes the Flight mission’s ECS World, clears pending ephemeral run state, restores prior ownership through the canonical Geo bridge, and—when the prior surface was non-Geo—returns success only after MapLibre has been disposed for two committed frames. A prior Geo surface retains its shared map.
+
+While Flight is active, optional Motion Control initialization reuses only the checked-in LiteRT runtime assets already prepared by the repository. Flight exposes no fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, or Service Worker capability and does not replace global transport functions. Its explicit gameplay-call seam still rejects a transport attempt before the supplied executor runs. Geo provider and Motion Control asset requests retain their independent owners. After initialization, pose continues through the existing normalized input adapter; it does not gain Canvas, camera, renderer, flight-policy, persistence, or gameplay-network ownership.
 
 ### Success metrics
 
@@ -214,8 +225,9 @@ WebGL support is resolved synchronously before mission start; unsupported WebGL 
 | Entity simulation | `ecs/` | Reuse the native Agentic ECS API and its transactional `worldTick`; ephemeral runtime state |
 | Flight dynamics & collision | `canvas/src/features/game-flight-sim/flightModel.ts` | In-repo deterministic integration and AABB terrain resolution; no external physics engine |
 | Asset representation | `canvas/src/features/game-flight-sim/assetSpec/` and `scripts/generate-game-flight-sim-optional-prop-glb.mjs` | Prefer/validate the TypeScript+JSON required-aircraft spec; admit only the generated, hash-locked committed-local optional beacon GLB when no spec exists; reject remote/missing/unreadable fallback references |
-| Rendering | `canvas/src/lib/three/ThreeGraph.impl.tsx` plus the canonical XR stage owners | Reuse the single React Three Fiber Canvas, authored XR world, Camera catalog, and Physics controller camera; add the aircraft and waypoint/objective actors plus the HUD |
-| Camera/input arbitration | `xrNativeControllerCameraCatalog.ts`, `xrNativeControllerCameraRuntime.ts`, `useXrNativeControllerDemoCamera.ts`, Timeline camera-marks, and Motion Control adapter | Flight supplies a pure aircraft follow/framing descriptor; the shared Physics controller hook alone mutates the camera and OrbitControls for Fixed Follow / Free Orbit, Timeline playback may temporarily override it, and Motion Control contributes normalized input only |
+| Rendering | `ThreeGraph.impl.tsx`, `CanvasViewportGeospatialOverlay.tsx`, `flightSimGeospatialProjection.ts`, and Gympgrph Flight overlay layers | In Geo+XR, native MapLibre renders the geospatial world and Flight geometry; one transparent XR Canvas retains simulation/input/readiness with all R3F visuals suppressed; retain exclusive plain-Geo projection separately |
+| Camera/input arbitration | `xrNativeControllerCameraCatalog.ts`, `xrNativeControllerCameraRuntime.ts`, `flightGeoOverlayMapLibre.ts`, Timeline camera-marks, and Motion Control adapter | Fixed Follow drives visible MapLibre Chase/Cockpit/Survey framing; Free Orbit yields pan/zoom to MapLibre; the transparent runtime Canvas retains capture/lifecycle integration and Motion Control contributes normalized input only |
+| Flight transport capability | `flightSimExternalCallGuard.ts` | Reject explicit Flight gameplay transport attempts before their executors run; leave Geo provider and Motion Control asset transport with their existing independent owners |
 | Browser persistence | `canvas/src/features/workspace-fs/` | Use WorkspaceFs and its existing source-file bridge; add no storage or Git owner |
 | Cost truth | Agentic ECS `worldTick` post-systems harness plus `contracts/cost-log.schema.js` | Emit/validate one canonical zero record for a model-free tick or one `incomplete: true`, `error: "blocked_inference"` record for a blocked attempt |
 | Activation | `docs/workspace-seeds/knowgrph-game-flight-sim-demo.md` with Physics as `shared_xr_scene.source_authority` | Source-backed run-ready activation; overlay-only world ownership |
@@ -236,7 +248,9 @@ flowchart LR
   TICK --> DYN["In-repo flight dynamics"]
   TICK --> COLLISION["In-repo AABB terrain collision"]
   TICK --> VIEW["Immutable scene and HUD projection"]
-  VIEW --> THREE["Existing R3F Canvas"]
+  VIEW --> SURFACE{"Shared surface policy"}
+  SURFACE --> THREE["Existing R3F Canvas"]
+  SURFACE --> GEO["Existing interactive Geo renderer + transparent Flight overlay"]
   TICK --> PENDING["Validated pending Decisions"]
   PENDING --> TERMINAL{"Terminal result?"}
   TERMINAL -->|no| TICK
@@ -275,7 +289,7 @@ Terrain and obstacle collision uses the authored XR AABB slab catalog plus expli
 
 `flightSimTrainingRuntime.ts` derives route progress, stable-attitude time, target-energy time, failure recovery, terminal score, and grade from the canonical Flight snapshot. It also owns one visible systems-first coaching cue. Explicit voice enablement sends that exact text to browser speech synthesis, while browsers without speech retain the visible cue. Save adds one idempotent `knowgrph-flight-training-outcome/v1` `dialogue_outcome` Decision for a terminal run; it does not create an auto-save path.
 
-`FlightSimTrainingSurfaceProjection.tsx` is reused by the existing Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera panels. Those panels remain projections only: the native flight runtime, shared authored XR world, shared renderer, shared atmosphere/lights, shared camera, and browser-local persistence owners remain singular.
+`FlightSimTrainingSurfaceProjection.tsx` is reused by the existing Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera panels. Those panels remain projections only: the native flight runtime, shared authored world selection, one active XR or Geo renderer, shared atmosphere/lights, shared camera/input authority, and browser-local persistence owners remain singular.
 
 ### Mission coordinate system
 
@@ -312,6 +326,7 @@ The local save path is owned by the flight adapter under WorkspaceFs. A terminal
 | Surface entry failure | Dispose any provisional mission, restore the captured Canvas/controller ownership, and report a local entry error |
 | Surface restoration failure | Report the failed owner restoration and never return a successful Exit result |
 | WebMCP deadline or inactive inspection | Return `FLIGHT_SIM_WEB_MCP_TIMEOUT` by 2,000 ms or `FLIGHT_SIM_STATE_UNAVAILABLE`; leave mission state unchanged |
+| Flight-fenced request outside the local Motion Control asset set | Report `FLIGHT_SIM_GAMEPLAY_NETWORK_BLOCKED` before transport; keep sockets, event streams, beacons, and durable starts blocked |
 
 ## Architecture Decisions
 
@@ -319,7 +334,7 @@ The local save path is owned by the flight adapter under WorkspaceFs. A terminal
 
 **Status:** Accepted for this increment.
 
-Flight Sim mounts a dedicated stage inside the existing `ThreeGraph` React Three Fiber Canvas and uses the native Agentic ECS for ephemeral runtime state. A second renderer, second camera owner, bitECS, Babylon.js, or another ECS is rejected because it duplicates an existing repository owner.
+Flight Sim uses the native Agentic ECS for ephemeral runtime state and projects onto the active shared surface. Geo+XR uses `CanvasViewportGeospatialOverlay` to publish deterministic Flight coordinates into the native MapLibre host, which renders all visible Flight geometry. The existing transparent `ThreeGraph` React Three Fiber Canvas retains only simulation/input/readiness and renders neither Flight actors nor XR environment geometry. Plain Geo remains an exclusive renderer path. A second R3F Canvas, duplicate terrain, Flight-owned map camera, bitECS, Babylon.js, or another ECS is rejected because it duplicates an existing repository owner.
 
 ### ADR-2: Own minimal flight dynamics and collision in-repo
 
@@ -372,13 +387,16 @@ npm run game-flight-sim:browser-smoke
 | `npm -C canvas run test:smoke:game-flight-sim:source` | Mandatory exact-candidate gate | Focused source suite, including 45 uniquely named fast-check properties at at least 100 runs each (4,500 generated cases) |
 | `npx tsc -b --noEmit` from `canvas/` | Mandatory exact-candidate gate | Focused TypeScript project proof |
 | `npm run game-flight-sim:runtime-ready` | Mandatory final aggregate | Child-isolated `smoke:prepare`, readiness authority, full ECS tests, focused source suite, crafted negative gates, failure/no-mutation orchestration contracts, Canvas check, and production build |
-| `npm run game-flight-sim:browser-smoke` | Mandatory two-run exact-HEAD proof | Child-isolated retained authored XR Canvas, first frame under 3 s, desktop/WebMCP input, trusted Chromium-emulated touch at 375x812, ordered three-waypoint plus landing-pad completion through public production runtime APIs, lifecycle/failure/Exit disposal, fixed-follow/free-orbit plus Timeline round-trip, zero blocked/non-local requests, and cleanup-before-transactional-evidence publication |
+| `npm run game-flight-sim:browser-smoke` | Mandatory two-run exact-HEAD XR proof | Child-isolated native MapLibre surface in all four Geo views; one transparent terrain-free Flight XR Canvas; exact Singapore reference and visible camera center; planar 2D stage/asset footprints; native 3D structure and placed-subject extrusions; registered source-generated fixed-pixel aircraft images over pose-derived geometry; georeferenced route and active-objective course; mode-correct camera pitch; non-live mobile HUD course cue; first frame under 3 s; desktop/WebMCP input; trusted Chromium-emulated touch at 375x812; ordered route completion with guide removal; lifecycle/failure/Exit disposal; camera and Timeline round-trip; Geo-attributed provider requests only; and cleanup-before-transactional-evidence publication |
+| Exact-main Media → Geo Flight acceptance | Mandatory handoff proof | Existing Geo renderer visibly retained beneath exactly one Flight route/aircraft/HUD/input overlay, no active R3F Flight stage, selected environment retained, and Geo panel still interactive |
+| Exact-main Geo+XR four-view acceptance | Mandatory composed-surface proof | Native MapLibre remains visible for 2D Classic/Modern and 3D Classic/Modern and renders the same Singapore stage, structures, selected subjects, route, course director, and native aircraft geometry; 2D remains north-up and 3D remains oblique; one transparent R3F Canvas retains simulation/input/readiness with zero competing Flight/XR visuals; map transforms remain interactive; provider requests remain Geo-owned |
 | `data/outputs/game-flight-sim-browser-smoke*.{json,png}` | Ignored local artifacts | Exact branch/HEAD/tree/source evidence only; not source, integration, or release artifacts |
-| Protected PR `#369` | Pending | No protected integration claim |
+| Protected baseline PR `#369` | Merged at `f5530e141b7d76ade09c091617e253f930f95eff` | Historical Flight runtime baseline only |
+| Current four-mode Flight/Geo/XR candidate | Exact revision, PR, and proof status reported externally at handoff | No tracked-document integration, deployment, or public-runtime claim |
 | Agentic workspace-seed projection | Absent | Release-gated until a separate authorized change |
 | Production / Cloudflare | Not authorized | No deployment or remote storage mutation |
 
-Each `knowgrph-flight-sim-browser-run/v3` record carries `runIndex` 1/2 or 2/2, exact candidate/source identity, first-frame timing, trusted Chromium-emulated touch provenance, ordered route transitions and terminal Decision, camera ownership, lifecycle/failure evidence, and network/error inventories. The aggregate v3 record requires both runs to share the same identity. Native Pointer Lock is attempted first; only the exact automation-host `WrongDocumentError` may activate the browser-interface contract harness, while production code retains native request and rejection diagnostics. The final handoff reports the exact evidence-bound SHA and source hash without embedding a self-invalidating commit hash in this tracked document.
+Each `knowgrph-flight-sim-browser-run/v5` record carries `runIndex` 1/2 or 2/2, exact candidate/source identity, first-frame timing, trusted Chromium-emulated touch provenance, the four exact MapLibre view/style/projection results, rendered Flight layer and live-coordinate evidence, map interaction, ordered route transitions and terminal Decision, camera ownership, lifecycle/failure evidence, and separated Geo-provider/Flight-gameplay transport inventories. Gameplay-network proof invokes the explicit Flight guard with a real browser transport inside a never-invoked executor, then requires exact mission-state equivalence apart from the monotonic revision and runtime diagnostic, the exact runtime error/deadline observation, zero executor invocation, and zero observed transport; it does not replace Geo-owned browser transports globally. The aggregate `knowgrph-flight-sim-browser-proof/v5` record requires both runs to share the same identity. Native Pointer Lock is attempted first; only the exact automation-host `WrongDocumentError` may activate the browser-interface contract harness, while production code retains native request and rejection diagnostics. The final handoff reports the exact evidence-bound SHA and source hash without embedding a self-invalidating commit hash in this tracked document.
 
 Both commands are finite and local apart from ordinary build/test artifacts, access no paid model or runtime image-to-3D service, and do not deploy or mutate Cloudflare. The physics-playground seed (`docs/workspace-seeds/knowgrph-physics-playground-demo.md`) is the canonical shared XR source authority: it provides the shared Canvas, procedural Singapore terrain, selectable airplane/helicopter subjects, the Physics-controller camera with exactly fixed-follow/free-orbit, Motion Control boundary, and `/ @ #` MCP grammar.
 

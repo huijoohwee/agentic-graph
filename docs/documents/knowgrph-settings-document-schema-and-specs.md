@@ -351,6 +351,12 @@ Area | Responsibility | Modules | Classes/Objects | Functions/Methods |
 Key | Imports | Notes | Line Range
 ```
 
+`SettingMeta.source` remains the runtime state/persistence owner. Optional
+`SettingMeta.backingImports` records additional typed build-time backing without replacing that
+owner. The closed backing taxonomy is `zustand`, `localStorage`, `import.meta.env`,
+`window.__ENV__`, `eslint`, and `tailwindcss`; generated Imports are the stable, deduplicated union
+of the source-derived backing and explicit backing metadata. `htmx` is intentionally absent.
+
 **Projection contract**:
 
 | Projection | Consumer | Contract |
@@ -365,6 +371,7 @@ Key | Imports | Notes | Line Range
 |---|---|---|---|---|---|---|
 | Unique Keys | Preserve registry cardinality | - [ ] Emit exactly 593 unique rows at the current baseline; forbid duplicate or missing keys | Settings builder | registry entries | normalized rows | reject duplicate keys before rendering |
 | Ownership | Keep every row actionable | - [ ] Require Area, Responsibility, Modules, Key, and Line Range; forbid placeholders that hide missing ownership | Settings builder | code metadata + anchors | validated row | fail with setting-specific diagnostic |
+| Styling Backing | Attribute CSS-first appearance dependencies without changing persistence ownership | - [ ] Emit `tailwindcss` only from typed `backingImports`; forbid inferred or free-form backing names | Settings builder | `SettingMeta.source` + `backingImports` | normalized Imports | stable deduplicated union |
 | Determinism | Make diffs trustworthy | - [ ] Sort keys, paths, and references consistently; forbid filesystem-order dependence | Settings builder | validated rows | ordered rows | stable code-point ordering |
 ---
 

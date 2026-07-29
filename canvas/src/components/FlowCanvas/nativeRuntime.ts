@@ -1,5 +1,4 @@
 import * as d3 from 'd3'
-
 import type { FlowHandleId, FlowNodeHandles } from '@/components/FlowCanvas/handles'
 import { parseFlowHandleKey } from '@/components/FlowCanvas/handles'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
@@ -17,6 +16,7 @@ import { computeDynamicNodePortHandlePx, computeZoomScaledPortHandlePx, shouldRe
 import { drawInfiniteGridInWorldContext } from '@/lib/canvas/infiniteGrid'
 import { readEdgePathCurveOptions, traceEdgePathOnCanvas } from '@/lib/graph/edgeTypes'
 import { computeWidgetScale, computeWidgetScaledSize } from '@/lib/canvas/overlayWidgetZoom'
+import { computeNestedGroupPadding } from '@/lib/canvas/subFlow'
 
 export type FlowNativeNodeShape = 'circle' | 'rect' | 'diamond' | 'hex'
 
@@ -64,9 +64,12 @@ export type FlowNativeScene = {
   nodes: FlowNativeNode[]
   edges: FlowNativeEdge[]
   nodeById: Map<string, FlowNativeNode>
+  overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb>
   groups?: GraphGroup[]
   groupIdsByNodeId?: Map<string, string[]>
 }
+
+export type FlowOverlayNodeAabb = { minX: number; minY: number; maxX: number; maxY: number }
 
 export type FlowNativePortHandlesPresentation = {
   enabled: boolean
@@ -325,9 +328,9 @@ export const computeFlowGroupAabb = (args: {
   group: GraphGroup
   paddingPx: number
   labelTopExtraPx: number
-  overlayAabbByNodeId?: Record<string, { minX: number; minY: number; maxX: number; maxY: number }> | null
+  overlayAabbByNodeId?: Record<string, FlowOverlayNodeAabb> | null
 }): { minX: number; minY: number; maxX: number; maxY: number } | null => {
-  const explicit = (args.group as unknown as { bounds?: unknown }).bounds
+  const explicit = args.group.autoBounds === true ? undefined : (args.group as unknown as { bounds?: unknown }).bounds
   const explicitAabb = (() => {
     if (!explicit || typeof explicit !== 'object' || Array.isArray(explicit)) return null
     const x = typeof (explicit as any).x === 'number' ? (explicit as any).x : Number.NaN
@@ -339,7 +342,7 @@ export const computeFlowGroupAabb = (args: {
   })()
   const memberIds = Array.isArray(args.group.memberNodeIds) ? args.group.memberNodeIds : []
   if (memberIds.length === 0) return explicitAabb
-  const padding = Math.max(0, args.paddingPx)
+  const padding = computeNestedGroupPadding({ basePadding: args.paddingPx, group: args.group, groups: args.scene.groups || [] })
   const topExtra = Math.max(0, args.labelTopExtraPx)
 
   let minX = Infinity
@@ -351,26 +354,28 @@ export const computeFlowGroupAabb = (args: {
     const id = String(memberIds[j] || '').trim()
     if (!id) continue
     const n = args.scene.nodeById.get(id)
-    if (!n) continue
-    const x0 = n.x - padding
-    const y0 = n.y - padding
-    const x1 = n.x + n.width + padding
-    const y1 = n.y + n.height + padding
-    minX = Math.min(minX, x0)
-    minY = Math.min(minY, y0)
-    maxX = Math.max(maxX, x1)
-    maxY = Math.max(maxY, y1)
-    const overlayAabb = args.overlayAabbByNodeId?.[id]
+    if (n) {
+      const x0 = n.x - padding
+      const y0 = n.y - padding
+      const x1 = n.x + n.width + padding
+      const y1 = n.y + n.height + padding
+      minX = Math.min(minX, x0)
+      minY = Math.min(minY, y0)
+      maxX = Math.max(maxX, x1)
+      maxY = Math.max(maxY, y1)
+    }
+    const overlayAabb = args.scene.overlayAabbByNodeId?.[id] || args.overlayAabbByNodeId?.[id]
     if (overlayAabb) {
       const ox0 = Number(overlayAabb.minX)
       const oy0 = Number(overlayAabb.minY)
       const ox1 = Number(overlayAabb.maxX)
       const oy1 = Number(overlayAabb.maxY)
       if (Number.isFinite(ox0) && Number.isFinite(oy0) && Number.isFinite(ox1) && Number.isFinite(oy1) && ox1 > ox0 && oy1 > oy0) {
-        minX = Math.min(minX, ox0)
-        minY = Math.min(minY, oy0)
-        maxX = Math.max(maxX, ox1)
-        maxY = Math.max(maxY, oy1)
+        const overlayPadding = n ? 0 : padding
+        minX = Math.min(minX, ox0 - overlayPadding)
+        minY = Math.min(minY, oy0 - overlayPadding)
+        maxX = Math.max(maxX, ox1 + overlayPadding)
+        maxY = Math.max(maxY, oy1 + overlayPadding)
       }
     }
   }
@@ -1111,7 +1116,35 @@ const drawEdgeLabels = (
   }
 }
 
-const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupAabb> | null) => {
+const CSS_COLOR_WITH_ALPHA_RE = /^(?:rgba|hsla)\s*\(|^#[\da-f]{4}$|^#[\da-f]{8}$/i
+
+export const resolveFlowGroupPaintVisibility = (args: {
+  fill: string
+  fillOpacity: number
+  fontSizePx: number
+  selected?: boolean
+  strokeWidthPx: number
+  zoom: number
+}) => {
+  const zoom = typeof args.zoom === 'number' && Number.isFinite(args.zoom) && args.zoom > 0 ? args.zoom : 1
+  const fillOpacity = typeof args.fillOpacity === 'number' && Number.isFinite(args.fillOpacity)
+    ? Math.max(0, Math.min(1, args.fillOpacity))
+    : 1
+  const fillOwnsAlpha = CSS_COLOR_WITH_ALPHA_RE.test(String(args.fill || '').trim())
+  const selected = args.selected === true
+  return {
+    fillGlobalAlpha: selected ? Math.max(0.16, fillOpacity) : fillOwnsAlpha ? 1 : fillOpacity,
+    fontSizePx: Math.max(Math.max(0, args.fontSizePx), (selected ? 13 : 11) / zoom),
+    strokeWidthPx: Math.max(Math.max(0, args.strokeWidthPx), (selected ? 3 : 1.5) / zoom),
+  }
+}
+
+const drawGroups = (
+  rt: FlowNativeRuntime,
+  groupAabbById: Map<string, FlowGroupAabb> | null,
+  selectedGroupId: string,
+  hiddenGroupIds: ReadonlySet<string>,
+) => {
   const cfg = rt.presentation.groups
   if (!cfg.enabled) return
   const scene = rt.scene
@@ -1136,6 +1169,7 @@ const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupA
   const depthCfg = cfg.depthStyle
   for (let i = 0; i < groups.length; i += 1) {
     const g = groups[i]
+    if (hiddenGroupIds.has(g.id)) continue
     const memberIds = Array.isArray(g.memberNodeIds) ? g.memberNodeIds : []
     if (memberIds.length === 0) continue
 
@@ -1164,7 +1198,8 @@ const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupA
     const h = Math.max(1, maxY - minY)
 
     const gStroke = resolveColor(rt, g.style?.stroke, stroke)
-    const gFill = resolveColor(rt, g.style?.fill, fill)
+    const selected = String(g.id || '') === selectedGroupId
+    const gFill = selected ? gStroke : resolveColor(rt, g.style?.fill, fill)
     const depth = typeof g.depth === 'number' && Number.isFinite(g.depth) ? Math.max(0, Math.floor(g.depth)) : 0
     const depthStyle = computeGroupDepthStyle({
       depth,
@@ -1175,12 +1210,20 @@ const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupA
     })
     const gStrokeWidth =
       typeof g.style?.strokeWidth === 'number' && Number.isFinite(g.style.strokeWidth) ? Math.max(0, g.style.strokeWidth) : depthStyle.strokeWidthPx
+    const groupPaintVisibility = resolveFlowGroupPaintVisibility({
+      fill: gFill,
+      fillOpacity: depthStyle.fillOpacity,
+      fontSizePx: Math.max(10, rt.presentation.labels?.groupFontSizePx ?? 12),
+      selected,
+      strokeWidthPx: gStrokeWidth,
+      zoom: rt.transform.k,
+    })
 
     ctx.save()
-    ctx.globalAlpha = depthStyle.fillOpacity
+    ctx.globalAlpha = groupPaintVisibility.fillGlobalAlpha
     ctx.fillStyle = gFill
     ctx.strokeStyle = gStroke
-    ctx.lineWidth = gStrokeWidth
+    ctx.lineWidth = groupPaintVisibility.strokeWidthPx
 
     if (cfg.shape === 'geo' && geoPoints.length >= 3) {
       const ring = computeConvexRing(geoPoints)
@@ -1208,7 +1251,7 @@ const drawGroups = (rt: FlowNativeRuntime, groupAabbById: Map<string, FlowGroupA
     if (label) {
       ctx.save()
       const paint = readLabelPaint(rt)
-      const fontSizePx = Math.max(10, rt.presentation.labels?.groupFontSizePx ?? 12)
+      const fontSizePx = groupPaintVisibility.fontSizePx
       ctx.font = `600 ${fontSizePx}px ${rt.fontFamily}`
       ctx.textAlign = 'left'
       ctx.textBaseline = 'top'
@@ -1229,6 +1272,7 @@ export type FlowNativeDrawArgs = {
   showGroupResizeHandle?: boolean
   hideNodeIds?: string[]
   hidePortHandleNodeIds?: string[]
+  hideGroupIds?: string[]
   grid?: { enabled: boolean; size: number; sizeX?: number; sizeY?: number; variant?: 'lines' | 'dots'; majorEvery?: number; dotRadiusPx?: number } | null
   storyboardWidgetOpenNodeIds?: string[]
   storyboardWidgetPinnedByNodeId?: Record<string, boolean>
@@ -1241,6 +1285,8 @@ const drawGroupResizeHandleOverlay = (rt: FlowNativeRuntime, args: { groupAabbBy
   if (!id) return
   const scene = rt.scene
   if (!scene?.groups || scene.groups.length === 0) return
+  const selectedGroup = scene.groups.find(group => String(group.id || '').trim() === id) || null
+  if (selectedGroup?.autoBounds === true) return
   const aabb = (args.groupAabbById ? args.groupAabbById.get(id) || null : null) || null
   if (!aabb) return
   const ctx = rt.ctx
@@ -1378,6 +1424,7 @@ export const drawFlowNative = (rt: FlowNativeRuntime, args: FlowNativeDrawArgs) 
     return idCache.hidePortHandleNodeIds
   })()
   const selectedGroupId = String(args.selectedGroupId || '').trim()
+  const hiddenGroupIds = new Set((args.hideGroupIds || []).map(String).filter(Boolean))
   const showGroupResizeHandle = args.showGroupResizeHandle === true
   const widgetOverlayAabbByNodeId = (() => {
     const openIds = Array.isArray(args.storyboardWidgetOpenNodeIds) ? args.storyboardWidgetOpenNodeIds : []
@@ -1426,7 +1473,7 @@ export const drawFlowNative = (rt: FlowNativeRuntime, args: FlowNativeDrawArgs) 
     return m
   })()
 
-  drawGroups(rt, groupAabbById)
+  drawGroups(rt, groupAabbById, selectedGroupId, hiddenGroupIds)
 
   const normalEdges: FlowNativeEdge[] = []
   const overlayEdges: FlowNativeEdge[] = []
