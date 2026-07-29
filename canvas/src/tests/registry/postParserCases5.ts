@@ -222,6 +222,7 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["ui.mainPanel.requestedIntegrationsSearch.chatProviderDerivedFromModel","@/__tests__/mainPanelIntegrationsChatProviderDropdown.test","testMainPanelRequestedIntegrationsChatProviderValueCellDerivesFromChatModel"],
   ["ui.mainPanel.requestedIntegrationsSearch.mappedDropdownKeepsUserSelection","@/__tests__/mainPanelIntegrationsChatProviderDropdown.test","testMainPanelRequestedIntegrationsMappedDropdownKeepsUserSelection"],
   ["ui.mainPanel.requestedIntegrationsSearch.mappedChatModelKeepsUserSelection","@/__tests__/mainPanelIntegrationsChatProviderDropdown.test","testMainPanelRequestedIntegrationsMappedChatModelKeepsUserSelection"],
+  ["ui.mainPanel.requestedIntegrationsSearch.chatSettingsSyncFloatingPanel","@/__tests__/mainPanelIntegrationsChatProviderDropdown.test","testMainPanelChatSettingsCommitOneRouteUsedByFloatingPanel"],
   ["ui.mainPanel.docMappedReferenceRows.editableVirtualValueSlots","@/__tests__/mainPanelIntegrations.test","testMainPanelDocMappedReferenceRowsUseEditableVirtualValueSlots"],
   ["ui.mainPanel.requestedIntegrationsSearch.rendersBytePlusNestedNumericField","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchRendersBytePlusNestedNumericField"],
   ["ui.mainPanel.requestedIntegrationsSearch.rendersWritableVirtualStringEditor","@/__tests__/mainPanelIntegrations.test","testMainPanelRequestedIntegrationsSearchRendersWritableVirtualStringEditor"],

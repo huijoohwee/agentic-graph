@@ -55,9 +55,15 @@ export function useSettingsSync({ dirtyRef, setValues, values }: UseSettingsSync
     const nextApiKey = typeof values.chatApiKey === 'string' ? values.chatApiKey : ''
 
     const store = useGraphStore.getState()
-    if (shouldApplyProvider) store.setChatProvider(nextProvider)
-    if (shouldApplyEndpointUrl) store.setChatEndpointUrl(nextEndpointUrl)
-    if (shouldApplyModel) store.setChatModel(nextModel)
+    // A model selection resolves its provider and endpoint as one route. Applying the
+    // three draft fields separately briefly exposes intermediate routes to the
+    // FloatingPanel's controlled model select, which can make its value snap back.
+    if (shouldApplyModel) {
+      store.setChatModel(nextModel)
+    } else {
+      if (shouldApplyProvider) store.setChatProvider(nextProvider)
+      if (shouldApplyEndpointUrl) store.setChatEndpointUrl(nextEndpointUrl)
+    }
     if (shouldApplyAuthMode) store.setChatAuthMode(nextAuthMode)
     if (shouldApplyApiKey && nextAuthMode === 'byok') store.setChatApiKey(nextApiKey)
 
