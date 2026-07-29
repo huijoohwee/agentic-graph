@@ -185,7 +185,6 @@ export function flightGeoOverlayFeatureCollection(
     properties: {
       kgFlightOverlayKind: 'route',
       kgFlightNight: overlay.night,
-      kgFlightOverlayRevision: overlay.revision,
     },
   }
   const routePoints: Feature<Point>[] = overlay.route.map(point => ({
@@ -197,7 +196,6 @@ export function flightGeoOverlayFeatureCollection(
       kgFlightRouteKind: point.kind,
       kgFlightRouteState: point.state,
       kgFlightNight: overlay.night,
-      kgFlightOverlayRevision: overlay.revision,
       altitudeMeters: point.altitudeMeters,
     },
   }))
@@ -224,7 +222,6 @@ export function flightGeoOverlayFeatureCollection(
           kgFlightObjectiveKind: overlay.objective.kind,
           kgFlightObjectiveLabel: overlay.objective.label,
           kgFlightNight: overlay.night,
-          kgFlightOverlayRevision: overlay.revision,
         },
       }
     : null
@@ -238,7 +235,6 @@ export function flightGeoOverlayFeatureCollection(
     properties: {
       kgFlightOverlayKind: 'aircraft',
       kgFlightNight: overlay.night,
-      kgFlightOverlayRevision: overlay.revision,
       altitudeMeters: overlay.aircraft.altitudeMeters,
       headingDegrees: overlay.aircraft.headingDegrees,
     },

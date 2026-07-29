@@ -89,6 +89,76 @@ function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex')
 }
 
+function hasMeterSurface(view, expected) {
+  const surface = view?.environmentSurfaceMeters?.find(
+    candidate => candidate?.id === expected.id,
+  )
+  const close = (actual, value, tolerance = 0.12) => (
+    Number.isFinite(actual) && Math.abs(actual - value) <= tolerance
+  )
+  return Boolean(
+    surface
+    && close(surface.baseHeightMeters, expected.baseHeightMeters, 0.01)
+    && close(surface.heightMeters, expected.heightMeters, 0.01)
+    && close(surface.widthMeters, expected.widthMeters)
+    && close(surface.depthMeters, expected.depthMeters)
+    && (!expected.viewportBounded || surface.viewportBounded === true),
+  )
+}
+
+function hasExactCityHandoffEvidence(handoff) {
+  const before = handoff?.before
+  const city = handoff?.city
+  const disposal = handoff?.mapDisposalClear
+  const restored = handoff?.restored
+  const reopened = handoff?.reopened
+  return (
+    before?.flightActive === true
+    && before?.hudVisible === true
+    && before?.activeMapPresent === true
+    && city?.flightActive === false
+    && city?.cityActive === true
+    && city?.cityStageActive === true
+    && city?.activeMapPresent === false
+    && city?.mapLibreCanvasCount === 0
+    && city?.threeCanvasOwnerCount === 1
+    && city?.hudVisible === false
+    && disposal?.styleLoaded === true
+    && disposal?.flight?.present === true
+    && disposal?.flight?.features === 0
+    && disposal?.environment?.present === true
+    && disposal?.environment?.features === 0
+    && restored?.flightActive === false
+    && restored?.cityActive === false
+    && restored?.activeMapPresent === true
+    && restored?.mapLibreCanvasCount === 1
+    && restored?.flightSourceFeatures === 0
+    && restored?.environmentSourceFeatures === 0
+    && reopened?.flightActive === true
+    && reopened?.cityActive === false
+    && reopened?.hudVisible === true
+    && reopened?.flightSourceFeatures >= 7
+    && reopened?.environmentSourceFeatures >= 10
+  )
+}
+
+function hasExactInitialReadyFrameEvidence(initialReadyFrame) {
+  const overlay = initialReadyFrame?.overlay
+  const presentation = initialReadyFrame?.presentation
+  const map = initialReadyFrame?.map
+  return (
+    map?.environment?.loaded === true
+    && map?.overlay?.loaded === true
+    && presentation?.stoppedEnvironmentLoaded === '1'
+    && presentation?.stoppedOverlayLoaded === '1'
+    && presentation?.stoppedProfileId === overlay?.profileId
+    && presentation?.stoppedRunId === '0'
+    && typeof presentation?.stoppedRevision === 'string'
+    && presentation.stoppedRevision.length > 0
+    && /^\d+$/.test(String(presentation?.attempts || ''))
+  )
+}
+
 async function assertCandidateState({
   expectedBranch,
   expectedHead,
@@ -261,6 +331,9 @@ async function readValidatedRunEvidence({
     && evidence?.deadlines?.gameplayWebSocketEvents?.length === 0
     && evidence?.deadlines?.gameplayWebSocketRouteHits?.length === 0
     && evidence?.deadlines?.hudUpdate?.browserElapsedMs <= 100
+    && hasExactInitialReadyFrameEvidence(
+      evidence?.deadlines?.initialReadyFrame,
+    )
   )
   const expectedGeoXrViews = [
     {
@@ -316,6 +389,28 @@ async function readValidatedRunEvidence({
           === JSON.stringify([[103.605, 1.158], [104.09, 1.48]])
         && view?.environmentLayersReady === true
         && Number(view?.environmentSourceFeatures || 0) >= 10
+        && hasMeterSurface(view, {
+          id: 'singapore:footprint',
+          baseHeightMeters: 0,
+          heightMeters: 0.08,
+          widthMeters: 32,
+          depthMeters: 24,
+          viewportBounded: true,
+        })
+        && hasMeterSurface(view, {
+          id: 'skyline-center',
+          baseHeightMeters: 0,
+          heightMeters: 12,
+          widthMeters: 4.4,
+          depthMeters: 4.4,
+        })
+        && hasMeterSurface(view, {
+          id: 'helicopter',
+          baseHeightMeters: 2,
+          heightMeters: 5.4,
+          widthMeters: 7.4,
+          depthMeters: 9,
+        })
         && ['stage-footprint', 'structure', 'subject'].every(kind =>
           view?.renderedEnvironmentKinds?.includes(kind),
         )
@@ -354,6 +449,9 @@ async function readValidatedRunEvidence({
       === evidence?.geoXrPresentation?.restoredView?.viewMode
     && evidence?.geoXrPresentation?.sourceStyleUrl
       === evidence?.geoXrPresentation?.restoredView?.styleUrl
+    && hasExactCityHandoffEvidence(
+      evidence?.geoXrPresentation?.cityHandoff,
+    )
     && evidence?.geoXrPresentation?.liveMovement?.after?.flightTick
       > evidence?.geoXrPresentation?.liveMovement?.before?.flightTick
     && evidence?.geoXrPresentation?.liveMovement?.after?.overlayRevision

@@ -288,6 +288,7 @@ def _read_view(page: Page) -> dict[str, Any]:
           )
           return {
             hostActive: Boolean(host),
+            activeMapPresent: Boolean(map),
             hostRevision: host?.getAttribute(
               'data-kg-flight-geospatial-revision',
             ) || '',
@@ -328,6 +329,7 @@ def _read_view(page: Page) -> dict[str, Any]:
             mapLibreCanvasCount: allMapCanvases.length,
             visibleMapLibreCanvasCount: allMapCanvases.filter(isVisible).length,
             flightSourceFeatures: sourceFeatures.length,
+            flightSourcePresent: Boolean(source),
             objectiveGuideFeatureCount: sourceFeatures.filter(
               feature => feature?.properties?.kgFlightOverlayKind
                 === 'objective-guide',
@@ -351,6 +353,7 @@ def _read_view(page: Page) -> dict[str, Any]:
               .every(id => Boolean(map?.getLayer?.(id))),
             environmentSourceFeatures:
               environmentFeatures.length,
+            environmentSourcePresent: Boolean(environmentSource),
             environmentSubjectIds: environmentFeatures
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
@@ -510,6 +513,14 @@ def _unmet_view_requirements(
             height_meters=12,
             width_meters=4.4,
             depth_meters=4.4,
+        ),
+        "environment.helicopterAuthoredMeters": _has_authored_environment_surface(
+            last,
+            surface_id="helicopter",
+            base_height_meters=2,
+            height_meters=5.4,
+            width_meters=7.4,
+            depth_meters=9,
         ),
         "renderedEnvironmentKinds": {
             "stage-footprint",

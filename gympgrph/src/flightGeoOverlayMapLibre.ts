@@ -1,5 +1,9 @@
-import type { Feature, FeatureCollection, Polygon } from 'geojson'
-import { flightGeoOverlayFeatureCollection, type FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
+import type { FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
+import {
+  FLIGHT_GEO_AIRCRAFT_SHAPE_METERS,
+  flightGeoOverlayMapLibreFeatureCollection,
+  hasExactFlightGeoOverlayFeatureCollection,
+} from './flightGeoOverlayMapLibrePayload.js'
 import {
   clearGeoJsonSourceData,
   isMapLibreStyleReady,
@@ -10,6 +14,8 @@ import {
   readFlightGeoMapViewportPadding,
   type FlightGeoMapViewportPadding,
 } from './flightGeoMapViewport.js'
+
+export { flightGeoOverlayMapLibreFeatureCollection }
 
 export const FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'
 export const FLIGHT_GEO_OVERLAY_LAYER_IDS = Object.freeze({
@@ -44,21 +50,6 @@ const FLIGHT_GEO_NIGHT_EXPRESSION = Object.freeze([
   'boolean',
   ['get', 'kgFlightNight'],
   false,
-])
-const METERS_PER_LATITUDE_DEGREE = 111_320
-const FLIGHT_GEO_AIRCRAFT_SHAPE_METERS = Object.freeze([
-  Object.freeze([0, 30] as const),
-  Object.freeze([5, 7] as const),
-  Object.freeze([28, -5] as const),
-  Object.freeze([7, -9] as const),
-  Object.freeze([10, -22] as const),
-  Object.freeze([3, -20] as const),
-  Object.freeze([0, -26] as const),
-  Object.freeze([-3, -20] as const),
-  Object.freeze([-10, -22] as const),
-  Object.freeze([-7, -9] as const),
-  Object.freeze([-28, -5] as const),
-  Object.freeze([-5, 7] as const),
 ])
 const FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE = 40
 
@@ -167,102 +158,29 @@ function ensureFlightGeoAircraftImages(map: any): boolean {
   }
 }
 
-function flightGeoAircraftShapeFeature(
-  overlay: FlightGeoOverlaySnapshot,
-): Feature<Polygon> | null {
-  const [longitude, latitude] = overlay.aircraft.coordinate
-  const headingDegrees = overlay.aircraft.headingDegrees
-  if (![longitude, latitude, headingDegrees].every(Number.isFinite)) return null
-  const headingRadians = headingDegrees * Math.PI / 180
-  const latitudeRadians = latitude * Math.PI / 180
-  const longitudeMetersPerDegree = METERS_PER_LATITUDE_DEGREE
-    * Math.max(0.01, Math.abs(Math.cos(latitudeRadians)))
-  const ring = FLIGHT_GEO_AIRCRAFT_SHAPE_METERS.map(
-    ([rightMeters, forwardMeters]) => {
-      const eastMeters = (
-        rightMeters * Math.cos(headingRadians)
-        + forwardMeters * Math.sin(headingRadians)
-      )
-      const northMeters = (
-        forwardMeters * Math.cos(headingRadians)
-        - rightMeters * Math.sin(headingRadians)
-      )
-      return [
-        longitude + eastMeters / longitudeMetersPerDegree,
-        latitude + northMeters / METERS_PER_LATITUDE_DEGREE,
-      ]
-    },
-  )
-  ring.push([...ring[0]])
-  return {
-    type: 'Feature',
-    id: `${overlay.profileId}:aircraft`,
-    geometry: {
-      type: 'Polygon',
-      coordinates: [ring],
-    },
-    properties: {
-      kgFlightOverlayKind: 'aircraft',
-      kgFlightNight: overlay.night,
-      kgFlightOverlayRevision: overlay.revision,
-      altitudeMeters: overlay.aircraft.altitudeMeters,
-      headingDegrees,
-    },
-  }
-}
-
-function flightGeoOverlayMapLibreFeatureCollection(
-  overlay: FlightGeoOverlaySnapshot,
-): FeatureCollection {
-  const collection = flightGeoOverlayFeatureCollection(overlay)
-  const aircraftShape = flightGeoAircraftShapeFeature(overlay)
-  if (!aircraftShape || collection.features.length === 0) return collection
-  return {
-    ...collection,
-    features: collection.features.map(feature => (
-      feature.properties?.kgFlightOverlayKind === 'aircraft'
-        ? aircraftShape
-        : feature
-    )),
-  }
-}
-
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /**
- * GeoJSONSource#setData restarts its worker update even when the serialized
- * payload is unchanged. Keep feature and coordinate order exact, while
- * treating record key order as an implementation detail of serialization.
+ * A Flight phase or ready-frame token is runtime metadata, not painted GeoJSON.
+ * Compare the complete visual payload instead of forcing a source-worker update
+ * merely because a stopped, already-rendered mission becomes ready at tick zero.
  */
-function hasExactFlightGeoOverlayValue(
-  expected: unknown,
-  actual: unknown,
+export function mapHasExactFlightGeoOverlay(
+  map: any,
+  overlay: FlightGeoOverlaySnapshot,
 ): boolean {
-  if (Object.is(expected, actual)) return true
-  if (Array.isArray(expected)) {
-    return Array.isArray(actual)
-      && expected.length === actual.length
-      && expected.every((value, index) => (
-        hasExactFlightGeoOverlayValue(value, actual[index])
-      ))
+  try {
+    const source = map?.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)
+    const sourceLoaded = typeof source?.loaded === 'function'
+      && source.loaded() === true
+    if (!sourceLoaded) return false
+    return hasExactFlightGeoOverlayFeatureCollection(
+      flightGeoOverlayMapLibreFeatureCollection(overlay),
+      readGeoJsonSourceData(source),
+    )
+      && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
+        .every(layerId => Boolean(map?.getLayer?.(layerId)))
+  } catch {
+    return false
   }
-  if (!isPlainRecord(expected) || !isPlainRecord(actual)) return false
-  const expectedKeys = Object.keys(expected)
-  const actualKeys = Object.keys(actual)
-  return expectedKeys.length === actualKeys.length
-    && expectedKeys.every(key => (
-      Object.prototype.hasOwnProperty.call(actual, key)
-      && hasExactFlightGeoOverlayValue(expected[key], actual[key])
-    ))
-}
-
-function hasExactFlightGeoOverlayFeatureCollection(
-  expected: FeatureCollection,
-  actual: unknown,
-): boolean {
-  return hasExactFlightGeoOverlayValue(expected, actual)
 }
 
 export function retainFlightGeoOverlayDuringStyleSwap(

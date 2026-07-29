@@ -4,6 +4,11 @@ import {
   readFlightGeoOverlayReadyFramePresented,
   type FlightGeoOverlayPresentation,
 } from '../../flightGeoOverlay.js'
+import {
+  hasExpectedMapLibreFlightBootstrapStyle,
+  readMapLibreFlightBootstrapStyleIdentity,
+  type MapLibreFlightBootstrapStyleIdentity,
+} from './mapLibreFlightBootstrapStyleIdentity.js'
 
 type MapLibreFlightProviderPresentation = Readonly<{
   profileId: string
@@ -11,12 +16,6 @@ type MapLibreFlightProviderPresentation = Readonly<{
   revision: string
   runId: number
   tick: number
-}>
-
-type MapLibreFlightBootstrapStyleIdentity = Readonly<{
-  layerId: string
-  name: string
-  version: number | null
 }>
 
 type MapLibreFlightBootstrapState = {
@@ -135,58 +134,12 @@ function notifyBootstrapSettled(state: MapLibreFlightBootstrapState): void {
   }
 }
 
-function readBootstrapStyleIdentity(
-  style: Readonly<Record<string, unknown>>,
-): MapLibreFlightBootstrapStyleIdentity {
-  const layers = Array.isArray(style.layers) ? style.layers : []
-  const bootstrapLayer = layers.find(layer => (
-    layer
-    && typeof layer === 'object'
-    && (layer as Record<string, unknown>).id === 'kg-flight-sim:geo-bootstrap-background'
-  )) as Readonly<Record<string, unknown>> | undefined
-  const firstLayer = layers.find(layer => (
-    layer && typeof layer === 'object'
-  )) as Readonly<Record<string, unknown>> | undefined
-  const version = Number(style.version)
-  return {
-    layerId: String(bootstrapLayer?.id || firstLayer?.id || ''),
-    name: String(style.name || ''),
-    version: Number.isFinite(version) ? version : null,
-  }
-}
-
-function readCurrentStyleIdentity(map: any): MapLibreFlightBootstrapStyleIdentity | null {
-  try {
-    const style = map?.getStyle?.()
-    if (!style || typeof style !== 'object' || Array.isArray(style)) return null
-    return readBootstrapStyleIdentity(style as Readonly<Record<string, unknown>>)
-  } catch {
-    return null
-  }
-}
-
-function isCurrentStyleLoaded(map: any): boolean {
-  try {
-    if (typeof map?.isStyleLoaded === 'function') {
-      return map.isStyleLoaded() === true
-    }
-    return map?.style?._loaded === true
-  } catch {
-    return false
-  }
-}
-
 function hasExpectedBootstrapStyle(
   state: MapLibreFlightBootstrapState,
 ): boolean {
-  const expected = state.bootstrapExpectedStyle
-  if (!expected || !isCurrentStyleLoaded(state.map)) return false
-  const current = readCurrentStyleIdentity(state.map)
-  return Boolean(
-    current
-    && current.name === expected.name
-    && current.version === expected.version
-    && current.layerId === expected.layerId,
+  return hasExpectedMapLibreFlightBootstrapStyle(
+    state.map,
+    state.bootstrapExpectedStyle,
   )
 }
 
@@ -353,7 +306,9 @@ export function beginMapLibreFlightBootstrap(
   state.bootstrapPending = true
   state.deadlineFramePresented = false
   state.providerPresentation = null
-  state.bootstrapExpectedStyle = readBootstrapStyleIdentity(bootstrapStyle)
+  state.bootstrapExpectedStyle = readMapLibreFlightBootstrapStyleIdentity(
+    bootstrapStyle,
+  )
   const bootstrapGeneration = ++state.bootstrapGeneration
   const onStyleLoad = () => settlePendingBootstrap(state, bootstrapGeneration)
   try {

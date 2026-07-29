@@ -13,6 +13,7 @@ import {
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   fitMapToFlightGeoOverlay,
+  mapHasExactFlightGeoOverlay,
 } from '../../flightGeoOverlayMapLibre.js'
 import {
   flightGeoMapViewportPaddingKey,
@@ -24,13 +25,17 @@ import {
   clearFlightGeoEnvironmentFromMap,
   mapHasExactFlightGeoEnvironment,
 } from '../../flightGeoEnvironmentMapLibre.js'
-import { readGeoJsonSourceData } from '../../maplibreLayers.js'
 import {
   canMapLibreFlightOverlayPresent,
   markMapLibreFlightOverlayPresented,
   markMapLibreFlightReadyFramePresented,
   subscribeMapLibreFlightBootstrapSettled,
 } from './mapLibreFlightBootstrap.js'
+import {
+  clearFlightGeoPresentationDebug,
+  recordFlightGeoStoppedPresentation,
+  writeFlightGeoPresentationDebug,
+} from './flightGeoPresentationDebug.js'
 
 export const FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT = 8
 export const FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT = 180
@@ -44,13 +49,6 @@ type PresentedFlightOverlay = {
 type SavedMapPadding = Readonly<{
   map: any | null
   padding: FlightGeoMapViewportPadding | null
-}>
-
-type FlightOverlayFeature = Readonly<{
-  properties?: Readonly<{
-    kgFlightOverlayKind?: unknown
-    kgFlightOverlayRevision?: unknown
-  }>
 }>
 
 type FlightOverlayPresentationGateOptions = Readonly<{
@@ -92,33 +90,8 @@ function mapHasExactFlightOverlay(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
 ): boolean {
-  try {
-    const source = map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)
-    const sourceData = readGeoJsonSourceData(source)
-    const features = (
-      sourceData?.features || []
-    ) as readonly FlightOverlayFeature[]
-    const exactRevision = features.every(
-      feature => (
-        feature?.properties?.kgFlightOverlayRevision === overlay.revision
-      ),
-    )
-    const kindCount = (kind: string) => features.filter(
-      feature => feature?.properties?.kgFlightOverlayKind === kind,
-    ).length
-    const objectiveGuideCount = overlay.objective ? 1 : 0
-    return features.length === overlay.route.length + 2 + objectiveGuideCount
-      && exactRevision
-      && kindCount('route') === 1
-      && kindCount('objective-guide') === objectiveGuideCount
-      && kindCount('route-point') === overlay.route.length
-      && kindCount('aircraft') === 1
-      && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
-        .every(layerId => Boolean(map.getLayer?.(layerId)))
-      && mapHasExactFlightGeoEnvironment(map, overlay)
-  } catch {
-    return false
-  }
+  return mapHasExactFlightGeoOverlay(map, overlay)
+    && mapHasExactFlightGeoEnvironment(map, overlay)
 }
 
 export function createFlightGeoOverlayPresentationGate(
@@ -222,6 +195,10 @@ export function createFlightGeoOverlayPresentationGate(
         cancel()
         return
       }
+      const root = readRoot()
+      if (root) {
+        writeFlightGeoPresentationDebug(root, current, pending.attempts)
+      }
       const canvas = readCanvas()
       let canvasVisible = false
       if (canvas) {
@@ -240,6 +217,9 @@ export function createFlightGeoOverlayPresentationGate(
       ) {
         if (!pending) return
         pending.attempts += 1
+        if (root) {
+          writeFlightGeoPresentationDebug(root, current, pending.attempts)
+        }
         if (pending.attempts >= pending.limit) {
           cancel()
           return
@@ -289,9 +269,12 @@ export function createFlightGeoOverlayPresentationGate(
         )
       }
       onPresented?.(presentation)
-      const root = readRoot()
-      if (root) {
-        root.dataset.kgFlightGeospatialPresentedRevision = current.revision
+      const settledRoot = readRoot()
+      if (settledRoot) {
+        settledRoot.dataset.kgFlightGeospatialPresentedRevision = current.revision
+        if (current.phase === 'stopped') {
+          recordFlightGeoStoppedPresentation(settledRoot, current)
+        }
       }
       presented.current = {
         map,
@@ -318,6 +301,8 @@ export function createFlightGeoOverlayPresentationGate(
       readyFrameRequestId: overlay.readyFrameRequestId,
       revision: overlay.revision,
     }
+    const root = readRoot()
+    if (root) writeFlightGeoPresentationDebug(root, overlay, pending.attempts)
     try {
       map.on('render', listener)
       map.triggerRepaint?.()
@@ -393,7 +378,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       if (root) {
         delete root.dataset.kgFlightGeospatialEnvironment
         delete root.dataset.kgFlightGeospatialCameraPadding
-        delete root.dataset.kgFlightGeospatialPresentedRevision
+        clearFlightGeoPresentationDebug(root)
       }
       restoreMapPadding(map)
       if (presentedRef.current.map === map) {
@@ -416,7 +401,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     if (root) {
       delete root.dataset.kgFlightGeospatialEnvironment
       delete root.dataset.kgFlightGeospatialCameraPadding
-      delete root.dataset.kgFlightGeospatialPresentedRevision
+      clearFlightGeoPresentationDebug(root)
     }
     restoreMapPadding(map)
     if (presentedRef.current.map === map) {
@@ -463,7 +448,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           delete root.dataset.kgFlightGeospatialRevision
           delete root.dataset.kgFlightGeospatialEnvironment
           delete root.dataset.kgFlightGeospatialCameraPadding
-          delete root.dataset.kgFlightGeospatialPresentedRevision
+          clearFlightGeoPresentationDebug(root)
         }
       }
       if (!map || !options.mapLibreRuntimeEnabled || !gate) {

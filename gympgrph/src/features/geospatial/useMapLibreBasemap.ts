@@ -15,8 +15,10 @@ import { LS_KEYS } from '../../lib/config.js'
 import {
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  clearFlightGeoOverlayFromMap,
   retainFlightGeoOverlayDuringStyleSwap,
 } from '../../flightGeoOverlayMapLibre.js'
+import { clearFlightGeoEnvironmentFromMap } from '../../flightGeoEnvironmentMapLibre.js'
 import {
   MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL,
   MAPLIBRE_DEFAULT_STYLE_URL,
@@ -1263,6 +1265,11 @@ export function useMapLibreBasemap(args: {
       releaseMapLease?.()
       releaseMapLease = null
       if (mountedMapRef.current === map) mountedMapRef.current = null
+      // Flight owns two GeoJSON sources on this native map. Clear them while
+      // MapLibre is still live so a City-exclusive XR handoff cannot retain
+      // prior Flight geometry beneath the replacement canvas.
+      clearFlightGeoOverlayFromMap(map)
+      clearFlightGeoEnvironmentFromMap(map)
       disposeMapLibreFlightBootstrap(map)
       try {
         map?.remove?.()

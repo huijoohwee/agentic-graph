@@ -2,7 +2,6 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   clearFlightGeoOverlay,
-  flightGeoOverlayFeatureCollection,
   markFlightGeoOverlayReadyFramePresented,
   readFlightGeoOverlay,
   setFlightGeoOverlay,
@@ -20,10 +19,15 @@ import {
 } from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap'
 import {
   applyFlightGeoOverlayToMap,
+  flightGeoOverlayMapLibreFeatureCollection,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   retainFlightGeoOverlayDuringStyleSwap,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
+import {
+  recordFlightGeoStoppedPresentation,
+  writeFlightGeoPresentationDebug,
+} from '../../../gympgrph/src/features/geospatial/flightGeoPresentationDebug'
 import {
   beginFlightSimReadyFrame,
   cancelCurrentFlightSimReadyFrame,
@@ -105,12 +109,16 @@ function flightOverlay(
 function presentationHarness(
   initial: FlightGeoOverlaySnapshot,
   afterPresented?: (presentation: FlightGeoOverlayPresentation) => void,
-  options?: Readonly<{ bootstrapApplied?: boolean }>,
+  options?: Readonly<{
+    bootstrapApplied?: boolean
+    overlaySourceLoaded?: boolean
+  }>,
 ) {
   let current = initial
+  let overlaySourceLoaded = options?.overlaySourceLoaded ?? true
   let width = 0
   let repaintCount = 0
-  let sourceData = flightGeoOverlayFeatureCollection(initial)
+  let sourceData = flightGeoOverlayMapLibreFeatureCollection(initial)
   const images = new Set<string>()
   const listeners = new Set<() => void>()
   const canvas = {
@@ -141,8 +149,9 @@ function presentationHarness(
       id === FLIGHT_GEO_OVERLAY_SOURCE_ID
         ? {
             id,
+            loaded: () => overlaySourceLoaded,
             serialize: () => ({ data: sourceData }),
-            setData: (data: ReturnType<typeof flightGeoOverlayFeatureCollection>) => {
+            setData: (data: ReturnType<typeof flightGeoOverlayMapLibreFeatureCollection>) => {
               sourceData = data
             },
           }
@@ -198,12 +207,15 @@ function presentationHarness(
     repaintCount: () => repaintCount,
     replaceSourceData: (next: FlightGeoOverlaySnapshot | null) => {
       sourceData = next
-        ? flightGeoOverlayFeatureCollection(next)
+        ? flightGeoOverlayMapLibreFeatureCollection(next)
         : { type: 'FeatureCollection', features: [] }
     },
     setCurrent: (next: FlightGeoOverlaySnapshot) => {
       current = next
-      sourceData = flightGeoOverlayFeatureCollection(next)
+      sourceData = flightGeoOverlayMapLibreFeatureCollection(next)
+    },
+    setOverlaySourceLoaded: (loaded: boolean) => {
+      overlaySourceLoaded = loaded
     },
     setWidth: (next: number) => {
       width = next
@@ -372,6 +384,49 @@ test('a stopped Flight frame waits for the local bootstrap before acknowledging 
   harness.emitRender()
   assert.equal(harness.presentations.length, 1)
   assert.equal(harness.listenerCount(), 0)
+})
+
+test('a stopped Flight frame waits for the settled overlay source before preparation can advance', () => {
+  const stopped = flightOverlay('stopped', 'stopped:source-pending')
+  const harness = presentationHarness(stopped, undefined, {
+    overlaySourceLoaded: false,
+  })
+  harness.setWidth(100)
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(
+    harness.presentations.length,
+    0,
+    'serialized GeoJSON alone cannot acknowledge stopped-stage preparation',
+  )
+  assert.equal(harness.listenerCount(), 1)
+
+  harness.setOverlaySourceLoaded(true)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+})
+
+test('a new stopped Flight request clears prior settlement proof before recording its own', () => {
+  const root = { dataset: {} as DOMStringMap } as HTMLElement
+  const priorStopped = flightOverlay('stopped', 'stopped:prior')
+  recordFlightGeoStoppedPresentation(root, priorStopped)
+
+  const currentStopped = {
+    ...priorStopped,
+    revision: 'stopped:current',
+  }
+  writeFlightGeoPresentationDebug(root, currentStopped, 0)
+  assert.equal(root.dataset.kgFlightGeospatialStoppedRevision, undefined)
+  assert.equal(root.dataset.kgFlightGeospatialStoppedProfileId, undefined)
+
+  recordFlightGeoStoppedPresentation(root, currentStopped)
+  assert.equal(
+    root.dataset.kgFlightGeospatialStoppedRevision,
+    'stopped:current',
+  )
+  assert.equal(root.dataset.kgFlightGeospatialStoppedRunId, '0')
 })
 
 test('a fresh ready-frame request re-arms the same deterministic revision', () => {

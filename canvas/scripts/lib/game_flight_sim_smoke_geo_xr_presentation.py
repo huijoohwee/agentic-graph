@@ -72,6 +72,48 @@ def _exit_city_for_cleanup(page: Page) -> None:
     )
 
 
+def _install_city_map_disposal_audit(page: Page) -> None:
+    page.evaluate(
+        """
+        async () => {
+          const gympgrph = await window.__kgFlightSimBrowserProof.importModule(
+            'gympgrphStore',
+          )
+          const map = gympgrph.readActiveMapLibreMap?.() || null
+          if (!map || typeof map.remove !== 'function') {
+            throw new Error('City handoff expected a live Flight MapLibre owner.')
+          }
+          const flightSourceId = gympgrph.FLIGHT_GEO_OVERLAY_SOURCE_ID
+            || 'kg-flight-sim:geo-overlay'
+          const environmentSourceId = gympgrph.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID
+            || 'kg-flight-geo-environment'
+          const readSource = sourceId => {
+            const source = map.getSource?.(sourceId) || null
+            let data = null
+            try { data = source?.serialize?.()?.data || null } catch { data = null }
+            return {
+              features: Array.isArray(data?.features) ? data.features.length : null,
+              present: Boolean(source),
+            }
+          }
+          const remove = map.remove
+          let captured = false
+          map.remove = function (...args) {
+            if (!captured) {
+              captured = true
+              window.__kgFlightCityMapDisposalAudit = {
+                environment: readSource(environmentSourceId),
+                flight: readSource(flightSourceId),
+                styleLoaded: map.isStyleLoaded?.() === true,
+              }
+            }
+            return remove.apply(this, args)
+          }
+        }
+        """
+    )
+
+
 def verify_flight_geo_xr_city_handoff(
     page: Page,
     *,
@@ -92,6 +134,7 @@ def verify_flight_geo_xr_city_handoff(
             f"{before}"
         )
 
+    _install_city_map_disposal_audit(page)
     city_trigger = page.locator(
         '[data-kg-floating-panel-view-trigger="cityBuilder"]',
     ).first
@@ -121,6 +164,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("geospatialPreferenceEnabled") is False
             and value.get("geoXrSurfaceActive") is False
             and value.get("geoXrLayerCount") == 0
+            and value.get("activeMapPresent") is False
             and value.get("mapLibreCanvasCount") == 0
             and value.get("visibleMapLibreCanvasCount") == 0
             and value.get("threeCanvasOwnerCount") == 1
@@ -132,6 +176,21 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
+    disposal = page.evaluate(
+        "() => window.__kgFlightCityMapDisposalAudit || null"
+    )
+    if (
+        not isinstance(disposal, dict)
+        or disposal.get("styleLoaded") is not True
+        or disposal.get("flight", {}).get("present") is not True
+        or disposal.get("flight", {}).get("features") != 0
+        or disposal.get("environment", {}).get("present") is not True
+        or disposal.get("environment", {}).get("features") != 0
+    ):
+        raise AssertionError(
+            "City disposed the Flight MapLibre owner before its GeoJSON sources "
+            f"were cleared: {disposal}"
+        )
 
     exit_button = city_panel.locator('[data-kg-city-sim-exit="1"]').first
     exit_button.wait_for(state="visible", timeout=30_000)
@@ -154,6 +213,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("geospatialPreferenceEnabled") is True
             and value.get("geoXrSurfaceActive") is True
             and value.get("geoXrLayerCount") == 1
+            and value.get("activeMapPresent") is True
             and value.get("mapLibreCanvasCount") == 1
             and value.get("visibleMapLibreCanvasCount") == 1
             and value.get("threeCanvasOwnerCount") == 1
@@ -198,6 +258,7 @@ def verify_flight_geo_xr_city_handoff(
     return {
         "before": before,
         "city": city,
+        "mapDisposalClear": disposal,
         "restored": restored,
         "reopened": reopened,
     }

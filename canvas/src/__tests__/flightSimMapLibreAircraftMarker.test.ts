@@ -5,6 +5,7 @@ import type { FlightGeoOverlaySnapshot } from '../../../gympgrph/src/flightGeoOv
 import {
   applyFlightGeoOverlayCameraToMap,
   applyFlightGeoOverlayToMap,
+  flightGeoOverlayMapLibreFeatureCollection,
   FLIGHT_GEO_AIRCRAFT_IMAGE_IDS,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
@@ -188,6 +189,7 @@ function mapHarness(failure?: LayerFailure) {
   }>()
   const sources = new Map<string, {
     data: unknown
+    loaded: () => boolean
     serialize: () => { data: unknown }
     setData: (data: unknown) => void
   }>()
@@ -211,6 +213,7 @@ function mapHarness(failure?: LayerFailure) {
     addSource: (sourceId: string, source: { data: unknown }) => {
       const stored = {
         data: source.data,
+        loaded: () => true,
         serialize: () => ({ data: stored.data }),
         setData: (data: unknown) => {
           setDataWrites += 1
@@ -321,6 +324,37 @@ test('an exact Flight Geo overlay replay does not restart its GeoJSON source', (
     harness.setDataWrites(),
     0,
     'the existing serialized source matches the ordered Flight overlay payload',
+  )
+})
+
+test('Ready reuses the loaded stopped Flight payload when its pixels are unchanged', () => {
+  const harness = mapHarness()
+  const stopped = {
+    ...flightOverlay(28),
+    phase: 'stopped' as const,
+    readyFrameRequestId: null,
+    revision: 'stopped:prepared',
+    runId: 0,
+  }
+  const ready = {
+    ...stopped,
+    phase: 'ready' as const,
+    readyFrameRequestId: 7,
+    revision: 'ready:armed',
+    runId: 1,
+  }
+
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, stopped), true)
+  assert.deepEqual(
+    flightGeoOverlayMapLibreFeatureCollection(stopped),
+    flightGeoOverlayMapLibreFeatureCollection(ready),
+    'stopped and first-ready GeoJSON stay byte-equivalent for unchanged pixels',
+  )
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, ready), true)
+  assert.equal(
+    harness.setDataWrites(),
+    0,
+    'phase and ready request metadata must not reset the settled MapLibre worker',
   )
 })
 
