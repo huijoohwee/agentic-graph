@@ -122,6 +122,9 @@ export async function assertFlightSimSurfaceReadiness({
   const mapLibreFlightBootstrapSource = await readText(
     'gympgrph/src/features/geospatial/mapLibreFlightBootstrap.ts',
   )
+  const mapLibreFlightProviderPromotionSource = await readText(
+    'gympgrph/src/features/geospatial/mapLibreFlightProviderPromotion.ts',
+  )
   requireSourceMarkers(geospatialHostSource, [
     'useFlightGeoOverlayMapLibrePresentation({',
   ], 'Flight Sim native MapLibre host composition')
@@ -139,9 +142,13 @@ export async function assertFlightSimSurfaceReadiness({
     'pending.attempts += 1',
   ], 'Flight Sim native MapLibre presentation gate')
   requireSourceMarkers(mapLibreFlightBootstrapSource, [
-    'requestIdleCallback',
     'scheduleProviderStyleApply',
-    'cancelProviderStyleApply(state)',
+    'cancelMapLibreFlightProviderStyleApply(state)',
+    'retainOverlay',
+  ], 'Flight Sim MapLibre bootstrap composition')
+  requireSourceMarkers(mapLibreFlightProviderPromotionSource, [
+    'requestIdleCallback',
+    'cancelMapLibreFlightProviderStyleApply(state)',
     'retainOverlay',
   ], 'Flight Sim non-blocking MapLibre provider promotion')
   const stagePreparationSource = await readText(
