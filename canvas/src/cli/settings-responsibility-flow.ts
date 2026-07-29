@@ -11,7 +11,7 @@ import {
 import path from 'node:path'
 import { FALLBACK_DETAILS } from '@/features/panels/views/SettingsFallbackDetails'
 import { settingsRegistry } from '@/features/settings/registry'
-import type { SettingMeta } from '@/features/settings/types'
+import type { SettingBackingKind, SettingMeta } from '@/features/settings/types'
 import {
   buildResponsibilityMarkdownArtifacts,
   RESPONSIBILITY_MARKDOWN_DIRECTORY,
@@ -187,13 +187,20 @@ function extractClasses(meta: SettingMeta): string[] {
   return uniqueSorted(classes)
 }
 
-function importsForSource(source: SettingMeta['source']): string[] {
+function importsForSource(source: SettingMeta['source']): SettingBackingKind[] {
   if (source === 'store') return ['zustand']
   if (source === 'localStorage') return ['localStorage']
   if (source === 'env') return ['import.meta.env']
   if (source === 'backendEnv') return ['window.__ENV__']
   if (source === 'eslint') return ['eslint']
   return []
+}
+
+function importsForSetting(meta: SettingMeta): SettingBackingKind[] {
+  return uniqueSorted([
+    ...importsForSource(meta.source),
+    ...(meta.backingImports ?? []),
+  ]) as SettingBackingKind[]
 }
 
 export function assertUniqueSettingKeys(registry: readonly SettingMeta[]): void {
@@ -244,7 +251,7 @@ function buildSchema(
       classes: extractClasses(meta),
       functions: setters,
       responsibility: fallback.responsibility || resolveSettingsResponsibility(key, meta.type),
-      imports: importsForSource(meta.source),
+      imports: importsForSetting(meta),
       notes: fallback.notes || '',
       lineRange: `${owner.modulePath}:L${owner.line}`,
     }

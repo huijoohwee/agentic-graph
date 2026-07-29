@@ -9,11 +9,21 @@ import {
   digest,
   selectProductionApproval,
 } from '../production-release-lifecycle.mjs'
+import { readContract } from '../collaboration-contract.mjs'
+import { resolveCanonicalSourceRoots } from '../worktree-policy.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
+const collaborationContract = await readContract()
+const canonicalSourceRoots = resolveCanonicalSourceRoots({
+  cwd: repoRoot,
+  contract: collaborationContract,
+})
+const docsSource = collaborationContract.local_development.canonical_sources
+  .find(source => source.id === 'agentic-canvas-os-docs')
+if (!docsSource) throw new Error('collaboration contract has no Agentic Canvas OS docs source')
 const docsRoot = path.resolve(
-  process.env.KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT ||
-    path.join(repoRoot, '..', 'agentic-canvas-os', 'docs'),
+  canonicalSourceRoots.roots.get(docsSource.id),
+  docsSource.required_path,
 )
 const contract = await import(pathToFileURL(
   path.join(path.dirname(docsRoot), 'scripts', 'collaborative-release-lifecycle-contract.mjs'),

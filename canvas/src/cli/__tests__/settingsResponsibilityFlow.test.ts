@@ -76,6 +76,15 @@ test('responsibility flow generation is complete, traceable, and deterministic',
   assert.equal(first.schema.byteplusImageModel?.area, 'BytePlus Image')
   assert.equal(first.schema.byteplusVideoModel?.area, 'BytePlus Video')
   assert.equal(first.schema.chatProvider?.area, 'Chat')
+  assert.deepEqual(
+    first.schema.uiPanelTextFontClass?.imports,
+    ['tailwindcss', 'zustand'],
+  )
+  assert.deepEqual(first.schema.themeMode?.imports, ['tailwindcss', 'zustand'])
+  assert.equal(
+    Object.values(first.schema).some(row => row.imports.includes('htmx')),
+    false,
+  )
 
   const markdownArtifacts = first.artifacts.filter(artifact => artifact.relativePath.endsWith('.md'))
   markdownArtifacts.forEach(artifact => {
