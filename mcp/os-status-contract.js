@@ -1,4 +1,5 @@
 import { KNOWGRPH_OS_STATUS_TOOL_NAME } from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
+import { PAYMENT_READINESS_RESULT_SCHEMA } from "./payment-tool-contract.js";
 
 export const OS_STATUS_TOOL_NAME = KNOWGRPH_OS_STATUS_TOOL_NAME;
 export const OS_STATUS_COUNT_UNAVAILABLE = "unavailable";
@@ -13,6 +14,8 @@ export const OS_STATUS_RUN_DIRS = Object.freeze({
 export const OS_STATUS_VIEWS = Object.freeze({
   processList: "process_list",
   capabilities: "capabilities",
+  railReadiness: "rail_readiness",
+  agenticPurchaseReadiness: "agentic_purchase_readiness",
   costSummary: "cost_summary",
   gateCatalog: "gate_catalog",
   circuitBreakers: "circuit_breakers",
@@ -43,7 +46,7 @@ export const OS_STATUS_INPUT_SCHEMA = Object.freeze({
   properties: {
     view: {
       type: "string",
-      enum: ["process_list", "capabilities", "cost_summary", "gate_catalog", "circuit_breakers"],
+      enum: ["process_list", "capabilities", "rail_readiness", "agentic_purchase_readiness", "cost_summary", "gate_catalog", "circuit_breakers"],
       description: "Read-only Agentic OS view to return.",
     },
     cloudflareMcpUrl: {
@@ -61,6 +64,11 @@ export const OS_STATUS_OUTPUT_SCHEMA = Object.freeze({
     ok: { type: "boolean" },
     view: { type: "string" },
     entries: { type: "array", items: { type: "object", additionalProperties: true } },
+    rails: PAYMENT_READINESS_RESULT_SCHEMA.properties.rails,
+    capability: PAYMENT_READINESS_RESULT_SCHEMA.properties.capability,
+    boundary: { type: "string" },
+    readiness: { type: "object", additionalProperties: true },
+    claims: { type: "object", additionalProperties: { type: "boolean" } },
     truncated: { type: "boolean" },
     unavailableSources: { type: "array", items: { type: "object", additionalProperties: true } },
     unreachableCatalogs: { type: "array", items: { type: "string" } },

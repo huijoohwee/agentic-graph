@@ -13,6 +13,7 @@ import {
   STRIPE_CHECKOUT_METADATA_WORKSPACE_ID,
   STRIPE_CHECKOUT_SESSION_ID_TOKEN,
   STRIPE_PAYMENT_ROUTE_PATHS,
+  STRIPE_PAYMENT_WEBHOOK_API_VERSION,
 } from 'grph-shared/payments/stripePaymentSsot'
 
 const worker = (
@@ -690,6 +691,7 @@ export async function testAgenticCommerceStripePaidWebhookCannotSettleCancelledA
 
     const payload = JSON.stringify({
       id: 'evt_agentic_cancelled_late_paid_1',
+      api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
       type: 'checkout.session.completed',
       livemode: false,
       data: {
@@ -955,6 +957,7 @@ export async function testAgenticCommerceStripeWebhookSettlesAcpSession() {
     const created = await createCheckoutSession(env, { idempotencyKey: 'webhook-idempotency-1' })
     const payload = JSON.stringify({
       id: 'evt_agentic_commerce_1',
+      api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
       type: 'checkout.session.completed',
       livemode: false,
       data: {
@@ -1020,6 +1023,7 @@ export async function testAgenticCommerceStripeWebhookDuplicateEventSkipsSettlem
     const created = await createCheckoutSession(env, { idempotencyKey: 'webhook-duplicate-idempotency-1' })
     const buildPayload = (paymentStatus: 'unpaid' | 'paid') => JSON.stringify({
       id: 'evt_agentic_duplicate_1',
+      api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
       type: 'checkout.session.completed',
       livemode: false,
       data: {
@@ -1334,6 +1338,7 @@ export async function testAgenticCommerceStripeExpiredWebhookCancelsAcpSession()
 
     const payload = JSON.stringify({
       id: 'evt_agentic_expired_webhook_1',
+      api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
       type: 'checkout.session.expired',
       livemode: false,
       data: {
@@ -1456,6 +1461,7 @@ export async function testAgenticCommerceStripeAsyncPaymentFailedWebhookMarksAcp
 
     const payload = JSON.stringify({
       id: 'evt_agentic_async_failed_1',
+      api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
       type: 'checkout.session.async_payment_failed',
       livemode: false,
       data: {
@@ -1510,6 +1516,7 @@ export async function testAgenticCommerceStripeAsyncPaymentFailedWebhookMarksAcp
 
     const latePaidPayload = JSON.stringify({
       id: 'evt_agentic_async_failed_late_paid_1',
+      api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
       type: 'checkout.session.completed',
       livemode: false,
       data: {
@@ -1559,6 +1566,7 @@ export async function testAgenticCommerceStripeWebhookRejectsMismatchedAcpAmount
   const created = await createCheckoutSession(env, { idempotencyKey: 'webhook-mismatch-idempotency-1' })
   const payload = JSON.stringify({
     id: 'evt_agentic_commerce_mismatch_1',
+    api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
     type: 'checkout.session.completed',
     livemode: false,
     data: {
@@ -1604,6 +1612,7 @@ export async function testAgenticCommerceStripeWebhookRejectsMissingAcpCurrency(
   const created = await createCheckoutSession(env, { idempotencyKey: 'webhook-missing-currency-idempotency-1' })
   const payload = JSON.stringify({
     id: 'evt_agentic_commerce_missing_currency_1',
+    api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
     type: 'checkout.session.completed',
     livemode: false,
     data: {
@@ -1652,6 +1661,7 @@ export async function testAgenticCommerceStripeWebhookRejectsMismatchedClientRef
   const created = await createCheckoutSession(env, { idempotencyKey: 'webhook-mismatched-client-reference-idempotency-1' })
   const payload = JSON.stringify({
     id: 'evt_agentic_commerce_mismatched_client_reference_1',
+    api_version: STRIPE_PAYMENT_WEBHOOK_API_VERSION,
     type: 'checkout.session.completed',
     livemode: false,
     data: {

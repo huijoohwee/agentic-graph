@@ -40,7 +40,7 @@ const validateRailCandidate = entry => {
   const expectedVerification =
     entry.rail === 'stripe'
       ? 'stripe-signature-and-provider-read'
-      : 'straitsx-provider-state-read'
+      : 'straitsx-raw-hmac-source-and-provider-read'
   if (
     entry.mode !== 'sandbox'
     || entry.terminalState !== 'paid'
@@ -130,10 +130,20 @@ export function inspectKnowgrphPaymentsProviderCandidate({
     if (proofSupplied) status = candidateResult?.candidateEligible ? 'candidate' : 'fail'
     return {
       status,
-      configuredApiVersion: rail === 'stripe' ? source.stripeApiVersion : null,
+      configuredRequestApiVersion:
+        rail === 'stripe' ? source.stripeRequestApiVersion : null,
+      configuredWebhookApiVersion:
+        rail === 'stripe' ? source.stripeWebhookApiVersion : null,
       configuredIntegrationModel: rail === 'straitsx' ? source.straitsxIntegrationModel : null,
+      configuredFundFlow: rail === 'straitsx' ? source.straitsxFundFlow : null,
+      configuredGrantedProducts:
+        rail === 'straitsx' ? source.straitsxGrantedProducts : [],
+      buyerProductEnvironmentNames: source.buyerProductEnvironmentNames,
+      buyerProductConfigured: source.buyerProductConfigured,
       credentialNames: source.secretNames.filter(name =>
-        rail === 'stripe' ? name.startsWith('STRIPE_') : name.startsWith('STRAITSX_')),
+        rail === 'stripe'
+          ? name.startsWith('STRIPE_') || name.startsWith('PAYMENT_STRIPE_')
+          : name.startsWith('STRAITSX_')),
       proof: proofEntry
         ? {
             candidateOnly: true,

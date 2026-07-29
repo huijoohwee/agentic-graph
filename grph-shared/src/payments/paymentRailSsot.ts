@@ -10,7 +10,13 @@ export const PAYMENT_RAIL_SELECTION_REASONS = Object.freeze([
 export type PaymentRailId = typeof PAYMENT_RAIL_IDS[number]
 export type PaymentSettlementAsset = typeof PAYMENT_SETTLEMENT_ASSETS[number]
 export type PaymentRailSelectionReason = typeof PAYMENT_RAIL_SELECTION_REASONS[number]
-export type PaymentRailReadiness = Readonly<Record<PaymentRailId, boolean>>
+export type PaymentRailReadiness = Readonly<Record<PaymentRailId, boolean> & {
+  /**
+   * XSGD is a separately granted capability. A ready StraitsX fiat rail does
+   * not imply that an account may accept XSGD.
+   */
+  xsgd?: boolean
+}>
 
 export type PaymentRailSelectionInput = Readonly<{
   currency: string
@@ -62,7 +68,12 @@ export function selectPaymentRail(input: PaymentRailSelectionInput): PaymentRail
     (input.cardSettledCurrencies || []).map(normalizeToken),
   )
   const compatibleRails = compatibleRailsFor(currency, settlementAsset, cardSettledCurrencies)
-  const readyCompatibleRails = compatibleRails.filter(rail => input.readiness[rail] === true)
+  const readyCompatibleRails = compatibleRails.filter(rail => {
+    if (rail !== 'straitsx' || settlementAsset !== 'xsgd') {
+      return input.readiness[rail] === true
+    }
+    return input.readiness.straitsx === true && input.readiness.xsgd === true
+  })
 
   if (readyCompatibleRails.length === 0) {
     return Object.freeze({
