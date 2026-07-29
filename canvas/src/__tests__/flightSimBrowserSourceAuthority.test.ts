@@ -303,7 +303,7 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     geoXrPresentationVerifier,
-    /\[aria-label="Flight Sim"\]'.*wait_for\(/s,
+    /\[data-kg-flight-sim-floating-panel="1"\]'.*wait_for\(/s,
   )
   const selectGeoViewIndex = geoXrPresentationVerifier.indexOf(
     'select_geo_xr_view(page, button_label)',

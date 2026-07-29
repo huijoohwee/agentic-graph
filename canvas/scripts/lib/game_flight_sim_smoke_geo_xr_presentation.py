@@ -31,7 +31,7 @@ def restore_flight_sim_panel(page: Page) -> None:
         }
         """
     )
-    page.locator('[aria-label="Flight Sim"]').wait_for(
+    page.locator('[data-kg-flight-sim-floating-panel="1"]').wait_for(
         state="visible", timeout=30_000,
     )
 
