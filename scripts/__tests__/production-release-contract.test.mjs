@@ -184,7 +184,7 @@ test('production release bounds transient artifacts and durably retains typed li
   assert.match(releaseWorkflow, /name: production-lifecycle-complete-\$\{\{ inputs\.source_sha \}\}-\$\{\{ github\.run_id \}\}/)
 })
 
-test('production release records the exact protected-environment human and six neutral receipts', () => {
+test('production release records the exact protected-environment human and eight neutral receipts', () => {
   assert.match(releaseWorkflow, /permissions:\s*\n\s*actions: read\s*\n\s*contents: read/)
   assert.match(releaseWorkflow, /actions\/runs\/\$\{\{ github\.run_id \}\}\/approvals/)
   assert.match(releaseWorkflow, /name: Create neutral release lifecycle receipts/)
@@ -196,6 +196,8 @@ test('production release records the exact protected-environment human and six n
   assert.match(productionLifecycleScript, /production release requires exactly one authenticated human approval/)
   assert.match(productionLifecycleScript, /protected environment authorization drifted from the prepared candidate digest/)
   for (const receipt of [
+    'overlap-preservation-receipt.json',
+    'overlap-disposition-receipt.json',
     'integration-receipt.json',
     'runtime-review-receipt.json',
     'candidate-manifest.json',
