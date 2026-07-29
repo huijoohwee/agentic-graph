@@ -14,6 +14,7 @@ import {
   markMapLibreFlightOverlayPresented,
   markMapLibreFlightReadyFramePresented,
   reconcileMapLibreFlightBootstrap,
+  subscribeMapLibreFlightBootstrapSettled,
 } from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
 import {
   captureNativeGeospatialMapLibreLease,
@@ -185,6 +186,7 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
   assert.equal(map, mapIdentity)
   assert.equal(map.getCanvas(), canvasIdentity)
   assert.equal(renderListeners.size, 1)
+  markMapLibreFlightBootstrapApplied(map)
 
   overlayPresented = true
   for (const listener of [...renderListeners]) listener()
@@ -234,14 +236,35 @@ test('only the bootstrap style can prepare a stopped Flight frame on a mounted p
   setFlightGeoOverlay(readyOverlay)
   context.after(clearFlightGeoOverlay)
   const renderListeners = new Set<() => void>()
+  const styleLoadListeners = new Set<() => void>()
+  const bootstrapStyle = {
+    version: 8,
+    name: 'local-flight-bootstrap',
+    layers: [{ id: 'kg-flight-sim:geo-bootstrap-background', type: 'background' }],
+  }
+  const providerStyle = {
+    version: 8,
+    name: 'provider-style',
+    layers: [{ id: 'provider-background', type: 'background' }],
+  }
+  let currentStyle: Readonly<Record<string, unknown>> = providerStyle
+  let styleLoaded = true
   const map = {
     off: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.delete(listener)
+      if (event === 'style.load') styleLoadListeners.delete(listener)
     },
     on: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.add(listener)
+      if (event === 'style.load') styleLoadListeners.add(listener)
     },
-    setStyle: () => void 0,
+    getStyle: () => currentStyle,
+    isStyleLoaded: () => styleLoaded,
+    setStyle: (style: string | Readonly<Record<string, unknown>>) => {
+      if (typeof style === 'string') return
+      currentStyle = style
+      styleLoaded = false
+    },
     triggerRepaint: () => void 0,
   }
 
@@ -249,15 +272,50 @@ test('only the bootstrap style can prepare a stopped Flight frame on a mounted p
   assert.equal(canMapLibreFlightOverlayPresent(map, readyOverlay), false)
 
   reconcileMapLibreFlightBootstrap({
-    bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
+    bootstrapStyle,
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => 'provider:bootstrap-presenter',
     map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
   })
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, stoppedPresentation),
+    false,
+    'setStyle alone must not authorize stopped-stage presentation',
+  )
+  let settledReplays = 0
+  const unsubscribeSettled = subscribeMapLibreFlightBootstrapSettled(map, () => {
+    settledReplays += 1
+  })
+  currentStyle = providerStyle
+  styleLoaded = true
+  for (const listener of [...styleLoadListeners]) listener()
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, stoppedPresentation),
+    false,
+    'a stale provider style.load cannot settle the pending local bootstrap',
+  )
+  assert.equal(settledReplays, 0)
+
+  currentStyle = bootstrapStyle
+  styleLoaded = true
+  for (const listener of [...styleLoadListeners]) listener()
   assert.equal(canMapLibreFlightOverlayPresent(map, stoppedPresentation), true)
   assert.equal(canMapLibreFlightOverlayPresent(map, readyOverlay), true)
+  assert.equal(settledReplays, 1)
+  unsubscribeSettled()
+  let lateSettledReplay = 0
+  const unsubscribeLateSettled = subscribeMapLibreFlightBootstrapSettled(map, () => {
+    lateSettledReplay += 1
+  })
+  await flushMicrotasks()
+  assert.equal(
+    lateSettledReplay,
+    1,
+    'a late presentation effect replays an already-settled bootstrap once',
+  )
+  unsubscribeLateSettled()
 
   markMapLibreFlightReadyFramePresented(
     map,
@@ -342,6 +400,7 @@ test('stale ready identity and a prior run cannot authorize provider promotion',
     scheduleProviderStyleApply: applyProviderStyleImmediately,
     retainFlightOverlay: (_previous, next) => ({ ...next }),
   })
+  markMapLibreFlightBootstrapApplied(map)
   markMapLibreFlightOverlayPresented(map, {
     ...readyOverlay,
     readyFrameRequestId: 30,
@@ -433,6 +492,7 @@ test('provider promotion yields to an idle opportunity and fences stale schedule
   }
 
   reconcile('provider:stale')
+  markMapLibreFlightBootstrapApplied(map)
   markMapLibreFlightReadyFramePresented(
     map,
     readyOverlay.revision,
@@ -510,6 +570,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   setFlightGeoOverlay(firstReady)
   const firstView = createMap('provider:first')
   firstView.reconcile()
+  markMapLibreFlightBootstrapApplied(firstView.map)
   firstView.emitRender()
   await flushMicrotasks()
   assert.deepEqual(firstView.applied, ['local-flight-bootstrap'])
@@ -569,6 +630,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   setFlightGeoOverlay(secondReady)
   const freshActivationView = createMap('provider:fresh')
   freshActivationView.reconcile()
+  markMapLibreFlightBootstrapApplied(freshActivationView.map)
   freshActivationView.emitRender()
   await flushMicrotasks()
   assert.deepEqual(freshActivationView.applied, ['local-flight-bootstrap'])
@@ -617,6 +679,7 @@ test('a consumed ready request authorizes only the exact presenting map', async 
   })
   assert.deepEqual(applied, ['local-flight-bootstrap'])
   assert.equal(readFlightGeoOverlayReadyFramePresented(), false)
+  markMapLibreFlightBootstrapApplied(map)
 
   markMapLibreFlightOverlayPresented(map, readyOverlay)
   for (const listener of [...renderListeners]) listener()
@@ -632,6 +695,14 @@ test('a consumed ready request authorizes only the exact presenting map', async 
 
 test('Flight deactivation restores the provider without waiting for overlay presentation', async () => {
   const renderListeners = new Set<() => void>()
+  const styleLoadListeners = new Set<() => void>()
+  const bootstrapStyle = {
+    version: 8,
+    name: 'local-flight-bootstrap',
+    layers: [{ id: 'kg-flight-sim:geo-bootstrap-background', type: 'background' }],
+  }
+  let currentStyle: Readonly<Record<string, unknown>> = bootstrapStyle
+  let styleLoaded = false
   const applied: Array<{
     style: string | Readonly<Record<string, unknown>>
     retained: boolean
@@ -639,10 +710,14 @@ test('Flight deactivation restores the provider without waiting for overlay pres
   const map = {
     off: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.delete(listener)
+      if (event === 'style.load') styleLoadListeners.delete(listener)
     },
     on: (event: string, listener: () => void) => {
       if (event === 'render') renderListeners.add(listener)
+      if (event === 'style.load') styleLoadListeners.add(listener)
     },
+    getStyle: () => currentStyle,
+    isStyleLoaded: () => styleLoaded,
     setStyle: (
       style: string | Readonly<Record<string, unknown>>,
       options?: Readonly<Record<string, unknown>>,
@@ -666,9 +741,10 @@ test('Flight deactivation restores the provider without waiting for overlay pres
 
   reconcileMapLibreFlightBootstrap({
     ...options,
-    bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
+    bootstrapStyle,
   })
   assert.equal(renderListeners.size, 1)
+  const staleBootstrapLoads = [...styleLoadListeners]
 
   reconcileMapLibreFlightBootstrap({
     ...options,
@@ -680,5 +756,13 @@ test('Flight deactivation restores the provider without waiting for overlay pres
   assert.equal(applied.length, 2)
   assert.equal(applied[1]?.style, 'https://provider.test/style.json')
   assert.equal(applied[1]?.retained, false)
+  currentStyle = bootstrapStyle
+  styleLoaded = true
+  for (const listener of staleBootstrapLoads) listener()
+  assert.equal(
+    applied.length,
+    2,
+    'a late bootstrap style.load after Exit cannot reclaim the restored provider',
+  )
   disposeMapLibreFlightBootstrap(map)
 })

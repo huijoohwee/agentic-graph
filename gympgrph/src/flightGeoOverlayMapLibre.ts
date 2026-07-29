@@ -1,6 +1,11 @@
 import type { Feature, FeatureCollection, Polygon } from 'geojson'
 import { flightGeoOverlayFeatureCollection, type FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
-import { clearGeoJsonSourceData, isMapLibreStyleReady, setGeoJsonSourceData } from './maplibreLayers.js'
+import {
+  clearGeoJsonSourceData,
+  isMapLibreStyleReady,
+  readGeoJsonSourceData,
+  setGeoJsonSourceData,
+} from './maplibreLayers.js'
 import {
   readFlightGeoMapViewportPadding,
   type FlightGeoMapViewportPadding,
@@ -222,6 +227,44 @@ function flightGeoOverlayMapLibreFeatureCollection(
   }
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/**
+ * GeoJSONSource#setData restarts its worker update even when the serialized
+ * payload is unchanged. Keep feature and coordinate order exact, while
+ * treating record key order as an implementation detail of serialization.
+ */
+function hasExactFlightGeoOverlayValue(
+  expected: unknown,
+  actual: unknown,
+): boolean {
+  if (Object.is(expected, actual)) return true
+  if (Array.isArray(expected)) {
+    return Array.isArray(actual)
+      && expected.length === actual.length
+      && expected.every((value, index) => (
+        hasExactFlightGeoOverlayValue(value, actual[index])
+      ))
+  }
+  if (!isPlainRecord(expected) || !isPlainRecord(actual)) return false
+  const expectedKeys = Object.keys(expected)
+  const actualKeys = Object.keys(actual)
+  return expectedKeys.length === actualKeys.length
+    && expectedKeys.every(key => (
+      Object.prototype.hasOwnProperty.call(actual, key)
+      && hasExactFlightGeoOverlayValue(expected[key], actual[key])
+    ))
+}
+
+function hasExactFlightGeoOverlayFeatureCollection(
+  expected: FeatureCollection,
+  actual: unknown,
+): boolean {
+  return hasExactFlightGeoOverlayValue(expected, actual)
+}
+
 export function retainFlightGeoOverlayDuringStyleSwap(
   previousStyle: Readonly<Record<string, any>> | undefined,
   nextStyle: Readonly<Record<string, any>>,
@@ -399,11 +442,17 @@ export function applyFlightGeoOverlayToMap(
       return clearFlightGeoOverlayFromMap(map)
     }
     if (!ensureFlightGeoAircraftImages(map)) return false
-    setGeoJsonSourceData(
-      map,
-      FLIGHT_GEO_OVERLAY_SOURCE_ID,
-      flightGeoOverlayMapLibreFeatureCollection(overlay),
+    const expected = flightGeoOverlayMapLibreFeatureCollection(overlay)
+    const sourceData = readGeoJsonSourceData(
+      map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID),
     )
+    if (!hasExactFlightGeoOverlayFeatureCollection(expected, sourceData)) {
+      setGeoJsonSourceData(
+        map,
+        FLIGHT_GEO_OVERLAY_SOURCE_ID,
+        expected,
+      )
+    }
     addLayerOnce(map, {
       id: FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
       type: 'line',

@@ -191,6 +191,7 @@ function mapHarness(failure?: LayerFailure) {
     serialize: () => { data: unknown }
     setData: (data: unknown) => void
   }>()
+  let setDataWrites = 0
   const map = {
     style: { _loaded: true },
     addLayer: (layer: LayerDefinition) => {
@@ -212,6 +213,7 @@ function mapHarness(failure?: LayerFailure) {
         data: source.data,
         serialize: () => ({ data: stored.data }),
         setData: (data: unknown) => {
+          setDataWrites += 1
           stored.data = data
         },
       }
@@ -229,6 +231,7 @@ function mapHarness(failure?: LayerFailure) {
     layers,
     map,
     readSourceData: () => sources.get(FLIGHT_GEO_OVERLAY_SOURCE_ID)?.data,
+    setDataWrites: () => setDataWrites,
   }
 }
 
@@ -303,6 +306,21 @@ test('MapLibre aircraft uses pose-derived native geometry without fonts', () => 
   assert.ok(eastboundRing[0][0] > eastbound.aircraft.coordinate[0])
   assert.ok(
     Math.abs(eastboundRing[0][1] - eastbound.aircraft.coordinate[1]) < 1e-10,
+  )
+})
+
+test('an exact Flight Geo overlay replay does not restart its GeoJSON source', () => {
+  const harness = mapHarness()
+  const overlay = flightOverlay(28)
+
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, overlay), true)
+  assert.equal(harness.setDataWrites(), 0)
+
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, overlay), true)
+  assert.equal(
+    harness.setDataWrites(),
+    0,
+    'the existing serialized source matches the ordered Flight overlay payload',
   )
 })
 

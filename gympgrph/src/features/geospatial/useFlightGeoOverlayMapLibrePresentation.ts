@@ -29,6 +29,7 @@ import {
   canMapLibreFlightOverlayPresent,
   markMapLibreFlightOverlayPresented,
   markMapLibreFlightReadyFramePresented,
+  subscribeMapLibreFlightBootstrapSettled,
 } from './mapLibreFlightBootstrap.js'
 
 export const FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT = 8
@@ -480,6 +481,21 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         clearFlightGeoEnvironmentFromMap(map)
         return
       }
+      // A retained provider map stays mounted while Flight installs its local
+      // bootstrap style. Only the settled bootstrap may receive the stopped
+      // preparation payload; `style.load` replays this apply after handoff.
+      const requiresBootstrapPresentation = (
+        overlay.phase === 'stopped'
+        || (overlay.phase === 'ready' && overlay.tick === 0)
+      )
+      if (
+        requiresBootstrapPresentation
+        && !canMapLibreFlightOverlayPresent(map, overlay)
+      ) {
+        gate.cancel()
+        gate.clearCanvas()
+        return
+      }
       if (overlay.phase === 'stopped') gate.clearCanvas()
       const environmentApplied = applyFlightGeoEnvironmentToMap(
         map,
@@ -536,6 +552,12 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         apply()
       })
     }
+    const unsubscribeBootstrapSettled = map
+      ? subscribeMapLibreFlightBootstrapSettled(map, () => {
+          apply()
+          scheduleFinalApply()
+        })
+      : () => void 0
     apply()
     scheduleFinalApply()
     const unsubscribe = subscribeFlightGeoOverlay(apply)
@@ -555,6 +577,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     }
     return () => {
       unsubscribe()
+      unsubscribeBootstrapSettled()
       map?.off?.('style.load', scheduleFinalApply)
       map?.off?.('load', scheduleFinalApply)
       map?.off?.('resize', scheduleFinalApply)

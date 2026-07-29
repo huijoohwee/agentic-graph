@@ -13,8 +13,19 @@ type MapLibreFlightProviderPresentation = Readonly<{
   tick: number
 }>
 
+type MapLibreFlightBootstrapStyleIdentity = Readonly<{
+  layerId: string
+  name: string
+  version: number | null
+}>
+
 type MapLibreFlightBootstrapState = {
   bootstrapApplied: boolean
+  bootstrapExpectedStyle: MapLibreFlightBootstrapStyleIdentity | null
+  bootstrapGeneration: number
+  bootstrapPending: boolean
+  bootstrapSettledListeners: Set<() => void>
+  cancelBootstrapStyleLoad: (() => void) | null
   cancelProviderStyleApply: (() => void) | null
   deadlineFramePresented: boolean
   disposed: boolean
@@ -41,6 +52,11 @@ function readState(map: any): MapLibreFlightBootstrapState | null {
   if (!state) {
     state = {
       bootstrapApplied: false,
+      bootstrapExpectedStyle: null,
+      bootstrapGeneration: 0,
+      bootstrapPending: false,
+      bootstrapSettledListeners: new Set(),
+      cancelBootstrapStyleLoad: null,
       cancelProviderStyleApply: null,
       deadlineFramePresented: false,
       disposed: false,
@@ -85,12 +101,113 @@ function cancelProviderStyleApply(state: MapLibreFlightBootstrapState): void {
   state.cancelProviderStyleApply = null
 }
 
+function cancelBootstrapStyleLoad(state: MapLibreFlightBootstrapState): void {
+  try {
+    state.cancelBootstrapStyleLoad?.()
+  } catch {
+    void 0
+  }
+  state.cancelBootstrapStyleLoad = null
+}
+
+function clearPendingBootstrap(state: MapLibreFlightBootstrapState): void {
+  state.bootstrapPending = false
+  state.bootstrapExpectedStyle = null
+  state.bootstrapGeneration += 1
+  cancelBootstrapStyleLoad(state)
+}
+
 function requestMapRepaint(state: MapLibreFlightBootstrapState): void {
   try {
     state.map.triggerRepaint?.()
   } catch {
     void 0
   }
+}
+
+function notifyBootstrapSettled(state: MapLibreFlightBootstrapState): void {
+  for (const listener of state.bootstrapSettledListeners) {
+    try {
+      listener()
+    } catch {
+      void 0
+    }
+  }
+}
+
+function readBootstrapStyleIdentity(
+  style: Readonly<Record<string, unknown>>,
+): MapLibreFlightBootstrapStyleIdentity {
+  const layers = Array.isArray(style.layers) ? style.layers : []
+  const bootstrapLayer = layers.find(layer => (
+    layer
+    && typeof layer === 'object'
+    && (layer as Record<string, unknown>).id === 'kg-flight-sim:geo-bootstrap-background'
+  )) as Readonly<Record<string, unknown>> | undefined
+  const firstLayer = layers.find(layer => (
+    layer && typeof layer === 'object'
+  )) as Readonly<Record<string, unknown>> | undefined
+  const version = Number(style.version)
+  return {
+    layerId: String(bootstrapLayer?.id || firstLayer?.id || ''),
+    name: String(style.name || ''),
+    version: Number.isFinite(version) ? version : null,
+  }
+}
+
+function readCurrentStyleIdentity(map: any): MapLibreFlightBootstrapStyleIdentity | null {
+  try {
+    const style = map?.getStyle?.()
+    if (!style || typeof style !== 'object' || Array.isArray(style)) return null
+    return readBootstrapStyleIdentity(style as Readonly<Record<string, unknown>>)
+  } catch {
+    return null
+  }
+}
+
+function isCurrentStyleLoaded(map: any): boolean {
+  try {
+    if (typeof map?.isStyleLoaded === 'function') {
+      return map.isStyleLoaded() === true
+    }
+    return map?.style?._loaded === true
+  } catch {
+    return false
+  }
+}
+
+function hasExpectedBootstrapStyle(
+  state: MapLibreFlightBootstrapState,
+): boolean {
+  const expected = state.bootstrapExpectedStyle
+  if (!expected || !isCurrentStyleLoaded(state.map)) return false
+  const current = readCurrentStyleIdentity(state.map)
+  return Boolean(
+    current
+    && current.name === expected.name
+    && current.version === expected.version
+    && current.layerId === expected.layerId,
+  )
+}
+
+function settlePendingBootstrap(
+  state: MapLibreFlightBootstrapState,
+  bootstrapGeneration: number,
+): void {
+  if (
+    state.disposed
+    || !state.bootstrapPending
+    || state.bootstrapGeneration !== bootstrapGeneration
+    || !hasExpectedBootstrapStyle(state)
+  ) return
+  state.bootstrapPending = false
+  state.bootstrapExpectedStyle = null
+  cancelBootstrapStyleLoad(state)
+  state.bootstrapApplied = true
+  state.deadlineFramePresented = readFlightGeoOverlayReadyFramePresented()
+  state.providerPresentation = null
+  requestMapRepaint(state)
+  notifyBootstrapSettled(state)
 }
 
 function scheduleProviderStyleApply(apply: () => void): () => void {
@@ -203,6 +320,7 @@ async function promoteProviderStyle(options: Readonly<{
         : { diff: true },
     )
     state.bootstrapApplied = false
+    clearPendingBootstrap(state)
     return 'applied'
   } catch (error) {
     reportError(state, generation, onError, error)
@@ -213,9 +331,77 @@ async function promoteProviderStyle(options: Readonly<{
 export function markMapLibreFlightBootstrapApplied(map: any): void {
   const state = readState(map)
   if (!state) return
+  clearPendingBootstrap(state)
   state.bootstrapApplied = true
   state.deadlineFramePresented = readFlightGeoOverlayReadyFramePresented()
   state.providerPresentation = null
+}
+
+/**
+ * Reserve a Flight bootstrap before its local MapLibre style is installed.
+ * A tokenized listener verifies that the emitted style is the exact local
+ * bootstrap, rather than an already-mounted provider style racing this handoff.
+ */
+export function beginMapLibreFlightBootstrap(
+  map: any,
+  bootstrapStyle: Readonly<Record<string, unknown>>,
+): void {
+  const state = readState(map)
+  if (!state || state.disposed) return
+  clearPendingBootstrap(state)
+  state.bootstrapApplied = false
+  state.bootstrapPending = true
+  state.deadlineFramePresented = false
+  state.providerPresentation = null
+  state.bootstrapExpectedStyle = readBootstrapStyleIdentity(bootstrapStyle)
+  const bootstrapGeneration = ++state.bootstrapGeneration
+  const onStyleLoad = () => settlePendingBootstrap(state, bootstrapGeneration)
+  try {
+    state.map.on?.('style.load', onStyleLoad)
+    state.cancelBootstrapStyleLoad = () => {
+      state.map.off?.('style.load', onStyleLoad)
+    }
+  } catch {
+    state.cancelBootstrapStyleLoad = null
+  }
+  queueMicrotask(() => settlePendingBootstrap(state, bootstrapGeneration))
+}
+
+/**
+ * Attempt to settle the current bootstrap. Production callers should use
+ * `beginMapLibreFlightBootstrap()`, which owns the tokenized style listener;
+ * this export keeps focused lifecycle tests able to exercise a real settle.
+ */
+export function settleMapLibreFlightBootstrap(map: any): void {
+  const state = readState(map)
+  if (!state || state.disposed || !state.bootstrapPending) return
+  settlePendingBootstrap(state, state.bootstrapGeneration)
+}
+
+/**
+ * Subscribe to the one transition which makes stopped/ready Flight payloads
+ * eligible for MapLibre writes. An already-settled state is replayed in a
+ * microtask so a late React effect cannot strand the first-frame gate.
+ */
+export function subscribeMapLibreFlightBootstrapSettled(
+  map: any,
+  listener: () => void,
+): () => void {
+  const state = bootstrapStateByMap.get(map)
+  if (!state || state.disposed) return () => void 0
+  state.bootstrapSettledListeners.add(listener)
+  if (state.bootstrapApplied) {
+    queueMicrotask(() => {
+      if (!state.disposed && state.bootstrapSettledListeners.has(listener)) {
+        try {
+          listener()
+        } catch {
+          void 0
+        }
+      }
+    })
+  }
+  return () => state.bootstrapSettledListeners.delete(listener)
 }
 
 /**
@@ -343,7 +529,10 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   if (!options.bootstrapStyle) {
     state.deadlineFramePresented = false
     state.providerPresentation = null
-    if (!state.bootstrapApplied) return
+    const shouldRestoreProvider = state.bootstrapApplied || state.bootstrapPending
+    state.bootstrapApplied = false
+    clearPendingBootstrap(state)
+    if (!shouldRestoreProvider) return
     void promoteProviderStyle({
       ...options,
       generation,
@@ -354,15 +543,18 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
     return
   }
 
-  if (!state.bootstrapApplied && !hasCurrentProviderPresentation(state)) {
+  if (
+    !state.bootstrapApplied
+    && !state.bootstrapPending
+    && !hasCurrentProviderPresentation(state)
+  ) {
     try {
       // The source-owned style is installed before provider resolution starts,
       // so the first playable Flight frame never waits on remote style I/O.
+      beginMapLibreFlightBootstrap(state.map, options.bootstrapStyle)
       state.map.setStyle?.(options.bootstrapStyle, { diff: true })
-      state.bootstrapApplied = true
-      state.deadlineFramePresented = false
-      state.providerPresentation = null
     } catch (error) {
+      clearPendingBootstrap(state)
       reportError(state, generation, options.onError, error)
       return
     }
@@ -374,6 +566,7 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
       promotionStarted
       || state.disposed
       || state.generation !== generation
+      || state.bootstrapPending
       || !hasCurrentProviderPresentation(state)
       || !options.hasExactFlightOverlay(state.map)
     ) return
@@ -409,6 +602,7 @@ export function disposeMapLibreFlightBootstrap(map: any): void {
   if (!state) return
   state.disposed = true
   state.generation += 1
+  clearPendingBootstrap(state)
   cancelProviderStyleApply(state)
   removeRenderBinding(state)
   bootstrapStateByMap.delete(map)

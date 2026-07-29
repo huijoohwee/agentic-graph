@@ -23,8 +23,8 @@ import {
   SAFE_SVG_FALLBACK_STYLE_SENTINEL,
 } from './basemapStyle.js'
 import {
+  beginMapLibreFlightBootstrap,
   disposeMapLibreFlightBootstrap,
-  markMapLibreFlightBootstrapApplied,
   reconcileMapLibreFlightBootstrap,
 } from './mapLibreFlightBootstrap.js'
 import {
@@ -902,7 +902,7 @@ export function useMapLibreBasemap(args: {
         }
         mountedMapRef.current = map
         if (initialStyleOverride) {
-          markMapLibreFlightBootstrapApplied(map)
+          beginMapLibreFlightBootstrap(map, initialStyleOverride)
         }
         releaseMapLease = claimMapLibreMapLease({
           map,
