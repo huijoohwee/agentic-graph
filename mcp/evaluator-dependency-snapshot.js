@@ -16,6 +16,8 @@ const MAX_LOCK_BYTES = 16 * 1024 * 1024;
 const MAX_PACKAGE_FILE_BYTES = 8 * 1024 * 1024;
 const MAX_CLOSURE_BYTES = 64 * 1024 * 1024;
 const MAX_CLOSURE_FILES = 4096;
+const FILE_READ_CONCURRENCY = 16;
+const METADATA_CONCURRENCY = 32;
 const INTEGRITY = /^(?:sha256|sha384|sha512)-[A-Za-z0-9+/]+={0,2}$/;
 
 const fail = (message) =>
@@ -28,6 +30,7 @@ const within = (parent, candidate) => {
 const sameDirectory = (left, right) =>
   left.dev === right.dev
   && left.ino === right.ino
+  && left.size === right.size
   && left.mtimeMs === right.mtimeMs
   && left.ctimeMs === right.ctimeMs;
 const stableValue = (value) => {
@@ -40,6 +43,24 @@ const stableValue = (value) => {
 };
 const stableJson = (value) => JSON.stringify(stableValue(value));
 const digest = (value) => crypto.createHash("sha256").update(value).digest("hex");
+
+async function mapBounded(items, concurrency, mapper) {
+  const output = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({
+    length: Math.min(concurrency, items.length),
+  }, async () => {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      output[index] = await mapper(items[index], index);
+    }
+  }));
+  return output;
+}
+
+const entryIdentity = (entry) =>
+  `${entry.isDirectory() ? "directory" : "file"}\0${entry.name}`;
 
 function parseJson(content, label) {
   try {
@@ -94,9 +115,10 @@ async function snapshotPackageDirectory({
   if (!within(evaluatorReal, packageReal) || packageReal === evaluatorReal) {
     throw fail("An evaluator dependency package escapes the evaluator checkout.");
   }
-  const hash = crypto.createHash("sha256");
+  const directories = [];
+  const files = [];
 
-  async function visit(directory) {
+  async function enumerate(directory) {
     const before = await fs.lstat(directory);
     const directoryReal = await fs.realpath(directory);
     if (!before.isDirectory() || before.isSymbolicLink()
@@ -105,48 +127,99 @@ async function snapshotPackageDirectory({
     }
     const relativeDirectory = path.relative(packageReal, directoryReal)
       .split(path.sep).join("/");
-    hash.update(`directory\0${relativeDirectory}\0`);
     const entries = (await fs.readdir(directory, { withFileTypes: true }))
+      .filter((entry) =>
+        !(directoryReal === packageReal && entry.name === "node_modules"))
       .sort((left, right) => left.name.localeCompare(right.name, "en"));
+    const node = {
+      children: [],
+      path: directoryReal,
+      relativePath: relativeDirectory,
+      snapshot: before,
+      entries: Object.freeze(entries.map(entryIdentity)),
+    };
+    directories.push(node);
     for (const entry of entries) {
-      if (directoryReal === packageReal && entry.name === "node_modules") continue;
       if (entry.isSymbolicLink()
         || (!entry.isDirectory() && !entry.isFile())) {
         throw fail("An evaluator dependency contains an unsafe filesystem entry.");
       }
       const filePath = path.join(directory, entry.name);
       if (entry.isDirectory()) {
-        await visit(filePath);
+        node.children.push({
+          name: entry.name,
+          node: await enumerate(filePath),
+          type: "directory",
+        });
         continue;
       }
       budget.files += 1;
       if (budget.files > MAX_CLOSURE_FILES) {
         throw fail("The evaluator dependency closure exceeds its file-count bound.");
       }
-      const { content, realPath } = await readStableBoundedFile({
-        filePath,
+      const file = {
         containingDirectory: directory,
-        maximumBytes: MAX_PACKAGE_FILE_BYTES,
-      });
-      budget.bytes += content.byteLength;
-      if (budget.bytes > MAX_CLOSURE_BYTES) {
-        throw fail("The evaluator dependency closure exceeds its byte bound.");
-      }
-      const relativeFile = path.relative(packageReal, realPath)
-        .split(path.sep).join("/");
-      hash.update(`file\0${relativeFile}\0${content.byteLength}\0`);
-      hash.update(content);
+        filePath,
+        name: entry.name,
+      };
+      files.push(file);
+      node.children.push({ name: entry.name, node: file, type: "file" });
     }
-    const after = await fs.lstat(directory);
-    const finalReal = await fs.realpath(directory);
-    if (!sameDirectory(before, after)
-      || after.isSymbolicLink()
-      || finalReal !== directoryReal) {
-      throw fail("An evaluator dependency directory changed during inspection.");
-    }
+    return node;
   }
 
-  await visit(packageRoot);
+  const root = await enumerate(packageRoot);
+  await mapBounded(files, FILE_READ_CONCURRENCY, async (file) => {
+    const result = await readStableBoundedFile({
+      filePath: file.filePath,
+      containingDirectory: file.containingDirectory,
+      maximumBytes: MAX_PACKAGE_FILE_BYTES,
+    });
+    file.content = result.content;
+    file.path = result.realPath;
+    file.relativePath = path.relative(packageReal, result.realPath)
+      .split(path.sep).join("/");
+  });
+  for (const file of files) {
+    budget.bytes += file.content.byteLength;
+    if (budget.bytes > MAX_CLOSURE_BYTES) {
+      throw fail("The evaluator dependency closure exceeds its byte bound.");
+    }
+  }
+  await mapBounded(directories, METADATA_CONCURRENCY, async (directory) => {
+    const [after, finalReal, entries] = await Promise.all([
+      fs.lstat(directory.path),
+      fs.realpath(directory.path),
+      fs.readdir(directory.path, { withFileTypes: true }),
+    ]);
+    const finalEntries = entries
+      .filter((entry) =>
+        !(directory.relativePath === "" && entry.name === "node_modules"))
+      .sort((left, right) => left.name.localeCompare(right.name, "en"))
+      .map(entryIdentity);
+    if (!sameDirectory(directory.snapshot, after)
+      || after.isSymbolicLink()
+      || finalReal !== directory.path
+      || finalEntries.length !== directory.entries.length
+      || finalEntries.some((entry, index) => entry !== directory.entries[index])) {
+      throw fail("An evaluator dependency directory changed during inspection.");
+    }
+    directory.snapshot = after;
+  });
+  const hash = crypto.createHash("sha256");
+  function hashDirectory(directory) {
+    hash.update(`directory\0${directory.relativePath}\0`);
+    for (const child of directory.children) {
+      if (child.type === "directory") hashDirectory(child.node);
+      else {
+        hash.update(
+          `file\0${child.node.relativePath}\0${child.node.content.byteLength}\0`,
+        );
+        hash.update(child.node.content);
+      }
+    }
+  }
+  hashDirectory(root);
   return {
     bytes: budget.bytes - startingBytes,
     digest: hash.digest("hex"),
@@ -276,24 +349,10 @@ export async function snapshotPinnedEvaluatorDependencies(evaluatorRoot) {
       version: manifestBefore.value.version,
       integrity: lockEntry.integrity,
       packageDigest: directory.digest,
-      compareExtractedPackage: async (extractedPackage, extractionRoot) => {
-        const extractedBudget = { bytes: 0, files: 0 };
-        const extracted = await snapshotPackageDirectory({
-          packageRoot: extractedPackage,
-          evaluatorRoot: extractionRoot,
-          budget: extractedBudget,
-        });
-        if (extracted.digest !== directory.digest
-          || extracted.bytes !== directory.bytes
-          || extracted.files !== directory.files) {
-          throw fail(
-            `The installed evaluator dependency ${expectedName} differs from its pinned archive `
-            + `(installed sha256:${directory.digest}/${directory.files}/${directory.bytes}; `
-            + `archive sha256:${extracted.digest}/${extracted.files}/${extracted.bytes}).`,
-          );
-        }
-      },
+      packageBytes: directory.bytes,
+      packageFiles: directory.files,
     });
+    const resolvedEntryReal = await fs.realpath(resolvedEntry);
     const record = {
       name: expectedName,
       version: manifestBefore.value.version,
@@ -301,7 +360,7 @@ export async function snapshotPinnedEvaluatorDependencies(evaluatorRoot) {
       lockEntryDigest: digest(stableJson(lockEntry)),
       packageDigest: directory.digest,
       packageRealPath: directory.realPath,
-      resolvedEntry: await fs.realpath(resolvedEntry),
+      resolvedEntry: resolvedEntryReal,
     };
     visited.set(packageReal, record);
 
@@ -354,11 +413,12 @@ export async function snapshotPinnedEvaluatorDependencies(evaluatorRoot) {
   }
   const records = [...visited.values()]
     .sort((left, right) => left.lockKey.localeCompare(right.lockKey, "en"));
+  const ajvEntryReal = await fs.realpath(resolvedAjvEntry);
   return Object.freeze({
     identity: digest(stableJson({
       manifestDigest: digest(packageBefore.content),
       lockDigest: digest(lockBefore.content),
-      ajvEntry: await fs.realpath(resolvedAjvEntry),
+      ajvEntry: ajvEntryReal,
       records,
     })),
     ajvVersion: lockedAjv.version,

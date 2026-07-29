@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -6,11 +7,15 @@ import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
 
 import {
   evaluateAgenticSdlcLedger,
   loadAgenticSdlcEvaluator,
 } from "../agentic-sdlc-ledger-runtime.js";
+import {
+  snapshotStrictNpmPackageArchive,
+} from "../npm-package-integrity-proof.js";
 import { digestEvidence } from "../implementation-run-evidence.js";
 import {
   agenticSdlcLedgerResultFields,
@@ -40,6 +45,45 @@ const EVALUATOR_DEPENDENCIES = Object.freeze([
   "json-schema-traverse",
   "require-from-string",
 ]);
+
+function tarEntry(name, value = "", type = "0") {
+  const contentBytes = Buffer.from(value);
+  const header = Buffer.alloc(512);
+  header.write(name, 0, 100, "utf8");
+  header.write("0000644\0", 100, 8, "ascii");
+  header.write("0000000\0", 108, 8, "ascii");
+  header.write("0000000\0", 116, 8, "ascii");
+  header.write(
+    `${contentBytes.byteLength.toString(8).padStart(11, "0")}\0`,
+    124,
+    12,
+    "ascii",
+  );
+  header.write("00000000000\0", 136, 12, "ascii");
+  header.fill(0x20, 148, 156);
+  header.write(type, 156, 1, "ascii");
+  header.write("ustar\0", 257, 6, "ascii");
+  header.write("00", 263, 2, "ascii");
+  const checksum = [...header].reduce((total, byte) => total + byte, 0);
+  header.write(
+    `${checksum.toString(8).padStart(6, "0")}\0 `,
+    148,
+    8,
+    "ascii",
+  );
+  return Buffer.concat([
+    header,
+    contentBytes,
+    Buffer.alloc((512 - (contentBytes.byteLength % 512)) % 512),
+  ]);
+}
+
+function tarArchive(entries, { terminated = true } = {}) {
+  return gzipSync(Buffer.concat([
+    ...entries,
+    ...(terminated ? [Buffer.alloc(1024)] : []),
+  ]));
+}
 
 const createState = (
   worktreePath,
@@ -454,4 +498,46 @@ test("evaluator loader rejects stable pre-existing ignored dependency tampering"
     }),
     (error) => error.code === "ACOS_REVISION_MISMATCH",
   );
+});
+
+test("in-memory npm archive snapshot matches installed-tree digest ordering", () => {
+  const archive = tarArchive([
+    tarEntry("package/z.txt", "z"),
+    tarEntry("package/alpha/b.txt", "bee"),
+    tarEntry("package/alpha/", "", "5"),
+  ]);
+  const expected = crypto.createHash("sha256");
+  expected.update("directory\0\0");
+  expected.update("directory\0alpha\0");
+  expected.update(`file\0alpha/b.txt\0${3}\0`);
+  expected.update("bee");
+  expected.update(`file\0z.txt\0${1}\0`);
+  expected.update("z");
+  assert.deepEqual(snapshotStrictNpmPackageArchive(archive), {
+    bytes: 4,
+    digest: expected.digest("hex"),
+    files: 2,
+  });
+});
+
+test("in-memory npm archive snapshot rejects traversal, links, and collisions", () => {
+  const unsafeArchives = [
+    tarArchive([tarEntry("package/../escape", "x")]),
+    tarArchive([tarEntry("package/link", "", "2")]),
+    tarArchive([
+      tarEntry("package/duplicate", "one"),
+      tarEntry("package/duplicate", "two"),
+    ]),
+    tarArchive([
+      tarEntry("package/file", "one"),
+      tarEntry("package/file/child", "two"),
+    ]),
+    tarArchive([tarEntry("package/open", "x")], { terminated: false }),
+  ];
+  for (const archive of unsafeArchives) {
+    assert.throws(
+      () => snapshotStrictNpmPackageArchive(archive),
+      (error) => error.code === "ACOS_DEPENDENCY_MISMATCH",
+    );
+  }
 });

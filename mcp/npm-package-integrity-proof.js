@@ -86,18 +86,15 @@ function zeroBlock(bytes) {
   return true;
 }
 
-async function extractStrictPackageArchive(archive, extractionRoot) {
+export function snapshotStrictNpmPackageArchive(archive) {
   let expanded;
   try {
     expanded = gunzipSync(archive, { maxOutputLength: MAX_EXPANDED_BYTES });
   } catch {
     throw fail("The cached npm package archive cannot be safely decompressed.");
   }
-  const packageRoot = path.join(extractionRoot, "package");
-  await fs.mkdir(packageRoot, { mode: 0o700 });
-  const seen = new Set();
+  const root = { children: new Map(), explicit: true, type: "directory" };
   let entries = 0;
-  let extractedBytes = 0;
   let offset = 0;
   let terminated = false;
   while (offset + 512 <= expanded.byteLength) {
@@ -129,31 +126,50 @@ async function extractStrictPackageArchive(archive, extractionRoot) {
     if (dataEnd > expanded.byteLength || nextOffset > expanded.byteLength) {
       throw fail("The cached npm package archive is truncated.");
     }
-    const segments = safeArchiveRelativePath(header);
-    const relative = segments.join("/");
-    if (seen.has(relative)) {
-      throw fail("The cached npm package archive contains a duplicate path.");
+    if (!zeroBlock(expanded.subarray(dataEnd, nextOffset))) {
+      throw fail("The cached npm package archive has non-zero entry padding.");
     }
-    seen.add(relative);
+    const segments = safeArchiveRelativePath(header);
     entries += 1;
     if (entries > MAX_ARCHIVE_ENTRIES) {
       throw fail("The cached npm package archive exceeds its entry-count bound.");
     }
-    const target = path.join(packageRoot, ...segments);
-    if (!within(packageRoot, target)) {
-      throw fail("The cached npm package archive escapes its extraction root.");
-    }
-    if (type === 0x35) {
-      await fs.mkdir(target, { recursive: true, mode: 0o700 });
-    } else {
-      extractedBytes += size;
-      if (extractedBytes > MAX_EXPANDED_BYTES) {
-        throw fail("The cached npm package archive exceeds its expanded byte bound.");
+    let parent = root;
+    for (const segment of segments.slice(0, -1)) {
+      const existing = parent.children.get(segment);
+      if (existing?.type === "file") {
+        throw fail("The cached npm package archive has a file-directory collision.");
       }
-      await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-      await fs.writeFile(target, expanded.subarray(dataStart, dataEnd), {
-        flag: "wx",
-        mode: 0o600,
+      if (!existing) {
+        parent.children.set(segment, {
+          children: new Map(),
+          explicit: false,
+          type: "directory",
+        });
+      }
+      parent = parent.children.get(segment);
+    }
+    const leaf = segments.at(-1);
+    const existing = parent.children.get(leaf);
+    if (type === 0x35) {
+      if (existing?.type === "file" || existing?.explicit) {
+        throw fail("The cached npm package archive contains a duplicate or colliding path.");
+      }
+      if (existing) existing.explicit = true;
+      else {
+        parent.children.set(leaf, {
+          children: new Map(),
+          explicit: true,
+          type: "directory",
+        });
+      }
+    } else {
+      if (existing) {
+        throw fail("The cached npm package archive contains a duplicate or colliding path.");
+      }
+      parent.children.set(leaf, {
+        content: expanded.subarray(dataStart, dataEnd),
+        type: "file",
       });
     }
     offset = nextOffset;
@@ -161,7 +177,36 @@ async function extractStrictPackageArchive(archive, extractionRoot) {
   if (!terminated || entries === 0) {
     throw fail("The cached npm package archive has no valid terminator or entries.");
   }
-  return packageRoot;
+  const hash = crypto.createHash("sha256");
+  let bytes = 0;
+  let files = 0;
+  function visitDirectory(directory, relativeDirectory) {
+    hash.update(`directory\0${relativeDirectory}\0`);
+    const children = [...directory.children.entries()]
+      .sort(([left], [right]) => left.localeCompare(right, "en"));
+    for (const [name, child] of children) {
+      const relative = relativeDirectory
+        ? `${relativeDirectory}/${name}`
+        : name;
+      if (child.type === "directory") {
+        visitDirectory(child, relative);
+        continue;
+      }
+      files += 1;
+      bytes += child.content.byteLength;
+      if (bytes > MAX_EXPANDED_BYTES) {
+        throw fail("The cached npm package archive exceeds its expanded byte bound.");
+      }
+      hash.update(`file\0${relative}\0${child.content.byteLength}\0`);
+      hash.update(child.content);
+    }
+  }
+  visitDirectory(root, "");
+  return Object.freeze({
+    bytes,
+    digest: hash.digest("hex"),
+    files,
+  });
 }
 
 function integrityDescriptor(integrity) {
@@ -249,30 +294,26 @@ export async function verifyInstalledPackageIntegrity({
   version,
   integrity,
   packageDigest,
-  compareExtractedPackage,
+  packageBytes,
+  packageFiles,
 }) {
   if (!PACKAGE_NAME.test(String(name)) || !EXACT_VERSION.test(String(version))
     || typeof packageDigest !== "string"
     || !/^[0-9a-f]{64}$/.test(packageDigest)
-    || typeof compareExtractedPackage !== "function") {
+    || !Number.isSafeInteger(packageBytes) || packageBytes < 1
+    || !Number.isSafeInteger(packageFiles) || packageFiles < 1) {
     throw fail("The installed npm package proof request is invalid.");
   }
   const cacheKey = `${integrity}\0${packageDigest}`;
   if (verifiedArchives.has(cacheKey)) return;
   const archive = await readCachedArchive(integrity);
-  const temporaryDirectory = await fs.mkdtemp(
-    path.join(os.tmpdir(), "knowgrph-npm-integrity-"),
-  );
-  try {
-    const extractionRoot = path.join(temporaryDirectory, "extracted");
-    await fs.mkdir(extractionRoot, { mode: 0o700 });
-    const extractedPackage = await extractStrictPackageArchive(
-      archive,
-      extractionRoot,
+  const archived = snapshotStrictNpmPackageArchive(archive);
+  if (archived.digest !== packageDigest
+    || archived.bytes !== packageBytes
+    || archived.files !== packageFiles) {
+    throw fail(
+      `The installed evaluator dependency ${name} differs from its pinned archive.`,
     );
-    await compareExtractedPackage(extractedPackage, extractionRoot);
-    rememberVerified(cacheKey);
-  } finally {
-    await fs.rm(temporaryDirectory, { recursive: true, force: true });
   }
+  rememberVerified(cacheKey);
 }
