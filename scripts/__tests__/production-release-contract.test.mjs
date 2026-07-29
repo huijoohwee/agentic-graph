@@ -24,6 +24,7 @@ const serviceWorkerUpgradeCacheProofScript = fs.readFileSync(path.resolve(repoRo
 const productionMirrorArtifactScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-mirror-artifact.mjs'), 'utf8')
 const gameModeSourceAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'check-game-fps-readiness.mjs'), 'utf8')
 const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'assert-protected-main-release-authority.mjs'), 'utf8')
+const productionAuthorizationScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-release-authorization.mjs'), 'utf8')
 const packageScripts = JSON.parse(fs.readFileSync(path.resolve(repoRoot, 'package.json'), 'utf8')).scripts
 
 test('integration isolates protected merge and main checks by exact revision', () => {
@@ -108,16 +109,19 @@ test('GitHub workflows pin Node 24 actions to immutable revisions', () => {
   }
 })
 
-test('production release rebuilds the canvas with the exact authorized candidate revision', () => {
+test('production release builds the exact localhost-reviewed candidate once before authorization', () => {
   const verifyJob = releaseWorkflow.slice(
     releaseWorkflow.indexOf('\n  verify:'),
     releaseWorkflow.indexOf('\n  deploy:'),
   )
 
   assert.match(verifyJob, /name: Build and sync verified candidate/)
-  assert.match(verifyJob, /KNOWGRPH_SOURCE_REVISION: \$\{\{ github\.sha \}\}/)
+  assert.match(verifyJob, /KNOWGRPH_SOURCE_REVISION: \$\{\{ inputs\.source_sha \}\}/)
   assert.match(verifyJob, /VITE_KNOWGRPH_STORAGE_BASE_URL: https:\/\/airvio\.co/)
   assert.match(verifyJob, /run: npm run pages:build-sync/)
+  assert.match(verifyJob, /name: Materialize and verify localhost review candidate/)
+  assert.match(verifyJob, /name: Bind immutable production candidate/)
+  assert.match(verifyJob, /name: Upload production authorization evidence/)
   assert.doesNotMatch(verifyJob, /run: npm run pages:sync/)
 })
 
@@ -148,11 +152,16 @@ test('apex Home has one canonical shell and a real Pages not-found boundary', ()
   assert.match(releaseWorkflow, /huijoohwee\/404\.html/)
 })
 
-test('production release is automatic only for protected main and retains rollback evidence', () => {
-  assert.match(releaseWorkflow, /on:\s*\n\s*push:\s*\n\s*branches: \[main\]/)
+test('production release requires an exact reviewed candidate, human environment gate, and retains rollback evidence', () => {
+  assert.match(releaseWorkflow, /on:\s*\n\s*workflow_dispatch:/)
   assert.match(releaseWorkflow, /concurrency:\s*\n\s*group: production-release\s*\n\s*cancel-in-progress: false/)
-  assert.doesNotMatch(releaseWorkflow, /workflow_dispatch:/)
-  assert.doesNotMatch(releaseWorkflow, /confirmation:/)
+  assert.doesNotMatch(releaseWorkflow, /\n\s*push:/)
+  assert.match(releaseWorkflow, /source_sha:/)
+  assert.match(releaseWorkflow, /local_review_candidate:/)
+  assert.match(releaseWorkflow, /environment:\s*\n\s*name: production/)
+  assert.match(releaseWorkflow, /PRODUCTION_CANDIDATE_DIGEST: \$\{\{ needs\.verify\.outputs\.candidate_digest \}\}/)
+  assert.match(productionAuthorizationScript, /agentic-local-review-candidate\/v1/)
+  assert.match(productionAuthorizationScript, /agentic-production-release-candidate\/v1/)
   assert.match(releaseWorkflow, /name: Enforce sole deployment ownership/)
   assert.match(releaseWorkflow, /runtime:pages:owner-enforce/)
   assert.match(releaseWorkflow, /name: Capture current production rollback target/)
@@ -166,9 +175,10 @@ test('production release is automatic only for protected main and retains rollba
 test('production release bounds same-run artifacts to one day', () => {
   const retentionDays = [...releaseWorkflow.matchAll(/retention-days:\s*(\d+)/g)]
     .map(([, days]) => Number(days))
-  assert.deepEqual(retentionDays, [1, 1])
-  assert.match(releaseWorkflow, /name: production-\$\{\{ github\.sha \}\}/)
-  assert.match(releaseWorkflow, /name: immutable-release-manifest-\$\{\{ github\.sha \}\}/)
+  assert.deepEqual(retentionDays, [1, 1, 1])
+  assert.match(releaseWorkflow, /name: production-\$\{\{ inputs\.source_sha \}\}/)
+  assert.match(releaseWorkflow, /name: immutable-release-manifest-\$\{\{ inputs\.source_sha \}\}/)
+  assert.match(releaseWorkflow, /name: production-authorization-\$\{\{ inputs\.source_sha \}\}/)
 })
 
 test('Agentic Canvas OS docs promote automatically through protected Knowgrph integration', () => {
@@ -235,6 +245,7 @@ test('verified production mirror is published only after live smoke', () => {
     assert.ok(stepStart >= 0, `${stepName} must exist`)
     assert.ok(authorityIndex >= 0, `${stepName} must revalidate protected main`)
     assert.ok(mutationIndex > authorityIndex, `${stepName} must revalidate before mutation`)
+    assert.match(stepSource, /release:candidate:authorization -- verify/, `${stepName} must revalidate candidate authorization`)
   }
   assert.match(
     deployJob,

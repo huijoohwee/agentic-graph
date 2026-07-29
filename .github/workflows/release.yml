@@ -1,8 +1,17 @@
 name: Production Release
+run-name: Production candidate ${{ inputs.source_sha }}
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact protected main commit reviewed on localhost
+        required: true
+        type: string
+      local_review_candidate:
+        description: Exact agentic-local-review-candidate/v1 JSON from turn:end
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -21,16 +30,17 @@ jobs:
       docs_revision: ${{ steps.agentic_canvas_os_docs.outputs.ref }}
       manifest_digest: ${{ steps.immutable_manifest.outputs.digest }}
       mirror_revision: ${{ steps.mirror_revision.outputs.revision }}
+      candidate_digest: ${{ steps.production_candidate.outputs.candidate_digest }}
     env:
       NODE_OPTIONS: --max-old-space-size=4096
-      RELEASE_SHA: ${{ github.sha }}
+      RELEASE_SHA: ${{ inputs.source_sha }}
       KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
 
     steps:
       - name: Checkout exact protected main commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.source_sha }}
           path: knowgrph
           fetch-depth: 2
 
@@ -39,6 +49,7 @@ jobs:
         run: |
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA"
 
       - name: Checkout production mirror
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -98,6 +109,19 @@ jobs:
           path: agentic-canvas-os
           fetch-depth: 0
 
+      - name: Materialize and verify localhost review candidate
+        working-directory: knowgrph
+        env:
+          LOCAL_REVIEW_CANDIDATE_JSON: ${{ inputs.local_review_candidate }}
+        run: |
+          npm run --silent release:candidate:authorization -- materialize-local-review --output "$RUNNER_TEMP/local-review-candidate.json"
+          npm run --silent release:candidate:authorization -- verify-local-review \
+            --local-review "$RUNNER_TEMP/local-review-candidate.json" \
+            --source-sha "$RELEASE_SHA" \
+            --source-tree "$(git rev-parse HEAD^{tree})" \
+            --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" \
+            --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os"
+
       - name: Create immutable release manifest
         id: immutable_manifest
         working-directory: knowgrph
@@ -112,7 +136,7 @@ jobs:
       - name: Upload immutable release manifest
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: immutable-release-manifest-${{ github.sha }}
+          name: immutable-release-manifest-${{ inputs.source_sha }}
           path: ${{ runner.temp }}/immutable-release-manifest.json
           if-no-files-found: error
           retention-days: 1
@@ -124,7 +148,7 @@ jobs:
       - name: Build and sync verified candidate
         working-directory: knowgrph
         env:
-          KNOWGRPH_SOURCE_REVISION: ${{ github.sha }}
+          KNOWGRPH_SOURCE_REVISION: ${{ inputs.source_sha }}
           VITE_KNOWGRPH_STORAGE_BASE_URL: https://airvio.co
         run: npm run pages:build-sync
 
@@ -140,10 +164,41 @@ jobs:
         working-directory: knowgrph
         run: npm run --silent production:mirror-artifact:create -- ../huijoohwee
 
+      - name: Bind immutable production candidate
+        id: production_candidate
+        working-directory: knowgrph
+        run: |
+          npm run --silent release:candidate:authorization -- create \
+            --local-review "$RUNNER_TEMP/local-review-candidate.json" \
+            --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" \
+            --source-sha "$RELEASE_SHA" \
+            --source-tree "$(git rev-parse HEAD^{tree})" \
+            --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" \
+            --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" \
+            --output "$RUNNER_TEMP/production-release-candidate.json" \
+            --github-output >> "$GITHUB_OUTPUT"
+          {
+            echo "## Production candidate awaiting human authorization"
+            echo "- Source: \`$RELEASE_SHA\`"
+            echo "- Agentic Canvas OS: \`${{ steps.agentic_canvas_os_docs.outputs.ref }}\`"
+            echo "- Candidate digest: \`$(jq -r .candidateDigest "$RUNNER_TEMP/production-release-candidate.json")\`"
+            echo "- Immutable manifest: \`${{ steps.immutable_manifest.outputs.digest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload production authorization evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: production-authorization-${{ inputs.source_sha }}
+          path: |
+            ${{ runner.temp }}/local-review-candidate.json
+            ${{ runner.temp }}/production-release-candidate.json
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Upload verified release artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: production-${{ github.sha }}
+          name: production-${{ inputs.source_sha }}
           path: |
             huijoohwee/404.html
             huijoohwee/content/knowgrph
@@ -163,23 +218,26 @@ jobs:
           retention-days: 1
 
   deploy:
-    name: Deploy, Verify, And Publish Mirror
+    name: Human-Authorized Deploy, Verify, And Publish Mirror
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    environment: production
+    environment:
+      name: production
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
       KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
-      RELEASE_SHA: ${{ github.sha }}
+      RELEASE_SHA: ${{ inputs.source_sha }}
+      PRODUCTION_CANDIDATE_DIGEST: ${{ needs.verify.outputs.candidate_digest }}
 
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.source_sha }}
           path: knowgrph
           fetch-depth: 1
 
@@ -224,7 +282,7 @@ jobs:
       - name: Download verified artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: production-${{ github.sha }}
+          name: production-${{ inputs.source_sha }}
           path: ${{ runner.temp }}/production-mirror-artifact
 
       - name: Reconcile verified artifact into exact mirror base
@@ -234,8 +292,14 @@ jobs:
       - name: Download immutable manifest
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: immutable-release-manifest-${{ github.sha }}
+          name: immutable-release-manifest-${{ inputs.source_sha }}
           path: ${{ runner.temp }}/immutable-release-manifest-proof
+
+      - name: Download production authorization evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: production-authorization-${{ inputs.source_sha }}
+          path: ${{ runner.temp }}/production-authorization
 
       - name: Revalidate immutable manifest and configuration
         working-directory: knowgrph
@@ -245,12 +309,22 @@ jobs:
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$CLOUDFLARE_PAGES_PROJECT"
           test -n "${{ secrets.HUIJOOHWEE_PUSH_TOKEN }}"
-          npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest-proof/immutable-release-manifest.json" --source-sha "${{ github.sha }}" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --digest "${{ needs.verify.outputs.manifest_digest }}"
+          npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest-proof/immutable-release-manifest.json" --source-sha "$RELEASE_SHA" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --digest "${{ needs.verify.outputs.manifest_digest }}"
+          npm run --silent release:candidate:authorization -- verify \
+            --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" \
+            --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" \
+            --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" \
+            --source-sha "$RELEASE_SHA" \
+            --source-tree "$(git rev-parse HEAD^{tree})" \
+            --docs-sha "${{ needs.verify.outputs.docs_revision }}" \
+            --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" \
+            --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
 
       - name: Enforce sole deployment ownership
         working-directory: knowgrph
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           npm run --silent runtime:pages:owner-enforce
 
       - name: Capture current production rollback target
@@ -272,6 +346,7 @@ jobs:
         working-directory: knowgrph
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           npx --no-install wrangler pages deploy ../huijoohwee --project-name="$CLOUDFLARE_PAGES_PROJECT" --branch=main --commit-hash="$RELEASE_SHA" --commit-dirty=true
 
       - name: Capture exact candidate deployment origin
@@ -283,6 +358,7 @@ jobs:
         working-directory: knowgrph
         run: |
           npm run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
+          npm run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
           npm run storage:d1:seed:docs
 
       - name: Verify live runtime
@@ -327,6 +403,7 @@ jobs:
           else
             git commit -m "chore(release): promote knowgrph ${RELEASE_SHA:0:12}"
             npm --prefix ../knowgrph run --silent release:main-authority:check -- --source-sha "$RELEASE_SHA"
+            npm --prefix ../knowgrph run --silent release:candidate:authorization -- verify --candidate "$RUNNER_TEMP/production-authorization/production-release-candidate.json" --local-review "$RUNNER_TEMP/production-authorization/local-review-candidate.json" --readiness "$GITHUB_WORKSPACE/huijoohwee/.well-known/runtime-readiness.json" --source-sha "$RELEASE_SHA" --source-tree "$(git -C ../knowgrph rev-parse HEAD^{tree})" --docs-sha "${{ needs.verify.outputs.docs_revision }}" --docs-root "$GITHUB_WORKSPACE/agentic-canvas-os" --candidate-digest "$PRODUCTION_CANDIDATE_DIGEST"
             git push origin HEAD:main
           fi
 
