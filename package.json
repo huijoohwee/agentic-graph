@@ -54,6 +54,7 @@
     "production:sw-upgrade:prewarm": "node ./scripts/verify-production-service-worker-upgrade.mjs prewarm",
     "production:sw-upgrade:verify": "node ./scripts/verify-production-service-worker-upgrade.mjs verify",
     "release:main-authority:check": "node ./scripts/assert-protected-main-release-authority.mjs",
+    "production:authorize": "node ./scripts/production-terminal-authorization.mjs",
     "release:candidate:authorization": "node ./scripts/production-release-authorization.mjs",
     "release:lifecycle:receipts": "node ./scripts/production-release-lifecycle.mjs",
     "pwa:build-authority:check": "node ./scripts/check-pwa-build-authority.mjs",

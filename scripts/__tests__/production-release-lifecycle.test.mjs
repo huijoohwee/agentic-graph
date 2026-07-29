@@ -9,6 +9,11 @@ import {
   digest,
   selectProductionApproval,
 } from '../production-release-lifecycle.mjs'
+import {
+  buildTerminalAuthorizationEvidence,
+  formatTerminalAuthorizationComment,
+  responseFor,
+} from '../production-terminal-authorization.mjs'
 import { readContract } from '../collaboration-contract.mjs'
 import { resolveCanonicalSourceRoots } from '../worktree-policy.mjs'
 
@@ -80,11 +85,27 @@ const buildCandidate = (overrides = {}) => createLifecycleCandidate({
   ...overrides,
 })
 
-const approvals = [{
+const baseApproval = {
   state: 'approved',
   environments: [{ name: 'production' }],
   user: { login: 'operator', id: 7, type: 'User' },
-}]
+}
+
+const approvalsFor = (candidate, runId) => {
+  const challengeDigest = '4'.repeat(64)
+  const evidence = buildTerminalAuthorizationEvidence({
+    repository: 'huijoohwee/knowgrph',
+    runId,
+    sourceRevision,
+    candidateDigest: candidate.receiptDigest,
+    targetDigest: candidate.targetDigest,
+    humanActorId: 'github-user:7:operator',
+    challengeDigest,
+    responseDigest: responseFor({ challengeDigest, candidateDigest: candidate.receiptDigest }),
+    recordedAt: '2026-07-29T00:01:30.000Z',
+  })
+  return [{ ...baseApproval, comment: formatTerminalAuthorizationComment(evidence) }]
+}
 
 test('adapter creates a joined neutral receipt chain from the exact localhost candidate', () => {
   const chain = buildCandidate()
@@ -122,13 +143,15 @@ test('authorization accepts one GitHub human approval and is consumed once', () 
   const result = createLifecycleAuthorization({
     contract,
     ...chain,
-    approvals,
+    approvals: approvalsFor(chain.candidate, '123'),
     repository: 'huijoohwee/knowgrph',
     runId: '123',
     serverUrl: 'https://github.com',
     controllerId: 'github-actions:123:deploy',
     issuedAt: '2026-07-29T00:02:00.000Z',
   })
+  assert.equal(result.interaction.browserRequired, false)
+  assert.equal(result.authorization.interactionReceiptDigest, result.interaction.receiptDigest)
   assert.equal(result.authorization.humanActorId, 'github-user:7:operator')
   assert.equal(result.authorization.status, 'authorized')
   assert.equal(result.consumedAuthorization.status, 'consumed')
@@ -145,9 +168,9 @@ test('authorization accepts one GitHub human approval and is consumed once', () 
 test('authorization rejects agents, bots, ambiguity, and the wrong environment', () => {
   for (const invalid of [
     [],
-    [{ ...approvals[0], user: { login: 'release-bot', id: 8, type: 'Bot' } }],
-    [{ ...approvals[0], environments: [{ name: 'staging' }] }],
-    [...approvals, { ...approvals[0], user: { login: 'other', id: 9, type: 'User' } }],
+    [{ ...baseApproval, user: { login: 'release-bot', id: 8, type: 'Bot' } }],
+    [{ ...baseApproval, environments: [{ name: 'staging' }] }],
+    [baseApproval, { ...baseApproval, user: { login: 'other', id: 9, type: 'User' } }],
   ]) {
     assert.throws(() => selectProductionApproval(invalid), /exactly one authenticated human approval/)
   }
@@ -179,7 +202,7 @@ test('source, dependency, policy, target, artifact, and manifest drift fail clos
   const authorized = createLifecycleAuthorization({
     contract,
     ...chain,
-    approvals,
+    approvals: approvalsFor(chain.candidate, '124'),
     repository: 'huijoohwee/knowgrph',
     runId: '124',
     serverUrl: 'https://github.com',
