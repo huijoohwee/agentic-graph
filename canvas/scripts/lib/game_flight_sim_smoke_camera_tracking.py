@@ -23,6 +23,7 @@ def read_camera_state(page: Page) -> dict[str, Any]:
             source: source.inspectLocalCameraSource(),
             flight: flight.readFlightSimSnapshot(),
             overlay: geo.readFlightGeoOverlay(),
+            viewMode: geo.useGympgrphStore.getState().geospatialViewMode,
             mapCamera: map && center
               ? {
                   bearing: map.getBearing(),
@@ -201,16 +202,19 @@ def fixed_map_camera_matches_overlay(value: dict[str, Any]) -> bool:
     aircraft = overlay.get("aircraft") or {}
     if not preset or not isinstance(center, list) or len(center) != 2:
         return False
+    mode_3d = value.get("viewMode") in {"3d", "3d-modern"}
     expected_bearing = (
-        0 if view == "survey" else float(aircraft.get("headingDegrees", 0))
+        float(aircraft.get("headingDegrees", 0))
+        if mode_3d and view != "survey" else 0
     )
+    expected_pitch = preset["pitch"] if mode_3d else 0
     return (
         map_coordinate_distance(
             camera["center"],
             {"lng": center[0], "lat": center[1]},
         ) < 1e-7
         and _degrees_apart(camera["bearing"], expected_bearing) < 0.05
-        and abs(float(camera["pitch"]) - preset["pitch"]) < 0.05
+        and abs(float(camera["pitch"]) - expected_pitch) < 0.05
         and abs(float(camera["zoom"]) - preset["zoom"]) < 0.05
     )
 

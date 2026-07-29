@@ -280,6 +280,7 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
     && authoredSubjects.includes('<XrSceneLibrarySubject'), 'native controller ownership must keep authored Helicopter/Airplane/Car subjects visible through the shared subject renderer')
   assert(camera.includes('controls.target.lerp')
     && camera.includes('follow.fovDegrees')
+    && camera.includes('cameraViewRevisionRef.current !== follow.cameraViewRevision')
     && camera.includes('resolveXrNativeControllerFollowFraming')
     && camera.includes('resolveFlightSimFollowTarget')
     && cameraFraming.includes('PLAYGROUND_FOV_DEGREES')
