@@ -23,6 +23,23 @@ test('City disposal accepts settled Flight sources while provider tiles remain a
   assert.equal(hasExactCityDisposalEvidence(disposal), true)
   assert.equal(
     hasExactCityDisposalEvidence({
+      environment: {
+        features: null,
+        loaded: false,
+        present: false,
+      },
+      flight: {
+        features: null,
+        loaded: false,
+        present: false,
+      },
+      styleLoaded: true,
+    }),
+    true,
+    'removed owned sources are settled before MapLibre owner disposal',
+  )
+  assert.equal(
+    hasExactCityDisposalEvidence({
       ...disposal,
       environment: {
         ...disposal.environment,

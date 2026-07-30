@@ -31,14 +31,19 @@ function hasMeterSurface(view, expected) {
   )
 }
 
+function hasSettledCityFlightSource(source) {
+  if (source?.present === false) return true
+  return (
+    source?.present === true
+    && source?.features === 0
+    && source?.loaded === true
+  )
+}
+
 export function hasExactCityDisposalEvidence(disposal) {
   return (
-    disposal?.flight?.present === true
-    && disposal?.flight?.features === 0
-    && disposal?.flight?.loaded === true
-    && disposal?.environment?.present === true
-    && disposal?.environment?.features === 0
-    && disposal?.environment?.loaded === true
+    hasSettledCityFlightSource(disposal?.flight)
+    && hasSettledCityFlightSource(disposal?.environment)
   )
 }
 
