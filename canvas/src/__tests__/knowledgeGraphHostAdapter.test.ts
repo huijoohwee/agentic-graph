@@ -466,6 +466,29 @@ export async function testKnowledgeGraphDefaultCanvasBridgeRunsSourceBackedRepos
   }
 }
 
+export async function testKnowledgeGraphToolbarLauncherOwnsDefaultHostRegistration() {
+  const launcherSource = await fs.readFile(
+    path.resolve(process.cwd(), 'src/features/toolbar/ToolbarMenuLauncher.tsx'),
+    'utf8',
+  )
+  const editorShellSource = await fs.readFile(
+    path.resolve(process.cwd(), 'src/lib/markdown-workspace-runtime/useMarkdownWorkspaceShell.ts'),
+    'utf8',
+  )
+  if (
+    !launcherSource.includes("from '@/features/knowledge-graph/knowledgeGraphLaunchHostBridge'")
+    || !launcherSource.includes('useKnowledgeGraphLaunchHostBridge()')
+  ) {
+    throw new Error('the always-mounted Launch owner must install the default knowledge graph host bridge')
+  }
+  if (
+    editorShellSource.includes('createKnowledgeGraphHostAdapter')
+    || editorShellSource.includes('useKnowledgeGraphLaunchHostBridge')
+  ) {
+    throw new Error('the default knowledge graph host bridge must not depend on the editor-only shell')
+  }
+}
+
 export async function testKnowledgeGraphHostRejectsOversizedProjectionBeforeBrowserTransfer() {
   const host = await startHost({
     ...runtimeResult,

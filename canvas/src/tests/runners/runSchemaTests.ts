@@ -365,6 +365,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modKnowledgeGraphHostAdapter()
     await mod.testKnowledgeGraphDefaultCanvasBridgeRunsSourceBackedRepositoryIngest()
   })
+  await execTest(results, 'workspace.import.knowledgeGraph.defaultCanvasHostOwner', async () => {
+    const mod = await modKnowledgeGraphHostAdapter()
+    await mod.testKnowledgeGraphToolbarLauncherOwnsDefaultHostRegistration()
+  })
   await execTest(results, 'workspace.import.knowledgeGraph.hostBoundsBrowserProjection', async () => {
     const mod = await modKnowledgeGraphHostAdapter()
     await mod.testKnowledgeGraphHostRejectsOversizedProjectionBeforeBrowserTransfer()
