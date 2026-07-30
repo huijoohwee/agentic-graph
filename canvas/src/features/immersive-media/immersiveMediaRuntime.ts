@@ -411,8 +411,45 @@ export function setHoveredImmersiveMediaMarker(markerId: string | null): Immersi
 
 export function setSelectedImmersiveMediaMarker(markerId: string | null): ImmersiveMediaSnapshot {
   if (snapshot.selectedMarkerId === markerId) return snapshot
-  if (markerId && !snapshot.markers.some(marker => marker.id === markerId)) return snapshot
-  return publish({ selectedMarkerId: markerId, lastAction: 'marker-select' })
+  const marker = markerId
+    ? snapshot.markers.find(candidate => candidate.id === markerId)
+    : null
+  if (markerId && !marker) return snapshot
+  return publish({
+    selectedMarkerId: markerId,
+    lastAction: marker ? 'marker-select' : 'marker-clear',
+    message: marker ? `Selected ${marker.label}.` : 'Cleared the immersive marker selection.',
+    error: null,
+  })
+}
+
+export function focusImmersiveMediaMarker(
+  markerId: string,
+  projection: ImmersiveMediaProjection,
+): ImmersiveMediaSnapshot {
+  const marker = snapshot.markers.find(candidate => candidate.id === markerId)
+  if (!marker || !marker.projections.includes(projection)) return snapshot
+  if (snapshot.selectedMarkerId === marker.id) {
+    return publish({
+      hoveredMarkerId: null,
+      selectedMarkerId: null,
+      lastAction: 'marker-clear',
+      message: `Cleared ${marker.label} from the ${projection} projection.`,
+      error: null,
+    })
+  }
+  return publish({
+    hoveredMarkerId: null,
+    selectedMarkerId: marker.id,
+    view: {
+      ...snapshot.view,
+      yawDegrees: marker.yawDegrees,
+      pitchDegrees: marker.pitchDegrees,
+    },
+    lastAction: 'marker-focus',
+    message: `Focused ${marker.label} from the ${projection} projection.`,
+    error: null,
+  })
 }
 
 export async function captureImmersiveMediaScreenshot(download = false): Promise<{
