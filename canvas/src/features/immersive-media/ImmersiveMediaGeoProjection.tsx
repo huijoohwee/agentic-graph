@@ -1,5 +1,6 @@
 import React from 'react'
 import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
+import { MEDIA_EXPANDED_PREVIEW_OVERLAY_CLASS_NAME } from '@/lib/ui/mediaExpandedPreviewLayout'
 import {
   completeImmersiveMediaTransition,
   setHoveredImmersiveMediaMarker,
@@ -123,6 +124,16 @@ export function ImmersiveMediaGeoProjection({
       data-kg-immersive-media-geo-polygon={snapshot.polygonPattern ? '1' : '0'}
       data-kg-immersive-media-geo-selected-marker={snapshot.selectedMarkerId || ''}
     >
+      <section
+        className="pointer-events-none absolute inset-0"
+        aria-label="Dimmed surround outside immersive flight context media"
+        data-kg-immersive-media-lightbox-surround="1"
+      >
+        <span className={`absolute inset-x-0 top-0 bottom-[92%] ${MEDIA_EXPANDED_PREVIEW_OVERLAY_CLASS_NAME}`} />
+        <span className={`absolute inset-x-0 bottom-0 top-[87%] ${MEDIA_EXPANDED_PREVIEW_OVERLAY_CLASS_NAME}`} />
+        <span className={`absolute bottom-[13%] left-0 top-[8%] right-[92%] ${MEDIA_EXPANDED_PREVIEW_OVERLAY_CLASS_NAME}`} />
+        <span className={`absolute bottom-[13%] right-0 top-[8%] left-[92%] ${MEDIA_EXPANDED_PREVIEW_OVERLAY_CLASS_NAME}`} />
+      </section>
       <figure
         className="pointer-events-auto absolute inset-[8%_8%_13%_8%] m-0 overflow-hidden rounded-[2rem] border border-cyan-200/35 transition-all ease-out"
         aria-label="Immersive flight context media"
