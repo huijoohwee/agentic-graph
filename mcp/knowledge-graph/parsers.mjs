@@ -38,7 +38,7 @@ export const MARKDOWN_PARSER_ID = "local-markdown-structure";
 export const MARKDOWN_PARSER_VERSION = "1.0.0";
 export const JSON_CONFIG_PARSER_ID = "local-json-config-ast";
 const JSON_TYPESCRIPT_VERSION = String(typescript?.version || "unavailable").replace(/[^A-Za-z0-9._-]+/g, "-");
-export const JSON_CONFIG_PARSER_VERSION = `1.0.0+typescript-${JSON_TYPESCRIPT_VERSION}`;
+export const JSON_CONFIG_PARSER_VERSION = `1.1.0+typescript-${JSON_TYPESCRIPT_VERSION}`;
 export const STRUCTURAL_CONFIG_PARSER_ID = "local-config-structure";
 export const STRUCTURAL_CONFIG_PARSER_VERSION = "1.0.0";
 export const SOURCE_INVENTORY_PARSER_ID = "local-source-inventory";
@@ -499,7 +499,26 @@ function parseJsonConfigSource(source, options) {
     "json",
   );
   const sensitiveKey = /(?:secret|token|password|credential|private.?key|api.?key)/i;
-  const evidenceFor = (node, explanation, excerpt = undefined) => buildEvidence({ sourcePath: source.relativePath, sourceDigest: source.contentHash, text: source.text, startOffset: node.getStart(sourceFile), endOffset: node.getEnd(), ...(excerpt === undefined ? {} : { excerpt }), ruleId: "json.config-key.ast", explanation, parserId: descriptor.parserId, parserVersion: descriptor.parserVersion });
+  const evidenceFor = (node, explanation, excerpt) => {
+    const startOffset = node.getStart(sourceFile);
+    const endOffset = node.getEnd();
+    const start = sourceFile.getLineAndCharacterOfPosition(startOffset);
+    const end = sourceFile.getLineAndCharacterOfPosition(endOffset);
+    return buildEvidence({
+      sourcePath: source.relativePath,
+      sourceDigest: source.contentHash,
+      text: source.text,
+      lineStart: start.line + 1,
+      lineEnd: end.line + 1,
+      columnStart: start.character + 1,
+      columnEnd: end.character + 1,
+      excerpt,
+      ruleId: "json.config-key.ast",
+      explanation,
+      parserId: descriptor.parserId,
+      parserVersion: descriptor.parserVersion,
+    });
+  };
   const scalarType = (node) => {
     if (ts.isStringLiteral(node)) return "string";
     if (ts.isNumericLiteral(node)) return "number";
