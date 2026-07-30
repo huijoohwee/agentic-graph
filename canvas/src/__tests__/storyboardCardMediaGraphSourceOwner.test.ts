@@ -5,6 +5,7 @@ import {
   resolveStoryboardCardMediaGraphSourceOwner,
   shouldUpdateStoryboardCardMediaGraphActiveDocument,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSourceOwner'
+import { resolveStoryboardCardMediaGraphPersistenceText } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSource'
 
 const OWNER_PATH = '/docs/workflow.md'
 const GENERATED_PATH = '/docs/generated-output.md'
@@ -170,5 +171,16 @@ export function testStoryboardCardMediaGraphPersistenceProjectsComposedOwnerLaye
     || otherSourceText !== '# Other source'
   ) {
     throw new Error(`expected composed publication to serialize only the originating source layer, got ${JSON.stringify({ sourceGraph, synced })}`)
+  }
+}
+
+export function testStoryboardCardMediaGraphPersistenceWritesAlreadySynchronizedText() {
+  const synchronizedText = `${ownerSourceText}\n<!-- generated output already projected in active state -->`
+  const persistenceText = resolveStoryboardCardMediaGraphPersistenceText({
+    activeText: synchronizedText,
+    synchronizedText: undefined,
+  })
+  if (persistenceText !== synchronizedText) {
+    throw new Error('expected persistence to write active text even when graph serialization produces no state delta')
   }
 }
