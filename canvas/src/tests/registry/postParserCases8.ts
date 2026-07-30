@@ -3,6 +3,7 @@ import type { TestCaseTuple } from '../runner/testRunnerTypes'
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["markdown.workspace.runOutputSwitch.prefersAuthoredNoteFs","@/__tests__/workspaceRunOutputSwitchPersistence.test.ts","testWorkspaceRunOutputSwitchPrefersAuthoredNoteFsOverStaleDocsMirror"],
   ["markdown.workspace.runOutputSwitch.refreshesSettledPathRead","@/__tests__/workspaceRunOutputSwitchPersistence.test.ts","testWorkspaceRunOutputSwitchRefreshesSettledPathReadAfterFsWrite"],
+  ["markdown.workspace.runOutputSwitch.waitsForRunPublication","@/__tests__/workspaceRunOutputSwitchPersistence.test.ts","testWorkspaceRunOutputSwitchWaitsForRunPublication"],
   ["immersive.media.defaults.zeroConfig","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete"],
   ["immersive.media.projections.focusSharedView","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaProjectionMarkersFocusTheSharedView"],
   ["immersive.media.invocation.strict","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaNativeInvocationIsStrict"],
