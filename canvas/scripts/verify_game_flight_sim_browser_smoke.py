@@ -139,7 +139,7 @@ def main() -> None:
             executable_path=local_chromium_executable(),
             args=["--enable-webgl", "--use-angle=swiftshader"],
         )
-        context = browser.new_context(viewport={"width": 1280, "height": 800})
+        context = browser.new_context(viewport={"width": 1100, "height": 962})
 
         def route_websocket(websocket_route: Any) -> None:
             websocket_route_hits.append(str(websocket_route.url))

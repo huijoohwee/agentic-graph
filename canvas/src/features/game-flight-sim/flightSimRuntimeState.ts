@@ -1,6 +1,7 @@
 import {
   FLIGHT_SIM_MAX_FRAME_SECONDS,
   FLIGHT_SIM_ZERO_COST_LOG,
+  canonicalizeFlightSimEcsAircraftState,
   type FlightSimDecisionRecord,
   type FlightSimInputPatch,
   type FlightSimSnapshot,
@@ -74,7 +75,7 @@ export function createIdleFlightSimSnapshot(
     webglSupported,
     phase: 'stopped',
     runId: 0,
-    aircraft: profile.spawn,
+    aircraft: canonicalizeFlightSimEcsAircraftState(profile.spawn),
     waypointIndex: 0,
     waypointCount: profile.waypoints.length,
     currentWaypointId: profile.waypoints[0]?.id || profile.landingPad.id,

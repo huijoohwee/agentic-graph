@@ -28,6 +28,7 @@ import {
   readFlightSimSnapshot,
   readFlightSimSpatialProfile,
   subscribeFlightSimPresentation,
+  subscribeFlightSimSnapshot,
 } from '@/features/game-flight-sim/flightSimRuntime'
 import {
   claimFlightSimReadyPresenter,
@@ -39,6 +40,10 @@ import {
   readCurrentFlightSimStagePreparationRequest,
 } from '@/features/game-flight-sim/flightSimStagePreparationRuntime'
 import {
+  readFlightSimGeospatialBootstrapRequested,
+  subscribeFlightSimGeospatialBootstrapRequest,
+} from '@/features/game-flight-sim/flightSimSurfaceOpenLifecycle'
+import {
   projectFlightSimTimelineCameraToGeospatial,
   projectFlightSimToGeospatialOverlay,
 } from '@/features/game-flight-sim/flightSimGeospatialProjection'
@@ -46,7 +51,8 @@ import {
   projectXrEnvironmentToFlightGeo,
 } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import {
-  claimFlightGeoOverlayPublisherLease,
+  clearFlightGeoOverlayAfterPublisherRelease,
+  claimActiveFlightGeoOverlayPublisherLease,
 } from '@/features/game-flight-sim/flightGeoOverlayPublisherLease'
 import {
   readFlightSimCameraSnapshot,
@@ -73,6 +79,7 @@ const EMPTY_OPEN_WIDGETS_BY_RENDERER: Record<string, string[]> = {}
 
 type GeospatialOverlayHostProps = {
   active?: boolean
+  flightBootstrapRequested?: boolean
   snapshot?: unknown
   handlers?: unknown
   onFlightOverlayPresented?: (
@@ -134,6 +141,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   props: CanvasViewportGeospatialOverlayProps,
 ) {
   const { active, composedWithXr, geospatialModeEnabled, graphData, storyboardWidgetPanelsActive } = props
+  const flightBootstrapRequested = React.useSyncExternalStore(
+    subscribeFlightSimGeospatialBootstrapRequest,
+    readFlightSimGeospatialBootstrapRequested,
+    readFlightSimGeospatialBootstrapRequested,
+  )
   const gympgrphBridge = useGraphStore(
     useShallow(s => ({
       zoomState: s.zoomState,
@@ -385,89 +397,115 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   }, [active, composedWithXr])
 
   React.useEffect(() => {
-    const publisherLease = claimFlightGeoOverlayPublisherLease()
+    const publisherLease = claimActiveFlightGeoOverlayPublisherLease(
+      active,
+      composedWithXr,
+    )
+    if (!publisherLease) return
     let disposed = false
+    let loadPending = false
+    let publishCurrent: (() => void) | null = null
     let unsubscribeFlight = () => void 0
     let unsubscribeFlightCamera = () => void 0
     let unsubscribeFlightTraining = () => void 0
     let unsubscribeCameraSource = () => void 0
     let unsubscribeTimelineRuntime = () => void 0
     let unsubscribeTimelineTransport = () => void 0
-    void loadGympgrphModule()
-      .then(module => {
-        if (disposed || !publisherLease.isCurrent()) return
-        const publish = () => {
-          if (!publisherLease.isCurrent()) return
-          const flight = readFlightSimSnapshot()
-          if (!active || !composedWithXr || !flight.active) {
-            module.clearFlightGeoOverlay?.()
-            return
+    const activatePublisher = () => {
+      if (disposed || !publisherLease.isCurrent()) return
+      if (publishCurrent) {
+        publishCurrent()
+        return
+      }
+      if (loadPending) return
+      loadPending = true
+      void loadGympgrphModule()
+        .then(module => {
+          loadPending = false
+          if (disposed || !publisherLease.isCurrent()) return
+          const publish = () => {
+            if (disposed || !publisherLease.isCurrent()) return
+            const flight = readFlightSimSnapshot()
+            if (!flight.active) {
+              module.clearFlightGeoOverlay?.()
+              return
+            }
+            const spatialProfile = readFlightSimSpatialProfile()
+            const motionRuntime = readXrMotionReferenceRuntime()
+            const timelinePose = useGraphStore.getState().timelineTransportPlaying
+              ? sampleXrMotionReferenceCameraPose(
+                  motionRuntime.plan.camera,
+                  motionRuntime.playheadSeconds,
+                  motionRuntime.plan.cast,
+                  motionRuntime.plan.subjects,
+                )
+              : null
+            module.setFlightGeoOverlay?.(
+              projectFlightSimToGeospatialOverlay(
+                flight,
+                spatialProfile,
+                {
+                  source: readXrNativeControllerCamera().mode,
+                  timeline: timelinePose
+                    ? projectFlightSimTimelineCameraToGeospatial(
+                        timelinePose,
+                        spatialProfile,
+                        motionRuntime.playheadSeconds,
+                      )
+                    : null,
+                  view: readFlightSimCameraSnapshot().view,
+                },
+                readFlightSimTrainingSnapshot().night,
+                readCurrentFlightSimReadyFrameRequestId(),
+                projectXrEnvironmentToFlightGeo(motionRuntime.plan),
+              ),
+            )
           }
-          const spatialProfile = readFlightSimSpatialProfile()
-          const motionRuntime = readXrMotionReferenceRuntime()
-          const timelinePose = useGraphStore.getState().timelineTransportPlaying
-            ? sampleXrMotionReferenceCameraPose(
-                motionRuntime.plan.camera,
-                motionRuntime.playheadSeconds,
-                motionRuntime.plan.cast,
-                motionRuntime.plan.subjects,
-              )
-            : null
-          module.setFlightGeoOverlay?.(
-            projectFlightSimToGeospatialOverlay(
-              flight,
-              spatialProfile,
-              {
-                source: readXrNativeControllerCamera().mode,
-                timeline: timelinePose
-                  ? projectFlightSimTimelineCameraToGeospatial(
-                      timelinePose,
-                      spatialProfile,
-                      motionRuntime.playheadSeconds,
-                    )
-                  : null,
-                view: readFlightSimCameraSnapshot().view,
-              },
-              readFlightSimTrainingSnapshot().night,
-              readCurrentFlightSimReadyFrameRequestId(),
-              projectXrEnvironmentToFlightGeo(motionRuntime.plan),
-            ),
-          )
-        }
-        if (active && composedWithXr) {
+          publishCurrent = publish
           unsubscribeFlight = subscribeFlightSimPresentation(
             'maplibre',
             publish,
           )
-        }
-        unsubscribeFlightCamera = subscribeFlightSimCamera(publish)
-        unsubscribeFlightTraining = subscribeFlightSimTrainingSnapshot(publish)
-        unsubscribeCameraSource = subscribeXrNativeControllerCamera(publish)
-        unsubscribeTimelineRuntime = subscribeXrMotionReferenceRuntime(publish)
-        unsubscribeTimelineTransport = useGraphStore.subscribe(
-          (state, previousState) => {
-            if (
-              state.timelineTransportPlaying
-              !== previousState.timelineTransportPlaying
-            ) publish()
-          },
-        )
-        publish()
-      })
-      .catch(() => void 0)
+          unsubscribeFlightCamera = subscribeFlightSimCamera(publish)
+          unsubscribeFlightTraining =
+            subscribeFlightSimTrainingSnapshot(publish)
+          unsubscribeCameraSource = subscribeXrNativeControllerCamera(publish)
+          unsubscribeTimelineRuntime =
+            subscribeXrMotionReferenceRuntime(publish)
+          unsubscribeTimelineTransport = useGraphStore.subscribe(
+            (state, previousState) => {
+              if (
+                state.timelineTransportPlaying
+                !== previousState.timelineTransportPlaying
+              ) publish()
+            },
+          )
+          publish()
+        })
+        .catch(() => {
+          loadPending = false
+        })
+    }
+    const unsubscribeActivation =
+      publisherLease.onBecameCurrent(activatePublisher)
     return () => {
       disposed = true
+      unsubscribeActivation()
       unsubscribeFlight()
       unsubscribeFlightCamera()
       unsubscribeFlightTraining()
       unsubscribeCameraSource()
       unsubscribeTimelineRuntime()
       unsubscribeTimelineTransport()
-      void loadGympgrphModule()
-        .then(module => {
-          if (!publisherLease.isCurrent()) return
-          module.clearFlightGeoOverlay?.()
-        })
+      publishCurrent = null
+      const shouldClear = publisherLease.release()
+      if (!shouldClear) return
+      void clearFlightGeoOverlayAfterPublisherRelease(
+        publisherLease,
+        () => readFlightSimSnapshot().active,
+        subscribeFlightSimSnapshot,
+        loadGympgrphModule,
+      )
         .catch(() => void 0)
     }
   }, [active, composedWithXr])
@@ -518,6 +556,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     >
       <GeospatialOverlayHostLazy
         active={active}
+        flightBootstrapRequested={flightBootstrapRequested}
         snapshot={snapshot}
         handlers={handlers}
         onFlightOverlayPresented={handleFlightOverlayPresented}

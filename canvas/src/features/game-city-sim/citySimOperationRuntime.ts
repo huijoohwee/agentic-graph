@@ -4,7 +4,6 @@ import type {
   CityZoningType,
 } from './citySimModel'
 import {
-  exitCitySimSurface,
   openCitySimSurface,
   requestCityAdvice,
   resetCitySim,
@@ -15,6 +14,7 @@ import {
   zoneCityParcel,
   type CitySimOpenOptions,
 } from './citySimRuntime'
+import { exitCitySimSurfaceAndWait } from './citySimSurfaceExit'
 import type { CitySimSnapshot } from './citySimRuntimeState'
 
 export async function dispatchCityOperation(
@@ -33,5 +33,5 @@ export async function dispatchCityOperation(
   }
   if (invocation.operation === 'save') return saveCitySim(options)
   if (invocation.operation === 'reset') return resetCitySim()
-  return exitCitySimSurface()
+  return exitCitySimSurfaceAndWait()
 }

@@ -11,6 +11,7 @@ import { useGympgrphStore } from './store.js'
 import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
 import { NATIVE_GEOSPATIAL_MAPLIBRE_OWNER } from './features/geospatial/mapLibreHostLease.js'
 import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
+import { readFlightGeoMapOcclusionPadding } from './flightGeoMapViewport.js'
 import {
   readFlightGeoOverlay,
   subscribeFlightGeoOverlay,
@@ -54,7 +55,7 @@ import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLaye
 import { applyGeospatialFitRequest } from './geospatialFitRuntime.js'
 
 type GeospatialOverlayHostProps = {
-  active?: boolean
+  active?: boolean; flightBootstrapRequested?: boolean
   snapshot?: unknown
   handlers?: unknown
   onFlightOverlayPresented?: (
@@ -692,7 +693,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const selectedBounds = React.useMemo(() => computeBoundsFromCollections([selectedFeatureCollection]), [selectedFeatureCollection])
   const graphDataKey = React.useMemo(() => graphProjection.signature, [graphProjection.signature])
   const mapLibreRuntimeEnabled = show2dMapLibre || show3d
-  const flightBootstrapStyle = flightOverlayActive
+  const flightBootstrapStyle = flightOverlayActive || props.flightBootstrapRequested === true
     ? FLIGHT_GEO_BOOTSTRAP_STYLE
     : null
 
@@ -1115,22 +1116,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const [svgOverlayInsetRight, setSvgOverlayInsetRight] = React.useState(12)
   React.useEffect(() => {
     const measure = () => {
-      const rootRect = rootRef.current?.getBoundingClientRect?.()
-      if (!rootRect || typeof document === 'undefined') {
-        setSvgOverlayInsetRight(12)
-        return
-      }
-      const panels = Array.from(document.querySelectorAll('[aria-label="Floating panel"], [aria-label="Geospatial panel"]'))
-      let nextInsetRight = 12
-      for (const panel of panels) {
-        const rect = (panel as HTMLElement).getBoundingClientRect?.()
-        if (!rect) continue
-        const overlapWidth = Math.min(rootRect.right, rect.right) - Math.max(rootRect.left, rect.left)
-        const overlapHeight = Math.min(rootRect.bottom, rect.bottom) - Math.max(rootRect.top, rect.top)
-        if (overlapWidth <= 0 || overlapHeight <= 0) continue
-        if (rect.left < rootRect.left + rootRect.width * 0.35) continue
-        nextInsetRight = Math.max(nextInsetRight, Math.min(rootRect.width * 0.45, rootRect.right - rect.left + 16))
-      }
+      const nextInsetRight = Math.max(
+        12,
+        readFlightGeoMapOcclusionPadding(rootRef.current).right,
+      )
       setSvgOverlayInsetRight(prev => (Math.abs(prev - nextInsetRight) > 1 ? nextInsetRight : prev))
     }
     measure()
@@ -1332,6 +1321,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       ref={rootRef}
       className="relative w-full h-full"
       style={{ width: '100%', height: '100%' }}
+      data-kg-flight-sim-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}
     >
       <SvgGeospatialFallback
         featureCollection={graphFeatureCollection}

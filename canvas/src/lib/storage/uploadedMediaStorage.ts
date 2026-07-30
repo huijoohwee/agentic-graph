@@ -168,6 +168,7 @@ export const listUploadedMediaFromKnowgrphStorage = async (args: {
   fetchImpl?: typeof fetch
   limit?: number | null
 } = {}): Promise<UploadedMediaStorageResult[]> => {
+  if (!readKnowgrphStorageRuntimeSyncEnabled()) return []
   const workspaceId = normalizeString(args.workspaceId) || readActiveKnowgrphStorageWorkspaceId()
   if (!workspaceId) return []
   const fetchImpl = args.fetchImpl || (typeof fetch === 'function' ? fetch.bind(globalThis) : null)

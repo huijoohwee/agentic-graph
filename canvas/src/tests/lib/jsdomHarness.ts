@@ -32,6 +32,8 @@ export const restoreActiveJsdomGlobalsForTests = (): void => {
     Node?: typeof Node
     Element?: typeof Element
     HTMLElement?: typeof HTMLElement
+    Event?: typeof Event
+    CustomEvent?: typeof CustomEvent
     Range?: typeof Range
     NodeFilter?: typeof NodeFilter
     DOMParser?: typeof DOMParser
@@ -43,11 +45,17 @@ export const restoreActiveJsdomGlobalsForTests = (): void => {
     typeof globalThis,
     'Node' | 'Element' | 'HTMLElement' | 'Range' | 'DOMParser'
   >
+  const windowEventConstructors = activeJsdomWindow as unknown as {
+    Event: typeof Event
+    CustomEvent: typeof CustomEvent
+  }
   ;(g as { window?: unknown }).window = activeJsdomWindow
   g.document = activeJsdomDocument
   g.Node = windowConstructors.Node
   g.Element = windowConstructors.Element
   g.HTMLElement = windowConstructors.HTMLElement
+  g.Event = windowEventConstructors.Event
+  g.CustomEvent = windowEventConstructors.CustomEvent
   g.Range = windowConstructors.Range
   g.NodeFilter = (activeJsdomWindow as unknown as { NodeFilter?: typeof NodeFilter }).NodeFilter as typeof NodeFilter
   g.DOMParser = windowConstructors.DOMParser
@@ -78,6 +86,8 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
   const originalNode = (g as { Node?: typeof Node }).Node
   const originalElement = (g as { Element?: typeof Element }).Element
   const originalHTMLElement = (g as { HTMLElement?: typeof HTMLElement }).HTMLElement
+  const originalEvent = (g as { Event?: typeof Event }).Event
+  const originalCustomEvent = (g as { CustomEvent?: typeof CustomEvent }).CustomEvent
   const originalRange = (g as { Range?: typeof Range }).Range
   const originalNodeFilter = (g as { NodeFilter?: typeof NodeFilter }).NodeFilter
   const originalDomParser = (g as { DOMParser?: typeof DOMParser }).DOMParser
@@ -103,6 +113,9 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
   ;(g as { Node: typeof Node }).Node = dom.window.Node as unknown as typeof Node
   ;(g as { Element: typeof Element }).Element = dom.window.Element as unknown as typeof Element
   ;(g as { HTMLElement: typeof HTMLElement }).HTMLElement = dom.window.HTMLElement as unknown as typeof HTMLElement
+  ;(g as { Event: typeof Event }).Event = dom.window.Event as unknown as typeof Event
+  ;(g as { CustomEvent: typeof CustomEvent }).CustomEvent =
+    dom.window.CustomEvent as unknown as typeof CustomEvent
   ;(g as { Range: typeof Range }).Range = dom.window.Range as unknown as typeof Range
   ;(g as unknown as { IS_REACT_ACT_ENVIRONMENT?: unknown }).IS_REACT_ACT_ENVIRONMENT = true
   activeJsdomHarnessStack.push({
@@ -422,6 +435,19 @@ export const initJsdomHarness = (html: string = '<!doctype html><html><body></bo
       delete (g as { HTMLElement?: typeof HTMLElement }).HTMLElement
     } else {
       ;(g as { HTMLElement: typeof HTMLElement }).HTMLElement = originalHTMLElement as typeof HTMLElement
+    }
+
+    if (typeof originalEvent === 'undefined') {
+      delete (g as { Event?: typeof Event }).Event
+    } else {
+      ;(g as { Event: typeof Event }).Event = originalEvent as typeof Event
+    }
+
+    if (typeof originalCustomEvent === 'undefined') {
+      delete (g as { CustomEvent?: typeof CustomEvent }).CustomEvent
+    } else {
+      ;(g as { CustomEvent: typeof CustomEvent }).CustomEvent =
+        originalCustomEvent as typeof CustomEvent
     }
 
     if (typeof originalRange === 'undefined') {

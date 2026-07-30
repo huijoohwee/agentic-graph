@@ -2,23 +2,33 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   clearFlightGeoOverlay,
-  flightGeoOverlayFeatureCollection,
   readFlightGeoOverlay,
+  readFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
   subscribeFlightGeoOverlay,
-  type FlightGeoOverlayPresentation,
-  type FlightGeoOverlaySnapshot,
 } from '../../../gympgrph/src/flightGeoOverlay'
 import {
-  createFlightGeoOverlayPresentationGate,
-} from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
+  canMapLibreFlightOverlayPresent,
+  disposeMapLibreFlightBootstrap,
+  markMapLibreFlightBootstrapApplied,
+  markMapLibreFlightOverlayPresented,
+  markMapLibreFlightReadyFramePresented,
+  reconcileMapLibreFlightBootstrap,
+} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap'
 import {
+  applyFlightGeoOverlayCameraToMap,
   applyFlightGeoOverlayToMap,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
+  FLIGHT_GEO_OVERLAY_LAYER_ORDER,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
-  retainFlightGeoOverlayDuringStyleSwap,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
 import {
+  applyFlightGeoEnvironmentToMap,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
+} from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+import {
+  armFlightSimReadyFrame,
   beginFlightSimReadyFrame,
   cancelCurrentFlightSimReadyFrame,
   completeFlightSimMapLibreReadyFrame,
@@ -36,169 +46,16 @@ import {
 import {
   projectFlightSimToGeospatialOverlay,
 } from '../features/game-flight-sim/flightSimGeospatialProjection'
+import {
+  flightOverlay,
+  presentationHarness,
+  withEnvironment,
+} from './helpers/flightSimMapLibrePresentationHarness'
 
-function flightOverlay(
-  phase: FlightGeoOverlaySnapshot['phase'],
-  revision: string,
-  readyFrameRequestId: number | null = phase === 'ready' ? 1 : null,
-): FlightGeoOverlaySnapshot {
-  return {
-    active: true,
-    aircraft: {
-      coordinate: [103.82, 1.35],
-      altitudeMeters: 400,
-      headingDegrees: 0,
-    },
-    camera: {
-      centerCoordinate: [103.82, 1.35],
-      cockpitClearance: {
-        forwardMeters: 2,
-        verticalMeters: 1,
-      },
-      effectiveOwner: 'fixed-follow',
-      source: 'fixed-follow',
-      timeline: null,
-      view: 'chase',
-    },
-    environment: null,
-    night: false,
-    objective: {
-      bearingDegrees: 45,
-      coordinate: [103.83, 1.36],
-      distanceMeters: 120,
-      headingErrorDegrees: 45,
-      id: 'landing',
-      kind: 'landing',
-      label: 'LAND',
-    },
-    phase,
-    profileId: 'singapore',
-    readyFrameRequestId,
-    revision,
-    route: [
-      {
-        id: 'spawn',
-        coordinate: [103.82, 1.35],
-        altitudeMeters: 400,
-        kind: 'spawn',
-        state: 'visited',
-      },
-      {
-        id: 'landing',
-        coordinate: [103.83, 1.36],
-        altitudeMeters: 0,
-        kind: 'landing',
-        state: 'active',
-      },
-    ],
-    runId: phase === 'stopped' ? 0 : 1,
-    tick: 0,
-  }
-}
-
-function presentationHarness(
-  initial: FlightGeoOverlaySnapshot,
-  afterPresented?: (presentation: FlightGeoOverlayPresentation) => void,
-) {
-  let current = initial
-  let width = 0
-  let repaintCount = 0
-  let sourceData = flightGeoOverlayFeatureCollection(initial)
-  const images = new Set<string>()
-  const listeners = new Set<() => void>()
-  const canvas = {
-    dataset: {} as DOMStringMap,
-    getBoundingClientRect: () => ({
-      bottom: 100,
-      height: 100,
-      left: 0,
-      right: width,
-      top: 0,
-      width,
-      x: 0,
-      y: 0,
-      toJSON: () => ({}),
-    }),
-  }
-  const map = {
-    style: { _loaded: true },
-    addImage: (id: string) => images.add(id),
-    getCanvas: () => canvas,
-    getLayer: (id: string) => (
-      Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS).some(layerId => layerId === id)
-        ? { id }
-        : undefined
-    ),
-    hasImage: (id: string) => images.has(id),
-    getSource: (id: string) => (
-      id === FLIGHT_GEO_OVERLAY_SOURCE_ID
-        ? {
-            id,
-            serialize: () => ({ data: sourceData }),
-            setData: (data: ReturnType<typeof flightGeoOverlayFeatureCollection>) => {
-              sourceData = data
-            },
-          }
-        : undefined
-    ),
-    getStyle: () => ({
-      layers: Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS).map(id => ({ id })),
-    }),
-    moveLayer: () => undefined,
-    off: (type: string, listener: () => void) => {
-      if (type === 'render') listeners.delete(listener)
-    },
-    on: (type: string, listener: () => void) => {
-      if (type === 'render') listeners.add(listener)
-    },
-    triggerRepaint: () => {
-      repaintCount += 1
-    },
-  }
-  const presentations: FlightGeoOverlayPresentation[] = []
-  const presented = {
-    current: {
-      map: null,
-      readyFrameRequestId: null,
-      revision: '',
-    },
-  }
-  const gate = createFlightGeoOverlayPresentationGate({
-    active: () => true,
-    isCanvasElement: (value): value is HTMLCanvasElement => value === canvas,
-    map,
-    onPresented: presentation => {
-      presentations.push(presentation)
-      afterPresented?.(presentation)
-    },
-    presented,
-    readOverlay: () => current,
-    readRoot: () => null,
-  })
-  return {
-    canvas,
-    emitRender: () => {
-      for (const listener of [...listeners]) listener()
-    },
-    gate,
-    map,
-    listenerCount: () => listeners.size,
-    presentedRevision: () => presented.current.revision,
-    presentations,
-    repaintCount: () => repaintCount,
-    replaceSourceData: (next: FlightGeoOverlaySnapshot | null) => {
-      sourceData = next
-        ? flightGeoOverlayFeatureCollection(next)
-        : { type: 'FeatureCollection', features: [] }
-    },
-    setCurrent: (next: FlightGeoOverlaySnapshot) => {
-      current = next
-      sourceData = flightGeoOverlayFeatureCollection(next)
-    },
-    setWidth: (next: number) => {
-      width = next
-    },
-  }
+const flushMicrotasks = () => new Promise<void>(resolve => setImmediate(resolve))
+const applyProviderStyleImmediately = (apply: () => void) => {
+  apply()
+  return () => void 0
 }
 
 function runtimeProfile(): FlightSimSpatialProfile {
@@ -342,28 +199,321 @@ test('same-revision stopped presentation can acknowledge a fresh preparation', (
   assert.equal(harness.presentations.length, 2)
 })
 
-test('a fresh ready-frame request re-arms the same deterministic revision', () => {
-  const priorReady = flightOverlay('ready', 'same-ready-revision', 1)
-  const harness = presentationHarness(priorReady)
+test('a stopped Flight frame waits for the local bootstrap before acknowledging a mounted provider map', () => {
+  const stopped = flightOverlay('stopped', 'stopped:bootstrap-fence')
+  const harness = presentationHarness(stopped, undefined, {
+    bootstrapApplied: false,
+  })
   harness.setWidth(100)
 
-  harness.gate.request(priorReady)
-  harness.emitRender()
-  assert.equal(harness.presentations.at(-1)?.readyFrameRequestId, 1)
-
-  const stopped = flightOverlay('stopped', 'stopped-revision')
-  harness.setCurrent(stopped)
   harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(
+    harness.presentations.length,
+    0,
+    'the retained provider map cannot satisfy stopped-stage preparation',
+  )
   assert.equal(harness.listenerCount(), 1)
 
-  const freshReady = flightOverlay('ready', 'same-ready-revision', 2)
-  harness.setCurrent(freshReady)
-  harness.gate.request(freshReady)
-  assert.equal(harness.listenerCount(), 1)
+  markMapLibreFlightBootstrapApplied(harness.map)
   harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+})
+
+test('a stopped Flight frame waits for the settled overlay source before preparation can advance', () => {
+  const stopped = flightOverlay('stopped', 'stopped:source-pending')
+  const harness = presentationHarness(stopped, undefined, {
+    overlaySourceLoaded: false,
+  })
+  harness.setWidth(100)
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(
+    harness.presentations.length,
+    0,
+    'serialized GeoJSON alone cannot acknowledge stopped-stage preparation',
+  )
+  assert.equal(harness.listenerCount(), 1)
+
+  harness.setOverlaySourceLoaded(true)
+  harness.emitSourceData(FLIGHT_GEO_OVERLAY_SOURCE_ID)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+})
+
+test('a stopped Flight frame waits for its staged tick-zero camera', () => {
+  const stopped = flightOverlay('stopped', 'stopped:camera-pending')
+  const harness = presentationHarness(stopped, undefined, {
+    cameraExact: false,
+  })
+  harness.setWidth(100)
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 0)
+  assert.equal(harness.listenerCount(), 1)
+
+  harness.setCameraExact(true)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+})
+
+test('a stopped Flight frame rejects a noncanonical overlay stack before commit', () => {
+  const stopped = flightOverlay('stopped', 'stopped:layer-order', null)
+  const harness = presentationHarness(stopped)
+  harness.setWidth(100)
+  harness.setOverlayLayerOrder(Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS))
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+
+  assert.equal(harness.presentations.length, 0)
+  assert.equal(harness.listenerCount(), 1)
+
+  harness.setOverlayLayerOrder(FLIGHT_GEO_OVERLAY_LAYER_ORDER)
+  harness.emitRender()
+
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+})
+
+test('initial Ready reuses an exact stopped frame across MapLibre camera precision', context => {
+  const stopped = flightOverlay('stopped', 'stopped:committed', null)
+  const ready = {
+    ...stopped,
+    camera: {
+      ...stopped.camera,
+      centerCoordinate: [103.82, 1.350000000006] as const,
+    },
+    phase: 'ready' as const,
+    readyFrameRequestId: 7,
+    revision: 'ready:committed',
+    runId: 1,
+  }
+  clearFlightGeoOverlay()
+  context.after(clearFlightGeoOverlay)
+  setFlightGeoOverlay(stopped)
+  const harness = presentationHarness(stopped)
+  harness.setWidth(100)
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  assert.equal(harness.listenerCount(), 0)
+  const repaintsBeforeReady = harness.repaintCount()
+  const sourceWritesBeforeReady = harness.sourceDataWrites()
+  const jumpsBeforeReady = harness.jumpToCount()
+
+  setFlightGeoOverlay(ready)
+  harness.setCurrentPreservingSourceData(ready)
+  assert.equal(applyFlightGeoEnvironmentToMap(harness.map, ready, '3d'), true)
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, ready), true)
+  assert.equal(
+    applyFlightGeoOverlayCameraToMap(
+      harness.map,
+      ready,
+      '3d',
+      { top: 16, right: 16, bottom: 16, left: 16 },
+    ),
+    true,
+  )
+  assert.equal(harness.gate.canReuseCommittedStoppedFrame(ready), true)
+  harness.gate.request(ready)
 
   assert.equal(harness.presentations.length, 2)
-  assert.equal(harness.presentations.at(-1)?.readyFrameRequestId, 2)
+  assert.equal(harness.presentations.at(-1)?.readyFrameRequestId, 7)
+  assert.equal(harness.listenerCount(), 0)
+  assert.equal(harness.repaintCount(), repaintsBeforeReady)
+  assert.equal(harness.sourceDataWrites(), sourceWritesBeforeReady)
+  assert.equal(harness.jumpToCount(), jumpsBeforeReady)
+  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
+  assert.equal(readFlightGeoOverlayReadyFramePresented(), true)
+
+  const freshReady = {
+    ...ready,
+    readyFrameRequestId: 8,
+    revision: 'ready:next-request',
+  }
+  setFlightGeoOverlay(freshReady)
+  harness.setCurrentPreservingSourceData(freshReady)
+  harness.gate.request(freshReady)
+  assert.equal(
+    harness.listenerCount(),
+    1,
+    'the one-shot stopped proof cannot satisfy a later ready request',
+  )
+})
+
+test('initial Ready reuses the exact committed provider stopped frame without another painter pass', async context => {
+  const stopped = withEnvironment(
+    flightOverlay('stopped', 'stopped:provider-committed', null),
+  )
+  const priorReady = {
+    ...stopped,
+    phase: 'ready' as const,
+    readyFrameRequestId: 16,
+    revision: 'ready:prior-provider-committed',
+    runId: 1,
+  }
+  const ready = {
+    ...stopped,
+    phase: 'ready' as const,
+    readyFrameRequestId: 17,
+    revision: 'ready:provider-committed',
+    runId: 1,
+  }
+  clearFlightGeoOverlay()
+  context.after(clearFlightGeoOverlay)
+  const harness = presentationHarness(stopped)
+  context.after(() => {
+    harness.gate.dispose()
+    disposeMapLibreFlightBootstrap(harness.map)
+  })
+  harness.setWidth(100)
+  setFlightGeoOverlay(priorReady)
+  markMapLibreFlightOverlayPresented(harness.map, priorReady)
+  markMapLibreFlightReadyFramePresented(
+    harness.map,
+    priorReady.revision,
+    priorReady.readyFrameRequestId,
+  )
+  assert.equal(readFlightGeoOverlayReadyFramePresented(), true)
+  setFlightGeoOverlay(stopped)
+  assert.equal(readFlightGeoOverlayReadyFramePresented(), false)
+
+  reconcileMapLibreFlightBootstrap({
+    bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
+    hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
+    loadProviderStyle: async () => ({
+      version: 8,
+      name: 'provider-flight',
+      sources: {},
+      layers: [],
+    }),
+    map: harness.map,
+    scheduleProviderStyleApply: applyProviderStyleImmediately,
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+  })
+  await flushMicrotasks()
+  assert.equal(harness.styleSetCount(), 0)
+
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(harness.presentations.length, 1)
+  await flushMicrotasks()
+  assert.equal(
+    harness.styleSetCount(),
+    1,
+    'stopped commit directly queues provider admission after its render',
+  )
+  assert.equal(canMapLibreFlightOverlayPresent(harness.map, stopped), true)
+  harness.emitStyleLoad()
+  assert.equal(applyFlightGeoEnvironmentToMap(harness.map, stopped, '3d'), true)
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, stopped), true)
+  assert.equal(
+    applyFlightGeoOverlayCameraToMap(
+      harness.map,
+      stopped,
+      '3d',
+      { top: 16, right: 16, bottom: 16, left: 16 },
+      { stageStopped: true },
+    ),
+    true,
+  )
+  harness.gate.request(stopped)
+  harness.emitRender()
+  assert.equal(
+    harness.presentations.length,
+    2,
+    'the provider painter must commit its own stopped-frame proof',
+  )
+
+  setFlightGeoOverlay(ready)
+  harness.setCurrentPreservingSourceData(ready)
+  assert.equal(
+    canMapLibreFlightOverlayPresent(harness.map, ready),
+    false,
+    'the stopped provider identity does not generally admit Ready',
+  )
+  assert.equal(applyFlightGeoEnvironmentToMap(harness.map, ready, '3d'), true)
+  assert.equal(applyFlightGeoOverlayToMap(harness.map, ready), true)
+  assert.equal(
+    applyFlightGeoOverlayCameraToMap(
+      harness.map,
+      ready,
+      '3d',
+      { top: 16, right: 16, bottom: 16, left: 16 },
+    ),
+    true,
+  )
+  assert.equal(harness.gate.canReuseCommittedStoppedFrame(ready), true)
+  const listenerCountBeforeReady = harness.listenerCount()
+  const repaintsBeforeReady = harness.repaintCount()
+  const sourceWritesBeforeReady = harness.sourceDataWrites()
+  const jumpsBeforeReady = harness.jumpToCount()
+  const styleSetsBeforeReady = harness.styleSetCount()
+
+  harness.gate.request(ready)
+
+  assert.equal(harness.presentations.length, 3)
+  assert.equal(harness.presentations.at(-1)?.readyFrameRequestId, 17)
+  assert.equal(readFlightGeoOverlayReadyFramePresented(), true)
+  assert.equal(harness.listenerCount(), listenerCountBeforeReady)
+  assert.equal(harness.repaintCount(), repaintsBeforeReady)
+  assert.equal(harness.sourceDataWrites(), sourceWritesBeforeReady)
+  assert.equal(harness.jumpToCount(), jumpsBeforeReady)
+  assert.equal(harness.styleSetCount(), styleSetsBeforeReady)
+})
+
+test('stopped-frame reuse completes the armed native deadline without a second render', context => {
+  resetFlightSimDeadlineRuntimeForTests()
+  context.after(resetFlightSimDeadlineRuntimeForTests)
+  clearFlightGeoOverlay()
+  context.after(clearFlightGeoOverlay)
+  let clockMs = 20
+  const stopped = flightOverlay('stopped', 'stopped:deadline-reuse', null)
+  setFlightGeoOverlay(stopped)
+  const requestId = beginFlightSimReadyFrame(
+    () => clockMs,
+    () => () => undefined,
+  )
+  armFlightSimReadyFrame(requestId, 1, 0, 'maplibre')
+  const ready = {
+    ...stopped,
+    phase: 'ready' as const,
+    readyFrameRequestId: requestId,
+    revision: 'ready:deadline-reuse',
+    runId: 1,
+  }
+  const harness = presentationHarness(stopped, presentation => {
+    if (presentation.readyFrameRequestId === null) return
+    completeFlightSimMapLibreReadyFrame(
+      presentation.readyFrameRequestId,
+      presentation.runId,
+      presentation.tick,
+      () => clockMs,
+    )
+  })
+  harness.setWidth(100)
+  harness.gate.request(stopped)
+  harness.emitRender()
+  const repaintsBeforeReady = harness.repaintCount()
+  setFlightGeoOverlay(ready)
+  harness.setCurrentPreservingSourceData(ready)
+  clockMs = 21
+
+  harness.gate.request(ready)
+
+  assert.equal(harness.listenerCount(), 0)
+  assert.equal(harness.repaintCount(), repaintsBeforeReady)
+  assert.equal(readFlightSimDeadlineSnapshot().readyFrame?.source, 'native-maplibre-flight-ready-frame')
+  assert.equal(readFlightSimDeadlineSnapshot().readyFrame?.elapsedMs, 1)
+  assert.equal(readFlightSimDeadlineSnapshot().readyFrame?.withinLimit, true)
 })
 
 test('provider style promotion re-presents a consumed ready overlay and retains earned first-frame proof', () => {
@@ -420,101 +570,4 @@ test('a consumed ready overlay cannot manufacture first-frame proof on a fresh c
     harness.canvas.dataset.kgFlightSimFirstFrameSurface,
     undefined,
   )
-})
-
-test('transient invalid first render retries before exact MapLibre acknowledgement', () => {
-  const ready = flightOverlay('ready', 'ready:1:0')
-  const harness = presentationHarness(ready)
-
-  harness.gate.request(ready)
-  harness.emitRender()
-  assert.equal(harness.presentations.length, 0)
-  assert.equal(harness.listenerCount(), 1)
-  assert.ok(harness.repaintCount() >= 2)
-
-  harness.setWidth(100)
-  harness.emitRender()
-  assert.equal(harness.listenerCount(), 0)
-  assert.equal(harness.presentations.length, 1)
-  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrameSurface, 'maplibre')
-  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
-})
-
-test('retained layers with stale empty data cannot acknowledge a ready frame', () => {
-  const ready = flightOverlay('ready', 'ready:exact-source')
-  const harness = presentationHarness(ready)
-  harness.setWidth(100)
-  harness.replaceSourceData(null)
-
-  harness.gate.request(ready)
-  harness.emitRender()
-  assert.equal(harness.presentations.length, 0)
-  assert.equal(harness.listenerCount(), 1)
-  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, undefined)
-
-  harness.replaceSourceData(ready)
-  harness.emitRender()
-  assert.equal(harness.presentations.length, 1)
-  assert.equal(harness.canvas.dataset.kgFlightSimFirstFrame, '1')
-})
-
-test('provider promotion retains the exact Flight source and ordered layers', () => {
-  const source = {
-    data: {
-      type: 'FeatureCollection',
-      features: [{ id: 'aircraft' }],
-    },
-    type: 'geojson',
-  }
-  const flightLayers = [
-    FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
-    FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
-    FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
-    FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
-    FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
-  ].map(id => ({ id, source: FLIGHT_GEO_OVERLAY_SOURCE_ID }))
-  const previousStyle = {
-    version: 8,
-    sources: {
-      [FLIGHT_GEO_OVERLAY_SOURCE_ID]: source,
-    },
-    layers: [
-      { id: 'kg-flight-sim:geo-bootstrap-background', type: 'background' },
-      ...flightLayers,
-    ],
-  }
-  const nextStyle = {
-    version: 8,
-    sources: {
-      provider: { type: 'vector' },
-    },
-    layers: [
-      { id: 'provider-background', type: 'background' },
-      { id: FLIGHT_GEO_OVERLAY_LAYER_IDS.route, type: 'line' },
-    ],
-  }
-
-  const promoted = retainFlightGeoOverlayDuringStyleSwap(
-    previousStyle,
-    nextStyle,
-  )
-
-  assert.equal(
-    promoted.sources[FLIGHT_GEO_OVERLAY_SOURCE_ID],
-    source,
-  )
-  assert.equal(promoted.sources.provider.type, 'vector')
-  assert.deepEqual(
-    promoted.layers.map((layer: { id: string }) => layer.id),
-    [
-      'provider-background',
-      FLIGHT_GEO_OVERLAY_LAYER_IDS.route,
-      FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide,
-      FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints,
-      FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraftOutline,
-      FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
-    ],
-  )
-  assert.equal(previousStyle.layers.length, 6)
-  assert.equal(nextStyle.layers.length, 2)
 })

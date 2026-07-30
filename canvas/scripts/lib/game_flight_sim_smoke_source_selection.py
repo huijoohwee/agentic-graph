@@ -340,8 +340,13 @@ def verify_source_file_button_round_trip(
         lambda: page.evaluate(
             """
             async () => {
-              const store = await window.__kgFlightSimBrowserProof.importModule('graphStore')
-              const demos = await window.__kgFlightSimBrowserProof.importModule('workspaceRunReadyDemos')
+              const [store, demos, gympgrph] = await Promise.all([
+                window.__kgFlightSimBrowserProof.importModule('graphStore'),
+                window.__kgFlightSimBrowserProof.importModule(
+                  'workspaceRunReadyDemos',
+                ),
+                window.__kgFlightSimBrowserProof.importModule('gympgrphStore'),
+              ])
               const state = store.useGraphStore.getState()
               const root = document.querySelector(
                 '[data-kg-xr-scene-media-drop="1"]',
@@ -355,6 +360,18 @@ def verify_source_file_button_round_trip(
                 ),
                 renderMode: state.canvasRenderMode,
                 canvas3dMode: state.canvas3dMode,
+                geospatialModeEnabled:
+                  gympgrph.isGeospatialModeEnabled() === true,
+                geospatialPreferenceEnabled: ['1', 'true'].includes(
+                  String(localStorage.getItem(
+                    gympgrph.LS_KEYS.geospatialOverlayEnabled,
+                  ) || '').toLowerCase(),
+                ),
+                mapCanvasCount: document.querySelectorAll(
+                  'canvas.maplibregl-canvas',
+                ).length,
+                mapLibreActive:
+                  gympgrph.readActiveMapLibreMap?.() != null,
                 retainedCanvas: Boolean(canvas)
                   && canvas === window.__kgFlightSimCanvas,
                 flightHudCount: document.querySelectorAll(
@@ -369,6 +386,10 @@ def verify_source_file_button_round_trip(
             and value.get("active") is True
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
+            and value.get("geospatialModeEnabled") is False
+            and value.get("geospatialPreferenceEnabled") is False
+            and value.get("mapCanvasCount") == 0
+            and value.get("mapLibreActive") is False
             and value.get("retainedCanvas") is True
             and value.get("flightHudCount") == 0
         ),

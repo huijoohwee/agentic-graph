@@ -28,6 +28,7 @@ function isFlightOwnedPath(relativePath) {
     || relativePath.startsWith('.kiro/specs/knowgrph-game-flight-sim/')
     || relativePath.startsWith('canvas/src/features/game-flight-sim/')
     || relativePath.startsWith('canvas/src/lib/three/flightSim')
+    || relativePath.startsWith('gympgrph/src/flightGeo')
   )
 }
 

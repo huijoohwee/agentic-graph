@@ -321,24 +321,8 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'canvas/scripts/run_game_flight_sim_browser_smoke.mjs',
   )
   requireMarkers(browserAggregateSource, [
-    'const deadlineContracts = {',
-    'observation?.synchronous === contract.synchronous',
-    'observation?.limitMs === contract.limitMs',
-    "'knowgrph-flight-sim-browser-run/v5'",
     "'knowgrph-flight-sim-browser-proof/v5'",
-    "'fetch:GET:/api/storage/flight-sim-browser-deadline-proof'",
-    'gameplayNetworkExecutorInvoked === false',
-    'gameplayNetworkMissionStateRetained === true',
-    'gameplayNetworkBlockedSnapshot?.runtimeError',
-    'gameplayNetworkTransportObserved === false',
-    'gameplayWebSocketBlock',
-    'gameplayWebSocketExecutorInvoked === false',
-    'gameplayWebSocketBlockedSnapshot?.runtimeError',
-    'gameplayWebSocketMissionStateRetained === true',
-    'gameplayWebSocketTransportObserved === false',
-    'gameplayWebSocketRouteHits?.length === 0',
-    'assertExactFlightSimBrowserVerificationLedger(',
-    'assertExactFlightSimOptionalBeaconAdmission(',
+    'readValidatedFlightSimBrowserRunEvidence({',
     'runIsolatedBrowserProof({',
     'prepareEvidence: prepareIsolatedEvidence',
     'assertGitVerificationWorkspace({',
@@ -353,6 +337,28 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     "devServerStartMode: 'vite-preview-runner'",
     'productionBuild,',
   ], 'Flight Sim exact deadline evidence aggregate')
+  const browserEvidenceValidationSource = await readText(
+    'canvas/scripts/lib/game-flight-sim-browser-evidence-validation.mjs',
+  )
+  requireMarkers(browserEvidenceValidationSource, [
+    'const deadlineContracts = {',
+    'observation?.synchronous === contract.synchronous',
+    'observation?.limitMs === contract.limitMs',
+    "'knowgrph-flight-sim-browser-run/v5'",
+    "'fetch:GET:/api/storage/flight-sim-browser-deadline-proof'",
+    'gameplayNetworkExecutorInvoked === false',
+    'gameplayNetworkMissionStateRetained === true',
+    'gameplayNetworkBlockedSnapshot?.runtimeError',
+    'gameplayNetworkTransportObserved === false',
+    'gameplayWebSocketBlock',
+    'gameplayWebSocketExecutorInvoked === false',
+    'gameplayWebSocketBlockedSnapshot?.runtimeError',
+    'gameplayWebSocketMissionStateRetained === true',
+    'gameplayWebSocketTransportObserved === false',
+    'gameplayWebSocketRouteHits?.length === 0',
+    'assertExactFlightSimBrowserVerificationLedger(',
+    'assertExactFlightSimOptionalBeaconAdmission(',
+  ], 'Flight Sim exact browser evidence validation')
   forbidMarkers(browserAggregateSource, [
     'const canvasRoot = path.dirname(scriptPath)',
   ], 'Flight Sim exact deadline evidence aggregate')

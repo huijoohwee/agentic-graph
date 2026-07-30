@@ -11,12 +11,10 @@ import {
   readFloatingPanelViewPreset,
   type CanvasWorkspaceFrontmatterPreset,
 } from '@/lib/markdown/frontmatter'
-import { setGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
 import {
-  readGeospatialOverlayEnabledPreference,
-  readGeospatialOverlayEnabledPreferenceRaw,
-  writeGeospatialOverlayEnabledPreference,
-} from '@/lib/geospatial/geospatialModePreference'
+  beginCanvasFrontmatterSurfaceRequest,
+  requestCanvasFrontmatterGeospatialSurface,
+} from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import {
   activateXrSceneSurface,
   XR_SCENE_FLOATING_PANEL_VIEWS,
@@ -89,28 +87,6 @@ function readNormalizedCanvasWorkspacePreset(meta: Record<string, unknown> | nul
     frontmatterModeEnabled,
     multiDimTableModeEnabled,
     documentStructureBaselineLock,
-  }
-}
-
-function disableGeospatialForDocumentPreset(): void {
-  const raw = readGeospatialOverlayEnabledPreferenceRaw()
-  if (!readGeospatialOverlayEnabledPreference() && (!raw || raw === '0' || raw === 'false')) return
-  writeGeospatialOverlayEnabledPreference(false)
-  try {
-    void setGeospatialModeEnabled(false).catch(() => void 0)
-  } catch {
-    void 0
-  }
-}
-
-function enableGeospatialForDocumentPreset(): void {
-  const raw = readGeospatialOverlayEnabledPreferenceRaw()
-  if (readGeospatialOverlayEnabledPreference() && (raw === '1' || raw === 'true')) return
-  writeGeospatialOverlayEnabledPreference(true)
-  try {
-    void setGeospatialModeEnabled(true).catch(() => void 0)
-  } catch {
-    void 0
   }
 }
 
@@ -212,6 +188,7 @@ export function applyCanvasFrontmatterPreset(args: {
     defaultCanvasRenderMode: args.defaultCanvasRenderMode,
     defaultCanvas3dMode: args.defaultCanvas3dMode,
   })
+  const isCurrentSurfaceRequest = beginCanvasFrontmatterSurfaceRequest()
   const documentStructureBaselineLock =
     preset?.documentStructureBaselineLock ?? args.defaultDocumentStructureBaselineLock
   const videoSequenceTimelineEnabled = preset?.videoSequenceTimelineEnabled === true
@@ -260,11 +237,6 @@ export function applyCanvasFrontmatterPreset(args: {
   }
 
   const geospatialModeEnabled = surfacePreset.geospatialModeEnabled
-  if (geospatialModeEnabled === true) {
-    enableGeospatialForDocumentPreset()
-  } else if (geospatialModeEnabled === false) {
-    disableGeospatialForDocumentPreset()
-  }
   const canvasRenderMode = surfacePreset.canvasRenderMode
   const canvas3dMode = surfacePreset.canvas3dMode
   const xrScenePanelView = XR_SCENE_FLOATING_PANEL_VIEWS.find(view => view === preset?.floatingPanelView)
@@ -275,29 +247,47 @@ export function applyCanvasFrontmatterPreset(args: {
     && effectiveCanvasRenderMode === '3d'
     && effectiveCanvas3dMode === 'xr'
   const sharedXrSurfaceRouted = sharedXrSurfaceRequested || sharedXrPanelRequested
-  let sharedXrSurfaceActivated = false
-  if (sharedXrSurfaceRouted) {
+  const activateSharedXrSurface = (): boolean => {
     const before = useGraphStore.getState()
-    sharedXrSurfaceActivated = activateXrSceneSurface({
+    const activated = activateXrSceneSurface({
       ...(preset?.canvasSurfaceMode === 'geo-xr' ? { geospatialComposite: true } : {}),
       ...(xrScenePanelView ? { panelView: xrScenePanelView } : {}),
       ...(preset?.floatingPanelOpen === true ? { openPanel: true } : {}),
     })
     const after = useGraphStore.getState()
-    if (!sharedXrSurfaceActivated) {
+    if (!activated) {
       after.pushUiToast({
         id: 'frontmatter:xr-scene:unavailable',
         kind: 'error',
         message: `The document requested a shared ${preset?.canvasSurfaceMode === 'geo-xr' ? 'Geo+XR' : 'XR'} Mode surface that is unavailable.`,
       })
     }
-    if (sharedXrSurfaceActivated && (
+    if (activated && preset?.floatingPanelOpen === false) {
+      after.setFloatingPanelOpen(false)
+    }
+    if (activated && (
       before.canvasRenderMode !== after.canvasRenderMode
       || before.canvas3dMode !== after.canvas3dMode
       || before.floatingPanelView !== after.floatingPanelView
       || before.floatingPanelOpen !== after.floatingPanelOpen
     )) changed = true
-  } else {
+    return activated
+  }
+  if (typeof geospatialModeEnabled === 'boolean') {
+    void requestCanvasFrontmatterGeospatialSurface(
+      geospatialModeEnabled,
+      {
+        isCurrent: isCurrentSurfaceRequest,
+        ...(sharedXrSurfaceRouted
+          ? { afterCommit: activateSharedXrSurface }
+          : {}),
+      },
+    )
+    if (sharedXrSurfaceRouted) changed = true
+  } else if (sharedXrSurfaceRouted) {
+    activateSharedXrSurface()
+  }
+  if (!sharedXrSurfaceRouted) {
     if (canvasRenderMode === '3d' && canvas3dMode && useGraphStore.getState().canvas3dMode !== canvas3dMode) {
       store.setCanvas3dMode(canvas3dMode)
       changed = true
@@ -379,7 +369,7 @@ export function applyCanvasFrontmatterPreset(args: {
       changed = true
     }
   }
-  if (preset?.floatingPanelOpen === false && (!(sharedXrSurfaceRouted && xrScenePanelView) || sharedXrSurfaceActivated)) {
+  if (preset?.floatingPanelOpen === false && !sharedXrSurfaceRouted) {
     const current = useGraphStore.getState()
     if (current.floatingPanelOpen !== false) {
       current.setFloatingPanelOpen(false)

@@ -15,13 +15,15 @@ import { fetchPdfWorkspaceDoc } from '@/lib/pdf/pdfWorkspaceClient'
 import { setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { syncWorkspaceTextState } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.io'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import {
+  requestCanvasFrontmatterGeospatialSurface,
+} from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import type { StatusHelpers, UseWorkspaceFileActionsArgs } from './types'
 import type { MarkdownWorkspaceStatus } from '../markdownWorkspaceTypes'
 import { formatMarkdownWorkspaceStatusLabel } from '../markdownWorkspaceStatusUi'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
 import { runWorkspaceFsChangedBatch, suppressNextWorkspaceFsChangedEvent } from '@/features/workspace-fs/workspaceFsEvents'
 import { getDefaultNewWorkspaceFileName, resolveNewWorkspaceFileDraft } from './fileDraft'
-import { setGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
 import { shouldApplyImportedCanvasDocumentToGraph } from '../workspaceImport/applyPolicy'
 import { activateStrybldrImportSurface } from '@/features/strybldr/strybldrImportSurface'
 
@@ -259,7 +261,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
         }
         store.setCanvasRenderMode('2d')
         store.setCanvas2dRenderer('storyboard')
-        void setGeospatialModeEnabled(false).catch(() => void 0)
+        await requestCanvasFrontmatterGeospatialSurface(false)
         store.setWorkspaceViewMode('canvas')
         return
       }

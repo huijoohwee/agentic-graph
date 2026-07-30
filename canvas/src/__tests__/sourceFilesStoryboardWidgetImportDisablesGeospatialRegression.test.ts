@@ -2,8 +2,11 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import {
+  waitForCanvasFrontmatterSurfaceTransition,
+} from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 
-export const testCanvasFrontmatterPresetClearsStaleBaselineLock = () => {
+export const testCanvasFrontmatterPresetClearsStaleBaselineLock = async () => {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setCanvasRenderMode('2d')
   useGraphStore.getState().setCanvas3dMode('3d')
@@ -20,6 +23,7 @@ export const testCanvasFrontmatterPresetClearsStaleBaselineLock = () => {
       '# XR Surface Preset',
     ].join('\n'),
   })
+  await waitForCanvasFrontmatterSurfaceTransition()
 
   const state = useGraphStore.getState()
   if (changed !== true) throw new Error('expected workspace switch preset to apply explicit XR canvas frontmatter')
@@ -45,10 +49,12 @@ export const testSourceFilesWidgetRegistryImportDisablesGeospatialMode = () => {
   )
   const workspaceText = fs.readFileSync(workspaceActionPath, 'utf8')
   const rendererIndex = workspaceText.indexOf("store.setCanvas2dRenderer('storyboard')")
-  const geoDisableIndex = workspaceText.indexOf('void setGeospatialModeEnabled(false).catch(() => void 0)')
+  const geoDisableIndex = workspaceText.indexOf(
+    'await requestCanvasFrontmatterGeospatialSurface(false)',
+  )
   const viewModeIndex = workspaceText.indexOf("store.setWorkspaceViewMode('canvas')")
   if (rendererIndex < 0 || geoDisableIndex < 0 || viewModeIndex < 0) {
-    throw new Error('Expected widget-registry import path to disable Geospatial Mode before switching to canvas Storyboard Widget view')
+    throw new Error('Expected widget-registry import path to await canonical Geo disposal before switching to canvas Storyboard Widget view')
   }
   if (!(rendererIndex < geoDisableIndex && geoDisableIndex < viewModeIndex)) {
     throw new Error('Expected Geospatial Mode disable call to run after Storyboard renderer selection and before canvas view switch')
@@ -78,11 +84,13 @@ export const testSourceFilesWidgetRegistryImportDisablesGeospatialMode = () => {
 
   const presetPath = path.resolve(process.cwd(), 'src', 'features', 'parsers', 'canvasFrontmatterPreset.ts')
   const presetText = fs.readFileSync(presetPath, 'utf8')
-  if (!presetText.includes('function disableGeospatialForDocumentPreset(): void')
-    || !presetText.includes('readGeospatialOverlayEnabledPreferenceRaw()')
-    || !presetText.includes("(!raw || raw === '0' || raw === 'false')")
-    || !presetText.includes('void setGeospatialModeEnabled(false).catch(() => void 0)')) {
-    throw new Error('Expected shared canvas frontmatter preset application to disable Geospatial Mode without repeated no-op toggles')
+  if (!presetText.includes('requestCanvasFrontmatterGeospatialSurface(')
+    || !presetText.includes('geospatialModeEnabled,')
+    || !presetText.includes('afterCommit:')
+    || !presetText.includes('activateSharedXrSurface()')
+    || presetText.includes('writeGeospatialOverlayEnabledPreference(false)')
+    || presetText.includes('setGeospatialModeEnabled(false)')) {
+    throw new Error('Expected shared canvas frontmatter preset application to serialize canonical Geo disposal before claiming the shared XR surface')
   }
 
   const seedScriptPath = path.resolve(process.cwd(), '..', 'scripts', 'seed-storage-docs-to-cloudflare.mjs')
@@ -130,7 +138,7 @@ export const testSourceFilesWidgetRegistryImportDisablesGeospatialMode = () => {
   const geospatialBridgeText = fs.readFileSync(geospatialBridgePath, 'utf8')
   if (!geospatialBridgeText.includes('function publishGeospatialModeEnabled(enabled: boolean')
     || !geospatialBridgeText.includes('emitGeospatialModeChanged({ enabled: next })')
-    || !geospatialBridgeText.includes('publishGeospatialModeEnabled(next, { emitAlways: true })')) {
+    || !geospatialBridgeText.includes('const previous = publishMode(next, { emitAlways: true })')) {
     throw new Error('Expected geospatial bridge toggles to publish immediate local geospatial mode state before async module handoff so toolbar mode labels do not lag')
   }
 }

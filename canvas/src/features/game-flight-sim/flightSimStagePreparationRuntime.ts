@@ -313,7 +313,6 @@ export async function waitForFlightSimStagePresentation(
   ) {
     throw stagePreparationError(`preparation request ${requestId} is stale.`)
   }
-  if (currentRequest.framePresented) return
   const remainingMs =
     limitMs - Math.max(0, stagePreparationClockMs() - startedAt)
   if (remainingMs <= 0) {
@@ -321,9 +320,10 @@ export async function waitForFlightSimStagePresentation(
       `presentation request ${requestId} did not complete within ${limitMs} ms.`,
     )
   }
-  // The acknowledgement can resolve while React is still committing the
-  // authored-controller pause. Wait for the next frame opportunity before
-  // Start arms its independent ready-frame deadline.
+  // Both the native MapLibre render acknowledgement and the shared surface
+  // acknowledgement can resolve in the same turn that React commits the
+  // stopped-stage payload. Let that committed frame retire before Start
+  // changes the Flight source to ready and arms its independent 100 ms clock.
   await waitForFlightSimStageFrameOpportunity({
     signal: options.signal,
     limitMs: Math.min(

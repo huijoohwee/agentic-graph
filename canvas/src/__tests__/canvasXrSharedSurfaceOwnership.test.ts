@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { applyCanvasViewSelection } from '@/components/toolbar/canvasViewActions'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import {
+  waitForCanvasFrontmatterSurfaceTransition,
+} from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { readMediaCatalogMode, setMediaCatalogMode } from '@/features/command-menu/mediaCatalogModeRuntime'
 import {
   activateXrSceneSurface,
@@ -345,7 +348,7 @@ export function testCanvasSurfaceMode3dSelectionUsesSharedOwner() {
   }
 }
 
-export function testXrSurfaceFrontmatterPresetActivatesXrCanvasMode() {
+export async function testXrSurfaceFrontmatterPresetActivatesXrCanvasMode() {
   const store = useGraphStore.getState()
   for (const panelView of XR_SCENE_FLOATING_PANEL_VIEWS) {
     store.resetAll()
@@ -364,6 +367,7 @@ export function testXrSurfaceFrontmatterPresetActivatesXrCanvasMode() {
         '# XR Demo',
       ].join('\n'),
     })
+    await waitForCanvasFrontmatterSurfaceTransition()
     const next = useGraphStore.getState()
     if (!changed
       || next.canvasRenderMode !== '3d'
@@ -418,11 +422,13 @@ export async function testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels() 
     const active = useGraphStore.getState()
     if (active.canvasRenderMode !== '3d'
       || active.canvas3dMode !== 'xr'
+      || readGeospatialOverlayEnabledPreference()
       || active.floatingPanelOpen !== true
       || active.floatingPanelView !== 'motionControl') {
       throw new Error(`expected Physics source activation to restore native XR, got ${JSON.stringify({
         canvasRenderMode: active.canvasRenderMode,
         canvas3dMode: active.canvas3dMode,
+        geospatialModeEnabled: readGeospatialOverlayEnabledPreference(),
         floatingPanelOpen: active.floatingPanelOpen,
         floatingPanelView: active.floatingPanelView,
       })}`)
@@ -513,8 +519,13 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
     || /set(?:Canvas|Floating|Bottom|Media)/.test(canvasXrSelection)) {
     throw new Error('expected Canvas View XR selection to invoke the shared scene owner without a raw surface setter variant')
   }
-  const frontmatterXrStart = frontmatter.indexOf('if (sharedXrSurfaceRouted) {')
-  const frontmatterXrEnd = frontmatter.indexOf('} else {', frontmatterXrStart)
+  const frontmatterXrStart = frontmatter.indexOf(
+    'const activateSharedXrSurface = (): boolean => {',
+  )
+  const frontmatterXrEnd = frontmatter.indexOf(
+    'if (!sharedXrSurfaceRouted) {',
+    frontmatterXrStart,
+  )
   const frontmatterXrSelection = frontmatterXrStart >= 0 && frontmatterXrEnd > frontmatterXrStart
     ? frontmatter.slice(frontmatterXrStart, frontmatterXrEnd)
     : ''
@@ -522,8 +533,14 @@ export function testXrSceneSurfaceOwnershipSourceBoundaries() {
     || !frontmatter.includes('XR_SCENE_FLOATING_PANEL_VIEWS.find')
     || !frontmatter.includes('const sharedXrSurfaceRouted = sharedXrSurfaceRequested || sharedXrPanelRequested')
     || !frontmatterXrSelection.includes('activateXrSceneSurface({')
-    || /set(?:Canvas|Floating|Bottom|Media)/.test(frontmatterXrSelection)) {
-    throw new Error('expected XR frontmatter presets to invoke the shared scene owner for all six panels without raw surface setters')
+    || !frontmatterXrSelection.includes(
+      'requestCanvasFrontmatterGeospatialSurface(',
+    )
+    || !frontmatterXrSelection.includes(
+      'afterCommit: activateSharedXrSurface',
+    )
+    || /setCanvas(?:RenderMode|3dMode)/.test(frontmatterXrSelection)) {
+    throw new Error('expected XR frontmatter presets to await canonical Geo ownership before invoking the shared scene owner')
   }
   const sharedSceneConsumers = {
     Media: 'features/three/xrSceneMcpRuntime.ts',
