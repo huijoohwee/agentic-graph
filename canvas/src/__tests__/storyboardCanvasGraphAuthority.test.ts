@@ -11,13 +11,13 @@ const graph = (id: string, nodeIds: string[] = [id]): GraphData => ({
   edges: [],
 })
 
-export function testStoryboardCanvasGraphAuthorityPrefersLiveNonEmptyDraft() {
+export function testStoryboardCanvasGraphAuthorityPrefersDerivedRenderTopology() {
   const resolved = resolveStoryboardCanvasGraphDataAuthority({
     baseGraphData: graph('base'),
     draftGraphData: graph('draft'),
     renderGraphData: graph('render'),
   })
-  if (resolved.nodes?.[0]?.id !== 'draft') throw new Error('expected a live non-empty draft to own Storyboard display')
+  if (resolved.nodes?.[0]?.id !== 'render') throw new Error('expected derived render topology to own Storyboard display granularity')
 }
 
 export function testStoryboardCanvasGraphAuthorityRejectsEmptyTransientDraft() {

@@ -250,6 +250,7 @@ export const buildMonacoEditorOptions = (
   },
 ): Monaco.editor.IStandaloneEditorConstructionOptions => ({
   readOnly: !!args.readOnly,
+  editContext: false,
   minimap: { enabled: settings.monacoMinimapEnabled },
   scrollbar: {
     useShadows: settings.monacoScrollbarUseShadowsEnabled,

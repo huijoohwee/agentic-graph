@@ -3,6 +3,7 @@ import { CHAT_INPUT_APPEND_EVENT, FLOATING_PANEL_OPEN_EVENT } from '@/features/c
 import { installFloatingPanelBridge } from '@/features/toolbar/floatingPanelBridge'
 import { consumeFloatingPanelChatInputHandoff } from '@/features/chat/floatingPanelChat/floatingPanelChatInputHandoff'
 import { openFloatingPanelChat, openFloatingPanelChatWithSeed } from '@/features/chat/floatingPanelChat/floatingPanelChatOpenSeed'
+import { NATIVE_IMPORT_URL_INVOCATION_TEMPLATE } from '@/features/chat/nativeImportUrlInvocation'
 
 export async function testFloatingPanelChatOpenOnlyHelperDispatchesSharedOpenEvent(): Promise<void> {
   const { dom, restore } = initJsdomHarness()
@@ -129,14 +130,14 @@ export async function testFloatingPanelChatOpenSeedAppendEventPreservesRawSeedTe
   try {
     dom.window.addEventListener(CHAT_INPUT_APPEND_EVENT, appendListener as EventListener)
     const accepted = openFloatingPanelChatWithSeed({
-      text: '/ingest-url ',
+      text: NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
       mode: 'append',
       delivery: 'appendEvent',
     })
     if (!accepted) throw new Error('expected append-event chat seed helper to accept raw command prompts')
     if (
       seenAppend.length !== 1
-      || seenAppend[0]?.text !== '/ingest-url '
+      || seenAppend[0]?.text !== NATIVE_IMPORT_URL_INVOCATION_TEMPLATE
       || seenAppend[0]?.mode !== 'append'
     ) {
       throw new Error(`expected append-event chat seed helper to preserve raw seed text when normalization does not apply, got ${JSON.stringify(seenAppend)}`)

@@ -9,7 +9,6 @@ import type {
 import { parseGitHubRepoUrl } from '@/features/markdown-workspace/githubRepoApi'
 import { applyKnowledgeGraphCanvasProjection } from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
-import { targetSkillsCommandsMcpInvocation } from '@/features/agentic-os/skillsCommandsMcpTarget'
 
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
 export const LAUNCH_FOLDER_PREVIEW_MAX_BYTES = 25 * 1024 * 1024
@@ -127,9 +126,13 @@ export async function runLaunchImportUrl(args: {
     if (typeof importRepositoryUrl !== 'function') {
       throw new Error('Canonical repository knowledge graph import is unavailable.')
     }
-    const resolved = await (args.resolveMcpInvocation || targetSkillsCommandsMcpInvocation)(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
-    )
+    const resolved = args.resolveMcpInvocation
+      ? await args.resolveMcpInvocation(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
+      : await import('@/features/agentic-os/skillsCommandsMcpTarget').then(
+        ({ targetSkillsCommandsMcpInvocation }) => targetSkillsCommandsMcpInvocation(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+        ),
+      )
     return finishKnowledgeGraphImport(await importRepositoryUrl(repositoryUrl, args.opts, resolved.invocation))
   }
   const bridgeImport = args.bridge.importUrl

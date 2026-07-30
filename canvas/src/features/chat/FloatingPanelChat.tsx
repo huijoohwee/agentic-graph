@@ -28,6 +28,7 @@ import {
 import { useFloatingPanelChatHistory } from '@/features/chat/floatingPanelChat/useFloatingPanelChatHistory'
 import { useFinalizeAssistantSuccess } from '@/features/chat/floatingPanelChat/useFinalizeAssistantSuccess'
 import { useFloatingPanelChatSubmit } from '@/features/chat/floatingPanelChat/useFloatingPanelChatSubmit'
+import { isNativeImportUrlInvocationAttempt } from '@/features/chat/nativeImportUrlInvocation'
 import { shouldRenderFloatingChatApiKeyPrompt } from '@/features/chat/floatingPanelChat/floatingPanelChatApiKeyPrompt'
 import { buildStorageChatRelayLogDescriptor } from '@/features/chat/floatingPanelChat/floatingPanelChatRelayDiagnostics'
 import { applyFloatingPanelChatInputAppend, resolveFloatingPanelChatInputAppend } from '@/features/chat/floatingPanelChat/floatingPanelChatInputAppend'
@@ -38,7 +39,6 @@ import { useResumeDurableChatStream } from '@/features/chat/floatingPanelChat/us
 import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceTableSsot'
 import { emitMarkdownLayoutRequest } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.shared'
 import { normalizeMarkdownWorkspaceSelectionPath } from '@/lib/markdown-workspace-runtime/markdownWorkspaceSelectionPath'
-import { parseChatIngestUrlCommand } from '@/features/chat/chatCommandRegistry'
 import {
   clearLocalChatPipelineSurfaceSnapshot,
   publishLocalChatPipelineSurfaceSnapshot,
@@ -781,44 +781,8 @@ export default function FloatingPanelChat() {
     requestHistorySubTab,
     setStreamingInsights,
   })
+  const nativeImportUrlInputReady = isNativeImportUrlInvocationAttempt(input)
 
-  const handleSubmitWithCommands = React.useCallback<React.FormEventHandler<HTMLFormElement>>((e) => {
-    const cmd = parseChatIngestUrlCommand(input)
-    if (!cmd) {
-      handleSubmit(e)
-      return
-    }
-    e.preventDefault()
-    if (isLoading) return
-    const userText = String(input || '').trim()
-    if (!userText) return
-    setErrorText(null)
-    setInput('')
-    setMessages(prev => [...prev, { id: `cmd-user-${Date.now().toString(36)}`, role: 'user', content: userText }])
-    void (async () => {
-      try {
-        const { importUrlViaDeerFlowAndApply } = (await import(
-          '@/features/markdown-workspace/useWorkspaceFileActions/deerflowUrlImportAction'
-        )) as typeof import('@/features/markdown-workspace/useWorkspaceFileActions/deerflowUrlImportAction')
-        const result = await importUrlViaDeerFlowAndApply({ urlRaw: cmd.url, pushUiToast })
-        const created = result?.createdPaths || []
-        const links = created
-          .map(path => {
-            const name = String(path || '').split('/').filter(Boolean).slice(-1)[0] || String(path || '')
-            return name ? `- [${name}](${path})` : ''
-          })
-          .filter(Boolean)
-          .join('\n')
-        const assistantText = created.length
-          ? `Imported ${created.length} file(s):\n${links}`
-          : 'Import finished (no files reported).'
-        setMessages(prev => [...prev, { id: `cmd-assistant-${Date.now().toString(36)}`, role: 'assistant', content: assistantText }])
-      } catch (err) {
-        const message = err && typeof err === 'object' && 'message' in err ? String(err.message || '') : ''
-        setMessages(prev => [...prev, { id: `cmd-error-${Date.now().toString(36)}`, role: 'assistant', content: message || 'Import failed.' }])
-      }
-    })()
-  }, [handleSubmit, input, isLoading, pushUiToast])
   return (
     <section className="h-full flex flex-col">
       <section
@@ -869,8 +833,8 @@ export default function FloatingPanelChat() {
         onModelChanged={handleChatModelChanged}
         uiPanelTextFontClass={uiPanelTextFontClass}
         uiPanelMicroLabelTextSizeClass={uiPanelMicroLabelTextSizeClass}
-        isSubmitDisabled={!input.trim() || isLoading || !chatModelSelect.modelId}
-        onSubmit={handleSubmitWithCommands}
+        isSubmitDisabled={!input.trim() || isLoading || (!chatModelSelect.modelId && !nativeImportUrlInputReady)}
+        onSubmit={handleSubmit}
         onStop={stopActiveChatStream}
         showNewChatButton={chatStorageTarget === 'chatKnowgrph'}
         onNewChat={handleNewChat}

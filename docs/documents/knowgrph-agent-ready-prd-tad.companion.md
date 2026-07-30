@@ -36,7 +36,7 @@ endpoint invocation.
 | Concern | Canonical source owner | Required invariant |
 |---|---|---|
 | Shared MCP tool definitions | `canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs` | One typed definition source supports the Pages subset and app registry. |
-| Browser WebMCP registration | `canvas/src/features/agent-ready/webMcpRuntime.ts` | Exactly 41 tools: 30 read-only, 11 guarded controls. |
+| Browser WebMCP registration | `canvas/src/features/agent-ready/webMcpRuntime.ts` | Exactly 42 tools: 30 read-only, 12 guarded controls. |
 | Browser startup | `canvas/src/main.tsx` | Registration occurs through the canonical runtime owner. |
 | Pages HTTP MCP | `cloudflare/pages/knowgrph-agent-ready.mjs` | Exactly 7 read-only tools; no guarded control. |
 | Agent-ready resources/prompts | Agent-ready prompt/resource contracts consumed by the adapters | Resource or prompt discovery does not enlarge the tool count. |
@@ -64,14 +64,14 @@ All seven are read-only and require zero model calls.
 
 ### Browser capability boundary
 
-The app WebMCP registry contains exactly 41 tools. Annotation classification is
+The app WebMCP registry contains exactly 42 tools. Annotation classification is
 part of the contract:
 
 | Class | Count | Boundary |
 |---|---:|---|
 | Read-only | 30 | Inspection or context retrieval; zero implicit model calls. |
-| Guarded control | 11 | Browser-local runtime owner and approval determine availability. |
-| Total | 41 | No duplicate name. |
+| Guarded control | 12 | Browser-local runtime owner and approval determine availability. |
+| Total | 42 | No duplicate name. |
 
 The browser total must not replace the Pages count in discovery metadata,
 onboarding, tests, or status narratives.
@@ -102,7 +102,7 @@ specific surface:
 
 - Source files establish public reachability.
 - The seven-tool Pages surface exposes browser-local guarded controls.
-- The 41-tool browser registry is the local stdio or remote Worker registry.
+- The 42-tool browser registry is the local stdio or remote Worker registry.
 - The broader local stdio catalog is executable without its configuration.
 - The 10-tool Worker source registry establishes a delivered Worker.
 - A session id replaces Worker bearer authorization.
@@ -128,7 +128,7 @@ The sole endpoint Invocation Register and detailed remote client sequence are in
 | ID | End state | Stated check | Constraint | Evidence Reference |
 |---|---|---|---|---|
 | `VCC-AR-C-01` | Pages exposes the seven exact names above. | Run the focused Pages parity test and surface name/annotation output. | Read-only only. | None recorded |
-| `VCC-AR-C-02` | Browser exposes 41 unique tools split 30/11. | Run the focused WebMCP runtime test and surface counts. | No duplicate; no Pages mutation. | None recorded |
+| `VCC-AR-C-02` | Browser exposes 42 unique tools split 30/12. | Run the focused WebMCP runtime test and surface counts. | No duplicate; no Pages mutation. | None recorded |
 | `VCC-AR-C-03` | Valid content uses one workspace/parser/canvas path. | Run the focused structured-content and canvas-apply tests and surface ownership assertions. | No second persistence or parser path. | None recorded |
 | `VCC-AR-C-04` | Negative paths cause no unintended mutation or spend. | Run invalid-input, unavailable-owner, and denied-control tests and surface unchanged-state assertions. | Stop on first unexpected side effect. | None recorded |
 

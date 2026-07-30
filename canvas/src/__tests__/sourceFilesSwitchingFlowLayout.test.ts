@@ -492,6 +492,19 @@ export function testSourceFilesStableHydratedSelectionStillAppliesStaleCanvasDoc
   if (!emptySourceShouldApply) {
     throw new Error('expected already-hydrated selected file text to apply when Canvas graph source is unowned or missing')
   }
+  const userDraftShouldApplyCachedText = shouldApplyStableWorkspaceSelectionToCanvas({
+    activePath: '/docs/knowgrph-design-demo.md',
+    activeEntryKind: 'file',
+    activeDocumentKey: 'docs/knowgrph-design-demo.md',
+    nextText: '---\nkgCanvas2dRenderer: "design"\n---\n# Cached text',
+    userEditedActiveText: true,
+    markdownDocumentName: 'docs/knowgrph-design-demo.md',
+    markdownDocumentText: '---\nkgCanvas2dRenderer: "design"\n---\n# Cached text',
+    graphDataSource: 'markdown:docs/knowgrph-video-demo.md',
+  })
+  if (userDraftShouldApplyCachedText) {
+    throw new Error('expected stable Source Files hydration to preserve an unsaved user draft even when Canvas metadata is stale')
+  }
   if (!isWorkspaceGraphSourceStaleForDocument({
     activeDocumentKey: 'docs/knowgrph-design-demo.md',
     graphDataSource: 'source-file:docs/knowgrph-video-demo.md',

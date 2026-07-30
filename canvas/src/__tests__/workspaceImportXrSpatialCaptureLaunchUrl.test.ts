@@ -137,6 +137,52 @@ export async function testLaunchImportUrlFallsBackWhenBridgeCreatesNoWorkspacePa
   if (calls.join(',') !== expected) throw new Error(`expected Launch Import URL to fall back after no-op bridge, got ${calls.join(',')}`)
 }
 
+export async function testLaunchImportUrlSkipsFallbackWhenBridgeCreatesWorkspacePath() {
+  const calls: string[] = []
+  const result = await runLaunchImportUrl({
+    urlRaw: 'https://example.test/article',
+    bridge: {
+      importUrl: async url => {
+        calls.push(`bridge:${url}`)
+        return { createdPaths: ['/article.md'], removedPaths: [] }
+      },
+    },
+    fallback: async url => {
+      calls.push(`fallback:${url}`)
+      return { createdPaths: ['/duplicate.md'] }
+    },
+  })
+  if (calls.join(',') !== 'bridge:https://example.test/article') {
+    throw new Error(`expected a successful Launch Import URL bridge to skip fallback, got ${calls.join(',')}`)
+  }
+  if (!result || result.createdPaths?.[0] !== '/article.md') {
+    throw new Error(`expected Launch Import URL to preserve bridge mutation evidence, got ${JSON.stringify(result)}`)
+  }
+}
+
+export async function testLaunchImportUrlSkipsFallbackWhenBridgeHandledWithoutWorkspacePath() {
+  const calls: string[] = []
+  const result = await runLaunchImportUrl({
+    urlRaw: 'https://example.test/article',
+    bridge: {
+      importUrl: async url => {
+        calls.push(`bridge:${url}`)
+        return { handled: true, createdPaths: [], removedPaths: [] }
+      },
+    },
+    fallback: async url => {
+      calls.push(`fallback:${url}`)
+      return { createdPaths: ['/duplicate.md'] }
+    },
+  })
+  if (calls.join(',') !== 'bridge:https://example.test/article') {
+    throw new Error(`expected handled Launch Import URL evidence to prevent a duplicate fallback, got ${calls.join(',')}`)
+  }
+  if (!result || result.handled !== true || result.createdPaths?.length !== 0) {
+    throw new Error(`expected Launch Import URL to preserve handled no-path evidence, got ${JSON.stringify(result)}`)
+  }
+}
+
 export async function testLaunchImportLocalFilesFallsBackWhenBridgeRejects() {
   const calls: string[] = []
   const file = new File([tinyPlyText], 'scan-neutral.ply', { type: 'model/ply' })

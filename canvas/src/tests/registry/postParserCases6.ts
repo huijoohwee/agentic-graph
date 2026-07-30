@@ -141,7 +141,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["ui.floatingPanelChat.contextCache.exactText","@/__tests__/floatingPanelChatPipeline.test","testFloatingPanelChatContextKeysRejectSameLengthMiddleEditStaleness"],
   ["ui.floatingPanelChat.composer.triggerRanges","@/__tests__/floatingPanelChatComposerCommands.test","testFloatingPanelChatComposerTriggerRangesStayInlineAndNeutral"],
   ["ui.floatingPanelChat.composer.invocationSourceLinks","@/__tests__/floatingPanelChatComposerCommands.test","testAgenticOsInvocationsUsePublicSourceLinks"],
-  ["ui.floatingPanelChat.composer.ingestCommandRegistry","@/__tests__/floatingPanelChatComposerCommands.test","testFloatingPanelChatIngestCommandUsesSharedRegistryParser"],
+  ["ui.floatingPanelChat.composer.ingestCommandRegistry","@/__tests__/floatingPanelChatComposerCommands.test","testFloatingPanelChatIngestCommandUsesCanonicalNativeParser"],
   ["ui.floatingPanelChat.composer.mediaProjectionGrammar","@/__tests__/floatingPanelChatComposerMediaProjection.test","testFloatingPanelChatComposerMediaProjectionPreservesInvocationGrammar"],
   ["ui.floatingPanelChat.composer.workspaceDocumentLinkRaw","@/__tests__/floatingPanelChatComposerMediaProjection.test","testFloatingPanelChatComposerKeepsWorkspaceDocumentLinksAuthored"],
   ["ui.floatingPanelChat.composer.attachedMediaProjectionDisplayOnly","@/__tests__/floatingPanelChatComposerMediaProjection.test","testFloatingPanelChatComposerAttachedMediaProjectionStaysDisplayOnly"],
@@ -283,5 +283,6 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["strybldr.runAll.videoSourceWritesVideoAgentAnalysisPacket","@/__tests__/strybldrWorkspaceParserFallback.test","testStrybldrRunAllVideoSourceWritesVideoAgentAnalysisPacket"],
   ["strybldr.runAll.videoSourceUsesWorkspaceImportUrlBridge","@/__tests__/strybldrWorkspaceParserFallback.test","testStrybldrRunAllVideoSourceUsesWorkspaceImportUrlBridge"],
   ["strybldr.runAll.videoSourceFallsBackToLaunchImportUrl","@/__tests__/strybldrWorkspaceParserFallback.test","testStrybldrRunAllVideoSourceFallsBackToLaunchImportUrl"],
+  ["agentReady.webMcpRuntime.importUrlControl","@/__tests__/importUrlWebMcpTools.test","testImportUrlWebMcpControlUsesCanonicalStructuredExecutor"],
   ["graph.data.preserveLayout.probeTreeOutputContentCommit","@/__tests__/graphDataPreservingLayoutSync.test","testSetGraphDataPreservingLayoutCommitsProbeTreeOutputWithoutTopologyChange"],
 ]
