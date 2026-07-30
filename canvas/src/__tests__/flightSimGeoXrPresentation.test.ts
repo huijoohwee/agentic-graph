@@ -59,6 +59,13 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     path.resolve(process.cwd(), 'src/lib/three/ThreeGameplayOverlay.tsx'),
     'utf8',
   )
+  const flightMissionStage = readFileSync(
+    path.resolve(
+      process.cwd(),
+      'src/features/game-flight-sim/FlightSimMissionStage.tsx',
+    ),
+    'utf8',
+  )
   const canvasCss = readFileSync(
     path.resolve(process.cwd(), 'src/index.css'),
     'utf8',
@@ -141,6 +148,22 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
   assert.doesNotMatch(
     gameplayOverlay,
     /actorsVisible=\{!props\.geospatialComposite\}/,
+  )
+  assert.match(
+    gameplayOverlay,
+    /geospatialComposite=\{props\.geospatialComposite\}/,
+  )
+  assert.match(
+    flightMissionStage,
+    /geospatialComposite \? \([\s\S]*name="kg_flight_sim_geospatial_actor_lighting"[\s\S]*<ambientLight intensity=\{0\.9\} \/>[\s\S]*<hemisphereLight args=\{\['#ffffff', '#cbd5e1', 0\.6\]\} \/>[\s\S]*<pointLight position=\{\[120, 120, 120\]\} intensity=\{0\.9\} \/>/,
+  )
+  assert.match(
+    flightMissionStage,
+    /preservesTransparentBackground: true/,
+  )
+  assert.doesNotMatch(
+    flightMissionStage,
+    /<color attach="background"|<fog/,
   )
   assert.match(threeGraph, /data-kg-three-canvas-owner="1"/)
   assert.match(

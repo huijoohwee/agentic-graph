@@ -23,12 +23,14 @@ import { useFlightSimSurfaceControls } from './useFlightSimSurfaceControls'
 export type FlightSimMissionStageProps = Readonly<{
   actorsVisible?: boolean
   coordinateScale?: number
+  geospatialComposite?: boolean
   runtimeController: FlightSimStageRuntimeController
 }>
 
 export function FlightSimMissionStage({
   actorsVisible = true,
   coordinateScale = 1,
+  geospatialComposite = false,
   runtimeController,
 }: FlightSimMissionStageProps) {
   const { gl } = useThree()
@@ -222,18 +224,29 @@ export function FlightSimMissionStage({
   })
 
   return (
-    <group
-      name="kg_flight_sim_mission"
-      scale={coordinateScale}
-      visible={actorsVisible}
-      userData={{
-        actorOnly: true,
-        coordinateScale,
-        mapProjectionOnly: !actorsVisible,
-        spatialProfile: profile.id,
-        visualProjection: actorsVisible ? 'r3f' : 'maplibre',
-      }}
-    >
+    <>
+      {geospatialComposite ? (
+        <group
+          name="kg_flight_sim_geospatial_actor_lighting"
+          userData={{ actorOnly: true, preservesTransparentBackground: true }}
+        >
+          <ambientLight intensity={0.9} />
+          <hemisphereLight args={['#ffffff', '#cbd5e1', 0.6]} />
+          <pointLight position={[120, 120, 120]} intensity={0.9} />
+        </group>
+      ) : null}
+      <group
+        name="kg_flight_sim_mission"
+        scale={coordinateScale}
+        visible={actorsVisible}
+        userData={{
+          actorOnly: true,
+          coordinateScale,
+          mapProjectionOnly: !actorsVisible,
+          spatialProfile: profile.id,
+          visualProjection: actorsVisible ? 'r3f' : 'maplibre',
+        }}
+      >
       <group
         ref={actorRef}
         name="kg_flight_sim_aircraft"
@@ -310,7 +323,8 @@ export function FlightSimMissionStage({
           opacity={0.9}
         />
       </mesh>
-    </group>
+      </group>
+    </>
   )
 }
 
@@ -319,6 +333,7 @@ export function createFlightSimMissionStage(
 ): React.ComponentType<{
   actorsVisible?: boolean
   coordinateScale?: number
+  geospatialComposite?: boolean
 }> {
   return function BoundFlightSimMissionStage(props) {
     return (
