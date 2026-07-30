@@ -5,6 +5,7 @@ const escapedPdfText = (value) => (
 function minimalPdfWithStreams(streams, {
   includeFont,
   contentValues = [],
+  contentStreamExtras = [],
   extraObjects = [],
   pageExtras = [],
 }) {
@@ -30,7 +31,7 @@ function minimalPdfWithStreams(streams, {
     });
     objects.push({
       id: contentId,
-      body: `<< /Length ${Buffer.byteLength(stream, "latin1")} >>\nstream\n${stream}\nendstream`,
+      body: `<< /Length ${Buffer.byteLength(stream, "latin1")} ${contentStreamExtras[index] || ""} >>\nstream\n${stream}\nendstream`,
     });
   }
   if (includeFont) {
@@ -68,6 +69,31 @@ export const minimalTextAndBlankPdf = (text) => minimalPdfWithStreams([
   `BT /F1 24 Tf 72 720 Td (${escapedPdfText(text)}) Tj ET`,
   "q\nQ",
 ], { includeFont: true });
+
+export const minimalTextAndVectorPdf = (text) => minimalPdfWithStreams([
+  `BT /F1 24 Tf 72 720 Td (${escapedPdfText(text)}) Tj ET`,
+  "q\n0 0 m 100 0 l S\nQ",
+], { includeFont: true });
+
+export const minimalVectorPdf = () => minimalPdfWithStreams([
+  "q\n0 0 m 100 0 l S\nQ",
+], { includeFont: false });
+
+export const minimalTextAndMalformedContentsPdf = (text) => minimalPdfWithStreams([
+  `BT /F1 24 Tf 72 720 Td (${escapedPdfText(text)}) Tj ET`,
+  "q\nQ",
+], {
+  includeFont: true,
+  contentValues: ["", "<< /Malformed true >>"],
+});
+
+export const minimalTextAndUnsupportedFilterPdf = (text, filter = "/BogusDecode") => minimalPdfWithStreams([
+  `BT /F1 24 Tf 72 720 Td (${escapedPdfText(text)}) Tj ET`,
+  "q\n0 0 m 100 0 l S\nQ",
+], {
+  includeFont: true,
+  contentStreamExtras: ["", `/Filter ${filter}`],
+});
 
 export const minimalAnnotatedBlankPdf = () => minimalPdfWithStreams([
   "q\nQ",

@@ -11,7 +11,11 @@ import {
   minimalBlankPdf,
   minimalMalformedContentsPdf,
   minimalTextAndBlankPdf,
+  minimalTextAndMalformedContentsPdf,
+  minimalTextAndUnsupportedFilterPdf,
+  minimalTextAndVectorPdf,
   minimalTextPdf,
+  minimalVectorPdf,
 } from "./fixtures/minimal-text-pdf.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -30,6 +34,9 @@ test("host PDF adapter invokes only the native local converter over discovered b
     pageCount: 1,
     textLineCount: 1,
     blankPageCount: 0,
+    nonTextPageCount: 0,
+    blankPages: [],
+    nonTextPages: [],
     contentClass: "text",
   });
 });
@@ -45,6 +52,9 @@ test("source text shaped like a page marker cannot alter structured PDF metadata
     pageCount: 1,
     textLineCount: 1,
     blankPageCount: 0,
+    nonTextPageCount: 0,
+    blankPages: [],
+    nonTextPages: [],
     contentClass: "text",
   });
   assert.match(result.markdown, /^## Page 1$/m);
@@ -82,13 +92,33 @@ test("host PDF adapter rejects zero-page and no-text results instead of publishi
     /no extractable text/i,
   );
   await assert.rejects(
+    convert({ sourcePath: "docs/vector-only.pdf", bytes: minimalVectorPdf() }),
+    /no extractable text/i,
+  );
+  await assert.rejects(
     convert({ sourcePath: "docs/annotated.pdf", bytes: minimalAnnotatedBlankPdf() }),
     /nonblank pages with no extractable text/i,
   );
   await assert.rejects(
     convert({ sourcePath: "docs/malformed-contents.pdf", bytes: minimalMalformedContentsPdf() }),
-    /nonblank pages with no extractable text/i,
+    /could not safely decode every page content stream/i,
   );
+  await assert.rejects(
+    convert({
+      sourcePath: "docs/text-and-malformed.pdf",
+      bytes: minimalTextAndMalformedContentsPdf("Valid text must not hide an unsafe page"),
+    }),
+    /could not safely decode every page content stream/i,
+  );
+  for (const filter of ["/BogusDecode", "[/FlateDecode /BogusDecode]"]) {
+    await assert.rejects(
+      convert({
+        sourcePath: "docs/text-and-unsupported-filter.pdf",
+        bytes: minimalTextAndUnsupportedFilterPdf("Valid text must not hide encoded content", filter),
+      }),
+      /could not safely decode every page content stream/i,
+    );
+  }
 });
 
 test("host PDF adapter admits verified blank pages without fabricating document text", async () => {
@@ -102,6 +132,9 @@ test("host PDF adapter admits verified blank pages without fabricating document 
     pageCount: 1,
     textLineCount: 0,
     blankPageCount: 1,
+    nonTextPageCount: 0,
+    blankPages: [1],
+    nonTextPages: [],
     contentClass: "blank",
   });
   assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), [
@@ -130,6 +163,7 @@ test("host PDF adapter admits verified blank pages without fabricating document 
   assert.ok(fragment.nodes.some((node) => (
     node.type === "DocumentSection"
     && node.properties["pdf:page"] === 1
+    && node.properties["pdf:pageContentClass"] === "blank"
   )));
   assert.equal(
     fragment.nodes.some((node) => node.type === "DocumentText"),
@@ -151,6 +185,9 @@ test("mixed text and verified blank PDF pages preserve honest blank-page metadat
     pageCount: 2,
     textLineCount: 1,
     blankPageCount: 1,
+    nonTextPageCount: 0,
+    blankPages: [2],
+    nonTextPages: [],
     contentClass: "text-with-blank-pages",
   });
   assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), [
@@ -184,4 +221,65 @@ test("mixed text and verified blank PDF pages preserve honest blank-page metadat
     fragment.nodes.filter((node) => node.type === "DocumentText").length,
     1,
   );
+});
+
+test("mixed text and nontext visual PDF pages stay queryable without fabricated OCR text", async () => {
+  const convert = createLocalKnowledgeGraphPdfConverter({ rootDir: repoRoot, timeoutMs: 30_000 });
+  const bytes = minimalTextAndVectorPdf("Source-backed page text");
+  const result = await convert({
+    sourcePath: "docs/mixed-visual.pdf",
+    bytes,
+  });
+  assert.deepEqual(result.extraction, {
+    pageCount: 2,
+    textLineCount: 1,
+    blankPageCount: 0,
+    nonTextPageCount: 1,
+    blankPages: [],
+    nonTextPages: [2],
+    contentClass: "text-with-nontext-pages",
+  });
+  assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), [
+    "pdf_nontext_pages",
+  ]);
+  assert.deepEqual(result.diagnostics[0].pages, [2]);
+
+  const fragment = await parseKnowledgeSource({
+    relativePath: "docs/mixed-visual.pdf",
+    bytes,
+    contentHash: sha256(bytes),
+    byteSize: bytes.length,
+    kind: "pdf",
+    status: "ready",
+    diagnostics: [],
+  }, {
+    pdfConverter: convert,
+    pdfConverterVersion: "mixed-visual-fixture-v1",
+  });
+  const sourceNode = fragment.nodes.find((node) => node.type === "SourceFile");
+  assert.equal(fragment.status, "parsed");
+  assert.equal(sourceNode.properties["pdf:contentClass"], "text-with-nontext-pages");
+  assert.equal(sourceNode.properties["pdf:nonTextPageCount"], 1);
+  const nonTextPageNode = fragment.nodes.find((node) => (
+    node.type === "DocumentSection"
+    && node.properties["pdf:page"] === 2
+  ));
+  assert.equal(nonTextPageNode.properties["pdf:pageContentClass"], "nontext");
+  const nonTextPageEdge = fragment.edges.find((edge) => edge.target === nonTextPageNode.id);
+  assert.ok(nonTextPageEdge);
+  assert.equal(typeof nonTextPageEdge.properties["evidence:explanation"], "string");
+  assert.ok(nonTextPageEdge.properties["evidence:explanation"].length > 0);
+  assert.equal(
+    fragment.nodes.filter((node) => (
+      node.type === "DocumentSection" && Number.isInteger(node.properties["pdf:page"])
+    )).length,
+    2,
+  );
+  assert.equal(
+    fragment.nodes.filter((node) => node.type === "DocumentText").length,
+    1,
+  );
+  assert.deepEqual(fragment.diagnostics.map((diagnostic) => diagnostic.code), [
+    "pdf_nontext_pages",
+  ]);
 });

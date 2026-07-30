@@ -14,6 +14,7 @@ export type NativePdfPageObservation = {
   contentByteCount: number
   contentStreamCount: number
   decodedContentStreamCount: number
+  contentDecodeComplete: boolean
   contentTruncated: boolean
   contentShapeValid: boolean
   hasAnnotationsEntry: boolean
@@ -255,11 +256,15 @@ export async function convertPdfBytesToMarkdown(args: {
       })()
       let used = 0
       let decodedContentStreamCount = 0
+      let contentDecodeComplete = true
       let contentTruncated = false
       for (const r of contentRefs) {
         if (maxPageContentBytes > 0 && used >= maxPageContentBytes) break
         const st = readStream(objects, r, streamDecodeCache, { maxOutputLength: maxContentStreamDecodeBytes, onError: 'null' })
-        if (!st.bytes) continue
+        if (!st.decodeComplete || !st.bytes) {
+          contentDecodeComplete = false
+          continue
+        }
         decodedContentStreamCount += 1
         if (maxPageContentBytes > 0) {
           const remaining = maxPageContentBytes - used
@@ -274,6 +279,8 @@ export async function convertPdfBytesToMarkdown(args: {
       return {
         bytes: parts.length > 0 ? Buffer.concat(parts) : Buffer.alloc(0),
         decodedContentStreamCount,
+        contentDecodeComplete: contentDecodeComplete
+          && decodedContentStreamCount === contentRefs.length,
         contentTruncated,
       }
     })()
@@ -302,6 +309,7 @@ export async function convertPdfBytesToMarkdown(args: {
       contentByteCount: contentBytes.length,
       contentStreamCount: contentRefs.length,
       decodedContentStreamCount: content.decodedContentStreamCount,
+      contentDecodeComplete: content.contentDecodeComplete,
       contentTruncated: content.contentTruncated,
       contentShapeValid,
       hasAnnotationsEntry,
@@ -310,6 +318,7 @@ export async function convertPdfBytesToMarkdown(args: {
       structurallyBlank: fragments.length === 0
         && contentShapeValid
         && !hasAnnotationsEntry
+        && content.contentDecodeComplete
         && content.decodedContentStreamCount === contentRefs.length
         && !content.contentTruncated
         && isStructurallyBlankPdfPage(contentBytes),

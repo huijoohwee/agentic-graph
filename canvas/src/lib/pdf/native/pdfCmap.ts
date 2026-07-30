@@ -134,7 +134,7 @@ export function buildFontUnicodeMaps(
       return 512 * 1024
     })()
     const st = readStream(objects, toUnicodeRef, streamDecodeCache, { maxOutputLength: maxToUnicodeDecodeBytes, onError: 'null' })
-    if (!st.bytes) continue
+    if (!st.decodeComplete || !st.bytes) continue
     try {
       const cmap = parseToUnicodeCMap(st.bytes, { maxBytes: limits?.cmapMaxBytes })
       out[fontKey] = cmap

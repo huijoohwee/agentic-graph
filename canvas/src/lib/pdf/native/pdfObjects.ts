@@ -135,8 +135,9 @@ export function expandObjectStreams(objects: Map<number, ParsedIndirectObject>, 
       const n = Math.max(0, Math.min(5000, Math.floor(nVal.value)))
       const first = Math.max(0, Math.floor(firstVal.value))
       if (n <= 0 || first <= 0) continue
-      const decoded = readStream(objects, { obj: obj.obj, gen: obj.gen }, streamDecodeCache, null).bytes
-      if (!decoded || decoded.length <= first) continue
+      const stream = readStream(objects, { obj: obj.obj, gen: obj.gen }, streamDecodeCache, null)
+      const decoded = stream.bytes
+      if (!stream.decodeComplete || !decoded || decoded.length <= first) continue
       const header = decoded.slice(0, first).toString('latin1')
       const pairs: Array<{ obj: number; offset: number }> = []
       const pairRe = /(\d+)\s+(\d+)/g
@@ -364,24 +365,49 @@ export function readStream(
   ref: PdfRef | null,
   cache?: PdfStreamDecodeCache | null,
   opts?: { maxOutputLength?: number; onError?: 'raw' | 'null' } | null,
-): { dict: PdfDict | null; bytes: Buffer | null } {
-  if (!ref) return { dict: null, bytes: null }
+): { dict: PdfDict | null; bytes: Buffer | null; decodeComplete: boolean } {
+  if (!ref) return { dict: null, bytes: null, decodeComplete: false }
   const obj = objects.get(ref.obj)
-  if (!obj) return { dict: null, bytes: null }
+  if (!obj) return { dict: null, bytes: null, decodeComplete: false }
   const dict = obj.dict
   const bytes = obj.stream
-  if (!bytes || !dict) return { dict: dict || null, bytes: bytes || null }
+  if (!bytes || !dict) return { dict: dict || null, bytes: bytes || null, decodeComplete: false }
   const filterVal = getDictValue(dict, 'Filter')
-  const filters: string[] = (() => {
-    if (!filterVal) return []
-    if (isName(filterVal)) return [filterVal.name]
-    if (isArray(filterVal)) return filterVal.items.filter(isName).map(n => n.name)
-    return []
+  const filterDescriptor = (() => {
+    if (!filterVal) return { valid: true, filters: [] as string[] }
+    if (isName(filterVal)) return { valid: true, filters: [filterVal.name] }
+    if (isArray(filterVal) && filterVal.items.every(isName)) {
+      return { valid: true, filters: filterVal.items.map(n => n.name) }
+    }
+    return { valid: false, filters: [] as string[] }
   })()
-  if (filters.length === 0) return { dict, bytes }
-  if (filters[0] === 'FlateDecode') {
+  const unsupported = () => ({
+    dict,
+    bytes: opts?.onError === 'null' ? null : bytes,
+    decodeComplete: false,
+  })
+  if (!filterDescriptor.valid) return unsupported()
+  if (filterDescriptor.filters.length === 0) return { dict, bytes, decodeComplete: true }
+  const flateDecodeParmsAreTrivial = (() => {
+    const declared = getDictValue(dict, 'DecodeParms')
+    if (!declared) return true
+    const value = deref(objects, declared)
+    if (!value) return false
+    const parameter = isArray(value)
+      ? (value.items.length === 1 ? deref(objects, value.items[0]) : null)
+      : value
+    if (!parameter) return false
+    if (typeof parameter === 'object' && 'kind' in parameter && parameter.kind === 'null') return true
+    if (!isDict(parameter)) return false
+    const predictor = deref(objects, getDictValue(parameter, 'Predictor'))
+    return !predictor
+      || (typeof predictor === 'object' && 'kind' in predictor && predictor.kind === 'null')
+      || (isNumber(predictor) && predictor.value === 1)
+  })()
+  if (filterDescriptor.filters.length === 1
+    && filterDescriptor.filters[0] === 'FlateDecode') {
     const cached = cache?.decodedByObj.get(ref.obj)
-    if (cached) return { dict, bytes: cached }
+    if (cached) return { dict, bytes: cached, decodeComplete: flateDecodeParmsAreTrivial }
     try {
       const maxOutputLength = (() => {
         if (typeof opts?.maxOutputLength === 'number' && Number.isFinite(opts.maxOutputLength) && opts.maxOutputLength > 0) {
@@ -400,12 +426,12 @@ export function readStream(
           cache.usedBytes += size
         }
       }
-      return { dict, bytes: decoded }
+      return { dict, bytes: decoded, decodeComplete: flateDecodeParmsAreTrivial }
     } catch {
-      return { dict, bytes: opts?.onError === 'null' ? null : bytes }
+      return unsupported()
     }
   }
-  return { dict, bytes }
+  return unsupported()
 }
 
 export function sanitizeFilename(name: string): string {

@@ -49,7 +49,7 @@ export const STRUCTURAL_CONFIG_PARSER_VERSION = "1.0.0";
 export const SOURCE_INVENTORY_PARSER_ID = "local-source-inventory";
 export const SOURCE_INVENTORY_PARSER_VERSION = "1.0.0";
 export const PDF_PARSER_ID = "local-pdf-markdown-adapter";
-export const PDF_PARSER_VERSION = "1.1.0";
+export const PDF_PARSER_VERSION = "1.2.0";
 const MAX_PARSER_NODES = 100_000;
 const MAX_PARSER_EDGES = 200_000;
 const MAX_PARSER_RECORDS = 250_000;
@@ -698,6 +698,25 @@ async function parsePdfSource(source, options) {
       throw new Error("PDF conversion found no readable pages.");
     }
     const blankPageCount = Number(extraction?.blankPageCount || 0);
+    const nonTextPageCount = Number(extraction?.nonTextPageCount || 0);
+    const parseDeclaredPages = (value, expectedCount) => {
+      if (!Array.isArray(value) || value.length !== expectedCount) return null;
+      const pages = value.map(Number);
+      if (pages.some((page, index) => (
+        !Number.isSafeInteger(page)
+        || page < 1
+        || page > pageCount
+        || (index > 0 && page <= pages[index - 1])
+      ))) return null;
+      return pages;
+    };
+    const blankPages = extraction
+      ? parseDeclaredPages(extraction.blankPages, blankPageCount)
+      : [];
+    const nonTextPages = extraction
+      ? parseDeclaredPages(extraction.nonTextPages, nonTextPageCount)
+      : [];
+    const nonTextPageSet = nonTextPages ? new Set(nonTextPages) : null;
     const contentClass = String(extraction?.contentClass || (textLineCount ? "text" : "unknown"));
     if (extraction) {
       if (!Number.isSafeInteger(textLineCount)
@@ -705,18 +724,53 @@ async function parsePdfSource(source, options) {
         || !Number.isSafeInteger(blankPageCount)
         || blankPageCount < 0
         || blankPageCount > pageCount
-        || !["blank", "text", "text-with-blank-pages"].includes(contentClass)
+        || !Number.isSafeInteger(nonTextPageCount)
+        || nonTextPageCount < 0
+        || blankPageCount + nonTextPageCount > pageCount
+        || !blankPages
+        || !nonTextPages
+        || blankPages.some((page) => nonTextPageSet.has(page))
+        || ![
+          "blank",
+          "text",
+          "text-with-blank-pages",
+          "text-with-nontext-pages",
+          "text-with-blank-and-nontext-pages",
+        ].includes(contentClass)
         || (
           contentClass === "blank"
-          && (textLineCount !== 0 || blankPageCount !== pageCount)
+          && (textLineCount !== 0 || blankPageCount !== pageCount || nonTextPageCount !== 0)
         )
         || (
           contentClass === "text"
-          && (textLineCount === 0 || blankPageCount !== 0)
+          && (textLineCount === 0 || blankPageCount !== 0 || nonTextPageCount !== 0)
         )
         || (
           contentClass === "text-with-blank-pages"
-          && (textLineCount === 0 || blankPageCount < 1 || blankPageCount >= pageCount)
+          && (
+            textLineCount === 0
+            || blankPageCount < 1
+            || blankPageCount >= pageCount
+            || nonTextPageCount !== 0
+          )
+        )
+        || (
+          contentClass === "text-with-nontext-pages"
+          && (
+            textLineCount === 0
+            || blankPageCount !== 0
+            || nonTextPageCount < 1
+            || nonTextPageCount >= pageCount
+          )
+        )
+        || (
+          contentClass === "text-with-blank-and-nontext-pages"
+          && (
+            textLineCount === 0
+            || blankPageCount < 1
+            || nonTextPageCount < 1
+            || blankPageCount + nonTextPageCount >= pageCount
+          )
         )) {
         throw new Error("PDF converter returned inconsistent extraction metadata.");
       }
@@ -735,8 +789,25 @@ async function parsePdfSource(source, options) {
       "pdf:pageCount": pageCount,
       "pdf:textLineCount": textLineCount,
       "pdf:blankPageCount": extraction ? blankPageCount : 0,
+      "pdf:nonTextPageCount": extraction ? nonTextPageCount : 0,
       "pdf:contentClass": blankDocument ? "blank" : contentClass,
     }, options);
+    const blankPageSet = new Set(blankPages || []);
+    const classifiedNonTextPageSet = new Set(nonTextPages || []);
+    const classifiedNodes = fragment.nodes.map((node) => {
+      const pageNumber = Number(node.properties?.["pdf:page"]);
+      if (node.type !== "DocumentSection" || !Number.isSafeInteger(pageNumber)) return node;
+      const pageContentClass = blankPageSet.has(pageNumber)
+        ? "blank"
+        : classifiedNonTextPageSet.has(pageNumber) ? "nontext" : "text";
+      return {
+        ...node,
+        properties: {
+          ...node.properties,
+          "pdf:pageContentClass": pageContentClass,
+        },
+      };
+    });
     const converterDiagnostics = converted
       && typeof converted === "object"
       && Array.isArray(converted.diagnostics)
@@ -745,6 +816,7 @@ async function parsePdfSource(source, options) {
     retainDiagnostics(options, converterDiagnostics, "pdf.converter-diagnostics");
     return {
       ...fragment,
+      nodes: classifiedNodes,
       diagnostics: [...fragment.diagnostics, ...converterDiagnostics],
     };
   } catch (error) {

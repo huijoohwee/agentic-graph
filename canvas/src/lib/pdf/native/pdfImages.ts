@@ -268,7 +268,7 @@ export function extractPageImages(args: {
           return isDict(dv) ? dv : resources
         })()
         const st = readStream(args.objects, ref, args.streamDecodeCache, { maxOutputLength: 8 * 1024 * 1024, onError: 'null' })
-        if (!st.bytes) continue
+        if (!st.decodeComplete || !st.bytes) continue
         walkDoNames(st.bytes, formResources, depth + 1)
       }
     }

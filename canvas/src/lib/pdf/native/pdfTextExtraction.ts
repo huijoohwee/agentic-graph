@@ -192,7 +192,7 @@ export function extractTextFragmentsFromPage(args: {
         return isDict(dv) ? dv : resources
       })()
       const st = readStream(args.objects, ref, args.streamDecodeCache, { maxOutputLength: maxFormXObjectBytes, onError: 'null' })
-      if (!st.bytes) continue
+      if (!st.decodeComplete || !st.bytes) continue
       if (st.bytes.length > maxFormXObjectBytes) continue
       followed += 1
       fragments.push(...extractFromStream(st.bytes, formResources, depth + 1))

@@ -29,6 +29,7 @@ function validatePageObservations(value) {
     const contentByteCount = Number(entry?.contentByteCount);
     const contentStreamCount = Number(entry?.contentStreamCount);
     const decodedContentStreamCount = Number(entry?.decodedContentStreamCount);
+    const contentDecodeComplete = entry?.contentDecodeComplete;
     const contentTruncated = entry?.contentTruncated;
     const contentShapeValid = entry?.contentShapeValid;
     const hasAnnotationsEntry = entry?.hasAnnotationsEntry;
@@ -42,6 +43,7 @@ function validatePageObservations(value) {
       || !Number.isSafeInteger(decodedContentStreamCount)
       || decodedContentStreamCount < 0
       || decodedContentStreamCount > contentStreamCount
+      || typeof contentDecodeComplete !== "boolean"
       || typeof contentTruncated !== "boolean"
       || typeof contentShapeValid !== "boolean"
       || typeof hasAnnotationsEntry !== "boolean"
@@ -53,7 +55,10 @@ function validatePageObservations(value) {
       || (
         entry.structurallyBlank
         && (
-          decodedContentStreamCount !== contentStreamCount
+          textFragmentCount !== 0
+          || markdownTextLineCount !== 0
+          || !contentDecodeComplete
+          || decodedContentStreamCount !== contentStreamCount
           || contentTruncated
           || !contentShapeValid
           || hasAnnotationsEntry
@@ -66,6 +71,7 @@ function validatePageObservations(value) {
       contentByteCount,
       contentStreamCount,
       decodedContentStreamCount,
+      contentDecodeComplete,
       contentTruncated,
       contentShapeValid,
       hasAnnotationsEntry,
@@ -100,22 +106,36 @@ function validateNativePdfOutput(outputRaw, sourcePath) {
     (total, page) => total + page.markdownTextLineCount,
     0,
   );
+  const unsafePages = pageObservations.filter((page) => (
+    !page.contentShapeValid
+    || !page.contentDecodeComplete
+    || page.contentTruncated
+    || page.decodedContentStreamCount !== page.contentStreamCount
+  ));
+  if (unsafePages.length) {
+    throw new Error("Native PDF converter could not safely decode every page content stream.");
+  }
   const blankPages = pageObservations.filter(
     (page) => page.textFragmentCount === 0 && page.structurallyBlank,
   );
-  const nonTextNonBlankPages = pageObservations.filter(
-    (page) => page.textFragmentCount === 0 && !page.structurallyBlank,
+  const nonTextPages = pageObservations.filter(
+    (page) => page.markdownTextLineCount === 0 && !page.structurallyBlank,
   );
-  if (nonTextNonBlankPages.length || (!textLineCount && blankPages.length !== pageCount)) {
+  if (!textLineCount && blankPages.length !== pageCount) {
     throw new Error("Native PDF converter found nonblank pages with no extractable text; image-only, encrypted, or unsupported visual content requires an explicit local OCR lane.");
   }
   const blankPageCount = blankPages.length;
-  const contentClass = blankPageCount === pageCount
-    ? "blank"
-    : blankPageCount > 0 ? "text-with-blank-pages" : "text";
-  return {
-    markdown,
-    diagnostics: blankPageCount ? [{
+  const nonTextPageCount = nonTextPages.length;
+  const contentClass = (() => {
+    if (blankPageCount === pageCount) return "blank";
+    if (blankPageCount > 0 && nonTextPageCount > 0) return "text-with-blank-and-nontext-pages";
+    if (blankPageCount > 0) return "text-with-blank-pages";
+    if (nonTextPageCount > 0) return "text-with-nontext-pages";
+    return "text";
+  })();
+  const diagnostics = [];
+  if (blankPageCount) {
+    diagnostics.push({
       code: blankPageCount === pageCount ? "pdf_blank_document" : "pdf_blank_pages",
       sourcePath,
       message: blankPageCount === pageCount
@@ -123,11 +143,28 @@ function validateNativePdfOutput(outputRaw, sourcePath) {
         : `PDF ${sourcePath} contains ${blankPageCount} structurally blank page(s); no text was fabricated for them.`,
       blankPageCount,
       pageCount,
-    }] : [],
+    });
+  }
+  if (nonTextPageCount) {
+    diagnostics.push({
+      code: "pdf_nontext_pages",
+      sourcePath,
+      message: `PDF ${sourcePath} contains ${nonTextPageCount} nonblank page(s) with no extractable text; those pages are represented structurally and no visual semantics or OCR text was fabricated.`,
+      nonTextPageCount,
+      pageCount,
+      pages: nonTextPages.map((page) => page.pageNumber),
+    });
+  }
+  return {
+    markdown,
+    diagnostics,
     extraction: {
       pageCount,
       textLineCount,
       blankPageCount,
+      nonTextPageCount,
+      blankPages: blankPages.map((page) => page.pageNumber),
+      nonTextPages: nonTextPages.map((page) => page.pageNumber),
       contentClass,
     },
   };
