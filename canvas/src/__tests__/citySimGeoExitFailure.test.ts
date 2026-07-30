@@ -41,8 +41,8 @@ export async function testCitySimExitSurfacesGeoRestorationFailure() {
     })
     prepareCitySurface()
     resetCitySimRuntimeForTests({ webglSupported: true })
-    writeGeospatialOverlayEnabledPreference(true)
-    setGeospatialModeEnabled(true)
+    writeGeospatialOverlayEnabledPreference(false)
+    setGeospatialModeEnabled(false)
     useGraphStore.setState({
       canvasRenderMode: '3d',
       canvas3dMode: 'xr',
@@ -72,12 +72,12 @@ export async function testCitySimExitSurfacesGeoRestorationFailure() {
       assert.ok('operation' in result)
       assert.equal(result.operation, 'exit')
       assert.equal(result.code, 'surface-restoration-failed')
-      assert.match(result.message, /Geo mode committed false instead of true/)
+      assert.match(result.message, /Geo mode committed true instead of false/)
     }
     assert.equal(readCitySimSnapshot().active, false)
     assert.equal(readCitySimSnapshot().phase, 'error')
-    assert.equal(readGeospatialOverlayEnabledPreference(), false)
-    assert.equal(isGeospatialModeEnabled(), false)
+    assert.equal(readGeospatialOverlayEnabledPreference(), true)
+    assert.equal(isGeospatialModeEnabled(), true)
   } finally {
     useGympgrphStore.setState({
       setGeospatialModeEnabled: originalSetGeospatialModeEnabled,

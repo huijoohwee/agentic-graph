@@ -26,12 +26,8 @@ import { XrEmptyWorldHud } from '@/features/three/XrEmptyWorldHud'
 import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
 import { XrArPlacementStage } from '@/features/three/XrArPlacementStage'
-import {
-  subscribeXrMotionReferenceRuntime,
-} from '@/features/three/xrMotionReferenceRuntime'
-import {
-  isNativeXrRunReadyDemoActive,
-} from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
+import { isCitySimRunReadyDemoActive, isNativeXrRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrRendererClearController } from '@/lib/three/XrRendererClearController'
 import { GAME_FPS_SHARED_XR_PROFILE_ID } from '@/features/game-fps/gameFpsModel'
 import { resolveFlightSimGameplayCoordinateScale } from '@/features/game-flight-sim/flightSimSpatialScale'
@@ -43,6 +39,7 @@ import {
 import { readWebglSupport } from '@/lib/three/webglSupport'
 import { XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE } from '@/features/three/xrNativeControllerDemoRuntime'
 import { resolveAuthoredWorldPaused } from '@/lib/three/authoredWorldPause'
+import { ThreeCanvasMediaFigure } from '@/lib/three/ThreeCanvasMediaFigure'
 import {
   boundedInverseFitScale,
   fitFloorOffset,
@@ -84,6 +81,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
   const nativeXrRunReadyDemo = isNativeXrRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+  const citySimRunReadyDemo = isCitySimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const { citySim, citySimActive, flightSim, flightSimActive, gameMode, gameFpsActive } = useCanvasGameplayOverlayState()
   const citySimStageActive = mode === 'xr' && citySimActive
   const flightStageActive = mode === 'xr' && flightSimActive
@@ -199,7 +197,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ? sceneGraph
       : { ...sceneGraph, edges: [] }
   }, [nativeXrRunReadyDemo, sceneGraph])
-  const hasGraph = !!sceneGraphForRender
+  const hasGraph = !citySimRunReadyDemo && !citySimStageActive && !!sceneGraphForRender
   const hasGlbAsset = !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !!spatialCaptureManifest
   const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !nativeXrRunReadyDemo && !immersiveMediaStageActive
@@ -435,7 +433,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       data-kg-game-mode-surface={gameMode.active ? gameMode.surfaceMode : undefined}
       data-kg-game-mode-scene={gameMode.active ? GAME_FPS_SHARED_XR_PROFILE_ID : undefined}
       data-kg-flight-sim-surface={flightSim.active ? flightSim.surfaceMode : undefined}
-      data-kg-city-sim-surface={citySim.active ? 'xr' : undefined}
+      data-kg-city-sim-surface={citySim.active ? 'geo-xr' : undefined}
       data-kg-authored-xr-scene-retained={gameplayOverlayActive ? '1' : undefined}
       data-kg-immersive-media-stage={immersiveMediaStageActive ? 'active' : undefined}
       data-kg-three-viewport-gestures={gameFpsStageActive ? 'first-person' : citySimStageActive ? 'city-parcel-select' : immersiveMediaStageActive ? 'immersive-look-zoom' : 'orbit-pan-cursor-zoom'}
@@ -446,14 +444,15 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         event.stopPropagation()
       }}
     >
-      <Canvas
+      <ThreeCanvasMediaFigure citySimActive={citySimStageActive}>
+        <Canvas
         key={rendererLifecycleKey}
         data-kg-three-canvas-owner="1"
         frameloop={paused ? 'demand' : 'always'}
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={{ antialias: true, alpha: true }}
-        style={geospatialComposite ? { pointerEvents: 'none' } : undefined}
+        style={geospatialComposite && !citySimStageActive ? { pointerEvents: 'none' } : undefined}
         onCreated={({ gl, scene, camera }) => {
           gl.xr.enabled = mode === 'xr'
           try {
@@ -573,7 +572,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           /> : null}
           <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} />
         </React.Suspense>
-      </Canvas>
+        </Canvas>
+      </ThreeCanvasMediaFigure>
       {mode === 'xr' && xrDocumentLoaded && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
       {hasXrEmptyWorld && !gameplayOverlayActive ? <XrEmptyWorldHud /> : null}
       {immersiveMediaStageActive ? <ThreeGraphImmersiveMediaHud geospatialComposite={geospatialComposite} /> : null}
