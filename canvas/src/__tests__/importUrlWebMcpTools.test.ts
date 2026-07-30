@@ -74,6 +74,41 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
     throw new Error(`expected typed Import URL output to validate, got ${JSON.stringify(validateOutput.errors)}`)
   }
 
+  const expectedKnowledgeGraphResult = {
+    kind: 'knowledge-graph' as const,
+    source: 'https://github.com/example/repository',
+    invocation: '/ingest-url @url:https://github.com/example/repository @reference-policy #canvas',
+    renderer: null,
+    documentSemanticMode: null,
+    graphId: 'kg:graph:0123456789abcdef0123456789abcdef',
+    snapshotDigest: 'a'.repeat(64),
+    complete: true as const,
+    counts: { sources: 3, nodes: 8, edges: 7 },
+    projectionToken: 'kg:projection:0123456789abcdef01234567',
+    projectionComplete: true,
+    projectionTruncated: false,
+    projectionLimit: 1_000,
+    projectionCounts: { nodes: 8, edges: 7 },
+    outputText: '# Knowledge graph imported',
+  }
+  const knowledgeGraphTool = buildImportUrlWebMcpToolBuilders(
+    name => {
+      const found = contracts.find(candidate => candidate.name === name)
+      if (!found) throw new Error(`missing test contract ${name}`)
+      return found
+    },
+    async () => expectedKnowledgeGraphResult,
+  )[toolId]()
+  const knowledgeGraphResult = await knowledgeGraphTool.execute({
+    url: 'https://github.com/example/repository',
+  }) as typeof expectedKnowledgeGraphResult
+  if (knowledgeGraphResult !== expectedKnowledgeGraphResult || 'createdPaths' in knowledgeGraphResult) {
+    throw new Error(`expected a path-free discriminated knowledge graph result, got ${JSON.stringify(knowledgeGraphResult)}`)
+  }
+  if (!validateOutput(knowledgeGraphResult)) {
+    throw new Error(`expected knowledge graph Import URL output to validate, got ${JSON.stringify(validateOutput.errors)}`)
+  }
+
   const expectedFailure = {
     status: 'error' as const,
     source: 'https://example.com/',

@@ -92,7 +92,9 @@ export const normalizeAgenticOsDocsMcpInvocationTokens = (value: unknown): strin
   const tokens: string[] = []
   for (const candidate of value) {
     const token = String(candidate || '').trim()
-    if (!/^[/#@][A-Za-z0-9_.-]{1,96}$/.test(token)) continue
+    const valid = /^[/#][A-Za-z0-9_.-]{1,96}$/.test(token)
+      || /^@[A-Za-z0-9_.-]{1,96}:?$/.test(token)
+    if (!valid) continue
     const identity = token.toLowerCase()
     if (seen.has(identity)) continue
     seen.add(identity)

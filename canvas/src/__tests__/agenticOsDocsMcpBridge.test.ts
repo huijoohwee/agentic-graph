@@ -15,7 +15,7 @@ export async function testAgenticOsDocsMcpBridgeResolvesEveryNormalizedTokenWith
   const candidates = [
     '/one',
     '/two',
-    '@source.one',
+    '@url:',
     '@source.two',
     '#ready',
     '#verified',
@@ -65,6 +65,8 @@ export async function testAgenticOsDocsMcpBridgeResolvesEveryNormalizedTokenWith
   const resolutions = await resolveAgenticOsDocsMcpInvocationTokens({ client, tokens, requestOptions })
   if (
     tokens.length !== AGENTIC_OS_DOCS_MCP_MAX_INVOCATION_TOKENS
+    || !tokens.includes('@url:')
+    || tokens.includes('@url')
     || maxInFlight !== AGENTIC_OS_DOCS_MCP_MAX_INVOCATION_TOKENS
     || calledTokens.join(' ') !== tokens.join(' ')
     || resolutions.map(resolution => resolution.token).join(' ') !== tokens.join(' ')

@@ -36,6 +36,7 @@ import {
   NATIVE_IMPORT_URL_COMMAND,
   NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
 } from './nativeImportUrlInvocation'
+import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import type { PromptPreset } from './promptPresetCatalog'
 
 export type ChatInvocationId =
@@ -173,7 +174,7 @@ const NATIVE_IMPORT_URL_CATALOG_ENTRY: ChatInvocationCatalogEntry = {
   sourcePath: 'agentic-canvas-os/docs/DICTIONARY-COMMAND.md',
   keywords: ['import url', 'url ingest', '@url:', '@reference-policy', '#canvas', 'workspace', 'canvas', 'webmcp'],
   insertionText: NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
-  mcpTool: 'knowgrph.control_local_import_url',
+  mcpTool: IMPORT_URL_AGENT_READY_MCP_TOOL_NAME,
 }
 
 const BASE_CHAT_INVOCATION_OPTIONS: readonly ChatInvocationOption[] = [

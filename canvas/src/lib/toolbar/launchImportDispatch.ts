@@ -128,8 +128,8 @@ export async function runLaunchImportUrl(args: {
     }
     const resolved = args.resolveMcpInvocation
       ? await args.resolveMcpInvocation(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
-      : await import('@/features/agentic-os/skillsCommandsMcpTarget').then(
-        ({ targetSkillsCommandsMcpInvocation }) => targetSkillsCommandsMcpInvocation(
+      : await import('@/features/agentic-os/agenticOsMcpInvocationResolver').then(
+        ({ resolveAgenticOsMcpInvocation }) => resolveAgenticOsMcpInvocation(
           KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
         ),
       )

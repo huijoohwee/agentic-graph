@@ -307,6 +307,36 @@ test("docs catalog derives MCP tool, semantics, and bindings from the command di
   assert.deepEqual(command?.bindings, ["@source.root"]);
 });
 
+test("docs catalog preserves the canonical trailing-colon Import URL binding", () => {
+  const catalog = buildAgenticCanvasOsDocsCatalog({
+    "FACTS.md": "",
+    "DICTIONARY-COMMAND.md": [
+      "---",
+      "dictionary_entries:",
+      '  - "/ingest-url"',
+      "---",
+      "| Command | Intent | Bindings | Semantics | Outcome |",
+      "| --- | --- | --- | --- | --- |",
+      "| `/ingest-url` | Import one URL | `@url:`, `@reference-policy` | `#canvas` | `knowgrph.control_local_import_url` returns one typed result |",
+    ].join("\n"),
+    "DICTIONARY-SEMANTIC.md": "---\ndictionary_entries:\n  - \"#canvas\"\n---\n| `#canvas` | Canvas |",
+    "DICTIONARY-BINDING.md": [
+      "---",
+      "dictionary_entries:",
+      '  - "@url:"',
+      '  - "@reference-policy"',
+      "---",
+      "| `@url:` | URL value |",
+      "| `@reference-policy` | Reference policy |",
+    ].join("\n"),
+  });
+  const command = catalog.find((entry) => entry.token === "/ingest-url");
+
+  assert.deepEqual(command?.bindings, ["@url:", "@reference-policy"]);
+  assert.equal(catalog.some((entry) => entry.token === "@url:"), true);
+  assert.equal(catalog.some((entry) => entry.token === "@url"), false);
+});
+
 test("catalog digest is deterministic, order independent, and sensitive to source metadata", () => {
   const entries = [
     { token: "#known", kind: "semantic", label: "Known", summary: "Semantic source", sourcePath: "DICTIONARY-SEMANTIC.md##known" },

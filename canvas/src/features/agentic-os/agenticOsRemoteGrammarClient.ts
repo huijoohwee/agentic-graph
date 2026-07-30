@@ -27,9 +27,14 @@ export type AgenticOsRemoteGrammarSigil = '/' | '#' | '@'
 const REMOTE_GRAMMAR_SIGIL_ORDER: readonly AgenticOsRemoteGrammarSigil[] = ['/', '#', '@'] as const
 const normalizeString = (value: unknown): string => String(value || '').trim()
 const normalizeToken = (value: unknown): string => normalizeString(value)
-const normalizeRelatedTokens = (value: unknown, sigil: '#' | '@'): string[] => Array.isArray(value)
-  ? [...new Set(value.map(normalizeString).filter(token => token.startsWith(sigil) && /^[/#@][A-Za-z0-9_.-]+$/.test(token)))].slice(0, 12)
-  : []
+const normalizeRelatedTokens = (value: unknown, sigil: '#' | '@'): string[] => {
+  const tokenPattern = sigil === '@'
+    ? /^@[A-Za-z0-9_.-]+:?$/
+    : /^#[A-Za-z0-9_.-]+$/
+  return Array.isArray(value)
+    ? [...new Set(value.map(normalizeString).filter(token => token.startsWith(sigil) && tokenPattern.test(token)))].slice(0, 12)
+    : []
+}
 const normalizeMcpTools = (value: unknown): string[] => Array.isArray(value)
   ? [...new Set(value.map(normalizeString).filter(tool => /^knowgrph\.[A-Za-z0-9_.-]+$/.test(tool)))].slice(0, 12)
   : []

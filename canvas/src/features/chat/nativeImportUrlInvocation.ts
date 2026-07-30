@@ -2,6 +2,8 @@ import {
   getMarkdownWorkspaceActionBridge,
   type WorkspaceBridgeImportResult,
   type WorkspaceImportUrlOpts,
+  type WorkspaceKnowledgeGraphCounts,
+  type WorkspaceKnowledgeGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import {
   isWorkspaceUrlImportCanvasRendererId,
@@ -34,15 +36,45 @@ export type NativeImportUrlInvocation = {
   documentSemanticMode: WorkspaceUrlImportDocumentModeId | null
 }
 
-export type NativeImportUrlRunResult = {
+type NativeImportUrlRunResultCommon = {
   source: string
   invocation: string
-  createdPaths: string[]
-  removedPaths: string[]
   renderer: WorkspaceUrlImportCanvasRendererId | null
   documentSemanticMode: WorkspaceUrlImportDocumentModeId | null
   outputText: string
 }
+
+export type NativeImportUrlWorkspaceFilesRunResult = NativeImportUrlRunResultCommon & {
+  createdPaths: string[]
+  removedPaths: string[]
+}
+
+export type NativeImportUrlKnowledgeGraphRunResult = NativeImportUrlRunResultCommon & {
+  kind: 'knowledge-graph'
+  graphId: string
+  snapshotDigest: string
+  complete: true
+  counts: WorkspaceKnowledgeGraphCounts
+  projectionToken: string
+  projectionComplete: boolean
+  projectionTruncated: boolean
+  projectionLimit: number
+  projectionReason?: string
+  projectionCounts: {
+    nodes: number
+    edges: number
+  }
+}
+
+export type NativeImportUrlRunResult =
+  | NativeImportUrlWorkspaceFilesRunResult
+  | NativeImportUrlKnowledgeGraphRunResult
+
+export const isNativeImportUrlKnowledgeGraphRunResult = (
+  result: NativeImportUrlRunResult,
+): result is NativeImportUrlKnowledgeGraphRunResult => (
+  'kind' in result && result.kind === 'knowledge-graph'
+)
 
 export type NativeImportUrlMutationFailure = {
   status: 'error'
@@ -89,6 +121,14 @@ const normalizePaths = (value: unknown): string[] => {
     .map(path => String(path || '').trim())
     .filter((path, index, paths) => Boolean(path) && paths.indexOf(path) === index)
 }
+
+const isKnowledgeGraphImportResult = (
+  value: unknown,
+): value is WorkspaceKnowledgeGraphImportResult => (
+  !!value
+  && typeof value === 'object'
+  && (value as { kind?: unknown }).kind === 'knowledge-graph'
+)
 
 const buildInvocationText = (invocation: NativeImportUrlInvocation): string =>
   `${invocation.command} ${NATIVE_IMPORT_URL_BINDING}${invocation.url} ${invocation.policy} ${invocation.semantic}`
@@ -220,10 +260,52 @@ export const executeNativeImportUrlInvocation = async (
       })
     },
   })
+  const invocationText = buildInvocationText(normalizedInvocation)
+  if (isKnowledgeGraphImportResult(result)) {
+    const projectionCounts = {
+      nodes: result.projection.graphData.nodes.length,
+      edges: result.projection.graphData.edges.length,
+    }
+    const outputText = [
+      '# Knowledge graph imported',
+      '',
+      `- Source URL: ${normalizedInvocation.url}`,
+      `- Graph ID: ${result.graphId}`,
+      `- Snapshot digest: ${result.snapshotDigest}`,
+      `- Complete canonical snapshot: ${result.complete ? 'yes' : 'no'}`,
+      `- Canonical records: ${result.counts.sources} sources, ${result.counts.nodes} nodes, ${result.counts.edges} edges`,
+      `- Canvas projection: ${projectionCounts.nodes} nodes, ${projectionCounts.edges} edges`,
+      `- Projection status: ${result.projection.complete ? 'complete' : 'partial'}${result.projection.truncated ? ' (truncated)' : ''}`,
+      `- Projection token: ${result.projection.token}`,
+      `- Projection limit: ${result.projection.limit}`,
+      ...(result.projection.reason ? [`- Projection reason: ${result.projection.reason}`] : []),
+    ].join('\n')
+    return {
+      kind: 'knowledge-graph',
+      source: normalizedInvocation.url,
+      invocation: invocationText,
+      renderer: normalizedInvocation.canvas2dRenderer,
+      documentSemanticMode: normalizedInvocation.documentSemanticMode,
+      graphId: result.graphId,
+      snapshotDigest: result.snapshotDigest,
+      complete: true,
+      counts: {
+        sources: result.counts.sources,
+        nodes: result.counts.nodes,
+        edges: result.counts.edges,
+      },
+      projectionToken: result.projection.token,
+      projectionComplete: result.projection.complete,
+      projectionTruncated: result.projection.truncated,
+      projectionLimit: result.projection.limit,
+      ...(result.projection.reason ? { projectionReason: result.projection.reason } : {}),
+      projectionCounts,
+      outputText,
+    }
+  }
   const bridgeResult = result as WorkspaceBridgeImportResult | undefined
   const createdPaths = normalizePaths(bridgeResult?.createdPaths)
   const removedPaths = normalizePaths(bridgeResult?.removedPaths)
-  const invocationText = buildInvocationText(normalizedInvocation)
   if (bridgeResult?.error) {
     const error = String(bridgeResult.error).trim() || 'Native URL import failed.'
     const mutationState = createdPaths.length > 0 || removedPaths.length > 0 ? 'partial' : 'unknown'
@@ -322,7 +404,9 @@ export const tryActivateNativeImportUrlInvocation = async (args: {
       response = result.outputText
       submitArgs.pushUiLog?.({
         kind: 'success',
-        message: `Native URL import finished: ${invocation.url}`,
+        message: isNativeImportUrlKnowledgeGraphRunResult(result)
+          ? `Native knowledge graph import finished: ${result.graphId}`
+          : `Native URL import finished: ${invocation.url}`,
         source: 'chat:nativeImportUrl',
       })
     } catch (error) {

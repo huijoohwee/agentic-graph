@@ -297,7 +297,7 @@ const invocationMetadataForToken = (token, markdown) => {
   const cells = splitMarkdownTableRow(rowForToken(token, markdown));
   const summary = String(cells[1] || "").replace(/\s+/g, " ").trim();
   if (!String(token).startsWith("/")) return { summary };
-  const extract = (cell, sigil) => [...String(cell || "").matchAll(/`([/#@][A-Za-z0-9_.-]+)`/g)]
+  const extract = (cell, sigil) => [...String(cell || "").matchAll(/`((?:[/#][A-Za-z0-9_.-]+)|(?:@[A-Za-z0-9_.-]+:?))`/g)]
     .map((match) => match[1])
     .filter((value) => value.startsWith(sigil));
   const outcome = cells.slice(4).join(" ");

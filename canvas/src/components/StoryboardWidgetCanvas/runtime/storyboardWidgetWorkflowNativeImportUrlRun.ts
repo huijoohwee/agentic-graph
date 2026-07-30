@@ -95,12 +95,19 @@ export async function runStoryboardWidgetNativeImportUrlInvocation(args: {
     canvasAuthorityBefore = readCanvasAuthority()
     const result = await executeNativeImportUrlInvocation(invocation)
     terminalOutput = result.outputText
-    outputPath = result.createdPaths[0] || null
+    let successMessage = ''
+    if ('createdPaths' in result) {
+      outputPath = result.createdPaths[0] || null
+      successMessage = `Imported ${result.createdPaths.length} workspace file${result.createdPaths.length === 1 ? '' : 's'} from URL.`
+    } else {
+      outputPath = null
+      successMessage = `Imported knowledge graph with ${result.counts.nodes} nodes and ${result.counts.edges} edges.`
+    }
     if (!detectCanvasAuthorityChange()) updateStatus('done')
     args.upsertToast({
       id: `storyboard-widget-run-${args.id}`,
       kind: 'success',
-      message: `Imported ${result.createdPaths.length} workspace file${result.createdPaths.length === 1 ? '' : 's'} from URL.`,
+      message: successMessage,
       ttlMs: 3000,
     })
   } catch (error) {

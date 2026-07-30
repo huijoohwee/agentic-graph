@@ -27,7 +27,7 @@ import {
 } from './ImportUrlRendererSelect'
 import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
 import { runLaunchImportUrl } from './launchImportDispatch'
-import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
+import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { targetSkillsCommandsMcpInvocation } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
@@ -64,7 +64,7 @@ export function LaunchDropdownImportUrlItem(props: {
     state.setFloatingPanelView('skillsCommands')
     state.setFloatingPanelOpen(true)
     void targetSkillsCommandsMcpInvocation(
-      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+      IMPORT_URL_AGENT_READY_MCP_TOOL_NAME,
     ).catch(error => {
       pushUiToast({
         id: 'launch:import-url:skills-commands-resolution',
@@ -240,7 +240,7 @@ export function LaunchDropdownImportUrlItem(props: {
         aria-expanded={urlInputOpen}
         aria-controls={importUrlControlsId}
         data-kg-launch-import-url-skills-commands-target="skillsCommands"
-        data-kg-launch-import-url-mcp-tool={KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest}
+        data-kg-launch-import-url-mcp-tool={IMPORT_URL_AGENT_READY_MCP_TOOL_NAME}
       >
         <Link className={props.menuIconClass} strokeWidth={1.6} />
         <span className="truncate">Import URL</span>

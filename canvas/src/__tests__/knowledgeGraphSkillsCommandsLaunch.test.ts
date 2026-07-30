@@ -3,6 +3,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
 import { AGENTIC_OS_DOCS_MCP_TOOL_NAME } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
+import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
 import {
   resetAgenticOsRemoteGrammarCatalogForTests,
@@ -26,6 +27,9 @@ const SOURCE_REVISION = 'c'.repeat(40)
 const SOURCE_COMMAND = '/source.ingest'
 const SOURCE_SEMANTIC = '#source.graph'
 const SOURCE_BINDING = '@source.root'
+const IMPORT_URL_COMMAND = '/ingest-url'
+const IMPORT_URL_SEMANTIC = '#canvas'
+const IMPORT_URL_BINDINGS = ['@url:', '@reference-policy']
 const SOURCE_CATALOG = [
   {
     token: SOURCE_COMMAND,
@@ -41,6 +45,31 @@ const SOURCE_CATALOG = [
     semantics: [SOURCE_SEMANTIC],
     bindings: [SOURCE_BINDING],
   },
+  {
+    token: IMPORT_URL_COMMAND,
+    kind: 'command',
+    label: 'Import URL',
+    summary: 'Import an HTTP(S) URL into the active workspace and Canvas.',
+    sourcePath: `DICTIONARY-COMMAND.md#${IMPORT_URL_COMMAND}`,
+    mcpTool: IMPORT_URL_AGENT_READY_MCP_TOOL_NAME,
+    mcpTools: [IMPORT_URL_AGENT_READY_MCP_TOOL_NAME],
+    semantics: [IMPORT_URL_SEMANTIC],
+    bindings: IMPORT_URL_BINDINGS,
+  },
+  {
+    token: IMPORT_URL_SEMANTIC,
+    kind: 'semantic',
+    label: 'Canvas',
+    summary: 'Project the imported source into the active Canvas.',
+    sourcePath: `DICTIONARY-SEMANTIC.md#${IMPORT_URL_SEMANTIC}`,
+  },
+  ...IMPORT_URL_BINDINGS.map(token => ({
+    token,
+    kind: 'binding',
+    label: token,
+    summary: 'Bind canonical Import URL input or reference policy.',
+    sourcePath: `DICTIONARY-BINDING.md#${token}`,
+  })),
   {
     token: '/unrelated.command',
     kind: 'command',
@@ -233,6 +262,10 @@ export async function testKnowledgeGraphLaunchImportUrlTargetsFloatingPanelSkill
       '[data-kg-launch-import-url-skills-commands-target="skillsCommands"]',
     )
     assert.ok(launchButton instanceof dom.window.HTMLButtonElement)
+    assert.equal(
+      launchButton.getAttribute('data-kg-launch-import-url-mcp-tool'),
+      IMPORT_URL_AGENT_READY_MCP_TOOL_NAME,
+    )
     await act(async () => {
       launchButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
       for (let attempt = 0; attempt < 12 && readSkillsCommandsMcpTarget().status === 'loading'; attempt += 1) {
@@ -244,22 +277,31 @@ export async function testKnowledgeGraphLaunchImportUrlTargetsFloatingPanelSkill
     assert.equal(graphState.floatingPanelOpen, true)
     assert.equal(graphState.floatingPanelView, 'skillsCommands')
     const target = readSkillsCommandsMcpTarget()
-    assert.equal(target.status, 'ready')
-    assert.equal(target.resolution?.invocation.action, SOURCE_COMMAND)
+    assert.equal(target.status, 'ready', target.error)
+    assert.equal(target.resolution?.mcpTool, IMPORT_URL_AGENT_READY_MCP_TOOL_NAME)
+    assert.equal(target.resolution?.invocation.action, IMPORT_URL_COMMAND)
 
     const shell = container.querySelector('[data-kg-floating-panel-root="true"]')
     assert.ok(shell, 'expected the actual FloatingPanel shell to remain mounted')
     const panel = shell.querySelector('[data-kg-floating-panel-skills-commands-view="true"]')
     assert.equal(panel?.getAttribute('data-kg-floating-panel-skills-commands-mcp-target-status'), 'ready')
-    assert.equal(panel?.getAttribute('data-kg-floating-panel-skills-commands-mcp-target-action'), SOURCE_COMMAND)
+    assert.equal(panel?.getAttribute('data-kg-floating-panel-skills-commands-mcp-target-action'), IMPORT_URL_COMMAND)
     assert.equal(
       panel?.getAttribute('data-kg-floating-panel-skills-commands-mcp-target-tokens'),
-      `${SOURCE_COMMAND} ${SOURCE_SEMANTIC} ${SOURCE_BINDING}`,
+      `${IMPORT_URL_COMMAND} ${IMPORT_URL_SEMANTIC} ${IMPORT_URL_BINDINGS.join(' ')}`,
     )
     const visibleTokens = [...container.querySelectorAll('[data-kg-skill-command-token-chip="1"]')]
       .map(element => String(element.textContent || '').trim())
-    assert.deepEqual(visibleTokens.sort(), [SOURCE_BINDING, SOURCE_COMMAND, SOURCE_SEMANTIC].sort())
+    assert.deepEqual(
+      visibleTokens.sort(),
+      [IMPORT_URL_COMMAND, IMPORT_URL_SEMANTIC, ...IMPORT_URL_BINDINGS].sort(),
+    )
     assert.equal(visibleTokens.includes('/unrelated.command'), false)
+    assert.deepEqual(fetchMock.exactInvocationRequests, [[
+      IMPORT_URL_COMMAND,
+      IMPORT_URL_SEMANTIC,
+      ...IMPORT_URL_BINDINGS,
+    ]])
     const closeButton = shell.querySelector('button[aria-label="Close"]')
     assert.ok(closeButton instanceof dom.window.HTMLButtonElement)
     await act(async () => {
