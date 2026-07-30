@@ -40,12 +40,16 @@ export async function assertFlightSimSurfaceReadiness({
   requireSourceMarkers(geoSurfaceSource, [
     'export function FlightSimGeoSurfaceOverlay',
     'projectFlightSimNavigation(',
-    'useFlightSimSurfaceControls({',
     'completeFlightSimStagePreparation(requestId)',
     'completeFlightSimReadyFrame(flight.runId, flight.tick)',
     'data-kg-flight-sim-geo-overlay="1"',
-    'data-kg-flight-sim-geo-aircraft="1"',
   ], 'Flight Sim Geo surface overlay')
+  if (
+    geoSurfaceSource.includes('useFlightSimSurfaceControls')
+    || geoSurfaceSource.includes('data-kg-flight-sim-geo-aircraft')
+  ) {
+    throw new Error('FlightSimGeoSurfaceOverlay must not duplicate the mission controls or canonical Flight media subject')
+  }
   const environmentGeoButtonSource = await readText(`${flightFeatureRoot}/FlightSimEnvironmentGeoButton.tsx`)
   requireSourceMarkers(environmentGeoButtonSource, [
     'selectFlightSimGeoEnvironment(',
@@ -166,6 +170,8 @@ export async function assertFlightSimSurfaceReadiness({
   requireSourceMarkers(flightHudSource, [
     'subscribeFlightSimHudSnapshot',
     'completeFlightSimHudStagePreparation(requestId, flight.revision)',
+    'data-kg-flight-sim-aircraft-media={FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.id}',
+    'requestFlightSimPointerCapture()',
   ], 'Flight Sim deadline-critical HUD ownership')
   if (
     geospatialHostSource.includes('shared-xr-stage')
