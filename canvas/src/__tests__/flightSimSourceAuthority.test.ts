@@ -159,6 +159,14 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     /completeFlightSimStagePreparation\(requestId,\s*\{\s*framePresented: true,/,
   )
   assert.doesNotMatch(missionStage, /from '\.\/flightSimRuntime'/)
+  assert.match(missionStage, /from '@\/features\/three\/XrSceneLibrarySubject'/)
+  assert.match(missionStage, /<XrSceneLibraryAssetGeometry\s+assetId=\{assetCatalog\.aircraft\.assetSpec\.id\}/)
+  assert.match(
+    missionStage,
+    /canvas\.dataset\.kgFlightSimAircraftAsset = JSON\.stringify\(\{[\s\S]*assetId: aircraftAsset\.id,[\s\S]*dimensionsMeters: aircraftAsset\.dimensionsMeters,[\s\S]*label: aircraftAsset\.label,[\s\S]*representation: aircraftAsset\.representation,/,
+  )
+  assert.match(missionStage, /delete canvas\.dataset\.kgFlightSimAircraftAsset/)
+  assert.doesNotMatch(missionStage, /XrProceduralVehicleGeometry/)
   assert.match(missionStage, /runtimeController\.readSnapshot\(\)/)
   const opening = runtime.indexOf('async function performFlightSimSurfaceOpen')
   const preload = runtime.indexOf(

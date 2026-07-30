@@ -2,7 +2,7 @@ import React from 'react'
 import { addAfterEffect, invalidate, useFrame, useThree } from '@react-three/fiber'
 import { type Group, type Mesh } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
+import { XrSceneLibraryAssetGeometry } from '@/features/three/XrSceneLibrarySubject'
 import { readFlightSimDefaultAssetLoadReport } from './assetSpec/flightSimDefaultAssets'
 import {
   FLIGHT_SIM_AIRCRAFT_FORWARD,
@@ -107,6 +107,14 @@ export function FlightSimMissionStage({
 
   React.useEffect(() => {
     const canvas = gl.domElement
+    const aircraftAsset = assetCatalog.aircraft.assetSpec
+    canvas.dataset.kgFlightSimAircraftAsset = JSON.stringify({
+      assetId: aircraftAsset.id,
+      defaultColor: aircraftAsset.defaultColor,
+      dimensionsMeters: aircraftAsset.dimensionsMeters,
+      label: aircraftAsset.label,
+      representation: aircraftAsset.representation,
+    })
     canvas.dataset.kgFlightSimSpatialProfile = profile.id
     canvas.dataset.kgFlightSimVisualProjection = actorsVisible
       ? 'r3f'
@@ -144,11 +152,12 @@ export function FlightSimMissionStage({
     invalidate()
     return () => {
       removeAfterRender()
+      delete canvas.dataset.kgFlightSimAircraftAsset
       delete canvas.dataset.kgFlightSimSpatialProfile
       delete canvas.dataset.kgFlightSimVisualProjection
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [actorsVisible, gl, invalidate, profile.id, runtimeController])
+  }, [actorsVisible, assetCatalog, gl, invalidate, profile.id, runtimeController])
 
   React.useEffect(() => {
     const canvas = gl.domElement
@@ -242,10 +251,9 @@ export function FlightSimMissionStage({
             proceduralForward: FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
           }}
         >
-          <XrProceduralVehicleGeometry
-            kind="airplane"
+          <XrSceneLibraryAssetGeometry
+            assetId={assetCatalog.aircraft.assetSpec.id}
             color={assetCatalog.aircraft.assetSpec.defaultColor}
-            size={assetCatalog.aircraft.assetSpec.dimensionsMeters}
           />
         </group>
       </group>
