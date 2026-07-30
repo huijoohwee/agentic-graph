@@ -9,8 +9,8 @@ import { redactEvidence, writeEvidenceArtifact } from "./implementation-run-evid
 import { assertExecutableProof, assertFileProof, executableProof, runManagedProcess } from "./implementation-run-managed-process.js";
 import { assertPinnedImplementationRunPolicy, digestVerifierProfiles, loadImplementationRunCoordinationConfig, loadImplementationRunHostConfig } from "./implementation-run-validation.js";
 import { AGENTIC_DEVICE_RESULT_SCHEMA, buildAgenticDeviceCommand, parseAgenticDeviceFailure, parseAgenticDeviceResult } from "./implementation-run-acos-adapter.js";
+import { bindImplementationRunAdmissionObservation, implementationRunAdmissionResultFields, reconcileImplementationRunAdmissionObservation, settleImplementationRunAdmissionUnavailable } from "./implementation-run-admission-evidence.js";
 import { agenticSdlcLedgerResultFields, agenticSdlcRunnerRequestFields, bindAgenticSdlcLedger } from "./implementation-run-agentic-sdlc-ledger.js";
-
 const ACOS_SCHEMA = AGENTIC_DEVICE_RESULT_SCHEMA;
 const MAX_INLINE_VERIFICATION_EVIDENCE_BYTES = 32768;
 const MAX_CHANGED_PATHS = 1000;
@@ -26,7 +26,7 @@ function safeEnvironment(source, names) {
 
 const redactOutput = (value, secrets, maximumBytes) => redactEvidence(value, secrets, maximumBytes).content;
 
-export function createImplementationRunSupervisor({ rootDir, runId, token, env = process.env, spawnImpl = spawn, acosInvoker = null, now = () => new Date() }) {
+export function createImplementationRunSupervisor({ rootDir, runId, token, env = process.env, spawnImpl = spawn, acosInvoker = null, admissionBinder = bindImplementationRunAdmissionObservation, now = () => new Date() }) {
   const store = new ImplementationRunStore({ rootDir, now });
   let stopped = false;
   let coordinationHealthy = true;
@@ -195,7 +195,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
       if (error?.code === "ENOENT") exists = false;
       else return { schema: ACOS_SCHEMA, ok: false, action: "park", status: "error", error: { code: "worktree_probe_failed", message: error.message } };
     }
-    if (!exists) return { ok: true, action: "park", status: "not_created", worktreePath: state.coordination.worktreePath };
+    if (!exists) return state.coordination?.branch || state.coordination?.lease ? { schema: ACOS_SCHEMA, ok: false, action: "park", status: "error", error: { code: "owned_worktree_missing", message: "The owned task worktree disappeared before its remote lease and draft pull request could be proven parked." } } : { ok: true, action: "park", status: "not_created", worktreePath: state.coordination.worktreePath };
     try { return await callAcos(state, "park", "", state.coordination.worktreePath); } catch (firstError) {
       try { return await callAcos(state, "park", "", state.coordination.worktreePath); } catch (error) {
         return { schema: ACOS_SCHEMA, ok: false, action: "park", status: "error", error: { code: "park_failed", message: `${firstError.message}; replay: ${error.message}` } };
@@ -426,6 +426,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
       const pendingControl = state.control?.action;
       if (pendingControl === "cancel" && !state.coordination?.branch && !await pathExists(state.plan.derivedWorktreePath)) return fail("canceled", "operator_cancel", "Run cancel request applied before coordination existed.", state);
       await assertCoordinationAuthority(state);
+      state = await reconcileImplementationRunAdmissionObservation({ state, store, runId, supervisorToken: token, updateOwned: ownedUpdate });
       if (state.coordinationIntent?.action === "review") {
         handoffInProgress = true;
         const review = await callAcos(state, "review", "", state.coordination.worktreePath);
@@ -487,6 +488,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
       if (control === "pause" || control === "cancel") return fail(control === "pause" ? "paused" : "canceled", `operator_${control}`, `Run ${control} requested before runner launch.`, state);
       await assertAllowedPathRoots(state);
       await assertRemoteFence(state, state.coordination.lease.fenceSha);
+      state = await admissionBinder({ state, store, runId, supervisorToken: token, evaluationTime: state.updatedAt, updateOwned: ownedUpdate });
       const artifactScope = `attempt-${String(state.attempt).padStart(4, "0")}-revision-${String(state.revision).padStart(10, "0")}`;
       const requestReceipt = await writeEvidenceArtifact({ store, runId, fileName: `${artifactScope}-runner-request.json`, content: `${JSON.stringify({
         schema: "knowgrph-implementation-run-request/v1",
@@ -565,7 +567,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
       if (!clean.ok || clean.stdout.trim() || !head.ok || head.stdout.trim() === state.coordination.lease.fenceSha) return fail("blocked", "review_commit_required", "Runner must leave a clean worktree with a committed change beyond the lease fence.", state);
       state = await ownedUpdate("coordination.review_requested", { headSha: head.stdout.trim() }, (current) => {
         current.coordinationIntent = { action: "review", requestedAt: now().toISOString() };
-        current.result = { runner: current.result?.runner || null, ...agenticSdlcLedgerResultFields(current.result), changedPaths: paths, verification: evidence, headSha: head.stdout.trim(), handoffPending: true, automaticMerge: false, deployment: false };
+        current.result = { runner: current.result?.runner || null, ...implementationRunAdmissionResultFields(current.result), ...agenticSdlcLedgerResultFields(current.result), changedPaths: paths, verification: evidence, headSha: head.stdout.trim(), handoffPending: true, automaticMerge: false, deployment: false };
         return current;
       });
       handoffInProgress = true;
@@ -582,6 +584,7 @@ export function createImplementationRunSupervisor({ rootDir, runId, token, env =
           return current;
         });
       }
+      if (error.code === "AGENTIC_SDLC_EVIDENCE_ADAPTER_UNAVAILABLE") { handoffInProgress = true; return settleImplementationRunAdmissionUnavailable({ state, message: error.message, park, updateOwned: ownedUpdate }); }
       const failureCode = error.code === "LEASE_REACTIVATION_REQUIRED" ? "lease_reactivation_required" : error.code === "MANUAL_RECOVERY_REQUIRED" ? "manual_recovery_required" : error.code === "LEDGER_CONFORMANCE_FAILED" ? "agentic_sdlc_conformance_failed" : "supervisor_failed";
       return fail("blocked", failureCode, error.message, state, error.acosResult || null);
     }

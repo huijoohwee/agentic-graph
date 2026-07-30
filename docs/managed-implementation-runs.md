@@ -113,16 +113,60 @@ Minimal plan/start arguments:
 }
 ```
 
-Call `plan` first and inspect `ready`, diagnostics, the pinned target/ACOS revisions, run-owned ACOS semantic scope, 96-bit-suffixed worktree, policy proof, exact verifier profile digest, executable SHA-256 proofs, and containment declaration. Send the same specification to `start`. Reusing its idempotency key with identical content returns the existing run; different content fails closed. Specifications, registries, profile argv/environment sets, plans, durable state, events, process configuration, and child argv/environment all have explicit aggregate UTF-8 byte limits. State creation reserves half of the hard state-file limit for coordination and evidence growth.
+Call `plan` first and inspect `supervisorReady`, `implementationReady`,
+`admissionStatus`, diagnostics, the pinned target/ACOS revisions, run-owned ACOS
+semantic scope, 96-bit-suffixed worktree, policy proof, exact verifier profile
+digest, executable SHA-256 proofs, and containment declaration. `ready` is the
+same implementation-readiness verdict as `implementationReady`. For a
+conformance-requesting plan, `ok` and `supervisorReady` only mean the supervisor
+can record the fail-closed observation. Such a plan is therefore `ok: true`,
+`supervisorReady: true`, `admissionStatus: "unevaluated"`, and
+`implementationReady: false`. Send the same specification to `start` only when
+the operation-derived observation and blocked result are intended evidence.
+Reusing its idempotency key with identical content returns the existing run;
+different content fails closed. Specifications, registries, profile
+argv/environment sets, plans, durable state, events, process configuration,
+and child argv/environment all have explicit aggregate UTF-8 byte limits.
+State creation reserves half of the hard state-file limit for coordination and
+evidence growth.
 
-`agenticSdlcLedgerPath` is optional for backwards compatibility, but it is
-required for full Agentic SDLC observation. It must be a safe
-repository-relative path contained by `allowedPaths`. When configured, the
-runner request names that path explicitly. After the host-owned verification
-profiles pass, the supervisor loads the ledger through the exact clean ACOS
-revision pinned by the run, applies the canonical schema and independent
-evaluator, copies the original bytes into the run's immutable artifact
-directory, and records:
+`agenticSdlcLedgerPath` opts a run into the Agentic SDLC conformance boundary.
+It must be a safe repository-relative path contained by `allowedPaths`. Before
+launching the Implementer, the supervisor derives a host-owned admission
+observation from the exact durable specification, plan, source revision,
+executable and policy proofs, and parsed ACOS lease/PR result. The immutable
+observation records its input/result digests, evidence references, all
+unevaluated stages, and the currently known missing admission inputs. Its
+`inventoryComplete: false` field explicitly prevents that local inventory from
+claiming canonical schema completeness. Until a repository-owned
+independent admission evaluator, schema closure, dependency closure, baselined
+authoring evidence, VCC/task bridge, budgets, grants, and dependency-admission
+records join, the run stops as `agentic_sdlc_admission_unavailable` before the
+runner request or Implementer process exists. The supervisor first records a
+durable pending intent, binds the exact immutable artifact, records the bound
+receipt, and parks the owned collaboration lane before publishing the terminal
+blocked state. Recovery completes the same content-addressed binding after a
+crash instead of starting a second attempt.
+
+This observation is not an Admission Stage Receipt and cannot establish
+admission, review, integration, runtime readiness, release readiness,
+deployment, or publication. Runs without `agenticSdlcLedgerPath` retain their
+existing managed-review behavior but make no Agentic SDLC conformance claim.
+The full observation remains an owner-only local-host artifact under the run
+directory; MCP list responses expose its bounded receipt and digest, not an
+artifact-read capability.
+
+Because the specification, plan, source, and missing admission closure are
+immutable for the run, `retry` cannot resolve
+`agentic_sdlc_admission_unavailable`. The supervisor has already parked the
+owned lane; land the repository-owned evaluator and authoring-input contract,
+then start a new run from the new exact revision. A retry request returns
+`NEW_RUN_REQUIRED` without launching another supervisor.
+
+After verified admission becomes available, the later review boundary will
+load the runner-authored ledger through the exact clean ACOS revision pinned by
+the run, apply the canonical schema and independent evaluator, copy the
+original bytes into the run's immutable artifact directory, and record:
 
 ```json
 {

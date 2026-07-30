@@ -44,7 +44,7 @@ test("supervisor reaches review-ready without publish and replays a lost review 
       await git(state.plan.derivedWorktreePath, ["commit", "--allow-empty", "-m", "chore: claim"]);
       const fenceSha = (await git(state.plan.derivedWorktreePath, ["rev-parse", "HEAD"])).stdout.trim();
       await git(state.plan.derivedWorktreePath, ["push", "--set-upstream", "origin", branch]);
-      lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url };
+      lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, device: "test", scope: state.plan.acosSemanticScope, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url };
       return payload("start", "active", true);
     }
     if (action === "review") {
@@ -151,7 +151,7 @@ test("supervisor rejects an ACOS branch outside the pinned run scope", async (t)
   state = await own(fx.runtime.store, state, token);
   await createImplementationRunSupervisor({ rootDir: state.spec.repoRoot, runId: state.runId, token, env: fx.env, acosInvoker: async (input) => {
     const result = await lifecycle.invoke(input);
-    return { ...result, branch: "agent/test/wrong-scope", lease: { ...result.lease, branch: "agent/test/wrong-scope" } };
+    return { ...result, branch: "agent/test/wrong-scope", lease: { ...result.lease, branch: "agent/test/wrong-scope", scope: "wrong-scope" } };
   } }).run();
   state = await fx.runtime.store.read(state.runId);
   assert.equal(state.state, "blocked");
@@ -412,7 +412,7 @@ else { fs.appendFileSync(target, "resumed\\n"); execFileSync("git", ["-C", reque
       const branch = `agent/test/${state.plan.acosSemanticScope}`;
       await git(state.spec.repoRoot, ["worktree", "add", "--detach", state.plan.derivedWorktreePath, "refs/remotes/origin/main"]); await git(state.plan.derivedWorktreePath, ["switch", "--create", branch]); await git(state.plan.derivedWorktreePath, ["commit", "--allow-empty", "-m", "chore: claim"]);
       const fenceSha = (await git(state.plan.derivedWorktreePath, ["rev-parse", "HEAD"])).stdout.trim(); await git(state.plan.derivedWorktreePath, ["push", "--set-upstream", "origin", branch]);
-      lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url }; remoteStatus = "active";
+      lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, device: "test", scope: state.plan.acosSemanticScope, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url }; remoteStatus = "active";
       return machinePayload(state, lease, pullRequest, "start", "active", true);
     }
     if (action === "heartbeat") { if (remoteStatus !== "active") throw new Error(`lease is ${remoteStatus}`); return machinePayload(state, lease, pullRequest, "heartbeat", "active"); }
@@ -503,7 +503,7 @@ test("pause racing the review response resumes the ready PR before becoming paus
       await git(state.plan.derivedWorktreePath, ["commit", "--allow-empty", "-m", "chore: claim"]);
       const fenceSha = (await git(state.plan.derivedWorktreePath, ["rev-parse", "HEAD"])).stdout.trim();
       await git(state.plan.derivedWorktreePath, ["push", "--set-upstream", "origin", branch]);
-      lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url };
+      lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, device: "test", scope: state.plan.acosSemanticScope, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url };
       remoteStatus = "active";
       return machinePayload(state, lease, pullRequest, "start", "active", true);
     }

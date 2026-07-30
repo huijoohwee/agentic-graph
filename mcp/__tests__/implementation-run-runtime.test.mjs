@@ -107,6 +107,10 @@ test("implementation-run plan is non-mutating and validates exact catalog member
   const runtime = fixtureRuntime(fx, { spawnImpl: fakeSpawn });
   const planned = await runtime.plan(fx.spec);
   assert.equal(planned.ok, true, JSON.stringify(planned.diagnostics));
+  assert.equal(planned.ready, true);
+  assert.equal(planned.supervisorReady, true);
+  assert.equal(planned.implementationReady, true);
+  assert.equal(planned.admissionStatus, "not_requested");
   assert.equal(planned.mutation, "none");
   assert.equal(planned.sourceRevision, fx.sourceRevision);
   assert.deepEqual(planned.containment, { filesystem: "git-worktree-only", applicationPreflight: true, kernelOrContainerIsolation: "not-supplied" });
@@ -124,6 +128,10 @@ test("implementation-run plan is non-mutating and validates exact catalog member
     agenticSdlcLedgerPath: "src/evidence/agentic-sdlc-run.json",
   });
   assert.equal(withLedger.ok, true, JSON.stringify(withLedger.diagnostics));
+  assert.equal(withLedger.ready, false);
+  assert.equal(withLedger.supervisorReady, true);
+  assert.equal(withLedger.implementationReady, false);
+  assert.equal(withLedger.admissionStatus, "unevaluated");
   const ledgerOutsideScope = await runtime.plan({
     ...fx.spec,
     agenticSdlcLedgerPath: "evidence/agentic-sdlc-run.json",

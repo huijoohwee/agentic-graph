@@ -22,6 +22,8 @@ const result = (action, status, leaseStatus = status) => ({
     status: leaseStatus,
     epoch: 4,
     sessionId,
+    device: "device",
+    scope: "managed-item",
     branch,
     worktreePath,
     baseSha: "a".repeat(40),
@@ -71,6 +73,10 @@ test("ACOS adapter accepts only internally consistent lease-fenced JSON", () => 
   assert.throws(() => parseAgenticDeviceResult(JSON.stringify({ ...result("heartbeat", "active"), lease: { ...result("heartbeat", "active").lease, sessionId: "other" } }), { action: "heartbeat", expectedStatus: "active", sessionId }), /lease identity/);
   assert.throws(() => parseAgenticDeviceResult(JSON.stringify({ ...result("start", "active"), pullRequest: null, lease: { ...result("start", "active").lease, pullRequestUrl: undefined } }), { action: "start", expectedStatus: "active", sessionId }), /pull-request ownership/);
   assert.throws(() => parseAgenticDeviceResult(JSON.stringify({ ...result("resume", "active"), lease: { ...result("resume", "active").lease, baseSha: "short" } }), { action: "resume", expectedStatus: "active", sessionId }), /lease identity/);
+  assert.throws(() => parseAgenticDeviceResult(JSON.stringify({ ...result("start", "active"), lease: { ...result("start", "active").lease, device: "other" } }), { action: "start", expectedStatus: "active", sessionId }), /device and semantic-scope/);
+  assert.throws(() => parseAgenticDeviceResult(JSON.stringify({ ...result("start", "active"), lease: { ...result("start", "active").lease, scope: "other" } }), { action: "start", expectedStatus: "active", sessionId }), /device and semantic-scope/);
+  const slashIdentity = { ...result("start", "active"), branch: "agent/device/extra/scope", lease: { ...result("start", "active").lease, branch: "agent/device/extra/scope", device: "device/extra", scope: "scope" } };
+  assert.throws(() => parseAgenticDeviceResult(JSON.stringify(slashIdentity), { action: "start", expectedStatus: "active", sessionId }), /device and semantic-scope/);
   assert.throws(() => parseAgenticDeviceResult(`${JSON.stringify(result("start", "active"))}\n{}`, { action: "start", expectedStatus: "active", sessionId }), /exactly one/);
 });
 
@@ -86,7 +92,7 @@ test("adapter accepts the merged ACOS 0b3e0c90 v2 start projection", () => {
     repoRoot: worktreePath, branch, worktreePath, provisioned: true,
     pullRequest: { url: pullRequestUrl, number: 12, isDraft: true },
     lease: {
-      schema: "agentic-writer-lease/v2", status: "active", epoch: 4, sessionId, device: "fixture-device", scope: "managed-item", branch, worktreePath,
+      schema: "agentic-writer-lease/v2", status: "active", epoch: 4, sessionId, device: "device", scope: "managed-item", branch, worktreePath,
       baseSha: "a".repeat(40), fenceSha: "b".repeat(40), pullRequestUrl, reviewHeadSha: null, deliveryHeadSha: null,
       parkHeadSha: null, parkBranchHeadSha: null, parkSourceEpoch: null, parkSourceFenceSha: null,
       parkStashRef: null, parkStashSha: null, parkStashMessage: null, parkStashStatus: null,

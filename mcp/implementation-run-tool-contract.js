@@ -71,7 +71,7 @@ export const IMPLEMENTATION_RUN_SPEC_SCHEMA = Object.freeze({
       type: "string",
       minLength: 1,
       maxLength: 4096,
-      description: "Optional repository-relative path where the runner must leave one exact agentic-sdlc-run/v1 ledger for independent validation and immutable observation.",
+      description: "Repository-relative conformance path. Selecting it first creates an immutable host-owned admission observation and fails closed before runner launch until the independent admission evaluator and required evidence closure are available.",
     },
     allowedPaths: {
       type: "array",
@@ -114,13 +114,13 @@ export function buildImplementationRunToolDefinitions({ toolNames, withDefaults 
   return [
     withDefaults(descriptor(
       toolNames.implementationRunPlan,
-      "Use this when a local MCP host needs to validate a managed implementation run and return an exact non-mutating execution plan, source revision, policy decision, and containment boundary.",
+      "Use this when a local MCP host needs to validate a managed implementation run and return an exact non-mutating supervisor plan with distinct implementation/admission readiness, source revision, policy decision, and containment boundary.",
       IMPLEMENTATION_RUN_SPEC_SCHEMA,
       READ_ONLY,
     ), READ_ONLY),
     withDefaults(descriptor(
       toolNames.implementationRunStart,
-      "Use this when a local MCP host needs to idempotently persist and start one bounded isolated implementation run under the local durable supervisor; it stops at delivery_ready and never merges or deploys.",
+      "Use this when a local MCP host needs to idempotently persist one bounded isolated run; a conformance request fails closed before Implementer launch while admission is unevaluated, and an admitted or non-conformance run stops at delivery_ready without merge or deployment.",
       IMPLEMENTATION_RUN_SPEC_SCHEMA,
       LOCAL_MUTATION,
     ), LOCAL_MUTATION),

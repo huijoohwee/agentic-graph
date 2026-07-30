@@ -123,6 +123,9 @@ execFileSync("git", ["-C", request.workspacePath, "commit", "-m", "feat: managed
     semanticScope: "supervisor-test",
     runnerId: "fixture",
     sandboxPolicyPath: "policy.json",
+    ...(options.agenticSdlcLedgerPath ? {
+      agenticSdlcLedgerPath: options.agenticSdlcLedgerPath,
+    } : {}),
     allowedPaths: ["src"],
     verification: Object.keys(verifierProfiles).map((profileId) => ({ profileId })),
     idempotencyKey: "supervisor-integration-key",
@@ -175,7 +178,7 @@ export async function provisionLane(fx, state, sessionId) {
   const fenceSha = (await git(state.plan.derivedWorktreePath, ["rev-parse", "HEAD"])).stdout.trim();
   await git(state.plan.derivedWorktreePath, ["push", "--set-upstream", "origin", branch]);
   const pullRequest = { url: "https://github.com/example/target/pull/73", number: 73 };
-  const lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url };
+  const lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, device: "test", scope: state.plan.acosSemanticScope, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url };
   return { lease, pullRequest };
 }
 
@@ -194,7 +197,7 @@ export function createHappyLifecycle(fx, state) {
         await git(state.plan.derivedWorktreePath, ["commit", "--allow-empty", "-m", "chore: claim"]);
         const fenceSha = (await git(state.plan.derivedWorktreePath, ["rev-parse", "HEAD"])).stdout.trim();
         await git(state.plan.derivedWorktreePath, ["push", "--set-upstream", "origin", branch]);
-        lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url };
+        lease = { schema: "agentic-writer-lease/v2", status: "active", epoch: 1, sessionId, device: "test", scope: state.plan.acosSemanticScope, branch, worktreePath: state.plan.derivedWorktreePath, baseSha: fx.sourceRevision, fenceSha, pullRequestUrl: pullRequest.url };
         return machinePayload(state, lease, pullRequest, "start", "active", true);
       }
       if (action === "review") {
@@ -203,6 +206,11 @@ export function createHappyLifecycle(fx, state) {
         return machinePayload(state, lease, pullRequest, "review", "review_ready");
       }
       if (action === "heartbeat") return machinePayload(state, lease, pullRequest, "heartbeat", "active");
+      if (action === "park") {
+        await git(state.plan.derivedWorktreePath, ["switch", "--detach", "origin/main"]);
+        lease = { ...lease, status: "parked" };
+        return machinePayload(state, lease, pullRequest, "park", "parked");
+      }
       throw new Error(`unexpected lifecycle action ${action}`);
     },
   };

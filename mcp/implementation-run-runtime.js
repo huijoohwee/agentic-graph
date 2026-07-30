@@ -21,6 +21,16 @@ const MAX_PLAN_BYTES = 384 * 1024;
 const MAX_SPAWN_ENV_BYTES = 256 * 1024;
 const RECOVERABLE_STATES = new Set(["queued", "claiming", "provisioning", "running", "verifying"]);
 const LIFECYCLE_STATES = new Set([...RECOVERABLE_STATES, "delivery_ready", "paused", "blocked", "failed", "canceled"]);
+const requiresAdmissionFinalization = (state) => {
+  const receipt = state.result?.agenticSdlcAdmissionObservation;
+  return Boolean(
+    state.spec?.agenticSdlcLedgerPath
+    && (
+      state.agenticSdlcAdmissionObservationPending
+      || ["pending", "bound"].includes(receipt?.artifactStatus)
+    ),
+  );
+};
 
 const errorPayload = (code, message, details = undefined) => ({
   schema: "knowgrph-implementation-run-result/v1",
@@ -32,6 +42,7 @@ const nextAction = (state) => {
   if (state.state === "canceled") return "none";
   if (state.error?.code === "lease_reactivation_required") return "retry with the current revision for fenced same-session reactivation, or cancel to park";
   if (state.error?.code === "manual_recovery_required") return "preserve and resolve dirty task-worktree changes manually, then retry or cancel";
+  if (state.error?.code === "agentic_sdlc_admission_unavailable") return "the lane is parked; land the repository-owned evaluator and authoring evidence contract, then start a new exact-revision run";
   if (["paused", "blocked", "failed"].includes(state.state)) return "retry or cancel using the current revision";
   return "wait, pause, or cancel using the current revision";
 };
@@ -62,7 +73,7 @@ const publicSummary = (state) => ({
   coordination: state.coordination ? { status: state.coordination.status, branch: clipped(state.coordination.branch, 240), pullRequest: state.coordination.pullRequest ? { number: state.coordination.pullRequest.number, url: clipped(state.coordination.pullRequest.url, 512) } : null, leaseEpoch: state.coordination.lease?.epoch || null } : null,
   supervisor: state.supervisor ? { status: state.supervisor.status, epoch: state.supervisor.epoch, heartbeatAt: state.supervisor.heartbeatAt } : null,
   review: state.review ? { decision: state.review.decision, decidedAt: state.review.decidedAt } : null,
-  result: state.result ? { changedPathCount: state.result.changedPaths?.length || 0, verificationCount: state.result.verification?.length || state.result.failureEvidence?.verification?.length || 0, pullRequest: state.result.pullRequest ? { number: state.result.pullRequest.number, url: clipped(state.result.pullRequest.url, 512) } : null, automaticMerge: false, deployment: false } : null,
+  result: state.result ? { changedPathCount: state.result.changedPaths?.length || 0, verificationCount: state.result.verification?.length || state.result.failureEvidence?.verification?.length || 0, pullRequest: state.result.pullRequest ? { number: state.result.pullRequest.number, url: clipped(state.result.pullRequest.url, 512) } : null, agenticSdlcAdmissionObservation: state.result.agenticSdlcAdmissionObservation || null, automaticMerge: false, deployment: false } : null,
   error: state.error ? { code: clipped(state.error.code, 120), message: clipped(state.error.message, 512) } : null,
 });
 const sanitizedSupervisorEnvironment = (env, state) => {
@@ -144,7 +155,10 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
     const reconcileExit = async () => {
       const current = await store.read(runId).catch(() => null);
       if (!current || current.supervisor?.token !== token || current.supervisor?.status !== "active") return;
-      if (current.attempt >= current.spec.bounds.maxAttempts) {
+      if (
+        current.attempt >= current.spec.bounds.maxAttempts
+        && !requiresAdmissionFinalization(current)
+      ) {
         await store.update(runId, { expectedRevision: current.revision, eventType: "supervisor.exit_exhausted", eventData: { reason } }, (owned) => {
           if (owned.supervisor?.token !== token) return owned;
           owned.state = "blocked";
@@ -216,10 +230,18 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
     const validation = validateImplementationRunSpec(raw);
     if (!validation.ok) return errorPayload("invalid_arguments", "Implementation-run specification is invalid.", validation.errors);
     const preflight = await preflightImplementationRun(validation.spec, { env, supportedAcosRevision });
+    const admissionStatus = validation.spec.agenticSdlcLedgerPath
+      ? "unevaluated"
+      : "not_requested";
+    const implementationReady =
+      preflight.ok && admissionStatus === "not_requested";
     const result = {
       schema: "knowgrph-implementation-run-plan/v1",
       ok: preflight.ok,
-      ready: preflight.ok,
+      ready: implementationReady,
+      supervisorReady: preflight.ok,
+      implementationReady,
+      admissionStatus,
       mutation: "none",
       invocation: validation.spec.invocation,
       workItem: validation.spec.workItem,
@@ -340,6 +362,16 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
           return current;
         }
         if (args.action === "retry") {
+          if (
+            current.error?.code === "agentic_sdlc_admission_unavailable"
+          ) {
+            throw Object.assign(
+              new Error(
+                "Retry cannot resolve unavailable Agentic SDLC admission; start a new exact-revision run after the evaluator and authoring evidence contract land.",
+              ),
+              { code: "NEW_RUN_REQUIRED" },
+            );
+          }
           if (["pause", "cancel"].includes(current.result?.controlDispositionPending)) {
             current.state = "queued";
             current.control = { action: current.result.controlDispositionPending, requestedAt: now().toISOString(), requestId: crypto.randomUUID() };
@@ -347,7 +379,7 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
             return current;
           }
           if (!["paused", "blocked", "failed"].includes(current.state)) throw Object.assign(new Error(`retry is unavailable from ${current.state}.`), { code: "INVALID_TRANSITION" });
-          if (current.attempt >= current.spec.bounds.maxAttempts) throw Object.assign(new Error("Retry attempt bound is exhausted."), { code: "ATTEMPT_LIMIT" });
+          if (current.attempt >= current.spec.bounds.maxAttempts && !requiresAdmissionFinalization(current)) throw Object.assign(new Error("Retry attempt bound is exhausted."), { code: "ATTEMPT_LIMIT" });
           current.retryContext = { fromErrorCode: current.error?.code || null, requestedAt: now().toISOString() };
           current.state = "queued";
           current.control = null;
@@ -416,7 +448,10 @@ export function createImplementationRunRuntime({ rootDir, env = process.env, spa
           return current;
         });
         recovered.push(publicState(blocked));
-      } else if (state.attempt < state.spec.bounds.maxAttempts) {
+      } else if (
+        state.attempt < state.spec.bounds.maxAttempts
+        || requiresAdmissionFinalization(state)
+      ) {
         recovered.push(publicState(await launchSupervisor(state.runId, { expectedRevision: state.revision, reason: "server_recovery" })));
       } else {
         const blocked = await store.update(state.runId, { expectedRevision: state.revision, eventType: "recovery.exhausted" }, (current) => {

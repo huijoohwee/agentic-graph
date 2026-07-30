@@ -17,11 +17,18 @@ const fakeSpawn = () => {
   queueMicrotask(() => child.emit("spawn"));
   return child;
 };
-const spec = (key) => ({ idempotencyKey: key, bounds: { maxAttempts: 2 }, workItem: { id: key } });
+const spec = (key, values = {}) => ({
+  idempotencyKey: key,
+  bounds: { maxAttempts: values.maxAttempts || 2 },
+  workItem: { id: key },
+  ...(values.agenticSdlc ? {
+    agenticSdlcLedgerPath: "evidence/agentic-sdlc-run.json",
+  } : {}),
+});
 const plan = { schema: "knowgrph-implementation-run-plan/v1" };
 
 async function createState(runtime, key, stateName, values = {}) {
-  const created = await runtime.store.create({ spec: spec(key), plan });
+  const created = await runtime.store.create({ spec: spec(key, values), plan });
   return runtime.store.update(created.state.runId, { expectedRevision: 1, eventType: "test.state" }, (state) => {
     state.state = stateName;
     state.attempt = values.attempt ?? 0;
@@ -33,6 +40,16 @@ async function createState(runtime, key, stateName, values = {}) {
       heartbeatAt: values.heartbeatAt || new Date().toISOString(),
       processMarker: values.processMarker || "missing",
     };
+    if (values.admissionArtifactStatus) {
+      const receipt = { artifactStatus: values.admissionArtifactStatus };
+      state.result = { agenticSdlcAdmissionObservation: receipt };
+      if (values.admissionArtifactStatus === "pending") {
+        state.agenticSdlcAdmissionObservationPending = {
+          receipt,
+          content: "{}\n",
+        };
+      }
+    }
     return state;
   });
 }
@@ -83,6 +100,74 @@ test("recovery fences exhausted runs instead of exceeding attempt bounds", async
   assert.equal(state.state, "blocked");
   assert.equal(state.error.code, "attempt_limit");
   assert.equal(state.supervisor.status, "fenced");
+});
+
+test("recovery finalizes admission evidence after implementation attempts are exhausted", async (t) => {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
+  let spawns = 0;
+  const runtime = createImplementationRunRuntime({
+    rootDir,
+    recoveryIntervalMs: 0,
+    spawnImpl: () => {
+      spawns += 1;
+      return fakeSpawn();
+    },
+  });
+  for (const status of ["pending", "bound"]) {
+    await createState(runtime, `admission-${status}`, "provisioning", {
+      attempt: 1,
+      maxAttempts: 1,
+      agenticSdlc: true,
+      admissionArtifactStatus: status,
+    });
+  }
+  const recovered = await runtime.recover();
+  assert.equal(recovered.length, 2);
+  assert.equal(spawns, 2);
+  assert.ok(recovered.every((state) => state.supervisor.status === "active"));
+});
+
+test("unexpected exit can relaunch final-attempt admission finalization", async (t) => {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-recovery-"));
+  t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
+  const children = [];
+  const runtime = createImplementationRunRuntime({
+    rootDir,
+    recoveryIntervalMs: 0,
+    spawnImpl: () => {
+      const child = fakeSpawn();
+      children.push(child);
+      return child;
+    },
+  });
+  const run = await createState(runtime, "admission-exit", "provisioning", {
+    attempt: 1,
+    maxAttempts: 1,
+    agenticSdlc: true,
+    admissionArtifactStatus: "bound",
+  });
+  await runtime.recover();
+  const firstToken = (await runtime.store.read(run.runId)).supervisor.token;
+  children[0].exitCode = 1;
+  children[0].emit("exit", 1, null);
+  const deadline = Date.now() + 5000;
+  while (children.length < 2 && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.equal(children.length, 2);
+  while (Date.now() < deadline) {
+    const state = await runtime.store.read(run.runId);
+    if (
+      state.supervisor.status === "active"
+      && state.supervisor.token !== firstToken
+    ) break;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.notEqual(
+    (await runtime.store.read(run.runId)).supervisor.token,
+    firstToken,
+  );
 });
 
 test("an unexpected supervisor exit is reconciled without restarting the MCP server", async (t) => {

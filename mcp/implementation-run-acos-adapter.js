@@ -4,6 +4,8 @@ export const AGENTIC_DEVICE_RESULT_SCHEMA = "agentic-device-command-result/v1";
 const ACTIONS = new Set(["start", "resume", "heartbeat", "review", "park"]);
 const SHA = /^[a-f0-9]{40}$/;
 const PARK_STASH_STATUSES = new Set(["pending", "restored"]);
+const DEVICE_BRANCH =
+  /^agent\/([a-z0-9](?:[a-z0-9._-]*[a-z0-9])?)\/([a-z0-9](?:[a-z0-9-]*[a-z0-9])?)$/;
 const validPullRequestUrl = (value) => {
   try { return ["http:", "https:"].includes(new URL(value).protocol); } catch { return false; }
 };
@@ -35,6 +37,8 @@ export function parseAgenticDeviceResult(stdout, { action, expectedStatus, sessi
   if (action === "start" && payload.provisioned !== expectedProvisioned) throw new Error(`ACOS start did not prove the expected ${expectedProvisioned ? "atomic provisioning" : "existing-worktree reconciliation"} mode.`);
   const lease = payload.lease;
   if (!lease || lease.schema !== "agentic-writer-lease/v2" || lease.sessionId !== sessionId || lease.branch !== payload.branch || !path.isAbsolute(lease.worktreePath || "") || path.resolve(lease.worktreePath) !== path.resolve(payload.worktreePath) || !Number.isInteger(lease.epoch) || lease.epoch < 1 || !SHA.test(lease.baseSha || "") || !SHA.test(lease.fenceSha || "")) throw new Error(`ACOS ${action} omitted consistent token-bound lease identity.`);
+  const branchIdentity = String(payload.branch || "").match(DEVICE_BRANCH);
+  if (!branchIdentity || lease.device !== branchIdentity[1] || lease.scope !== branchIdentity[2]) throw new Error(`ACOS ${action} omitted consistent device and semantic-scope identity.`);
   if (!validPullRequestUrl(payload.pullRequest?.url) || !Number.isInteger(payload.pullRequest?.number) || payload.pullRequest.number < 1 || lease.pullRequestUrl !== payload.pullRequest.url) throw new Error(`ACOS ${action} omitted consistent pull-request ownership identity.`);
   const expectedDraft = action !== "review";
   if (payload.pullRequest.isDraft !== expectedDraft) throw new Error(`ACOS ${action} returned an invalid pull-request draft state.`);
