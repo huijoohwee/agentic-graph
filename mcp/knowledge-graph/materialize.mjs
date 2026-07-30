@@ -5,7 +5,7 @@ import {
 import {
   readKnowledgeGraphRepositoryIndex,
   readKnowledgeGraphResolutionShards,
-  readKnowledgeGraphSourceShard,
+  readKnowledgeGraphSourceParts,
 } from "./store.mjs";
 
 const boundedInteger = (value, fallback, maximum) => {
@@ -47,14 +47,15 @@ export async function materializeKnowledgeGraphRepository(snapshot, repositoryId
   const edges = [];
   for (const entry of index.sources) {
     checkpoint();
-    const shard = await readKnowledgeGraphSourceShard(snapshot, entry);
-    for (const node of shard.nodes) {
-      checkpoint();
-      nodes.push(node);
-    }
-    for (const edge of shard.edges) {
-      checkpoint();
-      edges.push(edge);
+    for await (const part of readKnowledgeGraphSourceParts(snapshot, entry)) {
+      for (const node of part.nodes) {
+        checkpoint();
+        nodes.push(node);
+      }
+      for (const edge of part.edges) {
+        checkpoint();
+        edges.push(edge);
+      }
     }
   }
   for await (const resolution of readKnowledgeGraphResolutionShards(snapshot, index)) {

@@ -2,7 +2,7 @@ import { checkKnowledgeGraphBudget, compareStableStrings, KnowledgeGraphError, s
 import {
   readKnowledgeGraphRepositoryIndex,
   readKnowledgeGraphResolutionShards,
-  readKnowledgeGraphSourceShard,
+  readKnowledgeGraphSourceParts,
 } from "./store.mjs";
 import { materializeKnowledgeGraphRepository } from "./materialize.mjs";
 import {
@@ -125,9 +125,10 @@ async function* snapshotShards(snapshot, options = {}) {
     options.checkpoint?.();
     for (const entry of index.sources || []) {
       options.checkpoint?.();
-      const shard = await readKnowledgeGraphSourceShard(snapshot, entry);
-      options.checkpoint?.();
-      yield { repository, shard };
+      for await (const shard of readKnowledgeGraphSourceParts(snapshot, entry)) {
+        options.checkpoint?.();
+        yield { repository, shard };
+      }
     }
     for await (const shard of readKnowledgeGraphResolutionShards(snapshot, index)) {
       options.checkpoint?.();
@@ -245,27 +246,40 @@ async function searchSnapshot(snapshot, args, options = {}) {
   const terms = tokenize(query);
   const nodes = [];
   const edges = [];
-  for await (const { shard } of snapshotShards(snapshot, { checkpoint })) {
-    const localNodes = new Map();
-    for (const node of shard.nodes || []) {
-      checkpoint();
-      localNodes.set(node.id, node);
+  for (const repository of snapshot.manifest.repositories || []) {
+    checkpoint();
+    const index = await readKnowledgeGraphRepositoryIndex(snapshot, repository);
+    for (const entry of index.sources || []) {
+      const sourceNodes = new Map();
+      for await (const part of readKnowledgeGraphSourceParts(snapshot, entry)) {
+        for (const node of part.nodes || []) {
+          checkpoint();
+          sourceNodes.set(node.id, node);
+          const score = lexicalScore(nodeSearchText(node), terms, node.label);
+          if (score > 0) retainBest(nodes, { node, score }, limit + 1, (
+            left,
+            right,
+          ) => right.score - left.score || compareStableStrings(left.node.id, right.node.id));
+        }
+        for (const edge of part.edges || []) {
+          checkpoint();
+          const score = lexicalScore(edgeSearchText(edge, sourceNodes), terms, edge.label);
+          if (score > 0) retainBest(edges, { edge, score }, limit + 1, (
+            left,
+            right,
+          ) => right.score - left.score || compareStableStrings(left.edge.id, right.edge.id));
+        }
+      }
     }
-    for (const node of shard.nodes || []) {
-      checkpoint();
-      const score = lexicalScore(nodeSearchText(node), terms, node.label);
-      if (score > 0) retainBest(nodes, { node, score }, limit + 1, (
-        left,
-        right,
-      ) => right.score - left.score || compareStableStrings(left.node.id, right.node.id));
-    }
-    for (const edge of shard.edges || []) {
-      checkpoint();
-      const score = lexicalScore(edgeSearchText(edge, localNodes), terms, edge.label);
-      if (score > 0) retainBest(edges, { edge, score }, limit + 1, (
-        left,
-        right,
-      ) => right.score - left.score || compareStableStrings(left.edge.id, right.edge.id));
+    for await (const shard of readKnowledgeGraphResolutionShards(snapshot, index)) {
+      for (const edge of shard.edges || []) {
+        checkpoint();
+        const score = lexicalScore(edgeSearchText(edge, new Map()), terms, edge.label);
+        if (score > 0) retainBest(edges, { edge, score }, limit + 1, (
+          left,
+          right,
+        ) => right.score - left.score || compareStableStrings(left.edge.id, right.edge.id));
+      }
     }
   }
   const nodesTruncated = nodes.length > limit;
@@ -300,8 +314,10 @@ export async function explainKnowledgeGraphSnapshotEdge(snapshot, edgeIdRaw, opt
     let edge;
     for (const entry of index.sources || []) {
       checkpoint();
-      const shard = await readKnowledgeGraphSourceShard(snapshot, entry);
-      edge = (shard.edges || []).find((candidate) => (checkpoint(), candidate.id === edgeId));
+      for await (const shard of readKnowledgeGraphSourceParts(snapshot, entry)) {
+        edge = (shard.edges || []).find((candidate) => (checkpoint(), candidate.id === edgeId));
+        if (edge) break;
+      }
       if (edge) break;
     }
     if (!edge) {
@@ -316,10 +332,11 @@ export async function explainKnowledgeGraphSnapshotEdge(snapshot, edgeIdRaw, opt
     const required = new Set([edge.source, edge.target]);
     for (const entry of index.sources || []) {
       checkpoint();
-      const shard = await readKnowledgeGraphSourceShard(snapshot, entry);
-      for (const node of shard.nodes || []) {
-        checkpoint();
-        if (required.has(node.id)) nodes.push(node);
+      for await (const shard of readKnowledgeGraphSourceParts(snapshot, entry)) {
+        for (const node of shard.nodes || []) {
+          checkpoint();
+          if (required.has(node.id)) nodes.push(node);
+        }
       }
       if (nodes.length === required.size) break;
     }

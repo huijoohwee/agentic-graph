@@ -353,6 +353,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modKnowledgeGraphHostAdapter()
     await mod.testKnowledgeGraphHostUsesOpaqueContentAddressedFolderGrant()
   })
+  await execTest(results, 'workspace.import.knowledgeGraph.hostStrictMultipartFolder', async () => {
+    const mod = await modKnowledgeGraphHostAdapter()
+    await mod.testKnowledgeGraphHostStrictFolderCommitCompletesMultipartRuntime()
+  })
   await execTest(results, 'workspace.import.knowledgeGraph.hostStreamsFolder', async () => {
     const mod = await modKnowledgeGraphHostAdapter()
     await mod.testKnowledgeGraphBrowserAdapterStreamsFolderAndSkipsGeneratedTrees()

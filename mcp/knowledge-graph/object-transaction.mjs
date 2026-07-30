@@ -6,6 +6,7 @@ import {
   readKnowledgeGraphRepositoryIndex,
   readKnowledgeGraphSnapshotIfPresent,
   removeKnowledgeGraphObject,
+  sourceObjectDigestsForEntry,
 } from "./store.mjs";
 import { resolutionShardDigestsForIndex } from "./resolution-store-validation.mjs";
 import { withKnowledgeGraphIngestLock } from "./ingest-lock.mjs";
@@ -19,7 +20,9 @@ async function reachableObjectDigests(pointerPath, options) {
     reachable.add(repository.indexDigest);
     const index = await readKnowledgeGraphRepositoryIndex(snapshot, repository);
     for (const digest of resolutionShardDigestsForIndex(index)) reachable.add(digest);
-    for (const source of index.sources || []) reachable.add(source.shardDigest);
+    for (const source of index.sources || []) {
+      for (const digest of await sourceObjectDigestsForEntry(snapshot, source)) reachable.add(digest);
+    }
   }
   return reachable;
 }

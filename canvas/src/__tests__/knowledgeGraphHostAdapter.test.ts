@@ -19,6 +19,7 @@ import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-o
 import { resetSkillsCommandsMcpTargetForTests } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { createKnowledgeGraphBridgeRequestHandler } from '../../viteKnowledgeGraphBridge'
+import { createKnowledgeGraphRuntime } from '../../../mcp/knowledge-graph/runtime.mjs'
 
 const GRAPH_ID = 'kg:graph:0123456789abcdef0123456789abcdef'
 const SNAPSHOT_DIGEST = 'a'.repeat(64)
@@ -131,7 +132,10 @@ async function close(server: Server): Promise<void> {
   })
 }
 
-async function startHost(ingestResult: unknown = runtimeResult) {
+async function startHost(
+  ingestResult: unknown = runtimeResult,
+  runIngestOverride?: (context: IngestCall, temporaryRoot: string) => Promise<unknown>,
+) {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'knowgrph-host-adapter-test-'))
   const calls: IngestCall[] = []
   const nativeFetch = globalThis.fetch.bind(globalThis)
@@ -140,7 +144,9 @@ async function startHost(ingestResult: unknown = runtimeResult) {
     hostDataRoot: path.join(temporaryRoot, 'host-data'),
     runIngest: async context => {
       calls.push(context)
-      return ingestResult
+      return runIngestOverride
+        ? runIngestOverride(context, temporaryRoot)
+        : ingestResult
     },
   })
   const server = createServer((request, response) => {
@@ -242,6 +248,67 @@ export async function testKnowledgeGraphHostUsesOpaqueContentAddressedFolderGran
     const stagedText = await fs.readFile(path.join(stagedRoot, 'src', 'index.ts'), 'utf8')
     if (stagedText !== 'export const answer = 42\\n') {
       throw new Error(`expected exact staged bytes, got ${JSON.stringify(stagedText)}`)
+    }
+  } finally {
+    await host.dispose()
+  }
+}
+
+export async function testKnowledgeGraphHostStrictFolderCommitCompletesMultipartRuntime() {
+  let rawRuntimeResult: Record<string, unknown> | null = null
+  const host = await startHost(runtimeResult, async (context, temporaryRoot) => {
+    if (context.args.strict !== true) {
+      throw new Error('Launch folder commit must retain strict canonical ingestion')
+    }
+    const rootPath = String(context.args.rootPath || '')
+    const runtime = createKnowledgeGraphRuntime({
+      knowgrphRoot: temporaryRoot,
+      allowedRoots: [rootPath],
+      outputRoot: path.join(temporaryRoot, 'runtime-output'),
+      maxSourceShardBytes: 32_768,
+      maxSourcePartTargetBytes: 16_384,
+    })
+    rawRuntimeResult = await runtime.ingest(context.args, {
+      abortSignal: context.abortSignal,
+    }) as Record<string, unknown>
+    return rawRuntimeResult
+  })
+  try {
+    const body = Array.from(
+      { length: 160 },
+      (_, index) => `## Section ${index}\nparagraph ${index}`,
+    ).join('\n')
+    const bytes = new TextEncoder().encode(body)
+    const createResponse = await host.fetchImpl('/__knowgrph_knowledge_graph/grants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+    const grant = await createResponse.json() as { grantId: string }
+    const upload = await host.fetchImpl(
+      `/__knowgrph_knowledge_graph/grants/${grant.grantId}/files?path=large.md&offset=0&complete=1`,
+      { method: 'PUT', body: bytes },
+    )
+    if (upload.status !== 200) {
+      throw new Error(`expected bounded folder upload, got ${upload.status}`)
+    }
+    const commit = await host.fetchImpl(
+      `/__knowgrph_knowledge_graph/grants/${grant.grantId}/commit`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileCount: 1, totalBytes: bytes.byteLength }),
+      },
+    )
+    const result = await commit.json() as Record<string, unknown>
+    if (
+      commit.status !== 200
+      || result.complete !== true
+      || rawRuntimeResult?.ok !== true
+      || rawRuntimeResult?.complete !== true
+      || host.calls[0]?.args.strict !== true
+    ) {
+      throw new Error(`expected strict complete multipart Launch ingest, got ${JSON.stringify(result)}`)
     }
   } finally {
     await host.dispose()

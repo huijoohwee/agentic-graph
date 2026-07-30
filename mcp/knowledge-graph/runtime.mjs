@@ -36,12 +36,17 @@ import {
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
 import { persistKnowledgeGraphSource } from "./source-persistence.mjs";
 import {
+  sourceArtifactByteLimit,
+  sourceArtifactRecordLimit,
+  sourcePartCountLimit,
+} from "./source-sharding.mjs";
+import {
   ensureKnowledgeGraphStorageRoot,
   knowledgeGraphSourceShardByteLimit,
   listKnowledgeGraphSourceEntries,
   readKnowledgeGraphSnapshot,
   readKnowledgeGraphSnapshotIfPresent,
-  readKnowledgeGraphSourceShard,
+  readKnowledgeGraphSourceParts,
   writeKnowledgeGraphSnapshotAtomic,
 } from "./store.mjs";
 
@@ -177,15 +182,32 @@ async function serializeIngest(graphId, operation, budget = {}) {
 async function reusableFragment(previousSnapshot, entry, budget = {}) {
   if (!previousSnapshot || !entry) return null;
   checkKnowledgeGraphBudget({ ...budget, stage: "source-shard-reuse" });
-  const shard = await readKnowledgeGraphSourceShard(previousSnapshot, entry);
+  const relevantTypes = new Set([
+    "CodeDependency",
+    "DocumentLinkReference",
+    "SourceFile",
+    "SqlTable",
+    "SqlTableReference",
+  ]);
+  const nodes = [];
+  const edges = [];
+  const nodeIds = new Set();
+  for await (const part of readKnowledgeGraphSourceParts(previousSnapshot, entry)) {
+    for (const node of part.nodes || []) {
+      if (relevantTypes.has(node.type)) {
+        nodes.push(node);
+        nodeIds.add(node.id);
+      }
+    }
+    for (const edge of part.edges || []) {
+      if (nodeIds.has(edge.target)) edges.push(edge);
+    }
+  }
   checkKnowledgeGraphBudget({ ...budget, stage: "source-shard-reuse" });
   return {
-    parserId: shard.parserId,
-    parserVersion: shard.parserVersion,
-    nodes: shard.nodes,
-    edges: shard.edges,
-    diagnostics: shard.diagnostics,
-    status: shard.status,
+    nodes,
+    edges,
+    status: entry.status,
   };
 }
 
@@ -300,6 +322,9 @@ async function ingestResolvedTransaction(
   const fragments = new Map();
   const sourceEntries = [];
   const sourceShardByteLimit = knowledgeGraphSourceShardByteLimit(deps.maxSourceShardBytes);
+  const sourceByteLimit = sourceArtifactByteLimit(deps.maxSourceArtifactBytes);
+  const sourceRecordLimit = sourceArtifactRecordLimit(deps.maxSourceArtifactRecords);
+  const partCountLimit = sourcePartCountLimit(deps.maxSourceParts);
   const resolutionRetention = createResolutionRetentionBudget({
     maxBytes: args.maxResolutionBytes,
     maxRecords: args.maxResolutionRecords,
@@ -318,12 +343,17 @@ async function ingestResolvedTransaction(
       && previous?.parserVersion === descriptor.parserVersion
       && previous?.repositoryId === source.repositoryId
       && previous?.repositoryPath === source.repositoryPath
-      && Number.isSafeInteger(previous?.shardBytes)
-      && previous.shardBytes <= sourceShardByteLimit
+      && Number.isSafeInteger(previous?.maxPartBytes)
+      && previous.maxPartBytes <= sourceShardByteLimit
+      && Number.isSafeInteger(previous?.sourceArtifactBytes)
+      && previous.sourceArtifactBytes <= sourceByteLimit
+      && Number.isSafeInteger(previous?.sourceArtifactRecords)
+      && previous.sourceArtifactRecords <= sourceRecordLimit
+      && Number(previous.nodePartCount || 0) + Number(previous.edgePartCount || 0) <= partCountLimit
       ? await reusableFragment(previousSnapshot, previous, budget)
       : null;
-    let fragment = reusable;
-    if (!fragment) {
+    let fragment = null;
+    if (!reusable) {
       const hydrated = await hydrateKnowledgeSource(source, {
         rootPath: resolved.rootPath,
         maxFileBytes: args.maxFileBytes,
@@ -348,12 +378,24 @@ async function ingestResolvedTransaction(
     }
     parserCheckpoint.force();
     const persisted = await persistKnowledgeGraphSource({
-      source, fragment, reusableEntry: reusable ? previous : null, strict,
+      source,
+      fragment: fragment || {
+        parserId: previous.parserId,
+        parserVersion: previous.parserVersion,
+        nodes: [],
+        edges: [],
+        diagnostics: previous.diagnostics,
+        status: previous.status,
+      },
+      reusableEntry: reusable ? previous : null,
+      strict,
       pointerPath, outputRoot: resolved.outputRoot, objectTransaction,
       deps, budget, checkpoint: parserCheckpoint,
     });
     const annotated = persisted.fragment;
-    const resolutionFragment = fragmentForResolution(annotated, parserCheckpoint);
+    const resolutionFragment = reusable
+      ? reusable
+      : fragmentForResolution(annotated, parserCheckpoint);
     retainResolutionFragment(resolutionRetention, source.relativePath, resolutionFragment);
     fragments.set(source.relativePath, resolutionFragment);
     sourceEntries.push(persisted.sourceEntry);
@@ -423,6 +465,9 @@ async function ingestResolvedTransaction(
   }, {
     allowedRoot: resolved.outputRoot,
     objectTransaction,
+    maxSnapshotArtifactBytes: deps.maxSnapshotArtifactBytes,
+    maxSnapshotArtifactRecords: deps.maxSnapshotArtifactRecords,
+    maxSnapshotSourceParts: deps.maxSnapshotSourceParts,
     ...budget,
   });
 
@@ -556,6 +601,13 @@ export function createKnowledgeGraphRuntime({
   pythonBin = process.env.KNOWGRPH_PYTHON || "python3",
   now = Date.now,
   maxSourceShardBytes,
+  maxSourcePartTargetBytes,
+  maxSourceArtifactBytes,
+  maxSourceArtifactRecords,
+  maxSourceParts,
+  maxSnapshotArtifactBytes,
+  maxSnapshotArtifactRecords,
+  maxSnapshotSourceParts,
 }) {
   const deps = {
     knowgrphRoot: path.resolve(knowgrphRoot),
@@ -566,6 +618,13 @@ export function createKnowledgeGraphRuntime({
     pythonBin,
     now,
     maxSourceShardBytes,
+    maxSourcePartTargetBytes,
+    maxSourceArtifactBytes,
+    maxSourceArtifactRecords,
+    maxSourceParts,
+    maxSnapshotArtifactBytes,
+    maxSnapshotArtifactRecords,
+    maxSnapshotSourceParts,
   };
   return Object.freeze({
     ingest: (args, options) => ingestKnowledgeGraph(args, deps, options),

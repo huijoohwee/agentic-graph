@@ -4,7 +4,8 @@ import {
 } from "./contract.mjs";
 import { assertExplainedEdges } from "./store-records.mjs";
 
-export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA = "knowgrph-knowledge-graph-repository-index/v2";
+export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA = "knowgrph-knowledge-graph-repository-index/v3";
+export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V2 = "knowgrph-knowledge-graph-repository-index/v2";
 export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V1 = "knowgrph-knowledge-graph-repository-index/v1";
 export const KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA = "knowgrph-knowledge-graph-resolution-shard/v1";
 export const MAX_RESOLUTION_SHARD_DIGESTS = 200_000;
@@ -27,7 +28,8 @@ export function resolutionShardDigestsForIndex(index, options = {}) {
   const hasSingular = hasOwn(index, "resolutionShardDigest");
   const hasPlural = hasOwn(index, "resolutionShardDigests");
   let digests;
-  if (index?.schema === KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA) {
+  if (index?.schema === KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA
+    || index?.schema === KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V2) {
     if (!hasPlural || hasSingular || !Array.isArray(index.resolutionShardDigests)) {
       throw invalid(code, repositoryId, "Repository index has an invalid v2 resolution shape");
     }

@@ -10,6 +10,7 @@ import {
   knowledgeGraphStoreRoot,
   readKnowledgeGraphRepositoryIndex,
   readKnowledgeGraphSnapshot,
+  readKnowledgeGraphSourceBundle,
   readKnowledgeGraphSourceShard,
 } from "../knowledge-graph/store.mjs";
 
@@ -253,42 +254,81 @@ test("parser record caps stop graph construction before an oversized fragment is
   assert.equal(reparsed.counts.reused, 0);
 });
 
-test("non-strict ingest records an oversized source artifact as bounded incomplete evidence", async (t) => {
-  const value = await fixture(t, { maxSourceShardBytes: 4_096 });
+test("strict ingest persists an oversized source graph as bounded complete parts", async (t) => {
+  const maxSourceShardBytes = 32_768;
+  const value = await fixture(t, {
+    maxSourceShardBytes,
+    maxSourcePartTargetBytes: 16_384,
+  });
   await fs.writeFile(
     path.join(value.corpusRoot, "large.md"),
     Array.from({ length: 200 }, (_, index) => `## Section ${index}\nparagraph ${index}`).join("\n"),
   );
-  const limited = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: false });
-  assert.equal(limited.ok, true, JSON.stringify(limited));
-  assert.equal(limited.complete, false);
-  assert.deepEqual(limited.completeness.incompleteSources, ["large.md"]);
-  assert.ok(limited.completeness.reasons.includes("parser_limited"));
-  assert.ok(limited.diagnostics.some((entry) => entry.code === "source_artifact_limit_exceeded"));
+  const first = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    projectionLimit: 1_000,
+  });
+  assert.equal(first.ok, true, JSON.stringify(first));
+  assert.equal(first.complete, true);
+  assert.equal(first.counts.parsed, 1);
 
-  const graphPointer = pointerPath(value, limited.graphId);
+  const graphPointer = pointerPath(value, first.graphId);
   const snapshot = await readKnowledgeGraphSnapshot(graphPointer, {
     allowedRoot: value.outputRoot,
-    expectedGraphId: limited.graphId,
+    expectedGraphId: first.graphId,
   });
   const index = await readKnowledgeGraphRepositoryIndex(
     snapshot,
     snapshot.manifest.repositories[0],
   );
+  const entry = index.sources[0];
+  const bundle = await readKnowledgeGraphSourceBundle(snapshot, entry);
+  assert.ok(bundle.nodeParts.length + bundle.edgeParts.length > 1);
+  for (const part of [...bundle.nodeParts, ...bundle.edgeParts]) {
+    assert.ok(part.bytes <= maxSourceShardBytes);
+    const stored = await fs.stat(path.join(
+      knowledgeGraphStoreRoot(graphPointer),
+      "objects",
+      part.digest.slice(0, 2),
+      `${part.digest}.json`,
+    ));
+    assert.equal(stored.size, part.bytes);
+    assert.ok(stored.size <= maxSourceShardBytes);
+  }
   const shard = await readKnowledgeGraphSourceShard(snapshot, index.sources[0]);
-  assert.equal(shard.status, "limited");
-  assert.equal(shard.nodes.length, 1);
-  assert.equal(shard.edges.length, 0);
-  const before = await fs.readFile(graphPointer, "utf8");
-
-  const strict = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
-  assert.equal(strict.ok, false);
-  assert.equal(strict.error.code, "artifact_too_large");
-  assert.equal(strict.error.details.maxBytes, 4_096);
-  assert.equal(await fs.readFile(graphPointer, "utf8"), before);
+  assert.equal(shard.status, "parsed");
+  assert.equal(shard.nodes.length, entry.nodeCount);
+  assert.equal(shard.edges.length, entry.edgeCount);
+  assert.equal(first.projection.complete, true);
+  assert.equal(first.projection.graphData.nodes.length, entry.nodeCount);
+  const search = await value.runtime.query({
+    graphId: first.graphId,
+    expectedSnapshotDigest: first.snapshotDigest,
+    mode: "search",
+    query: "Section 199",
+  });
+  assert.equal(search.ok, true, JSON.stringify(search));
+  assert.ok(search.results.nodes.length > 0);
+  const explanation = await value.runtime.explainEdge({
+    graphId: first.graphId,
+    expectedSnapshotDigest: first.snapshotDigest,
+    edgeId: shard.edges.at(-1).id,
+  });
+  assert.equal(explanation.ok, true, JSON.stringify(explanation));
+  assert.equal(explanation.edge.id, shard.edges.at(-1).id);
+  const second = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    projectionLimit: 1_000,
+  });
+  assert.equal(second.ok, true, JSON.stringify(second));
+  assert.equal(second.snapshotDigest, first.snapshotDigest);
+  assert.equal(second.counts.parsed, 0);
+  assert.equal(second.counts.reused, 1);
 });
 
-test("a tighter source artifact ceiling invalidates an otherwise reusable shard", async (t) => {
+test("a tighter source part ceiling reparses once and then reuses the bounded bundle", async (t) => {
   const value = await fixture(t);
   await fs.writeFile(
     path.join(value.corpusRoot, "large.md"),
@@ -302,22 +342,24 @@ test("a tighter source artifact ceiling invalidates an otherwise reusable shard"
     knowgrphRoot: value.base,
     allowedRoots: [value.corpusRoot],
     outputRoot: value.outputRoot,
-    maxSourceShardBytes: 4_096,
+    maxSourceShardBytes: 32_768,
+    maxSourcePartTargetBytes: 16_384,
   });
   const strict = await limitedRuntime.ingest({ rootPath: value.corpusRoot, strict: true });
-  assert.equal(strict.ok, false);
-  assert.equal(strict.error.code, "artifact_too_large");
-
-  const limited = await limitedRuntime.ingest({ rootPath: value.corpusRoot, strict: false });
-  assert.equal(limited.ok, true, JSON.stringify(limited));
-  assert.equal(limited.complete, false);
-  assert.equal(limited.counts.parsed, 1);
-  assert.equal(limited.counts.reused, 0);
-  assert.deepEqual(limited.completeness.incompleteSources, ["large.md"]);
+  assert.equal(strict.ok, true, JSON.stringify(strict));
+  assert.equal(strict.complete, true);
+  assert.equal(strict.counts.parsed, 1);
+  assert.equal(strict.counts.reused, 0);
+  const reused = await limitedRuntime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(reused.ok, true, JSON.stringify(reused));
+  assert.equal(reused.snapshotDigest, strict.snapshotDigest);
+  assert.equal(reused.counts.parsed, 0);
+  assert.equal(reused.counts.reused, 1);
 });
 
 test("non-strict ingest fails closed when an existing source object is oversized", async (t) => {
-  const value = await fixture(t, { maxSourceShardBytes: 4_096 });
+  const maxSourceShardBytes = 16_384;
+  const value = await fixture(t, { maxSourceShardBytes });
   await fs.writeFile(path.join(value.corpusRoot, "small.md"), "# Small\n");
   const first = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
   assert.equal(first.ok, true, JSON.stringify(first));
@@ -330,14 +372,15 @@ test("non-strict ingest fails closed when an existing source object is oversized
     snapshot,
     snapshot.manifest.repositories[0],
   );
-  const digest = index.sources[0].shardDigest;
+  const bundle = await readKnowledgeGraphSourceBundle(snapshot, index.sources[0]);
+  const digest = [...bundle.nodeParts, ...bundle.edgeParts][0].digest;
   const objectPath = path.join(
     knowledgeGraphStoreRoot(graphPointer),
     "objects",
     digest.slice(0, 2),
     `${digest}.json`,
   );
-  await fs.writeFile(objectPath, "x".repeat(4_097));
+  await fs.writeFile(objectPath, "x".repeat(maxSourceShardBytes + 1));
   const before = await fs.readFile(graphPointer, "utf8");
 
   const result = await value.runtime.ingest({

@@ -26,11 +26,13 @@ import {
   KNOWLEDGE_GRAPH_POINTER_SCHEMA,
   KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA,
   KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V1,
+  KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V2,
   KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA,
   knowledgeGraphStoreRoot,
   readKnowledgeGraphRepositoryIndex,
   readKnowledgeGraphResolutionShards,
   readKnowledgeGraphSnapshot,
+  readKnowledgeGraphSourceShard,
   writeKnowledgeGraphSnapshotAtomic,
   writeKnowledgeGraphSourceShard,
 } from "../knowledge-graph/store.mjs";
@@ -149,10 +151,31 @@ async function publishLegacyV1Snapshot(pointerPath, snapshot, index, edges) {
     nodes: [],
     edges,
   });
+  const legacySources = [];
+  for (const entry of index.sources) {
+    const shard = await readKnowledgeGraphSourceShard(snapshot, entry);
+    const shardDigest = await writeStoredObject(pointerPath, shard);
+    const {
+      bundleDigest: _bundleDigest,
+      bundleBytes: _bundleBytes,
+      sourceArtifactBytes: _sourceArtifactBytes,
+      sourceArtifactRecords: _sourceArtifactRecords,
+      nodePartCount: _nodePartCount,
+      edgePartCount: _edgePartCount,
+      maxPartBytes: _maxPartBytes,
+      ...legacyEntry
+    } = entry;
+    legacySources.push({
+      ...legacyEntry,
+      shardDigest,
+      shardBytes: Buffer.byteLength(stableStringify(shard, 2)),
+    });
+  }
   const { resolutionShardDigests: _digests, ...indexWithoutDigests } = index;
   const legacyIndexDigest = await writeStoredObject(pointerPath, {
     ...indexWithoutDigests,
     schema: KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V1,
+    sources: legacySources,
     resolutionShardDigest,
   });
   const manifest = {
@@ -208,6 +231,11 @@ test("repository index resolution fields are exact, unique, and bounded by schem
   assert.deepEqual(resolutionShardDigestsForIndex({
     ...common,
     schema: KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA,
+    resolutionShardDigests: [digest],
+  }), [digest]);
+  assert.deepEqual(resolutionShardDigestsForIndex({
+    ...common,
+    schema: KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V2,
     resolutionShardDigests: [digest],
   }), [digest]);
   for (const index of [
