@@ -1,15 +1,16 @@
 ---
 title: "Knowgrph — SenseNova AI API MainPanel Integrations PRD/TAD"
 id: "md:knowgrph-sensenova-api-prd-tad"
-author: "airvio / joohwee"
-date: "2026-06-13"
-updated: "2026-06-13"
+doc_type: "Product and Technical Specification"
 version: "0.1.0"
-status: "proposed-implementation-contract"
-doc_type: "Combined PRD/TAD"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
-domain: "knowgrph"
+owner: "docs.mcp.sensenova"
+local_rung: "source-audited"
+delivered_rung: "spec-complete"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-sensenova-api-prd-tad.md"
 orientation:
   - "solo-dev"
   - "AI-native"

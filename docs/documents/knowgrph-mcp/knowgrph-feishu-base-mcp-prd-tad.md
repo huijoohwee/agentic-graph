@@ -1,13 +1,16 @@
 ---
 title: "Knowgrph - Feishu Base MCP Integration PRD/TAD"
 id: "md:knowgrph-feishu-base-mcp-prd-tad"
-author: "joohwee"
-date: "2026-06-06"
-updated: "2026-06-06"
+doc_type: "Product and Technical Specification"
 version: "0.1.1"
-status: "accepted-implemented-baseline"
-doc_type: "Combined PRD/TAD"
+date: "2026-07-30"
 lang: "en-US"
+owner: "docs.mcp.feishu-base"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-feishu-base-mcp-prd-tad.md"
 kgDocumentSemanticMode: "document"
 kgFrontmatterModeEnabled: true
 kgCanvasSurfaceMode: "2d"

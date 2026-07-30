@@ -48,7 +48,8 @@ export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
   }
 
   const requiredStripeDocTokens = [
-    'status: "accepted-implemented-baseline"',
+    'doc_type: "Product and Technical Specification"',
+    'delivered_rung: "runtime-ready"',
     'MainPanel MCP exposes payment readiness and agent configuration; MainPanel Commerce remains the customer-facing checkout, entitlement, and reconciliation surface.',
     'Commerce surface owns checkout, entitlement, and reconciliation UX',
   ]

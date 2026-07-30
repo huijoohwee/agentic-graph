@@ -1,17 +1,21 @@
 ---
 title: Knowgrph - Stripe MCP Payment Readiness
-graphId: md:knowgrph-stripe-mcp-service
+id: "md:knowgrph-stripe-mcp-service"
+doc_type: "Product and Technical Specification"
+version: "0.2.1"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.mcp.stripe"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-stripe-mcp-service.md"
 product: "Knowgrph Canvas"
 service_type: "AI-native MCP payment integration"
-doc_type: "PRD + TAD"
-version: "0.2.1"
-owner: "joohwee"
-status: "accepted-implemented-baseline"
-date: "2026-06-04"
 license: "FOSS-compatible integration posture"
 tier: "free + pay-per-use + subscription"
 ai_model: "provider-swappable"
-
 billing_provider: "Stripe"
 stripe_mcp_registry_url: "https://github.com/mcp/com.stripe/mcp"
 stripe_mcp_docs_url: "https://docs.stripe.com/mcp"
