@@ -7,6 +7,10 @@ import {
   type MarkdownWorkspaceSelectionResolvedTextCache,
 } from '@/lib/markdown-workspace-runtime/markdownWorkspaceSelectionResolvedText'
 import type { WorkspaceEntry, WorkspaceFs } from '@/features/workspace-fs/types'
+import {
+  settleWorkspaceSourceTextWrites,
+  trackWorkspaceSourceTextPublication,
+} from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
 
 const SOURCE_ONLY_TEXT = '---\nflow:\n  nodes:\n    - id: n1\n---\n'
 const GENERATED_TEXT = '---\nflow:\n  nodes:\n    - id: n1\n    - id: generated-output\n---\n'
@@ -72,5 +76,31 @@ export async function testWorkspaceRunOutputSwitchRefreshesSettledPathReadAfterF
   const after = await readCachedWorkspaceSelectionResolvedTextForActivePath(args)
   if (before !== SOURCE_ONLY_TEXT || after !== GENERATED_TEXT) {
     throw new Error('expected a later file switch to reread Workspace FS after generated output persistence')
+  }
+}
+
+export async function testWorkspaceRunOutputSwitchWaitsForRunPublication() {
+  let releasePublication = () => void 0
+  const publicationRelease = new Promise<void>(resolve => {
+    releasePublication = resolve
+  })
+  const publication = trackWorkspaceSourceTextPublication(async () => {
+    await publicationRelease
+  })
+  let selectionFenceSettled = false
+  const selectionFence = settleWorkspaceSourceTextWrites().then(() => {
+    selectionFenceSettled = true
+  })
+
+  await Promise.resolve()
+  await Promise.resolve()
+  if (selectionFenceSettled) {
+    throw new Error('expected file switching to wait while a Canvas Run publication is still in flight')
+  }
+
+  releasePublication()
+  await Promise.all([publication, selectionFence])
+  if (!selectionFenceSettled) {
+    throw new Error('expected file switching to continue after the Canvas Run publication settles')
   }
 }

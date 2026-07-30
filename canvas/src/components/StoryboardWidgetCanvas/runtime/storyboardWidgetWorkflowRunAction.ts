@@ -4,6 +4,7 @@ import { buildWorkspaceGraphMutationTransitionState } from '@/features/workspace
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import { isKgcWorkspaceCompanionPath, toCanonicalKgcWorkspacePath } from '@/features/chat/chatHistoryWorkspace.paths'
 import { emitKgcRunOutput } from '@/features/chat/kgcRunOutput'
+import { trackWorkspaceSourceTextPublication } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
 import { ensureEditorCanvasLandingForDuration } from '@/lib/toolbar/workspaceLandingGuard'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { UI_COPY, FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config'
@@ -472,7 +473,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
     scheduleWorkflowOutputEdgeRefresh()
     if (deferredError) throw deferredError.value
   }
-  runWorkflowNode = async (nodeId, runOptions) => {
+  runWorkflowNode = (nodeId, runOptions) => trackWorkspaceSourceTextPublication(async () => {
     const id = String(nodeId || '').trim()
     if (!id || runOptions?.visitedNodeIds?.has(id)) return
     const runToastId = `storyboard-widget-run-${id}`
@@ -522,6 +523,6 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
     } finally {
       inFlightNodeIds.delete(id)
     }
-  }
+  })
   return runWorkflowNode
 }
