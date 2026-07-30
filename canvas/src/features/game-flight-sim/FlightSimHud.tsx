@@ -1,6 +1,7 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { subscribeGlobalCancelEvents } from '@/lib/browser/globalCancelEvents'
+import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { resolveFloatingPanelRightClearanceCss } from '@/lib/ui/floatingPanelGeometry'
 import {
   flightSimInputFromHeldTouches,
@@ -161,6 +162,7 @@ export function FlightSimHud() {
   const hudPanelClassName = training.night
     ? 'border-violet-300/35 bg-indigo-950/80'
     : 'border-white/20 bg-slate-950/75'
+  const selectableSurfaceDataAttr = resolveMediaPreviewSelectableDataAttr(true)
   React.useLayoutEffect(
     () => registerFlightSimHudDeadlineOwner(mountedRevision.current),
     [],
@@ -214,6 +216,19 @@ export function FlightSimHud() {
       data-kg-flight-sim-panel-clearance={floatingPanelOpen ? 'reserved' : 'none'}
       style={floatingPanelClearanceVariables}
     >
+      <figure
+        className="pointer-events-auto absolute inset-[8%_8%_13%_8%] m-0"
+        aria-label="Flight Sim media surface"
+        data-kg-flight-sim-media-surface="1"
+        data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
+      >
+        <figcaption
+          className="pointer-events-auto absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-cyan-50 backdrop-blur"
+          data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
+        >
+          Flight Sim media · {camera.view} · {flight.phase}
+        </figcaption>
+      </figure>
       <header
         className={`absolute left-3 right-3 top-3 grid grid-cols-1 gap-2 pt-[env(safe-area-inset-top)] ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : 'sm:flex sm:items-start sm:justify-between sm:gap-3'}`}
       >
