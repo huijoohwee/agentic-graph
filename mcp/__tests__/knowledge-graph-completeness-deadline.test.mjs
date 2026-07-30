@@ -232,6 +232,9 @@ test("parser record caps stop graph construction before an oversized fragment is
   assert.equal(shard.nodes[0].type, "SourceFile");
   assert.equal(shard.edges.length, 0);
   const before = await fs.readFile(graphPointer, "utf8");
+  const objectsBeforeStrict = (await storedObjects(graphPointer))
+    .map((object) => JSON.stringify(object))
+    .sort();
 
   const strict = await value.runtime.ingest({
     rootPath: value.corpusRoot,
@@ -240,8 +243,14 @@ test("parser record caps stop graph construction before an oversized fragment is
   });
   assert.equal(strict.ok, false);
   assert.equal(strict.error.code, "parser_record_limit_exceeded");
+  assert.equal(strict.error.details.attemptedRecords, 5);
   assert.equal(strict.error.details.maxRecords, 4);
+  assert.equal(strict.error.details.stage, "markdown.text-edges");
   assert.equal(await fs.readFile(graphPointer, "utf8"), before);
+  const objectsAfterStrict = (await storedObjects(graphPointer))
+    .map((object) => JSON.stringify(object))
+    .sort();
+  assert.deepEqual(objectsAfterStrict, objectsBeforeStrict);
 
   const reparsed = await value.runtime.ingest({
     rootPath: value.corpusRoot,
@@ -252,6 +261,160 @@ test("parser record caps stop graph construction before an oversized fragment is
   assert.equal(reparsed.complete, true);
   assert.equal(reparsed.counts.parsed, 1);
   assert.equal(reparsed.counts.reused, 0);
+});
+
+test("dense generated JavaScript retains its complete AST graph within separate operation and record bounds", async (t) => {
+  const value = await fixture(t, { maxParserOperations: 60_000 });
+  const baselinePath = path.join(value.corpusRoot, "a.md");
+  const bundleDirectory = path.join(value.corpusRoot, "z-dist");
+  const bundlePath = path.join(bundleDirectory, "dense-runtime.bundle.js");
+  const denseValues = Array.from({ length: 40_000 }, (_, index) => String(index)).join(",");
+  const denseSource = [
+    "export class DenseRenderer {",
+    " render() { return runtimeCall(",
+    "   payload); }",
+    "}",
+    `const payload = [${denseValues}];`,
+    "export { payload };",
+  ].join("\n");
+  assert.equal(denseSource.split("\n").length, 6);
+  assert.ok(Buffer.byteLength(denseSource) > 200_000);
+  await fs.mkdir(bundleDirectory, { recursive: true });
+  await fs.writeFile(baselinePath, "# Baseline\n");
+  await fs.writeFile(bundlePath, denseSource);
+
+  const complete = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    projectionLimit: 100,
+  });
+  assert.equal(complete.ok, true, JSON.stringify(complete));
+  assert.equal(complete.complete, true);
+  assert.equal(complete.projection.complete, true);
+  const graphPointer = pointerPath(value, complete.graphId);
+  const snapshot = await readKnowledgeGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: complete.graphId,
+  });
+  const repository = snapshot.manifest.repositories[0];
+  const index = await readKnowledgeGraphRepositoryIndex(snapshot, repository);
+  const entry = index.sources.find((source) => source.sourcePath === "z-dist/dense-runtime.bundle.js");
+  assert.ok(entry);
+  assert.match(entry.parserVersion, /^1\.1\.0\+typescript-/);
+  const shard = await readKnowledgeGraphSourceShard(snapshot, entry);
+  assert.equal(shard.status, "parsed");
+  const classNode = shard.nodes.find((node) => node.type === "CodeClass" && node.label === "DenseRenderer");
+  const methodNode = shard.nodes.find((node) => node.type === "CodeMethod" && node.label === "render");
+  const callNode = shard.nodes.find((node) => node.type === "CodeCallReference" && node.label === "runtimeCall");
+  assert.ok(classNode && methodNode && callNode);
+  const methodEdge = shard.edges.find((edge) => (
+    edge.source === classNode.id
+    && edge.target === methodNode.id
+    && edge.label === "containsDeclaration"
+  ));
+  const callEdge = shard.edges.find((edge) => (
+    edge.source === methodNode.id
+    && edge.target === callNode.id
+    && edge.label === "calls"
+  ));
+  assert.ok(methodEdge && callEdge);
+  assert.equal(methodEdge.properties["evidence:lineStart"], 2);
+  assert.equal(methodEdge.properties["evidence:lineEnd"], 3);
+  assert.equal(methodEdge.properties["evidence:columnStart"], 2);
+  assert.equal(methodEdge.properties["evidence:columnEnd"], 15);
+  assert.equal(
+    methodEdge.properties["evidence:excerpt"],
+    "render() { return runtimeCall(\n   payload); }",
+  );
+  assert.equal(callEdge.properties["evidence:lineStart"], 2);
+  assert.equal(callEdge.properties["evidence:lineEnd"], 2);
+  assert.equal(callEdge.properties["evidence:columnStart"], 20);
+  assert.equal(callEdge.properties["evidence:columnEnd"], 31);
+  assert.equal(callEdge.properties["evidence:excerpt"], "runtimeCall");
+  assert.equal(callEdge.properties["evidence:excerptHash"], sha256("runtimeCall"));
+  assert.equal(callEdge.properties["evidence:sourceDigest"], sha256(denseSource));
+  assert.equal(callEdge.properties["evidence:parserVersion"], entry.parserVersion);
+  assert.equal(
+    callEdge.properties["evidence:parserDigest"],
+    sha256(`local-typescript-ast\0${entry.parserVersion}`),
+  );
+
+  const search = await value.runtime.query({
+    graphId: complete.graphId,
+    expectedSnapshotDigest: complete.snapshotDigest,
+    mode: "search",
+    query: "DenseRenderer",
+  });
+  assert.equal(search.ok, true, JSON.stringify(search));
+  assert.ok(search.results.nodes.some((result) => result.node.id === classNode.id));
+  const explanation = await value.runtime.explainEdge({
+    graphId: complete.graphId,
+    expectedSnapshotDigest: complete.snapshotDigest,
+    edgeId: callEdge.id,
+  });
+  assert.equal(explanation.ok, true, JSON.stringify(explanation));
+  assert.equal(explanation.edge.source, methodNode.id);
+  assert.equal(explanation.edge.target, callNode.id);
+  assert.equal(explanation.evidence.excerpt, "runtimeCall");
+  assert.equal(explanation.evidence.excerptHash, sha256("runtimeCall"));
+
+  const pointerBeforeFailure = await fs.readFile(graphPointer, "utf8");
+  const objectsBeforeFailure = (await storedObjects(graphPointer))
+    .map((object) => JSON.stringify(object))
+    .sort();
+  await fs.writeFile(baselinePath, "# Changed before rollback\n");
+  await fs.writeFile(bundlePath, `${denseSource}\nvoid 0;\n`);
+  const operationLimitedRuntime = createKnowledgeGraphRuntime({
+    knowgrphRoot: value.base,
+    allowedRoots: [value.corpusRoot],
+    outputRoot: value.outputRoot,
+    maxParserOperations: 1_000,
+  });
+  const failed = await operationLimitedRuntime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+  });
+  assert.equal(failed.ok, false);
+  assert.equal(failed.error.code, "parser_operation_limit_exceeded");
+  assert.equal(failed.error.details.sourcePath, "z-dist/dense-runtime.bundle.js");
+  assert.equal(failed.error.details.attemptedOperations, 1_001);
+  assert.equal(failed.error.details.maxOperations, 1_000);
+  assert.equal(await fs.readFile(graphPointer, "utf8"), pointerBeforeFailure);
+  const objectsAfterFailure = (await storedObjects(graphPointer))
+    .map((object) => JSON.stringify(object))
+    .sort();
+  assert.deepEqual(objectsAfterFailure, objectsBeforeFailure);
+
+  const limited = await operationLimitedRuntime.ingest({
+    rootPath: value.corpusRoot,
+    strict: false,
+  });
+  assert.equal(limited.ok, true, JSON.stringify(limited));
+  assert.equal(limited.complete, false);
+  assert.deepEqual(
+    limited.completeness.incompleteSources,
+    ["z-dist/dense-runtime.bundle.js"],
+  );
+  const limitedSnapshot = await readKnowledgeGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: limited.graphId,
+  });
+  const limitedIndex = await readKnowledgeGraphRepositoryIndex(
+    limitedSnapshot,
+    limitedSnapshot.manifest.repositories[0],
+  );
+  const limitedEntry = limitedIndex.sources.find(
+    (source) => source.sourcePath === "z-dist/dense-runtime.bundle.js",
+  );
+  const limitedShard = await readKnowledgeGraphSourceShard(limitedSnapshot, limitedEntry);
+  assert.equal(limitedShard.status, "limited");
+  assert.deepEqual(
+    limitedShard.diagnostics.map((diagnostic) => diagnostic.code),
+    ["parser_operation_limit_exceeded"],
+  );
+  assert.equal(limitedShard.nodes.length, 1);
+  assert.equal(limitedShard.nodes[0].type, "SourceFile");
+  assert.equal(limitedShard.edges.length, 0);
 });
 
 test("strict ingest persists an oversized source graph as bounded complete parts", async (t) => {

@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 
-import { buildEvidence, makeEdge, makeNode, stableEntityId } from "./contract.mjs";
+import { makeEdge, makeNode, stableEntityId } from "./contract.mjs";
 
 const require = createRequire(import.meta.url);
 let typescript = null;
@@ -12,7 +12,7 @@ try {
 }
 
 export const TYPESCRIPT_PARSER_ID = "local-typescript-ast";
-const TYPESCRIPT_WRAPPER_VERSION = "1.0.0";
+const TYPESCRIPT_WRAPPER_VERSION = "1.1.0";
 const TYPESCRIPT_RUNTIME_VERSION = String(typescript?.version || "unavailable").replace(/[^A-Za-z0-9._-]+/g, "-");
 export const TYPESCRIPT_PARSER_VERSION = `${TYPESCRIPT_WRAPPER_VERSION}+typescript-${TYPESCRIPT_RUNTIME_VERSION}`;
 
@@ -54,32 +54,58 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
   const ts = typescript;
   const sourceFile = ts.createSourceFile(sourcePath, text, ts.ScriptTarget.Latest, true, scriptKindForPath(sourcePath));
   options.checkpoint?.("typescript.ast-created");
-  const nodes = new Map([[sourceId, sourceNode]]);
+  const nodes = new Map();
   const edges = new Map();
-  const declarationOwner = new WeakMap();
 
   const addNode = (node) => {
     options.checkpoint?.("typescript.nodes");
-    if (!nodes.has(node.id)) nodes.set(node.id, node);
+    if (!nodes.has(node.id)) {
+      options.retainRecord?.("node", "typescript.nodes");
+      nodes.set(node.id, node);
+    }
     return node.id;
   };
-  const evidenceFor = (astNode, ruleId, explanation, confidence = "high") => buildEvidence({
-    sourcePath,
-    sourceDigest: contentHash,
-    text,
-    startOffset: astNode.getStart(sourceFile),
-    endOffset: astNode.getEnd(),
+  const evidenceFor = (
+    astNode,
     ruleId,
     explanation,
-    parserId: TYPESCRIPT_PARSER_ID,
-    parserVersion: TYPESCRIPT_PARSER_VERSION,
-    confidence,
-  });
+    confidence = "high",
+    startOffset = astNode.getStart(sourceFile),
+  ) => {
+    const endOffset = astNode.getEnd();
+    const start = sourceFile.getLineAndCharacterOfPosition(startOffset);
+    const end = sourceFile.getLineAndCharacterOfPosition(endOffset);
+    return {
+      sourcePath,
+      sourceDigest: contentHash,
+      lineStart: start.line + 1,
+      lineEnd: end.line + 1,
+      columnStart: start.character + 1,
+      columnEnd: end.character + 1,
+      excerpt: text.slice(startOffset, Math.min(endOffset, startOffset + 320)),
+      ruleId,
+      explanation,
+      parserId: TYPESCRIPT_PARSER_ID,
+      parserVersion: TYPESCRIPT_PARSER_VERSION,
+      confidence,
+    };
+  };
   const addEdge = ({ source, target, label, astNode, ruleId, explanation, confidence = "high" }) => {
     options.checkpoint?.("typescript.edges");
-    const edge = makeEdge({ source, target, label, evidence: evidenceFor(astNode, ruleId, explanation, confidence), anchor: String(astNode.getStart(sourceFile)) });
-    edges.set(edge.id, edge);
+    const startOffset = astNode.getStart(sourceFile);
+    const edge = makeEdge({
+      source,
+      target,
+      label,
+      evidence: evidenceFor(astNode, ruleId, explanation, confidence, startOffset),
+      anchor: String(startOffset),
+    });
+    if (!edges.has(edge.id)) {
+      options.retainRecord?.("edge", "typescript.edges");
+      edges.set(edge.id, edge);
+    }
   };
+  addNode(sourceNode);
   const identifierText = (nameNode, fallback) => {
     if (!nameNode) return fallback;
     if (ts.isIdentifier(nameNode) || ts.isStringLiteral(nameNode) || ts.isNumericLiteral(nameNode)) return nameNode.text;
@@ -100,8 +126,8 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
     return null;
   }
 
-  function visitDeclarations(node, ownerId, scope) {
-    options.checkpoint?.("typescript.declaration-walk");
+  function visitStructure(node, ownerId, scope) {
+    options.checkpoint?.("typescript.ast-walk");
     const descriptor = declarationDescriptor(node);
     let nextOwner = ownerId;
     let nextScope = scope;
@@ -127,18 +153,9 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
         ruleId: "typescript.declaration.ast",
         explanation: `${ownerId === sourceId ? sourcePath : "The enclosing declaration"} declares ${descriptor.kind} ${qualifiedName}.`,
       });
-      declarationOwner.set(node, id);
       nextOwner = id;
       nextScope = [...scope, descriptor.name];
     }
-    ts.forEachChild(node, (child) => visitDeclarations(child, nextOwner, nextScope));
-  }
-  visitDeclarations(sourceFile, sourceId, []);
-
-  function visitRelations(node, ownerId) {
-    options.checkpoint?.("typescript.relation-walk");
-    const declaredOwner = declarationOwner.get(node);
-    const nextOwner = declaredOwner || ownerId;
     if (ts.isImportDeclaration(node) && ts.isStringLiteralLike(node.moduleSpecifier)) {
       const moduleName = node.moduleSpecifier.text;
       const dependencyId = stableEntityId("CodeDependency", sourcePath, `${moduleName}:${node.getStart(sourceFile)}`);
@@ -166,12 +183,13 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
       addNode(makeNode({ id: referenceId, label: callName, type: "CodeCallReference", sourcePath, properties: { "code:referenceKind": "call" } }));
       addEdge({ source: nextOwner, target: referenceId, label: "calls", astNode: node.expression, ruleId: "typescript.call.ast", explanation: `${nextOwner === sourceId ? sourcePath : "The enclosing declaration"} calls ${callName}.` });
     }
-    ts.forEachChild(node, (child) => visitRelations(child, nextOwner));
+    ts.forEachChild(node, (child) => visitStructure(child, nextOwner, nextScope));
   }
-  visitRelations(sourceFile, sourceId);
+  visitStructure(sourceFile, sourceId, []);
 
   const diagnostics = (sourceFile.parseDiagnostics || []).map((diagnostic) => {
     options.checkpoint?.("typescript.diagnostics");
+    options.retainRecord?.("diagnostic", "typescript.diagnostics");
     const start = Number.isFinite(diagnostic.start) ? diagnostic.start : 0;
     const position = sourceFile.getLineAndCharacterOfPosition(start);
     return {

@@ -48,6 +48,7 @@ export const PDF_PARSER_VERSION = "1.0.0";
 const MAX_PARSER_NODES = 100_000;
 const MAX_PARSER_EDGES = 200_000;
 const MAX_PARSER_RECORDS = 250_000;
+const MAX_PARSER_OPERATIONS = 2_000_000;
 
 const boundedParserLimit = (value, fallback, maximum) => {
   const number = Number(value);
@@ -60,35 +61,81 @@ function boundedParserOptions(source, options) {
     maxEdges: boundedParserLimit(options.maxParserEdges, MAX_PARSER_EDGES, MAX_PARSER_EDGES),
     maxRecords: boundedParserLimit(options.maxParserRecords, MAX_PARSER_RECORDS, MAX_PARSER_RECORDS),
   };
-  let records = 0;
-  const checkpoint = (stage = "parser") => {
-    records += 1;
-    if (records > limits.maxRecords) {
-      throw new KnowledgeGraphError("parser_record_limit_exceeded", `Parser work exceeded its record limit for ${source.relativePath}.`, {
+  const maxOperations = boundedParserLimit(
+    options.maxParserOperations,
+    MAX_PARSER_OPERATIONS,
+    MAX_PARSER_OPERATIONS,
+  );
+  let operations = 0;
+  const retained = { nodes: 0, edges: 0, diagnostics: 0 };
+  const retainedRecordCount = () => retained.nodes + retained.edges + retained.diagnostics;
+  const retainRecord = (kind, stage = "parser-output") => {
+    const key = kind === "node" ? "nodes" : kind === "edge" ? "edges" : "diagnostics";
+    retained[key] += 1;
+    const attemptedRecords = retainedRecordCount();
+    if (retained.nodes > limits.maxNodes
+      || retained.edges > limits.maxEdges
+      || attemptedRecords > limits.maxRecords) {
+      throw new KnowledgeGraphError("parser_record_limit_exceeded", `Parser output exceeded its graph limits for ${source.relativePath}.`, {
         sourcePath: source.relativePath,
-        attemptedRecords: records,
+        attemptedRecords,
+        nodes: retained.nodes,
+        edges: retained.edges,
+        diagnostics: retained.diagnostics,
+        stage,
+        ...limits,
+      });
+    }
+  };
+  const checkpoint = (stage = "parser") => {
+    operations += 1;
+    if (operations > maxOperations) {
+      throw new KnowledgeGraphError("parser_operation_limit_exceeded", `Parser traversal exceeded its operation limit for ${source.relativePath}.`, {
+        sourcePath: source.relativePath,
+        attemptedOperations: operations,
+        maxOperations,
+        retainedRecords: retainedRecordCount(),
+        nodes: retained.nodes,
+        edges: retained.edges,
+        diagnostics: retained.diagnostics,
         ...limits,
       });
     }
     options.checkpoint?.(stage);
-    if (records % 128 === 0) {
+    if (operations % 128 === 0) {
       checkKnowledgeGraphBudget({
         abortSignal: options.abortSignal,
         deadline: options.deadline,
         stage,
-        details: { sourcePath: source.relativePath, records },
+        details: { sourcePath: source.relativePath, operations },
       });
     }
   };
-  return { ...options, ...limits, limits, checkpoint };
+  return {
+    ...options,
+    ...limits,
+    maxOperations,
+    limits,
+    checkpoint,
+    retainRecord,
+  };
 }
 
 function assertParserFragmentBounds(source, fragment, options) {
-  if (fragment.nodes.length > options.maxNodes || fragment.edges.length > options.maxEdges) {
+  const nodes = fragment.nodes.length;
+  const edges = fragment.edges.length;
+  const diagnostics = Array.isArray(fragment.diagnostics) ? fragment.diagnostics.length : 0;
+  const records = nodes + edges + diagnostics;
+  if (nodes > options.maxNodes
+    || edges > options.maxEdges
+    || records > options.maxRecords) {
     throw new KnowledgeGraphError("parser_record_limit_exceeded", `Parser output exceeded its graph limits for ${source.relativePath}.`, {
       sourcePath: source.relativePath,
-      nodes: fragment.nodes.length,
-      edges: fragment.edges.length,
+      attemptedRecords: records,
+      records,
+      nodes,
+      edges,
+      diagnostics,
       maxNodes: options.maxNodes,
       maxEdges: options.maxEdges,
       maxRecords: options.maxRecords,
@@ -130,13 +177,19 @@ function sourceOnlyFragment(source, descriptor, diagnostics = source.diagnostics
   };
 }
 
-export function parserLimitFragmentForSource(source, options = {}) {
+export function parserLimitFragmentForSource(source, options = {}, limitError = null) {
   const descriptor = parserDescriptorForSource(source, options);
+  const code = limitError?.code === "parser_operation_limit_exceeded"
+    ? "parser_operation_limit_exceeded"
+    : "parser_record_limit_exceeded";
+  const message = code === "parser_operation_limit_exceeded"
+    ? `Structural facts were omitted after the parser operation bound was reached for ${source.relativePath}.`
+    : `Structural facts were omitted after the parser record bound was reached for ${source.relativePath}.`;
   return {
     ...sourceOnlyFragment(source, descriptor, [{
-      code: "parser_record_limit_exceeded",
+      code,
       sourcePath: source.relativePath,
-      message: `Structural facts were omitted after the parser bound was reached for ${source.relativePath}.`,
+      message,
     }]),
     nodes: [sourceNodeFor(source, descriptor.parserId, descriptor.parserVersion, descriptor.fidelity, {
       "corpus:sourceStatus": "limited",
@@ -173,6 +226,34 @@ export function parserDescriptorForSource(source, options = {}) {
     return { parserId: PDF_PARSER_ID, parserVersion: `${PDF_PARSER_VERSION}+${converterVersion}`, fidelity: options.pdfConverter ? "native-converted-structure" : "pending" };
   }
   return { parserId: SOURCE_INVENTORY_PARSER_ID, parserVersion: SOURCE_INVENTORY_PARSER_VERSION, fidelity: "inventory-only" };
+}
+
+function createRetainedGraph(options, sourceNode, stagePrefix) {
+  const nodes = new Map();
+  const edges = new Map();
+  const addNode = (node, stage = `${stagePrefix}.nodes`) => {
+    if (!nodes.has(node.id)) {
+      options.retainRecord?.("node", stage);
+      nodes.set(node.id, node);
+    }
+    return node.id;
+  };
+  const addEdge = (edge, stage = `${stagePrefix}.edges`) => {
+    if (!edges.has(edge.id)) {
+      options.retainRecord?.("edge", stage);
+      edges.set(edge.id, edge);
+    }
+    return edge.id;
+  };
+  addNode(sourceNode, `${stagePrefix}.source`);
+  return { nodes, edges, addNode, addEdge };
+}
+
+function retainDiagnostics(options, diagnostics, stage) {
+  for (let index = 0; index < diagnostics.length; index += 1) {
+    options.retainRecord?.("diagnostic", stage);
+  }
+  return diagnostics;
 }
 
 function runPythonAstFacts({ pythonBin, sourcePath, text, timeoutMs = 10_000, abortSignal }) {
@@ -244,8 +325,11 @@ async function parsePythonSource(source, options) {
   const sourceNode = sourceNodeFor(source, parsedDescriptor.parserId, parsedDescriptor.parserVersion, parsedDescriptor.fidelity, {
     "code:pythonVersionInfo": versionInfo,
   });
-  const nodes = new Map([[sourceNode.id, sourceNode]]);
-  const edges = new Map();
+  const { nodes, edges, addNode, addEdge } = createRetainedGraph(
+    options,
+    sourceNode,
+    "python",
+  );
   const declarationIdByName = new Map();
   const evidenceFor = (fact, ruleId, explanation, confidence = "high") => buildEvidence({
     sourcePath: source.relativePath,
@@ -261,8 +345,6 @@ async function parsePythonSource(source, options) {
     parserVersion: parsedDescriptor.parserVersion,
     confidence,
   });
-  const addNode = (node) => { if (!nodes.has(node.id)) nodes.set(node.id, node); return node.id; };
-  const addEdge = (edge) => { edges.set(edge.id, edge); };
   for (const fact of facts.declarations || []) {
     options.checkpoint("python.declarations");
     const type = fact.kind === "class" ? "CodeClass" : fact.kind === "method" ? "CodeMethod" : "CodeFunction";
@@ -297,15 +379,24 @@ async function parsePythonSource(source, options) {
     addNode(makeNode({ id, label: fact.target, type: "CodeReference", sourcePath: source.relativePath, properties: { "code:referenceKind": "extends" } }));
     addEdge(makeEdge({ source: owner, target: id, label: "extends", evidence: evidenceFor(fact, "python.extends.ast", `${fact.owner} extends ${fact.target}.`) }));
   }
-  const diagnostics = (facts.diagnostics || []).map((diagnostic) => ({ ...diagnostic, sourcePath: source.relativePath }));
+  const diagnostics = (facts.diagnostics || []).map((diagnostic) => {
+    options.retainRecord?.("diagnostic", "python.diagnostics");
+    return {
+      ...diagnostic,
+      sourcePath: source.relativePath,
+    };
+  });
   return { parserId: parsedDescriptor.parserId, parserVersion: parsedDescriptor.parserVersion, nodes: [...nodes.values()], edges: [...edges.values()], diagnostics, status: diagnostics.length ? "partial" : "parsed" };
 }
 
 function parseMarkdownStructure(source, descriptor, markdownText, extraSourceProperties = {}, options = {}) {
   const adaptedSource = { ...source, text: markdownText };
   const sourceNode = sourceNodeFor(adaptedSource, descriptor.parserId, descriptor.parserVersion, descriptor.fidelity, extraSourceProperties);
-  const nodes = new Map([[sourceNode.id, sourceNode]]);
-  const edges = new Map();
+  const { nodes, edges, addNode, addEdge } = createRetainedGraph(
+    options,
+    sourceNode,
+    "markdown",
+  );
   const headingStack = [];
   const occurrenceByKey = new Map();
   const lines = String(markdownText || "").split("\n");
@@ -334,9 +425,9 @@ function parseMarkdownStructure(source, descriptor, markdownText, extraSourcePro
       occurrenceByKey.set(occurrenceKey, occurrence);
       const id = stableEntityId("DocumentSection", source.relativePath, `${occurrenceKey}:${occurrence}`);
       const pageMatch = /^page\s+(\d+)\b/i.exec(label);
-      nodes.set(id, makeNode({ id, label, type: "DocumentSection", sourcePath: source.relativePath, properties: { "doc:headingLevel": level, "doc:headingPath": [...headingStack.map((entry) => entry.label), label].join(" / "), "corpus:lineStart": lineNumber, ...(pageMatch ? { "pdf:page": Number(pageMatch[1]) } : {}) } }));
+      addNode(makeNode({ id, label, type: "DocumentSection", sourcePath: source.relativePath, properties: { "doc:headingLevel": level, "doc:headingPath": [...headingStack.map((entry) => entry.label), label].join(" / "), "corpus:lineStart": lineNumber, ...(pageMatch ? { "pdf:page": Number(pageMatch[1]) } : {}) } }), "markdown.heading-nodes");
       const edge = makeEdge({ source: parent, target: id, label: "containsSection", evidence: evidenceFor(line, lineNumber, 1, line.length + 1, "markdown.heading.structure", `${parent === sourceNode.id ? source.relativePath : "The parent section"} contains heading ${label}.`) });
-      edges.set(edge.id, edge);
+      addEdge(edge, "markdown.heading-edges");
       headingStack.push({ id, level, label, ...(pageMatch ? { page: Number(pageMatch[1]) } : {}) });
     }
     const linkPattern = /(?<!!)\[([^\]]+)\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
@@ -346,10 +437,10 @@ function parseMarkdownStructure(source, descriptor, markdownText, extraSourcePro
       const label = match[1].trim();
       const target = match[2].trim();
       const id = stableEntityId("DocumentLinkReference", source.relativePath, `${target}:${lineNumber}:${match.index + 1}`);
-      nodes.set(id, makeNode({ id, label: label || target, type: "DocumentLinkReference", sourcePath: source.relativePath, properties: { "doc:target": target, "corpus:lineStart": lineNumber } }));
+      addNode(makeNode({ id, label: label || target, type: "DocumentLinkReference", sourcePath: source.relativePath, properties: { "doc:target": target, "corpus:lineStart": lineNumber } }), "markdown.link-nodes");
       const owner = headingStack.at(-1)?.id || sourceNode.id;
       const edge = makeEdge({ source: owner, target: id, label: "linksTo", evidence: evidenceFor(line, lineNumber, match.index + 1, match.index + match[0].length + 1, "markdown.link.structure", `${owner === sourceNode.id ? source.relativePath : "The current section"} links to ${target}.`) });
-      edges.set(edge.id, edge);
+      addEdge(edge, "markdown.link-edges");
     }
     if (!heading && line.trim()) {
       const leading = line.search(/\S/);
@@ -360,7 +451,7 @@ function parseMarkdownStructure(source, descriptor, markdownText, extraSourcePro
         const owner = headingStack.at(-1)?.id || sourceNode.id;
         const id = stableEntityId("DocumentText", source.relativePath, `${lineNumber}:${chunkIndex}:${sha256(chunk)}`);
         const page = [...headingStack].reverse().find((entry) => Number.isInteger(entry.page))?.page;
-        nodes.set(id, makeNode({
+        addNode(makeNode({
           id,
           label: chunk,
           type: "DocumentText",
@@ -371,7 +462,7 @@ function parseMarkdownStructure(source, descriptor, markdownText, extraSourcePro
             "corpus:lineStart": lineNumber,
             ...(Number.isInteger(page) ? { "pdf:page": page } : {}),
           },
-        }));
+        }), "markdown.text-nodes");
         const edge = makeEdge({
           source: owner,
           target: id,
@@ -379,11 +470,19 @@ function parseMarkdownStructure(source, descriptor, markdownText, extraSourcePro
           evidence: evidenceFor(chunk, lineNumber, leading + offset + 1, leading + offset + chunk.length + 1, "markdown.text.structure", `${owner === sourceNode.id ? source.relativePath : "The current section"} contains this locally extracted text unit.`),
           anchor: `${lineNumber}:${chunkIndex}`,
         });
-        edges.set(edge.id, edge);
+        addEdge(edge, "markdown.text-edges");
       }
     }
   }
-  const diagnostics = nodes.size > 1 ? [] : [{ code: "markdown_structure_not_found", sourcePath: source.relativePath, message: `No headings, links, or bounded text units were found in ${source.relativePath}.` }];
+  const diagnostics = retainDiagnostics(
+    options,
+    nodes.size > 1 ? [] : [{
+      code: "markdown_structure_not_found",
+      sourcePath: source.relativePath,
+      message: `No headings, links, or bounded text units were found in ${source.relativePath}.`,
+    }],
+    "markdown.diagnostics",
+  );
   return { parserId: descriptor.parserId, parserVersion: descriptor.parserVersion, nodes: [...nodes.values()], edges: [...edges.values()], diagnostics, status: "parsed" };
 }
 
@@ -394,8 +493,11 @@ function parseJsonConfigSource(source, options) {
   const ts = typescript;
   const sourceFile = ts.parseJsonText(source.relativePath, source.text || "");
   const rootExpression = sourceFile.statements?.[0]?.expression;
-  const nodes = new Map([[sourceNode.id, sourceNode]]);
-  const edges = new Map();
+  const { nodes, edges, addNode, addEdge } = createRetainedGraph(
+    options,
+    sourceNode,
+    "json",
+  );
   const sensitiveKey = /(?:secret|token|password|credential|private.?key|api.?key)/i;
   const evidenceFor = (node, explanation, excerpt = undefined) => buildEvidence({ sourcePath: source.relativePath, sourceDigest: source.contentHash, text: source.text, startOffset: node.getStart(sourceFile), endOffset: node.getEnd(), ...(excerpt === undefined ? {} : { excerpt }), ruleId: "json.config-key.ast", explanation, parserId: descriptor.parserId, parserVersion: descriptor.parserVersion });
   const scalarType = (node) => {
@@ -420,12 +522,12 @@ function parseJsonConfigSource(source, options) {
         const properties = { "config:key": String(key), "config:keyPath": nextPath.join("."), "corpus:lineStart": sourceFile.getLineAndCharacterOfPosition(property.getStart(sourceFile)).line + 1 };
         if (redacted) properties["config:redacted"] = true;
         if (valueType) properties["config:valueType"] = valueType;
-        nodes.set(id, makeNode({ id, label: nextPath.join("."), type: "ConfigKey", sourcePath: source.relativePath, properties }));
+        addNode(makeNode({ id, label: nextPath.join("."), type: "ConfigKey", sourcePath: source.relativePath, properties }), "json.property-nodes");
         const observedKeyExcerpt = redacted
           ? `${String(key)}=<redacted>`
           : `${property.name?.getText(sourceFile).slice(0, 160) || String(key)}: <omitted>`;
         const edge = makeEdge({ source: parentId, target: id, label: "hasConfigKey", evidence: evidenceFor(property, `${parentId === sourceNode.id ? source.relativePath : pathParts.join(".")} contains configuration key ${nextPath.join(".")}.`, observedKeyExcerpt) });
-        edges.set(edge.id, edge);
+        addEdge(edge, "json.property-edges");
         visitValue(property.initializer, id, nextPath, redacted);
       }
     } else if (ts.isArrayLiteralExpression(node)) {
@@ -433,15 +535,16 @@ function parseJsonConfigSource(source, options) {
         options.checkpoint("json.items");
         const nextPath = [...pathParts, `[${index}]`];
         const id = stableEntityId("ConfigItem", source.relativePath, nextPath.join("."));
-        nodes.set(id, makeNode({ id, label: nextPath.join("."), type: "ConfigItem", sourcePath: source.relativePath, properties: { "config:index": index, "config:keyPath": nextPath.join(".") } }));
+        addNode(makeNode({ id, label: nextPath.join("."), type: "ConfigItem", sourcePath: source.relativePath, properties: { "config:index": index, "config:keyPath": nextPath.join(".") } }), "json.item-nodes");
         const edge = makeEdge({ source: parentId, target: id, label: "hasConfigItem", evidence: evidenceFor(element, `${pathParts.join(".") || source.relativePath} contains array item ${index}.`, `[${index}]`) });
-        edges.set(edge.id, edge);
+        addEdge(edge, "json.item-edges");
         visitValue(element, id, nextPath, sensitiveAncestor);
       });
     }
   }
   visitValue(rootExpression, sourceNode.id, []);
   const diagnostics = (sourceFile.parseDiagnostics || []).map((diagnostic) => {
+    options.retainRecord?.("diagnostic", "json.diagnostics");
     const start = Number.isFinite(diagnostic.start) ? diagnostic.start : 0;
     const position = sourceFile.getLineAndCharacterOfPosition(start);
     return { code: "json_syntax_error", sourcePath: source.relativePath, lineStart: position.line + 1, columnStart: position.character + 1, message: ts.flattenDiagnosticMessageText(diagnostic.messageText, " ") };
@@ -452,8 +555,11 @@ function parseJsonConfigSource(source, options) {
 function parseStructuralConfigSource(source, options) {
   const descriptor = parserDescriptorForSource(source, options);
   const sourceNode = sourceNodeFor(source, descriptor.parserId, descriptor.parserVersion, descriptor.fidelity);
-  const nodes = new Map([[sourceNode.id, sourceNode]]);
-  const edges = new Map();
+  const { nodes, edges, addNode, addEdge } = createRetainedGraph(
+    options,
+    sourceNode,
+    "config",
+  );
   const stack = [];
   const occurrences = new Map();
   const sensitiveKey = /(?:secret|token|password|credential|private.?key|api.?key)/i;
@@ -478,7 +584,7 @@ function parseStructuralConfigSource(source, options) {
     occurrences.set(keyPath, occurrence);
     const id = stableEntityId("ConfigKey", source.relativePath, `${keyPath}:${occurrence}`);
     const redacted = sensitiveKey.test(keyPath) || sensitiveKey.test(key);
-    nodes.set(id, makeNode({ id, label: keyPath, type: block ? "ConfigBlock" : section ? "ConfigSection" : docker ? "ConfigInstruction" : "ConfigKey", sourcePath: source.relativePath, properties: { "config:key": key, "config:keyPath": keyPath, "corpus:lineStart": index + 1, ...(redacted ? { "config:redacted": true } : {}) } }));
+    addNode(makeNode({ id, label: keyPath, type: block ? "ConfigBlock" : section ? "ConfigSection" : docker ? "ConfigInstruction" : "ConfigKey", sourcePath: source.relativePath, properties: { "config:key": key, "config:keyPath": keyPath, "corpus:lineStart": index + 1, ...(redacted ? { "config:redacted": true } : {}) } }), "config.entry-nodes");
     const evidenceExcerpt = section
       ? `[${key}]`
       : block
@@ -488,10 +594,18 @@ function parseStructuralConfigSource(source, options) {
           : `${key}=<omitted>`;
     const evidence = buildEvidence({ sourcePath: source.relativePath, sourceDigest: source.contentHash, text: line, lineStart: index + 1, lineEnd: index + 1, columnStart: indent + 1, columnEnd: line.length + 1, excerpt: evidenceExcerpt, ruleId: "config.entry.structure", explanation: `${parent === sourceNode.id ? source.relativePath : parentPath} contains configuration entry ${keyPath}.`, parserId: descriptor.parserId, parserVersion: descriptor.parserVersion, confidence: "medium" });
     const edge = makeEdge({ source: parent, target: id, label: block ? "declaresConfigBlock" : "hasConfigKey", evidence });
-    edges.set(edge.id, edge);
+    addEdge(edge, "config.entry-edges");
     if (section || block || /:\s*(?:#.*)?$/.test(trimmed)) stack.push({ id, indent, keyPath, section: Boolean(section) });
   }
-  const diagnostics = nodes.size > 1 ? [] : [{ code: "config_structure_not_found", sourcePath: source.relativePath, message: `No structural configuration entries were found in ${source.relativePath}.` }];
+  const diagnostics = retainDiagnostics(
+    options,
+    nodes.size > 1 ? [] : [{
+      code: "config_structure_not_found",
+      sourcePath: source.relativePath,
+      message: `No structural configuration entries were found in ${source.relativePath}.`,
+    }],
+    "config.diagnostics",
+  );
   return { parserId: descriptor.parserId, parserVersion: descriptor.parserVersion, nodes: [...nodes.values()], edges: [...edges.values()], diagnostics, status: "parsed" };
 }
 
@@ -535,9 +649,23 @@ async function parsePdfSource(source, options) {
       "pdf:pageCount": pageCount,
       "pdf:textLineCount": textLineCount,
     }, options);
-    return { ...fragment, diagnostics: [...fragment.diagnostics, ...((converted && typeof converted === "object" && Array.isArray(converted.diagnostics)) ? converted.diagnostics : [])] };
+    const converterDiagnostics = converted
+      && typeof converted === "object"
+      && Array.isArray(converted.diagnostics)
+      ? converted.diagnostics
+      : [];
+    retainDiagnostics(options, converterDiagnostics, "pdf.converter-diagnostics");
+    return {
+      ...fragment,
+      diagnostics: [...fragment.diagnostics, ...converterDiagnostics],
+    };
   } catch (error) {
-    if (error instanceof KnowledgeGraphError && ["aborted", "max_duration_exceeded", "parser_record_limit_exceeded"].includes(error.code)) throw error;
+    if (error instanceof KnowledgeGraphError && [
+      "aborted",
+      "max_duration_exceeded",
+      "parser_operation_limit_exceeded",
+      "parser_record_limit_exceeded",
+    ].includes(error.code)) throw error;
     return { ...sourceOnlyFragment(source, descriptor), diagnostics: [{ code: "pdf_conversion_failed", sourcePath: source.relativePath, message: error.message }], status: "error" };
   }
 }
@@ -556,6 +684,7 @@ const PARSER_DISPATCH = compileParserDispatch(SOURCE_PARSER_REGISTRY, {
     byteSize: source.byteSize,
     checkpoint: options.checkpoint,
     limits: options.limits,
+    retainRecord: options.retainRecord,
   }),
   pdf: parsePdfSource,
   inventory: (source, options) => sourceOnlyFragment(source, parserDescriptorForSource(source, options)),

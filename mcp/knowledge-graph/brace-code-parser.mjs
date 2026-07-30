@@ -294,6 +294,7 @@ export function parseBraceCodeSource({
   maxNodes,
   maxEdges,
   maxRecords,
+  retainRecord = () => {},
 }) {
   const parserId = BRACE_CODE_PARSER_ID;
   const parserVersion = BRACE_CODE_PARSER_VERSION;
@@ -315,8 +316,21 @@ export function parseBraceCodeSource({
       "corpus:parserFidelity": "structural-parser",
     },
   });
-  const nodes = new Map([[sourceId, sourceNode]]);
+  const nodes = new Map();
   const edges = new Map();
+  const addNode = (node, stage) => {
+    if (!nodes.has(node.id)) {
+      retainRecord("node", stage);
+      nodes.set(node.id, node);
+    }
+  };
+  const addEdge = (edge, stage) => {
+    if (!edges.has(edge.id)) {
+      retainRecord("edge", stage);
+      edges.set(edge.id, edge);
+    }
+  };
+  addNode(sourceNode, "brace-code.source");
   const masked = maskCommentsAndStrings(text, checkpoint);
   const declarations = declarationMatches(masked, {
     checkpoint,
@@ -347,13 +361,13 @@ export function parseBraceCodeSource({
     const qualifiedName = parent ? `${parent.name}.${declaration.name}` : declaration.name;
     const id = stableEntityId(declaration.type, sourcePath, `${qualifiedName}:${declaration.start}`);
     declarationIds.set(declaration, id);
-    nodes.set(id, makeNode({
+    addNode(makeNode({
       id,
       label: declaration.name,
       type: declaration.type,
       sourcePath,
       properties: { "code:kind": declaration.kind, "code:qualifiedName": qualifiedName },
-    }));
+    }), "brace-code.declaration-nodes");
     const owner = parent ? declarationIds.get(parent) : sourceId;
     const edge = makeEdge({
       source: owner || sourceId,
@@ -366,7 +380,7 @@ export function parseBraceCodeSource({
         `${parent?.name || sourcePath} declares ${declaration.kind} ${qualifiedName}.`,
       ),
     });
-    edges.set(edge.id, edge);
+    addEdge(edge, "brace-code.declaration-edges");
   }
   const remainingRecords = Math.max(0, recordLimit - declarations.length);
   const dependencies = dependencyMatches(text, {
@@ -380,20 +394,20 @@ export function parseBraceCodeSource({
     runCheckpoint(checkpoint, "brace-code.dependency-records", index);
     const dependency = dependencies[index];
     const id = stableEntityId("CodeDependency", sourcePath, `${dependency.module}:${dependency.start}`);
-    nodes.set(id, makeNode({
+    addNode(makeNode({
       id,
       label: dependency.module,
       type: "CodeDependency",
       sourcePath,
       properties: { "code:module": dependency.module },
-    }));
+    }), "brace-code.dependency-nodes");
     const edge = makeEdge({
       source: sourceId,
       target: id,
       label: "imports",
       evidence: evidence(dependency.start, dependency.end, "brace-code.import.structure", `${sourcePath} imports ${dependency.module}.`),
     });
-    edges.set(edge.id, edge);
+    addEdge(edge, "brace-code.dependency-edges");
   }
   if (nodes.size > parserLimits.maxNodes) throwRecordLimit(sourcePath, parserLimits, declarations.length + dependencies.length, "node");
   if (edges.size > parserLimits.maxEdges) throwRecordLimit(sourcePath, parserLimits, declarations.length + dependencies.length, "edge");
@@ -401,5 +415,8 @@ export function parseBraceCodeSource({
   const diagnostics = declarations.length || edges.size
     ? []
     : [{ code: "brace_code_structure_not_found", sourcePath, message: `No bounded declaration or dependency structure was found in ${sourcePath}.` }];
+  if (diagnostics.length) {
+    retainRecord("diagnostic", "brace-code.diagnostics");
+  }
   return { parserId, parserVersion, nodes: [...nodes.values()], edges: [...edges.values()], diagnostics, status: "parsed" };
 }

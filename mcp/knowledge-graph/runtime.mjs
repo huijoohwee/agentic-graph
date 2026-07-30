@@ -372,8 +372,11 @@ async function ingestResolvedTransaction(
         });
       } catch (error) {
         if (strict || !(error instanceof KnowledgeGraphError)
-          || error.code !== "parser_record_limit_exceeded") throw error;
-        fragment = parserLimitFragmentForSource(hydrated, deps);
+          || ![
+            "parser_operation_limit_exceeded",
+            "parser_record_limit_exceeded",
+          ].includes(error.code)) throw error;
+        fragment = parserLimitFragmentForSource(hydrated, deps, error);
       }
     }
     parserCheckpoint.force();
@@ -600,6 +603,7 @@ export function createKnowledgeGraphRuntime({
   pdfConverterVersion = "pending",
   pythonBin = process.env.KNOWGRPH_PYTHON || "python3",
   now = Date.now,
+  maxParserOperations,
   maxSourceShardBytes,
   maxSourcePartTargetBytes,
   maxSourceArtifactBytes,
@@ -617,6 +621,7 @@ export function createKnowledgeGraphRuntime({
     pdfConverterVersion,
     pythonBin,
     now,
+    maxParserOperations,
     maxSourceShardBytes,
     maxSourcePartTargetBytes,
     maxSourceArtifactBytes,

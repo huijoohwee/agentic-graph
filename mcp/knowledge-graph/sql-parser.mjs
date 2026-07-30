@@ -104,7 +104,11 @@ function referenceAfter(segment, referenceIndex) {
   return { table: target.name, columns, token: segment[referenceIndex], endToken };
 }
 
-function parseTableDefinitions(tokens, checkpoint = () => {}) {
+function parseTableDefinitions(
+  tokens,
+  checkpoint = () => {},
+  retainRecord = () => {},
+) {
   const tables = [];
   const diagnostics = [];
   for (let index = 0; index < tokens.length - 2; index += 1) {
@@ -117,6 +121,7 @@ function parseTableDefinitions(tokens, checkpoint = () => {}) {
     if (tokens[cursor]?.upper === "IF" && tokens[cursor + 1]?.upper === "NOT" && tokens[cursor + 2]?.upper === "EXISTS") cursor += 3;
     const qualified = readQualifiedName(tokens, cursor);
     if (!qualified.name) {
+      retainRecord("diagnostic", "sql.diagnostics");
       diagnostics.push({ token: tokens[index], message: "CREATE TABLE is missing a table name." });
       continue;
     }
@@ -131,11 +136,13 @@ function parseTableDefinitions(tokens, checkpoint = () => {}) {
       if (token.value === ";" || token.upper === "CREATE") break;
     }
     if (openIndex < 0) {
+      retainRecord("diagnostic", "sql.diagnostics");
       diagnostics.push({ token: tokens[index], message: `CREATE TABLE ${qualified.name} has no column-list opening parenthesis before the statement boundary.` });
       continue;
     }
     const closeIndex = findTableClosingParen(tokens, openIndex, checkpoint);
     if (closeIndex < 0) {
+      retainRecord("diagnostic", "sql.diagnostics");
       diagnostics.push({ token: tokens[index], message: `CREATE TABLE ${qualified.name} has no closing parenthesis before the statement boundary.` });
       continue;
     }
@@ -184,6 +191,7 @@ function analyzeTable(table, checkpoint = () => {}) {
 
 export function parseSqlSource({ sourcePath, text, contentHash, byteSize }, options = {}) {
   const checkpoint = options.checkpoint || (() => {});
+  const retainRecord = options.retainRecord || (() => {});
   checkpoint("sql.start");
   const sourceId = stableEntityId("SourceFile", sourcePath, "source");
   const nodes = new Map();
@@ -201,8 +209,13 @@ export function parseSqlSource({ sourcePath, text, contentHash, byteSize }, opti
       "corpus:parserFidelity": "structural-parser",
     },
   });
+  retainRecord("node", "sql.source");
   nodes.set(sourceId, sourceNode);
-  const parsedDefinitions = parseTableDefinitions(tokenizeSql(text, checkpoint), checkpoint);
+  const parsedDefinitions = parseTableDefinitions(
+    tokenizeSql(text, checkpoint),
+    checkpoint,
+    retainRecord,
+  );
   const tables = parsedDefinitions.tables.map((table) => analyzeTable(table, checkpoint));
   const declaredTableNames = new Set(tables.map((table) => normalizedSqlName(table.name)));
   const declaredColumnNames = new Set(tables.flatMap((table) => table.columns.map((column) => `${normalizedSqlName(table.name)}.${normalizedSqlName(column.name)}`)));
@@ -218,8 +231,19 @@ export function parseSqlSource({ sourcePath, text, contentHash, byteSize }, opti
     parserVersion: SQL_PARSER_VERSION,
     confidence,
   });
-  const addNode = (node) => { if (!nodes.has(node.id)) nodes.set(node.id, node); return node.id; };
-  const addEdge = (edge) => { edges.set(edge.id, edge); };
+  const addNode = (node) => {
+    if (!nodes.has(node.id)) {
+      retainRecord("node", "sql.nodes");
+      nodes.set(node.id, node);
+    }
+    return node.id;
+  };
+  const addEdge = (edge) => {
+    if (!edges.has(edge.id)) {
+      retainRecord("edge", "sql.edges");
+      edges.set(edge.id, edge);
+    }
+  };
   const tableIdFor = (name) => stableEntityId("SqlTable", sourcePath, normalizedSqlName(name));
   const columnIdFor = (tableName, columnName) => stableEntityId("SqlColumn", sourcePath, `${normalizedSqlName(tableName)}.${normalizedSqlName(columnName)}`);
 
@@ -324,6 +348,9 @@ export function parseSqlSource({ sourcePath, text, contentHash, byteSize }, opti
     : tables.length
       ? []
       : [{ code: "sql_schema_not_found", sourcePath, message: `No CREATE TABLE structure was found in ${sourcePath}.` }];
+  if (!malformedDiagnostics.length && !tables.length) {
+    retainRecord("diagnostic", "sql.diagnostics");
+  }
   return {
     parserId: SQL_PARSER_ID,
     parserVersion: SQL_PARSER_VERSION,
