@@ -275,8 +275,12 @@ an explicit `workflow_dispatch`. It does not deploy or mutate an environment:
   the gate is inert pre-wiring and self-activates afterward.
 
 Production deployment is isolated in `.github/workflows/release.yml`. It requires
-an exact verified Dev commit SHA, `confirmation=DEPLOY`, and the protected GitHub
-`production` environment. Pull requests and pushes to `main` cannot invoke it.
+an exact protected `main` SHA and the matching
+`agentic-local-review-candidate/v1` JSON through `workflow_dispatch`. After the
+candidate is verified, `npm run production:authorize` requires the authenticated
+operator to reply exactly `authorize <candidate_digest>` before the protected
+GitHub `production` environment can release it. Pull requests and pushes to
+`main` cannot invoke Production.
 
 ## Rollback
 
