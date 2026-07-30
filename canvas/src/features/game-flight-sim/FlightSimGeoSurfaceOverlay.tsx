@@ -1,5 +1,6 @@
 import React from 'react'
 import { Plane } from 'lucide-react'
+import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import {
   readXrMotionReferenceRuntime,
   subscribeXrMotionReferenceRuntime,
@@ -46,7 +47,7 @@ export function FlightSimGeoSurfaceOverlay() {
   )
   const environment = resolveXrMotionReferenceStage(environmentRuntime.plan.stageId)
   const runtimeController = React.useMemo(readFlightSimStageRuntimeController, [])
-  const [inputElement, setInputElement] = React.useState<HTMLButtonElement | null>(null)
+  const [inputElement, setInputElement] = React.useState<HTMLElement | null>(null)
   const requestPresentationFrame = React.useCallback(() => {
     if (typeof window !== 'undefined') window.requestAnimationFrame(() => undefined)
   }, [])
@@ -92,18 +93,22 @@ export function FlightSimGeoSurfaceOverlay() {
     .join(' ')
   const aircraftHeading = navigation.aircraft.headingDegrees
     + (flight.aircraft.roll * 180 / Math.PI) * 0.35
+  const selectableSurfaceDataAttr = resolveMediaPreviewSelectableDataAttr(true)
 
   return (
-    <section
-      className="pointer-events-none absolute inset-0 z-[45] overflow-hidden"
-      aria-label="Flight Sim Geo overlay"
+    <figure
+      ref={setInputElement}
+      className="pointer-events-auto absolute inset-0 z-[45] m-0 overflow-hidden"
+      aria-label="Flight Sim media over Geo"
+      tabIndex={0}
+      data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
       data-kg-flight-sim-geo-overlay="1"
       data-kg-flight-sim-geo-environment={environment.id}
       data-kg-flight-sim-geography-boundary="not-rendered"
       data-kg-flight-sim-geo-phase={flight.phase}
     >
       <svg
-        className="absolute inset-0 h-full w-full"
+        className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
         role="img"
@@ -147,11 +152,13 @@ export function FlightSimGeoSurfaceOverlay() {
           />
         ))}
       </svg>
-      <output className="absolute left-3 top-28 rounded-full border border-cyan-200/70 bg-slate-950/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-lg backdrop-blur-sm">
+      <figcaption
+        className="pointer-events-auto absolute left-3 top-28 rounded-full border border-cyan-200/70 bg-slate-950/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-lg backdrop-blur-sm"
+        data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
+      >
         Flight on Geo · {environment.label} local stage
-      </output>
+      </figcaption>
       <button
-        ref={setInputElement}
         type="button"
         className="pointer-events-auto absolute grid size-12 place-items-center rounded-full border-2 border-white bg-cyan-600 text-white shadow-[0_0_0_5px_rgba(8,47,73,0.28),0_8px_22px_rgba(8,47,73,0.45)] transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
         style={{
@@ -164,8 +171,8 @@ export function FlightSimGeoSurfaceOverlay() {
         data-kg-flight-sim-geo-aircraft="1"
         data-kg-flight-sim-geo-heading={navigation.aircraft.headingDegrees.toFixed(3)}
       >
-        <Plane className="size-7" aria-hidden="true" />
+        <Plane className="size-7" />
       </button>
-    </section>
+    </figure>
   )
 }
