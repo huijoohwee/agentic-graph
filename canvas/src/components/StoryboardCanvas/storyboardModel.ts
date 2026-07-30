@@ -39,6 +39,7 @@ import {
   readStoryboardString as readString,
   readStoryboardStringList as readStringList,
 } from '@/components/StoryboardCanvas/storyboardModelScalars'
+import { getGraphDataForDisplay } from '@/components/GraphCanvas/displayFilter'
 import { selectRenderableStoryboardCards } from '@/components/StoryboardCanvas/storyboardCardVisibility'
 export const STORYBOARD_EMPTY_LANE = 'Storyboard'
 export const STORYBOARD_CANVAS_RICH_MEDIA_PANEL_PROPERTY = 'storyboardCanvasRichMediaPanel' as const
@@ -540,13 +541,16 @@ export const buildStoryboardBoardModel = (args: {
   connectedValuesByNodeId?: ReadonlyMap<string, FlowConnectedValuesBySchemaPath> | null
 }): StoryboardBoardModel => {
   const semanticKey = buildStoryboardSemanticKey(args)
-  const nodes = Array.isArray(args.graphData?.nodes) ? args.graphData.nodes : []
+  const displayGraphData = args.graphData
+    ? getGraphDataForDisplay({ graphData: args.graphData })
+    : null
+  const nodes = Array.isArray(displayGraphData?.nodes) ? displayGraphData.nodes : []
   const cardNodes = nodes.filter(node => !isStoryboardCanvasRichMediaPanelNode(node))
-  const stageTokensByLane = buildStoryboardInvocationTokensByLane(args.graphData)
+  const stageTokensByLane = buildStoryboardInvocationTokensByLane(displayGraphData)
   const connectedValuesByNodeId = args.connectedValuesByNodeId || (
     args.widgetRegistry
       ? computeRichMediaOverlayConnectedValuesByNodeId({
-          graphData: args.graphData,
+          graphData: displayGraphData,
           registry: args.widgetRegistry,
           graphRevision: args.graphRevision,
           graphSemanticKey: semanticKey,
@@ -557,7 +561,7 @@ export const buildStoryboardBoardModel = (args: {
   )
   const allCards = cardNodes.map((node, index) => {
     const connectedProjection = buildStoryboardCardConnectedProjection({
-      graphData: args.graphData,
+      graphData: displayGraphData,
       node,
       connectedValuesBySchemaPath: connectedValuesByNodeId?.get(readString(node.id)),
     })

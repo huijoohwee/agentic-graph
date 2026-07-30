@@ -93,7 +93,7 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["ui.storyboard.fixedCardOverlay.flexInteractions","@/__tests__/storyboardFixedCardOverlayPerformanceRegression.test","testStoryboardCardOverlayRestoresFlexInteractions"],
   ["richMediaPanel.storyboard.dragSourceAuthority","@/__tests__/richMediaPanelEditorModeDragRegression.test","testRichMediaPanelEditorModeDisablesInteractiveContentForDragging"],
   ["graph.canonicalNodePropertyAuthority.preservesScopedLayout","@/__tests__/applyCanonicalNodePropertyAuthority.test","testCanonicalNodePropertyAuthorityPreservesScopedLayout"],
-  ["ui.storyboard.canvasGraphAuthority.prefersLiveDraft","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityPrefersLiveNonEmptyDraft"],
+  ["ui.storyboard.canvasGraphAuthority.prefersDerivedRenderTopology","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityPrefersDerivedRenderTopology"],
   ["ui.storyboard.canvasGraphAuthority.rejectsEmptyDraft","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityRejectsEmptyTransientDraft"],
   ["ui.storyboard.canvasGraphAuthority.honorsPendingEmptyMarkdownDraft","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityHonorsPendingEmptyMarkdownDraft"],
   ["ui.storyboard.canvasGraphAuthority.projectsCanonicalSubgraphs","@/__tests__/storyboardCanvasGraphAuthority.test","testStoryboardCanvasGraphAuthorityProjectsCanonicalSubgraphs"],
