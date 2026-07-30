@@ -144,7 +144,10 @@ function resolveCanvasSurfacePreset(args: {
   }
   const canvasRenderMode = args.preset?.canvasRenderMode ?? args.defaultCanvasRenderMode
   return {
-    geospatialModeEnabled: args.preset?.canvasRenderMode ? false : undefined,
+    // A document-owned render-mode default is still an explicit surface
+    // transition. Without this, a normal 2D landing contract could inherit a
+    // previous document's Geospatial owner and leave the toolbar mislabeled.
+    geospatialModeEnabled: canvasRenderMode ? false : undefined,
     canvasRenderMode,
     canvas3dMode: args.preset?.canvas3dMode ?? args.defaultCanvas3dMode ?? (canvasRenderMode === '2d' ? '3d' : undefined),
   }
