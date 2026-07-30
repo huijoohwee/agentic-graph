@@ -37,14 +37,6 @@ export function resolveCanvasSurfaceOwnership(
   activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
   geospatialOverlayOwnsViewport: boolean
 }> {
-  // City owns the shared XR canvas exclusively.  A retained Geo+XR preference
-  // must never leave MapLibre mounted beneath the orthographic City stage.
-  if (input.citySimActive) {
-    return {
-      activeSurface: '3d',
-      geospatialOverlayOwnsViewport: false,
-    }
-  }
   if (input.geospatialModeEnabled && input.geospatialXrModeEnabled) {
     return {
       activeSurface: 'geo-xr',

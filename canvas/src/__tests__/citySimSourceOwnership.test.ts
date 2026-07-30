@@ -25,6 +25,8 @@ function collectTextFiles(path: string): readonly string[] {
 export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
   const stage = readCanvasSource('features/game-city-sim/CitySimStage.tsx')
   const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
+  const threeGraph = readCanvasSource('lib/three/ThreeGraph.impl.tsx')
+  const viewport = readCanvasSource('components/CanvasViewport.tsx')
   const xrPhysicsRuntime = readCanvasSource(
     'features/canvas/XrPhysicsRunReadyDemoRuntime.tsx',
   )
@@ -43,8 +45,37 @@ export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
   assert.ok(stage.includes('cityCamera.updateProjectionMatrix()'))
   assert.ok(stage.includes('set({ camera: cityCamera })'))
   assert.ok(stage.includes('set({ camera: previousCamera })'))
+  assert.equal(
+    stage.match(/onPointerDown=\{selectInstance\}/g)?.length,
+    2,
+    'City parcels and buildings must retain the shared XR pointer owner',
+  )
   assert.ok(overlay.includes('<CitySimStageLazy'))
   assert.ok(overlay.includes('if (props.citySimActive) return <CitySimMissionStage />'))
+  assert.ok(overlay.includes('enqueueCityInput({'))
+  assert.ok(overlay.includes('onSelectParcel={selectParcel}'))
+  assert.ok(
+    viewport.includes(
+      "geospatialXrModeEnabled && !citySimActive ? 'pointer-events-none' : 'pointer-events-auto'",
+    ),
+    'Geo+XR must retain pointer events on the City parcel stage while MapLibre presents the aerial background',
+  )
+  assert.ok(
+    threeGraph.includes(
+      "style={geospatialComposite && !citySimStageActive ? { pointerEvents: 'none' } : undefined}",
+    ),
+    'the shared Three Canvas must remain interactive only for City parcel selection in Geo+XR',
+  )
+  assert.ok(
+    threeGraph.includes(
+      "data-kg-city-sim-surface={citySim.active ? 'geo-xr' : undefined}",
+    ),
+  )
+  assert.ok(
+    threeGraph.includes(
+      "citySimStageActive ? 'city-parcel-select'",
+    ),
+  )
   assert.ok(
     xrPhysicsRuntime.includes(
       'const { citySimActive, flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()',
@@ -88,10 +119,52 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
   const gameMode = readCanvasSource('features/game-fps/gameModeRuntime.ts')
   const flightSim = readCanvasSource('features/game-flight-sim/flightSimSurfacePresentationRuntime.ts')
   const citySim = readCanvasSource('features/game-city-sim/citySimRuntime.ts')
+  const geospatialPublisher = readCanvasSource(
+    'components/CanvasViewportGeospatialOverlay.tsx',
+  )
+  const aerialProjection = readCanvasSource(
+    'features/game-city-sim/citySimAerialInspectionProjection.ts',
+  )
   const xrPhysics = readCanvasSource('features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
   assert.ok(gameMode.includes("gameplaySurface: 'gameMode'"))
   assert.ok(flightSim.includes("gameplaySurface: 'flightSim'"))
   assert.ok(citySim.includes("gameplaySurface: 'cityBuilder'"))
+  assert.ok(
+    citySim.includes('commitCanvasGeospatialSurfaceOwnership(true, {'),
+    'City must claim the canonical native Geo owner instead of disabling it',
+  )
+  assert.ok(
+    citySim.includes(
+      'isCurrent: () => expectedGeneration === asyncGeneration',
+    ),
+    'the native Geo claim must roll back when a newer City lifecycle supersedes entry',
+  )
+  assert.ok(
+    citySim.includes('geospatialComposite: true'),
+    'City must activate the shared XR surface as a Geo+XR composition',
+  )
+  assert.ok(
+    geospatialPublisher.includes(
+      'projectCitySimAerialInspectionToGeospatialOverlay(',
+    ),
+    'the shared geospatial publisher must project City through the existing aerial-inspection overlay',
+  )
+  assert.ok(
+    geospatialPublisher.includes('applyGeoXrGameplayOverlayPublication({'),
+    'the shared publisher must retain deterministic Flight-first City arbitration',
+  )
+  assert.ok(geospatialPublisher.includes('subscribeCitySimSnapshot('))
+  assert.ok(
+    geospatialPublisher.includes(
+      'if (!active || !composedWithXr || !flightSimActive) return',
+    ),
+    'City aerial inspection must not claim the Flight MapLibre readiness presenter',
+  )
+  assert.doesNotMatch(
+    aerialProjection,
+    /\b(?:open|start|restart)FlightSim\b|claimFlightSimReadyPresenter/,
+    'the City projector must reuse Flight geometry without invoking Flight lifecycle or readiness',
+  )
   assert.ok(xrPhysics.includes('citySimActive || flightSimActive || gameFpsActive'))
 }
 

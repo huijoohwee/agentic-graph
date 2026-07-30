@@ -6,6 +6,12 @@ import {
   assertRapierIndependentDependencyBoundary,
   assertRapierIndependentPhysicsSourceBoundary,
 } from './lib/rapier-independence-boundary.mjs'
+import {
+  CITY_SIM_OVERLAY_AUTHORITY,
+  CITY_SIM_SEED_RELATIVE_PATH,
+  FLIGHT_SEED_RELATIVE_PATH,
+  PHYSICS_SEED_RELATIVE_PATH,
+} from './workspace-seed-authority.mjs'
 
 const root = process.cwd()
 const requiredPaths = [
@@ -285,7 +291,7 @@ if (!decisionStoreSource.includes("from '../../../../ecs/decisionDocument.js'")
   throw new Error('Game Mode Decisions must retain the canonical browser-safe merge and verified read-back owner')
 }
 
-const physicsSeedPath = 'docs/workspace-seeds/knowgrph-physics-playground-demo.md'
+const physicsSeedPath = PHYSICS_SEED_RELATIVE_PATH
 const physicsSeedSource = await text(physicsSeedPath)
 const physicsSeed = parseFrontmatter(physicsSeedSource, physicsSeedPath)
 if (physicsSeed?.run_ready_demo?.id !== 'xr-physics') {
@@ -305,8 +311,8 @@ if (physicsSeed?.run_ready_demo?.canonical_source_file !== `/${physicsSeedPath}`
 
 const workspaceSeedPaths = (await listMarkdownFiles(path.join(root, 'docs/workspace-seeds'))).sort()
 const gameOrPhysicsDemoIdPattern = /(?:^|-)(?:game-(?:fps|mode)|(?:fps|mode)-game|xr-physics|physics-(?:xr|playground))(?:-|$)/
-const flightOverlaySeedPath = 'docs/workspace-seeds/knowgrph-game-flight-sim-demo.md'
-const cityOverlaySeedPath = 'docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md'
+const flightOverlaySeedPath = FLIGHT_SEED_RELATIVE_PATH
+const cityOverlaySeedPath = CITY_SIM_SEED_RELATIVE_PATH
 for (const relPath of workspaceSeedPaths) {
   if (relPath === physicsSeedPath) continue
   const source = await text(relPath)
@@ -333,13 +339,13 @@ for (const relPath of workspaceSeedPaths) {
     && sharedXrScene.world_ownership === 'overlay-only'
   const cityRuntime = frontmatter.city_runtime
   const declaresCanonicalCityOverlay = relPath === cityOverlaySeedPath
-    && runReadyId === 'city-sim'
+    && runReadyId === CITY_SIM_OVERLAY_AUTHORITY.id
     && cityRuntime
     && typeof cityRuntime === 'object'
     && !Array.isArray(cityRuntime)
-    && cityRuntime.world_ownership === 'overlay-only'
-    && cityRuntime.stage_owner === 'additive City Stage in the existing shared Canvas'
-    && cityRuntime.renderer_rule === 'never create a second Canvas or renderer'
+    && cityRuntime.world_ownership === CITY_SIM_OVERLAY_AUTHORITY.worldOwnership
+    && cityRuntime.stage_owner === CITY_SIM_OVERLAY_AUTHORITY.stageOwner
+    && cityRuntime.renderer_rule === CITY_SIM_OVERLAY_AUTHORITY.rendererRule
   const declaresGameOrHomeAuthority = Object.hasOwn(frontmatter, 'game_mode')
     || Object.hasOwn(frontmatter, 'game_mode_xr_fidelity_status')
     || Object.hasOwn(frontmatter, 'home_apex')

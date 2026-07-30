@@ -21,6 +21,15 @@ class SupersededGeospatialSurfaceOwnershipError extends Error {
   }
 }
 
+export class GeospatialSurfaceOwnershipRestorationError extends Error {
+  constructor(ownershipFailure: string, restorationFailure: string) {
+    super(
+      `${ownershipFailure} Prior Geo ownership could not be restored: ${restorationFailure}`,
+    )
+    this.name = 'GeospatialSurfaceOwnershipRestorationError'
+  }
+}
+
 function waitForSurfaceFrame(
   deadline: number,
   timeoutMessage: string,
@@ -257,8 +266,9 @@ async function performCanvasGeospatialSurfaceOwnershipCommit(
         const restorationFailure = restorationError instanceof Error
           ? restorationError.message
           : String(restorationError)
-        throw new Error(
-          `${failure} Prior Geo ownership could not be restored: ${restorationFailure}`,
+        throw new GeospatialSurfaceOwnershipRestorationError(
+          failure,
+          restorationFailure,
         )
       }
     }

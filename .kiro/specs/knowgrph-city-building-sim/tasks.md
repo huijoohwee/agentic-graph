@@ -21,13 +21,20 @@ candidate SHA.
   `/game-city-sim/city-grid.md`, including malformed-byte preservation.
 - [ ] Register exactly the inspect/control MCP tools through existing
   transports and the existing approval owner.
-- [ ] Add gameplay-overlay mutual exclusion and exact-once prior
-  surface/camera restoration.
+- [ ] Add gameplay-overlay mutual exclusion, City aerial publication cleanup,
+  and exact-once prior surface/camera restoration.
 
 ## 3. Shared Canvas and FloatingPanel
 
-- [ ] Add the City Stage as an instanced subtree of the existing Canvas, with
-  no `<Canvas>` import.
+- [ ] Activate Surface Mode `geo-xr` while retaining the existing native
+  MapLibre Geo host below the shared R3F Canvas.
+- [ ] Add the City Stage and parcel hit testing as an instanced subtree of the
+  existing Canvas above Geo, with no `<Canvas>` import.
+- [ ] Add a City-owned deterministic `stopped` aircraft/route adapter that
+  publishes through the existing Flight Geo overlay store and MapLibre
+  source/layers without activating Flight gameplay or Flight readiness.
+- [ ] Prove City creates no duplicate map, map source/layer, R3F Canvas, or
+  renderer.
 - [ ] Add mode-scoped orthographic `isometric-topdown` framing and responsive
   projection updates through the shared camera owner.
 - [ ] Add `cityBuilder` as the complete control/status view.
@@ -49,16 +56,22 @@ candidate SHA.
 - [ ] Focused unit/static/type checks pass at the candidate SHA.
 - [ ] Neutral browser proof starts without a city selector or persisted city
   state and materializes only after applying the Source File.
-- [ ] Browser proof covers one Canvas, authored metrics, zone/tick/stop,
-  save/read-back, all six projections, console cleanliness, and exit restore.
+- [ ] Browser proof covers Geo+XR, the retained native MapLibre host, the shared
+  City R3F stage/input, authored metrics, zone/tick/stop, save/read-back, all
+  six projections, console cleanliness, and exit restore.
+- [ ] Browser proof captures the deterministic stopped aircraft/route on the
+  existing Flight Geo source/layers, no duplicate map/source/layer/Canvas, and
+  inactive Flight gameplay/readiness.
 - [ ] Candidate is reviewed and integrated through the protected workflow.
 - [ ] Seed proof status and checklist are updated only from captured exact-SHA
   evidence.
 
 ## Explicit exclusions
 
-- No second world, Canvas, renderer, persistence owner, camera catalog,
-  transport, or network service.
+- No second world, map, map source/layer family, Canvas, renderer, persistence
+  owner, camera catalog, transport, or network service.
+- No Flight gameplay activation, Flight control path, mission advance, or
+  Flight readiness claim.
 - No autosave, multiplayer, cloud sync, traffic simulation, or model-backed
   advisor.
 - No production, publish-mirror, or Cloudflare release without a separate

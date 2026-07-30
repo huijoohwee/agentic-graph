@@ -202,7 +202,7 @@ test('Geo+XR mounts one transparent shared XR viewport over the Geo owner', () =
   }), { mounted: true, active: true })
 })
 
-test('City claims the shared XR canvas ahead of a retained Geo+XR preference', () => {
+test('City retains the shared Geo+XR composition for aerial inspection', () => {
   const ownership = resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
     citySimActive: true,
@@ -214,7 +214,7 @@ test('City claims the shared XR canvas ahead of a retained Geo+XR preference', (
     workspaceStoryboardSurfaceActive: false,
   })
   assert.deepEqual(ownership, {
-    activeSurface: '3d',
+    activeSurface: 'geo-xr',
     geospatialOverlayOwnsViewport: false,
   })
   assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
