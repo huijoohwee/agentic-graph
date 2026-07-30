@@ -7,6 +7,7 @@ import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const integrationWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'integration.yml'), 'utf8')
 const releaseWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'release.yml'), 'utf8')
+const releaseSmoke = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'smoke-test.sh'), 'utf8')
 const promotionWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'promote-agentic-canvas-os.yml'), 'utf8')
 const agentReadySmoke = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'check-agent-ready.mjs'), 'utf8')
 const docsSeedScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'seed-storage-docs-to-cloudflare.mjs'), 'utf8')
@@ -249,6 +250,7 @@ test('verified production mirror is published only after live smoke', () => {
   const candidateIndex = deployJob.indexOf('name: Capture exact candidate deployment origin')
   const fidelityIndex = deployJob.indexOf('name: Verify exact deployment markers and candidate browser fidelity')
   const serviceWorkerUpgradeIndex = deployJob.indexOf('name: Verify returning-user service worker revision convergence')
+  const liveVerificationIndex = deployJob.indexOf('name: Record live verification receipt')
   const publishIndex = deployJob.indexOf('name: Publish verified production mirror')
 
   assert.ok(prewarmIndex >= 0)
@@ -258,7 +260,14 @@ test('verified production mirror is published only after live smoke', () => {
   assert.ok(smokeIndex > deployIndex)
   assert.ok(fidelityIndex > smokeIndex)
   assert.ok(serviceWorkerUpgradeIndex > fidelityIndex)
-  assert.ok(publishIndex > serviceWorkerUpgradeIndex)
+  assert.ok(liveVerificationIndex > serviceWorkerUpgradeIndex)
+  assert.ok(publishIndex > liveVerificationIndex)
+  assert.match(releaseSmoke, /require\('\.\/config\/surface-registry\.json'\)/)
+  assert.match(releaseSmoke, /registry\.publicOrigin/)
+  assert.match(releaseSmoke, /KNOWGRPH_AGENT_READY_BASE_URL:-\$configured_public_origin/)
+  assert.doesNotMatch(releaseSmoke, /pages\.dev/)
+  assert.match(agentReadySmoke, /name: 'root-homepage-app-alias'/)
+  assert.match(agentReadySmoke, /name: 'markdown-negotiation'/)
   const deployStep = deployJob.slice(
     deployIndex,
     deployJob.indexOf('name: Capture exact candidate deployment origin'),
