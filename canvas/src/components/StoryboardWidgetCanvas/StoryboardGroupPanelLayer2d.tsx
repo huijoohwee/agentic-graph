@@ -7,6 +7,13 @@ import type { FlowNativeRuntime } from '@/components/FlowCanvas/nativeRuntime'
 import { startRichMediaPanelHeaderDrag } from '@/components/RichMediaPanelOverlayDrag'
 import { FloatingPanel } from '@/components/ui/FloatingPanel'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import {
+  collectCanonicalStoryboardWidgetOverlayRectEntries,
+  findStoryboardWidgetOverlaySurfaceRoot,
+  queryStoryboardWidgetOverlayRootsForSurface,
+  RICH_MEDIA_OVERLAY_ROOT_SELECTOR,
+  STORYBOARD_WIDGET_OVERLAY_ROOT_SELECTOR,
+} from '@/lib/canvas/storyboard-widget-overlay-proxy'
 import { applyVectorPaintedOverlayBox } from '@/lib/canvas/vectorPaintedOverlayProjection'
 import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 import { collectSelectedGroupIds, collectSelectedNodeIds } from '@/lib/canvas/selectionGrouping'
@@ -17,6 +24,16 @@ import { createRafValueScheduler } from '@/lib/react/rafValueScheduler'
 import { isFlowWidgetHeaderDragAllowedByPin } from '@/lib/storyboardWidget/flowWidgetPinMovement'
 import type { FlowWidgetPinnedById } from '@/lib/storyboardWidget/flowWidgetPinnedState'
 import { computeStoryboardWidgetOverlayScreenBox } from '@/lib/storyboardWidget/overlayWorldDrag'
+import {
+  collectStoryboardGroupPanelMemberNodeIds,
+  computeStoryboardGroupPanelRenderedBox,
+} from '@/lib/storyboardWidget/renderedGroupPanelBounds'
+
+const GROUP_PANEL_MEMBER_OVERLAY_SELECTOR = [
+  '[data-kg-storyboard-fixed-card="1"][data-node-id]',
+  STORYBOARD_WIDGET_OVERLAY_ROOT_SELECTOR,
+  RICH_MEDIA_OVERLAY_ROOT_SELECTOR,
+].join(', ')
 
 const readGroupDepth = (group: UserSubgraph, byId: ReadonlyMap<string, UserSubgraph>): number => {
   let depth = 0
@@ -40,12 +57,21 @@ export function StoryboardGroupPanelLayer2d(props: {
   onNodeChange: (nodeId: string, patch: Partial<GraphNode>, sourceGraphData?: GraphData | null) => void
   storyboardWidgetSurfaceId: string
 }) {
+  const { fallbackNodePositions, graphData, onNodeChange } = props
   const getRuntimeRef = React.useRef(props.getRuntime)
   getRuntimeRef.current = props.getRuntime
   const selectedGroupId = useGraphStore(state => state.selectedGroupId)
   const selectedGroupIds = useGraphStore(state => state.selectedGroupIds)
   const groups = React.useMemo(() => readSubgraphs(props.graphData), [props.graphData])
   const groupById = React.useMemo(() => new Map(groups.map(group => [group.id, group] as const)), [groups])
+  const memberNodeIdsByGroupId = React.useMemo(() => new Map(groups.map(group => [
+    group.id,
+    collectStoryboardGroupPanelMemberNodeIds({
+      graphData: props.graphData,
+      groupId: group.id,
+      groups,
+    }),
+  ] as const)), [groups, props.graphData])
   const selectedIds = React.useMemo(
     () => new Set(collectSelectedGroupIds(selectedGroupId, selectedGroupIds)),
     [selectedGroupId, selectedGroupIds],
@@ -74,11 +100,39 @@ export function StoryboardGroupPanelLayer2d(props: {
       if (runtime && transform && Number.isFinite(transform.k) && transform.k > 0) {
         const devicePixelRatio = Number.isFinite(window.devicePixelRatio) ? Math.max(1, window.devicePixelRatio) : 1
         const nextProjectedGroupIds = new Set<string>()
+        const surfaceRoot = findStoryboardWidgetOverlaySurfaceRoot(props.storyboardWidgetSurfaceId)
+        const surfaceRect = surfaceRoot?.getBoundingClientRect() || null
+        const renderedRectByNodeId = new Map(
+          collectCanonicalStoryboardWidgetOverlayRectEntries(
+            queryStoryboardWidgetOverlayRootsForSurface({
+              surfaceId: props.storyboardWidgetSurfaceId,
+              selector: GROUP_PANEL_MEMBER_OVERLAY_SELECTOR,
+            }),
+          ).map(entry => [entry.id, entry.rect] as const),
+        )
         groups.forEach(group => {
           const groupId = subgraphGroupId(group.id)
           const element = panelElementsRef.current.get(groupId)
+          if (!element) return
+          const renderedBox = group.autoBounds === true && surfaceRect
+            ? computeStoryboardGroupPanelRenderedBox({
+                surfaceRect,
+                memberRects: (memberNodeIdsByGroupId.get(group.id) || [])
+                  .map(nodeId => renderedRectByNodeId.get(nodeId))
+                  .filter((rect): rect is DOMRect => !!rect),
+              })
+            : null
+          if (renderedBox) {
+            applyVectorPaintedOverlayBox(element, {
+              ...renderedBox,
+              scale: 1,
+              zIndex: String(1 + readGroupDepth(group, groupById)),
+            })
+            nextProjectedGroupIds.add(groupId)
+            return
+          }
           const aabb = runtime.groupAabbByIdCache.get(groupId)
-          if (!element || !aabb) return
+          if (!aabb) return
           const width = Math.max(1, aabb.maxX - aabb.minX)
           const height = Math.max(1, aabb.maxY - aabb.minY)
           const box = computeStoryboardWidgetOverlayScreenBox({
@@ -109,7 +163,7 @@ export function StoryboardGroupPanelLayer2d(props: {
     }
     frame = window.requestAnimationFrame(project)
     return () => window.cancelAnimationFrame(frame)
-  }, [groups, props.active])
+  }, [groupById, groups, memberNodeIdsByGroupId, props.active, props.storyboardWidgetSurfaceId])
 
   const selectGroupPanel = React.useCallback((
     groupId: string,
@@ -135,24 +189,8 @@ export function StoryboardGroupPanelLayer2d(props: {
   }, [])
 
   const collectNestedMemberNodeIds = React.useCallback((groupId: string): string[] => {
-    const memberNodeIds = new Set<string>()
-    const pending = [groupId]
-    const visited = new Set<string>()
-    while (pending.length > 0 && visited.size < 200) {
-      const nextGroupId = String(pending.pop() || '').trim()
-      if (!nextGroupId || visited.has(nextGroupId)) continue
-      visited.add(nextGroupId)
-      const group = groupById.get(nextGroupId)
-      group?.memberNodeIds.forEach(nodeId => {
-        const id = String(nodeId || '').trim()
-        if (id) memberNodeIds.add(id)
-      })
-      groups.forEach(candidate => {
-        if (candidate.parentId === nextGroupId) pending.push(candidate.id)
-      })
-    }
-    return Array.from(memberNodeIds)
-  }, [groupById, groups])
+    return memberNodeIdsByGroupId.get(groupId) || []
+  }, [memberNodeIdsByGroupId])
 
   const beginGroupPanelHeaderDrag = React.useCallback((
     event: React.PointerEvent<HTMLElement>,
@@ -171,7 +209,7 @@ export function StoryboardGroupPanelLayer2d(props: {
     memberNodeIds.forEach(nodeId => {
       const graphNode = graphNodes.get(nodeId)
       const runtimeNode = runtimeNodes?.get(nodeId)
-      const fallbackPosition = props.fallbackNodePositions.get(nodeId)
+      const fallbackPosition = fallbackNodePositions.get(nodeId)
       const x = Number.isFinite(graphNode?.x)
         ? Number(graphNode?.x)
         : Number.isFinite(runtimeNode?.x)
@@ -188,10 +226,10 @@ export function StoryboardGroupPanelLayer2d(props: {
     let moved = false
     const moveScheduler = createRafValueScheduler((delta: { worldDx: number; worldDy: number }) => {
       startByNodeId.forEach((start, nodeId) => {
-        props.onNodeChange(nodeId, {
+        onNodeChange(nodeId, {
           x: Number(start.x) + delta.worldDx,
           y: Number(start.y) + delta.worldDy,
-        }, props.graphData)
+        }, graphData)
       })
     })
     const started = startRichMediaPanelHeaderDrag(event.nativeEvent, {
@@ -213,7 +251,7 @@ export function StoryboardGroupPanelLayer2d(props: {
     selectGroupPanel(subgraphGroupId(group.id), event)
     event.preventDefault()
     event.stopPropagation()
-  }, [collectNestedMemberNodeIds, props.fallbackNodePositions, props.graphData, props.onNodeChange, selectGroupPanel])
+  }, [collectNestedMemberNodeIds, fallbackNodePositions, graphData, onNodeChange, selectGroupPanel])
 
   if (!props.active || groups.length === 0) return null
   return (
