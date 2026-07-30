@@ -3,7 +3,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
   checkKnowledgeGraphBudget,
-  EVIDENCE_FIELDS,
   KnowledgeGraphError,
   KNOWLEDGE_GRAPH_CONTRACT_VERSION,
   KNOWLEDGE_GRAPH_SCHEMA_VERSION,
@@ -11,11 +10,28 @@ import {
   sha256,
   stableStringify,
 } from "./contract.mjs";
+import { MAX_RESOLUTION_SHARD_BYTES, partitionResolutionEdges } from "./resolution-sharding.mjs";
+import {
+  expectedResolutionEdgeCount,
+  KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA,
+  KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V1,
+  KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA,
+  resolutionShardDigestsForIndex,
+  validatedResolutionShards,
+} from "./resolution-store-validation.mjs";
+import {
+  assertExplainedEdges,
+  countBy,
+  sortedDiagnostics,
+} from "./store-records.mjs";
 export const KNOWLEDGE_GRAPH_POINTER_SCHEMA = "knowgrph-knowledge-graph-pointer/v1";
 export const KNOWLEDGE_GRAPH_MANIFEST_SCHEMA = "knowgrph-knowledge-graph-sharded-manifest/v1";
 export const KNOWLEDGE_GRAPH_SOURCE_SHARD_SCHEMA = "knowgrph-knowledge-graph-source-shard/v1";
-export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA = "knowgrph-knowledge-graph-repository-index/v1";
-export const KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA = "knowgrph-knowledge-graph-resolution-shard/v1";
+export {
+  KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA,
+  KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA_V1,
+  KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA,
+};
 export const DEFAULT_MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
 const MAX_POINTER_BYTES = 64 * 1024;
 const MAX_MANIFEST_BYTES = 64 * 1024 * 1024;
@@ -299,59 +315,6 @@ async function readContentAddressed(snapshot, digest, maxBytes = MAX_OBJECT_BYTE
   return parsed;
 }
 
-function countBy(values, checkpoint = () => {}) {
-  const counts = new Map();
-  for (const value of values) {
-    checkpoint();
-    counts.set(String(value), (counts.get(String(value)) || 0) + 1);
-  }
-  return Object.fromEntries([...counts.entries()].sort(([left], [right]) => compareStableStrings(left, right)));
-}
-
-function sortedDiagnostics(diagnostics, checkpoint = () => {}) {
-  const safeMessage = (value) => String(value || "")
-    .replace(/(^|\s)\/(?:[^/\s:]+\/)*[^/\s:]*/g, "$1<absolute-path>")
-    .replace(/\b[A-Za-z]:\\(?:[^\\\s:]+\\)*[^\\\s:]*/g, "<absolute-path>")
-    .slice(0, 2000);
-  return [...(diagnostics || [])]
-    .filter((item) => (checkpoint(), item && typeof item === "object"))
-    .map((item) => ({
-      code: String(item.code || "diagnostic"),
-      sourcePath: String(item.sourcePath || ""),
-      message: safeMessage(item.message),
-      ...(Number.isInteger(item.lineStart) ? { lineStart: item.lineStart } : {}),
-      ...(Number.isInteger(item.columnStart) ? { columnStart: item.columnStart } : {}),
-    }))
-    .sort((left, right) => compareStableStrings(
-      `${left.sourcePath}\0${left.code}\0${left.message}`,
-      `${right.sourcePath}\0${right.code}\0${right.message}`,
-    ));
-}
-
-function assertExplainedEdges(edges, nodeIds = null, checkpoint = () => {}) {
-  const ids = new Set();
-  for (const edge of edges || []) {
-    checkpoint();
-    if (!edge?.id || ids.has(edge.id)) {
-      throw new KnowledgeGraphError("source_shard_invalid", "Stored graph shard contains a missing or duplicate edge id.");
-    }
-    ids.add(edge.id);
-    if (nodeIds && (!nodeIds.has(edge.source) || !nodeIds.has(edge.target))) {
-      throw new KnowledgeGraphError("source_shard_invalid", `Stored graph shard contains a dangling edge: ${edge.id}`);
-    }
-    for (const field of EVIDENCE_FIELDS) {
-      const value = edge.properties?.[field];
-      if (value === undefined || value === null || value === "") {
-        throw new KnowledgeGraphError("edge_evidence_invalid", `Stored graph edge is missing ${field}: ${edge.id}`);
-      }
-    }
-    const excerpt = edge.properties["evidence:excerpt"];
-    if (excerpt.length > 320 || sha256(excerpt) !== edge.properties["evidence:excerptHash"]) {
-      throw new KnowledgeGraphError("edge_evidence_invalid", `Stored graph edge excerpt evidence is invalid: ${edge.id}`);
-    }
-  }
-}
-
 export async function writeKnowledgeGraphSourceShard(pointerPath, source, fragment, options = {}) {
   const { allowedRoot } = options;
   const checkpoint = () => checkStoreBudget(options, "source-shard-write");
@@ -400,6 +363,37 @@ function mergeCounts(target, source) {
   for (const [key, count] of Object.entries(source || {})) target[key] = (target[key] || 0) + Number(count || 0);
 }
 
+async function writeResolutionChunk(storeRoot, repositoryId, edges, options) {
+  try {
+    const stored = await writeContentAddressed(storeRoot, {
+      schema: KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA,
+      repositoryId,
+      nodes: [],
+      edges,
+    }, MAX_RESOLUTION_SHARD_BYTES, options);
+    return [stored.digest];
+  } catch (error) {
+    if (error?.code !== "artifact_too_large" || edges.length < 2) throw error;
+    const midpoint = Math.floor(edges.length / 2);
+    return [
+      ...await writeResolutionChunk(storeRoot, repositoryId, edges.slice(0, midpoint), options),
+      ...await writeResolutionChunk(storeRoot, repositoryId, edges.slice(midpoint), options),
+    ];
+  }
+}
+
+async function writeResolutionShards(storeRoot, repositoryId, edges, options) {
+  const chunks = partitionResolutionEdges(edges, {
+    checkpoint: () => checkStoreBudget(options, "resolution-shard-partition"),
+    targetBytes: options.resolutionShardTargetBytes,
+  });
+  const digests = [];
+  for (const chunk of chunks) {
+    digests.push(...await writeResolutionChunk(storeRoot, repositoryId, chunk, options));
+  }
+  return digests;
+}
+
 export async function writeKnowledgeGraphSnapshotAtomic(pointerPath, {
   graphId,
   sourceEntries,
@@ -425,15 +419,15 @@ export async function writeKnowledgeGraphSnapshotAtomic(pointerPath, {
     const entries = sourceEntries
       .filter((entry) => entry.repositoryId === repositoryId)
       .sort((left, right) => compareStableStrings(left.sourcePath, right.sourcePath));
-    const derivedEdges = [...(derivedEdgesByRepository.get(repositoryId) || [])]
-      .sort((left, right) => compareStableStrings(left.id, right.id));
+    const derivedEdges = derivedEdgesByRepository.get(repositoryId) || [];
+    derivedEdges.sort((left, right) => compareStableStrings(left.id, right.id));
     assertExplainedEdges(derivedEdges, null, checkpoint);
-    const resolution = await writeContentAddressed(storeRoot, {
-      schema: KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA,
+    const resolutionShardDigests = await writeResolutionShards(
+      storeRoot,
       repositoryId,
-      nodes: [],
-      edges: derivedEdges,
-    }, MAX_OBJECT_BYTES, options);
+      derivedEdges,
+      options,
+    );
     const repositoryPath = entries[0]?.repositoryPath || ".";
     const repositoryNodeTypes = {};
     const repositoryEdgeLabels = {};
@@ -457,7 +451,7 @@ export async function writeKnowledgeGraphSnapshotAtomic(pointerPath, {
       repositoryId,
       repositoryPath,
       sources: entries,
-      resolutionShardDigest: resolution.digest,
+      resolutionShardDigests,
       graph: {
         nodes: repositoryNodeCount,
         edges: repositoryEdgeCount,
@@ -557,10 +551,11 @@ export async function readKnowledgeGraphSnapshotIfPresent(pointerPath, options =
 
 export async function readKnowledgeGraphRepositoryIndex(snapshot, repository) {
   const index = await readContentAddressed(snapshot, repository.indexDigest, MAX_MANIFEST_BYTES);
-  if (index.schema !== KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA
-    || index.repositoryId !== repository.repositoryId) {
+  if (index.repositoryId !== repository.repositoryId) {
     throw new KnowledgeGraphError("repository_index_invalid", `Repository index is invalid: ${repository.repositoryId}`);
   }
+  resolutionShardDigestsForIndex(index);
+  expectedResolutionEdgeCount(index, repository);
   return index;
 }
 
@@ -574,13 +569,16 @@ export async function readKnowledgeGraphSourceShard(snapshot, sourceEntry) {
   return shard;
 }
 
-export async function readKnowledgeGraphResolutionShard(snapshot, repositoryIndex) {
-  const shard = await readContentAddressed(snapshot, repositoryIndex.resolutionShardDigest);
-  if (shard.schema !== KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA
-    || shard.repositoryId !== repositoryIndex.repositoryId) {
-    throw new KnowledgeGraphError("resolution_shard_invalid", `Resolution shard is invalid: ${repositoryIndex.repositoryId}`);
-  }
-  return shard;
+export async function* readKnowledgeGraphResolutionShards(snapshot, repositoryIndex) {
+  const sharded = repositoryIndex.schema === KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA;
+  yield* validatedResolutionShards(
+    repositoryIndex,
+    null,
+    (digest) => readContentAddressed(
+      snapshot, digest, sharded ? MAX_RESOLUTION_SHARD_BYTES : MAX_OBJECT_BYTES,
+    ),
+    () => checkStoreBudget(snapshot.readBudget, "resolution-shard-validation"),
+  );
 }
 
 export async function listKnowledgeGraphSourceEntries(snapshot) {

@@ -123,7 +123,7 @@ The query path must:
 - Canonicalized source paths and resolved symlink targets remain inside the host-owned allowed root.
 - Indexed content is parsed as data and is never executed as code, script, SQL, configuration, document action, or PDF behavior.
 - Output remains inside the host-owned store boundary and must not present a partial or invalid run as complete.
-- Content-addressed source, repository-resolution, index, and manifest shards are individually bounded and committed behind one atomic current-snapshot pointer; an oversized object fails before pointer replacement and preserves the prior ready snapshot.
+- Content-addressed source, deterministically chunked repository-resolution, index, and manifest shards are individually bounded and committed behind one atomic current-snapshot pointer; no repository-wide resolution payload may bypass the per-object ceiling, and an oversized single record fails before pointer replacement.
 - A cross-process, dead-owner-recoverable per-graph lease serializes ingest publication and rollback. Ingest writes immutable source shards as each source completes, retains only cross-source resolution records, and applies aggregate record and serialized-byte ceilings to both resolution inputs and derived edges. Ambiguous edges retain the exact candidate count plus a deterministic bounded candidate set that includes their target. A failed unpublished ingest rolls back objects it created and leaves the current pointer unchanged.
 - File, corpus, traversal, and output limits fail closed with explicit diagnostics.
 - Configuration structure may be indexed, but secret values must not be returned as graph evidence.

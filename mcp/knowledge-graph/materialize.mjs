@@ -4,7 +4,7 @@ import {
 } from "./contract.mjs";
 import {
   readKnowledgeGraphRepositoryIndex,
-  readKnowledgeGraphResolutionShard,
+  readKnowledgeGraphResolutionShards,
   readKnowledgeGraphSourceShard,
 } from "./store.mjs";
 
@@ -57,10 +57,11 @@ export async function materializeKnowledgeGraphRepository(snapshot, repositoryId
       edges.push(edge);
     }
   }
-  const resolution = await readKnowledgeGraphResolutionShard(snapshot, index);
-  for (const edge of resolution.edges) {
-    checkpoint();
-    edges.push(edge);
+  for await (const resolution of readKnowledgeGraphResolutionShards(snapshot, index)) {
+    for (const edge of resolution.edges) {
+      checkpoint();
+      edges.push(edge);
+    }
   }
   checkKnowledgeGraphBudget({ ...budget, stage: "snapshot-materialization" });
   return {

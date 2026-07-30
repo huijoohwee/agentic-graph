@@ -1,7 +1,7 @@
 import { checkKnowledgeGraphBudget, compareStableStrings, KnowledgeGraphError, sha256 } from "./contract.mjs";
 import {
   readKnowledgeGraphRepositoryIndex,
-  readKnowledgeGraphResolutionShard,
+  readKnowledgeGraphResolutionShards,
   readKnowledgeGraphSourceShard,
 } from "./store.mjs";
 import { materializeKnowledgeGraphRepository } from "./materialize.mjs";
@@ -129,9 +129,10 @@ async function* snapshotShards(snapshot, options = {}) {
       options.checkpoint?.();
       yield { repository, shard };
     }
-    const shard = await readKnowledgeGraphResolutionShard(snapshot, index);
-    options.checkpoint?.();
-    yield { repository, shard };
+    for await (const shard of readKnowledgeGraphResolutionShards(snapshot, index)) {
+      options.checkpoint?.();
+      yield { repository, shard };
+    }
   }
 }
 
@@ -304,8 +305,11 @@ export async function explainKnowledgeGraphSnapshotEdge(snapshot, edgeIdRaw, opt
       if (edge) break;
     }
     if (!edge) {
-      const resolution = await readKnowledgeGraphResolutionShard(snapshot, index);
-      edge = (resolution.edges || []).find((candidate) => (checkpoint(), candidate.id === edgeId));
+      for await (const resolution of readKnowledgeGraphResolutionShards(snapshot, index)) {
+        edge = (resolution.edges || [])
+          .find((candidate) => (checkpoint(), candidate.id === edgeId));
+        if (edge) break;
+      }
     }
     if (!edge) continue;
     const nodes = [];

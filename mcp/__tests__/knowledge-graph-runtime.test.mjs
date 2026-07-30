@@ -8,7 +8,7 @@ import { EVIDENCE_FIELDS, sha256 } from "../knowledge-graph/contract.mjs";
 import { createKnowledgeGraphRuntime, KNOWLEDGE_GRAPH_TOOL_NAMES } from "../knowledge-graph/runtime.mjs";
 import {
   readKnowledgeGraphRepositoryIndex,
-  readKnowledgeGraphResolutionShard,
+  readKnowledgeGraphResolutionShards,
   readKnowledgeGraphSnapshot,
   readKnowledgeGraphSourceShard,
 } from "../knowledge-graph/store.mjs";
@@ -117,7 +117,9 @@ async function materializeFixture(fixture, ingest) {
       nodes.push(...shard.nodes);
       edges.push(...shard.edges);
     }
-    edges.push(...(await readKnowledgeGraphResolutionShard(snapshot, index)).edges);
+    for await (const resolution of readKnowledgeGraphResolutionShards(snapshot, index)) {
+      edges.push(...resolution.edges);
+    }
   }
   return { snapshot, nodes, edges, sources };
 }
