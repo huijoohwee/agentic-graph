@@ -31,9 +31,21 @@ private branch protection, merge-group admission, Production, or Cloudflare.
 | Surface | Exact evidence | Result | Boundary |
 |---|---|---|---|
 | Browser-originated public claim | Agentic Canvas OS workflow run [30518175215](https://github.com/huijoohwee/agentic-canvas-os/actions/runs/30518175215), protected source `aeb28f0ae85ddb8747712289bfd145821ed2063c`, claim `98921958bec39a281f4e84d7ac29e6d558e4ffcbbd693d20f76533f1bb268a4c`, initial ledger `1d7058110fd0d26bea029a0fb9bc0f74e80d068a` | Passed from GitHub's browser workflow form at a 390x844 responsive viewport | Viewport emulation is not physical-mobile or second-device proof |
-| Node 24 action runtime candidate | Agentic Canvas OS [PR #185](https://github.com/huijoohwee/agentic-canvas-os/pull/185), exact head `7924456c39c14f5ab56bb9cf3fd77dfa5c3c01f4` | Checkout v7, setup-node v7, Dependency Review v5, and CodeQL v4 are immutable-SHA policy inputs | Protected merge and post-merge exact-main proof remain separate |
-| Concurrent cloud authority | Active claims `98921958…`, `b4d4cbcc…`, `12b20e2a…`, and `74bbe17c…` targeted disjoint public/private repositories and paths through one compare-and-swap ledger | No overlap collision; transitions serialized without local coordination authority | Concurrency evidence concerns GitHub writer authority, not live canvas-room document collaboration |
-| AgenticRAG projection | Website [PR #69](https://github.com/huijoohwee/huijoohwee.github.io/pull/69), head `34e4a32074ff2a0905194b8570eca6355dab031a`, run [30518583134](https://github.com/huijoohwee/huijoohwee.github.io/actions/runs/30518583134) | Required jobs passed; deterministic map parity reported 62 guideline files | Draft review candidate; Knowgrph document-map projection follows protected source integration |
+| Node 24 action runtime candidate | Agentic Canvas OS [PR #185](https://github.com/huijoohwee/agentic-canvas-os/pull/185), exact head `7924456c39c14f5ab56bb9cf3fd77dfa5c3c01f4`; CI `30519038504`; Dependency Security `30518731675`; CodeQL `30518731712`; exact-head cloud Check Run `90795332924` | All selected actions resolve to Node 24 metadata; 1,044 tests and every protected review gate passed | Protected merge and post-merge exact-main proof remain separate |
+| Concurrent cloud authority | Claims `98921958…`, `b4d4cbcc…`, `12b20e2a…`, and `74bbe17c…` overlapped in time while targeting disjoint public/private repositories and paths through one compare-and-swap ledger | No overlap collision; transitions serialized without local coordination authority | Concurrency evidence concerns GitHub writer authority, not live canvas-room document collaboration |
+| AgenticRAG projection | Website [PR #69](https://github.com/huijoohwee/huijoohwee.github.io/pull/69), head `34e4a32074ff2a0905194b8570eca6355dab031a`, run [30518583134](https://github.com/huijoohwee/huijoohwee.github.io/actions/runs/30518583134), jobs `90795054768` and `90795076806` | Ready-for-review claim and required jobs passed; deterministic map parity reported 62 guideline files | Protected merge is separate; Knowgrph document-map projection follows protected source integration |
+
+
+The action-runtime claim reached review-ready at ledger revision
+`dabb3eed2ff0cd894714f12fdfc2e9516499a22b`, claim digest
+`02c93c5ac89ca93a1932a5d3a80e1728d3900c887f6b74a170bca5246fe214c2`,
+and zero-finding verification receipt
+`20dbb10b415a45f5af911cd956017cd7860e8e4e18f05eb3833d5ca420504fa0`.
+The AgenticRAG claim reached review-ready at ledger revision
+`b0531ec01f1202719f5ec9d9b73a738a94551ed4`, claim digest
+`72f57626fcfcbab25f726f86cac22de8009b3e1ebe563e5f535f80f8afff434b`,
+and zero-finding verification receipt
+`cc5266f66b8ad2be9a7b19570d8daab7e7e34ac0dbe8f2280ab575274d5bd0fc`.
 
 ## Private Sibling-Repository Lifecycle
 
