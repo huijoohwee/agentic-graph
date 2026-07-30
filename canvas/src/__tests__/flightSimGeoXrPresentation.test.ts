@@ -128,7 +128,11 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
   )
   assert.match(
     threeGraph,
-    /style=\{geospatialComposite && !citySimStageActive \? \{ pointerEvents: 'none' \} : undefined\}/,
+    /const citySimMeshActive = citySimStageActive && !geospatialComposite/,
+  )
+  assert.match(
+    threeGraph,
+    /style=\{geospatialComposite && !citySimMeshActive \? \{ pointerEvents: 'none' \} : undefined\}/,
   )
   assert.match(threeGraph, /data-kg-three-canvas-owner="1"/)
   assert.match(

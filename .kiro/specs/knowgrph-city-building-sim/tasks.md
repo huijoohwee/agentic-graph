@@ -27,9 +27,10 @@ candidate SHA.
 ## 3. Shared Canvas and FloatingPanel
 
 - [ ] Activate Surface Mode `geo-xr` while retaining the existing native
-  MapLibre Geo host below the shared R3F Canvas.
-- [ ] Add the City Stage and parcel hit testing as an instanced subtree of the
-  existing Canvas above Geo, with no `<Canvas>` import.
+  MapLibre Geo host as the visual and viewport-gesture owner.
+- [ ] Retain the shared Canvas as the semantic City media stage while mounting
+  no local City mesh or parcel hit testing above Geo; City Builder coordinate
+  controls own parcel input, with no `<Canvas>` import.
 - [ ] Exclude City from the native XR physics launcher and suppress the
   authored/native graph from source intent through active stage ownership.
 - [ ] Wrap the shared WebGL Canvas in a labeled semantic City media `figure`
@@ -40,8 +41,8 @@ candidate SHA.
   source/layers with a null XR environment and no Flight gameplay/readiness.
 - [ ] Prove City creates no duplicate map, map source/layer, R3F Canvas, or
   renderer.
-- [ ] Add mode-scoped orthographic `isometric-topdown` framing and responsive
-  projection updates through the shared camera owner.
+- [ ] Retain native MapLibre framing in Geo+XR and restore the captured shared
+  R3F camera reference exactly once on exit.
 - [ ] Add `cityBuilder` as the complete control/status view.
 - [ ] Compose one snapshot-backed projection into Media, Animation, Motion
   Control, Game Mode, Flight Sim, and Camera.
@@ -61,8 +62,9 @@ candidate SHA.
 - [ ] Focused unit/static/type checks pass at the candidate SHA.
 - [ ] Neutral browser proof starts without a city selector or persisted city
   state and materializes only after applying the Source File.
-- [ ] Browser proof covers Geo+XR, the retained native MapLibre host, the shared
-  City R3F stage/input, absence of the native physics playground, the
+- [ ] Browser proof covers Geo+XR, the retained native MapLibre host and
+  viewport gestures, the transparent shared City semantic media stage and
+  City Builder coordinate input, absence of the native physics playground, the
   selectable semantic City media figure, authored metrics, zone/tick/stop,
   save/read-back, all six projections, console cleanliness, and exit restore.
 - [ ] Browser proof captures the deterministic stopped aircraft/route on the

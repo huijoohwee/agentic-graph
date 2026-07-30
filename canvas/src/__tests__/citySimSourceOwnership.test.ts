@@ -23,7 +23,7 @@ function collectTextFiles(path: string): readonly string[] {
     .filter(file => /\.(?:md|ts|tsx|mjs)$/.test(file) || file.endsWith('.kiro'))
 }
 
-export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
+export function testCitySimGeoXrRetainsSemanticCanvasWithoutLocalMesh() {
   const stage = readCanvasSource('features/game-city-sim/CitySimStage.tsx')
   const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
   const threeGraph = readCanvasSource('lib/three/ThreeGraph.impl.tsx')
@@ -53,20 +53,29 @@ export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
     'City parcels and buildings must retain the shared XR pointer owner',
   )
   assert.ok(overlay.includes('<CitySimStageLazy'))
-  assert.ok(overlay.includes('if (props.citySimActive) return <CitySimMissionStage />'))
+  assert.ok(
+    overlay.includes('if (props.citySimActive && !props.geospatialComposite)'),
+    'the local City mesh must not be painted over the geospatial composite',
+  )
   assert.ok(overlay.includes('enqueueCityInput({'))
   assert.ok(overlay.includes('onSelectParcel={selectParcel}'))
   assert.ok(
     viewport.includes(
-      "geospatialXrModeEnabled && !citySimActive ? 'pointer-events-none' : 'pointer-events-auto'",
+      "geospatialXrModeEnabled ? 'pointer-events-none' : 'pointer-events-auto'",
     ),
-    'Geo+XR must retain pointer events on the City parcel stage while MapLibre presents the aerial background',
+    'Geo+XR must pass viewport gestures to the native MapLibre host',
   )
   assert.ok(
     threeGraph.includes(
-      "style={geospatialComposite && !citySimStageActive ? { pointerEvents: 'none' } : undefined}",
+      "const citySimMeshActive = citySimStageActive && !geospatialComposite",
     ),
-    'the shared Three Canvas must remain interactive only for City parcel selection in Geo+XR',
+    'the shared Canvas must distinguish a local mesh from the MapLibre-owned Geo+XR stage',
+  )
+  assert.ok(
+    threeGraph.includes(
+      "style={geospatialComposite && !citySimMeshActive ? { pointerEvents: 'none' } : undefined}",
+    ),
+    'the shared Three Canvas must pass Geo+XR gestures to MapLibre when no local City mesh is mounted',
   )
   assert.ok(
     threeGraph.includes(
@@ -75,7 +84,13 @@ export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
   )
   assert.ok(
     threeGraph.includes(
-      "citySimStageActive ? 'city-parcel-select'",
+      "citySimMeshActive ? 'city-parcel-select'",
+    ),
+  )
+  assert.ok(threeGraph.includes("citySimStageActive && geospatialComposite ? 'map-pass-through'"))
+  assert.ok(
+    threeGraph.includes(
+      "data-kg-city-sim-stage={citySimMeshActive ? 'active' : citySimStageActive ? 'maplibre-aerial' : undefined}",
     ),
   )
   assert.ok(

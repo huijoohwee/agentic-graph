@@ -84,6 +84,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const citySimRunReadyDemo = isCitySimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const { citySim, citySimActive, flightSim, flightSimActive, gameMode, gameFpsActive } = useCanvasGameplayOverlayState()
   const citySimStageActive = mode === 'xr' && citySimActive
+  const citySimMeshActive = citySimStageActive && !geospatialComposite
   const flightStageActive = mode === 'xr' && flightSimActive
   const gameFpsStageActive = mode === 'xr' && gameFpsActive
   const gameplayOverlayActive = citySimStageActive || flightStageActive || gameFpsStageActive
@@ -429,14 +430,14 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       data-kg-xr-scene-media-drop={mode === 'xr' ? '1' : undefined}
       data-kg-game-fps-stage={gameFpsStageActive ? 'active' : undefined}
       data-kg-flight-sim-stage={flightStageActive ? 'active' : undefined}
-      data-kg-city-sim-stage={citySimStageActive ? 'active' : undefined}
+      data-kg-city-sim-stage={citySimMeshActive ? 'active' : citySimStageActive ? 'maplibre-aerial' : undefined}
       data-kg-game-mode-surface={gameMode.active ? gameMode.surfaceMode : undefined}
       data-kg-game-mode-scene={gameMode.active ? GAME_FPS_SHARED_XR_PROFILE_ID : undefined}
       data-kg-flight-sim-surface={flightSim.active ? flightSim.surfaceMode : undefined}
       data-kg-city-sim-surface={citySim.active ? 'geo-xr' : undefined}
       data-kg-authored-xr-scene-retained={gameplayOverlayActive ? '1' : undefined}
       data-kg-immersive-media-stage={immersiveMediaStageActive ? 'active' : undefined}
-      data-kg-three-viewport-gestures={gameFpsStageActive ? 'first-person' : citySimStageActive ? 'city-parcel-select' : immersiveMediaStageActive ? 'immersive-look-zoom' : 'orbit-pan-cursor-zoom'}
+      data-kg-three-viewport-gestures={gameFpsStageActive ? 'first-person' : citySimMeshActive ? 'city-parcel-select' : citySimStageActive && geospatialComposite ? 'map-pass-through' : immersiveMediaStageActive ? 'immersive-look-zoom' : 'orbit-pan-cursor-zoom'}
       onDragOver={xrSceneMediaDrop.onDragOver}
       onDrop={xrSceneMediaDrop.onDrop}
       onContextMenu={event => {
@@ -452,7 +453,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         camera={{ position: [0, 0, 220], fov: 50 }}
         shadows
         gl={{ antialias: true, alpha: true }}
-        style={geospatialComposite && !citySimStageActive ? { pointerEvents: 'none' } : undefined}
+        style={geospatialComposite && !citySimMeshActive ? { pointerEvents: 'none' } : undefined}
         onCreated={({ gl, scene, camera }) => {
           gl.xr.enabled = mode === 'xr'
           try {
