@@ -253,6 +253,103 @@ test("parser record caps stop graph construction before an oversized fragment is
   assert.equal(reparsed.counts.reused, 0);
 });
 
+test("non-strict ingest records an oversized source artifact as bounded incomplete evidence", async (t) => {
+  const value = await fixture(t, { maxSourceShardBytes: 4_096 });
+  await fs.writeFile(
+    path.join(value.corpusRoot, "large.md"),
+    Array.from({ length: 200 }, (_, index) => `## Section ${index}\nparagraph ${index}`).join("\n"),
+  );
+  const limited = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: false });
+  assert.equal(limited.ok, true, JSON.stringify(limited));
+  assert.equal(limited.complete, false);
+  assert.deepEqual(limited.completeness.incompleteSources, ["large.md"]);
+  assert.ok(limited.completeness.reasons.includes("parser_limited"));
+  assert.ok(limited.diagnostics.some((entry) => entry.code === "source_artifact_limit_exceeded"));
+
+  const graphPointer = pointerPath(value, limited.graphId);
+  const snapshot = await readKnowledgeGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: limited.graphId,
+  });
+  const index = await readKnowledgeGraphRepositoryIndex(
+    snapshot,
+    snapshot.manifest.repositories[0],
+  );
+  const shard = await readKnowledgeGraphSourceShard(snapshot, index.sources[0]);
+  assert.equal(shard.status, "limited");
+  assert.equal(shard.nodes.length, 1);
+  assert.equal(shard.edges.length, 0);
+  const before = await fs.readFile(graphPointer, "utf8");
+
+  const strict = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(strict.ok, false);
+  assert.equal(strict.error.code, "artifact_too_large");
+  assert.equal(strict.error.details.maxBytes, 4_096);
+  assert.equal(await fs.readFile(graphPointer, "utf8"), before);
+});
+
+test("a tighter source artifact ceiling invalidates an otherwise reusable shard", async (t) => {
+  const value = await fixture(t);
+  await fs.writeFile(
+    path.join(value.corpusRoot, "large.md"),
+    Array.from({ length: 200 }, (_, index) => `## Section ${index}\nparagraph ${index}`).join("\n"),
+  );
+  const first = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(first.ok, true, JSON.stringify(first));
+  assert.equal(first.counts.parsed, 1);
+
+  const limitedRuntime = createKnowledgeGraphRuntime({
+    knowgrphRoot: value.base,
+    allowedRoots: [value.corpusRoot],
+    outputRoot: value.outputRoot,
+    maxSourceShardBytes: 4_096,
+  });
+  const strict = await limitedRuntime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(strict.ok, false);
+  assert.equal(strict.error.code, "artifact_too_large");
+
+  const limited = await limitedRuntime.ingest({ rootPath: value.corpusRoot, strict: false });
+  assert.equal(limited.ok, true, JSON.stringify(limited));
+  assert.equal(limited.complete, false);
+  assert.equal(limited.counts.parsed, 1);
+  assert.equal(limited.counts.reused, 0);
+  assert.deepEqual(limited.completeness.incompleteSources, ["large.md"]);
+});
+
+test("non-strict ingest fails closed when an existing source object is oversized", async (t) => {
+  const value = await fixture(t, { maxSourceShardBytes: 4_096 });
+  await fs.writeFile(path.join(value.corpusRoot, "small.md"), "# Small\n");
+  const first = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(first.ok, true, JSON.stringify(first));
+  const graphPointer = pointerPath(value, first.graphId);
+  const snapshot = await readKnowledgeGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: first.graphId,
+  });
+  const index = await readKnowledgeGraphRepositoryIndex(
+    snapshot,
+    snapshot.manifest.repositories[0],
+  );
+  const digest = index.sources[0].shardDigest;
+  const objectPath = path.join(
+    knowledgeGraphStoreRoot(graphPointer),
+    "objects",
+    digest.slice(0, 2),
+    `${digest}.json`,
+  );
+  await fs.writeFile(objectPath, "x".repeat(4_097));
+  const before = await fs.readFile(graphPointer, "utf8");
+
+  const result = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: false,
+    useCache: false,
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, "artifact_too_large");
+  assert.equal(await fs.readFile(graphPointer, "utf8"), before);
+});
+
 test("query and explain deadlines remain active after snapshot acquisition", async (t) => {
   let enforceDeadline = false;
   let clockCalls = 0;

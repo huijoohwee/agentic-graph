@@ -16,6 +16,11 @@ export function countBy(values, checkpoint = () => {}) {
   );
 }
 
+export function boundedArtifactBytes(value, maximum) {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0 ? Math.min(number, maximum) : maximum;
+}
+
 export function sortedDiagnostics(diagnostics, checkpoint = () => {}) {
   const safeMessage = (value) => String(value || "")
     .replace(/(^|\s)\/(?:[^/\s:]+\/)*[^/\s:]*/g, "$1<absolute-path>")

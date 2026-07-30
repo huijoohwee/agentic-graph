@@ -21,6 +21,7 @@ import {
 } from "./resolution-store-validation.mjs";
 import {
   assertExplainedEdges,
+  boundedArtifactBytes,
   countBy,
   sortedDiagnostics,
 } from "./store-records.mjs";
@@ -36,6 +37,9 @@ export const DEFAULT_MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
 const MAX_POINTER_BYTES = 64 * 1024;
 const MAX_MANIFEST_BYTES = 64 * 1024 * 1024;
 const MAX_OBJECT_BYTES = 128 * 1024 * 1024;
+export const knowledgeGraphSourceShardByteLimit = (value) => (
+  boundedArtifactBytes(value, MAX_OBJECT_BYTES)
+);
 const checkStoreBudget = (options, stage) => checkKnowledgeGraphBudget({
   abortSignal: options?.abortSignal,
   deadline: options?.deadline,
@@ -338,7 +342,9 @@ export async function writeKnowledgeGraphSourceShard(pointerPath, source, fragme
     edges: fragment.edges,
     diagnostics: sortedDiagnostics(fragment.diagnostics, checkpoint),
   };
-  const stored = await writeContentAddressed(storeRoot, shard, MAX_OBJECT_BYTES, options);
+  const stored = await writeContentAddressed(
+    storeRoot, shard, knowledgeGraphSourceShardByteLimit(options.maxSourceShardBytes), options,
+  );
   return {
     sourcePath: source.relativePath,
     contentHash: source.contentHash,

@@ -145,6 +145,21 @@ export function parserLimitFragmentForSource(source, options = {}) {
   };
 }
 
+export function sourceArtifactLimitFragmentForSource(source, options = {}) {
+  const descriptor = parserDescriptorForSource(source, options);
+  return {
+    ...sourceOnlyFragment(source, descriptor, [{
+      code: "source_artifact_limit_exceeded",
+      sourcePath: source.relativePath,
+      message: `Structural facts were omitted after the source artifact bound was reached for ${source.relativePath}.`,
+    }]),
+    nodes: [sourceNodeFor(source, descriptor.parserId, descriptor.parserVersion, descriptor.fidelity, {
+      "corpus:sourceStatus": "limited",
+    })],
+    status: "limited",
+  };
+}
+
 export function parserDescriptorForSource(source, options = {}) {
   if (source.kind === "typescript") return { parserId: TYPESCRIPT_PARSER_ID, parserVersion: TYPESCRIPT_PARSER_VERSION, fidelity: "ast" };
   if (source.kind === "python") return { parserId: PYTHON_PARSER_ID, parserVersion: PYTHON_PARSER_VERSION, fidelity: "ast" };
