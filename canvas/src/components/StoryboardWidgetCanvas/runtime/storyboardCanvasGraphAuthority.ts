@@ -42,14 +42,21 @@ export function resolveStoryboardCanvasGraphDataAuthority(args: {
   draftGraphData: GraphData | null
   renderGraphData: GraphData | null
 }): GraphData {
-  const graphData = isAuthoritativeEmptyStoryboardGraph(args.draftGraphData)
-    ? args.draftGraphData
+  if (isAuthoritativeEmptyStoryboardGraph(args.draftGraphData)) {
+    return args.draftGraphData
+  }
+  const graphData = hasGraphNodes(args.renderGraphData)
+    ? args.renderGraphData
     : hasGraphNodes(args.draftGraphData)
-    ? args.draftGraphData
-    : hasGraphNodes(args.renderGraphData)
-      ? args.renderGraphData
+      ? args.draftGraphData
       : hasGraphNodes(args.baseGraphData)
         ? args.baseGraphData
-        : args.draftGraphData || args.renderGraphData || args.baseGraphData || { context: '', type: 'Graph', nodes: [], edges: [] }
-  return normalizeAllStoryboardWidgetProbeTreeOutputLayouts(graphData)
+        : args.renderGraphData || args.draftGraphData || args.baseGraphData || { context: '', type: 'Graph', nodes: [], edges: [] }
+  const propertyAuthorityGraphData = hasGraphNodes(args.draftGraphData)
+    ? args.draftGraphData
+    : args.baseGraphData
+  return applyStoryboardCanvasGraphPropertyAuthority({
+    graphData,
+    propertyAuthorityGraphData,
+  }) || { context: '', type: 'Graph', nodes: [], edges: [] }
 }

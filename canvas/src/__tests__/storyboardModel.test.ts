@@ -63,8 +63,8 @@ const makeGraph = (): GraphData => ({
 export function testStoryboardBoardModelProjectsSceneLikeNodesIntoLanes() {
   const board = buildStoryboardBoardModel({ graphData: makeGraph(), graphRevision: 4 })
   if (!board.semanticKey) throw new Error('expected storyboard board model to expose a semantic key')
-  if (board.totalCards !== 2) throw new Error(`expected storyboard model to filter structural nodes, got ${board.totalCards}`)
-  if (board.lanes.length !== 2) throw new Error(`expected two storyboard lanes, got ${board.lanes.length}`)
+  if (board.totalCards !== 3) throw new Error(`expected one Storyboard card per shared display node, got ${board.totalCards}`)
+  if (board.lanes.length !== 3) throw new Error(`expected scene lanes plus the shared structural-node lane, got ${board.lanes.length}`)
   const outlineLane = board.lanes.find(lane => lane.label === 'Outline')
   if (!outlineLane || outlineLane.cards.length !== 1) {
     throw new Error(`expected Outline lane with one card, got ${JSON.stringify(board.lanes)}`)
@@ -127,13 +127,13 @@ export function testStoryboardBoardModelPreservesAuthoredStructuralSourceAcrossG
   })
   const cardIds = board.lanes.flatMap(lane => lane.cards.map(card => card.id))
   if (
-    cardIds.length !== 3
+    cardIds.length !== 4
     || !cardIds.includes('source')
+    || !cardIds.includes('empty-group')
     || !cardIds.includes('branch-1')
     || !cardIds.includes('branch-2')
-    || cardIds.includes('empty-group')
   ) {
-    throw new Error(`expected authored structural content and generated cards to coexist without structural scaffold leakage, got ${JSON.stringify(cardIds)}`)
+    throw new Error(`expected Storyboard growth to preserve every shared display-node id, got ${JSON.stringify(cardIds)}`)
   }
 }
 

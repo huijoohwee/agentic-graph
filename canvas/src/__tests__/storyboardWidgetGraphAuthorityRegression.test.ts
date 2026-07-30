@@ -122,8 +122,8 @@ export function testStoryboardWidgetRuntimeUsesActiveSourceGraphAuthority() {
     throw new Error('expected Storyboard Widget runtime state to avoid exposing raw store graph as render authority')
   }
   if (!activeGraphDataText.includes("if (canvas2dRenderer === 'storyboard') {")
-    || !activeGraphDataText.includes('return workspaceFrontmatterFlowGraphData || workspaceJsonGraphData || workspaceStrybldrStoryboardGraphData')) {
-    throw new Error('expected Storyboard Widget active graph selection to prefer authored frontmatter-flow before Strybldr storyboard graph data')
+    || !activeGraphDataText.includes('return workspaceStrybldrStoryboardGraphData || workspaceFrontmatterFlowGraphData || workspaceJsonGraphData')) {
+    throw new Error('expected Storyboard Widget active graph selection to preserve valid Strybldr card-level graph authority')
   }
   if (!activeGraphDataText.includes('if (!frontmatterOnlyPolicyActive) {')
     || !activeGraphDataText.includes('if (workspaceFrontmatterFlowGraphData) return workspaceFrontmatterFlowGraphData')
