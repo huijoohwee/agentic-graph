@@ -1,5 +1,11 @@
 import { upsertFrontmatterFlowMarkdownText } from '@/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
 import type { GraphData } from '@/lib/graph/types'
+import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
+import { readSubgraphs } from '@/lib/graph/subgraphs'
+import {
+  readWorkflowMaterializationProjectionSourceNodeId,
+  WORKFLOW_MATERIALIZATION_PROJECTION_SOURCE_NODE_ID_PROPERTY,
+} from '@/lib/storyboardWidget/runMaterializationProjection'
 
 export function testFrontmatterFlowWritebackDoesNotReplaceNonEmptyFlowWithEmptyGraph() {
   const text = [
@@ -49,5 +55,52 @@ export function testFrontmatterFlowWritebackDoesNotReplaceNonEmptyFlowWithEmptyG
     || !repairedNoteText.includes('id: {key: id, type: string, value: "source"}')
   ) {
     throw new Error(`expected legacy authored-note flow writeback to restore titled 2D YAML frontmatter, got ${repairedNoteText}`)
+  }
+}
+
+export function testFrontmatterFlowWritebackRoundTripsAutoBoundSubgraphs() {
+  const graphData: GraphData = {
+    type: 'flow',
+    nodes: [
+      { id: 'source', type: 'InputWidget', label: 'Source', properties: {} },
+      { id: 'output', type: 'RichMediaPanel', label: 'Output', properties: {} },
+    ],
+    edges: [{
+      id: 'output-edge',
+      source: 'source',
+      target: 'output',
+      label: '',
+      properties: {
+        [WORKFLOW_MATERIALIZATION_PROJECTION_SOURCE_NODE_ID_PROPERTY]: 'output',
+      },
+    }],
+    metadata: {
+      frontmatterFlow: true,
+      'kg:subgraphs': [{
+        id: 'workflow-materialization:source',
+        label: 'Generated outputs',
+        memberNodeIds: ['source', 'output'],
+        parentId: null,
+        kind: 'subgraph',
+        autoBounds: true,
+      }],
+    },
+  }
+  const text = upsertFrontmatterFlowMarkdownText('# Generated outputs\n', graphData, {
+    documentName: '/notes/generated-output.md',
+  })
+  const parsed = tryParseMarkdownFrontmatterFlowGraph('generated-output.md', text)
+  const subgraph = readSubgraphs(parsed?.graphData)[0]
+  const projectionSourceNodeId = readWorkflowMaterializationProjectionSourceNodeId(
+    parsed?.graphData.edges[0]?.properties,
+  )
+  if (
+    !text.includes('  subgraphs:')
+    || subgraph?.id !== 'workflow-materialization:source'
+    || subgraph.autoBounds !== true
+    || subgraph.memberNodeIds.join('|') !== 'output|source'
+    || projectionSourceNodeId !== 'output'
+  ) {
+    throw new Error(`expected generated Group Panel membership and projected edge routing to survive frontmatter writeback, got ${JSON.stringify({ text, subgraph, projectionSourceNodeId })}`)
   }
 }

@@ -1,4 +1,5 @@
 import fsPromises from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import {
@@ -102,5 +103,16 @@ export async function testWorkspaceRunOutputSwitchWaitsForRunPublication() {
   await Promise.all([publication, selectionFence])
   if (!selectionFenceSettled) {
     throw new Error('expected file switching to continue after the Canvas Run publication settles')
+  }
+}
+
+export function testWorkspaceRunOutputSwitchStableHydrationReadsDurablePath() {
+  const selectionText = readFileSync(
+    path.resolve(process.cwd(), 'src/lib/markdown-workspace-runtime/useMarkdownWorkspaceSelection.ts'),
+    'utf8',
+  )
+  const durablePathReads = selectionText.match(/preferPathResolvedText: true/g) || []
+  if (durablePathReads.length < 3) {
+    throw new Error('expected switched and stable workspace hydration to reread durable path authority before Canvas apply')
   }
 }

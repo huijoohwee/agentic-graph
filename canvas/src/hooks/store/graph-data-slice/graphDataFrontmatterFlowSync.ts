@@ -24,9 +24,13 @@ import {
 import { syncStructuredResponseEnvelopeFromNodeEdit } from './graphDataStructuredResponseSync'
 import { buildTextSelectionWidgetEdgePersistenceProperties } from '@/lib/storyboardWidget/textSelectionWidgetLink'
 import { ensureAuthoredMarkdownNoteFrontmatterDefaults } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
+import { readSubgraphs } from '@/lib/graph/subgraphs'
 const FLOW_YAML_PLAIN_KEY_RE = /^[A-Za-z0-9_.-]+$/
 const FLOW_EDGE_SOURCE_PORT_KEY = 'flow:sourcePortKey'
 const FLOW_EDGE_TARGET_PORT_KEY = 'flow:targetPortKey'
+const FLOW_EDGE_DISPLAY_LABEL_KEY = 'flow:displayLabel'
+const FLOW_EDGE_SOCKET_TYPE_KEY = 'flow:socketType'
+const FLOW_EDGE_ANIMATED_KEY = 'flow:animated'
 const FLOW_COMPUTE_PROPERTY_KEY = 'flow:compute'
 const FLOW_PORT_TYPES_PROPERTY_KEY = 'flow:portTypes'
 const FRONTMATTER_HANDLES_PROPERTY_KEY = 'frontmatter:handles'
@@ -171,6 +175,20 @@ function buildFrontmatterFlowBlockLines(graphData: GraphData): string[] {
     appendFlowYamlEnvelopeFieldLines(lines, '  ', 'snapToGrid', settings.snapToGrid, 'boolean')
     appendFlowYamlEnvelopeFieldLines(lines, '  ', 'gridSize', settings.gridSize, 'number')
   }
+  const subgraphs = readSubgraphs(graphData)
+  if (subgraphs.length > 0) {
+    lines.push('  subgraphs:')
+    for (const subgraph of subgraphs) {
+      lines.push(`    - ${flowYamlInlineValue({
+        id: subgraph.id,
+        label: subgraph.label,
+        memberNodeIds: subgraph.memberNodeIds,
+        parentId: subgraph.parentId ?? null,
+        kind: subgraph.kind || 'subgraph',
+        ...(subgraph.autoBounds === true ? { autoBounds: true } : {}),
+      })}`)
+    }
+  }
   lines.push('  nodes:')
   const nodes = Array.isArray(graphData.nodes) ? graphData.nodes : []
   for (const node of nodes) {
@@ -240,11 +258,30 @@ function buildFrontmatterFlowBlockLines(graphData: GraphData): string[] {
     }
     const label = String(unwrapGraphCellValue(edge.label) || '').trim()
     if (label) row.label = label
-    if (typeof props.animated === 'boolean') row.animated = props.animated
-    const socketType = String(unwrapGraphCellValue(props['flow:socketType']) || '').trim()
+    const animated = unwrapGraphCellValue(props.animated ?? props[FLOW_EDGE_ANIMATED_KEY])
+    if (typeof animated === 'boolean') row.animated = animated
+    const socketType = String(unwrapGraphCellValue(props[FLOW_EDGE_SOCKET_TYPE_KEY]) || '').trim()
     if (socketType) row.type = socketType
+    const persistedProperties = Object.fromEntries(
+      Object.entries(props)
+        .filter(([key, value]) => (
+          typeof value !== 'undefined'
+          && key !== FLOW_EDGE_SOURCE_PORT_KEY
+          && key !== FLOW_EDGE_TARGET_PORT_KEY
+          && key !== FLOW_EDGE_DISPLAY_LABEL_KEY
+          && key !== FLOW_EDGE_SOCKET_TYPE_KEY
+          && key !== FLOW_EDGE_ANIMATED_KEY
+          && key !== 'animated'
+        ))
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, value]) => [key, unwrapGraphCellValue(value)]),
+    )
     const selectionProvenance = buildTextSelectionWidgetEdgePersistenceProperties(edge)
-    if (selectionProvenance) row.properties = selectionProvenance
+    const mergedProperties = {
+      ...persistedProperties,
+      ...(selectionProvenance || {}),
+    }
+    if (Object.keys(mergedProperties).length > 0) row.properties = mergedProperties
     lines.push(`    - ${flowYamlInlineValue(row)}`)
   }
   return lines

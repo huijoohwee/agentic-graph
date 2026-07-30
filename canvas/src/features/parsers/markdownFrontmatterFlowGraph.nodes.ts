@@ -7,7 +7,7 @@ import {
   FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID,
   FLOW_VIDEO_GENERATION_NODE_TYPE_ID,
 } from '@/lib/config.storyboard-widget'
-import { KG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
+import { KG_SUBGRAPHS_KEY, type UserSubgraph } from '@/lib/graph/subgraphs'
 import {
   FLOW_WIDGET_FORM_ID_KEY,
   FLOW_WIDGET_TYPE_ID_KEY,
@@ -167,7 +167,7 @@ export function coerceFrontmatterNodeRecord(raw: unknown): Record<string, unknow
 
 export function normalizeClusters(meta: Record<string, unknown>, nodes: GraphNode[]): {
   clusterNodes: GraphNode[]
-  subgraphs: Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'cluster' }>
+  subgraphs: UserSubgraph[]
 } {
   const rawClusters = Array.isArray(meta.clusters) ? meta.clusters : []
   if (rawClusters.length === 0) return { clusterNodes: [], subgraphs: [] }
@@ -177,7 +177,7 @@ export function normalizeClusters(meta: Record<string, unknown>, nodes: GraphNod
     if (id) nodeIdSet.add(id)
   }
   const clusterNodes: GraphNode[] = []
-  const subgraphs: Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'cluster' }> = []
+  const subgraphs: UserSubgraph[] = []
   const seenClusterIds = new Set<string>()
   for (let i = 0; i < rawClusters.length; i += 1) {
     const row = rawClusters[i]
@@ -235,7 +235,7 @@ function categoryLayerIndex(category: string): number | null {
 export function normalizeSubgraphsFromFrontmatter(args: {
   meta: Record<string, unknown>
   rawNodes: ReadonlyArray<unknown>
-}): Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }> | null {
+}): UserSubgraph[] | null {
   const raw = args.meta[KG_SUBGRAPHS_KEY]
   if (!Array.isArray(raw)) return null
   const nodeIdSet = new Set<string>()
@@ -245,7 +245,7 @@ export function normalizeSubgraphsFromFrontmatter(args: {
     const id = asString(row.id)
     if (id) nodeIdSet.add(id)
   }
-  const out: Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }> = []
+  const out: UserSubgraph[] = []
   const seen = new Set<string>()
   for (let i = 0; i < raw.length; i += 1) {
     const row = raw[i]
@@ -268,12 +268,14 @@ export function normalizeSubgraphsFromFrontmatter(args: {
     const parentId = row.parentId == null ? null : asString(row.parentId) || null
     const kindRaw = asString(row.kind)
     const kind = kindRaw === 'cluster' ? 'cluster' : kindRaw === 'subgraph' ? 'subgraph' : undefined
+    const autoBounds = row.autoBounds === true
     out.push({
       id,
       label,
       memberNodeIds,
       ...(parentId !== undefined ? { parentId } : {}),
       ...(kind ? { kind } : {}),
+      ...(autoBounds ? { autoBounds: true } : {}),
     })
   }
   return out

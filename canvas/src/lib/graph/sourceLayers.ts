@@ -6,6 +6,7 @@ import { toMetadataRecord } from '@/lib/graph/documentMetadata'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { createUniqueId } from '@/lib/ids'
 import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
+import { readSubgraphs, writeSubgraphs, type UserSubgraph } from '@/lib/graph/subgraphs'
 
 export type SourceLayerInput = {
   id: string
@@ -546,9 +547,41 @@ export function projectComposedGraphToSourceLayer(args: {
     ))
   }
 
+  const candidateSubgraphs = readSubgraphs(args.graphData).map(subgraph => ({
+    ...subgraph,
+    memberNodeIds: Array.from(new Set(
+      subgraph.memberNodeIds
+        .map(memberNodeId => projectComposedEntityId(memberNodeId, layerId))
+        .filter(memberNodeId => memberNodeId && includedNodeIds.has(memberNodeId)),
+    )).sort((left, right) => left.localeCompare(right)),
+  }))
+  const retainedSubgraphIds = new Set(
+    candidateSubgraphs
+      .filter(subgraph => subgraph.memberNodeIds.length > 0)
+      .map(subgraph => subgraph.id),
+  )
+  let retainedParent = true
+  while (retainedParent) {
+    retainedParent = false
+    for (const subgraph of candidateSubgraphs) {
+      if (retainedSubgraphIds.has(subgraph.id)) continue
+      if (!candidateSubgraphs.some(child => child.parentId === subgraph.id && retainedSubgraphIds.has(child.id))) continue
+      retainedSubgraphIds.add(subgraph.id)
+      retainedParent = true
+    }
+  }
+  const projectedSubgraphs: UserSubgraph[] = candidateSubgraphs
+    .filter(subgraph => retainedSubgraphIds.has(subgraph.id))
+    .map(subgraph => ({
+      ...subgraph,
+      parentId: subgraph.parentId && retainedSubgraphIds.has(subgraph.parentId)
+        ? subgraph.parentId
+        : null,
+    }))
+
   const sourceMetadata = readSourceLayerGraphMetadata(sourceGraph)
   const graphDataRevision = graphMetadata.graphDataRevision
-  return {
+  const projectedGraph: GraphData = {
     ...sourceGraph,
     type: sourceGraph.type || args.graphData.type || 'Graph',
     nodes: projectedNodes,
@@ -558,4 +591,5 @@ export function projectComposedGraphToSourceLayer(args: {
       ...(typeof graphDataRevision === 'number' && Number.isFinite(graphDataRevision) ? { graphDataRevision } : {}),
     } as GraphData['metadata'],
   }
+  return writeSubgraphs(projectedGraph, projectedSubgraphs)
 }
