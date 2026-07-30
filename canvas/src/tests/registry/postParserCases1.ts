@@ -224,6 +224,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["workspace.import.frontmatterPreset.canonicalTokensAndTableMode","@/__tests__/frontmatterFlowImportModeSeepageRegression.test","testWorkspaceImportModesNormalizeCanonicalRendererTokensAndExplicitTableMode"],
   ["workspace.import.frontmatterPreset.storyboardWidgetDisablesTableConflict","@/__tests__/frontmatterFlowImportModeSeepageRegression.test","testWorkspaceImportModesStoryboardPresetDisablesConflictingTableMode"],
   ["workspace.import.frontmatterPreset.flowCanonicalTokenFrontmatterOnly","@/__tests__/frontmatterFlowImportModeSeepageRegression.test","testWorkspaceImportModesUseCanonicalFlowRendererForFrontmatterOnlyLanding"],
+  ["frontmatter.flowImportMode.default2dSurface.exitsGeospatialMode","@/__tests__/frontmatterFlowDefaultSurfaceMode.test","testFrontmatterFlowDefault2dSurfaceExitsGeospatialMode"],
   ["workspace.import.frontmatterPreset.disablesGeospatialOverlay","@/__tests__/frontmatterFlowImportModeSeepageRegression.test","testCanvasFrontmatterPresetDisablesGeospatialOverlayFor2dDocuments"],
   ["workspace.import.frontmatterPreset.enablesGeospatialSurfaceMode","@/__tests__/frontmatterFlowImportModeSeepageRegression.test","testCanvasFrontmatterPresetEnablesGeospatialSurfaceMode"],
   ["workspace.import.frontmatterPreset.enables3dSurfaceVoxelMode","@/__tests__/frontmatterFlowImportModeSeepageRegression.test","testCanvasFrontmatterPresetEnables3dSurfaceModeAndVoxelMode"],
