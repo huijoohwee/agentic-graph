@@ -44,7 +44,10 @@ import {
   buildStoryboardWidgetRunMaterializationLayoutProperties,
   type StoryboardWidgetRunExecutionAnchorSnapshot,
 } from './storyboardWidgetRunExecutionAnchor'
-import { applyWorkflowMaterializationProjectionParent } from '@/lib/storyboardWidget/runMaterializationProjection'
+import {
+  applyWorkflowMaterializationGroupPanel,
+  applyWorkflowMaterializationProjectionParent,
+} from '@/lib/storyboardWidget/runMaterializationProjection'
 import {
   createStoryboardWidgetRunMaterializationPositionResolver,
   readStoryboardWidgetWorkflowPublicationString as readWorkflowString,
@@ -394,12 +397,21 @@ export function createStoryboardWidgetWorkflowRichMediaPublishers(args: {
       ))
       if (panelNodeIds.length === 1 && materializationChildNodeIds.length > 0) {
         const currentDraft = transaction.readDraftGraphData()
-        const nextDraft = applyWorkflowMaterializationProjectionParent({
+        let nextDraft = applyWorkflowMaterializationProjectionParent({
           graphData: currentDraft,
           semanticParentNodeId: readWorkflowString(panelArgs.anchorNode.id),
           projectionParentNodeId: panelNodeIds[0]!,
           childNodeIds: materializationChildNodeIds,
         })
+        if (createdPanelNodeId) {
+          nextDraft = applyWorkflowMaterializationGroupPanel({
+            graphData: nextDraft,
+            projectionParentNodeId: createdPanelNodeId,
+            childNodeIds: materializationChildNodeIds,
+            outputGroupId: panelArgs.outputGroupId,
+            groupLabel: `${panelArgs.panelLabel?.trim() || panelArgs.title?.trim() || 'Generated'} outputs`,
+          })
+        }
         if (nextDraft !== currentDraft) {
           transaction.commitDraftGraphDataUpdate(currentDraft, nextDraft)
         }
