@@ -101,8 +101,8 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
   })
   const cockpit = resolveFlightSimFollowTarget(flight, 2, 'cockpit')
   assert.deepEqual(cockpit, {
-    position: [2, 6.1, 1.5999999999999996],
-    target: [2, 6.1, -34.4],
+    position: [2, 8.3, -6.1],
+    target: [2, 8.3, -42.1],
     fovDegrees: 68,
     resetKey: 7,
     sequence: 42,

@@ -2,7 +2,7 @@ import React from 'react'
 import { addAfterEffect, invalidate, useFrame, useThree } from '@react-three/fiber'
 import { type Group, type Mesh } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
+import { XrSceneLibraryAssetGeometry } from '@/features/three/XrSceneLibrarySubject'
 import { readFlightSimDefaultAssetLoadReport } from './assetSpec/flightSimDefaultAssets'
 import {
   FLIGHT_SIM_AIRCRAFT_FORWARD,
@@ -242,10 +242,9 @@ export function FlightSimMissionStage({
             proceduralForward: FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
           }}
         >
-          <XrProceduralVehicleGeometry
-            kind="airplane"
+          <XrSceneLibraryAssetGeometry
+            assetId={assetCatalog.aircraft.assetSpec.id}
             color={assetCatalog.aircraft.assetSpec.defaultColor}
-            size={assetCatalog.aircraft.assetSpec.dimensionsMeters}
           />
         </group>
       </group>
