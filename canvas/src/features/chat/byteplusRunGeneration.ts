@@ -16,7 +16,7 @@ import {
 } from '@/lib/chatEndpoint'
 import { buildProviderChatRequestOptions } from './floatingPanelChat/floatingPanelChatProviderOptions'
 import { extractAssistantDelta } from './floatingPanelChat/floatingPanelChatStreamParsing'
-import { readRunTextEventStream } from './runTextEventStream'
+import { extractRunTextReasoningSignal, readRunTextEventStream } from './runTextEventStream'
 import { readRunTextProviderResponse } from './runTextProviderResponse'
 import { readRunTextResponseInstructions } from './runTextResponseInstructions'
 import { resolveBytePlusVideoReferenceImage } from './byteplusVideoReferenceImage'
@@ -36,7 +36,6 @@ export type RunGenerationConfig = {
   apiKey?: unknown
   chatModel?: unknown
 }
-
 export type RunTextGenerationOptions = {
   chatTemperature?: unknown
   chatMaxCompletionTokens?: unknown
@@ -58,9 +57,8 @@ export type RunTextGenerationOptions = {
   chatLogitBiasJson?: unknown
   chatToolsJson?: unknown
   chatToolChoiceJson?: unknown
-  onText?: (text: string) => void
+  onText?: (text: string) => void; onReasoningText?: (text: string) => void
 }
-
 export type RunImageGenerationOptions = {
   model?: unknown
   size?: unknown
@@ -74,7 +72,6 @@ export type RunImageGenerationOptions = {
   guidanceScale?: unknown
   referenceImageUrl?: unknown
 }
-
 export type RunVideoGenerationOptions = {
   model?: unknown
   contentJson?: unknown
@@ -89,7 +86,6 @@ export type RunVideoGenerationOptions = {
   referenceImageUrl?: unknown
   personGeneration?: unknown
 }
-
 export type GeneratedBinaryAsset = {
   blob: Blob
   renderUrl: string
@@ -713,7 +709,7 @@ const extractVideoUrl = (payload: unknown): string => {
 
 export async function generateRunMarkdownWithProvider(args: {
   config: RunGenerationConfig
-  prompt: string
+  prompt: string; systemMessages?: ReadonlyArray<{ role: 'system'; content: string }>
   options?: RunTextGenerationOptions
 }): Promise<string | null> {
   const endpoint = resolveChatEndpointForRequest(args.config.endpointUrl)
@@ -751,7 +747,7 @@ export async function generateRunMarkdownWithProvider(args: {
   const baseMessages = [
     {
       role: 'system',
-      content: readRunTextResponseInstructions(),
+      content: [readRunTextResponseInstructions(), ...(args.systemMessages || []).map(message => String(message?.content || '').trim())].filter(Boolean).join('\n\n'),
     },
     {
       role: 'user',
@@ -809,10 +805,14 @@ export async function generateRunMarkdownWithProvider(args: {
     return readRunTextEventStream({
       body: res.body,
       extractText: extractStreamTextDelta,
-      onText: args.options?.onText,
+      onText: args.options?.onText, onReasoningText: args.options?.onReasoningText,
     })
   }
   const data = await parseJsonResponseBody(res, 'Run text generation')
+  const reasoningSignal = extractRunTextReasoningSignal(data)
+  const reasoningText = [reasoningSignal.textDelta.trim(), reasoningSignal.summaries.length > 0
+    ? reasoningSignal.summaries.map(summary => `- ${summary}`).join('\n') : ''].filter(Boolean).join('\n\n')
+  if (reasoningText) args.options?.onReasoningText?.(reasoningText)
   return readRunTextProviderResponse({ payload: data, extractText: extractChatText, onText: args.options?.onText })
 }
 

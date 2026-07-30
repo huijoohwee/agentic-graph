@@ -53,10 +53,12 @@ export function testCanvasToolbarDockResponsiveContract() {
     responsiveToolbarText.includes('.kg-canvas-toolbar-dock') ||
     responsiveToolbarText.includes('.kg-workspace-overlay-canvas-toolbar') ||
     !dockCssText.includes('.kg-canvas-toolbar-dock-content > .App-toolbar--touch-scroll') ||
+    !dockCssText.includes('width: fit-content') ||
+    !dockCssText.includes('inline-size: fit-content') ||
     !dockCssText.includes('max-inline-size: calc(100vw - var(--kg-safe-left) - var(--kg-safe-right) - 1rem)') ||
     !dockCssText.includes('inset-block-end: calc(var(--kg-safe-bottom) + var(--kg-canvas-viewport-edge-gap))')
   ) {
-    throw new Error('expected focused canvas toolbar CSS to be the only owner of dock bounds, mobile bottom placement, and toolbar-scroll clamping')
+    throw new Error('expected focused canvas toolbar CSS to own intrinsic dock width, viewport clamping, and mobile bottom placement')
   }
   if (
     !classText.includes('UI_RESPONSIVE_MAIN_PANEL_MOBILE_SHEET_CLASSNAME') ||

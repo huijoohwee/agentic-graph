@@ -23,6 +23,15 @@ const FLOATING_SCALE_STEP = 0.02
 const COLLECTIVE_CAMERA_BASELINE_REF_LIMIT = 64
 const collectiveCameraBaselineRefByKey = new Map<string, { current: number | null }>()
 
+export function buildCollectiveCameraFollowBaselineKey(args: {
+  surfaceId: unknown
+  graphKey?: unknown
+}): string {
+  const surfaceId = String(args.surfaceId || '').trim() || 'storyboard'
+  const graphKey = String(args.graphKey || '').trim()
+  return `${surfaceId}|${graphKey}`
+}
+
 export function resolveCollectiveCameraFollowBaselineRef(
   rawKey: unknown,
 ): { current: number | null } {
@@ -38,6 +47,16 @@ export function resolveCollectiveCameraFollowBaselineRef(
     }
   }
   return baselineRef
+}
+
+export function resetCollectiveCameraFollowBaseline(
+  rawKey: unknown,
+  baselineZoomK = 1,
+): void {
+  const baselineRef = resolveCollectiveCameraFollowBaselineRef(rawKey)
+  baselineRef.current = Number.isFinite(baselineZoomK) && baselineZoomK > 0
+    ? Number(baselineZoomK)
+    : 1
 }
 
 function clamp(v: number, lo: number, hi: number): number {

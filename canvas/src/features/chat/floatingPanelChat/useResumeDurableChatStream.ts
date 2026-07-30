@@ -6,6 +6,7 @@ import {
   clearActiveDurableChatStreamRun,
   forgetDurableChatStreamRun,
   readActiveDurableChatStreamRun,
+  restoreDurableChatHeadlessPreparation,
 } from './floatingPanelChatDurableStream'
 import {
   createPendingChatRequestMessageId,
@@ -20,6 +21,30 @@ import {
   readAssistantResponseText,
 } from './floatingPanelChatStreaming'
 import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes'
+import {
+  finalizeHeadlessResponseRun,
+  type HeadlessResponsePreparation,
+  type HeadlessResponseRunResult,
+} from '../headlessResponseCoordinator'
+import { projectHeadlessResponseRunToChatMessage } from '../headlessResponseChatProjection'
+
+export const buildDurableChatResumedHeadlessRunResult = (args: {
+  prepared: HeadlessResponsePreparation | null
+  responseText: string
+  status: 'ok' | 'error'
+  modelId: string | null
+  artifactPath: string | null
+}): HeadlessResponseRunResult | undefined => {
+  return args.prepared
+    ? finalizeHeadlessResponseRun({
+        prepared: args.prepared,
+        responseText: args.responseText,
+        status: args.status,
+        modelId: args.modelId,
+        artifactPath: args.artifactPath,
+      })
+    : undefined
+}
 
 export const useResumeDurableChatStream = (args: {
   isLoading: boolean
@@ -62,6 +87,14 @@ export const useResumeDurableChatStream = (args: {
     if (!activeRun || durableResumeRunRef.current === activeRun.runId || args.isLoading) return
     if (activeRun.chatStorageTarget !== args.chatStorageTarget) return
     durableResumeRunRef.current = activeRun.runId
+    const resumedHeadlessPreparation = restoreDurableChatHeadlessPreparation(
+      activeRun.headlessPreparationSeed,
+      {
+        requestText: activeRun.requestText,
+        expectedRunId: activeRun.assistantMessageId,
+        expectedAssistantMessageId: activeRun.assistantMessageId,
+      },
+    )
     let cancelled = false
 
     args.setIsLoading(true)
@@ -163,11 +196,19 @@ export const useResumeDurableChatStream = (args: {
             finalStatus = 'error'
           }
         }
+        const resumedHeadlessRunResult = buildDurableChatResumedHeadlessRunResult({
+          prepared: resumedHeadlessPreparation,
+          responseText: finalAssistantText,
+          status: finalStatus,
+          modelId: assistantStream.modelId || activeRun.modelId || args.chatModelId,
+          artifactPath: activeRun.liveKgcPath,
+        })
         await args.finalizeAssistantSuccess({
           assistantMessageId: activeRun.assistantMessageId,
           requestText: activeRun.requestText,
           modelId: assistantStream.modelId || activeRun.modelId || args.chatModelId,
           rawAssistantText: finalAssistantText,
+          runResult: resumedHeadlessRunResult,
           validatedKgc: finalValidatedKgc,
           timestampMs: Date.now(),
           traceId: activeRun.traceId,
@@ -183,12 +224,27 @@ export const useResumeDurableChatStream = (args: {
       } catch (error) {
         if (!cancelled) {
           const message = error instanceof Error ? error.message : String(error || 'Durable chat stream resume failed.')
+          const isAborted = message.toLowerCase().includes('aborted')
+          const errorRunResult = isAborted
+            ? undefined
+            : buildDurableChatResumedHeadlessRunResult({
+                prepared: resumedHeadlessPreparation,
+                responseText: message,
+                status: 'error',
+                modelId: activeRun.modelId || args.chatModelId,
+                artifactPath: activeRun.liveKgcPath,
+              })
           args.setErrorText(message)
           args.setConnectivity('error')
           args.setConnectivityDetail(message)
           args.setMessages(prev => {
             const next = prev.filter(item => item.id !== activeRun.assistantMessageId)
-            return [...next, { id: activeRun.assistantMessageId, role: 'assistant', content: message }]
+            return [...next, projectHeadlessResponseRunToChatMessage({
+              message: { id: activeRun.assistantMessageId, role: 'assistant', content: '' },
+              content: message,
+              runResult: errorRunResult,
+              artifactPath: activeRun.liveKgcPath,
+            })]
           })
         }
       } finally {

@@ -1,4 +1,5 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
 
 export function testFlowWidgetUiStateIsScopedByGraphMetaKey() {
   useGraphStore.getState().setDocumentStructureBaselineLock(false)
@@ -87,6 +88,158 @@ export function testFlowWidgetUiStateCarriesAcrossSameSourceRecomposeHashChanges
   }
   if (after.flowWidgetWorldPosByNodeId.NODE_TEXT?.x !== 12 || after.flowWidgetWorldPosByNodeId.NODE_TEXT?.y !== 24) {
     throw new Error('expected same-source recomposition to preserve widget world position across sourceLayerHash changes')
+  }
+
+  useGraphStore.getState().setGraphDataPreservingLayout({
+    type: 'Graph',
+    context: 'frontmatter-flow',
+    nodes: [
+      { id: 'NODE_TEXT', type: 'CustomWidget', label: 'Text Widget', properties: { prompt: 'retained' } },
+      { id: 'NODE_OUTPUT', type: 'CustomWidget', label: 'Output Widget', properties: {} },
+    ],
+    edges: [{ id: 'EDGE_OUTPUT', source: 'NODE_TEXT', target: 'NODE_OUTPUT' }],
+    metadata: {
+      kind: 'frontmatter-flow',
+      source: 'workspace:/typed.md',
+      sourceLayerHash: 'typed-hash-c',
+    },
+  } as never)
+
+  const afterGrowth = useGraphStore.getState()
+  if (afterGrowth.flowWidgetPinnedByNodeId.NODE_TEXT !== true) {
+    throw new Error('expected same-document topology growth to preserve retained widget placement authority')
+  }
+  if (
+    afterGrowth.flowWidgetPosByNodeId.NODE_TEXT?.top !== 120
+    || afterGrowth.flowWidgetPosByNodeId.NODE_TEXT?.left !== 240
+  ) {
+    throw new Error('expected same-document topology growth to preserve retained widget viewport position')
+  }
+  if (
+    afterGrowth.flowWidgetWorldPosByNodeId.NODE_TEXT?.x !== 12
+    || afterGrowth.flowWidgetWorldPosByNodeId.NODE_TEXT?.y !== 24
+  ) {
+    throw new Error('expected same-document topology growth to preserve retained widget world position')
+  }
+  if (
+    afterGrowth.flowWidgetPosByNodeId.NODE_OUTPUT !== undefined
+    || afterGrowth.flowWidgetWorldPosByNodeId.NODE_OUTPUT !== undefined
+  ) {
+    throw new Error('expected newly added widgets to enter normal placement without inheriting retained-node authority')
+  }
+}
+
+export function testFlowWidgetUiStateCarriesOnlyStableRetainedNodesAcrossSameSourceTopologyReplacement() {
+  useGraphStore.getState().setDocumentStructureBaselineLock(false)
+
+  useGraphStore.getState().setGraphData({
+    type: 'Graph',
+    context: 'frontmatter-flow',
+    nodes: [
+      { id: 'NODE_SOURCE', type: 'CustomWidget', label: 'Source', x: 100, y: 80, properties: {} },
+      { id: 'NODE_LAYOUT_CHANGED', type: 'CustomWidget', label: 'Changed', x: 220, y: 80, properties: {} },
+      { id: 'NODE_OUTPUT_OLD', type: 'CustomWidget', label: 'Old output', x: 340, y: 80, properties: {} },
+    ],
+    edges: [{ id: 'EDGE_OUTPUT_OLD', source: 'NODE_SOURCE', target: 'NODE_OUTPUT_OLD' }],
+    metadata: {
+      kind: 'frontmatter-flow',
+      source: 'workspace:/replacement-continuity.md',
+      sourceLayerHash: 'replacement-hash-a',
+    },
+  } as never)
+
+  useGraphStore.getState().setFlowWidgetPinnedByNodeId({
+    NODE_SOURCE: true,
+    NODE_LAYOUT_CHANGED: true,
+    NODE_OUTPUT_OLD: true,
+  })
+  useGraphStore.getState().setFlowWidgetPosByNodeId({
+    NODE_SOURCE: { top: 140, left: 240 },
+    NODE_LAYOUT_CHANGED: { top: 140, left: 640 },
+    NODE_OUTPUT_OLD: { top: 140, left: 1040 },
+  })
+  useGraphStore.getState().setFlowWidgetWorldPosByNodeId({
+    NODE_SOURCE: { x: 12, y: 24 },
+    NODE_LAYOUT_CHANGED: { x: 36, y: 24 },
+    NODE_OUTPUT_OLD: { x: 60, y: 24 },
+  })
+
+  const previousCamera = {
+    zoomRequest: useGraphStore.getState().zoomRequest,
+    zoomState: useGraphStore.getState().zoomState,
+    zoomStateByKey: useGraphStore.getState().zoomStateByKey,
+  }
+  const unchangedZoomState = { k: 1, x: 160, y: 96, viewportW: 1280, viewportH: 720 }
+  const unchangedZoomStateByKey = { 'replacement-continuity-camera': unchangedZoomState }
+  const unchangedZoomRequest = {
+    type: 'transform',
+    payload: { k: 1, x: 160, y: 96 },
+    intent: 'zoomPreset',
+    at: 42,
+  } as const
+  useGraphStore.setState({
+    zoomRequest: unchangedZoomRequest,
+    zoomState: unchangedZoomState,
+    zoomStateByKey: unchangedZoomStateByKey,
+  } as never)
+
+  try {
+    useGraphStore.getState().setGraphDataPreservingLayout({
+      type: 'Graph',
+      context: 'frontmatter-flow',
+      nodes: [
+        { id: 'ws:rerun::NODE_SOURCE', type: 'CustomWidget', label: 'Source', x: 100, y: 80, properties: { revision: 2 } },
+        { id: 'ws:rerun::NODE_LAYOUT_CHANGED', type: 'ChangedWidget', label: 'Changed', x: 260, y: 160, properties: {} },
+        { id: 'ws:rerun::NODE_OUTPUT_NEW', type: 'CustomWidget', label: 'New output', x: 340, y: 80, properties: {} },
+      ],
+      edges: [{ id: 'ws:rerun::EDGE_OUTPUT_NEW', source: 'ws:rerun::NODE_SOURCE', target: 'ws:rerun::NODE_OUTPUT_NEW' }],
+      metadata: {
+        kind: 'frontmatter-flow',
+        source: 'workspace:/replacement-continuity.md',
+        sourceLayerHash: 'replacement-hash-b',
+      },
+    } as never)
+
+    const after = useGraphStore.getState()
+    const retainedId = 'ws:rerun::NODE_SOURCE'
+    if (after.flowWidgetPinnedByNodeId[retainedId] !== true) {
+      throw new Error('expected same-source output replacement to preserve the stable retained canonical pin authority')
+    }
+    if (
+      after.flowWidgetPosByNodeId[retainedId]?.top !== 140
+      || after.flowWidgetPosByNodeId[retainedId]?.left !== 240
+      || after.flowWidgetWorldPosByNodeId[retainedId]?.x !== 12
+      || after.flowWidgetWorldPosByNodeId[retainedId]?.y !== 24
+    ) {
+      throw new Error('expected same-source output replacement to preserve stable retained screen/world placement')
+    }
+
+    const expectedPlacementKeys = [retainedId]
+    const actualPlacementKeySets = [
+      Object.keys(after.flowWidgetPinnedByNodeId || {}).sort(),
+      Object.keys(after.flowWidgetPosByNodeId || {}).sort(),
+      Object.keys(after.flowWidgetWorldPosByNodeId || {}).sort(),
+    ]
+    if (actualPlacementKeySets.some(keys => JSON.stringify(keys) !== JSON.stringify(expectedPlacementKeys))) {
+      throw new Error(`expected removed, new, and layout-changed IDs to remain unplaced, got ${JSON.stringify(actualPlacementKeySets)}`)
+    }
+
+    const activeGraphKey = buildGraphMetaKeyIgnoringPending(after.graphData)
+    const scopedPlacementKeys = Object.keys(
+      (after.flowWidgetPosByNodeIdByGraphMetaKey || {})[activeGraphKey] || {},
+    ).sort()
+    if (JSON.stringify(scopedPlacementKeys) !== JSON.stringify(expectedPlacementKeys)) {
+      throw new Error(`expected the active graph-key placement index to filter replacement residue, got ${JSON.stringify(scopedPlacementKeys)}`)
+    }
+    if (
+      after.zoomRequest !== unchangedZoomRequest
+      || after.zoomState !== unchangedZoomState
+      || after.zoomStateByKey !== unchangedZoomStateByKey
+    ) {
+      throw new Error('expected same-source output replacement to leave the active camera request and stored transforms untouched')
+    }
+  } finally {
+    useGraphStore.setState(previousCamera as never)
   }
 }
 
@@ -416,75 +569,6 @@ export function testFlowWidgetOverlayStateDoesNotCarryAcrossSameSourceLayoutChan
   }
 }
 
-export function testFrontmatterBuiltInFloatingBalancedLayoutCarriesAcrossSameSourceLayoutChanges() {
-  useGraphStore.getState().setDocumentStructureBaselineLock(false)
-
-  useGraphStore.getState().setGraphData({
-    type: 'Graph',
-    context: 'frontmatter-flow',
-    nodes: [
-      { id: 'NODE_TEXT_A', type: 'TextGeneration', label: 'Text A', x: 0, y: 0, properties: {} },
-      { id: 'NODE_TEXT_B', type: 'ImageGeneration', label: 'Image B', x: 200, y: 0, properties: {} },
-      { id: 'NODE_TEXT_C', type: 'VideoGeneration', label: 'Video C', x: 0, y: 200, properties: {} },
-      { id: 'NODE_TEXT_D', type: 'RichMediaPanel', label: 'Panel D', x: 200, y: 200, properties: {} },
-    ],
-    edges: [],
-    metadata: {
-      kind: 'frontmatter-flow',
-      source: 'workspace:/typed.md',
-      sourceLayerHash: 'balanced-layout-a',
-    },
-  } as never)
-
-  useGraphStore.getState().setFlowWidgetPinnedByNodeId({
-    NODE_TEXT_A: false,
-    NODE_TEXT_B: false,
-    NODE_TEXT_C: false,
-    NODE_TEXT_D: false,
-  })
-  useGraphStore.getState().setFlowWidgetPosByNodeId({
-    NODE_TEXT_A: { top: 140, left: 240 },
-    NODE_TEXT_B: { top: 140, left: 720 },
-    NODE_TEXT_C: { top: 760, left: 240 },
-    NODE_TEXT_D: { top: 760, left: 720 },
-  })
-  useGraphStore.getState().setFlowWidgetWorldPosByNodeId({
-    NODE_TEXT_A: { x: 16, y: 28 },
-    NODE_TEXT_B: { x: 18, y: 30 },
-    NODE_TEXT_C: { x: 20, y: 32 },
-    NODE_TEXT_D: { x: 22, y: 34 },
-  })
-
-  useGraphStore.getState().setGraphData({
-    type: 'Graph',
-    context: 'frontmatter-flow',
-    nodes: [
-      { id: 'NODE_TEXT_A', type: 'TextGeneration', label: 'Text A', x: 640, y: 320, properties: { prompt: 'updated-a' } },
-      { id: 'NODE_TEXT_B', type: 'ImageGeneration', label: 'Image B', x: 960, y: 320, properties: { prompt: 'updated-b' } },
-      { id: 'NODE_TEXT_C', type: 'VideoGeneration', label: 'Video C', x: 640, y: 640, properties: { prompt: 'updated-c' } },
-      { id: 'NODE_TEXT_D', type: 'RichMediaPanel', label: 'Panel D', x: 960, y: 640, properties: { prompt: 'updated-d' } },
-    ],
-    edges: [],
-    metadata: {
-      kind: 'frontmatter-flow',
-      source: 'workspace:/typed.md',
-      sourceLayerHash: 'balanced-layout-b',
-    },
-  } as never)
-
-  const after = useGraphStore.getState()
-  if (after.flowWidgetPinnedByNodeId.NODE_TEXT_A !== false || after.flowWidgetPinnedByNodeId.NODE_TEXT_D !== false) {
-    throw new Error('expected balanced floating frontmatter collective to preserve floating pinned semantics across same-source layout changes')
-  }
-  if (
-    after.flowWidgetPosByNodeId.NODE_TEXT_A?.top !== 140
-    || after.flowWidgetPosByNodeId.NODE_TEXT_A?.left !== 240
-    || after.flowWidgetPosByNodeId.NODE_TEXT_D?.top !== 760
-    || after.flowWidgetPosByNodeId.NODE_TEXT_D?.left !== 720
-  ) {
-    throw new Error('expected balanced floating frontmatter collective to preserve screen-space layout across same-source layout changes')
-  }
-  if (after.flowWidgetWorldPosByNodeId.NODE_TEXT_A?.x !== 16 || after.flowWidgetWorldPosByNodeId.NODE_TEXT_D?.y !== 34) {
-    throw new Error('expected balanced floating frontmatter collective to preserve world-space anchor state across same-source layout changes')
-  }
-}
+export {
+  testFrontmatterBuiltInFloatingBalancedLayoutCarriesAcrossSameSourceLayoutChanges,
+} from './flowWidgetUiStateBalancedLayoutCarry.test'

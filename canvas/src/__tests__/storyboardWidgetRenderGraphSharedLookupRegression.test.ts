@@ -8,7 +8,9 @@ export function testStoryboardWidgetRenderGraphHelperBecomesRuntimeSsot() {
   const collisionPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetOverlayCollision.ts')
   const overlayEdgesPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetOverlayEdges.ts')
   const workflowActionsPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetWorkflowActions.ts')
+  const workflowRunActionPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts')
   const workflowRichMediaPanelPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRichMediaPanel.ts')
+  const workflowRichMediaPublicationPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRichMediaPublication.ts')
   const workflowRunInputsPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunInputs.ts')
   const workflowWritebackPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowWriteback.ts')
 
@@ -18,7 +20,9 @@ export function testStoryboardWidgetRenderGraphHelperBecomesRuntimeSsot() {
   const collisionText = readFileSync(collisionPath, 'utf8')
   const overlayEdgesText = readFileSync(overlayEdgesPath, 'utf8')
   const workflowActionsText = readFileSync(workflowActionsPath, 'utf8')
+  const workflowRunActionText = readFileSync(workflowRunActionPath, 'utf8')
   const workflowRichMediaPanelText = readFileSync(workflowRichMediaPanelPath, 'utf8')
+  const workflowRichMediaPublicationText = readFileSync(workflowRichMediaPublicationPath, 'utf8')
   const workflowRunInputsText = readFileSync(workflowRunInputsPath, 'utf8')
   const workflowWritebackText = readFileSync(workflowWritebackPath, 'utf8')
 
@@ -214,64 +218,66 @@ export function testStoryboardWidgetRenderGraphHelperBecomesRuntimeSsot() {
   }
   const workflowRunAllPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetWorkflowRunAll.ts')
   const workflowRunAllText = readFileSync(workflowRunAllPath, 'utf8')
-  if (!workflowRunAllText.includes('getCachedStoryboardWidgetWorkflowRunPlan') || !workflowActionsText.includes('getCachedStoryboardWidgetWorkflowNodeResolutionContext,')) {
+  if (!workflowRunAllText.includes('getCachedStoryboardWidgetWorkflowRunPlan') || !workflowRunActionText.includes('getCachedStoryboardWidgetWorkflowNodeResolutionContext,')) {
     throw new Error('expected StoryboardWidget workflow runtime to consume the shared workflow run-plan and node-resolution helpers')
   }
   if (!workflowRunAllText.includes('const runPlan = getCachedStoryboardWidgetWorkflowRunPlan({')) {
     throw new Error('expected StoryboardWidget run-all helper to reuse the shared run-all plan instead of rebuilding eligibility locally')
   }
-  if (!workflowActionsText.includes('const workflowNodeResolutionContext = getCachedStoryboardWidgetWorkflowNodeResolutionContext({')) {
-    throw new Error('expected StoryboardWidget workflow actions to reuse the shared node-resolution context instead of rebuilding multi-graph lookup order locally')
+  if (!workflowActionsText.includes('createStoryboardWidgetWorkflowNodeRunner({')
+    || !workflowRunActionText.includes('const workflowNodeResolutionContext = getCachedStoryboardWidgetWorkflowNodeResolutionContext({')) {
+    throw new Error('expected StoryboardWidget workflow hook to delegate execution to the runner that reuses the shared node-resolution context')
   }
-  if (!workflowActionsText.includes('const resolvedRunTarget = resolveStoryboardWidgetWorkflowRunTarget({')) {
-    throw new Error('expected StoryboardWidget workflow actions to reuse the shared initial run-target resolver')
+  if (!workflowRunActionText.includes('const resolvedRunTarget = resolveStoryboardWidgetWorkflowRunTarget({')) {
+    throw new Error('expected StoryboardWidget workflow runner to reuse the shared initial run-target resolver')
   }
-  if (!workflowActionsText.includes('resolveStoryboardWidgetWorkflowNodeByIdAcrossGraphs({')) {
-    throw new Error('expected StoryboardWidget workflow actions to reuse the shared cross-graph node resolver for output writes')
+  if (!workflowRunActionText.includes('resolveStoryboardWidgetWorkflowNodeByIdAcrossGraphs({')) {
+    throw new Error('expected StoryboardWidget workflow runner to reuse the shared cross-graph node resolver for output writes')
   }
-  if (!workflowActionsText.includes('ensureStoryboardWidgetWorkflowRichMediaPanelNodeId({') || !workflowActionsText.includes('applyStoryboardWidgetWorkflowRichMediaPanelDraftPatch({')) {
-    throw new Error('expected StoryboardWidget workflow actions to reuse the shared rich-media panel helper set instead of owning local panel targeting and patching')
+  if (!workflowRichMediaPublicationText.includes('ensureStoryboardWidgetWorkflowRichMediaPanelNodeId({')
+    || !workflowRichMediaPublicationText.includes('applyStoryboardWidgetWorkflowRichMediaPanelDraftPatch({')) {
+    throw new Error('expected StoryboardWidget workflow publication to reuse the shared rich-media panel helper set instead of owning local panel targeting and patching')
   }
-  if (!workflowActionsText.includes('const connectedValuesInput = resolveStoryboardWidgetWorkflowConnectedValuesInput({')) {
-    throw new Error('expected StoryboardWidget workflow actions to reuse the shared connected-values input helper')
+  if (!workflowRunActionText.includes('const connectedValuesInput = resolveStoryboardWidgetWorkflowConnectedValuesInput({')) {
+    throw new Error('expected StoryboardWidget workflow runner to reuse the shared connected-values input helper')
   }
-  if (!workflowActionsText.includes('updateStoryboardWidgetWorkflowOutputForKnownNodeIds({')) {
-    throw new Error('expected StoryboardWidget workflow actions to reuse the shared output writeback helper')
+  if (!workflowRunActionText.includes('updateStoryboardWidgetWorkflowOutputForKnownNodeIds({')) {
+    throw new Error('expected StoryboardWidget workflow runner to reuse the shared output writeback helper')
   }
-  if (!workflowActionsText.includes('setStoryboardWidgetWorkflowRunLoadingStateForKnownNodeIds({')) {
-    throw new Error('expected StoryboardWidget workflow actions to reuse the shared loading-state writeback helper')
+  if (!workflowRunActionText.includes('setStoryboardWidgetWorkflowRunLoadingStateForKnownNodeIds({')) {
+    throw new Error('expected StoryboardWidget workflow runner to reuse the shared loading-state writeback helper')
   }
-  if (workflowActionsText.includes('buildFlowWidgetEligibleNodeIdSet(nodes)')) {
+  if (workflowRunActionText.includes('buildFlowWidgetEligibleNodeIdSet(nodes)')) {
     throw new Error('expected StoryboardWidget workflow actions to stop rebuilding widget eligibility locally for run-all')
   }
-  if (workflowActionsText.includes('const ordered = buildFlowRunAllNodeSequence({')) {
+  if (workflowRunActionText.includes('const ordered = buildFlowRunAllNodeSequence({')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning local run-all sequencing')
   }
-  if (workflowActionsText.includes('const resolved = [draft, args.renderGraphDataOverride as GraphData | null, args.baseGraphData]')) {
+  if (workflowRunActionText.includes('const resolved = [draft, args.renderGraphDataOverride as GraphData | null, args.baseGraphData]')) {
     throw new Error('expected StoryboardWidget workflow actions to stop rebuilding local initial graph scan order for run targets')
   }
-  if (workflowActionsText.includes('const pickWritableNodeId = () => {')) {
+  if (workflowRunActionText.includes('const pickWritableNodeId = () => {')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning local writable-node resolution logic')
   }
-  if (workflowActionsText.includes('const resolveNodeByIdAcrossGraphs = (candidateId: string): GraphNode | null => {\n        const cid = String(candidateId || \'\').trim()')) {
+  if (workflowRunActionText.includes('const resolveNodeByIdAcrossGraphs = (candidateId: string): GraphNode | null => {\n        const cid = String(candidateId || \'\').trim()')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning local cross-graph node lookup loops')
   }
-  if (workflowActionsText.includes('const resolveRichMediaPanelTargetNodeId = (): string | null => {')) {
+  if (workflowRunActionText.includes('const resolveRichMediaPanelTargetNodeId = (): string | null => {')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning local rich-media panel target resolution')
   }
-  if (workflowActionsText.includes('const ensureRichMediaPanelNodeId = (anchorNode: GraphNode): string | null => {')) {
+  if (workflowRunActionText.includes('const ensureRichMediaPanelNodeId = (anchorNode: GraphNode): string | null => {')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning local rich-media panel creation fallback')
   }
-  if (workflowActionsText.includes('const updatePanelInDraft = (panelId: string, patch: Record<string, unknown>) => {')) {
+  if (workflowRunActionText.includes('const updatePanelInDraft = (panelId: string, patch: Record<string, unknown>) => {')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning local rich-media panel draft patch writeback')
   }
-  if (workflowActionsText.includes('computeFlowConnectedValuesBySchemaPath({')) {
+  if (workflowRunActionText.includes('computeFlowConnectedValuesBySchemaPath({')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning inline connected-values graph selection for single-node runs')
   }
-  if (workflowActionsText.includes('function areRecordValuesEqual')) {
+  if (workflowRunActionText.includes('function areRecordValuesEqual')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning local semantic property equality helpers')
   }
-  if (workflowActionsText.includes('function bumpDraftGraphDataRevision(graphData: GraphData): GraphData')) {
+  if (workflowRunActionText.includes('function bumpDraftGraphDataRevision(graphData: GraphData): GraphData')) {
     throw new Error('expected StoryboardWidget workflow actions to stop owning local draft graph revision bump helpers')
   }
   const runtimeScenePath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetRuntimeScene.ts')

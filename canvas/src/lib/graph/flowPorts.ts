@@ -7,6 +7,8 @@ export const FLOW_EDGE_TARGET_PORT_KEY = 'flow:targetPortKey' as const
 export const FLOW_EDGE_DISPLAY_LABEL_KEY = 'flow:displayLabel' as const
 export const FLOW_DEFAULT_SOURCE_PORT_KEY = 'output' as const
 export const FLOW_DEFAULT_TARGET_PORT_KEY = 'input' as const
+export const FLOW_TEXT_OUTPUT_PORT_KEY = 'text_out' as const
+export const FLOW_PROMPT_INPUT_PORT_KEY = 'prompt_in' as const
 
 export function buildImplicitFlowEdgePortKey(args: { socketType: unknown; side: 'source' | 'target' }): string {
   const fallback = args.side === 'source' ? FLOW_DEFAULT_SOURCE_PORT_KEY : FLOW_DEFAULT_TARGET_PORT_KEY

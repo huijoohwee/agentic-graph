@@ -40,6 +40,16 @@ export function buildAuthoredMarkdownNoteInitialText(documentName: string): stri
   ].join('\n')
 }
 
+export function isAuthoredMarkdownNoteInitialDocument(args: {
+  documentName: string
+  rawText: string
+}): boolean {
+  const expected = buildAuthoredMarkdownNoteInitialText(args.documentName)
+  if (!expected) return false
+  const normalize = (value: string): string => String(value || '').replace(/\r\n?/g, '\n').trimEnd()
+  return normalize(args.rawText) === normalize(expected)
+}
+
 export function resolveWorkspaceDocumentCanvasPreset(args: {
   documentName: string
   rawText: string

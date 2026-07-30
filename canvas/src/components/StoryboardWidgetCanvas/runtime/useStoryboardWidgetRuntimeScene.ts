@@ -5,25 +5,22 @@ import { resolveStoryboardWidgetVisibleViewport } from '@/components/FlowCanvas/
 import {
   buildFlowOverlayBoundsFromRects,
   deriveFlowOverlayCollectiveViewportState,
+  hasFlowOverlayCollectiveTopologyChanged,
   type VisibleFlowViewport,
 } from '@/components/FlowCanvas/workspaceVisibleViewportRecovery'
 import { placeWidgetsCenteredInGroupBounds } from '@/components/StoryboardWidget/seedGroupSpread'
-import {
-  computeCollectiveFollowPinnedScale,
-  computeWidgetScaledSize,
-  WIDGET_BASE_SIZE,
-  WIDGET_LAYOUT_BASE_HEIGHT_PX,
-} from '@/lib/canvas/overlayWidgetZoom'
+import { computeCollectiveFollowPinnedScale, computeWidgetScaledSize, WIDGET_BASE_SIZE, WIDGET_LAYOUT_BASE_HEIGHT_PX } from '@/lib/canvas/overlayWidgetZoom'
 import {
   isCanonicalFrontmatterBuiltInWidgetNode,
   resolveGraphNodeIdByCanonicalId,
   shouldAutoPlaceStoryboardWidget,
 } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
-import { resolveIncrementalStoryboardCardMovableIds2d } from '@/components/StoryboardWidgetCanvas/storyboardIncrementalLayout2d'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { isWorkspaceGraphMutationBlocked, type WorkspaceGraphMutationState } from '@/features/workspace-table/workspaceTableSsot'
 import { getEffectiveZoomStateForKey } from '@/lib/canvas/zoom-effective'
 import {
+  CANVAS_OVERLAY_PROXY_ROOT_SELECTOR,
+  collectCanonicalStoryboardWidgetOverlayRectEntries,
   emitStoryboardWidgetInteractionFrame as emitStoryboardWidgetInteractionFrameEvent,
   findStoryboardWidgetOverlaySurfaceRoot,
   STORYBOARD_WIDGET_OVERLAY_ROOT_SELECTOR,
@@ -42,9 +39,7 @@ import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { readWidgetGridLayoutSettings, snapToGridPx } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
 import { readGraphDataRevision } from '@/lib/graph/documentMetadata'
 import { getCachedStoryboardWidgetPlacementContext } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
-import {
-  syncFlowWidgetScreenAuthorityPosition,
-} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeSeedPositions'
+import { syncFlowWidgetScreenAuthorityPosition } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeSeedPositions'
 import { readFrontmatterFlowRenderSettings, resolveBalancedViewportPreset } from '@/lib/graph/frontmatterFlowSettings'
 import { resolveScopedFlowWidgetNodeMap } from '@/lib/storyboardWidget/widgetStateScope'
 import {
@@ -53,14 +48,12 @@ import {
   shouldUseStoryboardWidgetFloatingScreenAuthority,
 } from '@/lib/storyboardWidget/widgetPlacementAuthority'
 import { resolveStoryboardWidgetGraphDataForNodeAuthority } from '@/lib/storyboardWidget/storyboardWidgetGraphAuthority'
-import {
-  collectActiveRichMediaWorldObstacles,
-  collectActiveStoryboardCardWorldObstacles,
-} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeRichMediaObstacles'
+import { collectActiveRichMediaWorldObstacles, collectActiveStoryboardCardWorldObstacles } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeRichMediaObstacles'
 import { buildGraphDocumentMetaKey } from '@/lib/graph/graphMetaKey'
 import { __flowCanvasDebug, syncFlowCanvasDebugWindow } from '@/components/FlowCanvas/flowCanvasDebug'
 import { defaultSchema, type GraphSchema } from '@/lib/graph/schema'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
+import { isCanonicalNodeIdEqual } from '@/lib/graph/canonicalNodeIds'
 import { relaxOverlayPanelsWithCollision } from '@/lib/ui/relaxOverlayPanelsWithCollision'
 import { reportRuntimeTrace } from '@/lib/debug/runtimeTrace'
 import {
@@ -70,10 +63,8 @@ import {
   useStoryboardWidgetStateDependencyCounts,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeWidgetState'
 import { getCachedStoryboardWidgetContainmentGroupLookup } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeGroupLookup'
-
-const STORYBOARD_WIDGET_RUNTIME_SCENE_TRACE_KEY = '__storyboardWidgetRuntimeSceneDebug'
-
-type FlowRuntimeZoomTransform = { k: number; x: number; y: number }
+import { isStoryboardWidgetContentMaterializationRebalanceRequest, isStoryboardWidgetZoomPresetRebalanceRequest, readStoryboardWidgetLayoutTargetTransform, type StoryboardWidgetLayoutRebalanceRequest } from '@/lib/storyboardWidget/layoutRebalance'
+import { hasViewportOffset, pushStoryboardWidgetRuntimeSceneTrace, type FlowRuntimeZoomTransform } from './storyboardWidgetRuntimeSceneDiagnostics'
 
 export function readFiniteRuntimeZoomTransform(runtime: FlowNativeRuntime | null | undefined): FlowRuntimeZoomTransform | null {
   const t = runtime?.transform || null
@@ -82,63 +73,6 @@ export function readFiniteRuntimeZoomTransform(runtime: FlowNativeRuntime | null
   const y = typeof t?.y === 'number' && Number.isFinite(t.y) ? t.y : null
   if (k == null || x == null || y == null) return null
   return { k, x, y }
-}
-
-function hasViewportOffset(transform: FlowRuntimeZoomTransform | null | undefined): boolean {
-  if (!transform) return false
-  return Math.abs(transform.k - 1) > 1e-3 || Math.abs(transform.x) > 0.5 || Math.abs(transform.y) > 0.5
-}
-
-function pushStoryboardWidgetRuntimeSceneTrace(entry: {
-  reason: string
-  sceneNodeCount: number
-  positionsReady: boolean
-  workspaceMutationBlocked: boolean
-  viewportW: number
-  viewportH: number
-  transform: { k: number; x: number; y: number } | null
-}) {
-  if (typeof window === 'undefined') return
-  const w = window as Window & {
-    [STORYBOARD_WIDGET_RUNTIME_SCENE_TRACE_KEY]?: {
-      last: string
-      history: Array<{
-        ts: number
-        reason: string
-        sceneNodeCount: number
-        positionsReady: boolean
-        workspaceMutationBlocked: boolean
-        viewportW: number
-        viewportH: number
-        transform: { k: number; x: number; y: number } | null
-      }>
-    }
-  }
-  const sig = [
-    entry.reason,
-    entry.sceneNodeCount,
-    entry.positionsReady ? 1 : 0,
-    entry.workspaceMutationBlocked ? 1 : 0,
-    `${entry.viewportW}x${entry.viewportH}`,
-    entry.transform ? `${Math.round(entry.transform.x)}:${Math.round(entry.transform.y)}:${Math.round(entry.transform.k * 1000)}` : 'none',
-  ].join('|')
-  const current = w[STORYBOARD_WIDGET_RUNTIME_SCENE_TRACE_KEY] || { last: '', history: [] }
-  if (current.last === sig) return
-  const nextHistory = current.history.concat([{
-    ts: Date.now(),
-    reason: entry.reason,
-    sceneNodeCount: entry.sceneNodeCount,
-    positionsReady: entry.positionsReady,
-    workspaceMutationBlocked: entry.workspaceMutationBlocked,
-    viewportW: entry.viewportW,
-    viewportH: entry.viewportH,
-    transform: entry.transform,
-  }])
-  while (nextHistory.length > 32) nextHistory.shift()
-  w[STORYBOARD_WIDGET_RUNTIME_SCENE_TRACE_KEY] = {
-    last: sig,
-    history: nextHistory,
-  }
 }
 
 export function useStoryboardWidgetRuntimeScene(args: {
@@ -151,7 +85,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
   viewportH: number
   schema: unknown
   overlayNodeLayoutSignature: string
-  storyboardWidgetLayoutRebalanceRequest?: null | { type: 'balanced-spread'; at: number }
+  storyboardWidgetLayoutRebalanceRequest?: StoryboardWidgetLayoutRebalanceRequest | null
   zoomViewKeyRef: React.MutableRefObject<string | null>
 }) {
   const flowRuntimeRefRef = React.useRef<React.MutableRefObject<FlowNativeRuntime | null> | null>(null)
@@ -413,6 +347,38 @@ export function useStoryboardWidgetRuntimeScene(args: {
     return next
   }, [args.viewportH, args.viewportW, args.zoomViewKeyRef])
 
+  const getRenderedZoomTransform = React.useCallback(() => {
+    // The workspace mutation guard protects layout writes. Run placement only
+    // needs a read-only snapshot of the coordinate frame currently painted on
+    // screen, which remains authoritative while the editor overlay is open.
+    return readFiniteRuntimeZoomTransform(flowRuntimeRefRef.current?.current)
+  }, [])
+
+  const getRenderedOverlayRectForNode = React.useCallback((nodeId: string) => {
+    const id = String(nodeId || '').trim()
+    if (!id || typeof document === 'undefined') return null
+    const surfaceRoot = findStoryboardWidgetOverlaySurfaceRoot(args.storyboardWidgetSurfaceId)
+    const surfaceRect = surfaceRoot?.getBoundingClientRect() || null
+    if (
+      !surfaceRect
+      || !Number.isFinite(surfaceRect.left)
+      || !Number.isFinite(surfaceRect.top)
+    ) return null
+    const roots = queryStoryboardWidgetOverlayRootsForSurface({
+      surfaceId: args.storyboardWidgetSurfaceId,
+      selector: CANVAS_OVERLAY_PROXY_ROOT_SELECTOR,
+    })
+    const entry = collectCanonicalStoryboardWidgetOverlayRectEntries(roots)
+      .find(candidate => isCanonicalNodeIdEqual(candidate.id, id))
+    if (!entry) return null
+    return {
+      left: entry.rect.left - surfaceRect.left,
+      top: entry.rect.top - surfaceRect.top,
+      width: entry.rect.width,
+      height: entry.rect.height,
+    }
+  }, [args.storyboardWidgetSurfaceId])
+
   const getLiveContainmentGroupAabbForNode = React.useCallback((nodeId: string) => {
     const id = String(nodeId || '').trim()
     if (!id) return null
@@ -455,6 +421,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
   const lastHandledLayoutRebalanceAtRef = React.useRef<number>(0)
   const domCollectiveRecoveryAttemptByScopeRef = React.useRef<Record<string, number>>({})
   const domCollectiveNodeIdsRef = React.useRef<string[]>([])
+  const domCollectiveLayoutSignatureRef = React.useRef<string>('')
   React.useEffect(() => {
     const prev = workspaceMutationBlockedPrevRef.current
     workspaceMutationBlockedPrevRef.current = workspaceMutationBlocked
@@ -485,35 +452,41 @@ export function useStoryboardWidgetRuntimeScene(args: {
     let rafId: number | null = null
     let observer: MutationObserver | null = null
     let readinessAttempts = 0
-    const currentNodeIds = Array.from(new Set(
-      args.openWidgetNodeIds.map(id => String(id || '').trim()).filter(Boolean),
-    ))
-    const previousNodeIds = domCollectiveNodeIdsRef.current
-    const incrementalMovableIds = resolveIncrementalStoryboardCardMovableIds2d({
-      currentCardIds: currentNodeIds,
-      previousCardIds: previousNodeIds,
-    })
-    const preserveExistingCollective =
-      previousNodeIds.length > 0
-      && currentNodeIds.length > previousNodeIds.length
-      && incrementalMovableIds.size < currentNodeIds.length
-    domCollectiveNodeIdsRef.current = currentNodeIds
+    const currentLayoutSignature = String(args.overlayNodeLayoutSignature || '').trim()
+    const previousLayoutSignature = domCollectiveLayoutSignatureRef.current
+    let establishedTopologyChanged =
+      previousLayoutSignature.length > 0
+      && currentLayoutSignature.length > 0
+      && previousLayoutSignature !== currentLayoutSignature
+    if (currentLayoutSignature) domCollectiveLayoutSignatureRef.current = currentLayoutSignature
     const run = (): boolean => {
       if (cancelled) return true
-      if (preserveExistingCollective) return true
       const roots = queryStoryboardWidgetOverlayRootsForSurface({
         surfaceId: args.storyboardWidgetSurfaceId,
-        selector: STORYBOARD_WIDGET_OVERLAY_ROOT_SELECTOR,
+        selector: CANVAS_OVERLAY_PROXY_ROOT_SELECTOR,
       })
-      if (roots.length <= 1) return false
+      const canonicalEntries = collectCanonicalStoryboardWidgetOverlayRectEntries(roots)
+      const currentNodeIds = canonicalEntries
+        .map(entry => String(entry.id || '').trim())
+        .filter(Boolean)
+        .sort((leftId, rightId) => leftId.localeCompare(rightId))
+      const previousNodeIds = domCollectiveNodeIdsRef.current
+      if (hasFlowOverlayCollectiveTopologyChanged({
+        previousIds: previousNodeIds,
+        currentIds: currentNodeIds,
+      })) {
+        establishedTopologyChanged = true
+      }
+      if (currentNodeIds.length > 0) domCollectiveNodeIdsRef.current = currentNodeIds
+      if (canonicalEntries.length === 0) return false
       const surfaceRoot = findStoryboardWidgetOverlaySurfaceRoot(args.storyboardWidgetSurfaceId)
       const surfaceRect = surfaceRoot?.getBoundingClientRect() || null
       const surfaceOffsetLeft = surfaceRect && Number.isFinite(surfaceRect.left) ? Number(surfaceRect.left) : 0
       const surfaceOffsetTop = surfaceRect && Number.isFinite(surfaceRect.top) ? Number(surfaceRect.top) : 0
-      const rootRectItems = roots.map(root => {
-        const rect = root.getBoundingClientRect()
+      const rootRectItems = canonicalEntries.map(entry => {
+        const rect = entry.rect
         return {
-          id: String(root.dataset.kgWidget || '').trim(),
+          id: entry.id,
           screenLeft: rect.left,
           screenTop: rect.top,
           left: rect.left - surfaceOffsetLeft,
@@ -526,7 +499,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
         items: rootRectItems,
       })
       const boundsIds = bounds?.ids || []
-      if (!bounds || boundsIds.length <= 1) return true
+      if (!bounds || boundsIds.length === 0) return true
       const st = useGraphStore.getState()
       const graphDataForSeeding = resolveStoryboardWidgetGraphDataForNodeAuthority({
         preferredGraphData: readPreferredGraphDataForSeeding(),
@@ -559,7 +532,9 @@ export function useStoryboardWidgetRuntimeScene(args: {
           })
           return shouldUseStoryboardWidgetFloatingScreenAuthority({ graphMetaKind, pinnedInCanvas: pinned })
         })
-      if (skipDomCollectiveRecoveryForFrontmatterScreenAuthority) return true
+      if (skipDomCollectiveRecoveryForFrontmatterScreenAuthority) {
+        return true
+      }
       const visibleViewport = getVisibleViewport()
       const visibleViewportCenterX = visibleViewport.left + visibleViewport.width / 2
       const visibleViewportCenterY = visibleViewport.top + visibleViewport.height / 2
@@ -576,6 +551,11 @@ export function useStoryboardWidgetRuntimeScene(args: {
           centerY: visibleViewportCenterY,
         },
       })
+      // Topology growth already carries graph-owned placement authored in the
+      // painted camera frame. Preserve both authorities; only explicit layout
+      // commands may move the established collective or camera.
+      if (establishedTopologyChanged) return true
+      if (boundsIds.length <= 1) return true
       const measuredCenterX = (bounds.minX + bounds.maxX) / 2
       const measuredCenterY = (bounds.minY + bounds.maxY) / 2
       const measuredCenterShiftX = visibleViewportCenterX - measuredCenterX
@@ -783,6 +763,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
     flowWidgetPinnedCount,
     flowWidgetWorldPosCount,
     getVisibleViewport,
+    workspaceMutationBlocked,
   ])
   useIsomorphicLayoutEffect(() => {
     if (!args.active) return
@@ -799,6 +780,24 @@ export function useStoryboardWidgetRuntimeScene(args: {
       && (Math.abs(measuredSurfaceWidth - args.viewportW) > 1 || Math.abs(measuredSurfaceHeight - args.viewportH) > 1)
     ) return
     const st = useGraphStore.getState()
+    const layoutRebalanceRequestAt =
+      args.storyboardWidgetLayoutRebalanceRequest?.type === 'balanced-spread'
+      && typeof args.storyboardWidgetLayoutRebalanceRequest.at === 'number'
+      && Number.isFinite(args.storyboardWidgetLayoutRebalanceRequest.at)
+        ? args.storyboardWidgetLayoutRebalanceRequest.at
+        : 0
+    const contentMaterializationViewportRecoveryRequested =
+      isStoryboardWidgetContentMaterializationRebalanceRequest(args.storyboardWidgetLayoutRebalanceRequest)
+    const layoutRebalanceRequested =
+      layoutRebalanceRequestAt > 0
+      && layoutRebalanceRequestAt !== lastHandledLayoutRebalanceAtRef.current
+      && !contentMaterializationViewportRecoveryRequested
+    const layoutRebalanceTargetTransform = layoutRebalanceRequested
+      ? readStoryboardWidgetLayoutTargetTransform(args.storyboardWidgetLayoutRebalanceRequest)
+      : null
+    const zoomPresetPresentationRebalanceRequested =
+      layoutRebalanceRequested
+      && isStoryboardWidgetZoomPresetRebalanceRequest(args.storyboardWidgetLayoutRebalanceRequest)
     const graphDataForSeeding = resolveStoryboardWidgetGraphDataForNodeAuthority({
       preferredGraphData: readPreferredGraphDataForSeeding(),
       authorityGraphData: (st.graphData || null) as GraphData | null,
@@ -825,7 +824,7 @@ export function useStoryboardWidgetRuntimeScene(args: {
     const defaultPinnedInCanvas = widgetPlacementContext?.defaultPinnedInCanvas ?? true
     const graphKey = buildGraphDocumentMetaKey(graphDataForSeeding)
     const workspaceMutationBlockedForSeed = isWorkspaceGraphMutationBlocked(st)
-    if (workspaceMutationBlockedForSeed) {
+    if (workspaceMutationBlockedForSeed && !zoomPresetPresentationRebalanceRequested) {
       pushStoryboardWidgetRuntimeSceneTrace({
         reason: 'workspace-blocked-skipping-flow-widget-seed-write',
         sceneNodeCount: flowRuntimeRefRef.current?.current?.scene?.nodes?.length || 0,
@@ -969,15 +968,6 @@ export function useStoryboardWidgetRuntimeScene(args: {
         || Math.abs(Number.isFinite(persistedZoom.x) ? persistedZoom.x : 0) > 0.5
         || Math.abs(Number.isFinite(persistedZoom.y) ? persistedZoom.y : 0) > 0.5
       )
-    const layoutRebalanceRequestAt =
-      args.storyboardWidgetLayoutRebalanceRequest?.type === 'balanced-spread'
-      && typeof args.storyboardWidgetLayoutRebalanceRequest.at === 'number'
-      && Number.isFinite(args.storyboardWidgetLayoutRebalanceRequest.at)
-        ? args.storyboardWidgetLayoutRebalanceRequest.at
-        : 0
-    const layoutRebalanceRequested =
-      layoutRebalanceRequestAt > 0
-      && layoutRebalanceRequestAt !== lastHandledLayoutRebalanceAtRef.current
     const isFirstFrontmatterInitSeed = isFrontmatterFlow && seededPinnedWidgetWorldPosKeyRef.current.length === 0
     const liveHasViewportOffset = hasViewportOffset(liveZoom)
     const shouldUseNeutralSeedZoomForFrontmatterInit =
@@ -989,6 +979,8 @@ export function useStoryboardWidgetRuntimeScene(args: {
       (runtimeSceneNodeCount <= 0 && !partitionedFrontmatterRuntimeScene && !persistedHasViewportOffset)
       || shouldUseNeutralSeedZoomForFrontmatterInit
     const z =
+      layoutRebalanceTargetTransform
+      ||
       (shouldUseNeutralSeedZoom ? { k: 1, x: 0, y: 0 } : null)
       || (persistedHasViewportOffset && liveLooksDefault ? persistedZoom : null)
       || liveZoom
@@ -1535,8 +1527,11 @@ export function useStoryboardWidgetRuntimeScene(args: {
     }
     __flowCanvasDebug.widgetWorldRectById = nextWidgetWorldRectById
     syncFlowCanvasDebugWindow()
-    if (changedScreenPos) st.setFlowWidgetPosByNodeId(nextScreenPos)
-    if (changed) st.setFlowWidgetWorldPosByNodeId(nextWorld)
+    const presentationPositionCommitOptions = zoomPresetPresentationRebalanceRequested
+      ? { allowDuringWorkspaceMutation: true, persist: false }
+      : undefined
+    if (changedScreenPos) st.setFlowWidgetPosByNodeId(nextScreenPos, presentationPositionCommitOptions)
+    if (changed) st.setFlowWidgetWorldPosByNodeId(nextWorld, presentationPositionCommitOptions)
     seededPinnedWidgetWorldPosKeyRef.current = seedKey
     lastAutoSeedLayoutSignatureRef.current = currentLayoutSignature
     markLayoutRebalanceHandled()
@@ -1568,6 +1563,8 @@ export function useStoryboardWidgetRuntimeScene(args: {
     getLiveContainmentGroupAabbForNode,
     getLiveNodeWorldPos,
     getLiveZoomTransform,
+    getRenderedOverlayRectForNode,
+    getRenderedZoomTransform,
     latestAutoSeedWorldPosByNodeIdRef,
   }
 }

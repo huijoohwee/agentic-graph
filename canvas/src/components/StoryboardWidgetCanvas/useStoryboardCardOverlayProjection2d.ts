@@ -2,6 +2,11 @@ import React from 'react'
 
 import type { StoryboardCardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import { readStoryboardCardCenter2d, type StoryboardCardPlacement } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
+import {
+  buildStoryboardFixedCardCollisionLayoutKey2d,
+  settleStoryboardFixedCardCollisionItems2d,
+  storyboardFixedCardCollisionRectsOverlap2d,
+} from '@/components/StoryboardWidgetCanvas/storyboardFixedCardCollisionLayout2d'
 import { resolveIncrementalStoryboardCardMovableIds2d } from '@/components/StoryboardWidgetCanvas/storyboardIncrementalLayout2d'
 import { shouldFreezeProjectionForFlowPortHandleDrag } from '@/components/StoryboardWidget/flowPortHandlePointerDrag'
 import { emitStoryboardWidgetGeometryCommitted } from '@/lib/canvas/storyboard-widget-overlay-proxy'
@@ -198,22 +203,31 @@ export function useStoryboardCardOverlayProjection2d(args: {
           .map(el => {
             const rect = el.getBoundingClientRect()
             const scale = readVectorPaintedOverlayScale(el)
+            const left = rect.left - (viewportRect?.left || 0)
+            const top = rect.top - (viewportRect?.top || 0)
+            const centerWorld = screenToWorld({
+              transform: currentTransform,
+              sx: left + rect.width / 2,
+              sy: top + rect.height / 2,
+            })
             return {
               id: `rich-media:${String(el.dataset.kgRichMediaOverlayId || el.dataset.kgWidget || el.dataset.nodeId || '').trim()}`,
-              left: rect.left - (viewportRect?.left || 0),
-              top: rect.top - (viewportRect?.top || 0),
+              left,
+              top,
               width: rect.width,
               height: rect.height,
+              centerWorldX: centerWorld.x,
+              centerWorldY: centerWorld.y,
               baseWidth: rect.width / scale,
               baseHeight: rect.height / scale,
             }
           })
           .filter(item => item.id !== 'rich-media:' && item.width > 0 && item.height > 0)
-        const layoutInputKey = [
-          `${viewport.width}x${viewport.height}`,
-          ...pending.map(item => `${item.card.id}:${Math.round(item.width)}x${Math.round(item.height)}`),
-          ...richMediaObstacles.map(item => `${item.id}:${Math.round(item.baseWidth)}x${Math.round(item.baseHeight)}`),
-        ].join('|')
+        const layoutInputKey = buildStoryboardFixedCardCollisionLayoutKey2d({
+          viewport,
+          cards: pending.map(item => ({ id: item.card.id, width: item.width, height: item.height })),
+          obstacles: richMediaObstacles,
+        })
         const cachedWorldById = settledWorldByCardIdRef.current.key === layoutInputKey
           ? settledWorldByCardIdRef.current.worldById
           : null
@@ -234,23 +248,22 @@ export function useStoryboardCardOverlayProjection2d(args: {
             })
           }
         } else {
-          const overlaps = (
-            left: { left: number; top: number; width: number; height: number },
-            right: { left: number; top: number; width: number; height: number },
-          ) => left.left < right.left + right.width + gapPx
-            && right.left < left.left + left.width + gapPx
-            && left.top < right.top + right.height + gapPx
-            && right.top < left.top + left.height + gapPx
           const hasUnresolvedOverlap = (items: typeof layoutItems) => {
-            if (items.some(item => richMediaObstacles.some(obstacle => overlaps(item, obstacle)))) return true
+            if (items.some(item => richMediaObstacles.some(obstacle => (
+              storyboardFixedCardCollisionRectsOverlap2d(item, obstacle, gapPx)
+            )))) return true
             for (let leftIndex = 0; leftIndex < items.length; leftIndex += 1) {
               for (let rightIndex = leftIndex + 1; rightIndex < items.length; rightIndex += 1) {
-                if (overlaps(items[leftIndex]!, items[rightIndex]!)) return true
+                if (storyboardFixedCardCollisionRectsOverlap2d(items[leftIndex]!, items[rightIndex]!, gapPx)) return true
               }
             }
             return false
           }
-          let relaxed = layoutItems
+          let relaxed = settleStoryboardFixedCardCollisionItems2d({
+            items: layoutItems,
+            obstacles: richMediaObstacles,
+            gapPx,
+          })
           for (let pass = 0; pass < 4 && hasUnresolvedOverlap(relaxed); pass += 1) {
             const passPositions = relaxOverlayPanelsWithCollision({
               schema: defaultSchema,
@@ -267,36 +280,6 @@ export function useStoryboardCardOverlayProjection2d(args: {
             const passById = new Map(passPositions.map(item => [item.id, item]))
             relaxed = relaxed.map(item => ({ ...item, ...(passById.get(item.id) || {}) }))
           }
-          const exactlySettled: typeof layoutItems = relaxed.filter(item => !item.movable)
-          const movableItems = relaxed.filter(item => item.movable)
-          for (let itemIndex = 0; itemIndex < movableItems.length; itemIndex += 1) {
-            const item = movableItems[itemIndex]!
-            const blockers = [...richMediaObstacles, ...exactlySettled]
-            if (!blockers.some(blocker => overlaps(item, blocker))) {
-              exactlySettled.push(item)
-              continue
-            }
-            const xCandidates = new Set<number>([item.left])
-            const yCandidates = new Set<number>([item.top])
-            for (let blockerIndex = 0; blockerIndex < blockers.length; blockerIndex += 1) {
-              const blocker = blockers[blockerIndex]!
-              xCandidates.add(blocker.left - item.width - gapPx)
-              xCandidates.add(blocker.left + blocker.width + gapPx)
-              yCandidates.add(blocker.top - item.height - gapPx)
-              yCandidates.add(blocker.top + blocker.height + gapPx)
-            }
-            const candidates = Array.from(xCandidates).flatMap(left => Array.from(yCandidates).map(top => ({ left, top })))
-              .sort((left, right) => {
-                const leftScore = Math.abs(left.left - item.left) + Math.abs(left.top - item.top)
-                const rightScore = Math.abs(right.left - item.left) + Math.abs(right.top - item.top)
-                if (leftScore !== rightScore) return leftScore - rightScore
-                if (left.top !== right.top) return left.top - right.top
-                return left.left - right.left
-              })
-            const open = candidates.find(candidate => !blockers.some(blocker => overlaps({ ...item, ...candidate }, blocker)))
-            exactlySettled.push(open ? { ...item, ...open } : item)
-          }
-          relaxed = exactlySettled
           const relaxedById = new Map(relaxed.map(item => [item.id, { left: item.left, top: item.top }]))
           const worldById = new Map<string, StoryboardCardPlacement>()
           for (let index = 0; index < pending.length; index += 1) {

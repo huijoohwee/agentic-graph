@@ -19,8 +19,12 @@ export type StoryboardWidgetTextRunOutputPublisher = (args: {
   panelLabel?: string
   panelProperties?: Record<string, unknown>
   outputIndex?: number
+  outputCount?: number
+  materializationPosition?: { x: number; y: number }
+  materializationChildNodeIds?: readonly string[]
   allowCreateStandaloneOutput?: boolean
   connectCreatedOutputToAnchor?: boolean
   ownedOutputOnly?: boolean
+  suppressOwnedOutputFallback?: boolean
   deferPublishedGraphCommit?: boolean
 }) => GraphData | null

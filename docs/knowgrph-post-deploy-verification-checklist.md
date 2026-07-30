@@ -91,6 +91,38 @@ Run only when the Pages publication fields are complete.
 | `VCC-DELIVERY-PAGES-02` — valid read returns typed content | | | | delivery | |
 | `VCC-DELIVERY-PAGES-03` — invalid read fails closed | | | | delivery | |
 
+#### Reference implementation: Pages candidate transport and browser fidelity
+
+The release workflow resolves the exact successful Pages deployment for the protected SHA
+through the Cloudflare API. It runs machine-route smoke plus immutable-marker and browser
+fidelity checks against that direct origin before publishing the mirror. Responses must
+still carry the canonical `airvio.co` URLs and metadata.
+
+The returning-user check derives the stable Pages alias from `CLOUDFLARE_PAGES_PROJECT`,
+prewarms and reopens a persistent browser profile, and seeds stale runtime assets plus
+in-scope and out-of-scope HTML cache cases. It requires one canonical service-worker
+registration, exact-revision imported-worker URLs, matching active/controller revisions,
+lifecycle-clean chat attestations, the exact release cache namespace, zero HTML in
+Knowgrph-owned or `/knowgrph` cache entries, network-owned HTML, preserved sibling caches,
+no installing or waiting legacy worker, clean transition execution, and preserved
+local-first storage. Runtime-cache admission rejects non-200, HTML, and XHTML responses, and
+cached-hit validation rejects existing HTML or XHTML entries. These direct-origin checks
+exercise the unchanged candidate artifact without weakening any assertion.
+
+| VCC | Exact invocable check/request | Recorded result | Tested revision and target | Lane | Pass/fail |
+|---|---|---|---|---|---|
+| `VCC-DELIVERY-PAGES-04` — direct-candidate route, marker, browser, and returning-user checks preserve canonical metadata | `.github/workflows/smoke-test.sh`; `npm run production:fidelity:check`; `npm run production:sw-upgrade:verify` | | | delivery | |
+| `VCC-DELIVERY-PAGES-05` — public custom-domain browser fidelity from a non-challenged operator network | `RELEASE_SHA=<sha> PRODUCTION_IMMUTABLE_MANIFEST_DIGEST=<digest> npm run production:fidelity:check` | | | delivery | |
+
+The hosted transport does not prove public custom-domain browser acceptance. Repeat the
+public-route fidelity check from a non-challenged operator network:
+
+```bash
+RELEASE_SHA=<40-character-knowgrph-sha> \
+PRODUCTION_IMMUTABLE_MANIFEST_DIGEST=<64-character-sha256> \
+npm run production:fidelity:check
+```
+
 ### Remote Worker MCP — authenticated session verification
 
 Begin this section only when a separate Worker publication record identifies
@@ -162,6 +194,7 @@ This section checks app WebMCP and does not change Pages or Worker results.
 | Surface | Applicable VCCs all pass? | Evidence References complete? | Derived delivered rung | Finding / next action |
 |---|---|---|---|---|
 | Pages HTTP MCP | | | | |
+| Pages candidate transport and public fidelity | | | | |
 | Remote Worker MCP | | | | |
 | App WebMCP, if selected | | | | |
 

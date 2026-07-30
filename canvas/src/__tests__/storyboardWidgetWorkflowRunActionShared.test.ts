@@ -9,7 +9,7 @@ export function testStoryboardWidgetWorkflowRunActionIsSharedBetweenStoryboardWi
     'export function createStoryboardWidgetWorkflowNodeRunner',
     "export { resolveStoryboardWidgetBaseGraphKind } from './storyboardWidgetWorkflowRunTypes'",
     "export type { StoryboardWidgetWorkflowNodeRunner, StoryboardWidgetWorkflowNodeRunnerArgs } from './storyboardWidgetWorkflowRunTypes'",
-    'const runWorkflowNode: StoryboardWidgetWorkflowNodeRunner = async',
+    'const executeRunWorkflowNode: StoryboardWidgetWorkflowNodeRunner = async',
     'scheduleWorkflowOutputEdgeRefresh()\n    if (deferredError)',
   ]) {
     if (!sharedSource.includes(snippet)) {
@@ -23,6 +23,9 @@ export function testStoryboardWidgetWorkflowRunActionIsSharedBetweenStoryboardWi
   if (!hookSource.includes('const runWorkflowNode = React.useMemo(() => createStoryboardWidgetWorkflowNodeRunner({')) {
     throw new Error('expected Storyboard Widget workflow hook to build runWorkflowNode from the shared workflow run action')
   }
+  if (!hookSource.includes('captureExecutionAnchor: args.captureExecutionAnchor')) {
+    throw new Error('expected Storyboard Widget workflow hook to pass the live Run execution-anchor authority')
+  }
   if (hookSource.includes('const runWorkflowNode = React.useCallback(async (nodeId: string')) {
     throw new Error('expected Storyboard Widget workflow hook to avoid owning an inline runWorkflowNode implementation')
   }
@@ -35,5 +38,12 @@ export function testStoryboardWidgetWorkflowRunActionIsSharedBetweenStoryboardWi
   }
   if (!storyboardSource.includes("scheduleOverlayEdgeUpdate: () => {}")) {
     throw new Error('expected StoryboardCanvas to provide a neutral overlay-edge adapter to the shared workflow run action')
+  }
+  if (
+    !storyboardSource.includes('const captureStoryboardRunExecutionAnchor = React.useCallback((rawNodeId: string) => {')
+    || !storyboardSource.includes('buildStoryboardWidgetRunExecutionAnchorSnapshot({')
+    || !storyboardSource.includes('captureExecutionAnchor: captureStoryboardRunExecutionAnchor')
+  ) {
+    throw new Error('expected StoryboardCanvas Run to share the same live execution-anchor contract as Storyboard Widget')
   }
 }

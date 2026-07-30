@@ -25,6 +25,8 @@ import { WEB_MCP_LIFECYCLE_SCRIPT_MARKER } from '../cloudflare/pages/webmcp-html
 import { buildAgentReadyCommerceChecks } from './agent-ready-commerce-checks.mjs'
 const canonicalOriginUrl = 'https://airvio.co'
 const canonicalBaseUrl = `${canonicalOriginUrl}/knowgrph`
+const requestOriginUrl = new URL(process.env.KNOWGRPH_AGENT_READY_BASE_URL || canonicalBaseUrl).origin
+const toRequestUrl = (url) => url.replace(canonicalOriginUrl, requestOriginUrl)
 const baseUrl = canonicalBaseUrl
 const originUrl = canonicalOriginUrl
 const rootA2aAgentCardUrl = `${originUrl}/.well-known/agent-card.json`
@@ -93,7 +95,7 @@ const buildSharedDocSample = async ({ workspaceId, canonicalPath, requireNonEmpt
   const storagePath = workspaceId
     ? `/api/storage/doc/${encodedWorkspaceId}/${encodedCanonicalPath}`
     : `/api/storage/doc-default/${encodedCanonicalPath}`
-  const markdownResponse = await fetch(`${canonicalOriginUrl}${storagePath}`, {
+  const markdownResponse = await fetch(toRequestUrl(`${canonicalOriginUrl}${storagePath}`), {
     headers: { accept: 'text/markdown' },
   })
   if (!markdownResponse.ok) return null
@@ -122,7 +124,7 @@ const extractStorageDocEntries = (body) => {
   return entries
 }
 const resolveSharedDocSampleFromIndex = async ({ requireNonEmpty = false } = {}) => {
-  const response = await fetch(`${canonicalOriginUrl}/api/storage/source-files`, {
+  const response = await fetch(toRequestUrl(`${canonicalOriginUrl}/api/storage/source-files`), {
     headers: { accept: 'text/markdown' },
   })
   if (!response.ok) return null
@@ -1124,7 +1126,7 @@ const checks = [
 let failed = 0
 for (const check of checks) {
   try {
-    const response = await fetch(check.url.replace(canonicalOriginUrl, new URL(process.env.KNOWGRPH_AGENT_READY_BASE_URL || canonicalBaseUrl).origin), {
+    const response = await fetch(toRequestUrl(check.url), {
       method: check.method || 'GET',
       headers: { accept: check.accept },
       body: check.body,

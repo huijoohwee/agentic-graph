@@ -66,7 +66,7 @@ export function testStoryboardWidgetCanvasTextRunUsesSharedRichMediaOutputPatch(
   if (!workflowRichMediaPanelText.includes('export function ensureStoryboardWidgetWorkflowRichMediaPanelNodeId(args: {')) {
     throw new Error('expected StoryboardWidget runtime helper to centralize rich-media panel creation fallback')
   }
-  if (!text.includes('const panelNodeId = ensureStoryboardWidgetWorkflowRichMediaPanelNodeId({')) {
+  if (!text.includes('const createdPanelNodeId = explicitPanelNodeIds.length > 0 ? null : ensureStoryboardWidgetWorkflowRichMediaPanelNodeId({')) {
     throw new Error('expected StoryboardWidgetCanvas text widget run path to reuse the shared rich-media panel target helper')
   }
   if (!text.includes('applyStoryboardWidgetWorkflowRichMediaPanelDraftPatch({') || !text.includes('applyPublishedPanelPatch(panelNodeId, patch)')) {

@@ -12,6 +12,8 @@ export async function generateStoryboardWidgetTextWithProvider(args: {
   localProperties: Record<string, unknown>
   prompt: string
   onText?: (nextText: string) => void
+  onReasoningText?: (nextText: string) => void
+  systemMessages?: ReadonlyArray<{ role: 'system'; content: string }>
 }): Promise<string> {
   const { properties, store } = args
   const thinkingOptions = resolveStoryboardWidgetTextThinkingOptions({
@@ -54,11 +56,13 @@ export async function generateStoryboardWidgetTextWithProvider(args: {
     chatToolsJson: properties.chatToolsJson ?? store.chatToolsJson,
     chatToolChoiceJson: properties.chatToolChoiceJson ?? store.chatToolChoiceJson,
     ...(args.onText ? { onText: args.onText } : {}),
+    ...(args.onReasoningText ? { onReasoningText: args.onReasoningText } : {}),
   }
   const run = (overrides: Partial<RunTextGenerationOptions> = {}) => generateRunMarkdownWithProvider({
     config,
     prompt: args.prompt,
     options: { ...options, ...overrides },
+    systemMessages: args.systemMessages,
   })
   try {
     return await run()

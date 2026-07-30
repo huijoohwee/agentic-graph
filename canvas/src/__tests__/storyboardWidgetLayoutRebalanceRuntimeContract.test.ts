@@ -5,9 +5,30 @@ const readUtf8 = (absPath: string): string => fs.readFileSync(absPath, { encodin
 
 export const testStoryboardWidgetLayoutRebalanceUsesCenteredBalancedSpreadRuntime = () => {
   const runtimeText = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetRuntimeScene.ts'))
+  const runActionText = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts'))
   const overlayCollisionText = readUtf8(path.resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetOverlayCollision.ts'))
-  if (!runtimeText.includes("storyboardWidgetLayoutRebalanceRequest?: null | { type: 'balanced-spread'; at: number }")) throw new Error('expected Storyboard Widget runtime scene to accept a renderer Layout rebalance request')
+  if (!runtimeText.includes('storyboardWidgetLayoutRebalanceRequest?: StoryboardWidgetLayoutRebalanceRequest | null')) throw new Error('expected Storyboard Widget runtime scene to accept the shared renderer Layout rebalance request contract')
+  if (!runtimeText.includes('readStoryboardWidgetLayoutTargetTransform(args.storyboardWidgetLayoutRebalanceRequest)')
+    || !runtimeText.includes('isStoryboardWidgetZoomPresetRebalanceRequest(args.storyboardWidgetLayoutRebalanceRequest)')
+    || !runtimeText.includes('layoutRebalanceTargetTransform')
+    || !runtimeText.includes('allowDuringWorkspaceMutation: true, persist: false')) {
+    throw new Error('expected explicit zoom-preset rebalances to use target camera geometry as non-persistent presentation state while source mutation is guarded')
+  }
   if (!runtimeText.includes('const forcedLayoutRebalanceIds = layoutRebalanceRequested ? pinnedOpenIds : []')) throw new Error('expected Storyboard renderer Layout rebalance to target the pinned open widget collective')
+  if (!runActionText.includes('const executionAnchor = args.captureExecutionAnchor?.(resolvedNodeId) || null')
+    || !runActionText.includes('const commitPublishedRunGraphData = args.commitPublishedGraphData')
+    || !runActionText.includes('commitPublishedGraphData: commitPublishedRunGraphData')
+    || !runActionText.includes('executionAnchor,')
+    || runActionText.includes("reason: 'content-materialization'")) {
+    throw new Error('expected successful generic Run materialization to use one execution-anchor authority without requesting downstream camera recovery')
+  }
+  if (!runtimeText.includes('isStoryboardWidgetContentMaterializationRebalanceRequest(args.storyboardWidgetLayoutRebalanceRequest)')
+    || !runtimeText.includes('&& !contentMaterializationViewportRecoveryRequested')
+    || !runtimeText.includes('if (establishedTopologyChanged) return true')
+    || runtimeText.includes('lastHandledContentMaterializationRecoveryAtRef')
+    || runtimeText.includes('topologyRecoveryArmed')) {
+    throw new Error('expected content materialization to preserve execution-anchor placement without downstream position or camera recovery')
+  }
   if (!runtimeText.includes('const activeSurfaceOverlayWidgetIds = (() => {') || !runtimeText.includes('selector: STORYBOARD_WIDGET_OVERLAY_ROOT_SELECTOR,') || !runtimeText.includes('resolveGraphNodeIdByCanonicalId(graphDataForSeeding, id)') || !runtimeText.includes('const placementPinnedById: FlowWidgetPinnedById =') || !runtimeText.includes('const activeSurfaceOverlayWidgetIdSet = new Set(activeSurfaceOverlayWidgetIds)') || !runtimeText.includes('return pinned || activeSurfaceOverlayWidgetIdSet.has(id)') || !runtimeText.includes("if (pinnedAttr === '0') activeSurfaceOverlayPinnedById[id] = false") || !runtimeText.includes('...activeSurfaceOverlayWidgetIds,')) throw new Error('expected Storyboard renderer Layout rebalance to include all active surface widget overlays, including unpinned screen-authority widgets')
   if (!runtimeText.includes('const forcedInitialCollectiveIds =')) throw new Error('expected Storyboard initialization to balance the full collective when seed positions are missing')
   if (!runtimeText.includes('domCollectiveRecoveryAttemptByScopeRef') || !runtimeText.includes("reason: 'workspace-blocked-skipping-dom-collective-seed-write'") || !runtimeText.includes('ids: boundsIds,') || !runtimeText.includes('new MutationObserver(() => {') || !runtimeText.includes('viewportState?.balanced === true') || !runtimeText.includes('needsMeasuredCenterShift') || !runtimeText.includes('measuredCenterShiftY') || !runtimeText.includes('readinessAttempts < 240') || !runtimeText.includes('attempts >= 6') || !runtimeText.includes('emitStoryboardWidgetInteractionFrameEvent()') || !runtimeText.includes('return false')) throw new Error('expected Storyboard initialization to recover mounted offscreen/off-center collectives through guarded active-surface seed writes outside workspace-blocked mode')

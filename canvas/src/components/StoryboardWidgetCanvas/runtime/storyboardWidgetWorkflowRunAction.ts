@@ -6,23 +6,12 @@ import { isKgcWorkspaceCompanionPath, toCanonicalKgcWorkspacePath } from '@/feat
 import { emitKgcRunOutput } from '@/features/chat/kgcRunOutput'
 import { ensureEditorCanvasLandingForDuration } from '@/lib/toolbar/workspaceLandingGuard'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
-import { UI_COPY, FLOW_SWARM_PREDICTION_NODE_TYPE_ID, FLOW_TEXT_GENERATION_NODE_LABEL, FLOW_TEXT_GENERATION_NODE_TYPE_ID, FLOW_VIDEO_TRANSCRIBER_NODE_LABEL, FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID } from '@/lib/config'
+import { UI_COPY, FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config'
 import { readGraphDataRevision } from '@/lib/graph/documentMetadata'
-import { resolveWidgetRegistryEntry, FLOW_WIDGET_FORM_ID_KEY } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
-import { buildTextWidgetOutputPatch, clearRichMediaOutputProperties, resolveRichMediaWidgetKind, writeTextWidgetRunOutputArtifact } from '@/features/chat/richMediaRun'
-import { fetchYouTubeTranscriptMarkdown } from '@/features/transcription/youtubeTranscriptMarkdown'
-import { resolveEffectiveTextGenerationWidgetProperties } from '@/features/storyboard-widget-manager/registryTemplates'
-import { inferTextGenerationProviderFamily } from '@/features/storyboard-widget-manager/textGenerationProviderFamily'
-import { runSwarmPredictionWidgetProperties } from '@/features/swarm-prediction/swarmPredictionWidget'
-import { FLOW_SHOWRUNNER_NODE_TYPE_ID, runShowrunnerWidgetProperties } from '@/features/ai-showrunner/showrunnerFlowNode'
+import { resolveWidgetRegistryEntry } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
+import { resolveRichMediaWidgetKind } from '@/features/chat/richMediaRun'
 import { getCachedStoryboardWidgetWorkflowNodeResolutionContext, resolveStoryboardWidgetWorkflowNodeByIdAcrossGraphs, resolveStoryboardWidgetWorkflowRunTarget } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
-import {
-  buildStoryboardWidgetInlineComputeOutputPatch,
-  resolveStoryboardWidgetTextGenerationPrompts,
-  resolveStoryboardWidgetTextSourceContexts,
-  resolveStoryboardWidgetWorkflowConnectedValuesInput,
-  serializeStoryboardWidgetTextSourceProvenance,
-} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs'
+import { buildStoryboardWidgetInlineComputeOutputPatch, resolveStoryboardWidgetWorkflowConnectedValuesInput } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunInputs'
 import { isStoryboardWidgetWorkflowRunnableNode, resolveStoryboardWidgetWorkflowDownstreamRunTargetIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowDownstreamRunTargets'
 import { publishStoryboardWidgetSourceBackedRunOutput } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetSourceBackedRunOutput'
 import { setStoryboardWidgetWorkflowRunLoadingStateForKnownNodeIds, updateStoryboardWidgetWorkflowOutputForKnownNodeIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowWriteback'
@@ -39,7 +28,9 @@ import { readGraphNodeProperties } from '@/lib/cards/graphNodeCardFields'
 import { runStoryboardWidgetNativeCrawlerInvocation } from './storyboardWidgetWorkflowNativeCrawlerRun'
 import { runStoryboardWidgetRichMediaDeliverables } from './storyboardWidgetWorkflowRichMediaDeliverablesRun'
 import { generateStoryboardWidgetTextWithProvider } from './storyboardWidgetWorkflowTextGenerationProvider'
-import { buildStoryboardWidgetTextRunSourceState } from './storyboardWidgetTextRunSourceState'
+import { runStoryboardWidgetHeadlessTextResponse } from './storyboardWidgetHeadlessTextRun'
+import { resolveStoryboardWidgetTextGenerationRunContext, type StoryboardWidgetTextGenerationRunContext } from './storyboardWidgetTextGenerationRunContext'
+import { runStoryboardWidgetSpecializedWorkflowNode } from './storyboardWidgetWorkflowSpecializedRunHandlers'
 import type { StoryboardWidgetWorkflowNodeRunner, StoryboardWidgetWorkflowNodeRunnerArgs } from './storyboardWidgetWorkflowRunTypes'
 export { resolveStoryboardWidgetBaseGraphKind } from './storyboardWidgetWorkflowRunTypes'
 export type { StoryboardWidgetWorkflowNodeRunner, StoryboardWidgetWorkflowNodeRunnerArgs } from './storyboardWidgetWorkflowRunTypes'
@@ -54,6 +45,12 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
   const executeRunWorkflowNode: StoryboardWidgetWorkflowNodeRunner = async (nodeId, runOptions) => {
     let runAnchorNode: GraphNode | null = null
     let publishedRunGraphData: GraphData | null = null
+    const commitPublishedRunGraphData = args.commitPublishedGraphData
+      ? (graphData: GraphData) => {
+          publishedRunGraphData = graphData
+          args.commitPublishedGraphData?.(graphData)
+        }
+      : undefined
     const executeWorkflowNode = async () => {
       const id = String(nodeId || '').trim()
       const allowCreateRichMediaPanel = runOptions?.allowCreateRichMediaPanel !== false
@@ -170,6 +167,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
       const graphForRun = resolvedRunTarget?.graphForRun || draft
       const resolvedNodeId = String(resolvedRunTarget?.resolvedNodeId || node.id || id)
       const writableNodeId = String(resolvedRunTarget?.writableNodeId || resolvedNodeId).trim() || resolvedNodeId
+      const executionAnchor = args.captureExecutionAnchor?.(resolvedNodeId) || null
 
       const resolveNodeByIdAcrossGraphs = (candidateId: string): GraphNode | null =>
         resolveStoryboardWidgetWorkflowNodeByIdAcrossGraphs({
@@ -259,131 +257,26 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
         commitDraftGraphDataUpdate: args.commitDraftGraphDataUpdate,
         updateNode: args.updateNode,
         appendWorkflowOutputEdge: materializeStoryboardWidgetWorkflowOutputEdge,
-        commitPublishedGraphData: args.commitPublishedGraphData,
+        commitPublishedGraphData: commitPublishedRunGraphData,
         resolveNodeByIdAcrossGraphs,
+        executionAnchor,
       })
 
-      if (String(node.type || '').trim() === FLOW_VIDEO_TRANSCRIBER_NODE_TYPE_ID) {
-        const sourceUrlRaw = typeof rawNodeProperties.sourceUrl === 'string' ? rawNodeProperties.sourceUrl.trim() : ''
-        const langRaw = typeof rawNodeProperties.languageHint === 'string' ? rawNodeProperties.languageHint.trim() : ''
-        if (!sourceUrlRaw) {
-          reportNodeRunFailure('Import a video URL before running the Video Transcriber Widget.', 2400)
-          return
-        }
-        setRunLoadingStateForKnownNodeIds({ loading: true, kind: 'text' })
-        try {
-          const converted = await fetchYouTubeTranscriptMarkdown({ url: sourceUrlRaw, ...(langRaw ? { lang: langRaw } : {}) })
-          if (!converted) {
-            reportNodeRunFailure(UI_COPY.storyboardWidgetRunFailedToast)
-            return
-          }
-          if ('error' in converted) {
-            reportNodeRunFailure(converted.error.trim() ? converted.error.trim() : UI_COPY.storyboardWidgetRunFailedToast)
-            return
-          }
-          const nodeTitle = node.label || FLOW_VIDEO_TRANSCRIBER_NODE_LABEL
-          const resolvedSourceUrl = String(converted.sourceUrl || sourceUrlRaw).trim() || sourceUrlRaw
-          const outputText = String(converted.markdown || '')
-          const outputPath = await writeTextWidgetRunOutputArtifact({
-            workspacePath: activeWorkspacePath || null,
-            node,
-            output: outputText,
-            variant: 'transcript',
-          })
-          updateRunOutputForKnownNodeIds(nodeProps => ({
-            ...clearRichMediaOutputProperties(nodeProps),
-            sourceUrl: resolvedSourceUrl,
-            ...(langRaw ? { languageHint: langRaw } : { languageHint: '' }),
-            ...buildTextWidgetOutputPatch({ output: outputText, title: nodeTitle, model: 'youtube', outputPath }),
-            outputSourceUrl: resolvedSourceUrl,
-          }))
-          publishTextRunOutputToRichMediaPanel({ anchorNode: node, outputText, title: nodeTitle, model: 'youtube', sourceUrl: resolvedSourceUrl, outputPath, loading: false })
-          args.upsertUiToast({ id: `storyboard-widget-run-${id}`, kind: 'neutral', message: 'Transcribed video transcript.', ttlMs: 2400 })
-        } finally {
-          setRunLoadingStateForKnownNodeIds({ loading: false })
-        }
-        return
-      }
-
-      if (String(node.type || '').trim() === FLOW_SWARM_PREDICTION_NODE_TYPE_ID) {
-        const connectedValuesInput = resolveStoryboardWidgetWorkflowConnectedValuesInput({
-          context: workflowNodeResolutionContext,
-          graphForRun,
-          writableNodeId,
-          registry: args.widgetRegistry,
-        })
-        const connectedValuesBySchemaPath = connectedValuesInput?.connectedValuesByNodeId.get(connectedValuesInput.targetNodeId)
-        const readConnectedProperty = (schemaPath: string, propertyKey: string): unknown => {
-          const connected = connectedValuesBySchemaPath?.[schemaPath]?.value
-          return typeof connected === 'undefined' || connected === null ? rawNodeProperties[propertyKey] : connected
-        }
-        setRunLoadingStateForKnownNodeIds({ loading: true, kind: 'text' })
-        try {
-          const outputProperties = runSwarmPredictionWidgetProperties({
-            ...rawNodeProperties,
-            scenarioTitle: readConnectedProperty('properties.scenarioTitle', 'scenarioTitle'),
-            seedSignalsJson: readConnectedProperty('properties.seedSignalsJson', 'seedSignalsJson'),
-            agentPopulationJson: readConnectedProperty('properties.agentPopulationJson', 'agentPopulationJson'),
-            interventionsJson: readConnectedProperty('properties.interventionsJson', 'interventionsJson'),
-          })
-          updateRunOutputForKnownNodeIds(nodeProps => ({
-            ...clearRichMediaOutputProperties(nodeProps),
-            output: outputProperties.output,
-            imageUrl: outputProperties.imageUrl,
-            predictionScore: outputProperties.predictionScore,
-            confidenceScore: outputProperties.confidenceScore,
-            eventLogJson: outputProperties.eventLogJson,
-            metricsJson: outputProperties.metricsJson,
-            swarmPredictionRunId: outputProperties.swarmPredictionRunId,
-            outputMimeType: 'text/markdown; charset=utf-8',
-            outputModel: 'knowgrph-swarm-prediction',
-            lastRunAt: new Date().toISOString(),
-          }))
-          args.upsertUiToast({ id: `storyboard-widget-run-${id}`, kind: 'neutral', message: 'Ran swarm prediction.', ttlMs: 2400 })
-        } finally {
-          setRunLoadingStateForKnownNodeIds({ loading: false })
-        }
-        return
-      }
-
-      if (String(node.type || '').trim() === FLOW_SHOWRUNNER_NODE_TYPE_ID) {
-        const connectedValuesInput = resolveStoryboardWidgetWorkflowConnectedValuesInput({
-          context: workflowNodeResolutionContext,
-          graphForRun,
-          writableNodeId,
-          registry: args.widgetRegistry,
-        })
-        const connectedValuesBySchemaPath = connectedValuesInput?.connectedValuesByNodeId.get(connectedValuesInput.targetNodeId)
-        const readConnectedProperty = (schemaPath: string, propertyKey: string): unknown => {
-          const connected = connectedValuesBySchemaPath?.[schemaPath]?.value
-          return typeof connected === 'undefined' || connected === null ? rawNodeProperties[propertyKey] : connected
-        }
-        setRunLoadingStateForKnownNodeIds({ loading: true, kind: 'text' })
-        try {
-          const outputProperties = await runShowrunnerWidgetProperties({
-            ...rawNodeProperties,
-            brief_path: readConnectedProperty('properties.brief_path', 'brief_path'),
-            brief_markdown: readConnectedProperty('properties.brief_markdown', 'brief_markdown'),
-            run_id: readConnectedProperty('properties.run_id', 'run_id'),
-            dry_run: readConnectedProperty('properties.dry_run', 'dry_run'),
-          })
-          updateRunOutputForKnownNodeIds(nodeProps => ({
-            ...clearRichMediaOutputProperties(nodeProps),
-            run_id: outputProperties.run_id,
-            run_status: outputProperties.run_status,
-            latest_artifact_path: outputProperties.latest_artifact_path,
-            token_spend_summary: outputProperties.token_spend_summary,
-            output: outputProperties.token_spend_summary,
-            outputMimeType: 'application/json; charset=utf-8',
-            outputModel: 'knowgrph-ai-showrunner',
-            lastRunAt: new Date().toISOString(),
-          }))
-          args.upsertUiToast({ id: `storyboard-widget-run-${id}`, kind: 'neutral', message: 'Ran AI Showrunner.', ttlMs: 2400 })
-        } finally {
-          setRunLoadingStateForKnownNodeIds({ loading: false })
-        }
-        return
-      }
+      if (await runStoryboardWidgetSpecializedWorkflowNode({
+        id,
+        node,
+        rawNodeProperties,
+        context: workflowNodeResolutionContext,
+        graphForRun,
+        writableNodeId,
+        widgetRegistry: args.widgetRegistry,
+        activeWorkspacePath,
+        updateRunOutputForKnownNodeIds,
+        setRunLoadingStateForKnownNodeIds,
+        publishTextRunOutputToRichMediaPanel,
+        reportNodeRunFailure,
+        upsertUiToast: args.upsertUiToast,
+      })) return
 
       const mediaNodeHandled = await runStoryboardWidgetMediaWorkflowNode({
         id,
@@ -416,68 +309,86 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
       })
       if (mediaNodeHandled) return
 
-      if (String(unwrapGraphCellValue(node.type) || '').trim() === FLOW_TEXT_GENERATION_NODE_TYPE_ID) {
-        const resolvedTextRegistryEntry = resolveWidgetRegistryEntry({ node, registry: args.widgetRegistry, graphMetaKind: args.baseGraphKind })
-        const providerFamily = inferTextGenerationProviderFamily({
-          provider: unwrapGraphCellValue(rawNodeProperties.chatProvider) || store.chatProvider, endpointUrl: unwrapGraphCellValue(rawNodeProperties.chatEndpointUrl) || store.chatEndpointUrl,
-          model: unwrapGraphCellValue(rawNodeProperties.chatModel) || store.chatModel, widgetTypeId: resolvedTextRegistryEntry?.widgetTypeId,
-          formId: resolvedTextRegistryEntry?.formId || rawNodeProperties[FLOW_WIDGET_FORM_ID_KEY],
-        })
-        const properties = resolveEffectiveTextGenerationWidgetProperties({
-          providerFamily,
-          localProperties: rawNodeProperties,
-          globalProperties: {
-            chatProvider: store.chatProvider,
-            chatAuthMode: store.chatAuthMode,
-            chatEndpointUrl: store.chatEndpointUrl,
-            chatModel: store.chatModel,
-            chatTemperature: store.chatTemperature,
-            chatMaxCompletionTokens: store.chatMaxCompletionTokens,
-            chatServiceTier: store.chatServiceTier,
-            chatStream: store.chatStream,
-            chatMessagesJson: store.chatMessagesJson,
-            chatReasoningEffort: store.chatReasoningEffort,
-            chatThinkingType: store.chatThinkingType,
-            chatThinkingJson: store.chatThinkingJson,
-            chatFrequencyPenalty: store.chatFrequencyPenalty,
-            chatPresencePenalty: store.chatPresencePenalty,
-            chatTopP: store.chatTopP,
-            chatLogprobs: store.chatLogprobs,
-            chatTopLogprobs: store.chatTopLogprobs,
-            chatParallelToolCalls: store.chatParallelToolCalls,
-            chatStopJson: store.chatStopJson,
-            chatStreamOptionsJson: store.chatStreamOptionsJson,
-            chatResponseFormatJson: store.chatResponseFormatJson,
-            chatLogitBiasJson: store.chatLogitBiasJson,
-            chatToolsJson: store.chatToolsJson,
-            chatToolChoiceJson: store.chatToolChoiceJson,
+      const resolveTextGenerationRunContext = () => resolveStoryboardWidgetTextGenerationRunContext({
+        node,
+        rawNodeProperties,
+        runtimeProperties: store as unknown as Record<string, unknown>,
+        context: workflowNodeResolutionContext,
+        graphForRun,
+        writableNodeId,
+        widgetRegistry: args.widgetRegistry,
+        baseGraphKind: args.baseGraphKind,
+      })
+      const createTextGenerationProvider = (textGeneration: StoryboardWidgetTextGenerationRunContext) => (
+        generationPrompt: string,
+        onText?: (nextText: string) => void,
+        systemMessages?: ReadonlyArray<{ role: 'system'; content: string }>,
+        onReasoningText?: (nextText: string) => void,
+      ) => generateStoryboardWidgetTextWithProvider({
+        properties: textGeneration.properties,
+        store,
+        formId: textGeneration.formId,
+        localProperties: rawNodeProperties,
+        prompt: generationPrompt,
+        onText,
+        onReasoningText,
+        systemMessages,
+      })
+      const runHeadlessTextGeneration = (
+        textGeneration: StoryboardWidgetTextGenerationRunContext,
+        generateText = createTextGenerationProvider(textGeneration),
+      ) => runStoryboardWidgetHeadlessTextResponse({
+        sourceNodeId: writableNodeId,
+        node,
+        authoredRequestText: textGeneration.authoredPrompt || textGeneration.prompt,
+        providerPrompt: textGeneration.prompt,
+        provider: String(textGeneration.properties.chatProvider || store.chatProvider || ''),
+        model: String(textGeneration.properties.chatModel || store.chatModel || '').trim() || null,
+        workspacePath: activeWorkspacePath || null,
+        outputSourceProvenanceJson: textGeneration.outputSourceProvenanceJson,
+        generateText,
+        updateSource: updateRunOutputForKnownNodeIds,
+        publishOutput: publishTextRunOutputToRichMediaPanel,
+        setLoading: loading => setRunLoadingStateForKnownNodeIds(loading ? { loading: true, kind: 'text' } : { loading: false }),
+        reportFailure: reportNodeRunFailure,
+        reportSuccess: message => args.upsertUiToast({
+          id: `storyboard-widget-run-${id}`,
+          kind: 'neutral',
+          message,
+          ttlMs: 2400,
+        }),
+      })
+      const runProbeTreeInvocation = async (textGeneration: StoryboardWidgetTextGenerationRunContext): Promise<boolean> => {
+        const probeTreeOutput = await runStoryboardWidgetProbeTreeTextGenerationInvocation({
+          graphForRun, nodeIds: [writableNodeId, resolvedNodeId, id, String(node.id || '')], requestedNodeId: id, fallbackNode: node, resolutionContext: workflowNodeResolutionContext,
+          textGeneration: {
+            prompt: textGeneration.prompt,
+            formId: textGeneration.formId,
+            localProperties: rawNodeProperties,
+            resolvedProperties: textGeneration.properties,
+            runtimeProperties: store,
           },
+          onInvocationStart: () => disableAutoZoomModesForUserGesture(useGraphStore.getState()),
+          onMaterialized: nodeIds => { revealProbeTreeBranchCardsOnCanvas(nodeIds); scheduleRunOutputEdgeRefresh() },
+          publishOutput: publishTextRunOutputToRichMediaPanel,
+          executionAnchor,
+          setLoading: loading => setRunLoadingStateForKnownNodeIds(loading ? { loading: true, kind: 'text' } : { loading: false }),
         })
-        const connectedValuesInput = resolveStoryboardWidgetWorkflowConnectedValuesInput({
-          context: workflowNodeResolutionContext,
-          graphForRun,
-          writableNodeId,
-          registry: args.widgetRegistry,
-        })
-        const connectedValuesBySchemaPath = connectedValuesInput?.connectedValuesByNodeId.get(connectedValuesInput.targetNodeId)
-        const connectedPromptValue = connectedValuesBySchemaPath?.['properties.prompt']
-        const sourceContexts = resolveStoryboardWidgetTextSourceContexts({
-          graphData: connectedValuesInput?.graphData,
-          connectedValue: connectedPromptValue,
-          targetPath: 'properties.prompt',
-        })
-        const outputSourceProvenanceJson = serializeStoryboardWidgetTextSourceProvenance(sourceContexts)
-        const { authoredPrompt, connectedPrompt, prompt } = resolveStoryboardWidgetTextGenerationPrompts({
-          authoredPrompt: properties.prompt,
-          connectedValue: connectedPromptValue?.value,
-          sourceContexts,
-        })
-        const textProviderBase = { properties, store, formId: resolvedTextRegistryEntry?.formId || rawNodeProperties[FLOW_WIDGET_FORM_ID_KEY], localProperties: rawNodeProperties }
-        const generateTextWithProvider = (generationPrompt: string, onText?: (nextText: string) => void) => generateStoryboardWidgetTextWithProvider({
-          ...textProviderBase,
-          prompt: generationPrompt,
-          onText,
-        })
+        if (!probeTreeOutput) return false
+        publishedRunGraphData = probeTreeOutput.graphData
+        args.upsertUiToast({ id: `storyboard-widget-run-${id}`, kind: probeTreeOutput.kind, message: probeTreeOutput.message, ttlMs: probeTreeOutput.kind === 'success' ? 3000 : 4200 })
+        return true
+      }
+      const nodeType = String(unwrapGraphCellValue(node.type) || '').trim()
+      const genericTextGeneration = nodeType === FLOW_TEXT_GENERATION_NODE_TYPE_ID
+        ? null
+        : resolveTextGenerationRunContext()
+      if (genericTextGeneration && await runProbeTreeInvocation(genericTextGeneration)) return
+
+      if (nodeType === FLOW_TEXT_GENERATION_NODE_TYPE_ID) {
+        const textGeneration = resolveTextGenerationRunContext()
+        const { properties, authoredPrompt, connectedPrompt, connectedSourceNodeId, prompt } = textGeneration
+        const generateTextWithProvider = createTextGenerationProvider(textGeneration)
         const deliverablesRun = await runStoryboardWidgetRichMediaDeliverables({
           id,
           node,
@@ -485,7 +396,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           rawNodeProperties,
           authoredPrompt,
           connectedPrompt,
-          connectedSourceNodeId: connectedValuesBySchemaPath?.['properties.prompt']?.sources?.[0]?.nodeId || '',
+          connectedSourceNodeId,
           workspacePath: activeWorkspacePath || null, requireDurablePersistence: runOptions?.requireDurableMediaPersistence === true,
           model: properties.chatModel || store.chatModel,
           generateText: generateTextWithProvider,
@@ -496,71 +407,13 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           upsertToast: args.upsertUiToast,
         })
         if (deliverablesRun.handled) return void (publishedRunGraphData = deliverablesRun.graphData || args.readDraftGraphData())
-        const probeTreeOutput = await runStoryboardWidgetProbeTreeTextGenerationInvocation({
-          graphForRun, nodeIds: [writableNodeId, resolvedNodeId, id, String(node.id || '')], requestedNodeId: id, fallbackNode: node, resolutionContext: workflowNodeResolutionContext,
-          textGeneration: { prompt, formId: resolvedTextRegistryEntry?.formId || rawNodeProperties[FLOW_WIDGET_FORM_ID_KEY], localProperties: rawNodeProperties, resolvedProperties: properties, runtimeProperties: store },
-          onInvocationStart: () => disableAutoZoomModesForUserGesture(useGraphStore.getState()),
-          onMaterialized: nodeIds => { revealProbeTreeBranchCardsOnCanvas(nodeIds); scheduleRunOutputEdgeRefresh() },
-          publishOutput: publishTextRunOutputToRichMediaPanel,
-          setLoading: loading => setRunLoadingStateForKnownNodeIds(loading ? { loading: true, kind: 'text' } : { loading: false }),
-        })
-        if (probeTreeOutput) {
-          publishedRunGraphData = probeTreeOutput.graphData
-          args.upsertUiToast({ id: `storyboard-widget-run-${id}`, kind: probeTreeOutput.kind, message: probeTreeOutput.message, ttlMs: probeTreeOutput.kind === 'success' ? 3000 : 4200 })
-          return
-        }
+        if (await runProbeTreeInvocation(textGeneration)) return
         if (!prompt) {
           reportNodeRunFailure('Add a prompt before running the Widget Card.', 2400)
           return
         }
         if (await runStoryboardWidgetNativeCrawlerInvocation({ id, prompt, node, nodeProperties: rawNodeProperties, workspacePath: args.markdownDocumentName, recoveryOnly: runOptions?.nativeCrawlerRecovery === true, updateOutput: updateRunOutputForKnownNodeIds, publishOutput: publishTextRunOutputToRichMediaPanel, upsertToast: args.upsertUiToast, reportFailure: reportNodeRunFailure })) return
-        const textRunStartedAt = new Date().toISOString()
-        setRunLoadingStateForKnownNodeIds({ loading: true, kind: 'text' })
-        updateRunOutputForKnownNodeIds(nodeProps => buildStoryboardWidgetTextRunSourceState({
-          properties: nodeProps,
-          loading: true,
-          runAt: textRunStartedAt,
-        }))
-        let lastPublishedText = ''
-        const publishTextRunOutput = (outputText: string, loading: boolean, outputPath?: string | null) => {
-          const nextOutput = String(outputText || '')
-          updateRunOutputForKnownNodeIds(nodeProps => buildStoryboardWidgetTextRunSourceState({
-            properties: nodeProps,
-            loading,
-            runAt: textRunStartedAt,
-          }))
-          publishTextRunOutputToRichMediaPanel({
-            anchorNode: node,
-            outputText: nextOutput,
-            title: node.label || FLOW_TEXT_GENERATION_NODE_LABEL,
-            model: properties.chatModel || useGraphStore.getState().chatModel,
-            outputPath,
-            loading, versionId: `text-run-${textRunStartedAt}`, versionCreatedAt: textRunStartedAt,
-            connectCreatedOutputToAnchor: true,
-            panelProperties: { outputSourceProvenanceJson: outputSourceProvenanceJson || undefined },
-          })
-        }
-        try {
-          const result = await generateTextWithProvider(prompt, nextText => {
-            if (nextText === lastPublishedText) return
-            lastPublishedText = nextText
-            publishTextRunOutput(nextText, true)
-          })
-          if (!result) {
-            reportNodeRunFailure(UI_COPY.storyboardWidgetRunFailedToast)
-            return
-          }
-          const outputPath = await writeTextWidgetRunOutputArtifact({
-            workspacePath: activeWorkspacePath || null,
-            node,
-            output: result,
-            variant: 'text-output',
-          })
-          publishTextRunOutput(result, false, outputPath)
-          args.upsertUiToast({ id: `storyboard-widget-run-${id}`, kind: 'neutral', message: 'Generated text output.', ttlMs: 2400 })
-        } finally {
-          setRunLoadingStateForKnownNodeIds({ loading: false })
-        }
+        await runHeadlessTextGeneration(textGeneration, generateTextWithProvider)
         return
       }
       const downstreamRunTargetIds = resolveStoryboardWidgetWorkflowDownstreamRunTargetIds({
@@ -586,6 +439,10 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
         return
       }
 
+      if (genericTextGeneration?.prompt) {
+        await runHeadlessTextGeneration(genericTextGeneration)
+        return
+      }
       publishStoryboardWidgetSourceBackedRunOutput({ id, node, publishTextRunOutputToRichMediaPanel, updateRunOutputForKnownNodeIds, upsertUiToast: args.upsertUiToast })
     }
     const executeWorkflowNodeWithFailureReporting = async () => {

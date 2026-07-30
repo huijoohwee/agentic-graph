@@ -56,6 +56,67 @@ export function testStoryboardWidgetWorkflowRunTargetResolvesComposedOverlayIdAg
   }
 }
 
+export async function testProbeTreeInvocationRoutesGenericCardBeforeSourceBackedFallback() {
+  let graphData: GraphData = {
+    type: 'Graph',
+    nodes: [{
+      id: 'runtime-gate',
+      type: 'XrDemoValidation',
+      label: 'Native Runtime Gate',
+      properties: {
+        prompt: '/sme-care-agent /knowgrph.probe-tree Compare bounded SME retail options.',
+      },
+    }],
+    edges: [],
+  }
+  const toasts: Array<{ message: string }> = []
+  const runWorkflowNode = createStoryboardWidgetWorkflowNodeRunner({
+    baseGraphKind: 'frontmatter-flow',
+    baseGraphData: graphData,
+    readDraftGraphData: () => graphData,
+    commitDraftGraphDataUpdate: (_current, next) => { graphData = next },
+    commitPublishedGraphData: next => { graphData = next },
+    persistDraftGraphData: next => { graphData = next },
+    renderGraphDataOverride: null,
+    markdownDocumentName: null,
+    markdownDocumentSourceUrl: null,
+    widgetRegistry: [],
+    appendDraftNode: args => {
+      const id = String(args.id || `n${graphData.nodes.length + 1}`)
+      graphData = {
+        ...graphData,
+        nodes: [...graphData.nodes, { ...args, id, properties: args.properties || {} } as GraphNode],
+      }
+      return id
+    },
+    updateNode: (id, patch) => {
+      graphData = {
+        ...graphData,
+        nodes: graphData.nodes.map(node => String(node.id) === id ? { ...node, ...patch } : node),
+      }
+    },
+    upsertUiToast: toast => { toasts.push(toast) },
+    scheduleOverlayEdgeUpdate: () => undefined,
+  })
+  let errorMessage = ''
+  try {
+    await runWorkflowNode('runtime-gate', { propagateErrors: true })
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error || '')
+  }
+  const sourceBackedPanel = graphData.nodes.find(node => (
+    unwrapGraphCellValue(node.type) === 'RichMediaPanel'
+    && String(readGraphNodeProperties(node).output || '').includes('without a provider call')
+  ))
+  if (
+    !errorMessage.startsWith('Probe-Tree LLM request failed:')
+    || sourceBackedPanel
+    || toasts.some(toast => toast.message === 'Generated source-backed Rich Media output.')
+  ) {
+    throw new Error(`expected a generic source card with an authored Probe-Tree command to use the invocation route before source-backed fallback, got ${JSON.stringify({ errorMessage, graphData, toasts })}`)
+  }
+}
+
 export async function testProbeTreeWidgetRunResolvesTypedFrontmatterNodeIdentity() {
   const prompt = [
     '/sme-care-agent @source.frontmatter @source.body',

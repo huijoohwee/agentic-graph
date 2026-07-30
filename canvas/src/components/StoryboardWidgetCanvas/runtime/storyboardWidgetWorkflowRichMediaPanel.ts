@@ -14,13 +14,9 @@ import {
   isImageToGlbOutputPanel,
 } from '@/features/image-to-glb/imageToGlbContract'
 import { bumpStoryboardWidgetDraftGraphDataRevision } from '@/lib/storyboardWidget/storyboardWidgetDraftGraphData'
-import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
-import { isPlainObject } from '@/lib/graph/value'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { isCanonicalNodeIdEqual, resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
-import { normalizeGeneratedRichMediaTableProperties } from '@/features/rich-media/richMediaTablePersistence'
 import { readGraphNodeProperties } from '@/lib/cards/graphNodeCardFields'
-
 import {
   listStoryboardWidgetWorkflowNodesAcrossGraphs,
   type StoryboardWidgetWorkflowNodeResolutionContext,
@@ -29,11 +25,26 @@ import {
   areStoryboardWidgetWorkflowRecordValuesEqual,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowWriteback'
 import {
+  buildStoryboardWidgetWorkflowOutputEdgeId,
+  hasCanonicalStoryboardWidgetWorkflowOutputEdgeProperties,
+  isStoryboardWidgetWorkflowOutputEdge,
+  mergeStoryboardWidgetWorkflowOutputEdgeProperties,
+  WORKFLOW_OUTPUT_EDGE_MODE_MANUAL,
+  WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY,
+} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowOutputEdge'
+import {
+  mergeStoryboardWidgetWorkflowPropertyPatch,
+  readStoryboardWidgetWorkflowString as cleanString,
+  resolveStoryboardWidgetWorkflowOutputPanelPosition,
+  STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION,
+  STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION_PROPERTY,
+} from './storyboardWidgetWorkflowOutputPanelPlacement'
+import {
   PROBE_TREE_OUTPUT_KEY,
   PROBE_TREE_OUTPUT_LAYOUT_VERSION,
   PROBE_TREE_OUTPUT_RIGHTMOST_X_PROPERTY,
   resolveStoryboardWidgetProbeTreeOutputPanelPosition,
-} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeLayout'
+} from './storyboardWidgetProbeTreeLayout'
 import {
   PROBE_TREE_BALANCED_LAYOUT_MODE,
   PROBE_TREE_BALANCED_LAYOUT_VERSION,
@@ -42,13 +53,16 @@ import {
   PROBE_TREE_PINNED_BY_DEFAULT_PROPERTY,
 } from '@/lib/storyboardWidget/probeTreeLayoutContract'
 import {
-  buildStoryboardWidgetWorkflowOutputEdgeId,
-  hasCanonicalStoryboardWidgetWorkflowOutputEdgeProperties,
-  isStoryboardWidgetWorkflowOutputEdge,
-  mergeStoryboardWidgetWorkflowOutputEdgeProperties,
-  WORKFLOW_OUTPUT_EDGE_MODE_MANUAL,
-  WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY,
-} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowOutputEdge'
+  buildStoryboardWidgetRunMaterializationLayoutProperties,
+} from './storyboardWidgetRunExecutionAnchor'
+
+export {
+  mergeStoryboardWidgetWorkflowPropertyPatch,
+  normalizeStoryboardWidgetWorkflowOwnedRichMediaPanelPlacement,
+  resolveStoryboardWidgetWorkflowOutputPanelPosition,
+  STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION,
+  STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION_PROPERTY,
+} from './storyboardWidgetWorkflowOutputPanelPlacement'
 
 export {
   IMAGE_TO_THREEJS_OUTPUT_PANEL_ANCHOR_ID_PROPERTY,
@@ -67,55 +81,6 @@ export const IMAGE_TO_THREEJS_OUTPUT_EDGE_LABEL = 'image.to-threejs output' as c
 export const IMAGE_TO_GLB_OUTPUT_EDGE_PROPERTY = 'imageGlbOutputEdge' as const
 export const IMAGE_TO_GLB_OUTPUT_EDGE_LABEL = 'image.to-glb output' as const
 export { WORKFLOW_OUTPUT_EDGE_MODE_MANUAL, WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY }
-
-const isTypedPropertyEnvelope = (value: unknown): value is Record<string, unknown> & { value: unknown } => (
-  isPlainObject(value)
-  && Object.prototype.hasOwnProperty.call(value, 'value')
-  && (Object.prototype.hasOwnProperty.call(value, 'key') || Object.prototype.hasOwnProperty.call(value, 'type'))
-)
-
-const mergeStoryboardWidgetWorkflowPropertyValues = (
-  current: Record<string, unknown>,
-  patch: Record<string, unknown>,
-): Record<string, unknown> => {
-  const next = { ...current }
-  for (const [key, value] of Object.entries(patch)) {
-    if (typeof value === 'undefined') {
-      delete next[key]
-      continue
-    }
-    next[key] = isTypedPropertyEnvelope(next[key])
-      ? { ...next[key], value }
-      : value
-  }
-  return normalizeGeneratedRichMediaTableProperties({
-    nodeType: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
-    properties: next,
-  })
-}
-
-export function mergeStoryboardWidgetWorkflowPropertyPatch(
-  current: Record<string, unknown>,
-  patch: Record<string, unknown>,
-): Record<string, unknown> {
-  const typedValues = isTypedPropertyEnvelope(current) && isPlainObject(current.value)
-    ? current.value
-    : null
-  const nextValues = mergeStoryboardWidgetWorkflowPropertyValues(typedValues || current, patch)
-  if (!typedValues) return nextValues
-
-  const nextContainer: Record<string, unknown> = { ...current, value: nextValues }
-  for (const key of Object.keys(patch)) {
-    // Clean up values written beside the canonical typed container by older runs.
-    delete nextContainer[key]
-  }
-  return nextContainer
-}
-
-function cleanString(value: unknown): string {
-  const unwrapped = unwrapGraphCellValue(value)
-  return typeof unwrapped === 'string' ? unwrapped.trim() : ''
-}
 
 function listStoryboardWidgetWorkflowRichMediaPanelSearchNodes(args: {
   context: StoryboardWidgetWorkflowNodeResolutionContext
@@ -189,6 +154,7 @@ export function ensureStoryboardWidgetWorkflowRichMediaPanelNodeId(args: {
   outputThreadRootId?: string | null
   outputLabel?: string | null
   outputIndex?: number
+  materializationPosition?: { x: number; y: number } | null
   appendDraftNode: (args: {
     id?: string | null
     type: string
@@ -217,22 +183,34 @@ export function ensureStoryboardWidgetWorkflowRichMediaPanelNodeId(args: {
         threadRootId: cleanString(args.outputThreadRootId),
       })
     : null
-  const fallbackPanelX = (Number.isFinite(args.anchorNode.x) ? args.anchorNode.x : 0)
-    + 520
-    + (typeof args.outputIndex === 'number' && Number.isFinite(args.outputIndex) ? Math.max(0, args.outputIndex) * 460 : 0)
-  const fallbackPanelY = Number.isFinite(args.anchorNode.y) ? args.anchorNode.y : 0
+  const ownedOutputPanelPosition = resolveStoryboardWidgetWorkflowOutputPanelPosition({
+    anchorNode: args.anchorNode,
+    liveDraftGraphData,
+    outputIndex: args.outputIndex,
+  })
   return args.appendDraftNode({
     id: null,
     type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID,
     label: cleanString(args.outputLabel) || FLOW_RICH_MEDIA_PANEL_NODE_LABEL,
-    x: probeTreePanelPosition?.x ?? fallbackPanelX,
-    y: probeTreePanelPosition?.y ?? fallbackPanelY,
+    x: Number.isFinite(args.materializationPosition?.x)
+      ? Number(args.materializationPosition?.x)
+      : probeTreePanelPosition?.x ?? ownedOutputPanelPosition.x,
+    y: Number.isFinite(args.materializationPosition?.y)
+      ? Number(args.materializationPosition?.y)
+      : probeTreePanelPosition?.y ?? ownedOutputPanelPosition.y,
     properties: {
       media_interactive: true,
       ...(cleanString(args.outputKey) ? {
         workflowOutputAnchorNodeId: cleanString(args.anchorNode.id),
         workflowOutputKey: cleanString(args.outputKey),
       } : {}),
+      ...(cleanString(args.outputKey) && cleanString(args.outputKey) !== PROBE_TREE_OUTPUT_KEY ? {
+        [STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION_PROPERTY]:
+          STORYBOARD_WIDGET_WORKFLOW_OUTPUT_PANEL_LAYOUT_VERSION,
+      } : {}),
+      ...(args.materializationPosition
+        ? buildStoryboardWidgetRunMaterializationLayoutProperties()
+        : {}),
       ...(cleanString(args.outputGroupId) ? { workflowOutputGroupId: cleanString(args.outputGroupId) } : {}),
       ...(probeTreePanelPosition ? {
         probeTreeThreadLedger: true,

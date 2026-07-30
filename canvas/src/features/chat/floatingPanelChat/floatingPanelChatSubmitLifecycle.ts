@@ -1,5 +1,7 @@
 import type React from 'react'
 import type { ChatMessage, StreamingAssistantState } from '../FloatingPanelChatSections'
+import { projectHeadlessResponseRunToChatMessage } from '../headlessResponseChatProjection'
+import type { HeadlessResponseRunResult } from '../headlessResponseCoordinator'
 
 export type SubmitStreamingWorkspaceResetRefs = {
   setStreamingWorkspacePath: React.Dispatch<React.SetStateAction<string | null>>
@@ -29,13 +31,21 @@ export const finalizeSubmitTerminalState = (args: SubmitStreamingWorkspaceResetR
 export const materializePendingSubmitAssistantError = (args: {
   assistantMessageId: string
   responseText: string
+  runResult?: HeadlessResponseRunResult
   setStreamingAssistant: React.Dispatch<React.SetStateAction<StreamingAssistantState | null>>
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
 }): void => {
   args.setStreamingAssistant(null)
   args.setMessages(previous => previous.map(message => (
     message.id === args.assistantMessageId
-      ? { ...message, content: args.responseText }
+      ? args.runResult
+        ? projectHeadlessResponseRunToChatMessage({
+            message,
+            content: args.responseText,
+            runResult: args.runResult,
+            artifactPath: args.runResult.output.artifactPath,
+          })
+        : { ...message, content: args.responseText }
       : message
   )))
 }
