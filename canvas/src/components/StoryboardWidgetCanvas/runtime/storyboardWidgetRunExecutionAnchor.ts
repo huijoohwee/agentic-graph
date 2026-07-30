@@ -33,7 +33,8 @@ export type StoryboardWidgetRunCoordinatorFanoutTopology = {
 
 export const STORYBOARD_WIDGET_RUN_MATERIALIZATION_LAYOUT_MODE =
   'visible-viewport-balanced' as const
-export const STORYBOARD_WIDGET_RUN_MATERIALIZATION_LAYOUT_VERSION = 3 as const
+export const STORYBOARD_WIDGET_RUN_MATERIALIZATION_LAYOUT_VERSION = 4 as const
+export const STORYBOARD_WIDGET_RUN_MATERIALIZATION_MIN_INTERACTION_GAP_PX = 40
 export const STORYBOARD_WIDGET_RUN_MATERIALIZATION_LAYOUT_MODE_PROPERTY =
   'workflowMaterializationLayoutMode' as const
 export const STORYBOARD_WIDGET_RUN_MATERIALIZATION_LAYOUT_VERSION_PROPERTY =
@@ -182,7 +183,10 @@ export function planStoryboardWidgetRunMaterializationPositions(
   const viewportH = Math.max(1, Number(viewport.height) || 1)
   const preset = args.preset || 'richMedia'
   const margins = computeBalancedSpreadViewportMargins({ viewportW, viewportH, preset })
-  const gapPx = computeBalancedSpreadBaseGapPx({ viewportW, viewportH, preset, margins })
+  const gapPx = Math.max(
+    STORYBOARD_WIDGET_RUN_MATERIALIZATION_MIN_INTERACTION_GAP_PX,
+    computeBalancedSpreadBaseGapPx({ viewportW, viewportH, preset, margins }),
+  )
   const screenGridSize = Math.max(1, Number(args.gridSize) || 1) * zoomK
   const derivedAnchorScreen = worldToScreen({
     transform,

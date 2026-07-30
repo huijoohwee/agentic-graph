@@ -21,6 +21,12 @@ export type StoryboardOverlayRectAnchor = {
   y: number
 }
 
+export type StoryboardContainedProjectionEdgeAnchors = {
+  source: StoryboardOverlayRectAnchor
+  target: StoryboardOverlayRectAnchor
+  trackSide: 'left' | 'right' | null
+}
+
 const isFiniteOverlayRect = (rect: StoryboardOverlayRectLike | null | undefined): rect is StoryboardOverlayRectLike =>
   !!rect
   && Number.isFinite(rect.left)
@@ -84,6 +90,68 @@ export function readNearestStoryboardOverlayRectAnchors(args: {
   const source = readStoryboardOverlayRectSideAnchor(args.sourceRect, sourceSide)
   const target = readStoryboardOverlayRectSideAnchor(args.targetRect, targetSide)
   return source && target ? { source, target } : null
+}
+
+/**
+ * Presentation-projected workflow edges connect members of one generated
+ * collective. A vertically stacked collective needs a side gutter so a
+ * parent-to-later-child edge does not cross the intervening cards.
+ */
+export function readStoryboardContainedProjectionEdgeAnchors(args: {
+  sourceRect: StoryboardOverlayRectLike
+  targetRect: StoryboardOverlayRectLike
+}): StoryboardContainedProjectionEdgeAnchors | null {
+  if (!isFiniteOverlayRect(args.sourceRect) || !isFiniteOverlayRect(args.targetRect)) return null
+  const sourceCenter = readRectCenter(args.sourceRect)
+  const targetCenter = readRectCenter(args.targetRect)
+  const horizontalOverlap = Math.max(
+    0,
+    Math.min(args.sourceRect.right, args.targetRect.right)
+      - Math.max(args.sourceRect.left, args.targetRect.left),
+  )
+  const minWidth = Math.min(args.sourceRect.width, args.targetRect.width)
+  const verticallyStacked = horizontalOverlap >= minWidth * 0.25
+    && Math.abs(targetCenter.y - sourceCenter.y) >= Math.abs(targetCenter.x - sourceCenter.x)
+  if (!verticallyStacked) {
+    const nearest = readNearestStoryboardOverlayRectAnchors(args)
+    return nearest ? { ...nearest, trackSide: null } : null
+  }
+  const trackSide = 'right' as const
+  const source = readStoryboardOverlayRectSideAnchor(args.sourceRect, trackSide)
+  const target = readStoryboardOverlayRectSideAnchor(args.targetRect, trackSide)
+  return source && target ? { source, target, trackSide } : null
+}
+
+export function buildStoryboardContainedProjectionEdgePath(args: {
+  source: Pick<StoryboardOverlayRectAnchor, 'x' | 'y'>
+  target: Pick<StoryboardOverlayRectAnchor, 'x' | 'y'>
+  trackOffset?: number
+  trackSide: 'left' | 'right'
+}): string {
+  const sx = Number.isFinite(args.source.x) ? args.source.x : 0
+  const sy = Number.isFinite(args.source.y) ? args.source.y : 0
+  const tx = Number.isFinite(args.target.x) ? args.target.x : sx
+  const ty = Number.isFinite(args.target.y) ? args.target.y : sy
+  const direction = args.trackSide === 'left' ? -1 : 1
+  const offset = Number.isFinite(args.trackOffset)
+    ? Math.max(8, Number(args.trackOffset))
+    : 24
+  const trackX = args.trackSide === 'left'
+    ? Math.min(sx, tx) - offset
+    : Math.max(sx, tx) + offset
+  const verticalSign = ty >= sy ? 1 : -1
+  const radius = Math.min(
+    14,
+    Math.max(2, Math.min(Math.abs(trackX - sx) * 0.5, Math.abs(ty - sy) * 0.25)),
+  )
+  return [
+    `M${sx},${sy}`,
+    `L${trackX - direction * radius},${sy}`,
+    `Q${trackX},${sy} ${trackX},${sy + verticalSign * radius}`,
+    `L${trackX},${ty - verticalSign * radius}`,
+    `Q${trackX},${ty} ${trackX - direction * radius},${ty}`,
+    `L${tx},${ty}`,
+  ].join(' ')
 }
 
 export function readStoryboardOutputCardLeftSideAnchors(args: {

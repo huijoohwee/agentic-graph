@@ -1,6 +1,7 @@
 import {
   planStoryboardWidgetRunMaterializationPositions,
   STORYBOARD_WIDGET_RUN_COORDINATOR_FANOUT_TOPOLOGY_MODE,
+  STORYBOARD_WIDGET_RUN_MATERIALIZATION_MIN_INTERACTION_GAP_PX,
   type StoryboardWidgetRunExecutionAnchorSnapshot,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRunExecutionAnchor'
 import {
@@ -92,7 +93,10 @@ export function testCoordinatorFanoutRunMaterializationPreservesRightwardTopDown
   const wideFanout = [wideRects[0]!, wideRects[2]!]
   if (
     wideCoordinator.left <= Number(wideSnapshot.screen?.left) + sourceSize.width
-    || wideFanout.some(rect => rect.left <= wideCoordinator.left + wideCoordinator.width)
+    || wideFanout.some(rect => (
+      rect.left - (wideCoordinator.left + wideCoordinator.width)
+        < STORYBOARD_WIDGET_RUN_MATERIALIZATION_MIN_INTERACTION_GAP_PX
+    ))
     || wideFanout[0]!.left !== wideFanout[1]!.left
     || wideFanout[0]!.top >= wideFanout[1]!.top
   ) {
@@ -121,6 +125,10 @@ export function testCoordinatorFanoutRunMaterializationPreservesRightwardTopDown
     || constrainedFanout.some(rect => rect.left !== constrainedCoordinator.left)
     || constrainedCoordinator.top >= constrainedFanout[0]!.top
     || constrainedFanout[0]!.top >= constrainedFanout[1]!.top
+    || constrainedFanout[0]!.top - (constrainedCoordinator.top + constrainedCoordinator.height)
+      < STORYBOARD_WIDGET_RUN_MATERIALIZATION_MIN_INTERACTION_GAP_PX
+    || constrainedFanout[1]!.top - (constrainedFanout[0]!.top + constrainedFanout[0]!.height)
+      < STORYBOARD_WIDGET_RUN_MATERIALIZATION_MIN_INTERACTION_GAP_PX
     || !allConstrainedRectsInsideViewport
   ) {
     throw new Error(`expected a constrained natural-size viewport to collapse the coordinator and ordered fanout into one visible rightward top-down column, got ${JSON.stringify(constrainedRects)}`)

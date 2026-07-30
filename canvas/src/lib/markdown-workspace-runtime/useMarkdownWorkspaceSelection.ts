@@ -37,6 +37,7 @@ import {
   readWorkspaceSelectionResolvedTextForActivePath,
   type MarkdownWorkspaceSelectionResolvedTextCache,
 } from './markdownWorkspaceSelectionResolvedText'
+import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'
 export {
   isWorkspaceDocumentSwitchApplySettled,
   isWorkspace2dRendererPresetStaleForDocument,
@@ -111,12 +112,15 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
       selectionPathRef.current = normalized
       setSelectionPath(normalized)
     }
-    const pendingCommit = commitActiveMarkdownBlockEditors()
-    if (!pendingCommit) {
-      applySelection()
-      return
-    }
-    return pendingCommit.then(applySelection, applySelection)
+    const pendingEditorCommit = commitActiveMarkdownBlockEditors()
+    // A Canvas Run publishes into the active document before its serialized
+    // Workspace FS and mirror writes settle. Preserve that owner at the same
+    // boundary that already fences active block-editor commits.
+    const pendingSourceWrites = settleWorkspaceSourceTextWrites()
+    return Promise.allSettled([
+      ...(pendingEditorCommit ? [pendingEditorCommit] : []),
+      pendingSourceWrites,
+    ]).then(applySelection)
   }, [])
 
   const entriesIndex = React.useMemo(() => buildWorkspaceEntriesIndex(args.entries), [args.entries])
