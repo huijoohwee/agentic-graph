@@ -279,6 +279,7 @@ export function playImmersiveMediaIntro(): ImmersiveMediaSnapshot {
   return publish({
     phase: snapshot.active ? 'transitioning' : snapshot.phase,
     introRevision: snapshot.introRevision + 1,
+    transitionRevision: snapshot.transitionRevision + 1,
     lastAction: 'intro',
     message: 'Intro animation queued on the shared Camera.',
     error: null,

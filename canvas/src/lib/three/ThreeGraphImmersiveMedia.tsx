@@ -24,10 +24,14 @@ export function ThreeGraphImmersiveMediaStage() {
   return <ImmersiveMediaStageLazy />
 }
 
-export function ThreeGraphImmersiveMediaHud() {
+export function ThreeGraphImmersiveMediaHud({
+  geospatialComposite,
+}: {
+  geospatialComposite: boolean
+}) {
   return (
     <React.Suspense fallback={null}>
-      <ImmersiveMediaHudLazy />
+      <ImmersiveMediaHudLazy geospatialComposite={geospatialComposite} />
     </React.Suspense>
   )
 }

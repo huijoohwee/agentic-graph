@@ -6,8 +6,13 @@ import {
   setSelectedImmersiveMediaMarker,
   subscribeImmersiveMediaSnapshot,
 } from './immersiveMediaRuntime'
+import { ImmersiveMediaGeoProjection } from './ImmersiveMediaGeoProjection'
 
-export function ImmersiveMediaHud() {
+export function ImmersiveMediaHud({
+  geospatialComposite = false,
+}: {
+  geospatialComposite?: boolean
+}) {
   const snapshot = React.useSyncExternalStore(
     subscribeImmersiveMediaSnapshot,
     readImmersiveMediaSnapshot,
@@ -19,6 +24,7 @@ export function ImmersiveMediaHud() {
   const tooltipMarker = selectedMarker || hoveredMarker
   return (
     <>
+      {geospatialComposite ? <ImmersiveMediaGeoProjection snapshot={snapshot} /> : null}
       {snapshot.overlay.enabled ? (
         <aside
           className={cn(
