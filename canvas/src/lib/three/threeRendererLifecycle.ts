@@ -22,7 +22,7 @@ export type ThreeCanvasSurfaceLifecycleInput = ThreeCanvasSurfaceMountInput & Re
 
 export type CanvasSurfaceOwnershipInput = Readonly<{
   canvasRenderMode: '2d' | '3d'
-  citySimActive: boolean
+  citySimMapLibreSurfaceIntent: boolean
   flightSimActive: boolean
   gameplayOverlayActive: boolean
   geospatialModeEnabled: boolean
@@ -37,6 +37,12 @@ export function resolveCanvasSurfaceOwnership(
   activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
   geospatialOverlayOwnsViewport: boolean
 }> {
+  if (input.citySimMapLibreSurfaceIntent) {
+    return {
+      activeSurface: 'geo-xr',
+      geospatialOverlayOwnsViewport: true,
+    }
+  }
   if (input.geospatialModeEnabled && input.geospatialXrModeEnabled) {
     return {
       activeSurface: 'geo-xr',

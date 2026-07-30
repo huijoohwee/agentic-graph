@@ -255,7 +255,8 @@ export async function assertFlightSimSeedReadiness({
   requireMarkers(grammarAutoHydrationSource, [
     'AgenticOsRemoteGrammarAutoHydrationContext = React.createContext(true)',
     'useSourceFilesBootstrapReady()',
-    'isNativeXrRunReadyDemoActive(',
+    'isXrPhysicsRuntimeRunReadyDemoActive(',
+    'isCitySimRunReadyDemoActive(',
     'args.runtimeIdentityProofRequested || !args.offlineNativeXrActive',
   ], 'offline native XR automatic grammar fence')
   const grammarClientSource = await readText(

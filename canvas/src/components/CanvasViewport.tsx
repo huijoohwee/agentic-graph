@@ -10,7 +10,7 @@ import { useForbidBrowserZoomWheel } from '@/lib/ui/forbidBrowserZoom'
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import { UI_RESPONSIVE_CANVAS_MINIMAP_OVERLAY_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { resolveCanvas3dMode } from '@/lib/canvas/canvas3dMode'
-import { isNativeXrRunReadyDemoActive, isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { isCitySimRunReadyDemoActive, isXrPhysicsRunReadyDemoActive, isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useCanvasGameplayOverlayState } from '@/features/canvas/useCanvasGameplayOverlayState'
 import { useFlightSimSurfacePreload } from '@/features/game-flight-sim/useFlightSimSurfacePreload'
 import { FlightSimHud } from '@/features/game-flight-sim/FlightSimHud'
@@ -36,6 +36,7 @@ import {
 import { loadCanvasViewportGeospatialOverlay } from '@/components/canvasViewportGeospatialOverlayLoader'
 import { CanvasEmbedCodePanelHost } from '@/components/CanvasEmbedCodePanelHost'
 import { CanvasSourceInitializationError } from '@/components/CanvasSourceInitializationError'
+import { CitySimMediaFigure } from '@/features/game-city-sim/CitySimMediaFigure'
 import {
   createEmbeddedCanvasChatSubmitMessage,
   deliverEmbeddedCanvasChatSubmit,
@@ -113,8 +114,11 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
   const xrPhysicsRunReadyDemo = isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
-  const nativeXrRunReadyDemo = isNativeXrRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
-  const { citySimActive, gameFpsActive, flightSimActive } = useCanvasGameplayOverlayState()
+  const xrPhysicsRuntimeRunReadyDemo = isXrPhysicsRuntimeRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+  const citySimSourceIntent = isCitySimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+  const { citySim, citySimActive, gameFpsActive, flightSimActive } = useCanvasGameplayOverlayState()
+  const citySimMapLibreSurfaceIntent = citySimActive
+    || (citySimSourceIntent && citySim.lastResult?.operation !== 'exit')
   const gameplayOverlayActive = citySimActive || gameFpsActive || flightSimActive
   const geospatialCompositionEnabled = geospatialModeEnabled
   const sourceFilesBootstrap = useSourceFilesBootstrapSnapshot()
@@ -195,7 +199,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const geospatialXrModeEnabled = geospatialCompositionEnabled && canvasRenderMode === '3d' && effectiveCanvas3dMode === 'xr'
   const { activeSurface, geospatialOverlayOwnsViewport } = resolveCanvasSurfaceOwnership({
     canvasRenderMode,
-    citySimActive,
+    citySimMapLibreSurfaceIntent,
     flightSimActive,
     gameplayOverlayActive,
     geospatialModeEnabled: geospatialCompositionEnabled,
@@ -284,7 +288,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const isTouchViewport = useMediaQuery('(max-width: 768px), (pointer: coarse)')
   const isNarrowViewport = useMediaQuery('(max-width: 768px)')
   const [activatedHeavyRuntimeSurfaces, setActivatedHeavyRuntimeSurfaces] = React.useState<Partial<Record<'3d' | 'geo', true>>>({})
-  const heavyRuntimeIntentSurface = nativeXrRunReadyDemo || gameplayOverlayActive ? null : resolveCanvasViewportHeavyRuntimeIntentSurface({
+  const heavyRuntimeIntentSurface = xrPhysicsRuntimeRunReadyDemo || citySimSourceIntent || gameplayOverlayActive ? null : resolveCanvasViewportHeavyRuntimeIntentSurface({
     isTouchViewport,
     geospatialOverlayOwnsViewport,
     canvasRenderMode,
@@ -324,7 +328,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
     && active2dSurface !== 'storyboard'
   const rootRef = React.useRef<HTMLElement | null>(null)
   useForbidBrowserZoomWheel(rootRef, true, { stopPropagation: false })
-  const workspaceXrViewportInset = nativeXrRunReadyDemo
+  const workspaceXrViewportInset = xrPhysicsRuntimeRunReadyDemo
     && !gameplayOverlayActive
     && !liveCanvasHeroVisible
     && workspaceEditorOverlayOpen
@@ -353,7 +357,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
           : gameFpsActive ? 'Deterministic Game Mode'
             : flightSimActive
               ? 'Deterministic Flight Sim'
-              : sourceFilesBootstrapReady && nativeXrRunReadyDemo
+              : sourceFilesBootstrapReady && xrPhysicsRuntimeRunReadyDemo
                 ? 'Interactive XR Physics Playground'
                 : variant === 'embeddedPreview'
                   ? 'Canvas Preview Only'
@@ -487,13 +491,27 @@ export function CanvasViewport(props: CanvasViewportProps) {
         ) : null}
 
         {!documentSwitchOwnsViewport && geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (
-          <CanvasViewportGeospatialOverlayLazy
-            active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
-            composedWithXr={geospatialXrModeEnabled}
-            geospatialModeEnabled={geospatialCompositionEnabled}
-            graphData={safeGraphData}
-            storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
-          />
+          citySimMapLibreSurfaceIntent ? (
+            <CitySimMediaFigure citySimActive={citySimActive}>
+              <CanvasViewportGeospatialOverlayLazy
+                active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
+                composedWithXr={geospatialXrModeEnabled}
+                geospatialModeEnabled={geospatialCompositionEnabled}
+                graphData={safeGraphData}
+                storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
+                threeOverlayComposed={false}
+              />
+            </CitySimMediaFigure>
+          ) : (
+            <CanvasViewportGeospatialOverlayLazy
+              active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
+              composedWithXr={geospatialXrModeEnabled}
+              geospatialModeEnabled={geospatialCompositionEnabled}
+              graphData={safeGraphData}
+              storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
+              threeOverlayComposed={geospatialXrModeEnabled}
+            />
+          )
         ) : null}
         {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && flightSimHudVisible ? <FlightSimGeoSurfaceOverlayLazy /> : null}
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (

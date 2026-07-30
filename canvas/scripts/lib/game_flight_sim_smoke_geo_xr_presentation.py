@@ -72,7 +72,7 @@ def _exit_city_for_cleanup(page: Page) -> None:
     )
 
 
-def _install_city_map_disposal_audit(page: Page) -> None:
+def _install_city_map_retention_audit(page: Page) -> None:
     page.evaluate(
         """
         async () => {
@@ -83,57 +83,19 @@ def _install_city_map_disposal_audit(page: Page) -> None:
           if (!map || typeof map.remove !== 'function') {
             throw new Error('City handoff expected a live Flight MapLibre owner.')
           }
-          const flightSourceId = gympgrph.FLIGHT_GEO_OVERLAY_SOURCE_ID
-            || 'kg-flight-sim:geo-overlay'
-          const environmentSourceId = gympgrph.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID
-            || 'kg-flight-geo-environment'
-          const readSource = sourceId => {
-            const source = map.getSource?.(sourceId) || null
-            let data = null
-            let loaded = false
-            try { data = source?.serialize?.()?.data || null } catch { data = null }
-            try {
-              loaded = typeof source?.loaded === 'function'
-                && source.loaded() === true
-            } catch { loaded = false }
-            return {
-              features: Array.isArray(data?.features) ? data.features.length : null,
-              loaded,
-              present: Boolean(source),
-            }
-          }
           const remove = map.remove
-          let captured = false
+          const audit = {
+            map,
+            removeCalls: 0,
+          }
+          window.__kgFlightCityMapRetentionAudit = audit
           map.remove = function (...args) {
-            if (!captured) {
-              captured = true
-              window.__kgFlightCityMapDisposalAudit = {
-                environment: readSource(environmentSourceId),
-                flight: readSource(flightSourceId),
-                styleLoaded: map.isStyleLoaded?.() === true,
-              }
-            }
+            audit.removeCalls += 1
             return remove.apply(this, args)
           }
         }
         """
     )
-
-
-def _source_disposal_was_settled(source: Any) -> bool:
-    if not isinstance(source, dict):
-        return False
-    # The canonical disposal contract accepts either a loaded empty source or
-    # a source already removed with its layers. Both leave zero renderable
-    # Flight geometry before the MapLibre canvas owner is disposed.
-    if source.get("present") is False:
-        return True
-    return (
-        source.get("present") is True
-        and source.get("features") == 0
-        and source.get("loaded") is True
-    )
-
 
 def verify_flight_geo_xr_city_handoff(
     page: Page,
@@ -155,7 +117,7 @@ def verify_flight_geo_xr_city_handoff(
             f"{before}"
         )
 
-    _install_city_map_disposal_audit(page)
+    _install_city_map_retention_audit(page)
     city_trigger = page.locator(
         '[data-kg-floating-panel-view-trigger="cityBuilder"]',
     ).first
@@ -171,43 +133,64 @@ def verify_flight_geo_xr_city_handoff(
 
     city = _wait_for_browser_contract(
         page,
-        label="exclusive City XR surface after Flight Geo+XR",
+        label="MapLibre-owned City Geo+XR surface after Flight Geo+XR",
         accepted=lambda value: (
             value.get("flightActive") is False
             and value.get("cityActive") is True
             and value.get("cityPanelVisible") is True
-            and value.get("cityStageActive") is True
+            and value.get("citySemanticSurfaceActive") is True
+            and value.get("cityMapLibreOwnerCount") == 1
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "cityBuilder"
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
-            and value.get("geospatialEnabled") is False
-            and value.get("geospatialPreferenceEnabled") is False
-            and value.get("geoXrSurfaceActive") is False
-            and value.get("geoXrLayerCount") == 0
-            and value.get("activeMapPresent") is False
-            and value.get("mapLibreCanvasCount") == 0
-            and value.get("visibleMapLibreCanvasCount") == 0
-            and value.get("threeCanvasOwnerCount") == 1
+            and value.get("geospatialEnabled") is True
+            and value.get("geospatialPreferenceEnabled") is True
+            and value.get("geoXrSurfaceActive") is True
+            and value.get("geoXrLayerCount") == 1
+            and value.get("activeMapPresent") is True
+            and value.get("mapLibreCanvasCount") == 1
+            and value.get("visibleMapLibreCanvasCount") == 1
+            and value.get("threeCanvasOwnerCount") == 0
             and value.get("hudVisible") is False
             and value.get("flightHudCount") == 0
-            and value.get("flightSourceFeatures") == 0
+            and value.get("flightSourceFeatures") >= 7
+            and value.get("flightSourcePresent") is True
+            and value.get("flightLayersReady") is True
+            and value.get("aircraftLayerType") == "symbol"
+            and value.get("aircraftGeometryType") == "Polygon"
+            and value.get("overlayPhase") == "stopped"
+            and value.get("overlayRoutePointCount") >= 2
+            and set(value.get("sourceKinds") or [])
+            == {"aircraft", "objective-guide", "route", "route-point"}
             and value.get("environmentSourceFeatures") == 0
-            and value.get("renderedFeatureCount") == 0
+            and value.get("renderedFeatureCount") >= 4
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
-    disposal = page.evaluate(
-        "() => window.__kgFlightCityMapDisposalAudit || null"
+    retention = page.evaluate(
+        """
+        async () => {
+          const audit = window.__kgFlightCityMapRetentionAudit || null
+          const gympgrph = await window.__kgFlightSimBrowserProof.importModule(
+            'gympgrphStore',
+          )
+          const currentMap = gympgrph.readActiveMapLibreMap?.() || null
+          return {
+            removeCalls: Number(audit?.removeCalls || 0),
+            sameMap: Boolean(audit?.map) && audit.map === currentMap,
+          }
+        }
+        """
     )
     if (
-        not isinstance(disposal, dict)
-        or not _source_disposal_was_settled(disposal.get("flight"))
-        or not _source_disposal_was_settled(disposal.get("environment"))
+        not isinstance(retention, dict)
+        or retention.get("sameMap") is not True
+        or retention.get("removeCalls") != 0
     ):
         raise AssertionError(
-            "City disposed the Flight MapLibre owner before its GeoJSON sources "
-            f"were cleared and settled: {disposal}"
+            "City did not retain the existing MapLibre owner: "
+            f"{retention}"
         )
 
     exit_button = city_panel.locator('[data-kg-city-sim-exit="1"]').first
@@ -222,7 +205,7 @@ def verify_flight_geo_xr_city_handoff(
             value.get("flightActive") is False
             and value.get("cityActive") is False
             and value.get("cityPanelVisible") is True
-            and value.get("cityStageActive") is False
+            and value.get("citySemanticSurfaceActive") is False
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "cityBuilder"
             and value.get("renderMode") == "3d"
@@ -266,7 +249,7 @@ def verify_flight_geo_xr_city_handoff(
     )
     if (
         reopened.get("cityActive") is not False
-        or reopened.get("cityStageActive") is not False
+        or reopened.get("citySemanticSurfaceActive") is not False
         or reopened.get("hudVisible") is not True
     ):
         raise AssertionError(
@@ -276,7 +259,7 @@ def verify_flight_geo_xr_city_handoff(
     return {
         "before": before,
         "city": city,
-        "mapDisposalClear": disposal,
+        "mapRetention": retention,
         "restored": restored,
         "reopened": reopened,
     }

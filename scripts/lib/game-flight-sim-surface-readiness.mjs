@@ -182,9 +182,12 @@ export async function assertFlightSimSurfaceReadiness({
   requireSourceMarkers(threeGameplayOverlaySource, [
     'const FlightSimMissionStageLazy = React.lazy(loadFlightSimMissionStage)',
     '<FlightSimMissionStageLazy',
-    'actorsVisible={!props.geospatialComposite}',
+    'actorsVisible',
     'coordinateScale={props.coordinateScale}',
   ], 'Flight Sim transparent runtime layer')
+  if (threeGameplayOverlaySource.includes('props.geospatialComposite')) {
+    throw new Error('Flight Sim actor visibility must not depend on a removed City/Geo composition alias')
+  }
 
   const rendererLifecycleSource = await readText('canvas/src/lib/three/threeRendererLifecycle.ts')
   requireSourceMarkers(rendererLifecycleSource, [

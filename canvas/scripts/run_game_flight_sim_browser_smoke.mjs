@@ -61,8 +61,6 @@ const browserEvidenceNames = Object.freeze([
 ])
 
 process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT ||= path.resolve(process.cwd(), '../docs')
-process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT ||= path.resolve(process.cwd(), '../docs/workspace-seeds')
-process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT ||= path.resolve(process.cwd(), '../docs/workspace-seeds')
 process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL ||= '1'
 // The smoke must prove that applying the authored Source File activates Flight.
 delete process.env.VITE_KNOWGRPH_RUN_READY_DEMO
@@ -285,16 +283,6 @@ async function executeIsolatedProof(isolatedRepositoryRoot, token) {
         VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: path.join(
           isolatedRepositoryRoot,
           'docs',
-        ),
-        VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT: path.join(
-          isolatedRepositoryRoot,
-          'docs',
-          'workspace-seeds',
-        ),
-        VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT: path.join(
-          isolatedRepositoryRoot,
-          'docs',
-          'workspace-seeds',
         ),
       },
       shell: false,

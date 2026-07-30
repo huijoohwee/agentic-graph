@@ -190,9 +190,9 @@ type SourceFilesOwnershipProjection = {
 
 The path resolver selects `workspaceSeeds` for `/docs/workspace-seeds/**`, rejects `huijoohwee/docs/workspace-seeds/**`, and refuses Agentic Canvas OS write targets. Explorer consumes the same constants, so labels cannot drift from save-bridge authority. The Agentic seed file remains a protected byte-identical runtime projection outside this write model.
 
-The local filesystem bridge applies the same invariant. A seed mutation is valid only when its workspace key and resolved host path agree on `$GITHUB_ROOT/knowgrph/docs/workspace-seeds/**`; nested deletes are supported for rename/delete convergence, while deleting the root or omitting the ownership key is forbidden.
+The local filesystem bridge applies the same invariant. A seed mutation is valid only when its workspace key and logical `/docs/workspace-seeds/**` `workspacePath` agree; the server derives the exact `$GITHUB_ROOT/knowgrph/docs/workspace-seeds/**` host target. Client-supplied absolute mutation paths and client mutation-root environment variables are forbidden. Nested deletes are supported for rename/delete convergence, while deleting the root or omitting the ownership key is rejected.
 
-`WorkspaceDocsMirrorEntry.authority` distinguishes `knowgrph-workspace-seeds-local` from `knowgrph-workspace-seeds-bundled`. Either value admits exact subtree reconciliation; absence of both prevents stale-cache pruning. The bundled value identifies the complete six-file artifact built from the protected source revision, not a second writable repository. This marker is transient bootstrap metadata and is not added to PocketBase or D1 document rows.
+`WorkspaceDocsMirrorEntry.authority` distinguishes `knowgrph-workspace-seeds-local` from `knowgrph-workspace-seeds-bundled`. Either value admits exact subtree reconciliation; absence of both prevents stale-cache pruning. The bundled value identifies the complete seven-file artifact built from the protected source revision, not a second writable repository. This marker is transient bootstrap metadata and is not added to PocketBase or D1 document rows.
 
 ---
 

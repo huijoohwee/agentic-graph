@@ -17,7 +17,6 @@ import { isWorkspaceRepoLocalRunReadyBootstrap } from '@/features/workspace-fs/w
 import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   readKnowgrphWorkspaceSeedsReadAbsRoot,
-  resolveKnowgrphWorkspaceSeedMirrorAbsolutePath,
 } from './workspaceSeedLocalMirrorAuthority'
 import {
   overlayCanonicalLocalWorkspaceSeedEntries,
@@ -862,7 +861,6 @@ const buildWorkspaceSeedAbsolutePathCandidates = (args: {
   relPathCandidates: ReadonlyArray<string>
 }): string[] => {
   const root = readWorkspaceInitializationDocsAbsRoot()
-  if (!root) return []
   const basename = normalizeBasename(args.basename)
   const relPathCandidates = Array.from(
     new Set((args.relPathCandidates || []).map(path => normalizeRelPath(path)).filter(Boolean)),
@@ -876,12 +874,13 @@ const buildWorkspaceSeedAbsolutePathCandidates = (args: {
       if (seedsRoot && seedRelPath) out.add(`${seedsRoot}/${seedRelPath}`)
       continue
     }
+    if (!root) continue
     out.add(`${root}/${relPath}`)
     if (relPath.startsWith('docs/')) {
       out.add(`${root}/${relPath.slice('docs/'.length)}`)
     }
   }
-  if (basename) out.add(`${root}/${basename}`)
+  if (basename && root) out.add(`${root}/${basename}`)
   return [...out]
 }
 
@@ -913,7 +912,12 @@ const buildPublishedSeedRelPath = (relPath: string): string => {
   return `/${normalized}`
 }
 
-const writeTextViaLocalFsProxy = async (absolutePath: string, text: string, workspacePath?: string): Promise<boolean> => {
+const writeTextViaLocalFsProxy = async (
+  absolutePath: string,
+  text: string,
+  workspacePath?: string,
+  allowBlankText?: boolean,
+): Promise<boolean> => {
   if (typeof window === 'undefined' || typeof fetch !== 'function') return false
   if (isHiddenDocumentWriteSkipActive()) return false
   const traceId = nextWorkspaceMirrorTraceId('write-text')
@@ -949,9 +953,10 @@ const writeTextViaLocalFsProxy = async (absolutePath: string, text: string, work
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          path: absolutePath,
+          ...(absolutePath ? { path: absolutePath } : {}),
           text: String(text ?? ''),
           ...(workspacePath ? { workspacePath } : {}),
+          ...(allowBlankText === true ? { allowBlankText: true } : {}),
         }),
         signal: controller.signal,
       })
@@ -964,7 +969,11 @@ const writeTextViaLocalFsProxy = async (absolutePath: string, text: string, work
         data: { absolutePath, ok: response.ok, status: response.status },
       })
       // #endregion
-      return response.ok
+      if (!response.ok) return false
+      const result = await response.clone().json().catch(() => null) as {
+        changed?: unknown
+      } | null
+      return result?.changed !== false
     } finally {
       window.clearTimeout(timeoutId)
     }
@@ -1156,7 +1165,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          path: absolutePath,
+          ...(absolutePath ? { path: absolutePath } : {}),
           mkdirOnly: true,
           ...(workspacePath ? { workspacePath } : {}),
         }),
@@ -1197,8 +1206,7 @@ const ensureFolderViaLocalFsProxy = async (absolutePath: string, workspacePath?:
 const resolveWorkspaceDocsMirrorAbsolutePath = (workspacePath: string): string | null => {
   const parts = splitSafeMirrorSegments(String(workspacePath || '').trim())
   if (parts.length === 0) return null
-  const canonicalSeedPath = resolveKnowgrphWorkspaceSeedMirrorAbsolutePath(workspacePath)
-  if (canonicalSeedPath) return canonicalSeedPath
+  if (isKnowgrphWorkspaceSeedsPath(workspacePath)) return null
   const rootSegment = String(parts[0] || '').trim()
   if (!rootSegment) return null
   const docsRoot = readWorkspaceInitializationDocsAbsRoot()
@@ -1224,10 +1232,19 @@ export async function readWorkspaceInitializationSeedText(args: {
 }): Promise<string | null> {
   const basename = normalizeBasename(args.basename)
   if (!basename) return null
+  const normalizedRelCandidates = Array.from(
+    new Set((args.relPathCandidates || []).map(path => normalizeRelPath(path)).filter(Boolean)),
+  )
+  const canonicalSeedRelCandidates = normalizedRelCandidates.filter(path =>
+    isKnowgrphWorkspaceSeedsPath(path),
+  )
+  const canonicalSeedOwned = canonicalSeedRelCandidates.length > 0
 
   const absolutePathCandidates = buildWorkspaceSeedAbsolutePathCandidates({
     basename,
-    relPathCandidates: args.relPathCandidates,
+    relPathCandidates: canonicalSeedOwned
+      ? canonicalSeedRelCandidates
+      : normalizedRelCandidates,
   })
   for (let i = 0; i < absolutePathCandidates.length; i += 1) {
     const absolutePath = absolutePathCandidates[i]!
@@ -1239,10 +1256,9 @@ export async function readWorkspaceInitializationSeedText(args: {
     const text = await readTextViaNodeFs(absolutePath)
     if (text) return text
   }
+  if (canonicalSeedOwned) return null
 
-  const relCandidates = Array.from(
-    new Set((args.relPathCandidates || []).map(path => normalizeRelPath(path)).filter(Boolean)),
-  )
+  const relCandidates = normalizedRelCandidates
   for (let i = 0; i < relCandidates.length; i += 1) {
     const publishedPath = buildPublishedSeedRelPath(relCandidates[i]!)
     if (publishedPath) {
@@ -1509,7 +1525,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
   const sourceFilesSelection = await resolveWorkspaceDocsRootFromSourceFilesSelection()
   const knowgrphStorageBaseUrl = readWorkspaceDocsMirrorStorageFallbackEnabled() ? readWorkspaceInitializationKnowgrphStorageBaseUrl() : ''
   const knowgrphStorageWorkspaceId = knowgrphStorageBaseUrl && sourceFilesSelection ? buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({ folderName: sourceFilesSelection.folderName, accessMode: sourceFilesSelection.accessMode as 'fs-access' | 'opfs' | 'file-input' | null, folderCacheId: sourceFilesSelection.localMarkdownFolderCacheId, selectedFolderPath: sourceFilesSelection.selectedFolderPath || null }) : ''
-  const localRootRequests = resolveWorkspaceDocsMirrorLocalRootRequests({ docsAbsRoot: readWorkspaceInitializationDocsAbsRoot(), outputDocsAbsRoot: readWorkspaceInitializationOutputDocsAbsRoot(), agenticDocsAbsRoot: readWorkspaceInitializationAgenticOsDocsAbsRoot(), knowgrphWorkspaceSeedsAbsRoot: readKnowgrphWorkspaceSeedsReadAbsRoot() })
+  const localRootRequests = resolveWorkspaceDocsMirrorLocalRootRequests({ docsAbsRoot: readWorkspaceInitializationDocsAbsRoot(), outputDocsAbsRoot: readWorkspaceInitializationOutputDocsAbsRoot(), agenticDocsAbsRoot: readWorkspaceInitializationAgenticOsDocsAbsRoot(), workspaceSeedsReadAbsRoot: readKnowgrphWorkspaceSeedsReadAbsRoot() })
   const rootMirrorEntries = (await Promise.all(localRootRequests.map(async request => {
     const entries = await readWorkspaceMirrorRootEntries({
       ...request,
@@ -1645,6 +1661,11 @@ export async function upsertWorkspaceInitializationSeedText(args: {
 export async function ensureWorkspaceDocsMirrorFolder(args: {
   workspacePath: string
 }): Promise<boolean> {
+  if (isKnowgrphWorkspaceSeedsPath(args.workspacePath)) {
+    return typeof window !== 'undefined'
+      ? ensureFolderViaLocalFsProxy('', args.workspacePath)
+      : false
+  }
   const absolutePath = resolveWorkspaceDocsMirrorAbsolutePath(args.workspacePath)
   if (!absolutePath) return false
   if (typeof window !== 'undefined') {
@@ -1682,6 +1703,22 @@ export async function upsertWorkspaceDocsMirrorText(args: {
   allowBlankText?: boolean
   allowCrossDocumentOverwrite?: boolean
 }): Promise<boolean> {
+  if (isKnowgrphWorkspaceSeedsPath(args.workspacePath)) {
+    if (typeof window === 'undefined') return false
+    if (await shouldBlockDuplicateMirrorDocumentOverwrite({
+      workspacePath: args.workspacePath,
+      text: args.text,
+      allowCrossDocumentOverwrite: args.allowCrossDocumentOverwrite,
+    })) {
+      return false
+    }
+    return writeTextViaLocalFsProxy(
+      '',
+      String(args.text ?? ''),
+      args.workspacePath,
+      args.allowBlankText,
+    )
+  }
   const absolutePath = resolveWorkspaceDocsMirrorAbsolutePath(args.workspacePath)
   if (!absolutePath) return false
   const nextText = String(args.text ?? '')
