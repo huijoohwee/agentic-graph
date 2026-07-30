@@ -1,6 +1,9 @@
 import { readWebglSupport } from '@/lib/three/webglSupport'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
-import { commitCanvasGeospatialSurfaceOwnership } from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
+import {
+  commitCanvasGeospatialSurfaceOwnership,
+  GeospatialSurfaceOwnershipRestorationError,
+} from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
 import { activateXrSceneSurface, registerXrSceneGameplayExitHandler } from '@/features/three/xrSceneSurfaceRuntime'
 import {
   CITY_SIM_FIXED_STEP_MS,
@@ -46,7 +49,7 @@ let previousCanvasSurface: CitySimPreviousCanvasSurface | null = null
 let citySimSurfaceOpenTail: Promise<void> | null = null
 let citySimSurfaceRestorationTail: Promise<string | null> = Promise.resolve(null)
 let citySimSurfaceRestoring: CitySimPreviousCanvasSurface | null = null
-let citySimSurfaceRestorationSuppressed: CitySimPreviousCanvasSurface | null = null
+let latestCitySimSurfaceIntent: 'idle' | 'open' | 'exit' = 'idle'
 let sessionStartCity = createDefaultCityGrid()
 let malformedDocument: Readonly<{ document: string; message: string }> | null = null
 
@@ -144,7 +147,6 @@ function beginCitySimSurfaceRestoration(
     return citySimSurfaceRestorationTail
   }
   citySimSurfaceRestoring = previous
-  citySimSurfaceRestorationSuppressed = null
   citySimSurfaceRestorationTail = restoreCitySimPreviousCanvasSurface(previous)
   return citySimSurfaceRestorationTail
 }
@@ -172,31 +174,24 @@ async function failSurfaceEntry(
   )
 }
 
-async function claimCityExclusiveXrSurface(): Promise<void> {
-  await commitCanvasGeospatialSurfaceOwnership(false)
+async function claimCityGeoXrSurface(expectedGeneration: number): Promise<void> {
+  await commitCanvasGeospatialSurfaceOwnership(true, {
+    isCurrent: () => expectedGeneration === asyncGeneration,
+  })
 }
 
-async function restoreSupersededCitySurface(
-  previous: CitySimPreviousCanvasSurface,
-): Promise<CitySimSnapshot> {
-  // A newer City entry can already own the Canvas. Restoring Geo under that
-  // entry would recreate the competing MapLibre owner, so only a genuinely
-  // inactive City session rolls the captured owner back.
-  if (
-    snapshot.active
-    || citySimSurfaceRestorationSuppressed === previous
-  ) return snapshot
-  previousCanvasSurface = null
-  const restorationFailure = await beginCitySimSurfaceRestoration(previous)
-  if (restorationFailure) {
-    return publishFailure(
-      'open',
-      'surface-restoration-failed',
-      `Superseded City surface restoration did not complete: ${restorationFailure}`,
-      { active: false, phase: 'error' },
-    )
+function surfaceOwnershipFailureAfterSupersession(
+  error: unknown,
+): CitySimSnapshot {
+  if (!(error instanceof GeospatialSurfaceOwnershipRestorationError)) {
+    return snapshot
   }
-  return snapshot
+  return publishFailure(
+    latestCitySimSurfaceIntent === 'exit' ? 'exit' : 'open',
+    'surface-restoration-failed',
+    `City Simulation Geo+XR ownership did not restore: ${error.message}`,
+    { active: false, phase: 'error' },
+  )
 }
 
 async function performOpenCitySimSurface(
@@ -230,23 +225,24 @@ async function performOpenCitySimSurface(
   }
   if (snapshot.active) {
     try {
-      await claimCityExclusiveXrSurface()
+      await claimCityGeoXrSurface(generation)
       if (generation !== asyncGeneration || !snapshot.active) {
-        return restoreSupersededCitySurface(previous)
+        return snapshot
       }
     } catch (error) {
       if (generation !== asyncGeneration) {
-        return restoreSupersededCitySurface(previous)
+        return surfaceOwnershipFailureAfterSupersession(error)
       }
       return failSurfaceEntry(
         previous,
         'geo-surface-unavailable',
-        `City Builder could not claim the exclusive XR Canvas: ${
+        `City Builder could not claim the shared Geo+XR surface: ${
           error instanceof Error ? error.message : String(error)
         }`,
       )
     }
     const activated = activateXrSceneSurface({
+      geospatialComposite: true,
       gameplaySurface: 'cityBuilder',
       ...(options.openPanel === false
         ? {}
@@ -257,7 +253,7 @@ async function performOpenCitySimSurface(
       : publishFailure(
           'open',
           'surface-unavailable',
-          'City Builder could not claim the shared XR Canvas.',
+          'City Builder could not claim the shared Geo+XR surface.',
         )
   }
 
@@ -295,11 +291,12 @@ async function performOpenCitySimSurface(
 
   const city = loaded.status === 'loaded' ? loaded.city : createDefaultCityGrid()
   try {
-    await claimCityExclusiveXrSurface()
+    await claimCityGeoXrSurface(generation)
     if (generation !== asyncGeneration) {
-      return restoreSupersededCitySurface(previous)
+      return snapshot
     }
     const activated = activateXrSceneSurface({
+      geospatialComposite: true,
       gameplaySurface: 'cityBuilder',
       ...(options.openPanel === false
         ? {}
@@ -314,7 +311,7 @@ async function performOpenCitySimSurface(
       return failSurfaceEntry(
         previous,
         'surface-unavailable',
-        'City Simulation could not claim the shared XR Canvas.',
+        'City Simulation could not claim the shared Geo+XR surface.',
         { saveStatus: loaded.status === 'loaded' ? 'loaded' : 'not-loaded' },
       )
     }
@@ -338,7 +335,7 @@ async function performOpenCitySimSurface(
     )
   } catch (error) {
     if (generation !== asyncGeneration) {
-      return restoreSupersededCitySurface(previous)
+      return surfaceOwnershipFailureAfterSupersession(error)
     }
     return failSurfaceEntry(
       previous,
@@ -353,6 +350,7 @@ async function performOpenCitySimSurface(
 export function openCitySimSurface(
   options: CitySimOpenOptions = {},
 ): Promise<CitySimSnapshot> {
+  latestCitySimSurfaceIntent = 'open'
   const opening = performOpenCitySimSurface(options)
   const tail = opening.then(() => undefined, () => undefined)
   citySimSurfaceOpenTail = tail
@@ -490,6 +488,7 @@ export function loadCitySim(
 export function exitCitySimSurface(
   options: Readonly<{ restorePreviousSurface?: boolean }> = {},
 ): CitySimSnapshot {
+  latestCitySimSurfaceIntent = 'exit'
   asyncGeneration += 1
   fenceTimer()
   const previous = previousCanvasSurface
@@ -507,7 +506,6 @@ export function exitCitySimSurface(
   if (options.restorePreviousSurface !== false && previous) {
     beginCitySimSurfaceRestoration(previous)
   } else if (options.restorePreviousSurface === false) {
-    citySimSurfaceRestorationSuppressed = previous
     citySimSurfaceRestoring = null
     citySimSurfaceRestorationTail = Promise.resolve(null)
   }
@@ -556,7 +554,7 @@ export function resetCitySimRuntimeForTests(
   citySimSurfaceOpenTail = null
   citySimSurfaceRestorationTail = Promise.resolve(null)
   citySimSurfaceRestoring = null
-  citySimSurfaceRestorationSuppressed = null
+  latestCitySimSurfaceIntent = 'idle'
   malformedDocument = null
   sessionStartCity = createDefaultCityGrid()
   const reset = resetCitySimSnapshotForTests(

@@ -116,9 +116,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const nativeXrRunReadyDemo = isNativeXrRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const { citySimActive, gameFpsActive, flightSimActive } = useCanvasGameplayOverlayState()
   const gameplayOverlayActive = citySimActive || gameFpsActive || flightSimActive
-  // City is a single-canvas XR surface.  Preserve the user's Geo preference
-  // for restoration, but remove the live Geo composition while City owns XR.
-  const geospatialCompositionEnabled = geospatialModeEnabled && !citySimActive
+  const geospatialCompositionEnabled = geospatialModeEnabled
   const sourceFilesBootstrap = useSourceFilesBootstrapSnapshot()
   const sourceFilesBootstrapReady = sourceFilesBootstrap.phase === 'ready'
   const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady
@@ -476,7 +474,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
         {threeCanvasSurface.mounted ? (
           <section className={`absolute inset-0 z-[10] ${
             threeCanvasSurface.active
-              ? `${geospatialXrModeEnabled ? 'pointer-events-none' : 'pointer-events-auto'} opacity-100`
+              ? `${geospatialXrModeEnabled && !citySimActive ? 'pointer-events-none' : 'pointer-events-auto'} opacity-100`
               : 'pointer-events-none opacity-0'
           }`}>
             <ThreeGraphLazy active={threeCanvasSurface.active} geospatialComposite={geospatialXrModeEnabled} mode={effectiveCanvas3dMode} />

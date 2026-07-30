@@ -483,7 +483,7 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   assert.match(flightTarget, /resolveFlightSimFollowTarget/)
   assert.match(
     physicsRuntime,
-    /const active = isNativeXrRunReadyDemoActive\(markdownDocumentName, markdownDocumentText\)/,
+    /const active = isXrPhysicsRuntimeRunReadyDemoActive\(\s*markdownDocumentName,\s*markdownDocumentText,\s*\)/,
   )
   assert.match(physicsRuntime, /pauseXrNativeControllerDemo\(\)/)
   assert.match(physicsRuntime, /resumeXrNativeControllerDemo\(\)/)

@@ -28,6 +28,10 @@ import {
   isCitySimRunReadyDemoActive,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import {
+  readGeospatialOverlayEnabledPreference,
+  writeGeospatialOverlayEnabledPreference,
+} from '@/lib/geospatial/geospatialModePreference'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import {
@@ -36,6 +40,10 @@ import {
   waitForTasks,
 } from '@/tests/lib/reactRootHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
+import {
+  isGeospatialModeEnabled,
+  setGeospatialModeEnabled,
+} from 'gympgrph'
 
 const CITY_SEED_PATH = `/${CITY_SIM_DEMO_REPO_REL_PATH}`
 const NEUTRAL_PATH = '/docs/workspace-seeds/workspace-readme.md'
@@ -117,10 +125,13 @@ export async function testCitySimGraphOwningMaterializationCommitsIdentityBefore
   const previousStore = useGraphStore.getState()
   const previousExplorerStore = useMarkdownExplorerStore.getState()
   const previousDemoSelector = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
+  const previousGeospatialEnabled = readGeospatialOverlayEnabledPreference()
   let unsubscribe = () => {}
   try {
     delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
     prepareNeutralCitySourceSelection()
+    writeGeospatialOverlayEnabledPreference(false)
+    setGeospatialModeEnabled(false)
     const observedTransitions: string[] = []
     const prematureCityBuilderCommits: string[] = []
 
@@ -131,7 +142,10 @@ export async function testCitySimGraphOwningMaterializationCommitsIdentityBefore
       )
       const transition = `${String(state.floatingPanelView)}:${cityIdentityActive ? 'city' : 'neutral'}`
       observedTransitions.push(transition)
-      if (state.floatingPanelView === 'cityBuilder' && !cityIdentityActive) {
+      if (
+        state.floatingPanelView === 'cityBuilder'
+        && (!cityIdentityActive || !isGeospatialModeEnabled())
+      ) {
         prematureCityBuilderCommits.push(transition)
       }
     })
@@ -149,6 +163,10 @@ export async function testCitySimGraphOwningMaterializationCommitsIdentityBefore
       true,
       'expected the authored City identity to be active after materialization',
     )
+    assert.equal(isGeospatialModeEnabled(), true)
+    assert.equal(readGeospatialOverlayEnabledPreference(), true)
+    assert.equal(finalState.canvasRenderMode, '3d')
+    assert.equal(finalState.canvas3dMode, 'xr')
     assert.equal(finalState.floatingPanelView, 'cityBuilder')
     assert.ok(
       observedTransitions.includes('cityBuilder:city'),
@@ -161,6 +179,8 @@ export async function testCitySimGraphOwningMaterializationCommitsIdentityBefore
     } else {
       delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
     }
+    writeGeospatialOverlayEnabledPreference(previousGeospatialEnabled)
+    setGeospatialModeEnabled(previousGeospatialEnabled)
     useGraphStore.setState(previousStore, true)
     useMarkdownExplorerStore.setState(previousExplorerStore, true)
     restore()

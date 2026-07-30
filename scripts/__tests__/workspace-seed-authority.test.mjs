@@ -88,7 +88,7 @@ const cityRuntimeSeed = `---
 status: "proof-pending"
 runtime_status: "proof-pending"
 publish_scope: "local-only"
-kgCanvasSurfaceMode: "xr"
+kgCanvasSurfaceMode: "geo-xr"
 kgCanvasRenderMode: "3d"
 kgCanvas3dMode: "xr"
 kgFloatingPanelOpen: true
@@ -102,15 +102,41 @@ run_ready_demo:
   source_root: "knowgrph/docs"
   source_backed: true
   native_runtime: true
+  presentation: "shared-geo-xr-city-overlay"
   auto_start: false
   external_dependencies: []
   forbid_external_copy_or_dependency: true
+  canonical_consumers: ["workspace", "geo-xr-mode", "city-builder", "maplibre-flight-overlay"]
 city_runtime:
   schema_id: "knowgrph-city-grid/v1"
   world_ownership: "overlay-only"
-  stage_owner: "additive City Stage in the existing shared Canvas"
+  stage_owner: "additive City Stage in the existing shared React Three Fiber Canvas"
   renderer_rule: "never create a second Canvas or renderer"
   runtime_dependencies_added: 0
+city_geo_xr:
+  surface_owner: "Geo+XR Mode"
+  geo_host_owner: "native MapLibre Geo host"
+  geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
+  city_stage_owner: "existing shared React Three Fiber Canvas"
+  parcel_input_owner: "City Stage"
+  composition: "native MapLibre Geo below the shared City R3F stage"
+  duplicate_map_or_canvas_forbidden: true
+city_aerial_projection:
+  behavior: "deterministic read-only stopped aircraft and route"
+  phase: "stopped"
+  spatial_source: "current selected authored XR spatial profile"
+  environment: null
+  adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
+  adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
+  flight_projection_owner: "canvas/src/features/game-flight-sim/flightSimGeospatialProjection.ts"
+  overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"
+  maplibre_projection_owner: "gympgrph/src/flightGeoOverlayMapLibre.ts"
+  shared_publisher_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
+  flight_gameplay_active: false
+  flight_readiness_claimed: false
+  duplicate_source_or_layers_forbidden: true
+city_camera:
+  canvas_mode: "geo-xr"
 ---
 `
 const safeDraftPresentation = [
@@ -167,6 +193,39 @@ test('accepts the exact authored and projection inventories', async t => {
   const roots = await fixture()
   t.after(() => rm(roots.root, { recursive: true, force: true }))
   await assert.doesNotReject(() => verifyWorkspaceSeedAuthority(roots))
+})
+
+test('rejects City drift from the Geo+XR and stopped aerial ownership contract', async t => {
+  const mutations = [
+    ['XR-only surface', 'kgCanvasSurfaceMode: "geo-xr"', 'kgCanvasSurfaceMode: "xr"'],
+    [
+      'private MapLibre host',
+      'geo_host_owner: "native MapLibre Geo host"',
+      'geo_host_owner: "City private map"',
+    ],
+    [
+      'private overlay store',
+      'overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"',
+      'overlay_store_owner: "canvas/src/features/game-city-sim/privateOverlay.ts"',
+    ],
+    ['projected XR environment', 'environment: null', 'environment: "singapore"'],
+    ['active Flight gameplay', 'flight_gameplay_active: false', 'flight_gameplay_active: true'],
+    ['claimed Flight readiness', 'flight_readiness_claimed: false', 'flight_readiness_claimed: true'],
+  ]
+  for (const [label, from, to] of mutations) {
+    await t.test(label, async t => {
+      const roots = await fixture()
+      t.after(() => rm(roots.root, { recursive: true, force: true }))
+      await writeFile(
+        path.join(roots.knowgrphRoot, CITY_SIM_SEED_RELATIVE_PATH),
+        cityRuntimeSeed.replace(from, to),
+      )
+      await assert.rejects(
+        () => verifyWorkspaceSeedAuthority(roots),
+        /proof-pending workspace document knowgrph-game-city-building-sim-demo\.md has invalid authority/,
+      )
+    })
+  }
 })
 
 test('rejects a missing authored inventory entry', async t => {
