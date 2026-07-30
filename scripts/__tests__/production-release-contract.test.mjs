@@ -15,6 +15,7 @@ const docsSeedLibrary = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'lib',
 const pagesSyncScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'sync-pages-knowgrph.mjs'), 'utf8')
 const pagesFunctionsBuildScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'build-pages-functions-worker.mjs'), 'utf8')
 const agentReadyFunction = fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'knowgrph-agent-ready.mjs'), 'utf8')
+const agentReadyToolContract = fs.readFileSync(path.resolve(repoRoot, 'canvas', 'src', 'features', 'agent-ready', 'knowgrphAgentReadyToolContract.mjs'), 'utf8')
 const rootAgentReadyFunction = fs.readFileSync(path.resolve(repoRoot, 'cloudflare', 'pages', 'root-agent-ready-index.mjs'), 'utf8')
 const productionReadinessBuild = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-runtime-readiness-build.mjs'), 'utf8')
 const pagesDeploymentScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'pages-production-deployment.mjs'), 'utf8')
@@ -128,9 +129,12 @@ test('production release builds the exact localhost-reviewed candidate once befo
   assert.doesNotMatch(verifyJob, /run: npm run pages:sync/)
 })
 
-test('Pages mirror sync preserves the agent-ready route local module closure', () => {
-  const localModuleImports = [...agentReadyFunction.matchAll(/from ["']\.\/([^"']+)["']/g)]
-    .map(([, fileName]) => fileName)
+test('Pages mirror sync preserves the agent-ready route and tool module closure', () => {
+  const localModuleImports = [...new Set(
+    [agentReadyFunction, agentReadyToolContract]
+      .flatMap(source => [...source.matchAll(/from ["'](\.\.?\/[^"']+)["']/g)])
+      .map(([, modulePath]) => path.posix.basename(modulePath)),
+  )]
 
   assert.ok(localModuleImports.length > 0)
   for (const fileName of localModuleImports) {
