@@ -14,10 +14,12 @@ import {
 import {
   applyFlightGeoOverlayToMap,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
+  FLIGHT_GEO_OVERLAY_SOURCE_ID,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
 import {
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
+  FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
 } from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
 import {
   recordFlightGeoStoppedPresentation,
@@ -58,6 +60,7 @@ test('mutated Ready visuals fall back to a new native MapLibre render', () => {
     prepare: (harness: ReturnType<typeof presentationHarness>) => void
     ready: FlightGeoOverlaySnapshot
     restore?: (harness: ReturnType<typeof presentationHarness>) => void
+    settlementSourceId?: string
     stopped: FlightGeoOverlaySnapshot
   }>) => {
     const harness = presentationHarness(args.stopped)
@@ -79,8 +82,20 @@ test('mutated Ready visuals fall back to a new native MapLibre render', () => {
       1,
       `${args.label} must not reuse the stopped painter frame`,
     )
-    assert.ok(harness.repaintCount() > repaintsBeforeReady)
+    if (args.settlementSourceId) {
+      assert.equal(
+        harness.repaintCount(),
+        repaintsBeforeReady,
+        `${args.label} must wait for worker settlement without repaint churn`,
+      )
+    } else {
+      assert.ok(harness.repaintCount() > repaintsBeforeReady)
+    }
     args.restore?.(harness)
+    if (args.settlementSourceId) {
+      harness.emitSourceData(args.settlementSourceId)
+      assert.ok(harness.repaintCount() > repaintsBeforeReady)
+    }
     harness.emitRender()
     assert.equal(harness.presentations.length, 2)
     assert.equal(harness.presentations.at(-1)?.revision, args.ready.revision)
@@ -156,6 +171,7 @@ test('mutated Ready visuals fall back to a new native MapLibre render', () => {
     ready: { ...ready, readyFrameRequestId: 4, revision: 'ready:overlay-pending' },
     prepare: harness => harness.setOverlaySourceLoaded(false),
     restore: harness => harness.setOverlaySourceLoaded(true),
+    settlementSourceId: FLIGHT_GEO_OVERLAY_SOURCE_ID,
   })
   exerciseFallback({
     label: 'unsettled environment source',
@@ -169,6 +185,7 @@ test('mutated Ready visuals fall back to a new native MapLibre render', () => {
     },
     prepare: harness => harness.setEnvironmentSourceLoaded(false),
     restore: harness => harness.setEnvironmentSourceLoaded(true),
+    settlementSourceId: FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
   })
   exerciseFallback({
     label: 'camera mutation',

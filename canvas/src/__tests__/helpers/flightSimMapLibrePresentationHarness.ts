@@ -141,6 +141,14 @@ export function presentationHarness(
   const layerDefinitions = new Map<string, Record<string, any>>()
   const listeners = new Set<() => void>()
   const resizeListeners = new Set<() => void>()
+  const sourceDataListeners = new Set<(event: {
+    sourceDataType?: 'content'
+    sourceId: string
+    tile?: object
+  }) => void>()
+  const sourceErrorListeners = new Set<(event: { sourceId: string }) => void>()
+  const sourceLoadingListeners =
+    new Set<(event: { sourceId: string; tile?: object }) => void>()
   const styleLoadListeners = new Set<() => void>()
   let environmentLayerOrder: string[] = []
   let overlayLayerOrder: string[] = []
@@ -254,14 +262,20 @@ export function presentationHarness(
         overlayLayerOrder.push(id)
       }
     },
-    off: (type: string, listener: () => void) => {
+    off: (type: string, listener: (...args: any[]) => void) => {
       if (type === 'render') listeners.delete(listener)
       if (type === 'resize') resizeListeners.delete(listener)
+      if (type === 'sourcedataloading') sourceLoadingListeners.delete(listener)
+      if (type === 'sourcedata') sourceDataListeners.delete(listener)
+      if (type === 'error') sourceErrorListeners.delete(listener)
       if (type === 'style.load') styleLoadListeners.delete(listener)
     },
-    on: (type: string, listener: () => void) => {
+    on: (type: string, listener: (...args: any[]) => void) => {
       if (type === 'render') listeners.add(listener)
       if (type === 'resize') resizeListeners.add(listener)
+      if (type === 'sourcedataloading') sourceLoadingListeners.add(listener)
+      if (type === 'sourcedata') sourceDataListeners.add(listener)
+      if (type === 'error') sourceErrorListeners.add(listener)
       if (type === 'style.load') styleLoadListeners.add(listener)
     },
     removeLayer: (id: string) => {
@@ -328,12 +342,35 @@ export function presentationHarness(
     emitResize: () => {
       for (const listener of [...resizeListeners]) listener()
     },
+    emitSourceDataError: (sourceId: string) => {
+      for (const listener of [...sourceErrorListeners]) listener({ sourceId })
+    },
+    emitSourceDataLoading: (sourceId: string, tile = false) => {
+      const event = tile ? { sourceId, tile: {} } : { sourceId }
+      for (const listener of [...sourceLoadingListeners]) listener(event)
+    },
+    emitSourceData: (sourceId: string) => {
+      for (const listener of [...sourceDataListeners]) {
+        listener({ sourceDataType: 'content', sourceId })
+      }
+    },
+    emitSourceTileData: (sourceId: string) => {
+      for (const listener of [...sourceDataListeners]) {
+        listener({ sourceId, tile: {} })
+      }
+    },
     emitStyleLoad: () => {
       for (const listener of [...styleLoadListeners]) listener()
     },
     gate,
     map,
     listenerCount: () => listeners.size,
+    sourceDataListenerCount: () => sourceDataListeners.size,
+    sourceLifecycleListenerCount: () => (
+      sourceDataListeners.size
+      + sourceErrorListeners.size
+      + sourceLoadingListeners.size
+    ),
     presentedRevision: () => presented.current.revision,
     presentations,
     repaintCount: () => repaintCount,

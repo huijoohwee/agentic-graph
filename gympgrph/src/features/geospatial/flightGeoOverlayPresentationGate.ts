@@ -29,6 +29,16 @@ import {
   type FlightOverlayPresentationGate,
   type FlightOverlayPresentationGateOptions,
 } from './flightGeoOverlayPresentationContracts.js'
+import {
+  markFlightGeoSourceDataEventSettled,
+  markFlightGeoSourceEventUnsettled,
+  mapHasLoadedFlightGeoSources,
+} from './flightGeoOverlaySourceSettlement.js'
+
+export {
+  isFlightGeoPresentationSourceDataEvent,
+  mapHasLoadedFlightGeoSources,
+} from './flightGeoOverlaySourceSettlement.js'
 
 export function createFlightGeoOverlayPresentationGate(
   options: FlightOverlayPresentationGateOptions,
@@ -47,18 +57,17 @@ export function createFlightGeoOverlayPresentationGate(
     attempts: number
     listener: () => void
     limit: number
+    phase: FlightGeoOverlaySnapshot['phase']
+    profileId: string
+    repaintRequested: boolean
     readyFrameRequestId: number | null
     revision: string
+    runId: number
+    tick: number
   } | null = null
   let stoppedFrameProof: FlightGeoStoppedFrameProof | null = null
   const invalidateStoppedFrameProof = () => {
     stoppedFrameProof = null
-  }
-  try {
-    map.on?.('style.load', invalidateStoppedFrameProof)
-    map.on?.('resize', invalidateStoppedFrameProof)
-  } catch {
-    void 0
   }
 
   const cancel = () => {
@@ -112,12 +121,75 @@ export function createFlightGeoOverlayPresentationGate(
     && current.tick === requested.tick
   )
 
+  const currentMatchesPendingRequest = (
+    current: FlightGeoOverlaySnapshot,
+  ): boolean => Boolean(
+    pending
+    && active()
+    && current.active
+    && current.revision === pending.revision
+    && current.phase === pending.phase
+    && current.profileId === pending.profileId
+    && current.readyFrameRequestId === pending.readyFrameRequestId
+    && current.runId === pending.runId
+    && current.tick === pending.tick,
+  )
+
+  const requestPendingRepaint = () => {
+    if (!pending || pending.repaintRequested) return
+    pending.repaintRequested = true
+    try {
+      map.triggerRepaint?.()
+    } catch (error) {
+      if (pending) pending.repaintRequested = false
+      throw error
+    }
+  }
+
+  const onFlightSourceLoading = (event: unknown) => {
+    markFlightGeoSourceEventUnsettled(map, event)
+  }
+
+  const onFlightSourceError = (event: unknown) => {
+    markFlightGeoSourceEventUnsettled(map, event)
+  }
+
+  const onFlightSourceData = (event: unknown) => {
+    if (!markFlightGeoSourceDataEventSettled(map, event)) return
+    if (!pending) return
+    const current = readOverlay()
+    if (!currentMatchesPendingRequest(current)) {
+      cancel()
+      return
+    }
+    // GeoJSON worker completion, not a paint loop, owns this retry. MapLibre's
+    // source event is the first point at which both strict loaded() predicates
+    // can be true; one repaint then validates the exact payload/layers/camera.
+    if (!mapHasLoadedFlightGeoSources(map, current)) return
+    try {
+      requestPendingRepaint()
+    } catch {
+      void 0
+    }
+  }
+
+  try {
+    map.on?.('style.load', invalidateStoppedFrameProof)
+    map.on?.('resize', invalidateStoppedFrameProof)
+    map.on?.('sourcedataloading', onFlightSourceLoading)
+    map.on?.('sourcedata', onFlightSourceData)
+    map.on?.('error', onFlightSourceError)
+  } catch {
+    void 0
+  }
+
   const canCommitVisuals = (
     current: FlightGeoOverlaySnapshot,
     camera: ReturnType<typeof readFlightGeoOverlayPresentationCamera>,
     canvas: HTMLCanvasElement | null,
   ): boolean => (
-    mapHasExactFlightOverlay(map, current)
+    mapHasLoadedFlightGeoSources(map, current)
+    && mapHasExactFlightOverlay(map, current)
     && mapHasExactFlightLayerState(map, current, viewMode)
     && camera.exact
     && canvasIsVisible(canvas)
@@ -225,6 +297,9 @@ export function createFlightGeoOverlayPresentationGate(
     try {
       map.off?.('style.load', invalidateStoppedFrameProof)
       map.off?.('resize', invalidateStoppedFrameProof)
+      map.off?.('sourcedataloading', onFlightSourceLoading)
+      map.off?.('sourcedata', onFlightSourceData)
+      map.off?.('error', onFlightSourceError)
     } catch {
       void 0
     }
@@ -307,6 +382,7 @@ export function createFlightGeoOverlayPresentationGate(
 
     const listener = () => {
       if (pending?.listener !== listener) return
+      pending.repaintRequested = false
       const current = readOverlay()
       if (!sameRequest(current, overlay)) {
         cancel()
@@ -329,6 +405,10 @@ export function createFlightGeoOverlayPresentationGate(
       const canvas = readCanvas()
       if (!canCommit(current, camera, canvas)) {
         if (!pending) return
+        // setData() can update serialized GeoJSON before the worker has
+        // completed. Do not monopolize a slow painter with speculative frames;
+        // the owned sourcedata listener will re-arm exactly once loaded().
+        if (!mapHasLoadedFlightGeoSources(map, current)) return
         pending.attempts += 1
         if (root) {
           writeFlightGeoPresentationDebug(
@@ -343,7 +423,7 @@ export function createFlightGeoOverlayPresentationGate(
           return
         }
         try {
-          map.triggerRepaint?.()
+          requestPendingRepaint()
         } catch {
           void 0
         }
@@ -369,8 +449,13 @@ export function createFlightGeoOverlayPresentationGate(
       )
         ? FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT
         : FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT,
+      phase: overlay.phase,
+      profileId: overlay.profileId,
+      repaintRequested: false,
       readyFrameRequestId: overlay.readyFrameRequestId,
       revision: overlay.revision,
+      runId: overlay.runId,
+      tick: overlay.tick,
     }
     const root = readRoot()
     if (root) {
@@ -383,7 +468,9 @@ export function createFlightGeoOverlayPresentationGate(
     }
     try {
       map.on('render', listener)
-      map.triggerRepaint?.()
+      if (mapHasLoadedFlightGeoSources(map, overlay)) {
+        requestPendingRepaint()
+      }
     } catch {
       cancel()
     }
@@ -398,4 +485,3 @@ export function createFlightGeoOverlayPresentationGate(
     resetPresented,
   })
 }
-

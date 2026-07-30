@@ -339,7 +339,19 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   )
   assert.match(
     geospatialPresentationGate,
-    /map\.on\('render', listener\)[\s\S]*map\.triggerRepaint\?\.\(\)/,
+    /map\.on\?\.\('sourcedataloading', onFlightSourceLoading\)/,
+  )
+  assert.match(
+    geospatialPresentationGate,
+    /map\.on\?\.\('sourcedata', onFlightSourceData\)/,
+  )
+  assert.match(
+    geospatialPresentationGate,
+    /map\.on\?\.\('error', onFlightSourceError\)/,
+  )
+  assert.match(
+    geospatialPresentationGate,
+    /map\.on\('render', listener\)[\s\S]*requestPendingRepaint\(\)/,
   )
   assert.match(
     geospatialPresentationGate,

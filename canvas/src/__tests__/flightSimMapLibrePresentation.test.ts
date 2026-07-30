@@ -20,6 +20,7 @@ import {
   applyFlightGeoOverlayToMap,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_LAYER_ORDER,
+  FLIGHT_GEO_OVERLAY_SOURCE_ID,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
 import {
   applyFlightGeoEnvironmentToMap,
@@ -237,6 +238,7 @@ test('a stopped Flight frame waits for the settled overlay source before prepara
   assert.equal(harness.listenerCount(), 1)
 
   harness.setOverlaySourceLoaded(true)
+  harness.emitSourceData(FLIGHT_GEO_OVERLAY_SOURCE_ID)
   harness.emitRender()
   assert.equal(harness.presentations.length, 1)
   assert.equal(harness.listenerCount(), 0)
