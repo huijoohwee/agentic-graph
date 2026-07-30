@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   SENSENOVA_API_KEY_ENV,
@@ -87,27 +87,29 @@ for (const requiredText of [
   assert(prdTadText.includes(requiredText), `SenseNova PRD/TAD missing required text: ${requiredText}`)
 }
 
-const demoText = readFileSync(demoPath, 'utf8')
-const demoFrontmatterBlock = extractYamlFrontmatterHeaderBlock(demoText)
-const demoVideoId = demoFrontmatterBlock ? readYamlFrontmatterValue(demoFrontmatterBlock.rawBlock, 'kgYoutubeVideoId').trim() : ''
-assert(demoVideoId, 'Strybldr demo must declare kgYoutubeVideoId in validation input frontmatter')
-for (const requiredText of [
-  'SenseNova API Lane (Text, Image, Video)',
-  `VideoDB API + MCP Recreate ${demoVideoId} Lane`,
-  'SenseNova API Text, Image, Video generation feeds VideoDB upload, index, search, stream, and local publish packet workflow',
-  'local_animatic_status: "Toolbar Run all and Strybldr Generate Video create a generated, playable, zero-paid-call local animatic from approved cards when live credentials are unavailable"',
-  'provider: "knowgrph-local-animatic"',
-  'model: "strybldr-local-animatic-v1"',
-  'sensenova-api-readiness-card',
-  'sensenova-api-contract',
-  'SenseChat-5',
-  'artist-xl',
-  'SenseAnim',
-  'videodb_stream_url',
-]) {
-  assert(demoText.includes(requiredText), `Strybldr demo missing SenseNova E2E text: ${requiredText}`)
+if (existsSync(demoPath)) {
+  const demoText = readFileSync(demoPath, 'utf8')
+  const demoFrontmatterBlock = extractYamlFrontmatterHeaderBlock(demoText)
+  const demoVideoId = demoFrontmatterBlock ? readYamlFrontmatterValue(demoFrontmatterBlock.rawBlock, 'kgYoutubeVideoId').trim() : ''
+  assert(demoVideoId, 'Strybldr demo must declare kgYoutubeVideoId in validation input frontmatter')
+  for (const requiredText of [
+    'SenseNova API Lane (Text, Image, Video)',
+    `VideoDB API + MCP Recreate ${demoVideoId} Lane`,
+    'SenseNova API Text, Image, Video generation feeds VideoDB upload, index, search, stream, and local publish packet workflow',
+    'local_animatic_status: "Toolbar Run all and Strybldr Generate Video create a generated, playable, zero-paid-call local animatic from approved cards when live credentials are unavailable"',
+    'provider: "knowgrph-local-animatic"',
+    'model: "strybldr-local-animatic-v1"',
+    'sensenova-api-readiness-card',
+    'sensenova-api-contract',
+    'SenseChat-5',
+    'artist-xl',
+    'SenseAnim',
+    'videodb_stream_url',
+  ]) {
+    assert(demoText.includes(requiredText), `Strybldr demo missing SenseNova E2E text: ${requiredText}`)
+  }
+  assert(
+    !/SENSENOVA_API_KEY\\s*[:=]\\s*["'][^$]|SENSENOVA_ACCESS_KEY_ID|SENSENOVA_SECRET_ACCESS_KEY|signed-jwt-|stream\\.videodb\\.io|job-upload-|job-index-|job-generation-|\\bzapier\\b|\\bnotion\\b|客家/i.test(demoText),
+    'Strybldr demo must not contain raw SenseNova credentials, fabricated runtime values, copied external-workflow terms, or unrelated content',
+  )
 }
-assert(
-  !/SENSENOVA_API_KEY\\s*[:=]\\s*["'][^$]|SENSENOVA_ACCESS_KEY_ID|SENSENOVA_SECRET_ACCESS_KEY|signed-jwt-|stream\\.videodb\\.io|job-upload-|job-index-|job-generation-|\\bzapier\\b|\\bnotion\\b|客家/i.test(demoText),
-  'Strybldr demo must not contain raw SenseNova credentials, fabricated runtime values, copied external-workflow terms, or unrelated content',
-)

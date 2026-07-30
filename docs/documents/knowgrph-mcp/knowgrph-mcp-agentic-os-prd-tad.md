@@ -1,14 +1,16 @@
 ---
 title: "Knowgrph MCP Agentic Canvas OS - PRD and TAD"
 id: "md:knowgrph-mcp-agentic-os-prd-tad"
-author: "airvio / joohwee"
-created: "2026-06-08"
-updated: "2026-07-03"
+doc_type: "Product and Technical Specification"
 version: "0.3.1"
-status: "local-dry-run-contract-implemented"
-doc_type: "Combined PRD/TAD"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.mcp.agentic-os"
+local_rung: "dev-proven"
+delivered_rung: "spec-complete"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-mcp-agentic-os-prd-tad.md"
 kgDocumentSemanticMode: "document"
 kgFrontmatterModeEnabled: true
 kgCanvasSurfaceMode: "2d"

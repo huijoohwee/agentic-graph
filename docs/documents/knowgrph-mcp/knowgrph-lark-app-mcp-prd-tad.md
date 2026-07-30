@@ -1,13 +1,16 @@
 ---
 title: "Knowgrph - Lark App MCP to Canvas Integration PRD/TAD"
 id: "md:knowgrph-lark-app-mcp-prd-tad"
-author: "joohwee"
-date: "2026-06-06"
-updated: "2026-06-06"
+doc_type: "Product and Technical Specification"
 version: "0.1.20"
-status: "accepted-implemented-baseline"
-doc_type: "Combined PRD/TAD"
+date: "2026-07-30"
 lang: "en-US"
+owner: "docs.mcp.lark-app"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-lark-app-mcp-prd-tad.md"
 kgDocumentSemanticMode: "document"
 kgFrontmatterModeEnabled: true
 kgCanvasSurfaceMode: "2d"
