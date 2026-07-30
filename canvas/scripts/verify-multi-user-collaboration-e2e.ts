@@ -46,6 +46,7 @@ const MACOS_BROWSER_CANDIDATES = [
 type BrowserStoreSnapshot = {
   markdownDocumentName: string
   markdownDocumentText: string
+  activeEditorText: string
   markdownWorkspaceIndexingInFlight: boolean
   sessionPhase: string
   statusText: string
@@ -146,16 +147,39 @@ function assertIncludes(haystack: string, needle: string): void {
   }
 }
 
+function summarizeCollaborationFrame(label: string, direction: 'sent' | 'received', payload: string | Buffer): string | null {
+  try {
+    const parsed = JSON.parse(String(payload)) as Record<string, unknown>
+    const type = String(parsed.type || '')
+    if (type !== 'document.sync' && type !== 'document.synced') return null
+    const text = String(parsed.text || '')
+    return JSON.stringify({
+      label,
+      direction,
+      type,
+      peerId: String(parsed.peerId || ''),
+      documentKey: String(parsed.documentKey || ''),
+      textLength: text.length,
+      includesMarker: text.includes(MARKER),
+    })
+  } catch {
+    return null
+  }
+}
+
 async function readBrowserStoreSnapshot(page: Page): Promise<BrowserStoreSnapshot> {
   return await page.evaluate(async () => {
     const graphStoreModule = await import('/src/hooks/useGraphStore.ts')
     const collaborationStoreModule = await import('/src/features/collaboration/p2pCollaborationStore.ts')
+    const editorSurfaceModule = await import('/src/features/agent-ready/browserLocalSurfaceSnapshots.ts')
     const graphState = graphStoreModule.useGraphStore.getState()
     const collaborationState = collaborationStoreModule.useP2PCollaborationStore.getState()
+    const editorSurface = editorSurfaceModule.readLocalEditorWorkspaceSurfaceSnapshot()
     const peers = Array.isArray(collaborationState.peers) ? collaborationState.peers : []
     return {
       markdownDocumentName: String(graphState.markdownDocumentName || ''),
       markdownDocumentText: String(graphState.markdownDocumentText || ''),
+      activeEditorText: String(editorSurface?.liveMarkdownText || ''),
       markdownWorkspaceIndexingInFlight: graphState.markdownWorkspaceIndexingInFlight === true,
       sessionPhase: String(collaborationState.phase || ''),
       statusText: String(collaborationState.statusText || ''),
@@ -342,14 +366,29 @@ async function appendMarkerThroughActiveEditor(page: Page, marker: string): Prom
   if (editorSurfaceCount !== 1) {
     throw new Error(`expected one active Markdown editor surface, got ${editorSurfaceCount}`)
   }
-  await editorSurface.click()
-  const editorFocused = await page.evaluate(() => {
-    const editorRoot = document.querySelector('.kg-markdown-editor-pane .monaco-editor')
-    return Boolean(document.activeElement && editorRoot?.contains(document.activeElement))
-  })
-  if (!editorFocused) throw new Error('active Markdown editor did not acquire keyboard focus')
-  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End')
-  await page.keyboard.insertText(`\n${marker}\n`)
+  const editResult = await page.evaluate(async ({ marker }) => {
+    const graphStoreModule = await import('/src/hooks/useGraphStore.ts')
+    const modelRegistryModule = await import('/src/features/monaco/monacoModelRegistry.ts')
+    const graphState = graphStoreModule.useGraphStore.getState()
+    const documentText = String(graphState.markdownDocumentText || '')
+    const candidates = modelRegistryModule
+      .readRegisteredTextModelSnapshots()
+      .filter(model => model.language === 'markdown' && model.value === documentText)
+    if (candidates.length !== 1) {
+      return { applied: false, candidateCount: candidates.length }
+    }
+    const candidate = candidates[0]
+    return {
+      applied: modelRegistryModule.replaceRegisteredTextModelValue(
+        candidate.uri,
+        `${candidate.value}\n${marker}\n`,
+      ),
+      candidateCount: candidates.length,
+    }
+  }, { marker })
+  if (!editResult.applied) {
+    throw new Error(`expected one mutable active Markdown editor model, got ${editResult.candidateCount}`)
+  }
 }
 
 async function assertSession(workerUrl: string, token: string, label: string): Promise<void> {
@@ -399,9 +438,20 @@ async function main(): Promise<void> {
   const ownerPage = await ownerContext.newPage()
   const guestPage = await guestContext.newPage()
   const pageErrors: string[] = []
-  for (const page of [ownerPage, guestPage]) {
+  const collaborationFrameTrace: string[] = []
+  for (const [label, page] of [['owner', ownerPage], ['guest', guestPage]] as const) {
     page.on('pageerror', error => {
       pageErrors.push(error.message)
+    })
+    page.on('websocket', socket => {
+      socket.on('framesent', event => {
+        const summary = summarizeCollaborationFrame(label, 'sent', event.payload)
+        if (summary) collaborationFrameTrace.push(summary)
+      })
+      socket.on('framereceived', event => {
+        const summary = summarizeCollaborationFrame(label, 'received', event.payload)
+        if (summary) collaborationFrameTrace.push(summary)
+      })
     })
   }
 
@@ -453,13 +503,21 @@ async function main(): Promise<void> {
       waitForPageCondition(guestPage, 'guest peer roster', snapshot => snapshot.connectedPeerCount >= 2),
     ])
     await assertRoomStatus(WORKER_URL, ownerConnectedSnapshot.markdownDocumentName)
+    await ownerPage.waitForTimeout(1_000)
+    const [ownerSettledSnapshot, guestSettledSnapshot] = await Promise.all([
+      readBrowserStoreSnapshot(ownerPage),
+      readBrowserStoreSnapshot(guestPage),
+    ])
+    if (ownerSettledSnapshot.markdownDocumentText !== guestSettledSnapshot.markdownDocumentText) {
+      throw new Error('owner and guest documents did not converge before the collaboration edit')
+    }
 
     await appendMarkerThroughActiveEditor(guestPage, MARKER)
 
     const guestSnapshot = await waitForPageCondition(
       guestPage,
       'guest marker retention',
-      snapshot => snapshot.markdownDocumentText.includes(MARKER),
+      snapshot => snapshot.activeEditorText.includes(MARKER),
     )
     const ownerSnapshot = await waitForPageCondition(
       ownerPage,
@@ -488,7 +546,7 @@ async function main(): Promise<void> {
         ownerDocumentName: ownerSnapshot.markdownDocumentName,
         guestDocumentName: guestSnapshot.markdownDocumentName,
         ownerTextLength: ownerSnapshot.markdownDocumentText.length,
-        guestTextLength: guestSnapshot.markdownDocumentText.length,
+        guestTextLength: guestSnapshot.activeEditorText.length,
         runtimeIdentity: {
           status: ownerIdentityProof.status,
           observedDeviceCount: ownerIdentityProof.observedDeviceCount,
@@ -507,7 +565,10 @@ async function main(): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const suffix = pageErrors.length ? `\nPage errors:\n${pageErrors.join('\n')}` : ''
-    await failWithScreenshots(ownerPage, guestPage, `${message}${suffix}`)
+    const frameSuffix = collaborationFrameTrace.length
+      ? `\nCollaboration frames:\n${collaborationFrameTrace.join('\n')}`
+      : ''
+    await failWithScreenshots(ownerPage, guestPage, `${message}${suffix}${frameSuffix}`)
   } finally {
     await browser.close()
     restoreLocalDocumentSnapshot(localDocumentSnapshot)

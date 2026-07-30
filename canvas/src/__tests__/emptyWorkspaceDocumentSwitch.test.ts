@@ -7,6 +7,7 @@ import {
   shouldAcceptWorkspaceDocumentSelectionText,
   shouldHydrateStableWorkspaceSelectionText,
 } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceSelection'
+import { resolveStableWorkspaceSelectionSyncDecision } from '@/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply'
 import {
   readCachedWorkspaceSelectionResolvedTextForActivePath,
   type MarkdownWorkspaceSelectionResolvedTextCache,
@@ -123,6 +124,24 @@ export function testWorkspaceSelectionHydrationYieldsToUnsavedUserDraft() {
   })
   if (accepted !== false) {
     throw new Error(`expected stable active workspace hydration to yield to an unsaved user draft, got ${String(accepted)}`)
+  }
+}
+
+export function testStableWorkspaceSelectionSyncYieldsEditorAndCanvasToAuthoredText() {
+  const decision = resolveStableWorkspaceSelectionSyncDecision({
+    activePath: '/docs/demo.md' as never,
+    activeEntryKind: 'file',
+    activeDocumentKey: 'docs/demo.md',
+    currentText: '# Demo\n\nremote collaboration marker',
+    nextText: '# Demo',
+    lastLoadedPath: '/docs/demo.md' as never,
+    userEditedActiveText: true,
+    markdownDocumentName: 'docs/demo.md',
+    markdownDocumentText: '# Demo\n\nremote collaboration marker',
+    graphDataSource: 'markdown:docs/demo.md',
+  })
+  if (decision.hydrateText || decision.applyToCanvas) {
+    throw new Error(`expected authored editor text to fence stale stable-selection sync, got ${JSON.stringify(decision)}`)
   }
 }
 
