@@ -11,6 +11,7 @@ import {
   isCitySimRunReadyDemoActive,
   isXrPhysicsRuntimeRunReadyDemoActive,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 
 function readCanvasSource(relativePath: string): string {
   return readFileSync(resolve(process.cwd(), 'src', relativePath), 'utf8')
@@ -58,11 +59,22 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
     'City must not compose a Three overlay above the MapLibre owner',
   )
   assert.ok(
-    rendererLifecycle.includes(
-      'if (input.citySimMapLibreSurfaceIntent)',
-    ),
-    'City intent must keep MapLibre as the sole viewport owner before Geo+XR commits',
+    !/citySim|CitySim|MapLibre/.test(rendererLifecycle),
+    'Three lifecycle ownership must remain independent from the City MapLibre surface',
   )
+  assert.deepEqual(resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    cityMapLibreSurfaceRequested: true,
+    flightSimActive: false,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: false,
+    geospatialXrModeEnabled: false,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  }), {
+    activeSurface: 'geo-xr',
+    geospatialOverlayOwnsViewport: true,
+  })
   assert.ok(
     geospatialOverlay.includes(
       'data-kg-city-maplibre-owner={',

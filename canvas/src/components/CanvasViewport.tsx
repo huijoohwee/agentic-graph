@@ -10,13 +10,13 @@ import { useForbidBrowserZoomWheel } from '@/lib/ui/forbidBrowserZoom'
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import { UI_RESPONSIVE_CANVAS_MINIMAP_OVERLAY_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { resolveCanvas3dMode } from '@/lib/canvas/canvas3dMode'
+import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import { isCitySimRunReadyDemoActive, isXrPhysicsRunReadyDemoActive, isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useCanvasGameplayOverlayState } from '@/features/canvas/useCanvasGameplayOverlayState'
 import { useFlightSimSurfacePreload } from '@/features/game-flight-sim/useFlightSimSurfacePreload'
 import { FlightSimHud } from '@/features/game-flight-sim/FlightSimHud'
 import { XrNativeControllerDemoHud } from '@/features/three/XrNativeControllerDemoHud'
 import {
-  resolveCanvasSurfaceOwnership,
   resolveThreeCanvasSurfaceLifecycle,
   retainThreeCanvasSourceAdmission,
 } from '@/lib/three/threeRendererLifecycle'
@@ -117,7 +117,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const xrPhysicsRuntimeRunReadyDemo = isXrPhysicsRuntimeRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const citySimSourceIntent = isCitySimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const { citySim, citySimActive, gameFpsActive, flightSimActive } = useCanvasGameplayOverlayState()
-  const citySimMapLibreSurfaceIntent = citySimActive
+  const cityMapLibreSurfaceRequested = citySimActive
     || (citySimSourceIntent && citySim.lastResult?.operation !== 'exit')
   const gameplayOverlayActive = citySimActive || gameFpsActive || flightSimActive
   const geospatialCompositionEnabled = geospatialModeEnabled
@@ -199,7 +199,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const geospatialXrModeEnabled = geospatialCompositionEnabled && canvasRenderMode === '3d' && effectiveCanvas3dMode === 'xr'
   const { activeSurface, geospatialOverlayOwnsViewport } = resolveCanvasSurfaceOwnership({
     canvasRenderMode,
-    citySimMapLibreSurfaceIntent,
+    cityMapLibreSurfaceRequested,
     flightSimActive,
     gameplayOverlayActive,
     geospatialModeEnabled: geospatialCompositionEnabled,
@@ -491,7 +491,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
         ) : null}
 
         {!documentSwitchOwnsViewport && geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (
-          citySimMapLibreSurfaceIntent ? (
+          cityMapLibreSurfaceRequested ? (
             <CitySimMediaFigure citySimActive={citySimActive}>
               <CanvasViewportGeospatialOverlayLazy
                 active={activeSurface === 'geo' || activeSurface === 'geo-xr'}

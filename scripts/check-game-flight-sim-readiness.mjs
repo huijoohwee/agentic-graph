@@ -63,6 +63,7 @@ const requiredPaths = [
   'canvas/src/App.tsx',
   'canvas/src/components/CanvasViewport.tsx',
   'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+  'canvas/src/lib/canvas/canvasSurfaceOwnershipRuntime.ts',
   'canvas/src/features/agentic-os/agenticOsRemoteGrammarClient.ts',
   'canvas/src/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration.tsx',
   'canvas/src/features/agent-ready/flightSimAgentReadyContract.mjs',

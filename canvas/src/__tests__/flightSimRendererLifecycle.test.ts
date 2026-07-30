@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 import {
-  resolveCanvasSurfaceOwnership,
   resolveThreeRendererLifecycleKey,
   resolveThreeCanvasSurfaceLifecycle,
   shouldMountThreeRenderer,
@@ -121,7 +121,7 @@ test('an open Geo panel synchronizes the canvas Geo owner', () => {
 test('Flight Sim keeps exclusive Geo available without mounting a competing XR viewport', () => {
   const ownership = resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
-    citySimMapLibreSurfaceIntent: false,
+    cityMapLibreSurfaceRequested: false,
     flightSimActive: true,
     gameplayOverlayActive: true,
     geospatialModeEnabled: true,
@@ -148,7 +148,7 @@ test('Flight Sim keeps exclusive Geo available without mounting a competing XR v
 
   assert.deepEqual(resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
-    citySimMapLibreSurfaceIntent: false,
+    cityMapLibreSurfaceRequested: false,
     flightSimActive: false,
     gameplayOverlayActive: true,
     geospatialModeEnabled: true,
@@ -162,7 +162,7 @@ test('Flight Sim keeps exclusive Geo available without mounting a competing XR v
 
   assert.deepEqual(resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
-    citySimMapLibreSurfaceIntent: false,
+    cityMapLibreSurfaceRequested: false,
     flightSimActive: false,
     gameplayOverlayActive: false,
     geospatialModeEnabled: true,
@@ -178,7 +178,7 @@ test('Flight Sim keeps exclusive Geo available without mounting a competing XR v
 test('Geo+XR mounts one transparent shared XR viewport over the Geo owner', () => {
   const ownership = resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
-    citySimMapLibreSurfaceIntent: false,
+    cityMapLibreSurfaceRequested: false,
     flightSimActive: true,
     gameplayOverlayActive: true,
     geospatialModeEnabled: true,
@@ -205,7 +205,7 @@ test('Geo+XR mounts one transparent shared XR viewport over the Geo owner', () =
 test('City intent fails closed to MapLibre before Geo+XR commits', () => {
   const ownership = resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
-    citySimMapLibreSurfaceIntent: true,
+    cityMapLibreSurfaceRequested: true,
     flightSimActive: false,
     gameplayOverlayActive: true,
     geospatialModeEnabled: false,
@@ -230,7 +230,7 @@ test('City intent fails closed to MapLibre before Geo+XR commits', () => {
 
   assert.deepEqual(resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
-    citySimMapLibreSurfaceIntent: false,
+    cityMapLibreSurfaceRequested: false,
     flightSimActive: false,
     gameplayOverlayActive: false,
     geospatialModeEnabled: false,
