@@ -8,12 +8,14 @@ import {
 import { PROBE_TREE_OUTPUT_KEY } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeLayout'
 import { FLOW_EDGE_SOURCE_PORT_KEY, FLOW_EDGE_TARGET_PORT_KEY } from '@/lib/graph/flowPorts'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
+import { readSubgraphs, writeSubgraphs } from '@/lib/graph/subgraphs'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { buildStoryboardWidgetTextRunSourceState } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetTextRunSourceState'
 import { buildRichMediaPanelOverlayState, resolveRichMediaPanelDisplayText } from '@/lib/render/richMediaPanelState'
 import { createStoryboardWidgetTextOutputHarness as createTextOutputHarness } from '@/tests/lib/storyboardWidgetTextOutputHarness'
 import { getCachedStoryboardWidgetOverlayEdgeGraph } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
 import {
+  applyWorkflowMaterializationGroupPanel,
   readWorkflowMaterializationParentNodeId,
   readWorkflowMaterializationProjectionSourceNodeId,
 } from '@/lib/storyboardWidget/runMaterializationProjection'
@@ -425,6 +427,7 @@ export function testProbeTreeBranchesLedgerConnectsSourceIdempotently() {
   const ledgers = published.nodes.filter(node => node.label === 'Probe-Tree Branches')
   const ledgerEdges = published.edges.filter(edge => edge.properties?.workflowOutputEdge === true)
   const candidateEdges = published.edges.filter(edge => edge.label === 'candidateOption')
+  const outputGroups = readSubgraphs(published)
   const downstreamFromLedger = resolveStoryboardWidgetWorkflowDownstreamRunTargetIds({
     node: disconnectedLedger,
     graphData: published,
@@ -472,8 +475,56 @@ export function testProbeTreeBranchesLedgerConnectsSourceIdempotently() {
       sourceRoundTripOverlayLookup?.edges.find(rendered => rendered.id === edge.id)?.source !== disconnectedLedger.id
       || sourceRoundTripOverlayLookup?.rawEdgeById.get(String(edge.id))?.source !== source.id
     ))
+    || outputGroups.length !== 1
+    || outputGroups[0]?.autoBounds !== true
+    || outputGroups[0]?.memberNodeIds.join(',') !== ['branch-a', 'branch-b', 'n2'].join(',')
+    || outputGroups[0]?.memberNodeIds.includes(source.id)
   ) {
-    throw new Error(`expected semantic source lineage with durable source -> ledger -> topological branch presentation and no new Run edges, got ${JSON.stringify({ published, downstreamFromLedger, renderedEdges: overlayLookup?.edges, sourceRoundTripRenderedEdges: sourceRoundTripOverlayLookup?.edges })}`)
+    throw new Error(`expected semantic source lineage with one generated-output Group Panel and no new Run edges, got ${JSON.stringify({ published, outputGroups, downstreamFromLedger, renderedEdges: overlayLookup?.edges, sourceRoundTripRenderedEdges: sourceRoundTripOverlayLookup?.edges })}`)
+  }
+}
+
+export function testWorkflowMaterializationAdoptsExistingCollectiveGroupPanel() {
+  const source: GraphNode = { id: 'source', type: 'TextGeneration', label: 'Source', properties: {} }
+  const panel: GraphNode = { id: 'panel', type: 'RichMediaPanel', label: 'Generated panel', properties: {} }
+  const childA: GraphNode = { id: 'child-a', type: 'TextGeneration', label: 'Child A', properties: {} }
+  const childB: GraphNode = { id: 'child-b', type: 'TextGeneration', label: 'Child B', properties: {} }
+  const graph = writeSubgraphs({
+    type: 'Graph',
+    nodes: [source, panel, childA, childB],
+    edges: [],
+  }, [{
+    id: 'group-1',
+    label: 'Group 1',
+    memberNodeIds: [childA.id, childB.id],
+    parentId: null,
+    kind: 'subgraph',
+    autoBounds: true,
+  }])
+  const grouped = applyWorkflowMaterializationGroupPanel({
+    graphData: graph,
+    projectionParentNodeId: panel.id,
+    childNodeIds: [childA.id, childB.id],
+    outputGroupId: 'probe-tree:source',
+    groupLabel: 'Probe-Tree Branches outputs',
+  })
+  const rerun = applyWorkflowMaterializationGroupPanel({
+    graphData: grouped,
+    projectionParentNodeId: panel.id,
+    childNodeIds: [childA.id, childB.id],
+    outputGroupId: 'probe-tree:source',
+    groupLabel: 'Probe-Tree Branches outputs',
+  })
+  const outputGroups = readSubgraphs(grouped)
+  if (
+    outputGroups.length !== 1
+    || outputGroups[0]?.id !== 'group-1'
+    || outputGroups[0]?.label !== 'Group 1'
+    || outputGroups[0]?.memberNodeIds.join(',') !== ['child-a', 'child-b', 'panel'].join(',')
+    || outputGroups[0]?.memberNodeIds.includes(source.id)
+    || rerun !== grouped
+  ) {
+    throw new Error(`expected Run to adopt the exact existing collective Group Panel idempotently, got ${JSON.stringify(outputGroups)}`)
   }
 }
 

@@ -48,6 +48,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["storyboardWidget.outputWiring.explicitMultiTargets","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testExplicitMultiEdgesTargetWidgetCardAndRichMediaPanels"],
   ["storyboardWidget.outputWiring.standaloneUntilExplicit","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testGeneratedOutputsStayStandaloneUntilExplicitlyWired"],
   ["storyboardWidget.outputWiring.probeTreeBranchesLedgerConnected","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testProbeTreeBranchesLedgerConnectsSourceIdempotently"],
+  ["storyboardWidget.outputGrouping.adoptsExistingCollectiveGroupPanel","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testWorkflowMaterializationAdoptsExistingCollectiveGroupPanel"],
   ["storyboardWidget.outputWiring.selectedChildCanonicalTarget","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testSelectedChildRunRestoresExplicitTargetFromCanonicalGraph"],
   ["storyboardWidget.outputWiring.runAllConnectedTerminal","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testSelectedGenerationConnectsResultDuringRunAll"],
   ["storyboardWidget.outputWiring.runAllTypedPersistedTerminal","@/__tests__/storyboardWidgetExplicitOutputWiring.test","testRunAllReconcilesTypedPersistedStandaloneResult"],
