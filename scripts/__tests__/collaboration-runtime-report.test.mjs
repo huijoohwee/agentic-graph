@@ -403,6 +403,74 @@ test('report schema rejects unknown fields and mutated workflow checks', async (
   )
 })
 
+test('report schema couples draft state to remote authority requirements and receipts', async () => {
+  const baseReport = readLocalReport()
+  const emptyReceipt = {
+    claimId: null,
+    claimDigest: null,
+    ledgerRevision: null,
+    writeSetDigest: null,
+    verificationReceiptDigest: null,
+  }
+  const draftProjection = {
+    id: 'pull-request-coordination/v1',
+    status: 'passed',
+    pullNumber: 541,
+    draft: true,
+    scope: '#cloud.github-collaboration-proof',
+    authority: 'agentic-canvas-os-remote-ledger',
+    remoteAuthorityRequired: false,
+    remoteAuthorityCheck: 'not-applicable',
+    ...emptyReceipt,
+  }
+  await validateCollaborationRuntimeReport({
+    ...baseReport,
+    policies: { ...baseReport.policies, pullRequestCoordination: draftProjection },
+  })
+
+  const skippedLocalProjection = {
+    ...draftProjection,
+    draft: false,
+    remoteAuthorityCheck: 'skipped',
+  }
+  await validateCollaborationRuntimeReport({
+    ...baseReport,
+    policies: { ...baseReport.policies, pullRequestCoordination: skippedLocalProjection },
+  })
+
+  await assert.rejects(
+    validateCollaborationRuntimeReport({
+      ...baseReport,
+      policies: {
+        ...baseReport.policies,
+        pullRequestCoordination: {
+          ...draftProjection,
+          remoteAuthorityCheck: 'passed',
+          claimId: 'a'.repeat(64),
+          claimDigest: 'b'.repeat(64),
+          ledgerRevision: 'c'.repeat(40),
+          writeSetDigest: 'd'.repeat(64),
+          verificationReceiptDigest: 'e'.repeat(64),
+        },
+      },
+    }),
+    /must be equal to constant/,
+  )
+  await assert.rejects(
+    validateCollaborationRuntimeReport({
+      ...baseReport,
+      policies: {
+        ...baseReport.policies,
+        pullRequestCoordination: {
+          ...skippedLocalProjection,
+          remoteAuthorityRequired: true,
+        },
+      },
+    }),
+    /must be equal to constant/,
+  )
+})
+
 test('artifact validator CLI accepts canonical output and rejects a mutated file', async () => {
   const temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-collaboration-report-'))
   const artifactPath = path.join(temporaryDirectory, 'collaboration-contract-report.json')

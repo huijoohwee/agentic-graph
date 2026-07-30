@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { load } from 'js-yaml'
 import {
   readContract,
@@ -77,8 +78,9 @@ const assertBaseShaIsAncestor = baseSha => {
   if (result.status !== 0) throw new Error(`declared base_sha is not an ancestor of HEAD: ${baseSha}`)
 }
 
-const emptyCloudAuthority = (contract, status) => ({
+const emptyCloudAuthority = (contract, status, required = false) => ({
   authority: contract.coordination.authority,
+  remoteAuthorityRequired: required,
   remoteAuthorityCheck: status,
   claimId: null,
   claimDigest: null,
@@ -87,23 +89,29 @@ const emptyCloudAuthority = (contract, status) => ({
   verificationReceiptDigest: null,
 })
 
-const verifyProtectedCloudAuthority = ({ contract, pullNumber }) => {
-  const repository = String(process.env.KNOWGRPH_REPOSITORY || '').trim()
-  const token = String(process.env.KNOWGRPH_GITHUB_TOKEN || '').trim()
-  const upstreamRoot = String(process.env.KNOWGRPH_AGENTIC_CANVAS_OS_ROOT || '').trim()
-  const required = String(process.env.KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK).toLowerCase() === 'true'
-  const branch = String(process.env.KNOWGRPH_PR_HEAD_REF || '').trim()
-  const baseSha = String(process.env.KNOWGRPH_PR_BASE_SHA || '').trim()
-  const headSha = String(process.env.KNOWGRPH_PR_HEAD_SHA || '').trim()
+export const verifyProtectedCloudAuthority = ({
+  contract,
+  pullNumber,
+  environment = process.env,
+  runner = spawnSync,
+  fileExists = existsSync,
+}) => {
+  const repository = String(environment.KNOWGRPH_REPOSITORY || '').trim()
+  const token = String(environment.KNOWGRPH_GITHUB_TOKEN || '').trim()
+  const upstreamRoot = String(environment.KNOWGRPH_AGENTIC_CANVAS_OS_ROOT || '').trim()
+  const required = String(environment.KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK).toLowerCase() === 'true'
+  const branch = String(environment.KNOWGRPH_PR_HEAD_REF || '').trim()
+  const baseSha = String(environment.KNOWGRPH_PR_BASE_SHA || '').trim()
+  const headSha = String(environment.KNOWGRPH_PR_HEAD_SHA || '').trim()
   if (!repository || !token || !upstreamRoot || !branch || !baseSha || !headSha) {
     if (required) {
       throw new Error('protected cloud authority verification requires repository, token, upstream root, branch, base SHA, and head SHA')
     }
-    return emptyCloudAuthority(contract, 'skipped')
+    return emptyCloudAuthority(contract, 'skipped', required)
   }
 
   const cliPath = path.resolve(upstreamRoot, 'scripts', 'cloud-collaboration.mjs')
-  if (!existsSync(cliPath)) {
+  if (!fileExists(cliPath)) {
     throw new Error('protected cloud authority CLI is unavailable from the pinned Agentic Canvas OS source')
   }
   const request = {
@@ -114,7 +122,7 @@ const verifyProtectedCloudAuthority = ({ contract, pullNumber }) => {
     laneRevision: headSha,
     requiredState: 'review-ready',
   }
-  const result = spawnSync(
+  const result = runner(
     process.execPath,
     [cliPath, 'verify', `--request-json=${JSON.stringify(request)}`, '--json'],
     {
@@ -122,7 +130,7 @@ const verifyProtectedCloudAuthority = ({ contract, pullNumber }) => {
       encoding: 'utf8',
       maxBuffer: 1024 * 1024,
       env: {
-        ...process.env,
+        ...environment,
         GH_TOKEN: token,
         AGENTIC_LEDGER_REPOSITORY: contract.coordination.ledger_repository,
       },
@@ -136,7 +144,7 @@ const verifyProtectedCloudAuthority = ({ contract, pullNumber }) => {
   }
   if (result.status !== 0 || output.ok !== true || output.status !== 'ready') {
     const message = output?.error?.message
-      || output?.findings?.map(finding => finding.code).join(', ')
+      || output?.findings?.map(finding => finding.type).filter(Boolean).join(', ')
       || result.stderr.trim()
       || 'verification failed'
     throw new Error(`protected cloud authority verification failed: ${message}`)
@@ -152,6 +160,7 @@ const verifyProtectedCloudAuthority = ({ contract, pullNumber }) => {
   }
   return {
     authority: contract.coordination.authority,
+    remoteAuthorityRequired: required,
     remoteAuthorityCheck: 'passed',
     claimId: output.claim.claimId,
     claimDigest: output.claimDigest,
@@ -183,7 +192,7 @@ const validatePullRequestCoordination = async contract => {
       pullNumber,
       draft: true,
       scope: null,
-      ...emptyCloudAuthority(contract, 'not-applicable'),
+      ...emptyCloudAuthority(contract, 'not-applicable', false),
     }
   }
   validateTaskBranch(process.env.KNOWGRPH_PR_HEAD_REF, contract, metadata.scope)
@@ -193,7 +202,7 @@ const validatePullRequestCoordination = async contract => {
     throw new Error('pull request base_sha must equal the exact current protected base SHA')
   }
   const cloudAuthority = draft
-    ? emptyCloudAuthority(contract, 'not-applicable')
+    ? emptyCloudAuthority(contract, 'not-applicable', false)
     : verifyProtectedCloudAuthority({ contract, pullNumber })
   return {
     id: 'pull-request-coordination/v1',
@@ -237,4 +246,6 @@ const main = async () => {
   else console.log('[knowgrph] collaboration runtime contract passed')
 }
 
-await main()
+const isMainModule = process.argv[1]
+  && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+if (isMainModule) await main()

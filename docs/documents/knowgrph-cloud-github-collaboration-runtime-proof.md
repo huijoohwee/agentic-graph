@@ -50,7 +50,7 @@ and zero-finding verification receipt
 ## Private Sibling-Repository Lifecycle
 
 The disposable private target was
-`huijoohwee/codex-mcp-smoke-20260529103436`. Its protected source remained
+`huijoohwee/codex-mcp-smoke-20260529103436`. Its canonical default-branch source remained
 `7c0d3b980b3db8977a31fe286567a0e2637ab111`. The proof used one isolated
 branch, one path, and never merged [PR #4](https://github.com/huijoohwee/codex-mcp-smoke-20260529103436/pull/4).
 

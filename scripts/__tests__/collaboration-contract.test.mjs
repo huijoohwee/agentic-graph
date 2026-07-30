@@ -8,6 +8,7 @@ import {
   validateTaskBranch,
 } from '../collaboration-contract.mjs'
 import { findProtectedPushes, parsePrePushEntries } from '../check-pre-push-refs.mjs'
+import { verifyProtectedCloudAuthority } from '../check-collaboration-runtime.mjs'
 import {
   classifyPrePushGate,
   withoutGitLocalEnvironment,
@@ -311,6 +312,155 @@ test('protected cloud ledger is the only shared write-scope authority', async ()
   assert.match(workflowSource, /KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK/)
   assert.match(workflowSource, /KNOWGRPH_AGENTIC_CANVAS_OS_ROOT/)
   assert.doesNotMatch(workflowSource, /KNOWGRPH_REQUIRE_REMOTE_SCOPE_CHECK/)
+})
+
+test('protected cloud authority wrapper returns exact redacted receipts', async () => {
+  const contract = await readContract()
+  const calls = []
+  const environment = {
+    KNOWGRPH_REPOSITORY: 'huijoohwee/knowgrph',
+    KNOWGRPH_GITHUB_TOKEN: 'sensitive-token',
+    KNOWGRPH_AGENTIC_CANVAS_OS_ROOT: '/virtual/agentic-canvas-os',
+    KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK: 'true',
+    KNOWGRPH_PR_HEAD_REF: 'agent/device/cloud-proof',
+    KNOWGRPH_PR_BASE_SHA: 'a'.repeat(40),
+    KNOWGRPH_PR_HEAD_SHA: 'b'.repeat(40),
+  }
+  const cloudResult = {
+    ok: true,
+    status: 'ready',
+    ledgerRevision: 'c'.repeat(40),
+    claimDigest: 'd'.repeat(64),
+    claim: {
+      claimId: 'e'.repeat(64),
+      writeSetDigest: 'f'.repeat(64),
+    },
+    receipt: { receiptDigest: '1'.repeat(64) },
+  }
+  const receipt = verifyProtectedCloudAuthority({
+    contract,
+    pullNumber: 541,
+    environment,
+    fileExists: () => true,
+    runner: (command, args, options) => {
+      calls.push({ command, args, options })
+      return { status: 0, stdout: JSON.stringify(cloudResult), stderr: '' }
+    },
+  })
+
+  assert.equal(receipt.remoteAuthorityRequired, true)
+  assert.equal(receipt.remoteAuthorityCheck, 'passed')
+  assert.equal(receipt.claimId, cloudResult.claim.claimId)
+  assert.equal(receipt.claimDigest, cloudResult.claimDigest)
+  assert.equal(receipt.ledgerRevision, cloudResult.ledgerRevision)
+  assert.equal(receipt.writeSetDigest, cloudResult.claim.writeSetDigest)
+  assert.equal(receipt.verificationReceiptDigest, cloudResult.receipt.receiptDigest)
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].command, process.execPath)
+  assert.equal(calls[0].options.env.GH_TOKEN, 'sensitive-token')
+  assert.equal(JSON.stringify(calls[0].args).includes('sensitive-token'), false)
+  assert.match(calls[0].args.join(' '), /requiredState.*review-ready/)
+})
+
+test('protected cloud authority wrapper preserves typed failure evidence', async () => {
+  const contract = await readContract()
+  const environment = {
+    KNOWGRPH_REPOSITORY: 'huijoohwee/knowgrph',
+    KNOWGRPH_GITHUB_TOKEN: 'token',
+    KNOWGRPH_AGENTIC_CANVAS_OS_ROOT: '/virtual/agentic-canvas-os',
+    KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK: 'true',
+    KNOWGRPH_PR_HEAD_REF: 'agent/device/cloud-proof',
+    KNOWGRPH_PR_BASE_SHA: 'a'.repeat(40),
+    KNOWGRPH_PR_HEAD_SHA: 'b'.repeat(40),
+  }
+  for (const findingType of [
+    'runtime-readiness-unproven',
+    'stale-collaboration-fence',
+    'expired-collaboration-fence',
+    'canonical-base-revision-mismatch',
+    'lane-revision-mismatch',
+    'review-request-mismatch',
+  ]) {
+    assert.throws(
+      () => verifyProtectedCloudAuthority({
+        contract,
+        pullNumber: 541,
+        environment,
+        fileExists: () => true,
+        runner: () => ({
+          status: 1,
+          stdout: JSON.stringify({
+            ok: false,
+            status: 'blocked',
+            findings: [{ type: findingType }],
+          }),
+          stderr: '',
+        }),
+      }),
+      new RegExp(findingType),
+    )
+  }
+})
+
+test('protected cloud authority wrapper fails closed without leaking credentials', async () => {
+  const contract = await readContract()
+  const requiredEnvironment = {
+    KNOWGRPH_GITHUB_TOKEN: 'sensitive-token',
+    KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK: 'true',
+  }
+  assert.throws(
+    () => verifyProtectedCloudAuthority({
+      contract,
+      pullNumber: 541,
+      environment: requiredEnvironment,
+    }),
+    error => {
+      assert.match(error.message, /requires repository, token, upstream root, branch, base SHA, and head SHA/)
+      assert.equal(error.message.includes('sensitive-token'), false)
+      return true
+    },
+  )
+
+  const skipped = verifyProtectedCloudAuthority({
+    contract,
+    pullNumber: 541,
+    environment: { KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK: 'false' },
+  })
+  assert.equal(skipped.remoteAuthorityRequired, false)
+  assert.equal(skipped.remoteAuthorityCheck, 'skipped')
+
+  const completeEnvironment = {
+    KNOWGRPH_REPOSITORY: 'huijoohwee/knowgrph',
+    KNOWGRPH_GITHUB_TOKEN: 'sensitive-token',
+    KNOWGRPH_AGENTIC_CANVAS_OS_ROOT: '/virtual/agentic-canvas-os',
+    KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK: 'true',
+    KNOWGRPH_PR_HEAD_REF: 'agent/device/cloud-proof',
+    KNOWGRPH_PR_BASE_SHA: 'a'.repeat(40),
+    KNOWGRPH_PR_HEAD_SHA: 'b'.repeat(40),
+  }
+  assert.throws(
+    () => verifyProtectedCloudAuthority({
+      contract,
+      pullNumber: 541,
+      environment: completeEnvironment,
+      fileExists: () => false,
+    }),
+    /CLI is unavailable/,
+  )
+  assert.throws(
+    () => verifyProtectedCloudAuthority({
+      contract,
+      pullNumber: 541,
+      environment: completeEnvironment,
+      fileExists: () => true,
+      runner: () => ({ status: 1, stdout: '{', stderr: 'sensitive-token' }),
+    }),
+    error => {
+      assert.match(error.message, /invalid JSON/)
+      assert.equal(error.message.includes('sensitive-token'), false)
+      return true
+    },
+  )
 })
 
 test('pre-push protection is derived from canonical refs', async () => {

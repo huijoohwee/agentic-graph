@@ -155,6 +155,7 @@
             "draft",
             "scope",
             "authority",
+            "remoteAuthorityRequired",
             "remoteAuthorityCheck",
             "claimId",
             "claimDigest",
@@ -251,9 +252,66 @@
                   "type": "null"
                 }
               ]
+            },
+            "remoteAuthorityRequired": {
+              "type": "boolean"
             }
           },
           "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "draft": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "draft"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "remoteAuthorityRequired": {
+                    "const": false
+                  },
+                  "remoteAuthorityCheck": {
+                    "const": "not-applicable"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "remoteAuthorityCheck": {
+                    "enum": [
+                      "passed",
+                      "skipped"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "remoteAuthorityRequired": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "remoteAuthorityRequired"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "draft": {
+                    "const": false
+                  },
+                  "remoteAuthorityCheck": {
+                    "const": "passed"
+                  }
+                }
+              }
+            },
             {
               "if": {
                 "properties": {
