@@ -12,7 +12,7 @@ import {
 } from '@/features/workspace-fs/workspaceSourceRoots'
 import { readWorkspaceInitializationDocsMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
 import { resolveWorkspaceRepoLocalRunReadyBootstrap } from '@/features/workspace-fs/workspaceRunReadyDemos'
-import { resolveKnowgrphWorkspaceSeedsAbsRoot, resolveWorkspaceDocsMirrorLocalRootRequests } from '@/features/workspace-fs/workspaceDocsMirrorLocalRoots'
+import { resolveWorkspaceDocsMirrorLocalRootRequests } from '@/features/workspace-fs/workspaceDocsMirrorLocalRoots'
 import { resetCanonicalPublishedDocsMirrorCacheForTests } from '@/features/workspace-fs/workspaceGithubDocsMirror'
 import { toWorkspaceDocsMirrorPath } from '@/features/workspace-fs/workspaceFsPersistedReconciliation'
 
@@ -103,11 +103,16 @@ export async function testWorkspaceSeedProviderIncludesSiblingAgenticOsDocsMirro
 }
 
 export function testWorkspaceDocsMirrorLocalRootsSelectsSoleAgenticRootWhenPrimaryRootIsAbsent(): void {
-  const canonicalSeedsRoot = resolveKnowgrphWorkspaceSeedsAbsRoot({
-    docsAbsRoot: '/workspace/huijoohwee/docs',
+  const seedOnly = resolveWorkspaceDocsMirrorLocalRootRequests({
+    docsAbsRoot: '',
+    agenticDocsAbsRoot: '',
+    workspaceSeedsReadAbsRoot: '/tmp/knowgrph/docs/workspace-seeds',
   })
-  if (canonicalSeedsRoot !== '/workspace/knowgrph/docs/workspace-seeds') {
-    throw new Error(`expected sibling docs configuration to derive the canonical Knowgrph seed root, got ${canonicalSeedsRoot}`)
+  if (
+    seedOnly.length !== 1
+    || seedOnly[0]?.workspaceRootName !== 'workspace-seeds'
+  ) {
+    throw new Error(`expected the seed read root to remain independent of collaborative docs, got ${JSON.stringify(seedOnly)}`)
   }
   const soleAgenticRoot = resolveWorkspaceDocsMirrorLocalRootRequests({
     docsAbsRoot: '',
@@ -120,7 +125,7 @@ export function testWorkspaceDocsMirrorLocalRootsSelectsSoleAgenticRootWhenPrima
     docsAbsRoot: '/tmp/knowgrph/docs',
     outputDocsAbsRoot: '/tmp/huijoohwee/docs_',
     agenticDocsAbsRoot: '/tmp/agentic-canvas-os/docs',
-    knowgrphWorkspaceSeedsAbsRoot: '/tmp/knowgrph/docs/workspace-seeds',
+    workspaceSeedsReadAbsRoot: '/tmp/knowgrph/docs/workspace-seeds',
   })
   if (combined[0]?.excludedRelPathRoots?.[0] !== 'workspace-seeds') {
     throw new Error(`expected the general docs root to exclude the Knowgrph-owned seed subtree, got ${JSON.stringify(combined)}`)

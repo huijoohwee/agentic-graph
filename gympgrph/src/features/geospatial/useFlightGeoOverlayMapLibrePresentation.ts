@@ -75,6 +75,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   graphRevision: number
   map: any | null
   mapLibreRuntimeEnabled: boolean
+  requiresFlightLifecyclePresentation: boolean
   onPresented?: (presentation: FlightGeoOverlayPresentation) => void
   rootRef: React.RefObject<HTMLElement | null>
   styleRevision: number
@@ -223,11 +224,14 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       // preparation payload; `style.load` replays this apply after handoff.
       const canReuseCommittedStoppedFrame =
         gate.canReuseCommittedStoppedFrame(overlay)
-      if (deferFlightGeoPresentationForBootstrapRecovery(
-        map,
-        overlay,
-        canReuseCommittedStoppedFrame,
-      )) {
+      if (
+        options.requiresFlightLifecyclePresentation
+        && deferFlightGeoPresentationForBootstrapRecovery(
+          map,
+          overlay,
+          canReuseCommittedStoppedFrame,
+        )
+      ) {
         gate.cancel()
         gate.clearCanvas()
         return
@@ -278,7 +282,9 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       // the deterministic tick-zero follow camera and waits for that painter
       // frame. Ready can therefore re-arm its request without another camera
       // transform or GeoJSON worker update.
-      if (cameraApplied) gate.request(overlay)
+      if (cameraApplied && options.requiresFlightLifecyclePresentation) {
+        gate.request(overlay)
+      }
     }
     const scheduleFinalApply = () => {
       if (typeof window === 'undefined') return
@@ -323,6 +329,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     options.graphRevision,
     options.map,
     options.mapLibreRuntimeEnabled,
+    options.requiresFlightLifecyclePresentation,
     options.onPresented,
     options.rootRef,
     captureMapPadding,

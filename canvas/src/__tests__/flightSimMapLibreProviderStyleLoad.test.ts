@@ -108,6 +108,25 @@ test('Flight threads surface-open bootstrap intent into the native map host', ()
   )
 })
 
+test('City aerial inspection keeps the provider basemap outside Flight bootstrap', () => {
+  const host = readFileSync(
+    new URL('../../../gympgrph/src/GeospatialHost.tsx', import.meta.url),
+    'utf8',
+  )
+  const basemap = readFileSync(
+    new URL(
+      '../../../gympgrph/src/features/geospatial/useMapLibreBasemap.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  )
+
+  assert.match(host, /city-aerial-inspection:/)
+  assert.match(host, /flightBootstrapEnabled: !cityAerialInspectionOverlay/)
+  assert.match(host, /requiresFlightLifecyclePresentation: !cityAerialInspectionOverlay/)
+  assert.match(basemap, /flightBootstrapEnabledRef\.current/)
+})
+
 test('runtime basemap fallbacks cannot bypass exact Flight style retention', () => {
   const basemap = readFileSync(
     new URL(

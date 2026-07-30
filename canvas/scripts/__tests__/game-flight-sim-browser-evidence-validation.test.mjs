@@ -2,62 +2,84 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
-  hasExactCityDisposalEvidence,
+  hasExactCityMapLibreSurfaceEvidence,
+  hasExactCityMapRetentionEvidence,
 } from '../lib/game-flight-sim-browser-evidence-validation.mjs'
 
-test('City disposal accepts settled Flight sources while provider tiles remain active', () => {
-  const disposal = {
-    environment: {
-      features: 0,
-      loaded: true,
-      present: true,
-    },
-    flight: {
-      features: 0,
-      loaded: true,
-      present: true,
-    },
-    styleLoaded: false,
-  }
-
-  assert.equal(hasExactCityDisposalEvidence(disposal), true)
+test('City retains the exact MapLibre owner throughout the handoff', () => {
   assert.equal(
-    hasExactCityDisposalEvidence({
-      environment: {
-        features: null,
-        loaded: false,
-        present: false,
-      },
-      flight: {
-        features: null,
-        loaded: false,
-        present: false,
-      },
-      styleLoaded: true,
+    hasExactCityMapRetentionEvidence({
+      sameMap: true,
+      removeCalls: 0,
     }),
     true,
-    'removed owned sources are settled before MapLibre owner disposal',
+    'the provider map must remain the same live instance',
   )
   assert.equal(
-    hasExactCityDisposalEvidence({
-      ...disposal,
-      environment: {
-        ...disposal.environment,
-        loaded: false,
-      },
+    hasExactCityMapRetentionEvidence({
+      sameMap: false,
+      removeCalls: 0,
     }),
     false,
-    'an unsettled owned source must fail closed',
+    'a replacement map must fail closed',
   )
   assert.equal(
-    hasExactCityDisposalEvidence({
-      ...disposal,
-      flight: {
-        features: 0,
-        present: true,
-      },
+    hasExactCityMapRetentionEvidence({
+      sameMap: true,
+      removeCalls: 1,
     }),
     false,
-    'a source without loaded() proof must fail closed',
+    'any provider-map disposal attempt must fail closed',
   )
+})
+
+test('City uses one semantic MapLibre surface with stopped Flight route and aircraft layers', () => {
+  const city = {
+    activeMapPresent: true,
+    aircraftGeometryType: 'Polygon',
+    aircraftLayerType: 'symbol',
+    canvas3dMode: 'xr',
+    cityActive: true,
+    cityMapLibreOwnerCount: 1,
+    cityPanelVisible: true,
+    citySemanticSurfaceActive: true,
+    environmentSourceFeatures: 0,
+    flightActive: false,
+    flightHudCount: 0,
+    flightLayersReady: true,
+    flightSourceFeatures: 7,
+    flightSourcePresent: true,
+    floatingPanelOpen: true,
+    floatingPanelView: 'cityBuilder',
+    geoXrLayerCount: 1,
+    geoXrSurfaceActive: true,
+    geospatialEnabled: true,
+    geospatialPreferenceEnabled: true,
+    hudVisible: false,
+    mapLibreCanvasCount: 1,
+    overlayPhase: 'stopped',
+    overlayRoutePointCount: 5,
+    renderMode: '3d',
+    renderedEnvironmentFeatureCount: 0,
+    renderedFeatureCount: 4,
+    sourceKinds: ['aircraft', 'objective-guide', 'route', 'route-point'],
+    threeCanvasOwnerCount: 0,
+    visibleMapLibreCanvasCount: 1,
+  }
+
+  assert.equal(hasExactCityMapLibreSurfaceEvidence(city), true)
+  for (const [field, value] of [
+    ['citySemanticSurfaceActive', false],
+    ['cityMapLibreOwnerCount', 0],
+    ['threeCanvasOwnerCount', 1],
+    ['flightLayersReady', false],
+    ['overlayPhase', 'ready'],
+    ['sourceKinds', ['aircraft', 'route']],
+  ]) {
+    assert.equal(
+      hasExactCityMapLibreSurfaceEvidence({ ...city, [field]: value }),
+      false,
+      `${field} drift must fail closed`,
+    )
+  }
 })

@@ -9,41 +9,26 @@ const KNOWGRPH_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME = 'workspace-seeds'
 
 const normalizeRoot = (value: unknown): string => String(value || '').trim().replace(/\\/g, '/').replace(/\/+$/, '')
 
-const readAbsoluteParentRoot = (absRoot: string): string => {
-  const parts = normalizeRoot(absRoot).split('/').filter(Boolean)
-  return parts.length > 1 ? `/${parts.slice(0, -1).join('/')}` : ''
-}
-
-export function resolveKnowgrphWorkspaceSeedsAbsRoot(args: {
-  docsAbsRoot: unknown
-  explicitAbsRoot?: unknown
-}): string {
-  const explicitAbsRoot = normalizeRoot(args.explicitAbsRoot)
-  if (explicitAbsRoot) return explicitAbsRoot
-  const docsAbsRoot = normalizeRoot(args.docsAbsRoot)
-  const repositoryRoot = readAbsoluteParentRoot(docsAbsRoot)
-  const githubRoot = readAbsoluteParentRoot(repositoryRoot)
-  return githubRoot ? `${githubRoot}/knowgrph/docs/workspace-seeds` : ''
-}
-
 export function resolveWorkspaceDocsMirrorLocalRootRequests(args: {
   docsAbsRoot: unknown
   outputDocsAbsRoot?: unknown
   agenticDocsAbsRoot: unknown
-  knowgrphWorkspaceSeedsAbsRoot?: unknown
+  workspaceSeedsReadAbsRoot?: unknown
 }): WorkspaceDocsMirrorLocalRootRequest[] {
   const docsAbsRoot = normalizeRoot(args.docsAbsRoot)
   const outputDocsAbsRoot = normalizeRoot(args.outputDocsAbsRoot)
   const agenticDocsAbsRoot = normalizeRoot(args.agenticDocsAbsRoot)
-  const knowgrphWorkspaceSeedsAbsRoot = normalizeRoot(args.knowgrphWorkspaceSeedsAbsRoot)
-  if (!docsAbsRoot) return agenticDocsAbsRoot ? [{ absRoot: agenticDocsAbsRoot }] : []
-  const requests: WorkspaceDocsMirrorLocalRootRequest[] = [{
-    absRoot: docsAbsRoot,
-    ...(knowgrphWorkspaceSeedsAbsRoot ? { excludedRelPathRoots: [KNOWGRPH_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME] } : {}),
-  }]
-  if (knowgrphWorkspaceSeedsAbsRoot) {
+  const workspaceSeedsReadAbsRoot = normalizeRoot(args.workspaceSeedsReadAbsRoot)
+  const requests: WorkspaceDocsMirrorLocalRootRequest[] = []
+  if (docsAbsRoot) {
     requests.push({
-      absRoot: knowgrphWorkspaceSeedsAbsRoot,
+      absRoot: docsAbsRoot,
+      ...(workspaceSeedsReadAbsRoot ? { excludedRelPathRoots: [KNOWGRPH_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME] } : {}),
+    })
+  }
+  if (workspaceSeedsReadAbsRoot) {
+    requests.push({
+      absRoot: workspaceSeedsReadAbsRoot,
       workspaceRootName: KNOWGRPH_WORKSPACE_SEEDS_WORKSPACE_ROOT_NAME,
     })
   }
@@ -51,10 +36,12 @@ export function resolveWorkspaceDocsMirrorLocalRootRequests(args: {
     requests.push({ absRoot: outputDocsAbsRoot, workspaceRootName: 'docs_' })
   }
   if (agenticDocsAbsRoot) {
-    requests.push({
-      absRoot: agenticDocsAbsRoot,
-      workspaceRootName: AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT_NAME,
-    })
+    requests.push(requests.length === 0
+      ? { absRoot: agenticDocsAbsRoot }
+      : {
+          absRoot: agenticDocsAbsRoot,
+          workspaceRootName: AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT_NAME,
+        })
   }
   return requests
 }

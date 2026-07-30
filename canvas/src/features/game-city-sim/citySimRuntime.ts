@@ -219,7 +219,7 @@ async function performOpenCitySimSurface(
     return failSurfaceEntry(
       previous,
       'webgl-unavailable',
-      'City Simulation requires the existing shared WebGL Canvas.',
+      'City Simulation requires the native MapLibre Geo surface.',
       { webglSupported },
     )
   }
@@ -351,6 +351,12 @@ export function openCitySimSurface(
   options: CitySimOpenOptions = {},
 ): Promise<CitySimSnapshot> {
   latestCitySimSurfaceIntent = 'open'
+  if (!snapshot.active && snapshot.lastResult?.operation === 'exit') {
+    publish({
+      lastResult: null,
+      message: 'Opening City Simulation on the native MapLibre Geo+XR surface…',
+    })
+  }
   const opening = performOpenCitySimSurface(options)
   const tail = opening.then(() => undefined, () => undefined)
   citySimSurfaceOpenTail = tail

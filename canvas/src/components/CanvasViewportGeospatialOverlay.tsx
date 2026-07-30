@@ -112,6 +112,7 @@ export type CanvasViewportGeospatialOverlayProps = {
   geospatialModeEnabled: boolean
   graphData: GraphData
   storyboardWidgetPanelsActive: boolean
+  threeOverlayComposed: boolean
 }
 
 const MissingGeospatialOverlayHost = React.memo(function MissingGeospatialOverlayHost(_props: GeospatialOverlayHostProps) {
@@ -146,7 +147,14 @@ const GeospatialOverlayHostLazy = React.lazy(async (): Promise<{ default: React.
 export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewportGeospatialOverlay(
   props: CanvasViewportGeospatialOverlayProps,
 ) {
-  const { active, composedWithXr, geospatialModeEnabled, graphData, storyboardWidgetPanelsActive } = props
+  const {
+    active,
+    composedWithXr,
+    geospatialModeEnabled,
+    graphData,
+    storyboardWidgetPanelsActive,
+    threeOverlayComposed,
+  } = props
   const flightBootstrapRequested = React.useSyncExternalStore(
     subscribeFlightSimGeospatialBootstrapRequest,
     readFlightSimGeospatialBootstrapRequested,
@@ -581,8 +589,12 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
 
   return (
     <section
-      className={`absolute inset-0 ${composedWithXr ? 'z-[5] pointer-events-none' : 'z-[20] pointer-events-auto'} ${active ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+      className={`absolute inset-0 ${threeOverlayComposed ? 'z-[5] pointer-events-none' : 'z-[20] pointer-events-auto'} ${active ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}
+      data-kg-geo-xr-surface={active && composedWithXr ? 'active' : undefined}
+      data-kg-city-maplibre-owner={
+        active && composedWithXr && !threeOverlayComposed ? '1' : undefined
+      }
     >
       <GeospatialOverlayHostLazy
         active={active}
