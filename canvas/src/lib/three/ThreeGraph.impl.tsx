@@ -498,7 +498,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           xrSurface={mode === 'xr'}
         />
         <React.Suspense fallback={null}>
-          {immersiveMediaStageActive ? <ThreeGraphImmersiveMediaStage /> : null}
+          {immersiveMediaStageActive && !geospatialComposite ? <ThreeGraphImmersiveMediaStage /> : null}
           <XrWorldPlacement
             active={mode === 'xr'}
             contentScale={xrWorldContentScale}
