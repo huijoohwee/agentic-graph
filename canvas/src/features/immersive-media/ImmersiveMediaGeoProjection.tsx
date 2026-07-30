@@ -1,6 +1,10 @@
 import React from 'react'
 import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
-import { completeImmersiveMediaTransition } from './immersiveMediaRuntime'
+import {
+  completeImmersiveMediaTransition,
+  setHoveredImmersiveMediaMarker,
+  setSelectedImmersiveMediaMarker,
+} from './immersiveMediaRuntime'
 import type {
   ImmersiveMediaMarker,
   ImmersiveMediaSnapshot,
@@ -141,7 +145,11 @@ export function ImmersiveMediaGeoProjection({
             }}
           />
         ) : null}
-        <figcaption className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold tracking-[0.16em] text-cyan-50 backdrop-blur">
+        <figcaption
+          className="pointer-events-auto absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold tracking-[0.16em] text-cyan-50 backdrop-blur"
+          aria-label="Immersive flight context media"
+          data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
+        >
           IMMERSIVE FLIGHT CONTEXT · {Math.round(snapshot.view.yawDegrees)}° · FOV {Math.round(snapshot.view.fieldOfViewDegrees)}°
         </figcaption>
         <hr
@@ -172,6 +180,7 @@ export function ImmersiveMediaGeoProjection({
             <polygon
               points={polygonPoints}
               fill="rgba(245,158,11,0.06)"
+              pointerEvents="visibleStroke"
               stroke="rgba(251,191,36,0.62)"
               strokeDasharray="1.5 1.5"
               strokeWidth="0.35"
@@ -181,11 +190,17 @@ export function ImmersiveMediaGeoProjection({
         {markers.map(({ edge, left, marker, opacity, top }) => {
           const selected = marker.id === snapshot.selectedMarkerId
           return (
-            <article
+            <button
+              type="button"
               key={marker.id}
-              className="absolute -translate-x-1/2 -translate-y-1/2"
+              className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 border-0 bg-transparent p-0"
               aria-label={`${marker.label} immersive marker${selected ? ', selected' : ''}`}
+              aria-pressed={selected}
+              onClick={() => setSelectedImmersiveMediaMarker(selected ? null : marker.id)}
+              onPointerEnter={() => setHoveredImmersiveMediaMarker(marker.id)}
+              onPointerLeave={() => setHoveredImmersiveMediaMarker(null)}
               style={{ left: `${left}%`, opacity, top: `${top}%` }}
+              data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
               data-kg-immersive-media-geo-marker={marker.id}
               data-kg-immersive-media-geo-marker-selected={selected ? '1' : '0'}
             >
@@ -198,7 +213,7 @@ export function ImmersiveMediaGeoProjection({
               <strong className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-950/60 px-1.5 py-0.5 text-[8px] font-normal text-white/90 backdrop-blur">
                 {edge ? '‹ ' : ''}{marker.label}{edge ? ' ›' : ''}
               </strong>
-            </article>
+            </button>
           )
         })}
         {selectedMarker ? (
