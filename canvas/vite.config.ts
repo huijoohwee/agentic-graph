@@ -6936,6 +6936,7 @@ export default defineConfig(({ command, mode }) => {
                 if (moduleId.includes('/node_modules/d3/')) return 'd3'
                 if (moduleId.includes('/node_modules/lucide-react/')) return 'ui'
                 if (moduleId.includes('/node_modules/zustand/')) return 'ui'
+                if (moduleId.includes('/node_modules/fflate/')) return 'fflate'
                 if (moduleId.includes('/node_modules/monaco-editor/')) return 'monaco'
                 if (moduleId.includes('/node_modules/katex/')) return 'katex'
                 if (moduleId.includes('/node_modules/highlight.js/')) return 'highlightjs'
