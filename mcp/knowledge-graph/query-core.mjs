@@ -25,32 +25,49 @@ function clippedJson(value, maxLength = 2000) {
   try { return JSON.stringify(value).slice(0, maxLength); } catch { return ""; }
 }
 
-const nodeSearchText = (node) => [
-  node.id,
-  node.label,
-  node.type,
-  clippedJson(node.properties),
-  clippedJson(node.metadata, 500),
-].join(" ").toLowerCase();
+const configSearchText = (node) => (
+  String(
+    asRecord(node.properties)["config:searchText"] || "",
+  ).slice(0, 128 * 1024)
+);
 
-const edgeSearchText = (edge, nodeById) => [
-  edge.id,
-  edge.label,
-  nodeById.get(edge.source)?.label,
-  nodeById.get(edge.target)?.label,
-  edge.properties?.["evidence:explanation"],
-  edge.properties?.["evidence:sourcePath"],
-].join(" ").toLowerCase();
+const nodeSearchText = (node) => {
+  return [
+    node.id,
+    node.label,
+    node.type,
+    configSearchText(node),
+    clippedJson(node.properties),
+    clippedJson(node.metadata, 500),
+  ].join(" ").toLowerCase();
+};
+
+const edgeSearchText = (edge, nodeById) => {
+  const targetNode = nodeById.get(edge.target);
+  return [
+    edge.id,
+    edge.label,
+    nodeById.get(edge.source)?.label,
+    targetNode?.label,
+    edge.properties?.["evidence:explanation"],
+    edge.properties?.["evidence:sourcePath"],
+    configSearchText(targetNode),
+  ].join(" ").toLowerCase();
+};
 
 function lexicalScore(text, terms, exactLabel = "") {
   if (!terms.length) return 0;
   let score = 0;
   const normalizedLabel = normalized(exactLabel);
+  const exactTokens = new Set(
+    text.split(/[^\p{L}\p{N}_.$/@-]+/u).filter(Boolean),
+  );
   for (const term of terms) {
     if (normalizedLabel === term) score += 100;
     else if (normalizedLabel.startsWith(term)) score += 30;
     else if (normalizedLabel.includes(term)) score += 15;
-    if (text.includes(term)) score += term.length >= 4 ? 5 : 2;
+    if (exactTokens.has(term)) score += 10;
+    else if (term.length >= 4 && text.includes(term)) score += 5;
   }
   return score;
 }

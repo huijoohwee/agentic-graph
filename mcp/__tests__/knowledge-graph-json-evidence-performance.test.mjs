@@ -14,6 +14,7 @@ import {
   JSON_CONFIG_PARSER_VERSION,
   parseKnowledgeSource,
 } from "../knowledge-graph/parsers.mjs";
+import { queryKnowledgeGraph } from "../knowledge-graph/query-core.mjs";
 import { createKnowledgeGraphRuntime } from "../knowledge-graph/runtime.mjs";
 import {
   readKnowledgeGraphRepositoryIndex,
@@ -145,7 +146,7 @@ test("JSON evidence preserves multiline coordinates, redaction, query, explain, 
   const current = await sourceSnapshot(value, initial);
   assert.equal(current.entry.parserId, JSON_CONFIG_PARSER_ID);
   assert.equal(current.entry.parserVersion, JSON_CONFIG_PARSER_VERSION);
-  assert.match(current.entry.parserVersion, /^1\.1\.0\+typescript-/);
+  assert.match(current.entry.parserVersion, /^1\.2\.0\+typescript-/);
 
   const expectedEvidence = new Map([
     ["service", [2, 11, 3, 4, '"service": <omitted>']],
@@ -222,7 +223,7 @@ test("JSON evidence preserves multiline coordinates, redaction, query, explain, 
   assert.equal(explanation.evidence.excerpt, "apiToken=<redacted>");
   assert.equal(explanation.evidence.excerptHash, sha256("apiToken=<redacted>"));
 
-  const priorVersion = JSON_CONFIG_PARSER_VERSION.replace(/^1\.1\.0/, "1.0.0");
+  const priorVersion = JSON_CONFIG_PARSER_VERSION.replace(/^1\.2\.0/, "1.1.0");
   await publishValidPriorParserSnapshot(value, current, priorVersion);
   const prior = await sourceSnapshot(value, initial);
   assert.equal(prior.entry.parserVersion, priorVersion);
@@ -306,5 +307,226 @@ test("dense minified JSON parsing has a bounded offset-free evidence path", { ti
       assert.equal(error?.details?.stage, "json.property-edges");
       return true;
     },
+  );
+});
+
+test("oversized JSON arrays use deterministic explained AST ranges", { timeout: 15_000 }, async () => {
+  const itemCount = 10_001;
+  const jsonText = `[${Array.from(
+    { length: itemCount },
+    (_, index) => `{"id":${index},"city":"city_${index}","iata":"${index === 0 ? "SIN" : "NONE"}","region":"${index === 1 ? "Wisconsin" : "NONE"}","apiToken":"secret_${index}","a":1,"b":2,"c":3,"d":4,"e":5,"f":6,"g":7,"h":8,"i":9}`,
+  ).join(",")}]`;
+  const source = {
+    relativePath: "test-data/large-array.json",
+    text: jsonText,
+    contentHash: sha256(jsonText),
+    byteSize: Buffer.byteLength(jsonText),
+    kind: "json-config",
+    status: "ready",
+    diagnostics: [],
+  };
+  const first = await parseKnowledgeSource(source);
+  const second = await parseKnowledgeSource(source);
+
+  assert.deepEqual(second, first);
+  assert.equal(first.status, "parsed");
+  assert.equal(first.nodes.filter((node) => node.type === "SourceFile").length, 1);
+  const ranges = first.nodes.filter((node) => node.type === "ConfigItemRange");
+  assert.equal(ranges.length, Math.ceil(itemCount / 1_000));
+  assert.equal(
+    ranges.reduce((count, node) => count + node.properties["config:itemCount"], 0),
+    itemCount,
+  );
+  assert.deepEqual(
+    ranges.map((node) => [
+      node.properties["config:itemStart"],
+      node.properties["config:itemEnd"],
+    ]),
+    Array.from({ length: ranges.length }, (_, index) => [
+      index * 1_000,
+      Math.min(itemCount - 1, ((index + 1) * 1_000) - 1),
+    ]),
+  );
+  assert.ok(ranges.every((node) => (
+    node.properties["config:representation"] === "deterministic-ast-range"
+    && node.properties["config:redacted"] === true
+    && /^[0-9a-f]{64}$/u.test(node.properties["config:integrityDigest"])
+    && node.properties["config:subtreeDigest"] === undefined
+  )));
+  const rangeEdges = first.edges.filter((edge) => edge.label === "hasConfigItemRange");
+  assert.equal(rangeEdges.length, ranges.length);
+  assert.ok(rangeEdges.every((edge) => (
+    edge.label === "hasConfigItemRange"
+    && edge.properties["evidence:ruleId"] === "json.array-range.ast"
+    && edge.properties["evidence:explanation"].includes("redacted sensitive value")
+    && /^[0-9a-f]{64}$/u.test(edge.properties["evidence:sourceDigest"])
+  )));
+  const searchChunks = first.nodes.filter((node) => node.type === "ConfigSearchChunk");
+  const searchText = searchChunks.map(
+    (node) => node.properties["config:searchText"],
+  ).join(" ");
+  assert.ok(searchChunks.length > 0);
+  assert.match(searchText, /city_10000/u);
+  assert.match(searchText, /apiToken/u);
+  assert.doesNotMatch(searchText, /secret_0|secret_10000/u);
+  assert.equal(
+    first.edges.filter((edge) => edge.label === "indexesConfigTokens").length,
+    searchChunks.length,
+  );
+  const shortTokenSearch = queryKnowledgeGraph({
+    ...first,
+    metadata: { knowledgeGraph: { digest: sha256("short-token") } },
+  }, {
+    mode: "search",
+    query: "SIN",
+  });
+  assert.equal(shortTokenSearch.results.nodes.length, 1);
+  assert.equal(shortTokenSearch.results.edges.length, 1);
+  assert.equal(shortTokenSearch.citations.length, 1);
+  assert.match(shortTokenSearch.citations[0].excerpt, /\bSIN\b/u);
+
+  const objectText = `{${Array.from(
+    { length: itemCount },
+    (_, index) => `"item_${index}":{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6,"g":7,"h":8,"i":9}`,
+  ).join(",")}}`;
+  const objectSource = {
+    ...source,
+    relativePath: "test-data/large-object.json",
+    text: objectText,
+    contentHash: sha256(objectText),
+    byteSize: Buffer.byteLength(objectText),
+  };
+  const objectFragment = await parseKnowledgeSource(objectSource);
+  const propertyRanges = objectFragment.nodes.filter(
+    (node) => node.type === "ConfigKeyRange",
+  );
+  assert.equal(propertyRanges.length, Math.ceil(itemCount / 1_000));
+  assert.equal(
+    propertyRanges.reduce(
+      (count, node) => count + node.properties["config:propertyCount"],
+      0,
+    ),
+    itemCount,
+  );
+  const propertyRangeEdges = objectFragment.edges.filter(
+    (edge) => edge.label === "hasConfigKeyRange",
+  );
+  assert.equal(propertyRangeEdges.length, propertyRanges.length);
+  assert.ok(propertyRangeEdges.every((edge) => (
+    edge.label === "hasConfigKeyRange"
+    && edge.properties["evidence:ruleId"] === "json.object-range.ast"
+    && edge.properties["evidence:explanation"].includes("exact local subtree")
+  )));
+  assert.match(
+    objectFragment.nodes
+      .filter((node) => node.type === "ConfigSearchChunk")
+      .map((node) => node.properties["config:searchText"])
+      .join(" "),
+    /item_10000/u,
+  );
+
+  const nestedText = [
+    `{"root":${objectText},`,
+    "// apiToken: commentsecret",
+    '"password":{"apiToken":"low-entropy-secret"},',
+    "/* privateKey: blocksecret */",
+    '"api":{"key":"lowentropy"},"private":{"key":"secondsecret"}}',
+    "// token: trailingsecret",
+  ].join("\n");
+  const nestedFragment = await parseKnowledgeSource({
+    ...source,
+    relativePath: "test-data/large-nested-object.json",
+    text: nestedText,
+    contentHash: sha256(nestedText),
+    byteSize: Buffer.byteLength(nestedText),
+  });
+  const nestedSearch = queryKnowledgeGraph({
+    ...nestedFragment,
+    metadata: { knowledgeGraph: { digest: sha256("nested") } },
+  }, {
+    mode: "search",
+    query: "item_10000",
+  });
+  assert.ok(nestedSearch.results.nodes.length > 0);
+  assert.ok(nestedSearch.results.edges.length > 0);
+  assert.ok(nestedSearch.citations.some((citation) => (
+    citation.excerpt.includes("item_10000")
+  )));
+  const secretSearch = queryKnowledgeGraph({
+    ...nestedFragment,
+    metadata: { knowledgeGraph: { digest: sha256("nested") } },
+  }, {
+    mode: "search",
+    query: "low-entropy-secret",
+  });
+  assert.equal(secretSearch.results.nodes.length, 0);
+  assert.equal(secretSearch.results.edges.length, 0);
+  for (const secret of [
+    "lowentropy",
+    "secondsecret",
+    "commentsecret",
+    "blocksecret",
+    "trailingsecret",
+  ]) {
+    const result = queryKnowledgeGraph({
+      ...nestedFragment,
+      metadata: { knowledgeGraph: { digest: sha256("nested") } },
+    }, {
+      mode: "search",
+      query: secret,
+    });
+    assert.equal(result.results.nodes.length, 0);
+    assert.equal(result.results.edges.length, 0);
+  }
+  const passwordNode = nestedFragment.nodes.find(
+    (node) => node.type === "ConfigKey" && node.properties["config:key"] === "password",
+  );
+  assert.equal(passwordNode.properties["config:redacted"], true);
+  assert.match(passwordNode.properties["config:integrityDigest"], /^[0-9a-f]{64}$/u);
+  assert.equal(passwordNode.properties["config:subtreeDigest"], undefined);
+  for (const key of ["api", "private"]) {
+    const redacted = nestedFragment.nodes.find(
+      (node) => node.type === "ConfigKey" && node.properties["config:key"] === key,
+    );
+    assert.equal(redacted.properties["config:redacted"], true);
+    assert.equal(redacted.properties["config:subtreeDigest"], undefined);
+  }
+});
+
+test("large JSON AST construction is isolated and abortable", { timeout: 10_000 }, async () => {
+  const assertPromptAbort = async (relativePath, jsonText) => {
+    const source = {
+      relativePath,
+      text: jsonText,
+      contentHash: sha256(jsonText),
+      byteSize: Buffer.byteLength(jsonText),
+      kind: "json-config",
+      status: "ready",
+      diagnostics: [],
+    };
+    const controller = new AbortController();
+    const startedAt = performance.now();
+    const parsing = parseKnowledgeSource(source, { abortSignal: controller.signal });
+    setTimeout(() => controller.abort(), 10);
+    await assert.rejects(
+      parsing,
+      (error) => error?.code === "aborted",
+    );
+    assert.ok(
+      performance.now() - startedAt < 1_000,
+      "isolated JSON parser did not honor cancellation promptly",
+    );
+  };
+  await assertPromptAbort(
+    "test-data/abortable-large.json",
+    `{"payload":"${"x".repeat(5 * 1024 * 1024)}"}`,
+  );
+  await assertPromptAbort(
+    "test-data/abortable-dense.json",
+    `[${Array.from({ length: 200_000 }, () => "0").join(",")}]`,
+  );
+  await assertPromptAbort(
+    "test-data/abortable-malformed-dense.json",
+    "{".repeat(200_000),
   );
 });

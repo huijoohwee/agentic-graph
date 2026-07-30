@@ -18,6 +18,11 @@ import {
   BRACE_CODE_PARSER_VERSION,
   parseBraceCodeSource,
 } from "./brace-code-parser.mjs";
+import { compactJsonConfigSource } from "./json-config-compaction.mjs";
+import {
+  runIsolatedJsonParser,
+  shouldIsolateJsonSource,
+} from "./isolated-json-parser.mjs";
 import { compileParserDispatch } from "./parser-generator.mjs";
 import { parseSqlSource, SQL_PARSER_ID, SQL_PARSER_VERSION } from "./sql-parser.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
@@ -38,7 +43,7 @@ export const MARKDOWN_PARSER_ID = "local-markdown-structure";
 export const MARKDOWN_PARSER_VERSION = "1.0.0";
 export const JSON_CONFIG_PARSER_ID = "local-json-config-ast";
 const JSON_TYPESCRIPT_VERSION = String(typescript?.version || "unavailable").replace(/[^A-Za-z0-9._-]+/g, "-");
-export const JSON_CONFIG_PARSER_VERSION = `1.1.0+typescript-${JSON_TYPESCRIPT_VERSION}`;
+export const JSON_CONFIG_PARSER_VERSION = `1.2.0+typescript-${JSON_TYPESCRIPT_VERSION}`;
 export const STRUCTURAL_CONFIG_PARSER_ID = "local-config-structure";
 export const STRUCTURAL_CONFIG_PARSER_VERSION = "1.0.0";
 export const SOURCE_INVENTORY_PARSER_ID = "local-source-inventory";
@@ -297,6 +302,14 @@ function runPythonAstFacts({ pythonBin, sourcePath, text, timeoutMs = 10_000, ab
   });
 }
 
+async function parseJsonConfigSourceWithIsolation(source, options) {
+  if (options.isolatedJsonChild === true
+    || !shouldIsolateJsonSource(source, options)) {
+    return parseJsonConfigSource(source, options);
+  }
+  return runIsolatedJsonParser(source, options);
+}
+
 async function parsePythonSource(source, options) {
   const descriptor = parserDescriptorForSource(source, options);
   let facts;
@@ -493,6 +506,16 @@ function parseJsonConfigSource(source, options) {
   const ts = typescript;
   const sourceFile = ts.parseJsonText(source.relativePath, source.text || "");
   const rootExpression = sourceFile.statements?.[0]?.expression;
+  const compacted = compactJsonConfigSource({
+    descriptor,
+    options,
+    rootExpression,
+    source,
+    sourceFile,
+    sourceNode,
+    typescript: ts,
+  });
+  if (compacted) return compacted;
   const { nodes, edges, addNode, addEdge } = createRetainedGraph(
     options,
     sourceNode,
@@ -694,7 +717,7 @@ const PARSER_DISPATCH = compileParserDispatch(SOURCE_PARSER_REGISTRY, {
   python: parsePythonSource,
   sql: (source, options) => parseSqlSource({ sourcePath: source.relativePath, text: source.text || "", contentHash: source.contentHash, byteSize: source.byteSize }, options),
   markdown: (source, options) => parseMarkdownStructure(source, parserDescriptorForSource(source, options), source.text || "", {}, options),
-  "json-config": parseJsonConfigSource,
+  "json-config": parseJsonConfigSourceWithIsolation,
   "structural-config": parseStructuralConfigSource,
   "brace-code": (source, options) => parseBraceCodeSource({
     sourcePath: source.relativePath,
