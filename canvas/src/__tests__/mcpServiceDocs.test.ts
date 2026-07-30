@@ -17,9 +17,11 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
   const docs = readMcpServiceDocs()
   const required = [
     'id: md:knowgrph-mcp-service-prd-tad',
-    'status: accepted-implemented-baseline',
-    'version: 0.4.21',
-    '**Document Version**: 0.4.21',
+    'doc_type: "Product and Technical Specification"',
+    'local_rung: "dev-proven"',
+    'delivered_rung: "runtime-ready"',
+    'version: 0.4.27',
+    '**Document Version**: 0.4.24',
     '| Remote Worker MCP gateway / pipeline platform | Planned extension | none in repo yet | must not be described as implemented |',
     '| Remote Worker MCP platform | Planned extension | none in repo yet | must not be documented as implemented |',
     'mcp/server.js',
@@ -43,6 +45,7 @@ export function testMcpServiceDocsUseImplementedBaselineContract(): void {
   const stale = [
     'id: md:knowgrph-mcp-service-prd-tad-proposed',
     'status: proposed',
+    'status: accepted-implemented-baseline',
     'Proposed only',
     'Shipped Vs Proposed',
     'proposed future remote MCP',

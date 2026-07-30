@@ -26,7 +26,9 @@ export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
   ].map(readRepoFile).join('\n')
 
   const requiredMiroMindDocTokens = [
-    'status: accepted-implemented-baseline',
+    'doc_type: "Product and Technical Specification"',
+    'local_rung: "dev-proven"',
+    'delivered_rung: "runtime-ready"',
     'Knowgrph now has a repo-accurate MiroMind baseline across the real shipped surfaces.',
     'MainPanel `Integrations` documents and exposes `MiroMind API` through the same shared settings owner used by other providers.',
     'MainPanel Integrations provider discoverability | implemented MiroMind row | one shared-owner MiroMind area',

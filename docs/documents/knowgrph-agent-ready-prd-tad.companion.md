@@ -1,15 +1,19 @@
 ---
-schema: kgc-computing-flow/v1
-id: knowgrph-agent-ready-prd-tad-companion
-version: 1.27.6
-status: implemented
-created: 2026-05-21
-updated: 2026-06-04
-author: airvio / joohwee
-domain: knowgrph
-parent: docs/documents/knowgrph-agent-ready-prd-tad.md
+title: "Knowgrph Agent Ready - Source Of Truth And Requirements Companion"
+id: "md:knowgrph-agent-ready-prd-tad.companion"
+doc_type: "TAD Companion"
+version: "1.27.6"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.contract.evidence"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-agent-ready-prd-tad.companion.md"
+parent: "docs/documents/knowgrph-agent-ready-prd-tad.md"
+schema: "kgc-computing-flow/v1"
 tags: [agent-ready, source-of-truth, requirements, prd, tad]
-frontmatter_contract: required
 ---
 
 # Knowgrph Agent Ready - Source Of Truth And Requirements Companion

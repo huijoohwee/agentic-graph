@@ -1,9 +1,16 @@
 ---
 title: "Knowgrph Markdown SSOT UI Contract"
+id: "md:knowgrph-markdown-ssot-ui-contract-document"
 doc_type: "Document"
-date: "2026-05-27"
+version: "1.0.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.markdown-ssot-ui-contract"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-markdown-ssot-ui-contract-document.md"
 ---
 
 # Knowgrph Markdown SSOT UI Contract

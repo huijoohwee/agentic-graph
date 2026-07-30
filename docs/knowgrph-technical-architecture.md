@@ -1,9 +1,16 @@
 ---
 title: "Knowgrph Technical Architecture"
+id: "md:knowgrph-technical-architecture"
 doc_type: "Generated Registry Surface"
-status: "generated"
+version: "1.0.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.generated.technical-architecture-registry"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/knowgrph-technical-architecture.md"
 canonical_docs_root: "docs/documents"
 generator_owner: "canvas/src/cli/lint-doc.ts"
 ---
@@ -601,7 +608,7 @@ The opening YAML frontmatter block remains the machine SSOT for this generated r
 | `payments.stripe.publishableKey` | string | localStorage |  |  |
 | `payments.stripe.webhookSecret` | string | backendEnv |  |  |
 | `payments.stripe.accountId` | string | localStorage |  |  |
-| `payments.stripe.paywallEnabled` | boolean | localStorage |  |  |
+| `payments.paywallEnabled` | boolean | localStorage |  |  |
 | `payments.stripe.checkoutUrl` | string | store |  |  |
 | `payments.stripe.mcp.serverKey` | string | localStorage |  |  |
 | `payments.stripe.mcp.remoteUrl` | string | localStorage |  |  |

@@ -21,11 +21,16 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
   ].join('\n')
 
   const required = [
-    'id: knowgrph-agent-ready-prd-tad',
-    'status: implemented',
+    'id: "md:knowgrph-agent-ready-prd-tad"',
+    'doc_type: "Product and Technical Specification"',
+    'owner: "cloudflare.pages.agent-ready.surface"',
+    'companion: "docs/documents/knowgrph-agent-ready-prd-tad.companion.md"',
+    'runtime_companion: "docs/documents/knowgrph-agent-ready-prd-tad.runtime.md"',
     '`knowgrph-agent-ready-prd-tad.companion.md`',
     '`knowgrph-agent-ready-prd-tad.runtime.md`',
-    'parent: docs/documents/knowgrph-agent-ready-prd-tad.md',
+    'parent: "docs/documents/knowgrph-agent-ready-prd-tad.md"',
+    'owner: "docs.contract.evidence"',
+    'owner: "docs.runtime.evidence"',
     '{{md:knowgrph-agent-ready-prd-tad}}',
   ]
   required.forEach(snippet => {
@@ -38,4 +43,16 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
   if (docs.includes(staleId)) {
     throw new Error('Expected agent-ready docs to avoid stale proposed document identity')
   }
+
+  const forbidden = [
+    'status: implemented',
+    'created: 2026-05-21',
+    'updated: 2026-05-29',
+    'updated: 2026-05-30',
+  ]
+  forbidden.forEach(snippet => {
+    if (docs.includes(snippet)) {
+      throw new Error(`Expected agent-ready docs to omit stale snippet ${JSON.stringify(snippet)}`)
+    }
+  })
 }

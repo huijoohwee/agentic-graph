@@ -1,13 +1,16 @@
 ---
 title: "Knowgrph - Exa MCP MainPanel Integration PRD/TAD"
 id: "md:knowgrph-exa-mcp-prd-tad"
-author: "joohwee"
-date: "2026-06-03"
-updated: "2026-06-03"
+doc_type: "Product and Technical Specification"
 version: "0.1.0"
-status: "proposed-implementation-contract"
-doc_type: "Combined PRD/TAD"
+date: "2026-07-30"
 lang: "en-US"
+owner: "docs.mcp.exa"
+local_rung: "source-audited"
+delivered_rung: "spec-complete"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-exa-mcp-prd-tad.md"
 kgDocumentSemanticMode: "document"
 kgFrontmatterModeEnabled: true
 kgCanvasSurfaceMode: "2d"
@@ -19,7 +22,6 @@ traceability:
   tad: "TAD-EXA-MCP"
   repo: "huijoohwee/knowgrph"
   feature_surface: "MainPanel MCP"
-  doc_path: "docs/documents/knowgrph-mcp/knowgrph-exa-mcp-prd-tad.md"
 source_references:
   exa_docs_url: "https://exa.ai/docs/reference/exa-mcp"
   exa_docs_markdown_url: "https://exa.ai/docs/reference/exa-mcp.md"

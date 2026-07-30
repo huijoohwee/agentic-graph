@@ -1,21 +1,22 @@
 ---
 title: "Knowgrph — Agentic OS PRD/TAD"
 id: "md:knowgrph-agentic-os-prd-tad"
-author: "airvio / joohwee"
-date: "2026-07-02"
-updated: "2026-07-09"
+doc_type: "Product and Technical Specification"
 version: "0.5.1"
-status: "runtime-ready"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.agentic-os"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-agentic-os-prd-tad.md"
 readiness:
   agentic_os: "implemented — knowgrph.os.status (local + Cloudflare McpAgent) + agentic_canvas_os.docs.invoke (/, @, # dynamic remote grammar via edge cache)"
   ai_agent: "implemented — four-surface MCP + harness contracts"
   mcp_gateway: "implemented — discovery-first federation (no new proxy tier)"
   follow_on: "spec-complete — see knowgrph-agentic-os-follow-on-prd-tad.md"
   video_agent: "runtime-ready — Video_Remix Director render/edit enhancement"
-doc_type: "Combined PRD/TAD"
-lang: "en-US"
-frontmatter_contract: "required"
-domain: "knowgrph"
 orientation: ["solo-dev", "AI-native", "min-viable-max-value", "TCO-zero", "FOSS-first", "token-economical", "harness-first"]
 constraints:
   - "universal"
