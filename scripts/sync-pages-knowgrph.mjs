@@ -418,7 +418,7 @@ const agentReadyRuntimeCopies = [
   [groupPanelContractSource, groupPanelContractTarget],
   [storageEngineMcpContractSource, storageEngineMcpContractTarget],
   ...agentReadyBrowserRuntimeFilenames.map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
-  ...['knowgrphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'flightSimAgentReadyContract.mjs', 'immersiveMediaAgentReadyContract.mjs', 'citySimAgentReadyContract.mjs', 'storageSyncAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'knowgrphVdeoxplnRegistryData.mjs', 'knowgrphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
+  ...['knowgrphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'flightSimAgentReadyContract.mjs', 'immersiveMediaAgentReadyContract.mjs', 'citySimAgentReadyContract.mjs', 'storageSyncAgentReadyContract.mjs', 'importUrlAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'knowgrphVdeoxplnRegistryData.mjs', 'knowgrphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
   ...(await collectGrphSharedRuntimeCopies(agentReadyRuntimeSharedEntries)),
 ]
 const removeEmptyDirs = async (rootDir) => {
