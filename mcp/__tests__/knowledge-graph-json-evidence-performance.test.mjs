@@ -44,6 +44,29 @@ const pointerPath = (value, graphId) => path.join(
   `${graphId.slice("kg:graph:".length)}.json`,
 );
 
+const sourceOffset = (text, line, column) => (
+  text.split("\n").slice(0, line - 1).reduce(
+    (offset, value) => offset + value.length + 1,
+    0,
+  ) + column - 1
+);
+
+const exactEvidenceSlice = (text, edge) => {
+  const properties = edge.properties;
+  return text.slice(
+    sourceOffset(
+      text,
+      properties["evidence:lineStart"],
+      properties["evidence:columnStart"],
+    ),
+    sourceOffset(
+      text,
+      properties["evidence:lineEnd"],
+      properties["evidence:columnEnd"],
+    ),
+  );
+};
+
 async function sourceSnapshot(value, ingest) {
   const graphPointer = pointerPath(value, ingest.graphId);
   const snapshot = await readKnowledgeGraphSnapshot(graphPointer, {
@@ -146,7 +169,7 @@ test("JSON evidence preserves multiline coordinates, redaction, query, explain, 
   const current = await sourceSnapshot(value, initial);
   assert.equal(current.entry.parserId, JSON_CONFIG_PARSER_ID);
   assert.equal(current.entry.parserVersion, JSON_CONFIG_PARSER_VERSION);
-  assert.match(current.entry.parserVersion, /^1\.2\.0\+typescript-/);
+  assert.match(current.entry.parserVersion, /^1\.3\.0\+typescript-/);
 
   const expectedEvidence = new Map([
     ["service", [2, 11, 3, 4, '"service": <omitted>']],
@@ -223,7 +246,7 @@ test("JSON evidence preserves multiline coordinates, redaction, query, explain, 
   assert.equal(explanation.evidence.excerpt, "apiToken=<redacted>");
   assert.equal(explanation.evidence.excerptHash, sha256("apiToken=<redacted>"));
 
-  const priorVersion = JSON_CONFIG_PARSER_VERSION.replace(/^1\.2\.0/, "1.1.0");
+  const priorVersion = JSON_CONFIG_PARSER_VERSION.replace(/^1\.3\.0/, "1.2.0");
   await publishValidPriorParserSnapshot(value, current, priorVersion);
   const prior = await sourceSnapshot(value, initial);
   assert.equal(prior.entry.parserVersion, priorVersion);
@@ -373,6 +396,16 @@ test("oversized JSON arrays use deterministic explained AST ranges", { timeout: 
     first.edges.filter((edge) => edge.label === "indexesConfigTokens").length,
     searchChunks.length,
   );
+  for (const edge of first.edges.filter(
+    (candidate) => candidate.label === "indexesConfigTokens",
+  )) {
+    assert.equal(
+      edge.properties["evidence:excerpt"],
+      exactEvidenceSlice(jsonText, edge),
+    );
+    assert.ok(edge.properties["evidence:excerpt"].length <= 280);
+    assert.doesNotMatch(edge.properties["evidence:excerpt"], /secret_[0-9]+/u);
+  }
   const shortTokenSearch = queryKnowledgeGraph({
     ...first,
     metadata: { knowledgeGraph: { digest: sha256("short-token") } },
@@ -425,6 +458,35 @@ test("oversized JSON arrays use deterministic explained AST ranges", { timeout: 
     /item_10000/u,
   );
 
+  const rangedParentText = `{"target":${objectText},${Array.from(
+    { length: itemCount - 1 },
+    (_, index) => `"padding_${index}":${index}`,
+  ).join(",")}}`;
+  const rangedParentFragment = await parseKnowledgeSource({
+    ...source,
+    relativePath: "test-data/ranged-parent-nested-object.json",
+    text: rangedParentText,
+    contentHash: sha256(rangedParentText),
+    byteSize: Buffer.byteLength(rangedParentText),
+  });
+  const rangedParentIds = new Set(rangedParentFragment.nodes
+    .filter((node) => node.type === "ConfigKeyRange"
+      && node.properties["config:keyPath"].startsWith("[properties:"))
+    .map((node) => node.id));
+  const rangedTarget = rangedParentFragment.nodes.find(
+    (node) => node.type === "ConfigKey"
+      && node.properties["config:keyPath"] === "target",
+  );
+  assert.ok(rangedTarget);
+  const rangedTargetEdge = rangedParentFragment.edges.find(
+    (edge) => edge.label === "hasConfigKey" && edge.target === rangedTarget.id,
+  );
+  assert.ok(rangedParentIds.has(rangedTargetEdge.source));
+  assert.ok(rangedParentFragment.edges.some((edge) => (
+    edge.source === rangedTarget.id
+    && edge.label === "hasConfigKeyRange"
+  )));
+
   const nestedText = [
     `{"root":${objectText},`,
     "// apiToken: commentsecret",
@@ -440,6 +502,44 @@ test("oversized JSON arrays use deterministic explained AST ranges", { timeout: 
     contentHash: sha256(nestedText),
     byteSize: Buffer.byteLength(nestedText),
   });
+  const nestedRoot = nestedFragment.nodes.find(
+    (node) => node.type === "ConfigKey" && node.properties["config:keyPath"] === "root",
+  );
+  assert.ok(nestedRoot);
+  const nestedRanges = nestedFragment.nodes.filter(
+    (node) => node.type === "ConfigKeyRange"
+      && node.properties["config:keyPath"].startsWith("root.[properties:"),
+  );
+  assert.equal(nestedRanges.length, Math.ceil(itemCount / 1_000));
+  const nestedRangeIds = new Set(nestedRanges.map((node) => node.id));
+  assert.ok(nestedFragment.edges.some((edge) => (
+    edge.source === nestedRoot.id
+    && nestedRangeIds.has(edge.target)
+    && edge.label === "hasConfigKeyRange"
+  )));
+  const itemSearchChunk = nestedFragment.nodes.find(
+    (node) => node.type === "ConfigSearchChunk"
+      && node.properties["config:searchText"].includes("item_10000"),
+  );
+  assert.ok(itemSearchChunk);
+  const itemSearchEdge = nestedFragment.edges.find(
+    (edge) => edge.label === "indexesConfigTokens" && edge.target === itemSearchChunk.id,
+  );
+  assert.ok(itemSearchEdge);
+  assert.ok(nestedRangeIds.has(itemSearchEdge.source));
+  for (const edge of nestedFragment.edges.filter(
+    (candidate) => candidate.label === "indexesConfigTokens",
+  )) {
+    assert.equal(
+      edge.properties["evidence:excerpt"],
+      exactEvidenceSlice(nestedText, edge),
+    );
+    assert.ok(edge.properties["evidence:excerpt"].length <= 280);
+    assert.doesNotMatch(
+      edge.properties["evidence:excerpt"],
+      /low-entropy-secret|lowentropy|secondsecret|commentsecret|blocksecret|trailingsecret/u,
+    );
+  }
   const nestedSearch = queryKnowledgeGraph({
     ...nestedFragment,
     metadata: { knowledgeGraph: { digest: sha256("nested") } },

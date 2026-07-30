@@ -145,6 +145,63 @@ function rankedEdges(access, query, limit, checkpoint) {
   return ranked;
 }
 
+const compareRankedEdgeEntries = (left, right) => (
+  right.score - left.score || compareStableStrings(left.edge.id, right.edge.id)
+);
+
+function configSearchSupportEntries(access, rankedNodeEntries, query, checkpoint) {
+  const targetIds = new Set(
+    rankedNodeEntries
+      .filter(({ node }) => node.type === "ConfigSearchChunk")
+      .map(({ node }) => node.id),
+  );
+  if (!targetIds.size) return new Map();
+  const terms = tokenize(query);
+  const supportByTarget = new Map();
+  for (const edge of access.edges) {
+    checkpoint();
+    if (edge.label !== "indexesConfigTokens" || !targetIds.has(edge.target)) continue;
+    const existing = supportByTarget.get(edge.target);
+    if (existing && compareStableStrings(existing.edge.id, edge.id) <= 0) continue;
+    supportByTarget.set(edge.target, {
+      edge,
+      score: lexicalScore(edgeSearchText(edge, access.nodeById), terms, edge.label),
+    });
+  }
+  return supportByTarget;
+}
+
+export function selectPairedSearchEdges({
+  rankedNodeEntries,
+  rankedEdgeEntries,
+  supportByTarget,
+  limit,
+}) {
+  const selectedById = new Map();
+  const candidateEdgeIds = new Set(rankedEdgeEntries.map(({ edge }) => edge.id));
+  for (const { node } of rankedNodeEntries) {
+    if (node.type !== "ConfigSearchChunk") continue;
+    const support = supportByTarget.get(node.id);
+    if (!support) {
+      throw new KnowledgeGraphError(
+        "config_search_support_edge_missing",
+        "A configuration search result is missing its source-backed evidence edge.",
+        { nodeId: node.id },
+      );
+    }
+    candidateEdgeIds.add(support.edge.id);
+    selectedById.set(support.edge.id, support);
+  }
+  for (const entry of rankedEdgeEntries) {
+    if (selectedById.size >= limit) break;
+    if (!selectedById.has(entry.edge.id)) selectedById.set(entry.edge.id, entry);
+  }
+  return {
+    entries: [...selectedById.values()].sort(compareRankedEdgeEntries),
+    truncated: rankedEdgeEntries.length > limit || candidateEdgeIds.size > limit,
+  };
+}
+
 function resolveNode(access, selector, checkpoint) {
   const value = String(selector || "").trim().slice(0, 1000);
   if (!value) throw new KnowledgeGraphError("node_selector_required", "A node id or lexical selector is required.");
@@ -356,9 +413,22 @@ export function queryKnowledgeGraph(artifact, args = {}, options = {}) {
     const rankedNodeEntries = rankedNodes(access, query, limit + 1, checkpoint);
     const rankedEdgeEntries = rankedEdges(access, query, limit + 1, checkpoint);
     const nodesTruncated = rankedNodeEntries.length > limit;
-    const edgesTruncated = rankedEdgeEntries.length > limit;
-    const nodes = rankedNodeEntries.slice(0, limit).map(({ node, score }) => ({ score, node }));
-    const edges = rankedEdgeEntries.slice(0, limit)
+    const selectedNodeEntries = rankedNodeEntries.slice(0, limit);
+    const supportByTarget = configSearchSupportEntries(
+      access,
+      selectedNodeEntries,
+      query,
+      checkpoint,
+    );
+    const pairedEdges = selectPairedSearchEdges({
+      rankedNodeEntries: selectedNodeEntries,
+      rankedEdgeEntries,
+      supportByTarget,
+      limit,
+    });
+    const edgesTruncated = pairedEdges.truncated;
+    const nodes = selectedNodeEntries.map(({ node, score }) => ({ score, node }));
+    const edges = pairedEdges.entries
       .map(({ edge, score }) => ({ score, edge, evidence: evidenceForEdge(edge) }));
     const truncated = nodesTruncated || edgesTruncated;
     return {

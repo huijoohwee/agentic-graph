@@ -96,23 +96,128 @@ function denseJsonValueCountExceedsThreshold(source, options) {
 }
 
 export const shouldIsolateJsonSource = (source, options = {}) => (
-  Number(source?.byteSize || 0) > JSON_ISOLATION_THRESHOLD_BYTES
+  Buffer.byteLength(String(source?.text || ""), "utf8") > JSON_ISOLATION_THRESHOLD_BYTES
   || denseJsonValueCountExceedsThreshold(source, options)
 );
 
-export function runIsolatedJsonParser(source, options) {
+const boundedProcessCode = (value, fallback) => {
+  const candidate = String(value || "").trim();
+  return /^[A-Za-z][A-Za-z0-9._-]{0,63}$/u.test(candidate)
+    ? candidate
+    : fallback;
+};
+
+const isolatedJsonProcessError = ({
+  code = "parser_failed",
+  message,
+  source,
+  stage,
+  causeCategory,
+  causeCode,
+  details = {},
+}) => new KnowledgeGraphError(code, message, {
+  complete: false,
+  sourcePath: source.relativePath,
+  stage,
+  causeCategory,
+  causeCode: boundedProcessCode(causeCode, "unknown"),
+  ...details,
+});
+
+const JSON_WORKER_ERROR_CODES = new Set([
+  "parser_operation_limit_exceeded",
+  "parser_record_limit_exceeded",
+]);
+const JSON_WORKER_STAGES = new Set([
+  "json.compact-item-edges",
+  "json.compact-item-nodes",
+  "json.compact-property-edges",
+  "json.compact-property-nodes",
+  "json.compact-range-edges",
+  "json.compact-range-nodes",
+  "json.compaction-search-index",
+  "json.diagnostics",
+  "json.item-edges",
+  "json.item-nodes",
+  "json.property-edges",
+  "json.property-nodes",
+  "json.search-index-edges",
+  "json.search-index-nodes",
+  "json.source",
+]);
+const JSON_WORKER_NUMERIC_DETAIL_KEYS = [
+  "attemptedOperations",
+  "attemptedRecords",
+  "diagnostics",
+  "edges",
+  "maxEdges",
+  "maxNodes",
+  "maxOperations",
+  "maxRecords",
+  "maxTokenCharacters",
+  "nodes",
+  "records",
+  "retainedRecords",
+  "tokenCharacters",
+];
+
+const isolatedJsonWorkerError = (source, value) => {
+  const raw = value && typeof value === "object" ? value : {};
+  const code = JSON_WORKER_ERROR_CODES.has(raw.code)
+    ? raw.code
+    : "parser_failed";
+  const rawDetails = raw.details && typeof raw.details === "object"
+    ? raw.details
+    : {};
+  const details = {};
+  for (const key of JSON_WORKER_NUMERIC_DETAIL_KEYS) {
+    const numeric = Number(rawDetails[key]);
+    if (Number.isSafeInteger(numeric) && numeric >= 0) details[key] = numeric;
+  }
+  const workerStage = String(rawDetails.stage || "");
+  const stage = JSON_WORKER_STAGES.has(workerStage)
+    ? workerStage
+    : "json.ast-isolated-worker";
+  return isolatedJsonProcessError({
+    code,
+    message: code === "parser_record_limit_exceeded"
+      ? `Isolated JSON parser exceeded a record bound for ${source.relativePath}.`
+      : code === "parser_operation_limit_exceeded"
+        ? `Isolated JSON parser exceeded its traversal bound for ${source.relativePath}.`
+        : `Isolated JSON parser failed for ${source.relativePath}.`,
+    source,
+    stage,
+    causeCategory: "worker-response",
+    causeCode: JSON_WORKER_ERROR_CODES.has(raw.code) ? raw.code : "unknown",
+    details,
+  });
+};
+
+export function runIsolatedJsonParser(source, options, dependencies = {}) {
   return new Promise((resolve, reject) => {
     throwIfAborted(options.abortSignal);
-    const child = spawn(process.execPath, [
-      `--max-old-space-size=${JSON_WORKER_HEAP_MIB}`,
-      JSON_HELPER_PATH,
-    ], {
-      env: jsonWorkerEnvironment(process.env),
-      stdio: ["pipe", "pipe", "pipe"],
-    });
+    let child;
+    try {
+      child = (dependencies.spawn || spawn)(process.execPath, [
+        `--max-old-space-size=${JSON_WORKER_HEAP_MIB}`,
+        JSON_HELPER_PATH,
+      ], {
+        env: jsonWorkerEnvironment(process.env),
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+    } catch (error) {
+      reject(isolatedJsonProcessError({
+        message: `Isolated JSON parser could not be started for ${source.relativePath}.`,
+        source,
+        stage: "json.ast-isolated-spawn",
+        causeCategory: "spawn",
+        causeCode: error?.code,
+      }));
+      return;
+    }
     const stdout = [];
     let stdoutBytes = 0;
-    let stderr = "";
+    let stderrObserved = false;
     let settled = false;
     const finish = (error, value) => {
       if (settled) return;
@@ -138,7 +243,13 @@ export function runIsolatedJsonParser(source, options) {
       ));
     }, Math.max(1, remainingKnowledgeGraphDuration(options.deadline)));
     options.abortSignal?.addEventListener("abort", onAbort, { once: true });
-    child.on("error", (error) => finish(error));
+    child.on("error", (error) => finish(isolatedJsonProcessError({
+      message: `Isolated JSON parser could not be started for ${source.relativePath}.`,
+      source,
+      stage: "json.ast-isolated-spawn",
+      causeCategory: "spawn",
+      causeCode: error?.code,
+    })));
     child.stdout.on("data", (chunk) => {
       stdoutBytes += chunk.length;
       if (stdoutBytes > MAX_ISOLATED_JSON_OUTPUT_BYTES) {
@@ -157,35 +268,31 @@ export function runIsolatedJsonParser(source, options) {
       }
       stdout.push(chunk);
     });
-    child.stderr.on("data", (chunk) => {
-      stderr = `${stderr}${chunk.toString("utf8")}`.slice(-8_192);
-    });
+    child.stderr.on("data", () => { stderrObserved = true; });
     child.on("close", (code, signal) => {
       if (settled) return;
       if (code !== 0) {
-        finish(new KnowledgeGraphError(
-          "parser_resource_limit_exceeded",
-          `Isolated JSON parser exited ${code ?? signal} for ${source.relativePath}: ${stderr.trim()}`,
-          {
-            complete: false,
-            exitCode: code,
+        const exitedWithCode = Number.isInteger(code);
+        finish(isolatedJsonProcessError({
+          code: "parser_resource_limit_exceeded",
+          message: `Isolated JSON parser terminated before producing a result for ${source.relativePath}.`,
+          source,
+          stage: "json.ast-isolated-exit",
+          causeCategory: exitedWithCode ? "nonzero-exit" : "signal",
+          causeCode: exitedWithCode ? `exit-${code}` : signal,
+          details: {
+            exitCode: exitedWithCode ? code : null,
             heapLimitMiB: JSON_WORKER_HEAP_MIB,
-            signal: signal || null,
-            sourcePath: source.relativePath,
+            signal: signal ? boundedProcessCode(signal, "unknown") : null,
+            stderrObserved,
           },
-        ));
+        }));
         return;
       }
       try {
         const result = JSON.parse(Buffer.concat(stdout, stdoutBytes).toString("utf8"));
         if (result?.ok === true) finish(null, result.fragment);
-        else {
-          finish(new KnowledgeGraphError(
-            String(result?.error?.code || "parser_failed"),
-            String(result?.error?.message || `JSON parser failed for ${source.relativePath}.`),
-            result?.error?.details,
-          ));
-        }
+        else finish(isolatedJsonWorkerError(source, result?.error));
       } catch {
         finish(new KnowledgeGraphError(
           "parser_failed",
@@ -221,10 +328,29 @@ export function runIsolatedJsonParser(source, options) {
     const prefix = Buffer.allocUnsafe(4);
     prefix.writeUInt32BE(header.length);
     child.stdin.on("error", (error) => {
-      if (!settled) finish(error);
+      if (settled) return;
+      child.kill("SIGKILL");
+      finish(isolatedJsonProcessError({
+        message: `Isolated JSON parser input channel failed for ${source.relativePath}.`,
+        source,
+        stage: "json.ast-isolated-input",
+        causeCategory: "stdin",
+        causeCode: error?.code,
+      }));
     });
-    child.stdin.write(prefix);
-    child.stdin.write(header);
-    child.stdin.end(String(text || ""), "utf8");
+    try {
+      child.stdin.write(prefix);
+      child.stdin.write(header);
+      child.stdin.end(String(text || ""), "utf8");
+    } catch (error) {
+      child.kill("SIGKILL");
+      finish(isolatedJsonProcessError({
+        message: `Isolated JSON parser input channel failed for ${source.relativePath}.`,
+        source,
+        stage: "json.ast-isolated-input",
+        causeCategory: "stdin",
+        causeCode: error?.code,
+      }));
+    }
   });
 }
