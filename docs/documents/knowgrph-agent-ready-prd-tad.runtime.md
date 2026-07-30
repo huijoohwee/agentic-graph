@@ -83,7 +83,7 @@ belong to the install contract's sole endpoint Invocation Register and a non-own
 | Surface | Source owner | Contract | Local rung | Delivered rung |
 |---|---|---|---|---|
 | Pages HTTP MCP | `cloudflare/pages/knowgrph-agent-ready.mjs` | exactly 7 read-only tools | `spec-complete` | `undocumented` |
-| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` plus shared contract | exactly 41 tools: 30 read-only and 11 guarded controls | `spec-complete` | `undocumented` |
+| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` plus shared contract | exactly 42 tools: 30 read-only and 12 guarded controls | `spec-complete` | `undocumented` |
 | Local stdio MCP | `mcp/server.js`, `mcp/local-tool-contract.js` | broad descriptor/executor catalog; configuration-gated per tool | `spec-complete` | `undocumented` |
 | Control-plane MCP | `cloudflare/workers/knowgrph-mcp/tool-registry.mjs` | separate 10-tool registry | `spec-complete` | `undocumented` |
 | Source materialization | `canvas/src/features/source-files/` and parser owners | source-backed workspace/canvas path | `spec-complete` | `undocumented` |
@@ -97,7 +97,7 @@ control-plane Worker.
 | Contract | End state | Failure behavior |
 |---|---|---|
 | Public-read | only the seven owned read tools are described and invoked | unsupported/mutating request rejected |
-| Embedded | current 41-tool contract is registered page-locally | unsupported page capability returns typed unavailable state |
+| Embedded | current 42-tool contract is registered page-locally | unsupported page capability returns typed unavailable state |
 | Local stdio | descriptor and executor availability are reported separately | missing adapter/credential fails closed |
 | Control-plane | ten-tool registry is protected by bearer authorization and MCP session semantics | missing runtime secret yields unavailable; invalid bearer yields unauthorized |
 | Structured content | validated content reaches the existing source/workspace/canvas owner | invalid content never bypasses parsing/validation |
@@ -107,7 +107,7 @@ control-plane Worker.
 | VCC | End state | Named check | Constraint | Recorded result | Local rung | Delivered rung |
 |---|---|---|---|---|---|---|
 | VCC-AR-1 | Pages contract reports exactly seven read-only tools | `npm run agent-ready:check` | zero spend-bearing public-read tools | not recorded for this revision | `spec-complete` | `undocumented` |
-| VCC-AR-2 | browser contract reports exactly 41 tools split 30/11 | `npm test` | controls remain page-local and guarded | not recorded | `spec-complete` | `undocumented` |
+| VCC-AR-2 | browser contract reports exactly 42 tools split 30/12 | `npm test` | controls remain page-local and guarded | not recorded | `spec-complete` | `undocumented` |
 | VCC-AR-3 | Worker registry reports exactly ten tools and bearer/session tests pass | `npm run runtime:test` | no delivery inference | not recorded | `spec-complete` | `undocumented` |
 | VCC-AR-4 | valid structured content uses the existing workspace/canvas apply path | `npm test` | no second graph pipeline | not recorded | `spec-complete` | `undocumented` |
 | VCC-AR-5 | exact delivered revision and surface pass live verification | protected release receipt | source checks cannot satisfy it | not recorded | `spec-complete` | `undocumented` |

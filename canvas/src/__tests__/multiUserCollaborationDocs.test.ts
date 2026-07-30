@@ -13,6 +13,7 @@ export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(
     'canvas/src/features/panels/mainPanelTabs.ts',
     'canvas/src/features/panels/views/CollaborationView.tsx',
     'canvas/src/features/collaboration/useKnowgrphStorageCollaborationRuntime.ts',
+    'canvas/src/lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx',
     'canvas/src/lib/storage/knowgrphStorageCanvasRoomClient.ts',
     'cloudflare/workers/knowgrph-storage/canvasSyncRoom.ts',
     'cloudflare/workers/knowgrph-storage/index.ts',
@@ -54,6 +55,7 @@ export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(
   const requiredOwnerTokens = [
     "key: 'collaboration'",
     'useKnowgrphStorageCollaborationRuntime',
+    'setActiveTextProgrammatic: effectiveContent.effectiveSetActiveText',
     'buildKnowgrphStorageCanvasRoomWebSocketUrl',
     'Workspace room connected',
     'Connect Room',

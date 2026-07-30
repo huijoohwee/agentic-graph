@@ -37,6 +37,8 @@ export type WorkspaceWebsiteImportProgress = {
 export type WorkspaceFileSelection = FileList | ReadonlyArray<File> | null
 
 export type WorkspaceBridgeImportResult = {
+  handled?: boolean
+  error?: string
   createdPaths?: string[]
   removedPaths?: string[]
   websiteImportSummary?: WorkspaceWebsiteImportSummary

@@ -287,6 +287,14 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
     await mod.testLaunchImportUrlFallsBackWhenBridgeCreatesNoWorkspacePath()
   })
+  await execTest(results, 'workspace.import.url.launchBridgeSuccess', async () => {
+    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
+    await mod.testLaunchImportUrlSkipsFallbackWhenBridgeCreatesWorkspacePath()
+  })
+  await execTest(results, 'workspace.import.url.launchBridgeHandled', async () => {
+    const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
+    await mod.testLaunchImportUrlSkipsFallbackWhenBridgeHandledWithoutWorkspacePath()
+  })
   await execTest(results, 'workspace.import.xrSpatialCapture.launchLocalFilesBridgeFallback', async () => {
     const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
     await mod.testLaunchImportLocalFilesFallsBackWhenBridgeRejects()

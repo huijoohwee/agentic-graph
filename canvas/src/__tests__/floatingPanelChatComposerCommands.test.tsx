@@ -1,5 +1,5 @@
-import { parseChatIngestUrlCommand } from '@/features/chat/chatCommandRegistry'
 import { buildChatInvocationSystemPrompt, parseChatInvocationDirectives } from '@/features/chat/chatInvocationRegistry'
+import { parseNativeImportUrlInvocation } from '@/features/chat/nativeImportUrlInvocation'
 import { buildKnowgrphVdeoxplnChatSystemPrompt, buildKnowgrphVdeoxplnRoutingPlan } from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
 import {
   AGENTIC_OS_DOCS_GITHUB_ROOT_URL,
@@ -44,16 +44,16 @@ export function testFloatingPanelChatComposerTriggerRangesStayInlineAndNeutral()
   const invocationReplacement = replaceChatComposerTrigger({ text: 'Recall #memory.sea  next', trigger: invocation, replacement: '#memory.search ' })
   if (invocationReplacement.text !== 'Recall #memory.search next') throw new Error(`expected shared # token insertion to normalize trailing spacing, got ${JSON.stringify(invocationReplacement)}`)
 }
-export function testFloatingPanelChatIngestCommandUsesSharedRegistryParser() {
-  const parsed = parseChatIngestUrlCommand('/ingest-url https://example.com/source.md')
+export function testFloatingPanelChatIngestCommandUsesCanonicalNativeParser() {
+  const parsed = parseNativeImportUrlInvocation('/ingest-url @url:https://example.com/source.md @reference-policy #canvas')
   if (parsed?.url !== 'https://example.com/source.md') {
     throw new Error(`expected canonical ingest command parsing, got ${JSON.stringify(parsed)}`)
   }
-  if (parseChatIngestUrlCommand('ingest-url https://example.com/source.md') !== null) {
-    throw new Error('expected URL ingest parsing to require the canonical slash command')
+  if (parseNativeImportUrlInvocation('/ingest-url https://example.com/source.md') !== null) {
+    throw new Error('expected the legacy direct-URL ingest shape to remain rejected')
   }
-  if (parseChatIngestUrlCommand('/ingest-url not-a-url') !== null) {
-    throw new Error('expected invalid ingest command URL to stay rejected')
+  if (parseNativeImportUrlInvocation('/ingest-url @url:https://example.com/source.md @reference-policy #canvas extra') !== null) {
+    throw new Error('expected extra invocation operands to remain rejected')
   }
 }
 export function testFloatingPanelChatMemoryInvocationBuildsExternalRuntimeContract() {

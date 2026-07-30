@@ -4,6 +4,7 @@ import { hashSignatureParts } from '@/lib/hash/signature'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import type { GraphData } from '@/lib/graph/types'
 import type { SourceFile } from '@/hooks/store/types'
+import { NATIVE_IMPORT_URL_INVOCATION_TEMPLATE } from '../nativeImportUrlInvocation'
 
 type ChatSurfaceNode = {
   label?: unknown
@@ -273,7 +274,7 @@ export const createFloatingPanelChatQuickActions = (args: {
   addAction({
     id: 'ingest-url',
     label: '/ingest-url',
-    prompt: '/ingest-url ',
+    prompt: NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
   })
   return actions
 }

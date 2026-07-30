@@ -365,7 +365,7 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         preferPathResolvedText: true,
         cacheRef: resolvedTextCacheRef,
       })
-      if (!shouldHydrateStableWorkspaceSelectionText({
+      const shouldHydrateStableText = shouldHydrateStableWorkspaceSelectionText({
         activePath: path,
         activeEntryKind,
         activeDocumentKey,
@@ -373,16 +373,19 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         nextText,
         lastLoadedPath: args.lastLoadedRef.current?.path || null,
         userEditedActiveText: args.userEditedActiveTextRef.current === true,
-      }) && !shouldApplyStableWorkspaceSelectionToCanvas({
+      })
+      const shouldApplyStableCanvas = shouldApplyStableWorkspaceSelectionToCanvas({
         activePath: path,
         activeEntryKind,
         activeDocumentKey,
         nextText,
+        userEditedActiveText: args.userEditedActiveTextRef.current === true,
         markdownDocumentName: args.markdownDocumentName,
         markdownDocumentText: args.markdownDocumentText,
         graphDataSource: args.graphDataSource,
         canvas2dRenderer: args.canvas2dRenderer,
-      })) {
+      })
+      if (!shouldHydrateStableText && !shouldApplyStableCanvas) {
         return
       }
       if (cancelled || args.activePath !== path) return

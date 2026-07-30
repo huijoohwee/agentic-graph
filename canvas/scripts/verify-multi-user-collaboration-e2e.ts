@@ -47,6 +47,9 @@ type BrowserStoreSnapshot = {
   markdownDocumentName: string
   markdownDocumentText: string
   markdownWorkspaceIndexingInFlight: boolean
+  editorDocumentKey: string
+  editorLiveMarkdownText: string
+  editorPersistedMarkdownText: string
   sessionPhase: string
   statusText: string
   errorText: string
@@ -150,13 +153,18 @@ async function readBrowserStoreSnapshot(page: Page): Promise<BrowserStoreSnapsho
   return await page.evaluate(async () => {
     const graphStoreModule = await import('/src/hooks/useGraphStore.ts')
     const collaborationStoreModule = await import('/src/features/collaboration/p2pCollaborationStore.ts')
+    const localSurfaceModule = await import('/src/features/agent-ready/browserLocalSurfaceSnapshots.ts')
     const graphState = graphStoreModule.useGraphStore.getState()
     const collaborationState = collaborationStoreModule.useP2PCollaborationStore.getState()
+    const editorWorkspace = localSurfaceModule.readLocalEditorWorkspaceSurfaceSnapshot()
     const peers = Array.isArray(collaborationState.peers) ? collaborationState.peers : []
     return {
       markdownDocumentName: String(graphState.markdownDocumentName || ''),
       markdownDocumentText: String(graphState.markdownDocumentText || ''),
       markdownWorkspaceIndexingInFlight: graphState.markdownWorkspaceIndexingInFlight === true,
+      editorDocumentKey: String(editorWorkspace?.activeDocumentKey || ''),
+      editorLiveMarkdownText: String(editorWorkspace?.liveMarkdownText || ''),
+      editorPersistedMarkdownText: String(editorWorkspace?.persistedMarkdownText || ''),
       sessionPhase: String(collaborationState.phase || ''),
       statusText: String(collaborationState.statusText || ''),
       errorText: String(collaborationState.errorText || ''),
@@ -254,6 +262,25 @@ async function readMainPanelText(page: Page): Promise<string> {
   return await page.getByRole('complementary', { name: 'Main panel', exact: true }).innerText()
 }
 
+function summarizeBrowserStoreSnapshot(snapshot: BrowserStoreSnapshot): Record<string, unknown> {
+  return {
+    markdownDocumentName: snapshot.markdownDocumentName,
+    markdownDocumentTextLength: snapshot.markdownDocumentText.length,
+    markdownDocumentHasMarker: snapshot.markdownDocumentText.includes(MARKER),
+    markdownWorkspaceIndexingInFlight: snapshot.markdownWorkspaceIndexingInFlight,
+    editorDocumentKey: snapshot.editorDocumentKey,
+    editorLiveMarkdownTextLength: snapshot.editorLiveMarkdownText.length,
+    editorLiveMarkdownHasMarker: snapshot.editorLiveMarkdownText.includes(MARKER),
+    editorPersistedMarkdownTextLength: snapshot.editorPersistedMarkdownText.length,
+    editorPersistedMarkdownHasMarker: snapshot.editorPersistedMarkdownText.includes(MARKER),
+    sessionPhase: snapshot.sessionPhase,
+    statusText: snapshot.statusText,
+    errorText: snapshot.errorText,
+    peerCount: snapshot.peerCount,
+    connectedPeerCount: snapshot.connectedPeerCount,
+  }
+}
+
 async function waitForPageCondition(page: Page, label: string, predicate: (snapshot: BrowserStoreSnapshot) => boolean): Promise<BrowserStoreSnapshot> {
   const startedAt = Date.now()
   let lastSnapshot = await readBrowserStoreSnapshot(page)
@@ -262,7 +289,7 @@ async function waitForPageCondition(page: Page, label: string, predicate: (snaps
     if (predicate(lastSnapshot)) return lastSnapshot
     await page.waitForTimeout(500)
   }
-  throw new Error(`${label} timed out: ${JSON.stringify(lastSnapshot)}`)
+  throw new Error(`${label} timed out: ${JSON.stringify(summarizeBrowserStoreSnapshot(lastSnapshot))}`)
 }
 
 async function connectAuthenticatedRoom(page: Page): Promise<void> {
@@ -343,12 +370,27 @@ async function appendMarkerThroughActiveEditor(page: Page, marker: string): Prom
     throw new Error(`expected one active Markdown editor surface, got ${editorSurfaceCount}`)
   }
   await editorSurface.click()
-  const editorFocused = await page.evaluate(() => {
+  const editorInput = page.locator('.kg-markdown-editor-pane .monaco-editor .inputarea').first()
+  await editorInput.waitFor({ state: 'attached', timeout: 30_000 })
+  await editorInput.focus()
+  const readEditorFocusState = async () => page.evaluate(() => {
     const editorRoot = document.querySelector('.kg-markdown-editor-pane .monaco-editor')
-    return Boolean(document.activeElement && editorRoot?.contains(document.activeElement))
+    const editorInput = editorRoot?.querySelector('.inputarea')
+    return {
+      focused: document.activeElement === editorInput,
+      activeElementClass: String(document.activeElement?.className || ''),
+      ariaReadOnly: String(editorInput?.getAttribute('aria-readonly') || ''),
+      readOnly: editorInput instanceof HTMLTextAreaElement ? editorInput.readOnly : null,
+    }
   })
-  if (!editorFocused) throw new Error('active Markdown editor did not acquire keyboard focus')
+  const initialFocusState = await readEditorFocusState()
+  if (!initialFocusState.focused) throw new Error(`active Markdown editor did not acquire keyboard focus: ${JSON.stringify(initialFocusState)}`)
+  if (initialFocusState.ariaReadOnly === 'true' || initialFocusState.readOnly === true) {
+    throw new Error(`active Markdown editor is read-only: ${JSON.stringify(initialFocusState)}`)
+  }
   await page.keyboard.press(process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End')
+  const terminalFocusState = await readEditorFocusState()
+  if (!terminalFocusState.focused) throw new Error(`active Markdown editor lost keyboard focus: ${JSON.stringify(terminalFocusState)}`)
   await page.keyboard.insertText(`\n${marker}\n`)
 }
 
@@ -453,8 +495,16 @@ async function main(): Promise<void> {
       waitForPageCondition(guestPage, 'guest peer roster', snapshot => snapshot.connectedPeerCount >= 2),
     ])
     await assertRoomStatus(WORKER_URL, ownerConnectedSnapshot.markdownDocumentName)
+    // Both peers publish their baseline snapshot as they connect. Let that bounded
+    // exchange drain before proving a post-connection user edit.
+    await guestPage.waitForTimeout(1_000)
 
     await appendMarkerThroughActiveEditor(guestPage, MARKER)
+    await waitForPageCondition(
+      guestPage,
+      'guest editor marker insertion',
+      snapshot => snapshot.editorLiveMarkdownText.includes(MARKER),
+    )
 
     const guestSnapshot = await waitForPageCondition(
       guestPage,

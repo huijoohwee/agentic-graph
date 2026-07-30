@@ -469,7 +469,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     activeDocumentKey: selectionState.activeDocumentKey,
     activeText: effectiveContent.effectiveActiveText,
     setActiveMarkdownDocument,
-    setActiveTextProgrammatic,
+    setActiveTextProgrammatic: effectiveContent.effectiveSetActiveText,
     revealLineInEditor: interactionState.revealLineInEditor,
   })
   const viewShell = useMarkdownWorkspaceViewShell({

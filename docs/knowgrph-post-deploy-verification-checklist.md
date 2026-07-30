@@ -170,19 +170,19 @@ the exact Worker revision, bindings, and target. A Pages publication or the
 This section checks app WebMCP and does not change Pages or Worker results.
 
 - [ ] Record the exact app revision and runtime target.
-- [ ] Discover exactly 41 unique app tools.
-- [ ] Classify exactly 30 as read-only and 11 as guarded controls.
+- [ ] Discover exactly 42 unique app tools.
+- [ ] Classify exactly 30 as read-only and 12 as guarded controls.
 - [ ] Confirm a missing runtime owner or approval returns unavailable/denied.
 - [ ] Confirm no browser control appears in the Pages seven-tool result.
 
 | VCC | Exact invocable check | Recorded result | Tested revision and target | Lane | Pass/fail |
 |---|---|---|---|---|---|
-| `VCC-DELIVERY-WEBMCP-01` — 41 tools split 30/11 | | | | delivery | |
+| `VCC-DELIVERY-WEBMCP-01` — 42 tools split 30/12 | | | | delivery | |
 
 ### Cross-document consistency
 
 - [ ] The overview, service PRD/TAD, companion, agent-ready pair, install
-      contract, and onboarding index use the same 7 / 41 (30 + 11) / 10 counts.
+      contract, and onboarding index use the same 7 / 42 (30 + 12) / 10 counts.
 - [ ] Every status value is one Readiness Ladder rung.
 - [ ] Local and delivered rungs are recorded separately.
 - [ ] No document treats a source file or blank checklist as evidence.

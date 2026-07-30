@@ -8,6 +8,7 @@ import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes
 import { normalizeInvocationTokenSpacing } from '@/lib/markdown/invocationTokens'
 import { tryActivateVideoAgentDemoPreset } from './videoAgentDemoPresetSubmit'
 import { tryActivateNativeCrawlerInvocation } from '../nativeCrawlerInvocation'
+import { tryActivateNativeImportUrlInvocation } from '../nativeImportUrlInvocation'
 import { tryActivateVoiceStudioInvocation } from '@/features/voice-studio/voiceStudioInvocation'
 import { tryActivateGeospatialInvocation } from './geospatialInvocationSubmit'
 
@@ -36,6 +37,7 @@ export const useFloatingPanelChatSubmit = (
     if (await activateGeospatialInvocation({ input: trimmed, submitArgs: args })) return
     if (await tryActivateVideoAgentDemoPreset({ input: trimmed, submitArgs: args })) return
     if (await tryActivateVoiceStudioInvocation({ input: trimmed, submitArgs: args })) return
+    if (await tryActivateNativeImportUrlInvocation({ input: trimmed, submitArgs: args })) return
     if (await tryActivateNativeCrawlerInvocation({ input: trimmed, submitArgs: args })) return
     const requestUrl = resolveRequestUrlOrSetError({
       chatModel: args.chatModel,

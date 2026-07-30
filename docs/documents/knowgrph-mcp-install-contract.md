@@ -45,7 +45,7 @@ separate deployment from Pages and requires separate delivery evidence.
 |---|---|---|
 | Search, fetch, source-file/shared-document reading, or surface inspection | Pages HTTP MCP | Browser controls, local stdio tools, or Worker execution |
 | Remote status, orchestration, or other Worker registry capability | Remote Worker MCP | That discovery guarantees the downstream harness, approval, or credential |
-| Browser-local inspection/control | App WebMCP, documented in the service contract | That the HTTP endpoints expose all 41 browser tools |
+| Browser-local inspection/control | App WebMCP, documented in the service contract | That the HTTP endpoints expose all 42 browser tools |
 | Broad local integration | Local stdio MCP | That every discovered tool is configured or remotely available |
 
 ### Generic client sequence — Pages read surface

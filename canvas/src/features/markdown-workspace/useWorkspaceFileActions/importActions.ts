@@ -21,7 +21,7 @@ import {
   importWorkspaceUrl,
 } from '../workspaceImport'
 import type { WorkspaceImportResult } from '../workspaceImport/types'
-import type { WorkspaceFileSelection, WorkspaceImportActionsCtx } from './types'
+import type { WorkspaceBridgeImportResult, WorkspaceFileSelection, WorkspaceImportActionsCtx } from './types'
 import { summarizeCorpusImportManifest } from '@/features/queryable-corpus/sourceFilesCorpusManifest'
 import { inferCorpusMediaKind } from '@/features/queryable-corpus/corpusGraph'
 import { registerStrybldrImageFiles } from '@/features/strybldr/strybldrImageFileRegistry'
@@ -357,6 +357,7 @@ export function useWorkspaceImportActions(args: {
         ? `Importing URL (${getWorkspaceUrlImportCanvasRendererLabel(selectedCanvas2dRenderer)})`
         : 'Importing URL'
       const jobId = (importJobRef.current += 1)
+      let bridgeResult: WorkspaceBridgeImportResult = { handled: true }
       status.setStatusProgress(importKindLabel, null, null, null, null, { busy: true })
       useGraphStore.getState().pushUiLog({ kind: 'neutral', message: `Import URL started: ${url}`, source: 'workspace:importUrl' })
       try {
@@ -413,7 +414,12 @@ export function useWorkspaceImportActions(args: {
             },
           })
         }))
-        if (importJobRef.current !== jobId) return
+        bridgeResult = {
+          handled: true,
+          createdPaths: res.createdPaths,
+          removedPaths: res.removedPaths,
+        }
+        if (importJobRef.current !== jobId) return bridgeResult
         const summary = formatWorkspaceImportSummary('Imported URL', res)
         const applyToGraph = typeof res.applyToGraph === 'boolean'
           ? res.applyToGraph
@@ -421,7 +427,7 @@ export function useWorkspaceImportActions(args: {
               fs,
               createdPaths: res.createdPaths,
             })
-        if (importJobRef.current !== jobId) return
+        if (importJobRef.current !== jobId) return bridgeResult
         const { createdPath, sourceUrl, jsonSourceText } = await finalizeWorkspaceImportCommit({
           fs,
           result: res,
@@ -446,11 +452,15 @@ export function useWorkspaceImportActions(args: {
           message: `Import URL finished: ${summary.imported} imported${summary.suffix}${summary.failureSuffix}`,
           source: 'workspace:importUrl',
         })
+        return bridgeResult
       } catch (e) {
-        if (importJobRef.current !== jobId) return
         const msg = String((e as { message?: unknown })?.message ?? e)
+        if (importJobRef.current !== jobId) {
+          return { ...bridgeResult, error: msg }
+        }
         status.setStatusError(`Import failed: ${msg}`)
         useGraphStore.getState().pushUiLog({ kind: 'error', message: `Import URL failed: ${msg}`, source: 'workspace:importUrl' })
+        return { ...bridgeResult, error: msg }
       }
     },
     [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, status],

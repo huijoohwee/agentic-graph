@@ -174,7 +174,7 @@ export async function importUrlFallback(args: {
   canvas2dRenderer?: WorkspaceUrlImportCanvasRendererId | null
   documentSemanticMode?: WorkspaceUrlImportDocumentModeId | null
   pushUiToast: PushUiToast
-}): Promise<void> {
+}): Promise<void | WorkspaceBridgeImportResult> {
   const url = normalizeWorkspaceImportUrlInput(args.urlRaw)
   if (!url) {
     args.pushUiToast({
@@ -245,14 +245,17 @@ export async function importUrlFallback(args: {
       ttlMs: UI_TOAST_TTL_MS.actionFeedback,
       dismissible: false,
     })
+    return { createdPaths: res.createdPaths, removedPaths: res.removedPaths }
   } catch (e) {
+    const error = String((e as { message?: unknown })?.message ?? e)
     args.pushUiToast({
       id: toastId,
       kind: 'error',
-      message: `Import failed: ${String((e as { message?: unknown })?.message ?? e)}`,
+      message: `Import failed: ${error}`,
       ttlMs: UI_TOAST_TTL_MS.warningExtended,
       dismissible: true,
     })
+    return { handled: true, error }
   }
 }
 
