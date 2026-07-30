@@ -2,7 +2,7 @@ import { applyRemoteDocumentToMarkdownWorkspace } from '@/lib/markdown-workspace
 
 export async function testMarkdownWorkspaceCollaborationRuntimeBridgeCommitsProgrammaticTextForActiveDocument() {
   const setActiveMarkdownDocumentCalls: Array<Record<string, unknown>> = []
-  const setActiveTextProgrammaticCalls: string[] = []
+  const setActiveTextCalls: string[] = []
 
   const applied = await applyRemoteDocumentToMarkdownWorkspace({
     activeDocumentKey: 'docs/workspace-readme.md',
@@ -12,8 +12,8 @@ export async function testMarkdownWorkspaceCollaborationRuntimeBridgeCommitsProg
       setActiveMarkdownDocumentCalls.push(payload as unknown as Record<string, unknown>)
       return true
     },
-    setActiveTextProgrammatic: text => {
-      setActiveTextProgrammaticCalls.push(text)
+    setActiveText: text => {
+      setActiveTextCalls.push(text)
     },
   })
 
@@ -23,21 +23,21 @@ export async function testMarkdownWorkspaceCollaborationRuntimeBridgeCommitsProg
   if (setActiveMarkdownDocumentCalls.length !== 1) {
     throw new Error(`expected canonical markdown apply to run once, got ${setActiveMarkdownDocumentCalls.length}`)
   }
-  if (setActiveTextProgrammaticCalls.length !== 1 || setActiveTextProgrammaticCalls[0] !== '# Remote sync\n') {
-    throw new Error(`expected active editor text to receive the remote sync payload, got ${JSON.stringify(setActiveTextProgrammaticCalls)}`)
+  if (setActiveTextCalls.length !== 1 || setActiveTextCalls[0] !== '# Remote sync\n') {
+    throw new Error(`expected active editor text to receive the remote sync payload, got ${JSON.stringify(setActiveTextCalls)}`)
   }
 }
 
 export async function testMarkdownWorkspaceCollaborationRuntimeBridgeSkipsProgrammaticTextForInactiveOrRejectedApply() {
-  const setActiveTextProgrammaticCalls: string[] = []
+  const setActiveTextCalls: string[] = []
 
   const rejectedApply = await applyRemoteDocumentToMarkdownWorkspace({
     activeDocumentKey: 'docs/workspace-readme.md',
     documentKey: 'docs/workspace-readme.md',
     text: '# Rejected remote sync\n',
     setActiveMarkdownDocument: async () => false,
-    setActiveTextProgrammatic: text => {
-      setActiveTextProgrammaticCalls.push(text)
+    setActiveText: text => {
+      setActiveTextCalls.push(text)
     },
   })
   if (rejectedApply !== false) {
@@ -49,13 +49,12 @@ export async function testMarkdownWorkspaceCollaborationRuntimeBridgeSkipsProgra
     documentKey: 'docs/other.md',
     text: '# Other remote sync\n',
     setActiveMarkdownDocument: async () => true,
-    setActiveTextProgrammatic: text => {
-      setActiveTextProgrammaticCalls.push(text)
+    setActiveText: text => {
+      setActiveTextCalls.push(text)
     },
   })
 
-  if (setActiveTextProgrammaticCalls.length !== 0) {
-    throw new Error(`expected programmatic editor text sync to stay scoped to successful active-document applies, got ${JSON.stringify(setActiveTextProgrammaticCalls)}`)
+  if (setActiveTextCalls.length !== 0) {
+    throw new Error(`expected editor text sync to stay scoped to successful active-document applies, got ${JSON.stringify(setActiveTextCalls)}`)
   }
 }
-

@@ -14,14 +14,14 @@ type SetActiveMarkdownDocument = (args: {
   normalizeMermaidMmd?: boolean
 }) => Promise<boolean>
 
-type SetActiveTextProgrammatic = (text: string) => void
+type SetActiveText = (text: string) => void
 
 export async function applyRemoteDocumentToMarkdownWorkspace(args: {
   activeDocumentKey: string | null
   documentKey: string
   text: string
   setActiveMarkdownDocument: SetActiveMarkdownDocument
-  setActiveTextProgrammatic: SetActiveTextProgrammatic
+  setActiveText: SetActiveText
 }): Promise<boolean> {
   const applied = await args.setActiveMarkdownDocument({
     name: args.documentKey,
@@ -31,7 +31,7 @@ export async function applyRemoteDocumentToMarkdownWorkspace(args: {
     applyViewPreset: false,
   })
   if (applied !== false && String(args.activeDocumentKey || '').trim() === String(args.documentKey || '').trim()) {
-    args.setActiveTextProgrammatic(args.text)
+    args.setActiveText(args.text)
   }
   return applied
 }
@@ -41,7 +41,7 @@ export const useMarkdownWorkspaceCollaborationRuntimeBridge = (args: {
   activeDocumentKey: string | null
   activeText: string
   setActiveMarkdownDocument: SetActiveMarkdownDocument
-  setActiveTextProgrammatic: SetActiveTextProgrammatic
+  setActiveText: SetActiveText
   revealLineInEditor: (line: number) => void
 }) => {
   const runtimeArgs = {
@@ -54,7 +54,7 @@ export const useMarkdownWorkspaceCollaborationRuntimeBridge = (args: {
         documentKey,
         text,
         setActiveMarkdownDocument: args.setActiveMarkdownDocument,
-        setActiveTextProgrammatic: args.setActiveTextProgrammatic,
+        setActiveText: args.setActiveText,
       })
     },
     revealRemoteLine: line => {
