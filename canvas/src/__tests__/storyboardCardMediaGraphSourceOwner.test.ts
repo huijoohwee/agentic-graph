@@ -6,6 +6,7 @@ import {
   shouldUpdateStoryboardCardMediaGraphActiveDocument,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSourceOwner'
 import { resolveStoryboardCardMediaGraphPersistenceText } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSource'
+import { readSubgraphs } from '@/lib/graph/subgraphs'
 
 const OWNER_PATH = '/docs/workflow.md'
 const GENERATED_PATH = '/docs/generated-output.md'
@@ -134,7 +135,18 @@ export function testStoryboardCardMediaGraphPersistenceProjectsComposedOwnerLaye
       { id: 'n2', type: 'RichMediaPanel', label: 'Generated output', properties: { output: 'Composed owner result' } },
     ],
     edges: [{ id: 'output-edge', source: 'owner-layer::n1', target: 'n2', label: '', properties: {} }],
-    metadata: { sourceLayerComposition: 'compose', graphDataRevision: 9 },
+    metadata: {
+      sourceLayerComposition: 'compose',
+      graphDataRevision: 9,
+      'kg:subgraphs': [{
+        id: 'workflow-materialization:n1',
+        label: 'Generated outputs',
+        memberNodeIds: ['owner-layer::n1', 'n2'],
+        parentId: null,
+        kind: 'subgraph',
+        autoBounds: true,
+      }],
+    },
   }
   const ownerResolution = resolveStoryboardCardMediaGraphSourceOwner({
     state: {
@@ -156,6 +168,7 @@ export function testStoryboardCardMediaGraphPersistenceProjectsComposedOwnerLaye
   })
   const sourceNodeIds = sourceGraph.nodes.map(node => String(node.id || '')).sort()
   const sourceEdge = sourceGraph.edges[0]
+  const sourceSubgraph = readSubgraphs(sourceGraph)[0]
   const syncedOwnerText = String(synced.sourceFiles.find(file => file.id === 'owner-layer')?.text || '')
   const otherSourceText = String(synced.sourceFiles.find(file => file.id === 'other-layer')?.text || '')
   if (
@@ -164,6 +177,9 @@ export function testStoryboardCardMediaGraphPersistenceProjectsComposedOwnerLaye
     || String((sourceGraph.metadata as Record<string, unknown>)?.kind || '') !== 'frontmatter-flow'
     || sourceEdge?.source !== 'n1'
     || sourceEdge?.target !== 'n2'
+    || sourceSubgraph?.id !== 'workflow-materialization:n1'
+    || sourceSubgraph.autoBounds !== true
+    || sourceSubgraph.memberNodeIds.join('|') !== 'n1|n2'
     || !synced.accepted
     || !syncedOwnerText.includes('Composed owner result')
     || !syncedOwnerText.includes('flow:')

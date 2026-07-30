@@ -8,6 +8,7 @@ type FrontmatterFlowSubgraphKeyInput = {
   memberNodeIds: string[]
   parentId?: string | null
   kind?: 'subgraph' | 'cluster'
+  autoBounds?: boolean
 }
 
 const asString = (v: unknown): string => typeof v === 'string' ? v.trim() : ''
@@ -41,7 +42,7 @@ export function buildFrontmatterFlowSourceLayerHash(args: {
         .filter(Boolean)
         .sort()
         .join(',')
-      return `${asString(row?.id)}|${asString(row?.label)}|${asString(row?.kind)}|${asString(row?.parentId)}|${memberSig}`
+      return `${asString(row?.id)}|${asString(row?.label)}|${asString(row?.kind)}|autoBounds:${row?.autoBounds === true ? 'true' : 'false'}|${asString(row?.parentId)}|${memberSig}`
     })
     .filter(Boolean)
     .sort()

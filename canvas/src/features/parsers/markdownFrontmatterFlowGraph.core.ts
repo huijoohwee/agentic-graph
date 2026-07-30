@@ -1,4 +1,5 @@
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
+import type { UserSubgraph } from '@/lib/graph/subgraphs'
 import { splitMarkdownLines, parseMarkdownFrontmatter } from '@/lib/markdown'
 import { hashText } from '@/features/parsers/hash'
 import {
@@ -1625,7 +1626,7 @@ export function tryParseMarkdownFrontmatterFlowGraph(
   })
 
   const clusters = hasFlowDerivedNodes
-    ? { clusterNodes: [], subgraphs: [] as Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'cluster' }> }
+    ? { clusterNodes: [], subgraphs: [] as UserSubgraph[] }
     : normalizeClusters(metaRecord, normalized.nodes)
   if (!hasFlowDerivedNodes) {
     for (let i = 0; i < clusters.clusterNodes.length; i += 1) {
