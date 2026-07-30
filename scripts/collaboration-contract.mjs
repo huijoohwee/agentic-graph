@@ -62,7 +62,21 @@ export const validateContract = contract => {
   }
   if (typeof coordination.branch_pattern !== 'string') throw new Error('coordination.branch_pattern is required')
   new RegExp(coordination.branch_pattern)
-  if (coordination.unique_active_scope !== true) throw new Error('coordination.unique_active_scope must be true')
+  if (coordination.authority !== 'agentic-canvas-os-remote-ledger') {
+    throw new Error('coordination.authority must be agentic-canvas-os-remote-ledger')
+  }
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(coordination.ledger_repository || '')) {
+    throw new Error('coordination.ledger_repository must be an owner/repository name')
+  }
+  if (coordination.ledger_ref !== 'refs/heads/agentic/collaboration-ledger') {
+    throw new Error('coordination.ledger_ref must be refs/heads/agentic/collaboration-ledger')
+  }
+  if (coordination.overlap_policy !== 'normalized-write-scope') {
+    throw new Error('coordination.overlap_policy must be normalized-write-scope')
+  }
+  if (coordination.local_projection !== 'pull-request-and-device-lease') {
+    throw new Error('coordination.local_projection must be pull-request-and-device-lease')
+  }
   requireStringArray(coordination.protected_push_refs, 'coordination.protected_push_refs')
 
   const localDevelopment = contract.local_development
@@ -183,29 +197,6 @@ export const validateTaskBranch = (branchName, contract, semanticScope) => {
     }
   }
   return branchName
-}
-
-export const collectActiveScopeClaims = (pullRequests, contract) => {
-  const claims = []
-  for (const pullRequest of Array.isArray(pullRequests) ? pullRequests : []) {
-    const metadata = validatePullRequestMetadata(pullRequest?.body, contract, { allowIncomplete: true })
-    if (!metadata) continue
-    claims.push({
-      actor: metadata.actor,
-      branch: pullRequest?.head?.ref || '',
-      number: Number(pullRequest?.number),
-      scope: metadata.scope,
-      url: pullRequest?.html_url || '',
-    })
-  }
-  return claims
-}
-
-export const findActiveScopeConflicts = (pullRequests, currentPullNumber, contract) => {
-  const claims = collectActiveScopeClaims(pullRequests, contract)
-  const current = claims.find(claim => claim.number === Number(currentPullNumber))
-  if (!current) return []
-  return claims.filter(claim => claim.number !== current.number && claim.scope === current.scope)
 }
 
 export const selectAffectedCommands = (changedPaths, contract) => {

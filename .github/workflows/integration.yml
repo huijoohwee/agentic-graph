@@ -32,6 +32,9 @@ jobs:
       KNOWGRPH_SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
       KNOWGRPH_TARGET_REF: ${{ github.event_name == 'merge_group' && 'refs/heads/main' || format('refs/heads/{0}', github.event.pull_request.head.ref || github.ref_name) }}
       KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: ${{ github.workspace }}/agentic-canvas-os/docs
+      KNOWGRPH_AGENTIC_CANVAS_OS_ROOT: ${{ github.workspace }}/agentic-canvas-os
+      KNOWGRPH_PR_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+      KNOWGRPH_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - name: Checkout knowgrph
@@ -112,11 +115,11 @@ jobs:
         working-directory: knowgrph
         run: npm run --silent release:manifest:check -- "$RUNNER_TEMP/immutable-release-manifest-proof/immutable-release-manifest.json" --source-sha "$KNOWGRPH_SOURCE_REVISION" --docs-sha "${{ steps.agentic_canvas_os_docs.outputs.ref }}" --digest "${{ steps.immutable_manifest.outputs.digest }}"
 
-      - name: Validate cross-device scope ownership
+      - name: Validate protected cloud writer authority
         working-directory: knowgrph
         env:
           KNOWGRPH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          KNOWGRPH_REQUIRE_REMOTE_SCOPE_CHECK: ${{ github.event_name == 'pull_request' }}
+          KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
         run: npm run --silent collaboration:contract:check -- --json > collaboration-contract-report.json
 
       - name: Upload collaboration contract report

@@ -2,7 +2,7 @@
 title: "Knowgrph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 26
+contract_version: 27
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 invocation:
@@ -14,7 +14,11 @@ invocation:
 coordination:
   base_branch: "main"
   branch_pattern: "^agent/[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
-  unique_active_scope: true
+  authority: "agentic-canvas-os-remote-ledger"
+  ledger_repository: "huijoohwee/agentic-canvas-os"
+  ledger_ref: "refs/heads/agentic/collaboration-ledger"
+  overlap_policy: "normalized-write-scope"
+  local_projection: "pull-request-and-device-lease"
   protected_push_refs: ["refs/heads/main"]
 local_development:
   canonical_mode: "canonical"
@@ -116,12 +120,13 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 ## Ownership And Conflict Prevention
 
 - Each device keeps one canonical main worktree and may add registered task worktrees detached from fetched `origin/main` before claim.
-- One task owns each writable task worktree, branch, semantic scope, lease, and draft pull request.
-- One semantic scope has one active implementation owner.
-- Every task branch uses `agent/<device>/<semantic-scope>` and starts from the declared `origin/main` commit.
-- If two active changes claim the same scope, serialize them or explicitly hand over ownership before further edits.
+- One task owns each writable task worktree, branch, local lease, and draft pull request; one branch still has one writer at a time.
+- The protected Agentic Canvas OS remote ledger owns shared write-scope authority. It admits concurrent claims only when their normalized declared write sets are disjoint.
+- Semantic scope labels communicate intent and shape branch names; labels do not replace path-level collision checks or serialize otherwise disjoint work.
+- Every task branch uses `agent/<device>/<semantic-scope>` and starts from the exact protected `origin/main` revision recorded by its cloud claim.
+- If current cloud claims overlap, stop both writers until one claim is released or an exact fenced handoff succeeds.
 - Resolve conflicts in the highest upstream source owner, then regenerate derived artifacts.
-- Do not commit lease files, lock records, or other coordination state that creates repository churn. Pull request metadata carries live task ownership.
+- Do not commit local lease files or lock records. Pull-request metadata and local leases project the current remote fence; neither can override it.
 
 ## Continuous Integration
 
@@ -135,7 +140,7 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 - Superseded runs on the same pull request are cancelled. Merge-group and protected-main runs use their exact `github.sha` as the concurrency identity, so a delayed older push cannot cancel the required check for a newer protected revision.
 - `runtime:check` owns the focused runtime/property suite, including the native `ecs/` core and MCP lifecycle, external invocation-dictionary validation, canonical stage topology, deterministic mock replay, and zero-spend proof.
 - `npm run collaboration:contract:check` auto-discovers every workflow that references Agentic Canvas OS and requires dependency installation, the contract resolver, and the checkout in order; checkout repository and immutable ref must come from resolver outputs, never copied workflow YAML. The resolver-owned checkout must fetch full Git history so history-derived proof provenance remains network-free and fail-closed.
-- `npm run --silent collaboration:contract:check -- --json` validates against `schemas/collaboration-runtime-report.v1.schema.json` before emitting `knowgrph.collaboration-runtime-report/v1`, including deployment isolation, discovered runtime-docs workflow consumers and checks, pull-request coordination status, and the canonical `sourceRevision`. Integration sets that revision to the pull-request head SHA, or `github.sha` for a push, so a merge-ref checkout cannot obscure which source commit produced the artifact. Local runs derive it from `git rev-parse HEAD`. Integration uploads the report as the seven-day `collaboration-contract-report` artifact, downloads it, and runs `collaboration:report:check -- --json` against the stored file. The resulting machine envelope is uploaded as the separate seven-day `collaboration-validation-result` artifact, downloaded, and revalidated against both its schema and the downloaded report before the canonical gate. The report validator accepts either an artifact path or `-` for UTF-8 JSON from stdin; the optional leading `--json` emits structured success identity on stdout or a structured failure envelope on stderr with a nonzero exit code. Every success envelope carries the report's `sourceRevision` and `reportDigest`, the lowercase SHA-256 of the exact report bytes including whitespace and final newline. Every JSON envelope is validated against `schemas/collaboration-runtime-validation.v1.schema.json` before it is written, so contract drift fails closed.
+- `npm run --silent collaboration:contract:check -- --json` validates against `schemas/collaboration-runtime-report.v1.schema.json` before emitting `knowgrph.collaboration-runtime-report/v1`, including deployment isolation, discovered runtime-docs workflow consumers and checks, pull-request coordination status, protected remote-ledger authority receipts, and the canonical `sourceRevision`. Integration sets that revision to the pull-request head SHA, or `github.sha` for a push, so a merge-ref checkout cannot obscure which source commit produced the artifact. Local runs derive it from `git rev-parse HEAD`. Integration uploads the report as the seven-day `collaboration-contract-report` artifact, downloads it, and runs `collaboration:report:check -- --json` against the stored file. The resulting machine envelope is uploaded as the separate seven-day `collaboration-validation-result` artifact, downloaded, and revalidated against both its schema and the downloaded report before the canonical gate. The report validator accepts either an artifact path or `-` for UTF-8 JSON from stdin; the optional leading `--json` emits structured success identity on stdout or a structured failure envelope on stderr with a nonzero exit code. Every success envelope carries the report's `sourceRevision` and `reportDigest`, the lowercase SHA-256 of the exact report bytes including whitespace and final newline. Every JSON envelope is validated against `schemas/collaboration-runtime-validation.v1.schema.json` before it is written, so contract drift fails closed.
 - `npm run --silent collaboration:report:schema` emits that exact canonical Draft 2020-12 schema through the shared cached loader, so external machine consumers do not need repository-path knowledge or a copied schema.
 - `npm run --silent collaboration:report:check-schema` emits the exact canonical Draft 2020-12 validation-envelope schema through the shared cached loader. Both success and failure identify themselves as `knowgrph.collaboration-runtime-validation/v1`; consumers must use this command or the upstream schema rather than copying the envelope or error taxonomy.
 - `npm run --silent collaboration:report:check-result -- <validation.json|-> [--report <report.json>] [--source-revision <40-hex-sha>]` validates a stored success or failure envelope from a file or UTF-8 stdin. `--report` requires a success envelope and compares both `reportDigest` and `sourceRevision` with the exact report. `--source-revision` requires `--report` and additionally binds that pair to the expected CI head SHA, preventing a valid pair from another commit from being replayed. It reports only human confirmation and exit status, avoiding recursive validator envelopes while giving external consumers a path-independent round-trip check.
@@ -145,11 +150,11 @@ Draft pull requests may omit the declaration while their scope is being formed. 
 
 ## Cross-Device Handoff
 
-1. The sending device stops its Codex task, validates, commits, and pushes.
-2. The receiving device fetches the remote and verifies the sender's exact commit SHA.
+1. The sending device stops its writer, validates, commits, pushes, and advances or hands off the exact protected cloud fence.
+2. The receiving device fetches the remote, verifies the sender's exact commit SHA, and reacquires that current fence before writing.
 3. Only one device may resume writes to that branch; the sender remains stopped.
-4. A non-fast-forward update or duplicate active semantic scope halts both tasks for explicit upstream resolution.
-5. GitHub pull-request metadata is the live coordination registry; shared folders and committed lease files are forbidden.
+4. A non-fast-forward update, stale fence, or overlapping normalized write set halts both tasks for explicit upstream resolution.
+5. The protected remote ledger is live authority. GitHub pull-request metadata and local leases are projections; shared folders and committed lease files are forbidden.
 
 When the canonical checkout remains owned by another semantic scope, an already-created stopped-writer commit may be published with `npm run release:publish:immutable -- --source-sha <sha> --target-ref refs/heads/agent/<device>/<scope> --expected-remote-sha <sha>`. The command compares the expected remote head, proves fast-forward ancestry, validates the source commit and tree without switching or staging, reads the exact pinned docs SHA from that source object, writes the immutable app/docs/catalog manifest only under `.git`, performs the bounded repository-owned object gate, pushes the exact object, and verifies the remote ref. Manual hook bypass, force, raw refspec push, missing manifest, or authored-file mutation is forbidden.
 

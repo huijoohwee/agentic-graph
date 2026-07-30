@@ -63,13 +63,17 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 | Contracts | Keep one canonical contract | - [ ] Update the canonical contract before mirrors; preserve one authority; forbid duplicate contract ownership across repos |
 | Docs | Update canonical files first | - [ ] Edit `knowgrph/docs/**` before schema mirrors unless a directive states otherwise; keep docs canonical; forbid mirror-first changes |
 | Generators | Fix emission logic once | - [ ] Patch generators or source inputs once and rerun them; remove duplicate edits; forbid repeated patching of emitted outputs |
-| Ownership | Assign one path per concern | - [ ] Declare one owner for runtime, docs, schema, and publish surfaces; maintain accountability; forbid overlapping edit authority |
+| Ownership | Reserve one normalized write set per claim | - [ ] Use the protected remote ledger for shared authority; permit disjoint concurrent claims; forbid overlapping current write sets |
 | Publish | Sync from source | - [ ] Treat publish mirrors as outputs from source workflows; preserve deploy integrity; forbid hand-maintained deploy mirrors |
 | Redirects | Derive routes from sync logic | - [ ] Update redirects through sync code and rerun the sync workflow; preserve determinism; forbid direct copied-route edits |
 | Scope | Merge one concern at a time | - [ ] Keep one directive or tightly related concern per merge; maintain MECE scope; forbid mixed conflict batches |
 | Validation | Verify focused diffs | - [ ] Run focused build, sync, lint, or test commands after conflict resolution; confirm correctness; forbid untested merge resolutions |
 
 ---
+
+## Cloud Writer Authority
+
+The Agentic Canvas OS protected remote ledger is the only shared writer authority. Pull requests retain review, branch, and integration evidence; local leases retain checkout fencing and offline projections. Neither substitutes for a current remote claim. Concurrent work is valid when exact declared write sets are disjoint, even when semantic labels are related. One branch still has one writer, and any stale fence, branch drift, or path overlap fails closed.
 
 ## Ownership Matrix
 
@@ -88,7 +92,7 @@ Each mantra and table row stays alphabetized so merge decisions remain easy to s
 1. Fetch `origin`, preserve one clean registered `main` runtime worktree, and create each `agent/<device>/<semantic-scope>` from `origin/main` in its own detached registered task worktree.
 2. Declare one action, semantic scope, actor, and exact `origin/main` base SHA in pull-request frontmatter.
 3. Classify each conflicting file as `runtime-source`, `canonical-doc`, `generator`, `schema-mirror`, or `publish-mirror`.
-4. Stop parallel implementation when another active change owns the same semantic scope; serialize or explicitly hand over ownership.
+4. Query the protected remote ledger; continue disjoint normalized write sets concurrently, but stop and serialize or hand off any overlap.
 5. Merge the upstream owner first and decide the intended behavior there.
 6. Remove stale duplicate paths, legacy routes, or parallel copy instead of preserving both sides.
 7. Regenerate emitted docs, redirects, or publish assets from the merged upstream state.
@@ -246,7 +250,7 @@ Use `npm run hygiene:audit` before broad refactors to list all current source-bu
 - [ ] The task branch identifies one device and matches the declared semantic scope
 - [ ] Each source repository has one canonical main worktree and only registered branch-exclusive task worktrees
 - [ ] Completed task worktrees are lifecycle-cleaned without force while active, delivery, and parked lanes are retained
-- [ ] No other active change owns the same semantic scope
+- [ ] The current protected cloud claim is unexpired and no other current claim overlaps its normalized write set
 - [ ] A cross-device handoff stopped the sender before the receiver resumed the exact pushed commit
 - [ ] No generated or publish mirror file was hand-merged without fixing the upstream source
 - [ ] No stale duplicate path, alias, or compatibility branch remains

@@ -4,7 +4,13 @@
   "title": "Knowgrph Collaboration Runtime Report v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "status", "contractVersion", "sourceRevision", "policies"],
+  "required": [
+    "schema",
+    "status",
+    "contractVersion",
+    "sourceRevision",
+    "policies"
+  ],
   "properties": {
     "schema": {
       "const": "knowgrph.collaboration-runtime-report/v1"
@@ -23,7 +29,11 @@
     "policies": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["deploymentIsolation", "runtimeDocsWorkflow", "pullRequestCoordination"],
+      "required": [
+        "deploymentIsolation",
+        "runtimeDocsWorkflow",
+        "pullRequestCoordination"
+      ],
       "properties": {
         "deploymentIsolation": {
           "$ref": "#/$defs/deploymentIsolation"
@@ -41,7 +51,13 @@
     "deploymentIsolation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "status", "workflowCount", "deploymentWorkflowCount", "allowedWorkflows"],
+      "required": [
+        "id",
+        "status",
+        "workflowCount",
+        "deploymentWorkflowCount",
+        "allowedWorkflows"
+      ],
       "properties": {
         "id": {
           "const": "deployment-isolation/v1"
@@ -70,7 +86,13 @@
     "runtimeDocsWorkflow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "status", "consumerCount", "consumers", "checks"],
+      "required": [
+        "id",
+        "status",
+        "consumerCount",
+        "consumers",
+        "checks"
+      ],
       "properties": {
         "id": {
           "const": "runtime-docs-workflow/v1"
@@ -110,7 +132,10 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "status"],
+          "required": [
+            "id",
+            "status"
+          ],
           "properties": {
             "id": {
               "const": "pull-request-coordination/v1"
@@ -123,7 +148,20 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "status", "pullNumber", "draft", "scope", "remoteScopeCheck"],
+          "required": [
+            "id",
+            "status",
+            "pullNumber",
+            "draft",
+            "scope",
+            "authority",
+            "remoteAuthorityCheck",
+            "claimId",
+            "claimDigest",
+            "ledgerRevision",
+            "writeSetDigest",
+            "verificationReceiptDigest"
+          ],
           "properties": {
             "id": {
               "const": "pull-request-coordination/v1"
@@ -149,10 +187,129 @@
                 }
               ]
             },
-            "remoteScopeCheck": {
-              "enum": ["passed", "skipped", "not-applicable"]
+            "authority": {
+              "const": "agentic-canvas-os-remote-ledger"
+            },
+            "remoteAuthorityCheck": {
+              "enum": [
+                "passed",
+                "skipped",
+                "not-applicable"
+              ]
+            },
+            "claimId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "claimDigest": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "ledgerRevision": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{40}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "writeSetDigest": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "verificationReceiptDigest": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "remoteAuthorityCheck": {
+                    "const": "passed"
+                  }
+                },
+                "required": [
+                  "remoteAuthorityCheck"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "claimId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "claimDigest": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "ledgerRevision": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "writeSetDigest": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "verificationReceiptDigest": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "claimId": {
+                    "type": "null"
+                  },
+                  "claimDigest": {
+                    "type": "null"
+                  },
+                  "ledgerRevision": {
+                    "type": "null"
+                  },
+                  "writeSetDigest": {
+                    "type": "null"
+                  },
+                  "verificationReceiptDigest": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          ]
         }
       ]
     },

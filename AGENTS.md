@@ -2,12 +2,12 @@
 
 Before changing this repository, read and follow `docs/collaboration-runtime-contract.md` and `docs/conflict-resolution.md`.
 
-- Keep one clean registered `main` worktree as the runtime owner; isolate each task in its own registered worktree, branch, semantic scope, and writer lease.
+- Keep one clean registered `main` worktree as the runtime owner; isolate each task in its own registered worktree, branch, semantic scope, and writer lease. The protected Agentic Canvas OS remote ledger is shared write-scope authority; pull requests and local leases are projections.
 - When another task owns that checkout, an already-created stopped-writer commit may be delivered only through `npm run release:publish:immutable -- ...`; the object lane must not switch or edit the checkout and must emit exact paired-SHA evidence.
 - Fetch `origin` before starting and create `agent/<device>/<semantic-scope>` from `origin/main`.
 - Never write the same branch from two devices; stop the sender before a commit-SHA handoff.
 - Declare `/`, `#`, and `@` intent before editing.
-- Stop when another active pull request owns the same semantic scope.
+- Stop when another current cloud claim's normalized write scope overlaps this task. A shared semantic label alone does not serialize disjoint write sets.
 - Never push directly to `main`; integrate only through the required `Integration Gate`.
 - Never use manual `git push --no-verify` or a raw object refspec; the repository-owned immutable publisher performs the bounded object gate and records its hook mode before remote CI.
 - Work only in this Dev repository unless the user explicitly expands scope.

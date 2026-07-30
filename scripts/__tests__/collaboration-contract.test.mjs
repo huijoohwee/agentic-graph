@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import {
-  findActiveScopeConflicts,
   readContract,
   selectAffectedCommands,
   validatePullRequestMetadata,
@@ -13,7 +12,6 @@ import {
   classifyPrePushGate,
   withoutGitLocalEnvironment,
 } from '../run-pre-push-gate.mjs'
-import { fetchOpenPullRequests } from '../github-active-scope-client.mjs'
 import {
   buildLocalCollaborationBrowserEnv,
   buildLocalCollaborationPersistenceArgs,
@@ -296,81 +294,23 @@ test('task branches encode one device and semantic scope', async () => {
   assert.throws(() => validateTaskBranch('agent/macbook/runtime-contract', contract, '#canvas.render'), /branch scope must be/)
 })
 
-test('active pull requests cannot claim the same semantic scope', async () => {
+test('protected cloud ledger is the only shared write-scope authority', async () => {
   const contract = await readContract()
-  const body = (scope, actor) => `---
-action: /change
-scope: "${scope}"
-actor: "${actor}"
-base_sha: "0123456789abcdef0123456789abcdef01234567"
----
-`
-  const pullRequests = [
-    { number: 11, body: body('#canvas.render', '@macbook-codex'), head: { ref: 'agent/macbook/canvas-render' } },
-    { number: 12, body: body('#canvas.render', '@desktop-codex'), head: { ref: 'agent/desktop/canvas-render' } },
-    { number: 13, body: body('#runtime.contract', '@laptop-codex'), head: { ref: 'agent/laptop/runtime-contract' } },
-  ]
+  const checkerSource = fs.readFileSync(new URL('../check-collaboration-runtime.mjs', import.meta.url), 'utf8')
+  const workflowSource = fs.readFileSync(new URL('../../.github/workflows/integration.yml', import.meta.url), 'utf8')
 
-  assert.deepEqual(findActiveScopeConflicts(pullRequests, 11, contract), [{
-    actor: '@desktop-codex',
-    branch: 'agent/desktop/canvas-render',
-    number: 12,
-    scope: '#canvas.render',
-    url: '',
-  }])
-  assert.deepEqual(findActiveScopeConflicts(pullRequests, 13, contract), [])
-})
-
-test('active scope query retries bounded transient GitHub failures', async () => {
-  const statuses = [503, 502, 504, 200]
-  const delays = []
-  const pullRequests = await fetchOpenPullRequests('owner/repository', 'token', {
-    fetchImpl: async () => {
-      const status = statuses.shift()
-      return {
-        ok: status === 200,
-        status,
-        json: async () => [{ number: 96 }],
-      }
-    },
-    retryDelaysMs: [10, 20, 40],
-    sleepImpl: async delayMs => delays.push(delayMs),
-  })
-
-  assert.deepEqual(delays, [10, 20, 40])
-  assert.deepEqual(pullRequests, [{ number: 96 }])
-})
-
-test('active scope query remains fail-closed after transient retries', async () => {
-  let calls = 0
-  await assert.rejects(
-    fetchOpenPullRequests('owner/repository', 'token', {
-      fetchImpl: async () => {
-        calls += 1
-        return { ok: false, status: 503 }
-      },
-      retryDelaysMs: [0, 0],
-      sleepImpl: async () => {},
-    }),
-    /GitHub active-scope query failed with HTTP 503 after 3 attempts/,
-  )
-  assert.equal(calls, 3)
-})
-
-test('active scope query does not retry non-transient GitHub failures', async () => {
-  let calls = 0
-  await assert.rejects(
-    fetchOpenPullRequests('owner/repository', 'token', {
-      fetchImpl: async () => {
-        calls += 1
-        return { ok: false, status: 401 }
-      },
-      retryDelaysMs: [0, 0],
-      sleepImpl: async () => {},
-    }),
-    /GitHub active-scope query failed with HTTP 401$/,
-  )
-  assert.equal(calls, 1)
+  assert.equal(contract.coordination.authority, 'agentic-canvas-os-remote-ledger')
+  assert.equal(contract.coordination.ledger_repository, 'huijoohwee/agentic-canvas-os')
+  assert.equal(contract.coordination.ledger_ref, 'refs/heads/agentic/collaboration-ledger')
+  assert.equal(contract.coordination.overlap_policy, 'normalized-write-scope')
+  assert.equal(contract.coordination.local_projection, 'pull-request-and-device-lease')
+  assert.equal('unique_active_scope' in contract.coordination, false)
+  assert.match(checkerSource, /cloud-collaboration\.mjs/)
+  assert.match(checkerSource, /requiredState: 'review-ready'/)
+  assert.doesNotMatch(checkerSource, /findActiveScopeConflicts|fetchOpenPullRequests/)
+  assert.match(workflowSource, /KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK/)
+  assert.match(workflowSource, /KNOWGRPH_AGENTIC_CANVAS_OS_ROOT/)
+  assert.doesNotMatch(workflowSource, /KNOWGRPH_REQUIRE_REMOTE_SCOPE_CHECK/)
 })
 
 test('pre-push protection is derived from canonical refs', async () => {

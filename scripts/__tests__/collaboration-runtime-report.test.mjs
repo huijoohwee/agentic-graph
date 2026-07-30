@@ -21,7 +21,7 @@ import {
 const readLocalReport = () => {
   const env = { ...process.env }
   for (const key of Object.keys(env)) {
-    if (key.startsWith('KNOWGRPH_PR_') || key === 'KNOWGRPH_GITHUB_TOKEN') delete env[key]
+    if (key.startsWith('KNOWGRPH_PR_') || ['KNOWGRPH_GITHUB_TOKEN', 'KNOWGRPH_AGENTIC_CANVAS_OS_ROOT', 'KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK'].includes(key)) delete env[key]
   }
   const result = spawnSync(process.execPath, ['scripts/check-collaboration-runtime.mjs', '--json'], {
     cwd: repoRoot,
@@ -376,6 +376,8 @@ test('integration round-trips the real validation envelope artifact before the c
     workflowSource,
     /KNOWGRPH_SOURCE_REVISION: \$\{\{ github\.event\.pull_request\.head\.sha \|\| github\.sha \}\}/,
   )
+  assert.match(workflowSource, /KNOWGRPH_AGENTIC_CANVAS_OS_ROOT:/)
+  assert.match(workflowSource, /KNOWGRPH_REQUIRE_REMOTE_AUTHORITY_CHECK:/)
 })
 
 test('report schema rejects unknown fields and mutated workflow checks', async () => {
