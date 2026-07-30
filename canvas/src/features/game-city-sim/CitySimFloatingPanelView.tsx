@@ -401,7 +401,7 @@ export function CitySimFloatingPanelView() {
             </p>
           ) : (
             <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
-              Select a parcel in the shared Canvas before assigning a zone.
+              Select a parcel with the City Builder coordinate controls before assigning a zone.
             </p>
           )}
           {snapshot.lastInput ? (

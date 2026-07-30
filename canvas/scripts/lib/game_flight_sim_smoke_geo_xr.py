@@ -141,6 +141,11 @@ def _read_view(page: Page) -> dict[str, Any]:
               feature => feature?.properties?.kgFlightOverlayKind || '',
             ).filter(Boolean),
           )).sort()
+          const sourceKinds = Array.from(new Set(
+            sourceFeatures.map(
+              feature => feature?.properties?.kgFlightOverlayKind || '',
+            ).filter(Boolean),
+          )).sort()
           const mapCanvas = visibleMapCanvases[0] || null
           const mapWidth = Number(mapCanvas?.clientWidth || 0)
           const mapHeight = Number(mapCanvas?.clientHeight || 0)
@@ -331,8 +336,8 @@ def _read_view(page: Page) -> dict[str, Any]:
           const cityPanel = document.querySelector(
             '[data-kg-city-sim-floating-panel="1"]',
           )
-          const cityStage = document.querySelector(
-            '[data-kg-city-sim-stage="active"]',
+          const citySemanticSurface = document.querySelector(
+            '[data-kg-city-sim-semantic-media="active"]',
           )
           return {
             hostActive: Boolean(host),
@@ -365,7 +370,10 @@ def _read_view(page: Page) -> dict[str, Any]:
               === '1',
             cityPanelVisible: isVisible(cityPanel),
             cityPhase: cityPanel?.getAttribute('data-kg-city-sim-phase') || '',
-            cityStageActive: Boolean(cityStage),
+            citySemanticSurfaceActive: Boolean(citySemanticSurface),
+            cityMapLibreOwnerCount: document.querySelectorAll(
+              '[data-kg-city-maplibre-owner="1"]',
+            ).length,
             styleUrl: localStorage.getItem(
               gympgrph.LS_KEYS.geospatialStyleUrl,
             ) || '',
@@ -418,6 +426,7 @@ def _read_view(page: Page) -> dict[str, Any]:
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
             renderedKinds,
+            sourceKinds,
             renderedFeatureCount: renderedFeatures.length,
             renderedEnvironmentFeatureCount: renderedEnvironment.length,
             routeInViewport,
@@ -459,6 +468,10 @@ def _read_view(page: Page) -> dict[str, Any]:
               '[data-kg-flight-sim-geo-overlay="1"]',
             ).length,
             overlayRevision: overlay?.revision || '',
+            overlayPhase: overlay?.phase || '',
+            overlayRoutePointCount: Array.isArray(overlay?.route)
+              ? overlay.route.length
+              : 0,
             aircraftCoordinate: overlay?.aircraft?.coordinate || null,
             flightActive: flightSnapshot.active,
             flightPhase: flightSnapshot.phase,

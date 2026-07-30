@@ -277,6 +277,7 @@ export function useMapLibreBasemap(args: {
   containerRef: React.RefObject<HTMLElement | null>
   targetStyleUrl?: string | null
   initialStyleOverride?: Readonly<Record<string, unknown>> | null
+  flightBootstrapEnabled?: boolean
   ownerScope?: MapLibreMapOwnerScope
   canvasRenderMode: '2d' | '3d'
   projectionMode: 'mercator' | 'globe'
@@ -291,6 +292,7 @@ export function useMapLibreBasemap(args: {
     containerRef,
     targetStyleUrl,
     initialStyleOverride,
+    flightBootstrapEnabled = true,
     ownerScope = 'embedded-preview',
     canvasRenderMode,
     projectionMode,
@@ -308,12 +310,15 @@ export function useMapLibreBasemap(args: {
   // therefore need the latest ownership rather than their mount-time value.
   const initialStyleOverrideRef = React.useRef(initialStyleOverride)
   initialStyleOverrideRef.current = initialStyleOverride
+  const flightBootstrapEnabledRef = React.useRef(flightBootstrapEnabled)
+  flightBootstrapEnabledRef.current = flightBootstrapEnabled
   const readLiveFlightBootstrapStyle = React.useCallback((): Readonly<
     Record<string, unknown>
   > | null => (
     initialStyleOverrideRef.current
     || (
-      ownerScope === NATIVE_GEOSPATIAL_MAPLIBRE_OWNER
+      flightBootstrapEnabledRef.current
+      && ownerScope === NATIVE_GEOSPATIAL_MAPLIBRE_OWNER
       && readFlightGeoOverlay().active
         ? FLIGHT_GEO_BOOTSTRAP_STYLE
         : null

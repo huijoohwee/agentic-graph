@@ -11,6 +11,7 @@ import {
   isCitySimRunReadyDemoActive,
   isXrPhysicsRuntimeRunReadyDemoActive,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 
 function readCanvasSource(relativePath: string): string {
   return readFileSync(resolve(process.cwd(), 'src', relativePath), 'utf8')
@@ -23,83 +24,69 @@ function collectTextFiles(path: string): readonly string[] {
     .filter(file => /\.(?:md|ts|tsx|mjs)$/.test(file) || file.endsWith('.kiro'))
 }
 
-export function testCitySimGeoXrRetainsSemanticCanvasWithoutLocalMesh() {
-  const stage = readCanvasSource('features/game-city-sim/CitySimStage.tsx')
+export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
   const threeGraph = readCanvasSource('lib/three/ThreeGraph.impl.tsx')
-  const mediaFigure = readCanvasSource('lib/three/ThreeCanvasMediaFigure.tsx')
+  const mediaFigure = readCanvasSource(
+    'features/game-city-sim/CitySimMediaFigure.tsx',
+  )
   const viewport = readCanvasSource('components/CanvasViewport.tsx')
+  const rendererLifecycle = readCanvasSource(
+    'lib/three/threeRendererLifecycle.ts',
+  )
+  const geospatialOverlay = readCanvasSource(
+    'components/CanvasViewportGeospatialOverlay.tsx',
+  )
   const xrPhysicsRuntime = readCanvasSource(
     'features/canvas/XrPhysicsRunReadyDemoRuntime.tsx',
   )
-  assert.equal(stage.includes('<Canvas'), false, 'City Stage must not mount a Canvas')
-  assert.equal(
-    /import\s*\{[^}]*\bCanvas\b[^}]*\}\s*from\s*['"]@react-three\/fiber['"]/.test(stage),
-    false,
-    'City Stage must not import the Canvas component',
+  assert.doesNotMatch(
+    overlay,
+    /citySim|CitySim/,
+    'the shared gameplay scene must not retain a local City render or input fallback',
   )
-  assert.ok(
-    stage.match(/<instancedMesh\b/g)?.length === 2,
-    'City Stage must project parcels and buildings through two InstancedMesh nodes',
-  )
-  assert.ok(stage.includes('instanceMatrix.needsUpdate = true'))
-  assert.ok(stage.includes('instanceColor.needsUpdate = true'))
-  assert.ok(stage.includes('cityCamera.updateProjectionMatrix()'))
-  assert.ok(stage.includes('set({ camera: cityCamera })'))
-  assert.ok(stage.includes('set({ camera: previousCamera })'))
-  assert.equal(
-    stage.match(/onPointerDown=\{selectInstance\}/g)?.length,
-    2,
-    'City parcels and buildings must retain the shared XR pointer owner',
-  )
-  assert.ok(overlay.includes('<CitySimStageLazy'))
-  assert.ok(
-    overlay.includes('if (props.citySimActive && !props.geospatialComposite)'),
-    'the local City mesh must not be painted over the geospatial composite',
-  )
-  assert.ok(overlay.includes('enqueueCityInput({'))
-  assert.ok(overlay.includes('onSelectParcel={selectParcel}'))
+  assert.doesNotMatch(threeGraph, /citySim|CitySim/)
   assert.ok(
     viewport.includes(
-      "geospatialXrModeEnabled ? 'pointer-events-none' : 'pointer-events-auto'",
+      '<CitySimMediaFigure citySimActive={citySimActive}>',
     ),
-    'Geo+XR must pass viewport gestures to the native MapLibre host',
+    'the semantic City wrapper must own the native MapLibre surface',
   )
   assert.ok(
-    threeGraph.includes(
-      "const citySimMeshActive = citySimStageActive && !geospatialComposite",
+    viewport.includes(
+      'threeOverlayComposed={false}',
     ),
-    'the shared Canvas must distinguish a local mesh from the MapLibre-owned Geo+XR stage',
+    'City must not compose a Three overlay above the MapLibre owner',
   )
   assert.ok(
-    threeGraph.includes(
-      "style={geospatialComposite && !citySimMeshActive ? { pointerEvents: 'none' } : undefined}",
+    !/citySim|CitySim|MapLibre/.test(rendererLifecycle),
+    'Three lifecycle ownership must remain independent from the City MapLibre surface',
+  )
+  assert.deepEqual(resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    cityMapLibreSurfaceRequested: true,
+    flightSimActive: false,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: false,
+    geospatialXrModeEnabled: false,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  }), {
+    activeSurface: 'geo-xr',
+    geospatialOverlayOwnsViewport: true,
+  })
+  assert.ok(
+    geospatialOverlay.includes(
+      'data-kg-city-maplibre-owner={',
     ),
-    'the shared Three Canvas must pass Geo+XR gestures to MapLibre when no local City mesh is mounted',
+    'Geo+XR evidence must identify the actual MapLibre-only City owner',
   )
   assert.ok(
-    threeGraph.includes(
-      "data-kg-city-sim-surface={citySim.active ? 'geo-xr' : undefined}",
+    geospatialOverlay.includes(
+      "data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}",
     ),
+    'City must retain the stable native Geo ownership selector',
   )
-  assert.ok(
-    threeGraph.includes(
-      "citySimMeshActive ? 'city-parcel-select'",
-    ),
-  )
-  assert.ok(threeGraph.includes("citySimStageActive && geospatialComposite ? 'map-pass-through'"))
-  assert.ok(
-    threeGraph.includes(
-      "data-kg-city-sim-stage={citySimMeshActive ? 'active' : citySimStageActive ? 'maplibre-aerial' : undefined}",
-    ),
-  )
-  assert.ok(
-    threeGraph.includes(
-      'const hasGraph = !citySimRunReadyDemo && !citySimStageActive && !!sceneGraphForRender',
-    ),
-    'City source intent and active stage must suppress the unrelated authored/native XR graph before scene authority and placement are derived',
-  )
-  assert.ok(threeGraph.includes('<ThreeCanvasMediaFigure citySimActive={citySimStageActive}>'))
   assert.ok(mediaFigure.includes('<figure'))
   assert.ok(mediaFigure.includes('<figcaption'))
   assert.ok(mediaFigure.includes('resolveMediaPreviewSelectableDataAttr(citySimActive)'))

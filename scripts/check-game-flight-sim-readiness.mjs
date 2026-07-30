@@ -63,6 +63,7 @@ const requiredPaths = [
   'canvas/src/App.tsx',
   'canvas/src/components/CanvasViewport.tsx',
   'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+  'canvas/src/lib/canvas/canvasSurfaceOwnershipRuntime.ts',
   'canvas/src/features/agentic-os/agenticOsRemoteGrammarClient.ts',
   'canvas/src/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration.tsx',
   'canvas/src/features/agent-ready/flightSimAgentReadyContract.mjs',
@@ -255,8 +256,9 @@ requireMarkers(gameplayOverlaySource, [
   "from './flightSimMissionStageLoader'",
   'if (props.flightSimActive)',
   '<FlightSimMissionStageLazy',
-  'actorsVisible={!props.geospatialComposite}',
+  'actorsVisible',
   'coordinateScale={props.coordinateScale}',
+  'geospatialComposite={props.geospatialComposite}',
 ], 'shared Three gameplay overlay')
 const threeGraphSource = await readText('canvas/src/lib/three/ThreeGraph.impl.tsx')
 requireMarkers(threeGraphSource, [
@@ -265,6 +267,7 @@ requireMarkers(threeGraphSource, [
   '<ThreeGameplayMissionStage',
   'flightSimActive={flightStageActive}',
   'gameplayCoordinateScale={gameplayCoordinateScale}',
+  'geospatialComposite={geospatialComposite}',
 ], 'shared Three renderer')
 const controlsSource = await readText('canvas/src/features/three/Controls.tsx') + await readText('canvas/src/features/three/threeViewportInputOwnership.ts') + await readText('canvas/src/features/three/xrCameraPlaybackControlsRuntime.ts')
 requireMarkers(controlsSource, [

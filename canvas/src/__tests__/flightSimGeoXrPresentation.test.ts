@@ -135,15 +135,11 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
   )
   assert.match(
     mapLibrePresentation,
-    /if \(cameraApplied\) gate\.request\(overlay\)/,
+    /if \(cameraApplied && options\.requiresFlightLifecyclePresentation\) \{[\s\S]*gate\.request\(overlay\)/,
   )
   assert.match(
     threeGraph,
-    /const citySimMeshActive = citySimStageActive && !geospatialComposite/,
-  )
-  assert.match(
-    threeGraph,
-    /style=\{geospatialComposite && !citySimMeshActive \? \{ pointerEvents: 'none' \} : undefined\}/,
+    /style=\{geospatialComposite \? \{ pointerEvents: 'none' \} : undefined\}/,
   )
   assert.match(
     gameplayOverlay,

@@ -9,13 +9,14 @@ and the workspace seed is a derived activation and proof projection.
 
 The increment is a local-first, single-operator city simulation projected
 through the existing Geo+XR surface and FloatingPanel. The real native
-MapLibre Geo host owns the geographic visual and viewport gestures; the
-existing shared React Three Fiber Canvas remains a semantic City media stage
-without painting its local grid over Geo+XR. It adds one `cityBuilder` view and contextual projections
-in the existing `media`, `animation`, `motionControl`, `gameMode`, `flightSim`,
-and `camera` views. It does not add a second game world, map, renderer, Canvas,
-map source/layer family, persistence authority, camera catalog, network
-service, or deployment surface.
+MapLibre Geo host is the sole City visual, renderer, camera, and viewport-
+gesture owner. A labeled semantic `figure` wraps that MapLibre projection for
+selection tooling without adding a City Three.js or React Three Fiber stage,
+Canvas, mesh, or camera. It adds one `cityBuilder` view and contextual
+projections in the existing `media`, `animation`, `motionControl`, `gameMode`,
+`flightSim`, and `camera` views. It does not add a second game world, map,
+renderer, Canvas, map source/layer family, persistence authority, camera
+catalog, network service, or deployment surface.
 
 All implementation, prose, schemas, fixtures, and assets for this feature must
 be source-authored for Knowgrph. The feature may use only existing
@@ -30,11 +31,10 @@ publish-mirror release work requires a separate explicit instruction.
 
 - **City Runtime**: Single in-memory owner of lifecycle, selection, parcel
   state, economy state, and persistence status.
-- **City Stage**: Semantic shared-Canvas City media stage. In Geo+XR it mounts
-  no local parcel/building mesh over the native map.
-- **City Media Surface**: Labeled semantic `figure` around the shared WebGL
-  Canvas. It exposes the existing media-selection marker only while City is
-  active and owns no pointer-capture behavior.
+- **City Geo Media Surface**: Labeled semantic `figure` around the native
+  MapLibre Geo projection. It exposes the existing media-selection marker only
+  while City is active, owns no pointer-capture behavior, and contains no City
+  Three.js or React Three Fiber stage.
 - **Native Geo Host**: Existing MapLibre map owned by Geo; it owns Geo+XR
   visuals and viewport gestures, and City never creates or replaces it.
 - **City Aerial Projection**: Deterministic, read-only, stopped aircraft and
@@ -71,9 +71,9 @@ owner chain so that its behavior remains auditable and inexpensive.
 
 1. The City Runtime shall execute zoning, ticking, advising, rendering
    projection, save, and read-back without a required network request.
-2. The feature shall add zero runtime dependencies and shall use existing
-   Knowgrph MapLibre Geo, Canvas, Three.js, React Three Fiber, Flight Geo
-   overlay, FloatingPanel, camera, MCP, and WorkspaceFs owners.
+2. The feature shall add zero runtime dependencies and shall use the existing
+   Knowgrph MapLibre Geo, Flight Geo overlay, FloatingPanel, MCP, and
+   WorkspaceFs owners.
 3. The feature shall contain only source-authored implementation, prose,
    schemas, fixtures, and assets.
 4. The feature shall add no alternate map, map source/layer family, renderer,
@@ -91,7 +91,7 @@ through the tools I already use so that I do not learn a parallel interface.
 
 1. Applying the authored workspace seed after Source Files bootstrap shall set
    Surface Mode to `geo-xr`, open `cityBuilder`, retain the native MapLibre Geo
-   host, and activate the semantic City media stage without obscuring it.
+   host, and expose its semantic City media `figure` without obscuring it.
 2. The source identity shall be `run_ready_demo.id: city-sim`; a conflicting
    known path or identity shall fail closed instead of selecting a different
    demo.
@@ -109,12 +109,12 @@ through the tools I already use so that I do not learn a parallel interface.
 8. `flightSim` shall provide a read-only aerial-inspection handoff; it shall not
    activate Flight gameplay, claim Flight readiness, or create, mutate, or
    retain a second city world.
-9. `camera` shall show native MapLibre framing state and the captured shared
-   R3F restore target without replacing either camera owner.
+9. `camera` shall show native MapLibre framing state without capturing,
+   replacing, or restoring a Three.js or React Three Fiber camera.
 10. All six existing projections shall subscribe to the same City Runtime
     snapshot; switching views shall not duplicate or reset city state.
 
-### Requirement 3: Geo+XR composition, shared Canvas, and restoration
+### Requirement 3: Geo+XR MapLibre ownership, semantic media, and restoration
 
 **User story:** As an operator, I want city controls and aerial context on the
 canonical Geo surface without an unregistered local mesh corrupting map, input,
@@ -123,14 +123,15 @@ or camera behavior.
 #### Acceptance criteria
 
 1. City entry shall activate Surface Mode `geo-xr`; the existing native
-   MapLibre Geo host shall remain the geographic background.
-2. The shared React Three Fiber Canvas shall retain the labeled semantic City
-   media stage but shall not mount local parcel/building geometry or parcel hit
-   testing over MapLibre in Geo+XR. It shall never instantiate a `<Canvas>`
-   component and shall pass viewport gestures through to MapLibre.
+   MapLibre Geo host shall be the sole City visual, renderer, camera, and
+   viewport-gesture owner.
+2. The City Geo media surface shall wrap the native MapLibre projection in one
+   labeled semantic `figure`. City shall mount no Three.js scene, React Three
+   Fiber Canvas, parcel/building geometry, selection indicator, or parcel hit
+   testing.
 3. City Builder coordinate controls shall read the City Runtime snapshot and
-   select parcels without mutating it; no local City mesh may substitute for
-   that input owner in Geo+XR.
+   select parcels without mutating it; no local City mesh or Three pointer
+   handler may substitute for that input owner in Geo+XR.
 4. City shall publish one deterministic route and one aircraft with phase
    `stopped` through
    `projectCitySimAerialInspectionToGeospatialOverlay`, the existing Flight
@@ -141,14 +142,14 @@ or camera behavior.
    to `null`. It shall not call Flight lifecycle, mission-advance, control, or
    readiness APIs; the shared `CanvasViewport` geospatial publisher retains its
    existing Flight subscriptions only for publication arbitration.
-6. City entry shall create no MapLibre map, R3F Canvas, Flight Geo source, or
-   Flight Geo layer. The existing map, store, source ids, layer ids, and layer
-   application functions are the only owners.
-7. While City is active in Geo+XR, native MapLibre remains the visual and
-   camera owner. The transparent shared Canvas shall not replace MapLibre's
-   camera; Exit shall retain the captured shared R3F restore contract.
+6. City entry shall create no MapLibre map, Three.js or React Three Fiber
+   Canvas, Flight Geo source, or Flight Geo layer. The existing map, store,
+   source ids, layer ids, and layer application functions are the only owners.
+7. While City is active in Geo+XR, native MapLibre remains the sole City visual,
+   renderer, camera, and responsive viewport owner. City shall capture, install,
+   or restore no Three camera.
 8. On exit, the City Aerial Projection shall clear through the existing overlay
-   owner and the prior FloatingPanel surface and R3F camera shall be restored
+   owner and the prior FloatingPanel and Canvas surface state shall be restored
    exactly once.
 9. Opening another exclusive gameplay surface shall exit the city overlay
    through the shared gameplay-surface lifecycle rather than hiding a live
@@ -157,12 +158,11 @@ or camera behavior.
     cannot restore the prior Geo owner, City shall return the typed
     `surface-restoration-failed` result instead of reporting a successful Exit.
 11. City source admission shall not start or retain the native XR physics
-    playground. From City source intent through active gameplay ownership, the
-    renderer shall exclude the authored/native graph before deriving XR scene
+    playground or authored Three graph. City shall derive no XR scene
     authority, placement, or rendering.
-12. While City is active, the shared WebGL Canvas shall have one labeled
-    semantic `figure` ancestor using the existing conditional media-selection
-    marker. The new wrapper shall contain a `figcaption` and shall add no
+12. While City is active, the native MapLibre Geo projection shall have one
+    labeled semantic `figure` ancestor using the existing conditional media-
+    selection marker. The wrapper shall contain a `figcaption` and shall add no
     generic `div`, `aria-hidden`, or pointer/mouse/click capture handler. It
     shall not intercept MapLibre gestures. When City is inactive, the persistent
     wrapper shall be presentational and shall expose neither the City name nor
@@ -303,8 +303,8 @@ legible on a small screen.
 
 #### Acceptance criteria
 
-1. The city stage and City Builder controls shall remain usable at 375 by 812
-   CSS pixels without horizontal page overflow.
+1. The native MapLibre City media surface and City Builder controls shall remain
+   usable at 375 by 812 CSS pixels without horizontal page overflow.
 2. Treasury, population, tick, run state, selection, and the latest operation
    result shall remain visible or reachable by one vertical panel scroll.
 3. Invalid actions shall explain the reason and shall not mutate the committed
@@ -326,17 +326,17 @@ runtime state so that preselected demo state cannot masquerade as activation.
 3. Proof shall open the authored seed through Explorer -> Source Files and
    apply it only after Source Files bootstrap reports ready.
 4. After application, proof shall assert Surface Mode `geo-xr`, `cityBuilder`,
-   one existing native MapLibre map, one existing shared R3F semantic media
-   Canvas stage, MapLibre viewport gestures, City Builder coordinate parcel
-   input, no unregistered City mesh above Geo, deterministic seeded metrics,
-   and no browser console error.
+   one existing native MapLibre map wrapped by the semantic City media
+   `figure`, MapLibre viewport gestures, City Builder coordinate parcel input,
+   zero City Three.js or React Three Fiber Canvas/stage/mesh/camera,
+   deterministic seeded metrics, and no browser console error.
 5. Proof shall exercise zone, one tick, stop fencing, save/read-back, all six
    existing Panel Projections, and exit restoration.
 6. Proof shall assert one stopped aircraft and its deterministic route through
    the existing Flight Geo source/layers, no duplicate map/source/layer/Canvas,
    and inactive Flight gameplay with no Flight readiness claim.
 7. Exit proof shall verify the City Aerial Projection clears and the prior
-   surface and camera restore exactly once.
+   FloatingPanel and Canvas surface state restores exactly once.
 8. Reapplying from the same neutral state shall produce the same initial
    serialized snapshot and aerial projection.
 

@@ -12,8 +12,14 @@ export const CITY_SIM_SEED_BASENAME = 'knowgrph-game-city-building-sim-demo.md'
 export const CITY_SIM_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${CITY_SIM_SEED_BASENAME}`
 export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   id: 'city-sim',
-  rendererRule: 'never create a second Canvas or renderer',
-  stageOwner: 'semantic City media stage in the existing shared React Three Fiber Canvas',
+  rendererRule: 'reuse one native MapLibre map; mount zero City Three Canvas',
+  surfaceOwner: 'native MapLibre Geo+XR surface wrapped by CitySimMediaFigure',
+  citySurfaceOwner: 'native MapLibre Geo+XR host wrapped by the City semantic media figure',
+  composition: 'one native MapLibre map with its existing Flight Geo source and layers; zero City Three Canvas',
+  semanticMediaChildOwner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+  semanticMediaOwner: 'canvas/src/features/game-city-sim/CitySimMediaFigure.tsx',
+  semanticMediaSelectionOwner: 'canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts',
+  semanticMediaSelectionWhen: 'City runtime active only',
   worldOwnership: 'overlay-only',
 })
 export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze([
@@ -358,7 +364,11 @@ const requireCitySimRuntimeIdentity = source => {
   requireValue('run_ready_demo.source_root', runReadyDemo.source_root, 'knowgrph/docs')
   requireValue('run_ready_demo.source_backed', readBooleanPreset(runReadyDemo.source_backed), true)
   requireValue('run_ready_demo.native_runtime', readBooleanPreset(runReadyDemo.native_runtime), true)
-  requireValue('run_ready_demo.presentation', runReadyDemo.presentation, 'shared-geo-xr-city-overlay')
+  requireValue(
+    'run_ready_demo.presentation',
+    runReadyDemo.presentation,
+    'native-maplibre-geo-xr-city-surface',
+  )
   requireValue('run_ready_demo.auto_start', readBooleanPreset(runReadyDemo.auto_start), false)
   requireValue(
     'run_ready_demo.forbid_external_copy_or_dependency',
@@ -379,11 +389,16 @@ const requireCitySimRuntimeIdentity = source => {
     )
   }
   requireValue('city_runtime.schema_id', cityRuntime.schema_id, 'knowgrph-city-grid/v1')
+  requireValue(
+    'city_runtime.world_ownership',
+    cityRuntime.world_ownership,
+    CITY_SIM_OVERLAY_AUTHORITY.worldOwnership,
+  )
   requireValue('city_runtime.runtime_dependencies_added', cityRuntime.runtime_dependencies_added, 0)
   requireValue(
-    'city_runtime.stage_owner',
-    cityRuntime.stage_owner,
-    CITY_SIM_OVERLAY_AUTHORITY.stageOwner,
+    'city_runtime.surface_owner',
+    cityRuntime.surface_owner,
+    CITY_SIM_OVERLAY_AUTHORITY.surfaceOwner,
   )
   requireValue(
     'city_runtime.renderer_rule',
@@ -398,9 +413,9 @@ const requireCitySimRuntimeIdentity = source => {
     'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
   )
   requireValue(
-    'city_geo_xr.city_stage_owner',
-    cityGeoXr.city_stage_owner,
-    'transparent shared React Three Fiber Canvas semantic media stage',
+    'city_geo_xr.city_surface_owner',
+    cityGeoXr.city_surface_owner,
+    CITY_SIM_OVERLAY_AUTHORITY.citySurfaceOwner,
   )
   requireValue(
     'city_geo_xr.parcel_input_owner',
@@ -410,18 +425,38 @@ const requireCitySimRuntimeIdentity = source => {
   requireValue(
     'city_geo_xr.composition',
     cityGeoXr.composition,
-    'native MapLibre Geo with existing stopped aircraft and route; no unregistered City R3F mesh',
+    CITY_SIM_OVERLAY_AUTHORITY.composition,
   )
   requireValue(
     'city_geo_xr.duplicate_map_or_canvas_forbidden',
     readBooleanPreset(cityGeoXr.duplicate_map_or_canvas_forbidden),
     true,
   )
+  requireValue(
+    'city_semantic_media.owner',
+    citySemanticMedia.owner,
+    CITY_SIM_OVERLAY_AUTHORITY.semanticMediaOwner,
+  )
+  requireValue(
+    'city_semantic_media.child_owner',
+    citySemanticMedia.child_owner,
+    CITY_SIM_OVERLAY_AUTHORITY.semanticMediaChildOwner,
+  )
   requireValue('city_semantic_media.element', citySemanticMedia.element, 'figure')
   requireValue(
     'city_semantic_media.accessible_name',
     citySemanticMedia.accessible_name,
     'Interactive City simulation media stage',
+  )
+  requireValue(
+    'city_semantic_media.selection_marker_owner',
+    citySemanticMedia.selection_marker_owner,
+    CITY_SIM_OVERLAY_AUTHORITY.semanticMediaSelectionOwner,
+  )
+  requireValue(
+    'city_semantic_media.selection_marker_when',
+    citySemanticMedia.selection_marker_when,
+    CITY_SIM_OVERLAY_AUTHORITY.semanticMediaSelectionWhen,
   )
   requireValue(
     'city_semantic_media.pointer_capture_owner',
@@ -494,10 +529,17 @@ const requireCitySimRuntimeIdentity = source => {
   requireValue('city_camera.framing', cityCamera.framing, 'native MapLibre camera in Geo+XR')
   requireValue('city_camera.projection', cityCamera.projection, 'MapLibre')
   requireValue('city_camera.owner', cityCamera.owner, 'native MapLibre Geo host')
-  if (missing.length > 0) {
+  const forbidden = [
+    Object.hasOwn(cityRuntime, 'stage_owner') ? 'city_runtime.stage_owner' : null,
+    Object.hasOwn(cityGeoXr, 'city_stage_owner') ? 'city_geo_xr.city_stage_owner' : null,
+    Object.hasOwn(cityCamera, 'exit_rule') ? 'city_camera.exit_rule' : null,
+    Object.hasOwn(cityCamera, 'captured_camera') ? 'city_camera.captured_camera' : null,
+    Object.hasOwn(cityCamera, 'restore_target') ? 'city_camera.restore_target' : null,
+  ].filter(Boolean)
+  if (missing.length > 0 || forbidden.length > 0) {
     throw new Error(
       `proof-pending workspace document ${CITY_SIM_SEED_BASENAME} has invalid authority; `
-      + `missing=${JSON.stringify(missing)}`,
+      + `missing=${JSON.stringify(missing)} forbidden=${JSON.stringify(forbidden)}`,
     )
   }
 }

@@ -63,9 +63,9 @@ Only one room provider may be active for a workspace. A Durable Object migration
 
 Explorer ownership is derived from the shared repository-authority contract, not stored in PocketBase or D1. `workspace-docs` displays `GitHub/huijoohwee/docs`; `knowgrph-docs` displays `GitHub/knowgrph/docs`; `/docs/workspace-seeds/**` displays the narrower `GitHub/knowgrph/docs/workspace-seeds` boundary; IndexedDB displays as offline fallback. Agentic runtime projections and rejected Huijoohwee seed duplicates never become selectable write authorities.
 
-No schema field may override the seed owner. Local mirror requests carry the workspace path and must resolve byte-for-byte to `$GITHUB_ROOT/knowgrph/docs/workspace-seeds/**`; PocketBase room metadata, D1 rows, browser settings, and import payloads cannot select `huijoohwee/docs/workspace-seeds` or another host path.
+No schema field may override the seed owner. Local mirror requests carry only a logical `/docs/workspace-seeds/**` `workspacePath`; the server bridge derives the corresponding `$GITHUB_ROOT/knowgrph/docs/workspace-seeds/**` host target. PocketBase room metadata, D1 rows, browser settings, import payloads, client absolute paths, and client mutation-root environment variables cannot select `huijoohwee/docs/workspace-seeds` or another host path.
 
-Seed inventory authority is runtime metadata, not a persisted schema extension. Entries read from the local canonical directory carry `knowgrph-workspace-seeds-local`; entries loaded from the revision-pinned six-file app artifact carry `knowgrph-workspace-seeds-bundled`. Only a complete, non-empty authority-marked inventory can replace and prune the cached `/docs/workspace-seeds/**` subtree.
+Seed inventory authority is runtime metadata, not a persisted schema extension. Entries read from the local canonical directory carry `knowgrph-workspace-seeds-local`; entries loaded from the revision-pinned seven-file app artifact carry `knowgrph-workspace-seeds-bundled`. Only a complete, non-empty authority-marked inventory can replace and prune the cached `/docs/workspace-seeds/**` subtree.
 
 ```sql
 CREATE TABLE IF NOT EXISTS users (

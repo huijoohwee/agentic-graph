@@ -586,6 +586,9 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const [flightOverlayActive, setFlightOverlayActive] = React.useState(
     () => readFlightGeoOverlay().active,
   )
+  const [flightOverlayRevision, setFlightOverlayRevision] = React.useState(
+    () => readFlightGeoOverlay().revision,
+  )
   const storeGeospatialViewMode = useGympgrphStore(s => s.geospatialViewMode)
   const geospatialAutoFitEnabled = useGympgrphStore(s => s.geospatialAutoFitEnabled)
   const geospatialFitRequest = useGympgrphStore(s => s.geospatialFitRequest)
@@ -630,8 +633,9 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
 
   React.useEffect(() => {
     const sync = () => {
-      const next = readFlightGeoOverlay().active
-      setFlightOverlayActive(previous => previous === next ? previous : next)
+      const next = readFlightGeoOverlay()
+      setFlightOverlayActive(previous => previous === next.active ? previous : next.active)
+      setFlightOverlayRevision(previous => previous === next.revision ? previous : next.revision)
     }
     sync()
     return subscribeFlightGeoOverlay(sync)
@@ -693,7 +697,16 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const selectedBounds = React.useMemo(() => computeBoundsFromCollections([selectedFeatureCollection]), [selectedFeatureCollection])
   const graphDataKey = React.useMemo(() => graphProjection.signature, [graphProjection.signature])
   const mapLibreRuntimeEnabled = show2dMapLibre || show3d
-  const flightBootstrapStyle = flightOverlayActive || props.flightBootstrapRequested === true
+  const cityAerialInspectionOverlay = (
+    flightOverlayActive
+    && flightOverlayRevision.startsWith('city-aerial-inspection:')
+  )
+  const flightBootstrapRequested = (
+    flightOverlayActive || props.flightBootstrapRequested === true
+  )
+  const flightBootstrapStyle = (
+    flightBootstrapRequested && !cityAerialInspectionOverlay
+  )
     ? FLIGHT_GEO_BOOTSTRAP_STYLE
     : null
 
@@ -822,6 +835,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     containerRef: map2dContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
+    flightBootstrapEnabled: !cityAerialInspectionOverlay,
     ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
     canvasRenderMode: '2d',
     projectionMode: 'mercator',
@@ -836,6 +850,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     containerRef: map3dContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
+    flightBootstrapEnabled: !cityAerialInspectionOverlay,
     ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
     canvasRenderMode: '3d',
     projectionMode: 'globe',
@@ -871,6 +886,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     graphRevision: basemapGraphRevision,
     map: activeBasemap.map,
     mapLibreRuntimeEnabled,
+    requiresFlightLifecyclePresentation: !cityAerialInspectionOverlay,
     onPresented: props.onFlightOverlayPresented,
     rootRef,
     styleRevision: activeBasemap.styleRevision,
