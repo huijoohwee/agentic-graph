@@ -25,6 +25,7 @@ export function StoryboardWidgetPanelChromeHeader(props: {
   showMinimizeToggle?: boolean
   actionsAriaLabel?: string
   pinned?: boolean
+  headerClassName?: string
   microLabelClass?: string
   uiIconScale?: 'compact' | 'default'
   uiIconStrokeWidth?: number
@@ -50,6 +51,7 @@ export function StoryboardWidgetPanelChromeHeader(props: {
     showMinimizeToggle = true,
     actionsAriaLabel,
     pinned = false,
+    headerClassName = '',
     microLabelClass = '',
     uiIconScale,
     uiIconStrokeWidth = 1.8,
@@ -127,6 +129,7 @@ export function StoryboardWidgetPanelChromeHeader(props: {
         dragHandle ? 'cursor-move' : 'cursor-default',
         'select-none',
         minimized ? `px-2 py-0 ${UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME}` : 'px-3 py-2',
+        headerClassName,
       )}
       style={richMediaHeaderStyle}
       data-kg-flow-node-drag-handle={dragHandle ? 'true' : undefined}

@@ -41,6 +41,8 @@ export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
     'data-kg-overlay-pan-owner="canvas"',
     'data-kg-storyboard-widget-surface={props.storyboardWidgetSurfaceId}',
     "showPinToggle={selected && typeof headerPinProps.onHeaderTogglePinned === 'function'}",
+    "className: 'pointer-events-none absolute overflow-hidden",
+    'headerClassName="pointer-events-auto"',
     'onPinnedPointerDown={headerPinProps.onHeaderPinnedPointerDown}',
     'onTogglePinned={headerPinProps.onHeaderTogglePinned}',
     "addHistory('Group panel move')",
@@ -53,8 +55,8 @@ export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
     throw new Error('expected Group Panel wrapper to remain visible to accessibility and selection tooling')
   }
   if (
-    !surfaceText.includes('props.onNodeChange(nodeId, {')
-    || !surfaceText.includes('}, props.graphData)')
+    !surfaceText.includes('onNodeChange(nodeId, {')
+    || !surfaceText.includes('}, graphData)')
     || !surfaceRuntimeText.includes('onNodeChange={props.patchNodeById}')
   ) {
     throw new Error('expected Group Panel drag to write through the canonical Storyboard document mutation owner')
@@ -78,7 +80,7 @@ export async function testGroupPanelFirstClassSurfaceAndInvocationContract() {
     throw new Error('expected grouped child movement to share Group Panel containment clamping')
   }
   if (
-    !surfaceText.includes('props.fallbackNodePositions.get(nodeId)')
+    !surfaceText.includes('fallbackNodePositions.get(nodeId)')
     || !surfaceRuntimeText.includes('fallbackNodePositions={stableStoryboardCardPlacements}')
   ) {
     throw new Error('expected Group Panel drag to initialize excluded fixed cards from stable Storyboard placements')

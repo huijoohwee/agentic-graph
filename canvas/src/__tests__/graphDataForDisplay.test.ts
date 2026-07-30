@@ -1,6 +1,9 @@
 import { getGraphDataForDisplay } from '@/components/GraphCanvas/displayFilter'
+import { getCachedStoryboardWidgetOverlayEdgeGraph } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import type { GraphData } from '@/lib/graph/types'
+
+const cell = (key: string, type: string, value: unknown) => ({ key, type, value })
 
 export const testGraphDataForDisplayFiltersNodesAndEdgesTogether = () => {
   const graphData: GraphData = {
@@ -109,6 +112,60 @@ export const testGraphDataForDisplayKeepsRichMediaPanelWithoutLocalMediaSpec = (
   if (!nodeIds.has('panel-1')) throw new Error('expected Rich Media Panel node to stay in display graph before connected values are rendered')
   const edgeIds = new Set((display.edges || []).map(e => String((e as { id?: unknown }).id)))
   if (!edgeIds.has('edge-1')) throw new Error('expected edge to Rich Media Panel to stay visible with the panel node')
+}
+
+export const testGraphDataForDisplayKeepsEdgesBetweenTypedFrontmatterNodeIds = () => {
+  const graphData = {
+    type: 'Graph',
+    context: 'frontmatter-flow',
+    metadata: { kind: 'frontmatter-flow' },
+    nodes: [
+      {
+        id: cell('id', 'string', 'source-card'),
+        type: cell('type', 'string', 'TextGeneration'),
+        label: cell('label', 'string', 'Source Card'),
+        properties: cell('properties', 'object', {}),
+      },
+      {
+        id: cell('id', 'string', 'generated-card'),
+        type: cell('type', 'string', 'TextGeneration'),
+        label: cell('label', 'string', 'Generated Card'),
+        properties: cell('properties', 'object', {}),
+      },
+      {
+        id: cell('id', 'string', 'ledger'),
+        type: cell('type', 'string', FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID),
+        label: cell('label', 'string', 'Generated outputs'),
+        properties: cell('properties', 'object', {}),
+      },
+    ],
+    edges: [{
+      id: cell('id', 'string', 'generated-edge'),
+      source: cell('source', 'string', 'source-card'),
+      target: cell('target', 'string', 'generated-card'),
+      label: cell('label', 'string', 'candidateOption'),
+      properties: cell('properties', 'object', {
+        workflowMaterializationProjectionSourceNodeId: 'ledger',
+      }),
+    }],
+  } as unknown as GraphData
+
+  const display = getGraphDataForDisplay({ graphData })
+  const overlay = getCachedStoryboardWidgetOverlayEdgeGraph({
+    graphData,
+    graphRevision: 1,
+    overlayNodeIds: ['source-card', 'generated-card', 'ledger'],
+    preferCurrentGraphDataRefs: true,
+  })
+  if (
+    display.nodes.length !== 3
+    || display.edges.length !== 1
+    || overlay?.edges.length !== 1
+    || overlay.edges[0]?.source !== 'ledger'
+    || overlay.edges[0]?.target !== 'generated-card'
+  ) {
+    throw new Error(`expected typed frontmatter endpoints to retain their visible edge, got ${JSON.stringify(display)}`)
+  }
 }
 
 export const testGraphDataForDisplaySuppressesDocumentStructureScaffoldOutsideDocumentStructureMode = () => {
