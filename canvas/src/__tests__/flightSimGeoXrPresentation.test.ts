@@ -103,6 +103,10 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     /!geospatialComposite && spatialCaptureManifest/,
   )
   assert.match(
+    threeGraph,
+    /immersiveMediaStageActive && !geospatialComposite \? <ThreeGraphImmersiveMediaStage/,
+  )
+  assert.match(
     mapLibrePresentation,
     /applyFlightGeoEnvironmentToMap\(/,
   )
