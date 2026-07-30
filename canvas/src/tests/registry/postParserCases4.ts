@@ -324,7 +324,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["workspaceFs.envBridge.fallsBackToProcessEnvOutsideBrowser","@/__tests__/workspaceSeedPersistence.test","testCanvasEnvBridgeFallsBackToProcessEnvOutsideBrowser"],
   ["workspaceFs.envBridge.readsKnowgrphStorageBaseUrlFromProcessEnv","@/__tests__/workspaceSeedPersistence.test","testCanvasEnvBridgeReadsKnowgrphStorageBaseUrlFromProcessEnv"],
   ["workspaceFs.seedProvider.prefersConfiguredAbsoluteDocsRoot","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersConfiguredAbsoluteDocsRoot"],
-  ["workspaceFs.seedProvider.resolvesDocsWorkspaceSeedsFromConfiguredAbsoluteDocsRoot","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderResolvesDocsWorkspaceSeedsFromConfiguredAbsoluteDocsRoot"],
+  ["workspaceFs.seedProvider.usesDeclaredReadRootWithoutDocsFallback","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderUsesDeclaredReadRootWithoutDocsFallback"],
   ["workspaceFs.seedProvider.prefersSourceFilesDocViewOverLargerStorageExportDataset","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLargerStorageExportDataset"],
   ["workspaceFs.seedProvider.prefersCompleteStorageExportDatasetForSync","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersCompleteStorageExportDatasetForSync"],
   ["workspaceFs.seedProvider.keepsEmptyAndModelAssetDocsMirrorFiles","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderKeepsEmptyAndModelAssetDocsMirrorFiles"],

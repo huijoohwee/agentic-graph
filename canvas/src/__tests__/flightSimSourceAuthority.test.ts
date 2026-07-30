@@ -100,6 +100,7 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   const geospatialBridge = readFileSync(resolve(repoRoot, 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'), 'utf8')
   const surfacePreload = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/useFlightSimSurfacePreload.ts'), 'utf8')
   const viewport = readFileSync(resolve(repoRoot, 'canvas/src/components/CanvasViewport.tsx'), 'utf8')
+  const hud = readFileSync(resolve(repoRoot, 'canvas/src/features/game-flight-sim/FlightSimHud.tsx'), 'utf8')
   const runReadyOwner = readFileSync(resolve(repoRoot, 'canvas/src/features/canvas/FlightSimRunReadyDemoRuntime.tsx'), 'utf8')
   const geospatialPresentation = readFileSync(
     resolve(
@@ -159,6 +160,14 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     /completeFlightSimStagePreparation\(requestId,\s*\{\s*framePresented: true,/,
   )
   assert.doesNotMatch(missionStage, /from '\.\/flightSimRuntime'/)
+  assert.match(missionStage, /from '@\/features\/three\/XrSceneLibrarySubject'/)
+  assert.match(missionStage, /<XrSceneLibraryAssetGeometry\s+assetId=\{assetCatalog\.aircraft\.assetSpec\.id\}/)
+  assert.match(
+    missionStage,
+    /canvas\.dataset\.kgFlightSimAircraftAsset = JSON\.stringify\(\{[\s\S]*assetId: aircraftAsset\.id,[\s\S]*dimensionsMeters: aircraftAsset\.dimensionsMeters,[\s\S]*label: aircraftAsset\.label,[\s\S]*representation: aircraftAsset\.representation,/,
+  )
+  assert.match(missionStage, /delete canvas\.dataset\.kgFlightSimAircraftAsset/)
+  assert.doesNotMatch(missionStage, /XrProceduralVehicleGeometry/)
   assert.match(missionStage, /runtimeController\.readSnapshot\(\)/)
   const opening = runtime.indexOf('async function performFlightSimSurfaceOpen')
   const preload = runtime.indexOf(
@@ -306,7 +315,9 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     /const acquireInput = \(\) => \{[\s\S]*claimThreeViewportInputOwnership\(INPUT_OWNER_ID,[\s\S]*installFlightSimDesktopInput\(element,[\s\S]*requestPresentationFrame\(\)/,
   )
   assert.match(missionStage, /useFlightSimSurfaceControls\(\{/)
-  assert.match(geoSurface, /useFlightSimSurfaceControls\(\{/)
+  assert.doesNotMatch(geoSurface, /useFlightSimSurfaceControls|data-kg-flight-sim-geo-aircraft/)
+  assert.match(hud, /data-kg-flight-sim-aircraft-media=\{FLIGHT_SIM_AIRCRAFT_ASSET_SPEC\.id\}/)
+  assert.match(hud, /requestFlightSimPointerCapture\(\)/)
   assert.match(missionStage, /&& actorRef\.current/)
   const demandFrameSubscription = missionStage.indexOf(
     'const syncRuntimeSnapshot = () => {',
@@ -483,7 +494,7 @@ test('Flight Sim reuses shared fixed-follow and free-orbit camera ownership', ()
   assert.match(flightTarget, /resolveFlightSimFollowTarget/)
   assert.match(
     physicsRuntime,
-    /const active = isNativeXrRunReadyDemoActive\(markdownDocumentName, markdownDocumentText\)/,
+    /const active = isXrPhysicsRuntimeRunReadyDemoActive\(\s*markdownDocumentName,\s*markdownDocumentText,\s*\)/,
   )
   assert.match(physicsRuntime, /pauseXrNativeControllerDemo\(\)/)
   assert.match(physicsRuntime, /resumeXrNativeControllerDemo\(\)/)

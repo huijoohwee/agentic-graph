@@ -162,6 +162,29 @@ export function shouldApplyStableWorkspaceSelectionToCanvas(args: {
   )
 }
 
+export function resolveStableWorkspaceSelectionSyncDecision(args: {
+  activePath: WorkspacePath | null
+  activeEntryKind: string
+  activeDocumentKey?: string | null
+  currentText: string
+  nextText: string
+  lastLoadedPath?: WorkspacePath | null
+  userEditedActiveText: boolean
+  markdownDocumentName: string
+  markdownDocumentText: string
+  graphDataSource?: string | null
+  canvas2dRenderer?: string | null
+}): { hydrateText: boolean; applyToCanvas: boolean } {
+  const hydrateText = shouldHydrateStableWorkspaceSelectionText(args)
+  if (args.userEditedActiveText) {
+    return { hydrateText: false, applyToCanvas: false }
+  }
+  return {
+    hydrateText,
+    applyToCanvas: shouldApplyStableWorkspaceSelectionToCanvas(args),
+  }
+}
+
 export function isWorkspaceDocumentSwitchApplySettled(args: {
   activeDocumentKey?: string | null
   text: string

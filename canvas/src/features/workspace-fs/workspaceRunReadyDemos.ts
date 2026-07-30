@@ -11,16 +11,13 @@ export const RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-sme-care-agen
 export const XR_PHYSICS_RUN_READY_DEMO_ID = 'xr-physics'
 export const XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-physics-playground-demo.md'
 export const XR_PHYSICS_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
-export const XR_PHYSICS_DEMO_CODEBASE_REL_PATH = `knowgrph/${XR_PHYSICS_DEMO_REPO_REL_PATH}`
 export const XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH = `agentic-canvas-os/${XR_PHYSICS_DEMO_REPO_REL_PATH}`
 export const FLIGHT_SIM_RUN_READY_DEMO_ID = 'flight-sim'
 export const FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-game-flight-sim-demo.md'
 export const FLIGHT_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
-export const FLIGHT_SIM_DEMO_CODEBASE_REL_PATH = `knowgrph/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`
 export const CITY_SIM_RUN_READY_DEMO_ID = 'city-sim'
 export const CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-game-city-building-sim-demo.md'
 export const CITY_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
-export const CITY_SIM_DEMO_CODEBASE_REL_PATH = `knowgrph/${CITY_SIM_DEMO_REPO_REL_PATH}`
 
 export type WorkspaceRunReadyDemoSeed = {
   id: string
@@ -84,13 +81,7 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
     id: XR_PHYSICS_RUN_READY_DEMO_ID,
     label: 'Knowgrph Native XR Physics Demo',
     validationSeedRelPath: XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
-    seedRelPathCandidates: [
-      XR_PHYSICS_DEMO_REPO_REL_PATH,
-      `workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`,
-      `docs/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`,
-      XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
-      XR_PHYSICS_DEMO_CODEBASE_REL_PATH,
-    ],
+    seedRelPathCandidates: [XR_PHYSICS_DEMO_REPO_REL_PATH],
     sourceRoot: 'knowgrph/docs',
     cleanCanvasRecommended: true,
   },
@@ -98,13 +89,7 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
     id: FLIGHT_SIM_RUN_READY_DEMO_ID,
     label: 'Knowgrph Local Flight Simulator',
     validationSeedRelPath: FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
-    seedRelPathCandidates: [
-      FLIGHT_SIM_DEMO_REPO_REL_PATH,
-      `workspace-seeds/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
-      `docs/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
-      FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
-      FLIGHT_SIM_DEMO_CODEBASE_REL_PATH,
-    ],
+    seedRelPathCandidates: [FLIGHT_SIM_DEMO_REPO_REL_PATH],
     sourceRoot: 'knowgrph/docs',
     cleanCanvasRecommended: true,
   },
@@ -112,13 +97,7 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
     id: CITY_SIM_RUN_READY_DEMO_ID,
     label: 'Knowgrph Local City Simulator',
     validationSeedRelPath: CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
-    seedRelPathCandidates: [
-      CITY_SIM_DEMO_REPO_REL_PATH,
-      `workspace-seeds/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
-      `docs/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
-      CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
-      CITY_SIM_DEMO_CODEBASE_REL_PATH,
-    ],
+    seedRelPathCandidates: [CITY_SIM_DEMO_REPO_REL_PATH],
     sourceRoot: 'knowgrph/docs',
     cleanCanvasRecommended: true,
   },
@@ -280,6 +259,14 @@ export const isFlightSimRunReadyDemoActive = (
   readWorkspaceRunReadyDemoId(documentPath, documentText) === FLIGHT_SIM_RUN_READY_DEMO_ID
 )
 
+export const isXrPhysicsRuntimeRunReadyDemoActive = (
+  documentPath?: string | null,
+  documentText?: string | null,
+): boolean => (
+  isXrPhysicsRunReadyDemoActive(documentPath, documentText)
+  || isFlightSimRunReadyDemoActive(documentPath, documentText)
+)
+
 export const isCitySimRunReadyDemoActive = (
   documentPath?: string | null,
   documentText?: string | null,
@@ -288,18 +275,6 @@ export const isCitySimRunReadyDemoActive = (
   return diagnostic.ok
     && diagnostic.id === CITY_SIM_RUN_READY_DEMO_ID
     && diagnostic.sourceId === CITY_SIM_RUN_READY_DEMO_ID
-}
-
-export const isNativeXrRunReadyDemoActive = (
-  documentPath?: string | null,
-  documentText?: string | null,
-): boolean => {
-  const demoId = readWorkspaceRunReadyDemoId(documentPath, documentText)
-  if (demoId === CITY_SIM_RUN_READY_DEMO_ID) {
-    return isCitySimRunReadyDemoActive(documentPath, documentText)
-  }
-  return demoId === XR_PHYSICS_RUN_READY_DEMO_ID
-    || demoId === FLIGHT_SIM_RUN_READY_DEMO_ID
 }
 
 export const resolveWorkspaceRepoLocalRunReadyBootstrap = (args: {

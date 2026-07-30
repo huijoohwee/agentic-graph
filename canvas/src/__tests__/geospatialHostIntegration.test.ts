@@ -257,17 +257,21 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const presentationPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useFlightGeoOverlayMapLibrePresentation.ts')
+  const presentationGatePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'flightGeoOverlayPresentationGate.ts')
   const xrStagePath = path.resolve(process.cwd(), 'src', 'features', 'three', 'XrCanonicalPhysicsStage.tsx')
   const threeGraphPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGraph.impl.tsx')
   const gameplayOverlayPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGameplayOverlay.tsx')
-  const flightOverlayPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibre.ts')
+  const flightCameraPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibreCamera.ts')
+  const flightLayersPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibreLayers.ts')
   const viewportText = readUtf8(viewportPath)
   const hostText = readUtf8(hostPath)
   const presentationText = readUtf8(presentationPath)
+  const presentationGateText = readUtf8(presentationGatePath)
   const xrStageText = readUtf8(xrStagePath)
   const threeGraphText = readUtf8(threeGraphPath)
   const gameplayOverlayText = readUtf8(gameplayOverlayPath)
-  const flightOverlayText = readUtf8(flightOverlayPath)
+  const flightCameraText = readUtf8(flightCameraPath)
+  const flightLayersText = readUtf8(flightLayersPath)
   if (viewportText.includes('shared-xr-stage') || hostText.includes('sharedXrStage')) {
     throw new Error('Expected Geo+XR to avoid the conflicting shared-R3F provider policy')
   }
@@ -309,9 +313,9 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
     || !presentationText.includes('applyFlightGeoOverlayCameraToMap(')) {
     throw new Error('Expected MapLibre initialization to finish with the Flight camera owner')
   }
-  const renderAcknowledgeIndex = presentationText.indexOf("map.on('render', listener)")
-  const firstFrameMarkerIndex = presentationText.indexOf("canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'")
-  const presentationCallbackIndex = presentationText.indexOf('onPresented?.(presentation)')
+  const renderAcknowledgeIndex = presentationGateText.indexOf("map.on('render', listener)")
+  const firstFrameMarkerIndex = presentationGateText.indexOf("canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'")
+  const presentationCallbackIndex = presentationGateText.indexOf('onPresented?.(presentation)')
   if (
     renderAcknowledgeIndex < 0
     || firstFrameMarkerIndex < 0
@@ -319,10 +323,10 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   ) {
     throw new Error('Expected only the rendered native MapLibre overlay to acknowledge Geo+XR Flight presentation')
   }
-  if (!presentationText.includes("overlay.phase !== 'stopped'")
-    || !presentationText.includes('pending.attempts += 1')
-    || !presentationText.includes('FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT')
-    || !presentationText.includes('FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT')) {
+  if (!presentationGateText.includes("overlay.phase !== 'stopped'")
+    || !presentationGateText.includes('pending.attempts += 1')
+    || !presentationGateText.includes('FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT')
+    || !presentationGateText.includes('FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT')) {
     throw new Error('Expected stopped re-preparation and transient MapLibre renders to use bounded, exact presentation retries')
   }
   if (!viewportText.includes('completeFlightSimMapLibreReadyFrame(')
@@ -335,27 +339,30 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
     || !xrStageText.includes('geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere')) {
     throw new Error('Expected Geo+XR to hide duplicate R3F terrain and atmosphere')
   }
-  if (!threeGraphText.includes('const rendererDefaultClearAlpha = geospatialComposite ? 0')) {
+  if (!/const rendererDefaultClearAlpha\s*=\s*geospatialComposite\s*\?\s*0/.test(threeGraphText)) {
     throw new Error('Expected the Flight R3F canvas to stay transparent above MapLibre')
   }
-  if (!gameplayOverlayText.includes('actorsVisible={!props.geospatialComposite}')) {
-    throw new Error('Expected Geo+XR to suppress competing R3F Flight geometry')
+  if (!gameplayOverlayText.includes('actorsVisible')
+    || gameplayOverlayText.includes('actorsVisible={!props.geospatialComposite}')) {
+    throw new Error('Expected Geo+XR to retain the actor-only R3F Media Airplane above MapLibre')
   }
   for (const layer of ['route', 'routePoints', 'aircraft', 'aircraftOutline']) {
-    if (!flightOverlayText.includes(`${layer}:`)) {
+    if (!flightLayersText.includes(`${layer}:`)) {
       throw new Error(`Expected the MapLibre Flight projection to include ${layer}`)
     }
   }
   for (const marker of [
     "overlay.camera.effectiveOwner === 'timeline-playback'",
     'center: [...overlay.camera.centerCoordinate]',
-    'FLIGHT_GEO_NIGHT_EXPRESSION',
   ]) {
-    if (!flightOverlayText.includes(marker)) {
-      throw new Error(`Expected visible MapLibre Flight camera/palette contract to include ${marker}`)
+    if (!flightCameraText.includes(marker)) {
+      throw new Error(`Expected visible MapLibre Flight camera contract to include ${marker}`)
     }
   }
-  if (flightOverlayText.includes('overlay.tick <= 0')) {
+  if (!flightLayersText.includes('FLIGHT_GEO_NIGHT_EXPRESSION')) {
+    throw new Error('Expected visible MapLibre Flight palette to retain the night expression')
+  }
+  if (flightCameraText.includes('overlay.tick <= 0')) {
     throw new Error('Expected Fixed Follow camera framing to apply at stopped/ready tick zero')
   }
 }

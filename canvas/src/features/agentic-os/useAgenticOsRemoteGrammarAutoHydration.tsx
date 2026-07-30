@@ -1,7 +1,7 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
-import { isNativeXrRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { isCitySimRunReadyDemoActive, isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { QUERY_PARAM_RUNTIME_IDENTITY_PROOF } from '@/lib/routing/queryParams'
 
 const AgenticOsRemoteGrammarAutoHydrationContext = React.createContext(true)
@@ -22,7 +22,11 @@ export function AgenticOsRemoteGrammarAutoHydrationBoundary(props: {
   const runtimeIdentityProofRequested = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get(QUERY_PARAM_RUNTIME_IDENTITY_PROOF) === '1'
   const offlineNativeXrActive = useGraphStore(state => (
-    isNativeXrRunReadyDemoActive(
+    isXrPhysicsRuntimeRunReadyDemoActive(
+      state.markdownDocumentName,
+      state.markdownDocumentText,
+    )
+    || isCitySimRunReadyDemoActive(
       state.markdownDocumentName,
       state.markdownDocumentText,
     )

@@ -2,11 +2,11 @@
 title: "Reference implementation: Knowgrph City Simulation PRD/TAD"
 id: "md:knowgrph-game-city-building-sim-prd-tad"
 doc_type: "PRD/TAD"
-version: "1.3.0"
-date: "2026-07-30"
+version: "1.7.0"
+date: "2026-07-31"
 lang: "en-US"
 owner: "docs.game.city-simulation"
-local_rung: "dev-proven"
+local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
@@ -20,10 +20,15 @@ requirements_authority: "/.kiro/specs/knowgrph-city-building-sim/requirements.md
 ## 1. Product decision
 
 Knowgrph will add a small, deterministic city simulation to the existing
-shared Canvas. The feature turns a parcel zoning decision into an immediately
-visible economy change and a bounded, explainable local recommendation. It is
-an extension of current Canvas, FloatingPanel, camera, WorkspaceFs, MCP, and
-gameplay-overlay owners rather than a standalone game or application.
+Geo+XR surface. Native MapLibre is the sole City visual, renderer, camera, and
+viewport-gesture owner. `CitySimMediaFigure` wraps that native map as a labeled,
+selectable semantic media stage; City mounts zero Three.js/React Three Fiber
+Canvas, stage, mesh, or camera. City Builder coordinate controls own parcel
+input.
+The feature turns a parcel zoning decision into an immediately visible economy
+change and a bounded, explainable local recommendation. It is an extension of
+current Geo, Canvas, Flight Geo overlay, FloatingPanel, camera, WorkspaceFs,
+MCP, and gameplay-overlay owners rather than a standalone game or application.
 
 The normative contract is
 `.kiro/specs/knowgrph-city-building-sim/requirements.md`. This PRD/TAD explains
@@ -67,14 +72,17 @@ state and that a recommendation is bounded and non-mutating until approved.
 
 1. Start Knowgrph from the exact candidate.
 2. Open the city workspace seed in Explorer -> Source Files and apply it.
-3. City Builder opens and the authored 4 by 4 grid appears on the shared
-   Canvas.
-4. Select `r00c02`, zone it residential, and Start.
-5. One tick commits; Stop fences later ticks.
-6. Request Advice and inspect the ranked, zero-cost proposals.
-7. Save and confirm read-back from `/game-city-sim/city-grid.md`.
-8. Visit the six existing FloatingPanel views and see one shared city revision.
-9. Exit and recover the prior surface and camera.
+3. Geo+XR opens with one native MapLibre map as the sole City visual, renderer,
+   camera, and viewport-gesture owner, wrapped by the semantic City media
+   `figure`.
+4. The existing Flight Geo source/layers show one deterministic route and
+   stopped aircraft while Flight gameplay/readiness remain inactive.
+5. Select `r00c02`, zone it residential, and Start.
+6. One tick commits; Stop fences later ticks.
+7. Request Advice and inspect the ranked, zero-cost proposals.
+8. Save and confirm read-back from `/game-city-sim/city-grid.md`.
+9. Visit the six existing FloatingPanel views and see one shared city revision.
+10. Exit and recover the prior FloatingPanel/Canvas surface state exactly once.
 
 ## 4. Scope
 
@@ -89,7 +97,15 @@ state and that a recommendation is bounded and non-mutating until approved.
 - strict `/game.city @canvas #civic` native invocation;
 - exactly two browser-local MCP tools;
 - KGC plus CSV save/read-back at `/game-city-sim/city-grid.md`;
-- one additive city stage in the existing shared Canvas;
+- Geo+XR activation with the existing native MapLibre host as the sole City
+  visual, renderer, camera, and viewport-gesture owner, wrapped by one semantic
+  City media `figure`;
+- zero City Three.js/R3F Canvas, stage, mesh, camera, or pointer handler;
+- explicit exclusion of the retained native XR physics world while City owns scene authority;
+- one labeled semantic City media `figure`, conditionally selectable without
+  intercepting MapLibre gestures; City Builder coordinate controls own parcel input;
+- one deterministic read-only stopped aircraft/route projection through the
+  existing Flight Geo store/source/layers, with a null XR environment and no Flight gameplay/readiness;
 - `cityBuilder` plus city projections in Media, Animation, Motion Control,
   Game Mode, Flight Sim, and Camera;
 - source-neutral exact-SHA browser proof.
@@ -111,7 +127,9 @@ state and that a recommendation is bounded and non-mutating until approved.
 | Required model calls | 0 |
 | Required network calls for core loop | 0 |
 | Added runtime dependencies | 0 |
-| Canvas elements during session | exactly 1 |
+| City-created maps, sources, layers, or Three canvases | exactly 0 |
+| Existing City visual/renderer/camera owners retained | 1 native MapLibre host |
+| Flight gameplay/readiness activated by City | 0 |
 | Deterministic replay | byte-identical |
 | Save targets | exactly 1 |
 | Advisor rounds | at most 2 |
@@ -154,6 +172,27 @@ hours. None authorizes a promotion.
 
 ## 5. Product surfaces
 
+### Geo+XR composition
+
+City source activation selects Surface Mode `geo-xr`. The existing native
+MapLibre host stays visible as the sole City visual, renderer, camera, and
+viewport-gesture owner. `CitySimMediaFigure` wraps that geospatial projection
+directly and owns only the semantic `figure`, active-only selection marker, and
+caption. City mounts zero Three.js/R3F Canvas, stage, mesh, camera, or parcel
+hit testing. City Builder coordinate controls own parcel input. City creates no
+map, source/layer family, Canvas, or renderer.
+
+The City-owned pure `citySimAerialInspectionProjection` adapter reuses the
+current selected authored XR spatial profile and existing Flight projector to
+produce one deterministic route and one aircraft with phase `stopped`, run id
+`0`, tick `0`, ready-frame request `null`, and environment `null`. Profile and
+the absent environment form its stable visual identity, so City tick/revision
+changes do not restart MapLibre bootstrap or move the aircraft. The shared
+`CanvasViewport` geospatial publisher sends it through the existing Flight Geo
+overlay store and MapLibre source/layers. The pure adapter calls no Flight
+lifecycle, mission-advance, control, or readiness API; the shared publisher
+retains normal Flight subscriptions for arbitration.
+
 ### City Builder
 
 `cityBuilder` is the only complete editing surface. It displays lifecycle,
@@ -168,8 +207,8 @@ status, and typed errors.
 | Animation | fixed-step playback and tick revision | delegates Start/Stop |
 | Motion Control | normalized input and current selection | no input copy |
 | Game Mode | exclusive city-overlay state | explicit enter/exit handoff |
-| Flight Sim | read-only aerial-inspection handoff | no second city world |
-| Camera | orthographic framing and restore target | shared camera owner |
+| Flight Sim | read-only City aerial-inspection handoff | no Flight gameplay/readiness or second city world |
+| Camera | native MapLibre framing | native MapLibre owns Geo+XR framing |
 
 All seven views read one immutable City Runtime snapshot. Switching views must
 not recreate, fork, or reset the city.
@@ -276,7 +315,7 @@ authored default in memory without overwriting those bytes.
 
 ## 10. Technical architecture
 
-### Topology: city simulation v1.3 — conformance baseline
+### Topology: city simulation v1.7 — native MapLibre Geo+XR baseline
 
 **Boundaries:** trusted browser runtime and device-local storage in Authoring;
 an unmaterialized non-public Mirror; and an unprovisioned public Delivery
@@ -287,11 +326,14 @@ not deployed components.
 |---|---|---|---|---|---|---|
 | City controls | Producer/router | Browser UI + invocation parser | Authoring | City Runtime | synchronous function call | volatile user-device memory |
 | Embedded tools | Gateway | Browser-local WebMCP | Authoring | City Runtime | asynchronous typed function call | volatile user-device memory |
-| City Runtime | Router | Browser function/state owner | Authoring | economy, Advisor, Workspace adapter, stage | synchronous function calls; async save | volatile user-device memory |
+| City Runtime | Router | Browser function/state owner | Authoring | economy, Advisor, Workspace adapter, City media figure, City Geo projection | synchronous function calls; async save | volatile user-device memory |
 | Economy + Advisor | Producer | Pure browser functions | Authoring | City Runtime | synchronous return | volatile user-device memory |
 | Workspace adapter | Store adapter | Browser function | Authoring | city-grid document | asynchronous WorkspaceFs read/write | user device |
 | City-grid document | Store | KGC + CSV document | Authoring | Workspace adapter | device-local persistence | user device |
-| City stage | Consumer | React Three Fiber group | Authoring | shared Canvas and camera owner | synchronous render projection | volatile user-device memory |
+| City media figure | Consumer | Semantic HTML `figure` | Authoring | native MapLibre Geo+XR host and selection tooling | marker-only DOM projection | volatile user-device memory |
+| `citySimAerialInspectionProjection` | Producer/adapter | Pure browser projection through the existing Flight projector | Authoring | current authored XR profile, null environment, shared geospatial publisher | synchronous stopped snapshot derivation | volatile user-device memory |
+| Flight Geo overlay owners | Router/consumer | Existing store + MapLibre source/layers | Authoring | native MapLibre Geo host | synchronous store subscription and map-layer projection | volatile user-device memory |
+| Native Geo host | Consumer | Existing MapLibre map | Authoring | selected Geo provider | existing provider transport; independent from gameplay | volatile user-device memory |
 | Approved mirror package | Consumer | immutable publish artifact, absent | Mirror | public delivery surface | batch publish, boundary closed | none; not materialized |
 | Public delivery surface | Consumer | static browser application, absent | Delivery | end-user browser | HTTPS fetch, boundary closed | none; not provisioned |
 
@@ -302,7 +344,11 @@ flowchart TB
     Tools["Embedded tools · gateway"] -->|async typed call| Runtime
     Runtime -->|sync function| Logic["Economy + Advisor · producers"]
     Runtime -->|async WorkspaceFs| Store["City-grid document · device-local store"]
-    Runtime -->|sync immutable projection| Stage["City stage · consumer"]
+    Runtime -->|semantic activation| Figure["CitySimMediaFigure · consumer"]
+    Runtime -->|sync immutable projection| Aerial["citySimAerialInspectionProjection"]
+    Aerial -->|shared publisher + existing store| FlightGeo["Flight Geo source/layers"]
+    FlightGeo -->|existing map projection| Geo["Native MapLibre Geo host"]
+    Geo -->|wrapped directly| Figure
   end
   subgraph M["Mirror boundary — absent"]
     Mirror["Approved mirror package · not materialized"]
@@ -314,9 +360,10 @@ flowchart TB
   Mirror -. "closed batch promotion" .-> Delivery
 ```
 
-**Version note:** v1.3 adds explicit roles, types, connections, residency, and
-closed Mirror/Delivery targets; it does not change runtime placement or claim
-promotion.
+**Version note:** v1.7 makes the native MapLibre Geo+XR host the sole City
+visual, renderer, camera, and viewport-gesture owner, wraps it directly with
+`CitySimMediaFigure`, mounts zero City Three.js/R3F Canvas, and retains the
+stopped aircraft/route without making a browser/promotion claim.
 
 ### Component inventory and VCC ownership
 
@@ -325,7 +372,8 @@ promotion.
 | `TAD-CITY-RUNTIME` | City Runtime / `dispatchCityOperation` | Runtime commits one valid operation atomically. | dev-proven | undocumented | 01, 02, 07 |
 | `TAD-CITY-MODEL` | economy + Advisor / `advanceCityTick`, `adviseCityZoning` | Pure functions derive bounded deterministic results. | dev-proven | undocumented | 01, 04, 07 |
 | `TAD-CITY-PERSIST` | codec + WorkspaceFs / `saveCityGridToWorkspace` | Adapter verifies one canonical document by read-back. | dev-proven | undocumented | 03, 07 |
-| `TAD-CITY-STAGE` | stage + camera / immutable projection | Consumer renders one snapshot in the shared Canvas. | dev-proven | undocumented | 02, 07 |
+| `TAD-CITY-GEO-SURFACE` | `CitySimMediaFigure` + native MapLibre / semantic projection | Wraps the sole native MapLibre Geo+XR owner in a selectable semantic `figure`; mounts zero City Three.js/R3F content while City Builder owns parcel input. | spec-complete | undocumented | 02, 07 |
+| `TAD-CITY-GEO` | `projectCitySimAerialInspectionToGeospatialOverlay` + shared publisher + existing Flight Geo store/layers | Reuses the current authored XR profile and Flight projector for one deterministic stopped aircraft/route with a null environment and no Flight activation. | spec-complete | undocumented | 02, 07 |
 | `TAD-CITY-INVOKE` | parser / `executeCitySimInvocation` | Parser validates the exact native grammar before dispatch. | dev-proven | undocumented | 05, 07 |
 | `TAD-CITY-MCP` | embedded tools / inspect + control | Gateway exposes the same dispatcher at browser-local trust. | dev-proven | undocumented | 06, 07 |
 | `TAD-CITY-MIRROR` | approved package / batch publish | Absent target receives only an approved whole candidate. | undocumented | undocumented | — |
@@ -343,19 +391,31 @@ rungs are owned by the VCC register, not inferred from source paths.
 | Offline behavior | 0 required network/model calls | local pure functions + WorkspaceFs | 01, 03, 04 |
 | Observability | typed result for every operation; one zero Cost_Log/advice | shared immutable snapshot | 04 |
 | Device reach | pointer, keyboard, touch parity | copied normalized input snapshot | 01, 07 |
+| Visual ownership | 0 City-created maps/sources/layers/Three Canvases; Flight inactive | sole native MapLibre + semantic figure + existing Flight Geo overlay | 02, 07 |
 
 ### Single-world rule
 
-The City Stage is a React Three Fiber group with instanced parcel/building
-meshes and selection hit testing. It is inserted by the existing gameplay
-overlay owner and never creates a Canvas or alternate renderer. Opening another
-exclusive gameplay surface exits the city through the common lifecycle first.
+The City Geo+XR presentation uses one native MapLibre map as its sole visual,
+renderer, camera, and viewport-gesture owner. `CitySimMediaFigure` wraps that
+map directly as a labeled semantic media stage and owns no renderer or pointer
+handler. City mounts zero Three.js/R3F Canvas, stage, mesh, camera, or selection
+hit testing. City Builder coordinate controls own parcel input. City creates no
+map, source/layer family, Canvas, or alternate renderer.
+Its pure aerial adapter reuses the current authored XR profile and existing
+Flight projector to derive phase `stopped` with environment `null`. The shared
+geospatial publisher uses `gympgrph/src/flightGeoOverlay.ts`, and the existing
+`gympgrph/src/flightGeoOverlayMapLibre.ts` source/layers render the route and
+aircraft. The City adapter calls no Flight lifecycle, control, mission-step, or
+readiness API. Opening another exclusive gameplay surface exits the city
+through the common lifecycle first; shared publication arbitration then
+replaces or clears the City aerial projection as appropriate.
 
 ### Camera rule
 
-City entry installs a mode-scoped orthographic `isometric-topdown` framing
-through the existing camera owner. Responsive bounds update the projection
-matrix. Exit reinstalls the captured camera reference exactly once.
+In Geo+XR, native MapLibre keeps its own camera and responsive viewport
+handling. City neither captures nor restores a Three/R3F camera and does not
+install an orthographic camera over the geographic presentation. Exit restores
+only the captured FloatingPanel/Canvas surface state exactly once.
 
 ### Persistence rule
 
@@ -406,12 +466,16 @@ agent-ready contract. **Excluded:** a monolithic proxy and transport parity.
 
 ## 11. Architecture decisions
 
-### ADR-1: Additive stage, not a second world
+### ADR-1: Geo+XR MapLibre-owned presentation, not a second world
 
-**Decision:** Mount instanced city meshes inside the existing shared Canvas.
+**Decision:** Retain native MapLibre Geo+XR as the sole City visual, renderer,
+camera, and viewport-gesture owner; wrap it directly in
+`CitySimMediaFigure`, mount zero City Three.js/R3F content, and use City Builder
+coordinate controls for parcel input.
 
-**Reason:** One scene and camera lifecycle keeps overlays composable and avoids
-the synchronization and accessibility cost of a parallel renderer.
+**Reason:** The semantic figure preserves the map, existing aircraft/route
+overlay, and selection tooling without adding a parallel Three world, map, or
+renderer owner.
 
 ### ADR-2: Integer economy
 
@@ -442,6 +506,18 @@ FloatingPanel routes.
 **Reason:** Existing panels retain ownership, city state stays centralized, and
 the change avoids six copies and dependency cycles.
 
+### ADR-6: Reuse the Flight Geo overlay without Flight gameplay
+
+**Decision:** Derive the deterministic stopped aircraft/route from the current
+selected authored XR spatial profile through the existing Flight projector and
+`projectCitySimAerialInspectionToGeospatialOverlay`, with environment `null`.
+The shared geospatial publisher uses the existing Flight Geo store
+and MapLibre source/layers. The pure City adapter calls no Flight lifecycle,
+mission-advance, control, or readiness API.
+
+**Reason:** Reusing the stable overlay owner supplies the requested aerial
+context without duplicate MapLibre sources/layers or a false Flight session.
+
 ### ADR alternatives and twelve-month TCO
 
 Cash estimates assume the bounded local workload; maintainer hours expose the
@@ -450,43 +526,50 @@ would add no license fee, but duplicates an existing owner.
 
 | ADR | Chosen option | FOSS alternative considered | Chosen 12-month TCO | Alternative 12-month TCO | Decision |
 |---|---|---|---|---|---|
-| 1 | stage in shared renderer | standalone FOSS scene/renderer | $0 + 4 h | $0 + 24 h | Reject duplicated world and camera owner |
+| 1 | native MapLibre wrapped by semantic figure | standalone FOSS scene/renderer | $0 + 4 h | $0 + 24 h | Reject duplicated world and camera owner |
 | 2 | native safe integers | FOSS arbitrary-precision numeric library | $0 + 2 h | $0 + 6 h | Reject unnecessary dependency |
 | 3 | KGC + CSV through WorkspaceFs | FOSS embedded browser database | $0 + 6 h | $0 + 16 h | Prefer readable, diffable state |
 | 4 | deterministic local heuristic | FOSS local model runtime | $0 + 4 h; 0 tokens | about $120 power + 24 h; unbounded inference risk | Preserve offline deterministic zero cost |
 | 5 | one projection wrapper | separate FOSS React composition per panel | $0 + 10 h | $0 + 30 h | Avoid duplicated adapters |
+| 6 | existing Flight Geo overlay owners | City-specific MapLibre source/layers | $0 + 4 h | $0 + 18 h | Avoid duplicate map-layer lifecycle and readiness semantics |
 
 ## 12. Error policy
 
 Every rejected operation returns a typed local result containing a code and
-specific offending value. Entry failure restores the prior surface/camera.
-Tick failure preserves the prior revision. Save mismatch preserves in-memory
-state and reports unsaved. Malformed file handling never repairs or overwrites
-bytes. Advisor ambiguity never auto-zones.
+specific offending value. Entry failure restores the prior
+FloatingPanel/Canvas surface state.
+If Exit supersedes an in-flight Geo claim and automatic rollback fails, the
+typed `surface-restoration-failed` result replaces the provisional Exit
+success. Tick failure preserves the prior revision. Save mismatch preserves
+in-memory state and reports unsaved. Malformed file handling never repairs or
+overwrites bytes. Advisor ambiguity never auto-zones. No error path creates
+fallback MapLibre sources/layers or activates Flight.
 
 ## 13. VCC and Evidence Reference register
 
-VCCs 01–06 have one reproducible authoring result; VCC-07 has no
-candidate-bound browser result. That derives local `dev-proven`, not
-`runtime-ready`, and proves nothing about delivery.
+VCCs 01 and 03–06 retain one prior reproducible authoring result. The v1.7
+Geo+XR, environment-exclusion, and semantic-media additions to VCC-02 have no
+candidate-bound browser result, and VCC-07 remains unrecorded. The document
+therefore remains `spec-complete`; prior evidence does not prove the new
+composition or delivery.
 
 | VCC | Evaluator-checkable end state and constraint | Stated check | Evidence Reference |
 |---|---|---|---|
 | `VCC-CITY-01` | Two equal seeds and input traces yield byte-identical valid city states; no clock, random, network, or model input. | Registered city model, economy, input, and lifecycle cases exit 0 with non-zero totals. | 2026-07-30 authoring: `npm --prefix canvas run test:ci:unit -- city.sim`; 31/31 passed |
-| `VCC-CITY-02` | All seven views project one revision in one Canvas and exit restores the captured surface/camera exactly once. | Registered shared-surface, camera, and projection cases exit 0. | same authoring run; relevant camera/source/runtime cases passed |
+| `VCC-CITY-02` | Geo+XR retains one native MapLibre visual/renderer/camera/gesture owner wrapped by one semantic/selectable `CitySimMediaFigure`; zero City Three.js/R3F Canvas/stage/mesh/camera mounts; native XR physics/graph and Flight XR environment stay absent; existing Flight Geo layers show the stopped aircraft/route without Flight activation or duplicate owners; exit restores FloatingPanel/Canvas surface state once. | Registered ownership/projection/semantic-media cases and candidate-bound browser assertions exit 0. | none recorded for v1.7; prior runs did not cover the full contract |
 | `VCC-CITY-03` | Save writes only the canonical path, verifies byte and semantic read-back, and preserves malformed prior bytes. | Registered codec and persistence cases exit 0. | same authoring run; codec/persistence cases passed |
 | `VCC-CITY-04` | Advisor returns at most two deterministic rounds and one zero-token cost record without mutating a zone. | Registered Advisor cases exit 0 and surface round/cost assertions. | same authoring run; Advisor case passed |
 | `VCC-CITY-05` | Parser accepts only the exact tuple and typed operations; every invalid input leaves the revision unchanged. | Registered invocation cases exit 0 with accepted/rejected counts. | same authoring run; invocation case passed |
 | `VCC-CITY-06` | Exactly two catalogued embedded tools inspect/control the same dispatcher; no remote transport or deployment authority is added. | Registered MCP contract and source-ownership cases exit 0. | same authoring run; MCP/source cases passed |
-| `VCC-CITY-07` | A clean browser reaches first tick within five actions/two minutes, then proves save, projections, stop fence, replay, and exit at one exact SHA. | Candidate-bound browser proof surfaces elapsed time, action count, SHA, and assertions. | none recorded |
+| `VCC-CITY-07` | A clean browser reaches first tick within five actions/two minutes, then proves Geo+XR composition, stopped aerial projection, inactive Flight, save, projections, stop fence, replay, and exit at one exact SHA. | Candidate-bound browser proof surfaces elapsed time, action count, SHA, and assertions. | none recorded |
 
 ## 14. PRD ↔ TAD ↔ VCC traceability
 
 | PRD requirement | Product outcome | TAD component / interface | VCC |
 |---|---|---|---|
 | `PRD-CITY-R1/R12` | source ownership and honest evidence | `TAD-CITY-RUNTIME` / evidence boundary | 01, 07 |
-| `PRD-CITY-R2/R11` | activation and seven-view proof | `TAD-CITY-STAGE` / immutable projection | 02, 07 |
-| `PRD-CITY-R3/R10` | shared scene, camera, responsive rendering | `TAD-CITY-STAGE` / stage + camera framing | 02 |
+| `PRD-CITY-R2/R11` | activation and seven-view proof | `TAD-CITY-GEO-SURFACE` + `TAD-CITY-GEO` / immutable projections | 02, 07 |
+| `PRD-CITY-R3/R10` | sole MapLibre ownership, semantic figure, aerial overlay, surface restoration | `TAD-CITY-GEO-SURFACE` + `TAD-CITY-GEO` | 02, 07 |
 | `PRD-CITY-R4/R5` | deterministic economy and lifecycle | `TAD-CITY-RUNTIME` / dispatch; `TAD-CITY-MODEL` / tick | 01 |
 | `PRD-CITY-R6` | canonical save and read-back | `TAD-CITY-PERSIST` / WorkspaceFs adapter | 03 |
 | `PRD-CITY-R7` | bounded local advice | `TAD-CITY-MODEL` / advise | 04 |
@@ -501,7 +584,7 @@ component or requirement is intentionally orphaned.
 | Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria (VCC) |
 |---|---|---|---|---|---|
 | deterministic runtime and Advisor | dev-proven | undocumented | clean-browser proof incomplete | major | 01, 04, 07 |
-| shared stage and persistence | dev-proven | undocumented | clean-browser proof incomplete | major | 02, 03, 07 |
+| Geo+XR MapLibre surface, semantic media figure, aerial projection, and persistence | spec-complete | undocumented | v1.7 exact-SHA clean-browser proof absent | major | 02, 03, 07 |
 | invocation and embedded tools | dev-proven | undocumented | no delivery proof | major | 05, 06, 07 |
 | clean browser first value | spec-complete | undocumented | exact-SHA proof absent | major | 07 |
 | Mirror and Delivery | undocumented | undocumented | targets absent and promotion not requested | none | separate promotion VCC required |

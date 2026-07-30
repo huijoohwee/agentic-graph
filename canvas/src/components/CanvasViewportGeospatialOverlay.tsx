@@ -6,6 +6,7 @@ import type { ViewportControlsPreset } from '@/lib/config.viewport-controls'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
 import { buildGeospatialOverlayGraphData } from '@/features/geospatial/geospatialOverlayGraphData'
+import { applyGeoXrGameplayOverlayPublication } from '@/features/geospatial/geoXrGameplayOverlayArbitration'
 import {
   buildGrabMapsPoiRichMediaSrcDoc,
   publishGrabMapsPoiRichMediaPreview,
@@ -47,13 +48,14 @@ import {
   projectFlightSimTimelineCameraToGeospatial,
   projectFlightSimToGeospatialOverlay,
 } from '@/features/game-flight-sim/flightSimGeospatialProjection'
-import {
-  projectXrEnvironmentToFlightGeo,
-} from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
+import { projectXrEnvironmentToFlightGeo } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
+import { readFlightSimXrSpatialProfile } from '@/features/game-flight-sim/flightSimSpatialProfile'
 import {
   clearFlightGeoOverlayAfterPublisherRelease,
   claimActiveFlightGeoOverlayPublisherLease,
 } from '@/features/game-flight-sim/flightGeoOverlayPublisherLease'
+import { projectCitySimAerialInspectionToGeospatialOverlay } from '@/features/game-city-sim/citySimAerialInspectionProjection'
+import { readCitySimSnapshot, subscribeCitySimSnapshot } from '@/features/game-city-sim/citySimRuntime'
 import {
   readFlightSimCameraSnapshot,
   subscribeFlightSimCamera,
@@ -76,6 +78,10 @@ import {
 
 const EMPTY_STRING_ARRAY: string[] = []
 const EMPTY_OPEN_WIDGETS_BY_RENDERER: Record<string, string[]> = {}
+
+function readFlightSimActive(): boolean {
+  return readFlightSimSnapshot().active
+}
 
 type GeospatialOverlayHostProps = {
   active?: boolean
@@ -106,6 +112,7 @@ export type CanvasViewportGeospatialOverlayProps = {
   geospatialModeEnabled: boolean
   graphData: GraphData
   storyboardWidgetPanelsActive: boolean
+  threeOverlayComposed: boolean
 }
 
 const MissingGeospatialOverlayHost = React.memo(function MissingGeospatialOverlayHost(_props: GeospatialOverlayHostProps) {
@@ -140,11 +147,23 @@ const GeospatialOverlayHostLazy = React.lazy(async (): Promise<{ default: React.
 export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewportGeospatialOverlay(
   props: CanvasViewportGeospatialOverlayProps,
 ) {
-  const { active, composedWithXr, geospatialModeEnabled, graphData, storyboardWidgetPanelsActive } = props
+  const {
+    active,
+    composedWithXr,
+    geospatialModeEnabled,
+    graphData,
+    storyboardWidgetPanelsActive,
+    threeOverlayComposed,
+  } = props
   const flightBootstrapRequested = React.useSyncExternalStore(
     subscribeFlightSimGeospatialBootstrapRequest,
     readFlightSimGeospatialBootstrapRequested,
     readFlightSimGeospatialBootstrapRequested,
+  )
+  const flightSimActive = React.useSyncExternalStore(
+    subscribeFlightSimSnapshot,
+    readFlightSimActive,
+    readFlightSimActive,
   )
   const gympgrphBridge = useGraphStore(
     useShallow(s => ({
@@ -392,9 +411,9 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
   }, [geospatialModeEnabled, selectedEdgeId, selectedNodeId, selectedNodeIds, viewPinned, zoomToSelectionMode])
 
   React.useLayoutEffect(() => {
-    if (!active || !composedWithXr) return
+    if (!active || !composedWithXr || !flightSimActive) return
     return claimFlightSimReadyPresenter('maplibre')
-  }, [active, composedWithXr])
+  }, [active, composedWithXr, flightSimActive])
 
   React.useEffect(() => {
     const publisherLease = claimActiveFlightGeoOverlayPublisherLease(
@@ -405,6 +424,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     let disposed = false
     let loadPending = false
     let publishCurrent: (() => void) | null = null
+    let unsubscribeCity = () => void 0
     let unsubscribeFlight = () => void 0
     let unsubscribeFlightCamera = () => void 0
     let unsubscribeFlightTraining = () => void 0
@@ -426,42 +446,52 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
           const publish = () => {
             if (disposed || !publisherLease.isCurrent()) return
             const flight = readFlightSimSnapshot()
-            if (!flight.active) {
-              module.clearFlightGeoOverlay?.()
-              return
-            }
-            const spatialProfile = readFlightSimSpatialProfile()
-            const motionRuntime = readXrMotionReferenceRuntime()
-            const timelinePose = useGraphStore.getState().timelineTransportPlaying
-              ? sampleXrMotionReferenceCameraPose(
-                  motionRuntime.plan.camera,
-                  motionRuntime.playheadSeconds,
-                  motionRuntime.plan.cast,
-                  motionRuntime.plan.subjects,
-                )
-              : null
-            module.setFlightGeoOverlay?.(
-              projectFlightSimToGeospatialOverlay(
-                flight,
-                spatialProfile,
-                {
-                  source: readXrNativeControllerCamera().mode,
-                  timeline: timelinePose
-                    ? projectFlightSimTimelineCameraToGeospatial(
-                        timelinePose,
-                        spatialProfile,
+            const city = readCitySimSnapshot()
+            applyGeoXrGameplayOverlayPublication({
+              city,
+              clearOverlay: () => module.clearFlightGeoOverlay?.(),
+              flight,
+              projectCity: citySnapshot =>
+                projectCitySimAerialInspectionToGeospatialOverlay(
+                  citySnapshot,
+                  readFlightSimXrSpatialProfile(),
+                ),
+              projectFlight: flightSnapshot => {
+                const spatialProfile = readFlightSimSpatialProfile()
+                const motionRuntime = readXrMotionReferenceRuntime()
+                const timelinePose =
+                  useGraphStore.getState().timelineTransportPlaying
+                    ? sampleXrMotionReferenceCameraPose(
+                        motionRuntime.plan.camera,
                         motionRuntime.playheadSeconds,
+                        motionRuntime.plan.cast,
+                        motionRuntime.plan.subjects,
                       )
-                    : null,
-                  view: readFlightSimCameraSnapshot().view,
-                },
-                readFlightSimTrainingSnapshot().night,
-                readCurrentFlightSimReadyFrameRequestId(),
-                projectXrEnvironmentToFlightGeo(motionRuntime.plan),
-              ),
-            )
+                    : null
+                return projectFlightSimToGeospatialOverlay(
+                  flightSnapshot,
+                  spatialProfile,
+                  {
+                    source: readXrNativeControllerCamera().mode,
+                    timeline: timelinePose
+                      ? projectFlightSimTimelineCameraToGeospatial(
+                          timelinePose,
+                          spatialProfile,
+                          motionRuntime.playheadSeconds,
+                        )
+                      : null,
+                    view: readFlightSimCameraSnapshot().view,
+                  },
+                  readFlightSimTrainingSnapshot().night,
+                  readCurrentFlightSimReadyFrameRequestId(),
+                  projectXrEnvironmentToFlightGeo(motionRuntime.plan),
+                )
+              },
+              setOverlay: overlay => module.setFlightGeoOverlay?.(overlay),
+            })
           }
           publishCurrent = publish
+          unsubscribeCity = subscribeCitySimSnapshot(publish)
           unsubscribeFlight = subscribeFlightSimPresentation(
             'maplibre',
             publish,
@@ -491,6 +521,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     return () => {
       disposed = true
       unsubscribeActivation()
+      unsubscribeCity()
       unsubscribeFlight()
       unsubscribeFlightCamera()
       unsubscribeFlightTraining()
@@ -502,8 +533,15 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       if (!shouldClear) return
       void clearFlightGeoOverlayAfterPublisherRelease(
         publisherLease,
-        () => readFlightSimSnapshot().active,
-        subscribeFlightSimSnapshot,
+        () => readFlightSimSnapshot().active || readCitySimSnapshot().active,
+        listener => {
+          const unsubscribeFlightRuntime = subscribeFlightSimSnapshot(listener)
+          const unsubscribeCityRuntime = subscribeCitySimSnapshot(listener)
+          return () => {
+            unsubscribeFlightRuntime()
+            unsubscribeCityRuntime()
+          }
+        },
         loadGympgrphModule,
       )
         .catch(() => void 0)
@@ -551,8 +589,12 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
 
   return (
     <section
-      className={`absolute inset-0 ${composedWithXr ? 'z-[5] pointer-events-none' : 'z-[20] pointer-events-auto'} ${active ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+      className={`absolute inset-0 ${threeOverlayComposed ? 'z-[5] pointer-events-none' : 'z-[20] pointer-events-auto'} ${active ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
       data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}
+      data-kg-geo-xr-surface={active && composedWithXr ? 'active' : undefined}
+      data-kg-city-maplibre-owner={
+        active && composedWithXr && !threeOverlayComposed ? '1' : undefined
+      }
     >
       <GeospatialOverlayHostLazy
         active={active}

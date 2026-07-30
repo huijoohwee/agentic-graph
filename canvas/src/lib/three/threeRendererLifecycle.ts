@@ -20,63 +20,6 @@ export type ThreeCanvasSurfaceLifecycleInput = ThreeCanvasSurfaceMountInput & Re
   documentSwitchOwnsViewport: boolean
 }>
 
-export type CanvasSurfaceOwnershipInput = Readonly<{
-  canvasRenderMode: '2d' | '3d'
-  citySimActive: boolean
-  flightSimActive: boolean
-  gameplayOverlayActive: boolean
-  geospatialModeEnabled: boolean
-  geospatialXrModeEnabled: boolean
-  workspaceEditorOverlayOpen: boolean
-  workspaceStoryboardSurfaceActive: boolean
-}>
-
-export function resolveCanvasSurfaceOwnership(
-  input: CanvasSurfaceOwnershipInput,
-): Readonly<{
-  activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
-  geospatialOverlayOwnsViewport: boolean
-}> {
-  // City owns the shared XR canvas exclusively.  A retained Geo+XR preference
-  // must never leave MapLibre mounted beneath the orthographic City stage.
-  if (input.citySimActive) {
-    return {
-      activeSurface: '3d',
-      geospatialOverlayOwnsViewport: false,
-    }
-  }
-  if (input.geospatialModeEnabled && input.geospatialXrModeEnabled) {
-    return {
-      activeSurface: 'geo-xr',
-      geospatialOverlayOwnsViewport: false,
-    }
-  }
-  const flightSimGeoOverlayActive = input.gameplayOverlayActive
-    && input.flightSimActive
-    && input.geospatialModeEnabled
-  if (flightSimGeoOverlayActive) {
-    return {
-      activeSurface: 'geo',
-      geospatialOverlayOwnsViewport: true,
-    }
-  }
-  if (input.gameplayOverlayActive) {
-    return {
-      activeSurface: '3d',
-      geospatialOverlayOwnsViewport: false,
-    }
-  }
-  return {
-    activeSurface: input.geospatialModeEnabled
-      ? 'geo'
-      : input.canvasRenderMode === '3d'
-        ? '3d'
-        : '2d',
-    geospatialOverlayOwnsViewport: input.geospatialModeEnabled
-      && !(input.workspaceEditorOverlayOpen && input.workspaceStoryboardSurfaceActive),
-  }
-}
-
 export function shouldMountThreeCanvasSurface(input: ThreeCanvasSurfaceMountInput): boolean {
   return input.sourceFilesBootstrapAdmitted
     && !input.geospatialOverlayOwnsViewport

@@ -10,6 +10,27 @@ const modelsByUriString = new Map<string, ModelEntry>()
 
 const normalizeUriString = (uri: Monaco.Uri) => uri.toString()
 
+export type RegisteredTextModelSnapshot = {
+  uri: string
+  language: string
+  value: string
+}
+
+export function readRegisteredTextModelSnapshots(): RegisteredTextModelSnapshot[] {
+  return Array.from(modelsByUriString.entries()).map(([uri, entry]) => ({
+    uri,
+    language: entry.model.getLanguageId(),
+    value: entry.model.getValue(),
+  }))
+}
+
+export function replaceRegisteredTextModelValue(uri: string, value: string): boolean {
+  const entry = modelsByUriString.get(String(uri || ''))
+  if (!entry) return false
+  entry.model.setValue(String(value || ''))
+  return true
+}
+
 export function acquireTextModel(
   monaco: typeof import('monaco-editor/esm/vs/editor/editor.api'),
   args: {

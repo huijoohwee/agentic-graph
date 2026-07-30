@@ -6,6 +6,7 @@ import {
   FLIGHT_SIM_REQUIRED_AIRCRAFT_GLB_FALLBACK_COUNT,
   readFlightSimAircraftAssetSpec,
 } from '../features/game-flight-sim/assetSpec/flightSimAssetSpec'
+import { resolveXrSceneLibraryAsset } from '../features/three/xrSceneLibrary'
 import {
   captureFlightSimMission,
   createFlightSimMission,
@@ -160,7 +161,15 @@ function completedDecision(spatial: FlightSimSpatialProfile, tick: number) {
 }
 
 test('source-authored aircraft JSON is validated as the local spec-primary asset', () => {
+  const mediaAirplane = resolveXrSceneLibraryAsset('vehicle-airplane')
   assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.id, 'vehicle-airplane')
+  assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.label, mediaAirplane.label)
+  assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.defaultColor, mediaAirplane.defaultColor)
+  assert.deepEqual(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.dimensionsMeters, mediaAirplane.dimensionsMeters)
+  assert.deepEqual(
+    FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters,
+    mediaAirplane.dimensionsMeters.map(value => value / 2),
+  )
   assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.representation, 'typescript-json')
   assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.runtimeModelCalls, 0)
   assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.runtimeNetworkCalls, 0)
@@ -201,8 +210,8 @@ test('Flight supplies a pure scaled follow target to the shared controller camer
     revision: 1,
   })
   assert.deepEqual(resolveFlightSimFollowTarget(snapshot, 2), {
-    position: [2, 12, 22],
-    target: [2, 5.6, 6],
+    position: [2, 13.8, 41],
+    target: [2, 7.4, 6],
     fovDegrees: 58,
     resetKey: 7,
     sequence: 42,

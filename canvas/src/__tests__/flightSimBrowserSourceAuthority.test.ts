@@ -212,6 +212,12 @@ test('Flight browser proof activates only after applying the authored source', (
     'geospatialPreferenceEnabled',
     'mapLibreCanvasCount',
     'threeCanvasOwnerCount',
+    'citySemanticSurfaceActive',
+    'cityMapLibreOwnerCount',
+    'flightLayersReady',
+    'overlayPhase',
+    'overlayRoutePointCount',
+    'sourceKinds',
     'environmentSourceFeatures',
     'renderedEnvironmentFeatureCount',
   ]) {

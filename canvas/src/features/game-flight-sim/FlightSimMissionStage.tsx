@@ -2,7 +2,7 @@ import React from 'react'
 import { addAfterEffect, invalidate, useFrame, useThree } from '@react-three/fiber'
 import { type Group, type Mesh } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { XrProceduralVehicleGeometry } from '@/features/three/XrProceduralVehicleGeometry'
+import { XrSceneLibraryAssetGeometry } from '@/features/three/XrSceneLibrarySubject'
 import { readFlightSimDefaultAssetLoadReport } from './assetSpec/flightSimDefaultAssets'
 import {
   FLIGHT_SIM_AIRCRAFT_FORWARD,
@@ -23,12 +23,14 @@ import { useFlightSimSurfaceControls } from './useFlightSimSurfaceControls'
 export type FlightSimMissionStageProps = Readonly<{
   actorsVisible?: boolean
   coordinateScale?: number
+  geospatialComposite?: boolean
   runtimeController: FlightSimStageRuntimeController
 }>
 
 export function FlightSimMissionStage({
   actorsVisible = true,
   coordinateScale = 1,
+  geospatialComposite = false,
   runtimeController,
 }: FlightSimMissionStageProps) {
   const { gl } = useThree()
@@ -107,6 +109,14 @@ export function FlightSimMissionStage({
 
   React.useEffect(() => {
     const canvas = gl.domElement
+    const aircraftAsset = assetCatalog.aircraft.assetSpec
+    canvas.dataset.kgFlightSimAircraftAsset = JSON.stringify({
+      assetId: aircraftAsset.id,
+      defaultColor: aircraftAsset.defaultColor,
+      dimensionsMeters: aircraftAsset.dimensionsMeters,
+      label: aircraftAsset.label,
+      representation: aircraftAsset.representation,
+    })
     canvas.dataset.kgFlightSimSpatialProfile = profile.id
     canvas.dataset.kgFlightSimVisualProjection = actorsVisible
       ? 'r3f'
@@ -144,11 +154,12 @@ export function FlightSimMissionStage({
     invalidate()
     return () => {
       removeAfterRender()
+      delete canvas.dataset.kgFlightSimAircraftAsset
       delete canvas.dataset.kgFlightSimSpatialProfile
       delete canvas.dataset.kgFlightSimVisualProjection
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [actorsVisible, gl, invalidate, profile.id, runtimeController])
+  }, [actorsVisible, assetCatalog, gl, invalidate, profile.id, runtimeController])
 
   React.useEffect(() => {
     const canvas = gl.domElement
@@ -213,18 +224,29 @@ export function FlightSimMissionStage({
   })
 
   return (
-    <group
-      name="kg_flight_sim_mission"
-      scale={coordinateScale}
-      visible={actorsVisible}
-      userData={{
-        actorOnly: true,
-        coordinateScale,
-        mapProjectionOnly: !actorsVisible,
-        spatialProfile: profile.id,
-        visualProjection: actorsVisible ? 'r3f' : 'maplibre',
-      }}
-    >
+    <>
+      {geospatialComposite ? (
+        <group
+          name="kg_flight_sim_geospatial_actor_lighting"
+          userData={{ actorOnly: true, preservesTransparentBackground: true }}
+        >
+          <ambientLight intensity={0.9} />
+          <hemisphereLight args={['#ffffff', '#cbd5e1', 0.6]} />
+          <pointLight position={[120, 120, 120]} intensity={0.9} />
+        </group>
+      ) : null}
+      <group
+        name="kg_flight_sim_mission"
+        scale={coordinateScale}
+        visible={actorsVisible}
+        userData={{
+          actorOnly: true,
+          coordinateScale,
+          mapProjectionOnly: !actorsVisible,
+          spatialProfile: profile.id,
+          visualProjection: actorsVisible ? 'r3f' : 'maplibre',
+        }}
+      >
       <group
         ref={actorRef}
         name="kg_flight_sim_aircraft"
@@ -242,10 +264,9 @@ export function FlightSimMissionStage({
             proceduralForward: FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
           }}
         >
-          <XrProceduralVehicleGeometry
-            kind="airplane"
+          <XrSceneLibraryAssetGeometry
+            assetId={assetCatalog.aircraft.assetSpec.id}
             color={assetCatalog.aircraft.assetSpec.defaultColor}
-            size={assetCatalog.aircraft.assetSpec.dimensionsMeters}
           />
         </group>
       </group>
@@ -302,7 +323,8 @@ export function FlightSimMissionStage({
           opacity={0.9}
         />
       </mesh>
-    </group>
+      </group>
+    </>
   )
 }
 
@@ -311,6 +333,7 @@ export function createFlightSimMissionStage(
 ): React.ComponentType<{
   actorsVisible?: boolean
   coordinateScale?: number
+  geospatialComposite?: boolean
 }> {
   return function BoundFlightSimMissionStage(props) {
     return (

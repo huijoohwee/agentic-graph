@@ -1,7 +1,7 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  isNativeXrRunReadyDemoActive,
+  isXrPhysicsRuntimeRunReadyDemoActive,
   isXrPhysicsRunReadyDemoActive,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import {
@@ -21,7 +21,10 @@ import { useCanvasGameplayOverlayState } from './useCanvasGameplayOverlayState'
 export function XrPhysicsRunReadyDemoRuntime() {
   const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
   const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
-  const active = isNativeXrRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+  const active = isXrPhysicsRuntimeRunReadyDemoActive(
+    markdownDocumentName,
+    markdownDocumentText,
+  )
   const dedicatedDemo = isXrPhysicsRunReadyDemoActive()
   const ownsDocumentLaunchRef = React.useRef(false)
   const surfaceInitializedRef = React.useRef(false)

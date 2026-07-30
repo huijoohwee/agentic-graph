@@ -103,7 +103,6 @@ export function inspectLocalCitySim() {
       policy: 'explicit-save-read-back',
     },
     runtime: {
-      rendererOwner: 'existing-r3f-canvas',
       simulationOwner: 'browser-local-city-runtime',
       modelCalls: 0,
       estimatedCostUsd: 0,

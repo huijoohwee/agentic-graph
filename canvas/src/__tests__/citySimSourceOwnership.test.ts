@@ -9,7 +9,9 @@ import {
   CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
   diagnoseWorkspaceRunReadyDemoActivation,
   isCitySimRunReadyDemoActive,
+  isXrPhysicsRuntimeRunReadyDemoActive,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { resolveCanvasSurfaceOwnership } from '@/lib/canvas/canvasSurfaceOwnershipRuntime'
 
 function readCanvasSource(relativePath: string): string {
   return readFileSync(resolve(process.cwd(), 'src', relativePath), 'utf8')
@@ -22,29 +24,73 @@ function collectTextFiles(path: string): readonly string[] {
     .filter(file => /\.(?:md|ts|tsx|mjs)$/.test(file) || file.endsWith('.kiro'))
 }
 
-export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
-  const stage = readCanvasSource('features/game-city-sim/CitySimStage.tsx')
+export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
+  const threeGraph = readCanvasSource('lib/three/ThreeGraph.impl.tsx')
+  const mediaFigure = readCanvasSource(
+    'features/game-city-sim/CitySimMediaFigure.tsx',
+  )
+  const viewport = readCanvasSource('components/CanvasViewport.tsx')
+  const rendererLifecycle = readCanvasSource(
+    'lib/three/threeRendererLifecycle.ts',
+  )
+  const geospatialOverlay = readCanvasSource(
+    'components/CanvasViewportGeospatialOverlay.tsx',
+  )
   const xrPhysicsRuntime = readCanvasSource(
     'features/canvas/XrPhysicsRunReadyDemoRuntime.tsx',
   )
-  assert.equal(stage.includes('<Canvas'), false, 'City Stage must not mount a Canvas')
-  assert.equal(
-    /import\s*\{[^}]*\bCanvas\b[^}]*\}\s*from\s*['"]@react-three\/fiber['"]/.test(stage),
-    false,
-    'City Stage must not import the Canvas component',
+  assert.doesNotMatch(
+    overlay,
+    /citySim|CitySim/,
+    'the shared gameplay scene must not retain a local City render or input fallback',
+  )
+  assert.doesNotMatch(threeGraph, /citySim|CitySim/)
+  assert.ok(
+    viewport.includes(
+      '<CitySimMediaFigure citySimActive={citySimActive}>',
+    ),
+    'the semantic City wrapper must own the native MapLibre surface',
   )
   assert.ok(
-    stage.match(/<instancedMesh\b/g)?.length === 2,
-    'City Stage must project parcels and buildings through two InstancedMesh nodes',
+    viewport.includes(
+      'threeOverlayComposed={false}',
+    ),
+    'City must not compose a Three overlay above the MapLibre owner',
   )
-  assert.ok(stage.includes('instanceMatrix.needsUpdate = true'))
-  assert.ok(stage.includes('instanceColor.needsUpdate = true'))
-  assert.ok(stage.includes('cityCamera.updateProjectionMatrix()'))
-  assert.ok(stage.includes('set({ camera: cityCamera })'))
-  assert.ok(stage.includes('set({ camera: previousCamera })'))
-  assert.ok(overlay.includes('<CitySimStageLazy'))
-  assert.ok(overlay.includes('if (props.citySimActive) return <CitySimMissionStage />'))
+  assert.ok(
+    !/citySim|CitySim|MapLibre/.test(rendererLifecycle),
+    'Three lifecycle ownership must remain independent from the City MapLibre surface',
+  )
+  assert.deepEqual(resolveCanvasSurfaceOwnership({
+    canvasRenderMode: '3d',
+    cityMapLibreSurfaceRequested: true,
+    flightSimActive: false,
+    gameplayOverlayActive: true,
+    geospatialModeEnabled: false,
+    geospatialXrModeEnabled: false,
+    workspaceEditorOverlayOpen: false,
+    workspaceStoryboardSurfaceActive: false,
+  }), {
+    activeSurface: 'geo-xr',
+    geospatialOverlayOwnsViewport: true,
+  })
+  assert.ok(
+    geospatialOverlay.includes(
+      'data-kg-city-maplibre-owner={',
+    ),
+    'Geo+XR evidence must identify the actual MapLibre-only City owner',
+  )
+  assert.ok(
+    geospatialOverlay.includes(
+      "data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}",
+    ),
+    'City must retain the stable native Geo ownership selector',
+  )
+  assert.ok(mediaFigure.includes('<figure'))
+  assert.ok(mediaFigure.includes('<figcaption'))
+  assert.ok(mediaFigure.includes('resolveMediaPreviewSelectableDataAttr(citySimActive)'))
+  assert.equal(/<(?:div)\b|aria-hidden|on(?:Click|Mouse|Pointer)/.test(mediaFigure), false)
   assert.ok(
     xrPhysicsRuntime.includes(
       'const { citySimActive, flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()',
@@ -88,10 +134,57 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
   const gameMode = readCanvasSource('features/game-fps/gameModeRuntime.ts')
   const flightSim = readCanvasSource('features/game-flight-sim/flightSimSurfacePresentationRuntime.ts')
   const citySim = readCanvasSource('features/game-city-sim/citySimRuntime.ts')
+  const geospatialPublisher = readCanvasSource(
+    'components/CanvasViewportGeospatialOverlay.tsx',
+  )
+  const aerialProjection = readCanvasSource(
+    'features/game-city-sim/citySimAerialInspectionProjection.ts',
+  )
   const xrPhysics = readCanvasSource('features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
   assert.ok(gameMode.includes("gameplaySurface: 'gameMode'"))
   assert.ok(flightSim.includes("gameplaySurface: 'flightSim'"))
   assert.ok(citySim.includes("gameplaySurface: 'cityBuilder'"))
+  assert.ok(
+    citySim.includes('commitCanvasGeospatialSurfaceOwnership(true, {'),
+    'City must claim the canonical native Geo owner instead of disabling it',
+  )
+  assert.ok(
+    citySim.includes(
+      'isCurrent: () => expectedGeneration === asyncGeneration',
+    ),
+    'the native Geo claim must roll back when a newer City lifecycle supersedes entry',
+  )
+  assert.ok(
+    citySim.includes('geospatialComposite: true'),
+    'City must activate the shared XR surface as a Geo+XR composition',
+  )
+  assert.ok(
+    geospatialPublisher.includes(
+      'projectCitySimAerialInspectionToGeospatialOverlay(',
+    ),
+    'the shared geospatial publisher must project City through the existing aerial-inspection overlay',
+  )
+  assert.ok(
+    geospatialPublisher.includes('applyGeoXrGameplayOverlayPublication({'),
+    'the shared publisher must retain deterministic Flight-first City arbitration',
+  )
+  assert.ok(geospatialPublisher.includes('subscribeCitySimSnapshot('))
+  assert.ok(
+    geospatialPublisher.includes(
+      'if (!active || !composedWithXr || !flightSimActive) return',
+    ),
+    'City aerial inspection must not claim the Flight MapLibre readiness presenter',
+  )
+  assert.doesNotMatch(
+    aerialProjection,
+    /\b(?:open|start|restart)FlightSim\b|claimFlightSimReadyPresenter/,
+    'the City projector must reuse Flight geometry without invoking Flight lifecycle or readiness',
+  )
+  assert.match(
+    aerialProjection,
+    /false,\s*null,\s*null,\s*\)/,
+    'the City projector must clear the Flight XR environment while retaining stopped aircraft and route geometry',
+  )
   assert.ok(xrPhysics.includes('citySimActive || flightSimActive || gameFpsActive'))
 }
 
@@ -114,6 +207,14 @@ export function testCitySimSourceIdentityFailsClosedWithoutAuthoredId() {
   assert.equal(
     isCitySimRunReadyDemoActive(CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME, seed),
     true,
+  )
+  assert.equal(
+    isXrPhysicsRuntimeRunReadyDemoActive(
+      CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+      seed,
+    ),
+    false,
+    'City source authority must not prelaunch the native XR physics environment',
   )
 }
 
