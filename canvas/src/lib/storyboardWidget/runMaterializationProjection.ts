@@ -1,5 +1,6 @@
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
+import { readSubgraphs, writeSubgraphs, type UserSubgraph } from '@/lib/graph/subgraphs'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { isPlainObject } from '@/lib/graph/value'
 import { bumpStoryboardWidgetDraftGraphDataRevision } from '@/lib/storyboardWidget/storyboardWidgetDraftGraphData'
@@ -8,6 +9,8 @@ export const WORKFLOW_MATERIALIZATION_PARENT_NODE_ID_PROPERTY =
   'workflowMaterializationParentNodeId' as const
 export const WORKFLOW_MATERIALIZATION_PROJECTION_SOURCE_NODE_ID_PROPERTY =
   'workflowMaterializationProjectionSourceNodeId' as const
+export const WORKFLOW_MATERIALIZATION_GROUP_ID_PREFIX =
+  'workflow-materialization:' as const
 
 const cleanId = (value: unknown): string => String(unwrapGraphCellValue(value) ?? '').trim()
 
@@ -120,4 +123,82 @@ export function applyWorkflowMaterializationProjectionParent(args: {
   return changed
     ? bumpStoryboardWidgetDraftGraphDataRevision({ ...args.graphData, nodes, edges })
     : args.graphData
+}
+
+/**
+ * Keeps the generated projection parent and its materialized children inside
+ * one auto-bounded Group Panel. An existing exact child-only Group Panel is
+ * adopted so a Run does not leave overlapping group shells behind.
+ */
+export function applyWorkflowMaterializationGroupPanel(args: {
+  graphData: GraphData
+  projectionParentNodeId: string
+  childNodeIds: readonly string[]
+  outputGroupId?: string | null
+  groupLabel?: string | null
+}): GraphData {
+  const projectionParentNodeId = cleanId(args.projectionParentNodeId)
+  const availableNodeIds = new Set(
+    (args.graphData.nodes || []).map(node => cleanId(node.id)).filter(Boolean),
+  )
+  const childNodeIds = Array.from(new Set(
+    args.childNodeIds
+      .map(cleanId)
+      .filter(nodeId => nodeId && nodeId !== projectionParentNodeId && availableNodeIds.has(nodeId)),
+  )).sort((a, b) => a.localeCompare(b))
+  if (
+    !projectionParentNodeId
+    || !availableNodeIds.has(projectionParentNodeId)
+    || childNodeIds.length === 0
+  ) return args.graphData
+
+  const desiredMemberNodeIds = [projectionParentNodeId, ...childNodeIds]
+    .sort((a, b) => a.localeCompare(b))
+  const desiredMemberNodeIdSet = new Set(desiredMemberNodeIds)
+  const stableGroupKey = cleanId(args.outputGroupId) || projectionParentNodeId
+  const desiredGroupId = `${WORKFLOW_MATERIALIZATION_GROUP_ID_PREFIX}${stableGroupKey}`
+  const subgraphs = readSubgraphs(args.graphData)
+  const exactGroup = subgraphs.find(subgraph => subgraph.id === desiredGroupId)
+  const adoptableGroup = exactGroup || subgraphs
+    .filter(subgraph => (
+      childNodeIds.every(nodeId => subgraph.memberNodeIds.includes(nodeId))
+      && subgraph.memberNodeIds.every(nodeId => desiredMemberNodeIdSet.has(nodeId))
+    ))
+    .sort((left, right) => (
+      left.memberNodeIds.length - right.memberNodeIds.length
+      || left.id.localeCompare(right.id)
+    ))[0]
+  const nextMemberNodeIds = Array.from(new Set([
+    ...(adoptableGroup?.memberNodeIds || []),
+    ...desiredMemberNodeIds,
+  ])).sort((a, b) => a.localeCompare(b))
+  const groupLabel = cleanId(args.groupLabel) || 'Generated outputs'
+
+  if (
+    adoptableGroup
+    && adoptableGroup.autoBounds === true
+    && adoptableGroup.memberNodeIds.length === nextMemberNodeIds.length
+    && adoptableGroup.memberNodeIds.every((nodeId, index) => nodeId === nextMemberNodeIds[index])
+  ) return args.graphData
+
+  const nextGroup: UserSubgraph = adoptableGroup
+    ? {
+        ...adoptableGroup,
+        memberNodeIds: nextMemberNodeIds,
+        autoBounds: true,
+      }
+    : {
+        id: desiredGroupId,
+        label: groupLabel,
+        memberNodeIds: nextMemberNodeIds,
+        parentId: null,
+        kind: 'subgraph',
+        autoBounds: true,
+      }
+  const nextSubgraphs = adoptableGroup
+    ? subgraphs.map(subgraph => subgraph.id === adoptableGroup.id ? nextGroup : subgraph)
+    : [...subgraphs, nextGroup]
+  return bumpStoryboardWidgetDraftGraphDataRevision(
+    writeSubgraphs(args.graphData, nextSubgraphs),
+  )
 }
