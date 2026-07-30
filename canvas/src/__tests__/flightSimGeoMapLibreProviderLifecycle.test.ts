@@ -495,6 +495,102 @@ test('a consumed ready request authorizes only the exact presenting map', async 
   disposeMapLibreFlightBootstrap(map)
 })
 
+test('an exact consumed Ready provider frame does not churn back to bootstrap without a Geo deadline', async context => {
+  const readyOverlay = readyFlightOverlay('ready:provider-consumed-local', 43)
+  const consumedOverlay = {
+    ...readyOverlay,
+    readyFrameRequestId: null,
+  }
+  clearFlightGeoOverlay()
+  setFlightGeoOverlay(consumedOverlay)
+  context.after(clearFlightGeoOverlay)
+  const renderListeners = new Set<() => void>()
+  const applied: string[] = []
+  const bootstrapStyle = {
+    version: 8,
+    name: 'local-flight-bootstrap',
+    sources: {},
+    layers: [{
+      id: 'kg-flight-sim:geo-bootstrap-background',
+      type: 'background',
+    }],
+  }
+  let currentStyle: Readonly<Record<string, unknown>> = bootstrapStyle
+  const map = {
+    getStyle: () => currentStyle,
+    isStyleLoaded: () => true,
+    off: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.delete(listener)
+    },
+    on: (event: string, listener: () => void) => {
+      if (event === 'render') renderListeners.add(listener)
+    },
+    setStyle: (style: Readonly<Record<string, unknown>>) => {
+      currentStyle = style
+      applied.push(String(style.name))
+    },
+    triggerRepaint: () => void 0,
+  }
+  context.after(() => disposeMapLibreFlightBootstrap(map))
+
+  reconcileMapLibreFlightBootstrap({
+    bootstrapStyle,
+    hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
+    loadProviderStyle: async () => ({
+      version: 8,
+      name: 'provider:consumed-local',
+      sources: {},
+      layers: [],
+    }),
+    map,
+    scheduleProviderStyleApply: applyProviderStyleImmediately,
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+  })
+  markMapLibreFlightBootstrapApplied(map)
+  markMapLibreFlightOverlayPresented(map, consumedOverlay)
+  for (const listener of [...renderListeners]) listener()
+  await flushMicrotasks()
+
+  assert.equal(
+    readFlightGeoOverlayReadyFramePresented(),
+    false,
+    'this map must not borrow a global Ready deadline earned by another surface',
+  )
+  assert.deepEqual(applied, [
+    'local-flight-bootstrap',
+    'provider:consumed-local',
+  ])
+  assert.equal(canMapLibreFlightOverlayPresent(map, consumedOverlay), true)
+  assert.equal(
+    deferFlightGeoPresentationForBootstrapRecovery(
+      map,
+      consumedOverlay,
+      false,
+    ),
+    false,
+    'the exact map-local consumed Ready identity must retain provider ownership',
+  )
+  assert.deepEqual(
+    applied,
+    ['local-flight-bootstrap', 'provider:consumed-local'],
+    'provider style.load must not schedule a second bootstrap setStyle',
+  )
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, {
+      ...consumedOverlay,
+      revision: 'ready:provider-consumed-mutated',
+    }),
+    false,
+    'a same-map visual identity mutation must fail closed',
+  )
+  assert.equal(
+    canMapLibreFlightOverlayPresent({}, consumedOverlay),
+    false,
+    'a different map must not reuse this provider presentation',
+  )
+})
+
 test('Flight deactivation restores the provider without waiting for overlay presentation', async () => {
   const renderListeners = new Set<() => void>()
   const styleLoadListeners = new Set<() => void>()

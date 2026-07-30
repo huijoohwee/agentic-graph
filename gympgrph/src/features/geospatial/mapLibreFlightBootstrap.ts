@@ -157,23 +157,30 @@ function notifyBootstrapSettled(state: MapLibreFlightBootstrapState): void {
 
 function hasExpectedBootstrapStyle(
   state: MapLibreFlightBootstrapState,
+  styleCommitObserved = false,
 ): boolean {
-  return hasExpectedMapLibreFlightBootstrapStyle(
-    state.map,
-    state.bootstrapExpectedStyle,
-  )
+  return styleCommitObserved
+    ? hasExpectedMapLibreFlightBootstrapStyleIdentity(
+        state.map,
+        state.bootstrapExpectedStyle,
+      )
+    : hasExpectedMapLibreFlightBootstrapStyle(
+        state.map,
+        state.bootstrapExpectedStyle,
+      )
 }
 
 function settlePendingBootstrap(
   state: MapLibreFlightBootstrapState,
   bootstrapGeneration: number,
+  styleCommitObserved = false,
 ): void {
   if (
     state.disposed
     || isMapLibreMapPreparingForDisposal(state.map)
     || !state.bootstrapPending
     || state.bootstrapGeneration !== bootstrapGeneration
-    || !hasExpectedBootstrapStyle(state)
+    || !hasExpectedBootstrapStyle(state, styleCommitObserved)
   ) return
   state.bootstrapPending = false
   state.bootstrapExpectedStyle = null
@@ -219,10 +226,12 @@ export function beginMapLibreFlightBootstrap(
     bootstrapStyle,
   )
   const bootstrapGeneration = ++state.bootstrapGeneration
+  const onStyleCommit = () =>
+    settlePendingBootstrap(state, bootstrapGeneration, true)
   const onSettlementOpportunity = () =>
     settlePendingBootstrap(state, bootstrapGeneration)
   const bindings = [
-    ['style.load', onSettlementOpportunity],
+    ['style.load', onStyleCommit],
     ['sourcedata', onSettlementOpportunity],
     ['idle', onSettlementOpportunity],
   ] as const
@@ -270,7 +279,7 @@ export function subscribeMapLibreFlightBootstrapSettled(
   map: any,
   listener: () => void,
 ): () => void {
-  const state = readMapLibreFlightBootstrapState(map)
+  const state = ensureMapLibreFlightBootstrapState(map)
   if (!state || state.disposed) return () => void 0
   state.bootstrapSettledListeners.add(listener)
   if (state.bootstrapApplied) {
@@ -317,6 +326,10 @@ export function canMapLibreFlightOverlayPresent(
         (
           presentation.phase === 'stopped'
           || state.deadlineFramePresented
+          || (
+            presentation.phase === 'ready'
+            && presentation.readyFrameRequestId === null
+          )
         )
         && providerPresentation
         && presentation.phase === providerPresentation.phase

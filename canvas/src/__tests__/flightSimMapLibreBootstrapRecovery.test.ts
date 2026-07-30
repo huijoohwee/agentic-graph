@@ -296,7 +296,7 @@ test('exact bootstrap settles after unrelated host source work without another s
   assert.deepEqual(styleCalls, [bootstrapStyle])
 })
 
-test('bootstrap style.load waits for global settlement before presentation', context => {
+test('exact bootstrap style.load admits presentation before unrelated source settlement', context => {
   const readyOverlay = readyFlightOverlay('ready:host-source-style-load', 26)
   const stoppedOverlay = {
     ...readyOverlay,
@@ -372,17 +372,17 @@ test('bootstrap style.load waits for global settlement before presentation', con
   }
   for (const listener of [...listenersFor('style.load')]) listener()
 
-  assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapPending, true)
-  assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapApplied, false)
-  styleLoaded = true
-  for (const listener of [...listenersFor('sourcedata')]) listener()
-
   assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapPending, false)
   assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapApplied, true)
   assert.equal(canMapLibreFlightOverlayPresent(map, stoppedOverlay), true)
   assert.equal(listenersFor('style.load').size, 0)
   assert.equal(listenersFor('sourcedata').size, 0)
   assert.equal(listenersFor('idle').size, 0)
+  assert.equal(
+    styleLoaded,
+    false,
+    'style.load proves the exact bootstrap commit without weakening owned source.loaded gates',
+  )
 })
 
 test('bootstrap identity rejects owned layer mutations while allowing host layers', () => {
