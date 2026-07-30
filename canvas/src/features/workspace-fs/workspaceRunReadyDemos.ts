@@ -280,6 +280,14 @@ export const isFlightSimRunReadyDemoActive = (
   readWorkspaceRunReadyDemoId(documentPath, documentText) === FLIGHT_SIM_RUN_READY_DEMO_ID
 )
 
+export const isXrPhysicsRuntimeRunReadyDemoActive = (
+  documentPath?: string | null,
+  documentText?: string | null,
+): boolean => (
+  isXrPhysicsRunReadyDemoActive(documentPath, documentText)
+  || isFlightSimRunReadyDemoActive(documentPath, documentText)
+)
+
 export const isCitySimRunReadyDemoActive = (
   documentPath?: string | null,
   documentText?: string | null,

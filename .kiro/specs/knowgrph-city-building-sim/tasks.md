@@ -30,6 +30,11 @@ candidate SHA.
   MapLibre Geo host below the shared R3F Canvas.
 - [ ] Add the City Stage and parcel hit testing as an instanced subtree of the
   existing Canvas above Geo, with no `<Canvas>` import.
+- [ ] Exclude City from the native XR physics launcher and suppress the
+  authored/native graph before renderer scene-authority derivation.
+- [ ] Wrap the shared WebGL Canvas in a labeled semantic City media `figure`
+  whose existing selection marker is active-only and whose wrapper owns no
+  pointer capture and adds no generic `div` or `aria-hidden`.
 - [ ] Add a City-owned deterministic `stopped` aircraft/route adapter that
   publishes through the existing Flight Geo overlay store and MapLibre
   source/layers without activating Flight gameplay or Flight readiness.
@@ -57,8 +62,9 @@ candidate SHA.
 - [ ] Neutral browser proof starts without a city selector or persisted city
   state and materializes only after applying the Source File.
 - [ ] Browser proof covers Geo+XR, the retained native MapLibre host, the shared
-  City R3F stage/input, authored metrics, zone/tick/stop, save/read-back, all
-  six projections, console cleanliness, and exit restore.
+  City R3F stage/input, absence of the native physics playground, the
+  selectable semantic City media figure, authored metrics, zone/tick/stop,
+  save/read-back, all six projections, console cleanliness, and exit restore.
 - [ ] Browser proof captures the deterministic stopped aircraft/route on the
   existing Flight Geo source/layers, no duplicate map/source/layer/Canvas, and
   inactive Flight gameplay/readiness.

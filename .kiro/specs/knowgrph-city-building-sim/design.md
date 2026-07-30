@@ -217,6 +217,21 @@ Parcel hit testing remains on the City R3F stage. The MapLibre host is a
 read-only geographic background for City and does not become a parcel-input
 owner.
 
+City source identity remains part of the broader native-XR catalog, but it is
+not an XR physics-runtime owner. `isXrPhysicsRuntimeRunReadyDemoActive`
+admits only the dedicated physics and Flight sources. `ThreeGraph` excludes
+the authored/native graph before deriving scene authority whenever the City
+stage is active, preventing the retained Singapore physics environment from
+sharing the orthographic City camera.
+
+The shared WebGL Canvas sits inside `ThreeCanvasMediaFigure`. While City is
+active, this semantic `figure` has an accessible City-stage name, a
+`figcaption`, and the marker-only result of
+`resolveMediaPreviewSelectableDataAttr(true)`. It installs no capture handler,
+so parcel pointer input continues to reach React Three Fiber. The marker and
+City semantics disappear when City is inactive; the stable wrapper remains
+presentational so changing modes does not remount the renderer.
+
 Instance matrices are updated only when snapshot revision changes. After
 `setMatrixAt`, the stage marks `instanceMatrix.needsUpdate = true`. Color
 updates likewise mark `instanceColor.needsUpdate = true`.

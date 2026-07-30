@@ -31,6 +31,9 @@ publish-mirror release work requires a separate explicit instruction.
   state, economy state, and persistence status.
 - **City Stage**: Read-only React Three Fiber subtree mounted inside the
   existing shared Canvas.
+- **City Media Surface**: Labeled semantic `figure` around the shared WebGL
+  Canvas. It exposes the existing media-selection marker only while City is
+  active and owns no pointer-capture behavior.
 - **Native Geo Host**: Existing MapLibre map owned by Geo; City renders above
   it and never creates or replaces it.
 - **City Aerial Projection**: Deterministic, read-only, stopped aircraft and
@@ -150,6 +153,16 @@ so that map, scene, input, and camera behavior stay coherent.
 10. If Exit supersedes an in-flight Geo claim and its automatic rollback
     cannot restore the prior Geo owner, City shall return the typed
     `surface-restoration-failed` result instead of reporting a successful Exit.
+11. City source admission shall not start or retain the native XR physics
+    playground. While City owns the gameplay stage, the renderer shall exclude
+    the authored/native graph before deriving XR scene authority, placement,
+    or rendering.
+12. While City is active, the shared WebGL Canvas shall have one labeled
+    semantic `figure` ancestor using the existing conditional media-selection
+    marker. The new wrapper shall contain a `figcaption` and shall add no
+    generic `div`, `aria-hidden`, or pointer/mouse/click capture handler. When
+    City is inactive, the persistent wrapper shall be presentational and shall
+    expose neither the City name nor the selection marker.
 
 ### Requirement 4: Deterministic parcel grid and economy
 

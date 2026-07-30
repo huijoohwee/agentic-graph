@@ -9,6 +9,7 @@ import {
   CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
   diagnoseWorkspaceRunReadyDemoActivation,
   isCitySimRunReadyDemoActive,
+  isXrPhysicsRuntimeRunReadyDemoActive,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 function readCanvasSource(relativePath: string): string {
@@ -26,6 +27,7 @@ export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
   const stage = readCanvasSource('features/game-city-sim/CitySimStage.tsx')
   const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
   const threeGraph = readCanvasSource('lib/three/ThreeGraph.impl.tsx')
+  const mediaFigure = readCanvasSource('lib/three/ThreeCanvasMediaFigure.tsx')
   const viewport = readCanvasSource('components/CanvasViewport.tsx')
   const xrPhysicsRuntime = readCanvasSource(
     'features/canvas/XrPhysicsRunReadyDemoRuntime.tsx',
@@ -76,6 +78,17 @@ export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
       "citySimStageActive ? 'city-parcel-select'",
     ),
   )
+  assert.ok(
+    threeGraph.includes(
+      'const hasGraph = !citySimStageActive && !!sceneGraphForRender',
+    ),
+    'City must suppress the unrelated authored/native XR graph before scene authority and placement are derived',
+  )
+  assert.ok(threeGraph.includes('<ThreeCanvasMediaFigure citySimActive={citySimStageActive}>'))
+  assert.ok(mediaFigure.includes('<figure'))
+  assert.ok(mediaFigure.includes('<figcaption'))
+  assert.ok(mediaFigure.includes('resolveMediaPreviewSelectableDataAttr(citySimActive)'))
+  assert.equal(/<(?:div)\b|aria-hidden|on(?:Click|Mouse|Pointer)/.test(mediaFigure), false)
   assert.ok(
     xrPhysicsRuntime.includes(
       'const { citySimActive, flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()',
@@ -187,6 +200,14 @@ export function testCitySimSourceIdentityFailsClosedWithoutAuthoredId() {
   assert.equal(
     isCitySimRunReadyDemoActive(CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME, seed),
     true,
+  )
+  assert.equal(
+    isXrPhysicsRuntimeRunReadyDemoActive(
+      CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+      seed,
+    ),
+    false,
+    'City source authority must not prelaunch the native XR physics environment',
   )
 }
 

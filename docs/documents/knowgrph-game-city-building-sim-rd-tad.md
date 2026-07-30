@@ -2,7 +2,7 @@
 title: "Reference implementation: Knowgrph City Simulation PRD/TAD"
 id: "md:knowgrph-game-city-building-sim-prd-tad"
 doc_type: "PRD/TAD"
-version: "1.4.0"
+version: "1.5.0"
 date: "2026-07-30"
 lang: "en-US"
 owner: "docs.game.city-simulation"
@@ -95,6 +95,8 @@ state and that a recommendation is bounded and non-mutating until approved.
 - KGC plus CSV save/read-back at `/game-city-sim/city-grid.md`;
 - Geo+XR activation with the existing native MapLibre host below one additive
   city stage and parcel input in the existing shared R3F Canvas;
+- explicit exclusion of the retained native XR physics world while City owns scene authority;
+- one labeled semantic City media `figure`, conditionally selectable without intercepting parcel input;
 - one deterministic read-only stopped aircraft/route projection through the
   existing Flight Geo store/source/layers, with no Flight gameplay/readiness;
 - `cityBuilder` plus city projections in Media, Animation, Motion Control,
@@ -303,7 +305,7 @@ authored default in memory without overwriting those bytes.
 
 ## 10. Technical architecture
 
-### Topology: city simulation v1.4 — Geo+XR conformance baseline
+### Topology: city simulation v1.5 — Geo+XR conformance baseline
 
 **Boundaries:** trusted browser runtime and device-local storage in Authoring;
 an unmaterialized non-public Mirror; and an unprovisioned public Delivery
@@ -319,6 +321,7 @@ not deployed components.
 | Workspace adapter | Store adapter | Browser function | Authoring | city-grid document | asynchronous WorkspaceFs read/write | user device |
 | City-grid document | Store | KGC + CSV document | Authoring | Workspace adapter | device-local persistence | user device |
 | City stage | Consumer | React Three Fiber group | Authoring | shared R3F Canvas and camera owner | synchronous render/input projection | volatile user-device memory |
+| City media figure | Consumer | Semantic HTML figure | Authoring | shared WebGL Canvas and selection tooling | marker-only DOM projection | volatile user-device memory |
 | `citySimAerialInspectionProjection` | Producer/adapter | Pure browser projection through the existing Flight projector | Authoring | current authored XR profile/environment, shared geospatial publisher | synchronous stopped snapshot derivation | volatile user-device memory |
 | Flight Geo overlay owners | Router/consumer | Existing store + MapLibre source/layers | Authoring | native MapLibre Geo host | synchronous store subscription and map-layer projection | volatile user-device memory |
 | Native Geo host | Consumer | Existing MapLibre map | Authoring | selected Geo provider | existing provider transport; independent from gameplay | volatile user-device memory |
@@ -349,10 +352,7 @@ flowchart TB
   Mirror -. "closed batch promotion" .-> Delivery
 ```
 
-**Version note:** v1.4 adds the Geo+XR composition boundary and City-owned
-stopped-aerial adapter. It reuses the existing native MapLibre and Flight Geo
-owners, does not activate Flight gameplay/readiness, and makes no new proof or
-promotion claim.
+**Version note:** v1.5 excludes City from the native XR physics/graph scene and adds the active-only semantic media figure without changing the v1.4 Geo+XR/aerial boundary or making a browser/promotion claim.
 
 ### Component inventory and VCC ownership
 
@@ -532,16 +532,16 @@ fallback MapLibre sources/layers or activates Flight.
 
 ## 13. VCC and Evidence Reference register
 
-VCCs 01 and 03–06 retain one prior reproducible authoring result. The v1.4
-Geo+XR composition added to VCC-02 has no candidate-bound source or browser
-result, and VCC-07 remains unrecorded. The document therefore remains
-`spec-complete`; prior v1.3 evidence does not prove the new composition or
-delivery.
+VCCs 01 and 03–06 retain one prior reproducible authoring result. The v1.5
+Geo+XR, physics-exclusion, and semantic-media additions to VCC-02 have no
+candidate-bound browser result, and VCC-07 remains unrecorded. The document
+therefore remains `spec-complete`; prior evidence does not prove the new
+composition or delivery.
 
 | VCC | Evaluator-checkable end state and constraint | Stated check | Evidence Reference |
 |---|---|---|---|
 | `VCC-CITY-01` | Two equal seeds and input traces yield byte-identical valid city states; no clock, random, network, or model input. | Registered city model, economy, input, and lifecycle cases exit 0 with non-zero totals. | 2026-07-30 authoring: `npm --prefix canvas run test:ci:unit -- city.sim`; 31/31 passed |
-| `VCC-CITY-02` | Geo+XR retains one native MapLibre host and one shared R3F City stage/input; the existing Flight Geo layers show the deterministic stopped aircraft/route without Flight activation or duplicate map/source/layer/Canvas; exit clears the projection and restores surface/camera once. | Registered ownership/projection cases and candidate-bound browser assertions exit 0. | none recorded for v1.4; prior v1.3 run did not cover this contract |
+| `VCC-CITY-02` | Geo+XR retains one native MapLibre host and one shared R3F City stage/input; the native XR physics/graph scene stays absent; the active City media figure is semantic and selectable without pointer capture; existing Flight Geo layers show the stopped aircraft/route without Flight activation or duplicate map/source/layer/Canvas; exit restores surface/camera once. | Registered ownership/projection/semantic-media cases and candidate-bound browser assertions exit 0. | none recorded for v1.5; prior runs did not cover the full contract |
 | `VCC-CITY-03` | Save writes only the canonical path, verifies byte and semantic read-back, and preserves malformed prior bytes. | Registered codec and persistence cases exit 0. | same authoring run; codec/persistence cases passed |
 | `VCC-CITY-04` | Advisor returns at most two deterministic rounds and one zero-token cost record without mutating a zone. | Registered Advisor cases exit 0 and surface round/cost assertions. | same authoring run; Advisor case passed |
 | `VCC-CITY-05` | Parser accepts only the exact tuple and typed operations; every invalid input leaves the revision unchanged. | Registered invocation cases exit 0 with accepted/rejected counts. | same authoring run; invocation case passed |
@@ -569,7 +569,7 @@ component or requirement is intentionally orphaned.
 | Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria (VCC) |
 |---|---|---|---|---|---|
 | deterministic runtime and Advisor | dev-proven | undocumented | clean-browser proof incomplete | major | 01, 04, 07 |
-| Geo+XR shared stage, aerial projection, and persistence | spec-complete | undocumented | v1.4 source and clean-browser proof absent | major | 02, 03, 07 |
+| Geo+XR shared stage, semantic media, aerial projection, and persistence | spec-complete | undocumented | v1.5 exact-SHA clean-browser proof absent | major | 02, 03, 07 |
 | invocation and embedded tools | dev-proven | undocumented | no delivery proof | major | 05, 06, 07 |
 | clean browser first value | spec-complete | undocumented | exact-SHA proof absent | major | 07 |
 | Mirror and Delivery | undocumented | undocumented | targets absent and promotion not requested | none | separate promotion VCC required |

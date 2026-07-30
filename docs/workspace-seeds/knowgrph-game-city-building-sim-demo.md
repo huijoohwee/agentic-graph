@@ -58,7 +58,17 @@ city_geo_xr:
   city_stage_owner: "existing shared React Three Fiber Canvas"
   parcel_input_owner: "City Stage"
   composition: "native MapLibre Geo below the shared City R3F stage"
+  native_xr_physics_stage_active: false
+  authored_graph_scene_active: false
   duplicate_map_or_canvas_forbidden: true
+city_semantic_media:
+  owner: "canvas/src/lib/three/ThreeCanvasMediaFigure.tsx"
+  element: "figure"
+  accessible_name: "Interactive City simulation media stage"
+  selection_marker_owner: "canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts"
+  selection_marker_when: "City Stage active only"
+  pointer_capture_owner: "none; City R3F parcel input remains authoritative"
+  wrapper_added_generic_div_or_aria_hidden_forbidden: true
 city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
@@ -202,6 +212,14 @@ runtime/readiness. The shared publisher retains its normal Flight subscriptions
 for arbitration. City creates no duplicate map, map source/layer, Canvas, or
 renderer.
 
+City never starts or retains the native XR physics playground. Before scene
+authority and placement are derived, the shared renderer excludes the
+authored/native graph while City owns the stage. The shared WebGL Canvas is
+wrapped by one labeled semantic `figure` that exposes the existing
+media-selection marker only while City is active. It has a `figcaption` and no
+pointer capture, and its wrapper adds no generic `div` or `aria-hidden`, so
+selection tooling can find the stage without stealing parcel input.
+
 The normative requirements live at
 `.kiro/specs/knowgrph-city-building-sim/requirements.md`. This document does
 not establish runtime readiness by declaration. Its status stays
@@ -289,6 +307,9 @@ FloatingPanel surface and camera exactly once.
 - [ ] City Stage and parcel input remain above Geo, and the existing Flight Geo
   source/layers show the deterministic route and stopped aircraft with no
   duplicate map/source/layer/Canvas or active Flight gameplay/readiness.
+- [ ] The native XR physics playground and authored graph scene remain absent,
+  while the active City media `figure` is named and selectable without
+  intercepting one parcel pointer action.
 - [ ] Zone, one Tick, Stop fencing, Advice, and Save/read-back pass.
 - [ ] Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera show
   one shared revision and their contracted projections.

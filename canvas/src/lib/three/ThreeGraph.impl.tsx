@@ -26,12 +26,8 @@ import { XrEmptyWorldHud } from '@/features/three/XrEmptyWorldHud'
 import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
 import { XrArPlacementStage } from '@/features/three/XrArPlacementStage'
-import {
-  subscribeXrMotionReferenceRuntime,
-} from '@/features/three/xrMotionReferenceRuntime'
-import {
-  isNativeXrRunReadyDemoActive,
-} from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
+import { isNativeXrRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrRendererClearController } from '@/lib/three/XrRendererClearController'
 import { GAME_FPS_SHARED_XR_PROFILE_ID } from '@/features/game-fps/gameFpsModel'
 import { resolveFlightSimGameplayCoordinateScale } from '@/features/game-flight-sim/flightSimSpatialScale'
@@ -43,6 +39,7 @@ import {
 import { readWebglSupport } from '@/lib/three/webglSupport'
 import { XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE } from '@/features/three/xrNativeControllerDemoRuntime'
 import { resolveAuthoredWorldPaused } from '@/lib/three/authoredWorldPause'
+import { ThreeCanvasMediaFigure } from '@/lib/three/ThreeCanvasMediaFigure'
 import {
   boundedInverseFitScale,
   fitFloorOffset,
@@ -199,7 +196,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ? sceneGraph
       : { ...sceneGraph, edges: [] }
   }, [nativeXrRunReadyDemo, sceneGraph])
-  const hasGraph = !!sceneGraphForRender
+  const hasGraph = !citySimStageActive && !!sceneGraphForRender
   const hasGlbAsset = !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !!spatialCaptureManifest
   const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !nativeXrRunReadyDemo && !immersiveMediaStageActive
@@ -446,7 +443,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
         event.stopPropagation()
       }}
     >
-      <Canvas
+      <ThreeCanvasMediaFigure citySimActive={citySimStageActive}>
+        <Canvas
         key={rendererLifecycleKey}
         data-kg-three-canvas-owner="1"
         frameloop={paused ? 'demand' : 'always'}
@@ -573,7 +571,8 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           /> : null}
           <OverlayFrameSync enabled={active && mode !== 'xr'} scheduleRef={scheduleRef} />
         </React.Suspense>
-      </Canvas>
+        </Canvas>
+      </ThreeCanvasMediaFigure>
       {mode === 'xr' && xrDocumentLoaded && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
       {hasXrEmptyWorld && !gameplayOverlayActive ? <XrEmptyWorldHud /> : null}
       {immersiveMediaStageActive ? <ThreeGraphImmersiveMediaHud geospatialComposite={geospatialComposite} /> : null}
