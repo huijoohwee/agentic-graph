@@ -27,11 +27,11 @@ export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
 
   const requiredMiroMindDocTokens = [
     'doc_type: "Product and Technical Specification"',
-    'local_rung: "dev-proven"',
-    'delivered_rung: "runtime-ready"',
-    'Knowgrph now has a repo-accurate MiroMind baseline across the real shipped surfaces.',
+    'local_rung: "spec-complete"',
+    'delivered_rung: "undocumented"',
+    'Knowgrph has a repository-accurate MiroMind source baseline; no delivery result is attached.',
     'MainPanel `Integrations` documents and exposes `MiroMind API` through the same shared settings owner used by other providers.',
-    'MainPanel Integrations provider discoverability | implemented MiroMind row | one shared-owner MiroMind area',
+    'MainPanel Integrations provider discoverability | source-present MiroMind row | one shared-owner MiroMind area',
   ]
   for (const token of requiredMiroMindDocTokens) {
     if (!miromindDocs.includes(token)) throw new Error(`Expected MiroMind PRD/TAD docs token ${JSON.stringify(token)}`)
@@ -51,7 +51,8 @@ export function testProviderPrdTadDocsUseImplementedOrReferenceOwners(): void {
 
   const requiredStripeDocTokens = [
     'doc_type: "Product and Technical Specification"',
-    'delivered_rung: "runtime-ready"',
+    'local_rung: "spec-complete"',
+    'delivered_rung: "undocumented"',
     'MainPanel MCP exposes payment readiness and agent configuration; MainPanel Commerce remains the customer-facing checkout, entitlement, and reconciliation surface.',
     'Commerce surface owns checkout, entitlement, and reconciliation UX',
   ]

@@ -1,21 +1,22 @@
 ---
-title: "Knowgrph Workflow Document"
+title: "Reference implementation: Knowgrph Workflow Document"
 id: "md:knowgrph-workflow-document"
 doc_type: "Generated Registry Surface"
-version: "1.0.0"
+version: "1.0.2"
 date: "2026-07-30"
 lang: "en-US"
 owner: "docs.generated.workflow-registry"
-local_rung: "dev-proven"
-delivered_rung: "runtime-ready"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
+guideline_version: "1.7.0"
 doc_path: "docs/knowgrph-workflow-document.md"
 canonical_docs_root: "docs/documents"
 generator_owner: "canvas/src/cli/lint-doc.ts"
 ---
 
-# Knowgrph Workflow Document
+# Reference implementation: Knowgrph Workflow Document
 
 ## Generated Registry Contract
 
@@ -42,3 +43,9 @@ This root document exists as the auto-generated workflow preset table surface us
 | `eda-mlp-pipeline-path` | `data/test-data/eda-mlp-path.json` | `data/config/schema/knowgrph-universal-schema-config.jsonld` | Demo: EDA→MLP pipeline path inspector |
 
 <!-- WORKFLOW_PRESETS_TABLE_END -->
+
+## Verification Condition
+
+| VCC | Condition | Invocable check | Expected result | Evidence |
+|---|---|---|---|---|
+| `VCC-GEN-WORKFLOW-01` | Generated preset rows exactly match the source workflow registry. | `npm --prefix canvas run doc:lint && npm --prefix canvas run doc:sanity` | Regeneration is idempotent and the workflow preset count reports `status=OK`. | None recorded in this document |

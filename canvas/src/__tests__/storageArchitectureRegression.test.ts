@@ -52,71 +52,68 @@ export function testCloudflareDeployScriptsSeedDocsMirrorIntoD1() {
   }
 }
 
-export function testStorageSyncDocumentDeclaresPocketBaseYjsGitHubSsotContract() {
+export function testStorageSyncDocumentDeclaresTieredSourceAuthorityContract() {
   const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'knowgrph-storage-sync-document.md')
   const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'knowgrph-storage-sync-document.companion.md')
   const storageDocText = readFileSync(storageDocPath, 'utf8')
   const companionText = readFileSync(companionPath, 'utf8')
   const requiredStorageDocFragments = [
-    'Keep GitHub `docs/**` canonical for Storage Sync',
-    'PocketBase + Yjs as the concurrent-editing layer',
-    'collaborators never touch Git',
-    'Never let two users edit raw JSON simultaneously without CRDT wrapping',
-    '**Solo/local path**: Editor Workspace `/docs/**` ⇄ Source Files ⇄ configured local docs mirror.',
-    '**Concurrent path**: Editor Workspace `/docs/**` ⇄ Yjs document room ⇄ PocketBase realtime relay ⇄ GitHub save bridge.',
-    '| `*.md` | `Y.Text` | Character-level CRDT, zero conflicts |',
-    '| `*.json` | `Y.Map` / nested `Y.Map` + `Y.Array` | Field-level merge, prevents destructive overwrites on minified JSON |',
-    'User save / autosave boundary',
-    'GitHub Contents API (or GitHub App): PUT /repos/{owner}/{repo}/contents/docs/{path}',
-    'GitHub docs branch/main stays SSOT',
-    'D1 remains the runtime export/read cache; it does not serve as the concurrent edit store.',
-    '### PocketBase Production Recommendation',
-    'an IndexedDB-backed idempotent Yjs update outbox with acknowledgements/retry/deduplication',
-    'never dual-write PocketBase and Durable Objects as competing room authorities',
+    'Authored Markdown remains canonical.',
+    'Browser records, shared D1 rows, R2',
+    'objects, collaboration rooms, and generated mirrors are supporting stores with explicit roles.',
+    'exactly one room provider owns updates and recovery',
+    'no dual-write between room providers',
+    '| Working store | Store | IndexedDB/Dexie or explicit memory adapter',
+    'memory fallback is not called durable',
+    'Route identity source',
+    'does not deploy storage Worker',
+    'local_rung: "spec-complete"',
+    'delivered_rung: "undocumented"',
   ]
   for (const fragment of requiredStorageDocFragments) {
     if (!storageDocText.includes(fragment)) {
-      throw new Error(`expected storage sync document to declare PocketBase/Yjs/GitHub SSOT fragment: ${fragment}`)
+      throw new Error(`expected storage sync document to declare tiered source-authority fragment: ${fragment}`)
     }
   }
   if (storageDocText.includes('D1 becomes SSOT') || storageDocText.includes('flip SSOT to D1') || storageDocText.includes('Yjs doc update event (debounced 5s)')) {
     throw new Error('expected storage sync document to avoid D1-as-SSOT and update-event commit wording for concurrent editing')
   }
   const requiredCompanionFragments = [
-    'MainPanel document storage mode is `Online` and two users edit the same `*.md`',
-    'MainPanel document storage mode is `Online` and two users edit the same `*.json`',
-    'raw JSON editing is blocked; Yjs shared JSON types own the edit',
-    'collaborators never touch Git credentials or Git commands',
-    '### PocketBase Production Gate',
-    'Persist each local Yjs update in IndexedDB with a stable update id',
-    'PocketBase and Durable Objects must never own the same room concurrently',
-    '| ADR-016 | Select one collaboration room provider; replace PocketBase with Durable Objects instead of dual-owning rooms. |',
+    'fallback is visible and not called durable',
+    'exactly one active room owner',
+    'No Evidence Reference in this document proves a configured shared Worker',
+    'The generic blob handler has no auth/entitlement check.',
+    'The protected Pages release does not deploy the storage Worker.',
   ]
   for (const fragment of requiredCompanionFragments) {
     if (!companionText.includes(fragment)) {
-      throw new Error(`expected storage sync companion to declare concurrent editing acceptance/ADR fragment: ${fragment}`)
+      throw new Error(`expected storage sync companion to declare current owner/security fragment: ${fragment}`)
+    }
+  }
+  for (const forbidden of [
+    'D1 becomes SSOT',
+    'flip SSOT to D1',
+    'PocketBase + Yjs as the concurrent-editing layer',
+    'dual-write PocketBase and Durable Objects',
+  ]) {
+    if (storageDocText.includes(forbidden) || companionText.includes(forbidden)) {
+      throw new Error(`expected consolidated storage docs to avoid legacy authority claim: ${forbidden}`)
     }
   }
 }
 
-export function testStorageSyncDocumentDeclaresGeneratedBinaryArtifactPersistenceContract() {
+export function testStorageSyncDocumentDeclaresActualBinaryRouteSecurityContract() {
   const storageDocPath = resolve(process.cwd(), '..', 'docs', 'documents', 'knowgrph-storage-sync-document.md')
   const companionPath = resolve(process.cwd(), '..', 'docs', 'documents', 'knowgrph-storage-sync-document.companion.md')
-  const topologyPath = resolve(process.cwd(), '..', 'docs', 'documents', 'knowgrph-cross-repo-publish-topology.md')
+  const binaryContractPath = resolve(process.cwd(), '..', 'docs', 'documents', 'knowgrph-artifact-media-storage-architecture.md')
   const storageDocText = readFileSync(storageDocPath, 'utf8')
   const companionText = readFileSync(companionPath, 'utf8')
-  const topologyText = readFileSync(topologyPath, 'utf8')
+  const binaryContractText = readFileSync(binaryContractPath, 'utf8')
   const requiredStorageDocFragments = [
-    '**Generated binary artifact store**: Cloudflare R2 owns generated image/video/binary bytes',
-    '**Generated artifact publication path**: Generated workspace artifact blob ⇄ `/api/storage/blob/:workspaceId/:canonicalPath*` ⇄ R2 object',
-    'A generated image/video/binary artifact is considered synced across Dev, Prod, and Cloudflare only when both checks pass',
-    '### Path G — Generated Image/Video/Binary Artifact Persistence (R2 + D1 Manifest)',
-    '`uploadGeneratedWorkspaceBlobToKnowgrphStorage()` posts the Blob to `/api/storage/blob/:workspaceId/:canonicalPath*`',
-    'Acceptance requires both reads to succeed: manifest through `/api/storage/doc/:workspaceId/:manifestPath*`, bytes or metadata through `GET|HEAD /api/storage/blob/:workspaceId/:canonicalPath*`',
-    '`features/source-files/sourceFilesBinaryStorage.ts`',
-    '`features/chat/chatHistoryWorkspace.output.ts`',
-    '`sourceFiles.storageSync.r2BlobRoute.storesBinaryObject`',
-    '`chat.responseContract.storage.kgcBinaryOutputPublishesR2Manifest`',
+    'binary_contract: "docs/documents/knowgrph-artifact-media-storage-architecture.md"',
+    'The generic blob handler currently has no auth and permits overwrite at a workspace/path key.',
+    'run-media token checks expiry and run id but is not signed.',
+    'security/overwrite gaps documented separately',
   ]
   for (const fragment of requiredStorageDocFragments) {
     if (!storageDocText.includes(fragment)) {
@@ -124,26 +121,27 @@ export function testStorageSyncDocumentDeclaresGeneratedBinaryArtifactPersistenc
     }
   }
   const requiredCompanionFragments = [
-    'Generated-media author',
-    'Generated binary artifact R2 + D1 manifest publication',
-    'bytes upload to R2 through `/api/storage/blob/`; a sibling manifest document is written to D1',
-    'chat.responseContract.storage.richMediaBinaryOutputPublishesR2Manifest',
-    '### Generated Binary Artifact Contract',
-    '`POST /api/storage/blob/:workspaceId/:canonicalPath*` with `x-knowgrph-content-kind: generated-binary-artifact`',
-    'If runtime sync is off, upload fails, or manifest publication fails, keep the local artifact evidence and do not claim Cloudflare persistence',
-    'Generated image/video artifacts are considered persisted across Dev, Prod, and Cloudflare only when the Worker blob route returns the bytes or metadata and the sibling D1 manifest route returns the Markdown manifest.',
+    'Generic blobs',
+    'unauthenticated and overwriteable until hardened',
+    'Run media',
+    'current base64url token is not a signed entitlement',
+    'Blob/media auth gap | delivery boundary closed',
   ]
   for (const fragment of requiredCompanionFragments) {
     if (!companionText.includes(fragment)) {
       throw new Error(`expected storage sync companion to declare generated binary persistence fragment: ${fragment}`)
     }
   }
-  if (storageDocText.includes('Cloudflare persistence is inferred from local artifact path')
-    || companionText.includes('Cloudflare persistence is inferred from local artifact path')) {
-    throw new Error('expected generated binary persistence docs to forbid inferring Cloudflare sync from local artifact paths')
-  }
-  if (!topologyText.includes('generated image/video/binary bytes to R2 when runtime storage is enabled')) {
-    throw new Error('expected cross-repo publish topology to keep generated artifact R2 mirror ownership aligned')
+  for (const fragment of [
+    'the generic blob route is workspace/path addressed, unauthenticated in the current handler, and',
+    'overwriteable;',
+    'currently only base64url JSON and is not a signed entitlement or a Durable Object lookup.',
+    'This is the sole declaration site for these three route identities.',
+    'The production Pages release does not deploy this Worker.',
+  ]) {
+    if (!binaryContractText.includes(fragment)) {
+      throw new Error(`expected binary storage contract to declare current route truth: ${fragment}`)
+    }
   }
 }
 

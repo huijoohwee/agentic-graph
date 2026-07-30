@@ -1,12 +1,19 @@
 ---
-title: "Knowgrph Markdown Processing"
+title: "Reference implementation: Knowgrph Markdown Processing"
 doc_type: "Document"
-date: "2026-05-27"
+version: "1.1.0"
+date: "2026-07-30"
 lang: "en-US"
+guideline_version: "1.7.0"
+owner: "docs.markdown.processing"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
 frontmatter_contract: "required"
 ---
 
-# Knowgrph Markdown Processing
+# Reference implementation: Knowgrph Markdown Processing
 
 ## Markdown YAML Frontmatter Enforcement
 
@@ -27,7 +34,7 @@ Markdown Editor/Viewer/Presentation must share a single SSOT header and a single
 - Header SSOT: `knowgrph/canvas/src/features/markdown-workspace/MarkdownWorkspaceToolbar.tsx`
 - Runtime SSOT: `knowgrph/canvas/src/lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx`
 - Shared workspace UI types: `knowgrph/canvas/src/features/markdown-explorer/workspaceUi.ts` + `knowgrph/canvas/src/features/markdown-workspace/markdownUtils.ts`
-- Sidebar SSOT: `singabldr/src/features/markdown/ui/MarkdownPanelLayout.tsx` (frame + sections)
+- Sidebar SSOT: `canvas/src/features/markdown/ui/MarkdownPanelLayout.tsx` (frame + sections)
 - Shared utils SSOT: `knowgrph/grph-shared/src/markdown/*` (wikilinks/backlinks/slugify)
 
 ## Non-Goals (Explicit)
@@ -127,7 +134,7 @@ To avoid redundant processing and ensure consistency across the application (e.g
 ### Rendering Optimization
 - **Memoization**: `MarkdownCodeBlock` is wrapped in `React.memo` to prevent unnecessary re-renders when parent components update.
 - **Highlight Caching**: Syntax highlighting is memoized via `useMemo`, ensuring that `highlight.js` is only invoked when the code content or language changes.
-- **GeoJSON Map Load**: Inline GeoJSON previews defer MapLibre initialization until the preview scrolls into view, wait for non-zero layout via bounded observers, keep a stable map container element across deferred-load states, and show a visible overlay message (“Loading map preview…” / “Map preview unavailable”) instead of failing silently ([InlineMarkdownGeoJsonLayerMap.tsx](../../canvas/src/features/geospatial/InlineMarkdownGeoJsonLayerMap.tsx), [mapLibreFactory.ts](../../gympgrph/src/features/geospatial/mapLibreFactory.ts)).
+- **GeoJSON Map Load**: Inline GeoJSON previews defer MapLibre initialization until the preview scrolls into view, wait for non-zero layout via bounded observers, keep a stable map container element across deferred-load states, and show a visible overlay message (“Loading map preview…” / “Map preview unavailable”) instead of failing silently ([InlineMarkdownGeoJsonLayerMap.tsx](../../canvas/src/features/geospatial/InlineMarkdownGeoJsonLayerMap.tsx)).
 - **GeoJSON Detection**: `geojson` blocks are always GeoJSON-renderable; `json` blocks are treated as GeoJSON only when `geoDatasetIntegration.isGeoJsonCodeBlock` identifies the content as GeoJSON.
 - **GeoJSON Render Defaults**: GeoJSON-renderable blocks are render-preferred in Viewer/Presentation (including `json` fences identified as GeoJSON).
 - **GeoJSON Interaction**: Map previews follow the same overlay conventions as Mermaid: container-scoped overlays use `PreviewOverlay` for fullscreen inspection; viewport-scoped previews delegate to `requestOpenGeoPanel`.
@@ -139,7 +146,7 @@ To avoid redundant processing and ensure consistency across the application (e.g
 - **Widget Mode Graph Caching**: Widget bundle generation must derive a shared semantic graph key, reuse the upstream graph lookup cache, and reuse a cached node-id subgraph lookup keyed by graph revision plus semantic node-id signatures rather than raw array identity.
 
 ### Media Proxy Handling
-- **Background Sources**: Slide `background` URLs are normalized via [markdownSlideVisuals.ts](../../../singabldr/src/features/markdown/ui/markdownSlideVisuals.ts) before render.
+- **Background Sources**: Slide `background` URLs are normalized via [markdownSlideVisuals.ts](../../canvas/src/features/markdown/ui/markdownSlideVisuals.ts) before render.
 - **Proxy Routing**: Cross-origin URLs are routed through `/__fetch_remote` by [applyMediaProxySrc](../../canvas/src/lib/url.ts).
 - **Domain Neutrality**: No special-case domain rewrites; all remote backgrounds follow the same proxy path.
 - **Webpage SSOT conversion**: For HTML/CSS/JS → Markdown SSOT rules (URL resolution, lazy media src filling, and duplicate-content forbiddance), use `knowgrph-webpage-proxy-and-srcdoc-iframe-document.md` + `knowgrph-markdown-editor-mode-contract-document.md` as the canonical references.
@@ -200,3 +207,12 @@ console.log('hello')
 ```
 
 The parsed `id` is used as the key for looking up annotations, falling back to line-based keys only when no ID is present. This ensures annotations persist through refactors.
+
+## VCC and Evidence Reference register
+
+No satisfying result is attached to this revision. The following commands are check hosts only.
+
+| VCC | End state | Named check | Constraint | Recorded result | Local rung | Delivered rung |
+|---|---|---|---|---|---|---|
+| `VCC-MD-PROC-1` | parser, workspace, and preview source contracts type-check | `npm --prefix canvas run typecheck` exits 0 | no generated document is accepted as an authored source | not recorded | `spec-complete` | `undocumented` |
+| `VCC-MD-PROC-2` | bounded markdown workspace, conversion, render, and source-identity cases pass | `npm --prefix canvas run test:ci:unit -- markdown.` exits 0 | the active markdown text remains the source owner | not recorded | `spec-complete` | `undocumented` |

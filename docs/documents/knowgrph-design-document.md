@@ -1,34 +1,57 @@
-# Knowgrph Design Document
+---
+title: "Reference implementation: Knowgrph Design Document Index"
+id: "md:knowgrph-design-document"
+doc_type: "Design Index"
+version: "2.0.1"
+date: "2026-07-30"
+lang: "en-US"
+guideline_version: "1.7.0"
+owner: "docs.design.index"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-design-document.md"
+---
+
+# Reference implementation: Knowgrph Design Document Index
 
 ## Purpose
 
-This document is the design-level index for Knowgrph. It provides a stable entry point for the end-to-end pipeline and links to deeper, single-responsibility documents.
+This is the authored entry point for current product and architecture documentation. It does
+not duplicate component registries or release evidence.
 
-## End-to-end pipeline (summary)
+## Canonical reading order
 
-1. **Author and ingest**: Markdown is ingested and normalized into a parseable form. `docs/workspace-readme.md` owns the public Live Canvas Hero's editorial model, while the published Physics Playground identity resolved by `XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH` owns its canonical interactive startup canvas.
-2. **Parse and derive**: Markdown (including Mermaid blocks) is converted into JSON-LD, then into `GraphData` (nodes + edges) with stable identifiers.
-3. **Layout and render**: Seed layout + simulation constraints produce stable node/group positions; the React FlowCanvas renders nodes, edges, groups, and interactions with toggle-safe caching.
-4. **Compose the launch surface**: `useKnowgrphLiveCanvasHero` derives the source-backed Hero model from the canonical workspace README (or a source-connected fallback when persisted state has not hydrated). The apex root alias grants Hero ownership on the first React render and resolves the physics playground's direct opaque share URL before Source Files hydration, preventing the full workspace from flashing underneath Home. The physics source frontmatter owns XR/3D mode; the Home preset strips stale preview, editor, and renderer query overrides. `LiveCanvasHero` renders the visible `/`, `#`, and `@` invocation grammar over that interactive shared-document runtime; it never mounts the outer `/knowgrph/` workspace behind Home. **Import canvas embed** accepts generated iframe HTML or the versioned `knowgrph.canvas-embed.select` postMessage payload directly on Home, validates the HTTP(S) source, and returns the Hero with that real interactive iframe as its background. Right-clicking a file and choosing **Share canvas embed** selects and session-persists its same-origin `kgDoc` interactive runtime, then restores the Hero with that canvas as its background. The action copies the selected published embed URL when available, otherwise a source-addressed `kgPreview=1&kgLiveHero=1` URL. An asynchronously published selected URL may upgrade only when same-origin, preserving the working local Dev canvas instead of mounting a production frame that production security headers reject.
-5. **Publish**: `npm run pages:build-sync` builds with `VITE_BASE_PATH=/knowgrph/` and synchronizes generated assets into `huijoohwee/content/knowgrph` plus the managed `huijoohwee/knowgrph` public-route surface. `npm run pages:functions:build` generates the Pages Functions bundle.
-6. **Deliver and verify**: Cloudflare Pages serves `airvio.co/knowgrph/`. At `airvio.co/`, the generated root handler loads the published Knowgrph React shell, injects the `/knowgrph/` runtime alias, and renders the source-backed Live Canvas Hero over the canonical physics playground. On a cold `/knowgrph/` initialization, the same physics seed is selected after Source Files bootstrap. Explicit share/deep-link targets, imported Home embeds, and persisted non-initialization documents remain authoritative. Verify Dev and Prod side by side before release completion.
+1. Product requirements: `knowgrph-prd.md`
+2. Technical architecture: `knowgrph-tad.md`
+3. Core decisions: `knowgrph-architecture-decisions.md`
+4. Pipeline overview: `knowgrph-pipeline-document.md`
+5. Parser: `knowgrph-parser-document.md`
+6. Renderer and Canvas UX: `knowgrph-renderer-document.md` and
+   `knowgrph-ui-ux-design-document.md`
+7. Storage and synchronization: `knowgrph-storage-sync-document.md`
+8. MCP topology: `knowgrph-mcp/knowgrph-mcp.md`
+9. Cross-repository publication: `knowgrph-cross-repo-publish-topology.md`
 
-The root hero is a live canvas composition, not a static image or copied HTML landing page. Its `Enter Knowgrph` action remains an ordinary link to `/knowgrph/`, preserving direct navigation and the public-route boundary.
+## End-to-end design
 
-**Route boundary**: A persisted **Share canvas embed** selection changes only the source used behind `airvio.co/` Home. It never grants Home ownership on `airvio.co/knowgrph/`; that route always retains the full workspace live canvas.
+`authored Markdown/frontmatter → Source Files → parser → GraphData/state → selected canvas
+projection → bounded tool/harness result → source/artifact review → protected promotion`
 
-**Apex Dev command**: Use `npm run dev:apex -- --host 127.0.0.1 --port 5180` from the repository root for Home parity. It sets `VITE_APEX_ROOT_ALIAS=1`; the ordinary `npm run dev` intentionally starts the workspace surface and therefore does not exercise the Home import panel.
+Supporting browser and shared stores preserve continuity, indexes, media, and collaboration.
+They remain explicit projections/supporting records rather than a second authored source.
 
-## Key design documents
+## Generated views
 
-- Pipeline overview: `knowgrph-pipeline-document.md`
-- Pipeline deep dive: `knowgrph-pipeline-deep-dive-document.md`
-- Parser: `knowgrph-parser-document.md`
-- Orchestrator: `knowgrph-orchestrator-document.md`
-- Renderer: `knowgrph-renderer-document.md`
-- Canvas UX: `knowgrph-ui-ux-design-document.md`
-- Mermaid layout/config: `knowgrph-mermaid-layout-configuration.md`
-- Schema: `knowgrph-schema-document.md`
-- Semantic layer: `knowgrph-semantic-document.md`
-- System design: `knowgrph-system-design-document.md`
-- Cross-repo publish and Cloudflare E2E: `knowgrph-cross-repo-publish-topology.md`
+- `docs/knowgrph-design-document.md` is a generated pointer to this authored index.
+- `docs/knowgrph-technical-architecture.md` is a generated settings/owner registry.
+- Generated views are updated through their owning generator, not used as competing prose
+  architecture.
+
+## Evidence and delivery boundary
+
+The core PRD/TAD/ADR Evidence Reference Registers own readiness claims. Authoring, Mirror,
+and Delivery remain independent; this index neither authorizes publication nor advances a
+readiness rung. This index has no independently owned VCC, so its local and delivered rungs both
+remain `undocumented`.

@@ -1,15 +1,21 @@
 ---
-title: "Knowgrph City Simulation PRD/TAD"
+title: "Reference implementation: Knowgrph City Simulation PRD/TAD"
+id: "md:knowgrph-game-city-building-sim-prd-tad"
 doc_type: "PRD/TAD"
-version: "1.1.0"
-date: "2026-07-24"
+version: "1.3.0"
+date: "2026-07-30"
 lang: "en-US"
-status: "proposed"
+owner: "docs.game.city-simulation"
+local_rung: "dev-proven"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+guideline_version: "1.7.0"
 frontmatter_contract: "required"
 requirements_authority: "/.kiro/specs/knowgrph-city-building-sim/requirements.md"
 ---
 
-# Knowgrph City Simulation PRD/TAD
+# Reference implementation: Knowgrph City Simulation PRD/TAD
 
 ## 1. Product decision
 
@@ -101,6 +107,7 @@ state and that a recommendation is bounded and non-mutating until approved.
 | Measure | Target |
 |---|---:|
 | First visible value from source application | within 2 minutes |
+| First-value manual actions | at most 5 |
 | Required model calls | 0 |
 | Required network calls for core loop | 0 |
 | Added runtime dependencies | 0 |
@@ -108,6 +115,42 @@ state and that a recommendation is bounded and non-mutating until approved.
 | Deterministic replay | byte-identical |
 | Save targets | exactly 1 |
 | Advisor rounds | at most 2 |
+
+### ROI, MoSCoW, and time-to-value
+
+The scoring threshold for Must scope is `1.0`, using
+`(impact × monthly sessions) / (build hours + monthly TCO + monthly token
+cost)`. Estimates are planning inputs, not delivery evidence.
+
+| Feature | Tier | Impact | Sessions/month | Build hours | Monthly cash/token TCO | ROI score | Rationale |
+|---|---|---:|---:|---:|---:|---:|---|
+| Deterministic grid, lifecycle, and save | Must | 4 | 12 | 40 | $0 | 1.20 | Smallest complete observable loop |
+| Local Advisor and shared projections | Must | 3 | 12 | 30 | $0 | 1.20 | Explains the state without a model |
+| Model narration | Won't | 2 | 4 | 24 | $5 | 0.28 | Lower value and breaks the zero-token loop |
+| Multiplayer persistence | Won't | 2 | 2 | 160 | $25 | 0.02 | Outside the local demonstration problem |
+
+The primary journey has five manual actions before the first committed tick
+and a two-minute elapsed ceiling. A clean-environment timed walk-through is
+still unrecorded, so the target does not raise readiness.
+
+| Time-to-value dimension | Estimate | Ceiling | Validation |
+|---|---:|---:|---|
+| Manual actions | 5 | 5 | clean-workspace browser walk-through |
+| Elapsed time | 2 minutes | 2 minutes | timed first-tick proof |
+| First-value action | one committed deterministic tick | — | visible revision and metric delta |
+| Persona | solo builder/presenter | — | primary journey |
+
+### Twelve-month deployment-model TCO
+
+All values are estimates at the bounded demo load and exclude feature build
+hours. None authorizes a promotion.
+
+| Deployment model | Infra | API, egress, tokens | Ops | 12-month cash TCO | Disposition |
+|---|---:|---:|---:|---:|---|
+| Browser-local, existing FOSS application | $0 | $0 | 6 h/year | $0 | Chosen |
+| Managed/serverless static delivery | $0 estimated within existing allowance | $0 | 4 h/year | $0 estimated | Not authorized |
+| Provisioned/self-managed FOSS web server | $72/year | $0 | 18 h/year | $72 | Rejected for idle capacity |
+| Hybrid/consolidated existing host | $0 incremental | $0 | 8 h/year | $0 incremental | Deferred; no delivery need |
 
 ## 5. Product surfaces
 
@@ -233,17 +276,73 @@ authored default in memory without overwriting those bytes.
 
 ## 10. Technical architecture
 
+### Topology: city simulation v1.3 — conformance baseline
+
+**Boundaries:** trusted browser runtime and device-local storage in Authoring;
+an unmaterialized non-public Mirror; and an unprovisioned public Delivery
+surface. Mirror and Delivery nodes below describe closed promotion targets,
+not deployed components.
+
+| Node | Role | Type | Lane | Connects to | Connection type | Data residency |
+|---|---|---|---|---|---|---|
+| City controls | Producer/router | Browser UI + invocation parser | Authoring | City Runtime | synchronous function call | volatile user-device memory |
+| Embedded tools | Gateway | Browser-local WebMCP | Authoring | City Runtime | asynchronous typed function call | volatile user-device memory |
+| City Runtime | Router | Browser function/state owner | Authoring | economy, Advisor, Workspace adapter, stage | synchronous function calls; async save | volatile user-device memory |
+| Economy + Advisor | Producer | Pure browser functions | Authoring | City Runtime | synchronous return | volatile user-device memory |
+| Workspace adapter | Store adapter | Browser function | Authoring | city-grid document | asynchronous WorkspaceFs read/write | user device |
+| City-grid document | Store | KGC + CSV document | Authoring | Workspace adapter | device-local persistence | user device |
+| City stage | Consumer | React Three Fiber group | Authoring | shared Canvas and camera owner | synchronous render projection | volatile user-device memory |
+| Approved mirror package | Consumer | immutable publish artifact, absent | Mirror | public delivery surface | batch publish, boundary closed | none; not materialized |
+| Public delivery surface | Consumer | static browser application, absent | Delivery | end-user browser | HTTPS fetch, boundary closed | none; not provisioned |
+
 ```mermaid
 flowchart TB
-  Controls["City Builder, projections, invocation, MCP"] --> Runtime["City Runtime"]
-  Runtime --> Economy["Pure economy"]
-  Runtime --> Advisor["Local Advisor"]
-  Runtime --> Workspace["WorkspaceFs adapter"]
-  Workspace --> File["/game-city-sim/city-grid.md"]
-  Runtime -. immutable snapshot .-> Stage["City stage"]
-  Stage --> Shared["Existing shared Canvas"]
-  Runtime <--> Camera["Existing camera owner"]
+  subgraph A["Authoring boundary — trusted browser and device-local data"]
+    Controls["City controls · producer/router"] -->|sync function| Runtime["City Runtime · router"]
+    Tools["Embedded tools · gateway"] -->|async typed call| Runtime
+    Runtime -->|sync function| Logic["Economy + Advisor · producers"]
+    Runtime -->|async WorkspaceFs| Store["City-grid document · device-local store"]
+    Runtime -->|sync immutable projection| Stage["City stage · consumer"]
+  end
+  subgraph M["Mirror boundary — absent"]
+    Mirror["Approved mirror package · not materialized"]
+  end
+  subgraph D["Delivery boundary — absent"]
+    Delivery["Public delivery surface · not provisioned"]
+  end
+  A -. "closed batch promotion" .-> Mirror
+  Mirror -. "closed batch promotion" .-> Delivery
 ```
+
+**Version note:** v1.3 adds explicit roles, types, connections, residency, and
+closed Mirror/Delivery targets; it does not change runtime placement or claim
+promotion.
+
+### Component inventory and VCC ownership
+
+| Component ID | Component / interface | Responsibility | Local rung | Delivered rung | VCCs |
+|---|---|---|---|---|---|
+| `TAD-CITY-RUNTIME` | City Runtime / `dispatchCityOperation` | Runtime commits one valid operation atomically. | dev-proven | undocumented | 01, 02, 07 |
+| `TAD-CITY-MODEL` | economy + Advisor / `advanceCityTick`, `adviseCityZoning` | Pure functions derive bounded deterministic results. | dev-proven | undocumented | 01, 04, 07 |
+| `TAD-CITY-PERSIST` | codec + WorkspaceFs / `saveCityGridToWorkspace` | Adapter verifies one canonical document by read-back. | dev-proven | undocumented | 03, 07 |
+| `TAD-CITY-STAGE` | stage + camera / immutable projection | Consumer renders one snapshot in the shared Canvas. | dev-proven | undocumented | 02, 07 |
+| `TAD-CITY-INVOKE` | parser / `executeCitySimInvocation` | Parser validates the exact native grammar before dispatch. | dev-proven | undocumented | 05, 07 |
+| `TAD-CITY-MCP` | embedded tools / inspect + control | Gateway exposes the same dispatcher at browser-local trust. | dev-proven | undocumented | 06, 07 |
+| `TAD-CITY-MIRROR` | approved package / batch publish | Absent target receives only an approved whole candidate. | undocumented | undocumented | — |
+| `TAD-CITY-DELIVERY` | public surface / HTTPS | Absent target serves a promoted mirror. | undocumented | undocumented | — |
+
+For each component, dependencies are exactly the topology `Connects to`
+edges; configuration is the typed grid/economy/invocation schema; the runtime
+uses the existing FOSS application stack and no paid dependency. Evidence and
+rungs are owned by the VCC register, not inferred from source paths.
+
+| Quality attribute | Bound | Architectural pattern | VCC |
+|---|---|---|---|
+| Determinism/performance | fixed 1000 ms tick; grid at most 64 by 64 | safe integers, stable ordering, atomic candidate | 01 |
+| Security | no remote route; mutation through explicit control | strict parser and existing approval owner | 05, 06 |
+| Offline behavior | 0 required network/model calls | local pure functions + WorkspaceFs | 01, 03, 04 |
+| Observability | typed result for every operation; one zero Cost_Log/advice | shared immutable snapshot | 04 |
+| Device reach | pointer, keyboard, touch parity | copied normalized input snapshot | 01, 07 |
 
 ### Single-world rule
 
@@ -274,6 +373,36 @@ Schema `knowgrph-city-sim-mcp/v1` registers exactly:
 Inspect is read-only. Control uses the existing approval owner. Both delegate
 to the same runtime dispatcher as City Builder and native invocation; no route
 or deployment authority is added.
+
+### Invocation Register: city simulation
+
+This is the sole declaration site for these invocation identities.
+
+| Route | Kind | Owner | Typed arguments | Trust boundary | Token cost |
+|---|---|---|---|---|---:|
+| `/game.city` | Command | `city-sim-invocation-owner` | `operation` enum; `parcel` `rNNcNN`; `type` enum; `scope` enum | browser-local; mutations explicit | 0 |
+| `@canvas` | Binding | `city-sim-invocation-owner` | — | read-only surface selection | 0 |
+| `#civic` | Tag | `city-sim-invocation-owner` | — | read-only context selection | 0 |
+| `knowgrph.inspect_local_city_sim` | Tool identity | `city-sim-agent-ready-owner` | empty object | browser-local read | 0 |
+| `knowgrph.control_local_city_sim` | Tool identity | `city-sim-agent-ready-owner` | native invocation or one structured operation | browser-local approval-gated mutation | 0 |
+
+### Gateway federation and capability catalog disposition
+
+The federation has one embedded browser surface. No remote gateway, proxy,
+stdio, or HTTP transport is implied.
+
+| Tool identity | Contributing catalog | Federated surface | Capability status | Federation disposition |
+|---|---|---|---|---|
+| `knowgrph.inspect_local_city_sim` | canonical agent-ready tool contract | embedded browser WebMCP | registered local read tool | catalogued in embedded federation; remote unregistered |
+| `knowgrph.control_local_city_sim` | canonical agent-ready tool contract | embedded browser WebMCP | registered local mutation tool | catalogued in embedded federation; remote unregistered |
+
+The catalog union deduplicates by full tool identity. Unavailable remote
+catalogs are not synthesized; `sourceCatalogs[]` contains only the embedded
+catalog for this feature.
+
+**Routing rule:** browser-local read/control routes to the embedded surface;
+all remote trust needs are excluded. **Catalog union source:** the canonical
+agent-ready contract. **Excluded:** a monolithic proxy and transport parity.
 
 ## 11. Architecture decisions
 
@@ -313,6 +442,20 @@ FloatingPanel routes.
 **Reason:** Existing panels retain ownership, city state stays centralized, and
 the change avoids six copies and dependency cycles.
 
+### ADR alternatives and twelve-month TCO
+
+Cash estimates assume the bounded local workload; maintainer hours expose the
+otherwise hidden operations cost. Each rejected option is FOSS-capable and
+would add no license fee, but duplicates an existing owner.
+
+| ADR | Chosen option | FOSS alternative considered | Chosen 12-month TCO | Alternative 12-month TCO | Decision |
+|---|---|---|---|---|---|
+| 1 | stage in shared renderer | standalone FOSS scene/renderer | $0 + 4 h | $0 + 24 h | Reject duplicated world and camera owner |
+| 2 | native safe integers | FOSS arbitrary-precision numeric library | $0 + 2 h | $0 + 6 h | Reject unnecessary dependency |
+| 3 | KGC + CSV through WorkspaceFs | FOSS embedded browser database | $0 + 6 h | $0 + 16 h | Prefer readable, diffable state |
+| 4 | deterministic local heuristic | FOSS local model runtime | $0 + 4 h; 0 tokens | about $120 power + 24 h; unbounded inference risk | Preserve offline deterministic zero cost |
+| 5 | one projection wrapper | separate FOSS React composition per panel | $0 + 10 h | $0 + 30 h | Avoid duplicated adapters |
+
 ## 12. Error policy
 
 Every rejected operation returns a typed local result containing a code and
@@ -321,40 +464,68 @@ Tick failure preserves the prior revision. Save mismatch preserves in-memory
 state and reports unsaved. Malformed file handling never repairs or overwrites
 bytes. Advisor ambiguity never auto-zones.
 
-## 13. Evidence plan
+## 13. VCC and Evidence Reference register
 
-### Source proof
+VCCs 01–06 have one reproducible authoring result; VCC-07 has no
+candidate-bound browser result. That derives local `dev-proven`, not
+`runtime-ready`, and proves nothing about delivery.
 
-- economy coefficient, atomicity, stop-fence, and replay tests;
-- codec canonicalization, round-trip, and malformed-byte tests;
-- invocation and Advisor property tests;
-- exact-two-tool MCP and shared-Canvas static tests;
-- City Builder and six-projection routing tests;
-- typecheck and focused build.
+| VCC | Evaluator-checkable end state and constraint | Stated check | Evidence Reference |
+|---|---|---|---|
+| `VCC-CITY-01` | Two equal seeds and input traces yield byte-identical valid city states; no clock, random, network, or model input. | Registered city model, economy, input, and lifecycle cases exit 0 with non-zero totals. | 2026-07-30 authoring: `npm --prefix canvas run test:ci:unit -- city.sim`; 31/31 passed |
+| `VCC-CITY-02` | All seven views project one revision in one Canvas and exit restores the captured surface/camera exactly once. | Registered shared-surface, camera, and projection cases exit 0. | same authoring run; relevant camera/source/runtime cases passed |
+| `VCC-CITY-03` | Save writes only the canonical path, verifies byte and semantic read-back, and preserves malformed prior bytes. | Registered codec and persistence cases exit 0. | same authoring run; codec/persistence cases passed |
+| `VCC-CITY-04` | Advisor returns at most two deterministic rounds and one zero-token cost record without mutating a zone. | Registered Advisor cases exit 0 and surface round/cost assertions. | same authoring run; Advisor case passed |
+| `VCC-CITY-05` | Parser accepts only the exact tuple and typed operations; every invalid input leaves the revision unchanged. | Registered invocation cases exit 0 with accepted/rejected counts. | same authoring run; invocation case passed |
+| `VCC-CITY-06` | Exactly two catalogued embedded tools inspect/control the same dispatcher; no remote transport or deployment authority is added. | Registered MCP contract and source-ownership cases exit 0. | same authoring run; MCP/source cases passed |
+| `VCC-CITY-07` | A clean browser reaches first tick within five actions/two minutes, then proves save, projections, stop fence, replay, and exit at one exact SHA. | Candidate-bound browser proof surfaces elapsed time, action count, SHA, and assertions. | none recorded |
 
-### Browser proof
+## 14. PRD ↔ TAD ↔ VCC traceability
 
-Proof starts without a city environment selector or persisted city state.
-Before source application, record that City Builder is closed and the city
-stage inactive. After Source Files bootstrap is ready, apply the authored seed
-and assert City Builder, one Canvas, authored metrics, and a clean console.
+| PRD requirement | Product outcome | TAD component / interface | VCC |
+|---|---|---|---|
+| `PRD-CITY-R1/R12` | source ownership and honest evidence | `TAD-CITY-RUNTIME` / evidence boundary | 01, 07 |
+| `PRD-CITY-R2/R11` | activation and seven-view proof | `TAD-CITY-STAGE` / immutable projection | 02, 07 |
+| `PRD-CITY-R3/R10` | shared scene, camera, responsive rendering | `TAD-CITY-STAGE` / stage + camera framing | 02 |
+| `PRD-CITY-R4/R5` | deterministic economy and lifecycle | `TAD-CITY-RUNTIME` / dispatch; `TAD-CITY-MODEL` / tick | 01 |
+| `PRD-CITY-R6` | canonical save and read-back | `TAD-CITY-PERSIST` / WorkspaceFs adapter | 03 |
+| `PRD-CITY-R7` | bounded local advice | `TAD-CITY-MODEL` / advise | 04 |
+| `PRD-CITY-R8` | strict native invocation | `TAD-CITY-INVOKE` / parse + execute | 05 |
+| `PRD-CITY-R9` | two browser-local tools | `TAD-CITY-MCP` / inspect + control | 06 |
 
-Exercise Zone, one Tick, Stop fencing, Advice, Save/read-back, all six
-projections, and Exit restoration. Repeat from the same neutral state and
-compare the initial serialized bytes.
+The component inventory provides the reverse component-to-VCC mapping; no
+component or requirement is intentionally orphaned.
 
-The seed remains `proof-pending` and runtime validation boxes remain unchecked
-until this evidence exists at the exact candidate SHA. Protected integration
-and any release are separate later gates.
+## 15. Readiness Gap Matrix
 
-## 14. Traceability
+| Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria (VCC) |
+|---|---|---|---|---|---|
+| deterministic runtime and Advisor | dev-proven | undocumented | clean-browser proof incomplete | major | 01, 04, 07 |
+| shared stage and persistence | dev-proven | undocumented | clean-browser proof incomplete | major | 02, 03, 07 |
+| invocation and embedded tools | dev-proven | undocumented | no delivery proof | major | 05, 06, 07 |
+| clean browser first value | spec-complete | undocumented | exact-SHA proof absent | major | 07 |
+| Mirror and Delivery | undocumented | undocumented | targets absent and promotion not requested | none | separate promotion VCC required |
 
-| Product area | Normative requirements | Primary design owner |
-|---|---|---|
-| Ownership and source boundary | 1, 12 | owner map and evidence |
-| Activation and seven panel views | 2, 11 | admission and projections |
-| Shared scene/camera | 3, 10 | stage and camera adapters |
-| Economy and lifecycle | 4, 5 | runtime and pure economy |
-| Persistence | 6 | codec and WorkspaceFs adapter |
-| Advisor | 7 | local Advisor |
-| Invocation and MCP | 8, 9 | parser and MCP adapter |
+### Agent-platform dimensions and execution order
+
+| Dimension | Tier | Order | Local rung | Delivered rung | VCC / disposition |
+|---|---|---:|---|---|---|
+| Agentic OS-ready | Won't this increment | — | undocumented | undocumented | no OS Status Surface declared |
+| AI Agent-ready | Must | 1 | dev-proven | undocumented | 06, 07; embedded discovery only |
+| MCP Gateway-ready | Won't this increment | — | undocumented | undocumented | remote gateway excluded; embedded tool disposition is recorded |
+
+No Follow-on work starts before VCC-06 is satisfied. Discovery and reads stay
+at zero tokens; no agent-platform path can promote a candidate.
+
+## 16. Lane topology and Deploy Boundary Register
+
+| Lane | Function | Mutation rights | Data residency | Readiness ceiling |
+|---|---|---|---|---|
+| Authoring | write and prove one candidate | source, tests, browser-local state | maintainer worktree and user device | runtime-ready |
+| Mirror | hold one approved non-public package | publish-only; currently absent | none | runtime-ready |
+| Delivery | serve one promoted mirror | publish-only; currently absent | none | production-verified |
+
+| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement | State |
+|---|---|---|---|---|---|---|
+| `CITY-AUTHORING-TO-MIRROR` | Authoring | Mirror | none recorded | none; no promotion authorized | retain prior mirror and verify its manifest is unchanged | closed |
+| `CITY-MIRROR-TO-DELIVERY` | Mirror | Delivery | none recorded | none; no promotion authorized | retain prior delivery revision and re-run its prior reachability check | closed |

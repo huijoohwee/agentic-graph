@@ -113,3 +113,11 @@ if (existsSync(demoPath)) {
     'Strybldr demo must not contain raw SenseNova credentials, fabricated runtime values, copied external-workflow terms, or unrelated content',
   )
 }
+
+// The assertions above execute when this module is imported. Exporting a
+// stable entrypoint lets the focused runExport harness prove that the module
+// loaded and all assertions completed instead of treating a zero-test filter
+// as success.
+export function testSensenovaMainPanelIntegrationContractModuleLoads() {
+  return
+}

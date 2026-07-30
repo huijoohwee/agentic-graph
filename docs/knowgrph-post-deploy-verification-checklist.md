@@ -1,284 +1,195 @@
-# Post-Deploy Verification Checklist — `airvio.co/knowgrph`
+---
+title: "Post-Delivery Verification Checklist"
+id: "md:knowgrph-post-deploy-verification-checklist"
+doc_type: "Operator Checklist"
+version: "2.1.0"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.delivery.verification"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/knowgrph-post-deploy-verification-checklist.md"
+guideline_version: "1.7.0"
+reference_implementation_label: "reference implementation"
+---
 
-Short operator checklist for the live `knowgrph` Cloudflare Pages + MCP deploy.
-This is the compact follow-up to the full [deploy runbook](knowgrph-acos-deploy-runbook.md).
+# Post-Delivery Verification Checklist
 
-For the hosted AWS REST proof path (`POST /auth/session` -> `POST /run` ->
-`GET /runs/{id}`), the fastest path is `npm run runtime:flow` from the main
-deploy runbook. The individual commands `runtime:proof`, `runtime:demo-pack`,
-`runtime:submission-brief`, and `runtime:bundle` remain available for targeted
-re-runs. This checklist stays focused on the Cloudflare `/knowgrph` surface and
-direct MCP verification.
+## Reference implementation: conditional Pages and Worker verification
 
-## Scope
+This blank checklist is a verification contract, not evidence. Use a section
+only after the corresponding publication record identifies an exact revision
+and delivery target. Source presence never satisfies a delivery VCC.
 
-Use this after publishing from `knowgrph` into `../huijoohwee` and deploying to
-Cloudflare Pages. The goal is to confirm:
+Endpoint values, trust, and token costs come only from
+[the authoritative Invocation Register](documents/knowgrph-mcp-install-contract.md).
 
-- the apex and `/knowgrph` readiness markers are byte-identical and bind the exact release SHA
-- the `/knowgrph` app shell is reachable
-- discovery and health routes are live
-- the MCP Streamable HTTP surface accepts a real session
-- a safe dry-run `tools/call` works without paid side effects
-- persisted Run_Manifest read-back is consistent
+### Readiness before execution
 
-## Recent Release Evidence
+| Scope | Local rung | Delivered rung | Basis |
+|---|---|---|---|
+| Blank checklist | `spec-complete` | `undocumented` | Checks are specified; no result, revision, target, or operator instruction is recorded. |
 
-Record the latest bounded release proof here after a real deploy.
+### Evidence header
 
-### Latest release snapshot (2026-07-11)
+Complete every applicable field before running checks.
 
-- Pages preview: `https://8ccfa5b7.joohwee.pages.dev`
-- Live route: `https://airvio.co/knowgrph/`
-- Deployed reachability: `npm run runtime:verify:deployed` passed with explicit URLs
-- Docs seed: `node ./scripts/seed-storage-docs-to-cloudflare.mjs` passed
-- Canonical docs seed proof:
-  - `source-files=41`
-  - `chunked-source-files=15`
-  - `before-seed` export: `825ms`
-  - `direct-d1-verification` export: `736ms`
-  - final verification: `documents=41`
-  - terminal result: `direct D1 seed complete`
+| Field | Recorded value |
+|---|---|
+| Operator | |
+| Verification start/end time with timezone | |
+| Authoring revision | |
+| Mirror revision | |
+| Pages publication record / deployment id | |
+| Pages target from the Invocation Register | |
+| Previous Pages revision for rollback | |
+| Worker publication record / deployment id | |
+| Worker target from the Invocation Register | |
+| Previous Worker revision/bindings for rollback | |
+| Exact promotion instruction | |
 
-### Release evidence template
+If the Worker publication fields are blank, mark the Worker section not
+applicable and keep Worker delivered readiness `undocumented`.
 
-- Dev repo commit or release scope:
-- Publish repo commit or release scope:
-- Pages preview URL:
-- Live route:
-- `pages:build` result and wall time:
-- `collaboration:release:check` result:
-- `pages:check-sync` result:
-- docs seed result and verification count:
-- `runtime:verify:deployed` result:
+### Preconditions
 
-## 1. Route Reachability
+- [ ] The operator instruction explicitly names Pages, Worker, or both.
+- [ ] The mirror revision is a faithful copy of the selected authoring revision.
+- [ ] Each selected delivery unit has its own publication record.
+- [ ] No secret appears in the revision, checklist, terminal capture, or client
+      configuration excerpt.
+- [ ] Rollback targets are known before runtime checks begin.
+- [ ] The verification client can surface response status, headers, tool names,
+      and exact check results.
 
-Expect `200` from each route:
+### Pages HTTP MCP — read-only verification
 
-```bash
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET /knowgrph/ -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/knowgrph/
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET /knowgrph/health -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/knowgrph/health
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET /knowgrph/.well-known/openapi.json -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/knowgrph/.well-known/openapi.json
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET /knowgrph/.well-known/mcp/server-card.json -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/knowgrph/.well-known/mcp/server-card.json
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET /knowgrph/llms.txt -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/knowgrph/llms.txt
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET /.well-known/api-catalog -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/.well-known/api-catalog
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET /knowgrph/mcp/health -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/knowgrph/mcp/health
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET readiness -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/.well-known/runtime-readiness.json
-curl -A 'Mozilla/5.0' -sS -o /dev/null -w 'GET /knowgrph readiness -> %{http_code} | %{content_type}\n' \
-  https://airvio.co/knowgrph/.well-known/runtime-readiness.json
-```
+Run only when the Pages publication fields are complete.
 
-Expected content types:
+- [ ] Select the Pages row from the Invocation Register without copying a
+      different endpoint into this checklist.
+- [ ] Initialize using JSON content type and an Accept value permitting JSON and
+      event-stream responses.
+- [ ] Confirm the source contract does not require bearer authorization.
+- [ ] Complete the MCP initialized handshake.
+- [ ] Request tool discovery and record exactly 7 unique, read-only names:
+      `search`, `fetch`, `list_source_files`, `read_source_file`,
+      `read_shared_document`, `inspect_shared_document_structure`, and
+      `inspect_agent_surface`.
+- [ ] Invoke one bounded read and record a typed, non-empty result.
+- [ ] Invoke one invalid read and record a typed error with no side effect.
+- [ ] Confirm no browser-local guarded control appears.
+- [ ] Confirm discovery and reads cause zero model calls.
 
-- `/knowgrph/` -> `text/html`
-- `/knowgrph/health` -> `application/health+json`
-- `/knowgrph/.well-known/openapi.json` -> `application/vnd.oai.openapi+json`
-- `/knowgrph/.well-known/mcp/server-card.json` -> `application/json`
-- `/knowgrph/llms.txt` -> `text/plain`
-- `/.well-known/api-catalog` -> `application/linkset+json`
-- `/knowgrph/mcp/health` -> `application/json`
-- both runtime-readiness routes -> `application/json`, schema `knowgrph-production-runtime-readiness/v2`, and byte-identical bodies
-- arbitrary missing root image, script, directory, `/index.html`, and retired `/hackamap/` paths -> HTTP `404` with the managed Not found document, never a `200` Home shell
-- `/singabldr/` and `/singabldr/manifest.webmanifest` -> `200`, preserving the sibling app across the root 404 boundary
+#### Pages result record
 
-The release workflow resolves the exact successful Pages deployment for the protected SHA through the Cloudflare API and reads its immutable marker and browser routes through that direct origin before it publishes the mirror. For returning-user proof, it derives the stable Pages production alias from `CLOUDFLARE_PAGES_PROJECT`, prewarms one persistent Chrome profile on that same origin, seeds a stale runtime asset plus root/nested app HTML and out-of-scope favicon-shaped HTML in Knowgrph-owned caches, seeds a valid Singabldr HTML cache, and reopens the profile afterward. The gate requires one canonical registration, exact-revision imported-worker URLs, matching active/controller revision and lifecycle-clean chat attestations, only the exact release namespace across every CacheStorage asset entry, zero HTML in Knowgrph-owned or `/knowgrph` cache entries, preserved sibling HTML caches, no installing/waiting legacy worker, clean transition-tab execution, network-owned HTML, and preserved local-first storage. The generated runtime-cache policies also reject non-200, HTML, and XHTML responses on admission and reject existing HTML/XHTML hits. This deterministic Pages transport avoids custom-domain challenge responses in hosted CI without changing the deployed artifact or weakening the checks. It does not claim custom-domain browser acceptance; repeat the public `airvio.co` proof from a non-challenged operator network:
+| VCC | Exact invocable check/request | Recorded result | Tested revision and target | Lane | Pass/fail |
+|---|---|---|---|---|---|
+| `VCC-DELIVERY-PAGES-01` — initialize and discover 7 reads | | | | delivery | |
+| `VCC-DELIVERY-PAGES-02` — valid read returns typed content | | | | delivery | |
+| `VCC-DELIVERY-PAGES-03` — invalid read fails closed | | | | delivery | |
 
-```bash
-RELEASE_SHA=<40-character-knowgrph-sha> \
-PRODUCTION_IMMUTABLE_MANIFEST_DIGEST=<64-character-sha256> \
-npm run production:fidelity:check
-```
+### Remote Worker MCP — authenticated session verification
 
-## AI Gateway Draft-Lane Gate
+Begin this section only when a separate Worker publication record identifies
+the exact Worker revision, bindings, and target. A Pages publication or the
+10-tool source registry is not Worker delivery evidence.
 
-Before treating the Cloudflare-hosted OpenAI draft lane as live, run:
+- [ ] Retrieve the bearer secret from the approved environment secret channel.
+- [ ] Send an initialize request without authorization and record an
+      unauthorized result; do not log a secret.
+- [ ] Initialize again with `Authorization: Bearer <token>`, JSON content type,
+      and an Accept value permitting JSON and event-stream responses.
+- [ ] Capture the returned `mcp-session-id` in redacted or hashed form suitable
+      for correlation without exposing sensitive state.
+- [ ] Complete the initialized handshake with both bearer authorization and the
+      returned session id.
+- [ ] Request tool discovery with both headers and the same session id.
+- [ ] Record exactly 10 unique names:
+      `knowgrph.superagent.run`, `knowgrph.video_remix.run`,
+      `knowgrph.video_remix.research`,
+      `knowgrph.video_remix.storyboard`,
+      `knowgrph.video_remix.render`, `knowgrph.video_remix.publish`,
+      `knowgrph.video_remix.checkout`,
+      `knowgrph.run_manifest.note.update`, `knowgrph.os.status`, and
+      `knowgrph.agentic_canvas_os.docs.invoke`.
+- [ ] Omit or alter the session id on a bounded negative request and record a
+      session failure, then stop using that invalid session.
+- [ ] Attempt a guarded operation without its required approval and record a
+      denial with no side effect or model spend.
+- [ ] If an approved execution is in scope, record the owner, input/output
+      tokens, cost, maximum iterations, circuit-breaker outcome, and resulting
+      artifact separately.
 
-```bash
-npm run ai-gateway:readiness:check -- --skip-sync-check
-```
+#### Worker result record
 
-Pass criteria:
+| VCC | Exact invocable check/request | Recorded result | Tested revision and target | Lane | Pass/fail |
+|---|---|---|---|---|---|
+| `VCC-DELIVERY-WORKER-01` — missing bearer fails closed | | | | delivery | |
+| `VCC-DELIVERY-WORKER-02` — authenticated initialize returns session id | | | | delivery | |
+| `VCC-DELIVERY-WORKER-03` — same session discovers 10 tools | | | | delivery | |
+| `VCC-DELIVERY-WORKER-04` — invalid session fails closed | | | | delivery | |
+| `VCC-DELIVERY-WORKER-05` — unapproved control has no side effect/spend | | | | delivery | |
 
-- focused source proofs pass
-- publish-repo `__chat_proxy` smoke passes
-- downloaded Pages project config contains `KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL`
-- Pages project `joohwee` exposes one accepted AI Gateway secret:
-  `KNOWGRPH_CHAT_PROXY_AI_GATEWAY_TOKEN`, `AI_GATEWAY_TOKEN`, or `CLOUDFLARE_API_TOKEN`
-- live `POST https://airvio.co/__chat_proxy/v1/responses` smoke returns a bounded non-5xx result
+### Optional browser-local verification
 
-Fail closed until those config checks pass; source proof alone is not enough to claim the hosted
-AI Gateway lane is live.
+This section checks app WebMCP and does not change Pages or Worker results.
 
-## 2. Browser Sanity
+- [ ] Record the exact app revision and runtime target.
+- [ ] Discover exactly 41 unique app tools.
+- [ ] Classify exactly 30 as read-only and 11 as guarded controls.
+- [ ] Confirm a missing runtime owner or approval returns unavailable/denied.
+- [ ] Confirm no browser control appears in the Pages seven-tool result.
 
-Open [airvio.co/knowgrph](https://airvio.co/knowgrph/) and confirm:
+| VCC | Exact invocable check | Recorded result | Tested revision and target | Lane | Pass/fail |
+|---|---|---|---|---|---|
+| `VCC-DELIVERY-WEBMCP-01` — 41 tools split 30/11 | | | | delivery | |
 
-- the page title is `knowgrph`
-- the main shell renders instead of a blank page or edge error
-- the apex hero renders `Map intent`, `Run agents`, and `Get results` with a ready canvas iframe
-- neither surface remains on `Switching document` or `Preparing canvas view...`
-- the top-level controls are present: `Launch`, `Workspace View`, `Interaction`,
-  `Settings`, `History`, `Help`
-- the explorer/doc surface loads the seeded workspace content
-- browser console shows no obvious runtime errors
+### Cross-document consistency
 
-## 3. MCP Session Handshake
+- [ ] The overview, service PRD/TAD, companion, agent-ready pair, install
+      contract, and onboarding index use the same 7 / 41 (30 + 11) / 10 counts.
+- [ ] Every status value is one Readiness Ladder rung.
+- [ ] Local and delivered rungs are recorded separately.
+- [ ] No document treats a source file or blank checklist as evidence.
+- [ ] No document besides the install contract owns an Invocation Register for
+      the two HTTP endpoints.
 
-The live Worker requires a streamable-HTTP `Accept` header:
+### Verdict and rung derivation
 
-```bash
-curl -sS -D - -o - https://airvio.co/knowgrph/mcp \
-  -A 'Mozilla/5.0' \
-  -X POST \
-  -H 'accept: application/json, text/event-stream' \
-  -H 'content-type: application/json' \
-  --data '{"jsonrpc":"2.0","id":"init-1","method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"post-deploy-check","version":"1.0.0"}}}'
-```
+| Surface | Applicable VCCs all pass? | Evidence References complete? | Derived delivered rung | Finding / next action |
+|---|---|---|---|---|
+| Pages HTTP MCP | | | | |
+| Remote Worker MCP | | | | |
+| App WebMCP, if selected | | | | |
 
-Expect:
+Derive, do not choose, the rung:
 
-- `HTTP 200`
-- `content-type: text/event-stream`
-- a non-empty `mcp-session-id` response header
-- `serverInfo.name = "knowgrph-control-plane"`
+- `undocumented`: no delivery VCC/evidence.
+- `spec-complete`: delivery VCC stated but no satisfying evidence.
+- `dev-proven`: reproducible local evidence only.
+- `runtime-ready`: every scoped VCC has satisfying runtime evidence.
+- `production-verified`: runtime-ready plus delivery Evidence References and the
+  exact operator promotion instruction.
 
-Then acknowledge the session:
+### Rollback gate
 
-```bash
-curl -sS -o /dev/null -w '%{http_code}\n' https://airvio.co/knowgrph/mcp \
-  -A 'Mozilla/5.0' \
-  -X POST \
-  -H 'accept: application/json, text/event-stream' \
-  -H "mcp-session-id: <SESSION_ID>" \
-  -H 'content-type: application/json' \
-  --data '{"jsonrpc":"2.0","method":"notifications/initialized"}'
-```
+Rollback the affected delivery unit when authorization can be bypassed, session
+correlation is broken, counts drift, a read mutates state, an unapproved control
+executes, secrets appear in output, or any blocker VCC fails.
 
-Expect `202`.
+Record:
 
-## 4. Tool Surface
+| Field | Value |
+|---|---|
+| Trigger | |
+| Restored revision/bindings | |
+| Exact rollback instruction | |
+| Post-rollback check and result | |
+| Incident/follow-up owner | |
 
-List tools on the same session:
-
-```bash
-curl -sS https://airvio.co/knowgrph/mcp \
-  -A 'Mozilla/5.0' \
-  -X POST \
-  -H 'accept: application/json, text/event-stream' \
-  -H "mcp-session-id: <SESSION_ID>" \
-  -H 'content-type: application/json' \
-  --data '{"jsonrpc":"2.0","id":"tools-1","method":"tools/list"}'
-```
-
-Expect these six tools:
-
-- `knowgrph.video_remix.run`
-- `knowgrph.video_remix.research`
-- `knowgrph.video_remix.storyboard`
-- `knowgrph.video_remix.render`
-- `knowgrph.video_remix.publish`
-- `knowgrph.video_remix.checkout`
-
-Expect both `inputSchema` and `outputSchema` on the listed tool entries.
-
-## 5. Safe Dry-Run Tool Call
-
-Run the Director in `dry-run` mode:
-
-```bash
-curl -sS https://airvio.co/knowgrph/mcp \
-  -A 'Mozilla/5.0' \
-  -X POST \
-  -H 'accept: application/json, text/event-stream' \
-  -H "mcp-session-id: <SESSION_ID>" \
-  -H 'content-type: application/json' \
-  --data '{"jsonrpc":"2.0","id":"call-run-1","method":"tools/call","params":{"name":"knowgrph.video_remix.run","arguments":{"referenceUrl":"https://example.com/reference-video.mp4","brief":"Post-deploy smoke: dry-run plan across the live Streamable HTTP seam.","mode":"dry-run","budgetUsd":10,"approvals":[]}}}'
-```
-
-Expect:
-
-- `isError = false`
-- a non-empty `structuredContent.runId`
-- `structuredContent.mode = "dry-run"`
-- `structuredContent.state = "blocked"`
-- `structuredContent.budgetMeters.actualCostUsd = 0`
-- no paid-provider execution
-
-For a deeper gate check, first read the persisted manifest at
-`/knowgrph/mcp/runs/<RUN_ID>` and extract `manifest.storyboard.plannedShots`.
-The live `knowgrph.video_remix.render` contract now requires a non-empty `shots`
-array before the tool can evaluate approval gating.
-
-Then call `knowgrph.video_remix.render` with:
-
-- `runId = <RUN_ID>`
-- `shots = <manifest.storyboard.plannedShots>`
-- `approvals = []`
-
-Example:
-
-```bash
-curl -sS https://airvio.co/knowgrph/mcp \
-  -A 'Mozilla/5.0' \
-  -X POST \
-  -H 'accept: application/json, text/event-stream' \
-  -H "mcp-session-id: <SESSION_ID>" \
-  -H 'content-type: application/json' \
-  --data '{"jsonrpc":"2.0","id":"call-render-1","method":"tools/call","params":{"name":"knowgrph.video_remix.render","arguments":{"runId":"<RUN_ID>","shots":[{"shotId":"shot-1","prompt":"<from plannedShots>","durationS":4}],"approvals":[]}}}'
-```
-
-Expect:
-
-- `isError = true`
-- `structuredContent.status = "approval_required"`
-- `structuredContent.gateId = "render-action"`
-- `structuredContent.paidProviderCalls = 0`
-- `structuredContent.runManifestStateChanged = false`
-
-## 6. Persisted Read-Back
-
-Use the `runId` from the dry-run call:
-
-```bash
-curl -A 'Mozilla/5.0' -fsS \
-  "https://airvio.co/knowgrph/mcp/runs/<RUN_ID>"
-```
-
-Expect:
-
-- `HTTP 200`
-- top-level `runId` matching `<RUN_ID>`
-- top-level `manifest` object present
-- `manifest.runId`, `manifest.state`, `manifest.mode` matching the original
-  `tools/call` response
-- approval gate count, stage count, `demoPack` presence, `stageTransitions`, and
-  zero-spend fields matching the original returned manifest
-
-## 7. Known Transport Notes
-
-- `Accept: application/json` alone is not enough for the live MCP Worker; expect
-  `406 Not Acceptable`.
-- Browser-style traffic or `curl -A 'Mozilla/5.0'` succeeds consistently against
-  Cloudflare, while generic non-browser clients may hit edge bot filtering.
-
-## Pass Criteria
-
-The deploy is verified when all of the following are true:
-
-- `/knowgrph` and the discovery/health routes return success
-- the browser app shell renders without obvious runtime failure
-- MCP `initialize` and `notifications/initialized` succeed
-- `tools/list` returns the six-tool surface with schemas
-- dry-run `knowgrph.video_remix.run` returns a blocked zero-spend manifest
-- unapproved `knowgrph.video_remix.render` fails closed with
-  `approval_required` when invoked with schema-valid `shots`
-- `GET /knowgrph/mcp/runs/{id}` returns the persisted manifest consistently
+The Pages and Worker rollback decisions are independent. Never roll a separate
+delivery unit merely because the other unit failed unless the operator
+instruction explicitly couples them.

@@ -1,140 +1,67 @@
 ---
-title: "Knowgrph Storage Sync ADRs"
+title: "Reference implementation: Superseded Knowgrph Storage Decision Index"
 id: "md:knowgrph-storage-sync-adrs-document"
-version: "1.4.0"
-updated: "2026-07-23"
-status: "active"
-doc_type: "Architecture Decision Records"
-frontmatter_contract: "required"
-document_runtime_status: "runtime-ready-dev"
-runtime_scope: "Frontmatter parsing, source validation, MCP grammar resolution, and read-only Source Files discovery; ADR implementation status remains row-specific."
-deploy_boundary: "No Prod mirror or Cloudflare mutation is authorized by this document."
-mcp:
-  grammar_tool: "knowgrph.agentic_canvas_os.docs.invoke"
-  published_source_tools: ["search", "fetch"]
-  webmcp_source_tools: ["knowgrph.list_source_files", "knowgrph.read_source_file"]
-  source_availability: "Read-only after the document is present in the configured published Source Files workspace."
-invocation:
-  normalize: "/source.normalize @source.frontmatter @source.body #frontmatter #no-legacy"
-  verify: "/runtime-ready.check @local-harness @runtime-proof #runtime-ready #vcc"
+doc_type: "Architecture Decision Record Archive"
+version: "2.0.0"
+date: "2026-07-30"
+lang: "en-US"
+guideline_version: "1.7.0"
+owner: "architecture.history.storage"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+document_lifecycle: "superseded"
+superseded_by:
+  - "docs/documents/knowgrph-architecture-decisions.md#adr-004--reference-implementation-use-tiered-persistence-roles"
+  - "docs/documents/knowgrph-storage-sync-document.md"
+  - "docs/documents/knowgrph-artifact-media-storage-architecture.md"
 ---
 
-# Knowgrph Storage Sync ADRs
+# Reference implementation: Superseded Knowgrph Storage Decision Index
 
-**Context**: Architectural decisions for the Knowgrph storage and sync system.
-**Intent**: Keep ADR ownership separate from the companion PRD/TAD so doc sanity budgets remain enforceable without losing decision traceability.
-**Directive**: This file records accepted storage decisions; runtime wiring remains in source and canonical architecture remains in `knowgrph-storage-sync-document.md`.
+**Decision lifecycle**: Superseded
+**Superseded on**: 2026-07-30
 
----
+## Context
 
-**Version**: 1.4.0
-**Date**: 2026-07-23
-**Companion index**: `knowgrph-storage-sync-document.companion.md`
+The former index mixed accepted design choices, source-presence notes, planned providers,
+production-gated claims, route declarations, and delivery statements across nineteen rows. Several
+rows had no complete Context/Decision/Alternatives/TCO record, and the index duplicated decisions
+now owned by the core ADR set and storage contracts.
 
-## ADR Index
+## Archived decision families
 
-| ADR | Status | Decision | Runtime owner |
-|---|---|---|---|
-| ADR-001 | Accepted | Keep a minimal persisted client working store. | `canvas/src/lib/storage/knowgrphStorageDb.ts` |
-| ADR-002 | Accepted | Use SQLite / D1 as the first shared cloud store. | `cloudflare/workers/knowgrph-storage/` |
-| ADR-003 | Accepted | Defer PostgreSQL until collaboration or retrieval scale requires it. | `docs/documents/knowgrph-storage-schemas-extensions-document.md` |
-| ADR-004 | Accepted | Deploy storage API as a standalone Cloudflare Worker on the same zone. | `cloudflare/workers/knowgrph-storage/wrangler.toml` |
-| ADR-005 | Accepted | Retain polling-based sync at 120 seconds for phase 1. | `canvas/src/lib/storage/knowgrphStorageClientSync.ts` |
-| ADR-006 | Accepted | Restrict seed write-back to Node.js filesystem contexts. | `canvas/src/features/workspace-fs/workspaceSeedProvider.ts` |
-| ADR-007 | Accepted | Auto-clear stale outbox conflicts after pull. | `canvas/src/lib/storage/knowgrphStorageClientSync.ts` |
-| ADR-008 | Accepted | Support default workspace initialization source URL. | `canvas/src/features/workspace-fs/workspaceSeedProvider.ts` |
-| ADR-009 | Accepted | Expose a public single-document view endpoint. | `cloudflare/workers/knowgrph-storage/index.ts` |
-| ADR-010 | Accepted, production-gated | Use PocketBase + Yjs as the small-team same-file collaboration provider, not Git merge or authoring SSOT. | `canvas/src/features/source-files/sourceFilesPocketBaseYjsRoom.ts` |
-| ADR-011 | Accepted | Promote generated chat Markdown through GitHub first, storage second. | `canvas/src/features/source-files/sourceFilesGitHubWrite.ts` |
-| ADR-012 | Accepted | Store generated binary artifacts in R2 with Markdown manifests. | `cloudflare/workers/knowgrph-storage/index.ts` |
-| ADR-013 | Accepted | Persist collaborative AI media through R2, D1, KV, and Durable Objects. | `cloudflare/workers/knowgrph-storage/index.ts` |
-| ADR-014 | Accepted | Use one canonical storage workspace by default across devices. | `canvas/src/features/source-files/sourceFilesStorageSync.ts` |
-| ADR-015 | Accepted | Route document writes to path-scoped Knowgrph or workspace GitHub docs roots. | `grph-shared/src/collaboration/documentRepositoryAuthority.ts` |
-| ADR-016 | Accepted | Select one collaboration room provider; replace PocketBase with Durable Objects instead of dual-owning rooms. | `canvas/src/features/source-files/sourceFilesPocketBaseYjsRoom.ts` |
-| ADR-017 | Accepted | Keep one authored workspace-seed root, one byte-identical runtime projection, and no publish-repository duplicate. | `scripts/workspace-seed-authority.mjs` |
-| ADR-018 | Accepted | Use Dexie/IndexedDB as the durable local-first working store and expose explicit degraded-memory state. | `canvas/src/lib/storage/indexedDbCollectionStore.ts` |
-| ADR-019 | Accepted | Bound sync retries, preserve unresolved outbox work, and reject non-local mutation origins in this enhancement. | `canvas/src/lib/storage/knowgrphStorageClientSync.ts` |
+| Family | Original direction | Current owner |
+|---|---|---|
+| Local working persistence | browser records and offline outbox/cursor | core ADR-004 and storage PRD/TAD |
+| Shared structured storage | D1-compatible first shared store | core ADR-004 |
+| Binary artifacts | R2 objects plus source-visible manifests | binary storage TAD |
+| Collaboration | one CRDT/room provider; no raw concurrent JSON writes | storage PRD/TAD |
+| Git/file relay | server-side identity and path-scoped authority | storage owner appendix |
+| Seed/mirror authority | authored source plus generated read-only projection | core ADR-001/007 |
+| Deployment | separate Worker operation and protected lane boundaries | core ADR-006 and storage PRD/TAD |
 
-## ADR-001: Minimal Persisted Client Working Store
+## Decision
 
-The workspace FS keeps a bounded local working set for continuity and sync recovery. Canonical authoring remains path-scoped to the owning GitHub docs root; D1 is the shared runtime/read cache, and the browser cache must not become an authoring SSOT. IndexedDB remains a zero-egress FOSS substrate through the typed storage wrapper.
+Supersede the incomplete index. Active storage decisions now live in:
 
-## ADR-002: SQLite / D1 First Shared Store
+1. the core ADR set for source authority, tiered persistence, and protected promotion;
+2. the storage PRD/TAD for product/flow/topology requirements;
+3. the binary storage TAD for actual blob/media security and overwrite semantics; and
+4. the source-owner appendix for file-level mapping.
 
-D1 fits the Pages + Worker deployment shape and keeps the first shared store below PostgreSQL-level TCO. SQLite portability remains sufficient until collaboration or retrieval scale requires a heavier store.
+## Alternatives and TCO
 
-## ADR-003: PostgreSQL Deferred
+| Alternative | 12-month cash estimate | Ops burden | Disposition |
+|---|---:|---|---|
+| keep nineteen mixed-status rows active | $0 cash; high recurring review cost | high | superseded |
+| consolidated active owners + compact archive | $0 | low | chosen |
+| external managed architecture registry | $120–720 | medium plus sync risk | rejected |
 
-PostgreSQL is deferred while D1 covers runtime read/export needs and PocketBase + Yjs handles concurrent same-file editing. Adoption gates live in `knowgrph-storage-schemas-extensions-document.md`.
+## Consequences
 
-## ADR-004: Standalone Storage Worker
-
-The storage API owns D1 binding, route pattern, and secret boundaries through a standalone Cloudflare Worker. This isolates storage and payment concerns from static Pages while preserving same-zone routing.
-
-## ADR-005: Polling Sync For Phase 1
-
-Polling remains at 120 seconds for the first shared sync phase. Durable Objects and streaming remain deferred until latency needs exceed the zero-ops polling path.
-
-## ADR-006: Node.js FS Seed Write-Back Only
-
-Seed write-back is Dev-only and guarded from browser execution. Browser runtime must not attempt local filesystem writes.
-
-## ADR-007: Stale Outbox Conflict Auto-Clear
-
-After pull, stale conflict rows are removed when pulled server revisions are at or ahead of local revisions. Legitimate local edits ahead of server state stay protected.
-
-## ADR-008: Default Workspace Initialization Source URL
-
-Workspace settings can provide a default source URL for empty-workspace initialization. Explicit GitHub docs URLs remain source-of-truth over local projections, and the path stays configurable instead of hardcoded.
-
-## ADR-009: Public Single-Document View Endpoint
-
-`GET /api/storage/doc/:workspaceId/:canonicalPath*` returns non-deleted document markdown with CORS and cache headers. It supports readable links, deep-link canvas rendering, and import defaults without promoting the SPA catch-all to an API owner.
-
-## ADR-010: PocketBase + Yjs Collaboration
-
-Concurrent edits use CRDT ownership: Markdown maps to `Y.Text`, JSON maps to `Y.Map`, and Git merge never reconciles simultaneous minified JSON. PocketBase owns authenticated membership, room metadata, and realtime fanout only for the selected small-team collaboration provider. It is not the GitHub authoring SSOT, the D1 read cache, or the offline store.
-
-Production is gated on a unique `(workspaceId, documentKey)` room key; server-checked membership; IndexedDB-backed idempotent update delivery with acknowledgement, retry, dedupe, and ordered replay; server-owned snapshot compaction; bounded batching/pruning; compare-and-set GitHub checkpoints; pinned server releases; `pb_migrations`; monitoring; and tested backup/restore. The JavaScript SDK version does not satisfy the PocketBase server version pin. PocketBase runs with persistent storage on a VM/container, not inside a Cloudflare Worker. See [PocketBase production guidance](https://pocketbase.io/docs/going-to-production/) and its [realtime API](https://pocketbase.io/docs/api-realtime/).
-
-## ADR-011: GitHub First For Generated Chat Markdown
-
-Generated chat artifacts under `chat-log/` are promoted to GitHub before any Cloudflare mirror. If GitHub promotion fails, D1/R2 mirroring is skipped so Cloudflare does not become the canonical write owner.
-
-## ADR-012: R2 Binary Artifacts With Markdown Manifests
-
-Generated binary artifacts use R2 for bytes and D1 for searchable Markdown manifests. Public reads go through the storage Worker so metadata, CORS, and cache policy stay centralized.
-
-## ADR-013: Collaborative AI Media Persistence
-
-AI media persistence combines R2 bytes, D1 metadata, optional KV access-cache entries, and optional Durable Object room notification. KV namespace ids and live Cloudflare binding proof remain operator-owned and are never faked in repo config.
-
-## ADR-014: Canonical Cross-Device Source Files Workspace
-
-The default Source Files storage workspace is `kgws:canonical-docs` on every installation. Browser-local folder cache IDs and selected paths remain local workspace preferences, never remote storage identity, so Dev, Prod, and other devices converge on the same Source Files inventory. `VITE_KNOWGRPH_STORAGE_WORKSPACE_ID` is the explicit opt-in boundary for an isolated workspace.
-
-## ADR-015: Path-Scoped GitHub Repository Authority
-
-The shared authority resolver maps Knowgrph product documents and `/docs/workspace-seeds/**` to `knowgrph-docs`, maps user-created and imported workspace documents to `workspace-docs`, and rejects Agentic Canvas OS paths plus the duplicate `huijoohwee/docs/workspace-seeds/**` root as collaboration write targets. Every browser save request carries the resolved target, and the Worker re-derives it before selecting target-specific repository configuration. IndexedDB and the outbox remain available when online transport is disabled or unavailable.
-
-## ADR-016: One Collaboration Room Provider
-
-The collaboration room contract is provider-neutral, but exactly one provider owns a workspace room at a time. PocketBase is the Phase 1 choice for small teams. A per-document Cloudflare Durable Object may replace it when single-server operations, fanout, or Cloudflare-native coordination justify migration. Migration fences new writes, transfers compacted Yjs state and replay position, verifies client convergence, then changes provider authority; PocketBase and Durable Objects never dual-write the same room. See [Cloudflare Durable Objects](https://developers.cloudflare.com/durable-objects/) and its [WebSocket guidance](https://developers.cloudflare.com/durable-objects/best-practices/websockets/).
-
-## ADR-017: Workspace-Seed Source And Projection Ownership
-
-`knowgrph/docs/workspace-seeds` is the only authored seed root. The protected `agentic-canvas-os/docs/workspace-seeds` file is a byte-identical default-runtime projection, not an editable copy; it remains until bootstrap no longer requires that projection. `huijoohwee/docs/workspace-seeds` is forbidden. Explorer displays this ownership boundary from shared constants, and the authority check derives sibling repositories through the Git common directory so canonical and linked worktrees validate the same roots.
-
-This ownership is enforced at mutation time, not only displayed: Source Files maps seed reads and writes to the canonical Knowgrph checkout, passes the workspace path to the local bridge for exact host-path validation, mirrors nested deletion after rename/delete, and forbids deleting the seed root. The configurable `workspace-docs` local mirror cannot redirect this subtree.
-
-The same owner governs inventory reconciliation. The protected build packages the exact authored six-file inventory as a revision-pinned, read-only app artifact; Prod and offline startup use it without a runtime GitHub tree request. A readable local canonical seed directory overlays only `workspace-seeds/**` during Dev. Reconciliation may replace and prune cached seed entries only when the complete bundle or local directory returns an authority-marked inventory, preventing both partial one-file projections and destructive pruning after an incomplete read.
-
-The 2026-07-23 filesystem audit confirms that the Huijoohwee duplicate root is absent and the single Agentic projection is byte-identical to its Knowgrph source. The Agentic projection remains read-only until a later bootstrap migration removes the authority-check dependency; collaboration and Source Files writes to that path are rejected now.
-
-## ADR-018: Durable IndexedDB Working Store
-
-Dexie is the browser adapter for the five sync collections, document revision history, and collaboration update outbox. The adapter restores each record type independently, retries one write conflict, reports persistence state to MainPanel, and degrades explicitly to the memory adapter when IndexedDB initialization, quota, or retry fails. The in-memory adapter remains a test and session fallback, not the normal browser authority.
-
-## ADR-019: Bounded Local/Dev Sync
-
-The client completes durable local writes before scheduling transport. Push uses a 30-second request timeout, at most 3 attempts, and 1/2-second retry delays; polling stays at 120 seconds. Conflict and rejection rows are never silently resent, empty pulls do not rewrite cache, and no sync path calls an LLM. Mutating Source Files actions require a configured loopback Worker origin, keeping this enhancement inside local/Dev scope.
+- Historical decisions remain visible by family and in Git history.
+- No archived row grants implementation, runtime, delivery, or provider mutation authority.
+- Exact route identities live in source, not in this archive.
+- New storage decisions must use the complete ADR template with FOSS and TCO comparisons.

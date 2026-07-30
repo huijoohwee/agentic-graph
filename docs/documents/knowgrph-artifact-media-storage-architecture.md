@@ -1,310 +1,225 @@
 ---
-title: "Knowgrph Artifact & Media Storage Architecture"
+title: "Reference implementation: Knowgrph Artifact and Media Storage Architecture"
 id: "md:knowgrph-artifact-media-storage-architecture"
-author: "airvio / joohwee"
-date: "2026-06-11"
-updated: "2026-06-18"
-version: "1.2.0"
-status: "canonical"
-doc_type: "Technical Architecture Documentation"
+doc_type: "Technical Architecture Document"
+version: "2.1.0"
+date: "2026-07-30"
 lang: "en-US"
+guideline_version: "1.7.0"
+owner: "docs.storage.media-architecture"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-artifact-media-storage-architecture.md"
 frontmatter_contract: "required"
-domain: "knowgrph"
-orientation:
-  - "solo-dev"
-  - "AI-native"
-  - "TCO-zero"
-  - "FOSS-first"
-constraints:
-  - "universal"
-  - "neutral"
-  - "agnostic"
-  - "modular"
-  - "no hardcoded credentials, workspace IDs, or route paths"
-owner: "Knowgrph canonical docs"
-traceability:
-  prd: "PRD-STORAGE-SYNC-S7"
-  tad: "TAD-STORAGE-SYNC-GeneratedBinaryArtifact"
-  canonical_storage_doc: "docs/documents/knowgrph-storage-sync-document.md"
 ---
 
-# Knowgrph — Artifact & Media Storage Architecture
+# Reference implementation: Knowgrph Artifact and Media Storage Architecture
 
-**Version**: 1.2.0
-**Date**: 2026-06-18
-**Status**: Canonical — supersedes any inline architecture notes in demo docs
-**Owner**: Knowgrph canonical docs
-**Scope**: Artifact and media storage, access, auto-save, replay, and infrastructure constraints for all agentic canvas runs
+## Authority and readiness
 
----
+This document owns only the implemented source contract for binary blob/media routes in the
+Knowgrph storage Worker. It does not make the storage Worker, bucket, endpoint, authentication
+policy, provider ingest, or delivery surface production-ready.
 
-## Infrastructure Constraint: Cloudflare + BytePlus + Stripe Only
+The three route families are deliberately distinct:
 
-**Vercel and AWS are FORBIDDEN** in this architecture. All compute, storage, and delivery runs on:
+- the generic blob route is workspace/path addressed, unauthenticated in the current handler, and
+  overwriteable;
+- the run media route is run/path addressed and checks an expiry/run-id token, but that token is
+  currently only base64url JSON and is not a signed entitlement or a Durable Object lookup.
+- the media-asset metadata route lists records for any caller-supplied workspace id without auth;
+  its mutations use the same unsigned run token before D1/R2/KV/room operations.
 
-| Layer | Provider | Service |
-|---|---|---|
-| UI + static | Cloudflare Pages | `airvio.co/knowgrph` |
-| Agent compute | Cloudflare Workers | `McpAgent` at `airvio.co/knowgrph/control-plane/mcp` |
-| AI routing + cache | Cloudflare AI Gateway | unified billing, fallback, token count |
-| Document store | Cloudflare D1 | run manifests, node metadata, media metadata/provenance, auto-save revisions |
-| Durable state | Cloudflare Durable Objects | per-run `RunManifest DO` and room-level canvas sync notifications |
-| Access cache | Cloudflare KV | short-lived media access URL cache when a namespace is bound |
-| Media bytes | Cloudflare R2 | image, audio, and video binary blobs |
-| Text / image / video models | BytePlus OpenArk | `agnes`, `seed`, `seedream-*`, `seedance-*`, `dreamina-*` |
-| Payments | Stripe | Checkout, payout |
+Those gaps keep local readiness at `spec-complete`. Delivered readiness remains `undocumented`.
 
-No Vercel edge functions, Lambda, S3, CloudFront, SQS, or any other AWS or Vercel resource is permitted. Control-plane keys live in the Worker; the canvas product surface holds none.
+## Scope
 
----
+In scope:
 
-## Architecture Flow Diagram
+- R2 object-key construction and path validation;
+- generic blob upload/read behavior;
+- run-media upload/read behavior;
+- media-asset list/persist/rename/delete behavior;
+- current auth and overwrite semantics;
+- replay URLs, metadata, limits, failures, VCCs, and delivery blockers.
 
-Rendered in the **BottomPanel** (`architecture` tab), **not** in a floating Rich Media Panel.
+Out of scope:
 
-```
-architecture-beta
-  group user(cloud)[User surface]
-  group cloudflare(cloud)[Cloudflare]
-  group providers(cloud)[Default provider BytePlus plus Stripe]
-  service web(internet)[Cloudflare UI airvio.co knowgrph] in cloudflare
-  service mcp(server)[McpAgent Worker] in cloudflare
-  service gateway(server)[Cloudflare AI Gateway] in cloudflare
-  service manifest(database)[Run Manifest DO] in cloudflare
-  service r2(database)[R2 image audio and video assets] in cloudflare
-  service byteplus(server)[BytePlus seedream and seedance] in providers
-  service stripe(database)[Stripe] in providers
-  web:R --> L:mcp
-  mcp:B --> T:manifest
-  mcp:R --> L:gateway
-  gateway:R --> L:byteplus
-  mcp:B --> T:r2
-  mcp:R --> L:stripe
-```
+- model/provider generation and ephemeral URL download;
+- payment entitlement;
+- D1 document/sync schema;
+- collaboration-room authorization;
+- proof that any configured Worker or bucket is delivered.
 
-**Frontmatter contract** for any `flow_diagrams` entry that carries an architecture diagram:
+## Invocation Register: Storage binary routes
 
-```yaml
-agentic_canvas_architecture:
-  type: mermaid_architecture
-  floatingPanelView: "architecture"   # FloatingPanel: row list (renderMode=split)
-  floatingPanelOpen: true             # open FloatingPanel on load
-  bottomPanelTab: "architecture"      # BottomPanel: chart only (renderMode=diagram)
-  bottomPanelOpen: true               # open BottomPanel on load
-  forbidPlatform: ["vercel", "aws"]
-```
+| Route | Kind | Owner | Typed arguments | Trust boundary | Token cost |
+|---|---|---|---|---|---|
+| `/api/storage/blob/{workspaceId}/{canonicalPath}` | HTTP route | `cloudflare/workers/knowgrph-storage/blob.ts` | path strings; body; content type; optional content hash; max bytes from environment | current handler has no authentication or entitlement check | 0 |
+| `/api/storage/media/{namespace}/runs/{runId}/{stageId}/{shotId}.{ext}` | HTTP route | `cloudflare/workers/knowgrph-storage/media.ts` | path strings; body; content type/hash; bearer or query token `{runId,expiresAt}` | run-id and expiry check only; token is not cryptographically verified | 0 |
+| `/api/storage/media/assets` | HTTP route | `cloudflare/workers/knowgrph-storage/mediaAssetSync.ts` | GET workspace/limit; POST typed artifact record; PATCH workspace/artifact/name; DELETE workspace/artifact | GET has no auth; mutations use the same unsigned run-id/expiry token | 0 |
 
----
+This is the sole declaration site for these three route identities. Other documents may link to this
+register but must not redefine their arguments or trust boundary.
 
-## Event Model Flow Diagram
+## Topology: Binary storage v2 — 2026-07-30
 
-Rendered in the **BottomPanel** (`eventModeling` tab), **not** in a floating Rich Media Panel.
+| Node | Role | Type | Lane | Connects to | Connection | Data residency |
+|---|---|---|---|---|---|---|
+| Client | Producer/Consumer | browser/tool host | Authoring | Storage Worker | HTTPS | caller device |
+| Storage Worker | Gateway | Worker source | Authoring | R2 binding | in-process binding call | configured Worker region |
+| Generic blob handler | Router | function | Authoring | R2 binding | async put/get/head | request memory |
+| Run-media handler | Router | function | Authoring | auth helper, R2 binding | sync token check + async put/get/head | request memory |
+| Media-asset handler | Router | function | Authoring | auth helper, D1, R2, optional KV/room | sync token check for mutations + async binding calls | request memory |
+| R2 bucket | Store | object store | Authoring until separately delivered | handlers | provider binding | configured bucket region |
+| D1 media catalog | Store | relational records | Authoring until separately delivered | media-asset handler | provider binding | configured database region |
+| Optional access/room stores | Store/Gateway | KV and room binding | Authoring until separately delivered | media-asset handler | provider binding/internal fetch | configured provider regions |
+| Mirror artifact | Store | immutable release candidate | Mirror | Delivery | protected batch | mirror artifact store |
+| Delivered Worker | Gateway | optional public runtime | Delivery | configured bucket | HTTPS + provider binding | declared delivery region |
 
-```
-eventmodeling
-tf 01 ui UserBrief
-tf 02 cmd StartVideoRemixRun
-tf 03 evt RunManifestCreated
-tf 04 pcr DirectorAgent
-tf 05 cmd RequestStoryboard
-tf 06 evt StoryboardReady
-tf 07 cmd RequestApprovalToken
-tf 08 evt ApprovalGranted
-tf 09 cmd GenerateImage
-tf 10 evt ImageAssetReady
-tf 11 cmd GenerateVideo
-tf 12 evt VideoAssetReady
-tf 13 cmd CreateCheckout
-tf 14 evt PaymentSessionCreated
-tf 15 ui DemoPackReady
-```
-
-**Frontmatter contract** for any `flow_diagrams` entry that carries an event model:
-
-```yaml
-agent_run_event_model:
-  type: mermaid_eventmodeling
-  floatingPanelView: "eventModeling"  # FloatingPanel: row list (renderMode=split)
-  floatingPanelOpen: true             # open FloatingPanel on load
-  bottomPanelTab: "eventModeling"     # BottomPanel: chart only (renderMode=diagram)
-  bottomPanelOpen: true               # open BottomPanel on load
+```mermaid
+flowchart TB
+  subgraph Caller["Caller boundary · Authoring"]
+    Client["Client"]
+  end
+  subgraph WorkerSource["Storage Worker source · Authoring"]
+    Dispatch["Route dispatcher"]
+    Blob["Generic blob handler"]
+    Media["Run-media handler"]
+    Assets["Media-asset handler"]
+    Auth["Expiry/run-id token check"]
+    Bucket["R2 binding · store"]
+    Catalog["D1 media catalog · store"]
+    Optional["Optional KV / room bindings"]
+  end
+  subgraph MirrorLane["Mirror lane"]
+    Mirror["Immutable candidate"]
+  end
+  subgraph DeliveryLane["Delivery lane"]
+    Delivered["Delivered Worker"]
+  end
+  Client -- "HTTPS" --> Dispatch
+  Dispatch -- "sync route match" --> Blob
+  Dispatch -- "sync route match" --> Media
+  Dispatch -- "sync route match" --> Assets
+  Media -- "sync token check" --> Auth
+  Assets -- "sync token check for mutations only" --> Auth
+  Blob -- "async put/get/head" --> Bucket
+  Media -- "async put/get/head" --> Bucket
+  Assets -- "async head/delete" --> Bucket
+  Assets -- "async query/upsert/delete" --> Catalog
+  Assets -- "async optional cache/notification" --> Optional
+  WorkerSource -. "protected batch" .-> Mirror
+  Mirror -. "protected publication" .-> Delivered
 ```
 
----
+**Version note**: v2.1 adds the previously omitted media-asset metadata route and records its
+unauthenticated listing plus unsigned-token mutation boundary. v2 replaced the false claim that
+binary routes use immutable, run-entitled objects verified against a RunManifest Durable Object.
 
-## Image and Video as Distinct Rich Media Panels
+## Data Flow: Generic blob
 
-Image and video outputs are **separate canvas nodes** — never merged into one panel, never routed through a generic `output` / `outputSrcDoc` handle when a typed media URL is available.
+| Stage | Component | Input | Output | Persistence | Error handling |
+|---|---|---|---|---|---|
+| Ingest | route parser | workspace id + canonical path | normalized route | none | 400 on missing/traversal/control characters |
+| Transform | key builder | normalized route | `workspaces/{encodedWorkspaceId}/{canonicalPath}` | none | fail before bucket access |
+| Store | blob upload | body + metadata | R2 object/etag | overwriteable at same key | 400 size limit; 500 missing binding |
+| Serve | blob read | same path | bytes/metadata | no-store response | 404 missing object |
 
-| Panel node id | Node type | Typed field | Field type | Provider |
-|---|---|---|---|---|
-| `panel_image_output` | `RichMediaPanel` | `imageAssetUrl` | `image_url` | BytePlus seedream-* |
-| `panel_video_output` | `RichMediaPanel` | `videoUrl` | `video_url` | BytePlus seedance-* |
+`POST` writes with `bucket.put`. The optional content hash is metadata only: the current handler
+does not compare it, deduplicate, reject overwrite, or make the object immutable.
 
-**Required node fields:**
+## Data Flow: Run media
 
-```yaml
-- id: panel_image_output
-  type: RichMediaPanel
-  label: "Rich Media Panel - Image (seedream)"
-  handles:
-    target: [imageAssetUrl]
-    source: [imageAssetUrl]
-  flow:portTypes:
-    in:  {imageAssetUrl: artifact_signal}
-    out: {imageAssetUrl: artifact_signal}
-  media_type: image
-  replayWithoutLlm: true
-  imageAssetUrl:
-    type: image_url
-    value: "https://airvio.co/api/storage/blob/{workspaceId}/{canonicalImagePath}"
+| Stage | Component | Input | Output | Persistence | Error handling |
+|---|---|---|---|---|---|
+| Ingest | route parser | namespace/run/stage/shot path | R2 key | none | 400 malformed key |
+| Transform | media auth helper | bearer/query token + run id | allow/deny | none | 401 missing/invalid/expired; 403 run mismatch |
+| Store | media write | bytes + optional hash metadata | R2 object/etag | overwriteable unless a higher owner forbids it | 500 missing binding |
+| Serve | media read | authorized path | bytes/metadata | no-store response | 404 missing object |
 
-- id: panel_video_output
-  type: RichMediaPanel
-  label: "Rich Media Panel - Video (seedance)"
-  handles:
-    target: [videoUrl]
-    source: [videoUrl]
-  flow:portTypes:
-    in:  {videoUrl: artifact_signal}
-    out: {videoUrl: artifact_signal}
-  media_type: video
-  replayWithoutLlm: true
-  videoUrl:
-    type: video_url
-    value: "https://airvio.co/api/storage/blob/{workspaceId}/{canonicalVideoPath}"
-```
+The token payload is `{runId, expiresAt}` encoded as base64url JSON. It is not signed and is not
+checked against D1, a Durable Object, a payment entitlement, or a session issuer. It must therefore
+not be treated as delivery-grade authorization.
 
----
+## Data Flow: Media-asset metadata
 
-## Media Storage — Persist on Generate
+| Stage | Component | Input | Output | Persistence | Error handling |
+|---|---|---|---|---|---|
+| List | media-asset handler | GET workspace id + limit | artifact ids, object/public paths, run/stage/shot ids, hashes, provenance | D1 read | 400 missing workspace; no auth check |
+| Persist | media-asset handler | typed record + unsigned run token | artifact record and binding statuses | D1; R2 must already contain object; optional KV/room | 401/403 token failure; 404 missing object; explicit optional-binding status |
+| Rename | media-asset handler | workspace/artifact/name + unsigned run token | updated provenance | D1 | 401/403 token failure; 404 missing record |
+| Delete | media-asset handler | workspace/artifact + unsigned run token | deletion status | D1 and R2 | 401/403 token failure; 404 missing record; missing binding surfaced |
 
-Generated or uploaded media is durable only after the Cloudflare storage path confirms both bytes and metadata. Browser object URLs, provider-hosted URLs, local previews, and embedded `srcdoc` are transient render evidence and must not be treated as synced collaboration state.
+GET accepts an arbitrary caller-supplied workspace id and returns metadata without authorization.
+Mutations call the same run-id/expiry helper used by run-media; this does not make them
+cryptographically authenticated.
 
-| Layer | Owner | Runtime contract |
-|---|---|---|
-| FloatingPanel Media | Media browser/catalog | Lists uploaded and generated image/audio/video records, previews uploaded media through the shared Rich Media Panel, downloads media through the shared download helper, and inserts selected media into active card fields as inline mention chips. Thumbnail clicks portal that direct Rich Media Panel to the previous centered lightbox geometry and player size while keeping parent-owned placement so Canvas Storyboard/frontmatter positioning cannot collapse image, video, or audio rendering; the uploaded-media path does not instantiate `MediaLightbox`. The expanded panel retains the shared native fullscreen action, which follows `fullscreenchange` and switches between Enter and Exit fullscreen states. Visible Previous/Next controls, Left/Up and Right/Down keys, and horizontal touch swipes all reuse one wraparound image/video sequence owner; swipe left advances, swipe right returns, vertical gestures are ignored, and audio is excluded. That sequence owner also selects the unique adjacent items for speculative loading: images preload their source and videos preload metadata, while navigation changes and panel close pause video probes, clear sources, and release obsolete resources. Preload resources remain one-pixel, transparent, pointer-inert, and `aria-hidden`; effect setup assigns their source so React Strict Mode cleanup replay cannot leave a connected preload empty. The Dev-only Rich Media browser smoke uses a 1,092-byte local H.264 MP4 fixture and measures both preloaded transitions: images must reach `complete && naturalWidth > 0`, and videos must reach `readyState >= HAVE_METADATA`. `richMediaBrowserSmokeFixtures.json` is the fixture identity SSOT for path, byte size, SHA-256, 160×90 dimensions, 0.4-second duration, and duration tolerance. Both the hidden preload and visible video must match that identity. The smoke enforces a 500 ms default budget configurable through `KG_MEDIA_PREVIEW_READY_BUDGET_MS` and writes structured fixture, image, and video evidence to `data/outputs/rich-media-catalog-preview-timing.json`. Every artifact declares `schema: rich-media-catalog-preview-timing/v1` and must pass the strict Draft 2020-12 contract at `canvas/schemas/rich-media-catalog-preview-timing.v1.schema.json`; unknown fields, missing readiness evidence, or invalid scalar constraints fail the smoke immediately. The schema, validator, fixture manifest, smoke page/runner/verifier, and browser-contract test share one affected-CI ownership scope that always selects the timing-schema and focused browser-contract gates. Its thumbnails share hover/focus-appearing kind, info, open-link, and download overlays with Storyboard card media and reference thumbnails. |
-| `@ Upload Media` command | Shared Media upload helper | Reuses the FloatingPanel Media upload utility and inventory builder; no second uploader, no panel-local storage config. |
-| R2 | Blob persistence | Stores image/audio/video binary objects under configured workspace/object prefixes. |
-| D1 | Metadata and provenance | Stores media asset metadata, content type, object key, source/provenance, workspace/run/card context, and persistence status. |
-| KV | Access URL cache | Stores short-lived browser-openable access URLs only when a real namespace is bound; it is not canonical metadata. |
-| Durable Objects | Collaboration sync state | Holds room-level canvas sync state and latest media notification for connected collaborators; it is not the blob or provenance store. |
+## Interface contracts
 
-Inline media chips in card text are display references. Inserting a chip through `@` or by clicking FloatingPanel Media must preserve the existing field text typography, line height, and source string order while attaching the selected media reference as structured inline content.
+| Interface | Input | Output | Invariants |
+|---|---|---|---|
+| Generic blob upload | POST body, workspace/path, optional hash, content type | JSON object key/path/etag/size | max-byte limit; normalized path; no auth claim |
+| Generic blob read | GET/HEAD workspace/path | bytes or headers | same deterministic key; no-store |
+| Run-media write | PUT/POST body, media path, token | JSON metadata | token expiry/run match before bucket access |
+| Run-media read | GET/HEAD media path, token | bytes or headers | token expiry/run match before bucket access |
+| Media-asset list | GET workspace id + limit | JSON artifact metadata | currently unauthenticated; no entitlement claim |
+| Media-asset persist/rename/delete | typed JSON/query + token | JSON record/status | unsigned token check before mutation; D1/R2 and optional binding outcomes explicit |
 
-BytePlus media URLs are **ephemeral** (short-lived signed URLs). On generation success the `McpAgent` Worker:
+## Component VCCs
 
-1. Downloads the media bytes from the BytePlus response URL.
-2. Computes a SHA-256 content hash for deduplication.
-3. Uploads to **Cloudflare R2** through the Storage Worker blob route:
-   ```
-   POST /api/storage/blob/{workspaceId}/{canonicalArtifactPath}
-   ```
-4. Records the Worker blob URL and R2 object key in the sibling Markdown manifest stored in D1.
-5. Returns only the Worker blob URL to the canvas node — the ephemeral provider URL is discarded.
+| VCC | End state | Stated check | Constraint | Evidence Reference | Local rung | Delivered rung |
+|---|---|---|---|---|---|---|
+| VCC-M1 | generic blob positive/negative/key/limit/overwrite behavior is asserted | a future handler-level suite must exercise upload/read/head/overwrite; no invocable satisfying host exists | no auth or immutability claim added | none | `spec-complete` | `undocumented` |
+| VCC-M2 | run-media route rejects missing/expired/mismatched token and accepts matching unexpired token | `node --test cloudflare/workers/knowgrph-storage/__tests__/media.test.mjs` exits 0 | result is described as expiry/run-id validation, not entitlement | not recorded for this revision | `spec-complete` | `undocumented` |
+| VCC-M3 | media-asset D1 records preserve workspace scope, version, content hash, and provenance | `node --test cloudflare/workers/knowgrph-storage/__tests__/mediaArtifacts.test.mjs` exits 0 | database behavior alone does not prove HTTP-route auth | not recorded for this revision | `spec-complete` | `undocumented` |
+| VCC-M4 | media-asset list and mutations match current D1/R2/KV/room and auth semantics | a future handler-level suite must exercise list/persist/rename/delete; no invocable satisfying host exists | GET remains documented unauthenticated; mutation token is not called signed auth | none | `spec-complete` | `undocumented` |
+| VCC-M5 | delivery-grade media auth uses a signed/issuer-verified token or server-side workspace/run entitlement lookup | a future security suite must reject forged payloads and unauthorized workspace listing; no invocable satisfying host exists | zero unauthenticated metadata/byte reads or writes on a delivered route | none | `undocumented` | `undocumented` |
+| VCC-M6 | delivery proof binds an exact Worker revision, stores, routes, auth policy, and rollback | protected live route/security check records exact result | no source test promotes delivered rung | not recorded | `spec-complete` | `undocumented` |
 
-Durable read URL template: `https://airvio.co/api/storage/blob/{workspaceId}/{canonicalArtifactPath}`
+## Security and delivery blockers
 
-**Key scheme examples:**
+- The generic blob route permits unauthenticated read and overwrite when the Worker is reachable.
+- The run-media token is forgeable because no signature/issuer secret is verified.
+- The media-asset GET route permits unauthenticated workspace metadata enumeration; its mutations
+  rely on the same forgeable token.
+- CORS permits `*`; this is not authorization.
+- Content hashes are descriptive metadata, not integrity enforcement.
+- Neither source presence nor local tests prove a private bucket or delivered route.
+- A delivery plan must either harden these routes or keep them unreachable from untrusted callers.
 
-| Asset | R2 key |
-|---|---|
-| Shot 1 image | Storage Worker-derived object key for `{workspaceId}/{canonicalImagePath}` |
-| Shot 2 video | Storage Worker-derived object key for `{workspaceId}/{canonicalVideoPath}` |
+## TCO comparison
 
----
+| Model | Infra/month | 12-month estimate | Security/ops burden | Disposition |
+|---|---:|---:|---|---|
+| local fixture/file artifacts | $0 | $0 | low; operator custody | default authoring fallback |
+| managed Worker + object store | $0–25 | $0–300 | medium; auth, retention, egress, rollback | optional after VCC-M3/M4 |
+| FOSS self-hosted object service | $10–80 | $120–960 | high; patching/backups/auth | portability alternative |
+| hybrid local + managed media | $0–35 | $0–420 | high boundary complexity | only with measured value |
 
-## Auto-Save
+All paths use zero LLM tokens for storage and replay.
 
-Auto-save is debounced and fires on:
+## Lane and deploy boundaries
 
-```yaml
-kgAutoSaveEnabled: true
-kgAutoSaveDebounceMs: 1500
-kgAutoSaveOn: ["nodeEdit", "runComplete", "approval", "assetReady"]
-```
+| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement/check | State |
+|---|---|---|---|---|---|---|
+| `STORAGE-SOURCE-TO-MIRROR` | Authoring | Mirror | security/unit candidate result `not recorded` | `none` | discard candidate; rerun VCC-M1–M5 checks | `closed` |
+| `STORAGE-MIRROR-TO-DELIVERY` | Mirror | Delivery | exact live route/security result `not recorded` | `none` | restore prior Worker revision/config; rerun auth/read/write probes | `closed` |
 
-Each save is:
-- **Idempotent** — keyed by `runId` + content hash; duplicate saves are no-ops.
-- **Revision-guarded** — the Worker checks the current revision before writing to D1; a stale write returns a conflict and the client retries with the latest revision.
-- **Dual-target** — document/manifest rows go to D1; media bytes go to R2.
+The production Pages release does not deploy this Worker. Worker deployment requires a separate
+operator instruction, evidence set, and rollback record.
 
-Storage frontmatter keys (all `kgStorage*` / `kgMedia*` / `kgReplay*` keys are required on any document that triggers media generation):
+## Reference implementation owners
 
-```yaml
-kgAutoSaveEnabled: true
-kgAutoSaveDebounceMs: 1500
-kgAutoSaveOn: ["nodeEdit", "runComplete", "approval", "assetReady"]
-kgStorageTarget: "cloudflare"
-kgStorageAccountId: "<cloudflare-account-id>"
-kgStorageWorkspaceId: "<workspace-id>"
-kgStorageDocPath: "<canonical-document-path>"
-kgStorageDocTarget: "cloudflare-d1"
-kgStorageMediaBucketBinding: "KNOWGRPH_STORAGE_BLOB_BUCKET"
-kgStorageMediaBaseUrl: "https://airvio.co/api/storage/blob"
-kgStorageMediaKeyScheme: "{workspaceId}/{canonicalArtifactPath}"
-kgMediaPersistPolicy: "copy-on-generate"
-kgProviderUrlEphemeral: true
-kgMediaDedupeBy: "sha256"
-kgForbidPlatform: ["vercel", "aws"]
-```
-
----
-
-## Replay Without Calling the LLM
-
-Once assets exist in R2, panels **replay by embedding the durable Worker blob URL directly** — no provider call, no AI Gateway request, no LLM invocation.
-
-```yaml
-kgReplayEnabled: true
-kgReplayFromStorageWithoutLlm: true
-kgReplayMediaFields: ["imageAssetUrl", "videoUrl"]
-kgReplayAccessScope: "run-entitled"
-```
-
-**Replay access contract:**
-
-- R2 assets are served through the Storage Worker blob route or a run-entitled media route; buckets remain private.
-- The bucket is **not public**.
-- Re-opening a panel, sharing a run link, or returning after days all read from R2 — zero BytePlus or LLM cost.
-- Replay is deterministic: the same workspace id and canonical artifact path resolve the same blob route and R2 object.
-
-**Panel behaviour on replay:**
-
-| Panel type | On first run | On replay |
-|---|---|---|
-| Image (`imageAssetUrl`) | Receives R2 URL from Worker, renders `<img>` | Reads saved R2 URL from D1/manifest, renders `<img>` — no model call |
-| Video (`videoUrl`) | Receives R2 URL from Worker, renders `<video>` | Reads saved R2 URL from D1/manifest, renders `<video>` — no model call |
-| Text / srcdoc | Rendered from saved markdown / HTML in D1 | Re-renders from D1 row — no model call |
-
-**Persistence claim boundary**: Local artifact paths, browser object URLs, provider URLs, and embedded `srcdoc` prove only that Dev generated an output. A generated artifact is persisted across Dev, Prod, and Cloudflare only after both the D1 manifest route and the Worker blob route are readable for the same artifact.
-
----
-
-## Run-Scoped Access
-
-```
-R2 asset access
-  → Worker receives request with runId + entitlement token
-  → Worker verifies token against RunManifest DO
-  → if verified: stream R2 object to client (zero-egress path)
-  → if not verified: 403
-  → bucket policy: private; no public-read ACL
-```
-
-No CDN cache-poisoning risk because R2 keys include `runId` and assets are immutable once written (deduped by SHA-256).
-
----
-
-## Companion References
-
-| Document | Scope |
-|---|---|
-| `knowgrph-storage-sync-document.md` | Full storage ladder, D1 schema, Yjs collaboration, conflict resolution |
-| `knowgrph-storage-schemas-document.md` | D1 SQL, browser cache shapes, route contracts |
-| `knowgrph-cloudflare-document.md` | Cloudflare Workers, Pages, D1, R2, AI Gateway setup |
-| `knowgrph-byteplus-openark-image-generation-api-reference.md` | seedream model reference |
-| `knowgrph-byteplus-openark-video-generation-api-reference.md` | seedance model reference |
-| `knowgrph-agentic-commerce-prd-tad.md` | Stripe checkout / payout contract |
-| `huijoohwee/docs/knowgrph-mcp-agentic-canvas-os-demo.md` | Live MCP demo with full flow, storage keys, replay |
-| `huijoohwee/docs/knowgrph-agentic-canvas-os-demo.md` | Market-radar-to-rich-media demo with storage keys, replay |
+- Dispatcher: `cloudflare/workers/knowgrph-storage/index.ts`
+- Generic blobs: `cloudflare/workers/knowgrph-storage/blob.ts`
+- Run media: `cloudflare/workers/knowgrph-storage/media.ts`
+- Media-asset catalog/sync: `cloudflare/workers/knowgrph-storage/mediaAssetSync.ts`
+- Media-asset D1 records: `cloudflare/workers/knowgrph-storage/mediaArtifacts.ts`
+- Current token check: `cloudflare/workers/knowgrph-storage/mediaAuth.ts`
+- Route constants/types: `cloudflare/workers/knowgrph-storage/contract.ts`
+- Tests: `cloudflare/workers/knowgrph-storage/__tests__/mediaArtifacts.test.mjs` and
+  `cloudflare/workers/knowgrph-storage/__tests__/media.test.mjs`
+- Wider storage contract: `docs/documents/knowgrph-storage-sync-document.md`

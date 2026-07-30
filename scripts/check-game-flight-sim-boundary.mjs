@@ -18,9 +18,16 @@ const { stdout } = await execFileAsync(
 const relativePaths = stdout.toString('utf8').split('\0').filter(Boolean)
 const entries = []
 for (const relativePath of relativePaths) {
+  let bytes
+  try {
+    bytes = await readFile(path.join(repositoryRoot, relativePath))
+  } catch (error) {
+    if (error?.code === 'ENOENT') continue
+    throw error
+  }
   entries.push({
     relativePath,
-    bytes: await readFile(path.join(repositoryRoot, relativePath)),
+    bytes,
   })
 }
 assertFlightSimBoundary(entries)

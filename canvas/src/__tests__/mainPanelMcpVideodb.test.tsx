@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client'
 import McpHubView from '@/features/panels/views/McpHubView'
 import {
   VIDEODB_MCP_AI_TOOLS,
+  VIDEODB_MCP_ALL_TOOLS,
+  VIDEODB_MCP_ASYNC_TOOLS,
   VIDEODB_MCP_CLAUDE_CODE_COMMAND_KEY,
   VIDEODB_MCP_CREDENTIAL_ENV,
   VIDEODB_MCP_CREDENTIAL_PLACEHOLDER,
@@ -107,6 +109,12 @@ export function testVideodbMcpGeneratedConfigsUseCredentialPlaceholderOnly() {
 }
 
 export function testVideodbMcpSsotRowsCoverAsyncAndConfirmationContract() {
+  if (VIDEODB_MCP_ALL_TOOLS.length !== 18 || new Set(VIDEODB_MCP_ALL_TOOLS).size !== 18) {
+    throw new Error(`expected 18 unique VideoDB MCP tools, got ${JSON.stringify(VIDEODB_MCP_ALL_TOOLS)}`)
+  }
+  if (VIDEODB_MCP_ASYNC_TOOLS.length !== 8 || new Set(VIDEODB_MCP_ASYNC_TOOLS).size !== 8) {
+    throw new Error(`expected 8 unique VideoDB MCP async tools, got ${JSON.stringify(VIDEODB_MCP_ASYNC_TOOLS)}`)
+  }
   const keys = new Set(VIDEODB_MCP_DOC_ENTRIES.map(entry => entry.meta.key))
   for (const key of [
     'videodb.mcp.server_key',

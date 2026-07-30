@@ -1,4 +1,21 @@
-# Knowgrph Pipeline Deep Dive: Universal Import-to-Render Specification
+---
+title: "Reference implementation: Knowgrph Import-to-Render Pipeline Deep Dive"
+doc_type: "Technical Design Reference"
+version: "1.0.1"
+date: "2026-07-30"
+lang: "en-US"
+guideline_version: "1.7.0"
+owner: "docs.pipeline.import-render"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+---
+
+# Reference implementation: Knowgrph Import-to-Render Pipeline Deep Dive
+
+This reference has no well-formed VCC or attached Evidence Reference. Its local and delivered
+rungs therefore remain `undocumented`; source-path descriptions below are not readiness evidence.
 
 ## Design Mantras
 
@@ -184,7 +201,7 @@ Canonical GraphData (Zustand store)
 **From/To**: Positioned render graph → scene builder → DOM/SVG updates → enables interaction.
 
 - Render entrypoint: [GraphCanvas.tsx](../../canvas/src/components/GraphCanvas.tsx)
-- 3D render entrypoint: [ThreeGraph.tsx](../../canvas/src/features/three/ThreeGraph.tsx)
+- 3D render entrypoint: [ThreeGraph.impl.tsx](../../canvas/src/lib/three/ThreeGraph.impl.tsx)
 - Scene orchestration: [scene.ts](../../canvas/src/components/GraphCanvas/scene.ts)
 - Scene layers barrel: [sceneLayers.ts](../../canvas/src/components/GraphCanvas/sceneLayers.ts)
 - Presentation updates (no simulation rebuild): [scene.ts](../../canvas/src/components/GraphCanvas/scene.ts)
@@ -199,7 +216,7 @@ Canonical GraphData (Zustand store)
 - Table surfaces (Multi-dimensional Table):
   - Host Graph Data Table workspace renders a canvas fast-grid over the persisted `GraphRecordDb` materialization and shares the same derived `GraphData` and collapse state used by Canvas.
 - UI surfaces:
-  - UI icon+text alignment in controls: [GraphDataTableUiPrimitives.tsx](../../../singabldr/src/features/graph-data-table/ui/GraphDataTableUiPrimitives.tsx)
+  - UI icon+text alignment in controls: [GraphDataTableUiPrimitives.tsx](../../canvas/src/features/graph-data-table/ui/GraphDataTableUiPrimitives.tsx)
 
 **Invariant**: UI toggles that affect presentation only (node shape, port handles, group overlay shape, media-as-nodes) update layers in-place and do not trigger re-layout or simulation rebuild.
 

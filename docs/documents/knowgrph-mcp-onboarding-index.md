@@ -1,150 +1,122 @@
 ---
-title: "Knowgrph MCP Onboarding Index"
-schema: kgc-computing-flow/v1
+title: "MCP Onboarding Index"
 id: "md:knowgrph-mcp-onboarding-index"
 doc_type: "Onboarding Index"
-version: "1.0.5"
+version: "1.1.0"
 date: "2026-07-30"
 lang: "en-US"
-owner: "docs.mcp.onboarding-index"
-local_rung: "dev-proven"
-delivered_rung: "runtime-ready"
+owner: "docs.mcp.onboarding"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/knowgrph-mcp-onboarding-index.md"
-canonical_service_url: "https://airvio.co/knowgrph/"
-public_read_mcp_url: "https://airvio.co/knowgrph/mcp"
-control_plane_mcp_url: "https://airvio.co/knowgrph/control-plane/mcp"
-tags: [mcp, onboarding, index, discovery, control-plane, operator]
-constraints:
-  - solo-dev
-  - source-owned
-  - token-efficient
-  - fail-closed
-related:
-  - docs/documents/knowgrph-mcp-install-contract.md
-  - docs/documents/knowgrph-mcp-install-boundary-release-note-20260710.md
-  - docs/documents/knowgrph-agent-ready-prd-tad.md
-  - docs/documents/knowgrph-xr-invocation-runtime-api.md
-  - docs/documents/knowgrph-native-physics-engines-prd-tad.md
-  - docs/documents/markdown-convertible-agent-discovery-document.md
-  - docs/documents/knowgrph-superagent-harness.md
-  - docs/documents/knowgrph-mcp/knowgrph-mcp.md
-  - docs/documents/knowgrph-mcp-service-prd-tad.md
-  - docs/documents/knowgrph-mcp-agentic-os-prd-tad.md
-  - docs/documents/knowgrph-mcp-service-prd-tad.companion.md
-  - docs/documents/knowgrph-mcp-agentic-os-prd-tad.companion.md
+guideline_version: "1.7.0"
+reference_implementation_label: "reference implementation"
 ---
 
-# Knowgrph MCP Onboarding Index
+# MCP Onboarding Index
 
-## Purpose
+## Reference implementation: choose the smallest truthful MCP surface
 
-This is the one-stop landing page for remote MCP onboarding.
+Start here to select a surface. Endpoint values, trust, and token cost are
+declared only in the
+[authoritative Invocation Register](knowgrph-mcp-install-contract.md).
+Repository source does not prove endpoint reachability.
 
-Use it when you need one short path to:
+### Readiness declaration
 
-- choose the correct Knowgrph MCP endpoint
-- understand the public discovery vs control-plane split
-- find the source-backed Markdown discovery contract behind the Live Canvas Hero
-- find the canonical install contract
-- inspect XR Mode, Media, Skills & Commands, and native-physics runtime boundaries
-- scan the latest install-boundary release note
-- jump straight to the latest evidence-backed release proof
+| Scope | Local rung | Delivered rung | Basis |
+|---|---|---|---|
+| Onboarding guidance | `spec-complete` | `undocumented` | The setup VCCs are stated; no delivery Evidence Reference is attached. |
 
-## Quick Answer
+### Fast path — read-only source context
 
-Map intent. Orchestrate agents. Prove outcomes.
+1. Open the Pages HTTP row in the authoritative Invocation Register.
+2. Configure that endpoint in an MCP-capable client.
+3. Initialize the connection and request tool discovery.
+4. Confirm exactly 7 read-only tools:
+   `search`, `fetch`, `list_source_files`, `read_source_file`,
+   `read_shared_document`, `inspect_shared_document_structure`, and
+   `inspect_agent_surface`.
+5. Invoke the smallest read that supplies the needed context.
+6. Treat any different count, control tool, or unreachable endpoint as drift,
+   not as permission to guess another surface.
 
-A source-backed canvas where `/` routes work, `#` sets meaning, and `@` binds context.
+The read path requires zero model calls.
 
-One canonical operator contract: install and discovery stay on `https://airvio.co/knowgrph/mcp`, while live `/`, `#`, and `@` grammar stays on `https://airvio.co/knowgrph/control-plane/mcp` or an app-owned forwarder until the host proves MCP session support.
+### Control-plane path — remote Worker
 
-- Install `https://airvio.co/knowgrph/mcp` for public discovery and read-only MCP usage
-- Use `https://airvio.co/knowgrph/control-plane/mcp` only for approval-gated orchestration and
-  live `/`, `#`, `@` grammar invocation
+Use this path only when a capability in the separate 10-tool Worker source
+registry is required.
 
-## Fastest Path
+1. Select the Worker row from the authoritative Invocation Register.
+2. Obtain the environment-issued bearer secret through the operator-approved
+   secret channel; never place it in source or documentation.
+3. Initialize with `Authorization: Bearer <token>`.
+4. Capture the returned `mcp-session-id`.
+5. Preserve bearer authorization and that session id on every subsequent MCP
+   request.
+6. Confirm discovery returns exactly 10 source registry tools.
+7. Obtain the tool-owner approval and spend declaration before a guarded
+   execution.
 
-1. Map intent: start with `https://airvio.co/knowgrph/mcp` for public discovery, retrieval, and
-   inspection.
-2. Orchestrate agents: add `https://airvio.co/knowgrph/control-plane/mcp` only if the host can
-   preserve MCP session state across calls and needs live grammar lookup.
-3. Prove outcomes: if you want the cheapest proof path before hosted setup, use the source-side
-   offline deterministic route in `README.md` or `docs/documents/knowgrph-superagent-harness.md`
-   in the `knowgrph` repository.
+The Worker is a separate deployment. A registry file, tool count, or successful
+Pages read does not prove Worker delivery. A missing token or session id fails
+closed.
 
-## Fastest Grammar Path
+### Browser-local path
 
-Use this path when you need live Agentic Canvas OS grammar, not just read-only discovery:
+The app WebMCP source contract contains exactly 41 tools:
 
-1. Map intent: install `https://airvio.co/knowgrph/mcp` first for discovery, retrieval, prompts, resources, and inspection
-2. Orchestrate agents: add `https://airvio.co/knowgrph/control-plane/mcp` only when the host can preserve MCP session state
-3. Prove outcomes: resolve live grammar on the control plane through `knowgrph.agentic_canvas_os.docs.invoke`
+- 30 read-only tools.
+- 11 guarded controls.
 
-Concrete grammar examples:
+These browser-local capabilities are not the Pages 7-tool registry and are not
+the Worker 10-tool registry. Guarded controls remain conditional on their
+runtime owners and approvals.
 
-- `/mcp.capabilities`
-- `#mcp`
-- `@mcp-gateway`
+### Local stdio path
 
-## Recommended Reading Order
+The local stdio catalog is broader than the HTTP surfaces and intentionally
+configuration-gated. Use it for local owners and pipelines. Discovery does not
+guarantee that credentials, files, processes, or harnesses are available;
+missing prerequisites fail closed.
 
-1. `docs/documents/knowgrph-mcp-install-contract.md`
-   - Canonical install rule, host recipes, and dual-surface boundary
-2. `docs/documents/knowgrph-mcp-install-boundary-release-note-20260710.md`
-   - Recent-change summary plus the latest evidence-backed release proof
-3. `docs/documents/knowgrph-agent-ready-prd-tad.md`
-   - Broader agent-ready surface, trust boundary, and discovery context
-4. `docs/documents/knowgrph-xr-invocation-runtime-api.md`
-   - Exact-revision `/`, `@`, `#` hydration, literal XR invocation, panel continuity, WebMCP lifecycle, and Source Files authority
-5. `docs/documents/knowgrph-native-physics-engines-prd-tad.md`
-   - Independent native 2D/3D engines and the Rapier principles-only, no-copy, no-dependency boundary
-6. `docs/documents/markdown-convertible-agent-discovery-document.md`
-   - Live Canvas Hero Markdown-discovery contract, publish route, and live proof
-7. `huijoohwee/knowgrph` `README.md` or `docs/documents/knowgrph-superagent-harness.md`
-   - Lowest-cost local evaluation path before hosted setup
-8. `docs/documents/knowgrph-mcp/knowgrph-mcp.md`
-   - Full MCP topology, readiness scope, and current implementation truth
-9. `docs/documents/knowgrph-mcp-service-prd-tad.md`
-   - Publish-side mirror entry for the implemented MCP baseline and shipped-vs-planned boundary
-10. `docs/documents/knowgrph-mcp-agentic-os-prd-tad.md`
-   - Publish-side mirror entry for the Agentic Canvas OS dashboard and orchestration contract
-11. `docs/documents/knowgrph-mcp-service-prd-tad.companion.md` or
-   `docs/documents/knowgrph-mcp-agentic-os-prd-tad.companion.md`
-   - Publish-side mirror entries for file-owner detail, lane payloads, and companion guardrails
-12. `https://airvio.co/knowgrph/.well-known/mcp/apps/knowgrph-agent-ready.html`
-   - Browser-published MCP Apps card for template-only `#promotion.retry <path...>` recovery semantics
+### Document map
 
-## Which Doc To Open
-
-| Need | Open |
+| Need | Canonical document |
 |---|---|
-| I just need the right install URL | `docs/documents/knowgrph-mcp-install-contract.md` |
-| I want the shortest update summary | `docs/documents/knowgrph-mcp-install-boundary-release-note-20260710.md` |
-| I want the latest release proof with preview URL and docs-seed verification | `docs/documents/knowgrph-mcp-install-boundary-release-note-20260710.md` |
-| I want the larger discovery and readiness context | `docs/documents/knowgrph-agent-ready-prd-tad.md` |
-| I want XR Mode, panel, invocation, WebMCP, and Source Files readiness | `docs/documents/knowgrph-xr-invocation-runtime-api.md` |
-| I want the independent 2D/3D physics and Rapier clean-room boundary | `docs/documents/knowgrph-native-physics-engines-prd-tad.md` |
-| I want the Live Canvas Hero Markdown route and discovery contract | `docs/documents/markdown-convertible-agent-discovery-document.md` |
-| I want the cheapest evaluation path before hosted setup | `huijoohwee/knowgrph` `README.md` or `docs/documents/knowgrph-superagent-harness.md` |
-| I want the MCP-specific architecture and scope | `docs/documents/knowgrph-mcp/knowgrph-mcp.md` |
-| I want the implemented MCP baseline in the publish docs tree | `docs/documents/knowgrph-mcp-service-prd-tad.md` |
-| I want the Agentic Canvas OS contract in the publish docs tree | `docs/documents/knowgrph-mcp-agentic-os-prd-tad.md` |
-| I want the companion-level ownership or lane detail in the publish docs tree | `docs/documents/knowgrph-mcp-service-prd-tad.companion.md` or `docs/documents/knowgrph-mcp-agentic-os-prd-tad.companion.md` |
-| I want published promotion retry semantics without opening source docs | `https://airvio.co/knowgrph/.well-known/mcp/apps/knowgrph-agent-ready.html` |
+| Endpoint values, trust, auth/session sequence, token cost | [MCP install contract](knowgrph-mcp-install-contract.md) |
+| Four-surface overview | [MCP surface overview](knowgrph-mcp/knowgrph-mcp.md) |
+| Product, architecture, five flows, and readiness gaps | [MCP service PRD/TAD](knowgrph-mcp/knowgrph-mcp-service-prd-tad.md) |
+| Exact tool names and source owners | [MCP service companion](knowgrph-mcp/knowgrph-mcp-service-prd-tad.companion.md) |
+| Pages/browser agent-ready contract | [Agent-ready PRD/TAD](knowgrph-agent-ready-prd-tad.md) |
+| File-level agent-ready invariants | [Agent-ready companion](knowgrph-agent-ready-prd-tad.companion.md) |
+| Conditional delivery verification | [Post-delivery verification checklist](../knowgrph-post-deploy-verification-checklist.md) |
 
-## Canonical Endpoint Rule
+### Surface decision table
 
-| Surface | URL | Use |
-|---|---|---|
-| Public discovery | `https://airvio.co/knowgrph/mcp` | Install, discovery, read-only retrieval, prompts, resources, inspection |
-| Control plane | `https://airvio.co/knowgrph/control-plane/mcp` | Approval-gated orchestration, live grammar invocation, sessioned MCP flows |
+| Need | Surface | Count | Trust | Readiness in this document set |
+|---|---|---:|---|---|
+| Public source reading | Pages HTTP | 7 | Read-only | Local `spec-complete`; delivered `undocumented` |
+| Browser context/control | App WebMCP | 41 | 30 reads + 11 guarded controls | Local `spec-complete`; delivered `undocumented` |
+| Broad local integration | Local stdio | Configuration-dependent | Local process and credentials | Local `spec-complete`; delivered `undocumented` |
+| Remote control plane | Separate Worker MCP | 10 | Bearer auth + preserved session + tool approval | Local `spec-complete`; delivered `undocumented` |
 
-Canonicalize the contract first, not the transport. The current dual-surface runtime stays intentional until hosted proof supports a single-runtime claim.
+### Onboarding VCCs
 
-## Guardrails
+| ID | End state | Stated check | Constraint | Evidence Reference |
+|---|---|---|---|---|
+| `VCC-ONBOARD-01` | A clean reader client discovers the seven exact Pages read tools. | Run the install-contract Pages handshake and surface count/names. | No bearer secret or control call; one session. | None recorded |
+| `VCC-ONBOARD-02` | A clean Worker client preserves auth and session across initialization and discovery. | Run the install-contract Worker handshake and surface redacted headers plus the 10-tool count. | Never surface the secret; one session. | None recorded |
+| `VCC-ONBOARD-03` | A reader reaches first value in at most 3 manual actions after endpoint configuration. | Time choose/initialize/read on a clean supported client and surface steps and elapsed time. | At most 5 minutes; one attempt. | None recorded |
 
-- Do not treat `/knowgrph/mcp` as if it already exposes the control-plane grammar tool.
-- Do not document both URLs as interchangeable install targets.
-- Do not claim one-URL plug-and-play grammar invocation for hosts that cannot manage MCP session flow.
+These are planned checks, so readiness remains `spec-complete` /
+`undocumented`.
+
+### Boundary
+
+This index authorizes no mirror, endpoint publication, secret change, or
+production verification. Operator instruction: none. Rollback is a source
+revert followed by link, count, and frontmatter validation.
