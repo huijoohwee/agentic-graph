@@ -107,6 +107,14 @@ export function FlightSimMissionStage({
 
   React.useEffect(() => {
     const canvas = gl.domElement
+    const aircraftAsset = assetCatalog.aircraft.assetSpec
+    canvas.dataset.kgFlightSimAircraftAsset = JSON.stringify({
+      assetId: aircraftAsset.id,
+      defaultColor: aircraftAsset.defaultColor,
+      dimensionsMeters: aircraftAsset.dimensionsMeters,
+      label: aircraftAsset.label,
+      representation: aircraftAsset.representation,
+    })
     canvas.dataset.kgFlightSimSpatialProfile = profile.id
     canvas.dataset.kgFlightSimVisualProjection = actorsVisible
       ? 'r3f'
@@ -144,11 +152,12 @@ export function FlightSimMissionStage({
     invalidate()
     return () => {
       removeAfterRender()
+      delete canvas.dataset.kgFlightSimAircraftAsset
       delete canvas.dataset.kgFlightSimSpatialProfile
       delete canvas.dataset.kgFlightSimVisualProjection
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [actorsVisible, gl, invalidate, profile.id, runtimeController])
+  }, [actorsVisible, assetCatalog, gl, invalidate, profile.id, runtimeController])
 
   React.useEffect(() => {
     const canvas = gl.domElement
