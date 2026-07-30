@@ -1,11 +1,16 @@
 ---
 title: Knowgrph MCP Service - PRD & TAD
 id: md:knowgrph-mcp-service-prd-tad
-author: joohwee
-date: 2026-05-20
-updated: 2026-07-11
+doc_type: "Product and Technical Specification"
 version: 0.4.27
-status: accepted-implemented-baseline
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.mcp.service"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-mcp-service-prd-tad.md"
 kgDocumentSemanticMode: document
 kgFrontmatterModeEnabled: true
 kgCanvasSurfaceMode: 2d

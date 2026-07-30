@@ -1,10 +1,16 @@
 ---
 title: "Knowgrph MCP Integration"
+id: "md:knowgrph-mcp"
 doc_type: "MCP Overview"
-status: "active"
-updated: "2026-07-12"
+version: "0.1.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.mcp.index"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-mcp.md"
 related:
   - "knowgrph-mcp-service-prd-tad.md"
   - "knowgrph-mcp-agentic-os-prd-tad.md"

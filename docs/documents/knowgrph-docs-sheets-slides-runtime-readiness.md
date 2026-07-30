@@ -1,12 +1,17 @@
 ---
 title: "Knowgrph Docs/Sheets/Slides Export Runtime Readiness"
+id: "md:knowgrph-docs-sheets-slides-runtime-readiness"
 doc_type: "Runtime Readiness Runbook"
 version: "1.0.0"
-date: "2026-07-19"
-status: "local-implemented-live-provider-blocked"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
-parent: "knowgrph-docs-sheets-slides-prd-tad.md"
+owner: "docs.docs-sheets-slides-export.runtime-readiness"
+local_rung: "dev-proven"
+delivered_rung: "spec-complete"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-docs-sheets-slides-runtime-readiness.md"
+parent: "docs/documents/knowgrph-docs-sheets-slides-prd-tad.md"
 live_provider_run_proven: false
 production_release_authorized: false
 ---

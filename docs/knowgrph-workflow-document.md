@@ -1,9 +1,16 @@
 ---
 title: "Knowgrph Workflow Document"
+id: "md:knowgrph-workflow-document"
 doc_type: "Generated Registry Surface"
-status: "generated"
+version: "1.0.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.generated.workflow-registry"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/knowgrph-workflow-document.md"
 canonical_docs_root: "docs/documents"
 generator_owner: "canvas/src/cli/lint-doc.ts"
 ---

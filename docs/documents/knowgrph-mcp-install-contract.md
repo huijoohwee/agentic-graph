@@ -1,14 +1,17 @@
 ---
+title: "Knowgrph MCP Install Contract"
 schema: kgc-computing-flow/v1
-id: knowgrph-mcp-install-contract
-version: 1.1.3
-status: implemented
-created: 2026-07-10
-updated: 2026-07-12
-author: airvio / joohwee
-domain: knowgrph
+id: "md:knowgrph-mcp-install-contract"
 doc_type: "Install Contract"
-frontmatter_contract: required
+version: "1.1.3"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.mcp.install-contract"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp-install-contract.md"
 canonical_service_url: "https://airvio.co/knowgrph/"
 public_read_mcp_url: "https://airvio.co/knowgrph/mcp"
 control_plane_mcp_url: "https://airvio.co/knowgrph/control-plane/mcp"

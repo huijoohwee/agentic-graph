@@ -1,9 +1,16 @@
 ---
 title: "Knowgrph Design Document"
+id: "md:knowgrph-design-document"
 doc_type: "Generated Registry Surface"
-status: "generated"
+version: "1.0.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.generated.design-registry"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/knowgrph-design-document.md"
 canonical_docs_root: "docs/documents"
 generator_owner: "canvas/src/cli/lint-doc.ts"
 ---
