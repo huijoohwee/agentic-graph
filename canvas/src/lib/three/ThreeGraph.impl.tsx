@@ -576,7 +576,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       </Canvas>
       {mode === 'xr' && xrDocumentLoaded && !gameplayOverlayActive && !immersiveMediaStageActive ? <XrCameraAspectMask /> : null}
       {hasXrEmptyWorld && !gameplayOverlayActive ? <XrEmptyWorldHud /> : null}
-      {immersiveMediaStageActive ? <ThreeGraphImmersiveMediaHud /> : null}
+      {immersiveMediaStageActive ? <ThreeGraphImmersiveMediaHud geospatialComposite={geospatialComposite} /> : null}
       <CanvasXrEntryPanel
         key={`${rendererLifecycleKey}-session-panel`}
         active={active && mode === 'xr' && !gameplayOverlayActive}

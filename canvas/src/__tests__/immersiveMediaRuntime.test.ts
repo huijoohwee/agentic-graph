@@ -12,6 +12,7 @@ import {
   inspectLocalImmersiveMedia,
 } from '@/features/immersive-media/immersiveMediaMcpRuntime'
 import {
+  playImmersiveMediaIntro,
   readImmersiveMediaSnapshot,
   resetImmersiveMediaRuntimeForTests,
 } from '@/features/immersive-media/immersiveMediaRuntime'
@@ -34,6 +35,12 @@ export function testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete() {
 
 export async function testImmersiveMediaNativeInvocationIsStrict() {
   resetImmersiveMediaRuntimeForTests()
+  const transitionRevisionBeforeIntro = readImmersiveMediaSnapshot().transitionRevision
+  playImmersiveMediaIntro()
+  assert.equal(
+    readImmersiveMediaSnapshot().transitionRevision,
+    transitionRevisionBeforeIntro + 1,
+  )
   const cropResult = await controlLocalImmersiveMedia({
     invocation: buildImmersiveMediaInvocation('toggle-crop'),
   })
@@ -146,6 +153,7 @@ export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {
   const graphSource = readFileSync(resolve(process.cwd(), 'src/lib/three/ThreeGraph.impl.tsx'), 'utf8')
   const controlsSource = readFileSync(resolve(process.cwd(), 'src/features/three/Controls.tsx'), 'utf8')
   const stageSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaStage.tsx'), 'utf8')
+  const geoProjectionSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaGeoProjection.tsx'), 'utf8')
   const projectionSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaMarkerProjections.tsx'), 'utf8')
   for (const surface of ['media', 'animation', 'motionControl', 'gameMode', 'flightSim', 'camera']) {
     assert.match(panelSource, new RegExp(`view === '${surface}'`))
@@ -156,6 +164,10 @@ export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {
   assert.match(controlsSource, /useImmersiveMediaCameraControls/)
   assert.doesNotMatch(stageSource, /<Canvas[\s>]/)
   assert.match(stageSource, /lensStrength\*radial/)
+  assert.match(graphSource, /<ThreeGraphImmersiveMediaHud geospatialComposite=\{geospatialComposite\}/)
+  assert.match(geoProjectionSource, /data-kg-immersive-media-geo-projection="active"/)
+  assert.match(geoProjectionSource, /pointer-events-none/)
+  assert.match(geoProjectionSource, /completeImmersiveMediaTransition\(revision\)/)
   assert.match(projectionSource, /setSelectedImmersiveMediaMarker/)
   for (const projection of ['compass', 'map', 'plan']) {
     assert.match(projectionSource, new RegExp(`projection-surface=\{id\}|${projection}`))
