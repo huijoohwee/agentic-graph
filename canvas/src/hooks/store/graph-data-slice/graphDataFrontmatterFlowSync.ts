@@ -22,6 +22,8 @@ import {
   syncStrybldrStoryboardMarkdownFromParsedGraph,
 } from './graphDataFrontmatterFlowSyncSupport'
 import { syncStructuredResponseEnvelopeFromNodeEdit } from './graphDataStructuredResponseSync'
+import { buildTextSelectionWidgetEdgePersistenceProperties } from '@/lib/storyboardWidget/textSelectionWidgetLink'
+import { ensureAuthoredMarkdownNoteFrontmatterDefaults } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 const FLOW_YAML_PLAIN_KEY_RE = /^[A-Za-z0-9_.-]+$/
 const FLOW_EDGE_SOURCE_PORT_KEY = 'flow:sourcePortKey'
 const FLOW_EDGE_TARGET_PORT_KEY = 'flow:targetPortKey'
@@ -241,6 +243,8 @@ function buildFrontmatterFlowBlockLines(graphData: GraphData): string[] {
     if (typeof props.animated === 'boolean') row.animated = props.animated
     const socketType = String(unwrapGraphCellValue(props['flow:socketType']) || '').trim()
     if (socketType) row.type = socketType
+    const selectionProvenance = buildTextSelectionWidgetEdgePersistenceProperties(edge)
+    if (selectionProvenance) row.properties = selectionProvenance
     lines.push(`    - ${flowYamlInlineValue(row)}`)
   }
   return lines
@@ -345,8 +349,15 @@ function upsertTopLevelFrontmatterSectionMarkdownText(args: {
   return `---\n${nextYaml}\n---${suffix}`
 }
 
-export function upsertFrontmatterFlowMarkdownText(rawText: string, graphData: GraphData): string {
-  const text = String(rawText || '')
+export function upsertFrontmatterFlowMarkdownText(
+  rawText: string,
+  graphData: GraphData,
+  context?: { documentName?: string | null },
+): string {
+  const text = ensureAuthoredMarkdownNoteFrontmatterDefaults({
+    documentName: String(context?.documentName || ''),
+    rawText: String(rawText || ''),
+  })
   if (!graphDataHasFlowTopology(graphData) && frontmatterTextHasFlowTopology(text)) return text
   const flowLines = buildFrontmatterFlowBlockLines(graphData)
   const block = extractYamlFrontmatterBlock(text)
@@ -463,7 +474,7 @@ export function syncActiveMarkdownDocumentTextFromParsedGraph(args: {
       nextNode: args.nextNode,
     }) || activeText
     const nextText = isFrontmatterFlowGraphData(args.parsedGraphData) && frontmatterTextHasFlowTopology(activeText)
-      ? upsertFrontmatterFlowMarkdownText(strybldrText, args.parsedGraphData)
+      ? upsertFrontmatterFlowMarkdownText(strybldrText, args.parsedGraphData, { documentName: activeName })
       : strybldrText
     if (!nextText || nextText === activeText) return { sourceFiles: args.sourceFiles, accepted: true }
     const activeFileMatch = findActiveMarkdownDocumentSourceFile(args)
@@ -494,7 +505,7 @@ export function syncActiveMarkdownDocumentTextFromParsedGraph(args: {
   }
   if (!isFrontmatterFlowGraphData(args.parsedGraphData)) return { sourceFiles: args.sourceFiles, accepted: false }
   const nextText = syncStructuredResponseEnvelopeFromNodeEdit({
-    rawText: upsertFrontmatterFlowMarkdownText(activeText, args.parsedGraphData),
+    rawText: upsertFrontmatterFlowMarkdownText(activeText, args.parsedGraphData, { documentName: activeName }),
     previousNode: args.previousNode,
     nextNode: args.nextNode,
   })
@@ -579,7 +590,9 @@ export function syncSourceFileTextFromParsedGraph(args: {
       ...(isActiveMarkdownSourceFile(args.state, file) ? { markdownDocumentText: nextText } : {}),
     }
   }
-  const nextText = upsertFrontmatterFlowMarkdownText(currentText, args.parsedGraphData)
+  const nextText = upsertFrontmatterFlowMarkdownText(currentText, args.parsedGraphData, {
+    documentName: readComposedSourceFilePath(file) || file.name,
+  })
   if (nextText === currentText) return { sourceFiles: args.sourceFiles }
   const nextSourceFiles = args.sourceFiles.slice()
   nextSourceFiles[args.fileIndex] = {

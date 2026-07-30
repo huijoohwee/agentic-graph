@@ -1,395 +1,51 @@
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { serializeMarkdownPipeTable } from '@/features/markdown/ui/markdownDataViewSerialize'
-import { settingsRegistry } from '../features/settings/registry'
-import { FALLBACK_DETAILS } from '../features/panels/views/SettingsFallbackDetails'
-import { MARKDOWN_DATA_VIEW_COPY } from '../lib/config-copy/markdownDataViewCopy'
+import {
+  buildSettingsFlowArtifacts,
+  findStaleSettingsFlowArtifacts,
+  writeSettingsFlowArtifacts,
+} from './settings-responsibility-flow'
 
-type SettingsFlowRow = {
-  area: string
-  modules: string[]
-  classes: string[]
-  functions: string[]
-  responsibility: string
-  imports: string[]
-  notes: string
-  lineRange: string
-}
-
-type SettingsFlowSchema = Record<string, SettingsFlowRow>
-
-function splitLines(text: string): string[] {
-  return text.split(/\r?\n/)
-}
-
-function stripTicks(value: string): string {
-  return value.replace(/`/g, '').trim()
-}
-
-function splitList(value: string): string[] {
-  return stripTicks(value)
-    .split(',')
-    .map(entry => entry.trim())
-    .filter(Boolean)
-}
-
-function normalizeHeaderCell(value: string): string {
-  return stripTicks(value)
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[^a-z0-9]/g, '')
-}
-
-function buildHeaderIndexMap(headerLine: string): Record<string, number> {
-  const cells = headerLine
-    .split('|')
-    .slice(1, -1)
-    .map(cell => normalizeHeaderCell(cell))
-  const map: Record<string, number> = {}
-  cells.forEach((cell, idx) => {
-    if (!cell) return
-    map[cell] = idx
-  })
-  return map
-}
-
-function resolveHeaderIndex(
-  map: Record<string, number>,
-  keys: string[],
-): number | undefined {
-  for (const key of keys) {
-    const idx = map[normalizeHeaderCell(key)]
-    if (typeof idx === 'number') return idx
+function parseCheckMode(arguments_: string[]): boolean {
+  const unknownArguments = arguments_.filter(argument => argument !== '--check')
+  if (unknownArguments.length > 0) {
+    throw new Error(`Unknown arguments: ${unknownArguments.join(', ')}. Usage: build:settings [--check]`)
   }
-  return undefined
-}
-
-function buildFromMarkdown(flowMarkdown: string): SettingsFlowSchema {
-  const lines = splitLines(flowMarkdown)
-  const schema: SettingsFlowSchema = {}
-  const headerIndex = lines.findIndex(line => line.includes('|') && line.toLowerCase().includes('key'))
-  if (headerIndex === -1) return schema
-  const headerMap = buildHeaderIndexMap(lines[headerIndex] ?? '')
-  const idxArea = resolveHeaderIndex(headerMap, ['Area'])
-  const idxResponsibility = resolveHeaderIndex(headerMap, ['Responsibility'])
-  const idxModules = resolveHeaderIndex(headerMap, ['Modules', 'Module'])
-  const idxClasses = resolveHeaderIndex(headerMap, ['Classes/Objects', 'ClassesObjects', 'Classes', 'Objects'])
-  const idxFunctions = resolveHeaderIndex(headerMap, ['Functions/Methods', 'FunctionsMethods', 'Functions', 'Methods'])
-  const idxKey = resolveHeaderIndex(headerMap, ['Key', 'Setting key', 'Settingkey'])
-  const idxImports = resolveHeaderIndex(headerMap, ['Imports', 'Import'])
-  const idxNotes = resolveHeaderIndex(headerMap, ['Notes', 'Note'])
-  const idxLineRange = resolveHeaderIndex(headerMap, ['Line Range', 'LineRange', 'Lines'])
-  if (typeof idxKey !== 'number') return schema
-
-  for (let index = headerIndex + 2; index < lines.length; index++) {
-    const line = lines[index] ?? ''
-    if (!line.trim().startsWith('|')) break
-    const rawCells = line
-      .split('|')
-      .slice(1, -1)
-      .map(cell => cell.trim())
-    const keyRaw = rawCells[idxKey] ?? ''
-    let key = stripTicks(keyRaw)
-    if (!key) continue
-    if (key.includes('/')) continue
-    if (key === 'max-lines.max') key = 'max-lines'
-
-    schema[key] = {
-      area: stripTicks(typeof idxArea === 'number' ? rawCells[idxArea] ?? '' : ''),
-      modules: splitList(typeof idxModules === 'number' ? rawCells[idxModules] ?? '' : ''),
-      classes: splitList(typeof idxClasses === 'number' ? rawCells[idxClasses] ?? '' : ''),
-      functions: splitList(typeof idxFunctions === 'number' ? rawCells[idxFunctions] ?? '' : ''),
-      responsibility: stripTicks(
-        typeof idxResponsibility === 'number' ? rawCells[idxResponsibility] ?? '' : '',
-      ),
-      imports: splitList(typeof idxImports === 'number' ? rawCells[idxImports] ?? '' : ''),
-      notes: stripTicks(typeof idxNotes === 'number' ? rawCells[idxNotes] ?? '' : ''),
-      lineRange: stripTicks(
-        typeof idxLineRange === 'number' ? rawCells[idxLineRange] ?? '' : '',
-      ),
-    }
-  }
-
-  return schema
-}
-
-function ensure(schema: SettingsFlowSchema, key: string, row: SettingsFlowRow): void {
-  if (!schema[key]) schema[key] = row
-}
-
-function collectFiles(dirPath: string, extensions: string[]): string[] {
-  const entries = readdirSync(dirPath)
-  const results: string[] = []
-  entries.forEach(name => {
-    const fullPath = path.join(dirPath, name)
-    const st = statSync(fullPath)
-    if (st.isDirectory()) {
-      results.push(...collectFiles(fullPath, extensions))
-      return
-    }
-    if (extensions.some(ext => fullPath.endsWith(ext))) results.push(fullPath)
-  })
-  return results
-}
-
-function dedupe<T>(list: T[]): T[] {
-  return Array.from(new Set(list))
-}
-
-function findDefinitionLocation(
-  fileContentsByPath: Array<{ path: string; rel: string; lines: string[] }>,
-  key: string,
-): { module: string; lineRange: string } | null {
-  const needleA = `key: '${key}'`
-  const needleB = `key: "${key}"`
-  for (const entry of fileContentsByPath) {
-    for (let i = 0; i < entry.lines.length; i += 1) {
-      const line = entry.lines[i] ?? ''
-      if (line.includes(needleA) || line.includes(needleB)) {
-        return { module: entry.rel, lineRange: `${entry.rel}:L${i + 1}` }
-      }
-    }
-  }
-  return null
-}
-
-function extractSetterNames(fn: unknown): string[] {
-  if (typeof fn !== 'function') return []
-  const src = fn.toString()
-  const matches = src.match(/\.set[A-Za-z0-9_]+/g) || []
-  return dedupe(matches.map(m => m.slice(1)))
-}
-
-function extractClassesFromFunction(fn: unknown): string[] {
-  if (typeof fn !== 'function') return []
-  const src = fn.toString()
-  const classes: string[] = []
-  if (src.includes('useGraphStore')) classes.push('useGraphStore')
-  if (src.includes('localStorage')) classes.push('window.localStorage')
-  if (src.includes('documentElement')) classes.push('window.document.documentElement')
-  if (src.includes('document')) classes.push('window.document')
-  if (src.includes('window')) classes.push('window')
-  return dedupe(classes)
-}
-
-function findSetterModules(
-  storeFiles: Array<{ rel: string; text: string }>,
-  setterNames: string[],
-): string[] {
-  const modules: string[] = []
-  setterNames.forEach(setter => {
-    const hits = storeFiles
-      .filter(f => f.text.includes(setter))
-      .filter(f => !f.rel.endsWith(path.join('hooks', 'store', 'types.ts')))
-    hits.forEach(hit => modules.push(hit.rel))
-  })
-  return dedupe(modules)
-}
-
-function findSetterLocations(
-  storeFileContents: Array<{ rel: string; lines: string[] }>,
-  setterNames: string[],
-): string[] {
-  const locations: string[] = []
-  setterNames.forEach(setter => {
-    for (const entry of storeFileContents) {
-      if (entry.rel.endsWith(path.join('hooks', 'store', 'types.ts'))) continue
-      for (let i = 0; i < entry.lines.length; i += 1) {
-        const line = entry.lines[i] ?? ''
-        if (!line.includes(setter)) continue
-        if (line.includes(`${setter}:`) || line.includes(` ${setter}:`) || line.includes(`function ${setter}`)) {
-          locations.push(`${entry.rel}:L${i + 1}`)
-          break
-        }
-      }
-    }
-  })
-  return dedupe(locations)
-}
-
-function buildImportsForSource(source: string): string[] {
-  if (source === 'store') return ['zustand']
-  if (source === 'localStorage') return ['localStorage']
-  if (source === 'env') return ['import.meta.env']
-  if (source === 'backendEnv') return ['window.__ENV__']
-  if (source === 'eslint') return ['eslint']
-  return []
-}
-
-function humanizeKey(value: string): string {
-  return String(value || '')
-    .replace(/[_-]+/g, ' ')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .trim()
-    .toLowerCase()
-}
-
-function inferAreaFromKey(key: string): string {
-  if (key.startsWith('graphDataTable.aggregate')) return `${MARKDOWN_DATA_VIEW_COPY.titleDefault} Aggregation`
-  if (key.startsWith('graphDataTable.')) return MARKDOWN_DATA_VIEW_COPY.titleDefault
-  if (key.startsWith('graphFields.')) return 'Graph Fields'
-  if (key.startsWith('graphHoverPreview.')) return 'Graph Hover Preview'
-  if (key.startsWith('spotlight.')) return 'Launch Spotlight Layout'
-  if (key === 'enableLaunchSpotlight') return 'Launch Spotlight'
-  if (key.startsWith('schema.behavior.hover.')) return 'Graph Hover Preview'
-  return '—'
-}
-
-function inferResponsibilityFromKey(key: string, type: string): string {
-  const leaf = key.split('.').slice(-1)[0] || key
-  const words = humanizeKey(leaf)
-  if (type === 'boolean') {
-    if (leaf.startsWith('enable')) return `Enable ${words.replace(/^enable\s+/, '')}`.trim()
-    if (leaf.startsWith('show')) return `Show ${words.replace(/^show\s+/, '')}`.trim()
-  }
-  if (leaf.endsWith('Ms')) return `${words.replace(/\sms$/, '')} (ms)`
-  return words
-}
-
-function deriveFromCode(repoRoot: string): SettingsFlowSchema {
-  const canvasRoot = path.join(repoRoot, 'canvas')
-  const srcRoot = path.join(canvasRoot, 'src')
-  const settingsDir = path.join(srcRoot, 'features', 'settings')
-  const storeDir = path.join(srcRoot, 'hooks', 'store')
-  const settingFiles = collectFiles(settingsDir, ['.ts', '.tsx'])
-  const storeFiles = collectFiles(storeDir, ['.ts', '.tsx'])
-  const settingFileContents = settingFiles.map(filePath => {
-    const rel = path.relative(repoRoot, filePath)
-    const text = readFileSync(filePath, 'utf8')
-    return { path: filePath, rel, lines: splitLines(text) }
-  })
-  const storeFileContents = storeFiles.map(filePath => ({
-    rel: path.relative(repoRoot, filePath),
-    text: readFileSync(filePath, 'utf8'),
-  }))
-  const storeFileContentsWithLines = storeFiles.map(filePath => ({
-    rel: path.relative(repoRoot, filePath),
-    lines: splitLines(readFileSync(filePath, 'utf8')),
-  }))
-
-  const schema: SettingsFlowSchema = {}
-  settingsRegistry.forEach(meta => {
-    const fallback = FALLBACK_DETAILS[meta.key] || {}
-    const def = findDefinitionLocation(settingFileContents, meta.key)
-    const setters = extractSetterNames(meta.write)
-    const setterModules = findSetterModules(storeFileContents, setters)
-    const setterLocations = findSetterLocations(storeFileContentsWithLines, setters)
-    const classes = dedupe([
-      ...extractClassesFromFunction(meta.read),
-      ...extractClassesFromFunction(meta.write),
-    ])
-    const functions = dedupe(setters)
-    const modules = dedupe([
-      ...(def ? [def.module] : []),
-      ...setterModules,
-    ])
-    const area = fallback.area || inferAreaFromKey(meta.key)
-    const responsibility =
-      fallback.responsibility || inferResponsibilityFromKey(meta.key, meta.type)
-    const lineRangeParts = dedupe([def?.lineRange || '', ...setterLocations]).filter(Boolean)
-    schema[meta.key] = {
-      area,
-      responsibility,
-      notes: fallback.notes || '',
-      modules,
-      classes,
-      functions,
-      imports: buildImportsForSource(meta.source),
-      lineRange: lineRangeParts.join('; '),
-    }
-  })
-  return schema
-}
-
-function buildMarkdown(schema: SettingsFlowSchema): string {
-  const rows = Object.entries(schema)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, row]) => [
-      row.area,
-      row.responsibility,
-      `\`${row.modules.join(', ')}\``,
-      `\`${row.classes.join(', ')}\``,
-      `\`${row.functions.join(', ')}\``,
-      `\`${key}\``,
-      `\`${row.imports.join(', ')}\``,
-      row.notes,
-      `\`${row.lineRange}\``,
-    ])
-  const table = serializeMarkdownPipeTable({
-    columns: ['Area', 'Responsibility', 'Modules', 'Classes/Objects', 'Functions/Methods', 'Key', 'Imports', 'Notes', 'Line Range'],
-    rows,
-  })
-  return ['# Knowgrph Codebase Responsibility Flow', '', ...table, ''].join('\n')
-}
-
-function mergeFlowRow(base: SettingsFlowRow, override: SettingsFlowRow): SettingsFlowRow {
-  const pickText = (next: string, prev: string) => {
-    const trimmed = String(next || '').trim()
-    if (!trimmed || trimmed === '—') return prev
-    return trimmed
-  }
-  const pickTextPreferPrev = (next: string, prev: string) => {
-    const trimmedPrev = String(prev || '').trim()
-    if (trimmedPrev && trimmedPrev !== '—') return trimmedPrev
-    return pickText(next, prev)
-  }
-  const pickListPreferPrev = (next: string[], prev: string[]) =>
-    Array.isArray(prev) && prev.length > 0 ? prev : (Array.isArray(next) ? next : prev)
-  return {
-    area: pickText(override.area, base.area),
-    responsibility: pickText(override.responsibility, base.responsibility),
-    notes: pickText(override.notes, base.notes),
-    modules: pickListPreferPrev(override.modules, base.modules),
-    classes: pickListPreferPrev(override.classes, base.classes),
-    functions: pickListPreferPrev(override.functions, base.functions),
-    imports: pickListPreferPrev(override.imports, base.imports),
-    lineRange: pickTextPreferPrev(override.lineRange, base.lineRange),
-  }
+  return arguments_.includes('--check')
 }
 
 function main(): void {
-  const currentDir = path.dirname(fileURLToPath(import.meta.url))
-  const repoRoot = path.resolve(currentDir, '../../..')
-  const flowMdPath = path.join(repoRoot, 'knowgrph-codebase-responsibility-flow.md')
-  const outJsonPublic = path.join(repoRoot, 'canvas', 'public', 'settings-flow.json')
-  const outJsonSrc = path.join(repoRoot, 'canvas', 'src', 'features', 'settings', 'settings-flow.schema.json')
+  const check = parseCheckMode(process.argv.slice(2))
+  const currentDirectory = path.dirname(fileURLToPath(import.meta.url))
+  const repoRoot = path.resolve(currentDirectory, '../../..')
+  const build = buildSettingsFlowArtifacts(repoRoot)
 
-  const exists = existsSync(flowMdPath)
-  const schemaFromMd = exists ? buildFromMarkdown(readFileSync(flowMdPath, 'utf8')) : ({} as SettingsFlowSchema)
-  const schemaFromCode = deriveFromCode(repoRoot)
-  const knownKeys = new Set(settingsRegistry.map(meta => meta.key))
-  const merged: SettingsFlowSchema = {}
-  Object.entries(schemaFromCode).forEach(([key, row]) => {
-    if (knownKeys.has(key)) merged[key] = row
-  })
-  Object.entries(schemaFromMd).forEach(([key, row]) => {
-    if (!knownKeys.has(key)) return
-    const base = merged[key]
-    merged[key] = base ? mergeFlowRow(base, row) : row
-  })
+  if (check) {
+    const staleArtifacts = findStaleSettingsFlowArtifacts(build.artifacts, repoRoot)
+    if (staleArtifacts.length > 0) {
+      process.stderr.write(
+        `Responsibility flow artifacts are stale:\n${staleArtifacts.map(value => `- ${value}`).join('\n')}\n`,
+      )
+      process.exitCode = 1
+      return
+    }
+    process.stdout.write(
+      `Responsibility flow artifacts are current (${Object.keys(build.schema).length} settings)\n`,
+    )
+    return
+  }
 
-  const overlay = merged['uiOverlayOpacity']
-  ensure(merged, 'uiOverlayOpacity', {
-    area: overlay?.area || 'Global Translucency',
-    modules: overlay?.modules || [],
-    classes: overlay?.classes || [],
-    functions: overlay?.functions || [],
-    responsibility: overlay?.responsibility || 'Main UI overlay opacity',
-    imports: overlay?.imports || ['zustand'],
-    notes: overlay?.notes || 'clamps to [0,1]',
-    lineRange: overlay?.lineRange || '',
-  })
-
-  writeFileSync(flowMdPath, buildMarkdown(merged), 'utf8')
-
-  const json = `${JSON.stringify(merged, null, 2)}\n`
-  writeFileSync(outJsonPublic, json, 'utf8')
-  writeFileSync(outJsonSrc, json, 'utf8')
-  const suffix = exists ? '' : ' (source doc created)'
+  writeSettingsFlowArtifacts(build.artifacts, repoRoot)
   process.stdout.write(
-    `Wrote ${outJsonPublic} and ${outJsonSrc} with ${Object.keys(merged).length} settings${suffix}\n`,
+    `Wrote ${build.artifacts.map(artifact => artifact.relativePath).join(', ')} `
+      + `with ${Object.keys(build.schema).length} settings\n`,
   )
 }
 
-main()
+try {
+  main()
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error)
+  process.stderr.write(`Responsibility flow generation failed: ${message}\n`)
+  process.exitCode = 1
+}

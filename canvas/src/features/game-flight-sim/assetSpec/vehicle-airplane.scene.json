@@ -1,0 +1,14 @@
+{
+  "schema": "knowgrph.img2threejs-scene/v1",
+  "id": "vehicle-airplane",
+  "label": "Airplane",
+  "representation": "typescript-json",
+  "renderer": "xr-procedural-vehicle",
+  "shape": "airplane",
+  "dimensionsMeters": [3.6, 1.2, 3.3],
+  "collisionHalfSizeMeters": [1.8, 0.6, 1.65],
+  "defaultColor": "#cbd5e1",
+  "opaqueBinaryFallback": null,
+  "runtimeModelCalls": 0,
+  "runtimeNetworkCalls": 0
+}

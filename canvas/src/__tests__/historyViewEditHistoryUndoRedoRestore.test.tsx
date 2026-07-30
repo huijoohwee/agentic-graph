@@ -7,10 +7,16 @@ import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import HistoryView from '@/features/panels/views/HistoryView'
-import type { GraphData } from '@/lib/graph/types'
+import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { resolveMermaidGitGraphCode } from '@/lib/mermaid/mermaidGitGraph'
 import { readYamlFrontmatterMermaidDiagramCodes } from '@/lib/mermaid/mermaidDiagramCode'
 import { VERSION_HISTORY_MAX_ENTRIES } from '@/features/history/versionHistoryTypes'
+import {
+  commitRichMediaInlineEditVersion,
+  RICH_MEDIA_INLINE_EDIT_HISTORY_LABEL,
+} from '@/features/history/richMediaInlineEditHistory'
+import { commitRichMediaPanelChange } from '@/lib/render/richMediaSsot'
+import { buildVersionHistoryGitGraphCode } from '@/features/gitgraph/versionHistoryGitGraph'
 
 const tick = async () => {
   await new Promise<void>(resolve => setTimeout(resolve, 0))
@@ -263,6 +269,100 @@ export function testVersionHistoryIsSemanticBoundedAndParentLinked() {
   useGraphStore.getState().addHistory('No-op duplicate')
   if (useGraphStore.getState().history.length !== lengthBeforeNoop) {
     throw new Error('expected identical semantic content not to create a version')
+  }
+}
+
+export function testRichMediaInlineEditVersionsAndRestoresThroughSharedHistory() {
+  const richMediaInlineEditSurfaces = [
+    readFileSync(resolve(process.cwd(), 'src', 'components', 'RichMediaPanelTextSurface.tsx'), 'utf8'),
+    readFileSync(resolve(process.cwd(), 'src', 'components', 'RichMediaPanelWorkspaceViewerSurface.tsx'), 'utf8'),
+  ]
+  if (richMediaInlineEditSurfaces.some(source => !source.includes('commitRichMediaInlineEditVersion({'))) {
+    throw new Error('expected Rich Media Card and Editor Workspace Viewer inline edits to reuse one shared version commit boundary')
+  }
+
+  const store = useGraphStore.getState()
+  store.resetAll()
+  useGraphStore.setState({
+    graphData: {
+      type: 'Graph',
+      nodes: [{
+        id: 'rich-media-history-node',
+        type: 'RichMediaPanel',
+        label: 'Rich Media history node',
+        properties: { output: 'Before inline edit', keep: 'yes' },
+      }],
+      edges: [],
+      metadata: {},
+    },
+  })
+
+  const committed = commitRichMediaInlineEditVersion({
+    currentText: 'Before inline edit',
+    nextText: 'After inline edit',
+    commit: () => {
+      commitRichMediaPanelChange({
+        nodeId: 'rich-media-history-node',
+        next: {
+          activeTab: 'text',
+          freezeConnectedOutput: true,
+          text: 'After inline edit',
+        },
+        updateNode: (id, patch) => useGraphStore.getState().updateNode(id, patch as Partial<GraphNode>),
+      })
+    },
+  })
+
+  const versioned = useGraphStore.getState()
+  if (!committed || versioned.history.length !== 2 || versioned.historyIndex !== 1) {
+    throw new Error(`expected one Rich Media inline edit to create before/after shared versions, got ${versioned.history.length}@${versioned.historyIndex}`)
+  }
+  const expectedLabels = [
+    `Before ${RICH_MEDIA_INLINE_EDIT_HISTORY_LABEL}`,
+    RICH_MEDIA_INLINE_EDIT_HISTORY_LABEL,
+  ]
+  if (versioned.history.map(entry => entry.label).join('|') !== expectedLabels.join('|')) {
+    throw new Error(`expected canonical Rich Media version labels, got ${versioned.history.map(entry => entry.label).join('|')}`)
+  }
+  const gitGraphCode = buildVersionHistoryGitGraphCode(versioned.history)
+  if (!expectedLabels.every(label => gitGraphCode.includes(`tag:"${label}"`))) {
+    throw new Error(`expected BottomPanel/FloatingPanel GitGraph projection to consume Rich Media versions, got ${gitGraphCode}`)
+  }
+
+  versioned.restoreHistory(0)
+  const restoredBefore = useGraphStore.getState()
+  const restoredBeforeNode = restoredBefore.graphData?.nodes?.[0]
+  if (restoredBeforeNode?.properties?.output !== 'Before inline edit' || restoredBeforeNode?.properties?.keep !== 'yes') {
+    throw new Error(`expected MainPanel History restore to recover the pre-edit Rich Media node, got ${JSON.stringify(restoredBeforeNode?.properties)}`)
+  }
+  if (restoredBefore.historyIndex !== 0 || restoredBefore.history.length !== 2) {
+    throw new Error(`expected Rich Media version navigation to select the restored entry without truncating shared history, got ${restoredBefore.history.length}@${restoredBefore.historyIndex}`)
+  }
+
+  useGraphStore.getState().restoreHistory(1)
+  const restoredAfterNode = useGraphStore.getState().graphData?.nodes?.[0]
+  if (restoredAfterNode?.properties?.output !== 'After inline edit') {
+    throw new Error(`expected shared GitGraph/History restore to recover the edited Rich Media node, got ${JSON.stringify(restoredAfterNode?.properties)}`)
+  }
+  useGraphStore.getState().undoHistory()
+  if (useGraphStore.getState().graphData?.nodes?.[0]?.properties?.output !== 'Before inline edit') {
+    throw new Error('expected shared Undo to restore the Rich Media text before the inline edit')
+  }
+  useGraphStore.getState().redoHistory()
+  if (useGraphStore.getState().graphData?.nodes?.[0]?.properties?.output !== 'After inline edit') {
+    throw new Error('expected shared Redo to restore the versioned Rich Media inline edit')
+  }
+
+  const historyLengthBeforeNoop = useGraphStore.getState().history.length
+  const noopCommitted = commitRichMediaInlineEditVersion({
+    currentText: 'After inline edit',
+    nextText: 'After inline edit',
+    commit: () => {
+      throw new Error('expected identical Rich Media text not to execute a commit')
+    },
+  })
+  if (noopCommitted || useGraphStore.getState().history.length !== historyLengthBeforeNoop) {
+    throw new Error('expected identical Rich Media inline text not to create duplicate versions')
   }
 }
 

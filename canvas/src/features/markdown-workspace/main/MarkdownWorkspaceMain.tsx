@@ -3,7 +3,6 @@ import type { MarkdownWorkspaceLayoutMode } from '@/features/markdown-explorer/w
 import { usePanelTypography } from '@/lib/ui/panelTypography'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { HighlightedLineRange, MarkdownPresentationApi } from '../markdownWorkspaceTypes'
-import MarkdownPreview from '@/features/markdown/ui/MarkdownPreview'
 import { parseMarkdownFrontmatter, splitMarkdownLines } from '@/lib/markdown'
 import { replaceMarkdownLineRange } from 'grph-shared/markdown/lineEditing'
 import type { MarkdownGeoDatasetIntegration } from '@/features/markdown/ui/MarkdownRendererTypes'
@@ -31,6 +30,7 @@ import { MarkdownWorkspaceLayout } from './layout/MarkdownWorkspaceLayout'
 import { useWorkspaceScrollSync } from './scroll/useWorkspaceScrollSync'
 import { useInitialWorkspacePaneVisibility } from './useInitialWorkspacePaneVisibility'
 import { MarkdownWorkspaceDerivedViewer, type MarkdownWorkspaceDerivedViewerKind, type MarkdownWorkspaceDerivedViewerMode } from './viewer/MarkdownWorkspaceDerivedViewer'
+import { MarkdownWorkspaceViewerSurface } from './viewer/MarkdownWorkspaceViewerSurface'
 import { buildMarkdownPipeTableFromRowsJsonArtifact } from './viewer/markdownWorkspaceDataViewCandidates'
 import { tryBuildJsonMarkdownDocumentFromText } from '@/features/markdown/jsonToMarkdownDocument'
 import { useWorkspaceExportBridge } from './useWorkspaceExportBridge'
@@ -850,13 +850,12 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
   const derivedViewerText = viewerMode === 'multiDimTable' ? (sourceAttachedMarkdownTableText || activeJsonSourcePreviewText || viewerText) : viewerText
 
   const markdownViewer = !viewerPaneVisible ? null : (viewerMode === 'read' || viewerMode === 'table') && viewerKind === 'markdown' ? (
-    <MarkdownPreview
+    <MarkdownWorkspaceViewerSurface
       ref={handleMarkdownViewerRootRef}
       markdownText={viewerText}
       activeDocumentPath={activeDocumentKey}
       highlightedLineRange={highlightedLineRange}
       markdownWordWrap={markdownWordWrap}
-      markdownPresentationMode={false}
       markdownTextHighlight={markdownTextHighlight}
       markdownViewerMediaMode={webpageMeta?.url ? 'image' : undefined}
       selectionKind={null}
@@ -864,12 +863,6 @@ export const MarkdownWorkspaceMain = React.memo(function MarkdownWorkspaceMain(p
       uiPanelMonospaceTextClass={uiPanelMonospaceTextClass}
       webpageLayoutWireframeAscii={webpageLayoutWireframeAscii}
       geoDatasetIntegration={geoDatasetIntegration}
-      previewOverlayScope="container"
-      previewOverlayPortalTarget={null}
-      previewScrollable={true}
-      showSidebar={false}
-      viewMode="viewer"
-      forbidCopy={false}
       onInsertLineAfter={disableDerivedMarkdownMutations ? undefined : onInsertLineAfter}
       onReorderLineBlock={disableDerivedMarkdownMutations ? undefined : onReorderLineBlock}
       onReplaceLineRange={disableDerivedMarkdownMutations ? undefined : onReplaceLineRange}

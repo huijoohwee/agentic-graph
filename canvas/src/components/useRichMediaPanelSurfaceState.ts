@@ -107,7 +107,6 @@ export function useRichMediaPanelSurfaceState(
   const panelTextEditable = Boolean(
     mediaState.panel
     && mediaState.panelSelectedTab === 'text'
-    && (mediaState.panel.outputVersions?.length || 0) === 0
     && typeof props.onPanelChange === 'function',
   )
   const showPanelTextSurface = Boolean(

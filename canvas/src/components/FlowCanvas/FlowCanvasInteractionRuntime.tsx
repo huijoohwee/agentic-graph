@@ -1,15 +1,22 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { useShallow } from 'zustand/react/shallow'
 
 import { applyZoomRequestNative } from '@/components/FlowCanvas/applyZoomRequestNative'
 import { EMPTY_STRING_ARRAY, type FlowCanvasInteractionRuntimeProps } from '@/components/FlowCanvas/shared'
 import { CanvasArrangeActionBar } from '@/components/canvas/CanvasArrangeActionBar'
+import { useParentChildRelation } from '@/components/canvas/useParentChildRelation'
+import { useSelectionGrouping } from '@/components/canvas/useSelectionGrouping'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { computeArrangeCenters, type ArrangeAction2d } from '@/lib/canvas/arrange2d'
 import { isEditableTarget, readArrangeShortcut, readNudgeDelta } from '@/lib/canvas/arrangeShortcuts'
 import { readSnapGridConfigFromSchema, snapScalarToGrid } from '@/lib/canvas/gridSnap'
-import { graphActivationFitTargetsGraph, isGraphActivationFitRequest } from '@/lib/zoom/graphActivationFit'
+import {
+  graphActivationZoomTargetsGraph,
+  isGraphActivationFitRequest,
+  isGraphActivationZoomRequest,
+} from '@/lib/zoom/graphActivationFit'
 
 export default React.memo(function FlowCanvasInteractionRuntime(
   props: FlowCanvasInteractionRuntimeProps,
@@ -103,6 +110,8 @@ export default React.memo(function FlowCanvasInteractionRuntime(
     }
     return Array.from(set)
   }, [selectedNodeId, selectedNodeIds])
+  const grouping = useSelectionGrouping({ active, allowMutations })
+  const parentChild = useParentChildRelation({ active, allowMutations })
 
   const applyArrange = React.useMemo(() => {
     return (action: ArrangeAction2d) => {
@@ -191,8 +200,9 @@ export default React.memo(function FlowCanvasInteractionRuntime(
     const storyboardWidgetMode = canvas2dRenderer === 'storyboard'
     const requestState = useGraphStore.getState()
     const graphActivationFit = isGraphActivationFitRequest(zoomRequest)
-    if (graphActivationFit && !graphActivationFitTargetsGraph({ request: zoomRequest, graphData: graphDataForZoomRequests })) return
-    if (!runtime && graphActivationFit) return
+    const graphActivationZoom = isGraphActivationZoomRequest(zoomRequest)
+    if (graphActivationZoom && !graphActivationZoomTargetsGraph({ request: zoomRequest, graphData: graphDataForZoomRequests })) return
+    if (!runtime && graphActivationZoom) return
     if (!runtime) {
       try {
         if (canvas2dRenderer === 'storyboard' && (zoomRequest.type === 'fit' || zoomRequest.type === 'reset')) {
@@ -207,8 +217,10 @@ export default React.memo(function FlowCanvasInteractionRuntime(
     if (storyboardWidgetMode && isWorkspaceGraphMutationBlocked(requestState)) {
       // Fit requests raised by source recomposition during a mutation lock must
       // not remain queued and fire against the settled graph on the next render.
-      if (!graphActivationFit) {
-        if (zoomRequest.type === 'fit') requestState.clearZoomRequest()
+      // Explicit user zoom commands are presentation-only and remain available
+      // while the Markdown editor owns source mutation authority.
+      if (!graphActivationFit && zoomRequest.type === 'fit') {
+        requestState.clearZoomRequest()
         return
       }
     }
@@ -251,13 +263,26 @@ export default React.memo(function FlowCanvasInteractionRuntime(
     zoomRequest,
   ])
 
-  if (!(active && allowMutations && selectedIds.length >= 2)) return null
-  return (
+  if (!(active && allowMutations && (selectedIds.length >= 2 || grouping.canUngroup || parentChild.canDetach))) return null
+  const actionBar = (
     <CanvasArrangeActionBar
       active={active}
       selectedCount={selectedIds.length}
       onArrange={applyArrange}
-      ariaLabel="Arrange selected flow nodes"
+      canGroupNodes={grouping.canGroupNodes}
+      canUngroup={grouping.canUngroup}
+      canDetach={parentChild.canDetach}
+      onGroupNodes={grouping.groupNodes}
+      onUngroup={grouping.ungroup}
+      onDetach={parentChild.detach}
+      ariaLabel="Selected flow node actions"
+      offsetBelowWorkspaceToolbar={Boolean(storyboardWidgetSurfaceId)}
     />
   )
+  if (storyboardWidgetSurfaceId && typeof document !== 'undefined') {
+    const portalHost = Array.from(document.querySelectorAll<HTMLElement>('[data-kg-storyboard-widget-surface-root]'))
+      .find(element => element.getAttribute('data-kg-storyboard-widget-surface-root') === storyboardWidgetSurfaceId)
+    if (portalHost) return createPortal(actionBar, portalHost)
+  }
+  return actionBar
 })

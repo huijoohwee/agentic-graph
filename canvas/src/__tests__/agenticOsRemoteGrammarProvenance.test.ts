@@ -5,6 +5,7 @@ import {
   resetAgenticOsRemoteGrammarCatalogForTests,
 } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { normalizeAgenticOsRemoteGrammarCatalogProvenance } from '@/features/agentic-os/agenticOsRemoteGrammarProvenance'
+import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
 
 const SOURCE_REVISION = 'b'.repeat(40)
 const STALE_REVISION = 'a'.repeat(40)
@@ -86,6 +87,7 @@ export function testAgenticOsRemoteGrammarProvenanceRebasesExactDictionaryFragme
 export async function testAgenticOsRemoteGrammarFetchRegistersOnlyRevisionBoundProvenance() {
   const originalFetch = globalThis.fetch
   let catalog: Array<Record<string, unknown>> = sourceBackedEntries()
+  const sourceCatalog = sourceBackedEntries()
   resetAgenticOsRemoteGrammarCatalogForTests()
   globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body || '{}')) as Record<string, unknown>
@@ -98,22 +100,28 @@ export async function testAgenticOsRemoteGrammarFetchRegistersOnlyRevisionBoundP
     return new Response(JSON.stringify({
       jsonrpc: '2.0',
       id: body.id,
-      result: { structuredContent: { ok: true, sourceRevision: SOURCE_REVISION, catalog } },
+      result: {
+        structuredContent: {
+          ok: true,
+          sourceRevision: SOURCE_REVISION,
+          ...buildAgenticOsTestCatalogMetadata(sourceCatalog),
+          catalog,
+        },
+      },
     }), { status: 200, headers: { 'content-type': 'application/json' } })
   }) as typeof fetch
 
   try {
+    catalog = [sourceCatalog[0]]
     const registered = await fetchAgenticOsRemoteGrammarCatalog({ query: '/' })
     assert.deepEqual(
       registered.map(entry => entry.sourceUrl),
       [
         `${SOURCE_ROOT_URL}/DICTIONARY-COMMAND.md#/camera.select`,
-        `${SOURCE_ROOT_URL}/DICTIONARY-SEMANTIC.md##transform`,
-        `${SOURCE_ROOT_URL}/DICTIONARY-BINDING.md#@scene`,
       ],
     )
     const safeSnapshot = getAgenticOsRemoteGrammarCatalogSnapshot()
-    assert.equal(safeSnapshot.entries.length, 3)
+    assert.equal(safeSnapshot.entries.length, 1)
 
     catalog = [{
       token: '/external',

@@ -48,6 +48,7 @@ import {
   fetchKnowgrphStaticAsset,
   handlesKnowgrphStaticAsset,
 } from "./knowgrph-agent-ready-app-shell.mjs";
+import { injectWebMcpScript } from "./webmcp-html-injection.mjs";
 import {
   PUBLISHED_DOC_IDENTITY_RESOLVER_BROWSER_SOURCE,
   createPublishedDocIdentityResolver,
@@ -890,18 +891,6 @@ export const webMcpScript = `(() => {
   webMcpLifecycle.install();
 })();`;
 
-const injectWebMcpScript = async (response) => {
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.toLowerCase().includes("text/html")) return response;
-  const html = await response.text();
-  if (webMcpTools.every((tool) => html.includes(tool.name))) return new Response(html, response);
-  const scriptTag = `<script>${webMcpScript}</script>`;
-  const nextHtml = html.includes("</head>") ? html.replace("</head>", `${scriptTag}</head>`) : `${html}${scriptTag}`;
-  const nextResponse = new Response(nextHtml, response);
-  nextResponse.headers.delete("content-length");
-  return nextResponse;
-};
-
 const PUBLISHED_TOOL_NAME_CONFIG = {
   search: KNOWGRPH_AGENT_READY_TOOL_IDS.search,
   fetch: KNOWGRPH_AGENT_READY_TOOL_IDS.fetch,
@@ -1408,7 +1397,7 @@ export async function onRequest(context) {
   const publishedDocIdentity = resolvePublishedDocRequestIdentity(request.url);
   const response = publishedDocIdentity ? await fetchKnowgrphAppShellAsset(context, APP_BASE_PATH) : await context.next();
   if (!handlesKnowgrphHtmlSurface(url.pathname)) return response;
-  const htmlResponse = method === "HEAD" ? response : await injectWebMcpScript(response);
+  const htmlResponse = method === "HEAD" ? response : await injectWebMcpScript(response, webMcpScript);
   const nextResponse = new Response(method === "HEAD" ? null : htmlResponse.body, htmlResponse);
   nextResponse.headers.set("link", agentReadyHomepageLinkHeaderValue);
   if (handlesKnowgrphRoot(url.pathname) || publishedDocIdentity) {

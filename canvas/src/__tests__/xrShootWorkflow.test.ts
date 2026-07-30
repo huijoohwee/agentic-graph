@@ -264,9 +264,8 @@ export function testXrShootWorkflowMarksRigsRetimeAndExports() {
   if (!packageSource.includes('cameraRig:') || !packageSource.includes('cameraLensMm:') || !packageSource.includes('cameraOptics:') || !packageSource.includes('focusDistanceMeters:')) {
     throw new Error('expected deterministic frame samples to carry rig, lens, sensor, focus, and aspect data')
   }
-  for (const marker of ['data-kg-xr-camera-aspect-mask="1"', 'data-kg-camera-optics-projection="xr-viewport"', "'selected-timeline-mark'", "'timeline-playback'", "'floating-panel-camera'"]) {
-    if (!aspectMaskSource.includes(marker)) throw new Error(`expected the XR viewport aspect-mask projection to expose ${marker}`)
-  }
+  for (const marker of ['data-kg-xr-camera-aspect-mask="1"', 'data-kg-camera-optics-projection="xr-viewport"', 'framing.claimed', "'selected-timeline-mark'", "'timeline-playback'", "'floating-panel-camera'"]) if (!aspectMaskSource.includes(marker)) throw new Error(`expected the XR viewport aspect-mask projection to expose ${marker}`)
+  if (aspectMaskSource.includes('isXrPhysicsRunReadyDemoActive')) throw new Error('expected explicit Camera ownership to replace document-specific aspect-mask suppression')
   if (!threeGraphSource.includes('<XrCameraAspectMask />')) throw new Error('expected XR Mode to render its shared Camera aspect mask over the Three viewport')
   for (const marker of ['/camera.select', '/camera.frame', '/camera.animate', '/camera.play', '/camera.scrub']) {
     if (!cameraMcpContractSource.includes(marker)) throw new Error(`expected Camera / @ # invocation contract to expose ${marker}`)

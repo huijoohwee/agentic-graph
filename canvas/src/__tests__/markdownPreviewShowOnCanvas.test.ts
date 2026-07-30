@@ -13,23 +13,6 @@ import {
   readSelectionMatchQuery,
 } from '@/lib/ui/textSelectionMatchHighlights'
 
-const findButtonByExactText = (rootEl: HTMLElement, label: string): HTMLButtonElement | null => {
-  const buttons = Array.from(rootEl.querySelectorAll('button'))
-  for (const btn of buttons) {
-    const text = (btn.textContent || '').trim()
-    if (text === label) return btn as HTMLButtonElement
-  }
-  return null
-}
-const findButtonByAriaLabel = (rootEl: HTMLElement, label: string): HTMLButtonElement | null => {
-  const buttons = Array.from(rootEl.querySelectorAll('button'))
-  for (const btn of buttons) {
-    const aria = (btn.getAttribute('aria-label') || '').trim()
-    if (aria === label) return btn as HTMLButtonElement
-  }
-  return null
-}
-
 export async function testMarkdownPreviewShowOnCanvasSelectsExpectedNode() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
@@ -147,40 +130,14 @@ export async function testMarkdownPreviewShowOnCanvasSelectsExpectedNode() {
       throw new Error('block with data-start-line=5 not found')
     }
 
-    anyWindow.getSelection = () =>
-      ({
-        isCollapsed: false,
-      } as unknown as Selection)
-
-    const contextMenuEvent = new dom.window.MouseEvent('contextmenu', {
+    const showOnCanvasEvent = new dom.window.MouseEvent('click', {
       bubbles: true,
       cancelable: true,
-      clientX: 10,
-      clientY: 10,
+      metaKey: true,
     })
     await React.act(async () => {
-      targetBlock.dispatchEvent(contextMenuEvent)
-      await tick('contextmenu')
-    })
-    let menuButton = findButtonByExactText(rootEl, 'Show on Canvas')
-    if (!menuButton) {
-      const actionsButton = findButtonByAriaLabel(rootEl, 'Selection actions')
-      if (!actionsButton) {
-        throw new Error('Selection actions button not found')
-      }
-      await React.act(async () => {
-        actionsButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-        await tick('actions-open')
-      })
-      menuButton = findButtonByExactText(rootEl, 'Show on Canvas')
-    }
-    if (!menuButton) {
-      throw new Error('Show on Canvas menu button not found')
-    }
-
-    await React.act(async () => {
-      menuButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-      await tick('show-on-canvas')
+      targetBlock.dispatchEvent(showOnCanvasEvent)
+      await tick('meta-click-show-on-canvas')
     })
 
     const selectedNodeId = useGraphStore.getState().selectedNodeId
@@ -202,7 +159,7 @@ export async function testMarkdownPreviewShowOnCanvasSelectsExpectedNode() {
   }
 }
 
-export async function testMarkdownPreviewContextMenuRendersInsideRoot() {
+export async function testMarkdownPreviewUsesNativeContextMenuWithoutLegacySelectionBubble() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
   const { dom, restore: restoreDom } = initJsdomHarness()
@@ -278,35 +235,22 @@ export async function testMarkdownPreviewContextMenuRendersInsideRoot() {
       throw new Error('block with data-start-line=5 not found')
     }
 
-    anyWindow.getSelection = () =>
-      ({
-        isCollapsed: false,
-      } as unknown as Selection)
-
     const contextMenuEvent = new dom.window.MouseEvent('contextmenu', {
       bubbles: true,
       cancelable: true,
       clientX: 10,
       clientY: 10,
     })
+    let dispatched = false
     await React.act(async () => {
-      targetBlock.dispatchEvent(contextMenuEvent)
+      dispatched = targetBlock.dispatchEvent(contextMenuEvent)
       await tick('contextmenu')
     })
-    let menuButton = findButtonByExactText(rootEl, 'Show on Canvas')
-    if (!menuButton) {
-      const actionsButton = findButtonByAriaLabel(rootEl, 'Selection actions')
-      if (!actionsButton) {
-        throw new Error('Selection actions button not found inside markdown preview root')
-      }
-      await React.act(async () => {
-        actionsButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
-        await tick('actions-open')
-      })
-      menuButton = findButtonByExactText(rootEl, 'Show on Canvas')
+    if (!dispatched || contextMenuEvent.defaultPrevented) {
+      throw new Error('expected Markdown Viewer to preserve the native context menu')
     }
-    if (!menuButton) {
-      throw new Error('context menu button not found inside markdown preview root')
+    if (rootEl.querySelector('[aria-label="Selection actions"]')) {
+      throw new Error('did not expect the deleted legacy Selection actions bubble')
     }
 
   } finally {

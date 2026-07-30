@@ -30,6 +30,7 @@ export function useStoryboardWidgetWorkflowActions(args: {
   updateNode: (id: string, patch: Partial<GraphNode>) => void
   upsertUiToast: (args: UiToastInput) => void
   scheduleOverlayEdgeUpdate: () => void
+  captureExecutionAnchor?: StoryboardWidgetWorkflowNodeRunnerArgs['captureExecutionAnchor']
 }) {
   const runWorkflowNode = React.useMemo(() => createStoryboardWidgetWorkflowNodeRunner({
     baseGraphKind: args.baseGraphKind,
@@ -49,10 +50,12 @@ export function useStoryboardWidgetWorkflowActions(args: {
     updateNode: args.updateNode,
     upsertUiToast: args.upsertUiToast,
     scheduleOverlayEdgeUpdate: args.scheduleOverlayEdgeUpdate,
+    captureExecutionAnchor: args.captureExecutionAnchor,
   }), [
     args.appendDraftNode,
     args.baseGraphData,
     args.baseGraphKind,
+    args.captureExecutionAnchor,
     args.commitPublishedGraphData,
     args.draftGraphData,
     args.draftGraphDataRef,

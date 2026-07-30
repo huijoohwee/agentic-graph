@@ -1,25 +1,37 @@
-export const KNOWGRPH_STORAGE_API_VERSION = '2026-05-04'
+import { hashStringToHex } from 'grph-shared/hash/stringHash'
+export {
+  KNOWGRPH_STORAGE_ROUTE_PATHS,
+  buildKnowgrphCollaborationSavePath,
+  buildKnowgrphStorageBlobPath,
+  buildKnowgrphStorageCanvasRoomPath,
+  buildKnowgrphStorageChatAuditPath,
+  buildKnowgrphStorageChatPoliciesPath,
+  buildKnowgrphStorageChatRelayPath,
+  buildKnowgrphStorageChatSessionPath,
+  buildKnowgrphStorageCursorId,
+  buildKnowgrphStorageDefaultDocPath,
+  buildKnowgrphStorageDocPath,
+  buildKnowgrphStorageExportPath,
+  buildKnowgrphStorageFileSyncRelayPath,
+  buildKnowgrphStorageGitRelayPath,
+  buildKnowgrphStorageRelayCapabilitiesPath,
+  buildKnowgrphStorageLlmsPath,
+  buildKnowgrphStorageMediaAssetListPath,
+  buildKnowgrphStorageMediaAssetPersistPath,
+  buildKnowgrphStorageMediaPath,
+  buildKnowgrphStorageOutboxId,
+  buildKnowgrphStorageSourceFilesIndexPath,
+} from '@/lib/storage/knowgrphStorageRoutePaths'
+export type {
+  KnowgrphStorageDurableObjectNamespaceLike,
+  KnowgrphStorageDurableObjectStubLike,
+  KnowgrphStorageKvNamespaceLike,
+  KnowgrphStorageR2BucketLike,
+  KnowgrphStorageR2ObjectLike,
+  KnowgrphStorageWorkerEnv,
+} from '@/lib/storage/knowgrphStorageWorkerEnvContract'
 
-export const KNOWGRPH_STORAGE_ROUTE_PATHS = {
-  push: '/api/storage/push',
-  pull: '/api/storage/pull',
-  collabSave: '/api/storage/collab/save',
-  canvasRoomPrefix: '/api/storage/canvas-room/',
-  chatSession: '/api/storage/chat/session',
-  chatRelay: '/api/storage/chat/relay',
-  chatPoliciesPrefix: '/api/storage/chat/policies/',
-  chatAuditPrefix: '/api/storage/chat/audit/',
-  exportPrefix: '/api/storage/export/',
-  docPrefix: '/api/storage/doc/',
-  defaultDocPrefix: '/api/storage/doc-default/',
-  blobPrefix: '/api/storage/blob/',
-  mediaAssetPersist: '/api/storage/media/assets',
-  mediaAssetPrefix: '/api/storage/media/assets/',
-  mediaPrefix: '/api/storage/media/',
-  sourceFilesIndex: '/api/storage/source-files',
-  sourceFilesIndexPrefix: '/api/storage/source-files/',
-  sourceFilesLlms: '/api/storage/llms.txt',
-} as const
+export const KNOWGRPH_STORAGE_API_VERSION = '2026-05-04'
 
 export const KNOWGRPH_STORAGE_D1_BINDING_NAME = 'DB'
 export const KNOWGRPH_STORAGE_R2_BLOB_BINDING_NAME = 'KNOWGRPH_STORAGE_BLOB_BUCKET'
@@ -95,6 +107,7 @@ export type KgDocumentChunkRecord = {
   tokenEstimate: number
   contentHash: string
   updatedAtMs: number
+  contentReused?: boolean
 }
 
 export type KgGraphSnapshotRecord = {
@@ -334,6 +347,12 @@ export type KnowgrphStoragePullRequest = {
   workspaceId: string
   deviceId: string
   since: string | null
+  knownChunks: Array<{
+    id: string
+    documentId: string
+    chunkKey: string
+    contentHash: string
+  }>
 }
 
 export type KnowgrphStoragePullChanges = {
@@ -459,14 +478,16 @@ export type KnowgrphMediaAssetDeleteResponse = {
     d1: 'deleted' | 'missing'
   }
 }
-
 export type KnowgrphCollaborationDocumentKind = 'markdown' | 'json'
-
+export type KnowgrphDocumentRepositoryTarget = 'knowgrph-docs' | 'workspace-docs'
 export type KnowgrphCollaborationSaveRequest = {
   apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  operation: 'upsert' | 'delete'
   workspaceId: string
   documentKey: string
   documentKind: KnowgrphCollaborationDocumentKind
+  repositoryTarget: KnowgrphDocumentRepositoryTarget
+  gitRemoteId?: string
   serializedText: string
   yjsStateBase64: string
   activePeerCount: number
@@ -474,77 +495,18 @@ export type KnowgrphCollaborationSaveRequest = {
   savedByPeerId: string | null
   saveBoundary: 'explicit' | 'autosave'
 }
-
 export type KnowgrphCollaborationSaveResponse = {
   ok: true
   apiVersion: typeof KNOWGRPH_STORAGE_API_VERSION
+  operation: 'upsert' | 'delete'
   workspaceId: string
   documentKey: string
+  repositoryTarget: KnowgrphDocumentRepositoryTarget
   githubPath: string
   commitSha: string | null
   contentSha: string | null
   committedAtMs: number
 }
-
-export type KnowgrphStorageR2ObjectLike = {
-  body?: ReadableStream<Uint8Array> | null
-  httpEtag?: string
-  etag?: string
-  size?: number
-  writeHttpMetadata?: (headers: Headers) => void
-}
-
-export type KnowgrphStorageR2BucketLike = {
-  put: (
-    key: string,
-    value: ReadableStream<Uint8Array> | ArrayBuffer | ArrayBufferView | Blob | string | null,
-    options?: {
-      httpMetadata?: Record<string, string>
-      customMetadata?: Record<string, string>
-    },
-  ) => Promise<KnowgrphStorageR2ObjectLike | null | undefined>
-  get: (key: string) => Promise<KnowgrphStorageR2ObjectLike | null | undefined>
-  head?: (key: string) => Promise<KnowgrphStorageR2ObjectLike | null | undefined>
-  delete?: (key: string) => Promise<void>
-}
-
-export type KnowgrphStorageKvNamespaceLike = {
-  put: (
-    key: string,
-    value: string,
-    options?: { expirationTtl?: number; metadata?: Record<string, unknown> },
-  ) => Promise<void>
-  get?: (key: string, type?: 'text' | 'json') => Promise<unknown>
-  delete?: (key: string) => Promise<void>
-}
-
-export type KnowgrphStorageDurableObjectStubLike = {
-  fetch: (request: Request | string, init?: RequestInit) => Promise<Response>
-}
-
-export type KnowgrphStorageDurableObjectNamespaceLike = {
-  idFromName: (name: string) => unknown
-  get: (id: unknown) => KnowgrphStorageDurableObjectStubLike
-}
-
-export type KnowgrphStorageWorkerEnv = {
-  DB: unknown
-  KNOWGRPH_STORAGE_SIGNING_SECRET?: string
-  KNOWGRPH_STORAGE_CHAT_PROXY_BASE_URL?: string
-  KNOWGRPH_STORAGE_BLOB_BUCKET?: KnowgrphStorageR2BucketLike
-  KNOWGRPH_MEDIA_ACCESS_KV?: KnowgrphStorageKvNamespaceLike
-  KNOWGRPH_CANVAS_ROOM?: KnowgrphStorageDurableObjectNamespaceLike
-  KNOWGRPH_STORAGE_BLOB_MAX_BYTES?: string
-  KNOWGRPH_STORAGE_GITHUB_TOKEN?: string
-  KNOWGRPH_STORAGE_GITHUB_OWNER?: string
-  KNOWGRPH_STORAGE_GITHUB_REPO?: string
-  KNOWGRPH_STORAGE_GITHUB_BRANCH?: string
-  KNOWGRPH_STORAGE_GITHUB_COMMITTER_NAME?: string
-  KNOWGRPH_STORAGE_GITHUB_COMMITTER_EMAIL?: string
-  KNOWGRPH_STORAGE_POCKETBASE_URL?: string
-  KNOWGRPH_STORAGE_POCKETBASE_TOKEN?: string
-}
-
 export const isKnowgrphStorageEntityKind = (value: unknown): value is KnowgrphStorageEntityKind =>
   value === 'document' || value === 'documentChunk' || value === 'graphSnapshot'
 
@@ -552,72 +514,26 @@ export const buildKnowgrphStoragePullRequest = (args: {
   workspaceId: string
   deviceId: string
   since?: string | null
+  knownChunks?: KnowgrphStoragePullRequest['knownChunks']
 }): KnowgrphStoragePullRequest => ({
   apiVersion: KNOWGRPH_STORAGE_API_VERSION,
   workspaceId: String(args.workspaceId || '').trim(),
   deviceId: String(args.deviceId || '').trim(),
   since: typeof args.since === 'string' && args.since.trim() ? args.since.trim() : null,
+  knownChunks: Array.isArray(args.knownChunks)
+    ? args.knownChunks.map(chunk => ({
+        id: String(chunk.id || '').trim(),
+        documentId: String(chunk.documentId || '').trim(),
+        chunkKey: String(chunk.chunkKey || '').trim(),
+        contentHash: String(chunk.contentHash || '').trim(),
+      })).filter(chunk => chunk.id && chunk.documentId && chunk.chunkKey && chunk.contentHash)
+    : [],
 })
 
-export const buildKnowgrphCollaborationSavePath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.collabSave
+export const hashKnowgrphStorageContent = (content: unknown): string =>
+  hashStringToHex(String(content ?? ''))
 
-export const buildKnowgrphStorageCanvasRoomPath = (workspaceId: string, roomId: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.canvasRoomPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(roomId || '').trim())}`
-
-export const buildKnowgrphStorageChatSessionPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.chatSession
-
-export const buildKnowgrphStorageChatRelayPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.chatRelay
-
-export const buildKnowgrphStorageChatPoliciesPath = (workspaceId: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.chatPoliciesPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`
-
-export const buildKnowgrphStorageChatAuditPath = (workspaceId: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.chatAuditPrefix}${encodeURIComponent(String(workspaceId || '').trim())}`
-
-export const buildKnowgrphStorageExportPath = (workspaceId: string): string =>
-  `/api/storage/export/${encodeURIComponent(String(workspaceId || '').trim())}`
-
-export const buildKnowgrphStorageDocPath = (workspaceId: string, canonicalPath: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(canonicalPath || '').trim())}`
-
-export const buildKnowgrphStorageDefaultDocPath = (canonicalPath: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.defaultDocPrefix}${encodeURIComponent(String(canonicalPath || '').trim())}`
-
-export const buildKnowgrphStorageBlobPath = (workspaceId: string, canonicalPath: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.blobPrefix}${encodeURIComponent(String(workspaceId || '').trim())}/${encodeURIComponent(String(canonicalPath || '').trim())}`
-
-export const buildKnowgrphStorageMediaPath = (objectKey: string): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.mediaPrefix}${String(objectKey || '').trim().split('/').map(encodeURIComponent).join('/')}`
-
-export const buildKnowgrphStorageMediaAssetPersistPath = (): string =>
-  KNOWGRPH_STORAGE_ROUTE_PATHS.mediaAssetPersist
-
-export const buildKnowgrphStorageMediaAssetListPath = (workspaceId: string, limit = 50): string =>
-  `${KNOWGRPH_STORAGE_ROUTE_PATHS.mediaAssetPersist}?workspaceId=${encodeURIComponent(String(workspaceId || '').trim())}&limit=${encodeURIComponent(String(limit))}`
-
-export const buildKnowgrphStorageSourceFilesIndexPath = (workspaceId?: string | null): string => {
-  const normalizedWorkspaceId = String(workspaceId || '').trim()
-  return normalizedWorkspaceId
-    ? `${KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndexPrefix}${encodeURIComponent(normalizedWorkspaceId)}`
-    : KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesIndex
-}
-
-export const buildKnowgrphStorageLlmsPath = (workspaceId?: string | null): string => {
-  const normalizedWorkspaceId = String(workspaceId || '').trim()
-  return normalizedWorkspaceId
-    ? `${buildKnowgrphStorageSourceFilesIndexPath(normalizedWorkspaceId)}/llms.txt`
-    : KNOWGRPH_STORAGE_ROUTE_PATHS.sourceFilesLlms
-}
-
-export const buildKnowgrphStorageCursorId = (workspaceId: string, deviceId: string): string =>
-  `${String(workspaceId || '').trim()}:${String(deviceId || '').trim()}`
-
-export const buildKnowgrphStorageOutboxId = (prefix = 'mut'): string => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `${prefix}:${crypto.randomUUID()}`
-  }
-  return `${prefix}:${Date.now()}:${Math.random().toString(16).slice(2)}`
+export const isKnowgrphStorageCanonicalPath = (value: unknown): value is string => {
+  const path = String(value || '').trim().replace(/\\/g, '/').replace(/^\/+/, '')
+  return !!path && path.length <= 1_024 && !path.split('/').includes('..')
 }

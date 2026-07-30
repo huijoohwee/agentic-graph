@@ -25,7 +25,9 @@ export function RichMediaPanelShell(args: {
       onMouseDownCapture={model.handleRootMouseDownCapture}
       onPointerUpCapture={props.onPointerUpCapture}
       onWheelCapture={props.onWheelCapture}
+      onClick={props.onClick}
       onClickCapture={props.onClickCapture}
+      onDoubleClick={props.onDoubleClick}
       onDoubleClickCapture={props.onDoubleClickCapture}
       onContextMenuCapture={props.onContextMenuCapture}
       {...model.rootAttributes}

@@ -1,14 +1,22 @@
 ---
-title: "Knowgrph Design Document"
+title: "Reference implementation: Knowgrph Design Document"
+id: "md:knowgrph-design-document"
 doc_type: "Generated Registry Surface"
-status: "generated"
+version: "1.0.2"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.generated.design-registry"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+guideline_version: "1.7.0"
+doc_path: "docs/knowgrph-design-document.md"
 canonical_docs_root: "docs/documents"
 generator_owner: "canvas/src/cli/lint-doc.ts"
 ---
 
-# Knowgrph Design Document
+# Reference implementation: Knowgrph Design Document
 
 ## Generated Registry Contract
 
@@ -54,3 +62,9 @@ This root document exists as the auto-generated table surface used by `canvas/sr
 | threeSelection | Renderer: selection highlighting | kg:render:three:selectionCollapsed | render.prefs |
 
 <!-- RENDER_SECTIONS_TABLE_END -->
+
+## Verification Condition
+
+| VCC | Condition | Invocable check | Expected result | Evidence |
+|---|---|---|---|---|
+| `VCC-GEN-DESIGN-01` | Generated orchestrator and render rows exactly match their source registries. | `npm --prefix canvas run doc:lint && npm --prefix canvas run doc:sanity` | Regeneration is idempotent and both registry counts report `status=OK`. | None recorded in this document |

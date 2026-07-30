@@ -18,13 +18,12 @@ import type {
 } from './MarkdownRendererTypes'
 import { useMarkdownPresentation } from './useMarkdownPresentation'
 import { MarkdownPreviewViewer } from '@/lib/markdown-core/ui/MarkdownPreviewViewer.impl'
-import { MarkdownSelectionToolbar, type MarkdownSelectionToolbarState } from '@/features/markdown/ui/MarkdownSelectionToolbar'
 import { MarkdownInlineSelectionActionsContext } from '@/lib/markdown-core/ui/markdownInlineSelectionActions'
 import type { SsotSurface } from 'grph-shared/ssot/types'
 import { findSelectionTarget } from '@/features/markdown/ui/markdownPreviewSelection'
+import { findLineRangeFromTarget } from '@/features/markdown/ui/markdownPreviewContextMenuUtils'
 import { useMarkdownPreviewLexedMarkdown } from '@/features/markdown/ui/useMarkdownPreviewTokens'
 import { useSelectionFlash } from '@/features/markdown/ui/useSelectionFlash'
-import { useMarkdownPreviewEvents } from '@/features/markdown/ui/useMarkdownPreviewEvents'
 import type { TokenWithLines } from '@/features/markdown/ui/markdownPreviewLex'
 import type { MarkdownSourceFilesPanelIntegration } from '@/features/markdown/ui/markdownSourceFilesPanelTypes'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
@@ -296,44 +295,12 @@ const MarkdownPreview = React.forwardRef<HTMLElement, MarkdownPreviewProps>(func
   const selectNode = useGraphStore(s => s.selectNode)
   const selectEdge = useGraphStore(s => s.selectEdge)
 
-  const [selectionToolbar, setSelectionToolbar] = React.useState<MarkdownSelectionToolbarState | null>(null)
-  const [inlineEditActive, setInlineEditActive] = React.useState(false)
-
-  const closeSelectionToolbar = React.useCallback(() => {
-    setSelectionToolbar(null)
-  }, [])
-  React.useEffect(() => {
-    if (!inlineEditActive) return
-    setSelectionToolbar(prev => (prev ? null : prev))
-  }, [inlineEditActive])
-  const setSelectionToolbarStable = React.useCallback((state: MarkdownSelectionToolbarState | null) => {
-    if (inlineEditActive) return
-    setSelectionToolbar(state)
-  }, [inlineEditActive])
+  const inlineEditActiveRef = React.useRef(false)
   const handleInlineEditStateChange = React.useCallback((active: boolean) => {
-    let changed = false
-    setInlineEditActive(prev => {
-      if (prev === active) return prev
-      changed = true
-      return active
-    })
-    if (changed) {
-      onInlineEditStateChange?.(active)
-    }
+    if (inlineEditActiveRef.current === active) return
+    inlineEditActiveRef.current = active
+    onInlineEditStateChange?.(active)
   }, [onInlineEditStateChange])
-
-  React.useEffect(() => {
-    if (!selectionToolbar) return
-    const handler = () => {
-      closeSelectionToolbar()
-    }
-    window.addEventListener('mousedown', handler)
-    window.addEventListener('scroll', handler, true)
-    return () => {
-      window.removeEventListener('mousedown', handler)
-      window.removeEventListener('scroll', handler, true)
-    }
-  }, [selectionToolbar, closeSelectionToolbar])
 
   const handleShowOnCanvas = React.useCallback(
     (startLine: number, endLine: number) => {
@@ -348,26 +315,22 @@ const MarkdownPreview = React.forwardRef<HTMLElement, MarkdownPreviewProps>(func
     },
     [activeDocumentPath, graphData, selectEdge, selectNode, setSelectionSource],
   )
+  const canShowOnCanvas = React.useCallback(
+    (startLine: number, endLine: number) =>
+      Boolean(findSelectionTarget(graphData as GraphData | null, activeDocumentPath, startLine, endLine)),
+    [activeDocumentPath, graphData],
+  )
 
-  const { handleClick, handleContextMenu, handleDoubleClick, handleMouseUp } = useMarkdownPreviewEvents({
-    rootElRef,
-    handleShowOnCanvas,
-    setSelectionToolbar: setSelectionToolbarStable,
-  })
-
-  const handleSlideContextMenu = React.useCallback((slideIdx: number, e: React.MouseEvent) => {
-    const slide = slides[slideIdx]
-    if (!slide) return
-    e.preventDefault()
-    e.stopPropagation()
-    setSelectionToolbarStable({
-      x: e.clientX,
-      y: e.clientY,
-      startLine: slide.startLine,
-      endLine: slide.endLine,
-      text: ''
-    })
-  }, [setSelectionToolbarStable, slides])
+  const handleClick = React.useCallback((event: React.MouseEvent<HTMLElement>) => {
+    if (!event.metaKey) return
+    const rootEl = rootElRef.current
+    if (!rootEl) return
+    const range = findLineRangeFromTarget(rootEl, event.target)
+    if (!range) return
+    event.preventDefault()
+    event.stopPropagation()
+    handleShowOnCanvas(range.startLine, range.endLine)
+  }, [handleShowOnCanvas])
 
   const flashActive = !!flashSelectionId && !!selectionId && flashSelectionId === selectionId
   const flashBg = flashActive ? `rgba(249,115,22,${flashAlpha})` : null
@@ -389,27 +352,15 @@ const MarkdownPreview = React.forwardRef<HTMLElement, MarkdownPreviewProps>(func
   const inlineSelectionActionsValue = React.useMemo(() => {
     return {
       onShowOnCanvas: handleShowOnCanvas,
-      onShowInViewer: onShowInViewer || (() => {}),
-      onShowInEditor: onShowInEditor || (() => {}),
-      onShowInPresentation: onShowInPresentation || (() => {}),
-      onShowInGallery: onShowInGallery || (() => {}),
-      onShowInGraphDataTable: onShowInGraphDataTable || (() => {}),
+      canShowOnCanvas,
+      onShowInViewer,
+      onShowInEditor,
+      onShowInPresentation,
+      onShowInGallery,
+      onShowInGraphDataTable,
       currentView,
     }
-  }, [currentView, handleShowOnCanvas, onShowInEditor, onShowInGraphDataTable, onShowInPresentation, onShowInGallery, onShowInViewer])
-  const selectionToolbarNode = !onReplaceLineRange ? (
-    <MarkdownSelectionToolbar
-      toolbar={selectionToolbar}
-      onClose={closeSelectionToolbar}
-      onShowOnCanvas={handleShowOnCanvas}
-      onShowInViewer={onShowInViewer || (() => {})}
-      onShowInEditor={onShowInEditor || (() => {})}
-      onShowInPresentation={onShowInPresentation || (() => {})}
-      onShowInGallery={onShowInGallery || (() => {})}
-      onShowInGraphDataTable={onShowInGraphDataTable || (() => {})}
-      currentView={currentView}
-    />
-  ) : null
+  }, [canShowOnCanvas, currentView, handleShowOnCanvas, onShowInEditor, onShowInGraphDataTable, onShowInPresentation, onShowInGallery, onShowInViewer])
 
   const activeSlideHeading = React.useMemo(() => {
     const slide = slides[activeSlideId]
@@ -476,7 +427,6 @@ const MarkdownPreview = React.forwardRef<HTMLElement, MarkdownPreviewProps>(func
             uiPanelTextFontClass={uiPanelTextFontClass}
             zoomScale={galleryZoomScale}
             onSlideDoubleClick={(idx) => { const pos = orderedSlideIndices.indexOf(idx); if (pos >= 0) setActiveSlideIndex(pos); if (onShowInPresentation) onShowInPresentation(slides[idx]?.startLine || 0) }}
-            onSlideContextMenu={handleSlideContextMenu}
           />
         </React.Suspense>
       </section>
@@ -489,8 +439,6 @@ const MarkdownPreview = React.forwardRef<HTMLElement, MarkdownPreviewProps>(func
           <MarkdownPreviewPresentation
             rootRef={setRootRef}
             onClick={handleClick}
-            onMouseUp={handleMouseUp}
-            onContextMenu={handleContextMenu}
             onRegisterFullscreenHandler={handleRegisterFullscreenHandler}
             headMeta={headMeta as Record<string, unknown>}
             slides={slides as never}
@@ -516,8 +464,6 @@ const MarkdownPreview = React.forwardRef<HTMLElement, MarkdownPreviewProps>(func
             effectiveHighlightUnderlineColor={effectiveHighlightUnderlineColor}
             onPreviewClick={onPreviewClick}
             onShowInEditor={onShowInEditor}
-            selectionToolbar={selectionToolbarNode}
-            onSlideContextMenu={handleSlideContextMenu}
             fullDocTokens={tokens}
             showSidebar={showSidebar || false}
             showSlidesSidebar={showSlidesSidebar}
@@ -564,11 +510,7 @@ const MarkdownPreview = React.forwardRef<HTMLElement, MarkdownPreviewProps>(func
       effectiveHighlightUnderlineColor={effectiveHighlightUnderlineColor}
       scrollClass={scrollClass}
       onScroll={onScroll}
-      onContextMenu={handleContextMenu}
       onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
-      onMouseUp={handleMouseUp}
-      selectionToolbar={selectionToolbarNode}
       showSidebar={showSidebar}
       onToggleSidebar={onToggleSidebar}
       collapsedIds={collapsedIds}

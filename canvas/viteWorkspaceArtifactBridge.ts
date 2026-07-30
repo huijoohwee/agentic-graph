@@ -10,6 +10,27 @@ export const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spr
 export type KgFsPathPolicy = {
   isAllowed: (candidate: string) => boolean
   resolveHostPath: (candidate: string) => string
+  resolveCanonicalWorkspacePath: (workspacePath: string) => string | null
+  isCanonicalWorkspaceMutation: (candidate: string, workspacePath: string) => boolean
+}
+
+export type KgFsMutationRequest = {
+  path?: unknown
+  workspacePath?: unknown
+  text?: unknown
+  base64?: unknown
+  encoding?: unknown
+  mimeType?: unknown
+  mkdirOnly?: unknown
+  deleteOnly?: unknown
+}
+
+export const parseKgFsMutationRequest = (body: string): KgFsMutationRequest | null => {
+  try {
+    return JSON.parse(body) as KgFsMutationRequest
+  } catch {
+    return null
+  }
 }
 
 export const createKgFsPathPolicy = (repoRoot: string): KgFsPathPolicy => {
@@ -19,6 +40,7 @@ export const createKgFsPathPolicy = (repoRoot: string): KgFsPathPolicy => {
     ? path.resolve(repoRoot).slice(0, worktreeMarkerIndex)
     : path.resolve(repoRoot, '..')
   const allowedRoots = [path.resolve(repoRoot), workspaceMirrorRoot]
+  const canonicalWorkspaceSeedsRoot = path.resolve(workspaceMirrorRoot, 'knowgrph', 'docs', 'workspace-seeds')
   const isAllowed = (candidate: string): boolean => {
     const resolved = path.resolve(candidate)
     return allowedRoots.some(root => resolved === root || resolved.startsWith(root + path.sep))
@@ -31,7 +53,53 @@ export const createKgFsPathPolicy = (repoRoot: string): KgFsPathPolicy => {
     if (raw.startsWith('/')) return path.resolve(workspaceMirrorRoot, `.${raw}`)
     return path.resolve(workspaceMirrorRoot, raw)
   }
-  return { isAllowed, resolveHostPath }
+  const resolveCanonicalWorkspacePath = (workspacePath: string): string | null => {
+    const normalized = String(workspacePath || '')
+      .trim()
+      .replace(/^workspace:/i, '')
+      .replace(/\\/g, '/')
+      .replace(/^\/+/, '')
+      .replace(/\/+$/, '')
+    const parts = normalized.split('/').filter(Boolean)
+    if (parts.some(part => part === '.' || part === '..')) return null
+    if (parts[0] !== 'docs' || parts[1] !== 'workspace-seeds') return null
+    return path.resolve(canonicalWorkspaceSeedsRoot, ...parts.slice(2))
+  }
+  const isCanonicalWorkspaceMutation = (candidate: string, workspacePath: string): boolean => {
+    const resolved = path.resolve(candidate)
+    const canonicalPath = resolveCanonicalWorkspacePath(workspacePath)
+    if (canonicalPath) return resolved === canonicalPath
+    const targetsWorkspaceSeeds = resolved === canonicalWorkspaceSeedsRoot
+      || resolved.startsWith(`${canonicalWorkspaceSeedsRoot}${path.sep}`)
+      || resolved.split(path.sep).join('/').endsWith('/docs/workspace-seeds')
+      || resolved.split(path.sep).join('/').includes('/docs/workspace-seeds/')
+    return !targetsWorkspaceSeeds
+  }
+  return { isAllowed, resolveHostPath, resolveCanonicalWorkspacePath, isCanonicalWorkspaceMutation }
+}
+
+export async function enforceCanonicalWorkspaceMutation(args: {
+  policy: KgFsPathPolicy
+  requestedAbsPath: string
+  workspacePath: string
+  deleteOnly: boolean
+}): Promise<{ status: number; error?: string } | null> {
+  if (!args.policy.isCanonicalWorkspaceMutation(args.requestedAbsPath, args.workspacePath)) {
+    return { status: 403, error: 'Workspace repository ownership mismatch' }
+  }
+  if (!args.deleteOnly) return null
+  const canonicalWorkspacePath = args.policy.resolveCanonicalWorkspacePath(args.workspacePath)
+  const normalizedWorkspacePath = args.workspacePath.replace(/\\/g, '/').replace(/\/+$/, '')
+  if (!canonicalWorkspacePath || normalizedWorkspacePath === '/docs/workspace-seeds' || normalizedWorkspacePath === 'docs/workspace-seeds') {
+    return { status: 403, error: 'Only nested canonical workspace seed entries can be deleted' }
+  }
+  try {
+    await fs.rm(args.requestedAbsPath, { recursive: true, force: true })
+    return { status: 200 }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    return { status: 500, error: message || 'Delete failed' }
+  }
 }
 
 export const decodeStrictBase64 = (value: string): Buffer | null => {

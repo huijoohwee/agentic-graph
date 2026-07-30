@@ -4,9 +4,14 @@ import path from "node:path";
 import { COST_LOG_UNKNOWN } from "../contracts/cost-log.schema.js";
 import { APPROVAL_GATE_ID_VALUES, APPROVAL_TOKEN_TTL_MS } from "../contracts/approval.schema.js";
 import { buildKnowgrphVdeoxplnRegistry } from "../canvas/src/features/agent-ready/knowgrphVdeoxplnContract.mjs";
+import {
+  AGENTIC_PURCHASE_LOCAL_DETERMINISTIC_CHECKS,
+  buildAgenticPurchaseReadiness,
+} from "../grph-shared/dist/payments/agenticPurchaseReadinessContract.js";
 import { DEFAULT_MAX_ITERATIONS, RETRY_BACKOFF_BASE_MS, RETRY_BACKOFF_CAP_MS } from "./video-remix/constants.js";
 import { computeRetryBackoffMs } from "./video-remix-runtime.js";
 import { buildKnowgrphLocalMcpToolDefinitions } from "./local-tool-contract.js";
+import { buildPaymentRailReadinessSnapshot } from "./payment-runtime.js";
 import { summarizeCostLedger } from "./os-status-cost-ledger.js";
 import {
   OS_STATUS_COUNT_UNAVAILABLE,
@@ -228,6 +233,7 @@ export async function listProcessRegistry({ rootDir = process.cwd() } = {}) {
 
 function owningHarnessForTool(toolId, fallback = "unknown") {
   if (toolId === OS_STATUS_TOOL_NAME) return "agentic_os";
+  if (toolId.startsWith("knowgrph.git.") || toolId.startsWith("knowgrph.file.")) return "storage_sync";
   if (toolId.startsWith("knowgrph.showrunner.")) return "showrunner";
   if (toolId.startsWith("knowgrph.sandbox.policy.")) return "agent_sandbox_policy";
   if (toolId.startsWith("knowgrph.video_remix.")) return "video_remix";
@@ -235,6 +241,10 @@ function owningHarnessForTool(toolId, fallback = "unknown") {
   if (toolId.startsWith("knowgrph.memory.")) return "memory_layer";
   if (toolId.startsWith("knowgrph.probe.")) return "probe_tree";
   if (toolId.startsWith("knowgrph.agentic_canvas_os.docs.")) return "agentic_canvas_os_docs";
+  if (toolId.startsWith("knowgrph.repository.")) return "repository_pack";
+  if (toolId.startsWith("knowgrph.agent_team.")) return "agent_team";
+  if (toolId.startsWith("knowgrph.payment.")) return "payments";
+  if (toolId.startsWith("knowgrph.skill.")) return "skill_evolution";
   if (toolId.startsWith("knowgrph.html_video.")) return "html_video_renderer";
   if (toolId.startsWith("knowgrph.annotate.")) return "visual_annotation_engine";
   if (toolId.startsWith("knowgrph.vdeoxpln.")) return "vdeoxpln";
@@ -475,7 +485,11 @@ export async function listCircuitBreakerRegistry({ rootDir = process.cwd() } = {
   return { ok: true, breakers, unavailableSources };
 }
 
-export async function runOsStatusTool(view, args = {}, { rootDir } = {}) {
+export async function runOsStatusTool(view, args = {}, {
+  rootDir,
+  env = process.env,
+  paymentReadinessEvidence = {},
+} = {}) {
   const normalizedView = text(view || args.view);
   try {
     if (normalizedView === OS_STATUS_VIEWS.processList) {
@@ -492,6 +506,34 @@ export async function runOsStatusTool(view, args = {}, { rootDir } = {}) {
           cloudflareMcpUrl: args.cloudflareMcpUrl,
           localMcpArgs: args.localMcpArgs,
         })),
+        cost_log: cloneCostLog(),
+      };
+    }
+    if (normalizedView === OS_STATUS_VIEWS.railReadiness) {
+      return {
+        ok: true,
+        view: normalizedView,
+        ...buildPaymentRailReadinessSnapshot({
+          env,
+          evidence: paymentReadinessEvidence,
+        }),
+        cost_log: cloneCostLog(),
+      };
+    }
+    if (normalizedView === OS_STATUS_VIEWS.agenticPurchaseReadiness) {
+      return {
+        ok: true,
+        view: normalizedView,
+        boundary: "deterministic-local",
+        readiness: buildAgenticPurchaseReadiness(
+          AGENTIC_PURCHASE_LOCAL_DETERMINISTIC_CHECKS,
+        ),
+        claims: {
+          providerSandboxProven: false,
+          browserProven: false,
+          protectedIntegrationProven: false,
+          deployed: false,
+        },
         cost_log: cloneCostLog(),
       };
     }

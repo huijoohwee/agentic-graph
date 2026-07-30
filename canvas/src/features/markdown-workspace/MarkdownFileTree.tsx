@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronDown, ChevronRight, FileText, Folder, Link as LinkIcon } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, Folder, Link as LinkIcon, ShieldCheck } from 'lucide-react'
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
 import { WORKSPACE_ROOT_PATH } from '@/features/workspace-fs/path'
 import { sortWorkspaceEntriesForExplorer } from '@/features/workspace-fs/workspaceFs'
@@ -11,6 +11,7 @@ import { buildMarkdownFileTreeContextMenuItems } from './markdownFileTreeContext
 import { MarkdownFileTreeRowButton } from './MarkdownFileTreeRowButton'
 import { clampOverlayTopLeftFullyInViewport } from '@/lib/ui/overlayClamp'
 import { excludeLegacyWorkspaceSourceEntries } from '@/features/workspace-fs/workspaceLegacySourceRoots'
+import { isKnowgrphWorkspaceSeedsRootPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
   UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME,
@@ -184,6 +185,7 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
     const isActive = activePath === entry.path
     const source = sourcesByPath ? sourcesByPath[entry.path] : null
     const isUrlSource = source && source.kind === 'url'
+    const isWorkspaceSeedsAuthorityRoot = isKnowgrphWorkspaceSeedsRootPath(entry.path)
 
     return (
       <li key={entry.path} className="list-none">
@@ -228,6 +230,11 @@ export const MarkdownFileTree = React.memo(function MarkdownFileTree(props: {
             )}
             {isFolder ? <Folder className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} /> : <FileText className={UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} />}
             <span className="truncate">{entry.name || (isFolder ? 'folder' : 'file')}</span>
+            {isWorkspaceSeedsAuthorityRoot ? (
+              <span title="Canonical source: GitHub/knowgrph/docs/workspace-seeds" aria-label="Knowgrph workspace-seed authority">
+                <ShieldCheck className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-80`} aria-hidden="true" />
+              </span>
+            ) : null}
             {isUrlSource ? <LinkIcon className={`${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} opacity-70`} aria-label="Imported from URL" /> : null}
           </MarkdownFileTreeRowButton>
           {renderFileRight ? (

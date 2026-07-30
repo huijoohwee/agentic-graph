@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { isFlowCanvasRichMediaPropertyMutationBlocked } from '@/components/FlowCanvas/shared'
 
 export function testStoryboardWidgetFrontmatterWorkspaceBlockedRichMediaLayoutStaysLive() {
   const overlaysPath = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'FlowCanvasMediaOverlays.tsx')
@@ -58,5 +59,26 @@ export function testStoryboardWidgetFrontmatterWorkspaceBlockedRichMediaLayoutSt
   }
   if (!text.includes("collision: richMediaInfiniteCanvasMode\n        ? { enabled: false }") || !text.includes("clampToViewport: richMediaInfiniteCanvasMode\n        ? null")) {
     throw new Error('expected Flow Rich Media panels to preserve infinite-canvas world placement instead of viewport collision/clamp relayout during pan/zoom')
+  }
+}
+
+export function testStoryboardWidgetFrontmatterWorkspaceDelegatesRichMediaPropertyMutation() {
+  if (isFlowCanvasRichMediaPropertyMutationBlocked({
+    workspaceMutationBlocked: true,
+    hasDelegatedPropertyMutation: true,
+  })) {
+    throw new Error('expected workspace Rich Media text edits to reach the delegated Storyboard source persistence owner')
+  }
+  if (!isFlowCanvasRichMediaPropertyMutationBlocked({
+    workspaceMutationBlocked: true,
+    hasDelegatedPropertyMutation: false,
+  })) {
+    throw new Error('expected workspace mutation blocking to continue rejecting store-only Rich Media property writes')
+  }
+  if (isFlowCanvasRichMediaPropertyMutationBlocked({
+    workspaceMutationBlocked: false,
+    hasDelegatedPropertyMutation: false,
+  })) {
+    throw new Error('expected ordinary Rich Media property writes to remain available outside workspace mutation blocking')
   }
 }

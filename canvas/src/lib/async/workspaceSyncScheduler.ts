@@ -95,12 +95,12 @@ export const scheduleWorkspaceSyncTask = (
   fn: () => void,
   delayMs: number,
   options?: WorkspaceSyncTaskOptions,
-): void => {
+): boolean => {
   const key = String(taskKey || '').trim() || 'default'
   const scopeKey = String(options?.scopeKey || '').trim() || key
   const signatureRaw = typeof options?.signature === 'string' ? options.signature : null
   const signature = normalizeSignature(signatureRaw)
-  if (signature && lastExecutedWorkspaceSyncTaskSignature.get(scopeKey) === signature) return
+  if (signature && lastExecutedWorkspaceSyncTaskSignature.get(scopeKey) === signature) return false
   const entry = getOrCreatePendingTaskEntry(key)
   const hasSamePendingSignature = entry.signature === signature && entry.scopeKey === scopeKey
   if (!hasSamePendingSignature) {
@@ -128,11 +128,13 @@ export const scheduleWorkspaceSyncTask = (
     workspaceSyncFlushScheduled = true
     workspaceSyncFlushDelayMs = normalizedDelay
     scheduleCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY, flushWorkspaceSyncTasks, normalizedDelay)
-    return
+    return true
   }
-  if (normalizedDelay >= workspaceSyncFlushDelayMs) return
-  workspaceSyncFlushDelayMs = normalizedDelay
-  scheduleCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY, flushWorkspaceSyncTasks, normalizedDelay)
+  if (normalizedDelay < workspaceSyncFlushDelayMs) {
+    workspaceSyncFlushDelayMs = normalizedDelay
+    scheduleCoalescedTask(WORKSPACE_SYNC_SCHEDULER_KEY, flushWorkspaceSyncTasks, normalizedDelay)
+  }
+  return true
 }
 
 export const cancelWorkspaceSyncTask = (taskKey: string): void => {

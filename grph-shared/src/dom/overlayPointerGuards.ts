@@ -20,7 +20,7 @@ export type OverlayPointerTargetState = {
 export const DEFAULT_OVERLAY_POINTER_TARGET_SELECTORS: OverlayPointerTargetSelectors = {
   resizeHandle: '[data-kg-resize-handle]',
   scrollSurface: '[data-kg-media-scroll-surface="1"]',
-  interactiveControl: 'textarea,input,select,button,a,[contenteditable="true"]',
+  interactiveControl: 'textarea,input,select,button,a,[contenteditable="true"],[data-kg-rich-media-inline-edit="1"]',
   playableMedia: '[data-kg-card-media-interactive="1"],iframe,video,audio',
   header: '[data-kg-rich-media-storyboard-widget-header="1"]',
   selectableSurface: '[data-kg-rich-media-selectable-surface="1"]',

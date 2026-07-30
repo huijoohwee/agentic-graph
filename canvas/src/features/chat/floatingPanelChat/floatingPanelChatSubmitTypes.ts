@@ -4,6 +4,7 @@ import type { SourceFile } from '@/hooks/store/types'
 import type { UiLogEntryInput } from '@/hooks/store/types'
 import type { KnowgrphStorageChatRelayDecision } from '@/lib/storage/knowgrphStorageChatClient'
 import type { ChatMessage, StreamingAssistantState } from '../FloatingPanelChatSections'
+import type { HeadlessResponseRunResult } from '../headlessResponseCoordinator'
 
 export type FloatingPanelChatSubmitArgs = {
   historyKey: string
@@ -82,6 +83,7 @@ export type FloatingPanelChatSubmitArgs = {
     requestText: string
     modelId: string
     rawAssistantText: string
+    runResult?: HeadlessResponseRunResult
     validatedKgc?: string | null
     timestampMs: number
     traceId?: string

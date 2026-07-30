@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 export function testSourceFilesIngestUsesParseJobGuardForStaleAsyncResults() {
-  const p = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesIngestIntegration.ts')
+  const p = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesParseRuntime.ts')
   const text = readFileSync(p, 'utf8')
   const hashPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFileParseIdentity.ts')
   const hashText = readFileSync(hashPath, 'utf8')
@@ -22,7 +22,7 @@ export function testSourceFilesIngestUsesParseJobGuardForStaleAsyncResults() {
   if (!text.includes("name: String(latest.name || '')")) {
     throw new Error('expected parse writeback identity to include latest source file name')
   }
-  if (!hashText.includes('SOURCE_FILE_PARSE_SEMANTICS_VERSION = 3')) {
+  if (!/SOURCE_FILE_PARSE_SEMANTICS_VERSION\s*=\s*[1-9]\d*\s+as const/.test(hashText)) {
     throw new Error('expected source file parse identity to carry an explicit semantics version for startup invalidation')
   }
   if (!hashText.includes('buildScopedGraphSemanticKey')) {
@@ -34,7 +34,7 @@ export function testSourceFilesIngestUsesParseJobGuardForStaleAsyncResults() {
 }
 
 export function testSourceFilesIngestDedupesPendingParsesForSameTextHash() {
-  const p = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesIngestIntegration.ts')
+  const p = resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesParseRuntime.ts')
   const text = readFileSync(p, 'utf8')
   if (!text.includes('pendingParseTextHashBySourceFileId')) {
     throw new Error('expected source file ingest parse path to track pending text hashes per file')
@@ -100,15 +100,34 @@ export function testCanvasStartupRuntimesMountsSourceFilesBootstrapEagerly() {
   const startupPath = resolve(process.cwd(), 'src', 'features', 'canvas', 'CanvasStartupRuntimes.tsx')
   const startupDebugPath = resolve(process.cwd(), 'src', 'features', 'canvas', 'CanvasStartupDebugRuntime.tsx')
   const startupSsotBridgePath = resolve(process.cwd(), 'src', 'features', 'canvas', 'CanvasStartupSsotBridgeRuntime.tsx')
+  const flightOwnerPath = resolve(process.cwd(), 'src', 'features', 'canvas', 'FlightSimRunReadyDemoRuntime.tsx')
   const text = readFileSync(startupPath, 'utf8')
   const debugText = readFileSync(startupDebugPath, 'utf8')
   const ssotBridgeText = readFileSync(startupSsotBridgePath, 'utf8')
+  const flightOwnerText = readFileSync(flightOwnerPath, 'utf8')
 
   if (!text.includes("import { SourceFilesPersistenceBootstrap } from '@/features/source-files/SourceFilesPersistenceBootstrap'")) {
     throw new Error('expected canvas startup runtimes to import SourceFilesPersistenceBootstrap eagerly at module scope')
   }
   if (!text.includes('<SourceFilesPersistenceBootstrap />')) {
     throw new Error('expected canvas startup runtimes to mount SourceFilesPersistenceBootstrap outside the deferred idle loader path')
+  }
+  if (!text.includes('useSourceFilesBootstrapHasReachedReady')) {
+    throw new Error('expected run-ready lifecycle owners to remain mounted across later Source Files document intents')
+  }
+  if (text.includes('useSourceFilesBootstrapReady')) {
+    throw new Error('expected transient Source Files document intent readiness to stop unmounting run-ready lifecycle owners')
+  }
+  if (!flightOwnerText.includes('useSourceFilesBootstrapReady')) {
+    throw new Error('expected the mounted Flight owner to gate persisted launch on current Source Files intent readiness')
+  }
+  if (
+    !flightOwnerText.includes('|| ownsDocumentLaunchRef.current')
+    || !flightOwnerText.includes(
+      'launchAttempt >= FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT',
+    )
+  ) {
+    throw new Error('expected Flight launch to wait without replacing its captured pre-active surface')
   }
   if (!text.includes('<CanvasStartupDebugRuntime />')) {
     throw new Error('expected canvas startup runtimes to delegate startup debug flag ownership through the dedicated debug runtime')
@@ -1339,8 +1358,8 @@ export function testSourceFilesStorageSyncDocumentHashDoesNotSelfDependOnParsedT
   if (hashFnSection.includes('file.enabled')) {
     throw new Error('expected source-files storage document hash to stay content-anchored and avoid enabled-flag selection churn')
   }
-  if (!hashFnSection.includes('String(file.text || \'\')')) {
-    throw new Error('expected source-files storage document hash to stay anchored on canonical markdown content text')
+  if (!hashFnSection.includes('hashKnowgrphStorageContent(file.text)')) {
+    throw new Error('expected source-files storage document hash to use the shared canonical content hash')
   }
   const graphHashFnStart = text.indexOf('const buildSourceFileGraphHash = (file: SourceFile): string =>')
   if (graphHashFnStart < 0) {
@@ -1378,24 +1397,24 @@ export function testSourceFilesStorageSyncDocumentHashDoesNotSelfDependOnParsedT
   if (inboundText.includes('scheduleApplyComposedGraphFromSourceFiles({ includeWorkspaceBacked: true })')) {
     throw new Error('expected inbound storage apply to avoid explicit workspace-backed composed graph scheduling during passive sync')
   }
-  if (!inboundText.includes('scheduleApplyComposedGraphFromSourceFiles()')) {
-    throw new Error('expected inbound storage apply to reuse the canonical passive composed graph scheduler')
+  if (!inboundText.includes('scheduleApplyGraphOwnerComposedGraphFromSourceFiles()')) {
+    throw new Error('expected inbound storage apply to reuse the canonical graph-owner composed graph scheduler')
   }
 }
 
 export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply() {
   const bootstrapPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx')
   const text = readFileSync(bootstrapPath, 'utf8')
-  if (!text.includes('const knowgrphInboundApplyInFlightRef = React.useRef(false)')) {
-    throw new Error('expected source files bootstrap to track inbound storage-apply windows for queue echo suppression')
+  if (!text.includes('const knowgrphInboundApplyOperations = React.useMemo(createKnowgrphStorageOperationTracker, [])')) {
+    throw new Error('expected source files bootstrap to track overlapping inbound storage-apply windows for queue echo suppression')
   }
-  if (!text.includes('knowgrphInboundApplyInFlightRef.current = true')) {
-    throw new Error('expected source files bootstrap storage pull apply path to mark inbound apply in-flight before mutating sourceFiles')
+  if (!text.includes('const operation = knowgrphInboundApplyOperations.begin()')) {
+    throw new Error('expected source files bootstrap storage pull apply path to claim an exact operation token before mutating sourceFiles')
   }
-  if (!text.includes('knowgrphInboundApplyInFlightRef.current = false')) {
-    throw new Error('expected source files bootstrap storage pull apply path to always clear inbound apply in-flight guard')
+  if (!text.includes('knowgrphInboundApplyOperations.finish(operation)')) {
+    throw new Error('expected source files bootstrap storage pull apply path to release only its exact operation token')
   }
-  if (!text.includes('const applySourceFilesPersistenceStorageRequest = React.useCallback((request: SourceFilesPersistenceEffectRequest) => {') || !text.includes('if (knowgrphInboundApplyInFlightRef.current) return')) {
+  if (!text.includes('const applySourceFilesPersistenceStorageRequest = React.useCallback((request: SourceFilesPersistenceEffectRequest) => {') || !text.includes('if (knowgrphInboundApplyOperations.isActive()) return')) {
     throw new Error('expected source files persistence side effects to skip queuing outbound storage sync during inbound pull apply windows through the dedicated storage helper')
   }
   if (!text.includes('type KnowgrphStorageQueueRequest = {') || !text.includes('const pendingKnowgrphStorageQueueRequestRef = React.useRef<KnowgrphStorageQueueRequest | null>(null)')) {
@@ -1428,11 +1447,11 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
   if (!text.includes('const startKnowgrphStorageWorkspaceRuntime = React.useCallback((request: KnowgrphStorageWorkspaceRequest) => {')) {
     throw new Error('expected source files knowgrph storage workspace lifecycle start path to centralize storage sync loop startup and callback wiring in a dedicated helper')
   }
-  if (!text.includes('const handleKnowgrphStorageSyncCompleted = React.useCallback((result: {') || !text.includes('const handleKnowgrphStoragePulledChangesApplied = React.useCallback((args: {')) {
-    throw new Error('expected source files knowgrph storage runtime callbacks to centralize sync-completed and pulled-changes handling behind dedicated helpers')
+  if (!text.includes('const handleKnowgrphStorageSyncCompleted = React.useCallback((result: {') || !text.includes('const createKnowgrphStoragePulledChangesHandler = React.useCallback((')) {
+    throw new Error('expected source files knowgrph storage callbacks to centralize completion and captured-ownership pulled-change handling')
   }
-  if (!text.includes('if (!hasNonWorkspaceSourceFile(sourceFilesSnapshot)) return null')) {
-    throw new Error('expected source files storage queue request resolution to skip workspace-only source snapshots and avoid switch-time sync churn')
+  if ((text.match(/onPulledChangesApplied: createKnowgrphStoragePulledChangesHandler\(ownership\)/g) || []).length !== 2) {
+    throw new Error('expected both loop startup and queue-sync follow-up to bind a pulled-change handler to captured workspace ownership')
   }
   if (!text.includes('const applyKnowgrphStorageQueueTransition = React.useCallback((args?: {')) {
     throw new Error('expected inbound storage apply queue-state transitions to centralize sourceFiles-to-queue normalization plus queue snapshot remembering in a dedicated helper')
@@ -1446,8 +1465,8 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
   if (!text.includes('const runKnowgrphStorageQueueSyncFollowUpRequest = React.useCallback((request: KnowgrphStorageQueueSyncFollowUpRequest) => {')) {
     throw new Error('expected source files storage queue follow-up scheduling to centralize sync execution behind a dedicated follow-up request runner')
   }
-  if (!text.includes('const handleKnowgrphStorageQueueSyncCompleted = React.useCallback((result: {')) {
-    throw new Error('expected source files storage queue follow-up sync completion to centralize conflict notification behind a dedicated helper')
+  if (!text.includes('onSyncCompleted: handleKnowgrphStorageSyncCompleted')) {
+    throw new Error('expected source files loop and follow-up sync completion to reuse the centralized conflict notification helper')
   }
   if (!text.includes('const scheduleKnowgrphStorageQueueSyncFollowUp = React.useCallback((args: {')) {
     throw new Error('expected source files storage queue success path to centralize post-sync conflict follow-up scheduling behind a dedicated helper')
@@ -1482,8 +1501,8 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
   if (!text.includes('runKnowgrphStorageQueueSyncFollowUpRequest(request)')) {
     throw new Error('expected source files storage queue follow-up scheduler to delegate execution to the dedicated follow-up request runner')
   }
-  if (!text.includes('onSyncCompleted: handleKnowgrphStorageQueueSyncCompleted')) {
-    throw new Error('expected source files storage queue follow-up scheduling to reuse the dedicated sync-completed helper instead of inlining conflict-notify logic')
+  if (!text.includes('onSyncCompleted: handleKnowgrphStorageSyncCompleted')) {
+    throw new Error('expected source files storage queue follow-up scheduling to reuse the centralized sync-completed helper instead of inlining conflict-notify logic')
   }
   if (!text.includes('applyKnowgrphStorageQueueTransition({')) {
     throw new Error('expected inbound storage apply to reuse the dedicated queue-state transition helper after applying pulled changes')
@@ -1522,8 +1541,8 @@ export function testSourceFilesBootstrapSkipsQueueEchoDuringInboundStorageApply(
   if (!text.includes('startKnowgrphStorageWorkspaceRuntime(request)')) {
     throw new Error('expected knowgrph storage workspace lifecycle apply path to delegate storage loop startup to the dedicated start helper')
   }
-  if (!text.includes('onSyncCompleted: handleKnowgrphStorageSyncCompleted') || !text.includes('onPulledChangesApplied: handleKnowgrphStoragePulledChangesApplied')) {
-    throw new Error('expected knowgrph storage workspace runtime startup to reuse the dedicated runtime callback helpers instead of inlining callback bodies')
+  if (!text.includes('onSyncCompleted: handleKnowgrphStorageSyncCompleted') || !text.includes('onPulledChangesApplied: createKnowgrphStoragePulledChangesHandler(ownership)')) {
+    throw new Error('expected knowgrph storage workspace runtime startup to reuse centralized completion and captured-ownership callback helpers')
   }
   if (!text.includes('type SourceFilesComposeRequest = {') || !text.includes('const storageSyncSignature = readKnowgrphStorageSyncSignature({') || !text.includes('const readSourceFilesCompositionSignature = React.useCallback((args: {') || !text.includes('const resolveSourceFilesComposeRequest = React.useCallback((args: {') || !text.includes('knowgrphStorageQueueRequest: resolveKnowgrphStorageQueueRequest({') || !text.includes('storageSyncSignature,') || !text.includes('composeRequest: resolveSourceFilesComposeRequest({')) {
     throw new Error('expected source files persistence and bootstrap compose handling to reuse one shared compose request shape plus dedicated signature helpers instead of shaping compose payloads independently')

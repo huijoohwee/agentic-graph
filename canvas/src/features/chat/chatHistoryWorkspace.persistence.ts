@@ -116,6 +116,7 @@ export const appendChatHistoryWorkspaceFile = async (args: ChatHistoryWorkspaceA
       workspacePath: key,
       requestText: args.userText,
       assistantText: assistantBody || 'No response content.',
+      structuredResponseSource: args.structuredResponseSource,
     })
     if (prefix === 'kgc') {
       const existingRaw = (await fs.readFileText(key)) || ''
@@ -229,6 +230,7 @@ export const upsertChatHistoryWorkspaceDraft = async (args: ChatHistoryWorkspace
         workspacePath: key,
         requestText: args.userText,
         assistantText: assistantDraftText,
+        structuredResponseSource: args.structuredResponseSource,
       })
       const normalizedIdentity = normalizeKgcFrontmatterIdentityToFileName({
         markdown: canonicalKgc,

@@ -8,7 +8,11 @@ import type {
 import type { TraversalSummary } from '@/features/panels/utils/orchestratorTraversal'
 import type { TokenWithLines } from '@/features/markdown/ui/markdownPreviewLex'
 import type { MarkdownFrontmatter } from '@/lib/markdown'
-import type { ZoomCommandType, ZoomFitIntent, ZoomRequest } from '@/lib/zoom/requests'
+import type { ZoomCommandType, ZoomFitIntent, ZoomRequest, ZoomTransformIntent } from '@/lib/zoom/requests'
+import type {
+  StoryboardWidgetLayoutRebalanceOptions,
+  StoryboardWidgetLayoutRebalanceRequest,
+} from '@/lib/storyboardWidget/layoutRebalance'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
 import type { ViewportControlsPreset } from '@/lib/config.viewport-controls'
 import type { Canvas2dRendererId, Canvas3dModeId, CanvasRunMode, CanvasWorkspaceSyncMode, InfiniteCanvasInteractionMode } from '@/lib/config'
@@ -63,7 +67,7 @@ export interface GraphStateCanvasRuntime {
   toggleZoomToSelectionMode: () => void;
   zoomRequest: ZoomRequest | null;
   requestZoom: (type: ZoomCommandType, opts?: { intent?: ZoomFitIntent }) => void;
-  requestZoomTransform: (payload: { k: number; x: number; y: number }) => void;
+  requestZoomTransform: (payload: { k: number; x: number; y: number }, opts?: { intent?: ZoomTransformIntent }) => void;
   requestZoomBounds: (payload: { bounds: { x: number; y: number; w: number; h: number }; insetPx?: number; origin?: { x: number; y: number } }) => void;
   clearZoomRequest: () => void;
 
@@ -78,8 +82,8 @@ export interface GraphStateCanvasRuntime {
   requestGraphCanvasArrange: (req: { type: 'center'; scope: 'selection' | 'all' } | { type: 'distribute'; axis: 'x' | 'y' }) => void;
   clearGraphCanvasArrangeRequest: () => void;
 
-  storyboardWidgetLayoutRebalanceRequest: null | { type: 'balanced-spread'; at: number };
-  requestStoryboardWidgetLayoutRebalance: () => void;
+  storyboardWidgetLayoutRebalanceRequest: StoryboardWidgetLayoutRebalanceRequest | null;
+  requestStoryboardWidgetLayoutRebalance: (options?: StoryboardWidgetLayoutRebalanceOptions) => void;
   clearStoryboardWidgetLayoutRebalanceRequest: () => void;
   zoomState: null | { k: number; x: number; y: number; graphDataRevision?: number; viewportW?: number; viewportH?: number };
   setZoomState: (z: { k: number; x: number; y: number; graphDataRevision?: number; viewportW?: number; viewportH?: number }) => void;

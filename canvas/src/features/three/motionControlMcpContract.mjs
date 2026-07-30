@@ -1,4 +1,4 @@
-export const MOTION_CONTROL_MCP_SCHEMA = 'knowgrph-motion-control-mcp/v1'
+export const MOTION_CONTROL_MCP_SCHEMA = 'knowgrph-motion-control-mcp/v2'
 
 export const MOTION_CONTROL_WEB_MCP_TOOL_IDS = Object.freeze({
   inspect: 'inspect_local_motion_control',

@@ -478,4 +478,18 @@ export const GRABMAPS_DOC_ROWS: ReadonlyArray<GrabMapsApiDocRow> = [
     responsibility: 'Shared MapLibre globe mode for 3D geospatial rendering.',
     searchHints: ['maplibre globe 3d basemap'],
   },
+  {
+    area: MAPS_MAPLIBRE_DOC_AREA,
+    key: 'maplibre.flight_geo.environment',
+    typeLabel: 'projection',
+    value: 'Singapore XR environment + Flight alignment',
+    keyDescription: 'Geo+XR environment projection -> transform the selected source-authored stage, structures, and placed subjects through the Singapore reference shared with Flight -> keep 2D footprints and 3D native extrusions aligned with the route and aircraft without a second world renderer.',
+    valueDescription: "Default: XR stage, structure, and subject values retain their authored metre dimensions at the Marina Bay local-stage anchor; the Flight profile's 20x conversion applies only to route and aircraft simulation coordinates. The stage footprint is a local scene overlay, never a Singapore geographic boundary; 2D is north-up, 3D is oblique; no Cesium, copied boundary, remote asset, token, or external simulator dependency.",
+    ssot: 'https://maplibre.org/maplibre-style-spec/layers/#fill-extrusion',
+    module: ['grph-shared/src/geospatial/singaporeFlightGeo.ts', 'canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts', 'gympgrph/src/flightGeoEnvironmentMapLibre.ts'],
+    className: ['CanvasViewportGeospatialOverlay', 'GeospatialHost'],
+    functionName: ['projectXrEnvironmentToFlightGeo', 'applyFlightGeoEnvironmentToMap'],
+    responsibility: 'Projects the selected local XR environment into the four-mode MapLibre world aligned with Flight.',
+    searchHints: ['flight geo xr singapore stage asset extrusion maplibre'],
+  },
 ]

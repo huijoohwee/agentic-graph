@@ -1,586 +1,489 @@
 ---
-title: "Knowgrph Cloudflare Document - PRD & TAD"
-doc_type: "PRD+TAD"
-doc_id: "KG-CF-001"
-version: "1.0.0"
-status: "Accepted implemented baseline"
-date: "2026-06-29"
-authors:
-  - "airvio"
-schema: "kgc-computing-flow/v1"
+title: "Reference implementation: Knowgrph Cloud Platform Product and Technical Specification"
+id: "md:knowgrph-cloudflare-document"
+doc_type: "Product and Technical Specification"
+version: "2.0.0"
+date: "2026-07-30"
 lang: "en-US"
+owner: "docs.cloudflare-platform-boundary"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-cloudflare-document.md"
+guideline_version: "1.7.0"
 frontmatter_contract: "required"
+invocation_authority: "This document declares no command, tag, binding, HTTP route, or tool identity; canonical source and linked contract owners retain invocation authority."
 related:
+  - "docs/documents/knowgrph-architecture-decisions.md"
+  - "docs/knowgrph-acos-deploy-runbook.md"
   - "docs/documents/knowgrph-agent-ready-prd-tad.md"
-  - "docs/documents/knowgrph-agent-ready-prd-tad.runtime.md"
-  - "docs/documents/knowgrph-ai-gateway-enhancement-plan.md"
-  - "docs/documents/knowgrph-crawler-prd-tad.md"
+  - "docs/documents/knowgrph-mcp/knowgrph-mcp.md"
   - "docs/documents/knowgrph-storage-sync-document.md"
-  - "docs/documents/knowgrph-storage-schemas-document.md"
-  - "docs/documents/knowgrph-cross-repo-publish-topology.md"
-  - "huijoohwee.github.io/guidelines/prd-tad-guidelines.md"
-tags:
-  - "cloudflare"
-  - "pages"
-  - "workers"
-  - "d1"
-  - "dns-aid"
-  - "dnssec"
-  - "wrangler"
-  - "agent-ready"
-  - "crawler"
-  - "tco"
-  - "foss"
-  - "prd"
-  - "tad"
+  - "docs/documents/knowgrph-artifact-media-storage-architecture.md"
+  - "docs/documents/knowgrph-payments-prd-tad.md"
 ---
 
-# Knowgrph Cloudflare Document - PRD & TAD
+# Reference implementation: Knowgrph Cloud Platform Product and Technical Specification
 
-## Overview
+## Reference implementation: Authority and readiness
 
-This document is the implementation-accurate Cloudflare operating baseline for Knowgrph. It
-describes the deployed `Dev -> Prod -> Cloudflare` chain, the Cloudflare Pages and Workers
-ownership model, the D1-backed storage surface, the payment Worker boundary, and the live DNS-AID
-records under `airvio.co`.
+This combined PRD/TAD owns the platform boundary between Knowgrph source, its generated Pages
+candidate, and separately operated Cloudflare-hosted runtimes. It describes repository source and
+named VCC hosts; it does not prove that any route, binding, DNS record, secret, database, bucket,
+queue, or Worker is currently delivered.
 
-For current remote MCP onboarding, start with
-`docs/documents/knowgrph-mcp-onboarding-index.md`, then use
-`docs/documents/knowgrph-mcp-install-contract.md` for the canonical
-public-discovery vs control-plane endpoint boundary.
-Map intent on `https://airvio.co/knowgrph/mcp`, orchestrate agents on
-`https://airvio.co/knowgrph/control-plane/mcp` only for session-capable hosts,
-and prove outcomes first with the source-side `README.md` or
-`docs/documents/knowgrph-superagent-harness.md` offline path.
+No satisfying Evidence Reference for this revision is attached. The stated VCCs therefore derive
+`local_rung: "spec-complete"`, while the absence of a delivery-surface result and referenced
+operator instruction derives `delivered_rung: "undocumented"`.
 
-**Governing lenses**: min-viable-max-value, TCO-zero, FOSS-first, token economics, and
-harness-first. This document has no AI harness in its own runtime path; token cost is therefore
-`$0` for the Cloudflare surfaces described here.
+Source presence, a `wrangler.toml` route, an old preview URL, an earlier deployment receipt, or a
+historical check result must not promote either rung. This document grants no deployment, remote
+mutation, DNS mutation, paid-provider, or secret-management authority.
 
-**Current live status, 2026-06-29**:
+### Canonical ownership and reading order
 
-- Cloudflare Pages serves Knowgrph at `https://airvio.co/knowgrph`.
-- Cloudflare Pages project name is `joohwee`.
-- Storage Worker route family is `https://airvio.co/api/storage/*`.
-- Payment Worker route family is `https://airvio.co/api/payments/*`.
-- Latest verified release shipped Dev `530462d6`, publish `ec4dfa47`, preview `https://0d3c18ba.joohwee.pages.dev`, and live route proofs `https://airvio.co/` -> `200`, `https://airvio.co/knowgrph/` -> `200`.
-- The latest `pages:deploy-cloudflare` run completed `storage:d1:seed:docs` with `applied=41`, `conflict=0`, and `rejected=0`.
-- DNSSEC is active for `airvio.co`.
-- DNS-AID SVCB records are published and verified for `_index._agents.airvio.co`,
-  `_mcp._agents.airvio.co`, and `_a2a._agents.airvio.co`.
-- `npm run dns-aid:check` passes `3/3`.
+This document deliberately contains no duplicate Invocation Register.
 
-**External documentation checked**: Cloudflare official docs for API-token authentication,
-Pages API-token permissions, DNS record configuration, and REST API bearer-token usage. Wrangler
-OAuth remains valid for Wrangler-managed deploy flows, but direct DNS record writes require a
-scoped API token with zone DNS edit permission.
+| Contract | Canonical owner |
+|---|---|
+| Cross-cutting source, persistence, transport, and promotion decisions | [Core architecture decisions](knowgrph-architecture-decisions.md) |
+| Protected Pages release, receipt, verification, and rollback | [Deployment runbook](../knowgrph-acos-deploy-runbook.md) |
+| Source-to-publish artifact relationship | [Cross-repository publish topology](knowgrph-cross-repo-publish-topology.md) |
+| Public discovery, browser, local, and control-plane MCP separation | [MCP overview](knowgrph-mcp/knowgrph-mcp.md) and [MCP install contract](knowgrph-mcp-install-contract.md) |
+| Agent discovery requirements and surface counts | [Agent-ready PRD/TAD](knowgrph-agent-ready-prd-tad.md) |
+| Structured persistence, reconciliation, and room ownership | [Storage and synchronization owner](knowgrph-storage-sync-document.md) |
+| Generic blob and run-media byte contracts | [Artifact and media storage owner](knowgrph-artifact-media-storage-architecture.md) |
+| Checkout, settlement, and payment-worker behavior | [Payments PRD/TAD](knowgrph-payments-prd-tad.md) |
+| Draft AI routing work | [AI Gateway enhancement plan](knowgrph-ai-gateway-enhancement-plan.md) |
 
-## AI Gateway High-ROI Next Steps
+Exact storage paths remain owned by
+`canvas/src/lib/storage/knowgrphStorageRoutePaths.ts`; exact MCP tools remain owned by their
+linked registries. Route-family names below are implementation evidence, not a second declaration.
 
-The Cloudflare baseline in this document stays implementation-accurate and infrastructure-owned.
-The next min-viable-max-value Cloudflare lane for Knowgrph is AI Gateway operationalization:
-deterministic context caching, intent-mapped dynamic routes, spend/rate limits, source-owned cost
-proof, and future alignment toward current AI Gateway REST surfaces.
+## Reference implementation: Product requirements
 
-The canonical execution queue for that work lives in
-`docs/documents/knowgrph-ai-gateway-enhancement-plan.md`.
+### Problem statement
 
-Current operator evidence is narrower than full live activation: the focused source draft-route
-proofs and the publish-repo `__chat_proxy` smoke pass, but the readiness command remains fail-closed
-until the `joohwee` Pages project exposes an accepted AI Gateway secret. `-- --skip-live` skips the
-live transport smoke only; it does not bypass the Pages secret-list gate.
+An operator must be able to distinguish four facts that legacy documentation blended together:
 
----
+1. source code and configuration exist;
+2. a reproducible local check is named;
+3. a candidate crossed the Authoring-to-Mirror boundary;
+4. an explicitly authorized candidate crossed the Mirror-to-Delivery boundary.
 
-## Part 1 - PRD
-
-### Problem Statement
-
-Knowgrph uses Cloudflare as the public publication, storage, discovery, and crawler boundary. The
-system must keep the fast static app route, the D1-backed Source Files route, the agent discovery
-surface, and DNS-AID records aligned without creating downstream-only patches in the publish repo.
-
-Current pain points:
-
-1. **Publication drift risk**: source lives in `knowgrph`, generated artifacts live in
-   `huijoohwee`, and Cloudflare serves the result. A release is incomplete unless all three layers
-   agree.
-2. **Agent discovery spans HTTP and DNS**: `.well-known` files, Link headers, Markdown
-   negotiation, WebMCP, HTTP MCP, and DNS-AID records must describe the same service.
-3. **Wrangler OAuth and REST API tokens have different jobs**: Wrangler OAuth can deploy Pages and
-   Workers, while REST DNS edits need a scoped Cloudflare API token.
-4. **Crawler access must stay storage-owned**: crawler-visible Source Files should come from D1
-   document rows and storage Worker routes, not from local docs folders or browser-only app state.
-5. **Payment and Pay Per Crawl boundaries must stay Cloudflare-owned**: application code must not
-   emulate Cloudflare crawler pricing headers, crawler identity, or zone-level payment decisions.
+Without that separation, an ordinary source change can be mistaken for a live Pages or Worker
+deployment, and insecure storage handlers can be described as authenticated merely because other
+handlers in the same Worker enforce sessions.
 
 ### Personas
 
-| Persona | Job To Be Done | Cloudflare Need | Failure To Avoid |
+| Persona | Job to be done | Current friction | Required outcome |
 |---|---|---|---|
-| Site owner | Publish Knowgrph at the public route | Stable Pages, DNS, and Worker routing | Live route points to stale artifacts |
-| AI crawler operator | Discover readable source content and agent metadata | DNS-AID, `.well-known`, MCP, and Markdown routes | SPA-only discovery hides Source Files |
-| Platform maintainer | Deploy and validate the public system | Repeatable Wrangler commands and route checks | Wrong account, wrong project, or silent DNS drift |
-| Knowledge consumer | Fetch current Markdown documents | D1-backed storage doc-view routes | Raw export parsing or stale local path references |
-| Security maintainer | Keep secrets scoped and revocable | API token separation and Keychain-backed local auth | Plaintext tokens in repo or dotfiles |
+| Builder | Change Pages or Worker source safely | Source presence resembles delivery | Source state and delivered state remain separate |
+| Release operator | Promote an exact reviewed Pages candidate | Worker and DNS scripts appear adjacent to the Pages workflow | Scope, evidence, instruction, and rollback are explicit |
+| Security reviewer | Assess route trust boundaries | Storage handlers have mixed authentication | Every route family states its actual source-enforced boundary |
+| Agent integrator | Choose a discovery or control surface | Public Pages MCP and protected Worker MCP can be conflated | Canonical MCP owner determines the surface |
+| Maintainer | Estimate cost and portability | Managed services are presented without variants | Managed and FOSS deployment models remain comparable |
 
-### User Journey
+### Journey: Release operator — qualify one platform change
 
-| Stage | Actor | Trigger | System Outcome | Evidence |
+| Stage | Action | Touchpoint | Pain | Opportunity |
 |---|---|---|---|---|
-| Build | Platform maintainer | Source changes land in `knowgrph` | `pages:build-sync` creates the SPA and syncs publish artifacts | `npm run pages:check-sync` exits 0 |
-| Deploy | Platform maintainer | Release is ready | Wrangler deploys Pages/Workers under the `joohwee` account | `npx wrangler whoami` and deploy output |
-| Discover HTTP | AI crawler operator | Agent requests `airvio.co/knowgrph` or `.well-known` | Pages returns discovery metadata, Markdown negotiation, and MCP metadata | `npm run agent-ready:check` exits 0 |
-| Discover DNS | AI crawler operator | Resolver queries `_agents.airvio.co` SVCB records | DNSSEC-authenticated DNS-AID records point to agent card, MCP, and A2A endpoints | `npm run dns-aid:check` exits 0 |
-| Read Source Files | Knowledge consumer | Crawler follows storage links | Storage Worker serves D1-backed indexes and Markdown doc views | `curl -i https://airvio.co/api/storage/...` |
-| Govern secrets | Security maintainer | DNS publish is required | Scoped DNS API token is read from local secure storage, not source control | Keychain/launchctl presence checks without printing token values |
+| Trigger | receives a reviewed source revision | Authoring source | revision may include several deployment units | identify affected units |
+| Discover | reads canonical owners and VCCs | this document and linked owners | stale live claims can mislead | derive readiness from evidence only |
+| Engage | produces a non-public candidate | protected verification job or unit-specific process | direct deploy scripts can bypass a mirror | keep boundary A closed by default |
+| Complete | authorizes one named delivery unit | protected environment or separate runbook | Pages approval can be overread as Worker approval | scope instruction to one unit |
+| Return | records result and rollback target | receipt/evidence store | a URL alone does not prove exact state | bind revision, result, instruction, and rollback |
 
-### Epics And Stories
+### User stories and acceptance criteria
 
-#### Epic PRD-CF-E001 - Publish The Cloudflare Route Reliably
-
-**Story PRD-CF-E001-S001: Dev -> Prod -> Cloudflare parity**
-
-**As a** platform maintainer  
-**I want** the Knowgrph source repo, publish mirror, and Cloudflare deployment to share one release
-contract  
-**So that** production route behavior matches the source-owned implementation.
-
-**Acceptance criteria**:
-
-- **Given** source changes are ready in `$GITHUB_ROOT/knowgrph`
-- **When** the maintainer runs the release validation chain
-- **Then** `npm run pages:check-sync` reports no mirror drift
-- **And** live probes confirm `https://airvio.co/knowgrph/` and at least one hashed asset return 200
-- **And** a transient missing hashed asset returns `503`, `Retry-After: 1`, and `Cache-Control: no-store`
-  instead of caching the HTML app shell under an immutable JavaScript or CSS URL
-
-> `/goal` translation: Cloudflare route parity is complete when `npm run pages:check-sync` exits 0
-> and live route probes return 200 for the app shell plus a current hashed asset.
-
-Revision-scoped `/knowgrph/assets/**` responses remain immutable only when the Pages asset binding
-returns a successful non-HTML asset. During deployment propagation, a missing asset or SPA HTML
-fallback is converted at the Pages Function boundary into the retryable, non-cacheable response
-above so a browser reload can recover without retaining a poisoned dynamic-import URL.
-
-#### Epic PRD-CF-E002 - Publish Agent Discovery Over HTTP And DNS
-
-**Story PRD-CF-E002-S001: HTTP agent-ready discovery**
-
-**As an** AI crawler operator  
-**I want** Knowgrph to expose `.well-known`, Link header, Markdown, and MCP discovery routes  
-**So that** agents can inspect the service without depending on browser-only state.
-
-**Acceptance criteria**:
-
-- **Given** Cloudflare Pages serves the app route
-- **When** `KNOWGRPH_AGENT_READY_BASE_URL=https://airvio.co/knowgrph npm run agent-ready:check`
-  runs
-- **Then** the check validates the Pages discovery routes, headers, Markdown negotiation, and MCP
-  metadata
-
-> `/goal` translation: HTTP agent discovery is complete when `agent-ready:check` exits 0 against
-> `https://airvio.co/knowgrph`.
-
-**Story PRD-CF-E002-S002: DNS-AID discovery**
-
-**As an** AI crawler operator  
-**I want** DNSSEC-authenticated DNS-AID SVCB records under `_agents.airvio.co`  
-**So that** agent discovery can begin at DNS before falling through to HTTP `.well-known`
-artifacts.
-
-**Acceptance criteria**:
-
-- **Given** `CLOUDFLARE_DNS_API_TOKEN` or `CLOUDFLARE_API_TOKEN` is available with zone DNS edit
-  permission
-- **When** `npm run dns-aid:publish` runs
-- **Then** Cloudflare contains SVCB records for `_index._agents.airvio.co`,
-  `_mcp._agents.airvio.co`, and `_a2a._agents.airvio.co`
-- **And** `npm run dns-aid:check` validates all three public DNSSEC-authenticated records
-
-> `/goal` translation: DNS-AID discovery is complete when `dns-aid:publish` exits 0, DNSSEC is
-> reported active, and `dns-aid:check` passes `3/3`.
-
-#### Epic PRD-CF-E003 - Keep Source Files Crawler Access Storage-Owned
-
-**Story PRD-CF-E003-S001: D1-backed crawler reads**
-
-**As a** knowledge consumer  
-**I want** crawler-readable Source Files routes backed by the storage Worker and D1  
-**So that** retrieval systems fetch current Markdown documents instead of local source files.
-
-**Acceptance criteria**:
-
-- **Given** D1 contains Source Files for a workspace
-- **When** a crawler requests `/api/storage/source-files` or `/api/storage/doc/...`
-- **Then** the storage Worker serves current D1-backed Markdown/index data
-- **And** the request does not trigger app-shell rendering, URL import, or local file reads
-
-> `/goal` translation: crawler reads are complete when storage route tests or live `curl` probes
-> show D1-backed Source Files responses and no app-local import path is invoked.
-
-#### Epic PRD-CF-E004 - Separate Deployment Auth From DNS Auth
-
-**Story PRD-CF-E004-S001: Scoped credentials**
-
-**As a** security maintainer  
-**I want** Wrangler OAuth and DNS API tokens to stay separate  
-**So that** deploy access does not imply broad DNS write authority and DNS writes remain scoped.
-
-**Acceptance criteria**:
-
-- **Given** Wrangler OAuth is active
-- **When** Pages or Worker deploys run through Wrangler
-- **Then** deploy commands may use Wrangler OAuth
-- **And** DNS publish scripts still require `CLOUDFLARE_DNS_API_TOKEN` or `CLOUDFLARE_API_TOKEN`
-  with zone DNS edit permission
-- **And** token values are never committed, logged, or written into repo files
-
-> `/goal` translation: credential separation is complete when `wrangler whoami` succeeds, DNS
-> publish refuses missing API tokens, and token presence checks are masked.
-
-### Success Metrics
-
-| Metric | Baseline | Target | Measurement |
+| ID | Story | Given / When / Then | VCC translation |
 |---|---|---|---|
-| Cloudflare app route availability | Manual route check | `airvio.co/knowgrph` returns 200 after deploy | `curl -I` plus browser smoke |
-| Static mirror drift | Possible generated artifact drift | `pages:check-sync` exits 0 | `npm run pages:check-sync` |
-| Agent-ready HTTP discovery | Partial or stale audit output | `agent-ready:check` exits 0 | `KNOWGRPH_AGENT_READY_BASE_URL=... npm run agent-ready:check` |
-| DNS-AID discovery | Records absent before publish | `dns-aid:check` passes 3/3 | `npm run dns-aid:check` |
-| DNSSEC | Required for authenticated DNS-AID | Active | `dns-aid:publish` DNSSEC check and DoH AD=true |
-| Storage route availability | Raw app shell only | D1-backed Source Files indexes and docs | storage Worker route probes |
-| Token cost / month | Not applicable | `$0` | No model call in Cloudflare routing path |
-| Monthly TCO | Cloudflare free-tier target | `$0` until usage exceeds free limits | monthly Cloudflare dashboard review |
+| PRD-CF-01 | As a release operator, I want Pages promotion to use one exact candidate so that public bytes match review. | Given an exact protected-main revision and localhost review artifact, when the protected release runs, then it builds a mirror candidate before any delivery mutation. | Verify the candidate manifest binds the exact source and dependency revisions; named release checks exit 0; no Worker deploy command runs. |
+| PRD-CF-02 | As a maintainer, I want ordinary integration to remain non-deploying so that merge does not publish. | Given a pull request or ordinary `main` push, when integration runs, then it validates source without deploying Pages or Workers. | Verify `.github/workflows/integration.yml` contains no deployment mutation and its check exits 0. |
+| PRD-CF-03 | As an agent integrator, I want public discovery and protected orchestration separated so that a read surface cannot imply control authority. | Given an agent chooses a Cloud-hosted surface, when discovery is public, then control execution remains on the separately authenticated Worker contract. | Verify linked MCP source-parity tests pass and no tool schema is redefined here. |
+| PRD-CF-04 | As a security reviewer, I want storage trust boundaries stated per route family so that unauthenticated access is visible. | Given storage source is inspected, when push, pull, export, blob, run-media, or media-asset behavior is described, then the description matches the handler before any delivery claim. | Verify focused storage tests and static source inspection surface the security matrix below; do not call an unsigned token entitlement. |
+| PRD-CF-05 | As an operator, I want storage, payment, MCP, research, fetch-proxy, and DNS publication treated separately so that Pages approval cannot deploy them. | Given the protected Pages workflow succeeds, when its steps are inspected, then it deploys Pages and reconciles documentation into D1 but does not deploy a Worker or publish DNS. | Verify the release workflow contains no Worker deploy or DNS publish step; preserve separate rollback ownership. |
+| PRD-CF-06 | As a security maintainer, I want secrets externalized so that static artifacts and source never contain credential values. | Given a deployment or DNS mutation needs a credential, when configuration is prepared, then only a secret name or masked presence is surfaced. | Verify secret-canary checks find no value and visible Worker variables contain no credential material. |
+| PRD-CF-07 | As a maintainer, I want routing and discovery checks to consume zero model tokens so that validation is bounded and cheap. | Given a source or deployed route check, when it runs, then it invokes no model harness and records zero prompt/completion tokens. | Verify network/model spies observe zero model calls and the cost record is zero. |
 
-### MoSCoW Priority
+### Success metrics and time-to-value
 
-| Priority | Scope | ROI Rationale | TCO |
+| Metric | Baseline | Target | Timeline / stated validation |
 |---|---|---|---|
-| Must | Pages route, storage Worker, D1 binding, DNS-AID records, DNSSEC, masked credential handling | High discovery and publication value for low maintenance cost | Cloudflare free-tier target |
-| Should | `agent-ready:check`, `dns-aid:contract`, `dns-aid:check`, live route smoke | Prevents false completion and stale discovery metadata | Local compute only |
-| Could | Terraform-managed DNS records after the manual/API-token path stabilizes | Improves infra history but adds setup burden | Open-source Terraform provider; no runtime token cost |
-| Won't | App-local Pay Per Crawl pricing, crawler identity signing, or broad DNS write tokens in source control | Conflicts with Cloudflare-owned boundaries and security model | Avoids vendor/security risk |
+| Local readiness rung | `spec-complete` | evidence-derived only | every revision |
+| Delivered readiness rung | `undocumented` | evidence-derived only | every revision |
+| Deployment-unit ambiguity | legacy combined claims | zero Pages-as-Worker claims | documentation review |
+| Storage security coverage | mixed and incomplete | all six named families classified | static source audit |
+| Ordinary integration deployments | must remain zero | 0 | workflow source check |
+| Discovery token cost | 0 | 0 prompt + 0 completion | per check |
+| TTV steps | unmeasured | at most 4 operator actions to identify owner and first check | clean-environment walkthrough |
+| TTV elapsed | unmeasured | at most 20 minutes before first source result | timed walkthrough |
+| Monthly platform TCO | unmeasured | operator-approved before delivery | monthly cost review |
 
-### Min-Viable Scope
+### ROI and MoSCoW
 
-The minimum complete Cloudflare baseline is:
+ROI uses `(impact × monthly sessions) / (build hours + 12-month cash TCO/100 + monthly token
+cost/1M)`. Values are planning estimates, not Evidence References.
 
-1. Source-owned build and sync commands.
-2. Cloudflare Pages route serving `airvio.co/knowgrph`.
-3. Storage Worker and D1 route family serving crawler-readable Source Files.
-4. Payment Worker route family isolated from storage reads.
-5. HTTP agent discovery verified by repo scripts.
-6. DNS-AID SVCB records published with DNSSEC-authenticated public verification.
-7. Scoped DNS API token stored outside the repository.
+| Tier | Capability | Inputs: impact, sessions, hours, 12-month cash | Score | Rationale |
+|---|---|---|---:|---|
+| Must | exact Pages lane and rollback boundary | 5, 20, 8, $0–1,200 | 5.0–12.5 | prevents the broadest release ambiguity |
+| Must | truthful storage security matrix | 5, 20, 4, $0 | 25.0 | exposes read/write risk before delivery |
+| Must | separate Worker and DNS units | 5, 12, 5, $0 | 12.0 | prevents accidental authority expansion |
+| Should | DNS source contract and public proof path | 3, 8, 4, $0–120 | 4.6–6.0 | useful discovery with separate mutation risk |
+| Could | managed infrastructure as code | 2, 4, 16, $0–240 | 0.4–0.5 | improves repeatability after boundaries are proven |
+| Won't | automatic deploy from ordinary `main` push | 1, 20, 1, unbounded risk | <0.1 | contradicts protected promotion |
 
-### Out Of Scope
+### Min-viable scope
 
-- Replacing Cloudflare with another edge provider.
-- Moving source ownership into the publish mirror.
-- Storing Cloudflare API tokens in `.env`, dotfiles, docs, or git-tracked files.
-- Emulating Cloudflare Pay Per Crawl decisions inside Worker code.
-- Claiming a full mutating remote MCP platform beyond the currently deployed read-only Pages MCP
-  and browser WebMCP surfaces.
+The minimum truthful artifact is source ownership, per-family trust boundaries, one protected Pages
+lane, separately closed Worker/DNS lanes, VCCs with no fabricated results, and rollback statements.
 
----
+### Out of scope
 
-## Part 2 - TAD
+- proving any currently delivered URL, DNS answer, binding, secret, or data row;
+- redefining MCP tools, storage routes, payment schemas, or provider API contracts;
+- authorizing a direct deploy, migration, DNS write, paid call, or remote mutation;
+- claiming Cloud-hosted persistence from a local preview, source file, or browser cache;
+- adding a unified proxy or new orchestration runtime.
 
-### Architecture Overview
+## Reference implementation: Technical architecture
 
-**From source to public agent-readable routes**: Knowgrph source builds the SPA, syncs the publish
-mirror, deploys Pages and Workers through Wrangler, stores Source Files in D1 through the storage
-Worker, and publishes DNS-AID SVCB records through the Cloudflare REST API.
+### Journey-to-system mapping
+
+| Journey stage | Workflow | Data flow | Control flow | Topology nodes | Component owner |
+|---|---|---|---|---|---|
+| Trigger | identify affected unit | source classification | deterministic inspection | Authoring source | repository owners |
+| Discover | resolve canonical contract | contract read | zero-model selection | docs/source registries | linked canonical owner |
+| Engage | qualify candidate | source → candidate | verify job | Builder, Mirror | release controller |
+| Complete | promote approved unit | candidate → delivery | protected deploy | Mirror, Pages delivery | release workflow |
+| Return | verify or restore | receipt/rollback data | bounded verification | Delivery, prior state | release controller |
+
+### Topology: Cloud platform boundary v2 — 2026-07-30
+
+**Boundaries**: local/CI Authoring, non-public candidate Mirror, public Delivery, managed-data
+bindings, and external provider control planes.
+
+| Node | Role | Type | Lane | Connects to | Connection | Data residency |
+|---|---|---|---|---|---|---|
+| Source workspace | Store | repository checkout | Authoring | builders, Worker sources | local file reads | operator/CI workspace |
+| Pages builder | Producer | deterministic build/sync | Authoring | Pages candidate | batch filesystem write | CI workspace |
+| Pages candidate | Store | immutable artifact | Mirror | release controller | artifact transfer | CI artifact store |
+| Release controller | Router/Gate | protected workflow | Mirror | Pages delivery, docs reconciler, receipts | approved batch | CI runner and receipt store |
+| Pages delivery | Consumer/Gateway | static site + Functions | Delivery | public clients | HTTPS | configured edge network |
+| Storage Worker source | Gateway/Router | Worker source | Authoring | D1, R2, optional KV, room object | HTTPS + binding calls | source workspace |
+| Payment Worker source | Gateway/Router | Worker source | Authoring | D1, queues, providers | HTTPS + binding calls | source workspace |
+| MCP Worker source | Gateway/Router | Worker source | Authoring | session/run objects, AI binding | authenticated HTTP + binding calls | source workspace |
+| Research Worker source | Gateway/Producer | Worker source | Authoring | D1, queue, R2 | HTTPS + binding calls | source workspace |
+| Fetch-proxy Worker source | Gateway | Worker source | Authoring | allowlisted remote fetch | HTTPS | source workspace/request memory |
+| DNS publisher | Producer | bounded script | Authoring | authoritative DNS API | authenticated HTTPS | operator process/provider control plane |
+| D1-compatible delivered store | Store | relational database binding | Delivery | storage/payment/research runtime | in-process binding | configured database region |
+| R2-compatible delivered store | Store | object binding | Delivery | storage/research runtime | in-process binding | configured bucket region |
+| Durable delivered state | Store | object/session binding | Delivery | storage/MCP runtime | in-process binding | configured provider region |
+| Optional delivered KV cache | Store | key/value binding | Delivery | media asset runtime | in-process binding | not configured by source default |
 
 ```mermaid
-flowchart LR
-  Dev["knowgrph Dev SSOT"] --> Build["npm run pages:build-sync"]
-  Build --> Mirror["huijoohwee publish mirror"]
-  Mirror --> Pages["Cloudflare Pages project joohwee"]
-  Pages --> App["airvio.co/knowgrph"]
-  Pages --> Agent["HTTP agent-ready routes"]
-  Dev --> StorageDeploy["npm run storage:deploy"]
-  StorageDeploy --> StorageWorker["knowgrph-storage Worker"]
-  StorageDeploy --> D1Seed["reconcile agentic-canvas-os/docs"]
-  StorageWorker --> D1["Cloudflare D1 knowgrph-storage"]
-  D1Seed --> D1
-  StorageWorker --> StorageRoutes["airvio.co/api/storage/*"]
-  Dev --> PaymentDeploy["npm run payment:worker:deploy"]
-  PaymentDeploy --> PaymentWorker["knowgrph-payment Worker"]
-  PaymentDeploy --> D1
-  PaymentWorker --> PaymentRoutes["airvio.co/api/payments/*"]
-  Dev --> DnsAidPublish["npm run dns-aid:publish"]
-  DnsAidPublish --> DnsAid["SVCB _agents.airvio.co records"]
-  DnsAid --> Agent
-  StorageRoutes --> Agent
+flowchart TB
+  subgraph Authoring["Authoring boundary"]
+    Source["Source workspace"]
+    Builder["Pages builder"]
+    Storage["Storage Worker source"]
+    Payment["Payment Worker source"]
+    MCP["MCP Worker source"]
+    Other["Research / fetch-proxy source"]
+    DNS["DNS publisher"]
+  end
+  subgraph MirrorLane["Mirror boundary"]
+    Candidate["Immutable Pages candidate"]
+    Controller["Protected release controller"]
+  end
+  subgraph DeliveryLane["Delivery boundary"]
+    Pages["Pages delivery"]
+    Separate["Separately delivered Workers / DNS"]
+    Stores["Managed D1 / R2 / durable state"]
+  end
+  Source -- "batch build" --> Builder
+  Builder -- "artifact write" --> Candidate
+  Candidate -- "approved artifact transfer" --> Controller
+  Controller -- "protected Pages deploy" --> Pages
+  Storage -. "separate closed boundary" .-> Separate
+  Payment -. "separate closed boundary" .-> Separate
+  MCP -. "separate closed boundary" .-> Separate
+  Other -. "separate closed boundary" .-> Separate
+  DNS -. "separate closed boundary" .-> Separate
+  Separate -- "binding call" --> Stores
 ```
 
-### Journey To System Mapping
+**Version note**: v2 removes historical live-route evidence and the direct source-to-delivery
+diagram. It makes the Pages candidate explicit and keeps every Worker and DNS publication outside
+the Pages release boundary.
 
-| Journey Stage | Workflow | Data Flow | Component |
-|---|---|---|---|
-| Build | `pages:build-sync` | source -> Vite build -> publish mirror | `scripts/sync-pages-knowgrph.mjs` |
-| Deploy static app | Wrangler Pages deploy | publish mirror -> Cloudflare Pages | `pages:deploy-cloudflare` |
-| Deploy storage | D1 migrations, Worker deploy, docs reconciliation | migrations -> D1, Worker bundle -> route, release-resolved `agentic-canvas-os/docs` -> D1 | `storage:deploy` |
-| Deploy payment | Payment D1 migrations, Worker deploy, payment readiness | payment migrations -> D1 schema, payment Worker bundle -> route, visible payment vars -> production authority | `payment:d1:migrate:remote`, `payment:worker:deploy`, `payment:stripe:readiness`, `payment:x402:configure`, `payment:x402:readiness`, `payment:readiness` |
-| Publish DNS-AID | REST API upsert | record contract -> Cloudflare DNS -> public DoH | `dns-aid:publish` |
-| Validate discovery | HTTP and DNS checks | public routes -> validators -> pass/fail | `agent-ready:check`, `dns-aid:check` |
+### Workflow: Protected Pages promotion
 
-### Component Specifications
+**Trigger**: a human supplies an exact protected `main` SHA and exact localhost-review candidate to
+the manually dispatched release workflow.
 
-| Component | Responsibility | Interfaces | Configuration | FOSS / Vendor | Status |
+**Happy path**:
+
+1. The verify job checks out exact source/dependency revisions, materializes the review artifact,
+   runs integration, and builds the Pages candidate once.
+2. While the protected `production` deployment is pending, `npm run production:authorize`
+   verifies the clean canonical checkouts, presents the candidate-bound terminal challenge,
+   and submits the environment approval with its exact evidence comment. A separate browser
+   approval is invalid.
+3. The deploy job captures the previous Pages deployment, deploys the verified candidate,
+   reconciles canonical documentation into D1, and runs live/browser/service-worker checks.
+4. Only after verification does the workflow publish the generated mirror and completion receipts.
+
+**Alternate path**: if the generated mirror already represents the candidate, the workflow records
+that state without creating an unnecessary mirror commit.
+
+**Error path**: only after a successful Pages deploy followed by failure, the workflow checks out
+the captured prior source, resolves its documentation dependency, restores the prior Pages
+deployment, reconciles prior documentation into D1, and reruns smoke checks. It does not revert a
+new persistent-mirror commit; failure after mirror publication can therefore require manual mirror
+reconciliation.
+
+**Postconditions**: either the exact candidate has delivery receipts and an identifiable prior
+Pages state, or the rollback path has attempted restoration. No Worker or DNS publication is
+implied.
+
+### Data flow: Pages candidate and documentation reconciliation
+
+| Stage | Component | Input | Output | Persistence | Error handling |
 |---|---|---|---|---|---|
-| Cloudflare Pages project | Serve the static SPA and Pages Functions | `https://airvio.co/knowgrph/*` | project `joohwee`, publish repo `huijoohwee` | Vendor free-tier target; alternative static host would lose Workers/D1 adjacency | Implemented |
-| Pages Functions | Serve agent-ready routes, Markdown negotiation, and MCP metadata | `.well-known`, `/knowgrph/mcp`, Link headers | `cloudflare/pages/knowgrph-agent-ready*.mjs` | Cloudflare Pages Functions; FOSS alternative is self-hosted Node edge router | Implemented |
-| Storage Worker | Serve D1-backed Source Files indexes and doc views | `airvio.co/api/storage/*` | `cloudflare/workers/knowgrph-storage/wrangler.toml` | Cloudflare Workers; FOSS alternative is self-hosted HTTP API + SQLite/Postgres | Implemented |
-| D1 database | Persist Source Files, storage sync rows, Stripe sessions, and ACP proof/trace rows | Worker `DB` binding | `knowgrph-storage` D1 binding | Cloudflare D1; FOSS alternative is local SQLite, but not globally hosted | Implemented |
-| Generated media asset store | Persist AI image/audio/video bytes, metadata, access cache, and canvas-room notification | R2 `KNOWGRPH_STORAGE_BLOB_BUCKET` (`knowgrph-storage-blobs/airvio/` object prefix), D1 `media_artifacts`, optional KV `KNOWGRPH_MEDIA_ACCESS_KV`, DO `KNOWGRPH_CANVAS_ROOM` | `/api/storage/media/*`, `/api/storage/media/assets`, `cloudflare/workers/knowgrph-storage/mediaAssetSync.ts` | Cloudflare R2/D1/KV/Durable Objects; FOSS alternative is MinIO + SQLite + Redis + WebSocket room service | Dev source implemented; KV binding remains operator-owned before live claim |
-| Payment Worker | Isolate checkout/payment route family | `airvio.co/api/payments/*`, `.well-known/acp-config`, `/checkout/sessions*` | `cloudflare/workers/knowgrph-payment/wrangler.toml` | Cloudflare Workers; FOSS alternative is self-hosted payment webhook service | Implemented |
-| DNS-AID publisher | Upsert SVCB discovery records | Cloudflare REST API | `CLOUDFLARE_DNS_API_TOKEN`, `CLOUDFLARE_ZONE_ID`, `CLOUDFLARE_ZONE_NAME` | Cloudflare DNS; FOSS alternative is another authoritative DNS provider with SVCB + DNSSEC | Implemented |
-| DNS-AID checker | Validate public DNSSEC-authenticated SVCB answers | DoH JSON, SVCB RFC3597 parser | `scripts/dns-aid-records.mjs` | FOSS local script; no vendor lock-in beyond DNS host | Implemented |
-| Wrangler auth | Deploy Pages and Workers | `npx wrangler whoami`, deploy commands | Wrangler OAuth, account `joohwee` | Open-source Wrangler CLI against Cloudflare APIs | Implemented |
+| Ingest | release verifier | exact source/dependency/review identities | validated candidate context | run-scoped artifacts | fail closed on mismatch |
+| Transform | Pages builder | source and pinned docs | static bytes + Functions + manifests | candidate artifact | non-zero build/parity result |
+| Store | candidate publisher | immutable artifact | Pages deployment | configured delivery platform | retain prior deployment id |
+| Serve | live verifiers | candidate/live origins | route, browser, and service-worker results | lifecycle receipts | retry within workflow bounds, then fail |
+| Reconcile | docs seeder | pinned canonical docs | D1 documentation projection | configured D1 | rollback reseeds prior docs; no general D1 snapshot claim |
 
-### Integration Contracts
+### Data flow: Storage trust boundaries
 
-| Interface | Protocol | Format | Auth | Error Handling |
+The following matrix describes current source enforcement. It is a delivery blocker, not an
+authorization design target.
+
+| Route family | Source owner | Persistence | Current source-enforced trust boundary | Material consequence |
 |---|---|---|---|---|
-| Pages app route | HTTPS | HTML, Markdown, JSON metadata | Public | Return route-specific status; avoid app-shell fallback for known metadata routes |
-| HTTP MCP route | HTTPS JSON-RPC | JSON-RPC requests/responses | Public read-only surface | Reject unsupported methods/tools without mutation |
-| Storage Worker routes | HTTPS | Markdown, JSON, plain text | Public read routes | Derive from D1; omit deleted records; no local file fallback |
-| Media asset route | HTTPS | JSON metadata over `/api/storage/media/assets`; bytes over `/api/storage/media/*` | Run-scoped bearer token | Confirm R2 before D1 write; return explicit KV/DO binding status; no fake namespace ids |
-| Payment Worker routes | HTTPS | JSON/HTTP payment endpoints | Provider-specific secrets in Worker env and D1 payment tables/columns | Keep payment errors isolated from storage reads; readiness verifies remote D1 tables and webhook-processing columns before live smoke |
-| DNS-AID publish | Cloudflare REST API | DNS record JSON | `CLOUDFLARE_DNS_API_TOKEN` or `CLOUDFLARE_API_TOKEN` with zone DNS edit | Fail fast on missing token, invalid permission, DNSSEC inactive, or Cloudflare validation errors |
-| DNS-AID verify | DNS-over-HTTPS | `application/dns-json`, type 64 answers | Public resolver | Require `AD=true`; decode RFC3597 SVCB answers for custom parameters |
+| structured `push`, `pull`, and workspace `export` | `cloudflare/workers/knowgrph-storage/index.ts` | D1 | no authentication or membership check; caller supplies workspace/device identity | an exposed deployment could mutate or disclose another workspace |
+| generic blob read/write | `cloudflare/workers/knowgrph-storage/blob.ts` | R2 | no authentication or entitlement check; same key is overwriteable | an exposed deployment could disclose or replace bytes |
+| run-media read/write | `cloudflare/workers/knowgrph-storage/media.ts`, `mediaAuth.ts` | R2 | token checks only `{runId, expiresAt}` decoded from unsigned base64url JSON | caller can forge a matching unexpired token |
+| media-asset metadata GET at `/api/storage/media/assets` | `cloudflare/workers/knowgrph-storage/mediaAssetSync.ts` | D1 | no authentication; caller supplies `workspaceId` | response exposes artifact/object/provenance metadata |
+| media-asset metadata mutation at `/api/storage/media/assets` | `cloudflare/workers/knowgrph-storage/mediaAssetSync.ts` | D1, R2, optional KV/room | same unsigned run token as run-media | not issuer-backed authorization |
+| authenticated relay/collaboration paths | storage relay, chat-auth, and room-proxy modules | D1, external provider, room object | session authentication plus workspace membership checks where invoked | these checks do not secure the route families above |
+| crawler/document reads | storage dispatcher and crawler modules | D1 | public read behavior in source; no local-file fallback | source presence does not prove intended public exposure |
 
-### Data Flow
+CORS allows `*` on the storage dispatcher. CORS is not authorization. Content hashes are metadata
+unless a named handler verifies them.
 
-| Stage | Component | Input Format | Output Format | Persistence | Error Handling |
+### Orchestration/harness flow: Deterministic release control
+
+There is no AI executor in the Pages release or route-discovery path.
+
+**Topology pattern**: sequential
+**Max iterations**: no agentic loop; individual install/fidelity retries are bounded in workflow
+source
+**Circuit-breaker**: any unresolved candidate, authorization, deploy, or live-check failure ends
+promotion and enters the scoped failure path
+**Token budget**: 0 prompt + 0 completion = $0.00 per control run
+
+| Role | Component | Input schema | Output schema | Cost log | Fallback |
 |---|---|---|---|---|---|
-| Build | Vite + sync script | TypeScript/Markdown/assets | Static assets + Pages control files | publish mirror | Build or sync exits non-zero |
-| Store Source Files | Storage Worker | Workspace/Source File sync payloads | D1 rows | Cloudflare D1 | Worker route validation and D1 migration checks |
-| Store generated media | Storage Worker | R2 object key + provenance payload | D1 `media_artifacts` row + optional KV access cache + DO room notification | R2, D1, optional KV, Durable Object storage | Reject missing R2 object; report `binding_missing` for unbound optional services |
-| Serve crawler docs | Storage Worker | HTTP GET route params | Markdown/index/doc-view response | D1 read | 404/empty-state responses without import side effects |
-| Serve agent metadata | Pages Functions | HTTP GET/HEAD/POST | JSON, Markdown, Link headers, MCP responses | generated artifacts | route-specific failures; no stale local docs fallback |
-| Publish DNS-AID | DNS-AID script | record contract from `scripts/dns-aid-records.mjs` | Cloudflare DNS SVCB records | Cloudflare DNS | REST API error exits non-zero |
-| Validate DNS-AID | DNS-AID checker | DoH type 64 answers | pass/fail console result | none | fail if missing answer, AD false, or SVCB params mismatch |
+| Dispatcher | release workflow | exact revision + review candidate | authorized candidate context | zero-model invariant | typed workflow failure |
+| Executor | deterministic build/deploy steps | candidate context + secrets by name | deployment/result artifacts | zero-model invariant | scoped rollback after mutation |
+| Observer | lifecycle receipt owner | identities + check outputs | candidate/auth/live/publication receipts | zero-model invariant | incomplete run remains failed |
+| Consumer | release operator/public surface | receipts + delivered bytes | accepted result or escalation | zero-model invariant | prior Pages state remains target |
 
-### Deployment Strategy
+### Component specifications and VCC conditions
 
-| Step | Command | Rollback |
+| ID | Component responsibility (SVO) | Interfaces / dependencies / configuration | FOSS posture | VCC end state and stated check | Constraint | Evidence Reference | Local rung | Delivered rung |
+|---|---|---|---|---|---|---|---|---|
+| TAD-CF-01 | Pages builder creates one candidate | package scripts, Vite, sync/build-function scripts | FOSS toolchain; host replaceable | `pages:build-sync` and mirror checks exit 0 | no delivery mutation | not recorded | `spec-complete` | `undocumented` |
+| TAD-CF-02 | Release controller promotes one exact Pages state | protected workflow, immutable manifest, review/auth receipts | provider-neutral CI contract | candidate, approval, live, and publication receipts close | no Worker/DNS deploy | not recorded | `spec-complete` | `undocumented` |
+| TAD-CF-03 | Pages discovery serves public read contracts | Pages modules and generated mirror | FOSS-compatible HTTP/MCP formats | agent-ready source/parity checks exit 0 | zero model calls; no control execution | not recorded | `spec-complete` | `undocumented` |
+| TAD-CF-04 | Storage Worker routes typed persistence requests | dispatcher, D1/R2/room bindings | replaceable with HTTP + SQLite/Postgres + object store | storage suites classify every trust boundary | no authenticated claim for insecure families | not recorded | `spec-complete` | `undocumented` |
+| TAD-CF-05 | MCP Worker protects its separate control transport | Worker registry, bearer gate, session object | open protocol; host/runtime replaceable | Worker auth/session and registry checks exit 0 | Pages discovery does not grant control | not recorded | `spec-complete` | `undocumented` |
+| TAD-CF-06 | Payment Worker isolates payment execution | payment source, D1, queues, provider secrets | provider adapters; self-hosted HTTP alternative | local payment VCC exits 0 | no Pages or storage readiness inference | not recorded | `spec-complete` | `undocumented` |
+| TAD-CF-07 | DNS publisher upserts bounded discovery records | DNS scripts, scoped API token, zone config | standards-based SVCB/DNSSEC; provider replaceable | contract check exits 0; delivery requires recorded public proof | no token value surfaced | not recorded | `spec-complete` | `undocumented` |
+
+### Integration contracts
+
+| Interface | Protocol / format | Security and configuration | Error strategy |
+|---|---|---|---|
+| source → Pages candidate | batch files/manifests | exact revisions and generated-artifact parity | fail before candidate qualification |
+| candidate → Pages | protected deployment API | exact review candidate; the candidate-bound interactive terminal command submits the protected-environment approval with evidence; release secret names | preserve captured prior deployment |
+| Pages → public discovery | HTTPS, HTML/Markdown/JSON/JSON-RPC | public read-only contract; canonical MCP owner applies | route-specific typed failure |
+| clients → storage source | HTTPS, JSON/bytes/Markdown | mixed per-family matrix above | validation/D1/binding errors; no invented auth |
+| clients → MCP control source | Streamable HTTP MCP | configured bearer gate and session continuity | missing config unavailable; invalid bearer unauthorized |
+| clients → payment source | HTTPS/JSON + provider callbacks | Worker-held provider secrets and D1 state | provider- and settlement-specific failure |
+| DNS publisher → authoritative API | HTTPS/JSON | scoped bearer token, zone identity, DNSSEC check | missing token/config/API failure exits non-zero |
+
+### Security and secret policy
+
+| Credential class | Source expectation | Must never imply |
 |---|---|---|
-| Build static app | `npm run pages:build` | Revert source and rebuild |
-| Sync publish mirror | `npm run pages:sync` | Re-run sync from last known-good source or revert publish commit |
-| Check mirror drift | `npm run pages:check-sync` | Fix source/sync owner before deploying |
-| Deploy Pages | `npm run pages:deploy-cloudflare` | Wrangler rollback or redeploy previous publish mirror |
-| Deploy storage Worker | `npm run storage:deploy` | Wrangler rollback for Worker; D1 migration rollback requires explicit migration plan |
-| Apply payment D1 migrations | `npm run payment:d1:migrate:remote` | D1 migration history |
-| Deploy payment Worker | `npm run payment:worker:deploy` | Wrangler rollback for Worker |
-| Publish DNS-AID | `npm run dns-aid:publish` | Update/delete records through the same Cloudflare REST API owner |
-| Verify DNS-AID | `npm run dns-aid:check` | Re-publish or inspect DNSSEC/DoH answer shape |
+| Pages release credentials | protected workflow secrets/variables by name | authorization for a Worker or DNS mutation |
+| Worker runtime secrets | configured through the runtime secret store | presence in visible vars, browser state, docs, or build output |
+| MCP bearer | separate control-plane runtime secret | authorization for public Pages MCP |
+| DNS API token | scoped DNS-edit token for the publisher | reuse of unrelated deploy credentials or broad account authority |
+| Provider/payment credentials | server-owned Worker secrets | client-side key storage or delivery proof |
 
-### Secrets And Auth Policy
+### Quality attributes
 
-| Secret / Credential | Purpose | Storage | Prohibited Location |
+| Attribute | Scenario | Target / pattern | Validation |
 |---|---|---|---|
-| Wrangler OAuth token | Wrangler-managed Pages/Workers deploys | Wrangler local auth config | repo files |
-| `CLOUDFLARE_DNS_API_TOKEN` | DNS-AID SVCB record publish | macOS Keychain and `launchctl` session env | git, docs, shell history, plaintext dotfiles |
-| `CLOUDFLARE_API_TOKEN` | Generic Cloudflare REST API token fallback | secure local env only | git, docs, shell history |
-| Worker runtime secrets | Provider/payment/API secrets | Cloudflare Worker secrets | `wrangler.toml`, docs, static assets |
+| Security | an untrusted caller reaches storage | insecure families stay delivery-blocked or gain issuer/membership enforcement | focused negative-path tests plus live proof when authorized |
+| Recoverability | Pages mutation passes then a later check fails | captured prior deployment and prior docs revision are restored | rollback job + post-rollback smoke |
+| Consistency | source, candidate, and mirror diverge | exact manifest and parity checks fail closed | build/mirror checks |
+| Observability | a promotion terminates | one linked receipt chain or explicit failed run | lifecycle receipt validation |
+| Offline behavior | provider connectivity is absent | source inspection/build checks remain local; delivery probes degrade explicitly | network-off source pass |
+| Token cost | routing/discovery/release control runs | 0 model calls | model/network spy or cost invariant |
+| TCO | usage exceeds planning band | operator reviews actual service and egress spend before scale | monthly cost record |
+| Device reach | public Pages candidate is accepted | browser and mobile layout remain testable; no native-only dependency | protected browser/mobile evidence |
 
-Wrangler OAuth is not a substitute for direct REST DNS edits. DNS record mutation must require a
-scoped API token with zone DNS edit permission. Presence checks must print only `<set>` or
-`<missing>`.
+## Reference implementation: Decisions, TCO, and portability
 
-### Quality Attributes
+### Decision summary
 
-| Attribute | Scenario | Pattern | Validation |
+| Decision | State | Choice | Rejected shortcut | Consequence |
+|---|---|---|---|---|
+| ADR-CF-001 | accepted in this source specification | static Pages candidate plus separately deployed bounded Workers | one deployment command or monolithic proxy | more units, but authority and rollback stay explicit |
+| ADR-CF-002 | accepted in this source specification | protected manual Pages promotion | ordinary push or direct Authoring-to-Delivery mutation | slower intentional release with exact-state receipts |
+| ADR-CF-003 | accepted in this source specification | route-family security truth blocks delivery claims | label the whole storage Worker authenticated | insecure handlers remain visible until hardened |
+| ADR-CF-004 | accepted in this source specification | DNS mutation uses a scoped, separate credential | infer DNS authority from unrelated deploy login | additional setup with smaller blast radius |
+
+The global source, persistence, transport, promotion, and generated-owner decisions remain in the
+[core ADR set](knowgrph-architecture-decisions.md).
+
+### Deployment-model TCO and FOSS comparison
+
+These are planning ranges, not billing evidence.
+
+| Deployment model | 12-month cash estimate | Token cost | Ops burden | FOSS / portability position |
+|---|---:|---:|---|---|
+| managed/serverless edge + managed data bindings | $0–1,200 | $0 for routing/control | low | source-owned HTTP, SQL, object, queue, and MCP contracts reduce but do not remove provider coupling |
+| provisioned/self-managed per service | $600–3,000 | $0 for routing/control | high | static server + Node-compatible HTTP + PostgreSQL/SQLite + MinIO + NATS/Redis |
+| hybrid/consolidated self-managed host | $180–1,200 | $0 for routing/control | medium/high | one host can consolidate HTTP, SQL, object, and queue roles at small scale |
+| static-only host | $0–240 | $0 | low | FOSS static server; excludes dynamic storage, payment, control, and research capabilities |
+
+The managed source shape is preferred for low initial operations only while actual spend stays
+inside an operator-approved ceiling. No proprietary model call is required by this platform
+control path.
+
+## Reference implementation: Rollout, rollback, and evidence
+
+### Rollout and rollback boundaries
+
+- The canonical protected release is `.github/workflows/release.yml`; ordinary integration and
+  `main` pushes do not deploy.
+- The verify job binds the exact `main` revision and
+  `agentic-local-review-candidate/v1`; an authenticated operator then runs
+  `npm run production:authorize` for that workflow run and answers its generated,
+  candidate-bound interactive challenge while the deployment is pending. The command requires
+  clean Knowgrph and Agentic Canvas OS `main` checkouts at the candidate-bound fetched revisions
+  and submits the protected-environment approval itself; a separate browser approval is invalid.
+- That workflow owns Pages candidate verification, Pages deployment, D1 documentation
+  reconciliation, live/browser/service-worker checks, receipts, and post-verification mirror
+  publication.
+- It does not deploy storage, payment, MCP, research, or fetch-proxy Workers and does not publish
+  DNS.
+- `storage:deploy`, `payment:worker:deploy`, `mcp:worker:deploy`, and `dns-aid:publish` exist as
+  separate operator capabilities. Naming them here is not an instruction to run them.
+- Pages rollback restores the captured Pages deployment and reseeds canonical docs from the prior
+  source dependency. It is not a general D1 snapshot, schema rollback, R2 rollback, Worker rollback,
+  DNS rollback, queue rollback, or external-provider compensation.
+- Pages rollback runs only after the Pages deploy step succeeded and does not revert the persistent
+  mirror. A failure after mirror publication can leave mirror `main` ahead of restored Pages/D1 and
+  requires manual reconciliation.
+- A storage deployment that applies remote migrations requires an explicit data/migration rollback
+  plan before its boundary can open. Each other Worker requires its prior revision, bindings,
+  secrets-by-name, and post-rollback probe.
+
+### Deploy Boundary Register
+
+Every boundary is closed because this revision references no operator instruction or recorded
+result.
+
+| Boundary | From | To | Evidence Reference | Operator instruction | Rollback statement / check | State |
+|---|---|---|---|---|---|---|
+| `CF-PAGES-SOURCE-TO-MIRROR` | Authoring | Mirror | candidate/parity result not recorded | `none` | discard candidate; rerun source checks | `closed` |
+| `CF-PAGES-MIRROR-TO-DELIVERY` | Mirror | Delivery | protected live result not recorded | `none` | restore captured Pages deployment; reseed prior docs; smoke | `closed` |
+| `CF-STORAGE-SOURCE-TO-MIRROR` | Authoring | Mirror | security/migration candidate not recorded | `none` | discard candidate; leave remote state unchanged | `closed` |
+| `CF-STORAGE-MIRROR-TO-DELIVERY` | Mirror | Delivery | auth/read-back/migration result not recorded | `none` | prior Worker/config plus approved data migration plan | `closed` |
+| `CF-PAYMENT-SOURCE-TO-MIRROR` | Authoring | Mirror | local payment candidate not recorded | `none` | discard candidate; leave remote/provider state unchanged | `closed` |
+| `CF-PAYMENT-MIRROR-TO-DELIVERY` | Mirror | Delivery | payment/provider result not recorded | `none` | prior Worker/config; provider compensation plan | `closed` |
+| `CF-MCP-SOURCE-TO-MIRROR` | Authoring | Mirror | registry/auth/session candidate not recorded | `none` | discard candidate; leave remote sessions unchanged | `closed` |
+| `CF-MCP-MIRROR-TO-DELIVERY` | Mirror | Delivery | auth/session result not recorded | `none` | prior Worker/bindings; invalidate affected sessions | `closed` |
+| `CF-OTHER-WORKERS-SOURCE-TO-MIRROR` | Authoring | Mirror | unit-specific candidate not recorded | `none` | discard candidate; leave remote state unchanged | `closed` |
+| `CF-OTHER-WORKERS-MIRROR-TO-DELIVERY` | Mirror | Delivery | unit-specific result not recorded | `none` | prior Worker/bindings and scoped probe | `closed` |
+| `CF-DNS-SOURCE-TO-MIRROR` | Authoring | Mirror | DNS contract/dry-run result not recorded | `none` | discard candidate; leave records unchanged | `closed` |
+| `CF-DNS-MIRROR-TO-DELIVERY` | Mirror | Delivery | DNSSEC/public answer result not recorded | `none` | restore prior record set; repeat public DNS check | `closed` |
+
+### VCC and Evidence Reference register
+
+| VCC | Named invocable check | Recorded result | Surface | Derived effect |
+|---|---|---|---|---|
+| TAD-CF-01 | `npm run pages:check-sync` | not recorded for this revision | Authoring | remains `spec-complete` |
+| TAD-CF-02 | protected release candidate/live/publication receipts | not recorded | Mirror/Delivery | delivered remains `undocumented` |
+| TAD-CF-03 | `npm run agent-ready:check` | not recorded | Authoring or explicit Delivery target | remains `spec-complete` |
+| TAD-CF-04 | storage route/unit/relay suites | not recorded | Authoring | remains `spec-complete` |
+| TAD-CF-05 | `npm run mcp:worker:test` | not recorded | Authoring | remains `spec-complete` |
+| TAD-CF-06 | `npm run payment:local:vcc` | not recorded | Authoring | remains `spec-complete` |
+| TAD-CF-07 | `npm run dns-aid:contract` and separately authorized public check | not recorded | Authoring/Delivery | remains `spec-complete`; delivery undocumented |
+
+Documentation YAML, link, or lint checks validate this artifact only. They do not satisfy a
+platform VCC and must not promote these rungs.
+
+### Component inventory
+
+| Layer | Component / source owner | Local rung | Delivered rung |
 |---|---|---|---|
-| Availability | Public app and storage routes must survive deploy | Pages + Workers route separation | live `curl` probes and browser smoke |
-| Security | DNS writes require least privilege | scoped token, secure local storage, fail-fast scripts | masked env checks and Cloudflare token validation |
-| Observability | Worker behavior must be inspectable | Wrangler logs, route probes, explicit check scripts; x402 readiness must reject fallback or zero-address placeholder `payTo` authority until operator-owned `X402_PAY_TO_ADDRESS` is deployed | `wrangler tail`, `agent-ready:check`, `dns-aid:check`, `payment:stripe:configure`, `payment:stripe:readiness`, `payment:x402:configure`, `payment:x402:readiness`, `payment:readiness` |
-| Consistency | Dev, publish mirror, and Cloudflare stay aligned | source-owned sync and deploy commands | `pages:check-sync` |
-| Agent discovery | Agents find the same service via DNS and HTTP | DNS-AID SVCB + `.well-known` + MCP metadata | DoH `AD=true` and route checks |
-| Token cost | Cloudflare routing path has no LLM calls | no AI harness in routing path | token cost remains `$0` |
-| TCO | Preserve free-tier operating posture | Cloudflare free-tier target, FOSS local scripts | monthly dashboard and ADR review |
+| Pages | build/sync modules and Pages Functions | `spec-complete` | `undocumented` |
+| Storage | `cloudflare/workers/knowgrph-storage/` | `spec-complete` | `undocumented` |
+| Payment | `cloudflare/workers/knowgrph-payment/` | `spec-complete` | `undocumented` |
+| MCP control | `cloudflare/workers/knowgrph-mcp/` | `spec-complete` | `undocumented` |
+| Research | `cloudflare/workers/knowgrph-research/` | `spec-complete` | `undocumented` |
+| Fetch proxy | `cloudflare/workers/knowgrph-fetch-proxy/` | `spec-complete` | `undocumented` |
+| DNS discovery | `scripts/dns-aid-*.mjs` | `spec-complete` | `undocumented` |
+| Managed stores | D1/R2/Durable Object/optional KV binding contracts | `spec-complete` | `undocumented` |
 
-### Architectural Decisions
+### Readiness Gap Matrix
 
-## ADR-CF-001: Cloudflare Pages Plus Workers For Public Knowgrph
-
-**Status**: Accepted  
-**Date**: 2026-05-29
-
-#### Context
-
-Knowgrph needs a static SPA route, dynamic read-only storage routes, agent metadata routes, and a
-separate payment route family.
-
-#### Decision
-
-Use Cloudflare Pages for `airvio.co/knowgrph`, Cloudflare Workers for storage/payment routes, and
-Cloudflare D1 for storage persistence.
-
-#### Alternatives Considered
-
-1. **Self-hosted VPS with Nginx and SQLite/Postgres**: more portable, but higher ops burden and no
-   native Pages/Workers/D1 adjacency.
-2. **Static-only Pages deployment**: simplest, but cannot serve D1-backed Source Files or payment
-   routes.
-3. **Cloudflare Pages + Workers + D1**: low ops, route adjacency, and current implementation fit.
-
-#### TCO Impact
-
-| Dimension | Chosen Option | Best FOSS Alternative | Delta / 12 Months |
-|---|---|---|---|
-| Infra cost | Cloudflare free-tier target | VPS or local host, non-zero ops | Cloudflare lower until free-tier limits are exceeded |
-| Egress cost | Cloudflare edge/CDN | VPS bandwidth | Cloudflare lower for current scale |
-| Token cost | `$0` | `$0` | none |
-| Vendor risk | Medium | Low | mitigated by source-owned scripts and route docs |
-
-#### Consequences
-
-- **Positive**: low-maintenance edge deploy with route-level separation.
-- **Negative**: Cloudflare API and product behavior must be validated against current docs.
-- **Neutral**: source and publish mirror remain separate repos.
-
-## ADR-CF-002: Scoped API Token For DNS-AID Publishing
-
-**Status**: Accepted  
-**Date**: 2026-05-29
-
-#### Context
-
-Wrangler OAuth is active and works for deploys, but direct Cloudflare REST DNS endpoints reject
-Wrangler OAuth tokens. DNS-AID SVCB upserts require DNS edit authority.
-
-#### Decision
-
-Require `CLOUDFLARE_DNS_API_TOKEN` or `CLOUDFLARE_API_TOKEN` with zone DNS edit permission for
-`npm run dns-aid:publish`. Store token values outside the repo.
-
-#### Alternatives Considered
-
-1. **Reuse Wrangler OAuth for DNS REST calls**: rejected by Cloudflare REST API and too broad for
-   scripted DNS writes.
-2. **Manual dashboard DNS edits only**: workable for one-off changes, but not repeatable or
-   testable.
-3. **Scoped API token**: repeatable, least-privilege, and compatible with repo-owned scripts.
-
-#### TCO Impact
-
-| Dimension | Chosen Option | Best FOSS Alternative | Delta / 12 Months |
-|---|---|---|---|
-| Infra cost | `$0` | `$0` | none |
-| Egress cost | `$0` | `$0` | none |
-| Token cost | `$0` | `$0` | none |
-| Vendor risk | Medium | Low | limited by scoped token and externalized config |
-
-#### Consequences
-
-- **Positive**: DNS publish is repeatable and auditable.
-- **Negative**: token creation remains a manual security step.
-- **Neutral**: deploy auth and DNS auth intentionally stay separate.
-
-## ADR-CF-003: DNS-AID SVCB Records With DNSSEC Verification
-
-**Status**: Accepted  
-**Date**: 2026-05-29
-
-#### Context
-
-Agent discovery should not depend only on HTTP crawling. DNS-AID records allow agents to discover
-service entrypoints from DNS and then verify HTTP metadata.
-
-#### Decision
-
-Publish three SVCB records:
-
-| Record | Purpose | Endpoint |
-|---|---|---|
-| `_index._agents.airvio.co` | organization index | `/knowgrph` |
-| `_mcp._agents.airvio.co` | MCP endpoint | `/knowgrph/mcp` |
-| `_a2a._agents.airvio.co` | A2A agent card | `/knowgrph/.well-known/agent-card.json` |
-
-Validate them through DNS-over-HTTPS type 64 answers with DNSSEC `AD=true`. The checker decodes
-RFC3597 hex-form SVCB answers so custom `key65400`, `key65401`, and `key65402` parameters remain
-testable.
-
-#### Alternatives Considered
-
-1. **HTTP-only `.well-known` discovery**: still needed, but misses DNS-first discovery.
-2. **TXT records**: easier to read, but weaker match for service binding semantics.
-3. **SVCB + DNSSEC**: current implementation, machine-readable, and authentication-aware.
-
-#### TCO Impact
-
-| Dimension | Chosen Option | Best FOSS Alternative | Delta / 12 Months |
-|---|---|---|---|
-| Infra cost | `$0` at current DNS scale | self-hosted DNS, higher ops | Cloudflare lower ops |
-| Egress cost | DNS only | DNS only | none |
-| Token cost | `$0` | `$0` | none |
-| Vendor risk | Medium | Low | mitigated by standards-based SVCB and DNSSEC |
-
-#### Consequences
-
-- **Positive**: DNS-first agent discovery is live and verifiable.
-- **Negative**: resolver display may use RFC3597 hex format, requiring a decoder in checks.
-- **Neutral**: custom SVCB keys remain implementation-specific until DNS-AID conventions stabilize.
-
-### Component Inventory
-
-| Layer | Component | File / Module | Status |
-|---|---|---|---|
-| Build | Static app build | `npm run pages:build` | Implemented |
-| Publish | Mirror sync | `scripts/sync-pages-knowgrph.mjs` | Implemented |
-| Cloudflare Pages | Public app route | `airvio.co/knowgrph` | Implemented |
-| Pages Functions | Agent-ready route owner | `cloudflare/pages/knowgrph-agent-ready.mjs` | Implemented |
-| Storage Worker | Worker config | `cloudflare/workers/knowgrph-storage/wrangler.toml` | Implemented |
-| Storage Worker | Route implementation | `cloudflare/workers/knowgrph-storage/index.ts` | Implemented |
-| Storage Worker | Crawler markdown/index owner | `cloudflare/workers/knowgrph-storage/crawler.ts` | Implemented |
-| D1 | Storage and payment database | `knowgrph-storage` D1 binding, payment migrations `0002_stripe_payments.sql`, `0003_agentic_commerce.sql`, and `0006_stripe_webhook_processing_state.sql` | Implemented |
-| Payment Worker | Worker config | `cloudflare/workers/knowgrph-payment/wrangler.toml` | Implemented |
-| DNS-AID | Shared record contract | `scripts/dns-aid-records.mjs` | Implemented |
-| DNS-AID | Cloudflare publisher | `scripts/publish-dns-aid-cloudflare.mjs` | Implemented |
-| DNS-AID | Public DNS checker | `scripts/check-dns-aid-cloudflare.mjs` | Implemented |
-| DNS-AID | Local contract checker | `scripts/check-dns-aid-contract.mjs` | Implemented |
+| Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria |
+|---|---|---|---|---|---|
+| Pages release | `spec-complete` | `undocumented` | no attached candidate/live receipt | major | TAD-CF-01 and TAD-CF-02 carry satisfying evidence |
+| Storage runtime | `spec-complete` | `undocumented` | unauthenticated and unsigned route families | blocker | TAD-CF-04 proves issuer/membership enforcement or non-exposure |
+| Payment runtime | `spec-complete` | `undocumented` | no attached provider/config/live result | major | TAD-CF-06 carries local and separately authorized delivery evidence |
+| MCP control | `spec-complete` | `undocumented` | no attached authenticated delivery result | major | TAD-CF-05 carries bearer/session delivery evidence |
+| Research and fetch proxy | `spec-complete` | `undocumented` | no unit-specific policy or live result | major | unit-specific VCC and rollback evidence are attached |
+| DNS discovery | `spec-complete` | `undocumented` | no attached DNSSEC/public answer result | major | TAD-CF-07 carries authorized public proof |
+| Managed stores | `spec-complete` | `undocumented` | residency, retention, backup, restore, and auth evidence absent | blocker | each binding has configuration, security, recovery, and delivery evidence |
 
 ### Traceability
 
-| Requirement | TAD Component | Verification |
+| Requirement | Technical owner | VCC |
 |---|---|---|
-| PRD-CF-E001-S001 | Pages build/sync/deploy chain | `npm run pages:check-sync`, live route probes |
-| PRD-CF-E002-S001 | Pages Functions agent-ready routes | `KNOWGRPH_AGENT_READY_BASE_URL=https://airvio.co/knowgrph npm run agent-ready:check` |
-| PRD-CF-E002-S002 | DNS-AID publisher/checker | `npm run dns-aid:publish`, `npm run dns-aid:check` |
-| PRD-CF-E003-S001 | Storage Worker + D1 | storage route tests and live storage `curl` probes |
-| PRD-CF-E004-S001 | Wrangler OAuth + scoped DNS token policy | `npx wrangler whoami`, masked token checks, missing-token fail-fast behavior |
+| PRD-CF-01, PRD-CF-02 | TAD-CF-01, TAD-CF-02 | exact candidate and non-deploying integration |
+| PRD-CF-03 | TAD-CF-03, TAD-CF-05 | surface separation and protected control |
+| PRD-CF-04 | TAD-CF-04 | per-family storage security truth |
+| PRD-CF-05 | TAD-CF-02, TAD-CF-04–07 | separate deployment units |
+| PRD-CF-06 | TAD-CF-02, TAD-CF-05–07 | secret-value exclusion |
+| PRD-CF-07 | TAD-CF-01–07 | zero-model platform control |
 
-### Validation Runbook
+### Open questions
 
-| Check | Command | Expected Result |
-|---|---|---|
-| Wrangler account | `npx --yes wrangler whoami` | account `joohwee` visible |
-| Static mirror | `npm run pages:check-sync` | exits 0 |
-| Agent-ready HTTP | `KNOWGRPH_AGENT_READY_BASE_URL=https://airvio.co/knowgrph npm run agent-ready:check` | exits 0 |
-| DNS-AID local contract | `npm run dns-aid:contract` | exits 0 |
-| DNS-AID publish | `npm run dns-aid:publish` | SVCB records created/updated; DNSSEC active |
-| DNS-AID public check | `npm run dns-aid:check` | `passed: 3/3` |
-| Storage Worker deploy | `npm run storage:deploy` | D1 migrations, Worker deploy, and docs seed succeed |
-| Payment Worker deploy | `npm run payment:worker:deploy` | Worker deploy succeeds |
-| Full Worker deploy | `npm run workers:deploy` | storage deploy, D1 docs seed, and payment route deploy succeed |
+- Which explicit runbooks will own storage, payment, MCP, research, fetch-proxy, and DNS
+  Mirror-to-Delivery transitions?
+- Which issuer or membership system will replace unauthenticated structured storage and unsigned
+  media tokens?
+- What retention, residency, backup, restore, deletion, and monthly cost evidence applies to each
+  managed binding?
+- What clean-environment TTV is measured for each separately authorized delivery unit?
 
-### Current Evidence
+### Change note
 
-The following evidence was produced on 2026-06-29:
-
-- `npm run storyboard:readiness:check` passed before release.
-- `npm run pages:deploy-cloudflare` completed with preview `https://0d3c18ba.joohwee.pages.dev`.
-- Route probes returned `200` for `https://airvio.co/`, `https://airvio.co/knowgrph/`, and `https://0d3c18ba.joohwee.pages.dev/knowgrph/`.
-- `storage:d1:seed:docs` completed with `applied=41`, `conflict=0`, and `rejected=0`.
-- DNS-AID remains verified by `npm run dns-aid:check` with `3/3` passing.
-
-### Change Log
-
-| Version | Date | Change |
-|---|---|---|
-| 1.0.1 | 2026-06-29 | Refreshed the live Cloudflare release evidence with the shipped storyboard-runtime release, preview/live route proof, and latest D1 docs seed result. |
-| 1.0.0 | 2026-05-29 | Created implementation-accurate Cloudflare PRD/TAD baseline with live DNS-AID publish evidence. |
+Version 2.0.0 replaces the legacy blended-status label and historical release-evidence ledger. It
+establishes guideline v1.7.0 frontmatter, source-grounded trust boundaries, separate readiness
+rungs, and closed Authoring → Mirror → Delivery transitions.

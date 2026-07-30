@@ -196,8 +196,8 @@ export function testWorkspaceTableUserFacingCopyUsesMultiDimensionalTableSsot() 
   const sourcePaths = [
     'src/features/graph-data-table/ui/GraphDataTableToolbar.tsx',
     'src/features/graph-data-table/ui/GraphDataTableKanbanView.tsx',
-    'src/features/markdown/ui/MarkdownSelectionToolbar.tsx',
-    'src/lib/markdown-core/ui/markdownBlockContainerCore.bubbleToolbarOverlay.tsx',
+    'src/lib/markdown-core/ui/MarkdownSelectionActionMenuItems.tsx',
+    'src/lib/markdown-core/ui/MarkdownInlineSelectionToolbar.tsx',
     'src/features/panels/config.ts',
     'src/features/panels/views/HelpIconsSection.tsx',
     'src/features/panels/views/useSettingsView.helpers.ts',

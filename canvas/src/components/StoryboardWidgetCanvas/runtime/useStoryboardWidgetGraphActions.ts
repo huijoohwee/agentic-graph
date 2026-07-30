@@ -183,6 +183,44 @@ export function useStoryboardWidgetGraphActions(args: {
     return new Set(((committed?.nodes || []) as GraphNode[]).map(node => String(node.id || '')).filter(Boolean))
   }, [args, readLiveGraphData])
 
+  const publishDraftEdge = React.useCallback((
+    authoringGraphData: GraphData,
+    edge: GraphData['edges'][number],
+  ): boolean => {
+    const source = resolveStoryboardWidgetEdgeAuthoringNodeId(authoringGraphData, edge.source)
+    const target = resolveStoryboardWidgetEdgeAuthoringNodeId(authoringGraphData, edge.target)
+    if (!source || !target || source === target) return false
+    const normalizedEdge = { ...edge, source, target }
+    const existing = (authoringGraphData.edges || []).some(candidate => (
+      String(candidate.id || '').trim() === String(normalizedEdge.id || '').trim()
+    ))
+    if (existing) return true
+    const revisionFloor = Math.max(
+      readDraftRevisionFloor(authoringGraphData),
+      readDraftRevisionFloor(args.draftGraphDataRef.current),
+      readDraftRevisionFloor(readLiveGraphData()),
+      readDraftRevisionFloor(args.baseGraphData),
+    )
+    const nextDraftGraphData = appendStoryboardWidgetAuthoredEdge(
+      authoringGraphData,
+      normalizedEdge,
+      { revisionFloor },
+    )
+    args.addEdge(normalizedEdge)
+    publishStoryboardWidgetAuthoredGraphMutation({
+      nextGraphData: nextDraftGraphData,
+      draftGraphDataRef: args.draftGraphDataRef,
+      setDraftGraphData: args.setDraftGraphData,
+      persistDraftGraphData: args.persistDraftGraphData,
+    })
+    return true
+  }, [args, readLiveGraphData])
+
+  const appendDraftEdge = React.useCallback((edge: GraphData['edges'][number]): boolean => {
+    const authoringGraphData = readAuthoringGraphData()
+    return authoringGraphData ? publishDraftEdge(authoringGraphData, edge) : false
+  }, [publishDraftEdge, readAuthoringGraphData])
+
   const beginAddEdgeFromNode = React.useCallback(
     (nodeId: string, portKey?: string | null) => {
       if (!args.active) return
@@ -269,20 +307,7 @@ export function useStoryboardWidgetGraphActions(args: {
         const targetNode = nodeById.get(id) || null
         if (sourceNode && !baseNodeIds.has(String(sourceNode.id || ''))) args.addNode(sourceNode)
         if (targetNode && !baseNodeIds.has(String(targetNode.id || ''))) args.addNode(targetNode)
-        const revisionFloor = Math.max(
-          readDraftRevisionFloor(authoringGraphData),
-          readDraftRevisionFloor(args.draftGraphDataRef.current),
-          readDraftRevisionFloor(readLiveGraphData()),
-          readDraftRevisionFloor(args.baseGraphData),
-        )
-        const nextDraftGraphData = appendStoryboardWidgetAuthoredEdge(authoringGraphData, result.edge, { revisionFloor })
-        args.addEdge(result.edge)
-        publishStoryboardWidgetAuthoredGraphMutation({
-          nextGraphData: nextDraftGraphData,
-          draftGraphDataRef: args.draftGraphDataRef,
-          setDraftGraphData: args.setDraftGraphData,
-          persistDraftGraphData: args.persistDraftGraphData,
-        })
+        publishDraftEdge(authoringGraphData, result.edge)
         materializeConnectedMediaValue({ sourceNode, targetNode, sourcePort, targetPort })
         disableAutoZoomModesForUserGesture(useGraphStore.getState())
         args.setSelectionSource('canvas')
@@ -293,7 +318,7 @@ export function useStoryboardWidgetGraphActions(args: {
         args.setToolMode('select')
       }
     },
-    [args, materializeConnectedMediaValue, readAuthoringGraphData, readCommittedNodeIds, readLiveGraphData],
+    [args, materializeConnectedMediaValue, publishDraftEdge, readAuthoringGraphData, readCommittedNodeIds],
   )
 
   const cancelPendingEdge = React.useCallback(() => {
@@ -415,6 +440,7 @@ export function useStoryboardWidgetGraphActions(args: {
   )
 
   return {
+    appendDraftEdge,
     appendDraftNode,
     beginAddEdgeFromNode,
     cancelPendingEdge,

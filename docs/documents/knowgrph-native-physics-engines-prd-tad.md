@@ -4,14 +4,17 @@ id: "md:knowgrph-native-physics-engines-prd-tad"
 author: "airvio / joohwee"
 date: "2026-07-22"
 updated: "2026-07-22"
-version: "1.0.0"
-status: "implementation-active"
+version: "1.1.0"
+status: "runtime-ready"
 doc_type: "Combined PRD/TAD"
 lang: "en-US"
 frontmatter_contract: "required"
 domain: "knowgrph"
 execution_boundary: "dev-only"
 publish_scope: "local-only"
+source_revision: "fc65982ecd24cd1553a1fe28c8007045f39f25e4"
+protected_pull_request: "https://github.com/huijoohwee/knowgrph/pull/300"
+protected_integration_run: "https://github.com/huijoohwee/knowgrph/actions/runs/29887624293"
 external_reference:
   project: "https://github.com/dimforge/rapier"
   role: "principles-only"
@@ -147,12 +150,14 @@ The migration changes ownership, not the persisted XR schema or canonical source
 
 ## Validation
 
+- PR #300 merged the independent engines at `fc65982ecd24cd1553a1fe28c8007045f39f25e4` after protected Integration Gate run `29887624293` passed.
+- The focused native-physics lane passed 16 engine checks, 15 XR migration checks, and 6 clean-room/source-boundary checks: 37/37 total.
 - Focused 2D engine tests cover integration, filtering, sensors, ordered events, queries, snapshot round trips, invalid restore, and repeat runs.
 - Focused 3D engine tests cover cuboid/sphere integration, filtering, sensors, ordered events, queries, snapshot round trips, invalid restore, and repeat runs.
 - Existing XR physics source/runtime tests cover the 3D ownership migration and scene retention.
 - The source-authority guard discovers every workspace package manifest and recognized npm, pnpm, or Yarn lockfile, then rejects Rapier 2D/3D package-family references, including compatibility and npm-alias entries.
 - Game Mode source/runtime and serial browser smoke remain the proof boundary for unchanged gameplay ownership.
-- Production and Cloudflare deployment are outside this Dev task.
+- This evidence proves the merged Dev source and focused runtime contract. Production and Cloudflare deployment remain outside this task.
 
 ## Follow-up gates
 

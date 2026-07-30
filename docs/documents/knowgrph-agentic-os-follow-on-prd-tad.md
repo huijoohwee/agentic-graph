@@ -1,304 +1,266 @@
 ---
-title: "Knowgrph — Agentic OS Follow-On PRD/TAD"
+title: "Knowgrph Agentic OS follow-on — Reference implementation PRD/TAD"
 id: "md:knowgrph-agentic-os-follow-on-prd-tad"
-author: "airvio / joohwee"
-date: "2026-07-03"
-updated: "2026-07-03"
-version: "1.0.0"
-status: "spec-complete to runtime-ready"
-doc_type: "Combined PRD/TAD"
+doc_type: "Follow-On Combined PRD/TAD"
+version: "1.1.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
-domain: "knowgrph"
+owner: "docs.agentic-os.follow-on.reference-implementation"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-agentic-os-follow-on-prd-tad.md"
 parent: "docs/documents/knowgrph-agentic-os-prd-tad.md"
-parent_version: "0.4.0"
+parent_version: "1.0.0"
+reference_implementation: true
+guideline_title: "PRD, TAD & ADR Guidelines"
+guideline_version: "1.7.0"
+guideline_reference: "https://huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
 related:
-  - "docs/documents/knowgrph-agentic-os-prd-tad.md"
-  - "docs/documents/knowgrph-agent-ready-prd-tad.md"
-  - "docs/documents/knowgrph-mcp/knowgrph-mcp-agentic-os-prd-tad.md"
-  - "docs/documents/knowgrph-mcp/knowgrph-mcp-agentic-os-prd-tad.companion.md"
-orientation:
-  - "solo-dev"
-  - "AI-native"
-  - "min-viable-max-value"
-  - "TCO-zero"
-  - "FOSS-first"
-  - "token-economical"
-  - "harness-first"
-traceability:
-  prd: "PRD-AOS-FOLLOWON"
-  tad: "TAD-AOS-FOLLOWON"
-  repo: "huijoohwee/knowgrph"
+  - "docs/documents/knowgrph-agentic-os-video-agent-prd-tad.companion.md"
+source_references:
+  parent_contract: "docs/documents/knowgrph-agentic-os-prd-tad.md"
+  local_status_runtime: "mcp/os-status-runtime.js"
+  approval_token_logic: "mcp/video-remix/approval-token-issuer.js"
+  live_client_resolver: "mcp/video-remix/live-clients.js"
+  worker_entrypoint: "cloudflare/workers/knowgrph-mcp/index.ts"
+  worker_configuration: "cloudflare/workers/knowgrph-mcp/wrangler.toml"
 ---
 
-# Knowgrph — Agentic OS Follow-On PRD/TAD
+# Knowgrph Agentic OS follow-on — Reference implementation PRD/TAD
 
-Parent SSOT: [`knowgrph-agentic-os-prd-tad.md`](knowgrph-agentic-os-prd-tad.md) v0.4.0 (Must-tier Agentic OS + MCP Gateway federation). This document closes the three **P1/P2 follow-on tracks** called out there: **HITL Gate Service completion**, **live stage harness wiring on the control plane**, and **Agentic Canvas OS dashboard UI lanes**.
+Parent authority: [Agentic OS reference implementation PRD/TAD](knowgrph-agentic-os-prd-tad.md)
+v1.0.0. Authoring rules: [PRD, TAD & ADR Guidelines v1.7.0](https://huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md).
 
-For current remote MCP onboarding, start with
-`docs/documents/knowgrph-mcp-onboarding-index.md`, then use
-`docs/documents/knowgrph-mcp-install-contract.md` for the canonical
-public-discovery vs control-plane endpoint boundary.
+This document sequences work that must remain outside the parent baseline. It
+does not declare an invocation route or tool identity, and it does not own an
+Invocation Register. The parent retains the status identity; executable owners
+retain all orchestration and document-resolution identities.
 
-## Overview
+No test result, mirror result, delivery check, live-provider capture, or
+operator promotion instruction is attached. Local readiness is therefore
+`spec-complete`; delivered readiness is `undocumented`.
 
-The Must-tier increment shipped read-only OS visibility and discovery-first MCP Gateway federation. What remains is **closing the spend-safety and live-orchestration loops** and **rendering the Agentic Canvas OS dashboard on Canvas** — all native-in-repo, reusing modules that already exist locally with passing tests.
+## Reference implementation scope and order
 
-| Track | Spec anchor | Local code status | Deployed gap |
-|---|---|---|---|
-| **A — HITL Gate Service** | tasks 4.1–4.5 | Issuance, verify, single-use, rejection, Director boundaries **implemented in-repo** with in-memory store | Durable token store on Worker; remote issuance API |
-| **B — Live stage harnesses** | tasks 3.x / 12.x | Exa research live path + env-gated clients **implemented**; storyboard wireable; render/commerce **async scaffold** | Worker secrets + one golden-path live proof |
-| **C — Dashboard UI lanes** | Agentic Canvas OS PRD + companion | `knowgrph.agentic_canvas_os.plan` dry-run manifest **implemented** | Canvas Storyboard render of dashboard doc + lane inspectors |
+The canonical dependency order is:
 
-## Four-Lens Overview
+1. **Precondition P — parent contract closure**: reconcile the two missing
+   Worker view branches and make optional remote catalog discovery
+   bearer-aware and session-compatible.
+2. **Track 1 — spend safety**: prove durable, single-use approval tokens with a
+   bounded TTL at the control plane.
+3. **Track 2 — live orchestration proof**: after Track 1, capture one bounded
+   approved run with valid cost evidence and a persisted manifest.
+4. **Track 3 — operator projection**: after parent visibility is proven,
+   project existing source-backed documents and manifests through the existing
+   Canvas apply path.
 
-| Lens | Follow-on constraint | Key decision |
-|---|---|---|
-| **Min-Viable-Max-Value** | One golden-path live Director run + durable HITL on Worker before expanding dashboard lanes | Ship Track B proof before Track C visual polish |
-| **TCO-Zero** | Live stages opt-in via `KNOWGRPH_LIVE_CLIENTS` + per-provider secrets; default remains mock/zero-spend | No live call without explicit env + approval token |
-| **Token Economics** | Every live harness emits Cost_Log via existing schema; Exa/BytePlus bounded by gate + daily budget | Cost logs validated by `validateCostLog()` before aggregation |
-| **Harness-First** | Stage tools remain typed input → harness → typed output; HITL wraps spend boundaries only | Reuse `mcp/video-remix/*` modules — no parallel gate implementation |
-
----
+Track 2 must not start before Track 1 exits unless a separate ADR explicitly
+accepts the risk. Track 3 must not introduce a second dashboard store, graph
+pipeline, or invocation owner.
 
 ## PRD
 
-### Problem Statement
+### Problem statement
 
-Operators and external agents can discover capabilities and inspect harness state (Must-tier), but **approved live spend** and **dashboard operator UX** are incomplete: HITL tokens work locally but lack a durable Worker store; live Exa research is env-gated but render/commerce async paths need deployment proof; Agentic Canvas OS plans exist as dry-run manifests without a Canvas-rendered operator dashboard.
+The parent records three implementation gaps rather than masking them:
 
-### Personas
+- the Worker advertises seven status views through the shared schema but
+  dispatches five;
+- the local capability-union adapter lacks bearer and MCP session handling for
+  the protected control plane;
+- source code alone does not prove durable approval, live provider execution,
+  document projection, or delivery.
 
-| Persona | Need | Success |
+The follow-on increment closes those gaps in dependency order with bounded,
+operator-verifiable outcomes.
+
+### Personas and journeys
+
+| Persona | Trigger | Action | Decision point | Outcome |
+|---|---|---|---|---|
+| Maintainer | Parent parity VCC is open | Compare shared schema with both dispatchers | Narrow schema or implement missing branches | One coherent remote contract |
+| Agent integrator | Remote catalog is unreachable | Initialize an authenticated MCP session | Credentials/session valid? | Catalog result or explicit typed failure |
+| Operator | A spend-bearing stage requests approval | Issue, present, and consume a token | Token valid, unused, and within TTL? | Spend allowed once or blocked at zero spend |
+| Operator | Proven run state exists | Open the source-backed operator document | Projection valid? | Existing Canvas path renders it without a second store |
+
+### Stories, criteria, and VCCs
+
+| Story | Given-When-Then criterion | VCC |
 |---|---|---|
-| **Operator** | Approve a render/checkout gate and see a live stage execute once | One approved live Director run completes research → storyboard with cited evidence |
-| **External agent** | Present approval tokens that survive Worker restarts | Durable Approval_Token store on control-plane; single-use enforced after spend |
-| **Solo founder** | Inspect cross-repo build state on Canvas, not only JSON manifests | Dashboard document renders on Storyboard Widget with lane nodes |
-| **Maintainer** | Prove spend isolation after follow-on deploy | R11 smoke tests pass; blocked run still shows zero estimated cost |
+| PRD-FO-01 — remote view parity | Given the shared seven-value schema, when local and Worker dispatchers are compared, then every advertised remote value resolves or the remote schema is intentionally narrower | VCC-FO-01 |
+| PRD-FO-02 — protected federation | Given a configured bearer and an initialized MCP session, when the local union reads the remote catalog, then it receives the current definitions without logging or persisting the credential | VCC-FO-02 |
+| PRD-FO-03 — durable approval | Given an unexpired token persisted before a simulated restart, when verification occurs after restart, then the token succeeds once and reuse fails closed | VCC-FO-03 |
+| PRD-FO-04 — live proof | Given explicit live configuration, an approved bounded budget, and Track 1 evidence, when one golden path runs, then the manifest and valid cost records are surfaced and an unapproved control run costs zero | VCC-FO-04 |
+| PRD-FO-05 — operator projection | Given a source-backed document and manifest, when the existing apply path runs, then one operator graph is rendered without a dashboard-only store or renderer | VCC-FO-05 |
 
-### User Stories
+### Success metrics and TTV
 
-| Story | Acceptance (condensed) | VCC translation |
-|---|---|---|
-| **PRD-FO-1**: Durable HITL on Worker | Given a minted Approval_Token on the control plane, when the Worker restarts, then verify/consume still succeeds within TTL | `Verify RunManifestStore-adjacent token DO or KV persistence tests pass and a token minted before simulated restart verifies after restart` |
-| **PRD-FO-2**: Live Exa research behind gate | Given `KNOWGRPH_LIVE_CLIENTS=1`, Exa key, and `paid-model-call` token, when research stage runs, then ≥3 cited sources return and Cost_Log validates | `Verify research-harness live fixture or integration test with mock fetch records ≥3 sources and validateCostLog() passes on emitted log` |
-| **PRD-FO-3**: Live storyboard behind gate | Given AI Gateway chat URL + BytePlus model env and approval token, when storyboard runs, then KGC doc emits with nodes == planned shots | `Verify storyboard harness test output parses as kgc-computing-flow/v1 with flow.nodes.length == shotCount` |
-| **PRD-FO-4**: Render/commerce async live path | Given render/commerce endpoints configured and matching gate tokens, when async Director live run executes, then queue/Stripe clients invoked once per approved stage | `Verify director-live-run tests pass with injected live clients; no provider call when gate withheld` |
-| **PRD-FO-5**: Dashboard Canvas render | Given `knowgrph.agentic_canvas_os.plan` output, when operator opens dashboard doc in Canvas, then frontmatter-flow projects lanes as Storyboard nodes | `Verify dashboard.agentic-os.md applies through applyChatKgcWorkspaceDocumentToCanvas without duplicate pipeline` |
-| **PRD-FO-6**: Market Radar lane inspect | Given dry-run market report in manifest, when browser-local inspection runs, then evidence levels and source cards readable; no credential fields | `Verify companion lane payload schema tests; redaction asserts no cookie/token fields` |
+| Metric | Baseline from parent/source | Target | Gate |
+|---|---:|---:|---|
+| Worker status branches | 5 of 7 | 7 of 7, or an intentionally narrowed remote schema | Precondition P |
+| Protected remote union paths | 0 | 1 authenticated, initialized path | Precondition P |
+| Approval-token restart checks | 0 attached | 1 pass with single-use proof | Track 1 |
+| Approved live golden paths | 0 attached | 1 bounded capture plus 1 zero-spend blocked control | Track 2 |
+| Operator projection owners | Existing apply path; no evidence attached | 1 existing owner, 0 duplicate stores/renderers | Track 3 |
+| TTV to first protected catalog | Not recorded | At most 3 operator actions and 2 minutes after prerequisites | Precondition P |
+| TTV to first approved proof | Not recorded | At most 5 operator actions after configured prerequisites | Track 2 |
+| Token budget for status/discovery | 0 | 0 | Every track |
+| Live proof budget | Not recorded | At most $5 for one operator-approved capture | Track 2 |
+| Incremental fixed monthly TCO | Planning assumption: $0 | $0 at demo load | Monthly review |
 
-### Success Metrics
+### MoSCoW and ROI
 
-| Metric | Baseline | Target | Timeline |
-|---|---|---|---|
-| HITL unit + PBT tests (local) | passing | remain passing after durable store | Track A |
-| Live harness unit tests | passing | +1 deployed golden-path capture | Track B |
-| Agentic OS blocked live run (zero spend) | proven locally | proven on deployed Worker | Track B |
-| Dashboard dry-run plan tool | implemented | Canvas render of dashboard doc | Track C |
-| Time-to-value — first live approved stage | n/a | ≤ 5 operator steps (env, deploy, mint token, submit run, read manifest) | Track B gate |
-| Token cost / month (follow-on orchestration) | unmeasured | ≤ $25 at demo load (bounded by gates + mock default) | Ongoing |
-| Monthly TCO (follow-on infra) | $0 | $0 delta (reuse Worker DO/KV; no new vendor) | Ongoing |
+Formula:
+`ROI = (impact × assumed monthly sessions) / (build hours + monthly TCO + token cost)`.
+The inputs are planning assumptions, not usage or billing evidence.
 
-### MoSCoW Priority
+| Tier | Item | Assumptions | ROI |
+|---|---|---|---:|
+| Must | Remote parity and protected federation | impact 5, sessions 20, hours 10, TCO 0, token 0 | 10.0 |
+| Must | Durable single-use approval | impact 5, sessions 10, hours 8, TCO 0, token 0 | 6.3 |
+| Should | One bounded live proof | impact 4, sessions 5, hours 8, TCO 0, token cost 5 | 1.5 |
+| Should | Existing-path operator projection | impact 3, sessions 10, hours 8, TCO 0, token 0 | 3.8 |
+| Won't | New proxy, dashboard store, or auto-approval | Not scored | — |
 
-| Tier | Item | ROI rationale |
-|---|---|---|
-| **Must** | Durable HITL token store on control-plane Worker | Unblocks trustworthy remote approval; local issuance already built |
-| **Must** | Deployed golden-path: gated live Exa research + storyboard | Proves Track B with smallest paid surface |
-| **Should** | Async live render + commerce on Worker | Requires async harness path; scaffolds exist in `live-clients.js` |
-| **Should** | Dashboard doc → Canvas Storyboard render | High operator value; reuses existing frontmatter-flow |
-| **Could** | Market Radar / browser evidence live capture | Companion contracts exist; live capture approval-gated |
-| **Could** | Learning Loop skill promotion UI | Local-first; promotion already approval-gated in companion |
-| **Won't** | Fifth MCP proxy tier | ADR-4 forbids |
-| **Won't** | Vercel/AWS product tiers | ADR-3 forbids |
+The working threshold of 5 keeps Track 1 ahead of live proof. Track 2 and Track
+3 remain gated follow-ons whose strategic evidence value, not recurring usage,
+must be approved explicitly.
 
-### Min-Viable Scope (Follow-On Sprint 1)
+### Out of scope
 
-1. Durable Approval_Token persistence on `knowgrph-mcp` Worker (KV or DO adapter implementing existing store interface).
-2. Deploy control plane with `KNOWGRPH_LIVE_CLIENTS=1` + Exa + AI Gateway chat vars.
-3. One operator-captured golden-path run: approved research + storyboard, manifest persisted, demo-pack section populated.
-4. Dashboard markdown from `knowgrph.agentic_canvas_os.plan` opens in Canvas via existing apply path.
-
-Explicitly excludes: full Market Radar live browser capture, Starter Repo file writes, skill auto-promotion.
-
-### Out of Scope
-
-- New persistent OS-level database beyond token/run manifest stores already on Worker.
-- Remote HTTP exposure of local-only tools (SuperAgent, pipelines) — surface separation unchanged.
-- Automatic approval or bypass of any gate.
-- Multi-tenant auth on control-plane read-back (deferred per parent Open Question 5).
-
----
+- Claiming public reach from source configuration or DNS/route declarations.
+- Persisting provider credentials in documents, manifests, or logs.
+- Making live clients the default; source configuration currently defaults the
+  live-client switch to off.
+- Remote exposure of the full 79-definition local catalog.
+- A new monolithic gateway, dashboard database, or graph mutation bridge.
+- Automatic approval, token reuse, unbounded retry, or provider spend without
+  an explicit budget.
 
 ## TAD
 
-### Journey → System Mapping
+### Topology delta
 
-| Journey stage | Workflow | Data flow | Orchestration/Harness | Component |
+**Version**: 3.1.0 — 2026-07-30.
+**Version note**: adds only the follow-on components and keeps both deploy
+boundaries closed.
+
+| Node | Responsibility | Lane | Connection | Data residency |
 |---|---|---|---|---|
-| Operator approves research | Mint token → re-submit Director with `approvals[]` | Token → DO/KV store → verify at research boundary | Sequential; max 1 research round by default | `approval-token-issuer.js`, `research-harness.js` |
-| Operator approves storyboard | Same token flow | Evidence pack → BytePlus via AI Gateway → KGC doc | Sequential after research | `live-clients.js`, storyboard harness |
-| Operator views dashboard | Open Source Files dashboard doc | manifest JSON + markdown → Canvas graph | Zero-token UI projection | `agentic-canvas-os` plan tool, Canvas apply |
-| External agent discovers live path | capabilities → control-plane MCP | Run_Manifest DO read-back | Agentic loop; max 8 iterations | `tool-registry.mjs`, `video-remix-runtime.js` |
-
-### Topology (Follow-On delta)
-
-**Version**: 2.2.0 — 2026-07-03 (extends parent Topology v2.1.0)
-
-| Node | Role | Type | Connects to | Connection type | Data residency |
-|---|---|---|---|---|---|
-| Approval_Token_Store | HITL persistence | Worker KV or DO (new binding) | `approval-token-issuer.js` adapter | sync read/write | CF region |
-| Live_Stage_Client_Resolver | Env-gated provider wiring | Pure module (`live-clients.js`) | Exa, AI Gateway, Strytree, payment worker | HTTPS via Worker env | Provider regions |
-| Dashboard_Document | Operator UI SSOT | Source Files markdown + manifest | Canvas Storyboard Widget | local/CF Pages | Git + optional D1 mirror |
+| Contract parity check | Compare shared enum and two dispatchers | Authoring | Sync source analysis | Local worktree |
+| Authenticated catalog client | Initialize protected remote discovery | Authoring | Streamable HTTP with bearer/session | Credential in process memory only |
+| Approval-token store adapter | Persist TTL and consumed state | Authoring target | Keyed async read/write | To-be-selected control-plane store; no delivery evidence |
+| Live client resolver | Keep live providers explicit and env-gated | Authoring target | HTTPS after approval | Provider regions; no live evidence |
+| Existing document apply path | Project source document/manifest to Canvas | Authoring target | In-process document apply | Local/browser state; no delivery evidence |
 
 ```mermaid
 flowchart TB
-  subgraph ControlPlane["Cloudflare Control Plane"]
-    MCP["McpAgent"]
-    TOK["Approval_Token_Store\nKV or DO"]
-    RMDO["Run_Manifest DO"]
-    LIVE["live-clients.js\nenv-gated"]
-    MCP --> TOK
-    MCP --> RMDO
-    MCP --> LIVE
+  subgraph Authoring["Authoring lane"]
+    Parity["Contract parity check"]
+    Catalog["Authenticated catalog client"]
+    Token["Durable approval-token adapter"]
+    Live["Env-gated live client resolver"]
+    Projection["Existing document apply path"]
+    Parity -- "sync source comparison" --> Catalog
+    Catalog -- "precondition passed" --> Token
+    Token -- "single-use proof" --> Live
+    Parity -- "visibility proof" --> Projection
   end
-  subgraph Harnesses["Stage Harnesses (in-repo)"]
-    RES["research-harness"]
-    STO["storyboard-harness"]
-    REN["render-harness"]
-    COM["commerce-harness"]
+
+  subgraph Mirror["Mirror lane · no evidence attached"]
+    MirrorState["Non-public proof target"]
   end
-  LIVE --> RES
-  LIVE --> STO
-  LIVE --> REN
-  LIVE --> COM
-  EXA[(Exa MCP)]
-  AIGW[(Cloudflare AI Gateway)]
-  PAY[(Payment Worker / Stripe)]
-  RES --> EXA
-  STO --> AIGW
-  REN --> PAY
-  COM --> PAY
-  subgraph CanvasUI["Canvas (local / Pages)"]
-    PLAN["agentic_canvas_os.plan"]
-    DASH["dashboard.agentic-os.md"]
-    SB["Storyboard Widget"]
-    PLAN --> DASH --> SB
+
+  subgraph Delivery["Delivery lane · no evidence attached"]
+    DeliveryState["Public/protected surface target"]
   end
 ```
 
-### Orchestration/Harness Flow: Live Director Stage Pipeline
+### Data and harness flows
 
-**Trigger**: `knowgrph.video_remix.run` with `mode:"live"` and growing `approvals[]`
-**Topology pattern**: Agentic loop | **Max iterations**: 8 | **Circuit-breaker**: `state in {blocked, budget_exceeded, approval_required, verification_failed}`
-**Token budget**: research ~800+600, storyboard ~1200+900 @ AI Gateway cache — est. < $0.03/stage at demo load
-
-| Role | Component | Input schema | Output schema | Cost log | Fallback |
+| Track | Input | Validation before spend | Output | Persistence | Fallback |
 |---|---|---|---|---|---|
-| Dispatcher | `tool-registry.mjs` / Director | Run args + approvals[] | Routed stage | — | `approval_required` |
-| Executor | Stage harness + live client | Typed stage input | Evidence/KGC/assets/session | ✓ required | mock client when env absent |
-| Observer | Cost log + Run_Manifest DO | Harness output | Persisted manifest | ✓ | persistence failure flagged inline |
-| Consumer | Operator / external agent | Run_Manifest | UI / MCP response | — | upstream error |
+| Precondition P | Shared schema, local/Worker dispatchers, remote config | Enum and credential/session checks | Parity result and catalog | None | Typed unreachable/error result |
+| Track 1 | Gate id, token, issued time, TTL | Gate id and expiry | Single-use decision | Existing selected control-plane store | Fail closed; zero provider calls |
+| Track 2 | Approved run, explicit live config, budget | Approval, budget, client config | Manifest and cost records | Existing run-manifest owner | Block or deterministic mock; no silent live fallback |
+| Track 3 | Source document and manifest | Frontmatter/schema validation | Existing Canvas graph projection | Existing document/run owners | Typed apply failure; no direct graph write |
 
-**Postconditions**: no unapproved provider call; Cost_Log validates or lands in `validationFailures`; token consumed only after permitted spend (task 4.3).
+Track 2 uses an agentic loop only if the existing Director does. Its maximum
+iteration count must remain source-configured and bounded; the circuit-breaker
+is approval required, budget exhausted, blocked, verification failed, or the
+configured iteration bound. Precondition P, Track 1, and Track 3 are
+single-pass with maximum one iteration.
 
-### Workflow: HITL Token Mint → Spend → Consume
+Every model-bearing executor must emit
+`{ model, prompt_tokens, completion_tokens, cache_hits, estimated_cost_usd }`.
+Status, discovery, approval verification, and document projection must remain
+zero-model paths.
 
-**Trigger**: Operator or Director raises `approval_required` for a gate id.
+### Security and failure rules
 
-**Happy path**:
-1. Operator calls issuance surface (local: in-process issuer; Worker: new `POST` mint route or embedded in Director response metadata — implementer chooses minimal diff).
-2. Token stored in Approval_Token_Store with `issuedAt`, `gateId`, `ttlMs` (15 min default).
-3. Operator re-submits run with token in `approvals[]`.
-4. `verifyGateToken` passes at stage boundary; spend executes via live or mock client.
-5. `consumeSeam()` marks token used; second verify fails closed.
+- Bearer material remains in request/process memory and is never written to a
+  catalog result.
+- Approval tokens are distinct from transport bearer authentication.
+- A missing, expired, reused, or wrong-gate approval token blocks before a
+  provider call.
+- Worker-held provider credentials do not make the status or discovery reads
+  model-bearing.
+- A live-provider error returns a typed failure and preserves the last
+  authoritative manifest; it does not trigger an unbounded rerun.
+- An unavailable operator projection leaves the source document authoritative.
 
-**Error paths**:
-- Expired token → `approval_required`, no spend.
-- Reused token → `consumed`, no spend.
-- Unknown gate id → `ApprovalTokenIssueError`, no mint.
+### Architecture decisions and 12-month TCO
 
-**Postconditions**: `paidProviderCalls` unchanged when gate withheld; R11 smoke tests unchanged.
+| Decision | Selected | FOSS/other alternative | Rationale |
+|---|---|---|---|
+| FO-ADR-01 | Extend the current remote catalog adapter with auth/session support | New FOSS proxy | Smaller ownership and attack surface |
+| FO-ADR-02 | Reuse the current approval-store interface with one durable adapter | New standalone approval service | Preserves one token contract |
+| FO-ADR-03 | Live off by default, operator-enabled per proof | Live by default | Bounds spend and accidental credential use |
+| FO-ADR-04 | Reuse the existing document apply path | New dashboard store/renderer | Avoids duplicate state and projection |
 
-### Component Specifications (Follow-On)
+| Deployment model | 12-month direct-cost assumption | Ops burden | Selection |
+|---|---:|---|---|
+| Existing managed/serverless control plane at demo load | $0 incremental target; measure before promotion | Low runtime ops, operator secrets/releases | Selected target |
+| Existing local FOSS test path | $0 incremental | Manual local setup | Selected evidence host |
+| New provisioned approval/proxy service | At least $60 at $5/month | Patching, backup, failover | Rejected |
+| Hybrid service on an existing host | $0 incremental only with spare capacity; otherwise at least $60 | Shared manual operations | Rejected |
 
-**Component**: `mcp/video-remix/approval-token-issuer.js`
-**Status**: Implemented locally | **Gap**: Worker durable `store` adapter
-**VCC**: `node --test mcp/__tests__/approval-token-single-use.test.mjs mcp/__tests__/approval-rejection-path.test.mjs` exits 0
+### Lane boundaries
 
-**Component**: `mcp/video-remix/approval-gate-guard.js`, `director-gates.js`
-**Status**: Implemented | **VCC**: `node --test mcp/__tests__/director-gates-enforcement.test.mjs` exits 0
+| Boundary | Evidence Reference | Operator instruction | Rollback | State |
+|---|---|---|---|---|
+| FO-AUTHORING-MIRROR | None attached | None | Retain authoring state and fixtures | `closed` |
+| FO-MIRROR-DELIVERY | None attached | None | Restore prior delivered state and re-run its recorded check | `closed` |
 
-**Component**: `mcp/video-remix/live-clients.js`, `live-stage-clients.js`, `director-live-run.js`
-**Status**: Exa + storyboard live wireable; render/commerce scaffold (`requiresAsyncHarness`)
-**VCC**: `node --test mcp/__tests__/director-live-run.test.mjs mcp/__tests__/research-harness.test.mjs` exits 0
+## Verification and traceability
 
-**Component**: `knowgrph.agentic_canvas_os.plan` (local MCP)
-**Status**: Dry-run manifest implemented | **Gap**: Canvas dashboard render automation
-**Owner**: `mcp/agentic-canvas-os-runtime.js` (or successor), `mcp/director-lanes.js` builders
+### VCC register
 
-**Component**: Agentic Canvas OS lanes (Market Radar, browser evidence, starter repo, learning loop)
-**Status**: P0 dry-run payloads per companion | **Gap**: live capture + Canvas lane nodes
-**Owner**: [`knowgrph-mcp-agentic-os-prd-tad.companion.md`](knowgrph-mcp/knowgrph-mcp-agentic-os-prd-tad.companion.md)
+| VCC | Candidate check | Recorded result | Surface |
+|---|---|---|---|
+| VCC-FO-01 | Deterministic shared-schema/local/Worker dispatcher comparison | None | None |
+| VCC-FO-02 | Authenticated initialized catalog integration check | None | None |
+| VCC-FO-03 | Approval-token restart, expiry, and reuse check | None | None |
+| VCC-FO-04 | One approved bounded live capture plus one blocked zero-spend control | None | None |
+| VCC-FO-05 | Existing document apply-path check with store/renderer owner count | None | None |
 
-### ADR-FO-1: Worker KV for Approval_Token store (vs new DO class)
+These are candidate check hosts, not Evidence References. No result and no lane
+are recorded, so the VCCs keep the local rung at `spec-complete`; the absence of
+delivery VCC evidence keeps the delivered rung at `undocumented`.
 
-**Status**: Proposed | **Date**: 2026-07-03
+### Traceability
 
-**Decision**: Implement durable HITL storage as a **KV namespace** first, accessed through the existing in-memory store **interface** from `approval-token-issuer.js` — smallest diff, zero new DO class.
+| PRD story | TAD component | VCC |
+|---|---|---|
+| PRD-FO-01 | Contract parity check | VCC-FO-01 |
+| PRD-FO-02 | Authenticated catalog client | VCC-FO-02 |
+| PRD-FO-03 | Approval-token store adapter | VCC-FO-03 |
+| PRD-FO-04 | Live client resolver and existing manifest owner | VCC-FO-04 |
+| PRD-FO-05 | Existing document apply path | VCC-FO-05 |
 
-**Alternatives**: dedicated Approval Token DO (stronger consistency, higher ops); external Redis (vendor + TCO).
-
-**TCO**: KV free tier at demo load; $0 delta vs in-memory for local dev.
-
-### ADR-FO-2: Live stages default mock; opt-in via env
-
-**Status**: Accepted (implemented in `live-clients.js`)
-
-**Decision**: `KNOWGRPH_LIVE_CLIENTS` + per-provider secrets required for any live call; unset env → deterministic mock → zero provider spend.
-
-### Deployment Strategy (Follow-On)
-
-1. `npm run runtime:test` — full gate locally.
-2. `wrangler secret put` for Exa/BytePlus/payment keys (operator-only).
-3. Deploy `knowgrph-mcp` Worker with KV binding for tokens + live env vars per [`knowgrph-acos-deploy-runbook.md`](../knowgrph-acos-deploy-runbook.md) (Cloudflare-only steps; ignore AWS/Vercel sections per ADR-3).
-4. Capture one golden-path manifest + demo-pack URLs.
-5. Open generated `dashboard.agentic-os.md` in Canvas.
-
-### Validation
-
-```bash
-# Track A — HITL
-node --test mcp/__tests__/approval-token-single-use.test.mjs \
-  mcp/__tests__/approval-rejection-path.test.mjs \
-  mcp/__tests__/director-gates-enforcement.test.mjs
-
-# Track B — Live harnesses
-node --test mcp/__tests__/research-harness.test.mjs \
-  mcp/__tests__/director-live-run.test.mjs \
-  cloudflare/workers/knowgrph-mcp/__tests__/tool-registry.test.mjs
-
-# Parent Must-tier regression
-node --test mcp/__tests__/os-status-runtime.test.mjs mcp/__pbt__/os-status.pbt.test.mjs
-npm run runtime:test
-```
-
-### PRD ↔ TAD Traceability
-
-| Line |
-|---|
-| `PRD-FO-1 ↔ TAD-Approval_Token_Store ↔ VCC "token survives simulated Worker restart verify path"` |
-| `PRD-FO-2 ↔ TAD-research-harness-live ↔ VCC "≥3 cited sources + validateCostLog passes"` |
-| `PRD-FO-3 ↔ TAD-storyboard-harness-live ↔ VCC "kgc-computing-flow/v1 nodes == shotCount"` |
-| `PRD-FO-4 ↔ TAD-director-live-run ↔ VCC "director-live-run tests pass; no call when gate withheld"` |
-| `PRD-FO-5 ↔ TAD-Dashboard_Document ↔ VCC "dashboard doc applies via existing Canvas pipeline"` |
-| `PRD-FO-6 ↔ TAD-Market_Radar_lane ↔ VCC "companion payload tests; no credential fields"` |
-
-### Execution Sequence
-
-1. **Track A** — Worker KV adapter + deploy; verify token persistence.
-2. **Track B** — Enable live Exa + storyboard env; golden-path capture on deployed Worker.
-3. **Track B2** — Async render/commerce live clients (after harness async seam complete).
-4. **Track C** — Canvas dashboard render + lane inspector nodes from dry-run manifest.
-
-*Follows [PRD & TAD Guidelines v1.3.0](https://huijoohwee.github.io/guidelines/prd-tad-guidelines.md). Parent: [`knowgrph-agentic-os-prd-tad.md`](knowgrph-agentic-os-prd-tad.md) v0.4.0.*
+The parent regression VCCs must be rerun after every follow-on track. A track
+that lacks a surfaced evaluator result remains at `spec-complete`; it is not
+promoted by narrative, source presence, or a configured route.

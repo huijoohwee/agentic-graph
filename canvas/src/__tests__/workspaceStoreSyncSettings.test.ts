@@ -1,7 +1,15 @@
+import React, { act } from 'react'
+import { createRoot } from 'react-dom/client'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { uiWorkspaceSettingsRegistry } from '@/features/settings/registry-ui.workspace'
-import { readWorkspaceDocsMirrorRootPathSetting, readWorkspaceImportDefaultSourceUrlSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
+import {
+  readWorkspaceCloudSyncEnabledSetting,
+  readWorkspaceDocsMirrorRootPathSetting,
+  readWorkspaceImportDefaultSourceUrlSetting,
+  writeWorkspaceCloudSyncEnabledSetting,
+} from '@/lib/workspace/workspaceStoreSyncSettings'
+import { DocumentStorageSyncSettingsRows } from '@/features/panels/views/DocumentStorageSyncSettingsRows'
 
 const DASH_D1_URL = 'https://dash.cloudflare.com/170e89fdb8679ff2fcc2900e25ed04f4/workers/d1'
 const LOCAL_DOCS_ROOT_SAMPLE = ['', 'Users', 'huijoohwee', 'Documents', 'GitHub', 'huijoohwee', 'docs'].join('/')
@@ -39,6 +47,57 @@ export function testWorkspaceImportDefaultSourceUrlPrefersStorageBaseUrlForLocal
     if (typeof previousBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousBaseUrl
     else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
     restore()
+  }
+}
+
+export function testWorkspaceCloudSyncPreferenceDoesNotDisableLocalMirrorSettings() {
+  const { restore } = initJsdomHarness()
+  const previousCloudSync = readWorkspaceCloudSyncEnabledSetting()
+  try {
+    writeWorkspaceCloudSyncEnabledSetting(false)
+    if (readWorkspaceCloudSyncEnabledSetting()) throw new Error('expected offline-only preference to persist')
+    if (typeof readWorkspaceDocsMirrorRootPathSetting() !== 'string') {
+      throw new Error('expected local docs mirror setting to remain available in offline-only mode')
+    }
+    writeWorkspaceCloudSyncEnabledSetting(true)
+    if (!readWorkspaceCloudSyncEnabledSetting()) throw new Error('expected online collaboration preference to persist')
+  } finally {
+    writeWorkspaceCloudSyncEnabledSetting(previousCloudSync)
+    restore()
+  }
+}
+
+export async function testDocumentStorageSyncSettingsRenderAndSwitchOffline() {
+  const harness = initJsdomHarness('<!doctype html><html><body><ul id="root"></ul></body></html>')
+  const container = harness.dom.window.document.getElementById('root')
+  if (!container) throw new Error('missing document storage settings root')
+  const previousCloudSync = readWorkspaceCloudSyncEnabledSetting()
+  const root = createRoot(container)
+  try {
+    writeWorkspaceCloudSyncEnabledSetting(true)
+    await act(async () => {
+      root.render(React.createElement(DocumentStorageSyncSettingsRows))
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+    const text = String(container.textContent || '')
+    for (const token of ['GitHub/knowgrph/docs', 'GitHub/huijoohwee/docs', 'IndexedDB: active', 'Sync now']) {
+      if (!text.includes(token)) throw new Error(`expected rendered document storage settings to include ${JSON.stringify(token)}`)
+    }
+    const offlineButton = (Array.from(container.querySelectorAll('button')) as HTMLElement[])
+      .find(button => String(button.textContent || '').includes('Offline only'))
+    if (!offlineButton) throw new Error('expected rendered offline-only control')
+    await act(async () => {
+      offlineButton.dispatchEvent(new harness.dom.window.MouseEvent('click', { bubbles: true }))
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+    if (readWorkspaceCloudSyncEnabledSetting()) throw new Error('expected offline-only control to update the cloud preference')
+  } finally {
+    writeWorkspaceCloudSyncEnabledSetting(previousCloudSync)
+    await act(async () => {
+      root.unmount()
+      await new Promise(resolve => setTimeout(resolve, 0))
+    })
+    harness.restore()
   }
 }
 

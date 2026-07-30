@@ -1,3 +1,4 @@
+import { RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID } from '@/lib/render/richMediaOutputVersions'
 import type { RichMediaPanelProps } from './RichMediaPanel.types'
 
 export function RichMediaOutputVersionSelector(props: {
@@ -43,6 +44,9 @@ export function RichMediaOutputVersionSelector(props: {
           selectedOutputVersionId: event.currentTarget.value,
         })}
       >
+        {selectedOutputVersionId === RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID ? (
+          <option value={RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID}>Edited draft</option>
+        ) : null}
         {[...outputVersions].reverse().map((version, reverseIndex) => {
           const versionNumber = outputVersions.length - reverseIndex
           return (

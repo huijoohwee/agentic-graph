@@ -8,7 +8,10 @@ import { promisify } from "node:util";
 
 import { repoRoot } from "./collaboration-contract.mjs";
 import { readRuntimeReadinessContract } from "./runtime-readiness-contract.mjs";
-import { runAgenticCanvasOsDocsInvokeTool } from "../mcp/agentic-canvas-os-docs-runtime.js";
+import {
+  resolveAgenticCanvasOsDocsRoot,
+  runAgenticCanvasOsDocsInvokeTool,
+} from "../mcp/agentic-canvas-os-docs-runtime.js";
 import { runVideoRemix } from "../mcp/video-remix-runtime.js";
 import { VIDEO_REMIX_STAGE_ORDER } from "../mcp/video-remix/stage-contract.js";
 import { listAgentDefinitions } from "../contracts/agent-runtime.schema.js";
@@ -54,7 +57,7 @@ async function verifyDocs(contract) {
   const explicitRoot = String(process.env[dependency.root_env] || "").trim();
   const docsRoot = explicitRoot
     ? path.resolve(explicitRoot)
-    : path.resolve(repoRoot, dependency.default_relative_root);
+    : resolveAgenticCanvasOsDocsRoot({ rootDir: repoRoot, env: process.env });
 
   for (const fileName of dependency.required_files) {
     await fs.access(path.join(docsRoot, fileName)).catch(() => fail(`missing docs dependency: ${path.join(docsRoot, fileName)}`));

@@ -9,6 +9,7 @@ import {
   resolveStoryboardWidgetOverlayProxyTarget,
   shouldUseCanvasOverlayBodyPan,
 } from '@/lib/canvas/storyboard-widget-overlay-proxy'
+import { shouldActivateFlowCanvasRichMediaPanelFromPointer } from '@/components/FlowCanvas/flowCanvasRichMediaPanelHeaderToolbar'
 
 export function testFlowCanvasSpacePanCanStartFromOverlay() {
   const p = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'interactions', 'listeners.ts')
@@ -172,6 +173,15 @@ export function testFlowCanvasRichMediaScrollBodyUsesCanvasOwnedPan() {
   }
   if (shouldUseCanvasOverlayBodyPan({ target: editor, overlayRoot })) {
     throw new Error('expected Rich Media inline editors to stay local controls')
+  }
+  if (shouldActivateFlowCanvasRichMediaPanelFromPointer({ isSelected: true, target: editor })) {
+    throw new Error('expected the selected Rich Media inline edit surface to retain edit state without redundant Canvas node activation')
+  }
+  if (!shouldActivateFlowCanvasRichMediaPanelFromPointer({ isSelected: false, target: editor })) {
+    throw new Error('expected an unselected Rich Media inline edit surface to activate its Canvas node on the first pointer interaction')
+  }
+  if (!shouldActivateFlowCanvasRichMediaPanelFromPointer({ isSelected: true, target: body })) {
+    throw new Error('expected selected Rich Media non-editor content to preserve normal Canvas activation behavior')
   }
 
   const globalDom = globalThis as typeof globalThis & { Element?: typeof Element; HTMLElement?: typeof HTMLElement }

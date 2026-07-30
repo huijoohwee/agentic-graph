@@ -22,6 +22,47 @@ function requireBootstrapGuardBeforeMount(source: string, mountMarker: string, c
   }
 }
 
+function requireStableBootstrapAdmissionBeforeMount(
+  source: string,
+  mountMarker: string,
+  contract: string,
+): void {
+  const mountIndex = source.lastIndexOf(mountMarker)
+  if (mountIndex < 0) throw new Error(`${contract}: missing ${mountMarker}`)
+  const enclosingCondition = source.slice(Math.max(0, mountIndex - 1_200), mountIndex)
+  if (!/sourceFilesBootstrapHasReachedReady\s*\?/.test(enclosingCondition)) {
+    throw new Error(`${contract}: ${mountMarker} must wait for initial source authority and remain mounted across later intents`)
+  }
+}
+
+function requireCentralizedBootstrapActivation(
+  viewportSource: string,
+  lifecycleSource: string,
+  mountMarker: string,
+  contract: string,
+): void {
+  const mountIndex = viewportSource.lastIndexOf(mountMarker)
+  if (mountIndex < 0) throw new Error(`${contract}: missing ${mountMarker}`)
+  const enclosingCondition = viewportSource.slice(Math.max(0, mountIndex - 1_200), mountIndex)
+  if (!enclosingCondition.includes('threeCanvasSurface.mounted')) {
+    throw new Error(`${contract}: ${mountMarker} must stay behind centralized mount ownership`)
+  }
+  for (const marker of [
+    'resolveThreeCanvasSurfaceLifecycle({',
+    'sourceFilesBootstrapReady,',
+    'documentSwitchOwnsViewport,',
+  ]) {
+    requireSourceMarker(viewportSource, marker, `${contract} viewport delegation`)
+  }
+  for (const marker of [
+    'export function shouldActivateThreeCanvasSurface',
+    'input.sourceFilesBootstrapReady',
+    '&& !input.documentSwitchOwnsViewport',
+  ]) {
+    requireSourceMarker(lifecycleSource, marker, `${contract} activation owner`)
+  }
+}
+
 export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   const canonicalProjection = resolveXrCanonicalSceneProjection({ physicsRunReady: true })
   if (canonicalProjection !== 'native-controller') {
@@ -53,11 +94,13 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   const bridgeSource = readSource('features', 'three', 'XrMotionReferenceRuntimeBridge.tsx')
   const startupRuntimesSource = readSource('features', 'canvas', 'CanvasStartupRuntimes.tsx')
   const canvasViewportSource = readSource('components', 'CanvasViewport.tsx')
+  const threeRendererLifecycleSource = readSource('lib', 'three', 'threeRendererLifecycle.ts')
   const canonicalPhysicsStageSource = readSource('features', 'three', 'XrCanonicalPhysicsStage.tsx')
   const motionReferenceGraphStageSource = readSource('features', 'three', 'XrMotionReferenceGraphStage.tsx')
   const xrSceneStageSource = readSource('features', 'three', 'XrSceneStage.tsx')
   const sceneSource = readSource('lib', 'three', 'Scene.impl.tsx')
   const threeGraphSource = readSource('lib', 'three', 'ThreeGraph.impl.tsx')
+  const threeGraphImmersiveMediaSource = readSource('lib', 'three', 'ThreeGraphImmersiveMedia.tsx')
   const gameMissionSource = readSource('features', 'game-fps', 'GameFpsMissionStage.tsx')
   const staleCompositionPath = resolve(
     process.cwd(),
@@ -75,6 +118,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     'useSourceFilesBootstrapSnapshot',
     'useSourceFilesBootstrapHydrated',
     'useSourceFilesBootstrapReady',
+    'useSourceFilesBootstrapHasReachedReady',
   ]) {
     requireSourceMarker(bootstrapSource, marker, 'source bootstrap must own a single explicit lifecycle')
   }
@@ -124,8 +168,9 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     'data-kg-source-authority-phase=',
     'Canvas viewport must expose source authority for runtime proof',
   )
-  requireBootstrapGuardBeforeMount(
+  requireCentralizedBootstrapActivation(
     canvasViewportSource,
+    threeRendererLifecycleSource,
     '<ThreeGraphLazy',
     'ThreeGraph source authority',
   )
@@ -139,7 +184,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     'const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady',
     'Game Mode HUD source authority',
   )
-  requireBootstrapGuardBeforeMount(
+  requireStableBootstrapAdmissionBeforeMount(
     startupRuntimesSource,
     '<XrPhysicsRunReadyDemoRuntime',
     'XR run-ready lifecycle source authority',
@@ -170,7 +215,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   requireSourceMarker(sceneSource, '<XrSceneStage authority={xrGraphStageAuthority}', 'Scene must delegate to the explicit XR selector')
   requireSourceMarker(
     threeGraphSource,
-    "xrPhysicsRunReadyDemo ? 'native-controller' : 'motion-reference'",
+    "nativeXrRunReadyDemo ? 'native-controller' : 'motion-reference'",
     'ThreeGraph source identity must decide the XR stage before construction',
   )
   if (existsSync(staleMixedStagePath)) {
@@ -181,9 +226,14 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
     'data-kg-xr-scene-authority=',
     "'native-controller'",
     "'motion-reference'",
+    "'immersive-media'",
     "'empty-world'",
   ]) {
-    requireSourceMarker(threeGraphSource, marker, 'XR scene owner must be explicit at first mount')
+    requireSourceMarker(
+      `${threeGraphSource}\n${threeGraphImmersiveMediaSource}`,
+      marker,
+      'XR scene owner must be explicit at first mount',
+    )
   }
 
   const forbiddenLegacyMarkers = [

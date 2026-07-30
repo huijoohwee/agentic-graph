@@ -1,16 +1,23 @@
 ---
-title: "Knowgrph Agentic Video Workflow Runtime Contract"
+title: "Knowgrph Agentic Video Workflow — Reference implementation companion"
 id: "md:knowgrph-agentic-os-video-agent-prd-tad-companion"
-date: "2026-07-10"
-updated: "2026-07-10"
-version: "0.3.0"
-status: "runtime-ready"
-doc_type: "Combined PRD/TAD Companion"
+doc_type: "TAD Companion"
+version: "0.4.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
-domain: "knowgrph"
-authority: "native video-remix workflow, checkpoint, revision, render-resume, and cost-control contract"
-runtime_scope: "Dev-only knowgrph runtime"
+owner: "docs.agentic-os.video-agent.companion"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-agentic-os-video-agent-prd-tad.companion.md"
+parent: "docs/documents/knowgrph-agentic-os-prd-tad.md"
+parent_version: "1.0.0"
+reference_implementation: true
+guideline_title: "PRD, TAD & ADR Guidelines"
+guideline_version: "1.7.0"
+authority: "target video-remix workflow, checkpoint, revision, render-resume, and cost-control contract"
+runtime_scope: "authoring specification; source presence requires independent runtime evidence"
 publish_policy: "Prod mirror and Cloudflare remain forbidden until explicit operator approval"
 orientation:
   - "solo-dev"
@@ -43,23 +50,39 @@ external_pattern_reference: "https://github.com/HKUDS/ViMax"
 external_reference_policy: "architecture inspiration only; no code, prompt, fixture, provider config, or runtime dependency copied"
 ---
 
-# Knowgrph Agentic Video Workflow Runtime Contract
+# Knowgrph Agentic Video Workflow — Reference implementation companion
 
-## Outcome
+This companion is a `spec-complete` authoring artifact with delivered readiness
+`undocumented`. It maps a target contract to source owners and VCCs, but it
+attaches no recorded test result, live-provider capture, mirror result, delivery
+check, or operator promotion instruction. Every capability and state below is a
+requirement unless an Evidence Reference is added later; source presence alone
+does not raise readiness.
 
-The existing `knowgrph.video_remix.run` Director remains the only end-to-end video orchestrator. It now supports interactive plan, revise, render, and resume actions through one native workflow contract while preserving the existing sequence:
+## Reference implementation outcome target
+
+The target keeps one Video Remix Director as the end-to-end video orchestrator.
+The contract requires interactive plan, revise, render, and resume actions while
+preserving the sequence:
 
 `research -> storyboard -> render -> edit -> publish -> checkout`
 
-The enhancement adds session reuse, deterministic context compaction, source-addressable long-script segmentation, audience-conditioned expressive storyboard design, scene-scoped multi-camera simulation, intelligent first-frame reference selection, automated spatial image-prompt generation, parallel first-frame candidate generation and VLM consistency selection, dependency-aware same-camera parallel shot rendering, hierarchical retrieval-backed narrative planning, temporal character/environment state, bounded specialist negotiation, multimodal visual review, and one inspectable nine-stage multi-agent pipeline projection with typed handoffs, semantic asset indexing, and resource accounting. It introduces no external runtime dependency, datastore, approval gate, or deploy action.
+The specification covers session reuse, deterministic context compaction,
+source-addressable long-script segmentation, audience-conditioned expressive
+storyboard design, scene-scoped multi-camera simulation, first-frame reference
+selection, spatial image-prompt generation, bounded candidate generation and
+consistency selection, dependency-aware shot rendering, hierarchical narrative
+planning, temporal state, bounded specialist negotiation, multimodal review,
+typed handoffs, asset indexing, and resource accounting. The target introduces
+no external runtime dependency, datastore, approval gate, or deploy action.
 
-## Product Contract
+## Reference implementation product contract
 
 ### Operator need
 
 A solo operator must be able to plan and revise before render spend, resume an interrupted script-to-video run without regenerating completed shots, inspect exact per-shot status, and keep context/token growth bounded.
 
-### Success conditions
+### Specified acceptance targets
 
 | Capability | Observable outcome |
 |---|---|
@@ -106,21 +129,13 @@ A solo operator must be able to plan and revise before render spend, resume an i
 | VLM quality loop | The existing multimodal AI Gateway client reviews rendered assets against planned narrative and continuity state. Low scores block edit/publish and return targeted prompt revisions. |
 | Cost control | Existing approvals, Cost Logs, Credit Ledger events, and Budget Meters remain authoritative. |
 
-## Invocation and control-surface alignment
+## Invocation ownership
 
-This workflow reuses the global Agentic Canvas OS grammar rather than defining a video-only command registry:
-
-| Grammar | Use |
-|---|---|
-| `/superagent.run` | Long-horizon video workflow entry. |
-| `/state.checkpoint` | Persist or resume the returned workflow checkpoint through the existing runtime owner. |
-| `/human.review` | Approve or revise the plan before render. |
-| `/stream.trace` | Read ordered retry and stage status without mutating the run. |
-| `#long-horizon-harness` | Semantic classification for the workflow. |
-| `#durable-execution` | Semantic classification for checkpoint/resume behavior. |
-| `@checkpoint-store` | Existing binding for persisted checkpoint ownership. |
-| `@human-review` | Existing operator review binding. |
-| `@runtime-proof` | Focused tests and returned manifest fields. |
+This companion declares no command route, semantic tag, binding, or callable
+tool identity. Callable identities and their schemas remain owned by the
+existing runtime contracts and catalogs. This document owns only the target
+workflow payload and its VCCs, so it requires no Invocation Register and cannot
+conflict with the canonical Agentic OS register.
 
 ## Runtime architecture
 
@@ -169,7 +184,9 @@ No UI-local registry, compatibility alias, provider-specific workflow schema, or
 19. Passing reviews allow edit/publish. Low scores return `awaiting_quality_revision`, block downstream output, and persist `proposedRevisions` in the workflow checkpoint. A later `resume` applies only approved shot revisions and reuses unaffected completed assets.
 20. The pipeline projector reads those canonical stage results once, emits named agent assignments and handoffs, indexes references/frames/clips/output by semantic identity, and advances the same projection in the checkpoint after live execution.
 
-This is a dependency-aware feedback loop, not an automatic unbounded rerender loop. Every model call remains approval-gated, retried through the shared bound, and recorded in Budget Meters and Cost Logs.
+This is specified as a dependency-aware feedback loop, not an automatic
+unbounded rerender loop. Every model call must remain approval-gated, retried
+through the shared bound, and recorded in Budget Meters and Cost Logs.
 
 ## Workflow input
 
@@ -232,7 +249,7 @@ Values shown above describe field shapes, not provider fixtures or runtime defau
 
 ## Checkpoint output
 
-The Run Manifest returns `workflow.checkpoint` with:
+The target Run Manifest schema requires `workflow.checkpoint` with:
 
 | Field | Rule |
 |---|---|
@@ -344,9 +361,11 @@ The checkpoint is a typed transport payload. Persistence stays with the existing
 44. Given completed candidate, render, edit, retry, and accounting results, when the checkpoint advances, then selected frames, clips, assembled output, provider calls, spend, retries, and Cost Logs are indexed once.
 45. Given unavailable optional VLM review or a blocking specialist decision, when pipeline state resolves, then it returns `complete_unverified` or propagates `blocked` through dependent stages and handoffs without claiming verified completion.
 
-## Runtime proof
+## Candidate runtime evidence checks
 
-Run from `$GITHUB_ROOT/knowgrph`:
+The following invocable commands are candidate VCC hosts. This document records
+no result or lane for them, so they are not Evidence References and do not raise
+either readiness rung.
 
 ```bash
 node --test mcp/__tests__/video-agent-workflow.test.mjs mcp/__tests__/video-agent-runtime.test.mjs mcp/__pbt__/video-agent.pbt.test.mjs
@@ -354,8 +373,15 @@ node --test cloudflare/workers/knowgrph-mcp/__tests__/tool-registry.test.mjs clo
 npm run hygiene:check
 ```
 
-TypeScript and broader Canvas checks remain separate repo gates. No Prod mirror sync or Cloudflare deploy is part of this contract.
+TypeScript and broader Canvas checks remain separate gates. No mirror sync or
+Cloudflare deploy is part of this contract.
 
 ## External reference boundary
 
-The ViMax project informed the capability checklist: interactive planning, revision, rendering control, session reuse, context compaction, bounded retries, persistent render status, landscape guards, and script-to-video resume. Knowgrph implements those capabilities through its own Director, schemas, harnesses, gates, ledgers, and tests. It does not copy ViMax code, prompts, repository layout, provider configuration, tests, fixtures, or runtime dependencies.
+The ViMax project informed the target checklist: interactive planning,
+revision, rendering control, session reuse, context compaction, bounded retries,
+persistent render status, landscape guards, and script-to-video resume. This
+reference implementation specifies those capabilities against its own Director,
+schemas, harnesses, gates, ledgers, and candidate tests; it does not infer
+runtime or delivery proof. It does not copy ViMax code, prompts, repository
+layout, provider configuration, tests, fixtures, or runtime dependencies.

@@ -65,6 +65,8 @@ export type MarkdownTokenRendererProps = {
   webpageLayoutWireframeAscii?: string | null
   markdownForcePlainTables?: boolean
   markdownSourceLines?: string[]
+  markdownParagraphEditStripLinePrefix?: (line: string) => { prefix: string; content: string }
+  markdownParagraphEditDefaultLinePrefix?: string
   forbidCopy?: boolean
   onInlineEditStateChange?: (active: boolean) => void
   onInlineDraftTextChange?: (nextText: string) => void
@@ -135,6 +137,8 @@ const MarkdownTokenRenderer = React.memo(function MarkdownTokenRenderer(props: M
     webpageLayoutWireframeAscii,
     markdownForcePlainTables,
     markdownSourceLines,
+    markdownParagraphEditStripLinePrefix,
+    markdownParagraphEditDefaultLinePrefix,
     forbidCopy,
     onInlineEditStateChange,
     onInlineDraftTextChange,
@@ -198,6 +202,8 @@ const MarkdownTokenRenderer = React.memo(function MarkdownTokenRenderer(props: M
       markdownVariablePreviewByKey,
       markdownForcePlainTables: !!markdownForcePlainTables,
       markdownSourceLines,
+      markdownParagraphEditStripLinePrefix,
+      markdownParagraphEditDefaultLinePrefix,
       standaloneMediaRenderLineSet,
       forbidCopy: !!forbidCopy,
       onInlineEditStateChange,
@@ -217,6 +223,8 @@ const MarkdownTokenRenderer = React.memo(function MarkdownTokenRenderer(props: M
       markdownPresentationMode,
       markdownForcePlainTables,
       markdownSourceLines,
+      markdownParagraphEditStripLinePrefix,
+      markdownParagraphEditDefaultLinePrefix,
       standaloneMediaRenderLineSet,
       markdownWordWrap,
       forbidCopy,

@@ -171,6 +171,19 @@ export const readRemoteRevision = ({ remote, targetRef, cwd = repoRoot }) => {
   return requireSha(revision, 'remote revision')
 }
 
+export const assertRemoteRevisionAuthority = ({
+  sourceRevision,
+  remoteRevision,
+  targetRef,
+}) => {
+  const source = requireSha(sourceRevision, 'release source revision')
+  const current = requireSha(remoteRevision, 'remote revision')
+  if (source !== current) {
+    throw new Error(`release source revision ${source} is stale; remote ${targetRef} is ${current}`)
+  }
+  return { sourceRevision: source, remoteRevision: current, targetRef }
+}
+
 export const pushImmutableRevision = ({ remote, sourceRevision, targetRef, cwd = repoRoot }) => {
   runGit(['push', '--no-verify', remote, `${sourceRevision}:${targetRef}`], cwd)
 }

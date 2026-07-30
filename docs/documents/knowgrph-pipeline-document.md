@@ -1,4 +1,22 @@
-# Knowgrph Pipeline: Universal GraphRAG Specification
+---
+title: "Reference implementation: Knowgrph Graph Pipeline"
+doc_type: "Technical Design Reference"
+version: "1.0.1"
+date: "2026-07-30"
+lang: "en-US"
+guideline_version: "1.7.0"
+owner: "docs.pipeline.graph"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+---
+
+# Reference implementation: Knowgrph Graph Pipeline
+
+This legacy reference has no well-formed VCC or attached Evidence Reference. Its local and
+delivered rungs therefore remain `undocumented`; checklists and source-path inventories below do
+not establish a readiness claim.
 
 ## Design Mantras
 
@@ -65,9 +83,9 @@
 | Published run expansion | Grow builder choices by adding verified non-empty city variants with stable suffixes in the SSOT runs catalog. | Improve exact-match usefulness without changing the runtime contract. |
 | Published year-series | Add a parameterized published year preset with exact `2024`/`2025`/`2026` runs. | Give the builder a trustworthy second parameter axis with real event and demo subsets. |
 | Mobile/PWA | Keep mobile-first behavior source-driven in `knowgrph/canvas`; consume published `runtime.mobile_pwa` for compact Flowchart controls and safe-area spacing, and mirror generated install metadata via Pages sync. | Avoid hand-edited deploy artifacts, duplicate viewport heuristics, and drift between source and public PWA UX. |
-| PWA offline shell | Precache all hashed `assets/*` chunks, cache same-origin JSON/JSON-LD/webmanifest payloads, and expose Canvas plus Editor shortcuts from the manifest. | Keep installed `/knowgrph` resilient for lazy bundles, public graph payloads, and mobile-first launch flows. |
-| PWA runtime state | Publish installed-shell/display-mode state from one shared runtime helper and surface offline-ready/update-ready signals through the app toast path. | Keep installed mobile behavior source-owned and observable without deploy-only patches or duplicate shell state. |
-| PWA display modes | Track `standalone`, `fullscreen`, and `minimal-ui` from one runtime helper and publish root datasets for display/install/offline/update state. | Keep installed-shell UX observable and CSS-driven across mobile relaunch paths without duplicate PWA state stores. |
+| PWA revision-safe cache | Keep HTML network-owned, precache exact-revision `assets/*` chunks, bypass HTTP caches for the top-level worker and both mutable imports, cache same-origin JSON/JSON-LD/webmanifest payloads, and expose Canvas plus Editor shortcuts from the manifest. | Prevent an old worker or cached imported authority/lifecycle script from projecting a retired release while retaining source-owned install and asset-cache behavior. |
+| PWA runtime state | Publish installed-shell/display-mode state from one shared runtime helper, bind immediate plus bounded foreground/online checks to the registered worker, keep failed checks immediately eligible for online recovery, and prune response-typed cached HTML plus prior-revision assets only after the activated controller attests its build revision. | Converge long-lived clients on one canonical revision without deploy-only cache clearing, retained `kg-assets` generations, a failed-update blind spot, successor deletion by an old tab, or duplicate lifecycle state. |
+| PWA display modes | Track `standalone`, `fullscreen`, and `minimal-ui` from one runtime helper and publish root datasets for display/install/asset-cache state. | Keep installed-shell UX observable and CSS-driven across mobile relaunch paths without duplicate PWA state stores. |
 | Canvas touch ergonomics | Keep toolbar touch sizing, narrow-toolbar overflow handling, viewport touch pan slop, node/group drag intent thresholds, collapsed-group chevron hit targets, resize-handle touch tolerance, active resize feedback with stronger outline/label emphasis, parent/child semantic emphasis, inset handle anchoring, exclusive active handle ownership, active-shape layer raising, and root-owned motion-token transition recipes reused by graph chrome plus action buttons/viewer buttons. | Improve coarse-pointer usability without adding duplicate mobile state or per-surface button forks. |
 | Loader telemetry | Finalize `loader:all` for no-match, empty-result, cache-hit, and markdown-fallback paths, and emit a dedicated markdown fallback stage. | Keep ingest→parse→render timing complete, comparable, and free of stale partial metrics. |
 | Source-file ingest dedupe | Skip duplicate pending parses when the same source-file text hash is already loading, while preserving stale-job and latest-hash guards before writeback. | Reduce repeated ingest→parse→compose churn during rapid local or URL import updates without changing parser/store SSOT. |
@@ -105,8 +123,8 @@ When changing shared packages that are wired via `file:` links (for example `sin
 
 #### Journey 1: Import JSON/CSV → See Nodes On MapLibre
 
-- `ToolbarToolMenuAreas` triggers a format import action → [useToolbarMenuAction](../../canvas/src/features/toolbar/useToolbarMenuAction.ts)
-- `useToolbarMenuAction(area='sourceFiles', action='importLocal'|'importUrl', payload.format='json'|'csv')` → `performJsonImport` / `performCsvImport`
+- `ToolbarToolMenu` and the shared toolbar actions dispatch a format import action → [ToolbarToolMenu.impl.tsx](../../canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx) and [useToolbarActions.ts](../../canvas/src/features/toolbar/hooks/useToolbarActions.ts)
+- The selected Source Files import action resolves `importLocal` or `importUrl` with the requested JSON/CSV format → `performJsonImport` / `performCsvImport`
 - `performJsonImport` / `performCsvImport` → [runImportFlow](../../canvas/src/features/toolbar/importFlow.ts) → [loadGraphDataFromTextViaParser](../../canvas/src/features/parsers/loader.ts)
 - `loadGraphDataFromTextViaParser` → `bestMatch` → `applyParserAsync` → `useGraphStore.getState().setGraphData(graphData)`
 - `GraphCanvas` reads `graphData` → renders nodes/edges → [GraphCanvas](../../canvas/src/components/GraphCanvas.tsx)
@@ -487,24 +505,24 @@ provenance_tracking: {track_lineage, versioning_strategy}
 
 **Structural Health**:
 
-| Context              | Status | Directive                                                                                   |
+| Context              | Evidence result | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
-| Layer Separation     | ✓      | - [ ] Each layer in separate module; clear interfaces; forbid cross-layer coupling         |
-| Config Completeness  | ✓      | - [ ] All behavior configurable; documented defaults; forbid hidden parameters             |
+| Layer Separation     | not recorded | - [ ] Each layer in separate module; clear interfaces; forbid cross-layer coupling      |
+| Config Completeness  | not recorded | - [ ] All behavior configurable; documented defaults; forbid hidden parameters          |
 
 **Maintainability**:
 
-| Context              | Status | Directive                                                                                   |
+| Context              | Evidence result | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
-| Documentation        | ✓      | - [ ] All layers documented; examples provided; forbid undocumented components             |
-| Test Coverage        | ✓      | - [ ] >80% overall; neutrality suite; forbid untested features                             |
+| Documentation        | not recorded | - [ ] All layers documented; examples provided; forbid undocumented components          |
+| Test Coverage        | not recorded | - [ ] >80% overall; neutrality suite; forbid untested features                          |
 
 **Operations**:
 
-| Context              | Status | Directive                                                                                   |
+| Context              | Evidence result | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
-| Reproducibility      | ✓      | - [ ] Config/data versioning; seeded randomness; forbid environment dependencies           |
-| Monitoring           | ✓      | - [ ] Quality metrics logged; drift detection; forbid silent failures                      |
+| Reproducibility      | not recorded | - [ ] Config/data versioning; seeded randomness; forbid environment dependencies        |
+| Monitoring           | not recorded | - [ ] Quality metrics logged; drift detection; forbid silent failures                   |
 
 ---
 

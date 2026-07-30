@@ -7,6 +7,9 @@
   const CHUNK = 'KG_CHAT_STREAM_CHUNK'
   const DONE = 'KG_CHAT_STREAM_DONE'
   const ERROR = 'KG_CHAT_STREAM_ERROR'
+  const RUNTIME_ATTEST_REQUEST = 'KG_CHAT_STREAM_RUNTIME_ATTEST_REQUEST'
+  const RUNTIME_ATTEST_RESPONSE = 'KG_CHAT_STREAM_RUNTIME_ATTEST_RESPONSE'
+  const RUNTIME_SCHEMA = 'knowgrph-chat-stream-worker/v2'
   const CACHE_NAME = 'kg-chat-durable-stream-v1'
   const CACHE_PATH_PREFIX = '/__kg_chat_stream/'
   const runs = new Map()
@@ -247,18 +250,14 @@
     replayRunToPort(run, port)
   }
 
-  self.addEventListener('install', event => {
-    if (self.skipWaiting) event.waitUntil(self.skipWaiting())
-  })
-
-  self.addEventListener('activate', event => {
-    if (self.clients && self.clients.claim) event.waitUntil(self.clients.claim())
-  })
-
   self.addEventListener('message', event => {
     const data = event.data || {}
     const runId = normalizeString(data.runId)
     const port = event.ports && event.ports[0] ? event.ports[0] : null
+    if (data.type === RUNTIME_ATTEST_REQUEST && port) {
+      send(port, { type: RUNTIME_ATTEST_RESPONSE, schema: RUNTIME_SCHEMA })
+      return
+    }
     if (!runId) return
     if (data.type === START && port && data.request) {
       event.waitUntil(startRun(runId, data.request, port))

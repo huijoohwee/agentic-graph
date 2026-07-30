@@ -6,6 +6,7 @@
 
 import { CHAT_STORYBOARD_TEMPLATE_CONTRACT_PROMPT } from './chatStoryboardTemplateContract'
 import { RICH_MEDIA_TEXT_MARKDOWN_SCHEMA } from '@/features/rich-media/richMediaTextMarkdownContract.mjs'
+import { CHAT_RESPONSE_WIDGET_PALETTE_CONTRACT_PROMPT } from './chatResponseWidgetPaletteContract'
 
 export const CHAT_BASE_RESPONSE_CONTRACT_PROMPT = [
   // ── ROLE ──────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ export const CHAT_BASE_RESPONSE_CONTRACT_PROMPT = [
   '· Structured metadata: ONE fenced yaml block with root key response:.',
   '· An imperative generation request (for example one beginning with generate, create, draft, or produce) must produce the requested deliverable. Do not replace it with canned scope/priority/constraint, relationship, evidence, dependency, decision-order, basis, or deliverable wrappers; hardcoded use-case output; or another Probe-Tree round unless the user explicitly requests questions or branches.',
   '· For renderable or interactive output, the yaml block MUST include `response.structuredContent` shaped like an MCP tool result: arrays named widgets, panels, cards, media, nodes, or tables; each item may carry id, label, kind, output, imageUrl, videoUrl, audioUrl, or non-table interactive outputSrcDoc; table records carry columns and rows. Declared widgets may also carry nodeTypeId, formId, widgetTypeId, prompt, sourceHandle, targetHandle, and optional safe `flow:compute` data for inline port-derived output; optional edges carry source, target, sourceHandle, targetHandle, label. Plain fields are preferred, and typed {key,type,value} envelopes or properties[] rows are normalized by the shared frontmatter-value path.',
+  CHAT_RESPONSE_WIDGET_PALETTE_CONTRACT_PROMPT,
   `· Rich Media Panel text records must use \`kind: text\` and \`output\` containing a byte-zero YAML-frontmatter Markdown document with \`schema: ${RICH_MEDIA_TEXT_MARKDOWN_SCHEMA}\`, \`media_kind: text\`, and \`content_type: text/markdown\`; never place text in \`html\`, \`srcDoc\`, or \`outputSrcDoc\`. Reserve \`outputSrcDoc\` for genuinely interactive non-text media.`,
   '· GitGraph, Gantt, and Geospatial outputs follow the same rule: diagram source may live in neutral records or typed `flow_diagrams` data (`mermaid_gitgraph`, `mermaid_gantt`), and GeoJSON/FeatureCollection data may live in neutral `geoJson`/`geojson`/coordinate fields, but renderable panels must be source/card/widget -> safe compute -> Rich Media Panel `outputSrcDoc` dataflow with authored edges whenever available.',
   '· D3 Graph, Flow Canvas, Dashboard, 3D Mode, and XR Mode outputs use neutral frontmatter data, not renderer-local instructions: put renderer/surface/model intent in `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*`, then keep generated graph nodes, edges, and panels on the shared dataflow path.',
@@ -67,7 +69,7 @@ export const CHAT_BASE_RESPONSE_CONTRACT_PROMPT = [
   '· structuredContent: MCP-aligned tool result payload for Canvas materialization.',
   '  Use neutral fields only: widgets/panels/cards/media/nodes/tables arrays plus edges array.',
   '  Render fields: output/result/response/transcript, imageUrl, videoUrl, audioUrl, and outputSrcDoc only for non-table interactive media.',
-  '  Declared widget forms may include nodeTypeId/formId/widgetTypeId/prompt and handle keys; undeclared panels/cards/media/nodes remain neutral Rich Media Panel endpoints.',
+  '  Declared widget forms may include a canonical layoutVariantId or specialized nodeTypeId/formId/widgetTypeId/prompt and handle keys; undeclared panels/cards/media/nodes remain neutral Rich Media Panel endpoints.',
   '  Dynamic inline compute is data, not UI glue: a declared widget may carry safe `flow:compute` that reads incoming handle keys from `inputs` and returns output-port values for the shared Storyboard Widget dataflow runtime.',
   '  Diagram and geospatial fields such as `flow_diagrams`, `mermaid_gitgraph`, `mermaid_gantt`, `geoJson`, `FeatureCollection`, and coordinate payloads are data inputs; do not mix them with document version-control GitGraph state, renderer-local Timeline UI, or Geospatial Mode toggles.',
   '  Renderer and model fields such as `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*` are frontmatter data inputs for D3 Graph, Flow Canvas, Dashboard, 3D Mode, and XR Mode; do not replace shared graph dataflow with renderer-local placement instructions.',

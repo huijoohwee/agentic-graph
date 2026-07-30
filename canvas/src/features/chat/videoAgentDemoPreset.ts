@@ -68,7 +68,16 @@ const readMirrorText = async (relPath: string): Promise<string> => {
   })
   if (direct) return direct
   const entries = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
-  return String(entries.find(entry => entry.relPath === normalized)?.text || '')
+  return resolveVideoAgentDemoMirrorText(entries, normalized)
+}
+
+export const resolveVideoAgentDemoMirrorText = (
+  entries: ReadonlyArray<{ relPath: string; text: string }>,
+  relPath: string,
+): string => {
+  const normalized = String(relPath || '').replace(/^\/+/, '')
+  const candidates = new Set([normalized, normalized.replace(/^docs\//, '')])
+  return String(entries.find(entry => candidates.has(String(entry.relPath || '').replace(/^\/+/, '')))?.text || '')
 }
 
 export const reconcileVideoAgentDemoPresetWorkspaceSource = async (args: {

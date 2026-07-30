@@ -1,7 +1,11 @@
 import { emitGeospatialModeChanged } from 'grph-shared/geospatial/events'
 import { DEFAULT_GEOSPATIAL_OVERLAY_ENABLED, GEOSPATIAL_OVERLAY_PREFERENCE_VERSION } from 'grph-shared/geospatial/constants'
 import { LS_KEYS } from '../../lib/config.js'
-import { DEFAULT_GEOSPATIAL_VIEW_MODE, normalizeGeospatialViewMode } from '../../features/geospatial/basemapStyle.js'
+import {
+  DEFAULT_GEOSPATIAL_VIEW_MODE,
+  normalizeGeospatialViewMode,
+  resolveCanonicalPersistedGeospatialStyleUrl,
+} from '../../features/geospatial/basemapStyle.js'
 import type { GeospatialFitRequest, GeospatialInteractionMode, GeospatialViewMode } from './types.js'
 
 const readBool = (key: string, fallback: boolean): boolean => {
@@ -93,6 +97,7 @@ export type GympgrphGeospatialState = {
   requestGeospatialFitToData: () => void
   requestGeospatialFitToSelection: () => void
   requestGeospatialCurrentLocation: (coords: { lat: number; lng: number; zoom?: number }) => void
+  requestGeospatialFitToBounds: (bounds: readonly [number, number, number, number]) => void
   clearGeospatialFitRequest: () => void
 }
 
@@ -112,6 +117,14 @@ export const createDefaultGympgrphGeospatialState = (): Pick<
     return normalizeGeospatialViewMode(readString(LS_KEYS.geospatialViewMode, DEFAULT_GEOSPATIAL_VIEW_MODE))
   }
   const geospatialViewMode = readPersistedViewMode()
+  const persistedStyleUrl = readString(LS_KEYS.geospatialStyleUrl, '')
+  const canonicalStyleUrl = resolveCanonicalPersistedGeospatialStyleUrl(
+    geospatialViewMode,
+    persistedStyleUrl,
+  )
+  if (canonicalStyleUrl !== persistedStyleUrl.trim()) {
+    writeString(LS_KEYS.geospatialStyleUrl, canonicalStyleUrl)
+  }
   const geospatialInteractionMode = (readString(LS_KEYS.geospatialInteractionMode, 'always') as GeospatialInteractionMode) || 'always'
   const geospatialAutoFitEnabled = readBool(LS_KEYS.geospatialAutoFitEnabled, false)
   const geospatialDatasetTimeoutMs = (() => {
@@ -242,6 +255,17 @@ export const buildGympgrphGeospatialActions = (set: (updater: (prev: GympgrphGeo
     }))
   }
 
+  const requestGeospatialFitToBounds = (bounds: readonly [number, number, number, number]) => {
+    const values = bounds.map(Number)
+    if (values.length !== 4 || values.some(value => !Number.isFinite(value))) return
+    const [west, south, east, north] = values
+    if (west < -180 || east > 180 || south < -90 || north > 90 || west > east || south > north) return
+    set(prev => ({
+      ...prev,
+      geospatialFitRequest: { mode: 'bounds', bounds: [west, south, east, north] },
+    }))
+  }
+
   const clearGeospatialFitRequest = () => {
     set(prev => {
       if (!prev.geospatialFitRequest) return prev
@@ -260,6 +284,7 @@ export const buildGympgrphGeospatialActions = (set: (updater: (prev: GympgrphGeo
     requestGeospatialFitToData,
     requestGeospatialFitToSelection,
     requestGeospatialCurrentLocation,
+    requestGeospatialFitToBounds,
     clearGeospatialFitRequest,
   }
 }

@@ -401,14 +401,14 @@ export function testHeavyFeatureSurfacesUseTargetedLazyLoadingGates() {
   if (sourceFilesBootstrapText.includes("import {\n  cancelKnowgrphStorageSync,\n  scheduleKnowgrphStorageSync,\n  startKnowgrphStorageSyncLoop,\n} from '@/lib/storage/knowgrphStorageClientSync'")) {
     throw new Error('expected SourceFilesPersistenceBootstrap to avoid eagerly importing knowgrph storage client runtime into the bootstrap module graph')
   }
-  if (!sourceFilesBootstrapText.includes("loadKnowgrphStorageRuntimeDependencies")) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to lazy-load knowgrph storage runtime dependencies on demand')
+  if (!sourceFilesBootstrapText.includes('createKnowgrphStorageWorkspaceLifecycle')) {
+    throw new Error('expected SourceFilesPersistenceBootstrap to delegate lazy storage dependency loading to its workspace lifecycle owner')
   }
   if (
-    !sourceFilesBootstrapText.includes("ensureKnowgrphStorageRuntimeDependencies()")
-    || !sourceFilesBootstrapText.includes(".then(deps => deps.syncSourceFilesToKnowgrphStorage({")
+    !sourceFilesBootstrapText.includes('ensureKnowgrphStorageRuntimeDependencies(capturedOwnership)')
+    || !sourceFilesBootstrapText.includes('runWorkspaceSeedSyncTask(capturedOwnership.signal, () => (') || !sourceFilesBootstrapText.includes('deps.syncSourceFilesToKnowgrphStorage({')
   ) {
-    throw new Error('expected SourceFilesPersistenceBootstrap to enqueue knowgrph storage sync through the deferred runtime loader')
+    throw new Error('expected SourceFilesPersistenceBootstrap to enqueue knowgrph storage sync through the deferred runtime loader and Flight suspension barrier')
   }
 
   const canvasPageText = readFileSync(resolve(root, 'src', 'pages', 'Canvas.tsx'), 'utf8')

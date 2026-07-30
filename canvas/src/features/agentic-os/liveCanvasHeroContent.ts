@@ -24,9 +24,9 @@ type LiveCanvasHeroGlobalScope = typeof globalThis & {
 }
 
 const DEFAULT_LIVE_CANVAS_HERO_CONTENT: LiveCanvasHeroContent = {
-  eyebrow: 'Knowgrph · Live canvas',
-  headline: ['Map intent.', 'Orchestrate agents.', 'Prove outcomes.'],
-  lede: 'A source-backed canvas where `/` routes work, `#` sets meaning, and `@` binds context.',
+  eyebrow: 'airvio · agentic canvas',
+  headline: ['Map intent', 'Run agents', 'Get results'],
+  lede: 'An agentic canvas that lets `/` route work, `#` set meaning, and `@` bind context.',
   posture: ['0 model calls before Run', 'Frontmatter SSOT', 'Approval-gated'],
   markdown: '',
 }

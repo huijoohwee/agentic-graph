@@ -6,6 +6,10 @@ import path from "node:path";
 const repoRoot = path.resolve(import.meta.dirname, "..", "..");
 const syncScriptPath = path.resolve(repoRoot, "scripts", "sync-pages-knowgrph.mjs");
 const syncScript = fs.readFileSync(syncScriptPath, "utf8");
+const routingSource = fs.readFileSync(
+  path.resolve(repoRoot, "scripts", "production-pages-routing.mjs"),
+  "utf8",
+);
 
 test("publish sync removes stale generated assets from both mirror trees", () => {
   assert.equal(
@@ -15,7 +19,7 @@ test("publish sync removes stale generated assets from both mirror trees", () =>
   );
   assert.match(
     syncScript,
-    /const isPublicManagedRelativePath = \(rel\) => \{\s+if \(!rel\) return false\s+return rel\.startsWith\('assets\/'\) \|\| publicManagedRootFiles\.has\(rel\)\s+\}/m,
+    /const isPublicManagedRelativePath = rel => Boolean\(rel\) && \(rel\.startsWith\('assets\/'\) \|\| publicManagedRootFiles\.has\(rel\)\)/,
     "expected public-managed publish paths to include hashed asset bundles",
   );
   assert.match(
@@ -41,13 +45,25 @@ test("publish sync includes the published agent-ready dependency closure", () =>
   assert.match(syncScript, /'mcpAppsContractText\.mjs'/);
   assert.match(syncScript, /'mcpAppsOnboarding\.mjs'/);
   assert.match(syncScript, /'motionControlAgentReadyContract\.mjs'/);
+  assert.match(syncScript, /'flightSimAgentReadyContract\.mjs'/);
+  assert.match(syncScript, /'storageSyncAgentReadyContract\.mjs'/);
+  assert.match(syncScript, /storageEngineMcpContractSource/);
+  assert.match(syncScript, /\[storageEngineMcpContractSource, storageEngineMcpContractTarget\]/);
   assert.match(syncScript, /'probeTreeUserInputRelevance\.mjs'/);
   assert.match(syncScript, /'knowgrphVdeoxplnRegistryData\.mjs'/);
   assert.match(syncScript, /'knowgrphApplicationCompositionVdeoxpln\.mjs'/);
   assert.match(syncScript, /cameraMcpContract\.mjs/);
   assert.match(syncScript, /richMediaTextMarkdownContractSource/);
   assert.match(syncScript, /\[richMediaTextMarkdownContractSource, richMediaTextMarkdownContractTarget\]/);
+  assert.match(syncScript, /groupPanelContractSource/);
+  assert.match(syncScript, /\[groupPanelContractSource, groupPanelContractTarget\]/);
   assert.match(syncScript, /\.map\(filename => \[agentReadyFeatureSource\(filename\), agentReadyFeatureTarget\(filename\)\]\)/);
+});
+
+test("publish sync includes the Group Panel tool contract dependency", () => {
+  assert.match(syncScript, /groupPanelContractSource = path\.resolve\(knowgrphRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract\.mjs'\)/);
+  assert.match(syncScript, /groupPanelContractTarget = path\.resolve\(mirrorRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract\.mjs'\)/);
+  assert.match(syncScript, /\[groupPanelContractSource, groupPanelContractTarget\]/);
 });
 
 test("publish sync includes the cross-root semantic-key dependency", () => {
@@ -74,6 +90,82 @@ test("publish sync includes the motion-control tool contract dependency", () => 
   assert.match(syncScript, /\[motionControlMcpContractSource, motionControlMcpContractTarget\]/);
 });
 
+test("publish sync includes the Flight Sim tool contract dependency", () => {
+  assert.match(syncScript, /flightSimMcpContractSource = path\.resolve\(knowgrphRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract\.mjs'\)/);
+  assert.match(syncScript, /flightSimMcpContractTarget = path\.resolve\(mirrorRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract\.mjs'\)/);
+  assert.match(syncScript, /\[flightSimMcpContractSource, flightSimMcpContractTarget\]/);
+});
+
 test("publish sync keeps the live canvas hero markdown route in the root-managed file set", () => {
   assert.match(syncScript, /'knowgrph-live-canvas-hero\.md'/);
+});
+
+test("publish sync replaces the implicit Pages SPA fallback with one managed 404 boundary", () => {
+  assert.match(
+    syncScript,
+    /const publishRootManagedSourceFiles = \[\{\s+rel: '404\.html',\s+src: path\.resolve\(knowgrphRoot, 'cloudflare', 'pages', '404\.html'\),\s+\}\]/m,
+  );
+  assert.match(syncScript, /publishRootManagedFilesToCopy/);
+  assert.match(
+    syncScript,
+    /copyPlainFile\(entry\.src, path\.resolve\(mirrorRoot, entry\.rel\)\)/,
+  );
+  assert.match(
+    syncScript,
+    /const obsoleteGeneratedMirrorFiles = new Set\(\[\s+'index\.html',/m,
+    "expected publish sync to remove the superseded static root shell",
+  );
+  for (const staleRedirect of [
+    "/ /content/knowgrph/index.html 200",
+    "/index.html /content/knowgrph/index.html 200",
+    "/hackamap /hackamap/ 301",
+    "/hackamap/ /content/hackamap/index.html 200",
+    "/hackamap/* /content/hackamap/:splat 200",
+    "/user-secrets*.json /404 404",
+    "/content/singabldr/user-secrets*.json /404 404",
+  ]) {
+    assert.match(routingSource, new RegExp(staleRedirect.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(routingSource, /\.filter\(line => !obsoleteRedirectLines\.has\(line\.trim\(\)\)\)/);
+});
+
+test("publish sync prevents HTTP caching of every mutable service-worker script", () => {
+  for (const route of [
+    "/content/knowgrph/sw.js",
+    "/knowgrph/sw.js",
+  ]) {
+    assert.match(
+      syncScript,
+      new RegExp(`'${route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}',\\s+'  Cache-Control: no-store`),
+      `expected ${route} to bypass the HTTP cache during service-worker revision checks`,
+    );
+  }
+  for (const route of [
+    "/content/knowgrph/knowgrph-chat-stream-sw.js",
+    "/knowgrph/knowgrph-chat-stream-sw.js",
+    "/content/knowgrph/knowgrph-service-worker-revision.js",
+    "/knowgrph/knowgrph-service-worker-revision.js",
+  ]) {
+    assert.match(syncScript, new RegExp(`'${route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}'`));
+  }
+  assert.match(
+    syncScript,
+    /flatMap\(route => \[route, '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0'\]\)/,
+    "expected every imported service-worker script route to share the cache-bypass policy",
+  );
+});
+
+test("runtime readiness digest includes every generated service-worker executable", () => {
+  assert.match(
+    syncScript,
+    /const importedServiceWorkerRootFiles = new Set\(\['knowgrph-chat-stream-sw\.js', 'knowgrph-service-worker-revision\.js'\]\)/,
+  );
+  assert.match(
+    syncScript,
+    /const isBrowserRuntimeArtifactRelativePath = rel => isPublicManagedRelativePath\(rel\) \|\| importedServiceWorkerRootFiles\.has\(rel\) \|\| \/\^workbox-/,
+  );
+  assert.match(
+    syncScript,
+    /sourceFiles\s+\.filter\(isBrowserRuntimeArtifactRelativePath\)\s+\.map\(relativePath => \(\{ relativePath, absolutePath: path\.resolve\(distDir, relativePath\) \}\)\)/m,
+  );
 });

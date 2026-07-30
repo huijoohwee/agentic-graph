@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const knowgrphRoot = path.resolve(scriptDir, '..')
-const publishRoot = path.resolve(knowgrphRoot, '..', 'huijoohwee')
+const publishRoot = path.resolve(
+  process.env.KNOWGRPH_PUBLISH_REPOSITORY_ROOT || path.resolve(knowgrphRoot, '..', 'huijoohwee'),
+)
 const outDir = await mkdtemp(path.join(os.tmpdir(), 'knowgrph-pages-functions-'))
 
 const run = (command, args, options = {}) => {

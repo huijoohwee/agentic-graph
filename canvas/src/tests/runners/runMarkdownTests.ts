@@ -53,6 +53,8 @@ const modMarkdownViewerVariableClickSsotNavigation = () => import('@/__tests__/m
 const modMarkdownFrontmatterReadPropertiesView = () => import('@/__tests__/markdownFrontmatterReadPropertiesView.test')
 const modMarkdownViewerMdDemoSweepLex = () => import('@/__tests__/markdownViewerMdDemoSweepLex.test')
 const modMarkdownViewerInlineEditConfig = () => import('@/__tests__/markdownViewerInlineEditConfig.test')
+const modMarkdownInlineEditToolbarConsolidation = () => import('@/__tests__/markdownInlineEditToolbarConsolidatesSelectionActions.test')
+const modMarkdownLargeViewerInlineSelectionToolbar = () => import('@/__tests__/markdownLargeViewerInlineSelectionToolbar.test')
 const modMarkdownViewerInlineEditMixedSequence = () => import('@/__tests__/markdownViewerInlineEditMixedSequence.test')
 const modMarkdownViewerInlineEditCodeFenceLanguageSelector = () => import('@/__tests__/markdownViewerInlineEditCodeFenceLanguageSelector.test')
 const modMarkdownViewerListInlineEditNoEdgeRows = () => import('@/__tests__/markdownViewerListInlineEditNoEdgeRows.test')
@@ -157,6 +159,14 @@ export const runMarkdownTests = async (results: TestResult[]) => {
   await execTest(results, 'flow.groupAabb.explicitBoundsRemainStable', async () => {
     const mod = await modFlowGroupAabbIncludesMembersWhenBoundsExplicit()
     await mod.testFlowGroupAabbExpandsExplicitBoundsToContainMembers()
+  })
+  await execTest(results, 'flow.groupAabb.overlayOnlyMembersRemainVisible', async () => {
+    const mod = await modFlowGroupAabbIncludesMembersWhenBoundsExplicit()
+    await mod.testFlowGroupAabbUsesOverlayOnlyMemberBounds()
+  })
+  await execTest(results, 'flow.groupPaint.visibleAtFittedZoom', async () => {
+    const mod = await modFlowGroupAabbIncludesMembersWhenBoundsExplicit()
+    await mod.testFlowGroupPaintRemainsVisibleAtFittedZoom()
   })
   await execTest(results, 'flow.frontmatterFlow.portHandles.enabled', async () => {
     const mod = await modFlowCanvasFrontmatterFlowPortHandlesEnabledRegression()
@@ -374,6 +384,22 @@ export const runMarkdownTests = async (results: TestResult[]) => {
     const mod = await modMarkdownViewerInlineEditConfig()
     mod.testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable()
   })
+  await execTest(results, 'markdown.viewer.inlineEdit.toolbar.singleSourceOwner', async () => {
+    const mod = await modMarkdownInlineEditToolbarConsolidation()
+    mod.testInlineSelectionToolbarHasOneSourceOwnerAndSharedSurfaces()
+  })
+  await execTest(results, 'markdown.viewer.inlineEdit.toolbar.centralizedSelectionActions', async () => {
+    const mod = await modMarkdownInlineEditToolbarConsolidation()
+    await mod.testInlineEditToolbarMoreMenuIncludesCentralizedSelectionActions()
+  })
+  await execTest(results, 'markdown.viewer.inlineEdit.toolbar.versionedRichMediaWorkspaceViewer', async () => {
+    const mod = await modMarkdownInlineEditToolbarConsolidation()
+    await mod.testVersionedRichMediaWorkspaceViewerReusesInlineSelectionToolbar()
+  })
+  await execTest(results, 'markdown.viewer.inlineEdit.toolbar.largeViewer', async () => {
+    const mod = await modMarkdownLargeViewerInlineSelectionToolbar()
+    await mod.testLargeMarkdownViewerKeepsInlineSelectionToolbar()
+  })
   await execTest(results, 'markdown.viewer.inlineEdit.mixedBlockSequence.inlineCodeAndLists', async () => {
     const mod = await modMarkdownViewerInlineEditMixedSequence()
     await mod.testMarkdownViewerInlineEditMixedBlockSequencePreservesInlineCodeAndListMarkers()
@@ -461,6 +487,10 @@ export const runMarkdownTests = async (results: TestResult[]) => {
   await execTest(results, 'markdown.viewer.inlineEdit.list.fence.editAsIs', async () => {
     const mod = await modMarkdownViewerListInlineEditNoEdgeRows()
     await mod.testMarkdownViewerInlineEditListWithFenceUsesEditAsIs()
+  })
+  await execTest(results, 'markdown.viewer.inlineEdit.list.nestedQuestion.renderedParity', async () => {
+    const mod = await modMarkdownViewerListInlineEditNoEdgeRows()
+    await mod.testMarkdownViewerNestedListQuestionKeepsRenderedEditSurfaceParity()
   })
   await execTest(results, 'markdown.viewer.inlineEdit.table.noGenericTextSurface', async () => {
     const mod = await modMarkdownViewerInlineEditTableReadOnlySurface()

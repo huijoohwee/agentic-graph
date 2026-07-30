@@ -8,6 +8,11 @@ import {
 import { PUBLISHED_AGENT_READY_TOOL_EXECUTORS_BROWSER_SOURCE } from '@/features/agent-ready/publishedToolExecutors.mjs'
 import { WEB_MCP_LIFECYCLE_CONTROLLER_BROWSER_SOURCE } from '@/features/agent-ready/webMcpLifecycleBrowserSource.mjs'
 import { webMcpScript } from '../../../cloudflare/pages/knowgrph-agent-ready.mjs'
+import {
+  WEB_MCP_LIFECYCLE_SCRIPT_MARKER,
+  hasOwnedWebMcpLifecycleScript,
+  injectWebMcpScript,
+} from '../../../cloudflare/pages/webmcp-html-injection.mjs'
 
 type RegisteredTool = {
   name: string
@@ -23,6 +28,41 @@ type RegisteredTool = {
 
 const readWebMcpContextState = (document: Document): string =>
   String(document.documentElement.dataset.kgWebmcpContext || '')
+
+export async function testAgentReadyHtmlInjectionRequiresLifecycleContractNotToolNameCoincidence(): Promise<void> {
+  const toolNames = buildKnowgrphAgentReadyToolContracts({
+    defaultWorkspaceId: 'kgws:canonical-docs',
+  }).map((tool) => tool.webName)
+  const bundledLifecycleShell = `<!doctype html><html><head></head><body>${[
+    ...toolNames,
+    'createWebMcpLifecycleController',
+    'kgWebmcpContext',
+    'toolDefinitions',
+    'toolExecutors',
+  ].join(' ')}</body></html>`
+  if (hasOwnedWebMcpLifecycleScript(bundledLifecycleShell)) {
+    throw new Error('expected bundled symbol coincidence to remain insufficient Pages lifecycle ownership evidence')
+  }
+
+  const response = await injectWebMcpScript(new Response(bundledLifecycleShell, {
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+  }), webMcpScript)
+  const body = await response.text()
+  if (!hasOwnedWebMcpLifecycleScript(body) || !body.includes('fallback-readable')) {
+    throw new Error('expected the Pages HTML owner to inject its canonical WebMCP lifecycle into an unowned app shell')
+  }
+  if (body.split(WEB_MCP_LIFECYCLE_SCRIPT_MARKER).length !== 2) {
+    throw new Error('expected exactly one explicit Pages WebMCP lifecycle owner marker')
+  }
+
+  const reinjected = await injectWebMcpScript(new Response(body, {
+    headers: { 'content-type': 'text/html; charset=utf-8' },
+  }), webMcpScript)
+  const reinjectedBody = await reinjected.text()
+  if (reinjectedBody !== body) {
+    throw new Error('expected lifecycle-complete HTML injection to be idempotent')
+  }
+}
 
 export async function testAgentReadyHtmlWebMcpFallbackLateBindsAndUsesSameOriginStoragePaths(): Promise<void> {
   const previousFetch = globalThis.fetch

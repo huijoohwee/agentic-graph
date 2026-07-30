@@ -6,6 +6,14 @@ import {
   type P2PCollaborationWireMessage,
   type P2PCollaborationWirePeerRole,
 } from './p2pCollaborationProtocol'
+import {
+  broadcastP2PCollaborationExtensionWireMessageToGuests,
+  broadcastP2PCollaborationWireMessageToGuests,
+  releaseP2PCollaborationExtensionConnection,
+  resetP2PCollaborationExtensionSession,
+  routeP2PCollaborationExtensionWireMessage,
+  sendP2PCollaborationWireMessage,
+} from './p2pCollaborationExtensionRuntime'
 import { useP2PCollaborationStore } from './p2pCollaborationStore'
 import { useP2PCollaborationBroadcastEffects } from './useP2PCollaborationBroadcastEffects'
 import { useP2PCollaborationCommandEffect } from './useP2PCollaborationCommandEffect'
@@ -15,6 +23,7 @@ import {
   buildPeerSummary,
   closeConnectionRef,
   countConnectedRemotePeers,
+  notifyP2PCollaborationTransportTopologyChanged,
   resetRuntimeSessionRefs,
   resetSharedRuntimeRefs,
   sharedCurrentCaretLineRef,
@@ -34,6 +43,7 @@ import {
 } from './p2pCollaborationRuntimeState'
 
 export function __resetP2PCollaborationRuntimeForTests(): void {
+  resetP2PCollaborationExtensionSession()
   resetSharedRuntimeRefs()
 }
 
@@ -78,7 +88,7 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
     currentCaretLineRef.current = typeof localCaretLine === 'number' && Number.isFinite(localCaretLine)
       ? Math.max(1, Math.floor(localCaretLine))
       : null
-  }, [args.activeDocumentKey, args.activeText, displayName, followModeEnabled, followPeerId, localCaretLine])
+  }, [args.activeDocumentKey, args.activeText, currentCaretLineRef, currentDisplayNameRef, currentDocumentKeyRef, currentFollowModeRef, currentFollowPeerIdRef, currentTextRef, displayName, followModeEnabled, followPeerId, localCaretLine])
 
   const buildLocalOwnership = React.useCallback((): P2PCollaborationWirePeerRole => {
     const runtime = runtimeRefs.current
@@ -101,27 +111,9 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
     }))
   }, [buildLocalOwnership, currentCaretLineRef, currentDisplayNameRef, currentDocumentKeyRef, runtimeRefs, upsertPeer])
 
-  const sendWireMessageToConnection = React.useCallback((
-    connectionRef: RuntimeConnectionRef | null,
-    message: P2PCollaborationWireMessage,
-  ): boolean => {
-    const channel = connectionRef?.channel
-    if (!channel || channel.readyState !== 'open') return false
-    try {
-      channel.send(JSON.stringify(message))
-      return true
-    } catch {
-      return false
-    }
-  }, [])
-
   const broadcastToGuests = React.useCallback((message: P2PCollaborationWireMessage, excludedPeerId?: string | null) => {
-    const runtime = runtimeRefs.current
-    for (const [peerId, connectionRef] of runtime.hostConnectionsByPeerId.entries()) {
-      if (excludedPeerId && peerId === excludedPeerId) continue
-      sendWireMessageToConnection(connectionRef, message)
-    }
-  }, [runtimeRefs, sendWireMessageToConnection])
+    broadcastP2PCollaborationWireMessageToGuests(runtimeRefs.current, message, excludedPeerId)
+  }, [runtimeRefs])
 
   const broadcastRosterToGuests = React.useCallback(() => {
     const runtime = runtimeRefs.current
@@ -153,6 +145,7 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
 
   const disconnectRuntime = React.useCallback((statusText: string = 'Disconnected') => {
     const runtime = runtimeRefs.current
+    resetP2PCollaborationExtensionSession()
     resetRuntimeSessionRefs(runtime)
     suppressOutboundDocumentSigRef.current = null
     lastOutboundDocumentSigRef.current = null
@@ -163,10 +156,13 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
   const handleHostPeerDisconnect = React.useCallback((peerId: string, statusText: string) => {
     const runtime = runtimeRefs.current
     const connectionRef = runtime.hostConnectionsByPeerId.get(peerId) || null
+    const extensionCleanupMessages = releaseP2PCollaborationExtensionConnection(connectionRef, runtime.sessionId)
     if (connectionRef) {
       closeConnectionRef(connectionRef, { suppressEvents: true })
       runtime.hostConnectionsByPeerId.delete(peerId)
+      notifyP2PCollaborationTransportTopologyChanged()
     }
+    extensionCleanupMessages.forEach(message => broadcastP2PCollaborationExtensionWireMessageToGuests(runtime, message))
     removePeer(peerId)
     broadcastRosterToGuests()
     updateHostStatus(statusText)
@@ -188,8 +184,11 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
       updateHostStatus(buildPeerSummary(useP2PCollaborationStore.getState().peers))
       return
     }
+    const extensionCleanupMessages = releaseP2PCollaborationExtensionConnection(connectionRef, runtime.sessionId)
     runtime.hostConnectionsByPeerId.delete(normalizedPeerId)
+    notifyP2PCollaborationTransportTopologyChanged()
     closeConnectionRef(connectionRef, { suppressEvents: true })
+    extensionCleanupMessages.forEach(message => broadcastP2PCollaborationExtensionWireMessageToGuests(runtime, message))
     removePeer(normalizedPeerId)
     broadcastRosterToGuests()
     updateHostStatus('Host ready. Generate an invite.', { forceStatusText: `Removed ${connectionRef.displayName || 'guest'}` })
@@ -198,7 +197,7 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
   const sendHelloToConnection = React.useCallback((connectionRef: RuntimeConnectionRef | null) => {
     const runtime = runtimeRefs.current
     if (!runtime.sessionId || !runtime.localPeerId) return
-    sendWireMessageToConnection(connectionRef, {
+    sendP2PCollaborationWireMessage(connectionRef, {
       v: P2P_COLLAB_PROTOCOL_VERSION,
       kind: 'hello',
       sessionId: runtime.sessionId,
@@ -215,13 +214,12 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
     currentDisplayNameRef,
     currentDocumentKeyRef,
     runtimeRefs,
-    sendWireMessageToConnection,
   ])
 
   const sendPresenceToConnection = React.useCallback((connectionRef: RuntimeConnectionRef | null) => {
     const runtime = runtimeRefs.current
     if (!runtime.sessionId || !runtime.localPeerId) return
-    sendWireMessageToConnection(connectionRef, {
+    sendP2PCollaborationWireMessage(connectionRef, {
       v: P2P_COLLAB_PROTOCOL_VERSION,
       kind: 'presence',
       sessionId: runtime.sessionId,
@@ -238,7 +236,6 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
     currentDisplayNameRef,
     currentDocumentKeyRef,
     runtimeRefs,
-    sendWireMessageToConnection,
   ])
 
   const sendDocumentToConnection = React.useCallback((connectionRef: RuntimeConnectionRef | null) => {
@@ -249,7 +246,7 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
     const text = currentTextRef.current
     const documentSignature = buildDocumentSignature(documentKey, text)
     lastOutboundDocumentSigRef.current = documentSignature
-    sendWireMessageToConnection(connectionRef, {
+    sendP2PCollaborationWireMessage(connectionRef, {
       v: P2P_COLLAB_PROTOCOL_VERSION,
       kind: 'document-sync',
       sessionId: runtime.sessionId,
@@ -264,7 +261,6 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
     currentTextRef,
     lastOutboundDocumentSigRef,
     runtimeRefs,
-    sendWireMessageToConnection,
   ])
 
   const broadcastLocalHello = React.useCallback(() => {
@@ -427,6 +423,7 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
           errorText: '',
         })
       }
+      notifyP2PCollaborationTransportTopologyChanged()
       sendHelloToConnection(connectionRef)
       sendDocumentToConnection(connectionRef)
       sendPresenceToConnection(connectionRef)
@@ -452,6 +449,11 @@ export function useP2PCollaborationRuntime(args: UseP2PCollaborationRuntimeArgs)
       const runtime = runtimeRefs.current
       const message = parseP2PCollaborationWireMessage(String(event.data || ''))
       if (!message || message.sessionId !== runtime.sessionId) return
+      if (message.kind === 'extension') {
+        const routed = routeP2PCollaborationExtensionWireMessage(message, connectionRef, runtime.role)
+        if (routed.relayMessage) broadcastP2PCollaborationExtensionWireMessageToGuests(runtime, routed.relayMessage, connectionRef.peerId)
+        return
+      }
       if (message.kind === 'session-roster') {
         if (runtime.role === 'guest') applyRemoteRoster(message)
         return

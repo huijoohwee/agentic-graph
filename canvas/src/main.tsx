@@ -9,6 +9,19 @@ import { installHtmlVideoBrowserRuntimeAdapters } from '@/features/html-video-re
 installKnowgrphWebMcpRuntime()
 installHtmlVideoBrowserRuntimeAdapters()
 
+if (
+  import.meta.env.VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF === '1'
+  && typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search)
+    .get('kgFlightSimBrowserProof') === '1'
+) {
+  void import('@/features/testing/flightSimBrowserProofBridge')
+    .then(module => module.installFlightSimBrowserProofBridge())
+    .catch(error => {
+      console.error('[knowgrph] Flight browser proof bridge unavailable', error)
+    })
+}
+
 if (import.meta.env.PROD) {
   installPwaRuntime()
 } else if (typeof window !== 'undefined') {

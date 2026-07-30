@@ -1,3 +1,24 @@
+---
+title: "Knowgrph Source Files Import"
+id: "md:knowgrph-source-files-import-document"
+version: "1.4.0"
+updated: "2026-07-23"
+status: "active"
+doc_type: "Workflow and Runtime Reference"
+frontmatter_contract: "required"
+document_runtime_status: "runtime-ready-dev"
+runtime_scope: "Frontmatter parsing, source validation, MCP grammar resolution, and read-only Source Files discovery; importer status remains section-specific."
+deploy_boundary: "No Prod mirror or Cloudflare mutation is authorized by this document."
+mcp:
+  grammar_tool: "knowgrph.agentic_canvas_os.docs.invoke"
+  published_source_tools: ["search", "fetch"]
+  webmcp_source_tools: ["knowgrph.list_source_files", "knowgrph.read_source_file"]
+  source_availability: "Read-only after the document is present in the configured published Source Files workspace."
+invocation:
+  normalize: "/source.normalize @source.frontmatter @source.body #frontmatter #no-legacy"
+  verify: "/runtime-ready.check @local-harness @runtime-proof #runtime-ready #vcc"
+---
+
 # Knowgrph Source Files Import (Workflow → Workspace Actions)
 
 ## Design Mantras
@@ -18,6 +39,22 @@
 
 **Workspace Persistence**: The `sourceFiles` workspace is persisted locally via IndexedDB (Dexie) so Source Files survive reloads and act as a lightweight file-system abstraction; the persisted payload is intentionally minimal (no heavy parsed graph blobs) and includes workspace metadata (folder name/access mode/selected folder path). Local-folder-backed entries fall back to cached text when folder handles are unavailable.
 
+**Durable Cache Contract**: Source Files document, chunk, graph-snapshot, sync-outbox, and cursor records restore independently through the shared Dexie adapter. Local writes and collaboration updates enter IndexedDB before transport. Initialization/quota or write-conflict failure retries once, then reports degraded in-memory persistence through MainPanel instead of silently claiming durable storage.
+
+**Storage And Sync Settings**: MainPanel Settings → `Document Storage & Sync` exposes Online/Offline only mode, the `GitHub/knowgrph/docs` and `GitHub/huijoohwee/docs` roots, offline fallback state, and explicit `Sync now`. Import remains local-first: Offline only never discards imported content, and online publication routes Knowgrph product/workspace-seed paths to `knowgrph-docs`, collaborative workspace documents to `workspace-docs`, and rejects Agentic Canvas OS paths as write targets.
+
+**Explorer Ownership Projection**: Explorer → Source Files renders a compact path-derived ownership ledger above the tree: product documents → `GitHub/knowgrph/docs`, workspace documents → `GitHub/huijoohwee/docs`, seeds → `GitHub/knowgrph/docs/workspace-seeds`, and offline fallback → IndexedDB. The canonical `workspace-seeds` folder has a shield marker. The byte-identical Agentic Canvas OS seed remains a protected runtime projection and is never shown as another editable root; `huijoohwee/docs/workspace-seeds` is rejected.
+
+**Seed Mutation Enforcement**: Source Files reads, creates, writes, renames, and nested deletes below `/docs/workspace-seeds/**` resolve only to `$GITHUB_ROOT/knowgrph/docs/workspace-seeds/**`. The general local docs-mirror preference cannot redirect this subtree. Every local bridge mutation includes the workspace ownership key; mismatched host paths, direct unkeyed seed writes, and deletion of the seed root are rejected. IndexedDB remains the offline fallback and queued cloud saves retain the same `knowgrph-docs` authority.
+
+**Seed Inventory Convergence**: The protected app build packages all six canonical seed files as a revision-pinned, read-only bootstrap artifact. Prod and offline startup materialize that exact inventory without GitHub API tree discovery. During repository-local Dev, Source Files also probes `$GITHUB_ROOT/knowgrph/docs/workspace-seeds`; a successful listing overlays only the bundled seed subtree so authored edits remain immediate. Authority-marked reconciliation materializes every canonical seed, refreshes changed bytes, removes stale cached seed paths and source metadata, and never prunes the subtree after an incomplete or unavailable authority read.
+
+**Seed Filesystem Audit**: The canonical Knowgrph root currently contains six authored files. `huijoohwee/docs/workspace-seeds` is absent. One tracked Agentic Canvas OS physics file remains as an exact-byte, read-only runtime projection because the bootstrap authority gate still requires it; Source Files does not display it as writable and the save bridge rejects its path. Physical removal is gated on migrating that bootstrap dependency.
+
+**Collaboration Admission**: Fetching, parsing, and first persistence always complete locally before an import can join a live room. When Online mode, authenticated workspace membership, a canonical document path, and one configured room provider are all available, Source Files may hydrate the Yjs document from a compacted provider snapshot plus ordered updates, then replay its IndexedDB-backed local update outbox. PocketBase is the recommended small-team provider after production gates pass; a Durable Object is a replacement provider, never a simultaneous second owner. Import credentials, local paths, and remote-source authorization headers are never transmitted to the room provider.
+
+**Checkpoint Publication**: Imported collaborative text reaches GitHub only at explicit save or bounded autosave checkpoints through the server bridge with path-derived repository authority and compare-and-set content SHA. D1 projection follows a successful GitHub checkpoint; room updates are never committed per keystroke, and failed online delivery leaves the local import and outbox available offline.
+
 **Initialization-File Bootstrap Contract**: The canonical family contains the three legacy root seeds sourced from `huijoohwee/docs`—`/workspace-readme.md`, `/knowgrph-agentic-video-canvas-demo.md`, and `/knowgrph-maps-places.md`—plus `/docs/workspace-seeds/knowgrph-physics-playground-demo.md`, sourced from Knowgrph and published under the same path in Agentic Canvas OS. A cold unselected workspace starts from the physics seed; its frontmatter owns XR/3D and Motion Control initialization. Explicit deep links, imported embeds, persisted non-initialization documents, and a custom validation-seed environment remain authoritative in their declared scopes.
 
 **Imported-Document Activation Rule**: During the exact UI import path, the first imported workspace file chosen for focus becomes the active raw-frontmatter authority before any composed source-file replay runs. This prevents a previously selected document from reapplying stale renderer/surface frontmatter over the newly imported preset document.
@@ -27,6 +64,8 @@
 **Composition Invariant**: Any change to `sourceFiles` (add/remove/clear/toggle/parsed hash updates) must trigger a recomposition via `applyComposedGraphFromSourceFiles()` so the active `graphData` and all graph-tied touchpoints (canvas, Graph Data Table) stay consistent. When Source Files becomes empty, the composed `graphData` must become empty as well (no stale rows).
 
 **Document Versioning Rule**: Editor Workspace saves, Source Files writeback, and GitGraph CRUD must record bounded local document snapshots via the shared document-versioning utility. Source Files exposes per-file version counts, Editor Workspace `[ ] diff` opens the shared Timeline bottom panel in GitGraph view after `[ ] Markdown`, and that bottom panel exposes the GitGraph icon immediately to the right of the Timeline icon. MainPanel History does not own a document-version Docs surface.
+
+**Bounded Import And Identity Rule**: Local and URL text imports stop at 10,485,760 bytes; URL fetches also stop after 30 seconds. Batch hydration isolates malformed, oversize, slow, and unreachable sources so earlier imports remain and later sources continue. Re-importing the same case-insensitive filename updates the existing Source Files id. Valid JSON, JSON-LD, and CSV parse/print/reparse cycles preserve normalized structure and ordering.
 
 **Supported Formats**: Local import/export supports `.md .markdown .txt .json .jsonld .csv .html .htm .yaml .yml`, URL sources via `https://…`, and YouTube imports via the YouTube importer.
 
@@ -161,7 +200,7 @@ sequenceDiagram
   - `knowgrph/canvas/src/features/source-files/sourceFilesIngestIntegration.ts` implements Source Files import/export/clear + parse/apply helpers used by the markdown workspace toolbar.
   - `knowgrph/canvas/src/features/source-files/workspaceSeedSourceFiles.ts` keeps the canonical source-file aliases for the 3-file initialization family aligned with the root-level workspace paths.
 - **Workspace Seed Bootstrap (Knowgrph)**:
-  - `knowgrph/canvas/src/features/workspace-fs/workspaceFs.ts` loads initialization-file source text from `huijoohwee/docs`, materializes the canonical files into the workspace root, and keeps seed ordering deterministic.
+  - `knowgrph/canvas/src/features/workspace-fs/workspaceFs.ts` loads the three legacy initialization files from `huijoohwee/docs`, loads the physics seed from `knowgrph/docs/workspace-seeds`, materializes the canonical family into the workspace root, and keeps seed ordering deterministic.
 - **Source Files Runtime Bootstrap (Knowgrph)**:
   - `knowgrph/canvas/src/features/source-files/SourceFilesPersistenceBootstrap.tsx` coalesces seed-sync, rematerialization, and storage bridge scheduling through request-owned helpers to keep Source Files, Workspace, and Storage in sync on the same tick.
   - `knowgrph/canvas/src/features/source-files/sourceFilesBootstrapReadiness.ts` owns the base-plus-keyed-document transaction. Stale keyed completions are ignored, terminal bootstrap failures cannot be overwritten, and Canvas/XR consumers read the combined phase.
@@ -175,7 +214,7 @@ sequenceDiagram
   - `knowgrph/canvas/src/lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx` wires selection and active workspace path to `setMarkdownDocument(...)`.
   - `knowgrph/canvas/src/features/markdown-workspace/MarkdownWorkspaceToolbar.tsx` renders the Source Files ingest controls in the markdown workspace toolbar.
 - **Geospatial Mode (Gympgrph)**:
-  - `gympgrph/src/geospatialDatasets.ts` exposes a lightweight dataset-add API for hosts.
+  - `gympgrph/src/datasets.ts` exposes the lightweight `addGeospatialDatasetUrl` API for hosts.
   - `gympgrph/src/hooks/store/geospatialSlice.ts` persists `mapOverlayDatasets` under `kg:ui:geospatial:*` keys.
 
 ### Component Inventory
@@ -185,6 +224,7 @@ sequenceDiagram
 | Workspace Actions | Workflow Step 3 UI | `WorkspaceActionsPanel.tsx` | Built |
 | Source Files | Import/export/clear/parse | `sourceFilesIngestIntegration.ts` | Built |
 | Source Files | Seed aliases (3-file family) | `workspaceSeedSourceFiles.ts` | Built |
+| Source Files | Ownership ledger + seed authority marker | `SourceFilesOwnershipSummary.tsx` + `MarkdownFileTree.tsx` | Built |
 | Workspace FS | Seed bootstrap | `workspaceFs.ts` | Built |
 | Workspace FS | Minimal persisted cache FS | `workspaceFsPersisted.ts` | Built |
 | Workspace FS | In-memory FS | `workspaceFsMemory.ts` | Built |
@@ -195,7 +235,7 @@ sequenceDiagram
 | Curation UI | Explorer sidebar | `MarkdownPanelLayout.tsx` (Singabldr) | Built |
 | Curation UI | Workspace runtime | `MarkdownWorkspaceRuntime.impl.tsx` | Built |
 | Curation UI | Toolbar ingest controls | `MarkdownWorkspaceToolbar.tsx` | Built |
-| Geospatial | Dataset add API | `geospatialDatasets.ts` (Gympgrph) | Built |
+| Geospatial | Dataset add API | `datasets.ts` (Gympgrph) | Built |
 | Geospatial | Dataset store | `geospatialSlice.ts` (Gympgrph) | Built |
 | Utilities | URL normalization | `url.ts` → `normalizeGitHubBlobLikeUrl` | Built |
 | Fetch | Bounded remote fetch | `fetchRemoteText.ts` → `fetchRemoteTextDetailed` | Built |
@@ -328,4 +368,4 @@ Note: The current website-import artifact set is `raw.html`, `page.md`, `convers
 | Utilities | Centralize parsing | - [ ] Reuse URL normalization; forbid ad-hoc GitHub URL handling | `knowgrph/canvas/src/lib/url.ts` | `normalizeGitHubBlobLikeUrl` | URL | URL | Normalize blob-like URLs to the canonical fetch URL when possible |
 | Fetch | Bound remote work | - [ ] Bound fetch; forbid indefinite streaming | `knowgrph/canvas/src/lib/net/fetchRemoteText.ts` | `fetchRemoteTextDetailed` | URL | `{ ok,text }` | Timeout + max-bytes guard |
 | Curation UI | Preserve discoverability | - [ ] Show Source Files/Outline/Backlinks in Explorer; forbid hidden state | `singabldr/.../MarkdownPanelLayout.tsx` | `MarkdownPanelLayout` | `sourceFiles`, `tokens` | Explorer sidebar | Render Source Files tree + Outline (TOC) + Backlinks as stable sections |
-| Geospatial | Avoid duplicate import surfaces | - [ ] Consolidate dataset import; forbid conflicting UIs | `gympgrph/src/features/geospatial/GeospatialPanel.tsx` | `GeospatialPanel` | Dataset list | Dataset list UI | Geo panel does not provide dataset-add inputs; adding is consolidated into Source Files import |
+| Geospatial | Avoid duplicate import surfaces | - [ ] Consolidate dataset import; forbid conflicting UIs | `gympgrph/src/GeospatialPanelHost.tsx` | `GeospatialPanelHost` | Dataset list | Dataset list UI | Geo panel does not provide dataset-add inputs; adding is consolidated into Source Files import |

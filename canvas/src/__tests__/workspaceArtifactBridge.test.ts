@@ -3,6 +3,7 @@ import {
   XLSX_MIME_TYPE,
   createKgFsPathPolicy,
   decodeXlsxArtifactBase64,
+  enforceCanonicalWorkspaceMutation,
 } from '../../viteWorkspaceArtifactBridge'
 
 export function testWorkspaceArtifactBridgeAcceptsOnlyVerifiedXlsxPayloads() {
@@ -32,4 +33,38 @@ export function testWorkspaceArtifactBridgeConfinesDownloadPathsToWorkspaceRoots
   if (remapped === '/outside/secrets.xlsx' || !policy.isAllowed(remapped)) {
     throw new Error(`expected outside absolute paths to be remapped inside the workspace mirror, got ${remapped}`)
   }
+}
+
+export async function testWorkspaceArtifactBridgeEnforcesCanonicalWorkspaceSeedOwnership() {
+  const repoRoot = path.resolve('/workspace/.worktrees/knowgrph/storage-sync')
+  const policy = createKgFsPathPolicy(repoRoot)
+  const workspacePath = '/docs/workspace-seeds/team/demo.md'
+  const canonicalPath = path.resolve('/workspace/knowgrph/docs/workspace-seeds/team/demo.md')
+  const rejectedPath = path.resolve('/workspace/huijoohwee/docs/workspace-seeds/team/demo.md')
+  if (policy.resolveCanonicalWorkspacePath(workspacePath) !== canonicalPath) {
+    throw new Error('expected task worktrees to resolve workspace seeds against the canonical Knowgrph checkout')
+  }
+  if (!policy.isCanonicalWorkspaceMutation(canonicalPath, workspacePath)) {
+    throw new Error('expected canonical Knowgrph workspace seed mutation to be accepted')
+  }
+  if (policy.isCanonicalWorkspaceMutation(rejectedPath, workspacePath)) {
+    throw new Error('expected huijoohwee/docs/workspace-seeds mutation to be rejected')
+  }
+  if (policy.isCanonicalWorkspaceMutation(canonicalPath, '')) {
+    throw new Error('expected direct workspace seed mutations without an ownership key to be rejected')
+  }
+  const mismatch = await enforceCanonicalWorkspaceMutation({
+    policy,
+    requestedAbsPath: rejectedPath,
+    workspacePath,
+    deleteOnly: false,
+  })
+  if (mismatch?.status !== 403) throw new Error('expected the bridge operation to reject a repository ownership mismatch')
+  const rootDelete = await enforceCanonicalWorkspaceMutation({
+    policy,
+    requestedAbsPath: path.resolve('/workspace/knowgrph/docs/workspace-seeds'),
+    workspacePath: '/docs/workspace-seeds',
+    deleteOnly: true,
+  })
+  if (rootDelete?.status !== 403) throw new Error('expected the bridge operation to reject seed-root deletion')
 }

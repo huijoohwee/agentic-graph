@@ -11,10 +11,9 @@ import {
 import { clampChatCompletionTokens } from '../chatAiMarkdownSpec'
 import { buildPackedContextSystemPrompt, packChatContext, type ChatPackedContext } from '../chatContextPack'
 import {
-  CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT,
-  CHAT_BASE_RESPONSE_CONTRACT_PROMPT,
-} from '../chatResponseBaseContract'
-import { buildChatSkillInvocationSystemPrompt, parseChatSkillSlashInvocation } from '../chatSkillRegistry'
+  prepareHeadlessResponseRun,
+  type HeadlessResponsePreparation,
+} from '../headlessResponseCoordinator'
 import { sanitizeStreamArtifactPrompt } from '../chatStreamArtifactSanitizers'
 import {
   buildBoundedGraphSystemPrompt,
@@ -47,10 +46,7 @@ import {
   buildKnowgrphVdeoxplnChatSystemPrompt,
   buildKnowgrphVdeoxplnRoutingPlan,
 } from '@/features/agent-ready/knowgrphVdeoxplnContract.mjs'
-import { buildChatInvocationSystemPrompt } from '../chatInvocationRegistry'
 import {
-  buildAgenticOsRuntimeInvocationSystemPrompt,
-  buildRuntimeInvocationRoutingSystemPrompt,
   hasRecognizedChatRuntimeInvocation,
   resolveChatSubmitResponseContract,
 } from './floatingPanelChatSubmitProfile'
@@ -147,10 +143,12 @@ export const buildChatSubmitRequestContext = async (args: {
   submitArgs: FloatingPanelChatSubmitArgs
   nextMessages: ChatMessage[]
   assistantMessageId: string
+  headlessPreparation?: HeadlessResponsePreparation
 }): Promise<{
   packedContext: ChatPackedContext
   systemMessages: Array<{ role: 'system'; content: string }>
   conversationMessages: Array<{ role: 'user' | 'assistant'; content: string }>
+  headlessPreparation: HeadlessResponsePreparation
 }> => {
   const packedContext = packChatContext({
     graphData: args.submitArgs.graphData,
@@ -169,14 +167,18 @@ export const buildChatSubmitRequestContext = async (args: {
     chatStorageTarget: args.submitArgs.chatStorageTarget,
     userQuery,
   })
-
+  const headlessPreparation = args.headlessPreparation || await prepareHeadlessResponseRun({
+    runId: args.assistantMessageId,
+    source: { kind: 'chat', id: args.assistantMessageId },
+    requestText: userQuery,
+    responseContract,
+    chatStorageTarget: args.submitArgs.chatStorageTarget,
+    provider: args.submitArgs.chatProvider,
+    model: args.submitArgs.chatModel,
+  })
+  const [baseResponseContractMessage, ...headlessInvocationMessages] = headlessPreparation.systemMessages
   const systemMessages: Array<{ role: 'system'; content: string }> = [
-    {
-      role: 'system',
-      content: responseContract === 'kgc'
-        ? CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT
-        : CHAT_BASE_RESPONSE_CONTRACT_PROMPT,
-    },
+    ...(baseResponseContractMessage ? [baseResponseContractMessage] : []),
     {
       role: 'system',
       content: buildPackedContextSystemPrompt(packedContext),
@@ -205,26 +207,7 @@ export const buildChatSubmitRequestContext = async (args: {
   if (args.submitArgs.chatSystemPrompt && typeof args.submitArgs.chatSystemPrompt === 'string' && args.submitArgs.chatSystemPrompt.trim()) {
     systemMessages.push({ role: 'system', content: args.submitArgs.chatSystemPrompt })
   }
-  const invocationPrompt = buildChatInvocationSystemPrompt({
-    userQuery,
-    chatProvider: args.submitArgs.chatProvider,
-    chatModel: args.submitArgs.chatModel,
-  })
-  if (invocationPrompt) systemMessages.push({ role: 'system', content: invocationPrompt })
-  const agenticOsInvocationPrompt = buildAgenticOsRuntimeInvocationSystemPrompt(userQuery)
-  if (agenticOsInvocationPrompt) systemMessages.push({ role: 'system', content: agenticOsInvocationPrompt })
-  const runtimeInvocationRoutingPrompt = buildRuntimeInvocationRoutingSystemPrompt(userQuery)
-  if (runtimeInvocationRoutingPrompt) systemMessages.push({ role: 'system', content: runtimeInvocationRoutingPrompt })
-  const skillInvocation = parseChatSkillSlashInvocation(userQuery)
-  if (skillInvocation) {
-    systemMessages.push({
-      role: 'system',
-      content: buildChatSkillInvocationSystemPrompt({
-        invocation: skillInvocation,
-        chatStorageTarget: args.submitArgs.chatStorageTarget,
-      }),
-    })
-  }
+  systemMessages.push(...headlessInvocationMessages)
   if (includeSelectionContext) {
     const markdownSnippet = buildMarkdownNodeSnippetPrompt(
       args.submitArgs.markdownText,
@@ -272,6 +255,7 @@ export const buildChatSubmitRequestContext = async (args: {
   return {
     packedContext,
     systemMessages,
+    headlessPreparation,
     conversationMessages: buildSubmitConversationMessages(args.nextMessages, args.assistantMessageId, {
       normalizeRuntimeInvocation: true,
     }),

@@ -1,6 +1,7 @@
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
 import { hashText } from '@/features/parsers/hash'
 import { LS_KEYS } from '@/lib/config'
+import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
 
 export type DocumentVersionSource = 'editorWorkspace' | 'sourceFiles' | 'gitGraph' | 'manual'
 export type DocumentVersionReviewDecision = 'keep' | 'discard'
@@ -81,7 +82,7 @@ type DocumentVersionState = {
 }
 
 const DOCUMENT_VERSION_STATE_VERSION = 1
-const DOCUMENT_VERSION_MAX_ENTRIES_PER_PATH = 16
+const DOCUMENT_VERSION_MAX_ENTRIES_PER_PATH = KNOWGRPH_STORAGE_SYNC_BOUNDS.maxVersionSnapshots
 const DOCUMENT_VERSION_MAX_TOTAL_ENTRIES = 240
 const DOCUMENT_VERSION_TEXT_MAX_CHARS = 320_000
 const DOCUMENT_VERSION_EVENT = 'kg:document-versions-changed'
@@ -178,7 +179,7 @@ const readDocumentVersionReviewDecision = (value: unknown): DocumentVersionRevie
   return null
 }
 
-const trimDocumentVersionState = (entries: DocumentVersionEntry[]): DocumentVersionEntry[] => {
+export const trimDocumentVersionState = (entries: DocumentVersionEntry[]): DocumentVersionEntry[] => {
   const byPathCount = new Map<string, number>()
   const kept: DocumentVersionEntry[] = []
   for (let i = entries.length - 1; i >= 0; i -= 1) {

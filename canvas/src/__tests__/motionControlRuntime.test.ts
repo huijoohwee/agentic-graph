@@ -114,6 +114,7 @@ async function testCaptureEndedLifecycle() {
     if (readMotionControlSnapshot().revision !== beforeStops + 1) {
       throw new Error('expected concurrent stop calls to share one serialized teardown')
     }
+    if (!openMotionControlSurface('motion-control')) throw new Error('expected an approved XR capture surface')
     const starting = startMotionControl('wasm')
     for (let attempt = 0; attempt < 12 && readMotionControlSnapshot().phase !== 'requesting-camera'; attempt += 1) {
       await Promise.resolve()
@@ -124,7 +125,7 @@ async function testCaptureEndedLifecycle() {
     track.end()
     resolvePlay()
     await starting
-    await Promise.resolve()
+    for (let attempt = 0; attempt < 12 && readMotionControlSnapshot().phase !== 'error'; attempt += 1) await Promise.resolve()
     const ended = readMotionControlSnapshot()
     if (ended.phase !== 'error' || ended.cameraActive || ended.pose || !track.stopped) {
       throw new Error('expected a revoked or ended camera track to clear capture and publish an error')
@@ -201,7 +202,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     resetAgenticOsRemoteGrammarCatalogForTests()
   }
   const inspection = inspectLocalMotionControl()
-  if (inspection.schema !== 'knowgrph-motion-control-mcp/v1'
+  if (inspection.schema !== 'knowgrph-motion-control-mcp/v2'
     || inspection.runtimeSchema !== 'knowgrph-motion-control/v1'
     || inspection.webMcpTools.control !== 'knowgrph.control_local_motion_control'
     || inspection.webMcpTools.inspect !== 'knowgrph.inspect_local_motion_control'
@@ -233,7 +234,7 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     || inspection.targets.surfaces.gameMode.webMcpTool !== 'knowgrph.control_local_game_mode') {
     throw new Error('expected Motion Control WebMCP inspection to expose the shared target projection')
   }
-  for (const view of ['motionControl', 'animation', 'gameMode'] as const) {
+  for (const view of ['motionControl', 'skillsCommands', 'media', 'animation', 'gameMode', 'flightSim'] as const) {
     if (!motionControlCaptureSurfaceIsOpen({
       canvasRenderMode: '3d',
       canvas3dMode: 'xr',
@@ -250,14 +251,14 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     floatingPanelOpen: true,
     floatingPanelView: 'media',
     mediaCatalogMode: 'xr-3d',
-  }) || motionControlCaptureSurfaceIsOpen({
+  }) || !motionControlCaptureSurfaceIsOpen({
     canvasRenderMode: '3d',
     canvas3dMode: 'xr',
     floatingPanelOpen: true,
     floatingPanelView: 'media',
     mediaCatalogMode: 'media',
   })) {
-    throw new Error('expected capture continuity only for Media\'s explicit 3D for XR submode')
+    throw new Error('expected capture continuity for both canonical Media projections in XR Mode')
   }
   for (const closed of [
     { canvasRenderMode: '2d', canvas3dMode: 'xr', floatingPanelOpen: true, floatingPanelView: 'motionControl' as const, mediaCatalogMode: 'xr-3d' as const },
@@ -323,9 +324,9 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   const rejectedStructured = await controlLocalMotionControl({ operation: 'open', extra: true } as never)
   if (rejectedStructured.ok !== false) throw new Error('expected unknown structured fields to fail closed')
 
-  const runtimeSource = source('src', 'features', 'three', 'motionControlRuntime.ts')
+  const runtimeSource = [source('src', 'features', 'three', 'motionControlRuntime.ts'), source('src', 'features', 'three', 'motionControlCaptureResources.ts')].join('\n')
   const assetScript = source('scripts', 'prepare-litert-assets.mjs')
-  const panelSource = source('src', 'features', 'three', 'MotionControlFloatingPanelView.tsx')
+  const panelSource = [source('src', 'features', 'three', 'MotionControlFloatingPanelView.tsx'), source('src', 'features', 'three', 'MotionCapturePlatformProjection.tsx')].join('\n')
   const targetCardsSource = source('src', 'features', 'three', 'MotionControlTargetCards.tsx')
   const targetRuntimeSource = source('src', 'features', 'three', 'motionControlTargetRuntime.ts')
   const surfaceRuntimeSource = source('src', 'features', 'three', 'motionControlSurfaceRuntime.ts')
@@ -362,14 +363,14 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
   }
   const stopRuntimeStart = runtimeSource.indexOf('export async function stopMotionControl')
   const immediateOffPublish = runtimeSource.indexOf("phase: 'off'", stopRuntimeStart)
-  const pendingInferenceDrain = runtimeSource.indexOf('if (pendingInference) await pendingInference.catch', stopRuntimeStart)
+  const pendingInferenceDrain = runtimeSource.indexOf('if (pendingInference) void pendingInference.catch', stopRuntimeStart)
   if (stopRuntimeStart < 0 || immediateOffPublish < stopRuntimeStart || pendingInferenceDrain < 0 || immediateOffPublish > pendingInferenceDrain) {
-    throw new Error('expected Stop to publish camera-off state before awaiting an in-flight LiteRT inference cleanup')
+    throw new Error('expected Stop to publish camera-off state before asynchronously draining in-flight LiteRT inference')
   }
   for (const marker of ['POSE_TASK_SHA256', 'MAX_POSE_TASK_BYTES', 'AbortSignal.timeout(', 'storage.googleapis.com/mediapipe-models/', 'copyFile(', 'pose_landmarks_detector.tflite', 'readBoundedResponseBytes(']) {
     if (!assetScript.includes(marker)) throw new Error(`expected same-origin licensed LiteRT asset preparation marker ${marker}`)
   }
-  for (const marker of ['floatingPanelCatalogSurfaceClassName()', 'floatingPanelCatalogBodyClassName(', 'data-kg-motion-control-start', 'data-kg-motion-control-invocation-chip-renderer="shared-markdown-sigil"']) {
+  for (const marker of ['floatingPanelCatalogSurfaceClassName()', 'floatingPanelCatalogBodyClassName(', 'data-kg-motion-control-start', 'data-kg-motion-control-invocation-chip-renderer="shared-markdown-sigil"', 'disabled={!captureSurfaceActive || session.sources.length === 0', 'disabled={!captureSurfaceActive || !peerSharing.available', 'useAgenticOsRemoteGrammarAutoHydration()', "sourceMetadataDeferred ? 'deferred-offline'", 'data-kg-motion-capture-research-evidence="import"', 'applyResearchEvidenceManifest']) {
     if (!panelSource.includes(marker)) throw new Error(`expected shared FloatingPanel Motion Control layout marker ${marker}`)
   }
   for (const marker of ['MotionControlTargetCards', "openMotionControlSurface(target)"]) {
@@ -394,18 +395,13 @@ export async function testMotionControlRuntimeIsLiteRtInvocableAndXrReady() {
     if (!targetRuntimeSource.includes(marker)) throw new Error(`expected centralized Motion Control target ownership marker ${marker}`)
   }
   for (const marker of [
-    "'motion-control': Object.freeze", "'xr-3d': Object.freeze", 'animation: Object.freeze', "input.floatingPanelView === 'media' && input.mediaCatalogMode === 'xr-3d'", 'activateXrSceneSurface({', 'panelView: MOTION_CONTROL_SURFACE_CATALOG[target].view',
+    "'motion-control': Object.freeze", "'xr-3d': Object.freeze", 'animation: Object.freeze', 'MOTION_CONTROL_XR_RUNTIME_READY_VIEWS', "'skillsCommands'", "'flightSim'", 'activateXrSceneSurface({', 'panelView: MOTION_CONTROL_SURFACE_CATALOG[target].view',
   ]) {
     if (!surfaceRuntimeSource.includes(marker)) throw new Error(`expected centralized Motion Control surface ownership marker ${marker}`)
   }
   const staleSurfaceOwner = ['activateCanvasGraphSurfaceMode', "setCanvas3dMode('xr')", "setMediaCatalogMode('xr-3d')"].find(marker => surfaceRuntimeSource.includes(marker))
   if (staleSurfaceOwner) throw new Error(`expected Motion Control to remove local XR surface owner ${staleSurfaceOwner}`)
-  if (!lifecycleGuardSource.includes('motionControlCaptureSurfaceIsOpen')
-    || !lifecycleGuardSource.includes('subscribeMediaCatalogMode')
-    || !lifecycleGuardSource.includes('subscribeMotionControl')
-    || !lifecycleGuardSource.includes('captureActive')
-    || !lifecycleGuardSource.includes('mountedLifecycleOwnerCount')
-    || !lifecycleGuardSource.includes('Motion Control stopped when its XR FloatingPanel surface closed.')
+  if (!['motionControlCaptureSurfaceIsOpen', 'subscribeMediaCatalogMode', 'subscribeMotionControl', 'subscribeMotionCaptureSession', 'subscribeMotionCapturePeerSharing', 'captureActive', 'lifecycleActive', 'stopMotionCaptureOutsideXrSurface', 'mountedLifecycleOwnerCount', 'Motion Control stopped when its XR FloatingPanel surface closed.'].every(marker => lifecycleGuardSource.includes(marker))
     || !toolbarLauncherSource.includes('<MotionControlXrLifecycleGuard />')) {
     throw new Error('expected stable toolbar lifecycle ownership for Motion Control capture continuity')
   }
@@ -575,7 +571,7 @@ export async function testMotionControlWebMcpReusesCanonicalXrTargets() {
     }
     const opened = await controlTool.execute({ operation: 'open' }) as { ok?: unknown }
     const surface = useGraphStore.getState()
-    if (inspection.schema !== 'knowgrph-motion-control-mcp/v1'
+    if (inspection.schema !== 'knowgrph-motion-control-mcp/v2'
       || inspection.targets?.surfaces?.xr3d?.webMcpTool !== 'knowgrph.control_local_xr_scene'
       || inspection.targets?.surfaces?.animation?.webMcpTool !== 'knowgrph.control_local_animation'
       || !String(inspection.targets?.surfaces?.xr3d?.invocation || '').includes('/xr.physics @canvas #controller')

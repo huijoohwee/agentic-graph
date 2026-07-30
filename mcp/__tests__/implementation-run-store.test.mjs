@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
+import { readStableBoundedFile } from "../bounded-file-reader.js";
 import { ImplementationRunStore } from "../implementation-run-store.js";
 
 const spec = (idempotencyKey = "store-test-key") => ({
@@ -85,6 +86,57 @@ test("state read and initial persistence enforce hard bounds with growth headroo
   await assert.rejects(store.read(accepted.state.runId), (error) => error.code === "DURABLE_STATE_TOO_LARGE");
 });
 
+test("state reads reject continuous pathname churn after the durable file is opened", async (t) => {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-run-store-"));
+  t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
+  let armed = false;
+  let swaps = 0;
+  const store = new ImplementationRunStore({
+    rootDir,
+    stableFileReader: (options) => readStableBoundedFile({
+      ...options,
+      afterOpen: async () => {
+        if (!armed || path.basename(options.filePath) !== "state.json") return;
+        swaps += 1;
+        await fs.rename(options.filePath, `${options.filePath}.opened-${swaps}`);
+        await fs.writeFile(options.filePath, "{}\n", { mode: 0o600 });
+      },
+    }),
+  });
+  const created = await store.create({ spec: spec("state-pathname-swap"), plan });
+  armed = true;
+  await assert.rejects(
+    store.read(created.state.runId),
+    (error) => error.code === "DURABLE_STATE_UNSAFE",
+  );
+  assert.equal(swaps, 4);
+});
+
+test("state reads retry a bounded transient atomic replacement", async (t) => {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-run-store-"));
+  t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
+  const writer = new ImplementationRunStore({ rootDir });
+  const created = await writer.create({ spec: spec("state-atomic-replacement"), plan });
+  let armed = true;
+  const reader = new ImplementationRunStore({
+    rootDir,
+    stableFileReader: (options) => readStableBoundedFile({
+      ...options,
+      afterOpen: async () => {
+        if (!armed || path.basename(options.filePath) !== "state.json") return;
+        armed = false;
+        await writer.update(created.state.runId, { expectedRevision: 1, eventType: "test.concurrent-update" }, (state) => {
+          state.state = "running";
+          return state;
+        });
+      },
+    }),
+  });
+  const state = await reader.read(created.state.runId);
+  assert.equal(state.revision, 2);
+  assert.equal(state.state, "running");
+});
+
 test("implementation-run event reads are bounded to the newest 200 committed revisions", async (t) => {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-run-store-"));
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
@@ -96,6 +148,34 @@ test("implementation-run event reads are bounded to the newest 200 committed rev
   const events = await store.events(state.runId);
   assert.equal(events.length, 200);
   assert.equal(events.at(-1).revision, state.revision);
+});
+
+test("event reads reject a pathname swap after the durable file is opened", async (t) => {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-run-store-"));
+  t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
+  let armed = false;
+  const store = new ImplementationRunStore({
+    rootDir,
+    stableFileReader: (options) => readStableBoundedFile({
+      ...options,
+      afterOpen: async () => {
+        if (!armed || !/^\d{10}\.json$/.test(path.basename(options.filePath))) return;
+        armed = false;
+        await fs.rename(options.filePath, `${options.filePath}.opened`);
+        await fs.writeFile(
+          options.filePath,
+          `${JSON.stringify({ revision: 999, type: "swapped" })}\n`,
+          { mode: 0o600 },
+        );
+      },
+    }),
+  });
+  const created = await store.create({ spec: spec("event-pathname-swap"), plan });
+  armed = true;
+  await assert.rejects(
+    store.events(created.state.runId),
+    (error) => error.code === "DURABLE_EVENT_UNSAFE",
+  );
 });
 
 test("implementation-run updates reject state-parent replacement before creating a lock", async (t) => {

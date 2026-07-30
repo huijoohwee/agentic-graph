@@ -27,7 +27,7 @@ const normalizeRelPath = (value: string): string => String(value || '')
 let sourcePromise: Promise<string> | null = null
 
 const normalizeSource = (value: unknown): string => {
-  const text = String(value || '').trim()
+  const text = String(value || '')
   if (!text.startsWith('---\n')) return ''
   if (!text.includes(`id: "${XR_PHYSICS_RUN_READY_DEMO_ID}"`)) return ''
   if (!text.includes('native_runtime: true')) return ''
@@ -85,8 +85,8 @@ export async function mergeCanonicalXrPhysicsWorkspaceSeedIntoDocsMirror(
   entries: ReadonlyArray<WorkspaceDocsMirrorSeedEntry>,
 ): Promise<WorkspaceDocsMirrorSeedEntry[]> {
   if (!CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED) return [...entries]
-  const text = String(await loadXrPhysicsDemoSeedSource() || '').trim()
-  if (!text) return [...entries]
+  const text = String(await loadXrPhysicsDemoSeedSource() || '')
+  if (!text.trim()) return [...entries]
   const canonicalRelPath = normalizeRelPath(XR_PHYSICS_DEMO_REPO_REL_PATH).replace(/^docs\//, '')
   const targetBasename = XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME.toLowerCase()
   const withoutConflicts = entries.filter(entry => {

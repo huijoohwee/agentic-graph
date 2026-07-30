@@ -39,6 +39,7 @@ import {
   readStoryboardString as readString,
   readStoryboardStringList as readStringList,
 } from '@/components/StoryboardCanvas/storyboardModelScalars'
+import { selectRenderableStoryboardCards } from '@/components/StoryboardCanvas/storyboardCardVisibility'
 export const STORYBOARD_EMPTY_LANE = 'Storyboard'
 export const STORYBOARD_CANVAS_RICH_MEDIA_PANEL_PROPERTY = 'storyboardCanvasRichMediaPanel' as const
 const LANE_PROPERTY_KEYS = GRAPH_KEYWORD_LANE_PROPERTY_KEYS
@@ -519,15 +520,6 @@ const buildCardModel = (node: GraphNode, inputIndex: number, stageTokensByLane: 
   }
 }
 
-const selectRenderableCards = (cards: StoryboardCardModel[]): StoryboardCardModel[] => {
-  if (cards.length <= 1) return cards
-  const richCards = cards.filter(card => !card.structural && card.candidateScore >= 2)
-  if (richCards.length >= 2) return richCards
-  const nonStructuralCards = cards.filter(card => !card.structural)
-  if (nonStructuralCards.length >= 2) return nonStructuralCards
-  return cards
-}
-
 const compareCards = (left: StoryboardCardModel, right: StoryboardCardModel): number => {
   if (left.order !== right.order) return left.order - right.order
   if (left.inputIndex !== right.inputIndex) return left.inputIndex - right.inputIndex
@@ -571,7 +563,7 @@ export const buildStoryboardBoardModel = (args: {
     })
     return buildCardModel(connectedProjection.renderNode, index, stageTokensByLane, connectedProjection)
   })
-  const cards = selectRenderableCards(allCards)
+  const cards = selectRenderableStoryboardCards(allCards)
   const lanesById = new Map<string, StoryboardLaneModel>()
   for (const card of cards) {
     const laneId = card.lane || STORYBOARD_EMPTY_LANE

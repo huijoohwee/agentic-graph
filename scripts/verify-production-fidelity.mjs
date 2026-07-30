@@ -6,6 +6,7 @@ import {
 } from '../canvas/src/features/canvas/canvasDocShareToken.mjs'
 import { LIVE_CANVAS_HERO_SOURCE_SESSION_KEY } from '../canvas/src/features/canvas/liveCanvasHeroSourceSelectionContract.mjs'
 import { validateProductionRuntimeReadiness } from './production-runtime-readiness.mjs'
+import { KNOWGRPH_WORKSPACE_SEED_INVENTORY } from './workspace-seed-authority.mjs'
 
 const normalizeOrigin = value => {
   const url = new URL(String(value || 'https://airvio.co'))
@@ -16,7 +17,6 @@ const normalizeOrigin = value => {
 }
 
 const browserOrigin = normalizeOrigin(process.env.PRODUCTION_ORIGIN)
-const publicOrigin = normalizeOrigin(process.env.PRODUCTION_PUBLIC_ORIGIN || 'https://airvio.co')
 const markerOrigin = normalizeOrigin(process.env.PRODUCTION_MARKER_ORIGIN || browserOrigin)
 const expectedSourceRevision = String(process.env.RELEASE_SHA || '').trim()
 const expectedManifestDigest = String(process.env.PRODUCTION_IMMUTABLE_MANIFEST_DIGEST || '').trim()
@@ -164,6 +164,55 @@ const waitForHomeSourceAuthority = async page => {
   )
 }
 
+const readVisibleWorkspaceSeedInventory = async seedFolder => seedFolder.evaluate(section => {
+  const childList = section.nextElementSibling
+  if (!(childList instanceof HTMLUListElement)) return []
+  return Array.from(childList.querySelectorAll(':scope > li > section[aria-label^="File "]'))
+    .map(element => String(element.getAttribute('aria-label') || '').replace(/^File /, ''))
+    .filter(Boolean)
+    .sort()
+})
+
+const openWorkspaceFolder = async (parent, name) => {
+  const folderLabel = `Folder ${name}`
+  const folder = parent.locator(`section[aria-label="${folderLabel}"]`)
+  await folder.waitFor({ state: 'visible', timeout: 45_000 })
+  const isExpanded = await folder.evaluate(section => section.nextElementSibling instanceof HTMLUListElement)
+  if (!isExpanded) await folder.getByRole('button', { name: folderLabel, exact: true }).click()
+  await folder.locator('xpath=following-sibling::ul[1]').waitFor({ state: 'visible', timeout: 45_000 })
+  return folder
+}
+
+const waitForWorkspaceSeedInventory = async page => {
+  const explorer = page.locator('aside[aria-label="Markdown Explorer"]')
+  if (!await explorer.isVisible()) {
+    await page.getByRole('button', { name: 'Workspace View', exact: true }).click()
+    const editorWorkspace = page.getByRole('button', { name: 'Editor Workspace', exact: true })
+    await editorWorkspace.waitFor({ state: 'visible', timeout: 45_000 })
+    await editorWorkspace.click()
+  }
+  await explorer.waitFor({ state: 'visible', timeout: 45_000 })
+  const sourceFilesSection = explorer.locator('section[aria-label="Source Files"]')
+  await sourceFilesSection.waitFor({ state: 'visible', timeout: 45_000 })
+  const sourceFilesToggle = sourceFilesSection.getByRole('button', { name: 'Source Files', exact: true })
+  if (await sourceFilesToggle.getAttribute('aria-expanded') === 'false') await sourceFilesToggle.click()
+  const sourceFilesContent = sourceFilesSection.locator('section[aria-label="Source Files content"]')
+  await sourceFilesContent.waitFor({ state: 'visible', timeout: 45_000 })
+  await openWorkspaceFolder(sourceFilesContent, 'docs')
+  const seedFolder = await openWorkspaceFolder(sourceFilesContent, 'workspace-seeds')
+  const expected = [...KNOWGRPH_WORKSPACE_SEED_INVENTORY].sort()
+  const deadline = Date.now() + 45_000
+  let observed = []
+  while (Date.now() < deadline) {
+    observed = await readVisibleWorkspaceSeedInventory(seedFolder)
+    if (JSON.stringify(observed) === JSON.stringify(expected)) return observed
+    await new Promise(resolve => setTimeout(resolve, 250))
+  }
+  throw new Error(
+    `Explorer Source Files workspace-seeds inventory mismatch: expected=${JSON.stringify(expected)} observed=${JSON.stringify(observed)}`,
+  )
+}
+
 const markerAtApex = await fetchMarker('/.well-known/runtime-readiness.json')
 const markerAtApp = await fetchMarker('/knowgrph/.well-known/runtime-readiness.json')
 assert.equal(markerAtApex.body, markerAtApp.body, 'apex and /knowgrph readiness markers must be byte-identical')
@@ -171,6 +220,36 @@ await validateProductionRuntimeReadiness(markerAtApex.marker, {
   sourceRevision: expectedSourceRevision,
   immutableManifestDigest: expectedManifestDigest,
 })
+for (const missingPath of [
+  `/knowgrph-release-missing-${expectedSourceRevision}.png`,
+  `/knowgrph-release-missing-${expectedSourceRevision}.js`,
+  `/knowgrph-release-missing-${expectedSourceRevision}/`,
+  '/index.html',
+  '/hackamap/',
+]) {
+  const missingResponse = await fetch(`${markerOrigin}${missingPath}`, {
+    cache: 'no-store',
+    redirect: 'manual',
+  })
+  const missingBody = await missingResponse.text()
+  assert.equal(missingResponse.status, 404, 'missing assets must not resolve through the apex Home app shell')
+  assert.match(missingResponse.headers.get('content-type') || '', /^text\/html\b/i)
+  assert.match(missingBody, /<h1>Not found<\/h1>/)
+  assert.doesNotMatch(missingBody, /\/knowgrph\/assets\//)
+}
+const siblingAppResponse = await fetch(`${markerOrigin}/singabldr/`, { cache: 'no-store' })
+const siblingAppBody = await siblingAppResponse.text()
+assert.equal(siblingAppResponse.status, 200, 'the Pages 404 boundary must preserve the sibling Singabldr app')
+assert.match(siblingAppResponse.headers.get('content-type') || '', /^text\/html\b/i)
+assert.match(siblingAppBody, /<title>Singabldr<\/title>/)
+const siblingManifestResponse = await fetch(`${markerOrigin}/singabldr/manifest.webmanifest`, {
+  cache: 'no-store',
+})
+assert.equal(siblingManifestResponse.status, 200, 'the Pages 404 boundary must preserve sibling static assets')
+assert.equal((await siblingManifestResponse.json()).name, 'Singabldr')
+const siblingWorkerResponse = await fetch(`${markerOrigin}/singabldr/sw.js`, { cache: 'no-store' })
+assert.equal(siblingWorkerResponse.status, 200, 'the Pages 404 boundary must preserve the sibling worker')
+assert.match(siblingWorkerResponse.headers.get('content-type') || '', /javascript/i)
 
 const browser = await chromium.launch({
   channel: 'chrome',
@@ -249,9 +328,21 @@ let staleSelectionContext = null
 try {
   const home = await context.newPage()
   await home.goto(`${browserOrigin}/?kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
-  await home.locator('h1').filter({ hasText: 'Map intent.' }).waitFor({ state: 'visible', timeout: 30_000 })
+  await home.locator('h1').filter({ hasText: 'Map intent' }).waitFor({ state: 'visible', timeout: 30_000 })
   const heading = await home.locator('h1').innerText()
-  for (const phrase of ['Map intent.', 'Orchestrate agents.', 'Prove outcomes.']) assert.ok(heading.includes(phrase))
+  for (const phrase of ['Map intent', 'Run agents', 'Get results']) assert.ok(heading.includes(phrase))
+  const promptPresetFieldset = home.locator('[data-kg-live-canvas-hero-prompt-presets="true"]')
+  const promptPresetSelect = promptPresetFieldset.locator('[data-kg-live-canvas-hero-prompt-preset-select="true"]')
+  await promptPresetSelect.waitFor({ state: 'visible', timeout: 30_000 })
+  assert.equal(
+    await promptPresetFieldset.locator('[role="alert"]').count(),
+    0,
+    'Home prompt catalog must load without a source-authority alert',
+  )
+  assert.ok(
+    await promptPresetSelect.locator('option').count() >= 11,
+    'Home must load the complete canonical prompt preset catalog',
+  )
   const heroFrameElement = home.locator('iframe').first()
   await heroFrameElement.waitFor({ state: 'attached', timeout: 30_000 })
   const heroFrameSrc = await heroFrameElement.getAttribute('src')
@@ -301,7 +392,7 @@ try {
   staleSelectionContext.on('page', page => page.on('pageerror', error => pageErrors.push(error.message)))
   const staleHome = await staleSelectionContext.newPage()
   await staleHome.goto(`${browserOrigin}/?kgReleaseProof=${expectedSourceRevision}`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
-  await staleHome.locator('h1').filter({ hasText: 'Map intent.' }).waitFor({ state: 'visible', timeout: 30_000 })
+  await staleHome.locator('h1').filter({ hasText: 'Map intent' }).waitFor({ state: 'visible', timeout: 30_000 })
   const staleHeroFrame = staleHome.locator('iframe').first()
   await staleHeroFrame.waitFor({ state: 'attached', timeout: 30_000 })
   const staleHeroFrameSrc = await staleHeroFrame.getAttribute('src')
@@ -332,6 +423,8 @@ try {
   const appText = await waitForCanvas(() => app.locator('body'))
   assert.match(appText, PHYSICS_PLAYGROUND_PATTERN)
   assert.match(appText, /Beach Ball/)
+  const workspaceSeedInventory = await waitForWorkspaceSeedInventory(app)
+  assert.deepEqual(workspaceSeedInventory, [...KNOWGRPH_WORKSPACE_SEED_INVENTORY].sort())
   assert.ok(browserAssetScripts.length > 0, 'browser proof must load exact-revision Knowgrph JavaScript assets')
   const exactReleaseAssetPrefix = `/knowgrph/assets/${expectedSourceRevision}/`
   const scriptsOutsideExactReleaseNamespace = [
@@ -352,7 +445,6 @@ try {
 process.stdout.write(`${JSON.stringify({
   status: 'passed',
   browserOrigin,
-  publicOrigin,
   markerOrigin,
   sourceRevision: markerAtApex.marker.source.revision,
   agenticCanvasOsRevision: markerAtApex.marker.agenticCanvasOs.revision,

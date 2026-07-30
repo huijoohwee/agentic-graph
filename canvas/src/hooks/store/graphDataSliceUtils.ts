@@ -58,7 +58,7 @@ function hasNon2dCanvasWorkspacePreset(metadata: Record<string, unknown>): boole
     explicitFrontmatterPreset?.canvasSurfaceMode
     || readMetadataString(canvasWorkspacePreset, 'canvasSurfaceMode'),
   ).trim()
-  if (canvasSurfaceMode === '3d' || canvasSurfaceMode === 'xr') return true
+  if (canvasSurfaceMode === '3d' || canvasSurfaceMode === 'xr' || canvasSurfaceMode === 'geo-xr') return true
   if (canvasSurfaceMode === '2d' || canvasSurfaceMode === 'geospatial') return false
   const canvasRenderMode = String(
     explicitFrontmatterPreset?.canvasRenderMode

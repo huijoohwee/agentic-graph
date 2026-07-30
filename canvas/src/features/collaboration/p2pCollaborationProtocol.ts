@@ -3,6 +3,36 @@ import { decodeBase64ToUtf8, encodeUtf8ToBase64 } from '@/features/markdown/mark
 export const P2P_COLLAB_INVITE_SEARCH_PARAM = 'kgCollab'
 export const P2P_COLLAB_ANSWER_SEARCH_PARAM = 'kgCollabAnswer'
 export const P2P_COLLAB_PROTOCOL_VERSION = 1 as const
+export const P2P_COLLAB_EXTENSION_MAX_PAYLOAD_BYTES = 24 * 1024
+export const P2P_COLLAB_EXTENSION_MAX_WIRE_BYTES = P2P_COLLAB_EXTENSION_MAX_PAYLOAD_BYTES + 1024
+
+const P2P_COLLAB_EXTENSION_NAMESPACE_PATTERN = /^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*(?:\/v[1-9][0-9]*)$/
+const P2P_COLLAB_EXTENSION_SOURCE_PATTERN = /^src_[A-Za-z0-9_-]{12,64}$/
+const P2P_COLLAB_EXTENSION_FORBIDDEN_KEY_PATTERN = /(?:endpoint|url|uri|device[-_]?id)$/i
+const P2P_COLLAB_EXTENSION_NETWORK_VALUE_PATTERN = /(?:^|[^a-z0-9])(?:https?|wss?|ftp|file|data|blob):(?:\/\/)?/i
+
+export type P2PCollaborationExtensionJsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | P2PCollaborationExtensionJsonValue[]
+  | { [key: string]: P2PCollaborationExtensionJsonValue }
+
+export type P2PCollaborationExtensionPayload = {
+  [key: string]: P2PCollaborationExtensionJsonValue
+}
+
+export type P2PCollaborationExtensionWireMessage = {
+  v: typeof P2P_COLLAB_PROTOCOL_VERSION
+  kind: 'extension'
+  event: 'message' | 'source-left'
+  sessionId: string
+  namespace: string
+  sourceId: string
+  payload?: P2PCollaborationExtensionPayload
+  sentAt: number
+}
 
 export type P2PCollaborationRole = 'idle' | 'host' | 'guest'
 export type P2PCollaborationPhase =
@@ -93,6 +123,7 @@ export type P2PCollaborationWireMessage =
       peers: P2PCollaborationPeerSnapshot[]
       sentAt: number
     }
+  | P2PCollaborationExtensionWireMessage
 
 const toBase64Url = (value: string): string => {
   return value.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
@@ -165,6 +196,80 @@ function isPeerSnapshot(value: unknown): value is P2PCollaborationPeerSnapshot {
     && Number.isFinite(snapshot.lastSeenAt)
     && (snapshot.caretLine == null || (typeof snapshot.caretLine === 'number' && Number.isFinite(snapshot.caretLine)))
   )
+}
+
+function utf8ByteLength(value: string): number {
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(value).byteLength
+  return encodeURIComponent(value).replace(/%[0-9A-F]{2}/gi, '_').length
+}
+
+function isExtensionJsonValue(value: unknown, depth: number, seen: WeakSet<object>): value is P2PCollaborationExtensionJsonValue {
+  if (value === null || typeof value === 'boolean' || typeof value === 'string') {
+    return typeof value !== 'string' || !P2P_COLLAB_EXTENSION_NETWORK_VALUE_PATTERN.test(value.trim())
+  }
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (typeof value !== 'object' || depth > 8 || seen.has(value)) return false
+  seen.add(value)
+  if (Array.isArray(value)) {
+    if (value.length > 512) return false
+    return Array.from(value).every(item => isExtensionJsonValue(item, depth + 1, seen))
+  }
+  const prototype = Object.getPrototypeOf(value)
+  if (prototype !== Object.prototype && prototype !== null) return false
+  const entries = Object.entries(value as Record<string, unknown>)
+  if (entries.length > 256) return false
+  return entries.every(([key, entryValue]) => (
+    key.length > 0
+    && key.length <= 128
+    && key !== '__proto__'
+    && key !== 'constructor'
+    && key !== 'prototype'
+    && !P2P_COLLAB_EXTENSION_FORBIDDEN_KEY_PATTERN.test(key)
+    && isExtensionJsonValue(entryValue, depth + 1, seen)
+  ))
+}
+
+export function isP2PCollaborationExtensionNamespace(value: unknown): value is string {
+  return typeof value === 'string'
+    && value.length <= 96
+    && P2P_COLLAB_EXTENSION_NAMESPACE_PATTERN.test(value)
+}
+
+export function isP2PCollaborationExtensionPayload(value: unknown): value is P2PCollaborationExtensionPayload {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  if (!isExtensionJsonValue(value, 0, new WeakSet<object>())) return false
+  try {
+    return utf8ByteLength(JSON.stringify(value)) <= P2P_COLLAB_EXTENSION_MAX_PAYLOAD_BYTES
+  } catch {
+    return false
+  }
+}
+
+export function isP2PCollaborationExtensionSourceId(value: unknown): value is string {
+  return typeof value === 'string' && P2P_COLLAB_EXTENSION_SOURCE_PATTERN.test(value)
+}
+
+function parseExtensionWireMessage(
+  parsed: Partial<P2PCollaborationExtensionWireMessage>,
+  raw: string,
+): P2PCollaborationExtensionWireMessage | null {
+  if (utf8ByteLength(raw) > P2P_COLLAB_EXTENSION_MAX_WIRE_BYTES) return null
+  if (!isP2PCollaborationExtensionNamespace(parsed.namespace)) return null
+  if (!isP2PCollaborationExtensionSourceId(parsed.sourceId)) return null
+  if (parsed.event !== 'message' && parsed.event !== 'source-left') return null
+  if (!Number.isFinite(parsed.sentAt) || Number(parsed.sentAt) < 0) return null
+  if (parsed.event === 'message' && !isP2PCollaborationExtensionPayload(parsed.payload)) return null
+  if (parsed.event === 'source-left' && typeof parsed.payload !== 'undefined') return null
+  return {
+    v: P2P_COLLAB_PROTOCOL_VERSION,
+    kind: 'extension',
+    event: parsed.event,
+    sessionId: String(parsed.sessionId || ''),
+    namespace: parsed.namespace,
+    sourceId: parsed.sourceId,
+    ...(parsed.event === 'message' ? { payload: parsed.payload } : {}),
+    sentAt: Number(parsed.sentAt),
+  }
 }
 
 export function encodeP2PInvitePayload(payload: P2PInvitePayload): string {
@@ -248,9 +353,14 @@ export function readP2PInviteTokenFromLocation(locationHref: string): string {
 
 export function parseP2PCollaborationWireMessage(raw: string): P2PCollaborationWireMessage | null {
   try {
-    const parsed = JSON.parse(String(raw || '')) as Partial<P2PCollaborationWireMessage>
+    const rawText = String(raw || '')
+    const parsed = JSON.parse(rawText) as Partial<P2PCollaborationWireMessage>
     if (!parsed || parsed.v !== P2P_COLLAB_PROTOCOL_VERSION || typeof parsed.kind !== 'string' || typeof parsed.sessionId !== 'string') {
       return null
+    }
+    if (!parsed.sessionId || parsed.sessionId.length > 128) return null
+    if (parsed.kind === 'extension') {
+      return parseExtensionWireMessage(parsed, rawText)
     }
     if (parsed.kind === 'hello' || parsed.kind === 'presence') {
       if (!isWirePeerRole(parsed.ownership)) return null

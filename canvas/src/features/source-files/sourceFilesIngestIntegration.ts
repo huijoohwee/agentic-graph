@@ -1,5 +1,4 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { createId } from '@/lib/id'
 import { pickFileWithExtensions } from '@/lib/graph/filePicker'
 import { SOURCE_FILES_FORMATS } from '@/lib/config.copy'
 import { decodeCodebasePathFromUrl, deriveFilenameFromUrl, normalizeGitHubBlobLikeUrl, unwrapUserProvidedText } from '@/lib/url'
@@ -8,39 +7,44 @@ import { describeFetchRemoteTextFailure } from '@/lib/net/fetchRemoteTextFailure
 import { downloadBlob } from '@/lib/graph/save'
 import { exportAsCombinedCsvBlob, exportAsJsonLdBlob, exportAsRawJsonBlob } from '@/lib/graph/io/adapter'
 import { exportAsGeoJsonBlob } from '@/lib/graph/io/geojson'
-import { normalizeMermaidMmdToMarkdown } from 'grph-shared/markdown/mermaidInput'
-import { runImportFlow } from '@/features/toolbar/importFlow'
-import { applyImportedCsvToStore, applyImportedJsonToStore } from '@/features/toolbar/importSideEffects'
 import { scheduleApplyComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
-import { findNextSourceFileIndex } from '@/features/source-files/sourceFileNaming'
 import { writeLocalMarkdownFileText } from '@/features/source-files/localMarkdownFolder'
 import { getMostRecentCachedMarkdownFolderId, writeCachedMarkdownText } from '@/features/source-files/markdownFsCache'
-import { useGympgrphStore } from '@/lib/gympgrph/api'
 import type { MarkdownSourceFilesIngestIntegration } from '@/features/markdown/ui/MarkdownSourceFilesIngestIntegration'
 import { convertPdfFileToMarkdown, convertPdfUrlToMarkdown, fetchYouTubeTranscriptMarkdown, fetchWebpageMarkdown } from '@/lib/net/remoteMarkdownConversions'
 import { sanitizeImportedMarkdownText } from '@/lib/markdown/sanitizeImportedMarkdown'
 import { buildGrabMapsProxyRequestHeaders } from 'grph-shared/geospatial/grabMapsAuth'
 import { toGrabMapsProxyUrl } from 'grph-shared/geospatial/grabMapsProxy'
-import { buildSourceFileParseIdentityHash } from '@/features/source-files/sourceFileParseIdentity'
-import { buildSourceFileLifecycleState, buildSourceFileRecord } from '@/features/source-files/sourceFileParsedState'
-import { mapLimit } from '@/lib/async/mapLimit'
-import { SOURCE_FILES_REPARSE_CONCURRENCY } from '@/lib/config'
-import { openMarkdownWorkspaceEditorPane } from '@/features/workspace-table/workspaceTableSsot'
-import { adaptFeishuBaseRecordsToSourceDocument } from '@/features/source-files/feishuBaseSourceAdapter'
-import type { FeishuBaseSourceImportRequest, FeishuBaseSourceImportResult } from '@/features/source-files/feishuBaseSourceImportContract'
+import { buildSourceFileLifecycleState } from '@/features/source-files/sourceFileParsedState'
+import { KNOWGRPH_SOURCE_IMPORT_LIMITS } from '@/lib/storage/knowgrphStorageBounds'
+import {
+  applyImportedTextToSourceFile,
+  buildSourceFileIdleReset,
+  ensureTargetSourceFileId,
+  syncDocumentViewFromSourceFile,
+} from '@/features/source-files/sourceFilesParseRuntime'
+export {
+  importFeishuBaseSnapshotIntoSourceFile,
+  parseAndApplySourceFile,
+  readSourceImportUtf8ByteLength,
+  refreshPersistedSourceFilesForCurrentParseIdentity,
+  resolveSameNameSourceFileId,
+} from '@/features/source-files/sourceFilesParseRuntime'
 
 const SUPPORTED_SOURCE_FILE_IMPORT_EXTENSIONS = [...SOURCE_FILES_FORMATS.import]
 
-const isJsonishName = (name: string): boolean => {
-  const lower = String(name || '').trim().toLowerCase()
-  return (
-    lower.endsWith('.json') ||
-    lower.endsWith('.jsonld') ||
-    lower.endsWith('.geojson') ||
-    lower.endsWith('.csv') ||
-    lower.endsWith('.yaml') ||
-    lower.endsWith('.yml')
-  )
+const runBoundedRemoteImport = async <T>(operation: () => Promise<T>): Promise<T> => {
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timeoutId = globalThis.setTimeout(() => {
+      reject(new Error(`Request timed out after ${KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs}ms`))
+    }, KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs)
+  })
+  try {
+    return await Promise.race([operation(), timeout])
+  } finally {
+    if (timeoutId != null) globalThis.clearTimeout(timeoutId)
+  }
 }
 
 const inferExportFormatFromName = (name: string): (typeof SOURCE_FILES_FORMATS.export)[number] => {
@@ -90,271 +94,17 @@ const coerceGrabMapsHttpsUrl = (rawUrl: string): string | null => {
 const fetchSameOriginCodebaseFileText = async (url: string): Promise<{ ok: true; text: string } | { ok: false; error: string }> => {
   const target = String(url || '').trim()
   if (!target) return { ok: false, error: 'Request failed' }
-  const attempts = 2
-  for (let i = 0; i < attempts; i += 1) {
-    try {
-      const res = await fetch(target, { method: 'GET', cache: 'no-store' })
-      if (!res.ok) return { ok: false, error: `Request failed (${res.status})` }
-      const text = await res.text()
-      return { ok: true, text }
-    } catch {
-      if (i + 1 < attempts) {
-        await new Promise(resolve => setTimeout(resolve, 40))
-        continue
-      }
-      return { ok: false, error: 'Request failed' }
-    }
-  }
-  return { ok: false, error: 'Request failed' }
-}
-
-function ensureTargetSourceFileId(args: { fileId: string | null; suggestedName?: string | null }): string {
-  const store = useGraphStore.getState()
-  const existing = Array.isArray(store.sourceFiles) ? store.sourceFiles : []
-  if (args.fileId) {
-    const found = existing.find(f => f.id === args.fileId)
-    if (found) return found.id
-  }
-  const suggested = String(args.suggestedName || '').trim()
-  const nextName =
-    suggested || (() => {
-      const idx = findNextSourceFileIndex(existing.map(f => String(f.name || '')), '')
-      return `source-${idx}.md`
-    })()
-  const id = createId('sf')
-  store.addSourceFile(buildSourceFileRecord({
-    id,
-    name: nextName,
-    text: '',
-    enabled: true,
-    source: { kind: 'local', path: nextName },
-  }))
-  return id
-}
-
-function syncDocumentViewFromSourceFile(
-  file: { name: string; text: string; source?: { kind: 'url' | 'local'; url?: string } },
-  opts?: { applyToGraph?: boolean },
-) {
-  const store = useGraphStore.getState()
-  const baselineLocked = store.documentStructureBaselineLock === true
-  const name = String(file.name || '').trim() || 'source.md'
-  const text = String(file.text || '')
-  const sourceUrl = file.source?.kind === 'url' ? String(file.source?.url || '').trim() : ''
-  if (isJsonishName(name)) {
-    const lower = name.toLowerCase()
-    if (lower.endsWith('.csv')) {
-      applyImportedCsvToStore({ name, text, sourceUrl: sourceUrl || null })
-      return
-    }
-    if (lower.endsWith('.json') || lower.endsWith('.jsonld') || lower.endsWith('.geojson')) {
-      applyImportedJsonToStore({
-        name,
-        text,
-        fallbackFenceLang: lower.endsWith('.jsonld') ? 'jsonld' : 'json',
-        sourceUrl: sourceUrl || null,
-        applyToGraph: opts?.applyToGraph ?? true,
-      })
-      return
-    }
-
-    const trimmed = text.trim()
-    const fencedLang = lower.endsWith('.yml') || lower.endsWith('.yaml') ? 'yaml' : 'text'
-    const markdown = trimmed ? ['```' + fencedLang, trimmed, '```', ''].join('\n') : text
-    if (!baselineLocked) {
-      try {
-        openMarkdownWorkspaceEditorPane(store)
-      } catch {
-        void 0
-      }
-    }
-    void store.setActiveMarkdownDocument({
-      name, text: markdown, normalizeMermaidMmd: false,
-      sourceUrl: sourceUrl || null, jsonSourceText: null, autoEnableFrontmatter: false,
-      applyViewPreset: false,
-    })
-    return
-  }
-  const normalized = normalizeMermaidMmdToMarkdown(name, text)
-  if (!baselineLocked) {
-    try {
-      openMarkdownWorkspaceEditorPane(store)
-    } catch {
-      void 0
-    }
-  }
-  void store.setActiveMarkdownDocument({
-    name, text: normalized, normalizeMermaidMmd: false,
-    sourceUrl: sourceUrl || null, autoEnableFrontmatter: false,
-    applyViewPreset: opts?.applyToGraph === true,
-    applyToGraph: opts?.applyToGraph ?? true,
-    forceApplyToGraph: opts?.applyToGraph === true,
+  const result = await fetchRemoteTextDetailed(target, {
+    preflightHead: false,
+    preferProxy: false,
+    useProxy: 'never',
+    timeoutMs: KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs,
+    maxBytes: KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes,
   })
-}
-
-const buildSourceFileIdleReset = () => buildSourceFileLifecycleState({ status: 'idle' })
-
-const parseJobBySourceFileId = new Map<string, number>()
-const pendingParseTextHashBySourceFileId = new Map<string, string>()
-
-async function applyImportedTextToSourceFile(args: {
-  id: string
-  name: string
-  text: string
-  source: { kind: 'url' | 'local'; url?: string; path?: string }
-}): Promise<void> {
-  const store = useGraphStore.getState()
-  store.updateSourceFile(args.id, {
-    name: args.name,
-    text: args.text,
-    ...buildSourceFileIdleReset(),
-    source: args.source,
-    enabled: true,
-  })
-  syncDocumentViewFromSourceFile({ name: args.name, text: args.text, source: args.source }, { applyToGraph: false })
-  await parseAndApplySourceFile(args.id)
-}
-
-export async function importFeishuBaseSnapshotIntoSourceFile(
-  args: FeishuBaseSourceImportRequest,
-): Promise<FeishuBaseSourceImportResult> {
-  const adapted = adaptFeishuBaseRecordsToSourceDocument(args.snapshot)
-  if (!adapted.ok) {
-    return {
-      ok: false,
-      error: 'error' in adapted ? adapted.error : 'Import failed',
-      warnings: adapted.warnings,
-    }
+  if (result.ok === false) {
+    return { ok: false, error: describeFetchRemoteTextFailure(result) }
   }
-  const targetId = ensureTargetSourceFileId({
-    fileId: args.fileId,
-    suggestedName: adapted.document.name,
-  })
-  await applyImportedTextToSourceFile({
-    id: targetId,
-    name: adapted.document.name,
-    text: adapted.document.text,
-    source: { kind: 'local', path: adapted.document.name },
-  })
-  return {
-    ok: true,
-    fileId: targetId,
-    name: adapted.document.name,
-    warnings: adapted.warnings,
-  }
-}
-
-export async function parseAndApplySourceFile(fileId: string): Promise<void> {
-  const before = useGraphStore.getState().sourceFiles.find(f => f.id === fileId)
-  if (!before) return
-  const name = String(before.name || '')
-  const text = String(before.text || '')
-  if (!text.trim()) return
-  const textHash = buildSourceFileParseIdentityHash({
-    cacheNamespace: `source-file:${fileId}`,
-    name,
-    text,
-  })
-  if (before.status === 'loading' && pendingParseTextHashBySourceFileId.get(fileId) === textHash) {
-    return
-  }
-  if (before.parsedGraphData && before.parsedTextHash === textHash) {
-    useGraphStore.getState().updateSourceFile(fileId, {
-      ...buildSourceFileLifecycleState({
-        status: 'parsed',
-        parserId: before.parsedParserId,
-        textHash: before.parsedTextHash,
-        graphData: before.parsedGraphData,
-        previousState: before,
-        preserveExistingRevision: true,
-      }),
-    })
-    scheduleApplyComposedGraphFromSourceFiles()
-    return
-  }
-
-  const store = useGraphStore.getState()
-  store.updateSourceFile(
-    fileId,
-    buildSourceFileLifecycleState({
-      status: 'loading',
-      previousState: before,
-      preserveParsedState: true,
-    }),
-  )
-  const parseJobToken = (parseJobBySourceFileId.get(fileId) || 0) + 1
-  parseJobBySourceFileId.set(fileId, parseJobToken)
-  pendingParseTextHashBySourceFileId.set(fileId, textHash)
-
-  const clearPendingParseForJob = () => {
-    if (parseJobBySourceFileId.get(fileId) !== parseJobToken) return
-    pendingParseTextHashBySourceFileId.delete(fileId)
-  }
-
-  try {
-    const res = await runImportFlow({ nameForParse: before.name, textForParse: text, applyToStore: false, sideEffects: false })
-    if (parseJobBySourceFileId.get(fileId) !== parseJobToken) return
-    const latest = useGraphStore.getState().sourceFiles.find(f => f.id === fileId)
-    if (!latest) return
-    if (buildSourceFileParseIdentityHash({
-      cacheNamespace: `source-file:${fileId}`,
-      name: String(latest.name || ''),
-      text: String(latest.text || ''),
-    }) !== textHash) return
-    const parsedOk = !!(res && res.graphData && res.parserId && res.counts && (res.counts.n > 0 || res.counts.e > 0))
-    if (parsedOk) {
-      store.updateSourceFile(fileId, {
-        ...buildSourceFileLifecycleState({
-          status: 'parsed',
-          parserId: res?.parserId,
-          textHash,
-          graphData: res?.graphData,
-        }),
-      })
-      scheduleApplyComposedGraphFromSourceFiles()
-      return
-    }
-
-    const msg =
-      res && Array.isArray(res.warnings) && typeof res.warnings[0] === 'string' && res.warnings[0].trim()
-        ? res.warnings[0].trim()
-        : 'Parse failed'
-    store.updateSourceFile(fileId, {
-      ...buildSourceFileLifecycleState({
-        status: 'error',
-        error: msg,
-        parserId: res?.parserId,
-        textHash,
-        graphData: undefined,
-      }),
-    })
-  } finally {
-    clearPendingParseForJob()
-  }
-}
-
-export async function refreshPersistedSourceFilesForCurrentParseIdentity(): Promise<void> {
-  const files = Array.isArray(useGraphStore.getState().sourceFiles) ? useGraphStore.getState().sourceFiles.slice() : []
-  const idsToReparse: string[] = []
-  for (let i = 0; i < files.length; i += 1) {
-    const file = files[i]
-    if (!file) continue
-    const id = String(file.id || '').trim()
-    const name = String(file.name || '')
-    const text = String(file.text || '')
-    if (!id || !text.trim()) continue
-    const nextHash = buildSourceFileParseIdentityHash({
-      cacheNamespace: `source-file:${id}`,
-      name,
-      text,
-    })
-    if (String(file.parsedTextHash || '') === nextHash) continue
-    idsToReparse.push(id)
-  }
-  if (idsToReparse.length === 0) return
-  await mapLimit(idsToReparse, SOURCE_FILES_REPARSE_CONCURRENCY, async id => {
-    await parseAndApplySourceFile(id)
-  })
+  return { ok: true, text: result.text }
 }
 
 function exportActiveSourceFile(args: { fileId: string | null }) {
@@ -439,12 +189,15 @@ function clearActiveSourceFile(args: { fileId: string | null }) {
 
 async function importLocalIntoActive(args: { fileId: string | null }): Promise<void> {
   const store = useGraphStore.getState()
-  const { geospatialDatasetMaxBytes } = useGympgrphStore.getState()
   const picked = await pickFileWithExtensions([...SUPPORTED_SOURCE_FILE_IMPORT_EXTENSIONS])
   if (!picked) return
-  if (typeof picked.size === 'number' && Number.isFinite(picked.size) && picked.size > geospatialDatasetMaxBytes) {
+  if (
+    typeof picked.size === 'number'
+    && Number.isFinite(picked.size)
+    && picked.size > KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes
+  ) {
     const mb = (picked.size / (1024 * 1024)).toFixed(1)
-    const limitMb = (geospatialDatasetMaxBytes / (1024 * 1024)).toFixed(1)
+    const limitMb = (KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes / (1024 * 1024)).toFixed(1)
     const id = ensureTargetSourceFileId({ fileId: args.fileId, suggestedName: picked.name })
     const previous = store.sourceFiles.find(file => file.id === id)
     store.updateSourceFile(
@@ -517,7 +270,6 @@ async function importLocalIntoActive(args: { fileId: string | null }): Promise<v
 
 async function importUrlIntoActive(args: { fileId: string | null; url: string; format?: 'markdown' | 'json' }): Promise<void> {
   const store = useGraphStore.getState()
-  const { geospatialDatasetTimeoutMs, geospatialDatasetMaxBytes } = useGympgrphStore.getState()
   const rawUrl = unwrapUserProvidedText(String(args.url || '').trim()) || String(args.url || '').trim()
   if (!rawUrl) return
   const normalizedUrl = normalizeGitHubBlobLikeUrl(rawUrl) || rawUrl
@@ -538,7 +290,7 @@ async function importUrlIntoActive(args: { fileId: string | null; url: string; f
   try {
     const isYouTube = lower.includes('youtube.com') || lower.includes('youtu.be')
     if (isYouTube) {
-      const yt = await fetchYouTubeTranscriptMarkdown(normalizedUrl)
+      const yt = await runBoundedRemoteImport(() => fetchYouTubeTranscriptMarkdown(normalizedUrl))
       if (!yt) {
         store.updateSourceFile(
           id,
@@ -605,7 +357,7 @@ async function importUrlIntoActive(args: { fileId: string | null; url: string; f
     }
 
     if (/\.(pdf)(\?|#|$)/i.test(lower)) {
-      const converted = await convertPdfUrlToMarkdown(normalizedUrl)
+      const converted = await runBoundedRemoteImport(() => convertPdfUrlToMarkdown(normalizedUrl))
       if (!converted) {
         store.updateSourceFile(
           id,
@@ -648,7 +400,9 @@ async function importUrlIntoActive(args: { fileId: string | null; url: string; f
         if (v === 'json') return 'json'
         return 'markdown'
       })()
-      const webpage = await fetchWebpageMarkdown(normalizedUrl, { includeImages })
+      const webpage = await runBoundedRemoteImport(
+        () => fetchWebpageMarkdown(normalizedUrl, { includeImages }),
+      )
       if (webpage && webpage.ok) {
         const frontmatter = `---\nkgWebpageUrl: "${normalizedUrl}"\nkgWebpageView: "${view}"\n---\n\n`
         const content = sanitizeImportedMarkdownText(`${frontmatter}${webpage.markdown}`, { sourceUrl: normalizedUrl }).text
@@ -697,8 +451,8 @@ async function importUrlIntoActive(args: { fileId: string | null; url: string; f
       preferProxy: !isGrabMapsProxyRequest,
       useProxy: isGrabMapsProxyRequest ? 'never' : 'auto',
       headers: isGrabMapsProxyRequest ? buildGrabMapsProxyRequestHeaders() : undefined,
-      timeoutMs: geospatialDatasetTimeoutMs,
-      maxBytes: geospatialDatasetMaxBytes,
+      timeoutMs: KNOWGRPH_SOURCE_IMPORT_LIMITS.urlTimeoutMs,
+      maxBytes: KNOWGRPH_SOURCE_IMPORT_LIMITS.maxBytes,
     })
     if (res.ok === false) {
       store.updateSourceFile(

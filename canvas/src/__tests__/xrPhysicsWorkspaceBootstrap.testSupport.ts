@@ -19,7 +19,7 @@ export const readCanonicalRepoSourceText = (): string => fs.readFileSync(path.re
   'docs',
   'workspace-seeds',
   XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
-), 'utf8').trim()
+), 'utf8')
 
 export const assertCanonicalXrEntry = (entries: WorkspaceEntries) => {
   const canonicalEntries = entries.filter(entry => (
@@ -28,7 +28,7 @@ export const assertCanonicalXrEntry = (entries: WorkspaceEntries) => {
   if (canonicalEntries.length !== 1 || canonicalEntries[0]?.path !== CANONICAL_XR_WORKSPACE_PATH) {
     throw new Error(`expected exactly one canonical XR Source Files entry at ${CANONICAL_XR_WORKSPACE_PATH}, got ${JSON.stringify(canonicalEntries)}`)
   }
-  const materializedText = String(canonicalEntries[0]?.text || '').trim()
+  const materializedText = String(canonicalEntries[0]?.text || '')
   if (materializedText !== readCanonicalRepoSourceText()) {
     throw new Error('expected the Source Files entry to reuse the canonical in-repo XR document without a duplicated fallback copy')
   }

@@ -4,17 +4,17 @@ id: knowgrph-live-canvas-hero
 version: 1.0.0
 status: implemented
 created: 2026-07-11
-updated: 2026-07-21
+updated: 2026-07-22
 author: airvio / joohwee
 domain: knowgrph
 tags: [agent-ready, live-canvas, hero, discovery]
-title: Knowgrph · Live canvas
-eyebrow: Knowgrph · Live canvas
+title: airvio · agentic canvas os
+eyebrow: airvio · agentic canvas os
 headline:
-  - Map intent.
-  - Orchestrate agents.
-  - Prove outcomes.
-lede: A source-backed canvas where `/` routes work, `#` sets meaning, and `@` binds context.
+  - Map intent
+  - Run agents
+  - Get results
+lede: An agentic canvas that lets `/` route work, `#` set meaning, and `@` bind context.
 posture:
   - 0 model calls before Run
   - Frontmatter SSOT
@@ -28,9 +28,9 @@ frontmatter_contract: required
 
 ## Live Canvas Hero
 
-Map intent. Orchestrate agents. Prove outcomes.
+Map intent. Run agents. Get results.
 
-A source-backed canvas where `/` routes work, `#` sets meaning, and `@` binds context.
+An agentic canvas that lets `/` route work, `#` set meaning, and `@` bind context.
 
 ## Agentic Grammar
 

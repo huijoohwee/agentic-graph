@@ -35,7 +35,7 @@ import {
   UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 
-const s = () => useGraphStore.getState()
+const s = () => useGraphStore.getState(); const TAILWIND_BACKING = ['tailwindcss'] as const
 
 export const uiUiSettingsRegistry: SettingMeta[] = [
   {
@@ -111,7 +111,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiPanelTextFontClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiPanelTextFontClass,
     write: (v) => s().setUiPanelTextFontClass(String(v || '')),
     docKey: 'uiPanelTextFontClass',
@@ -120,7 +120,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiPanelKeyValueTextSizeClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiPanelKeyValueTextSizeClass,
     write: (v) => s().setUiPanelKeyValueTextSizeClass(String(v || '')),
     docKey: 'uiPanelKeyValueTextSizeClass',
@@ -129,7 +129,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiPanelKeyValueInputClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiPanelKeyValueInputClass,
     write: (v) => s().setUiPanelKeyValueInputClass(String(v || '')),
     docKey: 'uiPanelKeyValueInputClass',
@@ -138,7 +138,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiPanelMonospaceTextClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiPanelMonospaceTextClass,
     write: (v) => s().setUiPanelMonospaceTextClass(String(v || '')),
     docKey: 'uiPanelMonospaceTextClass',
@@ -147,7 +147,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiPanelRowDensityDefaultClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiPanelRowDensityDefaultClass,
     write: (v) => s().setUiPanelRowDensityDefaultClass(String(v || '')),
     docKey: 'uiPanelRowDensityDefaultClass',
@@ -156,7 +156,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiHeaderRowHeightClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiHeaderRowHeightClass,
     write: (v) => s().setUiHeaderRowHeightClass(String(v || '')),
     docKey: 'uiHeaderRowHeightClass',
@@ -165,7 +165,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiHeaderRowPaddingClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiHeaderRowPaddingClass,
     write: (v) => s().setUiHeaderRowPaddingClass(String(v || '')),
     docKey: 'uiHeaderRowPaddingClass',
@@ -174,7 +174,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiSectionHeaderRowHeightClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiSectionHeaderRowHeightClass,
     write: (v) => s().setUiSectionHeaderRowHeightClass(String(v || '')),
     docKey: 'uiSectionHeaderRowHeightClass',
@@ -183,7 +183,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiSectionHeaderRowPaddingClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiSectionHeaderRowPaddingClass,
     write: (v) => s().setUiSectionHeaderRowPaddingClass(String(v || '')),
     docKey: 'uiSectionHeaderRowPaddingClass',
@@ -216,7 +216,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiIconColorClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiIconColorClass,
     write: (v) => s().setUiIconColorClass(String(v || '')),
     docKey: 'uiIconColorClass',
@@ -225,7 +225,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiIconHoverBgClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiIconHoverBgClass,
     write: (v) => s().setUiIconHoverBgClass(String(v || '')),
     docKey: 'uiIconHoverBgClass',
@@ -234,7 +234,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiIconButtonPaddingClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiIconButtonPaddingClass,
     write: (v) => s().setUiIconButtonPaddingClass(String(v || '')),
     docKey: 'uiIconButtonPaddingClass',
@@ -243,7 +243,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiIconPillClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiIconPillClass,
     write: (v) => s().setUiIconPillClass(String(v || '')),
     docKey: 'uiIconPillClass',
@@ -253,7 +253,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiIconPillLegendTextSizeClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiIconPillLegendTextSizeClass,
     write: (v) => s().setUiIconPillLegendTextSizeClass(String(v || '')),
     docKey: 'uiIconPillLegendTextSizeClass',
@@ -262,7 +262,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiIconPillBadgeTextSizeClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiIconPillBadgeTextSizeClass,
     write: (v) => s().setUiIconPillBadgeTextSizeClass(String(v || '')),
     docKey: 'uiIconPillBadgeTextSizeClass',
@@ -271,7 +271,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiIconBadgeChipClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiIconBadgeChipClass,
     write: (v) => s().setUiIconBadgeChipClass(String(v || '')),
     docKey: 'uiIconBadgeChipClass',
@@ -280,7 +280,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiIconBadgeChipTextSizeClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiIconBadgeChipTextSizeClass,
     write: (v) => s().setUiIconBadgeChipTextSizeClass(String(v || '')),
     docKey: 'uiIconBadgeChipTextSizeClass',
@@ -289,7 +289,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'uiPanelMicroLabelTextSizeClass',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().uiPanelMicroLabelTextSizeClass,
     write: (v) => s().setUiPanelMicroLabelTextSizeClass(String(v || '')),
     docKey: 'uiPanelMicroLabelTextSizeClass',
@@ -307,7 +307,7 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
   {
     key: 'themeMode',
     type: 'string',
-    source: 'store',
+    source: 'store', backingImports: TAILWIND_BACKING,
     read: () => s().themeMode,
     write: (v) => {
       const raw = String(v || '')

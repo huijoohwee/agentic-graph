@@ -70,8 +70,9 @@ export function testLiveCanvasHeroEditorialCopyLoadsFromCanonicalMarkdownSource(
     throw new Error('expected live canvas hero content loader to read the canonical markdown document')
   }
   if (
-    content.eyebrow !== 'Knowgrph · Live canvas'
-    || content.headline.join(' ') !== 'Map intent. Orchestrate agents. Prove outcomes.'
+    content.eyebrow !== 'airvio · agentic canvas os'
+    || content.headline.join(' ') !== 'Map intent Run agents Get results'
+    || content.lede !== 'An agentic canvas that lets `/` route work, `#` set meaning, and `@` bind context.'
     || content.posture.join(' | ') !== '0 model calls before Run | Frontmatter SSOT | Approval-gated'
   ) {
     throw new Error(`expected canonical hero copy from markdown frontmatter, got ${JSON.stringify(content)}`)

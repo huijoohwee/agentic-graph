@@ -19,6 +19,7 @@ import {
 import {
   buildAgentLiveProviderProofSummary,
   buildAgenticCanvasOsDocsCatalog,
+  buildAgenticCanvasOsDocsCatalogDigest,
   buildAgenticCanvasOsDocsInvokePayload,
   buildProgressiveAgentsReadinessSummary,
   resolveAgentLiveProviderProofRevisionFromGitHub,
@@ -91,6 +92,8 @@ test("configured docs revision must match checkout HEAD with a clean docs tree",
     execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
     execFileSync("git", ["-c", "user.name=Knowgrph Test", "-c", "user.email=test@knowgrph.local", "commit", "-qm", "test docs"], { cwd: repositoryRoot });
     const headRevision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repositoryRoot, encoding: "utf8" }).trim();
+    execFileSync("git", ["remote", "add", "origin", "https://github.com/huijoohwee/agentic-canvas-os.git"], { cwd: repositoryRoot });
+    execFileSync("git", ["update-ref", "refs/remotes/origin/main", headRevision], { cwd: repositoryRoot });
 
     await assert.rejects(
       resolveAgenticCanvasOsDocsRevision({
@@ -107,6 +110,128 @@ test("configured docs revision must match checkout HEAD with a clean docs tree",
         env: { KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_REVISION: headRevision },
       }),
       /uncommitted content/,
+    );
+  } finally {
+    rmSync(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("docs revision rejects an arbitrary synthetic repository with no canonical origin", async () => {
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "knowgrph-docs-untrusted-"));
+  const repositoryRoot = path.join(workspaceRoot, "agentic-canvas-os");
+  const docsRoot = path.join(repositoryRoot, "docs");
+  try {
+    mkdirSync(docsRoot, { recursive: true });
+    writeFileSync(path.join(docsRoot, "FACTS.md"), "# Forged source marker\n");
+    execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
+    execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
+    execFileSync("git", [
+      "-c", "user.name=Knowgrph Test",
+      "-c", "user.email=test@knowgrph.local",
+      "commit", "-qm", "forged docs",
+    ], { cwd: repositoryRoot });
+    const forgedRevision = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    }).trim();
+
+    await assert.rejects(
+      resolveAgenticCanvasOsDocsRevision({ absoluteDocsRoot: docsRoot, env: {} }),
+      /no canonical origin/,
+    );
+
+    await assert.rejects(
+      runAgenticCanvasOsDocsInvokeTool({}, {
+        rootDir: repositoryRoot,
+        env: { KNOWGRPH_AGENTIC_CANVAS_OS_DOCS_ROOT: docsRoot },
+      }),
+      (error) => {
+        assert.equal(error.code, "docs_source_authority_unverified");
+        assert.equal(error.message, "Agentic Canvas OS docs source authority could not be verified.");
+        assert.equal(error.message.includes(workspaceRoot), false);
+        return true;
+      },
+    );
+
+    execFileSync("git", ["remote", "add", "origin", "https://github.com/example/forged-docs.git"], { cwd: repositoryRoot });
+    execFileSync("git", ["update-ref", "refs/remotes/origin/main", forgedRevision], { cwd: repositoryRoot });
+    await assert.rejects(
+      resolveAgenticCanvasOsDocsRevision({ absoluteDocsRoot: docsRoot, env: {} }),
+      /origin is not canonical/,
+    );
+  } finally {
+    rmSync(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("docs revision accepts canonical GitHub origin forms with a fetched origin/main fence", async () => {
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "knowgrph-docs-canonical-origin-"));
+  const repositoryRoot = path.join(workspaceRoot, "agentic-canvas-os");
+  const docsRoot = path.join(repositoryRoot, "docs");
+  try {
+    mkdirSync(docsRoot, { recursive: true });
+    writeFileSync(path.join(docsRoot, "FACTS.md"), "# Canonical source marker\n");
+    execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
+    execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
+    execFileSync("git", [
+      "-c", "user.name=Knowgrph Test",
+      "-c", "user.email=test@knowgrph.local",
+      "commit", "-qm", "canonical docs",
+    ], { cwd: repositoryRoot });
+    const headRevision = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    }).trim();
+    execFileSync("git", ["remote", "add", "origin", "https://github.com/huijoohwee/agentic-canvas-os.git"], { cwd: repositoryRoot });
+    execFileSync("git", ["update-ref", "refs/remotes/origin/main", headRevision], { cwd: repositoryRoot });
+
+    for (const remoteUrl of [
+      "https://github.com/huijoohwee/agentic-canvas-os.git",
+      "git@github.com:huijoohwee/agentic-canvas-os.git",
+      "ssh://git@github.com/huijoohwee/agentic-canvas-os.git",
+    ]) {
+      execFileSync("git", ["remote", "set-url", "origin", remoteUrl], { cwd: repositoryRoot });
+      assert.equal(
+        await resolveAgenticCanvasOsDocsRevision({ absoluteDocsRoot: docsRoot, env: {} }),
+        headRevision,
+      );
+    }
+  } finally {
+    rmSync(workspaceRoot, { recursive: true, force: true });
+  }
+});
+
+test("docs revision rejects a clean local HEAD that is ahead of fetched origin/main", async () => {
+  const workspaceRoot = mkdtempSync(path.join(tmpdir(), "knowgrph-docs-ahead-"));
+  const repositoryRoot = path.join(workspaceRoot, "agentic-canvas-os");
+  const docsRoot = path.join(repositoryRoot, "docs");
+  try {
+    mkdirSync(docsRoot, { recursive: true });
+    writeFileSync(path.join(docsRoot, "FACTS.md"), "# Canonical source marker\n");
+    execFileSync("git", ["init", "-q"], { cwd: repositoryRoot });
+    execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
+    execFileSync("git", [
+      "-c", "user.name=Knowgrph Test",
+      "-c", "user.email=test@knowgrph.local",
+      "commit", "-qm", "fetched docs",
+    ], { cwd: repositoryRoot });
+    const fetchedRevision = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: repositoryRoot,
+      encoding: "utf8",
+    }).trim();
+    execFileSync("git", ["remote", "add", "origin", "https://github.com/huijoohwee/agentic-canvas-os.git"], { cwd: repositoryRoot });
+    execFileSync("git", ["update-ref", "refs/remotes/origin/main", fetchedRevision], { cwd: repositoryRoot });
+    writeFileSync(path.join(docsRoot, "FACTS.md"), "# Unfetched local source marker\n");
+    execFileSync("git", ["add", "docs/FACTS.md"], { cwd: repositoryRoot });
+    execFileSync("git", [
+      "-c", "user.name=Knowgrph Test",
+      "-c", "user.email=test@knowgrph.local",
+      "commit", "-qm", "unfetched docs",
+    ], { cwd: repositoryRoot });
+
+    await assert.rejects(
+      resolveAgenticCanvasOsDocsRevision({ absoluteDocsRoot: docsRoot, env: {} }),
+      /not contained in fetched origin\/main/,
     );
   } finally {
     rmSync(workspaceRoot, { recursive: true, force: true });
@@ -157,6 +282,21 @@ test("standalone docs catalog retains the branch source URL without a revision",
   assert.equal(query?.sourceUrl, `${AGENTIC_CANVAS_OS_DOCS_SOURCE_ROOT_URL}/DICTIONARY-COMMAND.md#/query`);
 });
 
+test("catalog digest is deterministic, order independent, and sensitive to source metadata", () => {
+  const entries = [
+    { token: "#known", kind: "semantic", label: "Known", summary: "Semantic source", sourcePath: "DICTIONARY-SEMANTIC.md##known" },
+    { token: "/known", kind: "command", label: "Known", summary: "Command source", sourcePath: "DICTIONARY-COMMAND.md#/known" },
+  ];
+  const digest = buildAgenticCanvasOsDocsCatalogDigest(entries);
+
+  assert.match(digest, /^[0-9a-f]{64}$/);
+  assert.equal(buildAgenticCanvasOsDocsCatalogDigest([...entries].reverse()), digest);
+  assert.notEqual(
+    buildAgenticCanvasOsDocsCatalogDigest([{ ...entries[0], summary: "Drifted" }, entries[1]]),
+    digest,
+  );
+});
+
 test("docs invocation rejects syntactically valid tokens absent from the source catalog", () => {
   const result = buildAgenticCanvasOsDocsInvokePayload({
     docsContentByFileName: {
@@ -202,6 +342,8 @@ test("local MCP docs invocation catalogs /, #, and @ entries from source docs", 
   assert.equal(result.docsRoot, AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT);
   assert.equal(result.absoluteDocsRoot, DOCS_ROOT);
   assert.match(result.sourceRevision, /^[0-9a-f]{40}$/);
+  assert.match(result.catalogDigest, /^[0-9a-f]{64}$/);
+  assert.equal(result.catalogDigest, buildAgenticCanvasOsDocsCatalogDigest(result.catalog));
   assert.equal(
     result.sourceRootUrl,
     `https://github.com/huijoohwee/agentic-canvas-os/blob/${result.sourceRevision}/docs`,
@@ -264,6 +406,7 @@ test("local MCP docs invocation catalogs /, #, and @ entries from source docs", 
 });
 
 test("local MCP docs invocation treats sigil-only queries as token-prefix filters", { skip: !DOCS_AVAILABLE }, async () => {
+  let catalogDigest = "";
   for (const [query, kind] of [["/", "command"], ["#", "semantic"], ["@", "binding"]]) {
     const result = await runAgenticCanvasOsDocsInvokeTool({ query, limit: 500 }, {
       rootDir: KNOWGRPH_ROOT,
@@ -271,6 +414,9 @@ test("local MCP docs invocation treats sigil-only queries as token-prefix filter
     });
 
     assert.equal(result.ok, true);
+    assert.match(result.catalogDigest, /^[0-9a-f]{64}$/);
+    if (catalogDigest) assert.equal(result.catalogDigest, catalogDigest);
+    catalogDigest = result.catalogDigest;
     assert.equal(result.catalog.length, result.counts[kind]);
     assert.ok(result.catalog.every((entry) => entry.token.startsWith(query)));
   }

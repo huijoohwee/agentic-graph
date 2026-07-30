@@ -16,6 +16,18 @@ import {
   serializeCollaborationYDoc,
   type CollaborationDocumentKind,
 } from 'grph-shared/collaboration/yjsSnapshot'
+import { resolveDocumentRepositoryAuthority } from 'grph-shared/collaboration/documentRepositoryAuthority'
+import { hashStringToHex } from '@/lib/hash/stringHash'
+import {
+  acknowledgeKnowgrphCollaborationUpdate,
+  enqueueKnowgrphCollaborationUpdate,
+  listKnowgrphCollaborationUpdates,
+  markKnowgrphCollaborationUpdateAttempt,
+} from '@/lib/storage/knowgrphStorageDb'
+import type { IndexedCollaborationUpdateRecord } from '@/lib/storage/indexedDbCollectionStore'
+import {
+  readKnowgrphStorageChatRelayConfig,
+} from '@/lib/storage/knowgrphStorageChatClient'
 
 type PocketBaseRecord = Record<string, unknown> & { id?: string }
 
@@ -86,6 +98,7 @@ export type KnowgrphPocketBaseYjsRoomOptions = {
   pocketBaseUrl?: string | null
   saveBridgeUrl?: string | null
   storageBaseUrl?: string | null
+  sessionToken?: string | null
   client?: PocketBaseLike | null
   fetchImpl?: typeof fetch
   onRemoteText?: (text: string) => void
@@ -111,6 +124,21 @@ const AWARENESS_HEARTBEAT_MS = 30_000
 export const KNOWGRPH_COLLABORATION_AWARENESS_STALE_MS = 2 * 60_000
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
+
+const resolveCollaborationSaveSessionToken = (
+  explicitToken?: string | null,
+): string => {
+  const token = explicitToken == null
+    ? String(
+        readKnowgrphStorageChatRelayConfig()?.sessionToken
+        || readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', ''),
+      )
+    : String(explicitToken)
+  if (!token || token.length > 8_192 || /\s/.test(token)) {
+    throw new Error('Authenticated storage session is required for collaboration save.')
+  }
+  return token
+}
 
 const readEnvBoolean = (name: string, fallback: boolean): boolean => {
   const raw = normalizeString(readEnvString(name, fallback ? 'true' : 'false')).toLowerCase()
@@ -255,6 +283,29 @@ export const createPocketBaseYjsSourceFileRoom = async (
   let disconnected = false
   let localCaretLine: number | null = null
   let snapshotPersistQueued = false
+  let clientSeq = nowMs() * 1_000
+
+  const sendQueuedCollaborationUpdate = async (
+    queued: IndexedCollaborationUpdateRecord,
+  ): Promise<void> => {
+    try {
+      await updateService.create({
+        updateId: queued.updateId,
+        roomId,
+        workspaceId,
+        documentKey,
+        documentKind,
+        senderPeerId: peerId,
+        clientSeq: queued.clientSeq,
+        updateBase64: queued.updateBase64,
+        sentAtMs: queued.createdAtMs,
+      })
+      await acknowledgeKnowgrphCollaborationUpdate(queued.updateId)
+    } catch (error) {
+      await markKnowgrphCollaborationUpdateAttempt(queued.updateId)
+      throw error
+    }
+  }
 
   const emitPresence = () => {
     const peers = Array.from(peersById.values()).sort((left, right) => left.displayName.localeCompare(right.displayName))
@@ -295,6 +346,11 @@ export const createPocketBaseYjsSourceFileRoom = async (
     if (peer.peerId === peerId) localAwarenessRecordId = peer.recordId
   }
   await upsertLocalAwareness()
+  const retainedUpdates = await listKnowgrphCollaborationUpdates(workspaceId, documentKey)
+  for (const retainedUpdate of retainedUpdates) {
+    if (retainedUpdate.provider !== 'pocketbase') continue
+    await sendQueuedCollaborationUpdate(retainedUpdate).catch(() => void 0)
+  }
   const awarenessHeartbeat = setInterval(() => {
     if (!disconnected) void upsertLocalAwareness().catch(() => void 0)
   }, AWARENESS_HEARTBEAT_MS)
@@ -323,18 +379,35 @@ export const createPocketBaseYjsSourceFileRoom = async (
 
   const docUpdateHandler = (update: Uint8Array, origin: unknown) => {
     if (disconnected || origin === SNAPSHOT_ORIGIN) return
-    queueRoomSnapshotPersist()
     if (origin === REMOTE_ORIGIN) return
     const updateBase64 = encodeYjsUpdateBase64(update)
-    void updateService.create({
+    clientSeq += 1
+    const createdAtMs = nowMs()
+    const queued: IndexedCollaborationUpdateRecord = {
+      updateId: `collab:${hashStringToHex([
+        workspaceId,
+        documentKey,
+        peerId,
+        clientSeq,
+        updateBase64,
+      ].join('\u0000'))}`,
       roomId,
       workspaceId,
       documentKey,
-      documentKind,
-      senderPeerId: peerId,
+      provider: 'pocketbase',
+      clientSeq,
       updateBase64,
-      sentAtMs: nowMs(),
-    }).catch(() => void 0)
+      attemptCount: 0,
+      acknowledgedAtMs: null,
+      createdAtMs,
+      updatedAtMs: createdAtMs,
+    }
+    void enqueueKnowgrphCollaborationUpdate(queued)
+      .then(() => {
+        queueRoomSnapshotPersist()
+        return sendQueuedCollaborationUpdate(queued)
+      })
+      .catch(() => void 0)
   }
   doc.on('update', docUpdateHandler)
 
@@ -407,8 +480,13 @@ export const createPocketBaseYjsSourceFileRoom = async (
         })
       }
       const snapshot = readSnapshot()
+      const authority = resolveDocumentRepositoryAuthority({ documentKey, documentKind })
+      if (!authority) throw new Error('Collaboration save is read-only for this document source.')
       const serializedText = snapshot.serializedText
       const yjsStateBase64 = snapshot.yjsStateBase64
+      const sessionToken = resolveCollaborationSaveSessionToken(
+        options.sessionToken,
+      )
       await roomService.update(roomId, {
         yjsStateBase64,
         savedAtMs: nowMs(),
@@ -416,9 +494,11 @@ export const createPocketBaseYjsSourceFileRoom = async (
       })
       const request: KnowgrphCollaborationSaveRequest = {
         apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        operation: 'upsert',
         workspaceId,
         documentKey,
         documentKind,
+        repositoryTarget: authority.repositoryTarget,
         serializedText,
         yjsStateBase64,
         activePeerCount,
@@ -434,7 +514,10 @@ export const createPocketBaseYjsSourceFileRoom = async (
       })
       const response = await fetchImpl(saveUrl, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: {
+          authorization: `Bearer ${sessionToken}`,
+          'content-type': 'application/json',
+        },
         body: JSON.stringify(request),
       })
       const body = await response.json().catch(() => null) as KnowgrphCollaborationSaveResponse | null

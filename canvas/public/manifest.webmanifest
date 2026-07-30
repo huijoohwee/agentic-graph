@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "knowgrph",
-  "short_name": "knowgrph",
-  "description": "Local-first knowledge graph canvas.",
+  "name": "airvio agentic canvas os",
+  "short_name": "airvio",
+  "description": "Airvio agentic canvas OS.",
   "lang": "en",
   "dir": "ltr",
   "start_url": ".",

@@ -30,6 +30,17 @@ export type FlowCanvasRichMediaPanelHeaderToolbar = {
   panelProps: HeaderToolbarProps
 }
 
+export function shouldActivateFlowCanvasRichMediaPanelFromPointer(args: {
+  isSelected: boolean
+  target: EventTarget | null
+}): boolean {
+  if (!args.isSelected) return true
+  const targetElement = args.target && typeof (args.target as Element).closest === 'function'
+    ? args.target as Element
+    : null
+  return !targetElement?.closest('[data-kg-rich-media-inline-edit="1"]')
+}
+
 export function buildFlowCanvasHeaderPinProps(args: {
   enabled: boolean
   flowWidgetPinnedByNodeId: Record<string, boolean> | null | undefined

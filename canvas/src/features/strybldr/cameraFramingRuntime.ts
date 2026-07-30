@@ -7,6 +7,7 @@ export type CameraFramingRuntimeSource = 'document' | 'panel' | 'canvas' | 'axis
 
 export type CameraFramingRuntimeSnapshot = Readonly<{
   anchorId: string
+  claimed: boolean
   settings: Readonly<StrybldrCameraSettings>
   source: CameraFramingRuntimeSource
   revision: number
@@ -57,12 +58,14 @@ function normalizeSettings(value: unknown): Readonly<StrybldrCameraSettings> {
 
 function createSnapshot(args: {
   anchorId: unknown
+  claimed: unknown
   settings: unknown
   source: unknown
   revision: number
 }): CameraFramingRuntimeSnapshot {
   return Object.freeze({
     anchorId: normalizeAnchorId(args.anchorId),
+    claimed: args.claimed === true,
     settings: normalizeSettings(args.settings),
     source: normalizeSource(args.source),
     revision: args.revision,
@@ -87,6 +90,7 @@ function settingsEqual(
 
 let snapshot = createSnapshot({
   anchorId: '',
+  claimed: false,
   settings: null,
   source: 'document',
   revision: 0,
@@ -106,6 +110,7 @@ export function resetCameraFramingRuntimeForDocument(documentKeyValue: unknown):
   activeDocumentKey = documentKey
   snapshot = createSnapshot({
     anchorId: SHARED_CANVAS_CAMERA_ANCHOR_ID,
+    claimed: false,
     settings: null,
     source: 'document',
     revision: snapshot.revision + 1,
@@ -119,12 +124,14 @@ export function publishCameraFramingRuntime(
 ): CameraFramingRuntimeSnapshot {
   const candidate = createSnapshot({
     anchorId: value.anchorId,
+    claimed: true,
     settings: value.settings,
     source: value.source,
     revision: snapshot.revision + 1,
   })
   if (
     candidate.anchorId === snapshot.anchorId
+    && candidate.claimed === snapshot.claimed
     && candidate.source === snapshot.source
     && settingsEqual(candidate.settings, snapshot.settings)
   ) {

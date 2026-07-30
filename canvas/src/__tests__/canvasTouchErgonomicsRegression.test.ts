@@ -264,8 +264,8 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
   const markdownBlockquoteText = readUtf8(path.resolve(root, 'src/features/markdown/ui/MarkdownBlockquoteBlock.tsx'))
   const markdownCalloutText = readUtf8(path.resolve(root, 'src/features/markdown/ui/MarkdownCalloutBlock.tsx'))
   const markdownInlineMenusText = readUtf8(path.resolve(root, 'src/lib/markdown-core/ui/markdownBlockContainerCore.inlineMenusOverlay.tsx'))
-  const markdownBubbleToolbarText = readUtf8(path.resolve(root, 'src/lib/markdown-core/ui/markdownBlockContainerCore.bubbleToolbarOverlay.tsx'))
-  const markdownSelectionToolbarText = readUtf8(path.resolve(root, 'src/features/markdown/ui/MarkdownSelectionToolbar.tsx'))
+  const markdownInlineSelectionToolbarText = readUtf8(path.resolve(root, 'src/lib/markdown-core/ui/MarkdownInlineSelectionToolbar.tsx'))
+  const markdownSelectionToolbarText = readUtf8(path.resolve(root, 'src/lib/markdown-core/ui/MarkdownSelectionActionMenuItems.tsx'))
   const markdownSidebarSectionText = readUtf8(path.resolve(root, 'src/features/markdown/ui/MarkdownSidebarSection.tsx'))
   const dateCellEditorText = readUtf8(path.resolve(root, 'src/features/graph-data-table/ui/fast-grid/DateCellEditor.tsx'))
   const flowMappingRowsTableText = readUtf8(path.resolve(root, 'src/features/storyboard-widget-manager/FlowMappingRowsTable.tsx'))
@@ -2143,11 +2143,9 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
     !markdownDataViewKanbanCardText.includes('UI_RESPONSIVE_DATA_VIEW_COMPACT_MENU_PANEL_CLASSNAME') ||
     !markdownDataViewKanbanCardText.includes('UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME') ||
     !markdownDataViewKanbanGroupText.includes('UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME') ||
-    !markdownSelectionToolbarText.includes('UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME') ||
     !dateCellEditorText.includes('UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME') ||
     !flowMappingRowsTableText.includes('UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME') ||
     !expandCollapseAllButtonText.includes('UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME') ||
-    !markdownSelectionToolbarText.includes('UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME') ||
     !markdownWorkspaceFileTreeText.includes('UI_RESPONSIVE_DATA_VIEW_NARROW_MENU_PANEL_CLASSNAME') ||
     !workspaceDataViewHeaderText.includes('UI_RESPONSIVE_DATA_VIEW_SEARCH_FORM_CLASSNAME') ||
     !workspaceDataViewHeaderText.includes('UI_RESPONSIVE_DATA_VIEW_SEARCH_INPUT_CLASSNAME') ||
@@ -2279,28 +2277,29 @@ export function testToolbarTouchErgonomicsStaySourceDriven() {
     throw new Error('expected markdown GeoJSON preview frames to use shared responsive viewport-safe height owners instead of local fixed height literals')
   }
   if (!markdownInlineMenusText.includes('uiToolbarRowScrollListClassName') || markdownInlineMenusText.includes('flex flex-wrap gap-1')) {
-    throw new Error('expected inline markdown bubble menus to scroll on one toolbar-owned reset list row')
+    throw new Error('expected inline markdown selection menus to scroll on one toolbar-owned reset list row')
   }
   if (
-    !markdownBubbleToolbarText.includes('allowOverflowVisible') ||
-    !markdownBubbleToolbarText.includes('uiToolbarRowScrollListClassName') ||
-    !markdownBubbleToolbarText.includes('uiToolbarResponsiveRowScrollClassName') ||
-    !markdownBubbleToolbarText.includes('uiToolbarTouchRowScrollClassName') ||
-    !markdownBubbleToolbarText.includes('UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME') ||
-    !markdownBubbleToolbarText.includes('markdownBubbleToolbarIconClassName') ||
-    !responsiveToolbarCssText.includes('touch-action: pan-x') || markdownBubbleToolbarText.includes("touchAction: 'pan-x") ||
-    markdownBubbleToolbarText.includes('flex flex-wrap items-center gap-1') ||
-    markdownBubbleToolbarText.includes('w-3 h-3') ||
-    markdownBubbleToolbarText.includes('h-3 w-3')
+    !markdownInlineSelectionToolbarText.includes('allowOverflowVisible') ||
+    !markdownInlineSelectionToolbarText.includes('uiToolbarRowScrollListClassName') ||
+    !markdownInlineSelectionToolbarText.includes('uiToolbarResponsiveRowScrollClassName') ||
+    !markdownInlineSelectionToolbarText.includes('uiToolbarTouchRowScrollClassName') ||
+    !markdownInlineSelectionToolbarText.includes('UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME') ||
+    !markdownInlineSelectionToolbarText.includes('markdownInlineSelectionToolbarIconClassName') ||
+    !responsiveToolbarCssText.includes('touch-action: pan-x') || markdownInlineSelectionToolbarText.includes("touchAction: 'pan-x") ||
+    markdownInlineSelectionToolbarText.includes('flex flex-wrap items-center gap-1') ||
+    markdownInlineSelectionToolbarText.includes('w-3 h-3') ||
+    markdownInlineSelectionToolbarText.includes('h-3 w-3')
   ) {
-    throw new Error('expected Viewer floating selection toolbar menus to reuse shared list, row-scroll, touch-scroll, visible-overflow, and compact glyph mobile toolbar primitives')
+    throw new Error('expected Viewer inline selection toolbar menus to reuse shared list, row-scroll, touch-scroll, visible-overflow, and compact glyph mobile toolbar primitives')
   }
   if (
-    !markdownSelectionToolbarText.includes('clampLocalOverlayTopLeftFullyInViewport') ||
-    !markdownSelectionToolbarText.includes('readOverlayElementSize') ||
-    markdownSelectionToolbarText.includes("style={{ left: `${toolbar.x}px`, top: `${toolbar.y}px` }}")
+    !markdownInlineSelectionToolbarText.includes('MarkdownSelectionActionMenuItems') ||
+    markdownInlineSelectionToolbarText.includes('>Show on Canvas<') ||
+    !markdownSelectionToolbarText.includes('Link: Inline URL (default)') ||
+    !markdownSelectionToolbarText.includes('Link: Horizontal Card')
   ) {
-    throw new Error('expected Markdown selection actions to clamp measured menu placement through the shared viewport overlay helper')
+    throw new Error('expected Markdown selection actions and link display modes to have one centralized More-menu owner')
   }
   if (!settingsUiText.includes('UI_RESPONSIVE_INLINE_ELEMENT_ROW_CLASSNAME') || !settingsUiText.includes('uiToolbarRowScrollClassName')) {
     throw new Error('expected Settings previews to use responsive inline rows and shared row scrolling')

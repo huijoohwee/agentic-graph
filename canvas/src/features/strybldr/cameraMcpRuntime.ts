@@ -65,7 +65,13 @@ import {
   type CameraAspectRatioId,
   type CameraSensorFormatId,
 } from './cameraOptics'
-import { controlLocalCameraSource, inspectLocalCameraSource, isCameraSourceInvocation, normalizeCameraSourceSelection } from './cameraSourceMcpRuntime'
+import {
+  controlLocalCameraSource,
+  inspectLocalCameraSource,
+  isCameraSourceInvocation,
+  normalizeCameraSourceSelection,
+  rejectInvalidCameraSourceSelection,
+} from './cameraSourceMcpRuntime'
 import { ensureSharedCameraPanel } from './cameraPanelSurfaceRuntime'
 import type { XrNativeControllerCameraMode } from '@/features/three/xrNativeControllerCameraCatalog'
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
@@ -118,6 +124,12 @@ export type CameraControlResult = Readonly<{
   ok: boolean
   message: string
   action?: CameraControlAction
+  errorCode?: string
+  field?: string
+  token?: string
+  invalidValue?: string
+  elapsedMs?: number
+  deadlineMs?: number
   camera?: ReturnType<typeof inspectLocalCamera>
 }>
 const cleanTarget = (value: unknown): string => String(value || '').trim().replace(/^@+/, '')
@@ -432,6 +444,9 @@ export function inspectLocalCamera() {
 }
 
 export function controlLocalCamera(input: CameraControlInput): CameraControlResult {
+  const canonical = resolveCanonicalCameraInvocationTokens()
+  const invalidCameraSource = rejectInvalidCameraSourceSelection(input, canonical, inspectLocalCamera)
+  if (invalidCameraSource) return invalidCameraSource
   const control = normalizeCameraControl(input)
   if (!control) return { ok: false, message: 'Use a supported structured Camera action or native /camera.* invocation.' }
   if (control.action === 'select') return control.cameraId
@@ -480,7 +495,6 @@ export function controlLocalCamera(input: CameraControlInput): CameraControlResu
     }
     return { ok: true, action: control.action, message: keyboardResult.message, camera: inspectLocalCamera() }
   }
-
   if (control.action === 'frame') {
     const state = useGraphStore.getState()
     const choreographyPlaying = state.canvasRenderMode === '3d'
@@ -505,7 +519,6 @@ export function controlLocalCamera(input: CameraControlInput): CameraControlResu
   const durationSeconds = runtime.plan.durationSeconds
   const requestedTime = Number.isFinite(control.timeSeconds) ? Number(control.timeSeconds) : runtime.playheadSeconds
   const timeSeconds = Math.max(0, Math.min(durationSeconds, requestedTime))
-
   if (control.action === 'animate') {
     const replacesExistingMark = runtime.plan.camera.some(mark => Math.abs(mark.timeSeconds - timeSeconds) < 0.0005)
     if (!control.moveId && runtime.plan.camera.length >= XR_MOTION_REFERENCE_MAX_CAMERA_MARKS && !replacesExistingMark) {

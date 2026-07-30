@@ -10,6 +10,7 @@ import {
   buildKnowgrphStorageDefaultDocPath,
   buildKnowgrphStorageLlmsPath,
   buildKnowgrphStorageSourceFilesIndexPath,
+  hashKnowgrphStorageContent,
 } from '@/lib/storage/knowgrphStorageSyncContract'
 import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
 
@@ -65,7 +66,7 @@ export async function testKnowgrphStorageWorkerPushPullAndExportFlow() {
               graphId: 'graph_1',
               sourceKind: 'markdown',
               contentMd: '# Example',
-              contentHash: 'sha256:doc1',
+              contentHash: hashKnowgrphStorageContent('# Example'),
               parserVersion: '1.0.0',
               revision: 1,
               updatedAtMs: 1_777_000_000_000,
@@ -88,7 +89,7 @@ export async function testKnowgrphStorageWorkerPushPullAndExportFlow() {
               heading: null,
               markdown: 'title: Example',
               tokenEstimate: 12,
-              contentHash: 'sha256:chunk1',
+              contentHash: hashKnowgrphStorageContent('title: Example'),
               updatedAtMs: 1_777_000_000_100,
             },
           },
@@ -222,7 +223,7 @@ export async function testKnowgrphStorageWorkerReturnsConflictForStaleDocumentRe
             graphId: null,
             sourceKind: 'markdown',
             contentMd: '# Conflict',
-            contentHash: 'sha256:v1',
+            contentHash: hashKnowgrphStorageContent('# Conflict'),
             parserVersion: '1.0.0',
             revision: 2,
             updatedAtMs: 1_777_000_001_000,
@@ -260,7 +261,7 @@ export async function testKnowgrphStorageWorkerReturnsConflictForStaleDocumentRe
               graphId: null,
               sourceKind: 'markdown',
               contentMd: '# Conflict stale',
-              contentHash: 'sha256:v_stale',
+              contentHash: hashKnowgrphStorageContent('# Conflict stale'),
               parserVersion: '1.0.0',
               revision: 1,
               updatedAtMs: 1_777_000_001_100,
@@ -334,7 +335,7 @@ export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown(
               graphId: null,
               sourceKind: 'markdown',
               contentMd: '',
-              contentHash: 'sha256:doc-chunk-only',
+              contentHash: hashKnowgrphStorageContent(''),
               parserVersion: 'seed-storage-docs-to-cloudflare:v1',
               revision: 1,
               updatedAtMs: 1_777_300_400_000,
@@ -357,7 +358,7 @@ export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown(
               heading: null,
               markdown: '# Chunk Title',
               tokenEstimate: 4,
-              contentHash: 'sha256:chunk-doc-view-0',
+              contentHash: hashKnowgrphStorageContent('# Chunk Title'),
               updatedAtMs: 1_777_300_400_001,
             },
           },
@@ -377,7 +378,7 @@ export async function testKnowgrphStorageWorkerDocViewRebuildsChunkOnlyMarkdown(
               heading: null,
               markdown: 'Chunk body',
               tokenEstimate: 3,
-              contentHash: 'sha256:chunk-doc-view-1',
+              contentHash: hashKnowgrphStorageContent('Chunk body'),
               updatedAtMs: 1_777_300_400_002,
             },
           },
@@ -409,7 +410,6 @@ export async function testKnowgrphStorageWorkerServesDefaultDocViewWithoutWorksp
     canonicalPath: 'huijoohwee/docs/default-doc.md',
     title: 'Default Doc',
     contentMd: '# Default Doc',
-    contentHash: 'sha256:default-doc',
   })
 
   const response = await worker.fetch(
@@ -431,7 +431,6 @@ const pushCrawlerDocument = async (args: {
   canonicalPath: string
   title: string
   contentMd: string
-  contentHash: string
   deleted?: boolean
 }) => {
   const response = await worker.fetch(
@@ -460,7 +459,7 @@ const pushCrawlerDocument = async (args: {
               graphId: null,
               sourceKind: 'markdown',
               contentMd: args.contentMd,
-              contentHash: args.contentHash,
+              contentHash: hashKnowgrphStorageContent(args.contentMd),
               parserVersion: 'source-files',
               revision: 1,
               updatedAtMs: 1_777_400_000_000,
@@ -484,7 +483,6 @@ export async function testKnowgrphStorageWorkerServesSourceFilesCrawlerIndex() {
     canonicalPath: 'huijoohwee/docs/alpha.md',
     title: 'Alpha Source',
     contentMd: '# Alpha',
-    contentHash: 'sha256:alpha',
   })
   await pushCrawlerDocument({
     env,
@@ -493,7 +491,6 @@ export async function testKnowgrphStorageWorkerServesSourceFilesCrawlerIndex() {
     canonicalPath: 'huijoohwee/docs/deleted.md',
     title: 'Deleted Source',
     contentMd: '# Deleted',
-    contentHash: 'sha256:deleted',
     deleted: true,
   })
 
@@ -530,7 +527,7 @@ export async function testKnowgrphStorageWorkerServesSourceFilesCrawlerIndex() {
   if (!markdown.includes('https://example.com/api/storage/doc/wk_crawler/huijoohwee%2Fdocs%2Falpha.md')) {
     throw new Error('expected crawler index to link directly to the markdown doc-view route')
   }
-  if (!markdown.includes('contentHash: `sha256:alpha`')) {
+  if (!markdown.includes(`contentHash: \`${hashKnowgrphStorageContent('# Alpha')}\``)) {
     throw new Error('expected crawler index to expose source-file content hash metadata')
   }
   if (markdown.includes('Deleted Source')) {
@@ -547,7 +544,6 @@ export async function testKnowgrphStorageWorkerServesDefaultLlmsSourceFilesEntry
     canonicalPath: 'huijoohwee/docs/llms-demo.md',
     title: 'LLMS Demo',
     contentMd: '# LLMS Demo',
-    contentHash: 'sha256:llms-demo',
   })
 
   const response = await worker.fetch(
@@ -593,7 +589,6 @@ export async function testKnowgrphStorageWorkerServesWorkspaceLlmsSourceFilesEnt
     canonicalPath: 'huijoohwee/docs/workspace-llms.md',
     title: 'Workspace LLMS',
     contentMd: '# Workspace LLMS',
-    contentHash: 'sha256:workspace-llms',
   })
 
   const response = await worker.fetch(

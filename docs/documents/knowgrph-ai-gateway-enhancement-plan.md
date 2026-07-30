@@ -1,12 +1,18 @@
 ---
-title: "Knowgrph AI Gateway Enhancement Plan"
+title: "Reference implementation: Knowgrph AI Gateway Enhancement Plan"
 doc_type: "Execution Plan"
-status: "active"
-date: "2026-07-11"
+version: "1.1.0"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.ai-gateway.plan"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+guideline_version: "1.7.0"
 authors:
   - "airvio"
 schema: "kgc-computing-flow/v1"
-lang: "en-US"
 frontmatter_contract: "required"
 tags:
   - "cloudflare"
@@ -18,12 +24,12 @@ tags:
 related:
   - "README.md"
   - "docs/documents/knowgrph-cloudflare-document.md"
-  - "docs/documents/knowgrph-next-step-priorities.md"
+  - "docs/documents/knowgrph-prd.md"
   - "canvas/src/features/panels/views/cloudflareAiGatewayMcpApiDocs.ts"
   - "web/src/lib/ai-gateway.js"
 ---
 
-# Knowgrph AI Gateway Enhancement Plan
+# Reference implementation: Knowgrph AI Gateway Enhancement Plan
 
 ## Purpose
 
@@ -36,7 +42,7 @@ It is optimized for the current operating mode:
 - no core runtime edits in this phase
 - time-to-value before feature breadth
 - token economics and TCO visibility before provider expansion
-- Dev -> Prod -> Cloudflare discipline
+- authoring -> mirror -> delivery lane discipline
 
 ## Current Repo Truth
 
@@ -192,16 +198,51 @@ density with the least runtime churn.
 - replacing existing local harness proof with hosted-only proof
 - claiming unified billing or provider-key removal in runtime surfaces before implementation exists
 
-## Done For This Run
+## Source Baseline And Open Delivery Gap
 
-- source-owned canonical plan created
-- README pointer added for first-read operators
-- Cloudflare baseline linked to this queue
-- planning ledger updated so the next runtime slice is explicit
-- focused `ai-gateway:readiness:check` command added for source proof, publish smoke, and Pages-secret verification
-- authenticated storage relay now derives the default AI Gateway `dynamic/draft` route and draft-cache TTL from request metadata
-- current execution confirms the focused source proofs and publish-repo `__chat_proxy` smoke pass before the live gate
-- `ai-gateway:readiness:check -- --skip-sync-check --skip-live` still stops at the Pages secret-list check when the `joohwee` project lacks an accepted AI Gateway secret
-- latest bounded readiness run: source proof and publish proxy smoke passed, but Cloudflare Pages project `joohwee` is still missing both `KNOWGRPH_CHAT_PROXY_AI_GATEWAY_BASE_URL` in project config and an accepted AI Gateway secret, and no local operator AI Gateway envs were present to promote
-- materialized the source-owned analytics proof artifact (`docs/reports/ai-gateway-cost-proof.md`) to anchor future cost tracking
-- updated API documentation to explicitly distinguish legacy `gateway.ai.cloudflare.com` references from the modern `api.cloudflare.com/.../ai` REST endpoints
+The repository contains source owners for the planned gateway boundary:
+
+- `web/src/lib/ai-gateway.js` validates gateway-only URL construction;
+- `canvas/vite.config.ts` owns the development chat-proxy transport and secret
+  lookup;
+- `cloudflare/workers/knowgrph-storage/chatAuth.ts` derives the
+  `dynamic/draft` route and bounded cache policy for authenticated relay
+  requests;
+- `scripts/check-ai-gateway-readiness.mjs` provides source checks and optional
+  target-environment checks; and
+- `docs/reports/ai-gateway-cost-proof.md` is an empty operating template until
+  live, attributable traffic supplies measured values.
+
+These owners establish a source-present contract. They do not prove that a
+mirror or delivery environment has the required variables, secret, route,
+deployment, or live traffic. No historical environment observation in this
+plan raises `delivered_rung` above `undocumented`.
+
+## Lane Topology
+
+| Lane | Current artifact | Exit boundary | Evidence required |
+|---|---|---|---|
+| Authoring | Source contract, focused tests, readiness checker, cost-proof template | Source review and deterministic checks | Exact revision plus passing VCC result |
+| Mirror | Candidate runtime with environment-owned gateway configuration | Protected release authorization | Candidate URL, configuration presence, and bounded smoke receipt |
+| Delivery | Public runtime and attributable gateway traffic | Operational acceptance | Protected revision, live transport receipt, and populated cost metrics |
+
+Promotion remains closed until the next lane's evidence is recorded. A local
+source check cannot substitute for mirror or delivery evidence.
+
+## Economics Boundary
+
+| Path | Token cost | Infrastructure TCO | Control |
+|---|---:|---:|---|
+| Readiness/document inspection | $0 | $0 incremental | Must not call a model |
+| Source-focused unit checks | $0 | Existing development compute | Network/provider calls prohibited |
+| Candidate smoke | Bounded by one explicit request | Existing candidate environment | Operator-authorized; record request and result |
+| Delivery traffic | Unknown until measured | Provider and platform usage | Spend/rate limit plus per-intent cost record |
+
+## Verification Conditions
+
+| VCC | Condition | Invocable check | Expected result | Recorded evidence |
+|---|---|---|---|---|
+| `VCC-AIG-01` | Browser and proxy owners preserve the typed route, metadata, cache, and secret boundary. | From `canvas/`: `npm exec -- tsx src/tests/runExport.ts src/__tests__/chatEndpointProviders.test.ts testOpenAiDraftRouteBuildsAiGatewayHeaders` | Focused source contract passes without a provider call. | None recorded in this document |
+| `VCC-AIG-02` | Authenticated storage relay derives the draft route and bounded cache TTL. | From `canvas/`, invoke `testStorageChatRelayRouteForwardsOpenAiResponsesInput` and `testStorageChatRelayRouteDerivesShortAiGatewayCacheTtlWithoutWorkspaceCacheKey` through `src/tests/runExport.ts`. | Both focused relay contracts pass with injected transport. | None recorded in this document |
+| `VCC-AIG-03` | Public web URL construction rejects non-gateway model targets. | `node --test web/__tests__/ai-gateway-routing.test.mjs` | Static routing and spend-isolation checks pass. | None recorded in this document |
+| `VCC-AIG-04` | A delivery environment is configured and carries one bounded live request. | Run `npm run ai-gateway:readiness:check` only with explicit operator authorization for its live gate. | Receipt names exact revision, environment, response, and cost observation. | Not satisfied; `delivered_rung` remains `undocumented` |

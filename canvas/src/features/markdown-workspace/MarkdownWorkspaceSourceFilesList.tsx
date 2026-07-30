@@ -20,6 +20,7 @@ import {
   SourceFileCloudSyncIndicator,
   useSourceFileCloudSync,
 } from './SourceFileCloudSyncIndicator'
+import { SourceFilesOwnershipSummary } from './SourceFilesOwnershipSummary'
 
 type MarkdownWorkspaceSourceFilesListProps = {
   loading: boolean
@@ -136,25 +137,28 @@ export function MarkdownWorkspaceSourceFilesList(props: MarkdownWorkspaceSourceF
   }
 
   return (
-    <MarkdownFileTree
-      entries={entries}
-      expandedPaths={expandedPaths}
-      toggleExpanded={toggleExpanded}
-      activePath={activePath}
-      onSelectFile={onSelectFile}
-      onSelectFolder={onSelectFolder}
-      sourcesByPath={sourcesByPath}
-      onCreateNewFile={onCreateNewFile}
-      onRevealInFinder={onRevealInFinder}
-      onClearFile={onClearFile}
-      onRenameEntry={onRenameEntry}
-      onDeleteEntry={onDeleteEntry}
-      buildShareUrl={buildShareUrl}
-      buildCanvasEmbedUrl={buildCanvasEmbedUrl}
-      onCanvasEmbedStart={handleCanvasEmbedStart}
-      onCanvasEmbedReady={handleCanvasEmbedReady}
-      onShareCodeReady={handleShareCodeReady}
-      renderFileRight={renderFileStatusRight}
-    />
+    <>
+      <SourceFilesOwnershipSummary />
+      <MarkdownFileTree
+        entries={entries}
+        expandedPaths={expandedPaths}
+        toggleExpanded={toggleExpanded}
+        activePath={activePath}
+        onSelectFile={onSelectFile}
+        onSelectFolder={onSelectFolder}
+        sourcesByPath={sourcesByPath}
+        onCreateNewFile={onCreateNewFile}
+        onRevealInFinder={onRevealInFinder}
+        onClearFile={onClearFile}
+        onRenameEntry={onRenameEntry}
+        onDeleteEntry={onDeleteEntry}
+        buildShareUrl={buildShareUrl}
+        buildCanvasEmbedUrl={buildCanvasEmbedUrl}
+        onCanvasEmbedStart={handleCanvasEmbedStart}
+        onCanvasEmbedReady={handleCanvasEmbedReady}
+        onShareCodeReady={handleShareCodeReady}
+        renderFileRight={renderFileStatusRight}
+      />
+    </>
   )
 }

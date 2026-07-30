@@ -6,9 +6,17 @@ import {
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
   readMotionControlSnapshot,
-  stopMotionControl,
   subscribeMotionControl,
 } from './motionControlRuntime'
+import {
+  readMotionCaptureSessionSnapshot,
+  subscribeMotionCaptureSession,
+} from './motionCaptureSessionRuntime'
+import {
+  readMotionCapturePeerSharingSnapshot,
+  subscribeMotionCapturePeerSharing,
+} from './motionCapturePeerRuntime'
+import { stopMotionCaptureOutsideXrSurface } from './motionCaptureXrLifecycleRuntime'
 import { motionControlCaptureSurfaceIsOpen } from './motionControlSurfaceRuntime'
 
 let mountedLifecycleOwnerCount = 0
@@ -31,10 +39,29 @@ export function MotionControlXrLifecycleGuard() {
     readMotionControlSnapshot,
     readMotionControlSnapshot,
   )
+  const recordingStatus = React.useSyncExternalStore(
+    subscribeMotionCaptureSession,
+    () => readMotionCaptureSessionSnapshot().recording.status,
+    () => readMotionCaptureSessionSnapshot().recording.status,
+  )
+  const registeredSourceCount = React.useSyncExternalStore(
+    subscribeMotionCaptureSession,
+    () => readMotionCaptureSessionSnapshot().sources.length,
+    () => readMotionCaptureSessionSnapshot().sources.length,
+  )
+  const peerSharing = React.useSyncExternalStore(
+    subscribeMotionCapturePeerSharing,
+    readMotionCapturePeerSharingSnapshot,
+    readMotionCapturePeerSharingSnapshot,
+  )
   const captureActive = runtime.cameraActive
     || runtime.phase === 'requesting-camera'
     || runtime.phase === 'loading-model'
     || runtime.phase === 'running'
+  const lifecycleActive = captureActive
+    || recordingStatus === 'recording'
+    || registeredSourceCount > 0
+    || peerSharing.enabled
 
   React.useEffect(() => {
     mountedLifecycleOwnerCount += 1
@@ -42,17 +69,15 @@ export function MotionControlXrLifecycleGuard() {
       mountedLifecycleOwnerCount = Math.max(0, mountedLifecycleOwnerCount - 1)
       queueMicrotask(() => {
         if (mountedLifecycleOwnerCount > 0) return
-        const snapshot = readMotionControlSnapshot()
-        if (snapshot.phase === 'off' && !snapshot.cameraActive) return
-        void stopMotionControl('Motion Control stopped when its lifecycle owner unmounted.')
+        void stopMotionCaptureOutsideXrSurface('Motion Control stopped when its lifecycle owner unmounted.')
       })
     }
   }, [])
 
   React.useEffect(() => {
-    if (captureSurfaceOpen || !captureActive) return
-    void stopMotionControl('Motion Control stopped when its XR FloatingPanel surface closed.')
-  }, [captureActive, captureSurfaceOpen])
+    if (captureSurfaceOpen || !lifecycleActive) return
+    void stopMotionCaptureOutsideXrSurface('Motion Control stopped when its XR FloatingPanel surface closed.')
+  }, [captureSurfaceOpen, lifecycleActive])
 
   return null
 }

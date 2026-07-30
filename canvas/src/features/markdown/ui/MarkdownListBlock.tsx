@@ -123,6 +123,7 @@ function MarkdownListRow(props: {
     return first.tokens as Token[]
   })()
   const useHtmlInlineRow = !!onlyParagraph
+  const nestedBlockEditingEnabled = rowEditingEnabled && !useHtmlInlineRow
   return (
     <li
       data-kg-list-item-index={itemIndex}
@@ -157,15 +158,15 @@ function MarkdownListRow(props: {
         startLine={rowStartLine}
         endLine={rowEndLine}
         editLineRange={editRange}
-        inlineEditable={rowEditingEnabled && !!editRange}
+        inlineEditable={rowEditingEnabled && !!editRange && useHtmlInlineRow}
         sourceLines={opts.markdownSourceLines}
         onReplaceLineRange={opts.onReplaceLineRange}
         onInlineEditStateChange={opts.onInlineEditStateChange}
         onInlineDraftTextChange={opts.onInlineDraftTextChange}
         forbidCopy={!!opts.forbidCopy}
         editorClassName={rowEditorClassName}
-        editPresentation={useHtmlInlineRow ? 'html' : 'markdown'}
-        editHtmlRender={useHtmlInlineRow ? 'inline' : undefined}
+        editPresentation="html"
+        editHtmlRender="inline"
         editInlineFlow
         editStripLinePrefix={stripListLinePrefix}
         editDefaultLinePrefix={rowDefaultLinePrefix}
@@ -186,7 +187,7 @@ function MarkdownListRow(props: {
         ) : (
           <MarkdownTokenRenderer
             tokens={addLineRangesToTokens(item.tokens as unknown as Token[], 0)}
-            blockNestingLevel={1}
+            blockNestingLevel={0}
             activeDocumentPath={opts.activeDocumentPath}
             highlightedLineRange={null}
             markdownWordWrap={opts.markdownWordWrap}
@@ -200,6 +201,14 @@ function MarkdownListRow(props: {
             rootThemeMode={opts.rootThemeMode}
             previewOverlayScope={opts.previewOverlayScope}
             previewOverlayPortalTarget={opts.previewOverlayPortalTarget}
+            viewerBlockEditingEnabled={nestedBlockEditingEnabled}
+            onReplaceLineRange={nestedBlockEditingEnabled ? opts.onReplaceLineRange : undefined}
+            markdownSourceLines={opts.markdownSourceLines}
+            markdownParagraphEditStripLinePrefix={stripListLinePrefix}
+            markdownParagraphEditDefaultLinePrefix={rowDefaultLinePrefix}
+            forbidCopy={!!opts.forbidCopy}
+            onInlineEditStateChange={opts.onInlineEditStateChange}
+            onInlineDraftTextChange={opts.onInlineDraftTextChange}
             fragmentsEnabled={fragmentsEnabled}
             fragmentStep={fragmentStep}
             fragmentClassNames={fragmentClassNames}
@@ -302,7 +311,21 @@ export const MarkdownListBlock = React.memo(function MarkdownListBlock({
     const baseRange = editLineRange
     if (!Array.isArray(src) || src.length === 0 || !baseRange) return []
     const ranges: Array<{ startLine: number; endLine: number }> = []
-    const isListMarkerLine = (line: string): boolean => /^\s*(?:[-+*]\s+|\d+[.)]\s+)/.test(String(line || ''))
+    const readListMarkerIndent = (line: string): number | null => {
+      const marker = String(line || '').match(/^(\s*)(?:[-+*]\s+|\d+[.)]\s+)/)
+      if (!marker) return null
+      return String(marker[1] || '').replace(/\t/g, '    ').length
+    }
+    const baseMarkerIndent = (() => {
+      for (let line = baseRange.startLine; line <= baseRange.endLine; line += 1) {
+        const indent = readListMarkerIndent(String(src[line - 1] || ''))
+        if (indent !== null) return indent
+      }
+      return null
+    })()
+    const isListMarkerLine = (line: string): boolean => readListMarkerIndent(line) !== null
+    const isRowMarkerLine = (line: string): boolean =>
+      baseMarkerIndent !== null && readListMarkerIndent(line) === baseMarkerIndent
     const isBlankLine = (line: string): boolean => String(line || '').trim().length === 0
     const isContinuationLine = (line: string): boolean => {
       const raw = String(line || '')
@@ -314,7 +337,7 @@ export const MarkdownListBlock = React.memo(function MarkdownListBlock({
     const endBound = Math.max(cursor, baseRange.endLine)
     while (cursor <= endBound) {
       const line = String(src[cursor - 1] || '')
-      if (!isListMarkerLine(line)) {
+      if (!isRowMarkerLine(line)) {
         cursor += 1
         continue
       }
@@ -323,7 +346,13 @@ export const MarkdownListBlock = React.memo(function MarkdownListBlock({
       let probe = cursor + 1
       while (probe <= endBound) {
         const next = String(src[probe - 1] || '')
-        if (isListMarkerLine(next)) break
+        if (isRowMarkerLine(next)) break
+        const nestedMarkerIndent = readListMarkerIndent(next)
+        if (nestedMarkerIndent !== null && baseMarkerIndent !== null && nestedMarkerIndent > baseMarkerIndent) {
+          rowEnd = probe
+          probe += 1
+          continue
+        }
         if (isContinuationLine(next)) {
           rowEnd = probe
           probe += 1
@@ -331,7 +360,11 @@ export const MarkdownListBlock = React.memo(function MarkdownListBlock({
         }
         if (isBlankLine(next)) {
           const after = String(src[probe] || '')
-          if (isContinuationLine(after)) {
+          if (isContinuationLine(after) || (
+            baseMarkerIndent !== null
+            && readListMarkerIndent(after) !== null
+            && Number(readListMarkerIndent(after)) > baseMarkerIndent
+          )) {
             rowEnd = probe + 1
             probe += 2
             continue
@@ -346,7 +379,7 @@ export const MarkdownListBlock = React.memo(function MarkdownListBlock({
       let line = Math.max(1, baseRange.startLine)
       const fallback: Array<{ startLine: number; endLine: number }> = []
       for (let i = 0; i < list.items.length; i += 1) {
-        while (line <= endBound && !isListMarkerLine(String(src[line - 1] || ''))) line += 1
+        while (line <= endBound && !isRowMarkerLine(String(src[line - 1] || ''))) line += 1
         if (line > endBound) break
         fallback.push({ startLine: line, endLine: line })
         line += 1

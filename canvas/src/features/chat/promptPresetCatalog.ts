@@ -170,7 +170,10 @@ const parsePreset = (value: unknown): PromptPreset | null => {
   }
 }
 
-const readCatalogText = async (fs: WorkspaceFs, preferAuthoritativeMirror: boolean): Promise<string> => {
+const readRepoLocalCatalogText = async (
+  fs: WorkspaceFs,
+  preferAuthoritativeMirror: boolean,
+): Promise<string> => {
   const relPath = PROMPT_PRESET_CATALOG_WORKSPACE_PATH.replace(/^\//, '')
   if (preferAuthoritativeMirror) {
     const entries = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
@@ -184,8 +187,13 @@ const readCatalogText = async (fs: WorkspaceFs, preferAuthoritativeMirror: boole
 }
 
 export const loadPromptPresetCatalog = async (fsOverride?: WorkspaceFs): Promise<PromptPresetCatalogResult> => {
-  const fs = fsOverride || await getWorkspaceFs()
-  const markdownText = await readCatalogText(fs, !fsOverride)
+  const publishedSource = fsOverride
+    ? { authority: 'repo-local' as const }
+    : await import('@/features/workspace-fs/workspacePublishedAgenticDocsSource')
+        .then(module => module.readPublishedAgenticDocSource(PROMPT_PRESET_CATALOG_WORKSPACE_PATH))
+  const markdownText = publishedSource.authority === 'canonical-storage'
+    ? publishedSource.text
+    : await readRepoLocalCatalogText(fsOverride || await getWorkspaceFs(), !fsOverride)
   if (!markdownText) return { ok: false, error: `Prompt preset catalog unavailable: ${PROMPT_PRESET_CATALOG_WORKSPACE_PATH}` }
   const frontmatter = parseFrontmatter(markdownText)
   if (frontmatter?.schema !== PROMPT_PRESET_CATALOG_SCHEMA || !Array.isArray(frontmatter.prompt_presets)) {

@@ -22,6 +22,7 @@ import { readSnapGridScalarSize } from '@/lib/canvas/snapGridSize'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { getEffectiveZoomStateForKey } from '@/lib/canvas/zoom-effective'
 import { RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE } from '@/lib/render/richMediaPanelDefaults'
+import { readStableRichMediaPanelSize } from '@/lib/render/mediaPanelLayout'
 export {
   isCanonicalFrontmatterBuiltInWidgetNode,
   resolveDefaultFlowWidgetPinnedInCanvas,
@@ -80,9 +81,27 @@ function normalizeStoryboardWidgetDropTransform(raw: { k?: unknown; x?: unknown;
   return Number.isFinite(k) && k > 0 && Number.isFinite(x) && Number.isFinite(y) ? { k, x, y } : null
 }
 
+export function resolveProjectedRichMediaShellTransformFromGeometry(args: {
+  rect: { left: number; top: number; width: number; height: number }
+  nodeTopLeft: { x: number; y: number }
+  panelSize: { width: number; height: number }
+  screenOrigin?: { left: number; top: number } | null
+}): { k: number; x: number; y: number } | null {
+  const kx = args.rect.width / args.panelSize.width
+  const ky = args.rect.height / args.panelSize.height
+  const k = Number.isFinite(kx) && kx > 0 ? kx : (Number.isFinite(ky) && ky > 0 ? ky : null)
+  if (k == null) return null
+  const originLeft = Number.isFinite(args.screenOrigin?.left) ? Number(args.screenOrigin?.left) : 0
+  const originTop = Number.isFinite(args.screenOrigin?.top) ? Number(args.screenOrigin?.top) : 0
+  const x = args.rect.left - originLeft - args.nodeTopLeft.x * k
+  const y = args.rect.top - originTop - args.nodeTopLeft.y * k
+  return Number.isFinite(x) && Number.isFinite(y) ? { k, x, y } : null
+}
+
 export function readProjectedRichMediaShellTransform(args: {
   draftGraphDataRef: React.MutableRefObject<GraphData | null>
   baseGraphData: GraphData | null
+  screenOrigin?: { left: number; top: number } | null
 }): { k: number; x: number; y: number } | null {
   if (typeof document === 'undefined') return null
   const graphData = args.draftGraphDataRef.current || useGraphStore.getState().graphData || args.baseGraphData || null
@@ -98,13 +117,17 @@ export function readProjectedRichMediaShellTransform(args: {
     const nodeX = typeof node?.x === 'number' && Number.isFinite(node.x) ? node.x : null
     const nodeY = typeof node?.y === 'number' && Number.isFinite(node.y) ? node.y : null
     if (nodeX == null || nodeY == null) continue
-    const kx = rect.width / RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.width
-    const ky = rect.height / RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.height
-    const k = Number.isFinite(kx) && kx > 0 ? kx : (Number.isFinite(ky) && ky > 0 ? ky : null)
-    if (k == null) continue
-    const x = rect.left - nodeX * k
-    const y = rect.top - nodeY * k
-    if (Number.isFinite(x) && Number.isFinite(y)) return { k, x, y }
+    const properties = isRecord(node?.properties) ? node.properties : null
+    const stableSize = readStableRichMediaPanelSize(properties)
+    const panelWidth = stableSize?.w || RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.width
+    const panelHeight = stableSize?.h || RICH_MEDIA_PANEL_DEFAULT_VIEW_SIZE.height
+    const transform = resolveProjectedRichMediaShellTransformFromGeometry({
+      rect,
+      nodeTopLeft: { x: nodeX, y: nodeY },
+      panelSize: { width: panelWidth, height: panelHeight },
+      screenOrigin: args.screenOrigin,
+    })
+    if (transform) return transform
   }
   return null
 }
@@ -116,6 +139,7 @@ export function readResolvedStoryboardWidgetDropTransform(args: {
   baseGraphData: GraphData | null
   allowNeutralFallback?: boolean
   useProjectedRichMediaShell?: boolean
+  screenOrigin?: { left: number; top: number } | null
 }): { k: number; x: number; y: number } | null {
   const st = useGraphStore.getState()
   const liveTransform = normalizeStoryboardWidgetDropTransform(args.getLiveZoomTransform())
@@ -126,7 +150,11 @@ export function readResolvedStoryboardWidgetDropTransform(args: {
   }))
   const liveIsNeutral = !!liveTransform && Math.abs(liveTransform.k - 1) <= 1e-3 && Math.abs(liveTransform.x) <= 0.5 && Math.abs(liveTransform.y) <= 0.5
   const projectedTransform = args.useProjectedRichMediaShell === true
-    ? readProjectedRichMediaShellTransform({ draftGraphDataRef: args.draftGraphDataRef, baseGraphData: args.baseGraphData })
+    ? readProjectedRichMediaShellTransform({
+        draftGraphDataRef: args.draftGraphDataRef,
+        baseGraphData: args.baseGraphData,
+        screenOrigin: args.screenOrigin,
+      })
     : null
   if (liveTransform && !liveIsNeutral) return liveTransform
   if (projectedTransform) return projectedTransform
@@ -146,6 +174,7 @@ export function captureStoryboardWidgetDropCameraAuthority(args: {
   zoomViewKeyRef: React.MutableRefObject<string | null>
   draftGraphDataRef: React.MutableRefObject<GraphData | null>
   baseGraphData: GraphData | null
+  screenOrigin?: { left: number; top: number } | null
 }): StoryboardWidgetDropCameraAuthority | null {
   const transform = readResolvedStoryboardWidgetDropTransform({
     ...args,

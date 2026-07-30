@@ -1,4 +1,7 @@
-import { reconcileVideoAgentDemoPresetWorkspaceSource } from '@/features/chat/videoAgentDemoPreset'
+import {
+  reconcileVideoAgentDemoPresetWorkspaceSource,
+  resolveVideoAgentDemoMirrorText,
+} from '@/features/chat/videoAgentDemoPreset'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 
 export async function testFloatingPanelChatVideoPresetRepairsDriftedRuntimeMirrorFromCanonicalSource() {
@@ -26,6 +29,12 @@ export async function testFloatingPanelChatVideoPresetRepairsDriftedRuntimeMirro
     '      type: VideoGeneration',
     '---',
   ].join('\n')
+  const canonicalMirrorText = resolveVideoAgentDemoMirrorText([
+    { relPath: 'AI视频-港岛实景写实风-异城算计与女主绝境求生-终极统一执行总表.md', text: canonicalText },
+  ], 'docs/AI视频-港岛实景写实风-异城算计与女主绝境求生-终极统一执行总表.md')
+  if (canonicalMirrorText !== canonicalText) {
+    throw new Error('expected a configured docs root to resolve a workspace:/docs source reference')
+  }
   await workspace.createFile({
     parentPath: '/docs',
     name: 'knowgrph-agentic-video-canvas-demo.md',

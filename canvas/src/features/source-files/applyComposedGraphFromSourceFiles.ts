@@ -242,6 +242,7 @@ export function scheduleApplyComposedGraphFromSourceFiles(options: ComposeSource
         w.cancelAnimationFrame(pendingComposeRaf)
         pendingComposeRaf = null
       }
+      applyComposedGraphFromSourceFiles(options)
       return
     }
   } else if (!hasEnabledComposedSources(currentSourceFiles)) {
@@ -251,6 +252,7 @@ export function scheduleApplyComposedGraphFromSourceFiles(options: ComposeSource
       w.cancelAnimationFrame(pendingComposeRaf)
       pendingComposeRaf = null
     }
+    applyComposedGraphFromSourceFiles(options)
     return
   }
   const requestedIncludesWorkspaceBacked = includeWorkspaceBacked || pendingComposeIncludesWorkspaceBackedSources

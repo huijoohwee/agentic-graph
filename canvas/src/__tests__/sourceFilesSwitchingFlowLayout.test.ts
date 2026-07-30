@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { resolveActiveMarkdownBaseGraph } from '@/hooks/active-graph-data/useActiveGraphData.impl'
 import {
   buildCanvasAppliedMarkdownDocumentIdentityKey,
   buildCanvasAppliedMarkdownDocumentSemanticKey,
@@ -13,16 +12,19 @@ import {
   isWorkspace2dRendererPresetStaleForDocument,
   isWorkspaceGraphSourceStaleForDocument,
   isWorkspaceDocumentSwitchApplySettled,
+  resolveWorkspaceDocumentSwitchCanvasPreset,
   shouldApplyStableWorkspaceSelectionToCanvas,
 } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceSelection'
-import { readWorkspaceActiveDocumentResolvedText } from '@/features/source-files/sourceFilesRuntimeActive'
-import { shouldProactivelyReapplyActiveWorkspaceMarkdownDocument } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { resolvePreferredEnabledComposedSourceFile } from '@/features/source-files/composedSourceSelection'
 import {
   createGraphActivationFitRequest,
+  createGraphActivationTransformRequest,
   graphActivationFitTargetsGraph,
+  graphActivationZoomTargetsGraph,
   resolveGraphActivationFitDecision,
 } from '@/lib/zoom/graphActivationFit'
+import { computeNaturalCanvasInitialTransform } from '@/lib/zoom/fixedZoomPreset'
+import { buildAuthoredMarkdownNoteInitialText } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 
 export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresInteractionPositions() {
   const ingestText = readFileSync(resolve(process.cwd(), 'src/features/source-files/sourceFilesIngestIntegration.ts'), 'utf8')
@@ -219,6 +221,74 @@ export async function testSourceFilesSwitchingPrimesCanvasForSelectedFileWithout
   }
 }
 
+export async function testSameDocumentGraphPublicationPreservesOpenWidgetPresentationState() {
+  const state = useGraphStore.getState()
+  state.resetAll()
+  const name = 'notes/presentation-state.md'
+  const text = [
+    '---',
+    'kgCanvas2dRenderer: "storyboard"',
+    'kgFrontmatterModeEnabled: true',
+    'flow:',
+    '  nodes:',
+    '    - id: {key: id, type: string, value: "source-card"}',
+    '      type: {key: type, type: string, value: "RichMediaPanel"}',
+    '      label: {key: label, type: string, value: "Source card"}',
+    '---',
+    '',
+    '# Source card',
+  ].join('\n')
+  const firstApplied = await useGraphStore.getState().setActiveMarkdownDocument({
+    name,
+    text,
+    applyViewPreset: true,
+    applyToGraph: true,
+    forceApplyToGraph: true,
+  })
+  if (!firstApplied || !useGraphStore.getState().graphData?.nodes.some(node => String(node.id || '') === 'source-card')) {
+    throw new Error('expected presentation-state fixture to publish its source card')
+  }
+
+  useGraphStore.getState().setOpenWidgetNodeIds(['source-card'])
+  useGraphStore.getState().selectNode('source-card')
+  if (useGraphStore.getState().openWidgetNodeIds[0] !== 'source-card') {
+    throw new Error('expected source card to be open before the same-document publication round-trip')
+  }
+
+  const publishedText = `${text}\n\nGenerated output.`
+  const reapplied = await useGraphStore.getState().setActiveMarkdownDocument({
+    name,
+    text: publishedText,
+    applyViewPreset: true,
+    applyToGraph: true,
+    forceApplyToGraph: true,
+  })
+  const afterReapply = useGraphStore.getState()
+  if (
+    !reapplied
+    || afterReapply.openWidgetNodeIds.length !== 1
+    || afterReapply.openWidgetNodeIds[0] !== 'source-card'
+    || afterReapply.selectedNodeId !== 'source-card'
+  ) {
+    throw new Error(`expected same-document graph publication to preserve valid source-card presentation state, got ${JSON.stringify({
+      openWidgetNodeIds: afterReapply.openWidgetNodeIds,
+      selectedNodeId: afterReapply.selectedNodeId,
+    })}`)
+  }
+
+  await useGraphStore.getState().setActiveMarkdownDocument({
+    name: 'notes/another-presentation-state.md',
+    text,
+    applyViewPreset: false,
+    applyToGraph: true,
+    forceApplyToGraph: true,
+  })
+  const afterSwitch = useGraphStore.getState()
+  if (afterSwitch.openWidgetNodeIds.length !== 0 || afterSwitch.selectedNodeId !== null) {
+    throw new Error('expected a real document switch to clear transient source-card presentation state')
+  }
+}
+
 function buildAppliedMarkdownDocument(name: string, text: string): CanvasAppliedMarkdownDocument {
   return {
     name,
@@ -343,6 +413,58 @@ export function testSourceFilesGraphActivationFitWaitsForMatchingDocument() {
   }
 }
 
+export async function testNewMarkdownDocumentInitializesAtNaturalZoom() {
+  const state = useGraphStore.getState()
+  state.resetAll()
+  const name = 'notes/natural-initialization.md'
+  const text = buildAuthoredMarkdownNoteInitialText(name)
+  try {
+    const applied = await useGraphStore.getState().setActiveMarkdownDocument({
+      name,
+      text,
+      autoEnableFrontmatter: true,
+      applyViewPreset: true,
+      applyToGraph: true,
+      forceApplyToGraph: true,
+    })
+    const zoomRequest = useGraphStore.getState().zoomRequest
+    if (!applied) {
+      throw new Error('expected authored New .md initialization to apply its document graph')
+    }
+    const expectedTransform = computeNaturalCanvasInitialTransform(useGraphStore.getState())
+    if (
+      zoomRequest?.type !== 'transform'
+      || zoomRequest.intent !== 'naturalInitialization'
+      || Math.abs(zoomRequest.payload.k - 1) > 0.000001
+      || Math.abs(zoomRequest.payload.x - expectedTransform.x) > 0.000001
+      || Math.abs(zoomRequest.payload.y - expectedTransform.y) > 0.000001
+      || zoomRequest.origin !== 'graphActivation'
+      || !zoomRequest.targetGraphKey
+      || !graphActivationZoomTargetsGraph({
+        request: zoomRequest,
+        graphData: useGraphStore.getState().graphData,
+      })
+    ) {
+      throw new Error(`expected authored New .md initialization to request a centered natural 100% camera, got ${JSON.stringify(zoomRequest)}`)
+    }
+    const mismatchedGraph = { metadata: { kind: 'document', source: 'notes/another-note.md' } }
+    if (graphActivationZoomTargetsGraph({ request: zoomRequest, graphData: mismatchedGraph })) {
+      throw new Error('expected authored New .md natural zoom to wait for its matching document runtime')
+    }
+    const directTransform = createGraphActivationTransformRequest({
+      graphData: useGraphStore.getState().graphData,
+      payload: { k: 1, x: 0, y: 0 },
+      intent: 'naturalInitialization',
+      now: 4,
+    })
+    if (!directTransform || directTransform.targetGraphKey !== zoomRequest.targetGraphKey) {
+      throw new Error('expected fit and natural transforms to share graph-targeted activation ownership')
+    }
+  } finally {
+    useGraphStore.getState().resetAll()
+  }
+}
+
 export function testSourceFilesStableHydratedSelectionStillAppliesStaleCanvasDocument() {
   const shouldApply = shouldApplyStableWorkspaceSelectionToCanvas({
     activePath: '/docs/knowgrph-design-demo.md',
@@ -389,6 +511,21 @@ export function testSourceFilesStableHydratedSelectionStillAppliesStaleCanvasDoc
 }
 
 export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
+  const defaultNotePreset = resolveWorkspaceDocumentSwitchCanvasPreset({
+    activeDocumentKey: 'notes/note_20260727T225041Z.md',
+    text: '---\nflow:\n  nodes: []\n---\n',
+  })
+  if (defaultNotePreset?.canvasSurfaceMode !== '2d' || defaultNotePreset.canvasRenderMode !== '2d') {
+    throw new Error(`expected authored notes without an explicit surface to default to 2D Mode, got ${JSON.stringify(defaultNotePreset)}`)
+  }
+  const authoredXrNotePreset = resolveWorkspaceDocumentSwitchCanvasPreset({
+    activeDocumentKey: '/notes/xr-playground.md',
+    text: '---\nkgCanvasSurfaceMode: "xr"\nkgCanvasRenderMode: "3d"\n---\n',
+  })
+  if (authoredXrNotePreset?.canvasSurfaceMode !== 'xr' || authoredXrNotePreset.canvasRenderMode !== '3d') {
+    throw new Error(`expected explicit authored note surface frontmatter to remain authoritative, got ${JSON.stringify(authoredXrNotePreset)}`)
+  }
+
   const settled = isWorkspaceDocumentSwitchApplySettled({
     activeDocumentKey: 'docs/knowgrph-storyboard-widget-demo.md',
     text: '# Storyboard Widget',
@@ -455,79 +592,8 @@ export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
   }
 }
 
-export function testSourceFilesActiveGraphRejectsUnownedCanvasGraphForSelectedFile() {
-  const staleGraph = {
-    type: 'Graph',
-    context: 'frontmatter-flow',
-    metadata: {
-      kind: 'frontmatter-flow',
-      source: '',
-    },
-    nodes: [
-      { id: 'stale', label: 'Stale graph' },
-    ],
-    edges: [],
-  } as never
-  const active = resolveActiveMarkdownBaseGraph({
-    baseGraphDataRaw: staleGraph,
-    markdownName: 'docs/knowgrph-design-demo.md',
-    markdownText: '---\nkgCanvas2dRenderer: "storyboard"\n---\n# Design',
-  })
-  const meta = ((active?.metadata || null) as Record<string, unknown> | null) || {}
-  if (String(meta.source || '') !== 'markdown:docs/knowgrph-design-demo.md' || meta.pending !== true) {
-    throw new Error(`expected active graph derivation to replace unowned stale graph with selected-document pending graph, got ${JSON.stringify(meta)}`)
-  }
-  if ((active?.nodes || []).some(node => String(node.id || '') === 'stale')) {
-    throw new Error('expected active graph derivation to suppress stale unowned Canvas nodes after Source Files switch')
-  }
-}
-
-export function testSourceFilesActiveWorkspaceReapplyAllowsEditorWorkspaceCanvasPane() {
-  const shouldApply = shouldProactivelyReapplyActiveWorkspaceMarkdownDocument({
-    activePath: '/docs/knowgrph-design-demo.md',
-    markdownDocumentName: 'docs/model-asset-source.md',
-    markdownDocumentText: '---\nkgCanvasSurfaceMode: "xr"\n---\n# XR',
-    markdownDocumentApplyViewPreset: true,
-  })
-  if (!shouldApply) {
-    throw new Error('expected Source Files active path switching to reapply the selected Markdown document/frontmatter with the Editor Workspace open')
-  }
-}
-
-export async function testSourceFilesModelAssetSwitchUsesFileTypeFallbackCanvasPreset() {
-  const modelAssetPath = '/docs/model-asset-source.glb'
-  const modelAssetName = 'docs/model-asset-source.glb'
-  const resolvedText = await readWorkspaceActiveDocumentResolvedText({
-    activePath: modelAssetPath,
-    currentText: 'glTF\u0002\u0000\u0000\u0000',
-    fs: {
-      readFileText: async () => '',
-    } as never,
-  })
-  if (!resolvedText.includes('kgAssetFormat: "glb"') || !resolvedText.includes('kgCanvasSurfaceMode: "xr"')) {
-    throw new Error(`expected empty GLB Source Files selection to synthesize XR model-asset frontmatter, got ${resolvedText}`)
-  }
-
-  useGraphStore.getState().resetAll()
-  useGraphStore.getState().setCanvasRenderMode('2d')
-  useGraphStore.getState().setCanvas2dRenderer('d3')
-  const applied = await useGraphStore.getState().setActiveMarkdownDocument({
-    name: modelAssetName,
-    text: resolvedText,
-    autoEnableFrontmatter: true,
-    applyViewPreset: true,
-    applyToGraph: true,
-    forceApplyToGraph: true,
-    normalizeMermaidMmd: false,
-  })
-  const state = useGraphStore.getState()
-  if (applied !== true) {
-    throw new Error('expected GLB Source Files switch to complete from synthesized model-asset document')
-  }
-  if (state.canvasRenderMode !== '3d' || state.canvas3dMode !== 'xr') {
-    throw new Error(`expected GLB Source Files switch to apply XR Canvas preset, got ${state.canvasRenderMode}/${state.canvas3dMode}`)
-  }
-  if (state.markdownDocumentName !== modelAssetName || state.markdownDocumentText !== resolvedText) {
-    throw new Error('expected active markdown document to reflect selected GLB fallback manifest')
-  }
-}
+export {
+  testSourceFilesActiveGraphRejectsUnownedCanvasGraphForSelectedFile,
+  testSourceFilesActiveWorkspaceReapplyAllowsEditorWorkspaceCanvasPane,
+  testSourceFilesModelAssetSwitchUsesFileTypeFallbackCanvasPreset,
+} from './sourceFilesSwitchingActiveGraphAndModelAsset.test'

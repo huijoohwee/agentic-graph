@@ -160,7 +160,7 @@ test('Game Mode freeze contract retains authored presentation and removes every 
   assert.equal(resolveAuthoredWorldPaused(false, false), false)
   assert.equal(resolveAuthoredWorldPaused(true, false), true)
   assert.equal(resolveAuthoredWorldPaused(false, true), true)
-  assert.ok(threeGraph.includes('const authoredWorldPaused = resolveAuthoredWorldPaused(paused, gameFpsActive)'))
+  assert.ok(threeGraph.includes('const authoredWorldPaused = resolveAuthoredWorldPaused(paused, gameplayOverlayActive)'))
   for (const component of ['SceneLazy', 'GlbAssetModel', 'SpatialCaptureManifestStage']) {
     const mount = threeGraph.match(new RegExp(`<${component}\\b[\\s\\S]*?\\n\\s*/>`))?.[0] || ''
     assert.ok(mount.includes('paused={authoredWorldPaused}'), `${component} must use the one authored-world pause owner`)

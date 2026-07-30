@@ -73,14 +73,14 @@ export const paymentsSettingsRegistry: SettingMeta[] = [
     default: () => '',
   },
   {
-    key: 'payments.stripe.paywallEnabled',
+    key: 'payments.paywallEnabled',
     type: 'boolean',
     source: 'localStorage',
-    read: () => s().paymentsStripePaywallEnabled === true,
+    read: () => s().paymentsPaywallEnabled === true,
     write: (v) => {
-      s().setPaymentsStripePaywallEnabled(Boolean(v))
+      s().setPaymentsPaywallEnabled(Boolean(v))
     },
-    docKey: 'payments.stripe.paywallEnabled',
+    docKey: 'payments.paywallEnabled',
     default: () => false,
   },
   {

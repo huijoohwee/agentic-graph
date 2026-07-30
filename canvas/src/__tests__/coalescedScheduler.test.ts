@@ -108,17 +108,19 @@ export async function testWorkspaceSyncSchedulerDoesNotDelayExistingFlushForLate
 
 export async function testWorkspaceSyncSchedulerCancelDoesNotResetSignatureDedupe() {
   const calls: string[] = []
-  scheduleWorkspaceSyncTask('runtime:refresh', () => {
+  const firstAdmitted = scheduleWorkspaceSyncTask('runtime:refresh', () => {
     calls.push('runtime:once')
   }, 10, { signature: 'stable-signature' })
+  if (!firstAdmitted) throw new Error('expected the first signature to be admitted')
 
   await new Promise(resolve => setTimeout(resolve, 40))
 
   cancelWorkspaceSyncTask('runtime:refresh')
 
-  scheduleWorkspaceSyncTask('runtime:refresh', () => {
+  const duplicateAdmitted = scheduleWorkspaceSyncTask('runtime:refresh', () => {
     calls.push('runtime:duplicate')
   }, 10, { signature: 'stable-signature' })
+  if (duplicateAdmitted) throw new Error('expected the executed duplicate signature to be rejected')
 
   await new Promise(resolve => setTimeout(resolve, 40))
 

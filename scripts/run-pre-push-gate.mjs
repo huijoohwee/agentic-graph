@@ -15,8 +15,24 @@ const runGit = args => {
   return result.stdout.trim()
 }
 
+export const withoutGitLocalEnvironment = (environment, localVariableNames) => {
+  const sanitized = { ...environment }
+  for (const variableName of String(localVariableNames || '').split(/\s+/).filter(Boolean)) {
+    delete sanitized[variableName]
+  }
+  return sanitized
+}
+
 const runCheckoutIntegration = () => {
-  const result = spawnSync('npm', ['run', 'ci:integration'], { cwd: repoRoot, stdio: 'inherit' })
+  const environment = withoutGitLocalEnvironment(
+    process.env,
+    runGit(['rev-parse', '--local-env-vars']),
+  )
+  const result = spawnSync('npm', ['run', 'ci:integration'], {
+    cwd: repoRoot,
+    env: environment,
+    stdio: 'inherit',
+  })
   if (result.error) throw result.error
   if (result.status !== 0) throw new Error(`checkout integration exited with status ${result.status}`)
 }

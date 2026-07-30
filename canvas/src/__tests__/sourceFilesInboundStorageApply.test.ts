@@ -1,7 +1,7 @@
 import { applyPulledKnowgrphStorageChangesToSourceFiles } from '@/features/source-files/sourceFilesInboundStorageApply'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
-export function testPulledKnowgrphStorageChangesMaterializeIntoVisibleSourceFilesWithoutAutoComposingWorkspaceDocs() {
+export async function testPulledKnowgrphStorageChangesMaterializeIntoVisibleSourceFilesWithoutAutoComposingWorkspaceDocs() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
@@ -48,6 +48,7 @@ export function testPulledKnowgrphStorageChangesMaterializeIntoVisibleSourceFile
     },
   })
 
+  await result.completion
   if (!result.applied) throw new Error('expected pulled storage changes to apply into visible source files')
   const store = useGraphStore.getState()
   const file = store.sourceFiles.find(entry => entry.id === 'remote_demo') || null
@@ -59,7 +60,7 @@ export function testPulledKnowgrphStorageChangesMaterializeIntoVisibleSourceFile
   }
 }
 
-export function testPulledKnowgrphStorageDeletesRemoveVisibleSourceFiles() {
+export async function testPulledKnowgrphStorageDeletesRemoveVisibleSourceFiles() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([
     {
@@ -107,12 +108,13 @@ export function testPulledKnowgrphStorageDeletesRemoveVisibleSourceFiles() {
     },
   })
 
+  await result.completion
   if (!result.applied) throw new Error('expected pulled delete to apply into visible source files')
   const file = useGraphStore.getState().sourceFiles.find(entry => entry.id === 'remote_demo') || null
   if (file) throw new Error('expected pulled delete tombstone to remove the visible source file')
 }
 
-export function testPulledKnowgrphStorageDocsCanonicalPathMaterializeIntoWorkspaceDocsSourceFiles() {
+export async function testPulledKnowgrphStorageDocsCanonicalPathMaterializeIntoWorkspaceDocsSourceFiles() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
@@ -142,13 +144,14 @@ export function testPulledKnowgrphStorageDocsCanonicalPathMaterializeIntoWorkspa
     },
   })
 
+  await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to materialize into visible source files')
   const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/knowgrph-maps-places.md') || null
   if (!file) throw new Error('expected pulled canonical docs record to map into workspace:/docs source path')
   if (String(file.text || '') !== '# Maps Places') throw new Error('expected pulled canonical docs markdown content to become visible source file text')
 }
 
-export function testPulledKnowgrphStorageUsesDocumentChunksWhenContentMdIsBlank() {
+export async function testPulledKnowgrphStorageUsesDocumentChunksWhenContentMdIsBlank() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([])
 
@@ -203,6 +206,7 @@ export function testPulledKnowgrphStorageUsesDocumentChunksWhenContentMdIsBlank(
     },
   })
 
+  await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to apply when markdown is in document chunks')
   const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/knowgrph-video-demo.md') || null
   if (!file) throw new Error('expected pulled canonical docs chunked record to map into workspace:/docs source path')
@@ -211,7 +215,7 @@ export function testPulledKnowgrphStorageUsesDocumentChunksWhenContentMdIsBlank(
   }
 }
 
-export function testPulledKnowgrphStorageDoesNotOverwriteExistingVisibleTextWithBlankDocumentContent() {
+export async function testPulledKnowgrphStorageDoesNotOverwriteExistingVisibleTextWithBlankDocumentContent() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([
     {
@@ -250,6 +254,7 @@ export function testPulledKnowgrphStorageDoesNotOverwriteExistingVisibleTextWith
     },
   })
 
+  await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to apply')
   const file = useGraphStore.getState().sourceFiles.find(entry => String(entry.source?.path || '') === 'workspace:/docs/knowgrph-video-demo.md') || null
   if (!file) throw new Error('expected canonical docs source file to remain present after pull apply')
@@ -258,7 +263,7 @@ export function testPulledKnowgrphStorageDoesNotOverwriteExistingVisibleTextWith
   }
 }
 
-export function testPulledKnowgrphStorageCanonicalizesExistingWorkspaceDocsAliasPathBeforeMatching() {
+export async function testPulledKnowgrphStorageCanonicalizesExistingWorkspaceDocsAliasPathBeforeMatching() {
   useGraphStore.getState().resetAll()
   useGraphStore.getState().setSourceFiles([
     {
@@ -297,6 +302,7 @@ export function testPulledKnowgrphStorageCanonicalizesExistingWorkspaceDocsAlias
     },
   })
 
+  await result.completion
   if (!result.applied) throw new Error('expected pulled canonical docs record to apply into existing alias workspace entry')
   const files = useGraphStore.getState().sourceFiles.filter(entry => String(entry.name || '') === 'knowgrph-video-demo.md')
   if (files.length !== 1) {
@@ -350,6 +356,7 @@ export async function testPulledKnowgrphStorageHydratesBlankCanonicalDocsViaStor
         graphSnapshots: [],
       },
     })
+    await result.completion
     if (!result.applied) throw new Error('expected pulled canonical docs record to apply before async fallback hydration')
 
     const waitUntil = async (predicate: () => boolean, timeoutMs = 2500) => {

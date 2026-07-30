@@ -18,6 +18,7 @@ import {
 } from '@/lib/ui/floatingPanelCatalogLayout'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
+import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
 
 const SKILLS_COMMANDS_PREFIX_FILTERS: Array<{ filter: SkillsCommandsPrefixFilter; label: string; Icon: typeof Slash }> = [
   { filter: 'slash', label: 'Slash commands', Icon: Slash },
@@ -169,6 +170,7 @@ export function FloatingPanelSkillsCommandsView() {
         ) : null}
       />
       <section className={floatingPanelCatalogBodyClassName()} tabIndex={-1} data-kg-floating-panel-catalog-body="skills-commands" data-kg-floating-panel-skills-commands-list="1" aria-label="Skills & Commands catalog">
+        <MotionCapturePlatformProjection variant="skills" />
         <SkillsCommandsView
           collapsedGroupKeys={collapsedGroupKeys}
           grammarGroupBy={grammarGroupBy}

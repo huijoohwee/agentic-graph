@@ -1,4 +1,4 @@
-import { scheduleApplyComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
+import { scheduleApplyGraphOwnerComposedGraphFromSourceFiles } from '@/features/source-files/applyComposedGraphFromSourceFiles'
 import {
   areSourceFileRecordsEqual,
   normalizeSourceFileRecord,
@@ -27,8 +27,56 @@ import {
   normalizeStorageCanonicalPathCandidate,
   readStorageCanonicalPathCandidatesForDocument,
 } from '@/features/source-files/sourceFilesStoragePaths'
+import {
+  runWorkspaceSeedSyncTask,
+  runWorkspaceSeedSyncTaskWithContext,
+  type WorkspaceSeedSyncTaskContext,
+} from '@/lib/workspace/workspaceSeedSyncRuntime'
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
+
+function throwIfInboundStorageApplyAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return
+  throw signal.reason instanceof Error
+    ? signal.reason
+    : new Error('Inbound Knowgrph storage apply was cancelled')
+}
+
+export async function runSourceFilesInboundStorageApplyDescendant(
+  operation: () => Promise<void>,
+  signal?: AbortSignal,
+  taskContext?: WorkspaceSeedSyncTaskContext,
+): Promise<void> {
+  if (taskContext) {
+    await runWorkspaceSeedSyncTaskWithContext(taskContext, operation)
+    return
+  }
+  await runWorkspaceSeedSyncTask(signal, operation)
+}
+
+function scheduleSourceFilesInboundStorageApplyDescendant(
+  operation: () => Promise<void>,
+  signal?: AbortSignal,
+  taskContext?: WorkspaceSeedSyncTaskContext,
+): Promise<void> {
+  const completion = runSourceFilesInboundStorageApplyDescendant(
+    operation,
+    signal,
+    taskContext,
+  )
+  void completion.catch(() => {
+    void 0
+  })
+  return completion
+}
+
+async function awaitInboundStorageApplyDescendants(
+  completions: Promise<void>[],
+): Promise<void> {
+  const results = await Promise.allSettled(completions)
+  const failure = results.find(result => result.status === 'rejected')
+  if (failure?.status === 'rejected') throw failure.reason
+}
 
 const readSourceFileNameFromCanonicalPath = (canonicalPath: string, fallbackTitle: string | null): string => {
   const safeTitle = normalizeString(fallbackTitle)
@@ -63,23 +111,28 @@ const buildKnowgrphStorageRequestUrl = (args: { path: string; baseUrl: string })
 const readStorageDocFallbackText = async (args: {
   workspaceId: string
   canonicalPathCandidates: string[]
+  signal?: AbortSignal
 }): Promise<string> => {
   if (typeof fetch !== 'function') return ''
   const baseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_STORAGE_BASE_URL', ''))
   const workspaceId = normalizeString(args.workspaceId)
   if (!baseUrl || !workspaceId) return ''
   for (let i = 0; i < args.canonicalPathCandidates.length; i += 1) {
+    throwIfInboundStorageApplyAborted(args.signal)
     const canonicalPath = normalizeStorageCanonicalPathCandidate(args.canonicalPathCandidates[i] || '')
     if (!canonicalPath) continue
     const docPath = `${KNOWGRPH_STORAGE_ROUTE_PATHS.docPrefix}${encodeURIComponent(workspaceId)}/${encodeURIComponent(canonicalPath)}`
     const requestUrl = buildKnowgrphStorageRequestUrl({ path: docPath, baseUrl })
     if (!requestUrl) continue
     try {
-      const response = await fetch(requestUrl)
+      const response = await fetch(requestUrl, { signal: args.signal })
+      throwIfInboundStorageApplyAborted(args.signal)
       if (!response.ok) continue
       const text = String(await response.text())
+      throwIfInboundStorageApplyAborted(args.signal)
       if (text.trim()) return text
-    } catch {
+    } catch (error) {
+      if (args.signal?.aborted) throwIfInboundStorageApplyAborted(args.signal)
       void 0
     }
   }
@@ -89,11 +142,14 @@ const readStorageDocFallbackText = async (args: {
 const scheduleBlankPulledDocsHydration = (args: {
   workspaceId: string
   tasks: Array<{ sourceFileId: string; sourcePath: string; canonicalPathCandidates: string[] }>
-}) => {
-  if (!Array.isArray(args.tasks) || args.tasks.length === 0) return
-  void (async () => {
+  signal?: AbortSignal
+  taskContext?: WorkspaceSeedSyncTaskContext
+}): Promise<void> | null => {
+  if (!Array.isArray(args.tasks) || args.tasks.length === 0) return null
+  return scheduleSourceFilesInboundStorageApplyDescendant(async () => {
     const bySourceFileId = new Map<string, string>()
     for (let i = 0; i < args.tasks.length; i += 1) {
+      throwIfInboundStorageApplyAborted(args.signal)
       const task = args.tasks[i]
       if (!task) continue
       const sourceFileId = normalizeString(task.sourceFileId)
@@ -101,11 +157,13 @@ const scheduleBlankPulledDocsHydration = (args: {
       const fallbackText = await readStorageDocFallbackText({
         workspaceId: args.workspaceId,
         canonicalPathCandidates: task.canonicalPathCandidates,
+        signal: args.signal,
       })
       if (!fallbackText.trim()) continue
       bySourceFileId.set(sourceFileId, fallbackText)
     }
     if (bySourceFileId.size === 0) return
+    throwIfInboundStorageApplyAborted(args.signal)
     const state = useGraphStore.getState()
     const currentSourceFiles = Array.isArray(state.sourceFiles) ? state.sourceFiles : []
     let changed = false
@@ -132,9 +190,10 @@ const scheduleBlankPulledDocsHydration = (args: {
       })
     })
     if (!changed) return
+    throwIfInboundStorageApplyAborted(args.signal)
     state.setSourceFiles(next)
-    scheduleApplyComposedGraphFromSourceFiles()
-  })()
+    scheduleApplyGraphOwnerComposedGraphFromSourceFiles()
+  }, args.signal, args.taskContext)
 }
 
 const resolvePulledDocumentSourceFileIdentity = (document: KgDocumentRecord): {
@@ -254,11 +313,15 @@ const buildSourceFileFromStorageDocument = (
 export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
   workspaceId: string
   changes: KnowgrphStoragePullResponse['changes']
+  signal?: AbortSignal
+  taskContext?: WorkspaceSeedSyncTaskContext
 }): {
   applied: boolean
+  completion: Promise<void>
   nextCount: number
   sourceFilesSnapshot: SourceFile[]
 } => {
+  throwIfInboundStorageApplyAborted(args.signal)
   const current = useGraphStore.getState()
   const currentSourceFiles = Array.isArray(current.sourceFiles) ? current.sourceFiles : []
   const next = currentSourceFiles.slice()
@@ -268,6 +331,7 @@ export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
   const documentChunks = Array.isArray(args.changes.documentChunks) ? args.changes.documentChunks : []
   const pulledMarkdownByDocumentId = readPulledDocumentMarkdownByDocumentId(documentChunks, args.workspaceId)
   const blankPulledDocHydrationTasks: Array<{ sourceFileId: string; sourcePath: string; canonicalPathCandidates: string[] }> = []
+  const descendantCompletions: Promise<void>[] = []
 
   for (let i = 0; i < documents.length; i += 1) {
     const document = documents[i]
@@ -328,31 +392,36 @@ export const applyPulledKnowgrphStorageChangesToSourceFiles = (args: {
   }
 
   if (blankPulledDocHydrationTasks.length > 0) {
-    scheduleBlankPulledDocsHydration({
+    const hydration = scheduleBlankPulledDocsHydration({
       workspaceId: args.workspaceId,
       tasks: blankPulledDocHydrationTasks,
+      signal: args.signal,
+      taskContext: args.taskContext,
     })
+    if (hydration) descendantCompletions.push(hydration)
   }
   if (!changed) {
     return {
       applied: false,
+      completion: awaitInboundStorageApplyDescendants(descendantCompletions),
       nextCount: currentSourceFiles.length,
       sourceFilesSnapshot: currentSourceFiles,
     }
   }
+  throwIfInboundStorageApplyAborted(args.signal)
   current.setSourceFiles(next)
-  scheduleApplyComposedGraphFromSourceFiles()
-  void (async () => {
-    try {
-      const mod = (await import('@/features/workspace-fs/workspaceFs')) as typeof import('@/features/workspace-fs/workspaceFs')
-      const fs = await mod.getWorkspaceFs()
-      await fs.ensureSeed()
-    } catch {
-      void 0
-    }
-  })()
+  scheduleApplyGraphOwnerComposedGraphFromSourceFiles()
+  descendantCompletions.push(scheduleSourceFilesInboundStorageApplyDescendant(async () => {
+    const mod = (await import('@/features/workspace-fs/workspaceFs')) as typeof import('@/features/workspace-fs/workspaceFs')
+    throwIfInboundStorageApplyAborted(args.signal)
+    const fs = await mod.getWorkspaceFs()
+    throwIfInboundStorageApplyAborted(args.signal)
+    await fs.ensureSeed()
+    throwIfInboundStorageApplyAborted(args.signal)
+  }, args.signal, args.taskContext))
   return {
     applied: true,
+    completion: awaitInboundStorageApplyDescendants(descendantCompletions),
     nextCount: next.length,
     sourceFilesSnapshot: next,
   }

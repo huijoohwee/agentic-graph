@@ -1,5 +1,6 @@
 import { readNodeCenterWorld2d } from '@/lib/render/mediaAnchor'
 import { resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
+import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { isProbeTreeLayoutOwnedNode } from '@/lib/storyboardWidget/probeTreeLayoutContract'
 import { resolveEffectiveFlowWidgetPinnedInCanvas } from '@/lib/storyboardWidget/widgetPlacementAuthority'
@@ -10,6 +11,24 @@ type CanvasPointTransform = {
 }
 
 type WorldPoint = { x: number; y: number }
+type NodeWorldPointSource = {
+  x?: unknown
+  y?: unknown
+  fx?: unknown
+  fy?: unknown
+  position?: unknown
+}
+
+const readFiniteGraphNumber = (value: unknown): number | null => {
+  const unwrapped = unwrapGraphCellValue(value)
+  return typeof unwrapped === 'number' && Number.isFinite(unwrapped) ? unwrapped : null
+}
+
+const readNestedWorldPointRecord = (value: unknown): Record<string, unknown> | null => {
+  const unwrapped = unwrapGraphCellValue(value)
+  if (!unwrapped || typeof unwrapped !== 'object' || Array.isArray(unwrapped)) return null
+  return unwrapped as Record<string, unknown>
+}
 
 export function resolveFlowCanvasMediaOverlayGraphNode(
   graphData: GraphData | null | undefined,
@@ -31,8 +50,8 @@ export function resolveFlowCanvasMediaOverlayWorldTopLeft2d(args: {
   pinnedInCanvas: boolean
   interactionOverride?: WorldPoint | null
   storedWorldPosition?: WorldPoint | null
-  mediaNode?: { x?: unknown; y?: unknown; fx?: unknown; fy?: unknown } | null
-  runtimeNode?: { x?: unknown; y?: unknown; fx?: unknown; fy?: unknown } | null
+  mediaNode?: NodeWorldPointSource | null
+  runtimeNode?: NodeWorldPointSource | null
 }): WorldPoint | null {
   const graphWorldPosition = readNodeWorldTopLeft2d(args.graphNode)
   if (args.pinnedInCanvas && isProbeTreeLayoutOwnedNode(args.graphNode) && graphWorldPosition) {
@@ -46,23 +65,16 @@ export function resolveFlowCanvasMediaOverlayWorldTopLeft2d(args: {
 }
 
 export function readNodeWorldTopLeft2d(
-  node: { x?: unknown; y?: unknown; fx?: unknown; fy?: unknown } | null | undefined,
+  node: NodeWorldPointSource | null | undefined,
 ): { x: number; y: number } | null {
   if (!node) return null
-  const xRaw = node.x
-  const yRaw = node.y
-  const fxRaw = node.fx
-  const fyRaw = node.fy
-  const x = typeof xRaw === 'number' && Number.isFinite(xRaw)
-    ? xRaw
-    : typeof fxRaw === 'number' && Number.isFinite(fxRaw)
-      ? fxRaw
-      : null
-  const y = typeof yRaw === 'number' && Number.isFinite(yRaw)
-    ? yRaw
-    : typeof fyRaw === 'number' && Number.isFinite(fyRaw)
-      ? fyRaw
-      : null
+  const nestedPosition = readNestedWorldPointRecord(node.position)
+  const x = readFiniteGraphNumber(node.x)
+    ?? readFiniteGraphNumber(node.fx)
+    ?? readFiniteGraphNumber(nestedPosition?.x)
+  const y = readFiniteGraphNumber(node.y)
+    ?? readFiniteGraphNumber(node.fy)
+    ?? readFiniteGraphNumber(nestedPosition?.y)
   return x == null || y == null ? null : { x, y }
 }
 

@@ -566,7 +566,7 @@ import type { TestCaseTuple } from '../runner/testRunnerTypes'; export const TES
   ["vdeoxpln.contract.registryProjection","@/__tests__/vdeoxplnContract.test","testKnowgrphVdeoxplnRegistryProjectsToAgentSkillsMainPanelAndMcp"],
   ["vdeoxpln.contract.routingKeepsCanonicalKgcClean","@/__tests__/vdeoxplnContract.test","testKnowgrphVdeoxplnRoutingKeepsCanonicalKgcClean"],
   ["ui.payments.stripe.paywall.returnUrls","@/__tests__/paywallOverlay.test","testPaywallOverlayBuildsNeutralStripeCheckoutReturnUrls"],
-  ["ui.payments.stripe.paywall.opensOverlay","@/__tests__/paywallOverlay.test","testPaywallOverlayOpensFromPaymentsStripeToggle"],
+  ["ui.payments.paywall.opensOverlay","@/__tests__/paywallOverlay.test","testPaywallOverlayOpensFromPaymentsToggle"],
   ["ui.payments.stripe.paywall.generatesCheckout","@/__tests__/paywallOverlay.test","testPaywallOverlayGeneratesServerManagedCheckout"],
   ["ui.payments.stripe.checkout.currentWindowRedirect","@/__tests__/stripeCheckoutSecurity.test","testStripeCheckoutRedirectUsesCurrentWindowHttpsUrl"],
   ["ui.payments.stripe.checkout.sessionOnlyUrl","@/__tests__/stripeCheckoutSecurity.test","testStripeCheckoutUrlStaysSessionOnly"],

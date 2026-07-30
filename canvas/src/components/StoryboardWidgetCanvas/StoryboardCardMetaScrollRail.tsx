@@ -1,6 +1,7 @@
 import React from 'react'
 
 import type { StoryboardCardModel } from '@/components/StoryboardCanvas/storyboardModel'
+import type { StoryboardCardSourceReference } from '@/components/StoryboardCanvas/storyboardCardConnectedSources'
 import { StoryboardCardInvocationChips } from '@/components/StoryboardWidgetCanvas/StoryboardCardInvocationChips'
 import { StoryboardCardSourceReferenceChips } from '@/components/StoryboardWidgetCanvas/StoryboardCardSourceReferenceChips'
 import { CardInlineTextEditor } from '@/lib/cards/CardInlineTextEditor'
@@ -54,8 +55,9 @@ export function StoryboardCardMetaScrollRail(props: {
   card: StoryboardCardModel
   onCommitLane?: (card: StoryboardCardModel, nextValue: string) => void
   onCommitType?: (card: StoryboardCardModel, nextValue: string) => void
+  onSourceReferenceActivate?: (reference: StoryboardCardSourceReference) => void
 }) {
-  const { card, onCommitLane, onCommitType } = props
+  const { card, onCommitLane, onCommitType, onSourceReferenceActivate } = props
   const hasInvocationTokens = card.invocationTokens.some(token => token.startsWith('/') || token.startsWith('@') || token.startsWith('#'))
   const sourceReferences = card.sourceReferences || []
   const hasSourceReferences = sourceReferences.length > 0
@@ -109,7 +111,7 @@ export function StoryboardCardMetaScrollRail(props: {
           editorClassName="min-w-[4.5rem] rounded border bg-[color:var(--kg-input-bg)] px-1 py-0.5 text-[8px] font-semibold text-[color:var(--kg-text-primary)]"
         />
       </> : null}
-      <StoryboardCardSourceReferenceChips references={sourceReferences} />
+      <StoryboardCardSourceReferenceChips references={sourceReferences} onActivate={onSourceReferenceActivate} />
       <StoryboardCardInvocationChips tokens={card.invocationTokens} />
     </header>
   )

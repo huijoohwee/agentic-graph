@@ -1,4 +1,5 @@
-export const STRIPE_PAYMENT_API_VERSION = '2026-05-19'
+export const STRIPE_PAYMENT_REQUEST_API_VERSION = '2026-06-24.dahlia'
+export const STRIPE_PAYMENT_WEBHOOK_API_VERSION = '2026-06-24.dahlia'
 
 export const STRIPE_PAYMENT_ROUTE_PATHS = {
   checkoutSession: '/api/payments/stripe/checkout/session',
@@ -10,6 +11,10 @@ export const STRIPE_PROJECTS_SKILL_URL = 'https://projects.dev/skill.md'
 export const STRIPE_PROJECTS_DOCS_URL = 'https://docs.stripe.com/projects'
 
 export const STRIPE_PAYMENT_ENV_KEYS = {
+  runtimeMode: 'PAYMENT_STRIPE_MODE',
+  runtimeRestrictedKey: 'PAYMENT_STRIPE_SANDBOX_RESTRICTED_KEY',
+  mcpRestrictedKey: 'PAYMENT_STRIPE_MCP_SANDBOX_RESTRICTED_KEY',
+  runtimeWebhookSecret: 'PAYMENT_STRIPE_SANDBOX_WEBHOOK_SECRET',
   restrictedKey: 'STRIPE_RESTRICTED_KEY',
   secretKey: 'STRIPE_SECRET_KEY',
   webhookSecret: 'STRIPE_WEBHOOK_SECRET',
@@ -20,6 +25,12 @@ export const STRIPE_PAYMENT_ENV_KEYS = {
   checkoutMode: 'STRIPE_CHECKOUT_MODE',
   checkoutReturnOrigin: 'STRIPE_CHECKOUT_RETURN_ORIGIN',
 } as const
+
+export const STRIPE_PAYMENT_RUNTIME_SECRET_ENV_NAMES = [
+  STRIPE_PAYMENT_ENV_KEYS.runtimeRestrictedKey,
+  STRIPE_PAYMENT_ENV_KEYS.mcpRestrictedKey,
+  STRIPE_PAYMENT_ENV_KEYS.runtimeWebhookSecret,
+] as const
 
 export const STRIPE_PAYMENT_SECRET_ENV_NAMES = [
   STRIPE_PAYMENT_ENV_KEYS.restrictedKey,

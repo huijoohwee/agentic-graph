@@ -16,7 +16,7 @@ export const toMarkdownBlockInlineEditRangeToken = (startLine: number, endLine?:
   return `${start}:${end}`
 }
 
-export const toMarkdownBlockBubbleScheduleKey = (rangeToken: string): string => `markdown:inlineEdit:bubble:${rangeToken}`
+export const toMarkdownBlockInlineSelectionToolbarScheduleKey = (rangeToken: string): string => `markdown:inlineEdit:inlineSelectionToolbar:${rangeToken}`
 
 export const toMarkdownBlockMouseUpSyncScheduleKey = (rangeToken: string): string => `markdown:inlineEdit:mouseup-sync:${rangeToken}`
 

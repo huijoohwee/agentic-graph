@@ -2,14 +2,12 @@ import React from 'react'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import {
   isPromptPresetCatalogError,
-  loadPromptPresetCatalog,
   type PromptPreset,
-  type PromptPresetCatalogResult,
 } from '@/features/chat/promptPresetCatalog'
 import {
-  loadPromptPresetInvocation,
-  type PromptPresetInvocationResult,
-} from '@/features/chat/promptPresetInvocation'
+  defaultPromptPresetSelectionRuntime,
+  type PromptPresetSelectionRuntime,
+} from '@/features/chat/promptPresetSelectionRuntime'
 import { openFloatingPanelChatWithSeedWhenReady } from '@/features/chat/floatingPanelChat/floatingPanelChatOpenSeed'
 import { MainPanelTypeIcon } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { resolveInlineInvocationChipClassName } from '@/features/markdown/ui/dataViewChipStyles'
@@ -31,15 +29,12 @@ import { UI_TEXT_TRUNCATE_CHIP } from '@/lib/ui/textLayout'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 
-export type FloatingPanelPromptPresetsRuntime = {
-  loadCatalog: () => Promise<PromptPresetCatalogResult>
-  loadPrompt: (id: string) => Promise<PromptPresetInvocationResult>
+export type FloatingPanelPromptPresetsRuntime = PromptPresetSelectionRuntime & {
   invokePrompt: (prompt: string) => boolean
 }
 
 const defaultFloatingPanelPromptPresetsRuntime: FloatingPanelPromptPresetsRuntime = {
-  loadCatalog: () => loadPromptPresetCatalog(),
-  loadPrompt: id => loadPromptPresetInvocation(id),
+  ...defaultPromptPresetSelectionRuntime,
   invokePrompt: prompt => openFloatingPanelChatWithSeedWhenReady({
     text: prompt,
     mode: 'replace',

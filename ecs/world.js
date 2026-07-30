@@ -47,7 +47,12 @@ function assertMutableOutsideTick(state) {
   }
 }
 
-export function createWorld({ systems = [], decisionExecutor, clock } = {}) {
+export function createWorld({
+  systems = [],
+  decisionExecutor,
+  clock,
+  reasoningPolicy = "allow",
+} = {}) {
   if (!Array.isArray(systems) || systems.some((system) => typeof system !== "function")) {
     throw ecsError("ECS_INVALID_SYSTEMS", "systems must be an array of functions");
   }
@@ -57,11 +62,18 @@ export function createWorld({ systems = [], decisionExecutor, clock } = {}) {
   if (clock !== undefined && typeof clock !== "function") {
     throw ecsError("ECS_INVALID_CLOCK", "clock must be a function");
   }
+  if (reasoningPolicy !== "allow" && reasoningPolicy !== "forbid") {
+    throw ecsError(
+      "ECS_INVALID_REASONING_POLICY",
+      'reasoningPolicy must be either "allow" or "forbid"',
+    );
+  }
 
   const world = Object.freeze(Object.create(null));
   WORLD_STATES.set(world, {
     clock: clock ?? Date.now,
     decisionExecutor,
+    reasoningPolicy,
     entities: [],
     entityRefs: new Map(),
     nextEntityId: 0,
@@ -240,8 +252,8 @@ export function getWorldSystems(world) {
 }
 
 export function getWorldRuntimeOptions(world) {
-  const { clock, decisionExecutor } = getState(world);
-  return { clock, decisionExecutor };
+  const { clock, decisionExecutor, reasoningPolicy } = getState(world);
+  return { clock, decisionExecutor, reasoningPolicy };
 }
 
 export function beginWorldTick(world) {

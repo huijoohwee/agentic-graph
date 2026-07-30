@@ -1,290 +1,239 @@
-# Deploy Runbook — knowgrph ↔ agentic-canvas-os connector (Section 11 + tasks 12.7, 13.9, 13.10)
-
-**Status:** Ready to run — **operator-gated** (requires cloud credentials + the
-`cloud-deploy` Approval_Token). These steps make live, billable changes to
-Cloudflare, AWS, and Vercel and call paid providers, so they are NOT executed by
-the agent. Run them yourself in order.
-
-All commands run from the `knowgrph` repo root unless noted. Local test/lint
-gates must pass first: `npm run runtime:test`.
-
+---
+title: "Reference implementation: Knowgrph Protected Release Runbook"
+id: "md:knowgrph-acos-deploy-runbook"
+doc_type: "Release Runbook"
+version: "2.0.0"
+date: "2026-07-30"
+lang: "en-US"
+guideline_version: "1.7.0"
+owner: "docs.release.runbook"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "delivery"
+universal_scope: false
+doc_path: "docs/knowgrph-acos-deploy-runbook.md"
 ---
 
-## Recent Pages UI Release Evidence (2026-06-16)
+# Reference implementation: Knowgrph Protected Release Runbook
 
-This runbook covers the full connector topology, but the `/knowgrph` Pages app-shell release also has a lighter Dev->Prod->Cloudflare path.
+## Authority and scope
 
-- Dev repo commit: `36dd25e7`
-- Publish repo commit: `af9f48a5`
-- Preview: `https://ea647ff5.joohwee.pages.dev`
-- Live: `https://airvio.co/knowgrph/`
+The only canonical production path is `.github/workflows/release.yml`. It is manually
+dispatched for an exact reviewed `main` revision and matching
+`agentic-local-review-candidate/v1` JSON. After candidate verification, an authenticated
+operator must run the interactive `npm run production:authorize` challenge for the exact
+workflow run while its `production` deployment is pending. That command submits the
+protected-environment approval with digest-bound terminal evidence; there is no second
+browser-approval step, and a browser-only approval is invalid.
 
-Release path (app shell only):
-```
-npm --prefix canvas run test:ci:unit -- strybldr
-npm --prefix canvas run typecheck
-npm run collaboration:release:check
-npm run pages:build-sync
-npm run pages:check-sync
-npm run pages:deploy-cloudflare
-```
+This runbook does not authorize a release. It replaces the obsolete AWS Agent API,
+AgentCore, and Vercel instructions formerly at this path; those source trees and commands do
+not exist in the current product topology.
 
-If the release scope touches authenticated collaboration only and the publish mirror is intentionally dirty during local iteration, you may use `npm run collaboration:release:check -- --skip-sync` before `pages:build-sync`. The actual release lane still requires the full `npm run collaboration:release:check` result before `pages:deploy-cloudflare`.
+The protected production workflow currently:
 
-## Pre-reqs (one-time)
+1. verifies the exact protected `main` revision and localhost-review candidate;
+2. resolves and pins the Agentic Canvas OS documentation dependency;
+3. builds and verifies an immutable Pages/mirror candidate;
+4. waits at the protected environment for the candidate-digest-bound interactive terminal
+   command to submit its approval evidence;
+5. deploys that verified Pages candidate;
+6. reconciles canonical documentation into D1;
+7. runs live, browser-fidelity, and returning-user service-worker checks;
+8. records release receipts;
+9. publishes the verified mirror only after live checks pass.
 
-- Cloudflare: account + `airvio.co` zone; `wrangler login`.
-- AWS: account + credentials (`aws configure`); CDK bootstrapped in the target
-  region (`npx cdk bootstrap` once per account/region).
-- Vercel: account + project; `vercel login`.
-- Provider credentials (only the tiers you want live): Exa, BytePlus/ModelArk,
-  Stripe. The product tiers (AWS/Vercel) hold **no** model keys (R11).
+It deploys no Worker and publishes no DNS. Storage, payment, MCP, research, fetch-proxy,
+and DNS operations are separate operator capabilities with separate evidence and rollback
+requirements.
 
-## 0. Gate: secret hygiene + tests
+## Lane model
 
-```
-npm run runtime:test          # full suite (unit + PBT + integration + smoke), network-free, deterministic
-```
-The smoke tests assert no model-provider key ships in the Agent-API / McpAgent /
-frontend tiers and no auth secret ships in the frontend bundle (R11.1/3/5, R15.7).
-Runs with `--test-concurrency=1` so the gate result is independent of host core
-count (deterministic across machines/CI).
+| Lane | Owner | Permitted action | Promotion evidence |
+|---|---|---|---|
+| Authoring | scoped task branch and protected integration | edit/test/review source | exact candidate SHA, checks, manifest |
+| Mirror | release verify job | build a digest-bound non-public candidate | immutable candidate/digest and parity checks |
+| Delivery | protected release job | deploy, verify, publish receipt/mirror | terminal-evidenced environment approval, live checks, rollback target |
 
-## 1. Cloudflare control plane (task 11.1)
+| Boundary | From → To | Evidence Reference | Operator instruction reference | Rollback path and check | State |
+|---|---|---|---|---|---|
+| `KNOWGRPH-AUTHORING-TO-MIRROR` | Authoring → Mirror | `ER-REL-B1`; result not recorded | `OI-REL-B1`: Production dispatch with exact `source_sha` and `local_review_candidate` | discard the candidate; rerun the verify job; compare candidate, manifest, and lifecycle digests | closed |
+| `KNOWGRPH-MIRROR-TO-DELIVERY` | Mirror → Delivery | `ER-REL-B2`; result not recorded | `OI-REL-B2`: while the exact run is pending, use the interactive terminal command to submit the protected `production` approval and evidence | follow **Rollback**; rerun live smoke, revision, document-seed, and browser-fidelity checks | closed |
 
-Provision live-client secrets (only if running live stages):
-```
-npx wrangler secret put EXA_API_KEY      --config cloudflare/workers/knowgrph-mcp/wrangler.toml
-npx wrangler secret put BYTEPLUS_API_KEY --config cloudflare/workers/knowgrph-mcp/wrangler.toml
-# set KNOWGRPH_LIVE_CLIENTS="1" + AI_GATEWAY_CHAT_URL / STRYTREE_RENDER_URL /
-# KNOWGRPH_PAYMENT_URL in wrangler.toml [vars] to enable each live stage.
-```
-Deploy + verify the MCP Streamable HTTP endpoint:
-```
-npm run mcp:worker:deploy
-curl -fsS https://airvio.co/knowgrph/control-plane/mcp/health   # expect 200, status:"pass"
-```
+No command from a developer checkout, pull request, or ordinary `main` push opens either
+boundary.
 
-## 2. AWS Agent-API — REST tier (task 11.2)
+### Boundary Evidence References
 
-> **Topology (task 13.11 — COMPLEMENT):** this API Gateway + Lambda + S3 tier is
-> the product **REST** surface the Vercel frontend calls (`POST /auth/session`,
-> `POST /run`, `GET /runs/{id}`, `GET /health`, S3 artifacts). It is **retained,
-> not replaced** by the AgentCore Runtime — the AgentCore Runtime (§5) is an
-> *additive* durable **MCP** tool surface (the deployable-agent judging
-> artifact). Both are keyless thin forwarders to the Cloudflare `McpAgent`
-> (R11 holds on either path). Deploy this tier whenever the frontend is in play;
-> add §5 only when demonstrating the AgentCore deployable-agent artifact.
+| Reference | Named check | Recorded result | Surface | Meaning |
+|---|---|---|---|---|
+| `ER-REL-B1` | `.github/workflows/release.yml` verify job for an exact `source_sha` | not recorded for this revision | Mirror | no immutable candidate is qualified by this runbook |
+| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | not recorded for this revision | Delivery | no public delivery is proven by this runbook |
 
-Create the HS256 signing secret (server-side only, R15.7):
-```
-aws secretsmanager create-secret --name knowgrph/agent-api/auth-jwt-secret \
-  --secret-string "$(openssl rand -hex 32)"
-```
-Install tier deps (so node_modules ships in the Lambda asset) and deploy:
-```
-npm run agent-api:install
-CDK_DEFAULT_ACCOUNT=<acct> \
-CDK_DEFAULT_REGION=<region> \
-MCP_ENDPOINT=https://airvio.co/knowgrph/control-plane/mcp \
-CORS_ALLOW_ORIGIN=<https://your-vercel-app.vercel.app> \
-# optional: RUN_MANIFEST_PREFIX=runs
-npm run agent-api:cdk:deploy
-```
-The Agent-API now picks up `MCP_ENDPOINT`, `CORS_ALLOW_ORIGIN`, and optional
-`RUN_MANIFEST_PREFIX` from the deploy environment, so the preferred path is to
-set them **before** `cdk deploy` rather than patching Lambda env vars manually
-after deploy. Verify:
-```
-curl -fsS <ApiUrl>/health                          # expect 200 within 5s
-```
+`OI-REL-B1` and `OI-REL-B2` describe how a future operator supplies an instruction; they are not
+an instruction instance for this revision. Both boundaries therefore remain closed.
 
-## 3. Vercel frontend (task 11.3)
+## Preconditions
 
-```
-npm run web:build
-# deploy web/ to Vercel (point NEXT_PUBLIC_AGENT_API_URL at the AWS ApiUrl)
-vercel deploy --prebuilt web   # or `vercel --cwd web`
-```
-Confirm no auth secret / model key is in the client bundle (the smoke test
-covers this; re-run after build): `npm run web:test`.
+Before dispatch:
 
-## 4. Post-deploy verification + live proof (tasks 11.4, 12.7)
+- the change is integrated into protected `main`;
+- `source_sha` is the exact 40-character protected `main` revision reviewed locally;
+- `local_review_candidate` is the exact `agentic-local-review-candidate/v1` JSON emitted by
+  the collaboration workflow handoff;
+- protected integration is green for that revision;
+- required repository variables/secrets and production environment reviewers are configured;
+- the operator has an authenticated GitHub CLI session;
+- the canonical Knowgrph and Agentic Canvas OS checkouts are both clean on `main`, with
+  `HEAD` and the already-fetched `origin/main` equal to their candidate-bound revisions;
+  the authorization command does not fetch or repair either checkout;
+- an operator has reviewed scope, cost, data migration, and rollback impact;
+- any separately deployed Worker change has its own operator-approved runbook/evidence.
 
-For a compact operator-ready checklist covering the live `/knowgrph` routes, MCP
-session handshake, dry-run `tools/call`, and persisted Run_Manifest read-back,
-see [knowgrph-post-deploy-verification-checklist.md](knowgrph-post-deploy-verification-checklist.md).
+Do not substitute a branch name, pull-request SHA, mutable tag, or remembered URL for the
+exact inputs.
 
-```
-AGENT_API_URL=<ApiUrl> \
-MCP_ENDPOINT=https://airvio.co/knowgrph/control-plane/mcp \
-FRONTEND_URL=<vercel-url> \
-AGENTCORE_MCP_URL=<optional-agentcore-runtime-base-url> \
-npm run runtime:verify:deployed
-```
-This probes all three `/health`/reachability surfaces (5s-bounded) and prints a
-sample Demo_Pack `urls[]`. When `AGENTCORE_MCP_URL` is set, the additive AWS
-AgentCore `/ping` liveness URL and `/mcp` URL are included in the same
-Demo_Pack block. Exit 0 = AC-7 reachability satisfied for every supplied URL.
+After the verify job publishes its candidate receipts, the workflow summary names the
+interactive command:
 
-**Hosted blocked-path proof (immediate, high-ROI):**
-Fastest operator path: run the entire hosted artifact flow in one command after
-deploy:
 ```bash
-AGENT_API_URL=<ApiUrl> \
-FRONTEND_URL=<vercel-url> \
-MCP_ENDPOINT=https://airvio.co/knowgrph/control-plane/mcp \
-REFERENCE_URL=https://example.com/reference-video.mp4 \
-BRIEF='Hosted proof run: blocked path plus same-session persisted read-back.' \
-BUDGET_USD=10 \
-ARTIFACTS_DIR=./artifacts \
-SUBMISSION_TITLE='Knowgrph Hackathon Submission Brief' \
-npm run runtime:flow
+npm run production:authorize -- --repository huijoohwee/knowgrph --run-id <workflow-run-id>
 ```
-This runs `runtime:verify:deployed` -> `runtime:proof` -> `runtime:demo-pack` ->
-`runtime:submission-brief` -> `runtime:bundle` and writes the complete artifact
-set under `ARTIFACTS_DIR`.
 
-For operator review without making network calls first:
+The command independently downloads and verifies the candidate artifacts, rejects either
+canonical checkout unless it is clean `main` at the exact fetched candidate revision,
+rechecks canonical runtime state, displays the exact challenge, and accepts only the
+generated candidate-bound reply. It then submits the protected-environment approval with the
+terminal evidence comment. It cannot run non-interactively. An example reply, a browser-only
+approval, or a remembered candidate digest is not authorization for a later run.
+
+## Authoring verification
+
+Use the checks appropriate to the changed owners. The protected integration workflow is the
+authority; useful local equivalents include:
+
 ```bash
-AGENT_API_URL=<ApiUrl> \
-FRONTEND_URL=<vercel-url> \
-npm run runtime:flow -- --dry-run
+npm run ci:integration
+npm run runtime:check
+npm run check
+npm test
 ```
 
-Equivalent step-by-step commands remain available below if you want to inspect
-or re-run an individual phase.
+Notes:
 
-**Step-by-step equivalent:**
-```bash
-AGENT_API_URL=<ApiUrl> \
-FRONTEND_URL=<vercel-url> \
-MCP_ENDPOINT=https://airvio.co/knowgrph/control-plane/mcp \
-REFERENCE_URL=https://example.com/reference-video.mp4 \
-BRIEF='Hosted proof run: blocked path plus same-session persisted read-back.' \
-BUDGET_USD=10 \
-PROOF_OUTPUT_PATH=./artifacts/runtime-proof.json \
-npm run runtime:proof
-```
-This performs the minimum hosted proof sequence end to end:
-1. `POST /auth/session` on the deployed AWS API.
-2. `POST /run` with `approvals: []`.
-3. `GET /runs/{id}` with the **same** Auth_Token.
-4. Writes a proof JSON artifact when `PROOF_OUTPUT_PATH` is set.
+- `npm run docs:qa` begins with the mutating `docs:update`; inspect its diff before accepting
+  generated changes.
+- `npm run pages:build-sync` mutates the sibling mirror and is not an ordinary read-only
+  verification command.
+- direct Pages/Worker deployment commands are not Authoring-lane checks.
 
-Then turn the saved proof into a judging-ready Demo_Pack artifact:
-```bash
-PROOF_INPUT_PATH=./artifacts/runtime-proof.json \
-DEMO_PACK_OUTPUT_PATH=./artifacts/runtime-demo-pack.json \
-npm run runtime:demo-pack
-```
-This reads the persisted manifest payload from the proof file, builds the
-Demo_Pack through the existing SSOT manifest-to-pack path, validates it against
-the canonical contract, and writes the final artifact JSON when
-`DEMO_PACK_OUTPUT_PATH` is set.
+## Optional non-deploying runtime gate
 
-Then export a polished markdown submission brief:
-```bash
-DEMO_PACK_INPUT_PATH=./artifacts/runtime-demo-pack.json \
-SUBMISSION_BRIEF_OUTPUT_PATH=./artifacts/runtime-submission-brief.md \
-SUBMISSION_TITLE='Knowgrph Hackathon Submission Brief' \
-npm run runtime:submission-brief
-```
-This converts the contract-valid Demo_Pack artifact into a human-readable brief
- you can paste into a hackathon form, PR comment, doc, or review packet.
+`.github/workflows/runtime-gate.yml` is manual and non-deploying.
 
-Finally, package everything into one portable submission bundle directory:
-```bash
-PROOF_INPUT_PATH=./artifacts/runtime-proof.json \
-DEMO_PACK_INPUT_PATH=./artifacts/runtime-demo-pack.json \
-SUBMISSION_BRIEF_INPUT_PATH=./artifacts/runtime-submission-brief.md \
-SUBMISSION_BUNDLE_DIR=./artifacts/submission-bundle \
-npm run runtime:bundle
-```
-This copies the three source artifacts into a single directory and generates:
-`index.md`, `summary.html`, and `bundle-manifest.json` for judge-friendly review
-and handoff.
+- It always runs the deterministic `npm run runtime:check`.
+- It runs deployed reachability only when both `FRONTEND_URL` and `MCP_ENDPOINT` are supplied
+  as workflow inputs or repository variables.
+- An optional `STORAGE_WORKER_URL` may be supplied.
+- A skipped deployed probe is not positive runtime or delivery evidence.
 
-Pass criteria for the hosted blocked-path proof:
-1. `/auth/session` returns `201` with a non-empty token.
-2. `/run` returns `202` with a non-empty `runId`.
-3. `/runs/{id}` returns `200` for the same session.
-4. `runId`, `state`, and `mode` match between submit and read-back.
-5. The proof JSON captures frontend/API/control-plane URLs for the Demo_Pack.
-6. `runtime:demo-pack` emits a contract-valid Demo_Pack artifact JSON.
-7. `runtime:submission-brief` emits a polished markdown brief from that artifact.
-8. `runtime:bundle` emits a portable submission folder with an index and HTML summary page.
+Record the workflow URL, exact revision, configured endpoints, and result when using it as an
+Evidence Reference.
 
-**One approved live end-to-end run (follow-on judging capture):**
-1. Start with the hosted blocked-path proof above and keep the same browser
-   session/Auth_Token.
-2. Re-submit `POST /run` with the required `approvals[]` after each operator
-   decision.
-3. Let the live path execute research → storyboard → render → publish →
-   checkout.
-4. Read back `GET /runs/{id}` again and capture the terminal Run_Manifest.
-5. Use the terminal manifest + reachable URLs as the canonical judging artifact.
+## Production dispatch
 
-## 5. AWS AgentCore Runtime — MCP tier (tasks 13.9, 13.10) — OPTIONAL / ADDITIVE
+In the GitHub Actions UI, open **Production Release** and supply:
 
-> **Topology (task 13.11 — COMPLEMENT):** the AgentCore Runtime is an *additive*
-> AWS surface — it does **not** replace the §2 API Gateway + Lambda + S3 REST
-> tier. It hosts the durable streamable-HTTP **MCP** tool surface
-> (`tools/list`, `knowgrph.video_remix.run` + stage tools, `/ping`) as the
-> AWS-tier "deployable agent" judging artifact. Like the REST tier it is a
-> **keyless thin forwarder** to the Cloudflare `McpAgent`: no model keys in the
-> image/role/env, no direct paid-model invocation (R11 preserved; the IAM role
-> grants no `bedrock:InvokeModel*`). Deploy this only when demonstrating the
-> deployable-agent artifact; the frontend does not depend on it.
+| Input | Required value |
+|---|---|
+| `source_sha` | exact protected `main` commit reviewed on localhost |
+| `local_review_candidate` | exact JSON handoff for that same revision |
 
-Gated by the `cloud-deploy` Approval_Gate (same gate as §1–§3). Build + push the
-ARM64 image to ECR and launch the runtime, wiring the inbound JWT authorizer
-(R15 Auth_Token), the least-privilege IAM role (no model-invoke permission), and
-the control-plane endpoint env:
-```
-# local test first (network-free, fail-closed when control-plane endpoint unset)
-npm run agentcore:test
-# build + push ARM64 image and create the AgentCore Runtime
-CLOUD_DEPLOY_APPROVAL_TOKEN=<token> \
-MCP_ENDPOINT=https://airvio.co/knowgrph/control-plane/mcp \
-AUTH_JWT_SECRET=<server-side-secret> \
-npm run agentcore:deploy        # wraps agentcore launch; set AGENTCORE_DEPLOY_COMMAND=deploy for newer CLI flows
-# verify the deployed MCP endpoint + liveness
-AGENTCORE_MCP_URL=<agentcore-runtime-base-url> \
-AGENTCORE_AUTH_TOKEN=<auth-token-from-post-auth-session> \
-npm run agentcore:verify        # tools/list over Streamable HTTP; /ping 200 within 5s
-```
-Register the deployed AgentCore MCP endpoint in the Demo_Pack `urls[]` and the
-`runtime:verify:deployed` probe (task 13.10) so the Demo_Pack carries **both** AWS
-endpoints — the REST Agent_Api `/health` (§2) and the AgentCore MCP endpoint —
-as distinct reachable artifacts. Mark the section unverified if the endpoint
-does not return success within 5s.
+Review the verify job and wait until the production deployment is pending. Then run the
+interactive terminal command above; it is the only valid way to submit this workflow's
+protected-environment approval. Do not click a separate browser approval. The authorization
+is specific to the candidate and does not authorize later revisions, Workers, or DNS changes.
 
-## Manual runtime verification
+## Expected protected workflow sequence
 
-The `.github/workflows/runtime-gate.yml` workflow verifies §0 + §4 only after
-an explicit `workflow_dispatch`. It does not deploy or mutate an environment:
+### Verify job
 
-- Always runs `npm run runtime:ci` (deterministic and network-free). Run
-  `npm run runtime:test` separately for the broader property/audit suite while
-  its existing source-contract findings remain under upstream remediation.
-- Runs `npm run runtime:verify:deployed` only when both required endpoints are explicitly configured. Wire
-  the endpoints WITHOUT editing the workflow (no hardcode): set repository
-  **Variables** `AGENT_API_URL`, `MCP_ENDPOINT`, `FRONTEND_URL` (or pass them as
-  `workflow_dispatch` inputs). Until then the verify step skips with a notice, so
-  the gate is inert pre-wiring and self-activates afterward.
+Confirm:
 
-Production deployment is isolated in `.github/workflows/release.yml`. It requires
-an exact verified Dev commit SHA, `confirmation=DEPLOY`, and the protected GitHub
-`production` environment. Pull requests and pushes to `main` cannot invoke it.
+- checkout and remote `main` both equal `source_sha`; the workflow repeats the remote-main
+  authority check before each mutation and fails if `main` advances;
+- external schema/docs/mirror revisions are resolved and recorded;
+- the localhost-review candidate validates against the exact source tree;
+- build, tests, source checks, mirror parity, and immutable candidate checks pass;
+- candidate, lifecycle, manifest, mirror, and docs revision digests are emitted.
+
+Failure here leaves Delivery unchanged.
+
+### Protected deploy job
+
+After the terminal command records the evidence-bearing environment approval, confirm:
+
+- the candidate authorization is revalidated immediately before mutation;
+- the exact candidate is deployed to Pages;
+- canonical documentation seeding completes;
+- live smoke, exact marker/browser fidelity, and returning-user service-worker convergence
+  pass;
+- live and publication receipts are uploaded;
+- the persistent mirror is pushed only after live verification.
 
 ## Rollback
 
-- Cloudflare: `npx wrangler rollback --config cloudflare/workers/knowgrph-mcp/wrangler.toml`.
-- AWS: `npm run diff --prefix aws/agent-api/cdk` then `cdk destroy` (the artifact
-  bucket is `RETAIN` — delete manually if intended).
-- Vercel: promote the previous deployment.
-- AgentCore Runtime (§5, if deployed): delete the runtime via the starter
-  toolkit / `agentcore` CLI and remove its Demo_Pack `urls[]` entry; the §2 REST
-  tier is unaffected (the two AWS surfaces are independent — task 13.11).
-- Unset `KNOWGRPH_LIVE_CLIENTS` / `MCP_ENDPOINT` to fail closed to mock/501.
+The workflow captures the previous Pages deployment identity before mutation. Rollback is
+eligible only after the Pages deploy step completes successfully. It does not pre-capture a
+separate documentation snapshot. If a later check fails, the rollback path checks out the
+prior source revision, resolves that revision's documentation dependency, redeploys the prior
+Pages candidate, reseeds documentation from the prior source, and verifies the restored
+surface.
+
+Rollback does not revert the persistent `huijoohwee` mirror. If mirror publication succeeds
+and a later publication-receipt or artifact-persistence step fails, Pages and D1 may be
+restored while mirror `main` still contains the newer revision. That divergence requires
+explicit manual reconciliation before another delivery claim.
+
+An operator must verify:
+
+- rollback job result and workflow URL;
+- restored deployment revision/URL;
+- restored document count/revision;
+- post-rollback live smoke result;
+- persistent-mirror revision and any required manual reconciliation;
+- whether any separately operated Worker or external provider action needs its own rollback.
+
+Never describe a Pages rollback as rolling back storage, payment, MCP Workers, external
+models, or financial/provider state.
+
+## Release receipt
+
+Retain:
+
+- `source_sha` and source tree;
+- pinned Agentic Canvas OS docs revision;
+- immutable manifest/candidate/lifecycle digests;
+- protected workflow run and environment approval;
+- previous and new deployment identities;
+- live verification evidence;
+- mirror publication revision;
+- rollback result when applicable.
+
+Only this revision-bound evidence may advance the delivered rung.
+
+## Separate Worker and DNS boundaries
+
+Source includes named deploy scripts for storage, payment, and MCP Workers and a DNS
+publication script. Research and fetch-proxy have Worker source/configuration but no named
+repository deploy script. Every one of these boundaries remains closed unless an operator
+separately supplies:
+
+- exact candidate and environment;
+- migration/data-backup plan;
+- secret/binding readiness;
+- deterministic and deployed VCCs;
+- live verification and cost impact;
+- rollback command and post-rollback check.
+
+Do not infer any Worker deployment or DNS publication from the static production release.

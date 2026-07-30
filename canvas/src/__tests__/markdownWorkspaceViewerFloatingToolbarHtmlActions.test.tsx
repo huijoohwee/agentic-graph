@@ -202,7 +202,7 @@ async function runViewerToolbarActionCase(args: {
     })
 
     const toolbar = doc.querySelector('menu[aria-label="Inline selection toolbar"]') as HTMLElement | null
-    if (!toolbar) throw new Error('expected floating selection toolbar')
+    if (!toolbar) throw new Error('expected inline selection toolbar')
     await args.action({ dom, doc, toolbar })
     await act(async () => {
       await tick(6)
@@ -262,7 +262,7 @@ async function runViewerToolbarActionCase(args: {
   }
 }
 
-export async function testMarkdownWorkspaceViewerFloatingToolbarHtmlActionsSyncMarkdownAndJsonPanes() {
+export async function testMarkdownWorkspaceViewerInlineSelectionToolbarHtmlActionsSyncMarkdownAndJsonPanes() {
   await runViewerToolbarActionCase({
     activeText: ['Viewer sync line one', '', 'Viewer sync line two'].join('\n'),
     expectedMarkdownSnippet: '<u>Viewer</u>',
@@ -342,7 +342,7 @@ export async function testMarkdownWorkspaceViewerFloatingToolbarHtmlActionsSyncM
   })
 }
 
-export async function testMarkdownWorkspaceViewerBubbleToolbarCommandMenusExposeSlashAndVariableActions() {
+export async function testMarkdownWorkspaceViewerInlineSelectionToolbarCommandMenusExposeSlashAndVariableActions() {
   await runViewerToolbarActionCase({
     activeText: ['Viewer command menu line', '', 'Viewer sync line two'].join('\n'),
     expectedMarkdownSnippet: '- [ ] Viewer command menu line',
@@ -620,7 +620,7 @@ export async function testMarkdownWorkspaceViewerTaskRowUnderlineKeepsRenderedUn
   }
 }
 
-export async function testMarkdownWorkspaceViewerBubbleToolbarCommentSupportsInlineSemanticAndFootnoteSelections() {
+export async function testMarkdownWorkspaceViewerInlineSelectionToolbarCommentSupportsInlineSemanticAndFootnoteSelections() {
   await runViewerToolbarActionCase({
     activeText: 'Semantic `@comment:c-42` and `@node:callout-alert-1` and `@key:Ctrl+S` and footnote [^1]\n\n[^1]: Citation body',
     expectedMarkdownSnippet: '<!-- metadata | type: key | value: Ctrl+S | note: Reuse the same shortcut label in toolbar copy. -->',
@@ -758,7 +758,7 @@ export async function testMarkdownWorkspaceViewerHtmlCommentMarkersDifferentiate
   })
 }
 
-export async function testMarkdownWorkspaceViewerBubbleToolbarCommentSelectionPreservesWholeExistingReviewCommentToken() {
+export async function testMarkdownWorkspaceViewerInlineSelectionToolbarCommentSelectionPreservesWholeExistingReviewCommentToken() {
   const rawComment = '<!-- comment | id: c-001 | author: A. Hui | text: Long annotation in appendix for AI-ready phrasing. -->'
   await runViewerToolbarActionCase({
     activeText: `Before ${rawComment} after`,
@@ -839,7 +839,7 @@ export async function testMarkdownWorkspaceViewerCommentRangeReopensAsNonLiteral
   })
 }
 
-export async function testMarkdownWorkspaceViewerBubbleToolbarFormatsWholeSemanticAndFootnoteTokens() {
+export async function testMarkdownWorkspaceViewerInlineSelectionToolbarFormatsWholeSemanticAndFootnoteTokens() {
   await runViewerToolbarActionCase({
     activeText: 'Semantic `@comment:c-42` and `@key:Ctrl+S` and footnote [^1]\n\n[^1]: Citation body',
     expectedMarkdownSnippet: '==`@comment:c-42`==',
@@ -938,7 +938,7 @@ export async function testMarkdownWorkspaceViewerBubbleToolbarFormatsWholeSemant
   })
 }
 
-export async function testMarkdownWorkspaceViewerBubbleToolbarClearFormattingPreservesCanonicalSemanticAndFootnoteTokens() {
+export async function testMarkdownWorkspaceViewerInlineSelectionToolbarClearFormattingPreservesCanonicalSemanticAndFootnoteTokens() {
   await runViewerToolbarActionCase({
     activeText: 'Semantic `#EF4444:@key:Ctrl+S` and footnote [^1]\n\n[^1]: Citation body',
     expectedMarkdownSnippet: '`@key:Ctrl+S`',

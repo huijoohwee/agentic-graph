@@ -9,15 +9,30 @@ import {
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { useGympgrphStore } from './store.js'
 import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
+import { NATIVE_GEOSPATIAL_MAPLIBRE_OWNER } from './features/geospatial/mapLibreHostLease.js'
+import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
+import { readFlightGeoMapOcclusionPadding } from './flightGeoMapViewport.js'
+import {
+  readFlightGeoOverlay,
+  subscribeFlightGeoOverlay,
+  type FlightGeoOverlayPresentation,
+} from './flightGeoOverlay.js'
 import { LS_KEYS } from './lib/config.js'
 import { onGeospatialModeChanged, type GeospatialViewMode } from 'grph-shared/geospatial/events'
 import { GEOSPATIAL_POINT_STYLE_CHANGED_EVENT, GEOSPATIAL_STYLE_URL_CHANGED_EVENT } from 'grph-shared/geospatial/constants'
 import { computeBoundsFromCollections } from './geo.js'
-import { clearGeoJsonSourceData, ensureDatasetLayer, isMapLibreStyleReady, setGeoJsonSourceData } from './maplibreLayers.js'
+import {
+  clearGeoJsonSourceData,
+  ensureDatasetLayer,
+  isMapLibreStyleReady,
+  readGeoJsonSourceData,
+  setGeoJsonSourceData,
+} from './maplibreLayers.js'
 import { colorForDataset } from './colors.js'
 import { isPointOnlyFeatureCollection } from './selection.js'
 import {
   DEFAULT_GEOSPATIAL_VIEW_MODE,
+  FLIGHT_GEO_BOOTSTRAP_STYLE,
   isGrabMapsPresetActive,
   normalizeGeospatialViewMode,
   normalizePersistedGeospatialStyleUrl,
@@ -36,11 +51,16 @@ import {
   HIGH_FIDELITY_WORLD_SVG_INNER,
   HIGH_FIDELITY_WORLD_SVG_WIDTH,
 } from './features/geospatial/worldSvgBasemap.js'
+import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLayers.js'
+import { applyGeospatialFitRequest } from './geospatialFitRuntime.js'
 
 type GeospatialOverlayHostProps = {
-  active?: boolean
+  active?: boolean; flightBootstrapRequested?: boolean
   snapshot?: unknown
   handlers?: unknown
+  onFlightOverlayPresented?: (
+    presentation: FlightGeoOverlayPresentation,
+  ) => void
 }
 
 type RichMediaPoiDetail = {
@@ -297,10 +317,16 @@ function SvgGeospatialFallback(args: {
     const sy = safeImageBounds.height / HIGH_FIDELITY_WORLD_SVG_HEIGHT
     return `translate(${safeImageBounds.x} ${safeImageBounds.y}) scale(${sx} ${sy})`
   }, [safeImageBounds.height, safeImageBounds.valid, safeImageBounds.width, safeImageBounds.x, safeImageBounds.y])
-
   return (
-    <figure className={args.className} style={args.style}>
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full" aria-label="Fallback geospatial basemap">
+    <figure
+      className={args.className}
+      style={args.style}
+    >
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-full"
+        aria-label="Fallback geospatial basemap"
+      >
         <defs>
           <linearGradient id="kg-geo-fallback-bg" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={SVG_FALLBACK_STYLE.oceanGradientStops[0]} />
@@ -557,6 +583,9 @@ const readPersistedViewMode = (): GeospatialViewMode => {
 
 export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.ReactElement | null {
   const active = props.active !== false
+  const [flightOverlayActive, setFlightOverlayActive] = React.useState(
+    () => readFlightGeoOverlay().active,
+  )
   const storeGeospatialViewMode = useGympgrphStore(s => s.geospatialViewMode)
   const geospatialAutoFitEnabled = useGympgrphStore(s => s.geospatialAutoFitEnabled)
   const geospatialFitRequest = useGympgrphStore(s => s.geospatialFitRequest)
@@ -597,6 +626,15 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       const next = normalizeGeospatialViewMode(detail.viewMode || readPersistedViewMode())
       setGeospatialViewMode(prev => (prev === next ? prev : next))
     })
+  }, [])
+
+  React.useEffect(() => {
+    const sync = () => {
+      const next = readFlightGeoOverlay().active
+      setFlightOverlayActive(previous => previous === next ? previous : next)
+    }
+    sync()
+    return subscribeFlightGeoOverlay(sync)
   }, [])
 
   const show2dMapLibreClassic = active && geospatialViewMode === '2d'
@@ -655,6 +693,9 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const selectedBounds = React.useMemo(() => computeBoundsFromCollections([selectedFeatureCollection]), [selectedFeatureCollection])
   const graphDataKey = React.useMemo(() => graphProjection.signature, [graphProjection.signature])
   const mapLibreRuntimeEnabled = show2dMapLibre || show3d
+  const flightBootstrapStyle = flightOverlayActive || props.flightBootstrapRequested === true
+    ? FLIGHT_GEO_BOOTSTRAP_STYLE
+    : null
 
   const notifyGrabMapsFallback = React.useCallback(() => {
     const overlayHandlers = getOverlayHandlers(props.snapshot, props.handlers)
@@ -780,6 +821,8 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     rootRef,
     containerRef: map2dContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
+    initialStyleOverride: flightBootstrapStyle,
+    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
     canvasRenderMode: '2d',
     projectionMode: 'mercator',
     viewportSizingMode: 'fit',
@@ -792,6 +835,8 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     rootRef,
     containerRef: map3dContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
+    initialStyleOverride: flightBootstrapStyle,
+    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
     canvasRenderMode: '3d',
     projectionMode: 'globe',
     viewportSizingMode: 'fit',
@@ -800,6 +845,18 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     onPoiClick: handlePoiClick,
   })
   const activeBasemap = show3d ? basemap3d : basemap2d
+  const enhancedLayerBounds = useEnhancedGeospatialHostLayers({
+    enabled: active && mapLibreRuntimeEnabled,
+    map: activeBasemap.map,
+    styleRevision: activeBasemap.styleRevision,
+    snapshot: props.snapshot,
+    handlers: props.handlers,
+    autoFitEnabled: geospatialAutoFitEnabled && !flightOverlayActive,
+    show3d,
+    fitPadding,
+    selectedBounds,
+    graphBounds,
+  })
 
   const graphSourceIdBase = 'kg-host-graph:nodes'
   const graphSourceIdClustered = `${graphSourceIdBase}:clustered`
@@ -807,6 +864,18 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const graphDataAppliedRef = React.useRef<{ map2d: string; map3d: string }>({ map2d: '', map3d: '' })
   const debugToastMessageRef = React.useRef<string>('')
   const [basemapGraphRevision, setBasemapGraphRevision] = React.useState(0)
+
+  useFlightGeoOverlayMapLibrePresentation({
+    active,
+    enhancedLayerBounds,
+    graphRevision: basemapGraphRevision,
+    map: activeBasemap.map,
+    mapLibreRuntimeEnabled,
+    onPresented: props.onFlightOverlayPresented,
+    rootRef,
+    styleRevision: activeBasemap.styleRevision,
+    viewMode: geospatialViewMode,
+  })
 
   const applyFeatureCollectionToBasemap = React.useCallback(
     (args: { basemapMap: any | null; styleRevision: number; viewMode: 'map2d' | 'map3d' }) => {
@@ -978,9 +1047,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     const readSourceFeatureCount = (sourceId: string): number | null => {
       if (!styleReady) return null
       try {
-        const src = basemapMap.getSource?.(sourceId) as { _data?: { features?: unknown[] } } | null
-        const features = src && src._data && Array.isArray(src._data.features) ? src._data.features : null
-        return features ? features.length : null
+        const sourceData = readGeoJsonSourceData(
+          basemapMap.getSource?.(sourceId),
+        )
+        return sourceData ? sourceData.features.length : null
       } catch {
         return null
       }
@@ -1046,22 +1116,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const [svgOverlayInsetRight, setSvgOverlayInsetRight] = React.useState(12)
   React.useEffect(() => {
     const measure = () => {
-      const rootRect = rootRef.current?.getBoundingClientRect?.()
-      if (!rootRect || typeof document === 'undefined') {
-        setSvgOverlayInsetRight(12)
-        return
-      }
-      const panels = Array.from(document.querySelectorAll('[aria-label="Floating panel"], [aria-label="Geospatial panel"]'))
-      let nextInsetRight = 12
-      for (const panel of panels) {
-        const rect = (panel as HTMLElement).getBoundingClientRect?.()
-        if (!rect) continue
-        const overlapWidth = Math.min(rootRect.right, rect.right) - Math.max(rootRect.left, rect.left)
-        const overlapHeight = Math.min(rootRect.bottom, rect.bottom) - Math.max(rootRect.top, rect.top)
-        if (overlapWidth <= 0 || overlapHeight <= 0) continue
-        if (rect.left < rootRect.left + rootRect.width * 0.35) continue
-        nextInsetRight = Math.max(nextInsetRight, Math.min(rootRect.width * 0.45, rootRect.right - rect.left + 16))
-      }
+      const nextInsetRight = Math.max(
+        12,
+        readFlightGeoMapOcclusionPadding(rootRef.current).right,
+      )
       setSvgOverlayInsetRight(prev => (Math.abs(prev - nextInsetRight) > 1 ? nextInsetRight : prev))
     }
     measure()
@@ -1083,6 +1141,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     const map = activeBasemap.map
     if (!map) return
     if (!active) return
+    if (flightOverlayActive) return
     if (show3d) return
     if (!geospatialAutoFitEnabled) return
     if (!graphBounds) return
@@ -1095,13 +1154,14 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     } catch {
       void 0
     }
-  }, [active, activeBasemap.map, fitPadding, geospatialAutoFitEnabled, graphBounds, graphDataKey, show3d])
+  }, [active, activeBasemap.map, fitPadding, flightOverlayActive, geospatialAutoFitEnabled, graphBounds, graphDataKey, show3d])
 
   const initialDataFitDoneRef = React.useRef<boolean>(false)
   React.useEffect(() => {
     const map = activeBasemap.map
     if (!map) return
     if (!active) return
+    if (flightOverlayActive) return
     if (show3d) return
     const featureCount = Array.isArray(graphFeatureCollection.features) ? graphFeatureCollection.features.length : 0
     if (featureCount <= 0) {
@@ -1116,7 +1176,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     } catch {
       void 0
     }
-  }, [active, activeBasemap.map, fitPadding, graphBounds, graphFeatureCollection.features, show3d])
+  }, [active, activeBasemap.map, fitPadding, flightOverlayActive, graphBounds, graphFeatureCollection.features, show3d])
 
   React.useEffect(() => {
     const map = activeBasemap.map
@@ -1211,56 +1271,17 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
 
   React.useEffect(() => {
     const map = activeBasemap.map
-    if (!map) return
-    if (!active) return
-    if (!geospatialFitRequest) return
-    if (geospatialFitRequest.mode === 'currentLocation') {
-      const zoom = Number.isFinite(geospatialFitRequest.zoom) ? geospatialFitRequest.zoom : Math.max(12, Number(map.getZoom?.() || 0))
-      try {
-        map.flyTo?.({
-          center: [geospatialFitRequest.lng, geospatialFitRequest.lat],
-          zoom,
-          duration: 0,
-        })
-      } catch {
-        try {
-          map.jumpTo?.({
-            center: [geospatialFitRequest.lng, geospatialFitRequest.lat],
-            zoom,
-          })
-        } catch {
-          void 0
-        }
-      }
-      clearGeospatialFitRequest()
-      return
-    }
-    if (geospatialFitRequest.mode === 'selection') {
-      if (selectedBounds) {
-        try {
-          map.fitBounds(selectedBounds, { padding: fitPadding, duration: 0 })
-        } catch {
-          void 0
-        }
-      } else if (graphBounds) {
-        try {
-          map.fitBounds(graphBounds, { padding: fitPadding, duration: 0 })
-        } catch {
-          void 0
-        }
-      }
-      clearGeospatialFitRequest()
-      return
-    }
-    if (graphBounds) {
-      try {
-        map.fitBounds(graphBounds, { padding: fitPadding, duration: 0 })
-      } catch {
-        void 0
-      }
-    }
+    if (!map || !active || !geospatialFitRequest) return
+    applyGeospatialFitRequest({
+      map,
+      request: geospatialFitRequest,
+      selectedBounds,
+      graphBounds,
+      enhancedBounds: enhancedLayerBounds,
+      padding: fitPadding,
+    })
     clearGeospatialFitRequest()
-  }, [active, activeBasemap.map, clearGeospatialFitRequest, fitPadding, geospatialFitRequest, graphBounds, selectedBounds])
+  }, [active, activeBasemap.map, clearGeospatialFitRequest, enhancedLayerBounds, fitPadding, geospatialFitRequest, graphBounds, selectedBounds])
 
   const debug = React.useMemo(() => {
     if (typeof window === 'undefined') return false
@@ -1296,7 +1317,12 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   }, [debug, graphFeatureCollection.features, overlayDebugInfo, props.handlers, props.snapshot])
 
   return (
-    <main ref={rootRef} className="relative w-full h-full" style={{ width: '100%', height: '100%' }}>
+    <main
+      ref={rootRef}
+      className="relative w-full h-full"
+      style={{ width: '100%', height: '100%' }}
+      data-kg-flight-sim-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}
+    >
       <SvgGeospatialFallback
         featureCollection={graphFeatureCollection}
         selectedFeatureCollection={selectedFeatureCollection}
@@ -1341,6 +1367,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
             zoom: {activeBasemap.probe.zoom.toFixed(2)} center: {activeBasemap.probe.lng.toFixed(4)},{activeBasemap.probe.lat.toFixed(4)}
           </p>
           <p>features: {Array.isArray(graphFeatureCollection.features) ? graphFeatureCollection.features.length : 0}</p>
+          <p>enhancedBounds: {enhancedLayerBounds ? enhancedLayerBounds.map(value => value.toFixed(3)).join(',') : 'none'}</p>
           {basemapGraphDebug ? (
             <>
               <p>styleReady: {basemapGraphDebug.styleReady ? 'yes' : 'no'} source: {basemapGraphDebug.activeSourceId}</p>

@@ -65,6 +65,7 @@ function failureResult(error, details = {}) {
       : {
           failingSystemIndex: details.failingSystemIndex,
           failingSystemName: details.failingSystemName,
+          failingSystemCause: message,
         }),
     error: {
       code: errorCode,
@@ -74,9 +75,17 @@ function failureResult(error, details = {}) {
         : {
             systemIndex: details.failingSystemIndex,
             systemName: details.failingSystemName,
+            cause: message,
           }),
     },
   };
+}
+
+function stableSystemName(system, systemIndex) {
+  const name = system.systemName;
+  return typeof name === "string" && name.trim() === name && name.length > 0
+    ? name
+    : `system-${systemIndex}`;
 }
 
 function reasoningTimeoutMs(request) {
@@ -285,7 +294,7 @@ export async function worldTick(world, input) {
           decisions,
           deferredDecisions: skippedReasoning,
           failingSystemIndex: systemIndex,
-          failingSystemName: `system-${systemIndex}`,
+          failingSystemName: stableSystemName(system, systemIndex),
         });
       } finally {
         systemContext.deactivate();
@@ -309,7 +318,24 @@ export async function worldTick(world, input) {
       };
     }
 
-    const { decisionExecutor, clock } = getWorldRuntimeOptions(world);
+    const { decisionExecutor, clock, reasoningPolicy } = getWorldRuntimeOptions(world);
+    if (reasoningPolicy === "forbid") {
+      return {
+        ok: true,
+        decisions,
+        deferred_decisions: reasoningRequests.map((request) =>
+          deferRequest(
+            request,
+            "inference_blocked",
+            "reasoning is forbidden by the World runtime policy",
+          )
+        ),
+        cost_logs: [{
+          ...createCostLog({ model: "none" }),
+          error: "blocked_inference",
+        }],
+      };
+    }
     const deferredDecisions = [];
     const costLogs = [];
 

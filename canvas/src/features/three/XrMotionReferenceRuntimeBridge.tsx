@@ -21,6 +21,11 @@ import { resolveXrMotionReferencePersistedValue } from './xrMotionReferencePersi
 import { resolveXrSubjectFootprint } from './xrMotionReferenceSubjectPlacement'
 import { resolveXrCanonicalSceneSpatialSource } from './xrCanonicalSceneSpatialSource'
 import { resolveXrSceneDocumentReady } from './xrSceneDocumentReadiness'
+import {
+  hydrateFlightSimSharedXrSceneSource,
+  isSourceAuthoredFlightSimDocument,
+  resolveCanonicalFlightSimXrPersistedValue,
+} from '@/features/game-flight-sim/flightSimSharedXrSceneSource'
 
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
 
@@ -61,11 +66,25 @@ export function hydrateCanonicalXrMotionReferenceRuntime(): boolean {
   const sceneKey = documentReady
     ? xrMotionReferenceSceneKey(state.markdownDocumentName || 'Untitled', graphData)
     : '__knowgrph:no-document__'
+  const persistedValue = resolveXrMotionReferencePersistedValue(
+    graphData?.metadata,
+  )
+  const flightSource = resolveCanonicalFlightSimXrPersistedValue({
+    activeDocumentName: state.markdownDocumentName,
+    activeDocumentText: state.markdownDocumentText,
+    currentPersistedValue: persistedValue,
+    graphData,
+  })
+  let effectivePersistedValue = persistedValue
+  if (flightSource.applies) {
+    if (!flightSource.ok) return false
+    effectivePersistedValue = flightSource.persistedValue
+  }
   resetCameraFramingRuntimeForDocument(sceneKey)
   hydrateXrMotionReferenceRuntime({
     sceneKey,
     nodes: graphData?.nodes || [],
-    persistedValue: resolveXrMotionReferencePersistedValue(graphData?.metadata),
+    persistedValue: effectivePersistedValue,
   })
   return documentReady
 }
@@ -114,13 +133,47 @@ export function XrMotionReferenceRuntimeBridge() {
   })))
   const persistedValue = resolveXrMotionReferencePersistedValue(graphData?.metadata)
   const persistedPhysicsValue = graphData?.metadata?.[XR_PHYSICS_GRAPH_METADATA_KEY]
+  const sceneKey = xrMotionReferenceSceneKey(
+    markdownDocumentName || 'Untitled',
+    graphData,
+  )
 
   useIsomorphicLayoutEffect(() => {
     if (!sourceFilesBootstrapReady) return
+    if (
+      persistedValue === undefined
+      && isSourceAuthoredFlightSimDocument(
+        markdownDocumentName,
+        markdownDocumentText,
+      )
+    ) {
+      let disposed = false
+      void hydrateFlightSimSharedXrSceneSource()
+        .then(hydrated => {
+          if (disposed || !hydrated) return
+          hydrateCanonicalXrPhysicsRuntime()
+          synchronizeBoundXrActorFromGraphSelection()
+        })
+        .catch(error => {
+          if (disposed) return
+          const message = error instanceof Error
+            ? error.message
+            : String(error || 'Flight Sim shared XR source failed.')
+          useGraphStore.getState().pushUiToast({
+            id: 'flight-sim:shared-xr-source:error',
+            kind: 'error',
+            message,
+          })
+        })
+      return () => {
+        disposed = true
+      }
+    }
     const documentReady = hydrateCanonicalXrMotionReferenceRuntime()
+    if (!documentReady) return
     hydrateCanonicalXrPhysicsRuntime()
-    if (documentReady) synchronizeBoundXrActorFromGraphSelection()
-  }, [graphData?.nodes, markdownDocumentName, markdownDocumentText, persistedPhysicsValue, persistedValue, selectedNodeId, sourceFilesBootstrapReady])
+    synchronizeBoundXrActorFromGraphSelection()
+  }, [graphData?.nodes, markdownDocumentName, markdownDocumentText, persistedPhysicsValue, persistedValue, sceneKey, selectedNodeId, sourceFilesBootstrapReady])
 
   return null
 }

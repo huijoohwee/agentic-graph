@@ -1,238 +1,320 @@
 ---
-schema: kgc-computing-flow/v1
-id: knowgrph-agent-ready-prd-tad
-version: 1.27.7
-status: implemented
-created: 2026-05-21
-updated: 2026-05-29
-author: airvio / joohwee
-domain: knowgrph
-tags: [agent-ready, auth-md, cloudflare, dns-aid, mcp, webmcp, a2a, markdown, share-url, source-files, workspace, chat, kgc, canvas, prd, tad]
-source_audit: isitagentready.com / Cloudflare Is Your Site Agent-Ready? + in-repo implementation audit
-constraints:
-  - solo-dev
-  - tco-zero
-  - foss-first
-  - cloudflare-native
-  - token-efficient
-related:
-  - prd-tad-guidelines.md
-  - knowgrph-agent-ready-cloudflare-isitagentready.md
-  - knowgrph-mcp/knowgrph-mcp-service-prd-tad.md
+title: "Agent-Ready Surface Contract"
+id: "md:knowgrph-agent-ready-prd-tad"
+doc_type: "Product and Technical Specification"
+version: "1.28.0"
+date: "2026-07-30"
+lang: "en-US"
+owner: "cloudflare.pages.agent-ready.surface"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-agent-ready-prd-tad.md"
+guideline_version: "1.7.0"
+reference_implementation_label: "reference implementation"
+companion: "docs/documents/knowgrph-agent-ready-prd-tad.companion.md"
+runtime_companion: "docs/documents/knowgrph-agent-ready-prd-tad.runtime.md"
 ---
 
-# Knowgrph Agent Ready - PRD + TAD (Implementation Accurate + Enhanced)
+# Agent-Ready Surface Contract
 
-## Executive Summary
+## Reference implementation: repository discovery, retrieval, and canvas context
 
-This document replaces two stale narratives at once:
+This combined PRD/TAD defines the source contract for agent discovery and
+browser-local context. Source presence does not prove mirror, runtime, or
+production delivery.
 
-- scan-style narratives that still describe Knowgrph as missing Link headers, Markdown
-  negotiation, or WebMCP on `https://airvio.co/knowgrph/`
-- roadmap narratives that blur the boundary between the shipped read-only Pages MCP surface and
-  a larger planned remote MCP platform documented separately in
-  `docs/documents/knowgrph-mcp/knowgrph-mcp-service-prd-tad.md`
-- crawl-path narratives that imply agents should read Markdown-pane content from
-  `huijoohwee/docs` instead of the published Editor Workspace -> Source Files -> D1 document-view
-  pipeline
+### Readiness declaration
 
-In the current repo, Knowgrph already ships the service-homepage agent-readiness surface on
-`https://airvio.co/knowgrph/`, plus a separate in-browser MainPanel -> FloatingPanel Chat -> KGC
-or literal MCP structured response -> Editor Workspace -> Canvas pipeline that is richer than the deployed read-only MCP surface but is not yet exposed
-as a first-class MCP tool chain. It also ships a local long-horizon SuperAgent harness through
-`knowgrph_parser`, `npm run goal:run`, and local MCP `knowgrph.superagent.run`; that local harness
-is not a deployed public mutation tool.
+| Scope | Local rung | Delivered rung | Basis |
+|---|---|---|---|
+| Agent-ready contract | `spec-complete` | `undocumented` | VCCs are stated; no Evidence Reference with a recorded result is attached. |
 
-For current remote MCP onboarding, start with
-`docs/documents/knowgrph-mcp-onboarding-index.md`, then use
-`docs/documents/knowgrph-mcp-install-contract.md` for the canonical
-public-discovery vs control-plane endpoint boundary.
-Map intent on `https://airvio.co/knowgrph/mcp`, orchestrate agents on
-`https://airvio.co/knowgrph/control-plane/mcp` only for session-capable hosts,
-and prove outcomes first with the source-side `README.md` or
-`docs/documents/knowgrph-superagent-harness.md` offline path.
+The only allowed order is `undocumented` → `spec-complete` → `dev-proven` →
+`runtime-ready` → `production-verified`.
 
-The active work is therefore not "add the first agent-ready surface." The active work is:
+### PRD
 
-- keep deployed discovery owned upstream in `knowgrph`
-- keep `/knowgrph/` as the canonical service homepage for agent discovery
-- preserve the shipped seven-tool read-only Pages MCP contract and the app-installed browser
-  WebMCP contract with 23 inspectors/reads plus three guarded browser-local controls
-- publish DNS-AID service-binding records under `_agents.airvio.co` so agent discovery can start
-  from DNS before falling through to HTTP `.well-known` artifacts
-- keep crawler-visible Markdown reads pinned to the published D1-backed Source Files and doc-view
-  routes that derive from the Editor Workspace Markdown pane
-- document MainPanel `mcp` and `integrations` as thin shells over shared `SettingsView` ownership
-  instead of parallel configuration systems
-- document the existing FloatingPanel Chat -> LLM output -> YAML frontmatter or literal MCP structured content -> Editor Workspace -> Canvas graph
-  pipeline as the only valid upstream path for future MCP-aligned pipeline work
-- document the native local SuperAgent harness as a source-owned CLI/local-MCP execution surface,
-  inspired by DeerFlow primitives but not copied from DeerFlow and not deployed through Pages MCP
-- prevent drift between browser WebMCP, HTTP MCP, MainPanel surfaces, chat submit helpers, canvas
-  parsing, storage routes, and publish sync
-- forbid stale architecture claims that the full remote MCP pipeline, auth, monetization, or graph
-  mutation platform is already deployed when those capabilities remain planned elsewhere
+#### Problem and target outcome
 
-## Scope
+An agent must discover source-backed content, read it without model spend, and
+understand which capabilities are read-only versus guarded. A browser operator
+must be able to pass validated structured content into the existing editor and
+canvas pipeline without implying that browser controls exist on the public
+read-only transport.
 
-### Product scope
+#### Personas and journey
 
-Make `https://airvio.co/knowgrph/` discoverable to agents, browser-resident tools, and
-Cloudflare-based crawlers without introducing a parallel architecture, duplicate deploy owner, or
-stale downstream patches.
+| Stage | Reader host | Browser operator | Friction addressed |
+|---|---|---|---|
+| Trigger | Needs repository context. | Needs contextual inspection or an approved action. | Similar transports have different capabilities. |
+| Discover | Selects the Pages read surface. | Loads the app WebMCP registry. | Exact counts and trust are made explicit. |
+| Engage | Calls one of 7 read-only tools. | Uses one of 30 reads or chooses one of 11 guarded controls. | Invalid or unavailable operations fail closed. |
+| Complete | Receives a typed source result. | Receives a typed result or denial. | Partial failure remains visible. |
+| Return | Reuses the authoritative install guidance. | Reuses browser-local context and app state. | No duplicate endpoint recipe. |
 
-Crawler-visible Markdown pane content must resolve from the published Editor Workspace -> Source
-Files -> storage-worker D1 document routes, not from repo-local docs trees such as
-`$GITHUB_ROOT/huijoohwee/docs`.
+#### User stories
 
-### Deployment topology
+- **As a** reader host **I want** seven stable read tools **so that** I can
+  acquire source context with zero model spend.
+- **As a** browser operator **I want** 30 reads separated from 11 guarded
+  controls **so that** I can approve side effects intentionally.
+- **As a** document author **I want** one validated workspace-to-canvas path
+  **so that** MCP input cannot create a parallel graph authority.
 
-```text
-Dev SSOT
-  $GITHUB_ROOT/knowgrph
-    -> npm run pages:build-sync
+#### Requirements
 
-Prod static mirror
-  $GITHUB_ROOT/huijoohwee/content/knowgrph
-    -> mirrored app payload only
+| ID | Requirement | Priority |
+|---|---|---|
+| `PRD-AR-01` | Pages HTTP discovery exposes exactly 7 read-only source tools. | Must |
+| `PRD-AR-02` | App WebMCP exposes exactly 41 tools: 30 read-only and 11 guarded controls. | Must |
+| `PRD-AR-03` | Browser-local controls never appear in the Pages read-only contract. | Must |
+| `PRD-AR-04` | Source reads and inspection require zero model calls. | Must |
+| `PRD-AR-05` | Validated structured content follows one Editor Workspace → parser → Canvas path. | Must |
+| `PRD-AR-06` | Missing configuration, invalid input, or absent approval fails closed with a typed outcome. | Must |
+| `PRD-AR-07` | Local stdio and the remote Worker remain separate MCP surfaces, not expansions of Pages. | Must |
+| `PRD-AR-08` | Additional public controls wait for a separately specified trust, spend, and evidence gate. | Won't in this increment |
 
-Prod Pages route owner
-  $GITHUB_ROOT/huijoohwee/functions/knowgrph/[[path]].js
-    -> generated from cloudflare/pages/knowgrph-agent-ready.mjs
+#### MoSCoW and ROI
 
-Prod Pages root config
-  $GITHUB_ROOT/huijoohwee/{_headers,_redirects,.well-known/*}
+Scores use `(impact × reach) / (build + TCO + token cost)` with normalized
+0–10 inputs.
 
-Cloudflare Pages
-  https://airvio.co/knowgrph/
+| Tier | Scope | Impact × reach | Cost scores | ROI | Rationale |
+|---|---|---:|---:|---:|---|
+| Must | `PRD-AR-01` through `PRD-AR-07` | `9 × 8` | `4 + 0 + 0` | `18.0` | Preserves the useful read/canvas path without a new service. |
+| Should | None | — | — | — | Evidence gates take priority. |
+| Could | None | — | — | — | No extra surface is needed for first value. |
+| Won't | `PRD-AR-08` without new trust/spend evidence | `2 × 2` | `8 + 5 + 8` | `0.19` | Public controls would blend trust and increase TCO/token risk. |
+
+#### Acceptance criteria
+
+| Requirement | Given / When / Then | VCC |
+|---|---|---|
+| `PRD-AR-01` | Given Pages tool discovery, when the registry is read, then the seven exact read-only names are returned. | `VCC-AR-01` |
+| `PRD-AR-02` | Given app registration, when tool annotations are classified, then 41 names split 30/11. | `VCC-AR-02` |
+| `PRD-AR-03` | Given both registries, when names and annotations are compared, then no guarded browser control is present on Pages. | `VCC-AR-03` |
+| `PRD-AR-05` | Given valid structured content, when it is accepted, then one canonical editor/parser/canvas path receives it. | `VCC-AR-04` |
+| `PRD-AR-06` | Given invalid input or absent approval, when an operation is requested, then no side effect occurs and a typed denial is surfaced. | `VCC-AR-05` |
+
+#### Success metrics and economics
+
+| Metric | Baseline | Target | Timeline / check |
+|---|---|---|---|
+| TTV steps / elapsed | Unmeasured | At most 3 actions / 5 minutes. | Clean-client VCC before promotion. |
+| Discovery/read model tokens | 0 by source path | 0 per request. | Every registry change. |
+| Guarded-control token budget | Owner-dependent | Numeric prompt/completion cap, cache target, max iterations, and circuit breaker before execution. | Owner VCC. |
+| Local/browser 12-month incremental TCO | Existing app; actual unmeasured | USD 0 new license/store. | Quarterly review. |
+| Pages 12-month incremental TCO | Delivery actual unmeasured | USD 0 until nonzero budget is approved. | Publication gate. |
+| Added persistent stores | 0 | 0. | Architecture review. |
+| ROI | `18.0` estimate | At least `10.0`. | Recompute on scope/cost change. |
+
+The open-protocol/direct-adapter baseline has USD 0 license cost. A proprietary
+gateway requires a later ADR with managed, self-managed, and hybrid TCO.
+
+#### Minimum scope, exclusions, and dependencies
+
+| Kind | Contract |
+|---|---|
+| Minimum scope | Seven Pages reads, 41 browser tools split 30/11, zero-token reads, and one validated canvas path. |
+| Out of scope | Public guarded controls, a unified proxy, a second workspace/parser/store, and a delivery claim. |
+| Dependencies | Shared tool contract, Pages/browser adapters, source readers, Editor Workspace, parser, and Canvas owners. |
+| Open measurement | Clean-client TTV, p95 discovery latency, and environment-specific delivery TCO; close through VCC evidence. |
+
+### TAD
+
+#### Surface contract
+
+| Surface | Source truth | Local rung | Delivered rung |
+|---|---|---|---|
+| Pages HTTP MCP | Exactly 7 read-only tools. | `spec-complete` | `undocumented` |
+| App WebMCP | Exactly 41 tools: 30 read-only, 11 guarded controls. | `spec-complete` | `undocumented` |
+| Local stdio MCP | Broader and configuration-gated. | `spec-complete` | `undocumented` |
+| Remote Worker MCP | Separate 10-tool registry, delivery unit, bearer-authenticated session transport. | `spec-complete` | `undocumented` |
+
+The Worker is contextual only; it is not part of the agent-ready Pages surface.
+Its endpoint invocation and session steps are owned by
+[the install contract](knowgrph-mcp-install-contract.md).
+
+#### Pages tool set
+
+1. `search`
+2. `fetch`
+3. `list_source_files`
+4. `read_source_file`
+5. `read_shared_document`
+6. `inspect_shared_document_structure`
+7. `inspect_agent_surface`
+
+#### Workflow flow
+
+**Trigger:** a reader needs source context or a browser operator selects an
+app-local operation.
+
+**Happy path:** discover the intended registry → validate typed arguments →
+invoke its owner → return a typed result → optionally project validated
+structured content through the canonical canvas path.
+
+**Alternate path:** when a browser-only tool is requested through Pages, return
+the Pages capability boundary rather than proxying it.
+
+**Error path:** invalid identifier, unavailable source, missing runtime owner, or
+denied control returns a typed error and no side effect.
+
+**Postcondition:** the result identifies its surface; source state is unchanged
+for all read operations.
+
+```mermaid
+sequenceDiagram
+    participant U as Reader or operator
+    participant R as Registry adapter
+    participant O as Source/control owner
+    participant W as Editor Workspace
+    participant C as Canvas
+    U->>R: initialize, discover, invoke
+    R->>O: validated read or approved control
+    O-->>R: typed result or denial
+    R-->>U: surface-identified result
+    U->>W: accept validated structured content
+    W->>C: canonical parse and apply
 ```
 
-### Critical correction
+#### Data flow
 
-`huijoohwee/content/knowgrph` is not the complete deploy authority for agent-readiness. It is a
-mirrored artifact tree. The deployed discovery and route behavior is jointly owned by:
+| Stage | Component | Input | Output | Persistence | Error handling |
+|---|---|---|---|---|---|
+| Discover | Shared tool contract | Registry request | Typed descriptors | None | Protocol error |
+| Read | Source/shared-document owner | Allowlisted identifier | Text or structured content | Source-owned | Typed missing/denied result |
+| Validate | Structured-content validators | KGC Markdown or MCP structured content | Validated document | None | Reject invalid structure |
+| Store | Editor Workspace owner | Validated document | Workspace document | App/source-store owned | Preserve prior document on failure |
+| Consume | Parser and Canvas owner | Workspace document | Graph projection | App-local | Surface parse/apply error |
 
-- `knowgrph/cloudflare/pages/knowgrph-agent-ready.mjs`
-- `knowgrph/scripts/sync-pages-knowgrph.mjs`
-- `huijoohwee/functions/knowgrph/[[path]].js`
-- `huijoohwee/_headers`
-- `huijoohwee/_redirects`
+This data flow traces to Engage and Complete in the journey.
 
-## Product Goals
+#### Journey → system mapping
 
-Knowgrph must:
+| Journey stage | Workflow | Data flow | Harness | Topology | Component |
+|---|---|---|---|---|---|
+| Trigger | Select read or browser need | User intent | None | Client/app | Install guidance |
+| Discover | Initialize/list | Registry descriptors | Dispatcher, zero model calls | Shared contract + adapter | Registry |
+| Engage | Invoke | Source/control request | Read owner or approval gate | Adapter + owner | Tool owner |
+| Complete | Receive/project | Typed result → optional validated document | Observer/validator | Client + workspace | Validator/workspace |
+| Return | Reuse context | Workspace/canvas state | Circuit breaker on denial/failure/budget | App state | Canvas owner |
 
-- expose machine-readable discovery metadata without requiring HTML scraping
-- expose a valid A2A Agent Card at the standard well-known path
-- expose DNS-AID ServiceMode SVCB records for the Knowgrph index, MCP endpoint, and A2A descriptor
-  under the Cloudflare-managed `airvio.co` zone
-- keep HTML as the default human response on `/knowgrph/`
-- return Markdown for agent requests on `/knowgrph/` when `Accept: text/markdown`
-- expose seven read-only published HTTP/HTML MCP tools, plus bounded app-installed browser tools
-  that inspect or explicitly control only the open local Camera, Animation, and XR scene runtimes
-- keep the default published workspace readable without requiring a caller-supplied `workspaceId`
-- keep MainPanel `mcp` and MainPanel `integrations` aligned to the same upstream settings and chat
-  routing owners instead of diverging into duplicate surfaces
-- keep MainPanel `commerce` aligned to the shared Agentic Commerce route and semantic-key owner
-  instead of duplicating payment, Web3, governance, proof, or trace readiness in the browser UI
-- preserve one canonical document identity and path contract across Editor Workspace, Source Files,
-  FloatingPanel Chat, frontmatter or structured-surface validation, canvas parsing, storage routes, and agent surfaces
-- preserve one canonical KGC contract where the LLM output starts at YAML frontmatter and uses
-  `flow.subgraphs` as the sole grouping authoring surface
-- prevent stale or conflicting Cloudflare control surfaces, mirror-owned route logic, apex-root PWA
-  drift, and duplicate MCP-only chat-to-canvas pipelines
+#### Orchestration/harness flow
 
-## Non-Goals
+```mermaid
+flowchart LR
+    A["Reader or browser operator"] --> B["Registry dispatcher"]
+    B --> C{"Read-only or guarded?"}
+    C -->|Read-only| D["Source owner · zero model calls"]
+    C -->|Guarded| E["Runtime owner + approval gate"]
+    D --> F["Typed result validator"]
+    E --> F
+    F --> G["Client or Editor Workspace"]
+    G --> H["Parser → Canvas projection"]
+```
 
-Knowgrph does not currently aim to:
+The MCP layer contains no agentic loop. A guarded owner that invokes a model
+must emit spend data and enforce its own finite iteration bound; denial,
+exhausted budget, or typed owner failure is the circuit breaker.
 
-- expose write-capable published HTTP/HTML MCP tools or unbounded browser mutation tools
-- expose the user's unsaved local browser draft directly as a deployed Cloudflare document
-- move full Knowgrph route ownership or app identity onto the apex homepage `https://airvio.co/`
-- introduce a second agent-ready implementation path outside `knowgrph`
-- preserve legacy or conflicting architecture descriptions through compatibility aliases
-- emulate DNS-AID through TXT records, HTTP-only aliases, or app-local code in place of real DNS
-  records
+#### Topology v1.28.0
 
-## Current Implementation Status
-| Capability | Status | Canonical owner | Remaining gap |
+| Node | Role | Type | Lane | Connection | Data residency |
+|---|---|---|---|---|---|
+| Shared contracts | Catalog producer | Repository module | Authoring | Synchronous import | Authoring filesystem |
+| App WebMCP runtime | Browser gateway | App module | Authoring/runtime target | In-process calls | Browser app state |
+| Editor/parser/canvas | Consumer/projector | App modules | Authoring/runtime target | In-process state flow | Browser/workspace owners |
+| Mirror artifact | Faithful copy | Repository artifact | Mirror | Explicit batch copy | Mirror repository |
+| Pages adapter | Read gateway | Edge function | Delivery | Synchronous HTTP JSON-RPC | Delivery environment; no MCP-owned store |
+| Reader host | Consumer | MCP client | Delivery | Synchronous HTTP JSON-RPC | Client-owned |
+
+```mermaid
+flowchart TB
+    subgraph A["Authoring boundary · local source residency"]
+        C["Shared agent-ready contracts"]
+        B["App WebMCP runtime"]
+        E["Editor Workspace → parser → Canvas"]
+    end
+    subgraph M["Mirror boundary"]
+        R["Faithful source artifact"]
+    end
+    subgraph D["Delivery boundary · environment-owned"]
+        P["Pages HTTP adapter"]
+        H["Reader host"]
+    end
+    C -->|"sync module import"| B
+    B -->|"sync app state"| E
+    C -.->|"explicit batch mirror"| R
+    R -.->|"explicit publication"| P
+    H -->|"sync JSON-RPC"| P
+```
+
+Dashed edges require an explicit operator action. No storage location or
+delivery state is inferred from this authoring document.
+
+#### Source ownership
+
+| Concern | SVO responsibility | Interface/configuration | Local rung | Delivered rung |
+|---|---|---|---|---|
+| Shared definitions | Contract defines names, schemas, and annotations. | Module import; `knowgrphAgentReadyToolContract.mjs` | `spec-complete` | `undocumented` |
+| Browser registration | Runtime registers 41 browser tools. | WebMCP; `webMcpRuntime.ts` and app startup | `spec-complete` | `undocumented` |
+| Pages adapter | Adapter serves seven reads. | HTTP JSON-RPC; `knowgrph-agent-ready.mjs` | `spec-complete` | `undocumented` |
+| Structured validation | Validator accepts or rejects structured response content. | Typed/KGC document; chat validation owners | `spec-complete` | `undocumented` |
+| Editor/canvas bridge | Bridge persists then projects the canonical document. | Workspace/parser/canvas interfaces | `spec-complete` | `undocumented` |
+
+File-level invariants and forbidden projections are in
+[the companion](knowgrph-agent-ready-prd-tad.companion.md). The legacy runtime
+companion is implementation detail and cannot override the counts or readiness
+declared here.
+
+#### Decision, quality, and reach
+
+The discovery-first versus unified-proxy decision is owned by `MCP-ADR-01` in
+[the MCP service contract](knowgrph-mcp/knowgrph-mcp-service-prd-tad.md); this
+document does not redeclare it.
+
+| Attribute | Target | Planned validation |
+|---|---|---|
+| Security | Invalid or unapproved work produces no side effect. | Negative-path VCC. |
+| Performance | Discovery is at most 1 second p95 on the selected runtime target. | Bounded runtime measurement. |
+| Browser reach | App registry is 41 tools; Pages is 7 reads. | Separate registry checks. |
+| Mobile reach | HTTP reads require an MCP-capable mobile client; browser controls require capability support. | Supported-client clean run. |
+| Offline behavior | Existing local/app state may work; HTTP reports unavailable and never silently falls back. | Network-off negative check. |
+| Token/TCO | Reads use 0 model tokens; no new store/license. | Cost spy and quarterly review. |
+
+#### Requirement traceability
+
+| PRD requirements | TAD interfaces | VCCs |
+|---|---|---|
+| `PRD-AR-01`, `03`, `04` | Pages adapter and read catalog | `VCC-AR-01`, `VCC-AR-03` |
+| `PRD-AR-02`, `06` | Browser registry and approval gates | `VCC-AR-02`, `VCC-AR-05` |
+| `PRD-AR-05` | Validator → Editor Workspace → parser → Canvas | `VCC-AR-04` |
+| `PRD-AR-07` | Federation boundary and install reference | `VCC-AR-03` |
+
+#### VCC register
+
+| ID | End state | Stated check | Constraint | Evidence Reference |
+|---|---|---|---|---|
+| `VCC-AR-01` | Pages exposes exactly the seven names above, all read-only. | Run the focused Pages parity test and surface count, names, and annotations. | No guarded control; one run. | None recorded |
+| `VCC-AR-02` | App WebMCP exposes 41 unique names split 30/11. | Run the focused WebMCP runtime test and surface classification counts. | No duplicate name; one run. | None recorded |
+| `VCC-AR-03` | Pages is a strict read-only subset boundary. | Compare the two surfaced registries. | Do not change tool implementations. | None recorded |
+| `VCC-AR-04` | Valid structured content reaches the canonical Canvas path. | Run the focused structured-response/canvas bridge test and surface the asserted owner path. | No second parser or persistence path. | None recorded |
+| `VCC-AR-05` | Invalid or unapproved operations cause no side effect. | Run focused negative-path tests and surface denial plus unchanged-state assertions. | Stop on first unexpected mutation. | None recorded |
+
+Named checks above are planned VCC hosts, not evidence. Local readiness remains
+`spec-complete`. Delivered readiness remains `undocumented`.
+
+#### Readiness gap and boundary
+
+| Workstream | Local rung | Delivered rung | Gap |
 |---|---|---|---|
-| Link headers on service homepage | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` | Headers exist on `/knowgrph/`; apex `/` remains intentionally excluded |
-| Link headers on root homepage | Implemented | `scripts/sync-pages-knowgrph.mjs` + `huijoohwee/_headers` | Root `/` advertises Knowgrph discovery without moving route ownership out of `knowgrph` |
-| Auth.md agent registration metadata | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` + `scripts/check-auth-md.mjs` | `/auth.md` is Markdown, Protected Resource Metadata points agents at the site-owned authorization-server metadata, and that metadata includes `agent_auth`; registration remains user-mediated through the existing auth boundary |
-| DNS-AID records | Implemented | `scripts/dns-aid-records.mjs` + `scripts/publish-dns-aid-cloudflare.mjs` + `scripts/check-dns-aid-cloudflare.mjs` | `_index._agents.airvio.co`, `_mcp._agents.airvio.co`, and `_a2a._agents.airvio.co` return DNSSEC-authenticated ServiceMode SVCB records |
-| Markdown negotiation on homepage | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` + `cloudflare/pages/root-agent-ready-index.mjs` | Accept parsing is intentionally narrow to `text/markdown` |
-| Markdown negotiation on shared published docs | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` + `cloudflare/workers/knowgrph-storage/wrangler.toml` + `scripts/sync-pages-knowgrph.mjs` | Pages server-side shared-doc and MCP storage reads use the storage worker `workers.dev` origin to avoid custom-domain self-fetch rewrites |
-| Knowgrph health endpoint | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` | App-scoped route stays the canonical status surface |
-| A2A Agent Card | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` | Card advertises current machine interfaces; it does not imply a full new task runtime |
-| Browser WebMCP tool registration | Implemented | `canvas/src/features/agent-ready/webMcpRuntime.ts` + `canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs` | App runtime installs 28 tools: 24 read-only retrieval/inspection tools plus guarded `control_local_camera`, `control_local_animation`, `control_local_motion_control`, and `control_local_xr_scene` mutations of the open browser-local runtime; Motion Control inspection returns status, summarized pose, and strict scene-authored object/physics records, never camera frames, camera box coordinates, or camera-derived identities. The separate three-tool Agentic ECS stdio session is intentionally absent from browser WebMCP. |
-| Browser WebMCP lifecycle hardening | Implemented | `canvas/src/features/agent-ready/webMcpLifecycle.mjs` + `canvas/src/features/agent-ready/webMcpRuntime.ts` | Runtime and fallback expose `provideContext`, `registerTool`, readable `tools`, and paired `document.modelContext`/`navigator.modelContext` late binding; contexts with both APIs receive one canonical `provideContext({ tools })` publication instead of duplicate registration |
-| Browser-local workspace document inspector | Implemented | `canvas/src/features/agent-ready/webMcpRuntime.ts` + `canvas/src/hooks/useGraphStore.ts` | Exposed only in the app-installed browser runtime; not part of the shared deployed Pages HTTP/HTML tool contract |
-| Browser-local canvas topology inspector | Implemented | `canvas/src/features/agent-ready/webMcpRuntime.ts` + `canvas/src/features/agent-ready/localCanvasTopologyInspection.ts` | Reuses active-view derivation and graph-topology helpers in the app runtime only; not part of the shared deployed Pages HTTP/HTML tool contract |
-| Browser-local canvas snapshot inspector | Implemented | `canvas/src/features/agent-ready/webMcpRuntime.ts` + `canvas/src/features/agent-ready/localCanvasSnapshotInspection.ts` | Reuses the store-owned canvas SVG snapshot seam in the app runtime only; not part of the shared deployed Pages HTTP/HTML tool contract |
-| Browser-local 3d camera pose inspector | Implemented | `canvas/src/features/agent-ready/webMcpRuntime.ts` + `canvas/src/features/agent-ready/localThreeCameraPoseInspection.ts` | Reuses the store-owned 3d camera pose seam in the app runtime only; not part of the shared deployed Pages HTTP/HTML tool contract |
-| Browser-local 3d layout-position inspector | Implemented | `canvas/src/features/agent-ready/webMcpRuntime.ts` + `canvas/src/features/agent-ready/localThreeLayoutPositionsInspection.ts` | Reuses the store-owned 3d layout-position seam in the app runtime only, with a bounded sampled payload; not part of the shared deployed Pages HTTP/HTML tool contract |
-| Browser-local 2d zoom/viewport inspector | Implemented | `canvas/src/features/agent-ready/webMcpRuntime.ts` + `canvas/src/features/agent-ready/local2dZoomViewportInspection.ts` | Reuses the keyed 2d zoom-state seam in the app runtime only, with renderer-aware active-view key resolution; not part of the shared deployed Pages HTTP/HTML tool contract |
-| Browser-local Source Files snapshot inspector | Implemented | `canvas/src/features/agent-ready/webMcpRuntime.ts` + `canvas/src/features/agent-ready/localSourceFilesSnapshotInspection.ts` | Reuses the in-memory Source Files runtime snapshot, active workspace path, and existing composition/storage signatures in the app runtime only; not part of the shared deployed Pages HTTP/HTML tool contract |
-| HTML fallback WebMCP injection | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` + `cloudflare/pages/root-agent-ready-index.mjs` | Inline fallback stays contract-equal with the seven-tool read-only published contract; root `/` no longer meta-refreshes during scanner execution |
-| HTTP MCP transport | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` | Tool surface is read-only only, by design |
-| Shared tool-schema contract | Implemented | `canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs` | Future published tools must extend this shared upstream contract; browser-only tools may opt in explicitly without leaking into Pages MCP |
-| MainPanel Integrations hub | Implemented | `canvas/src/features/panels/MainPanel.tsx` + `canvas/src/features/panels/views/IntegrationsHubView.tsx` + `canvas/src/features/panels/views/SettingsView.tsx` | Integrations is a thin `SettingsView` specialization, not a second routing owner |
-| MainPanel MCP hub | Implemented | `canvas/src/features/panels/MainPanel.tsx` + `canvas/src/features/panels/views/McpHubView.tsx` + `canvas/src/features/panels/views/SettingsView.tsx` | MCP is also a thin `SettingsView` specialization, not a separate chat pipeline |
-| MainPanel Commerce hub | Implemented | `grph-shared/src/payments/agenticCommerceSsot.ts` + `canvas/src/features/panels/views/CommerceHubView.tsx` | Commerce is the canonical payment/agent-buyable operator surface; route readiness is read from `AGENTIC_COMMERCE_MAIN_PANEL_READINESS`, keyed by `buildAgenticCommerceMainPanelReadiness`, and published to browser-local agent inspection |
-| Chat integration routing and presets | Implemented | `canvas/src/features/panels/views/useSettingsChatAssist.tsx` + `canvas/src/features/panels/views/settingsView.constants.ts` | Future MCP deep links must reuse the same chat routing, model, and open-panel helpers |
-| FloatingPanel chat submit pipeline | Implemented | `canvas/src/features/chat/floatingPanelChat/useFloatingPanelChatSubmit.ts` + coordinator helpers | Browser-local today; not yet exposed as a first-class WebMCP or HTTP MCP tool chain |
-| KGC and literal MCP structured-surface validation | Implemented | `canvas/src/features/chat/floatingPanelChat/floatingPanelChatKgcAttempt.ts` + `canvas/src/features/chat/chatMarkdownValidation.ts` + recovery helpers | Wrapper prose and parallel grouping aliases are rejected or stripped upstream; renderable literal MCP `structuredContent` finalizes without KGC retry |
-| Chat finalize -> canvas apply | Implemented | `canvas/src/features/chat/floatingPanelChat/useFinalizeAssistantSuccess.ts` + `canvas/src/features/chat/chatKgcCanvasApply.ts` | Writes canonical workspace KGC or projected MCP structured response first, then applies to graph through existing store actions |
-| Frontmatter-flow parse priority and graph composition | Implemented | `canvas/src/features/parsers/default.ts` + `canvas/src/features/parsers/markdownFrontmatterFlowGraph.*` | `tryParseMarkdownFrontmatterFlowGraph()` remains first parse priority for structured KGC Markdown |
-| Subgraph/group projection | Implemented | `canvas/src/lib/graph/subgraphs.ts` + `canvas/src/components/GraphCanvas/layout/graphGroups.ts` | `flow.subgraphs` remains the sole authoring surface; rendered groups are downstream projection only |
-| API catalog | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` | `status` relation now targets `/knowgrph/health` |
-| OpenAPI document | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` | Health, MCP, and storage reads are documented from the existing route owner |
-| Agent Skills index | Implemented | `cloudflare/pages/knowgrph-agent-ready.mjs` | Index is intentionally minimal |
-| Default workspace markdown doc route | Implemented | `cloudflare/workers/knowgrph-storage/index.ts` | Published default workspace only |
-| Source Files index and `llms.txt` | Implemented | `cloudflare/workers/knowgrph-storage/crawler.ts` | Service doc remains intentionally compact |
-| Crawler-visible Markdown pane path | Implemented | `cloudflare/workers/knowgrph-storage/crawler.ts` + `cloudflare/workers/knowgrph-storage/index.ts` | Agents read published Editor Workspace Markdown through D1-backed Source Files index and doc-view routes, not from repo-local docs directories |
-| Local long-horizon SuperAgent harness | Implemented locally | `knowgrph_parser/superagent_harness.py`, `knowgrph_parser/superagent_plan.py`, `knowgrph_parser/superagent_tools.py`, `mcp/server.js`, `mcp/local-tool-contract.js` | CLI/local MCP only; not a deployed Pages/WebMCP mutation service; DeerFlow is conceptual inspiration only |
-| Publish sync and Pages control-file hygiene | Implemented | `scripts/sync-pages-knowgrph.mjs` | Must keep mirror non-authoritative |
-| PWA base-path correctness | Implemented | `canvas/index.html` and Pages root config | Must keep `%BASE_URL%manifest.webmanifest` invariant |
-| Full remote MCP pipeline platform from the separate MCP service PRD/TAD | Planned extension | `docs/documents/knowgrph-mcp/knowgrph-mcp-service-prd-tad.md` | Must not be documented here as already shipped on the Pages agent-ready surface |
-| Agentic OS Canvas UI and cross-repo build/control dashboard | Follow-on Track C | `docs/documents/knowgrph-mcp/knowgrph-mcp-agentic-os-prd-tad.md` + [`knowgrph-agentic-os-follow-on-prd-tad.md`](knowgrph-agentic-os-follow-on-prd-tad.md) | Dry-run plan **implemented** (`knowgrph.agentic_canvas_os.plan`); Canvas Storyboard render + live lanes → follow-on Track C; HITL/live deploy → Tracks A/B |
+| Pages registry | `spec-complete` | `undocumented` | No attached Evidence Reference. |
+| Browser registry | `spec-complete` | `undocumented` | No attached Evidence Reference. |
+| Structured-content canvas path | `spec-complete` | `undocumented` | No attached Evidence Reference. |
 
-## Commerce
-
-MainPanel Commerce is part of the browser-local agent-readiness path. It is not a second payment
-registry, a storefront, or a duplicate worker. The canonical Commerce contract lives in
-`grph-shared/src/payments/agenticCommerceSsot.ts` as `AGENTIC_COMMERCE_MAIN_PANEL_READINESS`.
-
-That shared owner provides the section list, row semantic keys, route paths, signal rows, route
-count, and top-level readiness semantic key through `buildAgenticCommerceMainPanelReadiness`.
-`CommerceHubView` renders those rows directly and publishes the same snapshot into
-`browserLocalSurfaceSnapshots`, so WebMCP inspection reads the same ACP discovery, UCP profile,
-MPP OpenAPI, x402 middleware probes, checkout, Stripe webhook, Base RPC/EAS, OpenBOX, proof, and trace
-readiness surface that the operator sees.
-
-`knowgrph.inspect_local_mainpanel_chat_canvas_pipeline` treats MainPanel `mcp`, `integrations`,
-and `commerce` as the valid browser-local entry surfaces for the E2E readiness path. The tool does
-not claim that Commerce mutates payments through WebMCP or HTTP MCP. It only exposes read-only
-Commerce readiness next to Settings chat readiness, mounted Editor Workspace state, FloatingPanel
-Chat state, workspace frontmatter/KGC or MCP structured-surface validation, and active Canvas
-topology.
-
-`agentReady.localMainPanelChatCanvasPipeline.entryTabs` verifies the three valid entry tabs
-against the same ready FloatingPanel Chat, workspace, and Canvas fixture. The companion
-`agentReady.localMainPanelChatCanvasPipeline.rejectsLegacyPayments` guard keeps stale
-`payments` tab state visible as an issue instead of remapping it into Commerce.
-
-The forbidden states are:
-
-- top-level `payments` and `commerce` tabs rendered in parallel
-- browser-local route strings that duplicate `AGENTIC_COMMERCE_ROUTE_PATHS` or
-  `STRIPE_PAYMENT_ROUTE_PATHS`
-- UI-side proof recomputation, fake settlement state, or hardcoded seller/project identifiers
-- compatibility aliases that remap stale payment tab names into the Commerce route
-## Companion Files
-
-| File | Scope |
-|---|---|
-| `knowgrph-agent-ready-prd-tad.companion.md` | Source-of-truth owners, forbidden architecture, and corrected requirements. |
-| `knowgrph-agent-ready-prd-tad.runtime.md` | Technical architecture, route contract, component inventory, guardrails, validation, and deployment sequence. |
+Authoring → mirror and mirror → delivery boundaries are closed. Operator
+instruction: none. Rollback is a source revert; any later delivery rollback must
+restore the previously recorded delivery revision.

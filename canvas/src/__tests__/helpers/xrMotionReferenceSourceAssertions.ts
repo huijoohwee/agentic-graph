@@ -79,7 +79,7 @@ export function assertXrMotionReferenceStageSurfaceContracts(): void {
   const rendererClearOwnership = threeGraphSource.match(
     /const rendererClearColor[\s\S]*?const rendererLifecycleKey/,
   )?.[0] || ''
-  if (!threeGraphSource.includes('const rendererLifecycleKey = `scene-canvas-${mode}`')
+  if (!threeGraphSource.includes('const rendererLifecycleKey = resolveThreeRendererLifecycleKey(mode)')
     || !rendererClearOwnership
     || rendererClearOwnership.includes('gameFpsActive')
     || !threeGraphSource.includes("? '#0b2f4a'")

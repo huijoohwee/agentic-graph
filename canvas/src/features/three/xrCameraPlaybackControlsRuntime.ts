@@ -94,7 +94,7 @@ export function useXrMotionReferenceCameraPlayback({
   }, [camera, cameraTrackAvailable, controls, playing])
 
   const applyTrackedPose = React.useCallback(() => {
-    if (paused || viewportInputOwnership.active || !cameraTrackAvailable) return
+    if (paused || viewportInputOwnership.blocksProgrammaticCamera || !cameraTrackAvailable) return
     const pose = sampleXrMotionReferenceCameraPose(runtime.plan.camera, runtime.playheadSeconds, runtime.plan.cast, runtime.plan.subjects)
     const settings = sampleXrMotionReferenceCameraSettings(runtime.plan.camera, runtime.playheadSeconds)
     if (!pose || !settings) return
@@ -112,7 +112,7 @@ export function useXrMotionReferenceCameraPlayback({
       },
       minimumY: XR_MOTION_STAGE_MIN_CAMERA_Y,
     })
-  }, [camera, cameraTrackAvailable, controls, paused, runtime.plan.camera, runtime.plan.cast, runtime.plan.stageId, runtime.plan.subjects, runtime.playheadSeconds, viewportInputOwnership.active])
+  }, [camera, cameraTrackAvailable, controls, paused, runtime.plan.camera, runtime.plan.cast, runtime.plan.stageId, runtime.plan.subjects, runtime.playheadSeconds, viewportInputOwnership.blocksProgrammaticCamera])
 
   React.useEffect(() => {
     applyTrackedPose()

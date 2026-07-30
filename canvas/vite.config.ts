@@ -1,11 +1,11 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react'; import tailwindcss from '@tailwindcss/vite'
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge'
 import { VitePWA } from 'vite-plugin-pwa'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { existsSync, createReadStream, readFileSync } from 'node:fs'
@@ -30,8 +30,9 @@ import { serializeMarkdownPipeTable } from './src/features/markdown/ui/markdownD
 import { createWebpageMetaHandler } from './src/lib/websites/webpageMetaServer'
 import { createLocalFileRangeHandler } from './src/lib/assets/server/localFileRangeServer'
 import { createRemoteVideoFrameHandler, createRemoteVideoFramePublicAssetHandler, REMOTE_VIDEO_FRAME_PUBLIC_PREFIX } from './src/lib/rich-media/server/videoFrameServer'
-import { createKgFsPathPolicy, createWorkspaceArtifactBridgePlugin, decodeStrictBase64, decodeXlsxArtifactBase64 } from './viteWorkspaceArtifactBridge'; import { buildVersionedAssetFileNames } from './viteBuildAssetNamespace.mjs'
-import { buildWebpageProxyRuntimePlan } from './src/lib/websites/webpageProxyRuntimePolicy'
+import { createKgFsPathPolicy, createWorkspaceArtifactBridgePlugin, decodeStrictBase64, decodeXlsxArtifactBase64, enforceCanonicalWorkspaceMutation, parseKgFsMutationRequest } from './viteWorkspaceArtifactBridge'; import { buildVersionedAssetFileNames } from './viteBuildAssetNamespace.mjs'
+import { isWorkspaceMirrorReadPathAllowed, resolveWorkspaceMirrorReadRoots } from './viteWorkspaceMirrorReadRoots'
+import { buildWebpageProxyRuntimePlan } from './src/lib/websites/webpageProxyRuntimePolicy'; import { createServiceWorkerRevisionAuthorityPlugin } from './viteServiceWorkerRevisionAuthority.mjs'
 import {
   buildWebpageSandboxCsp,
   stripWebpageInlineEventHandlers,
@@ -42,11 +43,14 @@ import { WEBPAGE_SHELL_PATTERN_REGEX_SOURCES } from './src/lib/websites/webpageS
 import { isWorkspaceSourceMirrorFileName, shouldEncodeWorkspaceSourceMirrorAsBase64 } from './src/features/workspace-fs/workspaceSourceMirrorFormats'
 import { DEFAULT_VITE_WATCH_IGNORED, buildWorkspaceMirrorWatchIgnoredRoots, createWorkspaceMirrorWatchPathIgnore } from './viteWorkspaceMirrorWatch'
 import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './viteChatProxyEnv'
+import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { resolveKnowgrphStorageDevProxyTarget } from './viteStorageProxyEnv'
+import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { resolveKnowgrphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
+let workspaceInitializationDocsAbsRootForDev = ''
+let workspaceInitializationWorkspaceSeedsAbsRootForDev = ''
 const liveCanvasHeroDocPath = path.resolve(repoRoot, 'docs', 'documents', 'knowgrph-live-canvas-hero.md')
 const mainPanelSectionDescriptionsDocPath = path.resolve(repoRoot, 'docs', 'documents', 'knowgrph-mainpanel-section-descriptions.md')
 const LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH = '/knowgrph-live-canvas-hero.md'
@@ -5120,15 +5124,11 @@ function createKgFsWriteHandler(): import('vite').Connect.NextHandleFunction {
       res.end(JSON.stringify({ ok: false, error: 'Body too large' }))
       return
     }
-    let parsed: { path?: unknown; text?: unknown; base64?: unknown; encoding?: unknown; mimeType?: unknown; mkdirOnly?: unknown } | null = null
-    try {
-      parsed = JSON.parse(body) as { path?: unknown; text?: unknown; base64?: unknown; encoding?: unknown; mimeType?: unknown; mkdirOnly?: unknown }
-    } catch {
-      parsed = null
-    }
+    const parsed = parseKgFsMutationRequest(body)
     const incomingPath = typeof parsed?.path === 'string' ? parsed.path.trim() : ''
+    const workspacePath = typeof parsed?.workspacePath === 'string' ? parsed.workspacePath.trim() : ''
     const text = typeof parsed?.text === 'string' ? parsed.text : ''
-    const base64 = typeof parsed?.base64 === 'string' ? parsed.base64 : '', encoding = typeof parsed?.encoding === 'string' ? parsed.encoding.trim().toLowerCase() : '', mkdirOnly = parsed?.mkdirOnly === true
+    const base64 = typeof parsed?.base64 === 'string' ? parsed.base64 : '', encoding = typeof parsed?.encoding === 'string' ? parsed.encoding.trim().toLowerCase() : '', mkdirOnly = parsed?.mkdirOnly === true, deleteOnly = parsed?.deleteOnly === true
     if (!incomingPath || incomingPath.includes('\u0000')) {
       res.statusCode = 400
       res.setHeader('Content-Type', 'application/json; charset=utf-8')
@@ -5136,6 +5136,8 @@ function createKgFsWriteHandler(): import('vite').Connect.NextHandleFunction {
       return
     }
     const requestedAbsPath = pathPolicy.resolveHostPath(incomingPath)
+    const workspaceMutation = await enforceCanonicalWorkspaceMutation({ policy: pathPolicy, requestedAbsPath, workspacePath, deleteOnly })
+    if (workspaceMutation) { res.statusCode = workspaceMutation.status; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ ok: workspaceMutation.status === 200, ...(workspaceMutation.error ? { error: workspaceMutation.error } : {}) })); return }
     if (mkdirOnly) { if (!pathPolicy.isAllowed(requestedAbsPath)) { res.statusCode = 403; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ ok: false, error: 'Forbidden' })); return } try { await fs.mkdir(requestedAbsPath, { recursive: true }); res.statusCode = 200; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ ok: true })) } catch (e: unknown) { const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message?: unknown }).message || '') : ''; res.statusCode = 500; res.setHeader('Content-Type', 'application/json; charset=utf-8'); res.end(JSON.stringify({ ok: false, error: msg || 'Mkdir failed' })) } return }
     const kgcPathInfo = parseKgcPathInfo(requestedAbsPath)
     const absPath = kgcPathInfo.tracePath || kgcPathInfo.canonicalPath
@@ -5207,16 +5209,15 @@ function createKgFsListHandler(): import('vite').Connect.NextHandleFunction {
   const MAX_FILE_COUNT_DEFAULT = 500
   const MAX_FILE_BYTES = 500 * 1024
   const workspaceMirrorRoot = path.resolve(repoRoot, '..')
-  const allowedRoots = [
-    workspaceMirrorRoot,
-    path.resolve(repoRoot, '..', '..'),
-    path.resolve(repoRoot),
-    path.resolve(repoRoot, '..'),
-  ]
-  const isAllowed = (candidate: string): boolean => {
-    const resolved = path.resolve(candidate)
-    return allowedRoots.some(root => resolved === root || resolved.startsWith(root + path.sep))
-  }
+  const allowedRoots = resolveWorkspaceMirrorReadRoots({
+    repoRoot,
+    configuredRoots: [
+      workspaceInitializationDocsAbsRootForDev || process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT,
+      workspaceInitializationWorkspaceSeedsAbsRootForDev,
+      process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT,
+    ],
+  })
+  const isAllowed = (candidate: string): boolean => isWorkspaceMirrorReadPathAllowed(candidate, allowedRoots)
   const toHostPath = (candidate: string): string => {
     const raw = String(candidate || '').trim()
     if (!raw) return ''
@@ -6822,14 +6823,35 @@ function resolveViteCacheDir(command: string): string {
   return path.resolve(__dirname, `node_modules/.vite/dev-${port}`)
 }
 
-function applyWorkspaceInitializationDocsAbsRootDefault(command: string): void {
-  if (command === 'build') return
-  if (String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()) return
-  if (existsSync(siblingDocsRoot)) process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = siblingDocsRoot
+function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string {
+  if (command === 'build') return ''
+  const configuredDocsRoot = String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()
+  if (configuredDocsRoot) {
+    workspaceInitializationDocsAbsRootForDev = configuredDocsRoot
+    workspaceInitializationWorkspaceSeedsAbsRootForDev = path.resolve(configuredDocsRoot, '..', '..', 'knowgrph', 'docs', 'workspace-seeds')
+    return configuredDocsRoot
+  }
+  let gitCommonDir = ''
+  try {
+    gitCommonDir = String(execFileSync('git', ['-C', repoRoot, 'rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' })).trim()
+  } catch {
+    gitCommonDir = ''
+  }
+  const docsRoot = resolveWorkspaceInitializationDocsRoot({
+    siblingDocsRoot,
+    gitCommonDir,
+    exists: existsSync,
+  })
+  if (docsRoot) process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = docsRoot
+  workspaceInitializationDocsAbsRootForDev = docsRoot
+  workspaceInitializationWorkspaceSeedsAbsRootForDev = docsRoot
+    ? path.resolve(docsRoot, '..', '..', 'knowgrph', 'docs', 'workspace-seeds')
+    : ''
+  return docsRoot
 }
 
 export default defineConfig(({ command, mode }) => {
-  applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const knowgrphStorageDevProxyTarget = resolveKnowgrphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
+  const workspaceInitializationDocsAbsRoot = applyWorkspaceInitializationDocsAbsRootDefault(command); const fileEnv = loadEnv(mode, __dirname, ''); const knowgrphStorageDevProxyTarget = resolveKnowgrphStorageDevProxyTarget({ processEnv: process.env, fileEnv })
   const grphSharedAliasRoot = path.resolve(
     __dirname,
     command === 'serve' ? '../grph-shared/src' : '../grph-shared/dist',
@@ -6845,6 +6867,7 @@ export default defineConfig(({ command, mode }) => {
       })()
     : '/',
   define: { __KNOWGRPH_SOURCE_REVISION__: JSON.stringify(runtimeIdentity.sourceRevision), __KNOWGRPH_RUNTIME_DEVICE__: JSON.stringify(runtimeIdentity.device), __KNOWGRPH_SOURCE_BRANCH__: JSON.stringify(runtimeIdentity.branch),
+    'import.meta.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT': JSON.stringify(workspaceInitializationDocsAbsRoot),
     __KNOWGRPH_LIVE_CANVAS_HERO_MARKDOWN__: JSON.stringify(readLiveCanvasHeroMarkdownSource()),
     __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
   },
@@ -6867,9 +6890,9 @@ export default defineConfig(({ command, mode }) => {
       'highlight.js/lib/languages/sql',
       'dayjs',
       'mermaid',
-      'maplibre-gl',
+      'maplibre-gl', 'maplibre-gl/dist/maplibre-gl.js',
       'dagre',
-      '@react-three/fiber',
+      '@react-three/fiber', 'fflate', 'three/examples/jsm/loaders/GLTFLoader.js',
       'yjs',
     ],
     exclude: ['gympgrph', 'grph-shared', 'entities'],
@@ -6913,6 +6936,7 @@ export default defineConfig(({ command, mode }) => {
                 if (moduleId.includes('/node_modules/d3/')) return 'd3'
                 if (moduleId.includes('/node_modules/lucide-react/')) return 'ui'
                 if (moduleId.includes('/node_modules/zustand/')) return 'ui'
+                if (moduleId.includes('/node_modules/fflate/')) return 'fflate'
                 if (moduleId.includes('/node_modules/monaco-editor/')) return 'monaco'
                 if (moduleId.includes('/node_modules/katex/')) return 'katex'
                 if (moduleId.includes('/node_modules/highlight.js/')) return 'highlightjs'
@@ -6986,10 +7010,10 @@ export default defineConfig(({ command, mode }) => {
       { find: '@', replacement: path.resolve(__dirname, './src') },
     ]
   },
-  server: {
+  server: { host: '127.0.0.1',
     port: 5173,
-    strictPort: false,
-    watch: { ignored: [...DEFAULT_VITE_WATCH_IGNORED, createWorkspaceMirrorWatchPathIgnore(buildWorkspaceMirrorWatchIgnoredRoots({ repoRoot, canvasRoot: __dirname, workspaceRoot, docsRoot: process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT, chatLogRoot: process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT }))] },
+    strictPort: true,
+    watch: { ignored: [...DEFAULT_VITE_WATCH_IGNORED, createWorkspaceMirrorWatchPathIgnore(buildWorkspaceMirrorWatchIgnoredRoots({ repoRoot, canvasRoot: __dirname, workspaceRoot, docsRoot: process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT, chatLogRoot: process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT, mutableSourcePath: process.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH }))] },
     headers: {
       'Cache-Control': 'no-store',
     },
@@ -7009,11 +7033,11 @@ export default defineConfig(({ command, mode }) => {
     }
   },
   plugins: [
-    stripEntitiesBadSourcemapsPlugin,
+    tailwindcss(), stripEntitiesBadSourcemapsPlugin,
     stripMermaidArchitectureDetectorPlugin,
     stripMermaidCoseBilkentLayoutPlugin,
     react(),
-    inlineHtmlStylesheetAssetsPlugin(),
+    inlineHtmlStylesheetAssetsPlugin(), createServiceWorkerRevisionAuthorityPlugin(runtimeIdentity.sourceRevision),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: null,
@@ -7081,9 +7105,9 @@ export default defineConfig(({ command, mode }) => {
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        navigateFallback: 'index.html',
-        importScripts: ['knowgrph-chat-stream-sw.js'],
-        globPatterns: ['index.html', 'manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
+        navigateFallback: null,
+        importScripts: [`knowgrph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}`, `knowgrph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}`],
+        globPatterns: ['manifest.webmanifest', 'favicon.svg', 'apple-touch-icon.png', 'assets/**/*.{js,css,woff,woff2,ttf}'],
         globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'],
         runtimeCaching: [
           {
@@ -7093,7 +7117,7 @@ export default defineConfig(({ command, mode }) => {
               || request.destination === 'worker',
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'kg-assets',
+              cacheName: 'kg-assets', plugins: [nonHtmlRuntimeCachePlugin],
               expiration: { maxEntries: 160, maxAgeSeconds: 60 * 60 * 24 * 14 },
             },
           },
@@ -7101,7 +7125,7 @@ export default defineConfig(({ command, mode }) => {
             urlPattern: ({ request }) => request.destination === 'image' || request.destination === 'font',
             handler: 'CacheFirst',
             options: {
-              cacheName: 'kg-static',
+              cacheName: 'kg-static', plugins: [nonHtmlRuntimeCachePlugin],
               expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
@@ -7117,7 +7141,7 @@ export default defineConfig(({ command, mode }) => {
               ),
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'kg-data',
+              cacheName: 'kg-data', plugins: [nonHtmlRuntimeCachePlugin],
               expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 7 },
             },
           },

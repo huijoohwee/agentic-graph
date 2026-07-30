@@ -14,6 +14,7 @@ import {
 } from '@/features/game-fps/gameModeRuntime'
 import {
   activateXrSceneSurface,
+  registerXrSceneGameplayExitHandler,
 } from '@/features/three/xrSceneSurfaceRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
@@ -123,7 +124,7 @@ async function startActiveGame(): Promise<void> {
   assert.equal(state.floatingPanelView, 'gameMode')
 }
 
-function selectCanvasDestination(mode: CanvasGraphSurfaceModeId): boolean {
+function selectCanvasDestination(mode: Exclude<CanvasGraphSurfaceModeId, 'xr'>): boolean {
   const state = useGraphStore.getState()
   return applyCanvasSurfaceModeSelection({
     mode,
@@ -219,6 +220,23 @@ test('same-XR companion panel handoff exits Game without restoring its previous 
   assert.equal(state.canvas3dMode, 'xr')
   assert.equal(state.floatingPanelView, 'motionControl')
   assert.equal(state.floatingPanelOpen, true)
+})
+
+test('the shared XR owner keeps one exclusive gameplay overlay active', () => {
+  let flightExitCount = 0
+  const unregister = registerXrSceneGameplayExitHandler('flightSim', () => {
+    flightExitCount += 1
+  })
+  try {
+    assert.equal(activateXrSceneSurface({ panelView: 'flightSim', openPanel: true }), true)
+    assert.equal(flightExitCount, 0)
+    assert.equal(activateXrSceneSurface({ panelView: 'gameMode', openPanel: true }), true)
+    assert.equal(flightExitCount, 1)
+    assert.equal(activateXrSceneSurface({ panelView: 'camera', openPanel: true }), true)
+    assert.equal(flightExitCount, 1)
+  } finally {
+    unregister()
+  }
 })
 
 test('failed toolbar XR activation has no raw setter fallthrough or state mutation', () => {

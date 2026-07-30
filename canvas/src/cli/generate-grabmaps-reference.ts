@@ -68,8 +68,9 @@ function buildMarkdown(): string {
 }
 
 function main(): void {
+  const markdown = buildMarkdown()
   mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true })
-  writeFileSync(OUTPUT_PATH, buildMarkdown(), 'utf8')
+  writeFileSync(OUTPUT_PATH, markdown, 'utf8')
   process.stdout.write(`${OUTPUT_PATH}\n`)
 }
 

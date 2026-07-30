@@ -66,7 +66,7 @@ export function testStoryboardWidgetCanvasTextRunUsesSharedRichMediaOutputPatch(
   if (!workflowRichMediaPanelText.includes('export function ensureStoryboardWidgetWorkflowRichMediaPanelNodeId(args: {')) {
     throw new Error('expected StoryboardWidget runtime helper to centralize rich-media panel creation fallback')
   }
-  if (!text.includes('const panelNodeId = ensureStoryboardWidgetWorkflowRichMediaPanelNodeId({')) {
+  if (!text.includes('const createdPanelNodeId = explicitPanelNodeIds.length > 0 ? null : ensureStoryboardWidgetWorkflowRichMediaPanelNodeId({')) {
     throw new Error('expected StoryboardWidgetCanvas text widget run path to reuse the shared rich-media panel target helper')
   }
   if (!text.includes('applyStoryboardWidgetWorkflowRichMediaPanelDraftPatch({') || !text.includes('applyPublishedPanelPatch(panelNodeId, patch)')) {
@@ -354,15 +354,23 @@ export function testFloatingPropsPanelUsesMergedDataflowRegistry() {
 }
 
 export function testRichMediaPanelMarkdownPreviewDisablesGlobalTokenStoreSync() {
-  const richMediaPanelPaths = ['RichMediaPanelTextSurface.tsx', 'useRichMediaPanelSurfaceState.ts', 'useRichMediaPanelMediaState.ts'].map(fileName => resolve(process.cwd(), 'src', 'components', fileName))
+  const richMediaPanelPaths = ['RichMediaPanelTextSurface.tsx', 'RichMediaPanelWorkspaceViewerSurface.tsx', 'useRichMediaPanelSurfaceState.ts', 'useRichMediaPanelMediaState.ts'].map(fileName => resolve(process.cwd(), 'src', 'components', fileName))
   const markdownPreviewPath = resolve(process.cwd(), 'src', 'features', 'markdown', 'ui', 'MarkdownPreview.tsx')
   const cardMarkdownPreviewPath = resolve(process.cwd(), 'src', 'lib', 'cards', 'CardMarkdownPreview.tsx')
+  const cardTextSurfaceFramePath = resolve(process.cwd(), 'src', 'lib', 'cards', 'cardTextSurfaceFrame.ts')
   const panelText = richMediaPanelPaths.map(filePath => readFileSync(filePath, 'utf8')).join('\n')
   const previewText = readFileSync(markdownPreviewPath, 'utf8')
   const cardMarkdownPreviewText = readFileSync(cardMarkdownPreviewPath, 'utf8')
+  const cardTextSurfaceFrameText = readFileSync(cardTextSurfaceFramePath, 'utf8')
 
-  if (!panelText.includes("from '@/lib/cards/CardInlineTextEditor'") || !panelText.includes('markdownPreview="auto"') || !cardMarkdownPreviewText.includes('markdownTokenStoreSync={false}')) {
-    throw new Error('expected RichMediaPanel markdown view to reuse the shared CardInlineTextEditor markdown path with global markdown token store sync disabled')
+  if (
+    !panelText.includes("from '@/lib/cards/CardInlineTextEditor'")
+    || !panelText.includes("markdownPreview={props.panel?.markdownPresentationMode === true ? true : 'auto'}")
+    || !cardMarkdownPreviewText.includes('markdownTokenStoreSync={false}')
+    || !panelText.includes("React.lazy(() => import('@/features/markdown/ui/MarkdownPreview'))")
+    || !panelText.includes('markdownTokenStoreSync={false}')
+  ) {
+    throw new Error('expected RichMediaPanel Card and Workspace Viewer markdown paths to disable global markdown token store synchronization')
   }
   if (!previewText.includes('markdownTokenStoreSync?: boolean')) {
     throw new Error('expected MarkdownPreview to expose an explicit markdown token store sync gate')
@@ -382,10 +390,10 @@ export function testRichMediaPanelMarkdownPreviewDisablesGlobalTokenStoreSync() 
   if (!panelText.includes('data-kg-canvas-wheel-ignore="true"')) {
     throw new Error('expected RichMediaPanel markdown preview container to opt into the shared canvas wheel-ignore contract like MainPanel scroll surfaces')
   }
-  if (!panelText.includes("overflowY: 'auto'")) {
-    throw new Error('expected RichMediaPanel markdown preview container to use vertical auto overflow like MainPanel settings bodies')
+  if (!panelText.includes('CARD_TEXT_SURFACE_SCROLL_CLASS_NAME') || !panelText.includes("'flex min-h-0 flex-1 overflow-hidden'")) {
+    throw new Error('expected compact Card previews to retain the shared vertical scroll owner while Workspace Viewer previews use their canonical internal scroll owner')
   }
-  if (!panelText.includes("overflowX: 'hidden'")) {
+  if (!cardTextSurfaceFrameText.includes('overflow-x-hidden')) {
     throw new Error('expected RichMediaPanel markdown preview container to keep horizontal overflow hidden like MainPanel settings bodies')
   }
   if (!panelText.includes('const storyboardWidgetInteractionMode = storyboardWidgetOverlayProxyMode || storyboardWidgetFrontmatterDocumentMode')) {

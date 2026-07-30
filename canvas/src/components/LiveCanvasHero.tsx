@@ -33,6 +33,13 @@ import {
   type GenerationSpecification,
 } from '@/features/chat/generationInvocation'
 import { LiveCanvasHeroQueryEditor } from '@/features/agentic-os/LiveCanvasHeroQueryEditor'
+import { LiveCanvasHeroPromptPresetPicker } from '@/features/agentic-os/LiveCanvasHeroPromptPresetPicker'
+import {
+  liveCanvasHeroPromptHasParameter,
+  readLiveCanvasHeroPromptParameters,
+  toggleLiveCanvasHeroPromptParameter,
+} from '@/features/agentic-os/liveCanvasHeroPromptParameters'
+import type { PromptPresetSelectionRuntime } from '@/features/chat/promptPresetSelectionRuntime'
 
 export type LiveCanvasHeroProps = {
   onEnter?: () => void
@@ -47,6 +54,7 @@ type ReadyLiveCanvasHeroModel = Extract<LiveCanvasHeroModel, { status: 'ready' }
 
 type LiveCanvasHeroEditorialProps = LiveCanvasHeroProps & {
   model: ReadyLiveCanvasHeroModel
+  promptPresetsRuntime?: PromptPresetSelectionRuntime
 }
 
 const heroActionControlClassName = 'inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg border border-[color:var(--kg-border)] bg-[color-mix(in_srgb,var(--kg-panel-bg)_72%,transparent)] p-2.5 text-[var(--kg-text-primary)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)] disabled:cursor-wait disabled:opacity-60'
@@ -68,16 +76,23 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
   const { model } = props
   const content = React.useMemo(readLiveCanvasHeroContent, [])
   const [draft, setDraft] = React.useState(model.defaultQuery)
+  const [selectedPromptPresetId, setSelectedPromptPresetId] = React.useState('video-agent')
+  const [selectedPromptPresetPrompt, setSelectedPromptPresetPrompt] = React.useState(model.defaultQuery)
   const previousDefaultQueryRef = React.useRef(model.defaultQuery)
   const [errorText, setErrorText] = React.useState('')
   const [importPanelOpen, setImportPanelOpen] = React.useState(false)
   const invocation = React.useMemo(() => parseGenerationInvocation(draft), [draft])
   const selectedKinds = invocation?.kinds || []
+  const promptParameters = React.useMemo(
+    () => readLiveCanvasHeroPromptParameters(selectedPromptPresetPrompt),
+    [selectedPromptPresetPrompt],
+  )
 
   React.useEffect(() => {
     const previous = previousDefaultQueryRef.current
     previousDefaultQueryRef.current = model.defaultQuery
     setDraft(current => current === previous ? model.defaultQuery : current)
+    setSelectedPromptPresetPrompt(current => current === previous ? model.defaultQuery : current)
   }, [model.defaultQuery])
 
   React.useEffect(() => {
@@ -130,7 +145,12 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
         data-kg-live-canvas-hero-editorial="overlay"
       >
         <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--kg-text-secondary)]">
-          <span className="h-2 w-2 rounded-full bg-[var(--kg-canvas-accent)] shadow-[0_0_18px_var(--kg-canvas-accent)]" aria-hidden="true" />
+          <span
+            className="h-3 w-3 shrink-0 bg-contain bg-center bg-no-repeat"
+            style={{ backgroundImage: "url('/favicon.svg?v=airvio')" }}
+            aria-hidden="true"
+            data-kg-live-canvas-hero-brand-mark="airvio-favicon"
+          />
           {content.eyebrow}
         </p>
         <h1 id="knowgrph-live-canvas-hero-title" className="mt-3 text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.045em] md:mt-4 md:text-5xl lg:text-[3.5rem]">
@@ -143,50 +163,91 @@ export function LiveCanvasHeroEditorial(props: LiveCanvasHeroEditorialProps) {
         </p>
 
         <form
-          className="mt-4 rounded-2xl border border-[color:var(--kg-border)] bg-[color-mix(in_srgb,var(--kg-panel-bg)_72%,transparent)] p-3 shadow-[0_18px_64px_color-mix(in_srgb,var(--kg-canvas-bg)_72%,transparent)] backdrop-blur-xl md:mt-6 md:p-4"
+          className="mt-4 flex h-[29rem] shrink-0 flex-col overflow-hidden rounded-2xl border border-[color:var(--kg-border)] bg-[color-mix(in_srgb,var(--kg-panel-bg)_72%,transparent)] p-3 shadow-[0_18px_64px_color-mix(in_srgb,var(--kg-canvas-bg)_72%,transparent)] backdrop-blur-xl md:mt-6 md:p-4"
           onSubmit={handleSubmit}
           data-kg-live-canvas-hero-command-deck="true"
         >
-          <label className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]" htmlFor="knowgrph-live-canvas-hero-query">
-            Agentic Video Canvas
+          <LiveCanvasHeroPromptPresetPicker
+            activePresetId={selectedPromptPresetId}
+            runtime={props.promptPresetsRuntime}
+            onSelect={selection => {
+              setSelectedPromptPresetId(selection.id)
+              setSelectedPromptPresetPrompt(selection.prompt)
+              setDraft(selection.prompt)
+              setErrorText('')
+            }}
+          />
+          <label className="mt-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--kg-text-secondary)]" htmlFor="knowgrph-live-canvas-hero-query">
+            Prompt Presets
           </label>
           <LiveCanvasHeroQueryEditor value={draft} onChange={setDraft} />
-          {model.sourceLabel ? <p className="mt-2 truncate text-[10px] text-[var(--kg-text-secondary)]" title={model.sourceWorkspacePath || model.sourceLabel}>Script: {model.sourceLabel}</p> : null}
-          <section className="mt-3 grid gap-2" aria-label="Agentic video invocation controls">
-            {(['Route', 'Provider', 'Specification', 'Outputs'] as const).map(group => <fieldset key={group} data-kg-live-canvas-hero-invocation-group={group.toLowerCase()}>
-              <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">{group}</legend>
-              <nav className="mt-1 flex flex-wrap gap-1.5" aria-label={`${group} invocations`}>{model.invocations.filter(invocation => invocation.group === group).map(invocation => {
-              const active = liveCanvasHeroQueryHasToken(draft, invocation.token)
-              const attrs = buildAgenticOsInvocationChipAttrs(invocation.token) || {}
-              return (
-                <button
-                  key={invocation.token}
-                  type="button"
-                  className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)] ${active ? 'border-[var(--kg-canvas-accent)] bg-[color-mix(in_srgb,var(--kg-canvas-accent)_16%,transparent)] text-[var(--kg-text-primary)]' : 'border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/70 text-[var(--kg-text-secondary)] hover:text-[var(--kg-text-primary)]'}`}
-                  aria-pressed={active}
-                  title={buildAgenticOsInvocationChipTitle(invocation.token) || invocation.summary}
-                  data-kg-live-canvas-hero-invocation-token={invocation.token}
-                  onClick={() => setDraft(current => {
-                    const providerOption = GENERATION_PROVIDER_INVOCATIONS.find(item => item.token === invocation.token)
-                    if (providerOption) return setGenerationProvider(current, providerOption.provider)
-                    if (invocation.token.startsWith('#spec.')) return setGenerationSpecification(current, invocation.token.slice('#spec.'.length) as GenerationSpecification)
-                    const kindOption = GENERATION_KIND_INVOCATIONS.find(item => item.token === invocation.token)
-                    if (kindOption) {
-                      const next = selectedKinds.includes(kindOption.kind) ? selectedKinds.filter(kind => kind !== kindOption.kind) : [...selectedKinds, kindOption.kind]
-                      return next.length ? setGenerationKinds(current, next) : current
-                    }
-                    return appendLiveCanvasHeroToken(current, invocation.token)
+          {selectedPromptPresetId === 'video-agent' && model.sourceLabel ? <p className="mt-2 truncate text-[10px] text-[var(--kg-text-secondary)]" title={model.sourceWorkspacePath || model.sourceLabel}>Script: {model.sourceLabel}</p> : null}
+          <section className="mt-3 h-24 shrink-0 overflow-y-auto overscroll-contain pr-1" aria-label="Prompt preset controls" data-kg-live-canvas-hero-prompt-controls-scroll="fixed">
+            <section className="grid gap-2">
+            {!invocation && promptParameters.length ? (
+              <fieldset className="h-16 overflow-hidden" data-kg-live-canvas-hero-prompt-parameters="true">
+                <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">
+                  Parameters
+                </legend>
+                <nav className="mt-1 flex max-h-11 flex-wrap gap-1.5 overflow-y-auto overscroll-contain pr-1" aria-label="Prompt parameters">
+                  {promptParameters.map(parameter => {
+                    const active = liveCanvasHeroPromptHasParameter(draft, parameter)
+                    return (
+                      <button
+                        key={parameter}
+                        type="button"
+                        className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)] ${active ? 'border-[var(--kg-canvas-accent)] bg-[color-mix(in_srgb,var(--kg-canvas-accent)_16%,transparent)] text-[var(--kg-text-primary)]' : 'border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/70 text-[var(--kg-text-secondary)] hover:text-[var(--kg-text-primary)]'}`}
+                        aria-pressed={active}
+                        title={`${active ? 'Remove' : 'Add'} ${parameter}`}
+                        data-kg-live-canvas-hero-prompt-parameter={parameter}
+                        onClick={() => setDraft(current => toggleLiveCanvasHeroPromptParameter(current, parameter))}
+                      >
+                        {parameter}
+                      </button>
+                    )
                   })}
-                  {...attrs}
-                >
-                  {invocation.token}
-                </button>
-              )
-              })}</nav>
-            </fieldset>)}
+                </nav>
+              </fieldset>
+            ) : null}
+            {invocation ? (
+              <section className="grid gap-2" aria-label="Video prompt invocation controls">
+                {(['Route', 'Provider', 'Specification', 'Outputs'] as const).map(group => <fieldset key={group} data-kg-live-canvas-hero-invocation-group={group.toLowerCase()}>
+                  <legend className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--kg-text-secondary)]">{group}</legend>
+                  <nav className="mt-1 flex flex-wrap gap-1.5" aria-label={`${group} invocations`}>{model.invocations.filter(invocation => invocation.group === group).map(invocation => {
+                    const active = liveCanvasHeroQueryHasToken(draft, invocation.token)
+                    const attrs = buildAgenticOsInvocationChipAttrs(invocation.token) || {}
+                    return (
+                      <button
+                        key={invocation.token}
+                        type="button"
+                        className={`shrink-0 rounded-full border px-2.5 py-1 font-mono text-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--kg-canvas-accent)] ${active ? 'border-[var(--kg-canvas-accent)] bg-[color-mix(in_srgb,var(--kg-canvas-accent)_16%,transparent)] text-[var(--kg-text-primary)]' : 'border-[color:var(--kg-border)] bg-[color:var(--kg-panel-bg)]/70 text-[var(--kg-text-secondary)] hover:text-[var(--kg-text-primary)]'}`}
+                        aria-pressed={active}
+                        title={buildAgenticOsInvocationChipTitle(invocation.token) || invocation.summary}
+                        data-kg-live-canvas-hero-invocation-token={invocation.token}
+                        onClick={() => setDraft(current => {
+                          const providerOption = GENERATION_PROVIDER_INVOCATIONS.find(item => item.token === invocation.token)
+                          if (providerOption) return setGenerationProvider(current, providerOption.provider)
+                          if (invocation.token.startsWith('#spec.')) return setGenerationSpecification(current, invocation.token.slice('#spec.'.length) as GenerationSpecification)
+                          const kindOption = GENERATION_KIND_INVOCATIONS.find(item => item.token === invocation.token)
+                          if (kindOption) {
+                            const next = selectedKinds.includes(kindOption.kind) ? selectedKinds.filter(kind => kind !== kindOption.kind) : [...selectedKinds, kindOption.kind]
+                            return next.length ? setGenerationKinds(current, next) : current
+                          }
+                          return appendLiveCanvasHeroToken(current, invocation.token)
+                        })}
+                        {...attrs}
+                      >
+                        {invocation.token}
+                      </button>
+                    )
+                  })}</nav>
+                </fieldset>)}
+              </section>
+            ) : null}
+            </section>
           </section>
 
-          <section className="mt-4 flex flex-wrap items-center gap-2">
+          <section className="mt-auto flex shrink-0 flex-wrap items-center gap-2">
             <a
               href={resolveLiveCanvasHeroEnterHref(import.meta.env?.BASE_URL)}
               onClick={props.onEnter}

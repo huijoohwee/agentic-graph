@@ -1,6 +1,7 @@
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import { finalizeEdgeAuthoring } from '@/features/edge-creation/authoring'
 import { appendStoryboardWidgetAuthoredEdge, appendStoryboardWidgetDraftNode, resolveStoryboardWidgetEdgeAuthoringNodeId } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetGraphActions'
+import { resolveProjectedRichMediaShellTransformFromGeometry } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
 import { buildRichMediaPanelRegistryDraft } from '@/features/storyboard-widget-manager/richMediaPanelRegistryDraft'
 import { buildStoryboardElementRegistryDraft } from '@/features/storyboard-widget-manager/storyboardElementRegistryDraft'
 import { FLOW_WIDGET_FORM_ID_KEY, FLOW_WIDGET_TYPE_ID_KEY } from '@/features/storyboard-widget-manager/resolveWidgetRegistry'
@@ -383,6 +384,15 @@ export function testStoryboardRichMediaOverlaySelectionMountsSharedPortHandles()
 }
 
 export function testStoryboardRichMediaDropCentersPanelOnPointer() {
+  const projectedTransform = resolveProjectedRichMediaShellTransformFromGeometry({
+    rect: { left: 620, top: 340, width: 720, height: 406 },
+    nodeTopLeft: { x: 100, y: 50 },
+    panelSize: { width: 720, height: 406 },
+    screenOrigin: { left: 500, top: 100 },
+  })
+  if (JSON.stringify(projectedTransform) !== JSON.stringify({ k: 1, x: 20, y: 190 })) {
+    throw new Error(`expected projected Rich Media camera to use local surface coordinates and the panel's real visual size, got ${JSON.stringify(projectedTransform)}`)
+  }
   const dropBridge = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetDropBridge.ts'), 'utf8')
   const graphActions = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetGraphActions.ts'), 'utf8')
   const runtime = readFileSync(resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas.runtime.tsx'), 'utf8')

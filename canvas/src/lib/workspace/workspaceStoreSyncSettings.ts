@@ -50,6 +50,16 @@ export const subscribeWorkspaceStoreSyncSettingsChanged = (
   }
 }
 
+export const readWorkspaceCloudSyncEnabledSetting = (): boolean => {
+  return lsBool(LS_KEYS.workspaceCloudSyncEnabled, true)
+}
+
+export const writeWorkspaceCloudSyncEnabledSetting = (next: boolean): boolean => {
+  const written = lsSetBool(LS_KEYS.workspaceCloudSyncEnabled, !!next)
+  notifyWorkspaceStoreSyncSettingsChanged()
+  return written
+}
+
 export const readWorkspaceSeedSyncEnabledSetting = (): boolean => {
   return lsBool(LS_KEYS.workspaceSeedSyncEnabled, parseEnvBoolean('VITE_WORKSPACE_SEED_SYNC_ENABLED', true))
 }

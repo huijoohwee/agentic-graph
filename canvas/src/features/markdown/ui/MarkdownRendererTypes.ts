@@ -75,6 +75,8 @@ export type RenderOpts = InlineRenderOpts & {
   markdownForcePlainTables?: boolean
   webpageLayoutWireframeAscii?: string | null
   markdownSourceLines?: string[]
+  markdownParagraphEditStripLinePrefix?: (line: string) => { prefix: string; content: string }
+  markdownParagraphEditDefaultLinePrefix?: string
   standaloneMediaRenderLineSet?: ReadonlySet<number> | null
   forbidCopy?: boolean
   deferMermaidRender?: boolean

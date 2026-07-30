@@ -3,6 +3,7 @@ import React from 'react'
 export type ThreeViewportInputOwnership = Readonly<{
   active: boolean
   ownerId: string | null
+  blocksProgrammaticCamera: boolean
   revision: number
 }>
 
@@ -10,6 +11,7 @@ const listeners = new Set<() => void>()
 let ownership: ThreeViewportInputOwnership = Object.freeze({
   active: false,
   ownerId: null,
+  blocksProgrammaticCamera: false,
   revision: 0,
 })
 
@@ -30,13 +32,17 @@ export function useThreeViewportInputOwnership(): ThreeViewportInputOwnership {
   )
 }
 
-export function claimThreeViewportInputOwnership(ownerId: string): boolean {
+export function claimThreeViewportInputOwnership(
+  ownerId: string,
+  options: Readonly<{ blocksProgrammaticCamera?: boolean }> = {},
+): boolean {
   const normalizedOwnerId = String(ownerId || '').trim()
   if (!normalizedOwnerId) return false
   if (ownership.active) return ownership.ownerId === normalizedOwnerId
   ownership = Object.freeze({
     active: true,
     ownerId: normalizedOwnerId,
+    blocksProgrammaticCamera: options.blocksProgrammaticCamera !== false,
     revision: ownership.revision + 1,
   })
   publishOwnershipChange()
@@ -48,6 +54,7 @@ export function releaseThreeViewportInputOwnership(ownerId: string): void {
   ownership = Object.freeze({
     active: false,
     ownerId: null,
+    blocksProgrammaticCamera: false,
     revision: ownership.revision + 1,
   })
   publishOwnershipChange()
@@ -55,9 +62,9 @@ export function releaseThreeViewportInputOwnership(ownerId: string): void {
 
 export function shouldDeferThreeCameraProgrammaticInput(args: {
   objectInputActive: boolean
-  viewportInputActive: boolean
+  viewportInputBlocksProgrammaticCamera: boolean
 }): boolean {
-  return args.objectInputActive || args.viewportInputActive
+  return args.objectInputActive || args.viewportInputBlocksProgrammaticCamera
 }
 
 function publishOwnershipChange(): void {

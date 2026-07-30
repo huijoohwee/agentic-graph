@@ -3,9 +3,12 @@ import { CardMediaEmptyPlaceholder, CardMediaLoadingSkeleton } from '@/lib/cards
 import { CardMediaDropZoneFrame } from '@/lib/cards/CardMediaDropZone'
 import { CardInlineTextEditor } from '@/lib/cards/CardInlineTextEditor'
 import { CARD_TEXT_SURFACE_COLUMN_CLASS_NAME, CARD_TEXT_SURFACE_EDIT_CLASS_NAME, CARD_TEXT_SURFACE_SCROLL_CLASS_NAME, CARD_TEXT_SURFACE_TEXT_CLASS_NAME, CARD_TEXT_SURFACE_VIEW_CLASS_NAME } from '@/lib/cards/cardTextSurfaceFrame'
+import { commitRichMediaInlineEditVersion } from '@/features/history/richMediaInlineEditHistory'
+import { RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID } from '@/lib/render/richMediaOutputVersions'
 import { UI_VIEW_EDIT_SURFACE_AREA_CLASS_NAME, UI_VIEW_EDIT_SURFACE_DATA_ATTRIBUTES } from '@/lib/ui/surfaceClasses'
 import { cn } from '@/lib/utils'
 import { RichMediaOutputVersionSelector } from './RichMediaOutputVersionSelector'
+import { RichMediaPanelWorkspaceViewerSurface } from './RichMediaPanelWorkspaceViewerSurface'
 import type { RichMediaPanelProps } from './RichMediaPanel.types'
 import type { RichMediaPanelModel } from './useRichMediaPanelModel'
 
@@ -57,33 +60,56 @@ export function RichMediaPanelTextSurface(args: {
             placement="body"
           />
         ) : null}
-        <section className={CARD_TEXT_SURFACE_SCROLL_CLASS_NAME} data-kg-canvas-pointer-ignore="true" data-kg-canvas-wheel-ignore="true" data-kg-media-scroll-surface="1" data-kg-rich-media-card-text-scroll="1">
-          <CardInlineTextEditor
-            value={model.panelDisplayText}
-            ariaLabel={`${model.title} text`}
-            placeholder="Add text"
-            canEdit={model.panelTextEditable}
-            editActivation="click"
-            multiline
-            displayLineClamp="none"
-            rows={8}
-            markdownPreview={props.panel?.markdownPresentationMode === true ? true : 'auto'}
-            markdownPresentationMode={props.panel?.markdownPresentationMode === true}
-            markdownDocumentPath={model.panelMarkdownDocumentPath}
-            markdownCommandMenus={model.panelTextEditable}
-            editorSurface="viewer"
-            inlineChipDensity="compact"
-            openOnPointerDown
-            showCommandLaunchers={false}
-            markdownCommandContextText={model.panelMarkdownCommandContextText}
-            onCommit={model.panelTextEditable ? nextValue => {
-              const nextText = String(nextValue || '')
-              model.setPanelDraftText(nextText)
-              props.onPanelChange?.({ activeTab: 'text', freezeConnectedOutput: true, text: nextText })
-            } : undefined}
-            displayClassName={cn(CARD_TEXT_SURFACE_VIEW_CLASS_NAME, CARD_TEXT_SURFACE_TEXT_CLASS_NAME)}
-            editorClassName={cn(CARD_TEXT_SURFACE_EDIT_CLASS_NAME, CARD_TEXT_SURFACE_TEXT_CLASS_NAME)}
-          />
+        <section
+          className={props.panel?.markdownWorkspaceViewerSurface === true ? 'flex min-h-0 flex-1 overflow-hidden' : CARD_TEXT_SURFACE_SCROLL_CLASS_NAME}
+          data-kg-canvas-pointer-ignore="true"
+          data-kg-canvas-wheel-ignore="true"
+          data-kg-media-scroll-surface="1"
+          data-kg-rich-media-card-text-scroll="1"
+        >
+          {props.panel?.markdownWorkspaceViewerSurface === true ? (
+            <RichMediaPanelWorkspaceViewerSurface model={model} props={props} />
+          ) : (
+            <CardInlineTextEditor
+              value={model.panelDisplayText}
+              ariaLabel={`${model.title} text`}
+              placeholder="Add text"
+              canEdit={model.panelTextEditable}
+              editActivation="click"
+              multiline
+              displayLineClamp="none"
+              rows={8}
+              markdownPreview={props.panel?.markdownPresentationMode === true ? true : 'auto'}
+              markdownPresentationMode={props.panel?.markdownPresentationMode === true}
+              markdownDocumentPath={model.panelMarkdownDocumentPath}
+              markdownCommandMenus={model.panelTextEditable}
+              editorSurface="viewer"
+              inlineChipDensity="compact"
+              openOnPointerDown
+              showCommandLaunchers={false}
+              markdownCommandContextText={model.panelMarkdownCommandContextText}
+              onCommit={model.panelTextEditable ? nextValue => {
+                const nextText = String(nextValue || '')
+                commitRichMediaInlineEditVersion({
+                  currentText: model.panelDisplayText,
+                  nextText,
+                  commit: () => {
+                    model.setPanelDraftText(nextText)
+                    props.onPanelChange?.({
+                      activeTab: 'text',
+                      freezeConnectedOutput: true,
+                      text: nextText,
+                      ...((props.panel?.outputVersions?.length || 0) > 0
+                        ? { selectedOutputVersionId: RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID }
+                        : {}),
+                    })
+                  },
+                })
+              } : undefined}
+              displayClassName={cn(CARD_TEXT_SURFACE_VIEW_CLASS_NAME, CARD_TEXT_SURFACE_TEXT_CLASS_NAME)}
+              editorClassName={cn(CARD_TEXT_SURFACE_EDIT_CLASS_NAME, CARD_TEXT_SURFACE_TEXT_CLASS_NAME)}
+            />
+          )}
         </section>
       </section>
     )

@@ -2,6 +2,7 @@ import React from 'react'
 import { UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import FlowCanvas from '@/components/FlowCanvas'
 import { StoryboardCardOverlayLayer2d } from '@/components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d'
+import { StoryboardGroupPanelLayer2d } from '@/components/StoryboardWidgetCanvas/StoryboardGroupPanelLayer2d'
 import { applyFixedStoryboardCardPlacementsToGraphData2d, readStoryboardWidgetPlacementSize2d } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
 import { readResolvedStoryboardWidgetDropTransform } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
@@ -37,6 +38,10 @@ import { buildRichMediaPanelOverlayExcludeNodeIdSet } from '@/lib/render/richMed
 import { isRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
 import { readFiniteRuntimeZoomTransform } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetRuntimeScene'
+import { buildCollectiveCameraFollowBaselineKey, resolveCollectiveCameraFollowBaselineRef } from '@/lib/canvas/overlayWidgetZoom'
+import { StoryboardEdgeNodeInsertionMenu } from '@/components/StoryboardWidgetCanvas/runtime/StoryboardEdgeNodeInsertionMenu'
+import { buildStoryboardOverlayAabbByNodeId } from '@/components/StoryboardWidgetCanvas/runtime/storyboardOverlayAabb'
+import { readSubgraphs, subgraphGroupId } from '@/lib/graph/subgraphs'
 
 export default function StoryboardWidgetCanvasSurface(props: {
   rootRef: React.RefObject<HTMLElement | null>
@@ -113,13 +118,13 @@ export default function StoryboardWidgetCanvasSurface(props: {
     () => resolveFlowWidgetStateGraphKey({ graphData: props.storyboardSourceGraphData || null }),
     [props.storyboardSourceGraphData],
   )
-  const storyboardCollectiveZoomBaselineKRef = React.useRef<number | null>(null)
-  const storyboardCollectiveZoomBaselineKeyRef = React.useRef('')
-  const storyboardCollectiveZoomBaselineKey = `${props.storyboardWidgetSurfaceId}|${flowWidgetStateGraphKey || ''}`
-  if (storyboardCollectiveZoomBaselineKeyRef.current !== storyboardCollectiveZoomBaselineKey) {
-    storyboardCollectiveZoomBaselineKeyRef.current = storyboardCollectiveZoomBaselineKey
-    storyboardCollectiveZoomBaselineKRef.current = null
-  }
+  const storyboardCollectiveZoomBaselineKey = buildCollectiveCameraFollowBaselineKey({
+    surfaceId: props.storyboardWidgetSurfaceId,
+    graphKey: flowWidgetStateGraphKey,
+  })
+  const storyboardCollectiveZoomBaselineKRef = resolveCollectiveCameraFollowBaselineRef(
+    storyboardCollectiveZoomBaselineKey,
+  )
   const effectiveFlowWidgetPinnedByNodeId = React.useMemo(() => resolveScopedFlowWidgetNodeMap({
     graphMetaKey: flowWidgetStateGraphKey,
     keyedByGraphMetaKey: flowWidgetPinnedByNodeIdByGraphMetaKey,
@@ -228,6 +233,10 @@ export default function StoryboardWidgetCanvasSurface(props: {
     return readFlowCanvasBaseGraphDataOverride()
   }, [readFlowCanvasBaseGraphDataOverride])
   const storyboardEdgeGraphData = storyboardSharedSurfaceActive ? storyboardGraphData : flowCanvasGraphDataOverride
+  const storyboardGroupPanelIds = React.useMemo(
+    () => readSubgraphs(storyboardGraphData).map(group => subgraphGroupId(group.id)),
+    [storyboardGraphData],
+  )
   const flowCanvasNativeSceneExcludedNodeIds = React.useMemo(() => (
     storyboardSharedSurfaceActive
       ? Array.from(new Set([
@@ -241,6 +250,21 @@ export default function StoryboardWidgetCanvasSurface(props: {
     () => Array.from(new Set(openRichMediaPanelNodeIds)),
     [openRichMediaPanelNodeIds],
   )
+  const flowCanvasOverlayAabbByNodeId = React.useMemo(() => buildStoryboardOverlayAabbByNodeId({
+    active: storyboardSharedSurfaceActive,
+    aspectRatioMode: strybldrStoryboardCardAspectMode,
+    fixedCardNodeIds: storyboardFixedCardNodeIds,
+    nodeById: storyboardNodeById,
+    openRichMediaPanelNodeIds,
+    openWidgetNodeIds: storyboardOpenWidgetNodeIds,
+  }), [
+    openRichMediaPanelNodeIds,
+    storyboardFixedCardNodeIds,
+    storyboardNodeById,
+    storyboardOpenWidgetNodeIds,
+    storyboardSharedSurfaceActive,
+    strybldrStoryboardCardAspectMode,
+  ])
   const storyboardSurfaceGraphSignature = React.useMemo(() => {
     return [
       String(storyboardSharedSurfaceActive),
@@ -291,6 +315,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
       draftGraphDataRef: { current: flowCanvasGraphDataOverride || props.renderGraphDataOverride || props.storyboardSourceGraphData || null },
       baseGraphData: props.storyboardSourceGraphData || null,
       useProjectedRichMediaShell: true,
+      screenOrigin: { left: rect.left, top: rect.top },
     })
     return screenToWorld({
       transform,
@@ -462,6 +487,8 @@ export default function StoryboardWidgetCanvasSurface(props: {
           mutationSourceGraphDataOverride={storyboardSourceGraphData || flowCanvasGraphDataOverride}
           graphDataRevisionOverride={props.storyboardWidgetViewActive ? props.draftGraphDataRevision : props.baseGraphDataRevision}
           excludeNativeSceneNodeIds={flowCanvasNativeSceneExcludedNodeIds}
+          hideGroupIds={storyboardGroupPanelIds}
+          overlayAabbByNodeId={flowCanvasOverlayAabbByNodeId}
           excludeRichMediaOverlayNodeIds={flowCanvasRichMediaOverlayExcludedNodeIds}
           flowWidgetPinnedByNodeIdOverride={effectiveFlowWidgetPinnedByNodeId}
           flowWidgetStateGraphKeyOverride={flowWidgetStateGraphKey}
@@ -492,7 +519,27 @@ export default function StoryboardWidgetCanvasSurface(props: {
         />
       )}
 
+      <StoryboardEdgeNodeInsertionMenu
+        active={props.active}
+        canEdit={props.canEdit}
+        rootRef={props.rootRef}
+        graphData={storyboardSourceGraphData || storyboardEdgeGraphData}
+        commitGraphData={props.commitStoryboardCardMediaGraph}
+        readWorldPoint={readSurfaceDrop}
+        upsertUiToast={props.upsertUiToast}
+      />
+
       {props.overlayEditorElements}
+      <StoryboardGroupPanelLayer2d
+        active={storyboardSharedSurfaceActive}
+        fallbackNodePositions={stableStoryboardCardPlacements}
+        flowWidgetPinnedByNodeId={effectiveFlowWidgetPinnedByNodeId}
+        flowWidgetStateGraphKey={flowWidgetStateGraphKey}
+        graphData={storyboardGraphData}
+        getRuntime={() => props.flowRuntimeRefRef.current?.current || null}
+        onNodeChange={props.patchNodeById}
+        storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
+      />
       <StoryboardCardOverlayLayer2d
         active={storyboardCardsActive}
         commitGraphData={props.commitStoryboardCardMediaGraph}
@@ -502,6 +549,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
         storyboardCollectiveZoomBaselineKRef={storyboardCollectiveZoomBaselineKRef}
         getTransform={getSynchronizedStoryboardCameraTransform}
+        getRuntime={() => props.flowRuntimeRefRef.current?.current || null}
         getWheelForwardTarget={() => props.rootRef.current?.querySelector('[data-kg-canvas-interactive="1"]') || null}
         graphData={storyboardGraphData}
         graphRevision={graphContentRevision || graphDataRevision || 0}

@@ -2,6 +2,7 @@ import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 
 export const RICH_MEDIA_OUTPUT_VERSIONS_PROPERTY = 'outputVersions'
 export const RICH_MEDIA_SELECTED_OUTPUT_VERSION_PROPERTY = 'selectedOutputVersionId'
+export const RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID = '__rich-media-edited-draft__'
 
 export type RichMediaTextOutputVersion = {
   id: string
@@ -66,6 +67,16 @@ export function resolveRichMediaTextOutputVersionSelection(args: {
 } {
   const versions = readRichMediaTextOutputVersions(args.properties)
   const requestedId = cleanString(args.properties?.[RICH_MEDIA_SELECTED_OUTPUT_VERSION_PROPERTY])
+  if (requestedId === RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID) {
+    const fallbackOutput = typeof unwrapGraphCellValue(args.fallbackOutput) === 'string'
+      ? String(unwrapGraphCellValue(args.fallbackOutput))
+      : ''
+    return {
+      versions,
+      selectedVersionId: RICH_MEDIA_OUTPUT_DRAFT_VERSION_ID,
+      selectedOutput: fallbackOutput,
+    }
+  }
   const selected = versions.find(version => version.id === requestedId) || versions.at(-1)
   const fallbackOutput = typeof unwrapGraphCellValue(args.fallbackOutput) === 'string'
     ? String(unwrapGraphCellValue(args.fallbackOutput))

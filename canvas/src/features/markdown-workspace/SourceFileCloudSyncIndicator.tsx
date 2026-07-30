@@ -6,9 +6,15 @@ import {
   resolveSourceFileCanonicalCloudTarget,
   syncWorkspaceEntryToCanonicalCloud,
 } from '@/features/source-files/sourceFileCanonicalCloudSync'
+import {
+  readKnowgrphStorageRuntimeSyncEnabled,
+} from '@/features/source-files/sourceFilesKnowgrphStorageSettings'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import {
+  subscribeWorkspaceStoreSyncSettingsChanged,
+} from '@/lib/workspace/workspaceStoreSyncSettings'
 
 const CLOUD_STATUS_REFRESH_INTERVAL_MS = 120_000
 
@@ -52,13 +58,23 @@ export const resolveSourceFileCloudSyncStatus = (args: {
 
 export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
   const pushUiToast = useGraphStore(state => state.pushUiToast)
+  const pathSignature = React.useMemo(() => readSupportedPathSignature(entries), [entries])
+  const [cloudSyncEnabled, setCloudSyncEnabled] = React.useState(
+    () => readKnowgrphStorageRuntimeSyncEnabled(),
+  )
   const [remoteContentByCanonicalPath, setRemoteContentByCanonicalPath] = React.useState<Map<string, string>>(() => new Map())
-  const [snapshotStatus, setSnapshotStatus] = React.useState<'checking' | 'ready' | 'unavailable'>('checking')
+  const [snapshotStatus, setSnapshotStatus] = React.useState<'checking' | 'ready' | 'unavailable'>(
+    () => cloudSyncEnabled && pathSignature ? 'checking' : 'unavailable',
+  )
   const [actionStateByPath, setActionStateByPath] = React.useState<Map<string, EntryActionState>>(() => new Map())
   const refreshInFlightRef = React.useRef<Promise<void> | null>(null)
-  const pathSignature = React.useMemo(() => readSupportedPathSignature(entries), [entries])
 
   const refresh = React.useCallback(async () => {
+    if (!cloudSyncEnabled || !pathSignature) {
+      setRemoteContentByCanonicalPath(new Map())
+      setSnapshotStatus('unavailable')
+      return
+    }
     if (refreshInFlightRef.current) return refreshInFlightRef.current
     const run = (async () => {
       try {
@@ -75,15 +91,28 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
     } finally {
       if (refreshInFlightRef.current === run) refreshInFlightRef.current = null
     }
-  }, [])
+  }, [cloudSyncEnabled, pathSignature])
+
+  React.useEffect(() => subscribeWorkspaceStoreSyncSettingsChanged(
+    () => setCloudSyncEnabled(readKnowgrphStorageRuntimeSyncEnabled()),
+  ), [])
 
   React.useEffect(() => {
+    if (!cloudSyncEnabled || !pathSignature) {
+      setRemoteContentByCanonicalPath(new Map())
+      setSnapshotStatus('unavailable')
+      return
+    }
     setSnapshotStatus('checking')
     void refresh()
-  }, [pathSignature, refresh])
+  }, [cloudSyncEnabled, pathSignature, refresh])
 
   React.useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (
+      typeof window === 'undefined'
+      || !cloudSyncEnabled
+      || !pathSignature
+    ) return
     const handleFocus = () => void refresh()
     const timer = window.setInterval(handleFocus, CLOUD_STATUS_REFRESH_INTERVAL_MS)
     window.addEventListener('focus', handleFocus)
@@ -91,7 +120,7 @@ export function useSourceFileCloudSync(entries: WorkspaceEntry[]) {
       window.clearInterval(timer)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [refresh])
+  }, [cloudSyncEnabled, pathSignature, refresh])
 
   const upload = React.useCallback(async (entry: WorkspaceEntry) => {
     if (entry.kind !== 'file' || !resolveSourceFileCanonicalCloudTarget(entry.path)) return

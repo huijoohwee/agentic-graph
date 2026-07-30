@@ -96,7 +96,7 @@ export const computeFloatingMenuPosition = (args: {
   }
 }
 
-export const computeBubblePosition = (args: {
+export const computeInlineSelectionToolbarPosition = (args: {
   rangeRect: DOMRect | null
   root?: HTMLElement
   hostRect?: DOMRect

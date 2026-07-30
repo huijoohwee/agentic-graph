@@ -56,7 +56,7 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   const blockSelectionToolbarSyncPath = path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'markdownBlockContainerCore.selectionToolbarSync.ts')
   const blockMarkdownFormattingPath = path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'markdownBlockContainerCore.markdownFormatting.ts')
   const blockHtmlFormattingPath = path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'markdownBlockContainerCore.htmlFormatting.ts')
-  const blockBubbleToolbarOverlayPath = path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'markdownBlockContainerCore.bubbleToolbarOverlay.tsx')
+  const blockInlineSelectionToolbarPath = path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'MarkdownInlineSelectionToolbar.tsx')
   const blockInlineMenusOverlayPath = path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'markdownBlockContainerCore.inlineMenusOverlay.tsx')
   const blockCommandMenuPath = path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'markdownBlockContainerCore.commandMenu.tsx')
   const blockCommitPath = path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'markdownBlockContainerCore.commit.ts')
@@ -79,7 +79,7 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
     fs.existsSync(blockSelectionToolbarSyncPath) ? readUtf8(blockSelectionToolbarSyncPath) : '',
     fs.existsSync(blockMarkdownFormattingPath) ? readUtf8(blockMarkdownFormattingPath) : '',
     fs.existsSync(blockHtmlFormattingPath) ? readUtf8(blockHtmlFormattingPath) : '',
-    fs.existsSync(blockBubbleToolbarOverlayPath) ? readUtf8(blockBubbleToolbarOverlayPath) : '',
+    fs.existsSync(blockInlineSelectionToolbarPath) ? readUtf8(blockInlineSelectionToolbarPath) : '',
     fs.existsSync(blockInlineMenusOverlayPath) ? readUtf8(blockInlineMenusOverlayPath) : '',
     fs.existsSync(blockCommandMenuPath) ? readUtf8(blockCommandMenuPath) : '',
     fs.existsSync(blockCommitPath) ? readUtf8(blockCommitPath) : '',
@@ -199,18 +199,18 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!blockText.includes('rewriteInlineCodeSigilsToStyledSpansHtml')) {
     throw new Error('expected html inline editor to convert sigil inline-code tokens into styled normal text on edit-open')
   }
-  if (!blockText.includes('captureSelectionForFloatingToolbar')) {
-    throw new Error('expected floating selection toolbar to reuse shared interaction capture SSOT helper')
+  if (!blockText.includes('captureInlineSelectionForToolbarAction')) {
+    throw new Error('expected inline selection toolbar to reuse shared interaction capture SSOT helper')
   }
-  const bubbleToolbarText = readUtf8(path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'markdownBlockContainerCore.bubbleToolbarOverlay.tsx'))
-  if (!bubbleToolbarText.includes("title: 'Highlight'") || !bubbleToolbarText.includes('preventDefaultPointerDown(event)')) {
+  const inlineSelectionToolbarText = readUtf8(path.resolve(root, 'src', 'lib', 'markdown-core', 'ui', 'MarkdownInlineSelectionToolbar.tsx'))
+  if (!inlineSelectionToolbarText.includes("title: 'Highlight'") || !inlineSelectionToolbarText.includes('preventDefaultPointerDown(event)')) {
     throw new Error('expected highlight menu summary to preserve editor focus/selection on pointer down')
   }
-  if (!bubbleToolbarText.includes("title: 'Text color'") || !bubbleToolbarText.includes('preventDefaultPointerDown(event)')) {
+  if (!inlineSelectionToolbarText.includes("title: 'Text color'") || !inlineSelectionToolbarText.includes('preventDefaultPointerDown(event)')) {
     throw new Error('expected text color menu summary to preserve editor focus/selection on pointer down')
   }
-  if (!bubbleToolbarText.includes('title="Slash commands"') || !bubbleToolbarText.includes('title="Variable commands"')) {
-    throw new Error('expected bubble toolbar to expose / and @ command menu triggers')
+  if (!inlineSelectionToolbarText.includes('title="Slash commands"') || !inlineSelectionToolbarText.includes('title="Variable commands"')) {
+    throw new Error('expected inline selection toolbar to expose / and @ command menu triggers')
   }
   const inlineMenusText = readUtf8(blockInlineMenusOverlayPath)
   const commandMenuText = `${readUtf8(blockCommandMenuPath)}\n${readUtf8(path.resolve(root, 'src', 'lib', 'command-menu', 'InlineMediaCommandThumbnail.tsx'))}`
@@ -335,8 +335,10 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!workspaceMainText.includes('onReorderLineBlock={disableDerivedMarkdownMutations ? undefined : onReorderLineBlock}')) {
     throw new Error('expected markdown workspace read viewer to keep reorder-line controls enabled unless mutations are disabled')
   }
-  if (!workspaceMainText.includes('forbidCopy={false}')) {
-    throw new Error('expected markdown workspace read viewer code-fence copy action to stay enabled in read mode')
+  const sharedViewerPath = path.resolve(root, 'src', 'features', 'markdown-workspace', 'main', 'viewer', 'MarkdownWorkspaceViewerSurface.tsx')
+  const sharedViewerText = readUtf8(sharedViewerPath)
+  if (!sharedViewerText.includes('forbidCopy={false}')) {
+    throw new Error('expected the shared workspace/rich-media Viewer code-fence copy action to stay enabled in read mode')
   }
   const codePath = path.resolve(root, 'src', 'features', 'markdown', 'ui', 'MarkdownCodeBlock.tsx')
   const codeText = readUtf8(codePath)
@@ -431,8 +433,8 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!listText.includes('const resolvedRowRange = rowRange || {')) {
     throw new Error('expected list row inline editor to resolve fallback row range per item token without mutating SSOT')
   }
-  if (!listText.includes('inlineEditable={rowEditingEnabled && !!editRange}')) {
-    throw new Error('expected list row inline editor to stay enabled only for source-mapped row ranges')
+  if (!listText.includes('inlineEditable={rowEditingEnabled && !!editRange && useHtmlInlineRow}')) {
+    throw new Error('expected paragraph-only list rows to own their source-mapped inline editor while composite rows delegate to nested blocks')
   }
   if (!listText.includes('rowControlsEnabled={gutterEnabled}') || !listText.includes('const rowCanInsert = rowControlsEnabled && !!opts.onInsertLineAfter')) {
     throw new Error('expected each list row token to own insert control eligibility')
@@ -486,8 +488,18 @@ export const testMarkdownViewerInlineEditConfigSupportsImagesTasksHrTable = () =
   if (!listText.includes('const useHtmlInlineRow = !!onlyParagraph')) {
     throw new Error('expected list row inline editor to enable html-inline mode for paragraph-only rows so existing inline semantics stay rendered during edit')
   }
-  if (!listText.includes("editPresentation={useHtmlInlineRow ? 'html' : 'markdown'}") || !listText.includes("editHtmlRender={useHtmlInlineRow ? 'inline' : undefined}")) {
-    throw new Error('expected list row inline editor to use html-inline editing for paragraph-only rows and keep markdown mode for complex rows')
+  if (!listText.includes('editPresentation="html"') || !listText.includes('editHtmlRender="inline"')) {
+    throw new Error('expected list row inline editor to preserve rendered html-inline semantics')
+  }
+  if (
+    !listText.includes('const nestedBlockEditingEnabled = rowEditingEnabled && !useHtmlInlineRow')
+    || !listText.includes('viewerBlockEditingEnabled={nestedBlockEditingEnabled}')
+    || !listText.includes('onReplaceLineRange={nestedBlockEditingEnabled ? opts.onReplaceLineRange : undefined}')
+  ) {
+    throw new Error('expected composite list rows to keep their rendered children mounted and delegate editing to the selected nested block')
+  }
+  if (!listText.includes('const readListMarkerIndent = (line: string): number | null =>')) {
+    throw new Error('expected list row source ranges to distinguish outer row markers from indented nested markers')
   }
   if (!listText.includes('const rowDefaultLinePrefix = React.useMemo(() =>') || !listText.includes("return ' '.repeat((marker[1] || '').length)")) {
     throw new Error('expected row editor to preserve list indentation width instead of mutating marker indentation')

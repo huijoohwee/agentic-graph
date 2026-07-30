@@ -2,7 +2,7 @@ import React from 'react'
 import {
   Accessibility, ArrowRightLeft, BarChart3, Braces, CalendarClock, Camera, ChartGantt, Clapperboard, Copy, CreditCard, Cuboid, Eraser, GitBranch, Globe2, Hand, Hash,
   HelpCircle, History as HistoryIcon, ImageIcon, LayoutGrid, Link2, ListChecks, LocateFixed, Map as MapIcon, MessageCircle, MonitorPlay,
-  Network, Palette, Plug, PlugZap, Radio, Server, Settings, SlidersHorizontal, SquareCheckBig, SquareTerminal, Table, Type as TextTypeIcon, UserX, Users,
+  Network, Palette, Plane, Plug, PlugZap, Radio, Server, Settings, SlidersHorizontal, SquareCheckBig, SquareTerminal, Table, Type as TextTypeIcon, UserX, Users,
   Workflow,
 } from 'lucide-react'
 import type { MainPanelTabKey } from '@/features/panels/mainPanelTabs'
@@ -73,6 +73,7 @@ export const MAIN_PANEL_TYPE_ICON_KEYS = [
   'floatingPanel.animation',
   'floatingPanel.motionControl',
   'floatingPanel.gameMode',
+  'floatingPanel.flightSim',
   'floatingPanel.camera',
   'floatingPanel.design',
   'floatingPanel.chat',
@@ -345,6 +346,11 @@ export const MAIN_PANEL_TYPE_ICON_META_BY_KEY = {
     label: 'Game Mode',
     Icon: Cuboid,
   },
+  'floatingPanel.flightSim': {
+    category: 'FloatingPanel surface',
+    label: 'Flight Sim',
+    Icon: Plane,
+  },
   'floatingPanel.camera': {
     category: 'FloatingPanel surface',
     label: 'Camera',
@@ -430,6 +436,8 @@ export type FloatingPanelTypeIconView =
   | 'animation'
   | 'motionControl'
   | 'gameMode'
+  | 'flightSim'
+  | 'cityBuilder'
   | 'camera'
   | 'design'
   | 'chat'
@@ -453,6 +461,8 @@ export const FLOATING_PANEL_TYPE_ICON_KEY_BY_VIEW = {
   animation: 'floatingPanel.animation',
   motionControl: 'floatingPanel.motionControl',
   gameMode: 'floatingPanel.gameMode',
+  flightSim: 'floatingPanel.flightSim',
+  cityBuilder: 'floatingPanel.gameMode',
   camera: 'floatingPanel.camera',
   design: 'floatingPanel.design',
   chat: 'floatingPanel.chat',

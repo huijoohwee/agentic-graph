@@ -1,6 +1,9 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import { createFakeKnowgrphStorageWorkerEnv } from '@/__tests__/helpers/fakeKnowgrphStorageD1'
+import {
+  createFakeKnowgrphStorageWorkerEnv,
+  type FakeKnowgrphStorageD1Database,
+} from '@/__tests__/helpers/fakeKnowgrphStorageD1'
 import { readStorageWorker } from '@/__tests__/helpers/fakeKnowgrphStorageWorkerFetch'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
@@ -19,22 +22,69 @@ import {
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 0))
+const SESSION_TOKEN = 'source-file-cloud-session'
+
+const hashToken = async (value: string): Promise<string> => {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(value),
+  )
+  return Array.from(
+    new Uint8Array(digest),
+    byte => byte.toString(16).padStart(2, '0'),
+  ).join('')
+}
+
+const seedAuthenticatedWorkspace = async (
+  db: FakeKnowgrphStorageD1Database,
+  workspaceId: string,
+): Promise<void> => {
+  const nowIso = '2026-07-24T00:00:00.000Z'
+  db.users.set('user:source-file-cloud', {
+    id: 'user:source-file-cloud',
+    email: 'source-file-cloud@example.com',
+    display_name: 'Source File Cloud',
+    status: 'active',
+  })
+  db.authSessions.set('session:source-file-cloud', {
+    id: 'session:source-file-cloud',
+    user_id: 'user:source-file-cloud',
+    session_hash: await hashToken(SESSION_TOKEN),
+    expires_at: '2036-01-01T00:00:00.000Z',
+    revoked_at: null,
+    created_at: nowIso,
+    updated_at: nowIso,
+  })
+  db.workspaceMemberships.set(`membership:${workspaceId}`, {
+    id: `membership:${workspaceId}`,
+    workspace_id: workspaceId,
+    user_id: 'user:source-file-cloud',
+    role: 'editor',
+    status: 'active',
+  })
+}
 
 export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndVerifiesReadBack() {
   const { restore: restoreDom } = initJsdomHarness()
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const previousFetch = globalThis.fetch
   const env = Object.assign(createFakeKnowgrphStorageWorkerEnv(), {
+    KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
     KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
     KNOWGRPH_STORAGE_GITHUB_OWNER: 'huijoohwee',
-    KNOWGRPH_STORAGE_GITHUB_REPO: 'agentic-canvas-os',
+    KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'huijoohwee',
     KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
   })
   const events: string[] = []
+  const saveAuthorizations: string[] = []
   let committedText = ''
   try {
     resetWorkspaceFsForTests()
     await __resetKnowgrphStorageDbForTests()
+    await seedAuthenticatedWorkspace(
+      env.DB,
+      'kgws:test-source-file-cloud-sync',
+    )
     const fs = await getWorkspaceFs()
     const path = await fs.createFile({
       parentPath: '/',
@@ -66,21 +116,29 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
       const request = input instanceof Request
         ? input
-        : new Request(new URL(String(input), 'https://storage.example'), init)
+        : new Request(new URL(String(input), 'http://127.0.0.1:8787'), init)
       events.push(`${request.method}:${new URL(request.url).pathname}`)
+      if (new URL(request.url).pathname === '/api/storage/collab/save') {
+        saveAuthorizations.push(
+          String(request.headers.get('authorization') || ''),
+        )
+      }
       return readStorageWorker().fetch(request, env as never)
     }
     const result = await syncWorkspaceEntryToCanonicalCloud({
       entry,
       workspaceId: 'kgws:test-source-file-cloud-sync',
-      baseUrl: 'https://storage.example',
+      baseUrl: 'http://127.0.0.1:8787',
+      sessionToken: SESSION_TOKEN,
       fetchImpl,
     })
 
     if (result.githubPath !== 'docs/note-cloud-sync.md') {
       throw new Error(`expected root New .md to commit under canonical GitHub docs, got ${result.githubPath}`)
     }
-    if (result.canonicalPath !== 'agentic-canvas-os/docs/note-cloud-sync.md' || result.readBackVerified !== true) {
+    if (result.repositoryTarget !== 'workspace-docs'
+      || result.canonicalPath !== 'huijoohwee/docs/note-cloud-sync.md'
+      || result.readBackVerified !== true) {
       throw new Error(`expected verified canonical Cloudflare path, got ${JSON.stringify(result)}`)
     }
     if (committedText !== '# New cloud note\n\nGitHub first, Cloudflare second.') {
@@ -91,9 +149,12 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     if (githubEventIndex < 0 || cloudflarePushEventIndex <= githubEventIndex) {
       throw new Error(`expected GitHub bridge before Cloudflare push, got ${events.join(', ')}`)
     }
+    if (saveAuthorizations[0] !== `Bearer ${SESSION_TOKEN}`) {
+      throw new Error('expected canonical cloud save to authenticate the GitHub bridge')
+    }
     const snapshot = await readCanonicalCloudDocumentSnapshot({
       workspaceId: result.workspaceId,
-      baseUrl: 'https://storage.example',
+      baseUrl: 'http://127.0.0.1:8787',
       fetchImpl,
     })
     if (snapshot.get(result.canonicalPath) !== committedText) {
@@ -104,7 +165,8 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     await syncWorkspaceEntryToCanonicalCloud({
       entry,
       workspaceId: result.workspaceId,
-      baseUrl: 'https://storage.example',
+      baseUrl: 'http://127.0.0.1:8787',
+      sessionToken: SESSION_TOKEN,
       fetchImpl,
     })
     if (events.indexOf('POST:/api/storage/collab/save') < 0
@@ -118,12 +180,13 @@ export async function testSourceFileCloudUploadCommitsGitHubBeforeCloudflareAndV
     const emptyResult = await syncWorkspaceEntryToCanonicalCloud({
       entry: emptyEntry,
       workspaceId: result.workspaceId,
-      baseUrl: 'https://storage.example',
+      baseUrl: 'http://127.0.0.1:8787',
+      sessionToken: SESSION_TOKEN,
       fetchImpl,
     })
     const snapshotWithEmptyDocument = await readCanonicalCloudDocumentSnapshot({
       workspaceId: result.workspaceId,
-      baseUrl: 'https://storage.example',
+      baseUrl: 'http://127.0.0.1:8787',
       fetchImpl,
     })
     if (!snapshotWithEmptyDocument.has(emptyResult.canonicalPath)
@@ -144,9 +207,10 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
   const { restore: restoreWindow } = initWindowHarness({ storage: new MemoryStorage() })
   const previousFetch = globalThis.fetch
   const env = Object.assign(createFakeKnowgrphStorageWorkerEnv(), {
+    KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
     KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
     KNOWGRPH_STORAGE_GITHUB_OWNER: 'huijoohwee',
-    KNOWGRPH_STORAGE_GITHUB_REPO: 'agentic-canvas-os',
+    KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO: 'knowgrph',
     KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
   })
   const githubMethods: string[] = []
@@ -154,8 +218,12 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
   try {
     resetWorkspaceFsForTests()
     await __resetKnowgrphStorageDbForTests()
+    await seedAuthenticatedWorkspace(
+      env.DB,
+      'kgws:test-source-file-protected-noop',
+    )
     const fs = await getWorkspaceFs()
-    const repositoryRoot = await fs.createFolder({ parentPath: '/', name: 'agentic-canvas-os' })
+    const repositoryRoot = await fs.createFolder({ parentPath: '/', name: 'knowgrph' })
     const docsRoot = await fs.createFolder({ parentPath: repositoryRoot, name: 'docs' })
     const path = await fs.createFile({ parentPath: docsRoot, name: 'existing.md', text })
     const entry = (await fs.listEntries()).find(candidate => candidate.path === path)
@@ -177,11 +245,23 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
     const result = await syncWorkspaceEntryToCanonicalCloud({
       entry,
       workspaceId: 'kgws:test-source-file-protected-noop',
-      baseUrl: 'https://storage.example',
-      fetchImpl: async (input, init) => readStorageWorker().fetch(
-        input instanceof Request ? input : new Request(new URL(String(input), 'https://storage.example'), init),
-        env as never,
-      ),
+      baseUrl: 'http://127.0.0.1:8787',
+      sessionToken: SESSION_TOKEN,
+      fetchImpl: async (input, init) => {
+        const request = input instanceof Request
+          ? input
+          : new Request(
+              new URL(String(input), 'http://127.0.0.1:8787'),
+              init,
+            )
+        if (
+          new URL(request.url).pathname === '/api/storage/collab/save'
+          && request.headers.get('authorization') !== `Bearer ${SESSION_TOKEN}`
+        ) {
+          throw new Error('expected protected save to authenticate the bridge')
+        }
+        return readStorageWorker().fetch(request, env as never)
+      },
     })
     if (githubMethods.join('|') !== 'GET') {
       throw new Error(`expected one read-only GitHub check, got ${githubMethods.join(',')}`)
@@ -191,6 +271,9 @@ export async function testSourceFileCloudUploadReusesMatchingProtectedGitHubCont
     }
     if (result.githubPath !== 'docs/existing.md') {
       throw new Error(`expected repository-root workspace path to normalize once, got ${result.githubPath}`)
+    }
+    if (result.repositoryTarget !== 'knowgrph-docs' || result.canonicalPath !== 'knowgrph/docs/existing.md') {
+      throw new Error(`expected product docs to retain knowgrph authority, got ${JSON.stringify(result)}`)
     }
   } finally {
     globalThis.fetch = previousFetch
@@ -217,9 +300,16 @@ export async function testSourceFileCloudUploadStopsBeforeCloudflareWhenGitHubBr
       await syncWorkspaceEntryToCanonicalCloud({
         entry,
         workspaceId: 'kgws:test-source-file-cloud-failure',
-        baseUrl: 'https://storage.example',
-        fetchImpl: async input => {
+        baseUrl: 'http://127.0.0.1:8787',
+        sessionToken: SESSION_TOKEN,
+        fetchImpl: async (input, init) => {
           const pathname = new URL(String(input), 'https://storage.example').pathname
+          if (
+            new Headers(init?.headers).get('authorization')
+            !== `Bearer ${SESSION_TOKEN}`
+          ) {
+            throw new Error('expected failed bridge calls to stay authenticated')
+          }
           calls.push(pathname)
           return new Response(JSON.stringify({ ok: false, error: 'missing GitHub bridge token' }), {
             status: 403,
@@ -230,14 +320,59 @@ export async function testSourceFileCloudUploadStopsBeforeCloudflareWhenGitHubBr
     } catch (error) {
       rejected = String(error).includes('missing GitHub bridge token')
     }
-    if (!rejected || calls.join('|') !== '/api/storage/collab/save') {
-      throw new Error(`expected GitHub failure to keep Cloudflare untouched, got rejected=${rejected} calls=${calls.join(',')}`)
+    if (!rejected
+      || calls.length !== 3
+      || calls.some(pathname => pathname !== '/api/storage/collab/save')) {
+      throw new Error(`expected three bounded GitHub retries to keep D1 untouched, got rejected=${rejected} calls=${calls.join(',')}`)
     }
   } finally {
     await __resetKnowgrphStorageDbForTests()
     resetWorkspaceFsForTests()
     restoreWindow()
     restoreDom()
+  }
+}
+
+export async function testSourceFileCloudUploadRejectsMissingSessionBeforeNetwork() {
+  const previousToken = process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN
+  let fetchCalls = 0
+  const entry: WorkspaceEntry = {
+    path: '/missing-session.md',
+    parentPath: '/',
+    kind: 'file',
+    name: 'missing-session.md',
+    text: '# Missing session',
+    updatedAtMs: 1,
+  }
+  try {
+    delete process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN
+    for (const sessionToken of [undefined, 'invalid token']) {
+      let rejected = false
+      try {
+        await syncWorkspaceEntryToCanonicalCloud({
+          entry,
+          workspaceId: 'kgws:missing-session',
+          baseUrl: 'http://127.0.0.1:8787',
+          ...(sessionToken === undefined ? {} : { sessionToken }),
+          fetchImpl: async () => {
+            fetchCalls += 1
+            throw new Error('unexpected network call')
+          },
+        })
+      } catch (error) {
+        rejected = String(error).includes('Authenticated storage session')
+      }
+      if (!rejected) throw new Error('expected missing or invalid session to fail closed')
+    }
+    if (fetchCalls !== 0) {
+      throw new Error(`expected session rejection before fetch, got ${fetchCalls} calls`)
+    }
+  } finally {
+    if (typeof previousToken === 'string') {
+      process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN = previousToken
+    } else {
+      delete process.env.VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN
+    }
   }
 }
 
@@ -297,4 +432,23 @@ export async function testSourceFileCloudIndicatorShowsLocalAndCloudStatesAndUpl
     })
     harness.restore()
   }
+}
+
+export function testSourceFileCloudTargetsRespectDocumentRepositoryAuthority() {
+  const workspace = resolveSourceFileCanonicalCloudTarget('/docs/team-note.md')
+  const product = resolveSourceFileCanonicalCloudTarget('/knowgrph/docs/documents/storage.md')
+  const seed = resolveSourceFileCanonicalCloudTarget('/docs/workspace-seeds/demo.md')
+  const staleWorkspaceSeed = resolveSourceFileCanonicalCloudTarget('/huijoohwee/docs/workspace-seeds/demo.md')
+  const governance = resolveSourceFileCanonicalCloudTarget('/agentic-canvas-os/docs/FACTS.md')
+  if (workspace?.repositoryTarget !== 'workspace-docs' || workspace.canonicalPath !== 'huijoohwee/docs/team-note.md') {
+    throw new Error(`expected collaborative docs to route to huijoohwee/docs, got ${JSON.stringify(workspace)}`)
+  }
+  if (product?.repositoryTarget !== 'knowgrph-docs' || product.canonicalPath !== 'knowgrph/docs/documents/storage.md') {
+    throw new Error(`expected product docs to route to knowgrph/docs, got ${JSON.stringify(product)}`)
+  }
+  if (seed?.repositoryTarget !== 'knowgrph-docs' || seed.canonicalPath !== 'knowgrph/docs/workspace-seeds/demo.md') {
+    throw new Error(`expected workspace seeds to remain authored in knowgrph/docs, got ${JSON.stringify(seed)}`)
+  }
+  if (staleWorkspaceSeed !== null) throw new Error('expected the duplicate huijoohwee workspace-seeds root to be read-only')
+  if (governance !== null) throw new Error('expected Agentic Canvas OS governance docs to remain read-only')
 }

@@ -1,5 +1,6 @@
 import { KNOWGRPH_AGENT_READY_TOOL_IDS } from "./knowgrphAgentReadyToolContract.mjs";
 import { KNOWGRPH_PROBE_TREE_TOOL_NAMES } from "./probeTreeContract.mjs";
+import { KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES } from "../../lib/storage/knowgrphStorageEngineMcpContract.mjs";
 
 export const KNOWGRPH_OS_STATUS_TOOL_NAME = "knowgrph.os.status";
 
@@ -8,6 +9,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   fetch: KNOWGRPH_AGENT_READY_TOOL_IDS.fetch,
   uiLaunch: "knowgrph.ui.launch",
   uiStop: "knowgrph.ui.stop",
+  geospatialCommand: "knowgrph.geospatial.command",
   pipeline: "knowgrph.pipeline",
   graphragPipeline: "knowgrph.graphrag_pipeline",
   knowledgeGraphIngest: "knowgrph.knowledge_graph.ingest",
@@ -16,6 +18,8 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   superagentRun: "knowgrph.superagent.run",
   videoRemixRun: "knowgrph.video_remix.run",
   browserApiRun: "knowgrph.browser_api.run",
+  gitRun: KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES.gitRun,
+  fileSyncRun: KNOWGRPH_STORAGE_LOCAL_TOOL_NAMES.fileSyncRun,
   sealionDetectLanguageVariant: "sealion.detect_language_variant",
   sealionTranslateLocalize: "sealion.translate_localize",
   sealionSafetyCheck: "sealion.safety_check",
@@ -23,7 +27,12 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   annotateImage: "knowgrph.annotate.image",
   annotateVideoFrame: "knowgrph.annotate.video_frame",
   memoryAdd: "knowgrph.memory.add",
+  memoryWrite: "knowgrph.memory.write",
+  memoryCompact: "knowgrph.memory.compact",
   memorySearch: "knowgrph.memory.search",
+  sessionSearch: "knowgrph.session.search",
+  userProfile: "knowgrph.user.profile",
+  memoryInvoke: "knowgrph.memory.invoke",
   memoryAssemblePrompt: "knowgrph.memory.assemble_prompt",
   memoryExtractProcedural: "knowgrph.memory.extract_procedural",
   memoryMaterializeUserModel: "knowgrph.memory.materialize_user_model",
@@ -37,10 +46,17 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   smeMultilingualAdapt: "knowgrph.sme.multilingual.adapt",
   smeCareAgentStatus: "sme_care_agent_status",
   agenticCanvasOsDocsInvoke: "knowgrph.agentic_canvas_os.docs.invoke",
+  skillEvolve: "knowgrph.skill.evolve",
+  repositoryPack: "knowgrph.repository.pack",
   implementationRunPlan: "knowgrph.implementation_run.plan",
   implementationRunStart: "knowgrph.implementation_run.start",
   implementationRunList: "knowgrph.implementation_run.list",
   implementationRunControl: "knowgrph.implementation_run.control",
+  agenticSdlcObserve: "knowgrph.agentic_sdlc.observe",
+  agentTeamPlan: "knowgrph.agent_team.plan",
+  agentTeamStart: "knowgrph.agent_team.start",
+  agentTeamList: "knowgrph.agent_team.list",
+  agentTeamControl: "knowgrph.agent_team.control",
   exportPublish: "export.publish",
   toolCatalog: "knowgrph.tool.catalog",
   toolSearch: "knowgrph.tool.search",
@@ -57,11 +73,20 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   ecsSessionStart: "knowgrph.ecs.session_start",
   ecsWorldTick: "knowgrph.ecs.world_tick",
   ecsDecisionPersist: "knowgrph.ecs.decision_persist",
+  paymentRailSelect: "knowgrph.payment.rail.select",
+  paymentIntentCreate: "knowgrph.payment.intent.create",
+  paymentStatus: "knowgrph.payment.status",
+  paymentEventSettle: "knowgrph.payment.event.settle",
+  paymentReconcile: "knowgrph.payment.reconcile",
+  paymentReceiptProject: "knowgrph.payment.receipt.project",
+  paymentRefund: "knowgrph.payment.refund",
+  paymentReadiness: "knowgrph.payment.readiness",
   osStatus: KNOWGRPH_OS_STATUS_TOOL_NAME,
   vdeoxplnList: "knowgrph.vdeoxpln.list",
   applicationCatalog: "knowgrph.application.catalog",
   applicationPlan: "knowgrph.application.plan",
   applicationExecute: "knowgrph.application.execute",
+  voiceStudio: "knowgrph.voice.studio",
 });
 
 export const buildKnowgrphLocalMcpToolNameList = () => Object.values(KNOWGRPH_LOCAL_MCP_TOOL_NAMES);

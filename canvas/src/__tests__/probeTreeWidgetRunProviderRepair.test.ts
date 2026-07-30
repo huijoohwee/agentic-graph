@@ -158,3 +158,65 @@ export async function testProbeTreeWidgetRunAcceptsMalayAffixGrounding() {
     throw new Error(`expected Malay derivational forms such as membeli and berdekatan to retain source-verbatim Probe-Tree anchors, got ${JSON.stringify({ providerCalls, result, cards })}`)
   }
 }
+
+export async function testProbeTreeWidgetRunCompletesSecondBoundedRepairWithinFirstRun() {
+  const authoredRequest = '/knowgrph.probe-tree Which products should a SGD800 Taobao shop test in Singapore and Malaysia?'
+  const graphData: GraphData = {
+    type: 'Graph',
+    nodes: [{ id: 'first-run-root', type: 'TextGeneration', label: 'Widget Card', properties: { prompt: authoredRequest } }],
+    edges: [],
+  }
+  const rejectedCards = providerCards([
+    {
+      question: 'Which products should the SGD800 Taobao shop test?',
+      rationale: 'Repeats the source request.',
+      evidenceNeeded: 'Product choice.',
+      selectionOptions: ['Products for Singapore', 'Products for Malaysia'],
+    },
+    {
+      question: 'Should the shop use SGD800?',
+      rationale: 'Repeats the source budget.',
+      evidenceNeeded: 'Budget confirmation.',
+      selectionOptions: ['Use SGD800', 'Use another budget'],
+    },
+  ])
+  const acceptedCards = providerCards([
+    {
+      question: 'Which fulfillment constraint should govern the SGD800 Taobao product test?',
+      rationale: 'Fulfillment speed and consolidation cost change which low-ticket products remain viable.',
+      evidenceNeeded: 'Preferred fulfillment tradeoff.',
+      selectionOptions: ['Prioritize lightweight products for low consolidated shipping cost', 'Accept higher shipping cost for faster local fulfillment'],
+    },
+    {
+      question: 'Which customer demand signal should govern the Singapore and Malaysia launch assortment?',
+      rationale: 'The validation channel changes inventory depth and the evidence required before restocking.',
+      evidenceNeeded: 'Preferred demand-validation method.',
+      selectionOptions: ['Test marketplace search demand before stocking', 'Test social preorders before committing inventory'],
+    },
+  ])
+  const prompts: string[] = []
+  const result = await runStoryboardWidgetProbeTreeMcpInvocation({
+    graphForRun: graphData,
+    nodeIds: ['first-run-root'],
+    fallbackNode: graphData.nodes[0],
+    invokeMcp: async () => zeroModelBridge(),
+    generateProviderResponse: async prompt => {
+      prompts.push(prompt)
+      return prompts.length < 3 ? rejectedCards : acceptedCards
+    },
+    providerModel: 'test-provider',
+    onMaterialized: () => undefined,
+    publishOutput: output => output.baseGraphData || null,
+  })
+  const cards = (result?.graphData.nodes || []).filter(node => node.properties.probeTreeResponseMode === 'llm-contract')
+  if (
+    prompts.length !== 3
+    || !prompts[1]?.includes('bounded repair attempt 1 of 2')
+    || !prompts[2]?.includes('bounded repair attempt 2 of 2')
+    || result?.providerAttempts !== 3
+    || !result.providerAccepted
+    || cards.length !== 2
+  ) {
+    throw new Error(`expected one Run action to complete a second bounded provider repair, got ${JSON.stringify({ prompts, result, cards })}`)
+  }
+}

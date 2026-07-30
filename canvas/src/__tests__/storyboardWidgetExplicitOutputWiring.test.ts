@@ -8,10 +8,17 @@ import {
 import { PROBE_TREE_OUTPUT_KEY } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeLayout'
 import { FLOW_EDGE_SOURCE_PORT_KEY, FLOW_EDGE_TARGET_PORT_KEY } from '@/lib/graph/flowPorts'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
+import { readSubgraphs, writeSubgraphs } from '@/lib/graph/subgraphs'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { buildStoryboardWidgetTextRunSourceState } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetTextRunSourceState'
 import { buildRichMediaPanelOverlayState, resolveRichMediaPanelDisplayText } from '@/lib/render/richMediaPanelState'
 import { createStoryboardWidgetTextOutputHarness as createTextOutputHarness } from '@/tests/lib/storyboardWidgetTextOutputHarness'
+import { getCachedStoryboardWidgetOverlayEdgeGraph } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
+import {
+  applyWorkflowMaterializationGroupPanel,
+  readWorkflowMaterializationParentNodeId,
+  readWorkflowMaterializationProjectionSourceNodeId,
+} from '@/lib/storyboardWidget/runMaterializationProjection'
 
 export function testWorkflowOwnedOutputEdgeRepairsCanonicalPortMetadata() {
   const source: GraphNode = { id: 'source', type: 'TextGeneration', label: 'Widget Card', properties: {} }
@@ -91,22 +98,35 @@ export function testGenericTextRunPreservesSourceAndMaterializesConnectedPanel()
     properties: source.properties as Record<string, unknown>,
     loading: false,
     runAt: '2026-07-19T02:00:00.000Z',
+    responseText: generatedVersions[1], title: source.label, model: 'test-model',
   })
   const published = harness.readGraph()
   const outputPanels = published.nodes.filter(node => node.type === 'RichMediaPanel')
   const outputEdges = published.edges.filter(edge => edge.properties?.workflowOutputEdge === true)
   const outputVersions = outputPanels[0]?.properties.outputVersions as Array<{ id?: unknown; output?: unknown }> | undefined
+  const compactOptOutHarness = createTextOutputHarness({ type: 'Graph', nodes: [source], edges: [] })
+  compactOptOutHarness.publishers.publishTextRunOutputToRichMediaPanel({
+    anchorNode: source,
+    outputText: generatedVersions[0] || '',
+    title: 'Widget Card',
+    model: 'test-model',
+    panelProperties: { markdownWorkspaceViewerSurface: false },
+    connectCreatedOutputToAnchor: true,
+  })
+  const compactOptOutPanel = compactOptOutHarness.readGraph().nodes.find(node => node.type === 'RichMediaPanel')
   if (
     sourceProperties.prompt !== 'Generate a financial response for restaurant startup'
     || sourceProperties.summary !== 'Keep this authored brief.'
-    || 'output' in sourceProperties
-    || 'outputModel' in sourceProperties
+    || sourceProperties.output !== generatedVersions[1]
+    || sourceProperties.outputModel !== 'test-model'
     || sourceProperties.lastRunAt !== '2026-07-19T02:00:00.000Z'
     || published.nodes.length !== 2
     || outputPanels.length !== 1
     || outputPanels[0]?.properties.output !== generatedVersions[1]
-    || outputVersions?.length !== 2
-    || outputVersions[0]?.id !== 'run-1'
+    || outputPanels[0]?.properties.markdownWorkspaceViewerSurface !== true
+    || compactOptOutPanel?.properties.markdownWorkspaceViewerSurface !== false
+    || outputPanels[0]?.properties.workflowOutputAnchorNodeId !== source.id || outputPanels[0]?.properties.workflowOutputKey !== 'output'
+    || outputVersions?.length !== 2 || outputVersions[0]?.id !== 'run-1'
     || outputVersions[0]?.output !== generatedVersions[0]
     || outputVersions[1]?.id !== 'run-2'
     || outputVersions[1]?.output !== generatedVersions[1]
@@ -349,10 +369,25 @@ export function testDeliverablesOwnedOutputsStayDistinctAndIdempotent() {
 
 export function testProbeTreeBranchesLedgerConnectsSourceIdempotently() {
   const source: GraphNode = { id: 'n1', type: 'TextGeneration', label: 'Widget Card', properties: {} }
+  const branches: GraphNode[] = ['branch-a', 'branch-b'].map((id, index) => ({
+    id,
+    type: 'TextGeneration',
+    label: `Branch ${index + 1}`,
+    x: 860,
+    y: index * 260,
+    properties: {
+      parentNodeId: source.id,
+      probeTreeThreadRootId: source.id,
+      cardTypeLabel: 'Probe-Tree Card',
+      index: `P${index + 1}`,
+    },
+  }))
   const disconnectedLedger: GraphNode = {
     id: 'n2',
     type: 'RichMediaPanel',
     label: 'Probe-Tree Branches',
+    x: 430,
+    y: 0,
     properties: {
       workflowOutputAnchorNodeId: 'n1',
       workflowOutputKey: PROBE_TREE_OUTPUT_KEY,
@@ -361,7 +396,17 @@ export function testProbeTreeBranchesLedgerConnectsSourceIdempotently() {
       probeTreeThreadLedger: true,
     },
   }
-  const graph: GraphData = { type: 'Graph', nodes: [source, disconnectedLedger], edges: [] }
+  const graph: GraphData = {
+    type: 'Graph',
+    nodes: [source, disconnectedLedger, ...branches],
+    edges: branches.map((branch, index) => ({
+      id: `candidate-${index + 1}`,
+      source: source.id,
+      target: branch.id,
+      label: 'candidateOption',
+      properties: {},
+    })),
+  }
   const harness = createTextOutputHarness(graph)
 
   for (let index = 0; index < 2; index += 1) harness.publishers.publishTextRunOutputToRichMediaPanel({
@@ -374,14 +419,37 @@ export function testProbeTreeBranchesLedgerConnectsSourceIdempotently() {
     outputThreadRootId: 'n1',
     panelLabel: 'Probe-Tree Branches',
     panelProperties: { probeTreeThreadLedger: true },
+    materializationChildNodeIds: branches.map(branch => String(branch.id)),
     connectCreatedOutputToAnchor: true,
   })
 
   const published = harness.readGraph()
   const ledgers = published.nodes.filter(node => node.label === 'Probe-Tree Branches')
   const ledgerEdges = published.edges.filter(edge => edge.properties?.workflowOutputEdge === true)
+  const candidateEdges = published.edges.filter(edge => edge.label === 'candidateOption')
+  const outputGroups = readSubgraphs(published)
+  const downstreamFromLedger = resolveStoryboardWidgetWorkflowDownstreamRunTargetIds({
+    node: disconnectedLedger,
+    graphData: published,
+  })
+  const overlayLookup = getCachedStoryboardWidgetOverlayEdgeGraph({
+    graphData: published,
+    graphRevision: 1,
+    overlayNodeIds: published.nodes.map(node => String(node.id)),
+  })
+  const sourceRoundTrip = {
+    ...published,
+    edges: published.edges.map(edge => edge.label === 'candidateOption'
+      ? { ...edge, properties: {} }
+      : edge),
+  }
+  const sourceRoundTripOverlayLookup = getCachedStoryboardWidgetOverlayEdgeGraph({
+    graphData: sourceRoundTrip,
+    graphRevision: 2,
+    overlayNodeIds: sourceRoundTrip.nodes.map(node => String(node.id)),
+  })
   if (
-    published.nodes.length !== 2
+    published.nodes.length !== 4
     || ledgers.length !== 1
     || ledgerEdges.length !== 1
     || ledgerEdges[0]?.source !== 'n1'
@@ -390,8 +458,73 @@ export function testProbeTreeBranchesLedgerConnectsSourceIdempotently() {
     || ledgerEdges[0]?.properties?.[FLOW_EDGE_SOURCE_PORT_KEY] !== 'text_out'
     || ledgerEdges[0]?.properties?.[FLOW_EDGE_TARGET_PORT_KEY] !== 'output'
     || ledgers[0]?.properties[WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY]
+    || candidateEdges.length !== 2
+    || candidateEdges.some(edge => edge.source !== source.id)
+    || candidateEdges.some(edge => readWorkflowMaterializationProjectionSourceNodeId(edge.properties) !== disconnectedLedger.id)
+    || branches.some(branch => {
+      const publishedBranch = published.nodes.find(node => node.id === branch.id)
+      return publishedBranch?.properties.parentNodeId !== source.id
+        || readWorkflowMaterializationParentNodeId(publishedBranch) !== disconnectedLedger.id
+    })
+    || downstreamFromLedger.length !== 0
+    || candidateEdges.some(edge => (
+      overlayLookup?.edges.find(rendered => rendered.id === edge.id)?.source !== disconnectedLedger.id
+      || overlayLookup?.rawEdgeById.get(String(edge.id))?.source !== source.id
+    ))
+    || candidateEdges.some(edge => (
+      sourceRoundTripOverlayLookup?.edges.find(rendered => rendered.id === edge.id)?.source !== disconnectedLedger.id
+      || sourceRoundTripOverlayLookup?.rawEdgeById.get(String(edge.id))?.source !== source.id
+    ))
+    || outputGroups.length !== 1
+    || outputGroups[0]?.autoBounds !== true
+    || outputGroups[0]?.memberNodeIds.join(',') !== ['branch-a', 'branch-b', 'n2'].join(',')
+    || outputGroups[0]?.memberNodeIds.includes(source.id)
   ) {
-    throw new Error(`expected the source Widget Card and owned Probe-Tree Branches ledger to share one typed edge, got ${JSON.stringify(published)}`)
+    throw new Error(`expected semantic source lineage with one generated-output Group Panel and no new Run edges, got ${JSON.stringify({ published, outputGroups, downstreamFromLedger, renderedEdges: overlayLookup?.edges, sourceRoundTripRenderedEdges: sourceRoundTripOverlayLookup?.edges })}`)
+  }
+}
+
+export function testWorkflowMaterializationAdoptsExistingCollectiveGroupPanel() {
+  const source: GraphNode = { id: 'source', type: 'TextGeneration', label: 'Source', properties: {} }
+  const panel: GraphNode = { id: 'panel', type: 'RichMediaPanel', label: 'Generated panel', properties: {} }
+  const childA: GraphNode = { id: 'child-a', type: 'TextGeneration', label: 'Child A', properties: {} }
+  const childB: GraphNode = { id: 'child-b', type: 'TextGeneration', label: 'Child B', properties: {} }
+  const graph = writeSubgraphs({
+    type: 'Graph',
+    nodes: [source, panel, childA, childB],
+    edges: [],
+  }, [{
+    id: 'group-1',
+    label: 'Group 1',
+    memberNodeIds: [childA.id, childB.id],
+    parentId: null,
+    kind: 'subgraph',
+    autoBounds: true,
+  }])
+  const grouped = applyWorkflowMaterializationGroupPanel({
+    graphData: graph,
+    projectionParentNodeId: panel.id,
+    childNodeIds: [childA.id, childB.id],
+    outputGroupId: 'probe-tree:source',
+    groupLabel: 'Probe-Tree Branches outputs',
+  })
+  const rerun = applyWorkflowMaterializationGroupPanel({
+    graphData: grouped,
+    projectionParentNodeId: panel.id,
+    childNodeIds: [childA.id, childB.id],
+    outputGroupId: 'probe-tree:source',
+    groupLabel: 'Probe-Tree Branches outputs',
+  })
+  const outputGroups = readSubgraphs(grouped)
+  if (
+    outputGroups.length !== 1
+    || outputGroups[0]?.id !== 'group-1'
+    || outputGroups[0]?.label !== 'Group 1'
+    || outputGroups[0]?.memberNodeIds.join(',') !== ['child-a', 'child-b', 'panel'].join(',')
+    || outputGroups[0]?.memberNodeIds.includes(source.id)
+    || rerun !== grouped
+  ) {
+    throw new Error(`expected Run to adopt the exact existing collective Group Panel idempotently, got ${JSON.stringify(outputGroups)}`)
   }
 }
 
@@ -470,129 +603,7 @@ export function testSelectedChildRunRestoresExplicitTargetFromCanonicalGraph() {
   }
 }
 
-export function testSelectedGenerationConnectsResultDuringRunAll() {
-  const selectedChild: GraphNode = {
-    id: 'mcp-response-n1-qa1',
-    type: 'TextGeneration',
-    label: 'Selected Probe child',
-    properties: { parentNodeId: 'n1', probeTreeThreadRootId: 'n1', cardTypeLabel: 'Probe-Tree Card' },
-  }
-  const secondSelectedChild: GraphNode = {
-    ...selectedChild,
-    id: 'mcp-response-n1-qa2',
-    label: 'Second selected Probe child',
-  }
-  const graph: GraphData = { type: 'Graph', nodes: [selectedChild, secondSelectedChild], edges: [] }
-  const harness = createTextOutputHarness(graph, graph, false)
-
-  for (const [index, anchorNode] of [selectedChild, secondSelectedChild].entries()) harness.publishers.publishTextRunOutputToRichMediaPanel({
-    anchorNode,
-    outputText: `# Generated result ${index + 1}`,
-    title: 'Generated Result',
-    model: 'test-model',
-    outputKey: 'probe-tree-generated-result',
-    outputGroupId: 'probe-tree:n1',
-    panelLabel: 'Generated Result',
-    panelProperties: { probeTreeTerminalGeneration: true },
-    allowCreateStandaloneOutput: true,
-    connectCreatedOutputToAnchor: true,
-  })
-
-  const published = harness.readGraph()
-  const resultPanels = published.nodes.filter(node => node.label === 'Generated Result')
-  const resultEdges = published.edges.filter(edge => edge.properties?.workflowOutputEdge === true)
-  if (
-    published.nodes.length !== 4
-    || resultPanels.length !== 2
-    || resultEdges.length !== 2
-    || resultEdges.some(edge => edge.label !== 'probe-tree-generated-result')
-    || resultEdges.some(edge => edge.properties?.[FLOW_EDGE_SOURCE_PORT_KEY] !== 'text_out')
-    || resultEdges.some(edge => edge.properties?.[FLOW_EDGE_TARGET_PORT_KEY] !== 'output')
-    || resultPanels.some(panel => panel.properties.workflowOutputKey !== 'probe-tree-generated-result')
-    || resultPanels.some(panel => panel.properties[WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY])
-    || ![selectedChild.id, secondSelectedChild.id].every(sourceId => resultEdges.some(edge => edge.source === sourceId))
-  ) {
-    throw new Error(`expected Run All terminal generation to publish one connected result per selected child, got ${JSON.stringify(published)}`)
-  }
-}
-
-export function testRunAllReconcilesTypedPersistedStandaloneResult() {
-  const selectedChild: GraphNode = {
-    id: 'mcp-response-card-01',
-    type: 'TextGeneration',
-    label: 'Selected Probe child',
-    properties: { parentNodeId: 'n2', probeTreeThreadRootId: 'n2', cardTypeLabel: 'Probe-Tree Card' },
-  }
-  const persistedResult: GraphNode = {
-    id: 'persisted-generated-result',
-    type: 'RichMediaPanel',
-    label: 'Generated Result',
-    properties: {
-      key: 'properties',
-      type: 'object',
-      value: {
-        media_interactive: true,
-        output: '# Previous generated result',
-        workflowOutputAnchorNodeId: 'mcp-response-card-01',
-        workflowOutputKey: 'probe-tree-generated-result',
-        workflowOutputGroupId: 'probe-tree:n2',
-        [WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY]: WORKFLOW_OUTPUT_EDGE_MODE_MANUAL,
-      },
-    } as never,
-  }
-  const runGraph: GraphData = { type: 'Graph', nodes: [selectedChild], edges: [] }
-  const canonicalGraph: GraphData = { type: 'Graph', nodes: [selectedChild, persistedResult], edges: [] }
-  const harness = createTextOutputHarness(runGraph, canonicalGraph, false, { commitPublishedGraphData: false })
-
-  const published = harness.publishers.publishTextRunOutputToRichMediaPanel({
-    anchorNode: selectedChild,
-    baseGraphData: runGraph,
-    outputText: '# Refreshed generated result',
-    title: 'Generated Result',
-    model: 'test-model',
-    outputKey: 'probe-tree-generated-result',
-    outputGroupId: 'probe-tree:n2',
-    panelLabel: 'Generated Result',
-    panelProperties: { probeTreeTerminalGeneration: true },
-    allowCreateStandaloneOutput: true,
-    connectCreatedOutputToAnchor: true,
-  })
-  harness.publishers.publishTextRunOutputToRichMediaPanel({
-    anchorNode: selectedChild,
-    baseGraphData: runGraph,
-    outputText: '# Refreshed generated result',
-    title: 'Generated Result',
-    model: 'test-model',
-    outputKey: 'probe-tree-generated-result',
-    outputGroupId: 'probe-tree:n2',
-    panelLabel: 'Generated Result',
-    panelProperties: { probeTreeTerminalGeneration: true },
-    allowCreateStandaloneOutput: true,
-    connectCreatedOutputToAnchor: true,
-  })
-
-  const reconciled = harness.readGraph()
-  const resultPanels = reconciled.nodes.filter(node => node.label === 'Generated Result')
-  const resultEdge = reconciled.edges.find(edge => edge.source === selectedChild.id && edge.target === persistedResult.id)
-  const resultProperties = resultPanels[0]?.properties as unknown as {
-    key?: unknown
-    type?: unknown
-    value?: Record<string, unknown>
-  }
-  if (
-    !published
-    || reconciled.nodes.length !== 2
-    || reconciled.edges.length !== 1
-    || resultEdge?.label !== 'probe-tree-generated-result'
-    || resultEdge?.properties?.workflowOutputEdge !== true
-    || resultPanels.length !== 1
-    || resultPanels[0]?.id !== 'persisted-generated-result'
-    || resultProperties.key !== 'properties'
-    || resultProperties.type !== 'object'
-    || resultProperties.value?.output !== '# Refreshed generated result'
-    || resultProperties.value?.workflowOutputAnchorNodeId !== 'mcp-response-card-01'
-    || resultProperties.value?.[WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY]
-  ) {
-    throw new Error(`expected Run All to atomically reconnect the typed persisted result without duplicates, got ${JSON.stringify(reconciled)}`)
-  }
-}
+export {
+  testRunAllReconcilesTypedPersistedStandaloneResult,
+  testSelectedGenerationConnectsResultDuringRunAll,
+} from './storyboardWidgetRunAllOutputWiring.test'

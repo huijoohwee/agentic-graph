@@ -6,7 +6,6 @@ import {
   STORYBOARD_SUMMARY_PROPERTY_KEYS,
 } from '@/components/StoryboardCanvas/storyboardModel'
 import type { StoryboardWidgetTextRunOutputPublisher } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaPublication'
-import { resolveStoryboardWidgetTextThinkingOptions } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowTextThinking'
 import {
   materializeStoryboardWidgetProbeTreeStructuredResponse,
   type StoryboardWidgetProbeTreeStructuredMaterialization,
@@ -27,7 +26,6 @@ import {
 } from '@/features/agent-ready/probeTreeContract.mjs'
 import { invokeProbeTreeMcpBridge } from '@/features/agent-ready/probeTreeMcpClient'
 import type { ProbeTreeMcpBridgeSuccess } from '@/features/agent-ready/probeTreeMcpBridgeContract'
-import { generateRunMarkdownWithProvider } from '@/features/chat/byteplusRunGeneration'
 import { buildRichMediaTextMarkdownDocument } from '@/features/rich-media/richMediaTextMarkdownContract.mjs'
 import {
   readGraphNodeCanonicalTextProperty,
@@ -36,6 +34,7 @@ import {
 } from '@/lib/cards/graphNodeCardFields'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
+import type { StoryboardWidgetRunExecutionAnchorSnapshot } from './storyboardWidgetRunExecutionAnchor'
 import type { StoryboardWidgetWorkflowNodeResolutionContext } from './storyboardWidgetRenderGraph'
 import { buildStoryboardWidgetProbeTreeContextText } from './storyboardWidgetProbeTreeContext'
 import { buildStoryboardWidgetProbeTreeProviderPrompt } from './storyboardWidgetProbeTreeProviderPrompt'
@@ -43,12 +42,19 @@ import { buildStoryboardWidgetProbeTreeProviderRepairPrompt } from './storyboard
 import {
   isStoryboardWidgetProbeTreeContinuationNode,
   reconcileStoryboardWidgetProbeTreeSelectedRunNode,
-  resolveStoryboardWidgetProbeTreeSelectedRunNodeFromContext,
 } from './storyboardWidgetProbeTreeRunNode'
 import {
   runStoryboardWidgetProbeTreeTerminalGeneration,
 } from './storyboardWidgetProbeTreeTerminalGeneration'
-import { resolveStoryboardWidgetProbeTreeProviderRequestOptions } from './storyboardWidgetProbeTreeProviderRequest'
+import {
+  buildStoryboardWidgetProbeTreeProviderInvocation,
+  prepareStoryboardWidgetProbeTreeTextGeneration,
+  type StoryboardWidgetProbeTreeProviderRuntimeProperties,
+} from './storyboardWidgetWorkflowProbeTreeTextGeneration'
+
+export {
+  resolveStoryboardWidgetProbeTreeChatRoute,
+} from './storyboardWidgetWorkflowProbeTreeTextGeneration'
 
 const INVOCATION_TOKEN_PATTERN = /(^|\s)([/#@][A-Za-z0-9_.-]+)/g
 const PROBE_TREE_INVOCATION_TOKENS = new Set<string>(
@@ -56,6 +62,7 @@ const PROBE_TREE_INVOCATION_TOKENS = new Set<string>(
 )
 const PROBE_TREE_RICH_MEDIA_PANEL_LABEL = 'Probe-Tree Branches'
 const PROBE_TREE_GRAPH_PROJECTION_MODEL = 'knowgrph-probe-tree-graph-projection'
+const PROBE_TREE_PROVIDER_MAX_ATTEMPTS = 3
 
 const readGraphIdentity = (value: unknown): string => String(unwrapGraphCellValue(value) ?? '').trim()
 
@@ -192,7 +199,12 @@ export function runStoryboardWidgetProbeTreeInvocation(args: {
     outputThreadRootId: threadRootId,
     outputIndex: 1,
     panelLabel: PROBE_TREE_RICH_MEDIA_PANEL_LABEL,
-    panelProperties: { probeTreeThreadLedger: true, probeTreeOutputLayoutVersion: PROBE_TREE_OUTPUT_LAYOUT_VERSION },
+    panelProperties: {
+      probeTreeThreadLedger: true,
+      probeTreeOutputLayoutVersion: PROBE_TREE_OUTPUT_LAYOUT_VERSION,
+      markdownWorkspaceViewerSurface: true,
+    },
+    materializationChildNodeIds: materialized.materializedNodeIds,
     connectCreatedOutputToAnchor: true,
   })
   if (!publishedGraphData) throw new Error('Probe-Tree could not publish its Rich Media ledger.')
@@ -235,44 +247,6 @@ export type StoryboardWidgetProbeTreeMcpRunResult = StoryboardWidgetProbeTreeStr
   providerError?: string
 }
 
-type StoryboardWidgetProbeTreeProviderRuntimeProperties = {
-  chatProvider?: unknown
-  chatAuthMode?: unknown
-  chatApiKey?: unknown
-  chatEndpointUrl?: unknown
-  chatModel?: unknown
-  chatTemperature?: unknown
-  chatMaxCompletionTokens?: unknown
-  chatServiceTier?: unknown
-  chatReasoningEffort?: unknown
-  chatThinkingType?: unknown
-  chatThinkingJson?: unknown
-  chatFrequencyPenalty?: unknown
-  chatPresencePenalty?: unknown
-  chatTopP?: unknown
-}
-
-export function resolveStoryboardWidgetProbeTreeChatRoute(args: {
-  localProperties?: Record<string, unknown>
-  resolvedProperties: Record<string, unknown>
-  runtimeProperties: StoryboardWidgetProbeTreeProviderRuntimeProperties
-}) {
-  const readRouteValue = (key: 'chatProvider' | 'chatEndpointUrl' | 'chatModel'): string => (
-    String(unwrapGraphCellValue(args.runtimeProperties[key]) || '').trim()
-  )
-  const localAuthMode = String(unwrapGraphCellValue(args.localProperties?.chatAuthMode) || '').trim()
-  const runtimeAuthMode = String(unwrapGraphCellValue(args.runtimeProperties.chatAuthMode) || '').trim()
-  const resolvedAuthMode = String(unwrapGraphCellValue(args.resolvedProperties.chatAuthMode) || '').trim()
-  return {
-    provider: readRouteValue('chatProvider'),
-    endpointUrl: readRouteValue('chatEndpointUrl'),
-    chatModel: readRouteValue('chatModel'),
-    chatAuthMode: localAuthMode === 'byok' || runtimeAuthMode === 'byok'
-      ? 'byok'
-      : runtimeAuthMode || resolvedAuthMode || localAuthMode,
-  }
-}
-
 export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
   graphForRun: GraphData | null | undefined
   nodeIds: readonly string[]
@@ -282,6 +256,7 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
   providerModel?: string
   generateProviderResponse?: (prompt: string) => Promise<string | null>
   invokeMcp?: typeof invokeProbeTreeMcpBridge
+  executionAnchor?: StoryboardWidgetRunExecutionAnchorSnapshot | null
 }): Promise<StoryboardWidgetProbeTreeMcpRunResult | null> {
   const current = args.graphForRun
   if (!current) return null
@@ -401,6 +376,7 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
         threadRootId,
         invocationTokens,
         invocationResolutions: bridge?.invocationResolutions,
+        executionAnchor: args.executionAnchor,
         onRejected: reason => { providerRejectionReason = reason },
       })
     : null
@@ -411,7 +387,7 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
     materialized = materializeStoryboardWidgetProbeTreeStructuredResponse({
       graphData: graphForInvocation,
       anchorNode: node,
-      responseText: JSON.stringify({ result: mcpResult }, null, 2),
+      responseText: JSON.stringify({ jsonrpc: '2.0', id: `probe-tree-${currentNodeId}`, result: mcpResult }, null, 2),
       contextText,
       responseSource: 'mcp',
       model: mcpModel,
@@ -419,15 +395,19 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
       threadRootId,
       invocationTokens,
       invocationResolutions: bridge?.invocationResolutions,
+      executionAnchor: args.executionAnchor,
     })
   }
-  if (!materialized && args.generateProviderResponse && !providerError) {
+  while (!materialized && args.generateProviderResponse && !providerError && providerAttempts < PROBE_TREE_PROVIDER_MAX_ATTEMPTS) {
+    const repairAttempt = providerAttempts
     let repairText = ''
     try {
       providerAttempts += 1
       repairText = String(await args.generateProviderResponse(buildStoryboardWidgetProbeTreeProviderRepairPrompt({
         basePrompt: providerPrompt,
         rejectionReason: providerRejectionReason,
+        repairAttempt,
+        maxRepairAttempts: PROBE_TREE_PROVIDER_MAX_ATTEMPTS - 1,
       })) || '').trim()
     } catch (error) {
       providerError = error instanceof Error ? error.message : String(error || '')
@@ -444,9 +424,12 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
         threadRootId,
         invocationTokens,
         invocationResolutions: bridge?.invocationResolutions,
+        executionAnchor: args.executionAnchor,
         onRejected: reason => { providerRejectionReason = reason },
       })
       if (materialized) providerAccepted = true
+    } else {
+      providerRejectionReason = 'The provider returned an empty repair response.'
     }
   }
   if (!materialized) {
@@ -471,8 +454,15 @@ export async function runStoryboardWidgetProbeTreeMcpInvocation(args: {
     outputGroupId,
     outputThreadRootId: threadRootId,
     outputIndex: 1,
+    outputCount: 1,
+    materializationPosition: materialized.outputPanelPosition,
     panelLabel: PROBE_TREE_RICH_MEDIA_PANEL_LABEL,
-    panelProperties: { probeTreeThreadLedger: true, probeTreeOutputLayoutVersion: PROBE_TREE_OUTPUT_LAYOUT_VERSION },
+    panelProperties: {
+      probeTreeThreadLedger: true,
+      probeTreeOutputLayoutVersion: PROBE_TREE_OUTPUT_LAYOUT_VERSION,
+      markdownWorkspaceViewerSurface: true,
+    },
+    materializationChildNodeIds: materialized.materializedNodeIds,
     connectCreatedOutputToAnchor: true,
   })
   if (!publishedGraphData) throw new Error('Probe-Tree could not publish its Rich Media ledger.')
@@ -513,77 +503,33 @@ export async function runStoryboardWidgetProbeTreeTextGenerationInvocation(args:
   setLoading: (loading: boolean) => void
   invokeMcp?: typeof invokeProbeTreeMcpBridge
   generateProviderResponse?: (prompt: string) => Promise<string | null>
+  executionAnchor?: StoryboardWidgetRunExecutionAnchorSnapshot | null
 }): Promise<StoryboardWidgetProbeTreeMcpRunResult | null> {
-  const fallbackNode = args.resolutionContext && args.requestedNodeId
-    ? resolveStoryboardWidgetProbeTreeSelectedRunNodeFromContext({ context: args.resolutionContext, requestedNodeId: args.requestedNodeId, fallbackNode: args.fallbackNode })
-    : args.fallbackNode
-  const invocationText = readStoryboardWidgetProbeTreeInvocationText(fallbackNode)
-  if (!resolveStoryboardWidgetProbeTreeInvocationTokenForNode(fallbackNode, invocationText)) return null
+  const preparedInvocation = prepareStoryboardWidgetProbeTreeTextGeneration({
+    ...args,
+    readInvocationText: readStoryboardWidgetProbeTreeInvocationText,
+    resolveInvocationTokenForNode: resolveStoryboardWidgetProbeTreeInvocationTokenForNode,
+  })
+  if (!preparedInvocation) return null
   args.onInvocationStart?.()
-  const { prompt, formId, localProperties, resolvedProperties, runtimeProperties } = args.textGeneration
-  const readResolvedProviderValue = (key: keyof StoryboardWidgetProbeTreeProviderRuntimeProperties): unknown => {
-    const localValue = unwrapGraphCellValue(resolvedProperties[key])
-    return localValue == null || localValue === '' ? unwrapGraphCellValue(runtimeProperties[key]) : localValue
-  }
-  const resolvedThinking = resolveStoryboardWidgetTextThinkingOptions({
-    formId,
-    localProperties,
-    prompt: prompt || invocationText,
-    resolvedMaxCompletionTokens: readResolvedProviderValue('chatMaxCompletionTokens'),
-    resolvedReasoningEffort: readResolvedProviderValue('chatReasoningEffort'),
-    resolvedThinkingJson: readResolvedProviderValue('chatThinkingJson'),
-    resolvedThinkingType: readResolvedProviderValue('chatThinkingType'),
-  })
-  const { provider, endpointUrl, chatModel, chatAuthMode } = resolveStoryboardWidgetProbeTreeChatRoute({
-    localProperties,
-    resolvedProperties,
-    runtimeProperties,
-  })
   args.setLoading(true)
-  let publicationCompleted = false
-  const generateProviderResponse = args.generateProviderResponse || (async refinementPrompt => {
-    try {
-      const providerRequestOptions = resolveStoryboardWidgetProbeTreeProviderRequestOptions({
-        prompt: refinementPrompt,
-        chatMaxCompletionTokens: resolvedThinking.chatMaxCompletionTokens,
-        chatReasoningEffort: resolvedThinking.chatReasoningEffort,
-      })
-      return await generateRunMarkdownWithProvider({
-        config: {
-          provider,
-          endpointUrl,
-          apiKey: chatAuthMode === 'byok' ? String(unwrapGraphCellValue(runtimeProperties.chatApiKey) || '') : '',
-          chatModel,
-        },
-        prompt: refinementPrompt,
-        options: {
-          chatTemperature: readResolvedProviderValue('chatTemperature'),
-          chatMaxCompletionTokens: providerRequestOptions.chatMaxCompletionTokens,
-          chatServiceTier: readResolvedProviderValue('chatServiceTier'),
-          chatStream: false,
-          chatReasoningEffort: providerRequestOptions.chatReasoningEffort,
-          chatThinkingType: resolvedThinking.chatThinkingType,
-          chatThinkingJson: resolvedThinking.chatThinkingJson,
-          chatFrequencyPenalty: readResolvedProviderValue('chatFrequencyPenalty'),
-          chatPresencePenalty: readResolvedProviderValue('chatPresencePenalty'),
-          chatTopP: readResolvedProviderValue('chatTopP'),
-        },
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error || '')
-      throw new Error(`${provider || 'unknown provider'} / ${chatModel || 'unknown model'}: ${message}`)
-    }
+  const providerInvocation = buildStoryboardWidgetProbeTreeProviderInvocation({
+    invocationText: preparedInvocation.invocationText,
+    textGeneration: args.textGeneration,
   })
+  const generateProviderResponse = args.generateProviderResponse || providerInvocation.generateProviderResponse
+  let publicationCompleted = false
   try {
     const result = await runStoryboardWidgetProbeTreeMcpInvocation({
       graphForRun: args.graphForRun,
       nodeIds: args.nodeIds,
-      fallbackNode,
+      fallbackNode: preparedInvocation.fallbackNode,
       onMaterialized: args.onMaterialized,
       publishOutput: args.publishOutput,
-      providerModel: chatModel,
+      providerModel: providerInvocation.chatModel,
       invokeMcp: args.invokeMcp,
       generateProviderResponse,
+      executionAnchor: args.executionAnchor,
     })
     if (!result) throw new Error('Probe-Tree did not recognize the Widget Card invocation.')
     publicationCompleted = true

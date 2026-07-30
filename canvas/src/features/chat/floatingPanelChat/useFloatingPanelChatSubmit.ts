@@ -8,11 +8,14 @@ import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes
 import { normalizeInvocationTokenSpacing } from '@/lib/markdown/invocationTokens'
 import { tryActivateVideoAgentDemoPreset } from './videoAgentDemoPresetSubmit'
 import { tryActivateNativeCrawlerInvocation } from '../nativeCrawlerInvocation'
+import { tryActivateVoiceStudioInvocation } from '@/features/voice-studio/voiceStudioInvocation'
+import { tryActivateGeospatialInvocation } from './geospatialInvocationSubmit'
 
 export type FloatingPanelChatSubmitHookDeps = {
   resolveRequestUrlOrSetError?: typeof resolveChatSubmitRequestUrlOrSetError
   initializeOptimisticState?: typeof initializeChatSubmitOptimisticState
   executeCoordinator?: typeof executeFloatingPanelChatSubmitCoordinator
+  activateGeospatialInvocation?: typeof tryActivateGeospatialInvocation
 }
 
 // Keep the hook as a thin shell so request-build, transport, streaming, and
@@ -24,12 +27,15 @@ export const useFloatingPanelChatSubmit = (
   const resolveRequestUrlOrSetError = deps.resolveRequestUrlOrSetError || resolveChatSubmitRequestUrlOrSetError
   const initializeOptimisticState = deps.initializeOptimisticState || initializeChatSubmitOptimisticState
   const executeCoordinator = deps.executeCoordinator || executeFloatingPanelChatSubmitCoordinator
+  const activateGeospatialInvocation = deps.activateGeospatialInvocation || tryActivateGeospatialInvocation
 
   return React.useCallback<React.FormEventHandler<HTMLFormElement>>(async ev => {
     ev.preventDefault()
     const trimmed = normalizeInvocationTokenSpacing(args.input.trim())
     if (!trimmed || args.isLoading) return
+    if (await activateGeospatialInvocation({ input: trimmed, submitArgs: args })) return
     if (await tryActivateVideoAgentDemoPreset({ input: trimmed, submitArgs: args })) return
+    if (await tryActivateVoiceStudioInvocation({ input: trimmed, submitArgs: args })) return
     if (await tryActivateNativeCrawlerInvocation({ input: trimmed, submitArgs: args })) return
     const requestUrl = resolveRequestUrlOrSetError({
       chatModel: args.chatModel,
@@ -71,5 +77,5 @@ export const useFloatingPanelChatSubmit = (
       requestTimestampMs,
       traceId,
     })
-  }, [args, executeCoordinator, initializeOptimisticState, resolveRequestUrlOrSetError])
+  }, [activateGeospatialInvocation, args, executeCoordinator, initializeOptimisticState, resolveRequestUrlOrSetError])
 }

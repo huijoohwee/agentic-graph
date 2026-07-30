@@ -359,6 +359,12 @@ export function testViteDevServerIgnoresWorkspaceMirrorOutputRoots(): void {
   if (!helperText.includes('`${docsBasename}_`')) {
     throw new Error('expected derived share-export sibling root such as /docs_ to be ignored without hardcoding a URL or artifact name')
   }
+  if (!text.includes('mutableSourcePath: process.env.VITE_WORKSPACE_MUTABLE_SOURCE_ABS_PATH')) {
+    throw new Error('expected collaboration smoke mutable source writes to be ignored without disabling source persistence')
+  }
+  if (!helperText.includes("push(String(args.mutableSourcePath || ''))")) {
+    throw new Error('expected the bounded mutable source path to join the Vite watch ignore contract')
+  }
 }
 
 export function testViteKgFsWriteHandlerAcceptsMirrorMkdirOnlyRequests(): void {

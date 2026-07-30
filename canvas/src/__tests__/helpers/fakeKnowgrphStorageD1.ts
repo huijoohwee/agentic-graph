@@ -1,6 +1,9 @@
 import { FakeKnowgrphStorageR2Bucket } from './fakeKnowgrphStorageR2'
-
-type FakeRow = Record<string, unknown>
+import {
+  readFakeKnowgrphStorageRawRows,
+  readFakeKnowgrphStorageRows,
+  type FakeRow,
+} from './fakeKnowgrphStorageD1Reads'
 
 const normalizeSql = (sql: string): string =>
   String(sql || '')
@@ -8,25 +11,6 @@ const normalizeSql = (sql: string): string =>
     .replace(/["`]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
-
-const readSelectedColumns = (sql: string): string[] => {
-  const normalizedSql = normalizeSql(sql)
-  const selectPrefix = 'select '
-  const fromIndex = normalizedSql.indexOf(' from ')
-  if (!normalizedSql.startsWith(selectPrefix) || fromIndex <= selectPrefix.length) return []
-  const selectClause = normalizedSql.slice(selectPrefix.length, fromIndex)
-  if (selectClause.trim() === '*') return []
-  return selectClause
-    .split(',')
-    .map(part => part.trim())
-    .map(part => {
-      const aliasMatch = /\s+as\s+([a-z0-9_]+)/.exec(part)
-      if (aliasMatch?.[1]) return aliasMatch[1]
-      const pieces = part.split('.')
-      return pieces[pieces.length - 1] || part
-    })
-    .filter(Boolean)
-}
 
 export class FakeKnowgrphStorageD1Database {
   workspaces = new Map<string, FakeRow>()
@@ -45,6 +29,11 @@ export class FakeKnowgrphStorageD1Database {
   agenticCommerceSessions = new Map<string, FakeRow>()
   agenticCommerceProofs = new Map<string, FakeRow>()
   agenticCommerceTraceEvents = new Map<string, FakeRow>()
+  storageRecordWriteCounts = {
+    documents: 0,
+    documentChunks: 0,
+    graphSnapshots: 0,
+  }
 
   prepare(sql: string) {
     let boundValues: unknown[] = []
@@ -139,7 +128,10 @@ export class FakeKnowgrphStorageD1Database {
       })
       return
     }
-    if (normalizedSql.includes('delete from sync_events where created_at < ?')) {
+    if (
+      normalizedSql.startsWith('delete from sync_events')
+      && normalizedSql.includes('created_at < ?')
+    ) {
       const cutoff = String(values[0] || '')
       for (const [id, row] of this.syncEvents.entries()) {
         if (String(row.created_at || '') < cutoff) this.syncEvents.delete(id)
@@ -147,6 +139,7 @@ export class FakeKnowgrphStorageD1Database {
       return
     }
     if (normalizedSql.includes('insert into documents')) {
+      this.storageRecordWriteCounts.documents += 1
       const [
         id,
         workspaceId,
@@ -190,6 +183,7 @@ export class FakeKnowgrphStorageD1Database {
       return
     }
     if (normalizedSql.includes('update documents set')) {
+      this.storageRecordWriteCounts.documents += 1
       const [
         canonicalPath,
         title,
@@ -226,9 +220,29 @@ export class FakeKnowgrphStorageD1Database {
       return
     }
     if (normalizedSql.includes('insert into document_chunks')) {
+      this.storageRecordWriteCounts.documentChunks += 1
       const [id, documentId, workspaceId, chunkKey, chunkOrder, heading, markdown, tokenEstimate, contentHash, updatedAt] = values
       this.documentChunks.set(String(id), {
         id,
+        document_id: documentId,
+        workspace_id: workspaceId,
+        chunk_key: chunkKey,
+        chunk_order: chunkOrder,
+        heading,
+        markdown,
+        token_estimate: tokenEstimate,
+        content_hash: contentHash,
+        updated_at: updatedAt,
+      })
+      return
+    }
+    if (normalizedSql.includes('update document_chunks set')) {
+      this.storageRecordWriteCounts.documentChunks += 1
+      const [documentId, workspaceId, chunkKey, chunkOrder, heading, markdown, tokenEstimate, contentHash, updatedAt, id] = values
+      const existing = this.documentChunks.get(String(id))
+      if (!existing || existing.workspace_id !== workspaceId) return
+      this.documentChunks.set(String(id), {
+        ...existing,
         document_id: documentId,
         workspace_id: workspaceId,
         chunk_key: chunkKey,
@@ -246,9 +260,38 @@ export class FakeKnowgrphStorageD1Database {
       return
     }
     if (normalizedSql.includes('insert into graph_snapshots')) {
+      this.storageRecordWriteCounts.graphSnapshots += 1
       const [id, documentId, workspaceId, graphRevision, graphHash, graphJson, layoutJson, derivedFromDocumentRevision, updatedAt] = values
       this.graphSnapshots.set(String(id), {
         id,
+        document_id: documentId,
+        workspace_id: workspaceId,
+        graph_revision: graphRevision,
+        graph_hash: graphHash,
+        graph_json: graphJson,
+        layout_json: layoutJson,
+        derived_from_document_revision: derivedFromDocumentRevision,
+        updated_at: updatedAt,
+      })
+      return
+    }
+    if (normalizedSql.includes('update graph_snapshots set')) {
+      this.storageRecordWriteCounts.graphSnapshots += 1
+      const [
+        documentId,
+        workspaceId,
+        graphRevision,
+        graphHash,
+        graphJson,
+        layoutJson,
+        derivedFromDocumentRevision,
+        updatedAt,
+        id,
+      ] = values
+      const existing = this.graphSnapshots.get(String(id))
+      if (!existing || existing.workspace_id !== workspaceId) return
+      this.graphSnapshots.set(String(id), {
+        ...existing,
         document_id: documentId,
         workspace_id: workspaceId,
         graph_revision: graphRevision,
@@ -449,239 +492,11 @@ export class FakeKnowgrphStorageD1Database {
   }
 
   private readRows(sql: string, values: unknown[]): FakeRow[] {
-    const normalizedSql = normalizeSql(sql)
-    if (normalizedSql.includes('from auth_sessions') && normalizedSql.includes('join users on users.id = auth_sessions.user_id')) {
-      const [sessionHash, nowIso] = values
-      const session = Array.from(this.authSessions.values()).find(row =>
-        row.session_hash === sessionHash
-        && (row.revoked_at == null || row.revoked_at === '')
-        && String(row.expires_at || '') > String(nowIso || ''),
-      )
-      if (!session) return []
-      const user = this.users.get(String(session.user_id || ''))
-      if (!user) return []
-      return [{
-        id: session.id,
-        user_id: session.user_id,
-        session_hash: session.session_hash,
-        expires_at: session.expires_at,
-        revoked_at: session.revoked_at ?? null,
-        created_at: session.created_at,
-        updated_at: session.updated_at,
-        user_email: user.email,
-        user_display_name: user.display_name,
-        user_status: user.status,
-      }]
-    }
-    if (normalizedSql.includes('from workspace_memberships') && normalizedSql.includes('where workspace_id = ?') && normalizedSql.includes('and user_id = ?') && normalizedSql.includes("and status = 'active'")) {
-      const [workspaceId, userId] = values
-      const rows = Array.from(this.workspaceMemberships.values()).filter(row =>
-        row.workspace_id === workspaceId && row.user_id === userId && row.status === 'active',
-      )
-      return rows.slice(0, 1)
-    }
-    if (normalizedSql.includes('from workspace_memberships') && normalizedSql.includes('where user_id = ?') && normalizedSql.includes('order by workspace_id asc')) {
-      const [userId] = values
-      return Array.from(this.workspaceMemberships.values())
-        .filter(row => row.user_id === userId)
-        .sort((a, b) => String(a.workspace_id || '').localeCompare(String(b.workspace_id || '')))
-    }
-    if (normalizedSql.includes('from workspace_provider_policies') && normalizedSql.includes('where workspace_id = ?') && normalizedSql.includes('and provider_id = ?')) {
-      const [workspaceId, providerId] = values
-      const rows = Array.from(this.workspaceProviderPolicies.values()).filter(row =>
-        row.workspace_id === workspaceId && row.provider_id === providerId,
-      )
-      return rows.slice(0, 1)
-    }
-    if (normalizedSql.includes('from workspace_provider_policies') && normalizedSql.includes('where workspace_id = ?') && normalizedSql.includes('order by provider_id asc')) {
-      const [workspaceId] = values
-      return Array.from(this.workspaceProviderPolicies.values())
-        .filter(row => row.workspace_id === workspaceId)
-        .sort((a, b) => String(a.provider_id || '').localeCompare(String(b.provider_id || '')))
-    }
-    if (normalizedSql.includes('from chat_proxy_audit') && normalizedSql.includes('where workspace_id = ?') && normalizedSql.includes('order by created_at desc')) {
-      const [workspaceId, limit] = values
-      return Array.from(this.chatProxyAudit.values())
-        .filter(row => row.workspace_id === workspaceId)
-        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-        .slice(0, Number(limit || 50))
-    }
-    if (
-      normalizedSql.includes('select id, content_md from documents')
-      && normalizedSql.includes('documents.workspace_id = ?')
-      && normalizedSql.includes('documents.canonical_path = ?')
-      && normalizedSql.includes('documents.deleted = ?')
-    ) {
-      const [workspaceId, canonicalPath, deleted] = values
-      const rows = Array.from(this.documents.values()).filter(
-        row =>
-          row.workspace_id === workspaceId
-          && row.canonical_path === canonicalPath
-          && Number(row.deleted || 0) === Number(deleted || 0),
-      )
-      return rows.slice(0, 1).map(row => ({ id: row.id, content_md: row.content_md }))
-    }
-    if (normalizedSql.includes('select id, content_md from documents where workspace_id = ? and canonical_path = ? and deleted = 0')) {
-      const [workspaceId, canonicalPath] = values
-      const rows = Array.from(this.documents.values()).filter(
-        row =>
-          row.workspace_id === workspaceId
-          && row.canonical_path === canonicalPath
-          && Number(row.deleted || 0) === 0,
-      )
-      return rows.slice(0, 1).map(row => ({ id: row.id, content_md: row.content_md }))
-    }
-    if (normalizedSql.includes('select id, chunk_order, markdown from document_chunks')) {
-      const [workspaceId, documentId] = values
-      return Array.from(this.documentChunks.values())
-        .filter(row => row.workspace_id === workspaceId && row.document_id === documentId)
-        .sort((a, b) => {
-          const orderDelta = Number(a.chunk_order || 0) - Number(b.chunk_order || 0)
-          if (orderDelta !== 0) return orderDelta
-          return String(a.id || '').localeCompare(String(b.id || ''))
-        })
-        .map(row => ({ id: row.id, chunk_order: row.chunk_order, markdown: row.markdown }))
-    }
-    if (normalizedSql.includes('select id, canonical_path, title, doc_type, content_hash, revision, updated_at') && normalizedSql.includes('from documents')) {
-      const [workspaceId] = values
-      return Array.from(this.documents.values())
-        .filter(row => row.workspace_id === workspaceId && Number(row.deleted || 0) === 0 && String(row.content_md || '').length > 0)
-        .sort((a, b) => {
-          const pathDelta = String(a.canonical_path || '').localeCompare(String(b.canonical_path || ''))
-          if (pathDelta !== 0) return pathDelta
-          return String(a.id || '').localeCompare(String(b.id || ''))
-        })
-        .map(row => ({
-          id: row.id,
-          canonical_path: row.canonical_path,
-          title: row.title,
-          doc_type: row.doc_type,
-          content_hash: row.content_hash,
-          revision: row.revision,
-          updated_at: row.updated_at,
-          content_length: String(row.content_md || '').length,
-        }))
-    }
-    if (
-      normalizedSql.includes('select id, revision, content_hash, deleted from documents where id = ? and workspace_id = ?')
-    ) {
-      const [id, workspaceId] = values
-      const row = this.documents.get(String(id))
-      if (!row || row.workspace_id !== workspaceId) return []
-      return [{ id: row.id, revision: row.revision, content_hash: row.content_hash, deleted: row.deleted }]
-    }
-    if (
-      normalizedSql.includes('select id, revision, content_hash, deleted from documents where workspace_id = ? and canonical_path = ?')
-    ) {
-      const [workspaceId, canonicalPath] = values
-      const row = Array.from(this.documents.values()).find(
-        item => item.workspace_id === workspaceId && item.canonical_path === canonicalPath,
-      )
-      return row ? [{ id: row.id, revision: row.revision, content_hash: row.content_hash, deleted: row.deleted }] : []
-    }
-    if (normalizedSql.includes('select revision from documents')) {
-      const [id, workspaceId] = values
-      const row = this.documents.get(String(id))
-      if (!row || row.workspace_id !== workspaceId) return []
-      return [{ revision: row.revision }]
-    }
-    if (normalizedSql.includes('select max(graph_revision) as graph_revision from graph_snapshots')) {
-      const [documentId, workspaceId] = values
-      const rows = Array.from(this.graphSnapshots.values()).filter(
-        row => row.document_id === documentId && row.workspace_id === workspaceId,
-      )
-      const max = rows.reduce((acc, row) => Math.max(acc, Number(row.graph_revision || 0)), 0)
-      return rows.length > 0 ? [{ graph_revision: max }] : []
-    }
-    if (normalizedSql.includes('select id') && normalizedSql.includes('from stripe_webhook_events where id = ?')) {
-      const row = this.stripeWebhookEvents.get(String(values[0]))
-      if (!row) return []
-      const columns = readSelectedColumns(sql)
-      if (columns.length === 0) return [row]
-      return [Object.fromEntries(columns.map(column => [column, row[column]]))]
-    }
-    if (normalizedSql.includes('select * from stripe_checkout_sessions where id = ?')) {
-      const row = this.stripeCheckoutSessions.get(String(values[0]))
-      return row ? [row] : []
-    }
-    if (normalizedSql.includes('select * from agentic_commerce_sessions where id = ?')) {
-      const row = this.agenticCommerceSessions.get(String(values[0]))
-      return row ? [row] : []
-    }
-    if (normalizedSql.includes('select * from agentic_commerce_sessions where seller_id = ? and idempotency_key = ?')) {
-      const [sellerId, idempotencyKey] = values
-      return Array.from(this.agenticCommerceSessions.values())
-        .filter(row => row.seller_id === sellerId && row.idempotency_key === idempotencyKey)
-        .slice(0, 1)
-    }
-    if (normalizedSql.includes('select * from agentic_commerce_proofs where session_id = ?')) {
-      const [sessionId] = values
-      return Array.from(this.agenticCommerceProofs.values())
-        .filter(row => row.session_id === sessionId)
-        .sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
-        .slice(0, 1)
-    }
-    if (normalizedSql.includes('select * from agentic_commerce_proofs order by created_at, id')) {
-      return Array.from(this.agenticCommerceProofs.values())
-        .sort((a, b) => {
-          const timeDelta = String(a.created_at || '').localeCompare(String(b.created_at || ''))
-          if (timeDelta !== 0) return timeDelta
-          return String(a.id || '').localeCompare(String(b.id || ''))
-        })
-    }
-    if (normalizedSql.includes('select * from agentic_commerce_trace_events where session_id = ?')) {
-      const [sessionId] = values
-      return Array.from(this.agenticCommerceTraceEvents.values())
-        .filter(row => row.session_id === sessionId)
-        .sort((a, b) => {
-          const timeDelta = String(a.created_at || '').localeCompare(String(b.created_at || ''))
-          if (timeDelta !== 0) return timeDelta
-          return String(a.id || '').localeCompare(String(b.id || ''))
-        })
-    }
-    if (normalizedSql.includes('select * from agentic_commerce_trace_events order by created_at, id')) {
-      return Array.from(this.agenticCommerceTraceEvents.values())
-        .sort((a, b) => {
-          const timeDelta = String(a.created_at || '').localeCompare(String(b.created_at || ''))
-          if (timeDelta !== 0) return timeDelta
-          return String(a.id || '').localeCompare(String(b.id || ''))
-        })
-    }
-    if (normalizedSql.includes('from documents where documents.workspace_id = ?')) {
-      return this.filterByWorkspaceAndSince(this.documents, values)
-    }
-    if (normalizedSql.includes('select * from documents')) {
-      return this.filterByWorkspaceAndSince(this.documents, values)
-    }
-    if (normalizedSql.includes('from document_chunks where document_chunks.workspace_id = ?')) {
-      return this.filterByWorkspaceAndSince(this.documentChunks, values)
-    }
-    if (normalizedSql.includes('select * from document_chunks')) {
-      return this.filterByWorkspaceAndSince(this.documentChunks, values)
-    }
-    if (normalizedSql.includes('from graph_snapshots where graph_snapshots.workspace_id = ?')) {
-      return this.filterByWorkspaceAndSince(this.graphSnapshots, values)
-    }
-    if (normalizedSql.includes('select * from graph_snapshots')) {
-      return this.filterByWorkspaceAndSince(this.graphSnapshots, values)
-    }
-    return []
+    return readFakeKnowgrphStorageRows(this, sql, values)
   }
 
   private readRawRows(sql: string, values: unknown[]): unknown[][] {
-    const rows = this.readRows(sql, values)
-    const columns = readSelectedColumns(sql)
-    if (columns.length === 0) return rows.map(row => Object.values(row))
-    return rows.map(row => columns.map(column => row[column]))
-  }
-
-  private filterByWorkspaceAndSince(source: Map<string, FakeRow>, values: unknown[]): FakeRow[] {
-    const workspaceId = values[0]
-    const since = typeof values[1] === 'string' ? values[1] : null
-    return Array.from(source.values())
-      .filter(row => row.workspace_id === workspaceId)
-      .filter(row => (since ? String(row.updated_at || '') > since : true))
-      .sort((a, b) => String(a.updated_at || '').localeCompare(String(b.updated_at || '')))
+    return readFakeKnowgrphStorageRawRows(this, sql, values)
   }
 }
 

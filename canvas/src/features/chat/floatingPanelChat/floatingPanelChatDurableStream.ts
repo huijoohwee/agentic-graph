@@ -1,6 +1,11 @@
 import { LS_KEYS } from '@/lib/config'
 import { getLocalStorage, readJsonFromStorage, writeJsonToStorage } from '@/lib/persistence'
 import type { JSONValue } from '@/lib/graph/types'
+import {
+  AGENTIC_OS_DOCS_MCP_TOOL_NAME,
+  normalizeAgenticOsDocsMcpInvocationTokens,
+} from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
+import type { HeadlessResponsePreparation } from '../headlessResponseCoordinator'
 
 export const CHAT_DURABLE_STREAM_WORKER_SCRIPT = 'knowgrph-chat-stream-sw.js'
 export const CHAT_DURABLE_STREAM_START = 'KG_CHAT_STREAM_START'
@@ -11,6 +16,132 @@ export const CHAT_DURABLE_STREAM_RESPONSE = 'KG_CHAT_STREAM_RESPONSE'
 export const CHAT_DURABLE_STREAM_CHUNK = 'KG_CHAT_STREAM_CHUNK'
 export const CHAT_DURABLE_STREAM_DONE = 'KG_CHAT_STREAM_DONE'
 export const CHAT_DURABLE_STREAM_ERROR = 'KG_CHAT_STREAM_ERROR'
+
+const durableChatStreamTransportSuspensions = new Set<symbol>()
+
+export const DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA =
+  'knowgrph-durable-chat-headless-preparation/v1' as const
+
+export type DurableChatHeadlessPreparationSeed = {
+  schema: typeof DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA
+  runId: string
+  source: {
+    kind: 'chat'
+    id: string
+  }
+  responseContract: HeadlessResponsePreparation['responseContract']
+  invocation: {
+    tokens: string[]
+    tool: typeof AGENTIC_OS_DOCS_MCP_TOOL_NAME | null
+    mcpInvoked: boolean
+  }
+}
+
+const parseDurableChatHeadlessPreparationSeed = (
+  value: unknown,
+): DurableChatHeadlessPreparationSeed | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const raw = value as Partial<DurableChatHeadlessPreparationSeed>
+  const rawSource = raw.source as Partial<DurableChatHeadlessPreparationSeed['source']> | undefined
+  const rawInvocation = raw.invocation as Partial<DurableChatHeadlessPreparationSeed['invocation']> | undefined
+  const rawTokens = Array.isArray(rawInvocation?.tokens) ? rawInvocation.tokens : []
+  const tokens = normalizeAgenticOsDocsMcpInvocationTokens(rawTokens)
+  if (
+    raw.schema !== DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA
+    || rawSource?.kind !== 'chat'
+    || (raw.responseContract !== 'plain' && raw.responseContract !== 'kgc')
+    || tokens.length !== rawTokens.length
+    || tokens.some((token, index) => token !== rawTokens[index])
+  ) return null
+  const runId = typeof raw.runId === 'string' ? raw.runId.trim() : ''
+  const sourceId = typeof rawSource.id === 'string' ? rawSource.id.trim() : ''
+  if (!runId || !sourceId) return null
+  const tool = rawInvocation?.tool === AGENTIC_OS_DOCS_MCP_TOOL_NAME
+    ? AGENTIC_OS_DOCS_MCP_TOOL_NAME
+    : rawInvocation?.tool === null
+      ? null
+      : undefined
+  const mcpInvoked = rawInvocation?.mcpInvoked
+  if (
+    tool === undefined
+    || typeof mcpInvoked !== 'boolean'
+    || (tokens.length > 0 && (tool !== AGENTIC_OS_DOCS_MCP_TOOL_NAME || mcpInvoked !== true))
+    || (tokens.length === 0 && (tool !== null || mcpInvoked !== false))
+  ) return null
+  return {
+    schema: DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA,
+    runId,
+    source: { kind: 'chat', id: sourceId },
+    responseContract: raw.responseContract,
+    invocation: {
+      tokens,
+      tool,
+      mcpInvoked,
+    },
+  }
+}
+
+export const projectDurableChatHeadlessPreparationSeed = (
+  prepared: HeadlessResponsePreparation,
+): DurableChatHeadlessPreparationSeed | null => parseDurableChatHeadlessPreparationSeed({
+  schema: DURABLE_CHAT_HEADLESS_PREPARATION_SEED_SCHEMA,
+  runId: prepared.runId,
+  source: prepared.source,
+  responseContract: prepared.responseContract,
+  invocation: {
+    tokens: prepared.invocation.tokens,
+    tool: prepared.invocation.mcpResponse?.tool || null,
+    mcpInvoked: prepared.invocation.mcpResponse?.mcpInvoked === true,
+  },
+})
+
+export const restoreDurableChatHeadlessPreparation = (
+  value: unknown,
+  args: {
+    requestText: string
+    expectedRunId: string
+    expectedAssistantMessageId: string
+  },
+): HeadlessResponsePreparation | null => {
+  const seed = parseDurableChatHeadlessPreparationSeed(value)
+  const requestText = typeof args.requestText === 'string' ? args.requestText.trim() : ''
+  const expectedRunId = String(args.expectedRunId || '').trim()
+  const expectedAssistantMessageId = String(args.expectedAssistantMessageId || '').trim()
+  if (
+    !seed
+    || !requestText
+    || seed.runId !== expectedRunId
+    || seed.source.id !== expectedAssistantMessageId
+  ) return null
+  return {
+    runId: seed.runId,
+    source: seed.source,
+    requestText,
+    providerText: requestText,
+    responseContract: seed.responseContract,
+    systemMessages: [],
+    invocation: {
+      tokens: [...seed.invocation.tokens],
+      mcpResponse: seed.invocation.mcpInvoked && seed.invocation.tool === AGENTIC_OS_DOCS_MCP_TOOL_NAME
+        ? {
+            ok: true,
+            tool: AGENTIC_OS_DOCS_MCP_TOOL_NAME,
+            mcpInvoked: true,
+            invocations: seed.invocation.tokens.map(token => ({ token, ok: true })),
+          }
+        : null,
+    },
+  }
+}
+
+export class DurableChatStreamTransportSuspendedError extends Error {
+  readonly code = 'DURABLE_CHAT_STREAM_TRANSPORT_SUSPENDED'
+
+  constructor() {
+    super('Durable chat stream transport is suspended while Flight Sim owns the runtime.')
+    this.name = 'DurableChatStreamTransportSuspendedError'
+  }
+}
 
 export type DurableChatStreamMetadata = {
   runId: string
@@ -24,6 +155,7 @@ export type DurableChatStreamMetadata = {
   defaultLocalRootPath: string
   modelId: string | null
   packedFrontmatter?: Record<string, JSONValue> | null
+  headlessPreparationSeed?: DurableChatHeadlessPreparationSeed | null
 }
 
 export type DurableChatStreamRequestMetadata = Omit<DurableChatStreamMetadata, 'modelId'> & {
@@ -77,6 +209,12 @@ const parseActiveRun = (value: unknown): DurableChatStreamActiveRun | null => {
   const requestText = typeof value.requestText === 'string' ? value.requestText : ''
   const chatStorageTarget = value.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatKnowgrph'
   if (!runId || !traceId || !assistantMessageId) return null
+  const parsedHeadlessSeed = parseDurableChatHeadlessPreparationSeed(value.headlessPreparationSeed)
+  const headlessPreparationSeed = parsedHeadlessSeed
+    && parsedHeadlessSeed.runId === assistantMessageId
+    && parsedHeadlessSeed.source.id === assistantMessageId
+    ? parsedHeadlessSeed
+    : null
   return {
     runId,
     traceId,
@@ -89,6 +227,7 @@ const parseActiveRun = (value: unknown): DurableChatStreamActiveRun | null => {
     defaultLocalRootPath: normalizeString(value.defaultLocalRootPath),
     modelId: normalizeString(value.modelId) || null,
     packedFrontmatter: isRecord(value.packedFrontmatter) ? value.packedFrontmatter as Record<string, JSONValue> : null,
+    headlessPreparationSeed,
     status: 'active',
     startedAtMs: Number(value.startedAtMs || 0) || Date.now(),
     updatedAtMs: Number(value.updatedAtMs || 0) || Date.now(),
@@ -105,10 +244,17 @@ export const writeActiveDurableChatStreamRun = (metadata: DurableChatStreamReque
   const storage = getLocalStorage()
   if (!storage) return null
   const nowMs = Date.now()
+  const assistantMessageId = normalizeString(metadata.assistantMessageId)
+  const parsedHeadlessSeed = parseDurableChatHeadlessPreparationSeed(metadata.headlessPreparationSeed)
+  const headlessPreparationSeed = parsedHeadlessSeed
+    && parsedHeadlessSeed.runId === assistantMessageId
+    && parsedHeadlessSeed.source.id === assistantMessageId
+    ? parsedHeadlessSeed
+    : null
   const active: DurableChatStreamActiveRun = {
     runId: normalizeString(metadata.runId),
     traceId: normalizeString(metadata.traceId),
-    assistantMessageId: normalizeString(metadata.assistantMessageId),
+    assistantMessageId,
     requestText: typeof metadata.requestText === 'string' ? metadata.requestText : '',
     requestTimestampMs: Number(metadata.requestTimestampMs || 0) || nowMs,
     chatStorageTarget: metadata.chatStorageTarget === 'chatHistory' ? 'chatHistory' : 'chatKnowgrph',
@@ -117,6 +263,7 @@ export const writeActiveDurableChatStreamRun = (metadata: DurableChatStreamReque
     defaultLocalRootPath: normalizeString(metadata.defaultLocalRootPath),
     modelId: normalizeString(metadata.modelId) || null,
     packedFrontmatter: metadata.packedFrontmatter || null,
+    headlessPreparationSeed,
     status: 'active',
     startedAtMs: nowMs,
     updatedAtMs: nowMs,
@@ -136,6 +283,24 @@ export const clearActiveDurableChatStreamRun = (runId?: string | null): void => 
     storage.removeItem(LS_KEYS.chatDurableStreamActiveRun)
   } catch {
     void 0
+  }
+}
+
+const assertDurableChatStreamTransportAvailable = (): void => {
+  if (durableChatStreamTransportSuspensions.size === 0) return
+  throw new DurableChatStreamTransportSuspendedError()
+}
+
+export const acquireDurableChatStreamTransportSuspension = (): (() => void) => {
+  if (readActiveDurableChatStreamRun()) {
+    throw new Error(
+      'Flight Sim cannot suspend durable chat stream transport while a durable chat run is active.',
+    )
+  }
+  const owner = Symbol('durable-chat-stream-transport-suspension')
+  durableChatStreamTransportSuspensions.add(owner)
+  return () => {
+    durableChatStreamTransportSuspensions.delete(owner)
   }
 }
 
@@ -369,6 +534,7 @@ export const fetchWithDurableChatStream = async (args: {
   signal?: AbortSignal | null
   fallbackFetch?: typeof fetch
 }): Promise<Response> => {
+  assertDurableChatStreamTransportAvailable()
   const fallbackFetch = args.fallbackFetch || fetch
   const method = normalizeString(args.init?.method || 'GET').toUpperCase()
   const body = typeof args.init?.body === 'string' ? args.init.body : ''
@@ -403,6 +569,7 @@ export const fetchWithDurableChatStream = async (args: {
 }
 
 export const attachDurableChatStreamResponse = async (runId: string): Promise<Response> => {
+  assertDurableChatStreamTransportAvailable()
   const response = await createWorkerBackedResponse({ runId })
   if (!response) throw new Error('No active durable chat stream worker is available.')
   return response

@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import {
+  CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+  CITY_SIM_RUN_READY_DEMO_ID,
   XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
   XR_PHYSICS_RUN_READY_DEMO_ID,
   resolveWorkspaceRunReadyDemoIdForDocument,
@@ -15,6 +17,8 @@ const source = (...parts: string[]) => readFileSync(resolve(repoRoot, ...parts),
 
 test('XR Physics is the only source-backed authority for the Game Mode overlay', () => {
   const physicsSource = source('docs', 'workspace-seeds', XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME)
+  const citySource = source('docs', 'workspace-seeds', CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME)
+  const threeGraphSource = source('canvas', 'src', 'lib', 'three', 'ThreeGraph.impl.tsx')
   const canvasScripts = JSON.parse(source('canvas', 'package.json')).scripts as Record<string, string>
   assert.equal(resolveWorkspaceRunReadyDemoSeed('game-fps'), null)
   assert.equal(
@@ -30,6 +34,23 @@ test('XR Physics is the only source-backed authority for the Game Mode overlay',
       physicsSource,
     ),
     XR_PHYSICS_RUN_READY_DEMO_ID,
+  )
+  assert.equal(
+    resolveWorkspaceRunReadyDemoIdForDocument(
+      `/docs/workspace-seeds/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
+      citySource,
+    ),
+    CITY_SIM_RUN_READY_DEMO_ID,
+  )
+  assert.match(citySource, /world_ownership: "overlay-only"/)
+  assert.doesNotMatch(citySource, /\n(?:game_mode|home_apex|native_controller_demo):/)
+  assert.match(
+    source('scripts', 'check-game-fps-readiness.mjs'),
+    /declaresCanonicalCityOverlay/,
+  )
+  assert.match(
+    threeGraphSource,
+    /\{!gameFpsStageActive && !citySimStageActive \? <ControlsLazy/,
   )
 
   assert.equal(

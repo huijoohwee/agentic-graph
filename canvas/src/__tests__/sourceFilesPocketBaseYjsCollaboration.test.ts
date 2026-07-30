@@ -21,12 +21,16 @@ import {
   createPocketBaseYjsSourceFileRoom,
   type PocketBaseLike,
 } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
+import {
+  createFakeKnowgrphStorageWorkerEnv,
+  type FakeKnowgrphStorageD1Database,
+} from '@/__tests__/helpers/fakeKnowgrphStorageD1'
 
 type FakePocketBaseRecord = Record<string, unknown> & { id: string }
 
 const waitForMicrotasks = async () => {
-  await Promise.resolve()
-  await Promise.resolve()
+  for (let index = 0; index < 8; index += 1) await Promise.resolve()
+  await new Promise<void>(resolve => globalThis.setTimeout(resolve, 0))
 }
 
 const createFakePocketBaseClient = () => {
@@ -78,6 +82,64 @@ const readStorageWorker = (): { fetch: (request: Request, env: Record<string, un
   if (!fetchImpl) throw new Error('expected storage worker test module to expose fetch')
   return { fetch: fetchImpl }
 }
+
+const SESSION_TOKEN = 'collaboration-save-session'
+
+const hashToken = async (value: string): Promise<string> => {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(value),
+  )
+  return Array.from(
+    new Uint8Array(digest),
+    byte => byte.toString(16).padStart(2, '0'),
+  ).join('')
+}
+
+const createAuthorizedWorkerEnv = async (
+  overrides: Record<string, unknown> = {},
+): Promise<Record<string, unknown>> => {
+  const env = Object.assign(createFakeKnowgrphStorageWorkerEnv(), {
+    KNOWGRPH_STORAGE_DEV_REMOTE_RELAY_ENABLED: 'true',
+    ...overrides,
+  })
+  const db = env.DB as FakeKnowgrphStorageD1Database
+  db.users.set('user:collaboration-save', {
+    id: 'user:collaboration-save',
+    email: 'collaboration-save@example.com',
+    display_name: 'Collaboration Save',
+    status: 'active',
+  })
+  db.authSessions.set('session:collaboration-save', {
+    id: 'session:collaboration-save',
+    user_id: 'user:collaboration-save',
+    session_hash: await hashToken(SESSION_TOKEN),
+    expires_at: '2036-01-01T00:00:00.000Z',
+    revoked_at: null,
+  })
+  db.workspaceMemberships.set('membership:collaboration-save', {
+    id: 'membership:collaboration-save',
+    workspace_id: 'kgws:test',
+    user_id: 'user:collaboration-save',
+    role: 'editor',
+    status: 'active',
+  })
+  return env
+}
+
+const collaborationSaveRequest = (
+  body: KnowgrphCollaborationSaveRequest,
+): Request => new Request(
+  `http://127.0.0.1${buildKnowgrphCollaborationSavePath()}`,
+  {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${SESSION_TOKEN}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  },
+)
 
 export function testPocketBaseYjsMarkdownConcurrentUpdatesMergeThroughYText() {
   const left = createCollaborationYDoc({
@@ -227,9 +289,11 @@ export async function testCollaborationSaveBridgeCommitsFormattedJsonThroughGitH
     })
     const body: KnowgrphCollaborationSaveRequest = {
       apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      operation: 'upsert',
       workspaceId: 'kgws:test',
       documentKey: '/docs/shared.json',
       documentKind: 'json',
+      repositoryTarget: 'workspace-docs',
       serializedText: '{"rawEditorTextMustNotWin":true}',
       yjsStateBase64: encodeCollaborationYDocStateBase64(doc),
       activePeerCount: 2,
@@ -238,17 +302,13 @@ export async function testCollaborationSaveBridgeCommitsFormattedJsonThroughGitH
       saveBoundary: 'explicit',
     }
     const response = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildKnowgrphCollaborationSavePath()}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      }),
-      {
+      collaborationSaveRequest(body),
+      await createAuthorizedWorkerEnv({
         KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
         KNOWGRPH_STORAGE_GITHUB_OWNER: 'owner',
-        KNOWGRPH_STORAGE_GITHUB_REPO: 'repo',
+        KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
         KNOWGRPH_STORAGE_GITHUB_BRANCH: 'main',
-      },
+      }),
     )
     const result = await response.json() as { ok?: boolean; githubPath?: string }
     if (!response.ok || result.ok !== true || result.githubPath !== 'docs/shared.json') {
@@ -260,7 +320,7 @@ export async function testCollaborationSaveBridgeCommitsFormattedJsonThroughGitH
     if (decoded !== '{\n  "z": 1\n}\n') {
       throw new Error(`expected bridge to format concurrent JSON before GitHub commit, got ${JSON.stringify(decoded)}`)
     }
-    if (String(putRequest?.body?.message || '') !== 'chore(sync): save shared.json from collaboration bridge') {
+    if (String(putRequest?.body?.message || '') !== 'chore(sync): save shared.json from workspace-docs collaboration bridge') {
       throw new Error(`expected bridge-owned commit message, got ${JSON.stringify(putRequest?.body?.message)}`)
     }
   } finally {
@@ -270,29 +330,52 @@ export async function testCollaborationSaveBridgeCommitsFormattedJsonThroughGitH
 
 export async function testCollaborationSaveBridgeRejectsConcurrentJsonWithoutCrdtState() {
   const response = await readStorageWorker().fetch(
-    new Request(`https://example.com${buildKnowgrphCollaborationSavePath()}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
-        workspaceId: 'kgws:test',
-        documentKey: '/docs/shared.json',
-        documentKind: 'json',
-        serializedText: '{"z":1}',
-        yjsStateBase64: '',
-        activePeerCount: 2,
-        pocketBaseRoomId: 'room_a',
-        savedByPeerId: 'peer_a',
-        saveBoundary: 'explicit',
-      } satisfies KnowgrphCollaborationSaveRequest),
+    collaborationSaveRequest({
+      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      operation: 'upsert',
+      workspaceId: 'kgws:test',
+      documentKey: '/docs/shared.json',
+      documentKind: 'json',
+      repositoryTarget: 'workspace-docs',
+      serializedText: '{"z":1}',
+      yjsStateBase64: '',
+      activePeerCount: 2,
+      pocketBaseRoomId: 'room_a',
+      savedByPeerId: 'peer_a',
+      saveBoundary: 'explicit',
     }),
-    {
+    await createAuthorizedWorkerEnv({
       KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
-    },
+    }),
   )
   const result = await response.json() as { ok?: boolean; code?: string; error?: string }
   if (response.status !== 409 || result.code !== 'conflict' || !String(result.error || '').includes('requires Yjs CRDT state')) {
     throw new Error(`expected bridge to reject concurrent raw JSON saves without CRDT state, got ${JSON.stringify(result)}`)
+  }
+}
+
+export async function testCollaborationSaveBridgeRejectsRepositoryTargetMismatch() {
+  const response = await readStorageWorker().fetch(
+    collaborationSaveRequest({
+      apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+      operation: 'upsert',
+      workspaceId: 'kgws:test',
+      documentKey: '/docs/team-note.md',
+      documentKind: 'markdown',
+      repositoryTarget: 'knowgrph-docs',
+      serializedText: '# Team note',
+      yjsStateBase64: '',
+      activePeerCount: 1,
+      pocketBaseRoomId: null,
+      savedByPeerId: 'peer_a',
+      saveBoundary: 'explicit',
+    }),
+    await createAuthorizedWorkerEnv(),
+  )
+  const result = await response.json() as { code?: string; error?: string }
+  if (response.status !== 400 || result.code !== 'bad_request'
+    || !String(result.error || '').includes('repository target does not match path authority')) {
+    throw new Error(`expected repository authority mismatch rejection, got ${JSON.stringify(result)}`)
   }
 }
 
@@ -315,28 +398,26 @@ export async function testCollaborationSaveBridgeIgnoresStalePocketBaseAwareness
   }) as typeof fetch
   try {
     const response = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildKnowgrphCollaborationSavePath()}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          apiVersion: KNOWGRPH_STORAGE_API_VERSION,
-          workspaceId: 'kgws:test',
-          documentKey: '/docs/shared.json',
-          documentKind: 'json',
-          serializedText: '{"z":1}',
-          yjsStateBase64: '',
-          activePeerCount: 2,
-          pocketBaseRoomId: 'room_a',
-          savedByPeerId: 'peer_a',
-          saveBoundary: 'explicit',
-        } satisfies KnowgrphCollaborationSaveRequest),
+      collaborationSaveRequest({
+        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        operation: 'upsert',
+        workspaceId: 'kgws:test',
+        documentKey: '/docs/shared.json',
+        documentKind: 'json',
+        repositoryTarget: 'workspace-docs',
+        serializedText: '{"z":1}',
+        yjsStateBase64: '',
+        activePeerCount: 2,
+        pocketBaseRoomId: 'room_a',
+        savedByPeerId: 'peer_a',
+        saveBoundary: 'explicit',
       }),
-      {
+      await createAuthorizedWorkerEnv({
         KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
         KNOWGRPH_STORAGE_GITHUB_OWNER: 'owner',
-        KNOWGRPH_STORAGE_GITHUB_REPO: 'repo',
+        KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
         KNOWGRPH_STORAGE_POCKETBASE_URL: 'https://pocketbase.test',
-      },
+      }),
     )
     const result = await response.json() as { ok?: boolean; code?: string; error?: string }
     if (!response.ok || result.ok !== true) {
@@ -379,28 +460,26 @@ export async function testCollaborationSaveBridgePrefersRequestYjsStateOverStale
   }) as typeof fetch
   try {
     const response = await readStorageWorker().fetch(
-      new Request(`https://example.com${buildKnowgrphCollaborationSavePath()}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          apiVersion: KNOWGRPH_STORAGE_API_VERSION,
-          workspaceId: 'kgws:test',
-          documentKey: '/docs/shared.json',
-          documentKind: 'json',
-          serializedText: '{"rawEditorTextMustNotWin":true}',
-          yjsStateBase64: encodeCollaborationYDocStateBase64(freshDoc),
-          activePeerCount: 2,
-          pocketBaseRoomId: 'room_a',
-          savedByPeerId: 'peer_a',
-          saveBoundary: 'explicit',
-        } satisfies KnowgrphCollaborationSaveRequest),
+      collaborationSaveRequest({
+        apiVersion: KNOWGRPH_STORAGE_API_VERSION,
+        operation: 'upsert',
+        workspaceId: 'kgws:test',
+        documentKey: '/docs/shared.json',
+        documentKind: 'json',
+        repositoryTarget: 'workspace-docs',
+        serializedText: '{"rawEditorTextMustNotWin":true}',
+        yjsStateBase64: encodeCollaborationYDocStateBase64(freshDoc),
+        activePeerCount: 2,
+        pocketBaseRoomId: 'room_a',
+        savedByPeerId: 'peer_a',
+        saveBoundary: 'explicit',
       }),
-      {
+      await createAuthorizedWorkerEnv({
         KNOWGRPH_STORAGE_GITHUB_TOKEN: 'test-token',
         KNOWGRPH_STORAGE_GITHUB_OWNER: 'owner',
-        KNOWGRPH_STORAGE_GITHUB_REPO: 'repo',
+        KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO: 'repo',
         KNOWGRPH_STORAGE_POCKETBASE_URL: 'https://pocketbase.test',
-      },
+      }),
     )
     const result = await response.json() as { ok?: boolean; code?: string; error?: string }
     if (!response.ok || result.ok !== true) {

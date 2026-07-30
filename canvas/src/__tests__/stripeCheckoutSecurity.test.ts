@@ -303,7 +303,7 @@ export async function testStripeCheckoutReturnRuntimeVerifiesPaidStatus() {
     }) as typeof fetch
 
     useGraphStore.getState().resetAll()
-    useGraphStore.getState().setPaymentsStripePaywallEnabled(true)
+    useGraphStore.getState().setPaymentsPaywallEnabled(true)
     useGraphStore.getState().setPaymentsStripeCheckoutUrl('https://checkout.stripe.com/c/pay/cs_test_paid')
 
     const container = dom.window.document.createElement('section')
@@ -313,7 +313,7 @@ export async function testStripeCheckoutReturnRuntimeVerifiesPaidStatus() {
       window: dom.window,
       frames: 2,
     })
-    await waitUntil(() => useGraphStore.getState().paymentsStripePaywallEnabled === false)
+    await waitUntil(() => useGraphStore.getState().paymentsPaywallEnabled === false)
 
     const state = useGraphStore.getState()
     if (state.paymentsStripeCheckoutUrl !== '') {
@@ -367,7 +367,7 @@ export async function testStripeCheckoutReturnRuntimeRejectsCompleteUnpaidStatus
     }) as Response) as typeof fetch
 
     useGraphStore.getState().resetAll()
-    useGraphStore.getState().setPaymentsStripePaywallEnabled(true)
+    useGraphStore.getState().setPaymentsPaywallEnabled(true)
     useGraphStore.getState().setPaymentsStripeCheckoutUrl('https://checkout.stripe.com/c/pay/cs_test_unpaid')
 
     const container = dom.window.document.createElement('section')
@@ -380,9 +380,9 @@ export async function testStripeCheckoutReturnRuntimeRejectsCompleteUnpaidStatus
     await waitUntil(() => useGraphStore.getState().uiToasts.some(toast => toast.kind === 'warning' && toast.message.includes('unpaid')))
 
     const state = useGraphStore.getState()
-    if (state.paymentsStripePaywallEnabled !== true || state.paymentsStripeCheckoutUrl !== '') {
+    if (state.paymentsPaywallEnabled !== true || state.paymentsStripeCheckoutUrl !== '') {
       throw new Error(`expected complete/unpaid checkout to stay locked and clear the stale Checkout URL, got ${JSON.stringify({
-        paywall: state.paymentsStripePaywallEnabled,
+        paywall: state.paymentsPaywallEnabled,
         checkoutUrl: state.paymentsStripeCheckoutUrl,
       })}`)
     }
@@ -423,7 +423,7 @@ export async function testStripeCheckoutReturnRuntimeKeepsPaywallOnCancel() {
     }) as typeof fetch
 
     useGraphStore.getState().resetAll()
-    useGraphStore.getState().setPaymentsStripePaywallEnabled(true)
+    useGraphStore.getState().setPaymentsPaywallEnabled(true)
     useGraphStore.getState().setPaymentsStripeCheckoutUrl('https://checkout.stripe.com/c/pay/cs_test_cancelled')
 
     const container = dom.window.document.createElement('section')
@@ -438,9 +438,9 @@ export async function testStripeCheckoutReturnRuntimeKeepsPaywallOnCancel() {
     })
 
     const state = useGraphStore.getState()
-    if (state.paymentsStripePaywallEnabled !== true || state.paymentsStripeCheckoutUrl !== '') {
+    if (state.paymentsPaywallEnabled !== true || state.paymentsStripeCheckoutUrl !== '') {
       throw new Error(`expected cancelled checkout to stay locked and clear the stale Checkout URL, got ${JSON.stringify({
-        paywall: state.paymentsStripePaywallEnabled,
+        paywall: state.paymentsPaywallEnabled,
         url: state.paymentsStripeCheckoutUrl,
       })}`)
     }

@@ -493,7 +493,7 @@ export const useMarkdownBlockContainerDraftCommit = (args: {
 
   const getDraft = React.useCallback(() => args.draftRef.current, [args.draftRef])
 
-  const commit = React.useCallback(() => {
+  const commit = React.useCallback(async () => {
     if (!args.editable || !args.onReplaceLineRange) return
     if (args.editorPresentation === 'html') {
       const root = args.editorRef.current
@@ -509,32 +509,30 @@ export const useMarkdownBlockContainerDraftCommit = (args: {
       }
       const sessionId = args.editSessionIdRef.current
       const hadSemanticRoot = hasSemanticRichMarkup(root)
-      void (async () => {
-        const markdown = await readCurrentMarkdownDraft()
-        if (args.editSessionIdRef.current !== sessionId) return
-        if (typeof markdown !== 'string') {
-          args.setEditing(false)
-          args.setSessionEditLineRange(null)
-          return
-        }
-        if (!markdown && hadSemanticRoot) {
-          args.setEditing(false)
-          args.setSessionEditLineRange(null)
-          return
-        }
-        if (markdown === args.initialPresentTextRef.current) {
-          args.setEditing(false)
-          args.setSessionEditLineRange(null)
-          return
-        }
-        const replacementLines = buildReplacementLinesFromDraft(normalizeInvocationTokenSpacing(markdown))
-        // HTML inline edits can already project a transient whole-document draft into
-        // the visible Markdown pane before commit. Comparing against the current
-        // sourceLines would treat the final persistence step as a false no-op.
-        args.onReplaceLineRange?.({ startLine: args.editStartLine, endLine: args.editEndLine, replacementLines })
+      const markdown = await readCurrentMarkdownDraft()
+      if (args.editSessionIdRef.current !== sessionId) return
+      if (typeof markdown !== 'string') {
         args.setEditing(false)
         args.setSessionEditLineRange(null)
-      })()
+        return
+      }
+      if (!markdown && hadSemanticRoot) {
+        args.setEditing(false)
+        args.setSessionEditLineRange(null)
+        return
+      }
+      if (markdown === args.initialPresentTextRef.current) {
+        args.setEditing(false)
+        args.setSessionEditLineRange(null)
+        return
+      }
+      const replacementLines = buildReplacementLinesFromDraft(normalizeInvocationTokenSpacing(markdown))
+      // HTML inline edits can already project a transient whole-document draft into
+      // the visible Markdown pane before commit. Comparing against the current
+      // sourceLines would treat the final persistence step as a false no-op.
+      args.onReplaceLineRange?.({ startLine: args.editStartLine, endLine: args.editEndLine, replacementLines })
+      args.setEditing(false)
+      args.setSessionEditLineRange(null)
       return
     }
     const draft = getDraft()

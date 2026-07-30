@@ -26,6 +26,12 @@
   Cache-Control: no-cache, no-store, must-revalidate
   Service-Worker-Allowed: /
 
+/knowgrph-chat-stream-sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/knowgrph-service-worker-revision.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
 /manifest.webmanifest
   Cache-Control: no-cache, no-store, must-revalidate
 

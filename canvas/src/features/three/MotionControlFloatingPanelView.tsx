@@ -12,10 +12,14 @@ import { UI_INLINE_CHIP_GROUP_CLASSNAME } from '@/lib/ui/textLayout'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 import { renderAgenticOsInvocationKeywordChip } from '@/features/agentic-os/agenticOsInvocationChips'
 import { useAgenticOsRemoteGrammarCatalog } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
+import { useAgenticOsRemoteGrammarAutoHydration } from '@/features/agentic-os/useAgenticOsRemoteGrammarAutoHydration'
+import { FlightSimTrainingSurfaceProjection } from '@/features/game-flight-sim/FlightSimTrainingSurfaceProjection'
 import { cn } from '@/lib/utils'
 import {
   buildMotionControlBoundingBoxInvocation,
+  buildMotionControlExportInvocation,
   buildMotionControlInvocation,
+  buildMotionControlShareInvocation,
   controlLocalMotionControl,
   inspectLocalMotionControl,
   type MotionControlOperation,
@@ -34,6 +38,9 @@ import {
   type MotionControlSnapshot,
 } from './motionControlRuntime'
 import { MotionControlTargetCards } from './MotionControlTargetCards'
+import { MotionCapturePlatformProjection } from './MotionCapturePlatformProjection'
+import { motionCapturePlatformUiAdapter } from './motionCapturePlatformUiAdapter'
+import { readMotionCapturePeerSharingSnapshot, subscribeMotionCapturePeerSharing } from './motionCapturePeerRuntime'
 import {
   MOTION_CONTROL_XR_UNAVAILABLE_MESSAGE,
   openMotionControlSurface,
@@ -51,14 +58,11 @@ const MOTION_CONTROL_REQUIRED_METADATA_TOKENS = Object.freeze([
   ...Object.values(MOTION_CONTROL_INVOCATION_BINDINGS).map(token => ({ kind: 'binding' as const, token })),
 ])
 
-function MotionInvocation({ operation, backend, boundingBox }: { operation: MotionControlOperation; backend?: MotionControlBackendPreference; boundingBox?: boolean }) {
-  const invocation = boundingBox === undefined
-    ? buildMotionControlInvocation(operation, backend)
-    : buildMotionControlBoundingBoxInvocation(boundingBox)
+function MotionInvocationChip({ invocation, operation }: { invocation: string; operation: string }) {
   return (
     <code
       className={cn(UI_INLINE_CHIP_GROUP_CLASSNAME, 'min-w-0 overflow-hidden font-mono text-[9px]', UI_THEME_TOKENS.text.secondary)}
-      data-kg-motion-control-invocation={boundingBox === undefined ? operation : `bounding-box-${boundingBox ? 'enable' : 'disable'}`}
+      data-kg-motion-control-invocation={operation}
       data-kg-motion-control-invocation-chip-renderer="shared-markdown-sigil"
     >
       {renderMarkdownSigilInlineText(invocation, {
@@ -66,6 +70,13 @@ function MotionInvocation({ operation, backend, boundingBox }: { operation: Moti
       })}
     </code>
   )
+}
+
+function MotionInvocation({ operation, backend, boundingBox }: { operation: Exclude<MotionControlOperation, 'export' | 'share'>; backend?: MotionControlBackendPreference; boundingBox?: boolean }) {
+  const invocation = boundingBox === undefined
+    ? buildMotionControlInvocation(operation, backend)
+    : buildMotionControlBoundingBoxInvocation(boundingBox)
+  return <MotionInvocationChip invocation={invocation} operation={boundingBox === undefined ? operation : `bounding-box-${boundingBox ? 'enable' : 'disable'}`} />
 }
 
 function drawPoseOverlay(canvas: HTMLCanvasElement, state: MotionControlSnapshot): void {
@@ -109,8 +120,15 @@ function drawPoseOverlay(canvas: HTMLCanvasElement, state: MotionControlSnapshot
 }
 
 export function MotionControlFloatingPanelView() {
+  const grammarAutoHydrationAllowed = useAgenticOsRemoteGrammarAutoHydration()
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: MOTION_CONTROL_GRAMMAR_SIGILS })
   const state = React.useSyncExternalStore(subscribeMotionControl, readMotionControlSnapshot, readMotionControlSnapshot)
+  const capture = React.useSyncExternalStore(
+    motionCapturePlatformUiAdapter.subscribeSession,
+    motionCapturePlatformUiAdapter.readSession,
+    motionCapturePlatformUiAdapter.readSession,
+  )
+  const peerSharing = React.useSyncExternalStore(subscribeMotionCapturePeerSharing, readMotionCapturePeerSharingSnapshot, readMotionCapturePeerSharingSnapshot)
   const pushUiToast = useGraphStore(store => store.pushUiToast)
   const [backend, setBackend] = React.useState<MotionControlBackendPreference>(state.requestedBackend)
   const [startPending, setStartPending] = React.useState(false)
@@ -125,7 +143,7 @@ export function MotionControlFloatingPanelView() {
     const canvas = overlayRef.current
     if (canvas) drawPoseOverlay(canvas, state)
   }, [state])
-  const runControl = React.useCallback(async (operation: Exclude<MotionControlOperation, 'open'>) => {
+  const runControl = React.useCallback(async (operation: Extract<MotionControlOperation, 'start' | 'stop'>) => {
     const setOperationPending = operation === 'start' ? setStartPending : setStopPending
     setOperationPending(true)
     try {
@@ -168,10 +186,13 @@ export function MotionControlFloatingPanelView() {
   const inspection = inspectLocalMotionControl()
   const sourceMetadataReady = grammarCatalog.hydration.status === 'fresh'
     && MOTION_CONTROL_REQUIRED_METADATA_TOKENS.every(required => grammarCatalog.entries.some(entry => entry.token === required.token && entry.kind === required.kind))
-  const sourceMetadataLoading = grammarCatalog.hydration.status === 'idle' || grammarCatalog.hydration.status === 'loading'
+  const sourceMetadataDeferred = !grammarAutoHydrationAllowed && grammarCatalog.hydration.status === 'idle'
+  const sourceMetadataLoading = !sourceMetadataDeferred
+    && (grammarCatalog.hydration.status === 'idle' || grammarCatalog.hydration.status === 'loading')
   const nativeInvocationReady = Boolean(inspection.invocationGrammar)
   const runtimeBusy = state.phase === 'requesting-camera' || state.phase === 'loading-model' || state.phase === 'running'
   const canStop = startPending || runtimeBusy || state.cameraActive
+    || capture.sources.length > 0 || capture.recording.status === 'recording' || peerSharing.enabled
   return (
     <section
       className={floatingPanelCatalogSurfaceClassName()}
@@ -179,7 +200,7 @@ export function MotionControlFloatingPanelView() {
       data-kg-motion-control-floating-panel="1"
       data-kg-motion-control-mcp="knowgrph.control_local_motion_control"
       data-kg-motion-control-runtime={state.phase}
-      data-kg-motion-control-metadata-status={grammarCatalog.hydration.status}
+      data-kg-motion-control-metadata-status={sourceMetadataDeferred ? 'deferred-offline' : grammarCatalog.hydration.status}
       data-kg-motion-control-metadata-version={String(grammarCatalog.version)}
     >
       <FloatingPanelCatalogHeader
@@ -234,21 +255,34 @@ export function MotionControlFloatingPanelView() {
           <span><b>Inference</b><br />{state.latencyMs.toFixed(1)} ms · {state.framesPerSecond.toFixed(1)} FPS</span>
         </section>
 
+        <MotionCapturePlatformProjection variant="full" />
+
         <MotionControlTargetCards livePoseActive={Boolean(state.pose)} onOpenTarget={openTarget} />
+
+        <FlightSimTrainingSurfaceProjection surface="motion-control" />
 
         <section className={cn('grid gap-1 rounded border p-2', UI_THEME_TOKENS.panel.border, UI_THEME_TOKENS.panel.bg)} data-kg-motion-control-invocations="shared-catalog">
           <h3 className="text-[11px] font-semibold">MCP · / · @ · #</h3>
           {!sourceMetadataReady ? (
             <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
-              {sourceMetadataLoading
+              {sourceMetadataDeferred
+                ? `ACOS Motion Control invocation metadata is deferred for offline XR.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`
+                : sourceMetadataLoading
                 ? `ACOS Motion Control invocation metadata is loading.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`
                 : `ACOS Motion Control invocation metadata is unavailable.${nativeInvocationReady ? ' Native Motion Control remains ready.' : ''}`}
             </p>
           ) : null}
           <MotionInvocation operation="start" backend={backend} />
           <MotionInvocation operation="stop" />
+          <MotionInvocation operation="record" />
+          <MotionInvocation operation="finish" />
+          <MotionInvocation operation="clear" />
           <MotionInvocation operation="open" boundingBox={true} />
           <MotionInvocation operation="open" boundingBox={false} />
+          <MotionInvocationChip invocation={buildMotionControlExportInvocation('json')} operation="export-json" />
+          <MotionInvocationChip invocation={buildMotionControlExportInvocation('csv')} operation="export-csv" />
+          <MotionInvocationChip invocation={buildMotionControlShareInvocation(true)} operation="share-enable" />
+          <MotionInvocationChip invocation={buildMotionControlShareInvocation(false)} operation="share-disable" />
           <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>WebMCP: {inspection.webMcpTools.control}</p>
         </section>
 

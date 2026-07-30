@@ -10,6 +10,11 @@ import { LS_KEYS } from '@/lib/config'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
+import { parseCanvasWorkspaceFrontmatterPreset, extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
+import {
+  readGeospatialOverlayEnabledPreference,
+  writeGeospatialOverlayEnabledPreference,
+} from '@/lib/geospatial/geospatialModePreference'
 
 const KG_HUIJOOHWEE_DOCS_ROOT = '/workspace/huijoohwee/docs'
 
@@ -28,6 +33,7 @@ export async function testCreateNewMarkdownSourceFileDefaultsToAuthoredNotesRoot
   resetWorkspaceFsForTests()
   useGraphStore.getState().resetAll()
   useMarkdownExplorerStore.getState().setActivePath(null)
+  writeGeospatialOverlayEnabledPreference(true)
   try {
     const timestampMs = Date.UTC(2026, 6, 9, 0, 1, 2)
     const firstName = buildNewMarkdownSourceFileName(timestampMs)
@@ -46,11 +52,28 @@ export async function testCreateNewMarkdownSourceFileDefaultsToAuthoredNotesRoot
     const fs = await getWorkspaceFs()
     const firstText = await fs.readFileText(firstPath)
     const secondText = await fs.readFileText(secondPath)
-    if (firstText !== '' || secondText !== '') {
-      throw new Error(`expected new markdown files to start empty, got ${JSON.stringify({ firstText, secondText })}`)
+    const firstFrontmatter = extractYamlFrontmatterBlock(firstText || '')
+    const secondFrontmatter = extractYamlFrontmatterBlock(secondText || '')
+    const firstPreset = parseCanvasWorkspaceFrontmatterPreset(firstText || '')
+    const secondPreset = parseCanvasWorkspaceFrontmatterPreset(secondText || '')
+    if (
+      !firstFrontmatter?.yamlText.includes(`title: ${JSON.stringify(firstName.replace(/\.md$/, ''))}`)
+      || !secondFrontmatter?.yamlText.includes(`title: ${JSON.stringify(secondName.replace(/\.md$/, ''))}`)
+      || firstPreset?.canvasSurfaceMode !== '2d'
+      || firstPreset.canvasRenderMode !== '2d'
+      || secondPreset?.canvasSurfaceMode !== '2d'
+      || secondPreset.canvasRenderMode !== '2d'
+    ) {
+      throw new Error(`expected new authored notes to start with titled 2D YAML frontmatter, got ${JSON.stringify({ firstText, secondText })}`)
     }
 
     const state = useGraphStore.getState()
+    if (readGeospatialOverlayEnabledPreference() || state.canvasRenderMode !== '2d') {
+      throw new Error(`expected Launch-created Markdown to leave Geospatial Mode for 2D Mode, got ${JSON.stringify({
+        geospatialModeEnabled: readGeospatialOverlayEnabledPreference(),
+        canvasRenderMode: state.canvasRenderMode,
+      })}`)
+    }
     if (state.workspaceViewMode !== 'editor' || state.editorWorkspacePane !== 'markdown' || !state.workspaceCanvasPaneOpen) {
       throw new Error(`expected new markdown creation to open the Markdown editor, got ${JSON.stringify({
         workspaceViewMode: state.workspaceViewMode,
@@ -62,9 +85,38 @@ export async function testCreateNewMarkdownSourceFileDefaultsToAuthoredNotesRoot
       throw new Error('expected latest new markdown file to be selected in Source Files')
     }
   } finally {
+    writeGeospatialOverlayEnabledPreference(false)
     useMarkdownExplorerStore.getState().setActivePath(null)
     useGraphStore.getState().resetAll()
     resetWorkspaceFsForTests()
+  }
+}
+
+export async function testCreateNewMarkdownSourceFileRepublishesExplicit2dPresentationState() {
+  const { g, restore } = initWindowHarness({ storage: new MemoryStorage() })
+  const publishedModes: boolean[] = []
+  g.window.dispatchEvent = ((event: Event) => {
+    const detail = (event as CustomEvent<{ enabled?: unknown }>).detail
+    if (typeof detail?.enabled === 'boolean') publishedModes.push(detail.enabled)
+    return true
+  }) as typeof window.dispatchEvent
+  try {
+    resetWorkspaceFsForTests()
+    useGraphStore.getState().resetAll()
+    useMarkdownExplorerStore.getState().setActivePath(null)
+    writeGeospatialOverlayEnabledPreference(false)
+    await createNewMarkdownSourceFile({
+      timestampMs: Date.UTC(2026, 6, 29, 14, 15, 11),
+    })
+    if (publishedModes.length === 0 || publishedModes[publishedModes.length - 1] !== false) {
+      throw new Error(`expected New .md to republish its explicit 2D presentation state even when the stored Geo preference was already disabled, got ${JSON.stringify(publishedModes)}`)
+    }
+  } finally {
+    writeGeospatialOverlayEnabledPreference(false)
+    useMarkdownExplorerStore.getState().setActivePath(null)
+    useGraphStore.getState().resetAll()
+    resetWorkspaceFsForTests()
+    restore()
   }
 }
 

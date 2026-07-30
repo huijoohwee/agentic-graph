@@ -11,7 +11,7 @@ export function getTimelineViewModeTitle(enabled: boolean): string {
 }
 
 export function shouldRenderTimelineSurface(args: {
-  activeSurface: '2d' | '3d' | 'geo'
+  activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
   documentSwitchPending?: boolean
   geospatialOverlayOwnsViewport?: boolean
   timelineEnabled: unknown

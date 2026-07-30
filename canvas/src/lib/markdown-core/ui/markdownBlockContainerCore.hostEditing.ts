@@ -1,5 +1,5 @@
 import React from 'react'
-import { captureSelectionForFloatingToolbar } from '@/features/markdown/ui/markdownFloatingSelectionToolbar'
+import { captureInlineSelectionForToolbarAction } from '@/lib/markdown-core/ui/markdownInlineSelectionToolbarInteractions'
 import { ensureWordSelectionInRoot } from './markdownBlockContainerCore.interaction'
 import { useMarkdownBlockContainerHostOrchestration } from './markdownBlockContainerCore.hostOrchestration'
 import { useMarkdownBlockContainerLinkPopover } from './markdownBlockContainerCore.linkPopover'
@@ -37,14 +37,14 @@ export const useMarkdownBlockContainerHostEditing = (args: {
   variableMenu: { show: boolean; keyInput: string; mode: 'ref' | 'create' | 'update' | 'fallback' | 'delete' }
   setSlashMenuStable: (next: SlashMenuState) => void
   slashMenu: Pick<SlashMenuState, 'show' | 'kind' | 'query'>
-  setBubble: React.Dispatch<React.SetStateAction<{ show: boolean; leftPx: number; topPx: number }>>
-  bubble: { show: boolean }
+  setInlineSelectionToolbar: React.Dispatch<React.SetStateAction<{ show: boolean; leftPx: number; topPx: number }>>
+  inlineSelectionToolbar: { show: boolean }
   blurCommitTimerRef: React.MutableRefObject<number>
   selectionSyncSuspendUntilRef: React.MutableRefObject<number>
   toolbarRef: React.RefObject<HTMLElement | null>
   slashMenuRef: React.RefObject<HTMLElement | null>
   variableMenuRef: React.RefObject<HTMLElement | null>
-  commit: () => void
+  commit: () => void | Promise<void>
   toolbarInteractionUntilRef: React.MutableRefObject<number>
   editOpenBlurGuardUntilRef: React.MutableRefObject<number>
   lastEditorPointerDownAtRef: React.MutableRefObject<number>
@@ -82,7 +82,7 @@ export const useMarkdownBlockContainerHostEditing = (args: {
 
   const handleVariableMenuMouseDownCapture = React.useCallback(() => {
     args.toolbarInteractingRef.current = true
-    captureSelectionForFloatingToolbar({
+    captureInlineSelectionForToolbarAction({
       getSelectionOffsets: args.getSelectionOffsets,
       lastSelectionOffsetsRef: args.lastSelectionOffsetsRef,
       lastNonCollapsedSelectionOffsetsRef: args.lastNonCollapsedSelectionOffsetsRef,
@@ -121,8 +121,8 @@ export const useMarkdownBlockContainerHostEditing = (args: {
     variableMenu: args.variableMenu,
     setSlashMenuStable: args.setSlashMenuStable,
     slashMenu: args.slashMenu,
-    setBubble: args.setBubble,
-    bubble: args.bubble,
+    setInlineSelectionToolbar: args.setInlineSelectionToolbar,
+    inlineSelectionToolbar: args.inlineSelectionToolbar,
     blurCommitTimerRef: args.blurCommitTimerRef,
     selectionSyncSuspendUntilRef: args.selectionSyncSuspendUntilRef,
     toolbarRef: args.toolbarRef,

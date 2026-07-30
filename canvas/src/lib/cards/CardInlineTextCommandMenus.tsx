@@ -10,7 +10,7 @@ import {
   type ChatInvocationCatalogPrefixFilter,
 } from '@/features/chat/chatInvocationRegistry'
 import { usePromptPresetCatalog } from '@/features/chat/usePromptPresetCatalog'
-import { preventDefaultMouseDown } from '@/features/markdown/ui/markdownFloatingSelectionToolbar'
+import { preventDefaultMouseDown } from '@/lib/markdown-core/ui/markdownInlineSelectionToolbarInteractions'
 import { MarkdownBlockContainerCommandMenu, type MarkdownInlineCommandMenuItem } from '@/lib/markdown-core/ui/markdownBlockContainerCore.commandMenu'
 import {
   INLINE_SLASH_COMMAND_ACTIONS,

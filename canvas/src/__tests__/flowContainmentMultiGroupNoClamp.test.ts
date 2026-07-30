@@ -1,5 +1,10 @@
 import type { FlowNativeRuntime, FlowNativeScene } from '@/components/FlowCanvas/nativeRuntime'
-import { computeFlowDeltaClampForNodes, computeFlowNodeClamp } from '@/components/FlowCanvas/groupContainment'
+import {
+  clampFlowDelta,
+  computeFlowDeltaClampForNodes,
+  computeFlowGroupDeltaClamp,
+  computeFlowNodeClamp,
+} from '@/components/FlowCanvas/groupContainment'
 import type { GraphGroup } from '@/components/GraphCanvas/layout/graphGroupsTypes'
 
 const makeRuntime = (scene: FlowNativeScene): FlowNativeRuntime => {
@@ -118,4 +123,50 @@ export const testFlowContainmentSingleNodeClampUsesInnerInset = () => {
   const clamp = computeFlowNodeClamp({ runtime: rt, nodeId: 'n1' })
   if (!clamp) throw new Error('expected clamp for single node in containment group')
   if (!(clamp.minX > 0 && clamp.minY > 0)) throw new Error('expected containment clamp to keep a non-zero inner inset')
+}
+
+export const testFlowContainmentNestedGroupClampsToParent = () => {
+  const outer: GraphGroup = {
+    id: 'subgraph:outer',
+    label: 'outer',
+    source: 'userSubgraph',
+    depth: 0,
+    memberNodeIds: ['inner-a', 'inner-b'],
+    containChildren: true,
+    connectable: false,
+    style: {},
+  }
+  const inner: GraphGroup = {
+    id: 'subgraph:inner',
+    label: 'inner',
+    source: 'userSubgraph',
+    depth: 1,
+    parentGroupId: outer.id,
+    memberNodeIds: ['inner-a', 'inner-b'],
+    containChildren: true,
+    connectable: false,
+    style: {},
+  }
+  const nodeById = new Map<string, any>([
+    ['inner-a', { id: 'inner-a', x: 120, y: 90, width: 60, height: 40 }],
+    ['inner-b', { id: 'inner-b', x: 210, y: 140, width: 60, height: 40 }],
+  ])
+  const scene: FlowNativeScene = {
+    nodes: Array.from(nodeById.values()),
+    edges: [],
+    groups: [outer, inner],
+    nodeById,
+    groupIdsByNodeId: new Map([
+      ['inner-a', [outer.id, inner.id]],
+      ['inner-b', [outer.id, inner.id]],
+    ]),
+  } as never
+  const clamp = computeFlowGroupDeltaClamp({ runtime: makeRuntime(scene), groupId: inner.id })
+  if (!clamp || !(clamp.minDx < 0 && clamp.maxDx > 0 && clamp.minDy < 0 && clamp.maxDy > 0)) {
+    throw new Error('expected a nested Flow group to receive a bounded parent-relative drag range')
+  }
+  const applied = clampFlowDelta({ clamp, dx: 10_000, dy: -10_000 })
+  if (applied.dx !== clamp.maxDx || applied.dy !== clamp.minDy) {
+    throw new Error('expected nested Flow group movement to clamp at the parent interior')
+  }
 }

@@ -6,20 +6,19 @@ import { readEnvString } from '@/lib/config.env'
 import { toCloneSafeObject } from '@/lib/storage/cloneSafe'
 import {
   getKnowgrphStorageDb,
+  putKnowgrphStorageDocument,
   type KgDocumentLocalRecord,
   type KnowgrphStorageDb,
 } from '@/lib/storage/knowgrphStorageDb'
+import { toKnowgrphRemoteDocumentRecord } from '@/lib/storage/knowgrphStorageRecordMapping'
 import { queueKnowgrphStorageMutation } from '@/lib/storage/knowgrphStorageClientSync'
-import type {
-  KgDocumentRecord,
-  KgGraphSnapshotRecord,
+import {
+  hashKnowgrphStorageContent,
+  type KgGraphSnapshotRecord,
 } from '@/lib/storage/knowgrphStorageSyncContract'
 import { KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID } from '@/lib/storage/knowgrphStorageSyncContract'
 import type { SourceFilesWorkspaceState } from '@/features/source-files/sourceFilesWorkspaceState'
-import {
-  getSourceFileTextHash,
-  isWorkspaceBackedSourceFile,
-} from '@/features/source-files/sourceFilesSignatures'
+import { isWorkspaceBackedSourceFile } from '@/features/source-files/sourceFilesSignatures'
 import type { GraphData } from '@/lib/graph/types'
 
 const KNOWGRPH_SOURCE_FILE_DOCUMENT_ID_PREFIX = 'sf:'
@@ -55,14 +54,7 @@ export const readKnowgrphSourceFileIdFromDocumentId = (value: unknown): string =
 }
 
 const buildSourceFileDocumentHash = (file: SourceFile): string => {
-  const text = String(file.text || '')
-  return hashSignatureParts([
-    'source-file-document',
-    normalizeSourceFileCanonicalPath(file),
-    normalizeString(file.name),
-    text.length,
-    getSourceFileTextHash(file),
-  ])
+  return hashKnowgrphStorageContent(file.text)
 }
 
 const readSourceFileGraphDataSemanticHash = (value: unknown): string => {
@@ -102,25 +94,6 @@ export const buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState = (
   if (workspaceIdOverride) return workspaceIdOverride
   return KNOWGRPH_STORAGE_DEFAULT_WORKSPACE_ID
 }
-
-const toRemoteDocumentRecord = (
-  localRecord: KgDocumentLocalRecord,
-): KgDocumentRecord => ({
-  id: localRecord.id,
-  workspaceId: localRecord.workspaceId,
-  canonicalPath: localRecord.canonicalPath,
-  title: localRecord.title,
-  docType: localRecord.docType,
-  lang: localRecord.lang,
-  graphId: localRecord.graphId,
-  sourceKind: localRecord.sourceKind,
-  contentMd: localRecord.contentMd,
-  contentHash: localRecord.contentHash,
-  parserVersion: localRecord.parserVersion,
-  revision: localRecord.documentRevision,
-  updatedAtMs: localRecord.updatedAtMs,
-  deleted: localRecord.isDeleted,
-})
 
 const buildDocumentLocalRecordForSourceFile = (
   workspaceId: string,
@@ -253,14 +226,14 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       || existing.documentRevision !== nextLocalRecord.documentRevision
       || existing.isDeleted !== nextLocalRecord.isDeleted
     if (didDocumentChange) {
-      await collections.documents.incrementalUpsert(nextLocalRecord)
+      await putKnowgrphStorageDocument(dbState, nextLocalRecord)
       await queueKnowgrphStorageMutation({
         workspaceId,
         entity: 'document',
         op: 'upsert',
         recordId: nextLocalRecord.id,
         baseRevision: existing ? existing.documentRevision : null,
-        record: toRemoteDocumentRecord(nextLocalRecord),
+        record: toKnowgrphRemoteDocumentRecord(nextLocalRecord),
         dbState,
       })
       queuedMutationCount += 1
@@ -308,32 +281,28 @@ export const syncSourceFilesToKnowgrphStorage = async (args: {
       queuedMutationCount += 1
     }
   }
-  const previousFiles = Array.isArray(args.previousSourceFiles) ? args.previousSourceFiles : []
-  for (let i = 0; i < previousFiles.length; i += 1) {
-    const previousFile = previousFiles[i]
-    if (!shouldSyncSourceFile(previousFile)) continue
-    const documentId = buildSourceFileDocumentId(previousFile.id)
+  for (const [documentId, existing] of existingById) {
     if (keepDocumentIds.has(documentId)) continue
-    const existing = existingById.get(documentId)
-    if (!existing) continue
+    if (existing.isDeleted) continue
     const deletedRecord: KgDocumentLocalRecord = {
       ...existing,
       documentRevision: Math.max(1, Number(existing.documentRevision || 0) + 1),
       updatedAtMs: Date.now(),
       isDeleted: true,
     }
-    await collections.documents.incrementalUpsert(deletedRecord)
+    await putKnowgrphStorageDocument(dbState, deletedRecord)
     await queueKnowgrphStorageMutation({
       workspaceId,
       entity: 'document',
       op: 'delete',
       recordId: deletedRecord.id,
       baseRevision: existing.documentRevision,
-      record: toRemoteDocumentRecord(deletedRecord),
+      record: toKnowgrphRemoteDocumentRecord(deletedRecord),
       dbState,
     })
     queuedMutationCount += 1
-    const graphSnapshotId = buildSourceFileGraphSnapshotId(previousFile.id)
+    const graphSnapshotId = normalizeString(existing.graphId)
+      || buildSourceFileGraphSnapshotId(readKnowgrphSourceFileIdFromDocumentId(documentId))
     const existingGraphSnapshotEntry = existingGraphSnapshotById.get(graphSnapshotId) || null
     if (existingGraphSnapshotEntry) {
       const deletedSnapshot = {

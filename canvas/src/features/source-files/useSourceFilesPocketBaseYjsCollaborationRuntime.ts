@@ -1,7 +1,7 @@
 import React from 'react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import {
-  readWorkspaceSeedSyncEnabledSetting,
+  readWorkspaceCloudSyncEnabledSetting,
   subscribeWorkspaceStoreSyncSettingsChanged,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
 import {
@@ -117,7 +117,7 @@ export function useSourceFilesPocketBaseYjsCollaborationRuntime(args: {
 
   const workspaceId = React.useMemo(() => readWorkspaceId(), [settingsRev])
   const config = React.useMemo(() => readKnowgrphCollaborationConfig(), [settingsRev])
-  const storageSyncEnabled = React.useMemo(() => readWorkspaceSeedSyncEnabledSetting(), [settingsRev])
+  const storageSyncEnabled = React.useMemo(() => readWorkspaceCloudSyncEnabledSetting(), [settingsRev])
   const shouldConnect = !!(
     args.active
     && args.activeEntryKind !== 'folder'

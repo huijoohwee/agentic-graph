@@ -21,9 +21,12 @@ import {
 } from '../canvas/src/features/agent-ready/mcpAppsReadyContract.mjs'
 import { encodePublishedDocShareToken, PUBLISHED_DOC_SHARE_TOKEN_PARAM } from '../canvas/src/features/canvas/canvasDocShareToken.mjs'
 import { buildAgentReadyDiscoveryExpectations } from '../cloudflare/pages/knowgrph-agent-ready-discovery.mjs'
+import { WEB_MCP_LIFECYCLE_SCRIPT_MARKER } from '../cloudflare/pages/webmcp-html-injection.mjs'
 import { buildAgentReadyCommerceChecks } from './agent-ready-commerce-checks.mjs'
 const canonicalOriginUrl = 'https://airvio.co'
 const canonicalBaseUrl = `${canonicalOriginUrl}/knowgrph`
+const requestOriginUrl = new URL(process.env.KNOWGRPH_AGENT_READY_BASE_URL || canonicalBaseUrl).origin
+const toRequestUrl = (url) => url.replace(canonicalOriginUrl, requestOriginUrl)
 const baseUrl = canonicalBaseUrl
 const originUrl = canonicalOriginUrl
 const rootA2aAgentCardUrl = `${originUrl}/.well-known/agent-card.json`
@@ -34,6 +37,10 @@ const expectedTools = buildKnowgrphAgentReadyToolContracts({
 })
 const expectedPrompts = buildKnowgrphAgentReadyPromptContracts()
 const expectedResourceTemplates = buildKnowgrphAgentReadyResourceTemplateContracts()
+const expectedWebMcpLifecycleTokens = [
+  'kgWebmcpContext', 'createWebMcpLifecycleController', 'provideContext', 'registerTool', 'AbortController',
+  'awaiting-model-context', 'fallback-readable', 'retry-exhausted', '/api/storage/source-files',
+]
 const toComparableMcpToolEntry = (tool) => ({
   name: tool.name,
   title: tool.title,
@@ -88,7 +95,7 @@ const buildSharedDocSample = async ({ workspaceId, canonicalPath, requireNonEmpt
   const storagePath = workspaceId
     ? `/api/storage/doc/${encodedWorkspaceId}/${encodedCanonicalPath}`
     : `/api/storage/doc-default/${encodedCanonicalPath}`
-  const markdownResponse = await fetch(`${canonicalOriginUrl}${storagePath}`, {
+  const markdownResponse = await fetch(toRequestUrl(`${canonicalOriginUrl}${storagePath}`), {
     headers: { accept: 'text/markdown' },
   })
   if (!markdownResponse.ok) return null
@@ -117,7 +124,7 @@ const extractStorageDocEntries = (body) => {
   return entries
 }
 const resolveSharedDocSampleFromIndex = async ({ requireNonEmpty = false } = {}) => {
-  const response = await fetch(`${canonicalOriginUrl}/api/storage/source-files`, {
+  const response = await fetch(toRequestUrl(`${canonicalOriginUrl}/api/storage/source-files`), {
     headers: { accept: 'text/markdown' },
   })
   if (!response.ok) return null
@@ -1111,24 +1118,15 @@ const checks = [
     accept: 'text/html',
     assert: async (response, body) =>
       response.ok
-      && body.includes('kgWebmcpContext')
-      && body.includes('createWebMcpLifecycleController')
-      && body.includes('provideContext({ tools })')
-      && body.includes('registerTool(tool, controller ? { signal: controller.signal } : {})')
-      && body.includes('AbortController')
-      && body.includes('awaiting-model-context')
-      && body.includes('fallback-readable')
-      && body.includes('retry-exhausted')
-      && body.includes('root.window && root.window.navigator')
-      && body.includes('currentOrigin || siteOrigin')
-      && body.includes('"/api/storage/source-files"'),
+      && body.split(WEB_MCP_LIFECYCLE_SCRIPT_MARKER).length === 2
+      && expectedWebMcpLifecycleTokens.every((token) => body.includes(token)),
   },
 ]
 
 let failed = 0
 for (const check of checks) {
   try {
-    const response = await fetch(check.url.replace(canonicalOriginUrl, new URL(process.env.KNOWGRPH_AGENT_READY_BASE_URL || canonicalBaseUrl).origin), {
+    const response = await fetch(toRequestUrl(check.url), {
       method: check.method || 'GET',
       headers: { accept: check.accept },
       body: check.body,

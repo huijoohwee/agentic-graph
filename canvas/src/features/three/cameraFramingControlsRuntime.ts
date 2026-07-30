@@ -308,7 +308,7 @@ export function useCameraFramingControlsRuntime({
   const viewportInputOwnerId = `orbit-controls:${React.useId()}`
   const programmaticCameraInputBlocked = shouldDeferThreeCameraProgrammaticInput({
     objectInputActive: objectInputOwnership.active,
-    viewportInputActive: viewportInputOwnership.active,
+    viewportInputBlocksProgrammaticCamera: viewportInputOwnership.blocksProgrammaticCamera,
   })
   const cameraOwnershipArgs = {
     mode,

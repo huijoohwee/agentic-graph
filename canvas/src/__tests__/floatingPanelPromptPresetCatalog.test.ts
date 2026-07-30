@@ -17,6 +17,7 @@ import {
   resolveChatInvocationCatalogEntryInsertionText,
 } from '@/features/chat/chatInvocationRegistry'
 import { FloatingPanelPromptPresetsView } from '@/features/toolbar/FloatingPanelPromptPresetsView'
+import { resetWorkspaceSeedProviderStorageCacheForTests } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 
@@ -71,6 +72,66 @@ export async function testFloatingPanelChatPromptPresetCatalogLoadsChatAndMcpPre
   const extendedInvocationEntries = buildPromptPresetChatInvocationCatalogEntries(extendedCatalog.presets)
   if (extendedInvocationEntries.at(-1)?.token !== '/crawler-reference-prompt-preset') {
     throw new Error(`expected future source-backed presets to join slash invocation without a local registry edit, got ${JSON.stringify(extendedInvocationEntries)}`)
+  }
+}
+
+export async function testHomePromptPresetCatalogUsesCanonicalPublishedStorage() {
+  const { restore } = initJsdomHarness()
+  const globals = globalThis as typeof globalThis & { fetch?: typeof fetch }
+  const originalFetch = globals.fetch
+  const previousStorageBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+  const previousRepoLocal = process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+  const requestedUrls: string[] = []
+  try {
+    process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://storage.example.test'
+    process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '0'
+    resetWorkspaceSeedProviderStorageCacheForTests()
+    globals.fetch = (async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      requestedUrls.push(url)
+      if (url.includes('/api/storage/doc/kgws%3Acanonical-docs/agentic-canvas-os%2Fdocs%2FPROMPT-PRESETS.md')) {
+        return new Response(promptCatalogMarkdown, {
+          status: 200,
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+        })
+      }
+      return new Response('', { status: 403 })
+    }) as typeof fetch
+
+    const catalog = await loadPromptPresetCatalog()
+    if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
+    if (catalog.presets.length < PROMPT_PRESET_REQUIRED_IDS.length) {
+      throw new Error(`expected canonical published prompt presets, got ${catalog.presets.length}`)
+    }
+    if (!requestedUrls.some(url => url.includes('/api/storage/doc/kgws%3Acanonical-docs/agentic-canvas-os%2Fdocs%2FPROMPT-PRESETS.md'))) {
+      throw new Error(`expected the exact canonical D1 prompt document request, got ${JSON.stringify(requestedUrls)}`)
+    }
+    if (requestedUrls.some(url => url.includes('github.com'))) {
+      throw new Error(`Home prompt catalog must not request mutable GitHub sources: ${JSON.stringify(requestedUrls)}`)
+    }
+
+    resetWorkspaceSeedProviderStorageCacheForTests()
+    requestedUrls.length = 0
+    globals.fetch = (async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      requestedUrls.push(url)
+      return new Response('', { status: 404 })
+    }) as typeof fetch
+    const missingCatalog = await loadPromptPresetCatalog()
+    if (!isPromptPresetCatalogError(missingCatalog) || !missingCatalog.error.includes('unavailable')) {
+      throw new Error(`missing canonical D1 catalog must fail closed, got ${JSON.stringify(missingCatalog)}`)
+    }
+    if (requestedUrls.some(url => url.includes('github.com'))) {
+      throw new Error(`missing canonical D1 catalog must not activate a GitHub fallback: ${JSON.stringify(requestedUrls)}`)
+    }
+  } finally {
+    resetWorkspaceSeedProviderStorageCacheForTests()
+    globals.fetch = originalFetch
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+    restore()
   }
 }
 

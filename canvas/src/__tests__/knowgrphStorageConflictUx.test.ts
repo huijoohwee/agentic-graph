@@ -9,6 +9,7 @@ export function testKnowgrphStorageConflictUxUsesSharedToastAndLogWithoutDuplica
   __resetKnowgrphStorageConflictUxForTests()
 
   notifyKnowgrphStorageConflictUx({
+    transportStatus: 'synced',
     workspaceId: 'kgws:conflict-ux',
     deviceId: 'dev_a',
     pushedCount: 1,
@@ -45,6 +46,7 @@ export function testKnowgrphStorageConflictUxUsesSharedToastAndLogWithoutDuplica
   }
 
   notifyKnowgrphStorageConflictUx({
+    transportStatus: 'synced',
     workspaceId: 'kgws:conflict-ux',
     deviceId: 'dev_a',
     pushedCount: 1,
@@ -80,6 +82,7 @@ export function testKnowgrphStorageConflictUxDismissesToastWhenConflictsResolve(
   __resetKnowgrphStorageConflictUxForTests()
 
   notifyKnowgrphStorageConflictUx({
+    transportStatus: 'synced',
     workspaceId: 'kgws:conflict-resolve',
     deviceId: 'dev_a',
     pushedCount: 1,
@@ -104,6 +107,7 @@ export function testKnowgrphStorageConflictUxDismissesToastWhenConflictsResolve(
   })
 
   notifyKnowgrphStorageConflictUx({
+    transportStatus: 'synced',
     workspaceId: 'kgws:conflict-resolve',
     deviceId: 'dev_a',
     pushedCount: 0,

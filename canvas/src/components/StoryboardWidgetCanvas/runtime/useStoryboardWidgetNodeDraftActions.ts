@@ -109,6 +109,7 @@ export function useStoryboardWidgetNodeDraftActions(args: {
   setSelectionSource: (src: 'canvas' | 'menu' | 'toolbar' | 'editor' | 'unknown') => void
   setGraphDataPreservingLayout: (next: GraphData) => void
   updateOpenWidgetNodeIds: (updater: (prev: string[]) => string[]) => void
+  persistCommittedNodeProperties?: (graphData: GraphData) => void
   onNodePropertiesCommittedForAutoRun?: (nodeId: string, changedPropertyKeys?: ReadonlyArray<string>) => void
   upsertUiToast: (args: { id: string; kind: 'neutral' | 'warning' | 'success' | 'error'; message: string; ttlMs?: number }) => void
   nodePropsJson: string
@@ -160,6 +161,7 @@ export function useStoryboardWidgetNodeDraftActions(args: {
     }
     args.updateNode(storeNodeId || id, patch)
     if (nextDraft) args.setDraftGraphData(nextDraft)
+    return nextDraft
   }, [args, readDraftMutationRevisionFloor])
 
   const removeNodeById = React.useCallback((nodeId: string) => {
@@ -251,7 +253,8 @@ export function useStoryboardWidgetNodeDraftActions(args: {
         const nextValue = nextProps[key]
         return !Object.is(prevValue, nextValue)
       })
-    updateNodeById(id, { properties: nextProps as never }, resolved?.graphData || sourceGraphData)
+    const nextDraft = updateNodeById(id, { properties: nextProps as never }, resolved?.graphData || sourceGraphData)
+    if (nextDraft && changedPropertyKeys.length > 0) args.persistCommittedNodeProperties?.(nextDraft)
     args.onNodePropertiesCommittedForAutoRun?.(id, changedPropertyKeys)
   }, [args, updateNodeById])
 
@@ -315,7 +318,8 @@ export function useStoryboardWidgetNodeDraftActions(args: {
     const nextProps = (properties || {}) as Record<string, unknown>
     const keySet = new Set([...Object.keys(prevProps), ...Object.keys(nextProps)])
     const changedPropertyKeys = Array.from(keySet).filter(key => !Object.is(prevProps[key], nextProps[key]))
-    updateNodeById(id, { properties: nextProps as never })
+    const nextDraft = updateNodeById(id, { properties: nextProps as never })
+    if (nextDraft && changedPropertyKeys.length > 0) args.persistCommittedNodeProperties?.(nextDraft)
     args.onNodePropertiesCommittedForAutoRun?.(id, changedPropertyKeys)
   }, [args, updateNodeById])
 

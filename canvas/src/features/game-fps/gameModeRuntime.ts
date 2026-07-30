@@ -7,7 +7,8 @@ import {
 } from '@/features/three/XrMotionReferenceRuntimeBridge'
 import {
   activateXrSceneSurface,
-  registerXrSceneGameModeExitHandler,
+  isXrGameplaySurfaceView,
+  registerXrSceneGameplayExitHandler,
 } from '@/features/three/xrSceneSurfaceRuntime'
 import {
   acknowledgeGameFpsDecisions,
@@ -196,13 +197,16 @@ export function openGameModeSurface(options: Readonly<{
       canvasRenderMode: state.canvasRenderMode,
       canvas3dMode: state.canvas3dMode,
       floatingPanelOpen: state.floatingPanelOpen,
-      floatingPanelView: state.floatingPanelView,
+      floatingPanelView: isXrGameplaySurfaceView(state.floatingPanelView)
+        ? 'motionControl'
+        : state.floatingPanelView,
     })
   }
   let spatialProfileRefreshed = false
   try {
     const activated = activateXrSceneSurface({
       ...(options.openPanel === false ? {} : { panelView: 'gameMode', openPanel: true }),
+      gameplaySurface: 'gameMode',
       beforePanelCommit: () => {
         if (hasGameFpsMission()) {
           spatialProfileRefreshed = Boolean(refreshGameFpsMissionSpatialProfile())
@@ -494,7 +498,7 @@ export function exitGameModeSurface(options: Readonly<{ restorePreviousSurface?:
   return next
 }
 
-registerXrSceneGameModeExitHandler(() => {
+registerXrSceneGameplayExitHandler('gameMode', () => {
   if (snapshot.active) exitGameModeSurface({ restorePreviousSurface: false })
 })
 

@@ -59,6 +59,8 @@ const EXPECTED_XR_BROWSER_WEB_MCP_TOOLS = Object.freeze([
   'knowgrph.control_local_motion_control',
   'knowgrph.inspect_local_game_mode',
   'knowgrph.control_local_game_mode',
+  'knowgrph.inspect_local_flight_sim',
+  'knowgrph.control_local_flight_sim',
 ])
 
 function assertSameValues(actual: readonly string[], expected: readonly string[], label: string): void {
@@ -181,7 +183,7 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
   const xrBrowserToolNames = browserContracts
     .map(contract => contract.webName)
     .filter(webName => EXPECTED_XR_BROWSER_WEB_MCP_TOOLS.includes(webName))
-  assertSameValues(xrBrowserToolNames, EXPECTED_XR_BROWSER_WEB_MCP_TOOLS, 'XR, Animation, Motion Control, and Game Mode browser WebMCP tools')
+  assertSameValues(xrBrowserToolNames, EXPECTED_XR_BROWSER_WEB_MCP_TOOLS, 'XR, Animation, Motion Control, Game Mode, and Flight Sim browser WebMCP tools')
   const webMcpRuntimeSource = readFileSync(
     resolve(repositoryRoot, 'canvas', 'src', 'features', 'agent-ready', 'webMcpRuntime.ts'),
     'utf8',
@@ -190,6 +192,8 @@ export function testXrAgenticEcsCompositionBoundaryRemainsExplicit(): void {
     'XR_SCENE_WEB_MCP_TOOL_BUILDERS',
     'XR_ANIMATION_WEB_MCP_TOOL_BUILDERS',
     'MOTION_CONTROL_WEB_MCP_TOOL_BUILDERS',
+    'GAME_MODE_WEB_MCP_TOOL_BUILDERS',
+    'FLIGHT_SIM_WEB_MCP_TOOL_BUILDERS',
   ]) {
     if (!webMcpRuntimeSource.includes(`...${builder}`)) {
       throw new Error(`expected browser WebMCP runtime to register ${builder}`)

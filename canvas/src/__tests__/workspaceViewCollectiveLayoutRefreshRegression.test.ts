@@ -140,11 +140,11 @@ export function testWorkspaceViewUpdateSchedulesStoryboardWidgetCollectiveCollis
   const runtimeSeedText = readFileSync(runtimeSeedPath, 'utf8')
   const overlayEdgesPath = resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetOverlayEdges.ts')
   const overlayEdgesText = readFileSync(overlayEdgesPath, 'utf8')
-  const worldSeedGuardIndex = runtimeText.indexOf('if (workspaceMutationBlockedForSeed) {')
+  const worldSeedGuardIndex = runtimeText.indexOf('if (workspaceMutationBlockedForSeed && !zoomPresetPresentationRebalanceRequested) {')
   const worldSeedKeyWriteIndex = runtimeText.indexOf('seededPinnedWidgetWorldPosKeyRef.current = seedKey', worldSeedGuardIndex)
-  const worldSeedWriteIndex = runtimeText.indexOf('if (changedScreenPos) st.setFlowWidgetPosByNodeId(nextScreenPos)', worldSeedGuardIndex)
+  const worldSeedWriteIndex = runtimeText.indexOf('if (changedScreenPos) st.setFlowWidgetPosByNodeId(nextScreenPos, presentationPositionCommitOptions)', worldSeedGuardIndex)
   if (worldSeedGuardIndex < 0 || worldSeedWriteIndex < 0 || worldSeedGuardIndex > worldSeedWriteIndex) {
-    throw new Error('expected pinned widget auto-seed to skip all widget geometry writes while Workspace/Indexing mutation guard is active')
+    throw new Error('expected pinned widget auto-seed to skip ordinary geometry writes while allowing only explicit non-persistent zoom-preset presentation rebalances')
   }
   if (worldSeedKeyWriteIndex >= 0 && worldSeedGuardIndex < worldSeedKeyWriteIndex && worldSeedKeyWriteIndex < worldSeedWriteIndex) {
     throw new Error('expected pinned widget auto-seed key not to be committed while Workspace/Indexing mutation guard is active')
@@ -186,7 +186,7 @@ export function testWorkspaceViewUpdateSchedulesStoryboardWidgetCollectiveCollis
   if (!runtimeText.includes('(persistedHasViewportOffset && liveLooksDefault ? persistedZoom : null)')) {
     throw new Error('expected pinned widget auto-seed zoom source to stay independent from Workspace overlay toggles after the read-only guard')
   }
-  if (!runtimeText.includes('const currentLayoutSignature = `${args.overlayTopologyLayoutSignature}|${visibleViewport.left},${visibleViewport.top},${visibleViewport.width}x${visibleViewport.height}|${bucketSignature}`')) {
+  if (!runtimeText.includes('const currentLayoutSignature = `${args.overlayNodeLayoutSignature}|${visibleViewport.left},${visibleViewport.top},${visibleViewport.width}x${visibleViewport.height}|${bucketSignature}`')) {
     throw new Error('expected pinned widget auto-seed layout signature to include shared visible viewport geometry without Editor Workspace pane authority')
   }
   if (!runtimeText.includes('args.storyboardWidgetSurfaceId,')) {
@@ -420,7 +420,8 @@ export function testWorkspaceViewUpdateSchedulesStoryboardWidgetCollectiveCollis
   }
   const storePath = resolve(process.cwd(), 'src', 'hooks', 'store', 'graphViewSlice.ts')
   const storeText = readFileSync(storePath, 'utf8')
-  if (!storeText.includes("import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'")) {
+  if (!storeText.includes('isWorkspaceGraphMutationBlocked,')
+    || !storeText.includes("from '@/features/workspace-table/workspaceTableSsot'")) {
     throw new Error('expected Flow widget store setters to reuse the shared workspace/indexing mutation guard')
   }
   const storePinnedGuardIndex = storeText.indexOf('if (isWorkspaceGraphMutationBlocked(state)) return')
@@ -428,12 +429,12 @@ export function testWorkspaceViewUpdateSchedulesStoryboardWidgetCollectiveCollis
   if (storePinnedGuardIndex < 0 || storePinnedWriteIndex < 0 || storePinnedGuardIndex > storePinnedWriteIndex) {
     throw new Error('expected root Flow widget pinned-state setter to reject Workspace/Indexing mutation writes')
   }
-  const storeScreenGuardIndex = storeText.indexOf('if (isWorkspaceGraphMutationBlocked(state)) return', storePinnedGuardIndex + 1)
+  const storeScreenGuardIndex = storeText.indexOf('if (isWorkspaceGraphMutationBlocked(state) && options?.allowDuringWorkspaceMutation !== true) return', storePinnedGuardIndex + 1)
   const storeScreenWriteIndex = storeText.indexOf('scheduleFlowWidgetPersistence({ pos: { graphKey, value: nextPosByNodeId } })')
   if (storeScreenGuardIndex < 0 || storeScreenWriteIndex < 0 || storeScreenGuardIndex > storeScreenWriteIndex) {
     throw new Error('expected root Flow widget screen-position setter to reject Workspace/Indexing mutation writes')
   }
-  const storeWorldGuardIndex = storeText.indexOf('if (isWorkspaceGraphMutationBlocked(state)) return', storeScreenGuardIndex + 1)
+  const storeWorldGuardIndex = storeText.indexOf('if (isWorkspaceGraphMutationBlocked(state) && options?.allowDuringWorkspaceMutation !== true) return', storeScreenGuardIndex + 1)
   const storeWorldWriteIndex = storeText.indexOf('scheduleFlowWidgetPersistence({ world: { graphKey, value: nextWorldByNodeId } })')
   if (storeWorldGuardIndex < 0 || storeWorldWriteIndex < 0 || storeWorldGuardIndex > storeWorldWriteIndex) {
     throw new Error('expected root Flow widget world-position setter to reject Workspace/Indexing mutation writes')
@@ -1312,129 +1313,6 @@ export function testD3SceneBuildKeyIgnoresWorkspaceGestureOverlayToggles() {
   }
 }
 
-export function testStoryboardWidgetOverlayFitNormalizesSurfaceWindowOffset() {
-  const zoomPath = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'applyZoomRequestNative.ts')
-  const text = readFileSync(zoomPath, 'utf8')
-  const recenterPath = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'storyboardWidgetOverlayRecenter.ts'); const recenterText = readFileSync(recenterPath, 'utf8')
-  if (!text.includes("import { isWorkspaceEditorOverlayOpen } from '@/features/workspace-table/workspaceTableSsot'")) {
-    throw new Error('expected Storyboard Widget zoom fit path to reuse shared Workspace overlay-open SSOT helper')
-  }
-  if (!text.includes('const workspaceEditorOverlayOpen = isWorkspaceEditorOverlayOpen(state)')) {
-    throw new Error('expected Storyboard Widget zoom fit path to derive overlay-open state from shared workspace SSOT before fit/recenter')
-  }
-  if (!recenterText.includes('readCanvasOverlayNodeId,') || !recenterText.includes('const nodeId = readCanvasOverlayNodeId(roots[j])')) {
-    throw new Error('expected Storyboard Widget fit recentering to reuse shared overlay node-id resolution when translating world positions')
-  }
-  if (!text.includes('function resolveStoryboardWidgetVisibleViewport(args: {')) {
-    throw new Error('expected Storyboard Widget zoom fit to centralize visible viewport resolution')
-  }
-  if (text.includes('WORKSPACE_LEFT_PANE_SELECTOR') || text.includes('document.querySelectorAll(\'[data-kg-workspace-left-pane="1"]\')')) {
-    throw new Error('expected Storyboard Widget visible viewport to ignore Editor Workspace overlay panes instead of treating them as layout authority')
-  }
-  if (text.includes('visibleLeft =') || text.includes('left: visibleLeft')) {
-    throw new Error('expected Storyboard Widget visible viewport to keep the canvas surface left edge instead of shifting to a workspace-pane strip')
-  }
-  if (!text.includes('Editor Workspace is an overlay, not a Storyboard Widget layout constraint.')) {
-    throw new Error('expected Storyboard Widget visible viewport source to document that Editor Workspace panes are overlays, not layout constraints')
-  }
-  if (!text.includes('const surfaceRect = surfaceRoot?.getBoundingClientRect() || null')) {
-    throw new Error('expected Storyboard Widget overlay fit bounds to resolve the active surface root window rect')
-  }
-  if (!text.includes('const surfaceOffsetLeft = Number.isFinite(surfaceRect?.left) ? Number(surfaceRect?.left) : 0')) {
-    throw new Error('expected Storyboard Widget overlay fit bounds to normalize horizontal screen coordinates by active surface offset')
-  }
-  if (!text.includes('const surfaceOffsetTop = Number.isFinite(surfaceRect?.top) ? Number(surfaceRect?.top) : 0')) {
-    throw new Error('expected Storyboard Widget overlay fit bounds to normalize vertical screen coordinates by active surface offset')
-  }
-  if (!text.includes('left,\n    top,\n    right,\n    bottom,') || !text.includes('centerX: (left + right) / 2')) {
-    throw new Error('expected Storyboard Widget visible viewport resolution to return the full active surface rect')
-  }
-  if (!text.includes('left: entry.rect.left - surfaceOffsetLeft')) {
-    throw new Error('expected Storyboard Widget overlay fit bounds to store left edge in active surface-local coordinates')
-  }
-  if (!text.includes('top: entry.rect.top - surfaceOffsetTop')) {
-    throw new Error('expected Storyboard Widget overlay fit bounds to store top edge in active surface-local coordinates')
-  }
-  if (!text.includes('pushEntries(SEMANTIC_FLOW_OVERLAY_ROOT_SELECTOR)')) {
-    throw new Error('expected Storyboard Widget overlay fit bounds to include semantic Storyboard fixed-card overlay roots')
-  }
-  if (!text.includes('const fitW = Math.max(1, visibleViewport.width - pad * 2)')) {
-    throw new Error('expected Storyboard Widget zoom fit to clamp collective bounds to the shared visible viewport width')
-  }
-  if (!text.includes("const isStoryboardWidgetCollectiveOutRequest =")
-    || !text.includes("&& args.zoomRequest.type === 'out'")
-    || !text.includes('const storyboardWidgetCollectiveOutResolved =')
-    || !text.includes('const wantsCollectiveFloor =')
-    || !text.includes('nextTransform: storyboardWidgetCollectiveFitReference.nextTransform')) {
-    throw new Error('expected Storyboard Widget zoom-out to reuse the collective frontmatter fit reference when generic zoom-out would otherwise snap to the old graph-only floor')
-  }
-  if (!text.includes('const canUseStoryboardWidgetOverlayFitResolved =')
-    || !text.includes('|| fitHasCollectiveOverlayFit')
-    || !text.includes('const storyboardWidgetOverlayFitResolved = canUseStoryboardWidgetOverlayFitResolved')) {
-    throw new Error('expected Storyboard Widget zoom fit to keep the overlay-bounds fit branch available for workspace-open frontmatter collective fits')
-  }
-  if (!text.includes('const forceImmediateWorkspaceOverlayFit = workspaceEditorOverlayOpen && isStoryboardWidgetFitLikeRequest')) {
-    throw new Error('expected Storyboard Widget zoom fit/reset to force immediate (non-animated) application while Workspace overlay is open')
-  }
-  if (!text.includes('const durationMs = forceImmediateWorkspaceOverlayFit')) {
-    throw new Error('expected Storyboard Widget zoom duration to be forced to zero for Workspace overlay fit/reset requests')
-  }
-  if (!text.includes('const shouldRecenterStoryboardWidgetCollectiveAfterFit =')
-    || !text.includes('|| fitHasCollectiveOverlayFit')
-    || !text.includes('if (shouldRecenterStoryboardWidgetCollectiveAfterFit) {')
-    || !text.includes('recenterVisibleStoryboardWidgetOverlayCentroid({')) {
-    throw new Error('expected Storyboard Widget zoom fit/reset to keep post-fit collective recentering active for workspace-open frontmatter collective fits')
-  }
-  if (!text.includes('const fitHasCollectiveOverlayFit =')
-    || !text.includes("resolveCanvas2dRendererId(state.canvas2dRenderer) === 'storyboard'")
-    || !text.includes("String(fitGraphMeta.kind || '').trim() === 'frontmatter-flow'")
-    || !text.includes("fitGraphContext === 'frontmatter-flow'")
-    || !text.includes('const useWorkspaceOverlayGraphFallbackFit =')
-    || !text.includes('&& !fitHasCollectiveOverlayFit')) {
-    throw new Error('expected Storyboard Widget zoom graph-fit branch to keep frontmatter-flow on the collective overlay fit path instead of forcing workspace-overlay graph-only fallback')
-  }
-  if (!text.includes('? fitAllTransform(')) {
-    throw new Error('expected Storyboard Widget zoom graph-fit branch to fallback to D3 fitAllTransform while Workspace overlay is open')
-  }
-  if (!text.includes('Math.max(1, visibleViewport.width),')) {
-    throw new Error('expected Storyboard Widget zoom graph-fit fallback to clamp width to visible viewport bounds while Workspace overlay is open')
-  }
-  if (!text.includes('Math.max(1, visibleViewport.height),')) {
-    throw new Error('expected Storyboard Widget zoom graph-fit fallback to clamp height to visible viewport bounds while Workspace overlay is open')
-  }
-  if (!text.includes('const targetX = visibleViewport.centerX - (centerX - base.x) * appliedScale')) {
-    throw new Error('expected Storyboard Widget zoom fit to center collective overlays inside the visible viewport center')
-  }
-  if (!text.includes('recenterVisibleStoryboardWidgetOverlayCentroid({') || !text.includes('graphData: args.graphData,')) {
-    throw new Error('expected Storyboard Widget fit recentering to shift widget world positions alongside viewport transform updates')
-  }
-  if (!text.includes('if (shouldRecenterStoryboardWidgetCollectiveAfterFit) {')) {
-    throw new Error('expected Storyboard Widget fit recentering to stay enabled for workspace-open frontmatter collective fits')
-  }
-  if (!recenterText.includes('st.setFlowWidgetWorldPosByNodeId(nextWorld)')) {
-    throw new Error('expected Storyboard Widget fit recentering to persist translated world positions through the shared widget world-position setter')
-  }
-  if (!recenterText.includes('st.setFlowWidgetPosByNodeId(nextScreen)')) {
-    throw new Error('expected Storyboard Widget fit recentering to persist translated screen positions through the shared widget screen-position setter')
-  }
-  if (text.includes('left: entry.rect.left,')) {
-    throw new Error('expected Storyboard Widget overlay fit bounds to avoid raw window-space left coordinates')
-  }
-  const fitHelperPath = resolve(process.cwd(), 'src', 'components', 'FlowCanvas', 'fitPinnedWidgets.ts')
-  const fitHelperText = readFileSync(fitHelperPath, 'utf8')
-  if (!fitHelperText.includes('const isFrontmatterOverlayFit =')) {
-    throw new Error('expected Storyboard Widget pinned-widget fit helper to detect frontmatter-flow fit mode explicitly')
-  }
-  if (!fitHelperText.includes('const openIds = isFrontmatterOverlayFit')) {
-    throw new Error('expected Storyboard Widget frontmatter-flow fit path to source open ids from the canonical frontmatter overlay set before fitting')
-  }
-  if (fitHelperText.includes('if (isFrontmatterOverlayFit) {\n    // Frontmatter nodes already encode the shared collective proxy layout.\n    // Reuse graph fit as the upstream basis and let later overlay-bounds refinement sharpen it.\n    return fitAllTransform(nodes, args.fitW, args.viewportH')) {
-    throw new Error('expected Storyboard Widget frontmatter-flow fit path to avoid hard graph-only fit fallback when overlay collective ids are available')
-  }
-  if (!fitHelperText.includes('let kGuess = isFrontmatterOverlayFit ? neutralFrontmatterFitZoom : kBase')) {
-    throw new Error('expected Storyboard Widget frontmatter-flow fit path to bootstrap proxy fitting from a neutral zoom instead of a tiny graph-only baseline')
-  }
-  if (!fitHelperText.includes('const worldById = args.worldPosById || {}')) {
-    throw new Error('expected non-frontmatter pinned-widget fit path to continue using persisted world positions')
-  }
-}
+export {
+  testStoryboardWidgetOverlayFitNormalizesSurfaceWindowOffset,
+} from './workspaceViewStoryboardWidgetOverlayFitRegression.test'

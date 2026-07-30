@@ -65,8 +65,6 @@ type MarkdownPreviewPresentationProps = {
   effectiveHighlightUnderlineColor: string | null
   onPreviewClick?: (line: number) => void
   onShowInEditor?: (line: number) => void
-  onMouseUp?: (e: React.MouseEvent<HTMLElement>) => void
-  selectionToolbar?: React.ReactNode
   onSlideContextMenu?: (slideIdx: number, e: React.MouseEvent) => void
   fullDocTokens?: TokenWithLines[]
   showSidebar: boolean
@@ -118,8 +116,6 @@ export function MarkdownPreviewPresentation(props: MarkdownPreviewPresentationPr
     effectiveHighlightUnderlineColor,
     onPreviewClick,
     onShowInEditor,
-    onMouseUp,
-    selectionToolbar,
     onSlideContextMenu,
     showSidebar,
     showSlidesSidebar,
@@ -427,7 +423,6 @@ export function MarkdownPreviewPresentation(props: MarkdownPreviewPresentationPr
           ref={rootRef}
           tabIndex={0}
           onClick={onClick}
-          onMouseUp={onMouseUp}
           onContextMenu={onContextMenu}
           className={[
             `relative flex-1 min-h-0 w-full overflow-hidden outline-none flex flex-col ${UI_THEME_TOKENS.panel.bg}`,
@@ -453,7 +448,6 @@ export function MarkdownPreviewPresentation(props: MarkdownPreviewPresentationPr
               {slideContent}
             </MarkdownPresentationViewport>
           </main>
-          {selectionToolbar}
         </section>
       </MarkdownPanelLayout>
       <PreviewOverlay
@@ -524,7 +518,6 @@ export function MarkdownPreviewPresentation(props: MarkdownPreviewPresentationPr
               {slideContent}
             </MarkdownPresentationViewport>
           </main>
-          {selectionToolbar}
           </section>
         </section>
       </PreviewOverlay>

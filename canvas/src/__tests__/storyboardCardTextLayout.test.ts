@@ -453,13 +453,13 @@ export function testStoryboardCardOverlayTextLayoutUsesReadableCardChrome() {
     'placeholder={outputField.placeholder}',
     'markdownCommandMenus={false}',
     'onCommit={nextValue => onCommitText(card, outputField, nextValue)}',
-    '<StoryboardCardMetaScrollRail card={card} onCommitLane={onCommitLane} onCommitType={onCommitType} />',
+    '<StoryboardCardMetaScrollRail card={card} onCommitLane={onCommitLane} onCommitType={onCommitType} onSourceReferenceActivate={onSourceReferenceActivate} />',
     'card, runCard: onRun',
     'void runWorkflowNode?.(card.id)',
   ]) {
     assert(source.includes(snippet), `expected Storyboard card overlay to keep readable text layout snippet: ${snippet}`)
   }
-  const metaRailIndex = source.indexOf('<StoryboardCardMetaScrollRail card={card} onCommitLane={onCommitLane} onCommitType={onCommitType} />')
+  const metaRailIndex = source.indexOf('<StoryboardCardMetaScrollRail card={card} onCommitLane={onCommitLane} onCommitType={onCommitType} onSourceReferenceActivate={onSourceReferenceActivate} />')
   const summaryScrollIndex = source.indexOf('data-kg-storyboard-card-summary-scroll="1"')
   assert(metaRailIndex >= 0 && summaryScrollIndex >= 0 && metaRailIndex < summaryScrollIndex, 'expected Storyboard card metadata rail to render above the summary editor')
   const titleLabelIndex = source.indexOf('ariaLabel={`Storyboard title for ${card.id}`}')

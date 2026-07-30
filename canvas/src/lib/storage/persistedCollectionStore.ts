@@ -80,12 +80,24 @@ export type PersistedCollectionMap<Collections extends PersistedRecordMap> = {
   [CollectionName in keyof Collections]: PersistedCollection<Collections[CollectionName]>
 }
 
+export type PersistedCollectionPersistenceState = {
+  mode: 'indexeddb' | 'memory'
+  status: 'active' | 'degraded'
+  error: string | null
+  restoredRecordTypes: string[]
+  failedRecordTypes: Array<{ recordType: string; reason: string }>
+}
+
 export type PersistedCollectionDb<Collections extends PersistedRecordMap> = {
   db: {
     remove(): Promise<void>
     close(): Promise<void>
   }
   collections: PersistedCollectionMap<Collections>
+  persistence: {
+    getState(): PersistedCollectionPersistenceState
+    subscribe(listener: (state: PersistedCollectionPersistenceState) => void): { unsubscribe(): void }
+  }
 }
 
 const createEmptySnapshot = <Collections extends PersistedRecordMap>(
@@ -332,5 +344,19 @@ export const createPersistedCollectionDb = <Collections extends PersistedRecordM
       },
     },
     collections,
+    persistence: {
+      getState() {
+        return {
+          mode: 'memory',
+          status: 'active',
+          error: null,
+          restoredRecordTypes: args.collectionNames.map(String),
+          failedRecordTypes: [],
+        }
+      },
+      subscribe() {
+        return { unsubscribe() { void 0 } }
+      },
+    },
   }
 }

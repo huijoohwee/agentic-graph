@@ -15,7 +15,7 @@ export async function testXrPhysicsCanonicalSeedReplacesConflictingDocsMirrorEnt
   if (
     matching.length !== 1
     || matching[0]?.relPath !== canonicalRelPath
-    || matching[0]?.text.trim() !== readCanonicalRepoSourceText()
+    || matching[0]?.text !== readCanonicalRepoSourceText()
   ) {
     throw new Error(`expected the canonical in-repo XR seed to replace all conflicting mirror entries, got ${JSON.stringify(matching)}`)
   }

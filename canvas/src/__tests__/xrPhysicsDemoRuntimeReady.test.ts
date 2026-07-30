@@ -280,15 +280,16 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     throw new Error('expected the standalone playground to retain an exclusive native stage with no fallback constructor')
   }
   if (
-    !aspectMaskSource.includes('isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)')
+    aspectMaskSource.includes('isXrPhysicsRunReadyDemoActive')
+    || !aspectMaskSource.includes('framing.claimed')
     || !sessionPanelSource.includes('isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)')
   ) {
-    throw new Error('expected standalone and canonical-document launches to suppress editor optics and session chrome')
+    throw new Error('expected Camera ownership to gate editor optics without a document-specific mask suppressor')
   }
   if (!threeGraphSource.includes('XR_PHYSICS_RUN_READY_GRAPH') || !threeGraphSource.includes('!xrDocumentLoaded && !xrPhysicsRunReadyDemo')) {
     throw new Error('expected standalone launch to bypass the authored XR empty-world loading surface')
   }
-  if (!xrRunReadyRuntimeSource.includes('pausedForGameModeRef')
+  if (!xrRunReadyRuntimeSource.includes('pausedForGameplayRef')
     || !xrRunReadyRuntimeSource.includes('pauseXrNativeControllerDemo()')
     || !xrRunReadyRuntimeSource.includes('resumeXrNativeControllerDemo()')) {
     throw new Error('expected Game Mode to pause and resume the existing XR controller without resetting its world')

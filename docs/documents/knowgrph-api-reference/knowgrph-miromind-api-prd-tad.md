@@ -1,22 +1,31 @@
 ---
+title: "Reference implementation: Knowgrph and MiroMind API PRD/TAD"
 schema: kgc-computing-flow/v1
-id: knowgrph-miromind-api-prd-tad
-version: 0.2.0
-status: accepted-implemented-baseline
-date: 2026-05-29
-repo: https://github.com/huijoohwee/knowgrph
-surface: MainPanel > Integrations
-publish_topology:
-  dev: $GITHUB_ROOT/knowgrph
-  prod: $GITHUB_ROOT/huijoohwee/content/knowgrph
-  cloudflare: https://airvio.co/knowgrph
+id: "md:knowgrph-miromind-api-prd-tad"
+doc_type: "Product and Technical Specification"
+version: "0.3.0"
+date: "2026-07-30"
+lang: "en-US"
+guideline_version: "1.7.0"
+owner: "docs.api-reference.miromind"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-api-reference/knowgrph-miromind-api-prd-tad.md"
+reference_repository: "https://github.com/huijoohwee/knowgrph"
+reference_surface: "MainPanel > Integrations"
+reference_lane_topology:
+  authoring: "$GITHUB_ROOT/knowgrph"
+  mirror: "protected candidate; no Evidence Reference attached"
+  delivery: "configured published surface; no Evidence Reference attached"
 tags: [prd, tad, miromind, integrations, mcp, chat, markdown, frontmatter, canvas]
 ---
 
-# PRD + TAD - Knowgrph x MiroMind API Integration
+# Reference implementation: Knowgrph and MiroMind API PRD/TAD
 
-> **Scope**: Maintain `MiroMind API` in MainPanel `Integrations`, align MainPanel `MCP` guidance, and keep the existing browser-local chat -> workspace markdown -> canvas pipeline as the only downstream graph-application route.  
-> **Lens**: universal, neutral, upstream-first, no duplicate pipelines, no renderer forks, no legacy shims.  
+> **Scope**: Maintain `MiroMind API` in MainPanel `Integrations`, align MainPanel `MCP` guidance, and keep the existing browser-local chat -> workspace markdown -> canvas pipeline as the only downstream graph-application route.
+> **Lens**: universal, neutral, upstream-first, no duplicate pipelines, no renderer forks, no legacy shims.
 > **Repo truth**: shared `SettingsView` remains the owner for MainPanel `integrations` and `mcp`; frontmatter-first markdown remains the only canonical payload that applies to canvas.
 
 ---
@@ -32,11 +41,11 @@ tags: [prd, tad, miromind, integrations, mcp, chat, markdown, frontmatter, canva
 
 ---
 
-# Part A - PRD
+## Reference implementation: Part A - PRD
 
-## 1. Current Repo Truth
+### 1. Current Repo Truth
 
-Knowgrph already ships the core end-to-end path that MiroMind must reuse:
+Knowgrph contains the source-owned core path that a MiroMind adapter must reuse:
 
 - MainPanel `integrations` and MainPanel `mcp` are thin shells over the shared `SettingsView` owner.
 - Shared settings/chat readiness already route provider, model, auth, and integration state through `useSettingsChatAssist` and normalized `integrationConfigsJson`.
@@ -47,18 +56,18 @@ Knowgrph already ships the core end-to-end path that MiroMind must reuse:
 - YAML frontmatter remains the single source of truth for canvas presets and downstream renderer/view state.
 - Canvas view modes and 2D renderers already project from shared frontmatter and graph state; they must not become MiroMind-specific.
 
-## 2. Problem Statement
+### 2. Problem Statement
 
-Knowgrph now has a repo-accurate MiroMind baseline across the real shipped surfaces.
+Knowgrph has a repository-accurate MiroMind source baseline; no delivery result is attached.
 
-Current implemented baseline:
+Current source baseline:
 
 1. MainPanel `Integrations` documents and exposes `MiroMind API` through the same shared settings owner used by other providers.
 2. MainPanel `MCP` explains how MiroMind's optional `mcp_servers` capability relates to the existing Knowgrph MCP/readiness surfaces.
 3. The runtime path is the existing `SettingsView` -> FloatingPanel Chat -> Workspace markdown -> Canvas path.
 4. MiroMind reasoning-step streaming is additive transport/parser capability inside the existing chat request pipeline, not a second graph materialization path.
 
-## 3. Product Goal
+### 3. Product Goal
 
 Maintain MiroMind in a way that preserves one upstream-to-downstream contract:
 
@@ -69,7 +78,7 @@ Maintain MiroMind in a way that preserves one upstream-to-downstream contract:
 - Canvas applies only from the saved markdown document and its frontmatter.
 - Renderer/view mode switches remain provider-neutral projections over shared graph state.
 
-## 4. Non-Goals
+### 4. Non-Goals
 
 - No new standalone MiroMind panel shell.
 - No direct LLM-output -> graph mutation bypass.
@@ -78,21 +87,21 @@ Maintain MiroMind in a way that preserves one upstream-to-downstream contract:
 - No browser-persisted MiroMind secrets.
 - No prod-only doc edits outside the `knowgrph` source tree.
 
-## 5. Personas
+### 5. Personas
 
-### Persona A - Workspace Operator
+#### Persona A - Workspace Operator
 
 Needs to configure MiroMind from MainPanel, run chat from the existing FloatingPanel surface, and land usable markdown/frontmatter into canvas without learning a second workflow.
 
-### Persona B - Pipeline Maintainer
+#### Persona B - Pipeline Maintainer
 
 Needs MiroMind to stay additive at shared owners and transport/parser seams, with no downstream patches, no renderer churn, and no duplicate contracts.
 
-### Persona C - Agent / MCP Operator
+#### Persona C - Agent / MCP Operator
 
 Needs clear guidance on the difference between MainPanel `Integrations` provider readiness and MainPanel `MCP` documentation for optional remote `mcp_servers` capability.
 
-## 6. User Journey
+### 6. User Journey
 
 | Stage | User action | Surface | Required behavior |
 |---|---|---|---|
@@ -104,9 +113,9 @@ Needs clear guidance on the difference between MainPanel `Integrations` provider
 | Apply | Applies saved markdown/frontmatter | Canvas | Shared `setActiveMarkdownDocument()` path applies frontmatter and graph |
 | Explore | Switches canvas view mode / 2D renderer | Toolbar / Canvas | D3 Graph, Flowchart, Flow Canvas, Animatic, Storyboard, and Design all remain projections of the same graph |
 
-## 7. Epics, Stories, Acceptance Criteria
+### 7. Epics, Stories, Acceptance Criteria
 
-### Epic MM-E1 - Keep MiroMind In MainPanel Integrations
+#### Epic MM-E1 - Keep MiroMind In MainPanel Integrations
 
 **Story MM-E1-S1 - Shared settings owner exposes MiroMind API**
 
@@ -120,7 +129,7 @@ Acceptance criteria:
 
 `/goal MainPanel Integrations adds MiroMind through shared settings metadata, shared chat assist owners, and normalized config/state surfaces only`
 
-### Epic MM-E2 - Align MainPanel MCP Without Forking Runtime
+#### Epic MM-E2 - Align MainPanel MCP Without Forking Runtime
 
 **Story MM-E2-S1 - MainPanel MCP explains MiroMind MCP capability neutrally**
 
@@ -134,7 +143,7 @@ Acceptance criteria:
 
 `/goal MainPanel MCP adds MiroMind guidance as documentation/readiness context only and does not introduce a second E2E contract`
 
-### Epic MM-E3 - Preserve One Chat-to-Canvas Contract
+#### Epic MM-E3 - Preserve One Chat-to-Canvas Contract
 
 **Story MM-E3-S1 - MiroMind reuses the existing chat pipeline**
 
@@ -148,7 +157,7 @@ Acceptance criteria:
 
 `/goal MiroMind stays inside the existing FloatingPanelChat submit/request/validation/finalize chain and preserves markdown-first graph application`
 
-### Epic MM-E4 - Additive Reasoning Stream Support
+#### Epic MM-E4 - Additive Reasoning Stream Support
 
 **Story MM-E4-S1 - MiroMind reasoning steps surface without replacing the transport shell**
 
@@ -162,7 +171,7 @@ Acceptance criteria:
 
 `/goal MiroMind streaming extensions remain additive transport/parser support under the shared chat shell and never fork the output contract`
 
-### Epic MM-E5 - Preserve Frontmatter and Renderer Neutrality
+#### Epic MM-E5 - Preserve Frontmatter and Renderer Neutrality
 
 **Story MM-E5-S1 - Canvas and renderer contracts remain provider-neutral**
 
@@ -176,7 +185,7 @@ Acceptance criteria:
 
 `/goal MiroMind affects upstream provider metadata only; renderer/view-layer ownership remains unchanged and provider-neutral`
 
-## 8. MoSCoW
+### 8. MoSCoW
 
 | Priority | Item | Why |
 |---|---|---|
@@ -189,17 +198,17 @@ Acceptance criteria:
 | Could | Add provider-specific prompt helper fragment for MiroMind capability hints | Useful, but only if it stays subordinate to base KGC contract |
 | Won't | Add a standalone MiroMind graph ingestion runtime | Explicitly forbidden |
 
-## 9. Success Metrics
+### 9. Success Metrics
 
 | Metric | Baseline | Target |
 |---|---|---|
-| MainPanel Integrations provider discoverability | implemented MiroMind row | one shared-owner MiroMind area |
+| MainPanel Integrations provider discoverability | source-present MiroMind row | one shared-owner MiroMind area |
 | Duplicate chat/graph pipeline count | 0 | exactly 0 |
 | Direct LLM-output -> graph bypasses | possible by ambiguity | exactly 0 |
 | Renderer-specific provider branches | at risk by poor design | exactly 0 |
 | Publish-surface doc divergence | possible | source-owned only in `knowgrph` |
 
-## 10. Scope Boundaries
+### 10. Scope Boundaries
 
 In scope now:
 
@@ -218,9 +227,9 @@ Explicitly excluded now:
 
 ---
 
-# Part B - TAD
+## Reference implementation: Part B - TAD
 
-## 11. Architecture Principles
+### 11. Architecture Principles
 
 1. Shared owners first: `MainPanel` tabs stay thin; `SettingsView` remains the owner for `integrations` and `mcp`.
 2. One canonical artifact: the saved workspace markdown document is the only payload that may apply to graph/canvas.
@@ -228,7 +237,7 @@ Explicitly excluded now:
 4. Additive provider capability: MiroMind-specific behavior belongs in settings metadata, prompt assembly extensions, and streaming/parser support only.
 5. Upstream neutralization: prevent duplicate state, duplicate schemas, legacy aliases, and local downstream patches instead of compensating for them later.
 
-## 12. Canonical E2E Path
+### 12. Canonical E2E Path
 
 | Phase | Canonical owner | Output |
 |---|---|---|
@@ -244,7 +253,7 @@ Explicitly excluded now:
 | Storyboard Widget image/video run | `useStoryboardWidgetWorkflowActions.ts` -> `writeRichMediaWidgetRunOutputArtifact()` -> `applyWorkspaceImportToCanvas({ applyToGraph: false })` | generated binary sibling artifact, R2-backed storage route when runtime sync is enabled, passive editable Markdown manifest, and shared widget/Rich Media Panel `outputPath` / `outputManifestPath` |
 | View/render | toolbar view state + renderer/frontmatter owners | provider-neutral canvas projections |
 
-## 13. Owner Map
+### 13. Owner Map
 
 | Surface | Owner | MiroMind rule |
 |---|---|---|
@@ -258,24 +267,24 @@ Explicitly excluded now:
 | Workspace persistence | workspace markdown runtime | saved document stays canonical |
 | Canvas/frontmatter | `frontmatter.ts`, `canvasFrontmatterPreset.ts`, graph-data actions | same preset and graph-apply rules apply |
 
-## 14. MiroMind Provider Contract
+### 14. MiroMind Provider Contract
 
-### 14.1 Runtime positioning
+#### 14.1 Runtime positioning
 
 MiroMind is an additive chat provider capability on the existing shared chat request path. It must not become a parallel assistant runtime.
 
-### 14.2 Endpoint contract
+#### 14.2 Endpoint contract
 
 | Field | Value |
 |---|---|
 | Base URL | `https://api.miromind.ai/v1` |
 | Primary endpoint | `POST /chat/completions` |
 | Models | `mirothinker-1-7-deepresearch-mini`, `mirothinker-1-7-deepresearch` |
-| Auth | Server-managed `MIROMIND_API_KEY` from Cloudflare Pages `context.env`, or memory-only BYOK on explicit fallback |
+| Auth | Server-managed key from the proxy runtime (`KNOWGRPH_CHAT_PROXY_MIROMIND_API_KEY`, with `MIROMIND_API_KEY` retained as the current compatibility alias), or memory-only BYOK on explicit fallback |
 | Stream mode | SSE, `stream: true` |
 | Optional capability | `mcp_servers` request field, provider-side, private beta / plan-dependent |
 
-### 14.3 Shared request envelope
+#### 14.3 Shared request envelope
 
 The request must continue to use the existing chat submit shell:
 
@@ -299,7 +308,7 @@ Rules:
 - If `mcp_servers` is later enabled, it remains optional provider metadata on the same request envelope.
 - MiroMind-specific prompt additions must remain subordinate to the base KGC contract and must never redefine the output schema.
 
-## 15. Prompt Contract Layering
+### 15. Prompt Contract Layering
 
 Prompt layering remains canonical and ordered:
 
@@ -317,13 +326,13 @@ MiroMind-specific guidance may be inserted only as an additive provider hint bet
 - does not hardcode project-specific schema forks,
 - does not instruct direct graph mutation or renderer-specific behavior.
 
-## 16. Streaming Contract
+### 16. Streaming Contract
 
-### 16.1 Why raw SSE matters
+#### 16.1 Why raw SSE matters
 
 MiroMind exposes reasoning-step extensions such as `delta.reasoning_steps` and final usage metadata including reasoning tokens and search query counts. OpenAI-compatible SDK wrappers may hide or drop extension fields, so reasoning visibility requires raw HTTP/SSE parsing inside the shared streaming shell.
 
-### 16.2 Allowed additive behavior
+#### 16.2 Allowed additive behavior
 
 - Parse `delta.reasoning_steps` when present.
 - Parse `delta.content` for final answer tokens, including provider-compatible structured text parts.
@@ -331,15 +340,15 @@ MiroMind exposes reasoning-step extensions such as `delta.reasoning_steps` and f
 - Parse terminal `finish_reason` and `usage`.
 - Ignore MiroMind-specific fields gracefully when not present.
 
-### 16.3 Forbidden behavior
+#### 16.3 Forbidden behavior
 
 - No second streaming client stack that bypasses shared chat lifecycle owners.
 - No provider-specific finalize path that skips markdown validation/persistence.
 - No direct reasoning-step -> graph mutation logic.
 
-## 17. Output Contract
+### 17. Output Contract
 
-### 17.1 Canonical `chatKnowgrph` output
+#### 17.1 Canonical `chatKnowgrph` output
 
 When the storage target is `chatKnowgrph`, the assistant output must still be exactly one standalone frontmatter-first KGC markdown document.
 
@@ -352,7 +361,7 @@ Required invariants:
 - The saved document lands in Source Files before active-document apply so Storyboard Card/Widget, Rich Media Panels, and Edges read the same renderer-neutral data.
 - Storyboard Widget text/transcript widget runs that have an active workspace document persist one sibling Markdown artifact and register it in Source Files passively. Storyboard Widget image/video widget runs persist the binary artifact, store bytes through the R2-backed storage route when runtime sync is enabled, create one editable Markdown manifest, and register that manifest in Source Files passively; provider output must not bypass the shared widget or Rich Media Panel patch owners.
 
-### 17.2 Provenance handling
+#### 17.2 Provenance handling
 
 MiroMind provenance may appear only as upstream metadata within the shared document/graph contract, for example:
 
@@ -368,7 +377,7 @@ It must not introduce:
 - alternate grouping registries,
 - renderer-only metadata that changes graph semantics.
 
-## 18. Workspace and Frontmatter Contract
+### 18. Workspace and Frontmatter Contract
 
 | Contract point | Required rule |
 |---|---|
@@ -380,7 +389,7 @@ It must not introduce:
 | Widget run artifacts | same workspace artifact writers and passive Source Files registration path persist completed text/transcript outputs plus image/video manifests |
 | Renderer behavior | D3 Graph, Flowchart, Flow Canvas, Animatic, Storyboard, and Design remain view projections only |
 
-## 19. MainPanel MCP Alignment
+### 19. MainPanel MCP Alignment
 
 MainPanel `MCP` must explain MiroMind neutrally:
 
@@ -389,25 +398,33 @@ MainPanel `MCP` must explain MiroMind neutrally:
 - MiroMind MCP capability, when available, still feeds the same chat -> markdown -> workspace -> canvas chain.
 - If unavailable, the base MiroMind chat-completions path still works and remains the default contract.
 
-## 20. Deployment and Publish Topology
+### 20. Lane Topology and Deploy Boundaries
 
-Documentation ownership must stay aligned across the publish chain:
+Source presence and configured destinations do not prove publication. This document has no attached
+integration, mirror, or live delivery result and no referenced operator promotion instruction.
 
-| Stage | Path | Rule |
-|---|---|---|
-| Source of truth | `$GITHUB_ROOT/knowgrph/docs/documents/...` | edit here only |
-| Published content | `$GITHUB_ROOT/huijoohwee/content/knowgrph` | generated/synced output only |
-| Cloudflare route | `https://airvio.co/knowgrph` | serves published output; no manual hotfix divergence |
+| Lane | Function and owner | Mutation rights | Residency | Current evidence | Local rung | Delivered rung |
+|---|---|---|---|---|---|---|
+| Authoring | source, tests, and this specification in `$GITHUB_ROOT/knowgrph` | scoped source/test/doc edits | developer checkout and local test process | VCCs stated; results not attached | `spec-complete` | `undocumented` |
+| Mirror | immutable candidate produced by the protected integration/release controller | publish only from an approved Authoring state | protected candidate artifact store | no MiroMind-specific candidate result attached | `spec-complete` | `undocumented` |
+| Delivery | optional client and server-side proxy publication | publish only from an approved Mirror state | configured delivery region | configured paths/URLs only; no live result attached | `spec-complete` | `undocumented` |
 
-Guardrails:
+| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement and check | State |
+|---|---|---|---|---|---|---|
+| `MIROMIND-SOURCE-TO-MIRROR` | Authoring | Mirror | exact candidate qualification; result `not recorded` | `none` | discard the candidate and rerun the source and integration checks | `closed` |
+| `MIROMIND-MIRROR-TO-DELIVERY` | Mirror | Delivery | live provider/proxy check; result `not recorded` | `none` | restore the prior approved whole state and rerun the live check | `closed` |
 
-- Do not maintain separate hand-edited prod-only copies of this integration spec.
-- Source edits in `knowgrph` must be the upstream authority for any later publish/sync step.
-- MainPanel docs, generated references, and published docs must describe the same single runtime contract.
+Reference paths are ownership hints only:
 
-## 21. ADRs
+- Source owner: `$GITHUB_ROOT/knowgrph/docs/documents/...`.
+- Possible generated mirror owner: `$GITHUB_ROOT/huijoohwee/content/knowgrph`.
+- Configured public route: `https://airvio.co/knowgrph`.
+- MainPanel docs, generated references, and published docs must describe one runtime contract, but
+  agreement is not a delivery claim without the boundary evidence above.
 
-### ADR-01 - One markdown artifact over direct graph mutation
+### 21. ADRs
+
+#### ADR-01 - One markdown artifact over direct graph mutation
 
 **Decision**: keep the saved workspace markdown document as the sole graph-application payload.
 
@@ -418,7 +435,7 @@ Guardrails:
 - prevents transport/UI-local graph drift,
 - avoids provider-specific canvas mutation code.
 
-### ADR-02 - Raw SSE parsing over SDK-only streaming for MiroMind reasoning visibility
+#### ADR-02 - Raw SSE parsing over SDK-only streaming for MiroMind reasoning visibility
 
 **Decision**: use raw HTTP/SSE parsing inside the shared transport shell when MiroMind reasoning extensions are needed.
 
@@ -428,7 +445,7 @@ Guardrails:
 - keeps one transport lifecycle,
 - avoids a parallel provider-specific runtime.
 
-### ADR-03 - MainPanel MCP documents optional provider capability, not a second pipeline
+#### ADR-03 - MainPanel MCP documents optional provider capability, not a second pipeline
 
 **Decision**: document `mcp_servers` as optional provider capability in MainPanel `MCP`, but keep runtime ownership with the shared chat pipeline.
 
@@ -438,7 +455,7 @@ Guardrails:
 - keeps Knowgrph MCP and provider-side MCP concerns separated,
 - avoids duplicate E2E claims.
 
-## 22. Quality Attributes
+### 22. Quality Attributes
 
 | Attribute | Requirement | Validation |
 |---|---|---|
@@ -450,7 +467,7 @@ Guardrails:
 
 ---
 
-## Traceability
+## Reference implementation: Traceability
 
 | Story | Owner | Interface | `/goal` |
 |---|---|---|---|
@@ -460,10 +477,32 @@ Guardrails:
 | MM-E4-S1 | shared raw HTTP/SSE parser path | streaming delta/usage parsing | reasoning visibility stays additive and transport-local |
 | MM-E5-S1 | frontmatter and renderer owners | markdown/frontmatter -> graph -> renderers | canvas views remain provider-neutral |
 
-## Validation Checklist
+## Reference implementation: VCC and Evidence Reference Register
+
+No satisfying result is attached to this revision. Named commands are VCC hosts, not Evidence
+References until their exit result and lane are recorded.
+
+| VCC | End state | Named check | Constraint | Recorded result | Local rung | Delivered rung |
+|---|---|---|---|---|---|---|
+| `VCC-MM-1` | shared MainPanel owners expose the configured provider rows and server-managed-key posture | `npm --prefix canvas run test:smoke:miromind:source` exits 0 | no new panel shell or browser-persisted secret | not recorded | `spec-complete` | `undocumented` |
+| `VCC-MM-2` | optional provider-side MCP guidance remains distinct from local/runtime ownership | `npm --prefix canvas run test:ci:unit -- provider.docs.implementedOrReferenceOwners` exits 0 | no second graph materialization path | not recorded | `spec-complete` | `undocumented` |
+| `VCC-MM-3` | shared request options retain the chat-completions envelope | `npm --prefix canvas run test:ci:unit -- chat.providers.miromindRequestOptions.chatCompletions` exits 0 | prompt/output schema remains shared | not recorded | `spec-complete` | `undocumented` |
+| `VCC-MM-4` | stream parsing surfaces reasoning and usage metadata | `npm --prefix canvas run test:ci:unit -- chat.floatingPanel.streaming.miromindDelta.readsReasoningAndUsage` exits 0 | metadata never directly mutates graph state | not recorded | `spec-complete` | `undocumented` |
+| `VCC-MM-5` | exact approved delivery surface passes the provider/proxy check | `npm run miromind:readiness:check` exits 0 with surfaced live result | source checks alone cannot satisfy delivery | not recorded | `spec-complete` | `undocumented` |
+
+## Reference implementation: Readiness Gap Matrix
+
+| Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria (VCC) |
+|---|---|---|---|---|---|
+| MainPanel configuration and source contract | `spec-complete` | `undocumented` | local source result is not attached | none | `VCC-MM-1` and `VCC-MM-3` gain satisfying local Evidence References |
+| Provider-side MCP guidance | `spec-complete` | `undocumented` | source result is not attached; capability remains plan-dependent | none | `VCC-MM-2` gains a satisfying local Evidence Reference |
+| Reasoning/usage stream metadata | `spec-complete` | `undocumented` | focused parser result is not attached | none | `VCC-MM-4` gains a satisfying local Evidence Reference |
+| Protected publication | `spec-complete` | `undocumented` | candidate/live results and operator instruction are absent | none | `VCC-MM-5` plus both boundary records satisfy Mirror and Delivery evidence rules |
+
+## Reference implementation: Validation Checklist
 
 - Add `MiroMind API` only through shared MainPanel settings metadata and shared config/readiness owners.
-- Keep `miromindApi.api_key` defaulted to `Server-managed Key`; Pages must provide `MIROMIND_API_KEY` through runtime `context.env` after a deployment created with that secret.
+- Keep `miromindApi.api_key` defaulted to `Server-managed Key`; the local proxy prefers `KNOWGRPH_CHAT_PROXY_MIROMIND_API_KEY`, while the current Pages readiness host checks the `MIROMIND_API_KEY` compatibility name. Neither source declaration proves that a deployed runtime sees a value.
 - Keep MainPanel `MCP` documentation descriptive and neutral; do not imply a new runtime.
 - Keep prompt layering canonical; do not replace the base KGC contract.
 - Keep `chatKnowgrph` output as one frontmatter-first KGC markdown document.
@@ -476,7 +515,7 @@ Guardrails:
 - Forbid duplicate grouping registries, legacy aliases, and provider-specific schema forks.
 - Forbid browser-persisted secrets and prod-only doc divergence.
 
-## Explicit Forbiddens
+## Reference implementation: Explicit Forbiddens
 
 - No MiroMind-only panel shell.
 - No MiroMind-only markdown schema.
@@ -488,4 +527,4 @@ Guardrails:
 
 ---
 
-*v0.2.0 · 2026-05-29 · accepted implemented baseline aligned to shared settings/chat/workspace/canvas owners*
+*v0.3.0 · 2026-07-30 · source baseline; delivery remains undocumented*

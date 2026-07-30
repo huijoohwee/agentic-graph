@@ -18,6 +18,7 @@ export type RichMediaPanelOverlayState = {
   activeTab: RichMediaPanelTab
   freezeConnectedOutput: boolean
   markdownPresentationMode: boolean
+  markdownWorkspaceViewerSurface?: boolean
   hasText: boolean
   hasImage: boolean
   hasVideo: boolean
@@ -235,6 +236,8 @@ export function buildRichMediaPanelOverlayState(args: {
       : 'auto'
   const freezeConnectedOutput = readNodeFieldBoolean(nodeForState, props, 'freezeConnectedOutput')
   const markdownPresentationMode = readNodeFieldBoolean(nodeForState, props, 'markdownPresentationMode')
+  const markdownWorkspaceViewerSurface = readNodeFieldBoolean(nodeForState, props, 'markdownWorkspaceViewerSurface')
+    || readNodeFieldBoolean(nodeForState, props, 'probeTreeThreadLedger')
   const localLoading = readLoadingStateFromNode(nodeForState)
   const connectedText = normalizeConnectedTextValue(connectedValuesBySchemaPath?.['properties.output']?.value)
   const connectedLoading = deriveRichMediaPanelLoadingSourceLabels({
@@ -256,6 +259,7 @@ export function buildRichMediaPanelOverlayState(args: {
     activeTab,
     freezeConnectedOutput,
     markdownPresentationMode,
+    ...(markdownWorkspaceViewerSurface ? { markdownWorkspaceViewerSurface: true } : {}),
     hasText: Boolean(text.trim() || outputSrcDoc.trim() || connectedText.trim()),
     hasImage: Boolean(imageUrl.trim() || imageToThreeJsOutputSourceUrl.trim()) || hasGenericImage,
     hasVideo: Boolean(videoUrl.trim()) || hasGenericVideo,

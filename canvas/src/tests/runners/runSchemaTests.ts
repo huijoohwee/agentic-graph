@@ -13,10 +13,19 @@ const modXrCameraMoves = () => import('@/__tests__/xrCameraMoves.test')
 const modXrShootWorkflow = () => import('@/__tests__/xrShootWorkflow.test')
 const modXrAnimationRuntime = () => import('@/__tests__/xrAnimationRuntime.test')
 const modMotionControlRuntime = () => import('@/__tests__/motionControlRuntime.test')
+const modMotionControlLiteRtReadiness = () => import('@/__tests__/motionControlLiteRtReadiness.test')
+const modMotionControlLiveCameraReadiness = () => import('@/__tests__/motionControlLiveCameraReadiness.test')
+const modMotionControlStartStopRace = () => import('@/__tests__/motionControlStartStopRace.test')
+const modMotionCaptureLifecycleFailure = () => import('@/__tests__/motionCaptureLifecycleFailure.test')
 const modMotionControlSmoothing = () => import('@/__tests__/motionControlSmoothing.test')
 const modMotionControlBoundingBox = () => import('@/__tests__/motionControlBoundingBox.test')
 const modMotionControlMultiObjectIdentification = () => import('@/__tests__/motionControlMultiObjectIdentification.test')
 const modMotionControlCleanRoomBoundary = () => import('@/__tests__/motionControlCleanRoomBoundary.test')
+const modMotionControlCapturePlatform = () => import('@/__tests__/motionControlCapturePlatform.test')
+const modMotionCaptureSnapshotStability = () => import('@/__tests__/motionCaptureSnapshotStability.test')
+const modMotionCaptureResearchIntegrity = () => import('@/__tests__/motionCaptureResearchIntegrity.test')
+const modMotionControlCaptureInvocation = () => import('@/__tests__/motionControlCaptureInvocation.test')
+const modMotionCapturePeerRuntime = () => import('@/__tests__/motionCapturePeerRuntime.test')
 const modXrKeyboardChoreography = () => import('@/__tests__/xrKeyboardChoreography.test')
 const modXrSubjectMotionConstraints = () => import('@/__tests__/xrSubjectMotionConstraints.test')
 const modXrLegacyPositionWriterConstraints = () => import('@/__tests__/xrLegacyPositionWriterConstraints.test')
@@ -134,6 +143,18 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modMotionControlRuntime()
     await mod.testMotionControlRuntimeIsLiteRtInvocableAndXrReady()
   })
+  await execTest(results, 'canvas.xrMode.motionControlLiteRtReadiness', async () => {
+    const mod = await modMotionControlLiteRtReadiness()
+    await mod.testMotionControlLiteRtReadinessUsesProductionModelOwner()
+  })
+  await execTest(results, 'canvas.xrMode.motionControlLiveCameraReadiness', async () => {
+    const mod = await modMotionControlLiveCameraReadiness()
+    await mod.testMotionControlLiveCameraProofUsesProductionCaptureLifecycle()
+  })
+  await execTest(results, 'canvas.xrMode.motionControlStartStopRace', async () => {
+    const mod = await modMotionControlStartStopRace()
+    await mod.testMotionControlExplicitStopCancelsConcurrentStart()
+  })
   await execTest(results, 'canvas.xrMode.motionControlSmoothing', async () => {
     const mod = await modMotionControlSmoothing()
     await mod.testMotionControlSmoothingIsInferenceRateInvariant()
@@ -157,6 +178,30 @@ export const runSchemaTests = async (results: TestResult[]) => {
   await execTest(results, 'canvas.xrMode.motionControlCleanRoomBoundary', async () => {
     const mod = await modMotionControlCleanRoomBoundary()
     await mod.testMotionControlProductionRemainsCleanRoomAndDependencyFree()
+  })
+  await execTest(results, 'canvas.xrMode.motionControlCapturePlatform', async () => {
+    const mod = await modMotionControlCapturePlatform()
+    await mod.testMotionCapturePlatformIsProviderNeutralBoundedAndEvidenceGraded()
+  })
+  await execTest(results, 'canvas.xrMode.motionCaptureSnapshotStability', async () => {
+    const mod = await modMotionCaptureSnapshotStability()
+    await mod.testMotionCaptureUiSnapshotsStayStableForReactExternalStores()
+  })
+  await execTest(results, 'canvas.xrMode.motionCaptureLifecycleFailure', async () => {
+    const mod = await modMotionCaptureLifecycleFailure()
+    await mod.testMotionCaptureLifecycleTeardownIsFailureSafe()
+  })
+  await execTest(results, 'canvas.xrMode.motionCaptureResearchIntegrity', async () => {
+    const mod = await modMotionCaptureResearchIntegrity()
+    await mod.testMotionCaptureResearchGradePreservesRecordingLocalEvidence()
+  })
+  await execTest(results, 'canvas.xrMode.motionControlCaptureInvocation', async () => {
+    const mod = await modMotionControlCaptureInvocation()
+    await mod.testMotionCaptureInvocationAndWebMcpConvergeWithoutPayloadDisclosure()
+  })
+  await execTest(results, 'canvas.xrMode.motionCapturePeerRuntime', async () => {
+    const mod = await modMotionCapturePeerRuntime()
+    await mod.testMotionCapturePeerRuntimeSharesOnlyBoundedDerivedObservations()
   })
   await execTest(results, 'canvas.xrMode.keyboardChoreography', async () => {
     const mod = await modXrKeyboardChoreography()
@@ -322,6 +367,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
     const mod = await modCanvasXrSharedSurfaceOwnership()
     await mod.testXrSurfaceFrontmatterPresetActivatesXrCanvasMode()
   })
+  await execTest(results, 'canvas.frontmatter.draftWorkspaceSeedNonRuntime', async () => {
+    const mod = await modCanvasXrSharedSurfaceOwnership()
+    await mod.testDraftWorkspaceSeedFrontmatterExitsXrAndClosesPanels()
+  })
   await execTest(results, 'canvas.renderSettings.xrModeSelect', async () => {
     const mod = await modCanvas3dMode()
     await mod.testRenderSettings3dModeSelectPreservesXrMode()
@@ -445,6 +494,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
   await execTest(results, 'canvas.viewSelection.mobileFirstGroupedOrder', async () => {
     const mod = await modCanvas3dMode()
     await mod.testCanvasViewMenuKeepsMobileFirstGroupedOrder()
+  })
+  await execTest(results, 'canvas.viewSelection.geospatialReturnsToCanvasView', async () => {
+    const mod = await modCanvas3dMode()
+    await mod.testGeospatialSurfaceModeReturnsToCanvasView()
   })
   await execTest(results, 'canvas.viewSelection.timelineDisplayControl', async () => {
     const mod = await modCanvas3dMode()

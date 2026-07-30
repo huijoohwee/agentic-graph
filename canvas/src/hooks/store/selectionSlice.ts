@@ -71,10 +71,10 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       set({
         selectedNodeId: nextActiveId,
         selectedEdgeId: state.selectedEdgeId,
-        selectedGroupId: null,
+        selectedGroupId: state.selectedGroupId,
         selectedNodeIds: nextIds,
         selectedEdgeIds: state.selectedEdgeIds || [],
-        selectedGroupIds: [],
+        selectedGroupIds: state.selectedGroupIds || [],
       })
       if (nextActiveId) {
         try {
@@ -117,13 +117,50 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       void 0
     }
   },
+  toggleNodeSelectionAdditive: (rawId: string) => {
+    const id = String(rawId || '').trim()
+    if (!id) return
+    const state = get()
+    const previousIds = new Set<string>(
+      (state.selectedNodeIds || []).map(value => String(value || '').trim()).filter(Boolean),
+    )
+    if (state.selectedNodeId) previousIds.add(String(state.selectedNodeId))
+    if (previousIds.has(id)) previousIds.delete(id)
+    else previousIds.add(id)
+    const nextIds = Array.from(previousIds)
+    const nextActiveId = nextIds.includes(id) ? id : nextIds[nextIds.length - 1] || null
+    set({
+      selectedNodeId: nextActiveId,
+      selectedEdgeId: null,
+      selectedGroupId: state.selectedGroupId,
+      selectedNodeIds: nextIds,
+      selectedEdgeIds: [],
+      selectedGroupIds: state.selectedGroupIds || [],
+    })
+    if (!nextActiveId) return
+    try {
+      const graphData = get().graphData
+      const node = (graphData?.nodes || []).find(item => String(item.id || '') === nextActiveId) || null
+      if (isFlowWidgetOverlayEligibleNode(node)) {
+        get().updateOpenWidgetNodeIds?.(previous => (
+          previous.includes(nextActiveId) ? previous : [...previous, nextActiveId]
+        ))
+      }
+    } catch {
+      void 0
+    }
+  },
   selectNodesExpanded: (args: { nodeIds: string[]; edgeIds?: string[]; groupIds?: string[]; activeNodeId?: string | null }) => {
     const state = get()
     const mode = state.schema.behavior?.selectMode || 'single'
     const rawNodeIds = Array.isArray(args.nodeIds) ? args.nodeIds : []
     const nodeIdSet = new Set<string>(rawNodeIds.map(v => String(v)).filter(Boolean))
     const nodeIds = Array.from(nodeIdSet)
-    if (nodeIds.length === 0) {
+    const rawEdgeIds = Array.isArray(args.edgeIds) ? args.edgeIds : []
+    const edgeIds = rawEdgeIds.map(v => String(v)).filter(Boolean)
+    const rawGroupIds = Array.isArray(args.groupIds) ? args.groupIds : []
+    const groupIds = rawGroupIds.map(v => String(v)).filter(Boolean)
+    if (nodeIds.length === 0 && edgeIds.length === 0 && groupIds.length === 0) {
       set({
         selectedNodeId: null,
         selectedEdgeId: null,
@@ -135,17 +172,37 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       return
     }
     const activeRaw = typeof args.activeNodeId === 'string' ? args.activeNodeId : null
-    const activeNodeId = activeRaw && nodeIdSet.has(activeRaw) ? activeRaw : nodeIds[nodeIds.length - 1]
-    const rawEdgeIds = Array.isArray(args.edgeIds) ? args.edgeIds : []
-    const edgeIds = rawEdgeIds.map(v => String(v)).filter(Boolean)
-    const rawGroupIds = Array.isArray(args.groupIds) ? args.groupIds : []
-    const groupIds = rawGroupIds.map(v => String(v)).filter(Boolean)
+    const activeNodeId = activeRaw && nodeIdSet.has(activeRaw) ? activeRaw : nodeIds[nodeIds.length - 1] || null
     if (mode === 'single') {
+      if (!activeNodeId && groupIds.length > 0) {
+        const selectedGroupId = groupIds[groupIds.length - 1]
+        set({
+          selectedNodeId: null,
+          selectedEdgeId: null,
+          selectedGroupId,
+          selectedNodeIds: [],
+          selectedEdgeIds: [],
+          selectedGroupIds: [selectedGroupId],
+        })
+        return
+      }
+      if (!activeNodeId && edgeIds.length > 0) {
+        const selectedEdgeId = edgeIds[edgeIds.length - 1]
+        set({
+          selectedNodeId: null,
+          selectedEdgeId,
+          selectedGroupId: null,
+          selectedNodeIds: [],
+          selectedEdgeIds: [selectedEdgeId],
+          selectedGroupIds: [],
+        })
+        return
+      }
       set({
         selectedNodeId: activeNodeId,
         selectedEdgeId: null,
         selectedGroupId: null,
-        selectedNodeIds: [activeNodeId],
+        selectedNodeIds: activeNodeId ? [activeNodeId] : [],
         selectedEdgeIds: [],
         selectedGroupIds: [],
       })
@@ -244,10 +301,10 @@ export const createSelectionSlice = (set: SetGraph, get: GetGraph) => ({
       const nextIds = exists ? prevIds.filter(x => x !== id) : [...prevIds, id]
       const nextActiveId = nextIds.length > 0 ? (nextIds.includes(id) ? id : nextIds[nextIds.length - 1]) : null
       set({
-        selectedNodeId: null,
+        selectedNodeId: state.selectedNodeId,
         selectedEdgeId: null,
         selectedGroupId: nextActiveId,
-        selectedNodeIds: [],
+        selectedNodeIds: state.selectedNodeIds || [],
         selectedEdgeIds: [],
         selectedGroupIds: nextIds,
       })

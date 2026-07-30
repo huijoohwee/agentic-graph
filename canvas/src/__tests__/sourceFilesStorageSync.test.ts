@@ -435,14 +435,19 @@ export async function testSourceFileShareUrlHydratesMetadataOnlyWorkspaceEntryBe
 export function testSourceFilesPersistenceBootstrapOwnsKnowgrphStorageLoopAndQueueIntegration() {
   const bootstrapPath = resolve(process.cwd(), 'src', 'features', 'source-files', 'SourceFilesPersistenceBootstrap.tsx')
   const text = readFileSync(bootstrapPath, 'utf8')
-  if (!text.includes("loadKnowgrphStorageRuntimeDependencies")) {
-    throw new Error('expected source-files bootstrap to lazy-load the knowgrph storage runtime dependencies instead of pulling them into the eager bootstrap module graph')
+  const settingsText = readFileSync(
+    resolve(process.cwd(), 'src', 'features', 'source-files', 'sourceFilesKnowgrphStorageSettings.ts'),
+    'utf8',
+  )
+  if (!text.includes('createKnowgrphStorageWorkspaceLifecycle')) {
+    throw new Error('expected source-files bootstrap to delegate lazy storage dependency loading to the workspace lifecycle owner')
   }
   if (
-    !text.includes("ensureKnowgrphStorageRuntimeDependencies()")
-    || !text.includes(".then(deps => deps.syncSourceFilesToKnowgrphStorage({")
+    !text.includes('ensureKnowgrphStorageRuntimeDependencies(capturedOwnership)')
+    || !text.includes('runWorkspaceSeedSyncTask(capturedOwnership.signal, () => (')
+    || !text.includes('deps.syncSourceFilesToKnowgrphStorage({')
   ) {
-    throw new Error('expected source-files bootstrap to integrate source-file edits with storage outbox enqueueing through the deferred storage runtime loader')
+    throw new Error('expected source-files bootstrap to integrate source-file edits with storage outbox enqueueing through the deferred runtime loader and Flight suspension barrier')
   }
   if (!text.includes("const request = resolveSourceFilesPersistenceEffectRequest(next as never)") || !text.includes("applySourceFilesPersistenceEffectRequest(request)")) {
     throw new Error('expected source-files persistence subscription to enqueue storage sync from live source-file edits through the dedicated persistence effect request path')
@@ -456,17 +461,20 @@ export function testSourceFilesPersistenceBootstrapOwnsKnowgrphStorageLoopAndQue
   if (!text.includes("deps.startKnowgrphStorageSyncLoop")) {
     throw new Error('expected source-files bootstrap to keep ownership of the knowgrph storage sync loop for the active workspace through the deferred runtime loader')
   }
-  if (!text.includes("readKnowgrphStorageRuntimeSyncEnabled") || !text.includes("VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED")) {
+  if (
+    !text.includes("readKnowgrphStorageRuntimeSyncEnabled")
+    || !settingsText.includes("VITE_KNOWGRPH_STORAGE_RUNTIME_SYNC_ENABLED")
+  ) {
     throw new Error('expected knowgrph storage runtime sync to stay explicitly opt-in instead of running from the toolbar Storage Sync path by default')
   }
-  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceSeedSyncEnabled) return null')) {
-    throw new Error('expected outbound Source Files storage queue requests to require explicit knowgrph runtime sync opt-in')
+  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) return null')) {
+    throw new Error('expected outbound Source Files storage queue requests to require explicit cloud sync opt-in')
   }
-  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceSeedSyncEnabled) {') || !text.includes('stopKnowgrphStorageWorkspaceRuntime()')) {
-    throw new Error('expected knowgrph storage push/pull runtime to stop unless explicit runtime sync opt-in and Storage Sync are both active')
+  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled() || !workspaceCloudSyncEnabled) {') || !text.includes('stopKnowgrphStorageWorkspaceRuntime()')) {
+    throw new Error('expected knowgrph storage push/pull runtime to stop unless runtime and user cloud sync opt-ins are active')
   }
-  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled() || !readWorkspaceSeedSyncEnabledSetting()) return')) {
-    throw new Error('expected delayed storage sync callbacks to re-check runtime opt-in and the shared Storage Sync setting before running')
+  if (!text.includes('if (!readKnowgrphStorageRuntimeSyncEnabled()) return')) {
+    throw new Error('expected delayed storage sync callbacks to re-check cloud runtime opt-in before running')
   }
   if (!text.includes("notifyKnowgrphStorageConflictUx")) {
     throw new Error('expected source-files bootstrap to route storage conflicts through the shared conflict UX notifier')

@@ -183,6 +183,11 @@
       "import": "./dist/collaboration/yjsSnapshot.js",
       "default": "./dist/collaboration/yjsSnapshot.js"
     },
+    "./collaboration/documentRepositoryAuthority": {
+      "types": "./dist/collaboration/documentRepositoryAuthority.d.ts",
+      "import": "./dist/collaboration/documentRepositoryAuthority.js",
+      "default": "./dist/collaboration/documentRepositoryAuthority.js"
+    },
     "./dom/pointerDrag": {
       "types": "./dist/dom/pointerDrag.d.ts",
       "import": "./dist/dom/pointerDrag.js",
@@ -207,6 +212,11 @@
       "types": "./dist/geospatial/events.d.ts",
       "import": "./dist/geospatial/events.js",
       "default": "./dist/geospatial/events.js"
+    },
+    "./geospatial/enhancedLayerContract": {
+      "types": "./dist/geospatial/enhancedLayerContract.d.ts",
+      "import": "./dist/geospatial/enhancedLayerContract.js",
+      "default": "./dist/geospatial/enhancedLayerContract.js"
     },
     "./geospatial/grabMapsAuth": {
       "types": "./dist/geospatial/grabMapsAuth.d.ts",
@@ -233,6 +243,11 @@
       "import": "./dist/geospatial/sgpAdministrativeAreas.js",
       "default": "./dist/geospatial/sgpAdministrativeAreas.js"
     },
+    "./geospatial/singaporeFlightGeo": {
+      "types": "./dist/geospatial/singaporeFlightGeo.d.ts",
+      "import": "./dist/geospatial/singaporeFlightGeo.js",
+      "default": "./dist/geospatial/singaporeFlightGeo.js"
+    },
     "./geospatial/poiRichMedia": {
       "types": "./dist/geospatial/poiRichMedia.d.ts",
       "import": "./dist/geospatial/poiRichMedia.js",
@@ -252,6 +267,41 @@
       "types": "./dist/payments/stripePaymentSsot.d.ts",
       "import": "./dist/payments/stripePaymentSsot.js",
       "default": "./dist/payments/stripePaymentSsot.js"
+    },
+    "./payments/paymentRailSsot": {
+      "types": "./dist/payments/paymentRailSsot.d.ts",
+      "import": "./dist/payments/paymentRailSsot.js",
+      "default": "./dist/payments/paymentRailSsot.js"
+    },
+    "./payments/paymentRecordDocument": {
+      "types": "./dist/payments/paymentRecordDocument.d.ts",
+      "import": "./dist/payments/paymentRecordDocument.js",
+      "default": "./dist/payments/paymentRecordDocument.js"
+    },
+    "./payments/paymentRuntimeContract": {
+      "types": "./dist/payments/paymentRuntimeContract.d.ts",
+      "import": "./dist/payments/paymentRuntimeContract.js",
+      "default": "./dist/payments/paymentRuntimeContract.js"
+    },
+    "./payments/agenticPurchaseRuntimeContract": {
+      "types": "./dist/payments/agenticPurchaseRuntimeContract.d.ts",
+      "import": "./dist/payments/agenticPurchaseRuntimeContract.js",
+      "default": "./dist/payments/agenticPurchaseRuntimeContract.js"
+    },
+    "./payments/agenticPurchaseReadinessContract": {
+      "types": "./dist/payments/agenticPurchaseReadinessContract.d.ts",
+      "import": "./dist/payments/agenticPurchaseReadinessContract.js",
+      "default": "./dist/payments/agenticPurchaseReadinessContract.js"
+    },
+    "./payments/paymentBuyerProductSsot": {
+      "types": "./dist/payments/paymentBuyerProductSsot.d.ts",
+      "import": "./dist/payments/paymentBuyerProductSsot.js",
+      "default": "./dist/payments/paymentBuyerProductSsot.js"
+    },
+    "./payments/straitsxPaymentSsot": {
+      "types": "./dist/payments/straitsxPaymentSsot.d.ts",
+      "import": "./dist/payments/straitsxPaymentSsot.js",
+      "default": "./dist/payments/straitsxPaymentSsot.js"
     },
     "./payments/agenticCommerceSemanticKey": {
       "types": "./dist/payments/agenticCommerceSemanticKey.d.ts",
@@ -423,6 +473,7 @@
     "@types/node": "^22.15.30",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "fast-check": "3.23.2",
     "typescript": "~5.8.3"
   },
   "dependencies": {

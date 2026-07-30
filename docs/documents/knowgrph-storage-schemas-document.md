@@ -1,13 +1,34 @@
+---
+title: "Knowgrph Storage Schemas and Route Contracts"
+id: "md:knowgrph-storage-schemas-document"
+version: "2.5.0"
+updated: "2026-07-23"
+status: "active"
+doc_type: "Schema and Route Reference"
+frontmatter_contract: "required"
+document_runtime_status: "runtime-ready-dev"
+runtime_scope: "Frontmatter parsing, source validation, MCP grammar resolution, and read-only Source Files discovery; route deployment status remains section-specific."
+deploy_boundary: "No migration, Prod mirror, or Cloudflare mutation is authorized by this document."
+mcp:
+  grammar_tool: "knowgrph.agentic_canvas_os.docs.invoke"
+  published_source_tools: ["search", "fetch"]
+  webmcp_source_tools: ["knowgrph.list_source_files", "knowgrph.read_source_file"]
+  source_availability: "Read-only after the document is present in the configured published Source Files workspace."
+invocation:
+  normalize: "/source.normalize @source.frontmatter @source.body #frontmatter #no-legacy"
+  verify: "/runtime-ready.check @local-harness @runtime-proof #runtime-ready #vcc"
+---
+
 # Knowgrph Storage Schemas & Route Contracts
 
 **Context**: Schema appendix for the Knowgrph storage and sync system.
 **Intent**: Single reference for all record shapes, D1 tables, browser-local cache collections, and API route contracts.
-**Directive**: Keep this file as a pure reference; architectural decisions and runtime wiring live in `knowgrph-storage-sync.md`.
+**Directive**: Keep this file as a pure reference; architectural decisions and runtime wiring live in `knowgrph-storage-sync-document.md`.
 
 ---
 
-**Version**: 2.1.0
-**Date**: 2026-05-13
+**Version**: 2.5.0
+**Date**: 2026-07-23
 **Canonical index**: `knowgrph-storage-sync-document.md`
 **See also**: `knowgrph-storage-schemas-extensions-document.md` (deferred auth relay and PostgreSQL extensions), `knowgrph-multi-user-collaboration-prd.tad.md` (auth tables, role-based access extension)
 
@@ -19,8 +40,27 @@
 - Keep stable ids and monotonic revisions.
 - Use hashes for dedupe and bounded prompt reuse.
 - Keep browser-local names stable across the persisted-cache contract.
+- Reject canonical paths longer than 1,024 characters and preserve identity for same-workspace/same-path upserts.
+- Retain `sync_events` at or below 24 hours and prune only records older than that boundary.
+- Skip D1 writes when every persisted field already matches.
 
----
+## Implemented Browser And Sync Bounds
+
+| Contract | Bound |
+|---|---:|
+| Push timeout | 30 seconds |
+| Push attempts | 3 total |
+| Backoff | 1 second, then 2 seconds; 30-second cap |
+| Poll interval | 120 seconds |
+| Local document revisions | Most recent 10 or more |
+| Document version snapshots | Most recent 50 per path |
+| Cloud read-back | At most 3 attempts |
+| Canonical path | 1,024 characters |
+| Import body | 10,485,760 bytes |
+| URL import timeout | 30 seconds |
+| `sync_events` TTL | 24 hours |
+
+The browser implementation maps `documentRevision` to remote `revision` and `isDeleted` to remote `deleted` at the contract boundary. Dexie restores each record type independently and stores a separate durable collaboration update outbox. Equal document/chunk hashes reuse stored artifacts; semantic chunk references with a known hash carry zero markdown bytes. JSON-LD graph export also preserves its canonicalized edge id across repeated parse/print cycles.
 
 ## Shared Contract
 
@@ -113,6 +153,46 @@ type KnowgrphStorageOutboxRecord = {
   updatedAtMs: number
 }
 ```
+
+### Collaboration Update Outbox Shape
+
+The Yjs collaboration outbox is browser-local and separate from the D1 document sync outbox. A failed PocketBase write must remain durable and visible to retry logic; it must never be swallowed.
+
+```ts
+type CollaborationUpdateOutboxRecord = {
+  updateId: string
+  workspaceId: string
+  documentKey: string
+  provider: 'pocketbase' | 'durable-object'
+  clientSeq: number
+  updateBase64: string
+  attemptCount: number
+  acknowledgedAtMs: number | null
+  createdAtMs: number
+  updatedAtMs: number
+}
+```
+
+Replay is idempotent by `updateId`, ordered per document, and retained until provider acknowledgement. Joining a room applies its compacted snapshot and ordered remote updates before replaying unacknowledged local records.
+
+### Source Files Ownership Projection
+
+This display model is derived at runtime and is not a new browser, D1, or PocketBase collection:
+
+```ts
+type SourceFilesOwnershipProjection = {
+  knowgrphDocs: 'GitHub/knowgrph/docs'
+  workspaceDocs: 'GitHub/huijoohwee/docs'
+  workspaceSeeds: 'GitHub/knowgrph/docs/workspace-seeds'
+  offlineFallback: 'IndexedDB'
+}
+```
+
+The path resolver selects `workspaceSeeds` for `/docs/workspace-seeds/**`, rejects `huijoohwee/docs/workspace-seeds/**`, and refuses Agentic Canvas OS write targets. Explorer consumes the same constants, so labels cannot drift from save-bridge authority. The Agentic seed file remains a protected byte-identical runtime projection outside this write model.
+
+The local filesystem bridge applies the same invariant. A seed mutation is valid only when its workspace key and resolved host path agree on `$GITHUB_ROOT/knowgrph/docs/workspace-seeds/**`; nested deletes are supported for rename/delete convergence, while deleting the root or omitting the ownership key is forbidden.
+
+`WorkspaceDocsMirrorEntry.authority` distinguishes `knowgrph-workspace-seeds-local` from `knowgrph-workspace-seeds-bundled`. Either value admits exact subtree reconciliation; absence of both prevents stale-cache pruning. The bundled value identifies the complete six-file artifact built from the protected source revision, not a second writable repository. This marker is transient bootstrap metadata and is not added to PocketBase or D1 document rows.
 
 ---
 
@@ -307,7 +387,7 @@ CREATE TABLE IF NOT EXISTS sync_events (
 
 ### Planned Authenticated Collaboration And Chat Relay Extension
 
-Deferred authenticated relay tables, route inputs, index guidance, and authorization rules live in `knowgrph-storage-schemas-extensions-document.md`. The shipped anonymous storage baseline remains `workspaces`, `documents`, `document_chunks`, `graph_snapshots`, `sync_devices`, and `sync_events`.
+Deferred authenticated relay tables, PocketBase provider-owned collaboration collections, route inputs, index guidance, and authorization rules live in `knowgrph-storage-schemas-extensions-document.md`. PocketBase collections are not D1 tables. The shipped anonymous D1 baseline remains `workspaces`, `documents`, `document_chunks`, `graph_snapshots`, `sync_devices`, and `sync_events`.
 
 ### Indexes
 
@@ -453,8 +533,8 @@ Error handling: 400 on malformed request; 500 on worker/database failures.
 
 - **Method**: `POST`
 - **Path**: `/api/storage/collab/save`
-- **Purpose**: Commit a saved PocketBase/Yjs document snapshot back to GitHub `docs/**`
-- **Behavior**: Validate the saved snapshot, read PocketBase room state when `KNOWGRPH_STORAGE_POCKETBASE_URL` is configured, canonicalize JSON with two-space formatting, reject concurrent JSON saves without Yjs state, and write through GitHub Contents API using a server-owned token. D1 is not touched.
+- **Purpose**: Commit a saved PocketBase/Yjs document snapshot to its path-scoped GitHub `docs/**` root
+- **Behavior**: Validate the saved snapshot and authenticated membership, re-derive repository authority from `documentKey`, reject a mismatched `repositoryTarget`, read the selected room provider state when configured, canonicalize JSON with two-space formatting, reject concurrent JSON saves without Yjs state, and write through a GitHub App/server identity using compare-and-set content SHA. D1 is not touched.
 
 Request:
 
@@ -464,6 +544,7 @@ Request:
   "workspaceId": "kgws:abc123",
   "documentKey": "/docs/shared.json",
   "documentKind": "json",
+  "repositoryTarget": "workspace-docs",
   "serializedText": "{\n  \"name\": \"Shared\"\n}\n",
   "yjsStateBase64": "AQID",
   "activePeerCount": 2,
@@ -481,6 +562,7 @@ Response:
   "apiVersion": "2026-05-04",
   "workspaceId": "kgws:abc123",
   "documentKey": "/docs/shared.json",
+  "repositoryTarget": "workspace-docs",
   "githubPath": "docs/shared.json",
   "commitSha": "commit_sha",
   "contentSha": "content_sha",
@@ -488,7 +570,9 @@ Response:
 }
 ```
 
-Error handling: 400 on malformed request or unsupported path; 409 when concurrent JSON lacks Yjs CRDT state; 403 when the Worker has no GitHub bridge token; 500 on missing repository config or GitHub API failures.
+Repository selection: `knowgrph-docs` reads `KNOWGRPH_STORAGE_GITHUB_KNOWGRPH_REPO`; `workspace-docs` reads `KNOWGRPH_STORAGE_GITHUB_WORKSPACE_REPO`. Both use the server-owned owner, branch, and token. Agentic Canvas OS paths are read-only in this bridge.
+
+Error handling: 400 on malformed request, unsupported path, or target/path mismatch; 401/403 on missing identity or inactive workspace membership; 409 when concurrent JSON lacks Yjs CRDT state or the GitHub content SHA changed; 500 on missing target-specific repository config or GitHub API failures.
 
 The Source Files row upload client uses this route only for explicit Markdown saves, including a newly created empty `.md`. A successful bridge response is necessary but not sufficient for the cloud icon: the client next pushes the same text through the D1 document sync contract and requires exact `GET /api/storage/doc/:workspaceId/:canonicalPath*` read-back. If the GitHub bridge fails, D1 is untouched; if D1 or read-back fails after the commit, the row remains in a retryable failure state.
 

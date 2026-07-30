@@ -1,4 +1,6 @@
 import type { PersistedCollectionMap } from '@/lib/storage/persistedCollectionStore'
+import { hashStringToHexCached } from '@/lib/hash/textHashCache'
+import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
 import {
   CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED,
@@ -18,6 +20,10 @@ import {
   resolveAuthoredMarkdownNotePath,
 } from './workspaceAuthoredNotes'
 import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from './workspaceSourceRoots'
+import {
+  isCanonicalWorkspaceSeedAuthority,
+  type WorkspaceDocsMirrorAuthority,
+} from './workspaceSeedInventoryAuthority'
 
 type WorkspaceRecordMap = { entries: WorkspaceEntry }
 type WorkspaceCollections = PersistedCollectionMap<WorkspaceRecordMap>
@@ -25,7 +31,7 @@ type WorkspaceDocsMirrorEntry = {
   relPath: string
   text: string
   updatedAtMs: number
-  authority?: 'agentic-canvas-os-github' | 'huijoohwee-demo-docs-github' | 'huijoohwee-output-docs-github'
+  authority?: WorkspaceDocsMirrorAuthority
 }
 
 const WORKSPACE_DOCS_MIRROR_ROOT_PATH = normalizeWorkspacePath('/docs')
@@ -101,6 +107,16 @@ const clearWorkspaceEntrySource = (path: WorkspacePath): boolean => {
   if (!loadWorkspaceSourceIndex()[normalizedPath]) return false
   setWorkspaceEntrySource(normalizedPath, null, { persist: 'sync' })
   return true
+}
+
+const clearCanonicalWorkspaceSeedSources = (): boolean => {
+  const sourceIndex = loadWorkspaceSourceIndex()
+  let changed = false
+  for (const path of Object.keys(sourceIndex)) {
+    if (!isKnowgrphWorkspaceSeedsPath(path)) continue
+    if (clearWorkspaceEntrySource(normalizeWorkspacePath(path))) changed = true
+  }
+  return changed
 }
 
 export const removeLegacyWorkspaceSourceEntries = async (
@@ -220,7 +236,9 @@ const buildDocsMirrorSyncSignature = (
     .map(entry => {
       const relPath = normalizeDocsMirrorRelPath(String(entry?.relPath || ''))
       if (!relPath) return ''
-      return `${relPath}:${Number(entry?.updatedAtMs || 0)}:${String(entry?.text || '').length}`
+      const text = String(entry?.text || '')
+      const contentHash = hashStringToHexCached('workspace-docs-mirror-sync', text)
+      return `${relPath}:${Number(entry?.updatedAtMs || 0)}:${contentHash}:${String(entry?.authority || '')}`
     })
     .filter(Boolean)
     .sort()
@@ -264,6 +282,9 @@ export const syncWorkspaceDocsMirrorEntries = async (
   }
   const canonicalXrSeedDesired = CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED
     && desiredEntriesByPath.get(XR_PHYSICS_WORKSPACE_SEED_PATH)?.kind === 'file'
+  const canonicalWorkspaceSeedInventoryPresent = docsEntries.some(entry => (
+    isCanonicalWorkspaceSeedAuthority(entry.authority)
+  ))
   const agenticRuntimeDesiredPaths = new Set(
     [...desiredEntriesByPath.keys()].filter(path => (
       path === WORKSPACE_AGENTIC_DOCS_MIRROR_ROOT_PATH
@@ -298,18 +319,34 @@ export const syncWorkspaceDocsMirrorEntries = async (
     }
     const canonicalXrSeedMustWin = canonicalXrSeedDesired
       && existingPath === XR_PHYSICS_WORKSPACE_SEED_PATH
+    const canonicalWorkspaceSeedMustWin = canonicalWorkspaceSeedInventoryPresent
+      && isKnowgrphWorkspaceSeedsPath(existingPath)
     const runtimeTwinPath = underVisibleDocs
       ? normalizeWorkspacePath(`${WORKSPACE_AGENTIC_DOCS_MIRROR_ROOT_PATH}/${existingPath.slice(`${WORKSPACE_DOCS_MIRROR_ROOT_PATH}/`.length)}`)
       : null
     const staleFlattenedRuntimeDoc = !!runtimeTwinPath && agenticRuntimeDesiredPaths.has(runtimeTwinPath)
     if (underOutputDocs && !desired) continue
-    if (!staleFlattenedRuntimeDoc && sourceOwnedDocsPaths.has(existingPath) && !canonicalXrSeedMustWin) {
+    if (
+      isKnowgrphWorkspaceSeedsPath(existingPath)
+      && !canonicalWorkspaceSeedInventoryPresent
+      && !desired
+    ) {
+      continue
+    }
+    if (
+      !staleFlattenedRuntimeDoc
+      && sourceOwnedDocsPaths.has(existingPath)
+      && !canonicalXrSeedMustWin
+      && !canonicalWorkspaceSeedMustWin
+    ) {
       desiredEntriesByPath.delete(existingPath)
       continue
     }
     if (!desired) {
       await row.remove()
-      if (underRuntimeDocs || staleFlattenedRuntimeDoc) clearWorkspaceEntrySource(existingPath)
+      if (underRuntimeDocs || staleFlattenedRuntimeDoc || canonicalWorkspaceSeedMustWin) {
+        clearWorkspaceEntrySource(existingPath)
+      }
       changed = true
       continue
     }
@@ -335,6 +372,7 @@ export const syncWorkspaceDocsMirrorEntries = async (
       })
       changed = true
     }
+    if (canonicalWorkspaceSeedMustWin && clearWorkspaceEntrySource(existingPath)) changed = true
   }
   const pendingEntries = [...desiredEntriesByPath.values()].sort((a, b) => a.path.localeCompare(b.path))
   for (let i = 0; i < pendingEntries.length; i += 1) {
@@ -353,6 +391,12 @@ export const syncWorkspaceDocsMirrorEntries = async (
   if (
     canonicalXrSeedDesired
     && await clearStaleXrPhysicsSourcesIfCanonicalMaterialized(collections)
+  ) {
+    changed = true
+  }
+  if (
+    canonicalWorkspaceSeedInventoryPresent
+    && clearCanonicalWorkspaceSeedSources()
   ) {
     changed = true
   }

@@ -193,6 +193,7 @@ test('every authored XR preset admits collision-free ground-actor spawns', () =>
 test('Game Mode panel projects shared owners without a second renderer, world, or save path', () => {
   const panel = source('src', 'features', 'game-fps', 'GameModeFloatingPanelView.tsx')
   const renderer = source('src', 'lib', 'three', 'ThreeGraph.impl.tsx')
+  const gameplayProjection = source('src', 'lib', 'three', 'ThreeGameplayOverlay.tsx')
   const missionStage = source('src', 'features', 'game-fps', 'GameFpsMissionStage.tsx')
   const model = source('src', 'features', 'game-fps', 'gameFpsModel.ts')
   const gameRuntime = source('src', 'features', 'game-fps', 'gameFpsRuntime.ts')
@@ -205,15 +206,15 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
   assert.equal(panel.includes('<Canvas'), false)
   assert.equal(panel.includes('createGameFpsAuthoredMission'), false)
   assert.match(panel, /GAME_FPS_SAVE_PATH/)
-  assert.match(renderer, /GameFpsMissionStageLazy coordinateScale=\{gameFpsCoordinateScale\}/)
-  assert.match(renderer, /<XrWorldPlacement[\s\S]*\{gameFpsStage\}/)
+  assert.match(gameplayProjection, /GameFpsMissionStageLazy coordinateScale=\{props\.coordinateScale\}/)
+  assert.match(renderer, /<XrWorldPlacement[\s\S]*\{gameplayStage\}/)
   assert.match(renderer, /data-kg-authored-xr-scene-retained/)
   assert.match(renderer, /data-kg-game-mode-scene=\{gameMode\.active \? GAME_FPS_SHARED_XR_PROFILE_ID/)
-  assert.match(renderer, /const gameFpsActive = mode === 'xr' && gameMode\.active\b/)
-  assert.match(viewport, /const gameFpsActive = gameMode\.active\b/)
+  assert.match(renderer, /const gameFpsStageActive = mode === 'xr' && gameFpsActive\b/)
+  assert.match(viewport, /const \{ citySimActive, gameFpsActive, flightSimActive \} = useCanvasGameplayOverlayState\(\)/)
   assert.equal(/gameFpsRunReadyDemo\s*\|\|\s*gameMode\.active/.test(`${renderer}\n${viewport}`), false)
-  assert.match(renderer, /active=\{active && mode === 'xr' && !gameFpsActive\}/)
-  assert.match(renderer, /const rendererLifecycleKey = `scene-canvas-\$\{mode\}`/)
+  assert.match(renderer, /active=\{active && mode === 'xr' && !gameplayOverlayActive\}/)
+  assert.match(renderer, /const rendererLifecycleKey = resolveThreeRendererLifecycleKey\(mode\)/)
   assert.match(viewport, /gameFpsHudVisible \? <GameFpsHudLazy \/>/)
   assert.match(hud, /data-kg-game-fps-action="save"/)
   assert.match(
@@ -221,15 +222,28 @@ test('Game Mode panel projects shared owners without a second renderer, world, o
     /resetGameFpsLocalSave\(\)\.then\(result => \{\s*if \(result\.status === 'saved'\) void restartGameMode\(\)/,
     'the Reset action must automatically Restart only after the empty save is verified',
   )
-  assert.match(xrRuntime, /pausedForGameModeRef/)
+  assert.match(xrRuntime, /pausedForGameplayRef/)
   assert.match(xrRuntime, /pauseXrNativeControllerDemo\(\)/)
   assert.match(xrRuntime, /resumeXrNativeControllerDemo\(\)/)
   const rendererClearOwnership = renderer.match(/const rendererClearColor[\s\S]*?const rendererLifecycleKey/)?.[0] || ''
   assert.notEqual(rendererClearOwnership, '')
   assert.doesNotMatch(rendererClearOwnership, /gameFpsActive/)
-  const activationGuardIndex = xrRuntime.indexOf('if (!activateXrSceneSurface()) return undefined')
+  const activationGuardIndex = xrRuntime.indexOf(
+    "const activatesXrSurface = state.canvasRenderMode !== '3d' || state.canvas3dMode !== 'xr'",
+  )
+  const preserveGameplayActivationIndex = xrRuntime.indexOf(
+    'activateXrSceneSurface({ preserveGameplay: !dedicatedDemo })',
+  )
   const initializedIndex = xrRuntime.indexOf('surfaceInitializedRef.current = true')
-  assert.ok(activationGuardIndex >= 0 && initializedIndex > activationGuardIndex)
+  assert.match(
+    xrRuntime,
+    /if \(\s*activatesXrSurface\s*&& !activateXrSceneSurface\(\{ preserveGameplay: !dedicatedDemo \}\)\s*\)/,
+  )
+  assert.ok(
+    activationGuardIndex >= 0
+    && preserveGameplayActivationIndex > activationGuardIndex
+    && initializedIndex > preserveGameplayActivationIndex,
+  )
 
   const productionSources = [missionStage, model, gameRuntime, modeRuntime, renderer]
   for (const forbiddenMarker of [

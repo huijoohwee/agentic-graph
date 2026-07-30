@@ -10,6 +10,12 @@ import {
   readLiveCanvasHeroSourceSelection,
 } from '@/features/canvas/liveCanvasHeroSourceSelection'
 import { installEmbeddedCanvasChatCommandBridge } from '@/features/canvas/embeddedCanvasChatCommand'
+import {
+  PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE,
+  PROMPT_PRESET_CATALOG_WORKSPACE_PATH,
+  type PromptPreset,
+} from '@/features/chat/promptPresetCatalog'
+import { AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME } from '../../../mcp/agentic-canvas-os-docs-contract.mjs'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames } from '@/tests/lib/reactRootHarness'
 
@@ -31,6 +37,42 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
   let completedCount = 0
   const model = buildLiveCanvasHeroModel()
   const expectedDefaultQuery = model.defaultQuery
+  const investmentPrompt = '/investment-research-agent @source.body #runtime-ready Assess the active workspace sources.'
+  const promptPresets: PromptPreset[] = [
+    {
+      id: 'video-agent',
+      label: 'Video Agent',
+      slashCommand: '/video-prompt-preset',
+      runtimeCommand: '/video-agent',
+      description: 'Source-backed video prompt.',
+      activation: 'source-backed-canvas',
+      invocationModes: ['llm-chat-response', 'mcp-invocation'],
+      chatRoute: PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE,
+      mcpTool: AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
+      mcpToken: '/video-agent',
+      prompt: expectedDefaultQuery,
+    },
+    {
+      id: 'investment-research-agent',
+      label: 'Investment Research Agent',
+      slashCommand: '/investment-research-prompt-preset',
+      runtimeCommand: '/investment-research-agent',
+      description: 'Source-grounded investment research prompt.',
+      activation: 'chat-agent',
+      invocationModes: ['llm-chat-response', 'mcp-invocation'],
+      chatRoute: PROMPT_PRESET_ACTIVE_LLM_CHAT_ROUTE,
+      mcpTool: AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
+      mcpToken: '/investment-research-agent',
+      prompt: investmentPrompt,
+    },
+  ]
+  const promptPresetsRuntime = {
+    loadCatalog: async () => ({ ok: true as const, presets: promptPresets, sourcePath: PROMPT_PRESET_CATALOG_WORKSPACE_PATH }),
+    loadPrompt: async (id: string) => {
+      const preset = promptPresets.find(candidate => candidate.id === id)
+      return preset ? { ok: true as const, prompt: preset.prompt } : { ok: false as const, error: `Unknown prompt preset: ${id}` }
+    },
+  }
 
   try {
     const content = readLiveCanvasHeroContent()
@@ -38,16 +80,32 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
       <LiveCanvasHeroEditorial
         model={model}
         onEnter={() => { completedCount += 1 }}
+        promptPresetsRuntime={promptPresetsRuntime}
       />
-    ), { window: dom.window as unknown as Window, frames: 2 })
+    ), { window: dom.window as unknown as Window, frames: 4 })
 
     const editor = container.querySelector('[data-kg-live-canvas-hero-query="1"][data-kg-card-inline-viewer-edit-surface="1"][data-kg-markdown-contenteditable-core="1"]') as HTMLElement | null
     const commandProxy = container.querySelector('[data-kg-card-inline-viewer-edit-command-proxy="1"]') as HTMLTextAreaElement | null
     if (!editor || !commandProxy || commandProxy.value !== expectedDefaultQuery) {
       throw new Error(`expected Hero to reuse the Card/Widget/Chat view-edit surface with raw source fidelity, got ${JSON.stringify(commandProxy?.value)}`)
     }
+    const editorViewport = container.querySelector('[data-kg-live-canvas-hero-query-scroll="inline"]') as HTMLElement | null
+    if (!editorViewport?.classList.contains('h-44') || !editorViewport.classList.contains('shrink-0') || !editorViewport.classList.contains('overflow-hidden')) {
+      throw new Error('expected the Home prompt editor viewport height to remain fixed as preset content changes')
+    }
+    for (const className of ['h-full', 'overflow-y-auto', 'overscroll-contain']) {
+      if (!editor.classList.contains(className)) throw new Error(`expected inline prompt scrolling class ${className}`)
+    }
     if (container.querySelector('textarea:not(.sr-only)')) {
       throw new Error('expected Hero to remove the legacy visible textarea projection')
+    }
+    const commandDeck = container.querySelector('[data-kg-live-canvas-hero-command-deck="true"]') as HTMLElement | null
+    const promptControlsViewport = container.querySelector('[data-kg-live-canvas-hero-prompt-controls-scroll="fixed"]') as HTMLElement | null
+    if (!commandDeck?.classList.contains('h-[29rem]') || !commandDeck.classList.contains('shrink-0') || !commandDeck.classList.contains('overflow-hidden')) {
+      throw new Error('expected the Home prompt panel height to remain fixed across presets')
+    }
+    for (const className of ['h-24', 'overflow-y-auto', 'overscroll-contain']) {
+      if (!promptControlsViewport?.classList.contains(className)) throw new Error(`expected fixed prompt controls viewport class ${className}`)
     }
     const projectedTokens = Array.from(editor.querySelectorAll('[data-kg-inline-invocation-edit-token="1"]')).map(node => node.textContent)
     for (const token of ['/video-agent', '@provider.byteplus', '@text', '@image', '@audio', '@video', '#spec.low']) {
@@ -68,7 +126,62 @@ export async function testLiveCanvasHeroInteractionSubmitsToEmbeddedChat(): Prom
     for (const requiredText of [content.eyebrow, ...content.headline, ...content.posture]) {
       if (!heroText.includes(requiredText)) throw new Error(`expected hero UI to render markdown-backed copy ${JSON.stringify(requiredText)}`)
     }
+    const brandMark = container.querySelector('[data-kg-live-canvas-hero-brand-mark="airvio-favicon"]') as HTMLElement | null
+    if (!brandMark?.getAttribute('style')?.includes('/favicon.svg?v=airvio')) {
+      throw new Error('expected the shared Airvio favicon to replace the legacy blue Home Apex eyebrow dot')
+    }
+    const promptPresetsLabel = container.querySelector('label[for="knowgrph-live-canvas-hero-query"]')
+    if (promptPresetsLabel?.textContent?.trim() !== 'Prompt Presets' || heroText.includes('Agentic Video Canvas')) {
+      throw new Error(`expected Prompt Presets to replace the video-only Home label, got ${JSON.stringify(promptPresetsLabel?.textContent)}`)
+    }
+    const presetSelect = container.querySelector('[data-kg-live-canvas-hero-prompt-preset-select="true"]') as HTMLSelectElement | null
+    const presetCatalog = container.querySelector('[data-kg-live-canvas-hero-prompt-presets="true"]')
+    const presetOptions = [...(presetSelect?.options || [])]
+    if (!presetSelect || presetOptions.map(option => option.value).join(',') !== promptPresets.map(preset => preset.id).join(',')) {
+      throw new Error(`expected Home to render the shared Prompt Presets catalog as a dropdown, got ${presetOptions.map(option => option.value).join(',')}`)
+    }
+    if (!presetCatalog || !promptPresetsLabel || !(presetCatalog.compareDocumentPosition(promptPresetsLabel) & dom.window.Node.DOCUMENT_POSITION_FOLLOWING)) {
+      throw new Error('expected the Catalog selector to precede Prompt Presets in semantic and visual order')
+    }
     if (submittedQueries.length !== 0 || completedCount !== 0) throw new Error('expected zero embedded Chat submissions on mount')
+    await act(async () => {
+      presetSelect.value = 'investment-research-agent'
+      Simulate.change(presetSelect)
+      await waitForFrames(dom.window as unknown as Window, 3)
+    })
+    if (commandProxy.value !== investmentPrompt || submittedQueries.length !== 0) {
+      throw new Error(`expected preset selection to load without submitting, got ${JSON.stringify({ value: commandProxy.value, submittedQueries })}`)
+    }
+    if (container.querySelector('[data-kg-live-canvas-hero-invocation-group]')) {
+      throw new Error('expected video-only invocation controls to stay hidden for a non-video prompt preset')
+    }
+    const parameterChips = [...container.querySelectorAll<HTMLButtonElement>('[data-kg-live-canvas-hero-prompt-parameter]')]
+    if (parameterChips.map(button => button.dataset.kgLiveCanvasHeroPromptParameter).join(',') !== '@source.body,#runtime-ready') {
+      throw new Error(`expected source-derived non-video parameter chips, got ${parameterChips.map(button => button.dataset.kgLiveCanvasHeroPromptParameter).join(',')}`)
+    }
+    const parameterFieldset = container.querySelector('[data-kg-live-canvas-hero-prompt-parameters="true"]') as HTMLElement | null
+    const parameterNavigation = parameterFieldset?.querySelector('nav') as HTMLElement | null
+    if (!parameterFieldset?.classList.contains('h-16') || !parameterFieldset.classList.contains('overflow-hidden')) {
+      throw new Error('expected the Parameters selector height to remain fixed across presets')
+    }
+    for (const className of ['max-h-11', 'overflow-y-auto', 'overscroll-contain']) {
+      if (!parameterNavigation?.classList.contains(className)) throw new Error(`expected internally scrolling Parameters class ${className}`)
+    }
+    await act(async () => {
+      parameterChips[1]?.click()
+      await waitForFrames(dom.window as unknown as Window, 2)
+    })
+    if (commandProxy.value.includes('#runtime-ready') || submittedQueries.length !== 0) {
+      throw new Error('expected parameter chips to edit locally without submitting')
+    }
+    await act(async () => {
+      presetSelect.value = 'video-agent'
+      Simulate.change(presetSelect)
+      await waitForFrames(dom.window as unknown as Window, 3)
+    })
+    if (commandProxy.value !== expectedDefaultQuery || !container.querySelector('[data-kg-live-canvas-hero-invocation-group="provider"]')) {
+      throw new Error('expected the Video Agent preset to restore its source-backed prompt and video controls')
+    }
     const openAiToken = container.querySelector('[data-kg-live-canvas-hero-invocation-token="@provider.openai"]') as HTMLButtonElement | null
     if (!openAiToken) throw new Error('expected source-backed @provider.openai provider token')
     await act(async () => {

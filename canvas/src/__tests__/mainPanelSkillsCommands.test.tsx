@@ -11,9 +11,15 @@ import { FloatingPanelSkillsCommandsView } from '@/features/toolbar/FloatingPane
 import SkillsCommandsView from '@/features/panels/views/SkillsCommandsView'
 import { resolveChatInvocationCatalogEntries } from '@/features/chat/chatInvocationRegistry'
 import { buildImageToThreeJsPromptPreset } from '@/features/image-to-threejs/imageToThreeJsPromptPreset'
-import { registerPinnedAgenticOsDictionaryCatalogForTest } from '@/__tests__/helpers/pinnedAgenticOsDictionary'
+import {
+  assertPinnedAgenticOsCatalogMetadataWinsForTest,
+  registerPinnedAgenticOsDictionaryCatalogForTest,
+} from '@/__tests__/helpers/pinnedAgenticOsDictionary'
 import { setActiveCardInlineTextExternalCommandTarget } from '@/lib/cards/cardInlineTextExternalCommands'
-import { registerAgenticOsRemoteGrammarCatalogEntries, resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
+import {
+  registerAgenticOsRemoteGrammarCatalogEntries,
+  resetAgenticOsRemoteGrammarCatalogForTests,
+} from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames, waitForNextFrame } from '@/tests/lib/reactRootHarness'
 
@@ -103,6 +109,7 @@ export async function testFloatingPanelSkillsCommandsViewRendersSlashInvokableSk
     if (slashEntries.length !== expectedSlashCount || hashEntries.length !== expectedHashCount || atEntries.length !== expectedAtCount) {
       throw new Error(`Expected Skills & Commands to render all / # @ entries, got slash=${slashEntries.length}/${expectedSlashCount} hash=${hashEntries.length}/${expectedHashCount} at=${atEntries.length}/${expectedAtCount}`)
     }
+    assertPinnedAgenticOsCatalogMetadataWinsForTest()
     if (!container.querySelector('[data-kg-floating-panel-catalog-list="skills-commands"]') || !container.querySelector('[data-kg-floating-panel-catalog-row-layout="compact-list"]')) {
       throw new Error('Expected Skills & Commands catalog rows to reuse the shared FloatingPanel catalog compact-list layout')
     }
@@ -237,6 +244,9 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
     const skillsSearchToggle = container.querySelector('[data-kg-skills-commands-search-toggle="1"]') as HTMLButtonElement | null
     const subjectGroupToggle = container.querySelector('[data-kg-skills-commands-grammar-toggle="subject"]') as HTMLButtonElement | null
     const objectGroupToggle = container.querySelector('[data-kg-skills-commands-grammar-toggle="object"]') as HTMLButtonElement | null
+    const motionCaptureProjection = container.querySelector('[data-kg-motion-capture-projection="skills"]')
+    const motionCaptureInvocation = motionCaptureProjection?.querySelector('[data-kg-motion-capture-invocation="canonical"]')
+    const motionCaptureWebMcp = motionCaptureProjection?.querySelector('[data-kg-motion-capture-web-mcp="1"]')
     if (
       !panel ||
       panel.getAttribute('data-kg-floating-panel-catalog-layout') !== 'media-reuse' ||
@@ -259,9 +269,15 @@ export async function testFloatingPanelSkillsCommandsViewReusesMediaPanelLayout(
       subjectGroupToggle.getAttribute('aria-pressed') !== 'true' ||
       objectGroupToggle.getAttribute('aria-pressed') !== 'false' ||
       !(sharedSearchToggle instanceof dom.window.HTMLButtonElement) ||
-      skillsSearchToggle !== sharedSearchToggle
+      skillsSearchToggle !== sharedSearchToggle ||
+      !motionCaptureProjection ||
+      motionCaptureProjection.getAttribute('data-kg-motion-capture-runtime-ready') === null ||
+      !motionCaptureInvocation?.textContent?.includes('/motion.control') ||
+      !motionCaptureInvocation.textContent.includes('@canvas') ||
+      !motionCaptureInvocation.textContent.includes('#pose') ||
+      !motionCaptureWebMcp?.textContent?.includes('knowgrph.control_local_motion_control')
     ) {
-      throw new Error('Expected FloatingPanel Skills & Commands to reuse the shared fixed Media catalog header/search layout with prefix and SVO grouping controls')
+      throw new Error('Expected Skills & Commands to reuse the shared Media layout and canonical Motion Capture invocation projection')
     }
     const groupDisclosureActions = container.querySelector('[data-kg-skills-commands-disclosure-actions="header"]') as HTMLElement | null
     const groupDisclosureButton = groupDisclosureActions?.querySelector('button') as HTMLButtonElement | null

@@ -4,8 +4,7 @@ import {
   FLOATING_MENU_BUTTON_DANGER_CLASSNAME,
   FLOATING_MENU_BUTTON_DISABLED_CLASSNAME,
   FLOATING_MENU_DIVIDER_CLASSNAME,
-  FLOATING_BUBBLE_TOOLBAR_CLASSNAME,
-  FLOATING_BUBBLE_BUTTON_CLASSNAME,
+  FLOATING_POPOVER_ACTION_BUTTON_CLASSNAME,
   FLOATING_POPOVER_PANEL_CLASSNAME,
   FLOATING_POPOVER_INPUT_CLASSNAME,
   FLOATING_MENU_LEFT_W220_CLASSNAME,
@@ -17,7 +16,7 @@ import {
   MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_CLASS,
   MARKDOWN_NORMAL_TEXT_EDIT_SURFACE_MIN_LINE_CLASS,
 } from '@/features/markdown/ui/markdownEditSurfaceLayout'
-import { MarkdownBlockContainerBubbleToolbarOverlay } from './markdownBlockContainerCore.bubbleToolbarOverlay'
+import { MarkdownInlineSelectionToolbar } from './MarkdownInlineSelectionToolbar'
 import { MarkdownBlockContainerCommentPreviewOverlay } from './markdownBlockContainerCore.commentPreviewOverlay'
 import { MarkdownBlockContainerInlineMenusOverlay } from './markdownBlockContainerCore.inlineMenusOverlay'
 import { MarkdownContentEditableCore } from './MarkdownContentEditableCore'
@@ -42,12 +41,12 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
   editStaticChildren?: React.ReactNode
   editStaticChildrenMode?: 'flow' | 'overlay' | 'passthrough'
   editLeftRailClassName?: string
-  bubble: { show: boolean; leftPx: number; topPx: number }
+  inlineSelectionToolbar: { show: boolean; leftPx: number; topPx: number }
   slashMenu: SlashMenuState
   variableMenu: { show: boolean; leftPx: number; topPx: number; query: string; keyInput: string; valueInput: string; fallbackInput: string; mode: 'ref' | 'create' | 'update' | 'fallback' | 'delete' }
   linkPopover: { show: boolean; leftPx: number; topPx: number; href: string }
   commentPreview: { show: boolean; leftPx: number; topPx: number; text: string }
-  bubbleAnchorRef: React.RefObject<HTMLSpanElement | null>
+  inlineSelectionToolbarAnchorRef: React.RefObject<HTMLSpanElement | null>
   slashAnchorRef: React.RefObject<HTMLSpanElement | null>
   variableAnchorRef: React.RefObject<HTMLSpanElement | null>
   linkAnchorRef: React.RefObject<HTMLSpanElement | null>
@@ -64,6 +63,7 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
   applyAlign: (next: string) => void
   applyDraftAction: (action: 'bold' | 'inlineCode' | 'italic' | 'link' | 'strike' | 'heading2' | 'bulletList' | 'numberedList' | 'blockquote') => void
   applyWrap: (left: string, right: string) => void
+  applyCreateLinkedWidget?: () => void
   applyComment: () => void
   captureSelectionForToolbarAction?: () => void
   closeCommentPreview: () => void
@@ -211,32 +211,30 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
             ))
         : null}
       {props.editLeftRailClassName ? <span aria-hidden className={`pointer-events-none absolute left-0 top-0 bottom-0 w-1 z-20 ${props.editLeftRailClassName}`} /> : null}
-      <span ref={props.bubbleAnchorRef} className="absolute w-px h-px" style={{ left: `${props.bubble.leftPx}px`, top: `${props.bubble.topPx}px` }} />
+      <span ref={props.inlineSelectionToolbarAnchorRef} className="absolute w-px h-px" style={{ left: `${props.inlineSelectionToolbar.leftPx}px`, top: `${props.inlineSelectionToolbar.topPx}px` }} />
       <span ref={props.slashAnchorRef} className="absolute w-px h-px" style={{ left: `${props.slashMenu.leftPx}px`, top: `${props.slashMenu.topPx}px` }} />
       <span ref={props.variableAnchorRef} className="absolute w-px h-px" style={{ left: `${props.variableMenu.leftPx}px`, top: `${props.variableMenu.topPx}px` }} />
       <span ref={props.linkAnchorRef} className="absolute w-px h-px" style={{ left: `${props.linkPopover.leftPx}px`, top: `${props.linkPopover.topPx}px` }} />
       <span ref={props.commentAnchorRef} className="absolute w-px h-px" style={{ left: `${props.commentPreview.leftPx}px`, top: `${props.commentPreview.topPx}px` }} />
 
-      <MarkdownBlockContainerBubbleToolbarOverlay
-        show={!props.editDisableRichUi && (props.bubble.show || props.hasCachedSelection)}
-        anchorRef={props.bubbleAnchorRef}
+      <MarkdownInlineSelectionToolbar
+        show={!props.editDisableRichUi && (props.inlineSelectionToolbar.show || props.hasCachedSelection)}
+        anchorRef={props.inlineSelectionToolbarAnchorRef}
         toolbarRef={props.toolbarRef}
         holdToolbarInteraction={props.holdToolbarInteraction}
         onToolbarInteractionEnd={props.onToolbarInteractionEnd}
-        floatingBubbleToolbarClassName={FLOATING_BUBBLE_TOOLBAR_CLASSNAME}
-        floatingBubbleButtonClassName={FLOATING_BUBBLE_BUTTON_CLASSNAME}
         floatingMenuButtonDangerClassName={FLOATING_MENU_BUTTON_DANGER_CLASSNAME}
         floatingMenuButtonDisabledClassName={FLOATING_MENU_BUTTON_DISABLED_CLASSNAME}
         toolbarMenuClassName={FLOATING_MENU_LEFT_W220_CLASSNAME}
         toolbarMenuButtonClassName={FLOATING_MENU_BUTTON_CLASSNAME}
         toolbarMenuDividerClassName={FLOATING_MENU_DIVIDER_CLASSNAME}
-        toolbarMenuSummaryClassName={FLOATING_BUBBLE_BUTTON_CLASSNAME}
         applyTurnInto={props.applyTurnInto}
         applyToggleHeading={props.applyToggleHeading}
         applyAlign={props.applyAlign}
         captureSelectionForToolbarAction={props.captureSelectionForToolbarAction}
         applyDraftAction={props.applyDraftAction}
         applyWrap={props.applyWrap}
+        applyCreateLinkedWidget={props.applyCreateLinkedWidget}
         applyComment={props.applyComment}
         applyHighlightColor={props.applyHighlightColor}
         applyColor={props.applyColor}
@@ -244,12 +242,12 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
         applyChecklist={props.applyChecklist}
         applyDivider={props.applyDivider}
         openSlashCommandMenu={() => {
-          props.setSlashMenuStable({ show: true, leftPx: props.bubble.leftPx, topPx: props.bubble.topPx, kind: 'slash', query: '' })
+          props.setSlashMenuStable({ show: true, leftPx: props.inlineSelectionToolbar.leftPx, topPx: props.inlineSelectionToolbar.topPx, kind: 'slash', query: '' })
           props.setVariableMenu(prev => ({ ...prev, show: false, leftPx: 0, topPx: 0, query: '', keyInput: '' }))
         }}
         openVariableCommandMenu={() => {
           props.setSlashMenuStable({ show: false, leftPx: 0, topPx: 0 })
-          props.setVariableMenu(prev => ({ ...prev, show: true, leftPx: props.bubble.leftPx, topPx: props.bubble.topPx, query: '', keyInput: '', mode: 'ref' }))
+          props.setVariableMenu(prev => ({ ...prev, show: true, leftPx: props.inlineSelectionToolbar.leftPx, topPx: props.inlineSelectionToolbar.topPx, query: '', keyInput: '', mode: 'ref' }))
         }}
         handleDuplicate={props.handleDuplicate}
         handleDelete={props.handleDelete}
@@ -312,7 +310,7 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
             <button
               key={entry.id}
               type="button"
-              className={`${FLOATING_BUBBLE_BUTTON_CLASSNAME} min-w-[2.5rem] justify-center`}
+              className={`${FLOATING_POPOVER_ACTION_BUTTON_CLASSNAME} min-w-[2.5rem] justify-center`}
               data-kg-markdown-mobile-grammar-quick-bar-token={entry.label}
               aria-label={entry.description}
               title={entry.description}
@@ -359,7 +357,7 @@ export const MarkdownBlockContainerEditSurfaceView = (props: {
         floatingMenuButtonDangerClassName={FLOATING_MENU_BUTTON_DANGER_CLASSNAME}
         floatingPopoverPanelClassName={FLOATING_POPOVER_PANEL_CLASSNAME}
         floatingPopoverInputClassName={FLOATING_POPOVER_INPUT_CLASSNAME}
-        floatingBubbleButtonClassName={FLOATING_BUBBLE_BUTTON_CLASSNAME}
+        actionButtonClassName={FLOATING_POPOVER_ACTION_BUTTON_CLASSNAME}
         onLinkSubmit={props.onLinkSubmit}
         onLinkHrefChange={props.onLinkHrefChange}
         onLinkInputKeyDown={props.onLinkInputKeyDown}

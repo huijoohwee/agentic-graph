@@ -12,6 +12,7 @@ import {
   buildP2PCollaborationPeerRecord,
   createPeerConnection,
   generatePeerId,
+  notifyP2PCollaborationTransportTopologyChanged,
   supportsWebRtc,
   waitForIceGatheringComplete,
   type MutableRefValue,
@@ -222,6 +223,7 @@ async function joinInvite(args: UseP2PCollaborationCommandEffectArgs): Promise<v
   }
   args.bindConnectionLifecycle(connectionRef)
   runtime.guestConnection = connectionRef
+  notifyP2PCollaborationTransportTopologyChanged()
   await connectionRef.connection.setRemoteDescription(invitePayload.offer)
   const answer = await connectionRef.connection.createAnswer()
   await connectionRef.connection.setLocalDescription(answer)
@@ -273,6 +275,7 @@ async function applyGuestAnswer(args: UseP2PCollaborationCommandEffectArgs): Pro
   pendingInvite.peerId = answerPayload.guestPeerId
   pendingInvite.displayName = answerPayload.guestDisplayName
   runtime.hostConnectionsByPeerId.set(answerPayload.guestPeerId, pendingInvite)
+  notifyP2PCollaborationTransportTopologyChanged()
   runtime.pendingHostInvite = null
   args.upsertPeer(buildP2PCollaborationPeerRecord({
     peerId: answerPayload.guestPeerId,

@@ -1,12 +1,20 @@
 ---
-title: "Knowgrph Markdown SSOT UI Contract"
+title: "Reference implementation: Knowgrph Markdown SSOT UI Contract"
+id: "md:knowgrph-markdown-ssot-ui-contract-document"
 doc_type: "Document"
-date: "2026-05-27"
+version: "1.1.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+guideline_version: "1.7.0"
+owner: "docs.markdown-ssot-ui-contract"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-markdown-ssot-ui-contract-document.md"
 ---
 
-# Knowgrph Markdown SSOT UI Contract
+# Reference implementation: Knowgrph Markdown SSOT UI Contract
 
 ## Markdown YAML Frontmatter Enforcement
 
@@ -230,8 +238,12 @@ Shared markdown logic is contractually owned by `knowgrph/grph-shared`.
 - If a duplicate TOC renderer appears (e.g., nested inside Source Files rows), it is a contract violation and must be deleted (not conditionally hidden).
 - If webpage view controls exist outside the canonical toolbar `nav` (for example in Source Files row affordances), they are legacy/conflicting UI and must be removed.
 
-## Verification (Bounded)
-- `npm --prefix singabldr run typecheck`
-- `npm --prefix knowgrph/canvas run typecheck`
-- `node knowgrph/canvas/src/tests/subsetEditorSmoke.ts`
-- `node knowgrph/canvas/src/tests/subsetWebpageSmoke.ts`
+## VCC and Evidence Reference register
+
+No satisfying result is attached to this revision. Obsolete sibling-checkout command paths are not
+Evidence References.
+
+| VCC | End state | Named check | Constraint | Recorded result | Local rung | Delivered rung |
+|---|---|---|---|---|---|---|
+| `VCC-MD-SSOT-1` | shared workspace and utility owners type-check | `npm --prefix canvas run typecheck` exits 0 | no second markdown document model or sibling-checkout dependency is introduced | not recorded | `spec-complete` | `undocumented` |
+| `VCC-MD-SSOT-2` | workspace source identity, inline edit, toolbar, TOC, backlinks, and viewer cases pass | `npm --prefix canvas run test:ci:unit -- markdownWorkspace` exits 0 | test filters do not mutate authored documents | not recorded | `spec-complete` | `undocumented` |

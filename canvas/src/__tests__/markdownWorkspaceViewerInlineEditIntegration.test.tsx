@@ -254,18 +254,18 @@ export async function testMarkdownWorkspaceViewerInlineEditInteractionDoesNotFre
     if (!toolbar) throw new Error('expected floating selection toolbar in viewer inline edit')
 
     const summary = toolbar.querySelector('button[aria-label="Text color"]') as HTMLElement | null
-    if (!summary) throw new Error('expected text color trigger in viewer floating toolbar')
+    if (!summary) throw new Error('expected text color trigger in viewer inline-selection toolbar')
     summary.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, cancelable: true }))
     summary.dispatchEvent(new dom.window.MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     summary.click()
     await tick(2)
     const redBtn = doc.querySelector('menu[aria-label="Text color menu"] button') as HTMLButtonElement | null
-    if (!redBtn) throw new Error('expected text color button in viewer floating toolbar')
+    if (!redBtn) throw new Error('expected text color button in viewer inline-selection toolbar')
     redBtn.dispatchEvent(new dom.window.MouseEvent('mousedown', { bubbles: true, cancelable: true }))
     redBtn.click()
     await tick(3)
     const stillEditorAfterToolbar = container.querySelector('[contenteditable="true"]') as HTMLElement | null
-    if (!stillEditorAfterToolbar) throw new Error('expected viewer editor to stay active after floating toolbar action')
+    if (!stillEditorAfterToolbar) throw new Error('expected viewer editor to stay active after inline-selection toolbar action')
     const toolbarAfterAction = doc.querySelector('menu[aria-label="Inline selection toolbar"]') as HTMLElement | null
     if (!toolbarAfterAction) throw new Error('expected floating selection toolbar to remain available after action click')
 
@@ -279,7 +279,7 @@ export async function testMarkdownWorkspaceViewerInlineEditInteractionDoesNotFre
   }
 }
 
-export async function testMarkdownWorkspaceViewerUsesInlineFloatingFormattingSsot() {
+export async function testMarkdownWorkspaceViewerUsesInlineSelectionToolbarFormattingSsot() {
   const { dom, restore } = initJsdomHarness()
   ensureRangeRect(dom)
   const doc = dom.window.document
@@ -322,7 +322,7 @@ export async function testMarkdownWorkspaceViewerUsesInlineFloatingFormattingSso
 
     const workspaceFormattingMenu = container.querySelector('menu[aria-label="Formatting"]') as HTMLElement | null
     if (workspaceFormattingMenu) {
-      throw new Error('expected viewer workspace toolbar to defer duplicate formatting buttons to the inline floating toolbar SSOT')
+      throw new Error('expected viewer workspace toolbar to defer duplicate formatting buttons to the inline-selection toolbar SSOT')
     }
     const workspaceContentMenu = container.querySelector('menu[aria-label="Content"]') as HTMLElement | null
     if (workspaceContentMenu) {
@@ -514,7 +514,7 @@ export async function testMarkdownWorkspaceEditorKeepsJsonPaneBlankForEmptyMarkd
   }
 }
 
-export async function testMarkdownWorkspaceSplitConsolidatesViewerFormattingIntoFloatingToolbar() {
+export async function testMarkdownWorkspaceSplitConsolidatesViewerFormattingIntoInlineSelectionToolbar() {
   const { dom, restore } = initJsdomHarness()
   const doc = dom.window.document
   const container = doc.createElement('section')
@@ -560,12 +560,12 @@ export async function testMarkdownWorkspaceSplitConsolidatesViewerFormattingInto
     const splitViewerPane = splitView.querySelector('section[aria-label="Viewer"]') as HTMLElement | null
     if (!splitViewerPane) throw new Error('expected split layout to include WYSIWYG viewer pane')
     const splitFormattingMenu = container.querySelector('menu[aria-label="Formatting"]') as HTMLElement | null
-    if (splitFormattingMenu) throw new Error('expected split header to defer duplicate formatting actions to the viewer floating toolbar when Viewer is checked')
+    if (splitFormattingMenu) throw new Error('expected split header to defer duplicate formatting actions to the viewer inline-selection toolbar when Viewer is checked')
     const derivedViewsMenu = container.querySelector('menu[aria-label="Derived views"]') as HTMLElement | null
     if (derivedViewsMenu) throw new Error('expected split header to omit Monaco document selector and avoid duplicate mode switching')
 
-    const floatingToolbarText = readFileSync(
-      resolve(process.cwd(), 'src/lib/markdown-core/ui/markdownBlockContainerCore.bubbleToolbarOverlay.tsx'),
+    const inlineSelectionToolbarText = readFileSync(
+      resolve(process.cwd(), 'src/lib/markdown-core/ui/MarkdownInlineSelectionToolbar.tsx'),
       'utf8',
     )
     const expectedToolbarTitles = [
@@ -580,11 +580,14 @@ export async function testMarkdownWorkspaceSplitConsolidatesViewerFormattingInto
       'Quote',
     ]
     for (const title of expectedToolbarTitles) {
-      if (!floatingToolbarText.includes(`title="${title}"`)) {
-        throw new Error(`expected split viewer floating toolbar to expose ${title}`)
+      if (
+        !inlineSelectionToolbarText.includes(`title="${title}"`)
+        && !inlineSelectionToolbarText.includes(`title: '${title}'`)
+      ) {
+        throw new Error(`expected split viewer inline-selection toolbar to expose ${title}`)
       }
     }
-    if (!floatingToolbarText.includes('autoFocus={false}')) {
+    if (!inlineSelectionToolbarText.includes('autoFocus={false}')) {
       throw new Error('expected inline selection toolbar overlay to preserve editor selection instead of stealing focus')
     }
     const formattingText = readFileSync(
@@ -674,7 +677,7 @@ export async function testMarkdownWorkspaceSplitButtonOpensPaneSelector() {
   }
 }
 
-export async function testMarkdownWorkspaceViewerFloatingToolbarSyncsSplitMarkdownAndJsonPanesLive() {
+export async function testMarkdownWorkspaceViewerInlineSelectionToolbarSyncsSplitMarkdownAndJsonPanesLive() {
   const { dom, restore } = initJsdomHarness()
   ensureRangeRect(dom)
   const doc = dom.window.document
@@ -738,7 +741,7 @@ export async function testMarkdownWorkspaceViewerFloatingToolbarSyncsSplitMarkdo
     })
 
     const host = container.querySelector('[data-start-line="1"]') as HTMLElement | null
-    if (!host) throw new Error('expected viewer first line host for floating toolbar sync test')
+    if (!host) throw new Error('expected viewer first line host for inline-selection toolbar sync test')
     host.getBoundingClientRect = () => {
       return {
         x: 0, y: 0, top: 0, left: 0, right: 460, bottom: 60, width: 460, height: 60, toJSON: () => ({}),
@@ -751,7 +754,7 @@ export async function testMarkdownWorkspaceViewerFloatingToolbarSyncsSplitMarkdo
     })
 
     const editor = container.querySelector('[contenteditable="true"]') as HTMLElement | null
-    if (!editor) throw new Error('expected viewer inline editor for floating toolbar sync test')
+    if (!editor) throw new Error('expected viewer inline editor for inline-selection toolbar sync test')
 
     const textNode = editor.firstChild
     if (!textNode || textNode.nodeType !== dom.window.Node.TEXT_NODE) throw new Error('expected text node in viewer inline editor')
@@ -759,7 +762,7 @@ export async function testMarkdownWorkspaceViewerFloatingToolbarSyncsSplitMarkdo
     range.setStart(textNode, 0)
     range.setEnd(textNode, Math.min(6, String(textNode.textContent || '').length))
     const sel = dom.window.getSelection()
-    if (!sel) throw new Error('expected selection object for floating toolbar sync test')
+    if (!sel) throw new Error('expected selection object for inline-selection toolbar sync test')
     sel.removeAllRanges()
     sel.addRange(range)
     doc.dispatchEvent(new dom.window.Event('selectionchange'))

@@ -1,10 +1,8 @@
-import type { CompiledModel, Tensor, TensorDetails } from '@litertjs/core'
+import type { CompiledModel, Tensor } from '@litertjs/core'
 import {
   MOTION_CONTROL_INPUT_SIZE,
   MOTION_CONTROL_LANDMARK_COUNT,
   MOTION_CONTROL_MIN_CONFIDENCE,
-  MOTION_CONTROL_MODEL_ID,
-  MOTION_CONTROL_MODEL_PROVENANCE,
   MOTION_CONTROL_SCHEMA,
   motionControlLiteRtWasmUrl,
   motionControlPoseModelUrl,
@@ -17,12 +15,17 @@ import {
   type MotionControlLandmark,
   type MotionControlPoseFrame,
 } from './motionControlPose'
-
+import { recordMotionControlCaptureMissingSample, recordMotionControlCapturePose, startMotionControlCapturePlatformSource, stopMotionControlCapturePlatformSource } from './motionControlCapturePlatformBridge'
+import { hasLiveMotionControlVideoTrack as hasLiveVideoTrack, releaseMotionControlCapture as releaseCapture } from './motionControlCaptureResources'
+import { clamp01, shapeElements, shapeMatches, sigmoid, valuesAreFinite } from './motionControlRuntimeNumbers'
+import { beginMotionCapturePlatformTeardown } from './motionCaptureLifecycleGate'
+import { MOTION_CONTROL_START_CANCELLED, waitForMotionControlStart } from './motionControlStartCancellation'
+import { motionControlCaptureSurfaceCurrentlyOpen, MOTION_CONTROL_XR_SURFACE_REQUIRED_MESSAGE } from './motionControlSurfaceRuntime'
+import { buildMotionControlRuntimeInspection, INITIAL_MOTION_CONTROL_SNAPSHOT } from './motionControlRuntimeSnapshot'
 export type MotionControlBackendPreference = 'auto' | 'webgpu' | 'wasm'
 export type MotionControlEffectiveBackend = 'webgpu' | 'webgpu+wasm' | 'wasm' | 'none'
 export type MotionControlPhase = 'off' | 'requesting-camera' | 'loading-model' | 'running' | 'error'
 export type MotionControlPermission = 'unknown' | 'prompting' | 'granted' | 'denied'
-
 export type MotionControlSnapshot = Readonly<{
   schema: typeof MOTION_CONTROL_SCHEMA
   phase: MotionControlPhase
@@ -42,37 +45,15 @@ export type MotionControlSnapshot = Readonly<{
   boundingBox: MotionControlBoundingBox | null
   revision: number
 }>
-
 type RuntimeRoi = { x: number; y: number; size: number }
 type LiteRtModule = typeof import('@litertjs/core')
-
 const listeners = new Set<() => void>()
 const processingCanvas = typeof document === 'undefined' ? null : document.createElement('canvas')
 if (processingCanvas) {
   processingCanvas.width = MOTION_CONTROL_INPUT_SIZE
   processingCanvas.height = MOTION_CONTROL_INPUT_SIZE
 }
-
-let snapshot: MotionControlSnapshot = Object.freeze({
-  schema: MOTION_CONTROL_SCHEMA,
-  phase: 'off',
-  requestedBackend: 'auto',
-  effectiveBackend: 'none',
-  fullyAccelerated: false,
-  cameraActive: false,
-  permission: 'unknown',
-  modelId: MOTION_CONTROL_MODEL_ID,
-  message: 'Motion Control is off.',
-  fallbackReason: '',
-  confidence: 0,
-  latencyMs: 0,
-  framesPerSecond: 0,
-  pose: null,
-  boundingBoxEnabled: false,
-  boundingBox: null,
-  revision: 0,
-})
-
+let snapshot: MotionControlSnapshot = INITIAL_MOTION_CONTROL_SNAPSHOT
 let activeGeneration = 0
 let animationFrameId: number | null = null
 let cameraStream: MediaStream | null = null
@@ -81,26 +62,24 @@ let compiledModel: CompiledModel | null = null
 let inferencePromise: Promise<void> | null = null
 let liteRtLoadPromise: Promise<LiteRtModule> | null = null
 let stopPromise: Promise<MotionControlSnapshot> | null = null
+let activeStartAbortController: AbortController | null = null
+let controlIntentRevision = 0
+let pendingReleaseRegisteredSources = false
 let trackLifecycleCleanup: (() => void) | null = null
 let roi: RuntimeRoi = { x: 0, y: 0, size: 1 }
 let previousInferenceAt = 0
 let lostFrameCount = 0
-
-const sigmoid = (value: number): number => 1 / (1 + Math.exp(-Math.max(-20, Math.min(20, value))))
-const clamp01 = (value: number): number => Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0))
-const shapeElements = (details: TensorDetails): number => Array.from(details.shape).reduce((product, value) => product * value, 1)
-const shapeMatches = (details: TensorDetails, expected: readonly number[]): boolean => {
-  const actual = Array.from(details.shape)
-  return actual.length === expected.length && actual.every((value, index) => value === expected[index])
-}
-const valuesAreFinite = (values: Float32Array): boolean => {
-  for (const value of values) if (!Number.isFinite(value)) return false
-  return true
-}
+const MOTION_CONTROL_PAGE_HIDDEN_MESSAGE = 'Capture stopped because the page is no longer visible.'
 
 function publish(update: Partial<Omit<MotionControlSnapshot, 'schema' | 'revision'>>): void {
   snapshot = Object.freeze({ ...snapshot, ...update, revision: snapshot.revision + 1 })
-  for (const listener of listeners) listener()
+  for (const listener of listeners) {
+    try {
+      listener()
+    } catch (error) {
+      console.error('[knowgrph] motion control listener failed', error)
+    }
+  }
 }
 
 export function readMotionControlSnapshot(): MotionControlSnapshot {
@@ -131,12 +110,6 @@ export function bindMotionControlPreview(video: HTMLVideoElement | null): () => 
     video.pause()
     video.srcObject = null
   }
-}
-
-function releaseCapture(stream: MediaStream | null, video: HTMLVideoElement | null): void {
-  video?.pause()
-  if (video) video.srcObject = null
-  stream?.getTracks().forEach(track => track.stop())
 }
 
 function removeTrackLifecycleStops(): void {
@@ -171,7 +144,7 @@ function removeLifecycleStops(): void {
 
 function stopForPageLifecycle(event: Event): void {
   if (event.type === 'visibilitychange' && typeof document !== 'undefined' && document.visibilityState === 'visible') return
-  void stopMotionControl('Capture stopped because the page is no longer visible.')
+  void stopMotionControl(MOTION_CONTROL_PAGE_HIDDEN_MESSAGE)
 }
 
 function installLifecycleStops(): void {
@@ -184,11 +157,6 @@ function installLifecycleStops(): void {
 function captureCanContinue(generation: number): boolean {
   return generation === activeGeneration
     && (typeof document === 'undefined' || document.visibilityState !== 'hidden')
-}
-
-function hasLiveVideoTrack(stream: MediaStream | null): boolean {
-  const tracks = stream?.getVideoTracks() || []
-  return tracks.length > 0 && tracks.some(track => track.readyState !== 'ended')
 }
 
 function stopForCaptureLoss(generation: number): void {
@@ -208,7 +176,7 @@ function installTrackLifecycleStops(stream: MediaStream, generation: number): vo
   trackLifecycleCleanup = () => tracks.forEach(track => track.removeEventListener('ended', onEnded))
 }
 
-async function loadLiteRtModule(): Promise<LiteRtModule> {
+export async function loadMotionControlLiteRt(): Promise<LiteRtModule> {
   if (liteRtLoadPromise) return liteRtLoadPromise
   liteRtLoadPromise = import('@litertjs/core').then(async module => {
     const jspi = await module.supportsFeature('jspi').catch(() => false)
@@ -221,12 +189,12 @@ async function loadLiteRtModule(): Promise<LiteRtModule> {
   return liteRtLoadPromise
 }
 
-async function compilePoseModel(preference: MotionControlBackendPreference): Promise<{
+export async function compileMotionControlPoseModel(preference: MotionControlBackendPreference): Promise<{
   model: CompiledModel
   effectiveBackend: Exclude<MotionControlEffectiveBackend, 'none'>
   fallbackReason: string
 }> {
-  const liteRt = await loadLiteRtModule()
+  const liteRt = await loadMotionControlLiteRt()
   const canUseWebGpu = liteRt.isWebGPUSupported()
   const requested = preference === 'wasm' ? 'wasm' : preference === 'webgpu' || canUseWebGpu ? 'webgpu' : 'wasm'
   if (requested === 'wasm') {
@@ -259,7 +227,7 @@ async function compilePoseModel(preference: MotionControlBackendPreference): Pro
   }
 }
 
-function validateModel(model: CompiledModel): void {
+export function validateMotionControlPoseModel(model: CompiledModel): void {
   const inputs = model.getInputDetails()
   const outputs = model.getOutputDetails()
   const expectedInputElements = MOTION_CONTROL_INPUT_SIZE * MOTION_CONTROL_INPUT_SIZE * 3
@@ -330,10 +298,11 @@ async function inferPose(generation: number): Promise<void> {
   const model = compiledModel
   const video = captureVideo
   if (!model || !video || generation !== activeGeneration) return
+  const captureTimestampMs = performance.now()
   const inputValues = pixelsForCurrentRoi(video)
   if (!inputValues) return
   const currentRoi = { ...roi }
-  const liteRt = await loadLiteRtModule()
+  const liteRt = await loadMotionControlLiteRt()
   const input = new liteRt.Tensor(inputValues, [1, MOTION_CONTROL_INPUT_SIZE, MOTION_CONTROL_INPUT_SIZE, 3])
   let outputs: Tensor[] = []
   const startedAt = performance.now()
@@ -364,6 +333,7 @@ async function inferPose(generation: number): Promise<void> {
     if (confidence < MOTION_CONTROL_MIN_CONFIDENCE) {
       lostFrameCount += 1
       if (lostFrameCount >= 4) roi = { x: 0, y: 0, size: 1 }
+      recordMotionControlCaptureMissingSample(captureTimestampMs, confidence)
       publish({
         confidence,
         latencyMs,
@@ -378,6 +348,7 @@ async function inferPose(generation: number): Promise<void> {
     const boundingBox = resolveMotionControlTrackingBoundingBox(landmarks)
     if (boundingBox) roi = { x: boundingBox.x, y: boundingBox.y, size: boundingBox.width }
     const nextPose = smoothMotionControlPose(snapshot.pose, Object.freeze({ timestampMs: now, confidence, landmarks, worldLandmarks }))
+    recordMotionControlCapturePose(nextPose, captureTimestampMs)
     publish({
       confidence,
       latencyMs,
@@ -426,11 +397,19 @@ function scheduleInference(generation: number): void {
 
 export async function startMotionControl(preference: MotionControlBackendPreference = 'auto'): Promise<MotionControlSnapshot> {
   if (snapshot.phase === 'running' && snapshot.requestedBackend === preference) return snapshot
-  await stopMotionControl('Restarting Motion Control.')
+  const startIntent = ++controlIntentRevision
+  await stopMotionControl('Restarting Motion Control.', false)
+  if (startIntent !== controlIntentRevision) return snapshot
+  if (!motionControlCaptureSurfaceCurrentlyOpen()) {
+    publish({ phase: 'error', requestedBackend: preference, message: MOTION_CONTROL_XR_SURFACE_REQUIRED_MESSAGE })
+    return snapshot
+  }
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia || typeof document === 'undefined') {
     publish({ phase: 'error', requestedBackend: preference, message: 'Camera capture is unavailable in this browser.' })
     return snapshot
   }
+  const startAbortController = new AbortController()
+  activeStartAbortController = startAbortController
   const generation = ++activeGeneration
   resetMotionControlCalibration()
   installLifecycleStops()
@@ -444,13 +423,19 @@ export async function startMotionControl(preference: MotionControlBackendPrefere
   let compiledCandidate: CompiledModel | null = null
   publish({ phase: 'requesting-camera', requestedBackend: preference, permission: 'prompting', message: 'Waiting for camera permission.', fallbackReason: '', pose: null, boundingBox: null })
   try {
-    requestedStream = await navigator.mediaDevices.getUserMedia({
+    const cameraRequest = navigator.mediaDevices.getUserMedia({
       audio: false,
       video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
     })
+    const cameraResult = await waitForMotionControlStart(cameraRequest, startAbortController.signal)
+    if (cameraResult === MOTION_CONTROL_START_CANCELLED) {
+      void cameraRequest.then(stream => releaseCapture(stream, null), () => undefined)
+      return snapshot
+    }
+    requestedStream = cameraResult
     if (!captureCanContinue(generation)) {
       releaseCapture(requestedStream, null)
-      return snapshot
+      return generation === activeGeneration ? stopMotionControl(MOTION_CONTROL_PAGE_HIDDEN_MESSAGE) : snapshot
     }
     if (!hasLiveVideoTrack(requestedStream)) throw new Error('The selected camera did not provide a live video track.')
     cameraStream = requestedStream
@@ -460,23 +445,35 @@ export async function startMotionControl(preference: MotionControlBackendPrefere
     requestedVideo.muted = true
     requestedVideo.playsInline = true
     requestedVideo.srcObject = requestedStream
-    await requestedVideo.play()
-    if (!captureCanContinue(generation)) {
+    if (await waitForMotionControlStart(requestedVideo.play(), startAbortController.signal) === MOTION_CONTROL_START_CANCELLED) {
       abandonRequestedCapture(requestedStream, requestedVideo)
       return snapshot
+    }
+    if (!captureCanContinue(generation)) {
+      abandonRequestedCapture(requestedStream, requestedVideo)
+      return generation === activeGeneration ? stopMotionControl(MOTION_CONTROL_PAGE_HIDDEN_MESSAGE) : snapshot
     }
     if (!hasLiveVideoTrack(requestedStream)) {
       stopForCaptureLoss(generation)
       return snapshot
     }
+    const captureSettings = requestedStream.getVideoTracks()[0]?.getSettings()
+    if (!startMotionControlCapturePlatformSource({ width: requestedVideo.videoWidth, height: requestedVideo.videoHeight, nominalFps: captureSettings?.frameRate })) throw new Error('Canonical motion capture source registration failed.')
     publish({ phase: 'loading-model', cameraActive: true, permission: 'granted', message: 'Loading the official Google pose model with LiteRT.js.' })
-    const compiled = await compilePoseModel(preference)
+    const compileRequest = compileMotionControlPoseModel(preference)
+    const compileResult = await waitForMotionControlStart(compileRequest, startAbortController.signal)
+    if (compileResult === MOTION_CONTROL_START_CANCELLED) {
+      void compileRequest.then(compiled => compiled.model.delete(), () => undefined)
+      abandonRequestedCapture(requestedStream, requestedVideo)
+      return snapshot
+    }
+    const compiled = compileResult
     compiledCandidate = compiled.model
     if (!captureCanContinue(generation)) {
       compiledCandidate.delete()
       compiledCandidate = null
       abandonRequestedCapture(requestedStream, requestedVideo)
-      return snapshot
+      return generation === activeGeneration ? stopMotionControl(MOTION_CONTROL_PAGE_HIDDEN_MESSAGE) : snapshot
     }
     if (!hasLiveVideoTrack(requestedStream)) {
       compiledCandidate.delete()
@@ -484,7 +481,7 @@ export async function startMotionControl(preference: MotionControlBackendPrefere
       stopForCaptureLoss(generation)
       return snapshot
     }
-    validateModel(compiledCandidate)
+    validateMotionControlPoseModel(compiledCandidate)
     compiledModel = compiledCandidate
     compiledCandidate = null
     roi = { x: 0, y: 0, size: 1 }
@@ -510,7 +507,9 @@ export async function startMotionControl(preference: MotionControlBackendPrefere
       && error instanceof DOMException
       && (error.name === 'NotAllowedError' || error.name === 'SecurityError')
     removeLifecycleStops()
+    if (activeStartAbortController === startAbortController) activeStartAbortController = null
     stopCamera()
+    stopMotionControlCapturePlatformSource()
     compiledCandidate?.delete()
     resetMotionControlCalibration()
     publish({
@@ -526,15 +525,28 @@ export async function startMotionControl(preference: MotionControlBackendPrefere
   }
   return snapshot
 }
-
-export async function stopMotionControl(message = 'Motion Control is off.'): Promise<MotionControlSnapshot> {
-  if (stopPromise) return stopPromise
+export async function stopMotionControl(message = 'Motion Control is off.', releaseRegisteredSources = true): Promise<MotionControlSnapshot> {
+  const finishPlatformTeardown = releaseRegisteredSources ? beginMotionCapturePlatformTeardown() : null
+  if (releaseRegisteredSources) controlIntentRevision += 1
+  pendingReleaseRegisteredSources ||= releaseRegisteredSources
+  if (stopPromise) {
+    const pendingStop = stopPromise
+    if (!releaseRegisteredSources) return pendingStop
+    return pendingStop.then(() => {
+      stopMotionControlCapturePlatformSource({ releaseRegisteredSources: true })
+      if (snapshot.phase !== 'off' || snapshot.message !== message) publish({ phase: 'off', cameraActive: false, message })
+      return snapshot
+    }).finally(() => finishPlatformTeardown?.())
+  }
   const operation = (async (): Promise<MotionControlSnapshot> => {
+    activeStartAbortController?.abort()
+    activeStartAbortController = null
     activeGeneration += 1
     if (animationFrameId !== null && typeof window !== 'undefined') window.cancelAnimationFrame(animationFrameId)
     animationFrameId = null
     removeLifecycleStops()
     stopCamera()
+    stopMotionControlCapturePlatformSource({ releaseRegisteredSources: pendingReleaseRegisteredSources })
     const model = compiledModel
     compiledModel = null
     resetMotionControlCalibration()
@@ -555,44 +567,24 @@ export async function stopMotionControl(message = 'Motion Control is off.'): Pro
       boundingBox: null,
     })
     const pendingInference = inferencePromise
-    if (pendingInference) await pendingInference.catch(() => void 0)
-    if (inferencePromise === pendingInference) inferencePromise = null
-    model?.delete()
+    inferencePromise = null
+    if (pendingInference) void pendingInference.catch(() => undefined).finally(() => model?.delete())
+    else model?.delete()
+    await Promise.resolve()
+    stopMotionControlCapturePlatformSource({ releaseRegisteredSources: pendingReleaseRegisteredSources })
     return snapshot
   })()
   stopPromise = operation
   try {
     return await operation
   } finally {
-    if (stopPromise === operation) stopPromise = null
+    if (stopPromise === operation) {
+      stopPromise = null
+      pendingReleaseRegisteredSources = false
+    }
+    finishPlatformTeardown?.()
   }
 }
 export function inspectMotionControlRuntime() {
-  return {
-    schema: snapshot.schema,
-    model: MOTION_CONTROL_MODEL_PROVENANCE,
-    runtime: {
-      phase: snapshot.phase,
-      requestedBackend: snapshot.requestedBackend,
-      effectiveBackend: snapshot.effectiveBackend,
-      fullyAccelerated: snapshot.fullyAccelerated,
-      cameraActive: snapshot.cameraActive,
-      permission: snapshot.permission,
-      message: snapshot.message,
-      fallbackReason: snapshot.fallbackReason,
-      confidence: snapshot.confidence,
-      latencyMs: snapshot.latencyMs,
-      framesPerSecond: snapshot.framesPerSecond,
-      trackedLandmarkCount: snapshot.pose?.landmarks.length || 0,
-      revision: snapshot.revision,
-    },
-    support: {
-      secureContext: typeof window !== 'undefined' && window.isSecureContext,
-      camera: typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia),
-      webGpu: typeof navigator !== 'undefined' && 'gpu' in navigator,
-    },
-    drivers: { selectedHumanoid: true, nativePhysicsController: true },
-    preview: { boundingBoxEnabled: snapshot.boundingBoxEnabled, boundingBoxAvailable: snapshot.boundingBox !== null },
-    privacy: { frameUpload: false, framePersistence: false, localInference: true },
-  }
+  return buildMotionControlRuntimeInspection(snapshot)
 }

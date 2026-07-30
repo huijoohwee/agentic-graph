@@ -188,12 +188,15 @@ export interface GraphStateStructure {
   removeNode: (id: string) => void;
   addEdge: (edge: GraphEdge) => void;
   removeEdge: (id: string) => void;
-  createUserSubgraph: (args: { label?: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }) => { ok: true; id: string } | { ok: false; message: string };
+  createUserSubgraph: (args: { label?: string; memberNodeIds: string[]; childGroupIds?: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster'; autoBounds?: boolean }) => { ok: true; id: string } | { ok: false; message: string };
   updateUserSubgraph: (id: string, patch: { label?: string; memberNodeIds?: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }) => { ok: true } | { ok: false; message: string };
   removeUserSubgraph: (id: string) => void;
   addNodesToUserSubgraph: (id: string, nodeIds: string[]) => { ok: true } | { ok: false; message: string };
   removeNodesFromUserSubgraph: (id: string, nodeIds: string[]) => { ok: true } | { ok: false; message: string };
+  attachNodeToUserSubgraph: (subgraphId: string, nodeId: string) => { ok: true } | { ok: false; message: string };
+  detachNodeFromUserSubgraph: (subgraphId: string, nodeId: string) => { ok: true } | { ok: false; message: string };
   selectNode: (id: string | null) => void;
+  toggleNodeSelectionAdditive: (id: string) => void;
   selectNodesExpanded: (args: { nodeIds: string[]; edgeIds?: string[]; groupIds?: string[]; activeNodeId?: string | null }) => void;
   selectEdge: (id: string | null) => void;
   selectGroup: (id: string | null) => void;
@@ -203,9 +206,15 @@ export interface GraphStateStructure {
   toggleGroupCollapsed: (id: string) => void;
   setOpenWidgetNodeIds: (ids: string[]) => void;
   updateOpenWidgetNodeIds: (updater: (prev: string[]) => string[]) => void;
-  setFlowWidgetPosByNodeId: (pos: Record<string, { top: number; left: number }>) => void;
+  setFlowWidgetPosByNodeId: (
+    pos: Record<string, { top: number; left: number }>,
+    options?: { allowDuringWorkspaceMutation?: boolean; persist?: boolean },
+  ) => void;
   setFlowWidgetPosByNodeIdForGraph: (graphMetaKey: string | null | undefined, pos: Record<string, { top: number; left: number }>) => void;
-  setFlowWidgetWorldPosByNodeId: (pos: Record<string, { x: number; y: number }>) => void;
+  setFlowWidgetWorldPosByNodeId: (
+    pos: Record<string, { x: number; y: number }>,
+    options?: { allowDuringWorkspaceMutation?: boolean; persist?: boolean },
+  ) => void;
   setFlowWidgetWorldPosByNodeIdForGraph: (graphMetaKey: string | null | undefined, pos: Record<string, { x: number; y: number }>) => void;
   setFlowWidgetDraggingNodeId: (id: string | null) => void;
   setEditMode: (mode: boolean) => void;

@@ -13,7 +13,7 @@ import { XR_MOTION_STAGE_GROUND_Y } from '@/features/three/xrMotionReferenceCoor
 import { resolveXrCanonicalSceneSpatialSource } from '@/features/three/xrCanonicalSceneSpatialSource'
 import { useXrStageMotionControlCleanup } from '@/features/three/useXrStageMotionControlCleanup'
 
-export function XrCanonicalPhysicsStage({ paused = false }: { paused?: boolean }) {
+export function XrCanonicalPhysicsStage({ geospatialComposite = false, paused = false }: { geospatialComposite?: boolean; paused?: boolean }) {
   useXrStageMotionControlCleanup()
   const runtime = React.useSyncExternalStore(
     subscribeXrMotionReferenceRuntime,
@@ -29,14 +29,16 @@ export function XrCanonicalPhysicsStage({ paused = false }: { paused?: boolean }
   }, [stage.id])
   return (
     <>
-      <XrNativeControllerDemoSceneAtmosphere stageScale={XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE} />
+      {geospatialComposite ? null : <XrNativeControllerDemoSceneAtmosphere stageScale={XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE} />}
       <group name="kg_graph_xr_stage">
         <XrNativeControllerDemoStage
           inputEnabled={!paused}
+          environmentVisible={!geospatialComposite}
           stageScale={XR_NATIVE_CONTROLLER_DEMO_STAGE_SCALE}
           groundY={XR_MOTION_STAGE_GROUND_Y}
           retainStage
           stage={stage}
+          visualsVisible={!geospatialComposite}
         />
       </group>
     </>

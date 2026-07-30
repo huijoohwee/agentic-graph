@@ -1,10 +1,4 @@
 import React from 'react'
-import {
-  buildGrabMapsProxyRequestHeaders,
-  readGrabMapsAuthModeFromBrowser,
-  readGrabMapsByokApiKeyFromBrowser,
-} from 'grph-shared/geospatial/grabMapsAuth'
-import { toGrabMapsProxyUrl } from 'grph-shared/geospatial/grabMapsProxy'
 import { tryCreateGrabMapsLibraryMap } from 'grph-shared/geospatial/grabMapsLibrary'
 import { GEOSPATIAL_STYLE_URL_CHANGED_EVENT } from 'grph-shared/geospatial/constants'
 import {
@@ -13,10 +7,69 @@ import {
 } from 'grph-shared/geospatial/poiRichMedia'
 import { LS_KEYS } from '../../lib/config.js'
 import {
+  createFlightGeoOverlayMapLibreCamera,
+  mapHasExactFlightGeoOverlay,
+  mapHasExactFlightGeoOverlayCamera,
+  mapHasExactFlightGeoStyleSources,
+  retainFlightGeoOverlayDuringStyleSwap,
+} from '../../flightGeoOverlayMapLibre.js'
+import {
+  mapHasExactFlightGeoEnvironment,
+} from '../../flightGeoEnvironmentMapLibre.js'
+import { readFlightGeoOverlay } from '../../flightGeoOverlay.js'
+import { readFlightGeoMapViewportPadding } from '../../flightGeoMapViewport.js'
+import {
+  FLIGHT_GEO_BOOTSTRAP_STYLE,
   MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL,
   MAPLIBRE_DEFAULT_STYLE_URL,
   SAFE_SVG_FALLBACK_STYLE_SENTINEL,
 } from './basemapStyle.js'
+import {
+  beginMapLibreFlightBootstrap,
+  disposeMapLibreFlightBootstrap,
+  mapHasCurrentFlightProviderPresentation,
+  reconcileMapLibreFlightBootstrap,
+  resumeMapLibreFlightBootstrapAfterDisposal,
+  suspendMapLibreFlightBootstrapForDisposal,
+} from './mapLibreFlightBootstrap.js'
+import {
+  acquireMapLibreMapDisposalPreparation,
+  claimMapLibreMapLease,
+  isMapLibreMapPreparingForDisposal,
+  NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+  readActiveNativeGeospatialMapLibreMap,
+  type MapLibreMapOwnerScope,
+} from './mapLibreHostLease.js'
+import {
+  createSingaporeMapInitialCameraOptions,
+  readSingaporeCanvasCameraPolicy,
+} from './singaporeMapPolicy.js'
+import {
+  createMapLibreInitialCameraAlignment,
+} from './mapLibreInitialCameraAlignment.js'
+import {
+  createMapLibreFlightRuntimeFallbackRequester,
+} from './mapLibreFlightRuntimeFallback.js'
+import {
+  mapHasExactFlightLayerState,
+} from './flightGeoOverlayPresentationContracts.js'
+import {
+  isFlightGeoMapLibreDisposalPrepared,
+  prepareFlightGeoMapLibreForDisposal,
+} from './flightGeoMapLibreDisposal.js'
+import {
+  isGrabMapsUrl,
+  loadMapLibreProviderStyleDocument,
+  resolveGrabMapsRequestTarget,
+  resolveInitialMapLibreStyle,
+  resolveMapLibreFlightProviderStyle,
+  shouldPreflightInitialMapLibreStyle,
+} from './mapLibreProviderStyle.js'
+
+export {
+  loadMapLibreProviderStyleDocument,
+  shouldPreflightInitialMapLibreStyle,
+}
 
 type BasemapProbe = {
   tileSourceId: string
@@ -46,16 +99,32 @@ type BasemapPoiClickDetail = {
 }
 
 const EMPTY_PROBE: BasemapProbe = { tileSourceId: '', tilesLoaded: false, canvasW: 0, canvasH: 0, zoom: 0, lng: 0, lat: 0 }
-const SINGAPORE_CENTER_LNG = 103.8198
-const SINGAPORE_CENTER_LAT = 1.3521
-const INITIAL_3D_ZOOM = 2.8
-const INITIAL_3D_PITCH = 0
-const INITIAL_3D_BEARING = 0
 const RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL = MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL
 const GRABMAPS_RUNTIME_NAVIGATION_GRACE_MS = 1200
 const GRABMAPS_IDLE_SERVICE_ERROR_FALLBACK_THRESHOLD = 3
 const BASEMAP_SOURCE_ACTIVITY_GRACE_MS = 12_000
 const HOST_GRAPH_SOURCE_PREFIX = 'kg-host-graph:nodes'
+let mapLibreRuntimePromise: Promise<any> | null = null
+
+const loadMapLibreRuntime = (): Promise<any> => {
+  if (!mapLibreRuntimePromise) {
+    mapLibreRuntimePromise = (async () =>
+      await import('maplibre-gl/dist/maplibre-gl.js'))()
+      .catch(error => {
+        mapLibreRuntimePromise = null
+        throw error
+      })
+  }
+  return mapLibreRuntimePromise
+}
+
+export async function preloadMapLibreBasemapRuntime(): Promise<void> {
+  await loadMapLibreRuntime()
+}
+
+export function readActiveMapLibreMap(): any | null {
+  return readActiveNativeGeospatialMapLibreMap()
+}
 
 const resolveBasemapStyle = (rawStyleUrl: string | null | undefined) => {
   const trimmed = String(rawStyleUrl || '').trim()
@@ -64,198 +133,6 @@ const resolveBasemapStyle = (rawStyleUrl: string | null | undefined) => {
   if (trimmed === SAFE_SVG_FALLBACK_STYLE_SENTINEL) return null
   if (lower.startsWith('kg:style:')) return MAPLIBRE_DEFAULT_STYLE_URL
   return trimmed
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return value != null && typeof value === 'object' && !Array.isArray(value)
-}
-
-const isGrabMapsUrl = (rawUrl: string): boolean => {
-  try {
-    return new URL(String(rawUrl || '').trim()).hostname.toLowerCase() === 'maps.grab.com'
-  } catch {
-    return false
-  }
-}
-
-const canUseDirectGrabMapsBrowserRequests = (): boolean => {
-  if (typeof window === 'undefined') return false
-  return readGrabMapsAuthModeFromBrowser() === 'byok' && !!readGrabMapsByokApiKeyFromBrowser()
-}
-
-const buildGrabMapsDirectRequestHeaders = (): Record<string, string> => {
-  const apiKey = readGrabMapsByokApiKeyFromBrowser()
-  if (!apiKey) return {}
-  return { Authorization: `Bearer ${apiKey}` }
-}
-
-const resolveGrabMapsRequestTarget = (
-  rawUrl: string,
-): { url: string | null; headers: Record<string, string>; proxied: boolean } => {
-  const normalizedUrl = normalizeGrabMapsVectorTileUrl(rawUrl)
-  if (canUseDirectGrabMapsBrowserRequests()) {
-    return {
-      url: normalizedUrl,
-      headers: buildGrabMapsDirectRequestHeaders(),
-      proxied: false,
-    }
-  }
-  const proxyUrl = toGrabMapsProxyUrl(normalizedUrl)
-  if (!proxyUrl) {
-    return { url: null, headers: {}, proxied: true }
-  }
-  return {
-    url: proxyUrl,
-    headers: buildGrabMapsProxyRequestHeaders(),
-    proxied: true,
-  }
-}
-
-const resolveGrabMapsStyleAssetUrl = (rawValue: unknown, styleUrl: string): string => {
-  const trimmed = String(rawValue || '').trim()
-  if (!trimmed) return ''
-  try {
-    if (trimmed.startsWith('//')) {
-      const base = new URL(styleUrl)
-      return new URL(`${base.protocol}${trimmed}`).toString()
-    }
-    if (trimmed.includes('://')) {
-      return new URL(trimmed).toString()
-    }
-    const styleBase = new URL(styleUrl)
-    return new URL(trimmed, styleBase).toString()
-  } catch {
-    return trimmed
-  }
-}
-
-const decodeGrabMapsTileTemplatePlaceholders = (url: string): string => {
-  return String(url || '')
-    .replace(/%257B/gi, '{')
-    .replace(/%257D/gi, '}')
-    .replace(/%7B/gi, '{')
-    .replace(/%7D/gi, '}')
-}
-
-const normalizeGrabMapsVectorTileUrl = (rawUrl: string): string => {
-  const trimmed = decodeGrabMapsTileTemplatePlaceholders(String(rawUrl || '').trim())
-  if (!trimmed) return ''
-  try {
-    const parsed = new URL(trimmed)
-    if (parsed.hostname.toLowerCase() !== 'maps.grab.com') return trimmed
-    if (parsed.pathname.startsWith('/api/maps/tiles/v2/vector/')) {
-      return decodeGrabMapsTileTemplatePlaceholders(parsed.toString())
-    }
-    if (parsed.pathname.startsWith('/maps/tiles/v2/vector/')) {
-      parsed.pathname = `/api${parsed.pathname}`
-      return decodeGrabMapsTileTemplatePlaceholders(parsed.toString())
-    }
-    return decodeGrabMapsTileTemplatePlaceholders(parsed.toString())
-  } catch {
-    return trimmed
-  }
-}
-
-const resolveGrabMapsGlyphsUrl = (rawValue: unknown, styleUrl: string): string => {
-  const normalized = decodeGrabMapsTileTemplatePlaceholders(resolveGrabMapsStyleAssetUrl(rawValue, styleUrl))
-  if (!normalized) return ''
-  if (normalized.includes('{fontstack}') && normalized.includes('{range}')) {
-    return normalized
-  }
-  const base = normalized.replace(/\/+$/, '')
-  return `${base}/{fontstack}/{range}.pbf`
-}
-
-const normalizeGrabMapsSourceDefinition = (rawSource: Record<string, unknown>, styleUrl: string): Record<string, unknown> => {
-  const nextSource: Record<string, unknown> = { ...rawSource }
-  if (typeof rawSource.url === 'string') {
-    nextSource.url = normalizeGrabMapsVectorTileUrl(resolveGrabMapsStyleAssetUrl(rawSource.url, styleUrl))
-  }
-  if (typeof rawSource.data === 'string') {
-    nextSource.data = resolveGrabMapsStyleAssetUrl(rawSource.data, styleUrl)
-  }
-  if (Array.isArray(rawSource.tiles)) {
-    nextSource.tiles = rawSource.tiles.map(tile =>
-      typeof tile === 'string'
-        ? normalizeGrabMapsVectorTileUrl(
-            decodeGrabMapsTileTemplatePlaceholders(resolveGrabMapsStyleAssetUrl(tile, styleUrl)),
-          )
-        : tile,
-    )
-  }
-  return nextSource
-}
-
-const normalizeGrabMapsStyleDocument = (rawStyle: unknown, styleUrl: string): Record<string, unknown> | null => {
-  if (!isRecord(rawStyle)) return null
-  const nextStyle: Record<string, unknown> = { ...rawStyle }
-  if (typeof rawStyle.sprite === 'string') {
-    nextStyle.sprite = resolveGrabMapsStyleAssetUrl(rawStyle.sprite, styleUrl)
-  }
-  if (typeof rawStyle.glyphs === 'string') {
-    nextStyle.glyphs = resolveGrabMapsGlyphsUrl(rawStyle.glyphs, styleUrl)
-  }
-  if (isRecord(rawStyle.sources)) {
-    const nextSources: Record<string, unknown> = {}
-    for (const [sourceId, sourceValue] of Object.entries(rawStyle.sources)) {
-      if (!isRecord(sourceValue)) {
-        nextSources[sourceId] = sourceValue
-        continue
-      }
-      nextSources[sourceId] = normalizeGrabMapsSourceDefinition(sourceValue, styleUrl)
-    }
-    nextStyle.sources = nextSources
-  }
-  return nextStyle
-}
-
-const hydrateGrabMapsSourceUrls = async (
-  style: Record<string, unknown>,
-  headers: Record<string, string>,
-  styleUrl: string,
-): Promise<{ style: Record<string, unknown>; hadGrabMapsSourceFailure: boolean }> => {
-  if (!isRecord(style.sources)) return { style, hadGrabMapsSourceFailure: false }
-  const nextSources: Record<string, unknown> = {}
-  let hadGrabMapsSourceFailure = false
-  await Promise.all(Object.entries(style.sources).map(async ([sourceId, sourceValue]) => {
-    if (!isRecord(sourceValue)) {
-      nextSources[sourceId] = sourceValue
-      return
-    }
-    const normalizedSource = normalizeGrabMapsSourceDefinition(sourceValue, styleUrl)
-    const sourceUrl = typeof normalizedSource.url === 'string' ? normalizedSource.url : ''
-    if (!sourceUrl || !isGrabMapsUrl(sourceUrl)) {
-      nextSources[sourceId] = normalizedSource
-      return
-    }
-    const requestTarget = resolveGrabMapsRequestTarget(sourceUrl)
-    if (!requestTarget.url) {
-      hadGrabMapsSourceFailure = true
-      nextSources[sourceId] = normalizedSource
-      return
-    }
-    try {
-      const sourceRes = await fetch(requestTarget.url, { method: 'GET', headers: requestTarget.headers })
-      if (!sourceRes.ok) {
-        hadGrabMapsSourceFailure = true
-        nextSources[sourceId] = normalizedSource
-        return
-      }
-      const sourceJson = await sourceRes.json()
-      if (!isRecord(sourceJson)) {
-        hadGrabMapsSourceFailure = true
-        nextSources[sourceId] = normalizedSource
-        return
-      }
-      const hydrated = normalizeGrabMapsSourceDefinition(sourceJson, sourceUrl)
-      nextSources[sourceId] = { ...normalizedSource, ...hydrated }
-      delete (nextSources[sourceId] as Record<string, unknown>).url
-    } catch {
-      hadGrabMapsSourceFailure = true
-      nextSources[sourceId] = normalizedSource
-    }
-  }))
-  return { style: { ...style, sources: nextSources }, hadGrabMapsSourceFailure }
 }
 
 const applyGrabMapsAutomaticFallback = (): void => {
@@ -267,42 +144,6 @@ const applyGrabMapsAutomaticFallback = (): void => {
     window.dispatchEvent(new Event(GEOSPATIAL_STYLE_URL_CHANGED_EVENT))
   } catch {
     void 0
-  }
-}
-
-type GrabMapsPreflightResult = {
-  style: string | Record<string, unknown>
-  shouldFallback: boolean
-}
-
-const preflightGrabMapsStyle = async (styleUrl: string): Promise<GrabMapsPreflightResult> => {
-  if (!isGrabMapsUrl(styleUrl)) return { style: styleUrl, shouldFallback: false }
-  const requestTarget = resolveGrabMapsRequestTarget(styleUrl)
-  if (!requestTarget.url) return { style: styleUrl, shouldFallback: false }
-  try {
-    const styleRes = await fetch(requestTarget.url, { method: 'GET', headers: requestTarget.headers })
-    if (styleRes.ok) {
-      const rawStyle = await styleRes.json()
-      const normalizedStyle = normalizeGrabMapsStyleDocument(rawStyle, styleUrl)
-      if (!normalizedStyle) return { style: styleUrl, shouldFallback: false }
-      const hydrated = await hydrateGrabMapsSourceUrls(normalizedStyle, requestTarget.headers, styleUrl)
-      if (hydrated.hadGrabMapsSourceFailure) {
-        return { style: RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL, shouldFallback: true }
-      }
-      return { style: hydrated.style, shouldFallback: false }
-    }
-    if (styleRes.status === 404 && requestTarget.proxied) {
-      return { style: RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL, shouldFallback: true }
-    }
-    if (styleRes.status === 401 || styleRes.status === 403) {
-      return { style: RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL, shouldFallback: true }
-    }
-    if (styleRes.status >= 500) {
-      return { style: RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL, shouldFallback: true }
-    }
-    return { style: styleUrl, shouldFallback: false }
-  } catch {
-    return { style: styleUrl, shouldFallback: false }
   }
 }
 
@@ -435,6 +276,8 @@ export function useMapLibreBasemap(args: {
   rootRef: React.RefObject<HTMLElement | null>
   containerRef: React.RefObject<HTMLElement | null>
   targetStyleUrl?: string | null
+  initialStyleOverride?: Readonly<Record<string, unknown>> | null
+  ownerScope?: MapLibreMapOwnerScope
   canvasRenderMode: '2d' | '3d'
   projectionMode: 'mercator' | 'globe'
   viewportSizingMode: 'none' | 'fit'
@@ -442,7 +285,47 @@ export function useMapLibreBasemap(args: {
   onGrabMapsFallback?: () => void
   onPoiClick?: (detail: BasemapPoiClickDetail) => void
 }): BasemapResult {
-  const { enabled, containerRef, targetStyleUrl, canvasRenderMode, projectionMode, viewportSizingMode, vectorFallbackMs, onGrabMapsFallback, onPoiClick } = args
+  const {
+    enabled,
+    rootRef,
+    containerRef,
+    targetStyleUrl,
+    initialStyleOverride,
+    ownerScope = 'embedded-preview',
+    canvasRenderMode,
+    projectionMode,
+    viewportSizingMode,
+    vectorFallbackMs,
+    onGrabMapsFallback,
+    onPoiClick,
+  } = args
+  const singaporeCamera = readSingaporeCanvasCameraPolicy(canvasRenderMode)
+  const singaporeInitialCamera =
+    createSingaporeMapInitialCameraOptions(singaporeCamera)
+  const mountedMapRef = React.useRef<any | null>(null)
+  // The mount effect intentionally does not depend on the bootstrap override:
+  // Flight takes over the retained map in place. Load and resize callbacks
+  // therefore need the latest ownership rather than their mount-time value.
+  const initialStyleOverrideRef = React.useRef(initialStyleOverride)
+  initialStyleOverrideRef.current = initialStyleOverride
+  const readLiveFlightBootstrapStyle = React.useCallback((): Readonly<
+    Record<string, unknown>
+  > | null => (
+    initialStyleOverrideRef.current
+    || (
+      ownerScope === NATIVE_GEOSPATIAL_MAPLIBRE_OWNER
+      && readFlightGeoOverlay().active
+        ? FLIGHT_GEO_BOOTSTRAP_STYLE
+        : null
+    )
+  ), [ownerScope])
+  const initialStylePreflightAbortRef =
+    React.useRef<AbortController | null>(null)
+  // Toast handlers close over the live Canvas snapshot. Their identity can
+  // change without changing map ownership, so it must not fence a promotion.
+  const onGrabMapsFallbackRef = React.useRef(onGrabMapsFallback)
+  onGrabMapsFallbackRef.current = onGrabMapsFallback
+  const requestedOpenFreeMapLibertyRef = React.useRef(false)
   const [runtimeProjectionMode, setRuntimeProjectionMode] = React.useState<'mercator' | 'globe'>(projectionMode)
   const [state, setState] = React.useState<BasemapResult>({
     map: null,
@@ -451,6 +334,12 @@ export function useMapLibreBasemap(args: {
     mapError: null,
     styleRevision: 0,
   })
+
+  React.useEffect(() => {
+    if (initialStyleOverride) {
+      initialStylePreflightAbortRef.current?.abort()
+    }
+  }, [initialStyleOverride])
 
   React.useEffect(() => {
     if (!enabled) {
@@ -530,23 +419,110 @@ export function useMapLibreBasemap(args: {
     let basemapVisibilityTimer: ReturnType<typeof setTimeout> | null = null
     let abortNoiseCleanup: (() => void) | null = null
     let grabMapsFallbackApplied = false
-    let grabMapsBootstrapPending = false
     let unsafeRuntimeFallbackApplied = false
     let blankBasemapStyleFallbackApplied = false
     let basemapRenderableConfirmationCount = 0
-    let requestedOpenFreeMapLiberty = false
+    requestedOpenFreeMapLibertyRef.current = false
     let lastNavigationAtMs = 0
     let lastBasemapSourceActivityAtMs = 0
     let basemapSourceRenderable = false
     let consecutiveIdleGrabMapsServiceErrors = 0
     let removePoiClickBinding: (() => void) | null = null
-    const requestedGrabMapsStyle = isGrabMapsUrl(resolveBasemapStyle(targetStyleUrl) || '')
+    let releaseMapLease: (() => void) | null = null
+    let releaseMapDisposalPreparation: (() => void) | null = null
+    const cancelMapDisposalPreparation = () => {
+      const shouldResumeFlightStyle = releaseMapDisposalPreparation !== null
+      releaseMapDisposalPreparation?.()
+      releaseMapDisposalPreparation = null
+      if (shouldResumeFlightStyle && map) {
+        resumeMapLibreFlightBootstrapAfterDisposal(map)
+      }
+    }
+    const prepareMapForDisposal = (): boolean => {
+      if (!map) return true
+      if (!releaseMapDisposalPreparation) {
+        releaseMapDisposalPreparation =
+          acquireMapLibreMapDisposalPreparation(map)
+        runtimeFallbackRequester.cancelPending()
+        suspendMapLibreFlightBootstrapForDisposal(map)
+      }
+      return prepareFlightGeoMapLibreForDisposal(map)
+    }
+    const isMapPreparedForDisposal = (): boolean => (
+      !map || isFlightGeoMapLibreDisposalPrepared(map)
+    )
+    const mapHasExactCurrentFlightPresentation = (
+      candidate: any,
+    ): boolean => {
+      const overlay = readFlightGeoOverlay()
+      const expectedCamera = createFlightGeoOverlayMapLibreCamera(
+        overlay,
+        canvasRenderMode,
+        readFlightGeoMapViewportPadding(candidate),
+      )
+      return overlay.active
+        && mapHasExactFlightGeoOverlay(candidate, overlay)
+        && mapHasExactFlightGeoEnvironment(candidate, overlay)
+        && mapHasExactFlightGeoStyleSources(candidate, overlay)
+        && mapHasExactFlightLayerState(
+          candidate,
+          overlay,
+          canvasRenderMode,
+        )
+        && (
+          expectedCamera === null
+          || mapHasExactFlightGeoOverlayCamera(candidate, expectedCamera)
+        )
+    }
+    const requiresFlightStyleRetention = (): boolean => (
+      Boolean(readLiveFlightBootstrapStyle())
+    )
+    const runtimeFallbackRequester =
+      createMapLibreFlightRuntimeFallbackRequester({
+        hasCurrentProviderPresentation:
+          mapHasCurrentFlightProviderPresentation,
+        hasExactFlightPresentation:
+          mapHasExactCurrentFlightPresentation,
+        isDisposed: () => (
+          cancelled
+          || (map ? isMapLibreMapPreparingForDisposal(map) : false)
+        ),
+        loadResolvedStyle: async (style, signal) => (
+          await resolveMapLibreFlightProviderStyle(style, { signal })
+        ).style,
+        readMap: () => map,
+        requiresFlightRetention: requiresFlightStyleRetention,
+        resetNonFlightStyleRevision: () => {
+          setState((prev: BasemapResult) => (
+            prev.styleRevision === 0
+              ? prev
+              : { ...prev, styleRevision: 0 }
+          ))
+        },
+        retainFlightOverlay: (previousStyle, nextStyle) =>
+          retainFlightGeoOverlayDuringStyleSwap(
+            previousStyle,
+            nextStyle,
+            readFlightGeoOverlay(),
+            canvasRenderMode,
+          ),
+      })
+    const requestResolvedBasemapStyleWithoutDroppingFlight = (
+      requestKey: string,
+      style: string | Readonly<Record<string, unknown>>,
+      onApplied: () => void,
+      onRejected: (error: unknown) => void,
+    ): boolean => runtimeFallbackRequester.request(
+      style,
+      { key: requestKey, onApplied, onRejected },
+    )
+    const selectedStyle = resolveBasemapStyle(targetStyleUrl)
+    const requestedGrabMapsStyle = isGrabMapsUrl(selectedStyle || '')
     const notifyGrabMapsFallback = () => {
       if (grabMapsFallbackApplied) return
       grabMapsFallbackApplied = true
-      grabMapsBootstrapPending = false
       try {
-        onGrabMapsFallback?.()
+        onGrabMapsFallbackRef.current?.()
       } catch {
         void 0
       }
@@ -596,19 +572,23 @@ export function useMapLibreBasemap(args: {
       if (!map || typeof map.setStyle !== 'function') return false
       if (blankBasemapStyleFallbackApplied) return false
       if (!requestedGrabMapsStyle) return false
-      blankBasemapStyleFallbackApplied = true
-      basemapRenderableConfirmationCount = 0
-      basemapSourceRenderable = false
-      lastBasemapSourceActivityAtMs = 0
-      notifyGrabMapsFallback()
-      applyGrabMapsAutomaticFallback()
-      try {
-        map.setStyle?.(RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL)
-        setState((prev: BasemapResult) => ({ ...prev, basemapUnavailable: false, mapError: null, styleRevision: 0 }))
-        return true
-      } catch {
-        return false
-      }
+      return requestResolvedBasemapStyleWithoutDroppingFlight(
+        'blank-grabmaps-style',
+        RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL,
+        () => {
+          blankBasemapStyleFallbackApplied = true
+          basemapRenderableConfirmationCount = 0
+          basemapSourceRenderable = false
+          lastBasemapSourceActivityAtMs = 0
+          notifyGrabMapsFallback()
+          applyGrabMapsAutomaticFallback()
+          setState((prev: BasemapResult) => ({ ...prev, basemapUnavailable: false, mapError: null }))
+          scheduleBasemapVisibilityProbe()
+        },
+        () => {
+          markBasemapUnavailable()
+        },
+      )
     }
 
     const scheduleBasemapVisibilityProbe = (delayOverrideMs?: number) => {
@@ -637,10 +617,7 @@ export function useMapLibreBasemap(args: {
           return
         }
         basemapRenderableConfirmationCount = 0
-        if (switchBlankBasemapToSafeStyle()) {
-          scheduleBasemapVisibilityProbe()
-          return
-        }
+        if (switchBlankBasemapToSafeStyle()) return
         markBasemapUnavailable()
       }, delayMs)
     }
@@ -682,7 +659,7 @@ export function useMapLibreBasemap(args: {
       }
 
       try {
-        const mlRaw = await import('maplibre-gl/dist/maplibre-gl.js')
+        const mlRaw = await loadMapLibreRuntime()
         if (cancelled) return
         const mlAny = mlRaw as unknown as any
         const MapConstructor = mlAny?.Map || mlAny?.default?.Map
@@ -735,8 +712,7 @@ export function useMapLibreBasemap(args: {
           }
         }
 
-        const style = resolveBasemapStyle(targetStyleUrl)
-        requestedOpenFreeMapLiberty = isOpenFreeMapLibertyUrl(style)
+        const style = readLiveFlightBootstrapStyle() || selectedStyle
 
         if (style == null) {
           setState((prev: BasemapResult) =>
@@ -747,11 +723,28 @@ export function useMapLibreBasemap(args: {
           return
         }
 
-        const preflight = await preflightGrabMapsStyle(style)
+        const preflightAbort = new AbortController()
+        initialStylePreflightAbortRef.current = preflightAbort
+        const preflight = await resolveInitialMapLibreStyle({
+          readActivationStyleOverride: () =>
+            readLiveFlightBootstrapStyle(),
+          selectedStyle: style,
+          signal: preflightAbort.signal,
+        }).finally(() => {
+          if (initialStylePreflightAbortRef.current === preflightAbort) {
+            initialStylePreflightAbortRef.current = null
+          }
+        })
         if (cancelled) return
         const styleForMap = preflight.style
-        grabMapsBootstrapPending = requestedGrabMapsStyle && !preflight.shouldFallback
-        if (preflight.shouldFallback && requestedGrabMapsStyle) {
+        const activationStyleOverride = preflight.activationStyleOverride
+        requestedOpenFreeMapLibertyRef.current = !activationStyleOverride
+          && isOpenFreeMapLibertyUrl(selectedStyle)
+        if (
+          !activationStyleOverride
+          && preflight.shouldFallback
+          && requestedGrabMapsStyle
+        ) {
           notifyGrabMapsFallback()
           applyGrabMapsAutomaticFallback()
         }
@@ -790,14 +783,10 @@ export function useMapLibreBasemap(args: {
             attributionControl: false,
             preserveDrawingBuffer: false,
             transformRequest,
-            center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-            pitch: canvasRenderMode === '3d' ? INITIAL_3D_PITCH : 0,
-            bearing: canvasRenderMode === '3d' ? INITIAL_3D_BEARING : 0,
-            maxPitch: canvasRenderMode === '3d' ? 85 : 60,
-            zoom: canvasRenderMode === '3d' ? INITIAL_3D_ZOOM : 12,
+            ...singaporeInitialCamera,
           })
         } catch (err) {
-          if (requestedOpenFreeMapLiberty) {
+          if (requestedOpenFreeMapLibertyRef.current) {
             try {
               map = new MapConstructor({
                 container: el,
@@ -806,11 +795,7 @@ export function useMapLibreBasemap(args: {
                 attributionControl: false,
                 preserveDrawingBuffer: false,
                 transformRequest,
-                center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-                pitch: canvasRenderMode === '3d' ? INITIAL_3D_PITCH : 0,
-                bearing: canvasRenderMode === '3d' ? INITIAL_3D_BEARING : 0,
-                maxPitch: canvasRenderMode === '3d' ? 85 : 60,
-                zoom: canvasRenderMode === '3d' ? INITIAL_3D_ZOOM : 12,
+                ...singaporeInitialCamera,
               })
             } catch {
               void 0
@@ -829,8 +814,8 @@ export function useMapLibreBasemap(args: {
           }
           const fallbackMap = await tryCreateGrabMapsLibraryMap({
             containerEl: el,
-            center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-            zoom: 12,
+            center: [...singaporeCamera.center],
+            zoom: singaporeCamera.zoom,
             enableNavigation: true,
             enableLabels: true,
             enableBuildings: true,
@@ -848,6 +833,18 @@ export function useMapLibreBasemap(args: {
             void 0
           }
         }
+        mountedMapRef.current = map
+        if (activationStyleOverride) {
+          beginMapLibreFlightBootstrap(map, activationStyleOverride)
+        }
+        releaseMapLease = claimMapLibreMapLease({
+          cancelDisposalPreparation: cancelMapDisposalPreparation,
+          isPreparedForDisposal: isMapPreparedForDisposal,
+          map,
+          ownerScope,
+          prepareForDisposal: prepareMapForDisposal,
+          root: rootRef.current,
+        })
 
         if (typeof map?.on === 'function' && typeof map?.queryRenderedFeatures === 'function') {
           const onMapClick = (ev: any) => {
@@ -895,18 +892,25 @@ export function useMapLibreBasemap(args: {
           const trimmed = msg.trim()
           if (!trimmed) return
           const openFreeMapAbort =
-            requestedOpenFreeMapLiberty
+            requestedOpenFreeMapLibertyRef.current
             && isAbortLike(err)
             && isOpenFreeMapLibertyUrl(trimmed)
           if (openFreeMapAbort && typeof map?.setStyle === 'function') {
-            try {
-              map.setStyle?.(RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL)
-              basemapRenderableConfirmationCount = 0
-              basemapSourceRenderable = false
-              lastBasemapSourceActivityAtMs = 0
-              setState((prev: BasemapResult) => ({ ...prev, basemapUnavailable: false, mapError: null, styleRevision: 0 }))
-              scheduleBasemapVisibilityProbe()
-            } catch {
+            const requested = requestResolvedBasemapStyleWithoutDroppingFlight(
+              'openfreemap-abort',
+              RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL,
+              () => {
+                basemapRenderableConfirmationCount = 0
+                basemapSourceRenderable = false
+                lastBasemapSourceActivityAtMs = 0
+                setState((prev: BasemapResult) => ({ ...prev, basemapUnavailable: false, mapError: null }))
+                scheduleBasemapVisibilityProbe()
+              },
+              () => {
+                setState((prev: BasemapResult) => ({ ...prev, mapError: trimmed }))
+              },
+            )
+            if (!requested) {
               setState((prev: BasemapResult) => ({ ...prev, mapError: trimmed }))
             }
             return
@@ -918,45 +922,56 @@ export function useMapLibreBasemap(args: {
             && typeof map?.setStyle === 'function'
           const fallbackGrabMapsRuntime = () => {
             if (!canFallbackGrabMapsRuntime) return false
-            notifyGrabMapsFallback()
-            try {
-              applyGrabMapsAutomaticFallback()
-              map.setStyle?.(RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL)
-              basemapRenderableConfirmationCount = 0
-              basemapSourceRenderable = false
-              lastBasemapSourceActivityAtMs = 0
-              setState((prev: BasemapResult) => ({ ...prev, basemapUnavailable: false, mapError: null, styleRevision: 0 }))
-              scheduleBasemapVisibilityProbe()
-              return true
-            } catch {
-              return false
-            }
+            return requestResolvedBasemapStyleWithoutDroppingFlight(
+              'grabmaps-runtime',
+              RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL,
+              () => {
+                notifyGrabMapsFallback()
+                applyGrabMapsAutomaticFallback()
+                basemapRenderableConfirmationCount = 0
+                basemapSourceRenderable = false
+                lastBasemapSourceActivityAtMs = 0
+                setState((prev: BasemapResult) => ({ ...prev, basemapUnavailable: false, mapError: null }))
+                scheduleBasemapVisibilityProbe()
+              },
+              () => {
+                setState((prev: BasemapResult) => ({ ...prev, mapError: trimmed }))
+              },
+            )
           }
           const fallbackUnsafeMapLibreRuntime = () => {
             if (unsafeRuntimeFallbackApplied) return false
-            unsafeRuntimeFallbackApplied = true
-            if (runtimeProjectionMode === 'globe' && !requestedOpenFreeMapLiberty) {
+            if (
+              runtimeProjectionMode === 'globe'
+              && !requestedOpenFreeMapLibertyRef.current
+            ) {
+              unsafeRuntimeFallbackApplied = true
               setRuntimeProjectionMode('mercator')
               setState((prev: BasemapResult) => ({ ...prev, mapError: null }))
               return true
             }
             if (typeof map?.setStyle !== 'function') {
+              unsafeRuntimeFallbackApplied = true
               setRuntimeProjectionMode('mercator')
               setState((prev: BasemapResult) => ({ ...prev, mapError: null }))
               return true
             }
-            try {
-              setRuntimeProjectionMode('mercator')
-              map.setStyle?.(RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL)
-              basemapRenderableConfirmationCount = 0
-              basemapSourceRenderable = false
-              lastBasemapSourceActivityAtMs = 0
-              setState((prev: BasemapResult) => ({ ...prev, basemapUnavailable: false, mapError: null, styleRevision: 0 }))
-              scheduleBasemapVisibilityProbe()
-              return true
-            } catch {
-              return false
-            }
+            return requestResolvedBasemapStyleWithoutDroppingFlight(
+              'unsafe-maplibre-runtime',
+              RESILIENT_AUTOMATIC_FALLBACK_STYLE_URL,
+              () => {
+                unsafeRuntimeFallbackApplied = true
+                setRuntimeProjectionMode('mercator')
+                basemapRenderableConfirmationCount = 0
+                basemapSourceRenderable = false
+                lastBasemapSourceActivityAtMs = 0
+                setState((prev: BasemapResult) => ({ ...prev, basemapUnavailable: false, mapError: null }))
+                scheduleBasemapVisibilityProbe()
+              },
+              () => {
+                setState((prev: BasemapResult) => ({ ...prev, mapError: trimmed }))
+              },
+            )
           }
           if (isGrabMapsServiceUnavailable(trimmed)) {
             if (requestedGrabMapsStyle) {
@@ -993,9 +1008,6 @@ export function useMapLibreBasemap(args: {
           consecutiveIdleGrabMapsServiceErrors = 0
           basemapSourceRenderable = false
           lastBasemapSourceActivityAtMs = 0
-          if (requestedGrabMapsStyle) {
-            grabMapsBootstrapPending = false
-          }
           try {
             if (runtimeProjectionMode === 'globe') {
               map.setProjection?.({ type: 'globe' })
@@ -1052,40 +1064,20 @@ export function useMapLibreBasemap(args: {
           lastNavigationAtMs = Date.now()
         }
 
-        let initial3dCameraAligned = false
-        const align3dViewportCenter = () => {
-          if (cancelled || !map) return
-          if (canvasRenderMode !== '3d') return
-          if (initial3dCameraAligned) return
-          initial3dCameraAligned = true
-          try {
-            map.jumpTo?.({
-              center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-              zoom: INITIAL_3D_ZOOM,
-              pitch: INITIAL_3D_PITCH,
-              bearing: INITIAL_3D_BEARING,
-              padding: { top: 0, right: 0, bottom: 0, left: 0 },
-            })
-          } catch {
-            void 0
-          }
-          const w = typeof window !== 'undefined' ? window : null
-          if (!w || typeof w.requestAnimationFrame !== 'function') return
-          w.requestAnimationFrame(() => {
-            if (cancelled || !map) return
-            try {
-              map.jumpTo?.({
-                center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-                zoom: INITIAL_3D_ZOOM,
-                pitch: INITIAL_3D_PITCH,
-                bearing: INITIAL_3D_BEARING,
-                padding: { top: 0, right: 0, bottom: 0, left: 0 },
-              })
-            } catch {
-              void 0
-            }
-          })
-        }
+        const align3dViewportCenter = createMapLibreInitialCameraAlignment({
+          canvasRenderMode,
+          // Flight's local bootstrap has camera ownership before the first
+          // native MapLibre frame. A late generic Singapore fit would overwrite
+          // its stopped fixed-follow camera and strand the presentation gate.
+          flightBootstrapActive: () =>
+            Boolean(readLiveFlightBootstrapStyle()),
+          isCurrent: () => !cancelled,
+          map: () => map,
+          requestFrame: typeof window === 'undefined'
+            ? undefined
+            : callback => window.requestAnimationFrame(callback),
+          singaporeCamera,
+        })
 
         map.once?.('load', () => {
           if (cancelled) return
@@ -1093,19 +1085,6 @@ export function useMapLibreBasemap(args: {
           align3dViewportCenter()
           setState((prev: BasemapResult) => (prev.styleRevision > 0 ? prev : { ...prev, styleRevision: 1 }))
           scheduleBasemapVisibilityProbe()
-          if (canvasRenderMode === '3d') {
-            try {
-              map.jumpTo?.({
-                center: [SINGAPORE_CENTER_LNG, SINGAPORE_CENTER_LAT],
-                zoom: INITIAL_3D_ZOOM,
-                pitch: INITIAL_3D_PITCH,
-                bearing: INITIAL_3D_BEARING,
-                padding: { top: 0, right: 0, bottom: 0, left: 0 },
-              })
-            } catch {
-              void 0
-            }
-          }
           updateProbe()
           if (debug) {
             try {
@@ -1170,13 +1149,17 @@ export function useMapLibreBasemap(args: {
       } catch (err) {
         if (cancelled) return
         const msg = err instanceof Error ? err.message : String(err || '')
+        releaseMapLease?.()
+        releaseMapLease = null
+        if (mountedMapRef.current === map) mountedMapRef.current = null
+        disposeMapLibreFlightBootstrap(map)
+        try {
+          map?.remove?.()
+        } catch {
+          void 0
+        }
+        map = null
         if (isKnownUnsafeMapLibreRuntimeError(msg)) {
-          try {
-            map?.remove?.()
-          } catch {
-            void 0
-          }
-          map = null
           setRuntimeProjectionMode('mercator')
           setState((prev: BasemapResult) => ({ ...prev, map: null, basemapUnavailable: false, mapError: null, styleRevision: 0 }))
           return
@@ -1189,6 +1172,9 @@ export function useMapLibreBasemap(args: {
 
     return () => {
       cancelled = true
+      runtimeFallbackRequester.dispose()
+      initialStylePreflightAbortRef.current?.abort()
+      initialStylePreflightAbortRef.current = null
       if (mountRetryTimer) {
         clearTimeout(mountRetryTimer)
         mountRetryTimer = null
@@ -1222,14 +1208,111 @@ export function useMapLibreBasemap(args: {
         }
         removePoiClickBinding = null
       }
+      // Flight owns two GeoJSON sources on this native map. Clear them while
+      // MapLibre is still live so a City-exclusive XR handoff cannot retain
+      // prior Flight geometry beneath the replacement canvas.
+      prepareMapForDisposal()
+      releaseMapLease?.()
+      releaseMapLease = null
+      if (mountedMapRef.current === map) mountedMapRef.current = null
+      disposeMapLibreFlightBootstrap(map)
       try {
         map?.remove?.()
       } catch {
         void 0
       }
+      cancelMapDisposalPreparation()
       map = null
     }
-  }, [enabled, containerRef, targetStyleUrl, canvasRenderMode, runtimeProjectionMode, viewportSizingMode, vectorFallbackMs, computeProbe, debug, setProbe, onGrabMapsFallback])
+    // The override is an activation bootstrap, not live map state. Flight may
+    // clear it while handing the same Geo surface back; remounting here would
+    // destroy the provider map instead of retaining its owner and camera.
+  }, [enabled, rootRef, containerRef, targetStyleUrl, ownerScope, canvasRenderMode, runtimeProjectionMode, viewportSizingMode, vectorFallbackMs, computeProbe, debug, setProbe])
+
+  React.useEffect(() => {
+    const map = state.map
+    if (!enabled || !map || mountedMapRef.current !== map) return
+    const selectedStyle = resolveBasemapStyle(targetStyleUrl)
+    if (selectedStyle == null) return
+    const requestedGrabMapsStyle = isGrabMapsUrl(
+      typeof selectedStyle === 'string' ? selectedStyle : '',
+    )
+    requestedOpenFreeMapLibertyRef.current = (
+      typeof selectedStyle === 'string'
+      && isOpenFreeMapLibertyUrl(selectedStyle)
+    )
+    const liveFlightBootstrapStyle = readLiveFlightBootstrapStyle()
+    reconcileMapLibreFlightBootstrap({
+      bootstrapStyle: liveFlightBootstrapStyle,
+      hasExactFlightOverlay: candidate => {
+        const overlay = readFlightGeoOverlay()
+        const expectedCamera = createFlightGeoOverlayMapLibreCamera(
+          overlay,
+          canvasRenderMode,
+          readFlightGeoMapViewportPadding(candidate),
+        )
+        return overlay.active
+          && mapHasExactFlightGeoOverlay(candidate, overlay)
+          && mapHasExactFlightGeoEnvironment(candidate, overlay)
+          && mapHasExactFlightGeoStyleSources(candidate, overlay)
+          && mapHasExactFlightLayerState(
+            candidate,
+            overlay,
+            canvasRenderMode,
+          )
+          && (
+            expectedCamera === null
+            || mapHasExactFlightGeoOverlayCamera(candidate, expectedCamera)
+          )
+      },
+      hasLiveFlightStyleOwner: () =>
+        Boolean(readLiveFlightBootstrapStyle()),
+      loadProviderStyle: async signal => {
+        if (typeof selectedStyle !== 'string') return selectedStyle
+        try {
+          const preflight = await resolveMapLibreFlightProviderStyle(
+            selectedStyle,
+            { signal },
+          )
+          if (preflight.shouldFallback && requestedGrabMapsStyle) {
+            applyGrabMapsAutomaticFallback()
+            try {
+              onGrabMapsFallbackRef.current?.()
+            } catch {
+              void 0
+            }
+          }
+          return preflight.style
+        } catch (error) {
+          if (signal.aborted || readLiveFlightBootstrapStyle()) throw error
+          return selectedStyle
+        }
+      },
+      map,
+      onError: error => {
+        const message = error instanceof Error
+          ? error.message
+          : String(error || '')
+        setState((prev: BasemapResult) => ({
+          ...prev,
+          mapError: message || 'Map style promotion failed',
+        }))
+      },
+      retainFlightOverlay: (previousStyle, nextStyle) =>
+        retainFlightGeoOverlayDuringStyleSwap(
+          previousStyle,
+          nextStyle,
+          readFlightGeoOverlay(),
+          canvasRenderMode,
+        ),
+    })
+  }, [
+    enabled,
+    initialStyleOverride,
+    readLiveFlightBootstrapStyle,
+    state.map,
+    targetStyleUrl,
+  ])
 
   return state
 }

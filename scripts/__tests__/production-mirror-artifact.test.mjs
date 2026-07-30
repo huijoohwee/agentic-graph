@@ -38,6 +38,8 @@ const createBaseMirror = async root => {
   const marker = '{"status":"old"}\n'
   await Promise.all([
     writeFile(root, 'README.md', 'unrelated mirror content\n'),
+    writeFile(root, '404.html', '<h1>old not found</h1>\n'),
+    writeFile(root, 'index.html', '<h1>legacy root fallback</h1>\n'),
     writeFile(root, '.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/knowgrph/.well-known/runtime-readiness.json', marker),
     writeFile(root, 'content/knowgrph/assets/old/entry.js', 'old content asset\n'),
@@ -80,11 +82,13 @@ test('reconciliation copies hidden readiness markers and removes tracked stale a
   await fs.cp(verifiedMirror, deployMirror, { recursive: true })
 
   await Promise.all([
+    fs.rm(path.resolve(verifiedMirror, 'index.html')),
     fs.rm(path.resolve(verifiedMirror, 'content/knowgrph/assets/old'), { force: true, recursive: true }),
     fs.rm(path.resolve(verifiedMirror, 'knowgrph/assets/old'), { force: true, recursive: true }),
   ])
   const marker = '{"status":"verified-build"}\n'
   await Promise.all([
+    writeFile(verifiedMirror, '404.html', '<h1>canonical not found</h1>\n'),
     writeFile(verifiedMirror, '.well-known/runtime-readiness.json', marker),
     writeFile(verifiedMirror, 'content/knowgrph/.well-known/runtime-readiness.json', marker),
     writeFile(verifiedMirror, 'content/knowgrph/assets/new/entry.js', 'new content asset\n'),
@@ -96,13 +100,16 @@ test('reconciliation copies hidden readiness markers and removes tracked stale a
 
   assert.deepEqual(manifest.deletedPaths, [
     'content/knowgrph/assets/old/entry.js',
+    'index.html',
     'knowgrph/assets/old/entry.js',
   ])
+  await assert.rejects(fs.stat(path.resolve(deployMirror, 'index.html')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'content/knowgrph/assets/old/entry.js')), { code: 'ENOENT' })
   await assert.rejects(fs.stat(path.resolve(deployMirror, 'knowgrph/assets/old/entry.js')), { code: 'ENOENT' })
   assert.deepEqual(await fs.readdir(path.resolve(deployMirror, 'content/knowgrph/assets')), ['new'])
   assert.deepEqual(await fs.readdir(path.resolve(deployMirror, 'knowgrph/assets')), ['new'])
   assert.equal(await fs.readFile(path.resolve(deployMirror, 'README.md'), 'utf8'), 'unrelated mirror content\n')
+  assert.equal(await fs.readFile(path.resolve(deployMirror, '404.html'), 'utf8'), '<h1>canonical not found</h1>\n')
   assert.equal(await fs.readFile(path.resolve(deployMirror, 'content/knowgrph/.well-known/runtime-readiness.json'), 'utf8'), marker)
   assert.equal(await fs.readFile(path.resolve(deployMirror, '.well-known/runtime-readiness.json'), 'utf8'), marker)
   assert.equal(await fs.readFile(path.resolve(deployMirror, 'knowgrph/assets/new/entry.js'), 'utf8'), 'new public asset\n')

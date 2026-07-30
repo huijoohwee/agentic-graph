@@ -1,7 +1,7 @@
 import React from 'react'
 import { AnchorOverlay } from '@/lib/ui/overlay'
 import { uiToolbarRowScrollListClassName } from '@/features/toolbar/ui/toolbarStyles'
-import { preventDefaultMouseDown } from '@/features/markdown/ui/markdownFloatingSelectionToolbar'
+import { preventDefaultMouseDown } from '@/lib/markdown-core/ui/markdownInlineSelectionToolbarInteractions'
 import {
   buildAgenticOsDictionaryActionId,
   buildAgenticOsDocActionId,
@@ -82,7 +82,7 @@ export const MarkdownBlockContainerInlineMenusOverlay = (props: {
   floatingMenuButtonDangerClassName: string
   floatingPopoverPanelClassName: string
   floatingPopoverInputClassName: string
-  floatingBubbleButtonClassName: string
+  actionButtonClassName: string
   onLinkSubmit: (event: React.FormEvent) => void
   onLinkHrefChange: (value: string) => void
   onLinkInputKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void
@@ -307,8 +307,8 @@ export const MarkdownBlockContainerInlineMenusOverlay = (props: {
                 onKeyDown={props.onLinkInputKeyDown}
               />
               <menu className={`${uiToolbarRowScrollListClassName} mt-2 gap-2`}>
-                <button type="submit" className={props.floatingBubbleButtonClassName}>Apply Link</button>
-                <button type="button" className={props.floatingBubbleButtonClassName} onClick={props.onLinkCancel}>Cancel</button>
+                <button type="submit" className={props.actionButtonClassName}>Apply Link</button>
+                <button type="button" className={props.actionButtonClassName} onClick={props.onLinkCancel}>Cancel</button>
               </menu>
             </form>
           </section>

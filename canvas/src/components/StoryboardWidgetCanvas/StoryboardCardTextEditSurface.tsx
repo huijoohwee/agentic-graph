@@ -1,6 +1,7 @@
 import React from 'react'
 
 import type { StoryboardCardModel } from '@/components/StoryboardCanvas/storyboardModel'
+import type { StoryboardCardSourceReference } from '@/components/StoryboardCanvas/storyboardCardConnectedSources'
 import { StoryboardCardMetaScrollRail } from '@/components/StoryboardWidgetCanvas/StoryboardCardMetaScrollRail'
 import { shouldStoryboardCardTextColumnOwnSummaryEditTarget } from '@/components/StoryboardWidgetCanvas/storyboardCardSummaryEditTarget'
 import type { StoryboardCardTextModel } from '@/components/StoryboardWidgetCanvas/storyboardCardTextModel'
@@ -176,6 +177,7 @@ export function StoryboardCardTextEditSurface(props: {
   onCommitType: (card: StoryboardCardModel, nextValue: string) => void
   onMediaCommandSelect: (candidate: InlineMediaCommandCandidate) => void
   onActivate: () => void
+  onSourceReferenceActivate?: (reference: StoryboardCardSourceReference) => void
 }) {
   const {
     card,
@@ -184,6 +186,7 @@ export function StoryboardCardTextEditSurface(props: {
     onCommitType,
     onMediaCommandSelect,
     onActivate,
+    onSourceReferenceActivate,
     projectedMediaAttachments,
     storyboardCommandContextText,
     textModel,
@@ -206,7 +209,7 @@ export function StoryboardCardTextEditSurface(props: {
       onMouseDownCapture={requestPrimaryEdit}
       style={{ borderColor: 'var(--kg-border)' }}
     >
-      <StoryboardCardMetaScrollRail card={card} onCommitLane={onCommitLane} onCommitType={onCommitType} />
+      <StoryboardCardMetaScrollRail card={card} onCommitLane={onCommitLane} onCommitType={onCommitType} onSourceReferenceActivate={onSourceReferenceActivate} />
       <section
         className={CARD_TEXT_SURFACE_SCROLL_CLASS_NAME}
         data-kg-canvas-pointer-ignore="true"

@@ -1,6 +1,7 @@
 export const XR_NATIVE_CONTROLLER_CAMERA_MODES = ['fixed-follow', 'free-orbit'] as const
 
 export type XrNativeControllerCameraMode = (typeof XR_NATIVE_CONTROLLER_CAMERA_MODES)[number]
+export const XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE = XR_NATIVE_CONTROLLER_CAMERA_MODES[0]
 
 export type XrNativeControllerCameraOption = Readonly<{
   id: XrNativeControllerCameraMode
@@ -12,7 +13,7 @@ export const XR_NATIVE_CONTROLLER_CAMERA_OPTIONS: readonly XrNativeControllerCam
   Object.freeze({
     id: 'fixed-follow',
     label: 'Fixed Follow',
-    description: 'Locked framing follows the active Ball or Rocket; selecting a 3D Object does not release it.',
+    description: 'Stage-aware framing follows the active Physics controller or Flight aircraft.',
   }),
   Object.freeze({
     id: 'free-orbit',
@@ -29,5 +30,7 @@ export function resolveXrNativeControllerCameraOption(
   value: unknown,
 ): XrNativeControllerCameraOption {
   return XR_NATIVE_CONTROLLER_CAMERA_OPTIONS.find(option => option.id === value)
-    || XR_NATIVE_CONTROLLER_CAMERA_OPTIONS[0]!
+    || XR_NATIVE_CONTROLLER_CAMERA_OPTIONS.find(
+      option => option.id === XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE,
+    )!
 }

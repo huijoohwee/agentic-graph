@@ -13,6 +13,14 @@ export const XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-physics-playgro
 export const XR_PHYSICS_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
 export const XR_PHYSICS_DEMO_CODEBASE_REL_PATH = `knowgrph/${XR_PHYSICS_DEMO_REPO_REL_PATH}`
 export const XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH = `agentic-canvas-os/${XR_PHYSICS_DEMO_REPO_REL_PATH}`
+export const FLIGHT_SIM_RUN_READY_DEMO_ID = 'flight-sim'
+export const FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-game-flight-sim-demo.md'
+export const FLIGHT_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
+export const FLIGHT_SIM_DEMO_CODEBASE_REL_PATH = `knowgrph/${FLIGHT_SIM_DEMO_REPO_REL_PATH}`
+export const CITY_SIM_RUN_READY_DEMO_ID = 'city-sim'
+export const CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-game-city-building-sim-demo.md'
+export const CITY_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
+export const CITY_SIM_DEMO_CODEBASE_REL_PATH = `knowgrph/${CITY_SIM_DEMO_REPO_REL_PATH}`
 
 export type WorkspaceRunReadyDemoSeed = {
   id: string
@@ -22,6 +30,21 @@ export type WorkspaceRunReadyDemoSeed = {
   sourceRoot: 'huijoohwee/docs' | 'knowgrph/docs'
   cleanCanvasRecommended: boolean
 }
+
+export type WorkspaceRunReadyDemoActivationDiagnostic =
+  | Readonly<{
+    ok: true
+    id: string
+    pathId: string
+    sourceId: string | null
+  }>
+  | Readonly<{
+    ok: false
+    errorCode: 'RUN_READY_IDENTITY_CONFLICT' | 'RUN_READY_IDENTITY_UNREGISTERED'
+    message: string
+    pathId: string
+    sourceId: string | null
+  }>
 
 const normalizeDemoId = (value: string): string =>
   String(value || '')
@@ -67,6 +90,34 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
       `docs/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`,
       XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME,
       XR_PHYSICS_DEMO_CODEBASE_REL_PATH,
+    ],
+    sourceRoot: 'knowgrph/docs',
+    cleanCanvasRecommended: true,
+  },
+  {
+    id: FLIGHT_SIM_RUN_READY_DEMO_ID,
+    label: 'Knowgrph Local Flight Simulator',
+    validationSeedRelPath: FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+    seedRelPathCandidates: [
+      FLIGHT_SIM_DEMO_REPO_REL_PATH,
+      `workspace-seeds/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
+      `docs/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
+      FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+      FLIGHT_SIM_DEMO_CODEBASE_REL_PATH,
+    ],
+    sourceRoot: 'knowgrph/docs',
+    cleanCanvasRecommended: true,
+  },
+  {
+    id: CITY_SIM_RUN_READY_DEMO_ID,
+    label: 'Knowgrph Local City Simulator',
+    validationSeedRelPath: CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+    seedRelPathCandidates: [
+      CITY_SIM_DEMO_REPO_REL_PATH,
+      `workspace-seeds/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
+      `docs/${CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME}`,
+      CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+      CITY_SIM_DEMO_CODEBASE_REL_PATH,
     ],
     sourceRoot: 'knowgrph/docs',
     cleanCanvasRecommended: true,
@@ -135,15 +186,73 @@ function resolveWorkspaceRunReadyDemoIdForDocumentText(
   return resolved
 }
 
+function readDeclaredWorkspaceRunReadyDemoId(
+  documentText: string | null | undefined,
+): string {
+  const block = extractYamlFrontmatterHeaderBlock(String(documentText || ''))
+  if (!block) return ''
+  const parsed = parseMarkdownFrontmatter(splitMarkdownLines(block.rawBlock))
+  const declaration = parsed.meta.run_ready_demo
+  if (!declaration || typeof declaration !== 'object' || Array.isArray(declaration)) {
+    return ''
+  }
+  return normalizeDemoId(String((declaration as Record<string, unknown>).id || ''))
+}
+
 export const resolveWorkspaceRunReadyDemoIdForDocument = (
   documentPath: string | null | undefined,
   documentText: string | null | undefined,
 ): string => {
+  const diagnostic = diagnoseWorkspaceRunReadyDemoActivation(documentPath, documentText)
+  return diagnostic.ok ? diagnostic.id : ''
+}
+
+export const diagnoseWorkspaceRunReadyDemoActivation = (
+  documentPath: string | null | undefined,
+  documentText: string | null | undefined,
+): WorkspaceRunReadyDemoActivationDiagnostic => {
   const pathId = resolveWorkspaceRunReadyDemoIdForDocumentPath(documentPath)
   const sourceId = resolveWorkspaceRunReadyDemoIdForDocumentText(documentText)
-  if (sourceId == null) return pathId
-  if (!sourceId || (pathId && pathId !== sourceId)) return ''
-  return sourceId
+  if (sourceId == null) {
+    if (pathId === CITY_SIM_RUN_READY_DEMO_ID) {
+      return Object.freeze({
+        ok: false,
+        errorCode: 'RUN_READY_IDENTITY_UNREGISTERED',
+        message: 'City run-ready activation requires source-authored identity: city-sim.',
+        pathId,
+        sourceId,
+      })
+    }
+    return pathId
+      ? Object.freeze({ ok: true, id: pathId, pathId, sourceId })
+      : Object.freeze({
+        ok: false,
+        errorCode: 'RUN_READY_IDENTITY_UNREGISTERED',
+        message: 'Run-ready activation identity is unregistered: (missing).',
+        pathId,
+        sourceId,
+      })
+  }
+  if (!sourceId) {
+    const declaredId = readDeclaredWorkspaceRunReadyDemoId(documentText)
+    return Object.freeze({
+      ok: false,
+      errorCode: 'RUN_READY_IDENTITY_UNREGISTERED',
+      message: `Run-ready source-authored identity is unregistered: ${declaredId || '(invalid)'}.`,
+      pathId,
+      sourceId: declaredId || sourceId,
+    })
+  }
+  if (pathId && pathId !== sourceId) {
+    return Object.freeze({
+      ok: false,
+      errorCode: 'RUN_READY_IDENTITY_CONFLICT',
+      message: `Run-ready identity conflict: imported path=${pathId}, source-authored=${sourceId}.`,
+      pathId,
+      sourceId,
+    })
+  }
+  return Object.freeze({ ok: true, id: sourceId, pathId, sourceId })
 }
 
 export const readWorkspaceRunReadyDemoId = (
@@ -164,9 +273,55 @@ export const isXrPhysicsRunReadyDemoActive = (
   readWorkspaceRunReadyDemoId(documentPath, documentText) === XR_PHYSICS_RUN_READY_DEMO_ID
 )
 
-export const isWorkspaceRepoLocalRunReadyBootstrap = (): boolean => {
-  const value = readEnvString('VITE_KNOWGRPH_RUN_READY_REPO_LOCAL', '').trim().toLowerCase()
+export const isFlightSimRunReadyDemoActive = (
+  documentPath?: string | null,
+  documentText?: string | null,
+): boolean => (
+  readWorkspaceRunReadyDemoId(documentPath, documentText) === FLIGHT_SIM_RUN_READY_DEMO_ID
+)
+
+export const isCitySimRunReadyDemoActive = (
+  documentPath?: string | null,
+  documentText?: string | null,
+): boolean => {
+  const diagnostic = diagnoseWorkspaceRunReadyDemoActivation(documentPath, documentText)
+  return diagnostic.ok
+    && diagnostic.id === CITY_SIM_RUN_READY_DEMO_ID
+    && diagnostic.sourceId === CITY_SIM_RUN_READY_DEMO_ID
+}
+
+export const isNativeXrRunReadyDemoActive = (
+  documentPath?: string | null,
+  documentText?: string | null,
+): boolean => {
+  const demoId = readWorkspaceRunReadyDemoId(documentPath, documentText)
+  if (demoId === CITY_SIM_RUN_READY_DEMO_ID) {
+    return isCitySimRunReadyDemoActive(documentPath, documentText)
+  }
+  return demoId === XR_PHYSICS_RUN_READY_DEMO_ID
+    || demoId === FLIGHT_SIM_RUN_READY_DEMO_ID
+}
+
+export const resolveWorkspaceRepoLocalRunReadyBootstrap = (args: {
+  viteDev: boolean
+  configuredValue: string
+}): boolean => {
+  if (args.viteDev) return true
+  const value = args.configuredValue.trim().toLowerCase()
   return value === '1' || value === 'true' || value === 'yes' || value === 'on'
+}
+
+export const isWorkspaceRepoLocalRunReadyBootstrap = (): boolean => {
+  let viteDev = false
+  try {
+    viteDev = import.meta.env.DEV === true
+  } catch {
+    // Node-focused source tests do not expose Vite's import.meta.env object.
+  }
+  return resolveWorkspaceRepoLocalRunReadyBootstrap({
+    viteDev,
+    configuredValue: readEnvString('VITE_KNOWGRPH_RUN_READY_REPO_LOCAL', ''),
+  })
 }
 
 export const resolveWorkspaceValidationSeedRelPath = (args: {

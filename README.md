@@ -1,8 +1,8 @@
-# Knowgrph
+# Reference implementation: Knowgrph
 
-**The frontmatter is the program. Git is the audit trail. There is no export step.**
+**The frontmatter is the program. Git is the audit trail. Projections do not replace the source.**
 
-Knowgrph is a markdown file that runs. Its YAML frontmatter is a typed widget graph — nodes are **widgets** (input, compute, rich-media panels), edges are typed **sockets** — and that same file is the thing an LLM/MCP agent (or a human) can **run, gate, persist, and replay**. Not a board that exports to markdown. Not a database that a canvas renders. The `.md` file committed to git *is* the graph, the audit trail, and the runnable program, all at once, with nothing else underneath it.
+Knowgrph is a markdown file that runs. Its YAML frontmatter is a typed widget graph — nodes are **widgets** (input, compute, rich-media panels), edges are typed **sockets** — and that same file is the thing an LLM/MCP agent (or a human) can **run, gate, persist, and replay**. The Git-backed `.md` file is the authored graph, audit trail, and runnable program. Browser stores, shared indexes, media objects, and collaboration rooms support that source without becoming a hidden replacement for it.
 
 The same file is three things at once:
 
@@ -10,7 +10,7 @@ The same file is three things at once:
 - a **typed widget graph** (`kgc-computing-flow/v1` frontmatter — nodes, edges, sockets, run actions), and
 - a **runnable agent program** (compute nodes, approval gates, budget meters, and media outputs that an LLM/MCP agent can execute end to end).
 
-Knowgrph is provider-neutral and project-agnostic: it operates on any brief, canvas graph, tool schema, or media provider without assuming a particular vendor, document, or domain. If you're looking for "agentic canvas" in the broader sense — Miro, tldraw, and others now use that phrase too, and worth knowing about (see below) — the claim above is the narrower, specific one only Knowgrph makes: the canvas has no format underneath it other than the markdown file itself.
+Knowgrph is provider-neutral and project-agnostic: it operates on a brief, canvas graph, tool schema, or media provider without making that adapter the source owner. The narrower claim is that authored graph/program state lives in the Markdown/frontmatter document; runtime projections and supporting stores remain explicit.
 
 ## Why Knowgrph exists
 
@@ -34,24 +34,24 @@ Infinite-canvas and agent tools split roughly into a few tiers today:
 - **Orchestration libraries** — LangGraph. No canvas at all; state lives in a checkpointer, not a plain file.
 - **Self-improving agent runtimes** — Hermes Agent (Nous Research). No canvas at all either, but a genuinely self-evolving skill loop — the real version of a claim easy to overstate elsewhere.
 
-**Knowgrph's difference is structural, not cosmetic**: there is no board format, sidecar file, checkpointer, or database underneath the markdown at all. The `.md` file *is* the node/edge data, the audit trail, and the thing an agent reads, runs, and rewrites. It's also a claim the others can't simply bolt on — Miro's board format is the product it sells; Obsidian's canvas-as-sidecar keeps the note format stable across renderers; LangGraph's checkpointer is intentionally pluggable and storage-agnostic. Making markdown-frontmatter the sole runtime state is an architectural bet made from the start.
+**Knowgrph's difference is structural, not cosmetic**: the `.md` file owns authored node/edge data and provenance. Parsed graph state, renderer layout, browser persistence, hosted indexes, binary objects, and collaboration state have explicit supporting roles. Making Markdown/frontmatter the authored source—rather than a lossy export—is the architectural bet.
 
 | | Knowgrph | Miro Canvas (2026) | Excalidraw / tldraw | Obsidian Canvas | Storyflow-style thinking canvas | LangGraph (raw) | Hermes Agent (Nous Research) |
 |---|---|---|---|---|---|---|---|
 | **Primary category** | Runnable knowledge-graph canvas | Commercial collaboration whiteboard | Drawing/sketching surface | Personal-knowledge canvas plugin | Cloud "thinking surface" canvas | Agent orchestration library | Self-improving personal agent runtime |
 | **Canvas/graph surface** | ✅ native, typed widget graph | ✅ primary product (agent-generated widgets) | ✅ primary (shapes/strokes only) | ✅ JSON Canvas sidecar | ✅ AI reads board as structured cards | Partial (Studio debug/trace view, not authoring) | ❌ none (chat/messaging + dashboard) |
-| **Markdown/frontmatter *is* the runtime state** | ✅ | ❌ (import/export only) | ❌ (JSON canvas format) | Partial (notes yes; layout is a separate sidecar) | ❌ (cloud/proprietary) | ❌ (checkpointer) | ❌ (its own skills/memory store) |
+| **Markdown/frontmatter is authored graph/program state** | ✅ | ❌ (import/export only) | ❌ (JSON canvas format) | Partial (notes yes; layout is a separate sidecar) | ❌ (cloud/proprietary) | ❌ (checkpointer) | ❌ (its own skills/memory store) |
 | **State is git-diffable** | ✅ | ❌ | ❌ | Partial (notes only) | ❌ | ❌ | ❌ |
 | **Nodes/widgets are runnable** (compute, gate, persist, replay) | ✅ | ❌ | ❌ | ❌ | Partial | ✅ (state only, no canvas) | N/A (task loop, no graph nodes) |
-| **Orchestration model** | LangGraph `StateGraph` (via DeerFlow v2) over KGC markdown SSOT | None (human-driven) | None | None | AI reasons over board context | Multi-node `StateGraph` — the library's core value prop | Single agent loop + skill retrieval |
+| **Orchestration model** | Native typed runtimes and bounded harnesses over KGC Markdown | None (human-driven) | None | None | AI reasons over board context | Multi-node `StateGraph` — the library's core value prop | Single agent loop + skill retrieval |
 | **Genuinely self-evolving?** | **No** — scoped; `probe.evolve` evolves one conversation branch, not the agent's own code | No | No | No | No | No | **Yes** — real skill-creation/refinement loop, its core differentiator |
 | **License / openness** | FOSS, provider-neutral, project-agnostic | Proprietary, cloud SaaS | FOSS (Excalidraw MIT; tldraw core FOSS) | Core proprietary; Canvas format is open JSON Canvas spec | Proprietary | MIT/Apache (LangChain org) | MIT, self-hosted |
-| **Deployment model** | Local-first Dev repo; optional Cloudflare mirror; shipped local stdio + public/control-plane MCP endpoints | Cloud SaaS | Self-hostable / embeddable SDK | Local-first desktop app | Cloud-only | Embedded library in your own app/infra | Self-hosted, multi-platform messaging gateway |
+| **Deployment model** | Local-first source; local stdio plus separate public-read, browser-local, and control-plane implementations; delivery requires its own evidence | Cloud SaaS | Self-hostable / embeddable SDK | Local-first desktop app | Cloud-only | Embedded library in your own app/infra | Self-hosted, multi-platform messaging gateway |
 | **Best fit** | The document itself should be the agent-runnable, git-versioned program | Your team already collaborates in Miro and wants agents to read/write boards | You want a polished freehand whiteboard/sketching UX | You keep a personal knowledge base and want simple visual note-linking | You want an AI-native thinking board and don't mind cloud lock-in | You're building custom multi-step orchestration and own the state layer yourself | You want a persistent personal agent that improves at repeated tasks over time |
 
 **The honest tradeoff:** Miro, Excalidraw, and tldraw have years of polish on collaboration and drawing UX that Knowgrph doesn't try to compete with. What Knowgrph optimizes for is the layer underneath — a graph an agent can actually own, run, and version for free in a tool already on every machine: git.
 
-**Why Hermes Agent is on this list despite having no canvas:** it's the clearest existing example of a framework that legitimately earns the word "self-evolving" — a real skill-creation-and-refinement loop, not a marketing gloss. Putting it in the same matrix makes the boundary concrete: Knowgrph doesn't compete on that axis and doesn't claim to. It competes on the canvas/graph-as-markdown axis, where Hermes has no equivalent at all. The two are complementary, not substitutes — a Hermes-style loop could in principle be one more surface reading and writing to a Knowgrph document, the same way DeerFlow/LangGraph already does.
+**Why Hermes Agent is on this list despite having no canvas:** it makes the boundary concrete. Knowgrph does not claim a self-modifying agent kernel; it focuses on a canvas/graph authored as Markdown. An external agent runtime can integrate through the same typed source and tool boundaries without becoming Knowgrph's core executor.
 
 ## What "self-runnable agentic widget canvas" means
 
@@ -106,9 +106,9 @@ flow:
 
 A few terms get thrown around loosely in this space. Here's what Knowgrph specifically means by each, tied to an actual artifact — not as a headline claim, but as evidence:
 
-- **Harness** — runs are dry-run first; live spend halts at the first unapproved gate with zero paid actions. Every run produces a `harness-proof.json` verification manifest alongside `state.json` (resumable) and `trace.jsonl` (step-by-step). `--fail-once <tool>` injects a bounded failure for recovery testing.
-- **Orchestration** — DeerFlow v2 is a LangGraph-based kernel; the probe-tree feature runs as a second, independent LangGraph `StateGraph` on top of it, with KGC markdown (not LangGraph's native checkpointer) kept as the source of truth for conversation state.
-- **SuperAgent** — a specific callable tool surface (`/superagent.run`, exposed via the local stdio MCP server), not a claim about the whole system. Any SuperAgent-scoped demo is explicitly labeled as scoped, consistent with the MainPanel readiness rule below.
+- **Harness** — the offline SuperAgent path is dry-run first; blocked live spend halts at the approval gate. Its run artifacts include `harness-proof.json`, `state.json`, and `trace.jsonl`; other harnesses keep their own typed contracts and do not inherit those artifact names.
+- **Orchestration** — native bounded runtimes own probe-tree, SuperAgent, Agent Team, implementation-run, and video-remix behavior. They are distinct harnesses with typed state and limits; no LangGraph or DeerFlow runtime package is the core executor.
+- **SuperAgent** — a specific local CLI/stdio capability, not a claim about the whole system. Any SuperAgent-scoped demo is explicitly labeled as scoped.
 
 What Knowgrph does **not** claim: this is not a self-modifying or self-improving system. `probe.evolve` evolves a conversation branch within probe-tree — it does not rewrite the agent's own code or capabilities. If a claim needs a footnote to walk it back, it doesn't belong here; the scoping above is the whole claim, not a preview of a bigger one.
 
@@ -118,24 +118,22 @@ Knowgrph is the Dev source for an **Agentic Canvas OS**: a local-first control p
 
 The runtime direction:
 
-- `/` commands describe bounded actions such as `/mcp.capabilities`, `/tool.catalog`, `/tool.route`, `/computing-flow`, `/superagent.run`, and `/runtime-ready.check`.
-- `#` semantics scope intent, proof, and cost filters such as `#mcp`, `#tool-gateway`, `#computing-flow`, `#runtime-ready`, and `#long-horizon-harness`.
-- `@` bindings name the source or runtime surface, e.g. `@source.frontmatter`, `@source.body`, `@mcp-gateway`, `@tool-policy`, `@sandbox-workspace`, and `@message-gateway`.
-- The deterministic knowledge-graph lane uses the ACOS-owned exact tuples documented below; dictionary resolution is metadata-only and explicit stdio tool dispatch remains required.
+- command routes describe bounded actions, semantic tags scope intent/proof/cost, and bindings name the selected source or runtime surface;
+- exact route identities and typed arguments live only in their owning Invocation Registers;
+- the deterministic knowledge-graph lane resolves ACOS-owned `/`, `#`, and `@` tuples to explicit local stdio tool calls; dictionary lookup remains metadata-only.
 - MainPanel MCP shows readiness and non-secret setup metadata. It does not execute tools or store credentials in browser settings.
-- MainPanel readiness claims distinguish `documented`, `browser-published`, and `runtime-executable` states so doc guidance, browser snapshots, and executable MCP owners don't drift into one label.
+- MainPanel readiness claims name the source owner and keep local and delivered ladder rungs
+  separate; documentation, browser snapshots, and executable owners do not collapse into one label.
 - FloatingPanel Chat and KGC keep source-backed runtime materialization on the existing Markdown → KTV frontmatter → Canvas path.
 - Local MCP, Pages HTTP MCP, Browser WebMCP, and approved Cloudflare control-plane owners are separate surfaces with explicit transport boundaries.
 
-This README describes the Dev repo. `agentic-canvas-os/docs` remains docs-control runtime proof only. Its latest protected green revision is promoted by the scheduled lifecycle PR, and only a protected green Knowgrph `main` push may trigger the automatic Prod mirror and Cloudflare release.
+This README describes the Dev repo. `agentic-canvas-os/docs` remains the documentation control surface. Production is not triggered by an ordinary `main` push: `.github/workflows/release.yml` requires an exact reviewed `main` SHA, a localhost-review candidate, manual dispatch, and protected `production` approval.
 
 ### Deterministic local knowledge graph
 
 The current local stdio extension adds three direct tool identities: `knowgrph.knowledge_graph.ingest`, `knowgrph.knowledge_graph.query`, and `knowgrph.knowledge_graph.explain_edge`. A local MCP client invokes those names directly. ACOS-capable hosts use `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof`, `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof`, or `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` before the explicit mapped tool call.
 
 This path uses registered deterministic AST parsing for supported code and deterministic structural extraction for supported docs, SQL schemas, configs, and PDFs. Queries use lexical matching plus graph traversal, and every returned edge must be explainable from stored source evidence. Unsupported languages, file forms, PDF content, syntax, or relationships produce explicit diagnostics rather than guessed facts. Ingest, query, and edge explanation require no embeddings, vector store, model call, or network service.
-
-[`Graphify-Labs/graphify`](https://github.com/Graphify-Labs/graphify) is clean-room, architecture-only inspiration for the product category. Knowgrph copies none of its code, prose, schemas, tool definitions, tests, fixtures, assets, prompts, commands, or output formats and does not clone, vendor, import, execute, call, or depend on Graphify.
 
 The authoritative scope, provenance, diagnostics, and security requirements are in the [deterministic knowledge-graph runtime contract](docs/documents/knowgrph-deterministic-knowledge-graph-runtime.md).
 
@@ -150,11 +148,13 @@ That template is intentionally local-first:
 - runtime outputs start blank until an operator-approved local or live run returns evidence;
 - `paid_call_count` starts at `0`;
 - `source_url`, provider job ids, stream URLs, generated asset URLs, and runtime proof paths stay operator-supplied or runtime-generated;
-- Prod mirror and Cloudflare are blocked from local, pull-request, and unprotected lanes; protected green `main` owns automatic release;
+- Mirror and Delivery are blocked from local, pull-request, and unprotected Authoring activity; only the manually dispatched protected release owns promotion;
 - Storyboard projection is view state only: authored frontmatter and source payloads own data, while visible connectors are projections of `flow.edges`;
 - semantic HTML projection should use landmarks such as `main`, `section`, `article`, `header`, `nav`, `aside`, `figure`, `figcaption`, and `table` before falling back to generic layout wrappers.
 
-The template's local runtime lane is source → ideation → invocation → Storyboard projection → runtime validation → deploy guard. In invocation grammar: `/source.normalize`, `/memory.seed`, `/harness.define`, `/canvas.project`, `/runtime-ready.check`, `/validation.run`, `/deploy.guard`, with `#frontmatter`, `#harness`, `#runtime-ready`, `#canvas`, `#approval-gate`, `#dev-only`, `@source.frontmatter`, `@source.body`, `@local-harness`, `@runtime-proof`, `@cost-log`, `@canvas`, `@operator`, `@dev-only`.
+The template's local runtime lane is source → ideation → invocation → Storyboard projection →
+runtime validation → deploy guard. The canonical Invocation Registers own the exact command, tag,
+binding, and tool identities; this README does not duplicate them.
 
 ## Agent + automation surfaces
 
@@ -169,55 +169,50 @@ The template's local runtime lane is source → ideation → invocation → Stor
 | Parser CLI / Codex | Run documents and harnesses headlessly from `knowgrph_parser` or Codex entrypoints. |
 | Cloudflare control plane | Pages, Workers, D1, R2, AI Gateway, and payment/runtime owners when an explicit deploy lane is open. |
 
-## MCP-compatible LLM readiness
+## MCP source contracts and readiness
 
-MCP-compatible LLM hosts are ready to use Knowgrph today through the shipped public discovery and control-plane surfaces. The repo currently ships explicit setup and readiness contracts for ChatGPT/OpenAI Apps, Claude, Qwen Code, Kimi CLI, BytePlus ModelArk, and generic MCP clients that can talk to MCP over stdio or Streamable HTTP.
+The repository contains separate source owners for local stdio, public-read Pages MCP,
+browser-local WebMCP, and a protected control-plane Worker. Source presence does not prove that a
+public endpoint is currently delivered, configured, or authorized.
 
-**Fastest path**
+**Fastest evidence-bounded path**
 
-Map intent. Orchestrate agents. Prove outcomes.
-
-A source-backed canvas where `/` routes work, `#` sets meaning, and `@` binds context.
-
-One canonical operator contract: install and discovery stay on `https://airvio.co/knowgrph/mcp`, while live `/`, `#`, and `@` grammar stays on `https://airvio.co/knowgrph/control-plane/mcp` or an app-owned forwarder until the host proves MCP session support.
-
-Canonicalize the contract first, not the transport. The current dual-surface runtime remains intentional until hosted proof supports a single runtime claim.
-
-1. Map intent: install `https://airvio.co/knowgrph/mcp` first for public discovery, retrieval, and inspection.
-2. Orchestrate agents: add `https://airvio.co/knowgrph/control-plane/mcp` only when the host can preserve MCP session state and you need live `/`, `#`, `@` grammar invocation.
-3. Prove outcomes: for zero-spend evaluation, run the local parser or harness in `--provider-mode mock` before wiring any hosted MCP client.
+1. Start with the local parser or harness in mock mode for zero-spend evaluation.
+2. Use the install contract's public-read surface only where a revision-bound delivery result exists.
+3. Add the control-plane surface only where the host preserves MCP sessions, supplies the required
+   bearer credential, and an operator has authorized the separately deployed Worker.
 
 For the canonical third-party install boundary, host recipes, and the explicit public-discovery vs control-plane split, see [`docs/documents/knowgrph-mcp-install-contract.md`](docs/documents/knowgrph-mcp-install-contract.md). For the one-page onboarding path that also links the release note, agent-ready doc, and MCP overview, see [`docs/documents/knowgrph-mcp-onboarding-index.md`](docs/documents/knowgrph-mcp-onboarding-index.md).
 For the current min-viable-max-value Cloudflare AI Gateway execution queue, see [`docs/documents/knowgrph-ai-gateway-enhancement-plan.md`](docs/documents/knowgrph-ai-gateway-enhancement-plan.md).
 For the canonical webpage embed boundary, see [`docs/documents/knowgrph-embeddability-contract.md`](docs/documents/knowgrph-embeddability-contract.md).
 
-**Current topology**
+**Current source topology**
 
-| Surface | Endpoint | Role | Status |
+| Surface | Role | Local rung | Delivered rung |
 | --- | --- | --- | --- |
-| Public discovery | `https://airvio.co/knowgrph/mcp` | Canonical public install and discovery endpoint; read-only retrieval, prompt discovery, resource discovery, and inspection | Shipped |
-| Control plane | `https://airvio.co/knowgrph/control-plane/mcp` | Approval-gated orchestration endpoint; exposes `knowgrph.agentic_canvas_os.docs.invoke` for live remote `/`, `#`, and `@` grammar invocation | Shipped |
-| Local stdio MCP | `mcp/server.js` | Repo-local MCP surface for hosts that want the same grammar tool and the richer local tool catalog without the remote control plane | Shipped |
+| Public-read MCP source | seven-tool read-only discovery/retrieval contract | `spec-complete` | `undocumented` |
+| Control-plane Worker source | ten-tool approval-gated registry with bearer/session boundary | `spec-complete` | `undocumented` |
+| Local stdio MCP | richest repo-local descriptor/executor catalog, configuration-gated per tool | `spec-complete` | `undocumented` |
+| Browser WebMCP | page-local inspection and guarded controls | `spec-complete` | `undocumented` |
 
-An MCP-compatible LLM can install the public Knowgrph server for discovery and retrieval, then route grammar invocation to the control-plane MCP surface when it needs live `/`, `#`, and `@` resolution against the current Agentic Canvas OS documentation contract.
-
-For local provider-neutral application building, invoke `/application.compose #application-composition @application-manifest @component-catalog @integration-profile @runtime-proof`. The local stdio tools `knowgrph.application.catalog`, `knowgrph.application.plan`, and `knowgrph.application.execute` expose exact-version components, immutable mode-bound plans, and bounded owner-delegated execution; see [`docs/agent-application-composition.md`](docs/agent-application-composition.md).
+For local provider-neutral application building and its exact tool identities, see
+[`docs/agent-application-composition.md`](docs/agent-application-composition.md).
 
 Baseline runs are provable **offline with deterministic mock providers**. Real providers activate only when host-owned keys are wired and the matching gate is approved.
 
-For hosted app-builder platforms (Lovable, Vercel, and similar) that expect a network-reachable HTTP/SSE MCP endpoint rather than a spawned local process: point the platform's MCP integration at `https://airvio.co/knowgrph/mcp` for read-only discovery. For live `/`, `#`, and `@`, default to a thin app-owned forwarder and add `https://airvio.co/knowgrph/control-plane/mcp` directly only when the host proves it can preserve MCP session state.
+Hosted platforms that cannot spawn a local process must follow the install contract. A direct
+control-plane connection is usable only when the host supports both session preservation and
+secret bearer headers; otherwise a separately authorized secret-holding forwarder is required.
 
-**MainPanel readiness states** — use one label per claim:
-
-- `documented`: static setup or operator guidance exists, no browser or executable runtime proof implied
-- `browser-published`: the browser publishes a runtime snapshot or inspection artifact for the claim
-- `runtime-executable`: a local or remote runtime owner actually registers the tool, route, or action
+**MainPanel readiness** uses only the canonical ladder with separate local and delivered columns:
+`undocumented`, `spec-complete`, `dev-proven`, `runtime-ready`, and `production-verified`.
 
 Current repo truth:
 
 - MainPanel Integrations is anchored to the broader Settings-backed provider universe; any demo or SuperAgent subset must be called out as scoped.
-- MainPanel MCP can contain both browser-published rows and documented-only connection guidance.
-- External bridge ids such as `knowgrph.tool.search`, `knowgrph.tool.describe`, and `knowgrph.tool.call` are planned contract targets, not current executable runtime owners.
+- MainPanel MCP can contain both browser-local source rows and connection guidance, but neither
+  receives a delivered rung without an Evidence Reference.
+- Planned external bridge identities are not current executable runtime owners.
 
 Release-gate checklist and readiness rubric: `docs/documents/knowgrph-mainpanel-readiness-rubric.md`.
 
@@ -262,7 +257,7 @@ npm run goal:run
 
 ## Repository role
 
-This repository is the Dev source of truth and the sole production deployment owner. Normal implementation and pull-request validation stay in Dev; after protected integration, a green `main` push automatically rebuilds, attests, deploys, browser-verifies, and publishes the generated mirror. The live public surfaces are `https://airvio.co/` and `https://airvio.co/knowgrph`.
+This repository is the Dev source of truth and the production release source. Normal implementation and pull-request validation stay in Dev. After protected integration, an operator may manually dispatch `.github/workflows/release.yml` for an exact reviewed `main` revision; the protected workflow builds, attests, deploys, browser-verifies, records receipts, and only then publishes the generated mirror. The public surfaces are `https://airvio.co/` and `https://airvio.co/knowgrph`.
 
 ## Workspace surfaces
 
@@ -273,7 +268,7 @@ This repository is the Dev source of truth and the sole production deployment ow
 | Floating Panel Chat | Agent-native assistant with workspace, selection, and source-aware context. |
 | MainPanel Integrations | Provider, endpoint, model, auth-mode, storage, and runtime configuration for the Settings-backed provider universe; any narrower subset must be labeled as scoped. |
 | Storyboard Widget | Structured 2D renderer editing over source-backed Markdown documents: Cards, Widgets, Rich Media Panels, reusable elements, and timeline lanes. |
-| MainPanel MCP | Readiness rows and connection templates for local stdio, read-only Pages HTTP, Browser WebMCP, and external MCP tool servers, labeled by `documented`, `browser-published`, or `runtime-executable` state. |
+| MainPanel MCP | Readiness rows and connection templates for local stdio, read-only Pages HTTP, Browser WebMCP, and external MCP tool servers, with separate local and delivered ladder rungs. |
 | Agentic OS docs | Sibling control surface for `/`, `#`, `@` route dictionaries, MCP gateway policy, harnesses, and runtime proof. |
 | Cloudflare Runtime | Pages, Workers (`McpAgent`), D1, R2, AI Gateway, and server-managed provider secrets when deploy is explicitly opened. |
 
@@ -287,8 +282,11 @@ This repository is the Dev source of truth and the sole production deployment ow
 | `gympgrph/` | Geospatial package consumed by the canvas app. |
 | `cloudflare/` | Pages handlers, Workers (incl. the `knowgrph-mcp` `McpAgent`), storage routes, D1 migrations, and R2-backed binary storage. |
 | `mcp/` | Local stdio MCP server, tool contracts, local runtimes, and service documentation. |
+| `config/surface-registry.json` | Protection-first authority for private, gated, served, and publicly discoverable artifacts and routes. |
+| `config/license-registry.json` | Class-to-terms authority used to validate published artifacts and render the staged reuse declaration. |
 | `data/config/` | Canonical config inputs for GraphRAG, schema, orchestrator, and LLM chat boundaries. |
 | `docs/documents/` | Authored product, API, architecture, and feature documents. |
+| `scripts/surface/` | Deterministic, network-free discovery generation, parsing, scanning, audit, and temp-fixture promotion proof. See [the runtime contract](docs/discoverability-ip-protection-runtime.md). |
 | `scripts/` | Repo checks, sync helpers, docs generation, storage seeding, payment readiness, and release tooling. |
 
 ## Setup
@@ -310,7 +308,7 @@ Prepare the shared runtime required by repository smoke checks:
 npm run smoke:prepare
 ```
 
-The collaboration readiness gate runs this preparation automatically before its focused and browser smoke checks.
+The collaboration readiness gate runs this preparation automatically before its focused and browser smoke checks. Agentic Canvas OS supplies run-scoped owner, guest, and worker URLs plus `KG_COLLABORATION_E2E_PERSISTENCE_PATH` and `KG_COLLABORATION_E2E_RESULT_PATH`, so concurrent proofs do not reuse canonical ports or repository-local Wrangler state.
 
 ## Local development
 
@@ -395,12 +393,13 @@ Do not commit local screenshots, transient previews, duplicate root-level config
 
 ## Feature docs
 
-Feature-specific planning belongs in canonical docs instead of the root README:
+Feature contracts belong in canonical docs. Live task planning belongs only in the Agentic Canvas OS planning control surface, not in repository-local roadmap files:
 
 | Feature | Docs |
 | --- | --- |
 | Agentic Canvas OS control surface | `../agentic-canvas-os/docs/` |
-| Current startup priorities | `docs/documents/knowgrph-next-step-priorities.md` |
+| Product and architecture | `docs/documents/knowgrph-prd.md`, `docs/documents/knowgrph-tad.md`, `docs/documents/knowgrph-architecture-decisions.md` |
+| Live task planning | `../agentic-canvas-os/docs/TODO.md` and its active monthly shard |
 | 2D Renderer Storyboard template | `../huijoohwee.github.io/template/knowgrph-2d-renderer-storyboard-template.md` |
 | Agentic Canvas OS PRD/TAD | `docs/documents/knowgrph-mcp/knowgrph-mcp-agentic-os-prd-tad.md` |
 | AI provider layer (MiroMindAI) | `docs/documents/knowgrph-api-reference/knowgrph-miromind-api-prd-tad.md` |
@@ -422,7 +421,7 @@ Feature-specific planning belongs in canonical docs instead of the root README:
 
 ## E2E Agentic Video Generation
 
-Home **Agentic Video Canvas** and FloatingPanel Chat share one editable query contract:
+Home **Prompt Presets** and FloatingPanel **Prompt Presets** read the same source-backed catalog and selection runtime. Selecting a preset loads its editable prompt without submitting Chat or approving provider spend. Video Agent additionally exposes its route, provider, specification, and output controls:
 
 ```text
 /video-agent @provider.byteplus @text @image @audio @video #spec.low @script.md

@@ -50,14 +50,14 @@ export const useMarkdownBlockContainerEditorEvents = (args: {
   variableMenu: { show: boolean; keyInput: string; mode: VariableMode }
   setSlashMenuStable: (next: SlashMenuState) => void
   slashMenu: { show: boolean }
-  setBubble: React.Dispatch<React.SetStateAction<{ show: boolean; leftPx: number; topPx: number }>>
-  bubble: { show: boolean }
+  setInlineSelectionToolbar: React.Dispatch<React.SetStateAction<{ show: boolean; leftPx: number; topPx: number }>>
+  inlineSelectionToolbar: { show: boolean }
   blurCommitTimerRef: React.MutableRefObject<number>
   selectionSyncSuspendUntilRef: React.MutableRefObject<number>
   toolbarRef: React.RefObject<HTMLElement | null>
   slashMenuRef: React.RefObject<HTMLElement | null>
   variableMenuRef: React.RefObject<HTMLElement | null>
-  commit: () => void
+  commit: () => void | Promise<void>
   toolbarInteractingRef: React.MutableRefObject<boolean>
   toolbarInteractionUntilRef: React.MutableRefObject<number>
   editOpenBlurGuardUntilRef: React.MutableRefObject<number>
@@ -136,7 +136,7 @@ export const useMarkdownBlockContainerEditorEvents = (args: {
       const query = String(atMatch[1] || '')
       args.setVariableMenuStable({ show: true, leftPx, topPx, query, keyInput: query || args.variableMenu.keyInput })
       args.setSlashMenuStable({ show: false, leftPx: 0, topPx: 0 })
-      args.setBubble(prev => (prev.show ? { ...prev, show: false } : prev))
+      args.setInlineSelectionToolbar(prev => (prev.show ? { ...prev, show: false } : prev))
     } else if (semanticMatch) {
       const query = String(semanticMatch[1] || '')
       args.setSlashMenuStable({
@@ -148,7 +148,7 @@ export const useMarkdownBlockContainerEditorEvents = (args: {
         triggerRange: { startOffset: caretOffset - semanticMatch[0].length, endOffset: caretOffset },
       })
       args.setVariableMenuStable({ show: false, leftPx: 0, topPx: 0, query: '', keyInput: '' })
-      args.setBubble(prev => (prev.show ? { ...prev, show: false } : prev))
+      args.setInlineSelectionToolbar(prev => (prev.show ? { ...prev, show: false } : prev))
     } else if (/\/$/.test(preceding)) {
       args.setSlashMenuStable({
         show: true,
@@ -159,7 +159,7 @@ export const useMarkdownBlockContainerEditorEvents = (args: {
         triggerRange: { startOffset: Math.max(0, caretOffset - 1), endOffset: caretOffset },
       })
       args.setVariableMenuStable({ show: false, leftPx: 0, topPx: 0, query: '', keyInput: '' })
-      args.setBubble(prev => (prev.show ? { ...prev, show: false } : prev))
+      args.setInlineSelectionToolbar(prev => (prev.show ? { ...prev, show: false } : prev))
     } else if (args.slashMenu.show) {
       args.setSlashMenuStable({ show: false, leftPx: 0, topPx: 0 })
     } else if (args.variableMenu.show) {
@@ -218,13 +218,13 @@ export const useMarkdownBlockContainerEditorEvents = (args: {
     if (Date.now() < args.toolbarInteractionUntilRef.current) return scheduleBlurCommit(60)
     if (!args.editDisableRichUi) {
       const cached = args.lastNonCollapsedSelectionOffsetsRef.current
-      if (args.bubble.show || (cached && cached.startOffset !== cached.endOffset)) {
+      if (args.inlineSelectionToolbar.show || (cached && cached.startOffset !== cached.endOffset)) {
         if (Date.now() < args.selectionSyncSuspendUntilRef.current) return
         scheduleBlurCommit(50)
         return
       }
     }
-    if (args.bubble.show) return scheduleBlurCommit(40)
+    if (args.inlineSelectionToolbar.show) return scheduleBlurCommit(40)
     const nextFocus = event.relatedTarget as Node | null
     if (root) {
       if (nextFocus && root.contains(nextFocus)) return
@@ -434,7 +434,7 @@ export const useMarkdownBlockContainerEditorEvents = (args: {
       const rect = snapshot?.rect || null
       const { leftPx, topPx } = computeFloatingMenuPosition({ rangeRect: rect, root: el })
       args.setLinkPopover({ show: true, leftPx, topPx, href: '' })
-      args.setBubble(prev => (prev.show ? { ...prev, show: false } : prev))
+      args.setInlineSelectionToolbar(prev => (prev.show ? { ...prev, show: false } : prev))
     }
   }, [args])
 

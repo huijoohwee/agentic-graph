@@ -4,8 +4,10 @@ import type { GraphSchema } from '@/lib/graph/schema'
 import { togglePortHandlesEnabledInSchema } from '@/lib/graph/portHandlesBehavior'
 import {
   CANVAS_GRID_DISPLAY_CONTROL_ID,
+  HELPER_LINES_DISPLAY_CONTROL_ID,
   SNAP_GRID_DISPLAY_CONTROL_ID,
   buildCanvasGridVisibilityBehaviorPatch,
+  buildHelperLinesBehaviorPatch,
   buildSnapGridBehaviorPatch,
 } from '@/lib/canvas/canvasGridDisplayControls'
 import {
@@ -39,7 +41,8 @@ type CanvasViewActionParams = {
   ensureBaselineUnlocked: () => boolean
   geospatialEnabled: boolean
   onOpenGeospatialMode: () => void
-  onOpenShared3dPanel?: (mode: '3d' | 'xr') => void
+  onExitGeospatialMode?: () => void
+  onOpenShared3dPanel?: (mode: '3d' | 'xr' | 'geo-xr') => void
   canvas2dRenderer: Canvas2dRendererId
   canvas3dMode: string
   canvasRenderMode: '2d' | '3d'
@@ -80,6 +83,7 @@ export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
     ensureBaselineUnlocked,
     geospatialEnabled,
     onOpenGeospatialMode,
+    onExitGeospatialMode,
     onOpenShared3dPanel,
     canvas2dRenderer,
     canvas3dMode,
@@ -212,14 +216,15 @@ export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
   }
   if (id.startsWith('surface:')) {
     const mode = id.slice('surface:'.length) as CanvasSurfaceModeId
-    if (mode === 'xr') {
-      onOpenShared3dPanel?.('xr')
+    if (mode === 'xr' || mode === 'geo-xr') {
+      onOpenShared3dPanel?.(mode)
       return
     }
     const activated = applyCanvasSurfaceModeSelection({
       mode,
       geospatialEnabled,
       onOpenGeospatialMode,
+      onExitGeospatialMode,
       canvas2dRenderer,
       documentSemanticMode,
       frontmatterModeEnabled,
@@ -367,6 +372,22 @@ export const applyCanvasViewSelection = (params: CanvasViewActionParams) => {
   if (id === SNAP_GRID_DISPLAY_CONTROL_ID) {
     const behavior = schema.behavior
     const nextBehavior = buildSnapGridBehaviorPatch(schema)
+    if (typeof setBehavior === 'function') {
+      setBehavior(nextBehavior)
+      return
+    }
+    setSchema({
+      ...schema,
+      behavior: {
+        ...behavior,
+        ...nextBehavior,
+      },
+    })
+    return
+  }
+  if (id === HELPER_LINES_DISPLAY_CONTROL_ID) {
+    const behavior = schema.behavior
+    const nextBehavior = buildHelperLinesBehaviorPatch(schema)
     if (typeof setBehavior === 'function') {
       setBehavior(nextBehavior)
       return

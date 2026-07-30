@@ -6,6 +6,11 @@ import {
   buildVersionedAssetFileNames,
   resolveBuildAssetNamespace,
 } from '../../canvas/viteBuildAssetNamespace.mjs'
+import {
+  buildServiceWorkerRevisionAuthoritySource,
+  SERVICE_WORKER_REVISION_REQUEST,
+  SERVICE_WORKER_REVISION_RESPONSE,
+} from '../../canvas/viteServiceWorkerRevisionAuthority.mjs'
 import { resolveBuiltChunkBudget } from '../hygiene-built-chunk-budget.mjs'
 
 const SOURCE_REVISION = '0123456789abcdef0123456789abcdef01234567'
@@ -37,6 +42,19 @@ test('build asset isolation fails closed without an exact revision', () => {
     assert.throws(
       () => resolveBuildAssetNamespace(revision),
       /exact 40-character source revision SHA/,
+    )
+  }
+})
+
+test('service-worker revision authority is generated from the same exact source namespace', () => {
+  const source = buildServiceWorkerRevisionAuthoritySource(SOURCE_REVISION)
+  assert.match(source, new RegExp(`const sourceRevision = "${SOURCE_REVISION}"`))
+  assert.match(source, new RegExp(SERVICE_WORKER_REVISION_REQUEST))
+  assert.match(source, new RegExp(SERVICE_WORKER_REVISION_RESPONSE))
+  for (const revision of ['', 'main', SOURCE_REVISION.slice(0, 12), SOURCE_REVISION.toUpperCase()]) {
+    assert.throws(
+      () => buildServiceWorkerRevisionAuthoritySource(revision),
+      /exact source revision/,
     )
   }
 })

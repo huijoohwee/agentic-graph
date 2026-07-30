@@ -920,7 +920,7 @@ export async function testWorkspaceSeedProviderResolvesDocsWorkspaceSeedsFromCon
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     calls.push(url)
-    if (url.includes(`${KG_HUIJOOHWEE_DOCS_FS_PREFIX}/workspace-seeds/knowgrph-video-demo.md`)) {
+    if (url.includes(`/@fs${KG_KNOWGRPH_DOCS_ROOT}/workspace-seeds/knowgrph-video-demo.md`)) {
       return new Response('# docs workspace-seeds absolute root', { status: 200 })
     }
     return new Response('', { status: 404 })
@@ -933,8 +933,8 @@ export async function testWorkspaceSeedProviderResolvesDocsWorkspaceSeedsFromCon
     if (text !== '# docs workspace-seeds absolute root') {
       throw new Error(`expected docs/workspace-seeds absolute docs-root seed to resolve, got ${String(text || '')}`)
     }
-    if (!calls.some(url => url.includes(`${KG_HUIJOOHWEE_DOCS_FS_PREFIX}/workspace-seeds/knowgrph-video-demo.md`))) {
-      throw new Error('expected workspace seed provider to probe docs/workspace-seeds path relative to configured absolute docs root')
+    if (!calls.some(url => url.includes(`/@fs${KG_KNOWGRPH_DOCS_ROOT}/workspace-seeds/knowgrph-video-demo.md`))) {
+      throw new Error('expected workspace seed provider to probe the canonical Knowgrph workspace-seeds root')
     }
   } finally {
     if (typeof previousAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousAbsRoot

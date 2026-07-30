@@ -47,9 +47,7 @@ export const splitInvocationTokenSegments = (text: string): InvocationTokenSegme
   return out.length ? out : [{ kind: 'text', value: raw }]
 }
 
-export const normalizeInvocationTokenSpacing = (text: string): string => {
-  const raw = String(text ?? '')
-  if (!raw) return ''
+const normalizeInvocationTokenSpacingChunk = (raw: string): string => {
   const segments = splitInvocationTokenSegments(raw)
   if (!segments.some(segment => segment.kind === 'token')) return raw
   let out = ''
@@ -67,6 +65,22 @@ export const normalizeInvocationTokenSpacing = (text: string): string => {
     }
     out += segment.value
   })
+  return out
+}
+
+export const normalizeInvocationTokenSpacing = (text: string): string => {
+  const raw = String(text ?? '')
+  if (!raw) return ''
+  const markdownCodePattern = /```[\s\S]*?```|`[^`\n]*`/g
+  let out = ''
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+  while ((match = markdownCodePattern.exec(raw))) {
+    out += normalizeInvocationTokenSpacingChunk(raw.slice(lastIndex, match.index))
+    out += match[0]
+    lastIndex = match.index + match[0].length
+  }
+  out += normalizeInvocationTokenSpacingChunk(raw.slice(lastIndex))
   return out
 }
 

@@ -12,7 +12,7 @@ export function testCameraPanelActivationPreservesOpenXrOperatorPanels() {
     floatingPanelView: state.floatingPanelView,
   }
   try {
-    for (const floatingPanelView of ['media', 'skillsCommands'] as const) {
+    for (const floatingPanelView of ['media', 'skillsCommands', 'flightSim'] as const) {
       useGraphStore.setState({ canvasRenderMode: '3d', canvas3dMode: 'xr', floatingPanelOpen: true, floatingPanelView } as never)
       if (!ensureSharedCameraPanel()) throw new Error(`expected Camera surface activation from ${floatingPanelView}`)
       const current = useGraphStore.getState()

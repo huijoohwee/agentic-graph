@@ -31,6 +31,9 @@ import type { InitialChatUiContext } from './uiSliceChat'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { createPdfImportInitialState } from './uiSlicePdfImportInitialState'
 import { createChatUiInitialState } from './uiSliceChatInitialState'
+import {
+  readMigratedPaymentsPaywallEnabled,
+} from '@/features/payments/paymentPaywallSetting'
 
 type SetGraph = StoreApi<GraphState>['setState']
 
@@ -73,6 +76,8 @@ export const createUiInitialState = (
           || view === 'animation'
           || view === 'motionControl'
           || view === 'gameMode'
+          || view === 'flightSim'
+          || view === 'cityBuilder'
           || view === 'view'
           || view === 'camera'
           || view === 'design'
@@ -218,13 +223,16 @@ export const createUiInitialState = (
         } as Partial<GraphState>
       }),
 
-    paymentsStripePaywallEnabled: lsBool(LS_KEYS.paymentsStripePaywallEnabled, false),
-    setPaymentsStripePaywallEnabled: (enabled: boolean) =>
+    paymentsPaywallEnabled: readMigratedPaymentsPaywallEnabled(
+      readers.storage,
+      false,
+    ),
+    setPaymentsPaywallEnabled: (enabled: boolean) =>
       set(state => {
         const next = enabled === true
-        if (state.paymentsStripePaywallEnabled === next) return {}
-        lsSetBool(LS_KEYS.paymentsStripePaywallEnabled, next)
-        return { paymentsStripePaywallEnabled: next } as Partial<GraphState>
+        if (state.paymentsPaywallEnabled === next) return {}
+        lsSetBool(LS_KEYS.paymentsPaywallEnabled, next)
+        return { paymentsPaywallEnabled: next } as Partial<GraphState>
       }),
 
     paymentsStripeCheckoutUrl: clearPersistedStripeCheckoutUrl(),

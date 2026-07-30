@@ -36,7 +36,7 @@ export const useMarkdownBlockContainerMarkdownFormatting = (args: {
   setEditing: (next: boolean) => void
   setSessionEditLineRange: (next: { startLine: number; endLine: number } | null) => void
   setLinkPopover: React.Dispatch<React.SetStateAction<{ show: boolean; leftPx: number; topPx: number; href: string }>>
-  setBubble: React.Dispatch<React.SetStateAction<{ show: boolean; leftPx: number; topPx: number }>>
+  setInlineSelectionToolbar: React.Dispatch<React.SetStateAction<{ show: boolean; leftPx: number; topPx: number }>>
   linkRangeRef: React.MutableRefObject<Range | null>
   liveSelectionSnapshotRef: React.MutableRefObject<LiveSelectionSnapshot | null>
   readSelectionOffsetsForFormatting: () => { startOffset: number; endOffset: number } | null
@@ -104,7 +104,7 @@ export const useMarkdownBlockContainerMarkdownFormatting = (args: {
         const rect = snapshot?.rect || (sel && sel.rangeCount > 0 ? getRangeRectSafe(sel.getRangeAt(0)) : null)
         const { leftPx, topPx } = computeFloatingMenuPosition({ rangeRect: rect, root })
         args.setLinkPopover({ show: true, leftPx, topPx, href: '' })
-        args.setBubble(prev => (prev.show ? { ...prev, show: false } : prev))
+        args.setInlineSelectionToolbar(prev => (prev.show ? { ...prev, show: false } : prev))
       }
       return
     }

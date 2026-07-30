@@ -1,14 +1,14 @@
 # Knowgrph Progressive Web App (PWA)
 
 **Context**: Browser-based knowledge graph canvas deployed on Cloudflare Pages at `airvio.co/knowgrph`.
-**Intent**: Enable install-to-homescreen, offline shell caching, deferred install UX, and Web Share API integration.
-**Directive**: Use `vite-plugin-pwa` with Workbox generateSW; keep manifest, service worker, and runtime in one upstream source; forbid duplicate PWA configs, stale SW registrations, and conflicting deploy-time `_headers` ownership.
+**Intent**: Enable install-to-homescreen, revision-bound asset caching, deferred install UX, and Web Share API integration.
+**Directive**: Use `vite-plugin-pwa` with Workbox generateSW; keep production HTTP as the sole HTML owner; keep manifest, service worker, and runtime in one upstream source; forbid cached navigation fallbacks, duplicate lifecycle listeners, stale SW registrations, and conflicting deploy-time `_headers` ownership.
 
 ---
 
-**Version**: 1.0.0
-**Date**: 2026-05-08
-**Status**: Deployed (manifest, SW, install button, share target, regression tests)
+**Version**: 1.1.0
+**Date**: 2026-07-23
+**Status**: Deployed (manifest, revision refresh, asset cache, install button, share target, release proof)
 **Owner**: Knowgrph canonical docs
 **Cross-references**: `knowgrph-storage-sync-document.md` (deployment topology), `agentic-canvas-os/todo/2026-05.md` (migrated 2026-05-08 planning history)
 
@@ -65,6 +65,7 @@ flowchart TB
 | Manifest | Web app manifest | `manifest.webmanifest` (generated) | Deployed |
 | Service worker | Workbox generateSW | `sw.js` + `workbox-*.js` (generated) | Deployed |
 | Runtime | PWA boot + install capture | `canvas/src/lib/pwa/runtime.ts` | Deployed |
+| Revision owner | Bounded registration/foreground/online update checks | `canvas/src/lib/pwa/serviceWorkerRevisionUpdateOwner.ts` | Deployed |
 | UI | Install button | `canvas/src/components/Toolbar.tsx` | Deployed |
 | Bootstrap | Share query handler | `canvas/src/features/canvas/CanvasQueryBootstrapRuntime.tsx` | Deployed |
 | HTML | Meta tags + icon links | `canvas/index.html` | Deployed |
@@ -74,6 +75,7 @@ flowchart TB
 | Labels | UI label constant | `canvas/src/lib/config-copy/uiMeta.ts` | Deployed |
 | Query params | Share param constants | `canvas/src/lib/routing/queryParams.ts` | Deployed |
 | Tests | Regression assertions | `canvas/src/__tests__/pipelinePwaEnhancementsRegression.test.ts` | Deployed |
+| Release proof | Same-profile pre-deploy/post-deploy convergence | `scripts/verify-production-service-worker-upgrade.mjs` | Deployed |
 
 ---
 
@@ -107,7 +109,6 @@ rewrite from `/` to `/knowgrph/` cannot bind the page to an apex-root manifest b
 
 | Pattern | Rationale |
 |---------|-----------|
-| `index.html` | App shell entry |
 | `manifest.webmanifest` | PWA manifest |
 | `favicon.svg` | Brand icon |
 | `apple-touch-icon.png` | iOS install icon |
@@ -128,12 +129,49 @@ rewrite from `/` to `/knowgrph/` cannot bind the page to an apex-root manifest b
 | `image, font` | CacheFirst | `kg-static` | 120 | 30 days |
 | Same-origin `.json, .jsonld, .webmanifest` | StaleWhileRevalidate | `kg-data` | 80 | 7 days |
 
+HTML documents are neither precached nor runtime-cached. An online navigation always resolves
+from production HTTP, so one retired worker cannot project an old HTML shell that references
+deleted revision assets. Offline navigation fails honestly instead of constructing a stale
+release from conflicting HTML and chunk generations.
+
+The build emits one imported worker authority containing the exact 40-character source
+revision. Cache cleanup asks the activated controller for that revision, refuses to mutate
+while another worker is installing or waiting, and then deletes cached HTML from
+Knowgrph-owned caches plus every scoped `/knowgrph` HTML response and every stale
+`/knowgrph/assets/*` entry wherever found. This removes response-typed HTML poison stored
+under root asset-shaped paths in `kg-static` while preserving valid HTML owned by sibling
+application cache namespaces such as Singabldr. It also removes prior-revision entries
+retained by the shared `kg-assets` runtime cache without letting an old document delete its
+successor's assets.
+
+Each generated `kg-assets`, `kg-static`, and `kg-data` route also rejects HTML and XHTML on
+both cache admission and cache reads. The write policy retains Workbox's HTTP 200 requirement.
+This prevents a scoped deep-link rewrite or an old root fallback response from re-entering a
+non-navigation runtime cache after cleanup.
+
+The apex Pages Function has no alternate Home or XR renderer. It rewrites only the canonical
+published `/knowgrph/` app shell and fails closed if that shell is unavailable or invalid.
+Publish sync also removes the superseded static root shell and installs one top-level
+`404.html`. This disables Cloudflare Pages' implicit whole-site SPA fallback, so a missing
+image or script returns HTTP 404 instead of a 200 Home document, while the release gate
+proves the explicit Singabldr routes still resolve. The sync owner also removes the obsolete
+`/` and `/index.html` static-shell rewrites plus standalone Hackamap redirects whose published
+target no longer exists; the root Function and canonical `/knowgrph/` application remain the
+only Home owners.
+
+The generated `sw.js` entry and both mutable imports,
+`knowgrph-service-worker-revision.js` and `knowgrph-chat-stream-sw.js`, use `no-store`
+response headers at the content and public routes. Both import URLs also carry the exact
+release revision, and the chat runtime exposes a lifecycle-clean schema attestation. This
+prevents an existing registration's imported-script cache policy from retaining a removed
+authority or legacy lifecycle implementation after the top-level worker advances.
+
 ### Configuration
 
 | Setting | Value | Rationale |
 |---------|-------|-----------|
 | `maximumFileSizeToCacheInBytes` | 3 MB | Exclude oversized bundles from precache |
-| `navigateFallback` | `index.html` | SPA routing support |
+| `navigateFallback` | `null` | Explicitly forbid plugin-default service-worker HTML ownership |
 | `registerType` | `autoUpdate` | Auto-activate new SW on reload |
 | `injectRegister` | `null` | Manual SW registration in runtime |
 
@@ -159,8 +197,7 @@ rewrite from `/` to `/knowgrph/` cannot bind the page to an apex-root manifest b
 |-----------|--------|----------|
 | `data-kg-display-mode` | `browser, standalone, fullscreen, minimal-ui` | CSS overscroll-behavior |
 | `data-kg-installed` | `0, 1` | CSS touch-target sizing |
-| `data-kg-offline-ready` | `0, 1` | Future offline indicator |
-| `data-kg-update-ready` | `0, 1` | Future update badge |
+| `data-kg-offline-ready` | `0, 1` | Revision-bound asset-cache indicator |
 | `data-kg-installable` | `1` (when set) | Toolbar install button visibility |
 
 **Event Flow**:
@@ -185,12 +222,12 @@ sequenceDiagram
   Runtime->>Store: Toast "App installed"
 
   SW->>Runtime: onOfflineReady
-  Runtime->>Store: Toast "Offline shell ready"
+  Runtime->>Store: Toast "Application assets cached"
 
-  SW->>Runtime: onNeedRefresh
-  Runtime->>SW: updateServiceWorker(true)
-  SW->>Runtime: onNeedRefresh (retry)
-  Runtime->>Store: Toast "App update ready"
+  SW->>Runtime: onRegisteredSW
+  Runtime->>SW: registration.update()
+  Browser->>Runtime: foreground or online after bounded interval
+  Runtime->>SW: registration.update()
 ```
 
 ---
@@ -240,6 +277,8 @@ sequenceDiagram
 | Path | Header | Value | Rationale |
 |------|--------|-------|-----------|
 | `/knowgrph/sw.js` | `Cache-Control` | `no-cache, no-store, must-revalidate` | Prevent stale Knowgrph SW |
+| `/knowgrph/knowgrph-service-worker-revision.js` | `Cache-Control` | `no-cache, no-store, must-revalidate` | Bind the active worker to one exact release revision |
+| `/knowgrph/knowgrph-chat-stream-sw.js` | `Cache-Control` | `no-cache, no-store, must-revalidate` | Prevent stale imported worker lifecycle code |
 | `/knowgrph/manifest.webmanifest` | `Cache-Control` | `no-cache, no-store, must-revalidate` | Instant manifest updates |
 | `/knowgrph/apple-touch-icon.png` | `Cache-Control` | `public, max-age=86400` | 1-day icon cache |
 
@@ -269,12 +308,19 @@ In development (`!import.meta.env.PROD`), `main.tsx` unregisters all existing se
 
 ## Regression Tests
 
-Six test functions in `pipelinePwaEnhancementsRegression.test.ts`:
+The static PWA contract remains in `pipelinePwaEnhancementsRegression.test.ts`; the generated
+worker activation authority has a direct Node test, and production release carries a persistent browser profile from
+the old Pages production worker through the new protected deployment. The profile origin is the stable
+Cloudflare Pages production alias derived from `CLOUDFLARE_PAGES_PROJECT`; it stays same-origin
+across the deployment and does not depend on custom-domain challenge behavior in hosted CI.
 
 | Test | Assertions |
 |------|-----------|
-| `testPwaShellPrecachesHashedAssetsAndCachesLocalJson` | Precache glob, exclusions, runtime cache, shortcuts, apple-touch-icon, share_target |
-| `testPwaRuntimeTracksStandaloneInstallAndUpdateState` | Display modes, appinstalled, DOM attributes, SW events, auto-update, beforeinstallprompt, deferred install exports |
+| `testPwaShellPrecachesHashedAssetsAndCachesLocalJson` | Precache glob, no HTML/navigation fallback, exclusions, runtime cache, shortcuts, apple-touch-icon, share_target |
+| `testPwaRuntimeTracksStandaloneInstallAndUpdateState` | Display modes, appinstalled, DOM attributes, registration-bound revision update owner, worker-owned activation cleanup, beforeinstallprompt, deferred install exports |
+| `serviceWorkerRevisionUpdateOwner.test.ts` | Immediate registration update, bounded online/foreground refresh, prompt online retry after a failed update, active-worker revision attestation, listener disposal |
+| `service-worker-import-attestation.test.mjs` | Worker activation removes extensionless/response-typed HTML and prior-revision assets after current-precache admission while preserving current and sibling-app entries; cleanup fails closed when admission is unavailable |
+| `verify-production-service-worker-upgrade.mjs` | Same Chrome profile on the configured stable Pages production origin, deliberately seeded stale runtime/extensionless-HTML entries, revision-bound worker imports, active/controller revision plus chat-schema attestations, singular canonical registration, exact revision across all CacheStorage assets, no cached or module-keyed HTML, no installing/waiting legacy worker, upgrade-tab error capture, preserved localStorage/IndexedDB, network-owned HTML |
 | `testPwaIndexHtmlIncludesInstallMeta` | apple-touch-icon link, manifest link, base-aware manifest path |
 | `testPwaHeadersIncludeSwAndManifestCacheControl` | sw.js headers, Service-Worker-Allowed, manifest headers |
 | `testPwaToolbarInstallButtonWiresDeferredPrompt` | Toolbar imports, installable state, UI_LABELS |
@@ -287,13 +333,13 @@ Six test functions in `pipelinePwaEnhancementsRegression.test.ts`:
 | Context | Intent | Directive |
 |---------|--------|-----------|
 | Assets | Cache hashed production assets | Precache `assets/*.{js,css,woff,woff2,ttf}`; exclude oversized Monaco/Mermaid bundles |
-| Headers | Prevent stale SW and manifest | Set `no-cache` on `sw.js` and `manifest.webmanifest`; add `Service-Worker-Allowed: /` |
+| Headers | Prevent stale SW, imported worker, and manifest | Set `no-store` on `sw.js`, `knowgrph-chat-stream-sw.js`, and `manifest.webmanifest`; add `Service-Worker-Allowed: /` |
 | Icons | Support cross-platform install | Provide SVG favicon (any, maskable) and 180x180 PNG apple-touch-icon |
 | Install | Enable deferred install UX | Capture `beforeinstallprompt`, export `promptPwaInstall()`, render toolbar button conditionally |
 | Manifest | Declare PWA identity and capabilities | Single manifest with name, icons, shortcuts, display override, share_target |
-| Offline | Cache app shell for relaunch | Precache index.html + hashed assets; runtime-cache scripts/styles/images/fonts |
-| Runtime | Track PWA state on DOM | Publish `data-kg-display-mode`, `data-kg-installed`, `data-kg-offline-ready`, `data-kg-update-ready`, `data-kg-installable` |
+| Cache | Cache revision-bound assets without an HTML variant | Precache hashed assets; runtime-cache scripts/styles/images/fonts; never cache or fall back to `index.html` |
+| Runtime | Track PWA state and refresh the canonical worker | Publish display/install/asset-cache state; call `registration.update()` at registration and bounded online/foreground recovery; let the activating worker prune cached HTML and prior-revision asset namespaces after current-precache admission |
 | Share | Receive shared content via Web Share API | Declare `share_target` in manifest; handle `?share=1` params in bootstrap runtime; show toast; clean URL |
 | iOS | Support Add to Home Screen | Add apple-touch-icon link, mobile-web-app-capable meta, black-translucent status bar |
 | Dev | Prevent stale SW in development | Unregister all SWs on localhost when not in production |
-| Tests | Guard PWA contracts via regression | Six test functions covering manifest, runtime, headers, toolbar, share handler |
+| Tests | Guard PWA and release convergence | Source regression, generated activation-authority test, and same-profile proof bound to one canonical worker plus one exact-revision precache |

@@ -23,6 +23,11 @@ import {
   XR_NATIVE_CONTROLLER_FOG_COLOR,
   XR_NATIVE_CONTROLLER_SKY_COLOR,
 } from './xrNativeControllerPresentation'
+import {
+  readFlightSimTrainingScenario,
+  resolveFlightSimTrainingMission,
+  subscribeFlightSimTrainingScenario,
+} from '@/features/game-flight-sim/flightSimTrainingScenario'
 
 export const XR_NATIVE_DYNAMIC_BODY_Y_OFFSETS: Readonly<Record<string, number>> = Object.freeze({
   'native-crate-a': 0.72,
@@ -37,18 +42,28 @@ type RegisterBodyRef = (subjectId: string, node: Object3D | null) => void
 
 export function XrNativeControllerDemoSceneAtmosphere({ stageScale }: { stageScale: number }) {
   const { scene } = useThree()
+  const trainingScenario = React.useSyncExternalStore(
+    subscribeFlightSimTrainingScenario,
+    readFlightSimTrainingScenario,
+    readFlightSimTrainingScenario,
+  )
+  const night = resolveFlightSimTrainingMission(trainingScenario.missionId).night
   React.useEffect(() => {
     const previousBackground = scene.background
     const previousFog = scene.fog
-    const background = new Color(XR_NATIVE_CONTROLLER_SKY_COLOR)
-    const fog = new Fog(XR_NATIVE_CONTROLLER_FOG_COLOR, stageScale * 38, stageScale * 92)
+    const background = new Color(night ? '#050a1a' : XR_NATIVE_CONTROLLER_SKY_COLOR)
+    const fog = new Fog(
+      night ? '#101a30' : XR_NATIVE_CONTROLLER_FOG_COLOR,
+      stageScale * (night ? 24 : 38),
+      stageScale * (night ? 70 : 92),
+    )
     scene.background = background
     scene.fog = fog
     return () => {
       if (scene.background === background) scene.background = previousBackground
       if (scene.fog === fog) scene.fog = previousFog
     }
-  }, [scene, stageScale])
+  }, [night, scene, stageScale])
   return null
 }
 

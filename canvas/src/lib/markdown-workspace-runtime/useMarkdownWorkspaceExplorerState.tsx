@@ -24,6 +24,10 @@ import {
   subscribeWorkspaceStoreSyncSettingsChanged,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { computeWorkspaceSeedSyncNextDelayMs } from '@/lib/workspace/workspaceSeedSyncBackoff'
+import {
+  beginWorkspaceSeedSyncTask,
+  subscribeWorkspaceSeedSyncResumed,
+} from '@/lib/workspace/workspaceSeedSyncRuntime'
 import { persistMarkdownExplorerChromeState } from '@/features/markdown/ui/markdownExplorerChromePersistence'
 import { persistMarkdownExplorerModePreferences } from '@/features/markdown/ui/markdownExplorerModePreferencesPersistence'
 import { persistMarkdownSourceFolderPaths } from '@/features/markdown/ui/markdownSourceFilesPersistence'
@@ -51,9 +55,12 @@ import type { MarkdownWorkspaceRuntimeInteractionStatusBindings } from './markdo
 import { applyMarkdownWorkspaceErrorStatus, applyMarkdownWorkspaceInfoStatus } from './markdownWorkspaceStatusTransitions'
 import {
   buildWorkspaceEntriesIndex,
-  getFirstDescendantFilePath,
-  hasWorkspaceFileEntry,
 } from './workspaceEntriesIndex'
+import {
+  resolveWorkspaceFolderContractDocumentPath,
+  resolveWorkspaceFolderContractTargetPath,
+} from './workspaceFolderContractTarget'
+import { readWorkspaceExplorerReadOnlySnapshot } from './workspaceExplorerReadOnlySnapshot'
 
 const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
   const list = Array.isArray(sourceFiles) ? sourceFiles : []
@@ -92,6 +99,7 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   const workspaceFsRef = React.useRef<Awaited<ReturnType<typeof getWorkspaceFs>> | null>(null)
   const refreshInFlightRef = React.useRef(false)
   const refreshQueuedRef = React.useRef(false)
+  const workspaceRefreshDeferredRef = React.useRef(false)
   const seedSyncInFlightRef = React.useRef(false)
   const workspaceSeedSyncSignatureRef = React.useRef('')
   const workspaceRefreshSemanticKeyRef = React.useRef('')
@@ -140,6 +148,33 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
   const refreshOnce = React.useCallback(async (opts?: { silent?: boolean }): Promise<WorkspaceRefreshSnapshot> => {
     const runtime = runtimeRef.current
     const silent = !!opts?.silent
+    const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
+    if (!finishSeedSyncTask) {
+      workspaceRefreshDeferredRef.current = true
+      try {
+        const fs = await getFs()
+        const snapshot = await readWorkspaceExplorerReadOnlySnapshot({
+          fs,
+          activePath: runtime.activePathRef.current,
+        })
+        const currentRuntime = runtimeRef.current
+        currentRuntime.setEntries(prev => (
+          areWorkspaceEntriesEqual(prev, snapshot.entries) ? prev : snapshot.entries
+        ))
+        currentRuntime.setSourcesByPath(prev => (
+          areWorkspaceSourcesEqual(prev, snapshot.sourcesByPath) ? prev : snapshot.sourcesByPath
+        ))
+        currentRuntime.setLoading(false)
+        currentRuntime.setLoadError('')
+        return buildWorkspaceRefreshSnapshot(snapshot)
+      } catch (error) {
+        const currentRuntime = runtimeRef.current
+        currentRuntime.setLoading(false)
+        currentRuntime.setLoadError(String((error as { message?: unknown })?.message ?? error))
+        return buildWorkspaceRefreshSnapshot({ entries: currentRuntime.entries })
+      }
+    }
+    workspaceRefreshDeferredRef.current = false
     if (!silent) runtime.setStatusProgress('Refreshing')
     if (!silent) {
       runtime.setLoading(true)
@@ -225,6 +260,8 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
         })
       }
       return buildFailedWorkspaceRefreshSnapshot()
+    } finally {
+      finishSeedSyncTask()
     }
   }, [getFs, scheduleApplyComposedFromSourceFiles])
 
@@ -249,6 +286,21 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
       refreshInFlightRef.current = false
     }
   }, [refreshOnce])
+
+  React.useEffect(() => {
+    return subscribeWorkspaceSeedSyncResumed(() => {
+      if (!workspaceRefreshDeferredRef.current) return
+      if (!runtimeRef.current.active) return
+      workspaceRefreshDeferredRef.current = false
+      void refresh({ silent: true })
+    })
+  }, [refresh])
+
+  React.useEffect(() => {
+    if (!args.active || !workspaceRefreshDeferredRef.current) return
+    workspaceRefreshDeferredRef.current = false
+    void refresh({ silent: true })
+  }, [args.active, refresh])
 
   React.useEffect(() => {
     if (!args.active || !workspaceAutoRefreshEnabled) return
@@ -284,10 +336,34 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     let stopped = false
     let timer: number | null = null
     let idleStreak = 0
+    const scheduleNextSeedSync = (
+      changed: boolean,
+      ensureSeedTick: () => Promise<void>,
+    ) => {
+      const docsOnly = readWorkspaceSourceFilesDocsOnlySetting()
+      const next = computeWorkspaceSeedSyncNextDelayMs({
+        basePollMs: workspaceSeedSyncPollMs,
+        idleMaxMs: workspaceSeedSyncIdleMaxMs,
+        docsOnly,
+        changed,
+        idleStreak,
+      })
+      idleStreak = next.nextIdleStreak
+      if (stopped) return
+      timer = window.setTimeout(() => {
+        timer = null
+        void ensureSeedTick()
+      }, next.nextDelayMs)
+    }
     const ensureSeedTick = async () => {
       if (stopped || seedSyncInFlightRef.current) return
       const runtime = runtimeRef.current
       if (runtime.viewerInlineEditActiveRef.current) return
+      const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
+      if (!finishSeedSyncTask) {
+        scheduleNextSeedSync(false, ensureSeedTick)
+        return
+      }
       seedSyncInFlightRef.current = true
       let effectiveChanged = false
       try {
@@ -333,21 +409,8 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
         void 0
       } finally {
         seedSyncInFlightRef.current = false
-        const docsOnly = readWorkspaceSourceFilesDocsOnlySetting()
-        const next = computeWorkspaceSeedSyncNextDelayMs({
-          basePollMs: workspaceSeedSyncPollMs,
-          idleMaxMs: workspaceSeedSyncIdleMaxMs,
-          docsOnly,
-          changed: effectiveChanged,
-          idleStreak,
-        })
-        idleStreak = next.nextIdleStreak
-        if (!stopped) {
-          timer = window.setTimeout(() => {
-            timer = null
-            void ensureSeedTick()
-          }, next.nextDelayMs)
-        }
+        finishSeedSyncTask()
+        scheduleNextSeedSync(effectiveChanged, ensureSeedTick)
       }
     }
     const onWake = () => {
@@ -518,26 +581,20 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
 
   const resolveFolderContractDocPath = React.useCallback(
     (folderPath: WorkspacePath, mode: FolderModeContract): WorkspacePath => {
-      const normalized = normalizeWorkspacePath(folderPath)
-      const leaf = mode === 'user-journey' ? 'repo.user-journey.md' : 'repo.sitemap.md'
-      return normalizeWorkspacePath(`${normalized.replace(/\/+$/, '')}/${leaf}`)
+      return resolveWorkspaceFolderContractDocumentPath(folderPath, mode)
     },
     [],
   )
 
   const pickFolderContractTargetPath = React.useCallback(
     (folderPath: WorkspacePath, preferredMode: FolderModeContract): WorkspacePath | null => {
-      const folder = normalizeWorkspacePath(folderPath)
-      const preferred = resolveFolderContractDocPath(folder, preferredMode)
-      if (hasWorkspaceFileEntry(entriesIndex, preferred)) return preferred
-
-      const alternateMode: FolderModeContract = preferredMode === 'sitemap' ? 'user-journey' : 'sitemap'
-      const alternate = resolveFolderContractDocPath(folder, alternateMode)
-      if (hasWorkspaceFileEntry(entriesIndex, alternate)) return alternate
-
-      return getFirstDescendantFilePath(entriesIndex, folder)
+      return resolveWorkspaceFolderContractTargetPath({
+        entriesIndex,
+        folderPath,
+        preferredMode,
+      })
     },
-    [entriesIndex, resolveFolderContractDocPath],
+    [entriesIndex],
   )
 
   return {

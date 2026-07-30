@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 export const productionMirrorArtifactManifestName = '.knowgrph-production-artifact-manifest.json'
 export const productionMirrorArtifactEntries = [
+  '404.html',
   'content/knowgrph',
   'knowgrph',
   'functions',
@@ -18,6 +19,7 @@ export const productionMirrorArtifactEntries = [
   '_redirects',
   '.well-known/runtime-readiness.json',
 ]
+const productionMirrorArtifactDeletionEntries = ['index.html']
 
 const manifestSchema = 'knowgrph-production-mirror-artifact/v1'
 const exactRevisionPattern = /^[0-9a-f]{40}$/
@@ -52,9 +54,10 @@ const resolveWithin = (root, relativePath) => {
   return resolved
 }
 
-const isManagedPath = relativePath => productionMirrorArtifactEntries.some(entry => (
-  relativePath === entry || relativePath.startsWith(`${entry}/`)
-))
+const isManagedPath = relativePath => [
+  ...productionMirrorArtifactEntries,
+  ...productionMirrorArtifactDeletionEntries,
+].some(entry => relativePath === entry || relativePath.startsWith(`${entry}/`))
 
 const readGitText = (root, args) => execFileSync('git', args, {
   cwd: root,

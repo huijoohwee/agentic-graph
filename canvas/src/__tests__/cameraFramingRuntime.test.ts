@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import {
   publishCameraFramingRuntime,
   readCameraFramingRuntime,
+  resetCameraFramingRuntimeForDocument,
   subscribeCameraFramingRuntime,
 } from '@/features/strybldr/cameraFramingRuntime'
 import {
@@ -39,7 +40,9 @@ function assertFiniteVector(vector: CameraFramingVector, label: string): void {
 }
 
 export function testCameraFramingRuntimePublishesImmutableNormalizedSnapshots() {
-  const firstRevision = readCameraFramingRuntime().revision
+  const reset = resetCameraFramingRuntimeForDocument(`camera-framing-runtime-test-${Date.now()}`)
+  assertCondition(!reset.claimed, 'expected a document reset to clear implicit Camera framing ownership')
+  const firstRevision = reset.revision
   let notifications = 0
   const unsubscribe = subscribeCameraFramingRuntime(() => {
     notifications += 1
@@ -57,6 +60,7 @@ export function testCameraFramingRuntimePublishesImmutableNormalizedSnapshots() 
     source: 'panel',
   })
   assertCondition(published.anchorId === 'card-1052', 'expected runtime to normalize the camera anchor id')
+  assertCondition(published.claimed, 'expected an explicit Camera publish to claim framing ownership')
   assertCondition(published.source === 'panel', 'expected runtime to preserve the publish source')
   assertCondition(published.revision === firstRevision + 1, 'expected runtime revision to advance once')
   assertCondition(published.settings.angle === 'right-side', 'expected runtime to normalize the camera angle')

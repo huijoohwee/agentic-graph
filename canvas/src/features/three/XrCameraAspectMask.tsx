@@ -13,7 +13,6 @@ import {
   subscribeXrMotionReferenceRuntime,
 } from './xrMotionReferenceRuntime'
 import { sampleXrMotionReferenceCameraSettings } from './xrMotionReferenceSampling'
-import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 
 type MaskGeometry = Readonly<{
   barHeight: number
@@ -31,8 +30,6 @@ export function XrCameraAspectMask() {
   const rootRef = React.useRef<HTMLElement | null>(null)
   const [size, setSize] = React.useState({ width: 0, height: 0 })
   const playing = useGraphStore(state => state.timelineTransportPlaying)
-  const markdownDocumentName = useGraphStore(state => state.markdownDocumentName)
-  const markdownDocumentText = useGraphStore(state => state.markdownDocumentText)
   const framing = React.useSyncExternalStore(
     subscribeCameraFramingRuntime,
     readCameraFramingRuntime,
@@ -44,7 +41,19 @@ export function XrCameraAspectMask() {
     readXrMotionReferenceRuntime,
   )
 
+  const selectedCameraMark = runtime.selectedMark?.kind === 'camera'
+    ? runtime.plan.camera.find(mark => mark.id === runtime.selectedMark?.markId)
+    : null
+  const sampledSettings = playing
+    ? sampleXrMotionReferenceCameraSettings(runtime.plan.camera, runtime.playheadSeconds)
+    : null
+  const settings = sampledSettings
+    || selectedCameraMark?.settings
+    || (framing.claimed ? framing.settings : null)
+  const projectionVisible = settings !== null
+
   React.useEffect(() => {
+    if (!projectionVisible) return undefined
     const root = rootRef.current
     if (!root) return undefined
     const measure = () => setSize({ width: root.clientWidth, height: root.clientHeight })
@@ -53,21 +62,21 @@ export function XrCameraAspectMask() {
     const observer = new ResizeObserver(measure)
     observer.observe(root)
     return () => observer.disconnect()
-  }, [])
+  }, [projectionVisible])
 
-  const selectedCameraMark = runtime.selectedMark?.kind === 'camera'
-    ? runtime.plan.camera.find(mark => mark.id === runtime.selectedMark?.markId)
-    : null
-  const sampledSettings = playing
-    ? sampleXrMotionReferenceCameraSettings(runtime.plan.camera, runtime.playheadSeconds)
-    : null
-  const settings = sampledSettings || selectedCameraMark?.settings || framing.settings
+  if (!settings) return null
+
   const aspect = resolveCameraAspectRatio(settings.aspectRatio)
   const geometry = resolveMaskGeometry(size.width, size.height, aspect.value)
   const activeWidth = Math.max(0, size.width - geometry.barWidth * 2)
   const activeHeight = Math.max(0, size.height - geometry.barHeight * 2)
-
-  if (isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)) return null
+  const projectionSource = sampledSettings
+    ? 'timeline-playback'
+    : selectedCameraMark
+      ? 'selected-timeline-mark'
+      : framing.source === 'panel'
+        ? 'floating-panel-camera'
+        : `camera-${framing.source}`
 
   return (
     <aside
@@ -81,7 +90,7 @@ export function XrCameraAspectMask() {
       data-kg-camera-focal-length-mm={settings.focalLengthMm}
       data-kg-camera-focus-distance-m={settings.focusDistanceMeters}
       data-kg-camera-aspect-ratio={settings.aspectRatio}
-      data-kg-camera-optics-source={sampledSettings ? 'timeline-playback' : selectedCameraMark ? 'selected-timeline-mark' : 'floating-panel-camera'}
+      data-kg-camera-optics-source={projectionSource}
     >
       {geometry.barHeight > 0 ? (
         <>

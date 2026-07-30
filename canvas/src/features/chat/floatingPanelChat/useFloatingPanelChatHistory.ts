@@ -5,6 +5,11 @@ import { cancelWorkspaceSyncTask, scheduleWorkspaceSyncTask } from '@/lib/async/
 import { WORKSPACE_SYNC_SCOPE_CHAT_HISTORY_RUNTIME_PERSISTENCE } from '@/lib/async/workspaceSyncKeys'
 import type { ChatMessage, StreamingAssistantState } from '../FloatingPanelChatSections'
 import {
+  isHeadlessResponseRunReceipt,
+  isHeadlessResponseRunResult,
+  projectHeadlessResponseRunReceipt,
+} from '../headlessResponseCoordinator'
+import {
   adoptLatestChatHistoryTransition,
   CHAT_HISTORY_COALESCE_DELAY_MS,
   getCachedChatHistory,
@@ -16,7 +21,7 @@ import {
   toHistoryTaskKey,
 } from './floatingPanelChatRuntime'
 
-const parseChatHistory = (raw: unknown): ChatMessage[] | null => {
+export const parseChatHistory = (raw: unknown): ChatMessage[] | null => {
   if (!Array.isArray(raw)) return null
   const next: ChatMessage[] = []
   raw.forEach(item => {
@@ -27,7 +32,18 @@ const parseChatHistory = (raw: unknown): ChatMessage[] | null => {
     if (!id) return
     if (role !== 'user' && role !== 'assistant') return
     if (typeof content !== 'string') return
-    next.push({ id, role, content })
+    const headlessResponseRun = (item as { headlessResponseRun?: unknown }).headlessResponseRun
+    const receipt = isHeadlessResponseRunResult(headlessResponseRun)
+      ? projectHeadlessResponseRunReceipt(headlessResponseRun)
+      : isHeadlessResponseRunReceipt(headlessResponseRun)
+        ? headlessResponseRun
+        : null
+    next.push({
+      id,
+      role,
+      content,
+      ...(receipt ? { headlessResponseRun: receipt } : {}),
+    })
   })
   return next
 }

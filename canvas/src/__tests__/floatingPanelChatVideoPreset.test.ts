@@ -131,9 +131,10 @@ export function testFloatingPanelPromptPresetsIsFirstClassViewAfterSkillsCommand
 
 export function testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff() {
   const source = fs.readFileSync(path.join(process.cwd(), 'src', 'features', 'toolbar', 'FloatingPanelPromptPresetsView.tsx'), 'utf8')
+  const selectionRuntimeSource = fs.readFileSync(path.join(process.cwd(), 'src', 'features', 'chat', 'promptPresetSelectionRuntime.ts'), 'utf8')
   for (const expected of [
-    'loadPromptPresetCatalog()',
-    'loadPromptPresetInvocation(id)',
+    'defaultPromptPresetSelectionRuntime',
+    '...defaultPromptPresetSelectionRuntime',
     'openFloatingPanelChatWithSeedWhenReady({',
     "mode: 'replace'",
     "delivery: 'queuedHandoff'",
@@ -141,6 +142,9 @@ export function testFloatingPanelPromptPresetsViewOwnsCatalogAndChatHandoff() {
     'data-kg-floating-panel-prompt-presets-view="true"',
   ]) {
     if (!source.includes(expected)) throw new Error(`Prompt Presets view missing ${expected}`)
+  }
+  for (const expected of ['loadPromptPresetCatalog()', 'loadPromptPresetInvocation(id)']) {
+    if (!selectionRuntimeSource.includes(expected)) throw new Error(`shared Prompt Presets selection runtime missing ${expected}`)
   }
 }
 

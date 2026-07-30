@@ -35,14 +35,30 @@ export function testPwaShellPrecachesHashedAssetsAndCachesLocalJson() {
   if (!text.includes("assets/**/*.{js,css,woff,woff2,ttf}")) {
     throw new Error('Expected PWA precache glob to include all hashed asset chunks, not only entry bundles')
   }
+  if (text.includes("globPatterns: ['index.html'") || !text.includes('navigateFallback: null')) {
+    throw new Error('Expected production HTTP to remain the sole HTML owner without a stale service-worker navigation fallback')
+  }
+  if (!text.includes("registerType: 'autoUpdate'")) {
+    throw new Error('Expected one auto-update service-worker lifecycle owner')
+  }
+  const chatWorkerText = readUtf8(path.resolve(process.cwd(), 'public/knowgrph-chat-stream-sw.js'))
+  if (/addEventListener\(['"](?:install|activate)['"]/.test(chatWorkerText)) {
+    throw new Error('Expected the imported chat worker to leave install and activate ownership to VitePWA')
+  }
   if (!text.includes("globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js']")) {
     throw new Error('Expected PWA precache to keep oversized Monaco and Mermaid bundles on runtime cache only')
   }
   if (!text.includes("request.destination === 'worker'")) {
     throw new Error('Expected PWA runtime cache to include worker assets for lazy parser/editor surfaces')
   }
-  if (!text.includes("importScripts: ['knowgrph-chat-stream-sw.js']")) {
-    throw new Error('Expected generated PWA service worker to import the durable chat stream worker without replacing the app shell worker scope')
+  if (!text.includes('knowgrph-service-worker-revision.js?revision=${runtimeIdentity.sourceRevision}')) {
+    throw new Error('Expected the generated PWA service worker to revision-bind its active-worker authority import')
+  }
+  if (!text.includes('knowgrph-chat-stream-sw.js?revision=${runtimeIdentity.sourceRevision}')) {
+    throw new Error('Expected the generated PWA service worker to revision-bind its durable chat runtime import')
+  }
+  if (!chatWorkerText.includes("RUNTIME_SCHEMA = 'knowgrph-chat-stream-worker/v2'")) {
+    throw new Error('Expected the durable chat worker to attest the lifecycle-clean runtime schema')
   }
   if (!text.includes("url.pathname.endsWith('.json')")) {
     throw new Error('Expected PWA runtime cache to include same-origin JSON data payloads')
@@ -81,8 +97,8 @@ export function testPwaRuntimeTracksStandaloneInstallAndUpdateState() {
   if (!runtimeText.includes("root.dataset.kgOfflineReady = swState?.offlineReady ? '1' : '0'")) {
     throw new Error('Expected PWA runtime to publish offline-ready state on the document root')
   }
-  if (!runtimeText.includes("root.dataset.kgUpdateReady = swState?.updateReady ? '1' : '0'")) {
-    throw new Error('Expected PWA runtime to publish update-ready state on the document root')
+  if (runtimeText.includes('kgUpdateReady') || runtimeText.includes('onNeedRefresh()')) {
+    throw new Error('Expected PWA runtime to remove the inactive prompt-mode update path')
   }
   if (!runtimeText.includes("root.dataset.kgInstalled = displayMode === 'browser' && !installedHint ? '0' : '1'")) {
     throw new Error('Expected PWA runtime to publish installed-shell state on the document root')
@@ -90,14 +106,32 @@ export function testPwaRuntimeTracksStandaloneInstallAndUpdateState() {
   if (!runtimeText.includes('onOfflineReady()')) {
     throw new Error('Expected PWA runtime to surface offline-ready state')
   }
-  if (!runtimeText.includes('onNeedRefresh()')) {
-    throw new Error('Expected PWA runtime to surface update-ready state')
+  if (!runtimeText.includes('registerCanonicalServiceWorker({')) {
+    throw new Error('Expected PWA runtime to register the canonical worker through the app-owned update policy')
   }
-  if (!runtimeText.includes('const updateServiceWorker = registerSW({')) {
-    throw new Error('Expected PWA runtime to retain the service-worker update handle for stale shell recovery')
+  const registrationOwnerText = readUtf8(
+    path.resolve(process.cwd(), 'src/lib/pwa/serviceWorkerRegistrationOwner.ts'),
+  )
+  if (!registrationOwnerText.includes("updateViaCache: 'none'")) {
+    throw new Error('Expected canonical worker registration to bypass caches for rapid release convergence')
   }
-  if (!runtimeText.includes('void updateServiceWorker(true)')) {
-    throw new Error('Expected PWA runtime to auto-activate a newly available shell so stale clients do not stay on outdated startup logic')
+  if (!registrationOwnerText.includes('sw.js?revision=${normalizedRevision}')) {
+    throw new Error('Expected canonical worker registration to bind the top-level worker URL to the exact release revision')
+  }
+  if (!runtimeText.includes('sourceRevision: readKnowgrphSourceRevision()')) {
+    throw new Error('Expected PWA runtime to register the worker with its exact build revision')
+  }
+  if (!runtimeText.includes('installServiceWorkerRevisionUpdateOwner({')) {
+    throw new Error('Expected PWA runtime to refresh the canonical worker on registration and bounded recovery events')
+  }
+  const revisionAuthorityText = readUtf8(
+    path.resolve(process.cwd(), 'viteServiceWorkerRevisionAuthority.mjs'),
+  )
+  if (!revisionAuthorityText.includes("self.addEventListener('activate', event =>")) {
+    throw new Error('Expected worker activation to own stale cache convergence before serving returning sessions')
+  }
+  if (runtimeText.includes('installServiceWorkerCacheRevisionOwner')) {
+    throw new Error('Expected cache convergence to have one worker-owned lifecycle path')
   }
   if (!runtimeText.includes("console.warn('[knowgrph] Offline shell registration failed.', error)")) {
     throw new Error('Expected PWA runtime to log offline-shell registration failures without forcing a user warning toast')
@@ -131,6 +165,8 @@ export function testPwaRuntimeTracksStandaloneInstallAndUpdateState() {
 export function testPwaIndexHtmlIncludesInstallMeta() {
   const htmlPath = path.resolve(process.cwd(), 'index.html')
   const htmlText = readUtf8(htmlPath)
+  const manifestText = readUtf8(path.resolve(process.cwd(), 'public/manifest.webmanifest'))
+  const faviconText = readUtf8(path.resolve(process.cwd(), 'public/favicon.svg'))
   if (!htmlText.includes('rel="apple-touch-icon"')) {
     throw new Error('Expected index.html to include apple-touch-icon link for iOS PWA install')
   }
@@ -143,6 +179,20 @@ export function testPwaIndexHtmlIncludesInstallMeta() {
   if (!htmlText.includes('href="%BASE_URL%manifest.webmanifest"')) {
     throw new Error('Expected index.html manifest link to resolve from the configured base path so rewritten custom domains do not bind to an apex-root manifest')
   }
+  for (const identityMarker of [
+    '<title>airvio agentic canvas os</title>',
+    'name="application-name" content="airvio agentic canvas os"',
+    'name="apple-mobile-web-app-title" content="airvio agentic canvas os"',
+    'href="/favicon.svg?v=airvio"',
+  ]) {
+    if (!htmlText.includes(identityMarker)) throw new Error(`Expected Home Apex browser identity marker ${identityMarker}`)
+  }
+  if (!manifestText.includes('"name": "airvio agentic canvas os"') || !manifestText.includes('"short_name": "airvio"')) {
+    throw new Error('Expected the installable Home Apex identity to use Airvio branding')
+  }
+  if (!faviconText.includes('aria-label="Airvio favicon"')) {
+    throw new Error('Expected Home Apex to publish the reviewed Airvio favicon asset')
+  }
 }
 
 export function testPwaHeadersIncludeSwAndManifestCacheControl() {
@@ -150,6 +200,12 @@ export function testPwaHeadersIncludeSwAndManifestCacheControl() {
   const headersText = readUtf8(headersPath)
   if (!headersText.includes('/sw.js')) {
     throw new Error('Expected _headers to include sw.js cache bypass rule')
+  }
+  if (!headersText.includes('/knowgrph-chat-stream-sw.js')) {
+    throw new Error('Expected _headers to bypass caching for the mutable imported service-worker script')
+  }
+  if (!headersText.includes('/knowgrph-service-worker-revision.js')) {
+    throw new Error('Expected _headers to bypass caching for the revision-bound service-worker authority')
   }
   if (!headersText.includes('Service-Worker-Allowed')) {
     throw new Error('Expected _headers to include Service-Worker-Allowed for scope flexibility')

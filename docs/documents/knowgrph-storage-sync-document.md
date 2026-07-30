@@ -1,556 +1,218 @@
 ---
-title: "Knowgrph Storage & Sync"
+title: "Reference implementation: Knowgrph Storage and Synchronization"
 id: "md:knowgrph-storage-sync-document"
-author: "airvio / joohwee"
-date: "2026-06-01"
-updated: "2026-06-18"
-version: "3.2.0"
-status: "deployed-dev; prod/cloudflare deploy remains manual"
 doc_type: "Combined PRD/TAD"
+version: "4.0.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
-domain: "knowgrph"
-orientation:
-  - "solo-dev"
-  - "AI-native"
-  - "min-viable-max-value"
-  - "TCO-zero"
-  - "FOSS-first"
-  - "token-economical"
-constraints:
-  - "universal"
-  - "neutral"
-  - "agnostic"
-  - "modular"
-  - "spec-complete to runtime-ready"
-  - "no hardcoded credentials, workspace IDs, or route paths"
-  - "no downstream local patch stacks"
-supersedes:
-  - "knowgrph-storage-document.md"
-  - "knowgrph-storage-document-runtime-and-conflict-ux.md"
-  - "knowgrph-storage-document-schemas-and-topology.md"
-  - "knowgrph-sync-infrastructure-prd-tad.md"
-owner: "Knowgrph canonical docs"
-kgDocumentSemanticMode: "document"
-kgFrontmatterModeEnabled: true
-kgCanvasSurfaceMode: "2d"
-kgCanvasRenderMode: "2d"
-kgCanvas2dRenderer: "storyboard"
-traceability:
-  prd: "PRD-STORAGE-SYNC"
-  tad: "TAD-STORAGE-SYNC"
-  repo: "huijoohwee/knowgrph"
-  feature_surface: "Storage Sync"
-  doc_path: "docs/documents/knowgrph-storage-sync-document.md"
+guideline_version: "1.7.0"
+owner: "docs.storage.sync"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-storage-sync-document.md"
+companion: "docs/documents/knowgrph-storage-sync-document.companion.md"
+decision_archive: "docs/documents/knowgrph-storage-sync-adrs-document.md"
+binary_contract: "docs/documents/knowgrph-artifact-media-storage-architecture.md"
+invocation_authority: "Runtime route identities are owned by the typed route-path source module; this document declares no invocation route."
 ---
 
-# Knowgrph Storage & Sync
+# Reference implementation: Knowgrph Storage and Synchronization
 
-**Context**: Canonical markdown documents, configurable local docs mirror sync, optional D1-backed Worker storage, PocketBase + Yjs collaborative editing, minimal browser cache, and Cloudflare deployment.
-**Intent**: Keep one canonical storage decision, one shared sync contract, and one conflict-resolution UX path.
-**Directive**: Keep GitHub `docs/**` canonical for Storage Sync. Use the local docs mirror as a working projection, use PocketBase + Yjs as the concurrent-editing layer, and use Cloudflare Worker + D1 only for explicit runtime/read-cache endpoints. Collaborators never touch Git; a server-side bridge commits saved CRDT snapshots back to GitHub. Never let two users edit raw JSON simultaneously without CRDT wrapping.
+## Authority and readiness
 
-## Companion Files
+This document owns the product and architecture contract for local working persistence and optional
+shared projections. Authored Markdown remains canonical. Browser records, shared D1 rows, R2
+objects, collaboration rooms, and generated mirrors are supporting stores with explicit roles.
 
-| File | Scope |
-|---|---|
-| `knowgrph-storage-sync-document.companion.md` | PRD summary, TAD runtime layers, conflict resolution, ADRs, deployment phases, quality attributes, token economics, validation |
-| `knowgrph-storage-schemas-document.md` | D1 SQL, browser cache shapes, contract types, route contracts |
-| `knowgrph-local-storage.md` | Browser LocalStorage keys (UI state, not sync) |
-| `knowgrph-source-files-import.md` | Import workflows, format routing, geo layer registration |
-| `knowgrph-multi-user-collaboration-prd.tad.md` | Multi-user auth, authorization, role-based access, SSOT transition |
+The source contains working adapters, but no satisfying Evidence Reference is attached here.
+Therefore local readiness is `spec-complete` and delivered readiness is `undocumented`.
 
----
+## Problem and personas
 
-## Storage Ladder
-
-1. **Canonical authoring source**: GitHub `huijoohwee/agentic-canvas-os` `docs/**` is the Source Files SSOT; device-local folders are never allowed to replace this inventory
-2. **Per-device cache**: minimal browser cache only; it is not canonical persistence
-3. **Concurrent edit layer**: PocketBase + Yjs when ≥2 users edit the same file at the same time
-4. **Save bridge**: server-side bridge serializes saved Yjs state and commits to GitHub; collaborators never touch Git directly
-5. **Explicit shared/runtime store**: Cloudflare D1 through a Cloudflare Worker sync API using `drizzle-orm` queries and Wrangler SQL migrations for read/export/runtime metadata only
-6. **Generated binary artifact store**: Cloudflare R2 owns generated image/video/binary bytes; D1 owns the sibling Markdown manifest that points to the R2 object through the Worker blob route
-7. **Future scale-up path**: PostgreSQL only when server-side retrieval clearly outgrows D1/PocketBase responsibilities
-
-### SSOT Transition
-
-The canonical authoring source does not change with workspace membership: GitHub `docs/**` remains SSOT.
-
-- **Single-user workspace**: Source Files reads the canonical Agentic Canvas OS GitHub tree first. A configured local mirror is an offline fallback, not an inventory owner.
-- **Multi-user workspace**: PocketBase + Yjs becomes the live collaboration layer only while concurrent same-file editing is active. On save, the bridge serializes Yjs state and commits to GitHub. D1 remains a runtime read/export cache and never becomes the collaboration SSOT.
-
-### Multi-User Concurrent Editing
-
-When ≥2 users edit the same `*.md` or `*.json` file simultaneously, Git merge is insufficient — minified JSON merges are destructive, and polling-based D1 sync introduces unacceptable conflict rates at character-level edit frequency.
-
-**Stack: PocketBase + Yjs**
-
-PocketBase owns authentication/session state, room metadata, membership, and realtime fanout using its JavaScript SDK authentication store and collection `subscribe()` realtime API. Yjs owns merge state through `Y.Doc` update events and shared types; clients exchange encoded Yjs updates through the PocketBase collaboration collections/relay and apply them with `Y.applyUpdate()`.
-
-| Doc type | Yjs primitive | Merge semantics |
+| Persona | Problem | First value |
 |---|---|---|
-| `*.md` | `Y.Text` | Character-level CRDT, zero conflicts |
-| `*.json` | `Y.Map` / nested `Y.Map` + `Y.Array` | Field-level merge, prevents destructive overwrites on minified JSON |
+| Solo author | browser refresh/offline work can lose context | save and reopen one local source |
+| Multi-device author | revisions can diverge across devices | explicit push/pull result or conflict |
+| Collaborator | concurrent edits can overwrite one another | one selected room provider and visible state |
+| Operator | source, shared state, and delivery can be confused | exact store role, evidence, and rollback |
 
-**Constraint**: Never allow two users to edit raw minified JSON simultaneously without CRDT wrapping. Git merge on minified JSON produces non-deterministic field loss. All concurrent `*.json` edits must route through Yjs shared JSON types and serialize back to canonical formatted JSON only at save time.
+## Journey: Author — Save, reconnect, and reconcile
 
-**JSON guardrail**:
+| Stage | Action | Touchpoint | Pain | Opportunity |
+|---|---|---|---|---|
+| Trigger | edits one source | workspace | fears loss | persist locally before transport |
+| Discover | inspects save/sync state | Source Files | status can be ambiguous | expose local, queued, conflict, and failure |
+| Engage | requests synchronization | sync adapter | network may fail and trust differs by adapter | bounded outbox, typed result, and explicit auth gap |
+| Complete | reopens or reconciles | workspace | fears silent overwrite | retain canonical revision and conflict |
+| Return | continues offline/online | local store | provider may be unavailable | local-first degraded mode |
 
-- Single-user raw JSON editing is allowed only when no active collaborator is present for the same file.
-- When a second collaborator joins a `*.json` document, the raw JSON textarea/editor becomes read-only and the structured Yjs JSON editor becomes authoritative.
-- Minified JSON is never committed directly from two clients. The bridge writes stable, formatted JSON generated from the Yjs shared model.
+## Requirements and VCCs
 
-**Git sync bridge auto-commit contract**
+| ID | Given / When / Then | VCC: end state; stated check; constraint |
+|---|---|---|
+| S1 Local durability | Given a valid source edit, when saved, then a recoverable local record exists before optional transport. | End: save/reopen and fallback tests pass; Check: `npm test` exits 0; Constraint: source identity remains explicit and memory fallback is not called durable. |
+| S2 Typed synchronization | Given queued mutations, when push/pull runs, then applied/conflict/rejected/deferred results are recorded with cursors. | End: storage/runtime suites pass; Check: `npm run runtime:test` exits 0; Constraint: conflict/rejection is never silently resent or overwritten. |
+| S3 Source authority | Given local, shared, and mirror copies, when identities disagree, then the configured authored source and revision remain authoritative. | End: source-authority tests pass; Check: `npm test` exits 0; Constraint: no D1/browser/mirror record becomes an implicit authoring owner. |
+| S4 Optional collaboration | Given concurrent editing is enabled, when a document opens, then exactly one room provider owns updates and recovery. | End: provider-specific room/replay tests pass; Check: `npm test` exits 0; Constraint: no dual-write between room providers. |
+| S5 Binary separation | Given generated/uploaded bytes, when stored or replayed, then binary-route auth/overwrite behavior matches the dedicated contract. | End: media/blob suites pass; Check: named binary tests exit 0; Constraint: no entitlement, immutability, or delivery claim beyond actual handlers. |
+| S6 Protected delivery | Given a shared Worker or mirror candidate, when promotion is requested, then Source→Mirror→Delivery boundaries remain closed without evidence and instruction. | End: exact candidate/live/rollback receipt exists; Check: protected workflow reports it; Constraint: the Pages release does not implicitly deploy storage Workers. |
+| S7 Shared authorization | Given a shared structured route, when authorization is missing or invalid, then the request is rejected before any read or write. | End: negative auth tests pass for push, pull, and export; Check: a future named security suite exits 0; Constraint: current source has no satisfying auth enforcement, so shared delivery remains closed. |
 
-```
-User save / autosave boundary
-  → bridge reads current PocketBase room membership and Y.Doc state
-  → serialize Y.Text / Y.Map snapshot to *.md / canonical formatted *.json
-  → GitHub Contents API (or GitHub App): PUT /repos/{owner}/{repo}/contents/docs/{path}
-  → commit: "chore(sync): save {path} from collaboration bridge"
-  → collaborators never touch Git — bridge owns all commits
-  → GitHub docs branch/main stays SSOT
-```
+## Time-to-value and metrics
 
-PocketBase realtime broadcasts Yjs update envelopes and awareness state (cursor, selection, active user) between clients. D1 remains the runtime export/read cache; it does not serve as the concurrent edit store.
+| Metric | Baseline | Target | Timeline |
+|---|---:|---:|---|
+| Local save/reopen TTV | unmeasured | ≤3 actions / ≤5 min | before baseline |
+| Offline save recovery | unmeasured | 100% canonical fixtures | before baseline |
+| Conflict visibility | unmeasured | 100% conflict fixtures produce explicit state | before enabling shared sync |
+| Mandatory token cost | 0 by design | 0/run and $0/month | every run |
+| Local cash TCO | $0 estimate | $0/month; $0/12 months | monthly |
+| Shared cash TCO | unmeasured | operator-approved budget before use | before delivery |
+| Local readiness rung | `spec-complete` | evidence-derived only | every revision |
+| Delivered readiness rung | `undocumented` | evidence-derived only | every revision |
 
----
+## ROI and scope
 
-### Default Workspace Initialization Source
+Score is `(impact × monthly reach) / (build hours + 12-month cash TCO/100 + risk)`.
 
-Users can configure a default import source URL via Settings → Workspace → `workspace.import.defaultSourceUrl`. When the workspace is empty and this URL is set, `ensureSeed()` fetches content from the URL and seeds the workspace, reusing the existing `importUrlFallback()` pipeline.
+| Tier | Capability | Estimated ROI | 12-month TCO | Scope |
+|---|---|---:|---:|---|
+| Must | local working store and recovery | 3.1 | $0 | minimum viable |
+| Must | typed outbox/cursor/conflict | 2.2 | $0 local | minimum viable |
+| Must | source-authority labels | 3.8 | $0 | minimum viable |
+| Should | optional shared structured sync | 0.9 | $0–540 | evidence-gated |
+| Should | one collaboration room provider | 0.6 | $120–1,200 | evidence-gated |
+| Could | shared binary replay | 0.5 | $0–420 | blocked on security VCCs |
+| Won't | hidden cloud authority or unbounded auto-sync | <0.1 | unbounded | excluded |
 
-Supported URL types: GitHub repo/folder/blob, any webpage, raw markdown URL, local dev path (via Vite proxy), and explicit Cloudflare D1 export endpoints for Worker/runtime validation.
+Minimum viable scope is local save/reopen, explicit memory fallback, typed outbox/cursor/conflict,
+and zero-token operation. Real-time collaboration, automatic Worker delivery, and claims of
+cross-device/public durability are out of scope until separately evidenced.
 
-### Toolbar Storage Sync
+## Topology: Storage roles v4 — 2026-07-30
 
-Toolbar → Workspace View → `Storage Sync` is the runtime gate for two storage paths that share GitHub as SSOT:
-
-1. **Solo/local path**: Editor Workspace `/docs/**` ⇄ Source Files ⇄ configured local docs mirror.
-2. **Concurrent path**: Editor Workspace `/docs/**` ⇄ Yjs document room ⇄ PocketBase realtime relay ⇄ GitHub save bridge.
-3. **Explicit Source Files cloud path**: a Markdown row's local/cloud icon commits the saved local file through the GitHub save bridge, pushes that exact text to D1 only after GitHub succeeds, and shows cloud-synced only after the public D1 document read-back matches.
-4. **Generated artifact publication path**: Generated workspace artifact blob ⇄ `/api/storage/blob/:workspaceId/:canonicalPath*` ⇄ R2 object, plus a sibling Markdown manifest pushed through the Source Files storage publication helper into D1.
-
-When on, the app keeps the workspace seed refresh loop active and allows same-file collaborative rooms to sync through PocketBase + Yjs. When off, seed refresh and collaboration room sync are paused; local Source Files persistence and graph composition remain local.
-
-Generated artifact publication remains explicitly opt-in through the runtime storage setting. A generated image/video/binary artifact is considered synced across Dev, Prod, and Cloudflare only when both checks pass: the Worker blob URL responds through `GET|HEAD /api/storage/blob/:workspaceId/:canonicalPath*`, and the sibling manifest is readable through the D1 document route. AI/LLM generated media that participates in collaborative canvas state additionally uses `/api/storage/media/assets` to confirm the R2 object, persist D1 metadata/provenance, cache an operator-supplied access URL in KV when `KNOWGRPH_MEDIA_ACCESS_KV` is bound, and notify `KNOWGRPH_CANVAS_ROOM` when a collaboration room id is present. Local generated files, browser object URLs, provider URLs, and embedded `srcdoc` alone are proof of Dev output only, not Cloudflare persistence.
-
-#### Media Upload And `@` Command Runtime
-
-FloatingPanel Media is the rich-media catalog, not a storage settings panel. Upload Media from the panel and `@ Upload Media` from an active card field must call the same shared upload helper, produce the same image/audio/video asset record, and refresh the same Media inventory. The `@` insertion path adds an inline media chip to the selected card field without changing the surrounding text typography or recomputing the card surface. Uploaded media thumbnails open the shared preview lightbox, while the thumbnail Download Media action uses the shared download helper without changing the insert, rename, delete, or open-link contracts. Storyboard card media previews and Storyboard reference thumbnails must reuse the same shared hover/focus-appearing translucent kind, info, open-link, and download overlays instead of a Storyboard-local overlay stack.
-
-| Runtime surface | Storage responsibility |
-|---|---|
-| FloatingPanel Media | List, rename, delete, open, preview, download, and insert persisted media records through shared media inventory helpers. |
-| `@ Upload Media` | Reuse FloatingPanel Media upload logic, then insert the resulting media record into the active card field as an inline chip. |
-| R2 | Store image/audio/video binary blobs under the configured workspace/object prefix. |
-| D1 | Store media asset metadata, provenance, content type, source action, and workspace/card/run context. |
-| KV | Cache short-lived access URLs only when `KNOWGRPH_MEDIA_ACCESS_KV` is bound. |
-| Durable Objects | Sync latest media room state and collaborator notifications when `KNOWGRPH_CANVAS_ROOM` is bound. |
-
-### Why This Remains The Default
-
-- GitHub `docs/**` stays the authoring source of truth; docs do not drift into a database-first workflow.
-- GitHub stays SSOT for both solo and collaborative authoring; D1 is a runtime read/export cache, not an authoring SSOT.
-- D1 + Wrangler SQL migrations keep the shared-store step operationally lean while `drizzle-orm` typed Worker code owns runtime access.
-- Browser cache remains bounded and non-canonical, so storage drift is neutralized at the source.
-- Token savings come from chunk reuse, graph snapshot reuse, and bounded pull/push contracts.
-- D1 write cost stays lean: read-first ensure* guards, pull skips writes on no-change, sync_events capped at 24h TTL, 120s poll interval.
-- Conflict handling stays inside the existing toast/log/runtime path; no second UX system.
-- Auto-clear of stale outbox conflicts after pull eliminates manual resolution after re-seeds.
-- Yjs CRDT (Y.Text/Y.Map) eliminates destructive Git merge conflicts for concurrent sessions; raw minified JSON must never be Git-merged across simultaneous edits.
-- GitHub save bridge auto-commits saved Yjs snapshots — GitHub SSOT is maintained without any manual Git workflow for collaborators.
-- Generated binary artifacts reuse the same Storage Worker and Source Files storage publication owners: R2 stores bytes, D1 stores manifests, and Cloudflare persistence is never claimed without a readable blob route and manifest route.
-- Collaborative generated media uses the MainPanel Cloudflare media topology and Storage Worker asset-sync route while FloatingPanel Media remains the rich-media browser: R2 stores image/audio/video bytes, D1 stores `media_artifacts` metadata/provenance, KV stores short-lived access URL cache entries only when a real namespace is bound, and the Durable Object stores the latest room asset notification.
-- FloatingPanel Media upload accepts image, audio, and video files. The panel shows a local preview immediately, attempts the existing Worker media PUT route plus `/api/storage/media/assets` metadata route when runtime sync is enabled, writes bytes to the `knowgrph-storage-blobs` R2 bucket under the `airvio/` object prefix, stores a short-lived browser-openable access URL in KV when bound, and writes a lightweight Markdown media reference only after R2/D1 persistence is confirmed.
-
----
-
-## Architecture — As-Is
+| Node | Role | Type | Lane | Connects to | Connection | Data residency |
+|---|---|---|---|---|---|---|
+| Authored source | Store | Markdown/file or configured source | Authoring | Source Files | file/API | configured source root |
+| Source Files | Router/Consumer | client feature | Authoring | working store, sync client | in-process events | browser memory |
+| Working store | Store | IndexedDB/Dexie or explicit memory adapter | Authoring | sync client | local transaction | user device |
+| Sync client | Producer/Consumer | typed client adapter | Authoring | shared Worker | bounded HTTPS | request memory |
+| Shared Worker source | Gateway | Worker source | Authoring | D1/R2/room binding | in-process binding | configured service region |
+| Structured store | Store | D1-compatible database | Authoring until delivered separately | Worker | binding call | configured database region |
+| Binary store | Store | R2-compatible object store | Authoring until delivered separately | Worker | binding call | configured bucket region |
+| Room provider | Store/Gateway | optional collaboration service | Authoring until delivered separately | Source Files | WebSocket/realtime | provider configuration |
+| Mirror | Store | immutable candidate | Mirror | Delivery | protected batch | mirror artifact store |
+| Delivery | Consumer/Gateway | optional public/shared runtime | Delivery | clients | HTTPS/WebSocket | declared delivery region |
 
 ```mermaid
 flowchart TB
-    subgraph Dev["Dev: knowgrph/"]
-        subgraph canvas["canvas/src/"]
-            subgraph fs["Workspace FS"]
-                fsPersisted["workspaceFsPersisted.ts"]
-                fsMem["workspaceFsMemory.ts"]
-                fsEvt["workspaceFsEvents.ts"]
-                seed["workspaceSeedProvider.ts"]
-                seedSF["workspaceSeedSourceFiles.ts"]
-                boot["sourceFilesBootstrapStartup.ts"]
-            end
-            subgraph bridge["SourceFiles ↔ Storage"]
-                sfSync["sourceFilesStorageSync.ts"]
-                sfInbound["sourceFilesInboundStorageApply.ts"]
-            end
-            subgraph browserCache["Browser cache"]
-                storageDb["knowgrphStorageDb.ts"]
-            end
-            syncEngine["knowgrphStorageClientSync.ts"]
-            contract["knowgrphStorageSyncContract.ts"]
-            subgraph conflict["Conflict UX"]
-                conflictUx["ConflictUx"]
-                conflictAct["ConflictActions"]
-            end
-        end
-        subgraph cf["cloudflare/"]
-            worker["workers/knowgrph-storage/<br/>index.ts + db.ts + contract.ts + wrangler.toml"]
-            migration["d1/migrations/0001_knowgrph_storage.sql"]
-        end
-        scripts["scripts/sync-pages-knowgrph.mjs"]
-    end
-
-    Dev -->|"npm run pages:build-sync"| ProdSSOT
-    Dev -->|"npm run storage:deploy"| Edge
-
-    subgraph ProdSSOT["Prod SSOT: huijoohwee/content/knowgrph/"]
-        index["index.html + sw.js"]
-        manifest["manifest.webmanifest"]
-        assets["assets/ (hashed SPA chunks)"]
-        data["imports/"]
-        favicon["favicon.svg"]
-    end
-
-    ProdSSOT -->|"Pages deploy"| Edge
-
-    subgraph Edge["Cloudflare Edge (airvio.co/knowgrph)"]
-        pages["Pages: static SPA"]
-        workerDeployed["Worker: /api/storage/*"]
-        blobRoute["Worker blob route<br/>/api/storage/blob/*"]
-        subgraph d1r["D1 (remote SQLite)"]
-            r1["workspaces"]
-            r2["documents"]
-            r3["document_chunks"]
-            r4["graph_snapshots"]
-            r5["sync_devices"]
-            r6["sync_events"]
-        end
-        subgraph r2b["R2"]
-            rb1["generated binary artifacts"]
-        end
-    end
-
-    subgraph Browser["Browser (any device)"]
-        bcache["Minimal browser cache"]
-        bsync["Client sync engine (120s poll)"]
-        bbridge["SF ↔ Storage bridge"]
-        byjs["Yjs doc room<br/>Y.Text / Y.Map"]
-        bconflict["Conflict UX (toast + log)"]
-        bautoClear["Auto-clear stale conflicts"]
-    end
-
-    subgraph Collab["Concurrent editing layer"]
-        pb["PocketBase auth + realtime relay"]
-        gitBridge["GitHub save bridge<br/>server-owned token"]
-        githubDocs["GitHub docs/** SSOT"]
-    end
-
-    Browser -->|"push/pull"| Edge
-    Browser -->|"generated artifact upload/read"| blobRoute
-    blobRoute --> rb1
-    blobRoute -->|"sibling manifest via storage publication"| r2
-    Browser -->|"Yjs updates + awareness"| pb
-    pb -->|"save snapshot"| gitBridge
-    gitBridge -->|"auto-commit on save"| githubDocs
+  subgraph Device["User device · Authoring"]
+    Source["Authored source"]
+    Files["Source Files"]
+    Local["Working store"]
+    Sync["Sync client"]
+  end
+  subgraph SharedSource["Optional shared source · Authoring"]
+    Worker["Shared Worker source"]
+    D1["Structured store"]
+    R2["Binary store"]
+    Room["Room provider"]
+  end
+  subgraph MirrorLane["Mirror lane"]
+    Mirror["Immutable candidate"]
+  end
+  subgraph DeliveryLane["Delivery lane"]
+    Delivery["Delivered shared surface"]
+  end
+  Source -- "file/API" --> Files
+  Files -- "local transaction" --> Local
+  Local -- "bounded HTTPS" --> Sync
+  Sync -- "bounded HTTPS" --> Worker
+  Worker -- "binding" --> D1
+  Worker -- "binding" --> R2
+  Files -- "WebSocket/realtime" --> Room
+  SharedSource -. "protected batch" .-> Mirror
+  Mirror -. "protected publication" .-> Delivery
 ```
 
-### As-Is Gaps
+**Version note**: v4 removes direct Authoring-to-Delivery commands, provider deployment claims, and
+duplicate invocation dictionaries. The prior long-form ADR narrative is retained as a superseded
+archive.
 
-| Gap | Impact | Status |
+## Data flows
+
+### Local save and reopen
+
+| Stage | Component | Input | Output | Persistence | Error handling |
+|---|---|---|---|---|---|
+| Ingest | Source Files | source edit + identity | typed source revision | active source | validation error |
+| Transform | storage mapper | revision | document/chunk/snapshot/outbox records | none | typed mapping error |
+| Store | working store | records | committed local transaction | device; user-controlled | explicit memory fallback/failure |
+| Serve | workspace | reopened record | source/projection | active session | preserve unsaved state |
+
+### Optional synchronization
+
+| Stage | Component | Input | Output | Persistence | Error handling |
+|---|---|---|---|---|---|
+| Ingest | sync client | outbox + cursor | bounded request | request-scoped | retain outbox |
+| Transform | shared Worker | typed mutations/base revisions | applied/conflict/rejected/deferred | transaction-scoped | typed revision/quota result; current structured routes do not enforce auth |
+| Store | structured/binary/room owner | accepted record/update | shared projection | declared retention/region | rollback/reconcile |
+| Serve | reconciler | response + local state | updated cursor/conflict | local history | no silent overwrite |
+
+## Reference implementation: Current owners and limits
+
+| Role | Source owner | Current truth |
 |---|---|---|
-| Cloudflare Worker not deployed to Edge | Client push/pull has no server endpoint | **Resolved** — Worker deployed at `airvio.co/api/storage/*` |
-| D1 database not provisioned | No shared remote store exists | **Resolved** — D1 provisioned (`633355bf-…152`) |
-| No cross-device sync | Workspace state is siloed per-browser | **Resolved** — push/pull + 120s polling loop |
-| Canonical corpus drift | Device caches, the former `huijoohwee/docs` seed, legacy `/agentic-os-docs`, and obsolete `video-runs*` generated roots exposed different Source Files inventories | **Resolved in Dev** — GitHub `agentic-canvas-os/docs` owns bootstrap; workspace startup removes exact legacy source subtrees from persisted, memory, and hot-reload state while preserving `/agentic-canvas-os` and current timestamped `kgc-output_*` artifacts; the release seeder reconciles D1 to the same canonical paths and removes stale rows |
-| No per-file persistence truth or upload action | A local `New .md` row looked the same as a GitHub + Cloudflare verified document | **Resolved in Dev** — Source Files renders local, checking, uploading, cloud, unavailable, and failure states; clicking a supported Markdown icon runs GitHub first, D1 second, then exact document read-back |
-| No user identity | Mutations are anonymous (device-scoped only) | Open — see multi-user collaboration PRD-TAD |
-| No access control | Any device with workspace ID can read/write | Open — see multi-user collaboration PRD-TAD |
-| Stale outbox conflicts after re-seed | 48+ conflicts require manual resolution | **Resolved** — auto-clear after pull |
-| No public document view URL | Cannot share a readable link to a specific D1 document | **Resolved** — `GET /api/storage/doc/:workspaceId/:canonicalPath` + deep link canvas rendering |
-| D1 write amplification on every request | Pull/export write rows even when idle; sync_events grows unboundedly | **Resolved** — read-first ensure*, pull skips writes on no-change, sync_events removed from pull/export, 24h TTL prune on push, poll interval 30s→120s |
-| No concurrent doc editing | Two users editing same `*.md`/`*.json` simultaneously causes destructive Git merge on minified JSON | **Built in Dev** — PocketBase + Yjs (`Y.Text`/`Y.Map`) + GitHub save bridge (Path F); deploy requires PocketBase collections and Worker GitHub secret |
+| Browser contract/types | `canvas/src/lib/storage/knowgrphStorageSyncContract.ts` | document/chunk/snapshot/outbox/cursor shapes |
+| Route identity source | `canvas/src/lib/storage/knowgrphStorageRoutePaths.ts` | typed route constants/builders; sole runtime route owner |
+| Browser database | storage-sync client modules and Dexie/IndexedDB adapter | explicit memory fallback |
+| Storage Worker | `cloudflare/workers/knowgrph-storage/index.ts` | source dispatcher; separate deployment |
+| Structured persistence | Worker D1 modules/migrations | optional shared projection; push, pull, and export currently dispatch without authorization |
+| Binary persistence | `cloudflare/workers/knowgrph-storage/blob.ts`, `media.ts` | security/overwrite gaps documented separately |
+| Collaboration | Source Files room adapters plus Durable Object source | exactly one active provider required |
+| Release | `.github/workflows/release.yml` | seeds documentation with Pages release; does not deploy storage Worker |
 
----
+The generic blob handler currently has no auth and permits overwrite at a workspace/path key. The
+run-media token checks expiry and run id but is not signed. The binary contract owns those blockers.
+The structured push, pull, and export handlers also have no authorization gate; current browser
+clients send content type but no credential. These routes must not be treated as safe public shared
+storage until S7 is implemented and evidenced.
+Optional KV support is not assumed live merely because a binding is supported.
 
-## Happy Paths
+## VCC and Evidence Reference register
 
-### Path A — Canonical GitHub Bootstrap (Every Device)
+| VCC | Named check | Recorded result | Surface | Derived rung |
+|---|---|---|---|---|
+| S1, S3 | `npm run check && npm test` | not recorded for this revision | authoring | `spec-complete` |
+| S2, S4 | `npm run runtime:test` | not recorded for this revision | authoring | `spec-complete` |
+| S5 | named media/blob unit tests in the binary contract | not recorded | authoring | `spec-complete` |
+| S6 | exact storage Worker delivery/security/rollback check | not recorded | delivery | `undocumented` |
+| S7 | negative authorization tests for structured push/pull/export | no satisfying check exists | authoring/delivery | `undocumented` |
 
-```
-1. Agentic Canvas OS changes merge into GitHub `huijoohwee/agentic-canvas-os/docs/**`
-2. Workspace bootstrap reads that GitHub tree before device-local or D1 fallback data
-3. Source Files materializes the exact canonical files under `/docs/**`
-4. Authoritative reconciliation deletes cached `/docs/**` entries absent from GitHub
-5. An authorized release seeds the same files as `agentic-canvas-os/docs/**` D1 canonical paths
-6. D1 export/read-back must equal the GitHub file inventory before cross-device Cloudflare sync is claimed
+## TCO comparison
 
-The collaboration readiness harness uses `/docs/workspace-seeds/knowgrph-physics-playground-demo.md`, which is guaranteed by clean workspace bootstrap, as its shared owner/guest document.
-```
+| Model | Infra/month | Egress/month | 12-month cash | Ops burden | Default |
+|---|---:|---:|---:|---|---|
+| local working store | $0 | $0 | $0 | low | chosen minimum |
+| managed shared structured/object/room adapters | $0–45 | $0–15 | $0–720 | medium | optional |
+| FOSS self-hosted shared stack | $15–100 | $0–25 | $180–1,500 | high | portability fallback |
+| hybrid local + selected managed adapters | $0–35 | $0–15 | $0–600 | medium/high | only with measured value |
 
-### Path B — Cloudflare D1 Export URL (Runtime Read Cache)
+All storage/sync operations have a zero-LLM-token budget.
 
-```
-1. Owner sets workspace.import.defaultSourceUrl in Settings
-   → https://airvio.co/api/storage/export/{workspaceId}
-2. New user opens workspace in browser
-3. ensureSeed() finds empty workspace + URL set
-4. Fetches export JSON from D1 endpoint
-5. Extracts documents[].contentMd → seeds workspace
-6. User edits stay local unless Storage Sync joins a PocketBase/Yjs collaboration room
-7. D1 remains a runtime read/export cache, not the authoring SSOT
-```
+## Deploy Boundary Register
 
-### Path B2 — Explicit Source File Cloud Upload
+| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement/check | State |
+|---|---|---|---|---|---|---|
+| `STORAGE-SOURCE-TO-MIRROR` | Authoring | Mirror | local/security candidate result `not recorded` | `none` | discard candidate; rerun local/runtime/security checks | `closed` |
+| `STORAGE-MIRROR-TO-DELIVERY` | Mirror | Delivery | exact live storage/auth/rollback result `not recorded` | `none` | restore prior Worker/config/migrations; rerun sync, conflict, auth, and read-back probes | `closed` |
 
-```
-1. User creates or edits a Markdown file, including an empty new `.md`, and saves it into Workspace FS
-2. Source Files compares the saved row text with the canonical D1 export snapshot
-3. A hard-drive icon means the saved local text is not verified in the Cloudflare projection
-4. User clicks the icon
-5. POST /api/storage/collab/save normalizes workspace-root paths once, verifies `docs/{path}` through the server-owned GitHub bridge, and treats byte-identical canonical content as success without creating a no-op commit
-6. Only after GitHub succeeds, the client force-queues the same text under agentic-canvas-os/docs/{path} and pushes D1
-7. GET /api/storage/doc/:workspaceId/:canonicalPath must return the exact saved text
-8. The row changes to a cloud icon only after that read-back; GitHub failure skips D1, and partial/read-back failure stays visible as retryable failure
-```
+## Open questions
 
-Local browser proof must set `KNOWGRPH_STORAGE_DEV_PROXY_TARGET` to a local Wrangler origin. Vite loads this server-only value from `.env.local` with `loadEnv`; local Worker credentials stay in an ignored `.dev.vars` file. The Vite default remains `https://airvio.co`, but explicit local verification must never click a mutating Source Files icon while that production default is active. The docs seeder forbids direct remote-D1 fallback whenever `--base-url` is not the canonical production origin.
-
-### Path C — GitHub Repo Docs Folder (Import from External Source)
-
-```
-1. User sets workspace.import.defaultSourceUrl in Settings
-   → https://github.com/user/repo/tree/main/docs
-2. ensureSeed() calls importWorkspaceUrl() via existing pipeline
-3. Source Files mirror hydration treats the GitHub `docs` tree URL as the authoritative seed and fetches Source Files-supported text/model files from the repo
-4. Workspace populated with imported docs and supported source assets
-5. Edits stay local unless an explicit Worker/D1 runtime path is enabled
-```
-
-### Path D — Recover Deleted Workspace Files
-
-```
-1. User deletes all workspace files (userClearedAll flag set)
-2. To recover: clear localStorage flags in browser console:
-   localStorage.removeItem('kg:ui:markdown:workspace:userClearedAllFiles')
-   localStorage.removeItem('kg:ui:markdown:workspace:seeded')
-   location.reload()
-3. ensureSeed() re-seeds from configured source (filesystem or URL)
-```
-
-### Path E — Re-Seed Without Conflict Accumulation
-
-```
-1. npm run storage:d1:seed:docs (re-seeds D1 with fresh revisions)
-2. Browser pulls on next poll cycle
-3. autoClearStaleOutboxConflicts compares server revisions vs outbox
-4. All stale conflicts auto-removed (serverRevision >= localRevision)
-5. Toast auto-dismisses — zero user intervention
-```
-
-### Path F — Concurrent Multi-User Edit (PocketBase + Yjs + GitHub Save Bridge)
-
-```
-1. User A and User B open same *.md or *.json in workspace
-2. Storage Sync is on, so the editor joins a PocketBase-backed Yjs room for that file
-3. PocketBase realtime relay broadcasts Yjs update envelopes and awareness (cursor, selection)
-4. Y.Text (*.md) / Y.Map (*.json) CRDTs merge edits character/field-level — zero conflict
-   ⚠ Raw minified JSON must never be Git-merged across simultaneous sessions — route through Y.Map
-5. On explicit save or autosave boundary:
-   → GitHub save bridge serializes Y.Doc snapshot
-   → Markdown writes from Y.Text; JSON writes from canonical formatted Y.Map/Y.Array projection
-   → GitHub Contents API or GitHub App writes docs/{path}
-   → commit: "chore(sync): save {path} from collaboration bridge"
-6. Neither User A nor User B touches Git — bridge owns all commits
-7. GitHub docs branch/main stays SSOT; D1 stays runtime export/read cache
-```
-
-### Path G — Generated Image/Video/Binary Artifact Persistence (R2 + D1 Manifest)
-
-```
-1. A runtime owner generates a binary artifact from a workspace path, for example image/video bytes for a KGC or rich-media output
-2. Runtime storage sync is explicitly enabled and the artifact has a workspace id plus canonical path
-3. `uploadGeneratedWorkspaceBlobToKnowgrphStorage()` posts the Blob to `/api/storage/blob/:workspaceId/:canonicalPath*`
-4. The Storage Worker stores the bytes in R2 using the same workspace/canonical-path identity and returns the object key, content type, hash, size, and public Worker path
-5. The generated output owner writes a sibling Markdown manifest through `writeKgcCompanionOutputBlob()` or the shared Source Files storage publication helper
-6. D1 stores the manifest as a normal document; R2 stores the binary bytes
-7. Acceptance requires both reads to succeed: manifest through `/api/storage/doc/:workspaceId/:manifestPath*`, bytes or metadata through `GET|HEAD /api/storage/blob/:workspaceId/:canonicalPath*`
-```
-
-**Constraint**: Do not infer Cloudflare persistence from a local artifact path, provider URL, browser object URL, or embedded `srcdoc`. Those are Dev/runtime evidence only until the R2 blob route and D1 manifest route are readable.
-
----
-
-## Architecture — To-Be (Phase 1)
-
-```mermaid
-flowchart TB
-    subgraph Dev["Dev: knowgrph/"]
-        subgraph canvas["canvas/src/"]
-            subgraph fs["Workspace FS"]
-                fsPersisted["workspaceFsPersisted.ts"]
-                fsEvt["workspaceFsEvents.ts"]
-                seed["workspaceSeedProvider.ts"]
-                boot["sourceFilesBootstrapStartup.ts"]
-            end
-            subgraph bridge["SourceFiles ↔ Storage"]
-                sfSync["sourceFilesStorageSync.ts"]
-                sfInbound["sourceFilesInboundStorageApply.ts"]
-            end
-            subgraph browserCache["Minimal persisted cache"]
-                storageDb["knowgrphStorageDb.ts"]
-            end
-            syncEngine["knowgrphStorageClientSync.ts"]
-        end
-        subgraph cf["cloudflare/"]
-            workerSrc["workers/knowgrph-storage/"]
-        end
-    end
-
-    Dev -->|"npm run storage:worker:dev"| LocalWorker
-    Dev -->|"npm run pages:build-sync"| ProdSSOT
-    Dev -->|"npm run storage:deploy"| Edge
-
-    subgraph LocalWorker["Local Worker (localhost:8787)"]
-        push["POST /api/storage/push"]
-        pull["POST /api/storage/pull"]
-        export["GET /api/storage/export/:id"]
-        docview["GET /api/storage/doc/:id/:path"]
-        subgraph d1l["D1 (local SQLite)"]
-            t1["workspaces"]
-            t2["documents"]
-            t3["document_chunks"]
-            t4["graph_snapshots"]
-            t5["sync_devices"]
-            t6["sync_events"]
-        end
-    end
-
-    subgraph ProdSSOT["Prod SSOT: huijoohwee/content/knowgrph/"]
-        index["index.html, sw.js"]
-        manifest["manifest.webmanifest"]
-        assets["assets/ (hashed SPA)"]
-    end
-
-    ProdSSOT -->|"Pages deploy"| Edge
-
-    subgraph Edge["Cloudflare Edge (airvio.co/knowgrph)"]
-        pages["Pages: static SPA"]
-        workerDeployed["Worker: /api/storage/*"]
-        subgraph d1r["D1 (remote SQLite)"]
-            r1["workspaces"]
-            r2["documents"]
-            r3["document_chunks"]
-            r4["graph_snapshots"]
-            r5["sync_devices"]
-            r6["sync_events"]
-        end
-    end
-
-    subgraph Browser["Browser (any device)"]
-        bfs["Workspace FS + Seed"]
-        bcache["Minimal persisted cache"]
-        bsync["Client sync engine (120s poll)"]
-        bbridge["SF ↔ Storage bridge"]
-        byjs["Yjs room client"]
-        bconflict["Conflict UX"]
-    end
-
-    subgraph Collab["Concurrent editing layer"]
-        pb["PocketBase auth + realtime"]
-        pbRooms["collab_rooms / collab_updates / awareness"]
-        gitBridge["GitHub save bridge"]
-        githubDocs["GitHub docs/** SSOT"]
-    end
-
-    Browser -->|"push/pull"| LocalWorker
-    Browser -->|"push/pull"| Edge
-    Browser -->|"Yjs update envelopes"| pb
-    pb --> pbRooms
-    pb -->|"save snapshot request"| gitBridge
-    gitBridge -->|"auto-commit on save"| githubDocs
-```
-
----
-
-## Component Inventory
-
-### Client (canvas/src/)
-
-| Layer | Component | File | Status |
-|---|---|---|---|
-| Workspace FS | Minimal persisted cache | `features/workspace-fs/workspaceFsPersisted.ts` | Built |
-| Workspace FS | In-memory fallback | `features/workspace-fs/workspaceFsMemory.ts` | Built |
-| Workspace FS | Change events | `features/workspace-fs/workspaceFsEvents.ts` | Built |
-| Workspace FS | Seed read/write | `features/workspace-fs/workspaceSeedProvider.ts` | Built |
-| Workspace FS | Seed → SF hydration | `features/source-files/workspaceSeedSourceFiles.ts` | Built |
-| Workspace FS | Bootstrap startup | `features/source-files/sourceFilesBootstrapStartup.ts` | Built |
-| Source Files | Minimal persisted cache | `features/source-files/sourceFilesDb.ts` | Built |
-| Source Files | Markdown folder cache | `features/source-files/markdownFsCache.ts` | Built |
-| Graph Record DB | Minimal persisted cache facade | `lib/graph-record-db/index.ts` | Built |
-| Graph Record DB | Minimal persisted cache implementation | `lib/graph-record-db/graphRecordDb.impl.ts` | Built |
-| Cache store | Shared keyed rows + change events | `lib/storage/persistedCollectionStore.ts` | Built |
-| SF ↔ Storage | Push bridge | `features/source-files/sourceFilesStorageSync.ts` | Built |
-| SF ↔ Storage | Pull apply | `features/source-files/sourceFilesInboundStorageApply.ts` | Built |
-| SF ↔ Storage | Runtime bootstrap | `features/source-files/SourceFilesPersistenceBootstrap.tsx` | Built |
-| Generated binary artifacts | Blob upload owner | `features/source-files/sourceFilesBinaryStorage.ts` | Built; runtime-sync opt-in; posts generated image/video/binary bytes to the Storage Worker blob route |
-| Generated binary artifacts | KGC binary manifest owner | `features/chat/chatHistoryWorkspace.output.ts` | Built; writes sibling Markdown manifest after R2 upload succeeds |
-| Cache store | Storage collections | `lib/storage/knowgrphStorageDb.ts` | Built |
-| Sync engine | Client push/pull/loop | `lib/storage/knowgrphStorageClientSync.ts` | Built |
-| Sync contract | Constants + builders | `lib/storage/knowgrphStorageSyncContract.ts` | Built |
-| Conflict UX | Toast notification | `lib/storage/knowgrphStorageConflictUx.ts` | Built |
-| Conflict UX | Resolution actions | `lib/storage/knowgrphStorageConflictActions.ts` | Built |
-| Conflict UX | Action runtime | `lib/ui/uiActionRuntime.ts` | Built |
-| Conflict UX | Toast surface | `components/ui/ToastHost.tsx` | Built |
-| Conflict UX | History log surface | `features/panels/views/HistoryView.tsx` | Built |
-| Conflict UX | Action buttons | `components/ui/UiActionButtons.tsx` | Built |
-| Collaboration | Yjs document rooms (`Y.Doc`, `Y.Text`, `Y.Map`) | `features/source-files/sourceFilesCollaborationYjs.ts` | Built |
-| Collaboration | PocketBase auth, room metadata, realtime update relay | `features/source-files/sourceFilesPocketBaseYjsRoom.ts` + PocketBase collections: `collab_rooms`, `collab_updates`, `collab_awareness` | Built in Dev; requires PocketBase collection deployment |
-| Collaboration | Markdown Workspace collaboration runtime | `features/source-files/useSourceFilesPocketBaseYjsCollaborationRuntime.ts` + `lib/markdown-workspace-runtime/MarkdownWorkspaceRuntime.impl.tsx` | Built; gated by Storage Sync and `VITE_KNOWGRPH_COLLAB_POCKETBASE_URL` |
-| Collaboration | GitHub save bridge with server-owned token/App identity | `POST /api/storage/collab/save` in `workers/knowgrph-storage/index.ts` | Built; requires Worker `KNOWGRPH_STORAGE_GITHUB_TOKEN`, owner, and repo config; reads PocketBase room state when `KNOWGRPH_STORAGE_POCKETBASE_URL` is set |
-| Source Files cloud status/action | `SourceFileCloudSyncIndicator` + `syncWorkspaceEntryToCanonicalCloud` | `features/markdown-workspace/SourceFileCloudSyncIndicator.tsx` + `features/source-files/sourceFileCanonicalCloudSync.ts` | Built in Dev; supports explicit Markdown uploads including empty new files, GitHub-before-D1 ordering, exact D1 read-back, focus/120s status refresh, and retryable failure state |
-| Collaboration | JSON CRDT guardrail | raw JSON editor gate + structured `Y.Map` owner | Built; bridge rejects concurrent JSON saves without Yjs state |
-
-`SourceFilesPersistenceBootstrap.tsx` is the client-side SSOT orchestrator: seed-sync and rematerialize scheduling accept prepared requests when available, fall back to one resolver otherwise, and reuse caller-owned `sourceFiles` snapshots to keep Storage ↔ Source Files ↔ Workspace parity without redundant store reads.
-
-### Cloudflare (cloudflare/)
-
-| Layer | Component | File | Status |
-|---|---|---|---|
-| Worker | Request handlers | `workers/knowgrph-storage/index.ts` | Built |
-| Worker | Public doc view route | `workers/knowgrph-storage/index.ts` (`/api/storage/doc/`) | **Built** — see ADR-009 |
-| Worker | Generated binary blob route | `workers/knowgrph-storage/blob.ts` (`/api/storage/blob/`) | **Built** — stores bytes in R2 and serves artifact bodies/metadata through Worker-owned routes |
-| Worker | Collaboration save bridge | `workers/knowgrph-storage/index.ts` (`/api/storage/collab/save`) | **Built in Dev** — reads PocketBase room state when configured, formats JSON, requires Yjs state for concurrent JSON, commits through GitHub Contents API |
-| Canvas | Deep link runtime | `features/canvas/CanvasDocDeepLinkRuntime.tsx` | **Built** — renders `/doc/{workspaceId}/{path}` in canvas |
-| Worker | D1 query helpers | `workers/knowgrph-storage/db.ts` | Built |
-| Worker | Contract re-export | `workers/knowgrph-storage/contract.ts` | Built |
-| Worker | Wrangler config | `workers/knowgrph-storage/wrangler.toml` | Built |
-| D1 | Migration SQL | `d1/migrations/0001_knowgrph_storage.sql` | Built |
-| Edge | Deployed Storage Worker | `cloudflare/workers/knowgrph-storage/wrangler.toml` + `index.ts` | **Deployed** — `knowgrph-storage` routes `airvio.co/api/storage/*` |
-| Edge | Payment Worker | `cloudflare/workers/knowgrph-payment/wrangler.toml` + `index.ts` | **Deployed separately** — `knowgrph-payment` routes `airvio.co/api/payments/*` |
-| Edge | Provisioned D1 | `633355bf-…152` | **Migrated** — remote D1 migrations apply through `npm run storage:d1:migrate:remote` |
-
-### Deploy & Test
-
-| Layer | Component | File | Status |
-|---|---|---|---|
-| Deploy | Pages sync script | `scripts/sync-pages-knowgrph.mjs` | Built |
-| Deploy | Static build + sync | `npm run pages:build-sync` | Built |
-| Deploy | Static + Workers deploy | `npm run pages:build-sync-cloudflare` -> `npm run workers:deploy` -> `npm run storage:deploy` | Built; storage deploy applies migrations, deploys the Worker, and re-seeds D1 docs |
-| Test | D1 fake | `__tests__/helpers/fakeKnowgrphStorageD1.ts` | Built |
-| Test | R2 fake | `__tests__/helpers/fakeKnowgrphStorageR2.ts` | Built |
-| Test | Generated binary manifest flow | `__tests__/chatHistoryWorkspaceOutput.test.ts` (`chat.responseContract.storage.kgcBinaryOutputPublishesR2Manifest`) | Built |
-| Test | Rich-media binary manifest flow | `__tests__/chatHistoryWorkspaceOutput.test.ts` (`chat.responseContract.storage.richMediaBinaryOutputPublishesR2Manifest`) | Built |
-| Test | Worker blob route | `__tests__/sourceFilesStorageBlobSync.test.ts` (`sourceFiles.storageSync.r2BlobRoute.storesBinaryObject`) | Built |
-| Test | PocketBase/Yjs collaboration + bridge guard | `__tests__/sourceFilesPocketBaseYjsCollaboration.test.ts` | Built |
-| Future | PostgreSQL backend | — | Deferred |
-
----
-
-## Continuation
-
-PRD summary, TAD runtime layers, conflict resolution, architectural decisions (ADRs), deployment phases, quality attributes, token economics, storage comparison, validation summary, and cross-repo documentation contract continue in [knowgrph-storage-sync-document.companion.md](knowgrph-storage-sync-document.companion.md).
-
-See `knowgrph-storage-schemas-document.md` for D1 SQL, minimal cache shapes, contract type definitions, and route contracts.
-See `knowgrph-local-storage.md` for browser LocalStorage key reference (UI state, not sync).
-See `knowgrph-source-files-import.md` for import workflows, format routing, and geo layer registration.
+- Which shared adapter, region, retention, and deletion policy is authorized per workspace?
+- Which cryptographic authorization replaces the current unsigned run-media token?
+- What clean-environment save/reopen and conflict-recovery TTV is observed?
+- What document/blob limits and cost ceilings are acceptable?
+- Which separately approved runbook owns Worker migration and rollback?

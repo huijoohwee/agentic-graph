@@ -67,6 +67,23 @@ function createInitialRuntimeSessionRefs(): RuntimeSessionRefs {
   }
 }
 
+const transportTopologyListeners = new Set<() => void>()
+
+export function subscribeP2PCollaborationTransportTopology(listener: () => void): () => void {
+  transportTopologyListeners.add(listener)
+  return () => transportTopologyListeners.delete(listener)
+}
+
+export function notifyP2PCollaborationTransportTopologyChanged(): void {
+  for (const listener of transportTopologyListeners) {
+    try {
+      listener()
+    } catch {
+      console.error('[knowgrph] collaboration transport topology listener failed')
+    }
+  }
+}
+
 export function closeConnectionRef(connectionRef: RuntimeConnectionRef | null, options?: { suppressEvents?: boolean }): void {
   if (!connectionRef) return
   if (options?.suppressEvents) {
@@ -107,6 +124,7 @@ export function resetRuntimeSessionRefs(runtime: RuntimeSessionRefs): void {
   runtime.guestConnection = null
   runtime.pendingHostInvite = null
   runtime.hostConnectionsByPeerId.clear()
+  notifyP2PCollaborationTransportTopologyChanged()
 }
 
 export const sharedRuntimeRefs: MutableRefValue<RuntimeSessionRefs> = {

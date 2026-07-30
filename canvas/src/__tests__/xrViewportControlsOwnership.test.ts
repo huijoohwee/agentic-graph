@@ -219,7 +219,10 @@ export function testThreeViewportGestureOwnershipPublishesSynchronously() {
     assertCondition(readThreeViewportInputOwnership().ownerId === ownerId, 'expected viewport ownership to identify the camera gesture owner')
     assertCondition(!claimThreeViewportInputOwnership('orbit-controls:other'), 'expected another viewport to be unable to steal the camera gesture')
     assertCondition(
-      shouldDeferThreeCameraProgrammaticInput({ objectInputActive: false, viewportInputActive: true }),
+      shouldDeferThreeCameraProgrammaticInput({
+        objectInputActive: false,
+        viewportInputBlocksProgrammaticCamera: true,
+      }),
       'expected framing and playback camera writes to defer during manual viewport input',
     )
     releaseThreeViewportInputOwnership('orbit-controls:other')

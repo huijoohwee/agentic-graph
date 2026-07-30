@@ -7,8 +7,13 @@ import { getNodeMediaSpec } from '@/components/GraphCanvas/helpers'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { buildRichMediaPanelOverlayState } from '@/lib/render/richMediaPanelState'
 import { writeMediaDragPayload, type MediaDragPayload } from '@/lib/ui/mediaDragPayload'
+import {
+  UI_VIEW_EDIT_SURFACE_DATA_ATTRIBUTES,
+  UI_VIEW_EDIT_SURFACE_VIEWER_CLASS_NAME,
+} from '@/lib/ui/surfaceClasses'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames, waitForNextFrame, waitForTasks } from '@/tests/lib/reactRootHarness'
+import { resolveRepoTestDataPath } from '@/tests/lib/repoTestData'
 
 const queryRichMediaTextEditor = (container: HTMLElement): HTMLElement | null =>
   container.querySelector('[contenteditable="true"][data-kg-card-inline-viewer-edit-surface="1"][aria-label="Rich Media Panel text"]')
@@ -296,6 +301,130 @@ export async function testRichMediaPanelTextModeUsesMarkdownPreviewSsot() {
     const cardDownloadLink = cardMarkdownPreview.querySelector('a[download][aria-label="Download media"]')
     if (cardDownloadLink) {
       throw new Error(`expected Card markdown preview to move media download affordance out of inline @ thumbnail pills, html=${container.innerHTML}`)
+    }
+
+    await unmountReactRoot(root, { window: dom.window })
+  } finally {
+    restoreDom()
+  }
+}
+
+export async function testProbeTreeRichMediaPanelReusesEditorWorkspaceViewerSurface() {
+  const { dom, restore: restoreDom } = initJsdomHarness()
+  try {
+    await import('@/features/markdown/ui/MarkdownPreview')
+    resetRichMediaPanelTestStoreState()
+    const doc = dom.window.document
+    const container = doc.createElement('section')
+    container.id = 'root'
+    doc.body.appendChild(container)
+    const root = createRoot(container as unknown as HTMLElement)
+
+    const fixturePath = resolveRepoTestDataPath('probe-tree-rich-media-edit-parity.md')
+    const probeTreeMarkdown = readFileSync(fixturePath, 'utf8')
+    const panelState = buildRichMediaPanelOverlayState({
+      node: {
+        id: 'probe-tree-ledger',
+        type: 'RichMediaPanel',
+        label: 'Probe-Tree Branches',
+        properties: {
+          probeTreeThreadLedger: true,
+          output: probeTreeMarkdown,
+        },
+      },
+    })
+    if (panelState?.markdownWorkspaceViewerSurface !== true) {
+      throw new Error(`expected existing Probe-Tree ledgers to resolve the Workspace Viewer surface, got ${JSON.stringify(panelState)}`)
+    }
+
+    await mountReactRoot(root,
+      React.createElement(RichMediaPanel, {
+        title: 'Probe-Tree Branches',
+        url: '',
+        kind: 'iframe',
+        interactive: false,
+        panel: panelState,
+        onPanelChange: () => void 0,
+      }),
+      { window: dom.window, frames: 28 },
+    )
+
+    const workspaceViewer = container.querySelector('[data-kg-rich-media-workspace-viewer="1"][aria-label="Editor Workspace Viewer"]')
+    if (!workspaceViewer) {
+      throw new Error(`expected Probe-Tree Rich Media output to mount the Editor Workspace Viewer surface, html=${container.innerHTML}`)
+    }
+    if (!workspaceViewer.querySelector('[data-testid="markdown-preview-root"]')) {
+      throw new Error(`expected the shared Workspace Viewer to own Probe-Tree markdown rendering, html=${container.innerHTML}`)
+    }
+    if (workspaceViewer.getAttribute('data-kg-view-edit-surface-area') !== UI_VIEW_EDIT_SURFACE_DATA_ATTRIBUTES['data-kg-view-edit-surface-area']) {
+      throw new Error(`expected the Rich Media Workspace Viewer to expose the shared view/edit surface contract, html=${container.innerHTML}`)
+    }
+    if (!UI_VIEW_EDIT_SURFACE_VIEWER_CLASS_NAME.split(/\s+/).includes('flex-col') || !workspaceViewer.classList.contains('flex-col')) {
+      throw new Error(`expected the shared Workspace Viewer surface to stack its preview vertically so narrow panes do not preserve the preview's intrinsic width, html=${container.innerHTML}`)
+    }
+    const workspaceScrollFrame = workspaceViewer.closest('[data-kg-rich-media-card-text-scroll="1"]')
+    if (!workspaceScrollFrame?.classList.contains('flex')
+      || !workspaceScrollFrame.classList.contains('min-h-0')
+      || !workspaceScrollFrame.classList.contains('flex-1')
+      || !workspaceScrollFrame.classList.contains('overflow-hidden')) {
+      throw new Error(`expected the Probe-Tree Viewer frame to constrain the Viewer preview so its internal markdown scroller remains reachable, html=${container.innerHTML}`)
+    }
+    if (workspaceViewer.querySelector('[data-kg-card-inline-edit="1"], [data-kg-card-markdown-viewer="1"]')) {
+      throw new Error('expected Probe-Tree output to avoid the compact Card markdown read/edit renderer')
+    }
+    const workspaceMainSource = readFileSync(resolve(process.cwd(), 'src', 'features', 'markdown-workspace', 'main', 'MarkdownWorkspaceMain.tsx'), 'utf8')
+    const richMediaViewerSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'RichMediaPanelWorkspaceViewerSurface.tsx'), 'utf8')
+    const sharedViewerImport = "from './viewer/MarkdownWorkspaceViewerSurface'"
+    const sharedRichMediaViewerImport = "import('@/features/markdown-workspace/main/viewer/MarkdownWorkspaceViewerSurface')"
+    if (!workspaceMainSource.includes(sharedViewerImport) || !richMediaViewerSource.includes(sharedRichMediaViewerImport)) {
+      throw new Error('expected Editor Workspace Viewer and Rich Media Panel to render through one shared Workspace Viewer surface owner')
+    }
+    if (workspaceMainSource.includes('<MarkdownPreview') || richMediaViewerSource.includes('<MarkdownPreview')) {
+      throw new Error('expected shared Workspace Viewer consumers not to retain parallel MarkdownPreview surface configurations')
+    }
+
+    const question = Array.from(workspaceViewer.querySelectorAll('p[data-start-line]') as NodeListOf<HTMLElement>)
+      .find(element => /For SGD800预算/.test(String(element.textContent || '')))
+    if (!question || !question.querySelector('strong')) {
+      throw new Error(`expected the Probe-Tree question to render with Viewer emphasis, html=${workspaceViewer.innerHTML}`)
+    }
+    question.getBoundingClientRect = () => ({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 400,
+      bottom: 42,
+      width: 400,
+      height: 42,
+      toJSON: () => ({}),
+    } as unknown as DOMRect)
+    await act(async () => {
+      question.dispatchEvent(new dom.window.MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 8,
+        clientY: 8,
+      }))
+      await waitForTasks(2)
+      await waitForFrames(dom.window, 2)
+    })
+
+    const nestedEditor = question.querySelector('[contenteditable="true"]') as HTMLElement | null
+    if (
+      !nestedEditor
+      || !nestedEditor.querySelector('strong')
+      || nestedEditor.innerHTML.includes('**')
+      || /^\s*1[.)]\s/.test(String(nestedEditor.textContent || ''))
+    ) {
+      throw new Error(`expected Rich Media to open the marker-free rendered Viewer editor, html=${question.innerHTML}`)
+    }
+    if (workspaceViewer.querySelector('[data-kg-card-inline-viewer-edit-surface="1"]')) {
+      throw new Error('expected Rich Media block editing not to fall back to the legacy whole-card editor')
+    }
+    const workspaceText = String(workspaceViewer.textContent || '')
+    if (!workspaceText.includes('优先批发库存以实现规模效应') || !workspaceText.includes('Evidence regarding成本结构')) {
+      throw new Error(`expected nested Probe-Tree content to remain rendered while editing the question, text=${JSON.stringify(workspaceText)}`)
     }
 
     await unmountReactRoot(root, { window: dom.window })

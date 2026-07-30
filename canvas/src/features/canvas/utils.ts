@@ -31,6 +31,8 @@ export type FloatingPanelOpenEventDetail = {
     | 'animation'
     | 'motionControl'
     | 'gameMode'
+    | 'flightSim'
+    | 'cityBuilder'
     | 'geo'
     | 'storyboardWidget'
     | 'flowchart'

@@ -6,6 +6,11 @@ const [command, ...args] = process.argv.slice(2)
 const accountId = requiredEnv('CLOUDFLARE_ACCOUNT_ID')
 const apiToken = requiredEnv('CLOUDFLARE_API_TOKEN')
 const projectName = requiredEnv('CLOUDFLARE_PAGES_PROJECT')
+if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(projectName)) {
+  throw new Error('CLOUDFLARE_PAGES_PROJECT must be one lowercase DNS label')
+}
+const pagesHostname = `${projectName}.pages.dev`
+const productionPagesOrigin = new URL(`https://${pagesHostname}`).origin
 const projectUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}`
 const baseUrl = `${projectUrl}/deployments`
 
@@ -49,6 +54,7 @@ if (command === 'enforce-direct-upload-owner') {
   }
   writeOutput('deployment_id', deployment.id)
   writeOutput('commit_sha', commitSha)
+  writeOutput('production_origin', productionPagesOrigin)
   console.log(`Captured production rollback target ${deployment.id}.`)
 } else if (command === 'capture-candidate') {
   const commitSha = option(args, '--commit-sha')
@@ -63,7 +69,6 @@ if (command === 'enforce-direct-upload-owner') {
   ))
   if (!deployment?.id) throw new Error(`no successful production Pages deployment represents ${commitSha}`)
   const deploymentUrl = new URL(String(deployment.url || ''))
-  const pagesHostname = `${projectName}.pages.dev`
   if (
     deploymentUrl.protocol !== 'https:'
       || (deploymentUrl.hostname !== pagesHostname && !deploymentUrl.hostname.endsWith(`.${pagesHostname}`))

@@ -59,6 +59,27 @@ export async function testRootAgentReadyAliasCanonicalizesPublishedAppShellMount
     if (/http-equiv=["']refresh["']/i.test(body) || body.includes('url=/knowgrph/')) {
       throw new Error('expected root alias to avoid redirect-style fallbacks')
     }
+
+    globalThis.fetch = (async () => new Response(
+      '<!DOCTYPE html><html><body><main>legacy fallback</main></body></html>',
+      { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } },
+    )) as typeof fetch
+    let invalidShellError = ''
+    try {
+      await onRootRequest({
+        request: new Request('https://airvio.co/', {
+          method: 'GET',
+          headers: { accept: 'text/html' },
+        }),
+        env: {},
+        next: async () => new Response('unexpected next()'),
+      } as never)
+    } catch (error) {
+      invalidShellError = String(error)
+    }
+    if (!invalidShellError.includes('canonical Knowgrph app shell is invalid')) {
+      throw new Error(`expected an invalid canonical shell to fail closed, got ${invalidShellError || 'no error'}`)
+    }
   } finally {
     globalThis.fetch = originalFetch
   }

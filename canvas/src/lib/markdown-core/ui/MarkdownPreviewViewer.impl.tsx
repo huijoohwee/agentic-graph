@@ -77,10 +77,7 @@ export type MarkdownPreviewViewerProps = {
   codeAnnotations?: Record<string, string> | null
   geoDatasetIntegration?: MarkdownGeoDatasetIntegration
   onScroll?: (event: React.UIEvent<HTMLElement>) => void
-  onContextMenu: (event: React.MouseEvent<HTMLElement>) => void
   onClick: (event: React.MouseEvent<HTMLElement>) => void
-  onMouseUp?: (event: React.MouseEvent<HTMLElement>) => void
-  selectionToolbar?: React.ReactNode
   showSidebar?: boolean
   onToggleSidebar?: (show: boolean) => void
   collapsedIds?: Set<string>
@@ -140,10 +137,7 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
     effectiveHighlightUnderlineColor,
     scrollClass,
     onScroll,
-    onContextMenu,
     onClick,
-    onMouseUp,
-    selectionToolbar,
     showSidebar,
     onToggleSidebar,
     collapsedIds,
@@ -618,10 +612,8 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
       onMouseUpCapture={resetUserSelectLockIfNeeded}
       onDoubleClickCapture={resetUserSelectLockIfNeeded}
       onScroll={onScroll}
-      onContextMenu={onContextMenu}
       onClick={handleClickWithWikiLinks}
       onDoubleClick={onDoubleClick}
-      onMouseUp={onMouseUp}
       onCopy={blockCopy}
       onCut={blockCopy}
       onKeyDown={blockCopyKeyDown}
@@ -692,11 +684,6 @@ export function MarkdownPreviewViewer(props: MarkdownPreviewViewerProps) {
       >
          {body}
       </article>
-      {selectionToolbar ? (
-        <section className={getMarkdownViewerWidthWrapperClassName(markdownViewerWidthMode || 'standard')}>
-          {selectionToolbar}
-        </section>
-      ) : null}
     </section>
   )
 

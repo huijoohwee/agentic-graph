@@ -36,6 +36,7 @@ export function toJsonLd(
     if (!text) return '';
     if (text.startsWith('http://') || text.startsWith('https://')) return text;
     if (text.includes(':')) return text;
+    if (text.startsWith('edge_')) return `${KG_PREFIX}${text}`;
     return `${KG_PREFIX}edge_${toSafeIdSegment(text)}`;
   };
   const graph: Array<Record<string, unknown>> = [];
@@ -72,7 +73,13 @@ export function toJsonLd(
     const tgt = toKgId(String(e.target));
     if (!src || !tgt) continue;
     const baseId = `${String(e.source)}-${String(e.label)}-${String(e.target)}`;
-    const rawEdgeId = String(e.id || '').trim() ? `${baseId}-${String(e.id)}` : baseId;
+    const providedId = String(e.id || '').trim();
+    const canonicalBasePrefix = `edge_${toSafeIdSegment(baseId)}`;
+    const rawEdgeId = providedId.startsWith(canonicalBasePrefix)
+      ? providedId
+      : providedId
+        ? `${baseId}-${providedId}`
+        : baseId;
     const item: Record<string, unknown> = {
       '@id': toEdgeId(rawEdgeId),
       '@type': AGENTIC_RAG_EDGE_TYPE_IRI,

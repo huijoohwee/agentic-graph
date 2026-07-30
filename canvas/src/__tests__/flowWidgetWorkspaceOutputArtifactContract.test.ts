@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 
 export function testStoryboardWidgetTextRunsPersistWorkspaceOutputArtifacts() {
   const workflowActionsText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts'), 'utf8')
+  const headlessTextRunText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetHeadlessTextRun.ts'), 'utf8')
   const richMediaPublicationText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRichMediaPublication.ts'), 'utf8')
   const richMediaRunText = readFileSync(resolve(process.cwd(), 'src', 'features', 'chat', 'richMediaRun.ts'), 'utf8')
 
@@ -12,10 +13,10 @@ export function testStoryboardWidgetTextRunsPersistWorkspaceOutputArtifacts() {
   if (!richMediaRunText.includes('writeWorkspaceTextArtifactAtPath({') || !richMediaRunText.includes('applyWorkspaceImportToCanvas({')) {
     throw new Error('expected shared text widget artifact writer to persist Workspace FS text and passively register Source Files')
   }
-  if (!workflowActionsText.includes('writeTextWidgetRunOutputArtifact({')) {
+  if (!headlessTextRunText.includes('writeTextWidgetRunOutputArtifact({')) {
     throw new Error('expected Storyboard Widget text/transcript run finalizers to land generated output in the Editor Workspace')
   }
-  if (!richMediaPublicationText.includes('outputPath: panelArgs.outputPath') || !workflowActionsText.includes("model: 'youtube', outputPath })") || !workflowActionsText.includes('publishTextRunOutput(result, false, outputPath)')) {
+  if (!richMediaPublicationText.includes('outputPath: panelArgs.outputPath') || !workflowActionsText.includes("model: 'youtube', outputPath })") || !headlessTextRunText.includes('outputPath: projection.artifactPath')) {
     throw new Error('expected Storyboard Widget text run patches to carry the shared workspace output path into widgets and Rich Media Panels')
   }
 }

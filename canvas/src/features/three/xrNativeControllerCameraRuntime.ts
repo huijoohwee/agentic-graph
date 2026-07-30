@@ -1,4 +1,5 @@
 import {
+  XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE,
   isXrNativeControllerCameraMode,
   type XrNativeControllerCameraMode,
 } from './xrNativeControllerCameraCatalog'
@@ -10,7 +11,10 @@ export type XrNativeControllerCameraSnapshot = Readonly<{
 
 type Listener = () => void
 const listeners = new Set<Listener>()
-let snapshot: XrNativeControllerCameraSnapshot = Object.freeze({ mode: 'fixed-follow', revision: 0 })
+let snapshot: XrNativeControllerCameraSnapshot = Object.freeze({
+  mode: XR_NATIVE_CONTROLLER_CAMERA_DEFAULT_MODE,
+  revision: 0,
+})
 
 export function readXrNativeControllerCamera(): XrNativeControllerCameraSnapshot {
   return snapshot

@@ -20,6 +20,44 @@ export type WidgetScaleMode = 'pinnedInCanvas' | 'floating'
 const FLOATING_MIN_SCALE = 0.86
 const FLOATING_MAX_SCALE = 1.06
 const FLOATING_SCALE_STEP = 0.02
+const COLLECTIVE_CAMERA_BASELINE_REF_LIMIT = 64
+const collectiveCameraBaselineRefByKey = new Map<string, { current: number | null }>()
+
+export function buildCollectiveCameraFollowBaselineKey(args: {
+  surfaceId: unknown
+  graphKey?: unknown
+}): string {
+  const surfaceId = String(args.surfaceId || '').trim() || 'storyboard'
+  const graphKey = String(args.graphKey || '').trim()
+  return `${surfaceId}|${graphKey}`
+}
+
+export function resolveCollectiveCameraFollowBaselineRef(
+  rawKey: unknown,
+): { current: number | null } {
+  const key = String(rawKey || '').trim() || 'storyboard:default'
+  const existing = collectiveCameraBaselineRefByKey.get(key)
+  if (existing) return existing
+  const baselineRef = { current: null }
+  collectiveCameraBaselineRefByKey.set(key, baselineRef)
+  if (collectiveCameraBaselineRefByKey.size > COLLECTIVE_CAMERA_BASELINE_REF_LIMIT) {
+    const oldestKey = collectiveCameraBaselineRefByKey.keys().next().value
+    if (typeof oldestKey === 'string' && oldestKey !== key) {
+      collectiveCameraBaselineRefByKey.delete(oldestKey)
+    }
+  }
+  return baselineRef
+}
+
+export function resetCollectiveCameraFollowBaseline(
+  rawKey: unknown,
+  baselineZoomK = 1,
+): void {
+  const baselineRef = resolveCollectiveCameraFollowBaselineRef(rawKey)
+  baselineRef.current = Number.isFinite(baselineZoomK) && baselineZoomK > 0
+    ? Number(baselineZoomK)
+    : 1
+}
 
 function clamp(v: number, lo: number, hi: number): number {
   if (!Number.isFinite(v)) return lo

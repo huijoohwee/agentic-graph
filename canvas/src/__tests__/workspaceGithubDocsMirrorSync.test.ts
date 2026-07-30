@@ -7,7 +7,9 @@ import {
 import {
   readWorkspaceInitializationDocsMirrorEntries,
 } from '@/features/workspace-fs/workspaceSeedProvider'
-import { resetCanonicalAgenticDocsMirrorCacheForTests } from '@/features/workspace-fs/workspaceGithubDocsMirror'
+import { resetCanonicalPublishedDocsMirrorCacheForTests } from '@/features/workspace-fs/workspaceGithubDocsMirror'
+import { readPublishedAgenticDocsMirrorEntries } from '@/features/workspace-fs/workspacePublishedAgenticDocsSource'
+import { resetWorkspaceSeedProviderStorageCacheForTests } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { readWorkspaceActiveDocumentResolvedText } from '@/features/source-files/sourceFilesRuntimeActive'
 import { materializeActiveWorkspaceEntryIntoSourceFiles } from '@/features/source-files/sourceFilesRuntimeMaterialization'
 import { mergeWorkspaceEntriesIntoSourceFiles } from '@/features/workspace-fs/syncToSourceFiles'
@@ -29,12 +31,6 @@ const textResponse = (text: string, status: number = 200) =>
   new Response(text, {
     status,
     headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Content-Length': String(text.length) },
-  })
-
-const binaryResponse = (bytes: Uint8Array, status: number = 200) =>
-  new Response(bytes, {
-    status,
-    headers: { 'Content-Type': 'model/gltf-binary', 'Content-Length': String(bytes.byteLength) },
   })
 
 const decodeProxyUrl = (url: string): string => {
@@ -135,28 +131,38 @@ export function testSourceFilesMergeReplacesStaleTextAcrossDocsTree() {
   }
 }
 
-export async function testWorkspaceSeedProviderGitHubDocsMirrorDefaultSourceWinsOverStaleLocalProjection() {
+export async function testWorkspaceSeedProviderUsesPublishedStorageForAgenticDocs() {
   const { restore } = initJsdomHarness()
   const g = globalThis as typeof globalThis & { fetch?: typeof fetch }
   const originalFetch = g.fetch
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+  const previousStorageBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+  const previousRepoLocal = process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
   const previousDefaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
-  let localMirrorReadCount = 0
+  const localMirrorReadRoots: string[] = []
+  const requestedUrls: string[] = []
 
   try {
     useGraphStore.getState().resetAll()
-    resetCanonicalAgenticDocsMirrorCacheForTests()
+    resetCanonicalPublishedDocsMirrorCacheForTests()
+    resetWorkspaceSeedProviderStorageCacheForTests()
     process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = KG_AGENTIC_CANVAS_OS_DOCS_ROOT
+    process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://storage.example.test'
+    process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '0'
     writeWorkspaceImportDefaultSourceUrlSetting('')
 
     const routes: MockRoute[] = [
       {
         test: u => u === '/__kg_fs_list',
-        handler: () => {
-          localMirrorReadCount += 1
+        handler: (_url, init) => {
+          const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
+          const requestedRoot = String(body.path || '')
+          localMirrorReadRoots.push(requestedRoot)
           return jsonResponse({
             ok: true,
-            files: [{ relPath: 'alpha.md', text: '# stale local\n', updatedAtMs: 1 }],
+            files: requestedRoot === '/workspace/knowgrph/docs/workspace-seeds'
+              ? [{ relPath: 'local-seed.md', text: '# canonical local seed\n', updatedAtMs: 1 }]
+              : [{ relPath: 'alpha.md', text: '# stale local\n', updatedAtMs: 1 }],
           })
         },
       },
@@ -184,49 +190,52 @@ export async function testWorkspaceSeedProviderGitHubDocsMirrorDefaultSourceWins
         handler: () => textResponse('# canonical output\n'),
       },
       {
-        test: u => u === 'https://api.github.com/repos/huijoohwee/agentic-canvas-os/git/refs/heads/main',
-        handler: () => jsonResponse({ object: { sha: 'commit-sha-docs' } }),
-      },
-      {
-        test: u => u === 'https://api.github.com/repos/huijoohwee/agentic-canvas-os/git/commits/commit-sha-docs',
-        handler: () => jsonResponse({ tree: { sha: 'tree-sha-docs' } }),
-      },
-      {
-        test: u => u === 'https://api.github.com/repos/huijoohwee/agentic-canvas-os/git/trees/tree-sha-docs?recursive=1',
-        handler: () =>
-          jsonResponse({
-            truncated: false,
-            tree: [
-              { path: 'docs/alpha.md', type: 'blob' },
-              { path: 'docs/data.json', type: 'blob' },
-              { path: 'docs/model.gltf', type: 'blob' },
-              { path: 'docs/model.glb', type: 'blob' },
-              { path: 'docs/image.png', type: 'blob' },
-              { path: 'content/knowgrph/index.html', type: 'blob' },
-            ],
-          }),
-      },
-      {
-        test: u => u === 'https://raw.githubusercontent.com/huijoohwee/agentic-canvas-os/main/docs/alpha.md',
-        handler: () => textResponse('# remote alpha\n'),
-      },
-      {
-        test: u => u === 'https://raw.githubusercontent.com/huijoohwee/agentic-canvas-os/main/docs/data.json',
-        handler: () => textResponse('{"remote":true}\n'),
-      },
-      {
-        test: u => u === 'https://raw.githubusercontent.com/huijoohwee/agentic-canvas-os/main/docs/model.gltf',
-        handler: () => textResponse('{"asset":{"version":"2.0"}}\n'),
-      },
-      {
-        test: u => u === 'https://raw.githubusercontent.com/huijoohwee/agentic-canvas-os/main/docs/model.glb',
-        handler: () => binaryResponse(new Uint8Array([0, 1, 2, 3])),
+        test: u => u.includes('/api/storage/export/kgws%3Acanonical-docs'),
+        handler: () => jsonResponse({
+          ok: true,
+          apiVersion: '2026-05-04',
+          workspaceId: 'kgws:canonical-docs',
+          exportedAtMs: 10,
+          documents: [
+            {
+              id: 'doc-alpha',
+              canonicalPath: 'agentic-canvas-os/docs/alpha.md',
+              contentMd: '# canonical storage alpha\n',
+              updatedAtMs: 10,
+              deleted: false,
+            },
+            {
+              id: 'doc-prompt-catalog',
+              canonicalPath: 'agentic-canvas-os/docs/PROMPT-PRESETS.md',
+              contentMd: '# canonical prompt catalog\n',
+              updatedAtMs: 11,
+              deleted: false,
+            },
+            {
+              id: 'stale-bare-alias',
+              canonicalPath: 'PROMPT-PRESETS.md',
+              contentMd: '# stale bare alias\n',
+              updatedAtMs: 100,
+              deleted: false,
+            },
+            {
+              id: 'stale-docs-alias',
+              canonicalPath: 'docs/PROMPT-PRESETS.md',
+              contentMd: '# stale docs alias\n',
+              updatedAtMs: 100,
+              deleted: false,
+            },
+          ],
+          documentChunks: [],
+          graphSnapshots: [],
+        }),
       },
     ]
 
     g.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const raw = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
       const url = decodeProxyUrl(raw)
+      requestedUrls.push(url)
       const route = routes.find(r => r.test(url))
       if (route) return route.handler(url, init)
       return new Response(`not found: ${url}`, { status: 404 })
@@ -235,8 +244,11 @@ export async function testWorkspaceSeedProviderGitHubDocsMirrorDefaultSourceWins
     const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
     const byPath = new Map(mirrored.map(entry => [entry.relPath, entry.text]))
 
-    if (localMirrorReadCount !== 0) {
-      throw new Error('expected canonical Agentic Canvas OS GitHub docs to win before reading a local docs projection')
+    if (
+      localMirrorReadRoots.length !== 1
+      || localMirrorReadRoots[0] !== '/workspace/knowgrph/docs/workspace-seeds'
+    ) {
+      throw new Error(`expected only the canonical local seed root to overlay GitHub docs, got ${JSON.stringify(localMirrorReadRoots)}`)
     }
     if (byPath.get('demo.md') !== '# canonical demo\n') {
       throw new Error(`expected demo.md to come from the canonical demo repository, got ${String(byPath.get('demo.md') || '')}`)
@@ -244,23 +256,20 @@ export async function testWorkspaceSeedProviderGitHubDocsMirrorDefaultSourceWins
     if (byPath.get('docs_/output.md') !== '# canonical output\n') {
       throw new Error(`expected output.md to retain the canonical output namespace, got ${String(byPath.get('docs_/output.md') || '')}`)
     }
-    if (byPath.get('agentic-canvas-os/docs/alpha.md') !== '# remote alpha\n') {
-      throw new Error(`expected Agentic alpha.md to retain its runtime namespace, got ${String(byPath.get('agentic-canvas-os/docs/alpha.md') || '')}`)
+    if (byPath.get('agentic-canvas-os/docs/alpha.md') !== '# canonical storage alpha\n') {
+      throw new Error(`expected Agentic alpha.md to retain its canonical storage namespace, got ${String(byPath.get('agentic-canvas-os/docs/alpha.md') || '')}`)
     }
-    if (byPath.get('agentic-canvas-os/docs/data.json') !== '{"remote":true}\n') {
-      throw new Error('expected GitHub docs mirror to include supported JSON source files')
+    if (byPath.get('workspace-seeds/local-seed.md') !== '# canonical local seed\n') {
+      throw new Error('expected the canonical local workspace-seed inventory to overlay the published aggregate')
     }
-    if (byPath.get('agentic-canvas-os/docs/model.gltf') !== '{"asset":{"version":"2.0"}}\n') {
-      throw new Error('expected GitHub docs mirror to include GLTF source files')
+    if (byPath.has('PROMPT-PRESETS.md') || byPath.has('docs/PROMPT-PRESETS.md')) {
+      throw new Error('expected stale bare and docs aliases to stay outside the canonical Agentic docs namespace')
     }
-    if (byPath.get('agentic-canvas-os/docs/model.glb') !== 'AAECAw==') {
-      throw new Error('expected GitHub docs mirror to base64-encode GLB source files')
+    if (!mirrored.some(entry => entry.authority === 'huijoohwee-demo-docs-github') || !mirrored.some(entry => entry.authority === 'huijoohwee-output-docs-github') || !mirrored.some(entry => entry.authority === 'agentic-canvas-os-storage') || !mirrored.some(entry => entry.authority === 'knowgrph-workspace-seeds-local')) {
+      throw new Error('expected demo, output, canonical storage, and local seed documents to retain distinct source authority')
     }
-    if (byPath.has('agentic-canvas-os/docs/image.png') || byPath.has('content/knowgrph/index.html')) {
-      throw new Error('expected GitHub docs mirror to stay within the configured docs tree and Source Files mirror formats')
-    }
-    if (!mirrored.some(entry => entry.authority === 'huijoohwee-demo-docs-github') || !mirrored.some(entry => entry.authority === 'huijoohwee-output-docs-github') || !mirrored.some(entry => entry.authority === 'agentic-canvas-os-github')) {
-      throw new Error('expected demo, output, and runtime documents to retain distinct repository authority')
+    if (requestedUrls.some(url => url.includes('/huijoohwee/agentic-canvas-os/'))) {
+      throw new Error(`published Agentic docs must not request mutable GitHub sources: ${JSON.stringify(requestedUrls)}`)
     }
     if (
       normalizeMarkdownWorkspaceDocsSourcePathFromCanonicalPath('agentic-canvas-os/docs/alpha.md')
@@ -272,11 +281,100 @@ export async function testWorkspaceSeedProviderGitHubDocsMirrorDefaultSourceWins
     if (canonicalCandidates[0] !== 'agentic-canvas-os/docs/alpha.md') {
       throw new Error(`expected canonical D1 writes to prefer Agentic Canvas OS docs, got ${JSON.stringify(canonicalCandidates)}`)
     }
+
+    resetWorkspaceSeedProviderStorageCacheForTests()
+    g.fetch = (async () => jsonResponse({
+      ok: true,
+      apiVersion: '2026-05-04',
+      workspaceId: 'kgws:canonical-docs',
+      exportedAtMs: 12,
+      documents: [{
+        id: 'oversized-agentic-doc',
+        canonicalPath: 'agentic-canvas-os/docs/oversized.md',
+        contentMd: 'x'.repeat((500 * 1024) + 1),
+        updatedAtMs: 12,
+        deleted: false,
+      }],
+      documentChunks: [],
+      graphSnapshots: [],
+    })) as typeof fetch
+    const oversizedEntries = await readPublishedAgenticDocsMirrorEntries()
+    if (oversizedEntries.length > 0) {
+      throw new Error('expected oversized canonical Agentic documents to fail the bounded D1 projection')
+    }
+
+    resetWorkspaceSeedProviderStorageCacheForTests()
+    g.fetch = (async () => jsonResponse({
+      ok: true,
+      apiVersion: '2026-05-04',
+      workspaceId: 'kgws:canonical-docs',
+      exportedAtMs: 13,
+      documents: Array.from({ length: 501 }, (_, index) => ({
+        id: `agentic-doc-${index}`,
+        canonicalPath: `agentic-canvas-os/docs/doc-${index}.md`,
+        contentMd: `# Agentic document ${index}\n`,
+        updatedAtMs: 13,
+        deleted: false,
+      })),
+      documentChunks: [],
+      graphSnapshots: [],
+    })) as typeof fetch
+    const overLimitEntries = await readPublishedAgenticDocsMirrorEntries()
+    if (overLimitEntries.length > 0) {
+      throw new Error('expected an over-limit canonical Agentic document inventory to fail closed')
+    }
   } finally {
-    resetCanonicalAgenticDocsMirrorCacheForTests()
+    resetCanonicalPublishedDocsMirrorCacheForTests()
+    resetWorkspaceSeedProviderStorageCacheForTests()
     writeWorkspaceImportDefaultSourceUrlSetting(previousDefaultSourceUrl)
     if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+    if (originalFetch) g.fetch = originalFetch
+    restore()
+  }
+  await verifyWorkspaceSeedProviderRejectsLegacyAgenticGitHubDefaultSource()
+}
+
+async function verifyWorkspaceSeedProviderRejectsLegacyAgenticGitHubDefaultSource() {
+  const { restore } = initJsdomHarness()
+  const g = globalThis as typeof globalThis & { fetch?: typeof fetch }
+  const originalFetch = g.fetch
+  const previousStorageBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+  const previousRepoLocal = process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+  const previousDefaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
+  const requestedUrls: string[] = []
+
+  try {
+    useGraphStore.getState().resetAll()
+    resetCanonicalPublishedDocsMirrorCacheForTests()
+    resetWorkspaceSeedProviderStorageCacheForTests()
+    process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://storage.example.test'
+    process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '0'
+    writeWorkspaceImportDefaultSourceUrlSetting(
+      'https://github.com/huijoohwee/agentic-canvas-os/tree/main/docs',
+    )
+    g.fetch = (async (input: RequestInfo | URL) => {
+      const raw = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      requestedUrls.push(decodeProxyUrl(raw))
+      return new Response('', { status: 404 })
+    }) as typeof fetch
+
+    await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+    if (requestedUrls.some(url => url.includes('/huijoohwee/agentic-canvas-os/'))) {
+      throw new Error(`legacy Agentic GitHub defaults must not reactivate a runtime fallback: ${JSON.stringify(requestedUrls)}`)
+    }
+  } finally {
+    resetCanonicalPublishedDocsMirrorCacheForTests()
+    resetWorkspaceSeedProviderStorageCacheForTests()
+    writeWorkspaceImportDefaultSourceUrlSetting(previousDefaultSourceUrl)
+    if (typeof previousStorageBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousStorageBaseUrl
+    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+    if (typeof previousRepoLocal === 'string') process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
     if (originalFetch) g.fetch = originalFetch
     restore()
   }

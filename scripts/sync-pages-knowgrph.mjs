@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { agentReadyHomepageLinkHeaderValue, buildAgentReadyStaticFiles } from '../cloudflare/pages/knowgrph-agent-ready.mjs'
+import { buildKnowgrphRedirects } from './production-pages-routing.mjs'
 import { buildProductionRuntimeReadiness, findRuntimeReadinessPathsNeedingUpdate, productionRuntimeReadinessHeaderLines } from './production-runtime-readiness-build.mjs'
-
 const checkMode = process.argv.includes('--check')
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -24,8 +24,8 @@ const sourceRevision = String(process.env.KNOWGRPH_SOURCE_REVISION || execFileSy
   'git', ['rev-parse', 'HEAD'], { cwd: knowgrphRoot, encoding: 'utf8' },
 )).trim()
 if (!/^[0-9a-f]{40}$/.test(sourceRevision)) throw new Error('Knowgrph source revision must be an exact lowercase 40-character SHA')
-const agentReadyFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'knowgrph-agent-ready.mjs')
-const agentReadyFunctionTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', '[[path]].js')
+const agentReadyFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'knowgrph-agent-ready.mjs'), agentReadyFunctionTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', '[[path]].js')
+const webMcpHtmlInjectionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'webmcp-html-injection.mjs'), webMcpHtmlInjectionTarget = path.resolve(mirrorRoot, 'functions', 'knowgrph', 'webmcp-html-injection.mjs')
 const agentReadyFeatureSource = filename => path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'agent-ready', filename)
 const agentReadyFeatureTarget = filename => path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'agent-ready', filename)
 const xrSceneMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'three', 'xrSceneMcpContract.mjs')
@@ -36,8 +36,16 @@ const motionControlMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src
 const motionControlMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'three', 'motionControlMcpContract.mjs')
 const gameModeMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'game-fps', 'gameModeMcpContract.mjs')
 const gameModeMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-fps', 'gameModeMcpContract.mjs')
+const flightSimMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract.mjs')
+const flightSimMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-flight-sim', 'flightSimMcpContract.mjs')
+const citySimMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'game-city-sim', 'citySimMcpContract.mjs')
+const citySimMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'game-city-sim', 'citySimMcpContract.mjs')
+const immersiveMediaMcpContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs')
+const immersiveMediaMcpContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'immersive-media', 'immersiveMediaMcpContract.mjs')
 const richMediaTextMarkdownContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'rich-media', 'richMediaTextMarkdownContract.mjs')
 const richMediaTextMarkdownContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'rich-media', 'richMediaTextMarkdownContract.mjs')
+const groupPanelContractSource = path.resolve(knowgrphRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract.mjs')
+const groupPanelContractTarget = path.resolve(mirrorRoot, 'canvas', 'src', 'features', 'group-panel', 'groupPanelContract.mjs')
 const youtubeTranscriptFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'youtube-transcript.mjs')
 const youtubeTranscriptFunctionTarget = path.resolve(mirrorRoot, 'functions', '__youtube_transcript.js')
 const videoFrameFunctionSource = path.resolve(knowgrphRoot, 'cloudflare', 'pages', 'video-frame.mjs')
@@ -134,6 +142,22 @@ const agentReadyBrowserRuntimeFilenames = [
   'webMcpLifecycle.mjs',
   'webMcpLifecycleBrowserSource.mjs',
 ]
+const storageEngineMcpContractSource = path.resolve(
+  knowgrphRoot,
+  'canvas',
+  'src',
+  'lib',
+  'storage',
+  'knowgrphStorageEngineMcpContract.mjs',
+)
+const storageEngineMcpContractTarget = path.resolve(
+  mirrorRoot,
+  'canvas',
+  'src',
+  'lib',
+  'storage',
+  'knowgrphStorageEngineMcpContract.mjs',
+)
 const publishedDocShareTokenSource = path.resolve(
   knowgrphRoot,
   'canvas',
@@ -170,7 +194,7 @@ const sharedD1Source = path.resolve(knowgrphRoot, 'cloudflare', 'workers', 'shar
 const sharedD1Target = path.resolve(mirrorRoot, 'cloudflare', 'workers', 'shared', 'd1.ts')
 const sharedPublishedDocSource = path.resolve(knowgrphRoot, 'cloudflare', 'workers', 'shared', 'publishedDoc.ts')
 const sharedPublishedDocTarget = path.resolve(mirrorRoot, 'cloudflare', 'workers', 'shared', 'publishedDoc.ts')
-const publicManagedRootFiles = new Set([
+const importedServiceWorkerRootFiles = new Set(['knowgrph-chat-stream-sw.js', 'knowgrph-service-worker-revision.js']); const publicManagedRootFiles = new Set([
   'favicon.svg',
   'index.html',
   'knowgrph-live-canvas-hero.md',
@@ -178,12 +202,14 @@ const publicManagedRootFiles = new Set([
   'manifest.webmanifest',
   'settings-flow.json',
   'sw.js',
+  ...importedServiceWorkerRootFiles,
 ])
 const obsoleteLegacyMirrorDir = path.resolve(mirrorRoot, '__' + 'repo_file')
 const joinRel = (...parts) => parts.join('/')
 const joinToken = (...parts) => parts.join('')
 const joinKebab = (...parts) => parts.join('-')
 const obsoleteGeneratedMirrorFiles = new Set([
+  'index.html',
   joinRel('knowgrph', '.well-known', 'runtime-readiness.json'),
   joinRel('canvas', 'src', 'features', 'agent-ready', joinToken('knowgrph', 'Skill', 'Pack', 'Contract.mjs')),
   joinRel('canvas', 'src', 'features', 'chat', joinToken('knowgrph', 'Skill', 'Pack', 'ChatArtifacts.ts')),
@@ -205,8 +231,6 @@ const blockedRelativeFiles = new Set([
 const preservedRelativeRoots = new Set([
   'imports',
 ])
-const GENERATED_REDIRECTS_START = '# BEGIN knowgrph generated top-level file routes'
-const GENERATED_REDIRECTS_END = '# END knowgrph generated top-level file routes'
 const GENERATED_AGENT_HEADERS_START = '# BEGIN knowgrph generated agent-ready headers'
 const GENERATED_AGENT_HEADERS_END = '# END knowgrph generated agent-ready headers'
 const GENERATED_APP_SHELL_HEADERS_START = '# BEGIN knowgrph generated app-shell cache headers'
@@ -286,10 +310,8 @@ const isPreservedRelativePath = (rel) => {
   return false
 }
 
-const isPublicManagedRelativePath = (rel) => {
-  if (!rel) return false
-  return rel.startsWith('assets/') || publicManagedRootFiles.has(rel)
-}
+const isPublicManagedRelativePath = rel => Boolean(rel) && (rel.startsWith('assets/') || publicManagedRootFiles.has(rel))
+const isBrowserRuntimeArtifactRelativePath = rel => isPublicManagedRelativePath(rel) || importedServiceWorkerRootFiles.has(rel) || /^workbox-[A-Za-z0-9_-]+\.js$/.test(rel)
 
 const listFiles = async (rootDir) => {
   const out = []
@@ -390,11 +412,13 @@ const fileExists = async (filePath) => {
 }
 
 const agentReadyRuntimeCopies = [
-  [agentReadyCommerceSource, agentReadyCommerceTarget], [agentReadyAppShellSource, agentReadyAppShellTarget], [semanticKeyContractSource, semanticKeyContractTarget],
-  [xrSceneMcpContractSource, xrSceneMcpContractTarget], [xrAnimationMcpContractSource, xrAnimationMcpContractTarget], [motionControlMcpContractSource, motionControlMcpContractTarget], [gameModeMcpContractSource, gameModeMcpContractTarget], [path.resolve(knowgrphRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs'), path.resolve(mirrorRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs')],
+  [agentReadyCommerceSource, agentReadyCommerceTarget], [agentReadyAppShellSource, agentReadyAppShellTarget], [webMcpHtmlInjectionSource, webMcpHtmlInjectionTarget], [semanticKeyContractSource, semanticKeyContractTarget],
+  [xrSceneMcpContractSource, xrSceneMcpContractTarget], [xrAnimationMcpContractSource, xrAnimationMcpContractTarget], [motionControlMcpContractSource, motionControlMcpContractTarget], [gameModeMcpContractSource, gameModeMcpContractTarget], [flightSimMcpContractSource, flightSimMcpContractTarget], [immersiveMediaMcpContractSource, immersiveMediaMcpContractTarget], [citySimMcpContractSource, citySimMcpContractTarget], [path.resolve(knowgrphRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs'), path.resolve(mirrorRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs')],
   [richMediaTextMarkdownContractSource, richMediaTextMarkdownContractTarget],
+  [groupPanelContractSource, groupPanelContractTarget],
+  [storageEngineMcpContractSource, storageEngineMcpContractTarget],
   ...agentReadyBrowserRuntimeFilenames.map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
-  ...['knowgrphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'knowgrphVdeoxplnRegistryData.mjs', 'knowgrphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
+  ...['knowgrphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'flightSimAgentReadyContract.mjs', 'immersiveMediaAgentReadyContract.mjs', 'citySimAgentReadyContract.mjs', 'storageSyncAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'knowgrphVdeoxplnRegistryData.mjs', 'knowgrphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
   ...(await collectGrphSharedRuntimeCopies(agentReadyRuntimeSharedEntries)),
 ]
 const removeEmptyDirs = async (rootDir) => {
@@ -416,41 +440,6 @@ const removeEmptyDirs = async (rootDir) => {
     }
   }
   await walk(rootDir)
-}
-
-const buildKnowgrphRedirects = (existing, rootFiles) => {
-  const generatedLines = [
-    GENERATED_REDIRECTS_START,
-    '/knowgrph /knowgrph 200',
-    '/knowgrph/ /knowgrph/ 200',
-    '/knowgrph/share/* /knowgrph/share/:splat 200',
-    '/knowgrph/doc/* /knowgrph/doc/:splat 200',
-    '/knowgrph/doc-default/* /knowgrph/doc-default/:splat 200',
-    '/knowgrph/mcp /knowgrph/mcp 200',
-    '/knowgrph/robots.txt /knowgrph/robots.txt 200',
-    '/knowgrph/sitemap.xml /knowgrph/sitemap.xml 200',
-    '/knowgrph/.well-known/* /knowgrph/.well-known/:splat 200',
-    ...rootFiles.map(rel => `/knowgrph/${rel} /content/knowgrph/${rel} 200`),
-    GENERATED_REDIRECTS_END,
-  ]
-  const nextBlock = generatedLines.join('\n')
-  const managedBlockRegex = new RegExp(
-    `${GENERATED_REDIRECTS_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${GENERATED_REDIRECTS_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
-  )
-  let next = existing.replace(
-    /^\/knowgrph\/\*\.js .*?\n^\/knowgrph\/\*\.mjs .*?\n^\/knowgrph\/\*\.css .*?\n^\/knowgrph\/\*\.svg .*?\n^\/knowgrph\/\*\.ico .*?\n^\/knowgrph\/\*\.json .*?\n^\/knowgrph\/\*\.wasm .*?\n^\/knowgrph\/\*\.txt .*?\n^\/knowgrph\/\*\.webmanifest .*?\n^\/knowgrph\/\*\.map .*?\n/gm,
-    '',
-  )
-  if (managedBlockRegex.test(next)) {
-    next = next.replace(managedBlockRegex, nextBlock)
-  } else {
-    const anchor = '/knowgrph/imports/* /content/knowgrph/imports/:splat 200'
-    if (!next.includes(anchor)) {
-      throw new Error(`Missing expected knowgrph redirects anchor in ${redirectsPath}`)
-    }
-    next = next.replace(anchor, `${anchor}\n${nextBlock}`)
-  }
-  return next
 }
 
 const buildAgentReadyHeaders = (existing, artifacts) => {
@@ -476,6 +465,7 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
     '/content/knowgrph/sw.js',
     '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0',
+    ...['/content/knowgrph/knowgrph-chat-stream-sw.js', '/knowgrph/knowgrph-chat-stream-sw.js', '/content/knowgrph/knowgrph-service-worker-revision.js', '/knowgrph/knowgrph-service-worker-revision.js'].flatMap(route => [route, '  Cache-Control: no-store, no-cache, must-revalidate, max-age=0']),
     '/knowgrph',
     '  Cache-Control: no-store, no-cache, no-transform, must-revalidate, max-age=0',
     '/knowgrph/',
@@ -495,8 +485,6 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
   const homepageHeaderLines = [
     GENERATED_AGENT_HOMEPAGE_HEADERS_START,
     '/',
-    `  Link: ${agentReadyHomepageLinkHeaderValue}`,
-    '/index.html',
     `  Link: ${agentReadyHomepageLinkHeaderValue}`,
     GENERATED_AGENT_HOMEPAGE_HEADERS_END,
   ]
@@ -536,11 +524,15 @@ if (!(await existsDir(distDir))) {
 
 const sourceFiles = await listFiles(distDir)
 const rootManagedSourceFiles = [{ rel: 'knowgrph-live-canvas-hero.md', src: liveCanvasHeroMarkdownSource }]
+const publishRootManagedSourceFiles = [{
+  rel: '404.html',
+  src: path.resolve(knowgrphRoot, 'cloudflare', 'pages', '404.html'),
+}]
 const runtimeReadiness = await buildProductionRuntimeReadiness({
   sourceRevision, knowgrphRoot, mirrorRoot, contentRoot: targetDir,
   artifactEntries: [
   ...sourceFiles
-    .filter(isPublicManagedRelativePath)
+    .filter(isBrowserRuntimeArtifactRelativePath)
     .map(relativePath => ({ relativePath, absolutePath: path.resolve(distDir, relativePath) })),
   ...rootManagedSourceFiles.map(entry => ({ relativePath: entry.rel, absolutePath: entry.src })),
   ],
@@ -594,6 +586,11 @@ if (await existsDir(publicRouteDir)) {
     publicFilesToRemove.push(rel)
   }
 }
+const publishRootManagedFilesToCopy = []
+for (const entry of publishRootManagedSourceFiles) {
+  const dst = path.resolve(mirrorRoot, entry.rel)
+  if (await plainFileNeedsUpdate(entry.src, dst)) publishRootManagedFilesToCopy.push(entry)
+}
 const rootFiles = [...new Set([
   ...sourceFiles,
   ...rootManagedSourceFiles.map(entry => entry.rel),
@@ -601,7 +598,7 @@ const rootFiles = [...new Set([
   .filter(rel => !rel.includes('/') && rel !== 'index.html' && !rel.startsWith('_'))
   .sort((a, b) => a.localeCompare(b))
 const existingRedirects = await fs.readFile(redirectsPath, 'utf8')
-const nextRedirects = buildKnowgrphRedirects(existingRedirects, rootFiles)
+const nextRedirects = buildKnowgrphRedirects({ existing: existingRedirects, rootFiles, redirectsPath })
 const redirectsNeedUpdate = nextRedirects !== existingRedirects
 const agentReadyFunctionNeedsUpdate = await plainFileNeedsUpdate(agentReadyFunctionSource, agentReadyFunctionTarget)
 const youtubeTranscriptFunctionNeedsUpdate = await plainFileNeedsUpdate(youtubeTranscriptFunctionSource, youtubeTranscriptFunctionTarget)
@@ -654,6 +651,7 @@ if (checkMode) {
     publicFilesToCopy.length > 0 ||
     publicRootManagedFilesToCopy.length > 0 ||
     publicFilesToRemove.length > 0 ||
+    publishRootManagedFilesToCopy.length > 0 ||
     redirectsNeedUpdate ||
     agentReadyFunctionNeedsUpdate ||
     youtubeTranscriptFunctionNeedsUpdate ||
@@ -713,6 +711,10 @@ if (checkMode) {
       console.error(`  stale public route files needing removal (${publicFilesToRemove.length}):`)
       for (const rel of publicFilesToRemove.slice(0, 20)) console.error(`  - ${rel}`)
       if (publicFilesToRemove.length > 20) console.error(`  - ... ${publicFilesToRemove.length - 20} more`)
+    }
+    if (publishRootManagedFilesToCopy.length > 0) {
+      console.error(`  publish-root files needing sync (${publishRootManagedFilesToCopy.length}):`)
+      for (const entry of publishRootManagedFilesToCopy) console.error(`  - ${entry.rel}`)
     }
     if (redirectsNeedUpdate) console.error('  - `huijoohwee/_redirects` generated knowgrph block is out of sync')
     if (agentReadyFunctionNeedsUpdate) console.error('  - Knowgrph agent-ready Pages Function is out of sync')
@@ -810,6 +812,11 @@ if (checkMode) {
   if (redirectsNeedUpdate) {
     await fs.writeFile(redirectsPath, nextRedirects, 'utf8')
   }
+  let publishRootCopiedCount = 0
+  for (const entry of publishRootManagedFilesToCopy) {
+    await copyPlainFile(entry.src, path.resolve(mirrorRoot, entry.rel))
+    publishRootCopiedCount += 1
+  }
   if (agentReadyFunctionNeedsUpdate) {
     await copyPlainFile(agentReadyFunctionSource, agentReadyFunctionTarget)
   }
@@ -900,6 +907,6 @@ if (checkMode) {
   }
 
   console.log(
-    `[knowgrph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, agentReadyFunctionUpdated=${agentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, youtubeTranscriptFunctionUpdated=${youtubeTranscriptFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameFunctionUpdated=${videoFrameFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameSharedProviderUpdated=${videoFrameSharedProviderNeedsUpdate ? 'yes' : 'no'}, agentReadyRuntimeUpdated=${agentReadyRuntimeUpdated}, agentReadyDocRouteUpdated=${agentReadyDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyDefaultDocRouteUpdated=${agentReadyDefaultDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyShareRouteUpdated=${agentReadyShareRouteNeedsUpdate ? 'yes' : 'no'}, agentReadySharedUpdated=${agentReadySharedNeedsUpdate ? 'yes' : 'no'}, agentReadyDiscoveryUpdated=${agentReadyDiscoveryNeedsUpdate ? 'yes' : 'no'}, rootAgentReadySharedUpdated=${rootAgentReadySharedNeedsUpdate ? 'yes' : 'no'}, rootAgentReadyFunctionUpdated=${rootAgentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, agentReadyToolContractUpdated=${agentReadyToolContractNeedsUpdate ? 'yes' : 'no'}, agentReadyPromptContractUpdated=${agentReadyPromptContractNeedsUpdate ? 'yes' : 'no'}, agentReadyResourceContractUpdated=${agentReadyResourceContractNeedsUpdate ? 'yes' : 'no'}, mcpAppsReadyContractUpdated=${mcpAppsReadyContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnContractUpdated=${vdeoxplnContractNeedsUpdate ? 'yes' : 'no'}, localMcpToolNamesUpdated=${localMcpToolNamesNeedsUpdate ? 'yes' : 'no'}, probeTreeContractUpdated=${probeTreeContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnRoutingToolsUpdated=${vdeoxplnRoutingToolsNeedsUpdate ? 'yes' : 'no'}, sharedDocumentStructureInspectionUpdated=${sharedDocumentStructureInspectionNeedsUpdate ? 'yes' : 'no'}, agentSurfaceInspectionUpdated=${agentSurfaceInspectionNeedsUpdate ? 'yes' : 'no'}, publishedDocShareTokenUpdated=${publishedDocShareTokenNeedsUpdate ? 'yes' : 'no'}, knowgrphStorageSyncContractUpdated=${knowgrphStorageSyncContractNeedsUpdate ? 'yes' : 'no'}, sharedD1Updated=${sharedD1NeedsUpdate ? 'yes' : 'no'}, sharedPublishedDocUpdated=${sharedPublishedDocNeedsUpdate ? 'yes' : 'no'}, agentReadyStaticUpdated=${agentReadyStaticUpdated}, obsoleteGeneratedMirrorFilesRemoved=${obsoleteGeneratedMirrorFilesRemoved})`,
+    `[knowgrph] synced ${distDir} -> ${targetDir} (copied=${copiedCount}, removed=${filesToRemove.length}, publicCopied=${copiedPublicCount}, publicRemoved=${publicFilesToRemove.length}, publishRootCopied=${publishRootCopiedCount}, redirectsUpdated=${redirectsNeedUpdate ? 'yes' : 'no'}, headersUpdated=${headersNeedUpdate ? 'yes' : 'no'}, agentReadyFunctionUpdated=${agentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, youtubeTranscriptFunctionUpdated=${youtubeTranscriptFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameFunctionUpdated=${videoFrameFunctionNeedsUpdate ? 'yes' : 'no'}, videoFrameSharedProviderUpdated=${videoFrameSharedProviderNeedsUpdate ? 'yes' : 'no'}, agentReadyRuntimeUpdated=${agentReadyRuntimeUpdated}, agentReadyDocRouteUpdated=${agentReadyDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyDefaultDocRouteUpdated=${agentReadyDefaultDocRouteNeedsUpdate ? 'yes' : 'no'}, agentReadyShareRouteUpdated=${agentReadyShareRouteNeedsUpdate ? 'yes' : 'no'}, agentReadySharedUpdated=${agentReadySharedNeedsUpdate ? 'yes' : 'no'}, agentReadyDiscoveryUpdated=${agentReadyDiscoveryNeedsUpdate ? 'yes' : 'no'}, rootAgentReadySharedUpdated=${rootAgentReadySharedNeedsUpdate ? 'yes' : 'no'}, rootAgentReadyFunctionUpdated=${rootAgentReadyFunctionNeedsUpdate ? 'yes' : 'no'}, agentReadyToolContractUpdated=${agentReadyToolContractNeedsUpdate ? 'yes' : 'no'}, agentReadyPromptContractUpdated=${agentReadyPromptContractNeedsUpdate ? 'yes' : 'no'}, agentReadyResourceContractUpdated=${agentReadyResourceContractNeedsUpdate ? 'yes' : 'no'}, mcpAppsReadyContractUpdated=${mcpAppsReadyContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnContractUpdated=${vdeoxplnContractNeedsUpdate ? 'yes' : 'no'}, localMcpToolNamesUpdated=${localMcpToolNamesNeedsUpdate ? 'yes' : 'no'}, probeTreeContractUpdated=${probeTreeContractNeedsUpdate ? 'yes' : 'no'}, vdeoxplnRoutingToolsUpdated=${vdeoxplnRoutingToolsNeedsUpdate ? 'yes' : 'no'}, sharedDocumentStructureInspectionUpdated=${sharedDocumentStructureInspectionNeedsUpdate ? 'yes' : 'no'}, agentSurfaceInspectionUpdated=${agentSurfaceInspectionNeedsUpdate ? 'yes' : 'no'}, publishedDocShareTokenUpdated=${publishedDocShareTokenNeedsUpdate ? 'yes' : 'no'}, knowgrphStorageSyncContractUpdated=${knowgrphStorageSyncContractNeedsUpdate ? 'yes' : 'no'}, sharedD1Updated=${sharedD1NeedsUpdate ? 'yes' : 'no'}, sharedPublishedDocUpdated=${sharedPublishedDocNeedsUpdate ? 'yes' : 'no'}, agentReadyStaticUpdated=${agentReadyStaticUpdated}, obsoleteGeneratedMirrorFilesRemoved=${obsoleteGeneratedMirrorFilesRemoved})`,
   )
 }

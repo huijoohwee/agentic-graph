@@ -1,6 +1,6 @@
 import React from 'react'
 import { Search } from 'lucide-react'
-import { preventDefaultMouseDown } from '@/features/markdown/ui/markdownFloatingSelectionToolbar'
+import { preventDefaultMouseDown } from '@/lib/markdown-core/ui/markdownInlineSelectionToolbarInteractions'
 import { InlineMediaCommandThumbnail } from '@/lib/command-menu/InlineMediaCommandThumbnail'
 import type { InlineMediaKind } from '@/lib/command-menu/inlineCommandMenuCatalog'
 import {

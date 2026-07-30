@@ -4,6 +4,10 @@ import {
   installWheelForwardingAndBrowserZoomGuards,
   shouldKeepWheelOnScrollableTarget,
 } from 'grph-shared/dom/wheelGuards'
+import {
+  readOverlayPointerTargetState,
+  shouldBlockOverlayPanTarget,
+} from '../../../grph-shared/src/dom/overlayPointerGuards'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 function readRichMediaPanelSourceBundle(): string {
@@ -180,6 +184,42 @@ export async function testRichMediaPanelStoryboardWidgetModifierWheelZoomKeepsIn
     g.getComputedStyle = originalGetComputedStyle
     g.WheelEvent = originalWheelEvent
     restoreDom()
+  }
+}
+
+export function testRichMediaPanelInlineEditSurfaceOwnsPointerBeforeContenteditable() {
+  const { dom, restore } = initJsdomHarness()
+  try {
+    const doc = dom.window.document
+    const editableSurface = doc.createElement('section')
+    editableSurface.setAttribute('data-kg-rich-media-inline-edit', '1')
+    editableSurface.setAttribute('data-kg-media-scroll-surface', '1')
+    const heading = doc.createElement('h1')
+    editableSurface.appendChild(heading)
+    doc.body.appendChild(editableSurface)
+
+    const editableTargetState = readOverlayPointerTargetState(heading)
+    if (!editableTargetState.isInteractiveControl) {
+      throw new Error('expected the marked Rich Media Viewer surface to own pointer input before contenteditable mounts')
+    }
+    if (!shouldBlockOverlayPanTarget(editableTargetState, { scrollSurfaceCanForwardPointer: true })) {
+      throw new Error('expected Canvas overlay pan capture to yield to the marked Rich Media Viewer edit surface')
+    }
+
+    const canvasPanSurface = doc.createElement('section')
+    canvasPanSurface.setAttribute('data-kg-media-scroll-surface', '1')
+    const canvasPanChild = doc.createElement('p')
+    canvasPanSurface.appendChild(canvasPanChild)
+    doc.body.appendChild(canvasPanSurface)
+    const canvasPanTargetState = readOverlayPointerTargetState(canvasPanChild)
+    if (canvasPanTargetState.isInteractiveControl) {
+      throw new Error('did not expect an ordinary Rich Media scroll surface to claim editor pointer ownership')
+    }
+    if (shouldBlockOverlayPanTarget(canvasPanTargetState, { scrollSurfaceCanForwardPointer: true })) {
+      throw new Error('expected ordinary forwarded Rich Media scroll surfaces to retain Canvas pan ownership')
+    }
+  } finally {
+    restore()
   }
 }
 
@@ -448,8 +488,8 @@ export function testRichMediaPanelStoryboardWidgetReusesSharedFloatingToolbarVar
     'const richMediaPanelPinned = resolveFlowCanvasMediaOverlayPinnedInCanvas({',
     'const richMediaPanelPinAllowsMovement = isFlowWidgetHeaderDragAllowedByPin({',
     'pinnedInCanvas: richMediaPanelPinned',
-    'const richMediaPanelMoveEnabled = headerDragInteractionActive && richMediaPanelPinAllowsMovement',
-    'const richMediaPanelOverlayPanEnabled = overlayInteractionEnabled && richMediaPanelPinAllowsMovement',
+    'const richMediaPanelMoveEnabled = headerDragInteractionActive && (containedByGroupPanel || richMediaPanelPinAllowsMovement)',
+    'const richMediaPanelOverlayPanEnabled = overlayInteractionEnabled && (containedByGroupPanel || richMediaPanelPinAllowsMovement) && !richMediaBodyPanOwnedByCollective',
     'const bodyDragMovesRichMediaPanel = richMediaPanelMoveEnabled',
     "data-kg-rich-media-storyboard-widget-pinned={richMediaPanelPinned ? '1' : '0'}",
     'if (bodyDragMovesRichMediaPanel) { beginMediaOverlayHeaderDrag(node.id, payload.pointerId); return }',

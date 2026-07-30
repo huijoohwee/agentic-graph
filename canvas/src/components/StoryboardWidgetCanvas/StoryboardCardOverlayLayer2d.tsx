@@ -20,6 +20,8 @@ import { runStoryboardRemoveAction } from '@/components/StoryboardCanvas/storybo
 import { mergeStoryboardMediaAlbumItems, toStoryboardMediaAlbumItem } from '@/components/StoryboardCanvas/storyboardCardMediaAlbum'
 import { buildStoryboardCardMediaTextareaAttachments } from '@/components/StoryboardCanvas/storyboardCardMediaProjection'
 import { buildStoryboardBoardModel, buildStoryboardInlineMediaCommandContext, type StoryboardCardModel } from '@/components/StoryboardCanvas/storyboardModel'
+import type { StoryboardCardSourceReference } from '@/components/StoryboardCanvas/storyboardCardConnectedSources'
+import { emitStoryboardCardProvenanceFocus } from '@/lib/storyboardWidget/storyboardCardProvenanceFocus'
 import { buildStoryboardToolbarProps } from '@/components/StoryboardCanvas/storyboardToolbarProps'
 import { writeActiveMarkdownDocumentTextIfPresent } from '@/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -27,7 +29,11 @@ import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/w
 import type { StoryboardWidgetOverlayDragTransform } from '@/lib/storyboardWidget/overlayWorldDrag'
 import type { FlowWidgetPinnedById } from '@/lib/storyboardWidget/flowWidgetPinnedState'
 import { readCanvasBoardLayoutMode } from '@/lib/canvas/canvasBoardLayoutDisplayControls'
+import { activateMultiNodeSelectModeForShift, resolveNodeSelectionGesture } from '@/lib/canvas/nodeSelectionGesture'
 import { isFlowWidgetHeaderDragAllowedByPin } from '@/lib/storyboardWidget/flowWidgetPinMovement'
+import { collectGroupPanelContainedNodeIds, isGroupPanelContainedNode } from '@/lib/storyboardWidget/groupPanelContainment'
+import { readStoryboardWidgetContainmentGroupAabb } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRuntimeGroupLookup'
+import type { FlowNativeRuntime } from '@/components/FlowCanvas/nativeRuntime'
 import { resolveScopedFlowWidgetNodeMap } from '@/lib/storyboardWidget/widgetStateScope'
 import { CardInlineTextEditor } from '@/lib/cards/CardInlineTextEditor'
 import { buildGraphNodeCanonicalTextPatch, GRAPH_NODE_CARD_TITLE_PROPERTY_KEYS, type GraphNodeCardTextFieldSpec } from '@/lib/cards/graphNodeCardFields'
@@ -49,16 +55,25 @@ function StoryboardCardOverlayItem(props: {
   card: StoryboardCardModel; node: GraphNode; pendingMedia: StoryboardCardModel['media']; storyboardWidgetSurfaceId: string
   cardMoveEnabled: boolean
   register: (id: string, el: HTMLElement | null) => void; selected: boolean
-  onDuplicate: (card: StoryboardCardModel) => void; onOpenInSidepane: (card: StoryboardCardModel) => void; onProbeTree: (card: StoryboardCardModel) => void; onRemove: (card: StoryboardCardModel) => void; onRun: (card: StoryboardCardModel) => void; onSelect: (card: StoryboardCardModel) => void
+  onDuplicate: (card: StoryboardCardModel) => void; onOpenInSidepane: (card: StoryboardCardModel) => void; onProbeTree: (card: StoryboardCardModel) => void; onRemove: (card: StoryboardCardModel) => void; onRun: (card: StoryboardCardModel) => void; onSelect: (card: StoryboardCardModel, modifiers?: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean }) => void
   onCommitLane: (card: StoryboardCardModel, nextValue: string) => void; onCommitPrimaryText: (card: StoryboardCardModel, field: GraphNodeCardTextFieldSpec, nextValue: string) => void; onCommitTitle: (card: StoryboardCardModel, nextValue: string) => void; onCommitType: (card: StoryboardCardModel, nextValue: string) => void
   onDropMedia: (card: StoryboardCardModel, payload: MediaDragPayload) => void
+  onSourceReferenceActivate: (reference: StoryboardCardSourceReference) => void
   headerPinProps: FlowCanvasHeaderPinProps
   readCardSize: (node: GraphNode) => { width: number; height: number }
   onHeaderPointerDown: (event: React.PointerEvent<HTMLElement>, node: GraphNode) => void
   onResizePointerDown: (event: React.PointerEvent<HTMLButtonElement>, node: GraphNode) => void
 }) {
-  const { card, cardMoveEnabled, storyboardWidgetSurfaceId, headerPinProps, node, onCommitLane, onCommitPrimaryText, onCommitTitle, onCommitType, onDropMedia, onDuplicate, onHeaderPointerDown, onOpenInSidepane, onProbeTree, onRemove, onResizePointerDown, onRun, onSelect, pendingMedia, readCardSize, register, selected } = props
+  const { card, cardMoveEnabled, storyboardWidgetSurfaceId, headerPinProps, node, onCommitLane, onCommitPrimaryText, onCommitTitle, onCommitType, onDropMedia, onDuplicate, onHeaderPointerDown, onOpenInSidepane, onProbeTree, onRemove, onResizePointerDown, onRun, onSelect, onSourceReferenceActivate, pendingMedia, readCardSize, register, selected } = props
   const { width, height } = readCardSize(node)
+  const suppressShiftActivationClickRef = React.useRef(false)
+  const activateCard = React.useCallback(() => {
+    if (suppressShiftActivationClickRef.current) {
+      suppressShiftActivationClickRef.current = false
+      return
+    }
+    onSelect(card)
+  }, [card, onSelect])
   const textModel = buildStoryboardCardTextModel(card)
   const displayMedia = pendingMedia || card.media
   const displayMediaItems = React.useMemo(() => mergeStoryboardMediaAlbumItems(
@@ -107,22 +122,41 @@ function StoryboardCardOverlayItem(props: {
       data-node-id={card.id}
       data-kg-storyboard-widget-surface={storyboardWidgetSurfaceId}
       onClickCapture={event => {
-        const target = event.target instanceof Element ? event.target : null
-        if (target && isStoryboardHeaderDragBlockedTarget(target)) return
-        if (shouldStoryboardCardOverlayYieldToTextEditTarget(target)) return
-        onSelect(card)
+        if (!suppressShiftActivationClickRef.current && !event.shiftKey) return
+        event.preventDefault()
+        event.stopPropagation()
       }}
       onPointerDownCapture={event => {
         const target = event.target instanceof Element ? event.target : null
         if (target?.closest('[data-kg-port-handle="1"],[data-kg-rich-media-resize-handle="1"]')) return
+        if (event.shiftKey) {
+          suppressShiftActivationClickRef.current = true
+          onSelect(card, {
+            shiftKey: true,
+            metaKey: event.metaKey,
+            ctrlKey: event.ctrlKey,
+          })
+          event.preventDefault()
+          event.stopPropagation()
+          return
+        }
+        suppressShiftActivationClickRef.current = false
         if (target && isStoryboardHeaderDragBlockedTarget(target)) return
         if (shouldStoryboardCardOverlayYieldToTextEditTarget(target)) return
         if (target?.closest('[data-kg-rich-media-storyboard-widget-header="1"]') && !isStoryboardHeaderDragBlockedTarget(target)) {
-          onSelect(card)
+          onSelect(card, {
+            shiftKey: event.shiftKey,
+            metaKey: event.metaKey,
+            ctrlKey: event.ctrlKey,
+          })
           if (cardMoveEnabled) onHeaderPointerDown(event, node)
           return
         }
-        onSelect(card)
+        onSelect(card, {
+          shiftKey: event.shiftKey,
+          metaKey: event.metaKey,
+          ctrlKey: event.ctrlKey,
+        })
       }}
       style={{
         width,
@@ -153,7 +187,7 @@ function StoryboardCardOverlayItem(props: {
               editorSurface="viewer"
               inlineChipDensity="compact"
               onCommit={nextValue => onCommitTitle(card, nextValue)}
-              onEditingChange={editing => { if (editing) onSelect(card) }}
+              onEditingChange={editing => { if (editing) activateCard() }}
               displayClassName={STORYBOARD_WIDGET_PANEL_TITLE_CLASS_NAME}
               editorClassName={STORYBOARD_WIDGET_PANEL_TITLE_CLASS_NAME}
             />
@@ -181,14 +215,15 @@ function StoryboardCardOverlayItem(props: {
             textModel={textModel}
             projectedMediaAttachments={projectedMediaAttachments}
             storyboardCommandContextText={storyboardCommandContextText}
-            onActivate={() => onSelect(card)}
+            onActivate={activateCard}
             onCommitLane={onCommitLane}
             onCommitText={onCommitPrimaryText}
             onCommitType={onCommitType}
             onMediaCommandSelect={applyInlineMediaCommandToCard}
+            onSourceReferenceActivate={onSourceReferenceActivate}
           />
           {textModel.secondaryEditable && textModel.secondaryField?.id === 'output' ? (
-            <StoryboardCardOutputEditSurface card={card} textModel={textModel} onActivate={() => onSelect(card)} onCommitText={onCommitPrimaryText} />
+            <StoryboardCardOutputEditSurface card={card} textModel={textModel} onActivate={activateCard} onCommitText={onCommitPrimaryText} />
           ) : (
             <StoryboardCardMediaDropSlot2d card={card} displayMedia={displayMedia} displayMediaItems={displayMediaItems} onDropMedia={onDropMedia} />
           )}
@@ -213,6 +248,7 @@ export function StoryboardCardOverlayLayer2d(props: {
   removeNodeById: (nodeId: string) => void
   removePendingNodeById: (nodeId: string) => void
   getTransform: () => StoryboardWidgetOverlayDragTransform | null
+  getRuntime: () => FlowNativeRuntime | null
   getWheelForwardTarget?: () => Element | null
   runWorkflowNode?: (nodeId: string) => Promise<void> | void
   schema: GraphSchema | null
@@ -229,6 +265,7 @@ export function StoryboardCardOverlayLayer2d(props: {
   const addHistory = useGraphStore(s => s.addHistory); const upsertUiToast = useGraphStore(s => s.upsertUiToast)
   const removeNode = useGraphStore(s => s.removeNode)
   const selectNode = useGraphStore(s => s.selectNode)
+  const selectNodesExpanded = useGraphStore(s => s.selectNodesExpanded)
   const selectedNodeId = useGraphStore(s => String(s.selectedNodeId || '').trim())
   const selectedNodeIds = useGraphStore(s => s.selectedNodeIds)
   const scopedFlowWidgetPinnedByNodeId = useGraphStore(s => resolveScopedFlowWidgetNodeMap({
@@ -271,6 +308,10 @@ export function StoryboardCardOverlayLayer2d(props: {
       .filter(card => isStoryboardFixedCardOwnedNode(nodeById.get(card.id))),
     [board.lanes, nodeById],
   )
+  const groupPanelContainedNodeIds = React.useMemo(
+    () => collectGroupPanelContainedNodeIds(graphData),
+    [graphData],
+  )
   const { dropCardMedia, pendingMediaByCardId } = useStoryboardCardMediaDrop2d({
     cards,
     commitGraphData,
@@ -304,6 +345,7 @@ export function StoryboardCardOverlayLayer2d(props: {
   const interactions = useStoryboardCardOverlayInteractions2d({
     addHistory,
     getTransform,
+    readContainmentBounds: id => readStoryboardWidgetContainmentGroupAabb(props.getRuntime(), id),
     readNodeCenter: readCardCenter,
     readNodeSize: readCardSize,
     schema,
@@ -402,11 +444,55 @@ export function StoryboardCardOverlayLayer2d(props: {
       propertyKeys: field.propertyKeys,
     })
   }, [commitNodeCanonicalProperty])
-  const selectCard = React.useCallback((card: StoryboardCardModel) => {
-    setActiveCardId(card.id)
+  const selectCard = React.useCallback((
+    card: StoryboardCardModel,
+    modifiers: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean } = {},
+  ) => {
+    const state = useGraphStore.getState()
+    const mode = activateMultiNodeSelectModeForShift({
+      mode: state.schema?.behavior?.selectMode || 'single',
+      shiftKey: modifiers.shiftKey,
+      setSelectMode: state.setSelectMode,
+    })
     setSelectionSource('canvas')
+    const gesture = resolveNodeSelectionGesture({ mode, ...modifiers })
+    if (gesture === 'toggle') {
+      state.toggleNodeSelectionAdditive(card.id)
+      const nextState = useGraphStore.getState()
+      const remainsSelected = String(nextState.selectedNodeId || '').trim() === card.id
+        || (nextState.selectedNodeIds || []).some(id => String(id || '').trim() === card.id)
+      setActiveCardId(remainsSelected ? card.id : '')
+      return
+    }
+    setActiveCardId(card.id)
+    if (mode === 'multi' || mode === 'lasso') {
+      state.selectNodesExpanded({ nodeIds: [card.id], activeNodeId: card.id })
+      return
+    }
     selectNode(card.id)
   }, [selectNode, setSelectionSource])
+  const focusSourceReference = React.useCallback((reference: StoryboardCardSourceReference) => {
+    const nodeId = String(reference.nodeId || '').trim()
+    if (!nodeId) return
+    setActiveCardId('')
+    setSelectionSource('canvas')
+    const provenance = reference.selectionProvenance?.[0]
+    if (provenance) {
+      selectNodesExpanded({ nodeIds: [nodeId], activeNodeId: nodeId })
+      requestZoom('selection')
+      emitStoryboardCardProvenanceFocus({
+        sourceNodeId: nodeId,
+        edgeId: provenance.edgeId || reference.edgeIds[0] || '',
+        documentPath: provenance.documentPath,
+        selectedText: provenance.selectedText,
+        startLine: provenance.startLine,
+        endLine: provenance.endLine,
+      })
+      return
+    }
+    selectNode(nodeId)
+    requestZoom('selection')
+  }, [requestZoom, selectNode, selectNodesExpanded, setSelectionSource])
   const runCard = React.useCallback((card: StoryboardCardModel) => {
     selectCard(card)
     void runWorkflowNode?.(card.id)
@@ -525,6 +611,7 @@ export function StoryboardCardOverlayLayer2d(props: {
       {cards.map(card => {
         const node = nodeById.get(card.id)
         if (!node) return null
+        const containedByGroupPanel = isGroupPanelContainedNode(groupPanelContainedNodeIds, card.id)
         const selected = isCanonicalNodeIdEqual(activeCardId, card.id)
           || isCanonicalNodeIdEqual(selectedNodeId, card.id)
           || (Array.isArray(selectedNodeIds) && selectedNodeIds.some(id => isCanonicalNodeIdEqual(id, card.id)))
@@ -540,7 +627,7 @@ export function StoryboardCardOverlayLayer2d(props: {
           <StoryboardCardOverlayItem
             key={card.id}
             card={card}
-            cardMoveEnabled={isFlowWidgetHeaderDragAllowedByPin({
+            cardMoveEnabled={containedByGroupPanel || isFlowWidgetHeaderDragAllowedByPin({
               pinnedInCanvas: headerPinProps.headerPinned === true,
             })}
             storyboardWidgetSurfaceId={storyboardWidgetSurfaceId}
@@ -561,6 +648,7 @@ export function StoryboardCardOverlayLayer2d(props: {
             onResizePointerDown={interactions.beginResize}
             onRun={runCard}
             onSelect={selectCard}
+            onSourceReferenceActivate={focusSourceReference}
             register={register}
             selected={selected}
           />

@@ -1,3 +1,3 @@
-export function resolveAuthoredWorldPaused(paused: boolean, gameFpsActive: boolean): boolean {
-  return paused || gameFpsActive
+export function resolveAuthoredWorldPaused(paused: boolean, gameplayOverlayActive: boolean): boolean {
+  return paused || gameplayOverlayActive
 }

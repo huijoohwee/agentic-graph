@@ -224,6 +224,13 @@ export const testMarkdownWorkspaceRuntimeGraphWritebackRefreshesActiveEditorText
 
 export const testMarkdownWorkspaceSelectionClearsStaleEditorTextBeforeSsotDocumentSwitch = () => {
   const text = readUtf8(markdownWorkspaceSelectionPath())
+  if (
+    !text.includes("import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'")
+    || !text.includes('const pendingSourceWrites = settleWorkspaceSourceTextWrites()')
+    || !text.includes('Promise.allSettled([')
+  ) {
+    throw new Error('Expected file selection to settle generated Canvas source writes and their durable mirror before changing document ownership')
+  }
   if (!text.includes('const previousActivePathRef = React.useRef<WorkspacePath | null>(args.activePath)')) {
     throw new Error('Expected markdown workspace selection to track the previous active path before synchronizing the active markdown document')
   }
@@ -334,6 +341,7 @@ export const testMarkdownWorkspaceSelectionUsesEntryIndexForSwitchHotPath = () =
   const canonicalText = readUtf8(path.resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'markdownWorkspaceSelectionCanonicalPath.ts'))
   const viewShellText = readUtf8(markdownWorkspaceViewShellPath())
   const explorerStateText = readUtf8(path.resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'useMarkdownWorkspaceExplorerState.tsx'))
+  const folderContractTargetText = readUtf8(path.resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'workspaceFolderContractTarget.ts'))
   const indexText = readUtf8(path.resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'workspaceEntriesIndex.ts'))
   if (!selectionText.includes('const entriesIndex = React.useMemo(() => buildWorkspaceEntriesIndex(args.entries), [args.entries])')) {
     throw new Error('Expected markdown workspace selection to build one entries index per entries revision instead of scanning on active-path switches')
@@ -367,9 +375,11 @@ export const testMarkdownWorkspaceSelectionUsesEntryIndexForSwitchHotPath = () =
     || !viewShellText.includes('hasWorkspaceFileEntry(entriesIndex, journeyPath)')) {
     throw new Error('Expected Source Files shell actions to use indexed file lookups instead of per-click/per-render scans')
   }
-  if (!explorerStateText.includes('getFirstDescendantFilePath(entriesIndex, folder)')
+  if (explorerStateText.includes('getFirstDescendantFilePath(entriesIndex, folder)')
+    || folderContractTargetText.includes('getFirstDescendantFilePath')
+    || !folderContractTargetText.includes('return null')
     || !indexText.includes('firstDescendantFileByFolderPath')) {
-    throw new Error('Expected folder contract targeting to use first-descendant file metadata from the shared entries index')
+    throw new Error('Expected regular folder expansion to preserve the active document while retaining indexed descendant metadata for explicit consumers')
   }
 }
 

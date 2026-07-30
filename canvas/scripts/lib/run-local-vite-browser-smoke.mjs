@@ -2,6 +2,11 @@ import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const supportedStartModes = new Set([
+  'npm-dev',
+  'vite-runner',
+  'vite-preview-runner',
+])
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -32,13 +37,21 @@ async function isServerReady(url, timeoutMs) {
 }
 
 function terminateProcess(child) {
-  if (!child || child.killed) return Promise.resolve()
+  if (!child || child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve()
+  }
   return new Promise(resolve => {
-    const finish = () => resolve()
+    let exited = false
+    const finish = () => {
+      exited = true
+      resolve()
+    }
     child.once('exit', finish)
     child.kill('SIGTERM')
     setTimeout(() => {
-      if (!child.killed) child.kill('SIGKILL')
+      if (exited) return
+      child.kill('SIGKILL')
+      setTimeout(finish, 2000)
     }, 2000)
   })
 }
@@ -61,10 +74,28 @@ function runCommand(command, args, env) {
   })
 }
 
-function startDevServer({ devServerPort, devServerStartMode, env }) {
-  if (devServerStartMode === 'vite-runner') {
+function startDevServer({
+  devServerPort,
+  devServerStartMode,
+  env,
+  previewOutDir,
+}) {
+  if (
+    devServerStartMode === 'vite-runner'
+    || devServerStartMode === 'vite-preview-runner'
+  ) {
     const viteCliPath = resolve(process.cwd(), '../node_modules/vite/bin/vite.js')
-    return spawn(process.execPath, [viteCliPath, '--configLoader', 'runner', '--port', devServerPort, '--strictPort'], {
+    const viteArgs = [
+      viteCliPath,
+      ...(devServerStartMode === 'vite-preview-runner' ? ['preview'] : []),
+      '--configLoader',
+      'runner',
+      '--port',
+      devServerPort,
+      '--strictPort',
+      ...(previewOutDir ? ['--outDir', previewOutDir] : []),
+    ]
+    return spawn(process.execPath, viteArgs, {
       cwd: process.cwd(),
       stdio: 'inherit',
       env,
@@ -87,18 +118,37 @@ export async function runLocalViteBrowserSmoke({
   verifierFailureLabel = 'Browser smoke',
   prepareBeforeStart = false,
   devServerStartMode = 'npm-dev',
+  existingServerPolicy = 'reuse',
+  previewOutDir = '',
 }) {
+  if (!['reuse', 'forbid'].includes(existingServerPolicy)) {
+    throw new Error(`Unsupported existingServerPolicy: ${existingServerPolicy}`)
+  }
+  if (!supportedStartModes.has(devServerStartMode)) {
+    throw new Error(`Unsupported devServerStartMode: ${devServerStartMode}`)
+  }
   const devServerBaseUrl = `http://localhost:${devServerPort}`
   const normalizedPath = devServerPath.startsWith('/') ? devServerPath : `/${devServerPath}`
   const devServerUrl = `${devServerBaseUrl}${normalizedPath}`
   let devServer = null
   const reuseExistingServer = await isServerReady(devServerUrl, 1500)
 
+  if (reuseExistingServer && existingServerPolicy === 'forbid') {
+    throw new Error(
+      `[${logLabel}] refusing responsive pre-existing server at ${devServerUrl}; `
+      + 'this proof requires a fresh server owned by the candidate checkout',
+    )
+  }
   if (!reuseExistingServer) {
     if (prepareBeforeStart) {
       await runCommand(npmCommand, ['run', 'predev'], process.env)
     }
-    devServer = startDevServer({ devServerPort, devServerStartMode, env: process.env })
+    devServer = startDevServer({
+      devServerPort,
+      devServerStartMode,
+      env: process.env,
+      previewOutDir,
+    })
   } else {
     console.log(`[${logLabel}] reusing existing dev server at ${devServerUrl}`)
   }

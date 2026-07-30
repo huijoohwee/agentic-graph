@@ -4,7 +4,7 @@ import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
 export function ensureSharedCameraPanel(): boolean {
   const state = useGraphStore.getState()
   if (state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr') {
-    if (state.floatingPanelOpen) return activateXrSceneSurface()
+    if (state.floatingPanelOpen) return true
     return activateXrSceneSurface({ panelView: 'camera', openPanel: true })
   }
   if (state.floatingPanelOpen) return true
