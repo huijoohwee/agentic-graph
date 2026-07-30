@@ -9,9 +9,6 @@ import type {
   CitySimSnapshot,
 } from '@/features/game-city-sim/citySimRuntimeState'
 import {
-  projectXrEnvironmentToFlightGeo,
-} from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
-import {
   readFlightSimXrSpatialProfile,
 } from '@/features/game-flight-sim/flightSimSpatialProfile'
 
@@ -39,15 +36,10 @@ function activeCitySnapshot(): CitySimSnapshot {
 export function testCitySimAerialInspectionReusesFlightGeoOverlayProjection() {
   const city = activeCitySnapshot()
   const profile = readFlightSimXrSpatialProfile()
-  const environment = projectXrEnvironmentToFlightGeo({
-    stageId: 'singapore',
-    subjects: [],
-  })
 
   const overlay = projectCitySimAerialInspectionToGeospatialOverlay(
     city,
     profile,
-    environment,
   )
 
   assert.equal(overlay.active, true)
@@ -60,7 +52,7 @@ export function testCitySimAerialInspectionReusesFlightGeoOverlayProjection() {
   assert.equal(overlay.camera.effectiveOwner, 'fixed-follow')
   assert.equal(overlay.camera.view, 'survey')
   assert.equal(overlay.night, false)
-  assert.strictEqual(overlay.environment, environment)
+  assert.equal(overlay.environment, null)
   assert.equal(overlay.route.length, profile.waypoints.length + 2)
   assert.match(overlay.revision, /^city-aerial-inspection:/)
   assert.equal(Object.isFrozen(overlay), true)
@@ -72,7 +64,6 @@ export function testCitySimAerialInspectionReusesFlightGeoOverlayProjection() {
       revision: city.revision + 1,
     }),
     profile,
-    environment,
   )
   assert.equal(laterCityTick.tick, 0)
   assert.equal(laterCityTick.revision, overlay.revision)
@@ -82,7 +73,6 @@ export function testCitySimAerialInspectionReusesFlightGeoOverlayProjection() {
   const inactive = projectCitySimAerialInspectionToGeospatialOverlay(
     Object.freeze({ ...city, active: false, revision: city.revision + 1 }),
     profile,
-    environment,
   )
   assert.equal(inactive.active, false)
   assert.equal(inactive.runId, 0)

@@ -27,7 +27,7 @@ import { useXrSceneMediaDrop } from '@/features/three/useXrSceneMediaDrop'
 import { XrCameraAspectMask } from '@/features/three/XrCameraAspectMask'
 import { XrArPlacementStage } from '@/features/three/XrArPlacementStage'
 import { subscribeXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
-import { isNativeXrRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { isCitySimRunReadyDemoActive, isNativeXrRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { XrRendererClearController } from '@/lib/three/XrRendererClearController'
 import { GAME_FPS_SHARED_XR_PROFILE_ID } from '@/features/game-fps/gameFpsModel'
 import { resolveFlightSimGameplayCoordinateScale } from '@/features/game-flight-sim/flightSimSpatialScale'
@@ -81,6 +81,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
   const nativeXrRunReadyDemo = isNativeXrRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
+  const citySimRunReadyDemo = isCitySimRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const { citySim, citySimActive, flightSim, flightSimActive, gameMode, gameFpsActive } = useCanvasGameplayOverlayState()
   const citySimStageActive = mode === 'xr' && citySimActive
   const flightStageActive = mode === 'xr' && flightSimActive
@@ -196,7 +197,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ? sceneGraph
       : { ...sceneGraph, edges: [] }
   }, [nativeXrRunReadyDemo, sceneGraph])
-  const hasGraph = !citySimStageActive && !!sceneGraphForRender
+  const hasGraph = !citySimRunReadyDemo && !citySimStageActive && !!sceneGraphForRender
   const hasGlbAsset = !!glbAsset && shouldRenderGlbAsset
   const hasSpatialCaptureManifest = !!spatialCaptureManifest
   const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !nativeXrRunReadyDemo && !immersiveMediaStageActive

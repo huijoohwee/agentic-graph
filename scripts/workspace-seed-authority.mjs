@@ -419,8 +419,9 @@ const requireCitySimRuntimeIdentity = source => {
   requireValue(
     'city_aerial_projection.spatial_source',
     cityAerialProjection.spatial_source,
-    'current selected authored XR spatial profile and environment',
+    'current selected authored XR spatial profile',
   )
+  requireValue('city_aerial_projection.environment', cityAerialProjection.environment, null)
   requireValue(
     'city_aerial_projection.adapter_owner',
     cityAerialProjection.adapter_owner,

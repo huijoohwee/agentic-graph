@@ -443,14 +443,11 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
               city,
               clearOverlay: () => module.clearFlightGeoOverlay?.(),
               flight,
-              projectCity: citySnapshot => {
-                const motionRuntime = readXrMotionReferenceRuntime()
-                return projectCitySimAerialInspectionToGeospatialOverlay(
+              projectCity: citySnapshot =>
+                projectCitySimAerialInspectionToGeospatialOverlay(
                   citySnapshot,
                   readFlightSimXrSpatialProfile(),
-                  projectXrEnvironmentToFlightGeo(motionRuntime.plan),
-                )
-              },
+                ),
               projectFlight: flightSnapshot => {
                 const spatialProfile = readFlightSimSpatialProfile()
                 const motionRuntime = readXrMotionReferenceRuntime()

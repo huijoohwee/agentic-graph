@@ -72,7 +72,8 @@ city_semantic_media:
 city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
-  spatial_source: "current selected authored XR spatial profile and environment"
+  spatial_source: "current selected authored XR spatial profile"
+  environment: null
   adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
   adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
   flight_projection_owner: "canvas/src/features/game-flight-sim/flightSimGeospatialProjection.ts"
@@ -204,9 +205,9 @@ framing, not a Canvas mode, a MapLibre camera replacement, or a separate world.
 
 City also uses `projectCitySimAerialInspectionToGeospatialOverlay` to derive one
 deterministic route and one stopped aircraft from the current selected authored
-XR spatial profile/environment. The shared `CanvasViewport` geospatial
-publisher sends that result through the existing Flight projector, overlay
-store, and MapLibre source/layers. The pure City adapter does not open Flight
+XR spatial profile. The shared `CanvasViewport` geospatial publisher sends that
+result with a null XR environment through the existing Flight projector,
+overlay store, and MapLibre source/layers. The pure City adapter does not open Flight
 gameplay, accept Flight controls, advance a mission, or claim Flight
 runtime/readiness. The shared publisher retains its normal Flight subscriptions
 for arbitration. City creates no duplicate map, map source/layer, Canvas, or
@@ -214,7 +215,7 @@ renderer.
 
 City never starts or retains the native XR physics playground. Before scene
 authority and placement are derived, the shared renderer excludes the
-authored/native graph while City owns the stage. The shared WebGL Canvas is
+authored/native graph from City source intent through stage ownership. The shared WebGL Canvas is
 wrapped by one labeled semantic `figure` that exposes the existing
 media-selection marker only while City is active. It has a `figcaption` and no
 pointer capture, and its wrapper adds no generic `div` or `aria-hidden`, so
@@ -308,8 +309,8 @@ FloatingPanel surface and camera exactly once.
   source/layers show the deterministic route and stopped aircraft with no
   duplicate map/source/layer/Canvas or active Flight gameplay/readiness.
 - [ ] The native XR physics playground and authored graph scene remain absent,
-  while the active City media `figure` is named and selectable without
-  intercepting one parcel pointer action.
+  the Flight XR environment source is empty, and the active City media `figure`
+  is named and selectable without intercepting one parcel pointer action.
 - [ ] Zone, one Tick, Stop fencing, Advice, and Save/read-back pass.
 - [ ] Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera show
   one shared revision and their contracted projections.

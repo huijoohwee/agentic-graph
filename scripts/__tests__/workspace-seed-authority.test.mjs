@@ -124,7 +124,8 @@ city_geo_xr:
 city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
-  spatial_source: "current selected authored XR spatial profile and environment"
+  spatial_source: "current selected authored XR spatial profile"
+  environment: null
   adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
   adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
   flight_projection_owner: "canvas/src/features/game-flight-sim/flightSimGeospatialProjection.ts"
@@ -207,6 +208,7 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
       'overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"',
       'overlay_store_owner: "canvas/src/features/game-city-sim/privateOverlay.ts"',
     ],
+    ['projected XR environment', 'environment: null', 'environment: "singapore"'],
     ['active Flight gameplay', 'flight_gameplay_active: false', 'flight_gameplay_active: true'],
     ['claimed Flight readiness', 'flight_readiness_claimed: false', 'flight_readiness_claimed: true'],
   ]

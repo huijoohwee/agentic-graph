@@ -38,8 +38,8 @@ publish-mirror release work requires a separate explicit instruction.
   it and never creates or replaces it.
 - **City Aerial Projection**: Deterministic, read-only, stopped aircraft and
   route snapshot derived from the current authored XR spatial
-  profile/environment by the existing Flight projector and published through
-  the shared Geo overlay owner without activating Flight gameplay.
+  profile by the existing Flight projector and published through the shared
+  Geo overlay owner without Flight gameplay or the Flight XR environment.
 - **City Builder**: FloatingPanel view id `cityBuilder`; the complete editing
   and lifecycle control surface.
 - **Panel Projection**: Compact city context rendered in an existing
@@ -133,10 +133,10 @@ so that map, scene, input, and camera behavior stay coherent.
    projector, the store in `gympgrph/src/flightGeoOverlay.ts`, and the existing
    MapLibre source/layers in `gympgrph/src/flightGeoOverlayMapLibre.ts`.
 5. The pure City aerial adapter shall derive the projection from the current
-   selected authored XR spatial profile/environment. It shall not call Flight
-   lifecycle, mission-advance, control, or readiness APIs; the shared
-   `CanvasViewport` geospatial publisher retains its existing Flight
-   subscriptions only for publication arbitration.
+   selected authored XR spatial profile and shall set the Flight XR environment
+   to `null`. It shall not call Flight lifecycle, mission-advance, control, or
+   readiness APIs; the shared `CanvasViewport` geospatial publisher retains its
+   existing Flight subscriptions only for publication arbitration.
 6. City entry shall create no MapLibre map, R3F Canvas, Flight Geo source, or
    Flight Geo layer. The existing map, store, source ids, layer ids, and layer
    application functions are the only owners.
@@ -154,9 +154,9 @@ so that map, scene, input, and camera behavior stay coherent.
     cannot restore the prior Geo owner, City shall return the typed
     `surface-restoration-failed` result instead of reporting a successful Exit.
 11. City source admission shall not start or retain the native XR physics
-    playground. While City owns the gameplay stage, the renderer shall exclude
-    the authored/native graph before deriving XR scene authority, placement,
-    or rendering.
+    playground. From City source intent through active gameplay ownership, the
+    renderer shall exclude the authored/native graph before deriving XR scene
+    authority, placement, or rendering.
 12. While City is active, the shared WebGL Canvas shall have one labeled
     semantic `figure` ancestor using the existing conditional media-selection
     marker. The new wrapper shall contain a `figcaption` and shall add no

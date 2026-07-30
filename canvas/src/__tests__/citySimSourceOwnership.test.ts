@@ -80,9 +80,9 @@ export function testCitySimStageReusesSharedCanvasAndCameraOwnership() {
   )
   assert.ok(
     threeGraph.includes(
-      'const hasGraph = !citySimStageActive && !!sceneGraphForRender',
+      'const hasGraph = !citySimRunReadyDemo && !citySimStageActive && !!sceneGraphForRender',
     ),
-    'City must suppress the unrelated authored/native XR graph before scene authority and placement are derived',
+    'City source intent and active stage must suppress the unrelated authored/native XR graph before scene authority and placement are derived',
   )
   assert.ok(threeGraph.includes('<ThreeCanvasMediaFigure citySimActive={citySimStageActive}>'))
   assert.ok(mediaFigure.includes('<figure'))
@@ -177,6 +177,11 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
     aerialProjection,
     /\b(?:open|start|restart)FlightSim\b|claimFlightSimReadyPresenter/,
     'the City projector must reuse Flight geometry without invoking Flight lifecycle or readiness',
+  )
+  assert.match(
+    aerialProjection,
+    /false,\s*null,\s*null,\s*\)/,
+    'the City projector must clear the Flight XR environment while retaining stopped aircraft and route geometry',
   )
   assert.ok(xrPhysics.includes('citySimActive || flightSimActive || gameFpsActive'))
 }

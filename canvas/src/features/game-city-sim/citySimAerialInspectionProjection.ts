@@ -1,5 +1,4 @@
 import type { FlightSimSpatialProfile } from '@/features/game-flight-sim/flightSimModel'
-import type { FlightSimGeoEnvironmentProjection } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import {
   projectFlightSimToGeospatialOverlay,
   type FlightSimGeospatialOverlay,
@@ -10,7 +9,6 @@ import type { CitySimSnapshot } from './citySimRuntimeState'
 export function projectCitySimAerialInspectionToGeospatialOverlay(
   city: CitySimSnapshot,
   profile: FlightSimSpatialProfile,
-  environment: FlightSimGeoEnvironmentProjection | null,
 ): FlightSimGeospatialOverlay {
   const flightProjection = projectFlightSimToGeospatialOverlay(
     createIdleFlightSimSnapshot(profile, city.active, city.webglSupported),
@@ -18,7 +16,7 @@ export function projectCitySimAerialInspectionToGeospatialOverlay(
     { source: 'fixed-follow', view: 'survey' },
     false,
     null,
-    environment,
+    null,
   )
   return Object.freeze({
     ...flightProjection,

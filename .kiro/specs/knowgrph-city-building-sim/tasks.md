@@ -31,13 +31,13 @@ candidate SHA.
 - [ ] Add the City Stage and parcel hit testing as an instanced subtree of the
   existing Canvas above Geo, with no `<Canvas>` import.
 - [ ] Exclude City from the native XR physics launcher and suppress the
-  authored/native graph before renderer scene-authority derivation.
+  authored/native graph from source intent through active stage ownership.
 - [ ] Wrap the shared WebGL Canvas in a labeled semantic City media `figure`
   whose existing selection marker is active-only and whose wrapper owns no
   pointer capture and adds no generic `div` or `aria-hidden`.
 - [ ] Add a City-owned deterministic `stopped` aircraft/route adapter that
   publishes through the existing Flight Geo overlay store and MapLibre
-  source/layers without activating Flight gameplay or Flight readiness.
+  source/layers with a null XR environment and no Flight gameplay/readiness.
 - [ ] Prove City creates no duplicate map, map source/layer, R3F Canvas, or
   renderer.
 - [ ] Add mode-scoped orthographic `isometric-topdown` framing and responsive
@@ -66,8 +66,8 @@ candidate SHA.
   selectable semantic City media figure, authored metrics, zone/tick/stop,
   save/read-back, all six projections, console cleanliness, and exit restore.
 - [ ] Browser proof captures the deterministic stopped aircraft/route on the
-  existing Flight Geo source/layers, no duplicate map/source/layer/Canvas, and
-  inactive Flight gameplay/readiness.
+  existing Flight Geo source/layers, an empty environment source, no duplicate
+  map/source/layer/Canvas, and inactive Flight gameplay/readiness.
 - [ ] Candidate is reviewed and integrated through the protected workflow.
 - [ ] Seed proof status and checklist are updated only from captured exact-SHA
   evidence.

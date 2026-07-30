@@ -71,7 +71,6 @@ export function testCityFlightGeoOverlayArbitrationIsDeterministic() {
     return projectCitySimAerialInspectionToGeospatialOverlay(
       city,
       profile,
-      environment,
     )
   }
   const projectFlight = () => {
@@ -131,8 +130,10 @@ export function testCityFlightGeoOverlayArbitrationIsDeterministic() {
     assert.equal(published[0]?.runId, 0)
     assert.equal(published[0]?.tick, 0)
     assert.equal(published[0]?.readyFrameRequestId, null)
+    assert.equal(published[0]?.environment, null)
     assert.equal(published[1]?.phase, 'ready')
     assert.equal(published[1]?.readyFrameRequestId, readyFrameBefore)
+    assert.strictEqual(published[1]?.environment, environment)
     assert.equal(cityProjectionCount, 1)
     assert.equal(flightProjectionCount, 1)
     assert.deepEqual(activeFlight, flightBefore)
