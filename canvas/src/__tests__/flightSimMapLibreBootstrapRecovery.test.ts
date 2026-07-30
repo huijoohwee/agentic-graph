@@ -296,7 +296,7 @@ test('exact bootstrap settles after unrelated host source work without another s
   assert.deepEqual(styleCalls, [bootstrapStyle])
 })
 
-test('bootstrap style.load proves installation without waiting on unrelated host sources', context => {
+test('bootstrap style.load waits for global settlement before presentation', context => {
   const readyOverlay = readyFlightOverlay('ready:host-source-style-load', 26)
   const stoppedOverlay = {
     ...readyOverlay,
@@ -327,9 +327,10 @@ test('bootstrap style.load proves installation without waiting on unrelated host
     }],
   }
   let currentStyle: Readonly<Record<string, unknown>> = bootstrapStyle
+  let styleLoaded = false
   const map = {
     getStyle: () => currentStyle,
-    isStyleLoaded: () => false,
+    isStyleLoaded: () => styleLoaded,
     off: (event: string, listener: () => void) => {
       listenersFor(event).delete(listener)
     },
@@ -370,6 +371,11 @@ test('bootstrap style.load proves installation without waiting on unrelated host
     ],
   }
   for (const listener of [...listenersFor('style.load')]) listener()
+
+  assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapPending, true)
+  assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapApplied, false)
+  styleLoaded = true
+  for (const listener of [...listenersFor('sourcedata')]) listener()
 
   assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapPending, false)
   assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapApplied, true)

@@ -157,14 +157,7 @@ function notifyBootstrapSettled(state: MapLibreFlightBootstrapState): void {
 
 function hasExpectedBootstrapStyle(
   state: MapLibreFlightBootstrapState,
-  styleLoadObserved = false,
 ): boolean {
-  if (styleLoadObserved) {
-    return hasExpectedMapLibreFlightBootstrapStyleIdentity(
-      state.map,
-      state.bootstrapExpectedStyle,
-    )
-  }
   return hasExpectedMapLibreFlightBootstrapStyle(
     state.map,
     state.bootstrapExpectedStyle,
@@ -174,14 +167,13 @@ function hasExpectedBootstrapStyle(
 function settlePendingBootstrap(
   state: MapLibreFlightBootstrapState,
   bootstrapGeneration: number,
-  styleLoadObserved = false,
 ): void {
   if (
     state.disposed
     || isMapLibreMapPreparingForDisposal(state.map)
     || !state.bootstrapPending
     || state.bootstrapGeneration !== bootstrapGeneration
-    || !hasExpectedBootstrapStyle(state, styleLoadObserved)
+    || !hasExpectedBootstrapStyle(state)
   ) return
   state.bootstrapPending = false
   state.bootstrapExpectedStyle = null
@@ -227,12 +219,10 @@ export function beginMapLibreFlightBootstrap(
     bootstrapStyle,
   )
   const bootstrapGeneration = ++state.bootstrapGeneration
-  const onStyleLoad = () =>
-    settlePendingBootstrap(state, bootstrapGeneration, true)
   const onSettlementOpportunity = () =>
     settlePendingBootstrap(state, bootstrapGeneration)
   const bindings = [
-    ['style.load', onStyleLoad],
+    ['style.load', onSettlementOpportunity],
     ['sourcedata', onSettlementOpportunity],
     ['idle', onSettlementOpportunity],
   ] as const
