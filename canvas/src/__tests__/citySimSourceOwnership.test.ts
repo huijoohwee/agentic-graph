@@ -86,7 +86,7 @@ export function testCitySimRouterComposesAllSixExistingPanelProjections() {
 
 export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
   const gameMode = readCanvasSource('features/game-fps/gameModeRuntime.ts')
-  const flightSim = readCanvasSource('features/game-flight-sim/flightSimRuntime.ts')
+  const flightSim = readCanvasSource('features/game-flight-sim/flightSimSurfacePresentationRuntime.ts')
   const citySim = readCanvasSource('features/game-city-sim/citySimRuntime.ts')
   const xrPhysics = readCanvasSource('features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
   assert.ok(gameMode.includes("gameplaySurface: 'gameMode'"))

@@ -50,6 +50,19 @@ function replaceBetweenMarkers(docPath: string, startMarker: string, endMarker: 
   }
 }
 
+function splitMarkdownTable(table: string, primaryRowLimit: number): { primary: string; continuation: string } {
+  const lines = table.split('\n')
+  if (lines.length < 2) {
+    return { primary: table, continuation: table }
+  }
+  const header = lines.slice(0, 2)
+  const rows = lines.slice(2)
+  return {
+    primary: [...header, ...rows.slice(0, primaryRowLimit)].join('\n'),
+    continuation: [...header, ...rows.slice(primaryRowLimit)].join('\n'),
+  }
+}
+
 function main(): void {
   const repoRoot = getRepoRoot()
   const canvasRoot = path.join(repoRoot, 'canvas')
@@ -57,6 +70,7 @@ function main(): void {
   const designDocPath = path.join(repoRoot, 'docs', 'knowgrph-design-document.md')
   const workflowDocPath = path.join(repoRoot, 'docs', 'knowgrph-workflow-document.md')
   const techArchDocPath = path.join(repoRoot, 'docs', 'knowgrph-technical-architecture.md')
+  const techArchContinuationDocPath = path.join(repoRoot, 'docs', 'knowgrph-technical-architecture.settings.md')
 
   const orchestratorTable = runCliTable(
     canvasRoot,
@@ -109,12 +123,20 @@ function main(): void {
     'Doc lint: settings CLI missing, skipping settings table generation',
   )
   if (settingsTable) {
+    const splitSettingsTable = splitMarkdownTable(settingsTable, 400)
     replaceBetweenMarkers(
       techArchDocPath,
       '<!-- SETTINGS_REGISTRY_TABLE_START -->',
       '<!-- SETTINGS_REGISTRY_TABLE_END -->',
-      settingsTable,
-      'settings registry table',
+      splitSettingsTable.primary,
+      'settings registry table part 1',
+    )
+    replaceBetweenMarkers(
+      techArchContinuationDocPath,
+      '<!-- SETTINGS_REGISTRY_CONTINUATION_TABLE_START -->',
+      '<!-- SETTINGS_REGISTRY_CONTINUATION_TABLE_END -->',
+      splitSettingsTable.continuation,
+      'settings registry table part 2',
     )
   }
 }

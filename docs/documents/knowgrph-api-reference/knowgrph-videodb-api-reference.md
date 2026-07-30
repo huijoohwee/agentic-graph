@@ -1,15 +1,16 @@
 ---
-title: "knowgrph — VideoDB API Reference (SSOT + Codebase Map)"
+title: "Reference implementation: Knowgrph — VideoDB API Reference (SSOT + Codebase Map)"
 id: "md:knowgrph-videodb-api-reference"
 doc_type: "api-reference"
-version: "0.1.0"
+version: "0.2.0"
 date: "2026-07-30"
 lang: "en-US"
 owner: "docs.api-reference.videodb"
-local_rung: "source-audited"
-delivered_rung: "runtime-ready"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
+guideline_version: "1.7.0"
 doc_path: "docs/documents/knowgrph-api-reference/knowgrph-videodb-api-reference.md"
 ssot_upstream: "https://docs.videodb.io/api-reference/introduction.md"
 planned_ssot_entrypoint: "canvas/src/features/integrations/videodbSsot.ts"
@@ -21,10 +22,9 @@ tags:
   - videodb
   - integrations
   - api-reference
-  - runtime-ready
 ---
 
-# knowgrph — VideoDB API Reference (SSOT + Codebase Map)
+# Reference implementation: Knowgrph — VideoDB API Reference (SSOT + Codebase Map)
 
 SSOT: https://docs.videodb.io/api-reference/introduction.md
 

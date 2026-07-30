@@ -1,15 +1,16 @@
 ---
-title: "Knowgrph - Stripe MCP Reference"
+title: "Reference implementation: Knowgrph - Stripe MCP Reference"
 id: "md:knowgrph-stripe-mcp-reference"
 doc_type: "Reference"
-version: "0.1.0"
+version: "0.2.0"
 date: "2026-07-30"
 lang: "en-US"
 owner: "docs.api-reference.stripe-mcp"
-local_rung: "source-audited"
-delivered_rung: "reference-baseline"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
+guideline_version: "1.7.0"
 doc_path: "docs/documents/knowgrph-api-reference/knowgrph-stripe-mcp-reference.md"
 ssot_upstream: "https://docs.stripe.com/mcp"
 ssot_captured: "2026-07-28"
@@ -34,7 +35,7 @@ tags:
   - "agent-platform-readiness"
 ---
 
-# Knowgrph - Stripe MCP Reference
+# Reference implementation: Knowgrph - Stripe MCP Reference
 
 **Upstream SSOT**: [Stripe Model Context Protocol](https://docs.stripe.com/mcp), captured 2026-07-28.
 **Release phase**: public preview ([Stripe release phases](https://docs.stripe.com/release-phases)).

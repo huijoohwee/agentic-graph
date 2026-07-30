@@ -1,17 +1,18 @@
 ---
-title: "Knowgrph Codebase Responsibility Flow PRD/TAD"
+title: "Reference implementation: Knowgrph Codebase Responsibility Flow PRD/TAD"
 id: "md:knowgrph-codebase-responsibility-flow-prd-tad"
 doc_type: "Product and Technical Specification"
-version: "1.3.0"
+version: "1.4.0"
 date: "2026-07-30"
 lang: "en-US"
+guideline_version: "1.7.0"
 owner: "docs.codebase-responsibility-flow"
-local_rung: "dev-proven"
-delivered_rung: "runtime-ready"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/knowgrph-codebase-responsibility-flow-prd-tad.md"
-deployment_topology: "Dev review only; Prod and Cloudflare require separate authority"
+deployment_topology: "Authoring only; Mirror and Delivery require separate authority"
 scope: "responsibility-ownership index for registered knowgrph canvas settings"
 source_of_truth: "settings registry, deterministic taxonomy, and source-literal provenance"
 generated_outputs:
@@ -19,33 +20,8 @@ generated_outputs:
   - "docs/knowgrph-codebase-responsibility-flow/part-*.md"
   - "canvas/public/settings-flow.json"
   - "canvas/src/features/settings/settings-flow.schema.json"
-constraints:
-  - "universal"
-  - "neutral"
-  - "project-agnostic"
-  - "file-agnostic"
-  - "source-owned"
-  - "foss-first"
-  - "tco-zero"
-  - "token-economical"
-  - "harness-first"
-  - "browser-first"
-  - "local-first"
-  - "offline-first"
-  - "mobile-first"
-tags:
-  - "codebase-responsibility"
-  - "ownership-index"
-  - "traceability"
-  - "settings-registry"
-  - "zustand"
-  - "localStorage"
-  - "tailwindcss-v4"
-  - "canvas"
-  - "prd"
-  - "tad"
 related:
-  - "huijoohwee.github.io/guidelines/prd-tad-guidelines.md"
+  - "../../../huijoohwee.github.io/guidelines/prd-tad-adr-guidelines.md"
   - "docs/knowgrph-codebase-responsibility-flow.md"
   - "docs/documents/knowgrph-modularity-prd-tad.md"
   - "docs/documents/knowgrph-settings-document.md"
@@ -53,7 +29,7 @@ related:
   - ".kiro/specs/tech-stack-optimization/requirements.md"
 ---
 
-# Knowgrph Codebase Responsibility Flow PRD/TAD
+# Reference implementation: Knowgrph Codebase Responsibility Flow PRD/TAD
 
 ## Executive Summary
 
@@ -156,42 +132,47 @@ changes that leave a concern owner-less or double-owned.
 
 ### Acceptance Criteria
 
-**Given** a setting registered in `settingsRegistry`, **When** the index is generated, **Then** the index
+**PRD-CODE-01 — Given** a setting registered in `settingsRegistry`, **When** the index is generated, **Then** the index
 contains exactly one row for that setting with a non-empty Area, Key, owning Modules, and Line
 Range.
 
-> **VCC translation**: `Verify the generated index contains exactly one row per settingsRegistry entry and no row has an empty Area, Key, Modules, or Line Range column`
+> **VCC-CODE-01**: `Verify the generated index contains exactly one row per settingsRegistry entry and no row has an empty Area, Key, Modules, or Line Range column`
 
-**Given** a persisted concern key, **When** a reader looks it up by Key, **Then** the row resolves
+**PRD-CODE-02 — Given** a persisted concern key, **When** a reader looks it up by Key, **Then** the row resolves
 to the owning module paths and the source line range where the key is defined.
 
-> **VCC translation**: `Verify every Key column value maps to at least one module path and one file:line reference, and each referenced file:line exists in the source tree`
+> **VCC-CODE-02**: `Verify every Key column value maps to at least one module path and one file:line reference, and each referenced file:line exists in the source tree`
 
-**Given** the source tree is unchanged, **When** the index is regenerated twice, **Then** the two
+**PRD-CODE-03 — Given** the source tree is unchanged, **When** the index is regenerated twice, **Then** the two
 outputs are byte-identical.
 
-> **VCC translation**: `Verify two consecutive generations over an unchanged tree produce byte-identical output (diff is empty)`
+> **VCC-CODE-03**: `Verify two consecutive generations over an unchanged tree produce byte-identical output (diff is empty)`
 
-**Given** any committed Markdown or JSON projection is stale, **When** CI invokes `--check`,
+**PRD-CODE-04 — Given** any committed Markdown or JSON projection is stale, **When** CI invokes `--check`,
 **Then** it exits non-zero before a generating build runs and leaves every projection unchanged.
 
-> **VCC translation**: `Verify --check compares the exact owned artifact set, performs zero writes, and precedes every CI build step that can generate a projection`
+> **VCC-CODE-04**: `Verify --check compares the exact owned artifact set, performs zero writes, and precedes every CI build step that can generate a projection`
 
-**Given** a concern that has been removed from source, **When** the index is regenerated, **Then**
+**PRD-CODE-05 — Given** a concern that has been removed from source, **When** the index is regenerated, **Then**
 the removed concern's row is absent.
 
-> **VCC translation**: `Verify no index row references a file:line or Key that no longer exists in source`
+> **VCC-CODE-05**: `Verify no index row references a file:line or Key that no longer exists in source`
 
-**Given** the index in a Markdown viewer, **When** a reader with no network access opens it,
+**PRD-CODE-06 — Given** the index in a Markdown viewer, **When** a reader with no network access opens it,
 **Then** the full table renders from the local file with zero network requests.
 
-> **VCC translation**: `Verify the index file opens and renders offline with zero network requests`
+> **VCC-CODE-06**: `Verify the index file opens and renders offline with zero network requests`
 
-**Given** the Settings UI cannot import its generated responsibility projection, **When** the
+**PRD-CODE-07 — Given** the Settings UI cannot import its generated responsibility projection, **When** the
 view opens, **Then** settings remain editable, an unavailable status is visible, and Retry starts
 a fresh import instead of reusing the rejected promise.
 
-> **VCC translation**: `Verify a failed projection import returns an observable unavailable result and a later retry can recover`
+> **VCC-CODE-07**: `Verify a failed projection import returns an observable unavailable result and a later retry can recover`
+
+**PRD-CODE-08 — Given** the backing taxonomy, **When** styling ownership is extracted, **Then**
+`tailwindcss` is recognized and `htmx` remains absent in this increment.
+
+> **VCC-CODE-08**: `Verify the typed backing taxonomy accepts tailwindcss and contains no htmx backing`
 
 ### Success Metrics
 
@@ -324,10 +305,11 @@ row unchanged.
 
 ### Component Specifications
 
-**Component**: Responsibility Extractor
+**Component**: `TAD-CODE-EXTRACTOR` — Responsibility Extractor
 **Responsibility**: Scan concern sources and emit one normalized row per concern.
-**Interfaces**: CLI/script entry with generate and `--check` modes; input = authoritative source
-tree; outputs = `docs/knowgrph-codebase-responsibility-flow.md`, bounded parts under
+**Interfaces**: `TAD-CODE-EXTRACTOR-GENERATE` and `TAD-CODE-EXTRACTOR-CHECK` — CLI/script entry
+with generate and `--check` modes; input = authoritative source tree; outputs =
+`docs/knowgrph-codebase-responsibility-flow.md`, bounded parts under
 `docs/knowgrph-codebase-responsibility-flow/`,
 `canvas/public/settings-flow.json`, and
 `canvas/src/features/settings/settings-flow.schema.json`. Generate writes the exact owned set and
@@ -343,45 +325,45 @@ migrate onto that owner. An `htmx` backing is **not** added in this increment; i
 introduced only if the deferred HTMX decision is reopened (see ADR-3).
 **FOSS / Vendor**: FOSS (Node + repo tooling); no proprietary dependency.
 **VCC Conditions**:
-- `Verify generate emits exactly one row per settingsRegistry entry with no empty Area/Key/Modules/Line Range`
-- `Verify two consecutive generate runs over an unchanged tree produce byte-identical output`
-- `Verify --check performs no writes, exits non-zero when any expected or obsolete owned projection differs from fresh generation, and exits 0 when the owned artifact set is identical`
+- `VCC-CODE-01`, `VCC-CODE-05`: verify generation emits exactly the current registry rows, omits removed concerns, and has no empty required column.
+- `VCC-CODE-03`: verify two generations over an unchanged tree are byte-identical.
+- `VCC-CODE-04`: verify `--check` is non-mutating and detects every stale or obsolete owned projection.
+- `VCC-CODE-08`: verify `tailwindcss` is an accepted backing and `htmx` is absent.
 
-**Component**: Responsibility Index File (`docs/knowgrph-codebase-responsibility-flow.md`)
+**Component**: `TAD-CODE-INDEX` — Responsibility Index File (`docs/knowgrph-codebase-responsibility-flow.md`)
 **Responsibility**: Serve as the read-only Markdown projection of setting → owner → key → line
 range. The source registry and code-owned metadata remain authoritative.
-**Interfaces**: Compact Markdown index linking to deterministic 200-row shards; rows are
+**Interfaces**: `TAD-CODE-INDEX-LOOKUP` — compact Markdown index linking to deterministic 200-row shards; rows are
 addressable by Area and by Key.
 **Dependencies**: Output of the Responsibility Extractor.
 **Configuration**: None at read time.
 **FOSS / Vendor**: FOSS format (Markdown); zero-egress local file.
 **VCC Conditions**:
-- `Verify every Key maps to at least one module path and one existing file:line reference`
-- `Verify every Markdown artifact stays at or below 600 lines as the registry grows`
-- `Verify the file renders offline with zero network requests`
+- `VCC-CODE-02`: verify every Key maps to a module path and an existing file:line.
+- `VCC-CODE-MAINTAINABILITY`: verify every Markdown artifact stays at or below 600 lines.
+- `VCC-CODE-06`: verify the file renders offline with zero network requests.
 
-**Component**: Settings Flow Runtime Loader
+**Component**: `TAD-CODE-LOADER` — Settings Flow Runtime Loader
 **Responsibility**: Load the generated JSON projection without blocking setting reads or writes.
-**Interfaces**: Typed `ready | unavailable` result; successful imports are cached; rejected or
+**Interfaces**: `TAD-CODE-LOADER-LOAD` — typed `ready | unavailable` result; successful imports are cached; rejected or
 malformed imports clear the cache so the visible Retry action can start a new attempt.
 **Dependencies**: Bundled `settings-flow.schema.json` projection.
 **Configuration**: None.
 **FOSS / Vendor**: Browser runtime only; no network service.
 **VCC Conditions**:
-- `Verify concurrent successful reads share one import`
-- `Verify a rejected import is observable and the next call retries rather than reusing rejection`
+- `VCC-CODE-07`: verify concurrent success shares one import and rejected imports remain observable and retryable.
 
-**Component**: Staleness Check
+**Component**: `TAD-CODE-GATE` — Staleness Check
 **Responsibility**: Fail the merge gate when any committed projection no longer matches source,
 without changing the worktree.
-**Interfaces**: CI invokes the extractor `--check` mode before any build step that can regenerate
+**Interfaces**: `TAD-CODE-GATE-CHECK` — CI invokes the extractor `--check` mode before any build step that can regenerate
 or otherwise mutate an output.
 **Dependencies**: Responsibility Extractor, all committed projections, authoritative source
 tree.
 **Configuration**: Bounded, terminating scan scope.
 **FOSS / Vendor**: FOSS.
 **VCC Conditions**:
-- `Verify the check terminates, leaves file hashes unchanged, and returns a pass/fail status usable as a merge gate`
+- `VCC-CODE-04`, `VCC-CODE-05`: verify the check terminates, preserves hashes, and rejects stale or obsolete projections.
 
 ### Integration Contracts
 
@@ -556,6 +538,19 @@ regenerated on demand and committed; the non-mutating staleness check guards dri
 generating build can mask it. Rollback is a normal file revert. Publishing to the Prod mirror or
 deploying to Cloudflare requires separate owner authority.
 
+| Lane | Function and residency | Mutation rights |
+|---|---|---|
+| Authoring | Dev repository; source, tests, and projections are local. | Full local authoring rights. |
+| Mirror | Prod mirror; faithful copy of one approved authoring revision. | Publish-only from an approved authoring state. |
+| Delivery | Cloudflare public surface. | Publish-only from an approved mirror state. |
+
+### Deploy Boundary Register
+
+| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement/check | State |
+|---|---|---|---|---|---|---|
+| `DB-CODE-AUTHORING-MIRROR` | Authoring | Mirror | `none recorded` | `none` | Restore the mirror checkout to its recorded prior revision; verify a clean checkout and `HEAD` equal that revision. | `closed` |
+| `DB-CODE-MIRROR-DELIVERY` | Mirror | Delivery | `none recorded` | `none` | Redeploy the recorded prior Cloudflare Pages version; run `docs/knowgrph-post-deploy-verification-checklist.md`. | `closed` |
+
 ### Architecture Diagrams
 
 See the Topology `flowchart TB` above; the generation path is
@@ -564,29 +559,31 @@ projection before a generating build.
 
 ### Component Inventory
 
-| Layer | Component | File / Module | Status |
-|-------|-----------|---------------|--------|
-| Source | Settings Registry + Ownership Metadata | code-owned settings and provenance under `canvas/src/` | Authoritative |
-| Generation | Responsibility Extractor | repo extraction tooling (generate / `--check`) | Dev runtime-ready |
-| Styling Build | Tailwind v4 Vite plugin + CSS-first theme/source directives | `canvas/vite.config.ts`, `canvas/src/index.css` | Dev runtime-ready |
-| Backing Taxonomy | Typed source and styling backing metadata | `canvas/src/features/settings/types.ts`, `registry-ui.ui.ts` | Dev runtime-ready |
-| Artifacts | Responsibility Flow Projections | Markdown plus two JSON output paths defined above | Generated |
-| Runtime | Settings Flow Loader | `canvas/src/features/settings/flowDetailsRuntime.ts` | Dev runtime-ready |
-| Gate | Staleness Check | pre-projection CI step invoking `--check` | Dev runtime-ready |
-| Docs | This PRD/TAD | `docs/documents/knowgrph-codebase-responsibility-flow-prd-tad.md` | Dev runtime-ready |
+| Layer | Component | File / Module | Local rung | Delivered rung |
+|-------|-----------|---------------|---|---|
+| Source | Settings Registry + Ownership Metadata | code-owned settings and provenance under `canvas/src/` | `spec-complete` | `undocumented` |
+| Generation | Responsibility Extractor | repo extraction tooling (generate / `--check`) | `spec-complete` | `undocumented` |
+| Styling Build | Tailwind v4 Vite plugin + CSS-first theme/source directives | `canvas/vite.config.ts`, `canvas/src/index.css` | `spec-complete` | `undocumented` |
+| Backing Taxonomy | Typed source and styling backing metadata | `canvas/src/features/settings/types.ts`, `registry-ui.ui.ts` | `spec-complete` | `undocumented` |
+| Artifacts | Responsibility Flow Projections | Markdown plus two JSON output paths defined above | `spec-complete` | `undocumented` |
+| Runtime | Settings Flow Loader | `canvas/src/features/settings/flowDetailsRuntime.ts` | `spec-complete` | `undocumented` |
+| Gate | Staleness Check | pre-projection CI step invoking `--check` | `spec-complete` | `undocumented` |
+| Docs | This PRD/TAD | `docs/documents/knowgrph-codebase-responsibility-flow-prd-tad.md` | `spec-complete` | `undocumented` |
 
 ---
 
 ## PRD ↔ TAD Traceability
 
-```
-PRD-Index-OneRowPerConcern      ↔ TAD-ResponsibilityExtractor-generate      ↔ VCC "one row per concern; no empty required column"
-PRD-Index-KeyResolvesOwner      ↔ TAD-ResponsibilityIndexFile-row           ↔ VCC "every Key maps to existing module + file:line"
-PRD-Index-Reproducible          ↔ TAD-ResponsibilityExtractor-determinism   ↔ VCC "two generations byte-identical"
-PRD-Index-NoStaleRows           ↔ TAD-StalenessCheck-check                  ↔ VCC "all projections checked without writes before generating CI steps"
-PRD-Index-OfflineRender         ↔ TAD-ResponsibilityIndexFile-offline       ↔ VCC "renders offline, zero network requests"
-PRD-Index-TailwindBacking       ↔ TAD-ResponsibilityExtractor-imports       ↔ VCC "typed tailwindcss backing, no htmx backing"
-```
+| Requirement | TAD component | Interface | VCC |
+|---|---|---|---|
+| `PRD-CODE-01` | `TAD-CODE-EXTRACTOR` | `TAD-CODE-EXTRACTOR-GENERATE` | `VCC-CODE-01` |
+| `PRD-CODE-02` | `TAD-CODE-INDEX` | `TAD-CODE-INDEX-LOOKUP` | `VCC-CODE-02` |
+| `PRD-CODE-03` | `TAD-CODE-EXTRACTOR` | `TAD-CODE-EXTRACTOR-GENERATE` | `VCC-CODE-03` |
+| `PRD-CODE-04` | `TAD-CODE-GATE` | `TAD-CODE-GATE-CHECK` | `VCC-CODE-04` |
+| `PRD-CODE-05` | `TAD-CODE-EXTRACTOR` + `TAD-CODE-GATE` | `TAD-CODE-EXTRACTOR-GENERATE` + `TAD-CODE-GATE-CHECK` | `VCC-CODE-05` |
+| `PRD-CODE-06` | `TAD-CODE-INDEX` | `TAD-CODE-INDEX-LOOKUP` | `VCC-CODE-06` |
+| `PRD-CODE-07` | `TAD-CODE-LOADER` | `TAD-CODE-LOADER-LOAD` | `VCC-CODE-07` |
+| `PRD-CODE-08` | `TAD-CODE-EXTRACTOR` | `TAD-CODE-EXTRACTOR-GENERATE` | `VCC-CODE-08` |
 
 ## Time-to-Value: Codebase Responsibility Flow Index
 

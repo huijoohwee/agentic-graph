@@ -1,15 +1,16 @@
 ---
-title: "Knowgrph - StraitsX API Reference"
+title: "Reference implementation: Knowgrph - StraitsX API Reference"
 id: "md:knowgrph-straitsx-api-reference"
 doc_type: "Reference"
-version: "0.1.0"
+version: "0.2.0"
 date: "2026-07-30"
 lang: "en-US"
 owner: "docs.api-reference.straitsx"
-local_rung: "source-audited"
-delivered_rung: "reference-baseline"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
+guideline_version: "1.7.0"
 doc_path: "docs/documents/knowgrph-api-reference/knowgrph-straitsx-api-reference.md"
 ssot_upstream: "https://docs.straitsx.com/docs/introduction"
 ssot_captured: "2026-07-28"
@@ -34,7 +35,7 @@ tags:
   - "payouts"
 ---
 
-# Knowgrph - StraitsX API Reference
+# Reference implementation: Knowgrph - StraitsX API Reference
 
 **Upstream SSOT**: [StraitsX API Guides](https://docs.straitsx.com/docs/introduction), captured 2026-07-28.
 **Companion**: authentication headers, signing mode, and the endpoint index live in

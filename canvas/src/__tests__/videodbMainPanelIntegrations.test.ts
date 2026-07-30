@@ -65,7 +65,14 @@ assert(
 )
 
 const apiReferenceText = readFileSync(apiReferencePath, 'utf8')
-assert(apiReferenceText.includes('delivered_rung: "runtime-ready"'), 'API reference must be runtime-ready')
+assert(
+  apiReferenceText.includes('local_rung: "undocumented"'),
+  'API reference must remain undocumented until it has evidence-bound VCCs',
+)
+assert(
+  apiReferenceText.includes('delivered_rung: "undocumented"'),
+  'API reference must not promote source presence into a delivery claim',
+)
 assert(
   apiReferenceText.includes('App SSOT entrypoint: `canvas/src/features/integrations/videodbSsot.ts`'),
   'API reference must name the app SSOT entrypoint',

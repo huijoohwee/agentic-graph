@@ -28,6 +28,30 @@ const documentPaths = Object.freeze([
   'docs/documents/knowgrph-spreadsheet-storage-document.md',
   'docs/documents/knowgrph-source-files-import-document.md',
 ])
+const conformanceDocumentPaths = new Set([
+  'docs/documents/knowgrph-storage-sync-document.md',
+  'docs/documents/knowgrph-storage-sync-document.companion.md',
+  'docs/documents/knowgrph-storage-sync-adrs-document.md',
+])
+const conformanceKeys = Object.freeze([
+  'title',
+  'doc_type',
+  'version',
+  'date',
+  'lang',
+  'owner',
+  'local_rung',
+  'delivered_rung',
+  'lane',
+  'universal_scope',
+])
+const allowedReadinessRungs = new Set([
+  'undocumented',
+  'spec-complete',
+  'dev-proven',
+  'runtime-ready',
+  'production-verified',
+])
 const requiredRuntimeOwnerPaths = Object.freeze([
   'canvas/src/features/graph-data-table/graphDataTable.ts',
   'canvas/src/features/graph-data-table/graphDataTableFilters.ts',
@@ -137,49 +161,61 @@ const documents = documentPaths.map(readDocument)
 
 for (const document of documents) {
   const { frontmatter, markdown, relativePath } = document
-  if (frontmatter.frontmatter_contract !== 'required') fail(`${relativePath} must require frontmatter`)
-  if (frontmatter.document_runtime_status !== 'runtime-ready-dev') {
-    fail(`${relativePath} must declare document_runtime_status runtime-ready-dev`)
-  }
-  if (!String(frontmatter.runtime_scope || '').includes('MCP grammar resolution')) {
-    fail(`${relativePath} must bound its document runtime scope`)
-  }
-  const deployBoundary = String(frontmatter.deploy_boundary || '')
-  if (!deployBoundary.includes('Prod mirror') || !deployBoundary.includes('Cloudflare mutation')) {
-    fail(`${relativePath} must preserve the no-deploy boundary`)
-  }
+  if (conformanceDocumentPaths.has(relativePath)) {
+    for (const key of conformanceKeys) {
+      if (!(key in frontmatter)) fail(`${relativePath} must declare conformance key ${key}`)
+    }
+    if (!allowedReadinessRungs.has(frontmatter.local_rung)
+      || !allowedReadinessRungs.has(frontmatter.delivered_rung)) {
+      fail(`${relativePath} must use the closed readiness vocabulary`)
+    }
+    if (frontmatter.lane !== 'authoring') fail(`${relativePath} must remain in the authoring lane`)
+    if ('status' in frontmatter) fail(`${relativePath} must not blend lifecycle and readiness into status`)
+  } else {
+    if (frontmatter.frontmatter_contract !== 'required') fail(`${relativePath} must require frontmatter`)
+    if (frontmatter.document_runtime_status !== 'runtime-ready-dev') {
+      fail(`${relativePath} must declare document_runtime_status runtime-ready-dev`)
+    }
+    if (!String(frontmatter.runtime_scope || '').includes('MCP grammar resolution')) {
+      fail(`${relativePath} must bound its document runtime scope`)
+    }
+    const deployBoundary = String(frontmatter.deploy_boundary || '')
+    if (!deployBoundary.includes('Prod mirror') || !deployBoundary.includes('Cloudflare mutation')) {
+      fail(`${relativePath} must preserve the no-deploy boundary`)
+    }
 
-  const mcp = frontmatter.mcp
-  if (!mcp || typeof mcp !== 'object' || mcp.grammar_tool !== AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME) {
-    fail(`${relativePath} must use the source-owned docs grammar MCP tool`)
-  }
-  assertExactArray(
-    readStringArray(mcp.published_source_tools, 'mcp.published_source_tools', relativePath),
-    expectedPublishedTools,
-    'mcp.published_source_tools',
-    relativePath,
-  )
-  assertExactArray(
-    readStringArray(mcp.webmcp_source_tools, 'mcp.webmcp_source_tools', relativePath),
-    expectedWebMcpTools,
-    'mcp.webmcp_source_tools',
-    relativePath,
-  )
-  if (!String(mcp.source_availability || '').includes('configured published Source Files workspace')) {
-    fail(`${relativePath} must state the published-source availability boundary`)
-  }
+    const mcp = frontmatter.mcp
+    if (!mcp || typeof mcp !== 'object' || mcp.grammar_tool !== AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME) {
+      fail(`${relativePath} must use the source-owned docs grammar MCP tool`)
+    }
+    assertExactArray(
+      readStringArray(mcp.published_source_tools, 'mcp.published_source_tools', relativePath),
+      expectedPublishedTools,
+      'mcp.published_source_tools',
+      relativePath,
+    )
+    assertExactArray(
+      readStringArray(mcp.webmcp_source_tools, 'mcp.webmcp_source_tools', relativePath),
+      expectedWebMcpTools,
+      'mcp.webmcp_source_tools',
+      relativePath,
+    )
+    if (!String(mcp.source_availability || '').includes('configured published Source Files workspace')) {
+      fail(`${relativePath} must state the published-source availability boundary`)
+    }
 
-  const invocation = frontmatter.invocation
-  if (!invocation || typeof invocation !== 'object') fail(`${relativePath} must declare invocation metadata`)
-  const tokens = [...invocationTokens(invocation.normalize), ...invocationTokens(invocation.verify)]
-  if (!tokens.some(token => token.startsWith('/'))
-    || !tokens.some(token => token.startsWith('@'))
-    || !tokens.some(token => token.startsWith('#'))) {
-    fail(`${relativePath} invocation metadata must include /, @, and # tokens`)
-  }
-  for (const token of tokens) {
-    if (!dictionaryEntries[token[0]]?.has(token)) {
-      fail(`${relativePath} uses invocation token absent from Agentic Canvas OS: ${token}`)
+    const invocation = frontmatter.invocation
+    if (!invocation || typeof invocation !== 'object') fail(`${relativePath} must declare invocation metadata`)
+    const tokens = [...invocationTokens(invocation.normalize), ...invocationTokens(invocation.verify)]
+    if (!tokens.some(token => token.startsWith('/'))
+      || !tokens.some(token => token.startsWith('@'))
+      || !tokens.some(token => token.startsWith('#'))) {
+      fail(`${relativePath} invocation metadata must include /, @, and # tokens`)
+    }
+    for (const token of tokens) {
+      if (!dictionaryEntries[token[0]]?.has(token)) {
+        fail(`${relativePath} uses invocation token absent from Agentic Canvas OS: ${token}`)
+      }
     }
   }
 
@@ -190,15 +226,16 @@ for (const document of documents) {
   }
 }
 
-const primaryFrontmatter = documents[0].frontmatter
-const sourceAuthority = primaryFrontmatter.source_authority
-if (!sourceAuthority || typeof sourceAuthority !== 'object'
-  || sourceAuthority.contract_root !== 'knowgrph/docs'
-  || sourceAuthority.collaborative_documents_root !== 'huijoohwee/docs'
-  || sourceAuthority.invocation_dictionary_root !== 'agentic-canvas-os/docs'
-  || sourceAuthority.production_mirror_root !== 'huijoohwee/content/knowgrph'
-  || sourceAuthority.production_mirror_editable !== false) {
-  fail('primary storage document must preserve the path-scoped source authority contract')
+const primaryDocument = documents[0]
+for (const requiredText of [
+  'Authored Markdown remains canonical.',
+  'supporting stores with explicit roles.',
+  'Route identity source',
+  'does not deploy storage Worker',
+]) {
+  if (!primaryDocument.markdown.includes(requiredText)) {
+    fail(`primary storage document must preserve source authority truth: ${requiredText}`)
+  }
 }
 for (const requiredText of [
   'Document Storage & Sync',
@@ -262,8 +299,8 @@ if (buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.listSourceFiles) !
 }
 
 const uniqueTokens = new Set(documents.flatMap(document => [
-  ...invocationTokens(document.frontmatter.invocation.normalize),
-  ...invocationTokens(document.frontmatter.invocation.verify),
+  ...invocationTokens(document.frontmatter.invocation?.normalize),
+  ...invocationTokens(document.frontmatter.invocation?.verify),
 ]))
 for (const token of uniqueTokens) {
   const result = await runAgenticCanvasOsDocsInvokeTool({ token }, {

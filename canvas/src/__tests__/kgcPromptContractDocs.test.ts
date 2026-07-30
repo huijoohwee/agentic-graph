@@ -6,6 +6,12 @@ const readRepoFile = (repoRelativePath: string): string => {
   return readFileSync(p, 'utf8')
 }
 
+const extractGeneratedSettingKeys = (document: string): string[] =>
+  document
+    .split('\n')
+    .map(line => line.match(/^\| `([^`]+)` \|/)?.[1])
+    .filter((key): key is string => Boolean(key))
+
 export function testKgcPromptContractDocsUseCanonicalImplementedNames() {
   const mainPath = resolve(process.cwd(), '..', 'docs/documents/knowgrph-llm-prompt-contract-prd-tad.md')
   const companionPath = resolve(process.cwd(), '..', 'docs/documents/knowgrph-llm-prompt-contract-prd-tad.companion.md')
@@ -19,10 +25,13 @@ export function testKgcPromptContractDocsUseCanonicalImplementedNames() {
     throw new Error('Expected stale KGC prompt contract proposed docs to be removed')
   }
 
+  const technicalArchitecture = readRepoFile('docs/knowgrph-technical-architecture.md')
+  const technicalArchitectureSettings = readRepoFile('docs/knowgrph-technical-architecture.settings.md')
   const referenceDocs = [
     readFileSync(mainPath, 'utf8'),
     readFileSync(companionPath, 'utf8'),
-    readRepoFile('docs/knowgrph-technical-architecture.md'),
+    technicalArchitecture,
+    technicalArchitectureSettings,
     readRepoFile('docs/documents/knowgrph-mcp/knowgrph-mcp-service-prd-tad.md'),
   ].join('\n')
 
@@ -44,5 +53,25 @@ export function testKgcPromptContractDocsUseCanonicalImplementedNames() {
   })
   if (referenceDocs.includes(staleBaseName)) {
     throw new Error('Expected KGC prompt contract references to avoid stale proposed document names')
+  }
+
+  const generatedSettingKeys = [
+    ...extractGeneratedSettingKeys(technicalArchitecture),
+    ...extractGeneratedSettingKeys(technicalArchitectureSettings),
+  ]
+  const uniqueGeneratedSettingKeys = new Set(generatedSettingKeys)
+  if (generatedSettingKeys.length < 500 || uniqueGeneratedSettingKeys.size !== generatedSettingKeys.length) {
+    throw new Error(
+      `Expected split settings registry to retain at least 500 unique rows, got rows=${generatedSettingKeys.length} unique=${uniqueGeneratedSettingKeys.size}`,
+    )
+  }
+  for (const [label, document] of [
+    ['technical architecture part 1', technicalArchitecture],
+    ['technical architecture part 2', technicalArchitectureSettings],
+  ] as const) {
+    const lineCount = document.split('\n').length
+    if (lineCount > 600) {
+      throw new Error(`Expected ${label} to stay within 600 lines, got ${lineCount}`)
+    }
   }
 }

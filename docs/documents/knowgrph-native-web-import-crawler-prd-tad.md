@@ -1,21 +1,22 @@
 ---
-title: "Knowgrph Native Web Import Crawler — PRD/TAD"
+title: "Reference implementation: Knowgrph Native Web Import Crawler — PRD/TAD"
 id: "md:knowgrph-native-web-import-crawler-prd-tad"
 doc_type: "Product and Technical Specification"
-version: "0.1.0"
+version: "0.2.0"
 date: "2026-07-30"
 lang: "en-US"
+guideline_version: "1.7.0"
 owner: "docs.native-web-import-crawler"
-local_rung: "dev-proven"
-delivered_rung: "runtime-ready"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/knowgrph-native-web-import-crawler-prd-tad.md"
 scope: "Native enhancement of existing Import URL, local-file import, Canvas projection, and live invocation owners"
-deploy_boundary: "Dev-only; no Prod mirror, Cloudflare publication, or paid runtime"
+deploy_boundary: "Authoring-only; mirror and delivery lanes are not provisioned for this increment"
 reference_repository: "https://github.com/apify/crawlee"
 reference_boundary: "Concept-only review of queue, browser, proxy, retry, and storage capabilities; no source, tests, fixtures, schemas, prose, assets, or dependency copied or imported"
-runtime_library: "Existing Playwright dependency"
+runtime_library: "Reference implementation uses the existing Playwright dependency"
 invocation: "/reference.expand @url:<https-url> @reference-policy #canvas"
 constraints:
   - "native in-repo implementation"
@@ -26,7 +27,7 @@ constraints:
   - "no proxy endpoint or credential in client options, manifests, Canvas documents, or logs"
 ---
 
-# Knowgrph Native Web Import Crawler
+# Reference implementation: Knowgrph Native Web Import Crawler
 
 ## Product decision
 
@@ -58,9 +59,9 @@ The external crawler project is a capability reference only. The implementation 
 - Physical crawler artifacts are stored under the sibling `sandbox/knowgrph-workspace` root. New manifests use portable `knowgrph-workspace/...` logical paths, while existing dot-prefixed paths remain readable through the shared resolver.
 - One `YYYYMMDDTHHmmssZ` UTC generation token owns the crawl folder and every derived artifact; an existing valid token from the active generated document is reused.
 
-# Technical architecture
+## Reference implementation: Technical architecture
 
-## Existing owners retained
+### Existing owners retained
 
 | Responsibility | Owner |
 |---|---|
@@ -73,7 +74,7 @@ The external crawler project is a capability reference only. The implementation 
 | Live invocation grammar | existing Agentic Canvas OS dictionary-backed catalog plus `nativeCrawlerInvocation.ts` route adapter |
 | Prompt preset | centralized Agentic Canvas OS `PROMPT-PRESETS.md`; `/crawler-agent @url:<https-url> @reference-policy #canvas` routes to the same native executor |
 
-## Input contract
+### Input contract
 
 The client may request `browserMode=headless`, proxy rotation, asset downloads, a maximum page count, concurrency, download count, total download bytes, and an existing valid UTC generation token. It cannot provide proxy URLs or credentials. Server proxy endpoints come only from `KNOWGRPH_CRAWLER_PROXY_URLS`, with one URL per comma or line.
 
@@ -81,7 +82,7 @@ The default physical store is the sibling `sandbox` checkout, resolved from the 
 
 `KNOWGRPH_CRAWLER_ALLOW_PRIVATE_NETWORKS=1` is an explicit development override for testing a locally hosted target. It is not sent by the client and is off by default.
 
-## Runtime flow
+### Runtime flow
 
 1. The existing start route normalizes bounds, reuses a valid supplied `YYYYMMDDTHHmmssZ` token or creates one once, and creates a typed manifest under that generation ID.
 2. Headless mode seeds the root URL without static prefetch, keeping discovery inside the browser and proxy boundary.
@@ -91,13 +92,13 @@ The default physical store is the sibling `sandbox` checkout, resolved from the 
 6. Download candidates reserve shared count and byte budgets before persistence.
 7. Workspace materialization creates page documents, the existing sitemap document, and one flowchart-backed Canvas document.
 
-## Output contract
+### Output contract
 
 The manifest records engine, headless state, proxy mode, proxy pool size, download bounds, page links, and downloaded artifact metadata. It never records proxy endpoints or credentials. The artifact route validates import, node, and download identifiers against the manifest before reading a stored file.
 
 The Canvas document exposes the page relationship graph and artifact download links. It is deliberately bounded to 500 pages, 1,500 graph edges, and 24 displayed downloads per page even if future server limits grow.
 
-## Failure and fallback behavior
+### Failure and fallback behavior
 
 - An unsafe target or redirect produces a typed node error.
 - A missing browser executable produces a crawl failure with the Playwright launch error. Development setup must run `npx playwright install chromium`; a system Chrome channel is the secondary launch option.
@@ -105,15 +106,43 @@ The Canvas document exposes the page relationship graph and artifact download li
 - A headless crawl does not silently fall back to the static HTTP crawler, because doing so would bypass the selected proxy and browser security boundary.
 - Markdown conversion failure leaves the raw HTML artifact available and does not discard the successful page capture.
 
-## Cost and token posture
+### Cost and token posture
 
 The crawler makes no model calls and consumes zero model tokens. Runtime cost is local browser CPU, memory, network traffic, proxy service cost if the operator configures one, and stored artifact bytes. Hard limits cap the crawl at 500 pages, 12 workers, 500 downloaded files, 1 GiB total downloaded bytes, 100 MiB configurable per-file bytes, five file redirects, and a 120-second configurable navigation timeout. The Import URL action requests the tighter defaults of 120 downloaded files and 250 MiB total bytes; the current native crawler keeps per-file downloads at 25 MiB and navigation at 30 seconds.
 
-## Validation evidence
+### Lane topology
 
-- TypeScript build check.
-- Focused unit cases for private-network policy, proxy parsing and deduplication, Canvas/download output, authoritative invocation parsing (including Widget Card token spacing), shared Import URL dispatch, Rich Media publication, and dependency prohibition.
-- Existing Import URL option regression.
-- Real headless Chromium capture of `https://example.com/`.
-- Real bounded PDF download of the W3C dummy PDF fixture.
-- Repository hygiene and affected validation gates before handoff.
+This increment is authoring-only. The repository has source owners and test hosts, but it has no
+separately provisioned crawler mirror, public server-owned crawler runtime, delivery receipt, or
+operator promotion instruction.
+
+| Lane | Function | Mutation rights | Residency | Current state | Local rung | Delivered rung |
+|---|---|---|---|---|---|---|
+| Authoring | edit and exercise crawler source/tests locally | scoped source, tests, and local artifacts | developer checkout plus sibling sandbox workspace | VCCs stated; results not attached | `spec-complete` | `undocumented` |
+| Mirror | not provisioned for this increment | none | not assigned | absent; no candidate evidence | `undocumented` | `undocumented` |
+| Delivery | not provisioned for this increment | none | not assigned | absent; no reachable runtime evidence | `undocumented` | `undocumented` |
+
+| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement and check | State |
+|---|---|---|---|---|---|---|
+| `CRAWLER-SOURCE-TO-MIRROR` | Authoring | Mirror | none; mirror is absent | `none` | retain the prior Authoring revision and local artifacts | `closed` |
+| `CRAWLER-MIRROR-TO-DELIVERY` | Mirror | Delivery | none; both lanes are absent | `none` | no delivered state exists to roll back | `closed` |
+
+### VCC and Evidence Reference register
+
+No satisfying result is attached to this revision. The source files and registered test cases
+establish invocable hosts, not completed evidence.
+
+| VCC | End state | Named check | Constraint | Recorded result | Local rung | Delivered rung |
+|---|---|---|---|---|---|---|
+| `VCC-NC-1` | private-network policy, proxy parsing, storage identity, canvas/download output, invocation routing, recovery, and dependency prohibition cases pass | `npm --prefix canvas run test:ci:unit -- websiteImport.native` exits 0 | no external crawler dependency or client-owned proxy credential is introduced | not recorded | `spec-complete` | `undocumented` |
+| `VCC-NC-2` | the client type/build contract accepts the retained owners | `npm --prefix canvas run check` exits 0 | no unrelated generated document changes | not recorded | `spec-complete` | `undocumented` |
+| `VCC-NC-3` | a clean environment captures one rendered page and one bounded linked file through the browser path | clean-environment browser smoke records the URL, artifact digest, byte count, and terminal status | private targets remain blocked and configured bounds remain active | not recorded; no dedicated smoke host exists | `spec-complete` | `undocumented` |
+| `VCC-NC-4` | an exact approved candidate and reachable crawler runtime pass live verification | protected mirror and delivery checks exit 0 | source/unit checks cannot satisfy delivery | not applicable this increment; lanes absent | `spec-complete` | `undocumented` |
+
+### Readiness Gap Matrix
+
+| Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria (VCC) |
+|---|---|---|---|---|---|
+| Source contract and bounded unit behavior | `spec-complete` | `undocumented` | focused source result is not attached | none | `VCC-NC-1` and `VCC-NC-2` gain satisfying local Evidence References |
+| Clean-environment browser behavior | `spec-complete` | `undocumented` | no dedicated invocable browser smoke host or recorded result | major | add a source-owned bounded smoke host and satisfy `VCC-NC-3` |
+| Mirror and delivery | `undocumented` | `undocumented` | both lanes are deliberately absent from this increment | none | keep `VCC-NC-4` out of scope, or add a follow-on PRD/TAD before provisioning either lane |

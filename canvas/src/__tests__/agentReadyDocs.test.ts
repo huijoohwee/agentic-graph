@@ -24,14 +24,16 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
     'id: "md:knowgrph-agent-ready-prd-tad"',
     'doc_type: "Product and Technical Specification"',
     'owner: "cloudflare.pages.agent-ready.surface"',
+    'local_rung: "spec-complete"',
+    'delivered_rung: "undocumented"',
     'companion: "docs/documents/knowgrph-agent-ready-prd-tad.companion.md"',
     'runtime_companion: "docs/documents/knowgrph-agent-ready-prd-tad.runtime.md"',
-    '`knowgrph-agent-ready-prd-tad.companion.md`',
-    '`knowgrph-agent-ready-prd-tad.runtime.md`',
     'parent: "docs/documents/knowgrph-agent-ready-prd-tad.md"',
     'owner: "docs.contract.evidence"',
-    'owner: "docs.runtime.evidence"',
-    '{{md:knowgrph-agent-ready-prd-tad}}',
+    'owner: "docs.agent-ready.runtime-companion"',
+    '[the parent contract](knowgrph-agent-ready-prd-tad.md)',
+    'Exactly 41 tools: 30 read-only, 11 guarded controls.',
+    'Exactly 7 read-only tools; no guarded control.',
   ]
   required.forEach(snippet => {
     if (!docs.includes(snippet)) {
@@ -49,6 +51,7 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
     'created: 2026-05-21',
     'updated: 2026-05-29',
     'updated: 2026-05-30',
+    'delivered_rung: "runtime-ready"',
   ]
   forbidden.forEach(snippet => {
     if (docs.includes(snippet)) {

@@ -18,6 +18,8 @@ import {
   STRIPE_MCP_DEFAULT_LOCAL_PACKAGE,
   STRIPE_MCP_DEFAULT_SERVER_KEY,
   STRIPE_MCP_DEFAULT_STARTUP_TIMEOUT_MS,
+  STRIPE_MCP_PAYMENT_READINESS_POLICY,
+  STRIPE_MCP_PAYMENT_TOOL_NAMES,
   STRIPE_MCP_REGISTRY_URL,
   STRIPE_MCP_REMOTE_URL,
   STRIPE_MCP_RESTRICTED_KEY_ENV_REF,
@@ -410,14 +412,8 @@ export function assertMcpHubSurfacesStripeMcpPaymentReadiness(container: Element
     STRIPE_MCP_RESTRICTED_KEY_ENV_REF,
     STRIPE_MCP_REGISTRY_URL,
     String(STRIPE_MCP_DEFAULT_STARTUP_TIMEOUT_MS),
-    'create_payment_link',
-    'create_price',
-    'create_product',
-    'create_refund',
-    'human confirmation',
-    'accept payment',
-    'checkout handoff',
-    'Payment-mutating MCP tools stay behind human confirmation and least-privilege authorization.',
+    ...STRIPE_MCP_PAYMENT_TOOL_NAMES,
+    STRIPE_MCP_PAYMENT_READINESS_POLICY,
     'Open MainPanel Commerce',
   ].forEach(token => {
     if (!searchableText.includes(token)) {
@@ -637,6 +633,10 @@ export function assertMcpHubSurfacesCloudflareAiGatewayMcpConfig(container: Elem
 export function assertMcpHubSurfacesFeishuBaseMcpConfig(container: Element): void {
   const text = container.textContent || ''
   const searchableText = `${text}\n${readRenderedFormValues(container)}`
+  const feishuSearchableText = Array.from(
+    container.querySelectorAll<HTMLElement>('[data-kg-anchor^="mcp-row-feishu-base-"]'),
+    row => `${row.textContent || ''}\n${readRenderedFormValues(row)}`,
+  ).join('\n')
   ;[
     'Feishu Base MCP Configuration',
     'feishuBaseMcp.server_key',
@@ -677,7 +677,7 @@ export function assertMcpHubSurfacesFeishuBaseMcpConfig(container: Element): voi
     'implemented source adapter',
     'implemented publish target',
   ].forEach(token => {
-    if (searchableText.includes(token)) {
+    if (feishuSearchableText.includes(token)) {
       throw new Error(`expected Feishu Base MCP surface to avoid forbidden token ${JSON.stringify(token)}`)
     }
   })

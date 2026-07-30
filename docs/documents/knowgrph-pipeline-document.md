@@ -1,4 +1,22 @@
-# Knowgrph Pipeline: Universal GraphRAG Specification
+---
+title: "Reference implementation: Knowgrph Graph Pipeline"
+doc_type: "Technical Design Reference"
+version: "1.0.1"
+date: "2026-07-30"
+lang: "en-US"
+guideline_version: "1.7.0"
+owner: "docs.pipeline.graph"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+---
+
+# Reference implementation: Knowgrph Graph Pipeline
+
+This legacy reference has no well-formed VCC or attached Evidence Reference. Its local and
+delivered rungs therefore remain `undocumented`; checklists and source-path inventories below do
+not establish a readiness claim.
 
 ## Design Mantras
 
@@ -105,8 +123,8 @@ When changing shared packages that are wired via `file:` links (for example `sin
 
 #### Journey 1: Import JSON/CSV → See Nodes On MapLibre
 
-- `ToolbarToolMenuAreas` triggers a format import action → [useToolbarMenuAction](../../canvas/src/features/toolbar/useToolbarMenuAction.ts)
-- `useToolbarMenuAction(area='sourceFiles', action='importLocal'|'importUrl', payload.format='json'|'csv')` → `performJsonImport` / `performCsvImport`
+- `ToolbarToolMenu` and the shared toolbar actions dispatch a format import action → [ToolbarToolMenu.impl.tsx](../../canvas/src/lib/toolbar/ToolbarToolMenu.impl.tsx) and [useToolbarActions.ts](../../canvas/src/features/toolbar/hooks/useToolbarActions.ts)
+- The selected Source Files import action resolves `importLocal` or `importUrl` with the requested JSON/CSV format → `performJsonImport` / `performCsvImport`
 - `performJsonImport` / `performCsvImport` → [runImportFlow](../../canvas/src/features/toolbar/importFlow.ts) → [loadGraphDataFromTextViaParser](../../canvas/src/features/parsers/loader.ts)
 - `loadGraphDataFromTextViaParser` → `bestMatch` → `applyParserAsync` → `useGraphStore.getState().setGraphData(graphData)`
 - `GraphCanvas` reads `graphData` → renders nodes/edges → [GraphCanvas](../../canvas/src/components/GraphCanvas.tsx)
@@ -487,24 +505,24 @@ provenance_tracking: {track_lineage, versioning_strategy}
 
 **Structural Health**:
 
-| Context              | Status | Directive                                                                                   |
+| Context              | Evidence result | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
-| Layer Separation     | ✓      | - [ ] Each layer in separate module; clear interfaces; forbid cross-layer coupling         |
-| Config Completeness  | ✓      | - [ ] All behavior configurable; documented defaults; forbid hidden parameters             |
+| Layer Separation     | not recorded | - [ ] Each layer in separate module; clear interfaces; forbid cross-layer coupling      |
+| Config Completeness  | not recorded | - [ ] All behavior configurable; documented defaults; forbid hidden parameters          |
 
 **Maintainability**:
 
-| Context              | Status | Directive                                                                                   |
+| Context              | Evidence result | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
-| Documentation        | ✓      | - [ ] All layers documented; examples provided; forbid undocumented components             |
-| Test Coverage        | ✓      | - [ ] >80% overall; neutrality suite; forbid untested features                             |
+| Documentation        | not recorded | - [ ] All layers documented; examples provided; forbid undocumented components          |
+| Test Coverage        | not recorded | - [ ] >80% overall; neutrality suite; forbid untested features                          |
 
 **Operations**:
 
-| Context              | Status | Directive                                                                                   |
+| Context              | Evidence result | Directive                                                                                   |
 |----------------------|--------|---------------------------------------------------------------------------------------------|
-| Reproducibility      | ✓      | - [ ] Config/data versioning; seeded randomness; forbid environment dependencies           |
-| Monitoring           | ✓      | - [ ] Quality metrics logged; drift detection; forbid silent failures                      |
+| Reproducibility      | not recorded | - [ ] Config/data versioning; seeded randomness; forbid environment dependencies        |
+| Monitoring           | not recorded | - [ ] Quality metrics logged; drift detection; forbid silent failures                   |
 
 ---
 

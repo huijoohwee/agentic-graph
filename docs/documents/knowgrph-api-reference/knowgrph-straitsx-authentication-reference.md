@@ -1,15 +1,16 @@
 ---
-title: "Knowgrph - StraitsX Authentication and Endpoint Index Reference"
+title: "Reference implementation: Knowgrph - StraitsX Authentication and Endpoint Index Reference"
 id: "md:knowgrph-straitsx-authentication-reference"
 doc_type: "Reference"
-version: "0.1.0"
+version: "0.2.0"
 date: "2026-07-30"
 lang: "en-US"
 owner: "docs.api-reference.straitsx-auth"
-local_rung: "source-audited"
-delivered_rung: "reference-baseline"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
+guideline_version: "1.7.0"
 doc_path: "docs/documents/knowgrph-api-reference/knowgrph-straitsx-authentication-reference.md"
 ssot_upstream: "https://docs.straitsx.com/reference/say-hello"
 ssot_captured: "2026-07-28"
@@ -29,7 +30,7 @@ tags:
   - "endpoint-index"
 ---
 
-# Knowgrph - StraitsX Authentication and Endpoint Index Reference
+# Reference implementation: Knowgrph - StraitsX Authentication and Endpoint Index Reference
 
 **Upstream SSOT**: [StraitsX Say Hello](https://docs.straitsx.com/reference/say-hello), captured 2026-07-28.
 **Companion**: integration models and product families live in

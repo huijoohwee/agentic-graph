@@ -1,344 +1,278 @@
-# Knowgrph Product Requirements: Universal Feature Specification
-
-## Design Mantras
-
-```
-- [ ] Accessibility; support all users; forbid barriers to entry
-- [ ] Composability; combine features freely; forbid feature silos
-- [ ] Discoverability; expose capabilities clearly; forbid hidden features
-- [ ] Efficiency; minimize user effort; forbid wasteful workflows
-- [ ] Extensibility; enable future features; forbid rigid designs
-- [ ] Feedback; communicate system state; forbid silent operations
-- [ ] Flexibility; support diverse workflows; forbid prescriptive paths
-```
-
+---
+title: "Source-Native Graph Workspace Product Requirements"
+doc_type: "Product Requirements Document"
+version: "3.1.0"
+date: "2026-07-30"
+lang: "en-US"
+guideline_version: "1.7.0"
+owner: "product.contract"
+local_rung: "spec-complete"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
 ---
 
-## Universal Design Principles
-
-| Context             | Intent                              | Directive                                                                                      |
-|---------------------|-------------------------------------|------------------------------------------------------------------------------------------------|
-| Capability Exposure | Make features discoverable          | - [ ] Surface in UI; provide hints; forbid undocumented features                              |
-| Data Ownership      | User controls their data            | - [ ] Enable export; support import; forbid data lock-in                                      |
-| Error Communication | Explain failures clearly            | - [ ] Show actionable messages; suggest fixes; forbid cryptic errors                          |
-| Feature Gating      | Progressive disclosure              | - [ ] Show advanced features on demand; forbid overwhelming defaults                          |
-| Feedback Loops      | Confirm user actions                | - [ ] Acknowledge operations; show progress; forbid silent state changes                      |
-| Input Validation    | Prevent invalid states              | - [ ] Validate early; guide corrections; forbid late-stage rejections                         |
-| Interoperability    | Support standard formats            | - [ ] Import/export common types; forbid proprietary-only formats                             |
-| Keyboard Navigation | Enable keyboard workflows           | - [ ] Provide shortcuts; support tab navigation; forbid mouse-only operations                 |
-| Loading States      | Indicate async operations           | - [ ] Show spinners; display progress; forbid blocking without feedback                       |
-| Onboarding          | Guide new users                     | - [ ] Provide tutorials; offer examples; forbid assuming expertise                            |
-| Performance         | Maintain responsiveness             | - [ ] Optimize hot paths; defer heavy work; forbid UI blocking                                |
-| Persistence         | Save user preferences               | - [ ] Remember settings; restore state; forbid session-only data                              |
-| Privacy             | Protect user information            | - [ ] Process locally; encrypt sensitive data; forbid unnecessary data collection             |
-| Scalability         | Handle large datasets               | - [ ] Virtualize lists; paginate results; forbid memory exhaustion                            |
-| Undo/Redo           | Support error recovery              | - [ ] Enable undo; preserve history; forbid irreversible destructive actions                  |
-| Workflow Integration| Fit user processes                  | - [ ] Support common workflows; allow customization; forbid rigid task sequences              |
-
----
-
-## Product Architecture
-
-**User Journey**: Discovery → Learning → Creation → Iteration → Sharing → Collaboration
-
-**Feature Stack**: Core Editing | Visualization | Import/Export | Collaboration | Customization | Automation
-
-**Design Principles**: User-centric design | Progressive complexity | Format flexibility | Workflow neutrality
-
-### Core Feature Categories
-
-| Category          | Core Capabilities                                  | User Value                                    | Success Metrics                          |
-|-------------------|---------------------------------------------------|-----------------------------------------------|------------------------------------------|
-| Graph Creation    | Manual node/edge creation, bulk import            | Rapid graph construction                      | Time to first graph, import success rate |
-| Visualization     | 2D/3D rendering, layout algorithms, styling       | Understanding structure                       | Render performance, user satisfaction    |
-| Data Management   | Version control, export, backup, restore          | Data safety, portability                      | Export usage, backup frequency           |
-| Analysis          | Search, filter, traversal, metrics                | Insight extraction                            | Query speed, feature adoption            |
-| Collaboration     | Sharing, comments, version tracking               | Team coordination                             | Active collaborators, shared graphs      |
-| Customization     | Themes, layouts, keyboard shortcuts, settings     | Personalized workflows                        | Settings usage, custom theme creation    |
-| Automation        | Scripts, workflows, batch operations, pipelines   | Efficiency gains                              | Automation adoption, time saved          |
-
-### Integration Bridge: User Needs → Product Features
-
-| User Need                  | Product Feature                          | Implementation Approach                      |
-|----------------------------|------------------------------------------|----------------------------------------------|
-| Understand large graphs    | Interactive visualization with filters   | D3 force layout, layer-based rendering       |
-| Import existing data       | Multi-format ingestion pipeline          | Parser registry, format detection            |
-| Share insights             | Export to common formats                 | JSON/CSV/Markdown/PDF/PNG export             |
-| Customize appearance       | Theme system, style editor               | CSS variables, user-defined palettes         |
-| Automate repetitive tasks  | Workflow engine, scripting support       | Python/JS hooks, pipeline configuration      |
-| Collaborate with team      | Real-time sync, version control          | Conflict resolution, change tracking         |
-
----
-
-## Feature Specifications
-
-### Feature: Multi-Format Import
-
-**User Story**: As a data analyst, I want to import graphs from various sources so that I can consolidate information from different tools.
-
-**Acceptance Criteria**:
-- Support Markdown, HTML, PDF, JSON, JSON-LD, CSV formats
-- Auto-detect format from file extension and content
-- Preserve metadata and properties during import
-- Show import progress for large files
-- Provide error messages for malformed inputs
-
-| Context              | Intent                          | Directive                                                                                   | UI Component     | User Action        | System Response         | Validation        | Success State                | Error Handling         | Decision Logic                   |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|------------------|--------------------|-------------------------|-------------------|------------------------------|------------------------|----------------------------------|
-| Format Selection     | Choose import format            | - [ ] Present format picker; auto-detect; forbid forcing wrong format                     | Toolbar Menu     | Click Import       | Show format dropdown    | Extension check   | Format selected              | Show supported formats | Match extension to parser        |
-| File Upload          | Retrieve source file            | - [ ] Open file picker; validate size; forbid oversized files                             | File Dialog      | Select file        | Read file content       | Size < 50MB       | File loaded                  | Display size error     | File size comparison             |
-| Parser Dispatch      | Convert to graph                | - [ ] Route to parser; show progress; forbid silent parsing                               | Progress Bar     | —                  | Parse and build graph   | Valid structure   | Graph created                | Show parse errors      | Parser capability match          |
-| Import Confirmation  | Acknowledge completion          | - [ ] Display node/edge counts; open graph; forbid silent import                          | Status Message   | —                  | Update UI state         | Graph valid       | Canvas shows graph           | Log import failure     | GraphData validation             |
-
----
-
-### Feature: Graph Visualization
-
-**User Story**: As a researcher, I want to visualize my knowledge graph so that I can identify patterns and relationships.
-
-**Acceptance Criteria**:
-- Render 10k+ nodes without performance degradation
-- Support 2D and 3D visualization modes
-- Enable pan, zoom, and node selection
-- Apply layout algorithms (force-directed, hierarchical, circular)
-- Customize node colors, sizes, and shapes
-
-| Context              | Intent                          | Directive                                                                                   | UI Component     | User Action        | System Response         | Validation        | Success State                | Error Handling         | Decision Logic                   |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|------------------|--------------------|-------------------------|-------------------|------------------------------|------------------------|----------------------------------|
-| Render Mode          | Choose visualization type       | - [ ] Toggle 2D/3D; persist preference; forbid mode without fallback                      | Toolbar Button   | Click 3D toggle    | Switch render mode      | WebGL support     | 3D view active               | Fallback to 2D         | Feature detection                |
-| Layout Algorithm     | Arrange nodes spatially         | - [ ] Select algorithm; apply forces; forbid unbounded simulation                         | Layout Dropdown  | Choose force-directed| Run simulation       | Node positions    | Layout converged             | Use cached positions   | Simulation tick threshold        |
-| Node Selection       | Identify graph element          | - [ ] Click node; highlight; forbid multi-select without key                              | Canvas SVG       | Click node         | Select and highlight    | Valid node ID     | Node selected                | Deselect all           | ID lookup in graph               |
-| Zoom/Pan             | Navigate large graphs           | - [ ] Use mouse/gestures; constrain bounds; forbid infinite zoom                          | Canvas Transform | Scroll/drag        | Apply transform         | Zoom in [0.1, 10] | Viewport updated             | Clamp to limits        | Transform bounds check           |
-| Style Application    | Customize appearance            | - [ ] Choose colors/shapes; apply to nodes; forbid invalid CSS                            | Style Panel      | Pick color         | Update node style       | Valid CSS color   | Nodes recolored              | Revert to default      | CSS validation                   |
-
----
-
-### Feature: Advanced Search and Filter
-
-**User Story**: As a knowledge worker, I want to search my graph so that I can quickly find relevant information.
-
-**Acceptance Criteria**:
-- Full-text search across node labels and properties
-- Filter by node type, edge label, and metadata
-- Support regex and fuzzy matching
-- Highlight search results on canvas
-- Save and reuse search queries
-
-| Context              | Intent                          | Directive                                                                                   | UI Component     | User Action        | System Response         | Validation        | Success State                | Error Handling         | Decision Logic                   |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|------------------|--------------------|-------------------------|-------------------|------------------------------|------------------------|----------------------------------|
-| Query Input          | Enter search terms              | - [ ] Provide input field; suggest completions; forbid empty queries                       | Search Bar       | Type query         | Update suggestions      | Query length > 0  | Suggestions shown            | Show placeholder       | String length check              |
-| Search Execution     | Find matching nodes             | - [ ] Execute search; rank results; forbid blocking UI                                     | Search Button    | Click search       | Display results         | Valid query       | Results listed               | Show no matches        | Debounced search execution       |
-| Filter Application   | Narrow results                  | - [ ] Apply filters; update view; forbid invalid filters                                   | Filter Panel     | Select filters     | Filter graph data       | Valid filter spec | Filtered view                | Reset filters          | Filter predicate evaluation      |
-| Result Highlighting  | Visualize matches               | - [ ] Highlight on canvas; scroll to result; forbid losing context                        | Canvas Overlay   | Click result       | Center and highlight    | Result exists     | Node centered                | Pan to viewport        | Viewport transform calculation   |
-| Query Persistence    | Save for reuse                  | - [ ] Store query; name and save; forbid unnamed saves                                    | Save Button      | Save query         | Persist to store        | Query name exists | Query saved                  | Prompt for name        | Name uniqueness check            |
-
----
-
-### Feature: Export and Sharing
-
-**User Story**: As a team lead, I want to export my graph so that I can share it with stakeholders.
-
-**Acceptance Criteria**:
-- Export to JSON, JSON-LD, CSV, Markdown, PDF, PNG
-- Preserve all metadata and properties
-- Generate shareable URLs (when server available)
-- Support batch export for multiple graphs
-- Include export preview before download
-
-| Context              | Intent                          | Directive                                                                                   | UI Component     | User Action        | System Response         | Validation        | Success State                | Error Handling         | Decision Logic                   |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|------------------|--------------------|-------------------------|-------------------|------------------------------|------------------------|----------------------------------|
-| Format Selection     | Choose export format            | - [ ] Present format options; forbid unsupported formats                                   | Export Menu      | Select format      | Show format details     | Format supported  | Format selected              | List available only    | Format capability check          |
-| Export Preview       | Review before download          | - [ ] Generate preview; allow edits; forbid exporting without review                       | Preview Panel    | Click preview      | Render export preview   | Valid graph       | Preview shown                | Show preview error     | Format-specific rendering        |
-| Download Trigger     | Initiate file download          | - [ ] Convert graph; trigger download; forbid incomplete exports                           | Download Button  | Click download     | Serialize and download  | Valid serialization| File downloaded              | Show export error      | Browser download API             |
-| Share URL            | Generate shareable link         | - [ ] Upload graph; return URL; forbid exposing private data                              | Share Button     | Click share        | POST to server          | Server available  | URL copied to clipboard      | Offline mode notice    | Network check then upload        |
-
----
-
-### Feature: Collaboration and Versioning
-
-**User Story**: As a collaborator, I want to see changes made by teammates so that we can work together effectively.
-
-**Acceptance Criteria**:
-- Track graph version history
-- Show diff between versions
-- Enable merge conflict resolution
-- Support comments on nodes/edges
-- Display collaborator presence indicators
-
-| Context              | Intent                          | Directive                                                                                   | UI Component     | User Action        | System Response         | Validation        | Success State                | Error Handling         | Decision Logic                   |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|------------------|--------------------|-------------------------|-------------------|------------------------------|------------------------|----------------------------------|
-| Version Commit       | Save snapshot                   | - [ ] Commit current state; add message; forbid empty commits                              | Commit Dialog    | Save version       | Store graph snapshot    | Commit message    | Version saved                | Prompt for message     | Message length > 0               |
-| Version Comparison   | View changes                    | - [ ] Compute diff; visualize changes; forbid lossy diffs                                  | Diff Viewer      | Select versions    | Display side-by-side    | Valid version IDs | Diff shown                   | Show error             | Graph diff algorithm             |
-| Merge Conflicts      | Resolve divergence              | - [ ] Detect conflicts; offer resolution; forbid auto-merge conflicts                      | Merge Panel      | Initiate merge     | Show conflicts          | Conflicting changes| Resolution UI shown          | Abort merge            | Change detection                 |
-| Comment Addition     | Annotate elements               | - [ ] Attach comment; notify collaborators; forbid anonymous comments                      | Comment Input    | Add comment        | Save and broadcast      | User authenticated| Comment visible              | Authentication prompt  | User ID check                    |
-| Presence Indicators  | Show active users               | - [ ] Display avatars; update in real-time; forbid stale presence                          | Presence Bar     | —                  | Poll/websocket updates  | Active session    | Avatars updated              | Show offline           | Last activity timestamp          |
-
----
-
-## Component Responsibility Matrix
-
-| Feature Category | Component              | Interface/Method                 | Responsibility (S-V-O)                                                          | Dependencies                         | User Interaction                               | Success Criteria                              |
-|------------------|------------------------|----------------------------------|-------------------------------------------------------------------------------|--------------------------------------|-----------------------------------------------|-----------------------------------------------|
-| Import           | MultiFormatImporter    | `importFile`                     | Importer detects format → parses content → creates graph                     | Parser Registry, File API            | Click Import → Select File                    | Graph appears on canvas                       |
-| Visualization    | GraphRenderer          | `renderGraph`                    | Renderer applies layout → draws nodes/edges → enables interaction            | D3, Three.js, Canvas                 | View graph → Pan/Zoom                         | Smooth rendering at 60fps                     |
-| Search           | SearchEngine           | `executeSearch`                  | Engine indexes graph → matches query → ranks results                         | Full-text indexer                    | Type query → Click search                     | Results shown in <500ms                       |
-| Export           | ExportManager          | `exportGraph`                    | Manager serializes graph → formats output → triggers download                | Format converters                    | Select format → Click export                  | File downloads successfully                   |
-| Collaboration    | VersionControl         | `commitVersion`                  | Version control snapshots state → stores diff → notifies collaborators       | Server API, Diff engine              | Save changes → Enter commit message           | Version saved and synced                      |
-| Customization    | ThemeManager           | `applyTheme`                     | Manager loads theme → applies CSS variables → updates UI                     | CSS engine                           | Select theme → Preview → Apply                | Theme applied immediately                     |
-
----
-
-## User Workflows
-
-### Workflow: Import and Analyze Workflow Document
-
-**Goal**: Import a workflow JSON and explore its structure
-
-**Steps**:
-
-| Step | User Action                      | System Response                           | Success Indicator                    | Error Recovery                          |
-|------|----------------------------------|-------------------------------------------|--------------------------------------|-----------------------------------------|
-| 1    | Click Import in toolbar          | Show import dialog with format options    | Dialog opens                         | Retry click                             |
-| 2    | Select JSON format               | Open file picker filtered to .json        | File picker shown                    | Manual file selection                   |
-| 3    | Choose workflow file             | Read file and detect structure            | File loaded                          | Show file read error                    |
-| 4    | Review import preview            | Display node/edge counts and sample data  | Preview rendered                     | Close and retry import                  |
-| 5    | Confirm import                   | Parse and build graph                     | Graph appears on canvas              | Show parse errors with line numbers     |
-| 6    | Apply force layout               | Simulation arranges nodes spatially       | Nodes positioned                     | Use fallback layout                     |
-| 7    | Search for specific node type    | Filter graph to matching nodes            | Results highlighted                  | Clear search and try different query    |
-| 8    | Export filtered view as Markdown | Convert visible nodes to Markdown table   | File downloads                       | Show export error, suggest different format |
-
----
-
-## Feature Prioritization
-
-### Must-Have (P0)
-
-| Feature                     | User Value                              | Technical Complexity | Dependencies                    |
-|-----------------------------|----------------------------------------|----------------------|---------------------------------|
-| Multi-format import         | Essential for data consolidation        | Medium               | Parser registry                 |
-| 2D graph visualization      | Core product experience                 | High                 | D3, SVG rendering               |
-| Node/edge creation          | Basic graph building                    | Low                  | Graph state management          |
-| Search and filter           | Critical for large graphs               | Medium               | Indexing, query engine          |
-| Export to JSON/CSV          | Data portability                        | Low                  | Serialization                   |
-
-### Should-Have (P1)
-
-| Feature                     | User Value                              | Technical Complexity | Dependencies                    |
-|-----------------------------|----------------------------------------|----------------------|---------------------------------|
-| 3D visualization            | Advanced spatial exploration            | High                 | Three.js, WebGL                 |
-| Advanced search (regex)     | Power user productivity                 | Medium               | Search engine                   |
-| Theme customization         | Personalization                         | Low                  | CSS variable system             |
-| Markdown export             | Human-readable sharing                  | Medium               | Markdown renderer               |
-| Keyboard shortcuts          | Efficiency                              | Low                  | Keyboard event handling         |
-
-### Nice-to-Have (P2)
-
-| Feature                     | User Value                              | Technical Complexity | Dependencies                    |
-|-----------------------------|----------------------------------------|----------------------|---------------------------------|
-| Real-time collaboration     | Team workflows                          | Very High            | WebSocket, CRDT                 |
-| PDF export                  | Professional presentations              | Medium               | Server-side rendering           |
-| Plugin system               | Extensibility                           | High                 | Sandboxed execution             |
-| Undo/redo                   | Error recovery                          | Medium               | Command pattern, state history  |
-| Automated layout suggestions| Guided experience                       | High                 | ML/heuristic algorithms         |
-
----
-
-## Accessibility Requirements
-
-| Context              | Intent                          | Directive                                                                                   | WCAG Level | Implementation                        |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|------------|---------------------------------------|
-| Keyboard Navigation  | Enable non-mouse workflows      | - [ ] Provide tab navigation; assign shortcuts; forbid mouse-only actions                 | A          | Tab index, aria-label, focus management|
-| Screen Reader        | Support assistive technology    | - [ ] Add ARIA labels; semantic HTML; forbid unlabeled controls                           | AA         | Semantic tags, role attributes         |
-| Color Contrast       | Ensure readability              | - [ ] Meet 4.5:1 ratio; forbid low-contrast text                                          | AA         | Contrast validation, theme testing     |
-| Focus Indicators     | Show keyboard focus             | - [ ] Visible focus rings; forbid removing outlines without replacement                   | A          | CSS focus styles                       |
-| Text Alternatives    | Describe visual content         | - [ ] Provide alt text; forbid images without descriptions                                | A          | Alt attributes, aria-describedby       |
-| Zoom Support         | Enable text scaling             | - [ ] Support 200% zoom; forbid fixed layouts                                             | AA         | Responsive design, relative units      |
-
----
-
-## Performance Requirements
-
-| Metric                  | Target                      | Measurement Method              | Acceptable Range        |
-|-------------------------|-----------------------------|---------------------------------|-------------------------|
-| Initial Load Time       | < 3 seconds                 | Time to interactive             | 2-4 seconds             |
-| Graph Render (10k nodes)| < 2 seconds                 | First paint after data load     | 1-3 seconds             |
-| Search Response         | < 500ms                     | Query to results displayed      | 200ms-1s                |
-| Export Generation       | < 5 seconds                 | Click export to download ready  | 3-10 seconds            |
-| Interaction Latency     | < 100ms                     | User action to UI response      | 50-200ms                |
-| Memory Usage (100k nodes)| < 2GB RAM                  | Browser memory profiler         | 1-3GB                   |
-
----
-
-## Security and Privacy
-
-| Context              | Intent                          | Directive                                                                                   | Implementation                        | Audit Frequency |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------|-----------------|
-| Data Storage         | Protect user data               | - [ ] Encrypt sensitive data; forbid plaintext storage                                     | Local encryption, secure storage APIs | Quarterly       |
-| Authentication       | Verify user identity            | - [ ] Use secure tokens; forbid weak passwords                                            | OAuth 2.0, JWT                        | Per release     |
-| Authorization        | Control access                  | - [ ] Enforce permissions; forbid privilege escalation                                    | Role-based access control             | Monthly         |
-| Input Sanitization   | Prevent injection attacks       | - [ ] Validate all inputs; forbid raw HTML injection                                      | DOMPurify, CSP headers                | Per commit      |
-| Network Security     | Secure data transmission        | - [ ] Use HTTPS only; forbid HTTP endpoints                                               | TLS 1.3, certificate pinning          | Continuous      |
-| Privacy              | Minimize data collection        | - [ ] Collect only necessary data; forbid tracking without consent                        | Privacy policy, opt-in analytics      | Annually        |
-
----
-
-## Deployment and Release
-
-| Phase          | Activities                                  | Success Criteria                        | Rollback Plan                         |
-|----------------|--------------------------------------------|-----------------------------------------|---------------------------------------|
-| Development    | Feature implementation, unit testing        | All tests pass, code review approved    | Revert commit                         |
-| Staging        | Integration testing, performance profiling  | No regressions, performance meets targets| Redeploy previous version            |
-| Beta           | Limited user testing, feedback collection   | 90% user satisfaction, <5% error rate   | Disable feature flag                  |
-| Production     | Full rollout, monitoring                    | 99.9% uptime, <1% error rate            | Hot-fix or rollback deployment        |
-| Post-Release   | Bug fixes, user support, analytics review   | Issues resolved within SLA              | Patch release                         |
-
----
-
-## Anti-Patterns (Forbidden)
-
-| Context              | Intent                          | Directive                                                                                   |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|
-| Feature Bloat        | Maintain focus                  | - [ ] Prioritize core value; forbid adding features without user demand                   |
-| Modal Overload       | Reduce interruptions            | - [ ] Use inline feedback; forbid excessive modal dialogs                                 |
-| Data Loss            | Protect user work               | - [ ] Auto-save drafts; forbid destructive actions without confirmation                   |
-| Inconsistent UI      | Maintain coherence              | - [ ] Follow design system; forbid one-off component styles                               |
-| Hidden Features      | Ensure discoverability          | - [ ] Document all features; forbid undocumented shortcuts                                |
-| Breaking Changes     | Preserve compatibility          | - [ ] Version APIs; forbid removing features without deprecation period                   |
-
----
-
-## Success Metrics
-
-**User Adoption**:
-
-| Metric                  | Target                      | Measurement Method              | Review Frequency |
-|-------------------------|-----------------------------|---------------------------------|------------------|
-| Monthly Active Users    | 10k+ within 6 months        | Analytics tracking              | Monthly          |
-| User Retention (30-day) | > 40%                       | Cohort analysis                 | Weekly           |
-| Feature Adoption        | > 60% for core features     | Event tracking                  | Quarterly        |
-
-**User Satisfaction**:
-
-| Metric                  | Target                      | Measurement Method              | Review Frequency |
-|-------------------------|-----------------------------|---------------------------------|------------------|
-| NPS Score               | > 50                        | User surveys                    | Quarterly        |
-| Customer Satisfaction   | > 4.5/5                     | Post-interaction surveys        | Monthly          |
-| Support Ticket Volume   | < 5% of users               | Helpdesk metrics                | Weekly           |
-
-**Technical Performance**:
-
-| Metric                  | Target                      | Measurement Method              | Review Frequency |
-|-------------------------|-----------------------------|---------------------------------|------------------|
-| Page Load Time          | < 3s (p95)                  | RUM data                        | Daily            |
-| Error Rate              | < 1%                        | Error tracking                  | Continuous       |
-| API Response Time       | < 500ms (p95)               | APM tools                       | Continuous       |
-
----
-
-## Version Control Standards
-
-| Context              | Intent                          | Directive                                                                                   |
-|----------------------|---------------------------------|---------------------------------------------------------------------------------------------|
-| Feature Versioning   | Track product evolution         | - [ ] Semantic versioning; document changes; forbid undocumented releases                 |
-| Deprecation Policy   | Manage breaking changes         | - [ ] Announce 2 versions ahead; forbid sudden removals                                   |
-| Release Notes        | Communicate updates             | - [ ] Detail all changes; categorize by impact; forbid vague descriptions                 |
+# Source-Native Graph Workspace Product Requirements
+
+## Authority
+
+This document owns the core user-value contract for a workspace in which one readable source
+artifact produces an inspectable graph, multiple projections, and bounded automation. Feature
+documents may extend this contract but may not redefine source authority, readiness vocabulary,
+lane order, or deploy boundaries.
+
+The local rung is `spec-complete` because the VCCs below are stated and no satisfying Evidence
+Reference is attached. The delivered rung is `undocumented` because no mirror or delivery result
+and no operator instruction are attached.
+
+## Phase 0 — Problem discovery
+
+### Problem and falsifiable hypothesis
+
+Knowledge authors and solo builders lose inspectability, portability, and auditability when prose,
+graph structure, canvas layout, tool state, and release state live in unrelated or opaque stores.
+
+**Hypothesis**: if one readable source owns content and graph structure, a first-time operator can
+open it and reach a visible, inspectable graph in no more than three manual actions and five elapsed
+minutes, without a model call, paid service, or hidden canonical database.
+
+Repository inspection establishes implementation owners, not user-research or delivery evidence.
+Observed clean-environment TTV, external user validation, and public-surface proof remain open.
+
+### Preliminary economics and gate
+
+Assumptions: 25 first-value sessions per month, five hours of avoided reconciliation per month,
+operator time excluded from cash TCO but tracked separately, and no mandatory model calls.
+
+| Measure | Estimate | Gate | State |
+|---|---:|---:|---|
+| Impact × monthly reach | 5 × 25 = 125 | ≥80 | estimated pass |
+| Core build/maintenance effort | 40 hours | ≤60 hours | estimated pass |
+| Incremental infrastructure TCO | $0/month; $0/12 months | $0 for minimum slice | estimated pass |
+| Mandatory token TCO | $0/month; $0/12 months | $0 | estimated pass |
+| TTV | 3 actions; 5 minutes | ≤3 actions; ≤5 minutes | unverified |
+| Phase 0 decision | — | observed problem and TTV evidence | open |
+
+No baseline or implementation-start claim follows from the estimated gate.
+
+## Personas
+
+| Persona | Job to be done | Core constraint |
+|---|---|---|
+| Solo Builder | Turn one structured document into an inspectable graph quickly | No infrastructure or model required for first value |
+| Knowledge Author | Read and edit the same artifact inside or outside the workspace | No hidden canonical database |
+| Reviewer | Inspect changes, automation, and proof without paid tools | Evidence and source remain readable |
+| Release Operator | Promote an exact reviewed state without ambiguous delivery claims | Human instruction and rollback are explicit |
+
+## Journey: Solo Builder — Reach an inspectable graph
+
+| Stage | Action | Touchpoint | Pain / emotion | Opportunity |
+|---|---|---|---|---|
+| Trigger | Receives or creates a structured source | Source artifact | Unsure whether it will render | Publish one explicit source contract |
+| Discover | Opens or imports the source | Workspace | Fears format-specific setup | Parse deterministically with typed diagnostics |
+| Engage | Inspects graph and body content | Canvas | Needs source/projection agreement | Derive every projection from one graph |
+| Complete | Sees an inspectable graph | Canvas | Wants proof source was preserved | Surface source identity and zero-spend result |
+| Return | Edits and reopens the source | Workspace | Fears stale parallel state | Persist through the same source owner |
+
+## Journey: Reviewer — Inspect a bounded operation
+
+| Stage | Action | Touchpoint | Pain / emotion | Opportunity |
+|---|---|---|---|---|
+| Trigger | Receives an automation result | Review surface | Unsure what ran | Show typed plan, bounds, and owner |
+| Discover | Opens trace and evidence | Evidence view | Fears hidden spend or mutation | Record zero/non-zero cost and side effects |
+| Engage | Compares result with source | Workspace | Needs deterministic provenance | Bind artifacts to source revision |
+| Complete | Accepts, revises, or rejects | Approval surface | Fears irreversible action | Keep protected actions closed by default |
+| Return | Reopens the recorded run | History | Fears missing context | Retain terminal state and evidence reference |
+
+## Journey: Release Operator — Promote an exact state
+
+| Stage | Action | Touchpoint | Pain / emotion | Opportunity |
+|---|---|---|---|---|
+| Trigger | Receives a reviewed revision | Authoring lane | Fears stale candidate | Bind checks to exact revision |
+| Discover | Reviews mirror qualification | Mirror lane | Needs delivery-shape confidence | Build an immutable candidate |
+| Engage | Supplies explicit instruction | Deploy boundary | Fears implicit release | Require a referenced human action |
+| Complete | Verifies delivery | Delivery lane | Needs rollback confidence | Record result and prior state |
+| Return | Audits the receipt | Evidence store | Fears unverifiable history | Retain boundary, instruction, and check |
+
+## User stories, acceptance criteria, and VCCs
+
+| PRD ID / VCC ID | Journey stage | Story | Given / When / Then | VCC: end state; stated check; constraint |
+|---|---|---|---|---|
+| `PRD-CORE-R1` / `VCC-PRD-R1` | Builder—Discover | As an author, I want one readable artifact to own content and graph structure so that I can inspect and version it. | Given valid source, when opened, then body, nodes, edges, handles, data, and compute fields are parsed deterministically. | End: canonical parser fixtures pass; Check: the canonical source check exits 0 and reports the fixtures; Constraint: source bytes and unrelated fixtures do not change. |
+| `PRD-CORE-R2` / `VCC-PRD-R2` | Builder—Engage | As an explorer, I want multiple projections over one graph so that views cannot drift into separate products. | Given one graph, when a supported projection is selected, then it renders shared graph state and reports unsupported modes explicitly. | End: projection and registry tests pass; Check: client contract and projection checks exit 0; Constraint: no renderer creates a second authored graph. |
+| `PRD-CORE-R3` / `VCC-PRD-R3` | Builder—Complete | As a solo builder, I want local open, convert, edit, export, and deterministic analysis before configuring shared services. | Given no provider credentials, when a local workflow runs, then it returns an artifact or typed failure without network or paid calls. | End: local client and parser suites pass; Check: both local validation hosts exit 0; Constraint: provider-call count and paid-token count remain zero. |
+| `PRD-CORE-R4` / `VCC-PRD-R4` | Reviewer—Discover | As an agent host, I want typed discovery separated by trust boundary so that a descriptor is not mistaken for permission. | Given a host context, when discovery runs, then each transport returns only its owned catalog, schema, annotations, and availability. | End: transport contract suites pass; Check: the runtime contract check exits 0; Constraint: no public read surface exposes spend-bearing execution. |
+| `PRD-CORE-R5` / `VCC-PRD-R5` | Reviewer—Engage | As a reviewer, I want every automated operation bounded, observable, cancellable, and approval-gated. | Given an operation request, when policy, budget, or approval is absent, then execution stops before protected mutation or spend. | End: bounded-run tests surface terminal state and cost fields; Check: runtime and bounded-harness checks exit 0 with required assertions; Constraint: blocked paths make zero provider calls and writes. |
+| `PRD-CORE-R6` / `VCC-PRD-R6` | Builder—Return | As an author, I want local durability plus optional shared projections so that offline work remains primary and conflicts stay visible. | Given unavailable shared transport, when a local change is saved, then it remains recoverable and pending work is explicit. | End: storage and relay suites pass; Check: the runtime contract check exits 0; Constraint: local source remains canonical and no conflict is silently overwritten. |
+| `PRD-CORE-R7` / `VCC-PRD-R7` | Operator—Complete | As a release operator, I want separate Authoring, Mirror, and Delivery lanes so that local proof cannot be presented as production proof. | Given an exact reviewed revision, when promotion is requested, then each adjacent boundary requires evidence and an explicit operator instruction. | End: protected integration/release gates bind the exact revision and rollback target; Check: protected workflows report success; Constraint: no Authoring command mutates Mirror or Delivery. |
+| `PRD-CORE-R8` / `VCC-PRD-R8` | All | As a user, I want core controls operable across input modes and constrained devices. | Given keyboard, touch, offline, or declared size limits, when the workspace is used, then controls remain reachable and failures are explicit. | End: focused accessibility/device/offline checks meet declared targets; Check: client and recorded device checks pass; Constraint: no unmeasured universal scale claim is introduced. |
+
+## Time-to-value by user-facing capability
+
+| Capability | Persona | Estimate | Target ceiling | First value | Validation |
+|---|---|---:|---:|---|---|
+| Open source | Solo Builder | 3 actions / 5 min | ≤3 / ≤5 min | valid source identity and graph | clean-environment timed walk-through |
+| Change projection | Solo Builder | 1 action / 2 sec | ≤1 / ≤2 sec | alternate view over same graph | timed canonical fixture |
+| Run deterministic local check | Reviewer | 2 actions / 2 min | ≤2 / ≤2 min | typed result with zero cost | clean-environment command run |
+| Recover offline edit | Knowledge Author | 3 actions / 5 min | ≤3 / ≤5 min | reopened local revision | airplane-mode save/reopen |
+| Review promotion candidate | Release Operator | 4 actions / 10 min | ≤4 / ≤10 min | immutable mirror candidate | protected dry review; no deployment |
+
+All estimates remain unverified and therefore do not promote readiness.
+
+## Success metrics
+
+| Metric | Baseline | Target | Timeline |
+|---|---:|---:|---|
+| Canonical source parse pass rate | unrecorded | 100% named fixtures | before baseline |
+| Source-preserving projection | unrecorded | 100% named fixtures | before baseline |
+| First-value TTV | estimated 3 actions / 5 min | ≤3 / ≤5 min | before Phase 3 exit |
+| Mandatory-path tokens | estimated 0 | 0 per run and $0/month | every run; monthly audit |
+| Optional model budget | unmeasured | ≤4,000 prompt + 1,000 completion, ≥50% cache hit, ≤$0.10/run | before enabling each harness |
+| Local minimum-slice TCO | estimated $0/month | $0/month; $0/12 months | monthly |
+| Shared/delivery TCO | unmeasured | operator-specific budget recorded before use | before promotion |
+| Local readiness | `spec-complete` | evidence-derived only | every revision |
+| Delivered readiness | `undocumented` | evidence-derived only | every revision |
+| Finding set | not baselined | zero blocker findings | before baseline |
+
+## ROI and MoSCoW
+
+Score formula: `(impact 1–5 × monthly reach) / (build hours + 12-month cash TCO / 100 +
+risk 1–5)`. Scores are estimates and must be replaced by observed inputs.
+
+| Tier | Capability | Impact × reach | Build h | 12-month TCO | Risk | ROI score | Rationale |
+|---|---|---:|---:|---:|---:|---:|---|
+| Must | R1 source authority | 5 × 25 | 40 | $0 | 2 | 2.98 | removes duplicate-state reconciliation |
+| Must | R2 shared projections | 4 × 25 | 32 | $0 | 2 | 2.94 | reuses one graph across views |
+| Must | R3 local-first workflow | 5 × 20 | 28 | $0 | 2 | 3.33 | shortest zero-infrastructure first value |
+| Must | R4 typed transport separation | 4 × 15 | 24 | $0 | 3 | 2.22 | prevents permission/catalog confusion |
+| Must | R5 bounded execution | 5 × 10 | 30 | ≤$120 | 4 | 1.42 | limits spend and side effects |
+| Must | R7 promotion boundaries | 5 × 8 | 20 | ≤$240 | 3 | 1.57 | prevents false delivery claims |
+| Should | R6 shared persistence | 3 × 10 | 36 | ≤$300 | 4 | 0.70 | valuable after local value is proven |
+| Should | R8 accessibility/device proof | 4 × 12 | 30 | $0 | 3 | 1.45 | broadens reliable reach |
+| Could | Additional adapters | 2 × 8 | 40 | ≤$600 | 4 | 0.32 | add only with observed demand |
+| Won't | Autonomous deployment or silent paid calls | 1 × 2 | 80 | unbounded | 5 | <0.02 | violates trust and cost envelope |
+
+## Minimum viable scope
+
+- One readable source with plain YAML metadata and typed graph fields.
+- Deterministic parse to one graph and at least one interactive projection.
+- One source-backed edit/save/reopen path.
+- Typed malformed-input behavior.
+- One deterministic local, zero-model check.
+- Visible readiness and deploy-boundary state.
+
+## Out of scope
+
+- A database or canvas becoming the hidden authoring authority.
+- Mandatory hosted infrastructure, provider account, or model call for first value.
+- Silent source repair, auto-approval, unbounded loops, or autonomous deployment.
+- Claims that every local, browser, public-read, or control-plane transport has tool parity.
+- Real-time collaboration, provider delivery, or scale guarantees without separate evidence.
+
+## Dependencies
+
+| Function | Posture | Constraint |
+|---|---|---|
+| Markdown/YAML parsing | FOSS | plain authored syntax remains canonical |
+| Browser graph/canvas runtime | FOSS | projection never becomes source authority |
+| Local persistence | browser-native/FOSS | explicit degraded state and user-controlled retention |
+| Versioned source storage | FOSS-compatible | history remains inspectable |
+| Optional shared storage | swappable | role, residency, retention, auth, TCO, and rollback declared |
+| Optional model/provider | swappable | ADR, approval, token budget, cost log, and fallback required |
+| Delivery runtime | swappable | reachable only across two closed deploy boundaries |
+
+## Delivery reach
+
+| Reach | Minimum behavior | Evidence state |
+|---|---|---|
+| Browser | open, inspect, edit, and project a local source | VCC stated; no Evidence Reference |
+| Mobile | no horizontal overflow at 375×812; core controls keyboard/touch reachable | VCC stated; no Evidence Reference |
+| Offline | after initial load, local open/edit/project remains usable; network features degrade explicitly | VCC stated; no Evidence Reference |
+
+## PRD ↔ TAD ↔ VCC traceability
+
+The stable PRD identifiers below resolve to the component and interface identifiers in the
+companion TAD. Each link names both the PRD VCC embedded in the acceptance row above and the TAD
+VCC that implements it; the Evidence Reference column records the current absence rather than
+implying proof.
+
+| PRD requirement | Journey and flow | TAD component ↔ interface | PRD VCC ↔ TAD VCC | Evidence Reference |
+|---|---|---|---|---|
+| `PRD-CORE-R1` | Builder—Discover; W1/DF1/H0 | `TAD-CORE-C03` ↔ `I-PARSE`; `TAD-CORE-C05` ↔ `I-SOURCE` | `VCC-PRD-R1` ↔ `VCC-T3`, `VCC-T5` | not recorded |
+| `PRD-CORE-R2` | Builder—Engage; W2/DF2/H0 | `TAD-CORE-C02` ↔ `I-GRAPH`; `TAD-CORE-C04` ↔ `I-PROJECTION` | `VCC-PRD-R2` ↔ `VCC-T2`, `VCC-T4` | not recorded |
+| `PRD-CORE-R3` | Builder—Complete; W1/DF1/H0 | `TAD-CORE-C01` ↔ `I-WORKSPACE`; `TAD-CORE-C06` ↔ `I-CLI` | `VCC-PRD-R3` ↔ `VCC-T1`, `VCC-T6` | not recorded |
+| `PRD-CORE-R4` | Reviewer—Discover; W0/DF0/H0 | `TAD-CORE-C07` ↔ `I-LOCAL-TOOL`; `TAD-CORE-C08` ↔ `I-REMOTE-TOOL` | `VCC-PRD-R4` ↔ `VCC-T7`, `VCC-T8` | not recorded |
+| `PRD-CORE-R5` | Reviewer—Engage; W3/DF3/H1 | `TAD-CORE-C07` ↔ `I-LOCAL-TOOL`; `TAD-CORE-C08` ↔ `I-REMOTE-TOOL` | `VCC-PRD-R5` ↔ `VCC-T7`, `VCC-T8` | not recorded |
+| `PRD-CORE-R6` | Builder—Return; W4/DF4/H0 | `TAD-CORE-C09` ↔ `I-WORKING-STORE`; `TAD-CORE-C10` ↔ `I-SHARED-STORE` | `VCC-PRD-R6` ↔ `VCC-T9`, `VCC-T10` | not recorded |
+| `PRD-CORE-R7` | Operator—Complete; W5/DF5/H0 | `TAD-CORE-C11` ↔ `I-PROMOTION` | `VCC-PRD-R7` ↔ `VCC-T11` | not recorded |
+| `PRD-CORE-R8` | All; W0–W5/DF0–DF5/H0–H1 | `TAD-CORE-C01` ↔ `I-WORKSPACE`; `TAD-CORE-C04` ↔ `I-PROJECTION` | `VCC-PRD-R8` ↔ `VCC-T1`, `VCC-T4` | not recorded |
+
+## Readiness Gap Matrix
+
+Local and delivered rungs are independent. Priority is the highest severity of a linked current
+finding; `none` means that the row has an evidence gap but no separately recorded defect.
+
+| Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria (VCC) |
+|---|---|---|---|---|---|
+| Source authority and deterministic ingest | `spec-complete` | `undocumented` | no recorded local fixture result or delivery proof | none | `VCC-PRD-R1`, `VCC-PRD-R3` and mapped `VCC-T3`, `VCC-T5`, `VCC-T6` gain satisfying Evidence References |
+| Shared projections and device reach | `spec-complete` | `undocumented` | projection, accessibility, device, and offline results are unrecorded | none | `VCC-PRD-R2`, `VCC-PRD-R8` and mapped `VCC-T1`, `VCC-T2`, `VCC-T4` are satisfied |
+| Discovery and bounded automation | `spec-complete` | `undocumented` | the current model-backed harness does not yet prove canonical token/cost fields | major | `VCC-PRD-R4`, `VCC-PRD-R5` and mapped `VCC-T7`, `VCC-T8` are satisfied with cost evidence |
+| Shared persistence | `spec-complete` | `undocumented` | current structured push/pull/export routes lack authorization enforcement | blocker | `VCC-PRD-R6` and mapped `VCC-T9`, `VCC-T10` prove authenticated failure/success and conflict behavior |
+| Exact-state promotion | `spec-complete` | `undocumented` | mirror result, live result, operator instruction, and rollback result are absent | none | `VCC-PRD-R7` and mapped `VCC-T11` carry complete Authoring, Mirror, and Delivery Evidence References |
+
+## VCC and Evidence Reference register
+
+No satisfying Evidence Reference is attached to this revision. The following invocable checks are
+the declared hosts for the VCCs; `not recorded` is a recorded absence and does not raise a rung.
+
+| VCC | Named check | Recorded result | Surface | Derived rung |
+|---|---|---|---|---|
+| `VCC-PRD-R1`, `VCC-PRD-R2`, `VCC-PRD-R3`, `VCC-PRD-R8` | canonical client/source validation host | not recorded for this revision | authoring | `spec-complete` |
+| `VCC-PRD-R3` parser | canonical offline parser validation host | not recorded for this revision | authoring | `spec-complete` |
+| `VCC-PRD-R4`, `VCC-PRD-R5`, `VCC-PRD-R6` | canonical runtime contract validation host | not recorded for this revision | authoring | `spec-complete` |
+| `VCC-PRD-R7` Authoring | protected integration workflow for exact candidate | not recorded for this revision | authoring | `spec-complete` |
+| `VCC-PRD-R7` Mirror | protected release qualification for exact candidate | not recorded for this revision | mirror | `undocumented` |
+| `VCC-PRD-R7` Delivery | protected live verification for exact candidate | not recorded for this revision | delivery | `undocumented` |
+
+## Deploy Boundary Register
+
+| Boundary | From lane | To lane | Evidence Reference | Operator instruction | Rollback statement and check | State |
+|---|---|---|---|---|---|---|
+| `SOURCE-TO-MIRROR` | Authoring | Mirror | ER-B1: release verify job; result `not recorded` | `none` | discard candidate, rerun verify job, and compare immutable candidate digest | `closed` |
+| `MIRROR-TO-DELIVERY` | Mirror | Delivery | ER-B2: protected deploy/live check; result `not recorded` | `none` | reconstruct prior approved revision, republish through the same boundary, and rerun live verification | `closed` |
+
+## Open questions
+
+- What observed user tasks establish pain severity and monthly reach?
+- Does a clean machine meet each TTV ceiling?
+- What document/graph size retains the projection latency target?
+- Which optional harness receives the first approved token budget?
+- What retention, residency, and deletion policy applies to each shared adapter?
+- What exact operator instruction and evidence will open each deploy boundary?
+
+## Reference implementation: Knowgrph repository mapping
+
+The current reference repository maps this neutral contract as follows:
+
+| Function | Repository owner |
+|---|---|
+| Parser | `canvas/src/lib/parsers/markdownJsonLd.impl.ts` and parser registry |
+| Canvas routing | `canvas/src/components/CanvasViewport.tsx` |
+| Storyboard projection | `canvas/src/components/StoryboardWidgetCanvas.tsx` |
+| Source ownership | `canvas/src/features/source-files/` |
+| Local tool transport | `mcp/server.js` |
+| Offline CLI/harness | `knowgrph_parser/` |
+| Browser working store | `canvas/src/lib/storage/` plus `canvas/src/features/source-files/` |
+| Shared storage projection | `cloudflare/workers/knowgrph-storage/` |
+| Protected integration/release | `.github/workflows/integration.yml` and `.github/workflows/release.yml` |
+| Release operator instructions | `docs/knowgrph-acos-deploy-runbook.md` |
+
+| Neutral validation host | Reference implementation command |
+|---|---|
+| canonical client/source validation host | `npm run check && npm test` |
+| canonical offline parser validation host | `python3 -m unittest discover -s knowgrph_parser -p '*_test.py'` |
+| canonical runtime contract validation host | `npm run runtime:test` plus `npm run superagent:test` where the bounded harness is in scope |
+
+The companion architecture and decision owners are
+`docs/documents/knowgrph-tad.md` and
+`docs/documents/knowgrph-architecture-decisions.md`.
