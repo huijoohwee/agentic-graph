@@ -12,6 +12,7 @@ import {
   inspectLocalImmersiveMedia,
 } from '@/features/immersive-media/immersiveMediaMcpRuntime'
 import {
+  focusImmersiveMediaMarker,
   playImmersiveMediaIntro,
   readImmersiveMediaSnapshot,
   resetImmersiveMediaRuntimeForTests,
@@ -31,6 +32,26 @@ export function testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete() {
   assert.equal(inspection.capabilities.customNavigation, true)
   assert.equal(inspection.capabilities.customTooltip, true)
   assert.equal(inspection.capabilities.partialOverlay, true)
+}
+
+export function testImmersiveMediaProjectionMarkersFocusTheSharedView() {
+  resetImmersiveMediaRuntimeForTests()
+  const before = readImmersiveMediaSnapshot()
+  const focused = focusImmersiveMediaMarker('marker-custom-element', 'map')
+  assert.equal(focused.revision, before.revision + 1)
+  assert.equal(focused.selectedMarkerId, 'marker-custom-element')
+  assert.equal(focused.view.yawDegrees, 38)
+  assert.equal(focused.view.pitchDegrees, -4)
+  assert.equal(focused.lastAction, 'marker-focus')
+  assert.equal(focused.message, 'Focused Info element from the map projection.')
+
+  const cleared = focusImmersiveMediaMarker('marker-custom-element', 'map')
+  assert.equal(cleared.selectedMarkerId, null)
+  assert.equal(cleared.lastAction, 'marker-clear')
+  assert.equal(cleared.message, 'Cleared Info element from the map projection.')
+
+  const unchanged = focusImmersiveMediaMarker('marker-custom-element', 'plan')
+  assert.equal(unchanged, cleared)
 }
 
 export async function testImmersiveMediaNativeInvocationIsStrict() {
@@ -168,7 +189,9 @@ export function testImmersiveMediaReusesPanelRendererAndCameraOwnership() {
   assert.match(geoProjectionSource, /data-kg-immersive-media-geo-projection="active"/)
   assert.match(geoProjectionSource, /pointer-events-none/)
   assert.match(geoProjectionSource, /completeImmersiveMediaTransition\(revision\)/)
-  assert.match(projectionSource, /setSelectedImmersiveMediaMarker/)
+  assert.match(projectionSource, /focusImmersiveMediaMarker/)
+  assert.match(projectionSource, /aria-pressed=\{selected\}/)
+  assert.match(projectionSource, /Cycle \$\{label\} projection markers/)
   for (const projection of ['compass', 'map', 'plan']) {
     assert.match(projectionSource, new RegExp(`projection-surface=\{id\}|${projection}`))
   }
