@@ -124,7 +124,7 @@ export function ImmersiveMediaGeoProjection({
       data-kg-immersive-media-geo-selected-marker={snapshot.selectedMarkerId || ''}
     >
       <figure
-        className="absolute inset-[8%_8%_13%_8%] m-0 overflow-hidden rounded-[2rem] border border-cyan-200/35 transition-all ease-out"
+        className="pointer-events-auto absolute inset-[8%_8%_13%_8%] m-0 overflow-hidden rounded-[2rem] border border-cyan-200/35 transition-all ease-out"
         aria-label="Immersive flight context media"
         data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
         style={{
@@ -135,7 +135,7 @@ export function ImmersiveMediaGeoProjection({
       >
         {snapshot.overlay.enabled ? (
           <aside
-            className="absolute inset-0"
+            className="pointer-events-none absolute inset-0"
             aria-label="Immersive panorama visual overlay"
             style={{
               background: [
@@ -153,24 +153,24 @@ export function ImmersiveMediaGeoProjection({
           IMMERSIVE FLIGHT CONTEXT · {Math.round(snapshot.view.yawDegrees)}° · FOV {Math.round(snapshot.view.fieldOfViewDegrees)}°
         </figcaption>
         <hr
-          className="absolute left-[8%] right-[8%] top-1/2 m-0 border-0 border-t border-dashed border-cyan-100/30"
+          className="pointer-events-none absolute left-[8%] right-[8%] top-1/2 m-0 border-0 border-t border-dashed border-cyan-100/30"
           aria-label="Immersive horizon"
         />
         <span
-          className="absolute bottom-[8%] left-1/2 top-[8%] border-l border-dashed border-cyan-100/25"
+          className="pointer-events-none absolute bottom-[8%] left-1/2 top-[8%] border-l border-dashed border-cyan-100/25"
           role="separator"
           aria-label="Immersive north axis"
           aria-orientation="vertical"
         />
         <abbr
-          className="absolute left-1/2 top-[9%] -translate-x-1/2 text-[9px] font-bold text-cyan-50/80 no-underline"
+          className="pointer-events-none absolute left-1/2 top-[9%] -translate-x-1/2 text-[9px] font-bold text-cyan-50/80 no-underline"
           title="North"
         >
           N
         </abbr>
         {snapshot.polygonPattern && markers.length > 2 ? (
           <svg
-            className="absolute inset-0 h-full w-full"
+            className="pointer-events-none absolute inset-0 h-full w-full"
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             role="img"
@@ -180,7 +180,6 @@ export function ImmersiveMediaGeoProjection({
             <polygon
               points={polygonPoints}
               fill="rgba(245,158,11,0.06)"
-              pointerEvents="visibleStroke"
               stroke="rgba(251,191,36,0.62)"
               strokeDasharray="1.5 1.5"
               strokeWidth="0.35"
