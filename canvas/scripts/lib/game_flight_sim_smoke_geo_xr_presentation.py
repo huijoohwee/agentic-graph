@@ -120,6 +120,21 @@ def _install_city_map_disposal_audit(page: Page) -> None:
     )
 
 
+def _source_disposal_was_settled(source: Any) -> bool:
+    if not isinstance(source, dict):
+        return False
+    # The canonical disposal contract accepts either a loaded empty source or
+    # a source already removed with its layers. Both leave zero renderable
+    # Flight geometry before the MapLibre canvas owner is disposed.
+    if source.get("present") is False:
+        return True
+    return (
+        source.get("present") is True
+        and source.get("features") == 0
+        and source.get("loaded") is True
+    )
+
+
 def verify_flight_geo_xr_city_handoff(
     page: Page,
     *,
@@ -187,12 +202,8 @@ def verify_flight_geo_xr_city_handoff(
     )
     if (
         not isinstance(disposal, dict)
-        or disposal.get("flight", {}).get("present") is not True
-        or disposal.get("flight", {}).get("features") != 0
-        or disposal.get("flight", {}).get("loaded") is not True
-        or disposal.get("environment", {}).get("present") is not True
-        or disposal.get("environment", {}).get("features") != 0
-        or disposal.get("environment", {}).get("loaded") is not True
+        or not _source_disposal_was_settled(disposal.get("flight"))
+        or not _source_disposal_was_settled(disposal.get("environment"))
     ):
         raise AssertionError(
             "City disposed the Flight MapLibre owner before its GeoJSON sources "
