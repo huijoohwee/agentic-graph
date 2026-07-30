@@ -41,11 +41,19 @@ environment.
 |---|---|---|---|---|
 | Local stdio MCP | `mcp/server.js`, `mcp/local-tool-contract.js` | Broad local surface; availability is configuration-gated and operations fail closed when their owners or credentials are absent. | `spec-complete` | `undocumented` |
 | Pages HTTP MCP | `cloudflare/pages/knowgrph-agent-ready.mjs` | Exactly 7 read-only source tools. | `spec-complete` | `undocumented` |
-| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` and the shared contract | Exactly 41 source tools: 30 read-only and 11 guarded controls. | `spec-complete` | `undocumented` |
+| App WebMCP | `canvas/src/features/agent-ready/webMcpRuntime.ts` and the shared contract | Exactly 42 source tools: 30 read-only and 12 guarded controls. | `spec-complete` | `undocumented` |
 | Remote Worker MCP | `cloudflare/workers/knowgrph-mcp/tool-registry.mjs` | Exactly 10 source registry tools. The Worker is a separate delivery unit. | `spec-complete` | `undocumented` |
 
 Source presence is not runtime availability, and runtime availability is not
 production verification.
+
+`knowgrph.control_local_import_url` is the guarded browser-local owner for
+`/ingest-url @url:https://example.com @reference-policy #canvas`. It delegates
+to the existing Launch Import URL workspace path; the Agentic Canvas OS docs
+MCP remains read-only discovery and never performs the import. Because the
+browser-local tool is destructive and non-idempotent, a failure after workspace
+mutation returns the created and removed paths plus a `partial` mutation state;
+inspect that evidence before retrying.
 
 ### Public read-only source tools
 
@@ -64,7 +72,7 @@ These names describe source contract truth only.
 ### Transport and trust boundaries
 
 - Pages HTTP is the read-only discovery and retrieval surface.
-- App WebMCP is browser-local and includes guarded controls; its 41-tool count
+- App WebMCP is browser-local and includes guarded controls; its 42-tool count
   must not be projected onto Pages HTTP.
 - Local stdio is intentionally broader and configuration-gated; it must not be
   projected onto either HTTP surface.
@@ -93,7 +101,7 @@ reference that register and do not redefine it.
 | ID | End state | Stated check | Constraint |
 |---|---|---|---|
 | `VCC-MCP-OV-01` | Pages source registry has 7 read-only tools. | Run the focused Pages parity test and inspect the returned names. | Exactly the seven names above; no controls. |
-| `VCC-MCP-OV-02` | App WebMCP has 41 tools. | Run the focused browser runtime contract test and classify annotations. | Exactly 30 read-only and 11 guarded controls. |
+| `VCC-MCP-OV-02` | App WebMCP has 42 tools. | Run the focused browser runtime contract test and classify annotations. | Exactly 30 read-only and 12 guarded controls. |
 | `VCC-MCP-OV-03` | Worker source registry has 10 tools. | Run the Worker registry test and inspect discovery output. | Exactly 10 unique names. |
 | `VCC-MCP-OV-04` | Remote session requests are authenticated and correlated. | Initialize with bearer authorization, retain the returned session id, then list tools with both headers. | Missing or invalid authorization fails closed; the session id is preserved. |
 

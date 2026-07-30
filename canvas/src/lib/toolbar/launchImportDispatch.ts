@@ -9,6 +9,10 @@ function hasCreatedWorkspacePaths(result: void | WorkspaceBridgeImportResult): b
   return !!result && Array.isArray(result.createdPaths) && result.createdPaths.length > 0
 }
 
+function hasHandledWorkspaceUrlImport(result: void | WorkspaceBridgeImportResult): boolean {
+  return !!result && (result.handled === true || hasCreatedWorkspacePaths(result))
+}
+
 export async function runLaunchImportLocalFiles(args: {
   files: WorkspaceFileSelection
   bridge: MarkdownWorkspaceActionBridge
@@ -40,7 +44,7 @@ export async function runLaunchImportUrl(args: {
   if (typeof bridgeImport === 'function') {
     try {
       const result = await bridgeImport(url, args.opts)
-      if (hasCreatedWorkspacePaths(result)) return result
+      if (hasHandledWorkspaceUrlImport(result)) return result
     } catch {
       void 0
     }

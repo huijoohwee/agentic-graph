@@ -32,7 +32,7 @@ export function testAgentReadyDocsUseCanonicalImplementedContractNames() {
     'owner: "docs.contract.evidence"',
     'owner: "docs.agent-ready.runtime-companion"',
     '[the parent contract](knowgrph-agent-ready-prd-tad.md)',
-    'Exactly 41 tools: 30 read-only, 11 guarded controls.',
+    'Exactly 42 tools: 30 read-only, 12 guarded controls.',
     'Exactly 7 read-only tools; no guarded control.',
   ]
   required.forEach(snippet => {

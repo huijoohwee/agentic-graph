@@ -24,6 +24,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["tests.jsdomHarness.rangeGeometryApis","@/__tests__/jsdomHarnessRangeGeometry.test","testJsdomHarnessProvidesRangeGeometryApis"],
   ["monaco.editor.longHtml.placeholderVisible","@/__tests__/monacoLongHtmlPlaceholderStyle.test","testMonacoLongHtmlPlaceholderIsVisibleAndEllipsized"],
   ["monaco.editor.htmlBlocks.previewNotInvisible","@/__tests__/monacoHtmlBlockPreviewNotInvisible.test","testMonacoHtmlBlockCollapseShowsPreview"],
+  ["monaco.editor.input.stableTextareaOwner","@/__tests__/monacoStableTextInput.test","testMonacoEditorUsesStableTextareaInputOwner"],
   ["policy.forbidHardcodedYouTubeUrlLiteral","@/__tests__/youtubeImportAction.test","testForbidHardcodedYouTubeUrlLiteral"],
   ["policy.forbidStrytreeDemoCopyHardcodes","@/__tests__/strytreeCopyHardcodeGuard.test","testForbidStrytreeDemoCopyHardcodes"],
   ["strytree.demo.forkCompareCanvasInput","@/__tests__/strytreeCopyHardcodeGuard.test","testStrytreeDemoInputRendersForkCompareCanvas"],

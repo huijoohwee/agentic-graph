@@ -67,10 +67,10 @@ closed.
 
 ### Browser-local path
 
-The app WebMCP source contract contains exactly 41 tools:
+The app WebMCP source contract contains exactly 42 tools:
 
 - 30 read-only tools.
-- 11 guarded controls.
+- 12 guarded controls.
 
 These browser-local capabilities are not the Pages 7-tool registry and are not
 the Worker 10-tool registry. Guarded controls remain conditional on their
@@ -100,7 +100,7 @@ missing prerequisites fail closed.
 | Need | Surface | Count | Trust | Readiness in this document set |
 |---|---|---:|---|---|
 | Public source reading | Pages HTTP | 7 | Read-only | Local `spec-complete`; delivered `undocumented` |
-| Browser context/control | App WebMCP | 41 | 30 reads + 11 guarded controls | Local `spec-complete`; delivered `undocumented` |
+| Browser context/control | App WebMCP | 42 | 30 reads + 12 guarded controls | Local `spec-complete`; delivered `undocumented` |
 | Broad local integration | Local stdio | Configuration-dependent | Local process and credentials | Local `spec-complete`; delivered `undocumented` |
 | Remote control plane | Separate Worker MCP | 10 | Bearer auth + preserved session + tool approval | Local `spec-complete`; delivered `undocumented` |
 

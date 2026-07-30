@@ -3,10 +3,10 @@ import type { WorkspaceSourceIndex } from '@/features/workspace-fs/sourceIndex'
 import type {
   WorkspaceBridgeImportResult,
   WorkspaceFileSelection,
+  WorkspaceImportUrlOpts,
   WorkspaceImportWebsiteOpts,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from '@/features/workspace-fs/types'
-import type { Canvas2dRendererId } from '@/lib/config.render'
 import type { CanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 
 export type { WorkspaceBridgeImportResult, WorkspaceFileSelection } from '@/features/markdown-explorer/workspaceActionBridge'
@@ -81,7 +81,7 @@ export type WorkspaceFileActions = {
   handleImportLocalFiles: (files: WorkspaceFileSelection) => Promise<void | WorkspaceBridgeImportResult>
   handleImportLocalImages: (files: WorkspaceFileSelection) => Promise<void | WorkspaceBridgeImportResult>
   handleImportLocalFolder: (files: WorkspaceFileSelection) => Promise<void | WorkspaceBridgeImportResult>
-  handleImportUrl: (urlRaw: string, opts?: { canvas2dRenderer?: Canvas2dRendererId | null }) => Promise<void>
+  handleImportUrl: (urlRaw: string, opts?: WorkspaceImportUrlOpts) => Promise<void | WorkspaceBridgeImportResult>
   handleImportWebsite: (urlRaw: string, opts?: WorkspaceImportWebsiteOpts) => Promise<void | WorkspaceBridgeImportResult>
   onDeleteEntry: (path: WorkspacePath) => void
   onRenameEntry: (path: WorkspacePath, nextName: string) => void

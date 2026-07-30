@@ -50,12 +50,12 @@ The canonical definition is
 adapter consumes the read-only subset through
 `cloudflare/pages/knowgrph-agent-ready.mjs`.
 
-#### App WebMCP source contract — 41 tools
+#### App WebMCP source contract — 42 tools
 
-The browser registration includes exactly 41 source tools:
+The browser registration includes exactly 42 source tools:
 
 - 30 tools annotated read-only.
-- 11 guarded controls.
+- 12 guarded controls.
 
 The count and split are the contract. Browser-local controls are not part of the
 seven-tool Pages surface. Registration is owned by
@@ -125,8 +125,8 @@ the harness owns its token budget, loop bound, cost log, and circuit breaker.
 
 | Concern | Canonical source owner | Invariant |
 |---|---|---|
-| Shared tool definitions | `canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs` | Pages remains the seven-tool read subset; browser totals remain 41. |
-| Browser registration | `canvas/src/features/agent-ready/webMcpRuntime.ts` | 30 read-only annotations and 11 guarded controls. |
+| Shared tool definitions | `canvas/src/features/agent-ready/knowgrphAgentReadyToolContract.mjs` | Pages remains the seven-tool read subset; browser totals remain 42. |
+| Browser registration | `canvas/src/features/agent-ready/webMcpRuntime.ts` | 30 read-only annotations and 12 guarded controls. |
 | Pages adapter | `cloudflare/pages/knowgrph-agent-ready.mjs` | No guarded controls in Pages tool discovery. |
 | Local adapter | `mcp/server.js` | Configuration gates are explicit and fail closed. |
 | Local tool catalog | `mcp/local-tool-contract.js` | Source discovery does not promise executability. |
@@ -150,7 +150,7 @@ the harness owns its token budget, loop bound, cost log, and circuit breaker.
 | VCC | Stated check | End state | Constraint | Evidence Reference |
 |---|---|---|---|---|
 | `VCC-MCP-C-01` | Focused Pages parity test | Seven exact read-only names are surfaced. | No browser/local/Worker controls. | None recorded |
-| `VCC-MCP-C-02` | Focused WebMCP runtime test | 41 exact names classify as 30 read-only and 11 guarded. | No duplicate name. | None recorded |
+| `VCC-MCP-C-02` | Focused WebMCP runtime test | 42 exact names classify as 30 read-only and 12 guarded. | No duplicate name. | None recorded |
 | `VCC-MCP-C-03` | Worker registry test | Ten exact names above are surfaced. | No duplicate name. | None recorded |
 | `VCC-MCP-C-04` | Focused Worker client/session test | Bearer auth is required and the initialized session id is reused. | No unauthenticated dispatch. | None recorded |
 | `VCC-MCP-C-05` | Local tool contract test with missing configuration | Configuration-gated tools fail closed. | No alternate transport fallback. | None recorded |

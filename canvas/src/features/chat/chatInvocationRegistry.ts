@@ -32,6 +32,10 @@ import {
   IMAGE_TO_GLB_COMMAND_TOKEN,
   IMAGE_TO_GLB_SEMANTIC_TOKEN,
 } from '@/features/image-to-glb/imageToGlbContract'
+import {
+  NATIVE_IMPORT_URL_COMMAND,
+  NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
+} from './nativeImportUrlInvocation'
 import type { PromptPreset } from './promptPresetCatalog'
 
 export type ChatInvocationId =
@@ -156,6 +160,19 @@ const IMAGE_TO_GLB_BINDING_CATALOG_ENTRY: ChatInvocationCatalogEntry = {
   keywords: ['image', 'glb', 'gltf', 'three.js', 'threejs', 'procedural', 'source', 'widget card', IMAGE_TO_GLB_COMMAND_TOKEN, IMAGE_TO_GLB_SEMANTIC_TOKEN],
 }
 
+const NATIVE_IMPORT_URL_CATALOG_ENTRY: ChatInvocationCatalogEntry = {
+  id: 'native:url.ingest',
+  label: 'Import URL',
+  token: NATIVE_IMPORT_URL_COMMAND,
+  summary: 'Import an HTTP(S) URL into the active workspace and Canvas through the native Import URL owner.',
+  group: 'Native workspace action',
+  kind: 'skill',
+  sourcePath: 'agentic-canvas-os/docs/DICTIONARY-COMMAND.md',
+  keywords: ['import url', 'url ingest', '@url:', '@reference-policy', '#canvas', 'workspace', 'canvas', 'webmcp'],
+  insertionText: NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
+  mcpTool: 'knowgrph.control_local_import_url',
+}
+
 const BASE_CHAT_INVOCATION_OPTIONS: readonly ChatInvocationOption[] = [
   ...GENERATION_SPECIFICATION_INVOCATIONS.map(option => ({ id: `generation.${option.specification}`, token: option.token, label: `${option.label} specification`, summary: option.summary, keywords: ['generation', 'specification', option.specification], slashCommand: '/video-agent' })),
   ...GENERATION_THINKING_INVOCATIONS.map(option => ({ id: `generation.thinking.${option.thinkingType}`, token: option.token, label: `${option.label} thinking`, summary: option.summary, keywords: ['generation', 'thinking', option.thinkingType], slashCommand: '/video-agent' })),
@@ -276,6 +293,7 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
     kind: 'skill' as const,
     keywords: option.keywords,
   })),
+  NATIVE_IMPORT_URL_CATALOG_ENTRY,
   IMAGE_TO_THREEJS_PROMPT_PRESET_COMMAND_ENTRY,
   IMAGE_TO_GLB_PROMPT_PRESET_COMMAND_ENTRY,
   ...getAgenticOsCommandInvocations().map(invocation => ({

@@ -135,11 +135,13 @@ export function shouldApplyStableWorkspaceSelectionToCanvas(args: {
   activeEntryKind: string
   activeDocumentKey?: string | null
   nextText: string
+  userEditedActiveText?: boolean
   markdownDocumentName: string
   markdownDocumentText: string
   graphDataSource?: string | null
   canvas2dRenderer?: string | null
 }): boolean {
+  if (args.userEditedActiveText === true) return false
   if (!shouldAcceptWorkspaceDocumentSelectionText({
     activePath: args.activePath,
     activeEntryKind: args.activeEntryKind,

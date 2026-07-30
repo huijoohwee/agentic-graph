@@ -26,6 +26,7 @@ import { disableAutoZoomModesForUserGesture } from '@/lib/canvas/auto-zoom-modes
 import { readFlowComputeSource } from '@/lib/storyboardWidget/flowComputeInline'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import { readGraphNodeProperties } from '@/lib/cards/graphNodeCardFields'
+import { runStoryboardWidgetNativeImportUrlInvocation } from './storyboardWidgetWorkflowNativeImportUrlRun'
 import { runStoryboardWidgetNativeCrawlerInvocation } from './storyboardWidgetWorkflowNativeCrawlerRun'
 import { runStoryboardWidgetRichMediaDeliverables } from './storyboardWidgetWorkflowRichMediaDeliverablesRun'
 import { generateStoryboardWidgetTextWithProvider } from './storyboardWidgetWorkflowTextGenerationProvider'
@@ -46,6 +47,7 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
   const executeRunWorkflowNode: StoryboardWidgetWorkflowNodeRunner = async (nodeId, runOptions) => {
     let runAnchorNode: GraphNode | null = null
     let publishedRunGraphData: GraphData | null = null
+    let suppressDraftPersistence = false
     const commitPublishedRunGraphData = args.commitPublishedGraphData
       ? (graphData: GraphData) => {
           publishedRunGraphData = graphData
@@ -413,6 +415,19 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
           reportNodeRunFailure('Add a prompt before running the Widget Card.', 2400)
           return
         }
+        if (await runStoryboardWidgetNativeImportUrlInvocation({
+          id,
+          prompt,
+          node,
+          updateOutput: updateRunOutputForKnownNodeIds,
+          publishOutput: publishTextRunOutputToRichMediaPanel,
+          upsertToast: args.upsertUiToast,
+          reportFailure: reportNodeRunFailure,
+          onCanvasAuthorityChanged: () => {
+            suppressDraftPersistence = true
+            publishedRunGraphData = null
+          },
+        })) return
         if (await runStoryboardWidgetNativeCrawlerInvocation({ id, prompt, node, nodeProperties: rawNodeProperties, workspacePath: args.markdownDocumentName, recoveryOnly: runOptions?.nativeCrawlerRecovery === true, updateOutput: updateRunOutputForKnownNodeIds, publishOutput: publishTextRunOutputToRichMediaPanel, upsertToast: args.upsertUiToast, reportFailure: reportNodeRunFailure })) return
         await runHeadlessTextGeneration(textGeneration, generateTextWithProvider)
         return
@@ -464,13 +479,15 @@ export function createStoryboardWidgetWorkflowNodeRunner(args: StoryboardWidgetW
     const currentDurableGraph = publishedRunGraphData || args.readDraftGraphData()
     const durableGraph = currentDurableGraph && runAnchorNode ? preserveStoryboardWidgetWorkflowInputTopology({ graphData: currentDurableGraph, anchorNode: runAnchorNode }) : currentDurableGraph
     try {
-      if (durableGraph) await args.persistDraftGraphData(durableGraph, runOptions?.sourcePersistence)
+      if (durableGraph && !suppressDraftPersistence) {
+        await args.persistDraftGraphData(durableGraph, runOptions?.sourcePersistence)
+      }
     } catch (error) {
       const detail = error && typeof error === 'object' && 'message' in error ? String((error as { message?: unknown }).message || '').trim() : ''
       args.upsertUiToast({ id: `storyboard-widget-persistence-failed-${String(nodeId || '')}`, kind: 'error', message: detail || 'Generated output could not be persisted to the workspace.', ttlMs: 5200 })
       deferredError = { value: error }
     }
-    scheduleWorkflowOutputEdgeRefresh()
+    if (!suppressDraftPersistence) scheduleWorkflowOutputEdgeRefresh()
     if (deferredError) throw deferredError.value
   }
   runWorkflowNode = (nodeId, runOptions) => trackWorkspaceSourceTextPublication(async () => {

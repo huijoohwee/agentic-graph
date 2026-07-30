@@ -13,6 +13,7 @@ import { buildImmersiveMediaAgentReadyToolContracts, IMMERSIVE_MEDIA_AGENT_READY
 import { buildCitySimAgentReadyToolContracts, CITY_SIM_AGENT_READY_TOOL_IDS } from './citySimAgentReadyContract.mjs'
 import { buildStorageSyncAgentReadyToolContracts, STORAGE_SYNC_AGENT_READY_TOOL_IDS } from './storageSyncAgentReadyContract.mjs'
 import { buildGroupPanelAgentReadyToolContracts, GROUP_PANEL_AGENT_READY_TOOL_IDS } from '../group-panel/groupPanelContract.mjs'
+import { buildImportUrlAgentReadyToolContracts, IMPORT_URL_AGENT_READY_TOOL_IDS } from './importUrlAgentReadyContract.mjs'
 import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './knowgrphAgentReadyOutputSchemas.mjs'
 export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
   search: 'search',
@@ -41,6 +42,7 @@ export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
   ...CITY_SIM_AGENT_READY_TOOL_IDS,
   ...STORAGE_SYNC_AGENT_READY_TOOL_IDS,
   ...GROUP_PANEL_AGENT_READY_TOOL_IDS,
+  ...IMPORT_URL_AGENT_READY_TOOL_IDS,
   inspectLocal3dLayoutPositions: 'inspect_local_3d_layout_positions',
   inspectLocalXrSceneAssets: XR_SCENE_WEB_MCP_TOOL_IDS.inspect,
   controlLocalXrScene: XR_SCENE_WEB_MCP_TOOL_IDS.control,
@@ -51,7 +53,6 @@ export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
 })
 export const KNOWGRPH_AGENT_READY_WEB_MCP_NAMESPACE = 'knowgrph'
 export const KNOWGRPH_AGENT_READY_DEFAULT_WORKSPACE_ID = 'kgws:canonical-docs'
-
 const buildReadOnlyToolAnnotations = () => Object.freeze({
   readOnlyHint: true,
   destructiveHint: false,
@@ -65,7 +66,6 @@ const LOCAL_MUTATION_TOOL_ANNOTATIONS = Object.freeze({
   openWorldHint: false,
   idempotentHint: false,
 })
-
 const XR_PHYSICS_CONTROL_FIELDS = Object.freeze({
   subjectId: { type: 'string', minLength: 1, maxLength: 160, pattern: '\\S' },
   bodyMode: { type: 'string', enum: ['static', 'dynamic', 'kinematic', 'trigger'] },
@@ -306,12 +306,10 @@ const XR_ANIMATION_CONTROL_INPUT_SCHEMA = Object.freeze({
     buildXrAnimationOperationSchema({ operation: 'scrub', fields: ['timeSeconds'], required: ['timeSeconds'] }),
   ],
 })
-
 export const buildKnowgrphWebMcpToolName = (
   toolName,
   namespace = KNOWGRPH_AGENT_READY_WEB_MCP_NAMESPACE,
 ) => `${String(namespace || '').trim()}.${String(toolName || '').trim()}`
-
 export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
   const defaultWorkspaceId = String(args.defaultWorkspaceId || '').trim()
   const includeBrowserOnlyTools = args.includeBrowserOnlyTools === true
@@ -448,7 +446,7 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
           description: 'Inspect the active browser-local Knowgrph workspace markdown document structure without reading published storage routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
-        }, {
+        }, ...buildImportUrlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), {
           name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology,
           webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology),
           title: 'Inspect Local Canvas Topology',
