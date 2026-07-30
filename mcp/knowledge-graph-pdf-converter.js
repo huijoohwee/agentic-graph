@@ -19,21 +19,161 @@ const safePdfName = (sourcePath) => {
   return name.toLowerCase().endsWith(".pdf") ? name : `${name || "document"}.pdf`;
 };
 
-function validateExtractedMarkdown(markdownRaw) {
-  const lines = String(markdownRaw || "").split(/\r?\n/);
-  const pageCount = lines.filter((line) => /^## Page [1-9][0-9]*\s*$/.test(line.trim())).length;
-  if (!pageCount) throw new Error("Native PDF converter found no readable pages.");
-  const meaningfulLines = lines.slice(1).filter((line) => {
-    const trimmed = line.trim();
-    return trimmed && !/^## Page [1-9][0-9]*\s*$/.test(trimmed);
+function validatePageObservations(value) {
+  if (!Array.isArray(value) || value.length > 10_000) {
+    throw new Error("Native PDF converter returned inconsistent page observations.");
+  }
+  if (value.length === 0) throw new Error("Native PDF converter found no readable pages.");
+  return value.map((entry, index) => {
+    const pageNumber = Number(entry?.pageNumber);
+    const contentByteCount = Number(entry?.contentByteCount);
+    const contentStreamCount = Number(entry?.contentStreamCount);
+    const decodedContentStreamCount = Number(entry?.decodedContentStreamCount);
+    const contentDecodeComplete = entry?.contentDecodeComplete;
+    const contentTruncated = entry?.contentTruncated;
+    const contentShapeValid = entry?.contentShapeValid;
+    const hasAnnotationsEntry = entry?.hasAnnotationsEntry;
+    const textFragmentCount = Number(entry?.textFragmentCount);
+    const markdownTextLineCount = Number(entry?.markdownTextLineCount);
+    if (pageNumber !== index + 1
+      || !Number.isSafeInteger(contentByteCount)
+      || contentByteCount < 0
+      || !Number.isSafeInteger(contentStreamCount)
+      || contentStreamCount < 0
+      || !Number.isSafeInteger(decodedContentStreamCount)
+      || decodedContentStreamCount < 0
+      || decodedContentStreamCount > contentStreamCount
+      || typeof contentDecodeComplete !== "boolean"
+      || typeof contentTruncated !== "boolean"
+      || typeof contentShapeValid !== "boolean"
+      || typeof hasAnnotationsEntry !== "boolean"
+      || !Number.isSafeInteger(textFragmentCount)
+      || textFragmentCount < 0
+      || !Number.isSafeInteger(markdownTextLineCount)
+      || markdownTextLineCount < 0
+      || typeof entry?.structurallyBlank !== "boolean"
+      || (
+        entry.structurallyBlank
+        && (
+          textFragmentCount !== 0
+          || markdownTextLineCount !== 0
+          || !contentDecodeComplete
+          || decodedContentStreamCount !== contentStreamCount
+          || contentTruncated
+          || !contentShapeValid
+          || hasAnnotationsEntry
+        )
+      )) {
+      throw new Error("Native PDF converter returned invalid page observations.");
+    }
+    return {
+      pageNumber,
+      contentByteCount,
+      contentStreamCount,
+      decodedContentStreamCount,
+      contentDecodeComplete,
+      contentTruncated,
+      contentShapeValid,
+      hasAnnotationsEntry,
+      textFragmentCount,
+      markdownTextLineCount,
+      structurallyBlank: entry.structurallyBlank,
+    };
   });
-  if (!meaningfulLines.length) throw new Error("Native PDF converter found no extractable text; image-only or encrypted PDF input requires an explicit local OCR lane.");
-  return { pageCount, textLineCount: meaningfulLines.length };
+}
+
+function validateNativePdfOutput(outputRaw, sourcePath) {
+  let output;
+  try {
+    output = JSON.parse(String(outputRaw || ""));
+  } catch {
+    throw new Error("Native PDF converter returned an invalid result envelope.");
+  }
+  const markdown = String(output?.markdown || "");
+  if (!markdown.trim()) throw new Error("Native PDF converter returned no Markdown.");
+  const lines = markdown.split(/\r?\n/);
+  const pageObservations = validatePageObservations(output?.pageObservations);
+  const pageCount = pageObservations.length;
+  const markerNumbers = lines.flatMap((line) => {
+    const match = /^## Page ([1-9][0-9]*)\s*$/.exec(line.trim());
+    return match ? [Number(match[1])] : [];
+  });
+  if (markerNumbers.length !== pageCount
+    || markerNumbers.some((pageNumber, index) => pageNumber !== index + 1)) {
+    throw new Error("Native PDF converter returned inconsistent page markers.");
+  }
+  const textLineCount = pageObservations.reduce(
+    (total, page) => total + page.markdownTextLineCount,
+    0,
+  );
+  const unsafePages = pageObservations.filter((page) => (
+    !page.contentShapeValid
+    || !page.contentDecodeComplete
+    || page.contentTruncated
+    || page.decodedContentStreamCount !== page.contentStreamCount
+  ));
+  if (unsafePages.length) {
+    throw new Error("Native PDF converter could not safely decode every page content stream.");
+  }
+  const blankPages = pageObservations.filter(
+    (page) => page.textFragmentCount === 0 && page.structurallyBlank,
+  );
+  const nonTextPages = pageObservations.filter(
+    (page) => page.markdownTextLineCount === 0 && !page.structurallyBlank,
+  );
+  if (!textLineCount && blankPages.length !== pageCount) {
+    throw new Error("Native PDF converter found nonblank pages with no extractable text; image-only, encrypted, or unsupported visual content requires an explicit local OCR lane.");
+  }
+  const blankPageCount = blankPages.length;
+  const nonTextPageCount = nonTextPages.length;
+  const contentClass = (() => {
+    if (blankPageCount === pageCount) return "blank";
+    if (blankPageCount > 0 && nonTextPageCount > 0) return "text-with-blank-and-nontext-pages";
+    if (blankPageCount > 0) return "text-with-blank-pages";
+    if (nonTextPageCount > 0) return "text-with-nontext-pages";
+    return "text";
+  })();
+  const diagnostics = [];
+  if (blankPageCount) {
+    diagnostics.push({
+      code: blankPageCount === pageCount ? "pdf_blank_document" : "pdf_blank_pages",
+      sourcePath,
+      message: blankPageCount === pageCount
+        ? `PDF ${sourcePath} is structurally valid and contains only blank pages; no text was fabricated.`
+        : `PDF ${sourcePath} contains ${blankPageCount} structurally blank page(s); no text was fabricated for them.`,
+      blankPageCount,
+      pageCount,
+    });
+  }
+  if (nonTextPageCount) {
+    diagnostics.push({
+      code: "pdf_nontext_pages",
+      sourcePath,
+      message: `PDF ${sourcePath} contains ${nonTextPageCount} nonblank page(s) with no extractable text; those pages are represented structurally and no visual semantics or OCR text was fabricated.`,
+      nonTextPageCount,
+      pageCount,
+      pages: nonTextPages.map((page) => page.pageNumber),
+    });
+  }
+  return {
+    markdown,
+    diagnostics,
+    extraction: {
+      pageCount,
+      textLineCount,
+      blankPageCount,
+      nonTextPageCount,
+      blankPages: blankPages.map((page) => page.pageNumber),
+      nonTextPages: nonTextPages.map((page) => page.pageNumber),
+      contentClass,
+    },
+  };
 }
 
 function runNativePdfCli({
   rootDir,
   inputPath,
+  sourcePath,
   abortSignal,
   timeoutMs,
   maxOutputBytes,
@@ -46,7 +186,15 @@ function runNativePdfCli({
       reject(new Error("PDF conversion was aborted."));
       return;
     }
-    const child = spawn(process.execPath, [tsxCli, "--tsconfig", tsconfig, converterCli, "--input", inputPath], {
+    const child = spawn(process.execPath, [
+      tsxCli,
+      "--tsconfig",
+      tsconfig,
+      converterCli,
+      "--input",
+      inputPath,
+      "--json",
+    ], {
       cwd: rootDir,
       env: {
         PATH: process.env.PATH || "",
@@ -92,12 +240,11 @@ function runNativePdfCli({
         return;
       }
       if (!stdout.trim()) {
-        settle(new Error("Native PDF converter returned empty Markdown."));
+        settle(new Error("Native PDF converter returned an empty result."));
         return;
       }
       try {
-        const extraction = validateExtractedMarkdown(stdout);
-        settle(null, { markdown: stdout, diagnostics: [], extraction });
+        settle(null, validateNativePdfOutput(stdout, sourcePath));
       } catch (error) {
         settle(error);
       }
@@ -122,6 +269,7 @@ export function createLocalKnowledgeGraphPdfConverter({
       return await runNativePdfCli({
         rootDir: absoluteRoot,
         inputPath,
+        sourcePath: String(sourcePath || safePdfName(sourcePath)),
         abortSignal,
         timeoutMs: boundedTimeoutMs,
         maxOutputBytes: boundedMaxOutputBytes,

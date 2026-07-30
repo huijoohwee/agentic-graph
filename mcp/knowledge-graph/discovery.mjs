@@ -1,4 +1,3 @@
-import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -10,13 +9,25 @@ import {
   normalizeRelativePath,
   sha256,
 } from "./contract.mjs";
+import {
+  readGitSourceInventory,
+  sameGitSourceInventory,
+} from "./git-source-inventory.mjs";
+import {
+  readStableSourceDirectory,
+  readStableSourceFile,
+} from "./safe-source-io.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
 
-const DEFAULT_EXCLUDED_SEGMENTS = new Set([
+const HARD_EXCLUDED_SEGMENTS = new Set([
   ".git",
   ".hg",
   ".svn",
   ".knowgrph",
+  ".knowgrph-workspace",
+]);
+
+const SOFT_EXCLUDED_SEGMENTS = new Set([
   ".next",
   ".nuxt",
   ".venv",
@@ -72,28 +83,81 @@ function matchesOrderedRules(relativePath, rules) {
   return ignored;
 }
 
-function matchesAny(relativePath, patterns) {
-  return patterns.some((pattern) => globPatternToRegExp(pattern).test(relativePath));
-}
+const compilePatterns = (patterns) => patterns.map(globPatternToRegExp);
+const matchesAny = (relativePath, patterns) => patterns.some((pattern) => pattern.test(relativePath));
+const hasExcludedSegment = (relativePath, segments) => (
+  relativePath.split("/").some((segment) => segments.has(segment))
+);
 
-function isDefaultExcluded(relativePath) {
-  return relativePath.split("/").some((segment) => DEFAULT_EXCLUDED_SEGMENTS.has(segment));
-}
-
-async function readRootGitignore(rootPath, options = {}) {
+async function readGitignorePolicy(repositoryRootPath, rootPath, repositoryPath, options = {}) {
+  const relativePath = repositoryPath === "." ? ".gitignore" : `${repositoryPath}/.gitignore`;
   try {
     const opened = await readStableSourceFile(
-      path.join(rootPath, ".gitignore"),
+      path.join(repositoryRootPath, ".gitignore"),
       rootPath,
       1_000_000,
-      ".gitignore",
+      relativePath,
       options,
     );
-    return opened.bytes ? buildOrderedIgnoreRules(opened.bytes.toString("utf8").split(/\r?\n/)) : [];
+    if (!opened.bytes) {
+      throw new KnowledgeGraphError(
+        "ignore_policy_too_large",
+        `Ignore policy exceeds its byte bound: ${relativePath}.`,
+        { complete: false, sourcePath: relativePath },
+      );
+    }
+    const text = opened.bytes.toString("utf8");
+    if (!Buffer.from(text, "utf8").equals(opened.bytes)) {
+      throw new KnowledgeGraphError(
+        "ignore_policy_invalid",
+        `Ignore policy is not valid UTF-8: ${relativePath}.`,
+        { complete: false, sourcePath: relativePath },
+      );
+    }
+    return {
+      digest: opened.bytes.length ? sha256(opened.bytes) : sha256(""),
+      rules: buildOrderedIgnoreRules(text.split(/\r?\n/)),
+    };
   } catch (error) {
     if (error instanceof KnowledgeGraphError && ["aborted", "max_duration_exceeded"].includes(error.code)) throw error;
-    return [];
+    if (error instanceof KnowledgeGraphError && error.details?.causeCode === "ENOENT") {
+      return { digest: sha256(""), rules: [] };
+    }
+    if (error instanceof KnowledgeGraphError && error.code.startsWith("ignore_policy_")) throw error;
+    throw new KnowledgeGraphError(
+      "ignore_policy_unreadable",
+      `Could not safely read ignore policy ${relativePath}.`,
+      {
+        causeCode: String(error?.details?.causeCode || error?.code || "read_failed"),
+        complete: false,
+        sourcePath: relativePath,
+      },
+    );
   }
+}
+
+function repositoryRelativePath(relativePath, repositoryPath) {
+  if (repositoryPath === ".") return relativePath;
+  const prefix = `${repositoryPath}/`;
+  return relativePath.startsWith(prefix) ? relativePath.slice(prefix.length) : relativePath;
+}
+
+function isExcludedByRepositoryScope(relativePath, entry, scope) {
+  if (!scope) return false;
+  const scopedPath = repositoryRelativePath(relativePath, scope.repositoryPath);
+  if (entry.isDirectory()) {
+    return !scope.inventory.directories.has(scopedPath);
+  }
+  return !scope.inventory.trackedFiles.has(scopedPath)
+    && !scope.inventory.untrackedFiles.has(scopedPath);
+}
+
+function isTrackedByRepositoryScope(relativePath, entry, scope) {
+  if (!scope) return false;
+  const scopedPath = repositoryRelativePath(relativePath, scope.repositoryPath);
+  return entry.isDirectory()
+    ? scope.inventory.trackedDirectories.has(scopedPath)
+    : scope.inventory.trackedFiles.has(scopedPath);
 }
 
 export function inferKnowledgeSourceKind(relativePath) {
@@ -104,67 +168,6 @@ function looksBinary(bytes) {
   const limit = Math.min(bytes.length, 8192);
   for (let index = 0; index < limit; index += 1) if (bytes[index] === 0) return true;
   return false;
-}
-
-function pathIsInside(candidatePath, rootPath) {
-  const relative = path.relative(rootPath, candidatePath);
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-}
-
-const sameFileIdentity = (left, right) => left.dev === right.dev && left.ino === right.ino;
-
-async function readStableSourceFile(absolutePath, rootPath, maxFileBytes, relativePath, options = {}) {
-  const checkBudget = () => checkKnowledgeGraphBudget({
-    abortSignal: options.abortSignal,
-    deadline: options.deadline,
-    stage: options.stage || "source-read",
-    details: { sourcePath: relativePath },
-  });
-  let handle;
-  try {
-    checkBudget();
-    const noFollow = Number(fsConstants.O_NOFOLLOW || 0);
-    handle = await fs.open(absolutePath, fsConstants.O_RDONLY | noFollow);
-    checkBudget();
-    const openedStat = await handle.stat();
-    checkBudget();
-    if (!openedStat.isFile()) throw new KnowledgeGraphError("source_not_regular_file", `Source is not a regular file: ${relativePath}`);
-    const realPath = await fs.realpath(absolutePath);
-    checkBudget();
-    const pathStat = await fs.stat(realPath);
-    checkBudget();
-    if (!pathIsInside(realPath, rootPath) || !sameFileIdentity(openedStat, pathStat)) {
-      throw new KnowledgeGraphError("source_path_unstable", `Source path changed or escaped during discovery: ${relativePath}`);
-    }
-    if (openedStat.size > maxFileBytes) return { stat: openedStat, bytes: null };
-    const bytes = Buffer.alloc(openedStat.size);
-    let offset = 0;
-    while (offset < bytes.length) {
-      checkBudget();
-      const chunk = await handle.read(bytes, offset, bytes.length - offset, offset);
-      if (!chunk.bytesRead) break;
-      offset += chunk.bytesRead;
-    }
-    checkBudget();
-    const extra = Buffer.alloc(1);
-    const extraRead = await handle.read(extra, 0, 1, openedStat.size);
-    checkBudget();
-    const closedStat = await handle.stat();
-    checkBudget();
-    if (offset !== bytes.length || extraRead.bytesRead || !sameFileIdentity(openedStat, closedStat)
-      || openedStat.size !== closedStat.size || openedStat.mtimeMs !== closedStat.mtimeMs) {
-      throw new KnowledgeGraphError("source_changed_during_read", `Source changed while it was being read: ${relativePath}`);
-    }
-    return { stat: openedStat, bytes };
-  } catch (error) {
-    if (error instanceof KnowledgeGraphError) throw error;
-    throw new KnowledgeGraphError("source_read_failed", `Could not safely read source: ${relativePath}`, {
-      sourcePath: relativePath,
-      causeCode: String(error?.code || "read_failed"),
-    });
-  } finally {
-    await handle?.close().catch(() => {});
-  }
 }
 
 const repositoryIdentity = (repositoryPath) => ({
@@ -235,17 +238,34 @@ export async function discoverKnowledgeSources(args) {
   const maxFileBytes = Math.max(1, Math.min(100_000_000, Number(args.maxFileBytes || 2_000_000)));
   const maxTotalBytes = Math.max(1, Math.min(4_000_000_000, Number(args.maxTotalBytes || 1_000_000_000)));
   const maxDurationMs = deadline.maxDurationMs;
-  const include = Array.isArray(args.include) ? args.include.map(normalizePattern).filter(Boolean) : [];
-  const exclude = Array.isArray(args.exclude) ? args.exclude.map(normalizePattern).filter(Boolean) : [];
+  const include = compilePatterns(
+    Array.isArray(args.include) ? args.include.map(normalizePattern).filter(Boolean) : [],
+  );
+  const exclude = compilePatterns(
+    Array.isArray(args.exclude) ? args.exclude.map(normalizePattern).filter(Boolean) : [],
+  );
   const exactExcludedPaths = new Set((args.exactExcludedPaths || []).map(normalizePattern).filter(Boolean));
-  const gitignoreRules = args.respectGitignore === false ? [] : await readRootGitignore(rootPath, {
+  const respectGitignore = args.respectGitignore !== false;
+  const rootRepositoryInventory = await readGitSourceInventory(rootPath, {
     abortSignal: args.abortSignal,
     deadline,
-    stage: "source-discovery-ignore",
+    repositoryPath: ".",
+    respectGitignore,
   });
+  const workspaceGitignorePolicy = respectGitignore && !rootRepositoryInventory
+    ? await readGitignorePolicy(rootPath, rootPath, ".", {
+      abortSignal: args.abortSignal,
+      deadline,
+      stage: "source-discovery-ignore",
+    })
+    : { digest: sha256(""), rules: [] };
+  let workspaceGitignoreApplies = !rootRepositoryInventory;
   const sources = [];
   const diagnostics = [];
   const repositories = new Map();
+  const repositoryPolicies = new Map();
+  const directorySnapshots = new Map();
+  const visitedDirectories = new Set();
   const counts = {
     entriesVisited: 0,
     ignoredEntries: 0,
@@ -267,21 +287,70 @@ export async function discoverKnowledgeSources(args) {
     });
   };
 
-  async function walk(directoryPath, directoryRelative = "", inheritedRepositoryPath = ".") {
+  async function walk(
+    directoryPath,
+    directoryRelative = "",
+    inheritedRepositoryPath = ".",
+    inheritedRepositoryScope = null,
+  ) {
     checkBudget();
-    const entries = await fs.readdir(directoryPath, { withFileTypes: true });
-    entries.sort((left, right) => compareStableStrings(left.name, right.name));
+    const directorySnapshot = await readStableSourceDirectory(
+      directoryPath,
+      rootPath,
+      directoryRelative,
+      { abortSignal: args.abortSignal, deadline },
+    );
+    if (visitedDirectories.has(directorySnapshot.identity)) {
+      throw new KnowledgeGraphError(
+        "source_directory_cycle",
+        `Source directory was visited more than once: ${directoryRelative || "."}.`,
+        { complete: false, sourcePath: directoryRelative || "." },
+      );
+    }
+    visitedDirectories.add(directorySnapshot.identity);
+    const entries = directorySnapshot.entries;
     const hasRepositoryMarker = entries.some((entry) => entry.name === ".git" && (
       entry.isDirectory() || entry.isFile()
     ));
-    const repositoryPath = hasRepositoryMarker ? (directoryRelative || ".") : inheritedRepositoryPath;
+    const candidateRepositoryPath = directoryRelative || ".";
+    let repositoryScope = inheritedRepositoryScope;
+    let repositoryPath = inheritedRepositoryPath;
+    if (hasRepositoryMarker || (!directoryRelative && rootRepositoryInventory)) {
+      const inventory = !directoryRelative && rootRepositoryInventory
+        ? rootRepositoryInventory
+        : await readGitSourceInventory(directoryPath, {
+          abortSignal: args.abortSignal,
+          deadline,
+          repositoryPath: candidateRepositoryPath,
+          respectGitignore,
+        });
+      if (inventory) {
+        repositoryPath = candidateRepositoryPath;
+        repositoryScope = { inventory, repositoryPath, repositoryRootPath: directoryPath };
+        repositoryPolicies.set(repositoryPath, repositoryScope);
+        if (!directoryRelative) workspaceGitignoreApplies = false;
+      }
+    }
+    directorySnapshots.set(directoryRelative || ".", {
+      directoryPath,
+      enforceListing: !repositoryScope,
+      identity: directorySnapshot.identity,
+      listingDigest: directorySnapshot.listingDigest,
+      relativePath: directoryRelative || ".",
+    });
     const repository = repositoryIdentity(repositoryPath);
     repositories.set(repository.repositoryId, repository);
     for (const entry of entries) {
       checkBudget();
       counts.entriesVisited += 1;
       const relativePath = normalizeRelativePath(directoryRelative ? `${directoryRelative}/${entry.name}` : entry.name);
-      if (exactExcludedPaths.has(relativePath) || isDefaultExcluded(relativePath) || matchesOrderedRules(relativePath, gitignoreRules) || matchesAny(relativePath, exclude)) {
+      if (exactExcludedPaths.has(relativePath)
+        || hasExcludedSegment(relativePath, HARD_EXCLUDED_SEGMENTS)
+        || (hasExcludedSegment(relativePath, SOFT_EXCLUDED_SEGMENTS)
+          && !isTrackedByRepositoryScope(relativePath, entry, repositoryScope))
+        || (workspaceGitignoreApplies && matchesOrderedRules(relativePath, workspaceGitignorePolicy.rules))
+        || matchesAny(relativePath, exclude)
+        || isExcludedByRepositoryScope(relativePath, entry, repositoryScope)) {
         counts.ignoredEntries += 1;
         continue;
       }
@@ -292,7 +361,7 @@ export async function discoverKnowledgeSources(args) {
         continue;
       }
       if (entry.isDirectory()) {
-        await walk(absolutePath, relativePath, repositoryPath);
+        await walk(absolutePath, relativePath, repositoryPath, repositoryScope);
         continue;
       }
       if (!entry.isFile()) continue;
@@ -400,8 +469,57 @@ export async function discoverKnowledgeSources(args) {
     ...(counts.filesSkipped ? ["source_skipped"] : []),
     ...(counts.filesUnsupported ? ["source_unsupported"] : []),
   ];
+  const revalidateAdmission = async () => {
+    checkBudget();
+    if (workspaceGitignoreApplies && respectGitignore) {
+      const currentPolicy = await readGitignorePolicy(rootPath, rootPath, ".", {
+        abortSignal: args.abortSignal,
+        deadline,
+        stage: "source-discovery-ignore-revalidation",
+      });
+      if (currentPolicy.digest !== workspaceGitignorePolicy.digest) {
+        throw new KnowledgeGraphError(
+          "source_admission_changed",
+          "Workspace ignore policy changed during ingestion.",
+          { complete: false, sourcePath: ".gitignore" },
+        );
+      }
+    }
+    for (const scope of repositoryPolicies.values()) {
+      const current = await readGitSourceInventory(scope.repositoryRootPath, {
+        abortSignal: args.abortSignal,
+        deadline,
+        repositoryPath: scope.repositoryPath,
+        respectGitignore,
+      });
+      if (!sameGitSourceInventory(scope.inventory, current)) {
+        throw new KnowledgeGraphError(
+          "source_admission_changed",
+          `Repository source inventory changed during ingestion: ${scope.repositoryPath}.`,
+          { complete: false, repositoryPath: scope.repositoryPath },
+        );
+      }
+    }
+    for (const snapshot of directorySnapshots.values()) {
+      const current = await readStableSourceDirectory(
+        snapshot.directoryPath,
+        rootPath,
+        snapshot.relativePath === "." ? "" : snapshot.relativePath,
+        { abortSignal: args.abortSignal, deadline },
+      );
+      if (current.identity !== snapshot.identity
+        || (snapshot.enforceListing && current.listingDigest !== snapshot.listingDigest)) {
+        throw new KnowledgeGraphError(
+          "source_admission_changed",
+          `Source directory changed during ingestion: ${snapshot.relativePath}.`,
+          { complete: false, sourcePath: snapshot.relativePath },
+        );
+      }
+    }
+  };
   return {
     rootPath,
+    revalidateAdmission,
     sources,
     repositories: [...repositories.values()].sort((left, right) => compareStableStrings(left.repositoryPath, right.repositoryPath)),
     admission: {

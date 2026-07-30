@@ -11,6 +11,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const input = readArg(args, '--input')
   if (!input) throw new Error('Missing --input')
+  const outputJson = args.includes('--json')
   const maxPagesRaw = Number(readArg(args, '--max-pages') || 0)
   const maxPages = Number.isInteger(maxPagesRaw) && maxPagesRaw > 0
     ? Math.min(maxPagesRaw, 10_000)
@@ -24,7 +25,12 @@ async function main(): Promise<void> {
     maxPages,
     ocrEnhance: null,
   })
-  process.stdout.write(result.markdown)
+  process.stdout.write(outputJson
+    ? JSON.stringify({
+        markdown: result.markdown,
+        pageObservations: result.pageObservations,
+      })
+    : result.markdown)
 }
 
 main().catch(error => {

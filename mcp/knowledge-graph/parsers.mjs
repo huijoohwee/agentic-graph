@@ -18,6 +18,11 @@ import {
   BRACE_CODE_PARSER_VERSION,
   parseBraceCodeSource,
 } from "./brace-code-parser.mjs";
+import { compactJsonConfigSource } from "./json-config-compaction.mjs";
+import {
+  runIsolatedJsonParser,
+  shouldIsolateJsonSource,
+} from "./isolated-json-parser.mjs";
 import { compileParserDispatch } from "./parser-generator.mjs";
 import { parseSqlSource, SQL_PARSER_ID, SQL_PARSER_VERSION } from "./sql-parser.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
@@ -38,16 +43,38 @@ export const MARKDOWN_PARSER_ID = "local-markdown-structure";
 export const MARKDOWN_PARSER_VERSION = "1.0.0";
 export const JSON_CONFIG_PARSER_ID = "local-json-config-ast";
 const JSON_TYPESCRIPT_VERSION = String(typescript?.version || "unavailable").replace(/[^A-Za-z0-9._-]+/g, "-");
-export const JSON_CONFIG_PARSER_VERSION = `1.1.0+typescript-${JSON_TYPESCRIPT_VERSION}`;
+export const JSON_CONFIG_PARSER_VERSION = `1.3.0+typescript-${JSON_TYPESCRIPT_VERSION}`;
 export const STRUCTURAL_CONFIG_PARSER_ID = "local-config-structure";
 export const STRUCTURAL_CONFIG_PARSER_VERSION = "1.0.0";
 export const SOURCE_INVENTORY_PARSER_ID = "local-source-inventory";
 export const SOURCE_INVENTORY_PARSER_VERSION = "1.0.0";
 export const PDF_PARSER_ID = "local-pdf-markdown-adapter";
-export const PDF_PARSER_VERSION = "1.0.0";
+export const PDF_PARSER_VERSION = "1.2.0";
 const MAX_PARSER_NODES = 100_000;
 const MAX_PARSER_EDGES = 200_000;
 const MAX_PARSER_RECORDS = 250_000;
+
+function normalizePythonVersionInfo(value) {
+  if (!Array.isArray(value) || value.length !== 5) {
+    throw new Error("Python AST helper returned invalid runtime version metadata.");
+  }
+  const [major, minor, micro, releaseLevelRaw, serial] = value;
+  const releaseLevel = String(releaseLevelRaw || "");
+  if (![major, minor, micro, serial].every((part) => (
+    Number.isSafeInteger(part) && part >= 0
+  )) || !releaseLevel || releaseLevel.length > 32 || !/^[A-Za-z0-9._-]+$/.test(releaseLevel)) {
+    throw new Error("Python AST helper returned invalid runtime version metadata.");
+  }
+  return [major, minor, micro, releaseLevel, serial];
+}
+
+function pythonParserVersionForRuntime(versionInfo) {
+  const runtimeVersion = normalizePythonVersionInfo(versionInfo)
+    .map(String)
+    .join("-")
+    .replace(/[^A-Za-z0-9._-]+/g, "-");
+  return `${PYTHON_PARSER_VERSION}.sys-${runtimeVersion}`;
+}
 const MAX_PARSER_OPERATIONS = 2_000_000;
 
 const boundedParserLimit = (value, fallback, maximum) => {
@@ -215,7 +242,14 @@ export function sourceArtifactLimitFragmentForSource(source, options = {}) {
 
 export function parserDescriptorForSource(source, options = {}) {
   if (source.kind === "typescript") return { parserId: TYPESCRIPT_PARSER_ID, parserVersion: TYPESCRIPT_PARSER_VERSION, fidelity: "ast" };
-  if (source.kind === "python") return { parserId: PYTHON_PARSER_ID, parserVersion: PYTHON_PARSER_VERSION, fidelity: "ast" };
+  if (source.kind === "python") {
+    const probedVersion = String(options.pythonParserVersion || "").trim();
+    const parserVersion = probedVersion.startsWith(`${PYTHON_PARSER_VERSION}.sys-`)
+      && /^[A-Za-z0-9._+-]+$/.test(probedVersion)
+      ? probedVersion
+      : PYTHON_PARSER_VERSION;
+    return { parserId: PYTHON_PARSER_ID, parserVersion, fidelity: "ast" };
+  }
   if (source.kind === "sql") return { parserId: SQL_PARSER_ID, parserVersion: SQL_PARSER_VERSION, fidelity: "structural-parser" };
   if (source.kind === "markdown") return { parserId: MARKDOWN_PARSER_ID, parserVersion: MARKDOWN_PARSER_VERSION, fidelity: "structural-parser" };
   if (source.kind === "json-config") return { parserId: JSON_CONFIG_PARSER_ID, parserVersion: JSON_CONFIG_PARSER_VERSION, fidelity: "ast" };
@@ -297,9 +331,37 @@ function runPythonAstFacts({ pythonBin, sourcePath, text, timeoutMs = 10_000, ab
   });
 }
 
+export async function probePythonParserRuntime(options = {}) {
+  const facts = await runPythonAstFacts({
+    pythonBin: options.pythonBin || "python3",
+    sourcePath: "<python-runtime-probe>",
+    text: "",
+    timeoutMs: Math.max(1, Math.min(
+      Number(options.pythonTimeoutMs) || 10_000,
+      remainingKnowledgeGraphDuration(options.deadline),
+    )),
+    abortSignal: options.abortSignal,
+  });
+  const pythonVersionInfo = normalizePythonVersionInfo(facts?.pythonVersionInfo);
+  return {
+    pythonParserVersion: pythonParserVersionForRuntime(pythonVersionInfo),
+    pythonVersionInfo,
+  };
+}
+
+async function parseJsonConfigSourceWithIsolation(source, options) {
+  if (options.isolatedJsonChild === true
+    || !shouldIsolateJsonSource(source, options)) {
+    return parseJsonConfigSource(source, options);
+  }
+  return runIsolatedJsonParser(source, options);
+}
+
 async function parsePythonSource(source, options) {
   const descriptor = parserDescriptorForSource(source, options);
   let facts;
+  let versionInfo;
+  let runtimeParserVersion;
   try {
     facts = await runPythonAstFacts({
       pythonBin: options.pythonBin || "python3",
@@ -311,6 +373,12 @@ async function parsePythonSource(source, options) {
       )),
       abortSignal: options.abortSignal,
     });
+    versionInfo = normalizePythonVersionInfo(facts?.pythonVersionInfo);
+    runtimeParserVersion = pythonParserVersionForRuntime(versionInfo);
+    if (descriptor.parserVersion !== PYTHON_PARSER_VERSION
+      && descriptor.parserVersion !== runtimeParserVersion) {
+      throw new Error("Python runtime identity changed after parser cache resolution.");
+    }
   } catch (error) {
     if (error instanceof KnowledgeGraphError && ["aborted", "max_duration_exceeded"].includes(error.code)) throw error;
     return {
@@ -319,9 +387,7 @@ async function parsePythonSource(source, options) {
       status: "error",
     };
   }
-  const versionInfo = Array.isArray(facts.pythonVersionInfo) ? facts.pythonVersionInfo.slice(0, 5) : ["unknown"];
-  const runtimeVersion = versionInfo.map(String).join("-").replace(/[^A-Za-z0-9._-]+/g, "-");
-  const parsedDescriptor = { ...descriptor, parserVersion: `${PYTHON_PARSER_VERSION}.sys-${runtimeVersion}` };
+  const parsedDescriptor = { ...descriptor, parserVersion: runtimeParserVersion };
   const sourceNode = sourceNodeFor(source, parsedDescriptor.parserId, parsedDescriptor.parserVersion, parsedDescriptor.fidelity, {
     "code:pythonVersionInfo": versionInfo,
   });
@@ -493,6 +559,16 @@ function parseJsonConfigSource(source, options) {
   const ts = typescript;
   const sourceFile = ts.parseJsonText(source.relativePath, source.text || "");
   const rootExpression = sourceFile.statements?.[0]?.expression;
+  const compacted = compactJsonConfigSource({
+    descriptor,
+    options,
+    rootExpression,
+    source,
+    sourceFile,
+    sourceNode,
+    typescript: ts,
+  });
+  if (compacted) return compacted;
   const { nodes, edges, addNode, addEdge } = createRetainedGraph(
     options,
     sourceNode,
@@ -654,20 +730,137 @@ async function parsePdfSource(source, options) {
         maxRecords: options.maxRecords,
       });
     }
-    const pageCount = lines.filter((line) => /^## Page [1-9][0-9]*\s*$/.test(line.trim())).length;
-    const textLineCount = lines.slice(1).filter((line) => {
-      options.checkpoint("pdf.converted-lines");
-      const trimmed = line.trim();
-      return trimmed && !/^## Page [1-9][0-9]*\s*$/.test(trimmed);
-    }).length;
-    if (!pageCount) throw new Error("PDF conversion found no readable pages.");
-    if (!textLineCount) throw new Error("PDF conversion found no extractable text; image-only or encrypted input requires an explicit local OCR lane.");
+    const extraction = converted && typeof converted === "object"
+      && converted.extraction && typeof converted.extraction === "object"
+      ? converted.extraction
+      : null;
+    const { pageCount, textLineCount } = extraction
+      ? {
+          pageCount: Number(extraction.pageCount),
+          textLineCount: Number(extraction.textLineCount),
+        }
+      : {
+          pageCount: lines.filter((line) => /^## Page [1-9][0-9]*\s*$/.test(line.trim())).length,
+          textLineCount: lines.slice(1).filter((line) => {
+            options.checkpoint("pdf.converted-lines");
+            const trimmed = line.trim();
+            return trimmed && !/^## Page [1-9][0-9]*\s*$/.test(trimmed);
+          }).length,
+        };
+    if (!Number.isSafeInteger(pageCount) || pageCount < 1) {
+      throw new Error("PDF conversion found no readable pages.");
+    }
+    const blankPageCount = Number(extraction?.blankPageCount || 0);
+    const nonTextPageCount = Number(extraction?.nonTextPageCount || 0);
+    const parseDeclaredPages = (value, expectedCount) => {
+      if (!Array.isArray(value) || value.length !== expectedCount) return null;
+      const pages = value.map(Number);
+      if (pages.some((page, index) => (
+        !Number.isSafeInteger(page)
+        || page < 1
+        || page > pageCount
+        || (index > 0 && page <= pages[index - 1])
+      ))) return null;
+      return pages;
+    };
+    const blankPages = extraction
+      ? parseDeclaredPages(extraction.blankPages, blankPageCount)
+      : [];
+    const nonTextPages = extraction
+      ? parseDeclaredPages(extraction.nonTextPages, nonTextPageCount)
+      : [];
+    const nonTextPageSet = nonTextPages ? new Set(nonTextPages) : null;
+    const contentClass = String(extraction?.contentClass || (textLineCount ? "text" : "unknown"));
+    if (extraction) {
+      if (!Number.isSafeInteger(textLineCount)
+        || textLineCount < 0
+        || !Number.isSafeInteger(blankPageCount)
+        || blankPageCount < 0
+        || blankPageCount > pageCount
+        || !Number.isSafeInteger(nonTextPageCount)
+        || nonTextPageCount < 0
+        || blankPageCount + nonTextPageCount > pageCount
+        || !blankPages
+        || !nonTextPages
+        || blankPages.some((page) => nonTextPageSet.has(page))
+        || ![
+          "blank",
+          "text",
+          "text-with-blank-pages",
+          "text-with-nontext-pages",
+          "text-with-blank-and-nontext-pages",
+        ].includes(contentClass)
+        || (
+          contentClass === "blank"
+          && (textLineCount !== 0 || blankPageCount !== pageCount || nonTextPageCount !== 0)
+        )
+        || (
+          contentClass === "text"
+          && (textLineCount === 0 || blankPageCount !== 0 || nonTextPageCount !== 0)
+        )
+        || (
+          contentClass === "text-with-blank-pages"
+          && (
+            textLineCount === 0
+            || blankPageCount < 1
+            || blankPageCount >= pageCount
+            || nonTextPageCount !== 0
+          )
+        )
+        || (
+          contentClass === "text-with-nontext-pages"
+          && (
+            textLineCount === 0
+            || blankPageCount !== 0
+            || nonTextPageCount < 1
+            || nonTextPageCount >= pageCount
+          )
+        )
+        || (
+          contentClass === "text-with-blank-and-nontext-pages"
+          && (
+            textLineCount === 0
+            || blankPageCount < 1
+            || nonTextPageCount < 1
+            || blankPageCount + nonTextPageCount >= pageCount
+          )
+        )) {
+        throw new Error("PDF converter returned inconsistent extraction metadata.");
+      }
+    }
+    const blankDocument = contentClass === "blank"
+      && Number.isSafeInteger(blankPageCount)
+      && blankPageCount === pageCount
+      && Number(extraction?.pageCount) === pageCount
+      && Number(extraction?.textLineCount) === 0;
+    if (!textLineCount && !blankDocument) {
+      throw new Error("PDF conversion found no extractable text; image-only, encrypted, or unsupported visual content requires an explicit local OCR lane.");
+    }
     const fragment = parseMarkdownStructure(source, descriptor, markdown, {
       "pdf:conversionHash": sha256(markdown),
       "pdf:converterVersion": String(options.pdfConverterVersion || "injected"),
       "pdf:pageCount": pageCount,
       "pdf:textLineCount": textLineCount,
+      "pdf:blankPageCount": extraction ? blankPageCount : 0,
+      "pdf:nonTextPageCount": extraction ? nonTextPageCount : 0,
+      "pdf:contentClass": blankDocument ? "blank" : contentClass,
     }, options);
+    const blankPageSet = new Set(blankPages || []);
+    const classifiedNonTextPageSet = new Set(nonTextPages || []);
+    const classifiedNodes = fragment.nodes.map((node) => {
+      const pageNumber = Number(node.properties?.["pdf:page"]);
+      if (node.type !== "DocumentSection" || !Number.isSafeInteger(pageNumber)) return node;
+      const pageContentClass = blankPageSet.has(pageNumber)
+        ? "blank"
+        : classifiedNonTextPageSet.has(pageNumber) ? "nontext" : "text";
+      return {
+        ...node,
+        properties: {
+          ...node.properties,
+          "pdf:pageContentClass": pageContentClass,
+        },
+      };
+    });
     const converterDiagnostics = converted
       && typeof converted === "object"
       && Array.isArray(converted.diagnostics)
@@ -676,6 +869,7 @@ async function parsePdfSource(source, options) {
     retainDiagnostics(options, converterDiagnostics, "pdf.converter-diagnostics");
     return {
       ...fragment,
+      nodes: classifiedNodes,
       diagnostics: [...fragment.diagnostics, ...converterDiagnostics],
     };
   } catch (error) {
@@ -694,7 +888,7 @@ const PARSER_DISPATCH = compileParserDispatch(SOURCE_PARSER_REGISTRY, {
   python: parsePythonSource,
   sql: (source, options) => parseSqlSource({ sourcePath: source.relativePath, text: source.text || "", contentHash: source.contentHash, byteSize: source.byteSize }, options),
   markdown: (source, options) => parseMarkdownStructure(source, parserDescriptorForSource(source, options), source.text || "", {}, options),
-  "json-config": parseJsonConfigSource,
+  "json-config": parseJsonConfigSourceWithIsolation,
   "structural-config": parseStructuralConfigSource,
   "brace-code": (source, options) => parseBraceCodeSource({
     sourcePath: source.relativePath,

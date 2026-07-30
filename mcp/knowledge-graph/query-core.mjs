@@ -25,32 +25,49 @@ function clippedJson(value, maxLength = 2000) {
   try { return JSON.stringify(value).slice(0, maxLength); } catch { return ""; }
 }
 
-const nodeSearchText = (node) => [
-  node.id,
-  node.label,
-  node.type,
-  clippedJson(node.properties),
-  clippedJson(node.metadata, 500),
-].join(" ").toLowerCase();
+const configSearchText = (node) => (
+  String(
+    asRecord(node.properties)["config:searchText"] || "",
+  ).slice(0, 128 * 1024)
+);
 
-const edgeSearchText = (edge, nodeById) => [
-  edge.id,
-  edge.label,
-  nodeById.get(edge.source)?.label,
-  nodeById.get(edge.target)?.label,
-  edge.properties?.["evidence:explanation"],
-  edge.properties?.["evidence:sourcePath"],
-].join(" ").toLowerCase();
+const nodeSearchText = (node) => {
+  return [
+    node.id,
+    node.label,
+    node.type,
+    configSearchText(node),
+    clippedJson(node.properties),
+    clippedJson(node.metadata, 500),
+  ].join(" ").toLowerCase();
+};
+
+const edgeSearchText = (edge, nodeById) => {
+  const targetNode = nodeById.get(edge.target);
+  return [
+    edge.id,
+    edge.label,
+    nodeById.get(edge.source)?.label,
+    targetNode?.label,
+    edge.properties?.["evidence:explanation"],
+    edge.properties?.["evidence:sourcePath"],
+    configSearchText(targetNode),
+  ].join(" ").toLowerCase();
+};
 
 function lexicalScore(text, terms, exactLabel = "") {
   if (!terms.length) return 0;
   let score = 0;
   const normalizedLabel = normalized(exactLabel);
+  const exactTokens = new Set(
+    text.split(/[^\p{L}\p{N}_.$/@-]+/u).filter(Boolean),
+  );
   for (const term of terms) {
     if (normalizedLabel === term) score += 100;
     else if (normalizedLabel.startsWith(term)) score += 30;
     else if (normalizedLabel.includes(term)) score += 15;
-    if (text.includes(term)) score += term.length >= 4 ? 5 : 2;
+    if (exactTokens.has(term)) score += 10;
+    else if (term.length >= 4 && text.includes(term)) score += 5;
   }
   return score;
 }
@@ -126,6 +143,63 @@ function rankedEdges(access, query, limit, checkpoint) {
     ) => right.score - left.score || compareStableStrings(left.edge.id, right.edge.id));
   }
   return ranked;
+}
+
+const compareRankedEdgeEntries = (left, right) => (
+  right.score - left.score || compareStableStrings(left.edge.id, right.edge.id)
+);
+
+function configSearchSupportEntries(access, rankedNodeEntries, query, checkpoint) {
+  const targetIds = new Set(
+    rankedNodeEntries
+      .filter(({ node }) => node.type === "ConfigSearchChunk")
+      .map(({ node }) => node.id),
+  );
+  if (!targetIds.size) return new Map();
+  const terms = tokenize(query);
+  const supportByTarget = new Map();
+  for (const edge of access.edges) {
+    checkpoint();
+    if (edge.label !== "indexesConfigTokens" || !targetIds.has(edge.target)) continue;
+    const existing = supportByTarget.get(edge.target);
+    if (existing && compareStableStrings(existing.edge.id, edge.id) <= 0) continue;
+    supportByTarget.set(edge.target, {
+      edge,
+      score: lexicalScore(edgeSearchText(edge, access.nodeById), terms, edge.label),
+    });
+  }
+  return supportByTarget;
+}
+
+export function selectPairedSearchEdges({
+  rankedNodeEntries,
+  rankedEdgeEntries,
+  supportByTarget,
+  limit,
+}) {
+  const selectedById = new Map();
+  const candidateEdgeIds = new Set(rankedEdgeEntries.map(({ edge }) => edge.id));
+  for (const { node } of rankedNodeEntries) {
+    if (node.type !== "ConfigSearchChunk") continue;
+    const support = supportByTarget.get(node.id);
+    if (!support) {
+      throw new KnowledgeGraphError(
+        "config_search_support_edge_missing",
+        "A configuration search result is missing its source-backed evidence edge.",
+        { nodeId: node.id },
+      );
+    }
+    candidateEdgeIds.add(support.edge.id);
+    selectedById.set(support.edge.id, support);
+  }
+  for (const entry of rankedEdgeEntries) {
+    if (selectedById.size >= limit) break;
+    if (!selectedById.has(entry.edge.id)) selectedById.set(entry.edge.id, entry);
+  }
+  return {
+    entries: [...selectedById.values()].sort(compareRankedEdgeEntries),
+    truncated: rankedEdgeEntries.length > limit || candidateEdgeIds.size > limit,
+  };
 }
 
 function resolveNode(access, selector, checkpoint) {
@@ -339,9 +413,22 @@ export function queryKnowledgeGraph(artifact, args = {}, options = {}) {
     const rankedNodeEntries = rankedNodes(access, query, limit + 1, checkpoint);
     const rankedEdgeEntries = rankedEdges(access, query, limit + 1, checkpoint);
     const nodesTruncated = rankedNodeEntries.length > limit;
-    const edgesTruncated = rankedEdgeEntries.length > limit;
-    const nodes = rankedNodeEntries.slice(0, limit).map(({ node, score }) => ({ score, node }));
-    const edges = rankedEdgeEntries.slice(0, limit)
+    const selectedNodeEntries = rankedNodeEntries.slice(0, limit);
+    const supportByTarget = configSearchSupportEntries(
+      access,
+      selectedNodeEntries,
+      query,
+      checkpoint,
+    );
+    const pairedEdges = selectPairedSearchEdges({
+      rankedNodeEntries: selectedNodeEntries,
+      rankedEdgeEntries,
+      supportByTarget,
+      limit,
+    });
+    const edgesTruncated = pairedEdges.truncated;
+    const nodes = selectedNodeEntries.map(({ node, score }) => ({ score, node }));
+    const edges = pairedEdges.entries
       .map(({ edge, score }) => ({ score, edge, evidence: evidenceForEdge(edge) }));
     const truncated = nodesTruncated || edgesTruncated;
     return {
