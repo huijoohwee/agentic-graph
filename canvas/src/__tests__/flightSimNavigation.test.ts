@@ -92,13 +92,25 @@ test('Flight camera views cycle deterministically without changing the shared ca
 
 test('Flight camera views remain pure scaled descriptors for the shared camera owner', () => {
   const flight = snapshot()
-  assert.deepEqual(resolveFlightSimFollowTarget(flight, 2, 'chase'), {
-    position: [2, 12, 22],
-    target: [2, 5.6, 6],
+  const chase = resolveFlightSimFollowTarget(flight, 2, 'chase')
+  assert.deepEqual(chase, {
+    position: [2, 13.8, 41],
+    target: [2, 7.4, 6],
     fovDegrees: 58,
     resetKey: 7,
     sequence: 42,
   })
+  assert.equal(
+    (chase.position[2] - chase.target[2]) / 2,
+    FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2]
+      + FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[0] * 2,
+  )
+  assert.ok(
+    Math.abs(
+      (chase.target[1] - flight.aircraft.position[1] * 2) / 2
+        - FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1],
+    ) < 1e-12,
+  )
   const cockpit = resolveFlightSimFollowTarget(flight, 2, 'cockpit')
   assert.deepEqual(cockpit, {
     position: [2, 8.3, -6.1],
