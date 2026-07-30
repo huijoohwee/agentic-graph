@@ -278,7 +278,7 @@ export function StoryboardGroupPanelLayer2d(props: {
             ariaLabel={`Group Panel: ${group.label}`}
             className={getStoryboardWidgetPanelSurfaceChromeClassName({
               selected,
-              className: 'pointer-events-auto absolute overflow-hidden bg-[color:color-mix(in_srgb,var(--kg-media-panel-bg)_42%,transparent)] shadow-sm',
+              className: 'pointer-events-none absolute overflow-hidden bg-[color:color-mix(in_srgb,var(--kg-media-panel-bg)_42%,transparent)] shadow-sm',
             })}
             data-kg-group-panel="1"
             data-kg-group-panel-id={group.id}
@@ -305,6 +305,7 @@ export function StoryboardGroupPanelLayer2d(props: {
               title={group.label}
               actionsAriaLabel="Group Panel"
               dragHandle={groupMoveEnabled}
+              headerClassName="pointer-events-auto"
               onHeaderPointerDown={groupMoveEnabled ? event => beginGroupPanelHeaderDrag(event, group) : undefined}
               pinned={headerPinProps.headerPinned === true}
               showFieldToggle={false}
