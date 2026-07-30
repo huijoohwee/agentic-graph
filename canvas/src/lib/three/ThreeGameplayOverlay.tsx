@@ -72,6 +72,7 @@ export function ThreeGameplayMissionStage(props: Readonly<{
       <FlightSimMissionStageLazy
         actorsVisible
         coordinateScale={props.coordinateScale}
+        geospatialComposite={props.geospatialComposite}
       />
     )
   }
