@@ -1,11 +1,48 @@
 import path from 'node:path'
 import { upsertWorkspaceDocsMirrorText } from '@/features/workspace-fs/workspaceSeedProvider'
-import { deleteWorkspaceDocsMirrorEntry } from '@/features/workspace-fs/workspaceSeedLocalMirrorAuthority'
+import {
+  deleteWorkspaceDocsMirrorEntry,
+  readKnowgrphWorkspaceSeedsAbsRoot,
+  readKnowgrphWorkspaceSeedsReadAbsRoot,
+  resolveKnowgrphWorkspaceSeedMirrorAbsolutePath,
+} from '@/features/workspace-fs/workspaceSeedLocalMirrorAuthority'
 
 const normalizeFsPath = (value: string): string => String(value || '').replace(/\\/g, '/')
 const githubRoot = normalizeFsPath(path.resolve(process.cwd(), '..', '..'))
 const huijoohweeDocsRoot = `${githubRoot}/huijoohwee/docs`
 const knowgrphDocsRoot = `${githubRoot}/knowgrph/docs`
+
+export function testWorkspaceSeedReadRootDoesNotRedirectMutationAuthority(): void {
+  const previousDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+  const previousWriteRoot = process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT
+  const previousReadRoot = process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT
+  const taskReadRoot = `${githubRoot}/.worktrees/canonical/knowgrph/docs/workspace-seeds`
+  try {
+    process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = huijoohweeDocsRoot
+    process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT = `${knowgrphDocsRoot}/workspace-seeds`
+    process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT = taskReadRoot
+
+    if (readKnowgrphWorkspaceSeedsReadAbsRoot() !== taskReadRoot) {
+      throw new Error('expected seed reads to use the exact task worktree')
+    }
+    if (readKnowgrphWorkspaceSeedsAbsRoot() !== `${knowgrphDocsRoot}/workspace-seeds`) {
+      throw new Error('expected seed mutations to retain the canonical authoring checkout')
+    }
+    const mutationPath = resolveKnowgrphWorkspaceSeedMirrorAbsolutePath(
+      '/docs/workspace-seeds/team/demo.md',
+    )
+    if (mutationPath !== `${knowgrphDocsRoot}/workspace-seeds/team/demo.md`) {
+      throw new Error(`expected the mutation path to ignore the read projection, got ${mutationPath}`)
+    }
+  } finally {
+    if (typeof previousDocsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsRoot
+    else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+    if (typeof previousWriteRoot === 'string') process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT = previousWriteRoot
+    else delete process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT
+    if (typeof previousReadRoot === 'string') process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT = previousReadRoot
+    else delete process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT
+  }
+}
 
 export async function testWorkspaceSeedProviderEnforcesCanonicalWorkspaceSeedsMutations() {
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT

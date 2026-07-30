@@ -332,6 +332,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["workspaceFs.seedProvider.browserUpsertWritesViaKgFsProxy","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderBrowserUpsertWritesViaKgFsProxy"],
   ["workspaceFs.seedProvider.browserUpsertDocsMirrorWritesViaKgFsProxy","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderBrowserUpsertDocsMirrorWritesViaKgFsProxy"],
   ["workspaceFs.seedProvider.enforcesCanonicalWorkspaceSeedsMutations","@/__tests__/workspaceSeedStorageAuthority.test","testWorkspaceSeedProviderEnforcesCanonicalWorkspaceSeedsMutations"],
+  ["workspaceFs.seedProvider.separatesReadAndMutationRoots","@/__tests__/workspaceSeedStorageAuthority.test","testWorkspaceSeedReadRootDoesNotRedirectMutationAuthority"],
   ["workspaceFs.seedProvider.bundlesCanonicalWorkspaceSeedInventory","@/__tests__/workspaceSeedInventorySync.test","testBundledWorkspaceSeedInventoryMatchesAuthoredSourceExactly"],
   ["workspaceFs.seedProvider.productionFallbackRestoresCanonicalWorkspaceSeedInventory","@/__tests__/workspaceSeedInventorySync.test","testProductionFallbackRestoresBundledWorkspaceSeedInventory"],
   ["workspaceFs.seedProvider.projectsCanonicalWorkspaceSeedInventory","@/__tests__/workspaceSeedInventorySync.test","testWorkspaceSeedProviderProjectsCanonicalLocalInventoryExactly"],

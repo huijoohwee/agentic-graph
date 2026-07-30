@@ -61,6 +61,7 @@ async function run() {
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = isolatedDocsRoot
   process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT = isolatedAgenticDocsRoot
   process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT = isolatedWorkspaceSeedsRoot
+  process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT = isolatedWorkspaceSeedsRoot
   process.env.VITE_WORKSPACE_INITIALIZATION_CHAT_LOG_ABS_ROOT = isolatedChatLogRoot
   process.env.VITE_WORKSPACE_DOCS_MIRROR_STORAGE_FALLBACK_ENABLED = '0'
   process.env.VITE_WORKSPACE_SEED_SYNC_ENABLED = '0'

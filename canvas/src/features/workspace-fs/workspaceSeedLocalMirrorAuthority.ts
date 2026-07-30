@@ -20,6 +20,9 @@ export const readKnowgrphWorkspaceSeedsAbsRoot = (): string => resolveKnowgrphWo
   explicitAbsRoot: readEnvString('VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT', ''),
 })
 
+export const readKnowgrphWorkspaceSeedsReadAbsRoot = (): string =>
+  normalizeRoot(readEnvString('VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT', ''))
+
 export const resolveKnowgrphWorkspaceSeedMirrorAbsolutePath = (workspacePath: string): string | null => {
   if (!isKnowgrphWorkspaceSeedsPath(workspacePath)) return null
   const root = normalizeRoot(readKnowgrphWorkspaceSeedsAbsRoot())

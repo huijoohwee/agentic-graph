@@ -44,13 +44,14 @@ import { isWorkspaceSourceMirrorFileName, shouldEncodeWorkspaceSourceMirrorAsBas
 import { DEFAULT_VITE_WATCH_IGNORED, buildWorkspaceMirrorWatchIgnoredRoots, createWorkspaceMirrorWatchPathIgnore } from './viteWorkspaceMirrorWatch'
 import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './viteChatProxyEnv'
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
+import { resolveWorkspaceInitializationWorkspaceSeedsReadRoot } from './viteWorkspaceSeedsReadRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
 import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { resolveKnowgrphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
 let workspaceInitializationDocsAbsRootForDev = ''
-let workspaceInitializationWorkspaceSeedsAbsRootForDev = ''
+let workspaceInitializationWorkspaceSeedsReadAbsRootForDev = ''
 const liveCanvasHeroDocPath = path.resolve(repoRoot, 'docs', 'documents', 'knowgrph-live-canvas-hero.md')
 const mainPanelSectionDescriptionsDocPath = path.resolve(repoRoot, 'docs', 'documents', 'knowgrph-mainpanel-section-descriptions.md')
 const LIVE_CANVAS_HERO_DISCOVERY_ROUTE_PATH = '/knowgrph-live-canvas-hero.md'
@@ -5213,7 +5214,7 @@ function createKgFsListHandler(): import('vite').Connect.NextHandleFunction {
     repoRoot,
     configuredRoots: [
       workspaceInitializationDocsAbsRootForDev || process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT,
-      workspaceInitializationWorkspaceSeedsAbsRootForDev,
+      workspaceInitializationWorkspaceSeedsReadAbsRootForDev,
       process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT,
     ],
   })
@@ -6824,11 +6825,16 @@ function resolveViteCacheDir(command: string): string {
 }
 
 function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string {
+  workspaceInitializationWorkspaceSeedsReadAbsRootForDev =
+    resolveWorkspaceInitializationWorkspaceSeedsReadRoot({
+      command,
+      repoRoot,
+      explicitAbsRoot: process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT,
+    })
   if (command === 'build') return ''
   const configuredDocsRoot = String(process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT || '').trim()
   if (configuredDocsRoot) {
     workspaceInitializationDocsAbsRootForDev = configuredDocsRoot
-    workspaceInitializationWorkspaceSeedsAbsRootForDev = path.resolve(configuredDocsRoot, '..', '..', 'knowgrph', 'docs', 'workspace-seeds')
     return configuredDocsRoot
   }
   let gitCommonDir = ''
@@ -6844,9 +6850,6 @@ function applyWorkspaceInitializationDocsAbsRootDefault(command: string): string
   })
   if (docsRoot) process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = docsRoot
   workspaceInitializationDocsAbsRootForDev = docsRoot
-  workspaceInitializationWorkspaceSeedsAbsRootForDev = docsRoot
-    ? path.resolve(docsRoot, '..', '..', 'knowgrph', 'docs', 'workspace-seeds')
-    : ''
   return docsRoot
 }
 
@@ -6868,6 +6871,7 @@ export default defineConfig(({ command, mode }) => {
     : '/',
   define: { __KNOWGRPH_SOURCE_REVISION__: JSON.stringify(runtimeIdentity.sourceRevision), __KNOWGRPH_RUNTIME_DEVICE__: JSON.stringify(runtimeIdentity.device), __KNOWGRPH_SOURCE_BRANCH__: JSON.stringify(runtimeIdentity.branch),
     'import.meta.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT': JSON.stringify(workspaceInitializationDocsAbsRoot),
+    'import.meta.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT': JSON.stringify(workspaceInitializationWorkspaceSeedsReadAbsRootForDev),
     __KNOWGRPH_LIVE_CANVAS_HERO_MARKDOWN__: JSON.stringify(readLiveCanvasHeroMarkdownSource()),
     __KNOWGRPH_MAIN_PANEL_SECTION_DESCRIPTIONS_MARKDOWN__: JSON.stringify(readMainPanelSectionDescriptionsMarkdownSource()),
   },

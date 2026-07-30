@@ -23,7 +23,7 @@ import type { WorkspaceEntry } from '@/features/workspace-fs/types'
 
 const REPO_LOCAL_ENV = 'VITE_KNOWGRPH_RUN_READY_REPO_LOCAL'
 const DOCS_ROOT_ENV = 'VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT'
-const SEEDS_ROOT_ENV = 'VITE_KNOWGRPH_WORKSPACE_SEEDS_ABS_ROOT'
+const SEEDS_READ_ROOT_ENV = 'VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT'
 const AGENTIC_DOCS_ROOT_ENV = 'VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT'
 
 const restoreEnv = (name: string, value: string | undefined): void => {
@@ -66,14 +66,14 @@ export async function testProductionFallbackRestoresBundledWorkspaceSeedInventor
   const missingRoot = `/missing/workspace-seed-production-${Date.now()}`
   const previousRepoLocal = process.env[REPO_LOCAL_ENV]
   const previousDocsRoot = process.env[DOCS_ROOT_ENV]
-  const previousSeedsRoot = process.env[SEEDS_ROOT_ENV]
+  const previousSeedsRoot = process.env[SEEDS_READ_ROOT_ENV]
   const previousAgenticRoot = process.env[AGENTIC_DOCS_ROOT_ENV]
   const previousFetch = globalThis.fetch
   const { restore } = initWindowHarness({ storage: new MemoryStorage() })
   try {
     delete process.env[REPO_LOCAL_ENV]
     process.env[DOCS_ROOT_ENV] = `${missingRoot}/docs`
-    process.env[SEEDS_ROOT_ENV] = `${missingRoot}/docs/workspace-seeds`
+    process.env[SEEDS_READ_ROOT_ENV] = `${missingRoot}/docs/workspace-seeds`
     process.env[AGENTIC_DOCS_ROOT_ENV] = `${missingRoot}/agentic-canvas-os/docs`
     resetCanonicalPublishedDocsMirrorCacheForTests()
     resetWorkspaceSeedProviderStorageCacheForTests()
@@ -99,7 +99,7 @@ export async function testProductionFallbackRestoresBundledWorkspaceSeedInventor
     restore()
     restoreEnv(REPO_LOCAL_ENV, previousRepoLocal)
     restoreEnv(DOCS_ROOT_ENV, previousDocsRoot)
-    restoreEnv(SEEDS_ROOT_ENV, previousSeedsRoot)
+    restoreEnv(SEEDS_READ_ROOT_ENV, previousSeedsRoot)
     restoreEnv(AGENTIC_DOCS_ROOT_ENV, previousAgenticRoot)
   }
 }
@@ -110,14 +110,14 @@ export async function testWorkspaceSeedProviderProjectsCanonicalLocalInventoryEx
   const seedsRoot = path.join(docsRoot, 'workspace-seeds')
   const previousRepoLocal = process.env[REPO_LOCAL_ENV]
   const previousDocsRoot = process.env[DOCS_ROOT_ENV]
-  const previousSeedsRoot = process.env[SEEDS_ROOT_ENV]
+  const previousSeedsRoot = process.env[SEEDS_READ_ROOT_ENV]
   const previousAgenticRoot = process.env[AGENTIC_DOCS_ROOT_ENV]
   const globals = globalThis as typeof globalThis & { window?: Window }
   const previousWindow = globals.window
   try {
     process.env[REPO_LOCAL_ENV] = '1'
     process.env[DOCS_ROOT_ENV] = docsRoot
-    process.env[SEEDS_ROOT_ENV] = seedsRoot
+    process.env[SEEDS_READ_ROOT_ENV] = seedsRoot
     process.env[AGENTIC_DOCS_ROOT_ENV] = path.join(repoRoot, '.missing-agentic-docs')
     delete globals.window
 
@@ -138,7 +138,7 @@ export async function testWorkspaceSeedProviderProjectsCanonicalLocalInventoryEx
   } finally {
     restoreEnv(REPO_LOCAL_ENV, previousRepoLocal)
     restoreEnv(DOCS_ROOT_ENV, previousDocsRoot)
-    restoreEnv(SEEDS_ROOT_ENV, previousSeedsRoot)
+    restoreEnv(SEEDS_READ_ROOT_ENV, previousSeedsRoot)
     restoreEnv(AGENTIC_DOCS_ROOT_ENV, previousAgenticRoot)
     if (previousWindow) globals.window = previousWindow
   }
@@ -150,13 +150,13 @@ export async function testRepoLocalPersistedBootstrapReconcilesCanonicalSeedInve
   const seedsRoot = path.join(docsRoot, 'workspace-seeds')
   const previousRepoLocal = process.env[REPO_LOCAL_ENV]
   const previousDocsRoot = process.env[DOCS_ROOT_ENV]
-  const previousSeedsRoot = process.env[SEEDS_ROOT_ENV]
+  const previousSeedsRoot = process.env[SEEDS_READ_ROOT_ENV]
   const globals = globalThis as typeof globalThis & { window?: Window }
   const previousWindow = globals.window
   try {
     process.env[REPO_LOCAL_ENV] = '1'
     process.env[DOCS_ROOT_ENV] = docsRoot
-    process.env[SEEDS_ROOT_ENV] = seedsRoot
+    process.env[SEEDS_READ_ROOT_ENV] = seedsRoot
     delete globals.window
 
     const persistedModuleUrl = new URL(
@@ -179,10 +179,19 @@ export async function testRepoLocalPersistedBootstrapReconcilesCanonicalSeedInve
     if (JSON.stringify(actual) !== JSON.stringify(expected)) {
       throw new Error(`expected repo-local persisted Source Files seed inventory ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
     }
+    const citySeedPath = '/docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md'
+    const projectedCityText = await workspaceFs.readFileText(citySeedPath)
+    const authoredCityText = await fsPromises.readFile(
+      path.join(seedsRoot, 'knowgrph-game-city-building-sim-demo.md'),
+      'utf8',
+    )
+    if (projectedCityText !== authoredCityText || !projectedCityText.includes('kgCanvasSurfaceMode: "geo-xr"')) {
+      throw new Error('expected the repo-local City projection to stay byte-identical to its Geo+XR source')
+    }
   } finally {
     restoreEnv(REPO_LOCAL_ENV, previousRepoLocal)
     restoreEnv(DOCS_ROOT_ENV, previousDocsRoot)
-    restoreEnv(SEEDS_ROOT_ENV, previousSeedsRoot)
+    restoreEnv(SEEDS_READ_ROOT_ENV, previousSeedsRoot)
     if (previousWindow) globals.window = previousWindow
   }
 }
@@ -192,14 +201,14 @@ export async function testWorkspaceSeedProviderOverlaysLocalInventoryOnPublished
   const seedsRoot = '/workspace/knowgrph/docs/workspace-seeds'
   const previousRepoLocal = process.env[REPO_LOCAL_ENV]
   const previousDocsRoot = process.env[DOCS_ROOT_ENV]
-  const previousSeedsRoot = process.env[SEEDS_ROOT_ENV]
+  const previousSeedsRoot = process.env[SEEDS_READ_ROOT_ENV]
   const previousFetch = globalThis.fetch
   const { restore } = initWindowHarness({ storage: new MemoryStorage() })
   const listedRoots: string[] = []
   try {
     delete process.env[REPO_LOCAL_ENV]
     process.env[DOCS_ROOT_ENV] = docsRoot
-    process.env[SEEDS_ROOT_ENV] = seedsRoot
+    process.env[SEEDS_READ_ROOT_ENV] = seedsRoot
     resetCanonicalPublishedDocsMirrorCacheForTests()
 
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -252,7 +261,7 @@ export async function testWorkspaceSeedProviderOverlaysLocalInventoryOnPublished
     restore()
     restoreEnv(REPO_LOCAL_ENV, previousRepoLocal)
     restoreEnv(DOCS_ROOT_ENV, previousDocsRoot)
-    restoreEnv(SEEDS_ROOT_ENV, previousSeedsRoot)
+    restoreEnv(SEEDS_READ_ROOT_ENV, previousSeedsRoot)
   }
 }
 

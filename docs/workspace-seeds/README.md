@@ -23,7 +23,7 @@ Explorer → Source Files must reconcile this exact authored inventory in both r
 
 The MMORPG draft and both projection companion notes are visible, editable records but remain non-activating and use the neutral 2D Flow Canvas presentation with panels closed. Drafts and companions must not request XR/3D, a runtime FloatingPanel view, applied-document activation, an implemented native runtime, or auto-start. The Flight companion records projection state only; the source itself is the local activation authority. None of these files grants deployment authority.
 
-The protected app build packages these exact seven source bytes as a revision-pinned, read-only bootstrap artifact. Production and offline startup reconcile from that artifact without discovering seed names through the GitHub API; repository-local Dev still reads this authored directory first so edits remain immediately visible.
+The protected app build packages these exact seven source bytes as a revision-pinned, read-only bootstrap artifact. Production and offline startup reconcile from that artifact without discovering seed names through the GitHub API. Repository-local Dev reads this directory from the exact running Knowgrph checkout or worktree, never by deriving another Knowgrph checkout from the collaborative-docs root. `VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT` may override that read projection for a bounded fixture; it cannot redirect the separately authorized mutation root.
 
 ## Authored seed registry
 
