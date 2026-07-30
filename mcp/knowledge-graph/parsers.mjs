@@ -53,6 +53,28 @@ export const PDF_PARSER_VERSION = "1.2.0";
 const MAX_PARSER_NODES = 100_000;
 const MAX_PARSER_EDGES = 200_000;
 const MAX_PARSER_RECORDS = 250_000;
+
+function normalizePythonVersionInfo(value) {
+  if (!Array.isArray(value) || value.length !== 5) {
+    throw new Error("Python AST helper returned invalid runtime version metadata.");
+  }
+  const [major, minor, micro, releaseLevelRaw, serial] = value;
+  const releaseLevel = String(releaseLevelRaw || "");
+  if (![major, minor, micro, serial].every((part) => (
+    Number.isSafeInteger(part) && part >= 0
+  )) || !releaseLevel || releaseLevel.length > 32 || !/^[A-Za-z0-9._-]+$/.test(releaseLevel)) {
+    throw new Error("Python AST helper returned invalid runtime version metadata.");
+  }
+  return [major, minor, micro, releaseLevel, serial];
+}
+
+function pythonParserVersionForRuntime(versionInfo) {
+  const runtimeVersion = normalizePythonVersionInfo(versionInfo)
+    .map(String)
+    .join("-")
+    .replace(/[^A-Za-z0-9._-]+/g, "-");
+  return `${PYTHON_PARSER_VERSION}.sys-${runtimeVersion}`;
+}
 const MAX_PARSER_OPERATIONS = 2_000_000;
 
 const boundedParserLimit = (value, fallback, maximum) => {
@@ -220,7 +242,14 @@ export function sourceArtifactLimitFragmentForSource(source, options = {}) {
 
 export function parserDescriptorForSource(source, options = {}) {
   if (source.kind === "typescript") return { parserId: TYPESCRIPT_PARSER_ID, parserVersion: TYPESCRIPT_PARSER_VERSION, fidelity: "ast" };
-  if (source.kind === "python") return { parserId: PYTHON_PARSER_ID, parserVersion: PYTHON_PARSER_VERSION, fidelity: "ast" };
+  if (source.kind === "python") {
+    const probedVersion = String(options.pythonParserVersion || "").trim();
+    const parserVersion = probedVersion.startsWith(`${PYTHON_PARSER_VERSION}.sys-`)
+      && /^[A-Za-z0-9._+-]+$/.test(probedVersion)
+      ? probedVersion
+      : PYTHON_PARSER_VERSION;
+    return { parserId: PYTHON_PARSER_ID, parserVersion, fidelity: "ast" };
+  }
   if (source.kind === "sql") return { parserId: SQL_PARSER_ID, parserVersion: SQL_PARSER_VERSION, fidelity: "structural-parser" };
   if (source.kind === "markdown") return { parserId: MARKDOWN_PARSER_ID, parserVersion: MARKDOWN_PARSER_VERSION, fidelity: "structural-parser" };
   if (source.kind === "json-config") return { parserId: JSON_CONFIG_PARSER_ID, parserVersion: JSON_CONFIG_PARSER_VERSION, fidelity: "ast" };
@@ -302,6 +331,24 @@ function runPythonAstFacts({ pythonBin, sourcePath, text, timeoutMs = 10_000, ab
   });
 }
 
+export async function probePythonParserRuntime(options = {}) {
+  const facts = await runPythonAstFacts({
+    pythonBin: options.pythonBin || "python3",
+    sourcePath: "<python-runtime-probe>",
+    text: "",
+    timeoutMs: Math.max(1, Math.min(
+      Number(options.pythonTimeoutMs) || 10_000,
+      remainingKnowledgeGraphDuration(options.deadline),
+    )),
+    abortSignal: options.abortSignal,
+  });
+  const pythonVersionInfo = normalizePythonVersionInfo(facts?.pythonVersionInfo);
+  return {
+    pythonParserVersion: pythonParserVersionForRuntime(pythonVersionInfo),
+    pythonVersionInfo,
+  };
+}
+
 async function parseJsonConfigSourceWithIsolation(source, options) {
   if (options.isolatedJsonChild === true
     || !shouldIsolateJsonSource(source, options)) {
@@ -313,6 +360,8 @@ async function parseJsonConfigSourceWithIsolation(source, options) {
 async function parsePythonSource(source, options) {
   const descriptor = parserDescriptorForSource(source, options);
   let facts;
+  let versionInfo;
+  let runtimeParserVersion;
   try {
     facts = await runPythonAstFacts({
       pythonBin: options.pythonBin || "python3",
@@ -324,6 +373,12 @@ async function parsePythonSource(source, options) {
       )),
       abortSignal: options.abortSignal,
     });
+    versionInfo = normalizePythonVersionInfo(facts?.pythonVersionInfo);
+    runtimeParserVersion = pythonParserVersionForRuntime(versionInfo);
+    if (descriptor.parserVersion !== PYTHON_PARSER_VERSION
+      && descriptor.parserVersion !== runtimeParserVersion) {
+      throw new Error("Python runtime identity changed after parser cache resolution.");
+    }
   } catch (error) {
     if (error instanceof KnowledgeGraphError && ["aborted", "max_duration_exceeded"].includes(error.code)) throw error;
     return {
@@ -332,9 +387,7 @@ async function parsePythonSource(source, options) {
       status: "error",
     };
   }
-  const versionInfo = Array.isArray(facts.pythonVersionInfo) ? facts.pythonVersionInfo.slice(0, 5) : ["unknown"];
-  const runtimeVersion = versionInfo.map(String).join("-").replace(/[^A-Za-z0-9._-]+/g, "-");
-  const parsedDescriptor = { ...descriptor, parserVersion: `${PYTHON_PARSER_VERSION}.sys-${runtimeVersion}` };
+  const parsedDescriptor = { ...descriptor, parserVersion: runtimeParserVersion };
   const sourceNode = sourceNodeFor(source, parsedDescriptor.parserId, parsedDescriptor.parserVersion, parsedDescriptor.fidelity, {
     "code:pythonVersionInfo": versionInfo,
   });
