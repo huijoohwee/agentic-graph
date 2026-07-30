@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 
 import { EVIDENCE_FIELDS, sha256 } from "../knowledge-graph/contract.mjs";
 import { createKnowledgeGraphRuntime, KNOWLEDGE_GRAPH_TOOL_NAMES } from "../knowledge-graph/runtime.mjs";
@@ -14,11 +16,24 @@ import {
 } from "../knowledge-graph/store.mjs";
 import { parseSqlSource } from "../knowledge-graph/sql-parser.mjs";
 
+const execFileAsync = promisify(execFile);
+
 async function writeFile(root, relativePath, contents) {
   const target = path.join(root, relativePath);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, contents);
   return target;
+}
+
+async function initializeRepository(repositoryPath) {
+  await fs.mkdir(repositoryPath, { recursive: true });
+  await execFileAsync("git", ["init", "--quiet", repositoryPath], {
+    env: {
+      PATH: String(process.env.PATH || ""),
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_CONFIG_GLOBAL: "/dev/null",
+    },
+  });
 }
 
 async function createFixture(t, { withPdfConverter = true } = {}) {
@@ -28,7 +43,7 @@ async function createFixture(t, { withPdfConverter = true } = {}) {
   const corpusRoot = path.join(base, "corpus");
   const outputRoot = path.join(knowgrphRoot, "outputs");
   await fs.mkdir(knowgrphRoot, { recursive: true });
-  await fs.mkdir(path.join(corpusRoot, ".git"), { recursive: true });
+  await initializeRepository(corpusRoot);
   await writeFile(corpusRoot, "src/db.ts", "export function load() { return 1; }\n");
   await writeFile(corpusRoot, "src/db/index.ts", "export function alternate() { return 2; }\n");
   await writeFile(corpusRoot, "src/app.ts", [
@@ -69,7 +84,7 @@ async function createFixture(t, { withPdfConverter = true } = {}) {
   await writeFile(corpusRoot, "config.json", '{"constructor":{"toString":"kept"},"credentials":{"value":"secret"}}\n');
   await writeFile(corpusRoot, "wrangler.toml", 'name = "fixture"\n[credentials]\nvalue = "secret"\n');
   await writeFile(corpusRoot, "paper.pdf", Buffer.from("%PDF-1.4\nlocal fixture\n%%EOF\n"));
-  await writeFile(corpusRoot, "nested/.git/HEAD", "ref: refs/heads/main\n");
+  await initializeRepository(path.join(corpusRoot, "nested"));
   await writeFile(corpusRoot, "nested/schema.sql", "CREATE TABLE accounts (id INTEGER PRIMARY KEY);\n");
   let pdfCalls = 0;
   const runtime = createKnowledgeGraphRuntime({

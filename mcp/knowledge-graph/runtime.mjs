@@ -438,7 +438,7 @@ async function ingestResolvedTransaction(
       },
     );
   }
-
+  await discovered.revalidateAdmission();
   const derivedEdgesByRepository = buildRepositoryScopedResolutionEdges(
     discovered.sources,
     fragments,
