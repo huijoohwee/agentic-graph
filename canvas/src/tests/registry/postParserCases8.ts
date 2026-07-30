@@ -6,6 +6,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["markdown.workspace.runOutputSwitch.waitsForRunPublication","@/__tests__/workspaceRunOutputSwitchPersistence.test.ts","testWorkspaceRunOutputSwitchWaitsForRunPublication"],
   ["immersive.media.defaults.zeroConfig","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete"],
   ["immersive.media.projections.focusSharedView","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaProjectionMarkersFocusTheSharedView"],
+  ["immersive.media.controls.observableFeedback","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaContextControlsPublishObservableFeedback"],
   ["immersive.media.invocation.strict","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaNativeInvocationIsStrict"],
   ["immersive.media.mcp.exactTwo","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaAgentReadyContractsExposeTwoTools"],
   ["immersive.media.source.sharedOwners","@/__tests__/immersiveMediaRuntime.test","testImmersiveMediaReusesPanelRendererAndCameraOwnership"],

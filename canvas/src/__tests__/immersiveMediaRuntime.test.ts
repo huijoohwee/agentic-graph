@@ -15,7 +15,11 @@ import {
   focusImmersiveMediaMarker,
   playImmersiveMediaIntro,
   readImmersiveMediaSnapshot,
+  resetImmersiveMediaView,
   resetImmersiveMediaRuntimeForTests,
+  setImmersiveMediaPolygonPattern,
+  transitionImmersiveMedia,
+  zoomImmersiveMedia,
 } from '@/features/immersive-media/immersiveMediaRuntime'
 
 export function testImmersiveMediaDefaultsAreZeroConfigAndCapabilityComplete() {
@@ -52,6 +56,50 @@ export function testImmersiveMediaProjectionMarkersFocusTheSharedView() {
 
   const unchanged = focusImmersiveMediaMarker('marker-custom-element', 'plan')
   assert.equal(unchanged, cleared)
+}
+
+export function testImmersiveMediaContextControlsPublishObservableFeedback() {
+  resetImmersiveMediaRuntimeForTests()
+
+  const zoomedIn = zoomImmersiveMedia('in')
+  assert.equal(zoomedIn.view.fieldOfViewDegrees, 58)
+  assert.equal(zoomedIn.lastAction, 'zoom-in')
+  assert.equal(zoomedIn.message, 'Zoomed in to 58° field of view.')
+
+  const zoomedOut = zoomImmersiveMedia('out')
+  assert.equal(zoomedOut.view.fieldOfViewDegrees, 68)
+  assert.equal(zoomedOut.lastAction, 'zoom-out')
+  assert.equal(zoomedOut.message, 'Zoomed out to 68° field of view.')
+
+  focusImmersiveMediaMarker('marker-custom-element', 'map')
+  const reset = resetImmersiveMediaView()
+  assert.deepEqual(reset.view, {
+    yawDegrees: 0,
+    pitchDegrees: 0,
+    fieldOfViewDegrees: 68,
+    lensStrength: 0,
+  })
+  assert.equal(reset.message, 'Shared Camera view reset.')
+
+  const polygonHidden = setImmersiveMediaPolygonPattern(false)
+  assert.equal(polygonHidden.polygonPattern, false)
+  assert.equal(polygonHidden.lastAction, 'polygon')
+  assert.equal(polygonHidden.message, 'Polygon marker pattern hidden.')
+
+  const intro = playImmersiveMediaIntro()
+  assert.equal(intro.lastAction, 'intro')
+  assert.equal(intro.message, 'Intro animation queued on the shared Camera.')
+
+  const transition = transitionImmersiveMedia()
+  assert.equal(transition.lastAction, 'transition')
+  assert.equal(transition.message, 'Bounded panorama transition queued.')
+
+  const panelSource = readFileSync(resolve(process.cwd(), 'src/features/immersive-media/ImmersiveMediaPanelProjection.tsx'), 'utf8')
+  assert.match(panelSource, /aria-label="Zoom in immersive Camera"/)
+  assert.match(panelSource, /aria-label="Zoom out immersive Camera"/)
+  assert.match(panelSource, /focusImmersiveMediaMarker\('marker-custom-element', 'map'\)/)
+  assert.match(panelSource, /role=\{snapshot\.error \? 'alert' : 'status'\}/)
+  assert.match(panelSource, /data-kg-immersive-media-selected-marker/)
 }
 
 export async function testImmersiveMediaNativeInvocationIsStrict() {

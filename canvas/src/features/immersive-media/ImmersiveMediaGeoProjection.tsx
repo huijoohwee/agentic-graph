@@ -111,6 +111,11 @@ export function ImmersiveMediaGeoProjection({
       data-kg-immersive-media-geo-projection="active"
       data-kg-immersive-media-geo-revision={snapshot.revision}
       data-kg-immersive-media-geo-fov={Math.round(snapshot.view.fieldOfViewDegrees)}
+      data-kg-immersive-media-geo-intro-revision={snapshot.introRevision}
+      data-kg-immersive-media-geo-transition-revision={snapshot.transitionRevision}
+      data-kg-immersive-media-geo-overlay={snapshot.overlay.enabled ? '1' : '0'}
+      data-kg-immersive-media-geo-polygon={snapshot.polygonPattern ? '1' : '0'}
+      data-kg-immersive-media-geo-selected-marker={snapshot.selectedMarkerId || ''}
     >
       <div
         className="absolute inset-[8%_8%_13%_8%] overflow-hidden rounded-[2rem] border border-cyan-200/35 transition-all ease-out"
