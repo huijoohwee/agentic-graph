@@ -224,6 +224,13 @@ export const testMarkdownWorkspaceRuntimeGraphWritebackRefreshesActiveEditorText
 
 export const testMarkdownWorkspaceSelectionClearsStaleEditorTextBeforeSsotDocumentSwitch = () => {
   const text = readUtf8(markdownWorkspaceSelectionPath())
+  if (
+    !text.includes("import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'")
+    || !text.includes('const pendingSourceWrites = settleWorkspaceSourceTextWrites()')
+    || !text.includes('Promise.allSettled([')
+  ) {
+    throw new Error('Expected file selection to settle generated Canvas source writes and their durable mirror before changing document ownership')
+  }
   if (!text.includes('const previousActivePathRef = React.useRef<WorkspacePath | null>(args.activePath)')) {
     throw new Error('Expected markdown workspace selection to track the previous active path before synchronizing the active markdown document')
   }

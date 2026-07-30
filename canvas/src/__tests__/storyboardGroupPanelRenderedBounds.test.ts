@@ -45,17 +45,16 @@ export function testGeneratedOutputGroupUsesRenderedCollectiveBounds() {
       { left: 120, top: 80, right: 480, bottom: 280 },
       { left: 700, top: 500, right: 1060, bottom: 700 },
     ],
-    padding: 24,
   })
 
   if (
     memberNodeIds.join(',') !== ['child-a', 'child-b', 'panel'].join(',')
     || memberNodeIds.includes(source.id)
     || !box
-    || box.left !== -4
-    || box.top !== 6
-    || box.width !== 988
-    || box.height !== 668
+    || box.left !== -28
+    || box.top !== -18
+    || box.width !== 1036
+    || box.height !== 716
   ) {
     throw new Error(`expected a rendered collective group around only generated outputs, got ${JSON.stringify({ memberNodeIds, box })}`)
   }

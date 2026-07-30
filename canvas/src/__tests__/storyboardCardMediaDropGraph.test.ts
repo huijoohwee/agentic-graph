@@ -9,8 +9,10 @@ import { resolveStoryboardCardMediaDropGraphData } from '@/components/Storyboard
 import { readStoryboardInlineMediaConsumerIds } from '@/components/StoryboardWidgetCanvas/storyboardCardInlineMediaConsumers'
 import { getCachedStoryboardWidgetOverlayEdgeGraph } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
 import {
+  buildStoryboardContainedProjectionEdgePath,
   buildStoryboardOverlayEdgePathD,
   buildStoryboardOutputCardLeftSidePath,
+  readStoryboardContainedProjectionEdgeAnchors,
   readStoryboardOutputCardLeftSideAnchors,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetOverlayEdgeAnchors'
 import { buildRichMediaPanelRegistryDraft } from '@/features/storyboard-widget-manager/richMediaPanelRegistryDraft'
@@ -629,4 +631,26 @@ export function testStoryboardOverlayForwardTrackEdgeAvoidsReverseBacktrack() {
   assert(forwardFirstX != null && forwardFirstX > sx, `expected forward-track path to move forward first, got ${forwardPath}`)
   assert(sourceLineFirstX != null && sourceLineFirstX > 618.08, `expected source-line forward edge to move forward before routing, got ${sourceLinePath}`)
   assert(hasItemFirstX != null && hasItemFirstX > 531.08, `expected same-line containment edge to move forward before routing, got ${hasItemPath}`)
+
+  const containedProjectionAnchors = readStoryboardContainedProjectionEdgeAnchors({
+    sourceRect: { left: 100, top: 100, right: 460, bottom: 300, width: 360, height: 200 },
+    targetRect: { left: 100, top: 380, right: 460, bottom: 580, width: 360, height: 200 },
+  })
+  assert(
+    containedProjectionAnchors?.trackSide === 'right'
+      && containedProjectionAnchors.source.side === 'right'
+      && containedProjectionAnchors.target.side === 'right',
+    `expected a vertically stacked projected edge to use the collective's side gutter, got ${JSON.stringify(containedProjectionAnchors)}`,
+  )
+  const containedProjectionPath = buildStoryboardContainedProjectionEdgePath({
+    source: containedProjectionAnchors!.source,
+    target: containedProjectionAnchors!.target,
+    trackSide: containedProjectionAnchors!.trackSide!,
+  })
+  const containedProjectionXs = Array.from(containedProjectionPath.matchAll(/-?\d+(?:\.\d+)?(?=,)/g))
+    .map(match => Number(match[0]))
+  assert(
+    Math.max(...containedProjectionXs) === 484,
+    `expected the projected edge track to stay inside the 48px auto-bounded group gutter, got ${containedProjectionPath}`,
+  )
 }

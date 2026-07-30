@@ -16,6 +16,8 @@ export type StoryboardGroupPanelRenderedBox = {
   width: number
 }
 
+export const STORYBOARD_GROUP_PANEL_AUTO_BOUNDS_PADDING_PX = 48
+
 const cleanId = (value: unknown): string => String(value || '').trim()
 
 /**
@@ -85,7 +87,9 @@ export function computeStoryboardGroupPanelRenderedBox(args: {
     || !Number.isFinite(args.surfaceRect.top)
   ) return null
 
-  const padding = Number.isFinite(args.padding) ? Math.max(0, Number(args.padding)) : 24
+  const padding = Number.isFinite(args.padding)
+    ? Math.max(0, Number(args.padding))
+    : STORYBOARD_GROUP_PANEL_AUTO_BOUNDS_PADDING_PX
   const left = Math.min(...memberRects.map(rect => rect.left))
   const top = Math.min(...memberRects.map(rect => rect.top))
   const right = Math.max(...memberRects.map(rect => rect.right))

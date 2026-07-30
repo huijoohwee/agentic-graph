@@ -46,7 +46,9 @@ import {
   readCanonicalStoryboardWidgetOverlayIdentity,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
 import {
+  buildStoryboardContainedProjectionEdgePath,
   buildStoryboardOverlayEdgePathD,
+  readStoryboardContainedProjectionEdgeAnchors,
   readStoryboardOverlayFallbackRectAnchor,
   readStoryboardOutputCardLeftSideAnchors,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetOverlayEdgeAnchors'
@@ -55,6 +57,7 @@ import { FRONTMATTER_COLLECTIVE_ROLE_INDEX_KEY, buildFrontmatterOverlayNodeLooku
 import { resolveStoryboardWidgetFocusedEdgeIds } from '@/lib/storyboardWidget/storyboardWidgetPortRows'
 import { FLOW_PORT_HANDLE_PREVIEW_EVENT, type FlowPortHandlePreviewDetail } from '@/components/StoryboardWidget/flowPortHandlePointerDrag'
 import { resolveStoryboardWidgetOverlayEdgeGraphAuthority } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetOverlayEdgeGraphAuthority'
+import { readWorkflowMaterializationProjectionSourceNodeId } from '@/lib/storyboardWidget/runMaterializationProjection'
 
 function removeAllPaths(ref: React.MutableRefObject<Map<string, SVGPathElement>>) {
   for (const el of ref.current.values()) {
@@ -1317,8 +1320,19 @@ export function useStoryboardWidgetOverlayEdges(args: {
         const semanticCardMediaOutputAnchors = isStoryboardCardMediaDropOverlayEdge(rawEdge, overlayNodeById.get(source) || null, target)
           ? readStoryboardOutputCardLeftSideAnchors({ sourceCardRect: tRect, outputCardRect: sRect })
           : null
-        const sAnchor = semanticCardMediaOutputAnchors?.source || readAnchor({ nodeId: source, dir: 'out', portKey: e.sourcePortKey || FLOW_HANDLE_DEFAULT_EDGE_ID, fallbackRect: sRect, fallbackPct: sPct })
-        const tAnchor = semanticCardMediaOutputAnchors?.target || readAnchor({ nodeId: target, dir: 'in', portKey: e.targetPortKey || FLOW_HANDLE_DEFAULT_EDGE_ID, fallbackRect: tRect, fallbackPct: tPct })
+        const containedProjectionAnchors = rawEdge
+          && readWorkflowMaterializationProjectionSourceNodeId(rawEdge.properties)
+          ? readStoryboardContainedProjectionEdgeAnchors({
+              sourceRect: sRect,
+              targetRect: tRect,
+            })
+          : null
+        const sAnchor = semanticCardMediaOutputAnchors?.source
+          || containedProjectionAnchors?.source
+          || readAnchor({ nodeId: source, dir: 'out', portKey: e.sourcePortKey || FLOW_HANDLE_DEFAULT_EDGE_ID, fallbackRect: sRect, fallbackPct: sPct })
+        const tAnchor = semanticCardMediaOutputAnchors?.target
+          || containedProjectionAnchors?.target
+          || readAnchor({ nodeId: target, dir: 'in', portKey: e.targetPortKey || FLOW_HANDLE_DEFAULT_EDGE_ID, fallbackRect: tRect, fallbackPct: tPct })
         const sx = (sAnchor ? sAnchor.x : sRect.right) - baseLeft
         const tx = (tAnchor ? tAnchor.x : tRect.left) - baseLeft
         const sy = (sAnchor ? sAnchor.y : sRect.top + (Math.max(0, Math.min(100, sPct)) / 100) * sRect.height) - baseTop
@@ -1338,7 +1352,30 @@ export function useStoryboardWidgetOverlayEdges(args: {
           orderByNodeId: overlayFlowOrderByNodeId,
         }) === 'forward'
 
-        const d = buildStoryboardOverlayEdgePathD({ outputCardLeftSide: !!semanticCardMediaOutputAnchors, flowForwardTrack, edgeType: globalEdgeType, sx, sy: adjustedSy, tx, ty: adjustedTy, rankdir, curve: overlayCurve || readEdgePathCurveOptions(e as unknown as GraphEdge, schema) })
+        const d = containedProjectionAnchors?.trackSide
+          ? buildStoryboardContainedProjectionEdgePath({
+              source: { x: sx, y: adjustedSy },
+              target: { x: tx, y: adjustedTy },
+              trackSide: containedProjectionAnchors.trackSide,
+            })
+          : buildStoryboardOverlayEdgePathD({
+              outputCardLeftSide: !!semanticCardMediaOutputAnchors,
+              flowForwardTrack,
+              edgeType: globalEdgeType,
+              sx,
+              sy: adjustedSy,
+              tx,
+              ty: adjustedTy,
+              rankdir: containedProjectionAnchors
+                ? containedProjectionAnchors.source.side === 'top'
+                  || containedProjectionAnchors.source.side === 'bottom'
+                  ? 'TB'
+                  : 'LR'
+                : rankdir,
+              curve: containedProjectionAnchors
+                ? null
+                : overlayCurve || readEdgePathCurveOptions(e as unknown as GraphEdge, schema),
+            })
         keep.add(edgeId)
         const pathEl = existing || document.createElementNS('http://www.w3.org/2000/svg', 'path')
         const stroke = e.stroke
