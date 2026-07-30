@@ -123,7 +123,19 @@ test('runtime basemap fallbacks cannot bypass exact Flight style retention', () 
   )
   assert.match(
     basemap,
-    /const requiresFlightStyleRetention[\s\S]*?Boolean\(initialStyleOverrideRef\.current\)[\s\S]*?readFlightGeoOverlay\(\)\.active/,
+    /const readLiveFlightBootstrapStyle[\s\S]*?initialStyleOverrideRef\.current[\s\S]*?ownerScope === NATIVE_GEOSPATIAL_MAPLIBRE_OWNER[\s\S]*?readFlightGeoOverlay\(\)\.active[\s\S]*?\?\s*FLIGHT_GEO_BOOTSTRAP_STYLE\s*:\s*null/,
+  )
+  assert.match(
+    basemap,
+    /const requiresFlightStyleRetention[\s\S]*?Boolean\(readLiveFlightBootstrapStyle\(\)\)/,
+  )
+  assert.match(
+    basemap,
+    /flightBootstrapActive:\s*\(\)\s*=>\s*Boolean\(readLiveFlightBootstrapStyle\(\)\)/,
+  )
+  assert.match(
+    basemap,
+    /const liveFlightBootstrapStyle = readLiveFlightBootstrapStyle\(\)[\s\S]*?reconcileMapLibreFlightBootstrap\(\{[\s\S]*?bootstrapStyle: liveFlightBootstrapStyle/,
   )
   assert.match(
     basemap,

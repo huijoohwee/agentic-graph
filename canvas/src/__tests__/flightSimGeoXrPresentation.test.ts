@@ -154,7 +154,7 @@ test('Flight Geo bootstrap retains one map owner and stages pre-document ownersh
   )
   assert.match(
     basemapHook,
-    /flightBootstrapActive: \(\) => Boolean\(initialStyleOverrideRef\.current\)/,
+    /flightBootstrapActive:\s*\(\)\s*=>\s*Boolean\(readLiveFlightBootstrapStyle\(\)\)/,
   )
   assert.doesNotMatch(basemapHook, /onGrabMapsFallback\?\.\(\)/)
   const bootstrapReconciliationDependencies = basemapHook.match(

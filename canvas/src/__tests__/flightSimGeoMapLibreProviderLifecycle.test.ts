@@ -37,6 +37,7 @@ import {
 
 test('a cold bootstrap re-arms after a failed disposal fence releases', async context => {
   const styleLoadListeners = new Set<() => void>()
+  let styleLoadBindings = 0
   let styleLoaded = false
   const map = {
     getStyle: () => ({
@@ -50,7 +51,9 @@ test('a cold bootstrap re-arms after a failed disposal fence releases', async co
       if (event === 'style.load') styleLoadListeners.delete(listener)
     },
     on: (event: string, listener: () => void) => {
-      if (event === 'style.load') styleLoadListeners.add(listener)
+      if (event !== 'style.load') return
+      styleLoadBindings += 1
+      styleLoadListeners.add(listener)
     },
     triggerRepaint: () => void 0,
   }
@@ -68,6 +71,16 @@ test('a cold bootstrap re-arms after a failed disposal fence releases', async co
   const releaseDisposal = acquireMapLibreMapDisposalPreparation(map)
   suspendMapLibreFlightBootstrapForDisposal(map)
   assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapPending, false)
+  assert.equal(styleLoadListeners.size, 0)
+
+  resumeMapLibreFlightBootstrapAfterDisposal(map)
+  assert.equal(
+    readMapLibreFlightBootstrapState(map)?.bootstrapPending,
+    false,
+    'an active disposal fence must block bootstrap rearm',
+  )
+  assert.equal(styleLoadBindings, 1)
+  assert.equal(styleLoadListeners.size, 0)
 
   releaseDisposal()
   resumeMapLibreFlightBootstrapAfterDisposal(map)
@@ -76,6 +89,12 @@ test('a cold bootstrap re-arms after a failed disposal fence releases', async co
     true,
     'the constructor-owned bootstrap must regain its settlement listener',
   )
+  assert.equal(
+    styleLoadBindings,
+    2,
+    'releasing the fence permits exactly one requested bootstrap rearm',
+  )
+  assert.equal(styleLoadListeners.size, 1)
 
   styleLoaded = true
   for (const listener of [...styleLoadListeners]) listener()

@@ -169,6 +169,17 @@ function hasExpectedBootstrapStyle(
   )
 }
 
+function isCurrentMapLibreStyleLoaded(
+  state: MapLibreFlightBootstrapState,
+): boolean {
+  try {
+    return typeof state.map.isStyleLoaded === 'function'
+      && state.map.isStyleLoaded() === true
+  } catch {
+    return false
+  }
+}
+
 function settlePendingBootstrap(
   state: MapLibreFlightBootstrapState,
   bootstrapGeneration: number,
@@ -429,7 +440,15 @@ export function requestMapLibreFlightPresentationBootstrap(
     || current.runId !== presentation.runId
     || current.tick !== presentation.tick
   ) return false
-  if (state.bootstrapApplied || state.bootstrapPending) return true
+  if (state.bootstrapApplied) return true
+  if (state.bootstrapPending) {
+    settlePendingBootstrap(state, state.bootstrapGeneration)
+    if (state.bootstrapApplied) return true
+    if (!isCurrentMapLibreStyleLoaded(state)) return true
+    // A provider style.load can overtake the local setStyle request. Its
+    // identity must not leave this map permanently "pending": reserve a new
+    // token below and reissue the exact bootstrap on the same map.
+  }
   try {
     const bootstrapStyle = state.bootstrapStyle
     beginMapLibreFlightBootstrap(map, bootstrapStyle)
@@ -491,6 +510,10 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
 }>): void {
   const state = ensureMapLibreFlightBootstrapState(options.map)
   if (!state || state.disposed) return
+  // A render-captured host override can briefly lag the source-owned Flight
+  // publication. Only the canonical inactive overlay may release bootstrap
+  // ownership and authorize a non-retaining provider-style restoration.
+  if (!options.bootstrapStyle && readFlightGeoOverlay().active) return
   state.bootstrapStyle = options.bootstrapStyle
   state.resumeReconciliation = () => {
     if (

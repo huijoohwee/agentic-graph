@@ -19,6 +19,7 @@ import {
 import { readFlightGeoOverlay } from '../../flightGeoOverlay.js'
 import { readFlightGeoMapViewportPadding } from '../../flightGeoMapViewport.js'
 import {
+  FLIGHT_GEO_BOOTSTRAP_STYLE,
   MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL,
   MAPLIBRE_DEFAULT_STYLE_URL,
   SAFE_SVG_FALLBACK_STYLE_SENTINEL,
@@ -35,6 +36,7 @@ import {
   acquireMapLibreMapDisposalPreparation,
   claimMapLibreMapLease,
   isMapLibreMapPreparingForDisposal,
+  NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
   readActiveNativeGeospatialMapLibreMap,
   type MapLibreMapOwnerScope,
 } from './mapLibreHostLease.js'
@@ -306,6 +308,17 @@ export function useMapLibreBasemap(args: {
   // therefore need the latest ownership rather than their mount-time value.
   const initialStyleOverrideRef = React.useRef(initialStyleOverride)
   initialStyleOverrideRef.current = initialStyleOverride
+  const readLiveFlightBootstrapStyle = React.useCallback((): Readonly<
+    Record<string, unknown>
+  > | null => (
+    initialStyleOverrideRef.current
+    || (
+      ownerScope === NATIVE_GEOSPATIAL_MAPLIBRE_OWNER
+      && readFlightGeoOverlay().active
+        ? FLIGHT_GEO_BOOTSTRAP_STYLE
+        : null
+    )
+  ), [ownerScope])
   const initialStylePreflightAbortRef =
     React.useRef<AbortController | null>(null)
   // Toast handlers close over the live Canvas snapshot. Their identity can
@@ -462,8 +475,7 @@ export function useMapLibreBasemap(args: {
         )
     }
     const requiresFlightStyleRetention = (): boolean => (
-      Boolean(initialStyleOverrideRef.current)
-      || readFlightGeoOverlay().active
+      Boolean(readLiveFlightBootstrapStyle())
     )
     const runtimeFallbackRequester =
       createMapLibreFlightRuntimeFallbackRequester({
@@ -700,7 +712,7 @@ export function useMapLibreBasemap(args: {
           }
         }
 
-        const style = initialStyleOverrideRef.current || selectedStyle
+        const style = readLiveFlightBootstrapStyle() || selectedStyle
 
         if (style == null) {
           setState((prev: BasemapResult) =>
@@ -715,7 +727,7 @@ export function useMapLibreBasemap(args: {
         initialStylePreflightAbortRef.current = preflightAbort
         const preflight = await resolveInitialMapLibreStyle({
           readActivationStyleOverride: () =>
-            initialStyleOverrideRef.current,
+            readLiveFlightBootstrapStyle(),
           selectedStyle: style,
           signal: preflightAbort.signal,
         }).finally(() => {
@@ -1057,7 +1069,8 @@ export function useMapLibreBasemap(args: {
           // Flight's local bootstrap has camera ownership before the first
           // native MapLibre frame. A late generic Singapore fit would overwrite
           // its stopped fixed-follow camera and strand the presentation gate.
-          flightBootstrapActive: () => Boolean(initialStyleOverrideRef.current),
+          flightBootstrapActive: () =>
+            Boolean(readLiveFlightBootstrapStyle()),
           isCurrent: () => !cancelled,
           map: () => map,
           requestFrame: typeof window === 'undefined'
@@ -1228,8 +1241,9 @@ export function useMapLibreBasemap(args: {
       typeof selectedStyle === 'string'
       && isOpenFreeMapLibertyUrl(selectedStyle)
     )
+    const liveFlightBootstrapStyle = readLiveFlightBootstrapStyle()
     reconcileMapLibreFlightBootstrap({
-      bootstrapStyle: initialStyleOverride || null,
+      bootstrapStyle: liveFlightBootstrapStyle,
       hasExactFlightOverlay: candidate => {
         const overlay = readFlightGeoOverlay()
         const expectedCamera = createFlightGeoOverlayMapLibreCamera(
@@ -1268,7 +1282,7 @@ export function useMapLibreBasemap(args: {
           }
           return preflight.style
         } catch (error) {
-          if (signal.aborted || initialStyleOverride) throw error
+          if (signal.aborted || readLiveFlightBootstrapStyle()) throw error
           return selectedStyle
         }
       },
@@ -1293,6 +1307,7 @@ export function useMapLibreBasemap(args: {
   }, [
     enabled,
     initialStyleOverride,
+    readLiveFlightBootstrapStyle,
     state.map,
     targetStyleUrl,
   ])
