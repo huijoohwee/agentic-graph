@@ -1,4 +1,5 @@
 import React from 'react'
+import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import {
@@ -22,25 +23,30 @@ export function ImmersiveMediaHud({
   const hoveredMarker = snapshot.markers.find(marker => marker.id === snapshot.hoveredMarkerId)
   const selectedMarker = snapshot.markers.find(marker => marker.id === snapshot.selectedMarkerId)
   const tooltipMarker = selectedMarker || hoveredMarker
+  const selectableSurfaceDataAttr = resolveMediaPreviewSelectableDataAttr(true)
   return (
     <>
       {geospatialComposite ? <ImmersiveMediaGeoProjection snapshot={snapshot} /> : null}
       {snapshot.overlay.enabled ? (
-        <aside
+        <figure
           className={cn(
-            'pointer-events-none absolute bottom-4 left-4 z-20 rounded border p-3 backdrop-blur',
+            'pointer-events-auto absolute bottom-4 left-4 z-20 m-0 rounded border p-3 backdrop-blur',
             UI_THEME_TOKENS.panel.border,
             UI_THEME_TOKENS.panel.bg,
           )}
+          aria-label="Partial immersive media overlay"
           style={{
             width: `${snapshot.overlay.widthPercent}%`,
             opacity: snapshot.overlay.opacity,
           }}
           data-kg-immersive-media-partial-overlay="1"
+          data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
         >
-          <b className="block text-xs">{snapshot.overlay.title}</b>
-          <span className="block text-[10px]">{snapshot.overlay.description}</span>
-        </aside>
+          <figcaption>
+            <b className="block text-xs">{snapshot.overlay.title}</b>
+            <span className="block text-[10px]">{snapshot.overlay.description}</span>
+          </figcaption>
+        </figure>
       ) : null}
       {selectedMarker?.kind === 'youtube' && selectedMarker.mediaUrl ? (
         <aside
