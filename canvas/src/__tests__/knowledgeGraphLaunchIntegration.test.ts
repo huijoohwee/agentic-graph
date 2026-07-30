@@ -365,7 +365,7 @@ export function testKnowledgeGraphCanvasProjectionRejectsPrivatePathsAndNonCanon
               id: 'repo:alpha',
               label: 'Alpha',
               type: 'Symbol',
-              properties: { rootPath: '/Users/private/repository' },
+              properties: { rootPath: '/workspace/private/repository' },
             },
           ],
           edges: [],
