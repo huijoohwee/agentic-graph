@@ -90,9 +90,10 @@ export async function readCachedWorkspaceSelectionResolvedTextForActivePath(args
 }): Promise<string> {
   const key = buildWorkspaceSelectionResolvedTextCacheKey(args)
   if (!key) return ''
+  const retainResolvedText = args.preferPathResolvedText !== true
   const cached = args.cacheRef.current
   if (cached?.key === key) {
-    if (typeof cached.text === 'string') return cached.text
+    if (retainResolvedText && typeof cached.text === 'string') return cached.text
     if (cached.promise) return cached.promise
   }
   const promise = readWorkspaceSelectionResolvedTextForActivePath(args)
@@ -100,7 +101,10 @@ export async function readCachedWorkspaceSelectionResolvedTextForActivePath(args
   try {
     const text = await promise
     if (args.cacheRef.current?.key === key) {
-      args.cacheRef.current = { key, text }
+      // File switches must reread path authority after a completed write. Keep
+      // only the in-flight coalescing window because the explorer entry
+      // revision can legitimately lag the Workspace FS mutation event.
+      args.cacheRef.current = retainResolvedText ? { key, text } : null
     }
     return text
   } catch (error) {

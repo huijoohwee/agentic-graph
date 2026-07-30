@@ -16,6 +16,14 @@ export const DEFAULT_WORKSPACE_SOURCE_ROOT_PATHS: WorkspacePath[] = [
   CHAT_LOCAL_STORAGE_ROOT_PATH_DEFAULT,
 ]
 
+export function isWorkspaceCanonicalDocsMirrorPath(path: string): boolean {
+  const normalizedPath = normalizeWorkspacePath(path as WorkspacePath)
+  return normalizedPath === WORKSPACE_DOCS_SOURCE_ROOT_PATH
+    || normalizedPath.startsWith(`${WORKSPACE_DOCS_SOURCE_ROOT_PATH}/`)
+    || normalizedPath === WORKSPACE_AGENTIC_OS_DOCS_SOURCE_ROOT_PATH
+    || normalizedPath.startsWith(`${WORKSPACE_AGENTIC_OS_DOCS_SOURCE_ROOT_PATH}/`)
+}
+
 function readWorkspaceConfiguredDocsMirrorRootPath(): WorkspacePath {
   const configured = normalizeWorkspacePath(readWorkspaceImportShareExportRootPathSetting() as WorkspacePath)
   if (!configured || configured === '/') return WORKSPACE_DOCS_SOURCE_ROOT_PATH
