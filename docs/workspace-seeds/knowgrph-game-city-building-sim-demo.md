@@ -42,7 +42,7 @@ run_ready_demo:
 city_runtime:
   schema_id: "knowgrph-city-grid/v1"
   runtime_owner: "one browser-local City Runtime"
-  stage_owner: "additive City Stage in the existing shared React Three Fiber Canvas"
+  stage_owner: "semantic City media stage in the existing shared React Three Fiber Canvas"
   fixed_step_ms: 1000
   world_ownership: "overlay-only"
   renderer_rule: "never create a second Canvas or renderer"
@@ -55,9 +55,9 @@ city_geo_xr:
   surface_owner: "Geo+XR Mode"
   geo_host_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  city_stage_owner: "existing shared React Three Fiber Canvas"
-  parcel_input_owner: "City Stage"
-  composition: "native MapLibre Geo below the shared City R3F stage"
+  city_stage_owner: "transparent shared React Three Fiber Canvas semantic media stage"
+  parcel_input_owner: "City Builder coordinate controls"
+  composition: "native MapLibre Geo with existing stopped aircraft and route; no unregistered City R3F mesh"
   native_xr_physics_stage_active: false
   authored_graph_scene_active: false
   duplicate_map_or_canvas_forbidden: true
@@ -67,7 +67,7 @@ city_semantic_media:
   accessible_name: "Interactive City simulation media stage"
   selection_marker_owner: "canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts"
   selection_marker_when: "City Stage active only"
-  pointer_capture_owner: "none; City R3F parcel input remains authoritative"
+  pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder coordinate controls own parcel selection"
   wrapper_added_generic_div_or_aria_hidden_forbidden: true
 city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
@@ -84,12 +84,12 @@ city_aerial_projection:
   flight_readiness_claimed: false
   duplicate_source_or_layers_forbidden: true
 city_camera:
-  framing: "isometric-topdown"
-  projection: "orthographic"
+  framing: "native MapLibre camera in Geo+XR"
+  projection: "MapLibre"
   canvas_mode: "geo-xr"
-  owner: "existing shared camera runtime"
-  resize_rule: "update orthographic bounds and projection matrix"
-  exit_rule: "restore the captured camera reference exactly once"
+  owner: "native MapLibre Geo host"
+  resize_rule: "native MapLibre viewport handling"
+  exit_rule: "restore the captured shared R3F camera reference exactly once"
 city_default:
   city_name: "Civic Seed"
   rows: 4
@@ -117,7 +117,7 @@ floating_panel:
     motionControl: "normalized input and selected parcel"
     gameMode: "exclusive city-overlay state and enter or exit handoff"
     flightSim: "read-only aerial-inspection handoff; no second city world"
-    camera: "orthographic framing and restore target"
+    camera: "native MapLibre framing and captured shared R3F restore target"
 advisor:
   implementation: "deterministic browser-local heuristic"
   loop: "generate -> select -> clarify -> evolve"
@@ -153,7 +153,7 @@ mcp:
 proof_contract:
   start: "neutral browser with no environment-selected or persisted city state"
   activation: "apply this Source File after Source Files bootstrap is ready"
-  assertions: ["Geo+XR Mode", "native MapLibre Geo host", "one shared R3F Canvas", "City Stage and parcel input above Geo", "stopped aircraft and route through existing Flight Geo layers", "Flight gameplay and readiness inactive", "no duplicate map, source, layers, or Canvas", "authored metrics", "clean console"]
+  assertions: ["Geo+XR Mode", "native MapLibre Geo host", "one shared R3F Canvas semantic media stage", "MapLibre gestures and City Builder coordinate parcel input", "no unregistered City R3F mesh", "stopped aircraft and route through existing Flight Geo layers", "Flight gameplay and readiness inactive", "no duplicate map, source, layers, or Canvas", "authored metrics", "clean console"]
   actions: ["Zone", "one Tick", "Stop fence", "Advice", "Save and read-back", "six panel projections", "Exit restore"]
   exact_sha_required: true
   repeatability: "repeat from neutral state and compare initial serialized bytes"
@@ -198,10 +198,10 @@ flow:
 
 This Source Files document is the derived local activation and proof projection
 for a deterministic city simulation. Applying it requests `cityBuilder` and
-Geo+XR Mode. The existing native MapLibre Geo host remains below the City Stage
-and parcel input in the existing shared React Three Fiber Canvas. The stage is
-an additive gameplay overlay; `isometric-topdown` is its orthographic R3F camera
-framing, not a Canvas mode, a MapLibre camera replacement, or a separate world.
+Geo+XR Mode. The existing native MapLibre Geo host owns the geographic visual
+and viewport gestures. The shared React Three Fiber Canvas remains as a labeled
+semantic City media stage, but it paints no unregistered local City mesh over
+the map; City Builder coordinate controls own parcel selection.
 
 City also uses `projectCitySimAerialInspectionToGeospatialOverlay` to derive one
 deterministic route and one stopped aircraft from the current selected authored
@@ -219,7 +219,8 @@ authored/native graph from City source intent through stage ownership. The share
 wrapped by one labeled semantic `figure` that exposes the existing
 media-selection marker only while City is active. It has a `figcaption` and no
 pointer capture, and its wrapper adds no generic `div` or `aria-hidden`, so
-selection tooling can find the stage without stealing parcel input.
+selection tooling can find the stage without stealing MapLibre gestures or
+City Builder parcel input.
 
 The normative requirements live at
 `.kiro/specs/knowgrph-city-building-sim/requirements.md`. This document does
@@ -261,8 +262,8 @@ r03c03,3,3,unzoned,5000,0,0
    inactive.
 4. Open Explorer -> Source Files and wait for bootstrap readiness.
 5. Open this document and apply it.
-6. Confirm Geo+XR Mode keeps native MapLibre visible beneath the shared City
-   Stage, then confirm City Builder opens with tick `0`, treasury `100000`
+6. Confirm Geo+XR Mode keeps native MapLibre unobscured with its stopped
+   aircraft and route overlay, then confirm City Builder opens with tick `0`, treasury `100000`
    cents, population `15`, and the 4 by 4 fixture.
 7. Confirm the existing Flight Geo layers show the selected authored XR
    profile's route and stopped aircraft without opening Flight gameplay or
@@ -292,7 +293,7 @@ All projections must report the same runtime revision:
 - Game Mode: exclusive city-overlay state;
 - Flight Sim: read-only City aerial handoff with no Flight gameplay or second
   city world;
-- Camera: orthographic framing and captured restore target.
+- Camera: native MapLibre framing and captured shared R3F restore target.
 
 City Builder remains the complete editing surface. Exit restores the prior
 FloatingPanel surface and camera exactly once.
@@ -304,13 +305,14 @@ FloatingPanel surface and camera exactly once.
 - [ ] Neutral proof records City Builder closed and City Stage inactive before
   applying this Source File.
 - [ ] Source application alone selects Geo+XR, retains one native MapLibre host,
-  and materializes the authored fixture in the existing shared R3F Canvas.
-- [ ] City Stage and parcel input remain above Geo, and the existing Flight Geo
+  a transparent shared R3F semantic media stage, and the authored fixture in City Builder.
+- [ ] MapLibre gestures remain available, City Builder controls parcel input,
+  no unregistered City R3F mesh obscures Geo, and the existing Flight Geo
   source/layers show the deterministic route and stopped aircraft with no
   duplicate map/source/layer/Canvas or active Flight gameplay/readiness.
 - [ ] The native XR physics playground and authored graph scene remain absent,
   the Flight XR environment source is empty, and the active City media `figure`
-  is named and selectable without intercepting one parcel pointer action.
+  is named and selectable without intercepting MapLibre gestures.
 - [ ] Zone, one Tick, Stop fencing, Advice, and Save/read-back pass.
 - [ ] Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera show
   one shared revision and their contracted projections.

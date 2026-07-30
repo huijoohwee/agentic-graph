@@ -13,7 +13,7 @@ export const CITY_SIM_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_
 export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   id: 'city-sim',
   rendererRule: 'never create a second Canvas or renderer',
-  stageOwner: 'additive City Stage in the existing shared React Three Fiber Canvas',
+  stageOwner: 'semantic City media stage in the existing shared React Three Fiber Canvas',
   worldOwnership: 'overlay-only',
 })
 export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze([
@@ -316,6 +316,9 @@ const requireCitySimRuntimeIdentity = source => {
   const cityGeoXr = isRecord(frontmatter.city_geo_xr)
     ? frontmatter.city_geo_xr
     : {}
+  const citySemanticMedia = isRecord(frontmatter.city_semantic_media)
+    ? frontmatter.city_semantic_media
+    : {}
   const cityAerialProjection = isRecord(frontmatter.city_aerial_projection)
     ? frontmatter.city_aerial_projection
     : {}
@@ -397,17 +400,37 @@ const requireCitySimRuntimeIdentity = source => {
   requireValue(
     'city_geo_xr.city_stage_owner',
     cityGeoXr.city_stage_owner,
-    'existing shared React Three Fiber Canvas',
+    'transparent shared React Three Fiber Canvas semantic media stage',
   )
-  requireValue('city_geo_xr.parcel_input_owner', cityGeoXr.parcel_input_owner, 'City Stage')
+  requireValue(
+    'city_geo_xr.parcel_input_owner',
+    cityGeoXr.parcel_input_owner,
+    'City Builder coordinate controls',
+  )
   requireValue(
     'city_geo_xr.composition',
     cityGeoXr.composition,
-    'native MapLibre Geo below the shared City R3F stage',
+    'native MapLibre Geo with existing stopped aircraft and route; no unregistered City R3F mesh',
   )
   requireValue(
     'city_geo_xr.duplicate_map_or_canvas_forbidden',
     readBooleanPreset(cityGeoXr.duplicate_map_or_canvas_forbidden),
+    true,
+  )
+  requireValue('city_semantic_media.element', citySemanticMedia.element, 'figure')
+  requireValue(
+    'city_semantic_media.accessible_name',
+    citySemanticMedia.accessible_name,
+    'Interactive City simulation media stage',
+  )
+  requireValue(
+    'city_semantic_media.pointer_capture_owner',
+    citySemanticMedia.pointer_capture_owner,
+    'none; MapLibre owns Geo+XR viewport gestures and City Builder coordinate controls own parcel selection',
+  )
+  requireValue(
+    'city_semantic_media.wrapper_added_generic_div_or_aria_hidden_forbidden',
+    readBooleanPreset(citySemanticMedia.wrapper_added_generic_div_or_aria_hidden_forbidden),
     true,
   )
   requireValue(
@@ -468,6 +491,9 @@ const requireCitySimRuntimeIdentity = source => {
     true,
   )
   requireValue('city_camera.canvas_mode', readCanvasSurfaceMode(cityCamera.canvas_mode), 'geo-xr')
+  requireValue('city_camera.framing', cityCamera.framing, 'native MapLibre camera in Geo+XR')
+  requireValue('city_camera.projection', cityCamera.projection, 'MapLibre')
+  requireValue('city_camera.owner', cityCamera.owner, 'native MapLibre Geo host')
   if (missing.length > 0) {
     throw new Error(
       `proof-pending workspace document ${CITY_SIM_SEED_BASENAME} has invalid authority; `

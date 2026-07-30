@@ -65,6 +65,14 @@ function requiredString(value: unknown, label: string): string {
   return value
 }
 
+function sameVector(
+  actual: SpatialVector,
+  expected: readonly number[],
+): boolean {
+  return actual.length === expected.length
+    && actual.every((value, index) => value === expected[index])
+}
+
 export function readFlightSimAircraftAssetSpec(value: unknown): FlightSimAircraftAssetSpec {
   const source = record(value)
   exactKeys(source)
@@ -81,19 +89,29 @@ export function readFlightSimAircraftAssetSpec(value: unknown): FlightSimAircraf
   const dimensionsMeters = vector(source.dimensionsMeters, 'Flight Sim aircraft dimensions')
   const collisionHalfSizeMeters = vector(source.collisionHalfSizeMeters, 'Flight Sim collision half-size')
   const catalogAsset = resolveXrSceneLibraryAsset('vehicle-airplane')
-  if (catalogAsset.id !== source.id || catalogAsset.shape !== source.shape) {
-    throw new Error('Flight Sim aircraft spec conflicts with the canonical XR scene-library identity')
+  const label = requiredString(source.label, 'Flight Sim asset label')
+  const defaultColor = requiredString(source.defaultColor, 'Flight Sim asset color')
+  const expectedCollisionHalfSize = catalogAsset.dimensionsMeters.map(value => value / 2)
+  if (
+    catalogAsset.id !== source.id
+    || catalogAsset.shape !== source.shape
+    || catalogAsset.label !== label
+    || catalogAsset.defaultColor !== defaultColor
+    || !sameVector(dimensionsMeters, catalogAsset.dimensionsMeters)
+    || !sameVector(collisionHalfSizeMeters, expectedCollisionHalfSize)
+  ) {
+    throw new Error('Flight Sim aircraft spec must match the canonical Media Airplane asset')
   }
   return Object.freeze({
     schema: FLIGHT_SIM_ASSET_SPEC_SCHEMA,
     id: 'vehicle-airplane',
-    label: requiredString(source.label, 'Flight Sim asset label'),
+    label,
     representation: 'typescript-json',
     renderer: 'xr-procedural-vehicle',
     shape: 'airplane',
     dimensionsMeters,
     collisionHalfSizeMeters,
-    defaultColor: requiredString(source.defaultColor, 'Flight Sim asset color'),
+    defaultColor,
     opaqueBinaryFallback: null,
     runtimeModelCalls: 0,
     runtimeNetworkCalls: 0,
