@@ -110,17 +110,22 @@ run_ready_demo:
 city_runtime:
   schema_id: "knowgrph-city-grid/v1"
   world_ownership: "overlay-only"
-  stage_owner: "additive City Stage in the existing shared React Three Fiber Canvas"
+  stage_owner: "semantic City media stage in the existing shared React Three Fiber Canvas"
   renderer_rule: "never create a second Canvas or renderer"
   runtime_dependencies_added: 0
 city_geo_xr:
   surface_owner: "Geo+XR Mode"
   geo_host_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  city_stage_owner: "existing shared React Three Fiber Canvas"
-  parcel_input_owner: "City Stage"
-  composition: "native MapLibre Geo below the shared City R3F stage"
+  city_stage_owner: "transparent shared React Three Fiber Canvas semantic media stage"
+  parcel_input_owner: "City Builder coordinate controls"
+  composition: "native MapLibre Geo with existing stopped aircraft and route; no unregistered City R3F mesh"
   duplicate_map_or_canvas_forbidden: true
+city_semantic_media:
+  element: "figure"
+  accessible_name: "Interactive City simulation media stage"
+  pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder coordinate controls own parcel selection"
+  wrapper_added_generic_div_or_aria_hidden_forbidden: true
 city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
@@ -136,7 +141,10 @@ city_aerial_projection:
   flight_readiness_claimed: false
   duplicate_source_or_layers_forbidden: true
 city_camera:
+  framing: "native MapLibre camera in Geo+XR"
+  projection: "MapLibre"
   canvas_mode: "geo-xr"
+  owner: "native MapLibre Geo host"
 ---
 `
 const safeDraftPresentation = [
