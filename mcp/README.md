@@ -30,7 +30,7 @@ It is intentionally distinct from the other shipped Knowgrph MCP-ready surfaces:
    - Owners:
      - `mcp/server.js`
      - `mcp/local-tool-contract.js`
-   - Scope: read-only published Source Files retrieval, Agentic Canvas OS docs `/` `#` `@` invocation lookup, bounded skill-text evolution, prompt/resource/template discovery, local UI launch, local pipelines, exact application catalog/plan/execute composition, a private Dev-only KGC-backed ECS session runtime, local superagent harness, deny-first sandbox policy validation and authorization preflight, approval-gated video-remix run manifests, local browser API bridge, SEA-LION sidecar calls, HTML video rendering, visual annotation, scoped memory, local probe-tree branching, AI Showrunner dry-runs, zero-token OS status, vdeoxpln registry inspection, and credential-gated Google/Microsoft spreadsheet or slide publication
+   - Scope: read-only published Source Files retrieval, deterministic local knowledge-graph indexing/query/edge explanation, Agentic Canvas OS docs `/` `#` `@` invocation lookup, bounded skill-text evolution, prompt/resource/template discovery, local UI launch, local pipelines, exact application catalog/plan/execute composition, a private Dev-only KGC-backed ECS session runtime, local superagent harness, deny-first sandbox policy validation and authorization preflight, approval-gated video-remix run manifests, local browser API bridge, SEA-LION sidecar calls, HTML video rendering, visual annotation, scoped memory, local probe-tree branching, AI Showrunner dry-runs, zero-token OS status, vdeoxpln registry inspection, and credential-gated Google/Microsoft spreadsheet or slide publication
    - Transport: stdio only
    - MCP Apps metadata: advertises the shared `ui://knowgrph/agent-ready` resource, no-auth `securitySchemes`, mirrored `_meta.securitySchemes` for UI-linked tools, and widget-accessibility metadata from the shared contract
 
@@ -90,6 +90,46 @@ Managed autonomous implementation runs are configured and operated through the f
 Role-based collaboration registers the exact source-backed tuple `/agent.team #role-based-agent-team @agent-team` through `knowgrph.agent_team.plan`, `.start`, `.list`, and `.control`. Planning is read-only and zero-model. The canonical stdio host privately installs exact Agent Definition/workflow/review verification, local control authorization, file-backed review-receipt verification, and a durable replay-safe Ollama adapter with a zero-spend estimate; MCP callers cannot configure or replace any owner. Set `KNOWGRPH_AGENT_TEAM_MODEL` to an exact local model name to enable execution (loopback `http://127.0.0.1:11434` by default). The checked-in `team.collaborative-intelligence@1.0.0` source delegates to an evidence scout and risk reviewer, then returns manager-owned synthesis. Durable execution sends one immutable digest-bound projection to estimate and execute, records pending/completed model-effect receipts, persists admitted envelopes on deterministic leased effects, folds a durable active-stage clock across control races, blocks uncertain or over-envelope continuation, requires exact delegate-synthesis and final-owner output-acceptance receipts, preserves exact start/control replay snapshots, and verifies a content-digest event/checkpoint chain capped at 64 checkpoints. Each descriptor has a closed operation-specific output schema; only a completed exact run lookup can return a public answer, while broad lists and every control suppress it and all public projections suppress private specialist messages. This is local stdio functionality only; remote Worker parity is an explicit gap. See `docs/agent-team-runtime.md`.
 
 Provider-neutral agent and LLM applications use the exact host invocation `/application.compose #application-composition @application-manifest @component-catalog @integration-profile @runtime-proof`. `knowgrph.application.catalog` returns authoring schemas and sanitized exact runtime evidence, `knowgrph.application.plan` creates an immutable mode-bound zero-call plan, and `knowgrph.application.execute` replans and delegates bounded steps to existing owners. Live external authorization is host-injected and never accepted as an MCP argument. See `docs/agent-application-composition.md`.
+
+### Deterministic knowledge-graph tools
+
+The local stdio knowledge-graph capability is intentionally limited to these tool identities:
+
+- `knowgrph.knowledge_graph.ingest` — indexes supported local corpus structure through Knowgrph-owned deterministic adapters
+- `knowgrph.knowledge_graph.query` — retrieves matching graph evidence through lexical matching and graph traversal
+- `knowgrph.knowledge_graph.explain_edge` — explains a stored relationship from its source evidence and extraction basis
+
+The matching Agentic Canvas OS invocation tokens are:
+
+| MCP tool | Exact Agentic Canvas OS invocation |
+|---|---|
+| `knowgrph.knowledge_graph.ingest` | `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof` |
+| `knowgrph.knowledge_graph.query` | `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
+| `knowgrph.knowledge_graph.explain_edge` | `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
+
+Invoke the tool identity directly from a stdio MCP client, or resolve and validate the matching exact tuple through the existing ACOS docs invocation contract before explicitly calling the mapped tool. Use the input schema advertised by the running local server; this README does not duplicate or invent request fields.
+
+This is a deterministic structural path:
+
+- supported code is parsed with a registered local AST adapter
+- supported documentation, SQL schemas, configuration, and PDFs contribute only locally observable structure and source locations
+- every edge retains enough source evidence for `knowgrph.knowledge_graph.explain_edge`; no opaque similarity edge is accepted
+- query uses lexical matching and graph traversal, not embeddings or a vector store
+- bounded query results report explicit completeness, truncation, and limit/depth reasons rather than presenting a partial traversal as exhaustive
+- local-directory ingest, parsing, query, and edge explanation make no model or network call; an explicit repository URL may use the network only during bounded immutable-revision acquisition
+- missing parser coverage, malformed or unreadable input, encrypted or image-only PDF content, unresolved references, and unsupported syntax return explicit diagnostics rather than guessed graph facts
+
+The focused authority for coverage, provenance, diagnostics, and security is the [deterministic knowledge-graph runtime contract](../docs/documents/knowgrph-deterministic-knowledge-graph-runtime.md).
+
+Host configuration keeps arbitrary-codebase access explicit:
+
+- `KNOWGRPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS` is a platform path-delimited allowlist of corpus roots; without it, ingestion is confined to `KNOWGRPH_ROOT`.
+- `KNOWGRPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT` owns generated snapshots and defaults to `data/outputs/knowledge-graph` under `KNOWGRPH_ROOT`; callers cannot redirect storage outside this boundary, and the runtime excludes the boundary from discovery whenever it is nested under the indexed root.
+- Snapshots use bounded content-addressed source, deterministically chunked repository-resolution, index, and manifest shards behind one atomic current pointer. Non-strict ingest records an oversized source artifact as explicit `limited` evidence with `source_artifact_limit_exceeded`; strict ingest and oversized single resolution records fail before pointer replacement, preserving the prior ready snapshot.
+- A cross-process, dead-owner-recoverable per-graph ingest lease fences publication and rollback. Source shards are written incrementally while only cross-source resolution records remain in memory. The ingest schema exposes hard-bounded aggregate record and serialized-byte ceilings across retained inputs and derived edges; ambiguous evidence keeps the exact count and a deterministic bounded candidate set containing the edge target. Exceeding a ceiling returns a typed failure, rolls back newly created unpublished objects, and does not replace the current pointer.
+- `KNOWGRPH_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS` and `KNOWGRPH_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES` bound the native local PDF adapter.
+- `KNOWGRPH_PYTHON` selects the local Python 3 interpreter used only for stdlib AST extraction; an unavailable or invalid interpreter produces a typed parser failure, and strict ingest preserves the previous artifact instead of falling back.
+- Query and explain calls must send the exact `expectedSnapshotDigest` returned by ingest alongside its opaque `graphId`, so a replaced or tampered snapshot fails closed.
 
 Skill-text optimization uses `/skill.evolve #skill-evolution @skill-catalog @skill-policy @runtime-proof @operator` through the single `knowgrph.skill.evolve` tool. Its `plan/start/step/status/cancel` state machine provides deterministic epochs, batches, mini-batches, textual learning-rate decay, held-out promotion gates, durable CAS/idempotency fencing, source-bound usage envelopes, phase cost meters, and a review-pending proposal only. The orchestrator has no skill-apply or model-weight mutation operation. The canonical stdio server fails closed until a repository-contained, SHA-pinned, self-contained module supplies separate authorization, source-verifier, training-executor, candidate, and held-out capabilities in fresh per-call processes under the trusted inference-only boundary. Persistent state uses `KNOWGRPH_SKILL_EVOLUTION_STATE_DIR` or the standard user state directory, never the repository. See `docs/skill-evolution-runtime.md`.
 
@@ -222,6 +262,8 @@ This local README does **not** claim that the following are implemented in `mcp/
 - a server-side D1 shadow graph for the browser canvas pipeline
 - a second MCP-only graph materialization path outside the current FloatingPanel Chat ->
   YAML frontmatter -> Canvas apply flow
+- embeddings, a vector store, model-backed graph extraction/query, or a network parser for the deterministic knowledge-graph tools
+- compatibility, conformance, integration, execution, or dependency on another parser-generator or graph runtime
 - live Google or Microsoft account readiness, recipient sharing permissions, or provider latency from local/mock tests alone
 - a Prod, Pages, Worker, or Cloudflare export route; `export.publish` is local stdio functionality
 
@@ -369,6 +411,9 @@ Cross-provider/runtime settings are:
 
 Then you can call:
 
+- `knowgrph.knowledge_graph.ingest`, or `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof`, using the input schema advertised by the local server
+- `knowgrph.knowledge_graph.query`, or `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof`, using the input schema advertised by the local server
+- `knowgrph.knowledge_graph.explain_edge`, or `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof`, using the input schema advertised by the local server
 - `search` with `{ "query": "renderer architecture", "limit": 10 }`
 - `fetch` with `{ "id": "kgdoc::docs%2Fexample.md" }`
 - `knowgrph.ui.launch` with `{ "target": "workspaceEditor" }` (or `canvas` / `geospatial`)
@@ -476,6 +521,15 @@ If an agent should connect to the browser runtime MCP directly instead of going 
 ## Security / sandboxing
 
 By default, tool path arguments are restricted to **inside `KNOWGRPH_ROOT`**. This prevents accidental reads/writes outside the repo.
+
+For the deterministic knowledge-graph surface, root containment is only the first bound:
+
+- canonicalized source paths and resolved symlink targets must remain inside the configured root
+- indexed files are parsed as data and are never executed
+- traversal and returned evidence remain bounded; a limit produces an explicit incomplete/unsupported diagnostic rather than an apparently complete answer
+- configuration structure may be indexed, but secret values must not be returned as graph evidence
+- source-controlled labels and evidence are sanitized before MCP output
+- unsupported parsers, file forms, PDF content, and graph relationships fail honestly without model, network, embedding, vector-store, or guessed-edge fallback
 
 If you truly need to allow external paths, set:
 

@@ -1,5 +1,6 @@
 import {
   AGENTIC_OS_DOCS_MCP_BRIDGE_PATH,
+  isAgenticOsDocsMcpBridgeSuccessBoundToProof,
   isAgenticOsDocsMcpBridgeSuccessForTokens,
   normalizeAgenticOsDocsMcpBridgeRequest,
   type AgenticOsDocsMcpBridgeRequest,
@@ -35,6 +36,16 @@ export async function invokeAgenticOsDocsMcpBridge(
       ? String((payload as { error?: unknown }).error || '').trim()
       : ''
     throw new Error(error || 'Agentic OS docs MCP bridge did not cover every requested invocation token.')
+  }
+  if (
+    boundedRequest.expectedProof
+    && !isAgenticOsDocsMcpBridgeSuccessBoundToProof(
+      payload,
+      boundedRequest.invocationTokens,
+      boundedRequest.expectedProof,
+    )
+  ) {
+    throw new Error('Agentic OS docs MCP bridge routing proof changed during exact token resolution.')
   }
   return payload
 }

@@ -155,7 +155,11 @@ export async function testLaunchImportUrlSkipsFallbackWhenBridgeCreatesWorkspace
   if (calls.join(',') !== 'bridge:https://example.test/article') {
     throw new Error(`expected a successful Launch Import URL bridge to skip fallback, got ${calls.join(',')}`)
   }
-  if (!result || result.createdPaths?.[0] !== '/article.md') {
+  if (
+    !result
+    || !('createdPaths' in result)
+    || result.createdPaths?.[0] !== '/article.md'
+  ) {
     throw new Error(`expected Launch Import URL to preserve bridge mutation evidence, got ${JSON.stringify(result)}`)
   }
 }
@@ -178,7 +182,12 @@ export async function testLaunchImportUrlSkipsFallbackWhenBridgeHandledWithoutWo
   if (calls.join(',') !== 'bridge:https://example.test/article') {
     throw new Error(`expected handled Launch Import URL evidence to prevent a duplicate fallback, got ${calls.join(',')}`)
   }
-  if (!result || result.handled !== true || result.createdPaths?.length !== 0) {
+  if (
+    !result
+    || !('createdPaths' in result)
+    || result.handled !== true
+    || result.createdPaths?.length !== 0
+  ) {
     throw new Error(`expected Launch Import URL to preserve handled no-path evidence, got ${JSON.stringify(result)}`)
   }
 }

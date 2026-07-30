@@ -1,4 +1,6 @@
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
+import type { GraphData } from '@/lib/graph/types'
+import { isReadOnlyKnowledgeGraphProjection } from '@/features/knowledge-graph/knowledgeGraphProjectionPolicy'
 export {
   openMarkdownWorkspaceEditorPane,
   openWorkspaceEditorPane,
@@ -12,6 +14,7 @@ const WORKSPACE_GRAPH_MUTATION_TRANSITION_BLOCK_MS = 360
 export type WorkspaceGraphMutationState = {
   workspaceViewMode: WorkspaceViewMode
   workspaceCanvasPaneOpen: boolean
+  graphData?: GraphData | null
   markdownWorkspaceIndexingInFlight?: boolean
   workspaceGraphMutationBlockUntilMs?: number
   workspaceGraphMutationBlockKey?: string
@@ -30,6 +33,7 @@ export function isWorkspaceEditorOverlayOpen(args: {
 }
 
 export function isWorkspaceGraphMutationBlocked(args: WorkspaceGraphMutationState): boolean {
+  if (isReadOnlyKnowledgeGraphProjection(args.graphData)) return true
   if (args.workspaceGraphMutationLayoutLockActive === true) return true
   if (isWorkspaceEditorOverlayOpen(args) || args.markdownWorkspaceIndexingInFlight === true) return true
   const untilMs = Number(args.workspaceGraphMutationBlockUntilMs || 0)

@@ -120,6 +120,7 @@ The runtime direction:
 
 - command routes describe bounded actions, semantic tags scope intent/proof/cost, and bindings name the selected source or runtime surface;
 - exact route identities and typed arguments live only in their owning Invocation Registers;
+- the deterministic knowledge-graph lane resolves ACOS-owned `/`, `#`, and `@` tuples to explicit local stdio tool calls; dictionary lookup remains metadata-only.
 - MainPanel MCP shows readiness and non-secret setup metadata. It does not execute tools or store credentials in browser settings.
 - MainPanel readiness claims name the source owner and keep local and delivered ladder rungs
   separate; documentation, browser snapshots, and executable owners do not collapse into one label.
@@ -127,6 +128,14 @@ The runtime direction:
 - Local MCP, Pages HTTP MCP, Browser WebMCP, and approved Cloudflare control-plane owners are separate surfaces with explicit transport boundaries.
 
 This README describes the Dev repo. `agentic-canvas-os/docs` remains the documentation control surface. Production is not triggered by an ordinary `main` push: `.github/workflows/release.yml` requires an exact reviewed `main` SHA, a localhost-review candidate, manual dispatch, and protected `production` approval.
+
+### Deterministic local knowledge graph
+
+The current local stdio extension adds three direct tool identities: `knowgrph.knowledge_graph.ingest`, `knowgrph.knowledge_graph.query`, and `knowgrph.knowledge_graph.explain_edge`. A local MCP client invokes those names directly. ACOS-capable hosts use `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof`, `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof`, or `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` before the explicit mapped tool call.
+
+This path uses registered deterministic AST parsing for supported code and deterministic structural extraction for supported docs, SQL schemas, configs, and PDFs. Queries use lexical matching plus graph traversal, and every returned edge must be explainable from stored source evidence. Unsupported languages, file forms, PDF content, syntax, or relationships produce explicit diagnostics rather than guessed facts. Parsing, query, and edge explanation require no embeddings, vector store, model call, or network service; an explicit repository URL uses a separately bounded network acquisition phase before local parsing.
+
+The authoritative scope, provenance, diagnostics, and security requirements are in the [deterministic knowledge-graph runtime contract](docs/documents/knowgrph-deterministic-knowledge-graph-runtime.md).
 
 ### 2D Renderer: Storyboard template
 
@@ -151,7 +160,7 @@ binding, and tool identities; this README does not duplicate them.
 
 | Surface | How an agent uses it |
 | --- | --- |
-| Local stdio MCP (`mcp/server.js`) | Starts from an external MCP client and exposes Knowgrph-owned local tools: Source Files search/fetch, UI launch, pipelines, memory, probe tree, showrunner, OS status, SuperAgent, video remix, browser bridge, HTML video, annotation, exact agent/LLM application catalog-plan-execute composition, and vdeoxpln inspection. |
+| Local stdio MCP (`mcp/server.js`) | Starts from an external MCP client and exposes Knowgrph-owned local tools: deterministic knowledge-graph ingest/query/edge explanation, Source Files search/fetch, UI launch, pipelines, memory, probe tree, showrunner, OS status, SuperAgent, video remix, browser bridge, HTML video, annotation, exact agent/LLM application catalog-plan-execute composition, and vdeoxpln inspection. |
 | MainPanel MCP | Browser-local readiness and non-secret setup view for Knowgrph-owned and external MCP tool servers. |
 | FloatingPanel Chat | In-canvas assistant with workspace, selection, invocation grammar, KGC generation, and source-aware context. |
 | 2D Renderer: Storyboard | Projects frontmatter-owned source, ideation, invocation, runtime, review, and publish lanes into Cards, Widgets, Rich Media Panels, and timeline views. |

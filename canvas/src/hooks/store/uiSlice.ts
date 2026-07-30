@@ -9,13 +9,14 @@ import { createUiCoreActions } from './uiSliceCoreActions'
 import { createUiIntegrationActions } from './uiSliceIntegrationActions'
 
 type SetGraph = StoreApi<GraphState>['setState']
+type GetGraph = StoreApi<GraphState>['getState']
 
 const UI_STARTUP_PANEL_DEFAULTS = {
   floatingPanelOpen: false,
   floatingPanelView: 'geo' as const,
 }
 
-export const createUiSlice = (set: SetGraph) => {
+export const createUiSlice = (set: SetGraph, get: GetGraph) => {
   const readers = createUiStorageReaders()
   const { lsBool } = readers
   const chat = createInitialChatUiContext(readers)
@@ -23,7 +24,7 @@ export const createUiSlice = (set: SetGraph) => {
     documentStructureBaselineLock: lsBool(LS_KEYS.documentStructureBaselineLock, false),
   }
   return {
-    ...createUiInitialState(set, readers, chat),
+    ...createUiInitialState(set, get, readers, chat),
     ...createUiCoreActions(set),
     ...createUiChatActions(set),
     ...createUiIntegrationActions(set),

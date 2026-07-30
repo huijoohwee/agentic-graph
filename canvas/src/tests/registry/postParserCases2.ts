@@ -65,6 +65,8 @@ export const TEST_CASES_POST_PARSER_2: TestCaseTuple[] = [
   ["workspace.importUrl.native.chatCredentialRedaction","@/__tests__/nativeImportUrlInvocation.test","testNativeImportUrlChatRedactsRejectedCredentials"],
   ["workspace.importUrl.native.chatCardDispatch","@/__tests__/nativeImportUrlInvocation.test","testNativeImportUrlCardAndChatDispatchBeforeProvider"],
   ["workspace.importUrl.native.cardCanvasAuthority","@/__tests__/storyboardWidgetImportUrlAuthority.test","testStoryboardImportUrlPreservesImportedCanvasAuthority"],
+  ["workspace.importUrl.native.cardKnowledgeGraphSuccess","@/__tests__/storyboardWidgetImportUrlAuthority.test","testStoryboardImportUrlRendersKnowledgeGraphSuccessWithoutFilePaths"],
+  ["workspace.importUrl.knowledgeGraph.nativeWebMcpCanonicalRepository","@/__tests__/knowledgeGraphImportUrlSurfaces.test","testKnowledgeGraphCanonicalRepositoryRunsThroughNativeAndWebMcpImportUrl"],
   ["ui.floatingPanel.skillsCommands.importUrlInvocation","@/__tests__/importUrlSkillsCommands.test","testImportUrlSkillsCommandsExposesAndInsertsCanonicalTuple"],
   ["websiteImport.native.fastRecoveryTable","@/__tests__/nativeWebsiteCrawler.test","testNativeCrawlerRecoveryUsesManifestTableWithoutRematerializing"],
   ["websiteImport.native.terminalErrorManifest","@/__tests__/nativeWebsiteCrawler.test","testNativeCrawlerTerminalErrorManifestPublishesReasonWithoutBackfill"],

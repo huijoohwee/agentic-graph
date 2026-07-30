@@ -20,6 +20,7 @@ import {
   buildAgentLiveProviderProofSummary,
   buildAgenticCanvasOsDocsCatalog,
   buildAgenticCanvasOsDocsCatalogDigest,
+  buildAgenticCanvasOsDocsRoutingDigest,
   buildAgenticCanvasOsDocsInvokePayload,
   buildProgressiveAgentsReadinessSummary,
   resolveAgentLiveProviderProofRevisionFromGitHub,
@@ -282,6 +283,60 @@ test("standalone docs catalog retains the branch source URL without a revision",
   assert.equal(query?.sourceUrl, `${AGENTIC_CANVAS_OS_DOCS_SOURCE_ROOT_URL}/DICTIONARY-COMMAND.md#/query`);
 });
 
+test("docs catalog derives MCP tool, semantics, and bindings from the command dictionary row", () => {
+  const catalog = buildAgenticCanvasOsDocsCatalog({
+    "FACTS.md": "",
+    "DICTIONARY-COMMAND.md": [
+      "---",
+      "dictionary_entries:",
+      "  - /source.ingest",
+      "---",
+      "| Command | Intent | Bindings | Semantics | Outcome |",
+      "| --- | --- | --- | --- | --- |",
+      "| `/source.ingest` | Build the selected source graph | `@source.root` | `#source.graph` | `knowgrph.source.ingest` returns a graph and `knowgrph.source.inspect` returns its proof |",
+    ].join("\n"),
+    "DICTIONARY-SEMANTIC.md": "---\ndictionary_entries:\n  - #source.graph\n---\n| `#source.graph` | Source graph |",
+    "DICTIONARY-BINDING.md": "---\ndictionary_entries:\n  - @source.root\n---\n| `@source.root` | Source root |",
+  });
+  const command = catalog.find((entry) => entry.token === "/source.ingest");
+
+  assert.equal(command?.summary, "Build the selected source graph");
+  assert.equal(command?.mcpTool, "knowgrph.source.ingest");
+  assert.deepEqual(command?.mcpTools, ["knowgrph.source.ingest", "knowgrph.source.inspect"]);
+  assert.deepEqual(command?.semantics, ["#source.graph"]);
+  assert.deepEqual(command?.bindings, ["@source.root"]);
+});
+
+test("docs catalog preserves the canonical trailing-colon Import URL binding", () => {
+  const catalog = buildAgenticCanvasOsDocsCatalog({
+    "FACTS.md": "",
+    "DICTIONARY-COMMAND.md": [
+      "---",
+      "dictionary_entries:",
+      '  - "/ingest-url"',
+      "---",
+      "| Command | Intent | Bindings | Semantics | Outcome |",
+      "| --- | --- | --- | --- | --- |",
+      "| `/ingest-url` | Import one URL | `@url:`, `@reference-policy` | `#canvas` | `knowgrph.control_local_import_url` returns one typed result |",
+    ].join("\n"),
+    "DICTIONARY-SEMANTIC.md": "---\ndictionary_entries:\n  - \"#canvas\"\n---\n| `#canvas` | Canvas |",
+    "DICTIONARY-BINDING.md": [
+      "---",
+      "dictionary_entries:",
+      '  - "@url:"',
+      '  - "@reference-policy"',
+      "---",
+      "| `@url:` | URL value |",
+      "| `@reference-policy` | Reference policy |",
+    ].join("\n"),
+  });
+  const command = catalog.find((entry) => entry.token === "/ingest-url");
+
+  assert.deepEqual(command?.bindings, ["@url:", "@reference-policy"]);
+  assert.equal(catalog.some((entry) => entry.token === "@url:"), true);
+  assert.equal(catalog.some((entry) => entry.token === "@url"), false);
+});
+
 test("catalog digest is deterministic, order independent, and sensitive to source metadata", () => {
   const entries = [
     { token: "#known", kind: "semantic", label: "Known", summary: "Semantic source", sourcePath: "DICTIONARY-SEMANTIC.md##known" },
@@ -294,6 +349,24 @@ test("catalog digest is deterministic, order independent, and sensitive to sourc
   assert.notEqual(
     buildAgenticCanvasOsDocsCatalogDigest([{ ...entries[0], summary: "Drifted" }, entries[1]]),
     digest,
+  );
+  assert.equal(
+    buildAgenticCanvasOsDocsCatalogDigest([entries[0], {
+      ...entries[1],
+      mcpTool: "knowgrph.source.ingest",
+      semantics: ["#known"],
+      bindings: ["@known"],
+    }]),
+    digest,
+  );
+  assert.notEqual(
+    buildAgenticCanvasOsDocsRoutingDigest(entries),
+    buildAgenticCanvasOsDocsRoutingDigest([entries[0], {
+      ...entries[1],
+      mcpTools: ["knowgrph.source.ingest", "knowgrph.source.inspect"],
+      semantics: ["#known"],
+      bindings: ["@known"],
+    }]),
   );
 });
 

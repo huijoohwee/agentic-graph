@@ -36,6 +36,7 @@ import {
   NATIVE_IMPORT_URL_COMMAND,
   NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
 } from './nativeImportUrlInvocation'
+import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import type { PromptPreset } from './promptPresetCatalog'
 
 export type ChatInvocationId =
@@ -79,8 +80,11 @@ export type ChatInvocationCatalogEntry = {
   insertionText?: string
   invocationModes?: PromptPreset['invocationModes']
   chatRoute?: PromptPreset['chatRoute']
-  mcpTool?: PromptPreset['mcpTool']
+  mcpTool?: string
+  mcpTools?: readonly string[]
   mcpToken?: PromptPreset['mcpToken']
+  semantics?: readonly string[]
+  bindings?: readonly string[]
 }
 
 const PROMPT_PRESET_CATALOG_SOURCE_PATH = 'agentic-canvas-os/docs/PROMPT-PRESETS.md' as const
@@ -170,7 +174,7 @@ const NATIVE_IMPORT_URL_CATALOG_ENTRY: ChatInvocationCatalogEntry = {
   sourcePath: 'agentic-canvas-os/docs/DICTIONARY-COMMAND.md',
   keywords: ['import url', 'url ingest', '@url:', '@reference-policy', '#canvas', 'workspace', 'canvas', 'webmcp'],
   insertionText: NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
-  mcpTool: 'knowgrph.control_local_import_url',
+  mcpTool: IMPORT_URL_AGENT_READY_MCP_TOOL_NAME,
 }
 
 const BASE_CHAT_INVOCATION_OPTIONS: readonly ChatInvocationOption[] = [
@@ -256,7 +260,10 @@ const mergeCatalogEntryBehavior = (
   invocationModes: canonical.invocationModes || behaviorSource.invocationModes,
   chatRoute: canonical.chatRoute || behaviorSource.chatRoute,
   mcpTool: canonical.mcpTool || behaviorSource.mcpTool,
+  mcpTools: canonical.mcpTools || behaviorSource.mcpTools,
   mcpToken: canonical.mcpToken || behaviorSource.mcpToken,
+  semantics: canonical.semantics || behaviorSource.semantics,
+  bindings: canonical.bindings || behaviorSource.bindings,
 })
 
 const dedupeCatalogEntriesByToken = (entries: readonly ChatInvocationCatalogEntry[]): readonly ChatInvocationCatalogEntry[] => {
@@ -305,6 +312,10 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
     kind: invocation.kind,
     sourcePath: invocation.sourcePath,
     keywords: invocation.keywords,
+    mcpTool: invocation.mcpTool,
+    mcpTools: invocation.mcpTools,
+    semantics: invocation.semantics,
+    bindings: invocation.bindings,
   })),
   ...getAgenticOsDocInvocations().map(doc => ({
     id: `doc:${doc.id}:slash`,

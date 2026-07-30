@@ -25,6 +25,7 @@ import { buildUpdatedSourceFileParsedGraphState } from '@/features/source-files/
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config.storyboard-widget'
 import { reportRuntimeTrace } from '@/lib/debug/runtimeTrace'
 import { isCanonicalNodeIdEqual, resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
+import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 
 const STORYBOARD_MEDIA_PANEL_LOOP_TRACE_SCOPE = 'storyboard-media-panel-loop'
 
@@ -59,6 +60,7 @@ function isStoryboardMarkdownText(text: unknown): boolean {
 export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
   return ({
   updateNode: (id: string, updates: Partial<GraphNode>) => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     const { graphData, schema } = get();
     if (!graphData) return;
     if (isComposedGraphData(graphData)) {
@@ -175,6 +177,7 @@ export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
   },
 
   updateGraphMetadata: (updates: Record<string, JSONValue | undefined>) => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     const { graphData } = get();
     if (!graphData) return;
     const nextMetadata = { ...(graphData.metadata || {}) } as Record<string, JSONValue>
@@ -233,6 +236,7 @@ export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
   },
 
   addNode: (node: GraphNode) => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     let { graphData, schema } = get();
     if (!graphData) {
       get().setGraphData({ context: '', type: 'Graph', nodes: [], edges: [] })
@@ -356,6 +360,7 @@ export function createGraphDataNodeActions(set: SetGraph, get: GetGraph) {
   },
 
   removeNode: (id: string) => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     const { graphData } = get();
     if (!graphData) return;
     if (isComposedGraphData(graphData)) {

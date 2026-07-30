@@ -36,6 +36,7 @@ type SkillsCommandsViewProps = {
   onCollapsedGroupKeysChange?: React.Dispatch<React.SetStateAction<ReadonlySet<string>>>
   prefixFilter?: SkillsCommandsPrefixFilter
   searchQuery?: string
+  tokenFilter?: readonly string[]
 }
 
 export type SkillsCommandsPrefixFilter = ChatInvocationCatalogPrefixFilter
@@ -98,11 +99,18 @@ function renderSkillsCommandsTokenChip(entry: SkillsCommandsCatalogEntry): React
   )
 }
 
-function resolveSkillsCommandsRenderEntries(prefixFilter: SkillsCommandsPrefixFilter, queryRaw: string): readonly SkillsCommandsRenderEntry[] {
-  return resolveChatInvocationCatalogEntries(prefixFilter, queryRaw).map(option => ({
-    grammar: resolveSkillsCommandsGrammarProjection(option),
-    option,
-  }))
+function resolveSkillsCommandsRenderEntries(
+  prefixFilter: SkillsCommandsPrefixFilter,
+  queryRaw: string,
+  tokenFilter?: readonly string[],
+): readonly SkillsCommandsRenderEntry[] {
+  const allowedTokens = new Set((tokenFilter || []).map(token => token.toLowerCase()))
+  return resolveChatInvocationCatalogEntries(prefixFilter, queryRaw)
+    .filter(option => tokenFilter === undefined || allowedTokens.has(option.token.toLowerCase()))
+    .map(option => ({
+      grammar: resolveSkillsCommandsGrammarProjection(option),
+      option,
+    }))
 }
 
 function groupSkillsCommandsRenderEntries(entries: readonly SkillsCommandsRenderEntry[], grammarGroupBy: SkillsCommandsGrammarGroupBy): readonly SkillsCommandsRenderGroup[] {
@@ -124,13 +132,15 @@ export function resolveSkillsCommandsGroupKeys({
   grammarGroupBy = 'subject',
   prefixFilter = 'all',
   searchQuery = '',
+  tokenFilter,
 }: {
   grammarGroupBy?: SkillsCommandsGrammarGroupBy
   prefixFilter?: SkillsCommandsPrefixFilter
   searchQuery?: string
+  tokenFilter?: readonly string[]
 }): readonly SkillsCommandsGroupKeyModel[] {
   return groupSkillsCommandsRenderEntries(
-    resolveSkillsCommandsRenderEntries(prefixFilter, searchQuery),
+    resolveSkillsCommandsRenderEntries(prefixFilter, searchQuery, tokenFilter),
     grammarGroupBy,
   ).map(group => ({
     count: group.entries.length,
@@ -147,6 +157,7 @@ export default function SkillsCommandsView({
   onCollapsedGroupKeysChange,
   prefixFilter = 'all',
   searchQuery = '',
+  tokenFilter,
 }: SkillsCommandsViewProps) {
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: ['/', '#', '@'] })
   const uiIconScale = useGraphStore(s => s.uiIconScale)
@@ -157,9 +168,9 @@ export default function SkillsCommandsView({
   const renderEntries = React.useMemo<readonly SkillsCommandsRenderEntry[]>(
     () => {
       void grammarCatalog.version
-      return resolveSkillsCommandsRenderEntries(prefixFilter, searchQuery)
+      return resolveSkillsCommandsRenderEntries(prefixFilter, searchQuery, tokenFilter)
     },
-    [grammarCatalog.version, prefixFilter, searchQuery],
+    [grammarCatalog.version, prefixFilter, searchQuery, tokenFilter],
   )
   const entryGroups = React.useMemo(() => groupSkillsCommandsRenderEntries(renderEntries, grammarGroupBy), [grammarGroupBy, renderEntries])
   const [uncontrolledCollapsedGroupKeys, setUncontrolledCollapsedGroupKeys] = React.useState<ReadonlySet<string>>(() => new Set())

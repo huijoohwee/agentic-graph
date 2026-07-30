@@ -3,6 +3,7 @@ import { registerMarkdownWorkspaceActionBridge } from '@/features/markdown-explo
 import type { WorkspaceFileActions } from '@/features/markdown-workspace/useWorkspaceFileActions/types'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { buildMarkdownWorkspaceActionBridge } from './markdownWorkspaceRuntime.composition'
+
 import { clearRuntimeTimeout, scheduleRuntimeTimeout } from './markdownWorkspaceRuntime.shared'
 
 export function useMarkdownWorkspaceShell(args: {
@@ -57,13 +58,12 @@ export function useMarkdownWorkspaceShell(args: {
   }, [workspaceRootRef])
 
   const actionBridge = React.useMemo(
-    () =>
-      buildMarkdownWorkspaceActionBridge({
-        fileActions,
-        createParentPath,
-        saveEnabled,
-        saveActiveFileNow,
-      }),
+    () => buildMarkdownWorkspaceActionBridge({
+      fileActions,
+      createParentPath,
+      saveEnabled,
+      saveActiveFileNow,
+    }),
     [createParentPath, fileActions, saveActiveFileNow, saveEnabled],
   )
 

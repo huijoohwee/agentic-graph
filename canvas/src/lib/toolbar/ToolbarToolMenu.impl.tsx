@@ -34,6 +34,7 @@ import {
 } from '@/features/panels/ui/mainPanelHelpIconLibrary'
 import { FloatingPropsPanel } from '@/features/toolbar/FloatingPropsPanel'
 import { FloatingPanelSkillsCommandsView } from '@/features/toolbar/FloatingPanelSkillsCommandsView'; import { FloatingPanelPromptPresetsView } from '@/features/toolbar/FloatingPanelPromptPresetsView'
+import { clearSkillsCommandsMcpTarget } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { DesignFloatingPanelView } from '@/features/design/DesignFloatingPanelView'
 import type { ToolbarToolMenuProps } from '@/features/toolbar/ToolbarToolMenuTypes'
 import { requestGeospatialTraversalRun, setGeospatialModeEnabled as enableGeospatialMode } from '@/features/geospatial/gympgrphBridge'
@@ -234,9 +235,14 @@ export function ToolbarToolMenu({
   const handleSelectView = React.useCallback((view: RequestedFloatingPanelView) => {
     if (routeToolbarXrScenePanel({ view, canvasRenderMode, canvas3dMode })) return
     if (view === 'media') setMediaCatalogMode(canvasRenderMode === '3d' && canvas3dMode === 'xr' ? 'xr-3d' : 'media')
+    if (floatingPanelView === 'skillsCommands' && view !== 'skillsCommands') clearSkillsCommandsMcpTarget()
     setFloatingPanelView(view)
     if (view === 'geo') void ensureGeospatialEnabled()
-  }, [canvas3dMode, canvasRenderMode, ensureGeospatialEnabled, setFloatingPanelView])
+  }, [canvas3dMode, canvasRenderMode, ensureGeospatialEnabled, floatingPanelView, setFloatingPanelView])
+  const handleClose = React.useCallback(() => {
+    if (floatingPanelView === 'skillsCommands') clearSkillsCommandsMcpTarget()
+    onClose()
+  }, [floatingPanelView, onClose])
 
   const handleFloatingPanelPointerDown = React.useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
@@ -420,7 +426,7 @@ export function ToolbarToolMenu({
               onRestore={() => {
                 setFloatingPanelMinimized(false)
               }}
-              onClose={onClose}
+              onClose={handleClose}
             />
           </header>
         </aside>
@@ -459,7 +465,7 @@ export function ToolbarToolMenu({
               onMinimize={() => {
                 setFloatingPanelMinimized(true)
               }}
-              onClose={onClose}
+              onClose={handleClose}
             />
           </header>
           <section className={floatingPanelBodyClassName} aria-label={UI_LABELS.floatingPanel}>

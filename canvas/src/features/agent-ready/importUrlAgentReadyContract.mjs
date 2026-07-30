@@ -2,6 +2,8 @@ export const IMPORT_URL_AGENT_READY_TOOL_IDS = Object.freeze({
   controlLocalImportUrl: 'control_local_import_url',
 })
 
+export const IMPORT_URL_AGENT_READY_MCP_TOOL_NAME = 'knowgrph.control_local_import_url'
+
 const IMPORT_URL_MUTATION_TOOL_ANNOTATIONS = Object.freeze({
   readOnlyHint: false,
   destructiveHint: true,
@@ -97,6 +99,72 @@ export const buildImportUrlAgentReadyToolContracts = ({ buildWebName }) => [{
           outputText: { type: 'string', minLength: 1 },
         },
         required: ['source', 'invocation', 'createdPaths', 'removedPaths', 'renderer', 'documentSemanticMode', 'outputText'],
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          kind: { const: 'knowledge-graph' },
+          source: { type: 'string', minLength: 1, pattern: '^https?://' },
+          invocation: { type: 'string', minLength: 1, pattern: '^/ingest-url\\s+@url:' },
+          renderer: {
+            oneOf: [
+              { type: 'string', enum: ['d3', 'design', 'storyboard'] },
+              { type: 'null' },
+            ],
+          },
+          documentSemanticMode: {
+            oneOf: [
+              { type: 'string', enum: ['document', 'keyword'] },
+              { type: 'null' },
+            ],
+          },
+          graphId: { type: 'string', pattern: '^kg:graph:[0-9a-f]{32}$' },
+          snapshotDigest: { type: 'string', pattern: '^[0-9a-f]{64}$' },
+          complete: { const: true },
+          counts: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              sources: { type: 'integer', minimum: 0 },
+              nodes: { type: 'integer', minimum: 0 },
+              edges: { type: 'integer', minimum: 0 },
+            },
+            required: ['sources', 'nodes', 'edges'],
+          },
+          projectionToken: { type: 'string', pattern: '^kg:projection:[0-9a-f]{24}$' },
+          projectionComplete: { type: 'boolean' },
+          projectionTruncated: { type: 'boolean' },
+          projectionLimit: { type: 'integer', minimum: 1, maximum: 1000 },
+          projectionReason: { type: 'string', minLength: 1, maxLength: 1024 },
+          projectionCounts: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              nodes: { type: 'integer', minimum: 0, maximum: 2000 },
+              edges: { type: 'integer', minimum: 0, maximum: 5000 },
+            },
+            required: ['nodes', 'edges'],
+          },
+          outputText: { type: 'string', minLength: 1 },
+        },
+        required: [
+          'kind',
+          'source',
+          'invocation',
+          'renderer',
+          'documentSemanticMode',
+          'graphId',
+          'snapshotDigest',
+          'complete',
+          'counts',
+          'projectionToken',
+          'projectionComplete',
+          'projectionTruncated',
+          'projectionLimit',
+          'projectionCounts',
+          'outputText',
+        ],
       },
       {
         type: 'object',

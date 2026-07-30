@@ -253,7 +253,7 @@ export const useGraphStore = create<GraphState>()(
   ...createSelectionSlice(set, get),
   ...createGraphViewSlice(set, get),
   ...createHistorySlice(set, get),
-  ...createUiSlice(set),
+  ...createUiSlice(set, get),
   ...createUiToastSlice(set),
   ...createUiLogSlice(set),
   ...createDesignSystemSlice(set, get),

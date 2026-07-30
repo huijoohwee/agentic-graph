@@ -26,6 +26,10 @@ export type AgenticOsDictionaryInvocation = {
   sourcePath: string
   dictionaryFileName: 'DICTIONARY-COMMAND.md' | 'DICTIONARY-SEMANTIC.md' | 'DICTIONARY-BINDING.md'
   keywords: readonly string[]
+  mcpTool?: string
+  mcpTools?: readonly string[]
+  semantics?: readonly string[]
+  bindings?: readonly string[]
 }
 
 export const AGENTIC_OS_CANVAS_INTERACTION_PANEL_KEYWORD = 'canvas interaction panel' as const
@@ -91,6 +95,10 @@ const buildAgenticOsDictionaryInvocation = (args: {
   dictionaryFileName: AgenticOsDictionaryInvocation['dictionaryFileName']
   keywords: readonly string[]
   sourcePath?: string
+  mcpTool?: string
+  mcpTools?: readonly string[]
+  semantics?: readonly string[]
+  bindings?: readonly string[]
 }): AgenticOsDictionaryInvocation => ({
   ...args,
   id: `${args.kind}:${sanitizeInvocationId(args.token)}`,

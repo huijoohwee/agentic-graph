@@ -109,6 +109,9 @@ export const testNativeImportUrlInvocationReusesLaunchBridgeAndCatalog = async (
     if (receivedOptions?.canvas2dRenderer !== 'design' || receivedOptions?.documentSemanticMode !== 'keyword') {
       throw new Error(`expected structured renderer options to reach the shared Import URL owner, got ${JSON.stringify(receivedOptions)}`)
     }
+    if ('kind' in result) {
+      throw new Error(`expected the protected file-import success wire shape to remain unchanged, got ${JSON.stringify(result)}`)
+    }
     if (result.createdPaths.length !== 2 || result.removedPaths.length !== 1) {
       throw new Error(`expected typed workspace mutation evidence, got ${JSON.stringify(result)}`)
     }
@@ -229,6 +232,7 @@ export const testNativeImportUrlCardAndChatDispatchBeforeProvider = () => {
     "updateStatus('done')",
     "updateStatus('error')",
     "model: 'native-import-url'",
+    "'createdPaths' in result",
   ]) {
     if (!nativeRunSource.includes(expected)) {
       throw new Error(`expected native Import URL Card Run owner to include ${expected}`)

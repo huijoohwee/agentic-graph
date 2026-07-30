@@ -17,10 +17,12 @@ import {
   writeWorkspaceSourceTextIfPresent,
 } from './graphDataFrontmatterFlowSync'
 import { buildUpdatedSourceFileParsedGraphState } from '@/features/source-files/sourceFileParsedState'
+import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 
 export function createGraphDataEdgeActions(set: SetGraph, get: GetGraph) {
   return ({
   addEdge: (edge: GraphEdge) => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     let { graphData, schema } = get();
     if (!graphData) {
       get().setGraphData({ context: '', type: 'Graph', nodes: [], edges: [] })
@@ -147,6 +149,7 @@ export function createGraphDataEdgeActions(set: SetGraph, get: GetGraph) {
   },
 
   updateEdge: (id: string, updates: Partial<GraphEdge>) => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     const { graphData, schema } = get();
     if (!graphData) return;
     if (isComposedGraphData(graphData)) {
@@ -269,6 +272,7 @@ export function createGraphDataEdgeActions(set: SetGraph, get: GetGraph) {
   },
 
   removeEdge: (id: string) => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     const { graphData } = get();
     if (!graphData) return;
     if (isComposedGraphData(graphData)) {

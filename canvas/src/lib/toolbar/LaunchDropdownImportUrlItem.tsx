@@ -27,6 +27,9 @@ import {
 } from './ImportUrlRendererSelect'
 import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
 import { runLaunchImportUrl } from './launchImportDispatch'
+import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
+import { targetSkillsCommandsMcpInvocation } from '@/features/agentic-os/skillsCommandsMcpTarget'
+import { useGraphStore } from '@/hooks/useGraphStore'
 
 const DEFAULT_VIDEO_DOWNLOAD_OPTIONS: VideoDownloadOptions = {
   format: 'best',
@@ -56,6 +59,22 @@ export function LaunchDropdownImportUrlItem(props: {
   const activeGraphData = useActiveGraphRenderData(true)
   const importUrlControlsId = React.useId()
   const endpointWarningShownRef = React.useRef(false)
+  const targetSkillsCommands = React.useCallback(() => {
+    const state = useGraphStore.getState()
+    state.setFloatingPanelView('skillsCommands')
+    state.setFloatingPanelOpen(true)
+    void targetSkillsCommandsMcpInvocation(
+      IMPORT_URL_AGENT_READY_MCP_TOOL_NAME,
+    ).catch(error => {
+      pushUiToast({
+        id: 'launch:import-url:skills-commands-resolution',
+        kind: 'error',
+        message: String((error as { message?: unknown })?.message || 'Source-backed MCP command resolution failed.'),
+        ttlMs: UI_TOAST_TTL_MS.warningExtended,
+        dismissible: true,
+      })
+    })
+  }, [pushUiToast])
 
   const bridge = getMarkdownWorkspaceActionBridge()
   const hasBridgeVideoDownload = typeof bridge.downloadVideo === 'function'
@@ -126,15 +145,33 @@ export function LaunchDropdownImportUrlItem(props: {
       const launchBridge = getMarkdownWorkspaceActionBridge()
       const opts = selectedImportOpts()
       if (opts?.canvas2dRenderer === 'design') activateDesignEditorSurface({ openFloatingPanel: true })
-      await runLaunchImportUrl({
-        urlRaw: nextUrl,
-        opts,
-        bridge: launchBridge,
-        fallback: importUrlFallback,
-      })
-      setUrlInputOpen(false)
+      try {
+        const result = await runLaunchImportUrl({
+          urlRaw: nextUrl,
+          opts,
+          bridge: launchBridge,
+          fallback: importUrlFallback,
+        })
+        if (result && 'kind' in result && result.kind === 'knowledge-graph') {
+          pushUiToast({
+            id: 'launch:import:knowledge-graph-url',
+            kind: 'success',
+            message: `Loaded knowledge graph projection (${result.projection?.graphData.nodes.length || 0} nodes, ${result.projection?.graphData.edges.length || 0} edges)`,
+            ttlMs: UI_TOAST_TTL_MS.actionFeedback,
+          })
+        }
+        setUrlInputOpen(false)
+      } catch (error) {
+        pushUiToast({
+          id: 'launch:import:knowledge-graph-url',
+          kind: 'error',
+          message: String((error as { message?: unknown })?.message || 'Knowledge graph URL import failed.'),
+          ttlMs: UI_TOAST_TTL_MS.warningExtended,
+          dismissible: true,
+        })
+      }
     },
-    [importUrlFallback, onClose, selectedImportOpts],
+    [importUrlFallback, onClose, pushUiToast, selectedImportOpts],
   )
 
   const runImportUrlDeerFlow = React.useCallback(
@@ -197,10 +234,13 @@ export function LaunchDropdownImportUrlItem(props: {
             if (WORKSPACE_IMPORT_URL_TEST) setUrlDraft(WORKSPACE_IMPORT_URL_TEST)
             else if (WORKSPACE_IMPORT_IMAGE_URL_TEST) setUrlDraft(WORKSPACE_IMPORT_IMAGE_URL_TEST)
           }
+          targetSkillsCommands()
           setUrlInputOpen(true)
         }}
         aria-expanded={urlInputOpen}
         aria-controls={importUrlControlsId}
+        data-kg-launch-import-url-skills-commands-target="skillsCommands"
+        data-kg-launch-import-url-mcp-tool={IMPORT_URL_AGENT_READY_MCP_TOOL_NAME}
       >
         <Link className={props.menuIconClass} strokeWidth={1.6} />
         <span className="truncate">Import URL</span>

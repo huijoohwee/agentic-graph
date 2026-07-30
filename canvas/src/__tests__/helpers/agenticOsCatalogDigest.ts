@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto'
-import { serializeAgenticCanvasOsDocsCatalogForDigest } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
+import {
+  AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA,
+  serializeAgenticCanvasOsDocsCatalogForDigest,
+  serializeAgenticCanvasOsDocsRoutingForDigest,
+} from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
 
 export type AgenticOsTestCatalogEntry = {
   token: string
@@ -9,6 +13,10 @@ export type AgenticOsTestCatalogEntry = {
   sourcePath: string
   sourceUrl?: string
   keywords?: string[]
+  mcpTool?: string
+  mcpTools?: string[]
+  semantics?: string[]
+  bindings?: string[]
 }
 
 export const buildAgenticOsTestCatalogMetadata = (
@@ -16,6 +24,10 @@ export const buildAgenticOsTestCatalogMetadata = (
 ) => ({
   catalogDigest: createHash('sha256')
     .update(serializeAgenticCanvasOsDocsCatalogForDigest(catalog), 'utf8')
+    .digest('hex'),
+  routingSchema: AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA,
+  routingDigest: createHash('sha256')
+    .update(serializeAgenticCanvasOsDocsRoutingForDigest(catalog), 'utf8')
     .digest('hex'),
   counts: {
     command: catalog.filter(entry => entry.kind === 'command').length,
