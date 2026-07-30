@@ -34,7 +34,9 @@ import { createChatUiInitialState } from './uiSliceChatInitialState'
 import {
   readMigratedPaymentsPaywallEnabled,
 } from '@/features/payments/paymentPaywallSetting'
-import { clearSkillsCommandsMcpTarget } from '@/features/agentic-os/skillsCommandsMcpTarget'
+import {
+  clearSkillsCommandsMcpTargetFromPanelLifecycle,
+} from '@/features/agentic-os/skillsCommandsMcpTargetLifecycle'
 
 type SetGraph = StoreApi<GraphState>['setState']
 type GetGraph = StoreApi<GraphState>['getState']
@@ -65,7 +67,9 @@ export const createUiInitialState = (
     floatingPanelOpen: false,
     setFloatingPanelOpen: (open: boolean) => {
       const next = open === true
-      if (!next && get().floatingPanelView === 'skillsCommands') clearSkillsCommandsMcpTarget()
+      if (!next && get().floatingPanelView === 'skillsCommands') {
+        clearSkillsCommandsMcpTargetFromPanelLifecycle()
+      }
       set(state => {
         if (state.floatingPanelOpen === next) return {}
         return { floatingPanelOpen: next } as Partial<GraphState>
@@ -98,7 +102,7 @@ export const createUiInitialState = (
           ? view
           : 'propsPanel'
       if (get().floatingPanelView === 'skillsCommands' && next !== 'skillsCommands') {
-        clearSkillsCommandsMcpTarget()
+        clearSkillsCommandsMcpTargetFromPanelLifecycle()
       }
       set(state => {
         if (state.floatingPanelView === next) return {}

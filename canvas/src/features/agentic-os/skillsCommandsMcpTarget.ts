@@ -3,6 +3,7 @@ import {
   resolveAgenticOsMcpInvocation,
   type AgenticOsMcpInvocationResolution,
 } from './agenticOsMcpInvocationResolver'
+import { registerSkillsCommandsMcpTargetLifecycleClear } from './skillsCommandsMcpTargetLifecycle'
 
 export type SkillsCommandsMcpTargetSnapshot = Readonly<{
   mcpTool: string
@@ -70,5 +71,7 @@ export function clearSkillsCommandsMcpTarget(): void {
   pendingByTool.clear()
   emit(EMPTY_SNAPSHOT)
 }
+
+registerSkillsCommandsMcpTargetLifecycleClear(clearSkillsCommandsMcpTarget)
 
 export const resetSkillsCommandsMcpTargetForTests = clearSkillsCommandsMcpTarget
