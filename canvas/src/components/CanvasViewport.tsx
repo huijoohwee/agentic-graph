@@ -474,7 +474,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
         {threeCanvasSurface.mounted ? (
           <section className={`absolute inset-0 z-[10] ${
             threeCanvasSurface.active
-              ? `${geospatialXrModeEnabled && !citySimActive ? 'pointer-events-none' : 'pointer-events-auto'} opacity-100`
+              ? `${geospatialXrModeEnabled ? 'pointer-events-none' : 'pointer-events-auto'} opacity-100`
               : 'pointer-events-none opacity-0'
           }`}>
             <ThreeGraphLazy active={threeCanvasSurface.active} geospatialComposite={geospatialXrModeEnabled} mode={effectiveCanvas3dMode} />

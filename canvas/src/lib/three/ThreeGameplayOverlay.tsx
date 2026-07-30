@@ -59,7 +59,11 @@ export function ThreeGameplayMissionStage(props: Readonly<{
   gameFpsActive: boolean
   geospatialComposite: boolean
 }>) {
-  if (props.citySimActive) return <CitySimMissionStage />
+  // The City grid has local coordinates, so Geo+XR leaves geographic visuals to
+  // MapLibre and its existing Flight overlay rather than painting it above them.
+  if (props.citySimActive && !props.geospatialComposite) {
+    return <CitySimMissionStage />
+  }
   if (props.gameFpsActive) {
     return <GameFpsMissionStageLazy coordinateScale={props.coordinateScale} />
   }
