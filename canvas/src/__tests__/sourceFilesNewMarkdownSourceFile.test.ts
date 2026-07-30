@@ -92,6 +92,34 @@ export async function testCreateNewMarkdownSourceFileDefaultsToAuthoredNotesRoot
   }
 }
 
+export async function testCreateNewMarkdownSourceFileRepublishesExplicit2dPresentationState() {
+  const { g, restore } = initWindowHarness({ storage: new MemoryStorage() })
+  const publishedModes: boolean[] = []
+  g.window.dispatchEvent = ((event: Event) => {
+    const detail = (event as CustomEvent<{ enabled?: unknown }>).detail
+    if (typeof detail?.enabled === 'boolean') publishedModes.push(detail.enabled)
+    return true
+  }) as typeof window.dispatchEvent
+  try {
+    resetWorkspaceFsForTests()
+    useGraphStore.getState().resetAll()
+    useMarkdownExplorerStore.getState().setActivePath(null)
+    writeGeospatialOverlayEnabledPreference(false)
+    await createNewMarkdownSourceFile({
+      timestampMs: Date.UTC(2026, 6, 29, 14, 15, 11),
+    })
+    if (publishedModes.length === 0 || publishedModes[publishedModes.length - 1] !== false) {
+      throw new Error(`expected New .md to republish its explicit 2D presentation state even when the stored Geo preference was already disabled, got ${JSON.stringify(publishedModes)}`)
+    }
+  } finally {
+    writeGeospatialOverlayEnabledPreference(false)
+    useMarkdownExplorerStore.getState().setActivePath(null)
+    useGraphStore.getState().resetAll()
+    resetWorkspaceFsForTests()
+    restore()
+  }
+}
+
 export async function testCreateNewMarkdownSourceFileDoesNotWriteIntoDocsMirror() {
   resetWorkspaceFsForTests()
   useGraphStore.getState().resetAll()

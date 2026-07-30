@@ -944,8 +944,8 @@ export async function testExecuteFloatingPanelChatSubmitCoordinatorPublishesVali
     if (!exchangeLog[0]?.response.includes('/workspace/chat/20260522T190000Z/kgc_20260522T190000Z.md')) {
       throw new Error(`Expected finalize flow to log the canonical workspace link in the assistant response, got: ${JSON.stringify(exchangeLog)}`)
     }
-    if (!exchangeLog[0]?.response.includes('APPLIED · LOCAL_ONLY · [Open KGC in Source Files: kgc_20260522T190000Z.md]')) {
-      throw new Error(`Expected finalize flow to expose an applied local-only typed Source Files link in the assistant response, got: ${JSON.stringify(exchangeLog)}`)
+    if (!exchangeLog[0]?.response.includes('APPLIED · MIRRORED_STORAGE · [Open KGC in Source Files: kgc_20260522T190000Z.md]')) {
+      throw new Error(`Expected the successful storage fixture to expose an applied storage-mirrored typed Source Files link in the assistant response, got: ${JSON.stringify(exchangeLog)}`)
     }
     if (observedToasts.some(toast => String(toast.id || '').startsWith('chat-promotion-retry:'))) {
       throw new Error(`Expected successful finalize flow not to emit a promotion retry toast, got: ${JSON.stringify(observedToasts)}`)

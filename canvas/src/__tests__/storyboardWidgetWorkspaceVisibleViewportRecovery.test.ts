@@ -2,9 +2,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {
   buildFlowOverlayBoundsFromRects,
+  buildFlowOverlayCollectiveTopologyKey,
   buildWorkspaceVisibleViewportFitRecoveryKey,
   computeWorkspaceOverlayVisibleViewportFitTransform,
   deriveFlowOverlayCollectiveViewportState,
+  hasFlowOverlayCollectiveTopologyChanged,
+  shouldRecoverFlowOverlayCollectiveAfterTopologyChange,
   type FlowOverlayBounds,
   type FlowTransformLike,
   type VisibleFlowViewport,
@@ -86,6 +89,73 @@ export function testStoryboardWidgetWorkspaceRecoveryBuildsSharedCollectiveBound
   const state = deriveFlowOverlayCollectiveViewportState({ bounds, visibleViewport })
   if (!state?.visible || !state.centered || !state.balanced) {
     throw new Error('expected shared rect bounds to score as visible centered balanced')
+  }
+
+  if (hasFlowOverlayCollectiveTopologyChanged({
+    previousIds: [],
+    currentIds: ['panel-a'],
+  })) {
+    throw new Error('expected first mixed-overlay measurement to establish a baseline without moving the camera')
+  }
+  const topologyKeyA = buildFlowOverlayCollectiveTopologyKey({
+    zoomViewKey: 'view-a',
+    layoutSignature: 'revision-a',
+    ids: ['panel-b', 'panel-a'],
+  })
+  const topologyKeyB = buildFlowOverlayCollectiveTopologyKey({
+    zoomViewKey: 'view-a',
+    layoutSignature: 'revision-a',
+    ids: ['panel-a', 'panel-b'],
+  })
+  const topologyKeyC = buildFlowOverlayCollectiveTopologyKey({
+    zoomViewKey: 'view-a',
+    layoutSignature: 'revision-b',
+    ids: ['panel-a', 'panel-b'],
+  })
+  if (!topologyKeyA || topologyKeyA !== topologyKeyB || topologyKeyA === topologyKeyC) {
+    throw new Error('expected mixed-overlay topology keys to be order-neutral and layout-revision-sensitive')
+  }
+  if (hasFlowOverlayCollectiveTopologyChanged({
+    previousIds: ['panel-b', 'panel-a'],
+    currentIds: ['panel-a', 'panel-b'],
+  })) {
+    throw new Error('expected mixed-overlay topology comparison to be order-neutral')
+  }
+  if (!hasFlowOverlayCollectiveTopologyChanged({
+    previousIds: ['panel-a'],
+    currentIds: ['panel-a', 'panel-b'],
+  })) {
+    throw new Error('expected a newly materialized generic overlay to arm bounded viewport recovery')
+  }
+  if (shouldRecoverFlowOverlayCollectiveAfterTopologyChange({
+    topologyChanged: true,
+    viewportState: state,
+  })) {
+    throw new Error('expected a visible materialized collective to preserve the established infinite-canvas camera')
+  }
+  const offscreenState = deriveFlowOverlayCollectiveViewportState({
+    bounds: {
+      minX: 2400,
+      maxX: 3300,
+      minY: -900,
+      maxY: -100,
+      width: 900,
+      height: 800,
+      ids: ['panel-a', 'panel-b'],
+    },
+    visibleViewport,
+  })
+  if (!shouldRecoverFlowOverlayCollectiveAfterTopologyChange({
+    topologyChanged: true,
+    viewportState: offscreenState,
+  })) {
+    throw new Error('expected a topology-changed, wholly offscreen mixed collective to request one bounded recovery')
+  }
+  if (shouldRecoverFlowOverlayCollectiveAfterTopologyChange({
+    topologyChanged: false,
+    viewportState: offscreenState,
+  })) {
+    throw new Error('expected ordinary offscreen panning without topology change to retain infinite-canvas authority')
   }
 }
 

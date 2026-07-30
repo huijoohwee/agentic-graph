@@ -25,6 +25,7 @@ import {
 import {
   clearActiveDurableChatStreamRun,
   forgetDurableChatStreamRun,
+  projectDurableChatHeadlessPreparationSeed,
 } from './floatingPanelChatDurableStream'
 import type { FloatingPanelChatSubmitArgs } from './floatingPanelChatSubmitTypes'
 import { resolveChatEndpointForModels, buildChatProxyHeaders, CHAT_DEFAULT_ENDPOINT_URL } from '@/lib/chatEndpoint'
@@ -32,8 +33,17 @@ import {
   publishLocalChatPipelineFinalizeSnapshot,
   publishLocalChatPipelineKgcValidationSnapshot,
 } from '@/features/agent-ready/browserLocalSurfaceSnapshots'
+import {
+  finalizeHeadlessResponseRun,
+  type HeadlessResponsePreparation,
+} from '../headlessResponseCoordinator'
 
-type SubmitRequestContext = Awaited<ReturnType<typeof buildChatSubmitRequestContext>>
+type SubmitRequestContext = Omit<
+  Awaited<ReturnType<typeof buildChatSubmitRequestContext>>,
+  'headlessPreparation'
+> & {
+  headlessPreparation?: HeadlessResponsePreparation
+}
 type AssistantStreamState = Awaited<ReturnType<typeof readAssistantResponseText>>
 
 const CHAT_SUBMIT_PREPARATION_TIMEOUT_MS = 12_000
@@ -97,6 +107,18 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
     clearActiveDurableChatStreamRun(args.traceId)
     void forgetDurableChatStreamRun(args.traceId)
   }
+  let activeHeadlessPreparation: HeadlessResponsePreparation | undefined
+  let activeLiveKgcPath: string | null = null
+  let activeModelId = String(args.submitArgs.chatModel || '').trim() || null
+  const buildHeadlessErrorResult = (responseText: string) => activeHeadlessPreparation
+    ? finalizeHeadlessResponseRun({
+        prepared: activeHeadlessPreparation,
+        responseText,
+        status: 'error',
+        modelId: activeModelId,
+        artifactPath: activeLiveKgcPath,
+      })
+    : undefined
 
   try {
     const liveKgcPath = await withPreparationTimeout({
@@ -109,12 +131,9 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         traceId: args.traceId,
       }),
     })
+    activeLiveKgcPath = liveKgcPath
 
-    const {
-      packedContext,
-      systemMessages,
-      conversationMessages,
-    } = await withPreparationTimeout({
+    const requestContext = await withPreparationTimeout({
       label: 'request-context',
       timeoutMs: args.preparationTimeoutMs,
       promise: buildRequestContext({
@@ -123,6 +142,13 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         assistantMessageId: args.assistantMessageId,
       }),
     })
+    const {
+      packedContext,
+      systemMessages,
+      conversationMessages,
+      headlessPreparation,
+    } = requestContext
+    activeHeadlessPreparation = headlessPreparation
 
     const controller = new AbortController()
     args.submitArgs.abortRef.current = controller
@@ -141,6 +167,9 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         providerSummary: args.submitArgs.chatProviderSummary,
         defaultLocalRootPath: args.submitArgs.chatLocalStorageRootPath,
         packedFrontmatter: packedContext.frontmatter,
+        headlessPreparationSeed: headlessPreparation
+          ? projectDurableChatHeadlessPreparationSeed(headlessPreparation)
+          : null,
       },
     })
     const {
@@ -151,6 +180,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       chatModel: args.submitArgs.chatModel,
     })
     let effectiveModel = initialEffectiveModel
+    activeModelId = effectiveModel
     const maxValidationAttempts =
       args.submitArgs.chatStorageTarget === 'chatKnowgrph' ? CHAT_AI_MARKDOWN_MAX_RETRY : 1
     let attempt = 0
@@ -224,6 +254,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
         }),
       })
       effectiveModel = transport.effectiveModel
+      activeModelId = effectiveModel
       const res = transport.response
       if (!res.ok) {
         const statusText = UI_COPY.chatRequestFailedStatus(res.status)
@@ -243,6 +274,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
           responseText,
           status: 'error',
           modelId: effectiveModel,
+          runResult: buildHeadlessErrorResult(responseText),
           timestampMs: Date.now(),
           setStreamingAssistant: args.submitArgs.setStreamingAssistant,
           setMessages: args.submitArgs.setMessages,
@@ -330,6 +362,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
           responseText: UI_COPY.chatResponseMissingContentError,
           status: 'error',
           modelId: effectiveModel,
+          runResult: buildHeadlessErrorResult(UI_COPY.chatResponseMissingContentError),
           timestampMs: Date.now(),
           setStreamingAssistant: args.submitArgs.setStreamingAssistant,
           setMessages: args.submitArgs.setMessages,
@@ -382,11 +415,21 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       break
     }
 
+    const headlessRunResult = headlessPreparation
+      ? finalizeHeadlessResponseRun({
+          prepared: headlessPreparation,
+          responseText: finalAssistantText,
+          status: finalStatus,
+          modelId: effectiveModel,
+          artifactPath: liveKgcPath,
+        })
+      : undefined
     await args.submitArgs.finalizeAssistantSuccess({
       assistantMessageId: args.assistantMessageId,
       requestText: args.trimmedInput,
       modelId: effectiveModel,
       rawAssistantText: finalAssistantText,
+      runResult: headlessRunResult,
       validatedKgc: finalValidatedKgc,
       timestampMs: Date.now(),
       traceId: args.traceId,
@@ -455,6 +498,7 @@ export const executeFloatingPanelChatSubmitCoordinator = async (args: {
       responseText: friendly,
       status: 'error',
       modelId: args.submitArgs.chatModel || null,
+      runResult: buildHeadlessErrorResult(friendly),
       timestampMs: Date.now(),
       setStreamingAssistant: args.submitArgs.setStreamingAssistant,
       setMessages: args.submitArgs.setMessages,

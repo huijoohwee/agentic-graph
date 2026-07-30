@@ -180,7 +180,10 @@ export function ZoomModeSelect({ iconSizeClass, iconStrokeWidth, onZoomSelection
           setFitToScreenMode,
           setZoomToSelectionMode,
         })
-        requestZoomTransform(computeToolbarZoomPresetTransform({ state, preset: presetValue }))
+        requestZoomTransform(
+          computeToolbarZoomPresetTransform({ state, preset: presetValue }),
+          { intent: 'zoomPreset' },
+        )
         return
       }
       const next = !zoomToSelectionMode

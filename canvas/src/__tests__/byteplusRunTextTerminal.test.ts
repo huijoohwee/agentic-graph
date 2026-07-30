@@ -49,6 +49,43 @@ export async function testBytePlusRunTextReportsReasoningOnlyLengthTerminal() {
   }
 }
 
+export async function testRunTextRejectsPartialAssistantContentWithLengthTerminal() {
+  const originalFetch = globalThis.fetch
+  try {
+    globalThis.fetch = (async () => {
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"# Partial answer"}}]}\n\n'))
+          controller.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{},"finish_reason":"length"}]}\n\n'))
+          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
+          controller.close()
+        },
+      })
+      return new Response(stream, { headers: { 'content-type': 'text/event-stream' } })
+    }) as typeof fetch
+
+    let failure = ''
+    try {
+      await generateRunMarkdownWithProvider({
+        config: {
+          provider: CHAT_PROVIDER_LM_STUDIO,
+          endpointUrl: 'http://127.0.0.1:5199/v1/chat/completions',
+          apiKey: '',
+          chatModel: 'acceptance-model',
+        },
+        prompt: 'Generate the final artifact.',
+      })
+    } catch (error) {
+      failure = error instanceof Error ? error.message : String(error)
+    }
+    if (!failure.includes('max_completion_tokens')) {
+      throw new Error(`expected a length terminal to reject accumulated partial assistant content, got ${JSON.stringify(failure)}`)
+    }
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+}
+
 export async function testBytePlusRunTextRejectsMissingEndpointBeforeFetch() {
   const originalFetch = globalThis.fetch
   let fetchCount = 0

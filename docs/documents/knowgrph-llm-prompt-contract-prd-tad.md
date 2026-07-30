@@ -3,10 +3,16 @@ title: Knowgrph LLM Prompt Contract PRD-TAD (Implemented E2E)
 id: knowgrph-llm-prompt-contract-prd-tad
 schema: kgc-computing-flow/v1
 doc_type: prd-tad
-version: 0.3.17
-status: Accepted and implemented
+version: 0.5.0
+date: 2026-07-30
+lang: en-US
+owner: llm-response-requirements
+local_rung: dev-proven
+delivered_rung: undocumented
+lane: authoring
+universal_scope: true
 created: 2026-05-21
-updated: 2026-07-08
+updated: 2026-07-30
 author: "@airvio"
 repo_dev: $GITHUB_ROOT/knowgrph
 repo_prod: $GITHUB_ROOT/huijoohwee/content/knowgrph
@@ -96,6 +102,15 @@ changelog:
   - version: 0.3.17
     date: 2026-07-08
     summary: Routes no-slash trace-only/no-content fallbacks through the plain base KGC contract instead of the computing-flow template scaffold, keeping attached-image prompts query-responsive without product/title backfill.
+  - version: 0.4.0
+    date: 2026-07-29
+    summary: Rejects provider-incomplete or length-limited assistant fragments as successful terminal responses and defines response and optional provider-exposed thinking as distinct, neutral Rich Media publications under one headless run identity.
+  - version: 0.4.1
+    date: 2026-07-30
+    summary: Restores upstream Editor Workspace Viewer selection for newly owned Markdown Rich Media output while preserving explicit authored targets and the compact-surface opt-out.
+  - version: 0.5.0
+    date: 2026-07-30
+    summary: Defines one generic shared Rich Media coordinator for canvas-bound generated collections, preserves source-or-selected-parent semantic lineage, adds a render-only viewport-aware fan-out, and restores the canonical load budget by relocating TAD sequence detail to the companion.
 ---
 
 # Knowgrph - LLM Prompt Contract PRD-TAD (Implemented E2E)
@@ -130,6 +145,8 @@ Rich Media Panel text is a stricter Markdown lane: `kind: text` writes `output` 
 
 Imperative generation is terminal intent. When the selected user input begins with a generation verb such as `generate`, `create`, `draft`, or `produce`, the runtime generates that deliverable and MUST NOT substitute generic clarification wrappers, use-case-specific hardcoded content, or another Probe-Tree round.
 
+Canvas-bound collection generation uses one shared headless materialization topology. The source or selected semantic parent remains the execution and lineage owner of generated Widget Cards, while the existing source-owned Rich Media Panel coordinates their presentation. The overlay may therefore show `source -> coordinator -> generated cards` without adding coordinator-to-card execution edges or changing downstream Run targets. On a wide viewport the coordinator occupies its own lane before one ordered top-down fan-out lane; on a constrained natural-size 100% viewport the source remains stable and only the downstream coordinator plus fan-out collapse into one rightward top-down column.
+
 ---
 
 ## 2. Architecture Truths
@@ -152,6 +169,7 @@ Imperative generation is terminal intent. When the selected user input begins wi
 | Final persistence and apply | Finalize success runtime | `canvas/src/features/chat/floatingPanelChat/useFinalizeAssistantSuccess.ts` | Writes the canonical KGC workspace file, follows it in Editor Workspace, and applies it through the workspace-document path. |
 | Workspace KGC apply | Chat KGC canvas bridge + workspace import owner | `canvas/src/features/chat/chatKgcCanvasApply.ts`, `canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts` | Materializes the saved Markdown into Source Files, then reuses `setActiveMarkdownDocument`, not local graph patching. |
 | Storyboard Widget run output | Shared widget run artifact owner | `canvas/src/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetWorkflowActions.ts`, `canvas/src/features/chat/richMediaRun.ts`, `canvas/src/features/chat/chatHistoryWorkspace.output.ts`, `canvas/src/features/workspace-fs/applyWorkspaceImportToCanvas.ts` | Persists final text/transcript output as sibling workspace Markdown, persists image/video binaries with editable Markdown manifests, routes audio media URLs through shared card/panel/output owners, passively registers text and media manifests in Source Files, and carries workspace paths through widgets and Rich Media Panels. |
+| Shared collection materialization | Run execution anchor, Rich Media publication, and overlay projection | `canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRunExecutionAnchor.ts`, `canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaPublication.ts`, `canvas/src/lib/storyboardWidget/runMaterializationProjection.ts`, `canvas/src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph.ts` | Captures the source and visible viewport at Run, plans a generic source/coordinator/top-down fan-out, keeps semantic edges unchanged for lineage and execution, and projects generated card edges from the coordinator only in the Storyboard overlay. |
 | Markdown parse priority | Default parser pipeline | `canvas/src/features/parsers/default.ts` | `tryParseMarkdownFrontmatterFlowGraph()` runs before generic Markdown/JSON-LD parsing. |
 | Frontmatter-flow parse | Frontmatter-flow parser core | `canvas/src/features/parsers/markdownFrontmatterFlowGraph.core.ts` plus supporting parser modules | Parses canonical YAML frontmatter `flow:` blocks, nodes, edges, subgraphs, clusters, and metadata. Body text is a human projection or typed KGC semantic-reference surface, not a second Storyboard Widget topology layer. |
 | Typed KGC semantic graph | KGC semantic parser and query helpers | `canvas/src/features/parsers/kgcSemanticGraph.ts`, `canvas/src/lib/graph/kgcSemanticQuery.ts`, `canvas/src/hooks/active-graph-data/workspaceStructuredGraph.ts` | Parses typed inline `@node:type:id` / `@edge:predicate:source->target` sigils, emits semantic-keyed GraphData, and keeps untyped legacy references out of the graph. |
@@ -159,46 +177,9 @@ Imperative generation is terminal intent. When the selected user input begins wi
 | Group and cluster render | Group derivation and rendering | `canvas/src/lib/graph/subgraphs.ts`, `canvas/src/components/GraphCanvas/layout/graphGroups.ts` | `kg:subgraphs` is the group SSOT; rendered group IDs are `subgraph:${id}`. |
 | Graph cache identity | Shared semantic-key helpers | `canvas/src/lib/graph/semanticKey.ts`, `canvas/src/lib/graph/lookupCache.ts` | `buildScopedGraphSemanticKey()` is the upstream semantic signature helper reused across MainPanel, chat, preview, workspace, and canvas flows. |
 
-### 2.2 Current End-to-End Sequence
+### 2.2 Runtime Detail Continuation
 
-```mermaid
-flowchart LR
-  A[MainPanel Settings] --> B[FloatingPanel chat]
-  B --> C[FloatingPanelChat]
-  C --> D[useFloatingPanelChatSubmit shell]
-  D --> E[submit preflight]
-  D --> F[submit coordinator]
-  F --> G[CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT]
-  F --> H[request build plus provider transport]
-  H --> I[streamed assistant text]
-  I --> J[upsertChatHistoryWorkspaceDraft]
-  I --> K[KGC recovery plus validateChatMarkdown retry]
-  K --> L[useFinalizeAssistantSuccess]
-  L --> M[appendChatHistoryWorkspaceFile]
-  L --> N[applyChatKgcWorkspaceDocumentToCanvas]
-  N --> O[setActiveMarkdownDocument]
-  O --> P[default markdown parser]
-  P --> Q[tryParseMarkdownFrontmatterFlowGraph]
-  Q --> R[GraphData context=frontmatter-flow]
-  R --> S[applyFrontmatterFlowImportModes]
-  R --> T[kg:subgraphs metadata]
-  T --> U[readSubgraphs + deriveGraphGroups]
-  U --> V[GraphCanvas groups and clusters]
-```
-
-### 2.3 Frontmatter Output Reality
-
-The import layer already accepts Markdown with YAML frontmatter presets. The current chatKnowgrph contract, however, is richer than a minimal four-key frontmatter document. The canonical chat path today is a KGC structured Markdown document that contains:
-
-- identity fields such as `title`, `graphId`, `doc_type`, `date`, `ai_model`, and `lang`
-- structural blocks such as `$schema`, `spec`, `runner`, `links`, `canvas`, `graph_meta`, `pipeline`, `mermaid`, and `flow`
-- `flow.subgraphs` as the grouping source of truth
-
-Therefore:
-
-- Minimal canvas preset keys remain a supported import surface.
-- Rich chatKnowgrph output remains the canonical chat contract.
-- The PRD must not downgrade chat-generated KGC output into a thinner, lossy frontmatter-only format that drops `flow`, `pipeline`, or `subgraph` semantics.
+The current end-to-end sequence and frontmatter output reality remain TAD detail in companion sections 7.6 and 7.7, keeping this canonical requirements index below its load-budget ceiling.
 
 ---
 
@@ -279,6 +260,7 @@ A user configures chat from MainPanel, opens FloatingPanel chat, submits a reque
 - Frontmatter-flow parsing of nodes, edges, subgraphs, clusters, groups, and import modes.
 - Shared semantic-key reuse and stale-path elimination.
 - Typed KGC semantic sigil extraction and queryable graph helpers.
+- Shared headless coordinator and viewport-aware fan-out presentation for generated canvas collections without a second execution topology.
 
 ### 4.5 Out Of Scope
 
@@ -417,7 +399,13 @@ Given a FloatingPanel Chat response includes MCP-style `response.structuredConte
 when KGC persistence normalizes a standard, recovered, or accepted assistant response,
 then `floatingPanelChatKgcAttempt.ts` MUST accept a renderable literal MCP structured surface without retrying for KGC or synthesizing KGC text, and `chatResponseStructuredContent.ts` MUST normalize plain scalar fields, exact typed `{key,type,value}` envelopes, and `properties[]` KTV rows into the same neutral record shape, MUST preserve declared `widgets[]` form records as canonical Storyboard Widget nodes with widget form metadata, document-scoped widget registry entries, widget source/target handles, and safe `flow:compute` data when authored, MUST project undeclared widget/panel/card/media/node records into canonical KGC `flow.nodes` and `flow.edges` as Rich Media Panel endpoints with `output`, `imageUrl`, `videoUrl`, `audioUrl`, or `outputSrcDoc` fields, MUST route typed Mermaid diagram source through `flow_diagrams` routing keys into FloatingPanel row-list and BottomPanel chart surfaces, MUST route geospatial `geoJson` / FeatureCollection source through typed frontmatter or neutral structured data into compute-backed Rich Media Panel `outputSrcDoc` without mixing it with document version-control GitGraph state, renderer-local Timeline state, or Geospatial Mode toggles, MUST project D3 Graph / Flow Canvas / Dashboard / 3D Mode / XR Mode renderer and model intent into canonical `kgCanvas2dRenderer`, `kgCanvasSurfaceMode`, `kgCanvasRenderMode`, `kgCanvas3dMode`, and `kgAsset*` frontmatter fields without replacing the shared graph dataflow, MUST preserve handle-bearing authored edges between structured-content records or from `n-deliver`, MUST let shared connected-value computation drive downstream panels and run-all eligibility after workspace apply, MUST execute authored `flow:compute` nodes through provider-free shared workflow writeback before TextGeneration provider dispatch, and MUST append projected node ids to an existing `widget_bundle.graph.nodes_ref` without renderer-local graph patching.
 
-**PRD-E3-AC10** Given a Probe-Tree or other LLM response targets Rich Media Panel text, when the output is published, then it MUST use `output` with the `knowgrph-rich-media-text/v1` YAML-frontmatter Markdown contract, MUST omit HTML/srcdoc fields, and MUST render and edit through the shared Viewer/Markdown surface.
+**PRD-E3-AC10** Given a Probe-Tree or other LLM response targets Rich Media Panel text, when the output is published, then it MUST use `output` with the `knowgrph-rich-media-text/v1` YAML-frontmatter Markdown contract, MUST omit HTML/srcdoc fields, and MUST render and edit through the shared Viewer/Markdown surface. Newly owned Markdown output MUST declare the Viewer capability upstream, an explicit authored target MUST retain its chosen surface, and an explicit `false` MUST remain a compact-surface opt-out; surface selection MUST NOT depend on request domain, language, provider, model, labels, filenames, directories, or example phrases.
+
+**PRD-E3-AC11** Given any headless Chat or Widget run receives streamed assistant text and optional provider-exposed reasoning, when the provider reaches a terminal state, then an incomplete, length-limited, failed, cancelled, or transport-error terminal MUST NOT be accepted as successful merely because provisional assistant text exists; a successful complete answer MUST publish losslessly as the `response` part; a canvas-bound response with non-empty provider-exposed reasoning MUST publish the optional `thinking` part in a separate Rich Media Panel under the same run identity; a Chat-only surface MAY project that same part through its dedicated reasoning UI and stream artifact; absent reasoning MUST create no thinking part; and routing MUST remain independent of request domain, language, provider, model, filenames, directories, or example phrases.
+
+**PRD-E3-AC12** Given one source or selected semantic parent produces a Rich Media coordinator and a collection of generated Widget Cards, when terminal publication materializes the collection, then semantic lineage and downstream Run targeting MUST remain `source-or-selected-parent -> generated-card`, the existing `source -> coordinator` edge MUST remain, and the canvas MUST present the generated collection as branching from that coordinator without adding physical coordinator-to-card execution edges. A wide visible viewport MUST place the coordinator in the first rightward lane and the ordered cards in a second top-down fan-out lane; when natural-size content cannot fit those three stages at 100%, the source MUST remain stable while coordinator and cards form one rightward top-down downstream column with the coordinator first. Placement and projection MUST be derived from graph semantics, measured footprints, viewport, grid, scale, and versioned topology only, never from request-, domain-, language-, provider-, model-, label-, filename-, directory-, or example-specific conditions.
+
+> **VCC translation**: `Verify semantic source/parent-to-card edges and source-to-coordinator edge remain unchanged, the overlay resolves card presentation sources to the coordinator, no coordinator-to-card execution edge exists, wide placement is source/coordinator/fan-out, constrained 100% placement is source plus one coordinator-first downstream stack, and old layout versions migrate once`
 
 #### Success metric
 
@@ -426,6 +414,8 @@ then `floatingPanelChatKgcAttempt.ts` MUST accept a renderable literal MCP struc
 - One timestamped workspace session folder for stream logs, stream reports, and dereferenced share/report artifacts.
 - One passive sibling workspace artifact or manifest for each completed Storyboard Widget text, transcript, image, or video run that has an active workspace document.
 - MCP-style chat structured-content records parse into declared Storyboard Widget nodes and document-scoped registry entries when form metadata is present, editable Rich Media Panel endpoint nodes otherwise, default delivery edges, authored record-to-record edges, and existing widget-bundle overlay refs through the normalized KGC document, not a provider-specific renderer branch.
+- Zero successful terminal publications contain a provider-declared incomplete or length-limited fragment; every non-empty provider-exposed thinking part is distinct from the complete response part.
+- Every coordinated generated collection preserves semantic Run lineage while presenting a coordinator-first, rightward, ordered top-down fan-out that fits the captured viewport without scaling or moving the source.
 - No direct raw-text-to-graph patch path exists outside workspace-document apply.
 
 ---
@@ -533,12 +523,17 @@ The enhanced contract MUST require all of the following:
 8. No duplicate sections or conflicting headings.
 9. No manual `position:` on `flow.nodes`.
 10. No secrets, no environment-specific paths, and no hardcoded provider credentials.
+11. Successful terminal output contains one complete `response` part and, only when explicitly exposed by the provider, a separate optional `thinking` part with the same run identity.
+12. A canvas-bound generated collection declares one neutral coordinator/fan-out topology while leaving semantic execution and lineage endpoints unchanged.
 
 ### 6.4 Enhanced Anti-Stale Rules
 
 The enhanced contract MUST explicitly forbid:
 
 - returning prose plus a partial KGC fragment instead of one full KGC document
+- accepting accumulated stream text as successful after a provider-declared incomplete, length-limited, failed, cancelled, or transport-error terminal
+- concatenating provider-exposed thinking into the final response or deriving response-part routing from request subject matter
+- adding physical coordinator-to-card edges for presentation, rewriting semantic parents to match visual grouping, or choosing materialization coordinates from request content
 - returning a minimal canvas-preset-only document when the chatKnowgrph path expects the full KGC contract
 - duplicate cluster channels such as separate retired `clusters:` payloads when `flow.subgraphs` already owns grouping semantics
 - hardcoded domain roles in actor arrays
@@ -585,6 +580,7 @@ Therefore the prompt contract MUST be authored so that validator failure drives 
 See continuation in `knowgrph-llm-prompt-contract-prd-tad.companion.md` for:
 
 - TAD component specifications
+- current end-to-end sequence and frontmatter output reality
 - data contracts
 - validation and traceability
 - implementation guidance
@@ -593,5 +589,5 @@ See continuation in `knowgrph-llm-prompt-contract-prd-tad.companion.md` for:
 ---
 
 *Document ID: `knowgrph-llm-prompt-contract-prd-tad`*  
-*Version: `0.3.14`*
-*Updated: `2026-06-04`*
+*Version: `0.5.0`*
+*Updated: `2026-07-30`*

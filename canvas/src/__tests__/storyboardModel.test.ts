@@ -91,6 +91,52 @@ export function testStoryboardBoardModelProjectsSceneLikeNodesIntoLanes() {
   }
 }
 
+export function testStoryboardBoardModelPreservesAuthoredStructuralSourceAcrossGrowth() {
+  const board = buildStoryboardBoardModel({
+    graphData: {
+      type: 'Graph',
+      nodes: [
+        {
+          id: 'source',
+          type: 'Document',
+          label: 'Source request',
+          properties: { summary: 'Compare the available approaches.' },
+        },
+        {
+          id: 'empty-group',
+          type: 'Group',
+          label: 'Structural scaffold',
+          properties: { stage: 'Generated' },
+        },
+        {
+          id: 'branch-1',
+          type: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
+          label: 'First branch',
+          properties: { summary: 'Clarify the first missing decision variable.' },
+        },
+        {
+          id: 'branch-2',
+          type: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
+          label: 'Second branch',
+          properties: { summary: 'Clarify the second missing decision variable.' },
+        },
+      ],
+      edges: [],
+    },
+    graphRevision: 1,
+  })
+  const cardIds = board.lanes.flatMap(lane => lane.cards.map(card => card.id))
+  if (
+    cardIds.length !== 3
+    || !cardIds.includes('source')
+    || !cardIds.includes('branch-1')
+    || !cardIds.includes('branch-2')
+    || cardIds.includes('empty-group')
+  ) {
+    throw new Error(`expected authored structural content and generated cards to coexist without structural scaffold leakage, got ${JSON.stringify(cardIds)}`)
+  }
+}
+
 export function testStoryboardBoardModelSupportsUniversalNeutralAliases() {
   const board = buildStoryboardBoardModel({
     graphData: {

@@ -3,6 +3,7 @@ import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/w
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import type { StoryboardCardMediaGraphPersistenceOptions } from './storyboardCardMediaGraphSource'
 import type { UiToastInput } from '@/hooks/store/types'
+import type { StoryboardWidgetRunExecutionAnchorSnapshot } from './storyboardWidgetRunExecutionAnchor'
 
 export type StoryboardWidgetWorkflowNodeRunner = (nodeId: string, runOptions?: {
   allowCreateRichMediaPanel?: boolean
@@ -29,6 +30,7 @@ export type StoryboardWidgetWorkflowNodeRunnerArgs = {
   updateNode: (id: string, patch: Partial<GraphNode>) => void
   upsertUiToast: (args: UiToastInput) => void
   scheduleOverlayEdgeUpdate: () => void
+  captureExecutionAnchor?: (nodeId: string) => StoryboardWidgetRunExecutionAnchorSnapshot | null
 }
 
 export function resolveStoryboardWidgetBaseGraphKind(graphData: GraphData | null | undefined): string {

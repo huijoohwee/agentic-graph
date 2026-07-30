@@ -206,9 +206,15 @@ export interface GraphStateStructure {
   toggleGroupCollapsed: (id: string) => void;
   setOpenWidgetNodeIds: (ids: string[]) => void;
   updateOpenWidgetNodeIds: (updater: (prev: string[]) => string[]) => void;
-  setFlowWidgetPosByNodeId: (pos: Record<string, { top: number; left: number }>) => void;
+  setFlowWidgetPosByNodeId: (
+    pos: Record<string, { top: number; left: number }>,
+    options?: { allowDuringWorkspaceMutation?: boolean; persist?: boolean },
+  ) => void;
   setFlowWidgetPosByNodeIdForGraph: (graphMetaKey: string | null | undefined, pos: Record<string, { top: number; left: number }>) => void;
-  setFlowWidgetWorldPosByNodeId: (pos: Record<string, { x: number; y: number }>) => void;
+  setFlowWidgetWorldPosByNodeId: (
+    pos: Record<string, { x: number; y: number }>,
+    options?: { allowDuringWorkspaceMutation?: boolean; persist?: boolean },
+  ) => void;
   setFlowWidgetWorldPosByNodeIdForGraph: (graphMetaKey: string | null | undefined, pos: Record<string, { x: number; y: number }>) => void;
   setFlowWidgetDraggingNodeId: (id: string | null) => void;
   setEditMode: (mode: boolean) => void;

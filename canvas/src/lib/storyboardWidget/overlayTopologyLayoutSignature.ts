@@ -4,6 +4,10 @@ import { splitComposedNodeId } from '@/lib/graph/canonicalNodeIds'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
 import { readNodeProperties } from '@/lib/graph/nodeProperties'
+import {
+  readWorkflowMaterializationParentNodeId,
+  readWorkflowMaterializationProjectionSourceNodeId,
+} from '@/lib/storyboardWidget/runMaterializationProjection'
 
 function measuredLayoutKey(value: unknown): string {
   const n = typeof value === 'number' ? value : Number(value)
@@ -28,11 +32,13 @@ export function buildOverlayTopologyLayoutSignature(graphData: GraphData | null 
   const edgeParts = edges
     .map(edge => {
       const { src, tgt } = readGraphEdgeEndpoints(edge)
+      const projectionSource = readWorkflowMaterializationProjectionSourceNodeId(edge.properties)
       const sourcePortKey = readFlowEdgePortKey(edge, 'source') || ''
       const targetPortKey = readFlowEdgePortKey(edge, 'target') || ''
       return [
         readCanonicalOverlayIdentity(edge.id),
         readCanonicalOverlayIdentity(src),
+        readCanonicalOverlayIdentity(projectionSource),
         readCanonicalOverlayIdentity(tgt),
         String(edge.label || '').trim(),
         sourcePortKey,
@@ -60,6 +66,7 @@ export function buildOverlayNodeLayoutSignature(graphData: GraphData | null | un
         readVisualLayoutKey(props, 'visual:minHeight'),
         String(props['visual:zIndex'] || '').trim(),
         String(props['flow:widgetFormId'] || '').trim(),
+        readCanonicalOverlayIdentity(readWorkflowMaterializationParentNodeId(node)),
       ].join(':')
     })
     .filter(Boolean)

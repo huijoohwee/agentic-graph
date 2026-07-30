@@ -39,6 +39,43 @@ export type FlowOverlayCollectiveViewportState = {
   fitsVisibleViewport: boolean
 }
 
+const normalizeFlowOverlayCollectiveIds = (ids: readonly string[]): string[] =>
+  Array.from(new Set(
+    ids.map(id => String(id || '').trim()).filter(Boolean),
+  )).sort((leftId, rightId) => leftId.localeCompare(rightId))
+
+export function buildFlowOverlayCollectiveTopologyKey(args: {
+  zoomViewKey: string
+  layoutSignature: string
+  ids: readonly string[]
+}): string {
+  return buildScopedGraphSemanticKey('flow-overlay-collective-topology', {
+    graphSemanticKey: [
+      String(args.zoomViewKey || '').trim(),
+      String(args.layoutSignature || '').trim(),
+      normalizeFlowOverlayCollectiveIds(args.ids).join(','),
+    ].join('|'),
+  })
+}
+
+export function hasFlowOverlayCollectiveTopologyChanged(args: {
+  previousIds: readonly string[]
+  currentIds: readonly string[]
+}): boolean {
+  const previousIds = normalizeFlowOverlayCollectiveIds(args.previousIds)
+  const currentIds = normalizeFlowOverlayCollectiveIds(args.currentIds)
+  if (previousIds.length === 0 || currentIds.length === 0) return false
+  if (previousIds.length !== currentIds.length) return true
+  return previousIds.some((id, index) => id !== currentIds[index])
+}
+
+export function shouldRecoverFlowOverlayCollectiveAfterTopologyChange(args: {
+  topologyChanged: boolean
+  viewportState: FlowOverlayCollectiveViewportState | null
+}): boolean {
+  return args.topologyChanged && args.viewportState?.offscreen === true
+}
+
 export function shouldPreserveEstablishedWorkspaceOverlayCamera(args: {
   initializedForView: boolean
   workspaceEditorOverlayOpen: boolean

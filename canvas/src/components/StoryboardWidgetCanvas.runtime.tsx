@@ -27,10 +27,7 @@ import { resolveCanvasViewportMeasureElement } from '@/lib/canvas/viewportMeasur
 import { buildDataflowWidgetRegistry } from '@/lib/storyboardWidget/widgetRegistryDataflow'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import { isFrontmatterOnlyPolicyActive } from '@/lib/config.render'
-import {
-  buildOverlayNodeLayoutSignature,
-  buildOverlayTopologyLayoutSignature,
-} from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
+import { buildOverlayNodeLayoutSignature, buildOverlayTopologyLayoutSignature } from '@/lib/storyboardWidget/overlayTopologyLayoutSignature'
 import { hashSignatureParts } from '@/lib/hash/signature'
 import { buildCanvasAppliedMarkdownDocumentIdentityKey, useCanvasAppliedMarkdownDocument } from '@/features/canvas/useCanvasAppliedMarkdownDocument'
 import { resolveRichMediaWidgetKind } from '@/features/chat/richMediaRun'
@@ -39,27 +36,12 @@ import { appendPendingOverlayNodesToGraphData, resolvePendingOverlayGraphDataBas
 import { useNativeCrawlerWorkflowRecovery } from '@/components/StoryboardWidgetCanvas/runtime/useNativeCrawlerWorkflowRecovery'
 import { useTextWidgetOutputArtifactRecovery } from '@/components/StoryboardWidgetCanvas/runtime/useTextWidgetOutputArtifactRecovery'
 import { useStoryboardCardMediaGraphCommit } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardCardMediaGraphCommit'
-import { reportRuntimeTrace } from '@/lib/debug/runtimeTrace'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
 import { isStoryboardFixedCardOwnedNode } from '@/components/StoryboardWidgetCanvas/storyboardCardOwnership2d'
 import { readCanvasCardWidgetDisplayMode } from '@/lib/canvas/canvasCardWidgetDisplayControls'
+import { captureStoryboardWidgetRunExecutionAnchor } from '@/components/StoryboardWidgetCanvas/runtime/captureStoryboardWidgetRunExecutionAnchor'
+import { reportStoryboardMediaPanelLoopRuntimeDebug } from '@/components/StoryboardWidgetCanvas/runtime/storyboardMediaPanelLoopRuntimeDebug'
 // #region debug-point A:runtime-storyboard-graph-handoff
-const STORYBOARD_MEDIA_PANEL_LOOP_TRACE_SCOPE = 'storyboard-media-panel-loop'
-const reportStoryboardMediaPanelLoopRuntimeDebug = (args: {
-  hypothesisId: 'A' | 'B' | 'C' | 'D' | 'E'
-  location: string
-  msg: string
-  data?: Record<string, unknown>
-}) => {
-  reportRuntimeTrace({
-    scope: STORYBOARD_MEDIA_PANEL_LOOP_TRACE_SCOPE,
-    runId: 'runtime',
-    hypothesisId: args.hypothesisId,
-    location: args.location,
-    msg: args.msg,
-    data: args.data || {},
-  })
-}
 // #endregion
 export default function StoryboardWidgetCanvasRuntime(
   {
@@ -349,6 +331,8 @@ export default function StoryboardWidgetCanvasRuntime(
     getLiveContainmentGroupAabbForNode,
     getLiveNodeWorldPos,
     getLiveZoomTransform,
+    getRenderedOverlayRectForNode,
+    getRenderedZoomTransform,
   } = useStoryboardWidgetRuntimeScene({
     active,
     storyboardWidgetSurfaceId,
@@ -362,6 +346,21 @@ export default function StoryboardWidgetCanvasRuntime(
     storyboardWidgetLayoutRebalanceRequest,
     zoomViewKeyRef,
   })
+  const captureExecutionAnchor = React.useCallback((rawNodeId: string) => {
+    // Delegated capture preserves renderedScreenRect: getRenderedOverlayRectForNode(nodeId),
+    // with transform authority getRenderedZoomTransform() || getLiveZoomTransform() || { k: 1, x: 0, y: 0 }
+    return captureStoryboardWidgetRunExecutionAnchor({
+      graphData: (draftGraphDataRef.current || draftGraphData || overlayRenderGraphDataOverride || storyboardWidgetBaseGraphData || baseGraphData || null) as GraphData | null,
+      rawNodeId,
+      storyboardWidgetSurfaceId,
+      viewportW,
+      viewportH,
+      getLiveNodeWorldPos,
+      getLiveZoomTransform,
+      getRenderedOverlayRectForNode,
+      getRenderedZoomTransform,
+    })
+  }, [baseGraphData, draftGraphData, draftGraphDataRef, getLiveNodeWorldPos, getLiveZoomTransform, getRenderedOverlayRectForNode, getRenderedZoomTransform, overlayRenderGraphDataOverride, storyboardWidgetBaseGraphData, storyboardWidgetSurfaceId, viewportH, viewportW])
 
   const overlayOnlyModeEnabled = React.useMemo(() => {
     return storyboardWidgetViewActive
@@ -610,6 +609,7 @@ export default function StoryboardWidgetCanvasRuntime(
     updateNode,
     upsertUiToast,
     scheduleOverlayEdgeUpdate,
+    captureExecutionAnchor,
   })
   runWorkflowNodeRef.current = runWorkflowNode
   useNativeCrawlerWorkflowRecovery({ active: storyboardWidgetViewActive, graphData: draftGraphDataRef.current || draftGraphData, documentName: markdownDocumentName, runNode: runWorkflowNode })

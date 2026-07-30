@@ -229,6 +229,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["sourceFiles.naming.findNextIndex.root","@/__tests__/sourceFileNaming.test","testFindNextSourceFileIndexRoot"],
   ["sourceFiles.naming.findNextIndex.nested","@/__tests__/sourceFileNaming.test","testFindNextSourceFileIndexNested"],
   ["sourceFiles.newMarkdown.defaultsToAuthoredNotesRoot","@/__tests__/sourceFilesNewMarkdownSourceFile.test","testCreateNewMarkdownSourceFileDefaultsToAuthoredNotesRoot"],
+  ["sourceFiles.newMarkdown.republishesExplicit2dPresentationState","@/__tests__/sourceFilesNewMarkdownSourceFile.test","testCreateNewMarkdownSourceFileRepublishesExplicit2dPresentationState"],
   ["sourceFiles.newMarkdown.doesNotWriteDocsMirror","@/__tests__/sourceFilesNewMarkdownSourceFile.test","testCreateNewMarkdownSourceFileDoesNotWriteIntoDocsMirror"],
   ["sourceFiles.newMarkdown.authoredNotesRefreshPreservesLocal","@/__tests__/sourceFilesNewMarkdownSourceFile.test","testCreateNewMarkdownSourceFileSurvivesDocsMirrorRefreshSync"],
   ["sourceFiles.newMarkdown.authoredNoteSurvivesReloadBesideLargeMirror","@/__tests__/sourceFilesNewMarkdownSourceFile.test","testAuthoredMarkdownNoteSurvivesReloadBesideLargeDocsMirror"],

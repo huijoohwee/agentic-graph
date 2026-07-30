@@ -3,10 +3,16 @@ title: Knowgrph LLM Prompt Contract PRD-TAD Companion (Runtime, Validation, Impl
 id: knowgrph-llm-prompt-contract-prd-tad-companion
 schema: kgc-computing-flow/v1
 doc_type: prd-tad-companion
-status: Accepted and implemented
-version: 0.3.4
+version: 0.5.0
+date: 2026-07-30
+lang: en-US
+owner: llm-response-architecture
+local_rung: dev-proven
+delivered_rung: undocumented
+lane: authoring
+universal_scope: true
 created: 2026-05-27
-updated: 2026-05-29
+updated: 2026-07-30
 canonical_doc: docs/documents/knowgrph-llm-prompt-contract-prd-tad.md
 continuation_note: Maintains TAD, validation, and implementation detail moved out of the canonical sub-600-line source index.
 ---
@@ -31,6 +37,8 @@ continuation_note: Maintains TAD, validation, and implementation detail moved ou
 | Keep `flow.subgraphs -> kg:subgraphs -> deriveGraphGroups()` as the grouping pipeline | Accepted | Prevents duplicate cluster/group owners. |
 | Reuse `buildScopedGraphSemanticKey()` everywhere graph identity is needed | Accepted | Prevents recomputation churn and signature drift. |
 | Parse typed KGC semantic sigils through `kgcSemanticGraph.ts` | Accepted | Adds queryable semantic nodes and directed edges without legacy untyped remaps or a second Markdown parser. |
+| Gate final response publication on provider terminal completeness and publish optional provider-exposed thinking as a separate response part | Accepted | Prevents partial success, preserves the answer losslessly, and keeps reasoning visibility independent of request subject matter. |
+| Present generated collections through one shared Rich Media coordinator without changing semantic execution edges | Accepted | Gives Chat and Widget materialization one neutral, viewport-aware fan-out while preserving lineage, Run targeting, and connected-value behavior. |
 | Delete stale competing paths instead of aliasing them | Accepted | Aligns with root-fix and no-backcompat-shim rules. |
 
 ### 7.2 Component Specification
@@ -137,6 +145,27 @@ continuation_note: Maintains TAD, validation, and implementation detail moved ou
 - Responsibility: parse inline typed `` `@node:type:id` `` and `` `@edge:predicate:source->target` `` sigils outside fenced code, validate optional `node_types` and `edge_predicates` frontmatter lists, infer edge endpoints only when the typed contract is explicit, merge semantic GraphData with neutral Markdown structure, and expose path/filter/search/ancestor/descendant helpers.
 - Constraint: untyped legacy references such as `@node:n-trigger` are references only; they must not be remapped into typed nodes.
 
+#### TAD-C14 - Headless Response Terminal And Part Coordinator
+
+- Owner: `runTextEventStream.ts`, `floatingPanelChatStreaming.ts`, `storyboardWidgetWorkflowTextGenerationProvider.ts`, `storyboardWidgetHeadlessTextRun.ts`, and the shared Rich Media publisher.
+- Responsibility: reject provider-declared non-success terminals before returning accumulated assistant text; preserve a successful answer as the required `response` part; carry non-empty provider-exposed reasoning as the optional `thinking` part; and, for canvas-bound output, publish each part to a distinct Rich Media Panel under one run identity. Newly owned Markdown panels declare the shared Editor Workspace Viewer capability upstream; explicit authored targets retain their selected surface, and explicit `false` remains the compact-surface opt-out.
+- Input contract: provider event stream or response envelope plus a prepared headless response run.
+- Output contract: terminal run result with one complete response part and zero or one thinking part; canvas-bound Widget publication materializes those parts as distinct Rich Media Panels, while Chat-only projection keeps reasoning in its dedicated UI and stream artifact.
+- Fallback: a bounded capability-compatible retry may replace an incomplete attempt; otherwise retain typed failure status and never label provisional text complete.
+- Constraint: response-part routing is provider-neutral and domain-agnostic. It MUST NOT inspect filenames, directories, user topics, languages, example phrases, or use-case labels.
+
+#### TAD-C15 - Shared Materialization Coordinator And Fan-Out Projection
+
+- Owner: `storyboardWidgetRunExecutionAnchor.ts`, `storyboardWidgetWorkflowRichMediaPublication.ts`, `runMaterializationProjection.ts`, `storyboardWidgetRenderGraph.ts`, and `overlayTopologyLayoutSignature.ts`.
+- Responsibility: capture one immutable source/viewport execution anchor; plan measured natural-size materialization; retain the existing semantic source-or-selected-parent edges to generated cards and source edge to the Rich Media coordinator; attach a render-only projection source to those semantic card edges; and include that projection in overlay cache identity.
+- Semantic contract: downstream Run, Run-all, connected-value discovery, persistence, and lineage read the original `source-or-selected-semantic-parent -> generated-card` endpoints and semantic `parentNodeId`.
+- Presentation contract: the Storyboard overlay may resolve the existing semantic card edge from the coordinator declared by `workflowMaterializationProjectionSourceNodeId`, while `workflowMaterializationParentNodeId` records the same presentation parent on the child and remains the durable fallback after source serializers that omit optional edge extension fields. Resolution prefers the live edge annotation and falls back to the matching child annotation. No physical coordinator-to-card execution edge is created.
+- Wide layout: source lane -> coordinator lane -> one ordered top-down fan-out lane.
+- Constrained layout: at natural-size 100% scale, keep the source and camera stable and collapse coordinator plus fan-out into one rightward, coordinator-first top-down column.
+- Migration: materialization layout version 3, balanced Probe layout version 7, and Probe output layout version 3 supersede older canonical placement; a valid current materialization layout remains authoritative.
+- Fallback: an absent, invalid, stale, or out-of-overlay projection source resolves to the semantic edge source; an invalid topology declaration uses the existing generic balanced planner.
+- Constraint: topology and placement depend only on semantic role, measured footprints, captured viewport, scale, grid, and version. They MUST NOT inspect request content, language, domain, provider, model, labels, filenames, directories, example phrases, or feature-specific card counts.
+
 ### 7.3 Data Contracts
 
 #### DC-01 - Chat Storage Target
@@ -186,6 +215,28 @@ The runtime MUST derive these from the shared session timestamp instead of provi
 - Optional frontmatter guards: `node_types` and `edge_predicates`
 - Graph identity: `metadata.kind = kgc-semantic`, `metadata.graphSemanticKey` from `buildScopedGraphSemanticKey()`
 
+#### DC-07 - Headless Response Parts
+
+- Run identity: `knowgrph-headless-response-run/v1` plus one `runId`.
+- Required part: `response`, containing the complete successful assistant answer.
+- Optional part: `thinking`, containing only non-empty reasoning text or summaries explicitly exposed by the provider.
+- Terminal rule: incomplete, length-limited, failed, cancelled, and transport-error terminals are non-success even when provisional response text exists.
+- Isolation rule: `thinking` never replaces, prefixes, suffixes, truncates, or shares a panel with `response`.
+- Absence rule: no provider-exposed reasoning means no thinking publication.
+- Presentation rule: newly owned Markdown parts declare the Editor Workspace Viewer capability; explicit authored targets retain their selected surface; an explicit `false` opts into the compact surface; routing uses persisted content capabilities rather than request- or provider-specific heuristics.
+
+#### DC-08 - Materialization Semantics And Projection
+
+- Topology mode: `coordinator-fanout-rightward-top-down`.
+- Semantic coordinator edge: existing `source -> Rich Media coordinator`.
+- Semantic generated-card edge: existing `source-or-selected-semantic-parent -> generated-card`.
+- Child presentation parent: `workflowMaterializationParentNodeId = <coordinator-id>`.
+- Edge presentation source: `workflowMaterializationProjectionSourceNodeId = <coordinator-id>`.
+- Overlay edge: presented as `coordinator -> generated-card` only when the coordinator resolves inside the active overlay; otherwise it falls back to the semantic source.
+- Physical coordinator-to-card execution edge: forbidden.
+- Persistence rule: the typed or plain property envelope is preserved while presentation metadata is merged; semantic endpoints and semantic parent fields are not rewritten.
+- Cache rule: overlay topology signatures include the presentation source, so a projection-only change invalidates stale edge geometry without mutating execution semantics.
+
 ### 7.4 Failure Handling
 
 | Failure point | Current owner | Required behavior |
@@ -193,6 +244,10 @@ The runtime MUST derive these from the shared session timestamp instead of provi
 | Missing endpoint or model | `floatingPanelChatSubmitPreflight.ts` via `useFloatingPanelChatSubmit` | Abort early with UI error; do not create alternate request path. |
 | Provider request 400/429/model mismatch | `floatingPanelChatSubmitTransport.ts` via `floatingPanelChatSubmitCoordinator.ts` | Retry token parameter fallback or model fallback in the same runtime. |
 | Empty assistant response | `floatingPanelChatStreaming.ts` plus `floatingPanelChatSubmitCoordinator.ts` | Surface explicit error and do not persist partial final content as success. |
+| Assistant fragment followed by incomplete or length terminal | `runTextEventStream.ts`, `floatingPanelChatStreaming.ts`, plus the headless text-generation adapter | Reject the fragment as terminal success; perform only the bounded compatible retry or preserve a typed failure state. |
+| Provider exposes reasoning | headless text-generation adapter plus shared Rich Media publisher | Preserve the final answer independently and materialize non-empty reasoning in its own optional `thinking` panel. |
+| Projection coordinator is missing, stale, or outside the active overlay | Storyboard overlay edge projector | Fall back to the semantic edge source; never fabricate a node or rewrite semantic endpoints. |
+| Coordinator/fan-out cannot fit as three natural-size stages | Run materialization planner | Keep source and camera stable; compare measured layouts and use one rightward coordinator-first downstream stack when it has the lower overlap/overflow score. |
 | Invalid KGC structure | `validateChatMarkdown` + `buildCorrectionPrompt` | Retry upstream contract before finalize. |
 | Stream artifact persistence mismatch | `chatStreamArtifacts.ts` | Keep canonical `kgc_*` success path intact and fail stream artifacts additively. |
 | Share/report dereference failure | `chatStreamArtifactDereference.ts` via `fetchWorkspaceUrlContent()` | Skip the failing dereference, keep the original observed URL, and avoid a second fetch stack. |
@@ -211,6 +266,47 @@ The runtime MUST derive these from the shared session timestamp instead of provi
 - Group derivation must read normalized metadata and avoid recomputing alternative group registries.
 - Graph cache identity must reuse the shared semantic-key helper.
 - Typed KGC semantic Markdown is a structured workspace graph and must suppress keyword-mode re-derivation.
+- Coordinator/fan-out layout must use measured natural-size footprints and the captured visible viewport; it must not resize cards, mutate zoom/pan, or replace the source position to manufacture fit.
+- Presentation-only projection must not become an execution edge, and the projection source must participate in overlay topology cache invalidation.
+
+### 7.6 Current End-to-End Sequence
+
+```mermaid
+flowchart LR
+  A[MainPanel Settings] --> B[FloatingPanel chat]
+  B --> C[FloatingPanelChat]
+  C --> D[useFloatingPanelChatSubmit shell]
+  D --> E[submit preflight]
+  D --> F[submit coordinator]
+  F --> G[CHAT_BASE_KGC_RESPONSE_CONTRACT_PROMPT]
+  F --> H[request build plus provider transport]
+  H --> I[streamed assistant text]
+  I --> J[upsertChatHistoryWorkspaceDraft]
+  I --> K[KGC recovery plus validateChatMarkdown retry]
+  K --> L[useFinalizeAssistantSuccess]
+  L --> M[appendChatHistoryWorkspaceFile]
+  L --> N[applyChatKgcWorkspaceDocumentToCanvas]
+  N --> O[setActiveMarkdownDocument]
+  O --> P[default markdown parser]
+  P --> Q[tryParseMarkdownFrontmatterFlowGraph]
+  Q --> R[GraphData context=frontmatter-flow]
+  R --> S[applyFrontmatterFlowImportModes]
+  R --> T[kg:subgraphs metadata]
+  T --> U[readSubgraphs + deriveGraphGroups]
+  U --> V[GraphCanvas groups and clusters]
+```
+
+Component inventory: canonical section 2.1 plus TAD-C01 through TAD-C15 in this companion.
+
+### 7.7 Frontmatter Output Reality
+
+The import layer accepts Markdown with YAML frontmatter presets. The canonical chat path is a richer KGC structured Markdown document containing:
+
+- identity fields such as `title`, `graphId`, `doc_type`, `date`, `ai_model`, and `lang`
+- structural blocks such as `$schema`, `spec`, `runner`, `links`, `canvas`, `graph_meta`, `pipeline`, `mermaid`, and `flow`
+- `flow.subgraphs` as the grouping source of truth
+
+Minimal canvas preset keys remain a supported import surface, but the contract must not downgrade generated KGC output into a thinner format that drops `flow`, `pipeline`, or `subgraph` semantics.
 
 ---
 
@@ -231,6 +327,12 @@ The runtime MUST derive these from the shared session timestamp instead of provi
 | Passive import-mode guard | `frontmatterFlowImportModeSeepageRegression.test.ts` | Passive flows do not replay interactive import modes. |
 | Source-file apply guard | `sourceFilesIngestStaleGuard.test.ts` | Workspace import and composed graph apply stay on the canonical graph-owning path. |
 | Shared semantic-key reuse | `sourceFilesIngestStaleGuard.test.ts` and other regressions | Graph identity remains rooted in `buildScopedGraphSemanticKey()`. |
+| Partial terminal rejection | `storyboardWidgetTextGenerationProviderRetry.test.ts`, `byteplusRunTextTerminal.test.ts`, `chatResponseStreamingContract.test.ts` | A readable fragment cannot bypass incomplete/length terminal handling in Widget generation or FloatingPanel Chat, and a bounded retry ends on a complete response. |
+| Response/thinking panel isolation | `storyboardWidgetHeadlessOutputWiring.test.ts` | Provider-exposed thinking uses a distinct owned Rich Media publication and never alters the response text. |
+| Rich Media Viewer publication | `storyboardWidgetExplicitOutputWiring.test.ts`, `storyboardWidgetNaturalLanguageRequest.test.ts`, `richMediaPanelTextModeRegression.test.tsx`, `richMediaPanelWorkspaceViewerPostEditRegression.test.tsx` | Newly owned Markdown output selects the shared Editor Workspace Viewer, explicit compact opt-out survives, and view/edit persistence remains canonical. |
+| Generic coordinator/fan-out planner | `storyboardWidgetNaturalLanguageRequest.test.ts` | A wide viewport preserves source/coordinator/ordered fan-out lanes; a constrained natural-size viewport preserves the source and collapses only coordinator plus fan-out into one rightward top-down column; invalid topology falls back to the generic balanced planner. |
+| Semantic-versus-presentation edge isolation | `storyboardWidgetExplicitOutputWiring.test.ts` | Semantic source-to-card endpoints and Run targeting remain unchanged while the overlay projects those cards from the Rich Media coordinator without adding coordinator-to-card execution edges. |
+| Canonical layout migration | `storyboardProbeTreeOutputLayout.test.ts`, `storyboardWidgetResetAllProbeTreeLayout.test.ts` | Older layouts migrate once to coordinator-before-branches placement and a settled current layout remains idempotent. |
 
 ### 8.2 Required PRD-To-TAD Traceability
 
@@ -238,7 +340,7 @@ The runtime MUST derive these from the shared session timestamp instead of provi
 |---|---|---|
 | PRD-E1 | TAD-C01, TAD-C02, TAD-C03, TAD-C12 | settings assist behavior + graph semantic-key reuse tests |
 | PRD-E2 | TAD-C04, TAD-C09 | `chatResponseContractPrompt.test.ts`, validator behavior |
-| PRD-E3 | TAD-C04, TAD-C05, TAD-C06, TAD-C07 | finalize/apply tests plus stream artifact and workspace path helpers |
+| PRD-E3 | TAD-C04, TAD-C05, TAD-C06, TAD-C07, TAD-C14, TAD-C15, DC-07, DC-08 | finalize/apply tests, stream artifact and workspace path helpers, terminal completeness tests, response-part publication tests, coordinator/fan-out layout tests, and semantic-versus-presentation edge isolation tests |
 | PRD-E4 | TAD-C08, TAD-C09, TAD-C10, TAD-C11 | parser and import-mode regression tests |
 | PRD-E5 | TAD-C10, TAD-C11, TAD-C12 | stale-guard and semantic-key reuse tests |
 | PRD-E6 | TAD-C13, DC-06 | `kgcSemanticGraph.test.ts` plus parser runner coverage |
@@ -253,6 +355,9 @@ This scope is done only when all of the following are true:
 4. Stream artifacts and share/report dereference remain additive workspace companions, not alternate apply surfaces.
 5. Stale or speculative components are removed from the canonical doc rather than kept as competing proposed owners.
 6. Focused validation remains tied to existing tests and parser/import guards.
+7. Provider-declared incomplete or length-limited fragments cannot finalize as successful answers, and non-empty provider-exposed thinking is isolated in a separate Rich Media publication.
+8. Newly owned Markdown response parts render and edit through the shared Editor Workspace Viewer without request-, provider-, label-, or file-specific surface heuristics.
+9. A generated collection preserves source-or-selected-parent semantic lineage while the overlay presents one Rich Media coordinator with an ordered rightward top-down fan-out; constrained 100% placement keeps the source stable, and no presentation-only execution edge exists.
 
 ---
 
@@ -274,6 +379,10 @@ This document update does not itself change runtime code, but it sets the exact 
    - keep session-folder lineage concise and renderer-neutral
 5. `chatResponseContractPrompt.test.ts`
    - add focused assertions for any newly tightened prompt requirements
+6. `storyboardWidgetRunExecutionAnchor.ts` and `runMaterializationProjection.ts`
+   - keep topology selection footprint- and viewport-driven
+   - preserve semantic endpoints while projecting coordinator-owned overlay geometry
+   - version migration at the shared layout owner rather than patching coordinates after render
 
 ### 9.2 Unsafe Changes To Avoid
 
@@ -283,6 +392,8 @@ This document update does not itself change runtime code, but it sets the exact 
 4. Introducing compatibility remaps for stale prompt shapes instead of fixing the prompt and validator upstream.
 5. Adding a second share/report fetch client instead of reusing workspace URL import helpers.
 6. Replacing shared semantic-key helpers with local hash logic.
+7. Adding physical coordinator-to-card edges for visual grouping or rewriting semantic `parentNodeId` to match the overlay.
+8. Hardcoding coordinates, card counts, request topics, languages, providers, models, labels, filenames, directories, or example phrases into materialization routing.
 
 ---
 
@@ -314,11 +425,18 @@ Therefore the architecture decision is final for this scope:
 - `tryParseMarkdownFrontmatterFlowGraph()` stays the first Markdown graph parser.
 - `flow.subgraphs -> kg:subgraphs -> deriveGraphGroups()` stays the grouping pipeline.
 - `buildScopedGraphSemanticKey()` stays the semantic identity helper.
+- Terminal provider status stays authoritative over accumulated response fragments.
+- Complete response and optional provider-exposed thinking stay distinct Rich Media parts under one headless run.
+- Newly owned Markdown Rich Media parts select the shared Editor Workspace Viewer upstream; explicit authored targets and compact opt-out remain authoritative.
+- Source-or-selected-parent semantic edges stay authoritative for generated-card lineage and execution, while the existing source-owned Rich Media Panel acts as the shared presentation coordinator.
+- The overlay may project coordinator-to-card fan-out through neutral properties, but it never creates a physical coordinator-to-card execution edge.
+- Wide views use a coordinator lane followed by an ordered top-down fan-out lane; constrained natural-size 100% views keep the source stable and stack coordinator plus fan-out in one rightward column.
+- Versioned canonical migration moves older coordinator-after-branches layouts to coordinator-before-branches without request- or domain-specific conditions.
 
 Everything stale, speculative, duplicate, conflicting, downstream-patched, or second-runtime is forbidden.
 
 ---
 
-*Companion ID: `knowgrph-llm-prompt-contract-prd-tad-companion`*  
-*Version: `0.3.3`*  
-*Updated: `2026-05-29`*
+*Companion ID: `knowgrph-llm-prompt-contract-prd-tad-companion`*
+*Version: `0.5.0`*
+*Updated: `2026-07-30`*
