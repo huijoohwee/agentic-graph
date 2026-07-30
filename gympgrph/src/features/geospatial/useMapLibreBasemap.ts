@@ -28,10 +28,13 @@ import {
   disposeMapLibreFlightBootstrap,
   mapHasCurrentFlightProviderPresentation,
   reconcileMapLibreFlightBootstrap,
+  resumeMapLibreFlightBootstrapAfterDisposal,
+  suspendMapLibreFlightBootstrapForDisposal,
 } from './mapLibreFlightBootstrap.js'
 import {
   acquireMapLibreMapDisposalPreparation,
   claimMapLibreMapLease,
+  isMapLibreMapPreparingForDisposal,
   readActiveNativeGeospatialMapLibreMap,
   type MapLibreMapOwnerScope,
 } from './mapLibreHostLease.js'
@@ -415,13 +418,21 @@ export function useMapLibreBasemap(args: {
     let releaseMapLease: (() => void) | null = null
     let releaseMapDisposalPreparation: (() => void) | null = null
     const cancelMapDisposalPreparation = () => {
+      const shouldResumeFlightStyle = releaseMapDisposalPreparation !== null
       releaseMapDisposalPreparation?.()
       releaseMapDisposalPreparation = null
+      if (shouldResumeFlightStyle && map) {
+        resumeMapLibreFlightBootstrapAfterDisposal(map)
+      }
     }
     const prepareMapForDisposal = (): boolean => {
       if (!map) return true
-      releaseMapDisposalPreparation ??=
-        acquireMapLibreMapDisposalPreparation(map)
+      if (!releaseMapDisposalPreparation) {
+        releaseMapDisposalPreparation =
+          acquireMapLibreMapDisposalPreparation(map)
+        runtimeFallbackRequester.cancelPending()
+        suspendMapLibreFlightBootstrapForDisposal(map)
+      }
       return prepareFlightGeoMapLibreForDisposal(map)
     }
     const isMapPreparedForDisposal = (): boolean => (
@@ -460,7 +471,10 @@ export function useMapLibreBasemap(args: {
           mapHasCurrentFlightProviderPresentation,
         hasExactFlightPresentation:
           mapHasExactCurrentFlightPresentation,
-        isDisposed: () => cancelled,
+        isDisposed: () => (
+          cancelled
+          || (map ? isMapLibreMapPreparingForDisposal(map) : false)
+        ),
         loadResolvedStyle: async (style, signal) => (
           await resolveMapLibreFlightProviderStyle(style, { signal })
         ).style,

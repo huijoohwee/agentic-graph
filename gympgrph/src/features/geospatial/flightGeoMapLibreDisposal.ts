@@ -41,7 +41,7 @@ function readOwnedSource(
   sourceId: string,
 ): Readonly<{
   source: any | null
-  state: 'absent' | 'present' | 'unreadable'
+  state: 'absent' | 'pending' | 'present' | 'unreadable'
 }> {
   let source: any | null
   try {
@@ -59,7 +59,7 @@ function readOwnedSource(
       return { source: null, state: 'unreadable' }
     }
     return Object.prototype.hasOwnProperty.call(sources, sourceId)
-      ? { source: null, state: 'unreadable' }
+      ? { source: null, state: 'pending' }
       : { source: null, state: 'absent' }
   } catch {
     return { source: null, state: 'unreadable' }
@@ -69,6 +69,10 @@ function readOwnedSource(
 function scheduleOwnedSourceClear(map: any, sourceId: string): boolean {
   const owned = readOwnedSource(map, sourceId)
   if (owned.state === 'absent') return true
+  // During setStyle(), the style specification can advertise a source before
+  // MapLibre exposes its live GeoJSONSource. Accept the clear request but keep
+  // settlement false so the ownership loop retries after the next frame.
+  if (owned.state === 'pending') return true
   if (owned.state !== 'present') return false
   const sourceData = readGeoJsonSourceData(owned.source)
   if (!sourceData) return false

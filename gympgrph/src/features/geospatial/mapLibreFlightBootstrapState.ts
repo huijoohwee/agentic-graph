@@ -28,6 +28,7 @@ export type MapLibreFlightBootstrapState = {
   providerPresentation: MapLibreFlightProviderPresentation | null
   queueProviderAdmission: (() => void) | null
   rearmProviderPromotion: (() => void) | null
+  resumeReconciliation: (() => void) | null
   removeRenderBinding: (() => void) | null
 }
 
@@ -57,6 +58,7 @@ export function ensureMapLibreFlightBootstrapState(
       providerPresentation: null,
       queueProviderAdmission: null,
       rearmProviderPromotion: null,
+      resumeReconciliation: null,
       removeRenderBinding: null,
     }
     bootstrapStateByMap.set(map, state)

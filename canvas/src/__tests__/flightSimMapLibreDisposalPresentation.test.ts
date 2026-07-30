@@ -180,6 +180,66 @@ test('exclusive disposal waits only for loaded empty Flight sources', () => {
   )
 })
 
+test('exclusive disposal retries style-owned sources that are not live yet', () => {
+  const sourceIds = [
+    FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+    FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  ]
+  let sourcesLive = false
+  let sourcesLoaded = true
+  const sourceData = new Map<string, {
+    type: string
+    features: unknown[]
+  }>(sourceIds.map(sourceId => [
+    sourceId,
+    {
+      type: 'FeatureCollection',
+      features: [{ id: `${sourceId}:pending-style` }],
+    },
+  ]))
+  const sourceWrites = new Map(sourceIds.map(sourceId => [sourceId, 0]))
+  const sources = Object.fromEntries(sourceIds.map(sourceId => [
+    sourceId,
+    {
+      loaded: () => sourcesLoaded,
+      serialize: () => ({ data: sourceData.get(sourceId) }),
+      setData: (data: { type: string; features: unknown[] }) => {
+        sourceData.set(sourceId, data)
+        sourceWrites.set(sourceId, (sourceWrites.get(sourceId) || 0) + 1)
+        sourcesLoaded = false
+      },
+    },
+  ]))
+  const map = {
+    getLayer: () => null,
+    getSource: (sourceId: string) => (
+      sourcesLive ? sources[sourceId] : null
+    ),
+    getStyle: () => ({
+      sources: Object.fromEntries(sourceIds.map(sourceId => [
+        sourceId,
+        { type: 'geojson' },
+      ])),
+    }),
+  }
+
+  assert.equal(
+    prepareFlightGeoMapLibreForDisposal(map),
+    true,
+    'a setStyle source gap is pending rather than a terminal clear failure',
+  )
+  assert.equal(isFlightGeoMapLibreDisposalPrepared(map), false)
+  assert.deepEqual([...sourceWrites.values()], [0, 0])
+
+  sourcesLive = true
+  assert.equal(prepareFlightGeoMapLibreForDisposal(map), true)
+  assert.deepEqual([...sourceWrites.values()], [1, 1])
+  assert.equal(isFlightGeoMapLibreDisposalPrepared(map), false)
+
+  sourcesLoaded = true
+  assert.equal(isFlightGeoMapLibreDisposalPrepared(map), true)
+})
+
 test('a provider style attempt reset preserves the exact stopped settlement audit', () => {
   const root = { dataset: {} as DOMStringMap } as HTMLElement
   const stopped = {

@@ -14,7 +14,12 @@ import {
   markMapLibreFlightOverlayPresented,
   markMapLibreFlightReadyFramePresented,
   reconcileMapLibreFlightBootstrap,
+  resumeMapLibreFlightBootstrapAfterDisposal,
+  suspendMapLibreFlightBootstrapForDisposal,
 } from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
+import {
+  readMapLibreFlightBootstrapState,
+} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrapState.js'
 import {
   applyProviderStyleImmediately,
   flushMicrotasks,
@@ -23,6 +28,106 @@ import {
 import {
   deferFlightGeoPresentationForBootstrapRecovery,
 } from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
+import {
+  promoteMapLibreFlightProviderStyle,
+} from '../../../gympgrph/src/features/geospatial/mapLibreFlightProviderPromotion.js'
+import {
+  acquireMapLibreMapDisposalPreparation,
+} from '../../../gympgrph/src/features/geospatial/mapLibreHostLease.js'
+
+test('a cold bootstrap re-arms after a failed disposal fence releases', async context => {
+  const styleLoadListeners = new Set<() => void>()
+  let styleLoaded = false
+  const map = {
+    getStyle: () => ({
+      version: 8,
+      name: 'local-flight-bootstrap',
+      sources: {},
+      layers: [],
+    }),
+    isStyleLoaded: () => styleLoaded,
+    off: (event: string, listener: () => void) => {
+      if (event === 'style.load') styleLoadListeners.delete(listener)
+    },
+    on: (event: string, listener: () => void) => {
+      if (event === 'style.load') styleLoadListeners.add(listener)
+    },
+    triggerRepaint: () => void 0,
+  }
+  context.after(() => disposeMapLibreFlightBootstrap(map))
+  const bootstrapStyle = {
+    version: 8 as const,
+    name: 'local-flight-bootstrap',
+    sources: {},
+    layers: [],
+  }
+
+  beginMapLibreFlightBootstrap(map, bootstrapStyle)
+  assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapPending, true)
+
+  const releaseDisposal = acquireMapLibreMapDisposalPreparation(map)
+  suspendMapLibreFlightBootstrapForDisposal(map)
+  assert.equal(readMapLibreFlightBootstrapState(map)?.bootstrapPending, false)
+
+  releaseDisposal()
+  resumeMapLibreFlightBootstrapAfterDisposal(map)
+  assert.equal(
+    readMapLibreFlightBootstrapState(map)?.bootstrapPending,
+    true,
+    'the constructor-owned bootstrap must regain its settlement listener',
+  )
+
+  styleLoaded = true
+  for (const listener of [...styleLoadListeners]) listener()
+  await flushMicrotasks()
+  const restored = readMapLibreFlightBootstrapState(map)
+  assert.equal(restored?.bootstrapPending, false)
+  assert.equal(restored?.bootstrapApplied, true)
+})
+
+test('provider idle apply cannot write a style after disposal fencing begins', async () => {
+  let scheduledApply: (() => void) | null = null
+  const styleCalls: unknown[] = []
+  const map = {
+    getStyle: () => ({ version: 8, sources: {}, layers: [] }),
+    setStyle: (style: unknown) => styleCalls.push(style),
+  }
+  const state = {
+    cancelProviderStyleApply: null,
+    cancelProviderStyleLoad: null,
+    disposed: false,
+    generation: 1,
+    map,
+  }
+  const promotion = promoteMapLibreFlightProviderStyle({
+    generation: 1,
+    hasCurrentProviderPresentation: () => true,
+    hasExactFlightOverlay: () => true,
+    loadProviderStyle: async () => ({
+      version: 8,
+      sources: {},
+      layers: [],
+    }),
+    onApplied: () => assert.fail('fenced provider style must not apply'),
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+    retainOverlay: true,
+    scheduleProviderApply: apply => {
+      scheduledApply = apply
+      return () => {
+        scheduledApply = null
+      }
+    },
+    state,
+  })
+  await flushMicrotasks()
+  assert.equal(typeof scheduledApply, 'function')
+
+  const releaseDisposal = acquireMapLibreMapDisposalPreparation(map)
+  scheduledApply?.()
+  assert.equal(await promotion, 'terminated')
+  assert.deepEqual(styleCalls, [])
+  releaseDisposal()
+})
 
 test('provider promotion yields to an idle opportunity and fences stale scheduled style work', async context => {
   const readyOverlay = readyFlightOverlay('ready:idle-promotion', 32)

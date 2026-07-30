@@ -1,3 +1,7 @@
+import {
+  isMapLibreMapPreparingForDisposal,
+} from './mapLibreHostLease.js'
+
 export type MapLibreFlightProviderStyle =
   | string
   | Readonly<Record<string, unknown>>
@@ -138,7 +142,11 @@ export async function promoteMapLibreFlightProviderStyle(
     if (state.cancelProviderStyleLoad === cancelLoad) {
       state.cancelProviderStyleLoad = null
     }
-    if (state.disposed || state.generation !== generation) return 'terminated'
+    if (
+      state.disposed
+      || state.generation !== generation
+      || isMapLibreMapPreparingForDisposal(state.map)
+    ) return 'terminated'
     if (retainOverlay && !hasCurrentProviderPresentation()) {
       return 'identity-changed'
     }
@@ -153,6 +161,7 @@ export async function promoteMapLibreFlightProviderStyle(
     if (retainOverlay && !hasCurrentProviderPresentation()) {
       return 'identity-changed'
     }
+    if (isMapLibreMapPreparingForDisposal(state.map)) return 'terminated'
     if (retainOverlay && !hasExactFlightOverlay()) {
       return 'admission-changed'
     }

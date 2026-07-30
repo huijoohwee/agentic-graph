@@ -4,6 +4,10 @@ import test from 'node:test'
 import {
   createMapLibreFlightRuntimeFallbackRequester,
 } from '../../../gympgrph/src/features/geospatial/mapLibreFlightRuntimeFallback'
+import {
+  acquireMapLibreMapDisposalPreparation,
+  isMapLibreMapPreparingForDisposal,
+} from '../../../gympgrph/src/features/geospatial/mapLibreHostLease'
 
 const flush = () => new Promise<void>(resolve => setImmediate(resolve))
 
@@ -258,4 +262,58 @@ test('ordinary non-Flight fallback resets revision before its URL swap', context
     onRejected: () => assert.fail('ordinary fallback should apply'),
   }), true)
   assert.deepEqual(order, ['reset', 'set:string', 'applied'])
+})
+
+test('MapLibre disposal cancels pending fallback writes and blocks new ones until release', async context => {
+  const resolution = deferred<Readonly<Record<string, unknown>>>()
+  const styleCalls: unknown[] = []
+  const map = {
+    getStyle: () => ({ version: 8, sources: {}, layers: [] }),
+    setStyle: (style: unknown) => styleCalls.push(style),
+  }
+  const requester = createMapLibreFlightRuntimeFallbackRequester({
+    hasCurrentProviderPresentation: () => true,
+    hasExactFlightPresentation: () => true,
+    isDisposed: () => isMapLibreMapPreparingForDisposal(map),
+    loadResolvedStyle: async () => resolution.promise,
+    readMap: () => map,
+    requiresFlightRetention: () => true,
+    resetNonFlightStyleRevision: () => void 0,
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+    scheduleProviderApply: apply => {
+      apply()
+      return () => void 0
+    },
+  })
+  context.after(requester.dispose)
+
+  assert.equal(requester.request('provider:pending', {
+    key: 'pending-before-disposal',
+    onApplied: () => assert.fail('fenced fallback must not apply'),
+    onRejected: () => assert.fail('cancelled fallback must stay silent'),
+  }), true)
+
+  const releaseDisposal = acquireMapLibreMapDisposalPreparation(map)
+  requester.cancelPending()
+  assert.equal(requester.request('provider:blocked', {
+    key: 'blocked-during-disposal',
+    onApplied: () => assert.fail('disposal must block new fallback writes'),
+    onRejected: () => assert.fail('blocked request must not publish'),
+  }), false)
+  resolution.resolve({ version: 8, sources: {}, layers: [] })
+  await flush()
+  assert.deepEqual(styleCalls, [])
+
+  releaseDisposal()
+  assert.equal(requester.request({
+    version: 8,
+    sources: {},
+    layers: [],
+  }, {
+    key: 'fresh-after-release',
+    onApplied: () => void 0,
+    onRejected: () => assert.fail('fresh post-disposal fallback should apply'),
+  }), true)
+  await flush()
+  assert.equal(styleCalls.length, 1)
 })

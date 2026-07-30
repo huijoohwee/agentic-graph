@@ -22,6 +22,7 @@ type PendingRuntimeFallback = {
 }
 
 export type MapLibreFlightRuntimeFallbackRequester = Readonly<{
+  cancelPending: () => void
   dispose: () => void
   request: (
     style: MapLibreFlightProviderStyle,
@@ -166,5 +167,5 @@ export function createMapLibreFlightRuntimeFallbackRequester(
     state.map = null
   }
 
-  return Object.freeze({ dispose, request })
+  return Object.freeze({ cancelPending, dispose, request })
 }

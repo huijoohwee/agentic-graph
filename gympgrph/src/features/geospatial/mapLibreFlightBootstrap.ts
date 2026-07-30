@@ -31,10 +31,14 @@ import {
   type MapLibreFlightProviderStyle,
   type MapLibreFlightProviderStyleApplyScheduler,
 } from './mapLibreFlightProviderPromotion.js'
+import {
+  isMapLibreMapPreparingForDisposal,
+} from './mapLibreHostLease.js'
 
 function hasCurrentProviderPresentation(
   state: MapLibreFlightBootstrapState,
 ): boolean {
+  if (isMapLibreMapPreparingForDisposal(state.map)) return false
   const presentation = state.providerPresentation
   const current = readFlightGeoOverlay()
   if (
@@ -171,6 +175,7 @@ function settlePendingBootstrap(
 ): void {
   if (
     state.disposed
+    || isMapLibreMapPreparingForDisposal(state.map)
     || !state.bootstrapPending
     || state.bootstrapGeneration !== bootstrapGeneration
     || !hasExpectedBootstrapStyle(state)
@@ -187,7 +192,7 @@ function settlePendingBootstrap(
 
 export function markMapLibreFlightBootstrapApplied(map: any): void {
   const state = ensureMapLibreFlightBootstrapState(map)
-  if (!state) return
+  if (!state || isMapLibreMapPreparingForDisposal(map)) return
   clearPendingBootstrap(state)
   state.bootstrapApplied = true
   state.deadlineFramePresented = readFlightGeoOverlayReadyFramePresented()
@@ -204,7 +209,12 @@ export function beginMapLibreFlightBootstrap(
   bootstrapStyle: Readonly<Record<string, unknown>>,
 ): void {
   const state = ensureMapLibreFlightBootstrapState(map)
-  if (!state || state.disposed) return
+  if (
+    !state
+    || state.disposed
+    || isMapLibreMapPreparingForDisposal(map)
+  ) return
+  state.bootstrapStyle = bootstrapStyle
   clearPendingBootstrap(state)
   state.bootstrapApplied = false
   state.bootstrapPending = true
@@ -289,6 +299,7 @@ export function canMapLibreFlightOverlayPresent(
   return Boolean(
     state
     && !state.disposed
+    && !isMapLibreMapPreparingForDisposal(map)
     && (
       state.bootstrapApplied
       || (
@@ -335,6 +346,7 @@ export function markMapLibreFlightOverlayPresented(
   if (
     !state
     || state.disposed
+    || isMapLibreMapPreparingForDisposal(map)
     || (!stoppedPresentation && !readyPresentation)
     || !current.active
     || current.phase !== presentation.phase
@@ -406,6 +418,7 @@ export function requestMapLibreFlightPresentationBootstrap(
   if (
     !state
     || state.disposed
+    || isMapLibreMapPreparingForDisposal(map)
     || !state.bootstrapStyle
     || (!stoppedPresentation && !readyPresentation)
     || !current.active
@@ -451,6 +464,7 @@ export function markMapLibreFlightReadyFramePresented(
   if (
     !state
     || state.disposed
+    || isMapLibreMapPreparingForDisposal(map)
     || (!state.bootstrapApplied && !committedProviderFrame)
     || state.deadlineFramePresented
   ) return
@@ -478,6 +492,17 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   const state = ensureMapLibreFlightBootstrapState(options.map)
   if (!state || state.disposed) return
   state.bootstrapStyle = options.bootstrapStyle
+  state.resumeReconciliation = () => {
+    if (
+      state.disposed
+      || isMapLibreMapPreparingForDisposal(state.map)
+    ) return
+    reconcileMapLibreFlightBootstrap(options)
+  }
+  if (isMapLibreMapPreparingForDisposal(state.map)) {
+    suspendMapLibreFlightBootstrapForDisposal(state.map)
+    return
+  }
   const generation = ++state.generation
   cancelMapLibreFlightProviderStyleLoad(state)
   cancelMapLibreFlightProviderStyleApply(state)
@@ -584,9 +609,49 @@ export function disposeMapLibreFlightBootstrap(map: any): void {
   state.disposed = true
   state.bootstrapStyle = null
   state.generation += 1
+  state.resumeReconciliation = null
   clearPendingBootstrap(state)
   cancelMapLibreFlightProviderStyleLoad(state)
   cancelMapLibreFlightProviderStyleApply(state)
   removeRenderBinding(state)
   deleteMapLibreFlightBootstrapState(map)
+}
+
+/**
+ * Stop every Flight-owned style writer while an exclusive surface handoff
+ * empties this map. The state remains recoverable until the handoff commits.
+ */
+export function suspendMapLibreFlightBootstrapForDisposal(map: any): void {
+  const state = readMapLibreFlightBootstrapState(map)
+  if (!state || state.disposed) return
+  state.generation += 1
+  state.bootstrapApplied = false
+  state.deadlineFramePresented = false
+  state.providerPresentation = null
+  clearPendingBootstrap(state)
+  cancelMapLibreFlightProviderStyleLoad(state)
+  cancelMapLibreFlightProviderStyleApply(state)
+  removeRenderBinding(state)
+}
+
+export function resumeMapLibreFlightBootstrapAfterDisposal(
+  map: any,
+): void {
+  const state = readMapLibreFlightBootstrapState(map)
+  if (
+    !state
+    || state.disposed
+    || isMapLibreMapPreparingForDisposal(map)
+  ) return
+  if (state.resumeReconciliation) {
+    state.resumeReconciliation()
+    return
+  }
+  // A cold map can be fenced after its constructor receives the Flight style
+  // but before the later reconciliation effect installs its recovery closure.
+  // Re-arm that exact bootstrap listener so a failed handoff cannot strand the
+  // still-owned map in a permanently ineligible state.
+  if (state.bootstrapStyle) {
+    beginMapLibreFlightBootstrap(map, state.bootstrapStyle)
+  }
 }

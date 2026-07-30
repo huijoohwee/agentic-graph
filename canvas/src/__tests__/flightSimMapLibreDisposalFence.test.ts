@@ -11,7 +11,9 @@ import {
 } from '../../../gympgrph/src/features/geospatial/mapLibreHostLease.js'
 import {
   claimMapLibreMapLease,
+  isGeospatialModeEnabled,
   NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+  setGeospatialModeEnabled,
 } from 'gympgrph'
 
 test('MapLibre disposal preparation remains fenced until every holder releases', context => {
@@ -106,5 +108,176 @@ test('failed exclusive preparation cancels the claimed MapLibre fence', async co
     cancellationCount,
     1,
     'a failed handoff must reopen the current map to Flight publication',
+  )
+})
+
+test('exclusive preparation retries a pending style source on the next frame', async context => {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const documentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  let frameSequence = 0
+  const pendingFrames = new Map<number, ReturnType<typeof setImmediate>>()
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      cancelAnimationFrame: (frameId: number) => {
+        const handle = pendingFrames.get(frameId)
+        if (handle) clearImmediate(handle)
+        pendingFrames.delete(frameId)
+      },
+      clearTimeout,
+      requestAnimationFrame: (callback: FrameRequestCallback) => {
+        const frameId = ++frameSequence
+        const handle = setImmediate(() => {
+          pendingFrames.delete(frameId)
+          callback(Date.now())
+        })
+        pendingFrames.set(frameId, handle)
+        return frameId
+      },
+      setTimeout,
+    },
+  })
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: {
+      querySelector: () => null,
+    },
+  })
+  context.after(() => {
+    for (const handle of pendingFrames.values()) clearImmediate(handle)
+    if (windowDescriptor) {
+      Object.defineProperty(globalThis, 'window', windowDescriptor)
+    } else {
+      delete (globalThis as { window?: unknown }).window
+    }
+    if (documentDescriptor) {
+      Object.defineProperty(globalThis, 'document', documentDescriptor)
+    } else {
+      delete (globalThis as { document?: unknown }).document
+    }
+  })
+
+  let prepared = false
+  let preparationCount = 0
+  let cancellationCount = 0
+  let releaseLease = () => void 0
+  releaseLease = claimMapLibreMapLease({
+    cancelDisposalPreparation: () => {
+      cancellationCount += 1
+    },
+    isPreparedForDisposal: () => prepared,
+    map: {},
+    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+    prepareForDisposal: () => {
+      preparationCount += 1
+      if (preparationCount === 1) return true
+      prepared = true
+      releaseLease()
+      return true
+    },
+    root: null,
+  })
+  context.after(releaseLease)
+
+  await commitCanvasGeospatialSurfaceOwnership(false)
+  assert.equal(preparationCount, 2)
+  assert.equal(cancellationCount, 0)
+})
+
+test('a post-commit disposal failure restores Geo ownership and releases the fence', async context => {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const documentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  const ownedCanvas = { isConnected: true } as HTMLCanvasElement
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      cancelAnimationFrame: () => void 0,
+      clearTimeout,
+      dispatchEvent: () => true,
+      requestAnimationFrame: () => 1,
+      setTimeout: (callback: () => void) => {
+        queueMicrotask(callback)
+        return 1
+      },
+    },
+  })
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: {
+      querySelector: () => ownedCanvas,
+    },
+  })
+
+  let cancellationCount = 0
+  const map = { getCanvas: () => ownedCanvas }
+  let releasePreparation: (() => void) | null = null
+  const releaseLease = claimMapLibreMapLease({
+    cancelDisposalPreparation: () => {
+      cancellationCount += 1
+      releasePreparation?.()
+      releasePreparation = null
+    },
+    isPreparedForDisposal: () => true,
+    map,
+    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+    prepareForDisposal: () => {
+      releasePreparation ??= acquireMapLibreMapDisposalPreparation(map)
+      return true
+    },
+    root: null,
+  })
+  context.after(() => {
+    releasePreparation?.()
+    releaseLease()
+    setGeospatialModeEnabled(false)
+    if (windowDescriptor) {
+      Object.defineProperty(globalThis, 'window', windowDescriptor)
+    } else {
+      delete (globalThis as { window?: unknown }).window
+    }
+    if (documentDescriptor) {
+      Object.defineProperty(globalThis, 'document', documentDescriptor)
+    } else {
+      delete (globalThis as { document?: unknown }).document
+    }
+  })
+  setGeospatialModeEnabled(true)
+
+  await assert.rejects(
+    commitCanvasGeospatialSurfaceOwnership(false),
+    /MapLibre did not release/,
+  )
+  assert.equal(
+    isGeospatialModeEnabled(),
+    true,
+    'the prior Geo owner must be restored after post-commit disposal failure',
+  )
+  assert.equal(
+    cancellationCount,
+    1,
+    'rollback must release the MapLibre preparation fence',
+  )
+  assert.equal(isMapLibreMapPreparingForDisposal(map), false)
+})
+
+test('a failed exclusive XR presentation restores the prior Geo owner', async context => {
+  context.after(() => setGeospatialModeEnabled(false))
+  setGeospatialModeEnabled(true)
+  let modeDuringPresentation: boolean | null = null
+
+  await assert.rejects(
+    commitCanvasGeospatialSurfaceOwnership(false, {
+      afterCommit: () => {
+        modeDuringPresentation = isGeospatialModeEnabled()
+        return false
+      },
+    }),
+    /could not claim ownership/,
+  )
+  assert.equal(modeDuringPresentation, false)
+  assert.equal(
+    isGeospatialModeEnabled(),
+    true,
+    'an unavailable XR owner must not strand the previous Geo surface off',
   )
 })

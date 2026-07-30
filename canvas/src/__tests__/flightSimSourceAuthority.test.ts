@@ -177,7 +177,7 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     'await preloadGeospatialMapRuntime()',
   )
   const geospatialActivation = surfacePresentation.indexOf(
-    'await setGeospatialModeEnabled(true)',
+    'await commitCanvasGeospatialSurfaceOwnership(true',
   )
   const sharedSurfaceActivation = surfacePresentation.indexOf(
     'return activateXrSceneSurface',
@@ -215,7 +215,7 @@ test('Flight surface opening preloads the existing lazy mission stage before act
   )
   assert.match(
     surfacePresentation,
-    /if \(!options\.geospatialComposite\) return[\s\S]*await preloadGeospatialMapRuntime\(\)/,
+    /if \(!options\.geospatialComposite\) return[\s\S]*await waitForActiveCanvasFrontmatterSurfaceTransition\(\)[\s\S]*await preloadGeospatialMapRuntime\(\)/,
   )
   assert.match(
     surfacePresentation,
