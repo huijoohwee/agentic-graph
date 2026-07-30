@@ -4,8 +4,13 @@ import { DOCUMENT_CONTAINMENT_EDGE_LABELS } from '@/lib/graph/documentContainmen
 import { readGraphActiveDocumentViewMode } from '@/lib/graph/documentViewMode'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { getCachedGraphLookup } from '@/lib/graph/lookupCache'
+import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { hashScopedStringArraySignature } from '@/lib/hash/signature'
+
+const readDisplayNodeId = (node: GraphNode | null | undefined): string => (
+  String(unwrapGraphCellValue(node?.id) ?? '').trim()
+)
 
 const isFrontmatterDisplayGraph = (graphData: GraphData): boolean => {
   if (String(graphData.context || '') === 'frontmatter-flow') return true
@@ -106,7 +111,7 @@ export const getGraphDataForDisplay = (args: { graphData: GraphData; edges?: Gra
     return isDisplayNode(n)
   })
   const baseNodes = preferredNodes.length > 0 ? preferredNodes : allNodes
-  const baseNodeIdSet = new Set<string>(baseNodes.map(n => String(n.id)))
+  const baseNodeIdSet = new Set<string>(baseNodes.map(readDisplayNodeId).filter(Boolean))
   const filteredEdgesSource = hideDocumentStructureScaffold
     ? edgesSource.filter(e => {
         const label = String(e.label || '').trim()
@@ -136,7 +141,7 @@ export const getGraphDataForDisplay = (args: { graphData: GraphData; edges?: Gra
       if (frontmatterMode && isParagraphOrListNode(n)) return false
       return true
     })
-    const connectedNodeIdSet = new Set<string>(connectedNodes.map(n => String(n.id)))
+    const connectedNodeIdSet = new Set<string>(connectedNodes.map(readDisplayNodeId).filter(Boolean))
     const edgesForConnected = getDisplayEdges({ edges: filteredEdgesSource, displayNodeIdSet: connectedNodeIdSet })
     return { ...graphData, nodes: connectedNodes, edges: edgesForConnected }
   }

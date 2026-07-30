@@ -367,6 +367,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["graphCanvas.displayFilter.graphDataForDisplay.suppressesDocumentStructureScaffoldOutsideDocumentStructureMode","@/__tests__/graphDataForDisplay.test","testGraphDataForDisplaySuppressesDocumentStructureScaffoldOutsideDocumentStructureMode"],
   ["graphCanvas.displayFilter.graphDataForDisplay.keepsKeywordEdgesWithHiddenKeywordSourceEndpoint","@/__tests__/graphDataForDisplay.test","testGraphDataForDisplayKeepsKeywordEdgesWithHiddenKeywordSourceEndpoint"],
   ["graphCanvas.displayFilter.graphDataForDisplay.keepsRichMediaPanelWithoutLocalMedia","@/__tests__/graphDataForDisplay.test","testGraphDataForDisplayKeepsRichMediaPanelWithoutLocalMediaSpec"],
+  ["graphCanvas.displayFilter.graphDataForDisplay.keepsEdgesBetweenTypedFrontmatterNodeIds","@/__tests__/graphDataForDisplay.test","testGraphDataForDisplayKeepsEdgesBetweenTypedFrontmatterNodeIds"],
   ["flowCanvas.transformShowingGraph.rejectsUnknownBounds","@/__tests__/flowTransformShowingGraph.test","testFlowTransformShowingGraphRejectsUnknownBounds"],
   ["flowCanvas.transformShowingGraph.rejectsOffscreenTransform","@/__tests__/flowTransformShowingGraph.test","testFlowTransformShowingGraphRejectsClearlyOffscreenTransform"],
   ["flowCanvas.transformShowingGraph.acceptsIdentityNearOrigin","@/__tests__/flowTransformShowingGraph.test","testFlowTransformShowingGraphAcceptsIdentityWhenGraphNearOrigin"],
