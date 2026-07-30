@@ -91,6 +91,14 @@ export async function testCameraInvocationSurfaceReactsToRemoteGrammarHydration(
 
   try {
     await mountReactRoot(root, <CameraMcpInvocationSection />, { window: dom.window as unknown as Window, frames: 4, tasks: 6 })
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const status = container
+        .querySelector('[data-kg-camera-webmcp-invocations="1"]')
+        ?.getAttribute('data-kg-camera-metadata-status')
+      if (status === 'fresh') break
+      await waitForTasks(1)
+      await waitForFrames(dom.window as unknown as Window, 1)
+    }
     const hydratedCard = container.querySelector('[data-kg-camera-invocation-token="/camera.hydration"]')
     const hydratedSurface = container.querySelector('[data-kg-camera-webmcp-invocations="1"]')
     const partialFreshVersion = Number(hydratedSurface?.getAttribute('data-kg-camera-metadata-version') || '-1')

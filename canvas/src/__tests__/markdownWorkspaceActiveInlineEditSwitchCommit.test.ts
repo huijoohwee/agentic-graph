@@ -35,14 +35,16 @@ export function testMarkdownWorkspaceSelectionUsesActiveInlineEditCommitBoundary
     resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'useMarkdownWorkspaceViewShell.tsx'),
     'utf8',
   )
-  const commitIndex = selectionText.indexOf('const pendingCommit = commitActiveMarkdownBlockEditors()')
-  const applyIndex = selectionText.indexOf('return pendingCommit.then(applySelection, applySelection)')
+  const commitIndex = selectionText.indexOf('const pendingEditorCommit = commitActiveMarkdownBlockEditors()')
+  const sourceWriteFenceIndex = selectionText.indexOf('const pendingSourceWrites = settleWorkspaceSourceTextWrites()')
+  const applyIndex = selectionText.indexOf(']).then(applySelection)')
   const guardedSelectionIndex = viewShellText.indexOf('const pendingSelection = setSelectionPathSafe(normalized)')
   const activePathHandoffIndex = viewShellText.indexOf('void pendingSelection.then(applyActivePath, applyActivePath)')
   if (
     !editorText.includes('return registerActiveMarkdownBlockEditor(commit)')
     || commitIndex < 0
-    || applyIndex < commitIndex
+    || sourceWriteFenceIndex < commitIndex
+    || applyIndex < sourceWriteFenceIndex
     || guardedSelectionIndex < 0
     || activePathHandoffIndex < guardedSelectionIndex
   ) {

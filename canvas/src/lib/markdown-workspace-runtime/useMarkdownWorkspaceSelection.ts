@@ -15,7 +15,6 @@ import { resolveMarkdownWorkspaceSelectionRestoreApply } from './markdownWorkspa
 import { readMarkdownWorkspaceRestoreTextForPath } from './markdownWorkspaceSelectionRestore'
 import {
   resolveMarkdownWorkspaceSelectionWritebackSync,
-  resolvePreferredMarkdownWorkspaceSelectionSyncText,
 } from './markdownWorkspaceSelectionWriteback'
 import { commitMarkdownWorkspaceWriteback } from './markdownWorkspaceWritebackCommit'
 import {
@@ -33,7 +32,6 @@ import {
 } from './markdownWorkspaceDocumentSwitchApply'
 import {
   readCachedWorkspaceSelectionResolvedTextForActivePath,
-  readWorkspaceSelectionEntryTextForActivePath,
   readWorkspaceSelectionResolvedTextForActivePath,
   type MarkdownWorkspaceSelectionResolvedTextCache,
 } from './markdownWorkspaceSelectionResolvedText'
@@ -45,6 +43,7 @@ export {
   resolveWorkspaceDocumentSwitchCanvasPreset,
   shouldAcceptWorkspaceDocumentSelectionText,
   shouldApplyStableWorkspaceSelectionToCanvas,
+  shouldForceWorkspaceDocumentSwitchGraphApply,
   shouldHydrateStableWorkspaceSelectionText,
 } from './markdownWorkspaceDocumentSwitchApply'
 export {
@@ -287,20 +286,13 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     void (async () => {
       const fs = await args.getFs()
       if (cancelled || switchedActivePathRef.current?.next !== switched.next || args.activePath !== switched.next) return
-      const selectionText = await readCachedWorkspaceSelectionResolvedTextForActivePath({
+      const nextText = await readCachedWorkspaceSelectionResolvedTextForActivePath({
         activePath: switched.next,
         activeEntry,
         fs,
         storageFallbackByPath: storageFallbackByPathRef.current,
         preferPathResolvedText: true,
         cacheRef: resolvedTextCacheRef,
-      })
-      const nextText = resolvePreferredMarkdownWorkspaceSelectionSyncText({
-        activePath: switched.next,
-        activeDocumentKey,
-        markdownDocumentName: args.markdownDocumentName,
-        markdownDocumentText: args.markdownDocumentText,
-        selectionText,
       })
       if (!shouldAcceptWorkspaceDocumentSelectionText({
         activePath: switched.next,
@@ -363,27 +355,15 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     if (switchedActivePathRef.current?.next === path) return
     let cancelled = false
     const run = async () => {
-      let nextText = readWorkspaceSelectionEntryTextForActivePath({
+      const fs = await args.getFs()
+      if (cancelled || args.activePath !== path) return
+      const nextText = await readCachedWorkspaceSelectionResolvedTextForActivePath({
         activePath: path,
         activeEntry,
-      })
-      if (!nextText.trim()) {
-        const fs = await args.getFs()
-        if (cancelled || args.activePath !== path) return
-        nextText = await readCachedWorkspaceSelectionResolvedTextForActivePath({
-          activePath: path,
-          activeEntry,
-          fs,
-          storageFallbackByPath: storageFallbackByPathRef.current,
-          cacheRef: resolvedTextCacheRef,
-        })
-      }
-      nextText = resolvePreferredMarkdownWorkspaceSelectionSyncText({
-        activePath: path,
-        activeDocumentKey,
-        markdownDocumentName: args.markdownDocumentName,
-        markdownDocumentText: args.markdownDocumentText,
-        selectionText: nextText,
+        fs,
+        storageFallbackByPath: storageFallbackByPathRef.current,
+        preferPathResolvedText: true,
+        cacheRef: resolvedTextCacheRef,
       })
       if (!shouldHydrateStableWorkspaceSelectionText({
         activePath: path,

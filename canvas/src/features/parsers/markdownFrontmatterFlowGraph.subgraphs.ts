@@ -4,6 +4,7 @@ type FlowSubgraph = {
   memberNodeIds: string[]
   parentId: string | null
   kind: 'subgraph' | 'cluster'
+  autoBounds?: boolean
 }
 
 type ResolveTemplateString = (
@@ -56,12 +57,14 @@ export function normalizeFlowSubgraphs(args: {
     if (memberNodeIds.length === 0) continue
     seen.add(id)
     memberNodeIds.sort((a, b) => a.localeCompare(b))
+    const autoBounds = row.autoBounds === true
     out.push({
       id,
       label: resolveText(row.label) || id,
       memberNodeIds,
       parentId: resolveText(row.parentId) || null,
       kind: resolveText(row.kind).toLowerCase() === 'cluster' ? 'cluster' : 'subgraph',
+      ...(autoBounds ? { autoBounds: true } : {}),
     })
   }
   return out

@@ -5,20 +5,19 @@ id: "knowgrph-deterministic-knowledge-graph-runtime"
 version: "1.0.0"
 status: "active"
 created: "2026-07-22"
-updated: "2026-07-22"
+updated: "2026-07-30"
 author: "airvio / joohwee"
 domain: "knowgrph"
 lang: "en-US"
 frontmatter_contract: "required"
 runtime_surface: "local-stdio-mcp"
-inspiration_source: "https://github.com/Graphify-Labs/graphify"
-copy_policy: "Clean-room, architecture-only inspiration; no copied code, prose, schemas, tool definitions, tests, fixtures, assets, prompts, commands, or outputs, and no clone, vendor, import, execute, call, or dependency relationship."
+implementation_policy: "Independently authored in-repository contracts and runtime; no copied parser generator, graph runtime, remote parsing service, or external conformance oracle."
 constraints:
   - "deterministic"
   - "local-first"
   - "no-vector-store"
   - "no-model-call"
-  - "no-network-access"
+  - "network-only-for-explicit-repository-acquisition"
   - "every-edge-explained"
   - "honest-unsupported-diagnostics"
 tags:
@@ -42,20 +41,9 @@ This document is the focused contract for Knowgrph's deterministic local knowled
 
 The 2026-07-22 runtime extension narrowly supersedes that PRD's Phase 1 no-CLI/MCP non-goal. It adds local stdio ingest, query, and edge-explanation access over Knowgrph-owned corpus graph state. It does not authorize a remote service, hosted graph API, second graph store, MCP-only materialization pipeline, model-backed retrieval path, or deployment.
 
-## Clean-Room Inspiration Boundary
+## Independent Implementation Boundary
 
-[`Graphify-Labs/graphify`](https://github.com/Graphify-Labs/graphify) is architecture-only inspiration for the broad product category of turning a mixed local corpus into a queryable graph. It is not a specification, implementation source, oracle, or runtime component.
-
-Knowgrph forbids:
-
-- copying Graphify code, prose, schemas, tool definitions, tests, fixtures, assets, prompts, commands, examples, benchmarks, layouts, or output formats
-- cloning or vendoring Graphify into a Knowgrph workspace, artifact, image, or repository
-- importing or executing Graphify packages, binaries, scripts, generated artifacts, or tests
-- calling a Graphify CLI, API, service, MCP server, subprocess, or hosted endpoint
-- adding Graphify as a direct, optional, build, runtime, or transitive dependency
-- using Graphify behavior or generated output as a conformance oracle for Knowgrph tests
-
-Knowgrph's contracts, tool names, evidence model, implementation, tests, fixtures, and documentation remain independently authored from existing repository owners.
+Knowgrph's contracts, tool names, evidence model, parser registry, implementation, tests, fixtures, and documentation are independently authored in this repository. The runtime does not copy or use another parser-generator or knowledge-graph project as an implementation source or conformance oracle. Registered local adapters may reuse the repository's pinned TypeScript compiler and the host Python standard-library AST; neither creates a remote parsing or graph service.
 
 ## Local Invocation Surface
 
@@ -82,7 +70,7 @@ A stdio MCP client calls the tool identity directly. An ACOS-capable host resolv
 The runtime follows one Knowgrph-owned path:
 
 ```text
-local corpus -> deterministic structural adapters -> explained-edge graph artifact -> lexical graph traversal -> MCP evidence
+local corpus or acquired immutable repository -> deterministic structural adapters -> sharded explained-edge snapshot -> lexical graph traversal -> MCP evidence
 ```
 
 - Existing corpus, GraphData, evidence, and local MCP owners remain authoritative.
@@ -103,7 +91,7 @@ Coverage is capability-driven. A filename or extension never implies a successfu
 | Supported PDFs | Extract locally available text and document structure without remote OCR or model fallback. |
 | Unsupported input | Return a bounded diagnostic and omit unsupported facts. |
 
-Unknown languages, unavailable parsers, malformed or unreadable files, encrypted or image-only PDFs, unsupported syntax, and unresolved references must stay visible as unsupported or unresolved diagnostics. The runtime must not silently substitute an LLM, remote parser, embedding model, or guessed relationship.
+Unknown languages, unavailable parsers, malformed or unreadable files, encrypted or image-only PDFs, unsupported syntax, and unresolved references must stay visible as unsupported or unresolved diagnostics. The runtime must not silently substitute a model, remote parser, embedding model, or guessed relationship. An explicit `repositoryUrl` ingest may use the network only to resolve and acquire one canonical credential-free HTTPS repository revision; parsing, storage, query, and explanation remain local and network-free.
 
 ## Every-Edge Explanation Contract
 
@@ -124,7 +112,7 @@ Every stored edge must be auditable from source-backed evidence:
 
 The query path must:
 
-- be deterministic for the same artifact and request
+- be deterministic for the same snapshot and request
 - honor runtime depth, result, and output bounds
 - distinguish an empty match from an incomplete or unsupported result
 - return evidence rather than an uncited synthesized answer
@@ -134,12 +122,12 @@ The query path must:
 
 - Canonicalized source paths and resolved symlink targets remain inside the host-owned allowed root.
 - Indexed content is parsed as data and is never executed as code, script, SQL, configuration, document action, or PDF behavior.
-- Output remains inside the host-owned artifact boundary and must not present a partial or invalid run as complete.
-- Canonical artifact hashing and replacement share a fixed 128 MiB ceiling; an oversized build fails before replacement and preserves the prior artifact.
+- Output remains inside the host-owned store boundary and must not present a partial or invalid run as complete.
+- Content-addressed source, repository-resolution, index, and manifest shards are individually bounded and committed behind one atomic current-snapshot pointer; an oversized object fails before pointer replacement and preserves the prior ready snapshot.
 - File, corpus, traversal, and output limits fail closed with explicit diagnostics.
 - Configuration structure may be indexed, but secret values must not be returned as graph evidence.
 - Source-controlled labels and evidence are sanitized before MCP output.
-- The deterministic path makes no model call, network request, embedding request, or vector-store write.
+- Local-directory ingest, parsing, storage, query, and explanation make no model call, network request, embedding request, or vector-store write. Explicit repository acquisition is the only network-capable phase.
 
 ## Honest Diagnostic Contract
 
@@ -149,7 +137,7 @@ The query path must:
 | Unsupported parser or syntax | Identify the unsupported source or capability; do not guess. |
 | Malformed, unreadable, encrypted, or image-only input | Return an explicit bounded diagnostic. |
 | Unresolved relationship | Preserve the unresolved state or omit the edge; do not fabricate a target. |
-| Missing graph artifact, node, or edge | Return a not-found diagnostic distinct from an empty successful query. |
+| Missing graph snapshot, node, or edge | Return a not-found diagnostic distinct from an empty successful query. |
 | Runtime limit reached | Mark the result incomplete or rejected; do not imply full coverage. |
 | Invalid edge evidence | Reject the authoritative edge explanation. |
 
@@ -162,10 +150,10 @@ The runtime is ready only when all of the following hold:
 - supported code uses deterministic AST parsing and supported non-code inputs use deterministic structural extraction
 - every returned edge has a source-backed deterministic explanation
 - query uses lexical graph traversal with no vector store
-- ingest, query, and explain make zero model and network calls
+- ingest, query, and explain make zero model calls; only explicit repository acquisition may use the network
 - path, symlink, secret, execution, size, traversal, and output bounds fail closed
 - unsupported inputs and unresolved evidence return honest diagnostics
-- Graphify is absent from package manifests, imports, subprocesses, runtime calls, vendored content, fixtures, tests, and generated assets
+- no copied or separately hosted parser-generator or graph runtime appears in manifests, imports, subprocesses, runtime calls, vendored content, fixtures, tests, or generated assets
 
 Documentation validation requires valid YAML frontmatter, `git diff --check`, and an authored-file length below 600 lines. Runtime implementation and tests remain owned by their existing code contracts; this document does not duplicate request schemas or test fixtures.
 

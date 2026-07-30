@@ -116,7 +116,7 @@ This is a deterministic structural path:
 - every edge retains enough source evidence for `knowgrph.knowledge_graph.explain_edge`; no opaque similarity edge is accepted
 - query uses lexical matching and graph traversal, not embeddings or a vector store
 - bounded query results report explicit completeness, truncation, and limit/depth reasons rather than presenting a partial traversal as exhaustive
-- ingest, query, and edge explanation make no model or network call
+- local-directory ingest, parsing, query, and edge explanation make no model or network call; an explicit repository URL may use the network only during bounded immutable-revision acquisition
 - missing parser coverage, malformed or unreadable input, encrypted or image-only PDF content, unresolved references, and unsupported syntax return explicit diagnostics rather than guessed graph facts
 
 The focused authority for coverage, provenance, diagnostics, and security is the [deterministic knowledge-graph runtime contract](../docs/documents/knowgrph-deterministic-knowledge-graph-runtime.md).
@@ -124,11 +124,11 @@ The focused authority for coverage, provenance, diagnostics, and security is the
 Host configuration keeps arbitrary-codebase access explicit:
 
 - `KNOWGRPH_KNOWLEDGE_GRAPH_ALLOWED_ROOTS` is a platform path-delimited allowlist of corpus roots; without it, ingestion is confined to `KNOWGRPH_ROOT`.
-- `KNOWGRPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT` owns generated artifacts and defaults to `data/outputs/knowledge-graph` under `KNOWGRPH_ROOT`; callers cannot redirect artifacts outside this boundary, and the runtime excludes the boundary from discovery whenever it is nested under the indexed root.
-- Canonical artifacts have one fixed 128 MiB read/write ceiling below Node's string bound. Oversized graph construction fails with `artifact_too_large` before replacement, preserving the prior artifact.
+- `KNOWGRPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT` owns generated snapshots and defaults to `data/outputs/knowledge-graph` under `KNOWGRPH_ROOT`; callers cannot redirect storage outside this boundary, and the runtime excludes the boundary from discovery whenever it is nested under the indexed root.
+- Snapshots use bounded content-addressed source, repository-resolution, index, and manifest shards behind one atomic current pointer. An oversized object fails with `artifact_too_large` before pointer replacement, preserving the prior ready snapshot.
 - `KNOWGRPH_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS` and `KNOWGRPH_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES` bound the native local PDF adapter.
 - `KNOWGRPH_PYTHON` selects the local Python 3 interpreter used only for stdlib AST extraction; an unavailable or invalid interpreter produces a typed parser failure, and strict ingest preserves the previous artifact instead of falling back.
-- Query and explain calls must send the exact `expectedDigest` returned by ingest, so an atomically replaced or tampered artifact fails closed.
+- Query and explain calls must send the exact `expectedSnapshotDigest` returned by ingest alongside its opaque `graphId`, so a replaced or tampered snapshot fails closed.
 
 Skill-text optimization uses `/skill.evolve #skill-evolution @skill-catalog @skill-policy @runtime-proof @operator` through the single `knowgrph.skill.evolve` tool. Its `plan/start/step/status/cancel` state machine provides deterministic epochs, batches, mini-batches, textual learning-rate decay, held-out promotion gates, durable CAS/idempotency fencing, source-bound usage envelopes, phase cost meters, and a review-pending proposal only. The orchestrator has no skill-apply or model-weight mutation operation. The canonical stdio server fails closed until a repository-contained, SHA-pinned, self-contained module supplies separate authorization, source-verifier, training-executor, candidate, and held-out capabilities in fresh per-call processes under the trusted inference-only boundary. Persistent state uses `KNOWGRPH_SKILL_EVOLUTION_STATE_DIR` or the standard user state directory, never the repository. See `docs/skill-evolution-runtime.md`.
 
@@ -262,7 +262,7 @@ This local README does **not** claim that the following are implemented in `mcp/
 - a second MCP-only graph materialization path outside the current FloatingPanel Chat ->
   YAML frontmatter -> Canvas apply flow
 - embeddings, a vector store, model-backed graph extraction/query, or a network parser for the deterministic knowledge-graph tools
-- Graphify compatibility, conformance, integration, execution, service calls, package use, or dependency
+- compatibility, conformance, integration, execution, or dependency on another parser-generator or graph runtime
 - live Google or Microsoft account readiness, recipient sharing permissions, or provider latency from local/mock tests alone
 - a Prod, Pages, Worker, or Cloudflare export route; `export.publish` is local stdio functionality
 

@@ -14,8 +14,6 @@ export type CorpusQueryEvidencePack = {
     evidenceKind: 'extracted' | 'inferred' | 'ambiguous'
     confidence: 'low' | 'medium' | 'high'
     excerpt: string
-    ruleId?: string
-    explanation?: string
   }>
   traversal: {
     nodeIds: string[]
@@ -41,12 +39,6 @@ const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 
 const normalize = (value: unknown): string => String(value || '').trim()
-
-const compareStableText = (leftValue: unknown, rightValue: unknown): number => {
-  const left = String(leftValue || '')
-  const right = String(rightValue || '')
-  return left < right ? -1 : left > right ? 1 : 0
-}
 
 const normalizeLower = (value: unknown): string => normalize(value).toLowerCase()
 
@@ -136,12 +128,10 @@ function edgeSourceRef(edge: GraphEdge, nodeById: Map<string, GraphNode>): Corpu
   const lineStart = toLineNumber(props['evidence:lineStart'])
   const lineEnd = toLineNumber(props['evidence:lineEnd']) || lineStart
   const excerpt = [
-    normalize(props['evidence:excerpt']),
-    [src?.label || edge.source, edge.label || 'related', tgt?.label || edge.target]
-      .map(normalize).filter(Boolean).join(' -> '),
-  ].find(Boolean) || ''
-  const ruleId = normalize(props['evidence:ruleId'])
-  const explanation = normalize(props['evidence:explanation'])
+    src?.label || edge.source,
+    edge.label || 'related',
+    tgt?.label || edge.target,
+  ].map(normalize).filter(Boolean).join(' -> ')
   return {
     sourcePath,
     ...(lineStart ? { lineStart } : {}),
@@ -149,8 +139,6 @@ function edgeSourceRef(edge: GraphEdge, nodeById: Map<string, GraphNode>): Corpu
     evidenceKind: readEvidenceKind(props),
     confidence: readConfidence(props),
     excerpt,
-    ...(ruleId ? { ruleId } : {}),
-    ...(explanation ? { explanation } : {}),
   }
 }
 
@@ -201,7 +189,7 @@ function findQueryEndpointNodeIds(args: {
         return { id, score: exact ? 20 : scoreText(text, [term]) }
       })
       .filter(row => row.id && row.score > 0)
-      .sort((a, b) => (b.score - a.score) || compareStableText(a.id, b.id))
+      .sort((a, b) => b.score - a.score)
       .slice(0, 4)
       .map(row => row.id)
     if (ids.length) buckets.push({ term, ids })
@@ -309,7 +297,7 @@ export function buildCorpusQueryEvidencePack(args: {
       score: scoreText(nodeSearchText(node), terms) + (args.selectedNodeId && node.id === args.selectedNodeId ? 20 : 0),
     }))
     .filter(row => row.score > 0)
-    .sort((a, b) => (b.score - a.score) || compareStableText(a.node.id, b.node.id))
+    .sort((a, b) => b.score - a.score)
     .slice(0, 12)
 
   const seedNodeIds = new Set<string>()
@@ -335,7 +323,7 @@ export function buildCorpusQueryEvidencePack(args: {
         + (seedNodeIds.has(String(edge.source || '')) || seedNodeIds.has(String(edge.target || '')) ? 6 : 0),
     }))
     .filter(row => row.score > 0)
-    .sort((a, b) => (b.score - a.score) || compareStableText(a.edge.id, b.edge.id))
+    .sort((a, b) => b.score - a.score)
     .map(row => row.edge)
 
   const adjacent = collectAdjacentEdges({ edges, seedNodeIds, maxEdges: maxSourceRefs })
@@ -367,14 +355,8 @@ export function buildCorpusQueryEvidencePack(args: {
     .slice(0, 16)
     .map(id => `@edge:${id}`)
   const graphRefs = [...nodeRefs, ...edgeRefs]
-  while (sourceRefs.length > 1 && Math.ceil(JSON.stringify({ query, intent, graphRefs, sourceRefs }).length / 4) > maxPromptTokens) {
-    sourceRefs.pop()
-  }
-  while (graphRefs.length > 1 && Math.ceil(JSON.stringify({ query, intent, graphRefs, sourceRefs }).length / 4) > maxPromptTokens) {
-    graphRefs.pop()
-  }
   const serializedSize = JSON.stringify({ query, intent, graphRefs, sourceRefs }).length
-  const estimatedPromptTokens = Math.min(maxPromptTokens, Math.ceil(serializedSize / 4))
+  const estimatedPromptTokens = Math.ceil(serializedSize / 4)
   const cacheHits = 0
   const completionTokenBudget = Math.max(0, Math.floor(Number(args.completionTokenBudget || 0)) || 0)
   const model = normalize(args.model) || 'unknown'

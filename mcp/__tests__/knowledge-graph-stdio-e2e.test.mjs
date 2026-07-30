@@ -8,11 +8,26 @@ import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-import { KNOWLEDGE_GRAPH_INVOCATIONS } from "../knowledge-graph-tool-contract.js";
+import {
+  AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID,
+  KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
+} from "../knowledge-graph-tool-contract.js";
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
 import { minimalTextPdf } from "./fixtures/minimal-text-pdf.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const invocationProof = (tool, route, overrides = {}) => ({
+  schema: KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
+  tool,
+  action: `/Future.${route}`,
+  semantics: [`#Future-${route}`, "#deterministic-runtime"],
+  bindings: [`@Future-${route}`, "@runtime-proof-v2"],
+  sourceRevision: "1".repeat(40),
+  catalogDigest: "2".repeat(64),
+  routingSchema: AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID,
+  routingDigest: "3".repeat(64),
+  ...overrides,
+});
 
 async function writeFixture(root, relativePath, contents) {
   const target = path.join(root, relativePath);
@@ -58,14 +73,25 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
       KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
     ]) assert.ok(names.includes(name), `${name}; stderr=${stderrText}`);
+    for (const name of [
+      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
+    ]) {
+      assert.equal(
+        listed.tools.find((tool) => tool.name === name)?.inputSchema?.properties?.maxDurationMs?.default,
+        300000,
+      );
+    }
 
     const ingestResult = await client.callTool({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
       arguments: {
         rootPath: corpusRoot,
-        outputPath: "stdio.json",
         strict: true,
-        invocation: KNOWLEDGE_GRAPH_INVOCATIONS.ingest,
+        invocation: invocationProof(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+          "corpus-build",
+        ),
       },
     }, undefined, { timeout: 30_000 });
     assert.equal(ingestResult.isError, false, stderrText);
@@ -74,33 +100,45 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.equal(ingest?.retrieval?.vectorStore, false);
     assert.equal(ingest?.cost?.modelCalls, 0);
     assert.ok(ingest?.parserCoverage?.["local-pdf-markdown-adapter"] > 0);
-
-    const artifact = JSON.parse(await fs.readFile(ingest.artifactPath, "utf8"));
-    const edge = artifact.edges.find((candidate) => candidate.label === "resolvesToSource") || artifact.edges[0];
+    assert.match(ingest?.graphId || "", /^kg:graph:[a-f0-9]{32}$/);
+    assert.match(ingest?.snapshotDigest || "", /^[a-f0-9]{64}$/);
+    assert.equal(ingest?.projection?.readOnly, true);
+    assert.equal(JSON.stringify(ingest).includes("artifactPath"), false);
+    const edge = ingest.projection.graphData.edges.find((candidate) => candidate.label === "resolvesToSource")
+      || ingest.projection.graphData.edges[0];
     assert.ok(edge?.properties?.["evidence:explanation"]);
 
     const queryResult = await client.callTool({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
-        artifactPath: ingest.artifactPath,
-        expectedDigest: ingest.digest,
+        graphId: ingest.graphId,
+        expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "search",
         query: "value",
-        invocation: KNOWLEDGE_GRAPH_INVOCATIONS.query,
+        maxDurationMs: 1000,
+        invocation: invocationProof(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+          "graph-lookup",
+        ),
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(queryResult.isError, false, stderrText);
     assert.equal(queryResult.structuredContent?.ok, true);
+    assert.equal(queryResult.structuredContent?.graphId, ingest.graphId);
+    assert.equal(queryResult.structuredContent?.snapshotDigest, ingest.snapshotDigest);
     assert.ok(queryResult.structuredContent?.results?.nodes?.length > 0);
 
     const pdfBodyQueryResult = await client.callTool({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
-        artifactPath: ingest.artifactPath,
-        expectedDigest: ingest.digest,
+        graphId: ingest.graphId,
+        expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "search",
         query: "Stdio PDF evidence",
-        invocation: KNOWLEDGE_GRAPH_INVOCATIONS.query,
+        invocation: invocationProof(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+          "graph-lookup",
+        ),
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(pdfBodyQueryResult.isError, false, stderrText);
@@ -112,36 +150,80 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     const explainResult = await client.callTool({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
       arguments: {
-        artifactPath: ingest.artifactPath,
-        expectedDigest: ingest.digest,
+        graphId: ingest.graphId,
+        expectedSnapshotDigest: ingest.snapshotDigest,
         edgeId: edge.id,
-        invocation: KNOWLEDGE_GRAPH_INVOCATIONS.explain,
+        maxDurationMs: 1000,
+        invocation: invocationProof(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
+          "edge-proof",
+        ),
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(explainResult.isError, false, stderrText);
     assert.equal(explainResult.structuredContent?.ok, true);
+    assert.equal(explainResult.structuredContent?.graphId, ingest.graphId);
+    assert.equal(explainResult.structuredContent?.snapshotDigest, ingest.snapshotDigest);
     assert.ok(explainResult.structuredContent?.evidence?.excerpt);
 
-    const invalidInvocation = await client.callTool({
+    const malformedInvocation = await client.callTool({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
-        artifactPath: ingest.artifactPath,
-        expectedDigest: ingest.digest,
+        graphId: ingest.graphId,
+        expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "summary",
-        invocation: { ...KNOWLEDGE_GRAPH_INVOCATIONS.query, semantics: ["#knowledge-graph"] },
+        invocation: invocationProof(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+          "graph-lookup",
+          { semantics: ["missing-sigil"] },
+        ),
       },
     }, undefined, { timeout: 10_000 });
-    assert.equal(invalidInvocation.isError, true);
-    assert.equal(invalidInvocation.structuredContent?.error?.code, "invalid_invocation");
+    assert.equal(malformedInvocation.isError, true);
+    assert.equal(malformedInvocation.structuredContent?.error?.code, "invalid_invocation");
+
+    const wrongToolInvocation = await client.callTool({
+      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      arguments: {
+        graphId: ingest.graphId,
+        expectedSnapshotDigest: ingest.snapshotDigest,
+        mode: "summary",
+        invocation: invocationProof(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+          "graph-lookup",
+        ),
+      },
+    }, undefined, { timeout: 10_000 });
+    assert.equal(wrongToolInvocation.isError, true);
+    assert.equal(wrongToolInvocation.structuredContent?.error?.code, "invalid_invocation");
+
+    const malformedProof = await client.callTool({
+      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+      arguments: {
+        graphId: ingest.graphId,
+        expectedSnapshotDigest: ingest.snapshotDigest,
+        mode: "summary",
+        invocation: invocationProof(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+          "graph-lookup",
+          { routingDigest: "not-a-digest" },
+        ),
+      },
+    }, undefined, { timeout: 10_000 });
+    assert.equal(malformedProof.isError, true);
+    assert.equal(malformedProof.structuredContent?.error?.code, "invalid_invocation");
 
     const invalidArguments = await client.callTool({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       arguments: {
-        artifactPath: ingest.artifactPath,
-        expectedDigest: ingest.digest,
+        graphId: ingest.graphId,
+        expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "summary",
         unexpected: true,
-        invocation: KNOWLEDGE_GRAPH_INVOCATIONS.query,
+        invocation: invocationProof(
+          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
+          "graph-lookup",
+        ),
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(invalidArguments.isError, true);

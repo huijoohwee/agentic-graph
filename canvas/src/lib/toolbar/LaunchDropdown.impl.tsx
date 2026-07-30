@@ -19,7 +19,12 @@ import {
 import { importLocalImagesWithWorkspaceBridgeRetry } from './launchImageImportBridge'
 import { LaunchDropdownImportUrlItem } from './LaunchDropdownImportUrlItem'
 import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
-import { runLaunchImportLocalFiles } from './launchImportDispatch'
+import {
+  hasLaunchKnowledgeGraphFolderImporter,
+  runLaunchImportKnowledgeGraphFolder,
+  runLaunchImportLocalFiles,
+  runLaunchImportLocalFolderPreview,
+} from './launchImportDispatch'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
 import { AIRVIO_HOME_URL } from '@/lib/routing/airvioHome'
 
@@ -247,8 +252,19 @@ export function LaunchDropdown({
         onChange={e => {
           const files = e.target.files
           const launchBridge = getMarkdownWorkspaceActionBridge()
-          if (typeof launchBridge.importLocalFolder === 'function') launchBridge.importLocalFolder(files)
-          else void importLocalFolderFallback(files ? Array.from(files) : [])
+          void runLaunchImportLocalFolderPreview({
+            files,
+            bridge: launchBridge,
+            fallback: importLocalFolderFallback,
+          }).catch(error => {
+            pushUiToast({
+              id: 'launch:import:folder-preview',
+              kind: 'error',
+              message: String((error as { message?: unknown })?.message || 'Browser folder preview failed.'),
+              ttlMs: UI_TOAST_TTL_MS.warningExtended,
+              dismissible: true,
+            })
+          })
           onClose()
           try {
             e.currentTarget.value = ''
@@ -361,6 +377,29 @@ export function LaunchDropdown({
               type="button"
               className={menuItemClass}
               onClick={() => {
+                const launchBridge = getMarkdownWorkspaceActionBridge()
+                if (hasLaunchKnowledgeGraphFolderImporter(launchBridge)) {
+                  onClose()
+                  void runLaunchImportKnowledgeGraphFolder({ bridge: launchBridge })
+                    .then(result => {
+                      pushUiToast({
+                        id: 'launch:import:knowledge-graph-folder',
+                        kind: 'success',
+                        message: `Loaded knowledge graph projection (${result.projection.graphData.nodes.length} nodes, ${result.projection.graphData.edges.length} edges)`,
+                        ttlMs: UI_TOAST_TTL_MS.actionFeedback,
+                      })
+                    })
+                    .catch(error => {
+                      pushUiToast({
+                        id: 'launch:import:knowledge-graph-folder',
+                        kind: 'error',
+                        message: String((error as { message?: unknown })?.message || 'Knowledge graph folder import failed.'),
+                        ttlMs: UI_TOAST_TTL_MS.warningExtended,
+                        dismissible: true,
+                      })
+                    })
+                  return
+                }
                 openFilePicker(folderInputRef.current)
               }}
             >

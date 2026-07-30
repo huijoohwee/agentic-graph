@@ -27,6 +27,10 @@ type CatalogRuntimeOptions = {
     group: string
     dictionaryFileName: AgenticOsDictionaryInvocation['dictionaryFileName']
     keywords: readonly string[]
+    mcpTool?: string
+    mcpTools?: readonly string[]
+    semantics?: readonly string[]
+    bindings?: readonly string[]
   }) => AgenticOsDictionaryInvocation
 }
 
@@ -66,6 +70,10 @@ export function createAgenticOsInvocationCatalogRuntime(options: CatalogRuntimeO
           entry.sourceUrl || '',
           entry.sourcePath || '',
         ].filter(Boolean))],
+        mcpTool: entry.mcpTool || fallbackInvocation?.mcpTool,
+        mcpTools: entry.mcpTools?.length ? entry.mcpTools : fallbackInvocation?.mcpTools,
+        semantics: entry.semantics?.length ? entry.semantics : fallbackInvocation?.semantics,
+        bindings: entry.bindings?.length ? entry.bindings : fallbackInvocation?.bindings,
       })
       mergedByToken.set(token.toLowerCase(), {
         ...merged,

@@ -1,6 +1,5 @@
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import { hashText } from '@/features/parsers/hash'
-import { buildCorpusEdgeEvidence } from '@/features/queryable-corpus/corpusEdgeEvidence'
 
 const asJson = (value: unknown): JSONValue => value as JSONValue
 
@@ -32,17 +31,15 @@ function createSourceNode(args: { sourcePath: string; text: string }): GraphNode
   }
 }
 
-function evidenceProperties(args: { sourcePath: string; lineStart: number; edgeLabel: string; entityLabel: string; confidence?: 'medium' | 'high' }): Record<string, JSONValue> {
-  return buildCorpusEdgeEvidence({
-    sourcePath: args.sourcePath,
-    sourceText: '',
-    lineStart: args.lineStart,
-    parserId: 'corpus-config',
-    ruleId: `corpus-config.${args.edgeLabel}`,
-    explanation: `The deterministic corpus-config parser observed ${args.edgeLabel} at this exact source span.`,
-    excerpt: `${args.edgeLabel}: ${args.entityLabel}`,
-    confidence: args.confidence || 'medium',
-  })
+function evidenceProperties(args: { sourcePath: string; lineStart: number; confidence?: 'medium' | 'high' }): Record<string, JSONValue> {
+  return {
+    'evidence:kind': asJson('extracted'),
+    'evidence:confidence': asJson(args.confidence || 'medium'),
+    'evidence:sourcePath': asJson(args.sourcePath),
+    'evidence:lineStart': asJson(args.lineStart),
+    'evidence:lineEnd': asJson(args.lineStart),
+    'corpus:parserId': asJson('corpus-config'),
+  }
 }
 
 function pushUniqueNode(nodes: GraphNode[], node: GraphNode, seen: Set<string>): void {
@@ -64,7 +61,6 @@ function addConfigEntity(args: {
   seenEdges: Set<string>
   source: GraphNode
   sourcePath: string
-  sourceText: string
   type: string
   kind: string
   label: string
@@ -90,7 +86,7 @@ function addConfigEntity(args: {
     source: args.source.id,
     target: id,
     label: args.edgeLabel,
-    properties: evidenceProperties({ sourcePath: args.sourcePath, lineStart: args.lineStart, edgeLabel: args.edgeLabel, entityLabel: args.label, confidence: args.confidence }),
+    properties: evidenceProperties({ sourcePath: args.sourcePath, lineStart: args.lineStart, confidence: args.confidence }),
   }, args.seenEdges)
 }
 
@@ -125,17 +121,17 @@ function addPackageJsonEntities(args: {
   if (!parsed) return
   const packageName = String(parsed.name || '').trim()
   if (packageName) {
-    addConfigEntity({ ...args, sourceText: args.text, type: 'CorpusConfigService', kind: 'service', label: packageName, edgeLabel: 'declaresService', lineStart: 1, confidence: 'high' })
+    addConfigEntity({ ...args, type: 'CorpusConfigService', kind: 'service', label: packageName, edgeLabel: 'declaresService', lineStart: 1, confidence: 'high' })
   }
   const scripts = parsed.scripts && typeof parsed.scripts === 'object' && !Array.isArray(parsed.scripts) ? Object.keys(parsed.scripts) : []
   for (const script of scripts) {
-    addConfigEntity({ ...args, sourceText: args.text, type: 'CorpusConfigScript', kind: 'script', label: script, edgeLabel: 'declaresScript', lineStart: 1 })
+    addConfigEntity({ ...args, type: 'CorpusConfigScript', kind: 'script', label: script, edgeLabel: 'declaresScript', lineStart: 1 })
   }
   const dependencyRecords = [parsed.dependencies, parsed.devDependencies, parsed.peerDependencies]
   for (const rec of dependencyRecords) {
     if (!rec || typeof rec !== 'object' || Array.isArray(rec)) continue
     for (const dependency of Object.keys(rec)) {
-      addConfigEntity({ ...args, sourceText: args.text, type: 'CorpusConfigDependency', kind: 'dependency', label: dependency, edgeLabel: 'declaresDependency', lineStart: 1 })
+      addConfigEntity({ ...args, type: 'CorpusConfigDependency', kind: 'dependency', label: dependency, edgeLabel: 'declaresDependency', lineStart: 1 })
     }
   }
 }
@@ -151,16 +147,16 @@ export function parseCorpusConfigGraph(name: string, text: string): { graphData:
   addPackageJsonEntities({ nodes, edges, seenNodes, seenEdges, source, sourcePath, text })
 
   for (const item of collectRegexMatches(text, /^\s{0,4}(?:name|service|worker|project)\s*[:=]\s*["']?([A-Za-z0-9_.@/-]+)/gmi)) {
-    addConfigEntity({ nodes, edges, seenNodes, seenEdges, source, sourcePath, sourceText: text, type: 'CorpusConfigService', kind: 'service', label: item.value, edgeLabel: 'declaresService', lineStart: item.line })
+    addConfigEntity({ nodes, edges, seenNodes, seenEdges, source, sourcePath, type: 'CorpusConfigService', kind: 'service', label: item.value, edgeLabel: 'declaresService', lineStart: item.line })
   }
-  for (const item of collectRegexMatches(text, /^\s*(binding|database_name|bucket_name|queue|route|routes|compatibility_date)\s*[:=]/gmi)) {
-    addConfigEntity({ nodes, edges, seenNodes, seenEdges, source, sourcePath, sourceText: text, type: 'CorpusConfigBinding', kind: 'binding', label: item.value, edgeLabel: 'declaresBindingOrRoute', lineStart: item.line })
+  for (const item of collectRegexMatches(text, /^\s*(?:binding|database_name|bucket_name|queue|route|routes|compatibility_date)\s*[:=]\s*["']?([^"'\n#]+)/gmi)) {
+    addConfigEntity({ nodes, edges, seenNodes, seenEdges, source, sourcePath, type: 'CorpusConfigBinding', kind: 'binding', label: item.value, edgeLabel: 'declaresBindingOrRoute', lineStart: item.line })
   }
   for (const item of collectRegexMatches(text, /^\s{2,}([A-Za-z0-9_.-]+):\s*(?:$|#)/gm)) {
-    addConfigEntity({ nodes, edges, seenNodes, seenEdges, source, sourcePath, sourceText: text, type: 'CorpusConfigService', kind: 'service', label: item.value, edgeLabel: 'declaresService', lineStart: item.line })
+    addConfigEntity({ nodes, edges, seenNodes, seenEdges, source, sourcePath, type: 'CorpusConfigService', kind: 'service', label: item.value, edgeLabel: 'declaresService', lineStart: item.line })
   }
   for (const item of collectRegexMatches(text, /\bresource\s+"([^"]+)"\s+"([^"]+)"/g)) {
-    addConfigEntity({ nodes, edges, seenNodes, seenEdges, source, sourcePath, sourceText: text, type: 'CorpusConfigResource', kind: 'resource', label: item.value, edgeLabel: 'declaresResource', lineStart: item.line })
+    addConfigEntity({ nodes, edges, seenNodes, seenEdges, source, sourcePath, type: 'CorpusConfigResource', kind: 'resource', label: item.value, edgeLabel: 'declaresResource', lineStart: item.line })
   }
 
   return {

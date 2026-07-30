@@ -15,8 +15,7 @@ import {
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { runVideoRemixAsync } from "./video-remix-runtime.js"; import { runShowrunnerLocalTool } from "./showrunner-runtime.js"; import { runOsStatusTool } from "./os-status-runtime.js"; import { callSealionSidecarTool } from "./sealion-sidecar-runtime.js"; import { callBrowserApiRuntime } from "./browser-api-runtime.js"; import { runProbeTreeTool } from "./probe-tree-runtime.js"; import { runSmeRiskCopilotTool } from "./sme-risk-copilot-runtime.js"; import { handleAnnotateImageTool, handleAnnotateVideoFrameTool } from "./annotation-runtime.js"; import { runAgentSandboxPolicyTool } from "./agent-sandbox-policy-runtime.js"; import { runAgenticCanvasOsDocsInvokeTool } from "./agentic-canvas-os-docs-runtime.js"; import { isExternalToolGatewayToolName } from "./external-tool-gateway-contract.js"; import { getExternalToolGatewayRuntime } from "./external-tool-gateway-runtime.js"; import { createDefaultApplicationAdapterRegistry } from "./agent-application-adapter-registry.js"; import { createAgentApplicationRuntime, isAgentApplicationToolName } from "./agent-application-runtime.js"; import { runExportPublishTool } from "./export-publish-runtime.js"; import { createEcsRuntime } from "./ecs-runtime.js"; import { isEcsToolName } from "./ecs-tool-contract.js"; import { createLocalRunRuntimeRegistrar } from "./local-run-runtime-registrar.js"; import { isSkillEvolutionToolName, runSkillEvolutionTool } from "./skill-evolution-runtime.js"; import { createLocalSkillEvolutionRuntime } from "./skill-evolution-local-runtime.js"; import { createVoiceStudioRuntime } from "./voice-studio-runtime.js";
-import { createPaymentRuntime } from "./payment-runtime.js";
-import { isKnowledgeGraphToolName, runKnowledgeGraphTool } from "./knowledge-graph-host.js";
+import { createPaymentRuntime } from "./payment-runtime.js"; import { isKnowledgeGraphToolName, runKnowledgeGraphTool } from "./knowledge-graph-host.js";
 import {
   createLocalMemoryToolRuntime,
 } from "./memory-local-runtime.js";
@@ -393,14 +392,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const payload = await getExternalToolGatewayRuntime().run(toolName, args);
       return jsonToolResult(payload, payload.ok === false);
     }
-    if (isKnowledgeGraphToolName(toolName)) {
-      const payload = await runKnowledgeGraphTool(toolName, args, {
-        rootDir: KNOWGRPH_ROOT,
-        env: process.env,
-        abortSignal: extra?.signal,
-      });
-      return jsonToolResult(payload, payload.ok === false);
-    }
+    if (isKnowledgeGraphToolName(toolName)) { const payload = await runKnowledgeGraphTool(toolName, args, { rootDir: KNOWGRPH_ROOT, env: process.env, abortSignal: extra?.signal }); return jsonToolResult(payload, payload.ok === false); }
     if (toolName === KNOWGRPH_LOCAL_MCP_TOOL_NAMES.uiLaunch) {
       const target = typeof args.target === "string" ? args.target : "canvas";
       const host = typeof args.host === "string" && args.host.trim() ? args.host.trim() : DEFAULT_UI_HOST;

@@ -1,28 +1,34 @@
 import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-
 import {
+  checkKnowledgeGraphBudget,
+  EVIDENCE_FIELDS,
   KnowledgeGraphError,
   KNOWLEDGE_GRAPH_CONTRACT_VERSION,
   KNOWLEDGE_GRAPH_SCHEMA_VERSION,
   compareStableStrings,
-  computeKnowledgeGraphArtifactDigestBounded,
   sha256,
-  sortGraphData,
   stableStringify,
-  validateKnowledgeGraphArtifact,
 } from "./contract.mjs";
-
-export const DEFAULT_MAX_ARTIFACT_BYTES = 128 * 1024 * 1024;
-const ARTIFACT_DIGEST_RESERVE_BYTES = 1024;
-
-const boundedArtifactMaxBytes = (value) => {
-  const number = Number(value);
-  if (!Number.isSafeInteger(number) || number < 1) return DEFAULT_MAX_ARTIFACT_BYTES;
-  return Math.min(number, DEFAULT_MAX_ARTIFACT_BYTES);
-};
-
+export const KNOWLEDGE_GRAPH_POINTER_SCHEMA = "knowgrph-knowledge-graph-pointer/v1";
+export const KNOWLEDGE_GRAPH_MANIFEST_SCHEMA = "knowgrph-knowledge-graph-sharded-manifest/v1";
+export const KNOWLEDGE_GRAPH_SOURCE_SHARD_SCHEMA = "knowgrph-knowledge-graph-source-shard/v1";
+export const KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA = "knowgrph-knowledge-graph-repository-index/v1";
+export const KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA = "knowgrph-knowledge-graph-resolution-shard/v1";
+export const DEFAULT_MAX_ARTIFACT_BYTES = 64 * 1024 * 1024;
+const MAX_POINTER_BYTES = 64 * 1024;
+const MAX_MANIFEST_BYTES = 64 * 1024 * 1024;
+const MAX_OBJECT_BYTES = 128 * 1024 * 1024;
+const checkStoreBudget = (options, stage) => checkKnowledgeGraphBudget({
+  abortSignal: options?.abortSignal,
+  deadline: options?.deadline,
+  stage,
+});
+const attachReadBudget = (snapshot, options) => Object.defineProperty(snapshot, "readBudget", {
+  value: { abortSignal: options?.abortSignal, deadline: options?.deadline },
+  enumerable: false,
+});
 function pathIsInside(candidatePath, rootPath) {
   const relative = path.relative(rootPath, candidatePath);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
@@ -30,181 +36,548 @@ function pathIsInside(candidatePath, rootPath) {
 
 const sameFileIdentity = (left, right) => left.dev === right.dev && left.ino === right.ino;
 
-async function readStableArtifactText(artifactPath, { allowedRoot, maxBytes = DEFAULT_MAX_ARTIFACT_BYTES } = {}) {
-  const artifactMaxBytes = boundedArtifactMaxBytes(maxBytes);
+async function lstatIfPresent(targetPath) {
+  try {
+    return await fs.lstat(targetPath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function verifiedDirectory(directoryPath, containmentRoot) {
+  const observed = await fs.lstat(directoryPath);
+  if (observed.isSymbolicLink()) {
+    throw new KnowledgeGraphError("artifact_path_symlink", "Knowledge graph storage paths must not contain symbolic links.");
+  }
+  if (!observed.isDirectory()) {
+    throw new KnowledgeGraphError("artifact_path_not_directory", "Knowledge graph storage parent is not a directory.");
+  }
+  const real = await fs.realpath(directoryPath);
+  const resolved = await fs.stat(real);
+  if (!sameFileIdentity(observed, resolved) || (containmentRoot && !pathIsInside(real, containmentRoot))) {
+    throw new KnowledgeGraphError("artifact_path_unstable", "Knowledge graph storage directory changed or escaped containment.");
+  }
+  return real;
+}
+
+export async function ensureKnowledgeGraphStorageRoot(rootPathRaw) {
+  const requested = path.resolve(String(rootPathRaw || ""));
+  if (!String(rootPathRaw || "").trim()) {
+    throw new KnowledgeGraphError("artifact_allowed_root_required", "A host-owned knowledge graph output root is required.");
+  }
+  let ancestor = requested;
+  const missing = [];
+  while (!(await lstatIfPresent(ancestor))) {
+    const parent = path.dirname(ancestor);
+    if (parent === ancestor) break;
+    missing.unshift(path.basename(ancestor));
+    ancestor = parent;
+  }
+  let current = await verifiedDirectory(ancestor);
+  const containmentRoot = current;
+  for (const segment of missing) {
+    const next = path.join(current, segment);
+    try {
+      await fs.mkdir(next, { mode: 0o700 });
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+    }
+    current = await verifiedDirectory(next, containmentRoot);
+  }
+  return current;
+}
+
+async function resolveContainedFileForWrite(filePath, allowedRoot) {
+  if (!String(allowedRoot || "").trim()) {
+    throw new KnowledgeGraphError("artifact_allowed_root_required", "A host-owned knowledge graph output root is required.");
+  }
+  const requestedRoot = path.resolve(String(allowedRoot || ""));
+  const requestedFile = path.resolve(filePath);
+  const relative = path.relative(requestedRoot, requestedFile);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new KnowledgeGraphError("artifact_path_escape", "Knowledge graph storage path is outside its host-owned output root.");
+  }
+  const canonicalRoot = await ensureKnowledgeGraphStorageRoot(requestedRoot);
+  let current = canonicalRoot;
+  for (const segment of path.dirname(relative).split(path.sep).filter((part) => part && part !== ".")) {
+    const next = path.join(current, segment);
+    try {
+      await fs.mkdir(next, { mode: 0o700 });
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+    }
+    current = await verifiedDirectory(next, canonicalRoot);
+  }
+  const target = path.join(current, path.basename(requestedFile));
+  const existing = await lstatIfPresent(target);
+  if (existing?.isSymbolicLink()) {
+    throw new KnowledgeGraphError("artifact_path_symlink", "Knowledge graph storage files must not be symbolic links.");
+  }
+  if (existing && !existing.isFile()) {
+    throw new KnowledgeGraphError("artifact_path_not_file", "Knowledge graph storage target is not a regular file.");
+  }
+  return { canonicalRoot, target };
+}
+
+async function writeExclusiveText(filePath, serialized) {
+  const flags = fsConstants.O_WRONLY
+    | fsConstants.O_CREAT
+    | fsConstants.O_EXCL
+    | Number(fsConstants.O_NOFOLLOW || 0);
+  const handle = await fs.open(filePath, flags, 0o600);
+  try {
+    await handle.writeFile(serialized, "utf8");
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+}
+
+async function readStableText(filePath, options = {}) {
+  const {
+    allowedRoot,
+    maxBytes = MAX_OBJECT_BYTES,
+    missingCode = "artifact_not_found",
+  } = options;
   let handle;
   try {
-    handle = await fs.open(artifactPath, fsConstants.O_RDONLY | Number(fsConstants.O_NOFOLLOW || 0));
-    const openedStat = await handle.stat();
-    if (!openedStat.isFile()) throw new KnowledgeGraphError("artifact_not_file", `Knowledge graph artifact is not a regular file: ${artifactPath}`);
-    if (openedStat.size > artifactMaxBytes) throw new KnowledgeGraphError("artifact_too_large", `Knowledge graph artifact exceeds ${artifactMaxBytes} bytes.`);
-    const realPath = await fs.realpath(artifactPath);
-    const pathStat = await fs.stat(realPath);
-    if ((allowedRoot && !pathIsInside(realPath, allowedRoot)) || !sameFileIdentity(openedStat, pathStat)) {
-      throw new KnowledgeGraphError("artifact_path_unstable", "Knowledge graph artifact changed or escaped while it was opened.");
+    checkStoreBudget(options, "snapshot-read-open");
+    handle = await fs.open(filePath, fsConstants.O_RDONLY | Number(fsConstants.O_NOFOLLOW || 0));
+    checkStoreBudget(options, "snapshot-read-stat");
+    const opened = await handle.stat();
+    if (!opened.isFile()) throw new KnowledgeGraphError("artifact_not_file", `Stored graph value is not a regular file: ${filePath}`);
+    if (opened.size > maxBytes) throw new KnowledgeGraphError("artifact_too_large", `Stored graph value exceeds ${maxBytes} bytes.`);
+    const real = await fs.realpath(filePath);
+    const pathStat = await fs.stat(real);
+    const realAllowedRoot = allowedRoot
+      ? await fs.realpath(allowedRoot).catch(() => path.resolve(allowedRoot))
+      : "";
+    if ((realAllowedRoot && !pathIsInside(real, realAllowedRoot)) || !sameFileIdentity(opened, pathStat)) {
+      throw new KnowledgeGraphError("artifact_path_unstable", "Stored graph value changed or escaped while it was opened.");
     }
-    const bytes = Buffer.alloc(openedStat.size);
+    const bytes = Buffer.alloc(opened.size);
     let offset = 0;
     while (offset < bytes.length) {
-      const chunk = await handle.read(bytes, offset, bytes.length - offset, offset);
+      checkStoreBudget(options, "snapshot-read-content");
+      const chunk = await handle.read(bytes, offset, Math.min(1024 * 1024, bytes.length - offset), offset);
       if (!chunk.bytesRead) break;
       offset += chunk.bytesRead;
     }
+    checkStoreBudget(options, "snapshot-read-verify");
     const extra = Buffer.alloc(1);
-    const extraRead = await handle.read(extra, 0, 1, openedStat.size);
-    const closedStat = await handle.stat();
-    if (offset !== bytes.length || extraRead.bytesRead || !sameFileIdentity(openedStat, closedStat)
-      || openedStat.size !== closedStat.size || openedStat.mtimeMs !== closedStat.mtimeMs) {
-      throw new KnowledgeGraphError("artifact_changed_during_read", "Knowledge graph artifact changed while it was being read.");
+    const extraRead = await handle.read(extra, 0, 1, opened.size);
+    const closed = await handle.stat();
+    if (offset !== bytes.length || extraRead.bytesRead || !sameFileIdentity(opened, closed)
+      || opened.size !== closed.size || opened.mtimeMs !== closed.mtimeMs) {
+      throw new KnowledgeGraphError("artifact_changed_during_read", "Stored graph value changed while it was being read.");
     }
+    checkStoreBudget(options, "snapshot-read-complete");
     return bytes.toString("utf8");
   } catch (error) {
     if (error instanceof KnowledgeGraphError) throw error;
-    if (error?.code === "ENOENT") throw new KnowledgeGraphError("artifact_not_found", `Knowledge graph artifact was not found: ${artifactPath}`);
-    throw new KnowledgeGraphError("artifact_read_failed", "Knowledge graph artifact could not be read safely.", { causeCode: String(error?.code || "read_failed") });
+    if (error?.code === "ENOENT") throw new KnowledgeGraphError(missingCode, `Stored graph value was not found: ${filePath}`);
+    if (error?.code === "ELOOP") {
+      throw new KnowledgeGraphError("artifact_path_symlink", "Knowledge graph storage files must not be symbolic links.");
+    }
+    throw new KnowledgeGraphError("artifact_read_failed", "Stored graph value could not be read safely.", {
+      causeCode: String(error?.code || "read_failed"),
+    });
   } finally {
     await handle?.close().catch(() => {});
   }
 }
 
-function sortDiagnostics(diagnostics) {
-  const seen = new Set();
-  return (diagnostics || [])
-    .filter((diagnostic) => diagnostic && typeof diagnostic === "object")
-    .map((diagnostic) => ({
-      code: String(diagnostic.code || "diagnostic"),
-      sourcePath: String(diagnostic.sourcePath || ""),
-      message: String(diagnostic.message || ""),
-      ...(Number.isInteger(diagnostic.lineStart) ? { lineStart: diagnostic.lineStart } : {}),
-      ...(Number.isInteger(diagnostic.columnStart) ? { columnStart: diagnostic.columnStart } : {}),
-    }))
-    .sort((left, right) => compareStableStrings(`${left.sourcePath}\0${left.code}\0${left.message}`, `${right.sourcePath}\0${right.code}\0${right.message}`))
-    .filter((diagnostic) => {
-      const key = JSON.stringify(diagnostic);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+function parseStoredJson(raw, code) {
+  try {
+    const value = JSON.parse(raw);
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("not an object");
+    return value;
+  } catch {
+    throw new KnowledgeGraphError(code, "Stored graph JSON is invalid.");
+  }
 }
 
-export function fragmentFromArtifact(artifact, manifestEntry) {
-  if (!artifact || !manifestEntry) return null;
-  const nodeById = new Map((artifact.nodes || []).map((node) => [node.id, node]));
-  const edgeById = new Map((artifact.edges || []).map((edge) => [edge.id, edge]));
-  const nodes = (manifestEntry.nodeIds || []).map((id) => nodeById.get(id)).filter(Boolean);
-  const edges = (manifestEntry.edgeIds || []).map((id) => edgeById.get(id)).filter(Boolean);
-  if (nodes.length !== (manifestEntry.nodeIds || []).length || edges.length !== (manifestEntry.edgeIds || []).length) return null;
+async function writeAtomicText(filePath, serialized, options = {}) {
+  const { allowedRoot } = options;
+  checkStoreBudget(options, "snapshot-pointer-stage");
+  const resolved = await resolveContainedFileForWrite(filePath, allowedRoot);
+  const directory = path.dirname(resolved.target);
+  const temporary = path.join(
+    directory,
+    `.${path.basename(filePath)}.${process.pid}.${sha256(`${filePath}:${process.hrtime.bigint()}`).slice(0, 12)}.tmp`,
+  );
+  try {
+    await writeExclusiveText(temporary, serialized);
+    checkStoreBudget(options, "snapshot-pointer-verify");
+    const staged = await readStableText(temporary, {
+      ...options,
+      allowedRoot: resolved.canonicalRoot,
+      maxBytes: MAX_POINTER_BYTES,
+    });
+    if (staged !== serialized) {
+      throw new KnowledgeGraphError("artifact_publish_mismatch", "Knowledge graph pointer publication could not be verified.");
+    }
+    checkStoreBudget(options, "snapshot-pointer-commit");
+    await fs.rename(temporary, resolved.target);
+  } catch (error) {
+    await fs.unlink(temporary).catch(() => {});
+    throw error;
+  }
+}
+
+export const knowledgeGraphStoreRoot = (pointerPath) => `${pointerPath}.store`;
+
+function objectPath(storeRoot, digest) {
+  if (!/^[a-f0-9]{64}$/.test(String(digest || ""))) {
+    throw new KnowledgeGraphError("object_digest_invalid", "Stored graph object digest is invalid.");
+  }
+  return path.join(storeRoot, "objects", digest.slice(0, 2), `${digest}.json`);
+}
+
+async function writeContentAddressed(storeRoot, value, maxBytes = MAX_OBJECT_BYTES, options = {}) {
+  const { allowedRoot } = options;
+  const checkpoint = () => checkStoreBudget(options, "snapshot-object-serialization");
+  const serialized = stableStringify(value, 2, { checkpoint });
+  const bytes = Buffer.byteLength(serialized);
+  if (bytes > maxBytes) {
+    throw new KnowledgeGraphError("artifact_too_large", `Stored graph object exceeds ${maxBytes} bytes.`, {
+      actualBytes: bytes,
+      maxBytes,
+      previousSnapshotPreserved: true,
+    });
+  }
+  checkpoint();
+  const digest = sha256(serialized);
+  const resolved = await resolveContainedFileForWrite(objectPath(storeRoot, digest), allowedRoot);
+  const target = resolved.target;
+  const temporary = `${target}.${process.pid}.${process.hrtime.bigint()}.tmp`;
+  try {
+    await writeExclusiveText(temporary, serialized);
+    checkpoint();
+    try {
+      await fs.link(temporary, target);
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+    }
+    const existing = await readStableText(target, {
+      ...options,
+      allowedRoot: resolved.canonicalRoot,
+      maxBytes,
+    });
+    checkpoint();
+    if (existing !== serialized) throw new KnowledgeGraphError("object_digest_collision", `Stored graph object digest collision: ${digest}`);
+  } finally {
+    await fs.unlink(temporary).catch(() => {});
+  }
+  return { digest, bytes };
+}
+
+async function readContentAddressed(snapshot, digest, maxBytes = MAX_OBJECT_BYTES) {
+  const options = snapshot.readBudget || {};
+  const raw = await readStableText(objectPath(snapshot.storeRoot, digest), {
+    ...options,
+    allowedRoot: snapshot.allowedRoot,
+    maxBytes,
+    missingCode: "snapshot_object_missing",
+  });
+  checkStoreBudget(options, "snapshot-object-hash");
+  if (sha256(raw) !== digest) throw new KnowledgeGraphError("snapshot_object_tampered", `Stored graph object digest mismatch: ${digest}`);
+  const parsed = parseStoredJson(raw, "snapshot_object_invalid");
+  checkStoreBudget(options, "snapshot-object-parse");
+  return parsed;
+}
+
+function countBy(values, checkpoint = () => {}) {
+  const counts = new Map();
+  for (const value of values) {
+    checkpoint();
+    counts.set(String(value), (counts.get(String(value)) || 0) + 1);
+  }
+  return Object.fromEntries([...counts.entries()].sort(([left], [right]) => compareStableStrings(left, right)));
+}
+
+function sortedDiagnostics(diagnostics, checkpoint = () => {}) {
+  const safeMessage = (value) => String(value || "")
+    .replace(/(^|\s)\/(?:[^/\s:]+\/)*[^/\s:]*/g, "$1<absolute-path>")
+    .replace(/\b[A-Za-z]:\\(?:[^\\\s:]+\\)*[^\\\s:]*/g, "<absolute-path>")
+    .slice(0, 2000);
+  return [...(diagnostics || [])]
+    .filter((item) => (checkpoint(), item && typeof item === "object"))
+    .map((item) => ({
+      code: String(item.code || "diagnostic"),
+      sourcePath: String(item.sourcePath || ""),
+      message: safeMessage(item.message),
+      ...(Number.isInteger(item.lineStart) ? { lineStart: item.lineStart } : {}),
+      ...(Number.isInteger(item.columnStart) ? { columnStart: item.columnStart } : {}),
+    }))
+    .sort((left, right) => compareStableStrings(
+      `${left.sourcePath}\0${left.code}\0${left.message}`,
+      `${right.sourcePath}\0${right.code}\0${right.message}`,
+    ));
+}
+
+function assertExplainedEdges(edges, nodeIds = null, checkpoint = () => {}) {
+  const ids = new Set();
+  for (const edge of edges || []) {
+    checkpoint();
+    if (!edge?.id || ids.has(edge.id)) {
+      throw new KnowledgeGraphError("source_shard_invalid", "Stored graph shard contains a missing or duplicate edge id.");
+    }
+    ids.add(edge.id);
+    if (nodeIds && (!nodeIds.has(edge.source) || !nodeIds.has(edge.target))) {
+      throw new KnowledgeGraphError("source_shard_invalid", `Stored graph shard contains a dangling edge: ${edge.id}`);
+    }
+    for (const field of EVIDENCE_FIELDS) {
+      const value = edge.properties?.[field];
+      if (value === undefined || value === null || value === "") {
+        throw new KnowledgeGraphError("edge_evidence_invalid", `Stored graph edge is missing ${field}: ${edge.id}`);
+      }
+    }
+    const excerpt = edge.properties["evidence:excerpt"];
+    if (excerpt.length > 320 || sha256(excerpt) !== edge.properties["evidence:excerptHash"]) {
+      throw new KnowledgeGraphError("edge_evidence_invalid", `Stored graph edge excerpt evidence is invalid: ${edge.id}`);
+    }
+  }
+}
+
+export async function writeKnowledgeGraphSourceShard(pointerPath, source, fragment, options = {}) {
+  const { allowedRoot } = options;
+  const checkpoint = () => checkStoreBudget(options, "source-shard-write");
+  checkpoint();
+  const storeRoot = knowledgeGraphStoreRoot(pointerPath);
+  const nodeIds = new Set(fragment.nodes.map((node) => (checkpoint(), node.id)));
+  if (nodeIds.size !== fragment.nodes.length) {
+    throw new KnowledgeGraphError("source_shard_invalid", `Source shard has duplicate node ids: ${source.relativePath}`);
+  }
+  assertExplainedEdges(fragment.edges, nodeIds, checkpoint);
+  const shard = {
+    schema: KNOWLEDGE_GRAPH_SOURCE_SHARD_SCHEMA,
+    repositoryId: source.repositoryId,
+    repositoryPath: source.repositoryPath,
+    sourcePath: source.relativePath,
+    contentHash: source.contentHash,
+    parserId: fragment.parserId,
+    parserVersion: fragment.parserVersion,
+    status: fragment.status,
+    nodes: fragment.nodes,
+    edges: fragment.edges,
+    diagnostics: sortedDiagnostics(fragment.diagnostics, checkpoint),
+  };
+  const stored = await writeContentAddressed(storeRoot, shard, MAX_OBJECT_BYTES, options);
   return {
-    parserId: manifestEntry.parserId,
-    parserVersion: manifestEntry.parserVersion,
-    nodes,
-    edges,
-    diagnostics: manifestEntry.diagnostics || [],
-    status: manifestEntry.status,
+    sourcePath: source.relativePath,
+    contentHash: source.contentHash,
+    byteSize: source.byteSize,
+    kind: source.kind,
+    status: fragment.status,
+    parserId: fragment.parserId,
+    parserVersion: fragment.parserVersion,
+    repositoryId: source.repositoryId,
+    repositoryPath: source.repositoryPath,
+    shardDigest: stored.digest,
+    shardBytes: stored.bytes,
+    nodeCount: fragment.nodes.length,
+    edgeCount: fragment.edges.length,
+    nodeTypes: countBy(fragment.nodes.map((node) => node.type || "Entity"), checkpoint),
+    edgeLabels: countBy(fragment.edges.map((edge) => edge.label || "relatedTo"), checkpoint),
+    diagnostics: shard.diagnostics,
   };
 }
 
-export function buildKnowledgeGraphArtifact({ sources, fragments, derivedEdges = [], diagnostics = [] }) {
-  const allNodes = [];
-  const allEdges = [];
-  const sourceEntries = [];
-  const parserCoverage = new Map();
-  for (const source of sources) {
-    const fragment = fragments.get(source.relativePath);
-    if (!fragment) continue;
-    allNodes.push(...fragment.nodes);
-    allEdges.push(...fragment.edges);
-    parserCoverage.set(fragment.parserId, (parserCoverage.get(fragment.parserId) || 0) + 1);
-    sourceEntries.push({
-      sourcePath: source.relativePath,
-      contentHash: source.contentHash,
-      byteSize: source.byteSize,
-      kind: source.kind,
-      status: fragment.status,
-      parserId: fragment.parserId,
-      parserVersion: fragment.parserVersion,
-      nodeIds: fragment.nodes.map((node) => node.id).sort(),
-      edgeIds: fragment.edges.map((edge) => edge.id).sort(),
-      diagnostics: sortDiagnostics(fragment.diagnostics),
+function mergeCounts(target, source) {
+  for (const [key, count] of Object.entries(source || {})) target[key] = (target[key] || 0) + Number(count || 0);
+}
+
+export async function writeKnowledgeGraphSnapshotAtomic(pointerPath, {
+  graphId,
+  sourceEntries,
+  derivedEdgesByRepository,
+  diagnostics,
+  rootContentHash,
+  admission,
+  completeness,
+  parserRegistryDigest,
+}, options = {}) {
+  const { allowedRoot } = options;
+  const checkpoint = () => checkStoreBudget(options, "snapshot-write");
+  checkpoint();
+  const storeRoot = knowledgeGraphStoreRoot(pointerPath);
+  const repositories = [];
+  const parserCoverage = {};
+  const nodeTypes = {};
+  const edgeLabels = {};
+  let nodeCount = 0;
+  let edgeCount = 0;
+  for (const repositoryId of [...new Set(sourceEntries.map((entry) => entry.repositoryId))].sort(compareStableStrings)) {
+    checkpoint();
+    const entries = sourceEntries
+      .filter((entry) => entry.repositoryId === repositoryId)
+      .sort((left, right) => compareStableStrings(left.sourcePath, right.sourcePath));
+    const derivedEdges = [...(derivedEdgesByRepository.get(repositoryId) || [])]
+      .sort((left, right) => compareStableStrings(left.id, right.id));
+    assertExplainedEdges(derivedEdges, null, checkpoint);
+    const resolution = await writeContentAddressed(storeRoot, {
+      schema: KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA,
+      repositoryId,
+      nodes: [],
+      edges: derivedEdges,
+    }, MAX_OBJECT_BYTES, options);
+    const repositoryPath = entries[0]?.repositoryPath || ".";
+    const repositoryNodeTypes = {};
+    const repositoryEdgeLabels = {};
+    let repositoryNodeCount = 0;
+    let repositoryEdgeCount = derivedEdges.length;
+    for (const entry of entries) {
+      checkpoint();
+      parserCoverage[entry.parserId] = (parserCoverage[entry.parserId] || 0) + 1;
+      repositoryNodeCount += entry.nodeCount;
+      repositoryEdgeCount += entry.edgeCount;
+      mergeCounts(repositoryNodeTypes, entry.nodeTypes);
+      mergeCounts(repositoryEdgeLabels, entry.edgeLabels);
+    }
+    mergeCounts(repositoryEdgeLabels, countBy(derivedEdges.map((edge) => edge.label), checkpoint));
+    mergeCounts(nodeTypes, repositoryNodeTypes);
+    mergeCounts(edgeLabels, repositoryEdgeLabels);
+    nodeCount += repositoryNodeCount;
+    edgeCount += repositoryEdgeCount;
+    const index = await writeContentAddressed(storeRoot, {
+      schema: KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA,
+      repositoryId,
+      repositoryPath,
+      sources: entries,
+      resolutionShardDigest: resolution.digest,
+      graph: {
+        nodes: repositoryNodeCount,
+        edges: repositoryEdgeCount,
+        nodeTypes: repositoryNodeTypes,
+        edgeLabels: repositoryEdgeLabels,
+      },
+    }, MAX_MANIFEST_BYTES, options);
+    repositories.push({
+      repositoryId,
+      repositoryPath,
+      indexDigest: index.digest,
+      sourceCount: entries.length,
+      graph: { nodes: repositoryNodeCount, edges: repositoryEdgeCount },
     });
   }
-  allEdges.push(...derivedEdges);
-  sourceEntries.sort((left, right) => compareStableStrings(left.sourcePath, right.sourcePath));
-  const graph = sortGraphData({
-    context: "knowgrph-knowledge-graph",
-    type: "Graph",
-    nodes: allNodes,
-    edges: allEdges,
-  });
-  const rootContentHash = sha256(sourceEntries.map((entry) => `${entry.sourcePath}\0${entry.contentHash}\0${entry.parserId}\0${entry.parserVersion}`).join("\n"));
-  const knowledgeGraphMetadata = {
+  const manifest = {
+    schema: KNOWLEDGE_GRAPH_MANIFEST_SCHEMA,
     schemaVersion: KNOWLEDGE_GRAPH_SCHEMA_VERSION,
     contractVersion: KNOWLEDGE_GRAPH_CONTRACT_VERSION,
-    retrievalMode: "lexical-graph",
-    vectorStore: false,
-    modelCalls: 0,
-    promptTokens: 0,
-    completionTokens: 0,
-    estimatedCostUsd: 0,
+    graphId,
     rootContentHash,
-    parserCoverage: Object.fromEntries([...parserCoverage.entries()].sort(([left], [right]) => compareStableStrings(left, right))),
+    parserRegistryDigest,
+    repositories,
+    graph: { nodes: nodeCount, edges: edgeCount, nodeTypes, edgeLabels },
+    sourceCount: sourceEntries.length,
+    parserCoverage: Object.fromEntries(Object.entries(parserCoverage).sort(([left], [right]) => compareStableStrings(left, right))),
+    admission,
+    completeness,
+    diagnostics: sortedDiagnostics([
+      ...(diagnostics || []),
+      ...sourceEntries.flatMap((entry) => entry.diagnostics || []),
+    ], checkpoint).slice(0, 10_000),
+    retrieval: { mode: "lexical-graph", vectorStore: false },
+    cost: { modelCalls: 0, promptTokens: 0, completionTokens: 0, estimatedCostUsd: 0 },
   };
-  const artifactWithoutDigest = {
-    ...graph,
-    metadata: { knowledgeGraph: knowledgeGraphMetadata },
-    manifest: { version: 1, sources: sourceEntries },
-    diagnostics: sortDiagnostics([...diagnostics, ...sourceEntries.flatMap((entry) => entry.diagnostics)]),
+  const storedManifest = await writeContentAddressed(storeRoot, manifest, MAX_MANIFEST_BYTES, options);
+  const pointer = {
+    schema: KNOWLEDGE_GRAPH_POINTER_SCHEMA,
+    graphId,
+    snapshotDigest: storedManifest.digest,
+    manifestDigest: storedManifest.digest,
   };
-  const { digest } = computeKnowledgeGraphArtifactDigestBounded(
-    artifactWithoutDigest,
-    DEFAULT_MAX_ARTIFACT_BYTES - ARTIFACT_DIGEST_RESERVE_BYTES,
-  );
-  const artifact = {
-    ...artifactWithoutDigest,
-    metadata: { knowledgeGraph: { ...knowledgeGraphMetadata, digest } },
-  };
-  const validation = validateKnowledgeGraphArtifact(artifact);
-  if (!validation.ok) {
-    throw new KnowledgeGraphError("artifact_validation_failed", "Knowledge graph artifact validation failed.", { errors: validation.errors });
-  }
-  return artifact;
+  checkpoint();
+  await writeAtomicText(pointerPath, stableStringify(pointer, 2, { checkpoint }), options);
+  return attachReadBudget({
+    pointerPath,
+    pointer,
+    manifest,
+    storeRoot,
+    allowedRoot: path.resolve(allowedRoot),
+  }, options);
 }
 
-export async function readKnowledgeGraphArtifact(artifactPath, options = {}) {
-  const raw = await readStableArtifactText(artifactPath, options);
-  let artifact;
-  try { artifact = JSON.parse(raw); } catch { throw new KnowledgeGraphError("artifact_invalid_json", `Knowledge graph artifact is not valid JSON: ${artifactPath}`); }
-  const validation = validateKnowledgeGraphArtifact(artifact);
-  if (!validation.ok) throw new KnowledgeGraphError("artifact_invalid", `Knowledge graph artifact failed validation: ${artifactPath}`, { errors: validation.errors });
-  return artifact;
+export async function readKnowledgeGraphSnapshot(pointerPath, options = {}) {
+  const { allowedRoot, expectedGraphId } = options;
+  if (!String(allowedRoot || "").trim()) {
+    throw new KnowledgeGraphError("artifact_allowed_root_required", "A host-owned knowledge graph output root is required.");
+  }
+  const raw = await readStableText(pointerPath, {
+    ...options,
+    allowedRoot,
+    maxBytes: MAX_POINTER_BYTES,
+    missingCode: "graph_not_found",
+  });
+  const pointer = parseStoredJson(raw, "graph_pointer_invalid");
+  if (pointer.schema !== KNOWLEDGE_GRAPH_POINTER_SCHEMA
+    || !/^[a-f0-9]{64}$/.test(String(pointer.snapshotDigest || ""))
+    || pointer.snapshotDigest !== pointer.manifestDigest) {
+    throw new KnowledgeGraphError("graph_pointer_invalid", "Knowledge graph current pointer is invalid.");
+  }
+  if (expectedGraphId && pointer.graphId !== expectedGraphId) {
+    throw new KnowledgeGraphError("graph_identity_mismatch", "Knowledge graph pointer does not match the requested graph identity.");
+  }
+  const storeRoot = knowledgeGraphStoreRoot(pointerPath);
+  const provisional = attachReadBudget({
+    pointerPath,
+    pointer,
+    storeRoot,
+    allowedRoot: path.resolve(allowedRoot),
+  }, options);
+  const manifest = await readContentAddressed(provisional, pointer.manifestDigest, MAX_MANIFEST_BYTES);
+  if (manifest.schema !== KNOWLEDGE_GRAPH_MANIFEST_SCHEMA || manifest.graphId !== pointer.graphId) {
+    throw new KnowledgeGraphError("snapshot_manifest_invalid", "Knowledge graph snapshot manifest is invalid.");
+  }
+  return attachReadBudget({ ...provisional, manifest }, options);
 }
 
-export async function readKnowledgeGraphArtifactIfPresent(artifactPath, options = {}) {
-  try { return await readKnowledgeGraphArtifact(artifactPath, options); } catch (error) {
-    if (error instanceof KnowledgeGraphError && error.code === "artifact_not_found") return null;
-    throw error;
-  }
-}
-
-export async function writeKnowledgeGraphArtifactAtomic(artifactPath, artifact, { maxBytes = DEFAULT_MAX_ARTIFACT_BYTES } = {}) {
-  const artifactMaxBytes = boundedArtifactMaxBytes(maxBytes);
-  const serialized = stableStringify(artifact);
-  const artifactBytes = Buffer.byteLength(serialized, "utf8");
-  if (artifactBytes > artifactMaxBytes) {
-    throw new KnowledgeGraphError("artifact_too_large", `Knowledge graph artifact exceeds ${artifactMaxBytes} bytes.`, {
-      actualBytes: artifactBytes,
-      maxBytes: artifactMaxBytes,
-      previousArtifactPreserved: true,
-    });
-  }
-  const directory = path.dirname(artifactPath);
-  await fs.mkdir(directory, { recursive: true, mode: 0o700 });
-  const temporaryPath = path.join(directory, `.${path.basename(artifactPath)}.${process.pid}.${sha256(`${artifactPath}:${process.hrtime.bigint()}`).slice(0, 12)}.tmp`);
+export async function readKnowledgeGraphSnapshotIfPresent(pointerPath, options = {}) {
   try {
-    await fs.writeFile(temporaryPath, serialized, { encoding: "utf8", flag: "wx", mode: 0o600 });
-    await fs.rename(temporaryPath, artifactPath);
+    return await readKnowledgeGraphSnapshot(pointerPath, options);
   } catch (error) {
-    await fs.unlink(temporaryPath).catch(() => {});
+    if (error instanceof KnowledgeGraphError && error.code === "graph_not_found") return null;
     throw error;
   }
+}
+
+export async function readKnowledgeGraphRepositoryIndex(snapshot, repository) {
+  const index = await readContentAddressed(snapshot, repository.indexDigest, MAX_MANIFEST_BYTES);
+  if (index.schema !== KNOWLEDGE_GRAPH_REPOSITORY_INDEX_SCHEMA
+    || index.repositoryId !== repository.repositoryId) {
+    throw new KnowledgeGraphError("repository_index_invalid", `Repository index is invalid: ${repository.repositoryId}`);
+  }
+  return index;
+}
+
+export async function readKnowledgeGraphSourceShard(snapshot, sourceEntry) {
+  const shard = await readContentAddressed(snapshot, sourceEntry.shardDigest);
+  if (shard.schema !== KNOWLEDGE_GRAPH_SOURCE_SHARD_SCHEMA
+    || shard.sourcePath !== sourceEntry.sourcePath
+    || shard.contentHash !== sourceEntry.contentHash) {
+    throw new KnowledgeGraphError("source_shard_invalid", `Source shard is invalid: ${sourceEntry.sourcePath}`);
+  }
+  return shard;
+}
+
+export async function readKnowledgeGraphResolutionShard(snapshot, repositoryIndex) {
+  const shard = await readContentAddressed(snapshot, repositoryIndex.resolutionShardDigest);
+  if (shard.schema !== KNOWLEDGE_GRAPH_RESOLUTION_SHARD_SCHEMA
+    || shard.repositoryId !== repositoryIndex.repositoryId) {
+    throw new KnowledgeGraphError("resolution_shard_invalid", `Resolution shard is invalid: ${repositoryIndex.repositoryId}`);
+  }
+  return shard;
+}
+
+export async function listKnowledgeGraphSourceEntries(snapshot) {
+  const entries = [];
+  for (const repository of snapshot.manifest.repositories || []) {
+    checkStoreBudget(snapshot.readBudget, "snapshot-source-list");
+    const index = await readKnowledgeGraphRepositoryIndex(snapshot, repository);
+    entries.push(...index.sources);
+  }
+  checkStoreBudget(snapshot.readBudget, "snapshot-source-list");
+  return entries.sort((left, right) => compareStableStrings(left.sourcePath, right.sourcePath));
 }

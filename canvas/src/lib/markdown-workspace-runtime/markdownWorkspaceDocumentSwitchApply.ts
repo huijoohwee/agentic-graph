@@ -180,6 +180,15 @@ export function isWorkspaceDocumentSwitchApplySettled(args: {
   })
 }
 
+export function shouldForceWorkspaceDocumentSwitchGraphApply(args: {
+  activeDocumentKey?: string | null
+  pendingSwitchPath?: WorkspacePath | null
+}): boolean {
+  const activeDocumentPath = normalizeMarkdownWorkspaceSelectionPath(args.activeDocumentKey || null)
+  const pendingSwitchPath = normalizeMarkdownWorkspaceSelectionPath(args.pendingSwitchPath || null)
+  return !!activeDocumentPath && pendingSwitchPath === activeDocumentPath
+}
+
 export type WorkspaceDocumentSwitchApplyStatus = 'applied' | 'settled' | 'deferred'
 
 export function useMarkdownWorkspaceDocumentSwitchApply(args: {
@@ -240,7 +249,11 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
     markdownDocumentText: string
     canvas2dRenderer?: string | null
   }): Promise<WorkspaceDocumentSwitchApplyStatus> => {
-    if (isWorkspaceDocumentSwitchApplySettled({
+    const forcePendingSwitchGraphApply = shouldForceWorkspaceDocumentSwitchGraphApply({
+      activeDocumentKey: applyArgs.activeDocumentKey,
+      pendingSwitchPath: args.readPendingSwitchNextPath(),
+    })
+    if (!forcePendingSwitchGraphApply && isWorkspaceDocumentSwitchApplySettled({
       activeDocumentKey: applyArgs.activeDocumentKey,
       text: applyArgs.text,
       markdownDocumentName: applyArgs.markdownDocumentName,
@@ -271,7 +284,9 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
     if (documentSwitchApplyInFlightSigRef.current === nextSig) return 'deferred'
     const shouldReplayCompletedApplyForMarkdownConflict =
       graphSourceStaleForDocument && graphSourceConflictingMarkdownDocument
-    if (!shouldReplayCompletedApplyForMarkdownConflict && lastDocumentSwitchApplySigRef.current === nextSig) return 'settled'
+    const shouldReplayCompletedApply =
+      shouldReplayCompletedApplyForMarkdownConflict || forcePendingSwitchGraphApply
+    if (!shouldReplayCompletedApply && lastDocumentSwitchApplySigRef.current === nextSig) return 'settled'
     lastDocumentSwitchApplyAttemptRef.current = { sig: nextSig, atMs: nowMs }
     documentSwitchApplyInFlightSigRef.current = nextSig
     try {

@@ -45,7 +45,7 @@ import { DEFAULT_VITE_WATCH_IGNORED, buildWorkspaceMirrorWatchIgnoredRoots, crea
 import { loadChatProxyServerManagedEnv, resolveViteRuntimeIdentity } from './viteChatProxyEnv'
 import { resolveWorkspaceInitializationDocsRoot } from './viteWorkspaceInitializationDocsRoot'
 import { forwardChatProxyUpstreamHead, forwardChatProxyUpstreamResponse } from './viteChatProxyResponse'; import { createProbeTreeMcpBridgePlugin } from './viteProbeTreeMcpBridge'
-import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { resolveKnowgrphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
+import { createExternalMcpBridgePlugin } from './viteExternalMcpBridge'; import { createKnowledgeGraphBridgePlugin } from './viteKnowledgeGraphBridge'; import { resolveKnowgrphStorageDevProxyTarget } from './viteStorageProxyEnv'; import { nonHtmlRuntimeCachePlugin } from './vitePwaRuntimeCachePolicy'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..'), workspaceRoot = path.resolve(repoRoot, '..')
 const siblingDocsRoot = path.resolve(workspaceRoot, 'huijoohwee', 'docs'); loadChatProxyServerManagedEnv({ repoRoot, canvasRoot: __dirname }); const runtimeIdentity = resolveViteRuntimeIdentity(repoRoot)
@@ -7159,7 +7159,7 @@ export default defineConfig(({ command, mode }) => {
             autoThemeTarget: '#root',
           }),
           stripeCheckoutDevPlugin,
-          createAgenticOsGrammarDevPlugin({ rootDir: repoRoot }), createProbeTreeMcpBridgePlugin({ repoRoot }), createExternalMcpBridgePlugin(),
+          createAgenticOsGrammarDevPlugin({ rootDir: repoRoot }), createProbeTreeMcpBridgePlugin({ repoRoot }), createExternalMcpBridgePlugin(), createKnowledgeGraphBridgePlugin({ repoRoot }),
           markdownPipelineDevPlugin,
           apiGraphDevPlugin,
           flowchartFixtureDevPlugin,

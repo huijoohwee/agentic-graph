@@ -14,6 +14,7 @@ import {
   normalizeAgenticOsDocsMcpBridgeRequest,
 } from './src/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import { KNOWGRPH_PROBE_TREE_TOOL_NAMES } from './src/features/agent-ready/probeTreeContract.mjs'
+import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../mcp/agentic-canvas-os-docs-contract.mjs'
 
 const MAX_REQUEST_BYTES = 32 * 1024
 export const PROBE_TREE_MCP_BRIDGE_TIMEOUT_MS = 20_000
@@ -93,11 +94,18 @@ const representativeInvocationTokens = (tokens: readonly string[]): string[] => 
   return ['/', '@', '#'].map(sigil => bySigil.get(sigil) || '').filter(Boolean)
 }
 
+type AgenticOsDocsMcpInvocationWithProof = ProbeTreeMcpInvocationResolution & {
+  sourceRevision: string
+  catalogDigest: string
+  routingSchema: string
+  routingDigest: string
+}
+
 const resolveInvocationToken = async (
   client: Client,
   token: string,
   requestOptions: { timeout: number; maxTotalTimeout: number; signal?: AbortSignal },
-): Promise<ProbeTreeMcpInvocationResolution> => {
+): Promise<AgenticOsDocsMcpInvocationWithProof> => {
   const result = await client.callTool({
     name: DOCS_TOOL_NAME,
     arguments: { token, includeContent: false, limit: 1 },
@@ -115,6 +123,10 @@ const resolveInvocationToken = async (
     label: String(invocation.label || invocation.title || '').slice(0, 160),
     summary: String(invocation.summary || '').slice(0, 320),
     sourcePath: String(invocation.sourcePath || invocation.source_path || '').slice(0, 320),
+    sourceRevision: String(structured.sourceRevision || ''),
+    catalogDigest: String(structured.catalogDigest || ''),
+    routingSchema: String(structured.routingSchema || ''),
+    routingDigest: String(structured.routingDigest || ''),
     ...(result.isError === true || structured.ok === false ? { error: readToolError(result) || 'Invocation token did not resolve.' } : {}),
   }
 }
@@ -142,7 +154,7 @@ export const resolveAgenticOsDocsMcpInvocationTokens = async (args: {
   client: Client
   tokens: readonly string[]
   requestOptions: { timeout: number; maxTotalTimeout: number; signal?: AbortSignal }
-}): Promise<ProbeTreeMcpInvocationResolution[]> => Promise.all(
+}): Promise<AgenticOsDocsMcpInvocationWithProof[]> => Promise.all(
   args.tokens.map(async token => {
     try {
       return await resolveInvocationToken(args.client, token, args.requestOptions)
@@ -152,6 +164,10 @@ export const resolveAgenticOsDocsMcpInvocationTokens = async (args: {
         ok: false,
         kind: token[0] || '',
         error: (error instanceof Error ? error.message : String(error)).slice(0, 320),
+        sourceRevision: '',
+        catalogDigest: '',
+        routingSchema: '',
+        routingDigest: '',
       }
     }
   }),
@@ -204,11 +220,46 @@ export function createProbeTreeMcpBridgePlugin({ repoRoot }: { repoRoot: string 
             tokens: parsed.invocationTokens,
             requestOptions,
           })
+          const proof = {
+            sourceRevision: String(invocations[0]?.sourceRevision || ''),
+            catalogDigest: String(invocations[0]?.catalogDigest || ''),
+            routingSchema: String(invocations[0]?.routingSchema || ''),
+            routingDigest: String(invocations[0]?.routingDigest || ''),
+          }
+          if (
+            !/^[0-9a-f]{40}$/.test(proof.sourceRevision)
+            || !/^[0-9a-f]{64}$/.test(proof.catalogDigest)
+            || proof.routingSchema !== AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA
+            || !/^[0-9a-f]{64}$/.test(proof.routingDigest)
+            || invocations.some(invocation => (
+              invocation.sourceRevision !== proof.sourceRevision
+              || invocation.catalogDigest !== proof.catalogDigest
+              || invocation.routingSchema !== proof.routingSchema
+              || invocation.routingDigest !== proof.routingDigest
+            ))
+          ) {
+            throw new Error('Agentic OS docs MCP invocation results do not share one verified routing proof.')
+          }
+          if (parsed.expectedProof && (
+            parsed.expectedProof.sourceRevision !== proof.sourceRevision
+            || parsed.expectedProof.catalogDigest !== proof.catalogDigest
+            || parsed.expectedProof.routingSchema !== proof.routingSchema
+            || parsed.expectedProof.routingDigest !== proof.routingDigest
+          )) {
+            throw new Error('Agentic OS docs MCP invocation routing proof changed during resolution.')
+          }
           writeJson(response, 200, {
             ok: true,
             tool: AGENTIC_OS_DOCS_MCP_TOOL_NAME,
             mcpInvoked: true,
-            invocations,
+            ...proof,
+            invocations: invocations.map(({
+              sourceRevision: _sourceRevision,
+              catalogDigest: _catalogDigest,
+              routingSchema: _routingSchema,
+              routingDigest: _routingDigest,
+              ...invocation
+            }) => invocation),
           })
         } catch (error) {
           writeJson(response, 502, {

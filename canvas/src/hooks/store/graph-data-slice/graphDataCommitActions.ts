@@ -30,6 +30,7 @@ import {
 import { resetComposedPositionWrites } from './graphDataComposedSource'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { buildRetainedNodePlacementContinuityAcrossTopologyChange, hasStableSameSourceNodeLayout, hasStableSameSourceTopology } from './graphDataRetainedPlacementContinuity'
+import { hasSameReadOnlyKnowledgeGraphProjectionIdentity } from '@/features/knowledge-graph/knowledgeGraphProjectionPolicy'
 
 function readGraphSourceIdentity(graph: GraphData | null | undefined): string {
   const meta = ((graph || null)?.metadata || {}) as Record<string, unknown>
@@ -154,6 +155,7 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
   return ({
   setGraphData: (graphData: GraphData) => {
     if (graphData === get().graphData) return
+    if (hasSameReadOnlyKnowledgeGraphProjectionIdentity(get().graphData, graphData)) return
     resetComposedPositionWrites()
     const normalized = normalizeGraphData(graphData)
     const nodeIds = new Set<string>((normalized.nodes || []).map(n => n.id))
@@ -433,6 +435,7 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
 
   setGraphDataPreservingLayout: (graphData: GraphData) => {
     if (graphData === get().graphData) return
+    if (hasSameReadOnlyKnowledgeGraphProjectionIdentity(get().graphData, graphData)) return
     const normalized = normalizeGraphData(graphData)
     const nodeIds = new Set<string>((normalized.nodes || []).map(n => n.id))
     const filteredEdges = (normalized.edges || []).filter(e => {
@@ -675,6 +678,7 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
   },
 
   clearGraphData: () => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     resetComposedPositionWrites()
     get().cancelMinimapWorker?.();
     set(s => ({

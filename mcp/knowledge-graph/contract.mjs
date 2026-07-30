@@ -8,7 +8,9 @@ export const EVIDENCE_FIELDS = Object.freeze([
   "evidence:explanation",
   "evidence:parserId",
   "evidence:parserVersion",
+  "evidence:parserDigest",
   "evidence:sourcePath",
+  "evidence:sourceDigest",
   "evidence:lineStart",
   "evidence:lineEnd",
   "evidence:columnStart",
@@ -16,6 +18,7 @@ export const EVIDENCE_FIELDS = Object.freeze([
   "evidence:excerpt",
   "evidence:excerptHash",
   "evidence:confidence",
+  "evidence:certainty",
 ]);
 
 export class KnowledgeGraphError extends Error {
@@ -45,6 +48,53 @@ export function throwIfAborted(abortSignal) {
   if (abortSignal?.aborted) {
     throw new KnowledgeGraphError("aborted", "Knowledge graph operation was aborted.");
   }
+}
+
+export const DEFAULT_KNOWLEDGE_GRAPH_MAX_DURATION_MS = 300_000;
+
+export function normalizeKnowledgeGraphMaxDuration(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0
+    ? Math.max(100, Math.min(3_600_000, Math.floor(number)))
+    : DEFAULT_KNOWLEDGE_GRAPH_MAX_DURATION_MS;
+}
+
+export function createKnowledgeGraphDeadline(maxDurationRaw, { now = Date.now } = {}) {
+  const maxDurationMs = normalizeKnowledgeGraphMaxDuration(maxDurationRaw);
+  const clock = typeof now === "function" ? now : Date.now;
+  const startedAt = Number(clock());
+  return Object.freeze({
+    maxDurationMs,
+    startedAt,
+    deadlineAt: startedAt + maxDurationMs,
+    now: clock,
+  });
+}
+
+export function remainingKnowledgeGraphDuration(deadline) {
+  if (!deadline) return DEFAULT_KNOWLEDGE_GRAPH_MAX_DURATION_MS;
+  return Math.max(0, Math.ceil(deadline.deadlineAt - Number(deadline.now())));
+}
+
+export function checkKnowledgeGraphBudget({
+  abortSignal,
+  deadline,
+  stage = "operation",
+  details = undefined,
+} = {}) {
+  if (deadline && Number(deadline.now()) >= deadline.deadlineAt) {
+    throw new KnowledgeGraphError(
+      "max_duration_exceeded",
+      `Knowledge graph operation exceeded ${deadline.maxDurationMs}ms during ${stage}.`,
+      {
+        maxDurationMs: deadline.maxDurationMs,
+        stage,
+        complete: false,
+        ...(details && typeof details === "object" ? details : {}),
+      },
+    );
+  }
+  throwIfAborted(abortSignal);
 }
 
 export function sha256(value) {
@@ -127,13 +177,22 @@ export function buildEvidence(args) {
   ).slice(0, 320);
   const confidence = ["low", "medium", "high"].includes(args.confidence) ? args.confidence : "high";
   const kind = ["extracted", "inferred", "ambiguous"].includes(args.kind) ? args.kind : "extracted";
+  const parserId = String(args.parserId || "").trim();
+  const parserVersion = String(args.parserVersion || "").trim();
+  const sourceDigest = String(args.sourceDigest || sha256(String(args.text || ""))).trim();
+  const parserDigest = String(args.parserDigest || sha256(`${parserId}\0${parserVersion}`)).trim();
+  const certainty = ["exact", "inferred", "ambiguous"].includes(args.certainty)
+    ? args.certainty
+    : kind === "ambiguous" ? "ambiguous" : kind === "inferred" ? "inferred" : "exact";
   return {
     kind,
     ruleId: String(args.ruleId || "").trim(),
     explanation: String(args.explanation || "").trim(),
-    parserId: String(args.parserId || "").trim(),
-    parserVersion: String(args.parserVersion || "").trim(),
+    parserId,
+    parserVersion,
+    parserDigest,
     sourcePath,
+    sourceDigest,
     lineStart,
     lineEnd,
     columnStart,
@@ -141,8 +200,10 @@ export function buildEvidence(args) {
     excerpt,
     excerptHash: String(args.excerptHash || sha256(excerpt)),
     confidence,
+    certainty,
     ...(Array.isArray(args.premiseEdgeIds) ? { premiseEdgeIds: [...args.premiseEdgeIds].sort() } : {}),
     ...(Number.isInteger(args.candidateCount) ? { candidateCount: args.candidateCount } : {}),
+    ...(Array.isArray(args.candidateIds) ? { candidateIds: [...new Set(args.candidateIds.map(String))].sort() } : {}),
   };
 }
 
@@ -184,7 +245,9 @@ export function makeEdge({ source, target, label, type = undefined, evidence, pr
       "evidence:explanation": normalized.explanation,
       "evidence:parserId": normalized.parserId,
       "evidence:parserVersion": normalized.parserVersion,
+      "evidence:parserDigest": normalized.parserDigest,
       "evidence:sourcePath": normalized.sourcePath,
+      "evidence:sourceDigest": normalized.sourceDigest,
       "evidence:lineStart": normalized.lineStart,
       "evidence:lineEnd": normalized.lineEnd,
       "evidence:columnStart": normalized.columnStart,
@@ -192,8 +255,10 @@ export function makeEdge({ source, target, label, type = undefined, evidence, pr
       "evidence:excerpt": normalized.excerpt,
       "evidence:excerptHash": normalized.excerptHash,
       "evidence:confidence": normalized.confidence,
+      "evidence:certainty": normalized.certainty,
       ...(normalized.premiseEdgeIds ? { "evidence:premiseEdgeIds": normalized.premiseEdgeIds } : {}),
       ...(normalized.candidateCount === undefined ? {} : { "evidence:candidateCount": normalized.candidateCount }),
+      ...(normalized.candidateIds ? { "evidence:candidateIds": normalized.candidateIds } : {}),
     },
     ...(type ? { type: String(type) } : {}),
     ...(metadata ? { metadata } : {}),
@@ -213,14 +278,24 @@ export function sortGraphData(graphData) {
   };
 }
 
-function stableValue(value) {
-  if (Array.isArray(value)) return value.map(stableValue);
+function stableValue(value, checkpoint, state) {
+  state.visited += 1;
+  if (checkpoint && state.visited % 256 === 0) checkpoint();
+  if (Array.isArray(value)) return value.map((entry) => stableValue(entry, checkpoint, state));
   if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(Object.keys(value).sort(compareStableStrings).map((key) => [key, stableValue(value[key])]));
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort(compareStableStrings)
+      .map((key) => [key, stableValue(value[key], checkpoint, state)]),
+  );
 }
 
-export function stableStringify(value, space = 2) {
-  return `${JSON.stringify(stableValue(value), null, space)}\n`;
+export function stableStringify(value, space = 2, options = {}) {
+  const checkpoint = typeof options === "function" ? options : options?.checkpoint;
+  checkpoint?.();
+  const serialized = `${JSON.stringify(stableValue(value, checkpoint, { visited: 0 }), null, space)}\n`;
+  checkpoint?.();
+  return serialized;
 }
 
 export function knowledgeGraphArtifactWithoutDigest(artifact) {
@@ -360,9 +435,17 @@ export function validateKnowledgeGraphArtifact(artifact) {
     }
     const excerpt = edge?.properties?.["evidence:excerpt"];
     const excerptHash = edge?.properties?.["evidence:excerptHash"];
+    const sourceDigest = edge?.properties?.["evidence:sourceDigest"];
+    const parserDigest = edge?.properties?.["evidence:parserDigest"];
     if (typeof excerpt === "string" && excerpt.length > 320) errors.push(`edge ${edge?.id || "unknown"} evidence excerpt exceeds 320 characters`);
     if (typeof excerpt === "string" && excerpt && typeof excerptHash === "string" && excerptHash !== sha256(excerpt)) {
       errors.push(`edge ${edge?.id || "unknown"} evidence excerpt hash does not match`);
+    }
+    if (typeof sourceDigest !== "string" || !/^[a-f0-9]{64}$/.test(sourceDigest)) {
+      errors.push(`edge ${edge?.id || "unknown"} evidence source digest is invalid`);
+    }
+    if (typeof parserDigest !== "string" || !/^[a-f0-9]{64}$/.test(parserDigest)) {
+      errors.push(`edge ${edge?.id || "unknown"} evidence parser digest is invalid`);
     }
   }
   const forbiddenEmbeddingPath = findForbiddenEmbedding(artifact);

@@ -9,7 +9,10 @@ import {
   KNOWGRPH_LOCAL_MCP_TOOL_NAMES,
   buildKnowgrphLocalMcpToolDefinitions,
 } from "../local-tool-contract.js";
-import { KNOWLEDGE_GRAPH_INVOCATIONS } from "../knowledge-graph-tool-contract.js";
+import {
+  AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID,
+  KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
+} from "../knowledge-graph-tool-contract.js";
 
 const expected = [
   KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
@@ -18,6 +21,18 @@ const expected = [
 ];
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const invocationProof = (tool, overrides = {}) => ({
+  schema: KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
+  tool,
+  action: "/Future.graph.Route-v2",
+  semantics: ["#Future-Graph", "#deterministic-runtime"],
+  bindings: ["@Future-Corpus", "@runtime-proof-v2"],
+  sourceRevision: "1".repeat(40),
+  catalogDigest: "2".repeat(64),
+  routingSchema: AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID,
+  routingDigest: "3".repeat(64),
+  ...overrides,
+});
 
 test("local MCP exposes one deterministic knowledge-graph tool family", () => {
   const byName = new Map(buildKnowgrphLocalMcpToolDefinitions().map((tool) => [tool.name, tool]));
@@ -31,44 +46,70 @@ test("local MCP exposes one deterministic knowledge-graph tool family", () => {
   assert.equal(ingest.annotations.openWorldHint, false);
   assert.equal(query.annotations.readOnlyHint, true);
   assert.equal(explain.annotations.readOnlyHint, true);
-  assert.deepEqual(ingest.inputSchema.required, ["rootPath"]);
-  assert.deepEqual(query.inputSchema.required, ["artifactPath", "expectedDigest", "mode"]);
-  assert.deepEqual(explain.inputSchema.required, ["artifactPath", "expectedDigest", "edgeId"]);
+  assert.equal(ingest.inputSchema.oneOf.length, 2);
+  assert.deepEqual(query.inputSchema.required, ["graphId", "expectedSnapshotDigest", "mode"]);
+  assert.deepEqual(explain.inputSchema.required, ["graphId", "expectedSnapshotDigest", "edgeId"]);
+  assert.equal(query.inputSchema.properties.maxDurationMs.default, 300000);
+  assert.equal(explain.inputSchema.properties.maxDurationMs.default, 300000);
 });
 
-test("tool descriptions and invocation packets make the zero-vector boundary explicit", () => {
+test("tool descriptions and invocation proof schemas keep aliases source-backed and zero-vector", () => {
   const definitions = buildKnowgrphLocalMcpToolDefinitions()
     .filter((tool) => expected.includes(tool.name));
   const contractText = JSON.stringify(definitions);
   assert.match(contractText, /no vector store/i);
   assert.match(contractText, /no network access/i);
-  assert.equal(KNOWLEDGE_GRAPH_INVOCATIONS.ingest.action, "/knowledge.graph.ingest");
-  assert.equal(KNOWLEDGE_GRAPH_INVOCATIONS.query.action, "/knowledge.graph.query");
-  assert.equal(KNOWLEDGE_GRAPH_INVOCATIONS.explain.action, "/knowledge.graph.explain");
-  assert.deepEqual(KNOWLEDGE_GRAPH_INVOCATIONS.ingest.semantics, ["#knowledge-graph", "#mcp", "#runtime-ready"]);
-  assert.deepEqual(KNOWLEDGE_GRAPH_INVOCATIONS.query.semantics, ["#knowledge-graph", "#mcp", "#vcc"]);
-  assert.deepEqual(KNOWLEDGE_GRAPH_INVOCATIONS.explain.semantics, ["#knowledge-graph", "#mcp", "#vcc"]);
-  assert.deepEqual(KNOWLEDGE_GRAPH_INVOCATIONS.ingest.bindings, ["@working-directory", "@knowledge-graph", "@operator", "@runtime-proof"]);
-  assert.deepEqual(KNOWLEDGE_GRAPH_INVOCATIONS.query.bindings, ["@knowledge-graph", "@runtime-proof"]);
-  assert.deepEqual(KNOWLEDGE_GRAPH_INVOCATIONS.explain.bindings, ["@knowledge-graph", "@runtime-proof"]);
+  assert.doesNotMatch(contractText, /\/knowledge\.graph\./);
+  assert.equal(KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID, "knowgrph-knowledge-graph-invocation/v1");
+  assert.equal(AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID, "agentic-canvas-os-docs-routing/v1");
+  for (const definition of definitions) {
+    const proof = definition.inputSchema.properties.invocation;
+    assert.equal(proof.properties.tool.const, definition.name);
+    assert.deepEqual(proof.required, [
+      "schema",
+      "tool",
+      "action",
+      "semantics",
+      "bindings",
+      "sourceRevision",
+      "catalogDigest",
+      "routingSchema",
+      "routingDigest",
+    ]);
+  }
 });
 
-test("schemas require digest fencing, exact invocation tuples, and typed error details", () => {
+test("schemas require digest fencing, source-backed invocation proofs, and typed error details", () => {
   const ajv = new Ajv({ strict: false });
   const byName = new Map(buildKnowgrphLocalMcpToolDefinitions().map((tool) => [tool.name, tool]));
+  const ingest = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest);
   const query = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery);
+  const validateIngest = ajv.compile(ingest.inputSchema);
+  assert.equal(validateIngest({ rootPath: "/workspace" }), true, JSON.stringify(validateIngest.errors));
+  assert.equal(validateIngest({ repositoryUrl: "https://github.com/example/project" }), true, JSON.stringify(validateIngest.errors));
+  assert.equal(validateIngest({ rootPath: "/workspace", repositoryUrl: "https://github.com/example/project" }), false);
   const validateInput = ajv.compile(query.inputSchema);
   const validInput = {
-    artifactPath: "graph.json",
-    expectedDigest: "a".repeat(64),
+    graphId: `kg:graph:${"a".repeat(32)}`,
+    expectedSnapshotDigest: "a".repeat(64),
     mode: "summary",
-    invocation: KNOWLEDGE_GRAPH_INVOCATIONS.query,
+    invocation: invocationProof(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery),
   };
   assert.equal(validateInput(validInput), true, JSON.stringify(validateInput.errors));
-  assert.equal(validateInput({ ...validInput, expectedDigest: undefined }), false);
+  assert.equal(validateInput({ ...validInput, maxDurationMs: 100 }), true);
+  assert.equal(validateInput({ ...validInput, maxDurationMs: 99 }), false);
+  assert.equal(validateInput({ ...validInput, expectedSnapshotDigest: undefined }), false);
   assert.equal(validateInput({
     ...validInput,
-    invocation: { ...KNOWLEDGE_GRAPH_INVOCATIONS.query, semantics: ["#knowledge-graph"] },
+    invocation: { ...validInput.invocation, tool: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest },
+  }), false);
+  assert.equal(validateInput({
+    ...validInput,
+    invocation: { ...validInput.invocation, semantics: ["future-graph"] },
+  }), false);
+  assert.equal(validateInput({
+    ...validInput,
+    invocation: { ...validInput.invocation, routingDigest: "not-a-digest" },
   }), false);
 
   const validateOutput = ajv.compile(query.outputSchema);
@@ -80,7 +121,7 @@ test("schemas require digest fencing, exact invocation tuples, and typed error d
   }), true, JSON.stringify(validateOutput.errors));
 });
 
-test("package manifests contain no Graphify or vector-store runtime dependency", () => {
+test("package manifests contain no vector-store runtime dependency", () => {
   const manifests = ["package.json", "mcp/package.json", "package-lock.json"]
     .map((file) => JSON.parse(readFileSync(path.join(repoRoot, file), "utf8")));
   const names = new Set();
@@ -91,6 +132,6 @@ test("package manifests contain no Graphify or vector-store runtime dependency",
       }
     }
   }
-  const forbidden = /(?:graphify|chromadb|pinecone|weaviate|qdrant|milvus|lancedb|pgvector|faiss)/i;
+  const forbidden = /(?:chromadb|pinecone|weaviate|qdrant|milvus|lancedb|pgvector|faiss)/i;
   assert.deepEqual([...names].filter((name) => forbidden.test(name)), []);
 });

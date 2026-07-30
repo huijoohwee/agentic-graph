@@ -1,3 +1,5 @@
+import { AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
+
 export const AGENTIC_OS_DOCS_MCP_BRIDGE_PATH = '/__knowgrph_mcp_agentic_os_docs_invoke' as const
 export const AGENTIC_OS_DOCS_MCP_TOOL_NAME = 'knowgrph.agentic_canvas_os.docs.invoke' as const
 export const AGENTIC_OS_DOCS_MCP_MAX_INVOCATION_TOKENS = 12
@@ -12,8 +14,16 @@ export type AgenticOsDocsMcpInvocationResolution = {
   error?: string
 }
 
+export type AgenticOsDocsRoutingProof = {
+  sourceRevision: string
+  catalogDigest: string
+  routingSchema: typeof AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA
+  routingDigest: string
+}
+
 export type AgenticOsDocsMcpBridgeRequest = {
   invocationTokens: string[]
+  expectedProof?: AgenticOsDocsRoutingProof
 }
 
 export type AgenticOsDocsMcpBridgeSuccess = {
@@ -21,6 +31,10 @@ export type AgenticOsDocsMcpBridgeSuccess = {
   tool: typeof AGENTIC_OS_DOCS_MCP_TOOL_NAME
   mcpInvoked: true
   invocations: AgenticOsDocsMcpInvocationResolution[]
+  sourceRevision?: string
+  catalogDigest?: string
+  routingSchema?: string
+  routingDigest?: string
 }
 
 const isAgenticOsDocsMcpInvocationResolution = (
@@ -60,6 +74,18 @@ export const isAgenticOsDocsMcpBridgeSuccessForTokens = (
   return resolvedTokens.size === requestedTokens.size
 }
 
+export const isAgenticOsDocsMcpBridgeSuccessBoundToProof = (
+  value: unknown,
+  invocationTokens: readonly string[],
+  proof: AgenticOsDocsRoutingProof,
+): value is AgenticOsDocsMcpBridgeSuccess & AgenticOsDocsRoutingProof => (
+  isAgenticOsDocsMcpBridgeSuccessForTokens(value, invocationTokens)
+  && value.sourceRevision === proof.sourceRevision
+  && value.catalogDigest === proof.catalogDigest
+  && value.routingSchema === proof.routingSchema
+  && value.routingDigest === proof.routingDigest
+)
+
 export const normalizeAgenticOsDocsMcpInvocationTokens = (value: unknown): string[] => {
   if (!Array.isArray(value)) return []
   const seen = new Set<string>()
@@ -78,8 +104,25 @@ export const normalizeAgenticOsDocsMcpInvocationTokens = (value: unknown): strin
 
 export const normalizeAgenticOsDocsMcpBridgeRequest = (value: unknown): AgenticOsDocsMcpBridgeRequest | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const input = value as { invocationTokens?: unknown, expectedProof?: unknown }
   const invocationTokens = normalizeAgenticOsDocsMcpInvocationTokens(
-    (value as { invocationTokens?: unknown }).invocationTokens,
+    input.invocationTokens,
   )
-  return invocationTokens.length > 0 ? { invocationTokens } : null
+  if (invocationTokens.length === 0) return null
+  if (input.expectedProof === undefined) return { invocationTokens }
+  if (!input.expectedProof || typeof input.expectedProof !== 'object' || Array.isArray(input.expectedProof)) return null
+  const candidate = input.expectedProof as Partial<AgenticOsDocsRoutingProof>
+  const expectedProof = {
+    sourceRevision: String(candidate.sourceRevision || '').trim(),
+    catalogDigest: String(candidate.catalogDigest || '').trim(),
+    routingSchema: String(candidate.routingSchema || '').trim(),
+    routingDigest: String(candidate.routingDigest || '').trim(),
+  }
+  if (
+    !/^[0-9a-f]{40}$/.test(expectedProof.sourceRevision)
+    || !/^[0-9a-f]{64}$/.test(expectedProof.catalogDigest)
+    || expectedProof.routingSchema !== AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA
+    || !/^[0-9a-f]{64}$/.test(expectedProof.routingDigest)
+  ) return null
+  return { invocationTokens, expectedProof: expectedProof as AgenticOsDocsRoutingProof }
 }

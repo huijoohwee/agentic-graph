@@ -2,27 +2,41 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
-  buildEvidence,
-  compareStableStrings,
+  checkKnowledgeGraphBudget,
+  createKnowledgeGraphDeadline,
   KnowledgeGraphError,
+  compareStableStrings,
   knowledgeGraphFailure,
-  makeEdge,
+  remainingKnowledgeGraphDuration,
   sha256,
-  throwIfAborted,
 } from "./contract.mjs";
 import {
   discoverKnowledgeSources,
+  hydrateKnowledgeSource,
   resolveRealDirectory,
 } from "./discovery.mjs";
-import { parseKnowledgeSource, parserDescriptorForSource } from "./parsers.mjs";
 import {
-  buildKnowledgeGraphArtifact,
-  fragmentFromArtifact,
-  readKnowledgeGraphArtifact,
-  readKnowledgeGraphArtifactIfPresent,
-  writeKnowledgeGraphArtifactAtomic,
+  parseKnowledgeSource,
+  parserDescriptorForSource,
+  parserLimitFragmentForSource,
+} from "./parsers.mjs";
+import {
+  explainKnowledgeGraphSnapshotEdge,
+  projectKnowledgeGraphSnapshot,
+  queryKnowledgeGraphSnapshot,
+} from "./query.mjs";
+import { acquireRepositoryUrl } from "./repository-acquisition.mjs";
+import { buildRepositoryScopedResolutionEdges } from "./resolution.mjs";
+import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
+import {
+  ensureKnowledgeGraphStorageRoot,
+  listKnowledgeGraphSourceEntries,
+  readKnowledgeGraphSnapshot,
+  readKnowledgeGraphSnapshotIfPresent,
+  readKnowledgeGraphSourceShard,
+  writeKnowledgeGraphSnapshotAtomic,
+  writeKnowledgeGraphSourceShard,
 } from "./store.mjs";
-import { explainKnowledgeGraphEdgeFromArtifact, queryKnowledgeGraph } from "./query.mjs";
 
 export const KNOWLEDGE_GRAPH_TOOL_NAMES = Object.freeze({
   ingest: "knowgrph.knowledge_graph.ingest",
@@ -36,345 +50,529 @@ const RESULT_SCHEMAS = Object.freeze({
   explain_edge: "knowgrph-knowledge-graph-explain-edge/v1",
 });
 
-const RESOLVER_ID = "local-cross-source-resolver";
-const RESOLVER_VERSION = "1.0.0";
-const artifactIngestTails = new Map();
-
+const GRAPH_ID = /^kg:graph:[a-f0-9]{32}$/;
+const ingestTails = new Map();
 const success = (operation, payload) => ({ schema: RESULT_SCHEMAS[operation], ok: true, operation, ...payload });
 const failure = (operation, error) => ({ schema: RESULT_SCHEMAS[operation], operation, ...knowledgeGraphFailure(error) });
-
-function assertExpectedDigest(args, artifact) {
-  const expected = String(args.expectedDigest || "").trim();
-  if (!expected) {
-    throw new KnowledgeGraphError("expected_digest_required", "expectedDigest is required for knowledge graph reads.");
-  }
-  const actual = String(artifact?.metadata?.knowledgeGraph?.digest || "");
-  if (expected !== actual) {
-    throw new KnowledgeGraphError("stale_artifact_digest", "Knowledge graph artifact digest does not match the caller's expected digest.", { expectedDigest: expected, actualDigest: actual });
-  }
-}
 
 function pathIsInside(candidatePath, rootPath) {
   const relative = path.relative(rootPath, candidatePath);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
-async function resolveAllowedRoots(deps) {
+async function resolveAllowedRoots(deps, budget = {}) {
   const roots = [deps.knowgrphRoot, ...(Array.isArray(deps.allowedRoots) ? deps.allowedRoots : [])].filter(Boolean);
   const resolved = [];
   for (const root of roots) {
-    const real = await resolveRealDirectory(root);
+    checkKnowledgeGraphBudget({ ...budget, stage: "allowed-root-resolution" });
+    const real = await resolveRealDirectory(root, { ...budget, stage: "allowed-root-resolution" });
     if (!resolved.includes(real)) resolved.push(real);
   }
   if (!resolved.length) throw new KnowledgeGraphError("allowed_roots_required", "At least one host-owned allowed root is required.");
   return resolved;
 }
 
-async function assertExistingPathAllowed(candidatePath, allowedRoots, code = "path_outside_allowed_roots") {
-  const real = await fs.realpath(candidatePath).catch(() => null);
-  if (!real || !allowedRoots.some((root) => pathIsInside(real, root))) {
-    throw new KnowledgeGraphError(code, `Path is outside the host-owned allowed roots: ${candidatePath}`);
+async function assertLocalRootAllowed(rootPathRaw, deps, budget = {}) {
+  const rootPath = await resolveRealDirectory(rootPathRaw, { ...budget, stage: "input-root-resolution" });
+  const allowedRoots = await resolveAllowedRoots(deps, budget);
+  if (!allowedRoots.some((allowed) => pathIsInside(rootPath, allowed))) {
+    throw new KnowledgeGraphError("root_outside_allowed_roots", "rootPath is outside the host-owned allowed roots.");
   }
-  return real;
+  return rootPath;
 }
 
-async function resolveThroughExistingAncestor(candidatePath) {
-  let current = path.resolve(candidatePath);
+async function resolveOutputRoot(deps, budget = {}) {
+  const configured = path.resolve(deps.outputRoot || path.join(deps.knowgrphRoot, "data", "outputs", "knowledge-graph"));
+  let ancestor = configured;
   const tail = [];
   while (true) {
+    checkKnowledgeGraphBudget({ ...budget, stage: "output-root-resolution" });
     try {
-      const stat = await fs.stat(current);
-      if (stat.isDirectory() || stat.isFile()) {
-        const real = await fs.realpath(current);
-        return path.resolve(real, ...tail);
-      }
-    } catch { /* continue to the parent */ }
-    const parent = path.dirname(current);
-    if (parent === current) return path.resolve(current, ...tail);
-    tail.unshift(path.basename(current));
-    current = parent;
+      const real = await fs.realpath(ancestor);
+      checkKnowledgeGraphBudget({ ...budget, stage: "output-root-resolution" });
+      const resolved = path.resolve(real, ...tail);
+      if (!pathIsInside(resolved, real)) throw new KnowledgeGraphError("output_outside_output_root", "Output root is invalid.");
+      return resolved;
+    } catch (error) {
+      if (error instanceof KnowledgeGraphError) throw error;
+    }
+    const parent = path.dirname(ancestor);
+    if (parent === ancestor) return configured;
+    tail.unshift(path.basename(ancestor));
+    ancestor = parent;
   }
 }
 
-async function resolveHostOutputRoot(deps) {
-  const configured = path.resolve(deps.outputRoot || path.join(deps.knowgrphRoot, "data", "outputs", "knowledge-graph"));
-  return resolveThroughExistingAncestor(configured);
-}
+const graphIdFor = (identity) => `kg:graph:${sha256(identity).slice(0, 32)}`;
+const graphPointerPath = (outputRoot, graphId) => path.join(outputRoot, "graphs", `${graphId.slice("kg:graph:".length)}.json`);
 
-async function assertOutputPathAllowed(outputPath, outputRoot) {
-  const resolved = await resolveThroughExistingAncestor(outputPath);
-  if (!pathIsInside(resolved, outputRoot)) {
-    throw new KnowledgeGraphError("output_outside_output_root", `Output path is outside the host-owned output root: ${resolved}`);
+async function resolveIngestSource(args, deps, abortSignal, deadline) {
+  const budget = { abortSignal, deadline };
+  checkKnowledgeGraphBudget({ ...budget, stage: "source-resolution" });
+  const hasRoot = Boolean(String(args.rootPath || "").trim());
+  const hasUrl = Boolean(String(args.repositoryUrl || "").trim());
+  if (hasRoot === hasUrl) {
+    throw new KnowledgeGraphError("source_identity_required", "Provide exactly one of rootPath or repositoryUrl.");
   }
-  return resolved;
-}
-
-function defaultArtifactPath(outputRoot, rootPath) {
-  const rootName = path.basename(rootPath).replace(/[^A-Za-z0-9._-]+/g, "-") || "corpus";
-  return path.join(outputRoot, `${rootName}-${sha256(rootPath).slice(0, 12)}.json`);
-}
-
-function exactOutputExclusion(rootPath, outputPath) {
-  if (!pathIsInside(outputPath, rootPath)) return [];
-  const relative = path.relative(rootPath, outputPath).replaceAll("\\", "/");
-  return relative ? [relative] : [];
-}
-
-async function resolveIngestPaths(args, deps) {
-  if (!String(args.rootPath || "").trim()) {
-    throw new KnowledgeGraphError("root_path_required", "rootPath is required.");
+  const outputRoot = await resolveOutputRoot(deps, budget);
+  if (hasUrl) {
+    const canonicalOutputRoot = await ensureKnowledgeGraphStorageRoot(outputRoot);
+    checkKnowledgeGraphBudget({ ...budget, stage: "repository-acquisition-root" });
+    const requestedTimeout = Number(args.acquisitionTimeoutMs);
+    const remaining = Math.max(1, remainingKnowledgeGraphDuration(deadline));
+    const acquired = await acquireRepositoryUrl({
+      repositoryUrl: args.repositoryUrl,
+      repositoryRef: args.repositoryRef,
+      cacheRoot: path.join(canonicalOutputRoot, "acquisitions"),
+      allowedRoot: canonicalOutputRoot,
+      abortSignal,
+      timeoutMs: Number.isFinite(requestedTimeout) && requestedTimeout > 0
+        ? Math.min(requestedTimeout, remaining)
+        : remaining,
+    });
+    checkKnowledgeGraphBudget({ ...budget, stage: "repository-acquisition" });
+    return {
+      rootPath: acquired.rootPath,
+      outputRoot: canonicalOutputRoot,
+      graphId: graphIdFor(`repository-url\0${acquired.identity.repositoryUrl}\0${acquired.identity.ref}\0${acquired.identity.subpath}`),
+      acquisition: acquired.identity,
+    };
   }
-  const allowedRoots = await resolveAllowedRoots(deps);
-  const requestedRoot = path.resolve(String(args.rootPath));
-  const rootPath = await assertExistingPathAllowed(requestedRoot, allowedRoots, "root_outside_allowed_roots");
-  const outputRoot = await resolveHostOutputRoot(deps);
-  if (outputRoot === rootPath) {
+  const rootPath = await assertLocalRootAllowed(args.rootPath, deps, budget);
+  if (rootPath === outputRoot) {
     throw new KnowledgeGraphError("output_root_matches_input_root", "The generated-output root must not equal the indexed corpus root.");
   }
-  const outputCandidate = args.outputPath
-    ? path.isAbsolute(String(args.outputPath))
-      ? path.resolve(String(args.outputPath))
-      : path.resolve(outputRoot, String(args.outputPath))
-    : defaultArtifactPath(outputRoot, rootPath);
-  const artifactPath = await assertOutputPathAllowed(outputCandidate, outputRoot);
-  return { rootPath, outputRoot, artifactPath };
+  return {
+    rootPath,
+    outputRoot,
+    graphId: graphIdFor(`local-directory\0${rootPath}`),
+    acquisition: { mode: "local-directory", networkRequests: 0, complete: true },
+  };
 }
 
-async function serializeArtifactIngest(artifactPath, operation) {
-  const previous = artifactIngestTails.get(artifactPath);
+async function serializeIngest(graphId, operation, budget = {}) {
+  const previous = ingestTails.get(graphId);
   let release;
   const tail = new Promise((resolve) => { release = resolve; });
-  artifactIngestTails.set(artifactPath, tail);
-  if (previous) await previous;
+  ingestTails.set(graphId, tail);
+  if (previous) {
+    await previous;
+    checkKnowledgeGraphBudget({ ...budget, stage: "ingest-queue" });
+  }
   try {
     return await operation();
   } finally {
     release();
-    if (artifactIngestTails.get(artifactPath) === tail) artifactIngestTails.delete(artifactPath);
+    if (ingestTails.get(graphId) === tail) ingestTails.delete(graphId);
   }
 }
 
-function normalizedLabel(value) {
-  return String(value || "").trim().toLowerCase().replace(/^(?:["`\[])|(?:["`\]])$/g, "");
+function annotateFragmentRepository(source, fragment, checkpoint = () => {}) {
+  return {
+    ...fragment,
+    nodes: fragment.nodes.map((node) => {
+      checkpoint();
+      return {
+        ...node,
+        properties: {
+          ...node.properties,
+          "corpus:repositoryId": source.repositoryId,
+          "corpus:repositoryPath": source.repositoryPath,
+        },
+      };
+    }),
+  };
 }
 
-function buildCrossSourceResolutionEdges(fragments) {
-  const nodes = [...fragments.values()].flatMap((fragment) => fragment.nodes);
-  const edges = [...fragments.values()].flatMap((fragment) => fragment.edges);
-  const sourceNodeByPath = new Map(nodes
-    .filter((node) => node.type === "SourceFile")
-    .map((node) => [String(node.properties?.["corpus:sourcePath"] || ""), node]));
-  const codeExtensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
-  const derived = [];
-  for (const dependency of nodes.filter((node) => node.type === "CodeDependency").sort((left, right) => compareStableStrings(left.id, right.id))) {
-    const moduleName = String(dependency.properties?.["code:module"] || dependency.label || "");
-    if (!moduleName.startsWith(".")) continue;
-    const sourcePath = String(dependency.properties?.["corpus:sourcePath"] || "");
-    const base = path.posix.normalize(path.posix.join(path.posix.dirname(sourcePath), moduleName));
-    if (!base || base === ".." || base.startsWith("../")) continue;
-    const hasExtension = Boolean(path.posix.extname(base));
-    const candidatePaths = hasExtension
-      ? [base]
-      : [...codeExtensions.map((extension) => `${base}${extension}`), ...codeExtensions.map((extension) => `${base}/index${extension}`)];
-    const candidates = candidatePaths.map((candidatePath) => sourceNodeByPath.get(candidatePath)).filter(Boolean).sort((left, right) => compareStableStrings(left.id, right.id));
-    if (!candidates.length) continue;
-    const premiseEdges = edges.filter((edge) => edge.target === dependency.id && ["imports", "reexports"].includes(edge.label)).sort((left, right) => compareStableStrings(left.id, right.id));
-    const premise = premiseEdges[0];
-    const premiseProperties = premise?.properties || {};
-    const ambiguous = candidates.length > 1;
-    for (const target of candidates) {
-      const evidence = buildEvidence({
-        sourcePath,
-        lineStart: premiseProperties["evidence:lineStart"],
-        lineEnd: premiseProperties["evidence:lineEnd"],
-        columnStart: premiseProperties["evidence:columnStart"],
-        columnEnd: premiseProperties["evidence:columnEnd"],
-        excerpt: premiseProperties["evidence:excerpt"] || moduleName,
-        ruleId: "resolve.relative-code-import",
-        explanation: ambiguous
-          ? `Relative module ${moduleName} has ${candidates.length} local source candidates; ${target.label} is one ambiguous candidate.`
-          : `Relative module ${moduleName} resolves to local source file ${target.label}.`,
-        parserId: RESOLVER_ID,
-        parserVersion: RESOLVER_VERSION,
-        kind: ambiguous ? "ambiguous" : "inferred",
-        confidence: ambiguous ? "low" : "high",
-        premiseEdgeIds: premiseEdges.map((edge) => edge.id),
-        candidateCount: candidates.length,
-      });
-      derived.push(makeEdge({ source: dependency.id, target: target.id, label: "resolvesToSource", evidence, anchor: `${dependency.id}:${target.id}` }));
-    }
-  }
-  const tablesByName = new Map();
-  for (const node of nodes) {
-    if (node.type !== "SqlTable") continue;
-    const full = normalizedLabel(node.properties?.["sql:qualifiedName"] || node.label);
-    const short = full.split(".").at(-1);
-    for (const key of new Set([full, short])) {
-      if (!key) continue;
-      tablesByName.set(key, [...(tablesByName.get(key) || []), node]);
-    }
-  }
-  for (const candidates of tablesByName.values()) candidates.sort((left, right) => compareStableStrings(left.id, right.id));
-  for (const reference of nodes.filter((node) => node.type === "SqlTableReference").sort((left, right) => compareStableStrings(left.id, right.id))) {
-    const full = normalizedLabel(reference.properties?.["sql:qualifiedName"] || reference.label);
-    const candidates = tablesByName.get(full) || tablesByName.get(full.split(".").at(-1)) || [];
-    if (!candidates.length) continue;
-    const sourcePath = String(reference.properties?.["corpus:sourcePath"] || "");
-    const premiseEdges = edges.filter((edge) => edge.target === reference.id).sort((left, right) => compareStableStrings(left.id, right.id));
-    const premiseEdgeIds = premiseEdges.map((edge) => edge.id);
-    const premiseProperties = premiseEdges[0]?.properties || {};
-    const ambiguous = candidates.length > 1;
-    for (const target of candidates) {
-      if (target.id === reference.id) continue;
-      const evidence = buildEvidence({
-        sourcePath,
-        lineStart: reference.properties?.["corpus:lineStart"],
-        lineEnd: reference.properties?.["corpus:lineEnd"],
-        columnStart: reference.properties?.["corpus:columnStart"],
-        columnEnd: reference.properties?.["corpus:columnEnd"],
-        excerpt: premiseProperties["evidence:excerpt"] || reference.label,
-        ruleId: "resolve.sql-table.exact-name",
-        explanation: ambiguous
-          ? `Reference ${reference.label} has ${candidates.length} exact-name table candidates; ${target.label} is one ambiguous candidate.`
-          : `Reference ${reference.label} resolves to the single exact-name table ${target.label}.`,
-        parserId: RESOLVER_ID,
-        parserVersion: RESOLVER_VERSION,
-        kind: ambiguous ? "ambiguous" : "inferred",
-        confidence: ambiguous ? "low" : "high",
-        premiseEdgeIds,
-        candidateCount: candidates.length,
-      });
-      derived.push(makeEdge({ source: reference.id, target: target.id, label: "resolvesTo", evidence, anchor: `${reference.id}:${target.id}` }));
-    }
-  }
-  return derived.sort((left, right) => compareStableStrings(left.id, right.id));
+function fragmentForResolution(fragment, checkpoint = () => {}) {
+  const relevantTypes = new Set([
+    "CodeDependency",
+    "DocumentLinkReference",
+    "SourceFile",
+    "SqlTable",
+    "SqlTableReference",
+  ]);
+  const nodes = fragment.nodes.filter((node) => {
+    checkpoint();
+    return relevantTypes.has(node.type);
+  });
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  return {
+    ...fragment,
+    nodes,
+    edges: fragment.edges.filter((edge) => {
+      checkpoint();
+      return nodeIds.has(edge.target);
+    }),
+  };
 }
 
-async function ingestOrThrow(args, deps, abortSignal, resolvedPaths = null) {
-  throwIfAborted(abortSignal);
-  const { rootPath, outputRoot, artifactPath } = resolvedPaths || await resolveIngestPaths(args, deps);
+async function reusableFragment(previousSnapshot, entry, budget = {}) {
+  if (!previousSnapshot || !entry) return null;
+  checkKnowledgeGraphBudget({ ...budget, stage: "source-shard-reuse" });
+  const shard = await readKnowledgeGraphSourceShard(previousSnapshot, entry);
+  checkKnowledgeGraphBudget({ ...budget, stage: "source-shard-reuse" });
+  return {
+    parserId: shard.parserId,
+    parserVersion: shard.parserVersion,
+    nodes: shard.nodes,
+    edges: shard.edges,
+    diagnostics: shard.diagnostics,
+    status: shard.status,
+  };
+}
+
+function createPeriodicCheckpoint(abortSignal, deadline, stage) {
+  let operations = 0;
+  const checkpoint = () => {
+    operations += 1;
+    if (operations % 128 === 0) {
+      checkKnowledgeGraphBudget({ abortSignal, deadline, stage, details: { operations } });
+    }
+  };
+  checkpoint.force = () => checkKnowledgeGraphBudget({
+    abortSignal,
+    deadline,
+    stage,
+    details: { operations },
+  });
+  return checkpoint;
+}
+
+function createOperationAbortSignal(deadline, externalSignal) {
+  const controller = new AbortController();
+  const onExternalAbort = () => controller.abort(externalSignal?.reason);
+  if (externalSignal?.aborted) onExternalAbort();
+  else externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
+  const timer = setTimeout(
+    () => controller.abort(new Error("knowledge graph deadline exceeded")),
+    Math.max(1, remainingKnowledgeGraphDuration(deadline)),
+  );
+  timer.unref?.();
+  return {
+    signal: controller.signal,
+    cleanup() {
+      clearTimeout(timer);
+      externalSignal?.removeEventListener("abort", onExternalAbort);
+    },
+  };
+}
+
+function unavailableProjection(snapshot, limitRaw) {
+  const numericLimit = Number(limitRaw);
+  const limit = Number.isFinite(numericLimit)
+    ? Math.max(1, Math.min(1000, Math.floor(numericLimit)))
+    : 200;
+  return {
+    token: `kg:projection:${sha256(`${snapshot.pointer.snapshotDigest}\0${limit}`).slice(0, 24)}`,
+    readOnly: true,
+    graphData: {
+      context: "knowgrph-knowledge-graph-projection",
+      type: "Graph",
+      nodes: [],
+      edges: [],
+    },
+    complete: false,
+    truncated: true,
+    limit,
+    reason: "projection_unavailable",
+  };
+}
+
+function assertExpectedSnapshot(args, snapshot) {
+  const expected = String(args.expectedSnapshotDigest || "").trim();
+  if (!expected) throw new KnowledgeGraphError("expected_snapshot_digest_required", "expectedSnapshotDigest is required.");
+  if (expected !== snapshot.pointer.snapshotDigest) {
+    throw new KnowledgeGraphError("stale_snapshot_digest", "Knowledge graph snapshot digest does not match the caller's expected digest.", {
+      expectedSnapshotDigest: expected,
+      actualSnapshotDigest: snapshot.pointer.snapshotDigest,
+    });
+  }
+}
+
+async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
+  const budget = { abortSignal, deadline };
+  checkKnowledgeGraphBudget({ ...budget, stage: "ingest-start" });
+  const pointerPath = graphPointerPath(resolved.outputRoot, resolved.graphId);
   const strict = args.strict !== false;
   const useCache = args.useCache !== false;
-  let previousArtifact = null;
-  const runDiagnostics = [];
-  if (useCache) {
-    try { previousArtifact = await readKnowledgeGraphArtifactIfPresent(artifactPath, { allowedRoot: outputRoot }); } catch (error) {
-      if (strict) throw error;
-      runDiagnostics.push({ code: "previous_artifact_ignored", sourcePath: "", message: error.message });
-    }
-  }
-  const outputRootExclusion = pathIsInside(outputRoot, rootPath)
-    ? `${path.relative(rootPath, outputRoot).replaceAll("\\", "/")}/**`
+  const previousSnapshot = useCache
+    ? await readKnowledgeGraphSnapshotIfPresent(pointerPath, {
+      allowedRoot: resolved.outputRoot,
+      expectedGraphId: resolved.graphId,
+      ...budget,
+    })
+    : null;
+  checkKnowledgeGraphBudget({ ...budget, stage: "previous-snapshot-read" });
+  const previousEntries = new Map(
+    (previousSnapshot ? await listKnowledgeGraphSourceEntries(previousSnapshot) : [])
+      .map((entry) => [entry.sourcePath, entry]),
+  );
+  checkKnowledgeGraphBudget({ ...budget, stage: "previous-source-index-read" });
+  const outputExclusion = pathIsInside(resolved.outputRoot, resolved.rootPath)
+    ? `${path.relative(resolved.rootPath, resolved.outputRoot).replaceAll("\\", "/")}/**`
     : "";
   const discovered = await discoverKnowledgeSources({
-    rootPath,
+    rootPath: resolved.rootPath,
     include: args.include,
-    exclude: [...(Array.isArray(args.exclude) ? args.exclude : []), ...(outputRootExclusion ? [outputRootExclusion] : [])],
-    exactExcludedPaths: exactOutputExclusion(rootPath, artifactPath),
+    exclude: [...(Array.isArray(args.exclude) ? args.exclude : []), ...(outputExclusion ? [outputExclusion] : [])],
     maxFiles: args.maxFiles,
     maxFileBytes: args.maxFileBytes,
     maxTotalBytes: args.maxTotalBytes,
+    maxDurationMs: args.maxDurationMs,
     abortSignal,
+    deadline,
   });
-  const previousEntries = new Map((previousArtifact?.manifest?.sources || []).map((entry) => [entry.sourcePath, entry]));
   const fragments = new Map();
-  let reused = 0;
+  const preparedSources = [];
   let parsed = 0;
+  let reused = 0;
+  const parserCheckpoint = createPeriodicCheckpoint(abortSignal, deadline, "source-parsing");
   for (const source of discovered.sources) {
-    throwIfAborted(abortSignal);
+    parserCheckpoint.force();
     const descriptor = parserDescriptorForSource(source, deps);
-    const previousEntry = previousEntries.get(source.relativePath);
+    const previous = previousEntries.get(source.relativePath);
     const reusable = useCache
-      && source.kind !== "python"
-      && previousEntry?.contentHash === source.contentHash
-      && previousEntry?.parserId === descriptor.parserId
-      && previousEntry?.parserVersion === descriptor.parserVersion
-      ? fragmentFromArtifact(previousArtifact, previousEntry)
+      && previous?.status !== "limited"
+      && previous?.contentHash === source.contentHash
+      && previous?.parserId === descriptor.parserId
+      && previous?.parserVersion === descriptor.parserVersion
+      && previous?.repositoryId === source.repositoryId
+      && previous?.repositoryPath === source.repositoryPath
+      ? await reusableFragment(previousSnapshot, previous, budget)
       : null;
-    if (reusable) {
-      fragments.set(source.relativePath, reusable);
-      reused += 1;
-      continue;
+    let fragment = reusable;
+    if (!fragment) {
+      const hydrated = await hydrateKnowledgeSource(source, {
+        rootPath: resolved.rootPath,
+        maxFileBytes: args.maxFileBytes,
+        abortSignal,
+        deadline,
+      });
+      try {
+        fragment = await parseKnowledgeSource(hydrated, {
+          ...deps,
+          abortSignal,
+          deadline,
+          checkpoint: parserCheckpoint,
+          maxParserNodes: args.maxParserNodes,
+          maxParserEdges: args.maxParserEdges,
+          maxParserRecords: args.maxParserRecords,
+        });
+      } catch (error) {
+        if (strict || !(error instanceof KnowledgeGraphError)
+          || error.code !== "parser_record_limit_exceeded") throw error;
+        fragment = parserLimitFragmentForSource(hydrated, deps);
+      }
     }
-    const fragment = await parseKnowledgeSource(source, { ...deps, abortSignal });
-    fragments.set(source.relativePath, fragment);
-    parsed += 1;
+    parserCheckpoint.force();
+    const annotated = annotateFragmentRepository(source, fragment, parserCheckpoint);
+    fragments.set(source.relativePath, fragmentForResolution(annotated, parserCheckpoint));
+    preparedSources.push({ source, annotated, previous: reusable ? previous : null });
+    if (reusable) reused += 1;
+    else parsed += 1;
   }
-  const fatalFragments = [...fragments.entries()].filter(([, fragment]) => (
-    fragment.status === "error"
-    || fragment.status === "partial"
-    || (fragment.status === "pending" && typeof deps.pdfConverter === "function")
-  ));
-  if (strict && fatalFragments.length) {
-    throw new KnowledgeGraphError("strict_ingest_incomplete", "Strict ingestion stopped before replacing the artifact because one or more parsers failed.", {
-      sources: fatalFragments.map(([sourcePath]) => sourcePath).sort(),
-      previousArtifactPreserved: Boolean(previousArtifact),
-    });
+
+  const incomplete = [...fragments.entries()]
+    .filter(([, fragment]) => fragment.status !== "parsed");
+  const incompleteSources = [...new Set([
+    ...(discovered.admission.incompleteSources || []),
+    ...incomplete.map(([sourcePath]) => sourcePath),
+  ])].sort(compareStableStrings);
+  const completenessReasons = [...new Set([
+    ...(discovered.admission.reasons || []),
+    ...incomplete.map(([, fragment]) => `parser_${String(fragment.status || "unknown")}`),
+    ...(resolved.acquisition?.complete === false ? ["acquisition_incomplete"] : []),
+  ])].sort(compareStableStrings);
+  const complete = discovered.admission.complete === true
+    && resolved.acquisition?.complete !== false
+    && incompleteSources.length === 0;
+  const completeness = {
+    complete,
+    admission: discovered.admission,
+    incompleteSources,
+    reasons: completenessReasons,
+  };
+  if (strict && !complete) {
+    throw new KnowledgeGraphError(
+      "strict_ingest_incomplete",
+      "Strict ingestion preserved the previous ready snapshot because source parsing was incomplete.",
+      {
+        complete: false,
+        sources: incompleteSources,
+        reasons: completenessReasons,
+        previousReadySnapshotPreserved: Boolean(previousSnapshot),
+      },
+    );
   }
-  const derivedEdges = buildCrossSourceResolutionEdges(fragments);
-  const artifact = buildKnowledgeGraphArtifact({
-    sources: discovered.sources,
+
+  const sourceEntries = [];
+  for (const prepared of preparedSources) {
+    parserCheckpoint.force();
+    sourceEntries.push(prepared.previous || await writeKnowledgeGraphSourceShard(
+      pointerPath,
+      prepared.source,
+      prepared.annotated,
+      { allowedRoot: resolved.outputRoot, ...budget },
+    ));
+  }
+  const derivedEdgesByRepository = buildRepositoryScopedResolutionEdges(
+    discovered.sources,
     fragments,
-    derivedEdges,
-    diagnostics: [...discovered.diagnostics, ...runDiagnostics],
-  });
-  await writeKnowledgeGraphArtifactAtomic(artifactPath, artifact);
+    budget,
+  );
+  parserCheckpoint.force();
+  const rootContentHash = sha256(sourceEntries.map((entry) => (
+    `${entry.sourcePath}\0${entry.contentHash}\0${entry.parserId}\0${entry.parserVersion}`
+  )).sort(compareStableStrings).join("\n"));
   const currentPaths = new Set(discovered.sources.map((source) => source.relativePath));
-  const deleted = [...previousEntries.keys()].filter((sourcePath) => !currentPaths.has(sourcePath)).sort();
+  const deletedPaths = [...previousEntries.keys()]
+    .filter((sourcePath) => !currentPaths.has(sourcePath))
+    .sort(compareStableStrings);
+  completeness.deletedPaths = deletedPaths;
+  const ready = discovered.sources.filter((source) => source.status === "ready").length;
+  const skipped = discovered.sources.filter((source) => source.status === "skipped").length;
+  const unsupported = discovered.sources.filter((source) => source.status === "unsupported").length;
+  const snapshot = await writeKnowledgeGraphSnapshotAtomic(pointerPath, {
+    graphId: resolved.graphId,
+    sourceEntries,
+    derivedEdgesByRepository,
+    diagnostics: discovered.diagnostics,
+    rootContentHash,
+    admission: discovered.admission,
+    completeness,
+    parserRegistryDigest: SOURCE_PARSER_REGISTRY.digest,
+  }, { allowedRoot: resolved.outputRoot, ...budget });
+
+  let projection;
+  try {
+    projection = await projectKnowledgeGraphSnapshot(snapshot, args.projectionLimit, budget);
+  } catch (error) {
+    projection = unavailableProjection(snapshot, args.projectionLimit, error);
+  }
   return success("ingest", {
-    artifactPath,
-    digest: artifact.metadata.knowledgeGraph.digest,
-    rootContentHash: artifact.metadata.knowledgeGraph.rootContentHash,
-    graph: { nodes: artifact.nodes.length, edges: artifact.edges.length },
-    sources: { total: discovered.sources.length, parsed, reused, deleted: deleted.length, deletedPaths: deleted },
-    diagnostics: artifact.diagnostics,
-    parserCoverage: artifact.metadata.knowledgeGraph.parserCoverage,
-    retrieval: { mode: "lexical-graph", vectorStore: false },
-    cost: { modelCalls: 0, promptTokens: 0, completionTokens: 0, estimatedCostUsd: 0 },
+    graphId: resolved.graphId,
+    snapshotDigest: snapshot.pointer.snapshotDigest,
+    complete,
+    counts: {
+      repositories: snapshot.manifest.repositories.length,
+      sources: sourceEntries.length,
+      ready,
+      skipped,
+      unsupported,
+      parsed,
+      reused,
+      deleted: deletedPaths.length,
+      nodes: snapshot.manifest.graph.nodes,
+      edges: snapshot.manifest.graph.edges,
+      visitedFiles: discovered.admission.counts.filesVisited,
+      admittedBytes: discovered.admission.counts.bytesAdmitted,
+      ignoredEntries: discovered.admission.counts.ignoredEntries,
+    },
+    completeness,
+    projection,
+    diagnostics: snapshot.manifest.diagnostics,
+    parserCoverage: snapshot.manifest.parserCoverage,
+    acquisition: resolved.acquisition,
+    retrieval: snapshot.manifest.retrieval,
+    cost: snapshot.manifest.cost,
   });
 }
 
 export async function ingestKnowledgeGraph(args, deps = {}, options = {}) {
+  const normalized = args && typeof args === "object" && !Array.isArray(args) ? args : {};
+  const deadline = createKnowledgeGraphDeadline(normalized.maxDurationMs, { now: deps.now });
+  const operationAbort = createOperationAbortSignal(deadline, options.abortSignal);
   try {
-    const normalizedArgs = args && typeof args === "object" && !Array.isArray(args) ? args : {};
-    const resolvedPaths = await resolveIngestPaths(normalizedArgs, deps);
-    return await serializeArtifactIngest(
-      resolvedPaths.artifactPath,
-      () => ingestOrThrow(normalizedArgs, deps, options.abortSignal, resolvedPaths),
+    const resolved = await resolveIngestSource(normalized, deps, operationAbort.signal, deadline);
+    return await serializeIngest(
+      resolved.graphId,
+      () => ingestResolved(normalized, deps, operationAbort.signal, deadline, resolved),
+      { abortSignal: operationAbort.signal, deadline },
     );
-  } catch (error) { return failure("ingest", error); }
+  } catch (error) {
+    let normalizedError = error;
+    try {
+      checkKnowledgeGraphBudget({
+        abortSignal: options.abortSignal,
+        deadline,
+        stage: "ingest",
+      });
+    } catch (budgetError) {
+      normalizedError = budgetError;
+    }
+    return failure("ingest", normalizedError);
+  } finally {
+    operationAbort.cleanup();
+  }
+}
+
+async function snapshotForRead(args, deps, budget) {
+  const graphId = String(args.graphId || "").trim();
+  if (!GRAPH_ID.test(graphId)) throw new KnowledgeGraphError("graph_id_invalid", "graphId is invalid.");
+  const outputRoot = await resolveOutputRoot(deps, budget);
+  const snapshot = await readKnowledgeGraphSnapshot(graphPointerPath(outputRoot, graphId), {
+    allowedRoot: outputRoot,
+    expectedGraphId: graphId,
+    ...budget,
+  });
+  assertExpectedSnapshot(args, snapshot);
+  return snapshot;
+}
+
+async function runSnapshotOperation(operation, args, deps, options, perform) {
+  const normalized = args && typeof args === "object" && !Array.isArray(args) ? args : {};
+  const deadline = createKnowledgeGraphDeadline(normalized.maxDurationMs, { now: deps.now });
+  const operationAbort = createOperationAbortSignal(deadline, options.abortSignal);
+  const budget = { abortSignal: operationAbort.signal, deadline };
+  try {
+    const snapshot = await snapshotForRead(normalized, deps, budget);
+    const payload = await perform(snapshot, normalized, budget);
+    checkKnowledgeGraphBudget({ ...budget, stage: operation });
+    return success(operation, { graphId: normalized.graphId, ...payload });
+  } catch (caught) {
+    let error = caught;
+    try {
+      checkKnowledgeGraphBudget({ abortSignal: options.abortSignal, deadline, stage: operation });
+    } catch (budgetError) {
+      error = budgetError;
+    }
+    return failure(operation, error);
+  } finally {
+    operationAbort.cleanup();
+  }
 }
 
 export async function queryKnowledgeGraphArtifact(args, deps = {}, options = {}) {
-  try {
-    throwIfAborted(options.abortSignal);
-    const outputRoot = await resolveHostOutputRoot(deps);
-    const requestedPath = path.isAbsolute(String(args.artifactPath || ""))
-      ? path.resolve(String(args.artifactPath || ""))
-      : path.resolve(outputRoot, String(args.artifactPath || ""));
-    const artifactPath = await assertExistingPathAllowed(requestedPath, [outputRoot], "artifact_outside_output_root");
-    const artifact = await readKnowledgeGraphArtifact(artifactPath, { allowedRoot: outputRoot });
-    assertExpectedDigest(args, artifact);
-    return success("query", { artifactPath, ...queryKnowledgeGraph(artifact, args) });
-  } catch (error) { return failure("query", error); }
+  return runSnapshotOperation("query", args, deps, options, (snapshot, normalized, budget) => (
+    queryKnowledgeGraphSnapshot(snapshot, normalized, budget)
+  ));
 }
 
 export async function explainKnowledgeGraphEdge(args, deps = {}, options = {}) {
-  try {
-    throwIfAborted(options.abortSignal);
-    const outputRoot = await resolveHostOutputRoot(deps);
-    const requestedPath = path.isAbsolute(String(args.artifactPath || ""))
-      ? path.resolve(String(args.artifactPath || ""))
-      : path.resolve(outputRoot, String(args.artifactPath || ""));
-    const artifactPath = await assertExistingPathAllowed(requestedPath, [outputRoot], "artifact_outside_output_root");
-    const artifact = await readKnowledgeGraphArtifact(artifactPath, { allowedRoot: outputRoot });
-    assertExpectedDigest(args, artifact);
-    return success("explain_edge", { artifactPath, ...explainKnowledgeGraphEdgeFromArtifact(artifact, args.edgeId) });
-  } catch (error) { return failure("explain_edge", error); }
+  return runSnapshotOperation("explain_edge", args, deps, options, (snapshot, normalized, budget) => (
+    explainKnowledgeGraphSnapshotEdge(snapshot, normalized.edgeId, budget)
+  ));
 }
 
-export function createKnowledgeGraphRuntime({ knowgrphRoot, allowedRoots, outputRoot, pdfConverter = null, pdfConverterVersion = "pending", pythonBin = process.env.KNOWGRPH_PYTHON || "python3" }) {
-  const deps = { knowgrphRoot: path.resolve(knowgrphRoot), allowedRoots, outputRoot, pdfConverter, pdfConverterVersion, pythonBin };
+export function createKnowledgeGraphRuntime({
+  knowgrphRoot,
+  allowedRoots,
+  outputRoot,
+  pdfConverter = null,
+  pdfConverterVersion = "pending",
+  pythonBin = process.env.KNOWGRPH_PYTHON || "python3",
+  now = Date.now,
+}) {
+  const deps = {
+    knowgrphRoot: path.resolve(knowgrphRoot),
+    allowedRoots,
+    outputRoot,
+    pdfConverter,
+    pdfConverterVersion,
+    pythonBin,
+    now,
+  };
   return Object.freeze({
     ingest: (args, options) => ingestKnowledgeGraph(args, deps, options),
     query: (args, options) => queryKnowledgeGraphArtifact(args, deps, options),

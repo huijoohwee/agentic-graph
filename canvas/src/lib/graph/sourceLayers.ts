@@ -6,7 +6,7 @@ import { toMetadataRecord } from '@/lib/graph/documentMetadata'
 import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { createUniqueId } from '@/lib/ids'
 import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
-import { buildCorpusEdgeEvidence } from '@/features/queryable-corpus/corpusEdgeEvidence'
+import { readSubgraphs, writeSubgraphs, type UserSubgraph } from '@/lib/graph/subgraphs'
 
 export type SourceLayerInput = {
   id: string
@@ -211,32 +211,19 @@ function appendCorpusCrossSourceReferenceEdges(nodes: GraphNode[], edges: GraphE
       if (existingEdgeIds.has(edgeId)) continue
       existingEdgeIds.add(edgeId)
       const lineStart = readCorpusLineStart(ref)
-      const premiseEdgeIds = edges
-        .filter(edge => [String(edge.source || ''), String(edge.target || '')].includes(String(ref.id || '')))
-        .map(edge => String(edge.id || '').trim())
-        .filter(Boolean)
-        .sort()
-        .slice(0, 16)
-      const evidenceKind = targets.length > 1 ? 'ambiguous' : 'inferred'
       edges.push({
         id: edgeId,
         source: String(ref.id),
         target: String(target.id),
         label: 'referencesCorpusEntity',
-        properties: buildCorpusEdgeEvidence({
-          sourcePath: readCorpusSourcePath(ref),
-          sourceText: String(ref.label || ref.id || ''),
-          lineStart,
-          parserId: 'source-layer-compose',
-          ruleId: 'source-layer-compose.exact-normalized-label',
-          explanation: targets.length > 1
-            ? `The source reference matches ${targets.length} graph entities by exact normalized label, so the relationship remains ambiguous.`
-            : 'The source reference and target entity share one exact normalized label across distinct source layers.',
-          kind: evidenceKind,
-          confidence: evidenceKind === 'ambiguous' ? 'low' : 'medium',
-          premiseEdgeIds,
-          candidateCount: targets.length,
-        }),
+        properties: {
+          'evidence:kind': 'inferred' as unknown as JSONValue,
+          'evidence:confidence': 'medium' as unknown as JSONValue,
+          'evidence:sourcePath': readCorpusSourcePath(ref) as unknown as JSONValue,
+          'evidence:lineStart': lineStart as unknown as JSONValue,
+          'evidence:lineEnd': lineStart as unknown as JSONValue,
+          'corpus:parserId': 'source-layer-compose' as unknown as JSONValue,
+        },
         metadata: {
           sourceLayerId: refLayer as unknown as JSONValue,
           sourceLayerLabel: String(readRecord((ref as { metadata?: unknown }).metadata).sourceLayerLabel || '') as unknown as JSONValue,
@@ -560,9 +547,41 @@ export function projectComposedGraphToSourceLayer(args: {
     ))
   }
 
+  const candidateSubgraphs = readSubgraphs(args.graphData).map(subgraph => ({
+    ...subgraph,
+    memberNodeIds: Array.from(new Set(
+      subgraph.memberNodeIds
+        .map(memberNodeId => projectComposedEntityId(memberNodeId, layerId))
+        .filter(memberNodeId => memberNodeId && includedNodeIds.has(memberNodeId)),
+    )).sort((left, right) => left.localeCompare(right)),
+  }))
+  const retainedSubgraphIds = new Set(
+    candidateSubgraphs
+      .filter(subgraph => subgraph.memberNodeIds.length > 0)
+      .map(subgraph => subgraph.id),
+  )
+  let retainedParent = true
+  while (retainedParent) {
+    retainedParent = false
+    for (const subgraph of candidateSubgraphs) {
+      if (retainedSubgraphIds.has(subgraph.id)) continue
+      if (!candidateSubgraphs.some(child => child.parentId === subgraph.id && retainedSubgraphIds.has(child.id))) continue
+      retainedSubgraphIds.add(subgraph.id)
+      retainedParent = true
+    }
+  }
+  const projectedSubgraphs: UserSubgraph[] = candidateSubgraphs
+    .filter(subgraph => retainedSubgraphIds.has(subgraph.id))
+    .map(subgraph => ({
+      ...subgraph,
+      parentId: subgraph.parentId && retainedSubgraphIds.has(subgraph.parentId)
+        ? subgraph.parentId
+        : null,
+    }))
+
   const sourceMetadata = readSourceLayerGraphMetadata(sourceGraph)
   const graphDataRevision = graphMetadata.graphDataRevision
-  return {
+  const projectedGraph: GraphData = {
     ...sourceGraph,
     type: sourceGraph.type || args.graphData.type || 'Graph',
     nodes: projectedNodes,
@@ -572,4 +591,5 @@ export function projectComposedGraphToSourceLayer(args: {
       ...(typeof graphDataRevision === 'number' && Number.isFinite(graphDataRevision) ? { graphDataRevision } : {}),
     } as GraphData['metadata'],
   }
+  return writeSubgraphs(projectedGraph, projectedSubgraphs)
 }

@@ -12,8 +12,12 @@ export function testLaunchImportFallbackSnapshotsFileListBeforeClearingInput() {
   if (!dispatch.includes('const snapshot = args.files ? Array.from(args.files as ArrayLike<File>) : []')) {
     throw new Error('expected Launch import local files dispatcher to snapshot FileList before clearing input')
   }
-  if (!text.includes('else void importLocalFolderFallback(files ? Array.from(files) : [])')) {
-    throw new Error('expected Launch import folder fallback to snapshot FileList before clearing input')
+  if (
+    !text.includes('runLaunchImportLocalFolderPreview({')
+    || !text.includes('fallback: importLocalFolderFallback')
+    || !dispatch.includes('const snapshot = args.files ? Array.from(args.files as ArrayLike<File>) : []')
+  ) {
+    throw new Error('expected Launch import folder preview fallback to snapshot FileList before clearing input')
   }
 }
 

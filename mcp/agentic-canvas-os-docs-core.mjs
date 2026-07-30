@@ -6,9 +6,11 @@ import {
   AGENTIC_CANVAS_OS_PROGRESSIVE_AGENTS_FILE,
   AGENTIC_CANVAS_OS_DOCS_SOURCE_ROOT_URL,
   AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT,
+  AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA,
   dictionaryFileForAgenticCanvasOsToken,
   kindForAgenticCanvasOsToken,
   serializeAgenticCanvasOsDocsCatalogForDigest,
+  serializeAgenticCanvasOsDocsRoutingForDigest,
 } from "./agentic-canvas-os-docs-contract.mjs";
 
 const FRONTMATTER_BOUNDARY = "---";
@@ -266,12 +268,47 @@ const labelForToken = (token) => (
     .join(" ") || normalizeText(token)
 );
 
-const rowSummaryForToken = (token, markdown) => {
+const rowForToken = (token, markdown) => {
   const escaped = normalizeText(token).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const rowPattern = new RegExp(`^\\|\\s+\`${escaped}\`\\s+\\|\\s+(.+?)\\s+\\|`, "m");
+  const rowPattern = new RegExp(`^\\|\\s+\`${escaped}\`\\s+\\|.*$`, "m");
   const rowMatch = String(markdown || "").match(rowPattern);
-  if (rowMatch) return rowMatch[1].replace(/\s+/g, " ").trim();
-  return "";
+  return rowMatch?.[0] || "";
+};
+
+const splitMarkdownTableRow = (row) => {
+  const cells = [];
+  let current = "";
+  let escaped = false;
+  for (const char of String(row || "").replace(/^\s*\|/, "").replace(/\|\s*$/, "")) {
+    if (char === "|" && !escaped) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += char;
+    escaped = char === "\\" && !escaped;
+    if (char !== "\\") escaped = false;
+  }
+  cells.push(current.trim());
+  return cells;
+};
+
+const invocationMetadataForToken = (token, markdown) => {
+  const cells = splitMarkdownTableRow(rowForToken(token, markdown));
+  const summary = String(cells[1] || "").replace(/\s+/g, " ").trim();
+  if (!String(token).startsWith("/")) return { summary };
+  const extract = (cell, sigil) => [...String(cell || "").matchAll(/`([/#@][A-Za-z0-9_.-]+)`/g)]
+    .map((match) => match[1])
+    .filter((value) => value.startsWith(sigil));
+  const outcome = cells.slice(4).join(" ");
+  const mcpTools = [...new Set([...outcome.matchAll(/`(knowgrph\.[A-Za-z0-9_.-]+)`/g)]
+    .map((match) => match[1]))];
+  return {
+    summary,
+    bindings: [...new Set(extract(cells[2], "@"))],
+    semantics: [...new Set(extract(cells[3], "#"))],
+    ...(mcpTools.length ? { mcpTool: mcpTools[0], mcpTools } : {}),
+  };
 };
 
 const snippetForToken = (token, markdown) => {
@@ -302,12 +339,12 @@ export const buildAgenticCanvasOsDocsCatalog = (docsContentByFileName, { sourceR
     const entries = parseDictionaryEntriesFromFrontmatter(extractFrontmatter(markdown));
     for (const token of entries) {
       const sourcePath = directResolution.get(token) || `${fileName}#${token}`;
-      const summary = rowSummaryForToken(token, markdown);
+      const metadata = invocationMetadataForToken(token, markdown);
       catalog.set(token, {
         token,
         kind,
         label: labelForToken(token),
-        summary,
+        ...metadata,
         sourcePath,
         sourceUrl: sourceUrlForPath(sourcePath, sourceRootUrl),
       });
@@ -322,7 +359,7 @@ export const buildAgenticCanvasOsDocsCatalog = (docsContentByFileName, { sourceR
       token,
       kind: kindForAgenticCanvasOsToken(token),
       label: labelForToken(token),
-      summary: rowSummaryForToken(token, docsContentByFileName[fileName] || ""),
+      ...invocationMetadataForToken(token, docsContentByFileName[fileName] || ""),
       sourcePath,
       sourceUrl: sourceUrlForPath(sourcePath, sourceRootUrl),
     });
@@ -334,6 +371,12 @@ export const buildAgenticCanvasOsDocsCatalog = (docsContentByFileName, { sourceR
 export const buildAgenticCanvasOsDocsCatalogDigest = (catalog = []) => (
   createHash("sha256")
     .update(serializeAgenticCanvasOsDocsCatalogForDigest(catalog), "utf8")
+    .digest("hex")
+);
+
+export const buildAgenticCanvasOsDocsRoutingDigest = (catalog = []) => (
+  createHash("sha256")
+    .update(serializeAgenticCanvasOsDocsRoutingForDigest(catalog), "utf8")
     .digest("hex")
 );
 
@@ -356,6 +399,7 @@ export const buildAgenticCanvasOsDocsInvokePayload = ({
     sourceRevision: normalizedSourceRevision,
   });
   const catalogDigest = buildAgenticCanvasOsDocsCatalogDigest(catalog);
+  const routingDigest = buildAgenticCanvasOsDocsRoutingDigest(catalog);
   const counts = catalog.reduce((acc, entry) => {
     acc[entry.kind] = (acc[entry.kind] || 0) + 1;
     return acc;
@@ -371,6 +415,10 @@ export const buildAgenticCanvasOsDocsInvokePayload = ({
       entry.kind,
       entry.label,
       entry.summary,
+      entry.mcpTool,
+      ...(entry.mcpTools || []),
+      ...(entry.semantics || []),
+      ...(entry.bindings || []),
       entry.sourcePath,
     ].some((value) => normalizeText(value).toLowerCase().includes(normalizedQuery));
 
@@ -406,6 +454,8 @@ export const buildAgenticCanvasOsDocsInvokePayload = ({
     sourceRootUrl,
     sourceRevision: normalizedSourceRevision,
     catalogDigest,
+    routingSchema: AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA,
+    routingDigest,
     liveAgentProviderProof,
     progressiveAgentsReadiness,
     ...(absoluteDocsRoot ? { absoluteDocsRoot } : {}),

@@ -24,7 +24,8 @@ const scriptKindForPath = (sourcePath) => {
   return typescript.ScriptKind.TS;
 };
 
-export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize }) {
+export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize }, options = {}) {
+  options.checkpoint?.("typescript.start");
   const sourceId = stableEntityId("SourceFile", sourcePath, "source");
   const sourceNode = makeNode({
     id: sourceId,
@@ -52,16 +53,19 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
 
   const ts = typescript;
   const sourceFile = ts.createSourceFile(sourcePath, text, ts.ScriptTarget.Latest, true, scriptKindForPath(sourcePath));
+  options.checkpoint?.("typescript.ast-created");
   const nodes = new Map([[sourceId, sourceNode]]);
   const edges = new Map();
   const declarationOwner = new WeakMap();
 
   const addNode = (node) => {
+    options.checkpoint?.("typescript.nodes");
     if (!nodes.has(node.id)) nodes.set(node.id, node);
     return node.id;
   };
   const evidenceFor = (astNode, ruleId, explanation, confidence = "high") => buildEvidence({
     sourcePath,
+    sourceDigest: contentHash,
     text,
     startOffset: astNode.getStart(sourceFile),
     endOffset: astNode.getEnd(),
@@ -72,6 +76,7 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
     confidence,
   });
   const addEdge = ({ source, target, label, astNode, ruleId, explanation, confidence = "high" }) => {
+    options.checkpoint?.("typescript.edges");
     const edge = makeEdge({ source, target, label, evidence: evidenceFor(astNode, ruleId, explanation, confidence), anchor: String(astNode.getStart(sourceFile)) });
     edges.set(edge.id, edge);
   };
@@ -96,6 +101,7 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
   }
 
   function visitDeclarations(node, ownerId, scope) {
+    options.checkpoint?.("typescript.declaration-walk");
     const descriptor = declarationDescriptor(node);
     let nextOwner = ownerId;
     let nextScope = scope;
@@ -130,6 +136,7 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
   visitDeclarations(sourceFile, sourceId, []);
 
   function visitRelations(node, ownerId) {
+    options.checkpoint?.("typescript.relation-walk");
     const declaredOwner = declarationOwner.get(node);
     const nextOwner = declaredOwner || ownerId;
     if (ts.isImportDeclaration(node) && ts.isStringLiteralLike(node.moduleSpecifier)) {
@@ -164,6 +171,7 @@ export function parseTypeScriptSource({ sourcePath, text, contentHash, byteSize 
   visitRelations(sourceFile, sourceId);
 
   const diagnostics = (sourceFile.parseDiagnostics || []).map((diagnostic) => {
+    options.checkpoint?.("typescript.diagnostics");
     const start = Number.isFinite(diagnostic.start) ? diagnostic.start : 0;
     const position = sourceFile.getLineAndCharacterOfPosition(start);
     return {

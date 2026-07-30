@@ -14,12 +14,16 @@ import {
   readGraphRagWorkflowJsonTextFromGraphData,
   withGraphDataRevision,
 } from '@/hooks/store/graphDataSliceUtils'
+import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
+
+const readOnlyResult = { ok: false as const, message: 'Knowledge graph projection is read-only.' }
 
 export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
   return ({
   createUserSubgraph: (
     args: { label?: string; memberNodeIds: string[]; childGroupIds?: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster'; autoBounds?: boolean },
   ): { ok: true; id: string } | { ok: false; message: string } => {
+    if (isWorkspaceGraphMutationBlocked(get())) return readOnlyResult
     let { graphData } = get()
     if (!graphData) {
       get().setGraphData({ context: '', type: 'Graph', nodes: [], edges: [] } as never)
@@ -92,6 +96,7 @@ export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
     rawId: string,
     patch: { label?: string; memberNodeIds?: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' },
   ): { ok: true } | { ok: false; message: string } => {
+    if (isWorkspaceGraphMutationBlocked(get())) return readOnlyResult
     const id = String(rawId || '').trim()
     if (!id) return { ok: false, message: 'Missing subgraph id.' }
     const { graphData } = get()
@@ -151,6 +156,7 @@ export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
   },
 
   addNodesToUserSubgraph: (rawId: string, rawNodeIds: string[]): { ok: true } | { ok: false; message: string } => {
+    if (isWorkspaceGraphMutationBlocked(get())) return readOnlyResult
     const id = String(rawId || '').trim()
     if (!id) return { ok: false, message: 'Missing subgraph id.' }
     const { graphData } = get()
@@ -163,6 +169,7 @@ export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
   },
 
   removeNodesFromUserSubgraph: (rawId: string, rawNodeIds: string[]): { ok: true } | { ok: false; message: string } => {
+    if (isWorkspaceGraphMutationBlocked(get())) return readOnlyResult
     const id = String(rawId || '').trim()
     if (!id) return { ok: false, message: 'Missing subgraph id.' }
     const { graphData } = get()
@@ -176,6 +183,7 @@ export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
   },
 
   attachNodeToUserSubgraph: (rawId: string, rawNodeId: string): { ok: true } | { ok: false; message: string } => {
+    if (isWorkspaceGraphMutationBlocked(get())) return readOnlyResult
     const id = String(rawId || '').trim()
     const nodeId = String(rawNodeId || '').trim()
     if (!id) return { ok: false, message: 'Missing subgraph id.' }
@@ -225,6 +233,7 @@ export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
   },
 
   detachNodeFromUserSubgraph: (rawId: string, rawNodeId: string): { ok: true } | { ok: false; message: string } => {
+    if (isWorkspaceGraphMutationBlocked(get())) return readOnlyResult
     const id = String(rawId || '').trim()
     const nodeId = String(rawNodeId || '').trim()
     if (!id) return { ok: false, message: 'Missing subgraph id.' }
@@ -242,6 +251,7 @@ export function createGraphDataSubgraphActions(set: SetGraph, get: GetGraph) {
   },
 
   removeUserSubgraph: (rawId: string) => {
+    if (isWorkspaceGraphMutationBlocked(get())) return
     const id = String(rawId || '').trim()
     if (!id) return
     const { graphData } = get()

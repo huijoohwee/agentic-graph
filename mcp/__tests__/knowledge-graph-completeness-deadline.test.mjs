@@ -1,0 +1,246 @@
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+
+import { createKnowledgeGraphRuntime } from "../knowledge-graph/runtime.mjs";
+import {
+  readKnowledgeGraphRepositoryIndex,
+  readKnowledgeGraphSnapshot,
+  readKnowledgeGraphSourceShard,
+} from "../knowledge-graph/store.mjs";
+
+async function fixture(t, options = {}) {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-kg-completeness-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const corpusRoot = path.join(base, "corpus");
+  const outputRoot = path.join(base, "output");
+  await fs.mkdir(corpusRoot, { recursive: true });
+  const runtime = createKnowledgeGraphRuntime({
+    knowgrphRoot: base,
+    allowedRoots: [corpusRoot],
+    outputRoot,
+    ...options,
+  });
+  return { base, corpusRoot, outputRoot, runtime };
+}
+
+const pointerPath = (value, graphId) => path.join(
+  value.outputRoot,
+  "graphs",
+  `${graphId.slice("kg:graph:".length)}.json`,
+);
+
+test("skipped and unsupported admitted sources remain incomplete in ingest, manifest, and summary", async (t) => {
+  const value = await fixture(t);
+  await fs.writeFile(path.join(value.corpusRoot, "ok.md"), "# OK\n");
+  await fs.writeFile(path.join(value.corpusRoot, "large.md"), `# Large\n${"x".repeat(64)}\n`);
+  await fs.writeFile(path.join(value.corpusRoot, "unknown.zzz"), "opaque but admitted\n");
+
+  const ingest = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: false,
+    maxFileBytes: 24,
+  });
+  assert.equal(ingest.ok, true, JSON.stringify(ingest));
+  assert.equal(ingest.complete, false);
+  assert.equal(ingest.completeness.complete, false);
+  assert.equal(ingest.counts.skipped, 1);
+  assert.equal(ingest.counts.unsupported, 1);
+  assert.deepEqual(ingest.completeness.incompleteSources, ["large.md", "unknown.zzz"]);
+  assert.equal(ingest.projection.complete, false);
+  assert.equal(ingest.projection.truncated, false);
+  assert.equal(ingest.projection.reason, "ingest_incomplete");
+
+  const snapshot = await readKnowledgeGraphSnapshot(pointerPath(value, ingest.graphId), {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: ingest.graphId,
+  });
+  assert.equal(snapshot.manifest.completeness.complete, false);
+  assert.deepEqual(snapshot.manifest.completeness.incompleteSources, ["large.md", "unknown.zzz"]);
+
+  const summary = await value.runtime.query({
+    graphId: ingest.graphId,
+    expectedSnapshotDigest: ingest.snapshotDigest,
+    mode: "summary",
+  });
+  assert.equal(summary.ok, true);
+  assert.equal(summary.completeness.complete, false);
+  assert.equal(summary.completeness.corpusComplete, false);
+  assert.equal(summary.completeness.resultComplete, true);
+  assert.equal(summary.completeness.truncated, false);
+  assert.equal(summary.completeness.reason, "ingest_incomplete");
+
+  for (const query of [
+    { mode: "search", query: "ok" },
+    { mode: "neighbors", nodeId: "ok.md" },
+    { mode: "impact", nodeId: "ok.md" },
+    { mode: "path", from: "ok.md", to: "large.md" },
+  ]) {
+    const result = await value.runtime.query({
+      graphId: ingest.graphId,
+      expectedSnapshotDigest: ingest.snapshotDigest,
+      ...query,
+    });
+    assert.equal(result.ok, true, JSON.stringify(result));
+    assert.equal(result.completeness.complete, false);
+    assert.equal(result.completeness.corpusComplete, false);
+    assert.equal(result.completeness.resultComplete, true);
+    assert.equal(result.completeness.truncated, false);
+    assert.equal(result.completeness.reason, "ingest_incomplete");
+  }
+  const limitedQuery = await value.runtime.query({
+    graphId: ingest.graphId,
+    expectedSnapshotDigest: ingest.snapshotDigest,
+    mode: "search",
+    query: "sourcefile",
+    limit: 1,
+  });
+  assert.equal(limitedQuery.completeness.corpusComplete, false);
+  assert.equal(limitedQuery.completeness.resultComplete, false);
+  assert.equal(limitedQuery.completeness.resultTruncated, true);
+  assert.equal(limitedQuery.completeness.truncated, true);
+  assert.equal(limitedQuery.completeness.reason, "ingest_incomplete");
+
+  const before = await fs.readFile(pointerPath(value, ingest.graphId), "utf8");
+  const strict = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    maxFileBytes: 24,
+  });
+  assert.equal(strict.ok, false);
+  assert.equal(strict.error.code, "strict_ingest_incomplete");
+  assert.deepEqual(strict.error.details.sources, ["large.md", "unknown.zzz"]);
+  assert.equal(await fs.readFile(pointerPath(value, ingest.graphId), "utf8"), before);
+});
+
+test("the operation deadline spans PDF conversion and preserves the previous pointer", async (t) => {
+  let clock = 0;
+  let expireDuringConversion = false;
+  const value = await fixture(t, {
+    now: () => clock,
+    pdfConverterVersion: "deadline-fixture",
+    pdfConverter: async () => {
+      if (expireDuringConversion) clock = 1000;
+      return "# Report\n## Page 1\nLocal text\n";
+    },
+  });
+  const pdfPath = path.join(value.corpusRoot, "report.pdf");
+  await fs.writeFile(pdfPath, Buffer.from("%PDF-1.4\nfirst\n%%EOF\n"));
+  const first = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    maxDurationMs: 1000,
+  });
+  assert.equal(first.ok, true, JSON.stringify(first));
+  const graphPointer = pointerPath(value, first.graphId);
+  const before = await fs.readFile(graphPointer, "utf8");
+
+  await fs.writeFile(pdfPath, Buffer.from("%PDF-1.4\nsecond\n%%EOF\n"));
+  clock = 0;
+  expireDuringConversion = true;
+  const expired = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    maxDurationMs: 1000,
+  });
+  assert.equal(expired.ok, false);
+  assert.equal(expired.error.code, "max_duration_exceeded");
+  assert.equal(expired.error.details.complete, false);
+  assert.equal(await fs.readFile(graphPointer, "utf8"), before);
+});
+
+test("parser record caps stop graph construction before an oversized fragment is stored", async (t) => {
+  const value = await fixture(t);
+  await fs.writeFile(
+    path.join(value.corpusRoot, "many.md"),
+    Array.from({ length: 20 }, (_, index) => `paragraph ${index}`).join("\n"),
+  );
+  const limited = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: false,
+    maxParserRecords: 4,
+  });
+  assert.equal(limited.ok, true, JSON.stringify(limited));
+  assert.equal(limited.complete, false);
+  assert.deepEqual(limited.completeness.incompleteSources, ["many.md"]);
+  assert.ok(limited.completeness.reasons.includes("parser_limited"));
+  const graphPointer = pointerPath(value, limited.graphId);
+  const snapshot = await readKnowledgeGraphSnapshot(graphPointer, {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: limited.graphId,
+  });
+  const repository = snapshot.manifest.repositories[0];
+  const index = await readKnowledgeGraphRepositoryIndex(snapshot, repository);
+  const shard = await readKnowledgeGraphSourceShard(snapshot, index.sources[0]);
+  assert.equal(shard.status, "limited");
+  assert.equal(shard.nodes.length, 1);
+  assert.equal(shard.nodes[0].type, "SourceFile");
+  assert.equal(shard.edges.length, 0);
+  const before = await fs.readFile(graphPointer, "utf8");
+
+  const strict = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    maxParserRecords: 4,
+  });
+  assert.equal(strict.ok, false);
+  assert.equal(strict.error.code, "parser_record_limit_exceeded");
+  assert.equal(strict.error.details.maxRecords, 4);
+  assert.equal(await fs.readFile(graphPointer, "utf8"), before);
+
+  const reparsed = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    maxParserRecords: 1000,
+  });
+  assert.equal(reparsed.ok, true, JSON.stringify(reparsed));
+  assert.equal(reparsed.complete, true);
+  assert.equal(reparsed.counts.parsed, 1);
+  assert.equal(reparsed.counts.reused, 0);
+});
+
+test("query and explain deadlines remain active after snapshot acquisition", async (t) => {
+  let enforceDeadline = false;
+  let clockCalls = 0;
+  const value = await fixture(t, {
+    now: () => {
+      if (!enforceDeadline) return 0;
+      clockCalls += 1;
+      return clockCalls > 26 ? 20000 : 0;
+    },
+  });
+  await fs.writeFile(path.join(value.corpusRoot, "doc.md"), "# Runtime\nBody\n");
+  const ingest = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+  });
+  assert.equal(ingest.ok, true, JSON.stringify(ingest));
+  const snapshot = await readKnowledgeGraphSnapshot(pointerPath(value, ingest.graphId), {
+    allowedRoot: value.outputRoot,
+    expectedGraphId: ingest.graphId,
+  });
+  const repository = snapshot.manifest.repositories[0];
+  const index = await readKnowledgeGraphRepositoryIndex(snapshot, repository);
+  const shard = await readKnowledgeGraphSourceShard(snapshot, index.sources[0]);
+  const edgeId = shard.edges[0].id;
+  const common = {
+    graphId: ingest.graphId,
+    expectedSnapshotDigest: ingest.snapshotDigest,
+    maxDurationMs: 10000,
+  };
+
+  enforceDeadline = true;
+  clockCalls = 0;
+  const query = await value.runtime.query({ ...common, mode: "search", query: "runtime" });
+  assert.equal(query.ok, false);
+  assert.equal(query.error.code, "max_duration_exceeded");
+  assert.ok(clockCalls > 20);
+
+  clockCalls = 0;
+  const explain = await value.runtime.explainEdge({ ...common, edgeId });
+  assert.equal(explain.ok, false);
+  assert.equal(explain.error.code, "max_duration_exceeded");
+  assert.ok(clockCalls > 20);
+});

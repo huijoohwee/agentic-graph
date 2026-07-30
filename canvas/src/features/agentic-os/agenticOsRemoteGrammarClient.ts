@@ -1,11 +1,9 @@
 import { useEffect, useSyncExternalStore } from 'react'
-import { readEnvString } from '@/lib/config.env'
-import { isWorkspaceRepoLocalRunReadyBootstrap } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useAgenticOsRemoteGrammarAutoHydration } from './useAgenticOsRemoteGrammarAutoHydration'
 import {
-  AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH,
-  AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
+  AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA,
   serializeAgenticCanvasOsDocsCatalogForDigest,
+  serializeAgenticCanvasOsDocsRoutingForDigest,
 } from '../../../../mcp/agentic-canvas-os-docs-contract.mjs'
 import {
   emptyProgressiveAgentsReadiness,
@@ -13,94 +11,39 @@ import {
   type AgenticOsProgressiveAgentsReadinessSummary,
 } from './agenticOsProgressiveAgentsReadiness'
 import { normalizeAgenticOsRemoteGrammarCatalogProvenance } from './agenticOsRemoteGrammarProvenance'
-import { extractAgenticOsRemoteGrammarMcpPayload, parseAgenticOsRemoteGrammarMcpResponse } from './agenticOsRemoteGrammarMcpPayload'
+import {
+  createAgenticOsRemoteGrammarClient,
+  type AgenticOsRemoteGrammarCatalogEntry,
+  type AgenticOsRemoteGrammarPayload,
+} from './agenticOsRemoteGrammarMcpClient'
 import {
   emptyLiveProviderProof,
   normalizeLiveProviderProof,
   type AgenticOsLiveProviderProofSummary,
 } from './agenticOsLiveProviderProof'
-
-export type AgenticOsRemoteGrammarCatalogEntry = {
-  token: string
-  kind?: string
-  label?: string
-  summary?: string
-  intent?: string
-  sourcePath?: string
-  sourceUrl?: string
-  fileName?: string
-  keywords?: string[]
-}
-
-type AgenticOsRemoteGrammarPayload = {
-  ok?: boolean
-  catalog?: AgenticOsRemoteGrammarCatalogEntry[]
-  sourceRevision?: string
-  catalogDigest?: string
-  counts?: Partial<Record<'command' | 'semantic' | 'binding', number>>
-  liveAgentProviderProof?: unknown
-  progressiveAgentsReadiness?: unknown
-}
-
-type AgenticOsRemoteGrammarClientOptions = {
-  endpoint?: string
-  fetchImpl?: typeof fetch
-}
-
+export { createAgenticOsRemoteGrammarClient }
+export type { AgenticOsRemoteGrammarCatalogEntry }
 export type AgenticOsRemoteGrammarSigil = '/' | '#' | '@'
-
-const DEFAULT_KNOWGRPH_AGENT_READY_BASE_URL = 'https://airvio.co/knowgrph'
 const REMOTE_GRAMMAR_SIGIL_ORDER: readonly AgenticOsRemoteGrammarSigil[] = ['/', '#', '@'] as const
-
 const normalizeString = (value: unknown): string => String(value || '').trim()
 const normalizeToken = (value: unknown): string => normalizeString(value)
-const isLocalhostHost = (value: unknown): boolean => {
-  const normalized = normalizeString(value).toLowerCase()
-  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '0.0.0.0'
-}
-const isBareLocalhostOrigin = (value: unknown): boolean => {
-  const origin = normalizeString(value)
-  if (!origin) return false
-  try {
-    const parsed = new URL(origin)
-    const port = normalizeString(parsed.port)
-    return isLocalhostHost(parsed.hostname) && !port
-  } catch {
-    return false
-  }
-}
+const normalizeRelatedTokens = (value: unknown, sigil: '#' | '@'): string[] => Array.isArray(value)
+  ? [...new Set(value.map(normalizeString).filter(token => token.startsWith(sigil) && /^[/#@][A-Za-z0-9_.-]+$/.test(token)))].slice(0, 12)
+  : []
+const normalizeMcpTools = (value: unknown): string[] => Array.isArray(value)
+  ? [...new Set(value.map(normalizeString).filter(tool => /^knowgrph\.[A-Za-z0-9_.-]+$/.test(tool)))].slice(0, 12)
+  : []
 const normalizeSigil = (value: unknown): AgenticOsRemoteGrammarSigil | null => {
   const token = normalizeToken(value)
   return token.startsWith('/') || token.startsWith('#') || token.startsWith('@')
     ? token[0] as AgenticOsRemoteGrammarSigil
     : null
 }
-
-const readKnowgrphAgentReadyBaseUrl = (): string => {
-  const configuredBaseUrl = normalizeString(readEnvString('VITE_KNOWGRPH_AGENT_READY_BASE_URL', ''))
-  if (configuredBaseUrl) return configuredBaseUrl.replace(/\/+$/, '')
-  if (typeof window !== 'undefined') {
-    const currentOrigin = normalizeString(window.location?.origin)
-    if (currentOrigin && (isWorkspaceRepoLocalRunReadyBootstrap() || !isBareLocalhostOrigin(currentOrigin))) {
-      return new URL('/knowgrph/', currentOrigin.endsWith('/') ? currentOrigin : `${currentOrigin}/`)
-        .toString()
-        .replace(/\/+$/, '')
-    }
-  }
-  return DEFAULT_KNOWGRPH_AGENT_READY_BASE_URL
-}
-
-const resolveControlPlaneEndpoint = (endpoint?: string): string => {
-  const explicitEndpoint = normalizeString(endpoint)
-  if (explicitEndpoint) return explicitEndpoint
-  const baseUrl = readKnowgrphAgentReadyBaseUrl()
-  return `${baseUrl}${AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH.replace(/^\/knowgrph/, '')}`
-}
-
 const normalizeCatalogEntry = (entry: AgenticOsRemoteGrammarCatalogEntry): AgenticOsRemoteGrammarCatalogEntry | null => {
   const token = normalizeToken(entry.token)
   const sigil = normalizeSigil(token)
   if (!token || !sigil) return null
+  const mcpTools = normalizeMcpTools(entry.mcpTools?.length ? entry.mcpTools : [entry.mcpTool])
   return {
     token,
     kind: normalizeString(entry.kind).toLowerCase(),
@@ -111,11 +54,13 @@ const normalizeCatalogEntry = (entry: AgenticOsRemoteGrammarCatalogEntry): Agent
     sourceUrl: normalizeString(entry.sourceUrl),
     fileName: normalizeString(entry.fileName),
     keywords: Array.isArray(entry.keywords) ? entry.keywords.map(normalizeString).filter(Boolean) : [],
+    mcpTool: mcpTools[0] || '',
+    mcpTools,
+    semantics: normalizeRelatedTokens(entry.semantics, '#'),
+    bindings: normalizeRelatedTokens(entry.bindings, '@'),
   }
 }
-
 export type AgenticOsRemoteGrammarHydrationStatus = 'idle' | 'loading' | 'fresh' | 'stale' | 'blocked'
-
 export type AgenticOsRemoteGrammarCatalogCounts = {
   slash: number
   hash: number
@@ -127,6 +72,9 @@ export type AgenticOsRemoteGrammarSnapshot = {
   entries: readonly AgenticOsRemoteGrammarCatalogEntry[]
   sourceRevision: string
   catalogDigest: string
+  routingSchema: string
+  routingDigest: string
+  routingVerified: boolean
   hydration: {
     status: AgenticOsRemoteGrammarHydrationStatus
     attempts: number
@@ -141,6 +89,9 @@ let remoteGrammarVersion = 0
 let remoteGrammarEntriesByToken = new Map<string, AgenticOsRemoteGrammarCatalogEntry>()
 let remoteGrammarSourceRevision = ''
 let remoteGrammarCatalogDigest = ''
+let remoteGrammarRoutingSchema = ''
+let remoteGrammarRoutingDigest = ''
+let remoteGrammarRoutingVerified = false
 let remoteGrammarExpectedCounts: AgenticOsRemoteGrammarCatalogCounts | null = null
 let remoteGrammarHydrationStatus: AgenticOsRemoteGrammarHydrationStatus = 'idle'
 let remoteGrammarHydrationAttempts = 0
@@ -156,6 +107,9 @@ let remoteGrammarSnapshot: AgenticOsRemoteGrammarSnapshot = {
   entries: [],
   sourceRevision: '',
   catalogDigest: '',
+  routingSchema: '',
+  routingDigest: '',
+  routingVerified: false,
   hydration: { status: 'idle', attempts: 0, error: '' },
   counts: emptyCounts(),
   liveAgentProviderProof: remoteGrammarLiveAgentProviderProof,
@@ -195,13 +149,14 @@ const normalizePayloadCounts = (
     : null
 }
 
-const digestCatalogEntries = async (
+const digestSerializedEntries = async (
   entries: readonly AgenticOsRemoteGrammarCatalogEntry[],
+  serialize: (catalog: readonly AgenticOsRemoteGrammarCatalogEntry[]) => string,
 ): Promise<string> => {
   if (!globalThis.crypto?.subtle) {
     throw new Error('Agentic OS catalog digest verification requires Web Crypto')
   }
-  const bytes = new TextEncoder().encode(serializeAgenticCanvasOsDocsCatalogForDigest(entries))
+  const bytes = new TextEncoder().encode(serialize(entries))
   const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes)
   return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('')
 }
@@ -214,6 +169,9 @@ const emitRemoteGrammarSnapshot = (): void => {
     entries,
     sourceRevision: remoteGrammarSourceRevision,
     catalogDigest: remoteGrammarCatalogDigest,
+    routingSchema: remoteGrammarRoutingSchema,
+    routingDigest: remoteGrammarRoutingDigest,
+    routingVerified: remoteGrammarRoutingVerified,
     hydration: {
       status: remoteGrammarHydrationStatus,
       attempts: remoteGrammarHydrationAttempts,
@@ -235,9 +193,16 @@ const finalizeRemoteGrammarHydration = async (hydrationEpoch: number): Promise<v
   const entries = [...remoteGrammarEntriesByToken.values()]
   const actualCounts = countRemoteGrammarEntries(entries)
   let verifiedDigest = ''
+  let verifiedRoutingDigest = ''
   if (missingSigils.length === 0 && remoteGrammarExpectedCounts && countsEqual(actualCounts, remoteGrammarExpectedCounts)) {
     try {
-      verifiedDigest = await digestCatalogEntries(entries)
+      verifiedDigest = await digestSerializedEntries(entries, serializeAgenticCanvasOsDocsCatalogForDigest)
+      if (
+        remoteGrammarRoutingSchema === AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA
+        && /^[0-9a-f]{64}$/.test(remoteGrammarRoutingDigest)
+      ) {
+        verifiedRoutingDigest = await digestSerializedEntries(entries, serializeAgenticCanvasOsDocsRoutingForDigest)
+      }
     } catch (error) {
       remoteGrammarHydrationError = error instanceof Error ? error.message : 'Agentic OS catalog digest verification failed'
     }
@@ -247,6 +212,9 @@ const finalizeRemoteGrammarHydration = async (hydrationEpoch: number): Promise<v
     && missingSigils.length === 0
     && Boolean(remoteGrammarExpectedCounts && countsEqual(actualCounts, remoteGrammarExpectedCounts))
     && verifiedDigest === remoteGrammarCatalogDigest
+  remoteGrammarRoutingVerified = fresh
+    && remoteGrammarRoutingSchema === AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA
+    && verifiedRoutingDigest === remoteGrammarRoutingDigest
   remoteGrammarHydrationStatus = fresh ? 'fresh' : remoteGrammarEntriesByToken.size > 0 ? 'stale' : 'blocked'
   if (fresh) remoteGrammarHydrationError = ''
   else if (!remoteGrammarHydrationError) {
@@ -259,7 +227,7 @@ const finalizeRemoteGrammarHydration = async (hydrationEpoch: number): Promise<v
   emitRemoteGrammarSnapshot()
 }
 
-const hydrateRemoteGrammarSigilsBounded = async (
+export const hydrateAgenticOsRemoteGrammarCatalogBySigils = async (
   sigils: readonly AgenticOsRemoteGrammarSigil[],
   options: { force?: boolean } = {},
 ): Promise<void> => {
@@ -293,6 +261,10 @@ const mergeCatalogEntry = (
   sourceUrl: next.sourceUrl || previous?.sourceUrl || '',
   fileName: next.fileName || previous?.fileName || '',
   keywords: [...new Set([...(previous?.keywords || []), ...(next.keywords || [])])],
+  mcpTool: next.mcpTool || previous?.mcpTool || '',
+  mcpTools: next.mcpTools?.length ? next.mcpTools : previous?.mcpTools || [],
+  semantics: next.semantics?.length ? next.semantics : previous?.semantics || [],
+  bindings: next.bindings?.length ? next.bindings : previous?.bindings || [],
 })
 
 export function getAgenticOsRemoteGrammarCatalogSnapshot(): AgenticOsRemoteGrammarSnapshot {
@@ -321,6 +293,7 @@ export function registerAgenticOsRemoteGrammarCatalogEntries(
   if (changed) {
     if (remoteGrammarCatalogDigest && remoteGrammarHydrationStatus === 'fresh') {
       remoteGrammarHydrationStatus = 'stale'
+      remoteGrammarRoutingVerified = false
       remoteGrammarHydrationError = 'Agentic OS catalog changed outside the verified MCP hydration cycle'
     }
     emitRemoteGrammarSnapshot()
@@ -343,6 +316,9 @@ export function resetAgenticOsRemoteGrammarCatalogForTests(): void {
   remoteGrammarEntriesByToken = new Map()
   remoteGrammarSourceRevision = ''
   remoteGrammarCatalogDigest = ''
+  remoteGrammarRoutingSchema = ''
+  remoteGrammarRoutingDigest = ''
+  remoteGrammarRoutingVerified = false
   remoteGrammarExpectedCounts = null
   remoteGrammarHydrationStatus = 'idle'
   remoteGrammarHydrationAttempts = 0
@@ -370,119 +346,9 @@ export function useAgenticOsRemoteGrammarCatalog(args: {
   useEffect(() => {
     const sigils = sigilSignature.split(',').filter((value, index, values) => REMOTE_GRAMMAR_SIGIL_ORDER.includes(value as AgenticOsRemoteGrammarSigil) && values.indexOf(value) === index) as AgenticOsRemoteGrammarSigil[]
     if (!autoHydrationAllowed || sigils.length === 0) return
-    void hydrateRemoteGrammarSigilsBounded(sigils)
+    void hydrateAgenticOsRemoteGrammarCatalogBySigils(sigils)
   }, [autoHydrationAllowed, sigilSignature])
   return snapshot
-}
-export function createAgenticOsRemoteGrammarClient(options: AgenticOsRemoteGrammarClientOptions = {}) {
-  let nextId = 1
-  let mcpSessionId = ''
-  let sessionPromise: Promise<string> | null = null
-
-  const postRpc = async (
-    body: Record<string, unknown>,
-    { signal, sessionId = '' }: { signal?: AbortSignal, sessionId?: string } = {},
-  ): Promise<{ rpc: Record<string, unknown>, sessionId: string }> => {
-    const response = await (options.fetchImpl || globalThis.fetch)(resolveControlPlaneEndpoint(options.endpoint), {
-      method: 'POST',
-      headers: {
-        accept: 'application/json, text/event-stream',
-        'content-type': 'application/json',
-        ...(sessionId ? { 'mcp-session-id': sessionId } : {}),
-      },
-      body: JSON.stringify(body),
-      signal,
-    })
-    const text = await response.text()
-    if (!response.ok) {
-      throw new Error(`Agentic OS remote grammar responded ${response.status}`)
-    }
-    const rpc = parseAgenticOsRemoteGrammarMcpResponse(text)
-    if (!rpc) {
-      throw new Error('Agentic OS remote grammar returned an unreadable MCP payload')
-    }
-    return {
-      rpc,
-      sessionId: response.headers.get('mcp-session-id') || sessionId,
-    }
-  }
-
-  const ensureSession = async ({ signal }: { signal?: AbortSignal } = {}): Promise<string> => {
-    if (mcpSessionId) return mcpSessionId
-    if (!sessionPromise) {
-      sessionPromise = (async () => {
-        const initialized = await postRpc({
-          jsonrpc: '2.0',
-          id: nextId++,
-          method: 'initialize',
-          params: {
-            protocolVersion: '2024-11-05',
-            capabilities: {},
-            clientInfo: { name: 'knowgrph-canvas', version: '0.1.0' },
-          },
-        }, { signal })
-        if (initialized.rpc.error) {
-          throw new Error(String((initialized.rpc.error as { message?: unknown }).message || 'Agentic OS remote grammar initialize failed'))
-        }
-        if (!initialized.sessionId) {
-          throw new Error('Agentic OS remote grammar initialize missing mcp-session-id')
-        }
-        mcpSessionId = initialized.sessionId
-        return mcpSessionId
-      })().finally(() => {
-        sessionPromise = null
-      })
-    }
-    return sessionPromise
-  }
-
-  const searchCatalogSnapshot = async (query: string, { signal }: { signal?: AbortSignal } = {}): Promise<{
-    catalog: AgenticOsRemoteGrammarCatalogEntry[]
-    sourceRevision: string
-    catalogDigest: string
-    counts: AgenticOsRemoteGrammarPayload['counts']
-    liveAgentProviderProof: unknown
-    progressiveAgentsReadiness: unknown
-  }> => {
-      const normalizedQuery = normalizeString(query)
-      if (!normalizedQuery) return {
-        catalog: [],
-        sourceRevision: '',
-        catalogDigest: '',
-        counts: undefined,
-        liveAgentProviderProof: null,
-        progressiveAgentsReadiness: null,
-      }
-      const sessionId = await ensureSession({ signal })
-      const invoked = await postRpc({
-        jsonrpc: '2.0',
-        id: nextId++,
-        method: 'tools/call',
-        params: {
-          name: AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME,
-          arguments: { query: normalizedQuery, limit: 500 },
-        },
-      }, { signal, sessionId })
-      if (invoked.rpc.error) {
-        throw new Error(String((invoked.rpc.error as { message?: unknown }).message || 'Agentic OS remote grammar tools/call failed'))
-      }
-      const payload = extractAgenticOsRemoteGrammarMcpPayload<AgenticOsRemoteGrammarPayload>(invoked.rpc)
-      return {
-        catalog: Array.isArray(payload.catalog) ? payload.catalog : [],
-        sourceRevision: normalizeString(payload.sourceRevision),
-        catalogDigest: normalizeString(payload.catalogDigest),
-        counts: payload.counts,
-        liveAgentProviderProof: payload.liveAgentProviderProof,
-        progressiveAgentsReadiness: payload.progressiveAgentsReadiness,
-      }
-  }
-
-  return {
-    searchCatalogSnapshot,
-    async searchCatalog(query: string, options: { signal?: AbortSignal } = {}): Promise<AgenticOsRemoteGrammarCatalogEntry[]> {
-      return (await searchCatalogSnapshot(query, options)).catalog
-    },
-  }
 }
 export async function fetchAgenticOsRemoteGrammarCatalog(
   args: { query: string, signal?: AbortSignal },
@@ -504,9 +370,15 @@ export async function fetchAgenticOsRemoteGrammarCatalog(
     payload.catalog,
     payload.sourceRevision,
   )
-  if (remoteGrammarSourceRevision && remoteGrammarSourceRevision !== payload.sourceRevision) {
+  const revisionChanged = Boolean(
+    remoteGrammarSourceRevision && remoteGrammarSourceRevision !== payload.sourceRevision,
+  )
+  if (revisionChanged) {
     remoteGrammarEntriesByToken = new Map()
     remoteGrammarCatalogDigest = ''
+    remoteGrammarRoutingSchema = ''
+    remoteGrammarRoutingDigest = ''
+    remoteGrammarRoutingVerified = false
     remoteGrammarExpectedCounts = null
     remoteGrammarLiveAgentProviderProof = emptyLiveProviderProof(payload.sourceRevision)
     remoteGrammarProgressiveAgentsReadiness = emptyProgressiveAgentsReadiness(payload.sourceRevision)
@@ -514,11 +386,38 @@ export async function fetchAgenticOsRemoteGrammarCatalog(
   if (remoteGrammarCatalogDigest && remoteGrammarCatalogDigest !== payload.catalogDigest) {
     throw new Error('Agentic OS remote grammar responses disagree on the catalog digest')
   }
+  const incomingRoutingSchema = normalizeString(payload.routingSchema)
+  const incomingRoutingDigest = normalizeString(payload.routingDigest)
+  if (Boolean(incomingRoutingSchema) !== Boolean(incomingRoutingDigest)) {
+    throw new Error('Agentic OS remote grammar response has an incomplete routing proof')
+  }
+  if (
+    incomingRoutingSchema
+    && (
+      incomingRoutingSchema !== AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA
+      || !/^[0-9a-f]{64}$/.test(incomingRoutingDigest)
+    )
+  ) {
+    throw new Error('Agentic OS remote grammar response has an unsupported routing proof')
+  }
+  if (
+    !revisionChanged
+    && remoteGrammarSuccessfulSigils.size > 0
+    && (
+      remoteGrammarRoutingSchema !== incomingRoutingSchema
+      || remoteGrammarRoutingDigest !== incomingRoutingDigest
+    )
+  ) {
+    throw new Error('Agentic OS remote grammar responses disagree on the routing proof')
+  }
   if (remoteGrammarExpectedCounts && !countsEqual(remoteGrammarExpectedCounts, expectedCounts)) {
     throw new Error('Agentic OS remote grammar responses disagree on the catalog counts')
   }
   remoteGrammarSourceRevision = payload.sourceRevision
   remoteGrammarCatalogDigest = payload.catalogDigest
+  remoteGrammarRoutingSchema = incomingRoutingSchema
+  remoteGrammarRoutingDigest = incomingRoutingDigest
+  remoteGrammarRoutingVerified = false
   remoteGrammarExpectedCounts = expectedCounts
   remoteGrammarLiveAgentProviderProof = normalizeLiveProviderProof(payload.liveAgentProviderProof, payload.sourceRevision)
   remoteGrammarProgressiveAgentsReadiness = normalizeProgressiveAgentsReadiness(
@@ -542,11 +441,9 @@ export async function fetchAgenticOsRemoteGrammarCatalog(
     : registerAgenticOsRemoteGrammarCatalogEntries(sourceBoundCatalog))]
   if (sigil) remoteGrammarSuccessfulSigils.set(sigil, payload.sourceRevision)
   remoteGrammarHydrationError = ''
-  remoteGrammarHydrationStatus = REMOTE_GRAMMAR_SIGIL_ORDER.every(value => remoteGrammarSuccessfulSigils.get(value) === payload.sourceRevision)
-    ? 'fresh'
-    : 'loading'
+  remoteGrammarHydrationStatus = 'loading'
   emitRemoteGrammarSnapshot()
-  if (!sigil) await hydrateRemoteGrammarSigilsBounded(REMOTE_GRAMMAR_SIGIL_ORDER)
+  if (!sigil) await hydrateAgenticOsRemoteGrammarCatalogBySigils(REMOTE_GRAMMAR_SIGIL_ORDER)
   return entries
 }
 
@@ -593,6 +490,6 @@ export async function refreshAgenticOsRemoteGrammarCatalog(): Promise<AgenticOsR
   remoteGrammarHydrationError = ''
   remoteGrammarHydrationStatus = 'loading'
   emitRemoteGrammarSnapshot()
-  await hydrateRemoteGrammarSigilsBounded(REMOTE_GRAMMAR_SIGIL_ORDER, { force: true })
+  await hydrateAgenticOsRemoteGrammarCatalogBySigils(REMOTE_GRAMMAR_SIGIL_ORDER, { force: true })
   return remoteGrammarSnapshot
 }

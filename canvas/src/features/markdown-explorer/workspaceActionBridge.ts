@@ -2,6 +2,7 @@ import type { Canvas2dRendererId } from '@/lib/config.render'
 import type { WorkspaceUrlImportDocumentModeId } from '@/features/markdown-workspace/workspaceImport/canvasPresets'
 import type { VideoDownloadOptions, VideoDownloadResult } from '@/lib/video-download/types'
 import type { WebsiteImportManifestV1 } from '@/lib/websites/server/websiteImportTypes'
+import type { GraphData } from '@/lib/graph/types'
 
 export type WorkspaceImportUrlOpts = {
   canvas2dRenderer?: Canvas2dRendererId | null
@@ -41,6 +42,45 @@ export type WorkspaceBridgeImportResult = {
   removedPaths?: string[]
   websiteImportSummary?: WorkspaceWebsiteImportSummary
   websiteImportManifest?: WebsiteImportManifestV1
+  handled?: true
+}
+
+export type WorkspaceKnowledgeGraphCounts = {
+  sources: number
+  nodes: number
+  edges: number
+}
+
+export type WorkspaceKnowledgeGraphProjection = {
+  token: string
+  readOnly: true
+  graphData: GraphData
+  complete: boolean
+  truncated: boolean
+  limit: number
+  reason?: string
+}
+
+export type WorkspaceKnowledgeGraphImportResult = {
+  handled: true
+  kind: 'knowledge-graph'
+  graphId: string
+  snapshotDigest: string
+  complete: boolean
+  counts: WorkspaceKnowledgeGraphCounts
+  projection: WorkspaceKnowledgeGraphProjection
+}
+
+export type WorkspaceKnowledgeGraphInvocation = {
+  schema: 'knowgrph-knowledge-graph-invocation/v1'
+  tool: string
+  action: string
+  semantics: readonly string[]
+  bindings: readonly string[]
+  sourceRevision: string
+  catalogDigest: string
+  routingSchema: 'agentic-canvas-os-docs-routing/v1'
+  routingDigest: string
 }
 
 export type WorkspaceWebsiteImportSummary = {
@@ -53,6 +93,15 @@ export type WorkspaceWebsiteImportSummary = {
 
 type WorkspaceBridgeImportReturn = void | WorkspaceBridgeImportResult | Promise<void | WorkspaceBridgeImportResult>
 
+export type WorkspaceKnowledgeGraphBridge = {
+  importFolder?: () => Promise<WorkspaceKnowledgeGraphImportResult>
+  importRepositoryUrl?: (
+    url: string,
+    opts?: WorkspaceImportUrlOpts,
+    invocation?: WorkspaceKnowledgeGraphInvocation,
+  ) => Promise<WorkspaceKnowledgeGraphImportResult>
+}
+
 export type MarkdownWorkspaceActionBridge = {
   importLocalFiles?: (files: WorkspaceFileSelection) => WorkspaceBridgeImportReturn
   importLocalImages?: (files: WorkspaceFileSelection) => WorkspaceBridgeImportReturn
@@ -62,6 +111,7 @@ export type MarkdownWorkspaceActionBridge = {
   downloadVideo?: (url: string, options: VideoDownloadOptions) => Promise<VideoDownloadResult>
   createNewFolder?: () => void
   save?: () => void
+  knowledgeGraph?: WorkspaceKnowledgeGraphBridge
 
   export?: {
     duplicateInWorkspace?: () => void
@@ -101,6 +151,12 @@ export function getMarkdownWorkspaceActionBridge(): MarkdownWorkspaceActionBridg
     if (bridge.downloadVideo) merged.downloadVideo = bridge.downloadVideo
     if (bridge.createNewFolder) merged.createNewFolder = bridge.createNewFolder
     if (bridge.save) merged.save = bridge.save
+    if (bridge.knowledgeGraph) {
+      merged.knowledgeGraph = {
+        ...(merged.knowledgeGraph || {}),
+        ...bridge.knowledgeGraph,
+      }
+    }
     if (bridge.export) {
       merged.export = {
         ...(merged.export || {}),

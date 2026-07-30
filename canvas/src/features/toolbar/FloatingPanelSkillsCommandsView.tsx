@@ -19,6 +19,7 @@ import {
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { MotionCapturePlatformProjection } from '@/features/three/MotionCapturePlatformProjection'
+import { useSkillsCommandsMcpTarget } from '@/features/agentic-os/skillsCommandsMcpTarget'
 
 const SKILLS_COMMANDS_PREFIX_FILTERS: Array<{ filter: SkillsCommandsPrefixFilter; label: string; Icon: typeof Slash }> = [
   { filter: 'slash', label: 'Slash commands', Icon: Slash },
@@ -35,13 +36,22 @@ const SKILLS_COMMANDS_GRAMMAR_GROUPS: Array<{ groupBy: SkillsCommandsGrammarGrou
 export function FloatingPanelSkillsCommandsView() {
   const panelTypography = usePanelTypography()
   const search = useFloatingPanelCatalogSearch()
+  const mcpTarget = useSkillsCommandsMcpTarget()
+  const targetingMcpInvocation = mcpTarget.status !== 'idle'
+  const targetTokens = React.useMemo(
+    () => targetingMcpInvocation
+      ? mcpTarget.resolution?.entries.map(entry => entry.token) || []
+      : undefined,
+    [mcpTarget.resolution, targetingMcpInvocation],
+  )
   const [prefixFilter, setPrefixFilter] = React.useState<SkillsCommandsPrefixFilter>('all')
   const [grammarGroupBy, setGrammarGroupBy] = React.useState<SkillsCommandsGrammarGroupBy>('subject')
   const visibleGroupKeys = React.useMemo(() => resolveSkillsCommandsGroupKeys({
     grammarGroupBy,
     prefixFilter,
     searchQuery: search.searchQuery,
-  }), [grammarGroupBy, prefixFilter, search.searchQuery])
+    tokenFilter: targetTokens,
+  }), [grammarGroupBy, prefixFilter, search.searchQuery, targetTokens])
   const visibleGroupKeyValues = React.useMemo(() => visibleGroupKeys.map(group => group.key), [visibleGroupKeys])
   const {
     allCollapsed: allGroupsCollapsed,
@@ -57,6 +67,10 @@ export function FloatingPanelSkillsCommandsView() {
       data-kg-floating-panel-skills-commands-view="true"
       data-kg-floating-panel-catalog-layout="media-reuse"
       data-kg-floating-panel-skills-commands-media-layout="reuse"
+      data-kg-floating-panel-skills-commands-mcp-target={mcpTarget.mcpTool || undefined}
+      data-kg-floating-panel-skills-commands-mcp-target-status={mcpTarget.status}
+      data-kg-floating-panel-skills-commands-mcp-target-action={mcpTarget.resolution?.invocation.action || undefined}
+      data-kg-floating-panel-skills-commands-mcp-target-tokens={targetTokens?.join(' ') || undefined}
       aria-label="Skills & Commands"
     >
       <FloatingPanelCatalogHeader
@@ -170,6 +184,16 @@ export function FloatingPanelSkillsCommandsView() {
         ) : null}
       />
       <section className={floatingPanelCatalogBodyClassName()} tabIndex={-1} data-kg-floating-panel-catalog-body="skills-commands" data-kg-floating-panel-skills-commands-list="1" aria-label="Skills & Commands catalog">
+        {mcpTarget.status === 'loading' ? (
+          <p role="status" data-kg-floating-panel-skills-commands-mcp-feedback="loading">
+            Resolving source-backed MCP command…
+          </p>
+        ) : null}
+        {mcpTarget.status === 'blocked' ? (
+          <p role="alert" data-kg-floating-panel-skills-commands-mcp-feedback="blocked">
+            {mcpTarget.error || 'Source-backed MCP command resolution failed.'}
+          </p>
+        ) : null}
         <MotionCapturePlatformProjection variant="skills" />
         <SkillsCommandsView
           collapsedGroupKeys={collapsedGroupKeys}
@@ -177,6 +201,7 @@ export function FloatingPanelSkillsCommandsView() {
           onCollapsedGroupKeysChange={setCollapsedGroupKeys}
           prefixFilter={prefixFilter}
           searchQuery={search.searchQuery}
+          tokenFilter={targetTokens}
         />
       </section>
     </section>

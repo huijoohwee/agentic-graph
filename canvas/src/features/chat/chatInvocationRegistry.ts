@@ -75,8 +75,11 @@ export type ChatInvocationCatalogEntry = {
   insertionText?: string
   invocationModes?: PromptPreset['invocationModes']
   chatRoute?: PromptPreset['chatRoute']
-  mcpTool?: PromptPreset['mcpTool']
+  mcpTool?: string
+  mcpTools?: readonly string[]
   mcpToken?: PromptPreset['mcpToken']
+  semantics?: readonly string[]
+  bindings?: readonly string[]
 }
 
 const PROMPT_PRESET_CATALOG_SOURCE_PATH = 'agentic-canvas-os/docs/PROMPT-PRESETS.md' as const
@@ -239,7 +242,10 @@ const mergeCatalogEntryBehavior = (
   invocationModes: canonical.invocationModes || behaviorSource.invocationModes,
   chatRoute: canonical.chatRoute || behaviorSource.chatRoute,
   mcpTool: canonical.mcpTool || behaviorSource.mcpTool,
+  mcpTools: canonical.mcpTools || behaviorSource.mcpTools,
   mcpToken: canonical.mcpToken || behaviorSource.mcpToken,
+  semantics: canonical.semantics || behaviorSource.semantics,
+  bindings: canonical.bindings || behaviorSource.bindings,
 })
 
 const dedupeCatalogEntriesByToken = (entries: readonly ChatInvocationCatalogEntry[]): readonly ChatInvocationCatalogEntry[] => {
@@ -287,6 +293,10 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
     kind: invocation.kind,
     sourcePath: invocation.sourcePath,
     keywords: invocation.keywords,
+    mcpTool: invocation.mcpTool,
+    mcpTools: invocation.mcpTools,
+    semantics: invocation.semantics,
+    bindings: invocation.bindings,
   })),
   ...getAgenticOsDocInvocations().map(doc => ({
     id: `doc:${doc.id}:slash`,

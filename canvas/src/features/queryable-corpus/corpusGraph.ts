@@ -1,6 +1,5 @@
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 import { hashText } from '@/features/parsers/hash'
-import { buildCorpusEdgeEvidence, corpusEdgeHasExplanation } from '@/features/queryable-corpus/corpusEdgeEvidence'
 
 export type CorpusMediaKind =
   | 'code'
@@ -225,20 +224,20 @@ function pushUniqueEdge(edges: GraphEdge[], edge: GraphEdge, seen: Set<string>) 
 
 function makeEvidenceProperties(args: {
   sourcePath: string
-  sourceText: string
   kind?: CorpusEvidenceKind
   confidence?: CorpusConfidence
   lineStart?: number
   lineEnd?: number
   parserId: string
-  ruleId: string
-  explanation: string
 }): Record<string, JSONValue> {
-  return buildCorpusEdgeEvidence({
-    ...args,
-    lineStart: args.lineStart || 1,
-    lineEnd: args.lineEnd || args.lineStart || 1,
-  })
+  return {
+    'evidence:kind': asJson(args.kind || 'extracted'),
+    'evidence:confidence': asJson(args.confidence || 'high'),
+    'evidence:sourcePath': asJson(args.sourcePath),
+    'evidence:lineStart': asJson(args.lineStart || 1),
+    'evidence:lineEnd': asJson(args.lineEnd || args.lineStart || 1),
+    'corpus:parserId': asJson(args.parserId),
+  }
 }
 
 function createSourceNode(args: {
@@ -263,7 +262,6 @@ function createSourceNode(args: {
 
 function createContainmentEdge(args: {
   sourcePath: string
-  sourceText: string
   sourceId: string
   targetId: string
   label: string
@@ -278,12 +276,9 @@ function createContainmentEdge(args: {
     label: args.label,
     properties: makeEvidenceProperties({
       sourcePath: args.sourcePath,
-      sourceText: args.sourceText,
       lineStart: args.lineStart,
       lineEnd: args.lineStart,
       parserId: args.parserId,
-      ruleId: `${args.parserId}.${args.label}`,
-      explanation: `The deterministic ${args.parserId} parser observed ${args.label} at this exact source span.`,
       confidence: args.confidence || 'high',
     }),
   }
@@ -316,7 +311,6 @@ export function parseCorpusSourceUnitMarkdown(name: string, text: string): { gra
   }
   const edge = createContainmentEdge({
     sourcePath,
-    sourceText: text,
     sourceId: source.id,
     targetId: statusId,
     label: 'hasExtractionStatus',
@@ -402,7 +396,6 @@ export function parseCorpusCodeGraph(name: string, text: string): { graphData: G
     }, seenNodes)
     pushUniqueEdge(edges, createContainmentEdge({
       sourcePath,
-      sourceText: text,
       sourceId: source.id,
       targetId: id,
       label: 'declares',
@@ -425,7 +418,6 @@ export function parseCorpusCodeGraph(name: string, text: string): { graphData: G
     }, seenNodes)
     pushUniqueEdge(edges, createContainmentEdge({
       sourcePath,
-      sourceText: text,
       sourceId: source.id,
       targetId: id,
       label: 'imports',
@@ -448,7 +440,6 @@ export function parseCorpusCodeGraph(name: string, text: string): { graphData: G
     }, seenNodes)
     pushUniqueEdge(edges, createContainmentEdge({
       sourcePath,
-      sourceText: text,
       sourceId: source.id,
       targetId: id,
       label: 'referencesEntity',
@@ -495,7 +486,6 @@ export function parseCorpusSqlGraph(name: string, text: string): { graphData: Gr
     }, seenNodes)
     pushUniqueEdge(edges, createContainmentEdge({
       sourcePath,
-      sourceText: text,
       sourceId: source.id,
       targetId: tableId,
       label: 'definesTable',
@@ -519,7 +509,6 @@ export function parseCorpusSqlGraph(name: string, text: string): { graphData: Gr
     }, seenNodes)
     pushUniqueEdge(edges, createContainmentEdge({
       sourcePath,
-      sourceText: text,
       sourceId: source.id,
       targetId: refId,
       label: 'referencesTable',
@@ -571,7 +560,6 @@ export function parseCorpusScriptGraph(name: string, text: string): { graphData:
     }, seenNodes)
     pushUniqueEdge(edges, createContainmentEdge({
       sourcePath,
-      sourceText: text,
       sourceId: source.id,
       targetId: id,
       label,
@@ -595,5 +583,12 @@ export function parseCorpusScriptGraph(name: string, text: string): { graphData:
 
 export function everyCorpusEdgeHasEvidence(graphData: GraphData | null | undefined): boolean {
   const edges = Array.isArray(graphData?.edges) ? graphData!.edges : []
-  return edges.every(edge => corpusEdgeHasExplanation(edge.properties || {}))
+  return edges.every(edge => {
+    const props = edge.properties || {}
+    return Boolean(
+      String(props['evidence:kind'] || '').trim()
+      && String(props['evidence:sourcePath'] || '').trim()
+      && String(props['evidence:confidence'] || '').trim(),
+    )
+  })
 }

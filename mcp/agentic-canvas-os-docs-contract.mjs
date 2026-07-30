@@ -1,5 +1,6 @@
 export const AGENTIC_CANVAS_OS_DOCS_MCP_TOOL_NAME = "knowgrph.agentic_canvas_os.docs.invoke";
 export const AGENTIC_CANVAS_OS_DOCS_CONTROL_PLANE_PATH = "/knowgrph/control-plane/mcp";
+export const AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA = "agentic-canvas-os-docs-routing/v1";
 
 export const AGENTIC_CANVAS_OS_DOCS_WORKSPACE_ROOT = "agentic-canvas-os/docs";
 export const AGENTIC_CANVAS_OS_DOCS_SOURCE_ROOT_URL =
@@ -76,7 +77,8 @@ export const AGENTIC_CANVAS_OS_DOCS_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: true,
   required: [
     "ok", "docsRoot", "sourceRootUrl", "sourceRevision",
-    "catalogDigest", "counts", "liveAgentProviderProof", "progressiveAgentsReadiness", "catalog",
+    "catalogDigest", "routingSchema", "routingDigest", "counts",
+    "liveAgentProviderProof", "progressiveAgentsReadiness", "catalog",
   ],
   properties: {
     ok: { type: "boolean" },
@@ -84,6 +86,8 @@ export const AGENTIC_CANVAS_OS_DOCS_OUTPUT_SCHEMA = Object.freeze({
     sourceRootUrl: { type: "string" },
     sourceRevision: { type: "string", pattern: "^[0-9a-f]{40}$" },
     catalogDigest: { type: "string", pattern: AGENTIC_CANVAS_OS_DOCS_CATALOG_DIGEST_PATTERN },
+    routingSchema: { const: AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA },
+    routingDigest: { type: "string", pattern: AGENTIC_CANVAS_OS_DOCS_CATALOG_DIGEST_PATTERN },
     liveAgentProviderProof: { type: "object", additionalProperties: true },
     progressiveAgentsReadiness: PROGRESSIVE_AGENTS_READINESS_OUTPUT_SCHEMA,
     absoluteDocsRoot: { type: "string" },
@@ -143,3 +147,27 @@ export const serializeAgenticCanvasOsDocsCatalogForDigest = (catalog = []) => `$
     }))
     .sort((left, right) => left.token.localeCompare(right.token)),
 )}\n`;
+
+const normalizeRoutingTokens = (values, sigil = "") => [
+  ...new Set((Array.isArray(values) ? values : [])
+    .map(normalizeCatalogDigestText)
+    .filter((value) => value && (!sigil || value.startsWith(sigil)))),
+];
+
+export const serializeAgenticCanvasOsDocsRoutingForDigest = (catalog = []) => `${JSON.stringify({
+  schema: AGENTIC_CANVAS_OS_DOCS_ROUTING_SCHEMA,
+  routes: [...catalog]
+    .map((entry) => ({
+      token: normalizeCatalogDigestText(entry?.token),
+      kind: normalizeCatalogDigestText(entry?.kind).toLowerCase(),
+      sourcePath: normalizeCatalogDigestText(entry?.sourcePath),
+      mcpTools: normalizeRoutingTokens(
+        Array.isArray(entry?.mcpTools)
+          ? entry.mcpTools
+          : normalizeCatalogDigestText(entry?.mcpTool) ? [entry.mcpTool] : [],
+      ),
+      semantics: normalizeRoutingTokens(entry?.semantics, "#"),
+      bindings: normalizeRoutingTokens(entry?.bindings, "@"),
+    }))
+    .sort((left, right) => left.token.localeCompare(right.token)),
+})}\n`;

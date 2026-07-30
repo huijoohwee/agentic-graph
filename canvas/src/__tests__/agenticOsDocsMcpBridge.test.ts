@@ -100,3 +100,29 @@ export async function testAgenticOsDocsMcpClientRejectsIncompleteInvocationCover
   }
   if (!rejected) throw new Error('expected missing /two MCP resolution to fail closed')
 }
+
+export async function testAgenticOsDocsMcpClientRejectsRoutingProofDrift() {
+  const invocationTokens = ['/source.ingest', '#source.graph', '@source.root']
+  const expectedProof = {
+    sourceRevision: 'a'.repeat(40),
+    catalogDigest: 'b'.repeat(64),
+    routingSchema: 'agentic-canvas-os-docs-routing/v1' as const,
+    routingDigest: 'c'.repeat(64),
+  }
+  let rejected = false
+  try {
+    await invokeAgenticOsDocsMcpBridge({ invocationTokens, expectedProof }, (async () => (
+      new Response(JSON.stringify({
+        ok: true,
+        tool: AGENTIC_OS_DOCS_MCP_TOOL_NAME,
+        mcpInvoked: true,
+        ...expectedProof,
+        routingDigest: 'd'.repeat(64),
+        invocations: invocationTokens.map(token => ({ token, ok: true })),
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    )) as typeof fetch)
+  } catch (error) {
+    rejected = /routing proof changed/i.test(error instanceof Error ? error.message : String(error))
+  }
+  if (!rejected) throw new Error('expected exact token resolution to reject routing proof drift')
+}

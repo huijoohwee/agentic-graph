@@ -38,6 +38,8 @@ const modXrArPlacementRuntime = () => import('@/__tests__/xrArPlacementRuntime.t
 const modWorkspaceImportXrSpatialCaptureIngestion = () => import('@/__tests__/workspaceImportXrSpatialCaptureIngestion.test')
 const modWorkspaceImportXrSpatialCaptureLaunchUrl = () => import('@/__tests__/workspaceImportXrSpatialCaptureLaunchUrl.test')
 const modWorkspaceImportXrSpatialCaptureRuntime = () => import('@/__tests__/workspaceImportXrSpatialCaptureRuntime.test')
+const modKnowledgeGraphLaunchIntegration = () => import('@/__tests__/knowledgeGraphLaunchIntegration.test')
+const modKnowledgeGraphHostAdapter = () => import('@/__tests__/knowledgeGraphHostAdapter.test')
 const modModelAssetRenderPayloadCache = () => import('@/__tests__/modelAssetRenderPayloadCache.test')
 const modSpatialCaptureRenderPerformance = () => import('@/__tests__/spatialCaptureRenderPerformance.test')
 const modGaussianSplatEditorModel = () => import('@/__tests__/gaussianSplatEditorModel.test')
@@ -302,6 +304,66 @@ export const runSchemaTests = async (results: TestResult[]) => {
   await execTest(results, 'workspace.import.xrSpatialCapture.launchFormats', async () => {
     const mod = await modWorkspaceImportXrSpatialCaptureLaunchUrl()
     await mod.testWorkspaceImportXrStandalonePlyLaunchImportFormatsStayAdvertised()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.handledSuppressesFallback', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    await mod.testKnowledgeGraphHandledResultSuppressesLegacyFallbackWithoutCreatedPaths()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.repositoryUsesCanonicalHost', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    await mod.testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreservesProjectionIds()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.repositoryFailsClosedWithoutHost', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    await mod.testKnowledgeGraphRepositoryUrlFailsClosedWithoutCanonicalHost()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.repositoryRejectsUnsafeUrl', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    await mod.testKnowledgeGraphRepositoryUrlRejectsUnsafeVariants()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.incompleteFailsClosed', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    await mod.testKnowledgeGraphIncompleteRepositoryImportFailsClosed()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.folderUsesOpaqueCapability', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    await mod.testKnowledgeGraphFolderUsesOpaqueHostCapability()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.browserFolderFallbackIsSmall', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    await mod.testKnowledgeGraphBrowserFolderFallbackIsSmallAndExplicit()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.projectionIsBounded', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    mod.testKnowledgeGraphCanvasProjectionRejectsUnboundedPayload()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.projectionRejectsPrivatePaths', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    mod.testKnowledgeGraphCanvasProjectionRejectsPrivatePathsAndNonCanonicalIds()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.projectionRejectsOversizedProperties', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    mod.testKnowledgeGraphCanvasProjectionRejectsOversizedProperties()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.projectionBlocksMutations', async () => {
+    const mod = await modKnowledgeGraphLaunchIntegration()
+    mod.testKnowledgeGraphCanvasProjectionBlocksGraphContentMutations()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.hostOpaqueFolderGrant', async () => {
+    const mod = await modKnowledgeGraphHostAdapter()
+    await mod.testKnowledgeGraphHostUsesOpaqueContentAddressedFolderGrant()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.hostStreamsFolder', async () => {
+    const mod = await modKnowledgeGraphHostAdapter()
+    await mod.testKnowledgeGraphBrowserAdapterStreamsFolderAndSkipsGeneratedTrees()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.hostRepositoryBoundary', async () => {
+    const mod = await modKnowledgeGraphHostAdapter()
+    await mod.testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSafe()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.hostBoundsBrowserProjection', async () => {
+    const mod = await modKnowledgeGraphHostAdapter()
+    await mod.testKnowledgeGraphHostRejectsOversizedProjectionBeforeBrowserTransfer()
   })
   await execTest(results, 'workspace.import.xrSpatialCapture.noLegacyModelExports', async () => {
     const mod = await modWorkspaceImportXrSpatialCaptureIngestion()

@@ -239,6 +239,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["richMedia.deliverables.mcpClient.allowlistedTokens","@/__tests__/richMediaDeliverablesRun.test","testAgenticOsDocsMcpClientPostsAllowlistedInvocationTokens"],
   ["agenticOsDocs.mcpBridge.everyBoundedToken","@/__tests__/agenticOsDocsMcpBridge.test","testAgenticOsDocsMcpBridgeResolvesEveryNormalizedTokenWithinBounds"],
   ["agenticOsDocs.mcpClient.incompleteCoverageFailsClosed","@/__tests__/agenticOsDocsMcpBridge.test","testAgenticOsDocsMcpClientRejectsIncompleteInvocationCoverage"],
+  ["agenticOsDocs.mcpClient.routingProofDriftFailsClosed","@/__tests__/agenticOsDocsMcpBridge.test","testAgenticOsDocsMcpClientRejectsRoutingProofDrift"],
   ["ui.floatingPanelChat.storyboardTemplate.responseContract","@/__tests__/floatingPanelChatNoSlashInvocationContract.test","testFloatingPanelChatResponseContractsAdhereToStoryboardTemplate"],
   ["ui.floatingPanelChat.noSlash.cleanSlateRuntimePrompts","@/__tests__/floatingPanelChatNoSlashInvocationContract.test","testFloatingPanelChatNoSlashImagePromptKeepsRuntimeInvocationPromptsClean"],
   ["ui.floatingPanelChat.prdTadSlash.structuredKgcContract","@/__tests__/floatingPanelChatPrdTadInvocationContract.test","testFloatingPanelChatPrdTadSlashUsesStructuredKgcContract"],
