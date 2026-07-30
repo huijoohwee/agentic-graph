@@ -1,5 +1,5 @@
 import type { GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
-import { KG_SUBGRAPHS_KEY } from '@/lib/graph/subgraphs'
+import { KG_SUBGRAPHS_KEY, type UserSubgraph } from '@/lib/graph/subgraphs'
 import { writeWidgetRegistryMetadata } from '@/lib/config.storyboard-widget'
 import { FLOW_EDGE_SOURCE_PORT_KEY, FLOW_EDGE_TARGET_PORT_KEY } from '@/lib/graph/flowPorts'
 
@@ -134,9 +134,9 @@ export function mergeEdges(args: {
 }
 
 export function mergeSubgraphs(args: {
-  baseSubgraphs: Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }>
-  clusterSubgraphs: Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'cluster' }>
-}): Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }> {
+  baseSubgraphs: UserSubgraph[]
+  clusterSubgraphs: UserSubgraph[]
+}): UserSubgraph[] {
   if (args.clusterSubgraphs.length === 0) return args.baseSubgraphs
   const out = [...args.baseSubgraphs]
   const seen = new Set<string>()
@@ -160,7 +160,7 @@ export function buildFrontmatterFlowMetadata(args: {
   flowSettings: Record<string, unknown> | null
   annotations: AnnotationRefs
   registry: unknown[]
-  subgraphs: Array<{ id: string; label: string; memberNodeIds: string[]; parentId?: string | null; kind?: 'subgraph' | 'cluster' }>
+  subgraphs: UserSubgraph[]
 }): Record<string, JSONValue> {
   const metadata: Record<string, JSONValue> = {
     kind: 'frontmatter-flow',

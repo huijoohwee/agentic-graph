@@ -14,6 +14,7 @@ import {
   isWorkspaceDocumentSwitchApplySettled,
   resolveWorkspaceDocumentSwitchCanvasPreset,
   shouldApplyStableWorkspaceSelectionToCanvas,
+  shouldForceWorkspaceDocumentSwitchGraphApply,
 } from '@/lib/markdown-workspace-runtime/useMarkdownWorkspaceSelection'
 import { resolvePreferredEnabledComposedSourceFile } from '@/features/source-files/composedSourceSelection'
 import {
@@ -75,10 +76,10 @@ export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresIn
     throw new Error('expected already-hydrated Source Files selection to replay Canvas/frontmatter apply when active markdown document is stale')
   }
   if (
-    !selectionText.includes('resolvePreferredMarkdownWorkspaceSelectionSyncText({') ||
-    !selectionText.includes('selectionText: nextText')
+    (selectionText.match(/preferPathResolvedText: true/g) || []).length < 3 ||
+    selectionText.includes('resolvePreferredMarkdownWorkspaceSelectionSyncText({')
   ) {
-    throw new Error('expected Source Files stable selection hydration to prefer canonical active markdown document text over stale entry text before replaying Canvas apply')
+    throw new Error('expected switched and stable Source Files hydration to keep durable path text authoritative over stale entry or in-memory text')
   }
   if (
     !activeGraphDataText.includes('resolveActiveMarkdownBaseGraph({') ||
@@ -102,7 +103,8 @@ export function testSourceFilesSwitchingAppliesFileContentAndFlowLayoutIgnoresIn
     !switchApplyText.includes('canvas2dRenderer: applyArgs.canvas2dRenderer') ||
     !switchApplyText.includes('graphSourceStaleForDocument') ||
     !switchApplyText.includes('shouldReplayCompletedApplyForMarkdownConflict') ||
-    !switchApplyText.includes("if (!shouldReplayCompletedApplyForMarkdownConflict && lastDocumentSwitchApplySigRef.current === nextSig) return 'settled'")
+    !switchApplyText.includes('shouldReplayCompletedApply') ||
+    !switchApplyText.includes("if (!shouldReplayCompletedApply && lastDocumentSwitchApplySigRef.current === nextSig) return 'settled'")
   ) {
     throw new Error('expected Source Files switching apply signature to include graphData source so stale Canvas graphs replay selected-file frontmatter')
   }
@@ -536,6 +538,18 @@ export function testSourceFilesDocumentSwitchSettlementStopsRetryChurn() {
   })
   if (!settled) {
     throw new Error('expected matching active markdown document and Canvas graph source to settle Source Files switch retries')
+  }
+  if (!shouldForceWorkspaceDocumentSwitchGraphApply({
+    activeDocumentKey: 'notes/note_20260727T225041Z.md',
+    pendingSwitchPath: '/notes/note_20260727T225041Z.md',
+  })) {
+    throw new Error('expected a pending file switch to reapply its durable document even when name, text, and graph source look settled')
+  }
+  if (shouldForceWorkspaceDocumentSwitchGraphApply({
+    activeDocumentKey: 'notes/note_20260727T225041Z.md',
+    pendingSwitchPath: '/notes/other.md',
+  })) {
+    throw new Error('expected pending switch graph replay to stay scoped to the selected document')
   }
 
   const staleGraph = isWorkspaceDocumentSwitchApplySettled({
