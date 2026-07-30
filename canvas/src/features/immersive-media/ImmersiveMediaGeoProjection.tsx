@@ -1,4 +1,5 @@
 import React from 'react'
+import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { completeImmersiveMediaTransition } from './immersiveMediaRuntime'
 import type {
   ImmersiveMediaMarker,
@@ -103,6 +104,7 @@ export function ImmersiveMediaGeoProjection({
     projected => projected.marker.id === snapshot.selectedMarkerId,
   )
   const lensScale = 1 + snapshot.view.lensStrength * 0.035
+  const selectableSurfaceDataAttr = resolveMediaPreviewSelectableDataAttr(true)
 
   return (
     <section
@@ -117,8 +119,10 @@ export function ImmersiveMediaGeoProjection({
       data-kg-immersive-media-geo-polygon={snapshot.polygonPattern ? '1' : '0'}
       data-kg-immersive-media-geo-selected-marker={snapshot.selectedMarkerId || ''}
     >
-      <div
-        className="absolute inset-[8%_8%_13%_8%] overflow-hidden rounded-[2rem] border border-cyan-200/35 transition-all ease-out"
+      <figure
+        className="absolute inset-[8%_8%_13%_8%] m-0 overflow-hidden rounded-[2rem] border border-cyan-200/35 transition-all ease-out"
+        aria-label="Immersive flight context media"
+        data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
         style={{
           opacity: transitionOpacity,
           transform: `scale(${introAnimating ? lensScale * 0.92 : lensScale})`,
@@ -126,8 +130,9 @@ export function ImmersiveMediaGeoProjection({
         }}
       >
         {snapshot.overlay.enabled ? (
-          <div
+          <aside
             className="absolute inset-0"
+            aria-label="Immersive panorama visual overlay"
             style={{
               background: [
                 'linear-gradient(180deg, rgba(8,47,73,0.14), transparent 28%, transparent 72%, rgba(8,47,73,0.12))',
@@ -136,21 +141,34 @@ export function ImmersiveMediaGeoProjection({
             }}
           />
         ) : null}
-        <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold tracking-[0.16em] text-cyan-50 backdrop-blur">
+        <figcaption className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold tracking-[0.16em] text-cyan-50 backdrop-blur">
           IMMERSIVE FLIGHT CONTEXT · {Math.round(snapshot.view.yawDegrees)}° · FOV {Math.round(snapshot.view.fieldOfViewDegrees)}°
-        </div>
-        <div className="absolute left-[8%] right-[8%] top-1/2 border-t border-dashed border-cyan-100/30" />
-        <div className="absolute bottom-[8%] left-1/2 top-[8%] border-l border-dashed border-cyan-100/25" />
-        <span className="absolute left-1/2 top-[9%] -translate-x-1/2 text-[9px] font-bold text-cyan-50/80">
+        </figcaption>
+        <hr
+          className="absolute left-[8%] right-[8%] top-1/2 m-0 border-0 border-t border-dashed border-cyan-100/30"
+          aria-label="Immersive horizon"
+        />
+        <span
+          className="absolute bottom-[8%] left-1/2 top-[8%] border-l border-dashed border-cyan-100/25"
+          role="separator"
+          aria-label="Immersive north axis"
+          aria-orientation="vertical"
+        />
+        <abbr
+          className="absolute left-1/2 top-[9%] -translate-x-1/2 text-[9px] font-bold text-cyan-50/80 no-underline"
+          title="North"
+        >
           N
-        </span>
+        </abbr>
         {snapshot.polygonPattern && markers.length > 2 ? (
           <svg
             className="absolute inset-0 h-full w-full"
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
-            aria-hidden="true"
+            role="img"
+            aria-label="Polygon connecting visible immersive markers"
           >
+            <title>Polygon connecting visible immersive markers</title>
             <polygon
               points={polygonPoints}
               fill="rgba(245,158,11,0.06)"
@@ -163,9 +181,10 @@ export function ImmersiveMediaGeoProjection({
         {markers.map(({ edge, left, marker, opacity, top }) => {
           const selected = marker.id === snapshot.selectedMarkerId
           return (
-            <span
+            <article
               key={marker.id}
               className="absolute -translate-x-1/2 -translate-y-1/2"
+              aria-label={`${marker.label} immersive marker${selected ? ', selected' : ''}`}
               style={{ left: `${left}%`, opacity, top: `${top}%` }}
               data-kg-immersive-media-geo-marker={marker.id}
               data-kg-immersive-media-geo-marker-selected={selected ? '1' : '0'}
@@ -176,19 +195,23 @@ export function ImmersiveMediaGeoProjection({
                 }`}
                 style={{ borderColor: marker.color }}
               />
-              <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-950/60 px-1.5 py-0.5 text-[8px] text-white/90 backdrop-blur">
+              <strong className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-slate-950/60 px-1.5 py-0.5 text-[8px] font-normal text-white/90 backdrop-blur">
                 {edge ? '‹ ' : ''}{marker.label}{edge ? ' ›' : ''}
-              </span>
-            </span>
+              </strong>
+            </article>
           )
         })}
         {selectedMarker ? (
-          <div className="absolute bottom-3 left-1/2 max-w-[70%] -translate-x-1/2 rounded border border-cyan-200/35 bg-slate-950/55 px-3 py-1.5 text-center text-[9px] text-cyan-50 backdrop-blur">
-            <b>{selectedMarker.marker.label}</b>
+          <output
+            className="absolute bottom-3 left-1/2 max-w-[70%] -translate-x-1/2 rounded border border-cyan-200/35 bg-slate-950/55 px-3 py-1.5 text-center text-[9px] text-cyan-50 backdrop-blur"
+            aria-label="Selected immersive marker details"
+            aria-live="polite"
+          >
+            <strong>{selectedMarker.marker.label}</strong>
             <span className="ml-2 text-white/70">{selectedMarker.marker.tooltip}</span>
-          </div>
+          </output>
         ) : null}
-      </div>
+      </figure>
     </section>
   )
 }
