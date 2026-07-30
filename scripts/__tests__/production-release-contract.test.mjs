@@ -252,6 +252,7 @@ test('verified production mirror is published only after live smoke', () => {
   const serviceWorkerUpgradeIndex = deployJob.indexOf('name: Verify returning-user service worker revision convergence')
   const liveVerificationIndex = deployJob.indexOf('name: Record live verification receipt')
   const publishIndex = deployJob.indexOf('name: Publish verified production mirror')
+  const rollbackSmokeIndex = deployJob.indexOf('name: Verify restored production runtime')
 
   assert.ok(prewarmIndex >= 0)
   assert.ok(prewarmIndex < deployIndex)
@@ -262,10 +263,27 @@ test('verified production mirror is published only after live smoke', () => {
   assert.ok(serviceWorkerUpgradeIndex > fidelityIndex)
   assert.ok(liveVerificationIndex > serviceWorkerUpgradeIndex)
   assert.ok(publishIndex > liveVerificationIndex)
+  assert.ok(rollbackSmokeIndex > publishIndex)
+  const liveSmokeStep = deployJob.slice(smokeIndex, fidelityIndex)
+  const rollbackSmokeStep = deployJob.slice(rollbackSmokeIndex)
+  assert.match(
+    liveSmokeStep,
+    /KNOWGRPH_AGENT_READY_BASE_URL: \$\{\{ steps\.candidate\.outputs\.deployment_url \}\}/,
+  )
+  assert.match(
+    rollbackSmokeStep,
+    /KNOWGRPH_AGENT_READY_BASE_URL: \$\{\{ steps\.previous\.outputs\.production_origin \}\}/,
+  )
   assert.match(releaseSmoke, /require\('\.\/config\/surface-registry\.json'\)/)
   assert.match(releaseSmoke, /registry\.publicOrigin/)
   assert.match(releaseSmoke, /KNOWGRPH_AGENT_READY_BASE_URL:-\$configured_public_origin/)
   assert.doesNotMatch(releaseSmoke, /pages\.dev/)
+  assert.match(agentReadySmoke, /const requestOriginUrl = new URL\(process\.env\.KNOWGRPH_AGENT_READY_BASE_URL \|\| canonicalBaseUrl\)\.origin/)
+  assert.equal(
+    (agentReadySmoke.match(/fetch\(toRequestUrl\(/g) || []).length,
+    3,
+    'every agent-ready request must use the selected transport origin',
+  )
   assert.match(agentReadySmoke, /name: 'root-homepage-app-alias'/)
   assert.match(agentReadySmoke, /name: 'markdown-negotiation'/)
   const deployStep = deployJob.slice(

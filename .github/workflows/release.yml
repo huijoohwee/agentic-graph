@@ -446,6 +446,11 @@ jobs:
 
       - name: Verify live runtime
         working-directory: knowgrph
+        env:
+          # GitHub-hosted runners can receive a custom-domain edge challenge.
+          # The immutable Pages origin serves the same candidate while the
+          # smoke assertions continue to require canonical airvio.co metadata.
+          KNOWGRPH_AGENT_READY_BASE_URL: ${{ steps.candidate.outputs.deployment_url }}
         run: ./.github/workflows/smoke-test.sh
 
       - name: Verify exact deployment markers and candidate browser fidelity
@@ -561,4 +566,6 @@ jobs:
       - name: Verify restored production runtime
         if: failure() && steps.deploy_pages.outcome == 'success'
         working-directory: rollback-knowgrph
+        env:
+          KNOWGRPH_AGENT_READY_BASE_URL: ${{ steps.previous.outputs.production_origin }}
         run: ./.github/workflows/smoke-test.sh
