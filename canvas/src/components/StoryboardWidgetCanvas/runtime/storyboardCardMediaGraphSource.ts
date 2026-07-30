@@ -14,6 +14,15 @@ export type StoryboardCardMediaGraphPersistenceOptions = {
   sourceOwner?: StoryboardCardMediaGraphSourceOwner
 }
 
+export function resolveStoryboardCardMediaGraphPersistenceText(args: {
+  activeText: string
+  synchronizedText?: string | null
+}): string {
+  return typeof args.synchronizedText === 'string'
+    ? args.synchronizedText
+    : String(args.activeText || '')
+}
+
 export async function persistStoryboardCardMediaGraphSource(graphData: GraphData, options?: StoryboardCardMediaGraphPersistenceOptions): Promise<boolean> {
   const ownerResolution = resolveStoryboardCardMediaGraphSourceOwner({
     state: useGraphStore.getState(),
@@ -31,34 +40,39 @@ export async function persistStoryboardCardMediaGraphSource(graphData: GraphData
     parsedGraphData: sourceGraphData,
   })
   if (!sourceSync.accepted) return false
-  if (typeof sourceSync.markdownDocumentText !== 'string') return true
+  const persistenceText = resolveStoryboardCardMediaGraphPersistenceText({
+    activeText: String(state.markdownDocumentText || ''),
+    synchronizedText: sourceSync.markdownDocumentText,
+  })
   const persistenceState = {
     ...state,
     sourceFiles: sourceSync.sourceFiles,
     markdownDocumentName: sourceSync.markdownDocumentName ?? state.markdownDocumentName,
-    markdownDocumentText: sourceSync.markdownDocumentText,
+    markdownDocumentText: persistenceText,
   }
-  useGraphStore.setState(current => {
-    if (!shouldUpdateStoryboardCardMediaGraphActiveDocument({
-      currentDocumentName: current.markdownDocumentName,
-      ownerPath: ownerResolution.ownerPath,
-    })) return { sourceFiles: sourceSync.sourceFiles }
-    return {
-      sourceFiles: sourceSync.sourceFiles,
-      markdownDocumentName: sourceSync.markdownDocumentName ?? current.markdownDocumentName,
-      markdownDocumentText: sourceSync.markdownDocumentText,
-      markdownDocumentApplyViewPreset: false,
-      markdownTokens: null,
-      markdownTokensPath: null,
-      markdownTokensKey: null,
-      markdownTokensMeta: null,
-      markdownTokensStartLineOffset: null,
-    }
-  })
+  if (typeof sourceSync.markdownDocumentText === 'string') {
+    useGraphStore.setState(current => {
+      if (!shouldUpdateStoryboardCardMediaGraphActiveDocument({
+        currentDocumentName: current.markdownDocumentName,
+        ownerPath: ownerResolution.ownerPath,
+      })) return { sourceFiles: sourceSync.sourceFiles }
+      return {
+        sourceFiles: sourceSync.sourceFiles,
+        markdownDocumentName: sourceSync.markdownDocumentName ?? current.markdownDocumentName,
+        markdownDocumentText: persistenceText,
+        markdownDocumentApplyViewPreset: false,
+        markdownTokens: null,
+        markdownTokensPath: null,
+        markdownTokensKey: null,
+        markdownTokensMeta: null,
+        markdownTokensStartLineOffset: null,
+      }
+    })
+  }
   const persisted = await writeActiveMarkdownDocumentTextIfPresent({
     state: persistenceState,
     sourceFiles: sourceSync.sourceFiles,
-    text: sourceSync.markdownDocumentText,
+    text: persistenceText,
     label: options?.label || 'Storyboard media graph',
     source: options?.source,
   })
