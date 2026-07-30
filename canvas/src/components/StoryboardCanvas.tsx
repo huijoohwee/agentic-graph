@@ -103,6 +103,8 @@ import { UI_COPY } from '@/lib/config'
 import { createUniqueId } from '@/lib/ids'
 import { persistStoryboardCardMediaGraphSource } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSource'
 import { createStoryboardWidgetWorkflowNodeRunner, resolveStoryboardWidgetBaseGraphKind } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunAction'
+import { buildStoryboardRunExecutionAnchorCapture } from '@/components/StoryboardCanvas/captureStoryboardRunExecutionAnchor'
+import { readStoryboardNodeProperties, readStoryboardNumber, readStoryboardScalar, readStoryboardStringList } from '@/components/StoryboardCanvas/storyboardValueReaders'
 import { resolveStoryboardPaintScale } from '@/components/StoryboardCanvas/storyboardInfiniteZoomMetrics'
 import { openWorkflowManagerMappingForNode } from '@/features/storyboard-widget-manager/openWorkflowManagerMappingForNode'
 import { isCanonicalNodeIdEqual, resolveGraphNodeByCanonicalId } from '@/lib/graph/canonicalNodeIds'
@@ -197,31 +199,6 @@ const buildStoryboardCardPrimaryMediaDropSlot = (
   media,
   href: card.href,
 })
-
-function readStoryboardNodeProperties(node: unknown): Record<string, unknown> {
-  if (!node || typeof node !== 'object' || Array.isArray(node)) return {}
-  const properties = (node as { properties?: unknown }).properties
-  if (!properties || typeof properties !== 'object' || Array.isArray(properties)) return {}
-  return properties as Record<string, unknown>
-}
-function readStoryboardScalar(value: unknown): string {
-  return String(value ?? '').replace(/\s+/g, ' ').trim()
-}
-function readStoryboardNumber(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  if (typeof value === 'string' && value.trim()) {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-  return null
-}
-
-function readStoryboardStringList(value: unknown): string[] {
-  if (Array.isArray(value)) return value.map(readStoryboardScalar).filter(Boolean)
-  const scalar = readStoryboardScalar(value)
-  if (!scalar) return []
-  return scalar.split(/[\n,|]+/g).map(readStoryboardScalar).filter(Boolean)
-}
 
 function buildStoryboardCanvasRichMediaPanelProperties(args: {
   cleanUrl: string
@@ -733,6 +710,26 @@ export default function StoryboardCanvas({
     addHistory,
     upsertUiToast,
   }), [addHistory, commitStoryboardPublishedGraphData, graphData, storeGraphData, upsertUiToast])
+  const captureStoryboardRunExecutionAnchor = React.useCallback((rawNodeId: string) => {
+    // The delegated capture owner terminates through buildStoryboardWidgetRunExecutionAnchorSnapshot({
+    return buildStoryboardRunExecutionAnchorCapture({
+      graphData: storyboardRunGraphRef.current || storeGraphData || graphData || null,
+      rawNodeId,
+      cardElements: cardElementsRef.current,
+      viewportElement: boardScrollRef.current,
+      graphMetaKey: flowWidgetStateGraphKey,
+      aspectMode: strybldrStoryboardCardAspectMode === '9:16' ? '9:16' : '16:9',
+      transform: storyboardZoom.transform,
+    })
+  }, [
+    flowWidgetStateGraphKey,
+    graphData,
+    storeGraphData,
+    storyboardZoom.transform.k,
+    storyboardZoom.transform.x,
+    storyboardZoom.transform.y,
+    strybldrStoryboardCardAspectMode,
+  ])
   const runStoryboardWorkflowNode = React.useMemo(() => createStoryboardWidgetWorkflowNodeRunner({
     baseGraphKind: storyboardRunBaseGraphKind,
     baseGraphData: storeGraphData || graphData || null,
@@ -751,7 +748,8 @@ export default function StoryboardCanvas({
     updateNode,
     upsertUiToast,
     scheduleOverlayEdgeUpdate: () => {},
-  }), [appendStoryboardRunNode, commitStoryboardPublishedGraphData, graphData, markdownDocumentName, markdownDocumentText, setGraphDataPreservingLayout, storyboardRunBaseGraphKind, storeGraphData, updateNode, upsertUiToast, widgetRegistry])
+    captureExecutionAnchor: captureStoryboardRunExecutionAnchor,
+  }), [appendStoryboardRunNode, captureStoryboardRunExecutionAnchor, commitStoryboardPublishedGraphData, graphData, markdownDocumentName, markdownDocumentText, setGraphDataPreservingLayout, storyboardRunBaseGraphKind, storeGraphData, updateNode, upsertUiToast, widgetRegistry])
   const storyboardKeywordCommandContextText = React.useMemo(() => {
     return collectGraphKeywordTermStats(graphData)
       .map(entry => `#${entry.term}`)

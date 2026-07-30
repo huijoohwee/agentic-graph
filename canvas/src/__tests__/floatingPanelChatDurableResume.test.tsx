@@ -6,17 +6,127 @@ import { Simulate } from 'react-dom/test-utils'
 import FloatingPanelChat from '@/features/chat/FloatingPanelChat'
 import {
   clearActiveDurableChatStreamRun,
+  projectDurableChatHeadlessPreparationSeed,
+  readActiveDurableChatStreamRun,
+  restoreDurableChatHeadlessPreparation,
   writeActiveDurableChatStreamRun,
 } from '@/features/chat/floatingPanelChat/floatingPanelChatDurableStream'
+import { buildDurableChatResumedHeadlessRunResult } from '@/features/chat/floatingPanelChat/useResumeDurableChatStream'
+import {
+  prepareHeadlessResponseRun,
+  projectHeadlessResponseRunReceipt,
+} from '@/features/chat/headlessResponseCoordinator'
+import { AGENTIC_OS_DOCS_MCP_TOOL_NAME } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForFrames, waitForTasks } from '@/tests/lib/reactRootHarness'
+import { initWindowHarness } from '@/tests/lib/windowHarness'
+import { MemoryStorage } from '@/tests/lib/memoryStorage'
 
 const findFooterButton = (container: Element, label: string): HTMLButtonElement | null => {
   return (Array.from(container.querySelectorAll('button')) as HTMLButtonElement[])
     .find(button => String(button.textContent || '').trim() === label) || null
+}
+
+export async function testFloatingPanelChatDurableResumeRestoresBoundedHeadlessReceiptWithoutMcpReplay() {
+  const { restore } = initWindowHarness({ storage: new MemoryStorage() })
+  const assistantMessageId = 'assistant-durable-headless'
+  const requestText = '/knowgrph.probe-tree Compare the retained options.'
+  let mcpCalls = 0
+  try {
+    const prepared = await prepareHeadlessResponseRun({
+      runId: assistantMessageId,
+      source: { kind: 'chat', id: assistantMessageId },
+      requestText,
+      responseContract: 'kgc',
+      chatStorageTarget: 'chatKnowgrph',
+      provider: 'test-provider',
+      model: 'test-model',
+    }, {
+      invokeDocsMcp: async request => {
+        mcpCalls += 1
+        return {
+          ok: true,
+          tool: AGENTIC_OS_DOCS_MCP_TOOL_NAME,
+          mcpInvoked: true,
+          invocations: request.invocationTokens.map(token => ({
+            token,
+            ok: true,
+            summary: 'This resolution detail must not enter the durable seed.',
+            sourcePath: 'DICTIONARY-COMMAND.md#test-only',
+          })),
+        }
+      },
+    })
+    const seed = projectDurableChatHeadlessPreparationSeed(prepared)
+    const active = writeActiveDurableChatStreamRun({
+      runId: 'trace-durable-headless',
+      traceId: 'trace-durable-headless',
+      assistantMessageId,
+      requestText,
+      requestTimestampMs: Date.UTC(2026, 6, 29, 9, 0, 0),
+      chatStorageTarget: 'chatKnowgrph',
+      liveKgcPath: '/workspace/chat/durable/kgc.md',
+      providerSummary: 'test-provider:test-model',
+      defaultLocalRootPath: '/workspace/chat',
+      modelId: 'test-model',
+      headlessPreparationSeed: seed,
+    })
+    const hydrated = readActiveDurableChatStreamRun()
+    const restoredPreparation = restoreDurableChatHeadlessPreparation(
+      hydrated?.headlessPreparationSeed,
+      {
+        requestText: hydrated?.requestText || '',
+        expectedRunId: assistantMessageId,
+        expectedAssistantMessageId: assistantMessageId,
+      },
+    )
+    const resumedResult = buildDurableChatResumedHeadlessRunResult({
+      prepared: restoredPreparation,
+      responseText: 'Resumed response.',
+      status: 'ok',
+      modelId: hydrated?.modelId || null,
+      artifactPath: hydrated?.liveKgcPath || null,
+    })
+    const receipt = resumedResult ? projectHeadlessResponseRunReceipt(resumedResult) : null
+    const serializedSeed = JSON.stringify(hydrated?.headlessPreparationSeed || null)
+    if (
+      !seed
+      || !active
+      || mcpCalls !== 1
+      || hydrated?.runId !== 'trace-durable-headless'
+      || hydrated.headlessPreparationSeed?.runId !== assistantMessageId
+      || restoredPreparation?.invocation.tokens.join(' ') !== '/knowgrph.probe-tree'
+      || restoredPreparation?.invocation.mcpResponse?.invocations[0]?.token !== '/knowgrph.probe-tree'
+      || resumedResult?.status !== 'ok'
+      || resumedResult?.invocation.mcpInvoked !== true
+      || resumedResult?.invocation.tool !== AGENTIC_OS_DOCS_MCP_TOOL_NAME
+      || receipt?.output.artifactPath !== '/workspace/chat/durable/kgc.md'
+      || serializedSeed.includes('resolution detail')
+      || serializedSeed.includes('sourcePath')
+      || serializedSeed.includes(requestText)
+      || serializedSeed.includes('systemMessages')
+      || restoreDurableChatHeadlessPreparation(hydrated?.headlessPreparationSeed, {
+        requestText,
+        expectedRunId: 'different-assistant',
+        expectedAssistantMessageId: assistantMessageId,
+      }) !== null
+    ) {
+      throw new Error(`expected durable resume to reuse one compact validated preparation seed without replaying MCP, got ${JSON.stringify({
+        mcpCalls,
+        seed,
+        active,
+        hydrated,
+        resumedResult,
+        receipt,
+      })}`)
+    }
+  } finally {
+    clearActiveDurableChatStreamRun()
+    restore()
+  }
 }
 
 export async function testFloatingPanelChatDurableResumeSettlesBeforeNewChat() {

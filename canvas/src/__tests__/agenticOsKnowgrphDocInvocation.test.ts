@@ -460,9 +460,10 @@ export function testStoryboardWidgetRunMaterializesEmbeddedProbeTreeInvocation()
   const runActionSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowRunAction.ts'), 'utf8')
   const probeTreeRunSource = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardWidgetWorkflowProbeTreeRun.ts'), 'utf8')
   const textGenerationIndex = runActionSource.indexOf("FLOW_TEXT_GENERATION_NODE_TYPE_ID) {")
-  const probeDispatchIndex = runActionSource.indexOf('const probeTreeOutput = await runStoryboardWidgetProbeTreeTextGenerationInvocation({')
+  const probeRunnerIndex = runActionSource.indexOf('const probeTreeOutput = await runStoryboardWidgetProbeTreeTextGenerationInvocation({')
+  const probeDispatchIndex = runActionSource.indexOf('if (await runProbeTreeInvocation(textGeneration)) return', textGenerationIndex)
   const crawlerIndex = runActionSource.indexOf('runStoryboardWidgetNativeCrawlerInvocation({', probeDispatchIndex)
-  const genericProviderIndex = runActionSource.indexOf('const result = await generateRunMarkdownWithProvider({', probeDispatchIndex)
+  const genericProviderIndex = runActionSource.indexOf('await runHeadlessTextGeneration(textGeneration', probeDispatchIndex)
   const providerFactoryIndex = probeTreeRunSource.indexOf('const generateProviderResponse = args.generateProviderResponse ||')
   const nativeProbeIndex = probeTreeRunSource.indexOf('const result = await runStoryboardWidgetProbeTreeMcpInvocation({')
   const providerForwardIndex = probeTreeRunSource.indexOf('generateProviderResponse,', nativeProbeIndex)
@@ -470,6 +471,7 @@ export function testStoryboardWidgetRunMaterializesEmbeddedProbeTreeInvocation()
   if (
     textGenerationIndex < 0
     || probeDispatchIndex <= textGenerationIndex
+    || probeRunnerIndex < 0
     || crawlerIndex <= probeDispatchIndex
     || genericProviderIndex <= probeDispatchIndex
     || providerFactoryIndex < 0
@@ -479,7 +481,7 @@ export function testStoryboardWidgetRunMaterializesEmbeddedProbeTreeInvocation()
     || probeTreeRunSource.includes('providerRefinementApproved')
     || runActionSource.includes('materializeProbeTreeOutput')
     || runActionSource.includes('const probeTreeOutput = runStoryboardWidgetProbeTreeInvocation({')
-    || !runActionSource.slice(probeDispatchIndex, crawlerIndex).includes('publishOutput: publishTextRunOutputToRichMediaPanel')
+    || !runActionSource.slice(probeRunnerIndex, textGenerationIndex).includes('publishOutput: publishTextRunOutputToRichMediaPanel')
     || !nativeProbeRunSource.includes('graphForRun: args.graphForRun')
     || !nativeProbeRunSource.includes('publishOutput: args.publishOutput')
     || nativeProbeRunSource.includes('commitGraphData:')

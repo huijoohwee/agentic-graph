@@ -7,6 +7,7 @@ import { CHAT_SUBMIT_PREPARATION_TIMEOUT_ERROR } from './floatingPanelChatSubmit
 import { CHAT_SUBMIT_TRANSPORT_TIMEOUT_ERROR } from './floatingPanelChatSubmitTransport'
 import { finalizeSubmitTerminalState, materializePendingSubmitAssistantError } from './floatingPanelChatSubmitLifecycle'
 import type { ChatMessage } from '../FloatingPanelChatSections'
+import type { HeadlessResponseRunResult } from '../headlessResponseCoordinator'
 
 const INVALID_TOKEN_PATTERN = /(invalid token|invalid api key|invalid authorization|api key format is incorrect|无效的令牌)/i
 const MISSING_API_KEY_PATTERN = /(missing [\w\s-]*api key|requires an api key)/i
@@ -188,6 +189,7 @@ export const handleSubmitIssueExit = (args: {
   responseText: string
   status: 'error' | 'aborted'
   modelId: string | null
+  runResult?: HeadlessResponseRunResult
   timestampMs: number
   setStreamingAssistant: React.Dispatch<React.SetStateAction<{ id: string; text: string } | null>>
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
@@ -230,6 +232,7 @@ export const handleSubmitIssueExit = (args: {
   materializePendingSubmitAssistantError({
     assistantMessageId: args.assistantMessageId,
     responseText: args.responseText,
+    runResult: args.runResult,
     setStreamingAssistant: args.setStreamingAssistant,
     setMessages: args.setMessages,
   })

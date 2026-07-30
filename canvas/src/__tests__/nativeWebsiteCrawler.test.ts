@@ -259,7 +259,7 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
     throw new Error('expected Widget Card Run to execute the shared native crawler invocation')
   }
   const nativeDispatchIndex = workflowSource.indexOf('await runStoryboardWidgetNativeCrawlerInvocation({')
-  const providerDispatchIndex = workflowSource.indexOf('await generateRunMarkdownWithProvider({')
+  const providerDispatchIndex = workflowSource.indexOf('await runHeadlessTextGeneration(textGeneration', nativeDispatchIndex)
   if (nativeDispatchIndex < 0 || providerDispatchIndex < 0 || nativeDispatchIndex >= providerDispatchIndex) {
     throw new Error('expected Widget Card crawler syntax to dispatch before any chat provider or API-key path')
   }
@@ -305,7 +305,8 @@ export const testNativeCrawlerWidgetRunReusesImportUrlBridgeAndPublishesRichMedi
   }
   const richMediaPublicationSource = fs.readFileSync(path.resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaPublication.ts'), 'utf8')
   const richMediaPanelSource = fs.readFileSync(path.resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRichMediaPanel.ts'), 'utf8')
-  if (!richMediaPublicationSource.includes('outputKey?: string') || !richMediaPublicationSource.includes('workflowOutputAnchorNodeId: readWorkflowString(panelArgs.anchorNode.id)')) {
+  const richMediaOutputPublisherSource = fs.readFileSync(path.resolve(process.cwd(), 'src/components/StoryboardWidgetCanvas/runtime/storyboardWidgetTextRunOutputPublisher.ts'), 'utf8')
+  if (!richMediaOutputPublisherSource.includes('outputKey?: string') || !richMediaPublicationSource.includes('workflowOutputAnchorNodeId: readWorkflowString(panelArgs.anchorNode.id)')) {
     throw new Error('expected named Rich Media output slots to persist their source Widget ownership')
   }
   if (!richMediaPublicationSource.includes('materializeSrcDoc: false')) {

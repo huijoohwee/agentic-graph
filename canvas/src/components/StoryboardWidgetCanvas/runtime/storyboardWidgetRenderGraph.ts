@@ -11,6 +11,10 @@ import type { GraphData, GraphEdge, GraphNode } from '@/lib/graph/types'
 import { deriveSceneDisplayGraph } from '@/lib/scene/sceneDerivation'
 import { resolveDefaultFlowWidgetPinnedInCanvas } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
 import { deriveFrontmatterFlowOverlayNodeIds } from '@/lib/storyboardWidget/frontmatterOverlayNodeIds'
+import {
+  readWorkflowMaterializationParentNodeId,
+  readWorkflowMaterializationProjectionSourceNodeId,
+} from '@/lib/storyboardWidget/runMaterializationProjection'
 import { buildFlowRunAllNodeSequence, type FlowRunAllPhaseId } from '@/lib/storyboardWidget/runAllSequenceSsot'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import { buildFrontmatterOverlayNodeLookup, resolveFrontmatterOverlayEdgeCurveOptions } from '@/lib/storyboardWidget/frontmatterCollectiveLayout'
@@ -297,11 +301,21 @@ export function getCachedStoryboardWidgetOverlayEdgeGraph(args: {
     const target = readCanonicalStoryboardWidgetOverlayIdentity(targetRaw)
     if (!id || !source || !target) continue
     if (!canonicalNodeIdSetHas(overlayNodeIdSet, sourceRaw) || !canonicalNodeIdSetHas(overlayNodeIdSet, targetRaw)) continue
+    const targetNode = overlayNodeById.get(target) || null
+    const projectionSourceRaw =
+      readWorkflowMaterializationProjectionSourceNodeId(edge?.properties)
+      || readWorkflowMaterializationParentNodeId(targetNode as Pick<GraphNode, 'properties'> | null)
+    const presentationSource = projectionSourceRaw
+      && canonicalNodeIdSetHas(overlayNodeIdSet, projectionSourceRaw)
+      ? readCanonicalStoryboardWidgetOverlayIdentity(projectionSourceRaw)
+      : source
     const props = edge?.properties
     const edgeWithProps = { properties: props as GraphEdge['properties'] } as Pick<GraphEdge, 'properties'>
-    const sourcePortKey =
-      readFlowEdgePortKey(edgeWithProps, 'source')
-      || defaultPortKeyByNodeId.get(source)?.out
+    const sourcePortKey = (
+      presentationSource === source
+        ? readFlowEdgePortKey(edgeWithProps, 'source')
+        : ''
+    ) || defaultPortKeyByNodeId.get(presentationSource)?.out
       || FLOW_HANDLE_DEFAULT_EDGE_ID
     const targetPortKey =
       readFlowEdgePortKey(edgeWithProps, 'target')
@@ -309,12 +323,12 @@ export function getCachedStoryboardWidgetOverlayEdgeGraph(args: {
       || FLOW_HANDLE_DEFAULT_EDGE_ID
     rawEdgeById.set(id, edge)
     const semanticEdgeCurve = resolveFrontmatterOverlayEdgeCurveOptions({
-      graphMetaKind: baseGraph.graphMetaKind, edge, sourceNode: overlayNodeById.get(source) || null, targetNode: overlayNodeById.get(target) || null, sourceId: source, targetId: target,
+      graphMetaKind: baseGraph.graphMetaKind, edge, sourceNode: overlayNodeById.get(presentationSource) || null, targetNode, sourceId: presentationSource, targetId: target,
     })
     edgeCurveById.set(id, semanticEdgeCurve)
     edges.push({
       id,
-      source,
+      source: presentationSource,
       target,
       sourcePortKey,
       targetPortKey,

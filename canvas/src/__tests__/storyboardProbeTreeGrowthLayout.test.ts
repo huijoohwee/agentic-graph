@@ -7,6 +7,11 @@ import {
 import { materializeStoryboardWidgetProbeTreeStructuredResponse } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetProbeTreeStructuredResponse'
 import { buildProbeTreeStructuredResponse } from '@/features/agent-ready/probeTreeContract.mjs'
 import type { GraphData } from '@/lib/graph/types'
+import type { StoryboardWidgetRunExecutionAnchorSnapshot } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRunExecutionAnchor'
+import {
+  RICH_MEDIA_PANEL_DEFAULT_HEIGHT_PX,
+  RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX,
+} from '@/lib/render/richMediaPanelDefaults'
 import {
   PROBE_TREE_BALANCED_LAYOUT_MODE,
   PROBE_TREE_BALANCED_LAYOUT_VERSION,
@@ -14,6 +19,7 @@ import {
   PROBE_TREE_LAYOUT_VERSION_PROPERTY,
   PROBE_TREE_PINNED_BY_DEFAULT_PROPERTY,
 } from '@/lib/storyboardWidget/probeTreeLayoutContract'
+import { screenToWorld, worldToScreen } from '@/lib/zoom/viewport'
 
 const assert = (condition: unknown, message: string): void => {
   if (!condition) throw new Error(message)
@@ -382,4 +388,190 @@ export function testProbeTreeStructuredReplacementRemovesDescendantClosure() {
   assert(!result!.graphData.nodes.some(node => node.id === 'old-child' || node.id === 'old-grandchild'), 'expected replacement to remove the complete old descendant closure')
   assert(!result!.graphData.edges.some(edge => ['old-child', 'old-grandchild'].includes(String(edge.source)) || ['old-child', 'old-grandchild'].includes(String(edge.target))), 'expected replacement to remove every incident descendant edge')
   assert(result!.graphData.nodes.some(node => node.id === 'other-child') && result!.graphData.edges.some(edge => edge.id === 'other-edge'), 'expected another parent subtree to remain untouched')
+}
+
+export function testProbeTreeRunMaterializationFitsCapturedVisibleViewport() {
+  const graphData: GraphData = {
+    type: 'Graph',
+    metadata: { kind: 'frontmatter-flow' },
+    nodes: [{
+      id: 'root',
+      type: 'TextGeneration',
+      label: 'Generic decision',
+      x: -4_000,
+      y: -2_500,
+      properties: {},
+    }],
+    edges: [],
+  }
+  const contextText = [
+    'Authored request:',
+    'Compare the available approaches by evidence quality, delivery constraint, and accountable owner.',
+    'Selected Widget id: root',
+  ].join('\n')
+  const response = buildProbeTreeStructuredResponse({
+    threadRootId: 'root',
+    currentNodeId: 'root',
+    contextText,
+    optionCount: 2,
+    options: [
+      {
+        id: 'evidence',
+        text: 'Which evidence quality threshold should determine the next approach?',
+        rationale: 'Clarifies the evidence-quality decision.',
+        evidenceNeeded: 'A selected evidence threshold.',
+        selectionOptions: ['Require verified primary evidence', 'Allow provisional secondary evidence'],
+        contextAnchors: ['evidence quality', 'available approaches'],
+      },
+      {
+        id: 'owner',
+        text: 'Which accountable owner should accept the delivery constraint?',
+        rationale: 'Clarifies the accountable-owner decision.',
+        evidenceNeeded: 'A selected owner and delivery constraint.',
+        selectionOptions: ['Assign the operating owner', 'Assign the reviewing owner'],
+        contextAnchors: ['accountable owner', 'delivery constraint'],
+      },
+    ],
+  })
+  const renderedTransform = { k: 1, x: 982, y: -523 }
+  const sourceScreenTopLeft = { left: 120, top: 260 }
+  const sourceWorldTopLeft = screenToWorld({
+    transform: renderedTransform,
+    sx: sourceScreenTopLeft.left,
+    sy: sourceScreenTopLeft.top,
+  })
+  const executionAnchor: StoryboardWidgetRunExecutionAnchorSnapshot = {
+    nodeId: 'root',
+    graphMetaKey: 'generic-document',
+    authority: 'screen',
+    world: sourceWorldTopLeft,
+    screen: sourceScreenTopLeft,
+    paintScale: 1,
+    transform: renderedTransform,
+    visibleViewport: {
+      left: 0,
+      top: 0,
+      right: 520,
+      bottom: 920,
+      width: 520,
+      height: 920,
+    },
+  }
+  const responseText = JSON.stringify({
+    jsonrpc: '2.0',
+    id: 'visible-materialization',
+    result: { structuredContent: { ok: true, response } },
+  })
+  const result = materializeStoryboardWidgetProbeTreeStructuredResponse({
+    graphData,
+    anchorNode: graphData.nodes[0]!,
+    responseText,
+    contextText,
+    responseSource: 'mcp',
+    model: 'generic-model',
+    mcpInvoked: true,
+    threadRootId: 'root',
+    invocationTokens: [],
+    executionAnchor,
+  })
+  assert(result != null, 'expected the structured response to materialize from the captured Run authority')
+  const normalized = normalizeStoryboardWidgetProbeTreeThreadLayout({
+    graphData: result!.graphData,
+    threadRootId: 'root',
+  })
+  const materializedPositions = result!.materializedNodeIds.map(nodeId => readPosition(normalized, nodeId))
+  const outputPosition = result!.outputPanelPosition
+  const materializedScreenRects = materializedPositions.map(position => {
+    const center = worldToScreen({ transform: renderedTransform, x: position.x, y: position.y })
+    return {
+      left: center.sx - RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX / 2,
+      top: center.sy - RICH_MEDIA_PANEL_DEFAULT_HEIGHT_PX / 2,
+      width: RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX,
+      height: RICH_MEDIA_PANEL_DEFAULT_HEIGHT_PX,
+    }
+  })
+  const outputScreenRects = outputPosition
+    ? [(() => {
+        const topLeft = worldToScreen({
+          transform: renderedTransform,
+          x: outputPosition.x,
+          y: outputPosition.y,
+        })
+        return {
+          left: topLeft.sx,
+          top: topLeft.sy,
+          width: RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX,
+          height: RICH_MEDIA_PANEL_DEFAULT_HEIGHT_PX,
+        }
+      })()]
+    : []
+  const allMaterializedScreenRects = [...materializedScreenRects, ...outputScreenRects]
+  const everyPositionIntersectsViewport = allMaterializedScreenRects.every(rect => (
+    rect.left + rect.width > executionAnchor.visibleViewport.left
+    && rect.left < executionAnchor.visibleViewport.right
+    && rect.top + rect.height > executionAnchor.visibleViewport.top
+    && rect.top < executionAnchor.visibleViewport.bottom
+  ))
+  const occupiedRects = [{
+    left: sourceScreenTopLeft.left,
+    top: sourceScreenTopLeft.top,
+    width: RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX,
+    height: RICH_MEDIA_PANEL_DEFAULT_HEIGHT_PX,
+  }, ...allMaterializedScreenRects]
+  const positionsDoNotOverlap = occupiedRects.every((position, index) => (
+    occupiedRects.slice(index + 1).every(other => !(
+      position.left < other.left + other.width
+      && position.left + position.width > other.left
+      && position.top < other.top + other.height
+      && position.top + position.height > other.top
+    ))
+  ))
+  assert(outputPosition != null, 'expected the viewport-balanced materialization to reserve a Rich Media output cell')
+  assert(everyPositionIntersectsViewport, `expected every new card and panel to intersect the 100% visible viewport, got ${JSON.stringify({ materializedPositions, outputPosition })}`)
+  assert(positionsDoNotOverlap, `expected the source, generated cards, and Rich Media panel to occupy distinct renderer-projected cells, got ${JSON.stringify(occupiedRects)}`)
+  assert(
+    result!.materializedNodeIds.every(nodeId => {
+      const before = readPosition(result!.graphData, nodeId)
+      const after = readPosition(normalized, nodeId)
+      return before.x === after.x && before.y === after.y
+    }),
+    'expected canonical Probe normalization to preserve the upstream viewport-balanced placement',
+  )
+
+  const staleNodeIds = new Set(result!.materializedNodeIds)
+  const staleRerunGraphData: GraphData = {
+    ...result!.graphData,
+    nodes: result!.graphData.nodes.map(node => (
+      staleNodeIds.has(String(node.id))
+        ? { ...node, x: 48_000, y: -31_000 }
+        : node
+    )),
+  }
+  const staleRerunAnchor = staleRerunGraphData.nodes.find(node => node.id === 'root')!
+  const rerunResult = materializeStoryboardWidgetProbeTreeStructuredResponse({
+    graphData: staleRerunGraphData,
+    anchorNode: staleRerunAnchor,
+    responseText,
+    contextText,
+    responseSource: 'mcp',
+    model: 'generic-model',
+    mcpInvoked: true,
+    threadRootId: 'root',
+    invocationTokens: [],
+    executionAnchor,
+  })
+  assert(rerunResult != null, 'expected a repeated structured response to rematerialize through the current captured viewport')
+  assert(
+    rerunResult!.materializedNodeIds.length === result!.materializedNodeIds.length
+    && rerunResult!.materializedNodeIds.every(nodeId => staleNodeIds.has(nodeId)),
+    `expected the repeated response to reconcile the same generated identities, got ${JSON.stringify(rerunResult!.materializedNodeIds)}`,
+  )
+  const rerunPositions = rerunResult!.materializedNodeIds.map(nodeId => readPosition(rerunResult!.graphData, nodeId))
+  assert(
+    rerunPositions.every((position, index) => (
+      position.x === materializedPositions[index]!.x
+      && position.y === materializedPositions[index]!.y
+    )),
+    `expected a repeated Run to replace stale/offscreen reused coordinates with the fresh execution-anchor plan, got ${JSON.stringify(rerunPositions)}`,
+  )
 }

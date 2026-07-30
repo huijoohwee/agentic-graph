@@ -26,6 +26,8 @@ import {
   type PromoteGeneratedChatWorkspacePathsResult,
   type WorkspaceArtifactPromotion,
 } from './chatWorkspaceArtifactPromotion'
+import type { HeadlessResponseRunResult } from '../headlessResponseCoordinator'
+import { projectHeadlessResponseRunToChatMessage } from '../headlessResponseChatProjection'
 
 const WORKSPACE_MARKDOWN_LINK_RE = /\[[^\]]+\]\(((?:workspace:)?\/[^\s)]+\.md)\)/g
 const WORKSPACE_RESULT_PATH_RE = /(?:^|[\s{,[])(?:["']?(?:workspace_document_path|workspace_path|workspacePath)["']?)\s*[:=]\s*["']?((?:workspace:)?\/[^"'`\s,)]+\.md)/gim
@@ -213,6 +215,7 @@ export const useFinalizeAssistantSuccess = (args: {
       requestText: string
       modelId: string
       rawAssistantText: string
+      runResult?: HeadlessResponseRunResult
       validatedKgc?: string | null
       timestampMs: number
       traceId?: string
@@ -226,7 +229,8 @@ export const useFinalizeAssistantSuccess = (args: {
       rawSseEvents?: string[]
     },
   ) => {
-    const { assistantMessageId, requestText, modelId, rawAssistantText, timestampMs, knownKnowgrphPath } = payload
+    const { assistantMessageId, requestText, modelId, timestampMs, knownKnowgrphPath } = payload
+    const rawAssistantText = payload.runResult?.responseText ?? payload.rawAssistantText
     const status = payload.status === 'error' ? 'error' : 'ok'
     const applyWorkspaceDocumentToCanvas = payload.applyWorkspaceDocumentToCanvas !== false
     const traceId = String(payload.traceId || '').trim() || `trace-${timestampMs}-${assistantMessageId}`
@@ -289,8 +293,8 @@ export const useFinalizeAssistantSuccess = (args: {
     })
     storagePromotionPaths.push(...persistedStreamArtifacts.createdArtifactPaths)
 
-    if (args.chatStorageTarget === 'chatHistory') {
-      await appendChatHistoryWorkspaceFile({
+    const resolvedHistoryPath = args.chatStorageTarget === 'chatHistory'
+      ? await appendChatHistoryWorkspaceFile({
         storageType: 'chatHistory',
         title: 'Chat History Storage',
         traceId,
@@ -302,7 +306,7 @@ export const useFinalizeAssistantSuccess = (args: {
         userText: requestText,
         assistantText: rawAssistantText,
       })
-    }
+      : null
 
     const knowgrphRawPath = String(resolvedKnowgrphPath || args.chatKnowgrphWorkspacePath || '').trim()
     const knowgrphPath = knowgrphRawPath ? normalizeWorkspacePath(knowgrphRawPath) : ''
@@ -439,15 +443,28 @@ export const useFinalizeAssistantSuccess = (args: {
       [knowgrphPath],
       workspacePromotionByPath,
     )))
+    const runArtifactPath = args.chatStorageTarget === 'chatHistory'
+      ? (resolvedHistoryPath ? normalizeWorkspacePath(resolvedHistoryPath) : '')
+      : knowgrphPath
 
     args.setMessages(prev => {
       let found = false
       const next = prev.map(m => {
         if (m.id !== assistantMessageId) return m
         found = true
-        return { ...m, content: finalAssistantText }
+        return projectHeadlessResponseRunToChatMessage({
+          message: m,
+          content: finalAssistantText,
+          runResult: payload.runResult,
+          artifactPath: runArtifactPath || null,
+        })
       })
-      return found ? next : [...next, { id: assistantMessageId, role: 'assistant', content: finalAssistantText }]
+      return found ? next : [...next, projectHeadlessResponseRunToChatMessage({
+        message: { id: assistantMessageId, role: 'assistant', content: '' },
+        content: finalAssistantText,
+        runResult: payload.runResult,
+        artifactPath: runArtifactPath || null,
+      })]
     })
     args.setStreamingAssistant(null)
     args.streamFollowRef.current = null

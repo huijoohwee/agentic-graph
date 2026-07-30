@@ -1,6 +1,7 @@
 import type { GraphState, CanvasSnapshotFns, ThreeCameraPose, ThreeCameraSnapshotFns, ThreeGlbSnapshotFns, ThreeLayoutSnapshotFns } from '@/hooks/store/types'
 import type { StoreApi } from 'zustand'
-import type { ZoomCommandType, ZoomFitIntent, ZoomRequest } from '@/lib/zoom/requests'
+import type { ZoomCommandType, ZoomFitIntent, ZoomRequest, ZoomTransformIntent } from '@/lib/zoom/requests'
+import type { StoryboardWidgetLayoutRebalanceOptions, StoryboardWidgetLayoutRebalanceRequest } from '@/lib/storyboardWidget/layoutRebalance'
 import {
   DEFAULT_CANVAS_2D_RENDERER,
   DEFAULT_CANVAS_3D_MODE,
@@ -81,13 +82,11 @@ import {
   clampCanvasInteractionSpeedMultiplier,
   clampCanvasPanSpeedMultiplier,
 } from '@/lib/canvas/camera-options-2d'
-
 type SetGraph = StoreApi<GraphState>['setState']
 export {
   applyCanvasSliceStorageMigrations,
   planCanvasSliceStorageMigrations,
 } from '@/hooks/store/canvasSliceStorageMigrations'
-
 export const createCanvasSlice = (set: SetGraph, get: () => GraphState) => {
   const storage = getLocalStorage()
   const migrationPlan = planCanvasSliceStorageMigrations(storage)
@@ -288,8 +287,8 @@ export const createCanvasSlice = (set: SetGraph, get: () => GraphState) => {
       }
       return { ...modePatch, zoomRequest: { type, at: Date.now() } as ZoomRequest }
     }),
-  requestZoomTransform: (payload: { k: number; x: number; y: number }) =>
-    set({ zoomRequest: { type: 'transform', at: Date.now(), payload } }),
+  requestZoomTransform: (payload: { k: number; x: number; y: number }, opts?: { intent?: ZoomTransformIntent }) =>
+    set({ zoomRequest: { type: 'transform', at: Date.now(), payload, intent: opts?.intent } }),
   requestZoomBounds: (payload: { bounds: { x: number; y: number; w: number; h: number }; insetPx?: number; origin?: { x: number; y: number } }) =>
     set({ zoomRequest: { type: 'bounds', at: Date.now(), payload } }),
   clearZoomRequest: () => set({ zoomRequest: null }),
@@ -315,9 +314,10 @@ export const createCanvasSlice = (set: SetGraph, get: () => GraphState) => {
   requestGraphCanvasArrange: (req: { type: 'center'; scope: 'selection' | 'all' } | { type: 'distribute'; axis: 'x' | 'y' }) =>
     set({ graphCanvasArrangeRequest: { ...req, at: Date.now() } }),
   clearGraphCanvasArrangeRequest: () => set({ graphCanvasArrangeRequest: null }),
-  storyboardWidgetLayoutRebalanceRequest: null as null | { type: 'balanced-spread'; at: number },
-  requestStoryboardWidgetLayoutRebalance: () =>
-    set({ storyboardWidgetLayoutRebalanceRequest: { type: 'balanced-spread', at: Date.now() } }),
+  storyboardWidgetLayoutRebalanceRequest: null as StoryboardWidgetLayoutRebalanceRequest | null,
+  requestStoryboardWidgetLayoutRebalance: (options?: StoryboardWidgetLayoutRebalanceOptions) => set(state => ({
+    storyboardWidgetLayoutRebalanceRequest: { type: 'balanced-spread', at: Math.max(Date.now(), (state.storyboardWidgetLayoutRebalanceRequest?.at || 0) + 1), ...options },
+  })),
   clearStoryboardWidgetLayoutRebalanceRequest: () => set({ storyboardWidgetLayoutRebalanceRequest: null }),
   zoomState: null as null | { k: number; x: number; y: number; graphDataRevision?: number; viewportW?: number; viewportH?: number },
   setZoomState: (z: { k: number; x: number; y: number; graphDataRevision?: number; viewportW?: number; viewportH?: number }) => set({ zoomState: z }),

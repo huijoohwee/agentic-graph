@@ -9,6 +9,11 @@ export const GRAPH_NODE_CARD_DIALOGUE_PROPERTY_KEYS = ['dialogue', 'voiceover', 
 export const GRAPH_NODE_CARD_PROMPT_PROPERTY_KEYS = ['prompt', 'imagePrompt', 'visualPrompt', 'brief', 'visualBrief', 'visual_brief', 'artDirection'] as const
 export const GRAPH_NODE_CARD_OUTPUT_PROPERTY_KEYS = ['output', 'result', 'response', 'transcript', 'outputText', 'output_text'] as const
 export const GRAPH_NODE_CARD_STYLE_PROPERTY_KEYS = ['style', 'look', 'treatment', 'theme', 'preset', 'variant'] as const
+export const GRAPH_NODE_CARD_REQUEST_PROPERTY_KEYS = [
+  ...GRAPH_NODE_CARD_PROMPT_PROPERTY_KEYS,
+  ...GRAPH_NODE_CARD_ACTION_PROPERTY_KEYS,
+  ...GRAPH_NODE_CARD_SUMMARY_PROPERTY_KEYS,
+] as const
 
 type GraphNodeProperties = Record<string, JSONValue>
 

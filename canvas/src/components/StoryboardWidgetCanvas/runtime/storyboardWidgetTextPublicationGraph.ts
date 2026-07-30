@@ -1,6 +1,5 @@
 import {
   mergeStoryboardWidgetExplicitRunTargetTopology,
-  resolveStoryboardWidgetWorkflowDownstreamRunTargetIds,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowDownstreamRunTargets'
 import {
   mergeStoryboardWidgetProbeTreeOutputPanels,
@@ -10,12 +9,12 @@ import {
 import type { StoryboardWidgetWorkflowNodeResolutionContext } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetRenderGraph'
 import { readGraphNodeProperties } from '@/lib/cards/graphNodeCardFields'
 import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/config'
-import { isRichMediaOutputTargetNode } from '@/features/chat/richMediaRun'
 import { isCanonicalNodeIdEqual } from '@/lib/graph/canonicalNodeIds'
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { bumpStoryboardWidgetDraftGraphDataRevision } from '@/lib/storyboardWidget/storyboardWidgetDraftGraphData'
+import { resolveStoryboardWidgetTextProjectionTargets } from './storyboardWidgetTextProjectionTargets'
 
 const readString = (value: unknown): string => {
   const scalar = unwrapGraphCellValue(value)
@@ -122,10 +121,13 @@ export function buildStoryboardWidgetTextPublicationGraph(args: {
   }, args.baseGraphData)
   const anchorNode = (graphData.nodes || []).find(node => readString(node.id) === args.anchorNodeId)
   const hasExplicitRichMediaTarget = anchorNode
-    ? resolveStoryboardWidgetWorkflowDownstreamRunTargetIds({ node: anchorNode, graphData })
-      .some(targetId => isRichMediaOutputTargetNode(
-        (graphData.nodes || []).find(node => readString(node.id) === targetId),
-      ))
+    ? resolveStoryboardWidgetTextProjectionTargets({
+        anchorNode,
+        graphData,
+        resolveNodeById: targetId => (
+          (graphData.nodes || []).find(node => isCanonicalNodeIdEqual(node.id, targetId)) || null
+        ),
+      }).explicitPanelNodeIds.length > 0
     : false
   if (!hasExplicitRichMediaTarget) {
     graphData = sourceGraphs.reduce<GraphData>((current, sourceGraphData) => mergeOwnedTextOutputPanel({

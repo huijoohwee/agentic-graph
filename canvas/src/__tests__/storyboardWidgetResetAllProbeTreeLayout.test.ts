@@ -105,9 +105,10 @@ export function testProbeTreeResetAllClearsOutputsAndRebalancesEveryThread() {
   assert(!Object.prototype.hasOwnProperty.call(reset.graphData.nodes.find(node => node.id === 'ledger-a')?.properties || {}, 'outputSrcDoc'), 'expected reset to clear ledger output')
   assertBalancedThread(reset.graphData, 'root-a', threadAIds)
   assertBalancedThread(reset.graphData, 'root-b', threadBIds)
+  const rootAX = readPosition(reset.graphData, 'root-a').x
   const ledgerX = readPosition(reset.graphData, 'ledger-a').x
-  const rightmostThreadAX = Math.max(...threadAIds.map(nodeId => readPosition(reset.graphData, nodeId).x))
-  assert(ledgerX > rightmostThreadAX, 'expected the canonical ledger to remain right of the rebalanced thread')
+  const leftmostThreadAX = Math.min(...threadAIds.map(nodeId => readPosition(reset.graphData, nodeId).x))
+  assert(ledgerX > rootAX && ledgerX < leftmostThreadAX, 'expected the canonical ledger between the source and the rebalanced branch columns')
 }
 
 export function testProbeTreeResetAllReflowsASettledLayoutWithoutStaleOutputOrNavigation() {

@@ -30,7 +30,7 @@ export function testStoryboardWidgetCanvasRunsFlowComputeBeforeProviderTextBranc
     if (!workflowRunInputsText.includes(snippet)) throw new Error(`expected StoryboardWidget workflow run-input helper to include ${snippet}`)
   }
   const inlineComputeIndex = workflowActionsText.indexOf('if (readFlowComputeSource(node))')
-  const providerTextIndex = workflowActionsText.indexOf("if (String(unwrapGraphCellValue(node.type) || '').trim() === FLOW_TEXT_GENERATION_NODE_TYPE_ID)")
+  const providerTextIndex = workflowActionsText.indexOf('if (nodeType === FLOW_TEXT_GENERATION_NODE_TYPE_ID)')
   if (inlineComputeIndex < 0 || providerTextIndex < 0 || inlineComputeIndex > providerTextIndex) {
     throw new Error('expected StoryboardWidget workflow run path to execute authored inline compute before provider TextGeneration runs')
   }

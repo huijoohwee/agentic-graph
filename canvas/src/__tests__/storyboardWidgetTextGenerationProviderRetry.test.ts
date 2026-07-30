@@ -25,12 +25,17 @@ export async function testStoryboardWidgetRetriesIncompleteResponsesWithoutReaso
       requestBodies.push(JSON.parse(String(init?.body || '{}')) as Record<string, unknown>)
       if (requestBodies.length === 1) {
         return responseStream([
+          { type: 'response.reasoning_summary_text.delta', delta: 'Inspect the request contract before answering.' },
+          { type: 'response.output_text.delta', delta: '# Incomplete answer\n\nThis fragment must not be accepted.' },
           {
             type: 'response.incomplete',
             response: {
               status: 'incomplete',
               incomplete_details: { reason: 'max_output_tokens' },
-              output: [{ type: 'reasoning', summary: [] }],
+              output: [{
+                type: 'reasoning',
+                summary: [{ type: 'summary_text', text: 'Inspect the request contract before answering.' }],
+              }],
             },
           },
           '[DONE]',
@@ -57,6 +62,7 @@ export async function testStoryboardWidgetRetriesIncompleteResponsesWithoutReaso
     }) as typeof fetch
 
     const publishedText: string[] = []
+    const publishedThinking: string[] = []
     const result = await generateStoryboardWidgetTextWithProvider({
       properties: {
         chatProvider: 'openai',
@@ -78,6 +84,7 @@ export async function testStoryboardWidgetRetriesIncompleteResponsesWithoutReaso
       localProperties: { chatReasoningEffort: 'medium' },
       prompt: 'Create a comparison and financial budget report.',
       onText: text => publishedText.push(text),
+      onReasoningText: text => publishedThinking.push(text),
     })
 
     const firstReasoning = requestBodies[0]?.reasoning as { effort?: unknown } | undefined
@@ -85,8 +92,15 @@ export async function testStoryboardWidgetRetriesIncompleteResponsesWithoutReaso
     if (requestBodies.length !== 2 || firstReasoning?.effort !== 'medium' || retryReasoning?.effort !== 'minimal') {
       throw new Error(`expected one bounded minimal-reasoning retry, got ${JSON.stringify(requestBodies)}`)
     }
-    if (!result.includes('# Comparison report') || publishedText.length !== 1 || publishedText[0] !== result) {
-      throw new Error(`expected terminal text to publish once for Rich Media materialization, got ${JSON.stringify({ result, publishedText })}`)
+    if (
+      !result.includes('# Comparison report')
+      || !publishedText.some(text => text.includes('# Incomplete answer'))
+      || publishedText[publishedText.length - 1] !== result
+    ) {
+      throw new Error(`expected an incomplete partial response to retry and end with terminal text, got ${JSON.stringify({ result, publishedText })}`)
+    }
+    if (!publishedThinking.some(text => text.includes('Inspect the request contract'))) {
+      throw new Error(`expected provider-exposed reasoning to remain available as a separate output signal, got ${JSON.stringify(publishedThinking)}`)
     }
   } finally {
     globalThis.fetch = originalFetch

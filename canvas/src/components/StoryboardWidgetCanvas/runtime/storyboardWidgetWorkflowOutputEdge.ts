@@ -1,10 +1,14 @@
-import { FLOW_EDGE_SOURCE_PORT_KEY, FLOW_EDGE_TARGET_PORT_KEY } from '@/lib/graph/flowPorts'
+import {
+  FLOW_EDGE_SOURCE_PORT_KEY,
+  FLOW_EDGE_TARGET_PORT_KEY,
+  FLOW_TEXT_OUTPUT_PORT_KEY,
+} from '@/lib/graph/flowPorts'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import { isPlainObject } from '@/lib/graph/value'
 
 export const WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY = 'workflowOutputEdgeMode' as const
 export const WORKFLOW_OUTPUT_EDGE_MODE_MANUAL = 'manual' as const
-export const WORKFLOW_OUTPUT_EDGE_DEFAULT_SOURCE_PORT_KEY = 'text_out' as const
+export const WORKFLOW_OUTPUT_EDGE_DEFAULT_SOURCE_PORT_KEY = FLOW_TEXT_OUTPUT_PORT_KEY
 export const WORKFLOW_OUTPUT_EDGE_DEFAULT_TARGET_PORT_KEY = 'output' as const
 
 const cleanEdgePart = (value: unknown): string => String(value ?? '').trim()

@@ -38,7 +38,7 @@ import { buildRichMediaPanelOverlayExcludeNodeIdSet } from '@/lib/render/richMed
 import { isRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
 import { readFiniteRuntimeZoomTransform } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetRuntimeScene'
-import { resolveCollectiveCameraFollowBaselineRef } from '@/lib/canvas/overlayWidgetZoom'
+import { buildCollectiveCameraFollowBaselineKey, resolveCollectiveCameraFollowBaselineRef } from '@/lib/canvas/overlayWidgetZoom'
 import { StoryboardEdgeNodeInsertionMenu } from '@/components/StoryboardWidgetCanvas/runtime/StoryboardEdgeNodeInsertionMenu'
 import { buildStoryboardOverlayAabbByNodeId } from '@/components/StoryboardWidgetCanvas/runtime/storyboardOverlayAabb'
 import { readSubgraphs, subgraphGroupId } from '@/lib/graph/subgraphs'
@@ -118,7 +118,10 @@ export default function StoryboardWidgetCanvasSurface(props: {
     () => resolveFlowWidgetStateGraphKey({ graphData: props.storyboardSourceGraphData || null }),
     [props.storyboardSourceGraphData],
   )
-  const storyboardCollectiveZoomBaselineKey = `${props.storyboardWidgetSurfaceId}|${flowWidgetStateGraphKey || ''}`
+  const storyboardCollectiveZoomBaselineKey = buildCollectiveCameraFollowBaselineKey({
+    surfaceId: props.storyboardWidgetSurfaceId,
+    graphKey: flowWidgetStateGraphKey,
+  })
   const storyboardCollectiveZoomBaselineKRef = resolveCollectiveCameraFollowBaselineRef(
     storyboardCollectiveZoomBaselineKey,
   )
