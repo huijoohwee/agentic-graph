@@ -338,8 +338,9 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   if (!threeGraphText.includes('const rendererDefaultClearAlpha = geospatialComposite ? 0')) {
     throw new Error('Expected the Flight R3F canvas to stay transparent above MapLibre')
   }
-  if (!gameplayOverlayText.includes('actorsVisible={!props.geospatialComposite}')) {
-    throw new Error('Expected Geo+XR to suppress competing R3F Flight geometry')
+  if (!gameplayOverlayText.includes('actorsVisible')
+    || gameplayOverlayText.includes('actorsVisible={!props.geospatialComposite}')) {
+    throw new Error('Expected Geo+XR to retain the actor-only R3F Media Airplane above MapLibre')
   }
   for (const layer of ['route', 'routePoints', 'aircraft', 'aircraftOutline']) {
     if (!flightOverlayText.includes(`${layer}:`)) {
