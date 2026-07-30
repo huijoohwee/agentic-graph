@@ -155,6 +155,8 @@ const INGEST_INPUT_SCHEMA = Object.freeze({
     maxFiles: { type: "integer", minimum: 1, maximum: 250000, default: 100000 },
     maxFileBytes: { type: "integer", minimum: 1, maximum: 100000000, default: 2000000 },
     maxTotalBytes: { type: "integer", minimum: 1, maximum: 4000000000, default: 1000000000 },
+    maxResolutionRecords: { type: "integer", minimum: 1, maximum: 1000000, default: 1000000 },
+    maxResolutionBytes: { type: "integer", minimum: 1, maximum: 256000000, default: 256000000 },
     maxDurationMs: { type: "integer", minimum: 100, maximum: 3600000, default: 300000 },
     projectionLimit: { type: "integer", minimum: 1, maximum: 1000, default: 200 },
     useCache: { type: "boolean", default: true },

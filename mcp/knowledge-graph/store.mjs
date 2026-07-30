@@ -257,6 +257,7 @@ async function writeContentAddressed(storeRoot, value, maxBytes = MAX_OBJECT_BYT
     checkpoint();
     try {
       await fs.link(temporary, target);
+      options.objectTransaction?.createdDigests?.add(digest);
     } catch (error) {
       if (error?.code !== "EEXIST") throw error;
     }
@@ -271,6 +272,16 @@ async function writeContentAddressed(storeRoot, value, maxBytes = MAX_OBJECT_BYT
     await fs.unlink(temporary).catch(() => {});
   }
   return { digest, bytes };
+}
+
+export async function removeKnowledgeGraphObject(pointerPath, digest, options = {}) {
+  const resolved = await resolveContainedFileForWrite(
+    objectPath(knowledgeGraphStoreRoot(pointerPath), digest),
+    options.allowedRoot,
+  );
+  await fs.unlink(resolved.target).catch((error) => {
+    if (error?.code !== "ENOENT") throw error;
+  });
 }
 
 async function readContentAddressed(snapshot, digest, maxBytes = MAX_OBJECT_BYTES) {
@@ -491,6 +502,7 @@ export async function writeKnowledgeGraphSnapshotAtomic(pointerPath, {
   };
   checkpoint();
   await writeAtomicText(pointerPath, stableStringify(pointer, 2, { checkpoint }), options);
+  if (options.objectTransaction) options.objectTransaction.committed = true;
   return attachReadBudget({
     pointerPath,
     pointer,

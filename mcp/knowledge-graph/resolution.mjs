@@ -7,10 +7,17 @@ import {
   KnowledgeGraphError,
   makeEdge,
 } from "./contract.mjs";
+import {
+  createResolutionRetentionBudget,
+  retainResolutionRecord,
+} from "./resolution-retention.mjs";
 
 const RESOLVER_ID = "local-repository-scoped-resolver";
 const RESOLVER_VERSION = "2.0.0";
 const CODE_EXTENSIONS = [".cjs", ".js", ".jsx", ".mjs", ".ts", ".tsx"];
+const CODE_PREMISE_LABELS = new Set(["imports", "reexports"]);
+const MAX_DERIVED_EDGES = 200_000;
+const MAX_EVIDENCE_CANDIDATE_IDS = 64;
 
 const normalizedLabel = (value) => String(value || "")
   .trim()
@@ -24,8 +31,15 @@ function evidenceFromPremises({
   explanation,
   ambiguous,
   candidateIds,
+  candidateCount = candidateIds.length,
+  targetId,
 }) {
   const premise = premiseEdges[0]?.properties || {};
+  const retainedCandidateIds = candidateIds.slice(0, MAX_EVIDENCE_CANDIDATE_IDS);
+  if (targetId && !retainedCandidateIds.includes(targetId)) {
+    retainedCandidateIds[retainedCandidateIds.length - 1] = targetId;
+    retainedCandidateIds.sort(compareStableStrings);
+  }
   return buildEvidence({
     sourcePath: source.relativePath,
     sourceDigest: source.contentHash,
@@ -42,26 +56,47 @@ function evidenceFromPremises({
     certainty: ambiguous ? "ambiguous" : "inferred",
     confidence: ambiguous ? "low" : "high",
     premiseEdgeIds: premiseEdges.map((edge) => edge.id),
-    candidateCount: candidateIds.length,
-    candidateIds,
+    candidateCount,
+    candidateIds: retainedCandidateIds,
   });
 }
 
-function appendDerived(derived, edge, repository, maxEdges) {
-  if (derived.length >= maxEdges) {
+function appendDerived(derived, edge, repository, derivedBudget, retentionBudget) {
+  if (derivedBudget.count >= derivedBudget.maxEdges) {
     throw new KnowledgeGraphError("resolution_edge_limit_exceeded", "Repository resolution exceeded its derived-edge limit.", {
       repositoryId: repository.repositoryId,
-      maxEdges,
+      maxEdges: derivedBudget.maxEdges,
     });
   }
+  retainResolutionRecord(
+    retentionBudget,
+    edge.properties["evidence:sourcePath"],
+    edge,
+    {
+      recordKind: "derived-edge",
+      repositoryId: repository.repositoryId,
+    },
+  );
   derived.push(edge);
+  derivedBudget.count += 1;
 }
 
-function resolveCodeDependencies(repository, sourceByPath, nodes, edges, checkpoint, maxEdges) {
-  const derived = [];
-  for (const dependency of nodes
-    .filter((node) => node.type === "CodeDependency")
-    .sort((left, right) => compareStableStrings(left.id, right.id))) {
+function premiseEdgesFor(premiseEdgesByTarget, targetId, labels = null) {
+  const premiseEdges = premiseEdgesByTarget.get(targetId) || [];
+  return labels ? premiseEdges.filter((edge) => labels.has(edge.label)) : premiseEdges;
+}
+
+function resolveCodeDependencies(
+  repository,
+  sourceByPath,
+  dependencies,
+  premiseEdgesByTarget,
+  derived,
+  checkpoint,
+  derivedBudget,
+  retentionBudget,
+) {
+  for (const dependency of dependencies.sort((left, right) => compareStableStrings(left.id, right.id))) {
     checkpoint();
     const moduleName = String(dependency.properties?.["code:module"] || dependency.label || "");
     if (!moduleName.startsWith(".")) continue;
@@ -81,12 +116,11 @@ function resolveCodeDependencies(repository, sourceByPath, nodes, edges, checkpo
       .filter(Boolean)
       .sort((left, right) => compareStableStrings(left.id, right.id));
     if (!candidates.length) continue;
-    const premiseEdges = edges
-      .filter((edge) => {
-        checkpoint();
-        return edge.target === dependency.id && ["imports", "reexports"].includes(edge.label);
-      })
-      .sort((left, right) => compareStableStrings(left.id, right.id));
+    const premiseEdges = premiseEdgesFor(
+      premiseEdgesByTarget,
+      dependency.id,
+      CODE_PREMISE_LABELS,
+    );
     const candidateIds = candidates.map((candidate) => candidate.id);
     for (const target of candidates) {
       checkpoint();
@@ -100,32 +134,39 @@ function resolveCodeDependencies(repository, sourceByPath, nodes, edges, checkpo
           source,
           premiseEdges,
           candidateIds,
+          targetId: target.id,
           ambiguous,
           ruleId: "resolve.relative-code-import.repository",
           explanation: ambiguous
             ? `Relative module ${moduleName} has ${candidates.length} candidates inside repository ${repository.repositoryPath}; ${target.label} is preserved as one candidate.`
             : `Relative module ${moduleName} resolves to ${target.label} inside repository ${repository.repositoryPath}.`,
         }),
-      }), repository, maxEdges);
+      }), repository, derivedBudget, retentionBudget);
     }
   }
-  return derived;
 }
 
-function resolveSqlReferences(repository, sourceByPath, nodes, edges, checkpoint, maxEdges) {
+function resolveSqlReferences(
+  repository,
+  sourceByPath,
+  tables,
+  references,
+  premiseEdgesByTarget,
+  derived,
+  checkpoint,
+  derivedBudget,
+  retentionBudget,
+) {
   const exactTables = new Map();
   const shortTables = new Map();
-  for (const node of nodes.filter((candidate) => candidate.type === "SqlTable")) {
+  for (const node of tables) {
     checkpoint();
     const full = normalizedLabel(node.properties?.["sql:qualifiedName"] || node.label);
     const short = full.split(".").at(-1);
     exactTables.set(full, [...(exactTables.get(full) || []), node]);
     shortTables.set(short, [...(shortTables.get(short) || []), node]);
   }
-  const derived = [];
-  for (const reference of nodes
-    .filter((node) => node.type === "SqlTableReference")
-    .sort((left, right) => compareStableStrings(left.id, right.id))) {
+  for (const reference of references.sort((left, right) => compareStableStrings(left.id, right.id))) {
     checkpoint();
     const sourcePath = String(reference.properties?.["corpus:sourcePath"] || "");
     const source = sourceByPath.get(sourcePath);
@@ -136,10 +177,7 @@ function resolveSqlReferences(repository, sourceByPath, nodes, edges, checkpoint
     for (const candidate of candidates) candidateSet.set(candidate.id, candidate);
     const sorted = [...candidateSet.values()].sort((left, right) => compareStableStrings(left.id, right.id));
     if (!sorted.length) continue;
-    const premiseEdges = edges.filter((edge) => {
-      checkpoint();
-      return edge.target === reference.id;
-    }).sort((left, right) => compareStableStrings(left.id, right.id));
+    const premiseEdges = premiseEdgesFor(premiseEdgesByTarget, reference.id);
     const candidateIds = sorted.map((candidate) => candidate.id);
     for (const target of sorted) {
       checkpoint();
@@ -153,21 +191,29 @@ function resolveSqlReferences(repository, sourceByPath, nodes, edges, checkpoint
           source,
           premiseEdges,
           candidateIds,
+          targetId: target.id,
           ambiguous,
           ruleId: "resolve.sql-table.repository-qualified",
           explanation: ambiguous
             ? `SQL reference ${reference.label} has ${sorted.length} repository-scoped candidates; ${target.label} is preserved as one candidate.`
             : `SQL reference ${reference.label} resolves to ${target.label} inside repository ${repository.repositoryPath}.`,
         }),
-      }), repository, maxEdges);
+      }), repository, derivedBudget, retentionBudget);
     }
   }
-  return derived;
 }
 
-function resolveDocumentLinks(repository, sourceByPath, nodes, edges, checkpoint, maxEdges) {
-  const derived = [];
-  for (const reference of nodes.filter((node) => node.type === "DocumentLinkReference")) {
+function resolveDocumentLinks(
+  repository,
+  sourceByPath,
+  references,
+  premiseEdgesByTarget,
+  derived,
+  checkpoint,
+  derivedBudget,
+  retentionBudget,
+) {
+  for (const reference of references) {
     checkpoint();
     const targetValue = String(reference.properties?.["doc:target"] || "");
     if (!targetValue || /^[a-z][a-z0-9+.-]*:/i.test(targetValue) || targetValue.startsWith("#")) continue;
@@ -178,10 +224,7 @@ function resolveDocumentLinks(repository, sourceByPath, nodes, edges, checkpoint
     const resolvedPath = path.posix.normalize(path.posix.join(path.posix.dirname(sourcePath), withoutAnchor));
     const target = sourceByPath.get(resolvedPath);
     if (!target?.sourceNode || target.repositoryId !== repository.repositoryId) continue;
-    const premiseEdges = edges.filter((edge) => {
-      checkpoint();
-      return edge.target === reference.id;
-    }).sort((left, right) => compareStableStrings(left.id, right.id));
+    const premiseEdges = premiseEdgesFor(premiseEdgesByTarget, reference.id);
     appendDerived(derived, makeEdge({
       source: reference.id,
       target: target.sourceNode.id,
@@ -191,13 +234,45 @@ function resolveDocumentLinks(repository, sourceByPath, nodes, edges, checkpoint
         source,
         premiseEdges,
         candidateIds: [target.sourceNode.id],
+        targetId: target.sourceNode.id,
         ambiguous: false,
         ruleId: "resolve.document-link.repository",
         explanation: `Document link ${targetValue} resolves to ${resolvedPath} inside repository ${repository.repositoryPath}.`,
       }),
-    }), repository, maxEdges);
+    }), repository, derivedBudget, retentionBudget);
   }
-  return derived;
+}
+
+function indexResolutionFragments(paths, fragments, checkpoint) {
+  const indexed = {
+    codeDependencies: [],
+    documentReferences: [],
+    premiseEdgesByTarget: new Map(),
+    sqlReferences: [],
+    tables: [],
+  };
+  for (const sourcePath of paths) {
+    const fragment = fragments.get(sourcePath);
+    if (!fragment) continue;
+    for (const node of fragment.nodes) {
+      checkpoint();
+      if (node.type === "CodeDependency") indexed.codeDependencies.push(node);
+      else if (node.type === "DocumentLinkReference") indexed.documentReferences.push(node);
+      else if (node.type === "SqlTableReference") indexed.sqlReferences.push(node);
+      else if (node.type === "SqlTable") indexed.tables.push(node);
+    }
+    for (const edge of fragment.edges) {
+      checkpoint();
+      const premiseEdges = indexed.premiseEdgesByTarget.get(edge.target);
+      if (premiseEdges) premiseEdges.push(edge);
+      else indexed.premiseEdgesByTarget.set(edge.target, [edge]);
+    }
+  }
+  for (const premiseEdges of indexed.premiseEdgesByTarget.values()) {
+    checkpoint();
+    premiseEdges.sort((left, right) => compareStableStrings(left.id, right.id));
+  }
+  return indexed;
 }
 
 export function buildRepositoryScopedResolutionEdges(sources, fragments, options = {}) {
@@ -213,9 +288,19 @@ export function buildRepositoryScopedResolutionEdges(sources, fragments, options
       });
     }
   };
-  const maxEdges = 200_000;
+  const requestedMaxEdges = Number(options.maxEdges);
+  const maxEdges = Number.isFinite(requestedMaxEdges) && requestedMaxEdges > 0
+    ? Math.min(MAX_DERIVED_EDGES, Math.floor(requestedMaxEdges))
+    : MAX_DERIVED_EDGES;
+  const derivedBudget = { count: 0, maxEdges };
+  const retentionBudget = options.retentionBudget || createResolutionRetentionBudget({
+    maxBytes: options.maxResolutionBytes,
+    maxRecords: options.maxResolutionRecords,
+  });
   checkKnowledgeGraphBudget({ ...options, stage: "repository-resolution" });
   const sourceByPath = new Map();
+  const repositoriesById = new Map();
+  const pathsByRepository = new Map();
   for (const source of sources) {
     checkpoint();
     const fragment = fragments.get(source.relativePath);
@@ -223,29 +308,57 @@ export function buildRepositoryScopedResolutionEdges(sources, fragments, options
       ...source,
       sourceNode: fragment?.nodes?.find((node) => node.type === "SourceFile"),
     });
+    repositoriesById.set(source.repositoryId, {
+      repositoryId: source.repositoryId,
+      repositoryPath: source.repositoryPath,
+    });
+    const repositoryPaths = pathsByRepository.get(source.repositoryId);
+    if (repositoryPaths) repositoryPaths.add(source.relativePath);
+    else pathsByRepository.set(source.repositoryId, new Set([source.relativePath]));
   }
   const byRepository = new Map();
-  const repositories = [...new Map(sources.map((source) => [
-    source.repositoryId,
-    { repositoryId: source.repositoryId, repositoryPath: source.repositoryPath },
-  ])).values()].sort((left, right) => compareStableStrings(left.repositoryPath, right.repositoryPath));
+  const repositories = [...repositoriesById.values()]
+    .sort((left, right) => compareStableStrings(left.repositoryPath, right.repositoryPath));
   for (const repository of repositories) {
     checkpoint();
-    const paths = new Set(sources.filter((source) => source.repositoryId === repository.repositoryId).map((source) => source.relativePath));
-    const scopedFragments = [...paths].map((sourcePath) => fragments.get(sourcePath)).filter(Boolean);
-    const nodes = scopedFragments.flatMap((fragment) => (checkpoint(), fragment.nodes));
-    const edges = scopedFragments.flatMap((fragment) => (checkpoint(), fragment.edges));
-    const derived = [
-      ...resolveCodeDependencies(repository, sourceByPath, nodes, edges, checkpoint, maxEdges),
-      ...resolveSqlReferences(repository, sourceByPath, nodes, edges, checkpoint, maxEdges),
-      ...resolveDocumentLinks(repository, sourceByPath, nodes, edges, checkpoint, maxEdges),
-    ].sort((left, right) => compareStableStrings(left.id, right.id));
-    if (derived.length > maxEdges) {
-      throw new KnowledgeGraphError("resolution_edge_limit_exceeded", "Repository resolution exceeded its derived-edge limit.", {
-        repositoryId: repository.repositoryId,
-        maxEdges,
-      });
-    }
+    const indexed = indexResolutionFragments(
+      pathsByRepository.get(repository.repositoryId) || new Set(),
+      fragments,
+      checkpoint,
+    );
+    const derived = [];
+    resolveCodeDependencies(
+      repository,
+      sourceByPath,
+      indexed.codeDependencies,
+      indexed.premiseEdgesByTarget,
+      derived,
+      checkpoint,
+      derivedBudget,
+      retentionBudget,
+    );
+    resolveSqlReferences(
+      repository,
+      sourceByPath,
+      indexed.tables,
+      indexed.sqlReferences,
+      indexed.premiseEdgesByTarget,
+      derived,
+      checkpoint,
+      derivedBudget,
+      retentionBudget,
+    );
+    resolveDocumentLinks(
+      repository,
+      sourceByPath,
+      indexed.documentReferences,
+      indexed.premiseEdgesByTarget,
+      derived,
+      checkpoint,
+      derivedBudget,
+      retentionBudget,
+    );
+    derived.sort((left, right) => compareStableStrings(left.id, right.id));
     byRepository.set(repository.repositoryId, derived);
   }
   return byRepository;

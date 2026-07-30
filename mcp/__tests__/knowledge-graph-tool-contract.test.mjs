@@ -47,6 +47,8 @@ test("local MCP exposes one deterministic knowledge-graph tool family", () => {
   assert.equal(query.annotations.readOnlyHint, true);
   assert.equal(explain.annotations.readOnlyHint, true);
   assert.equal(ingest.inputSchema.oneOf.length, 2);
+  assert.equal(ingest.inputSchema.properties.maxResolutionRecords.default, 1_000_000);
+  assert.equal(ingest.inputSchema.properties.maxResolutionBytes.default, 256_000_000);
   assert.deepEqual(query.inputSchema.required, ["graphId", "expectedSnapshotDigest", "mode"]);
   assert.deepEqual(explain.inputSchema.required, ["graphId", "expectedSnapshotDigest", "edgeId"]);
   assert.equal(query.inputSchema.properties.maxDurationMs.default, 300000);
@@ -86,6 +88,9 @@ test("schemas require digest fencing, source-backed invocation proofs, and typed
   const query = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery);
   const validateIngest = ajv.compile(ingest.inputSchema);
   assert.equal(validateIngest({ rootPath: "/workspace" }), true, JSON.stringify(validateIngest.errors));
+  assert.equal(validateIngest({ rootPath: "/workspace", maxResolutionRecords: 1, maxResolutionBytes: 1 }), true);
+  assert.equal(validateIngest({ rootPath: "/workspace", maxResolutionRecords: 1_000_001 }), false);
+  assert.equal(validateIngest({ rootPath: "/workspace", maxResolutionBytes: 256_000_001 }), false);
   assert.equal(validateIngest({ repositoryUrl: "https://github.com/example/project" }), true, JSON.stringify(validateIngest.errors));
   assert.equal(validateIngest({ rootPath: "/workspace", repositoryUrl: "https://github.com/example/project" }), false);
   const validateInput = ajv.compile(query.inputSchema);

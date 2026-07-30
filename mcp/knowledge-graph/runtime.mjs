@@ -20,6 +20,7 @@ import {
   parserDescriptorForSource,
   parserLimitFragmentForSource,
 } from "./parsers.mjs";
+import { runKnowledgeGraphObjectTransaction } from "./object-transaction.mjs";
 import {
   explainKnowledgeGraphSnapshotEdge,
   projectKnowledgeGraphSnapshot,
@@ -27,6 +28,11 @@ import {
 } from "./query.mjs";
 import { acquireRepositoryUrl } from "./repository-acquisition.mjs";
 import { buildRepositoryScopedResolutionEdges } from "./resolution.mjs";
+import {
+  createResolutionRetentionBudget,
+  fragmentForResolution,
+  retainResolutionFragment,
+} from "./resolution-retention.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
 import {
   ensureKnowledgeGraphStorageRoot,
@@ -184,29 +190,6 @@ function annotateFragmentRepository(source, fragment, checkpoint = () => {}) {
   };
 }
 
-function fragmentForResolution(fragment, checkpoint = () => {}) {
-  const relevantTypes = new Set([
-    "CodeDependency",
-    "DocumentLinkReference",
-    "SourceFile",
-    "SqlTable",
-    "SqlTableReference",
-  ]);
-  const nodes = fragment.nodes.filter((node) => {
-    checkpoint();
-    return relevantTypes.has(node.type);
-  });
-  const nodeIds = new Set(nodes.map((node) => node.id));
-  return {
-    ...fragment,
-    nodes,
-    edges: fragment.edges.filter((edge) => {
-      checkpoint();
-      return nodeIds.has(edge.target);
-    }),
-  };
-}
-
 async function reusableFragment(previousSnapshot, entry, budget = {}) {
   if (!previousSnapshot || !entry) return null;
   checkKnowledgeGraphBudget({ ...budget, stage: "source-shard-reuse" });
@@ -290,7 +273,14 @@ function assertExpectedSnapshot(args, snapshot) {
   }
 }
 
-async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
+async function ingestResolvedTransaction(
+  args,
+  deps,
+  abortSignal,
+  deadline,
+  resolved,
+  objectTransaction,
+) {
   const budget = { abortSignal, deadline };
   checkKnowledgeGraphBudget({ ...budget, stage: "ingest-start" });
   const pointerPath = graphPointerPath(resolved.outputRoot, resolved.graphId);
@@ -324,7 +314,11 @@ async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
     deadline,
   });
   const fragments = new Map();
-  const preparedSources = [];
+  const sourceEntries = [];
+  const resolutionRetention = createResolutionRetentionBudget({
+    maxBytes: args.maxResolutionBytes,
+    maxRecords: args.maxResolutionRecords,
+  });
   let parsed = 0;
   let reused = 0;
   const parserCheckpoint = createPeriodicCheckpoint(abortSignal, deadline, "source-parsing");
@@ -366,9 +360,16 @@ async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
       }
     }
     parserCheckpoint.force();
-    const annotated = annotateFragmentRepository(source, fragment, parserCheckpoint);
-    fragments.set(source.relativePath, fragmentForResolution(annotated, parserCheckpoint));
-    preparedSources.push({ source, annotated, previous: reusable ? previous : null });
+    const annotated = reusable ? fragment : annotateFragmentRepository(source, fragment, parserCheckpoint);
+    const resolutionFragment = fragmentForResolution(annotated, parserCheckpoint);
+    retainResolutionFragment(resolutionRetention, source.relativePath, resolutionFragment);
+    fragments.set(source.relativePath, resolutionFragment);
+    sourceEntries.push(reusable ? previous : await writeKnowledgeGraphSourceShard(
+      pointerPath,
+      source,
+      annotated,
+      { allowedRoot: resolved.outputRoot, objectTransaction, ...budget },
+    ));
     if (reusable) reused += 1;
     else parsed += 1;
   }
@@ -406,20 +407,10 @@ async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
     );
   }
 
-  const sourceEntries = [];
-  for (const prepared of preparedSources) {
-    parserCheckpoint.force();
-    sourceEntries.push(prepared.previous || await writeKnowledgeGraphSourceShard(
-      pointerPath,
-      prepared.source,
-      prepared.annotated,
-      { allowedRoot: resolved.outputRoot, ...budget },
-    ));
-  }
   const derivedEdgesByRepository = buildRepositoryScopedResolutionEdges(
     discovered.sources,
     fragments,
-    budget,
+    { ...budget, retentionBudget: resolutionRetention },
   );
   parserCheckpoint.force();
   const rootContentHash = sha256(sourceEntries.map((entry) => (
@@ -442,7 +433,11 @@ async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
     admission: discovered.admission,
     completeness,
     parserRegistryDigest: SOURCE_PARSER_REGISTRY.digest,
-  }, { allowedRoot: resolved.outputRoot, ...budget });
+  }, {
+    allowedRoot: resolved.outputRoot,
+    objectTransaction,
+    ...budget,
+  });
 
   let projection;
   try {
@@ -477,6 +472,16 @@ async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
     retrieval: snapshot.manifest.retrieval,
     cost: snapshot.manifest.cost,
   });
+}
+
+async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
+  return runKnowledgeGraphObjectTransaction(
+    graphPointerPath(resolved.outputRoot, resolved.graphId),
+    { abortSignal, allowedRoot: resolved.outputRoot, deadline },
+    (objectTransaction) => ingestResolvedTransaction(
+      args, deps, abortSignal, deadline, resolved, objectTransaction,
+    ),
+  );
 }
 
 export async function ingestKnowledgeGraph(args, deps = {}, options = {}) {

@@ -4,8 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { sha256 } from "../knowledge-graph/contract.mjs";
 import { createKnowledgeGraphRuntime } from "../knowledge-graph/runtime.mjs";
 import {
+  knowledgeGraphStoreRoot,
   readKnowledgeGraphRepositoryIndex,
   readKnowledgeGraphSnapshot,
   readKnowledgeGraphSourceShard,
@@ -31,6 +33,56 @@ const pointerPath = (value, graphId) => path.join(
   "graphs",
   `${graphId.slice("kg:graph:".length)}.json`,
 );
+
+async function storedObjects(graphPointer) {
+  const objectsRoot = path.join(knowledgeGraphStoreRoot(graphPointer), "objects");
+  const prefixes = await fs.readdir(objectsRoot, { withFileTypes: true });
+  const values = [];
+  for (const prefix of prefixes.filter((entry) => entry.isDirectory())) {
+    const files = await fs.readdir(path.join(objectsRoot, prefix.name));
+    for (const file of files.filter((name) => name.endsWith(".json"))) {
+      values.push(JSON.parse(await fs.readFile(path.join(objectsRoot, prefix.name, file), "utf8")));
+    }
+  }
+  return values;
+}
+
+test("aggregate resolution limits roll back streamed shards without publishing a failed snapshot", async (t) => {
+  const value = await fixture(t);
+  const original = "# Original\n";
+  const changed = "# Changed\n";
+  await fs.writeFile(path.join(value.corpusRoot, "a.md"), original);
+  await fs.writeFile(path.join(value.corpusRoot, "z.md"), "# Last\n");
+  const first = await value.runtime.ingest({ rootPath: value.corpusRoot, strict: true });
+  assert.equal(first.ok, true, JSON.stringify(first));
+  const graphPointer = pointerPath(value, first.graphId);
+  const before = await fs.readFile(graphPointer, "utf8");
+
+  await fs.writeFile(path.join(value.corpusRoot, "a.md"), changed);
+  const limited = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    maxResolutionRecords: 1,
+  });
+  assert.equal(limited.ok, false);
+  assert.equal(limited.error.code, "resolution_record_limit_exceeded");
+  assert.equal(limited.error.details.maxRecords, 1);
+  assert.equal(await fs.readFile(graphPointer, "utf8"), before);
+  const objects = await storedObjects(graphPointer);
+  assert.ok(!objects.some((object) => object.schema === "knowgrph-knowledge-graph-source-shard/v1"
+    && object.sourcePath === "a.md"
+    && object.contentHash === sha256(changed)));
+
+  const byteLimited = await value.runtime.ingest({
+    rootPath: value.corpusRoot,
+    strict: true,
+    maxResolutionBytes: 1,
+  });
+  assert.equal(byteLimited.ok, false);
+  assert.equal(byteLimited.error.code, "resolution_byte_limit_exceeded");
+  assert.equal(byteLimited.error.details.maxBytes, 1);
+  assert.equal(await fs.readFile(graphPointer, "utf8"), before);
+});
 
 test("skipped and unsupported admitted sources remain incomplete in ingest, manifest, and summary", async (t) => {
   const value = await fixture(t);
