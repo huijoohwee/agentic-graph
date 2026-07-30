@@ -258,10 +258,8 @@ requireMarkers(gameplayOverlaySource, [
   '<FlightSimMissionStageLazy',
   'actorsVisible',
   'coordinateScale={props.coordinateScale}',
+  'geospatialComposite={props.geospatialComposite}',
 ], 'shared Three gameplay overlay')
-if (gameplayOverlaySource.includes('props.geospatialComposite')) {
-  throw new Error('Flight Sim actor visibility must not depend on a removed City/Geo composition alias')
-}
 const threeGraphSource = await readText('canvas/src/lib/three/ThreeGraph.impl.tsx')
 requireMarkers(threeGraphSource, [
   "from '@/lib/three/ThreeGameplayOverlay'",
@@ -269,6 +267,7 @@ requireMarkers(threeGraphSource, [
   '<ThreeGameplayMissionStage',
   'flightSimActive={flightStageActive}',
   'gameplayCoordinateScale={gameplayCoordinateScale}',
+  'geospatialComposite={geospatialComposite}',
 ], 'shared Three renderer')
 const controlsSource = await readText('canvas/src/features/three/Controls.tsx') + await readText('canvas/src/features/three/threeViewportInputOwnership.ts') + await readText('canvas/src/features/three/xrCameraPlaybackControlsRuntime.ts')
 requireMarkers(controlsSource, [

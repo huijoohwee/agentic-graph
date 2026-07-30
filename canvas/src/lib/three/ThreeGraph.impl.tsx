@@ -410,6 +410,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     coordinateScale={gameplayCoordinateScale}
     flightSimActive={flightStageActive}
     gameFpsActive={gameFpsStageActive}
+    geospatialComposite={geospatialComposite}
   />
   return (
     <section

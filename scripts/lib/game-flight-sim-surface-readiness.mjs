@@ -190,10 +190,8 @@ export async function assertFlightSimSurfaceReadiness({
     '<FlightSimMissionStageLazy',
     'actorsVisible',
     'coordinateScale={props.coordinateScale}',
+    'geospatialComposite={props.geospatialComposite}',
   ], 'Flight Sim transparent runtime layer')
-  if (threeGameplayOverlaySource.includes('props.geospatialComposite')) {
-    throw new Error('Flight Sim actor visibility must not depend on a removed City/Geo composition alias')
-  }
 
   const canvasSurfaceOwnershipSource = await readText(
     'canvas/src/lib/canvas/canvasSurfaceOwnershipRuntime.ts',
