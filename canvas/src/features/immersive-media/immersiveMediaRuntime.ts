@@ -261,8 +261,20 @@ export function setImmersiveMediaView(input: Readonly<{
 
 export function zoomImmersiveMedia(direction: 'in' | 'out'): ImmersiveMediaSnapshot {
   const delta = direction === 'in' ? -10 : 10
-  return setImmersiveMediaView({
-    fieldOfViewDegrees: snapshot.view.fieldOfViewDegrees + delta,
+  const fieldOfViewDegrees = clampNumber(
+    snapshot.view.fieldOfViewDegrees + delta,
+    28,
+    105,
+    snapshot.view.fieldOfViewDegrees,
+  )
+  return publish({
+    view: {
+      ...snapshot.view,
+      fieldOfViewDegrees,
+    },
+    lastAction: `zoom-${direction}`,
+    message: `Zoomed ${direction} to ${Math.round(fieldOfViewDegrees)}° field of view.`,
+    error: null,
   })
 }
 
@@ -302,9 +314,14 @@ export function completeImmersiveMediaTransition(revision: number): ImmersiveMed
     || snapshot.phase !== 'transitioning'
     || revision !== snapshot.transitionRevision
   ) return snapshot
+  const completedAction = snapshot.lastAction
   return publish({
     phase: 'ready',
-    message: 'Immersive media transition completed.',
+    message: completedAction === 'intro'
+      ? 'Intro animation completed.'
+      : completedAction === 'transition'
+        ? 'Panorama transition completed.'
+        : 'Immersive media transition completed.',
   })
 }
 
@@ -329,6 +346,15 @@ export function setImmersiveMediaOverlay(enabled: boolean): ImmersiveMediaSnapsh
     overlay: { ...snapshot.overlay, enabled },
     lastAction: 'overlay',
     message: `Partial overlay ${enabled ? 'shown' : 'hidden'}.`,
+    error: null,
+  })
+}
+
+export function setImmersiveMediaPolygonPattern(enabled: boolean): ImmersiveMediaSnapshot {
+  return publish({
+    polygonPattern: enabled,
+    lastAction: 'polygon',
+    message: `Polygon marker pattern ${enabled ? 'shown' : 'hidden'}.`,
     error: null,
   })
 }

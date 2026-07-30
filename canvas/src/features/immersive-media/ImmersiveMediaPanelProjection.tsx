@@ -31,12 +31,13 @@ import {
   captureImmersiveMediaScreenshot,
   closeImmersiveMedia,
   configureImmersiveMedia,
+  focusImmersiveMediaMarker,
   openImmersiveMedia,
   playImmersiveMediaIntro,
   readImmersiveMediaSnapshot,
   resetImmersiveMediaView,
-  setHoveredImmersiveMediaMarker,
   setImmersiveMediaOverlay,
+  setImmersiveMediaPolygonPattern,
   setImmersiveMediaSource,
   subscribeImmersiveMediaSnapshot,
   toggleImmersiveMediaLayer,
@@ -233,13 +234,17 @@ function SurfaceControls({ surface }: { surface: ImmersiveMediaProjectionSurface
         <ToggleButton
           active={snapshot.polygonPattern}
           title="Toggle polygon marker pattern"
-          onClick={() => configureImmersiveMedia({ polygonPattern: !snapshot.polygonPattern })}
+          onClick={() => setImmersiveMediaPolygonPattern(!snapshot.polygonPattern)}
         >
           <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" /> Polygon
         </ToggleButton>
-        <button type="button" className="App-toolbar__btn" onClick={() => setHoveredImmersiveMediaMarker('marker-custom-element')}>
+        <ToggleButton
+          active={snapshot.selectedMarkerId === 'marker-custom-element'}
+          title="Focus the Info element in the shared Camera"
+          onClick={() => focusImmersiveMediaMarker('marker-custom-element', 'map')}
+        >
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> {snapshot.navigation.customElementLabel}
-        </button>
+        </ToggleButton>
       </section>
       <ImmersiveMediaMarkerProjections snapshot={snapshot} />
     </>
@@ -258,6 +263,9 @@ export function ImmersiveMediaPanelProjection({
   )
   const [pending, setPending] = React.useState(false)
   const copy = SURFACE_COPY[surface]
+  const transitioning = snapshot.phase === 'transitioning'
+  const introPending = transitioning && snapshot.lastAction === 'intro'
+  const transitionPending = transitioning && snapshot.lastAction === 'transition'
   const capture = async () => {
     setPending(true)
     try {
@@ -277,6 +285,11 @@ export function ImmersiveMediaPanelProjection({
       data-kg-immersive-media-projection={surface}
       data-kg-immersive-media-active={snapshot.active ? '1' : '0'}
       data-kg-immersive-media-phase={snapshot.phase}
+      data-kg-immersive-media-last-action={snapshot.lastAction}
+      data-kg-immersive-media-field-of-view={Math.round(snapshot.view.fieldOfViewDegrees)}
+      data-kg-immersive-media-overlay={snapshot.overlay.enabled ? '1' : '0'}
+      data-kg-immersive-media-polygon={snapshot.polygonPattern ? '1' : '0'}
+      data-kg-immersive-media-selected-marker={snapshot.selectedMarkerId || ''}
       data-kg-immersive-media-mcp="knowgrph.control_local_immersive_media"
     >
       <header className="flex items-start justify-between gap-2">
@@ -300,17 +313,72 @@ export function ImmersiveMediaPanelProjection({
         </span>
       </header>
       <p className={cn('text-[9px]', UI_THEME_TOKENS.text.secondary)}>{snapshot.description}</p>
-      <nav className="flex flex-wrap gap-1" aria-label="Custom immersive navigation" data-kg-immersive-media-navbar="custom">
-        <button type="button" className="App-toolbar__btn" onClick={playImmersiveMediaIntro}><Play className="h-3 w-3" aria-hidden="true" /> Intro</button>
-        <button type="button" className="App-toolbar__btn" onClick={resetImmersiveMediaView}><RotateCcw className="h-3 w-3" aria-hidden="true" /> Reset</button>
-        <button type="button" className="App-toolbar__btn" onClick={() => zoomImmersiveMedia('in')}><ZoomIn className="h-3 w-3" aria-hidden="true" /></button>
-        <button type="button" className="App-toolbar__btn" onClick={() => zoomImmersiveMedia('out')}><ZoomOut className="h-3 w-3" aria-hidden="true" /></button>
-        <button type="button" className="App-toolbar__btn" onClick={transitionImmersiveMedia}><Clapperboard className="h-3 w-3" aria-hidden="true" /> Transition</button>
+      <nav
+        className="flex flex-wrap gap-1"
+        aria-label="Custom immersive navigation"
+        aria-busy={transitioning}
+        data-kg-immersive-media-navbar="custom"
+      >
+        <button
+          type="button"
+          className={cn('App-toolbar__btn', introPending ? UI_THEME_TOKENS.status.info : '')}
+          aria-label="Play immersive intro"
+          title="Play immersive intro"
+          disabled={transitioning}
+          onClick={playImmersiveMediaIntro}
+        >
+          <Play className="h-3 w-3" aria-hidden="true" /> Intro
+        </button>
+        <button
+          type="button"
+          className="App-toolbar__btn"
+          aria-label="Reset immersive Camera view"
+          title="Reset immersive Camera view"
+          disabled={transitioning}
+          onClick={resetImmersiveMediaView}
+        >
+          <RotateCcw className="h-3 w-3" aria-hidden="true" /> Reset
+        </button>
+        <button
+          type="button"
+          className="App-toolbar__btn"
+          aria-label="Zoom in immersive Camera"
+          title="Zoom in immersive Camera"
+          disabled={transitioning}
+          onClick={() => zoomImmersiveMedia('in')}
+        >
+          <ZoomIn className="h-3 w-3" aria-hidden="true" /> Zoom +
+        </button>
+        <button
+          type="button"
+          className="App-toolbar__btn"
+          aria-label="Zoom out immersive Camera"
+          title="Zoom out immersive Camera"
+          disabled={transitioning}
+          onClick={() => zoomImmersiveMedia('out')}
+        >
+          <ZoomOut className="h-3 w-3" aria-hidden="true" /> Zoom −
+        </button>
+        <button
+          type="button"
+          className={cn('App-toolbar__btn', transitionPending ? UI_THEME_TOKENS.status.info : '')}
+          aria-label="Play panorama transition"
+          title="Play panorama transition"
+          disabled={transitioning}
+          onClick={transitionImmersiveMedia}
+        >
+          <Clapperboard className="h-3 w-3" aria-hidden="true" /> Transition
+        </button>
       </nav>
       <SurfaceControls surface={surface} />
       <p
-        className={cn('text-[9px]', snapshot.error ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.tertiary)}
-        role={snapshot.error ? 'alert' : undefined}
+        className={cn(
+          'min-h-4 rounded px-1 py-0.5 text-[9px]',
+          snapshot.error ? UI_THEME_TOKENS.status.error : UI_THEME_TOKENS.text.secondary,
+        )}
+        role={snapshot.error ? 'alert' : 'status'}
+        aria-live={snapshot.error ? 'assertive' : 'polite'}
+        data-kg-immersive-media-status={snapshot.lastAction}
       >
         {snapshot.message}
       </p>
