@@ -135,7 +135,7 @@ test('runtime basemap fallbacks cannot bypass exact Flight style retention', () 
   )
   assert.match(
     basemap,
-    /const liveFlightBootstrapStyle = readLiveFlightBootstrapStyle\(\)[\s\S]*?reconcileMapLibreFlightBootstrap\(\{[\s\S]*?bootstrapStyle: liveFlightBootstrapStyle/,
+    /const liveFlightBootstrapStyle = readLiveFlightBootstrapStyle\(\)[\s\S]*?reconcileMapLibreFlightBootstrap\(\{[\s\S]*?bootstrapStyle: liveFlightBootstrapStyle[\s\S]*?hasLiveFlightStyleOwner:\s*\(\)\s*=>\s*Boolean\(readLiveFlightBootstrapStyle\(\)\)/,
   )
   assert.match(
     basemap,
@@ -292,7 +292,7 @@ test('superseded provider promotion aborts remote I/O without applying stale sty
   const promotion = promoteMapLibreFlightProviderStyle({
     generation: 1,
     hasExactFlightOverlay: () => true,
-    hasCurrentProviderPresentation: () => true,
+    hasCurrentStyleOwnership: () => true,
     loadProviderStyle: signal => {
       observedSignal = signal
       return new Promise((_, reject) => {
@@ -322,6 +322,93 @@ test('superseded provider promotion aborts remote I/O without applying stale sty
   assert.deepEqual(appliedStyles, [])
 })
 
+test('plain provider restore rechecks live ownership after deferred style resolution', async () => {
+  const appliedStyles: unknown[] = []
+  let providerRestoreEligible = true
+  let resolveProviderStyle: (
+    style: Readonly<Record<string, unknown>>,
+  ) => void = () => void 0
+  const providerStylePromise = new Promise<Readonly<Record<string, unknown>>>(
+    resolve => {
+      resolveProviderStyle = resolve
+    },
+  )
+  let markedApplied = 0
+  const state: MapLibreFlightProviderPromotionState = {
+    cancelProviderStyleApply: null,
+    cancelProviderStyleLoad: null,
+    disposed: false,
+    generation: 1,
+    map: {
+      setStyle: (style: unknown) => appliedStyles.push(style),
+    },
+  }
+  const promotion = promoteMapLibreFlightProviderStyle({
+    generation: 1,
+    hasCurrentStyleOwnership: () => providerRestoreEligible,
+    hasExactFlightOverlay: () => false,
+    loadProviderStyle: () => providerStylePromise,
+    onApplied: () => {
+      markedApplied += 1
+    },
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+    retainOverlay: false,
+    scheduleProviderApply: apply => {
+      apply()
+      return () => void 0
+    },
+    state,
+  })
+
+  providerRestoreEligible = false
+  resolveProviderStyle({ layers: [], sources: {}, version: 8 })
+
+  assert.equal(await promotion, 'identity-changed')
+  assert.deepEqual(appliedStyles, [])
+  assert.equal(markedApplied, 0)
+})
+
+test('provider promotion never finalizes after synchronous setStyle reentrancy', async () => {
+  const appliedStyles: unknown[] = []
+  let markedApplied = 0
+  const state: MapLibreFlightProviderPromotionState = {
+    cancelProviderStyleApply: null,
+    cancelProviderStyleLoad: null,
+    disposed: false,
+    generation: 1,
+    map: {
+      setStyle: (style: unknown) => {
+        appliedStyles.push(style)
+        state.generation += 1
+      },
+    },
+  }
+  const result = await promoteMapLibreFlightProviderStyle({
+    generation: 1,
+    hasCurrentStyleOwnership: () => true,
+    hasExactFlightOverlay: () => false,
+    loadProviderStyle: async () => ({
+      layers: [],
+      sources: {},
+      version: 8,
+    }),
+    onApplied: () => {
+      markedApplied += 1
+    },
+    retainFlightOverlay: (_previous, next) => ({ ...next }),
+    retainOverlay: false,
+    scheduleProviderApply: apply => {
+      apply()
+      return () => void 0
+    },
+    state,
+  })
+
+  assert.equal(result, 'terminated')
+  assert.equal(appliedStyles.length, 1)
+  assert.equal(markedApplied, 0)
+})
+
 test('provider promotion rechecks exact Flight visuals after its async idle window', async () => {
   const appliedStyles: unknown[] = []
   const state: MapLibreFlightProviderPromotionState = {
@@ -337,7 +424,7 @@ test('provider promotion rechecks exact Flight visuals after its async idle wind
   let scheduledApply: (() => void) | null = null
   const promotion = promoteMapLibreFlightProviderStyle({
     generation: 1,
-    hasCurrentProviderPresentation: () => true,
+    hasCurrentStyleOwnership: () => true,
     hasExactFlightOverlay: () => exact,
     loadProviderStyle: async () => ({ layers: [], sources: {}, version: 8 }),
     onApplied: () => assert.fail('mutated Flight visuals cannot promote'),
@@ -378,7 +465,7 @@ test('Flight provider promotion never passes a raw URL to MapLibre', async () =>
   let markedApplied = 0
   const result = await promoteMapLibreFlightProviderStyle({
     generation: 1,
-    hasCurrentProviderPresentation: () => true,
+    hasCurrentStyleOwnership: () => true,
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => 'https://provider.test/style.json',
     onApplied: () => {
@@ -445,7 +532,7 @@ test('Flight precomposes and validates the complete provider style before one ob
   }
   const result = await promoteMapLibreFlightProviderStyle({
     generation: 1,
-    hasCurrentProviderPresentation: () => true,
+    hasCurrentStyleOwnership: () => true,
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => providerStyle,
     onApplied: () => {
@@ -477,7 +564,7 @@ test('Flight precomposes and validates the complete provider style before one ob
   markedApplied = 0
   const rejected = await promoteMapLibreFlightProviderStyle({
     generation: 2,
-    hasCurrentProviderPresentation: () => true,
+    hasCurrentStyleOwnership: () => true,
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => providerStyle,
     onApplied: () => {

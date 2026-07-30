@@ -106,7 +106,7 @@ export async function promoteMapLibreFlightProviderStyle(
   options: Readonly<{
     generation: number
     hasExactFlightOverlay: () => boolean
-    hasCurrentProviderPresentation: () => boolean
+    hasCurrentStyleOwnership: () => boolean
     loadProviderStyle: (
       signal: AbortSignal,
     ) => Promise<MapLibreFlightProviderStyle>
@@ -124,7 +124,7 @@ export async function promoteMapLibreFlightProviderStyle(
   const {
     generation,
     hasExactFlightOverlay,
-    hasCurrentProviderPresentation,
+    hasCurrentStyleOwnership,
     loadProviderStyle,
     onApplied,
     onError,
@@ -147,7 +147,7 @@ export async function promoteMapLibreFlightProviderStyle(
       || state.generation !== generation
       || isMapLibreMapPreparingForDisposal(state.map)
     ) return 'terminated'
-    if (retainOverlay && !hasCurrentProviderPresentation()) {
+    if (!hasCurrentStyleOwnership()) {
       return 'identity-changed'
     }
     if (
@@ -158,7 +158,7 @@ export async function promoteMapLibreFlightProviderStyle(
         state,
       })
     ) return 'terminated'
-    if (retainOverlay && !hasCurrentProviderPresentation()) {
+    if (!hasCurrentStyleOwnership()) {
       return 'identity-changed'
     }
     if (isMapLibreMapPreparingForDisposal(state.map)) return 'terminated'
@@ -187,10 +187,18 @@ export async function promoteMapLibreFlightProviderStyle(
         providerStyle,
       )
       if (!retainedStyle) return 'admission-changed'
+      if (!hasCurrentStyleOwnership()) return 'identity-changed'
       state.map.setStyle(retainedStyle, { diff: true })
     } else {
+      if (!hasCurrentStyleOwnership()) return 'identity-changed'
       state.map.setStyle(providerStyle, { diff: true })
     }
+    if (
+      state.disposed
+      || state.generation !== generation
+      || isMapLibreMapPreparingForDisposal(state.map)
+    ) return 'terminated'
+    if (!hasCurrentStyleOwnership()) return 'identity-changed'
     onApplied()
     return 'applied'
   } catch (error) {

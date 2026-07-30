@@ -15,6 +15,7 @@ import {
 } from './flightGeoOverlayPresentationContracts.js'
 import {
   hasExpectedMapLibreFlightBootstrapStyle,
+  hasExpectedMapLibreFlightBootstrapStyleIdentity,
   readMapLibreFlightBootstrapStyleIdentity,
 } from './mapLibreFlightBootstrapStyleIdentity.js'
 import {
@@ -118,20 +119,22 @@ function removeRenderBinding(state: MapLibreFlightBootstrapState): void {
   state.removeRenderBinding = null
 }
 
-function cancelBootstrapStyleLoad(state: MapLibreFlightBootstrapState): void {
+function cancelBootstrapSettlementBindings(
+  state: MapLibreFlightBootstrapState,
+): void {
   try {
-    state.cancelBootstrapStyleLoad?.()
+    state.cancelBootstrapSettlementBindings?.()
   } catch {
     void 0
   }
-  state.cancelBootstrapStyleLoad = null
+  state.cancelBootstrapSettlementBindings = null
 }
 
 function clearPendingBootstrap(state: MapLibreFlightBootstrapState): void {
   state.bootstrapPending = false
   state.bootstrapExpectedStyle = null
   state.bootstrapGeneration += 1
-  cancelBootstrapStyleLoad(state)
+  cancelBootstrapSettlementBindings(state)
 }
 
 function requestMapRepaint(state: MapLibreFlightBootstrapState): void {
@@ -154,14 +157,13 @@ function notifyBootstrapSettled(state: MapLibreFlightBootstrapState): void {
 
 function hasExpectedBootstrapStyle(
   state: MapLibreFlightBootstrapState,
+  styleLoadObserved = false,
 ): boolean {
-  try {
-    if (
-      typeof state.map.isStyleLoaded === 'function'
-      && state.map.isStyleLoaded() !== true
-    ) return false
-  } catch {
-    return false
+  if (styleLoadObserved) {
+    return hasExpectedMapLibreFlightBootstrapStyleIdentity(
+      state.map,
+      state.bootstrapExpectedStyle,
+    )
   }
   return hasExpectedMapLibreFlightBootstrapStyle(
     state.map,
@@ -169,31 +171,21 @@ function hasExpectedBootstrapStyle(
   )
 }
 
-function isCurrentMapLibreStyleLoaded(
-  state: MapLibreFlightBootstrapState,
-): boolean {
-  try {
-    return typeof state.map.isStyleLoaded === 'function'
-      && state.map.isStyleLoaded() === true
-  } catch {
-    return false
-  }
-}
-
 function settlePendingBootstrap(
   state: MapLibreFlightBootstrapState,
   bootstrapGeneration: number,
+  styleLoadObserved = false,
 ): void {
   if (
     state.disposed
     || isMapLibreMapPreparingForDisposal(state.map)
     || !state.bootstrapPending
     || state.bootstrapGeneration !== bootstrapGeneration
-    || !hasExpectedBootstrapStyle(state)
+    || !hasExpectedBootstrapStyle(state, styleLoadObserved)
   ) return
   state.bootstrapPending = false
   state.bootstrapExpectedStyle = null
-  cancelBootstrapStyleLoad(state)
+  cancelBootstrapSettlementBindings(state)
   state.bootstrapApplied = true
   state.deadlineFramePresented = readFlightGeoOverlayReadyFramePresented()
   state.providerPresentation = null
@@ -235,14 +227,32 @@ export function beginMapLibreFlightBootstrap(
     bootstrapStyle,
   )
   const bootstrapGeneration = ++state.bootstrapGeneration
-  const onStyleLoad = () => settlePendingBootstrap(state, bootstrapGeneration)
+  const onStyleLoad = () =>
+    settlePendingBootstrap(state, bootstrapGeneration, true)
+  const onSettlementOpportunity = () =>
+    settlePendingBootstrap(state, bootstrapGeneration)
+  const bindings = [
+    ['style.load', onStyleLoad],
+    ['sourcedata', onSettlementOpportunity],
+    ['idle', onSettlementOpportunity],
+  ] as const
+  const boundEvents: Array<readonly [string, () => void]> = []
+  const cancelBindings = () => {
+    for (const [event, listener] of boundEvents) {
+      state.map.off?.(event, listener)
+    }
+    boundEvents.length = 0
+  }
+  state.cancelBootstrapSettlementBindings = cancelBindings
   try {
-    state.map.on?.('style.load', onStyleLoad)
-    state.cancelBootstrapStyleLoad = () => {
-      state.map.off?.('style.load', onStyleLoad)
+    for (const [event, listener] of bindings) {
+      if (typeof state.map.on !== 'function') continue
+      state.map.on(event, listener)
+      boundEvents.push([event, listener])
     }
   } catch {
-    state.cancelBootstrapStyleLoad = null
+    cancelBindings()
+    state.cancelBootstrapSettlementBindings = null
   }
   // Provider promotion is retained for this map's lifetime. Re-arm it for a
   // new Start after a stopped provider view returns to the local bootstrap.
@@ -444,10 +454,14 @@ export function requestMapLibreFlightPresentationBootstrap(
   if (state.bootstrapPending) {
     settlePendingBootstrap(state, state.bootstrapGeneration)
     if (state.bootstrapApplied) return true
-    if (!isCurrentMapLibreStyleLoaded(state)) return true
+    if (hasExpectedMapLibreFlightBootstrapStyleIdentity(
+      state.map,
+      state.bootstrapExpectedStyle,
+    )) return true
     // A provider style.load can overtake the local setStyle request. Its
-    // identity must not leave this map permanently "pending": reserve a new
-    // token below and reissue the exact bootstrap on the same map.
+    // identity must not leave this map permanently "pending", even while
+    // unrelated provider/host sources keep global style.loaded() false:
+    // reserve a new token below and reissue the exact bootstrap on this map.
   }
   try {
     const bootstrapStyle = state.bootstrapStyle
@@ -497,6 +511,7 @@ export function markMapLibreFlightReadyFramePresented(
 export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   bootstrapStyle: Readonly<Record<string, unknown>> | null
   hasExactFlightOverlay: (map: any) => boolean
+  hasLiveFlightStyleOwner: () => boolean
   loadProviderStyle: (
     signal: AbortSignal,
   ) => Promise<MapLibreFlightProviderStyle>
@@ -513,14 +528,18 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   // A render-captured host override can briefly lag the source-owned Flight
   // publication. Only the canonical inactive overlay may release bootstrap
   // ownership and authorize a non-retaining provider-style restoration.
-  if (!options.bootstrapStyle && readFlightGeoOverlay().active) return
-  state.bootstrapStyle = options.bootstrapStyle
-  state.resumeReconciliation = () => {
+  if (!options.bootstrapStyle && options.hasLiveFlightStyleOwner()) return
+  const resumeCurrentReconciliation = () => {
     if (
       state.disposed
       || isMapLibreMapPreparingForDisposal(state.map)
     ) return
     reconcileMapLibreFlightBootstrap(options)
+  }
+  const previousBootstrapStyle = state.bootstrapStyle
+  if (options.bootstrapStyle) {
+    state.bootstrapStyle = options.bootstrapStyle
+    state.resumeReconciliation = resumeCurrentReconciliation
   }
   if (isMapLibreMapPreparingForDisposal(state.map)) {
     suspendMapLibreFlightBootstrapForDisposal(state.map)
@@ -534,18 +553,33 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
     options.scheduleProviderStyleApply
     || scheduleMapLibreFlightProviderStyleApply
   )
-  const promoteProvider = (retainOverlay: boolean) => (
+  const finalizeProviderOwnership = () => {
+    state.bootstrapStyle = null
+    state.bootstrapApplied = false
+    state.deadlineFramePresented = false
+    state.providerPresentation = null
+    clearPendingBootstrap(state)
+    state.resumeReconciliation = resumeCurrentReconciliation
+  }
+  const promoteProvider = (
+    retainOverlay: boolean,
+    onApplied: () => void = () => {
+      state.bootstrapApplied = false
+      clearPendingBootstrap(state)
+    },
+  ) => (
     promoteMapLibreFlightProviderStyle({
       generation,
       hasExactFlightOverlay: () =>
         options.hasExactFlightOverlay(state.map),
-      hasCurrentProviderPresentation: () =>
-        hasCurrentProviderPresentation(state),
+      hasCurrentStyleOwnership: () => retainOverlay
+        ? (
+            options.hasLiveFlightStyleOwner()
+            && hasCurrentProviderPresentation(state)
+          )
+        : !options.hasLiveFlightStyleOwner(),
       loadProviderStyle: options.loadProviderStyle,
-      onApplied: () => {
-        state.bootstrapApplied = false
-        clearPendingBootstrap(state)
-      },
+      onApplied,
       onError: options.onError,
       retainFlightOverlay: options.retainFlightOverlay,
       retainOverlay,
@@ -555,13 +589,42 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   )
 
   if (!options.bootstrapStyle) {
-    state.deadlineFramePresented = false
-    state.providerPresentation = null
-    const shouldRestoreProvider = state.bootstrapApplied || state.bootstrapPending
-    state.bootstrapApplied = false
-    clearPendingBootstrap(state)
-    if (!shouldRestoreProvider) return
-    void promoteProvider(false)
+    const releaseResume = () => {
+      if (
+        state.disposed
+        || isMapLibreMapPreparingForDisposal(state.map)
+      ) return
+      reconcileMapLibreFlightBootstrap({
+        ...options,
+        bootstrapStyle: options.hasLiveFlightStyleOwner()
+          ? previousBootstrapStyle
+          : null,
+      })
+    }
+    state.resumeReconciliation = releaseResume
+    const shouldRestoreProvider = Boolean(
+      state.bootstrapStyle
+      || state.bootstrapApplied
+      || state.bootstrapPending
+      || state.providerPresentation,
+    )
+    if (!shouldRestoreProvider) {
+      finalizeProviderOwnership()
+      return
+    }
+    void promoteProvider(false, finalizeProviderOwnership).then(result => {
+      if (
+        state.disposed
+        || state.generation !== generation
+        || result === 'applied'
+      ) return
+      if (
+        result === 'identity-changed'
+        || options.hasLiveFlightStyleOwner()
+      ) {
+        releaseResume()
+      }
+    })
     return
   }
 
@@ -624,6 +687,62 @@ export function reconcileMapLibreFlightBootstrap(options: Readonly<{
   }
   requestMapRepaint(state)
   queueMicrotask(promoteWhenPresented)
+}
+
+/**
+ * Install a non-Flight fallback through the same map-local writer state used
+ * by bootstrap/provider reconciliation. This prevents an older asynchronous
+ * provider restore from overwriting a newer fallback after Flight exits.
+ */
+export function applyMapLibreNonFlightStyle(options: Readonly<{
+  apply: () => void
+  hasLiveFlightStyleOwner: () => boolean
+  map: any
+}>): boolean {
+  const state = ensureMapLibreFlightBootstrapState(options.map)
+  if (
+    !state
+    || state.disposed
+    || isMapLibreMapPreparingForDisposal(state.map)
+    || options.hasLiveFlightStyleOwner()
+  ) return false
+  const previousResumeReconciliation = state.resumeReconciliation
+  const generation = ++state.generation
+  cancelMapLibreFlightProviderStyleLoad(state)
+  cancelMapLibreFlightProviderStyleApply(state)
+  removeRenderBinding(state)
+  state.bootstrapApplied = false
+  state.deadlineFramePresented = false
+  state.providerPresentation = null
+  clearPendingBootstrap(state)
+  const resumePreviousOwner = () => {
+    if (
+      state.disposed
+      || state.generation !== generation
+      || isMapLibreMapPreparingForDisposal(state.map)
+    ) return
+    const resume = state.resumeReconciliation
+      || previousResumeReconciliation
+    if (resume) queueMicrotask(resume)
+  }
+  try {
+    options.apply()
+  } catch (error) {
+    resumePreviousOwner()
+    throw error
+  }
+  if (
+    state.disposed
+    || state.generation !== generation
+    || isMapLibreMapPreparingForDisposal(state.map)
+  ) return false
+  if (options.hasLiveFlightStyleOwner()) {
+    resumePreviousOwner()
+    return false
+  }
+  state.bootstrapStyle = null
+  state.resumeReconciliation = null
+  return true
 }
 
 export function disposeMapLibreFlightBootstrap(map: any): void {

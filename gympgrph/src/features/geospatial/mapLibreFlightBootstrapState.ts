@@ -18,7 +18,7 @@ export type MapLibreFlightBootstrapState = {
   bootstrapPending: boolean
   bootstrapStyle: Readonly<Record<string, unknown>> | null
   bootstrapSettledListeners: Set<() => void>
-  cancelBootstrapStyleLoad: (() => void) | null
+  cancelBootstrapSettlementBindings: (() => void) | null
   cancelProviderStyleApply: (() => void) | null
   cancelProviderStyleLoad: (() => void) | null
   deadlineFramePresented: boolean
@@ -48,7 +48,7 @@ export function ensureMapLibreFlightBootstrapState(
       bootstrapPending: false,
       bootstrapStyle: null,
       bootstrapSettledListeners: new Set(),
-      cancelBootstrapStyleLoad: null,
+      cancelBootstrapSettlementBindings: null,
       cancelProviderStyleApply: null,
       cancelProviderStyleLoad: null,
       deadlineFramePresented: false,

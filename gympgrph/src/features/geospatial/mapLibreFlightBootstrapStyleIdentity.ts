@@ -1,11 +1,28 @@
 export type MapLibreFlightBootstrapStyleIdentity = Readonly<{
+  backgroundColor: string
   layerId: string
+  layerType: string
   name: string
   version: number | null
 }>
 
 const MAPLIBRE_FLIGHT_BOOTSTRAP_BACKGROUND_LAYER_ID =
   'kg-flight-sim:geo-bootstrap-background'
+
+function stableStyleValue(value: unknown): string {
+  if (value === undefined) return 'undefined'
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value)
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStyleValue).join(',')}]`
+  }
+  const record = value as Readonly<Record<string, unknown>>
+  return `{${Object.keys(record)
+    .sort()
+    .map(key => `${JSON.stringify(key)}:${stableStyleValue(record[key])}`)
+    .join(',')}}`
+}
 
 export function readMapLibreFlightBootstrapStyleIdentity(
   style: Readonly<Record<string, unknown>>,
@@ -21,8 +38,18 @@ export function readMapLibreFlightBootstrapStyleIdentity(
     layer && typeof layer === 'object'
   )) as Readonly<Record<string, unknown>> | undefined
   const version = Number(style.version)
+  const paint = bootstrapLayer?.paint
+  const backgroundColor = (
+    paint
+    && typeof paint === 'object'
+    && !Array.isArray(paint)
+  )
+    ? (paint as Readonly<Record<string, unknown>>)['background-color']
+    : undefined
   return {
+    backgroundColor: stableStyleValue(backgroundColor),
     layerId: String(bootstrapLayer?.id || firstLayer?.id || ''),
+    layerType: String(bootstrapLayer?.type || firstLayer?.type || ''),
     name: String(style.name || ''),
     version: Number.isFinite(version) ? version : null,
   }
@@ -57,12 +84,22 @@ export function hasExpectedMapLibreFlightBootstrapStyle(
   map: any,
   expected: MapLibreFlightBootstrapStyleIdentity | null,
 ): boolean {
-  if (!expected || !isCurrentMapLibreStyleLoaded(map)) return false
+  return isCurrentMapLibreStyleLoaded(map)
+    && hasExpectedMapLibreFlightBootstrapStyleIdentity(map, expected)
+}
+
+export function hasExpectedMapLibreFlightBootstrapStyleIdentity(
+  map: any,
+  expected: MapLibreFlightBootstrapStyleIdentity | null,
+): boolean {
+  if (!expected) return false
   const current = readCurrentMapLibreStyleIdentity(map)
   return Boolean(
     current
     && current.name === expected.name
     && current.version === expected.version
-    && current.layerId === expected.layerId,
+    && current.layerId === expected.layerId
+    && current.layerType === expected.layerType
+    && current.backgroundColor === expected.backgroundColor
   )
 }

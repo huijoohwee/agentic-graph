@@ -7,6 +7,9 @@ import {
   type MapLibreFlightProviderStyle,
   type MapLibreFlightProviderStyleApplyScheduler,
 } from './mapLibreFlightProviderPromotion.js'
+import {
+  applyMapLibreNonFlightStyle,
+} from './mapLibreFlightBootstrap.js'
 
 type RuntimeFallbackCallbacks = Readonly<{
   key: string
@@ -86,7 +89,12 @@ export function createMapLibreFlightRuntimeFallbackRequester(
       cancelPending()
       options.resetNonFlightStyleRevision()
       try {
-        map.setStyle(style)
+        const applied = applyMapLibreNonFlightStyle({
+          apply: () => map.setStyle(style),
+          hasLiveFlightStyleOwner: options.requiresFlightRetention,
+          map,
+        })
+        if (!applied) return false
         callbacks.onApplied()
         return true
       } catch (error) {
@@ -116,7 +124,7 @@ export function createMapLibreFlightRuntimeFallbackRequester(
     let resolutionError: unknown = null
     void promoteMapLibreFlightProviderStyle({
       generation,
-      hasCurrentProviderPresentation: () => (
+      hasCurrentStyleOwnership: () => (
         !options.isDisposed()
         && options.readMap() === map
         && options.requiresFlightRetention()

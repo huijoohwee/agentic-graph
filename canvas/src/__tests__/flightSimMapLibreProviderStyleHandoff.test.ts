@@ -217,7 +217,7 @@ test('provider promotion atomically applies the exact full Flight style and reje
   }
   const promote = () => promoteMapLibreFlightProviderStyle({
     generation: state.generation,
-    hasCurrentProviderPresentation: () => true,
+    hasCurrentStyleOwnership: () => true,
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => providerStyle,
     onApplied: () => {

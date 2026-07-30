@@ -386,6 +386,7 @@ test('initial Ready reuses the exact committed provider stopped frame without an
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
     hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: async () => ({
       version: 8,
       name: 'provider-flight',

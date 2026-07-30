@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import {
   clearFlightGeoOverlay,
+  readFlightGeoOverlay,
   readFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
 } from '../../../gympgrph/src/flightGeoOverlay.js'
@@ -120,7 +121,7 @@ test('provider idle apply cannot write a style after disposal fencing begins', a
   }
   const promotion = promoteMapLibreFlightProviderStyle({
     generation: 1,
-    hasCurrentProviderPresentation: () => true,
+    hasCurrentStyleOwnership: () => true,
     hasExactFlightOverlay: () => true,
     loadProviderStyle: async () => ({
       version: 8,
@@ -190,6 +191,7 @@ test('provider promotion yields to an idle opportunity and fences stale schedule
     reconcileMapLibreFlightBootstrap({
       bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
       hasExactFlightOverlay: () => true,
+      hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
       loadProviderStyle: async () => ({
         version: 8,
         name: providerStyle,
@@ -270,6 +272,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
     const reconcile = () => reconcileMapLibreFlightBootstrap({
       bootstrapStyle,
       hasExactFlightOverlay: () => true,
+      hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
       loadProviderStyle: async () => ({
         version: 8,
         name: providerStyle,
@@ -318,6 +321,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle,
     hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: async () => ({
       version: 8,
       name: 'provider:first-modern',
@@ -341,6 +345,7 @@ test('a ready Flight activation follows native MapLibre view replacements and re
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle,
     hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: async () => ({
       version: 8,
       name: 'provider:replacement',
@@ -430,6 +435,7 @@ test('a consumed ready request authorizes only the exact presenting map', async 
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle,
     hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: async () => ({
       version: 8,
       name: 'provider:consumed',
@@ -527,6 +533,7 @@ test('Flight deactivation restores the provider without waiting for overlay pres
   }
   const options = {
     hasExactFlightOverlay: () => false,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: async () => 'https://provider.test/style.json',
     map,
     retainFlightOverlay: (

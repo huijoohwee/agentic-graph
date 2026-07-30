@@ -1265,6 +1265,8 @@ export function useMapLibreBasemap(args: {
             || mapHasExactFlightGeoOverlayCamera(candidate, expectedCamera)
           )
       },
+      hasLiveFlightStyleOwner: () =>
+        Boolean(readLiveFlightBootstrapStyle()),
       loadProviderStyle: async signal => {
         if (typeof selectedStyle !== 'string') return selectedStyle
         try {

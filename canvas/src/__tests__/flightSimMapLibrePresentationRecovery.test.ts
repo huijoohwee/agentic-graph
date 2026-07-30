@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   clearFlightGeoOverlay,
   markFlightGeoOverlayReadyFramePresented,
+  readFlightGeoOverlay,
   readFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
 } from '../../../gympgrph/src/flightGeoOverlay'
@@ -76,6 +77,7 @@ test('consumed Ready recovery restores exact MapLibre sources without re-acknowl
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle,
     hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: async () => ({
       version: 8,
       name: 'provider-flight',

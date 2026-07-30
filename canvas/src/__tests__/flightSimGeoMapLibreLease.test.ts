@@ -131,6 +131,7 @@ test('Flight activation swaps a mounted Geo map to local bootstrap then promotes
     reconcileMapLibreFlightBootstrap({
       bootstrapStyle,
       hasExactFlightOverlay: () => overlayPresented,
+      hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
       loadProviderStyle: async () => {
         calls.push('provider:resolve')
         return {
@@ -242,6 +243,7 @@ test('only the bootstrap style can prepare a stopped Flight frame on a mounted p
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle,
     hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: async () => providerStyle,
     map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
@@ -388,6 +390,7 @@ test('stale ready identity and a prior run cannot authorize provider promotion',
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
     hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: () => {
       providerLoads += 1
       return providerLoads === 1
@@ -505,6 +508,7 @@ test('a delayed provider load admits the exact latest tick of its presented run'
   reconcileMapLibreFlightBootstrap({
     bootstrapStyle: { version: 8, name: 'local-flight-bootstrap' },
     hasExactFlightOverlay: () => true,
+    hasLiveFlightStyleOwner: () => readFlightGeoOverlay().active,
     loadProviderStyle: () => provider,
     map,
     scheduleProviderStyleApply: applyProviderStyleImmediately,
