@@ -215,7 +215,7 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   requireSourceMarker(sceneSource, '<XrSceneStage authority={xrGraphStageAuthority}', 'Scene must delegate to the explicit XR selector')
   requireSourceMarker(
     threeGraphSource,
-    "nativeXrRunReadyDemo ? 'native-controller' : 'motion-reference'",
+    "xrPhysicsRuntimeRunReadyDemo ? 'native-controller' : 'motion-reference'",
     'ThreeGraph source identity must decide the XR stage before construction',
   )
   if (existsSync(staleMixedStagePath)) {

@@ -102,7 +102,7 @@ run_ready_demo:
   source_root: "knowgrph/docs"
   source_backed: true
   native_runtime: true
-  presentation: "shared-geo-xr-city-overlay"
+  presentation: "native-maplibre-geo-xr-city-surface"
   auto_start: false
   external_dependencies: []
   forbid_external_copy_or_dependency: true
@@ -110,20 +110,24 @@ run_ready_demo:
 city_runtime:
   schema_id: "knowgrph-city-grid/v1"
   world_ownership: "overlay-only"
-  stage_owner: "semantic City media stage in the existing shared React Three Fiber Canvas"
-  renderer_rule: "never create a second Canvas or renderer"
+  surface_owner: "native MapLibre Geo+XR surface wrapped by CitySimMediaFigure"
+  renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"
   runtime_dependencies_added: 0
 city_geo_xr:
   surface_owner: "Geo+XR Mode"
   geo_host_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  city_stage_owner: "transparent shared React Three Fiber Canvas semantic media stage"
+  city_surface_owner: "native MapLibre Geo+XR host wrapped by the City semantic media figure"
   parcel_input_owner: "City Builder coordinate controls"
-  composition: "native MapLibre Geo with existing stopped aircraft and route; no unregistered City R3F mesh"
+  composition: "one native MapLibre map with its existing Flight Geo source and layers; zero City Three Canvas"
   duplicate_map_or_canvas_forbidden: true
 city_semantic_media:
+  owner: "canvas/src/features/game-city-sim/CitySimMediaFigure.tsx"
+  child_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   element: "figure"
   accessible_name: "Interactive City simulation media stage"
+  selection_marker_owner: "canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts"
+  selection_marker_when: "City runtime active only"
   pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder coordinate controls own parcel selection"
   wrapper_added_generic_div_or_aria_hidden_forbidden: true
 city_aerial_projection:
@@ -205,18 +209,43 @@ test('accepts the exact authored and projection inventories', async t => {
 
 test('rejects City drift from the Geo+XR and stopped aerial ownership contract', async t => {
   const mutations = [
-    ['XR-only surface', 'kgCanvasSurfaceMode: "geo-xr"', 'kgCanvasSurfaceMode: "xr"'],
+    ['wrong surface', 'kgCanvasSurfaceMode: "geo-xr"', 'kgCanvasSurfaceMode: "invalid"'],
     [
       'private MapLibre host',
       'geo_host_owner: "native MapLibre Geo host"',
-      'geo_host_owner: "City private map"',
+      'geo_host_owner: "invalid"',
+    ],
+    [
+      'private semantic surface',
+      'surface_owner: "native MapLibre Geo+XR surface wrapped by CitySimMediaFigure"',
+      'surface_owner: "invalid"',
+    ],
+    [
+      'wrong renderer',
+      'renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"',
+      'renderer_rule: "invalid"',
+    ],
+    [
+      'wrong semantic owner',
+      'owner: "canvas/src/features/game-city-sim/CitySimMediaFigure.tsx"',
+      'owner: "invalid"',
+    ],
+    [
+      'wrong semantic child owner',
+      'child_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"',
+      'child_owner: "invalid"',
+    ],
+    [
+      'wrong selection condition',
+      'selection_marker_when: "City runtime active only"',
+      'selection_marker_when: "invalid"',
     ],
     [
       'private overlay store',
       'overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"',
-      'overlay_store_owner: "canvas/src/features/game-city-sim/privateOverlay.ts"',
+      'overlay_store_owner: "invalid"',
     ],
-    ['projected XR environment', 'environment: null', 'environment: "singapore"'],
+    ['projected environment', 'environment: null', 'environment: "invalid"'],
     ['active Flight gameplay', 'flight_gameplay_active: false', 'flight_gameplay_active: true'],
     ['claimed Flight readiness', 'flight_readiness_claimed: false', 'flight_readiness_claimed: true'],
   ]
@@ -231,6 +260,43 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
       await assert.rejects(
         () => verifyWorkspaceSeedAuthority(roots),
         /proof-pending workspace document knowgrph-game-city-building-sim-demo\.md has invalid authority/,
+      )
+    })
+  }
+})
+
+test('rejects removed City Three stage and captured-camera authority fields', async t => {
+  const legacyFields = [
+    [
+      'runtime stage owner',
+      '  runtime_dependencies_added: 0',
+      '  runtime_dependencies_added: 0\n  stage_owner: "legacy"',
+      'city_runtime.stage_owner',
+    ],
+    [
+      'Geo+XR City stage owner',
+      '  duplicate_map_or_canvas_forbidden: true',
+      '  duplicate_map_or_canvas_forbidden: true\n  city_stage_owner: "legacy"',
+      'city_geo_xr.city_stage_owner',
+    ],
+    [
+      'removed camera exit rule',
+      '  owner: "native MapLibre Geo host"',
+      '  owner: "native MapLibre Geo host"\n  exit_rule: "legacy"',
+      'city_camera.exit_rule',
+    ],
+  ]
+  for (const [label, from, to, forbiddenField] of legacyFields) {
+    await t.test(label, async t => {
+      const roots = await fixture()
+      t.after(() => rm(roots.root, { recursive: true, force: true }))
+      await writeFile(
+        path.join(roots.knowgrphRoot, CITY_SIM_SEED_RELATIVE_PATH),
+        cityRuntimeSeed.replace(from, to),
+      )
+      await assert.rejects(
+        () => verifyWorkspaceSeedAuthority(roots),
+        new RegExp(`forbidden=.*${forbiddenField.replaceAll('.', '\\.')}`),
       )
     })
   }

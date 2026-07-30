@@ -46,15 +46,14 @@ test('XR Physics is the only source-backed authority for the Game Mode overlay',
   assert.doesNotMatch(citySource, /\n(?:game_mode|home_apex|native_controller_demo):/)
   const gameFpsAuthority = source('scripts', 'check-game-fps-readiness.mjs')
   assert.match(gameFpsAuthority, /declaresCanonicalCityOverlay/)
-  assert.match(gameFpsAuthority, /CITY_SIM_OVERLAY_AUTHORITY\.stageOwner/)
+  assert.match(gameFpsAuthority, /CITY_SIM_OVERLAY_AUTHORITY\.surfaceOwner/)
+  assert.match(gameFpsAuthority, /cityRuntime\.surface_owner/)
+  assert.doesNotMatch(gameFpsAuthority, /cityRuntime\.stage_owner/)
   assert.doesNotMatch(
     gameFpsAuthority,
     /additive City Stage in the existing shared Canvas/,
   )
-  assert.match(
-    threeGraphSource,
-    /\{!gameFpsStageActive && !citySimStageActive \? <ControlsLazy/,
-  )
+  assert.doesNotMatch(threeGraphSource, /citySim|CitySim/)
 
   assert.equal(
     existsSync(resolve(canvasRoot, 'src/features/canvas/GameFpsRunReadyDemoRuntime.tsx')),

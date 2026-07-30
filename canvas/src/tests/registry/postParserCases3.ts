@@ -239,6 +239,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["markdown.workspace.effectiveContent.scrollSyncFollowsLiveStreamingTail","@/__tests__/markdownWorkspaceEffectiveContentSync.test.tsx","testMarkdownWorkspaceScrollSyncFollowsLiveStreamingTail"],
   ["markdown.workspace.selection.hydratesStableActivePathAfterRefresh","@/__tests__/emptyWorkspaceDocumentSwitch.test.ts","testWorkspaceSelectionHydratesStableActivePathAfterRefresh"],
   ["markdown.workspace.selection.hydrationYieldsToUnsavedDraft","@/__tests__/emptyWorkspaceDocumentSwitch.test.ts","testWorkspaceSelectionHydrationYieldsToUnsavedUserDraft"],
+  ["markdown.workspace.selection.syncYieldsEditorAndCanvasToAuthoredText","@/__tests__/emptyWorkspaceDocumentSwitch.test.ts","testStableWorkspaceSelectionSyncYieldsEditorAndCanvasToAuthoredText"],
   ["markdown.workspace.selection.rejectsUnownedInlineTextDuringFileSwitch","@/__tests__/emptyWorkspaceDocumentSwitch.test.ts","testWorkspaceSelectionRejectsUnownedInlineTextDuringFileSwitch"],
   ["markdown.workspace.selection.acceptsOwnedInlineTextDuringFileSwitch","@/__tests__/emptyWorkspaceDocumentSwitch.test.ts","testWorkspaceSelectionAcceptsOwnedInlineTextDuringFileSwitch"],
   ["markdown.workspace.selection.switchPrefersPathResolvedText","@/__tests__/emptyWorkspaceDocumentSwitch.test.ts","testWorkspaceSelectionSwitchPrefersPathResolvedTextOverPollutedInlineText"],

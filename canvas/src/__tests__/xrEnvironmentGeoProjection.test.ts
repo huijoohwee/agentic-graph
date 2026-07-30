@@ -13,6 +13,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   const geoButton = readSource('features', 'command-menu', 'XrEnvironmentGeoButton.tsx')
   const flightGeoButton = readSource('features', 'game-flight-sim', 'FlightSimEnvironmentGeoButton.tsx')
   const flightGeoOverlay = readSource('features', 'game-flight-sim', 'FlightSimGeoSurfaceOverlay.tsx')
+  const flightHud = readSource('features', 'game-flight-sim', 'FlightSimHud.tsx')
   const geoView = readSource('lib', 'toolbar', 'ToolbarToolMenuGeoView.tsx')
   const flightPanel = readSource('features', 'game-flight-sim', 'FlightSimFloatingPanelView.tsx')
   const xrStage = readSource('features', 'three', 'XrCanonicalPhysicsStage.tsx')
@@ -53,7 +54,8 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     || !flightGeoButton.includes('await settleWorkspaceSourceTextWrites()')
     || !flightGeoButton.includes('Select the source-authored Flight Sim document after Source Files finishes loading.')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geo-overlay="1"')
-    || !flightGeoOverlay.includes('data-kg-flight-sim-geo-aircraft="1"')
+    || flightGeoOverlay.includes('data-kg-flight-sim-geo-aircraft="1"')
+    || !flightHud.includes('data-kg-flight-sim-aircraft-media={FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.id}')
     || !flightGeoOverlay.includes('data-kg-flight-sim-geography-boundary="not-rendered"')
     || !geoView.includes('data-kg-geo-xr-environment={selectedEnvironment.id}')
     || !flightPanel.includes('data-kg-flight-sim-environment={environment.id}')
@@ -64,7 +66,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     || !geospatialPresentation.includes('applyFlightGeoOverlayToMap(map, overlay)')
     || !geospatialHost.includes("data-kg-flight-sim-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}")
     || !viewport.includes('<FlightSimGeoSurfaceOverlayLazy />')) {
-    throw new Error('expected Media selection, settled source persistence, native MapLibre projection, and transparent Flight composition')
+    throw new Error('expected one canonical Media aircraft, settled source persistence, native MapLibre projection, and transparent Flight composition')
   }
   const flightSource = [
     '---',

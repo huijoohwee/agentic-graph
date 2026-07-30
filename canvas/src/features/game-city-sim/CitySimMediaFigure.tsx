@@ -1,7 +1,7 @@
 import React from 'react'
 import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
 
-export function ThreeCanvasMediaFigure({
+export function CitySimMediaFigure({
   children,
   citySimActive,
 }: Readonly<{

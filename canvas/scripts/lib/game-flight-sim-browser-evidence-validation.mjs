@@ -31,26 +31,50 @@ function hasMeterSurface(view, expected) {
   )
 }
 
-function hasSettledCityFlightSource(source) {
-  if (source?.present === false) return true
-  return (
-    source?.present === true
-    && source?.features === 0
-    && source?.loaded === true
-  )
+export function hasExactCityMapRetentionEvidence(retention) {
+  return retention?.sameMap === true && retention?.removeCalls === 0
 }
 
-export function hasExactCityDisposalEvidence(disposal) {
+export function hasExactCityMapLibreSurfaceEvidence(city) {
   return (
-    hasSettledCityFlightSource(disposal?.flight)
-    && hasSettledCityFlightSource(disposal?.environment)
+    city?.flightActive === false
+    && city?.cityActive === true
+    && city?.cityPanelVisible === true
+    && city?.citySemanticSurfaceActive === true
+    && city?.cityMapLibreOwnerCount === 1
+    && city?.floatingPanelOpen === true
+    && city?.floatingPanelView === 'cityBuilder'
+    && city?.renderMode === '3d'
+    && city?.canvas3dMode === 'xr'
+    && city?.geospatialEnabled === true
+    && city?.geospatialPreferenceEnabled === true
+    && city?.geoXrSurfaceActive === true
+    && city?.geoXrLayerCount === 1
+    && city?.activeMapPresent === true
+    && city?.mapLibreCanvasCount === 1
+    && city?.visibleMapLibreCanvasCount === 1
+    && city?.threeCanvasOwnerCount === 0
+    && city?.hudVisible === false
+    && city?.flightHudCount === 0
+    && city?.flightSourceFeatures >= 7
+    && city?.flightSourcePresent === true
+    && city?.flightLayersReady === true
+    && city?.aircraftLayerType === 'symbol'
+    && city?.aircraftGeometryType === 'Polygon'
+    && city?.overlayPhase === 'stopped'
+    && city?.overlayRoutePointCount >= 2
+    && JSON.stringify(city?.sourceKinds)
+      === JSON.stringify(['aircraft', 'objective-guide', 'route', 'route-point'])
+    && city?.environmentSourceFeatures === 0
+    && city?.renderedFeatureCount >= 4
+    && city?.renderedEnvironmentFeatureCount === 0
   )
 }
 
 function hasExactCityHandoffEvidence(handoff) {
   const before = handoff?.before
   const city = handoff?.city
-  const disposal = handoff?.mapDisposalClear
+  const retention = handoff?.mapRetention
   const restored = handoff?.restored
   const reopened = handoff?.reopened
   return (
@@ -59,33 +83,12 @@ function hasExactCityHandoffEvidence(handoff) {
     && before?.geospatialEnabled === true
     && before?.geospatialPreferenceEnabled === true
     && before?.activeMapPresent === true
-    && city?.flightActive === false
-    && city?.cityActive === true
-    && city?.cityPanelVisible === true
-    && city?.cityStageActive === true
-    && city?.floatingPanelOpen === true
-    && city?.floatingPanelView === 'cityBuilder'
-    && city?.renderMode === '3d'
-    && city?.canvas3dMode === 'xr'
-    && city?.geospatialEnabled === false
-    && city?.geospatialPreferenceEnabled === false
-    && city?.geoXrSurfaceActive === false
-    && city?.geoXrLayerCount === 0
-    && city?.activeMapPresent === false
-    && city?.mapLibreCanvasCount === 0
-    && city?.visibleMapLibreCanvasCount === 0
-    && city?.threeCanvasOwnerCount === 1
-    && city?.hudVisible === false
-    && city?.flightHudCount === 0
-    && city?.flightSourceFeatures === 0
-    && city?.environmentSourceFeatures === 0
-    && city?.renderedFeatureCount === 0
-    && city?.renderedEnvironmentFeatureCount === 0
-    && hasExactCityDisposalEvidence(disposal)
+    && hasExactCityMapLibreSurfaceEvidence(city)
+    && hasExactCityMapRetentionEvidence(retention)
     && restored?.flightActive === false
     && restored?.cityActive === false
     && restored?.cityPanelVisible === true
-    && restored?.cityStageActive === false
+    && restored?.citySemanticSurfaceActive === false
     && restored?.floatingPanelOpen === true
     && restored?.floatingPanelView === 'cityBuilder'
     && restored?.renderMode === '3d'
@@ -106,7 +109,7 @@ function hasExactCityHandoffEvidence(handoff) {
     && restored?.renderedEnvironmentFeatureCount === 0
     && reopened?.flightActive === true
     && reopened?.cityActive === false
-    && reopened?.cityStageActive === false
+    && reopened?.citySemanticSurfaceActive === false
     && reopened?.hudVisible === true
     && reopened?.activeMapPresent === true
     && reopened?.mapLibreCanvasCount === 1

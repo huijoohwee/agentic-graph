@@ -4,6 +4,7 @@ import {
   createKgFsPathPolicy,
   decodeXlsxArtifactBase64,
   enforceCanonicalWorkspaceMutation,
+  resolveKgFsMutationTarget,
 } from '../../viteWorkspaceArtifactBridge'
 
 export function testWorkspaceArtifactBridgeAcceptsOnlyVerifiedXlsxPayloads() {
@@ -44,13 +45,34 @@ export async function testWorkspaceArtifactBridgeEnforcesCanonicalWorkspaceSeedO
   if (policy.resolveCanonicalWorkspacePath(workspacePath) !== canonicalPath) {
     throw new Error('expected task worktrees to resolve workspace seeds against the canonical Knowgrph checkout')
   }
-  if (!policy.isCanonicalWorkspaceMutation(canonicalPath, workspacePath)) {
-    throw new Error('expected canonical Knowgrph workspace seed mutation to be accepted')
+  const logicalTarget = resolveKgFsMutationTarget({
+    policy,
+    incomingPath: '',
+    workspacePath,
+  })
+  if (!logicalTarget.ok || logicalTarget.requestedAbsPath !== canonicalPath) {
+    throw new Error(`expected the bridge to derive the canonical target from workspacePath, got ${JSON.stringify(logicalTarget)}`)
   }
-  if (policy.isCanonicalWorkspaceMutation(rejectedPath, workspacePath)) {
-    throw new Error('expected huijoohwee/docs/workspace-seeds mutation to be rejected')
+  const clientPathTarget = resolveKgFsMutationTarget({
+    policy,
+    incomingPath: canonicalPath,
+    workspacePath,
+  })
+  if (clientPathTarget.ok) {
+    throw new Error('expected canonical seed requests with client host paths to be rejected')
   }
-  if (policy.isCanonicalWorkspaceMutation(canonicalPath, '')) {
+  if (!('status' in clientPathTarget) || clientPathTarget.status !== 400) {
+    throw new Error('expected canonical seed requests with client host paths to be rejected')
+  }
+  const unkeyedTarget = resolveKgFsMutationTarget({
+    policy,
+    incomingPath: canonicalPath,
+    workspacePath: '',
+  })
+  if (unkeyedTarget.ok) {
+    throw new Error('expected direct workspace seed mutations without an ownership key to be rejected')
+  }
+  if (!('status' in unkeyedTarget) || unkeyedTarget.status !== 403) {
     throw new Error('expected direct workspace seed mutations without an ownership key to be rejected')
   }
   const mismatch = await enforceCanonicalWorkspaceMutation({

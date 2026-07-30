@@ -19,7 +19,6 @@ import {
   subscribeCitySimSnapshot,
 } from './citySimRuntime'
 import { describeCityInputSnapshot } from './citySimInputRuntime'
-import { requestCitySimCameraFocus } from './citySimCameraFocusRequest'
 
 export type CitySimProjectionSurface =
   | 'media'
@@ -47,7 +46,7 @@ const SURFACE_COPY: Readonly<Record<CitySimProjectionSurface, {
   },
   gameMode: {
     title: 'City gameplay overlay',
-    ownership: 'The city stage is additive and reuses the shared Canvas.',
+    ownership: 'City claims the shared Geo+XR surface while MapLibre owns visuals and gestures.',
   },
   flightSim: {
     title: 'City aerial inspection',
@@ -55,7 +54,7 @@ const SURFACE_COPY: Readonly<Record<CitySimProjectionSurface, {
   },
   camera: {
     title: 'City framing',
-    ownership: 'City view temporarily claims orthographic framing and restores it on exit.',
+    ownership: 'Native MapLibre owns City framing and responsive viewport changes.',
   },
 })
 
@@ -102,9 +101,9 @@ function projectionStatus(
   }
   return snapshot.active
     ? snapshot.selectedParcelId
-      ? `${snapshot.selectedParcelId} is ready for shared-camera focus.`
-      : 'Isometric orthographic framing is active for the full city grid.'
-    : 'City framing is available without replacing existing Camera presets.'
+      ? `${snapshot.selectedParcelId} is selected while native MapLibre retains framing.`
+      : 'Native MapLibre framing is active for the City Geo+XR surface.'
+    : 'Open City to use native MapLibre framing without replacing Camera presets.'
 }
 
 export function CitySimPanelProjection({
@@ -133,20 +132,15 @@ export function CitySimPanelProjection({
     }
   }, [])
 
-  const focusCamera = React.useCallback(async () => {
-    const opened = await openCitySimSurface({ openPanel: false })
-    if (!opened.active || opened.lastResult?.ok === false) return
-    requestCitySimCameraFocus(opened.selectedParcelId)
-  }, [])
   const animationAction = surface === 'animation' && snapshot.active
   const cameraAction = surface === 'camera'
   const actionLabel = cameraAction
-    ? snapshot.selectedParcelId ? 'Focus selection' : 'Frame city'
+    ? 'Open City map'
     : animationAction
     ? snapshot.phase === 'running' ? 'Stop ticks' : 'Start ticks'
     : snapshot.active ? 'Open city panel' : 'Open city'
   const action = cameraAction
-    ? focusCamera
+    ? () => openCitySimSurface({ openPanel: false })
     : animationAction
     ? snapshot.phase === 'running' ? stopCitySim : startCitySim
     : openCitySimSurface

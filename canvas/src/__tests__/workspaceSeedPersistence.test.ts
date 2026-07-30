@@ -912,16 +912,19 @@ export async function testWorkspaceSeedProviderPrefersConfiguredAbsoluteDocsRoot
   }
 }
 
-export async function testWorkspaceSeedProviderResolvesDocsWorkspaceSeedsFromConfiguredAbsoluteDocsRoot() {
+export async function testWorkspaceSeedProviderUsesDeclaredReadRootWithoutDocsFallback() {
   const previousAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+  const previousReadRoot = process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT
+  const seedReadRoot = `${KG_GITHUB_ROOT}/active-knowgrph/docs/workspace-seeds`
   process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = KG_HUIJOOHWEE_DOCS_ROOT
+  process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT = seedReadRoot
   const previousFetch = globalThis.fetch
   const calls: string[] = []
   ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
     const url = String(typeof input === 'string' ? input : (input as URL).toString())
     calls.push(url)
-    if (url.includes(`/@fs${KG_KNOWGRPH_DOCS_ROOT}/workspace-seeds/knowgrph-video-demo.md`)) {
-      return new Response('# docs workspace-seeds absolute root', { status: 200 })
+    if (url.includes(`/@fs${seedReadRoot}/knowgrph-video-demo.md`)) {
+      return new Response('# active repository seed', { status: 200 })
     }
     return new Response('', { status: 404 })
   }) as typeof fetch
@@ -930,15 +933,20 @@ export async function testWorkspaceSeedProviderResolvesDocsWorkspaceSeedsFromCon
       basename: 'knowgrph-video-demo.md',
       relPathCandidates: ['docs/workspace-seeds/knowgrph-video-demo.md', 'docs/knowgrph-video-demo.md'],
     })
-    if (text !== '# docs workspace-seeds absolute root') {
-      throw new Error(`expected docs/workspace-seeds absolute docs-root seed to resolve, got ${String(text || '')}`)
+    if (text !== '# active repository seed') {
+      throw new Error(`expected the declared active-repository seed to resolve, got ${String(text || '')}`)
     }
-    if (!calls.some(url => url.includes(`/@fs${KG_KNOWGRPH_DOCS_ROOT}/workspace-seeds/knowgrph-video-demo.md`))) {
-      throw new Error('expected workspace seed provider to probe the canonical Knowgrph workspace-seeds root')
+    if (!calls.some(url => url.includes(`/@fs${seedReadRoot}/knowgrph-video-demo.md`))) {
+      throw new Error('expected workspace seed provider to probe only the declared read root')
+    }
+    if (calls.some(url => url.includes(KG_HUIJOOHWEE_DOCS_ROOT))) {
+      throw new Error(`expected collaborative docs never to redirect Knowgrph seed reads, got ${JSON.stringify(calls)}`)
     }
   } finally {
     if (typeof previousAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousAbsRoot
     else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+    if (typeof previousReadRoot === 'string') process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT = previousReadRoot
+    else delete process.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT
     if (previousFetch) {
       ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
     } else {

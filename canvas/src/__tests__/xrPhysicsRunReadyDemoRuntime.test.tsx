@@ -187,13 +187,11 @@ export async function testXrPhysicsRunReadyRuntimeUnmountTeardownRespectsLaunchO
 
 export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDocumentInOrdinaryDev() {
   const previousDemo = process.env[WORKSPACE_RUN_READY_DEMO_ENV]
-  const canonicalRootPath = `/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
-  const canonicalWorkspaceSeedsPath = `/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
   const canonicalDocsPath = `/docs/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
   const unrelatedPath = '/docs/workspace-seeds/workspace-readme.md'
 
   delete process.env[WORKSPACE_RUN_READY_DEMO_ENV]
-  for (const canonicalPath of [canonicalRootPath, canonicalWorkspaceSeedsPath, canonicalDocsPath]) {
+  for (const canonicalPath of [canonicalDocsPath]) {
     const resolved = resolveWorkspaceRunReadyDemoIdForDocumentPath(canonicalPath)
     if (resolved !== XR_PHYSICS_RUN_READY_DEMO_ID) {
       throw new Error(`expected canonical Source Files path ${canonicalPath} to resolve the XR physics demo, got ${String(resolved || '')}`)
@@ -204,6 +202,8 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
   }
   for (const unrelatedDocumentPath of [
     unrelatedPath,
+    `/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`,
+    `/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`,
     `/imports/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`,
     `/docs/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}.backup`,
   ]) {
@@ -328,7 +328,7 @@ export async function testXrPhysicsRunReadyRuntimeActivatesFromCanonicalSourceDo
 
     process.env[WORKSPACE_RUN_READY_DEMO_ENV] = CARE_AGENT_RUN_READY_DEMO_ID
     await act(async () => {
-      useGraphStore.getState().setMarkdownDocument(canonicalRootPath, '# Canonical XR physics demo', {
+      useGraphStore.getState().setMarkdownDocument(canonicalDocsPath, '# Canonical XR physics demo', {
         autoEnableFrontmatter: false,
         applyViewPreset: false,
       })
