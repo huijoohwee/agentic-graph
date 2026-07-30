@@ -59,8 +59,8 @@ export function ThreeGameplayMissionStage(props: Readonly<{
   gameFpsActive: boolean
   geospatialComposite: boolean
 }>) {
-  // The City grid has local coordinates, so Geo+XR leaves geographic visuals to
-  // MapLibre and its existing Flight overlay rather than painting it above them.
+  // The City grid remains MapLibre-owned in Geo+XR. Flight is actor-only, so its
+  // Media Airplane can render through the transparent shared Canvas above it.
   if (props.citySimActive && !props.geospatialComposite) {
     return <CitySimMissionStage />
   }
@@ -70,7 +70,7 @@ export function ThreeGameplayMissionStage(props: Readonly<{
   if (props.flightSimActive) {
     return (
       <FlightSimMissionStageLazy
-        actorsVisible={!props.geospatialComposite}
+        actorsVisible
         coordinateScale={props.coordinateScale}
       />
     )
