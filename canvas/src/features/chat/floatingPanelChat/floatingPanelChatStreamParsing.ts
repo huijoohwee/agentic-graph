@@ -232,6 +232,15 @@ export const extractAssistantStreamDelta = (payload: unknown): AssistantStreamDe
   const reasoningSteps = extractReasoningSignalSummaries(delta, message, record)
   const reasoningTextDelta = extractReasoningTextDelta(delta, message, record)
   const usage = readChatStreamUsage(record, first, delta, message)
+  const eventType = readRecordStringField(record, 'type').toLowerCase()
+  const response = isObjectRecord(record.response) ? record.response : null
+  const responseStatus = readRecordStringField(response, 'status').toLowerCase()
+  const incompleteDetails = isObjectRecord(response?.incomplete_details)
+    ? response.incomplete_details
+    : isObjectRecord(record.incomplete_details)
+      ? record.incomplete_details
+      : null
+  const incompleteReason = readRecordStringField(incompleteDetails, 'reason')
   return {
     contentDelta:
       extractAssistantContentText(delta?.content)
@@ -244,6 +253,9 @@ export const extractAssistantStreamDelta = (payload: unknown): AssistantStreamDe
       || extractAssistantContentText(message)
       || extractAssistantContentText(first?.content)
       || extractAssistantContentText(first?.text)
+      || extractAssistantContentText(response?.output_text)
+      || extractAssistantContentText(response?.output)
+      || extractAssistantContentText(response)
       || extractAssistantContentText(record),
     reasoningTextDelta,
     reasoningStepSummaries: reasoningSteps,
@@ -252,16 +264,18 @@ export const extractAssistantStreamDelta = (payload: unknown): AssistantStreamDe
         ? String(first.finish_reason)
         : typeof record.finish_reason === 'string'
           ? String(record.finish_reason)
-          : readRecordStringField(record, 'type').toLowerCase().endsWith('.failed') ||
-            readRecordStringField(record, 'type').toLowerCase() === 'error' ||
-            readRecordStringField(isObjectRecord(record.response) ? record.response : null, 'status').toLowerCase() === 'failed'
+          : eventType === 'response.incomplete' || responseStatus === 'incomplete'
+            ? incompleteReason || 'incomplete'
+            : eventType.endsWith('.failed') ||
+              eventType === 'error' ||
+              responseStatus === 'failed'
               ? 'error'
               : null,
     usage,
     modelId:
       typeof record.model === 'string'
         ? String(record.model)
-        : readRecordStringField(isObjectRecord(record.response) ? record.response : null, 'model') || null,
+        : readRecordStringField(response, 'model') || null,
   }
 }
 
@@ -269,7 +283,14 @@ export const extractAssistantDelta = (payload: unknown): string => {
   if (!payload || typeof payload !== 'object') return ''
   const record = payload as Record<string, unknown>
   const choices = record.choices
-  const rootText = extractAssistantContentText(record.output_text) || extractAssistantContentText(record.output) || extractAssistantContentText(record)
+  const response = isObjectRecord(record.response) ? record.response : null
+  const rootText =
+    extractAssistantContentText(record.output_text)
+    || extractAssistantContentText(record.output)
+    || extractAssistantContentText(response?.output_text)
+    || extractAssistantContentText(response?.output)
+    || extractAssistantContentText(response)
+    || extractAssistantContentText(record)
   if (!Array.isArray(choices) || choices.length === 0) return rootText
   const first = isObjectRecord(choices[0]) ? choices[0] : null
   const delta = isObjectRecord(first?.delta)

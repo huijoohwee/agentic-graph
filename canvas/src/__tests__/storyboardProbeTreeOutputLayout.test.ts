@@ -3,7 +3,6 @@ import { resolve } from 'node:path'
 
 import {
   buildStoryboardWidgetProbeTreeOutputGroupId,
-  mergeStoryboardWidgetProbeTreeOutputPanels,
   normalizeAllStoryboardWidgetProbeTreeOutputLayouts,
   normalizeStoryboardWidgetProbeTreeOutputLayout,
   normalizeStoryboardWidgetProbeTreeThreadLayout,
@@ -23,8 +22,7 @@ import {
 } from '@/components/FlowCanvas/flowCanvasMediaOverlayWorldPoint'
 import { readGraphNodeProperties } from '@/lib/cards/graphNodeCardFields'
 import { FLOW_EDGE_SOURCE_PORT_KEY, FLOW_EDGE_TARGET_PORT_KEY } from '@/lib/graph/flowPorts'
-import { buildRichMediaTextMarkdownDocument } from '@/features/rich-media/richMediaTextMarkdownContract.mjs'
-import type { GraphData } from '@/lib/graph/types'
+import type { GraphData, GraphNode } from '@/lib/graph/types'
 import {
   PROBE_TREE_BALANCED_LAYOUT_MODE,
   PROBE_TREE_BALANCED_LAYOUT_VERSION,
@@ -190,7 +188,7 @@ export function testProbeTreeThreadLayoutBuildsBalancedGridSnappedForwardCascade
   assert(balancedSecondThread.nodes.find(node => node.id === 'a') === normalized.nodes.find(node => node.id === 'a'), 'expected balancing thread B not to rewrite thread A nodes')
 }
 
-export function testProbeTreeOutputPanelTracksGrowingRightmostColumnIdempotently() {
+export function testProbeTreeOutputPanelPrecedesGrowingBranchColumnsIdempotently() {
   const layoutProperties = {
     cardTypeLabel: 'Probe-Tree Card',
     probeTreeThreadRootId: 'root',
@@ -203,8 +201,8 @@ export function testProbeTreeOutputPanelTracksGrowingRightmostColumnIdempotently
     metadata: { kind: 'frontmatter-flow', frontmatterFlowSettings: { gridSize: 20 } },
     nodes: [
       { id: 'root', type: 'TextGeneration', label: 'Root', x: 0, y: 0, properties: {} },
-      { id: 'branch', type: 'TextGeneration', label: 'Branch', x: 440, y: 0, properties: { ...layoutProperties, parentNodeId: 'root', index: 'P1' } },
-      { id: 'deep-branch', type: 'TextGeneration', label: 'Deep branch', x: 860, y: 140, properties: { ...layoutProperties, parentNodeId: 'branch', index: 'P1' } },
+      { id: 'branch', type: 'TextGeneration', label: 'Branch', x: 860, y: 0, properties: { ...layoutProperties, parentNodeId: 'root', index: 'P1' } },
+      { id: 'deep-branch', type: 'TextGeneration', label: 'Deep branch', x: 1300, y: 140, properties: { ...layoutProperties, parentNodeId: 'branch', index: 'P1' } },
       {
         id: 'panel',
         type: 'RichMediaPanel',
@@ -229,10 +227,11 @@ export function testProbeTreeOutputPanelTracksGrowingRightmostColumnIdempotently
 
   const normalized = normalizeStoryboardWidgetProbeTreeOutputLayout({ graphData, threadRootId: 'deep-branch' })
   const panel = normalized.nodes.find(node => node.id === 'panel')
-  const rightmostBranchX = Math.max(readPosition(normalized, 'branch').x, readPosition(normalized, 'deep-branch').x)
-  assert(panel?.x === rightmostBranchX + 520, `expected the ledger to follow the growing rightmost branch column, got ${String(panel?.x)}`)
+  const rootX = readPosition(normalized, 'root').x
+  const leftmostBranchX = Math.min(readPosition(normalized, 'branch').x, readPosition(normalized, 'deep-branch').x)
+  assert(panel?.x === rootX + 440, `expected the shared ledger in the first downstream coordinator lane, got ${String(panel?.x)}`)
   assert(Number(panel?.x) % 20 === 0, `expected the ledger to remain grid snapped, got ${String(panel?.x)}`)
-  assert(Number(panel?.x) > rightmostBranchX, 'expected the ledger to remain strictly right of every branch')
+  assert(Number(panel?.x) > rootX && Number(panel?.x) < leftmostBranchX, 'expected the ledger between the source and its growing branch columns')
   assert(!normalized.edges.some(edge => edge.id === 'stale-backtrack'), 'expected stale backward output edges to be removed during terminal normalization')
   for (const edge of normalized.edges) {
     const source = readPosition(normalized, String(edge.source))
@@ -241,7 +240,7 @@ export function testProbeTreeOutputPanelTracksGrowingRightmostColumnIdempotently
   }
 
   const repeated = normalizeStoryboardWidgetProbeTreeOutputLayout({ graphData: normalized, threadRootId: 'root' })
-  assert(repeated === normalized, 'expected rightmost-ledger normalization to be idempotent once the thread has settled')
+  assert(repeated === normalized, 'expected coordinator-ledger normalization to be idempotent once the thread has settled')
 }
 
 export function testProbeTreeLayoutOwnershipSurvivesCanonicalPropertyProjection() {
@@ -398,14 +397,20 @@ export function testProbeTreePinnedOutputPanelUsesGrowingGraphPositionOverStaleO
     id: 'panel',
     type: 'RichMediaPanel',
     label: 'Probe-Tree Branches',
-    x: 2240,
-    y: 0,
+    position: {
+      key: 'position',
+      type: 'object',
+      value: {
+        x: { key: 'x', type: 'number', value: 2240 },
+        y: { key: 'y', type: 'number', value: 0 },
+      },
+    },
     properties: {
       [PROBE_TREE_LAYOUT_MODE_PROPERTY]: PROBE_TREE_BALANCED_LAYOUT_MODE,
       [PROBE_TREE_LAYOUT_VERSION_PROPERTY]: PROBE_TREE_BALANCED_LAYOUT_VERSION,
       [PROBE_TREE_PINNED_BY_DEFAULT_PROPERTY]: true,
     },
-  }
+  } as GraphNode & { position?: unknown }
   const pinnedByDefault = resolveFlowCanvasMediaOverlayPinnedInCanvas({
     graphMetaKind: 'frontmatter-flow',
     node: panel,
@@ -417,7 +422,16 @@ export function testProbeTreePinnedOutputPanelUsesGrowingGraphPositionOverStaleO
     interactionOverride: { x: 1320, y: 400 },
     storedWorldPosition: { x: 1320, y: 400 },
   })
-  assert(graphOwnedPosition?.x === 2240 && graphOwnedPosition.y === 0, `expected the growing thread's graph position to beat stale overlay state, got ${JSON.stringify(graphOwnedPosition)}`)
+  assert(graphOwnedPosition?.x === 2240 && graphOwnedPosition.y === 0, `expected the source-roundtripped graph position to beat stale overlay state, got ${JSON.stringify(graphOwnedPosition)}`)
+  const mixedAxisPosition = resolveFlowCanvasMediaOverlayWorldTopLeft2d({
+    graphNode: {
+      ...panel,
+      x: 2260,
+    },
+    pinnedInCanvas: pinnedByDefault,
+    storedWorldPosition: { x: 1320, y: 400 },
+  })
+  assert(mixedAxisPosition?.x === 2260 && mixedAxisPosition.y === 0, `expected flat and source-roundtripped axes to preserve independent authority, got ${JSON.stringify(mixedAxisPosition)}`)
 
   const explicitlyUnpinned = resolveFlowCanvasMediaOverlayPinnedInCanvas({
     graphMetaKind: 'frontmatter-flow',
@@ -469,8 +483,8 @@ export function testProbeTreeOutputLayoutCollapsesDuplicateThreadLedgers() {
     type: 'Graph',
     nodes: [
       { id: 'root', type: 'TextGeneration', label: 'Root', x: 0, y: 20, properties: {} },
-      { id: 'child-a', type: 'TextGeneration', label: 'A', x: 430, y: -240, properties: { parentNodeId: 'root', probeTreeThreadRootId: 'root' } },
-      { id: 'child-b', type: 'TextGeneration', label: 'B', x: 860, y: 280, properties: { parentNodeId: 'child-a', probeTreeThreadRootId: 'root' } },
+      { id: 'child-a', type: 'TextGeneration', label: 'A', x: 430, y: -240, properties: { cardTypeLabel: 'Probe-Tree Card', parentNodeId: 'root', probeTreeThreadRootId: 'root' } },
+      { id: 'child-b', type: 'TextGeneration', label: 'B', x: 860, y: 280, properties: { cardTypeLabel: 'Probe-Tree Card', parentNodeId: 'child-a', probeTreeThreadRootId: 'root' } },
       { id: 'panel-root', type: 'RichMediaPanel', label: 'Probe-Tree Branches', x: 520, y: 20, properties: { value: 'legitimate panel field', workflowOutputAnchorNodeId: 'root', workflowOutputKey: PROBE_TREE_OUTPUT_KEY } },
       { id: 'panel-a', type: 'RichMediaPanel', label: 'Probe-Tree Branches', x: 950, y: -240, properties: { workflowOutputAnchorNodeId: 'child-a', workflowOutputKey: PROBE_TREE_OUTPUT_KEY } },
       { id: 'panel-b', type: 'RichMediaPanel', label: 'Probe-Tree Branches', x: 1380, y: 280, properties: { workflowOutputAnchorNodeId: 'child-b', workflowOutputKey: PROBE_TREE_OUTPUT_KEY } },
@@ -489,7 +503,9 @@ export function testProbeTreeOutputLayoutCollapsesDuplicateThreadLedgers() {
   const panel = panels[0]
   const outputGroupId = buildStoryboardWidgetProbeTreeOutputGroupId('root')
   assert(panels.length === 1 && panel?.id === 'panel-root', `expected one canonical root ledger, got ${JSON.stringify(panels)}`)
-  assert(panel?.x === 1380 && panel?.y === 20, `expected the ledger after the rightmost branch column, got ${JSON.stringify(panel)}`)
+  const rootX = readPosition(normalized, 'root').x
+  const leftmostBranchX = Math.min(readPosition(normalized, 'child-a').x, readPosition(normalized, 'child-b').x)
+  assert(Number(panel?.x) > rootX && Number(panel?.x) < leftmostBranchX && panel?.y === 20, `expected the ledger in the first downstream coordinator lane, got ${JSON.stringify(panel)}`)
   assert(panel?.properties.workflowOutputGroupId === outputGroupId, 'expected the canonical ledger to be reusable by thread group')
   assert(panel?.properties.probeTreeOutputLayoutVersion === PROBE_TREE_OUTPUT_LAYOUT_VERSION, 'expected the canonical ledger layout marker')
   assert(normalized.edges.length === 2 && normalized.edges.every(edge => edge.label === 'candidateOption'), `expected stale output edges to be replaced by the next publication, got ${JSON.stringify(normalized.edges)}`)
@@ -548,54 +564,7 @@ export function testProbeTreeOutputLayoutRepairsDisconnectedCanonicalLedger() {
   assert(normalizeAllStoryboardWidgetProbeTreeOutputLayouts(normalized) === normalized, 'expected repaired ledger authority to be idempotent')
 }
 
-export function testProbeTreeOutputLayoutMergesLiveLedgersBeforeNormalization() {
-  const propertiesWithLegitimateValue = readGraphNodeProperties({
-    properties: { value: 'user-authored field', parentNodeId: 'root', probeTreeThreadRootId: 'root' },
-  })
-  assert(propertiesWithLegitimateValue.parentNodeId === 'root', 'expected a legitimate value field not to hide Probe-Tree ancestry')
-  const materializedGraph: GraphData = {
-    type: 'Graph',
-    nodes: [
-      { id: 'root', type: 'TextGeneration', label: 'Root', x: 0, y: 0, properties: {} },
-      { id: 'child', type: 'TextGeneration', label: 'Child', x: 430, y: 0, properties: { parentNodeId: 'root', probeTreeThreadRootId: 'root' } },
-    ],
-    edges: [],
-  }
-  const liveGraph: GraphData = {
-    ...materializedGraph,
-    nodes: [
-      ...materializedGraph.nodes,
-      { id: 'panel-root', type: 'RichMediaPanel', label: 'Probe-Tree Branches', x: 520, y: 0, properties: { workflowOutputAnchorNodeId: 'root', workflowOutputKey: PROBE_TREE_OUTPUT_KEY } },
-      { id: 'panel-child', type: 'RichMediaPanel', label: 'Probe-Tree Branches', x: 950, y: 0, properties: { workflowOutputAnchorNodeId: 'child' } },
-    ],
-    edges: [
-      { id: 'root-panel', source: 'root', target: 'panel-root', label: PROBE_TREE_OUTPUT_KEY, properties: {} },
-      { id: 'child-panel', source: 'child', target: 'panel-child', label: PROBE_TREE_OUTPUT_KEY, properties: {} },
-    ],
-  }
-  const merged = mergeStoryboardWidgetProbeTreeOutputPanels({ graphData: materializedGraph, liveGraphData: liveGraph })
-  const normalized = normalizeStoryboardWidgetProbeTreeOutputLayout({ graphData: merged, threadRootId: 'root' })
-  const panels = normalized.nodes.filter(node => node.type === 'RichMediaPanel')
-  assert(panels.length === 1, `expected one live ledger after terminal normalization, got ${JSON.stringify(panels)}`)
-  assert(panels[0]?.properties.workflowOutputGroupId === buildStoryboardWidgetProbeTreeOutputGroupId('root'), 'expected the live ledger to adopt the thread group')
-
-  const freshPanel = { id: 'panel-root', type: 'RichMediaPanel', label: 'Probe-Tree Branches', x: 520, y: 0, properties: { workflowOutputAnchorNodeId: 'child', workflowOutputKey: PROBE_TREE_OUTPUT_KEY, output: 'fresh child continuation' } }
-  const stalePanel = { ...freshPanel, properties: { ...freshPanel.properties, output: 'stale live ledger' } }
-  const freshMaterializedGraph: GraphData = { ...materializedGraph, nodes: [...materializedGraph.nodes, freshPanel] }
-  const staleLiveGraph: GraphData = { ...materializedGraph, nodes: [...materializedGraph.nodes, stalePanel] }
-  const sameIdMerged = mergeStoryboardWidgetProbeTreeOutputPanels({ graphData: freshMaterializedGraph, liveGraphData: staleLiveGraph })
-  const retainedPanel = sameIdMerged.nodes.find(node => node.id === 'panel-root')
-  assert(retainedPanel?.properties.output === 'fresh child continuation', `expected same-id fresh run ledger to outrank stale live bytes, got ${JSON.stringify(retainedPanel)}`)
-}
-
-export function testProbeTreeOutputMarkdownUsesFrontmatterSharedViewerContract() {
-  const markdown = buildRichMediaTextMarkdownDocument({
-    title: 'Probe-Tree Branches',
-    body: '# Probe-Tree Branches\n\n1. Evidence\n2. Assumption\n3. Reviewer',
-    sourceContract: 'knowgrph-probe-tree/v0.1',
-  })
-  assert(markdown.startsWith('---\nschema: "knowgrph-rich-media-text/v1"\n'), 'expected Probe-Tree Markdown to start with the Rich Media text frontmatter contract')
-  assert(markdown.includes('\nmedia_kind: "text"\ncontent_type: "text/markdown"\n'), 'expected Probe-Tree frontmatter to declare Markdown text media')
-  assert(markdown.endsWith('# Probe-Tree Branches\n\n1. Evidence\n2. Assumption\n3. Reviewer'), 'expected the authored Markdown body to remain intact')
-  assert(!/<!doctype|<html\b|<body\b/i.test(markdown), 'expected Probe-Tree text output to forbid HTML document materialization')
-}
+export {
+  testProbeTreeOutputLayoutMergesLiveLedgersBeforeNormalization,
+  testProbeTreeOutputMarkdownUsesFrontmatterSharedViewerContract,
+} from './storyboardProbeTreeOutputPublication.test'

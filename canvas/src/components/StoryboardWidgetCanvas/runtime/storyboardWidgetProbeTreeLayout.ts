@@ -27,10 +27,18 @@ import {
   mergeStoryboardWidgetWorkflowOutputEdgeProperties,
   WORKFLOW_OUTPUT_EDGE_MODE_PROPERTY,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowOutputEdge'
+import { hasCurrentStoryboardWidgetRunMaterializationLayout } from './storyboardWidgetRunExecutionAnchor'
+import {
+  collectProbeTreeThreadNodeIds as collectThreadNodeIds,
+  readProbeTreeLayoutProperties as readProperties,
+  readProbeTreeLayoutRecord as readRecord,
+  readProbeTreeLayoutString as readString,
+  resolveCanonicalProbeTreeThreadRootId as resolveCanonicalThreadRootId,
+} from './storyboardWidgetProbeTreeLayoutGraph'
 
 export const PROBE_TREE_OUTPUT_KEY = 'probe-tree-branches'
 export const PROBE_TREE_OUTPUT_LABEL = 'Probe-Tree Branches'
-export const PROBE_TREE_OUTPUT_LAYOUT_VERSION = 2
+export const PROBE_TREE_OUTPUT_LAYOUT_VERSION = 3
 export const PROBE_TREE_GRAPH_LAYOUT_VERSION_PROPERTY = 'probeTreeBalancedLayoutByThread' as const
 
 const BRANCH_COLUMN_OFFSET = RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX + 70
@@ -40,27 +48,8 @@ const BRANCH_VERTICAL_STEP = resolveCanvasAspectRatioSize({
 }).height + 40
 const BRANCH_WATERFALL_STAGGER = 130
 const BRANCH_VERTICAL_COLLISION_TOLERANCE = BRANCH_VERTICAL_STEP
-const OUTPUT_PANEL_COLUMN_OFFSET = 520
+const OUTPUT_PANEL_COLUMN_OFFSET = BRANCH_COLUMN_OFFSET
 export const PROBE_TREE_OUTPUT_RIGHTMOST_X_PROPERTY = 'probeTreeOutputRightmostBranchX' as const
-
-const readString = (value: unknown): string => String(unwrapGraphCellValue(value) ?? '').trim()
-
-const readRecord = (value: unknown): Record<string, unknown> => {
-  const unwrapped = unwrapGraphCellValue(value)
-  return unwrapped && typeof unwrapped === 'object' && !Array.isArray(unwrapped)
-    ? unwrapped as Record<string, unknown>
-    : {}
-}
-
-const readProperties = (value: unknown): Record<string, unknown> => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
-  const record = value as Record<string, unknown>
-  const typedValues = (Object.prototype.hasOwnProperty.call(record, 'key')
-    || Object.prototype.hasOwnProperty.call(record, 'type'))
-    ? readRecord(record.value)
-    : null
-  return typedValues || record
-}
 
 const readNodePosition = (node: GraphNode): { x: number; y: number } => {
   const directX = Number(unwrapGraphCellValue(node.x))
@@ -227,49 +216,8 @@ export function resolveStoryboardWidgetProbeTreeBranchPositions(args: {
     cardHeight: BRANCH_VERTICAL_STEP - 40,
     occupiedPositions,
     footprintPositions: threadPositions,
-    startColumn: 1,
+    startColumn: readString(args.anchorNode.id) === threadRootId ? 2 : 1,
   }).positions
-}
-
-const collectThreadNodeIds = (graphData: GraphData, threadRootId: string): Set<string> => {
-  const threadNodeIds = new Set<string>([threadRootId].filter(Boolean))
-  let changed = true
-  while (changed) {
-    changed = false
-    for (const node of graphData.nodes || []) {
-      const nodeId = readString(node.id)
-      if (!nodeId || threadNodeIds.has(nodeId)) continue
-      const properties = readProperties(node.properties)
-      const explicitRootId = readString(properties.probeTreeThreadRootId)
-      const parentNodeId = readString(properties.parentNodeId || properties.parentGraphNodeId)
-      if (explicitRootId === threadRootId || (parentNodeId && threadNodeIds.has(parentNodeId))) {
-        threadNodeIds.add(nodeId)
-        changed = true
-      }
-    }
-  }
-  return threadNodeIds
-}
-
-const resolveCanonicalThreadRootId = (graphData: GraphData, candidateNodeId: string): string => {
-  const nodeById = new Map((graphData.nodes || []).map(node => [readString(node.id), node]))
-  const seen = new Set<string>()
-  let currentNodeId = readString(candidateNodeId)
-  while (currentNodeId && !seen.has(currentNodeId)) {
-    seen.add(currentNodeId)
-    const node = nodeById.get(currentNodeId)
-    if (!node) break
-    const properties = readProperties(node.properties)
-    const explicitRootId = readString(properties.probeTreeThreadRootId)
-    if (explicitRootId && explicitRootId !== currentNodeId) {
-      currentNodeId = explicitRootId
-      continue
-    }
-    const parentNodeId = readString(properties.parentNodeId || properties.parentGraphNodeId)
-    if (!parentNodeId) break
-    currentNodeId = parentNodeId
-  }
-  return currentNodeId || readString(candidateNodeId)
 }
 
 export function resolveStoryboardWidgetProbeTreeOutputPanelPosition(args: {
@@ -290,7 +238,7 @@ export function resolveStoryboardWidgetProbeTreeOutputPanelPosition(args: {
     .filter(node => !visibleNodeIds || visibleNodeIds.has(readString(node.id)))
     .map(node => readNodePosition(node).x))
   const panelPosition = snapPointToGrid({
-    x: rightmostThreadX + OUTPUT_PANEL_COLUMN_OFFSET,
+    x: rootPosition.x + OUTPUT_PANEL_COLUMN_OFFSET,
     y: rootPosition.y,
   }, readProbeTreeLayoutGridSize(args.graphData))
   return { ...panelPosition, rightmostThreadX, threadRootId }
@@ -366,6 +314,32 @@ export function normalizeStoryboardWidgetProbeTreeThreadLayout(args: {
     return readString(properties[PROBE_TREE_LAYOUT_MODE_PROPERTY]) === PROBE_TREE_BALANCED_LAYOUT_MODE
       && Number(unwrapGraphCellValue(properties[PROBE_TREE_LAYOUT_VERSION_PROPERTY])) === PROBE_TREE_BALANCED_LAYOUT_VERSION
   })
+  const viewportMaterializationLayoutIsCurrent = branchNodes.every(node => (
+    hasCurrentStoryboardWidgetRunMaterializationLayout(readProperties(node.properties))
+    && hasFiniteNodePosition(node)
+  ))
+  if (args.forceLayout !== true && viewportMaterializationLayoutIsCurrent) {
+    if (nodeMarkersAreCurrent && graphLayoutIsCurrent) return args.graphData
+    const branchNodeIds = new Set(branchNodes.map(node => readString(node.id)))
+    const nodes = (args.graphData.nodes || []).map(node => {
+      if (!branchNodeIds.has(readString(node.id))) return node
+      return {
+        ...node,
+        properties: {
+          ...readProperties(node.properties),
+          probeTreeThreadRootId: threadRootId,
+          [PROBE_TREE_LAYOUT_MODE_PROPERTY]: PROBE_TREE_BALANCED_LAYOUT_MODE,
+          [PROBE_TREE_LAYOUT_VERSION_PROPERTY]: PROBE_TREE_BALANCED_LAYOUT_VERSION,
+          [PROBE_TREE_PINNED_BY_DEFAULT_PROPERTY]: true,
+        } as Record<string, JSONValue>,
+      }
+    })
+    return bumpStoryboardWidgetDraftGraphDataRevision({
+      ...args.graphData,
+      nodes,
+      metadata: writeProbeTreeThreadLayoutAuthority(args.graphData, threadRootId, gridSize),
+    })
+  }
   // Node-owned layout markers are the durable render authority. A source adapter may
   // temporarily omit graph metadata; valid marked nodes must not trigger revision churn.
   const requiresLayout = args.forceLayout === true || !nodeMarkersAreCurrent || !positionsRemainValid
@@ -438,7 +412,7 @@ export function normalizeStoryboardWidgetProbeTreeThreadLayout(args: {
       cardHeight: BRANCH_VERTICAL_STEP - 40,
       occupiedPositions: [rootPosition, ...occupiedOutsidePositions, ...plannedPositions],
       footprintPositions: [rootPosition, ...plannedPositions],
-      startColumn: 1,
+      startColumn: parentNodeId === threadRootId ? 2 : 1,
       horizontalOffsetPenaltyWeight: 0.12,
       verticalOffsetPenaltyWeight: 0.32,
       maxVerticalOffsetSteps: 2,
@@ -527,6 +501,8 @@ export function normalizeStoryboardWidgetProbeTreeOutputLayout(args: {
   const { rightmostThreadX } = outputPanelPosition
   const canonicalPanelPosition = readNodePosition(canonicalPanel)
   const recordedRightmostThreadX = Number(unwrapGraphCellValue(canonicalProperties[PROBE_TREE_OUTPUT_RIGHTMOST_X_PROPERTY]))
+  const viewportMaterializationLayoutIsCurrent =
+    hasCurrentStoryboardWidgetRunMaterializationLayout(canonicalProperties)
   const requiresCanonicalPlacement = redundantPanelIds.size > 0
     || readString(canonicalProperties.workflowOutputGroupId) !== outputGroupId
     || Number(unwrapGraphCellValue(canonicalProperties.probeTreeOutputLayoutVersion)) !== PROBE_TREE_OUTPUT_LAYOUT_VERSION
@@ -534,7 +510,13 @@ export function normalizeStoryboardWidgetProbeTreeOutputLayout(args: {
     || Number(unwrapGraphCellValue(canonicalProperties[PROBE_TREE_LAYOUT_VERSION_PROPERTY])) !== PROBE_TREE_BALANCED_LAYOUT_VERSION
     || unwrapGraphCellValue(canonicalProperties[PROBE_TREE_PINNED_BY_DEFAULT_PROPERTY]) !== true
     || recordedRightmostThreadX !== rightmostThreadX
-    || canonicalPanelPosition.x <= rightmostThreadX
+    || (
+      !viewportMaterializationLayoutIsCurrent
+      && (
+        canonicalPanelPosition.x !== outputPanelPosition.x
+        || canonicalPanelPosition.y !== outputPanelPosition.y
+      )
+    )
   const nodes = (threadGraphData.nodes || [])
     .filter(node => !redundantPanelIds.has(readString(node.id)))
     .map(node => {

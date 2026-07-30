@@ -81,8 +81,9 @@ export const testSourceFilesWidgetRegistryImportDisablesGeospatialMode = () => {
   if (!presetText.includes('function disableGeospatialForDocumentPreset(): void')
     || !presetText.includes('readGeospatialOverlayEnabledPreferenceRaw()')
     || !presetText.includes("(!raw || raw === '0' || raw === 'false')")
+    || !presetText.includes('publishGeospatialModeEnabledState(false)')
     || !presetText.includes('void setGeospatialModeEnabled(false).catch(() => void 0)')) {
-    throw new Error('Expected shared canvas frontmatter preset application to disable Geospatial Mode without repeated no-op toggles')
+    throw new Error('Expected shared canvas frontmatter preset application to republish explicit 2D state while avoiding repeated heavyweight runtime toggles')
   }
 
   const seedScriptPath = path.resolve(process.cwd(), '..', 'scripts', 'seed-storage-docs-to-cloudflare.mjs')
@@ -129,8 +130,9 @@ export const testSourceFilesWidgetRegistryImportDisablesGeospatialMode = () => {
   )
   const geospatialBridgeText = fs.readFileSync(geospatialBridgePath, 'utf8')
   if (!geospatialBridgeText.includes('function publishGeospatialModeEnabled(enabled: boolean')
+    || !geospatialBridgeText.includes('export function publishGeospatialModeEnabledState(enabled: boolean)')
     || !geospatialBridgeText.includes('emitGeospatialModeChanged({ enabled: next })')
-    || !geospatialBridgeText.includes('publishGeospatialModeEnabled(next, { emitAlways: true })')) {
+    || !geospatialBridgeText.includes('const previous = publishMode(next, { emitAlways: true })')) {
     throw new Error('Expected geospatial bridge toggles to publish immediate local geospatial mode state before async module handoff so toolbar mode labels do not lag')
   }
 }

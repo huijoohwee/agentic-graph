@@ -11,11 +11,13 @@ import {
   readFloatingPanelViewPreset,
   type CanvasWorkspaceFrontmatterPreset,
 } from '@/lib/markdown/frontmatter'
-import { setGeospatialModeEnabled } from '@/features/geospatial/gympgrphBridge'
+import {
+  publishGeospatialModeEnabledState,
+  setGeospatialModeEnabled,
+} from '@/features/geospatial/gympgrphBridge'
 import {
   readGeospatialOverlayEnabledPreference,
   readGeospatialOverlayEnabledPreferenceRaw,
-  writeGeospatialOverlayEnabledPreference,
 } from '@/lib/geospatial/geospatialModePreference'
 import {
   activateXrSceneSurface,
@@ -94,8 +96,10 @@ function readNormalizedCanvasWorkspacePreset(meta: Record<string, unknown> | nul
 
 function disableGeospatialForDocumentPreset(): void {
   const raw = readGeospatialOverlayEnabledPreferenceRaw()
-  if (!readGeospatialOverlayEnabledPreference() && (!raw || raw === '0' || raw === 'false')) return
-  writeGeospatialOverlayEnabledPreference(false)
+  if (!readGeospatialOverlayEnabledPreference() && (!raw || raw === '0' || raw === 'false')) {
+    publishGeospatialModeEnabledState(false)
+    return
+  }
   try {
     void setGeospatialModeEnabled(false).catch(() => void 0)
   } catch {
@@ -105,8 +109,10 @@ function disableGeospatialForDocumentPreset(): void {
 
 function enableGeospatialForDocumentPreset(): void {
   const raw = readGeospatialOverlayEnabledPreferenceRaw()
-  if (readGeospatialOverlayEnabledPreference() && (raw === '1' || raw === 'true')) return
-  writeGeospatialOverlayEnabledPreference(true)
+  if (readGeospatialOverlayEnabledPreference() && (raw === '1' || raw === 'true')) {
+    publishGeospatialModeEnabledState(true)
+    return
+  }
   try {
     void setGeospatialModeEnabled(true).catch(() => void 0)
   } catch {

@@ -4,8 +4,13 @@ import { inferTextGenerationProviderFamily } from '@/features/storyboard-widget-
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { GraphNode } from '@/lib/graph/types'
 import type { WidgetRegistryEntry } from '@/features/storyboard-widget-manager/widgetRegistryTypes'
+import {
+  GRAPH_NODE_CARD_REQUEST_PROPERTY_KEYS,
+  readGraphNodeAuthoredTextProperty,
+} from '@/lib/cards/graphNodeCardFields'
 import type { StoryboardWidgetWorkflowNodeResolutionContext } from './storyboardWidgetRenderGraph'
 import {
+  normalizeStoryboardWidgetConnectedTextValue,
   resolveStoryboardWidgetTextGenerationPrompts,
   resolveStoryboardWidgetTextSourceContexts,
   resolveStoryboardWidgetWorkflowConnectedValuesInput,
@@ -93,8 +98,13 @@ export function resolveStoryboardWidgetTextGenerationRunContext(args: {
     connectedValue: connectedPromptValue,
     targetPath: 'properties.prompt',
   })
+  const configuredPrompt = normalizeStoryboardWidgetConnectedTextValue(properties.prompt)
+  const authoredRequest = configuredPrompt || readGraphNodeAuthoredTextProperty(
+    args.rawNodeProperties,
+    GRAPH_NODE_CARD_REQUEST_PROPERTY_KEYS,
+  )
   const prompts = resolveStoryboardWidgetTextGenerationPrompts({
-    authoredPrompt: properties.prompt,
+    authoredPrompt: authoredRequest,
     connectedValue: connectedPromptValue?.value,
     sourceContexts,
   })

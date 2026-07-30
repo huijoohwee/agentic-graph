@@ -15,7 +15,14 @@ import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
 import { isStrybldrStoryboardMarkdown } from '@/features/strybldr/strybldrStoryboard'
-import { createGraphActivationFitRequest } from '@/lib/zoom/graphActivationFit'
+import {
+  createGraphActivationFitRequest,
+  createGraphActivationTransformRequest,
+} from '@/lib/zoom/graphActivationFit'
+import {
+  computeNaturalCanvasInitialTransform,
+} from '@/lib/zoom/fixedZoomPreset'
+import { isAuthoredMarkdownNoteInitialDocument } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 import { MarkdownApplyRequestQueue } from './markdownApplyRequestQueue'
 import { createGraphDataDocumentProjectionActions } from './graphDataDocumentProjectionActions'
 import { createGraphDataMarkdownDocumentStateActions } from './graphDataMarkdownDocumentStateActions'
@@ -247,11 +254,12 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           canonicalText,
         })
       : normalizedText
-    const shouldResetTransientCanvasState = args?.applyToGraph === true && (
-      previousState.markdownDocumentName !== name
-      || previousState.markdownDocumentText !== text
-      || args?.forceApplyToGraph === true
-    )
+    // A same-document publication can reapply the canonical Markdown after it
+    // commits generated graph nodes. Keep the view-local Widget/Rich Media
+    // identities in that case; the graph commit sanitizes identities whose
+    // nodes were actually removed. Only a real document switch owns a full
+    // transient presentation reset.
+    const shouldResetTransientCanvasState = args?.applyToGraph === true && didSwitchActiveDocument
     if (shouldResetTransientCanvasState) {
       previousState.selectNode(null)
       previousState.setOpenWidgetNodeIds([])
@@ -314,7 +322,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
       if (isCompletedMarkdownApplyRequestCurrent(get, request, requestKey)) return true
       if (isMarkdownApplyRequestInFlight(requestKey)) return markdownApplyRequestQueue.waitFor(requestKey)
 
-      if (applyViewPresetForSwitch) {
+      if (applyViewPresetForSwitch && didSwitchActiveDocument) {
         get().setGraphData(buildPendingMarkdownDocumentGraph({
           name,
           currentGraph: get().graphData,
@@ -340,6 +348,15 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
         if (!didSwitchActiveDocument) return
         const active = get()
         if (active.markdownDocumentName !== name || active.markdownDocumentText !== text) return
+        if (isAuthoredMarkdownNoteInitialDocument({ documentName: name, rawText: text })) {
+          const zoomRequest = createGraphActivationTransformRequest({
+            graphData: active.graphData,
+            payload: computeNaturalCanvasInitialTransform(active),
+            intent: 'naturalInitialization',
+          })
+          if (zoomRequest) set({ zoomRequest })
+          return
+        }
         const zoomRequest = createGraphActivationFitRequest({ graphData: active.graphData })
         if (zoomRequest) set({ zoomRequest })
       }

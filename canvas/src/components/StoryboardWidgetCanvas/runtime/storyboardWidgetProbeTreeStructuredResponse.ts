@@ -19,6 +19,18 @@ import { FLOW_TEXT_GENERATION_NODE_TYPE_ID } from '@/lib/config.storyboard-widge
 import { readGraphEdgeEndpoints } from '@/lib/graph/edgeEndpoints'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
+import {
+  buildStoryboardWidgetRunMaterializationLayoutProperties,
+  planStoryboardWidgetRunMaterializationPositions,
+  STORYBOARD_WIDGET_RUN_COORDINATOR_FANOUT_TOPOLOGY_MODE,
+  type StoryboardWidgetRunExecutionAnchorSnapshot,
+} from './storyboardWidgetRunExecutionAnchor'
+import {
+  RICH_MEDIA_PANEL_DEFAULT_HEIGHT_PX,
+  RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX,
+} from '@/lib/render/richMediaPanelDefaults'
+import { readDefaultStoryboardCardSize2d } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
+import { CANVAS_ASPECT_RATIO_MODE_DEFAULT } from '@/lib/canvas/canvasAspectRatioDisplayControls'
 
 const GENERIC_PROBE_CARD_PATTERN = /^(?:clarify probe|generate branches|select handoff)(?::|$)/i
 
@@ -171,6 +183,7 @@ export type StoryboardWidgetProbeTreeStructuredMaterialization = {
   panelOutput: string
   responseSource: 'provider' | 'mcp' | 'runtime'
   model: string
+  outputPanelPosition?: { x: number; y: number }
 }
 
 export function materializeStoryboardWidgetProbeTreeStructuredResponse(args: {
@@ -184,6 +197,7 @@ export function materializeStoryboardWidgetProbeTreeStructuredResponse(args: {
   threadRootId?: string
   invocationTokens: readonly string[]
   invocationResolutions?: readonly ProbeTreeMcpInvocationResolution[]
+  executionAnchor?: StoryboardWidgetRunExecutionAnchorSnapshot | null
   onRejected?: (reason: string) => void
 }): StoryboardWidgetProbeTreeStructuredMaterialization | null {
   const reject = (reason: string): null => {
@@ -246,6 +260,38 @@ export function materializeStoryboardWidgetProbeTreeStructuredResponse(args: {
     removedNodeIds,
     count: cards.length,
   })
+  const fixedCardSize = args.executionAnchor?.defaultFixedCardSize
+    || readDefaultStoryboardCardSize2d(CANVAS_ASPECT_RATIO_MODE_DEFAULT)
+  const materializationPositions = args.executionAnchor
+    ? planStoryboardWidgetRunMaterializationPositions({
+        snapshot: args.executionAnchor,
+        sourceItem: fixedCardSize,
+        items: [
+          ...cards.map(() => ({
+            ...fixedCardSize,
+            worldPositionMode: 'center' as const,
+          })),
+          {
+            width: RICH_MEDIA_PANEL_DEFAULT_WIDTH_PX,
+            height: RICH_MEDIA_PANEL_DEFAULT_HEIGHT_PX,
+            worldPositionMode: 'top-left' as const,
+          },
+        ],
+        topology: {
+          mode: STORYBOARD_WIDGET_RUN_COORDINATOR_FANOUT_TOPOLOGY_MODE,
+          coordinatorItemIndex: cards.length,
+          fanoutItemIndices: cards.map((_, index) => index),
+        },
+        preset: 'richMedia',
+      })
+    : []
+  const hasCapturedMaterializationPlan = materializationPositions.length === cards.length + 1
+  const branchPositions = hasCapturedMaterializationPlan
+    ? materializationPositions.slice(0, cards.length)
+    : projectedPositions
+  const outputPanelPosition = hasCapturedMaterializationPlan
+    ? materializationPositions[cards.length]
+    : undefined
   const materializedNodeIds: string[] = []
   const projectedNodes: GraphNode[] = cards.map((card, index) => {
     const candidateOptionId = readString(card.properties.probeTreeCandidateKey) || `candidate-${index + 1}`
@@ -263,10 +309,15 @@ export function materializeStoryboardWidgetProbeTreeStructuredResponse(args: {
       id: nodeId,
       type: FLOW_TEXT_GENERATION_NODE_TYPE_ID,
       label: question.slice(0, 160),
-      x: typeof previous?.x === 'number' && Number.isFinite(previous.x) ? previous.x : projectedPositions[index]!.x,
-      y: typeof previous?.y === 'number' && Number.isFinite(previous.y) ? previous.y : projectedPositions[index]!.y,
+      x: hasCapturedMaterializationPlan
+        ? branchPositions[index]!.x
+        : typeof previous?.x === 'number' && Number.isFinite(previous.x) ? previous.x : branchPositions[index]!.x,
+      y: hasCapturedMaterializationPlan
+        ? branchPositions[index]!.y
+        : typeof previous?.y === 'number' && Number.isFinite(previous.y) ? previous.y : branchPositions[index]!.y,
       properties: {
         ...card.properties,
+        ...(hasCapturedMaterializationPlan ? buildStoryboardWidgetRunMaterializationLayoutProperties() : {}),
         title: question.slice(0, 160),
         output: '',
         summary: question,
@@ -332,5 +383,6 @@ export function materializeStoryboardWidgetProbeTreeStructuredResponse(args: {
     }),
     responseSource: args.responseSource,
     model: args.model,
+    ...(outputPanelPosition ? { outputPanelPosition } : {}),
   }
 }

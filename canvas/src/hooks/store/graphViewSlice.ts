@@ -372,9 +372,12 @@ export const createGraphViewSlice = (set: SetGraph, get: GetGraph) => {
     {},
     v => (v && typeof v === 'object' ? (v as Record<string, { top: number; left: number }>) : {}),
   ),
-  setFlowWidgetPosByNodeId: (pos: Record<string, { top: number; left: number }>) => {
+  setFlowWidgetPosByNodeId: (
+    pos: Record<string, { top: number; left: number }>,
+    options?: { allowDuringWorkspaceMutation?: boolean; persist?: boolean },
+  ) => {
     const state = get()
-    if (isWorkspaceGraphMutationBlocked(state)) return
+    if (isWorkspaceGraphMutationBlocked(state) && options?.allowDuringWorkspaceMutation !== true) return
     const nextPosByNodeId = normalizePosByNodeId(pos)
     const graphKey = buildGraphDocumentMetaKey(state.graphData)
     const by = state.flowWidgetPosByNodeIdByGraphMetaKey || {}
@@ -389,7 +392,9 @@ export const createGraphViewSlice = (set: SetGraph, get: GetGraph) => {
         flowWidgetPosByNodeId: nextPosByNodeId,
         flowWidgetPosByNodeIdByGraphMetaKey: nextBy,
       })
-      scheduleFlowWidgetPersistence({ pos: { graphKey, value: nextPosByNodeId } })
+      if (options?.persist !== false) {
+        scheduleFlowWidgetPersistence({ pos: { graphKey, value: nextPosByNodeId } })
+      }
       return
     }
     set({ flowWidgetPosByNodeId: nextPosByNodeId })
@@ -432,9 +437,12 @@ export const createGraphViewSlice = (set: SetGraph, get: GetGraph) => {
       return out
     },
   ),
-  setFlowWidgetWorldPosByNodeId: (pos: Record<string, { x: number; y: number }>) => {
+  setFlowWidgetWorldPosByNodeId: (
+    pos: Record<string, { x: number; y: number }>,
+    options?: { allowDuringWorkspaceMutation?: boolean; persist?: boolean },
+  ) => {
     const state = get()
-    if (isWorkspaceGraphMutationBlocked(state)) return
+    if (isWorkspaceGraphMutationBlocked(state) && options?.allowDuringWorkspaceMutation !== true) return
     const nextWorldByNodeId = normalizeWorldByNodeId(pos)
     const graphKey = buildGraphDocumentMetaKey(state.graphData)
     const by = state.flowWidgetWorldPosByNodeIdByGraphMetaKey || {}
@@ -449,7 +457,9 @@ export const createGraphViewSlice = (set: SetGraph, get: GetGraph) => {
         flowWidgetWorldPosByNodeId: nextWorldByNodeId,
         flowWidgetWorldPosByNodeIdByGraphMetaKey: nextBy,
       })
-      scheduleFlowWidgetPersistence({ world: { graphKey, value: nextWorldByNodeId } })
+      if (options?.persist !== false) {
+        scheduleFlowWidgetPersistence({ world: { graphKey, value: nextWorldByNodeId } })
+      }
       return
     }
     set({ flowWidgetWorldPosByNodeId: nextWorldByNodeId })

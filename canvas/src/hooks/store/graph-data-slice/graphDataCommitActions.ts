@@ -13,7 +13,7 @@ import {
   stripFrontmatterAutoManagedWidgetWorldPositions,
   stripFrontmatterAutoManagedWidgetScreenPositions,
 } from '@/lib/storyboardWidget/widgetPlacementAuthority'
-import { buildCanonicalNodeLookup, parseCanonicalNodeIds, splitComposedNodeId } from '@/lib/graph/canonicalNodeIds'
+import { buildCanonicalNodeLookup, canonicalNodeIdSetHas, parseCanonicalNodeIds } from '@/lib/graph/canonicalNodeIds'
 import {
   applyLayoutAutosuggestFromMetadata,
   applyWidgetRegistryFromMetadata,
@@ -29,12 +29,7 @@ import {
 } from '@/features/graph-data-table/graphDataTable'
 import { resetComposedPositionWrites } from './graphDataComposedSource'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
-
-function readCanonicalGraphIdentity(raw: unknown): string {
-  const id = String(raw || '').trim()
-  if (!id) return ''
-  return splitComposedNodeId(id).inner || id
-}
+import { buildRetainedNodePlacementContinuityAcrossTopologyChange, hasStableSameSourceNodeLayout, hasStableSameSourceTopology } from './graphDataRetainedPlacementContinuity'
 
 function readGraphSourceIdentity(graph: GraphData | null | undefined): string {
   const meta = ((graph || null)?.metadata || {}) as Record<string, unknown>
@@ -64,6 +59,7 @@ function getCanonicalLookupValue<T>(lookup: ReadonlyMap<string, T>, rawId: unkno
 function remapNodeKeyedRecordByCanonicalNodeId<T>(
   graphData: GraphData | null | undefined,
   valueByNodeId: Record<string, T>,
+  allowedCanonicalNodeIds?: ReadonlySet<string> | null,
 ): Record<string, T> {
   const nodes = Array.isArray(graphData?.nodes) ? graphData.nodes : []
   const entries = Object.entries(valueByNodeId || {}).filter(([rawId]) => String(rawId || '').trim().length > 0)
@@ -73,6 +69,7 @@ function remapNodeKeyedRecordByCanonicalNodeId<T>(
   for (let i = 0; i < nodes.length; i += 1) {
     const rawId = String(nodes[i]?.id || '').trim()
     if (!rawId) continue
+    if (allowedCanonicalNodeIds && !canonicalNodeIdSetHas(allowedCanonicalNodeIds, rawId)) continue
     const value = getCanonicalLookupValue(lookup, rawId)
     if (typeof value === 'undefined') continue
     next[rawId] = value
@@ -91,63 +88,6 @@ function remapNodeKeyedRecordByCanonicalNodeId<T>(
     if (unchanged) return valueByNodeId
   }
   return next
-}
-
-function hasStableSameSourceTopology(current: GraphData | null, next: GraphData | null): boolean {
-  if (!current || !next) return false
-  const currentMeta = (current.metadata || {}) as Record<string, unknown>
-  const nextMeta = (next.metadata || {}) as Record<string, unknown>
-  const currentKind = String(currentMeta.kind || '').trim()
-  const nextKind = String(nextMeta.kind || '').trim()
-  if (currentKind !== nextKind) return false
-
-  const currentNodeIds = (current.nodes || []).map(n => readCanonicalGraphIdentity(n?.id)).filter(Boolean).sort()
-  const nextNodeIds = (next.nodes || []).map(n => readCanonicalGraphIdentity(n?.id)).filter(Boolean).sort()
-  if (currentNodeIds.length !== nextNodeIds.length) return false
-  for (let i = 0; i < currentNodeIds.length; i += 1) {
-    if (currentNodeIds[i] !== nextNodeIds[i]) return false
-  }
-
-  const currentEdgeSig = (current.edges || [])
-    .map(e => `${readCanonicalGraphIdentity(e?.id)}|${readCanonicalGraphIdentity(e?.source)}|${readCanonicalGraphIdentity(e?.target)}`)
-    .filter(Boolean)
-    .sort()
-  const nextEdgeSig = (next.edges || [])
-    .map(e => `${readCanonicalGraphIdentity(e?.id)}|${readCanonicalGraphIdentity(e?.source)}|${readCanonicalGraphIdentity(e?.target)}`)
-    .filter(Boolean)
-    .sort()
-  if (currentEdgeSig.length !== nextEdgeSig.length) return false
-  for (let i = 0; i < currentEdgeSig.length; i += 1) {
-    if (currentEdgeSig[i] !== nextEdgeSig[i]) return false
-  }
-  return true
-}
-
-function hasStableSameSourceNodeLayout(current: GraphData | null, next: GraphData | null): boolean {
-  if (!current || !next) return false
-  if (!hasStableSameSourceTopology(current, next)) return false
-  const currentById = new Map<string, { x: number | null; y: number | null }>()
-  for (let i = 0; i < (current.nodes || []).length; i += 1) {
-    const node = current.nodes[i]
-    const id = readCanonicalGraphIdentity(node?.id)
-    if (!id) continue
-    if (currentById.has(id)) return false
-    currentById.set(id, {
-      x: typeof node?.x === 'number' && Number.isFinite(node.x) ? Math.round(node.x) : null,
-      y: typeof node?.y === 'number' && Number.isFinite(node.y) ? Math.round(node.y) : null,
-    })
-  }
-  for (let i = 0; i < (next.nodes || []).length; i += 1) {
-    const node = next.nodes[i]
-    const id = readCanonicalGraphIdentity(node?.id)
-    if (!id) continue
-    const cur = currentById.get(id)
-    if (!cur) return false
-    const x = typeof node?.x === 'number' && Number.isFinite(node.x) ? Math.round(node.x) : null
-    const y = typeof node?.y === 'number' && Number.isFinite(node.y) ? Math.round(node.y) : null
-    if (cur.x !== x || cur.y !== y) return false
-  }
-  return true
 }
 
 function isSameFlowWidgetScreenPosByNodeId(
@@ -239,6 +179,12 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
     const currentSourceIdentity = readGraphSourceIdentity(currentGraph)
     const nextSourceIdentity = readGraphSourceIdentity(nextGraphDataBase)
     const stableSameSourceTopology = hasStableSameSourceTopology(currentGraph, nextGraphDataBase)
+    const retainedPlacementContinuity = currentSourceIdentity && currentSourceIdentity === nextSourceIdentity
+      ? buildRetainedNodePlacementContinuityAcrossTopologyChange(currentGraph, nextGraphDataBase)
+      : { nodeSetChanged: false, stableCanonicalNodeIds: new Set<string>() }
+    const stableRetainedNodeIdsAcrossTopologyChange = retainedPlacementContinuity.stableCanonicalNodeIds
+    const hasSameSourceNodeSetChange = retainedPlacementContinuity.nodeSetChanged
+    const hasStableSameSourceRetainedPlacement = stableRetainedNodeIdsAcrossTopologyChange.size > 0
     const carryForwardSameSourceUiState =
       !!collapsedKey &&
       !!currentGraphKey &&
@@ -261,8 +207,9 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
     const carryForwardSameSourceWidgetOverlayState =
       shouldCarryForwardFlowWidgetOverlayStateOnGraphCommit({
         graphData: nextGraphDataBase,
-        carryForwardSameSourceUiState,
-        stableSameSourceNodeLayout: hasStableSameSourceNodeLayout(currentGraph, nextGraphDataBase),
+        carryForwardSameSourceUiState: carryForwardSameSourceUiState || hasStableSameSourceRetainedPlacement,
+        stableSameSourceNodeLayout: hasStableSameSourceNodeLayout(currentGraph, nextGraphDataBase)
+          || hasStableSameSourceRetainedPlacement,
         preserveBalancedCollective: carryForwardBalancedFloatingCollectiveState,
       })
     const carryForwardSameSourceDesignFrameState = carryForwardSameSourceUiState
@@ -301,23 +248,45 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
       const pinnedKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(pinnedByKey, collapsedKey) : false
       const posKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(posByKey, collapsedKey) : false
       const worldKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(worldByKey, collapsedKey) : false
-      const nextPinnedRaw = collapsedKey && carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing
-        ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetPinnedByNodeId || {}) }) : collapsedKey ? (pinnedByKey[collapsedKey] || {}) : s.flowWidgetPinnedByNodeId
+      const nextPinnedRaw =
+        collapsedKey && hasSameSourceNodeSetChange
+          ? remapNodeKeyedRecordByCanonicalNodeId(
+              nextGraphData,
+              { ...(s.flowWidgetPinnedByNodeId || {}) },
+              stableRetainedNodeIdsAcrossTopologyChange,
+            )
+          : collapsedKey && carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing
+            ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetPinnedByNodeId || {}) })
+            : collapsedKey ? (pinnedByKey[collapsedKey] || {}) : s.flowWidgetPinnedByNodeId
       const nextPinned = stripFrontmatterAutoManagedWidgetPinnedStates({ graphData: nextGraphData, pinnedByNodeId: nextPinnedRaw || {} })
       const nextPosRaw =
-        collapsedKey && carryForwardSameSourceWidgetOverlayState && posKeyMissing
-          ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetPosByNodeId || {}) })
-          : collapsedKey ? (posByKey[collapsedKey] || {}) : s.flowWidgetPosByNodeId
-      const nextPos = resolveCommittedFlowWidgetScreenPositions({
-        graphData: nextGraphData,
-        posByNodeId: nextPosRaw || {},
-        pinnedByNodeId: nextPinned || {},
-        preserveStableSameSourceOverlayState: carryForwardSameSourceWidgetOverlayState,
-      })
+        collapsedKey && hasSameSourceNodeSetChange
+          ? remapNodeKeyedRecordByCanonicalNodeId(
+              nextGraphData,
+              { ...(s.flowWidgetPosByNodeId || {}) },
+              stableRetainedNodeIdsAcrossTopologyChange,
+            )
+          : collapsedKey && carryForwardSameSourceWidgetOverlayState && posKeyMissing
+            ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetPosByNodeId || {}) })
+            : collapsedKey ? (posByKey[collapsedKey] || {}) : s.flowWidgetPosByNodeId
+      const nextPos = hasSameSourceNodeSetChange
+        ? nextPosRaw || {}
+        : resolveCommittedFlowWidgetScreenPositions({
+            graphData: nextGraphData,
+            posByNodeId: nextPosRaw || {},
+            pinnedByNodeId: nextPinned || {},
+            preserveStableSameSourceOverlayState: carryForwardSameSourceWidgetOverlayState,
+          })
       const nextWorldRaw =
-        collapsedKey && carryForwardSameSourceWidgetOverlayState
-          ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetWorldPosByNodeId || {}) })
-          : collapsedKey ? (worldByKey[collapsedKey] || {}) : s.flowWidgetWorldPosByNodeId
+        collapsedKey && hasSameSourceNodeSetChange
+          ? remapNodeKeyedRecordByCanonicalNodeId(
+              nextGraphData,
+              { ...(s.flowWidgetWorldPosByNodeId || {}) },
+              stableRetainedNodeIdsAcrossTopologyChange,
+            )
+          : collapsedKey && carryForwardSameSourceWidgetOverlayState
+            ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetWorldPosByNodeId || {}) })
+            : collapsedKey ? (worldByKey[collapsedKey] || {}) : s.flowWidgetWorldPosByNodeId
       const nextWorld =
         carryForwardSameSourceWidgetOverlayState
           ? nextWorldRaw
@@ -341,8 +310,8 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
         collapsedKey && carryForwardSameSourceDesignFrameState && designFrameSizeKeyMissing
           ? { ...designFrameSizeByKey, [collapsedKey]: nextDesignFrameSize }
           : designFrameSizeByKey
-      const nextPinnedByKey =
-        collapsedKey && carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing
+      const nextPinnedByKey = collapsedKey
+        && (hasSameSourceNodeSetChange || (carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing))
           ? { ...pinnedByKey, [collapsedKey]: nextPinned }
           : pinnedByKey
       const nextPosByKey =
@@ -489,6 +458,12 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
     const currentSourceIdentity = readGraphSourceIdentity(currentGraph)
     const nextSourceIdentity = readGraphSourceIdentity(nextGraphData)
     const stableSameSourceTopology = hasStableSameSourceTopology(currentGraph, nextGraphData)
+    const retainedPlacementContinuity = currentSourceIdentity && currentSourceIdentity === nextSourceIdentity
+      ? buildRetainedNodePlacementContinuityAcrossTopologyChange(currentGraph, nextGraphData)
+      : { nodeSetChanged: false, stableCanonicalNodeIds: new Set<string>() }
+    const stableRetainedNodeIdsAcrossTopologyChange = retainedPlacementContinuity.stableCanonicalNodeIds
+    const hasSameSourceNodeSetChange = retainedPlacementContinuity.nodeSetChanged
+    const hasStableSameSourceRetainedPlacement = stableRetainedNodeIdsAcrossTopologyChange.size > 0
     const carryForwardSameSourceUiState =
       !!collapsedKey &&
       !!currentGraphKey &&
@@ -511,8 +486,9 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
     const carryForwardSameSourceWidgetOverlayState =
       shouldCarryForwardFlowWidgetOverlayStateOnGraphCommit({
         graphData: nextGraphData,
-        carryForwardSameSourceUiState,
-        stableSameSourceNodeLayout: hasStableSameSourceNodeLayout(currentGraph, nextGraphData),
+        carryForwardSameSourceUiState: carryForwardSameSourceUiState || hasStableSameSourceRetainedPlacement,
+        stableSameSourceNodeLayout: hasStableSameSourceNodeLayout(currentGraph, nextGraphData)
+          || hasStableSameSourceRetainedPlacement,
         preserveBalancedCollective: carryForwardBalancedFloatingCollectiveState,
       })
     const carryForwardSameSourceDesignFrameState = carryForwardSameSourceUiState
@@ -548,23 +524,45 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
       const pinnedKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(pinnedByKey, collapsedKey) : false
       const posKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(posByKey, collapsedKey) : false
       const worldKeyMissing = collapsedKey ? !Object.prototype.hasOwnProperty.call(worldByKey, collapsedKey) : false
-      const nextPinnedRaw = collapsedKey && carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing
-        ? { ...(s.flowWidgetPinnedByNodeId || {}) } : collapsedKey ? (pinnedByKey[collapsedKey] || {}) : s.flowWidgetPinnedByNodeId
+      const nextPinnedRaw =
+        collapsedKey && hasSameSourceNodeSetChange
+          ? remapNodeKeyedRecordByCanonicalNodeId(
+              nextGraphData,
+              { ...(s.flowWidgetPinnedByNodeId || {}) },
+              stableRetainedNodeIdsAcrossTopologyChange,
+            )
+          : collapsedKey && carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing
+            ? { ...(s.flowWidgetPinnedByNodeId || {}) }
+            : collapsedKey ? (pinnedByKey[collapsedKey] || {}) : s.flowWidgetPinnedByNodeId
       const nextPinned = stripFrontmatterAutoManagedWidgetPinnedStates({ graphData: nextGraphData, pinnedByNodeId: nextPinnedRaw || {} })
       const nextPosRaw =
-        collapsedKey && carryForwardSameSourceWidgetOverlayState && posKeyMissing
-          ? { ...(s.flowWidgetPosByNodeId || {}) }
-          : collapsedKey ? (posByKey[collapsedKey] || {}) : s.flowWidgetPosByNodeId
-      const nextPos = resolveCommittedFlowWidgetScreenPositions({
-        graphData: nextGraphData,
-        posByNodeId: nextPosRaw || {},
-        pinnedByNodeId: nextPinned || {},
-        preserveStableSameSourceOverlayState: carryForwardSameSourceWidgetOverlayState,
-      })
+        collapsedKey && hasSameSourceNodeSetChange
+          ? remapNodeKeyedRecordByCanonicalNodeId(
+              nextGraphData,
+              { ...(s.flowWidgetPosByNodeId || {}) },
+              stableRetainedNodeIdsAcrossTopologyChange,
+            )
+          : collapsedKey && carryForwardSameSourceWidgetOverlayState && posKeyMissing
+            ? { ...(s.flowWidgetPosByNodeId || {}) }
+            : collapsedKey ? (posByKey[collapsedKey] || {}) : s.flowWidgetPosByNodeId
+      const nextPos = hasSameSourceNodeSetChange
+        ? nextPosRaw || {}
+        : resolveCommittedFlowWidgetScreenPositions({
+            graphData: nextGraphData,
+            posByNodeId: nextPosRaw || {},
+            pinnedByNodeId: nextPinned || {},
+            preserveStableSameSourceOverlayState: carryForwardSameSourceWidgetOverlayState,
+          })
       const nextWorldRaw =
-        collapsedKey && carryForwardSameSourceWidgetOverlayState
-          ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetWorldPosByNodeId || {}) })
-          : collapsedKey ? (worldByKey[collapsedKey] || {}) : s.flowWidgetWorldPosByNodeId
+        collapsedKey && hasSameSourceNodeSetChange
+          ? remapNodeKeyedRecordByCanonicalNodeId(
+              nextGraphData,
+              { ...(s.flowWidgetWorldPosByNodeId || {}) },
+              stableRetainedNodeIdsAcrossTopologyChange,
+            )
+          : collapsedKey && carryForwardSameSourceWidgetOverlayState
+            ? remapNodeKeyedRecordByCanonicalNodeId(nextGraphData, { ...(s.flowWidgetWorldPosByNodeId || {}) })
+            : collapsedKey ? (worldByKey[collapsedKey] || {}) : s.flowWidgetWorldPosByNodeId
       const nextWorld =
         carryForwardSameSourceWidgetOverlayState
           ? nextWorldRaw
@@ -588,8 +586,8 @@ export function createGraphDataCommitActions(set: SetGraph, get: GetGraph) {
         collapsedKey && carryForwardSameSourceDesignFrameState && designFrameSizeKeyMissing
           ? { ...designFrameSizeByKey, [collapsedKey]: nextDesignFrameSize }
           : designFrameSizeByKey
-      const nextPinnedByKey =
-        collapsedKey && carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing
+      const nextPinnedByKey = collapsedKey
+        && (hasSameSourceNodeSetChange || (carryForwardSameSourceWidgetOverlayState && pinnedKeyMissing))
           ? { ...pinnedByKey, [collapsedKey]: nextPinned }
           : pinnedByKey
       const nextPosByKey =

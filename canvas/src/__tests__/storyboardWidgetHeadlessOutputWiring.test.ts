@@ -1,6 +1,5 @@
 import { runStoryboardWidgetHeadlessTextResponse } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetHeadlessTextRun'
 import { buildStoryboardWidgetTextRunSourceState } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetTextRunSourceState'
-import { createStoryboardWidgetWorkflowNodeRunner } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunAction'
 import { HEADLESS_RESPONSE_RUN_SCHEMA } from '@/features/chat/headlessResponseCoordinator'
 import {
   FLOW_EDGE_SOURCE_PORT_KEY,
@@ -10,6 +9,7 @@ import {
 } from '@/lib/graph/flowPorts'
 import type { GraphData, GraphNode } from '@/lib/graph/types'
 import { computeFlowConnectedValuesBySchemaPath } from '@/lib/storyboardWidget/flowDataflow'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { createStoryboardWidgetTextOutputHarness as createTextOutputHarness } from '@/tests/lib/storyboardWidgetTextOutputHarness'
 
 const responseStream = (events: readonly unknown[]): Response => {
@@ -405,15 +405,61 @@ export async function testHeadlessWidgetRunUsesOneProviderLaneAndCanonicalProjec
     || sourceProperties.output !== generatedText
     || sourceProperties.headlessResponseRunId !== result.runId
     || sourceProperties.headlessResponseRunStatus !== 'ok'
-    || published.length !== 2
-    || published[0]?.outputText !== '# Final answer'
-    || published[0]?.loading !== true
-    || published[1]?.outputText !== generatedText
-    || published[1]?.loading !== false
+    || published.length !== 1
+    || published[0]?.outputText !== generatedText
+    || published[0]?.loading !== false
     || loadingStates.join(',') !== 'true,false'
     || successes.join(',') !== 'Generated text output.'
   ) {
-    throw new Error(`expected one Widget provider lane to project the same streamed and canonical response, got ${JSON.stringify({ providerCalls, result, sourceProperties, published, loadingStates, successes })}`)
+    throw new Error(`expected one Widget provider lane to publish only the terminally complete canonical response, got ${JSON.stringify({ providerCalls, result, sourceProperties, published, loadingStates, successes })}`)
+  }
+}
+
+export async function testHeadlessWidgetPublishesAvailableThinkingAsSeparateOwnedPanel() {
+  const node: GraphNode = {
+    id: 'reasoning-source-widget',
+    type: 'TextGeneration',
+    label: 'Reasoning Source',
+    properties: { prompt: 'Compare the available options.' },
+  }
+  const published: Array<Parameters<ReturnType<typeof createTextOutputHarness>['publishers']['publishTextRunOutputToRichMediaPanel']>[0]> = []
+
+  const result = await runStoryboardWidgetHeadlessTextResponse({
+    sourceNodeId: node.id,
+    node,
+    authoredRequestText: String(node.properties.prompt),
+    providerPrompt: String(node.properties.prompt),
+    provider: 'test-provider',
+    model: 'test-model',
+    workspacePath: null,
+    outputSourceProvenanceJson: '',
+    generateText: async (_prompt, _onText, _systemMessages, onReasoningText) => {
+      onReasoningText?.('Compared the supplied constraints before selecting the final structure.')
+      return '# Response\n\nThe complete provider response.'
+    },
+    updateSource: () => undefined,
+    publishOutput: args => {
+      published.push(args)
+      return null
+    },
+    setLoading: () => undefined,
+    reportFailure: message => { throw new Error(message) },
+    reportSuccess: () => undefined,
+  })
+
+  const responsePublication = published.find(entry => entry.outputKey !== 'thinking' && entry.loading === false)
+  const thinkingPublication = published.find(entry => entry.outputKey === 'thinking')
+  if (
+    result?.status !== 'ok'
+    || responsePublication?.outputText !== '# Response\n\nThe complete provider response.'
+    || thinkingPublication?.outputText !== 'Compared the supplied constraints before selecting the final structure.'
+    || thinkingPublication.panelLabel !== 'Thinking'
+    || thinkingPublication.ownedOutputOnly !== true
+    || thinkingPublication.outputIndex !== 1
+    || thinkingPublication.connectCreatedOutputToAnchor !== true
+    || thinkingPublication.panelProperties?.headlessResponsePart !== 'thinking'
+  ) {
+    throw new Error(`expected response and provider-exposed thinking to use distinct canonical Rich Media publications, got ${JSON.stringify({ result, published })}`)
   }
 }
 
@@ -484,108 +530,17 @@ export async function testHeadlessWidgetStreamingFailureClearsTerminalLoading() 
   } catch (error) {
     thrown = error instanceof Error ? error.message : String(error)
   }
-  const terminal = published[published.length - 1]
-  const terminalProperties = terminal?.panelProperties as Record<string, unknown> | undefined
   if (
     thrown !== 'provider stream failed'
-    || sourceProperties.output !== '# Partial response'
+    || sourceProperties.output !== undefined
     || sourceProperties.outputLoading !== undefined
     || sourceProperties.headlessResponseRunStatus !== 'error'
-    || terminal?.outputText !== '# Partial response'
-    || terminal?.loading !== false
-    || terminalProperties?.headlessResponseRunStatus !== 'error'
+    || published.length !== 0
   ) {
-    throw new Error(`expected a failed Widget stream to terminate its canonical partial projection, got ${JSON.stringify({ thrown, sourceProperties, published })}`)
+    throw new Error(`expected a failed Widget stream to discard provisional text and preserve canonical output state, got ${JSON.stringify({ thrown, sourceProperties, published })}`)
   }
 }
 
-export async function testGenericPromptWidgetUsesSharedHeadlessCoordinatorBeforeSourceFallback() {
-  const generatedText = '# Generic Widget response\n\nGenerated through the shared headless response contract.'
-  const node: GraphNode = {
-    id: 'generic-prompt-widget',
-    type: 'XrDemoValidation',
-    label: 'Generic Prompt Widget',
-    properties: {
-      prompt: 'Explain the selected runtime evidence in two sentences.',
-      chatProvider: 'openai',
-      chatAuthMode: 'serverManaged',
-      chatEndpointUrl: 'https://api.openai.com/v1/responses',
-      chatModel: 'gpt-5-nano',
-      chatStream: true,
-    },
-  }
-  let graphData: GraphData = { type: 'Graph', nodes: [node], edges: [] }
-  const toasts: Array<{ message: string }> = []
-  const requestBodies: Array<Record<string, unknown>> = []
-  const originalFetch = globalThis.fetch
-  try {
-    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      if (String(input) !== '/__chat_proxy/v1/responses') {
-        throw new Error(`unexpected endpoint ${String(input)}`)
-      }
-      requestBodies.push(JSON.parse(String(init?.body || '{}')) as Record<string, unknown>)
-      return responseStream([
-        { type: 'response.output_text.delta', delta: generatedText },
-        {
-          type: 'response.completed',
-          response: {
-            status: 'completed',
-            output: [{
-              type: 'message',
-              role: 'assistant',
-              content: [{ type: 'output_text', text: generatedText }],
-            }],
-          },
-        },
-        '[DONE]',
-      ])
-    }) as typeof fetch
-
-    const runWorkflowNode = createStoryboardWidgetWorkflowNodeRunner({
-      baseGraphKind: 'frontmatter-flow',
-      baseGraphData: graphData,
-      readDraftGraphData: () => graphData,
-      commitDraftGraphDataUpdate: (_current, next) => { graphData = next },
-      commitPublishedGraphData: next => { graphData = next },
-      persistDraftGraphData: next => { graphData = next },
-      renderGraphDataOverride: null,
-      markdownDocumentName: null,
-      markdownDocumentSourceUrl: null,
-      widgetRegistry: [],
-      appendDraftNode: args => {
-        const id = String(args.id || `n${graphData.nodes.length + 1}`)
-        graphData = {
-          ...graphData,
-          nodes: [...graphData.nodes, { ...args, id, properties: args.properties || {} } as GraphNode],
-        }
-        return id
-      },
-      updateNode: (id, patch) => {
-        graphData = {
-          ...graphData,
-          nodes: graphData.nodes.map(current => String(current.id) === id ? { ...current, ...patch } : current),
-        }
-      },
-      upsertUiToast: toast => { toasts.push({ message: toast.message }) },
-      scheduleOverlayEdgeUpdate: () => undefined,
-    })
-    await runWorkflowNode(node.id, { propagateErrors: true })
-  } finally {
-    globalThis.fetch = originalFetch
-  }
-
-  const updatedSource = graphData.nodes.find(candidate => candidate.id === node.id)
-  const resultPanels = graphData.nodes.filter(candidate => candidate.type === 'RichMediaPanel')
-  const instructions = String(requestBodies[0]?.instructions || '')
-  if (
-    requestBodies.length !== 1
-    || !instructions.includes('pipeline AI assistant operating inside a graph workspace canvas')
-    || updatedSource?.properties.output !== generatedText
-    || updatedSource?.properties.headlessResponseRunSchema !== HEADLESS_RESPONSE_RUN_SCHEMA
-    || resultPanels.length !== 1
-    || resultPanels[0]?.properties.output !== generatedText
-    || toasts.some(toast => toast.message === 'Generated source-backed Rich Media output.')
-  ) {
-    throw new Error(`expected a prompt-bearing generic Widget to use one shared headless provider lane before source-backed fallback, got ${JSON.stringify({ requestBodies, graphData, toasts })}`)
-  }
-}
+export {
+  testGenericPromptWidgetUsesSharedHeadlessCoordinatorBeforeSourceFallback,
+} from './storyboardWidgetGenericPromptHeadlessRun.test'

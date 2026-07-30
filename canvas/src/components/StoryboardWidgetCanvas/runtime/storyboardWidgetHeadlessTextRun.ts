@@ -12,6 +12,9 @@ import type { GraphNode } from '@/lib/graph/types'
 import { buildStoryboardWidgetTextRunSourceState } from './storyboardWidgetTextRunSourceState'
 import type { StoryboardWidgetTextRunOutputPublisher } from './storyboardWidgetTextRunOutputPublisher'
 
+export const HEADLESS_RESPONSE_THINKING_OUTPUT_KEY = 'thinking' as const
+export const HEADLESS_RESPONSE_THINKING_PANEL_LABEL = 'Thinking' as const
+
 type TextOutputUpdater = (
   update: (properties: Record<string, unknown>) => Record<string, unknown>,
 ) => void
@@ -29,6 +32,7 @@ export async function runStoryboardWidgetHeadlessTextResponse(args: {
     prompt: string,
     onText?: (nextText: string) => void,
     systemMessages?: ReadonlyArray<HeadlessResponseSystemMessage>,
+    onReasoningText?: (nextText: string) => void,
   ) => Promise<string>
   updateSource: TextOutputUpdater
   publishOutput: StoryboardWidgetTextRunOutputPublisher
@@ -75,6 +79,8 @@ export async function runStoryboardWidgetHeadlessTextResponse(args: {
       loading: projection.loading,
       versionId: runId,
       versionCreatedAt: textRunStartedAt,
+      outputIndex: 0,
+      outputCount: lastThinkingText ? 2 : 1,
       connectCreatedOutputToAnchor: true,
       panelProperties: {
         outputSourceProvenanceJson: args.outputSourceProvenanceJson || undefined,
@@ -99,18 +105,14 @@ export async function runStoryboardWidgetHeadlessTextResponse(args: {
     outputSourceProvenanceJson: args.outputSourceProvenanceJson,
     preserveExistingOutput: true,
   }))
-  let lastPublishedText = ''
+  let lastThinkingText = ''
   const finalizeFailureState = () => {
     const runResult = finalizeHeadlessResponseRun({
       prepared,
-      responseText: lastPublishedText,
+      responseText: '',
       status: 'error',
       modelId: args.model,
     })
-    if (lastPublishedText) {
-      projectResponse({ responseText: lastPublishedText, loading: false, runResult })
-      return
-    }
     args.updateSource(properties => buildStoryboardWidgetTextRunSourceState({
       properties,
       loading: false,
@@ -123,19 +125,17 @@ export async function runStoryboardWidgetHeadlessTextResponse(args: {
   try {
     const responseText = await args.generateText(
       buildHeadlessResponseProviderPrompt(prepared),
-      nextText => {
-        if (nextText === lastPublishedText) return
-        lastPublishedText = nextText
-        projectResponse({ responseText: nextText, loading: true })
-      },
+      undefined,
       prepared.systemMessages,
+      nextText => {
+        lastThinkingText = String(nextText || '').replace(/\r\n/g, '\n').trim()
+      },
     )
     if (!responseText) {
       finalizeFailureState()
       args.reportFailure(UI_COPY.storyboardWidgetRunFailedToast)
       return null
     }
-    lastPublishedText = responseText
     const artifactPath = await writeTextWidgetRunOutputArtifact({
       workspacePath: args.workspacePath,
       node: args.node,
@@ -154,6 +154,30 @@ export async function runStoryboardWidgetHeadlessTextResponse(args: {
       artifactPath,
       runResult,
     })
+    if (lastThinkingText) {
+      args.publishOutput({
+        anchorNode: args.node,
+        outputText: lastThinkingText,
+        title: HEADLESS_RESPONSE_THINKING_PANEL_LABEL,
+        model: args.model,
+        loading: false,
+        versionId: `${runId}:thinking`,
+        versionCreatedAt: textRunStartedAt,
+        outputKey: HEADLESS_RESPONSE_THINKING_OUTPUT_KEY,
+        panelLabel: HEADLESS_RESPONSE_THINKING_PANEL_LABEL,
+        panelProperties: {
+          headlessResponseRunSchema: HEADLESS_RESPONSE_RUN_SCHEMA,
+          headlessResponseRunId: runId,
+          headlessResponseRunStatus: runResult.status,
+          headlessResponsePart: HEADLESS_RESPONSE_THINKING_OUTPUT_KEY,
+        },
+        outputIndex: 1,
+        outputCount: 2,
+        allowCreateStandaloneOutput: true,
+        connectCreatedOutputToAnchor: true,
+        ownedOutputOnly: true,
+      })
+    }
     args.reportSuccess('Generated text output.')
     return runResult
   } catch (error) {

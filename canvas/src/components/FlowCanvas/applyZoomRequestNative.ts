@@ -8,32 +8,31 @@ import { readZoomScaleExtent } from '@/lib/graph/layoutDefaults'
 import type { ZoomRequest } from '@/lib/zoom/requests'
 import type { GraphData } from '@/lib/graph/types'
 import { setFlowNativeTransform, type FlowNativeRuntime } from '@/components/FlowCanvas/nativeRuntime'
-import {
-  collectCanonicalStoryboardWidgetOverlayRectEntries,
-  STORYBOARD_WIDGET_OVERLAY_SURFACE_ROOT_ATTR,
-  STORYBOARD_WIDGET_OVERLAY_ROOT_SELECTOR,
-  RICH_MEDIA_OVERLAY_ROOT_SELECTOR,
-  SEMANTIC_FLOW_OVERLAY_ROOT_SELECTOR,
-  readStoryboardWidgetOverlaySurfaceId,
-} from '@/lib/canvas/storyboard-widget-overlay-proxy'
+import { resolveStoryboardWidgetVisibleViewport } from '@/components/FlowCanvas/storyboardWidgetZoomViewport'
+import { collectCanonicalStoryboardWidgetOverlayRectEntries, readStoryboardWidgetOverlaySurfaceId, RICH_MEDIA_OVERLAY_ROOT_SELECTOR, SEMANTIC_FLOW_OVERLAY_ROOT_SELECTOR, STORYBOARD_WIDGET_OVERLAY_ROOT_SELECTOR, STORYBOARD_WIDGET_OVERLAY_SURFACE_ROOT_ATTR } from '@/lib/canvas/storyboard-widget-overlay-proxy'
+import { recenterStoryboardWidgetOverlayWidgetPositions } from '@/components/FlowCanvas/storyboardWidgetOverlayRecenter'
 import { easeOutCubic01, lerpNumber } from '@/lib/canvas/zoom-smoothing'
 import { getFlowAutoMinScale, setFlowAutoMinScale } from '@/components/FlowCanvas/flowScaleExtentOverride'
 import { DEFAULT_TOOLBAR_ZOOM_CONFIG } from '@/lib/zoom/toolbarZoom'
 import { resolveZoomRequest2d } from '@/lib/zoom/resolveZoomRequest2d'
-import { computeTransformScaleAboutViewportFrameCenter, normalizeViewportFrame } from '@/lib/zoom/viewport'
+import { computeTransformScaleAboutViewportFrameCenter } from '@/lib/zoom/viewport'
 import { isWorkspaceEditorOverlayOpen } from '@/features/workspace-table/workspaceTableSsot'
-import { recenterStoryboardWidgetOverlayWidgetPositions } from '@/components/FlowCanvas/storyboardWidgetOverlayRecenter'
+import { resolveFlowWidgetStateGraphKey } from '@/lib/storyboardWidget/widgetStateScope'
 import { resolveScopedFlowWidgetNodeMap } from '@/lib/storyboardWidget/widgetStateScope'
 import { buildGraphMetaKeyIgnoringPending } from '@/lib/graph/graphMetaKey'
 import { measureLayoutRectSet } from '@/lib/canvas/layoutCentroid'
 import { isStoryboardCanvas2dRenderer, resolveCanvas2dRendererId } from '@/lib/config.render'
 import { readStoryboardCardSize2d } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
+import {
+  buildCollectiveCameraFollowBaselineKey,
+  resetCollectiveCameraFollowBaseline,
+} from '@/lib/canvas/overlayWidgetZoom'
 const FLOW_ZOOM_MAX_VISUAL_CAP = 24
 
 const escapeCssAttrValue = (value: string): string => {
   try {
-    const cssApi = (globalThis as { CSS?: { escape?: (input: string) => string } }).CSS
-    if (cssApi && typeof cssApi.escape === 'function') return cssApi.escape(value)
+    const escape = (globalThis as { CSS?: { escape?: (input: string) => string } }).CSS?.escape
+    if (typeof escape === 'function') return escape(value)
   } catch {
     void 0
   }
@@ -62,12 +61,10 @@ export function collectStoryboardWidgetOverlayBounds(activeSurfaceId: string) {
     const els = Array.from(queryRoot.querySelectorAll(selector))
       .filter((el): el is HTMLElement => el instanceof HTMLElement)
       .filter(el => !hasSurfaceId || readStoryboardWidgetOverlaySurfaceId(el) === normalizedSurfaceId)
-    const entries = collectCanonicalStoryboardWidgetOverlayRectEntries(els)
-    for (let i = 0; i < entries.length; i += 1) {
-      const entry = entries[i]!
+    for (const entry of collectCanonicalStoryboardWidgetOverlayRectEntries(els)) {
       const area = Math.max(0, entry.rect.width) * Math.max(0, entry.rect.height)
-      const prev = merged.get(entry.id)
-      if (prev && prev.area >= area) continue
+      const previous = merged.get(entry.id)
+      if (previous && previous.area >= area) continue
       merged.set(entry.id, {
         left: entry.rect.left - surfaceOffsetLeft,
         right: entry.rect.right - surfaceOffsetLeft,
@@ -87,64 +84,20 @@ export function collectStoryboardWidgetOverlayBounds(activeSurfaceId: string) {
     && Number.isFinite(entry.bottom),
   )
   if (entries.length === 0) return null
-  const ids = Array.from(merged.keys())
-    .map(id => String(id || '').trim())
-    .filter(Boolean)
+  const ids = Array.from(merged.keys()).map(id => String(id || '').trim()).filter(Boolean)
     .sort((leftId, rightId) => leftId.localeCompare(rightId))
   let minX = Number.POSITIVE_INFINITY
   let maxX = Number.NEGATIVE_INFINITY
   let minY = Number.POSITIVE_INFINITY
   let maxY = Number.NEGATIVE_INFINITY
-  for (let i = 0; i < entries.length; i += 1) {
-    const entry = entries[i]!
+  for (const entry of entries) {
     minX = Math.min(minX, entry.left)
     maxX = Math.max(maxX, entry.right)
     minY = Math.min(minY, entry.top)
     maxY = Math.max(maxY, entry.bottom)
   }
-  if (!Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(minY) || !Number.isFinite(maxY)) return null
-  return {
-    minX,
-    maxX,
-    minY,
-    maxY,
-    width: Math.max(1, maxX - minX),
-    height: Math.max(1, maxY - minY),
-    ids,
-    count: ids.length,
-  }
-}
-
-export function resolveStoryboardWidgetVisibleViewport(args: {
-  storyboardWidgetSurfaceId?: string
-  viewportW: number
-  viewportH: number
-}) {
-  const fallback = normalizeViewportFrame({ viewportW: args.viewportW, viewportH: args.viewportH })
-  if (typeof document === 'undefined') return fallback
-  const surfaceId = String(args.storyboardWidgetSurfaceId || '').trim()
-  if (!surfaceId) return fallback
-  const surfaceRoot = document.querySelector<HTMLElement>(
-    `[${STORYBOARD_WIDGET_OVERLAY_SURFACE_ROOT_ATTR}="${escapeCssAttrValue(surfaceId)}"]`,
-  )
-  if (!(surfaceRoot instanceof HTMLElement)) return fallback
-  const surfaceRect = surfaceRoot?.getBoundingClientRect() || null
-  if (!Number.isFinite(surfaceRect?.left) || !Number.isFinite(surfaceRect?.top) || !Number.isFinite(surfaceRect?.right) || !Number.isFinite(surfaceRect?.bottom)) return fallback
-  const top = 0
-  const left = 0
-  const right = Math.max(left + 1, Math.min(args.viewportW, Math.floor(Number(surfaceRect?.width) || args.viewportW)))
-  const bottom = Math.max(top + 1, Math.min(args.viewportH, Math.floor(Number(surfaceRect?.height) || args.viewportH)))
-  // Editor Workspace is an overlay, not a Storyboard Widget layout constraint.
-  return {
-    left,
-    top,
-    right,
-    bottom,
-    width: Math.max(1, right - left),
-    height: Math.max(1, bottom - top),
-    centerX: (left + right) / 2,
-    centerY: (top + bottom) / 2,
-  }
+  if (![minX, maxX, minY, maxY].every(Number.isFinite)) return null
+  return { minX, maxX, minY, maxY, width: Math.max(1, maxX - minX), height: Math.max(1, maxY - minY), ids, count: ids.length }
 }
 
 export function recenterVisibleStoryboardWidgetOverlayCentroid(args: {
@@ -166,18 +119,13 @@ export function recenterVisibleStoryboardWidgetOverlayCentroid(args: {
       viewportW: args.viewportW,
       viewportH: args.viewportH,
     })
-    const allEntries = [
-      { left: bounds.minX, right: bounds.maxX, top: bounds.minY, bottom: bounds.maxY },
-    ]
-    const visibleEntries = allEntries.filter(
-      entry =>
-        entry.right > visibleViewport.left
-        && entry.bottom > visibleViewport.top
-        && entry.left < visibleViewport.right
-        && entry.top < visibleViewport.bottom,
+    const allEntries = [{ left: bounds.minX, right: bounds.maxX, top: bounds.minY, bottom: bounds.maxY }]
+    const visibleEntries = allEntries.filter(entry =>
+      entry.right > visibleViewport.left
+      && entry.bottom > visibleViewport.top
+      && entry.left < visibleViewport.right
+      && entry.top < visibleViewport.bottom,
     )
-    // If every overlay drifted outside viewport, fall back to the full collective
-    // bounds so fit/reset can always recover and recenter the layout.
     const entries = visibleEntries.length > 0 ? visibleEntries : allEntries
     const metrics = measureLayoutRectSet(entries.map(entry => ({
       left: entry.left,
@@ -202,19 +150,14 @@ export function recenterVisibleStoryboardWidgetOverlayCentroid(args: {
     if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) return
     const current = args.runtime.transform || d3.zoomIdentity
     setFlowNativeTransform(args.runtime, d3.zoomIdentity.translate(current.x + deltaX, current.y + deltaY).scale(current.k))
-    recenterStoryboardWidgetOverlayWidgetPositions({
-      activeSurfaceId,
-      deltaX,
-      deltaY,
-      graphData: args.graphData,
-    })
+    recenterStoryboardWidgetOverlayWidgetPositions({ activeSurfaceId, deltaX, deltaY, graphData: args.graphData })
     args.onFrame?.()
     args.onCommit?.()
   }
-  requestAnimationFrame(() => {
-    requestAnimationFrame(run)
-  })
+  requestAnimationFrame(() => requestAnimationFrame(run))
 }
+
+export { resolveStoryboardWidgetVisibleViewport }
 
 export const cancelFlowZoomRequestAnim = (runtime: FlowNativeRuntime) => {
   const prev = FLOW_ZOOM_REQUEST_ANIMS.get(runtime)
@@ -279,6 +222,21 @@ export const applyZoomRequestNative = (args: {
     viewportW,
     viewportH,
   })
+  const naturalInitializationRequest =
+    args.zoomRequest.type === 'transform'
+    && args.zoomRequest.intent === 'naturalInitialization'
+  const effectiveZoomRequest: ZoomRequest =
+    args.zoomRequest.type === 'transform'
+    && args.zoomRequest.intent === 'naturalInitialization'
+    ? {
+        ...args.zoomRequest,
+        payload: {
+          k: args.zoomRequest.payload.k,
+          x: visibleViewport.centerX,
+          y: visibleViewport.centerY,
+        },
+      }
+    : args.zoomRequest
   const isStoryboardWidgetFitLikeRequest =
     state.canvasRenderMode === '2d'
     && isStoryboardCanvas2dRenderer(canvas2dRenderer)
@@ -296,6 +254,14 @@ export const applyZoomRequestNative = (args: {
     && (
       args.zoomRequest.type === 'in'
       || args.zoomRequest.type === 'out'
+    )
+  const isStoryboardWidgetZoomPresetRequest =
+    state.canvasRenderMode === '2d'
+    && isStoryboardCanvas2dRenderer(canvas2dRenderer)
+    && args.zoomRequest.type === 'transform'
+    && (
+      args.zoomRequest.intent === 'zoomPreset'
+      || naturalInitializationRequest
     )
   const forceImmediateWorkspaceOverlayFit = workspaceEditorOverlayOpen && isStoryboardWidgetFitLikeRequest
   const hasStoryboardWidgetGraphFitData =
@@ -432,7 +398,7 @@ export const applyZoomRequestNative = (args: {
       })()
     : null
   const defaultResolved = resolveZoomRequest2d({
-    zoomRequest: args.zoomRequest,
+    zoomRequest: effectiveZoomRequest,
     graphData: args.graphData,
     schema,
     documentSemanticMode: (state.documentSemanticMode as 'document' | 'keyword' | undefined) ?? undefined,
@@ -527,6 +493,22 @@ export const applyZoomRequestNative = (args: {
     clear()
     return
   }
+  const requestStoryboardWidgetZoomPresetRebalance = () => {
+    if (!isStoryboardWidgetZoomPresetRequest) return
+    const graphKey = resolveFlowWidgetStateGraphKey({ graphData: args.graphData })
+    resetCollectiveCameraFollowBaseline(buildCollectiveCameraFollowBaselineKey({
+      surfaceId: args.storyboardWidgetSurfaceId,
+      graphKey,
+    }))
+    state.requestStoryboardWidgetLayoutRebalance({
+      reason: 'zoom-preset',
+      targetTransform: {
+        k: resolved.nextTransform.k,
+        x: resolved.nextTransform.x,
+        y: resolved.nextTransform.y,
+      },
+    })
+  }
   const nextMinScale = resolved.nextMinScale
   if (typeof nextMinScale === 'number' && Number.isFinite(nextMinScale) && nextMinScale < flowMinK) {
     const prev = getFlowAutoMinScale(args.runtime)
@@ -566,6 +548,7 @@ export const applyZoomRequestNative = (args: {
     cancelFlowZoomRequestAnim(args.runtime)
     setFlowNativeTransform(args.runtime, resolved.nextTransform)
     args.onFrame?.()
+    requestStoryboardWidgetZoomPresetRebalance()
     args.onCommit?.()
     recenterStoryboardWidgetCollectiveAfterTransform()
     return
@@ -590,6 +573,7 @@ export const applyZoomRequestNative = (args: {
     if (!(raw01 < 1)) {
       FLOW_ZOOM_REQUEST_ANIMS.set(args.runtime, { rafId: null, token })
       recenterStoryboardWidgetCollectiveAfterTransform()
+      requestStoryboardWidgetZoomPresetRebalance()
       args.onCommit?.()
       return
     }

@@ -6,11 +6,10 @@ import {
   formatChatStreamUsageSummary,
   parseSseEvents,
 } from './floatingPanelChatStreamParsing'
-
+import { assertAssistantResponseTerminalComplete } from './floatingPanelChatTerminal'
 const CHAT_STREAM_FIRST_CHUNK_TIMEOUT_MS = 12_000
 const CHAT_STREAM_FIRST_CHUNK_TIMEOUT_ERROR = 'CHAT_STREAM_FIRST_CHUNK_TIMEOUT'
 const CHAT_STREAM_UI_YIELD_EVENT_INTERVAL = 24
-
 export type StreamingDraftStateRef = { current: { path: string; text: string } | null }
 export type AssistantResponseStreamState = {
   assistantText: string
@@ -24,7 +23,6 @@ export type AssistantResponseStreamState = {
   finishReason: string | null
   modelId: string | null
 }
-
 const TRACE_ONLY_SIGNAL_LIMIT = 12
 const LIVE_PROVIDER_TRACE_MAX_LINES = 560
 const LIVE_PROVIDER_TRACE_MAX_CHARS = 48_000
@@ -385,6 +383,7 @@ export const readAssistantResponseText = async (args: {
       modelId: streamDelta.modelId,
     })
     onProgress?.(state)
+    assertAssistantResponseTerminalComplete(state)
     return state
   }
 
@@ -597,6 +596,7 @@ export const readAssistantResponseText = async (args: {
   }
   const finalState = buildState(state)
   onProgress?.(finalState)
+  assertAssistantResponseTerminalComplete(finalState)
   return finalState
 }
 

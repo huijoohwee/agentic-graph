@@ -240,4 +240,6 @@ export const TEST_CASES_POST_PARSER_7: TestCaseTuple[] = [
   ["workspace.docsMirror.localRoots.repoLocalAuthority","@/__tests__/workspaceAgenticOsDocsSourceRoot.test","testWorkspaceSeedProviderUsesDeclaredRepoLocalAgenticDocsAuthority"],
   ["workspace.selection.switch.pendingUsesExplorerSourceAuthority","@/__tests__/sourceFilesSwitchingFlowLayout.test","testSourceFilesPendingSwitchUsesExplorerSourceAuthority"],
   ["workspace.selection.switch.graphActivationFitTargetsDocument","@/__tests__/sourceFilesSwitchingFlowLayout.test","testSourceFilesGraphActivationFitWaitsForMatchingDocument"],
+  ["workspace.selection.switch.newMarkdownNaturalZoom","@/__tests__/sourceFilesSwitchingFlowLayout.test","testNewMarkdownDocumentInitializesAtNaturalZoom"],
+  ["workspace.selection.sameDocumentGraphPublication.preservesOpenWidgets","@/__tests__/sourceFilesSwitchingFlowLayout.test","testSameDocumentGraphPublicationPreservesOpenWidgetPresentationState"],
 ]

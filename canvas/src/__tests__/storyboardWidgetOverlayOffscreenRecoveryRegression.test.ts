@@ -19,6 +19,63 @@ export function testStoryboardWidgetRuntimeUsesOverlayCollectiveViewportStateFor
   if (!runtimeText.includes('const overlayCollectiveState = deriveFlowOverlayCollectiveViewportState({')) {
     throw new Error('expected Flow runtime recovery to measure overlay collective viewport state before preservation decisions')
   }
+  const runtimeScenePath = path.resolve(
+    process.cwd(),
+    'src',
+    'components',
+    'StoryboardWidgetCanvas',
+    'runtime',
+    'useStoryboardWidgetRuntimeScene.ts',
+  )
+  const runtimeSceneText = fs.readFileSync(runtimeScenePath, 'utf8')
+  const storyboardRuntimePath = path.resolve(
+    process.cwd(),
+    'src',
+    'components',
+    'StoryboardWidgetCanvas.runtime.tsx',
+  )
+  const storyboardRuntimeText = fs.readFileSync(storyboardRuntimePath, 'utf8')
+  if (!runtimeSceneText.includes('selector: CANVAS_OVERLAY_PROXY_ROOT_SELECTOR,')
+    || !runtimeSceneText.includes('collectCanonicalStoryboardWidgetOverlayRectEntries(roots)')) {
+    throw new Error('expected topology recovery to measure the canonical mixed Widget Card and Rich Media Panel collective')
+  }
+  if (!runtimeSceneText.includes('const getRenderedZoomTransform = React.useCallback(() => {')
+    || !runtimeSceneText.includes('return readFiniteRuntimeZoomTransform(flowRuntimeRefRef.current?.current)')
+    || !runtimeSceneText.includes('getRenderedZoomTransform,')) {
+    throw new Error('expected Run capture to expose the finite coordinate frame currently painted by the runtime')
+  }
+  if (!runtimeSceneText.includes('const getRenderedOverlayRectForNode = React.useCallback((nodeId: string) => {')
+    || !runtimeSceneText.includes('collectCanonicalStoryboardWidgetOverlayRectEntries(roots)')
+    || !runtimeSceneText.includes('left: entry.rect.left - surfaceRect.left')
+    || !runtimeSceneText.includes('getRenderedOverlayRectForNode,')) {
+    throw new Error('expected Run capture to expose the canonical rendered source rectangle in surface-local coordinates')
+  }
+  if (!storyboardRuntimeText.includes('renderedScreenRect: getRenderedOverlayRectForNode(nodeId),')) {
+    throw new Error('expected Run execution anchoring to prefer the actually rendered source rectangle before ambiguous store or graph coordinates')
+  }
+  const renderedTransformReadIndex = storyboardRuntimeText.indexOf('getRenderedZoomTransform()')
+  const guardedTransformReadIndex = storyboardRuntimeText.indexOf('getLiveZoomTransform()', renderedTransformReadIndex)
+  const neutralTransformFallbackIndex = storyboardRuntimeText.indexOf('|| { k: 1, x: 0, y: 0 }', guardedTransformReadIndex)
+  if (
+    renderedTransformReadIndex < 0
+    || guardedTransformReadIndex < 0
+    || neutralTransformFallbackIndex < 0
+    || renderedTransformReadIndex > guardedTransformReadIndex
+    || guardedTransformReadIndex > neutralTransformFallbackIndex
+  ) {
+    throw new Error('expected immutable Run capture to prefer the rendered camera before guarded or neutral fallbacks')
+  }
+  if (!runtimeSceneText.includes('if (establishedTopologyChanged) return true')) {
+    throw new Error('expected same-view topology growth to preserve graph-authored placement and the established camera')
+  }
+  if (runtimeSceneText.includes("'content-materialization-offscreen-collective-visible-viewport-recovery'")
+    || runtimeSceneText.includes("'topology-change-offscreen-collective-visible-viewport-recovery'")
+    || runtimeSceneText.includes('st.requestZoomTransform(nextTransform)')) {
+    throw new Error('expected ordinary Run/topology materialization to never mutate the camera as a downstream recovery')
+  }
+  if (runtimeSceneText.includes('if (preserveExistingCollective) return true')) {
+    throw new Error('expected topology growth to stop suppressing canonical mixed-overlay recovery')
+  }
   if (!runtimeText.includes('const collectiveVisible = overlayCollectiveState?.visible ?? graphVisible')) {
     throw new Error('expected Flow runtime recovery to prefer overlay collective visibility over raw scene-node visibility when overlays exist')
   }
