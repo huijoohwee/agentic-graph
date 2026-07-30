@@ -1,5 +1,4 @@
 import React from 'react'
-import { Plane } from 'lucide-react'
 import {
   readXrMotionReferenceRuntime,
   subscribeXrMotionReferenceRuntime,
@@ -21,7 +20,6 @@ import {
   readCurrentFlightSimStagePreparationRequest,
 } from './flightSimStagePreparationRuntime'
 import { readFlightSimXrSpatialProfile } from './flightSimSpatialProfile'
-import { useFlightSimSurfaceControls } from './useFlightSimSurfaceControls'
 
 function markerColor(state: 'active' | 'pending' | 'visited'): string {
   if (state === 'active') return '#22d3ee'
@@ -46,15 +44,6 @@ export function FlightSimGeoSurfaceOverlay() {
   )
   const environment = resolveXrMotionReferenceStage(environmentRuntime.plan.stageId)
   const runtimeController = React.useMemo(readFlightSimStageRuntimeController, [])
-  const [inputElement, setInputElement] = React.useState<HTMLButtonElement | null>(null)
-  const requestPresentationFrame = React.useCallback(() => {
-    if (typeof window !== 'undefined') window.requestAnimationFrame(() => undefined)
-  }, [])
-  useFlightSimSurfaceControls({
-    inputElement,
-    requestPresentationFrame,
-    runtimeController,
-  })
 
   const navigation = React.useMemo(() => {
     try {
@@ -90,8 +79,6 @@ export function FlightSimGeoSurfaceOverlay() {
   const routePolyline = navigation.route
     .map(point => `${point.x * 100},${point.y * 100}`)
     .join(' ')
-  const aircraftHeading = navigation.aircraft.headingDegrees
-    + (flight.aircraft.roll * 180 / Math.PI) * 0.35
 
   return (
     <section
@@ -150,22 +137,6 @@ export function FlightSimGeoSurfaceOverlay() {
       <output className="absolute left-3 top-28 rounded-full border border-cyan-200/70 bg-slate-950/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-lg backdrop-blur-sm">
         Flight on Geo · {environment.label} local stage
       </output>
-      <button
-        ref={setInputElement}
-        type="button"
-        className="pointer-events-auto absolute grid size-12 place-items-center rounded-full border-2 border-white bg-cyan-600 text-white shadow-[0_0_0_5px_rgba(8,47,73,0.28),0_8px_22px_rgba(8,47,73,0.45)] transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
-        style={{
-          left: `${navigation.aircraft.x * 100}%`,
-          top: `${navigation.aircraft.y * 100}%`,
-          transform: `translate(-50%, -50%) rotate(${aircraftHeading}deg)`,
-        }}
-        aria-label="Flight aircraft control on Geo"
-        title="Flight aircraft · click for pointer control"
-        data-kg-flight-sim-geo-aircraft="1"
-        data-kg-flight-sim-geo-heading={navigation.aircraft.headingDegrees.toFixed(3)}
-      >
-        <Plane className="size-7" aria-hidden="true" />
-      </button>
     </section>
   )
 }
