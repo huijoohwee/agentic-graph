@@ -21,6 +21,9 @@ import {
   commitCanvasGeospatialModeEnabled,
 } from '@/features/geospatial/geospatialModeCommit'
 import {
+  commitCanvasGeospatialSurfaceOwnership,
+} from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
+import {
   onGeospatialModeChanged,
 } from '@/features/geospatial/events'
 import {
@@ -272,6 +275,7 @@ test('non-Geo restoration requires two consecutive released animation frames', a
     const ownedCanvas = document.querySelector<HTMLCanvasElement>('#owned-geo-map')
     assert.ok(ownedCanvas)
     const releaseOwnedLease = claimMapLibreMapLease({
+      isPreparedForDisposal: () => true,
       map: { getCanvas: () => ownedCanvas },
       ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
       root: ownedCanvas.parentElement,
@@ -298,6 +302,122 @@ test('non-Geo restoration requires two consecutive released animation frames', a
     assert.equal(settled, true)
     assert.equal(isGeospatialModeEnabled(), false)
     assert.equal(readActiveMapLibreMap(), null)
+  })
+})
+
+test('exclusive Canvas handoff re-clears Flight sources after style settlement', async () => {
+  await withSurfaceDom(GEO_CANVAS_MARKUP, async (window, document) => {
+    const ownedCanvas = document.querySelector<HTMLCanvasElement>('#owned-geo-map')
+    assert.ok(ownedCanvas)
+    let providerStyleLoadedReads = 0
+    let preparationCount = 0
+    let flightSourcesPopulated = true
+    let flightSourcesLoaded = true
+    let settledReadCount = 0
+    const releaseOwnedLease = claimMapLibreMapLease({
+      map: {
+        getCanvas: () => ownedCanvas,
+        isStyleLoaded: () => {
+          providerStyleLoadedReads += 1
+          return false
+        },
+      },
+      ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+      prepareForDisposal: () => {
+        preparationCount += 1
+        flightSourcesPopulated = false
+        flightSourcesLoaded = false
+        return true
+      },
+      isPreparedForDisposal: () => {
+        if (flightSourcesPopulated || !flightSourcesLoaded) return false
+        settledReadCount += 1
+        if (settledReadCount === 1) flightSourcesPopulated = true
+        return true
+      },
+      root: ownedCanvas.parentElement,
+    })
+    const controlledRaf = installControlledRaf(window)
+    stageGeoRestorationTarget()
+    let settled = false
+    const handoff = commitCanvasGeospatialSurfaceOwnership(false).then(() => {
+      settled = true
+    })
+
+    await controlledRaf.waitForPending()
+    assert.equal(preparationCount, 1)
+    assert.equal(
+      isGeospatialModeEnabled(),
+      true,
+      'Geo ownership must remain active while cleared sources settle',
+    )
+    flightSourcesLoaded = true
+    await controlledRaf.flushNext()
+
+    await controlledRaf.waitForPending()
+    assert.equal(preparationCount, 2)
+    assert.equal(
+      flightSourcesPopulated,
+      false,
+      'a Flight publication during first settlement must be cleared again',
+    )
+    assert.equal(isGeospatialModeEnabled(), true)
+    flightSourcesLoaded = true
+    await controlledRaf.flushNext()
+
+    await controlledRaf.waitForPending()
+    ownedCanvas.remove()
+    releaseOwnedLease()
+    await controlledRaf.flushNext()
+    await controlledRaf.waitForPending()
+    await controlledRaf.flushNext()
+
+    await handoff
+    assert.equal(settled, true)
+    assert.equal(isGeospatialModeEnabled(), false)
+    assert.equal(
+      providerStyleLoadedReads,
+      0,
+      'pending provider tiles must not gate owned Flight source disposal',
+    )
+  })
+})
+
+test('superseded Flight activation retains the original surface until normal Exit', async () => {
+  await withSurfaceDom('', async () => {
+    const previous = stageGeoRestorationTarget()
+    const opened = await openFlightSimSurface({
+      previousCanvasSurface: previous,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    assert.equal(opened.active, true, opened.runtimeError || undefined)
+
+    exitFlightSimSurface({ restorePreviousSurface: false })
+    assert.equal(readFlightSimSnapshot().active, false)
+    assert.equal(isGeospatialModeEnabled(), true)
+    useGraphStore.getState().setFloatingPanelView('cityBuilder')
+    const citySurface = captureFlightSimPreviousCanvasSurface()
+
+    const reopened = await openFlightSimSurface({
+      previousCanvasSurface: citySurface,
+      webglSupported: true,
+      workspace: EMPTY_WORKSPACE,
+    })
+    assert.equal(reopened.active, true, reopened.runtimeError || undefined)
+
+    exitFlightSimSurface()
+    await waitForFlightSimSurfaceRestoration()
+    const restored = useGraphStore.getState()
+    assert.equal(isGeospatialModeEnabled(), previous.geospatialModeEnabled)
+    assert.equal(
+      readGeospatialOverlayEnabledPreference(),
+      previous.geospatialModeEnabled,
+    )
+    assert.equal(restored.canvasRenderMode, previous.canvasRenderMode)
+    assert.equal(restored.canvas3dMode, previous.canvas3dMode)
+    assert.equal(restored.floatingPanelOpen, previous.floatingPanelOpen)
+    assert.equal(restored.floatingPanelView, previous.floatingPanelView)
   })
 })
 
@@ -448,6 +568,7 @@ test('an unrelated inline MapLibre canvas does not block owned Geo disposal', as
       assert.ok(ownedCanvas)
       assert.ok(inlineCanvas)
       const releaseOwnedLease = claimMapLibreMapLease({
+        isPreparedForDisposal: () => true,
         map: { getCanvas: () => ownedCanvas },
         ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
         root: ownedCanvas.parentElement,

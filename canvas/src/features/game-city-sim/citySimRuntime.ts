@@ -1,18 +1,12 @@
 import { readWebglSupport } from '@/lib/three/webglSupport'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
+import { commitCanvasGeospatialSurfaceOwnership } from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
 import { activateXrSceneSurface, registerXrSceneGameplayExitHandler } from '@/features/three/xrSceneSurfaceRuntime'
-import { adviseCityZoning } from './citySimAdvisor'
-import { advanceCityTick } from './citySimEconomy'
 import {
   CITY_SIM_FIXED_STEP_MS,
   createDefaultCityGrid,
-  findCityParcel,
   freezeCityGrid,
-  zoneCityGridParcel,
-  type CityAdviceScope,
-  type CityAdvisorProposal,
   type CityGrid,
-  type CityZoningType,
 } from './citySimModel'
 import { loadCityGridFromWorkspace, saveCityGridToWorkspace } from './citySimPersistence'
 import {
@@ -27,6 +21,7 @@ import {
   type CitySimSnapshot,
   type CitySimSnapshotUpdate,
 } from './citySimRuntimeState'
+import { createCitySimSynchronousCommands } from './citySimSynchronousCommands'
 import {
   captureCitySimPreviousCanvasSurface,
   restoreCitySimPreviousCanvasSurface,
@@ -48,6 +43,10 @@ let timerGeneration = 0
 let asyncGeneration = 0
 let persistenceTail: Promise<CitySimSnapshot> = Promise.resolve(snapshot)
 let previousCanvasSurface: CitySimPreviousCanvasSurface | null = null
+let citySimSurfaceOpenTail: Promise<void> | null = null
+let citySimSurfaceRestorationTail: Promise<string | null> = Promise.resolve(null)
+let citySimSurfaceRestoring: CitySimPreviousCanvasSurface | null = null
+let citySimSurfaceRestorationSuppressed: CitySimPreviousCanvasSurface | null = null
 let sessionStartCity = createDefaultCityGrid()
 let malformedDocument: Readonly<{ document: string; message: string }> | null = null
 
@@ -56,6 +55,33 @@ function fenceTimer(): void {
   if (timer) clearTimeout(timer)
   timer = null
 }
+
+const synchronousCommands = createCitySimSynchronousCommands({
+  fenceTimer,
+  invalidateAsyncOperations: () => {
+    asyncGeneration += 1
+  },
+  readMalformedDocument: () => malformedDocument,
+  clearMalformedDocument: () => {
+    malformedDocument = null
+  },
+  readSessionStartCity: () => sessionStartCity,
+  replaceSessionStartCity: city => {
+    sessionStartCity = city
+  },
+})
+
+export const {
+  stopCitySim,
+  advanceCitySimByFixedStep,
+  restartCitySim,
+  resetCitySim,
+  selectCityParcel,
+  zoneCityParcel,
+  zoneSelectedCityParcel,
+  requestCityAdvice,
+  applyCityAdvice,
+} = synchronousCommands
 
 function scheduleNextTick(generation: number): void {
   timer = setTimeout(() => {
@@ -111,25 +137,85 @@ function enqueuePersistence(
   return result
 }
 
-function failSurfaceEntry(
+function beginCitySimSurfaceRestoration(
+  previous: CitySimPreviousCanvasSurface,
+): Promise<string | null> {
+  if (citySimSurfaceRestoring === previous) {
+    return citySimSurfaceRestorationTail
+  }
+  citySimSurfaceRestoring = previous
+  citySimSurfaceRestorationSuppressed = null
+  citySimSurfaceRestorationTail = restoreCitySimPreviousCanvasSurface(previous)
+  return citySimSurfaceRestorationTail
+}
+
+async function failSurfaceEntry(
   previous: CitySimPreviousCanvasSurface,
   code: string,
   message: string,
   update: CitySimSnapshotUpdate = {},
-): CitySimSnapshot {
+): Promise<CitySimSnapshot> {
   fenceTimer()
   previousCanvasSurface = null
-  restoreCitySimPreviousCanvasSurface(previous)
-  return publishFailure('open', code, message, {
-    ...update,
-    active: false,
-    phase: 'error',
-  })
+  const restorationFailure = await beginCitySimSurfaceRestoration(previous)
+  return publishFailure(
+    'open',
+    restorationFailure ? 'surface-restoration-failed' : code,
+    restorationFailure
+      ? `${message} Surface restoration failed: ${restorationFailure}`
+      : message,
+    {
+      ...update,
+      active: false,
+      phase: 'error',
+    },
+  )
 }
 
-export async function openCitySimSurface(
+async function claimCityExclusiveXrSurface(): Promise<void> {
+  await commitCanvasGeospatialSurfaceOwnership(false)
+}
+
+async function restoreSupersededCitySurface(
+  previous: CitySimPreviousCanvasSurface,
+): Promise<CitySimSnapshot> {
+  // A newer City entry can already own the Canvas. Restoring Geo under that
+  // entry would recreate the competing MapLibre owner, so only a genuinely
+  // inactive City session rolls the captured owner back.
+  if (
+    snapshot.active
+    || citySimSurfaceRestorationSuppressed === previous
+  ) return snapshot
+  previousCanvasSurface = null
+  const restorationFailure = await beginCitySimSurfaceRestoration(previous)
+  if (restorationFailure) {
+    return publishFailure(
+      'open',
+      'surface-restoration-failed',
+      `Superseded City surface restoration did not complete: ${restorationFailure}`,
+      { active: false, phase: 'error' },
+    )
+  }
+  return snapshot
+}
+
+async function performOpenCitySimSurface(
   options: CitySimOpenOptions = {},
 ): Promise<CitySimSnapshot> {
+  const priorRestoration = citySimSurfaceRestorationTail
+  const restorationFailure = await priorRestoration
+  if (priorRestoration !== citySimSurfaceRestorationTail) return snapshot
+  if (restorationFailure) {
+    return publishFailure(
+      'open',
+      'surface-restoration-failed',
+      `City Simulation cannot enter until the prior surface restores: ${restorationFailure}`,
+      { active: false, phase: 'error' },
+    )
+  }
+  citySimSurfaceRestoring = null
+  const generation = asyncGeneration + 1
+  asyncGeneration = generation
   const previous = previousCanvasSurface
     ?? options.previousCanvasSurface
     ?? captureCitySimPreviousCanvasSurface()
@@ -143,6 +229,23 @@ export async function openCitySimSurface(
     )
   }
   if (snapshot.active) {
+    try {
+      await claimCityExclusiveXrSurface()
+      if (generation !== asyncGeneration || !snapshot.active) {
+        return restoreSupersededCitySurface(previous)
+      }
+    } catch (error) {
+      if (generation !== asyncGeneration) {
+        return restoreSupersededCitySurface(previous)
+      }
+      return failSurfaceEntry(
+        previous,
+        'geo-surface-unavailable',
+        `City Builder could not claim the exclusive XR Canvas: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      )
+    }
     const activated = activateXrSceneSurface({
       gameplaySurface: 'cityBuilder',
       ...(options.openPanel === false
@@ -158,8 +261,6 @@ export async function openCitySimSurface(
         )
   }
 
-  const generation = asyncGeneration + 1
-  asyncGeneration = generation
   publish({
     webglSupported,
     saveStatus: 'loading',
@@ -194,6 +295,10 @@ export async function openCitySimSurface(
 
   const city = loaded.status === 'loaded' ? loaded.city : createDefaultCityGrid()
   try {
+    await claimCityExclusiveXrSurface()
+    if (generation !== asyncGeneration) {
+      return restoreSupersededCitySurface(previous)
+    }
     const activated = activateXrSceneSurface({
       gameplaySurface: 'cityBuilder',
       ...(options.openPanel === false
@@ -232,6 +337,9 @@ export async function openCitySimSurface(
       },
     )
   } catch (error) {
+    if (generation !== asyncGeneration) {
+      return restoreSupersededCitySurface(previous)
+    }
     return failSurfaceEntry(
       previous,
       'surface-entry-failed',
@@ -240,6 +348,18 @@ export async function openCitySimSurface(
       }`,
     )
   }
+}
+
+export function openCitySimSurface(
+  options: CitySimOpenOptions = {},
+): Promise<CitySimSnapshot> {
+  const opening = performOpenCitySimSurface(options)
+  const tail = opening.then(() => undefined, () => undefined)
+  citySimSurfaceOpenTail = tail
+  void tail.then(() => {
+    if (citySimSurfaceOpenTail === tail) citySimSurfaceOpenTail = null
+  })
+  return opening
 }
 
 export async function startCitySim(
@@ -284,183 +404,6 @@ export async function startCitySim(
   )
   scheduleNextTick(timerGeneration)
   return running
-}
-
-export function stopCitySim(): CitySimSnapshot {
-  fenceTimer()
-  if (malformedDocument) {
-    return publishFailure(
-      'stop',
-      'malformed-document',
-      `City Simulation remains blocked by malformed document bytes: ${malformedDocument.message}`,
-      { phase: 'error', saveStatus: 'malformed' },
-    )
-  }
-  return publishSuccess(
-    'stop',
-    `City Simulation stopped at tick ${snapshot.city.tick}; queued ticks were fenced.`,
-    { phase: snapshot.active ? 'stopped' : 'idle' },
-  )
-}
-
-export function advanceCitySimByFixedStep(): CitySimSnapshot {
-  if (!snapshot.active || snapshot.phase !== 'running') return snapshot
-  const result = advanceCityTick(snapshot.city)
-  if (result.ok === false) {
-    fenceTimer()
-    return publishFailure(
-      'tick',
-      result.error.code,
-      result.error.message,
-      { phase: 'error', costLog: result.costLog },
-    )
-  }
-  return publishSuccess(
-    'tick',
-    `Committed deterministic city tick ${result.city.tick}.`,
-    { city: result.city, advisor: null, costLog: result.costLog, saveStatus: 'dirty' },
-  )
-}
-
-export function restartCitySim(): CitySimSnapshot {
-  fenceTimer()
-  if (malformedDocument) {
-    return publishFailure(
-      'restart',
-      'malformed-document',
-      `Restart is blocked because the City Document is malformed: ${malformedDocument.message}`,
-      { phase: 'error', saveStatus: 'malformed' },
-    )
-  }
-  if (!snapshot.active) {
-    return publishFailure(
-      'restart',
-      'inactive',
-      'Restart requires an active City Simulation session.',
-    )
-  }
-  const cityChanged = snapshot.city !== sessionStartCity
-  return publishSuccess(
-    'restart',
-    'City Simulation restored its session start snapshot at tick 0.',
-    {
-      city: sessionStartCity,
-      phase: 'stopped',
-      selectedParcelId: null,
-      advisor: null,
-      costLog: null,
-      ...(cityChanged ? { saveStatus: 'dirty' as const } : {}),
-    },
-  )
-}
-
-export function resetCitySim(): CitySimSnapshot {
-  asyncGeneration += 1
-  fenceTimer()
-  malformedDocument = null
-  sessionStartCity = createDefaultCityGrid()
-  return publishSuccess(
-    'reset',
-    'Selected the authored Civic Seed in memory; the City Document was not changed.',
-    {
-      city: sessionStartCity,
-      phase: snapshot.active ? 'stopped' : 'idle',
-      selectedParcelId: null,
-      advisor: null,
-      costLog: null,
-      saveStatus: 'not-loaded',
-    },
-  )
-}
-
-export function selectCityParcel(parcelId: string): CitySimSnapshot {
-  const parcel = findCityParcel(snapshot.city, parcelId)
-  if (!parcel) {
-    return publishFailure(
-      'select',
-      'unknown-parcel',
-      `Parcel ${parcelId || '(empty)'} does not exist; selection was unchanged.`,
-    )
-  }
-  return publishSuccess(
-    'select',
-    `Selected ${parcel.id}: ${parcel.zone}, ${parcel.landValueCents} cents, population ${parcel.population}, pollution ${parcel.pollution}.`,
-    { selectedParcelId: parcel.id },
-  )
-}
-
-export function zoneCityParcel(
-  parcelId: string,
-  zoningType: CityZoningType,
-): CitySimSnapshot {
-  const previousCity = snapshot.city
-  const result = zoneCityGridParcel(previousCity, parcelId, zoningType)
-  if (result.ok === false) {
-    return publishFailure('zone', result.error.code, result.error.message)
-  }
-  return publishSuccess(
-    'zone',
-    `Zoned ${result.parcel.id} as ${result.parcel.zone}; economy changes commit on the next tick.`,
-    {
-      city: result.city,
-      selectedParcelId: result.parcel.id,
-      advisor: null,
-      ...(result.city === previousCity ? {} : { saveStatus: 'dirty' as const }),
-    },
-  )
-}
-
-export function zoneSelectedCityParcel(
-  zoningType: CityZoningType,
-): CitySimSnapshot {
-  if (!snapshot.selectedParcelId) {
-    return publishFailure(
-      'zone',
-      'missing-selection',
-      'Select a known parcel before assigning a zone.',
-    )
-  }
-  return zoneCityParcel(snapshot.selectedParcelId, zoningType)
-}
-
-export function requestCityAdvice(
-  scope: CityAdviceScope,
-  parcelId: string | null = snapshot.selectedParcelId,
-): CitySimSnapshot {
-  try {
-    const advisor = adviseCityZoning(snapshot.city, {
-      scope,
-      selectedParcelId: parcelId,
-    })
-    return publishSuccess(
-      'advise',
-      advisor.clarifyRequired
-        ? `Advisor completed ${advisor.rounds} rounds and retained a tie for operator clarification.`
-        : `Advisor completed ${advisor.rounds} round(s) with a ranked local recommendation.`,
-      { advisor, costLog: advisor.costLog },
-    )
-  } catch (error) {
-    return publishFailure(
-      'advise',
-      'invalid-advisor-request',
-      error instanceof Error ? error.message : String(error),
-    )
-  }
-}
-
-export function applyCityAdvice(
-  proposalOrId: CityAdvisorProposal | string,
-): CitySimSnapshot {
-  const proposalId = typeof proposalOrId === 'string' ? proposalOrId : proposalOrId.id
-  const proposal = snapshot.advisor?.proposals.find(candidate => candidate.id === proposalId)
-  if (!proposal) {
-    return publishFailure(
-      'zone',
-      'unknown-proposal',
-      `Advisor proposal ${proposalId || '(empty)'} is not part of the current snapshot.`,
-    )
-  }
-  return zoneCityParcel(proposal.parcelId, proposal.recommendedZone)
 }
 
 export function saveCitySim(
@@ -562,9 +505,33 @@ export function exitCitySimSurface(
     },
   )
   if (options.restorePreviousSurface !== false && previous) {
-    restoreCitySimPreviousCanvasSurface(previous)
+    beginCitySimSurfaceRestoration(previous)
+  } else if (options.restorePreviousSurface === false) {
+    citySimSurfaceRestorationSuppressed = previous
+    citySimSurfaceRestoring = null
+    citySimSurfaceRestorationTail = Promise.resolve(null)
   }
   return next
+}
+
+export async function waitForCitySimSurfaceRestoration(): Promise<CitySimSnapshot> {
+  while (true) {
+    const opening = citySimSurfaceOpenTail
+    if (opening) await opening
+    const restoration = citySimSurfaceRestorationTail
+    const restorationFailure = await restoration
+    if (
+      opening !== citySimSurfaceOpenTail
+      || restoration !== citySimSurfaceRestorationTail
+    ) continue
+    if (!restorationFailure) return snapshot
+    return publishFailure(
+      'exit',
+      'surface-restoration-failed',
+      `City Simulation surface restoration did not complete: ${restorationFailure}`,
+      { active: false, phase: 'error' },
+    )
+  }
 }
 
 registerXrSceneGameplayExitHandler('cityBuilder', () => {
@@ -586,6 +553,10 @@ export function resetCitySimRuntimeForTests(
   asyncGeneration += 1
   fenceTimer()
   previousCanvasSurface = null
+  citySimSurfaceOpenTail = null
+  citySimSurfaceRestorationTail = Promise.resolve(null)
+  citySimSurfaceRestoring = null
+  citySimSurfaceRestorationSuppressed = null
   malformedDocument = null
   sessionStartCity = createDefaultCityGrid()
   const reset = resetCitySimSnapshotForTests(

@@ -10,6 +10,7 @@ import {
   FLIGHT_SIM_MAX_CATCH_UP_TICKS,
   FLIGHT_SIM_MAX_PERSISTED_RUN_ID,
   FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS,
+  canonicalizeFlightSimEcsAircraftState,
   type FlightSimSpatialProfile,
 } from '../features/game-flight-sim/flightSimModel'
 import { createFlightSimSimulationClock } from '../features/game-flight-sim/flightSimSimulationClock'
@@ -479,7 +480,10 @@ test('Exit discards the ECS World, pending state, and retained mission progress'
   assert.equal(exited.phase, 'stopped')
   assert.equal(exited.runId, 0)
   assert.equal(exited.tick, 0)
-  assert.deepEqual(exited.aircraft, profile().spawn)
+  assert.deepEqual(
+    exited.aircraft,
+    canonicalizeFlightSimEcsAircraftState(profile().spawn),
+  )
   assert.deepEqual(exited.pendingDecisions, [])
 
   runtime.open(true)

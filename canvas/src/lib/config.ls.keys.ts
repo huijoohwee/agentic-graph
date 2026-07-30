@@ -435,7 +435,7 @@ export const LS_KEYS = {
   paymentsStripeMode: 'kg:payments:stripe:mode',
   paymentsStripePublishableKey: 'kg:payments:stripe:publishableKey',
   paymentsStripeAccountId: 'kg:payments:stripe:accountId',
-  paymentsStripePaywallEnabled: 'kg:payments:stripe:paywallEnabled',
+  paymentsPaywallEnabled: 'kg:payments:paywallEnabled',
   paymentsStripeCheckoutUrl: 'kg:payments:stripe:checkoutUrl',
   paymentsStripeMcpServerKey: 'kg:payments:stripe:mcp:serverKey',
   paymentsStripeMcpRemoteUrl: 'kg:payments:stripe:mcp:remoteUrl',

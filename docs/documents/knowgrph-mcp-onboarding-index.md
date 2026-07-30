@@ -1,14 +1,17 @@
 ---
+title: "Knowgrph MCP Onboarding Index"
 schema: kgc-computing-flow/v1
-id: knowgrph-mcp-onboarding-index
-version: 1.0.5
-status: implemented
-created: 2026-07-10
-updated: 2026-07-22
-author: airvio / joohwee
-domain: knowgrph
+id: "md:knowgrph-mcp-onboarding-index"
 doc_type: "Onboarding Index"
-frontmatter_contract: required
+version: "1.0.5"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.mcp.onboarding-index"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp-onboarding-index.md"
 canonical_service_url: "https://airvio.co/knowgrph/"
 public_read_mcp_url: "https://airvio.co/knowgrph/mcp"
 control_plane_mcp_url: "https://airvio.co/knowgrph/control-plane/mcp"

@@ -1,18 +1,23 @@
 ---
-title: "Knowgrph Docs/Sheets/Slides Export: Combined PRD/TAD"
-doc_type: "Combined PRD/TAD"
+title: "Knowgrph Docs/Sheets/Slides Export"
+id: "md:knowgrph-docs-sheets-slides-prd-tad"
+doc_type: "Product and Technical Specification"
 version: "1.1.0"
-date: "2026-07-19"
-status: "implemented-local-live-provider-unproven"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.docs-sheets-slides-export"
+local_rung: "dev-proven"
+delivered_rung: "spec-complete"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-docs-sheets-slides-prd-tad.md"
 guidelines_version: "1.4.0"
 parent: "knowgrph"
 providers_in_scope: "google-primary, microsoft-fallback"
 providers_deferred: "lark (see knowgrph-risk-copilot-demo.md)"
 ---
 
-# Knowgrph Docs/Sheets/Slides Export — Combined PRD/TAD
+# Knowgrph Docs/Sheets/Slides Export
 
 ## Overview
 

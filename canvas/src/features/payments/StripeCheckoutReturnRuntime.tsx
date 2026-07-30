@@ -15,7 +15,7 @@ const isStripeCheckoutSettled = (args: { status: string; paymentStatus: string }
 
 export function StripeCheckoutReturnRuntime(props: { search: string }) {
   const pushUiToast = useGraphStore(s => s.pushUiToast)
-  const setPaymentsStripePaywallEnabled = useGraphStore(s => s.setPaymentsStripePaywallEnabled)
+  const setPaymentsPaywallEnabled = useGraphStore(s => s.setPaymentsPaywallEnabled)
   const setPaymentsStripeCheckoutUrl = useGraphStore(s => s.setPaymentsStripeCheckoutUrl)
 
   React.useEffect(() => {
@@ -60,7 +60,7 @@ export function StripeCheckoutReturnRuntime(props: { search: string }) {
       .then(session => {
         if (cancelled) return
         if (isStripeCheckoutSettled({ status: session.status, paymentStatus: session.paymentStatus })) {
-          setPaymentsStripePaywallEnabled(false)
+          setPaymentsPaywallEnabled(false)
           pushUiToast({
             id: STRIPE_CHECKOUT_RETURN_TOAST_ID,
             kind: 'success',
@@ -93,7 +93,7 @@ export function StripeCheckoutReturnRuntime(props: { search: string }) {
     return () => {
       cancelled = true
     }
-  }, [props.search, pushUiToast, setPaymentsStripeCheckoutUrl, setPaymentsStripePaywallEnabled])
+  }, [props.search, pushUiToast, setPaymentsStripeCheckoutUrl, setPaymentsPaywallEnabled])
 
   return null
 }

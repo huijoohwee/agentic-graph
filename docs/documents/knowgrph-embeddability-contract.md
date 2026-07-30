@@ -1,9 +1,16 @@
 ---
 title: "Knowgrph Embeddability Contract"
+id: "md:knowgrph-embeddability-contract"
 doc_type: "Implementation Contract"
-status: "Accepted source baseline"
+version: "1.0.0"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
+owner: "docs.embeddability-contract"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-embeddability-contract.md"
 ---
 
 # Knowgrph Embeddability Contract

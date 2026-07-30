@@ -6,6 +6,34 @@
       "contains": "\"payment:runtime:readiness\""
     },
     {
+      "file": "package.json",
+      "contains": "\"payment:local:vcc\""
+    },
+    {
+      "file": "scripts/check-knowgrph-payments-readiness.mjs",
+      "contains": "executeLocalVcc: true"
+    },
+    {
+      "file": "scripts/run-knowgrph-payments-local-vcc.mjs",
+      "contains": "runKnowgrphPaymentsLocalVcc"
+    },
+    {
+      "file": "scripts/lib/knowgrph-payments-local-vcc.mjs",
+      "contains": "knowgrph-payments-local-vcc-attestation/v1"
+    },
+    {
+      "file": "scripts/lib/knowgrph-payments-bundle-secrets.mjs",
+      "contains": "inspectKnowgrphPaymentsClientBundleSecrets"
+    },
+    {
+      "file": "scripts/lib/knowgrph-payments-delivery-gates.mjs",
+      "contains": "inspectKnowgrphPaymentsCanonicalRuntime"
+    },
+    {
+      "file": "scripts/__tests__/knowgrph-payments-local-vcc.test.mjs",
+      "contains": "rejects source, inventory, and suite-result tampering"
+    },
+    {
       "file": "package-lock.json",
       "contains": "\"fast-check\": \"3.23.2\""
     },
@@ -22,12 +50,148 @@
       "contains": "\"./payments/straitsxPaymentSsot\""
     },
     {
+      "file": "grph-shared/package.json",
+      "contains": "\"./payments/paymentRuntimeContract\""
+    },
+    {
+      "file": "grph-shared/package.json",
+      "contains": "\"./payments/paymentBuyerProductSsot\""
+    },
+    {
+      "file": "grph-shared/src/payments/paymentBuyerProductSsot.ts",
+      "contains": "PAYMENT_BUYER_PRODUCT_ENV_KEYS"
+    },
+    {
+      "file": "cloudflare/d1/migrations/0009_knowgrph_payment_runtime.sql",
+      "contains": "payment_intents"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/index.ts",
+      "contains": "handlePaymentRuntimeRoute"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/payments.ts",
+      "contains": "STRIPE_PAYMENT_WEBHOOK_API_VERSION"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/stripeHostedCheckout.ts",
+      "contains": "createStripeHostedCheckoutSessionForWorker"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/paymentRuntimeFailures.ts",
+      "contains": "paymentFailureMessage"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/paymentRuntimeRoutes.ts",
+      "contains": "PAYMENT_RUNTIME_ROUTE_PATHS"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/paymentIntentConcurrency.ts",
+      "contains": "createPaymentIntentConcurrency"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/paymentProviderAdapterSupport.ts",
+      "contains": "buildUnknownProviderOutcome"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/straitsxPaymentRailAdapter.ts",
+      "contains": "createStraitsxPaymentRailAdapter"
+    },
+    {
+      "file": "canvas/src/features/payments/PaywallOverlay.tsx",
+      "contains": "PaymentSurfaceView"
+    },
+    {
+      "file": "canvas/src/tests/registry/postParserCases5.ts",
+      "contains": "ui.payments.runtime"
+    },
+    {
+      "file": "mcp/local-tool-contract.js",
+      "contains": "buildPaymentToolDefinitions"
+    },
+    {
+      "file": "grph-shared/__tests__/payment-rail-ssot.test.mjs",
+      "contains": "compatibility-first, fail-closed, and deterministic"
+    },
+    {
+      "file": "grph-shared/__tests__/payment-record-document.test.mjs",
+      "contains": "payment record serialization properties hold across 100 generated record sets"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/paymentRuntimeService.ts",
+      "contains": "createPaymentRuntimeService"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/paymentRailAdapters.ts",
+      "contains": "createStraitsxPaymentRailAdapter"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/paymentEventIngress.ts",
+      "contains": "handlePaymentProviderEvent"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/paymentRuntimePersistence.ts",
+      "contains": "createD1PaymentRuntimeStore"
+    },
+    {
+      "file": "canvas/src/features/payments/paymentApiClient.ts",
+      "contains": "createPaymentApiTransport"
+    },
+    {
+      "file": "canvas/src/features/payments/paymentReconciler.ts",
+      "contains": "reconcilePaymentIntentQueue"
+    },
+    {
+      "file": "canvas/src/features/payments/paymentReceiptProjection.ts",
+      "contains": "appendLocalPaymentReceipt"
+    },
+    {
+      "file": "canvas/src/features/payments/paymentSurfaceController.ts",
+      "contains": "createPaymentSurfaceController"
+    },
+    {
+      "file": "canvas/src/features/payments/usePaymentSurfaceController.ts",
+      "contains": "usePaymentSurfaceController"
+    },
+    {
+      "file": "canvas/src/lib/storage/knowgrphStorageDb.ts",
+      "contains": "paymentIntentQueue"
+    },
+    {
+      "file": "mcp/payment-tool-contract.js",
+      "contains": "buildPaymentToolDefinitions"
+    },
+    {
+      "file": "mcp/payment-runtime.js",
+      "contains": "createPaymentRuntime"
+    },
+    {
+      "file": "mcp/os-status-runtime.js",
+      "contains": "buildPaymentRailReadinessSnapshot"
+    },
+    {
+      "file": "mcp/server.js",
+      "contains": "PAYMENT_RUNTIME"
+    },
+    {
+      "file": "mcp/__tests__/payment-tool-contract.test.mjs",
+      "contains": "payment MCP contract registers the eight canonical tool identities exactly once"
+    },
+    {
+      "file": "mcp/__tests__/os-status-runtime.test.mjs",
+      "contains": "cost_summary validates cost logs"
+    },
+    {
       "file": "cloudflare/workers/knowgrph-payment/wrangler.toml",
       "contains": "STRAITSX_ENABLED = \"false\""
     },
     {
       "file": "scripts/lib/knowgrph-payments-provider-proof.mjs",
       "contains": "knowgrph-payments-provider-sandbox-proof/v1"
+    },
+    {
+      "file": "scripts/__tests__/knowgrph-payments-readiness.test.mjs",
+      "contains": "readiness names the configured fund flow and validates all buyer-product inputs"
     },
     {
       "file": "docs/documents/knowgrph-api-reference/knowgrph-stripe-api-reference.md",
@@ -44,190 +208,437 @@
     {
       "file": "docs/documents/knowgrph-api-reference/knowgrph-straitsx-authentication-reference.md",
       "contains": "X-XFERS-APP-API-KEY"
+    },
+    {
+      "file": "grph-shared/src/payments/agenticPurchaseRuntimeContract.ts",
+      "contains": "knowgrph-agentic-purchase/v1"
+    },
+    {
+      "file": "grph-shared/src/payments/agenticPurchaseReadinessContract.ts",
+      "contains": "AGENTIC_PURCHASE_LOCAL_DETERMINISTIC_CHECKS"
+    },
+    {
+      "file": "cloudflare/d1/migrations/0010_knowgrph_agentic_purchase_lifecycle.sql",
+      "contains": "payment_purchase_lifecycles"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/agenticPurchaseSafetyPersistence.ts",
+      "contains": "claimAgenticPurchaseAuthorization"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/agenticPurchaseReadiness.ts",
+      "contains": "agentic_purchase_readiness"
+    },
+    {
+      "file": "scripts/lib/knowgrph-agentic-purchase-readiness.mjs",
+      "contains": "agentic-purchase-secure-card-broker"
+    },
+    {
+      "file": "mcp/os-status-runtime.js",
+      "contains": "agenticPurchaseReadiness"
+    },
+    {
+      "file": "grph-shared/__tests__/agentic-purchase-runtime-contract.test.mjs",
+      "contains": "post-financial cancellation preserves call counts and permits cleanup only"
+    },
+    {
+      "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+      "contains": "approval survives a runtime restart and consumes atomically once"
+    },
+    {
+      "file": "canvas/src/features/payments/trustedPurchaseInvocation.ts",
+      "contains": "invokeTrustedCanvasPurchase"
+    },
+    {
+      "file": "canvas/src/features/payments/AgenticPurchaseLifecycleView.tsx",
+      "contains": "data-agentic-purchase-phase"
+    },
+    {
+      "file": "canvas/src/features/payments/paymentPaywallSetting.ts",
+      "contains": "readMigratedPaymentsPaywallEnabled"
+    },
+    {
+      "file": "canvas/src/__tests__/trustedPurchaseInvocation.test.tsx",
+      "contains": "testTrustedPurchaseInvocationRendersFourBlockedPhasesWithZeroEgress"
     }
   ],
   "requirements": [
     {
       "id": "R1",
-      "status": "partial",
-      "detail": "Stripe custody exists and StraitsX credential names are centralized, but the built-client leak proof and every outbound provider header are not yet green.",
+      "status": "implemented",
+      "detail": "Local source separates provider, MCP, and webhook credentials, pins request and webhook versions independently, sorts exact raw StraitsX query pairs without decoding, normalization, or duplicate-key loss, builds canonical signing headers, proves signing failures make zero provider calls before egress, and scans the built client plus visible Worker vars for credential leakage. Secret-store presence and provider authentication remain provider-sandbox gates.",
       "evidence": [
         {
           "file": "grph-shared/src/payments/stripePaymentSsot.ts",
-          "contains": "STRIPE_PAYMENT_SECRET_ENV_NAMES"
+          "contains": "STRIPE_PAYMENT_REQUEST_API_VERSION"
         },
         {
-          "file": "grph-shared/src/payments/straitsxPaymentSsot.ts",
-          "contains": "STRAITSX_PAYMENT_SECRET_ENV_NAMES"
+          "file": "grph-shared/__tests__/straitsx-payment-ssot.test.mjs",
+          "contains": "every StraitsX request carries the API key and signed mode emits verifiable headers"
+        },
+        {
+          "file": "grph-shared/__tests__/straitsx-payment-ssot.test.mjs",
+          "contains": "a=%2F&a=%2f&a=/raw&z=two+words"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "contains": "StraitsX signing failures report zero provider calls before egress"
+        },
+        {
+          "file": "scripts/lib/knowgrph-payments-readiness.mjs",
+          "contains": "client-bundle-secret-values"
         }
       ]
     },
     {
       "id": "R2",
-      "status": "partial",
-      "detail": "The pure router checks compatibility before readiness and returns one typed selection or rail_unavailable, but the selection is not yet persisted before provider contact.",
+      "status": "implemented",
+      "detail": "The deterministic compatibility-first router selects only from sandbox-attemptable admissionRails while proof-complete rails stays false until authenticated paid evidence round-trips. Exactly one implicit server-owned buyer product is resolved from PAYMENT_BUYER_PRODUCT_AMOUNT_MINOR, PAYMENT_BUYER_PRODUCT_CURRENCY, and PAYMENT_BUYER_PRODUCT_SETTLEMENT_ASSET; caller price changes fail before storage or provider contact, discovery projects only that resolved tuple, and multi-product or entitlement catalogs remain out of scope.",
       "evidence": [
         {
           "file": "grph-shared/src/payments/paymentRailSsot.ts",
           "contains": "selectPaymentRail"
         },
         {
-          "file": "grph-shared/__tests__/payment-rail-ssot.test.mjs",
-          "contains": "compatibility-first, fail-closed, and deterministic"
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "contains": "intent ownership persists before provider contact"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "contains": "configuration alone never promotes a rail without paid sandbox evidence"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "contains": "missing server product authority blocks sandbox admission before proof"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "contains": "server product authority rejects caller price changes before storage or provider contact"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "contains": "discovery projects only the resolved server-owned buyer product"
         }
       ]
     },
     {
       "id": "R3",
-      "status": "partial",
-      "detail": "Hosted Stripe Checkout and idempotency exist, but Client_Intent_Key persistence, Request-Id capture, and provider-read expiry reconciliation are incomplete.",
+      "status": "implemented",
+      "detail": "The Stripe adapter owns one Checkout Session, one stable key, explicit request-version and Request-Id correlation, durable Client Intent ownership, same-key provider-read reconciliation for indeterminate outcomes, and a 23-hour local cutoff that forbids another provider-create POST before Stripe can prune idempotency state.",
       "evidence": [
         {
-          "file": "cloudflare/workers/knowgrph-payment/payments.ts",
-          "contains": "headers['Idempotency-Key']"
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "contains": "Stripe create uses one stable key, explicit API version, and Request-Id correlation"
         },
         {
-          "file": "grph-shared/src/payments/stripePaymentSsot.ts",
-          "contains": "STRIPE_PAYMENT_API_VERSION"
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "contains": "provider uncertainty retries the same durable intent and settles only from provider read"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "contains": "provider create is never retried beyond the safe idempotency window"
         }
       ]
     },
     {
       "id": "R4",
-      "status": "partial",
-      "detail": "The StraitsX sandbox/config/header SSOT fails closed, but provider create/read adapters remain blocked on the approved integration model and payment method.",
+      "status": "implemented",
+      "detail": "The StraitsX adapter is sandbox-only and model, fund-flow, product, path, and grant bound. STRAITSX_FUND_FLOW is required and validated against STRAITSX_INTEGRATION_MODEL before authentication or fetch; missing or invalid flow returns fund_flow_unresolved, an incompatible pair returns integration_model_unsupported, and both pre-egress failures record zero provider calls. The adapter preserves one provider operation identity, projects one usable allowlisted agent instruction reference, and makes zero XSGD calls until the exact capability contract is ready. Actual approved model, account grants, and paid settlement remain provider-sandbox gates.",
       "evidence": [
         {
           "file": "grph-shared/src/payments/straitsxPaymentSsot.ts",
           "contains": "resolveStraitsxRuntimeConfig"
         },
         {
-          "file": "grph-shared/__tests__/straitsx-payment-ssot.test.mjs",
-          "contains": "StraitsX SSOT enables only resolved sandbox API-key configuration"
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "contains": "StraitsX XSGD and refund remain zero-call until their contracts are bound"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "contains": "StraitsX unbound contracts fail before egress with a precise capability code"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-rail-adapters.test.ts",
+          "contains": "StraitsX signing failures report zero provider calls before egress"
+        },
+        {
+          "file": "mcp/__tests__/payment-runtime.test.mjs",
+          "contains": "StraitsX provider instructions project a usable allowlisted reference"
         }
       ]
     },
     {
       "id": "R5",
-      "status": "partial",
-      "detail": "Stripe raw-body signature and replay state exist; StraitsX source authentication and mandatory provider-read settlement do not.",
+      "status": "implemented",
+      "detail": "Both rails verify exact raw callback bytes before parsing, event identity and semantic duplicates are durable, StraitsX applies the source allowlist first, and settlement always delegates to an authoritative provider read.",
       "evidence": [
         {
-          "file": "cloudflare/workers/knowgrph-payment/payments.ts",
-          "contains": "stripe-signature"
+          "file": "cloudflare/workers/knowgrph-payment/paymentEventIngress.ts",
+          "contains": "cf-connecting-ip"
         },
         {
-          "file": "docs/documents/knowgrph-payments-prd-tad.md",
-          "contains": "StraitsX callback is accepted only from the documented source addresses"
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-event-ingress.test.ts",
+          "contains": "StraitsX sample callback authenticates, minimizes sender data, and dedupes by status delivery"
         }
       ]
     },
     {
       "id": "R6",
-      "status": "not_implemented",
-      "detail": "The canonical browser-local store exists, but no bounded payment intent queue or provider-authoritative reconnect reconciler is implemented.",
+      "status": "implemented",
+      "detail": "The existing browser-local store now owns a 100-record fail-closed queue and a creation-ordered same-key reconciler with zero offline egress, reload durability, serialized concurrent drains, a five-attempt stop, durable local uniqueness beyond provider retention, and no provider-create re-POST at or after the 23-hour safety window.",
       "evidence": [
         {
-          "file": "canvas/src/lib/storage/knowgrphStorageDb.ts",
-          "contains": "knowgrphStorageDbSingleton"
+          "file": "canvas/src/features/payments/paymentIntentQueue.ts",
+          "contains": "queue_capacity_reached"
         },
         {
-          "file": "docs/documents/knowgrph-payments-prd-tad.md",
-          "contains": "Offline continuity | Not present"
+          "file": "canvas/src/__tests__/paymentIntentQueueRuntime.test.ts",
+          "contains": "testPaymentReconcilerIsOfflineZeroEgressAndSameKeySerialized"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "contains": "provider create is never retried beyond the safe idempotency window"
         }
       ]
     },
     {
       "id": "R7",
-      "status": "partial",
-      "detail": "The pure canonical JSON Lines codec validates nine fields, rejects personal data, and enforces byte-identical round trips, but client local-store append and the offline receipt view are not implemented.",
+      "status": "implemented",
+      "detail": "The canonical nine-field JSON Lines codec and existing browser-local store now support idempotent append, byte-identical property round trips, typed parse failure without byte mutation, zero-fetch local receipt reads, and a refunded terminal state that remains distinct from paid.",
       "evidence": [
         {
           "file": "grph-shared/src/payments/paymentRecordDocument.ts",
           "contains": "parseKnowgrphPaymentRecordDocument"
         },
         {
-          "file": "grph-shared/__tests__/payment-record-document.test.mjs",
-          "contains": "payment record serialization properties hold across 100 generated record sets"
+          "file": "canvas/src/__tests__/paymentIntentQueueRuntime.test.ts",
+          "contains": "testPaymentReceiptProjectionIsIdempotentAndOfflineOnly"
+        },
+        {
+          "file": "grph-shared/__tests__/payment-runtime-contract.test.mjs",
+          "contains": "terminal runtime records project to the nine-field receipt contract"
         }
       ]
     },
     {
       "id": "R8",
-      "status": "not_implemented",
-      "detail": "The current buyer surface owns local checkoutBusy state and does not consume the required shared nine-state snapshot.",
+      "status": "implemented",
+      "detail": "The payment surface consumes the shared ten-state snapshot, exposes the exact server-owned buyer product, keeps refunded distinct from paid with a refund-receipt action, exposes labelled native controls and state text, and carries a deterministic 375px-safe source contract. Live browser pixel proof remains a separate blocked rung.",
       "evidence": [
         {
-          "file": "canvas/src/features/payments/PaywallOverlay.tsx",
-          "contains": "React.useState(false)"
+          "file": "canvas/src/features/payments/PaymentSurfaceView.tsx",
+          "contains": "PaymentSurfaceSnapshot"
         },
         {
-          "file": ".kiro/specs/knowgrph-payments/requirements.md",
-          "contains": "reconciliation_unresolved"
+          "file": "canvas/src/__tests__/paymentSurfaceRuntime.test.tsx",
+          "contains": "testPaywallOverlayConsumesSharedSnapshotAndIs375SafeBySourceContract"
+        },
+        {
+          "file": "grph-shared/__tests__/payment-runtime-contract.test.mjs",
+          "contains": "ten surface states have distinct labels and actions"
         }
       ]
     },
     {
       "id": "R9",
-      "status": "partial",
-      "detail": "The hosted Stripe MCP endpoint and confirmation policy have an SSOT, but rail-neutral discovery and payment-action approval dispatch are incomplete.",
+      "status": "implemented",
+      "detail": "The existing MCP transport now discovers eight rail-neutral payment tools, rejects all unapproved mutations before adapter dispatch, derives a non-secret approvalRef only after verified agent approval while stripping the raw token, keeps public HTTP agent creation denial-only before D1 even with a caller-supplied approvalRef, exposes zero-model metadata, and pins the ten-tool hosted Stripe allowlist with every tool confirmation-required. Live hosted federation remains unproven.",
       "evidence": [
         {
           "file": "grph-shared/src/payments/stripeMcpSsot.ts",
           "contains": "https://mcp.stripe.com"
         },
         {
-          "file": "grph-shared/src/payments/stripeMcpSsot.ts",
-          "contains": "human confirmation"
+          "file": "mcp/__tests__/payment-runtime.test.mjs",
+          "contains": "a valid approval immediately precedes one adapter call and the token is not forwarded"
+        },
+        {
+          "file": "mcp/__tests__/payment-stdio-e2e.test.mjs",
+          "contains": "existing stdio MCP discovers and dispatches the canonical payment surface"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "contains": "public HTTP agent creation stops at the approval boundary before storage access"
         }
       ]
     },
     {
       "id": "R10",
-      "status": "not_implemented",
-      "detail": "The rail-neutral typed failure taxonomy, provider request correlation, and idempotent same-rail refund owner are absent.",
+      "status": "implemented",
+      "detail": "The Worker maps rail-neutral failures with provider correlation, keeps indeterminate outcomes non-terminal, preserves refunded as a tenth state distinct from paid across the public projection, MCP read, payment surface, and receipt document, makes public HTTP refund denial-only before D1 access, permits refund execution only behind the MCP host approval boundary, performs idempotent paid Stripe refunds, rejects non-paid refunds, and keeps unbound StraitsX refunds at zero calls.",
       "evidence": [
         {
-          "file": ".kiro/specs/knowgrph-payments/requirements.md",
-          "contains": "refund_not_applicable"
+          "file": "grph-shared/src/payments/paymentRuntimeContract.ts",
+          "contains": "provider_outcome_unknown"
         },
         {
-          "file": "docs/documents/knowgrph-payments-prd-tad.md",
-          "contains": "Typed failures and refunds"
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "contains": "refunds are paid-only, idempotent, and StraitsX can remain zero-call unbound"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "contains": "public HTTP refund attempts stop at the approval boundary before storage access"
+        },
+        {
+          "file": "mcp/__tests__/payment-runtime.test.mjs",
+          "contains": "refunded remains distinct from paid in the public status projection"
         }
       ]
     },
     {
       "id": "R11",
-      "status": "partial",
-      "detail": "The read-only layered gate and unsigned candidate-proof schema are executable, but a trusted attestation or direct provider check, per-call cost rows, Agentic OS payment views, and authenticated paid sandbox evidence are absent.",
+      "status": "implemented",
+      "detail": "The local gate executes a fixed source-digest-bound VCC inventory; source-extracts independent Stripe pins, STRAITSX_FUND_FLOW, PAYMENT_BUYER_PRODUCT_AMOUNT_MINOR, PAYMENT_BUYER_PRODUCT_CURRENCY, and PAYMENT_BUYER_PRODUCT_SETTLEMENT_ASSET; reports configuredFundFlow, buyerProductEnvironmentNames, and buyerProductConfigured in the provider-sandbox rail snapshot; keeps sandbox-attemptable admissionRails separate from proof-complete rails; records one zero-model cost row per provider call; and exposes read-only rail_readiness and cost_summary views. Configuration alone does not establish runtime, provider, browser, protected, mirror, or delivery readiness.",
       "evidence": [
         {
           "file": "scripts/check-knowgrph-payments-readiness.mjs",
           "contains": "inspectKnowgrphPaymentsReadiness"
         },
         {
-          "file": "scripts/lib/knowgrph-payments-readiness.mjs",
-          "contains": "KNOWGRPH_PAYMENTS_PROVIDER_PROOF_SCHEMA_ID"
+          "file": "scripts/__tests__/knowgrph-payments-local-vcc.test.mjs",
+          "contains": "rejects a failed or zero-test suite"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-service.test.ts",
+          "contains": "every provider call emits one zero-model cost row"
         },
         {
           "file": "scripts/__tests__/knowgrph-payments-readiness.test.mjs",
-          "contains": "valid provider proof cannot promote incomplete source or local task provenance"
+          "contains": "readiness names the configured fund flow and validates all buyer-product inputs"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "contains": "configuration alone never promotes a rail without paid sandbox evidence"
+        },
+        {
+          "file": "mcp/__tests__/payment-os-status.test.mjs",
+          "contains": "rail_readiness is typed, read-only, zero-model, and fail-closed without evidence"
         }
       ]
     },
     {
       "id": "R12",
-      "status": "partial",
-      "detail": "The public four-field projection and Dev-only release boundary exist, but the rail-neutral Worker schema and mode-mismatch enforcement are incomplete because a generic StraitsX API-key binding cannot independently prove sandbox or live credential provenance.",
+      "status": "implemented",
+      "detail": "Shared and MCP contracts enforce the exact four-field public projection while preserving refunded as distinct from paid, payment data minimization, sandbox mode mismatch, one Worker/store/settings owner, and closed mirror/deployment boundaries.",
       "evidence": [
         {
           "file": "grph-shared/src/payments/paymentRecordDocument.ts",
           "contains": "buildKnowgrphPublicPaymentStatus"
         },
         {
+          "file": "grph-shared/__tests__/payment-runtime-contract.test.mjs",
+          "contains": "public status is exactly four fields and both rails share one result shape"
+        },
+        {
+          "file": "mcp/__tests__/payment-runtime.test.mjs",
+          "contains": "refunded remains distinct from paid in the public status projection"
+        },
+        {
           "file": "docs/documents/knowgrph-payments-prd-tad.md",
-          "contains": "Dev authoring only"
+          "contains": "Production mirror publication and Cloudflare deployment require a separate explicit operator instruction"
+        }
+      ]
+    },
+    {
+      "id": "R13",
+      "status": "implemented",
+      "detail": "The deterministic source owns one exact purchase envelope, one four-phase lifecycle preview, zero-call pre-financial cancellation, cleanup-only post-financial cancellation, and a read-only readiness view. The existing Paywall is the sole client owner; provider, browser, protected invocation, and delivery evidence remain separate gates.",
+      "evidence": [
+        {
+          "file": "grph-shared/__tests__/agentic-purchase-runtime-contract.test.mjs",
+          "contains": "existing-Paywall preview renders four phases and pre-financial cancel is zero-call"
+        },
+        {
+          "file": "grph-shared/__tests__/agentic-purchase-runtime-contract.test.mjs",
+          "contains": "post-financial cancellation preserves call counts and permits cleanup only"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/payment-runtime-routes.test.ts",
+          "contains": "agentic purchase readiness is read-only, local-bound, and fail closed"
+        },
+        {
+          "file": "canvas/src/__tests__/trustedPurchaseInvocation.test.tsx",
+          "contains": "testTrustedPurchaseInvocationRejectsUntrustedSourcesBeforeMutation"
+        },
+        {
+          "file": "canvas/src/__tests__/trustedPurchaseInvocation.test.tsx",
+          "contains": "testTrustedPurchaseInvocationRendersFourBlockedPhasesWithZeroEgress"
+        },
+        {
+          "file": "canvas/src/__tests__/trustedPurchaseInvocation.test.tsx",
+          "contains": "testPaymentsPaywallStorageKeyMigratesOnceToGenericOwner"
+        }
+      ]
+    },
+    {
+      "id": "R14",
+      "status": "implemented",
+      "detail": "Local contracts fix XSGD to Avalanche C-Chain 43114, persist one same-D1 funding reservation, release it exactly once, and explicitly forbid an automatic return transfer or signing/KYC material in lifecycle records. KYC grant, returned deposit address, signer, chain receipt, provider credit, and card-settlement bridge remain blocked external capability checks.",
+      "evidence": [
+        {
+          "file": "grph-shared/__tests__/agentic-purchase-runtime-contract.test.mjs",
+          "contains": "purchase envelope freezes one bounded HTTPS-origin SGD instruction"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+          "contains": "funding reservation releases once and never creates a return transfer"
+        },
+        {
+          "file": "cloudflare/d1/migrations/0010_knowgrph_agentic_purchase_lifecycle.sql",
+          "contains": "network = 'avalanche-c-chain'"
+        }
+      ]
+    },
+    {
+      "id": "R15",
+      "status": "implemented",
+      "detail": "The deterministic discovery boundary validates immutable allowed origins, candidate identity, quantity, total, currency, freshness, injection/cancellation stops, five-page/twelve-action/two-model-call ceilings, and one cost record per model call. The canonical browser adapter and approved merchant fixture remain a separate browser gate and no browser tool is registered.",
+      "evidence": [
+        {
+          "file": "grph-shared/__tests__/agentic-purchase-runtime-contract.test.mjs",
+          "contains": "candidate validation binds origin, URL, quantity, exact total, currency, and freshness"
+        },
+        {
+          "file": "grph-shared/__tests__/agentic-purchase-runtime-contract.test.mjs",
+          "contains": "discovery aborts on cancellation, injection, bounds, and missing model cost logs"
+        }
+      ]
+    },
+    {
+      "id": "R16",
+      "status": "implemented",
+      "detail": "The same D1 owner now proves approval amount/TTL admission before storage, restart-safe atomic consumption, first authenticated authorization identity, exact replay without a second reservation, competing identity denial, closure_pending while local financial state exists, and close-once replay. Card Program, effective provider-plus-RHA controls, pool, and secure credential broker remain unavailable external gates.",
+      "evidence": [
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+          "contains": "approval TTL and amount reject before D1"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+          "contains": "authorization rejects unauthenticated input before D1 and claims one identity"
+        },
+        {
+          "file": "cloudflare/workers/knowgrph-payment/__tests__/agentic-purchase-safety.test.ts",
+          "contains": "card closure remains pending while local financial state exists and closes once"
+        }
+      ]
+    },
+    {
+      "id": "R17",
+      "status": "implemented",
+      "detail": "The local execution contract reuses the immutable candidate and secret canaries, preserves outcome and closure blockers, and exposes no credential injection or checkout mutation while secure-broker, merchant, issuer, browser, and disposal evidence are missing. No local contract claims a completed merchant order.",
+      "evidence": [
+        {
+          "file": "grph-shared/__tests__/agentic-purchase-runtime-contract.test.mjs",
+          "contains": "secret, card, signer, and identity canaries cannot enter lifecycle records"
+        },
+        {
+          "file": "mcp/__tests__/payment-os-status.test.mjs",
+          "contains": "agentic_purchase_readiness exposes only deterministic-local evidence"
+        },
+        {
+          "file": "scripts/lib/knowgrph-agentic-purchase-readiness.mjs",
+          "contains": "providerSandboxProven: false"
         }
       ]
     }
@@ -243,7 +654,7 @@
       "id": "OQ-2",
       "status": "open",
       "gate": "providerSandbox",
-      "detail": "The provider-approved StraitsX integration model is unknown."
+      "detail": "The configured STRAITSX_INTEGRATION_MODEL and STRAITSX_FUND_FLOW are locally validated as one compatible pair, but the provider-approved model and flow remain unknown."
     },
     {
       "id": "OQ-3",
@@ -253,33 +664,33 @@
     },
     {
       "id": "OQ-4",
-      "status": "open",
+      "status": "resolved",
       "gate": "source",
-      "detail": "The preview Stripe MCP mutating-tool inventory is not pinned."
+      "detail": "The ten documented non-preview tools are pinned; unknown tools and get_balance_summary are excluded."
     },
     {
       "id": "OQ-5",
-      "status": "open",
+      "status": "resolved",
       "gate": "non_blocking",
       "detail": "Stripe Treasury automation is out of scope."
     },
     {
       "id": "OQ-6",
-      "status": "open",
-      "gate": "non_blocking",
-      "detail": "Mandatory provider-state reads retain the conservative callback boundary."
+      "status": "resolved",
+      "gate": "source",
+      "detail": "StraitsX callbacks require exact-body HMAC, source filtering before parse, and a provider-state read."
     },
     {
       "id": "OQ-7",
-      "status": "open",
-      "gate": "non_blocking",
-      "detail": "Per-attempt references plus provider-state reads retain the conservative retry boundary."
+      "status": "resolved",
+      "gate": "source",
+      "detail": "One stable provider operation key and provider-state reconciliation own uncertain retries."
     },
     {
       "id": "OQ-8",
-      "status": "open",
+      "status": "resolved",
       "gate": "source",
-      "detail": "The Worker source-address header owner is unresolved."
+      "detail": "Callback ingress reads CF-Connecting-IP and verifies raw-body HMAC after the source allowlist."
     },
     {
       "id": "OQ-9",
@@ -291,19 +702,19 @@
       "id": "OQ-10",
       "status": "open",
       "gate": "providerSandbox",
-      "detail": "Dynamic PayNow or virtual bank account remains unselected; persistent PayNow is outside this increment."
+      "detail": "The source implementation binds only dynamic PayNow and validates its configured model-flow pair; the provider-approved integration model, fund flow, and dynamic_paynow account grant remain unproven."
     },
     {
       "id": "OQ-11",
       "status": "resolved",
       "gate": "source",
-      "detail": "The existing Stripe SSOT pins 2026-05-19."
+      "detail": "The Stripe SSOT independently owns request and webhook API-version pins."
     },
     {
       "id": "OQ-12",
-      "status": "open",
+      "status": "resolved",
       "gate": "source",
-      "detail": "The queue owner and maximum depth are unresolved."
+      "detail": "The existing browser-local store owns a 100-record fail-closed queue."
     },
     {
       "id": "OQ-13",
@@ -313,15 +724,75 @@
     },
     {
       "id": "OQ-14",
-      "status": "open",
-      "gate": "non_blocking",
-      "detail": "HTTP request signing stays fail-closed; API-key sandbox mode remains the only supported mode."
+      "status": "resolved",
+      "gate": "source",
+      "detail": "The canonical Ed25519 request-signing builder sorts exact raw encoded query pairs, preserving duplicate keys, percent-encoding case, slash spelling, and plus signs without decoding or normalization; signing failures make zero provider calls."
     },
     {
       "id": "OQ-15",
-      "status": "open",
+      "status": "resolved",
       "gate": "non_blocking",
       "detail": "Live mode and deployment are out of scope."
+    },
+    {
+      "id": "OQ-16",
+      "status": "open",
+      "gate": "providerSandbox",
+      "detail": "No exact StraitsX refund endpoint, eligibility, account grant, or idempotency contract is bound; the adapter returns provider_operation_unverified with zero calls."
+    },
+    {
+      "id": "OQ-17",
+      "status": "open",
+      "gate": "providerSandbox",
+      "detail": "Issuer group, plan, virtual-card product, funding source, account currency, card pool, KYC/cardholder, 3DS, sandbox host, and credential grants are unproven."
+    },
+    {
+      "id": "OQ-18",
+      "status": "open",
+      "gate": "providerSandbox",
+      "detail": "No provider-approved XSGD-to-card settlement bridge or authoritative balance evidence is bound."
+    },
+    {
+      "id": "OQ-19",
+      "status": "open",
+      "gate": "providerSandbox",
+      "detail": "No approved PCI-scoped secure card credential broker or planted-secret result exists."
+    },
+    {
+      "id": "OQ-20",
+      "status": "open",
+      "gate": "browser",
+      "detail": "No allowlisted merchant sandbox and authoritative order-read contract is approved."
+    },
+    {
+      "id": "OQ-21",
+      "status": "open",
+      "gate": "providerSandbox",
+      "detail": "The provider-reviewed authorization, hold, capture, reversal, refund, force-post, and safe-close contract is unproven."
+    },
+    {
+      "id": "OQ-22",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "Provider-inclusive card, blockchain, FX, reserve, dispute, PCI, and model costs remain unknown and block live ROI sign-off."
+    },
+    {
+      "id": "OQ-23",
+      "status": "open",
+      "gate": "browser",
+      "detail": "The canonical browser-control owner has not accepted the bounded discovery adapter."
+    },
+    {
+      "id": "OQ-24",
+      "status": "open",
+      "gate": "protectedIntegration",
+      "detail": "No external slash, semantic, binding, or MCP lifecycle identity is accepted by the Agentic Canvas OS owners; only the trusted direct-import seam is in scope."
+    },
+    {
+      "id": "OQ-25",
+      "status": "open",
+      "gate": "non_blocking",
+      "detail": "Zero-state provider onboarding TTV has not been measured."
     }
   ]
 }

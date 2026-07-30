@@ -1,15 +1,19 @@
 ---
-schema: kgc-computing-flow/v1
-id: knowgrph-agent-ready-prd-tad-runtime
-version: 1.27.6
-status: implemented
-created: 2026-05-21
-updated: 2026-05-30
-author: airvio / joohwee
-domain: knowgrph
-parent: docs/documents/knowgrph-agent-ready-prd-tad.md
+title: "Knowgrph Agent Ready - Runtime, Routes, Validation, And Deployment Companion"
+id: "md:knowgrph-agent-ready-prd-tad.runtime"
+doc_type: "TAD Companion"
+version: "1.27.6"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.runtime.evidence"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-agent-ready-prd-tad.runtime.md"
+parent: "docs/documents/knowgrph-agent-ready-prd-tad.md"
+schema: "kgc-computing-flow/v1"
 tags: [agent-ready, cloudflare, webmcp, mcp, routes, validation, deployment, prd, tad]
-frontmatter_contract: required
 ---
 
 # Knowgrph Agent Ready - Runtime, Routes, Validation, And Deployment Companion

@@ -32,7 +32,7 @@ const buildRailProof = rail => ({
   verification:
     rail === 'stripe'
       ? 'stripe-signature-and-provider-read'
-      : 'straitsx-provider-state-read',
+      : 'straitsx-raw-hmac-source-and-provider-read',
   providerObjectCount: 1,
   paymentRecordRoundTrip: true,
   providerCallCount: 2,
@@ -87,6 +87,7 @@ async function createSourceFixture(t) {
     'scripts/knowgrph-payments-readiness-properties.json',
     'scripts/lib/knowgrph-payments-source-evidence.mjs',
     'cloudflare/workers/knowgrph-payment/wrangler.toml',
+    'grph-shared/src/payments/paymentBuyerProductSsot.ts',
     ...manifest.runtimeEvidence.map(item => item.file),
     ...manifest.requirements.flatMap(requirement =>
       requirement.evidence.map(item => item.file),
@@ -153,7 +154,7 @@ test('source inspection is read-only and fails stale companion authority', async
   assert.equal(baseline.gates.source.status, 'blocked', 'untrusted source claims remain blocked')
   assert.equal(
     baseline.gates.source.checks.find(check =>
-      check.id === 'trusted-executed-vcc-attestation')?.status,
+      check.id === 'executed-local-vcc-attestation')?.status,
     'blocked',
   )
   assert.equal(
@@ -168,7 +169,36 @@ test('source inspection is read-only and fails stale companion authority', async
     ['canvas/dist'],
   )
   assert.equal(baseline.gates.providerSandbox.status, 'blocked')
+  assert.equal(baseline.gates.agenticPurchase.status, 'blocked')
+  assert.equal(
+    baseline.gates.agenticPurchase.localDeterministicStatus,
+    'blocked',
+  )
+  assert.equal(baseline.gates.agenticPurchase.providerCallCount, 0)
+  assert.equal(baseline.gates.agenticPurchase.modelCallCount, 0)
+  assert.ok(
+    baseline.gates.agenticPurchase.blockers.some(blocker =>
+      blocker.gate === 'browser'),
+  )
+  assert.equal(
+    baseline.gates.providerSandbox.rails.straitsx.configuredFundFlow,
+    null,
+  )
+  assert.deepEqual(
+    baseline.gates.providerSandbox.rails.stripe.buyerProductEnvironmentNames,
+    [
+      'PAYMENT_BUYER_PRODUCT_AMOUNT_MINOR',
+      'PAYMENT_BUYER_PRODUCT_CURRENCY',
+      'PAYMENT_BUYER_PRODUCT_SETTLEMENT_ASSET',
+    ],
+  )
+  assert.equal(
+    baseline.gates.providerSandbox.rails.stripe.buyerProductConfigured,
+    false,
+  )
+  assert.equal(baseline.gates.browserRuntime.status, 'not-proven')
   assert.equal(baseline.gates.protectedIntegration.status, 'not-proven')
+  assert.equal(baseline.gates.productionMirror.status, 'not-authorized')
   assert.equal(baseline.gates.deployment.status, 'not-authorized')
 
   const requirementsPath = path.join(
@@ -204,6 +234,8 @@ test('valid provider proof cannot promote incomplete source or local task proven
   assert.equal(report.gates.providerSandbox.status, 'blocked')
   assert.equal(report.gates.providerSandbox.rails.stripe.status, 'candidate')
   assert.equal(report.gates.providerSandbox.rails.straitsx.status, 'candidate')
+  assert.equal(report.gates.agenticPurchase.status, 'blocked')
+  assert.equal(report.gates.agenticPurchase.claims.providerSandboxProven, false)
   assert.notEqual(report.gates.source.status, 'pass')
   assert.equal(report.ok, false)
   assert.equal(report.verdict, 'implemented-runtime-readiness-blocked')
@@ -222,7 +254,7 @@ test('valid provider proof cannot promote incomplete source or local task proven
   assert.equal(invalidReport.gates.providerSandbox.rails.straitsx.status, 'candidate')
 })
 
-test('editable manifest claims cannot replace a trusted executed VCC attestation', async t => {
+test('editable manifest claims cannot replace an executed source-bound local VCC attestation', async t => {
   const fixtureRoot = await createSourceFixture(t)
   const manifestPath = path.join(
     fixtureRoot,
@@ -244,7 +276,7 @@ test('editable manifest claims cannot replace a trusted executed VCC attestation
   )
   assert.equal(
     report.gates.source.checks.find(check =>
-      check.id === 'trusted-executed-vcc-attestation')?.status,
+      check.id === 'executed-local-vcc-attestation')?.status,
     'blocked',
   )
   assert.equal(report.gates.source.status, 'blocked')
@@ -270,6 +302,47 @@ test('environment-specific visible vars are included in the credential leak boun
     item.id === 'visible-worker-secret-bindings')
   assert.equal(check?.status, 'fail')
   assert.match(check?.detail || '', /env\.production\.vars:STRIPE_SECRET_KEY/)
+})
+
+test('readiness names the configured fund flow and validates all buyer-product inputs', async t => {
+  const fixtureRoot = await createSourceFixture(t)
+  const configPath = path.join(
+    fixtureRoot,
+    'cloudflare/workers/knowgrph-payment/wrangler.toml',
+  )
+  const config = await readFile(configPath, 'utf8')
+  const configured = config
+    .replace(
+      'PAYMENT_BUYER_PRODUCT_AMOUNT_MINOR = ""',
+      'PAYMENT_BUYER_PRODUCT_AMOUNT_MINOR = "1200"',
+    )
+    .replace(
+      'PAYMENT_BUYER_PRODUCT_CURRENCY = ""',
+      'PAYMENT_BUYER_PRODUCT_CURRENCY = "sgd"',
+    )
+    .replace(
+      'PAYMENT_BUYER_PRODUCT_SETTLEMENT_ASSET = ""',
+      'PAYMENT_BUYER_PRODUCT_SETTLEMENT_ASSET = "fiat"',
+    )
+    .replace(
+      'STRAITSX_FUND_FLOW = ""',
+      'STRAITSX_FUND_FLOW = "own_account_collection"',
+    )
+  await writeFile(configPath, configured)
+
+  const report = await inspectKnowgrphPaymentsReadiness({
+    root: fixtureRoot,
+    requireTracked: false,
+  })
+
+  assert.equal(
+    report.gates.providerSandbox.rails.straitsx.configuredFundFlow,
+    'own_account_collection',
+  )
+  assert.equal(
+    report.gates.providerSandbox.rails.stripe.buyerProductConfigured,
+    true,
+  )
 })
 
 test('malformed manifest objects return structured source failures', async t => {
@@ -346,6 +419,9 @@ test('CLI JSON output rejects an unsigned provider candidate with a non-zero exi
       assert.equal(report.schemaId, 'knowgrph-payments-readiness/v1')
       assert.equal(report.ok, false)
       assert.equal(report.verdict, 'implemented-runtime-readiness-blocked')
+      assert.equal(report.gates.source.status, 'pass')
+      assert.equal(report.gates.localVcc.status, 'pass')
+      assert.equal(report.localDevelopmentReady, true)
       assert.equal(report.gates.providerSandbox.status, 'blocked')
       assert.equal(report.gates.providerSandbox.rails.stripe.status, 'candidate')
       return true

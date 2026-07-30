@@ -98,8 +98,14 @@ export async function assertFlightSimSurfaceReadiness({
 
   const flightGeoMapLibreSource = await readText('gympgrph/src/flightGeoOverlayMapLibre.ts')
   requireSourceMarkers(flightGeoMapLibreSource, [
-    "FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'",
     'export function applyFlightGeoOverlayToMap(',
+    "from './flightGeoOverlayMapLibreLayers.js'",
+  ], 'Flight Sim native MapLibre application')
+  const flightGeoMapLibreLayersSource = await readText(
+    'gympgrph/src/flightGeoOverlayMapLibreLayers.ts',
+  )
+  requireSourceMarkers(flightGeoMapLibreLayersSource, [
+    "FLIGHT_GEO_OVERLAY_SOURCE_ID = 'kg-flight-sim:geo-overlay'",
     'FLIGHT_GEO_OVERLAY_LAYER_IDS.objectiveGuide',
     'FLIGHT_GEO_OVERLAY_LAYER_IDS.route',
     'FLIGHT_GEO_OVERLAY_LAYER_IDS.routePoints',
@@ -110,27 +116,39 @@ export async function assertFlightSimSurfaceReadiness({
   const geospatialPresentationSource = await readText(
     'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
   )
+  const geospatialPresentationGateSource = await readText(
+    'gympgrph/src/features/geospatial/flightGeoOverlayPresentationGate.ts',
+  )
   const mapLibreFlightBootstrapSource = await readText(
     'gympgrph/src/features/geospatial/mapLibreFlightBootstrap.ts',
+  )
+  const mapLibreFlightProviderPromotionSource = await readText(
+    'gympgrph/src/features/geospatial/mapLibreFlightProviderPromotion.ts',
   )
   requireSourceMarkers(geospatialHostSource, [
     'useFlightGeoOverlayMapLibrePresentation({',
   ], 'Flight Sim native MapLibre host composition')
   requireSourceMarkers(geospatialPresentationSource, [
     'applyFlightGeoOverlayToMap(map, overlay)',
+    'readyFrameRequestId',
+    "root.dataset.kgFlightGeospatialOverlay = 'active'",
+    'root.dataset.kgFlightGeospatialRevision = overlay.revision',
+  ], 'Flight Sim native MapLibre presentation owner')
+  requireSourceMarkers(geospatialPresentationGateSource, [
     "map.on('render', listener)",
     "canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'",
     'onPresented?.(presentation)',
-    'readyFrameRequestId',
     "overlay.phase !== 'stopped'",
     'pending.attempts += 1',
-    "root.dataset.kgFlightGeospatialOverlay = 'active'",
-    'root.dataset.kgFlightGeospatialRevision = overlay.revision',
-  ], 'Flight Sim native MapLibre presentation lifecycle')
+  ], 'Flight Sim native MapLibre presentation gate')
   requireSourceMarkers(mapLibreFlightBootstrapSource, [
-    'requestIdleCallback',
     'scheduleProviderStyleApply',
-    'cancelProviderStyleApply(state)',
+    'cancelMapLibreFlightProviderStyleApply(state)',
+    'retainOverlay',
+  ], 'Flight Sim MapLibre bootstrap composition')
+  requireSourceMarkers(mapLibreFlightProviderPromotionSource, [
+    'requestIdleCallback',
+    'cancelMapLibreFlightProviderStyleApply(state)',
     'retainOverlay',
   ], 'Flight Sim non-blocking MapLibre provider promotion')
   const stagePreparationSource = await readText(

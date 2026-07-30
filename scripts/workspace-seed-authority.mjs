@@ -249,7 +249,7 @@ const requireFlightRuntimeIdentity = (source, physicsSource) => {
   requireValue(
     'native_flight_demo.camera.driver_owner',
     camera.driver_owner,
-    'gympgrph/src/flightGeoOverlayMapLibre.ts',
+    'gympgrph/src/flightGeoOverlayMapLibreCamera.ts',
   )
   requireValue(
     'native_flight_demo.camera.runtime_canvas_driver_owner',

@@ -1,9 +1,17 @@
 ---
+title: "PRD + TAD - Knowgrph x MiroMind API Integration"
 schema: kgc-computing-flow/v1
-id: knowgrph-miromind-api-prd-tad
-version: 0.2.0
-status: accepted-implemented-baseline
-date: 2026-05-29
+id: "md:knowgrph-miromind-api-prd-tad"
+doc_type: "Product and Technical Specification"
+version: "0.2.0"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.api-reference.miromind"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-api-reference/knowgrph-miromind-api-prd-tad.md"
 repo: https://github.com/huijoohwee/knowgrph
 surface: MainPanel > Integrations
 publish_topology:

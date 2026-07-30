@@ -14,6 +14,9 @@ import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { hashStringToHexSharedContentCached } from '@/lib/hash/textHashCache'
 import { isWorkspaceGraphMutationBlocked } from '@/features/workspace-table/workspaceTableSsot'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import {
+  waitForCanvasFrontmatterSurfaceTransition,
+} from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { isStrybldrStoryboardMarkdown } from '@/features/strybldr/strybldrStoryboard'
 import {
   createGraphActivationFitRequest,
@@ -288,9 +291,15 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           rawText: text,
           preset: parsedTextPreset || undefined,
         })
+        await waitForCanvasFrontmatterSurfaceTransition()
       } catch {
-        void 0
+        return false
       }
+      const currentDocument = get()
+      if (
+        currentDocument.markdownDocumentName !== name
+        || currentDocument.markdownDocumentText !== text
+      ) return false
     }
 
     if ('sourceUrl' in (args as Record<string, unknown>)) {
@@ -333,15 +342,12 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
         if (!applyViewPresetForSwitch && !shouldApplyExplicitCanvasPreset) return
         const active = get()
         if (active.markdownDocumentName !== name || active.markdownDocumentText !== text) return
-        try {
-          applyCanvasFrontmatterPreset({
-            graphData: active.graphData,
-            rawText: text,
-            preset: parsedTextPreset || undefined,
-          })
-        } catch {
-          void 0
-        }
+        applyCanvasFrontmatterPreset({
+          graphData: active.graphData,
+          rawText: text,
+          preset: parsedTextPreset || undefined,
+        })
+        await waitForCanvasFrontmatterSurfaceTransition()
       }
       const requestActiveDocumentFit = (): void => {
         if (!applyViewPresetForSwitch) return
@@ -456,6 +462,7 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
           rawText: nextText,
           preset: parsedTextPreset || undefined,
         })
+        await waitForCanvasFrontmatterSurfaceTransition()
       }
       if (canReuseParsedSourceGraph) {
         const reusedGraph = withMarkdownDocumentSourceMetadata(exactSourceFile.parsedGraphData as GraphData, nextName, parsedTextPreset)

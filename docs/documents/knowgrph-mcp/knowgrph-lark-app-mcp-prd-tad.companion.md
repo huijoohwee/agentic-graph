@@ -1,3 +1,19 @@
+---
+title: "Knowgrph Lark App MCP - PRD/TAD Companion"
+id: "md:knowgrph-lark-app-mcp-prd-tad.companion"
+doc_type: "TAD Companion"
+version: "0.1.20"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.mcp.lark-app.companion"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-lark-app-mcp-prd-tad.companion.md"
+parent: "docs/documents/knowgrph-mcp/knowgrph-lark-app-mcp-prd-tad.md"
+---
+
 # Knowgrph Lark App MCP - PRD/TAD Companion
 
 Implementation-accurate supplement to [knowgrph-lark-app-mcp-prd-tad.md](knowgrph-lark-app-mcp-prd-tad.md).

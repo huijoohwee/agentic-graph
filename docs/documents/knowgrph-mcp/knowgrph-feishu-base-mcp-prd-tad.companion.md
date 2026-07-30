@@ -1,3 +1,19 @@
+---
+title: "Knowgrph Feishu Base MCP - PRD/TAD Companion"
+id: "md:knowgrph-feishu-base-mcp-prd-tad.companion"
+doc_type: "TAD Companion"
+version: "0.1.1"
+date: "2026-07-30"
+lang: "en-US"
+owner: "docs.mcp.feishu-base.companion"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-mcp/knowgrph-feishu-base-mcp-prd-tad.companion.md"
+parent: "docs/documents/knowgrph-mcp/knowgrph-feishu-base-mcp-prd-tad.md"
+---
+
 # Knowgrph Feishu Base MCP - PRD/TAD Companion
 
 Implementation checklist supplement to [knowgrph-feishu-base-mcp-prd-tad.md](knowgrph-feishu-base-mcp-prd-tad.md).

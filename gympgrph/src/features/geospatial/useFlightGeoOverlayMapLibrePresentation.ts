@@ -3,297 +3,70 @@ import {
   readFlightGeoOverlay,
   subscribeFlightGeoOverlay,
   type FlightGeoOverlayPresentation,
-  type FlightGeoOverlaySnapshot,
 } from '../../flightGeoOverlay.js'
 import {
   applyFlightGeoOverlayCameraToMap,
   applyFlightGeoOverlayToMap,
   clearFlightGeoOverlayFromMap,
-  FLIGHT_GEO_OVERLAY_LAYER_IDS,
-  FLIGHT_GEO_OVERLAY_SOURCE_ID,
   fitMapToFlightGeoOverlay,
 } from '../../flightGeoOverlayMapLibre.js'
 import {
+  flightGeoMapViewportPaddingKey,
+  observeFlightGeoMapOcclusionChanges,
+  readFlightGeoMapViewportPadding,
+} from '../../flightGeoMapViewport.js'
+import {
   applyFlightGeoEnvironmentToMap,
   clearFlightGeoEnvironmentFromMap,
-  mapHasExactFlightGeoEnvironment,
 } from '../../flightGeoEnvironmentMapLibre.js'
-import { readGeoJsonSourceData } from '../../maplibreLayers.js'
 import {
-  markMapLibreFlightOverlayPresented,
-  markMapLibreFlightReadyFramePresented,
+  canMapLibreFlightOverlayPresent,
+  requestMapLibreFlightPresentationBootstrap,
+  subscribeMapLibreFlightBootstrapSettled,
 } from './mapLibreFlightBootstrap.js'
+import {
+  clearFlightGeoPresentationAttemptDebug,
+  clearFlightGeoPresentationDebug,
+} from './flightGeoPresentationDebug.js'
+import {
+  readSavedFlightGeoMapPadding,
+} from './flightGeoOverlayPresentationCamera.js'
+import {
+  createFlightGeoOverlayPresentationGate,
+} from './flightGeoOverlayPresentationGate.js'
+import {
+  isMapLibreMapPreparingForDisposal,
+  subscribeMapLibreMapDisposalPreparation,
+} from './mapLibreHostLease.js'
+import {
+  type PresentedFlightOverlay,
+  type SavedMapPadding,
+} from './flightGeoOverlayPresentationContracts.js'
+export {
+  createFlightGeoOverlayPresentationGate,
+} from './flightGeoOverlayPresentationGate.js'
+export {
+  FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT,
+  FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
+  type FlightOverlayPresentationGate,
+} from './flightGeoOverlayPresentationContracts.js'
 
-export const FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT = 8
-export const FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT = 180
-
-type PresentedFlightOverlay = {
-  map: any | null
-  readyFrameRequestId: number | null
-  revision: string
-}
-
-type FlightOverlayFeature = Readonly<{
-  properties?: Readonly<{
-    kgFlightOverlayKind?: unknown
-    kgFlightOverlayRevision?: unknown
-  }>
-}>
-
-type FlightOverlayPresentationGateOptions = Readonly<{
-  active: () => boolean
-  map: any
-  onPresented?: (presentation: FlightGeoOverlayPresentation) => void
-  presented: { current: PresentedFlightOverlay }
-  readOverlay?: () => FlightGeoOverlaySnapshot
-  readRoot: () => HTMLElement | null
-  isCanvasElement?: (value: unknown) => value is HTMLCanvasElement
-}>
-
-export type FlightOverlayPresentationGate = Readonly<{
-  cancel: () => void
-  clearCanvas: () => void
-  request: (overlay: FlightGeoOverlaySnapshot) => void
-  resetPresented: () => void
-}>
-
-function defaultIsCanvasElement(value: unknown): value is HTMLCanvasElement {
-  return (
-    typeof HTMLCanvasElement !== 'undefined'
-    && value instanceof HTMLCanvasElement
-  )
-}
-
-function mapHasExactFlightOverlay(
+export function deferFlightGeoPresentationForBootstrapRecovery(
   map: any,
-  overlay: FlightGeoOverlaySnapshot,
+  overlay: FlightGeoOverlayPresentation,
+  canReuseCommittedStoppedFrame: boolean,
 ): boolean {
-  try {
-    const source = map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)
-    const sourceData = readGeoJsonSourceData(source)
-    const features = (
-      sourceData?.features || []
-    ) as readonly FlightOverlayFeature[]
-    const exactRevision = features.every(
-      feature => (
-        feature?.properties?.kgFlightOverlayRevision === overlay.revision
-      ),
-    )
-    const kindCount = (kind: string) => features.filter(
-      feature => feature?.properties?.kgFlightOverlayKind === kind,
-    ).length
-    const objectiveGuideCount = overlay.objective ? 1 : 0
-    return features.length === overlay.route.length + 2 + objectiveGuideCount
-      && exactRevision
-      && kindCount('route') === 1
-      && kindCount('objective-guide') === objectiveGuideCount
-      && kindCount('route-point') === overlay.route.length
-      && kindCount('aircraft') === 1
-      && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
-        .every(layerId => Boolean(map.getLayer?.(layerId)))
-      && mapHasExactFlightGeoEnvironment(map, overlay)
-  } catch {
-    return false
-  }
-}
-
-export function createFlightGeoOverlayPresentationGate(
-  options: FlightOverlayPresentationGateOptions,
-): FlightOverlayPresentationGate {
-  const {
-    active,
-    map,
-    onPresented,
-    presented,
-    readOverlay = readFlightGeoOverlay,
-    readRoot,
-    isCanvasElement = defaultIsCanvasElement,
-  } = options
-  let pending: {
-    attempts: number
-    listener: () => void
-    limit: number
-    readyFrameRequestId: number | null
-    revision: string
-  } | null = null
-
-  const cancel = () => {
-    if (!pending) return
-    const listener = pending.listener
-    pending = null
-    try {
-      map.off?.('render', listener)
-    } catch {
-      void 0
-    }
-  }
-
-  const readCanvas = (): HTMLCanvasElement | null => {
-    try {
-      const canvas = map.getCanvas?.()
-      return isCanvasElement(canvas) ? canvas : null
-    } catch {
-      return null
-    }
-  }
-
-  const clearCanvas = () => {
-    const canvas = readCanvas()
-    if (!canvas) return
-    delete canvas.dataset.kgFlightSimFirstFrame
-    delete canvas.dataset.kgFlightSimFirstFrameSurface
-  }
-
-  const resetPresented = () => {
-    if (presented.current.map === map) {
-      presented.current = {
-        map: null,
-        readyFrameRequestId: null,
-        revision: '',
-      }
-    }
-  }
-
-  const request = (overlay: FlightGeoOverlaySnapshot) => {
-    // Provider-style promotion can remount the same ready tick after its
-    // one-shot deadline request was consumed. It still needs visual
-    // acknowledgement, but must not recreate first-frame proof below.
-    const presentable = overlay.phase === 'stopped'
-      || (
-        overlay.phase === 'ready'
-        && overlay.tick === 0
-        && overlay.runId > 0
-      )
-    if (!presentable || typeof map.on !== 'function') return
-    // Stopped presentation is intentionally repeatable: an idempotent surface
-    // open can create a fresh preparation request without changing simulation
-    // state or the projection revision.
-    if (
-      overlay.phase !== 'stopped'
-      && presented.current.map === map
-      && presented.current.revision === overlay.revision
-      && presented.current.readyFrameRequestId
-        === overlay.readyFrameRequestId
-    ) return
-    if (
-      pending?.revision === overlay.revision
-      && pending.readyFrameRequestId === overlay.readyFrameRequestId
-    ) return
-    cancel()
-
-    const listener = () => {
-      if (pending?.listener !== listener) return
-      const current = readOverlay()
-      const exact = (
-        active()
-        && current.active
-        && current.revision === overlay.revision
-        && current.phase === overlay.phase
-        && current.profileId === overlay.profileId
-        && current.readyFrameRequestId === overlay.readyFrameRequestId
-        && current.runId === overlay.runId
-        && current.tick === overlay.tick
-      )
-      if (!exact) {
-        cancel()
-        return
-      }
-      const canvas = readCanvas()
-      let canvasVisible = false
-      if (canvas) {
-        try {
-          const rect = canvas.getBoundingClientRect()
-          canvasVisible = rect.width > 0 && rect.height > 0
-        } catch {
-          canvasVisible = false
-        }
-      }
-      if (!mapHasExactFlightOverlay(map, current) || !canvas || !canvasVisible) {
-        if (!pending) return
-        pending.attempts += 1
-        if (pending.attempts >= pending.limit) {
-          cancel()
-          return
-        }
-        try {
-          map.triggerRepaint?.()
-        } catch {
-          void 0
-        }
-        return
-      }
-
-      cancel()
-      const readyTickZero = (
-        current.phase === 'ready'
-        && current.tick === 0
-      )
-      // A consumed ready-frame request may revalidate the provider style.
-      // It neither creates nor erases the one-shot proof already earned by
-      // this same map canvas.
-      if (readyTickZero && current.readyFrameRequestId !== null) {
-        canvas.dataset.kgFlightSimFirstFrameSurface = 'maplibre'
-        canvas.dataset.kgFlightSimFirstFrame = '1'
-      } else if (!readyTickZero) {
-        delete canvas.dataset.kgFlightSimFirstFrame
-        delete canvas.dataset.kgFlightSimFirstFrameSurface
-      }
-      const presentation = Object.freeze({
-        phase: current.phase,
-        profileId: current.profileId,
-        readyFrameRequestId: current.readyFrameRequestId,
-        revision: current.revision,
-        runId: current.runId,
-        tick: current.tick,
-      })
-      if (readyTickZero) {
-        markMapLibreFlightOverlayPresented(map, presentation)
-      }
-      if (
-        readyTickZero
-        && current.readyFrameRequestId !== null
-      ) {
-        markMapLibreFlightReadyFramePresented(
-          map,
-          current.revision,
-          current.readyFrameRequestId,
-        )
-      }
-      onPresented?.(presentation)
-      const root = readRoot()
-      if (root) {
-        root.dataset.kgFlightGeospatialPresentedRevision = current.revision
-      }
-      presented.current = {
-        map,
-        readyFrameRequestId: current.readyFrameRequestId,
-        revision: current.revision,
-      }
-    }
-
-    pending = {
-      attempts: 0,
-      listener,
-      limit: overlay.phase === 'stopped'
-        ? FLIGHT_GEO_PREPARATION_RENDER_ATTEMPT_LIMIT
-        : FLIGHT_GEO_READY_RENDER_ATTEMPT_LIMIT,
-      readyFrameRequestId: overlay.readyFrameRequestId,
-      revision: overlay.revision,
-    }
-    try {
-      map.on('render', listener)
-      map.triggerRepaint?.()
-    } catch {
-      cancel()
-    }
-  }
-
-  return Object.freeze({
-    cancel,
-    clearCanvas,
-    request,
-    resetPresented,
-  })
+  const requiresBootstrapPresentation = (
+    overlay.phase === 'stopped'
+    || (overlay.phase === 'ready' && overlay.tick === 0)
+  )
+  if (
+    !requiresBootstrapPresentation
+    || canMapLibreFlightOverlayPresent(map, overlay)
+    || canReuseCommittedStoppedFrame
+  ) return false
+  requestMapLibreFlightPresentationBootstrap(map, overlay)
+  return true
 }
 
 export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
@@ -316,6 +89,25 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     readyFrameRequestId: null,
     revision: '',
   })
+  const savedMapPaddingRef = React.useRef<SavedMapPadding>({
+    map: null,
+    padding: null,
+  })
+
+  const restoreMapPadding = React.useCallback((map: any | null) => {
+    if (savedMapPaddingRef.current.map !== map) return
+    const padding = savedMapPaddingRef.current.padding
+    if (padding) map?.setPadding?.(padding)
+    savedMapPaddingRef.current = { map: null, padding: null }
+  }, [])
+
+  const captureMapPadding = React.useCallback((map: any) => {
+    if (savedMapPaddingRef.current.map === map) return
+    savedMapPaddingRef.current = {
+      map,
+      padding: readSavedFlightGeoMapPadding(map),
+    }
+  }, [])
 
   React.useEffect(() => {
     const map = options.map
@@ -335,8 +127,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       const root = options.rootRef.current
       if (root) {
         delete root.dataset.kgFlightGeospatialEnvironment
-        delete root.dataset.kgFlightGeospatialPresentedRevision
+        delete root.dataset.kgFlightGeospatialCameraPadding
+        clearFlightGeoPresentationDebug(root)
       }
+      restoreMapPadding(map)
       if (presentedRef.current.map === map) {
         presentedRef.current = {
           map: null,
@@ -348,6 +142,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   }, [
     options.map,
     options.rootRef,
+    restoreMapPadding,
   ])
 
   React.useEffect(() => {
@@ -355,8 +150,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     const root = options.rootRef.current
     if (root) {
       delete root.dataset.kgFlightGeospatialEnvironment
-      delete root.dataset.kgFlightGeospatialPresentedRevision
+      delete root.dataset.kgFlightGeospatialCameraPadding
+      clearFlightGeoPresentationAttemptDebug(root)
     }
+    restoreMapPadding(map)
     if (presentedRef.current.map === map) {
       presentedRef.current = {
         map: null,
@@ -367,6 +164,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   }, [
     options.map,
     options.rootRef,
+    restoreMapPadding,
     options.styleRevision,
     options.viewMode,
   ])
@@ -381,6 +179,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           onPresented: options.onPresented,
           presented: presentedRef,
           readRoot: () => options.rootRef.current,
+          viewMode: options.viewMode,
         })
       : null
     const apply = () => {
@@ -399,7 +198,8 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           delete root.dataset.kgFlightGeospatialOverlay
           delete root.dataset.kgFlightGeospatialRevision
           delete root.dataset.kgFlightGeospatialEnvironment
-          delete root.dataset.kgFlightGeospatialPresentedRevision
+          delete root.dataset.kgFlightGeospatialCameraPadding
+          clearFlightGeoPresentationDebug(root)
         }
       }
       if (!map || !options.mapLibreRuntimeEnabled || !gate) {
@@ -412,8 +212,24 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         gate.clearCanvas()
         gate.resetPresented()
         fitRef.current = { key: '', map: null }
+        restoreMapPadding(map)
         clearFlightGeoOverlayFromMap(map)
         clearFlightGeoEnvironmentFromMap(map)
+        return
+      }
+      if (isMapLibreMapPreparingForDisposal(map)) return gate.cancel()
+      // A retained provider map stays mounted while Flight installs its local
+      // bootstrap style. Only the settled bootstrap may receive the stopped
+      // preparation payload; `style.load` replays this apply after handoff.
+      const canReuseCommittedStoppedFrame =
+        gate.canReuseCommittedStoppedFrame(overlay)
+      if (deferFlightGeoPresentationForBootstrapRecovery(
+        map,
+        overlay,
+        canReuseCommittedStoppedFrame,
+      )) {
+        gate.cancel()
+        gate.clearCanvas()
         return
       }
       if (overlay.phase === 'stopped') gate.clearCanvas()
@@ -422,30 +238,46 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         overlay,
         options.viewMode,
       )
-      const applied = environmentApplied
-        && applyFlightGeoOverlayToMap(map, overlay)
+      const applied = applyFlightGeoOverlayToMap(map, overlay)
+      const completePresentation = environmentApplied && applied
+      const cameraPadding = readFlightGeoMapViewportPadding(map)
+      if (root) {
+        root.dataset.kgFlightGeospatialCameraPadding =
+          flightGeoMapViewportPaddingKey(cameraPadding)
+      }
       const fitKey = [
         options.styleRevision,
         options.viewMode,
         overlay.profileId,
+        overlay.environment?.revision || 'no-environment',
+        flightGeoMapViewportPaddingKey(cameraPadding),
       ].join(':')
       if (
-        applied
+        completePresentation
         && (
           fitRef.current.map !== map
           || fitRef.current.key !== fitKey
         )
-        && fitMapToFlightGeoOverlay(map, overlay)
+        && fitMapToFlightGeoOverlay(map, overlay, cameraPadding)
       ) {
         fitRef.current = { key: fitKey, map }
       }
-      if (!applied) return
+      if (!completePresentation) return
       const cameraApplied = overlay.camera.effectiveOwner === 'free-orbit'
-        || applyFlightGeoOverlayCameraToMap(
-          map,
-          overlay,
-          options.viewMode,
-        )
+        || (() => {
+          captureMapPadding(map)
+          return applyFlightGeoOverlayCameraToMap(
+            map,
+            overlay,
+            options.viewMode,
+            cameraPadding,
+            { stageStopped: overlay.phase === 'stopped' },
+          )
+        })()
+      // Stopped preparation first fits the full local environment, then stages
+      // the deterministic tick-zero follow camera and waits for that painter
+      // frame. Ready can therefore re-arm its request without another camera
+      // transform or GeoJSON worker update.
       if (cameraApplied) gate.request(overlay)
     }
     const scheduleFinalApply = () => {
@@ -456,16 +288,31 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         apply()
       })
     }
+    const unsubscribeBootstrapSettled = map
+      ? subscribeMapLibreFlightBootstrapSettled(map, () => {
+          apply()
+          scheduleFinalApply()
+        })
+      : () => void 0
+    const unsubscribeDisposalPreparation = map ? subscribeMapLibreMapDisposalPreparation(map, scheduleFinalApply) : () => void 0
     apply()
     scheduleFinalApply()
     const unsubscribe = subscribeFlightGeoOverlay(apply)
     map?.on?.('style.load', scheduleFinalApply)
     map?.on?.('load', scheduleFinalApply)
+    map?.on?.('resize', scheduleFinalApply)
+    const root = options.rootRef.current
+    const observedRoot = root || map?.getContainer?.()
+    const stopObservingOcclusion = observeFlightGeoMapOcclusionChanges(observedRoot || null, scheduleFinalApply)
     return () => {
       unsubscribe()
+      unsubscribeBootstrapSettled()
+      unsubscribeDisposalPreparation()
       map?.off?.('style.load', scheduleFinalApply)
       map?.off?.('load', scheduleFinalApply)
-      gate?.cancel()
+      map?.off?.('resize', scheduleFinalApply)
+      stopObservingOcclusion()
+      gate?.dispose()
       if (pendingCameraFrame && typeof window !== 'undefined') {
         window.cancelAnimationFrame(pendingCameraFrame)
       }
@@ -478,6 +325,8 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     options.mapLibreRuntimeEnabled,
     options.onPresented,
     options.rootRef,
+    captureMapPadding,
+    restoreMapPadding,
     options.styleRevision,
     options.viewMode,
   ])

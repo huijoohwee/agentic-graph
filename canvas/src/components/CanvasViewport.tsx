@@ -116,6 +116,9 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const nativeXrRunReadyDemo = isNativeXrRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const { citySimActive, gameFpsActive, flightSimActive } = useCanvasGameplayOverlayState()
   const gameplayOverlayActive = citySimActive || gameFpsActive || flightSimActive
+  // City is a single-canvas XR surface.  Preserve the user's Geo preference
+  // for restoration, but remove the live Geo composition while City owns XR.
+  const geospatialCompositionEnabled = geospatialModeEnabled && !citySimActive
   const sourceFilesBootstrap = useSourceFilesBootstrapSnapshot()
   const sourceFilesBootstrapReady = sourceFilesBootstrap.phase === 'ready'
   const gameFpsHudVisible = gameFpsActive && sourceFilesBootstrapReady
@@ -177,7 +180,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const mermaidEventModelingBottomPanelVisible = bottomSurfaceCollapsed !== true && bottomSurfaceTab === 'eventModeling'
   const { paywallEnabled, floatingPanelOpen, floatingPanelView } = useGraphStore(
     useShallow(s => ({
-      paywallEnabled: s.paymentsStripePaywallEnabled === true,
+      paywallEnabled: s.paymentsPaywallEnabled === true,
       floatingPanelOpen: s.floatingPanelOpen === true,
       floatingPanelView: s.floatingPanelView,
     })),
@@ -188,15 +191,16 @@ export function CanvasViewport(props: CanvasViewportProps) {
     documentSemanticMode,
     frontmatterModeEnabled,
     multiDimTableModeEnabled,
-    geospatialEnabled: geospatialModeEnabled,
+    geospatialEnabled: geospatialCompositionEnabled,
     schema,
   })
-  const geospatialXrModeEnabled = geospatialModeEnabled && canvasRenderMode === '3d' && effectiveCanvas3dMode === 'xr'
+  const geospatialXrModeEnabled = geospatialCompositionEnabled && canvasRenderMode === '3d' && effectiveCanvas3dMode === 'xr'
   const { activeSurface, geospatialOverlayOwnsViewport } = resolveCanvasSurfaceOwnership({
     canvasRenderMode,
+    citySimActive,
     flightSimActive,
     gameplayOverlayActive,
-    geospatialModeEnabled,
+    geospatialModeEnabled: geospatialCompositionEnabled,
     geospatialXrModeEnabled,
     workspaceEditorOverlayOpen,
     workspaceStoryboardSurfaceActive: active2dSurface === 'storyboard',
@@ -233,7 +237,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
     workspaceEditorOverlayOpen,
     workspaceDocumentSwitchPending: documentSwitchBlocksCanvas,
     floatingPanelOpen,
-    alternateCanvasSurfaceActive: geospatialModeEnabled || canvasRenderMode !== '2d',
+    alternateCanvasSurfaceActive: geospatialCompositionEnabled || canvasRenderMode !== '2d',
   })
   const documentSwitchOwnsViewport = shouldDocumentSwitchOwnCanvasViewport({
     documentSwitchBlocksCanvas,
@@ -478,19 +482,19 @@ export function CanvasViewport(props: CanvasViewportProps) {
             <ThreeGraphLazy active={threeCanvasSurface.active} geospatialComposite={geospatialXrModeEnabled} mode={effectiveCanvas3dMode} />
           </section>
         ) : null}
-        {!documentSwitchOwnsViewport && geospatialModeEnabled && active2dSurface === 'storyboard' ? (
+        {!documentSwitchOwnsViewport && geospatialCompositionEnabled && active2dSurface === 'storyboard' ? (
           <section className="absolute inset-0 z-[30] pointer-events-none" aria-hidden="true">
             <StoryboardWidgetDropBridgeLazy active={false} widgetDropCaptureEnabled geospatialWidgetPanelMode />
           </section>
         ) : null}
 
-        {!documentSwitchOwnsViewport && geospatialModeEnabled && !heavyRuntimeIntentBlocked ? (
+        {!documentSwitchOwnsViewport && geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (
           <CanvasViewportGeospatialOverlayLazy
             active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
             composedWithXr={geospatialXrModeEnabled}
-            geospatialModeEnabled={geospatialModeEnabled}
+            geospatialModeEnabled={geospatialCompositionEnabled}
             graphData={safeGraphData}
-            storyboardWidgetPanelsActive={geospatialModeEnabled && active2dSurface === 'storyboard'}
+            storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
           />
         ) : null}
         {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && flightSimHudVisible ? <FlightSimGeoSurfaceOverlayLazy /> : null}

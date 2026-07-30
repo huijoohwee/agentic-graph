@@ -30,10 +30,6 @@ function publishGeospatialModeEnabled(enabled: boolean, opts?: { emitAlways?: bo
   return previous
 }
 
-export function publishGeospatialModeEnabledState(enabled: boolean): boolean {
-  return publishGeospatialModeEnabled(enabled, { emitAlways: true })
-}
-
 export async function importGympgrph(): Promise<typeof import('gympgrph')> {
   try {
     return await import('gympgrph')

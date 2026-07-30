@@ -29,6 +29,96 @@ def _read_deadlines(page: Page) -> dict[str, Any]:
     )
 
 
+def _read_ready_frame_debug(page: Page) -> dict[str, Any]:
+    return page.evaluate(
+        """
+        async () => {
+          const proof = window.__kgFlightSimBrowserProof
+          const [deadlines, runtime, geo] = await Promise.all([
+            proof.importModule('flightSimDeadlineRuntime'),
+            proof.importModule('flightSimRuntime'),
+            proof.importModule('gympgrphStore'),
+          ])
+          const map = geo.readActiveMapLibreMap?.() || null
+          const readSource = sourceId => {
+            const source = map?.getSource?.(sourceId)
+            let loaded = null
+            let featureCount = null
+            try {
+              loaded = typeof source?.loaded === 'function'
+                ? source.loaded() === true
+                : null
+            } catch {
+              loaded = false
+            }
+            try {
+              const data = source?.serialize?.()?.data
+              featureCount = Array.isArray(data?.features)
+                ? data.features.length
+                : null
+            } catch {
+              featureCount = null
+            }
+            return { present: Boolean(source), loaded, featureCount }
+          }
+          const overlay = geo.readFlightGeoOverlay?.() || null
+          const canvas = map?.getCanvas?.() || null
+          const style = map?.getStyle?.() || null
+          const root = document.querySelector('[data-kg-flight-geospatial-overlay]')
+          return {
+            deadline: deadlines.readFlightSimDeadlineSnapshot().readyFrame || null,
+            readyFrameRequestId: deadlines.readCurrentFlightSimReadyFrameRequestId?.() ?? null,
+            flight: runtime.readFlightSimSnapshot?.() || null,
+            overlay: overlay ? {
+              active: overlay.active,
+              phase: overlay.phase,
+              profileId: overlay.profileId,
+              readyFrameRequestId: overlay.readyFrameRequestId,
+              revision: overlay.revision,
+              runId: overlay.runId,
+              tick: overlay.tick,
+              environmentRevision: overlay.environment?.revision || null,
+            } : null,
+            presentation: root instanceof HTMLElement ? {
+              attempts: root.dataset.kgFlightGeospatialRenderAttempts || null,
+              phase: root.dataset.kgFlightGeospatialPresentationPhase || null,
+              readyFrameRequestId:
+                root.dataset.kgFlightGeospatialPresentationRequest || null,
+              revision:
+                root.dataset.kgFlightGeospatialPresentationRevision || null,
+              stoppedEnvironmentLoaded:
+                root.dataset.kgFlightGeospatialStoppedEnvironmentLoaded || null,
+              stoppedOverlayLoaded:
+                root.dataset.kgFlightGeospatialStoppedOverlayLoaded || null,
+              stoppedProfileId:
+                root.dataset.kgFlightGeospatialStoppedProfileId || null,
+              stoppedRevision:
+                root.dataset.kgFlightGeospatialStoppedRevision || null,
+              stoppedRunId:
+                root.dataset.kgFlightGeospatialStoppedRunId || null,
+              stoppedCameraSignature:
+                root.dataset.kgFlightGeospatialStoppedCameraSignature || null,
+              cameraSignature:
+                root.dataset.kgFlightGeospatialPresentationCameraSignature || null,
+            } : null,
+            map: {
+              canvasCount: document.querySelectorAll('.maplibregl-canvas').length,
+              isStyleLoaded: map?.isStyleLoaded?.() === true,
+              styleName: String(style?.name || ''),
+              styleVersion: Number(style?.version || 0),
+              styleLayers: Array.isArray(style?.layers)
+                ? style.layers.map(layer => String(layer?.id || ''))
+                : [],
+              firstFrame: canvas?.dataset?.kgFlightSimFirstFrame || '',
+              environment: readSource(geo.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID),
+              overlay: readSource(geo.FLIGHT_GEO_OVERLAY_SOURCE_ID),
+            },
+          }
+        }
+        """
+    )
+
+
 def _wait_for_initial_deadlines(page: Page) -> dict[str, Any]:
     deadline = time.monotonic() + 2
     observed: dict[str, Any] = {}
@@ -64,6 +154,8 @@ def verify_flight_deadline_contracts(
         raise AssertionError(
             f"Flight WebGL admission was not synchronous within 100 ms: {webgl}"
         )
+
+    initial_ready_frame = _read_ready_frame_debug(page)
     if (
         ready.get("source") != "native-maplibre-flight-ready-frame"
         or ready.get("synchronous") is not False
@@ -75,7 +167,28 @@ def verify_flight_deadline_contracts(
     ):
         raise AssertionError(
             "Flight ready frame was not presented by native MapLibre "
-            f"within 100 ms: {ready}"
+            f"within 100 ms: {ready}; debug={_read_ready_frame_debug(page)}"
+        )
+    initial_presentation = initial_ready_frame.get("presentation") or {}
+    initial_map = initial_ready_frame.get("map") or {}
+    initial_overlay = initial_ready_frame.get("overlay") or {}
+    if (
+        (initial_map.get("environment") or {}).get("loaded") is not True
+        or (initial_map.get("overlay") or {}).get("loaded") is not True
+        or initial_presentation.get("stoppedEnvironmentLoaded") != "1"
+        or initial_presentation.get("stoppedOverlayLoaded") != "1"
+        or initial_presentation.get("stoppedProfileId")
+        != initial_overlay.get("profileId")
+        or not str(initial_presentation.get("stoppedRevision") or "").strip()
+        or initial_presentation.get("stoppedRunId") != "0"
+        or not str(initial_presentation.get("stoppedCameraSignature") or "").strip()
+        or initial_presentation.get("stoppedCameraSignature")
+        != initial_presentation.get("cameraSignature")
+        or not str(initial_presentation.get("attempts") or "").isdigit()
+    ):
+        raise AssertionError(
+            "Flight Start armed without the recorded stopped MapLibre source "
+            f"settlement: {initial_ready_frame}"
         )
 
     observed_probe_transport: list[str] = []
@@ -359,6 +472,7 @@ def verify_flight_deadline_contracts(
     return {
         "webglAdmission": webgl,
         "readyFrame": ready,
+        "initialReadyFrame": initial_ready_frame,
         "gameplayNetworkBlock": network,
         "gameplayNetworkExecutorInvoked":
             interaction["networkExecutorInvoked"],

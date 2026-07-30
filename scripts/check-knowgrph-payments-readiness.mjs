@@ -20,6 +20,8 @@ const report = await inspectKnowgrphPaymentsReadiness({
   root,
   providerProof: proof,
   providerProofError: error,
+  requireTracked: false,
+  executeLocalVcc: true,
 })
 
 if (json) {

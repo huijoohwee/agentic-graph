@@ -83,7 +83,7 @@ native_flight_demo:
     timeline_override: "camera-mark playback temporarily owns framing"
     catalog_owner: "canvas/src/features/three/xrNativeControllerCameraCatalog.ts"
     selection_owner: "canvas/src/features/three/xrNativeControllerCameraRuntime.ts"
-    driver_owner: "gympgrph/src/flightGeoOverlayMapLibre.ts"
+    driver_owner: "gympgrph/src/flightGeoOverlayMapLibreCamera.ts"
     runtime_canvas_driver_owner: "canvas/src/features/three/useXrNativeControllerDemoCamera.ts"
     follow_target: "Fixed Follow drives the visible MapLibre center, bearing, pitch, and zoom; Free Orbit yields pan and zoom to MapLibre"
     flight_views: ["chase", "cockpit", "survey"]

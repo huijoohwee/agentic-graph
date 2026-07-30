@@ -1,12 +1,19 @@
 ---
-schema: kgc-computing-flow/v1
-id: knowgrph-agent-ready-prd-tad
-version: 1.27.7
-status: implemented
-created: 2026-05-21
-updated: 2026-05-29
-author: airvio / joohwee
-domain: knowgrph
+title: "Knowgrph Agent Ready - PRD + TAD (Implementation Accurate + Enhanced)"
+id: "md:knowgrph-agent-ready-prd-tad"
+doc_type: "Product and Technical Specification"
+version: "1.27.7"
+date: "2026-07-30"
+lang: "en-US"
+owner: "cloudflare.pages.agent-ready.surface"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-agent-ready-prd-tad.md"
+companion: "docs/documents/knowgrph-agent-ready-prd-tad.companion.md"
+runtime_companion: "docs/documents/knowgrph-agent-ready-prd-tad.runtime.md"
+schema: "kgc-computing-flow/v1"
 tags: [agent-ready, auth-md, cloudflare, dns-aid, mcp, webmcp, a2a, markdown, share-url, source-files, workspace, chat, kgc, canvas, prd, tad]
 source_audit: isitagentready.com / Cloudflare Is Your Site Agent-Ready? + in-repo implementation audit
 constraints:

@@ -1,0 +1,501 @@
+from __future__ import annotations
+
+import time
+from typing import Any, Callable
+
+from playwright.sync_api import Page
+
+from lib.game_flight_sim_smoke_geo_view_cases import (
+    GEO_XR_VIEW_CASES,
+    select_geo_xr_view,
+)
+from lib.game_flight_sim_smoke_geo_xr import _read_view, _wait_for_view
+from lib.game_flight_sim_smoke_geo_xr_layout import (
+    prepare_reported_singapore_geo_handoff,
+)
+from lib.game_flight_sim_smoke_source_selection import (
+    close_source_files_selection_surface,
+)
+
+
+def restore_flight_sim_panel(page: Page) -> None:
+    page.evaluate(
+        """
+        async () => {
+          const graph = await window.__kgFlightSimBrowserProof.importModule(
+            'graphStore',
+          )
+          const state = graph.useGraphStore.getState()
+          state.setFloatingPanelOpen(true)
+          state.setFloatingPanelView('flightSim')
+        }
+        """
+    )
+    page.locator('[data-kg-flight-sim-floating-panel="1"]').wait_for(
+        state="visible", timeout=30_000,
+    )
+
+
+def _wait_for_browser_contract(
+    page: Page,
+    *,
+    label: str,
+    accepted: Callable[[dict[str, Any]], bool],
+) -> dict[str, Any]:
+    deadline = time.monotonic() + 30
+    observed: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        observed = _read_view(page)
+        if accepted(observed):
+            return observed
+        page.wait_for_timeout(100)
+    raise AssertionError(
+        f"timed out waiting for {label}: {observed}"
+    )
+
+
+def _exit_city_for_cleanup(page: Page) -> None:
+    observed = _read_view(page)
+    if observed.get("cityActive") is not True:
+        return
+    city_panel = page.locator('[data-kg-city-sim-floating-panel="1"]').first
+    exit_button = city_panel.locator('[data-kg-city-sim-exit="1"]').first
+    if exit_button.count() != 1 or not exit_button.is_visible():
+        return
+    exit_button.click(timeout=30_000)
+    _wait_for_browser_contract(
+        page,
+        label="City cleanup restoration",
+        accepted=lambda value: value.get("cityActive") is False
+        and value.get("geospatialEnabled") is True
+        and value.get("geospatialPreferenceEnabled") is True,
+    )
+
+
+def _install_city_map_disposal_audit(page: Page) -> None:
+    page.evaluate(
+        """
+        async () => {
+          const gympgrph = await window.__kgFlightSimBrowserProof.importModule(
+            'gympgrphStore',
+          )
+          const map = gympgrph.readActiveMapLibreMap?.() || null
+          if (!map || typeof map.remove !== 'function') {
+            throw new Error('City handoff expected a live Flight MapLibre owner.')
+          }
+          const flightSourceId = gympgrph.FLIGHT_GEO_OVERLAY_SOURCE_ID
+            || 'kg-flight-sim:geo-overlay'
+          const environmentSourceId = gympgrph.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID
+            || 'kg-flight-geo-environment'
+          const readSource = sourceId => {
+            const source = map.getSource?.(sourceId) || null
+            let data = null
+            let loaded = false
+            try { data = source?.serialize?.()?.data || null } catch { data = null }
+            try {
+              loaded = typeof source?.loaded === 'function'
+                && source.loaded() === true
+            } catch { loaded = false }
+            return {
+              features: Array.isArray(data?.features) ? data.features.length : null,
+              loaded,
+              present: Boolean(source),
+            }
+          }
+          const remove = map.remove
+          let captured = false
+          map.remove = function (...args) {
+            if (!captured) {
+              captured = true
+              window.__kgFlightCityMapDisposalAudit = {
+                environment: readSource(environmentSourceId),
+                flight: readSource(flightSourceId),
+                styleLoaded: map.isStyleLoaded?.() === true,
+              }
+            }
+            return remove.apply(this, args)
+          }
+        }
+        """
+    )
+
+
+def _source_disposal_was_settled(source: Any) -> bool:
+    if not isinstance(source, dict):
+        return False
+    # The canonical disposal contract accepts either a loaded empty source or
+    # a source already removed with its layers. Both leave zero renderable
+    # Flight geometry before the MapLibre canvas owner is disposed.
+    if source.get("present") is False:
+        return True
+    return (
+        source.get("present") is True
+        and source.get("features") == 0
+        and source.get("loaded") is True
+    )
+
+
+def verify_flight_geo_xr_city_handoff(
+    page: Page,
+    *,
+    expected_provider_host: str,
+    expected_view: str,
+    expected_projection: str,
+    expected_style_url: str,
+) -> dict[str, Any]:
+    before = _read_view(page)
+    if (
+        before.get("flightActive") is not True
+        or before.get("hudVisible") is not True
+        or before.get("geospatialEnabled") is not True
+        or before.get("geospatialPreferenceEnabled") is not True
+    ):
+        raise AssertionError(
+            "City handoff requires an active Flight Geo+XR surface: "
+            f"{before}"
+        )
+
+    _install_city_map_disposal_audit(page)
+    city_trigger = page.locator(
+        '[data-kg-floating-panel-view-trigger="cityBuilder"]',
+    ).first
+    city_trigger.wait_for(state="visible", timeout=30_000)
+    city_trigger.click(timeout=30_000)
+    city_panel = page.locator('[data-kg-city-sim-floating-panel="1"]').first
+    city_panel.wait_for(state="visible", timeout=30_000)
+    open_button = city_panel.locator('[data-kg-city-sim-open="1"]').first
+    open_button.wait_for(state="visible", timeout=30_000)
+    if open_button.is_disabled():
+        raise AssertionError("City Builder Open was disabled during Flight handoff")
+    open_button.click(timeout=30_000)
+
+    city = _wait_for_browser_contract(
+        page,
+        label="exclusive City XR surface after Flight Geo+XR",
+        accepted=lambda value: (
+            value.get("flightActive") is False
+            and value.get("cityActive") is True
+            and value.get("cityPanelVisible") is True
+            and value.get("cityStageActive") is True
+            and value.get("floatingPanelOpen") is True
+            and value.get("floatingPanelView") == "cityBuilder"
+            and value.get("renderMode") == "3d"
+            and value.get("canvas3dMode") == "xr"
+            and value.get("geospatialEnabled") is False
+            and value.get("geospatialPreferenceEnabled") is False
+            and value.get("geoXrSurfaceActive") is False
+            and value.get("geoXrLayerCount") == 0
+            and value.get("activeMapPresent") is False
+            and value.get("mapLibreCanvasCount") == 0
+            and value.get("visibleMapLibreCanvasCount") == 0
+            and value.get("threeCanvasOwnerCount") == 1
+            and value.get("hudVisible") is False
+            and value.get("flightHudCount") == 0
+            and value.get("flightSourceFeatures") == 0
+            and value.get("environmentSourceFeatures") == 0
+            and value.get("renderedFeatureCount") == 0
+            and value.get("renderedEnvironmentFeatureCount") == 0
+        ),
+    )
+    disposal = page.evaluate(
+        "() => window.__kgFlightCityMapDisposalAudit || null"
+    )
+    if (
+        not isinstance(disposal, dict)
+        or not _source_disposal_was_settled(disposal.get("flight"))
+        or not _source_disposal_was_settled(disposal.get("environment"))
+    ):
+        raise AssertionError(
+            "City disposed the Flight MapLibre owner before its GeoJSON sources "
+            f"were cleared and settled: {disposal}"
+        )
+
+    exit_button = city_panel.locator('[data-kg-city-sim-exit="1"]').first
+    exit_button.wait_for(state="visible", timeout=30_000)
+    if exit_button.is_disabled():
+        raise AssertionError("City Builder Exit was disabled during handoff proof")
+    exit_button.click(timeout=30_000)
+    restored = _wait_for_browser_contract(
+        page,
+        label="awaited City Geo+XR preference restoration",
+        accepted=lambda value: (
+            value.get("flightActive") is False
+            and value.get("cityActive") is False
+            and value.get("cityPanelVisible") is True
+            and value.get("cityStageActive") is False
+            and value.get("floatingPanelOpen") is True
+            and value.get("floatingPanelView") == "cityBuilder"
+            and value.get("renderMode") == "3d"
+            and value.get("canvas3dMode") == "xr"
+            and value.get("geospatialEnabled") is True
+            and value.get("geospatialPreferenceEnabled") is True
+            and value.get("geoXrSurfaceActive") is True
+            and value.get("geoXrLayerCount") == 1
+            and value.get("activeMapPresent") is True
+            and value.get("mapLibreCanvasCount") == 1
+            and value.get("visibleMapLibreCanvasCount") == 1
+            and value.get("threeCanvasOwnerCount") == 1
+            and value.get("hudVisible") is False
+            and value.get("flightHudCount") == 0
+            and value.get("flightSourceFeatures") == 0
+            and value.get("environmentSourceFeatures") == 0
+            and value.get("renderedFeatureCount") == 0
+            and value.get("renderedEnvironmentFeatureCount") == 0
+        ),
+    )
+
+    flight_trigger = page.locator(
+        '[data-kg-floating-panel-view-trigger="flightSim"]',
+    ).first
+    flight_trigger.wait_for(state="visible", timeout=30_000)
+    flight_trigger.click(timeout=30_000)
+    flight_panel = page.locator('[data-kg-flight-sim-floating-panel="1"]').first
+    flight_panel.wait_for(state="visible", timeout=30_000)
+    reopen_button = flight_panel.locator('[data-kg-flight-sim-open="1"]').first
+    reopen_button.wait_for(state="visible", timeout=30_000)
+    if reopen_button.is_disabled():
+        raise AssertionError("Flight Sim Open was disabled after City exit")
+    reopen_button.click(timeout=30_000)
+    reopened = _wait_for_view(
+        page,
+        expected_provider_host=expected_provider_host,
+        expected_view=expected_view,
+        expected_projection=expected_projection,
+        expected_style_url=expected_style_url,
+        require_visual_layout=True,
+    )
+    if (
+        reopened.get("cityActive") is not False
+        or reopened.get("cityStageActive") is not False
+        or reopened.get("hudVisible") is not True
+    ):
+        raise AssertionError(
+            "normal Flight reopen did not restore the Flight-only Geo+XR view: "
+            f"{reopened}"
+        )
+    return {
+        "before": before,
+        "city": city,
+        "mapDisposalClear": disposal,
+        "restored": restored,
+        "reopened": reopened,
+    }
+
+
+def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
+    baseline_camera = page.evaluate(
+        """
+        async () => {
+          const [camera, cameraSource, graph, gympgrph] = await Promise.all([
+            window.__kgFlightSimBrowserProof.importModule('flightSimCameraRuntime'),
+            window.__kgFlightSimBrowserProof.importModule('xrNativeControllerCameraRuntime'),
+            window.__kgFlightSimBrowserProof.importModule('graphStore'),
+            window.__kgFlightSimBrowserProof.importModule('gympgrphStore'),
+          ])
+          const state = graph.useGraphStore.getState()
+          return {
+            cameraPreference: camera.readFlightSimCameraSnapshot().view,
+            cameraSourceMode: cameraSource.readXrNativeControllerCamera().mode,
+            floatingPanelOpen: state.floatingPanelOpen,
+            floatingPanelView: state.floatingPanelView,
+            geospatialViewMode:
+              gympgrph.useGympgrphStore.getState().geospatialViewMode,
+            geospatialStyleUrl: localStorage.getItem(
+              gympgrph.LS_KEYS.geospatialStyleUrl,
+            ) || '',
+          }
+        }
+        """
+    )
+    results: list[dict[str, Any]] = []
+    source_files_opened = False
+    source_files_transition: dict[str, Any] | None = None
+    reported_handoff: dict[str, Any] | None = None
+    city_handoff: dict[str, Any] | None = None
+    restored_view: dict[str, Any] = {}
+
+    def restore_baseline() -> None:
+        nonlocal restored_view, source_files_transition
+        _exit_city_for_cleanup(page)
+        prior_case = next(
+            (
+                case for case in GEO_XR_VIEW_CASES
+                if case[0] == baseline_camera["geospatialViewMode"]
+                and case[3] == baseline_camera["geospatialStyleUrl"]
+            ),
+            None,
+        )
+        if prior_case is None:
+            raise AssertionError(
+                "source-authored Geo view/style was outside the four-view "
+                f"contract: {baseline_camera}"
+            )
+        select_geo_xr_view(page, prior_case[2])
+        _wait_for_view(
+            page,
+            expected_provider_host=prior_case[4],
+            expected_view=prior_case[0],
+            expected_projection=prior_case[1],
+            expected_style_url=prior_case[3],
+        )
+        restore_flight_sim_panel(page)
+        restored_view = _wait_for_view(
+            page,
+            expected_provider_host=prior_case[4],
+            expected_view=prior_case[0],
+            expected_projection=prior_case[1],
+            expected_style_url=prior_case[3],
+            require_visual_layout=source_files_opened,
+        )
+        if source_files_opened:
+            source_files_transition = close_source_files_selection_surface(page)
+        page.evaluate(
+            """
+            async prior => {
+              const graph = await window.__kgFlightSimBrowserProof.importModule(
+                'graphStore',
+              )
+              const state = graph.useGraphStore.getState()
+              state.setFloatingPanelOpen(prior.floatingPanelOpen)
+              state.setFloatingPanelView(prior.floatingPanelView)
+            }
+            """,
+            {
+                "floatingPanelOpen": baseline_camera["floatingPanelOpen"],
+                "floatingPanelView": baseline_camera["floatingPanelView"],
+            },
+        )
+
+    primary_error: BaseException | None = None
+    try:
+        reported_handoff = prepare_reported_singapore_geo_handoff(page)
+        source_files_opened = True
+        for (
+            view_mode,
+            projection,
+            button_label,
+            style_url,
+            provider_host,
+        ) in GEO_XR_VIEW_CASES:
+            select_geo_xr_view(page, button_label)
+            _wait_for_view(
+                page,
+                expected_provider_host=provider_host,
+                expected_view=view_mode,
+                expected_projection=projection,
+                expected_style_url=style_url,
+            )
+            restore_flight_sim_panel(page)
+            observed = _wait_for_view(
+                page,
+                expected_provider_host=provider_host,
+                expected_view=view_mode,
+                expected_projection=projection,
+                expected_style_url=style_url,
+                require_visual_layout=True,
+            )
+            exact_contract = {
+                "hostActive": True,
+                "rendererCanvasCount": 1,
+                "canvasStable": True,
+                "rendererAlpha": True,
+                "terrainCount": 0,
+                "nativeVisualCount": 0,
+                "flightR3fVisualCount": 0,
+                "visualProjection": "maplibre",
+                "rendererPointerTransparent": True,
+                "exclusivePlainGeoOverlayCount": 0,
+                "cameraPreference": baseline_camera["cameraPreference"],
+                "cameraSource": baseline_camera["cameraSourceMode"],
+            }
+            for key, expected in exact_contract.items():
+                if observed.get(key) != expected:
+                    raise AssertionError(
+                        f"Geo+XR {view_mode} violated {key}: "
+                        f"expected={expected!r} observed={observed}"
+                    )
+            if not observed.get("hostRevision"):
+                raise AssertionError(
+                    f"Geo+XR {view_mode} did not publish a Flight revision: "
+                    f"{observed}"
+                )
+            results.append(observed)
+        current_case = GEO_XR_VIEW_CASES[-1]
+        city_handoff = verify_flight_geo_xr_city_handoff(
+            page,
+            expected_provider_host=current_case[4],
+            expected_view=current_case[0],
+            expected_projection=current_case[1],
+            expected_style_url=current_case[3],
+        )
+        before_movement = _read_view(page)
+        page.evaluate(
+            """
+            async () => {
+              const flight = await window.__kgFlightSimBrowserProof.importModule(
+                'flightSimRuntime',
+              )
+              flight.restartFlightSim()
+              return flight.startFlightSim()
+            }
+            """
+        )
+        page.keyboard.down("KeyW")
+        try:
+            movement_deadline = time.monotonic() + 15
+            after_movement: dict[str, Any] = {}
+            while time.monotonic() < movement_deadline:
+                after_movement = _read_view(page)
+                layout = after_movement.get("layoutOcclusion") or {}
+                if (
+                    after_movement.get("flightTick", 0)
+                    > before_movement.get("flightTick", 0)
+                    and after_movement.get("overlayRevision")
+                    != before_movement.get("overlayRevision")
+                    and after_movement.get("aircraftCoordinate")
+                    != before_movement.get("aircraftCoordinate")
+                    and layout.get("aircraftUnoccluded") is True
+                ):
+                    break
+                page.wait_for_timeout(100)
+            else:
+                raise AssertionError(
+                    "MapLibre Flight aircraft did not move through the exposed "
+                    f"viewport: before={before_movement} after={after_movement}"
+                )
+        finally:
+            page.keyboard.up("KeyW")
+            page.evaluate(
+                """
+                async () => {
+                  const flight = await window.__kgFlightSimBrowserProof.importModule(
+                    'flightSimRuntime',
+                  )
+                  flight.restartFlightSim()
+                }
+                """
+            )
+    except BaseException as error:
+        primary_error = error
+        raise
+    finally:
+        try:
+            restore_baseline()
+        except BaseException:
+            if primary_error is None:
+                raise
+    return {
+        "baselineCameraPreference": baseline_camera["cameraPreference"],
+        "baselineCameraSource": baseline_camera["cameraSourceMode"],
+        "reportedSingaporeGeoHandoff": reported_handoff,
+        "cityHandoff": city_handoff,
+        "sourceFilesTransition": source_files_transition,
+        "sourceView": baseline_camera["geospatialViewMode"],
+        "sourceStyleUrl": baseline_camera["geospatialStyleUrl"],
+        "restoredView": restored_view,
+        "liveMovement": {
+            "before": before_movement,
+            "after": after_movement,
+        },
+        "views": results,
+    }

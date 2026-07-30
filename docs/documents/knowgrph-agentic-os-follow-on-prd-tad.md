@@ -1,15 +1,16 @@
 ---
 title: "Knowgrph — Agentic OS Follow-On PRD/TAD"
 id: "md:knowgrph-agentic-os-follow-on-prd-tad"
-author: "airvio / joohwee"
-date: "2026-07-03"
-updated: "2026-07-03"
+doc_type: "Product and Technical Specification"
 version: "1.0.0"
-status: "spec-complete to runtime-ready"
-doc_type: "Combined PRD/TAD"
+date: "2026-07-30"
 lang: "en-US"
-frontmatter_contract: "required"
-domain: "knowgrph"
+owner: "docs.agentic-os.follow-on"
+local_rung: "dev-proven"
+delivered_rung: "runtime-ready"
+lane: "authoring"
+universal_scope: false
+doc_path: "docs/documents/knowgrph-agentic-os-follow-on-prd-tad.md"
 parent: "docs/documents/knowgrph-agentic-os-prd-tad.md"
 parent_version: "0.4.0"
 related:
