@@ -8,6 +8,7 @@ export type FlightSimMissionStageLazyModule = Readonly<{
   default: ComponentType<{
     actorsVisible?: boolean
     coordinateScale?: number
+    geospatialComposite?: boolean
   }>
 }>
 
@@ -17,6 +18,7 @@ type FlightSimMissionStageModule = Readonly<{
   ) => ComponentType<{
     actorsVisible?: boolean
     coordinateScale?: number
+    geospatialComposite?: boolean
   }>
 }>
 

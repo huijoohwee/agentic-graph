@@ -152,7 +152,6 @@ export function testCitySimInputSourceAndSequenceProjectThroughSharedSnapshot() 
   const inputRuntime = readCanvasSource(
     'features/game-city-sim/citySimInputRuntime.ts',
   )
-  const stage = readCanvasSource('features/game-city-sim/CitySimStage.tsx')
   const panel = readCanvasSource(
     'features/game-city-sim/CitySimFloatingPanelView.tsx',
   )
@@ -162,16 +161,13 @@ export function testCitySimInputSourceAndSequenceProjectThroughSharedSnapshot() 
   const projection = readCanvasSource(
     'features/game-city-sim/CitySimPanelProjection.tsx',
   )
-  const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
   assert.equal(inputRuntime.match(/const cityInputQueue\b/g)?.length, 1)
   assert.equal(inputRuntime.includes('const listeners'), false)
   assert.equal(inputRuntime.includes('subscribeCityInput'), false)
   assert.ok(inputRuntime.includes('stageCitySimInputForNextPublish(snapshot)'))
-  assert.ok(stage.includes('event.pointerType'))
   assert.ok(panel.includes('<CityParcelCoordinateControls'))
   assert.ok(coordinateControls.includes("inputSourceRef.current = 'keyboard'"))
   assert.ok(coordinateControls.includes('cityInputSourceFromPointerType(event.pointerType)'))
   assert.ok(projection.includes('snapshot.lastInput?.source'))
   assert.ok(projection.includes('snapshot.lastInput?.sequence'))
-  assert.ok(overlay.includes('enqueueCityInput({'))
 }

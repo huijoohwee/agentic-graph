@@ -16,8 +16,17 @@ export function testWorkspaceInitializationDocsAbsRootDefaultStaysOutOfProductio
   if (!text.includes("'import.meta.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT': JSON.stringify(workspaceInitializationDocsAbsRoot)")) {
     throw new Error('expected Dev workspace docs root to be exposed to the browser seed reconciler')
   }
-  if (!text.includes('workspaceInitializationWorkspaceSeedsAbsRootForDev,')) {
-    throw new Error('expected the Dev mirror read policy to admit the derived canonical workspace-seeds root')
+  if (!text.includes("'import.meta.env.VITE_KNOWGRPH_WORKSPACE_SEEDS_READ_ABS_ROOT': JSON.stringify(workspaceInitializationWorkspaceSeedsReadAbsRootForDev)")) {
+    throw new Error('expected the active-worktree read root to be exposed to the browser seed reconciler')
+  }
+  if (!text.includes('resolveWorkspaceInitializationWorkspaceSeedsReadRoot({')) {
+    throw new Error('expected Dev workspace seed reads to resolve through the active-worktree owner')
+  }
+  if (text.includes("path.resolve(configuredDocsRoot, '..', '..', 'knowgrph', 'docs', 'workspace-seeds')")) {
+    throw new Error('expected Dev workspace seeds never to drift through another Knowgrph checkout')
+  }
+  if (!text.includes('workspaceInitializationWorkspaceSeedsReadAbsRootForDev,')) {
+    throw new Error('expected the Dev mirror read policy to admit the active-worktree workspace-seeds root')
   }
 }
 
