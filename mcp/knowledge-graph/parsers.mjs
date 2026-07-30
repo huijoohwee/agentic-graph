@@ -49,7 +49,7 @@ export const STRUCTURAL_CONFIG_PARSER_VERSION = "1.0.0";
 export const SOURCE_INVENTORY_PARSER_ID = "local-source-inventory";
 export const SOURCE_INVENTORY_PARSER_VERSION = "1.0.0";
 export const PDF_PARSER_ID = "local-pdf-markdown-adapter";
-export const PDF_PARSER_VERSION = "1.0.0";
+export const PDF_PARSER_VERSION = "1.1.0";
 const MAX_PARSER_NODES = 100_000;
 const MAX_PARSER_EDGES = 200_000;
 const MAX_PARSER_RECORDS = 250_000;
@@ -677,19 +677,65 @@ async function parsePdfSource(source, options) {
         maxRecords: options.maxRecords,
       });
     }
-    const pageCount = lines.filter((line) => /^## Page [1-9][0-9]*\s*$/.test(line.trim())).length;
-    const textLineCount = lines.slice(1).filter((line) => {
-      options.checkpoint("pdf.converted-lines");
-      const trimmed = line.trim();
-      return trimmed && !/^## Page [1-9][0-9]*\s*$/.test(trimmed);
-    }).length;
-    if (!pageCount) throw new Error("PDF conversion found no readable pages.");
-    if (!textLineCount) throw new Error("PDF conversion found no extractable text; image-only or encrypted input requires an explicit local OCR lane.");
+    const extraction = converted && typeof converted === "object"
+      && converted.extraction && typeof converted.extraction === "object"
+      ? converted.extraction
+      : null;
+    const { pageCount, textLineCount } = extraction
+      ? {
+          pageCount: Number(extraction.pageCount),
+          textLineCount: Number(extraction.textLineCount),
+        }
+      : {
+          pageCount: lines.filter((line) => /^## Page [1-9][0-9]*\s*$/.test(line.trim())).length,
+          textLineCount: lines.slice(1).filter((line) => {
+            options.checkpoint("pdf.converted-lines");
+            const trimmed = line.trim();
+            return trimmed && !/^## Page [1-9][0-9]*\s*$/.test(trimmed);
+          }).length,
+        };
+    if (!Number.isSafeInteger(pageCount) || pageCount < 1) {
+      throw new Error("PDF conversion found no readable pages.");
+    }
+    const blankPageCount = Number(extraction?.blankPageCount || 0);
+    const contentClass = String(extraction?.contentClass || (textLineCount ? "text" : "unknown"));
+    if (extraction) {
+      if (!Number.isSafeInteger(textLineCount)
+        || textLineCount < 0
+        || !Number.isSafeInteger(blankPageCount)
+        || blankPageCount < 0
+        || blankPageCount > pageCount
+        || !["blank", "text", "text-with-blank-pages"].includes(contentClass)
+        || (
+          contentClass === "blank"
+          && (textLineCount !== 0 || blankPageCount !== pageCount)
+        )
+        || (
+          contentClass === "text"
+          && (textLineCount === 0 || blankPageCount !== 0)
+        )
+        || (
+          contentClass === "text-with-blank-pages"
+          && (textLineCount === 0 || blankPageCount < 1 || blankPageCount >= pageCount)
+        )) {
+        throw new Error("PDF converter returned inconsistent extraction metadata.");
+      }
+    }
+    const blankDocument = contentClass === "blank"
+      && Number.isSafeInteger(blankPageCount)
+      && blankPageCount === pageCount
+      && Number(extraction?.pageCount) === pageCount
+      && Number(extraction?.textLineCount) === 0;
+    if (!textLineCount && !blankDocument) {
+      throw new Error("PDF conversion found no extractable text; image-only, encrypted, or unsupported visual content requires an explicit local OCR lane.");
+    }
     const fragment = parseMarkdownStructure(source, descriptor, markdown, {
       "pdf:conversionHash": sha256(markdown),
       "pdf:converterVersion": String(options.pdfConverterVersion || "injected"),
       "pdf:pageCount": pageCount,
       "pdf:textLineCount": textLineCount,
+      "pdf:blankPageCount": extraction ? blankPageCount : 0,
+      "pdf:contentClass": blankDocument ? "blank" : contentClass,
     }, options);
     const converterDiagnostics = converted
       && typeof converted === "object"

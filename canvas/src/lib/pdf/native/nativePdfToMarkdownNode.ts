@@ -9,6 +9,45 @@ import { maybeEnhancePageWithOcr } from './pdfOcrEnhance'
 import type { PdfDict, PdfRef } from './pdfObjects'
 import { createPdfStreamDecodeCache, deref, expandObjectStreams, getDictValue, isArray, isDict, isName, isNumber, isRef, parseIndirectObjects, readStream } from './pdfObjects'
 
+export type NativePdfPageObservation = {
+  pageNumber: number
+  contentByteCount: number
+  contentStreamCount: number
+  decodedContentStreamCount: number
+  contentTruncated: boolean
+  contentShapeValid: boolean
+  hasAnnotationsEntry: boolean
+  textFragmentCount: number
+  markdownTextLineCount: number
+  structurallyBlank: boolean
+}
+
+export type NativePdfConversionResult = {
+  markdown: string
+  assets: NativePdfAsset[]
+  pageObservations: NativePdfPageObservation[]
+}
+
+function isStructurallyBlankPdfPage(contentBytes: Buffer): boolean {
+  const observable = contentBytes
+    .toString('latin1')
+    .replace(/%[^\r\n]*/g, ' ')
+    .trim()
+  if (!observable) return true
+  return observable.split(/\s+/).every(token => token === 'q' || token === 'Q')
+}
+
+function escapeReservedPageMarkerLines(markdown: string): string {
+  return markdown
+    .split('\n')
+    .map((line, index) => (
+      index > 0 && /^## Page [1-9][0-9]*\s*$/.test(line.trim())
+        ? line.replace(/^(\s*)##/, '$1\\##')
+        : line
+    ))
+    .join('\n')
+}
+
 export async function convertPdfFileToMarkdown(args: {
   pdfPath: string
   title: string
@@ -34,7 +73,7 @@ export async function convertPdfFileToMarkdown(args: {
   maxFormXObjectBytes?: number
   maxFormXObjectStreamBytes?: number
   maxFormXObjectCount?: number
-}): Promise<{ markdown: string; assets: NativePdfAsset[] }> {
+}): Promise<NativePdfConversionResult> {
   const buf = await fs.readFile(args.pdfPath)
   return await convertPdfBytesToMarkdown({
     pdfBytes: buf,
@@ -89,7 +128,7 @@ export async function convertPdfBytesToMarkdown(args: {
   maxFormXObjectBytes?: number
   maxFormXObjectStreamBytes?: number
   maxFormXObjectCount?: number
-}): Promise<{ markdown: string; assets: NativePdfAsset[] }> {
+}): Promise<NativePdfConversionResult> {
   {
     const raw = String(process.env.KNOWGRPH_PDF_MAX_BYTES || '').trim()
     const n = raw ? Number(raw) : NaN
@@ -175,6 +214,7 @@ export async function convertPdfBytesToMarkdown(args: {
   docLines.push('')
 
   const allAssets: NativePdfAsset[] = []
+  const pageObservations: NativePdfPageObservation[] = []
   const toUnicodeCache = new Map<number, Map<string, string>>()
 
   for (let i = 0; i < usedPages.length; i += 1) {
@@ -182,14 +222,18 @@ export async function convertPdfBytesToMarkdown(args: {
     const p = usedPages[i]
     const pageDict = objects.get(p.ref.obj)?.dict || null
     const contentVal = pageDict ? getDictValue(pageDict, 'Contents') : null
+    const contentShapeValid = contentVal == null
+      || isRef(contentVal)
+      || (isArray(contentVal) && contentVal.items.every(isRef))
     const contentRefs = (() => {
-      const v = deref(objects, contentVal)
       if (isRef(contentVal)) return [contentVal]
-      if (isRef(v)) return [v]
-      if (isArray(v)) return v.items.filter(isRef)
+      if (isArray(contentVal)) return contentVal.items.filter(isRef)
       return []
     })()
-    const contentBytes = (() => {
+    const hasAnnotationsEntry = pageDict
+      ? getDictValue(pageDict, 'Annots') != null
+      : false
+    const content = (() => {
       const parts: Buffer[] = []
       const maxContentStreamDecodeBytes = (() => {
         if (typeof args.contentStreamMaxDecodeBytes === 'number' && args.contentStreamMaxDecodeBytes > 0) {
@@ -210,21 +254,30 @@ export async function convertPdfBytesToMarkdown(args: {
         return 8 * 1024 * 1024
       })()
       let used = 0
+      let decodedContentStreamCount = 0
+      let contentTruncated = false
       for (const r of contentRefs) {
         if (maxPageContentBytes > 0 && used >= maxPageContentBytes) break
         const st = readStream(objects, r, streamDecodeCache, { maxOutputLength: maxContentStreamDecodeBytes, onError: 'null' })
         if (!st.bytes) continue
+        decodedContentStreamCount += 1
         if (maxPageContentBytes > 0) {
           const remaining = maxPageContentBytes - used
           if (remaining <= 0) break
+          if (st.bytes.length > remaining) contentTruncated = true
           parts.push(st.bytes.length > remaining ? st.bytes.subarray(0, remaining) : st.bytes)
           used += Math.min(remaining, st.bytes.length)
         } else {
           parts.push(st.bytes)
         }
       }
-      return parts.length > 0 ? Buffer.concat(parts) : Buffer.alloc(0)
+      return {
+        bytes: parts.length > 0 ? Buffer.concat(parts) : Buffer.alloc(0),
+        decodedContentStreamCount,
+        contentTruncated,
+      }
     })()
+    const contentBytes = content.bytes
     if (debugTiming) process.stderr.write(`[pdf] page=${i + 1}/${usedPages.length} contentBytes=${contentBytes.length}ms=${Date.now() - tp0}\n`)
 
     const tf0 = debugTiming ? Date.now() : 0
@@ -244,6 +297,23 @@ export async function convertPdfBytesToMarkdown(args: {
       maxFormXObjectStreamBytes: args.maxFormXObjectStreamBytes,
       maxFormXObjectCount: args.maxFormXObjectCount,
     })
+    const pageObservation = {
+      pageNumber: i + 1,
+      contentByteCount: contentBytes.length,
+      contentStreamCount: contentRefs.length,
+      decodedContentStreamCount: content.decodedContentStreamCount,
+      contentTruncated: content.contentTruncated,
+      contentShapeValid,
+      hasAnnotationsEntry,
+      textFragmentCount: fragments.length,
+      markdownTextLineCount: 0,
+      structurallyBlank: fragments.length === 0
+        && contentShapeValid
+        && !hasAnnotationsEntry
+        && content.decodedContentStreamCount === contentRefs.length
+        && !content.contentTruncated
+        && isStructurallyBlankPdfPage(contentBytes),
+    }
     if (debugTiming) process.stderr.write(`[pdf] page=${i + 1}/${usedPages.length} textFragments=${fragments.length}ms=${Date.now() - tf0}\n`)
 
     const ti0 = debugTiming ? Date.now() : 0
@@ -269,7 +339,7 @@ export async function convertPdfBytesToMarkdown(args: {
     })
 
     const tm0 = debugTiming ? Date.now() : 0
-    const pageMd = buildMarkdownForPage({
+    const pageMd = escapeReservedPageMarkerLines(buildMarkdownForPage({
       pageIndex: i,
       fragments,
       mediaBox: p.mediaBox,
@@ -282,12 +352,21 @@ export async function convertPdfBytesToMarkdown(args: {
       tableMinColumns: args.tableMinColumns,
       tableMinRows: args.tableMinRows,
       tableMaxRows: args.tableMaxRows,
-    })
+    }))
+    pageObservation.markdownTextLineCount = pageMd
+      .split(/\r?\n/)
+      .slice(1)
+      .filter(line => line.trim()).length
+    pageObservations.push(pageObservation)
     docLines.push(pageMd)
     if (debugTiming) process.stderr.write(`[pdf] page=${i + 1}/${usedPages.length} markdownChars=${pageMd.length}ms=${Date.now() - tm0}\n`)
   }
 
-  return { markdown: docLines.join('\n'), assets: allAssets }
+  return {
+    markdown: docLines.join('\n'),
+    assets: allAssets,
+    pageObservations,
+  }
 }
 
 export async function writePdfAssets(args: { assetsDir: string; assets: NativePdfAsset[] }): Promise<void> {
