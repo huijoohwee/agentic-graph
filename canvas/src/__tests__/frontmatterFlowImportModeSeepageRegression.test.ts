@@ -6,6 +6,9 @@ import { applySavedDocumentUiPresentationState } from '@/features/canvas/graphSt
 import { applyFrontmatterFlowImportModes } from '@/features/parsers/frontmatterFlowImportMode'
 import { applyInteractiveImportModes } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 import { resolveCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import {
+  waitForCanvasFrontmatterSurfaceTransition,
+} from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 import { materializeActiveWorkspaceEntryIntoSourceFiles } from '@/features/source-files/sourceFilesRuntimeShared'
 import { LS_KEYS } from '@/lib/config'
@@ -491,11 +494,13 @@ export function testWorkspaceImportModesUseCanonicalFlowRendererForFrontmatterOn
   if (st.multiDimTableModeEnabled !== false) throw new Error('expected frontmatter-only flow renderer to force multi-dimensional table mode OFF')
 }
 
-export function testCanvasFrontmatterPresetDisablesGeospatialOverlayFor2dDocuments() {
-  const { restore } = initJsdomHarness()
+export async function testCanvasFrontmatterPresetDisablesGeospatialOverlayFor2dDocuments() {
+  const { restore, storage } = initWindowHarness({
+    storage: createMemoryStorage(),
+  })
   try {
     useGraphStore.getState().resetAll()
-    window.localStorage.setItem(LS_KEYS.geospatialOverlayEnabled, 'true')
+    storage.setItem(LS_KEYS.geospatialOverlayEnabled, 'true')
 
     const rawText = [
       '---',
@@ -511,8 +516,9 @@ export function testCanvasFrontmatterPresetDisablesGeospatialOverlayFor2dDocumen
     ].join('\n')
 
     applyInteractiveImportModes({ rawText })
+    await waitForCanvasFrontmatterSurfaceTransition()
 
-    const next = window.localStorage.getItem(LS_KEYS.geospatialOverlayEnabled)
+    const next = storage.getItem(LS_KEYS.geospatialOverlayEnabled)
     if (next !== '0' && next !== 'false') {
       throw new Error(`expected 2d frontmatter preset to disable geospatial overlay, got ${String(next)}`)
     }
@@ -521,11 +527,13 @@ export function testCanvasFrontmatterPresetDisablesGeospatialOverlayFor2dDocumen
   }
 }
 
-export function testCanvasFrontmatterPresetEnablesGeospatialSurfaceMode() {
-  const { restore } = initJsdomHarness()
+export async function testCanvasFrontmatterPresetEnablesGeospatialSurfaceMode() {
+  const { restore, storage } = initWindowHarness({
+    storage: createMemoryStorage(),
+  })
   try {
     useGraphStore.getState().resetAll()
-    window.localStorage.setItem(LS_KEYS.geospatialOverlayEnabled, 'false')
+    storage.setItem(LS_KEYS.geospatialOverlayEnabled, 'false')
     useGraphStore.getState().setCanvasRenderMode('3d')
     useGraphStore.getState().setCanvas2dRenderer('d3')
     useGraphStore.getState().setDocumentSemanticMode('keyword')
@@ -553,9 +561,10 @@ export function testCanvasFrontmatterPresetEnablesGeospatialSurfaceMode() {
     }
 
     applyInteractiveImportModes({ rawText })
+    await waitForCanvasFrontmatterSurfaceTransition()
 
     const st = useGraphStore.getState()
-    const next = window.localStorage.getItem(LS_KEYS.geospatialOverlayEnabled)
+    const next = storage.getItem(LS_KEYS.geospatialOverlayEnabled)
     if (next !== '1' && next !== 'true') {
       throw new Error(`expected geospatial surface preset to enable geospatial overlay, got ${String(next)}`)
     }
@@ -569,11 +578,13 @@ export function testCanvasFrontmatterPresetEnablesGeospatialSurfaceMode() {
   }
 }
 
-export function testCanvasFrontmatterPresetEnables3dSurfaceModeAndVoxelMode() {
-  const { restore } = initJsdomHarness()
+export async function testCanvasFrontmatterPresetEnables3dSurfaceModeAndVoxelMode() {
+  const { restore, storage } = initWindowHarness({
+    storage: createMemoryStorage(),
+  })
   try {
     useGraphStore.getState().resetAll()
-    window.localStorage.setItem(LS_KEYS.geospatialOverlayEnabled, 'true')
+    storage.setItem(LS_KEYS.geospatialOverlayEnabled, 'true')
     useGraphStore.getState().setCanvasRenderMode('2d')
     useGraphStore.getState().setCanvas3dMode('3d')
     useGraphStore.getState().setCanvas2dRenderer('flowchart')
@@ -602,9 +613,10 @@ export function testCanvasFrontmatterPresetEnables3dSurfaceModeAndVoxelMode() {
     if (preset.canvas3dMode !== 'voxel') throw new Error(`expected voxel 3d mode, got ${String(preset.canvas3dMode || '')}`)
 
     applyInteractiveImportModes({ rawText })
+    await waitForCanvasFrontmatterSurfaceTransition()
 
     const st = useGraphStore.getState()
-    const next = window.localStorage.getItem(LS_KEYS.geospatialOverlayEnabled)
+    const next = storage.getItem(LS_KEYS.geospatialOverlayEnabled)
     if (next !== '0' && next !== 'false') {
       throw new Error(`expected 3d surface preset to disable geospatial overlay, got ${String(next)}`)
     }

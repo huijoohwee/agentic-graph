@@ -47,7 +47,7 @@ export async function assertFlightSimCameraReadiness({
   const expectedOwners = {
     catalog_owner: 'canvas/src/features/three/xrNativeControllerCameraCatalog.ts',
     selection_owner: 'canvas/src/features/three/xrNativeControllerCameraRuntime.ts',
-    driver_owner: 'gympgrph/src/flightGeoOverlayMapLibre.ts',
+    driver_owner: 'gympgrph/src/flightGeoOverlayMapLibreCamera.ts',
     runtime_canvas_driver_owner: 'canvas/src/features/three/useXrNativeControllerDemoCamera.ts',
   }
   for (const [key, expected] of Object.entries(expectedOwners)) {
@@ -69,7 +69,9 @@ export async function assertFlightSimCameraReadiness({
     'canvas/src/features/three/xrNativeControllerCameraRuntime.ts',
   )
   const controls = await readText('canvas/src/features/three/Controls.tsx')
-  const mapCamera = await readText('gympgrph/src/flightGeoOverlayMapLibre.ts')
+  const mapCamera = await readText(
+    'gympgrph/src/flightGeoOverlayMapLibreCamera.ts',
+  )
   const missionStage = await readText(
     'canvas/src/features/game-flight-sim/FlightSimMissionStage.tsx',
   )
@@ -89,7 +91,7 @@ export async function assertFlightSimCameraReadiness({
     [mapCamera, "overlay.camera.source !== 'fixed-follow'"],
     [mapCamera, "FLIGHT_GEO_CAMERA_PRESETS[overlay.camera.view]"],
     [mapCamera, 'center: [...overlay.camera.centerCoordinate]'],
-    [mapCamera, 'map.jumpTo?.({'],
+    [mapCamera, 'map.jumpTo(expected)'],
   ]
   const missing = requiredMarkers
     .filter(([source, marker]) => !source.includes(marker))

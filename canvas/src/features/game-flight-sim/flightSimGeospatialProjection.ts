@@ -8,14 +8,14 @@ import { resolveFlightSimFollowTarget } from './flightSimFollowTarget'
 import { projectFlightSimRouteGuidance } from './flightSimRouteGuidance'
 import { flightSimAuthoredWorldUnitsToMeters } from './flightSimSpatialScale'
 import {
-  projectSingaporeLocalMeters,
-} from '@/lib/gympgrph/api'
+  projectFlightSimMissionPositionToGeospatial,
+  type FlightSimGeospatialCoordinate,
+} from './flightSimGeospatialCoordinates'
 import type {
   FlightSimGeoEnvironmentProjection,
 } from './flightSimGeoEnvironmentProjection'
 
-export type FlightSimGeospatialCoordinate =
-  readonly [longitude: number, latitude: number]
+export type { FlightSimGeospatialCoordinate } from './flightSimGeospatialCoordinates'
 
 export type FlightSimGeospatialRoutePoint = Readonly<{
   id: string
@@ -81,16 +81,6 @@ function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value))
 }
 
-function projectPosition(
-  position: SpatialVector,
-  origin: SpatialVector,
-): FlightSimGeospatialCoordinate {
-  return projectSingaporeLocalMeters(
-    position[0] - origin[0],
-    origin[2] - position[2],
-  )
-}
-
 export function projectFlightSimTimelineCameraToGeospatial(
   pose: CameraFramingPose,
   profile: FlightSimSpatialProfile,
@@ -114,7 +104,10 @@ export function projectFlightSimTimelineCameraToGeospatial(
     bearingDegrees: (
       Math.atan2(eastMeters, northMeters) * 180 / Math.PI + 360
     ) % 360,
-    centerCoordinate: projectPosition(target, profile.spawn.position),
+    centerCoordinate: projectFlightSimMissionPositionToGeospatial(
+      target,
+      profile.spawn.position,
+    ),
     pitchDegrees: clamp(
       90 - Math.atan2(verticalDistanceMeters, Math.max(0.001, horizontalDistanceMeters))
         * 180 / Math.PI,
@@ -151,7 +144,10 @@ export function projectFlightSimToGeospatialOverlay(
   const route = Object.freeze(guidance.route.map<FlightSimGeospatialRoutePoint>(point => {
     return Object.freeze({
       id: point.id,
-      coordinate: projectPosition(point.position, profile.spawn.position),
+      coordinate: projectFlightSimMissionPositionToGeospatial(
+        point.position,
+        profile.spawn.position,
+      ),
       altitudeMeters: point.position[1],
       kind: point.kind,
       state: point.state,
@@ -160,7 +156,7 @@ export function projectFlightSimToGeospatialOverlay(
   const objective = guidance.objective
     ? Object.freeze({
         bearingDegrees: guidance.objective.bearingDegrees,
-        coordinate: projectPosition(
+        coordinate: projectFlightSimMissionPositionToGeospatial(
           guidance.objective.position,
           profile.spawn.position,
         ),
@@ -174,12 +170,18 @@ export function projectFlightSimToGeospatialOverlay(
   return Object.freeze({
     active: flight.active,
     aircraft: Object.freeze({
-      coordinate: projectPosition(flight.aircraft.position, profile.spawn.position),
+      coordinate: projectFlightSimMissionPositionToGeospatial(
+        flight.aircraft.position,
+        profile.spawn.position,
+      ),
       altitudeMeters: flight.aircraft.position[1],
       headingDegrees: guidance.aircraftHeadingDegrees,
     }),
     camera: Object.freeze({
-      centerCoordinate: projectPosition(centerPosition, profile.spawn.position),
+      centerCoordinate: projectFlightSimMissionPositionToGeospatial(
+        centerPosition,
+        profile.spawn.position,
+      ),
       cockpitClearance,
       effectiveOwner: timeline ? 'timeline-playback' : camera.source,
       source: camera.source,

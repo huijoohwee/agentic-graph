@@ -1,7 +1,6 @@
 import {
   SINGAPORE_FLIGHT_GEO_REFERENCE,
   projectSingaporeLocalMeters,
-  projectSingaporeLocalRectangle,
   type GeospatialCoordinate,
   type GeospatialPresentationBounds,
 } from '@/lib/gympgrph/api'
@@ -42,6 +41,19 @@ const TONE_COLORS: Readonly<Record<XrGreyBoxStructure['tone'], string>> =
     mid: '#64748b',
   })
 
+/**
+ * XR environment stage and asset values are authored in local metres.  Flight
+ * mission positions use their own 20x authored-world conversion before they
+ * reach the route/aircraft projector; applying that conversion here would
+ * mutate the environment's real metre footprint and extrusion heights.
+ */
+function projectEnvironmentLocalMetersToGeospatial(
+  xMeters: number,
+  zMeters: number,
+): GeospatialCoordinate {
+  return projectSingaporeLocalMeters(xMeters, -zMeters)
+}
+
 function projectLocalRectangle(input: Readonly<{
   centerX: number
   centerZ: number
@@ -63,7 +75,7 @@ function projectLocalRectangle(input: Readonly<{
   const ring = corners.map(([offsetX, offsetZ]) => {
     const x = input.centerX + offsetX * cosine + offsetZ * sine
     const z = input.centerZ - offsetX * sine + offsetZ * cosine
-    return projectSingaporeLocalMeters(x, -z)
+    return projectEnvironmentLocalMetersToGeospatial(x, z)
   })
   return Object.freeze([...ring, ring[0]])
 }
@@ -75,13 +87,14 @@ function projectStructure(
     0,
     structure.position[1] - structure.size[1] / 2,
   )
+  const heightMeters = Math.max(
+    baseHeightMeters + 0.08,
+    structure.position[1] + structure.size[1] / 2,
+  )
   return Object.freeze({
     baseHeightMeters,
     color: TONE_COLORS[structure.tone],
-    heightMeters: Math.max(
-      baseHeightMeters + 0.08,
-      structure.position[1] + structure.size[1] / 2,
-    ),
+    heightMeters,
     id: structure.id,
     kind: 'structure',
     ring: projectLocalRectangle({
@@ -126,10 +139,12 @@ export function projectXrEnvironmentToFlightGeo(
   plan: Pick<XrMotionReferencePlan, 'stageId' | 'subjects'>,
 ): FlightSimGeoEnvironmentProjection {
   const stage = resolveXrMotionReferenceStage(plan.stageId)
-  const stageFootprint = projectSingaporeLocalRectangle(
-    stage.sizeMeters[0],
-    stage.sizeMeters[1],
-  )
+  const stageFootprint = projectLocalRectangle({
+    centerX: 0,
+    centerZ: 0,
+    depthMeters: stage.sizeMeters[1],
+    widthMeters: stage.sizeMeters[0],
+  })
   const footprintSurface: FlightSimGeoEnvironmentSurface = Object.freeze({
     baseHeightMeters: 0,
     color: '#0f766e',
@@ -144,7 +159,7 @@ export function projectXrEnvironmentToFlightGeo(
     ...plan.subjects.map(projectSubject),
   ])
   return Object.freeze({
-    anchor: SINGAPORE_FLIGHT_GEO_REFERENCE.anchor,
+    anchor: projectSingaporeLocalMeters(0, 0),
     id: stage.id,
     label: stage.label,
     presentationBounds: SINGAPORE_FLIGHT_GEO_REFERENCE.presentationBounds,

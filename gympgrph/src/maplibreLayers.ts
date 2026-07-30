@@ -109,6 +109,42 @@ export function readGeoJsonSourceData(source: unknown): FeatureCollection | null
   return null
 }
 
+export function readMapLibreStyleSource(
+  map: any,
+  sourceId: string,
+): unknown {
+  try {
+    const sources = map?.getStyle?.()?.sources
+    return sources && typeof sources === 'object'
+      ? sources[sourceId]
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function hasExactGeoJsonStyleSource<
+  Collection extends FeatureCollection,
+>(
+  source: unknown,
+  expectedData: Collection,
+  hasExactData: (
+    expected: Collection,
+    actual: unknown,
+  ) => boolean,
+): boolean {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    return false
+  }
+  const record = source as Record<string, unknown>
+  const keys = Object.keys(record)
+  return keys.length === 2
+    && keys.includes('type')
+    && keys.includes('data')
+    && record.type === 'geojson'
+    && hasExactData(expectedData, record.data)
+}
+
 export function setGeoJsonSourceData(map: any, sourceId: string, fc: FeatureCollection): void {
   if (!map || !sourceId) return
   if (!isStyleReady(map)) return

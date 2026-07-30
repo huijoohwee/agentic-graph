@@ -213,7 +213,7 @@ test('surface presentation waits for its stage acknowledgement and next frame op
   }
 })
 
-test('MapLibre preparation requires the exact HUD layout and no redundant browser frame', async () => {
+test('MapLibre preparation requires the exact HUD layout and a settled compositor frame', async () => {
   const animationFrame = installControlledAnimationFrameWindow()
   try {
     resetFlightSimStagePreparationForTests()
@@ -236,6 +236,15 @@ test('MapLibre preparation requires the exact HUD layout and no redundant browse
     await Promise.resolve()
     assert.equal(resolved, false)
     assert.equal(completeFlightSimHudStagePreparation(requestId, 17), true)
+    await Promise.resolve()
+    assert.equal(
+      animationFrame.callbacks.size,
+      1,
+      'ready must begin after the stopped MapLibre render has retired',
+    )
+    const [[frameId, presentFrame]] = [...animationFrame.callbacks]
+    animationFrame.callbacks.delete(frameId)
+    presentFrame(16)
     await waiting
     assert.equal(resolved, true)
     assert.equal(animationFrame.callbacks.size, 0)

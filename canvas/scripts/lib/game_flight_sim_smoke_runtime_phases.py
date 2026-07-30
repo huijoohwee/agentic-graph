@@ -10,8 +10,10 @@ from lib.game_flight_sim_smoke_camera import verify_flight_camera_runtime
 from lib.game_flight_sim_smoke_deadlines import verify_flight_deadline_contracts
 from lib.game_flight_sim_smoke_geo_xr import (
     prepare_canvas_view_standalone_flight_xr,
-    verify_geo_xr_four_view_presentation,
     wait_for_canvas_view_geo_xr_handoff,
+)
+from lib.game_flight_sim_smoke_geo_xr_presentation import (
+    verify_geo_xr_four_view_presentation,
 )
 from lib.game_flight_sim_smoke_ledger import BrowserVerificationLedger
 from lib.game_flight_sim_smoke_lifecycle import (

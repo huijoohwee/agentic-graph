@@ -60,6 +60,7 @@ import {
   resolveWorkspaceFolderContractDocumentPath,
   resolveWorkspaceFolderContractTargetPath,
 } from './workspaceFolderContractTarget'
+import { readWorkspaceExplorerReadOnlySnapshot } from './workspaceExplorerReadOnlySnapshot'
 
 const hasNonWorkspaceSourceFile = (sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']): boolean => {
   const list = Array.isArray(sourceFiles) ? sourceFiles : []
@@ -150,7 +151,28 @@ export function useMarkdownWorkspaceExplorerState(args: MarkdownWorkspaceRuntime
     const finishSeedSyncTask = beginWorkspaceSeedSyncTask()
     if (!finishSeedSyncTask) {
       workspaceRefreshDeferredRef.current = true
-      return buildWorkspaceRefreshSnapshot({ entries: runtime.entries })
+      try {
+        const fs = await getFs()
+        const snapshot = await readWorkspaceExplorerReadOnlySnapshot({
+          fs,
+          activePath: runtime.activePathRef.current,
+        })
+        const currentRuntime = runtimeRef.current
+        currentRuntime.setEntries(prev => (
+          areWorkspaceEntriesEqual(prev, snapshot.entries) ? prev : snapshot.entries
+        ))
+        currentRuntime.setSourcesByPath(prev => (
+          areWorkspaceSourcesEqual(prev, snapshot.sourcesByPath) ? prev : snapshot.sourcesByPath
+        ))
+        currentRuntime.setLoading(false)
+        currentRuntime.setLoadError('')
+        return buildWorkspaceRefreshSnapshot(snapshot)
+      } catch (error) {
+        const currentRuntime = runtimeRef.current
+        currentRuntime.setLoading(false)
+        currentRuntime.setLoadError(String((error as { message?: unknown })?.message ?? error))
+        return buildWorkspaceRefreshSnapshot({ entries: currentRuntime.entries })
+      }
     }
     workspaceRefreshDeferredRef.current = false
     if (!silent) runtime.setStatusProgress('Refreshing')

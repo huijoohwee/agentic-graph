@@ -99,6 +99,7 @@ export function FlightSimGeoSurfaceOverlay() {
       aria-label="Flight Sim Geo overlay"
       data-kg-flight-sim-geo-overlay="1"
       data-kg-flight-sim-geo-environment={environment.id}
+      data-kg-flight-sim-geography-boundary="not-rendered"
       data-kg-flight-sim-geo-phase={flight.phase}
     >
       <svg
@@ -106,7 +107,7 @@ export function FlightSimGeoSurfaceOverlay() {
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
         role="img"
-        aria-label={`Flight route over ${environment.label} Geo`}
+        aria-label={`Flight route over the ${environment.label} local XR stage`}
       >
         <polyline
           points={routePolyline}
@@ -147,7 +148,7 @@ export function FlightSimGeoSurfaceOverlay() {
         ))}
       </svg>
       <output className="absolute left-3 top-28 rounded-full border border-cyan-200/70 bg-slate-950/75 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 shadow-lg backdrop-blur-sm">
-        Flight on Geo · {environment.label}
+        Flight on Geo · {environment.label} local stage
       </output>
       <button
         ref={setInputElement}

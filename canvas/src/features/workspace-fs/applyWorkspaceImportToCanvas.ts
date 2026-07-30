@@ -11,6 +11,9 @@ import { DEFAULT_CANVAS_2D_RENDERER } from '@/lib/config.render'
 import { extractYamlFrontmatterHeaderBlock, isFrontmatterOnlyDoc, parseCanvasWorkspaceFrontmatterPreset } from '@/lib/markdown/frontmatter'
 import { applyFrontmatterFlowImportModes } from '@/features/parsers/frontmatterFlowImportMode'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import {
+  waitForCanvasFrontmatterSurfaceTransition,
+} from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
 import type { WorkspaceEntry, WorkspaceFs, WorkspacePath } from './types'
 import { normalizeWorkspacePath, workspaceDocumentKey } from './path'
@@ -354,6 +357,7 @@ export async function applyWorkspaceImportToCanvas(args: {
       frontmatterOnlyDoc: sawFrontmatterOnlyDoc,
       rawText: preferredInteractiveImportRawText,
     })
+    await waitForCanvasFrontmatterSurfaceTransition()
     return { sourceFilesUpdated: true, enabledCount, parsedCount }
   }
   if (merged !== existing) {
@@ -364,6 +368,7 @@ export async function applyWorkspaceImportToCanvas(args: {
         frontmatterOnlyDoc: sawFrontmatterOnlyDoc,
         rawText: preferredInteractiveImportRawText,
       })
+      await waitForCanvasFrontmatterSurfaceTransition()
     }
     return { sourceFilesUpdated: true, enabledCount, parsedCount: 0 }
   }
@@ -373,6 +378,7 @@ export async function applyWorkspaceImportToCanvas(args: {
       frontmatterOnlyDoc: sawFrontmatterOnlyDoc,
       rawText: preferredInteractiveImportRawText,
     })
+    await waitForCanvasFrontmatterSurfaceTransition()
   }
   return { sourceFilesUpdated: false, enabledCount: 0, parsedCount: 0 }
 }

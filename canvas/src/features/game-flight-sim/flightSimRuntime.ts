@@ -43,6 +43,7 @@ import {
   waitForFlightSimStagePresentation,
 } from './flightSimStagePreparationRuntime'
 import {
+  acquireFlightSimGeospatialBootstrapRequest,
   createFlightSimSurfaceOpenController,
   FlightSimSurfaceOpenStaleError,
   invalidateFlightSimSurfaceOpens,
@@ -266,10 +267,12 @@ async function performFlightSimSurfaceOpen(
   }
   throwIfFlightSimOperationAborted(options.signal)
   const hydrationToken = beginFlightSimHydration()
+  const releaseGeospatialBootstrapRequest =
+    options.geospatialComposite ? acquireFlightSimGeospatialBootstrapRequest() : null
   const entering = !defaultRuntime.read().active
   if (entering) {
-    previousCanvasSurface =
-      options.previousCanvasSurface
+    previousCanvasSurface = previousCanvasSurface
+      ?? options.previousCanvasSurface
       ?? captureFlightSimPreviousCanvasSurface()
   }
   clearFlightSimSurfaceOwnershipFailure()
@@ -395,6 +398,7 @@ async function performFlightSimSurfaceOpen(
     if (stagePreparationRequestId !== null) {
       cancelFlightSimStagePreparation(stagePreparationRequestId)
     }
+    releaseGeospatialBootstrapRequest?.()
     locallyAcquiredSeedSyncRelease?.()
   }
 }
@@ -536,14 +540,11 @@ export function exitFlightSimSurface(
   cancelFlightSimHydration()
   const failures: string[] = []
   const previous = previousCanvasSurface
-  previousCanvasSurface = null
+  const restorePreviousSurface = options.restorePreviousSurface !== false
+  // Suppressed gameplay handoffs retain the original owner for a normal Exit.
+  if (restorePreviousSurface) previousCanvasSurface = null
   const next = defaultRuntime.exit()
-  failures.push(
-    ...restoreSurfaceOwnership(
-      previous,
-      options.restorePreviousSurface !== false,
-    ),
-  )
+  failures.push(...restoreSurfaceOwnership(previous, restorePreviousSurface))
   restoreDurableChatStreamTransportOwnership()
   restoreWorkspaceSeedSyncOwnership()
   if (failures.length > 0) {

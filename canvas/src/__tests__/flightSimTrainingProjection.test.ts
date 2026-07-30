@@ -24,6 +24,10 @@ test('night training changes the native MapLibre overlay and shared HUD only', (
     '../gympgrph/src/flightGeoOverlayMapLibre.ts',
     'utf8',
   )
+  const mapLibreOverlayLayers = readFileSync(
+    '../gympgrph/src/flightGeoOverlayMapLibreLayers.ts',
+    'utf8',
+  )
   const projection = readFileSync(
     'src/features/game-flight-sim/flightSimGeospatialProjection.ts',
     'utf8',
@@ -42,8 +46,12 @@ test('night training changes the native MapLibre overlay and shared HUD only', (
   )
   assert.match(projection, /night: boolean/)
   assert.match(bridge, /readFlightSimTrainingSnapshot\(\)\.night/)
-  assert.match(mapLibreOverlay, /FLIGHT_GEO_NIGHT_EXPRESSION/)
-  assert.match(mapLibreOverlay, /#a78bfa/)
+  assert.match(
+    mapLibreOverlay,
+    /from '\.\/flightGeoOverlayMapLibreLayers\.js'/,
+  )
+  assert.match(mapLibreOverlayLayers, /FLIGHT_GEO_NIGHT_EXPRESSION/)
+  assert.match(mapLibreOverlayLayers, /#a78bfa/)
   assert.match(hud, /data-kg-flight-sim-night/)
   assert.match(hud, /bg-indigo-950\/80/)
   assert.doesNotMatch(missionStage, /ambientLight|directionalLight|hemisphereLight/)

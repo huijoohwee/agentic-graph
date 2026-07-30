@@ -349,6 +349,10 @@ test('canonical XR controls preserve the verified Flight Physics subjects', asyn
     },
     markdownDocumentName: FLIGHT_SIM_DEMO_REPO_REL_PATH,
     markdownDocumentText: seedSource,
+    floatingPanelOpen: true,
+    floatingPanelView: 'flightSim',
+    bottomSurfaceCollapsed: true,
+    bottomSurfaceTab: 'timeline',
   } as never)
   try {
     const revisionBeforeVerification = readXrMotionReferenceRuntime().revision
@@ -413,22 +417,64 @@ test('canonical XR controls preserve the verified Flight Physics subjects', asyn
       expectedAssetIds,
     )
 
+    const graphDataBeforeSameStageHandoff =
+      useGraphStore.getState().graphData
+    const graphRevisionBeforeSameStageHandoff =
+      useGraphStore.getState().graphDataRevision
+    const graphContentRevisionBeforeSameStageHandoff =
+      useGraphStore.getState().graphContentRevision
+    const documentTextBeforeSameStageHandoff =
+      useGraphStore.getState().markdownDocumentText
+    const motionRevisionBeforeSameStageHandoff =
+      readXrMotionReferenceRuntime().revision
+    assert.equal(readXrMotionReferenceRuntime().dirty, false)
+    assert.equal(
+      useGraphStore.getState().graphData?.metadata?.kgXrMotionReference,
+      undefined,
+    )
     const stageResult = controlLocalXrScene({
       action: 'stage',
       stageId: 'singapore',
     })
     assert.equal(stageResult.ok, true)
-    assert.equal(hydrateCanonicalXrMotionReferenceRuntime(), true)
-    const persistedPlan = readXrMotionReferencePlan(
-      useGraphStore.getState().graphData?.metadata?.kgXrMotionReference,
-      useGraphStore.getState().graphData?.nodes,
+    assert.match(stageResult.message, /already staged/i)
+    assert.equal(
+      readXrMotionReferenceRuntime().revision,
+      motionRevisionBeforeSameStageHandoff,
     )
+    assert.equal(
+      useGraphStore.getState().graphData,
+      graphDataBeforeSameStageHandoff,
+    )
+    assert.equal(
+      useGraphStore.getState().graphDataRevision,
+      graphRevisionBeforeSameStageHandoff,
+    )
+    assert.equal(
+      useGraphStore.getState().graphContentRevision,
+      graphContentRevisionBeforeSameStageHandoff,
+    )
+    assert.equal(
+      useGraphStore.getState().markdownDocumentText,
+      documentTextBeforeSameStageHandoff,
+    )
+    assert.equal(useGraphStore.getState().floatingPanelOpen, true)
+    assert.equal(useGraphStore.getState().floatingPanelView, 'flightSim')
+    assert.equal(useGraphStore.getState().bottomSurfaceCollapsed, true)
+    assert.equal(useGraphStore.getState().bottomSurfaceTab, 'timeline')
+    assert.equal(
+      useGraphStore.getState().graphData?.metadata?.kgXrMotionReference,
+      undefined,
+    )
+    assert.equal(hydrateCanonicalXrMotionReferenceRuntime(), true)
     assert.deepEqual(
-      persistedPlan.subjects.map(subject => subject.assetId),
+      readXrMotionReferenceRuntime().plan.subjects
+        .map(subject => subject.assetId),
       expectedAssetIds,
     )
     assert.deepEqual(
-      persistedPlan.cast.map(track => track.actorId),
+      readXrMotionReferenceRuntime().plan.cast
+        .map(track => track.actorId),
       expectedCastActorIds,
     )
   } finally {
@@ -436,6 +482,10 @@ test('canonical XR controls preserve the verified Flight Physics subjects', asyn
       graphData: previous.graphData,
       markdownDocumentName: previous.markdownDocumentName,
       markdownDocumentText: previous.markdownDocumentText,
+      floatingPanelOpen: previous.floatingPanelOpen,
+      floatingPanelView: previous.floatingPanelView,
+      bottomSurfaceCollapsed: previous.bottomSurfaceCollapsed,
+      bottomSurfaceTab: previous.bottomSurfaceTab,
     } as never)
     hydrateCanonicalXrMotionReferenceRuntime()
   }

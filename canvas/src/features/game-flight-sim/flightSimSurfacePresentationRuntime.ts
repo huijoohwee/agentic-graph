@@ -1,9 +1,17 @@
 import {
   preloadGeospatialMapRuntime,
-  setGeospatialModeEnabled,
 } from '@/features/geospatial/gympgrphBridge'
+import {
+  commitCanvasGeospatialSurfaceOwnership,
+} from '@/features/geospatial/geospatialSurfaceOwnershipRuntime'
+import {
+  waitForActiveCanvasFrontmatterSurfaceTransition,
+} from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { activateXrSceneSurface } from '@/features/three/xrSceneSurfaceRuntime'
-import { throwIfFlightSimSurfaceOpenStale } from './flightSimSurfaceOpenLifecycle'
+import {
+  isFlightSimSurfaceOpenCurrent,
+  throwIfFlightSimSurfaceOpenStale,
+} from './flightSimSurfaceOpenLifecycle'
 
 type FlightSimSurfacePresentationOptions = Readonly<{
   geospatialComposite?: boolean
@@ -24,6 +32,7 @@ export async function preloadFlightSimSurfacePresentation(
   options: FlightSimSurfacePresentationOptions,
 ): Promise<void> {
   if (!options.geospatialComposite) return
+  await waitForActiveCanvasFrontmatterSurfaceTransition()
   await preloadGeospatialMapRuntime()
 }
 
@@ -32,10 +41,12 @@ export async function activateFlightSimSurfacePresentation(
   expectedGeneration: number,
 ): Promise<boolean> {
   if (options.geospatialComposite) {
-    const enabled = await setGeospatialModeEnabled(true)
-    if (!enabled) {
-      throw new Error('The native geospatial Canvas owner remained disabled.')
-    }
+    await commitCanvasGeospatialSurfaceOwnership(true, {
+      isCurrent: () => (
+        isFlightSimSurfaceOpenCurrent(expectedGeneration)
+        && options.signal?.aborted !== true
+      ),
+    })
     throwIfFlightSimSurfaceOpenStale(expectedGeneration)
     throwIfFlightSimOperationAborted(options.signal)
   }

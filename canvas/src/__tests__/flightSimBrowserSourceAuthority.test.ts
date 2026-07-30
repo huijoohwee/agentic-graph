@@ -2,147 +2,39 @@ import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import test from 'node:test'
+import {
+  readFlightSimBrowserAuthoritySources,
+} from './helpers/flightSimBrowserSourceAuthorityFiles'
 
 const repoRoot = resolve(process.cwd(), '..')
 
 test('Flight browser proof activates only after applying the authored source', () => {
-  const runner = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/run_game_flight_sim_browser_smoke.mjs',
-    ),
-    'utf8',
-  )
-  const verifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/verify_game_flight_sim_browser_smoke.py',
-    ),
-    'utf8',
-  )
-  const runtimePhases = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_runtime_phases.py',
-    ),
-    'utf8',
-  )
-  const sourceSelection = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_source_selection.py',
-    ),
-    'utf8',
-  )
-  const sourceVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_source.py',
-    ),
-    'utf8',
-  )
-  const browserBootstrap = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_bootstrap.py',
-    ),
-    'utf8',
-  )
-  const browserProofBridge = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/src/features/testing/flightSimBrowserProofBridge.ts',
-    ),
-    'utf8',
-  )
-  const mainEntry = readFileSync(
-    resolve(repoRoot, 'canvas/src/main.tsx'),
-    'utf8',
-  )
-  const networkBoundary = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_network.py',
-    ),
-    'utf8',
-  )
-  const deadlineVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_deadlines.py',
-    ),
-    'utf8',
-  )
-  const serverOwner = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/run-local-vite-browser-smoke.mjs',
-    ),
-    'utf8',
-  )
-  const launcherRegression = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/__tests__/game-flight-sim-browser-smoke-launcher.test.mjs',
-    ),
-    'utf8',
-  )
-  const previewPageVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/__tests__/verify_game_flight_sim_preview_page.py',
-    ),
-    'utf8',
-  )
-  const touchVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_mobile.py',
-    ),
-    'utf8',
-  )
-  const touchSurfaceVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_mobile_surface.py',
-    ),
-    'utf8',
-  )
-  const missionVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_mission.py',
-    ),
-    'utf8',
-  )
-  const sceneVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_scene.py',
-    ),
-    'utf8',
-  )
-  const geoXrVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_geo_xr.py',
-    ),
-    'utf8',
-  )
-  const cameraTrackingVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_camera_tracking.py',
-    ),
-    'utf8',
-  )
-  const cameraVerifier = readFileSync(
-    resolve(
-      repoRoot,
-      'canvas/scripts/lib/game_flight_sim_smoke_camera.py',
-    ),
-    'utf8',
-  )
+  const {
+    browserBootstrap,
+    browserProofBridge,
+    cameraTrackingVerifier,
+    cameraVerifier,
+    deadlineVerifier,
+    evidenceValidator,
+    geoXrLayoutVerifier,
+    geoXrPresentationVerifier,
+    geoXrRequirementsVerifier,
+    geoXrVerifier,
+    launcherRegression,
+    mainEntry,
+    missionVerifier,
+    networkBoundary,
+    previewPageVerifier,
+    runner,
+    runtimePhases,
+    sceneVerifier,
+    serverOwner,
+    sourceSelection,
+    sourceVerifier,
+    touchSurfaceVerifier,
+    touchVerifier,
+    verifier,
+  } = readFlightSimBrowserAuthoritySources(repoRoot)
   assert.match(
     runner,
     /delete process\.env\.VITE_KNOWGRPH_RUN_READY_DEMO/,
@@ -167,7 +59,7 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /indexSource\.includes\('\/@vite\/client'\)/)
   assert.match(runner, /devServerStartMode: 'vite-preview-runner'/)
   assert.match(runner, /productionBuild,/)
-  assert.match(runner, /knowgrph-flight-sim-browser-run\/v5/)
+  assert.match(evidenceValidator, /knowgrph-flight-sim-browser-run\/v5/)
   assert.match(runner, /knowgrph-flight-sim-browser-proof\/v5/)
   assert.match(
     verifier,
@@ -277,6 +169,81 @@ test('Flight browser proof activates only after applying the authored source', (
     assert.match(sourceReader, /source\?\.serialize\?\.\(\)\?\.data/)
     assert.doesNotMatch(sourceReader, /source\?\._data\?\.features/)
   }
+  assert.match(
+    geoXrVerifier,
+    /layout_occlusion = read_geo_xr_layout_occlusion\(page\)/,
+  )
+  assert.match(
+    geoXrVerifier,
+    /view\["mapPointerHit"\] = layout_occlusion\.get\("mapPointerHit"\)/,
+  )
+  assert.doesNotMatch(geoXrVerifier, /const candidates = \[/)
+  assert.match(
+    geoXrRequirementsVerifier,
+    /environment\.stageFootprintAuthoredMeters/,
+  )
+  assert.match(geoXrRequirementsVerifier, /environment\.skylineAuthoredMeters/)
+  assert.match(geoXrRequirementsVerifier, /height_meters=0\.08/)
+  assert.match(geoXrRequirementsVerifier, /width_meters=32/)
+  assert.match(geoXrRequirementsVerifier, /height_meters=12/)
+  assert.doesNotMatch(geoXrLayoutVerifier, /heightMeters >= 20/)
+  assert.match(geoXrLayoutVerifier, /proof\.id === 'skyline-center'/)
+  assert.match(
+    geoXrPresentationVerifier,
+    /def restore_flight_sim_panel\(page: Page\) -> None:/,
+  )
+  assert.match(
+    geoXrPresentationVerifier,
+    /state\.setFloatingPanelView\('flightSim'\)/,
+  )
+  assert.match(
+    geoXrPresentationVerifier,
+    /\[data-kg-flight-sim-floating-panel="1"\]'.*wait_for\(/s,
+  )
+  assert.match(
+    geoXrPresentationVerifier,
+    /def verify_flight_geo_xr_city_handoff\(/,
+  )
+  for (const cityProofRequirement of [
+    'data-kg-floating-panel-view-trigger="cityBuilder"',
+    'data-kg-city-sim-open="1"',
+    'data-kg-city-sim-exit="1"',
+    'data-kg-flight-sim-open="1"',
+    'geospatialPreferenceEnabled',
+    'mapLibreCanvasCount',
+    'threeCanvasOwnerCount',
+    'environmentSourceFeatures',
+    'renderedEnvironmentFeatureCount',
+  ]) {
+    assert.ok(
+      geoXrPresentationVerifier.includes(cityProofRequirement),
+      `expected City handoff browser proof requirement: ${cityProofRequirement}`,
+    )
+  }
+  const selectGeoViewIndex = geoXrPresentationVerifier.indexOf(
+    'select_geo_xr_view(page, button_label)',
+  )
+  const restoreFlightPanelIndex = geoXrPresentationVerifier.indexOf(
+    'restore_flight_sim_panel(page)',
+    selectGeoViewIndex,
+  )
+  assert.ok(
+    selectGeoViewIndex
+      < geoXrPresentationVerifier.indexOf(
+        'expected_view=view_mode',
+        selectGeoViewIndex,
+      )
+      && geoXrPresentationVerifier.indexOf(
+        'expected_view=view_mode',
+        selectGeoViewIndex,
+      ) < restoreFlightPanelIndex
+      && restoreFlightPanelIndex
+      < geoXrPresentationVerifier.indexOf(
+        'require_visual_layout=True',
+        restoreFlightPanelIndex,
+      ),
+    'expected each Geo view control to transition back to Flight Sim before its visual assertion',
+  )
   assert.ok(
     runtimePhases.indexOf('prepare_source_files_selection_surface(page)')
       < runtimePhases.indexOf('prepare_authored_physics_surface(page)'),
@@ -303,7 +270,7 @@ test('Flight browser proof activates only after applying the authored source', (
       assert.match(source, /\.monaco-editor/)
     }
     for (const match of source.matchAll(
-      /window\.__kgFlightSimBrowserProof\.importModule\('([^']+)'\)/g,
+      /window\.__kgFlightSimBrowserProof\.importModule\(\s*'([^']+)'\s*,?\s*\)/g,
     )) {
       requestedBrowserModuleKeys.add(match[1])
     }
@@ -351,29 +318,29 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(runner, /KG_GAME_FLIGHT_SIM_EXPECTED_SOURCE_SHA256/)
   assert.match(runner, /freshServerPerRun: true/)
   assert.match(
-    runner,
+    evidenceValidator,
     /candidate\?\.runtimeRevision !== candidateHead/,
   )
   assert.match(
-    runner,
+    evidenceValidator,
     /candidate\?\.runtimeBranch !== candidateBranch/,
   )
   assert.match(
-    runner,
+    evidenceValidator,
     /source\?\.authoredSeedSha256 !== sourceSha256/,
   )
   assert.match(
-    runner,
+    evidenceValidator,
     /source\?\.workspaceSourceSha256 !== sourceSha256/,
   )
   assert.match(
-    runner,
+    evidenceValidator,
     /inputProof\?\.touchInteraction\?\.runId[\s\S]*missionProof\?\.runId/,
   )
-  assert.match(runner, /missionProof\?\.phase !== 'completed'/)
-  assert.match(runner, /missionProof\?\.transitions\?\.length !== 3/)
+  assert.match(evidenceValidator, /missionProof\?\.phase !== 'completed'/)
+  assert.match(evidenceValidator, /missionProof\?\.transitions\?\.length !== 3/)
   assert.match(
-    runner,
+    evidenceValidator,
     /gameplayNetworkBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/,
   )
   assert.match(
@@ -383,12 +350,12 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(deadlineVerifier, /networkExecutorInvoked = true/)
   assert.match(deadlineVerifier, /websocketExecutorInvoked = true/)
   assert.doesNotMatch(deadlineVerifier, /await window\.fetch\(attemptPath\)/)
-  assert.match(runner, /gameplayWebSocketBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/)
-  assert.match(runner, /gameplayNetworkExecutorInvoked === false/)
-  assert.match(runner, /gameplayNetworkMissionStateRetained === true/)
-  assert.match(runner, /gameplayWebSocketExecutorInvoked === false/)
-  assert.match(runner, /gameplayWebSocketTransportObserved === false/)
-  assert.match(runner, /assertExactFlightSimBrowserVerificationLedger/)
+  assert.match(evidenceValidator, /gameplayWebSocketBlock:\s*\{[\s\S]*?source: 'flight-runtime-network-guard'/)
+  assert.match(evidenceValidator, /gameplayNetworkExecutorInvoked === false/)
+  assert.match(evidenceValidator, /gameplayNetworkMissionStateRetained === true/)
+  assert.match(evidenceValidator, /gameplayWebSocketExecutorInvoked === false/)
+  assert.match(evidenceValidator, /gameplayWebSocketTransportObserved === false/)
+  assert.match(evidenceValidator, /assertExactFlightSimBrowserVerificationLedger/)
   assert.match(verifier, /page\.on\("websocket", record_websocket\)/)
   assert.match(verifier, /context\.route\("\*\*\/\*", route_request\)/)
   assert.match(verifier, /context\.on\("request", record_request\)/)
@@ -415,7 +382,7 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.doesNotMatch(verifier, /\.connect_to_server\(/)
   assert.match(verifier, /"webSocketAttempts": \{/)
   assert.match(verifier, /"optionalBeacon": active_scene\["optionalBeacon"\]/)
-  assert.match(runner, /assertExactFlightSimOptionalBeaconAdmission\(/)
+  assert.match(evidenceValidator, /assertExactFlightSimOptionalBeaconAdmission\(/)
   assert.match(touchVerifier, /chromium-cdp-emulated-touch/)
   assert.match(touchVerifier, /pointer_down\.get\("isTrusted"\) is not True/)
   assert.match(missionVerifier, /accelerated-public-production-runtime/)

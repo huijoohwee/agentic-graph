@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from typing import Any
 
 from playwright.sync_api import Page
@@ -10,10 +9,17 @@ from lib.game_flight_sim_smoke_geo_view_cases import (
     select_geo_xr_view,
     wait_for_surface_contract,
 )
+from lib.game_flight_sim_smoke_geo_xr_layout import (
+    read_geo_xr_layout_occlusion,
+)
+from lib.game_flight_sim_smoke_geo_xr_requirements import (
+    unmet_view_requirements,
+    wait_for_view,
+)
 
 
 def _read_view(page: Page) -> dict[str, Any]:
-    return page.evaluate(
+    view = page.evaluate(
         """
         async () => {
           const graph = await window.__kgFlightSimBrowserProof.importModule(
@@ -31,9 +37,16 @@ def _read_view(page: Page) -> dict[str, Any]:
           const flight = await window.__kgFlightSimBrowserProof.importModule(
             'flightSimRuntime',
           )
+          const motion = await window.__kgFlightSimBrowserProof.importModule(
+            'xrMotionReferenceRuntime',
+          )
+          const sceneLibrary = await window.__kgFlightSimBrowserProof.importModule(
+            'xrSceneLibrary',
+          )
           const graphState = graph.useGraphStore.getState()
           const gympgrphState = gympgrph.useGympgrphStore.getState()
           const flightSnapshot = flight.readFlightSimSnapshot()
+          const motionRuntime = motion.readXrMotionReferenceRuntime()
           const blob = await graphState.captureThreeGltfSnapshot()
           const gltf = blob ? JSON.parse(await blob.text()) : null
           const nodes = Array.isArray(gltf?.nodes) ? gltf.nodes : []
@@ -54,9 +67,12 @@ def _read_view(page: Page) -> dict[str, Any]:
             canvas => String(canvas.dataset.engine || '').startsWith('three.js'),
           )
           const rendererCanvas = rendererCanvases[0] || null
+          const allMapCanvases = Array.from(
+            document.querySelectorAll('canvas.maplibregl-canvas'),
+          )
           const mapCanvases = host
             ? Array.from(host.querySelectorAll('canvas.maplibregl-canvas'))
-            : []
+            : allMapCanvases
           const visibleMapCanvases = mapCanvases.filter(isVisible)
           const map = gympgrph.readActiveMapLibreMap?.() || null
           const overlay = gympgrph.readFlightGeoOverlay?.() || null
@@ -90,6 +106,9 @@ def _read_view(page: Page) -> dict[str, Any]:
           const environmentData = await readSourceData(environmentSource)
           const sourceFeatures = Array.isArray(sourceData?.features)
             ? sourceData.features
+            : []
+          const environmentFeatures = Array.isArray(environmentData?.features)
+            ? environmentData.features
             : []
           const mapStyle = map?.getStyle?.() || null
           const styleLayerIds = Array.isArray(mapStyle?.layers)
@@ -125,6 +144,134 @@ def _read_view(page: Page) -> dict[str, Any]:
           const mapCanvas = visibleMapCanvases[0] || null
           const mapWidth = Number(mapCanvas?.clientWidth || 0)
           const mapHeight = Number(mapCanvas?.clientHeight || 0)
+          const authoredEnvironmentSubjects = Array.isArray(
+            motionRuntime?.plan?.subjects,
+          ) ? motionRuntime.plan.subjects.map(subject => {
+            const asset = sceneLibrary.resolveXrSceneLibraryAsset(subject.assetId)
+            const scale = Number.isFinite(subject.scale) && subject.scale > 0
+              ? subject.scale
+              : 1
+            const baseHeightMeters = Math.max(0, Number(subject.position?.[1]) || 0)
+            return {
+              baseHeightMeters,
+              depthMeters: asset.dimensionsMeters[2] * scale,
+              heightMeters: baseHeightMeters + asset.dimensionsMeters[1] * scale,
+              id: subject.id,
+              widthMeters: asset.dimensionsMeters[0] * scale,
+            }
+          }) : []
+          const measureEdgeMeters = (from, to) => {
+            if (!Array.isArray(from) || !Array.isArray(to)) return NaN
+            const longitudeA = Number(from[0])
+            const latitudeA = Number(from[1])
+            const longitudeB = Number(to[0])
+            const latitudeB = Number(to[1])
+            if (![longitudeA, latitudeA, longitudeB, latitudeB].every(Number.isFinite)) {
+              return NaN
+            }
+            const latitude = (latitudeA + latitudeB) / 2
+            return Math.hypot(
+              (longitudeB - longitudeA) * 111_320 * Math.cos(latitude * Math.PI / 180),
+              (latitudeB - latitudeA) * 111_320,
+            )
+          }
+          const environmentSurfaceMeters = environmentFeatures.map(feature => {
+            const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
+              ? feature.geometry.coordinates[0]
+              : []
+            const coordinates = ring.filter(coordinate => (
+              Array.isArray(coordinate)
+              && Number.isFinite(Number(coordinate[0]))
+              && Number.isFinite(Number(coordinate[1]))
+            )).map(coordinate => [
+              Number(coordinate[0]),
+              Number(coordinate[1]),
+            ])
+            const latitude = coordinates.length > 0
+              ? coordinates.reduce((sum, coordinate) => sum + coordinate[1], 0)
+                / coordinates.length
+              : NaN
+            const metersPerLongitudeDegree = 111_320
+              * Math.cos(latitude * Math.PI / 180)
+            const longitudes = coordinates.map(coordinate => coordinate[0])
+            const latitudes = coordinates.map(coordinate => coordinate[1])
+            const projected = coordinates.map(coordinate => map?.project?.(coordinate))
+            const viewportBounded = coordinates.length >= 4
+              && mapWidth > 0
+              && mapHeight > 0
+              && projected.length === coordinates.length
+              && projected.every(point => (
+                Number.isFinite(point?.x)
+                && Number.isFinite(point?.y)
+                && point.x >= 0
+                && point.y >= 0
+                && point.x <= mapWidth
+                && point.y <= mapHeight
+              ))
+            return {
+              baseHeightMeters: Number(feature?.properties?.kgBaseHeightMeters),
+              edgeDepthMeters: measureEdgeMeters(coordinates[1], coordinates[2]),
+              edgeWidthMeters: measureEdgeMeters(coordinates[0], coordinates[1]),
+              heightMeters: Number(feature?.properties?.kgHeightMeters),
+              id: String(feature?.properties?.kgSurfaceId || ''),
+              kind: String(feature?.properties?.kgSurfaceKind || ''),
+              depthMeters: latitudes.length > 0
+                ? (Math.max(...latitudes) - Math.min(...latitudes)) * 111_320
+                : NaN,
+              widthMeters: longitudes.length > 0
+                ? (Math.max(...longitudes) - Math.min(...longitudes))
+                  * metersPerLongitudeDegree
+                : NaN,
+              viewportBounded,
+            }
+          })
+          const close = (actual, expected, tolerance = 0.02) => (
+            Number.isFinite(actual)
+            && Number.isFinite(expected)
+            && Math.abs(actual - expected) <= tolerance
+          )
+          const environmentSurfaces = Array.isArray(overlay?.environment?.surfaces)
+            ? overlay.environment.surfaces
+            : []
+          const environmentSourceExactlyMatchesOverlay = Boolean(
+            overlay?.environment
+            && environmentSurfaces.length === environmentFeatures.length
+            && environmentSurfaces.every((surface, index) => {
+              const feature = environmentFeatures[index]
+              const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
+                ? feature.geometry.coordinates[0]
+                : []
+              return (
+                feature?.id === `${overlay.environment.id}:${surface.id}`
+                && feature?.properties?.kgBaseHeightMeters === surface.baseHeightMeters
+                && feature?.properties?.kgHeightMeters === surface.heightMeters
+                && feature?.properties?.kgSurfaceId === surface.id
+                && feature?.properties?.kgSurfaceKind === surface.kind
+                && Array.isArray(ring)
+                && ring.length === surface.ring.length
+                && ring.every((coordinate, coordinateIndex) => (
+                  Array.isArray(coordinate)
+                  && coordinate[0] === surface.ring[coordinateIndex]?.[0]
+                  && coordinate[1] === surface.ring[coordinateIndex]?.[1]
+                ))
+              )
+            })
+          )
+          const selectedEnvironmentSubjectsExact = authoredEnvironmentSubjects.length
+            === environmentSurfaces.filter(surface => surface.kind === 'subject').length
+            && authoredEnvironmentSubjects.every(expected => {
+              const actual = environmentSurfaceMeters.find(
+                surface => surface.id === expected.id,
+              )
+              return Boolean(
+                actual
+                && actual.kind === 'subject'
+                && close(actual.baseHeightMeters, expected.baseHeightMeters, 0.01)
+                && close(actual.heightMeters, expected.heightMeters, 0.01)
+                && close(actual.edgeWidthMeters, expected.widthMeters)
+                && close(actual.edgeDepthMeters, expected.depthMeters)
+              )
+            })
           const projectedRoute = Array.isArray(overlay?.route)
             ? overlay.route.map(point => {
                 const projected = map?.project?.(point.coordinate)
@@ -162,24 +309,6 @@ def _read_view(page: Page) -> dict[str, Any]:
             && aircraftProjected.y >= 0
             && aircraftProjected.x <= mapWidth
             && aircraftProjected.y <= mapHeight
-          let mapPointerHit = null
-          if (mapCanvas) {
-            const rect = mapCanvas.getBoundingClientRect()
-            const candidates = [
-              [0.32, 0.48],
-              [0.2, 0.62],
-              [0.45, 0.7],
-            ]
-            for (const [ratioX, ratioY] of candidates) {
-              const x = rect.left + rect.width * ratioX
-              const y = rect.top + rect.height * ratioY
-              const hit = document.elementFromPoint(x, y)
-              if (hit === mapCanvas) {
-                mapPointerHit = { x, y }
-                break
-              }
-            }
-          }
           let rendererPointerRoot = rendererCanvas?.parentElement || null
           while (
             rendererPointerRoot
@@ -199,12 +328,24 @@ def _read_view(page: Page) -> dict[str, Any]:
               ?.getContext('webgl')
               ?.getContextAttributes?.()
             || null
+          const cityPanel = document.querySelector(
+            '[data-kg-city-sim-floating-panel="1"]',
+          )
+          const cityStage = document.querySelector(
+            '[data-kg-city-sim-stage="active"]',
+          )
           return {
             hostActive: Boolean(host),
+            activeMapPresent: Boolean(map),
             hostRevision: host?.getAttribute(
               'data-kg-flight-geospatial-revision',
             ) || '',
             geospatialEnabled: gympgrphState.geospatialModeEnabled === true,
+            geospatialPreferenceEnabled: ['1', 'true'].includes(
+              String(localStorage.getItem(
+                gympgrph.LS_KEYS.geospatialOverlayEnabled,
+              ) || '').toLowerCase(),
+            ),
             viewMode: gympgrphState.geospatialViewMode,
             renderMode: graphState.canvasRenderMode,
             canvas3dMode: graphState.canvas3dMode,
@@ -213,7 +354,18 @@ def _read_view(page: Page) -> dict[str, Any]:
             geoXrSurfaceActive: Boolean(document.querySelector(
               '[data-kg-geo-xr-surface="active"]',
             )),
+            geoXrLayerCount: document.querySelectorAll(
+              '[data-kg-geo-xr-layer]',
+            ).length,
             hudVisible: isVisible(hud),
+            flightHudCount: document.querySelectorAll(
+              '[data-kg-flight-sim-hud="1"]',
+            ).length,
+            cityActive: cityPanel?.getAttribute('data-kg-city-sim-active')
+              === '1',
+            cityPanelVisible: isVisible(cityPanel),
+            cityPhase: cityPanel?.getAttribute('data-kg-city-sim-phase') || '',
+            cityStageActive: Boolean(cityStage),
             styleUrl: localStorage.getItem(
               gympgrph.LS_KEYS.geospatialStyleUrl,
             ) || '',
@@ -222,9 +374,10 @@ def _read_view(page: Page) -> dict[str, Any]:
             center: map?.getCenter?.()?.toArray?.() || null,
             zoom: map?.getZoom?.() ?? null,
             pitch: map?.getPitch?.() ?? null,
-            mapLibreCanvasCount: mapCanvases.length,
-            visibleMapLibreCanvasCount: visibleMapCanvases.length,
+            mapLibreCanvasCount: allMapCanvases.length,
+            visibleMapLibreCanvasCount: allMapCanvases.filter(isVisible).length,
             flightSourceFeatures: sourceFeatures.length,
+            flightSourcePresent: Boolean(source),
             objectiveGuideFeatureCount: sourceFeatures.filter(
               feature => feature?.properties?.kgFlightOverlayKind
                 === 'objective-guide',
@@ -247,10 +400,15 @@ def _read_view(page: Page) -> dict[str, Any]:
             environmentLayersReady: Object.values(environmentLayerIds || {})
               .every(id => Boolean(map?.getLayer?.(id))),
             environmentSourceFeatures:
-              environmentData?.features?.length || 0,
-            environmentSubjectIds: (environmentData?.features || [])
+              environmentFeatures.length,
+            environmentSourcePresent: Boolean(environmentSource),
+            environmentSourceExactlyMatchesOverlay,
+            authoredEnvironmentSubjects,
+            environmentSubjectIds: environmentFeatures
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
+            environmentSurfaceMeters,
+            selectedEnvironmentSubjectsExact,
             renderedEnvironmentKinds: Array.from(new Set(
               renderedEnvironment.map(
                 feature => feature?.properties?.kgSurfaceKind || '',
@@ -261,14 +419,17 @@ def _read_view(page: Page) -> dict[str, Any]:
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
             renderedKinds,
             renderedFeatureCount: renderedFeatures.length,
+            renderedEnvironmentFeatureCount: renderedEnvironment.length,
             routeInViewport,
             routeScreenSpan,
             aircraftInViewport,
             aircraftScreenPoint: aircraftProjected
               ? { x: aircraftProjected.x, y: aircraftProjected.y }
               : null,
-            mapPointerHit,
             rendererCanvasCount: rendererCanvases.length,
+            threeCanvasOwnerCount: document.querySelectorAll(
+              '[data-kg-three-canvas-owner="1"]',
+            ).length,
             canvasStable: Boolean(rendererCanvas)
               && rendererCanvas === window.__kgFlightSimCanvas,
             rendererAlpha: contextAttributes?.alpha === true,
@@ -309,6 +470,29 @@ def _read_view(page: Page) -> dict[str, Any]:
         }
         """
     )
+    layout_occlusion = read_geo_xr_layout_occlusion(page)
+    view["layoutOcclusion"] = layout_occlusion
+    view["mapPointerHit"] = layout_occlusion.get("mapPointerHit")
+    return view
+
+
+def _unmet_view_requirements(
+    last: dict[str, Any],
+    *,
+    expected_provider_host: str,
+    expected_view: str,
+    expected_projection: str,
+    expected_style_url: str,
+    require_visual_layout: bool,
+) -> list[str]:
+    return unmet_view_requirements(
+        last,
+        expected_provider_host=expected_provider_host,
+        expected_view=expected_view,
+        expected_projection=expected_projection,
+        expected_style_url=expected_style_url,
+        require_visual_layout=require_visual_layout,
+    )
 
 
 def _wait_for_view(
@@ -318,59 +502,17 @@ def _wait_for_view(
     expected_view: str,
     expected_projection: str,
     expected_style_url: str,
+    require_visual_layout: bool = False,
 ) -> dict[str, Any]:
-    deadline = time.monotonic() + 30
-    last: dict[str, Any] = {}
-    while time.monotonic() < deadline:
-        last = _read_view(page)
-        if (
-            last.get("viewMode") == expected_view
-            and last.get("styleUrl") == expected_style_url
-            and expected_provider_host in str(
-                last.get("styleFingerprint") or ""
-            )
-            and last.get("projection") == expected_projection
-            and last.get("visibleMapLibreCanvasCount", 0) >= 1
-            and last.get("flightLayersReady") is True
-            and last.get("flightLayersTopmost") is True
-            and last.get("aircraftLayerType") == "symbol"
-            and last.get("aircraftGeometryType") == "Polygon"
-            and last.get("aircraftImagesReady") is True
-            and (last.get("aircraftImagePixelWidth") or 0) >= 40
-            and last.get("environmentId") == "singapore"
-            and last.get("environmentPresentationBounds")
-            == [[103.605, 1.158], [104.09, 1.48]]
-            and last.get("environmentLayersReady") is True
-            and (last.get("environmentSourceFeatures") or 0) >= 10
-            and {"stage-footprint", "structure", "subject"}.issubset(
-                set(last.get("renderedEnvironmentKinds") or [])
-            )
-            and any("vehicle-" in str(subject_id) for subject_id in
-                    last.get("renderedEnvironmentSubjectIds") or [])
-            and (last.get("flightSourceFeatures") or 0) >= 7
-            and last.get("objectiveGuideFeatureCount") == 1
-            and set(last.get("renderedKinds") or [])
-            == {"aircraft", "objective-guide", "route", "route-point"}
-            and last.get("routeInViewport") is True
-            and max(
-                float((last.get("routeScreenSpan") or {}).get("x") or 0),
-                float((last.get("routeScreenSpan") or {}).get("y") or 0),
-            ) >= 80
-            and last.get("aircraftInViewport") is True
-            and (
-                float(last.get("pitch") or 0) >= 22
-                if expected_view.startswith("3d")
-                else abs(float(last.get("pitch") or 0)) < 0.01
-            )
-            and bool(last.get("mapPointerHit"))
-        ):
-            return last
-        page.wait_for_timeout(100)
-    raise AssertionError(
-        "timed out waiting for native MapLibre Geo+XR view "
-        f"{expected_view}/{expected_projection}/{expected_style_url}: {last}"
+    return wait_for_view(
+        page,
+        read_view=_read_view,
+        expected_provider_host=expected_provider_host,
+        expected_view=expected_view,
+        expected_projection=expected_projection,
+        expected_style_url=expected_style_url,
+        require_visual_layout=require_visual_layout,
     )
-
 
 def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any], GeoXrViewCase, dict[str, Any]]:
     baseline = _read_view(page)
@@ -423,175 +565,3 @@ def wait_for_canvas_view_geo_xr_handoff(page: Page, source_case: GeoXrViewCase) 
             "exclusivePlainGeoOverlayCount": 0, "flightRuntimeError": "",
         }, require_revision_sync=True,
     )
-
-
-def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
-    baseline_camera = page.evaluate(
-        """
-        async () => {
-          const camera = await window.__kgFlightSimBrowserProof.importModule(
-            'flightSimCameraRuntime',
-          )
-          const cameraSource = await window.__kgFlightSimBrowserProof.importModule(
-            'xrNativeControllerCameraRuntime',
-          )
-          const graph = await window.__kgFlightSimBrowserProof.importModule(
-            'graphStore',
-          )
-          const gympgrph = await window.__kgFlightSimBrowserProof.importModule(
-            'gympgrphStore',
-          )
-          const state = graph.useGraphStore.getState()
-          return {
-            cameraPreference: camera.readFlightSimCameraSnapshot().view,
-            cameraSourceMode: cameraSource.readXrNativeControllerCamera().mode,
-            floatingPanelOpen: state.floatingPanelOpen,
-            floatingPanelView: state.floatingPanelView,
-            geospatialViewMode:
-              gympgrph.useGympgrphStore.getState().geospatialViewMode,
-            geospatialStyleUrl: localStorage.getItem(
-              gympgrph.LS_KEYS.geospatialStyleUrl,
-            ) || '',
-          }
-        }
-        """
-    )
-    results: list[dict[str, Any]] = []
-    try:
-        for (
-            view_mode,
-            projection,
-            button_label,
-            style_url,
-            provider_host,
-        ) in GEO_XR_VIEW_CASES:
-            select_geo_xr_view(page, button_label)
-            observed = _wait_for_view(
-                page,
-                expected_provider_host=provider_host,
-                expected_view=view_mode,
-                expected_projection=projection,
-                expected_style_url=style_url,
-            )
-            exact_contract = {
-                "hostActive": True,
-                "rendererCanvasCount": 1,
-                "canvasStable": True,
-                "rendererAlpha": True,
-                "terrainCount": 0,
-                "nativeVisualCount": 0,
-                "flightR3fVisualCount": 0,
-                "visualProjection": "maplibre",
-                "rendererPointerTransparent": True,
-                "exclusivePlainGeoOverlayCount": 0,
-                "cameraPreference": baseline_camera["cameraPreference"],
-                "cameraSource": baseline_camera["cameraSourceMode"],
-            }
-            for key, expected in exact_contract.items():
-                if observed.get(key) != expected:
-                    raise AssertionError(
-                        f"Geo+XR {view_mode} violated {key}: "
-                        f"expected={expected!r} observed={observed}"
-                    )
-            if not observed.get("hostRevision"):
-                raise AssertionError(
-                    f"Geo+XR {view_mode} did not publish a Flight revision: "
-                    f"{observed}"
-                )
-            results.append(observed)
-        before_movement = _read_view(page)
-        page.evaluate(
-            """
-            async () => {
-              const flight = await window.__kgFlightSimBrowserProof.importModule(
-                'flightSimRuntime',
-              )
-              flight.restartFlightSim()
-              return flight.startFlightSim()
-            }
-            """
-        )
-        page.keyboard.down("KeyW")
-        try:
-            movement_deadline = time.monotonic() + 15
-            after_movement: dict[str, Any] = {}
-            while time.monotonic() < movement_deadline:
-                after_movement = _read_view(page)
-                if (
-                    after_movement.get("flightTick", 0)
-                    > before_movement.get("flightTick", 0)
-                    and after_movement.get("overlayRevision")
-                    != before_movement.get("overlayRevision")
-                    and after_movement.get("aircraftCoordinate")
-                    != before_movement.get("aircraftCoordinate")
-                    and after_movement.get("aircraftInViewport") is True
-                ):
-                    break
-                page.wait_for_timeout(100)
-            else:
-                raise AssertionError(
-                    "MapLibre Flight aircraft did not move with gameplay: "
-                    f"before={before_movement} after={after_movement}"
-                )
-        finally:
-            page.keyboard.up("KeyW")
-            page.evaluate(
-                """
-                async () => {
-                  const flight = await window.__kgFlightSimBrowserProof.importModule(
-                    'flightSimRuntime',
-                  )
-                  flight.restartFlightSim()
-                }
-                """
-            )
-    finally:
-        prior_case = next(
-            (
-                case for case in GEO_XR_VIEW_CASES
-                if case[0] == baseline_camera["geospatialViewMode"]
-                and case[3] == baseline_camera["geospatialStyleUrl"]
-            ),
-            None,
-        )
-        if prior_case is None:
-            raise AssertionError(
-                "source-authored Geo view/style was outside the four-view "
-                f"contract: {baseline_camera}"
-            )
-        select_geo_xr_view(page, prior_case[2])
-        restored_view = _wait_for_view(
-            page,
-            expected_provider_host=prior_case[4],
-            expected_view=prior_case[0],
-            expected_projection=prior_case[1],
-            expected_style_url=prior_case[3],
-        )
-        page.evaluate(
-            """
-            async prior => {
-              const graph = await window.__kgFlightSimBrowserProof.importModule(
-                'graphStore',
-              )
-              const state = graph.useGraphStore.getState()
-              state.setFloatingPanelOpen(prior.floatingPanelOpen)
-              state.setFloatingPanelView(prior.floatingPanelView)
-            }
-            """,
-            {
-                "floatingPanelOpen": baseline_camera["floatingPanelOpen"],
-                "floatingPanelView": baseline_camera["floatingPanelView"],
-            },
-        )
-    return {
-        "baselineCameraPreference": baseline_camera["cameraPreference"],
-        "baselineCameraSource": baseline_camera["cameraSourceMode"],
-        "sourceView": baseline_camera["geospatialViewMode"],
-        "sourceStyleUrl": baseline_camera["geospatialStyleUrl"],
-        "restoredView": restored_view,
-        "liveMovement": {
-            "before": before_movement,
-            "after": after_movement,
-        },
-        "views": results,
-    }
