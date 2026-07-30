@@ -10,6 +10,12 @@ export const FLIGHT_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PA
 export const FLIGHT_COMPANION_BASENAME = 'knowgrph-game-flight-sim-demo.companion.md'
 export const CITY_SIM_SEED_BASENAME = 'knowgrph-game-city-building-sim-demo.md'
 export const CITY_SIM_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${CITY_SIM_SEED_BASENAME}`
+export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
+  id: 'city-sim',
+  rendererRule: 'never create a second Canvas or renderer',
+  stageOwner: 'additive City Stage in the existing shared React Three Fiber Canvas',
+  worldOwnership: 'overlay-only',
+})
 export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze([
   'knowgrph-game-mmorpg-demo.companion.md',
   'knowgrph-game-mmorpg-demo.md',
@@ -307,6 +313,15 @@ const requireCitySimRuntimeIdentity = source => {
   const cityRuntime = isRecord(frontmatter.city_runtime)
     ? frontmatter.city_runtime
     : {}
+  const cityGeoXr = isRecord(frontmatter.city_geo_xr)
+    ? frontmatter.city_geo_xr
+    : {}
+  const cityAerialProjection = isRecord(frontmatter.city_aerial_projection)
+    ? frontmatter.city_aerial_projection
+    : {}
+  const cityCamera = isRecord(frontmatter.city_camera)
+    ? frontmatter.city_camera
+    : {}
   const missing = []
   const requireValue = (label, actual, expected) => {
     if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
@@ -315,12 +330,12 @@ const requireCitySimRuntimeIdentity = source => {
   requireValue('status', frontmatter.status, 'proof-pending')
   requireValue('runtime_status', frontmatter.runtime_status, 'proof-pending')
   requireValue('publish_scope', frontmatter.publish_scope, 'local-only')
-  requireValue('kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), 'xr')
+  requireValue('kgCanvasSurfaceMode', readCanvasSurfaceMode(frontmatter.kgCanvasSurfaceMode), 'geo-xr')
   requireValue('kgCanvasRenderMode', readCanvasRenderMode(frontmatter.kgCanvasRenderMode), '3d')
   requireValue('kgCanvas3dMode', normalizePresetToken(frontmatter.kgCanvas3dMode), 'xr')
   requireValue('kgFloatingPanelOpen', readBooleanPreset(frontmatter.kgFloatingPanelOpen), true)
   requireValue('kgFloatingPanelView', frontmatter.kgFloatingPanelView, 'cityBuilder')
-  requireValue('run_ready_demo.id', runReadyDemo.id, 'city-sim')
+  requireValue('run_ready_demo.id', runReadyDemo.id, CITY_SIM_OVERLAY_AUTHORITY.id)
   requireValue('run_ready_demo.activation', runReadyDemo.activation, 'applied-source-document')
   requireValue(
     'run_ready_demo.identity_authority',
@@ -340,6 +355,7 @@ const requireCitySimRuntimeIdentity = source => {
   requireValue('run_ready_demo.source_root', runReadyDemo.source_root, 'knowgrph/docs')
   requireValue('run_ready_demo.source_backed', readBooleanPreset(runReadyDemo.source_backed), true)
   requireValue('run_ready_demo.native_runtime', readBooleanPreset(runReadyDemo.native_runtime), true)
+  requireValue('run_ready_demo.presentation', runReadyDemo.presentation, 'shared-geo-xr-city-overlay')
   requireValue('run_ready_demo.auto_start', readBooleanPreset(runReadyDemo.auto_start), false)
   requireValue(
     'run_ready_demo.forbid_external_copy_or_dependency',
@@ -349,9 +365,109 @@ const requireCitySimRuntimeIdentity = source => {
   if (!Array.isArray(runReadyDemo.external_dependencies) || runReadyDemo.external_dependencies.length !== 0) {
     missing.push('run_ready_demo.external_dependencies=[]')
   }
+  if (JSON.stringify(runReadyDemo.canonical_consumers) !== JSON.stringify([
+    'workspace',
+    'geo-xr-mode',
+    'city-builder',
+    'maplibre-flight-overlay',
+  ])) {
+    missing.push(
+      'run_ready_demo.canonical_consumers=["workspace","geo-xr-mode","city-builder","maplibre-flight-overlay"]',
+    )
+  }
   requireValue('city_runtime.schema_id', cityRuntime.schema_id, 'knowgrph-city-grid/v1')
   requireValue('city_runtime.runtime_dependencies_added', cityRuntime.runtime_dependencies_added, 0)
-  requireValue('city_runtime.renderer_rule', cityRuntime.renderer_rule, 'never create a second Canvas or renderer')
+  requireValue(
+    'city_runtime.stage_owner',
+    cityRuntime.stage_owner,
+    CITY_SIM_OVERLAY_AUTHORITY.stageOwner,
+  )
+  requireValue(
+    'city_runtime.renderer_rule',
+    cityRuntime.renderer_rule,
+    CITY_SIM_OVERLAY_AUTHORITY.rendererRule,
+  )
+  requireValue('city_geo_xr.surface_owner', cityGeoXr.surface_owner, 'Geo+XR Mode')
+  requireValue('city_geo_xr.geo_host_owner', cityGeoXr.geo_host_owner, 'native MapLibre Geo host')
+  requireValue(
+    'city_geo_xr.geo_policy_owner',
+    cityGeoXr.geo_policy_owner,
+    'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+  )
+  requireValue(
+    'city_geo_xr.city_stage_owner',
+    cityGeoXr.city_stage_owner,
+    'existing shared React Three Fiber Canvas',
+  )
+  requireValue('city_geo_xr.parcel_input_owner', cityGeoXr.parcel_input_owner, 'City Stage')
+  requireValue(
+    'city_geo_xr.composition',
+    cityGeoXr.composition,
+    'native MapLibre Geo below the shared City R3F stage',
+  )
+  requireValue(
+    'city_geo_xr.duplicate_map_or_canvas_forbidden',
+    readBooleanPreset(cityGeoXr.duplicate_map_or_canvas_forbidden),
+    true,
+  )
+  requireValue(
+    'city_aerial_projection.behavior',
+    cityAerialProjection.behavior,
+    'deterministic read-only stopped aircraft and route',
+  )
+  requireValue('city_aerial_projection.phase', cityAerialProjection.phase, 'stopped')
+  requireValue(
+    'city_aerial_projection.spatial_source',
+    cityAerialProjection.spatial_source,
+    'current selected authored XR spatial profile',
+  )
+  requireValue('city_aerial_projection.environment', cityAerialProjection.environment, null)
+  requireValue(
+    'city_aerial_projection.adapter_owner',
+    cityAerialProjection.adapter_owner,
+    'canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts',
+  )
+  requireValue(
+    'city_aerial_projection.adapter_function',
+    cityAerialProjection.adapter_function,
+    'projectCitySimAerialInspectionToGeospatialOverlay',
+  )
+  requireValue(
+    'city_aerial_projection.flight_projection_owner',
+    cityAerialProjection.flight_projection_owner,
+    'canvas/src/features/game-flight-sim/flightSimGeospatialProjection.ts',
+  )
+  requireValue(
+    'city_aerial_projection.overlay_store_owner',
+    cityAerialProjection.overlay_store_owner,
+    'gympgrph/src/flightGeoOverlay.ts',
+  )
+  requireValue(
+    'city_aerial_projection.maplibre_projection_owner',
+    cityAerialProjection.maplibre_projection_owner,
+    'gympgrph/src/flightGeoOverlayMapLibre.ts',
+  )
+  requireValue(
+    'city_aerial_projection.shared_publisher_owner',
+    cityAerialProjection.shared_publisher_owner,
+    'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
+  )
+  requireValue(
+    'city_aerial_projection.flight_gameplay_active',
+    readBooleanPreset(cityAerialProjection.flight_gameplay_active),
+    false,
+  )
+  requireValue(
+    'city_aerial_projection.flight_readiness_claimed',
+    readBooleanPreset(cityAerialProjection.flight_readiness_claimed),
+    false,
+  )
+  requireValue(
+    'city_aerial_projection.duplicate_source_or_layers_forbidden',
+    readBooleanPreset(cityAerialProjection.duplicate_source_or_layers_forbidden),
+    true,
+  )
+  requireValue('city_camera.canvas_mode', readCanvasSurfaceMode(cityCamera.canvas_mode), 'geo-xr')
   if (missing.length > 0) {
     throw new Error(
       `proof-pending workspace document ${CITY_SIM_SEED_BASENAME} has invalid authority; `

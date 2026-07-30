@@ -44,9 +44,12 @@ test('XR Physics is the only source-backed authority for the Game Mode overlay',
   )
   assert.match(citySource, /world_ownership: "overlay-only"/)
   assert.doesNotMatch(citySource, /\n(?:game_mode|home_apex|native_controller_demo):/)
-  assert.match(
-    source('scripts', 'check-game-fps-readiness.mjs'),
-    /declaresCanonicalCityOverlay/,
+  const gameFpsAuthority = source('scripts', 'check-game-fps-readiness.mjs')
+  assert.match(gameFpsAuthority, /declaresCanonicalCityOverlay/)
+  assert.match(gameFpsAuthority, /CITY_SIM_OVERLAY_AUTHORITY\.stageOwner/)
+  assert.doesNotMatch(
+    gameFpsAuthority,
+    /additive City Stage in the existing shared Canvas/,
   )
   assert.match(
     threeGraphSource,

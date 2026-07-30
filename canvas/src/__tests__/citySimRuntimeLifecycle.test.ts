@@ -38,9 +38,7 @@ import {
   writeGeospatialOverlayEnabledPreference,
 } from '@/lib/geospatial/geospatialModePreference'
 import {
-  claimMapLibreMapLease,
   isGeospatialModeEnabled,
-  NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
   setGeospatialModeEnabled,
 } from 'gympgrph'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -55,50 +53,6 @@ const CITY_PANEL_PROJECTIONS = [
   'flightSim',
   'camera',
 ] as const
-
-type ControlledAnimationFrames = Readonly<{
-  flushNext: () => Promise<void>
-  restore: () => void
-  waitForPending: () => Promise<void>
-}>
-
-function installControlledAnimationFrames(window: Window): ControlledAnimationFrames {
-  const originalRequestAnimationFrame = window.requestAnimationFrame.bind(window)
-  const originalCancelAnimationFrame = window.cancelAnimationFrame.bind(window)
-  let nextFrameId = 1
-  const frames = new Map<number, FrameRequestCallback>()
-  window.requestAnimationFrame = callback => {
-    const frameId = nextFrameId
-    nextFrameId += 1
-    frames.set(frameId, callback)
-    return frameId
-  }
-  window.cancelAnimationFrame = frameId => {
-    frames.delete(frameId)
-  }
-  return {
-    flushNext: async () => {
-      const entry = frames.entries().next().value as
-        | [number, FrameRequestCallback]
-        | undefined
-      assert.ok(entry, 'expected a pending Geo disposal animation frame')
-      frames.delete(entry[0])
-      entry[1](Date.now())
-      await Promise.resolve()
-    },
-    restore: () => {
-      window.requestAnimationFrame = originalRequestAnimationFrame
-      window.cancelAnimationFrame = originalCancelAnimationFrame
-    },
-    waitForPending: async () => {
-      for (let attempt = 0; attempt < 200; attempt += 1) {
-        if (frames.size > 0) return
-        await new Promise<void>(resolve => setTimeout(resolve, 10))
-      }
-      assert.fail('City Geo handoff did not schedule a disposal animation frame')
-    },
-  }
-}
 
 export function createCityWorkspace(initialDocument?: string): WorkspaceFs {
   const entries = new Map<string, WorkspaceEntry>()
@@ -540,8 +494,8 @@ export async function testCitySimClaimsAndRestoresTheNativeGeoOwner() {
     })
     prepareCitySurface()
     resetCitySimRuntimeForTests({ webglSupported: true })
-    writeGeospatialOverlayEnabledPreference(true)
-    setGeospatialModeEnabled(true)
+    writeGeospatialOverlayEnabledPreference(false)
+    setGeospatialModeEnabled(false)
     useGraphStore.setState({
       canvasRenderMode: '3d',
       canvas3dMode: 'xr',
@@ -558,15 +512,15 @@ export async function testCitySimClaimsAndRestoresTheNativeGeoOwner() {
     })
 
     assert.equal(opened.active, true)
-    assert.equal(readGeospatialOverlayEnabledPreference(), false)
-    assert.equal(isGeospatialModeEnabled(), false)
+    assert.equal(readGeospatialOverlayEnabledPreference(), true)
+    assert.equal(isGeospatialModeEnabled(), true)
     assert.equal(useGraphStore.getState().floatingPanelView, 'cityBuilder')
     assert.equal(readCitySimSnapshot().active, true)
 
     const restored = await exitCitySimSurfaceAndWait()
     assert.equal(restored.active, false)
-    assert.equal(readGeospatialOverlayEnabledPreference(), true)
-    assert.equal(isGeospatialModeEnabled(), true)
+    assert.equal(readGeospatialOverlayEnabledPreference(), false)
+    assert.equal(isGeospatialModeEnabled(), false)
     assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
     assert.equal(useGraphStore.getState().canvas3dMode, 'xr')
     assert.equal(useGraphStore.getState().floatingPanelView, 'flightSim')
@@ -605,8 +559,8 @@ export async function testCitySimFailedEntryRestoresTheCapturedGeoOwner() {
     })
     prepareCitySurface()
     resetCitySimRuntimeForTests({ webglSupported: true })
-    writeGeospatialOverlayEnabledPreference(true)
-    setGeospatialModeEnabled(true)
+    writeGeospatialOverlayEnabledPreference(false)
+    setGeospatialModeEnabled(false)
     useGraphStore.setState({
       schema: {
         layout: { mode: 'radial' },
@@ -623,114 +577,10 @@ export async function testCitySimFailedEntryRestoresTheCapturedGeoOwner() {
     })
     assert.equal(failed.active, false)
     assert.equal(failed.lastResult?.code, 'surface-unavailable')
-    assert.equal(readGeospatialOverlayEnabledPreference(), true)
-    assert.equal(isGeospatialModeEnabled(), true)
-    assert.equal(readCitySimSnapshot().active, false)
-  } finally {
-    exitCitySimSurface({ restorePreviousSurface: false })
-    resetCitySimRuntimeForTests({ webglSupported: true })
-    writeGeospatialOverlayEnabledPreference(priorGeospatialEnabled)
-    setGeospatialModeEnabled(priorGeospatialEnabled)
-    useGraphStore.setState(priorStore as never)
-    Object.assign(globalThis, {
-      Event: previousEvent,
-      CustomEvent: previousCustomEvent,
-    })
-    restore()
-  }
-}
-
-export async function testCitySimExitWaitsForPendingGeoClaimRollback() {
-  const { dom, restore } = initJsdomHarness(`
-    <!doctype html><html><body>
-      <section data-kg-geo-xr-layer="geo-background">
-        <canvas class="maplibregl-canvas"></canvas>
-      </section>
-    </body></html>
-  `)
-  const previousEvent = globalThis.Event
-  const previousCustomEvent = globalThis.CustomEvent
-  const priorStore = captureStoreState()
-  const priorGeospatialEnabled = readGeospatialOverlayEnabledPreference()
-  const controlledFrames = installControlledAnimationFrames(dom.window)
-  const ownedCanvas = dom.window.document.querySelector<HTMLCanvasElement>(
-    '[data-kg-geo-xr-layer="geo-background"] canvas.maplibregl-canvas',
-  )
-  assert.ok(ownedCanvas)
-  let releaseMapLease: (() => void) | null = null
-  try {
-    Object.assign(globalThis, {
-      Event: dom.window.Event,
-      CustomEvent: dom.window.CustomEvent,
-    })
-    prepareCitySurface()
-    resetCitySimRuntimeForTests({ webglSupported: true })
-    writeGeospatialOverlayEnabledPreference(true)
-    setGeospatialModeEnabled(true)
-    useGraphStore.setState({
-      canvasRenderMode: '3d',
-      canvas3dMode: 'xr',
-      canvasRenderModeLastFree: '3d',
-      canvasRenderModeIsAuto: false,
-      floatingPanelOpen: true,
-      floatingPanelView: 'flightSim',
-    } as never)
-    const previous = captureCitySimPreviousCanvasSurface()
-    releaseMapLease = claimMapLibreMapLease({
-      isPreparedForDisposal: () => true,
-      map: { getCanvas: () => ownedCanvas },
-      ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
-      root: ownedCanvas.parentElement,
-    })
-
-    const opening = openCitySimSurface({
-      workspace: createCityWorkspace(),
-      webglSupported: true,
-      previousCanvasSurface: previous,
-    })
-    await controlledFrames.waitForPending()
     assert.equal(readGeospatialOverlayEnabledPreference(), false)
     assert.equal(isGeospatialModeEnabled(), false)
-
-    let restorationSettled = false
-    const restoration = exitCitySimSurfaceAndWait().then(result => {
-      restorationSettled = true
-      return result
-    })
-    await Promise.resolve()
-    assert.equal(
-      restorationSettled,
-      false,
-      'Exit must remain pending until the stale Geo claim restores the captured owner.',
-    )
-
-    ownedCanvas.remove()
-    releaseMapLease()
-    releaseMapLease = null
-    await controlledFrames.flushNext()
-    await controlledFrames.waitForPending()
-    await controlledFrames.flushNext()
-
-    await opening
-    const restored = await restoration
-    assert.equal(restored.active, false)
-    assert.equal(restorationSettled, true)
-    assert.equal(readGeospatialOverlayEnabledPreference(), true)
-    assert.equal(isGeospatialModeEnabled(), true)
-    assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
-    assert.equal(useGraphStore.getState().canvas3dMode, 'xr')
-    assert.equal(useGraphStore.getState().floatingPanelView, 'flightSim')
-
-    useGraphStore.getState().setFloatingPanelView('camera')
-    await exitCitySimSurfaceAndWait()
-    assert.equal(
-      useGraphStore.getState().floatingPanelView,
-      'camera',
-      'a second Exit must not replay the consumed pre-City panel snapshot',
-    )
+    assert.equal(readCitySimSnapshot().active, false)
   } finally {
-    releaseMapLease?.()
-    controlledFrames.restore()
     exitCitySimSurface({ restorePreviousSurface: false })
     resetCitySimRuntimeForTests({ webglSupported: true })
     writeGeospatialOverlayEnabledPreference(priorGeospatialEnabled)
