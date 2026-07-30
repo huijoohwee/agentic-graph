@@ -361,3 +361,55 @@ export async function testKnowledgeGraphLaunchSkillsCommandsFailureIsVisibleAndS
     resetAgenticOsRemoteGrammarCatalogForTests()
   }
 }
+
+export async function testKnowledgeGraphSkillsCommandsTargetClearsAcrossStoreOwnedShellExits() {
+  resetSkillsCommandsMcpTargetForTests()
+  resetAgenticOsRemoteGrammarCatalogForTests()
+  const originalFetch = globalThis.fetch
+  let releaseFetch: (() => void) | null = null
+  let firstFetch = true
+  globalThis.fetch = (async () => {
+    if (firstFetch) {
+      firstFetch = false
+      await new Promise<void>(resolve => {
+        releaseFetch = resolve
+      })
+    }
+    return new Response('unavailable', { status: 503 })
+  }) as typeof fetch
+  try {
+    useGraphStore.getState().resetAll()
+    useGraphStore.getState().setFloatingPanelView('skillsCommands')
+    useGraphStore.getState().setFloatingPanelOpen(true)
+    const pending = targetSkillsCommandsMcpInvocation(
+      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+    ).catch(() => undefined)
+    await Promise.resolve()
+    assert.equal(readSkillsCommandsMcpTarget().status, 'loading')
+
+    useGraphStore.getState().setFloatingPanelOpen(false)
+    assert.equal(readSkillsCommandsMcpTarget().status, 'idle')
+    releaseFetch?.()
+    await pending
+    assert.equal(readSkillsCommandsMcpTarget().status, 'idle')
+
+    const fetchMock = installSourceCatalogFetchMock()
+    try {
+      useGraphStore.getState().setFloatingPanelOpen(true)
+      await targetSkillsCommandsMcpInvocation(
+        KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+      )
+      assert.equal(readSkillsCommandsMcpTarget().status, 'ready')
+      useGraphStore.getState().setFloatingPanelView('media')
+      assert.equal(readSkillsCommandsMcpTarget().status, 'idle')
+    } finally {
+      fetchMock.restore()
+    }
+  } finally {
+    releaseFetch?.()
+    globalThis.fetch = originalFetch
+    resetSkillsCommandsMcpTargetForTests()
+    resetAgenticOsRemoteGrammarCatalogForTests()
+    useGraphStore.getState().resetAll()
+  }
+}

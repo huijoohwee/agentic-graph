@@ -198,6 +198,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["workspace.import.knowledgeGraph.skillsCommandsRequiresRoutingProof","@/__tests__/knowledgeGraphSkillsCommandsLaunch.test","testKnowledgeGraphSkillsCommandsResolverRequiresRoutingProof"],
   ["workspace.import.knowledgeGraph.launchTargetsSkillsCommands","@/__tests__/knowledgeGraphSkillsCommandsLaunch.test","testKnowledgeGraphLaunchImportUrlTargetsFloatingPanelSkillsCommands"],
   ["workspace.import.knowledgeGraph.skillsCommandsFailureVisible","@/__tests__/knowledgeGraphSkillsCommandsLaunch.test","testKnowledgeGraphLaunchSkillsCommandsFailureIsVisibleAndScoped"],
+  ["workspace.import.knowledgeGraph.skillsCommandsStoreExitClears","@/__tests__/knowledgeGraphSkillsCommandsLaunch.test","testKnowledgeGraphSkillsCommandsTargetClearsAcrossStoreOwnedShellExits"],
   ["workspace.import.knowledgeGraph.projectionFailureNoFallback","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphProjectionFailureNeverFallsBackAfterCanonicalResult"],
   ["ui.panels.ktv.tailwindSharedSource","@/__tests__/tailwindSharedKtvSourceContract.test","testTailwindScansSharedKtvClassOwners"],
 ]

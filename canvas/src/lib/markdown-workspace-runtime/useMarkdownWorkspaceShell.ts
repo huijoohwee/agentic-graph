@@ -1,12 +1,9 @@
 import React from 'react'
 import { registerMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
-import { createKnowledgeGraphHostAdapter } from '@/features/knowledge-graph/knowledgeGraphHostAdapter'
 import type { WorkspaceFileActions } from '@/features/markdown-workspace/useWorkspaceFileActions/types'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
 import { buildMarkdownWorkspaceActionBridge } from './markdownWorkspaceRuntime.composition'
 
-const KNOWLEDGE_GRAPH_HOST_ENABLED = import.meta.env?.DEV === true
-  || import.meta.env?.VITE_KNOWGRPH_KNOWLEDGE_GRAPH_HOST === 'same-origin'
 import { clearRuntimeTimeout, scheduleRuntimeTimeout } from './markdownWorkspaceRuntime.shared'
 
 export function useMarkdownWorkspaceShell(args: {
@@ -61,20 +58,12 @@ export function useMarkdownWorkspaceShell(args: {
   }, [workspaceRootRef])
 
   const actionBridge = React.useMemo(
-    () => {
-      const bridge = buildMarkdownWorkspaceActionBridge({
-        fileActions,
-        createParentPath,
-        saveEnabled,
-        saveActiveFileNow,
-      })
-      return {
-        ...bridge,
-        ...(KNOWLEDGE_GRAPH_HOST_ENABLED
-          ? { knowledgeGraph: createKnowledgeGraphHostAdapter() }
-          : {}),
-      }
-    },
+    () => buildMarkdownWorkspaceActionBridge({
+      fileActions,
+      createParentPath,
+      saveEnabled,
+      saveActiveFileNow,
+    }),
     [createParentPath, fileActions, saveActiveFileNow, saveEnabled],
   )
 

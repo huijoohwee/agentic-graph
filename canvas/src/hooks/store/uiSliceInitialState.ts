@@ -34,8 +34,10 @@ import { createChatUiInitialState } from './uiSliceChatInitialState'
 import {
   readMigratedPaymentsPaywallEnabled,
 } from '@/features/payments/paymentPaywallSetting'
+import { clearSkillsCommandsMcpTarget } from '@/features/agentic-os/skillsCommandsMcpTarget'
 
 type SetGraph = StoreApi<GraphState>['setState']
+type GetGraph = StoreApi<GraphState>['getState']
 
 const clearPersistedStripeCheckoutUrl = (): string => {
   lsRemove(LS_KEYS.paymentsStripeCheckoutUrl)
@@ -44,6 +46,7 @@ const clearPersistedStripeCheckoutUrl = (): string => {
 
 export const createUiInitialState = (
   set: SetGraph,
+  get: GetGraph,
   readers: UiStorageReaders,
   chat: InitialChatUiContext,
 )=> {
@@ -60,42 +63,48 @@ export const createUiInitialState = (
     isEditMode: false,
 
     floatingPanelOpen: false,
-    setFloatingPanelOpen: (open: boolean) =>
+    setFloatingPanelOpen: (open: boolean) => {
+      const next = open === true
+      if (!next && get().floatingPanelView === 'skillsCommands') clearSkillsCommandsMcpTarget()
       set(state => {
-        const next = open === true
         if (state.floatingPanelOpen === next) return {}
         return { floatingPanelOpen: next } as Partial<GraphState>
-      }),
+      })
+    },
 
     floatingPanelView: 'geo' as GraphState['floatingPanelView'],
-    setFloatingPanelView: (view: GraphState['floatingPanelView']) =>
+    setFloatingPanelView: (view: GraphState['floatingPanelView']) => {
+      const next =
+        view === 'skillsCommands' || view === 'promptPresets'
+        || view === 'media'
+        || view === 'animation'
+        || view === 'motionControl'
+        || view === 'gameMode'
+        || view === 'flightSim'
+        || view === 'cityBuilder'
+        || view === 'view'
+        || view === 'camera'
+        || view === 'design'
+        || view === 'chat'
+        || view === 'geo'
+        || view === 'renderer'
+        || view === 'storyboardWidget' || view === 'flowchart'
+        || view === 'gitGraph'
+        || view === 'gantt'
+        || view === 'timeline'
+        || view === 'architecture'
+        || view === 'eventModeling'
+        || view === 'graphTraversal'
+          ? view
+          : 'propsPanel'
+      if (get().floatingPanelView === 'skillsCommands' && next !== 'skillsCommands') {
+        clearSkillsCommandsMcpTarget()
+      }
       set(state => {
-        const next =
-          view === 'skillsCommands' || view === 'promptPresets'
-          || view === 'media'
-          || view === 'animation'
-          || view === 'motionControl'
-          || view === 'gameMode'
-          || view === 'flightSim'
-          || view === 'cityBuilder'
-          || view === 'view'
-          || view === 'camera'
-          || view === 'design'
-          || view === 'chat'
-          || view === 'geo'
-          || view === 'renderer'
-          || view === 'storyboardWidget' || view === 'flowchart'
-          || view === 'gitGraph'
-          || view === 'gantt'
-          || view === 'timeline'
-          || view === 'architecture'
-          || view === 'eventModeling'
-          || view === 'graphTraversal'
-            ? view
-            : 'propsPanel'
         if (state.floatingPanelView === next) return {}
         return { floatingPanelView: next } as Partial<GraphState>
-      }),
+      })
+    },
 
     mermaidDiagramSelectedRowKeyByKind: {},
     setMermaidDiagramSelectedRowKey: (kind: 'flowchart' | 'gitgraph' | 'gantt' | 'timeline' | 'architecture' | 'eventmodeling', rowKey: string | null) =>

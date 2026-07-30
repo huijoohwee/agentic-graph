@@ -6,12 +6,54 @@ import path from 'node:path'
 import {
   createKnowledgeGraphHostAdapter,
   KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA,
+  KNOWLEDGE_GRAPH_HOST_ROUTE,
   normalizeKnowledgeGraphRepositoryUrl,
 } from '@/features/knowledge-graph/knowledgeGraphHostAdapter'
+import { registerKnowledgeGraphLaunchHostBridge } from '@/features/knowledge-graph/knowledgeGraphLaunchHostBridge'
+import { getMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
+import { runLaunchImportUrl } from '@/lib/toolbar/launchImportDispatch'
+import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
+import { AGENTIC_OS_DOCS_MCP_TOOL_NAME } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
+import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
+import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
+import { resetSkillsCommandsMcpTargetForTests } from '@/features/agentic-os/skillsCommandsMcpTarget'
+import { useGraphStore } from '@/hooks/useGraphStore'
 import { createKnowledgeGraphBridgeRequestHandler } from '../../viteKnowledgeGraphBridge'
 
 const GRAPH_ID = 'kg:graph:0123456789abcdef0123456789abcdef'
 const SNAPSHOT_DIGEST = 'a'.repeat(64)
+const SOURCE_REVISION = 'c'.repeat(40)
+const SOURCE_COMMAND = '/knowledge.graph.ingest'
+const SOURCE_SEMANTICS = ['#knowledge-graph', '#mcp', '#runtime-ready']
+const SOURCE_BINDINGS = ['@working-directory', '@knowledge-graph', '@operator', '@runtime-proof']
+const SOURCE_CATALOG = [
+  {
+    token: SOURCE_COMMAND,
+    kind: 'command',
+    label: 'Ingest knowledge graph',
+    summary: 'Compile one bounded local workspace into one deterministic graph snapshot.',
+    sourcePath: `DICTIONARY-COMMAND.md#${SOURCE_COMMAND}`,
+    mcpTool: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
+    mcpTools: [KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest],
+    semantics: SOURCE_SEMANTICS,
+    bindings: SOURCE_BINDINGS,
+  },
+  ...SOURCE_SEMANTICS.map(token => ({
+    token,
+    kind: 'semantic',
+    label: token,
+    summary: 'Source-backed knowledge graph semantic.',
+    sourcePath: `DICTIONARY-SEMANTIC.md#${token}`,
+  })),
+  ...SOURCE_BINDINGS.map(token => ({
+    token,
+    kind: 'binding',
+    label: token,
+    summary: 'Source-backed knowledge graph binding.',
+    sourcePath: `DICTIONARY-BINDING.md#${token}`,
+  })),
+]
+const SOURCE_CATALOG_METADATA = buildAgenticOsTestCatalogMetadata(SOURCE_CATALOG)
 
 type IngestCall = {
   args: Record<string, unknown>
@@ -53,7 +95,15 @@ const runtimeResult = {
           source: 'node:a',
           target: 'node:b',
           label: 'depends_on',
-          properties: { 'evidence:explanation': 'A names B.' },
+          properties: {
+            'evidence:explanation': 'A names B.',
+            'evidence:sourcePath': 'src/index.ts',
+            'evidence:sourceDigest': '1'.repeat(64),
+            'evidence:excerptHash': '2'.repeat(64),
+            'evidence:parserId': 'typescript-ast',
+            'evidence:parserDigest': '3'.repeat(64),
+            'evidence:ruleId': 'typescript.import',
+          },
         },
       ],
     },
@@ -84,6 +134,7 @@ async function close(server: Server): Promise<void> {
 async function startHost(ingestResult: unknown = runtimeResult) {
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'knowgrph-host-adapter-test-'))
   const calls: IngestCall[] = []
+  const nativeFetch = globalThis.fetch.bind(globalThis)
   const handler = createKnowledgeGraphBridgeRequestHandler({
     repoRoot: temporaryRoot,
     hostDataRoot: path.join(temporaryRoot, 'host-data'),
@@ -102,7 +153,7 @@ async function startHost(ingestResult: unknown = runtimeResult) {
   const port = await listen(server)
   const baseUrl = `http://127.0.0.1:${port}`
   const fetchImpl = (input: RequestInfo | URL, init?: RequestInit) => (
-    fetch(new URL(String(input), baseUrl), init)
+    nativeFetch(new URL(String(input), baseUrl), init)
   )
   return {
     calls,
@@ -307,6 +358,110 @@ export async function testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSaf
       throw new Error(`expected source-registry structural parser scope, got ${JSON.stringify(include)}`)
     }
   } finally {
+    await host.dispose()
+  }
+}
+
+export async function testKnowledgeGraphDefaultCanvasBridgeRunsSourceBackedRepositoryIngest() {
+  const host = await startHost()
+  const originalFetch = globalThis.fetch
+  const exactInvocationRequests: string[][] = []
+  let unregister = () => undefined
+  resetSkillsCommandsMcpTargetForTests()
+  resetAgenticOsRemoteGrammarCatalogForTests()
+  useGraphStore.getState().resetAll()
+  try {
+    globalThis.fetch = (async (input, init) => {
+      const requestUrl = String(input)
+      if (requestUrl.startsWith(KNOWLEDGE_GRAPH_HOST_ROUTE)) {
+        return host.fetchImpl(input, init)
+      }
+      const body = JSON.parse(String(init?.body || '{}')) as {
+        id?: unknown
+        method?: unknown
+        invocationTokens?: string[]
+        params?: { arguments?: { query?: unknown } }
+      }
+      if (requestUrl === '/__knowgrph_mcp_agentic_os_docs_invoke') {
+        const tokens = Array.isArray(body.invocationTokens) ? body.invocationTokens : []
+        exactInvocationRequests.push(tokens)
+        return new Response(JSON.stringify({
+          ok: true,
+          tool: AGENTIC_OS_DOCS_MCP_TOOL_NAME,
+          mcpInvoked: true,
+          sourceRevision: SOURCE_REVISION,
+          ...SOURCE_CATALOG_METADATA,
+          invocations: tokens.map(token => ({ token, ok: true })),
+        }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      if (body.method === 'initialize') {
+        return new Response(JSON.stringify({
+          jsonrpc: '2.0',
+          id: body.id,
+          result: { protocolVersion: '2024-11-05' },
+        }), {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+            'mcp-session-id': 'knowledge-graph-launch-host-session',
+          },
+        })
+      }
+      const query = String(body.params?.arguments?.query || '')
+      return new Response(JSON.stringify({
+        jsonrpc: '2.0',
+        id: body.id,
+        result: {
+          structuredContent: {
+            ok: true,
+            sourceRevision: SOURCE_REVISION,
+            ...SOURCE_CATALOG_METADATA,
+            catalog: SOURCE_CATALOG.filter(entry => entry.token.startsWith(query)),
+          },
+        },
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }) as typeof fetch
+
+    unregister = registerKnowledgeGraphLaunchHostBridge({ enabled: true })
+    const result = await runLaunchImportUrl({
+      urlRaw: 'https://github.com/example/repository',
+      bridge: getMarkdownWorkspaceActionBridge(),
+      fallback: async () => {
+        throw new Error('repository ingest must not use the legacy URL fallback')
+      },
+    })
+    if (!result || !('kind' in result) || result.kind !== 'knowledge-graph' || result.graphId !== GRAPH_ID) {
+      throw new Error(`expected one default Canvas knowledge graph result, got ${JSON.stringify(result)}`)
+    }
+    if (host.calls.length !== 1 || host.calls[0]?.args.repositoryUrl !== 'https://github.com/example/repository') {
+      throw new Error('expected the Launch-owned bridge to reach the Vite repository host exactly once')
+    }
+    const invocation = host.calls[0]?.args.invocation as Record<string, unknown> | undefined
+    if (
+      invocation?.tool !== KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
+      || invocation?.action !== SOURCE_COMMAND
+      || JSON.stringify(invocation?.semantics) !== JSON.stringify(SOURCE_SEMANTICS)
+      || JSON.stringify(invocation?.bindings) !== JSON.stringify(SOURCE_BINDINGS)
+      || invocation?.sourceRevision !== SOURCE_REVISION
+      || invocation?.catalogDigest !== SOURCE_CATALOG_METADATA.catalogDigest
+      || invocation?.routingSchema !== SOURCE_CATALOG_METADATA.routingSchema
+      || invocation?.routingDigest !== SOURCE_CATALOG_METADATA.routingDigest
+    ) {
+      throw new Error(`expected an exact source-backed invocation at the host, got ${JSON.stringify(invocation)}`)
+    }
+    if (JSON.stringify(exactInvocationRequests) !== JSON.stringify([[
+      SOURCE_COMMAND,
+      ...SOURCE_SEMANTICS,
+      ...SOURCE_BINDINGS,
+    ]])) {
+      throw new Error(`expected one exact shared catalog invocation, got ${JSON.stringify(exactInvocationRequests)}`)
+    }
+  } finally {
+    unregister()
+    globalThis.fetch = originalFetch
+    resetSkillsCommandsMcpTargetForTests()
+    resetAgenticOsRemoteGrammarCatalogForTests()
+    useGraphStore.getState().resetAll()
     await host.dispose()
   }
 }

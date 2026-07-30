@@ -22,6 +22,11 @@ const DEFAULT_IGNORED_DIRECTORY_NAMES = new Set([
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
 type DirectoryPicker = () => Promise<FileSystemDirectoryHandle>
 
+export type KnowledgeGraphHostAdapterOptions = {
+  fetchImpl?: FetchLike
+  pickDirectory?: DirectoryPicker
+}
+
 type HostCapability = {
   schema: typeof KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA
   available: true
@@ -299,10 +304,7 @@ async function uploadFile(args: {
 export function createKnowledgeGraphHostAdapter({
   fetchImpl = globalThis.fetch.bind(globalThis),
   pickDirectory = defaultDirectoryPicker,
-}: {
-  fetchImpl?: FetchLike
-  pickDirectory?: DirectoryPicker
-} = {}): WorkspaceKnowledgeGraphBridge {
+}: KnowledgeGraphHostAdapterOptions = {}): WorkspaceKnowledgeGraphBridge {
   const capability = async () => validateCapability(await requestJson(fetchImpl, '/capability'))
   return {
     importFolder: async () => {
