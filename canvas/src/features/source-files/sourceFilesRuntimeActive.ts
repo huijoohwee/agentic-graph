@@ -10,7 +10,10 @@ import { loadPersistedSourceFilesWorkspace } from '@/features/source-files/sourc
 import { readFirstKnowgrphStorageDocText } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { readWorkspaceInitializationDocsMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
 import { isWorkspaceSourceMirrorFileName } from '@/features/workspace-fs/workspaceSourceMirrorFormats'
-import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
+import {
+  isWorkspaceCanonicalDocsMirrorPath,
+  resolveWorkspaceSourceRootPaths,
+} from '@/features/workspace-fs/workspaceSourceRoots'
 import { readWorkspaceDocsMirrorRootPathSetting } from '@/lib/workspace/workspaceStoreSyncSettings'
 import { frontmatterFlowTextHasRepeatedCanonicalStringResidue } from '@/features/parsers/markdownFrontmatterFlowRepair'
 import { readStorageCanonicalPathCandidatesForWorkspacePath } from '@/features/source-files/sourceFilesStoragePaths'
@@ -270,7 +273,9 @@ export async function readWorkspaceActiveDocumentResolvedText(args: {
 }): Promise<string> {
   const activePath = normalizeWorkspacePath(args.activePath)
   const modelAssetFormat = isWorkspaceModelAssetPath(activePath)
-  if (args.preferCanonicalPathText === true) {
+  const preferCanonicalDocsMirrorText = args.preferCanonicalPathText === true
+    && isWorkspaceCanonicalDocsMirrorPath(activePath)
+  if (preferCanonicalDocsMirrorText) {
     const canonicalText = resolveWorkspaceActiveDocumentText(
       activePath,
       modelAssetFormat,
@@ -299,7 +304,7 @@ export async function readWorkspaceActiveDocumentResolvedText(args: {
   }
   const resolvedFsText = resolveWorkspaceActiveDocumentText(activePath, modelAssetFormat, fsText)
   if (resolvedFsText.trim()) return resolvedFsText
-  if (args.preferCanonicalPathText !== true) {
+  if (!preferCanonicalDocsMirrorText) {
     const docsMirrorText = resolveWorkspaceActiveDocumentText(
       activePath,
       modelAssetFormat,
