@@ -7,6 +7,11 @@ const COCKPIT_FORWARD_CLEARANCE_METERS = 0.55
 const COCKPIT_VERTICAL_CLEARANCE_METERS = 0.45
 const COCKPIT_LOOK_AHEAD_METERS = 18
 const COCKPIT_FOV_DEGREES = 68
+const CHASE_MIN_DISTANCE_METERS = 8
+const CHASE_TARGET_MIN_HEIGHT_METERS = 0.8
+const CHASE_HEIGHT_METERS = 3.2
+const CHASE_FOV_DEGREES = 58
+const CHASE_WING_HALF_SPAN_CLEARANCE = 2
 
 export type FlightSimFollowTarget = Readonly<{
   position: readonly [number, number, number]
@@ -33,16 +38,31 @@ export function resolveFlightSimFollowTarget(
     snapshot.aircraft.position[1] * scale,
     snapshot.aircraft.position[2] * scale,
   ] as const)
+  const [
+    aircraftHalfWidth,
+    aircraftHalfHeight,
+    aircraftHalfDepth,
+  ] = FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters
   const vector = (forwardDistance: number, height: number) => Object.freeze([
     aircraft[0] + forward[0] * forwardDistance * scale,
     aircraft[1] + forward[1] * forwardDistance * scale + height * scale,
     aircraft[2] + forward[2] * forwardDistance * scale,
   ] as const)
-  const chaseTarget = vector(0, 0.8)
+  const chaseTargetHeight = Math.max(
+    CHASE_TARGET_MIN_HEIGHT_METERS,
+    aircraftHalfHeight,
+  )
+  // Keep the camera behind the aircraft's aft envelope plus two half-spans.
+  // That fits the full Media Airplane inside the 58-degree chase frustum.
+  const chaseDistance = Math.max(
+    CHASE_MIN_DISTANCE_METERS,
+    aircraftHalfDepth + aircraftHalfWidth * CHASE_WING_HALF_SPAN_CLEARANCE,
+  )
+  const chaseTarget = vector(0, chaseTargetHeight)
   const chasePosition = Object.freeze([
-    chaseTarget[0] - forward[0] * 8 * scale,
-    chaseTarget[1] - forward[1] * 2 * scale + 3.2 * scale,
-    chaseTarget[2] - forward[2] * 8 * scale,
+    chaseTarget[0] - forward[0] * chaseDistance * scale,
+    chaseTarget[1] - forward[1] * 2 * scale + CHASE_HEIGHT_METERS * scale,
+    chaseTarget[2] - forward[2] * chaseDistance * scale,
   ] as const)
   const cockpitForwardDistance = FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2]
     + COCKPIT_FORWARD_CLEARANCE_METERS
@@ -75,7 +95,7 @@ export function resolveFlightSimFollowTarget(
       })
     : view === 'survey'
       ? Object.freeze({ position: vector(-4, 18), target: vector(5, 0.8), fovDegrees: 64 })
-      : Object.freeze({ position: chasePosition, target: chaseTarget, fovDegrees: 58 })
+      : Object.freeze({ position: chasePosition, target: chaseTarget, fovDegrees: CHASE_FOV_DEGREES })
   return Object.freeze({
     position: framing.position,
     target: framing.target,

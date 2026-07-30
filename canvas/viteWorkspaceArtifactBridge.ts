@@ -23,6 +23,7 @@ export type KgFsMutationRequest = {
   mimeType?: unknown
   mkdirOnly?: unknown
   deleteOnly?: unknown
+  allowBlankText?: unknown
 }
 
 export const parseKgFsMutationRequest = (body: string): KgFsMutationRequest | null => {
@@ -76,6 +77,58 @@ export const createKgFsPathPolicy = (repoRoot: string): KgFsPathPolicy => {
     return !targetsWorkspaceSeeds
   }
   return { isAllowed, resolveHostPath, resolveCanonicalWorkspacePath, isCanonicalWorkspaceMutation }
+}
+
+export function resolveKgFsMutationTarget(args: {
+  policy: KgFsPathPolicy
+  incomingPath: string
+  workspacePath: string
+}): Readonly<
+  | { ok: true; requestedAbsPath: string }
+  | { ok: false; status: 400 | 403; error: string }
+> {
+  const incomingPath = String(args.incomingPath || '').trim()
+  const workspacePath = String(args.workspacePath || '').trim()
+  const canonicalWorkspacePath = args.policy.resolveCanonicalWorkspacePath(
+    workspacePath,
+  )
+  if (canonicalWorkspacePath) {
+    if (incomingPath) {
+      return {
+        ok: false,
+        status: 400,
+        error: 'Canonical workspace mutations accept workspacePath only',
+      }
+    }
+    return { ok: true, requestedAbsPath: canonicalWorkspacePath }
+  }
+  const normalizedWorkspacePath = workspacePath
+    .replace(/^workspace:/i, '')
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '')
+  if (
+    normalizedWorkspacePath === 'docs/workspace-seeds'
+    || normalizedWorkspacePath.startsWith('docs/workspace-seeds/')
+  ) {
+    return {
+      ok: false,
+      status: 403,
+      error: 'Invalid canonical workspace path',
+    }
+  }
+  if (!incomingPath || incomingPath.includes('\u0000')) {
+    return { ok: false, status: 400, error: 'Missing path' }
+  }
+  const requestedAbsPath = args.policy.resolveHostPath(incomingPath)
+  if (!args.policy.isCanonicalWorkspaceMutation(requestedAbsPath, '')) {
+    return {
+      ok: false,
+      status: 403,
+      error: 'Canonical workspace mutations require workspacePath',
+    }
+  }
+  return { ok: true, requestedAbsPath }
 }
 
 export async function enforceCanonicalWorkspaceMutation(args: {

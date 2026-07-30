@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { ThreeCanvasMediaFigure } from '@/lib/three/ThreeCanvasMediaFigure'
+import { CitySimMediaFigure } from '@/features/game-city-sim/CitySimMediaFigure'
 
 function renderCityMediaFigure(citySimActive: boolean): string {
   return renderToStaticMarkup(
-    <ThreeCanvasMediaFigure citySimActive={citySimActive}>
-      <canvas />
-    </ThreeCanvasMediaFigure>,
+    <CitySimMediaFigure citySimActive={citySimActive}>
+      <section data-maplibre-owner="1" />
+    </CitySimMediaFigure>,
   )
 }
 

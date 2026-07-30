@@ -38,6 +38,24 @@ test('Flight reuses the shared bounded semantic media surface in every presentat
     hudSource,
     /Flight Sim media · \{camera\.view\} · \{flight\.phase\}/,
   )
+  assert.match(hudSource, /FLIGHT_SIM_AIRCRAFT_ASSET_SPEC/)
+  assert.match(
+    hudSource,
+    /<button[\s\S]*aria-label=\{`Select \$\{FLIGHT_SIM_AIRCRAFT_ASSET_SPEC\.label\} Flight media subject`\}/,
+  )
+  assert.match(hudSource, /aria-pressed=\{aircraftSelected\}/)
+  assert.match(
+    hudSource,
+    /data-kg-flight-sim-aircraft-media=\{FLIGHT_SIM_AIRCRAFT_ASSET_SPEC\.id\}/,
+  )
+  assert.match(
+    hudSource,
+    /data-kg-media-xr-asset=\{FLIGHT_SIM_AIRCRAFT_ASSET_SPEC\.id\}/,
+  )
+  assert.match(hudSource, /data-kg-media-xr-asset-category="vehicles"/)
+  assert.match(hudSource, /data-kg-media-xr-thumbnail="flight-subject"/)
+  assert.match(hudSource, /requestFlightSimPointerCapture\(\)/)
+  assert.match(hudSource, /<Plane[\s\S]*role="img"/)
   assert.doesNotMatch(hudSource, /<div\b/)
   assert.doesNotMatch(hudSource, /aria-hidden/)
 })

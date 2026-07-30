@@ -26,8 +26,7 @@ import { buildWorkspaceEntriesIndex } from './workspaceEntriesIndex'
 import type { MarkdownWorkspaceRuntimeGetFs } from './markdownWorkspaceRuntime.types'
 import {
   shouldAcceptWorkspaceDocumentSelectionText,
-  shouldApplyStableWorkspaceSelectionToCanvas,
-  shouldHydrateStableWorkspaceSelectionText,
+  resolveStableWorkspaceSelectionSyncDecision,
   useMarkdownWorkspaceDocumentSwitchApply,
 } from './markdownWorkspaceDocumentSwitchApply'
 import {
@@ -365,7 +364,7 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         preferPathResolvedText: true,
         cacheRef: resolvedTextCacheRef,
       })
-      const shouldHydrateStableText = shouldHydrateStableWorkspaceSelectionText({
+      const syncDecision = resolveStableWorkspaceSelectionSyncDecision({
         activePath: path,
         activeEntryKind,
         activeDocumentKey,
@@ -373,28 +372,21 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
         nextText,
         lastLoadedPath: args.lastLoadedRef.current?.path || null,
         userEditedActiveText: args.userEditedActiveTextRef.current === true,
-      })
-      const shouldApplyStableCanvas = shouldApplyStableWorkspaceSelectionToCanvas({
-        activePath: path,
-        activeEntryKind,
-        activeDocumentKey,
-        nextText,
-        userEditedActiveText: args.userEditedActiveTextRef.current === true,
         markdownDocumentName: args.markdownDocumentName,
         markdownDocumentText: args.markdownDocumentText,
         graphDataSource: args.graphDataSource,
         canvas2dRenderer: args.canvas2dRenderer,
       })
-      if (!shouldHydrateStableText && !shouldApplyStableCanvas) {
-        return
-      }
+      if (!syncDecision.hydrateText && !syncDecision.applyToCanvas) return
       if (cancelled || args.activePath !== path) return
-      if (String(args.activeTextRef.current || '') !== nextText) {
-        args.setActiveTextProgrammatic(nextText)
+      if (syncDecision.hydrateText) {
+        if (String(args.activeTextRef.current || '') !== nextText) {
+          args.setActiveTextProgrammatic(nextText)
+        }
+        args.lastLoadedRef.current = { path, text: nextText }
+        args.patchWorkspaceEntryInlineText(path, nextText)
       }
-      args.lastLoadedRef.current = { path, text: nextText }
-      args.patchWorkspaceEntryInlineText(path, nextText)
-      if (activeDocumentKey) {
+      if (syncDecision.applyToCanvas && activeDocumentKey) {
         await applySelectedWorkspaceDocumentToCanvas({
           activeDocumentKey,
           text: nextText,

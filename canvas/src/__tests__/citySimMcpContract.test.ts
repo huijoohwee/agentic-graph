@@ -105,7 +105,7 @@ export function testCitySimMcpPublishesExactlyTwoCanonicalTools() {
   )
 }
 
-export async function testCitySimMcpInspectIsPureAndReportsZeroCostOwnership() {
+export async function testCitySimMcpInspectIsPureAndReportsZeroCostRuntime() {
   resetCitySimRuntimeForTests({ webglSupported: true })
   const before = JSON.stringify(readCitySimSnapshot())
   const inspected = inspectLocalCitySim()
@@ -127,11 +127,12 @@ export async function testCitySimMcpInspectIsPureAndReportsZeroCostOwnership() {
     'exit',
   ])
   assert.equal(inspected.snapshot, readCitySimSnapshot())
-  assert.equal(inspected.runtime.rendererOwner, 'existing-r3f-canvas')
-  assert.equal(inspected.runtime.simulationOwner, 'browser-local-city-runtime')
-  assert.equal(inspected.runtime.modelCalls, 0)
-  assert.equal(inspected.runtime.estimatedCostUsd, 0)
-  assert.equal(inspected.runtime.networkRequired, false)
+  assert.deepEqual(inspected.runtime, {
+    simulationOwner: 'browser-local-city-runtime',
+    modelCalls: 0,
+    estimatedCostUsd: 0,
+    networkRequired: false,
+  })
 
   const contracts = buildCityContracts()
   const contractByName = new Map(

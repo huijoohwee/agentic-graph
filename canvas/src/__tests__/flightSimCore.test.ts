@@ -210,8 +210,8 @@ test('Flight supplies a pure scaled follow target to the shared controller camer
     revision: 1,
   })
   assert.deepEqual(resolveFlightSimFollowTarget(snapshot, 2), {
-    position: [2, 12, 22],
-    target: [2, 5.6, 6],
+    position: [2, 13.8, 41],
+    target: [2, 7.4, 6],
     fovDegrees: 58,
     resetKey: 7,
     sequence: 42,

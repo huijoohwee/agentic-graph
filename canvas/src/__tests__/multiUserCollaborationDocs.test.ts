@@ -55,7 +55,7 @@ export function testMultiUserCollaborationDocsUseImplementedCollaborationOwners(
   const requiredOwnerTokens = [
     "key: 'collaboration'",
     'useKnowgrphStorageCollaborationRuntime',
-    'setActiveTextProgrammatic: effectiveContent.effectiveSetActiveText',
+    'setActiveText: effectiveContent.effectiveSetActiveText',
     'buildKnowgrphStorageCanvasRoomWebSocketUrl',
     'Workspace room connected',
     'Connect Room',
