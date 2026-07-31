@@ -6,6 +6,7 @@ import type { MarkdownWorkspaceSelectionArgs } from './useMarkdownWorkspaceSelec
 import type { MarkdownWorkspaceDerivedViewsArgs } from './useMarkdownWorkspaceDerivedViews'
 import type { MarkdownWorkspaceIndexingArgs } from './useMarkdownWorkspaceIndexing'
 import type { MarkdownWorkspaceSaveArgs } from './useMarkdownWorkspaceSave'
+import { materializeKnowledgeGraphWorkspaceArtifact } from '@/features/knowledge-graph/knowledgeGraphWorkspaceArtifact'
 
 export function buildMarkdownWorkspaceFileActionsArgs(args: {
   getFs: UseWorkspaceFileActionsArgs['getFs']
@@ -57,6 +58,7 @@ export function buildMarkdownWorkspaceActionBridge(args: {
     importWebsite: args.fileActions.handleImportWebsite,
     createNewFolder: () => void args.fileActions.createNewFolder({ parentPath: args.createParentPath }),
     save: args.saveEnabled ? () => void args.saveActiveFileNow() : undefined,
+    materializeKnowledgeGraphImport: materializeKnowledgeGraphWorkspaceArtifact,
   }
 }
 

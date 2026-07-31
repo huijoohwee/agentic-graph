@@ -215,6 +215,8 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["workspace.import.knowledgeGraph.launchInputRateLimitRecovery","@/__tests__/knowledgeGraphLaunchInputInteraction.test","testKnowledgeGraphLaunchImportUrlOffersRateLimitedRepositoryRecovery"],
   ["workspace.import.knowledgeGraph.repositoryProofBoundDedupe","@/__tests__/knowledgeGraphLaunchInputInteraction.test","testKnowledgeGraphRepositoryImportDedupeIsExactProofBoundAndClears"],
   ["workspace.import.knowledgeGraph.repositoryCanonicalGraphView","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreservesProjectionIds"],
+  ["workspace.import.knowledgeGraph.repositoryMaterializesSourceFilesArtifact","@/__tests__/knowledgeGraphWorkspaceArtifact.test","testKnowledgeGraphRepositoryImportMaterializesSourceFilesArtifact"],
+  ["workspace.import.knowledgeGraph.incompleteSkipsSourceFilesArtifact","@/__tests__/knowledgeGraphWorkspaceArtifact.test","testIncompleteKnowledgeGraphRepositoryDoesNotMaterializeSourceFilesArtifact"],
   ["workspace.import.knowledgeGraph.projectionMultilineLabels","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphCanvasProjectionAcceptsBoundedMultilineLabels"],
   ["workspace.import.knowledgeGraph.projectionLockedViewAtomic","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphCanvasProjectionKeepsLockedViewAtomic"],
   ["workspace.import.knowledgeGraph.projectionFailureNoFallback","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphProjectionFailureNeverFallsBackAfterCanonicalResult"],

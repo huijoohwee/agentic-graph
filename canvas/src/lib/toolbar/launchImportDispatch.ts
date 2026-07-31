@@ -134,6 +134,21 @@ function finishKnowledgeGraphImport(
   return result
 }
 
+async function materializeRepositoryKnowledgeGraphArtifact(args: {
+  bridge: MarkdownWorkspaceActionBridge
+  repositoryUrl: string
+  invocation: WorkspaceKnowledgeGraphInvocation
+  result: WorkspaceKnowledgeGraphImportResult
+}): Promise<void> {
+  const materialize = args.bridge.materializeKnowledgeGraphImport
+  if (typeof materialize !== 'function') return
+  await materialize({
+    repositoryUrl: args.repositoryUrl,
+    invocation: args.invocation,
+    result: args.result,
+  })
+}
+
 export async function runLaunchImportLocalFiles(args: {
   files: WorkspaceFileSelection
   bridge: MarkdownWorkspaceActionBridge
@@ -239,8 +254,14 @@ export async function runLaunchImportUrl(args: {
         preview.apply,
       ))
       const completedOperation = operation
-        .then(importResult => {
+        .then(async importResult => {
           preview.commit(importResult)
+          await materializeRepositoryKnowledgeGraphArtifact({
+            bridge: args.bridge,
+            repositoryUrl,
+            invocation: resolved.invocation,
+            result: importResult,
+          })
           return importResult
         })
         .catch(error => {

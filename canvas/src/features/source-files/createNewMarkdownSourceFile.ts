@@ -1,9 +1,7 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { useMarkdownExplorerStore } from '@/features/markdown-explorer/store'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
-import { ensureWorkspaceFolderTreeIfMissing } from '@/features/workspace-fs/ensureFolderTreeIfMissing'
 import { normalizeWorkspacePath } from '@/features/workspace-fs/path'
-import { setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from '@/features/workspace-fs/workspaceSourceRoots'
 import { formatWorkspaceUtcSessionTimestamp } from '@/features/workspace-fs/workspaceTimestamp'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
@@ -13,6 +11,7 @@ import {
   resolveWorkspaceDocumentCanvasPreset,
 } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import { upsertWorkspaceMarkdownSourceFile } from './upsertWorkspaceMarkdownSourceFile'
 
 export type CreateNewMarkdownSourceFileArgs = {
   parentPath?: string | null
@@ -33,7 +32,6 @@ async function createTimestampedMarkdownSourceFile(args: {
 }): Promise<{ path: WorkspacePath; text: string }> {
   const fs = await getWorkspaceFs()
   await fs.ensureSeed()
-  await ensureWorkspaceFolderTreeIfMissing({ fs, folderPath: args.parentPath })
   for (let i = 0; i < 5; i += 1) {
     const timestampMs = args.timestampMs + i * 1000
     const name = buildNewMarkdownSourceFileName(timestampMs)
@@ -43,7 +41,14 @@ async function createTimestampedMarkdownSourceFile(args: {
     const text = typeof args.text === 'string'
       ? args.text
       : buildAuthoredMarkdownNoteInitialText(existingPath)
-    const createdPath = await fs.createFile({ parentPath: args.parentPath, name, text })
+    const createdPath = await upsertWorkspaceMarkdownSourceFile({
+      fs,
+      parentPath: args.parentPath,
+      name,
+      text,
+      source: { kind: 'local', originalName: null },
+      sourcePersistence: 'sync',
+    })
     return { path: normalizeWorkspacePath(createdPath), text }
   }
   const fallbackName = buildNewMarkdownSourceFileName(Date.now())
@@ -51,10 +56,13 @@ async function createTimestampedMarkdownSourceFile(args: {
   const text = typeof args.text === 'string'
     ? args.text
     : buildAuthoredMarkdownNoteInitialText(fallbackPath)
-  const createdPath = await fs.createFile({
+  const createdPath = await upsertWorkspaceMarkdownSourceFile({
+    fs,
     parentPath: args.parentPath,
     name: fallbackName,
     text,
+    source: { kind: 'local', originalName: null },
+    sourcePersistence: 'sync',
   })
   return { path: normalizeWorkspacePath(createdPath), text }
 }
@@ -74,7 +82,6 @@ export async function createNewMarkdownSourceFile(args?: CreateNewMarkdownSource
   if (canvasPreset) applyCanvasFrontmatterPreset({ preset: canvasPreset })
   openMarkdownWorkspaceEditorPane(useGraphStore.getState())
   useMarkdownExplorerStore.getState().setActivePath(createdPath)
-  setWorkspaceEntrySource(createdPath, { kind: 'local', originalName: null }, { persist: 'sync' })
   return createdPath
 }
 

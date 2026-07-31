@@ -94,6 +94,16 @@ export type WorkspaceKnowledgeGraphImportResult = {
   projection: WorkspaceKnowledgeGraphProjection
 }
 
+export type WorkspaceKnowledgeGraphArtifactRequest = {
+  repositoryUrl: string
+  invocation: WorkspaceKnowledgeGraphInvocation
+  result: WorkspaceKnowledgeGraphImportResult
+}
+
+export type WorkspaceKnowledgeGraphArtifactResult = {
+  path: string
+}
+
 export type WorkspaceKnowledgeGraphInvocation = {
   schema: 'knowgrph-knowledge-graph-invocation/v1'
   tool: string
@@ -135,6 +145,9 @@ export type MarkdownWorkspaceActionBridge = {
   downloadVideo?: (url: string, options: VideoDownloadOptions) => Promise<VideoDownloadResult>
   createNewFolder?: () => void
   save?: () => void
+  materializeKnowledgeGraphImport?: (
+    args: WorkspaceKnowledgeGraphArtifactRequest,
+  ) => Promise<WorkspaceKnowledgeGraphArtifactResult>
   knowledgeGraph?: WorkspaceKnowledgeGraphBridge
 
   export?: {
@@ -175,6 +188,9 @@ export function getMarkdownWorkspaceActionBridge(): MarkdownWorkspaceActionBridg
     if (bridge.downloadVideo) merged.downloadVideo = bridge.downloadVideo
     if (bridge.createNewFolder) merged.createNewFolder = bridge.createNewFolder
     if (bridge.save) merged.save = bridge.save
+    if (bridge.materializeKnowledgeGraphImport) {
+      merged.materializeKnowledgeGraphImport = bridge.materializeKnowledgeGraphImport
+    }
     if (bridge.knowledgeGraph) {
       merged.knowledgeGraph = {
         ...(merged.knowledgeGraph || {}),
