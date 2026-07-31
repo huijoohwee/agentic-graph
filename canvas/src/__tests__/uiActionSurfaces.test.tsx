@@ -157,6 +157,9 @@ export async function testToastHostMessageIsSelectableAndCopiesSanitizedText() {
     if (copyButton.getAttribute('data-kg-selection-surface') !== 'toast-copy' || !copyButton.classList.contains('pointer-events-auto')) {
       throw new Error('expected Copy affordance to stay hit-testable and visible to selection tooling')
     }
+    if (copyButton.textContent?.trim()) {
+      throw new Error('expected toast Copy affordance to remain icon-only')
+    }
     const copyIcon = copyButton.querySelector('[data-kg-selection-surface="toast-copy-icon"]')
     if (!copyIcon || copyIcon.getAttribute('aria-hidden') === 'true') {
       throw new Error('expected copy icon to remain a visible semantic affordance instead of hidden decoration')
@@ -169,8 +172,8 @@ export async function testToastHostMessageIsSelectableAndCopiesSanitizedText() {
     if (copiedMessages.length !== 1 || copiedMessages[0] !== renderedMessage) {
       throw new Error(`expected Copy to use the sanitized rendered message, got ${JSON.stringify(copiedMessages)}`)
     }
-    if (!copyButton.textContent?.includes('Copied')) {
-      throw new Error('expected successful toast copy to provide visible confirmation')
+    if (copyButton.getAttribute('aria-label') !== 'Notification text copied') {
+      throw new Error('expected successful toast copy to provide semantic confirmation')
     }
   } finally {
     try {

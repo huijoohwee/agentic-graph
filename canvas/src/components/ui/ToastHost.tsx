@@ -1,6 +1,6 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { AlertCircle, CheckCircle, Copy, Info, LoaderCircle, X, AlertTriangle, Pin, PinOff } from 'lucide-react'
+import { AlertCircle, Check, CheckCircle, Copy, Info, LoaderCircle, X, AlertTriangle, Pin, PinOff } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UiActionButtons } from '@/components/ui/UiActionButtons'
@@ -32,7 +32,8 @@ type ToastCopyState = 'idle' | 'copied' | 'unavailable'
 
 function ToastCopyButton({ message, toastId, iconStrokeWidth }: { message: string; toastId: string; iconStrokeWidth: number }) {
   const [copyState, setCopyState] = React.useState<ToastCopyState>('idle')
-  const label = copyState === 'copied' ? 'Copied' : copyState === 'unavailable' ? 'Copy unavailable' : 'Copy'
+  const Icon = copyState === 'copied' ? Check : Copy
+  const label = copyState === 'copied' ? 'Notification text copied' : copyState === 'unavailable' ? 'Copy notification text unavailable' : 'Copy notification text'
 
   React.useEffect(() => {
     setCopyState('idle')
@@ -46,28 +47,26 @@ function ToastCopyButton({ message, toastId, iconStrokeWidth }: { message: strin
     <button
       type="button"
       className={cn(
-        'inline-flex min-h-6 items-center gap-1 rounded border px-1.5 py-1 text-[11px] leading-4 pointer-events-auto',
-        UI_THEME_TOKENS.panel.border,
+        'h-5 w-5 rounded inline-flex items-center justify-center relative z-[1] pointer-events-auto',
         UI_THEME_TOKENS.button.hoverBg,
         UI_THEME_TOKENS.button.text,
         UI_FOCUS_RING,
       )}
       data-kg-selection-surface="toast-copy"
       data-kg-toast-copy={toastId}
-      aria-label={copyState === 'copied' ? 'Notification text copied' : 'Copy notification text'}
-      title="Copy notification text"
+      aria-label={label}
+      title={label}
       onClick={() => void handleCopy()}
     >
-      <Copy
-        className="size-3.5 shrink-0"
+      <Icon
+        className="w-3.5 h-3.5"
         strokeWidth={iconStrokeWidth}
         role="img"
-        aria-label="Copy notification text icon"
+        aria-label={`${label} icon`}
         aria-hidden={false}
         focusable={false}
         data-kg-selection-surface="toast-copy-icon"
       />
-      <span>{label}</span>
     </button>
   )
 }
@@ -119,12 +118,10 @@ function ToastCard({
           >
             {message}
           </p>
-          <footer className="mt-2 flex flex-wrap items-center gap-2" aria-label="Notification actions">
-            <ToastCopyButton message={message} toastId={toast.id} iconStrokeWidth={uiIconStrokeWidth} />
-            <UiActionButtons actions={toast.actions} className="pointer-events-auto" />
-          </footer>
+          <UiActionButtons actions={toast.actions} className="pointer-events-auto mt-2" />
         </section>
         <nav className="mt-0.5 flex items-center gap-1 pointer-events-auto" aria-label="Notification controls">
+          <ToastCopyButton message={message} toastId={toast.id} iconStrokeWidth={uiIconStrokeWidth} />
           <button
             type="button"
             className={cn(
