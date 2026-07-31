@@ -235,6 +235,10 @@ function testMapLibreApplyRepairModesAndClear(): void {
     map.getLayoutProperty(REGIONAL_POI_LAYER_IDS.extrusion, 'visibility'),
     'none',
   )
+  assert.deepEqual(
+    map.getLayer(REGIONAL_POI_LAYER_IDS.label)?.layout['text-font'],
+    ['Noto Sans Regular'],
+  )
 
   assert.equal(applyRegionalPoiProfileToMap(map, profile, {
     beforeLayerId: TEST_LAYER_ANCHOR,

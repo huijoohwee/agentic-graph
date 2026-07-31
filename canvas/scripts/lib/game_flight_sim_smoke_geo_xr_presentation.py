@@ -19,6 +19,7 @@ from lib.game_flight_sim_smoke_city_regional_poi import (
 )
 from lib.game_flight_sim_smoke_source_selection import (
     close_source_files_selection_surface,
+    prepare_source_files_selection_surface,
 )
 
 
@@ -149,6 +150,7 @@ def verify_flight_geo_xr_city_handoff(
     ).first
     city_source_button.wait_for(state="visible", timeout=30_000)
     city_source_button.click(timeout=30_000)
+    city_source_surface_transition = close_source_files_selection_surface(page)
     city_panel = page.locator('[data-kg-city-sim-floating-panel="1"]').first
     city_panel.wait_for(state="visible", timeout=30_000)
 
@@ -287,6 +289,7 @@ def verify_flight_geo_xr_city_handoff(
     )
     exited_regional_poi = require_city_regional_poi_teardown_contract(page)
 
+    prepare_source_files_selection_surface(page)
     flight_source_button = page.get_by_role(
         "button",
         name=f"File {flight_source_basename}",
@@ -323,6 +326,7 @@ def verify_flight_geo_xr_city_handoff(
         "mapRetention": retention,
         "restored": restored,
         "reopened": reopened,
+        "citySourceSurfaceTransition": city_source_surface_transition,
     }
 
 

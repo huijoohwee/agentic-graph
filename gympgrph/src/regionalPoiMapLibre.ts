@@ -66,6 +66,7 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
       'symbol-placement': 'point',
       'text-anchor': 'bottom',
       'text-field': ['get', 'kgRegionalPoiLabel'],
+      'text-font': ['Noto Sans Regular'],
       'text-offset': [0, -0.5],
       'text-size': 12,
     }),
