@@ -169,9 +169,6 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
               proof.visible
             )).map(proof => proof.kind).filter(Boolean),
           )).sort()
-          const activeEnvironmentLayerDefinition = map?.getLayer?.(
-            activeEnvironmentLayer,
-          ) || null
           const extrusionEnvironmentLayerDefinition = map?.getLayer?.(
             environmentLayerIds.extrusion3d,
           ) || null
@@ -206,9 +203,6 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
               'icon-rotate',
             )) === JSON.stringify(['get', 'headingDegrees'])
           )
-          const activeEnvironmentVisible = map?.getLayoutProperty?.(
-            activeEnvironmentLayer, 'visibility',
-          ) !== 'none'
           let mapPointerHit = null
           if (mapCanvas && mapRect) {
             for (const ratioX of [0.18, 0.36, 0.5, 0.64, 0.82]) {
@@ -236,15 +230,6 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
               'data-kg-flight-geospatial-camera-padding',
             ) || '',
             environmentExtrusionContractExact,
-            environmentExtrusionVisible: !mode3d || (
-              activeEnvironmentLayerDefinition?.type === 'fill-extrusion'
-              && activeEnvironmentVisible
-              && environmentScreenProof.some(proof => (
-                proof.visible
-                && proof.id === 'marina-bay-sands:tower-2'
-                && Math.abs(proof.heightMeters - 193) <= 0.01
-              ))
-            ),
             environmentUnoccludedKinds,
             floatingPanelView: graphState.floatingPanelView,
             floatingPanelVisible: isVisible(floatingPanel),

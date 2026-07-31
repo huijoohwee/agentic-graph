@@ -101,14 +101,9 @@ def unmet_view_requirements(
         "layout.routeUnoccluded": layout.get("routeUnoccluded") is True,
         "layout.aircraftUnoccluded": layout.get("aircraftUnoccluded") is True,
         "layout.environmentUnoccludedKinds": {
-            "poi",
             "stage-footprint",
             "subject",
         }.issubset(set(layout.get("environmentUnoccludedKinds") or [])),
-        "layout.environmentExtrusionVisible": layout.get(
-            "environmentExtrusionVisible",
-        )
-        is True,
         "layout.environmentExtrusionContractExact": layout.get(
             "environmentExtrusionContractExact",
         )

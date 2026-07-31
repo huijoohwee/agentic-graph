@@ -30,10 +30,9 @@ export function assertFlightSimBrowserSingaporePoiSourceAuthority({
   assert.match(geoXrRequirementsVerifier, /width_meters=71\.82/)
   assert.match(geoXrRequirementsVerifier, /depth_meters=76\.45/)
   assert.doesNotMatch(geoXrLayoutVerifier, /heightMeters >= 20/)
-  assert.match(
-    geoXrLayoutVerifier,
-    /proof\.id === 'marina-bay-sands:tower-2'/,
-  )
+  assert.match(geoXrLayoutVerifier, /environmentExtrusionContractExact/)
+  assert.doesNotMatch(geoXrLayoutVerifier, /environmentExtrusionVisible/)
+  assert.doesNotMatch(geoXrLayoutVerifier, /marina-bay-sands:tower-2/)
 
   for (const requirement of [
     "CITY_REGIONAL_POI_PROFILE_ID = 'adm0:SGP:major-pois/v1'",
