@@ -1,6 +1,7 @@
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { NATIVE_IMPORT_URL_INVOCATION_TEMPLATE } from '@/features/chat/nativeImportUrlInvocation'
+import { NATIVE_CRAWLER_INVOCATION_TEMPLATE } from '@/features/chat/nativeCrawlerInvocation'
 import { resetAgenticOsRemoteGrammarCatalogForTests } from '@/features/agentic-os/agenticOsRemoteGrammarClient'
 import SkillsCommandsView from '@/features/panels/views/SkillsCommandsView'
 import { setActiveCardInlineTextExternalCommandTarget } from '@/lib/cards/cardInlineTextExternalCommands'
@@ -31,14 +32,16 @@ export async function testImportUrlSkillsCommandsExposesAndInsertsCanonicalTuple
       frames: 2,
     })
     const commandRow = container.querySelector('[data-kg-skill-command-token="/ingest-url"]') as HTMLElement | null
+    const crawlerCommandRow = container.querySelector('[data-kg-skill-command-token="/crawler-agent"]') as HTMLElement | null
     const bindingRow = container.querySelector('[data-kg-skill-command-token="@url:"]') as HTMLElement | null
     const semanticRow = container.querySelector('[data-kg-skill-command-token="#canvas"]') as HTMLElement | null
     if (
       commandRow?.getAttribute('data-kg-skill-command-kind') !== 'command'
+      || crawlerCommandRow?.getAttribute('data-kg-skill-command-kind') !== 'command'
       || bindingRow?.getAttribute('data-kg-skill-command-kind') !== 'binding'
       || semanticRow?.getAttribute('data-kg-skill-command-kind') !== 'semantic'
     ) {
-      throw new Error('expected Skills & Commands to expose canonical /ingest-url, @url:, and #canvas rows')
+      throw new Error('expected Skills & Commands to expose canonical Import URL and headless-crawl /, @, and # rows')
     }
     await act(async () => {
       commandRow.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
@@ -46,6 +49,13 @@ export async function testImportUrlSkillsCommandsExposesAndInsertsCanonicalTuple
     })
     if (insertedText.length !== 1 || insertedText[0] !== NATIVE_IMPORT_URL_INVOCATION_TEMPLATE) {
       throw new Error(`expected Import URL row to insert the runnable tuple, got ${JSON.stringify(insertedText)}`)
+    }
+    await act(async () => {
+      crawlerCommandRow.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }))
+      await waitForNextFrame(dom.window)
+    })
+    if (insertedText.slice().length !== 2 || insertedText[1] !== NATIVE_CRAWLER_INVOCATION_TEMPLATE) {
+      throw new Error(`expected crawler row to insert the runnable tuple, got ${JSON.stringify(insertedText)}`)
     }
   } finally {
     setActiveCardInlineTextExternalCommandTarget(null)

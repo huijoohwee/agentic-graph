@@ -33,7 +33,11 @@ import {
 } from './launchImportDispatch'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
-import { targetSkillsCommandsMcpInvocation } from '@/features/agentic-os/skillsCommandsMcpTarget'
+import {
+  targetSkillsCommandsCommandInvocation,
+  targetSkillsCommandsMcpInvocation,
+} from '@/features/agentic-os/skillsCommandsMcpTarget'
+import { NATIVE_CRAWLER_COMMAND } from '@/features/chat/nativeCrawlerInvocation'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 const DEFAULT_VIDEO_DOWNLOAD_OPTIONS: VideoDownloadOptions = {
@@ -72,23 +76,34 @@ export function LaunchDropdownImportUrlItem(props: {
   const activeGraphData = useActiveGraphRenderData(true)
   const importUrlControlsId = React.useId()
   const endpointWarningShownRef = React.useRef(false)
-  const targetSkillsCommands = React.useCallback((mcpTool = IMPORT_URL_AGENT_READY_MCP_TOOL_NAME) => {
+  const openSkillsCommands = React.useCallback(() => {
     const state = useGraphStore.getState()
     state.setFloatingPanelView('skillsCommands')
     state.setFloatingPanelOpen(true)
-    return targetSkillsCommandsMcpInvocation(
-      mcpTool,
-    ).catch(error => {
-      pushUiToast({
-        id: 'launch:import-url:skills-commands-resolution',
-        kind: 'error',
-        message: String((error as { message?: unknown })?.message || 'Source-backed MCP command resolution failed.'),
-        ttlMs: UI_TOAST_TTL_MS.warningExtended,
-        dismissible: true,
-      })
-      throw error
+  }, [])
+  const reportSkillsCommandsResolutionFailure = React.useCallback((error: unknown) => {
+    pushUiToast({
+      id: 'launch:import-url:skills-commands-resolution',
+      kind: 'error',
+      message: String((error as { message?: unknown })?.message || 'Source-backed invocation resolution failed.'),
+      ttlMs: UI_TOAST_TTL_MS.warningExtended,
+      dismissible: true,
     })
   }, [pushUiToast])
+  const targetSkillsCommands = React.useCallback((mcpTool = IMPORT_URL_AGENT_READY_MCP_TOOL_NAME) => {
+    openSkillsCommands()
+    return targetSkillsCommandsMcpInvocation(mcpTool).catch(error => {
+      reportSkillsCommandsResolutionFailure(error)
+      throw error
+    })
+  }, [openSkillsCommands, reportSkillsCommandsResolutionFailure])
+  const targetSkillsCommandsCommand = React.useCallback((command: string) => {
+    openSkillsCommands()
+    return targetSkillsCommandsCommandInvocation(command).catch(error => {
+      reportSkillsCommandsResolutionFailure(error)
+      throw error
+    })
+  }, [openSkillsCommands, reportSkillsCommandsResolutionFailure])
 
   const bridge = getMarkdownWorkspaceActionBridge()
   const hasBridgeVideoDownload = typeof bridge.downloadVideo === 'function'
@@ -216,16 +231,37 @@ export function LaunchDropdownImportUrlItem(props: {
   )
 
   const runImportUrlDeerFlow = React.useCallback(
-    (nextUrlRaw: string) => {
+    async (nextUrlRaw: string) => {
       const nextUrl = String(nextUrlRaw || '').trim()
       if (!nextUrl) return
+      try {
+        await targetSkillsCommands()
+      } catch {
+        return
+      }
       onClose()
       const opts = selectedImportOpts()
       if (opts?.canvas2dRenderer === 'design') activateDesignEditorSurface({ openFloatingPanel: true })
       void importUrlDeerFlowFallback(nextUrl, opts)
       setUrlInputOpen(false)
     },
-    [importUrlDeerFlowFallback, onClose, selectedImportOpts],
+    [importUrlDeerFlowFallback, onClose, selectedImportOpts, targetSkillsCommands],
+  )
+
+  const runWebsiteCrawl = React.useCallback(
+    async (nextUrlRaw: string) => {
+      const nextUrl = String(nextUrlRaw || '').trim()
+      if (!nextUrl) return
+      try {
+        await targetSkillsCommandsCommand(NATIVE_CRAWLER_COMMAND)
+      } catch {
+        return
+      }
+      onClose()
+      getMarkdownWorkspaceActionBridge().importWebsite?.(nextUrl, buildAutoWebsiteImportOptions())
+      setUrlInputOpen(false)
+    },
+    [onClose, targetSkillsCommandsCommand],
   )
 
   const runVideoDownload = React.useCallback(async () => {
@@ -328,17 +364,11 @@ export function LaunchDropdownImportUrlItem(props: {
                   </button>
                 ) : null}
                 {typeof bridge.importWebsite === 'function' ? (
-                  <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Crawl website headlessly" aria-label="Crawl website headlessly" onClick={() => {
-                    const next = String(urlDraft || '').trim()
-                    if (!next) return
-                    props.onClose()
-                    getMarkdownWorkspaceActionBridge().importWebsite?.(next, buildAutoWebsiteImportOptions())
-                    setUrlInputOpen(false)
-                  }}>
+                  <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Crawl website headlessly" aria-label="Crawl website headlessly" data-kg-launch-import-url-crawler-target={NATIVE_CRAWLER_COMMAND} onClick={() => { void runWebsiteCrawl(urlDraft) }}>
                     <Globe className={props.menuIconClass} strokeWidth={1.6} />
                   </button>
                 ) : null}
-                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Import URL (DeerFlow)" aria-label="Import URL (DeerFlow)" onClick={() => runImportUrlDeerFlow(urlDraft)}>
+                <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)} title="Import URL (DeerFlow)" aria-label="Import URL (DeerFlow)" data-kg-launch-import-url-provider-assisted-target={IMPORT_URL_AGENT_READY_MCP_TOOL_NAME} onClick={() => { void runImportUrlDeerFlow(urlDraft) }}>
                   <Sparkles className={props.menuIconClass} strokeWidth={1.6} />
                 </button>
               </section>

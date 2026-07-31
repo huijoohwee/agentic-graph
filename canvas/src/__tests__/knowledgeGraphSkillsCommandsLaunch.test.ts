@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { Simulate } from 'react-dom/test-utils'
 import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
 import { AGENTIC_OS_DOCS_MCP_TOOL_NAME } from '@/features/agent-ready/agenticOsDocsMcpBridgeContract'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
@@ -11,9 +12,11 @@ import {
 import {
   readSkillsCommandsMcpTarget,
   resetSkillsCommandsMcpTargetForTests,
+  targetSkillsCommandsCommandInvocation,
   targetSkillsCommandsMcpInvocation,
 } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { registerMarkdownWorkspaceActionBridge } from '@/features/markdown-explorer/workspaceActionBridge'
 import { LaunchDropdownImportUrlItem } from '@/lib/toolbar/LaunchDropdownImportUrlItem'
 import { ToolbarToolMenu } from '@/lib/toolbar/ToolbarToolMenu.impl'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
@@ -30,6 +33,9 @@ const SOURCE_BINDING = '@source.root'
 const IMPORT_URL_COMMAND = '/ingest-url'
 const IMPORT_URL_SEMANTIC = '#canvas'
 const IMPORT_URL_BINDINGS = ['@url:', '@reference-policy']
+const CRAWLER_COMMAND = '/crawler-agent'
+const CRAWLER_SEMANTICS = ['#canvas', '#dev-only', '#approval-gate']
+const CRAWLER_BINDINGS = ['@url:', '@reference-policy', '@runtime-proof']
 const SOURCE_CATALOG = [
   {
     token: SOURCE_COMMAND,
@@ -57,6 +63,15 @@ const SOURCE_CATALOG = [
     bindings: IMPORT_URL_BINDINGS,
   },
   {
+    token: CRAWLER_COMMAND,
+    kind: 'command',
+    label: 'Crawl website headlessly',
+    summary: 'Crawl an approved website through the native headless runtime.',
+    sourcePath: `DICTIONARY-COMMAND.md#${CRAWLER_COMMAND}`,
+    semantics: CRAWLER_SEMANTICS,
+    bindings: CRAWLER_BINDINGS,
+  },
+  {
     token: IMPORT_URL_SEMANTIC,
     kind: 'semantic',
     label: 'Canvas',
@@ -68,6 +83,20 @@ const SOURCE_CATALOG = [
     kind: 'binding',
     label: token,
     summary: 'Bind canonical Import URL input or reference policy.',
+    sourcePath: `DICTIONARY-BINDING.md#${token}`,
+  })),
+  ...CRAWLER_SEMANTICS.filter(token => token !== IMPORT_URL_SEMANTIC).map(token => ({
+    token,
+    kind: 'semantic',
+    label: token,
+    summary: 'Source-backed crawler semantic.',
+    sourcePath: `DICTIONARY-SEMANTIC.md#${token}`,
+  })),
+  ...CRAWLER_BINDINGS.filter(token => !IMPORT_URL_BINDINGS.includes(token)).map(token => ({
+    token,
+    kind: 'binding',
+    label: token,
+    summary: 'Source-backed crawler binding.',
     sourcePath: `DICTIONARY-BINDING.md#${token}`,
   })),
   {
@@ -208,6 +237,38 @@ export async function testKnowledgeGraphSkillsCommandsResolverUsesSharedSourceBa
   }
 }
 
+export async function testSkillsCommandsCommandTargetUsesTheVerifiedCrawlerTuple() {
+  resetSkillsCommandsMcpTargetForTests()
+  resetAgenticOsRemoteGrammarCatalogForTests()
+  const fetchMock = installSourceCatalogFetchMock()
+  try {
+    const resolution = await targetSkillsCommandsCommandInvocation(CRAWLER_COMMAND)
+    assert.equal(resolution.command, CRAWLER_COMMAND)
+    assert.deepEqual(resolution.invocation, {
+      schema: 'knowgrph-knowledge-graph-invocation/v1',
+      tool: CRAWLER_COMMAND,
+      action: CRAWLER_COMMAND,
+      semantics: CRAWLER_SEMANTICS,
+      bindings: CRAWLER_BINDINGS,
+      sourceRevision: SOURCE_REVISION,
+      catalogDigest: SOURCE_CATALOG_METADATA.catalogDigest,
+      routingSchema: SOURCE_CATALOG_METADATA.routingSchema,
+      routingDigest: SOURCE_CATALOG_METADATA.routingDigest,
+    })
+    assert.deepEqual(
+      resolution.entries.map(entry => entry.token),
+      [CRAWLER_COMMAND, ...CRAWLER_SEMANTICS, ...CRAWLER_BINDINGS],
+    )
+    assert.deepEqual(fetchMock.exactInvocationRequests, [[
+      CRAWLER_COMMAND,
+      ...CRAWLER_SEMANTICS,
+      ...CRAWLER_BINDINGS,
+    ]])
+  } finally {
+    fetchMock.restore()
+  }
+}
+
 export async function testKnowledgeGraphSkillsCommandsResolverRequiresRoutingProof() {
   resetSkillsCommandsMcpTargetForTests()
   resetAgenticOsRemoteGrammarCatalogForTests()
@@ -283,7 +344,8 @@ export async function testKnowledgeGraphLaunchImportUrlTargetsFloatingPanelSkill
     assert.equal(graphState.floatingPanelView, 'skillsCommands')
     const target = readSkillsCommandsMcpTarget()
     assert.equal(target.status, 'ready', target.error)
-    assert.equal(target.resolution?.mcpTool, IMPORT_URL_AGENT_READY_MCP_TOOL_NAME)
+    assert.equal(target.targetKind, 'mcp-tool')
+    assert.equal(target.mcpTool, IMPORT_URL_AGENT_READY_MCP_TOOL_NAME)
     assert.equal(target.resolution?.invocation.action, IMPORT_URL_COMMAND)
 
     const shell = container.querySelector('[data-kg-floating-panel-root="true"]')
@@ -297,11 +359,14 @@ export async function testKnowledgeGraphLaunchImportUrlTargetsFloatingPanelSkill
     )
     const visibleTokens = [...container.querySelectorAll('[data-kg-skill-command-token-chip="1"]')]
       .map(element => String(element.textContent || '').trim())
+    assert.ok(SOURCE_CATALOG.every(entry => visibleTokens.includes(entry.token)), 'expected every verified source token to remain listable')
+    assert.equal(visibleTokens.includes('/unrelated.command'), true)
+    const targetedTokens = [...container.querySelectorAll('[data-kg-skill-command-targeted="true"]')]
+      .map(element => String(element.getAttribute('data-kg-skill-command-token') || '').trim())
     assert.deepEqual(
-      visibleTokens.sort(),
+      targetedTokens.sort(),
       [IMPORT_URL_COMMAND, IMPORT_URL_SEMANTIC, ...IMPORT_URL_BINDINGS].sort(),
     )
-    assert.equal(visibleTokens.includes('/unrelated.command'), false)
     assert.deepEqual(fetchMock.exactInvocationRequests, [[
       IMPORT_URL_COMMAND,
       IMPORT_URL_SEMANTIC,
@@ -320,6 +385,98 @@ export async function testKnowledgeGraphLaunchImportUrlTargetsFloatingPanelSkill
     container.remove()
     restore()
     fetchMock.restore()
+  }
+}
+
+export async function testLaunchImportUrlCrawlerTargetsSkillsCommandsBeforeDispatch() {
+  resetSkillsCommandsMcpTargetForTests()
+  resetAgenticOsRemoteGrammarCatalogForTests()
+  const fetchMock = installSourceCatalogFetchMock()
+  const websiteUrls: string[] = []
+  const unregisterBridge = registerMarkdownWorkspaceActionBridge('skills-commands-crawler-target-test', {
+    importWebsite: async url => {
+      websiteUrls.push(url)
+      return { handled: true, createdPaths: [] }
+    },
+  })
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  const toolMenuCardRef = React.createRef<HTMLElement>()
+  try {
+    useGraphStore.getState().resetAll()
+    function ShellHarness() {
+      const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen)
+      return React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(LaunchDropdownImportUrlItem, {
+          canvas2dRenderer: 'flow',
+          menuIconClass: 'icon',
+          menuItemClass: 'item',
+          onClose: () => undefined,
+          open: true,
+          pushUiToast: () => undefined,
+        }),
+        floatingPanelOpen ? React.createElement(ToolbarToolMenu, {
+          pipelineStatus: null,
+          exportStatus: null,
+          toolMenuCardRef,
+          toolMenuCardStyle: {},
+          onHeaderPointerDown: () => undefined,
+          onClose: () => useGraphStore.getState().setFloatingPanelOpen(false),
+        }) : null,
+      )
+    }
+    await mountReactRoot(root, React.createElement(ShellHarness), {
+      window: dom.window as unknown as Window,
+      tasks: 2,
+      frames: 1,
+    })
+    const launchButton = container.querySelector('[data-kg-launch-import-url-skills-commands-target="skillsCommands"]')
+    assert.ok(launchButton instanceof dom.window.HTMLButtonElement)
+    await act(async () => {
+      launchButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      for (let attempt = 0; attempt < 12 && readSkillsCommandsMcpTarget().status === 'loading'; attempt += 1) {
+        await waitForTasks(1)
+      }
+    })
+    const input = container.querySelector('input.kg-import-url-input')
+    assert.ok(input instanceof dom.window.HTMLInputElement)
+    const inputValueSetter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')?.set
+    assert.ok(inputValueSetter)
+    await act(async () => {
+      inputValueSetter.call(input, 'https://example.invalid/crawl')
+      Simulate.change(input)
+      await waitForTasks(2)
+    })
+    const crawlerButton = container.querySelector(`[data-kg-launch-import-url-crawler-target="${CRAWLER_COMMAND}"]`)
+    assert.ok(crawlerButton instanceof dom.window.HTMLButtonElement)
+    await act(async () => {
+      crawlerButton.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      for (let attempt = 0; attempt < 16 && readSkillsCommandsMcpTarget().status === 'loading'; attempt += 1) {
+        await waitForTasks(1)
+      }
+      await waitForTasks(2)
+    })
+    const target = readSkillsCommandsMcpTarget()
+    assert.equal(target.status, 'ready', target.error)
+    assert.equal(target.targetKind, 'command-token')
+    assert.equal(target.target, CRAWLER_COMMAND)
+    assert.equal(target.resolution?.invocation.action, CRAWLER_COMMAND)
+    assert.deepEqual(websiteUrls, ['https://example.invalid/crawl'])
+    assert.deepEqual(fetchMock.exactInvocationRequests, [
+      [IMPORT_URL_COMMAND, IMPORT_URL_SEMANTIC, ...IMPORT_URL_BINDINGS],
+      [CRAWLER_COMMAND, ...CRAWLER_SEMANTICS, ...CRAWLER_BINDINGS],
+    ])
+  } finally {
+    await unmountReactRoot(root, { window: dom.window as unknown as Window, tasks: 1 })
+    container.remove()
+    restore()
+    unregisterBridge()
+    fetchMock.restore()
+    useGraphStore.getState().resetAll()
   }
 }
 
