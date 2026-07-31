@@ -147,7 +147,10 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     /React\.lazy\(loadCanvasViewportGeospatialOverlay\)/,
   )
   assert.match(viewport, /import \{ FlightSimHud \} from '@\/features\/game-flight-sim\/FlightSimHud'/)
-  assert.match(viewport, /flightSimHudVisible \? <FlightSimHud \/> : null/)
+  assert.match(
+    viewport,
+    /<FlightSimHud geospatialComposite=\{geospatialXrModeEnabled\} \/>/,
+  )
   assert.doesNotMatch(viewport, /FlightSimHudLazy|loadFlightSimHud/)
   const ownedLaunchGuard = runReadyOwner.indexOf(
     'launchAttempt >= FLIGHT_SIM_DOCUMENT_LAUNCH_ATTEMPT_LIMIT',

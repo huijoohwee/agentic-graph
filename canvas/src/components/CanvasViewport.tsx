@@ -632,7 +632,9 @@ export function CanvasViewport(props: CanvasViewportProps) {
       </React.Suspense>
       {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
-      {flightSimHudVisible ? <FlightSimHud /> : null}
+      {flightSimHudVisible ? (
+        <FlightSimHud geospatialComposite={geospatialXrModeEnabled} />
+      ) : null}
       {variant === 'workspace' ? <CanvasEmbedCodePanelHost /> : null}
     </section>
   )

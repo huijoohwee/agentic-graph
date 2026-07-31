@@ -19,7 +19,7 @@ test('Flight reuses the shared bounded semantic media surface in every presentat
   )
   assert.match(
     hudSource,
-    /<figure[\s\S]*className="pointer-events-auto absolute inset-\[8%_8%_13%_8%\] m-0"/,
+    /<figure[\s\S]*className=\{`\$\{geospatialComposite \? 'pointer-events-none' : 'pointer-events-auto'\} absolute inset-\[8%_8%_13%_8%\] m-0`\}/,
   )
   assert.match(
     hudSource,
@@ -58,4 +58,23 @@ test('Flight reuses the shared bounded semantic media surface in every presentat
   assert.match(hudSource, /<Plane[\s\S]*role="img"/)
   assert.doesNotMatch(hudSource, /<div\b/)
   assert.doesNotMatch(hudSource, /aria-hidden/)
+})
+
+test('Geo+XR retains semantic Flight selection without intercepting the MapLibre owner', () => {
+  assert.match(
+    hudSource,
+    /export type FlightSimHudProps = Readonly<\{[\s\S]*geospatialComposite\?: boolean/,
+  )
+  assert.match(
+    hudSource,
+    /data-kg-flight-sim-media-pointer-owner=\{[\s\S]*geospatialComposite \? 'geo' : 'flight'/,
+  )
+  assert.match(
+    hudSource,
+    /<figcaption[\s\S]*className="pointer-events-auto/,
+  )
+  assert.match(
+    hudSource,
+    /<button[\s\S]*className=\{`pointer-events-auto/,
+  )
 })

@@ -63,7 +63,13 @@ function envelopeClassName(severity: 'nominal' | 'caution' | 'warning'): string 
   return 'border-cyan-300/50 bg-slate-950/80 text-cyan-50'
 }
 
-export function FlightSimHud() {
+export type FlightSimHudProps = Readonly<{
+  geospatialComposite?: boolean
+}>
+
+export function FlightSimHud({
+  geospatialComposite = false,
+}: FlightSimHudProps) {
   const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen === true)
   const floatingPanelWidthRatio = useGraphStore(state => state.floatingPanelWidthRatio)
   const [aircraftSelected, setAircraftSelected] = React.useState(false)
@@ -224,9 +230,12 @@ export function FlightSimHud() {
       style={floatingPanelClearanceVariables}
     >
       <figure
-        className="pointer-events-auto absolute inset-[8%_8%_13%_8%] m-0"
+        className={`${geospatialComposite ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-[8%_8%_13%_8%] m-0`}
         aria-label="Flight Sim media surface"
         data-kg-flight-sim-media-surface="1"
+        data-kg-flight-sim-media-pointer-owner={
+          geospatialComposite ? 'geo' : 'flight'
+        }
         data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
       >
         <figcaption
