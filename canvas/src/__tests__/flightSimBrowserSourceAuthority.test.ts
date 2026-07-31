@@ -197,6 +197,18 @@ test('Flight browser proof activates only after applying the authored source', (
     /proof\.id === 'marina-bay-sands:tower-center'/,
   )
   assert.match(
+    geoXrLayoutVerifier,
+    /flight_panel\.locator\(\s*'\[data-kg-flight-sim-open="1"\]'/,
+  )
+  assert.match(
+    geoXrLayoutVerifier,
+    /open_button\.click\(timeout=30_000\)/,
+  )
+  assert.match(
+    geoXrLayoutVerifier,
+    /flight\.readFlightSimSnapshot\(\)\.active/,
+  )
+  assert.match(
     geoXrPresentationVerifier,
     /def restore_flight_sim_panel\(page: Page\) -> None:/,
   )

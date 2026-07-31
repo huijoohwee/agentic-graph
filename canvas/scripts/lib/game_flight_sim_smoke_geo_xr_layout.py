@@ -315,7 +315,55 @@ def prepare_reported_singapore_geo_handoff(page: Page) -> dict[str, Any]:
         '[data-kg-floating-panel-view-trigger="flightSim"]'
     ).first
     flight_trigger.click(timeout=30_000)
-    page.locator('[data-kg-flight-sim-floating-panel="1"]').wait_for(
+    flight_panel = page.locator(
+        '[data-kg-flight-sim-floating-panel="1"]'
+    ).first
+    flight_panel.wait_for(
         state="visible", timeout=30_000
     )
-    return observed
+    open_button = flight_panel.locator(
+        '[data-kg-flight-sim-open="1"]'
+    ).first
+    if open_button.count() == 1 and open_button.is_visible():
+        if open_button.is_disabled():
+            raise AssertionError(
+                "Flight Sim Open was disabled after the Singapore environment "
+                "handoff"
+            )
+        open_button.click(timeout=30_000)
+    flight_observed: dict[str, Any] = {}
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        flight_observed = page.evaluate(
+            """
+            async () => {
+              const [flight, graph, gympgrph] = await Promise.all([
+                window.__kgFlightSimBrowserProof.importModule('flightSimRuntime'),
+                window.__kgFlightSimBrowserProof.importModule('graphStore'),
+                window.__kgFlightSimBrowserProof.importModule('gympgrphStore'),
+              ])
+              return {
+                active: flight.readFlightSimSnapshot().active,
+                geospatialEnabled:
+                  gympgrph.useGympgrphStore.getState().geospatialModeEnabled,
+                panelView: graph.useGraphStore.getState().floatingPanelView,
+              }
+            }
+            """
+        )
+        if (
+            flight_observed.get("active") is True
+            and flight_observed.get("geospatialEnabled") is True
+            and flight_observed.get("panelView") == "flightSim"
+        ):
+            break
+        page.wait_for_timeout(100)
+    else:
+        raise AssertionError(
+            "Flight Sim did not reopen through its authored control after the "
+            f"Singapore environment handoff: {flight_observed}"
+        )
+    return {
+        "environment": observed,
+        "flight": flight_observed,
+    }
