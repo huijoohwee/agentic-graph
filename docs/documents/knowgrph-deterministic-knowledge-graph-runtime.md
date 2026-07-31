@@ -2,7 +2,7 @@
 title: "Knowgrph Deterministic Knowledge-Graph Runtime"
 doc_type: "Runtime Contract"
 id: "knowgrph-deterministic-knowledge-graph-runtime"
-version: "1.1.0"
+version: "1.1.1"
 status: "active"
 created: "2026-07-22"
 updated: "2026-07-31"
@@ -79,6 +79,11 @@ local corpus or acquired immutable repository -> verified parser-registry v2 -> 
 - The MCP surface is an adapter over shared graph contracts, not a new graph owner.
 - The deterministic runtime does not require Neo4j, a vector database, an embedding index, or an external parsing service.
 - Optional FloatingPanel Chat answer synthesis remains a separate downstream harness concern and is not part of these four tools.
+
+Repository URLs are input data, not routing identities. Acquisition is selected
+from the source-backed command and capability contract, while host admission is
+an injected policy over canonical HTTPS repository identities. No repository,
+organization, forge brand, or submitted URL receives a private invocation path.
 
 ## Deterministic Coverage Contract
 
