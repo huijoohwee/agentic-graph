@@ -26,7 +26,10 @@ import {
   type ImportUrlRendererSelection,
 } from './ImportUrlRendererSelect'
 import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
-import { runLaunchImportUrl } from './launchImportDispatch'
+import {
+  runLaunchImportUrl,
+  type LaunchKnowledgeGraphImportProgressStage,
+} from './launchImportDispatch'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import { targetSkillsCommandsMcpInvocation } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { useGraphStore } from '@/hooks/useGraphStore'
@@ -36,6 +39,13 @@ const DEFAULT_VIDEO_DOWNLOAD_OPTIONS: VideoDownloadOptions = {
   mediaKind: 'video-audio',
   quality: 'best',
   subtitleLang: '',
+}
+
+const KNOWLEDGE_GRAPH_IMPORT_TOAST_ID = 'launch:import:knowledge-graph-url'
+const KNOWLEDGE_GRAPH_IMPORT_PROGRESS: Record<LaunchKnowledgeGraphImportProgressStage, string> = {
+  resolving: 'Resolving the source-backed knowledge graph command…',
+  ingesting: 'Parsing the repository into a local knowledge graph…',
+  projecting: 'Opening the knowledge graph in Graph view…',
 }
 
 type PushUiToast = (toast: UiToastInput) => void
@@ -151,19 +161,30 @@ export function LaunchDropdownImportUrlItem(props: {
           opts,
           bridge: launchBridge,
           fallback: importUrlFallback,
+          onKnowledgeGraphProgress: stage => {
+            pushUiToast({
+              id: KNOWLEDGE_GRAPH_IMPORT_TOAST_ID,
+              kind: 'neutral',
+              message: KNOWLEDGE_GRAPH_IMPORT_PROGRESS[stage],
+              ttlMs: null,
+              dismissible: false,
+              busy: true,
+              log: false,
+            })
+          },
         })
         if (result && 'kind' in result && result.kind === 'knowledge-graph') {
           pushUiToast({
-            id: 'launch:import:knowledge-graph-url',
+            id: KNOWLEDGE_GRAPH_IMPORT_TOAST_ID,
             kind: 'success',
-            message: `Loaded knowledge graph projection (${result.projection?.graphData.nodes.length || 0} nodes, ${result.projection?.graphData.edges.length || 0} edges)`,
+            message: `Loaded knowledge graph in Graph view (${result.projection?.graphData.nodes.length || 0} nodes, ${result.projection?.graphData.edges.length || 0} edges)`,
             ttlMs: UI_TOAST_TTL_MS.actionFeedback,
           })
         }
         setUrlInputOpen(false)
       } catch (error) {
         pushUiToast({
-          id: 'launch:import:knowledge-graph-url',
+          id: KNOWLEDGE_GRAPH_IMPORT_TOAST_ID,
           kind: 'error',
           message: String((error as { message?: unknown })?.message || 'Knowledge graph URL import failed.'),
           ttlMs: UI_TOAST_TTL_MS.warningExtended,
