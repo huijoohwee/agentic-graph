@@ -498,43 +498,32 @@ export function CanvasViewport(props: CanvasViewportProps) {
           </section>
         ) : null}
 
-        {!documentSwitchOwnsViewport && geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (
-          cityMapLibreSurfaceRequested ? (
-            <SemanticMediaFigure
-              active={citySimActive}
-              activeDataAttributes={CITY_SIM_MEDIA_STAGE_DATA_ATTRIBUTES}
-              label={CITY_SIM_MEDIA_STAGE_LABEL}
-              selectionTarget="descendant"
-            >
-              {captionId => (
-                <CanvasViewportGeospatialOverlayLazy
-                  active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
-                  composedWithXr={geospatialXrModeEnabled}
-                  geospatialModeEnabled={geospatialCompositionEnabled}
-                  graphData={safeGraphData}
-                  semanticMediaOwner={citySimActive ? {
-                    captionId,
-                    label: CITY_SIM_MEDIA_STAGE_LABEL,
-                    selectionAttribute: {
-                      name: MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
-                      value: MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
-                    },
-                  } : undefined}
-                  storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
-                  threeOverlayComposed={false}
-                />
-              )}
-            </SemanticMediaFigure>
-          ) : (
-            <CanvasViewportGeospatialOverlayLazy
-              active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
-              composedWithXr={geospatialXrModeEnabled}
-              geospatialModeEnabled={geospatialCompositionEnabled}
-              graphData={safeGraphData}
-              storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
-              threeOverlayComposed={geospatialXrModeEnabled}
-            />
-          )
+        {geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (
+          <SemanticMediaFigure
+            active={citySimActive}
+            activeDataAttributes={CITY_SIM_MEDIA_STAGE_DATA_ATTRIBUTES}
+            label={CITY_SIM_MEDIA_STAGE_LABEL}
+            selectionTarget="descendant"
+          >
+            {captionId => (
+              <CanvasViewportGeospatialOverlayLazy
+                active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
+                composedWithXr={geospatialXrModeEnabled}
+                geospatialModeEnabled={geospatialCompositionEnabled}
+                graphData={safeGraphData}
+                semanticMediaOwner={citySimActive ? {
+                  captionId,
+                  label: CITY_SIM_MEDIA_STAGE_LABEL,
+                  selectionAttribute: {
+                    name: MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
+                    value: MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
+                  },
+                } : undefined}
+                storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
+                threeOverlayComposed={cityMapLibreSurfaceRequested ? false : geospatialXrModeEnabled}
+              />
+            )}
+          </SemanticMediaFigure>
         ) : null}
         {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && flightSimHudVisible ? <FlightSimGeoSurfaceOverlayLazy /> : null}
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (
