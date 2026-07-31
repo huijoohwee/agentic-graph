@@ -88,8 +88,8 @@ regional_geographic_poi_projection:
   profile_fact_authority: "/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md"
   source_id: "kg-geo-xr:regional-poi"
   layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:locator", "kg-geo-xr:regional-poi:label"]
-  feature_contract: "nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three order-independent identity Point locators"
-  presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-independent labels"
+  feature_contract: "nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three topology-aware representative Point locators"
+  presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-aware variable-anchor labels"
   storage_policy: "checked-in"
   runtime_network_required: false
   city_fact_ownership: false
@@ -249,10 +249,11 @@ economy ticks, and selection update that source from the same runtime revision.
 The `regional_poi_profile_id` resolves one immutable geographic profile whose
 locale facts remain solely in the selected companion. Its exact geographic
 rings, real-metre heights, accuracy, and provenance project through nine
-surface features plus three derived identity locators in
+surface features plus three topology-aware representative identity locators in
 `kg-geo-xr:regional-poi`. Its five MapLibre layers keep massing below City
 parcels and make each POI visible through a fixed-pixel locator and
-collision-independent label. City does not copy or mutate that profile.
+collision-aware variable-anchor label. City does not copy or mutate that
+profile.
 
 City also uses `projectCitySimAerialInspectionToGeospatialOverlay` to derive one
 deterministic route and one stopped aircraft from the typed `city_geo_xr`

@@ -88,7 +88,7 @@ function createSyntheticGeographicProfile(): CityGeographicProfile {
   }
 }
 
-function createSyntheticSnapshot(options: Readonly<{
+export function createSyntheticSnapshot(options: Readonly<{
   landValueOffset?: number
   revision?: string
   selectedParcelId?: string | null

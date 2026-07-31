@@ -17,6 +17,13 @@ function readCanvasSource(relativePath: string): string {
   return readFileSync(resolve(process.cwd(), 'src', relativePath), 'utf8')
 }
 
+function readGympgrphSource(relativePath: string): string {
+  return readFileSync(
+    resolve(process.cwd(), '..', 'gympgrph', 'src', relativePath),
+    'utf8',
+  )
+}
+
 function collectTextFiles(path: string): readonly string[] {
   if (statSync(path).isFile()) return [path]
   return readdirSync(path)
@@ -38,6 +45,7 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
   const geospatialOverlay = readCanvasSource(
     'components/CanvasViewportGeospatialOverlay.tsx',
   )
+  const geospatialHost = readGympgrphSource('GeospatialHost.tsx')
   const xrPhysicsRuntime = readCanvasSource(
     'features/canvas/XrPhysicsRunReadyDemoRuntime.tsx',
   )
@@ -165,6 +173,44 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
         'semanticMediaOwner={stableSemanticMediaOwner}',
       ),
     'the live MapLibre canvas semantic owner must not churn on City updates',
+  )
+  assert.equal(
+    geospatialHost.match(/useMapLibreBasemap\(/g)?.length,
+    1,
+    'the shared Geo host must create one mode-derived MapLibre runtime',
+  )
+  assert.equal(
+    geospatialHost.match(/ref=\{mapContainerRef\}/g)?.length,
+    1,
+    'the shared Geo host must mount one mode-derived MapLibre host section',
+  )
+  assert.doesNotMatch(
+    geospatialHost,
+    /map2dContainerRef|map3dContainerRef|basemap2d|basemap3d/,
+    'inactive 2D/3D MapLibre aliases must not survive beside the canonical host',
+  )
+  assert.equal(
+    geospatialHost.match(/<figure\b/g)?.length ?? 0,
+    0,
+    'the SVG fallback must reuse the outer semantic media figure',
+  )
+  assert.ok(
+    geospatialHost.includes('{showSvgFallback ? (')
+      && geospatialHost.includes(
+        'semanticMediaOwner={props.semanticMediaOwner}',
+      ),
+    'the semantic SVG fallback must mount only while it owns the visible fallback surface',
+  )
+  assert.ok(
+    geospatialHost.includes(
+      'getCanvas: () => semanticSurfaceRef.current',
+    ),
+    'the active SVG fallback must reuse the shared selectable media binder directly',
+  )
+  assert.doesNotMatch(
+    geospatialHost,
+    /aria-hidden|opacity-0/,
+    'the canonical Geo host must not retain hidden selectable decoration',
   )
   assert.ok(
     xrPhysicsRuntime.includes(

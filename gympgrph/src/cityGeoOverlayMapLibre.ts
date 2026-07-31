@@ -202,10 +202,13 @@ function expectedVisibility(
   layerId: string,
   viewMode: CityGeoViewMode,
 ): 'none' | 'visible' {
-  return layerId === CITY_GEO_OVERLAY_LAYER_IDS.extrusion
-    && viewMode === '2d'
-    ? 'none'
-    : 'visible'
+  if (layerId === CITY_GEO_OVERLAY_LAYER_IDS.fill) {
+    return viewMode === '2d' ? 'visible' : 'none'
+  }
+  if (layerId === CITY_GEO_OVERLAY_LAYER_IDS.extrusion) {
+    return viewMode === '3d' ? 'visible' : 'none'
+  }
+  return 'visible'
 }
 
 function readVisibility(map: any, layerId: string): 'none' | 'visible' {
