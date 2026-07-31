@@ -26,6 +26,7 @@ import {
   clearRegionalPoiProfileFromMap,
   mapHasExactRegionalPoiProfile,
   mapHasExactRegionalPoiSource,
+  regionalPoiFeatureCollection,
   REGIONAL_POI_SOURCE_ID,
 } from './regionalPoiMapLibre.js'
 import {
@@ -197,7 +198,9 @@ export function createCityGeoOverlayMapLibreController(
     )
     viewport.dataset.kgCityGeospatialOverlay = 'active'
     viewport.dataset.kgCityGeospatialPoiFeatureCount = String(
-      snapshot.profile.regionalPoiProfile.surfaces.length,
+      regionalPoiFeatureCollection(
+        snapshot.profile.regionalPoiProfile,
+      ).features.length,
     )
     viewport.dataset.kgCityGeospatialPoiProfileId =
       snapshot.profile.regionalPoiProfile.id

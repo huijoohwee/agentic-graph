@@ -9,6 +9,14 @@ import type {
   XrMotionReferencePlan,
   XrMotionReferenceSubject,
 } from '@/features/three/xrMotionReferenceModel'
+import type {
+  RegionalPoiProfile,
+  RegionalPoiSurface,
+} from 'grph-shared/geospatial/regionalPoiGeo'
+import {
+  resolveRegionalPoiPresentationStyle,
+  type RegionalPoiPresentationPolicy,
+} from '@/features/geospatial/regionalPoiPresentationStyle'
 import {
   resolveXrMotionReferenceStage,
   resolveXrSceneLibraryAsset,
@@ -24,10 +32,9 @@ const TONE_COLORS: Readonly<Record<XrGreyBoxStructure['tone'], string>> =
   })
 
 /**
- * XR environment stage and asset values are authored in local metres.  Flight
- * mission positions use their own 20x authored-world conversion before they
- * reach the route/aircraft projector; applying that conversion here would
- * mutate the environment's real metre footprint and extrusion heights.
+ * XR environment stages, structures, and subjects use local metres. Regional
+ * POI surfaces already carry geographic rings and real-metre heights, so they
+ * bypass this local projection entirely.
  */
 function projectEnvironmentLocalMetersToGeospatial(
   xMeters: number,
@@ -83,12 +90,46 @@ function projectStructure(
     kind: structure.kind === 'poi' ? 'poi' : 'structure',
     label: structure.label || structure.id,
     poiId: structure.poiId || null,
-    ring: projectLocalRectangle({
-      centerX: structure.position[0],
-      centerZ: structure.position[2],
-      depthMeters: structure.size[2],
-      widthMeters: structure.size[0],
+    regionalPoiSourceFacts: null,
+    rings: Object.freeze([
+      projectLocalRectangle({
+        centerX: structure.position[0],
+        centerZ: structure.position[2],
+        depthMeters: structure.size[2],
+        widthMeters: structure.size[0],
+      }),
+    ]),
+  })
+}
+
+function projectRegionalPoiSurface(
+  surface: RegionalPoiSurface,
+  profile: Pick<RegionalPoiProfile, 'id' | 'revision'>,
+  policy: RegionalPoiPresentationPolicy,
+): FlightGeoEnvironmentSurface {
+  const style = resolveRegionalPoiPresentationStyle({
+    category: surface.category,
+    policy,
+    profile,
+  })
+  return Object.freeze({
+    baseHeightMeters: surface.baseHeightMeters,
+    color: style.color,
+    heightMeters: surface.heightMeters,
+    id: surface.id,
+    kind: 'poi',
+    label: surface.label,
+    poiId: surface.poiId,
+    regionalPoiSourceFacts: Object.freeze({
+      accuracy: surface.accuracy,
+      category: surface.category,
+      provenance: surface.provenance,
     }),
+    rings: Object.freeze(surface.geometry.coordinates.map(ring => (
+      Object.freeze(ring.map(coordinate => (
+        Object.freeze([...coordinate]) as GeospatialCoordinate
+      )))
+    ))),
   })
 }
 
@@ -113,13 +154,16 @@ function projectSubject(
     kind: 'subject',
     label: subject.label,
     poiId: null,
-    ring: projectLocalRectangle({
-      centerX: subject.position[0],
-      centerZ: subject.position[2],
-      depthMeters,
-      rotationDegrees: subject.rotationYDegrees,
-      widthMeters,
-    }),
+    regionalPoiSourceFacts: null,
+    rings: Object.freeze([
+      projectLocalRectangle({
+        centerX: subject.position[0],
+        centerZ: subject.position[2],
+        depthMeters,
+        rotationDegrees: subject.rotationYDegrees,
+        widthMeters,
+      }),
+    ]),
   })
 }
 
@@ -141,11 +185,28 @@ export function projectXrEnvironmentToFlightGeo(
     kind: 'stage-footprint',
     label: `${stage.label} stage footprint`,
     poiId: null,
-    ring: stageFootprint,
+    regionalPoiSourceFacts: null,
+    rings: Object.freeze([stageFootprint]),
   })
+  const profile = stage.regionalPoiProfile
+  const policy = stage.regionalPoiPresentationPolicy
+  if (Boolean(profile) !== Boolean(policy)) {
+    throw new TypeError(
+      `XR stage ${stage.id} must provide its regional POI profile and presentation policy together`,
+    )
+  }
+  const regionalPoiSurfaces = profile && policy
+    ? profile.surfaces.map(surface => (
+        projectRegionalPoiSurface(surface, profile, policy)
+      ))
+    : []
+  const localStructures = stage.structures.filter(structure => (
+    !profile || structure.kind !== 'poi'
+  ))
   const surfaces = Object.freeze([
     footprintSurface,
-    ...stage.structures.map(projectStructure),
+    ...localStructures.map(projectStructure),
+    ...regionalPoiSurfaces,
     ...plan.subjects.map(projectSubject),
   ])
   return Object.freeze({
@@ -155,6 +216,8 @@ export function projectXrEnvironmentToFlightGeo(
     presentationBounds: SINGAPORE_FLIGHT_GEO_REFERENCE.presentationBounds,
     revision: [
       stage.id,
+      profile?.id || '',
+      profile?.revision || '',
       ...surfaces.map(surface => [
         surface.id,
         surface.kind,
@@ -163,7 +226,10 @@ export function projectXrEnvironmentToFlightGeo(
         surface.color,
         surface.label,
         surface.poiId || '',
-        ...surface.ring.flat(),
+        surface.regionalPoiSourceFacts
+          ? JSON.stringify(surface.regionalPoiSourceFacts)
+          : '',
+        ...surface.rings.flatMap(ring => ring.flat()),
       ].join(':')),
     ].join('|'),
     stageFootprint,

@@ -1,4 +1,5 @@
 import type { FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
+import { deriveRegionalPoiLongitudeSpan } from 'grph-shared/geospatial/regionalPoiGeo'
 import {
   FLIGHT_GEO_AIRCRAFT_SHAPE_METERS,
   flightGeoOverlayMapLibreFeatureCollection,
@@ -482,16 +483,17 @@ export function fitMapToFlightGeoOverlay(
     const coordinates = [
       ...overlay.route.map(point => point.coordinate),
       overlay.aircraft.coordinate,
-      ...(overlay.environment?.surfaces.flatMap(surface => surface.ring) || []),
+      ...(overlay.environment?.surfaces.flatMap(surface => (
+        surface.rings.flat()
+      )) || []),
     ]
-    let minLongitude = Number.POSITIVE_INFINITY
+    const longitude = deriveRegionalPoiLongitudeSpan(coordinates.map(([value]) => value))
+    let minLongitude = longitude.west
     let minLatitude = Number.POSITIVE_INFINITY
-    let maxLongitude = Number.NEGATIVE_INFINITY
+    let maxLongitude = longitude.east
     let maxLatitude = Number.NEGATIVE_INFINITY
-    for (const [longitude, latitude] of coordinates) {
-      minLongitude = Math.min(minLongitude, longitude)
+    for (const [, latitude] of coordinates) {
       minLatitude = Math.min(minLatitude, latitude)
-      maxLongitude = Math.max(maxLongitude, longitude)
       maxLatitude = Math.max(maxLatitude, latitude)
     }
     if (![minLongitude, minLatitude, maxLongitude, maxLatitude].every(Number.isFinite)) {

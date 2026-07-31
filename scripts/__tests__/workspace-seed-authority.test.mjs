@@ -111,7 +111,7 @@ city_runtime:
   schema_id: "knowgrph-city-grid/v1"
   world_ownership: "overlay-only"
   surface_owner: "native MapLibre Geo+XR surface wrapped by SemanticMediaFigure"
-  renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"
+  renderer_rule: "reuse one native MapLibre map; create or activate zero City Three presentation; any retained shared Canvas remains inactive, invisible, and pointer-transparent"
   runtime_dependencies_added: 0
 city_geo_xr:
   profile_id: "city-sim:civic-seed:geo/v1"
@@ -125,7 +125,7 @@ city_geo_xr:
   basemap_owner: "one real native MapLibre basemap"
   parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
   parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"
-  composition: "one real native MapLibre basemap with companion-owned regional geographic POI layers, source-authored meter-scaled City parcel layers, and independent Flight aircraft/route layers; zero Flight-local XR environment sources or features; zero City Three Canvas or HTML POI markers"
+  composition: "one real native MapLibre basemap with companion-owned regional geographic POI layers, source-authored meter-scaled City parcel layers, and independent Flight aircraft/route layers; zero Flight-local XR environment sources or features; zero City-created, active, or visible Three presentation; zero HTML POI markers"
   layer_order: ["regional-context", "city", "flight"]
   duplicate_map_or_canvas_forbidden: true
 city_parcel_projection:
@@ -139,9 +139,9 @@ regional_geographic_poi_projection:
   profile_identity_source: "city_geo_xr.regional_poi_profile_id"
   profile_fact_authority: "/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md"
   source_id: "kg-geo-xr:regional-poi"
-  layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:label"]
-  feature_contract: "companion-authored exact geographic Polygon rings, real-metre base/height, accuracy, and provenance"
-  presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft"
+  layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:locator", "kg-geo-xr:regional-poi:label"]
+  feature_contract: "nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three order-independent identity Point locators"
+  presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-independent labels"
   storage_policy: "checked-in"
   runtime_network_required: false
   city_fact_ownership: false
@@ -250,7 +250,7 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
     ],
     [
       'wrong renderer',
-      'renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"',
+      'renderer_rule: "reuse one native MapLibre map; create or activate zero City Three presentation; any retained shared Canvas remains inactive, invisible, and pointer-transparent"',
       'renderer_rule: "invalid"',
     ],
     [
@@ -320,7 +320,7 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
     ],
     [
       'legacy regional layer ids',
-      'layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:label"]',
+      'layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:locator", "kg-geo-xr:regional-poi:label"]',
       'layers: ["fill", "extrusion", "outline", "label"]',
     ],
     [

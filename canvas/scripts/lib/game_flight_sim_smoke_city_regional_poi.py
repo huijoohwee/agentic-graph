@@ -32,6 +32,18 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
           }
           const data = await readSourceData()
           const features = Array.isArray(data?.features) ? data.features : []
+          const expectedFeatureCollection = profile
+            ? gympgrph.regionalPoiFeatureCollection?.(profile) || null
+            : null
+          const expectedFeatures = Array.isArray(
+            expectedFeatureCollection?.features,
+          ) ? expectedFeatureCollection.features : []
+          const surfaceFeatures = features.filter(feature => (
+            feature?.properties?.kgRegionalPoiFeatureKind === 'surface'
+          ))
+          const locatorFeatures = features.filter(feature => (
+            feature?.properties?.kgRegionalPoiFeatureKind === 'locator'
+          ))
           const viewMode = String(
             gympgrph.useGympgrphStore.getState().geospatialViewMode,
           ).startsWith('3d') ? '3d' : '2d'
@@ -44,23 +56,11 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
           const sourcePois = Array.from(new Set(features.map(
             feature => String(feature?.properties?.kgRegionalPoiId || ''),
           ).filter(Boolean))).sort()
+          const locatorPois = locatorFeatures.map(feature => String(
+            feature?.properties?.kgRegionalPoiId || '',
+          )).filter(Boolean).sort()
           const exactFeatures = Boolean(profile)
-            && features.length === profile.surfaces.length
-            && profile.surfaces.every((surface, index) => {
-              const feature = features[index]
-              return (
-                feature?.id === `${profile.id}:${surface.id}`
-                && feature?.properties?.kgRegionalPoiProfileId === profile.id
-                && feature?.properties?.kgRegionalPoiSurfaceId === surface.id
-                && feature?.properties?.kgRegionalPoiId === surface.poiId
-                && feature?.properties?.kgRegionalPoiBaseHeightMeters
-                  === surface.baseHeightMeters
-                && feature?.properties?.kgRegionalPoiHeightMeters
-                  === surface.heightMeters
-                && JSON.stringify(feature?.geometry?.coordinates)
-                  === JSON.stringify(surface.geometry.coordinates)
-              )
-            })
+            && JSON.stringify(features) === JSON.stringify(expectedFeatures)
           const canvas = map?.getCanvas?.() || null
           const isVisible = element => {
             const rect = element?.getBoundingClientRect?.()
@@ -177,8 +177,36 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
               return false
             }
           }
+          const renderedLocatorAt = (point, poiId) => {
+            if (!insideAperture(point) || !hitMapCanvas(point)) return false
+            try {
+              return map?.queryRenderedFeatures?.(
+                [point.x, point.y],
+                { layers: [gympgrph.REGIONAL_POI_LAYER_IDS?.locator] },
+              ).some(feature => (
+                String(feature?.properties?.kgRegionalPoiId || '') === poiId
+              )) || false
+            } catch {
+              return false
+            }
+          }
+          const renderedLabelPois = (() => {
+            try {
+              return Array.from(new Set(map?.queryRenderedFeatures?.(
+                [
+                  [aperture.left, aperture.top],
+                  [aperture.right, aperture.bottom],
+                ],
+                { layers: [gympgrph.REGIONAL_POI_LAYER_IDS?.label] },
+              ).map(feature => String(
+                feature?.properties?.kgRegionalPoiId || '',
+              )).filter(Boolean) || [])).sort()
+            } catch {
+              return []
+            }
+          })()
           const poiVisualProof = expectedPois.map(poiId => {
-            const poiFeatures = features.filter(feature => (
+            const poiFeatures = surfaceFeatures.filter(feature => (
               String(
                 feature?.properties?.kgRegionalPoiId || '',
               ) === poiId
@@ -205,10 +233,20 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             const anchor = rings.flatMap(sampleRing)
               .map(project)
               .find(point => renderedPoiAt(point, poiId)) || null
+            const locatorFeature = locatorFeatures.find(feature => (
+              String(feature?.properties?.kgRegionalPoiId || '') === poiId
+            )) || null
+            const locatorAnchor = locatorFeature?.geometry?.type === 'Point'
+              ? project(locatorFeature.geometry.coordinates)
+              : null
             return {
               anchor,
               bounds,
               boundsInsideAperture,
+              labelRendered: renderedLabelPois.includes(poiId),
+              locatorAnchor,
+              locatorInsideAperture: insideAperture(locatorAnchor),
+              locatorRenderedAtAnchor: renderedLocatorAt(locatorAnchor, poiId),
               poiId,
               renderedIdentityAtAnchor: Boolean(anchor),
               surfaceCount: poiFeatures.length,
@@ -237,15 +275,21 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             layerCount: layerIds.filter(
               layerId => Boolean(map?.getLayer?.(layerId)),
             ).length,
+            locatorCount: locatorFeatures.length,
+            locatorPois,
             poiVisualProof,
             profileFeatureCount: Number(profile?.surfaces?.length || 0),
             profileId: String(profile?.id || ''),
+            profileRevision: String(profile?.revision || ''),
             sourcePois,
             datasetFeatureCount: Number(
               container?.dataset?.kgCityGeospatialPoiFeatureCount || 0,
             ),
             datasetProfileId: String(
               container?.dataset?.kgCityGeospatialPoiProfileId || '',
+            ),
+            datasetProfileRevision: String(
+              container?.dataset?.kgCityGeospatialPoiRevision || '',
             ),
             visiblePoiAnchors,
           }
@@ -264,12 +308,17 @@ def require_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             observed.get("profileId")
             and isinstance(expected_pois, list)
             and expected_pois
-            and observed.get("featureCount") == observed.get("profileFeatureCount")
+            and observed.get("featureCount")
+            == observed.get("profileFeatureCount") + observed.get("locatorCount")
             and observed.get("datasetFeatureCount")
-            == observed.get("profileFeatureCount")
+            == observed.get("featureCount")
             and observed.get("datasetProfileId") == observed.get("profileId")
+            and observed.get("datasetProfileRevision")
+            == observed.get("profileRevision")
             and observed.get("sourcePois") == expected_pois
-            and observed.get("layerCount") == 4
+            and observed.get("layerCount") == 5
+            and observed.get("locatorCount") == len(expected_pois)
+            and observed.get("locatorPois") == expected_pois
             and observed.get("exactFeatures") is True
             and observed.get("exactPresentation") is True
             and observed.get("visiblePoiAnchors") == expected_pois
@@ -277,6 +326,9 @@ def require_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             and all(
                 proof.get("boundsInsideAperture") is True
                 and proof.get("renderedIdentityAtAnchor") is True
+                and proof.get("locatorInsideAperture") is True
+                and proof.get("locatorRenderedAtAnchor") is True
+                and proof.get("labelRendered") is True
                 for proof in observed.get("poiVisualProof") or []
             )
         ):
@@ -334,7 +386,7 @@ def require_city_regional_poi_teardown_contract(
     while time.monotonic() < deadline:
         observed = read_city_regional_poi_teardown_contract(page)
         if (
-            observed.get("expectedLayerCount") == 4
+            observed.get("expectedLayerCount") == 5
             and observed.get("sourcePresent") is False
             and observed.get("presentLayerIds") == []
             and observed.get("presentEvidenceKeys") == []

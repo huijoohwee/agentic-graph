@@ -487,7 +487,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
           </section>
         ) : null}
         {threeCanvasSurface.mounted ? (
-          <section className={`absolute inset-0 z-[10] ${
+          <section data-kg-three-canvas-active={threeCanvasSurface.active ? '1' : '0'} className={`absolute inset-0 z-[10] ${
             threeCanvasSurface.active
               ? `${geospatialXrModeEnabled ? 'pointer-events-none' : 'pointer-events-auto'} opacity-100`
               : 'pointer-events-none opacity-0'

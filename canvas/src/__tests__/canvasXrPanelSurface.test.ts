@@ -17,9 +17,8 @@ import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/storyboardWidget/richM
 import { sampleXrAnimationPose } from '@/features/three/xrAnimationCatalog'
 import { resolveMotionControlSubjectPose } from '@/features/three/useMotionControlAnimationPose'
 import { buildMotionControlAnimationTarget, buildMotionControlObjectIdentification } from '@/features/three/motionControlTargetRuntime'
-function readSource(...parts: string[]): string {
-  return readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8')
-}
+import { assertSingaporeEnvironmentCardSemantics } from './helpers/xrEnvironmentCardSemantics'
+function readSource(...parts: string[]): string { return readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8') }
 export function testXrModeUsesCanonicalFloatingPanel() {
   const spatialAssetTools = readSource('features', 'three', 'SpatialAssetToolsPanel.tsx')
   const mediaCatalog = readSource('features', 'command-menu', 'MediaCatalogPanelView.tsx')
@@ -385,6 +384,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   ) {
     throw new Error('expected Environment Kits and Subjects & Props to reuse the Media three-row card layout owner')
   }
+  assertSingaporeEnvironmentCardSemantics(xrMediaLibrary)
   if (xrMediaLibrary.includes('sm:grid-cols-2')) throw new Error('expected Environment Kits to remove the stale two-column tile layout')
   for (const marker of [
     "runControl({ action: 'transform'",

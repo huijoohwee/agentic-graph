@@ -1,8 +1,5 @@
-import type { Feature, FeatureCollection, Polygon } from 'geojson'
 import {
-  createRegionalPoiProfile,
   type RegionalPoiProfile,
-  type RegionalPoiSourceReference,
 } from 'grph-shared/geospatial/regionalPoiGeo'
 import {
   hasExactGeoJsonStyleSource,
@@ -10,18 +7,46 @@ import {
   readGeoJsonSourceData,
   readMapLibreStyleSource,
 } from './maplibreLayers.js'
+import {
+  hasExactRegionalPoiFeatureCollection,
+  regionalPoiFeatureCollection,
+  type RegionalPoiFeatureCollection as RegionalPoiMapLibreFeatureCollection,
+} from './regionalPoiMapLibreProjection.js'
+
+export {
+  regionalPoiFeatureCollection,
+  regionalPoiProfileBounds,
+} from './regionalPoiMapLibreProjection.js'
+export type {
+  RegionalPoiBounds,
+  RegionalPoiFeatureCollection,
+  RegionalPoiFeatureProperties,
+} from './regionalPoiMapLibreProjection.js'
+
 export const REGIONAL_POI_SOURCE_ID = 'kg-geo-xr:regional-poi'
 export const REGIONAL_POI_LAYER_IDS = Object.freeze({
   fill: `${REGIONAL_POI_SOURCE_ID}:fill`,
   extrusion: `${REGIONAL_POI_SOURCE_ID}:extrusion`,
   outline: `${REGIONAL_POI_SOURCE_ID}:outline`,
+  locator: `${REGIONAL_POI_SOURCE_ID}:locator`,
   label: `${REGIONAL_POI_SOURCE_ID}:label`,
 })
+const REGIONAL_POI_SURFACE_FILTER = Object.freeze([
+  '==',
+  ['get', 'kgRegionalPoiFeatureKind'],
+  'surface',
+])
+const REGIONAL_POI_LOCATOR_FILTER = Object.freeze([
+  '==',
+  ['get', 'kgRegionalPoiFeatureKind'],
+  'locator',
+])
 const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: REGIONAL_POI_LAYER_IDS.fill,
     type: 'fill',
     source: REGIONAL_POI_SOURCE_ID,
+    filter: REGIONAL_POI_SURFACE_FILTER,
     paint: Object.freeze({
       'fill-color': '#0ea5e9',
       'fill-opacity': 0.42,
@@ -31,6 +56,7 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
     id: REGIONAL_POI_LAYER_IDS.extrusion,
     type: 'fill-extrusion',
     source: REGIONAL_POI_SOURCE_ID,
+    filter: REGIONAL_POI_SURFACE_FILTER,
     paint: Object.freeze({
       'fill-extrusion-base': ['get', 'kgRegionalPoiBaseHeightMeters'],
       'fill-extrusion-color': '#0ea5e9',
@@ -43,6 +69,7 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
     id: REGIONAL_POI_LAYER_IDS.outline,
     type: 'line',
     source: REGIONAL_POI_SOURCE_ID,
+    filter: REGIONAL_POI_SURFACE_FILTER,
     layout: Object.freeze({
       'line-cap': 'round',
       'line-join': 'round',
@@ -54,26 +81,46 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
     }),
   }),
   Object.freeze({
+    id: REGIONAL_POI_LAYER_IDS.locator,
+    type: 'circle',
+    source: REGIONAL_POI_SOURCE_ID,
+    filter: REGIONAL_POI_LOCATOR_FILTER,
+    paint: Object.freeze({
+      'circle-color': '#0284c7',
+      'circle-opacity': 0.98,
+      'circle-pitch-alignment': 'viewport',
+      'circle-pitch-scale': 'viewport',
+      'circle-radius': 6,
+      'circle-stroke-color': '#f8fafc',
+      'circle-stroke-opacity': 1,
+      'circle-stroke-width': 2,
+    }),
+  }),
+  Object.freeze({
     id: REGIONAL_POI_LAYER_IDS.label,
     type: 'symbol',
     source: REGIONAL_POI_SOURCE_ID,
     filter: Object.freeze([
-      '!=',
-      ['get', 'kgRegionalPoiLabel'],
-      '',
+      'all',
+      REGIONAL_POI_LOCATOR_FILTER,
+      ['!=', ['get', 'kgRegionalPoiLabel'], ''],
     ]),
     layout: Object.freeze({
       'symbol-placement': 'point',
       'text-anchor': 'bottom',
+      'text-allow-overlap': true,
       'text-field': ['get', 'kgRegionalPoiLabel'],
       'text-font': ['Noto Sans Regular'],
-      'text-offset': [0, -0.5],
-      'text-size': 12,
+      'text-ignore-placement': true,
+      'text-offset': [0, -0.8],
+      'text-padding': 2,
+      'text-size': 13,
     }),
     paint: Object.freeze({
       'text-color': '#082f49',
       'text-halo-color': '#f8fafc',
-      'text-halo-width': 1.25,
+      'text-halo-blur': 0.25,
+      'text-halo-width': 2,
     }),
   }),
 ] as const)
@@ -86,186 +133,6 @@ export type RegionalPoiMapLibreOptions = Readonly<{
   beforeLayerId?: string | null
   viewMode: RegionalPoiViewMode
 }>
-export type RegionalPoiFeatureProperties = Readonly<{
-  kgRegionalPoiAccuracyFootprint: string
-  kgRegionalPoiAccuracyHeight: string
-  kgRegionalPoiAccuracyStatement: string
-  kgRegionalPoiAttribution: string
-  kgRegionalPoiBaseHeightMeters: number
-  kgRegionalPoiCategory: string
-  kgRegionalPoiContextProvenance: string
-  kgRegionalPoiGeometryAuthority: string
-  kgRegionalPoiGeometrySnapshotAt: string
-  kgRegionalPoiGeometrySourceId: string
-  kgRegionalPoiGeometrySourceUrl: string
-  kgRegionalPoiGeometrySourceVersion: string
-  kgRegionalPoiHeightAuthority: string
-  kgRegionalPoiHeightMeters: number
-  kgRegionalPoiHeightSnapshotAt: string
-  kgRegionalPoiHeightSourceId: string
-  kgRegionalPoiHeightSourceUrl: string
-  kgRegionalPoiHeightSourceVersion: string
-  kgRegionalPoiId: string
-  kgRegionalPoiLabel: string
-  kgRegionalPoiProfileId: string
-  kgRegionalPoiProfileRevision: string
-  kgRegionalPoiRegionCode: string
-  kgRegionalPoiRegionLabel: string
-  kgRegionalPoiRuntimeNetworkPolicy: 'forbidden'
-  kgRegionalPoiStoragePolicy: 'checked-in'
-  kgRegionalPoiSurfaceId: string
-  kgRegionalPoiSurfaceLabel: string
-}>
-export type RegionalPoiFeatureCollection = FeatureCollection<
-  Polygon,
-  RegionalPoiFeatureProperties
->
-export type RegionalPoiBounds = readonly [
-  southwest: readonly [longitude: number, latitude: number],
-  northeast: readonly [longitude: number, latitude: number],
-]
-const FEATURE_PROPERTY_KEYS = Object.freeze([
-  'kgRegionalPoiAccuracyFootprint',
-  'kgRegionalPoiAccuracyHeight',
-  'kgRegionalPoiAccuracyStatement',
-  'kgRegionalPoiAttribution',
-  'kgRegionalPoiBaseHeightMeters',
-  'kgRegionalPoiCategory',
-  'kgRegionalPoiContextProvenance',
-  'kgRegionalPoiGeometryAuthority',
-  'kgRegionalPoiGeometrySnapshotAt',
-  'kgRegionalPoiGeometrySourceId',
-  'kgRegionalPoiGeometrySourceUrl',
-  'kgRegionalPoiGeometrySourceVersion',
-  'kgRegionalPoiHeightAuthority',
-  'kgRegionalPoiHeightMeters',
-  'kgRegionalPoiHeightSnapshotAt',
-  'kgRegionalPoiHeightSourceId',
-  'kgRegionalPoiHeightSourceUrl',
-  'kgRegionalPoiHeightSourceVersion',
-  'kgRegionalPoiId',
-  'kgRegionalPoiLabel',
-  'kgRegionalPoiProfileId',
-  'kgRegionalPoiProfileRevision',
-  'kgRegionalPoiRegionCode',
-  'kgRegionalPoiRegionLabel',
-  'kgRegionalPoiRuntimeNetworkPolicy',
-  'kgRegionalPoiStoragePolicy',
-  'kgRegionalPoiSurfaceId',
-  'kgRegionalPoiSurfaceLabel',
-] as const)
-function canonicalSourceReference(
-  source: RegionalPoiSourceReference,
-): Readonly<Record<string, string>> {
-  return {
-    authority: source.authority,
-    sourceId: source.sourceId,
-    sourceUrl: source.sourceUrl,
-    sourceVersion: source.sourceVersion,
-    snapshotAt: source.snapshotAt,
-  }
-}
-function canonicalContextProvenance(
-  sources: readonly RegionalPoiSourceReference[],
-): string {
-  return JSON.stringify(sources.map(canonicalSourceReference))
-}
-function canonicalAttribution(profile: RegionalPoiProfile): string {
-  return JSON.stringify(profile.attribution.map(attribution => ({
-    text: attribution.text,
-    url: attribution.url,
-    licenseName: attribution.licenseName,
-    licenseUrl: attribution.licenseUrl,
-  })))
-}
-function buildRegionalPoiFeatureCollection(
-  profile: RegionalPoiProfile,
-): RegionalPoiFeatureCollection {
-  const labelledPoiIds = new Set<string>()
-  const poiLabels = new Map(profile.pois.map(poi => [poi.id, poi.label]))
-  const attribution = canonicalAttribution(profile)
-  const features = profile.surfaces.map(surface => {
-    const showPoiLabel = !labelledPoiIds.has(surface.poiId)
-    labelledPoiIds.add(surface.poiId)
-    const geometrySource = surface.provenance.geometry
-    const heightSource = surface.provenance.height
-    return {
-      type: 'Feature',
-      id: `${profile.id}:${surface.id}`,
-      geometry: {
-        type: 'Polygon',
-        coordinates: surface.geometry.coordinates.map(ring => (
-          ring.map(coordinate => [...coordinate])
-        )),
-      },
-      properties: {
-        kgRegionalPoiAccuracyFootprint: surface.accuracy.footprint,
-        kgRegionalPoiAccuracyHeight: surface.accuracy.height,
-        kgRegionalPoiAccuracyStatement: surface.accuracy.statement,
-        kgRegionalPoiAttribution: attribution,
-        kgRegionalPoiBaseHeightMeters: surface.baseHeightMeters,
-        kgRegionalPoiCategory: surface.category,
-        kgRegionalPoiContextProvenance: canonicalContextProvenance(
-          surface.provenance.context,
-        ),
-        kgRegionalPoiGeometryAuthority: geometrySource.authority,
-        kgRegionalPoiGeometrySnapshotAt: geometrySource.snapshotAt,
-        kgRegionalPoiGeometrySourceId: geometrySource.sourceId,
-        kgRegionalPoiGeometrySourceUrl: geometrySource.sourceUrl,
-        kgRegionalPoiGeometrySourceVersion: geometrySource.sourceVersion,
-        kgRegionalPoiHeightAuthority: heightSource.authority,
-        kgRegionalPoiHeightMeters: surface.heightMeters,
-        kgRegionalPoiHeightSnapshotAt: heightSource.snapshotAt,
-        kgRegionalPoiHeightSourceId: heightSource.sourceId,
-        kgRegionalPoiHeightSourceUrl: heightSource.sourceUrl,
-        kgRegionalPoiHeightSourceVersion: heightSource.sourceVersion,
-        kgRegionalPoiId: surface.poiId,
-        kgRegionalPoiLabel: showPoiLabel
-          ? poiLabels.get(surface.poiId) || surface.label
-          : '',
-        kgRegionalPoiProfileId: profile.id,
-        kgRegionalPoiProfileRevision: profile.revision,
-        kgRegionalPoiRegionCode: profile.region.code,
-        kgRegionalPoiRegionLabel: profile.region.label,
-        kgRegionalPoiRuntimeNetworkPolicy: profile.dataPolicy.runtimeNetwork,
-        kgRegionalPoiStoragePolicy: profile.dataPolicy.storage,
-        kgRegionalPoiSurfaceId: surface.id,
-        kgRegionalPoiSurfaceLabel: surface.label,
-      },
-    } satisfies Feature<Polygon, RegionalPoiFeatureProperties>
-  })
-  return { type: 'FeatureCollection', features }
-}
-export function regionalPoiFeatureCollection(
-  input: RegionalPoiProfile,
-): RegionalPoiFeatureCollection {
-  return buildRegionalPoiFeatureCollection(createRegionalPoiProfile(input))
-}
-
-export function regionalPoiProfileBounds(
-  input: RegionalPoiProfile,
-): RegionalPoiBounds {
-  const profile = createRegionalPoiProfile(input)
-  let west = Number.POSITIVE_INFINITY
-  let south = Number.POSITIVE_INFINITY
-  let east = Number.NEGATIVE_INFINITY
-  let north = Number.NEGATIVE_INFINITY
-  for (const surface of profile.surfaces) {
-    for (const ring of surface.geometry.coordinates) {
-      for (const [longitude, latitude] of ring) {
-        west = Math.min(west, longitude)
-        south = Math.min(south, latitude)
-        east = Math.max(east, longitude)
-        north = Math.max(north, latitude)
-      }
-    }
-  }
-  return Object.freeze([
-    Object.freeze([west, south] as const),
-    Object.freeze([east, north] as const),
-  ] as const)
-}
-
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -290,41 +157,6 @@ function hasExactValue(expected: unknown, actual: unknown): boolean {
       Object.prototype.hasOwnProperty.call(actual, key)
       && hasExactValue(expected[key], actual[key])
     ))
-}
-
-function hasExactFeature(
-  expected: Feature<Polygon, RegionalPoiFeatureProperties>,
-  actual: unknown,
-): boolean {
-  if (!isPlainRecord(actual) || Object.keys(actual).length !== 4) return false
-  if (
-    actual.type !== expected.type
-    || actual.id !== expected.id
-    || !hasExactValue(expected.geometry, actual.geometry)
-  ) return false
-  const properties = actual.properties
-  return isPlainRecord(properties)
-    && Object.keys(properties).length === FEATURE_PROPERTY_KEYS.length
-    && FEATURE_PROPERTY_KEYS.every(key => (
-      Object.is(expected.properties[key], properties[key])
-    ))
-}
-
-function hasExactFeatureCollection(
-  expected: RegionalPoiFeatureCollection,
-  actual: unknown,
-): boolean {
-  if (!isPlainRecord(actual)) return false
-  const features = actual.features
-  if (
-    Object.keys(actual).length !== 2
-    || actual.type !== expected.type
-    || !Array.isArray(features)
-    || features.length !== expected.features.length
-  ) return false
-  return expected.features.every((feature, index) => (
-    hasExactFeature(feature, features[index])
-  ))
 }
 
 function withoutVisibility(value: unknown): unknown {
@@ -435,7 +267,7 @@ function removeOwnedSource(map: any): boolean {
 
 function replaceOwnedSource(
   map: any,
-  expected: RegionalPoiFeatureCollection,
+  expected: RegionalPoiMapLibreFeatureCollection,
 ): boolean {
   if (!removeOwnedLayers(map) || !removeOwnedSource(map)) return false
   if (typeof map.addSource !== 'function') return false
@@ -448,7 +280,7 @@ function replaceOwnedSource(
 
 function ensureSource(
   map: any,
-  expected: RegionalPoiFeatureCollection,
+  expected: RegionalPoiMapLibreFeatureCollection,
 ): boolean {
   const liveSource = map.getSource?.(REGIONAL_POI_SOURCE_ID)
   const styleSource = readMapLibreStyleSource(map, REGIONAL_POI_SOURCE_ID)
@@ -458,14 +290,17 @@ function ensureSource(
     && !hasExactSourceShape(styleSource)
   ) return replaceOwnedSource(map, expected)
   if (!liveSource) return replaceOwnedSource(map, expected)
-  if (hasExactFeatureCollection(expected, readGeoJsonSourceData(liveSource))) {
+  if (hasExactRegionalPoiFeatureCollection(
+    expected,
+    readGeoJsonSourceData(liveSource),
+  )) {
     return true
   }
   if (typeof liveSource.setData !== 'function') {
     return replaceOwnedSource(map, expected)
   }
   liveSource.setData(expected)
-  return hasExactFeatureCollection(
+  return hasExactRegionalPoiFeatureCollection(
     expected,
     readGeoJsonSourceData(map.getSource?.(REGIONAL_POI_SOURCE_ID)),
   )
@@ -536,8 +371,8 @@ export function mapHasExactRegionalPoiSource(
     return hasExactGeoJsonStyleSource(
       readMapLibreStyleSource(map, REGIONAL_POI_SOURCE_ID),
       expected,
-      hasExactFeatureCollection,
-    ) && hasExactFeatureCollection(
+      hasExactRegionalPoiFeatureCollection,
+    ) && hasExactRegionalPoiFeatureCollection(
       expected,
       readGeoJsonSourceData(liveSource),
     )
@@ -573,8 +408,7 @@ export function applyRegionalPoiProfileToMap(
   if (!map || !isMapLibreStyleReady(map)) return false
   if (options.viewMode !== '2d' && options.viewMode !== '3d') return false
   try {
-    const profile = createRegionalPoiProfile(input)
-    const expected = buildRegionalPoiFeatureCollection(profile)
+    const expected = regionalPoiFeatureCollection(input)
     if (!ensureSource(map, expected)) return false
     const beforeLayerId = resolvedBeforeLayerId(map, options.beforeLayerId)
     for (const layer of REGIONAL_POI_LAYER_DEFINITIONS) {

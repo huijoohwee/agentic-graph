@@ -23,6 +23,9 @@ from lib.game_flight_sim_smoke_source_selection import (
 )
 
 
+CITY_GEO_OVERLAY_LAYER_COUNT = 4
+
+
 def restore_flight_sim_panel(page: Page) -> None:
     page.evaluate(
         """
@@ -191,11 +194,14 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("geospatialEnabled") is True
             and value.get("geospatialPreferenceEnabled") is True
             and value.get("geoXrSurfaceActive") is True
+            and value.get("geoXrSurfaceCount") == 1
             and value.get("geoXrLayerCount") == 1
             and value.get("activeMapPresent") is True
             and value.get("mapLibreCanvasCount") == 1
             and value.get("visibleMapLibreCanvasCount") == 1
             and value.get("threeCanvasOwnerCount") == 1
+            and value.get("threeCanvasActiveCount") == 0
+            and value.get("threeCanvasInactiveCount") == 1
             and value.get("canvasStable") is True
             and value.get("rendererPointerTransparent") is True
             and value.get("rendererSurfaceVisible") is False
@@ -223,6 +229,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("cityExpectedParcelCount") > 0
             and value.get("citySourceFeatures")
             == value.get("cityExpectedParcelCount")
+            and value.get("cityLayerCount") == CITY_GEO_OVERLAY_LAYER_COUNT
             and value.get("cityLayersReady") is True
             and value.get("cityParcelsUseAuthoredMeters") is True
             and value.get("cityGeoXrLayerOrderExact") is True
@@ -271,6 +278,13 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("citySemanticSurfaceActive") is False
             and value.get("cityMapLibreCanvasAriaLabelledBy") == ""
             and value.get("cityMapLibreCanvasAccessibleName") == "Map"
+            and value.get("cityMapLibreCanvasAriaHidden") is False
+            and value.get("cityMapLibreCanvasSelectableMarker") == ""
+            and value.get(
+                "cityMapLibreCanvasSelectableOwnerIsCanvas"
+            ) is False
+            and value.get("cityMapLibreCanvasSelectableOwnerNodeName") == ""
+            and value.get("cityMapLibreOwnerCount") == 0
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "flightSim"
             and value.get("renderMode") == "3d"
@@ -278,15 +292,24 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("geospatialEnabled") is True
             and value.get("geospatialPreferenceEnabled") is True
             and value.get("geoXrSurfaceActive") is True
+            and value.get("geoXrSurfaceCount") == 1
             and value.get("geoXrLayerCount") == 1
             and value.get("activeMapPresent") is True
             and value.get("mapLibreCanvasCount") == 1
             and value.get("visibleMapLibreCanvasCount") == 1
             and value.get("threeCanvasOwnerCount") == 1
+            and value.get("threeCanvasActiveCount") == 1
+            and value.get("threeCanvasInactiveCount") == 0
+            and value.get("rendererPointerTransparent") is True
+            and value.get("rendererSurfaceVisible") is True
             and value.get("hudVisible") is False
             and value.get("flightHudCount") == 0
             and value.get("flightSourceFeatures") == 0
             and value.get("environmentSourceFeatures") == 0
+            and value.get("citySourcePresent") is False
+            and value.get("citySourceFeatures") == 0
+            and value.get("cityLayerCount") == 0
+            and value.get("cityLayersReady") is False
             and value.get("renderedFeatureCount") == 0
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
@@ -314,6 +337,17 @@ def verify_flight_geo_xr_city_handoff(
         or reopened.get("citySemanticSurfaceActive") is not False
         or reopened.get("cityMapLibreCanvasAriaLabelledBy") != ""
         or reopened.get("cityMapLibreCanvasAccessibleName") != "Map"
+        or reopened.get("cityMapLibreCanvasAriaHidden") is not False
+        or reopened.get("cityMapLibreCanvasSelectableMarker") != ""
+        or reopened.get(
+            "cityMapLibreCanvasSelectableOwnerIsCanvas"
+        ) is not False
+        or reopened.get("cityMapLibreCanvasSelectableOwnerNodeName") != ""
+        or reopened.get("cityMapLibreOwnerCount") != 0
+        or reopened.get("citySourcePresent") is not False
+        or reopened.get("citySourceFeatures") != 0
+        or reopened.get("cityLayerCount") != 0
+        or reopened.get("cityLayersReady") is not False
         or reopened.get("hudVisible") is not True
     ):
         raise AssertionError(

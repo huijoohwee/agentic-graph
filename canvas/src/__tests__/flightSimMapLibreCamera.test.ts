@@ -181,9 +181,10 @@ test('Flight fit includes XR surfaces and the visual map aperture', () => {
         kind: 'stage-footprint',
         label: 'Singapore stage footprint',
         poiId: null,
-        ring: [
+        regionalPoiSourceFacts: null,
+        rings: [[
           [103.8, 1.2], [103.9, 1.2], [103.9, 1.3], [103.8, 1.3], [103.8, 1.2],
-        ],
+        ]],
       }],
     },
   }
@@ -197,4 +198,21 @@ test('Flight fit includes XR surfaces and the visual map aperture', () => {
     (calls[0]?.[1] as { padding?: unknown })?.padding,
     padding,
   )
+})
+
+test('Flight fit uses the minimum longitude span across the antimeridian', () => {
+  const calls: unknown[][] = []
+  const overlay = flightOverlay()
+  const antimeridianOverlay: FlightGeoOverlaySnapshot = {
+    ...overlay,
+    aircraft: { ...overlay.aircraft, coordinate: [179.5, 1.25] },
+    route: overlay.route.map((point, index) => ({
+      ...point,
+      coordinate: [index === 0 ? 179 : -179.5, 1.2 + index * 0.1],
+    })),
+  }
+  assert.equal(fitMapToFlightGeoOverlay({
+    fitBounds: (...args: unknown[]) => calls.push(args),
+  }, antimeridianOverlay), true)
+  assert.deepEqual(calls[0]?.[0], [[179, 1.2], [180.5, 1.3]])
 })

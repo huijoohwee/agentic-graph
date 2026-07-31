@@ -1,4 +1,5 @@
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson'
+import type { RegionalPoiSurface } from 'grph-shared/geospatial/regionalPoiGeo'
 
 export type FlightGeoCoordinate = readonly [longitude: number, latitude: number]
 
@@ -12,6 +13,11 @@ export type FlightGeoRoutePoint = Readonly<{
   state: 'active' | 'pending' | 'visited'
 }>
 
+export type FlightGeoRegionalPoiSourceFacts = Readonly<Pick<
+  RegionalPoiSurface,
+  'accuracy' | 'category' | 'provenance'
+>>
+
 export type FlightGeoEnvironmentSurface = Readonly<{
   baseHeightMeters: number
   color: string
@@ -20,7 +26,8 @@ export type FlightGeoEnvironmentSurface = Readonly<{
   kind: 'poi' | 'stage-footprint' | 'structure' | 'subject'
   label: string
   poiId: string | null
-  ring: readonly FlightGeoCoordinate[]
+  regionalPoiSourceFacts: FlightGeoRegionalPoiSourceFacts | null
+  rings: readonly (readonly FlightGeoCoordinate[])[]
 }>
 
 export type FlightGeoEnvironmentProjection = Readonly<{

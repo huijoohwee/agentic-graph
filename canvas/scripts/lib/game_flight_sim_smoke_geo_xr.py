@@ -69,6 +69,7 @@ def _read_view(page: Page) -> dict[str, Any]:
               && style?.display !== 'none' && style?.visibility !== 'hidden'
               && Number(style?.opacity || '1') > 0
           }
+          const count = selector => document.querySelectorAll(selector).length
           const rendererCanvases = Array.from(
             document.querySelectorAll('canvas'),
           ).filter(
@@ -275,9 +276,6 @@ def _read_view(page: Page) -> dict[str, Any]:
               : environmentSurfaces.length === environmentFeatures.length
                 && environmentSurfaces.every((surface, index) => {
               const feature = environmentFeatures[index]
-              const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
-                ? feature.geometry.coordinates[0]
-                : []
               return (
                 feature?.id === `${overlay.environment.id}:${surface.id}`
                 && feature?.properties?.kgBaseHeightMeters === surface.baseHeightMeters
@@ -286,13 +284,9 @@ def _read_view(page: Page) -> dict[str, Any]:
                 && feature?.properties?.kgSurfaceKind === surface.kind
                 && feature?.properties?.kgSurfaceLabel === surface.label
                 && feature?.properties?.kgPoiId === (surface.poiId || '')
-                && Array.isArray(ring)
-                && ring.length === surface.ring.length
-                && ring.every((coordinate, coordinateIndex) => (
-                  Array.isArray(coordinate)
-                  && coordinate[0] === surface.ring[coordinateIndex]?.[0]
-                  && coordinate[1] === surface.ring[coordinateIndex]?.[1]
-                ))
+                && Array.isArray(surface.rings)
+                && JSON.stringify(feature?.geometry?.coordinates)
+                  === JSON.stringify(surface.rings)
               )
                 })
           )
@@ -439,6 +433,7 @@ def _read_view(page: Page) -> dict[str, Any]:
             geoXrSurfaceActive: Boolean(document.querySelector(
               '[data-kg-geo-xr-surface="active"]',
             )),
+            geoXrSurfaceCount: count('[data-kg-geo-xr-surface="active"]'),
             geoXrLayerCount: document.querySelectorAll(
               '[data-kg-geo-xr-layer]',
             ).length,
@@ -498,6 +493,7 @@ def _read_view(page: Page) -> dict[str, Any]:
             cityExpectedParcelWidthMeters,
             citySourceFeatures: citySourceFeatures.length,
             citySourcePresent: Boolean(citySource),
+            cityLayerCount: cityLayerIds.filter(id => map?.getLayer?.(id)).length,
             cityLayersReady: cityLayerIds.length > 0
               && cityLayerIds.every(id => Boolean(map?.getLayer?.(id))),
             cityParcelEdgeMeters,
@@ -541,6 +537,8 @@ def _read_view(page: Page) -> dict[str, Any]:
             threeCanvasOwnerCount: document.querySelectorAll(
               '[data-kg-three-canvas-owner="1"]',
             ).length,
+            threeCanvasActiveCount: count('[data-kg-three-canvas-active="1"]'),
+            threeCanvasInactiveCount: count('[data-kg-three-canvas-active="0"]'),
             canvasStable: Boolean(rendererCanvas)
               && rendererCanvas === window.__kgFlightSimCanvas,
             rendererAlpha: contextAttributes?.alpha === true,

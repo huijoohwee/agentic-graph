@@ -5,6 +5,9 @@ import {
   type RegionalPoiSourceReference,
   type RegionalPoiSurface,
 } from './regionalPoiGeo.js'
+import {
+  SINGAPORE_MAJOR_POI_IDENTITIES,
+} from './singaporeMajorPoiIdentity.js'
 
 const SNAPSHOT_AT = '2026-07-31T00:00:00Z'
 
@@ -346,10 +349,6 @@ export const SINGAPORE_MAJOR_POI_GEO_PROFILE: RegionalPoiProfile =
       licenseName: 'Open Data Commons Open Database License 1.0',
       licenseUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
     }],
-    pois: [
-      { id: 'marina-bay-sands', label: 'Marina Bay Sands' },
-      { id: 'singapore-flyer', label: 'Singapore Flyer' },
-      { id: 'gardens-by-the-bay', label: 'Gardens by the Bay' },
-    ],
+    pois: SINGAPORE_MAJOR_POI_IDENTITIES,
     surfaces,
   })

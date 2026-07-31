@@ -19,6 +19,9 @@ import {
 import type {
   FlightGeoOverlaySnapshot,
 } from '../../gympgrph/src/flightGeoOverlay.ts'
+import {
+  SINGAPORE_MAJOR_POI_GEO_PROFILE,
+} from '../../grph-shared/src/geospatial/singaporeMajorPoiGeo.ts'
 
 type FakeSource = {
   data: unknown
@@ -199,21 +202,29 @@ test('Singapore XR environment projects its stage, named POIs, and selected asse
   assert.deepEqual(helicopterAsset.dimensionsMeters, [7.4, 3.4, 9])
   assert.equal(helicopter?.baseHeightMeters, 2)
   assert.equal(helicopter?.heightMeters, 5.4)
-  assert.equal(helicopter?.ring.length, 5)
+  assert.equal(helicopter?.rings.length, 1)
+  assert.equal(helicopter?.rings[0]?.length, 5)
   assert.deepEqual(
-    helicopter?.ring,
+    helicopter?.rings[0],
     projectLocalRectangle(4, -3, 7.4, 9, 35),
   )
   assertApproximately(
-    projectedDistanceMeters(helicopter!.ring[0], helicopter!.ring[1]),
+    projectedDistanceMeters(
+      helicopter!.rings[0][0],
+      helicopter!.rings[0][1],
+    ),
     7.4,
     'helicopter footprint keeps its authored metre width',
   )
   assertApproximately(
-    projectedDistanceMeters(helicopter!.ring[1], helicopter!.ring[2]),
+    projectedDistanceMeters(
+      helicopter!.rings[0][1],
+      helicopter!.rings[0][2],
+    ),
     9,
     'helicopter footprint keeps its authored metre depth',
   )
+  assert.equal(helicopter?.regionalPoiSourceFacts, null)
   const stageFootprint = environment.surfaces.find(
     surface => surface.kind === 'stage-footprint',
   )
@@ -256,27 +267,27 @@ test('Singapore XR environment projects its stage, named POIs, and selected asse
     'stage footprint keeps its authored 24 metre depth',
   )
   assert.deepEqual(environment.anchor, projectSingaporeLocalMeters(0, 0))
-  const marinaBaySandsCenter = environment.surfaces.find(
-    surface => surface.id === 'marina-bay-sands:tower-center',
+  const marinaBaySandsTowerTwo = environment.surfaces.find(
+    surface => surface.id === 'marina-bay-sands:tower-2',
   )
-  assert.equal(marinaBaySandsCenter?.baseHeightMeters, 0)
-  assert.equal(marinaBaySandsCenter?.heightMeters, 3.6)
-  assert.equal(marinaBaySandsCenter?.poiId, 'marina-bay-sands')
-  assertApproximately(
-    projectedDistanceMeters(
-      marinaBaySandsCenter!.ring[0],
-      marinaBaySandsCenter!.ring[1],
-    ),
-    1.42,
-    'Marina Bay Sands footprint keeps its authored metre width',
+  const authoredTowerTwo = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.find(
+    surface => surface.id === 'marina-bay-sands:tower-2',
   )
-  assertApproximately(
-    projectedDistanceMeters(
-      marinaBaySandsCenter!.ring[1],
-      marinaBaySandsCenter!.ring[2],
-    ),
-    1.38,
-    'Marina Bay Sands footprint keeps its authored metre depth',
+  assert.ok(authoredTowerTwo)
+  assert.equal(marinaBaySandsTowerTwo?.baseHeightMeters, 0)
+  assert.equal(marinaBaySandsTowerTwo?.heightMeters, 193)
+  assert.equal(marinaBaySandsTowerTwo?.poiId, 'marina-bay-sands')
+  assert.deepEqual(
+    marinaBaySandsTowerTwo?.rings,
+    authoredTowerTwo.geometry.coordinates,
+  )
+  assert.deepEqual(
+    marinaBaySandsTowerTwo?.regionalPoiSourceFacts,
+    {
+      accuracy: authoredTowerTwo.accuracy,
+      category: authoredTowerTwo.category,
+      provenance: authoredTowerTwo.provenance,
+    },
   )
 
   const recolored = projectXrEnvironmentToFlightGeo({

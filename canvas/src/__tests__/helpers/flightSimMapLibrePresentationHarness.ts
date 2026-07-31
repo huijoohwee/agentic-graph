@@ -110,7 +110,8 @@ export function withEnvironment(
         kind: 'stage-footprint',
         label: 'Singapore stage footprint',
         poiId: null,
-        ring,
+        regionalPoiSourceFacts: null,
+        rings: [ring],
       }],
     },
   }

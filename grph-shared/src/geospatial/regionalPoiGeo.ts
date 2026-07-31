@@ -1,3 +1,17 @@
+import {
+  assertValidRegionalPoiPolygon,
+  deriveRegionalPoiLongitudeSpan,
+} from './regionalPoiGeometry.js'
+
+export {
+  deriveRegionalPoiLongitudeSpan,
+  normalizeRegionalPoiLongitude,
+  unwrapRegionalPoiLongitude,
+} from './regionalPoiGeometry.js'
+export type {
+  RegionalPoiLongitudeSpan,
+} from './regionalPoiGeometry.js'
+
 export type RegionalPoiCoordinate = readonly [
   longitude: number,
   latitude: number,
@@ -45,6 +59,12 @@ export type RegionalPoiSurface = Readonly<{
 export type RegionalPoiIdentity = Readonly<{
   id: string
   label: string
+}>
+
+export type RegionalPoiLocator = Readonly<{
+  coordinate: RegionalPoiCoordinate
+  label: string
+  poiId: string
 }>
 
 export type RegionalPoiAttribution = Readonly<{
@@ -238,6 +258,7 @@ function cloneSurface(
       `${label}.geometry.coordinates[${ringIndex}]`,
     ),
   ))
+  assertValidRegionalPoiPolygon(coordinates, `${label}.geometry.coordinates`)
   if (!Number.isFinite(input.baseHeightMeters) || input.baseHeightMeters < 0) {
     throw new RangeError(`${label}.baseHeightMeters must be finite and non-negative`)
   }
@@ -366,6 +387,12 @@ export function createRegionalPoiProfile(
       throw new TypeError(`surface ${surface.id} references an unknown POI`)
     }
   }
+  const surfacedPoiIds = new Set(surfaces.map(surface => surface.poiId))
+  for (const poi of pois) {
+    if (!surfacedPoiIds.has(poi.id)) {
+      throw new TypeError(`POI ${poi.id} requires at least one surface`)
+    }
+  }
 
   return Object.freeze({
     schema: input.schema,
@@ -377,4 +404,42 @@ export function createRegionalPoiProfile(
     pois,
     surfaces,
   })
+}
+
+/**
+ * Derives one stable geographic focus point per semantic POI without changing
+ * or scaling its source polygons. Longitude uses the minimum circular span so
+ * a POI crossing the antimeridian remains centered on that POI.
+ */
+export function deriveRegionalPoiLocators(
+  input: RegionalPoiProfile,
+): readonly RegionalPoiLocator[] {
+  const profile = createRegionalPoiProfile(input)
+  const coordinatesByPoi = new Map<string, RegionalPoiCoordinate[]>()
+  for (const surface of profile.surfaces) {
+    const coordinates = coordinatesByPoi.get(surface.poiId) || []
+    for (const ring of surface.geometry.coordinates) {
+      coordinates.push(...ring)
+    }
+    coordinatesByPoi.set(surface.poiId, coordinates)
+  }
+
+  return Object.freeze(profile.pois.map(poi => {
+    const coordinates = coordinatesByPoi.get(poi.id)
+    if (!coordinates?.length) {
+      throw new TypeError(`POI ${poi.id} requires at least one coordinate`)
+    }
+    const latitudes = coordinates.map(([, latitude]) => latitude)
+    const coordinate = Object.freeze([
+      deriveRegionalPoiLongitudeSpan(
+        coordinates.map(([longitude]) => longitude),
+      ).center,
+      (Math.min(...latitudes) + Math.max(...latitudes)) / 2,
+    ] as const)
+    return Object.freeze({
+      coordinate,
+      label: poi.label,
+      poiId: poi.id,
+    })
+  }))
 }

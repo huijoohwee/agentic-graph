@@ -46,6 +46,7 @@ export type {
   FlightGeoOverlayPresentation,
   FlightGeoOverlayPresentationOwner,
   FlightGeoOverlaySnapshot,
+  FlightGeoRegionalPoiSourceFacts,
   FlightGeoRoutePoint,
 } from './flightGeoOverlay.js'
 export {
