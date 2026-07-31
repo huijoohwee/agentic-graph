@@ -108,6 +108,9 @@ function evidenceForEdge(edge) {
     parserVersion: String(properties["evidence:parserVersion"] || ""),
     parserDigest: String(properties["evidence:parserDigest"] || ""),
     sourceDigest: String(properties["evidence:sourceDigest"] || ""),
+    premiseEdgeIds: properties["evidence:premiseEdgeIds"] || [],
+    candidateCount: properties["evidence:candidateCount"] ?? 1,
+    candidateIds: properties["evidence:candidateIds"] || [],
   };
 }
 

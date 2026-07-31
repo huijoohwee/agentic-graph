@@ -452,6 +452,10 @@ test("query, traversal, summaries, and explanations are digest-fenced and bounde
     maxDepth: 3,
   });
   assert.equal(pathResult.found, true, JSON.stringify(pathResult));
+  const resolutionCitation = pathResult.citations.find((citation) => (
+    citation.ruleId === "resolve.relative-code-import.repository"
+  ));
+  assert.ok(resolutionCitation, JSON.stringify(pathResult));
   const summary = await fixture.runtime.query({ ...common, mode: "summary" });
   assert.equal(summary.ok, true);
   assert.equal(summary.completeness.complete, true);
@@ -464,6 +468,26 @@ test("query, traversal, summaries, and explanations are digest-fenced and bounde
   assert.match(explanation.evidence.explanation, /references table/i);
   assert.match(explanation.evidence.sourceDigest, /^[a-f0-9]{64}$/);
   assert.match(explanation.evidence.parserDigest, /^[a-f0-9]{64}$/);
+  assert.deepEqual(explanation.evidence.premiseEdgeIds, []);
+  assert.equal(explanation.evidence.candidateCount, 1);
+  assert.deepEqual(explanation.evidence.candidateIds, []);
+  const resolutionExplanation = await fixture.runtime.explainEdge({
+    ...common,
+    edgeId: resolutionCitation.edgeId,
+  });
+  assert.equal(resolutionExplanation.ok, true);
+  assert.deepEqual(
+    {
+      premiseEdgeIds: resolutionCitation.premiseEdgeIds,
+      candidateCount: resolutionCitation.candidateCount,
+      candidateIds: resolutionCitation.candidateIds,
+    },
+    {
+      premiseEdgeIds: resolutionExplanation.evidence.premiseEdgeIds,
+      candidateCount: resolutionExplanation.evidence.candidateCount,
+      candidateIds: resolutionExplanation.evidence.candidateIds,
+    },
+  );
   const stale = await fixture.runtime.query({ ...common, expectedSnapshotDigest: "0".repeat(64), mode: "summary" });
   assert.equal(stale.error.code, "stale_snapshot_digest");
   const missing = await fixture.runtime.query({ graphId: ingest.graphId, mode: "summary" });

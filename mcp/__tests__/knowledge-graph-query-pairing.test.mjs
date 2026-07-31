@@ -39,6 +39,9 @@ function evidence(excerpt) {
     excerpt,
     confidence: "high",
     certainty: "exact",
+    premiseEdgeIds: ["edge:premise:beta", "edge:premise:alpha"],
+    candidateCount: 3,
+    candidateIds: ["node:candidate:beta", "node:candidate:alpha"],
   };
 }
 
@@ -117,6 +120,11 @@ function assertPairedCommonResult(result, expectedDigest) {
     result.citations.map(({ edgeId }) => edgeId),
     result.results.edges.map(({ edge }) => edge.id),
   );
+  for (const citation of result.citations) {
+    assert.deepEqual(citation.premiseEdgeIds, ["edge:premise:alpha", "edge:premise:beta"]);
+    assert.equal(citation.candidateCount, 3);
+    assert.deepEqual(citation.candidateIds, ["node:candidate:alpha", "node:candidate:beta"]);
+  }
   assert.equal(result.completeness.truncated, true);
   assert.equal(result.completeness.reason, "result_limit");
   assert.equal(result.completeness.nodesTruncated, true);

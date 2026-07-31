@@ -4,6 +4,8 @@ export const KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID =
 export const KNOWLEDGE_GRAPH_DECLARATIVE_GRAMMAR_SCHEMA_ID =
   "knowgrph-declarative-grammar/v1";
 
+export const KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE = "default-source";
+
 export const NATIVE_KNOWLEDGE_GRAPH_PARSER_ADAPTERS = Object.freeze({
   "brace-code": "structural-parser",
   "declarative-grammar": "ast",
@@ -132,6 +134,34 @@ const boundedMatcherArray = (pattern) => ({
   uniqueItems: true,
 });
 
+const NATIVE_ADAPTER_FIDELITY_SCHEMA = Object.freeze({
+  oneOf: Object.entries(NATIVE_KNOWLEDGE_GRAPH_PARSER_ADAPTERS)
+    .map(([adapter, fidelity]) => ({
+      required: ["adapter", "fidelity"],
+      properties: {
+        adapter: { const: adapter },
+        fidelity: { const: fidelity },
+      },
+    })),
+});
+
+const INERT_MATCHER_REQUIRED_SCHEMA = Object.freeze({
+  anyOf: [
+    {
+      required: ["extensions"],
+      properties: { extensions: { minItems: 1 } },
+    },
+    {
+      required: ["basenames"],
+      properties: { basenames: { minItems: 1 } },
+    },
+    {
+      required: ["basenameFamilies"],
+      properties: { basenameFamilies: { minItems: 1 } },
+    },
+  ],
+});
+
 export const KNOWLEDGE_GRAPH_PARSER_DESCRIPTOR_SCHEMA = Object.freeze({
   type: "object",
   additionalProperties: false,
@@ -162,14 +192,18 @@ export const KNOWLEDGE_GRAPH_PARSER_DESCRIPTOR_SCHEMA = Object.freeze({
     priority: { type: "integer", minimum: -1000, maximum: 1000 },
     grammar: KNOWLEDGE_GRAPH_DECLARATIVE_GRAMMAR_SCHEMA,
   },
-  allOf: [{
-    if: {
-      properties: { adapter: { const: "declarative-grammar" } },
-      required: ["adapter"],
+  allOf: [
+    NATIVE_ADAPTER_FIDELITY_SCHEMA,
+    INERT_MATCHER_REQUIRED_SCHEMA,
+    {
+      if: {
+        properties: { adapter: { const: "declarative-grammar" } },
+        required: ["adapter"],
+      },
+      then: { required: ["grammar"] },
+      else: { not: { required: ["grammar"] } },
     },
-    then: { required: ["grammar"] },
-    else: { not: { required: ["grammar"] } },
-  }],
+  ],
 });
 
 export const KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA = Object.freeze({
@@ -191,8 +225,16 @@ export const KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA = Object.freeze({
 export const KNOWLEDGE_GRAPH_PARSER_GENERATE_INPUT_SCHEMA = Object.freeze({
   type: "object",
   additionalProperties: false,
-  required: ["descriptors"],
+  oneOf: [
+    { required: ["profile"], not: { required: ["descriptors"] } },
+    { required: ["descriptors"], not: { required: ["profile"] } },
+  ],
   properties: {
+    profile: {
+      const: KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
+      description:
+        "Return the digest-pinned built-in source parser registry without copying its descriptors into the request.",
+    },
     descriptors: {
       type: "array",
       minItems: 1,

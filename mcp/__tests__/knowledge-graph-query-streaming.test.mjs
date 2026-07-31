@@ -49,6 +49,9 @@ const fixtureEvidence = (excerpt) => ({
   excerpt,
   confidence: "high",
   certainty: "exact",
+  premiseEdgeIds: ["edge:premise:streaming"],
+  candidateCount: 2,
+  candidateIds: ["node:candidate:beta", "node:candidate:alpha"],
 });
 
 const firstEdge = makeEdge({
@@ -135,6 +138,9 @@ function assertCommonResult(result) {
     assert.equal(citation.explanation, fixtureEvidence("").explanation);
     assert.equal(citation.sourceDigest, SOURCE_DIGEST);
     assert.match(citation.parserDigest, /^[a-f0-9]{64}$/);
+    assert.deepEqual(citation.premiseEdgeIds, ["edge:premise:streaming"]);
+    assert.equal(citation.candidateCount, 2);
+    assert.deepEqual(citation.candidateIds, ["node:candidate:alpha", "node:candidate:beta"]);
   }
 }
 

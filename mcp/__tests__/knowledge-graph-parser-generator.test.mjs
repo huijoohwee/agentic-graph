@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
   KNOWLEDGE_GRAPH_DECLARATIVE_GRAMMAR_SCHEMA_ID,
 } from "../knowledge-graph-parser-contract.js";
 import { EVIDENCE_FIELDS, sha256 } from "../knowledge-graph/contract.mjs";
@@ -18,6 +19,7 @@ import {
   generateKnowledgeGraphParser,
 } from "../knowledge-graph/runtime.mjs";
 import {
+  PORTABLE_SOURCE_PARSER_REGISTRY,
   SOURCE_PARSER_REGISTRY,
 } from "../knowledge-graph/source-parser-registry.mjs";
 
@@ -151,6 +153,16 @@ test("parser generator rejects executable, ambiguous, and unbounded descriptors"
 });
 
 test("public parser generator returns only a digest-bound inert native registry", () => {
+  const builtIn = generateKnowledgeGraphParser({
+    profile: KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
+  });
+  assert.equal(builtIn.ok, true, JSON.stringify(builtIn));
+  assert.equal(builtIn.parserRegistryDigest, SOURCE_PARSER_REGISTRY.digest);
+  assert.equal(builtIn.parserRegistry, PORTABLE_SOURCE_PARSER_REGISTRY);
+  assert.equal(JSON.stringify(builtIn).includes("executable"), false);
+  assert.equal(JSON.stringify(builtIn).includes("modulePath"), false);
+  assert.equal(JSON.stringify(builtIn).includes("sourcePath"), false);
+
   const descriptors = [
     {
       id: "schema-json",
@@ -193,6 +205,28 @@ test("public parser generator returns only a digest-bound inert native registry"
   assert.equal(JSON.stringify(generated).includes("executable"), false);
   assert.equal(JSON.stringify(generated).includes("modulePath"), false);
   assert.equal(JSON.stringify(generated).includes("sourcePath"), false);
+
+  const missingSelection = generateKnowledgeGraphParser({});
+  assert.equal(missingSelection.ok, false);
+  assert.equal(missingSelection.error.code, "parser_generate_invalid");
+
+  const unexpectedSelection = generateKnowledgeGraphParser({
+    profile: KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
+    ignored: true,
+  });
+  assert.equal(unexpectedSelection.ok, false);
+  assert.equal(unexpectedSelection.error.code, "parser_generate_invalid");
+
+  const bothSelections = generateKnowledgeGraphParser({
+    profile: KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
+    descriptors,
+  });
+  assert.equal(bothSelections.ok, false);
+  assert.equal(bothSelections.error.code, "parser_generate_invalid");
+
+  const unsupportedProfile = generateKnowledgeGraphParser({ profile: "other-source" });
+  assert.equal(unsupportedProfile.ok, false);
+  assert.equal(unsupportedProfile.error.code, "parser_profile_unsupported");
 
   const unsupported = generateKnowledgeGraphParser({
     descriptors: [{
