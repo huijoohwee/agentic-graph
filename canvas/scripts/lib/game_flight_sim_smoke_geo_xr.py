@@ -399,6 +399,9 @@ def _read_view(page: Page) -> dict[str, Any]:
           const cityPanel = document.querySelector(
             '[data-kg-city-sim-floating-panel="1"]',
           )
+          const cityError = cityPanel?.querySelector(
+            '[data-kg-city-sim-error="1"]',
+          )
           const citySemanticSurface = document.querySelector(
             '[data-kg-city-sim-semantic-media="active"]',
           )
@@ -433,6 +436,7 @@ def _read_view(page: Page) -> dict[str, Any]:
               === '1',
             cityPanelVisible: isVisible(cityPanel),
             cityPhase: cityPanel?.getAttribute('data-kg-city-sim-phase') || '',
+            cityError: cityError?.textContent?.trim() || '',
             citySemanticSurfaceActive: Boolean(citySemanticSurface),
             cityMapLibreOwnerCount: document.querySelectorAll(
               '[data-kg-city-maplibre-owner="1"]',
