@@ -206,7 +206,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("overlayPhase") == "stopped"
             and value.get("overlayRoutePointCount") >= 2
             and set(value.get("sourceKinds") or [])
-            == {"aircraft", "objective-guide", "route", "route-point"}
+            == {"aircraft", "route", "route-point"}
             and value.get("environmentId") == ""
             and value.get("environmentSourceFeatures") == 0
             and value.get("environmentLayerCount") == 0

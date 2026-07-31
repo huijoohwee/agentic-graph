@@ -320,6 +320,14 @@ test('Flight browser proof activates only after applying the authored source', (
       `expected City handoff browser proof requirement: ${cityProofRequirement}`,
     )
   }
+  assert.match(
+    geoXrPresentationVerifier,
+    /\{"aircraft", "route", "route-point"\}/,
+  )
+  assert.doesNotMatch(
+    geoXrPresentationVerifier,
+    /\{"aircraft", "objective-guide", "route", "route-point"\}/,
+  )
   assert.doesNotMatch(
     geoXrPresentationVerifier,
     /data-kg-city-sim-open="1"/,
