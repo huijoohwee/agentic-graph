@@ -287,6 +287,7 @@ export const TEST_CASES_POST_PARSER_1: TestCaseTuple[] = [
   ["sourceFiles.githubWrite.pagesRouteDryRunDoesNotCallGitHub","@/__tests__/sourceFilesGitHubWrite.test","testPagesGitHubWorkspaceWriteRouteDryRunDoesNotCallGitHub"],
   ["sourceFiles.githubWrite.pagesRouteAcceptsRootAliasPath","@/__tests__/sourceFilesGitHubWrite.test","testPagesGitHubWorkspaceWriteRouteAcceptsRootAliasPath"],
   ["sourceFiles.githubWrite.pagesRouteRejectsNonChatLogPath","@/__tests__/sourceFilesGitHubWrite.test","testPagesGitHubWorkspaceWriteRouteRejectsNonChatLogPath"],
+  ["ui.toast.messageSelectionAndCopy","@/__tests__/uiActionSurfaces.test.tsx","testToastHostMessageIsSelectableAndCopiesSanitizedText"],
   ["ui.toast.promotionRetryInsertCommandAction","@/__tests__/uiActionSurfaces.test.tsx","testToastHostPromotionRetryActionAppendsCommandIntoChatComposer"],
   ["sourceFiles.storageSync.generatedChatLogArtifact.queuesCanonicalPath","@/__tests__/sourceFilesStorageBlobSync.test","testGeneratedChatLogWorkspaceEntryQueuesCanonicalStoragePath"],
   ["sourceFiles.storageSync.generatedChatLogArtifact.flushesRuntimeEnabled","@/__tests__/sourceFilesStorageBlobSync.test","testGeneratedChatLogWorkspaceEntryFlushesToPublicStorageWhenRuntimeSyncEnabled"],

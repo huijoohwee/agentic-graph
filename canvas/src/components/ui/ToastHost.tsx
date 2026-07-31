@@ -1,11 +1,11 @@
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { AlertCircle, CheckCircle, Info, LoaderCircle, X, AlertTriangle, Pin, PinOff } from 'lucide-react'
+import { AlertCircle, CheckCircle, Copy, Info, LoaderCircle, X, AlertTriangle, Pin, PinOff } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UiActionButtons } from '@/components/ui/UiActionButtons'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
-import { sanitizeMessageText } from '@/lib/ui'
+import { copyTextToClipboard, sanitizeMessageText, UI_FOCUS_RING } from '@/lib/ui'
 import { cn } from '@/lib/utils'
 import type { UiToast, UiToastKind } from '@/hooks/store/types'
 import { Z_INDEX_TOAST } from '@/lib/ui/zIndex'
@@ -28,6 +28,50 @@ const getKindIcon = (kind: UiToastKind) => {
   return Info
 }
 
+type ToastCopyState = 'idle' | 'copied' | 'unavailable'
+
+function ToastCopyButton({ message, toastId, iconStrokeWidth }: { message: string; toastId: string; iconStrokeWidth: number }) {
+  const [copyState, setCopyState] = React.useState<ToastCopyState>('idle')
+  const label = copyState === 'copied' ? 'Copied' : copyState === 'unavailable' ? 'Copy unavailable' : 'Copy'
+
+  React.useEffect(() => {
+    setCopyState('idle')
+  }, [message])
+
+  const handleCopy = React.useCallback(async () => {
+    setCopyState((await copyTextToClipboard(message)) ? 'copied' : 'unavailable')
+  }, [message])
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        'inline-flex min-h-6 items-center gap-1 rounded border px-1.5 py-1 text-[11px] leading-4 pointer-events-auto',
+        UI_THEME_TOKENS.panel.border,
+        UI_THEME_TOKENS.button.hoverBg,
+        UI_THEME_TOKENS.button.text,
+        UI_FOCUS_RING,
+      )}
+      data-kg-selection-surface="toast-copy"
+      data-kg-toast-copy={toastId}
+      aria-label={copyState === 'copied' ? 'Notification text copied' : 'Copy notification text'}
+      title="Copy notification text"
+      onClick={() => void handleCopy()}
+    >
+      <Copy
+        className="size-3.5 shrink-0"
+        strokeWidth={iconStrokeWidth}
+        role="img"
+        aria-label="Copy notification text icon"
+        aria-hidden={false}
+        focusable={false}
+        data-kg-selection-surface="toast-copy-icon"
+      />
+      <span>{label}</span>
+    </button>
+  )
+}
+
 function ToastCard({
   toast,
   onDismiss,
@@ -44,35 +88,66 @@ function ToastCard({
   const PinIcon = pinned ? PinOff : Pin
   if (!message) return null
   return (
-    <aside
+    <article
       className={cn(
-        'kg-toast-card pointer-events-none flex-none',
+        'kg-toast-card pointer-events-auto flex-none',
         'rounded border shadow-sm',
         'bg-[rgba(var(--panel-bg-rgb),var(--panel-opacity))]',
         UI_THEME_TOKENS.panel.border,
         getKindClasses(toast.kind),
       )}
       role={toast.kind === 'error' ? 'alert' : 'status'}
+      aria-label={`${toast.kind} notification`}
+      data-kg-selection-surface="toast"
+      data-kg-toast-id={toast.id}
     >
       <section className={TOAST_ROW_GRID_CLASS_NAME}>
-        <Icon className={cn('w-4 h-4 mt-0.5', toast.busy ? 'animate-spin' : '')} strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
-        <section className="min-w-0 pointer-events-none">
-          <section className="whitespace-pre-wrap break-words text-xs leading-5">{message}</section>
-          <UiActionButtons actions={toast.actions} className="pointer-events-auto mt-2" />
+        <Icon
+          className={cn('w-4 h-4 mt-0.5', toast.busy ? 'animate-spin' : '')}
+          strokeWidth={uiIconStrokeWidth}
+          role="img"
+          aria-label={toast.busy ? 'Notification in progress' : `${toast.kind} notification`}
+          aria-hidden={false}
+          focusable={false}
+          data-kg-selection-surface="toast-status-icon"
+        />
+        <section className="min-w-0">
+          <p
+            className="kg-toast-message pointer-events-auto select-text cursor-text whitespace-pre-wrap break-words text-xs leading-5"
+            data-kg-selection-surface="toast-message"
+            data-kg-toast-message={toast.id}
+          >
+            {message}
+          </p>
+          <footer className="mt-2 flex flex-wrap items-center gap-2" aria-label="Notification actions">
+            <ToastCopyButton message={message} toastId={toast.id} iconStrokeWidth={uiIconStrokeWidth} />
+            <UiActionButtons actions={toast.actions} className="pointer-events-auto" />
+          </footer>
         </section>
-        <section className="mt-0.5 flex items-center gap-1 pointer-events-auto">
+        <nav className="mt-0.5 flex items-center gap-1 pointer-events-auto" aria-label="Notification controls">
           <button
             type="button"
             className={cn(
               'h-5 w-5 rounded inline-flex items-center justify-center relative z-[1] pointer-events-auto',
               UI_THEME_TOKENS.button.hoverBg,
               UI_THEME_TOKENS.button.text,
+              UI_FOCUS_RING,
             )}
             onClick={() => onTogglePinned(toast)}
             aria-label={pinned ? 'Unpin' : 'Pin'}
             title={pinned ? 'Unpin toast' : 'Pin toast'}
+            data-kg-selection-surface="toast-pin"
+            data-kg-toast-pin={toast.id}
           >
-            <PinIcon className="w-3.5 h-3.5" strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
+            <PinIcon
+              className="w-3.5 h-3.5"
+              strokeWidth={uiIconStrokeWidth}
+              role="img"
+              aria-label={`${pinned ? 'Unpin' : 'Pin'} notification icon`}
+              aria-hidden={false}
+              focusable={false}
+              data-kg-selection-surface="toast-pin-icon"
+            />
           </button>
           {toast.dismissible ? (
             <button
@@ -81,16 +156,28 @@ function ToastCard({
                 'h-5 w-5 rounded inline-flex items-center justify-center relative z-[1] pointer-events-auto',
                 UI_THEME_TOKENS.button.hoverBg,
                 UI_THEME_TOKENS.button.text,
+                UI_FOCUS_RING,
               )}
               onClick={() => onDismiss(toast.id)}
               aria-label="Dismiss"
+              title="Dismiss toast"
+              data-kg-selection-surface="toast-dismiss"
+              data-kg-toast-dismiss={toast.id}
             >
-              <X className="w-4 h-4" strokeWidth={uiIconStrokeWidth} aria-hidden="true" />
+              <X
+                className="w-4 h-4"
+                strokeWidth={uiIconStrokeWidth}
+                role="img"
+                aria-label="Dismiss notification icon"
+                aria-hidden={false}
+                focusable={false}
+                data-kg-selection-surface="toast-dismiss-icon"
+              />
             </button>
           ) : null}
-        </section>
+        </nav>
       </section>
-    </aside>
+    </article>
   )
 }
 
@@ -165,7 +252,7 @@ export function ToastHost() {
     >
       <ol className="kg-toast-list flex flex-col gap-2 items-end" aria-label="Toast list">
         {orderedToasts.map(t => (
-          <li key={t.id} className="list-none pointer-events-none">
+          <li key={t.id} className="list-none">
             <ToastCard toast={t} onDismiss={dismissUiToast} onTogglePinned={togglePinned} />
           </li>
         ))}

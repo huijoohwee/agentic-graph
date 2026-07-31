@@ -89,17 +89,26 @@ export function testToastHostRendersBusySpinnerIcon() {
   if (!text.includes('className={TOAST_ROW_GRID_CLASS_NAME}')) {
     throw new Error('expected toast rows to reuse the responsive row owner')
   }
-  if (!text.includes('kg-toast-card pointer-events-none flex-none')) {
-    throw new Error('expected passive toast chrome to preserve access to underlying controls')
+  if (!text.includes('kg-toast-card pointer-events-auto flex-none')) {
+    throw new Error('expected toast cards to be hit-testable for text selection and controls')
   }
-  if (!text.includes('className="list-none pointer-events-none"')) {
-    throw new Error('expected toast list items to remain passive outside explicit controls')
+  if (!text.includes('className="list-none"')) {
+    throw new Error('expected toast list items to retain their semantic list contract')
   }
-  if (!text.includes('className="pointer-events-auto mt-2"')) {
-    throw new Error('expected toast action buttons to remain interactive')
+  if (!text.includes('<article') || !text.includes('data-kg-selection-surface="toast"')) {
+    throw new Error('expected each toast to expose a semantic, selection-visible article surface')
   }
-  if (text.includes('kg-toast-card pointer-events-auto')) {
-    throw new Error('expected toast cards to avoid intercepting their full visual bounds')
+  if (!text.includes('data-kg-toast-message={toast.id}') || !text.includes('select-text')) {
+    throw new Error('expected toast messages to remain selectable through an explicit semantic message surface')
+  }
+  if (!text.includes('data-kg-toast-copy={toastId}') || !text.includes('Copy notification text')) {
+    throw new Error('expected toast messages to expose a visible native Copy affordance')
+  }
+  if (text.includes('aria-hidden="true"')) {
+    throw new Error('expected toast visual affordances to avoid hidden decorative icon contracts')
+  }
+  if (!text.includes('aria-hidden={false}')) {
+    throw new Error('expected toast visual affordances to remain visible to selection tooling')
   }
   if (text.includes('grid grid-cols-[16px_minmax(0,1fr)_auto]')) {
     throw new Error('expected ToastHost to avoid inline arbitrary row grid sizing')

@@ -82,6 +82,112 @@ export async function testToastHostRendersSharedActionsAndDispatchesUiRuntime() 
   }
 }
 
+export async function testToastHostMessageIsSelectableAndCopiesSanitizedText() {
+  const storage = new MemoryStorage()
+  const { restore: restoreWindow } = initWindowHarness({ storage })
+  const { restore, dom } = initJsdomHarness('<!doctype html><html><body><section id="root"></section></body></html>')
+  const store = useGraphStore.getState()
+  const rawMessage = 'Repository parsing finished.\nat internal stack frame\nThe local graph is ready to query.'
+  const renderedMessage = 'Repository parsing finished.\nThe local graph is ready to query.'
+  const copiedMessages: string[] = []
+  const originalClipboard = Object.getOwnPropertyDescriptor(dom.window.navigator, 'clipboard')
+  let root: ReturnType<typeof createRoot> | null = null
+  try {
+    Object.defineProperty(dom.window.navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          copiedMessages.push(value)
+        },
+      },
+    })
+    store.resetAll()
+    store.pushUiToast({
+      id: 'toast:copy',
+      kind: 'neutral',
+      message: rawMessage,
+      ttlMs: null,
+      dismissible: true,
+      log: false,
+    })
+
+    const container = dom.window.document.getElementById('root')
+    if (!container) throw new Error('missing root container')
+    root = createRoot(container)
+    await act(async () => {
+      root!.render(<ToastHost />)
+    })
+    await tick()
+
+    const card = dom.window.document.querySelector('article[data-kg-toast-id="toast:copy"]')
+    if (!card) throw new Error('expected toast to use a semantic article card')
+    if (card.getAttribute('role') !== 'status' || card.getAttribute('data-kg-selection-surface') !== 'toast') {
+      throw new Error('expected toast article to expose a named, selection-visible notification surface')
+    }
+    if (!card.classList.contains('pointer-events-auto')) {
+      throw new Error('expected toast article to be hit-testable for notification interaction')
+    }
+
+    const message = card.querySelector('p[data-kg-toast-message="toast:copy"]')
+    if (!message) throw new Error('expected toast to expose its message in a semantic paragraph')
+    if (message.textContent !== renderedMessage) {
+      throw new Error(`expected toast message to expose sanitized text, got ${JSON.stringify(message.textContent)}`)
+    }
+    if (!message.classList.contains('pointer-events-auto') || !message.classList.contains('select-text')) {
+      throw new Error('expected toast message to remain selectable and hit-testable')
+    }
+    if (message.getAttribute('data-kg-selection-surface') !== 'toast-message') {
+      throw new Error('expected toast message to be visible to selection tooling')
+    }
+
+    const selection = dom.window.getSelection()
+    const range = dom.window.document.createRange()
+    range.selectNodeContents(message)
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    if (selection?.toString() !== renderedMessage) {
+      throw new Error(`expected toast message to support text selection, got ${JSON.stringify(selection?.toString())}`)
+    }
+
+    const copyButton = card.querySelector('button[data-kg-toast-copy="toast:copy"]') as HTMLButtonElement | null
+    if (!copyButton) throw new Error('expected a native Copy notification text button')
+    if (copyButton.type !== 'button' || copyButton.getAttribute('aria-label') !== 'Copy notification text') {
+      throw new Error('expected copy affordance to retain an explicit native button contract')
+    }
+    if (copyButton.getAttribute('data-kg-selection-surface') !== 'toast-copy' || !copyButton.classList.contains('pointer-events-auto')) {
+      throw new Error('expected Copy affordance to stay hit-testable and visible to selection tooling')
+    }
+    const copyIcon = copyButton.querySelector('[data-kg-selection-surface="toast-copy-icon"]')
+    if (!copyIcon || copyIcon.getAttribute('aria-hidden') === 'true') {
+      throw new Error('expected copy icon to remain a visible semantic affordance instead of hidden decoration')
+    }
+
+    await act(async () => {
+      copyButton.click()
+      await tick()
+    })
+    if (copiedMessages.length !== 1 || copiedMessages[0] !== renderedMessage) {
+      throw new Error(`expected Copy to use the sanitized rendered message, got ${JSON.stringify(copiedMessages)}`)
+    }
+    if (!copyButton.textContent?.includes('Copied')) {
+      throw new Error('expected successful toast copy to provide visible confirmation')
+    }
+  } finally {
+    try {
+      await act(async () => {
+        root?.unmount()
+      })
+      await tick()
+    } catch {
+      void 0
+    }
+    if (originalClipboard) Object.defineProperty(dom.window.navigator, 'clipboard', originalClipboard)
+    else delete (dom.window.navigator as Navigator & { clipboard?: unknown }).clipboard
+    restore()
+    restoreWindow()
+  }
+}
+
 export async function testHistoryViewRendersSharedLogActionsAndDispatchesUiRuntime() {
   const storage = new MemoryStorage()
   const { restore: restoreWindow } = initWindowHarness({ storage })
