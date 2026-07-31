@@ -73,6 +73,7 @@ function exactOverlay(): FlightGeoOverlaySnapshot {
       label: 'WP1',
     },
     phase: 'stopped',
+    presentationOwner: 'flight',
     profileId: 'singapore',
     readyFrameRequestId: null,
     revision: 'stopped:exact',

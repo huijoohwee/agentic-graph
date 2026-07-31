@@ -6,9 +6,9 @@ import {
   mapHasExactFlightGeoOverlayCamera,
 } from '../../flightGeoOverlayMapLibre.js'
 import {
-  readFlightGeoMapViewportPadding,
-  type FlightGeoMapViewportPadding,
-} from '../../flightGeoMapViewport.js'
+  readGeoMapViewportPadding,
+  type GeoMapViewportPadding,
+} from '../../geoMapViewport.js'
 
 export type FlightGeoOverlayPresentationCamera = Readonly<{
   exact: boolean
@@ -23,7 +23,7 @@ export function readFlightGeoOverlayPresentationCamera(
   const expected = createFlightGeoOverlayMapLibreCamera(
     overlay,
     viewMode,
-    readFlightGeoMapViewportPadding(map),
+    readGeoMapViewportPadding(map),
   )
   return Object.freeze({
     exact: (
@@ -39,7 +39,7 @@ export function readFlightGeoOverlayPresentationCamera(
 
 export function readSavedFlightGeoMapPadding(
   map: any,
-): FlightGeoMapViewportPadding | null {
+): GeoMapViewportPadding | null {
   const padding = map?.getPadding?.()
   if (!padding || typeof padding !== 'object') return null
   const bottom = Number(padding.bottom)

@@ -113,6 +113,8 @@ export function createFlightGeoOverlayPresentationGate(
   ): boolean => (
     active()
     && current.active
+    && current.presentationOwner === 'flight'
+    && requested.presentationOwner === 'flight'
     && current.revision === requested.revision
     && current.phase === requested.phase
     && current.profileId === requested.profileId
@@ -127,6 +129,7 @@ export function createFlightGeoOverlayPresentationGate(
     pending
     && active()
     && current.active
+    && current.presentationOwner === 'flight'
     && current.revision === pending.revision
     && current.phase === pending.phase
     && current.profileId === pending.profileId
@@ -239,6 +242,7 @@ export function createFlightGeoOverlayPresentationGate(
     }
     const presentation = Object.freeze({
       phase: current.phase,
+      presentationOwner: current.presentationOwner,
       profileId: current.profileId,
       readyFrameRequestId: current.readyFrameRequestId,
       revision: current.revision,
@@ -349,7 +353,11 @@ export function createFlightGeoOverlayPresentationGate(
         && overlay.tick === 0
         && overlay.runId > 0
       )
-    if (!presentable || typeof map.on !== 'function') return
+    if (
+      overlay.presentationOwner !== 'flight'
+      || !presentable
+      || typeof map.on !== 'function'
+    ) return
     // Stopped presentation is intentionally repeatable: an idempotent surface
     // open can create a fresh preparation request without changing simulation
     // state or the projection revision.

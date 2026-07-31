@@ -4,8 +4,8 @@ import {
   exitCitySimSurface,
   openCitySimSurface,
   readCitySimSnapshot,
-  resetCitySimRuntimeForTests,
 } from '@/features/game-city-sim/citySimRuntime'
+import { resetCitySimRuntimeForTests } from './citySimAuthoritativeSource'
 import {
   captureCitySimPreviousCanvasSurface,
 } from '@/features/game-city-sim/citySimSurfaceOwnership'
@@ -24,7 +24,7 @@ import {
   captureStoreState,
   createCityWorkspace,
   prepareCitySurface,
-} from './citySimRuntimeLifecycle.test'
+} from './helpers/citySimRuntimeHarness'
 
 export async function testCitySimExitSurfacesGeoRestorationFailure() {
   const { dom, restore } = initJsdomHarness()

@@ -244,6 +244,7 @@ test('a provider style attempt reset preserves the exact stopped settlement audi
   const root = { dataset: {} as DOMStringMap } as HTMLElement
   const stopped = {
     phase: 'stopped',
+    presentationOwner: 'flight',
     profileId: 'singapore',
     readyFrameRequestId: null,
     revision: 'stopped:provider-swap',

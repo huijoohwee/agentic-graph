@@ -6,7 +6,8 @@ candidate SHA.
 
 ## 1. Pure city domain
 
-- [ ] Add typed authored default grid and v1 integer coefficients.
+- [ ] Parse the typed authored initial grid and geographic profile from the
+  applied source; keep no runtime default-grid fixture.
 - [ ] Add atomic deterministic tick with safe-integer rejection and replay
   tests.
 - [ ] Add canonical KGC plus CSV codec and byte-identical round-trip tests.
@@ -29,20 +30,25 @@ candidate SHA.
 - [ ] Activate Surface Mode `geo-xr` while retaining the existing native
   MapLibre Geo host as the sole City visual, renderer, camera, and
   viewport-gesture owner.
-- [ ] Mount zero City Three.js/R3F Canvas, stage, mesh, camera, or parcel hit
-  testing above Geo; City Builder coordinate controls own parcel input.
+- [ ] Mount zero City Three.js/R3F Canvas, stage, mesh, or camera above Geo;
+  MapLibre parcel clicks and City Builder controls share one selection owner.
 - [ ] Exclude City from the native XR physics launcher and suppress the
   authored/native Three graph for City source intent.
 - [ ] Wrap the native MapLibre Geo+XR projection directly in a labeled semantic
   City media `figure` whose existing selection marker is active-only and whose
   wrapper owns no pointer capture and adds no generic `div` or `aria-hidden`.
-- [ ] Add a City-owned deterministic `stopped` aircraft/route adapter that
-  publishes through the existing Flight Geo overlay store and MapLibre
-  source/layers with a null XR environment and no Flight gameplay/readiness.
-- [ ] Prove City creates no duplicate map, map source/layer, Three.js/R3F
-  Canvas/stage/mesh/camera, or renderer.
-- [ ] Retain native MapLibre framing in Geo+XR and restore only the captured
-  FloatingPanel/Canvas surface state exactly once on exit.
+- [ ] Project every live parcel to the City GeoJSON source with zone fill,
+  extrusion, outline, selection, and mutation-driven updates.
+- [ ] Add a City-owned deterministic `stopped` aircraft/route adapter from the
+  City geographic profile that publishes through the existing Flight source
+  and layers with atomic owner `city`, null environment, and no Flight
+  bootstrap, camera, gameplay, or readiness.
+- [ ] Prove City creates one parcel source/layer family on the existing map and
+  no duplicate map, source/layer ids, Three.js/R3F Canvas/stage/mesh/camera, or
+  renderer.
+- [ ] Fit authored City bounds into the real visible aperture on mount and
+  resize, avoid cumulative MapLibre padding, and restore prior map plus
+  FloatingPanel/Canvas state exactly once on exit.
 - [ ] Add `cityBuilder` as the complete control/status view.
 - [ ] Compose one snapshot-backed projection into Media, Animation, Motion
   Control, Game Mode, Flight Sim, and Camera.
@@ -54,8 +60,8 @@ candidate SHA.
 - [ ] Register the authored seed in the canonical workspace seed bundle.
 - [ ] Gate `city-sim` admission on Source Files bootstrap readiness and reject
   known identity/path conflicts.
-- [ ] Compare the runtime default serialization with the seed CSV fixture to
-  prevent drift.
+- [ ] Parse the authoritative seed in focused tests and reject missing,
+  malformed, duplicated, or conflicting City source fields.
 
 ## 5. Evidence gates
 
@@ -68,17 +74,18 @@ candidate SHA.
   Canvas/stage/mesh/camera, absence of the native physics playground, authored
   metrics, zone/tick/stop, save/read-back, all six projections, console
   cleanliness, and exit restore.
-- [ ] Browser proof captures the deterministic stopped aircraft/route on the
-  existing Flight Geo source/layers, an empty environment source, no duplicate
-  map/source/layer/Canvas, and inactive Flight gameplay/readiness.
+- [ ] Browser proof captures sixteen City parcel features, a visible live
+  mutation/selection, and the stopped aircraft/route on the existing Flight
+  source/layers, with one map and inactive Flight bootstrap, camera,
+  environment, gameplay, and readiness.
 - [ ] Candidate is reviewed and integrated through the protected workflow.
 - [ ] Seed proof status and checklist are updated only from captured exact-SHA
   evidence.
 
 ## Explicit exclusions
 
-- No second world, map, map source/layer family, Canvas, renderer, persistence
-  owner, camera catalog, transport, or network service.
+- No second world, map, duplicate source/layer family, Canvas, renderer,
+  persistence owner, camera catalog, transport, or network service.
 - No Flight gameplay activation, Flight control path, mission advance, or
   Flight readiness claim.
 - No autosave, multiplayer, cloud sync, traffic simulation, or model-backed

@@ -3,6 +3,7 @@ import {
   readFlightGeoOverlay,
   subscribeFlightGeoOverlay,
   type FlightGeoOverlayPresentation,
+  type FlightGeoOverlayPresentationOwner,
 } from '../../flightGeoOverlay.js'
 import {
   applyFlightGeoOverlayCameraToMap,
@@ -11,10 +12,10 @@ import {
   fitMapToFlightGeoOverlay,
 } from '../../flightGeoOverlayMapLibre.js'
 import {
-  flightGeoMapViewportPaddingKey,
-  observeFlightGeoMapOcclusionChanges,
-  readFlightGeoMapViewportPadding,
-} from '../../flightGeoMapViewport.js'
+  geoMapViewportPaddingKey,
+  observeGeoMapOcclusionChanges,
+  readGeoMapViewportPadding,
+} from '../../geoMapViewport.js'
 import {
   applyFlightGeoEnvironmentToMap,
   clearFlightGeoEnvironmentFromMap,
@@ -39,6 +40,7 @@ import {
   subscribeMapLibreMapDisposalPreparation,
 } from './mapLibreHostLease.js'
 import {
+  type FlightOverlayPresentationGate,
   type PresentedFlightOverlay,
   type SavedMapPadding,
 } from './flightGeoOverlayPresentationContracts.js'
@@ -75,7 +77,6 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   graphRevision: number
   map: any | null
   mapLibreRuntimeEnabled: boolean
-  requiresFlightLifecyclePresentation: boolean
   onPresented?: (presentation: FlightGeoOverlayPresentation) => void
   rootRef: React.RefObject<HTMLElement | null>
   styleRevision: number
@@ -94,6 +95,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     map: null,
     padding: null,
   })
+  const presentationOwnerRef = React.useRef<{
+    map: any | null
+    owner: FlightGeoOverlayPresentationOwner
+  }>({ map: null, owner: null })
 
   const restoreMapPadding = React.useCallback((map: any | null) => {
     if (savedMapPaddingRef.current.map !== map) return
@@ -132,6 +137,8 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         clearFlightGeoPresentationDebug(root)
       }
       restoreMapPadding(map)
+      presentationOwnerRef.current = { map: null, owner: null }
+      fitRef.current = { key: '', map: null }
       if (presentedRef.current.map === map) {
         presentedRef.current = {
           map: null,
@@ -155,6 +162,8 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       clearFlightGeoPresentationAttemptDebug(root)
     }
     restoreMapPadding(map)
+    presentationOwnerRef.current = { map: null, owner: null }
+    fitRef.current = { key: '', map: null }
     if (presentedRef.current.map === map) {
       presentedRef.current = {
         map: null,
@@ -173,8 +182,18 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
   React.useEffect(() => {
     const map = options.map
     let pendingCameraFrame = 0
-    const gate = map
-      ? createFlightGeoOverlayPresentationGate({
+    let gate: FlightOverlayPresentationGate | null = null
+    const disposeGate = () => {
+      gate?.cancel()
+      gate?.clearCanvas()
+      gate?.resetPresented()
+      gate?.dispose()
+      gate = null
+    }
+    const ensureGate = (): FlightOverlayPresentationGate | null => {
+      if (!map) return null
+      if (!gate) {
+        gate = createFlightGeoOverlayPresentationGate({
           active: () => options.active,
           map,
           onPresented: options.onPresented,
@@ -182,18 +201,40 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           readRoot: () => options.rootRef.current,
           viewMode: options.viewMode,
         })
-      : null
+      }
+      return gate
+    }
+    const transitionPresentationOwner = (
+      owner: FlightGeoOverlayPresentationOwner,
+    ) => {
+      const previous = presentationOwnerRef.current
+      if (previous.map === map && previous.owner === owner) return
+      restoreMapPadding(previous.map)
+      presentationOwnerRef.current = { map, owner }
+      fitRef.current = { key: '', map: null }
+      presentedRef.current = {
+        map: null,
+        readyFrameRequestId: null,
+        revision: '',
+      }
+      if (map && owner === 'flight') captureMapPadding(map)
+    }
     const apply = () => {
       const overlay = readFlightGeoOverlay()
-      const visible = options.active && overlay.active
+      const presentationOwner = overlay.active
+        ? overlay.presentationOwner
+        : null
+      const visible = options.active && presentationOwner !== null
       const root = options.rootRef.current
       if (root) {
         if (visible) {
           root.dataset.kgFlightGeospatialOverlay = 'active'
           root.dataset.kgFlightGeospatialRevision = overlay.revision
-          if (overlay.environment) {
+          if (presentationOwner === 'flight' && overlay.environment) {
             root.dataset.kgFlightGeospatialEnvironment =
               overlay.environment.id
+          } else {
+            delete root.dataset.kgFlightGeospatialEnvironment
           }
         } else {
           delete root.dataset.kgFlightGeospatialOverlay
@@ -203,40 +244,50 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
           clearFlightGeoPresentationDebug(root)
         }
       }
-      if (!map || !options.mapLibreRuntimeEnabled || !gate) {
-        gate?.cancel()
-        gate?.clearCanvas()
+      if (!map || !options.mapLibreRuntimeEnabled) {
+        disposeGate()
         return
       }
       if (!visible) {
-        gate.cancel()
-        gate.clearCanvas()
-        gate.resetPresented()
-        fitRef.current = { key: '', map: null }
-        restoreMapPadding(map)
+        disposeGate()
+        transitionPresentationOwner(null)
         clearFlightGeoOverlayFromMap(map)
         clearFlightGeoEnvironmentFromMap(map)
         return
       }
-      if (isMapLibreMapPreparingForDisposal(map)) return gate.cancel()
+      if (isMapLibreMapPreparingForDisposal(map)) {
+        gate?.cancel()
+        return
+      }
+      transitionPresentationOwner(presentationOwner)
+      const flightPresentation = presentationOwner === 'flight'
+      const flightGate = flightPresentation ? ensureGate() : null
+      if (!flightPresentation) disposeGate()
       // A retained provider map stays mounted while Flight installs its local
       // bootstrap style. Only the settled bootstrap may receive the stopped
       // preparation payload; `style.load` replays this apply after handoff.
-      const canReuseCommittedStoppedFrame =
-        gate.canReuseCommittedStoppedFrame(overlay)
       if (
-        options.requiresFlightLifecyclePresentation
+        flightGate
         && deferFlightGeoPresentationForBootstrapRecovery(
           map,
           overlay,
-          canReuseCommittedStoppedFrame,
+          flightGate.canReuseCommittedStoppedFrame(overlay),
         )
       ) {
-        gate.cancel()
-        gate.clearCanvas()
+        flightGate.cancel()
+        flightGate.clearCanvas()
         return
       }
-      if (overlay.phase === 'stopped') gate.clearCanvas()
+      if (flightGate && overlay.phase === 'stopped') flightGate.clearCanvas()
+      if (!flightPresentation) {
+        clearFlightGeoEnvironmentFromMap(map)
+        if (root) {
+          delete root.dataset.kgFlightGeospatialEnvironment
+          delete root.dataset.kgFlightGeospatialCameraPadding
+        }
+        applyFlightGeoOverlayToMap(map, overlay)
+        return
+      }
       const environmentApplied = applyFlightGeoEnvironmentToMap(
         map,
         overlay,
@@ -244,17 +295,18 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       )
       const applied = applyFlightGeoOverlayToMap(map, overlay)
       const completePresentation = environmentApplied && applied
-      const cameraPadding = readFlightGeoMapViewportPadding(map)
+      const cameraPadding = readGeoMapViewportPadding(map)
       if (root) {
         root.dataset.kgFlightGeospatialCameraPadding =
-          flightGeoMapViewportPaddingKey(cameraPadding)
+          geoMapViewportPaddingKey(cameraPadding)
       }
       const fitKey = [
         options.styleRevision,
         options.viewMode,
+        presentationOwner,
         overlay.profileId,
         overlay.environment?.revision || 'no-environment',
-        flightGeoMapViewportPaddingKey(cameraPadding),
+        geoMapViewportPaddingKey(cameraPadding),
       ].join(':')
       if (
         completePresentation
@@ -266,25 +318,20 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       ) {
         fitRef.current = { key: fitKey, map }
       }
-      if (!completePresentation) return
+      if (!completePresentation || !flightGate) return
       const cameraApplied = overlay.camera.effectiveOwner === 'free-orbit'
-        || (() => {
-          captureMapPadding(map)
-          return applyFlightGeoOverlayCameraToMap(
-            map,
-            overlay,
-            options.viewMode,
-            cameraPadding,
-            { stageStopped: overlay.phase === 'stopped' },
-          )
-        })()
+        || applyFlightGeoOverlayCameraToMap(
+          map,
+          overlay,
+          options.viewMode,
+          cameraPadding,
+          { stageStopped: overlay.phase === 'stopped' },
+        )
       // Stopped preparation first fits the full local environment, then stages
       // the deterministic tick-zero follow camera and waits for that painter
       // frame. Ready can therefore re-arm its request without another camera
       // transform or GeoJSON worker update.
-      if (cameraApplied && options.requiresFlightLifecyclePresentation) {
-        gate.request(overlay)
-      }
+      if (cameraApplied) flightGate.request(overlay)
     }
     const scheduleFinalApply = () => {
       if (typeof window === 'undefined') return
@@ -309,7 +356,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     map?.on?.('resize', scheduleFinalApply)
     const root = options.rootRef.current
     const observedRoot = root || map?.getContainer?.()
-    const stopObservingOcclusion = observeFlightGeoMapOcclusionChanges(observedRoot || null, scheduleFinalApply)
+    const stopObservingOcclusion = observeGeoMapOcclusionChanges(observedRoot || null, scheduleFinalApply)
     return () => {
       unsubscribe()
       unsubscribeBootstrapSettled()
@@ -318,7 +365,8 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       map?.off?.('load', scheduleFinalApply)
       map?.off?.('resize', scheduleFinalApply)
       stopObservingOcclusion()
-      gate?.dispose()
+      disposeGate()
+      transitionPresentationOwner(null)
       if (pendingCameraFrame && typeof window !== 'undefined') {
         window.cancelAnimationFrame(pendingCameraFrame)
       }
@@ -329,7 +377,6 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
     options.graphRevision,
     options.map,
     options.mapLibreRuntimeEnabled,
-    options.requiresFlightLifecyclePresentation,
     options.onPresented,
     options.rootRef,
     captureMapPadding,

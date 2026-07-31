@@ -1,5 +1,5 @@
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { isCitySimRunReadyDemoActive, isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import {
   findSpatialCollision,
   findSweptSpatialCuboidHit,
@@ -161,15 +161,10 @@ export function createFlightSimSpatialProfile(
 function readSpatialSelection() {
   const state = useGraphStore.getState()
   const projection = resolveXrCanonicalSceneProjection({
-    physicsRunReady:
-      isXrPhysicsRuntimeRunReadyDemoActive(
-        state.markdownDocumentName,
-        state.markdownDocumentText,
-      )
-      || isCitySimRunReadyDemoActive(
-        state.markdownDocumentName,
-        state.markdownDocumentText,
-      ),
+    physicsRunReady: isXrPhysicsRuntimeRunReadyDemoActive(
+      state.markdownDocumentName,
+      state.markdownDocumentText,
+    ),
   })
   return Object.freeze({
     projection,

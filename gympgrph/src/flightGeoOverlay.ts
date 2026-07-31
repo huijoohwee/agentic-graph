@@ -2,6 +2,8 @@ import type { Feature, FeatureCollection, LineString, Point } from 'geojson'
 
 export type FlightGeoCoordinate = readonly [longitude: number, latitude: number]
 
+export type FlightGeoOverlayPresentationOwner = 'city' | 'flight' | null
+
 export type FlightGeoRoutePoint = Readonly<{
   id: string
   coordinate: FlightGeoCoordinate
@@ -68,6 +70,7 @@ export type FlightGeoOverlaySnapshot = Readonly<{
     label: string
   }> | null
   phase: 'stopped' | 'ready' | 'flying' | 'completed' | 'crashed'
+  presentationOwner: FlightGeoOverlayPresentationOwner
   profileId: string
   readyFrameRequestId: number | null
   revision: string
@@ -78,6 +81,7 @@ export type FlightGeoOverlaySnapshot = Readonly<{
 
 export type FlightGeoOverlayPresentation = Readonly<{
   phase: FlightGeoOverlaySnapshot['phase']
+  presentationOwner: FlightGeoOverlaySnapshot['presentationOwner']
   profileId: string
   readyFrameRequestId: number | null
   revision: string
@@ -109,6 +113,7 @@ const EMPTY_FLIGHT_GEO_OVERLAY: FlightGeoOverlaySnapshot = Object.freeze({
   night: false,
   objective: null,
   phase: 'stopped',
+  presentationOwner: null,
   profileId: '',
   readyFrameRequestId: null,
   revision: 'inactive',
@@ -154,7 +159,9 @@ export function clearFlightGeoOverlay(): void {
 }
 
 export function readFlightGeoOverlayReadyFramePresented(): boolean {
-  return snapshot.active && readyFramePresented
+  return snapshot.active
+    && snapshot.presentationOwner === 'flight'
+    && readyFramePresented
 }
 
 export function markFlightGeoOverlayReadyFramePresented(
@@ -163,6 +170,7 @@ export function markFlightGeoOverlayReadyFramePresented(
 ): boolean {
   if (
     !snapshot.active
+    || snapshot.presentationOwner !== 'flight'
     || snapshot.phase !== 'ready'
     || snapshot.tick !== 0
     || snapshot.readyFrameRequestId !== expectedReadyFrameRequestId

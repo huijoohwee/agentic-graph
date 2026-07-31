@@ -7,7 +7,7 @@ import { Simulate } from 'react-dom/test-utils'
 import { CityParcelCoordinateControls } from '@/features/game-city-sim/CityParcelCoordinateControls'
 import { CitySimFloatingPanelView } from '@/features/game-city-sim/CitySimFloatingPanelView'
 import { resetCityInputQueueForTests, type CityInputSource } from '@/features/game-city-sim/citySimInputRuntime'
-import { resetCitySimRuntimeForTests } from '@/features/game-city-sim/citySimRuntime'
+import { resetCitySimRuntimeForTests } from './citySimAuthoritativeSource'
 import {
   publishCitySimFailure,
   publishCitySimSnapshot,

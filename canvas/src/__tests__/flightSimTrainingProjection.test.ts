@@ -32,8 +32,8 @@ test('night training changes the native MapLibre overlay and shared HUD only', (
     'src/features/game-flight-sim/flightSimGeospatialProjection.ts',
     'utf8',
   )
-  const bridge = readFileSync(
-    'src/components/CanvasViewportGeospatialOverlay.tsx',
+  const publisher = readFileSync(
+    'src/features/geospatial/useGeoXrOverlayPublisher.ts',
     'utf8',
   )
   const hud = readFileSync(
@@ -45,7 +45,7 @@ test('night training changes the native MapLibre overlay and shared HUD only', (
     'utf8',
   )
   assert.match(projection, /night: boolean/)
-  assert.match(bridge, /readFlightSimTrainingSnapshot\(\)\.night/)
+  assert.match(publisher, /readFlightSimTrainingSnapshot\(\)\.night/)
   assert.match(
     mapLibreOverlay,
     /from '\.\/flightGeoOverlayMapLibreLayers\.js'/,

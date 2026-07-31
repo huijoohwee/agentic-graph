@@ -134,8 +134,11 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
   const gameMode = readCanvasSource('features/game-fps/gameModeRuntime.ts')
   const flightSim = readCanvasSource('features/game-flight-sim/flightSimSurfacePresentationRuntime.ts')
   const citySim = readCanvasSource('features/game-city-sim/citySimRuntime.ts')
-  const geospatialPublisher = readCanvasSource(
+  const viewport = readCanvasSource(
     'components/CanvasViewportGeospatialOverlay.tsx',
+  )
+  const geospatialPublisher = readCanvasSource(
+    'features/geospatial/useGeoXrOverlayPublisher.ts',
   )
   const aerialProjection = readCanvasSource(
     'features/game-city-sim/citySimAerialInspectionProjection.ts',
@@ -160,30 +163,34 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
   )
   assert.ok(
     geospatialPublisher.includes(
-      'projectCitySimAerialInspectionToGeospatialOverlay(',
+      'projectCityAerial: projectCitySimAerialInspectionToGeospatialOverlay',
     ),
     'the shared geospatial publisher must project City through the existing aerial-inspection overlay',
   )
   assert.ok(
-    geospatialPublisher.includes('applyGeoXrGameplayOverlayPublication({'),
-    'the shared publisher must retain deterministic Flight-first City arbitration',
+    geospatialPublisher.includes('publishGeoXrOverlayComposition({'),
+    'the shared publisher must use the behavior-tested atomic Geo+XR composition',
   )
   assert.ok(geospatialPublisher.includes('subscribeCitySimSnapshot('))
   assert.ok(
-    geospatialPublisher.includes(
+    geospatialPublisher.includes('projectCityOverlay: projectCitySimToGeospatialOverlay'),
+    'the shared publisher must project the live City snapshot to its own Geo overlay',
+  )
+  assert.ok(
+    viewport.includes(
       'if (!active || !composedWithXr || !flightSimActive) return',
     ),
     'City aerial inspection must not claim the Flight MapLibre readiness presenter',
   )
   assert.doesNotMatch(
     aerialProjection,
-    /\b(?:open|start|restart)FlightSim\b|claimFlightSimReadyPresenter/,
-    'the City projector must reuse Flight geometry without invoking Flight lifecycle or readiness',
+    /\b(?:open|start|restart)FlightSim\b|claimFlightSimReadyPresenter|readFlightSimXrSpatialProfile|projectFlightSimToGeospatialOverlay/,
+    'the City aerial projector must consume only the authored City profile and invoke no Flight runtime path',
   )
-  assert.match(
-    aerialProjection,
-    /false,\s*null,\s*null,\s*\)/,
-    'the City projector must clear the Flight XR environment while retaining stopped aircraft and route geometry',
+  assert.ok(
+    aerialProjection.includes("presentationOwner: 'city'")
+      && aerialProjection.includes('environment: null'),
+    'the independent aerial projection must publish atomic City ownership with no Flight environment',
   )
   assert.ok(xrPhysics.includes('citySimActive || flightSimActive || gameFpsActive'))
 }

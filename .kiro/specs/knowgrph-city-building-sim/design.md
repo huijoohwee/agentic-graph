@@ -6,33 +6,38 @@
 repository-native owner and deliberately keeps rendering, simulation,
 persistence, invocation, and projections separate.
 
-The City Simulation is one browser-local runtime with four adapters:
+The City Simulation is one browser-local runtime with five adapters:
 
 1. a labeled semantic City media `figure` around the existing native MapLibre
    Geo+XR host, which remains the sole City visual, renderer, camera, and
    viewport-gesture owner;
 2. a City Builder view plus compact projections in six existing
    FloatingPanel views; and
-3. a City-owned aerial adapter that reuses the current authored XR spatial
-   profile and existing Flight projector to publish a deterministic stopped
-   aircraft and route, with no Flight XR environment, through the Geo owner; and
-4. WorkspaceFs and MCP adapters that delegate to the same runtime operations.
+3. a City-owned geographic adapter that projects the applied source's live
+   parcel grid into one City GeoJSON source and four MapLibre layers;
+4. a City-owned aerial adapter that publishes the source-authored inspection
+   route and stopped aircraft through the existing Flight overlay as an
+   independent, camera-free presentation; and
+5. WorkspaceFs and MCP adapters that delegate to the same runtime operations.
 
 No adapter owns a second city state, map, Three.js or React Three Fiber
-Canvas/stage/mesh/camera, map source/layer family, or Flight gameplay runtime.
+Canvas/stage/mesh/camera, Flight bootstrap/camera, or Flight gameplay runtime.
 
 ## 2. Owner map
 
 | Owner | Responsibility | Must not own |
 |---|---|---|
 | `CitySimRuntime` | Committed snapshot, lifecycle fencing, operation dispatch, subscribers | Canvas, files, panel-local copies |
+| `citySimAuthoredSource` | Parse and validate the applied parcel grid, geographic profile, and aerial coordinates | Runtime fallback fixtures, identity remaps |
 | `citySimEconomy` | Pure tick transition and safe-integer validation | Timers, rendering, persistence |
 | `citySimCodec` | Canonical KGC plus CSV serialize/parse | WorkspaceFs access |
 | `citySimPersistence` | One-path WorkspaceFs write/read-back | Serialization rules, autosave |
 | `citySimAdvisor` | Two-round deterministic proposal loop | Model calls, automatic zoning |
 | `citySimInvocation` | Strict native grammar parse | Runtime mutation |
 | `CitySimMediaFigure` | Semantic `figure`, active-only selection marker, and caption around the native MapLibre Geo+XR projection | Map lifecycle, Three.js/R3F content, pointer capture, generic `div`, `aria-hidden` decoration |
-| `citySimAerialInspectionProjection` | Derive one `stopped` aircraft/route overlay from City state plus the current authored XR spatial profile, with a null environment, through the existing Flight projector | Flight lifecycle, controls, readiness, MapLibre layers |
+| `citySimGeospatialProjection` | Project the live City snapshot and authored geographic profile to the City overlay contract | Map lifecycle, Flight state, hardcoded parcel fixture |
+| City Geo overlay owners | Own `kg-city-sim:geo-overlay`, parcel GeoJSON, layers, selection, and responsive bounds framing on the existing map | Basemap replacement, Flight camera, second map |
+| `citySimAerialInspectionProjection` | Derive one `stopped` aircraft/route overlay from the City geographic profile with atomic owner `city` | Flight lifecycle, bootstrap, camera, controls, readiness |
 | Existing Flight Geo overlay store | Publish/read one aerial snapshot via `gympgrph/src/flightGeoOverlay.ts` | City state, Flight gameplay activation |
 | Existing Flight MapLibre projection | Apply the shared source/layer ids via `gympgrph/src/flightGeoOverlayMapLibre.ts` | A second map, duplicate source/layers |
 | Existing native MapLibre Geo host | Sole City visual, renderer, camera, and viewport-gesture owner in Geo+XR | City state, a City-owned map |
@@ -56,10 +61,14 @@ flowchart LR
   Runtime --> Persistence["WorkspaceFs adapter"]
   Persistence --> Document["/game-city-sim/city-grid.md"]
   Runtime -. semantic activation .-> Figure["CitySimMediaFigure"]
+  Runtime -. live parcel projection .-> CityProjection["citySimGeospatialProjection"]
+  CityProjection --> CityStore["City Geo overlay store"]
+  CityStore --> CityLayers["City parcel MapLibre layers"]
+  CityLayers --> Geo["Existing native MapLibre Geo host"]
   Runtime -. snapshot .-> Aerial["citySimAerialInspectionProjection"]
   Aerial --> FlightStore["Existing Flight Geo overlay store"]
   FlightStore --> FlightLayers["Existing Flight MapLibre source/layers"]
-  FlightLayers --> Geo["Existing native MapLibre Geo host"]
+  FlightLayers --> Geo
   Geo --> Figure
   Runtime -. snapshot .-> Builder["cityBuilder"]
   Runtime -. snapshot .-> Projections["Six existing panel projections"]
@@ -106,7 +115,7 @@ Every numeric field is a safe integer. Parcel arrays are stored and emitted in
 ascending parcel-id order. Runtime publication uses immutable snapshots and a
 monotonic revision.
 
-### Authored default seed
+### Authored initial City source
 
 The workspace seed describes a 4 by 4 row-major grid:
 
@@ -118,8 +127,10 @@ The workspace seed describes a 4 by 4 row-major grid:
 - all starting population, pollution, and land values are explicit in the
   seed's CSV fixture.
 
-The same values must be represented in the runtime default factory. A focused
-test compares runtime serialization with the seed fixture to prevent drift.
+`citySimAuthoredSource` parses these values directly from the applied seed. A
+focused test parses the authoritative document and rejects missing, malformed,
+duplicated, or dimension-conflicting source data; no runtime default factory or
+copied test fixture exists.
 
 ## 5. Deterministic economy
 
@@ -183,12 +194,12 @@ before it changes anything. It asks the existing gameplay-surface coordinator to
 exclusive overlay, activates `geo-xr`, retains the existing native MapLibre
 host as the sole City visual, renderer, camera, and viewport-gesture owner, and
 activates the semantic City media figure around that map without mounting a
-City Three.js/R3F stage or local grid. The shared
-`CanvasViewport` geospatial publisher then projects the current authored XR
-spatial profile as a stopped aircraft/route snapshot and clears the Flight XR
-environment. City never opens Flight gameplay or borrows a Flight readiness
-signal. If City entry fails, its FloatingPanel/Canvas surface lifecycle rolls
-back.
+City Three.js/R3F stage or local grid. The shared `CanvasViewport` geospatial
+publisher then projects the applied source's typed `city_geo_xr` profile as a
+stopped aircraft/route snapshot with presentation owner `city` and a null
+Flight XR environment. City never opens Flight gameplay or borrows a Flight
+readiness signal. If City entry fails, its FloatingPanel/Canvas surface
+lifecycle rolls back.
 
 On Exit, it fences the timer, releases its Flight Geo overlay publication
 through the existing owner, releases the City figure's active selection
@@ -204,15 +215,17 @@ wraps that geospatial projection directly and owns only the semantic `figure`,
 active-only selection marker, and caption. City mounts zero Three.js or React
 Three Fiber Canvas, stage, mesh, camera, or pointer handler.
 
-City creates no map, map source, map layer, or Three Canvas. It must use the
-stable source/layer ids and application functions already owned by
-`flightGeoOverlayMapLibre.ts`; alias ids and City-specific copies are
-forbidden.
+City creates no map or Three Canvas. It owns one stable
+`kg-city-sim:geo-overlay` source/layer family for live parcels on the existing
+map. The aircraft/route remains in the distinct existing Flight source/layers;
+duplicate ids, copied layer families, and compatibility aliases are forbidden.
 
-City Builder coordinate controls are the Geo+XR parcel-input owner. The local
-City parcel/building meshes, selection indicator, and pointer hit testing are
-not mounted over MapLibre, so an unregistered isometric grid cannot corrupt the
-geographic surface.
+The source-authored parcel table and geographic profile initialize one runtime
+snapshot. `citySimGeospatialProjection` converts every live parcel to a
+geographic polygon; `kg-city-sim:geo-overlay` renders zone fill, building
+extrusion, outline, and selected-parcel outline on the existing map. City
+Builder controls and MapLibre parcel clicks both dispatch selection to that one
+runtime. No local Three mesh or duplicate parcel store exists.
 
 City source identity remains part of the broader native-XR catalog, but it is
 not an XR physics-runtime owner. `isXrPhysicsRuntimeRunReadyDemoActive`
@@ -229,23 +242,19 @@ gestures and City Builder parcel controls remain available. The marker and City
 semantics disappear when City is inactive; the stable `figure` remains
 presentational without introducing a second renderer.
 
-`projectCitySimAerialInspectionToGeospatialOverlay` is a pure adapter from City
-active/Geo+XR admission plus the current selected authored XR spatial
-profile to one `FlightGeoOverlaySnapshot`. It reuses
-`projectFlightSimToGeospatialOverlay`, keeps the inherited profile as visual
-identity, fixes the environment to `null` and camera to Survey/Fixed Follow,
-and pins phase `stopped`, run id `0`, tick `0`, and ready-frame request `null`.
-City tick/revision changes therefore do not restart MapLibre bootstrap or move
-the aircraft. The shared publisher writes the result through `setFlightGeoOverlay`;
-MapLibre renders it through
-`applyFlightGeoOverlayToMap` and the existing Flight Geo source/layers. The
-pure City adapter calls no Flight lifecycle, mission-advance, control, or
-readiness API. The shared publisher retains its normal Flight subscriptions for
-publication arbitration; this does not activate Flight gameplay or readiness.
+`projectCitySimAerialInspectionToGeospatialOverlay` is a pure adapter from the
+same City geographic profile to one stopped aircraft/route snapshot. It sets
+atomic presentation owner `city`, environment `null`, phase `stopped`, run id
+`0`, tick `0`, and ready-frame request `null`. The existing Flight source and
+layers render the aircraft and route, but owner `city` is excluded from Flight
+bootstrap, camera/padding, lifecycle, mission, controls, readiness, and
+environment paths. No revision-prefix alias or selected XR Physics profile is
+consulted.
 
-In Geo+XR, MapLibre keeps its native camera and viewport sizing. The City
-lifecycle neither captures nor restores a Three/R3F camera and does not install
-an orthographic camera over Geo.
+The City overlay controller fits the authored parcel bounds into the map's
+visible aperture around workspace panels. It clears its own applied padding
+before each responsive fit, restores prior map padding on handoff, and never
+replaces the provider style or captures a Three/R3F camera.
 
 HUD metrics live in FloatingPanel HTML, not a second scene or renderer.
 
@@ -391,13 +400,15 @@ Focused source proof:
 - parser accept/reject and single-effect tests;
 - advisor bound/tie/no-mutation tests;
 - runtime timer fencing, save/read-back, and surface restoration tests;
-- static Geo+XR, semantic-figure, zero-City-Three, no-duplicate-map/layer, and
+- source parsing, parcel GeoJSON, mutation/selection projection, and City plus
+  Flight coexistence tests;
+- static Geo+XR, semantic-figure, zero-City-Three, one-map ownership, and
   exact-two-MCP registration tests;
 - City aerial projection tests for deterministic route/aircraft, permanent
   `stopped` phase, overlay owner reuse, Flight gameplay inactivity, and no
   Flight readiness claim;
 - FloatingPanel routing/projection ownership tests;
-- seed/default-fixture drift test.
+- authoritative-seed parsing test with no runtime default fixture.
 
 Neutral browser proof:
 
@@ -413,12 +424,14 @@ Neutral browser proof:
 7. save and verify read-back success at the canonical path;
 8. visit Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera,
    confirming one shared revision and the specified projection;
-9. assert the deterministic route and stopped aircraft use the existing Flight
-   Geo source/layers, with no duplicate map/source/layer or City Three Canvas,
-   Flight gameplay, or Flight readiness;
-10. exit and verify the aerial publication clears and the prior
+9. assert sixteen live City parcel features and a visible zone/selection
+   mutation in the City layers, plus the stopped aircraft/route above them;
+10. assert one map and no Flight bootstrap style, environment, camera,
+   gameplay, readiness, duplicate ids, or City Three Canvas;
+11. exit and verify both overlay publications clear, prior map padding is
+   restored, and the prior
     FloatingPanel/Canvas surface state restores exactly once;
-11. repeat from neutral state and compare initial serialized bytes and aerial
+12. repeat from neutral state and compare initial serialized bytes and aerial
     projection.
 
 The seed remains `proof-pending` until the focused suite and this browser proof

@@ -17,9 +17,8 @@ import {
   mapHasExactFlightGeoEnvironment,
 } from '../../flightGeoEnvironmentMapLibre.js'
 import { readFlightGeoOverlay } from '../../flightGeoOverlay.js'
-import { readFlightGeoMapViewportPadding } from '../../flightGeoMapViewport.js'
+import { readGeoMapViewportPadding } from '../../geoMapViewport.js'
 import {
-  FLIGHT_GEO_BOOTSTRAP_STYLE,
   MAPLIBRE_CLASSIC_DEFAULT_STYLE_URL,
   MAPLIBRE_DEFAULT_STYLE_URL,
   SAFE_SVG_FALLBACK_STYLE_SENTINEL,
@@ -36,7 +35,6 @@ import {
   acquireMapLibreMapDisposalPreparation,
   claimMapLibreMapLease,
   isMapLibreMapPreparingForDisposal,
-  NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
   readActiveNativeGeospatialMapLibreMap,
   type MapLibreMapOwnerScope,
 } from './mapLibreHostLease.js'
@@ -277,7 +275,6 @@ export function useMapLibreBasemap(args: {
   containerRef: React.RefObject<HTMLElement | null>
   targetStyleUrl?: string | null
   initialStyleOverride?: Readonly<Record<string, unknown>> | null
-  flightBootstrapEnabled?: boolean
   ownerScope?: MapLibreMapOwnerScope
   canvasRenderMode: '2d' | '3d'
   projectionMode: 'mercator' | 'globe'
@@ -292,7 +289,6 @@ export function useMapLibreBasemap(args: {
     containerRef,
     targetStyleUrl,
     initialStyleOverride,
-    flightBootstrapEnabled = true,
     ownerScope = 'embedded-preview',
     canvasRenderMode,
     projectionMode,
@@ -308,22 +304,12 @@ export function useMapLibreBasemap(args: {
   // The mount effect intentionally does not depend on the bootstrap override:
   // Flight takes over the retained map in place. Load and resize callbacks
   // therefore need the latest ownership rather than their mount-time value.
-  const initialStyleOverrideRef = React.useRef(initialStyleOverride)
-  initialStyleOverrideRef.current = initialStyleOverride
-  const flightBootstrapEnabledRef = React.useRef(flightBootstrapEnabled)
-  flightBootstrapEnabledRef.current = flightBootstrapEnabled
-  const readLiveFlightBootstrapStyle = React.useCallback((): Readonly<
-    Record<string, unknown>
-  > | null => (
-    initialStyleOverrideRef.current
-    || (
-      flightBootstrapEnabledRef.current
-      && ownerScope === NATIVE_GEOSPATIAL_MAPLIBRE_OWNER
-      && readFlightGeoOverlay().active
-        ? FLIGHT_GEO_BOOTSTRAP_STYLE
-        : null
-    )
-  ), [ownerScope])
+  const initialStyleOverrideRef = React.useRef(initialStyleOverride ?? null)
+  initialStyleOverrideRef.current = initialStyleOverride ?? null
+  const readLiveFlightBootstrapStyle = React.useCallback(
+    (): Readonly<Record<string, unknown>> | null => initialStyleOverrideRef.current,
+    [],
+  )
   const initialStylePreflightAbortRef =
     React.useRef<AbortController | null>(null)
   // Toast handlers close over the live Canvas snapshot. Their identity can
@@ -463,9 +449,10 @@ export function useMapLibreBasemap(args: {
       const expectedCamera = createFlightGeoOverlayMapLibreCamera(
         overlay,
         canvasRenderMode,
-        readFlightGeoMapViewportPadding(candidate),
+        readGeoMapViewportPadding(candidate),
       )
       return overlay.active
+        && overlay.presentationOwner === 'flight'
         && mapHasExactFlightGeoOverlay(candidate, overlay)
         && mapHasExactFlightGeoEnvironment(candidate, overlay)
         && mapHasExactFlightGeoStyleSources(candidate, overlay)
@@ -1254,9 +1241,10 @@ export function useMapLibreBasemap(args: {
         const expectedCamera = createFlightGeoOverlayMapLibreCamera(
           overlay,
           canvasRenderMode,
-          readFlightGeoMapViewportPadding(candidate),
+          readGeoMapViewportPadding(candidate),
         )
         return overlay.active
+          && overlay.presentationOwner === 'flight'
           && mapHasExactFlightGeoOverlay(candidate, overlay)
           && mapHasExactFlightGeoEnvironment(candidate, overlay)
           && mapHasExactFlightGeoStyleSources(candidate, overlay)

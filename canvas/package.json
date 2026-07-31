@@ -63,7 +63,7 @@
     "test:smoke:mobile-keyboard:browser": "node ./scripts/run_mobile_keyboard_browser_smoke.mjs",
     "test:smoke:game-fps:source": "node --import tsx --import ./scripts/source-authority-test-bootstrap.mjs --test --test-concurrency=1 src/__tests__/gameFpsMissionCore.test.ts src/__tests__/gameFpsRuntimeConcurrency.test.ts src/__tests__/gameFpsDecisionStore.test.ts src/__tests__/gameModeRuntime.test.ts src/__tests__/gameModeMotionInputRuntime.test.ts src/__tests__/gameModePersistenceRuntime.test.ts src/__tests__/gameModeSpatialSourceRuntime.test.ts src/__tests__/gameModeSourceAuthority.test.ts src/__tests__/canvasSurfaceGameDeparture.test.ts",
     "test:smoke:game-fps:browser": "node ./scripts/run_game_fps_browser_smoke.mjs",
-    "test:smoke:game-flight-sim:source": "node --import tsx --import ./scripts/source-authority-test-bootstrap.mjs --test --test-concurrency=1 src/__tests__/flightSim*.test.ts",
+    "test:smoke:game-flight-sim:source": "node --import tsx --import ./scripts/source-authority-test-bootstrap.mjs --test --test-concurrency=1 src/__tests__/flightSim*.test.ts src/__tests__/geoMapViewportOcclusionObserver.test.ts src/__tests__/geoXrOverlayPublisherLease.test.ts",
     "test:smoke:game-flight-sim:browser": "node ./scripts/run_game_flight_sim_browser_smoke.mjs",
     "test:smoke:game-mode-xr-share:unit": "python3 ./scripts/verify_game_mode_xr_share_browser_smoke_test.py",
     "test:smoke:game-mode-xr-share:browser": "npm run test:smoke:game-mode-xr-share:unit && KG_TEST_VALIDATION_FORBID_HARDCODE_IN_REPO=\"$KG_GAME_MODE_VALIDATION_SHARE_URL\" npm run test:ci:unit -- policy.boundary.forbidHardcodedRuntimeValidationInput && node ./scripts/run_game_mode_xr_share_browser_smoke.mjs",

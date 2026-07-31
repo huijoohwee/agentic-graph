@@ -6,7 +6,7 @@ import {
   applyFlightGeoOverlayCameraToMap,
   fitMapToFlightGeoOverlay,
 } from '../../../gympgrph/src/flightGeoOverlayMapLibre'
-import { readFlightGeoMapViewportPadding } from '../../../gympgrph/src/flightGeoMapViewport'
+import { readGeoMapViewportPadding } from '../../../gympgrph/src/geoMapViewport'
 import { flightOverlay } from './helpers/flightSimMapLibreFixtures'
 
 test('Flight camera preserves 2D north-up and 3D oblique mode ownership', () => {
@@ -147,7 +147,7 @@ test('Flight camera reserves a panel that crosses the compact map centre', () =>
     } as DOMRect)
 
     assert.deepEqual(
-      readFlightGeoMapViewportPadding({ getContainer: () => mapContainer }),
+      readGeoMapViewportPadding({ getContainer: () => mapContainer }),
       { bottom: 112, left: 44, right: 369, top: 88 },
     )
   } finally {

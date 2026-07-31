@@ -3,8 +3,8 @@ import {
   exitCitySimSurface,
   openCitySimSurface,
   readCitySimSnapshot,
-  resetCitySimRuntimeForTests,
 } from '@/features/game-city-sim/citySimRuntime'
+import { resetCitySimRuntimeForTests } from './citySimAuthoritativeSource'
 import { exitCitySimSurfaceAndWait } from '@/features/game-city-sim/citySimSurfaceExit'
 import { captureCitySimPreviousCanvasSurface } from '@/features/game-city-sim/citySimSurfaceOwnership'
 import { onGeospatialModeChanged } from '@/features/geospatial/events'
@@ -25,7 +25,7 @@ import {
   captureStoreState,
   createCityWorkspace,
   prepareCitySurface,
-} from './citySimRuntimeLifecycle.test'
+} from './helpers/citySimRuntimeHarness'
 
 export async function testCitySimRetainedGeoClaimDoesNotDisposeNativeMap() {
   const { dom, restore } = initJsdomHarness(`

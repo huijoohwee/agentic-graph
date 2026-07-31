@@ -106,7 +106,7 @@ run_ready_demo:
   auto_start: false
   external_dependencies: []
   forbid_external_copy_or_dependency: true
-  canonical_consumers: ["workspace", "geo-xr-mode", "city-builder", "maplibre-flight-overlay"]
+  canonical_consumers: ["workspace", "geo-xr-mode", "city-builder", "city-maplibre-overlay", "flight-aerial-overlay"]
 city_runtime:
   schema_id: "knowgrph-city-grid/v1"
   world_ownership: "overlay-only"
@@ -114,13 +114,22 @@ city_runtime:
   renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"
   runtime_dependencies_added: 0
 city_geo_xr:
+  profile_id: "city-sim:civic-seed:geo/v1"
+  parcel_gap_meters: 6
+  parcel_bearing_degrees: 18
   surface_owner: "Geo+XR Mode"
   geo_host_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   city_surface_owner: "native MapLibre Geo+XR host wrapped by the City semantic media figure"
-  parcel_input_owner: "City Builder coordinate controls"
-  composition: "one native MapLibre map with its existing Flight Geo source and layers; zero City Three Canvas"
+  parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
+  composition: "one native MapLibre map with City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas"
   duplicate_map_or_canvas_forbidden: true
+city_parcel_projection:
+  source_owner: "gympgrph/src/cityGeoOverlay.ts"
+  source_id: "kg-city-sim:geo-overlay"
+  layer_owner: "gympgrph/src/cityGeoOverlayMapLibre.ts"
+  framing_owner: "gympgrph/src/cityGeoOverlayMapLibreController.ts"
+  duplicate_source_or_layer_ids_forbidden: true
 city_semantic_media:
   owner: "canvas/src/features/game-city-sim/CitySimMediaFigure.tsx"
   child_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
@@ -133,11 +142,11 @@ city_semantic_media:
 city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
-  spatial_source: "current selected authored XR spatial profile"
+  spatial_source: "this source document's typed city_geo_xr geographic profile"
   environment: null
   adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
   adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
-  flight_projection_owner: "canvas/src/features/game-flight-sim/flightSimGeospatialProjection.ts"
+  presentation_owner: "city"
   overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"
   maplibre_projection_owner: "gympgrph/src/flightGeoOverlayMapLibre.ts"
   shared_publisher_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
@@ -145,7 +154,7 @@ city_aerial_projection:
   flight_readiness_claimed: false
   duplicate_source_or_layers_forbidden: true
 city_camera:
-  framing: "native MapLibre camera in Geo+XR"
+  framing: "source-authored City bounds in the visible MapLibre aperture"
   projection: "MapLibre"
   canvas_mode: "geo-xr"
   owner: "native MapLibre Geo host"

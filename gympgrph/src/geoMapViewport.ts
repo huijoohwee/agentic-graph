@@ -1,4 +1,4 @@
-export type FlightGeoMapViewportPadding = Readonly<{
+export type GeoMapViewportPadding = Readonly<{
   bottom: number
   left: number
   right: number
@@ -14,7 +14,7 @@ type ViewportRect = Readonly<{
   width: number
 }>
 
-export const FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR = [
+export const GEO_MAP_OCCLUDING_PANEL_SELECTOR = [
   '[aria-label="Markdown Workspace"]',
   '[aria-label="Floating panel"]',
   '[aria-label="Geospatial panel"]',
@@ -38,8 +38,8 @@ function nodeContainsOccludingPanel(node: Node): boolean {
   if (node.nodeType !== 1) return false
   const element = node as Element
   return (
-    element.matches(FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR)
-    || !!element.querySelector(FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR)
+    element.matches(GEO_MAP_OCCLUDING_PANEL_SELECTOR)
+    || !!element.querySelector(GEO_MAP_OCCLUDING_PANEL_SELECTOR)
   )
 }
 
@@ -48,7 +48,7 @@ function nodeContainsOccludingPanel(node: Node): boolean {
  * Workspace panels can mount after MapLibre, so child-list discovery is
  * required in addition to element resize observation.
  */
-export function observeFlightGeoMapOcclusionChanges(
+export function observeGeoMapOcclusionChanges(
   viewport: HTMLElement | null,
   onChange: () => void,
 ): () => void {
@@ -68,7 +68,7 @@ export function observeFlightGeoMapOcclusionChanges(
 
   const refreshPanels = () => {
     const currentPanels = new Set(Array.from(
-      ownerDocument.querySelectorAll(FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR),
+      ownerDocument.querySelectorAll(GEO_MAP_OCCLUDING_PANEL_SELECTOR),
     ))
     for (const panel of observedPanels) {
       if (currentPanels.has(panel)) continue
@@ -129,14 +129,10 @@ function overlaps(viewport: ViewportRect, candidate: ViewportRect): boolean {
     && candidate.bottom > viewport.top
 }
 
-/**
- * Reads the real left/right area covered by workspace and floating panels.
- * Flight maps are full-canvas, so camera placement follows the visual aperture
- * instead of the canvas's nominal center.
- */
-export function readFlightGeoMapOcclusionPadding(
+/** Reads workspace and floating-panel occlusion around the map aperture. */
+export function readGeoMapOcclusionPadding(
   viewport: HTMLElement | null,
-): FlightGeoMapViewportPadding {
+): GeoMapViewportPadding {
   const viewportRect = viewport ? readVisibleRect(viewport) : null
   const ownerDocument = viewport?.ownerDocument
   if (!viewportRect || !ownerDocument) {
@@ -146,18 +142,13 @@ export function readFlightGeoMapOcclusionPadding(
   let left = 0
   let right = 0
   for (const candidate of Array.from(
-    ownerDocument.querySelectorAll(
-      FLIGHT_GEO_MAP_OCCLUDING_PANEL_SELECTOR,
-    ),
+    ownerDocument.querySelectorAll(GEO_MAP_OCCLUDING_PANEL_SELECTOR),
   )) {
     if (candidate === viewport) continue
     const candidateRect = readVisibleRect(candidate)
     if (!candidateRect || !overlaps(viewportRect, candidateRect)) continue
-    // A floating panel can overlap the viewport centre while still covering
-    // one whole edge (the compact 1100px Flight layout is exactly that case).
-    // Classify it by its own centre rather than requiring it to sit wholly on
-    // one side of the map centre; otherwise the only visible map aperture is
-    // treated as if it were unobstructed.
+    // Classifying by panel centre handles compact layouts where a panel crosses
+    // the map centre while still covering one complete edge.
     const candidateCenter = candidateRect.left + candidateRect.width / 2
     if (candidateCenter <= horizontalCenter) {
       left = Math.max(left, candidateRect.right - viewportRect.left + PANEL_CLEARANCE_PX)
@@ -168,13 +159,13 @@ export function readFlightGeoMapOcclusionPadding(
   return Object.freeze({ bottom: 0, left, right, top: 0 })
 }
 
-export function readFlightGeoMapViewportPadding(
+export function readGeoMapViewportPadding(
   map: any,
-): FlightGeoMapViewportPadding {
+): GeoMapViewportPadding {
   const viewport = map?.getContainer?.() as HTMLElement | undefined
   const width = Math.max(1, Number(viewport?.clientWidth) || 1)
   const height = Math.max(1, Number(viewport?.clientHeight) || 1)
-  const occlusion = readFlightGeoMapOcclusionPadding(viewport || null)
+  const occlusion = readGeoMapOcclusionPadding(viewport || null)
   const horizontalBase = Math.max(16, Math.min(72, width * 0.08))
   const verticalBase = Math.max(16, Math.min(88, height * 0.1))
   return Object.freeze({
@@ -185,8 +176,8 @@ export function readFlightGeoMapViewportPadding(
   })
 }
 
-export function flightGeoMapViewportPaddingKey(
-  padding: FlightGeoMapViewportPadding,
+export function geoMapViewportPaddingKey(
+  padding: GeoMapViewportPadding,
 ): string {
   return [padding.top, padding.right, padding.bottom, padding.left].join(',')
 }
