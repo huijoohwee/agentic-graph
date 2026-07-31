@@ -211,6 +211,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["workspace.import.knowledgeGraph.skillsCommandsFailureVisible","@/__tests__/knowledgeGraphSkillsCommandsLaunch.test","testKnowledgeGraphLaunchSkillsCommandsFailureIsVisibleAndScoped"],
   ["workspace.import.knowledgeGraph.skillsCommandsStoreExitClears","@/__tests__/knowledgeGraphSkillsCommandsLaunch.test","testKnowledgeGraphSkillsCommandsTargetClearsAcrossStoreOwnedShellExits"],
   ["workspace.import.knowledgeGraph.launchInputButton","@/__tests__/knowledgeGraphLaunchInputInteraction.test","testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonicalGraph"],
+  ["workspace.import.knowledgeGraph.launchInputRateLimitRecovery","@/__tests__/knowledgeGraphLaunchInputInteraction.test","testKnowledgeGraphLaunchImportUrlOffersRateLimitedRepositoryRecovery"],
   ["workspace.import.knowledgeGraph.repositoryProofBoundDedupe","@/__tests__/knowledgeGraphLaunchInputInteraction.test","testKnowledgeGraphRepositoryImportDedupeIsExactProofBoundAndClears"],
   ["workspace.import.knowledgeGraph.repositoryCanonicalGraphView","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreservesProjectionIds"],
   ["workspace.import.knowledgeGraph.projectionMultilineLabels","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphCanvasProjectionAcceptsBoundedMultilineLabels"],

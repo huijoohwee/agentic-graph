@@ -40,6 +40,10 @@ export type WorkspaceFileSelection = FileList | ReadonlyArray<File> | null
 export type WorkspaceBridgeImportResult = {
   handled?: boolean
   error?: string
+  /** An explicit, source-classified recovery route; never inferred from a raw URL error. */
+  recovery?: {
+    kind: 'repository-graph'
+  }
   createdPaths?: string[]
   removedPaths?: string[]
   websiteImportSummary?: WorkspaceWebsiteImportSummary

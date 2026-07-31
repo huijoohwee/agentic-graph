@@ -17,6 +17,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot, waitForTasks } from '@/tests/lib/reactRootHarness'
 
 const REPOSITORY_URL = 'https://github.com/huijoohwee/knowgrph'
+const RATE_LIMITED_REPOSITORY_URL = 'https://code.example.test/organization/project'
 
 const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {
   handled: true,
@@ -202,6 +203,127 @@ export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonical
     assert.match(dom.window.document.body.textContent || '', /Loaded knowledge graph in Graph view/)
   } finally {
     releaseImport?.()
+    unregister()
+    await unmountReactRoot(root, { window: dom.window as unknown as Window, tasks: 1 })
+    container.remove()
+    useGraphStore.getState().resetAll()
+    restore()
+    fetchMock.restore()
+  }
+}
+
+export async function testKnowledgeGraphLaunchImportUrlOffersRateLimitedRepositoryRecovery() {
+  const fetchMock = installSourceCatalogFetchMock()
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  const legacyImportCalls: string[] = []
+  const repositoryCalls: Array<{ url: string; invocation: WorkspaceKnowledgeGraphInvocation | undefined }> = []
+  let closeCalls = 0
+  const unregister = registerMarkdownWorkspaceActionBridge('knowledge-graph-launch-rate-limit-recovery-test', {
+    importUrl: async url => {
+      legacyImportCalls.push(url)
+      return {
+        handled: true,
+        error: 'HTTP 403: {"message":"request rate limit exceeded"}',
+        recovery: { kind: 'repository-graph' },
+      }
+    },
+    knowledgeGraph: {
+      importRepositoryUrl: async (url, _opts, invocation) => {
+        repositoryCalls.push({ url, invocation })
+        return KNOWLEDGE_GRAPH_RESULT
+      },
+    },
+  })
+
+  try {
+    useGraphStore.getState().resetAll()
+    const LaunchShell = () => {
+      const [open, setOpen] = React.useState(true)
+      return React.createElement(React.Fragment, null,
+        open
+          ? React.createElement(LaunchDropdownImportUrlItem, {
+              canvas2dRenderer: 'storyboard',
+              menuIconClass: 'icon',
+              menuItemClass: 'item',
+              onClose: () => {
+                closeCalls += 1
+                setOpen(false)
+              },
+              open,
+              pushUiToast: useGraphStore.getState().pushUiToast,
+            })
+          : null,
+        React.createElement(ToastHost),
+      )
+    }
+    await mountReactRoot(root, React.createElement(LaunchShell), {
+      window: dom.window as unknown as Window,
+      tasks: 1,
+      frames: 1,
+    })
+
+    const disclosure = container.querySelector(
+      '[data-kg-launch-import-url-skills-commands-target="skillsCommands"]',
+    )
+    assert.ok(disclosure instanceof dom.window.HTMLButtonElement)
+    await act(async () => {
+      disclosure.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      await waitForTasks(1)
+    })
+    assert.match(container.textContent || '', /Codebase graph/)
+
+    const input = container.querySelector('input.kg-import-url-input')
+    const confirm = container.querySelector('button.kg-import-url-confirm')
+    assert.ok(input instanceof dom.window.HTMLInputElement)
+    assert.ok(confirm instanceof dom.window.HTMLButtonElement)
+    const valueSetter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')?.set
+    assert.ok(valueSetter)
+    await act(async () => {
+      valueSetter.call(input, RATE_LIMITED_REPOSITORY_URL)
+      Simulate.change(input)
+      await waitForTasks(1)
+    })
+
+    await act(async () => {
+      confirm.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      for (let attempt = 0; attempt < 16 && !container.querySelector('[data-kg-launch-import-url-rate-limit-recovery="true"]'); attempt += 1) {
+        await waitForTasks(1)
+      }
+    })
+    const recovery = container.querySelector('[data-kg-launch-import-url-rate-limit-recovery="true"]')
+    const retry = container.querySelector('[data-kg-launch-import-url-retry-codebase-graph="true"]')
+    assert.ok(recovery instanceof dom.window.HTMLElement)
+    assert.ok(retry instanceof dom.window.HTMLButtonElement)
+    assert.equal(closeCalls, 0, 'a recoverable generic import must keep the URL controls visible')
+    assert.deepEqual(legacyImportCalls, [RATE_LIMITED_REPOSITORY_URL])
+    assert.equal(repositoryCalls.length, 0, 'recovery must remain an explicit operator action')
+    assert.match(recovery.textContent || '', /local Git acquisition/)
+
+    await act(async () => {
+      retry.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      for (let attempt = 0; attempt < 16 && repositoryCalls.length === 0; attempt += 1) {
+        await waitForTasks(1)
+      }
+    })
+    assert.equal(closeCalls, 1, 'the selected codebase graph route closes the Launch menu when it starts')
+    assert.deepEqual(legacyImportCalls, [RATE_LIMITED_REPOSITORY_URL], 'the generic importer must not be retried')
+    assert.equal(repositoryCalls.length, 1)
+    assert.equal(repositoryCalls[0]?.url, RATE_LIMITED_REPOSITORY_URL)
+    assert.deepEqual(repositoryCalls[0]?.invocation, {
+      schema: 'knowgrph-knowledge-graph-invocation/v1',
+      tool: 'knowgrph.knowledge_graph.ingest',
+      action: fetchMock.sourceCommand,
+      semantics: [fetchMock.sourceSemantic],
+      bindings: [fetchMock.sourceBinding],
+      sourceRevision: fetchMock.sourceRevision,
+      catalogDigest: fetchMock.catalogMetadata.catalogDigest,
+      routingSchema: fetchMock.catalogMetadata.routingSchema,
+      routingDigest: fetchMock.catalogMetadata.routingDigest,
+    })
+  } finally {
     unregister()
     await unmountReactRoot(root, { window: dom.window as unknown as Window, tasks: 1 })
     container.remove()

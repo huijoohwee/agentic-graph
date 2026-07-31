@@ -523,6 +523,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["net.fetchRemoteText.wrapperUseProxyBoolean","@/__tests__/fetchRemoteTextInterop.test","testFetchRemoteTextWrapperUseProxyBoolean"],
   ["net.fetchRemoteText.supportsHeadersOption","@/__tests__/fetchRemoteTextInterop.test","testFetchRemoteTextSupportsHeadersOption"],
   ["net.fetchRemoteText.autoFallsBackToProxyOnPrivateLanOrigin","@/__tests__/fetchRemoteTextInterop.test","testFetchRemoteTextAutoFallsBackToProxyOnPrivateLanOrigin"],
+  ["net.fetchRemoteText.rateLimitedHttpDoesNotReplayAcrossTransports","@/__tests__/fetchRemoteTextInterop.test","testFetchRemoteTextDoesNotReplayRateLimitedHttpAcrossTransports"],
   ["geospatial.gympgrphMapLibre.pickSkipsClusters","@/__tests__/gympgrphMapLibreBehaviors.test","testGympgrphPickPoiSelectionSkipsClusterFeatures"],
   ["geospatial.gympgrphMapLibre.coerceFeatureIds","@/__tests__/gympgrphMapLibreBehaviors.test","testGympgrphCoerceFeatureCollectionIdsAddsMissingIds"],
   ["geospatial.gympgrphMapLibre.pointOnly.true","@/__tests__/gympgrphMapLibreBehaviors.test","testGympgrphIsPointOnlyFeatureCollectionDetectsPointOnly"],

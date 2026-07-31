@@ -1,5 +1,10 @@
 import type { FetchRemoteTextFailure } from 'grph-shared/net/fetchRemoteText'
 
+export function isRemoteRateLimitFailureMessage(value: unknown): boolean {
+  const message = String(value || '').trim()
+  return /\b(?:rate[\s-]*limit(?:ed|ing)?|too[\s-]*many[\s-]*requests)\b/i.test(message)
+}
+
 export function describeFetchRemoteTextFailure(res: FetchRemoteTextFailure): string {
   if (res.kind === 'timeout') return 'Timeout'
   if (res.kind === 'too_large') {

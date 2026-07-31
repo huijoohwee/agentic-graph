@@ -27,7 +27,9 @@ import {
 } from './ImportUrlRendererSelect'
 import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
 import {
+  canRecoverLaunchImportAsKnowledgeGraphRepository,
   isLaunchKnowledgeGraphRepositoryUrl,
+  isLaunchImportRepositoryRateLimitFailure,
   runLaunchImportUrl,
   type LaunchKnowledgeGraphImportProgressStage,
 } from './launchImportDispatch'
@@ -68,6 +70,8 @@ export function LaunchDropdownImportUrlItem(props: {
   const [urlDraft, setUrlDraft] = React.useState('')
   const [urlInputOpen, setUrlInputOpen] = React.useState(false)
   const [knowledgeGraphRepositoryMode, setKnowledgeGraphRepositoryMode] = React.useState(false)
+  const [rateLimitRecoveryUrl, setRateLimitRecoveryUrl] = React.useState<string | null>(null)
+  const [isImportingUrl, setIsImportingUrl] = React.useState(false)
   const [importUrlRenderer, setImportUrlRenderer] = React.useState<ImportUrlRendererSelection>('default')
   const [downloadOptionsOpen, setDownloadOptionsOpen] = React.useState(false)
   const [downloadOptions, setDownloadOptions] = React.useState<VideoDownloadOptions>(DEFAULT_VIDEO_DOWNLOAD_OPTIONS)
@@ -126,6 +130,8 @@ export function LaunchDropdownImportUrlItem(props: {
       setIsDownloading(false)
       setValidationConfigOpen(false)
       setKnowledgeGraphRepositoryMode(false)
+      setRateLimitRecoveryUrl(null)
+      setIsImportingUrl(false)
       endpointWarningShownRef.current = false
       return
     }
@@ -135,6 +141,8 @@ export function LaunchDropdownImportUrlItem(props: {
     setDownloadOptions(DEFAULT_VIDEO_DOWNLOAD_OPTIONS)
     setIsDownloading(false)
     setKnowledgeGraphRepositoryMode(false)
+    setRateLimitRecoveryUrl(null)
+    setIsImportingUrl(false)
     endpointWarningShownRef.current = false
   }, [props.canvas2dRenderer, props.open])
 
@@ -169,15 +177,18 @@ export function LaunchDropdownImportUrlItem(props: {
   const selectedImportOpts = React.useCallback(() => parseImportUrlRendererSelection(importUrlRenderer) || undefined, [importUrlRenderer])
 
   const runImportUrl = React.useCallback(
-    async (nextUrlRaw: string) => {
+    async (nextUrlRaw: string, options?: { forceKnowledgeGraphRepository?: boolean }) => {
       const nextUrl = String(nextUrlRaw || '').trim()
-      if (!nextUrl) return
-      const isKnowledgeGraphRepository = knowledgeGraphRepositoryMode
+      if (!nextUrl || isImportingUrl) return
+      const isKnowledgeGraphRepository = options?.forceKnowledgeGraphRepository === true
+        || knowledgeGraphRepositoryMode
         || isLaunchKnowledgeGraphRepositoryUrl(nextUrl)
       const sharedResolution = isKnowledgeGraphRepository
         ? targetSkillsCommands(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
         : null
-      onClose()
+      setRateLimitRecoveryUrl(null)
+      setIsImportingUrl(true)
+      if (isKnowledgeGraphRepository) onClose()
       const launchBridge = getMarkdownWorkspaceActionBridge()
       const opts = selectedImportOpts()
       if (opts?.canvas2dRenderer === 'design') activateDesignEditorSurface({ openFloatingPanel: true })
@@ -187,7 +198,7 @@ export function LaunchDropdownImportUrlItem(props: {
           opts,
           bridge: launchBridge,
           fallback: importUrlFallback,
-          forceKnowledgeGraphRepository: knowledgeGraphRepositoryMode,
+          forceKnowledgeGraphRepository: isKnowledgeGraphRepository,
           resolveMcpInvocation: sharedResolution
             ? async (mcpTool) => {
               if (mcpTool !== KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest) {
@@ -216,8 +227,18 @@ export function LaunchDropdownImportUrlItem(props: {
             ttlMs: UI_TOAST_TTL_MS.actionFeedback,
           })
         }
+        if (
+          !isKnowledgeGraphRepository
+          && isLaunchImportRepositoryRateLimitFailure(result)
+          && canRecoverLaunchImportAsKnowledgeGraphRepository(nextUrl)
+        ) {
+          setRateLimitRecoveryUrl(nextUrl)
+          return
+        }
+        if (!isKnowledgeGraphRepository) onClose()
         setUrlInputOpen(false)
       } catch (error) {
+        if (!isKnowledgeGraphRepository) onClose()
         pushUiToast({
           id: KNOWLEDGE_GRAPH_IMPORT_TOAST_ID,
           kind: 'error',
@@ -225,9 +246,11 @@ export function LaunchDropdownImportUrlItem(props: {
           ttlMs: UI_TOAST_TTL_MS.warningExtended,
           dismissible: true,
         })
+      } finally {
+        setIsImportingUrl(false)
       }
     },
-    [importUrlFallback, knowledgeGraphRepositoryMode, onClose, pushUiToast, selectedImportOpts, targetSkillsCommands],
+    [importUrlFallback, isImportingUrl, knowledgeGraphRepositoryMode, onClose, pushUiToast, selectedImportOpts, targetSkillsCommands],
   )
 
   const runImportUrlDeerFlow = React.useCallback(
@@ -327,30 +350,17 @@ export function LaunchDropdownImportUrlItem(props: {
         <section id={importUrlControlsId} className="kg-launch-menu-children kg-click-expand-menu-children mt-1">
           <ImportUrlPrompt
             urlDraft={urlDraft}
-            onChange={setUrlDraft}
+            onChange={next => {
+              setUrlDraft(next)
+              setRateLimitRecoveryUrl(null)
+            }}
             onCancel={() => setUrlInputOpen(false)}
             autoFocus
+            disabled={isImportingUrl}
             confirmLabel="Import"
             onConfirm={runImportUrl}
             rightAddon={
               <section className="flex min-w-0 flex-1 items-stretch gap-1">
-                <button
-                  type="button"
-                  className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', knowledgeGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
-                  title="Import as repository knowledge graph"
-                  aria-label="Import as repository knowledge graph"
-                  aria-pressed={knowledgeGraphRepositoryMode}
-                  data-kg-launch-import-url-repository-mode="true"
-                  onClick={() => {
-                    const next = !knowledgeGraphRepositoryMode
-                    setKnowledgeGraphRepositoryMode(next)
-                    void targetSkillsCommands(next
-                      ? KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
-                      : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
-                  }}
-                >
-                  <GitBranch className={props.menuIconClass} strokeWidth={1.6} aria-hidden />
-                </button>
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Design renderer" aria-label="Design renderer" aria-pressed={importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION} onClick={() => setImportUrlRenderer(prev => (prev === DESIGN_IMPORT_URL_RENDERER_SELECTION ? 'default' : DESIGN_IMPORT_URL_RENDERER_SELECTION))}>
                   <Palette className={props.menuIconClass} strokeWidth={1.6} aria-hidden={true} />
                 </button>
@@ -374,6 +384,52 @@ export function LaunchDropdownImportUrlItem(props: {
               </section>
             }
           />
+          <section className="mt-1 flex min-w-0 flex-wrap items-center gap-1 text-xs" aria-label="Codebase graph import mode">
+            <button
+              type="button"
+              className={cn('inline-flex min-h-7 items-center gap-1 rounded border px-2', knowledgeGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
+              title="Build a repository knowledge graph with local Git acquisition"
+              aria-label="Codebase graph"
+              aria-pressed={knowledgeGraphRepositoryMode}
+              data-kg-launch-import-url-repository-mode="true"
+              onClick={() => {
+                const next = !knowledgeGraphRepositoryMode
+                setKnowledgeGraphRepositoryMode(next)
+                setRateLimitRecoveryUrl(null)
+                void targetSkillsCommands(next
+                  ? KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
+                  : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
+              }}
+            >
+              <GitBranch className={props.menuIconClass} strokeWidth={1.6} aria-hidden />
+              <span>Codebase graph</span>
+            </button>
+            <span className={UI_THEME_TOKENS.text.secondary}>
+              {knowledgeGraphRepositoryMode
+                ? 'Uses deterministic local Git acquisition.'
+                : 'Use this mode for repository knowledge graphs.'}
+            </span>
+          </section>
+          {rateLimitRecoveryUrl ? (
+            <section
+              className={cn('mt-1 grid gap-1 rounded border p-2 text-xs', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.input.bg, UI_THEME_TOKENS.input.text)}
+              role="status"
+              data-kg-launch-import-url-rate-limit-recovery="true"
+            >
+              <span>Remote document import is rate limited. Retry this source as a codebase graph with local Git acquisition.</span>
+              <button
+                type="button"
+                className={cn('justify-self-start rounded border px-2 py-1', UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
+                data-kg-launch-import-url-retry-codebase-graph="true"
+                onClick={() => {
+                  setKnowledgeGraphRepositoryMode(true)
+                  void runImportUrl(rateLimitRecoveryUrl, { forceKnowledgeGraphRepository: true })
+                }}
+              >
+                Retry as codebase graph
+              </button>
+            </section>
+          ) : null}
           {validationConfigOpen ? (
             <VideoAgentValidationImportControls
               runtimeInput={activeGraphData}

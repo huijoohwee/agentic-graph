@@ -19,9 +19,11 @@ import {
   importWorkspaceLocalFiles,
   importWorkspaceLocalFolder,
   importWorkspaceUrl,
+  isWorkspaceRepositoryImportUrl,
 } from '../workspaceImport'
 import type { WorkspaceImportResult } from '../workspaceImport/types'
 import type { WorkspaceBridgeImportResult, WorkspaceFileSelection, WorkspaceImportActionsCtx } from './types'
+import { isRemoteRateLimitFailureMessage } from '@/lib/net/fetchRemoteTextFailure'
 import { summarizeCorpusImportManifest } from '@/features/queryable-corpus/sourceFilesCorpusManifest'
 import { inferCorpusMediaKind } from '@/features/queryable-corpus/corpusGraph'
 import { registerStrybldrImageFiles } from '@/features/strybldr/strybldrImageFileRegistry'
@@ -353,6 +355,7 @@ export function useWorkspaceImportActions(args: {
       }
       const selectedCanvas2dRenderer = isWorkspaceUrlImportCanvasRendererId(opts?.canvas2dRenderer) ? opts?.canvas2dRenderer : null
       const selectedDocumentSemanticMode = selectedCanvas2dRenderer ? normalizeWorkspaceUrlImportDocumentMode(opts?.documentSemanticMode) : null
+      const isRepositoryImport = isWorkspaceRepositoryImportUrl(url)
       const importKindLabel = selectedCanvas2dRenderer
         ? `Importing URL (${getWorkspaceUrlImportCanvasRendererLabel(selectedCanvas2dRenderer)})`
         : 'Importing URL'
@@ -455,12 +458,18 @@ export function useWorkspaceImportActions(args: {
         return bridgeResult
       } catch (e) {
         const msg = String((e as { message?: unknown })?.message ?? e)
+        const recovery = isRepositoryImport && isRemoteRateLimitFailureMessage(msg)
+          ? { kind: 'repository-graph' as const }
+          : undefined
+        const errorResult = recovery
+          ? { ...bridgeResult, error: msg, recovery }
+          : { ...bridgeResult, error: msg }
         if (importJobRef.current !== jobId) {
-          return { ...bridgeResult, error: msg }
+          return errorResult
         }
         status.setStatusError(`Import failed: ${msg}`)
         useGraphStore.getState().pushUiLog({ kind: 'error', message: `Import URL failed: ${msg}`, source: 'workspace:importUrl' })
-        return { ...bridgeResult, error: msg }
+        return errorResult
       }
     },
     [finalizeWorkspaceImportCommit, focusAfterImport, formatWorkspaceImportSummary, getFs, importJobRef, status],
