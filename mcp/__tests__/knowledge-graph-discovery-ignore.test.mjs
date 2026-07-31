@@ -7,6 +7,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 
 import { discoverKnowledgeSources } from "../knowledge-graph/discovery.mjs";
+import { createKnowledgeGraphRuntime } from "../knowledge-graph/runtime.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -226,5 +227,74 @@ test("discovery ignores ambient Git authority, skips symlinks, and revalidates a
   await assert.rejects(
     discovered.revalidateAdmission(),
     (error) => error?.code === "source_admission_changed",
+  );
+});
+
+test("tracked symlinks and gitlinks are explicit incomplete omissions and fail strict ingest", async (t) => {
+  const basePath = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-discovery-tracked-omissions-"));
+  t.after(() => fs.rm(basePath, { recursive: true, force: true }));
+  const repositoryPath = path.join(basePath, "repository");
+  const gitlinkPath = path.join(repositoryPath, "modules", "dependency");
+  const outputRoot = path.join(basePath, "output");
+  await initializeRepository(repositoryPath);
+  await write(repositoryPath, "ok.md", "# OK\n");
+  await fs.symlink("ok.md", path.join(repositoryPath, "linked.md"));
+  await git(repositoryPath, ["add", "ok.md", "linked.md"]);
+
+  await initializeRepository(gitlinkPath);
+  await write(gitlinkPath, "README.md", "# Nested dependency\n");
+  await git(gitlinkPath, ["add", "README.md"]);
+  await git(gitlinkPath, [
+    "-c", "user.name=Fixture",
+    "-c", "user.email=fixture@example.test",
+    "commit", "--quiet", "-m", "fixture",
+  ]);
+  const gitlinkCommit = (await git(gitlinkPath, ["rev-parse", "HEAD"])).trim();
+  await git(repositoryPath, [
+    "update-index", "--add", "--cacheinfo", "160000", gitlinkCommit, "modules/dependency",
+  ]);
+
+  const discovered = await discoverKnowledgeSources({ rootPath: repositoryPath });
+  assert.deepEqual(discovered.sources.map((source) => source.relativePath), ["ok.md"]);
+  assert.equal(discovered.admission.complete, false);
+  assert.deepEqual(discovered.admission.incompleteSources, ["linked.md", "modules/dependency"]);
+  assert.deepEqual(
+    discovered.admission.reasons,
+    ["tracked_symlink_omitted", "tracked_gitlink_omitted"],
+  );
+  assert.equal(discovered.admission.counts.trackedSymlinksOmitted, 1);
+  assert.equal(discovered.admission.counts.trackedGitlinksOmitted, 1);
+  assert.ok(discovered.diagnostics.some((item) => (
+    item.code === "tracked_symlink_omitted" && item.sourcePath === "linked.md"
+  )));
+  assert.ok(discovered.diagnostics.some((item) => (
+    item.code === "tracked_gitlink_omitted" && item.sourcePath === "modules/dependency"
+  )));
+  const markdownScoped = await discoverKnowledgeSources({
+    rootPath: repositoryPath,
+    include: ["*.md"],
+  });
+  assert.equal(markdownScoped.admission.complete, false);
+  assert.deepEqual(
+    markdownScoped.admission.incompleteSources,
+    ["linked.md", "modules/dependency"],
+  );
+
+  const runtime = createKnowledgeGraphRuntime({
+    knowgrphRoot: basePath,
+    allowedRoots: [repositoryPath],
+    outputRoot,
+  });
+  const nonStrict = await runtime.ingest({ rootPath: repositoryPath, strict: false });
+  assert.equal(nonStrict.ok, true, JSON.stringify(nonStrict));
+  assert.equal(nonStrict.complete, false);
+  assert.deepEqual(nonStrict.completeness.incompleteSources, ["linked.md", "modules/dependency"]);
+  const strict = await runtime.ingest({ rootPath: repositoryPath, strict: true });
+  assert.equal(strict.ok, false);
+  assert.equal(strict.error.code, "strict_ingest_incomplete");
+  assert.deepEqual(strict.error.details.sources, ["linked.md", "modules/dependency"]);
+  assert.deepEqual(
+    strict.error.details.reasons,
+    ["tracked_gitlink_omitted", "tracked_symlink_omitted"],
   );
 });

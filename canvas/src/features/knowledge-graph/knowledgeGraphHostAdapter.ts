@@ -3,6 +3,11 @@ import type {
   WorkspaceKnowledgeGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import type { GraphData } from '@/lib/graph/types'
+import {
+  normalizeKnowledgeGraphRepositoryUrl as normalizeRepositoryUrl,
+  normalizeKnowledgeGraphRepositoryRemoteUrl,
+  KnowledgeGraphRepositoryUrlError,
+} from './knowledgeGraphRepositoryUrl'
 
 export const KNOWLEDGE_GRAPH_HOST_ROUTE = '/__knowgrph_knowledge_graph'
 export const KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA = 'knowgrph-knowledge-graph-host-capability/v1'
@@ -83,41 +88,14 @@ const cleanRelativePath = (value: string): string => {
 }
 
 export function normalizeKnowledgeGraphRepositoryUrl(value: string): string {
-  let url: URL
   try {
-    url = new URL(String(value || '').trim())
-  } catch {
-    throw new KnowledgeGraphHostError('invalid-repository-url', 'Enter a canonical HTTPS GitHub repository URL.')
+    return normalizeRepositoryUrl(value)
+  } catch (error) {
+    if (error instanceof KnowledgeGraphRepositoryUrlError) {
+      throw new KnowledgeGraphHostError('invalid-repository-url', error.message)
+    }
+    throw error
   }
-  if (
-    url.protocol !== 'https:'
-    || url.hostname !== 'github.com'
-    || url.port
-    || url.username
-    || url.password
-    || url.search
-    || url.hash
-    || url.pathname.includes('%')
-  ) {
-    throw new KnowledgeGraphHostError('invalid-repository-url', 'Enter a credential-free HTTPS GitHub repository URL.')
-  }
-  const parts = url.pathname.split('/').filter(Boolean)
-  const segment = /^[A-Za-z0-9_.-]{1,100}$/
-  const owner = parts[0] || ''
-  const repository = String(parts[1] || '').replace(/\.git$/i, '')
-  const treeValid = parts.length === 2 || (
-    parts[2] === 'tree'
-    && parts.length >= 4
-    && parts.slice(3).every(part => segment.test(part))
-  )
-  if (!segment.test(owner) || !segment.test(repository) || !treeValid) {
-    throw new KnowledgeGraphHostError(
-      'invalid-repository-url',
-      'The URL must identify one GitHub owner/repository, optionally with a tree ref and path.',
-    )
-  }
-  const suffix = parts[2] === 'tree' ? `/tree/${parts.slice(3).join('/')}` : ''
-  return `https://github.com/${owner}/${repository}${suffix}`
 }
 
 function validateCapability(value: unknown): HostCapability {
@@ -157,6 +135,7 @@ export function validateKnowledgeGraphHostResult(value: unknown): WorkspaceKnowl
     || result.kind !== 'knowledge-graph'
     || !/^kg:graph:[0-9a-f]{32}$/.test(String(result.graphId || ''))
     || !/^[0-9a-f]{64}$/.test(String(result.snapshotDigest || ''))
+    || !/^[0-9a-f]{64}$/.test(String(result.parserRegistryDigest || ''))
     || typeof result.complete !== 'boolean'
     || !counts
     || !isNonNegativeInteger(counts.sources)
@@ -177,6 +156,7 @@ export function validateKnowledgeGraphHostResult(value: unknown): WorkspaceKnowl
     kind: 'knowledge-graph',
     graphId: result.graphId as string,
     snapshotDigest: result.snapshotDigest as string,
+    parserRegistryDigest: result.parserRegistryDigest as string,
     complete: result.complete,
     counts: {
       sources: counts.sources,
@@ -349,7 +329,7 @@ export function createKnowledgeGraphHostAdapter({
     },
     importRepositoryUrl: async (url, _opts, invocation) => {
       await capability()
-      const repositoryUrl = normalizeKnowledgeGraphRepositoryUrl(url)
+      const repositoryUrl = normalizeKnowledgeGraphRepositoryRemoteUrl(url)
       return validateKnowledgeGraphHostResult(await requestJson(fetchImpl, '/repositories', {
         method: 'POST',
         body: JSON.stringify({ repositoryUrl, invocation }),

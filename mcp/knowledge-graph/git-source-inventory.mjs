@@ -489,6 +489,32 @@ export async function readGitSourceInventory(repositoryRootPath, options = {}) {
   };
 }
 
+export function collectTrackedSourceOmissions(inventory, repositoryPath = ".") {
+  const workspacePath = (relativePath) => (
+    repositoryPath === "." ? relativePath : `${repositoryPath}/${relativePath}`
+  );
+  return [
+    ...[...(inventory?.trackedSymlinks || [])].map((relativePath) => ({
+      code: "tracked_symlink_omitted",
+      kind: "symlink",
+      relativePath,
+      sourcePath: workspacePath(relativePath),
+      message: `Omitted tracked symbolic link ${workspacePath(relativePath)}.`,
+    })),
+    ...[...(inventory?.trackedGitlinks || [])].map((relativePath) => ({
+      code: "tracked_gitlink_omitted",
+      kind: "gitlink",
+      relativePath,
+      sourcePath: workspacePath(relativePath),
+      message: `Omitted tracked Git link ${workspacePath(relativePath)}; submodule content is outside this repository inventory.`,
+    })),
+  ];
+}
+
+export function isTrackedGitlink(inventory, relativePath) {
+  return Boolean(inventory?.trackedGitlinks?.has(relativePath));
+}
+
 export function sameGitSourceInventory(left, right) {
   return Boolean(left && right && left.digest === right.digest);
 }

@@ -1,3 +1,8 @@
+import {
+  KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID,
+  NATIVE_KNOWLEDGE_GRAPH_PARSER_ADAPTERS,
+} from "../knowledge-graph-parser-contract.js";
+import { KnowledgeGraphError, compareStableStrings } from "./contract.mjs";
 import { compileParserRegistry } from "./parser-generator.mjs";
 
 export const SOURCE_PARSER_DESCRIPTORS = Object.freeze([
@@ -85,10 +90,68 @@ export const SOURCE_PARSER_DESCRIPTORS = Object.freeze([
   },
 ]);
 
-export const SOURCE_PARSER_REGISTRY = compileParserRegistry(SOURCE_PARSER_DESCRIPTORS);
+export function compileSourceParserRegistry(descriptors) {
+  return compileParserRegistry(descriptors, {
+    adapterFidelities: NATIVE_KNOWLEDGE_GRAPH_PARSER_ADAPTERS,
+  });
+}
 
-export const SOURCE_PARSER_STRUCTURAL_INCLUDE_PATTERNS = Object.freeze([
-  ...new Set(SOURCE_PARSER_REGISTRY.descriptors
+export function portableSourceParserRegistry(registry) {
+  if (!registry?.digest || !Array.isArray(registry.descriptors)) {
+    throw new KnowledgeGraphError(
+      "parser_registry_invalid",
+      "A compiled source parser registry is required.",
+    );
+  }
+  return Object.freeze({
+    schema: KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID,
+    digest: registry.digest,
+    descriptors: registry.descriptors,
+  });
+}
+
+export function verifyPortableSourceParserRegistry(candidate, expectedDigest = "") {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    throw new KnowledgeGraphError(
+      "parser_registry_invalid",
+      "parserRegistry must be a generated inert registry.",
+    );
+  }
+  const keys = Object.keys(candidate).sort(compareStableStrings);
+  const expectedKeys = ["descriptors", "digest", "schema"];
+  if (keys.length !== expectedKeys.length
+    || keys.some((key, index) => key !== expectedKeys[index])
+    || candidate.schema !== KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID
+    || !/^[a-f0-9]{64}$/.test(String(candidate.digest || ""))) {
+    throw new KnowledgeGraphError(
+      "parser_registry_invalid",
+      "parserRegistry does not match the generated registry contract.",
+    );
+  }
+  const compiled = compileSourceParserRegistry(candidate.descriptors);
+  if (candidate.digest !== compiled.digest) {
+    throw new KnowledgeGraphError(
+      "parser_registry_digest_mismatch",
+      "parserRegistry digest does not match its canonical descriptors.",
+      { actualDigest: compiled.digest, suppliedDigest: String(candidate.digest || "") },
+    );
+  }
+  const expected = String(expectedDigest || "").trim();
+  if (expected && expected !== compiled.digest) {
+    throw new KnowledgeGraphError(
+      "parser_registry_digest_mismatch",
+      "Generated parser registry does not match expectedParserRegistryDigest.",
+      { actualDigest: compiled.digest, expectedDigest: expected },
+    );
+  }
+  return compiled;
+}
+
+export const SOURCE_PARSER_REGISTRY = compileSourceParserRegistry(SOURCE_PARSER_DESCRIPTORS);
+export const PORTABLE_SOURCE_PARSER_REGISTRY = portableSourceParserRegistry(SOURCE_PARSER_REGISTRY);
+
+export const sourceParserStructuralIncludePatterns = (registry = SOURCE_PARSER_REGISTRY) => Object.freeze([
+  ...new Set(registry.descriptors
     .filter((descriptor) => descriptor.fidelity !== "inventory-only")
     .flatMap((descriptor) => [
       ...descriptor.extensions.map((extension) => `*${extension}`),
@@ -96,3 +159,16 @@ export const SOURCE_PARSER_STRUCTURAL_INCLUDE_PATTERNS = Object.freeze([
       ...descriptor.basenameFamilies.flatMap((family) => [family, `${family}.*`]),
     ])),
 ].sort());
+
+export const SOURCE_PARSER_STRUCTURAL_INCLUDE_PATTERNS =
+  sourceParserStructuralIncludePatterns(SOURCE_PARSER_REGISTRY);
+
+export const sourceParserIncludePatterns = (registry = SOURCE_PARSER_REGISTRY) => Object.freeze([
+  ...new Set(registry.descriptors.flatMap((descriptor) => [
+    ...descriptor.extensions.map((extension) => `*${extension}`),
+    ...descriptor.basenames,
+    ...descriptor.basenameFamilies.flatMap((family) => [family, `${family}.*`]),
+  ])),
+].sort());
+
+export const SOURCE_PARSER_INCLUDE_PATTERNS = sourceParserIncludePatterns(SOURCE_PARSER_REGISTRY);

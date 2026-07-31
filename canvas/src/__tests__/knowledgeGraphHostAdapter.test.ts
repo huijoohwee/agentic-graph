@@ -20,6 +20,7 @@ import { resetSkillsCommandsMcpTargetForTests } from '@/features/agentic-os/skil
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { createKnowledgeGraphBridgeRequestHandler } from '../../viteKnowledgeGraphBridge'
 import { createKnowledgeGraphRuntime } from '../../../mcp/knowledge-graph/runtime.mjs'
+import { SOURCE_PARSER_REGISTRY } from '../../../mcp/knowledge-graph/source-parser-registry.mjs'
 
 const GRAPH_ID = 'kg:graph:0123456789abcdef0123456789abcdef'
 const SNAPSHOT_DIGEST = 'a'.repeat(64)
@@ -69,6 +70,7 @@ const runtimeResult = {
   operation: 'ingest',
   graphId: GRAPH_ID,
   snapshotDigest: SNAPSHOT_DIGEST,
+  parserRegistryDigest: SOURCE_PARSER_REGISTRY.digest,
   complete: true,
   counts: {
     repositories: 1,
@@ -372,10 +374,9 @@ export async function testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSaf
   }
   try {
     for (const invalid of [
-      'http://github.com/example/repo',
-      'https://github.com/example/repo?tab=readme',
-      'https://user@github.com/example/repo',
-      'https://example.test/example/repo',
+      'http://code.example.test/example/repo',
+      'https://code.example.test/example/repo?tab=readme',
+      'https://user@code.example.test/example/repo',
     ]) {
       let failure: unknown = null
       try {
@@ -406,8 +407,20 @@ export async function testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSaf
         invocation,
       }),
     })
-    if (accepted.status !== 200 || host.calls[0]?.args.repositoryUrl !== 'https://github.com/example/repo') {
-      throw new Error('expected repository acquisition to use the normalized canonical runtime URL')
+    if (accepted.status !== 200 || host.calls[0]?.args.repositoryUrl !== 'https://github.com/example/repo.git') {
+      throw new Error('expected repository acquisition to preserve the submitted remote suffix')
+    }
+    if (
+      normalizeKnowledgeGraphRepositoryUrl('https://code.example.test/group/project.git')
+      !== 'https://code.example.test/group/project'
+    ) {
+      throw new Error('expected the browser host envelope to remain repository-provider neutral')
+    }
+    if (
+      normalizeKnowledgeGraphRepositoryUrl('https://localhost/group/project.git')
+      !== 'https://localhost/group/project'
+    ) {
+      throw new Error('expected repository host policy to remain solely owned by the local MCP runtime')
     }
     if (
       JSON.stringify(host.calls[0]?.args.invocation) !== JSON.stringify(invocation)
@@ -415,14 +428,10 @@ export async function testKnowledgeGraphHostRepositoryBoundaryIsStrictAndPathSaf
     ) {
       throw new Error('expected the verified / # @ packet and strict mode to reach canonical ingestion')
     }
-    const include = host.calls[0]?.args.include
-    if (
-      !Array.isArray(include)
-      || !include.includes('*.ts')
-      || include.includes('*.css')
-      || include.includes('*.rst')
-    ) {
-      throw new Error(`expected source-registry structural parser scope, got ${JSON.stringify(include)}`)
+    if (host.calls[0]?.args.include !== undefined) {
+      throw new Error(
+        `expected the full bounded repository inventory to reach discovery, got ${JSON.stringify(host.calls[0]?.args.include)}`,
+      )
     }
   } finally {
     await host.dispose()
@@ -492,6 +501,7 @@ export async function testKnowledgeGraphDefaultCanvasBridgeRunsSourceBackedRepos
     unregister = registerKnowledgeGraphLaunchHostBridge({ enabled: true })
     const result = await runLaunchImportUrl({
       urlRaw: 'https://github.com/example/repository',
+      forceKnowledgeGraphRepository: true,
       bridge: getMarkdownWorkspaceActionBridge(),
       fallback: async () => {
         throw new Error('repository ingest must not use the legacy URL fallback')

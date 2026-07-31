@@ -12,6 +12,7 @@ export const KNOWGRPH_LOCAL_MCP_TOOL_NAMES = Object.freeze({
   geospatialCommand: "knowgrph.geospatial.command",
   pipeline: "knowgrph.pipeline",
   graphragPipeline: "knowgrph.graphrag_pipeline",
+  knowledgeGraphParserGenerate: "knowgrph.knowledge_graph.parser_generate",
   knowledgeGraphIngest: "knowgrph.knowledge_graph.ingest",
   knowledgeGraphQuery: "knowgrph.knowledge_graph.query",
   knowledgeGraphExplainEdge: "knowgrph.knowledge_graph.explain_edge",

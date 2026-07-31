@@ -67,6 +67,7 @@ export type WorkspaceKnowledgeGraphImportResult = {
   kind: 'knowledge-graph'
   graphId: string
   snapshotDigest: string
+  parserRegistryDigest: string
   complete: boolean
   counts: WorkspaceKnowledgeGraphCounts
   projection: WorkspaceKnowledgeGraphProjection

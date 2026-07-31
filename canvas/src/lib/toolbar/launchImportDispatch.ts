@@ -6,29 +6,84 @@ import type {
   WorkspaceKnowledgeGraphInvocation,
   WorkspaceImportUrlOpts,
 } from '@/features/markdown-explorer/workspaceActionBridge'
-import { parseGitHubRepoUrl } from '@/features/markdown-workspace/githubRepoApi'
 import { applyKnowledgeGraphCanvasProjection } from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
+import {
+  normalizeKnowledgeGraphRepositoryRemoteUrl,
+  parseKnowledgeGraphRepositoryUrl,
+} from '@/features/knowledge-graph/knowledgeGraphRepositoryUrl'
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
 
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
 export const LAUNCH_FOLDER_PREVIEW_MAX_BYTES = 25 * 1024 * 1024
 
-function canonicalGitHubRepositoryUrl(value: string): string | null {
+export type LaunchKnowledgeGraphImportProgressStage = 'resolving' | 'ingesting' | 'projecting'
+
+const repositoryImporterIds = new WeakMap<object, number>()
+const inFlightRepositoryImports = new Map<string, Promise<WorkspaceKnowledgeGraphImportResult>>()
+let nextRepositoryImporterId = 1
+
+function repositoryImporterId(importer: object): number {
+  const existing = repositoryImporterIds.get(importer)
+  if (existing) return existing
+  const next = nextRepositoryImporterId
+  nextRepositoryImporterId += 1
+  repositoryImporterIds.set(importer, next)
+  return next
+}
+
+function repositoryImportOperationKey(args: {
+  repositoryUrl: string
+  opts?: WorkspaceImportUrlOpts
+  invocation: WorkspaceKnowledgeGraphInvocation
+  importer: object
+}): string {
+  return JSON.stringify([
+    args.repositoryUrl,
+    String(args.opts?.canvas2dRenderer || ''),
+    String(args.opts?.documentSemanticMode || ''),
+    repositoryImporterId(args.importer),
+    args.invocation.schema,
+    args.invocation.tool,
+    args.invocation.action,
+    args.invocation.semantics,
+    args.invocation.bindings,
+    args.invocation.sourceRevision,
+    args.invocation.catalogDigest,
+    args.invocation.routingSchema,
+    args.invocation.routingDigest,
+  ])
+}
+
+function reportKnowledgeGraphImportProgress(
+  callback: ((stage: LaunchKnowledgeGraphImportProgressStage) => void) | undefined,
+  stage: LaunchKnowledgeGraphImportProgressStage,
+): void {
   try {
-    const url = new URL(value)
-    if (
-      url.protocol !== 'https:'
-      || url.hostname !== 'github.com'
-      || url.username
-      || url.password
-      || url.port
-      || url.search
-      || url.hash
-    ) return null
-    if (!parseGitHubRepoUrl(url.href)) return null
-    return `https://github.com${url.pathname.replace(/\/+$/, '')}`
+    callback?.(stage)
   } catch {
-    return null
+    void 0
+  }
+}
+
+export function canonicalLaunchRepositoryUrl(
+  value: string,
+  options: { forceRepository?: boolean } = {},
+): string | null {
+  if (!options.forceRepository) {
+    try {
+      if (!/\.git\/?$/i.test(new URL(value).pathname)) return null
+    } catch {
+      return null
+    }
+  }
+  return normalizeKnowledgeGraphRepositoryRemoteUrl(value)
+}
+
+export function isLaunchKnowledgeGraphRepositoryUrl(value: string): boolean {
+  try {
+    return parseKnowledgeGraphRepositoryUrl(value).explicitGitSuffix
+  } catch {
+    return false
   }
 }
 
@@ -113,19 +168,21 @@ export async function runLaunchImportUrl(args: {
   opts?: WorkspaceImportUrlOpts
   bridge: MarkdownWorkspaceActionBridge
   fallback: (urlRaw: string, opts?: WorkspaceImportUrlOpts) => Promise<void | WorkspaceBridgeImportResult>
+  forceKnowledgeGraphRepository?: boolean
   resolveMcpInvocation?: (mcpTool: string) => Promise<{ invocation: WorkspaceKnowledgeGraphInvocation }>
+  onKnowledgeGraphProgress?: (stage: LaunchKnowledgeGraphImportProgressStage) => void
 }): Promise<void | WorkspaceBridgeImportResult | WorkspaceKnowledgeGraphImportResult> {
   const url = String(args.urlRaw || '').trim()
   if (!url) return
-  const repositoryUrl = canonicalGitHubRepositoryUrl(url)
-  if (!repositoryUrl && parseGitHubRepoUrl(url)) {
-    throw new Error('Repository URL must use canonical credential-free HTTPS without a port, query, or fragment.')
-  }
+  const repositoryUrl = canonicalLaunchRepositoryUrl(url, {
+    forceRepository: args.forceKnowledgeGraphRepository,
+  })
   if (repositoryUrl) {
     const importRepositoryUrl = args.bridge.knowledgeGraph?.importRepositoryUrl
     if (typeof importRepositoryUrl !== 'function') {
       throw new Error('Canonical repository knowledge graph import is unavailable.')
     }
+    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'resolving')
     const resolved = args.resolveMcpInvocation
       ? await args.resolveMcpInvocation(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
       : await import('@/features/agentic-os/agenticOsMcpInvocationResolver').then(
@@ -133,7 +190,30 @@ export async function runLaunchImportUrl(args: {
           KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
         ),
       )
-    return finishKnowledgeGraphImport(await importRepositoryUrl(repositoryUrl, args.opts, resolved.invocation))
+    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'ingesting')
+    const operationKey = repositoryImportOperationKey({
+      repositoryUrl,
+      opts: args.opts,
+      invocation: resolved.invocation,
+      importer: importRepositoryUrl as unknown as object,
+    })
+    const existingOperation = inFlightRepositoryImports.get(operationKey)
+    let result: WorkspaceKnowledgeGraphImportResult
+    if (existingOperation) {
+      result = await existingOperation
+    } else {
+      const operation = importRepositoryUrl(repositoryUrl, args.opts, resolved.invocation)
+      inFlightRepositoryImports.set(operationKey, operation)
+      try {
+        result = await operation
+      } finally {
+        if (inFlightRepositoryImports.get(operationKey) === operation) {
+          inFlightRepositoryImports.delete(operationKey)
+        }
+      }
+    }
+    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'projecting')
+    return finishKnowledgeGraphImport(result)
   }
   const bridgeImport = args.bridge.importUrl
   if (typeof bridgeImport === 'function') {

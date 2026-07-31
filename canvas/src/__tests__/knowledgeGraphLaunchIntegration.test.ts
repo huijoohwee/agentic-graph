@@ -1,5 +1,6 @@
 import type { WorkspaceKnowledgeGraphImportResult } from '@/features/markdown-explorer/workspaceActionBridge'
 import {
+  applyKnowledgeGraphCanvasProjection,
   buildKnowledgeGraphCanvasProjection,
   KnowledgeGraphProjectionError,
   KNOWLEDGE_GRAPH_CANVAS_MAX_NODES,
@@ -15,6 +16,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
 
 const SNAPSHOT_DIGEST = 'a'.repeat(64)
+const PARSER_REGISTRY_DIGEST = 'f'.repeat(64)
 const GRAPH_ID = `kg:graph:${'1'.repeat(32)}`
 const FOLDER_GRAPH_ID = `kg:graph:${'2'.repeat(32)}`
 const PROJECTION_TOKEN = `kg:projection:${'1'.repeat(24)}`
@@ -38,6 +40,7 @@ function knowledgeGraphResult(
     kind: 'knowledge-graph',
     graphId: GRAPH_ID,
     snapshotDigest: SNAPSHOT_DIGEST,
+    parserRegistryDigest: PARSER_REGISTRY_DIGEST,
     complete: true,
     counts: { sources: 2, nodes: 2, edges: 1 },
     projection: {
@@ -103,8 +106,11 @@ export async function testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreserv
   let receivedInvocation: unknown
   try {
     useGraphStore.getState().resetAll()
+    useGraphStore.getState().setCanvas2dRenderer('storyboard')
+    useGraphStore.getState().setCanvasRenderMode('3d')
     const result = await runLaunchImportUrl({
       urlRaw: 'https://github.com/example/sample',
+      forceKnowledgeGraphRepository: true,
       bridge: {
         importUrl: async () => {
           calls.push('legacy-bridge')
@@ -147,15 +153,136 @@ export async function testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreserv
     if (graph.edges[0]?.id !== 'edge:alpha-beta') {
       throw new Error(`expected authoritative edge id without remapping, got ${String(graph.edges[0]?.id)}`)
     }
+    if (useGraphStore.getState().canvas2dRenderer !== 'd3') {
+      throw new Error('expected a successful knowledge graph import to open the graph-capable D3 renderer')
+    }
+    if (useGraphStore.getState().canvasRenderMode !== '2d') {
+      throw new Error('expected a successful knowledge graph import to leave 3D and open the 2D Graph view')
+    }
     const metadata = graph.metadata?.knowledgeGraphProjection as Record<string, unknown> | undefined
     if (
       metadata?.owner !== 'knowledge-graph-runtime'
       || metadata?.readOnly !== true
       || metadata?.snapshotDigest !== SNAPSHOT_DIGEST
+      || metadata?.parserRegistryDigest !== PARSER_REGISTRY_DIGEST
     ) {
       throw new Error(`expected read-only snapshot-bound projection metadata, got ${JSON.stringify(metadata)}`)
     }
+    let neutralRepositoryUrl = ''
+    await runLaunchImportUrl({
+      urlRaw: 'https://code.example.test/group/sample.git',
+      bridge: {
+        knowledgeGraph: {
+          importRepositoryUrl: async url => {
+            neutralRepositoryUrl = url
+            return knowledgeGraphResult()
+          },
+        },
+      },
+      fallback: async () => {
+        throw new Error('explicit HTTPS Git repository URL must not use the webpage fallback')
+      },
+      resolveMcpInvocation: async () => ({ invocation: SOURCE_BACKED_INVOCATION }),
+    })
+    if (neutralRepositoryUrl !== 'https://code.example.test/group/sample.git') {
+      throw new Error(`expected a provider-neutral submitted repository remote, got ${neutralRepositoryUrl}`)
+    }
   } finally {
+    restore()
+  }
+}
+
+export function testKnowledgeGraphCanvasProjectionAcceptsBoundedMultilineLabels() {
+  const multilineLabel = 'layer\n    .selectAll '
+  const projected = buildKnowledgeGraphCanvasProjection(knowledgeGraphResult({
+    projection: {
+      token: PROJECTION_TOKEN,
+      readOnly: true,
+      complete: true,
+      truncated: false,
+      limit: 1_000,
+      graphData: {
+        type: 'Graph',
+        nodes: [
+          { id: 'repo:alpha', label: multilineLabel, type: 'CodeCallReference', properties: {} },
+          { id: 'repo:beta', label: 'Document text\nwith a second line', type: 'DocumentText', properties: {} },
+        ],
+        edges: [{
+          id: 'edge:alpha-beta',
+          source: 'repo:alpha',
+          target: 'repo:beta',
+          label: 'references',
+          properties: {
+            'evidence:explanation': 'The call\nreferences the document text. ',
+            'evidence:sourcePath': 'src/alpha.ts',
+            'evidence:sourceDigest': 'b'.repeat(64),
+            'evidence:excerptHash': 'c'.repeat(64),
+            'evidence:parserId': 'code.typescript',
+            'evidence:parserDigest': 'd'.repeat(64),
+            'evidence:ruleId': 'code.call',
+          },
+        }],
+      },
+    },
+  }))
+  if (projected.nodes[0]?.label !== multilineLabel) {
+    throw new Error('expected bounded multiline display labels to remain authoritative')
+  }
+
+  let failure: unknown = null
+  try {
+    buildKnowledgeGraphCanvasProjection(knowledgeGraphResult({
+      counts: { sources: 1, nodes: 1, edges: 0 },
+      projection: {
+        token: PROJECTION_TOKEN,
+        readOnly: true,
+        complete: true,
+        truncated: false,
+        limit: 1_000,
+        graphData: {
+          type: 'Graph',
+          nodes: [{ id: 'repo:alpha', label: 'unsafe\u0000label', type: 'Symbol', properties: {} }],
+          edges: [],
+        },
+      },
+    }))
+  } catch (error) {
+    failure = error
+  }
+  if (!(failure instanceof KnowledgeGraphProjectionError) || failure.code !== 'invalid-node-id') {
+    throw new Error('expected unsafe label controls to remain rejected')
+  }
+}
+
+export function testKnowledgeGraphCanvasProjectionKeepsLockedViewAtomic() {
+  const { restore } = initJsdomHarness()
+  try {
+    const store = useGraphStore.getState()
+    store.resetAll()
+    store.setCanvas2dRenderer('storyboard')
+    store.setCanvasRenderMode('3d')
+    store.setDocumentStructureBaselineLock(true)
+    const graphBefore = useGraphStore.getState().graphData
+    let failure: unknown = null
+    try {
+      applyKnowledgeGraphCanvasProjection(knowledgeGraphResult())
+    } catch (error) {
+      failure = error
+    }
+    if (!(failure instanceof KnowledgeGraphProjectionError) || failure.code !== 'graph-view-unavailable') {
+      throw new Error(`expected a locked Graph-view transition to fail closed, got ${String(failure)}`)
+    }
+    const state = useGraphStore.getState()
+    if (
+      state.canvasRenderMode !== '3d'
+      || state.canvas2dRenderer !== 'storyboard'
+      || state.graphData !== graphBefore
+    ) {
+      throw new Error('expected a locked Graph-view failure to leave the graph and view unchanged')
+    }
+  } finally {
+    useGraphStore.getState().setDocumentStructureBaselineLock(false)
+    useGraphStore.getState().resetAll()
     restore()
   }
 }
@@ -166,6 +293,7 @@ export async function testKnowledgeGraphRepositoryUrlFailsClosedWithoutCanonical
   try {
     await runLaunchImportUrl({
       urlRaw: 'https://github.com/example/sample',
+      forceKnowledgeGraphRepository: true,
       bridge: {},
       fallback: async () => {
         legacyFallbackCalls += 1
@@ -197,6 +325,7 @@ export async function testKnowledgeGraphRepositoryUrlRejectsUnsafeVariants() {
     try {
       await runLaunchImportUrl({
         urlRaw,
+        forceKnowledgeGraphRepository: true,
         bridge: {
           knowledgeGraph: {
             importRepositoryUrl: async () => {
@@ -224,6 +353,7 @@ export async function testKnowledgeGraphIncompleteRepositoryImportFailsClosed() 
   try {
     await runLaunchImportUrl({
       urlRaw: 'https://github.com/example/sample',
+      forceKnowledgeGraphRepository: true,
       bridge: {
         knowledgeGraph: {
           importRepositoryUrl: async () => knowledgeGraphResult({ complete: false }),

@@ -62,12 +62,30 @@ const byteLength = (value: unknown): number => {
   }
 }
 
+const hasForbiddenControlCharacter = (value: string, allowLineWhitespace = false): boolean => {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) || 0
+    if (codePoint === 0x7f) return true
+    if (codePoint >= 0x20) continue
+    if (allowLineWhitespace && (codePoint === 0x09 || codePoint === 0x0a || codePoint === 0x0d)) continue
+    return true
+  }
+  return false
+}
+
 const isCanonicalId = (value: unknown): value is string => (
   typeof value === 'string'
   && value.length > 0
   && value.length <= 1_024
   && value === value.trim()
-  && !/[\u0000-\u001f\u007f]/.test(value)
+  && !hasForbiddenControlCharacter(value)
+)
+
+const isCanonicalLabel = (value: unknown): value is string => (
+  typeof value === 'string'
+  && value.trim().length > 0
+  && value.length <= MAX_JSON_STRING_LENGTH
+  && !hasForbiddenControlCharacter(value, true)
 )
 
 const isLogicalRelativePath = (value: string): boolean => {
@@ -204,7 +222,7 @@ function validateGraphData(graphData: GraphData | undefined, counts: WorkspaceKn
       !node
       || Object.keys(node).some(key => !SAFE_NODE_KEYS.has(key))
       || !isCanonicalId(nodeId)
-      || !isCanonicalId(node.label)
+      || !isCanonicalLabel(node.label)
       || !isCanonicalId(node.type)
       || !isPlainRecord(node.properties)
       || nodeIds.has(nodeId)
@@ -247,7 +265,11 @@ function validateGraphData(graphData: GraphData | undefined, counts: WorkspaceKn
     validateJsonValue(edge.properties, `edge:${edgeId}.properties`)
     if (edge.metadata) validateJsonValue(edge.metadata, `edge:${edgeId}.metadata`)
     if (
-      REQUIRED_EDGE_EVIDENCE.some(key => !isCanonicalId(edge.properties[key]))
+      REQUIRED_EDGE_EVIDENCE.some(key => (
+        key === 'evidence:explanation'
+          ? !isCanonicalLabel(edge.properties[key])
+          : !isCanonicalId(edge.properties[key])
+      ))
       || !isLogicalRelativePath(String(edge.properties['evidence:sourcePath']))
     ) {
       throw new KnowledgeGraphProjectionError(
@@ -271,10 +293,15 @@ export function buildKnowledgeGraphCanvasProjection(
   }
   const graphId = cleanString(result.graphId)
   const snapshotDigest = cleanString(result.snapshotDigest)
-  if (!/^kg:graph:[0-9a-f]{32}$/.test(graphId) || !/^[0-9a-f]{64}$/.test(snapshotDigest)) {
+  const parserRegistryDigest = cleanString(result.parserRegistryDigest)
+  if (
+    !/^kg:graph:[0-9a-f]{32}$/.test(graphId)
+    || !/^[0-9a-f]{64}$/.test(snapshotDigest)
+    || !/^[0-9a-f]{64}$/.test(parserRegistryDigest)
+  ) {
     throw new KnowledgeGraphProjectionError(
       'invalid-snapshot-identity',
-      'Knowledge graph import returned an invalid graph or snapshot identity.',
+      'Knowledge graph import returned an invalid graph, snapshot, or parser-registry identity.',
     )
   }
   if (result.complete !== true) {
@@ -313,6 +340,7 @@ export function buildKnowledgeGraphCanvasProjection(
         readOnly: true,
         graphId,
         snapshotDigest: snapshotDigest.toLowerCase(),
+        parserRegistryDigest: parserRegistryDigest.toLowerCase(),
         projectionToken,
         complete: result.complete,
         projectionComplete: result.projection.complete,
@@ -333,7 +361,29 @@ export function buildKnowledgeGraphCanvasProjection(
 
 export function applyKnowledgeGraphCanvasProjection(
   result: WorkspaceKnowledgeGraphImportResult,
-  setGraphData: (graphData: GraphData) => void = graphData => useGraphStore.getState().setGraphData(graphData),
+  setGraphData: (graphData: GraphData) => void = graphData => {
+    const initialState = useGraphStore.getState()
+    if (
+      initialState.documentStructureBaselineLock === true
+      && initialState.canvas2dRenderer !== 'd3'
+    ) {
+      throw new KnowledgeGraphProjectionError(
+        'graph-view-unavailable',
+        'Knowledge graph import cannot change the renderer while the document baseline is locked.',
+      )
+    }
+    if (initialState.canvasRenderMode !== '2d') initialState.setCanvasRenderMode('2d')
+    const modeState = useGraphStore.getState()
+    if (modeState.canvas2dRenderer !== 'd3') modeState.setCanvas2dRenderer('d3')
+    const graphViewState = useGraphStore.getState()
+    if (graphViewState.canvasRenderMode !== '2d' || graphViewState.canvas2dRenderer !== 'd3') {
+      throw new KnowledgeGraphProjectionError(
+        'graph-view-unavailable',
+        'Knowledge graph import could not open the required 2D Graph view.',
+      )
+    }
+    graphViewState.setGraphData(graphData)
+  },
 ): GraphData {
   const graphData = buildKnowledgeGraphCanvasProjection(result)
   setGraphData(graphData)

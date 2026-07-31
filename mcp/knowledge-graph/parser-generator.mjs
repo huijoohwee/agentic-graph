@@ -1,4 +1,5 @@
 import { KnowledgeGraphError, compareStableStrings, sha256, stableStringify } from "./contract.mjs";
+import { compileDeclarativeGrammar } from "./declarative-grammar-parser.mjs";
 
 const MAX_DESCRIPTORS = 128;
 const MAX_MATCHERS_PER_DESCRIPTOR = 64;
@@ -19,7 +20,7 @@ const asUniqueSorted = (values, validate, field) => {
   return [...new Set(normalized)].sort(compareStableStrings);
 };
 
-function normalizeDescriptor(raw, index) {
+function normalizeDescriptor(raw, index, adapterFidelities) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new KnowledgeGraphError("parser_descriptor_invalid", `Parser descriptor ${index} must be an object.`);
   }
@@ -32,6 +33,7 @@ function normalizeDescriptor(raw, index) {
     "basenames",
     "basenameFamilies",
     "priority",
+    "grammar",
   ]);
   const unexpected = Object.keys(raw).filter((key) => !allowedKeys.has(key));
   if (unexpected.length) {
@@ -46,6 +48,38 @@ function normalizeDescriptor(raw, index) {
   if (![id, kind, adapter, fidelity].every((value) => SAFE_TOKEN.test(value))) {
     throw new KnowledgeGraphError("parser_descriptor_invalid", `Parser descriptor ${index} has an invalid identity token.`);
   }
+  if (adapterFidelities) {
+    if (!Object.hasOwn(adapterFidelities, adapter)) {
+      throw new KnowledgeGraphError(
+        "parser_adapter_unsupported",
+        `Parser descriptor ${id} requests an adapter that is not registered by the native runtime.`,
+        { adapter },
+      );
+    }
+    if (adapterFidelities[adapter] !== fidelity) {
+      throw new KnowledgeGraphError(
+        "parser_descriptor_invalid",
+        `Parser descriptor ${id} fidelity does not match its native adapter.`,
+        { adapter, expectedFidelity: adapterFidelities[adapter], fidelity },
+      );
+    }
+  }
+  const hasGrammar = Object.hasOwn(raw, "grammar");
+  if (adapter === "declarative-grammar" && !hasGrammar) {
+    throw new KnowledgeGraphError(
+      "parser_descriptor_invalid",
+      `Parser descriptor ${id} requires a bounded declarative grammar.`,
+    );
+  }
+  if (adapter !== "declarative-grammar" && hasGrammar) {
+    throw new KnowledgeGraphError(
+      "parser_descriptor_invalid",
+      `Parser descriptor ${id} cannot attach a grammar to a native fixed adapter.`,
+    );
+  }
+  const grammar = hasGrammar
+    ? compileDeclarativeGrammar(raw.grammar).grammar
+    : null;
   const extensions = asUniqueSorted(raw.extensions || [], SAFE_EXTENSION, "extensions");
   const basenames = asUniqueSorted(raw.basenames || [], SAFE_BASENAME, "basenames");
   const basenameFamilies = asUniqueSorted(
@@ -69,21 +103,37 @@ function normalizeDescriptor(raw, index) {
     basenames,
     basenameFamilies,
     priority,
+    ...(grammar ? { grammar } : {}),
   });
 }
 
-export function compileParserRegistry(rawDescriptors) {
+export function compileParserRegistry(rawDescriptors, { adapterFidelities = null } = {}) {
   if (!Array.isArray(rawDescriptors) || !rawDescriptors.length || rawDescriptors.length > MAX_DESCRIPTORS) {
     throw new KnowledgeGraphError("parser_registry_invalid", `Parser registry must contain 1-${MAX_DESCRIPTORS} descriptors.`);
   }
-  const descriptors = rawDescriptors.map(normalizeDescriptor);
+  if (adapterFidelities !== null && (
+    !adapterFidelities
+    || typeof adapterFidelities !== "object"
+    || Array.isArray(adapterFidelities)
+  )) {
+    throw new KnowledgeGraphError(
+      "parser_registry_invalid",
+      "Native parser adapter identities must be supplied as an inert fidelity record.",
+    );
+  }
+  const descriptors = rawDescriptors.map((descriptor, index) => (
+    normalizeDescriptor(descriptor, index, adapterFidelities)
+  ));
   const ids = new Set();
+  const kinds = new Set();
   const extensionOwners = new Map();
   const basenameOwners = new Map();
   const basenameFamilyOwners = new Map();
   for (const descriptor of descriptors) {
     if (ids.has(descriptor.id)) throw new KnowledgeGraphError("parser_registry_invalid", `Duplicate parser descriptor id: ${descriptor.id}`);
+    if (kinds.has(descriptor.kind)) throw new KnowledgeGraphError("parser_registry_invalid", `Duplicate parser descriptor kind: ${descriptor.kind}`);
     ids.add(descriptor.id);
+    kinds.add(descriptor.kind);
     for (const extension of descriptor.extensions) {
       const key = extension.toLowerCase();
       const owner = extensionOwners.get(key);
@@ -110,14 +160,41 @@ export function compileParserRegistry(rawDescriptors) {
     }
   }
   const canonical = descriptors
-    .map(({ id, kind, adapter, fidelity, extensions, basenames, basenameFamilies, priority }) => (
-      { id, kind, adapter, fidelity, extensions, basenames, basenameFamilies, priority }
+    .map(({
+      id,
+      kind,
+      adapter,
+      fidelity,
+      extensions,
+      basenames,
+      basenameFamilies,
+      priority,
+      grammar,
+    }) => (
+      {
+        id,
+        kind,
+        adapter,
+        fidelity,
+        extensions,
+        basenames,
+        basenameFamilies,
+        priority,
+        ...(grammar ? { grammar } : {}),
+      }
     ))
     .sort((left, right) => compareStableStrings(left.id, right.id));
   const basenameFamilyMatchers = [...basenameFamilyOwners.entries()]
     .sort(([leftFamily, left], [rightFamily, right]) => (
       right.priority - left.priority
       || rightFamily.length - leftFamily.length
+      || compareStableStrings(left.id, right.id)
+    ));
+  const extensionMatchers = [...extensionOwners.entries()]
+    .sort(([leftExtension, left], [rightExtension, right]) => (
+      rightExtension.length - leftExtension.length
+      || right.priority - left.priority
+      || compareStableStrings(leftExtension, rightExtension)
       || compareStableStrings(left.id, right.id)
     ));
   const digest = sha256(stableStringify(canonical, 0));
@@ -138,9 +215,10 @@ export function compileParserRegistry(rawDescriptors) {
           && SAFE_BASENAME_FAMILY_SUFFIX.test(familySuffix)
         )) return descriptor;
       }
-      const dot = basename.lastIndexOf(".");
-      const extension = dot > 0 ? basename.slice(dot) : "";
-      return extensionOwners.get(extension) || null;
+      for (const [extension, descriptor] of extensionMatchers) {
+        if (basename.length > extension.length && basename.endsWith(extension)) return descriptor;
+      }
+      return null;
     },
     descriptor(kindRaw) {
       const kind = String(kindRaw || "");
