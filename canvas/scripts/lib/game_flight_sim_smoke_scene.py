@@ -9,6 +9,7 @@ FLIGHT_MISSION_NODE = "kg_flight_sim_mission"
 FLIGHT_AIRCRAFT_NODE = "kg_flight_sim_aircraft"
 FLIGHT_AIRCRAFT_ORIENTATION_NODE = "kg_flight_sim_aircraft_model_orientation"
 FLIGHT_ASSET_NODE = "kg_xr_procedural_airplane"
+FLIGHT_GEO_XR_LIGHTING_NODE = "kg_flight_sim_geospatial_actor_lighting"
 FLIGHT_OPTIONAL_BEACON_NODE = "kg_flight_sim_optional_beacon"
 FLIGHT_OPTIONAL_BEACON_PATH = (
     "canvas/src/features/game-flight-sim/assetSpec/fallbacks/"
@@ -25,6 +26,21 @@ AUTHORED_XR_NODES = {
 }
 CANONICAL_XR_TERRAIN_NODE = "kg_xr_native_terrain_singapore"
 FORBIDDEN_SCENE_PREFIXES = ("kg_game_fps", "kg_xr_empty_world")
+FLIGHT_GEO_XR_VISUAL_NODES = {
+    FLIGHT_MISSION_NODE,
+    FLIGHT_AIRCRAFT_NODE,
+    FLIGHT_AIRCRAFT_ORIENTATION_NODE,
+    FLIGHT_GEO_XR_LIGHTING_NODE,
+}
+FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS = {
+    FLIGHT_ASSET_NODE: 1,
+    "kg_xr_airplane_cockpit": 1,
+    "kg_xr_airplane_engine": 2,
+    "kg_xr_airplane_fuselage": 1,
+    "kg_xr_airplane_tail_fin": 1,
+    "kg_xr_airplane_tailplane": 1,
+    "kg_xr_airplane_wing": 2,
+}
 
 
 def read_and_pin_authored_physics_baseline(
@@ -424,8 +440,8 @@ def assert_authored_scene(scene: dict[str, Any]) -> None:
         raise AssertionError("Flight Sim replaced the retained runtime Canvas")
     if scene.get("rendererAlpha") is not True:
         raise AssertionError("Flight runtime Canvas was not transparent")
-    if scene.get("visualProjection") != "maplibre":
-        raise AssertionError("Flight runtime Canvas still owned the visible projection")
+    if scene.get("visualProjection") != "r3f":
+        raise AssertionError("Flight runtime Canvas did not retain the Media Airplane")
     camera = scene.get("camera") or {}
     if camera.get("authorityStable") is not True:
         raise AssertionError("Flight Sim replaced the Physics camera catalog")
@@ -436,9 +452,21 @@ def assert_authored_scene(scene: dict[str, Any]) -> None:
         raise AssertionError(
             f"native XR visuals remained visible: {scene.get('nativeVisualNames')}"
         )
-    if scene.get("flightVisualCount") != 0:
+    flight_visual_names = set(scene.get("flightVisualNames") or [])
+    if flight_visual_names != FLIGHT_GEO_XR_VISUAL_NODES:
         raise AssertionError(
-            f"R3F Flight visuals remained visible: {scene.get('flightVisualNames')}"
+            "Geo+XR did not retain exactly the actor-only R3F Flight surface: "
+            f"{sorted(flight_visual_names)}"
+        )
+    named_node_counts = scene.get("namedNodeCounts") or {}
+    airplane_node_counts = {
+        name: int(named_node_counts.get(name) or 0)
+        for name in FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS
+    }
+    if airplane_node_counts != FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS:
+        raise AssertionError(
+            "Geo+XR Media Airplane geometry was incomplete or duplicated: "
+            f"{airplane_node_counts}"
         )
     map_overlay = scene.get("mapOverlay") or {}
     if (

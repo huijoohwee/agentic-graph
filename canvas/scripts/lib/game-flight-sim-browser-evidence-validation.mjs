@@ -308,8 +308,14 @@ export async function readValidatedFlightSimBrowserRunEvidence({
         && view?.rendererCanvasCount === 1
         && view?.rendererAlpha === true
         && view?.nativeVisualCount === 0
-        && view?.flightR3fVisualCount === 0
-        && view?.visualProjection === 'maplibre'
+        && view?.flightR3fVisualCount === 4
+        && JSON.stringify(view?.flightR3fVisualNames) === JSON.stringify([
+          'kg_flight_sim_aircraft',
+          'kg_flight_sim_aircraft_model_orientation',
+          'kg_flight_sim_geospatial_actor_lighting',
+          'kg_flight_sim_mission',
+        ])
+        && view?.visualProjection === 'r3f'
         && view?.rendererPointerTransparent === true
         && view?.exclusivePlainGeoOverlayCount === 0
         && view?.flightLayersReady === true

@@ -269,7 +269,7 @@ def run_flight_runtime_verifications(
             page,
             lambda: read_flight_scene(page),
             lambda value: (
-                value.get("visualProjection") == "maplibre"
+                value.get("visualProjection") == "r3f"
                 and (value.get("mapOverlay") or {}).get("layersReady") is True
                 and (value.get("mapOverlay") or {}).get(
                     "aircraftFeatureCount"
@@ -568,7 +568,7 @@ def run_flight_runtime_verifications(
             != state["activeScene"]["visibleSceneSignature"]
         ):
             raise AssertionError(
-                "suppressed R3F scene contract changed across the Flight lifecycle"
+                "actor-only R3F scene contract changed across the Flight lifecycle"
             )
         page.screenshot(path=str(screenshot_path), full_page=False)
         return scene

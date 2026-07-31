@@ -51,6 +51,13 @@ def _read_view(page: Page) -> dict[str, Any]:
           const blob = await graphState.captureThreeGltfSnapshot()
           const gltf = blob ? JSON.parse(await blob.text()) : null
           const nodes = Array.isArray(gltf?.nodes) ? gltf.nodes : []
+          const flightR3fVisualNames = nodes
+            .map(node => String(node?.name || ''))
+            .filter(name => (
+              name.startsWith('kg_flight_sim_')
+              || name.startsWith('kg_flight-sim_')
+            ))
+            .sort()
           const host = document.querySelector(
             '[data-kg-flight-geospatial-overlay="active"]',
           )
@@ -531,11 +538,8 @@ def _read_view(page: Page) -> dict[str, Any]:
                 || name.startsWith('kg_xr_stage_preset_')
                 || name.startsWith('kg_xr_playground_')
             }).length,
-            flightR3fVisualCount: nodes.filter(node => {
-              const name = String(node?.name || '')
-              return name.startsWith('kg_flight_sim_')
-                || name.startsWith('kg_flight-sim_')
-            }).length,
+            flightR3fVisualCount: flightR3fVisualNames.length,
+            flightR3fVisualNames,
             visualProjection:
               rendererCanvas?.dataset.kgFlightSimVisualProjection || '',
             rendererPointerTransparent:
@@ -651,7 +655,14 @@ def wait_for_canvas_view_geo_xr_handoff(page: Page, source_case: GeoXrViewCase) 
             "renderMode": "3d", "canvas3dMode": "xr", "hudVisible": True,
             "geoXrSurfaceActive": True, "rendererCanvasCount": 1,
             "canvasStable": True, "rendererAlpha": True,
-            "flightR3fVisualCount": 0, "visualProjection": "maplibre",
+            "flightR3fVisualCount": 4,
+            "flightR3fVisualNames": [
+                "kg_flight_sim_aircraft",
+                "kg_flight_sim_aircraft_model_orientation",
+                "kg_flight_sim_geospatial_actor_lighting",
+                "kg_flight_sim_mission",
+            ],
+            "visualProjection": "r3f",
             "rendererPointerTransparent": True, "flightActive": True,
             "exclusivePlainGeoOverlayCount": 0, "flightRuntimeError": "",
         }, require_revision_sync=True,

@@ -559,7 +559,14 @@ test('Flight browser proof activates only after applying the authored source', (
     sceneVerifier,
     /map_overlay\.get\("pendingWaypointCount"\)/,
   )
-  assert.match(sceneVerifier, /scene\.get\("flightVisualCount"\) != 0/)
+  assert.match(
+    sceneVerifier,
+    /flight_visual_names != FLIGHT_GEO_XR_VISUAL_NODES/,
+  )
+  assert.match(
+    sceneVerifier,
+    /airplane_node_counts != FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS/,
+  )
   assert.match(
     serverOwner,
     /refusing responsive pre-existing server/,
