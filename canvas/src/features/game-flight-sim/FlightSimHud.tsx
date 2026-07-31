@@ -70,6 +70,9 @@ export type FlightSimHudProps = Readonly<{
 export function FlightSimHud({
   geospatialComposite = false,
 }: FlightSimHudProps) {
+  const mediaPointerClassName = geospatialComposite
+    ? 'pointer-events-none'
+    : 'pointer-events-auto'
   const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen === true)
   const floatingPanelWidthRatio = useGraphStore(state => state.floatingPanelWidthRatio)
   const [aircraftSelected, setAircraftSelected] = React.useState(false)
@@ -230,7 +233,7 @@ export function FlightSimHud({
       style={floatingPanelClearanceVariables}
     >
       <figure
-        className={`${geospatialComposite ? 'pointer-events-none' : 'pointer-events-auto'} absolute inset-[8%_8%_13%_8%] m-0`}
+        className={`${mediaPointerClassName} absolute inset-[8%_8%_13%_8%] m-0`}
         aria-label="Flight Sim media surface"
         data-kg-flight-sim-media-surface="1"
         data-kg-flight-sim-media-pointer-owner={
@@ -239,14 +242,14 @@ export function FlightSimHud({
         data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
       >
         <figcaption
-          className="pointer-events-auto absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-cyan-50 backdrop-blur"
+          className={`${mediaPointerClassName} absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-cyan-50 backdrop-blur`}
           data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
         >
           Flight Sim media · {camera.view} · {flight.phase}
         </figcaption>
         <button
           type="button"
-          className={`pointer-events-auto absolute left-1/2 top-1/2 grid h-28 w-[min(72%,34rem)] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[50%] border bg-transparent text-cyan-50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300 ${
+          className={`${mediaPointerClassName} absolute left-1/2 top-1/2 grid h-28 w-[min(72%,34rem)] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[50%] border bg-transparent text-cyan-50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300 ${
             aircraftSelected
               ? 'border-cyan-200/70'
               : 'border-cyan-100/20 hover:border-cyan-200/55'
