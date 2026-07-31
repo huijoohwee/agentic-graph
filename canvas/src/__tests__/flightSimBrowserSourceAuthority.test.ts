@@ -173,6 +173,11 @@ test('Flight browser proof activates only after applying the authored source', (
     assert.match(sourceReader, /source\?\.serialize\?\.\(\)\?\.data/)
     assert.doesNotMatch(sourceReader, /source\?\._data\?\.features/)
   }
+  assert.doesNotMatch(
+    geoXrVerifier,
+    /\bNaN\b/,
+    'browser evidence diagnostics must remain valid JSON when a measurement is unavailable',
+  )
   assert.match(
     geoXrVerifier,
     /layout_occlusion = read_geo_xr_layout_occlusion\(page\)/,

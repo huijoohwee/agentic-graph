@@ -187,13 +187,13 @@ def _read_view(page: Page) -> dict[str, Any]:
             }
           }) : []
           const measureEdgeMeters = (from, to) => {
-            if (!Array.isArray(from) || !Array.isArray(to)) return NaN
+            if (!Array.isArray(from) || !Array.isArray(to)) return null
             const longitudeA = Number(from[0])
             const latitudeA = Number(from[1])
             const longitudeB = Number(to[0])
             const latitudeB = Number(to[1])
             if (![longitudeA, latitudeA, longitudeB, latitudeB].every(Number.isFinite)) {
-              return NaN
+              return null
             }
             const latitude = (latitudeA + latitudeB) / 2
             return Math.hypot(
@@ -216,7 +216,7 @@ def _read_view(page: Page) -> dict[str, Any]:
             const latitude = coordinates.length > 0
               ? coordinates.reduce((sum, coordinate) => sum + coordinate[1], 0)
                 / coordinates.length
-              : NaN
+              : null
             const metersPerLongitudeDegree = 111_320
               * Math.cos(latitude * Math.PI / 180)
             const longitudes = coordinates.map(coordinate => coordinate[0])
@@ -245,11 +245,11 @@ def _read_view(page: Page) -> dict[str, Any]:
               poiId: String(feature?.properties?.kgPoiId || ''),
               depthMeters: latitudes.length > 0
                 ? (Math.max(...latitudes) - Math.min(...latitudes)) * 111_320
-                : NaN,
+                : null,
               widthMeters: longitudes.length > 0
                 ? (Math.max(...longitudes) - Math.min(...longitudes))
                   * metersPerLongitudeDegree
-                : NaN,
+                : null,
               viewportBounded,
             }
           })
