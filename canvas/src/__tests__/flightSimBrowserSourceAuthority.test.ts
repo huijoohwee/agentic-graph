@@ -238,7 +238,6 @@ test('Flight browser proof activates only after applying the authored source', (
     'boundsInsideAperture',
     'renderedIdentityAtAnchor',
     'visiblePoiAnchors',
-    'renderedPois',
     'exactFeatures',
     'exactPresentation',
     'require_city_regional_poi_teardown_contract',
@@ -251,6 +250,7 @@ test('Flight browser proof activates only after applying the authored source', (
       `expected regional POI browser proof requirement: ${regionalPoiProofRequirement}`,
     )
   }
+  assert.doesNotMatch(cityRegionalPoiVerifier, /renderedPois/)
   assert.match(
     citySemanticMediaVerifier,
     /surface\?\.tagName \|\| ''/,

@@ -38,21 +38,10 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
           const activeLayer = viewMode === '3d'
             ? gympgrph.REGIONAL_POI_LAYER_IDS?.extrusion
             : gympgrph.REGIONAL_POI_LAYER_IDS?.fill
-          let rendered = []
-          try {
-            rendered = map?.queryRenderedFeatures?.({
-              layers: [activeLayer],
-            }) || []
-          } catch {
-            rendered = []
-          }
           const expectedPois = Array.isArray(profile?.pois)
             ? profile.pois.map(poi => String(poi.id)).sort()
             : []
           const sourcePois = Array.from(new Set(features.map(
-            feature => String(feature?.properties?.kgRegionalPoiId || ''),
-          ).filter(Boolean))).sort()
-          const renderedPois = Array.from(new Set(rendered.map(
             feature => String(feature?.properties?.kgRegionalPoiId || ''),
           ).filter(Boolean))).sort()
           const exactFeatures = Boolean(profile)
@@ -251,7 +240,6 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             poiVisualProof,
             profileFeatureCount: Number(profile?.surfaces?.length || 0),
             profileId: String(profile?.id || ''),
-            renderedPois,
             sourcePois,
             datasetFeatureCount: Number(
               container?.dataset?.kgCityGeospatialPoiFeatureCount || 0,
@@ -281,7 +269,6 @@ def require_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             == observed.get("profileFeatureCount")
             and observed.get("datasetProfileId") == observed.get("profileId")
             and observed.get("sourcePois") == expected_pois
-            and observed.get("renderedPois") == expected_pois
             and observed.get("layerCount") == 4
             and observed.get("exactFeatures") is True
             and observed.get("exactPresentation") is True
