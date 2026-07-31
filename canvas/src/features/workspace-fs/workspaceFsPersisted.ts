@@ -21,7 +21,7 @@ import {
 import { isWorkspaceRepoLocalRunReadyBootstrap } from './workspaceRunReadyDemos'
 import {
   ensureWorkspaceDocsMirrorFolder,
-  readCanonicalLocalWorkspaceSeedMirrorEntries,
+  readCanonicalWorkspaceSeedMirrorEntries,
   readWorkspaceInitializationDocsMirrorEntries,
   upsertWorkspaceDocsMirrorText,
   upsertWorkspaceInitializationSeedText,
@@ -190,7 +190,7 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
     const sourceDocsMirrorEntries = !docsOnlyMode
       ? []
       : isWorkspaceRepoLocalRunReadyBootstrap()
-        ? await readCanonicalLocalWorkspaceSeedMirrorEntries()
+        ? await readCanonicalWorkspaceSeedMirrorEntries()
         : await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
     const docsMirrorEntries = docsOnlyMode
       ? sourceDocsMirrorEntries.every(entry => entry.authority === 'agentic-canvas-os-storage')
