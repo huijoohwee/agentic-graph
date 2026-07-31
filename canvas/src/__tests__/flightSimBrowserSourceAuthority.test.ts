@@ -337,6 +337,26 @@ test('Flight browser proof activates only after applying the authored source', (
     geoXrPresentationVerifier,
     /\{"aircraft", "objective-guide", "route", "route-point"\}/,
   )
+  for (const retainedCityRendererEvidence of [
+    'city?.threeCanvasOwnerCount === 1',
+    'city?.canvasStable === true',
+    'city?.rendererPointerTransparent === true',
+    'city?.rendererSurfaceVisible === false',
+    'city?.flightR3fVisualCount === 0',
+  ]) {
+    assert.ok(
+      evidenceValidator.includes(retainedCityRendererEvidence),
+      `expected retained inactive City renderer evidence: ${retainedCityRendererEvidence}`,
+    )
+  }
+  assert.match(
+    evidenceValidator,
+    /JSON\.stringify\(\['aircraft', 'route', 'route-point'\]\)/,
+  )
+  assert.doesNotMatch(
+    evidenceValidator,
+    /JSON\.stringify\(\['aircraft', 'objective-guide', 'route', 'route-point'\]\)/,
+  )
   assert.doesNotMatch(
     geoXrPresentationVerifier,
     /data-kg-city-sim-open="1"/,

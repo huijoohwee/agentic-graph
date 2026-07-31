@@ -70,7 +70,11 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.activeMapPresent === true
     && city?.mapLibreCanvasCount === 1
     && city?.visibleMapLibreCanvasCount === 1
-    && city?.threeCanvasOwnerCount === 0
+    && city?.threeCanvasOwnerCount === 1
+    && city?.canvasStable === true
+    && city?.rendererPointerTransparent === true
+    && city?.rendererSurfaceVisible === false
+    && city?.flightR3fVisualCount === 0
     && city?.hudVisible === false
     && city?.flightHudCount === 0
     && city?.flightSourceFeatures >= 7
@@ -81,7 +85,7 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.overlayPhase === 'stopped'
     && city?.overlayRoutePointCount >= 2
     && JSON.stringify(city?.sourceKinds)
-      === JSON.stringify(['aircraft', 'objective-guide', 'route', 'route-point'])
+      === JSON.stringify(['aircraft', 'route', 'route-point'])
     && city?.environmentId === ''
     && city?.environmentSourceFeatures === 0
     && city?.environmentLayerCount === 0
