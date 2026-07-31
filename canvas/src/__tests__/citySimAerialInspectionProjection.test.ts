@@ -3,9 +3,6 @@ import {
   projectCitySimAerialInspectionToGeospatialOverlay,
 } from '@/features/game-city-sim/citySimAerialInspectionProjection'
 import type { CitySimSnapshot } from '@/features/game-city-sim/citySimRuntimeState'
-import {
-  projectXrEnvironmentToFlightGeo,
-} from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import { readAuthoritativeCitySimSource } from './citySimAuthoritativeSource'
 
 function activeCitySnapshot(): CitySimSnapshot {
@@ -33,14 +30,7 @@ function activeCitySnapshot(): CitySimSnapshot {
 export function testCitySimAerialInspectionUsesAuthoredCityProfileWithoutFlightCamera() {
   const city = activeCitySnapshot()
   const geographicProfile = city.geographicProfile!
-  const environment = projectXrEnvironmentToFlightGeo({
-    stageId: 'singapore',
-    subjects: [],
-  })
-  const overlay = projectCitySimAerialInspectionToGeospatialOverlay(
-    city,
-    environment,
-  )
+  const overlay = projectCitySimAerialInspectionToGeospatialOverlay(city)
 
   assert.equal(overlay.active, true)
   assert.equal(overlay.phase, 'stopped')
@@ -51,7 +41,7 @@ export function testCitySimAerialInspectionUsesAuthoredCityProfileWithoutFlightC
   assert.equal(overlay.readyFrameRequestId, null)
   assert.equal(overlay.camera.source, 'free-orbit')
   assert.equal(overlay.camera.effectiveOwner, 'free-orbit')
-  assert.strictEqual(overlay.environment, environment)
+  assert.equal(overlay.environment, null)
   assert.equal(overlay.objective, null)
   assert.deepEqual(
     overlay.route.map(point => point.coordinate),
@@ -66,7 +56,6 @@ export function testCitySimAerialInspectionUsesAuthoredCityProfileWithoutFlightC
       city: Object.freeze({ ...city.city, tick: city.city.tick + 1 }),
       revision: city.revision + 1,
     }),
-    environment,
   )
   assert.equal(laterCityTick.revision, overlay.revision)
   assert.deepEqual(laterCityTick.aircraft, overlay.aircraft)
@@ -74,7 +63,6 @@ export function testCitySimAerialInspectionUsesAuthoredCityProfileWithoutFlightC
 
   const inactive = projectCitySimAerialInspectionToGeospatialOverlay(
     Object.freeze({ ...city, active: false, revision: city.revision + 1 }),
-    environment,
   )
   assert.equal(inactive.active, false)
   assert.equal(inactive.presentationOwner, null)

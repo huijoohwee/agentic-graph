@@ -32,10 +32,12 @@ def read_city_semantic_media_contract(page: Page) -> dict[str, Any]:
           const caption = surface?.querySelector('figcaption[id]') || null
           const mapCanvasLabelledBy =
             mapCanvas?.getAttribute('aria-labelledby') || ''
-          const mapCanvasLabel = mapCanvasLabelledBy
+          const mapCanvasLabel =
+            mapCanvas?.getAttribute('aria-label') || ''
+          const mapCanvasLabelledByName = mapCanvasLabelledBy
             ? document.getElementById(mapCanvasLabelledBy)
                 ?.textContent?.trim() || ''
-            : mapCanvas?.getAttribute('aria-label') || ''
+            : ''
           const mapInteractiveRoot = mapCanvas?.closest(
             '.maplibregl-interactive',
           ) || null
@@ -71,12 +73,14 @@ def read_city_semantic_media_contract(page: Page) -> dict[str, Any]:
             cityMapLibreCanvasAriaHidden:
               mapCanvas?.hasAttribute('aria-hidden') === true,
             cityMapLibreCanvasAriaLabelledBy: mapCanvasLabelledBy,
+            cityMapLibreCanvasAriaLabelledByName:
+              mapCanvasLabelledByName,
             cityMapLibreCanvasSelectableMarker:
               mapCanvas?.getAttribute(
                 'data-kg-rich-media-selectable-surface',
               ) || '',
-            cityMapLibreCanvasSelectableOwnerIsSurface:
-              selectableOwner === surface,
+            cityMapLibreCanvasSelectableOwnerIsCanvas:
+              selectableOwner === mapCanvas,
             cityMapLibreCanvasSelectableOwnerNodeName:
               selectableOwner?.tagName || '',
           }

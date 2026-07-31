@@ -35,17 +35,22 @@ candidate SHA.
 - [ ] Exclude City from the native XR physics launcher and suppress the
   authored/native Three graph for City source intent.
 - [ ] Wrap the native MapLibre Geo+XR projection directly in a labeled semantic
-  City media `figure` whose existing selection marker is active-only and whose
-  wrapper owns no pointer capture and adds no generic `div` or `aria-hidden`.
+  City media `figure` and `figcaption`; bind the same accessible name and
+  caption link to the live canvas as the sole active selection-marker owner,
+  with no pointer capture, generic replacement `div`, or `aria-hidden`.
 - [ ] Project every live parcel to the City GeoJSON source with zone fill,
-  extrusion, outline, selection, and mutation-driven updates.
+  extrusion, outline, selection, and mutation-driven updates by converting the
+  source-authored meter geometry exactly once.
 - [ ] Add a City-owned deterministic `stopped` aircraft/route adapter from the
   City geographic profile that publishes through the existing Flight source
-  and layers with atomic owner `city`, the selected shared XR environment, and
-  no Flight bootstrap, camera, gameplay, or readiness.
-- [ ] Consume major-POI geometry only from the selected ADM0 companion so
-  spatial and geographic adapters share one authored source; order native
-  environment extrusions below City parcels.
+  and layers with atomic owner `city`, `environment: null`, and no Flight
+  bootstrap, camera, gameplay, or readiness.
+- [ ] Prove `environment: null` makes the shared projection owner remove any
+  retained local Flight XR environment layers and source before City
+  presentation; City owns no environment source/layer and creates no
+  environment definition.
+  Keep locale-specific content solely in the selected ADM0 companion without
+  copying it into the City contract.
 - [ ] Prove City creates one parcel source/layer family on the existing map and
   no duplicate map, source/layer ids, Three.js/R3F Canvas/stage/mesh/camera, or
   renderer.
@@ -72,13 +77,17 @@ candidate SHA.
 - [ ] Neutral browser proof starts without a city selector or persisted city
   state and materializes only after applying the Source File.
 - [ ] Browser proof covers Geo+XR, the retained native MapLibre host wrapped by
-  the selectable semantic City media figure, native camera and viewport
-  gestures, City Builder coordinate input, zero City Three.js/R3F
-  Canvas/stage/mesh/camera, absence of the native physics playground, authored
-  metrics, zone/tick/stop, save/read-back, all six projections, console
-  cleanliness, and exit restore.
-- [ ] Browser proof captures sixteen City parcel features, a visible live
-  mutation/selection, companion-authored major-POI extrusions, and the stopped
+  the semantic City media `figure` and `figcaption`, the live canvas as the
+  sole selection-marker owner with the same accessible name and caption link,
+  native camera and viewport gestures, City Builder coordinate input, zero
+  City Three.js/R3F Canvas/stage/mesh/camera, absence of the native physics
+  playground, authored metrics, zone/tick/stop, save/read-back, all six
+  projections, console cleanliness, and exit restore.
+- [ ] Browser proof captures `rows × columns` City parcel features, deriving
+  rows, columns, parcel width, and parcel depth from the applied source and
+  projecting those source-authored meter edges once at map scale; it also
+  captures a visible live mutation/selection, `environment: null`, zero local
+  Flight XR environment source/layers/features, and the stopped
   aircraft/route on the existing Flight source/layers, with one map and
   inactive Flight bootstrap, camera, gameplay, and readiness.
 - [ ] Candidate is reviewed and integrated through the protected workflow.

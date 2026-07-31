@@ -65,6 +65,24 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     ),
     'utf8',
   )
+  const cityOwnerBranchStart = geospatialPresentation.indexOf(
+    'if (!flightPresentation) {',
+  )
+  const flightOwnerBranchStart = geospatialPresentation.indexOf(
+    'const environmentApplied = applyFlightGeoEnvironmentToMap(',
+  )
+  const cityOwnerBranch = geospatialPresentation.slice(
+    cityOwnerBranchStart,
+    flightOwnerBranchStart,
+  )
+  const cityApplyStart = geospatialPresentation.indexOf(
+    'export function applyCityGeoXrAerialOverlayToMap(',
+  )
+  const cityApplyEnd = geospatialPresentation.indexOf(
+    'export function useFlightGeoOverlayMapLibrePresentation(',
+    cityApplyStart,
+  )
+  const cityApply = geospatialPresentation.slice(cityApplyStart, cityApplyEnd)
 
   for (const marker of [
     'requestXrEnvironmentGeoHandoff',
@@ -82,19 +100,30 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   if (
     !mediaLibrary.includes('<XrEnvironmentGeoButton')
     || mediaLibrary.includes('/game-flight-sim/')
-    || !geoOverlayBridge.includes(
+    || geoOverlayBridge.indexOf(
       'const environment = projectXrEnvironmentToFlightGeo(',
-    )
+    ) < geoOverlayBridge.indexOf('projectFlight: flightSnapshot => {')
     || !geoOverlayBridge.includes(
       'projectCityAerial: projectCitySimAerialInspectionToGeospatialOverlay',
     )
-    || !geoComposition.includes('environment: input.environment')
-    || !geospatialPresentation.includes(
-      '{ beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill }',
-    )
+    || geoComposition.includes('environment: input.environment')
     || !geospatialPresentation.includes(
       'applyFlightGeoEnvironmentToMap(',
     )
+    || cityOwnerBranchStart < 0
+    || flightOwnerBranchStart < 0
+    || cityApplyStart < 0
+    || cityApplyEnd < 0
+    || !cityOwnerBranch.includes(
+      'applyCityGeoXrAerialOverlayToMap(map, overlay)',
+    )
+    || cityOwnerBranch.includes('applyFlightGeoEnvironmentToMap(')
+    || !cityApply.includes("overlay.presentationOwner !== 'city'")
+    || !cityApply.includes('overlay.environment !== null')
+    || !cityApply.includes('removeFlightGeoEnvironmentFromMap(map)')
+    || !cityApply.includes('applyFlightGeoOverlayToMap(map, overlay)')
+    || cityApply.indexOf('removeFlightGeoEnvironmentFromMap(map)')
+      > cityApply.indexOf('applyFlightGeoOverlayToMap(map, overlay)')
     || !geospatialPresentation.includes(
       'applyFlightGeoOverlayToMap(map, overlay)',
     )
@@ -112,7 +141,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     )
   ) {
     throw new Error(
-      'expected generic Media environment selection, one selected-environment publication, ordered native MapLibre layers, and the retained aircraft overlay',
+      'expected generic Media environment selection to stay Flight-owned while City publishes ordered native MapLibre parcels and the retained aircraft overlay',
     )
   }
 }

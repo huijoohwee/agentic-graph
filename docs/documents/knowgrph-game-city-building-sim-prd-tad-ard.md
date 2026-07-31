@@ -380,9 +380,10 @@ advisories separately.
 Knowgrph realizes the contract through:
 
 - City domain modules in `canvas/src/features/game-city-sim/`;
-- shared `SemanticMediaFigure` as the sole selectable React wrapper around the
+- shared `SemanticMediaFigure` as the semantic React wrapper around the
   retained MapLibre geographic host, with the native canvas referencing its
-  caption through the neutral MapLibre semantic-owner binding;
+  caption, carrying the same direct accessible name, and owning the sole
+  selection marker through the neutral MapLibre semantic-owner binding;
 - City parcel adapters in `gympgrph/src/cityGeoOverlay*.ts`;
 - the current City/Flight MapLibre publisher specialization in
   `canvas/src/features/geospatial/`;
@@ -392,9 +393,11 @@ Knowgrph realizes the contract through:
 
 MapLibre remains the sole City geographic renderer, camera mechanism, and
 viewport-gesture owner. City mounts no Three.js or React Three Fiber visual
-world. The selected regional environment is intentionally active below City
-parcels; only Flight bootstrap, camera, gameplay, and readiness remain inactive
-for a City-owned stopped aircraft/route publication.
+world. City projects no selected local XR environment, stage footprint, or
+schematic POI into geographic space. The real basemap remains geographic
+context, source-authored City parcel meters are converted once, and Flight
+bootstrap, camera, gameplay, and readiness remain inactive for a City-owned
+stopped aircraft/route publication.
 
 The current native invocation grammar is:
 

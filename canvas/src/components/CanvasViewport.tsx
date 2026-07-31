@@ -42,6 +42,10 @@ import {
 } from '@/features/game-city-sim/citySimMediaSurface'
 import { SemanticMediaFigure } from '@/lib/cards/SemanticMediaFigure'
 import {
+  MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
+  MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
+} from '@/lib/cards/mediaPreviewSurfaceSelection'
+import {
   createEmbeddedCanvasChatSubmitMessage,
   deliverEmbeddedCanvasChatSubmit,
   isEmbeddedCanvasChatReadyMessage,
@@ -500,6 +504,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
               active={citySimActive}
               activeDataAttributes={CITY_SIM_MEDIA_STAGE_DATA_ATTRIBUTES}
               label={CITY_SIM_MEDIA_STAGE_LABEL}
+              selectionTarget="descendant"
             >
               {captionId => (
                 <CanvasViewportGeospatialOverlayLazy
@@ -507,7 +512,14 @@ export function CanvasViewport(props: CanvasViewportProps) {
                   composedWithXr={geospatialXrModeEnabled}
                   geospatialModeEnabled={geospatialCompositionEnabled}
                   graphData={safeGraphData}
-                  semanticMediaCaptionId={citySimActive ? captionId : undefined}
+                  semanticMediaOwner={citySimActive ? {
+                    captionId,
+                    label: CITY_SIM_MEDIA_STAGE_LABEL,
+                    selectionAttribute: {
+                      name: MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
+                      value: MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
+                    },
+                  } : undefined}
                   storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
                   threeOverlayComposed={false}
                 />

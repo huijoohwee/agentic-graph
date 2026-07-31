@@ -19,6 +19,9 @@ import {
   NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
 } from './features/geospatial/mapLibreHostLease.js'
 import { bindMapLibreCanvasSemanticOwner } from './features/geospatial/mapLibreCanvasSemanticOwner.js'
+export type {
+  MapLibreCanvasSemanticOwner,
+} from './features/geospatial/mapLibreCanvasSemanticOwner.js'
 import { GeospatialOverlayHost as GeospatialOverlayHostComponent } from './GeospatialHost.js'
 import { GeospatialPanelHost } from './GeospatialPanelHost.js'
 import { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection } from './geospatialFit.js'
@@ -60,6 +63,7 @@ export {
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
   mapHasExactFlightGeoEnvironment,
+  removeFlightGeoEnvironmentFromMap,
 } from './flightGeoEnvironmentMapLibre.js'
 export {
   applyFlightGeoOverlayCameraToMap,

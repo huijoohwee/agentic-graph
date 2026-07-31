@@ -23,9 +23,6 @@ export function requireCitySimRuntimeIdentity({
   const cityGeoXr = isRecord(frontmatter.city_geo_xr)
     ? frontmatter.city_geo_xr
     : {}
-  const cityEnvironment = isRecord(cityGeoXr.environment)
-    ? cityGeoXr.environment
-    : {}
   const citySemanticMedia = isRecord(frontmatter.city_semantic_media)
     ? frontmatter.city_semantic_media
     : {}
@@ -141,37 +138,18 @@ export function requireCitySimRuntimeIdentity({
     'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
   )
   requireValue('city_geo_xr.city_surface_owner', cityGeoXr.city_surface_owner, authority.citySurfaceOwner)
+  requireValue('city_geo_xr.basemap_owner', cityGeoXr.basemap_owner, authority.basemapOwner)
   requireValue(
     'city_geo_xr.parcel_input_owner',
     cityGeoXr.parcel_input_owner,
     'one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls',
   )
+  requireValue(
+    'city_geo_xr.parcel_scale_policy',
+    cityGeoXr.parcel_scale_policy,
+    authority.parcelScalePolicy,
+  )
   requireValue('city_geo_xr.composition', cityGeoXr.composition, authority.composition)
-  requireValue(
-    'city_geo_xr.environment.stage_id',
-    cityEnvironment.stage_id,
-    authority.environmentStageId,
-  )
-  requireValue(
-    'city_geo_xr.environment.source_owner',
-    cityEnvironment.source_owner,
-    authority.environmentSourceOwner,
-  )
-  requireValue(
-    'city_geo_xr.environment.projection_owner',
-    cityEnvironment.projection_owner,
-    authority.environmentProjectionOwner,
-  )
-  requireValue(
-    'city_geo_xr.environment.maplibre_source_id',
-    cityEnvironment.maplibre_source_id,
-    authority.environmentMapLibreSourceId,
-  )
-  requireValue(
-    'city_geo_xr.environment.major_poi_ids',
-    JSON.stringify(cityEnvironment.major_poi_ids),
-    JSON.stringify(authority.environmentMajorPoiIds),
-  )
   requireValue(
     'city_geo_xr.layer_order',
     JSON.stringify(cityGeoXr.layer_order),
@@ -206,9 +184,19 @@ export function requireCitySimRuntimeIdentity({
     authority.semanticMediaSelectionOwner,
   )
   requireValue(
-    'city_semantic_media.selection_marker_when',
-    citySemanticMedia.selection_marker_when,
-    authority.semanticMediaSelectionWhen,
+    'city_semantic_media.selection_target',
+    citySemanticMedia.selection_target,
+    authority.semanticMediaSelectionTarget,
+  )
+  requireValue(
+    'city_semantic_media.direct_canvas_accessible_name_required',
+    readBooleanPreset(citySemanticMedia.direct_canvas_accessible_name_required),
+    true,
+  )
+  requireValue(
+    'city_semantic_media.figure_selection_marker_forbidden',
+    readBooleanPreset(citySemanticMedia.figure_selection_marker_forbidden),
+    true,
   )
   requireValue(
     'city_semantic_media.pointer_capture_owner',
@@ -226,11 +214,6 @@ export function requireCitySimRuntimeIdentity({
     'city_aerial_projection.spatial_source',
     cityAerialProjection.spatial_source,
     "this source document's typed city_geo_xr geographic profile",
-  )
-  requireValue(
-    'city_aerial_projection.environment_owner',
-    cityAerialProjection.environment_owner,
-    'city_geo_xr.environment',
   )
   requireValue(
     'city_aerial_projection.adapter_owner',
@@ -267,9 +250,13 @@ export function requireCitySimRuntimeIdentity({
   requireValue('city_camera.owner', cityCamera.owner, 'native MapLibre Geo host')
   const forbidden = [
     Object.hasOwn(cityRuntime, 'stage_owner') ? 'city_runtime.stage_owner' : null,
+    Object.hasOwn(cityGeoXr, 'environment') ? 'city_geo_xr.environment' : null,
     Object.hasOwn(cityGeoXr, 'city_stage_owner') ? 'city_geo_xr.city_stage_owner' : null,
     Object.hasOwn(cityAerialProjection, 'flight_projection_owner')
       ? 'city_aerial_projection.flight_projection_owner'
+      : null,
+    Object.hasOwn(cityAerialProjection, 'environment_owner')
+      ? 'city_aerial_projection.environment_owner'
       : null,
     Object.hasOwn(cityAerialProjection, 'environment')
       ? 'city_aerial_projection.environment'

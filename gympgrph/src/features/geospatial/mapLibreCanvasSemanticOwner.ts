@@ -7,23 +7,70 @@ type MapLibreCanvasOwner = {
   getCanvas?: () => MapLibreCanvasElement | null
 }
 
+export type MapLibreCanvasSemanticOwner = Readonly<{
+  captionId: string
+  label: string
+  selectionAttribute: Readonly<{
+    name: string
+    value: string
+  }>
+}>
+
+function restoreAttribute(
+  element: MapLibreCanvasElement,
+  name: string,
+  ownedValue: string,
+  previousValue: string | null,
+): void {
+  if (element.getAttribute(name) !== ownedValue) return
+  if (previousValue !== null) {
+    element.setAttribute(name, previousValue)
+    return
+  }
+  element.removeAttribute(name)
+}
+
 export function bindMapLibreCanvasSemanticOwner(
   map: MapLibreCanvasOwner | null | undefined,
-  captionId: string | null | undefined,
+  owner: MapLibreCanvasSemanticOwner | null | undefined,
 ): (() => void) | undefined {
   const canvas = map?.getCanvas?.()
-  const normalizedCaptionId = String(captionId || '').trim()
-  if (!canvas || !normalizedCaptionId) return undefined
+  const captionId = String(owner?.captionId || '').trim()
+  const label = String(owner?.label || '').trim()
+  const selectionAttributeName = String(
+    owner?.selectionAttribute.name || '',
+  ).trim()
+  const selectionAttributeValue = String(
+    owner?.selectionAttribute.value || '',
+  ).trim()
+  if (
+    !canvas
+    || !captionId
+    || !label
+    || !selectionAttributeName
+    || !selectionAttributeValue
+  ) return undefined
 
-  const previousOwner = canvas.getAttribute('aria-labelledby')
-  canvas.setAttribute('aria-labelledby', normalizedCaptionId)
+  const previousLabel = canvas.getAttribute('aria-label')
+  const previousLabelledBy = canvas.getAttribute('aria-labelledby')
+  const previousSelectionMarker = canvas.getAttribute(selectionAttributeName)
+  canvas.setAttribute('aria-label', label)
+  canvas.setAttribute('aria-labelledby', captionId)
+  canvas.setAttribute(selectionAttributeName, selectionAttributeValue)
 
   return () => {
-    if (canvas.getAttribute('aria-labelledby') !== normalizedCaptionId) return
-    if (previousOwner) {
-      canvas.setAttribute('aria-labelledby', previousOwner)
-      return
-    }
-    canvas.removeAttribute('aria-labelledby')
+    restoreAttribute(canvas, 'aria-label', label, previousLabel)
+    restoreAttribute(
+      canvas,
+      'aria-labelledby',
+      captionId,
+      previousLabelledBy,
+    )
+    restoreAttribute(
+      canvas,
+      selectionAttributeName,
+      selectionAttributeValue,
+      previousSelectionMarker,
+    )
   }
 }
