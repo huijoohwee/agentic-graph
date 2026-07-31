@@ -297,10 +297,10 @@ function testControllerReplaysStyleAndFramesRegionalCityGeometry(): void {
     duration: 0,
     maxZoom: 17,
     padding: {
-      bottom: 36,
-      left: 36,
-      right: 36,
-      top: 36,
+      bottom: 52,
+      left: 52,
+      right: 52,
+      top: 52,
     },
     pitch: 52,
   })
@@ -475,6 +475,12 @@ function testControllerWaitsForOwnedSourceSettlementAndRefitsOnResize(): void {
       'the final map load must not discard an already settled owned source',
     )
     assert.equal(map.fitBoundsCalls.length, 1)
+    assert.deepEqual(map.fitBoundsCalls[0].options.padding, {
+      bottom: 148,
+      left: 108,
+      right: 108,
+      top: 124,
+    })
     size.width = 1_200
     map.emit('resize')
     assert.equal(

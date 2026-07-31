@@ -84,12 +84,13 @@ function cityViewportPadding(
   viewMode: CityGeoViewMode,
 ): CityMapPadding {
   const viewport = readGeoMapViewportPadding(map)
-  const minimum = snapshot.profile?.framing[viewMode].paddingPixels ?? 0
+  const framingClearance =
+    snapshot.profile?.framing[viewMode].paddingPixels ?? 0
   return Object.freeze({
-    bottom: Math.max(minimum, viewport.bottom),
-    left: Math.max(minimum, viewport.left),
-    right: Math.max(minimum, viewport.right),
-    top: Math.max(minimum, viewport.top),
+    bottom: viewport.bottom + framingClearance,
+    left: viewport.left + framingClearance,
+    right: viewport.right + framingClearance,
+    top: viewport.top + framingClearance,
   })
 }
 
