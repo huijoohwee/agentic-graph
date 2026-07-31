@@ -248,6 +248,16 @@
       "import": "./dist/geospatial/singaporeFlightGeo.js",
       "default": "./dist/geospatial/singaporeFlightGeo.js"
     },
+    "./geospatial/regionalPoiGeo": {
+      "types": "./dist/geospatial/regionalPoiGeo.d.ts",
+      "import": "./dist/geospatial/regionalPoiGeo.js",
+      "default": "./dist/geospatial/regionalPoiGeo.js"
+    },
+    "./geospatial/singaporeMajorPoiGeo": {
+      "types": "./dist/geospatial/singaporeMajorPoiGeo.d.ts",
+      "import": "./dist/geospatial/singaporeMajorPoiGeo.js",
+      "default": "./dist/geospatial/singaporeMajorPoiGeo.js"
+    },
     "./geospatial/poiRichMedia": {
       "types": "./dist/geospatial/poiRichMedia.d.ts",
       "import": "./dist/geospatial/poiRichMedia.js",

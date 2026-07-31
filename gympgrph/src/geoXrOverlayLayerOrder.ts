@@ -4,8 +4,12 @@ import {
 import {
   FLIGHT_GEO_OVERLAY_LAYER_ORDER,
 } from './flightGeoOverlayMapLibre.js'
+import {
+  REGIONAL_POI_LAYER_ORDER,
+} from './regionalPoiMapLibre.js'
 
 export const CITY_GEO_XR_LAYER_ORDER = Object.freeze([
+  ...REGIONAL_POI_LAYER_ORDER,
   ...CITY_GEO_OVERLAY_LAYER_ORDER,
   ...FLIGHT_GEO_OVERLAY_LAYER_ORDER,
 ])

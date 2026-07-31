@@ -12,7 +12,9 @@ The product contract is
 `docs/documents/knowgrph-game-city-building-sim-prd-tad-ard.md`. Generic
 surface composition belongs to
 `docs/documents/knowgrph-geo-xr-mode-prd-tad-ard.md`; regional values belong
-only to the selected ADM0 companion.
+only to the selected ADM0 companion. City consumes the companion by exact
+profile identity and shall not copy its geographic rings, real-metre heights,
+accuracy, provenance, or landmark facts into this generic contract.
 
 The increment is a local-first, single-operator city simulation projected
 through the existing Geo+XR surface and FloatingPanel. The real native
@@ -25,8 +27,11 @@ mesh, or camera. It adds one `cityBuilder` view and contextual
 projections in the existing `media`, `animation`, `motionControl`, `gameMode`,
 `flightSim`, and `camera` views. It does not add a second game world, map,
 renderer, Canvas, persistence authority, camera catalog, network service, or
-deployment surface. City contributes one owned source/layer family to that
-existing map rather than substituting a parallel visual world.
+deployment surface. A companion-owned regional geographic context band renders
+below the City-owned parcel source/layer family, and the stopped Flight
+route/aircraft renders above both on that existing map. The optional
+Flight-local XR environment stays absent. No Three.js/R3F presentation or
+parallel HTML marker layer participates.
 
 All implementation, prose, schemas, fixtures, and assets for this feature must
 be source-authored for Knowgrph. The feature may use only existing
@@ -49,7 +54,12 @@ publish-mirror release work requires a separate explicit instruction.
 - **Native Geo Host**: Existing MapLibre map owned by Geo; it owns Geo+XR
   visuals and viewport gestures, and City never creates or replaces it.
 - **City Geographic Profile**: Source-authored anchor, parcel dimensions,
-  bearing, gap, and aerial-inspection coordinates applied with the City seed.
+  bearing, gap, aerial-inspection coordinates, and exact regional-context
+  profile reference applied with the City seed.
+- **Regional Geographic Context**: Immutable companion-owned geographic
+  features with exact polygon rings, real-metre base/height values, accuracy,
+  and provenance. The MapLibre adapter presents this read-only band below City
+  parcels; City owns none of its regional facts.
 - **City Parcel Projection**: Live City Runtime parcels projected into the
   existing map through the City-owned `kg-city-sim:geo-overlay` GeoJSON source
   and its fill, extrusion, outline, and selection layers. Source-authored meter
@@ -172,14 +182,16 @@ or camera behavior.
    style, camera/padding, lifecycle, mission, controls, and readiness paths
    shall remain inactive.
 7. City entry shall create no additional MapLibre map, Three.js or React Three
-   Fiber Canvas, or duplicate source/layer ids. City and Flight sources may
-   coexist on the one real native basemap in the order City parcels, then
-   independent aircraft/route presentation. No local XR environment projection
+   Fiber Canvas, or duplicate source/layer ids. Regional-context, City, and
+   Flight sources may coexist on the one real native basemap in the order
+   regional geographic features, City parcels, then independent
+   aircraft/route presentation. No Flight-local XR environment projection
    shall be present in the City publication.
 8. Native MapLibre shall remain the sole City camera and responsive viewport
-   owner. City framing shall use the source-authored parcel bounds and the
-   visible aperture around workspace panels, restore prior map padding on
-   handoff, and never capture, install, or restore a Three camera.
+   owner. City framing shall use the union of admitted regional geographic
+   feature bounds and source-authored parcel bounds plus the visible aperture
+   around workspace panels, restore prior map padding on handoff, and never
+   capture, install, or restore a Three camera.
 9. Opening another exclusive gameplay surface shall exit the city overlay
    through the shared gameplay-surface lifecycle rather than hiding a live
    competing world.
@@ -200,6 +212,20 @@ or camera behavior.
     intercept MapLibre gestures. When City is inactive, the persistent wrapper
     shall be presentational and the canvas shall expose neither the City name
     nor the selection marker.
+13. The City Geographic Profile shall contain one exact regional-context
+    profile identity. Unknown, missing, aliased, malformed, or conflicting
+    identities shall fail before surface mutation.
+14. The selected companion shall supply the regional geographic features as
+    exact rings, real-metre base/height values, accuracy, and provenance. City
+    shall not copy, rescale, infer, or mutate those facts.
+15. The one native MapLibre host shall render regional geographic context
+    below City parcels and the stopped Flight route/aircraft. The
+    Flight-local XR environment shall remain `null` and absent; these two
+    contracts shall not be conflated.
+16. The MapLibre camera owner shall frame the union of admitted regional
+    geographic features and City parcel bounds inside the visible aperture.
+    Presentation shall use no Three.js/R3F surface, HTML POI marker, generic
+    selectable wrapper, or `aria-hidden` decoration.
 
 ### Requirement 4: Deterministic parcel grid and economy
 
@@ -358,8 +384,10 @@ runtime state so that preselected demo state cannot masquerade as activation.
 1. Browser proof shall start from a Neutral Browser Start at the exact
    candidate SHA.
 2. Before applying the source, proof shall record that City Builder is closed,
-   the city overlay is inactive, and no local XR environment source, layers,
-   or selector state exists.
+   the city overlay is inactive, and no Flight-local XR environment source,
+   layers, or selector state exists. The `kg-city-sim:geo-overlay` and
+   `kg-geo-xr:regional-poi` sources and all of their layers shall also be
+   absent from this neutral baseline.
 3. Proof shall open the authored seed through Explorer -> Source Files and
    apply it only after Source Files bootstrap reports ready.
 4. After application, proof shall assert Surface Mode `geo-xr`, `cityBuilder`,
@@ -379,11 +407,19 @@ runtime state so that preselected demo state cannot masquerade as activation.
    features, one stopped aircraft and its route in the independent Flight
    source/layers, one map, and inactive Flight bootstrap, camera, gameplay, and
    readiness paths.
-7. Exit proof shall verify both City and aerial overlay sources clear, prior map
-   padding is restored, and the prior FloatingPanel and Canvas surface state
-   restores exactly once.
-8. Reapplying from the same neutral state shall produce the same initial
-   serialized snapshot and aerial projection.
+7. Proof shall assert the selected companion's complete regional geographic
+   feature set, exact source rings and real-metre heights, accuracy/provenance
+   metadata, stable MapLibre source/layer identities, and composite framing
+   over those features plus the City parcel bounds. The regional band shall
+   render below City parcels and stopped Flight layers while the Flight-local
+   XR environment remains absent.
+8. Exit proof shall verify the City parcel source/layers, City-owned
+   publications, and City-selected regional presentation clear without
+   mutating companion facts, prior map padding is restored, and the prior
+   regional, FloatingPanel, and Canvas surface state restores exactly once.
+9. Reapplying from the same neutral state shall produce the same initial
+   serialized snapshot, regional feature/provenance digest, and aerial
+   projection.
 
 ### Requirement 12: Honest evidence and release boundary
 

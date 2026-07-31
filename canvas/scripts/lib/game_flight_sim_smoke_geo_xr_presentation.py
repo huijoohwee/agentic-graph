@@ -13,6 +13,10 @@ from lib.game_flight_sim_smoke_geo_xr import _read_view, _wait_for_view
 from lib.game_flight_sim_smoke_geo_xr_layout import (
     prepare_reported_singapore_geo_handoff,
 )
+from lib.game_flight_sim_smoke_city_regional_poi import (
+    require_city_regional_poi_contract,
+    require_city_regional_poi_teardown_contract,
+)
 from lib.game_flight_sim_smoke_source_selection import (
     close_source_files_selection_surface,
 )
@@ -200,6 +204,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
+    regional_poi = require_city_regional_poi_contract(page)
     retention = page.evaluate(
         """
         async () => {
@@ -260,6 +265,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
+    exited_regional_poi = require_city_regional_poi_teardown_contract(page)
 
     flight_trigger = page.locator(
         '[data-kg-floating-panel-view-trigger="flightSim"]',
@@ -292,9 +298,13 @@ def verify_flight_geo_xr_city_handoff(
             "normal Flight reopen did not restore the Flight-only Geo+XR view: "
             f"{reopened}"
         )
+    reopened_regional_poi = require_city_regional_poi_teardown_contract(page)
     return {
         "before": before,
         "city": city,
+        "regionalPoi": regional_poi,
+        "regionalPoiAfterCityExit": exited_regional_poi,
+        "regionalPoiAfterFlightReopen": reopened_regional_poi,
         "mapRetention": retention,
         "restored": restored,
         "reopened": reopened,

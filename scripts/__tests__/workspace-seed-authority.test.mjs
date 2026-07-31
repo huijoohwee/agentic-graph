@@ -115,6 +115,7 @@ city_runtime:
   runtime_dependencies_added: 0
 city_geo_xr:
   profile_id: "city-sim:civic-seed:geo/v1"
+  regional_poi_profile_id: "adm0:SGP:major-pois/v1"
   parcel_gap_meters: 6
   parcel_bearing_degrees: 18
   surface_owner: "Geo+XR Mode"
@@ -124,15 +125,28 @@ city_geo_xr:
   basemap_owner: "one real native MapLibre basemap"
   parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
   parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"
-  composition: "one real native MapLibre basemap with source-authored meter-scaled City parcel layers below independent Flight aircraft and route layers; zero local XR environment sources or features; zero City Three Canvas"
-  layer_order: ["city", "flight"]
+  composition: "one real native MapLibre basemap with companion-owned regional geographic POI layers, source-authored meter-scaled City parcel layers, and independent Flight aircraft/route layers; zero Flight-local XR environment sources or features; zero City Three Canvas or HTML POI markers"
+  layer_order: ["regional-context", "city", "flight"]
   duplicate_map_or_canvas_forbidden: true
 city_parcel_projection:
   source_owner: "gympgrph/src/cityGeoOverlay.ts"
   source_id: "kg-city-sim:geo-overlay"
   layer_owner: "gympgrph/src/cityGeoOverlayMapLibre.ts"
   framing_owner: "gympgrph/src/cityGeoOverlayMapLibreController.ts"
+  camera_policy: "fit the union of admitted regional geographic POI bounds and source-authored parcel bounds into the visible panel-adjusted aperture and restore prior padding"
   duplicate_source_or_layer_ids_forbidden: true
+regional_geographic_poi_projection:
+  profile_identity_source: "city_geo_xr.regional_poi_profile_id"
+  profile_fact_authority: "/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md"
+  source_id: "kg-geo-xr:regional-poi"
+  layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:label"]
+  feature_contract: "companion-authored exact geographic Polygon rings, real-metre base/height, accuracy, and provenance"
+  presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft"
+  storage_policy: "checked-in"
+  runtime_network_required: false
+  city_fact_ownership: false
+  local_xr_environment_identity: false
+  three_r3f_or_html_marker_forbidden: true
 city_semantic_media:
   owner: "canvas/src/lib/cards/SemanticMediaFigure.tsx"
   child_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
@@ -159,7 +173,7 @@ city_aerial_projection:
   flight_readiness_claimed: false
   duplicate_source_or_layers_forbidden: true
 city_camera:
-  framing: "source-authored City bounds in the visible MapLibre aperture"
+  framing: "union of admitted regional geographic POI bounds and source-authored City parcel bounds in the visible MapLibre aperture"
   projection: "MapLibre"
   canvas_mode: "geo-xr"
   owner: "native MapLibre Geo host"
@@ -274,7 +288,61 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
       'parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"',
       'parcel_scale_policy: "invalid"',
     ],
-    ['wrong Geo+XR layer order', 'layer_order: ["city", "flight"]', 'layer_order: ["flight", "city"]'],
+    [
+      'wrong regional profile identity',
+      'regional_poi_profile_id: "adm0:SGP:major-pois/v1"',
+      'regional_poi_profile_id: "legacy-local-singapore"',
+    ],
+    [
+      'wrong Geo+XR layer order',
+      'layer_order: ["regional-context", "city", "flight"]',
+      'layer_order: ["city", "regional-context", "flight"]',
+    ],
+    [
+      'parcel-only framing policy',
+      'camera_policy: "fit the union of admitted regional geographic POI bounds and source-authored parcel bounds into the visible panel-adjusted aperture and restore prior padding"',
+      'camera_policy: "fit source-authored parcel bounds only"',
+    ],
+    [
+      'parcel-only camera framing',
+      'framing: "union of admitted regional geographic POI bounds and source-authored City parcel bounds in the visible MapLibre aperture"',
+      'framing: "source-authored City bounds in the visible MapLibre aperture"',
+    ],
+    [
+      'missing regional projection authority',
+      'regional_geographic_poi_projection:',
+      'ignored_regional_geographic_poi_projection:',
+    ],
+    [
+      'wrong regional source',
+      'source_id: "kg-geo-xr:regional-poi"',
+      'source_id: "kg-city-sim:legacy-environment"',
+    ],
+    [
+      'legacy regional layer ids',
+      'layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:label"]',
+      'layers: ["fill", "extrusion", "outline", "label"]',
+    ],
+    [
+      'non-checked-in regional storage',
+      'storage_policy: "checked-in"',
+      'storage_policy: "runtime-network"',
+    ],
+    [
+      'runtime network dependency',
+      'runtime_network_required: false',
+      'runtime_network_required: true',
+    ],
+    [
+      'local XR identity',
+      'local_xr_environment_identity: false',
+      'local_xr_environment_identity: true',
+    ],
+    [
+      'Three or HTML marker admitted',
+      'three_r3f_or_html_marker_forbidden: true',
+      'three_r3f_or_html_marker_forbidden: false',
+    ],
     ['missing direct canvas name', 'direct_canvas_accessible_name_required: true', 'direct_canvas_accessible_name_required: false'],
     ['figure owns competing selection marker', 'figure_selection_marker_forbidden: true', 'figure_selection_marker_forbidden: false'],
     ['active Flight gameplay', 'flight_gameplay_active: false', 'flight_gameplay_active: true'],
@@ -312,9 +380,27 @@ test('rejects removed City environment, Three stage, and captured-camera authori
     ],
     [
       'Geo+XR local environment',
-      '  layer_order: ["city", "flight"]',
-      '  environment:\n    stage_id: "local-xr-stage"\n  layer_order: ["city", "flight"]',
+      '  layer_order: ["regional-context", "city", "flight"]',
+      '  environment:\n    stage_id: "local-xr-stage"\n  layer_order: ["regional-context", "city", "flight"]',
       'city_geo_xr.environment',
+    ],
+    [
+      'regional inline profile alias',
+      '  regional_poi_profile_id: "adm0:SGP:major-pois/v1"',
+      '  regional_poi_profile_id: "adm0:SGP:major-pois/v1"\n  regional_poi_profile:\n    id: "legacy-inline"',
+      'city_geo_xr.regional_poi_profile',
+    ],
+    [
+      'regional HTML marker owner',
+      '  three_r3f_or_html_marker_forbidden: true',
+      '  three_r3f_or_html_marker_forbidden: true\n  html_marker_owner: "legacy"',
+      'regional_geographic_poi_projection.html_marker_owner',
+    ],
+    [
+      'regional Three stage owner',
+      '  three_r3f_or_html_marker_forbidden: true',
+      '  three_r3f_or_html_marker_forbidden: true\n  three_stage_owner: "legacy"',
+      'regional_geographic_poi_projection.three_stage_owner',
     ],
     [
       'aerial environment owner',

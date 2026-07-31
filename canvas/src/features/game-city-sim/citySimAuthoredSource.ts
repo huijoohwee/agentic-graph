@@ -5,6 +5,9 @@ import {
   type CityGrid,
 } from './citySimModel'
 import { parseCityGridDocument } from './citySimCodec'
+import {
+  resolveRegionalPoiProfile,
+} from '@/features/geospatial/regionalPoiProfileCatalog'
 
 export type CitySimGeographicCoordinate = readonly [
   longitude: number,
@@ -14,6 +17,7 @@ export type CitySimGeographicCoordinate = readonly [
 export type CitySimGeographicProfile = Readonly<{
   id: string
   anchor: CitySimGeographicCoordinate
+  regionalPoiProfileId: string
   parcelWidthMeters: number
   parcelDepthMeters: number
   parcelGapMeters: number
@@ -234,6 +238,10 @@ function parseGeographicProfile(frontmatter: string): CitySimGeographicProfile {
       jsonValue(sectionValue(geographic, 'anchor'), 'City geographic anchor'),
       'City geographic anchor',
     ),
+    regionalPoiProfileId: quotedString(
+      sectionValue(geographic, 'regional_poi_profile_id'),
+      'City regional POI profile id',
+    ),
     parcelWidthMeters: dimensions[0],
     parcelDepthMeters: dimensions[1],
     parcelGapMeters: finiteNumber(
@@ -283,6 +291,19 @@ export function validateCitySimGeographicProfile(
 ): readonly string[] {
   const issues: string[] = []
   if (!profile.id.trim()) issues.push('Geographic profile id must not be empty')
+  if (!profile.regionalPoiProfileId.trim()) {
+    issues.push('Regional POI profile id must not be empty')
+  } else {
+    try {
+      resolveRegionalPoiProfile(profile.regionalPoiProfileId)
+    } catch (error) {
+      issues.push(
+        error instanceof Error
+          ? error.message
+          : 'Regional POI profile must resolve exactly',
+      )
+    }
+  }
   issues.push(...coordinateIssues(profile.anchor, 'City anchor'))
   for (const [value, label] of [
     [profile.parcelWidthMeters, 'Parcel width'],

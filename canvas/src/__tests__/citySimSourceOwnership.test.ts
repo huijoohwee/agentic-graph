@@ -100,6 +100,15 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   assert.ok(viewport.includes('selectionTarget="descendant"'))
   assert.ok(viewport.includes('MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR'))
   assert.ok(
+    geospatialOverlay.includes(
+      'const stableSemanticMediaOwner = React.useMemo',
+    )
+      && geospatialOverlay.includes(
+        'semanticMediaOwner={stableSemanticMediaOwner}',
+      ),
+    'the live MapLibre canvas semantic owner must not churn on City updates',
+  )
+  assert.ok(
     xrPhysicsRuntime.includes(
       'const { citySimActive, flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()',
     ),

@@ -32,6 +32,10 @@ export function testCitySimAuthoredSourceInitializesGridAndGeographicProfile() {
   assert.equal(city.taxRateBasisPoints, 1_000)
   assert.equal(city.population, 15)
   assert.equal(geographicProfile.id, 'city-sim:civic-seed:geo/v1')
+  assert.equal(
+    geographicProfile.regionalPoiProfileId,
+    'adm0:SGP:major-pois/v1',
+  )
   assert.equal(geographicProfile.anchor.every(Number.isFinite), true)
   assert.equal(geographicProfile.parcelWidthMeters > 0, true)
   assert.equal(geographicProfile.parcelDepthMeters > 0, true)

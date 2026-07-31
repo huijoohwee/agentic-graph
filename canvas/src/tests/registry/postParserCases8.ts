@@ -48,6 +48,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["city.sim.ui.semanticMediaSurface","@/__tests__/citySimSemanticMediaSurface.test","testCitySimSemanticMediaSurfaceResolvesMapLibreHitTarget"],
   ["city.sim.geo.aerialInspectionProjection","@/__tests__/citySimAerialInspectionProjection.test","testCitySimAerialInspectionUsesAuthoredCityProfileWithoutFlightCamera"],
   ["city.sim.geo.liveParcelProjection","@/__tests__/citySimGeospatialProjection.test","testCitySimGeospatialProjectionTracksLiveParcelsAndSelection"],
+  ["city.sim.geo.regionalPoiMapLibre","@/__tests__/regionalPoiMapLibre.test","testRegionalPoiMapLibre"],
   ["city.sim.geo.maplibreOverlay","@/__tests__/cityGeoOverlayMapLibre.test","testCityGeoOverlayMapLibreRuntime"],
   ["city.sim.geo.flightOverlayComposition","@/__tests__/cityFlightGeoOverlayComposition.test","testCityFlightGeoOverlayCompositionIsDeterministic"],
   ["city.sim.runtime.sourceFailClosed","@/__tests__/citySimRuntimeLifecycle.test","testCitySimRuntimeFailsClosedWithoutSavedOrAuthoredSource"],

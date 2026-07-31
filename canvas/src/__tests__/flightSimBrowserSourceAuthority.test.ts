@@ -10,6 +10,7 @@ test('Flight browser proof activates only after applying the authored source', (
     browserProofBridge,
     cameraTrackingVerifier,
     cameraVerifier,
+    cityRegionalPoiVerifier,
     citySemanticMediaVerifier,
     deadlineVerifier,
     evidenceValidator,
@@ -98,7 +99,7 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(browserProofBridge, /gympgrphStore: \(\) => import\('@\/lib\/gympgrph\/api'\)/)
   assert.match(
     gympgrphApi,
-    /CITY_GEO_XR_LAYER_ORDER[\s\S]*hasExactCityGeoXrLayerOrder[\s\S]*readCityGeoOverlay[\s\S]*readCityGeoXrLayerOrder/,
+    /CITY_GEO_XR_LAYER_ORDER[\s\S]*REGIONAL_POI_LAYER_IDS[\s\S]*hasExactCityGeoXrLayerOrder[\s\S]*mapHasExactRegionalPoiProfile[\s\S]*readCityGeoOverlay[\s\S]*readCityGeoXrLayerOrder[\s\S]*readGeoMapViewportPadding/,
   )
   assert.match(sourceSelection, /get_by_role\(\s*["']button["']/)
   assert.match(sourceSelection, /name=["']Workspace View["'],\s*exact=True/)
@@ -212,6 +213,33 @@ test('Flight browser proof activates only after applying the authored source', (
     /def verify_flight_geo_xr_city_handoff\(/,
   )
   assert.match(
+    geoXrPresentationVerifier,
+    /regional_poi = require_city_regional_poi_contract\(page\)/,
+  )
+  for (const regionalPoiProofRequirement of [
+    'REGIONAL_POI_SOURCE_ID',
+    'REGIONAL_POI_LAYER_IDS',
+    'mapHasExactRegionalPoiProfile',
+    'kgCityGeospatialPoiFeatureCount',
+    'kgCityGeospatialPoiProfileId',
+    'readGeoMapViewportPadding',
+    'boundsInsideAperture',
+    'renderedIdentityAtAnchor',
+    'visiblePoiAnchors',
+    'renderedPois',
+    'exactFeatures',
+    'exactPresentation',
+    'require_city_regional_poi_teardown_contract',
+    'presentEvidenceKeys',
+    'presentLayerIds',
+    'sourcePresent',
+  ]) {
+    assert.ok(
+      cityRegionalPoiVerifier.includes(regionalPoiProofRequirement),
+      `expected regional POI browser proof requirement: ${regionalPoiProofRequirement}`,
+    )
+  }
+  assert.match(
     citySemanticMediaVerifier,
     /surface\?\.tagName \|\| ''/,
   )
@@ -271,6 +299,8 @@ test('Flight browser proof activates only after applying the authored source', (
     'cityParcelsUseAuthoredMeters',
     'cityGeoXrLayerOrderExact',
     'renderedEnvironmentFeatureCount',
+    'regionalPoiAfterCityExit',
+    'regionalPoiAfterFlightReopen',
   ]) {
     assert.ok(
       geoXrPresentationVerifier.includes(cityProofRequirement),

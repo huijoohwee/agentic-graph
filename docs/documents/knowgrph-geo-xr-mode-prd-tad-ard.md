@@ -2,7 +2,7 @@
 title: "Geo+XR Mode Product, Technical Architecture, and Decision Contract"
 id: "md:geo-xr-mode-prd-tad-adr"
 doc_type: "PRD/TAD/ADR"
-version: "1.0.0"
+version: "1.1.0"
 date: "2026-07-31"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -44,8 +44,8 @@ conflicting cameras, gestures, selection state, and overlay order.
 
 **Hypothesis:** one explicit composed mode with one retained geographic host
 and typed spatial projections lets a user preserve geographic truth while
-adding environment, domain, and dynamic-subject context without a second
-visual authority.
+adding regional context, an optional local environment, domain data, and
+dynamic-subject context without a second visual authority.
 
 **Outcome:** a source can request `geo-xr`, receive one visible and selectable
 media surface, interact through the retained geographic camera and gestures,
@@ -73,7 +73,7 @@ and exit to the exact prior surface state.
 | ID | Story | Given / When / Then | VCC translation |
 |---|---|---|---|
 | `PRD-GXR-01` | As a spatial operator, I want one composed surface so that geographic truth remains visible. | Given a ready geographic host, when `geo-xr` activates, then exactly one visible geographic renderer, camera, and viewport-gesture owner remains. | Verify one host owns rendering, camera, and gestures; no alternate world is mounted. |
-| `PRD-GXR-02` | As a domain author, I want ordered projection bands so that capabilities compose without hardcoded peer precedence. | Given valid publishers, when snapshots are admitted, then environment, domain, and dynamic-subject bands render in stable order and each publisher owns one lease. | Verify band order is stable and a publisher cannot mutate another lease. |
+| `PRD-GXR-02` | As a domain author, I want ordered projection bands so that capabilities compose without hardcoded peer precedence. | Given valid publishers, when snapshots are admitted, then regional-context, optional local-environment, domain, and dynamic-subject bands render in stable order and each publisher owns one lease. | Verify band order is stable, an explicitly absent optional band stays absent, and a publisher cannot mutate another lease. |
 | `PRD-GXR-03` | As a reviewer, I want a semantic media stage so that selection tooling can identify the composed surface. | Given an active mode, when the surface renders, then one labeled `figure` with a caption wraps the renderer without intercepting viewport gestures, and the renderer-owned direct hit target references that caption, exposes the same direct accessible name, and owns the sole conditional selection marker. | Verify the semantic element, accessible name, caption, unique direct-hit selection marker, descendant label reference, exact closest owner, and absence of capture handlers. |
 | `PRD-GXR-04` | As a regional data steward, I want profiles outside the mode contract so that regions remain substitutable. | Given two conforming regional profiles, when either is selected, then activation and overlay arbitration are unchanged. | Verify profile substitution changes authored data only, not mode or publisher contracts. |
 | `PRD-GXR-05` | As an operator, I want failure to preserve my prior surface so that partial activation cannot corrupt the workspace. | Given any activation or publication failure, when rollback runs, then the captured prior owner, padding, and panel state are restored exactly once. | Verify typed failure plus one idempotent restoration and zero stale projections. |
@@ -110,9 +110,9 @@ The Must threshold is `2.0`.
 | Elapsed time | 30 seconds | 60 seconds | clean-workspace timed walk-through |
 | First value | composed geographic and spatial context | — | visible semantic surface assertion |
 
-**Min-viable scope:** exact `geo-xr` activation, one retained host, three ordered
-bands, one lease per publisher, one semantic media stage, typed rollback, and
-local/offline operation.
+**Min-viable scope:** exact `geo-xr` activation, one retained host, four
+ordered bands, one lease per publisher, one semantic media stage, typed
+rollback, and local/offline operation.
 
 **Out of scope:** standalone geographic mode, standalone spatial mode,
 simulation rules, regional facts, paid inference, remote collaboration,
@@ -139,8 +139,9 @@ context port, projection registry, semantic media adapter, and operator.
    and owns the sole conditional selection marker.
 6. Exit clears leases, releases the composed owner, and restores captured state.
 
-**Alternate path:** a profile supplies no optional spatial projection; the
-geographic host remains valid and the empty band is explicit.
+**Alternate path:** a profile supplies no optional local-environment
+projection; the geographic host and any admitted regional-context publication
+remain valid while the empty local-environment band is explicit.
 
 **Error path:** invalid intent, unavailable host, rejected lease, malformed
 snapshot, or failed restoration returns a typed error. No later stage commits
@@ -171,11 +172,11 @@ sequenceDiagram
 | Stage | Component | Input schema | Output schema | Persistence | Error handling |
 |---|---|---|---|---|---|
 | Ingest | Source resolver | `SurfaceIntent` | `ActivationPlan` | none | reject unknown mode or profile |
-| Transform | Profile adapter | `EnvironmentProfile` | bounded geographic/spatial features | none | reject invalid coordinates or bounds |
+| Transform | Profile adapter | `EnvironmentProfile` | bounded geographic/spatial features with source provenance | none | reject invalid coordinates, rings, heights, bounds, or provenance |
 | Transform | Projection registry | `OverlayPublication[]` | `OrderedProjection` | volatile memory | reject duplicate or expired lease |
 | Store | Surface transaction | prior-owner snapshot | `RestorationToken` | volatile memory for one ownership epoch | abort on incomplete capture |
 | Serve | Geographic host port | ordered projection + viewport contract | visible composed surface | host-owned runtime state | preserve prior committed frame |
-| Consume | Semantic media adapter | active surface identity | labeled selectable `figure` | none | expose typed unavailable state |
+| Consume | Semantic media adapter | active surface identity | labeled `figure` enclosing the renderer-owned selectable target | none | expose typed unavailable state |
 
 Retention is bounded to the active ownership epoch. No regional profile,
 projection snapshot, or restoration token becomes a second persistent store.
@@ -239,9 +240,11 @@ flowchart TB
   Mirror -. "closed batch promotion" .-> Delivery
 ```
 
-**Version note:** v1 introduces the universal port, band, lease, semantic, and
-rollback contract. It records the current peer-specific registry as a gap
-rather than treating specialization as universal proof.
+**Version note:** v1 introduced the universal port, lease, semantic, and
+rollback contract. v1.1 separates the source-proven `regional-context` band
+from the optional `local-environment` band. It records the current
+peer-specific registry as a gap rather than treating specialization as
+universal proof.
 
 ## 10. Integration contracts and component specifications
 
@@ -252,8 +255,9 @@ rather than treating specialization as universal proof.
 | `GeoHostPort` | acquire, project, frame, restore, release | one epoch has one host token |
 | `SpatialRuntimePort` | resolve profile, publish snapshot, clear publisher | no renderer or camera mutation |
 | `EnvironmentProfile` | stable id, coordinate reference, bounded extent, provenance | invalid or unbounded profile is rejected |
+| `RegionalContextFeature` | stable id, exact geographic geometry, real-metre base/height, accuracy, provenance | invalid rings, non-finite heights, missing provenance, or presentation-owned camera values are rejected |
 | `OverlayPublication` | publisher id, lease token, band, revision, features | duplicate, stale, or cross-lease write is rejected |
-| `SemanticMediaContract` | accessible name, caption, selectable state, gesture policy | generic or hidden selectable wrapper is invalid |
+| `SemanticMediaContract` | accessible name, caption, selectable state, gesture policy | generic or `aria-hidden` selectable wrappers, parallel HTML markers, and duplicate selection owners are invalid |
 | `ViewportContract` | visible aperture, padding token, resize request, restore | restoration is idempotent and exact |
 
 | Component ID | Responsibility | Dependencies | Configuration | Local rung | Delivered rung | VCCs |
@@ -289,8 +293,8 @@ camera, unleased publisher, or hidden semantic wrapper.
 | VCC | Evaluator-checkable end state | Stated check | Evidence Reference |
 |---|---|---|---|
 | `VCC-GXR-01` | one host owns renderer, camera, and gestures; alternate world count is zero | focused activation and shared-ownership checks exit 0 | none recorded for the universal contract |
-| `VCC-GXR-02` | neutral bands accept arbitrary valid publisher identities through leases | registry conformance checks exit 0 | none; current specialization is not a neutral registry |
-| `VCC-GXR-03` | one labeled `figure` exposes caption and conditional selection without capture handlers | semantic document-tree checks exit 0 | none recorded for the universal contract |
+| `VCC-GXR-02` | neutral regional-context, optional local-environment, domain, and dynamic-subject bands accept arbitrary valid publisher identities through leases | registry conformance checks exit 0 | none; current specialization is not a neutral registry |
+| `VCC-GXR-03` | one labeled `figure` exposes a caption while the live geographic renderer hit target owns the sole conditional selection marker without capture handlers, parallel HTML markers, a generic replacement wrapper, or `aria-hidden` | semantic document-tree and direct-hit checks exit 0 | none recorded for the universal contract |
 | `VCC-GXR-04` | two regional profiles substitute without mode or arbitration changes | profile-substitution checks exit 0 | none recorded |
 | `VCC-GXR-05` | every injected failure restores prior owner, padding, and projections exactly once | failure-matrix checks exit 0 | none recorded |
 | `VCC-GXR-06` | local/offline desktop and mobile paths activate, interact, and exit | clean-workspace browser proof records actions and viewport | none recorded |
@@ -367,8 +371,10 @@ private camera or renderer.
 **Context:** peer-name precedence cannot admit a new capability without editing
 the arbiter.
 
-**Decision:** order publications by `environment`, `domain`, and
-`dynamic-subject` bands, then stable publisher id. Every publisher requires an
+**Decision:** order publications by `regional-context`, `local-environment`,
+`domain`, and `dynamic-subject` bands, then stable publisher id. The
+regional-context band carries source-proven geographic features independently
+of an optional local spatial environment. Every publisher requires an
 epoch-bound lease.
 
 **Alternatives considered:** hardcoded peer precedence is simpler but coupled;
@@ -398,6 +404,8 @@ caption. Its renderer-owned interactive hit target references that caption
 with `aria-labelledby`, carries the same direct accessible name and the sole
 conditional selection marker, and retains its native input semantics. The
 `figure` carries no duplicate marker and adds no gesture-capture handler.
+Neither the adapter nor a publisher may substitute a generic `div`, add
+`aria-hidden`, or mount parallel HTML markers over the geographic renderer.
 
 **Alternatives considered:** a generic container requires parallel semantics;
 a FOSS custom-element wrapper adds lifecycle complexity without more value.
@@ -451,7 +459,11 @@ The current Knowgrph mapping specializes this contract as follows:
   `canvas/src/features/geospatial/geoXrOverlayPublisherLease.ts`,
   `canvas/src/features/geospatial/geoXrFlightOverlayComposition.ts`, and
   `canvas/src/features/geospatial/useGeoXrOverlayPublisher.ts`;
+- regional-context profile contract and admission:
+  `grph-shared/src/geospatial/regionalPoiGeo.ts` and
+  `canvas/src/features/geospatial/regionalPoiProfileCatalog.ts`;
 - MapLibre adapters:
+  `gympgrph/src/regionalPoiMapLibre.ts`,
   `gympgrph/src/flightGeoEnvironmentMapLibre.ts`,
   `gympgrph/src/cityGeoOverlayMapLibre.ts`,
   `gympgrph/src/flightGeoOverlayMapLibre.ts`, and
@@ -469,9 +481,16 @@ The current Knowgrph mapping specializes this contract as follows:
 
 MapLibre is the retained native geographic host in this reference
 implementation. Three.js and React Three Fiber remain outside the active City
-geographic presentation. The current overlay composer still hardcodes City and
-Flight identities and precedence, so it is evidence for a working
-specialization only—not evidence that ADR-2's neutral registry is implemented.
+geographic presentation. The City specialization resolves one companion-owned
+regional-context profile and presents its exact rings, real-metre heights,
+accuracy, and provenance below City parcels and stopped Flight route/aircraft.
+Its Flight-local XR environment publication remains explicitly absent.
+MapLibre frames regional and domain bounds through its native camera and its
+live canvas remains the sole selection owner; no HTML marker, generic
+selectable wrapper, or `aria-hidden` surface competes with it. The current
+overlay composer still hardcodes City and Flight identities and precedence, so
+it is evidence for a working specialization only—not evidence that ADR-2's
+neutral registry is implemented.
 
 Current focused source suites include
 `geoXrSurfaceActivation.test.ts`,

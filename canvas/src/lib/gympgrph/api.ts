@@ -14,7 +14,12 @@ export {
   FLIGHT_GEO_AIRCRAFT_IMAGE_IDS,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
+  REGIONAL_POI_LAYER_IDS,
+  REGIONAL_POI_LAYER_ORDER,
+  REGIONAL_POI_SOURCE_ID,
   hasExactCityGeoXrLayerOrder,
+  mapHasExactRegionalPoiProfile,
+  mapHasExactRegionalPoiSource,
   SINGAPORE_FLIGHT_GEO_REFERENCE,
   projectSingaporeLocalMeters,
   projectSingaporeLocalRectangle,
@@ -22,6 +27,7 @@ export {
   readCityGeoOverlay,
   readCityGeoXrLayerOrder,
   readFlightGeoOverlay,
+  readGeoMapViewportPadding,
   setGeospatialModeEnabled,
 } from 'gympgrph'
 export type {

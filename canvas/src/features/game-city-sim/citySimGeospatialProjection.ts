@@ -6,6 +6,9 @@ import type {
 } from 'gympgrph'
 import type { CitySimGeographicProfile } from './citySimAuthoredSource'
 import type { CitySimSnapshot } from './citySimRuntimeState'
+import {
+  resolveRegionalPoiProfile,
+} from '@/features/geospatial/regionalPoiProfileCatalog'
 
 const CITY_GEO_PRESENTATION_REVISION = 'city-geo-presentation/v1'
 
@@ -48,6 +51,9 @@ const CITY_ZONE_STYLES: Readonly<Record<CityGeoZone, CityGeoZoneStyle>> =
 function projectGeographicProfile(
   profile: CitySimGeographicProfile,
 ): CityGeographicProfile {
+  const regionalPoiProfile = resolveRegionalPoiProfile(
+    profile.regionalPoiProfileId,
+  )
   return Object.freeze({
     bearingDegrees: profile.parcelBearingDegrees,
     center: profile.anchor,
@@ -69,9 +75,12 @@ function projectGeographicProfile(
     id: profile.id,
     parcelDepthMeters: profile.parcelDepthMeters,
     parcelWidthMeters: profile.parcelWidthMeters,
+    regionalPoiProfile,
     revision: [
       CITY_GEO_PRESENTATION_REVISION,
       profile.id,
+      regionalPoiProfile.id,
+      regionalPoiProfile.revision,
       profile.anchor.join(','),
       profile.parcelWidthMeters,
       profile.parcelDepthMeters,

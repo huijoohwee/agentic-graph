@@ -1,3 +1,8 @@
+import {
+  createRegionalPoiProfile,
+  type RegionalPoiProfile,
+} from 'grph-shared/geospatial/regionalPoiGeo'
+
 export const CITY_GEO_ZONES = Object.freeze([
   'unzoned',
   'residential',
@@ -46,6 +51,7 @@ export type CityGeographicProfile = Readonly<{
   id: string
   parcelDepthMeters: number
   parcelWidthMeters: number
+  regionalPoiProfile: RegionalPoiProfile
   revision: string
   rowGapMeters: number
   selectedOutlineColor: string
@@ -189,6 +195,9 @@ function freezeGeographicProfile(
       '2d': freezeFraming(profile.framing['2d'], 'City 2D framing'),
       '3d': freezeFraming(profile.framing['3d'], 'City 3D framing'),
     }),
+    regionalPoiProfile: createRegionalPoiProfile(
+      profile.regionalPoiProfile,
+    ),
     zoneStyles: Object.freeze(Object.fromEntries(
       CITY_GEO_ZONES.map(zone => [
         zone,
