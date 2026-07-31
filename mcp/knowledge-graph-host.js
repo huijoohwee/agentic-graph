@@ -93,7 +93,7 @@ function getRuntime({ rootDir, env }) {
     allowedRoots: configuredAllowedRoots,
     outputRoot,
     pdfConverter,
-    pdfConverterVersion: "knowgrph-native-pdf-v1",
+    pdfConverterVersion: "knowgrph-native-pdf-v3",
     pythonBin: env.KNOWGRPH_PYTHON || "python3",
   });
   runtimeCache.set(key, runtime);

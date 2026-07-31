@@ -143,8 +143,13 @@ async function releaseIngestLock(lock) {
       "The knowledge graph ingest lock owner changed before release.",
     );
   }
-  await fs.unlink(path.join(lock.lockPath, lock.ownerName));
-  await fs.rmdir(lock.lockPath);
+  const releasedPath = path.join(
+    path.dirname(lock.lockPath),
+    `.${path.basename(lock.lockPath)}.released.${lock.token}`,
+  );
+  await fs.rename(lock.lockPath, releasedPath);
+  await fs.unlink(path.join(releasedPath, lock.ownerName));
+  await fs.rmdir(releasedPath);
 }
 
 export async function withKnowledgeGraphIngestLock(pointerPath, options, operation) {

@@ -19,6 +19,7 @@ import {
   parseKnowledgeSource,
   parserDescriptorForSource,
   parserLimitFragmentForSource,
+  probePythonParserRuntime,
 } from "./parsers.mjs";
 import { runKnowledgeGraphObjectTransaction } from "./object-transaction.mjs";
 import {
@@ -319,6 +320,20 @@ async function ingestResolvedTransaction(
     abortSignal,
     deadline,
   });
+  let parserDeps = deps;
+  if (discovered.sources.some((source) => source.kind === "python")) {
+    try {
+      const pythonRuntime = await probePythonParserRuntime({
+        ...deps,
+        ...budget,
+      });
+      parserDeps = { ...deps, ...pythonRuntime };
+    } catch (error) {
+      if (error instanceof KnowledgeGraphError
+        && ["aborted", "max_duration_exceeded"].includes(error.code)) throw error;
+    }
+  }
+  checkKnowledgeGraphBudget({ ...budget, stage: "parser-runtime-probe" });
   const fragments = new Map();
   const sourceEntries = [];
   const sourceShardByteLimit = knowledgeGraphSourceShardByteLimit(deps.maxSourceShardBytes);
@@ -334,10 +349,10 @@ async function ingestResolvedTransaction(
   const parserCheckpoint = createPeriodicCheckpoint(abortSignal, deadline, "source-parsing");
   for (const source of discovered.sources) {
     parserCheckpoint.force();
-    const descriptor = parserDescriptorForSource(source, deps);
+    const descriptor = parserDescriptorForSource(source, parserDeps);
     const previous = previousEntries.get(source.relativePath);
     const reusable = useCache
-      && previous?.status !== "limited"
+      && previous?.status === "parsed"
       && previous?.contentHash === source.contentHash
       && previous?.parserId === descriptor.parserId
       && previous?.parserVersion === descriptor.parserVersion
@@ -362,7 +377,7 @@ async function ingestResolvedTransaction(
       });
       try {
         fragment = await parseKnowledgeSource(hydrated, {
-          ...deps,
+          ...parserDeps,
           abortSignal,
           deadline,
           checkpoint: parserCheckpoint,
@@ -376,7 +391,7 @@ async function ingestResolvedTransaction(
             "parser_operation_limit_exceeded",
             "parser_record_limit_exceeded",
           ].includes(error.code)) throw error;
-        fragment = parserLimitFragmentForSource(hydrated, deps, error);
+        fragment = parserLimitFragmentForSource(hydrated, parserDeps, error);
       }
     }
     parserCheckpoint.force();
@@ -393,7 +408,7 @@ async function ingestResolvedTransaction(
       reusableEntry: reusable ? previous : null,
       strict,
       pointerPath, outputRoot: resolved.outputRoot, objectTransaction,
-      deps, budget, checkpoint: parserCheckpoint,
+      deps: parserDeps, budget, checkpoint: parserCheckpoint,
     });
     const annotated = persisted.fragment;
     const resolutionFragment = reusable
@@ -438,7 +453,7 @@ async function ingestResolvedTransaction(
       },
     );
   }
-
+  await discovered.revalidateAdmission();
   const derivedEdgesByRepository = buildRepositoryScopedResolutionEdges(
     discovered.sources,
     fragments,

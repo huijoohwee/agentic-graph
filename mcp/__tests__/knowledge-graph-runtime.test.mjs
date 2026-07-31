@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 
 import { EVIDENCE_FIELDS, sha256 } from "../knowledge-graph/contract.mjs";
 import { createKnowledgeGraphRuntime, KNOWLEDGE_GRAPH_TOOL_NAMES } from "../knowledge-graph/runtime.mjs";
@@ -14,11 +16,50 @@ import {
 } from "../knowledge-graph/store.mjs";
 import { parseSqlSource } from "../knowledge-graph/sql-parser.mjs";
 
+const execFileAsync = promisify(execFile);
+
 async function writeFile(root, relativePath, contents) {
   const target = path.join(root, relativePath);
   await fs.mkdir(path.dirname(target), { recursive: true });
   await fs.writeFile(target, contents);
   return target;
+}
+
+async function initializeRepository(repositoryPath) {
+  await fs.mkdir(repositoryPath, { recursive: true });
+  await execFileAsync("git", ["init", "--quiet", repositoryPath], {
+    env: {
+      PATH: String(process.env.PATH || ""),
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_CONFIG_GLOBAL: "/dev/null",
+    },
+  });
+}
+
+async function writeFakePythonRuntime(target, versionInfo, { failSources = false } = {}) {
+  const encodedVersion = JSON.stringify(versionInfo);
+  const sourceFailure = failSources
+    ? [
+        "  if (request.sourcePath !== '<python-runtime-probe>') {",
+        "    process.stderr.write('synthetic source parse failure\\n');",
+        "    process.exitCode = 2;",
+        "    return;",
+        "  }",
+      ]
+    : [];
+  await fs.writeFile(target, [
+    "#!/usr/bin/env node",
+    "let input = '';",
+    "process.stdin.setEncoding('utf8');",
+    "process.stdin.on('data', (chunk) => { input += chunk; });",
+    "process.stdin.on('end', () => {",
+    "  const request = JSON.parse(input);",
+    ...sourceFailure,
+    `  process.stdout.write(JSON.stringify({ pythonVersionInfo: ${encodedVersion}, declarations: [], imports: [], calls: [], inherits: [], diagnostics: [] }));`,
+    "});",
+    "",
+  ].join("\n"));
+  await fs.chmod(target, 0o700);
 }
 
 async function createFixture(t, { withPdfConverter = true } = {}) {
@@ -28,7 +69,7 @@ async function createFixture(t, { withPdfConverter = true } = {}) {
   const corpusRoot = path.join(base, "corpus");
   const outputRoot = path.join(knowgrphRoot, "outputs");
   await fs.mkdir(knowgrphRoot, { recursive: true });
-  await fs.mkdir(path.join(corpusRoot, ".git"), { recursive: true });
+  await initializeRepository(corpusRoot);
   await writeFile(corpusRoot, "src/db.ts", "export function load() { return 1; }\n");
   await writeFile(corpusRoot, "src/db/index.ts", "export function alternate() { return 2; }\n");
   await writeFile(corpusRoot, "src/app.ts", [
@@ -69,7 +110,7 @@ async function createFixture(t, { withPdfConverter = true } = {}) {
   await writeFile(corpusRoot, "config.json", '{"constructor":{"toString":"kept"},"credentials":{"value":"secret"}}\n');
   await writeFile(corpusRoot, "wrangler.toml", 'name = "fixture"\n[credentials]\nvalue = "secret"\n');
   await writeFile(corpusRoot, "paper.pdf", Buffer.from("%PDF-1.4\nlocal fixture\n%%EOF\n"));
-  await writeFile(corpusRoot, "nested/.git/HEAD", "ref: refs/heads/main\n");
+  await initializeRepository(path.join(corpusRoot, "nested"));
   await writeFile(corpusRoot, "nested/schema.sql", "CREATE TABLE accounts (id INTEGER PRIMARY KEY);\n");
   let pdfCalls = 0;
   const runtime = createKnowledgeGraphRuntime({
@@ -182,9 +223,109 @@ test("ingest writes content-addressed shards and returns only opaque graph ident
   const second = await ingestFixture(fixture);
   assert.equal(second.graphId, first.graphId);
   assert.equal(second.snapshotDigest, first.snapshotDigest);
-  assert.equal(second.counts.parsed, 1);
-  assert.equal(second.counts.reused, second.counts.sources - 1);
+  assert.equal(second.counts.parsed, 0);
+  assert.equal(second.counts.reused, second.counts.sources);
   assert.equal(fixture.pdfCalls(), 1);
+});
+
+test("Python runtime identity fences cache reuse and invalidates exact-version changes", async (t) => {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-kg-python-cache-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const knowgrphRoot = path.join(base, "host");
+  const corpusRoot = path.join(base, "corpus");
+  const outputRoot = path.join(knowgrphRoot, "outputs");
+  const pythonBin = path.join(base, "fake-python");
+  await fs.mkdir(knowgrphRoot, { recursive: true });
+  await initializeRepository(corpusRoot);
+  await writeFile(corpusRoot, "module.py", "def stable():\n    return 1\n");
+  await writeFakePythonRuntime(pythonBin, [3, 9, 6, "final", 0]);
+  const runtime = createKnowledgeGraphRuntime({
+    knowgrphRoot,
+    allowedRoots: [corpusRoot],
+    outputRoot,
+    pythonBin,
+  });
+  const ingest = () => runtime.ingest({
+    rootPath: corpusRoot,
+    strict: true,
+    useCache: true,
+  });
+
+  const first = await ingest();
+  assert.equal(first.ok, true, JSON.stringify(first));
+  assert.equal(first.counts.parsed, 1);
+  assert.equal(first.counts.reused, 0);
+
+  const warmA = await ingest();
+  assert.equal(warmA.ok, true, JSON.stringify(warmA));
+  assert.equal(warmA.snapshotDigest, first.snapshotDigest);
+  assert.equal(warmA.counts.parsed, 0);
+  assert.equal(warmA.counts.reused, 1);
+
+  await writeFakePythonRuntime(pythonBin, [3, 10, 0, "final", 0]);
+  const changedRuntime = await ingest();
+  assert.equal(changedRuntime.ok, true, JSON.stringify(changedRuntime));
+  assert.notEqual(changedRuntime.snapshotDigest, first.snapshotDigest);
+  assert.equal(changedRuntime.counts.parsed, 1);
+  assert.equal(changedRuntime.counts.reused, 0);
+
+  const warmB = await ingest();
+  assert.equal(warmB.ok, true, JSON.stringify(warmB));
+  assert.equal(warmB.snapshotDigest, changedRuntime.snapshotDigest);
+  assert.equal(warmB.counts.parsed, 0);
+  assert.equal(warmB.counts.reused, 1);
+});
+
+test("a transient Python parser error is reparsed after same-runtime recovery", async (t) => {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-kg-python-recovery-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const knowgrphRoot = path.join(base, "host");
+  const corpusRoot = path.join(base, "corpus");
+  const outputRoot = path.join(knowgrphRoot, "outputs");
+  const pythonBin = path.join(base, "fake-python");
+  await fs.mkdir(knowgrphRoot, { recursive: true });
+  await initializeRepository(corpusRoot);
+  await writeFile(corpusRoot, "module.py", "def recoverable():\n    return 1\n");
+  const versionInfo = [3, 9, 6, "final", 0];
+  await writeFakePythonRuntime(pythonBin, versionInfo, { failSources: true });
+  const runtime = createKnowledgeGraphRuntime({
+    knowgrphRoot,
+    allowedRoots: [corpusRoot],
+    outputRoot,
+    pythonBin,
+  });
+
+  const failed = await runtime.ingest({
+    rootPath: corpusRoot,
+    strict: false,
+    useCache: true,
+  });
+  assert.equal(failed.ok, true, JSON.stringify(failed));
+  assert.equal(failed.complete, false);
+  assert.equal(failed.counts.parsed, 1);
+  assert.equal(failed.counts.reused, 0);
+
+  await writeFakePythonRuntime(pythonBin, versionInfo);
+  const recovered = await runtime.ingest({
+    rootPath: corpusRoot,
+    strict: true,
+    useCache: true,
+  });
+  assert.equal(recovered.ok, true, JSON.stringify(recovered));
+  assert.equal(recovered.complete, true);
+  assert.equal(recovered.counts.parsed, 1);
+  assert.equal(recovered.counts.reused, 0);
+  assert.notEqual(recovered.snapshotDigest, failed.snapshotDigest);
+
+  const warm = await runtime.ingest({
+    rootPath: corpusRoot,
+    strict: true,
+    useCache: true,
+  });
+  assert.equal(warm.ok, true, JSON.stringify(warm));
+  assert.equal(warm.snapshotDigest, recovered.snapshotDigest);
+  assert.equal(warm.counts.parsed, 0);
+  assert.equal(warm.counts.reused, 1);
 });
 
 test("query, traversal, summaries, and explanations are digest-fenced and bounded", async (t) => {

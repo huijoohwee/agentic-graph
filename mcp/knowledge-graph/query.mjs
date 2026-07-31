@@ -8,6 +8,7 @@ import { materializeKnowledgeGraphRepository } from "./materialize.mjs";
 import {
   explainKnowledgeGraphEdgeFromArtifact,
   queryKnowledgeGraph,
+  selectPairedSearchEdges,
 } from "./query-core.mjs";
 
 export { explainKnowledgeGraphEdgeFromArtifact, queryKnowledgeGraph };
@@ -67,11 +68,23 @@ function clippedJson(value, maxLength = 2000) {
   try { return JSON.stringify(value).slice(0, maxLength); } catch { return ""; }
 }
 
+const configSearchText = (node) => (
+  String(node?.properties?.["config:searchText"] || "").slice(0, 128 * 1024)
+);
+
 function nodeSearchText(node) {
-  return [node.id, node.label, node.type, clippedJson(node.properties), clippedJson(node.metadata, 500)].join(" ").toLowerCase();
+  return [
+    node.id,
+    node.label,
+    node.type,
+    configSearchText(node),
+    clippedJson(node.properties),
+    clippedJson(node.metadata, 500),
+  ].join(" ").toLowerCase();
 }
 
 function edgeSearchText(edge, nodeById) {
+  const targetNode = nodeById.get(edge.target);
   return [
     edge.id,
     edge.label,
@@ -79,6 +92,7 @@ function edgeSearchText(edge, nodeById) {
     nodeById.get(edge.target)?.label,
     edge.properties?.["evidence:explanation"],
     edge.properties?.["evidence:sourcePath"],
+    configSearchText(targetNode),
   ].join(" ").toLowerCase();
 }
 
@@ -86,11 +100,15 @@ function lexicalScore(text, terms, exactLabel = "") {
   if (!terms.length) return 0;
   let score = 0;
   const normalizedLabel = normalized(exactLabel);
+  const exactTokens = new Set(
+    text.split(/[^\p{L}\p{N}_.$/@-]+/u).filter(Boolean),
+  );
   for (const term of terms) {
     if (normalizedLabel === term) score += 100;
     else if (normalizedLabel.startsWith(term)) score += 30;
     else if (normalizedLabel.includes(term)) score += 15;
-    if (text.includes(term)) score += term.length >= 4 ? 5 : 2;
+    if (exactTokens.has(term)) score += 10;
+    else if (term.length >= 4 && text.includes(term)) score += 5;
   }
   return score;
 }
@@ -246,6 +264,7 @@ async function searchSnapshot(snapshot, args, options = {}) {
   const terms = tokenize(query);
   const nodes = [];
   const edges = [];
+  const supportByTarget = new Map();
   for (const repository of snapshot.manifest.repositories || []) {
     checkpoint();
     const index = await readKnowledgeGraphRepositoryIndex(snapshot, repository);
@@ -261,6 +280,7 @@ async function searchSnapshot(snapshot, args, options = {}) {
             right,
           ) => right.score - left.score || compareStableStrings(left.node.id, right.node.id));
         }
+        const rankedNodeIds = new Set(nodes.map(({ node }) => node.id));
         for (const edge of part.edges || []) {
           checkpoint();
           const score = lexicalScore(edgeSearchText(edge, sourceNodes), terms, edge.label);
@@ -268,7 +288,17 @@ async function searchSnapshot(snapshot, args, options = {}) {
             left,
             right,
           ) => right.score - left.score || compareStableStrings(left.edge.id, right.edge.id));
+          if (edge.label === "indexesConfigTokens" && rankedNodeIds.has(edge.target)) {
+            const existing = supportByTarget.get(edge.target);
+            if (!existing || compareStableStrings(edge.id, existing.edge.id) < 0) {
+              supportByTarget.set(edge.target, { edge, score });
+            }
+          }
         }
+      }
+      const retainedNodeIds = new Set(nodes.map(({ node }) => node.id));
+      for (const targetId of supportByTarget.keys()) {
+        if (!retainedNodeIds.has(targetId)) supportByTarget.delete(targetId);
       }
     }
     for await (const shard of readKnowledgeGraphResolutionShards(snapshot, index)) {
@@ -283,13 +313,21 @@ async function searchSnapshot(snapshot, args, options = {}) {
     }
   }
   const nodesTruncated = nodes.length > limit;
-  const edgesTruncated = edges.length > limit;
-  const resultEdges = edges.slice(0, limit).map((entry) => ({ ...entry, evidence: evidenceForEdge(entry.edge) }));
+  const selectedNodeEntries = nodes.slice(0, limit);
+  const pairedEdges = selectPairedSearchEdges({
+    rankedNodeEntries: selectedNodeEntries,
+    rankedEdgeEntries: edges,
+    supportByTarget,
+    limit,
+  });
+  const edgesTruncated = pairedEdges.truncated;
+  const resultEdges = pairedEdges.entries
+    .map((entry) => ({ ...entry, evidence: evidenceForEdge(entry.edge) }));
   return {
     mode: "search",
     snapshotDigest: snapshot.pointer.snapshotDigest,
     query,
-    results: { nodes: nodes.slice(0, limit), edges: resultEdges },
+    results: { nodes: selectedNodeEntries, edges: resultEdges },
     citations: resultEdges.map((entry) => entry.evidence),
     retrieval: snapshot.manifest.retrieval,
     cost: snapshot.manifest.cost,
