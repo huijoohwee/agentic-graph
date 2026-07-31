@@ -95,6 +95,11 @@ export {
   fitMapToCityGeoOverlay,
 } from './cityGeoOverlayMapLibreController.js'
 export {
+  CITY_GEO_XR_LAYER_ORDER,
+  hasExactCityGeoXrLayerOrder,
+  readCityGeoXrLayerOrder,
+} from './geoXrOverlayLayerOrder.js'
+export {
   cityGeoGridProjectedBounds,
   cityGeoOverlayBounds,
   cityGeoOverlayFeatureCollection,

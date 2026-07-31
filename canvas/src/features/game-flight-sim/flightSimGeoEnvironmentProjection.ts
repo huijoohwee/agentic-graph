@@ -1,8 +1,9 @@
 import {
   SINGAPORE_FLIGHT_GEO_REFERENCE,
   projectSingaporeLocalMeters,
+  type FlightGeoEnvironmentProjection,
+  type FlightGeoEnvironmentSurface,
   type GeospatialCoordinate,
-  type GeospatialPresentationBounds,
 } from '@/lib/gympgrph/api'
 import type {
   XrMotionReferencePlan,
@@ -13,25 +14,6 @@ import {
   resolveXrSceneLibraryAsset,
   type XrGreyBoxStructure,
 } from '@/features/three/xrSceneLibrary'
-
-export type FlightSimGeoEnvironmentSurface = Readonly<{
-  baseHeightMeters: number
-  color: string
-  heightMeters: number
-  id: string
-  kind: 'stage-footprint' | 'structure' | 'subject'
-  ring: readonly GeospatialCoordinate[]
-}>
-
-export type FlightSimGeoEnvironmentProjection = Readonly<{
-  anchor: GeospatialCoordinate
-  id: string
-  label: string
-  presentationBounds: GeospatialPresentationBounds
-  revision: string
-  stageFootprint: readonly GeospatialCoordinate[]
-  surfaces: readonly FlightSimGeoEnvironmentSurface[]
-}>
 
 const TONE_COLORS: Readonly<Record<XrGreyBoxStructure['tone'], string>> =
   Object.freeze({
@@ -82,7 +64,7 @@ function projectLocalRectangle(input: Readonly<{
 
 function projectStructure(
   structure: XrGreyBoxStructure,
-): FlightSimGeoEnvironmentSurface {
+): FlightGeoEnvironmentSurface {
   const baseHeightMeters = Math.max(
     0,
     structure.position[1] - structure.size[1] / 2,
@@ -93,10 +75,14 @@ function projectStructure(
   )
   return Object.freeze({
     baseHeightMeters,
-    color: TONE_COLORS[structure.tone],
+    color: structure.color && /^#[0-9a-f]{6}$/i.test(structure.color)
+      ? structure.color
+      : TONE_COLORS[structure.tone],
     heightMeters,
     id: structure.id,
-    kind: 'structure',
+    kind: structure.kind === 'poi' ? 'poi' : 'structure',
+    label: structure.label || structure.id,
+    poiId: structure.poiId || null,
     ring: projectLocalRectangle({
       centerX: structure.position[0],
       centerZ: structure.position[2],
@@ -108,7 +94,7 @@ function projectStructure(
 
 function projectSubject(
   subject: XrMotionReferenceSubject,
-): FlightSimGeoEnvironmentSurface {
+): FlightGeoEnvironmentSurface {
   const asset = resolveXrSceneLibraryAsset(subject.assetId)
   const scale = Number.isFinite(subject.scale) && subject.scale > 0
     ? subject.scale
@@ -125,6 +111,8 @@ function projectSubject(
     heightMeters: baseHeightMeters + heightMeters,
     id: subject.id,
     kind: 'subject',
+    label: subject.label,
+    poiId: null,
     ring: projectLocalRectangle({
       centerX: subject.position[0],
       centerZ: subject.position[2],
@@ -137,7 +125,7 @@ function projectSubject(
 
 export function projectXrEnvironmentToFlightGeo(
   plan: Pick<XrMotionReferencePlan, 'stageId' | 'subjects'>,
-): FlightSimGeoEnvironmentProjection {
+): FlightGeoEnvironmentProjection {
   const stage = resolveXrMotionReferenceStage(plan.stageId)
   const stageFootprint = projectLocalRectangle({
     centerX: 0,
@@ -145,12 +133,14 @@ export function projectXrEnvironmentToFlightGeo(
     depthMeters: stage.sizeMeters[1],
     widthMeters: stage.sizeMeters[0],
   })
-  const footprintSurface: FlightSimGeoEnvironmentSurface = Object.freeze({
+  const footprintSurface: FlightGeoEnvironmentSurface = Object.freeze({
     baseHeightMeters: 0,
     color: '#0f766e',
     heightMeters: 0.08,
     id: `${stage.id}:footprint`,
     kind: 'stage-footprint',
+    label: `${stage.label} stage footprint`,
+    poiId: null,
     ring: stageFootprint,
   })
   const surfaces = Object.freeze([
@@ -171,6 +161,8 @@ export function projectXrEnvironmentToFlightGeo(
         surface.baseHeightMeters,
         surface.heightMeters,
         surface.color,
+        surface.label,
+        surface.poiId || '',
         ...surface.ring.flat(),
       ].join(':')),
     ].join('|'),

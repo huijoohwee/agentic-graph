@@ -139,6 +139,13 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("cityActive") is True
             and value.get("cityPanelVisible") is True
             and value.get("citySemanticSurfaceActive") is True
+            and value.get("citySemanticSurfaceNodeName") == "FIGURE"
+            and value.get("citySemanticSurfaceAccessibleName")
+            == "Interactive City simulation media stage"
+            and value.get("citySemanticSurfaceSelectableMarker") == "1"
+            and value.get("citySemanticSurfaceAriaHidden") is False
+            and value.get("citySemanticSurfaceVisibleMapLibreCanvasCount") == 1
+            and value.get("citySemanticSurfaceCenterMapLibreOwned") is True
             and value.get("cityMapLibreOwnerCount") == 1
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "cityBuilder"
@@ -163,9 +170,17 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("overlayRoutePointCount") >= 2
             and set(value.get("sourceKinds") or [])
             == {"aircraft", "objective-guide", "route", "route-point"}
-            and value.get("environmentSourceFeatures") == 0
+            and value.get("environmentSourceFeatures") >= 9
+            and value.get("environmentLayersReady") is True
+            and value.get("environmentPoiIds")
+            == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]
+            and value.get("renderedEnvironmentPoiIds")
+            == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]
+            and value.get("environmentSourceExactlyMatchesOverlay") is True
+            and value.get("cityGeoXrLayerOrderExact") is True
+            and "poi" in set(value.get("renderedEnvironmentKinds") or [])
             and value.get("renderedFeatureCount") >= 4
-            and value.get("renderedEnvironmentFeatureCount") == 0
+            and value.get("renderedEnvironmentFeatureCount") >= 1
         ),
     )
     retention = page.evaluate(

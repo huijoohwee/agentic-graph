@@ -65,9 +65,25 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.overlayRoutePointCount >= 2
     && JSON.stringify(city?.sourceKinds)
       === JSON.stringify(['aircraft', 'objective-guide', 'route', 'route-point'])
-    && city?.environmentSourceFeatures === 0
+    && city?.environmentSourceFeatures >= 9
+    && city?.environmentLayersReady === true
+    && JSON.stringify(city?.environmentPoiIds)
+      === JSON.stringify([
+        'gardens-by-the-bay',
+        'marina-bay-sands',
+        'singapore-flyer',
+      ])
+    && JSON.stringify(city?.renderedEnvironmentPoiIds)
+      === JSON.stringify([
+        'gardens-by-the-bay',
+        'marina-bay-sands',
+        'singapore-flyer',
+      ])
+    && city?.environmentSourceExactlyMatchesOverlay === true
+    && city?.cityGeoXrLayerOrderExact === true
+    && city?.renderedEnvironmentKinds?.includes('poi')
     && city?.renderedFeatureCount >= 4
-    && city?.renderedEnvironmentFeatureCount === 0
+    && city?.renderedEnvironmentFeatureCount >= 1
   )
 }
 
@@ -298,15 +314,27 @@ export async function readValidatedFlightSimBrowserRunEvidence({
           viewportBounded: true,
         })
         && hasMeterSurface(view, {
-          id: 'skyline-center',
+          id: 'marina-bay-sands:tower-center',
           baseHeightMeters: 0,
-          heightMeters: 12,
-          widthMeters: 4.4,
-          depthMeters: 4.4,
+          heightMeters: 3.6,
+          widthMeters: 1.42,
+          depthMeters: 1.38,
         })
+        && JSON.stringify(view?.environmentPoiIds)
+          === JSON.stringify([
+            'gardens-by-the-bay',
+            'marina-bay-sands',
+            'singapore-flyer',
+          ])
+        && JSON.stringify(view?.renderedEnvironmentPoiIds)
+          === JSON.stringify([
+            'gardens-by-the-bay',
+            'marina-bay-sands',
+            'singapore-flyer',
+          ])
         && view?.selectedEnvironmentSubjectsExact === true
         && view?.environmentSourceExactlyMatchesOverlay === true
-        && ['stage-footprint', 'structure', 'subject'].every(kind =>
+        && ['poi', 'stage-footprint', 'subject'].every(kind =>
           view?.renderedEnvironmentKinds?.includes(kind),
         )
         && view?.renderedEnvironmentSubjectIds?.some(subjectId =>

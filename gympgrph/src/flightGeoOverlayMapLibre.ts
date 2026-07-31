@@ -452,10 +452,9 @@ function keepFlightGeoOverlayAboveHostLayers(
 ): void {
   const styleLayers = map.getStyle?.()?.layers
   if (!Array.isArray(styleLayers)) return
-  const expected = [
-    ...(overlay.environment ? FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER : []),
-    ...FLIGHT_GEO_OVERLAY_LAYER_ORDER,
-  ]
+  const expected = overlay.presentationOwner === 'flight' && overlay.environment
+    ? [...FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER, ...FLIGHT_GEO_OVERLAY_LAYER_ORDER]
+    : [...FLIGHT_GEO_OVERLAY_LAYER_ORDER]
   const expectedIds = new Set<string>(expected)
   const presentOrder = styleLayers
     .map((layer: { id?: unknown }) => String(layer?.id || ''))

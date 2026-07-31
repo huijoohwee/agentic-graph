@@ -24,7 +24,19 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   rendererRule: 'reuse one native MapLibre map; mount zero City Three Canvas',
   surfaceOwner: 'native MapLibre Geo+XR surface wrapped by CitySimMediaFigure',
   citySurfaceOwner: 'native MapLibre Geo+XR host wrapped by the City semantic media figure',
-  composition: 'one native MapLibre map with City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas',
+  composition: 'one native MapLibre map with the shared Singapore environment below City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas',
+  environmentMajorPoiIds: Object.freeze([
+    'gardens-by-the-bay',
+    'marina-bay-sands',
+    'singapore-flyer',
+  ]),
+  environmentMapLibreSourceId: 'kg-flight-geo-environment',
+  environmentProjectionOwner:
+    'canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts',
+  environmentSourceOwner:
+    'canvas/src/features/three/xrSingaporeEnvironmentSource.ts',
+  environmentStageId: 'singapore',
+  layerOrder: Object.freeze(['environment', 'city', 'flight']),
   semanticMediaChildOwner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
   semanticMediaOwner: 'canvas/src/features/game-city-sim/CitySimMediaFigure.tsx',
   semanticMediaSelectionOwner: 'canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts',

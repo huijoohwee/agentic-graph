@@ -66,7 +66,14 @@ city_geo_xr:
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   city_surface_owner: "native MapLibre Geo+XR host wrapped by the City semantic media figure"
   parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
-  composition: "one native MapLibre map with City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas"
+  composition: "one native MapLibre map with the shared Singapore environment below City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas"
+  environment:
+    stage_id: "singapore"
+    source_owner: "canvas/src/features/three/xrSingaporeEnvironmentSource.ts"
+    projection_owner: "canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts"
+    maplibre_source_id: "kg-flight-geo-environment"
+    major_poi_ids: ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]
+  layer_order: ["environment", "city", "flight"]
   native_xr_physics_stage_active: false
   authored_graph_scene_active: false
   duplicate_map_or_canvas_forbidden: true
@@ -92,7 +99,7 @@ city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
   spatial_source: "this source document's typed city_geo_xr geographic profile"
-  environment: null
+  environment_owner: "city_geo_xr.environment"
   adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
   adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
   presentation_owner: "city"
@@ -169,9 +176,9 @@ mcp:
   tool_count: 2
   transport: "existing local discovery and approval-gated control owners"
 proof_contract:
-  start: "neutral browser with no environment-selected or persisted city state"
+  start: "neutral browser with the canonical Singapore environment and no persisted city state"
   activation: "apply this Source File after Source Files bootstrap is ready"
-  assertions: ["Geo+XR Mode", "one native MapLibre Geo host wrapped by CitySimMediaFigure", "sixteen live City parcel features", "visible City zone and selection layers", "panel-adjusted MapLibre framing and gestures", "zero City Three Canvas, stage, mesh, or camera", "stopped aircraft and route through independent existing Flight Geo layers", "Flight bootstrap, camera, gameplay, environment, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
+  assertions: ["Geo+XR Mode", "one native MapLibre Geo host wrapped by CitySimMediaFigure", "source-authored Singapore major-POI extrusions", "sixteen live City parcel features", "visible City zone and selection layers", "environment then City then Flight layer order", "panel-adjusted MapLibre framing and gestures", "zero City Three Canvas, stage, mesh, or camera", "stopped aircraft and route through independent existing Flight Geo layers", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
   actions: ["Zone", "one Tick", "Stop fence", "Advice", "Save and read-back", "six panel projections", "Exit restore"]
   exact_sha_required: true
   repeatability: "repeat from neutral state and compare initial serialized bytes"
@@ -231,11 +238,14 @@ economy ticks, and selection update that source from the same runtime revision.
 City also uses `projectCitySimAerialInspectionToGeospatialOverlay` to derive one
 deterministic route and one stopped aircraft from the typed `city_geo_xr`
 profile authored in this document. The shared `CanvasViewport` geospatial
-publisher sends that result with atomic presentation owner `city`, a null XR
-environment, and free-orbit metadata through the existing Flight overlay store
-and MapLibre source/layers. That presentation path cannot install the Flight
-bootstrap style, camera, padding, gameplay, controls, mission, or readiness.
-City creates no duplicate map, source/layer ids, Canvas, or renderer.
+publisher sends that result with atomic presentation owner `city`, the selected
+shared Singapore environment, and free-orbit metadata through the existing
+Flight overlay store and MapLibre sources/layers. Its named Marina Bay Sands,
+Singapore Flyer, and Gardens by the Bay surfaces render as native MapLibre
+extrusions below City parcels; the stopped aircraft and route remain above the
+City stack. That presentation path cannot install the Flight bootstrap style,
+camera, padding, gameplay, controls, mission, or readiness. City creates no
+duplicate map, source/layer ids, Canvas, or renderer.
 
 City never starts or retains the native XR physics playground. The Three
 renderer excludes the authored/native graph for City source intent, and City
@@ -279,15 +289,16 @@ r03c03,3,3,unzoned,5000,0,0
 ## Local use
 
 1. Run the repository-owned development command.
-2. Start from a browser with no city demo environment selector, persisted city
-   state, URL selection, or previously open city runtime.
+2. Start from a browser with the canonical Singapore environment, no persisted
+   city state, no URL selection, and no previously open city runtime.
 3. Confirm City Builder is closed, the City media figure is presentational and
    inactive, and Flight gameplay is inactive.
 4. Open Explorer -> Source Files and wait for bootstrap readiness.
 5. Open this document and apply it.
-6. Confirm Geo+XR Mode shows the source-authored 4 by 4 parcel grid with its
-   stopped aircraft and route overlay, then confirm City Builder opens with
-   tick `0`, treasury `100000` cents, and population `15`.
+6. Confirm Geo+XR Mode shows the shared Singapore major-POI extrusions below
+   the source-authored 4 by 4 parcel grid, with the stopped aircraft and route
+   above it, then confirm City Builder opens with tick `0`, treasury `100000`
+   cents, and population `15`.
 7. Confirm the existing Flight Geo layers show this document's authored City
    route and stopped aircraft without opening Flight gameplay or
    readiness.
@@ -335,12 +346,15 @@ restores a Three camera.
   MapLibre clicks and City Builder controls share parcel selection; one zone
   and selection mutation is visible; and zero City Three.js/R3F
   Canvas/stage/mesh/camera mounts.
-- [ ] The independent existing Flight source/layers show the deterministic
-  stopped aircraft/route without Flight bootstrap, camera, padding, gameplay,
-  environment, readiness, or duplicate map/source/layer ids.
+- [ ] The shared environment source renders the authored Marina Bay Sands,
+  Singapore Flyer, and Gardens by the Bay surfaces as native MapLibre
+  extrusions below City parcels; the independent existing Flight source/layers
+  show the deterministic stopped aircraft/route above them without Flight
+  bootstrap, camera, padding, gameplay, readiness, or duplicate map/source/layer
+  ids.
 - [ ] The native XR physics playground and authored graph scene remain absent,
-  the Flight XR environment source is empty, and the active City media `figure`
-  is named and selectable without intercepting MapLibre gestures.
+  and the active City media `figure` is named and selectable without
+  intercepting MapLibre gestures.
 - [ ] Zone, one Tick, Stop fencing, Advice, and Save/read-back pass.
 - [ ] Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera show
   one shared revision and their contracted projections.

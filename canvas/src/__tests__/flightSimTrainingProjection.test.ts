@@ -54,7 +54,15 @@ test('night training changes the native MapLibre overlay and shared HUD only', (
   assert.match(mapLibreOverlayLayers, /#a78bfa/)
   assert.match(hud, /data-kg-flight-sim-night/)
   assert.match(hud, /bg-indigo-950\/80/)
-  assert.doesNotMatch(missionStage, /ambientLight|directionalLight|hemisphereLight/)
+  assert.match(
+    missionStage,
+    /geospatialComposite \? \([\s\S]*name="kg_flight_sim_geospatial_actor_lighting"[\s\S]*userData=\{\{ actorOnly: true, preservesTransparentBackground: true \}\}[\s\S]*<ambientLight intensity=\{0\.9\} \/>[\s\S]*<hemisphereLight args=\{\['#ffffff', '#cbd5e1', 0\.6\]\} \/>[\s\S]*<pointLight position=\{\[120, 120, 120\]\} intensity=\{0\.9\} \/>/,
+  )
+  assert.doesNotMatch(missionStage, /<directionalLight/)
+  assert.doesNotMatch(
+    missionStage,
+    /<Canvas\b|<color attach="background"|<fog\b|FlightSimHud|name="[^"]*(?:world|terrain|hud)/i,
+  )
 })
 
 test('mission-stage entry owns a bounded transient dynamic-import retry', () => {

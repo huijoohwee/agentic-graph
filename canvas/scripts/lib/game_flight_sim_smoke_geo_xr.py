@@ -1,8 +1,9 @@
 from __future__ import annotations
-
 from typing import Any
-
 from playwright.sync_api import Page
+from lib.game_flight_sim_smoke_city_semantic_media import (
+    read_city_semantic_media_contract,
+)
 from lib.game_flight_sim_smoke_geo_view_cases import (
     GEO_XR_VIEW_CASES,
     GeoXrViewCase,
@@ -118,6 +119,8 @@ def _read_view(page: Page) -> dict[str, Any]:
             id => layerIds.includes(id),
           )
           const topLayerOrder = styleLayerIds.slice(-layerIds.length)
+          const cityGeoXrLayerOrder =
+            gympgrph.readCityGeoXrLayerOrder?.(styleLayerIds) || []
           let renderedFeatures = []
           try {
             renderedFeatures = map?.queryRenderedFeatures?.({
@@ -220,6 +223,8 @@ def _read_view(page: Page) -> dict[str, Any]:
               heightMeters: Number(feature?.properties?.kgHeightMeters),
               id: String(feature?.properties?.kgSurfaceId || ''),
               kind: String(feature?.properties?.kgSurfaceKind || ''),
+              label: String(feature?.properties?.kgSurfaceLabel || ''),
+              poiId: String(feature?.properties?.kgPoiId || ''),
               depthMeters: latitudes.length > 0
                 ? (Math.max(...latitudes) - Math.min(...latitudes)) * 111_320
                 : NaN,
@@ -252,6 +257,8 @@ def _read_view(page: Page) -> dict[str, Any]:
                 && feature?.properties?.kgHeightMeters === surface.heightMeters
                 && feature?.properties?.kgSurfaceId === surface.id
                 && feature?.properties?.kgSurfaceKind === surface.kind
+                && feature?.properties?.kgSurfaceLabel === surface.label
+                && feature?.properties?.kgPoiId === (surface.poiId || '')
                 && Array.isArray(ring)
                 && ring.length === surface.ring.length
                 && ring.every((coordinate, coordinateIndex) => (
@@ -411,6 +418,10 @@ def _read_view(page: Page) -> dict[str, Any]:
               environmentFeatures.length,
             environmentSourcePresent: Boolean(environmentSource),
             environmentSourceExactlyMatchesOverlay,
+            environmentPoiIds: Array.from(new Set(environmentFeatures
+              .filter(feature => feature?.properties?.kgSurfaceKind === 'poi')
+                .map(feature => feature?.properties?.kgPoiId || '')
+                .filter(Boolean))).sort(),
             authoredEnvironmentSubjects,
             environmentSubjectIds: environmentFeatures
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
@@ -422,6 +433,13 @@ def _read_view(page: Page) -> dict[str, Any]:
                 feature => feature?.properties?.kgSurfaceKind || '',
               ).filter(Boolean),
             )).sort(),
+            renderedEnvironmentPoiIds: Array.from(new Set(renderedEnvironment
+              .filter(feature => feature?.properties?.kgSurfaceKind === 'poi')
+                .map(feature => feature?.properties?.kgPoiId || '')
+                .filter(Boolean))).sort(),
+            cityGeoXrLayerOrder,
+            cityGeoXrLayerOrderExact:
+              gympgrph.hasExactCityGeoXrLayerOrder?.(styleLayerIds) === true,
             renderedEnvironmentSubjectIds: renderedEnvironment
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
@@ -484,6 +502,7 @@ def _read_view(page: Page) -> dict[str, Any]:
         """
     )
     layout_occlusion = read_geo_xr_layout_occlusion(page)
+    view.update(read_city_semantic_media_contract(page))
     view["layoutOcclusion"] = layout_occlusion
     view["mapPointerHit"] = layout_occlusion.get("mapPointerHit")
     return view

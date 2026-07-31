@@ -1,3 +1,7 @@
+import {
+  XR_SINGAPORE_MAJOR_POI_SURFACES,
+} from './xrSingaporeEnvironmentSource'
+
 export type XrMotionReferenceVector = readonly [number, number, number]
 
 export type XrMotionReferenceStageId =
@@ -15,7 +19,11 @@ export type XrMotionReferenceStageId =
   | 'aerial-sky'
 
 export type XrGreyBoxStructure = Readonly<{
+  color?: string
   id: string
+  kind?: 'poi' | 'structure'
+  label?: string
+  poiId?: string
   position: XrMotionReferenceVector
   size: XrMotionReferenceVector
   tone: 'light' | 'mid' | 'dark' | 'accent'
@@ -40,17 +48,7 @@ export const XR_MOTION_REFERENCE_STAGE_PRESETS: readonly XrMotionReferenceStageP
     description: 'Default tropical-city terrain with a waterfront edge, transit spine, garden deck, and compact skyline.',
     environmentKind: 'terrain',
     sizeMeters: [32, 24],
-    structures: [
-      { id: 'marina-waterfront', position: [0, 0.08, -10.5], size: [32, 0.16, 3], tone: 'accent', collidable: false },
-      { id: 'transit-spine', position: [0, 0.06, 1], size: [4.2, 0.12, 18], tone: 'light', collidable: false },
-      { id: 'civic-plaza', position: [-6.4, 0.12, 3.4], size: [7.2, 0.24, 6.4], tone: 'light', collidable: false },
-      { id: 'garden-deck', position: [7.6, 0.65, 5.2], size: [8.2, 1.3, 5.8], tone: 'mid', collidable: false },
-      { id: 'skyline-west', position: [-12.5, 4.2, -4.8], size: [3, 8.4, 5.2], tone: 'dark', collidable: false },
-      { id: 'skyline-center', position: [0, 6, -5.4], size: [4.4, 12, 4.4], tone: 'mid', collidable: false },
-      { id: 'skyline-east', position: [7, 5, -5.2], size: [4.8, 10, 4.8], tone: 'dark', collidable: false },
-      { id: 'canopy-marker-a', position: [10.6, 1.2, 0.2], size: [2.6, 2.4, 2.6], tone: 'accent', collidable: false },
-      { id: 'canopy-marker-b', position: [12.8, 1.5, 3.2], size: [3, 3, 3], tone: 'accent', collidable: false },
-    ],
+    structures: XR_SINGAPORE_MAJOR_POI_SURFACES,
   },
   {
     id: 'tropical-playground',

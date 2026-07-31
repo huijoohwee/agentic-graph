@@ -179,6 +179,8 @@ test('Flight fit includes XR surfaces and the visual map aperture', () => {
         heightMeters: 1.6,
         id: 'stage-footprint',
         kind: 'stage-footprint',
+        label: 'Singapore stage footprint',
+        poiId: null,
         ring: [
           [103.8, 1.2], [103.9, 1.2], [103.9, 1.3], [103.8, 1.3], [103.8, 1.2],
         ],

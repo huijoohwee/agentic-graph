@@ -3,6 +3,7 @@ import type {
   FlightSimGeospatialOverlay,
   FlightSimGeospatialRoutePoint,
 } from '@/features/game-flight-sim/flightSimGeospatialProjection'
+import type { FlightGeoEnvironmentProjection } from '@/lib/gympgrph/api'
 import type { CitySimSnapshot } from './citySimRuntimeState'
 
 const INACTIVE_COORDINATE = Object.freeze([0, 0] as const)
@@ -25,6 +26,7 @@ function routePoint(
 
 export function projectCitySimAerialInspectionToGeospatialOverlay(
   city: CitySimSnapshot,
+  environment: FlightGeoEnvironmentProjection,
 ): FlightSimGeospatialOverlay {
   const geographicProfile = city.geographicProfile
   if (!city.active || !geographicProfile) {
@@ -85,7 +87,7 @@ export function projectCitySimAerialInspectionToGeospatialOverlay(
       timeline: null,
       view: 'survey',
     }),
-    environment: null,
+    environment,
     night: false,
     objective: null,
     phase: 'stopped',
@@ -97,6 +99,7 @@ export function projectCitySimAerialInspectionToGeospatialOverlay(
       inspection.aircraft.coordinate.join(','),
       inspection.aircraft.headingDegrees,
       inspection.aircraft.altitudeMeters,
+      environment.revision,
       inspection.routeCoordinates.map(coordinate => coordinate.join(',')).join(';'),
     ].join(':'),
     route,

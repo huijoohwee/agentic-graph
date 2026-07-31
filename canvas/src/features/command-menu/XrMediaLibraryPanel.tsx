@@ -64,7 +64,7 @@ import {
   startMediaPointerDrag,
 } from './mediaCatalogShared'
 import { XrCatalogThumb } from './XrMediaCatalogThumbs'
-import { FlightSimEnvironmentGeoButton } from '@/features/game-flight-sim/FlightSimEnvironmentGeoButton'
+import { XrEnvironmentGeoButton } from './XrEnvironmentGeoButton'
 import { XrMediaLibrarySummary } from './XrMediaLibraryHeader'
 import { isXrMediaInvocationMetadataReady } from './xrMediaInvocationMetadata'
 import { buildXrMediaLibraryProjection } from './xrMediaLibrarySearch'
@@ -434,7 +434,7 @@ export function XrMediaLibraryPanel({ searchText }: { searchText: string }) {
                   active={active}
                   dataAttributes={{ 'data-kg-media-xr-environment': stage.id }}
                   footer={<>
-                    <FlightSimEnvironmentGeoButton stageId={stage.id} stageLabel={stage.label} disabled={!sceneReady} onSelect={stageId => runInvocation(buildXrStageInvocation(stageId))} />
+                    <XrEnvironmentGeoButton stageId={stage.id} stageLabel={stage.label} disabled={!sceneReady} onSelect={stageId => runInvocation(buildXrStageInvocation(stageId))} />
                     <XrInvocationButton invocation={buildXrStageInvocation(stage.id)} disabled={!sceneReady} onInvoke={runInvocation} />
                   </>}
                 />

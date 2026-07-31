@@ -2,24 +2,22 @@ import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import test from 'node:test'
-import {
-  readFlightSimBrowserAuthoritySources,
-} from './helpers/flightSimBrowserSourceAuthorityFiles'
-
+import { readFlightSimBrowserAuthoritySources } from './helpers/flightSimBrowserSourceAuthorityFiles'
 const repoRoot = resolve(process.cwd(), '..')
-
 test('Flight browser proof activates only after applying the authored source', () => {
   const {
     browserBootstrap,
     browserProofBridge,
     cameraTrackingVerifier,
     cameraVerifier,
+    citySemanticMediaVerifier,
     deadlineVerifier,
     evidenceValidator,
     geoXrLayoutVerifier,
     geoXrPresentationVerifier,
     geoXrRequirementsVerifier,
     geoXrVerifier,
+    gympgrphApi,
     launcherRegression,
     mainEntry,
     missionVerifier,
@@ -97,6 +95,8 @@ test('Flight browser proof activates only after applying the authored source', (
     browserProofBridge,
     /flightSimRuntime: \(\) => import\('@\/features\/game-flight-sim\/flightSimRuntime'\)/,
   )
+  assert.match(browserProofBridge, /gympgrphStore: \(\) => import\('@\/lib\/gympgrph\/api'\)/)
+  assert.match(gympgrphApi, /CITY_GEO_XR_LAYER_ORDER[\s\S]*hasExactCityGeoXrLayerOrder[\s\S]*readCityGeoXrLayerOrder/)
   assert.match(sourceSelection, /get_by_role\(\s*["']button["']/)
   assert.match(sourceSelection, /name=["']Workspace View["'],\s*exact=True/)
   assert.match(sourceSelection, /name=["']Editor Workspace["'],\s*exact=True/)
@@ -182,12 +182,16 @@ test('Flight browser proof activates only after applying the authored source', (
     geoXrRequirementsVerifier,
     /environment\.stageFootprintAuthoredMeters/,
   )
-  assert.match(geoXrRequirementsVerifier, /environment\.skylineAuthoredMeters/)
+  assert.match(geoXrRequirementsVerifier, /environment\.majorPoiAuthoredMeters/)
+  assert.match(geoXrRequirementsVerifier, /environment\.majorPoiIds/)
   assert.match(geoXrRequirementsVerifier, /height_meters=0\.08/)
   assert.match(geoXrRequirementsVerifier, /width_meters=32/)
-  assert.match(geoXrRequirementsVerifier, /height_meters=12/)
+  assert.match(geoXrRequirementsVerifier, /height_meters=3\.6/)
   assert.doesNotMatch(geoXrLayoutVerifier, /heightMeters >= 20/)
-  assert.match(geoXrLayoutVerifier, /proof\.id === 'skyline-center'/)
+  assert.match(
+    geoXrLayoutVerifier,
+    /proof\.id === 'marina-bay-sands:tower-center'/,
+  )
   assert.match(
     geoXrPresentationVerifier,
     /def restore_flight_sim_panel\(page: Page\) -> None:/,
@@ -204,6 +208,34 @@ test('Flight browser proof activates only after applying the authored source', (
     geoXrPresentationVerifier,
     /def verify_flight_geo_xr_city_handoff\(/,
   )
+  assert.match(
+    citySemanticMediaVerifier,
+    /surface\?\.tagName \|\| ''/,
+  )
+  assert.match(
+    citySemanticMediaVerifier,
+    /surface\?\.getAttribute\('aria-label'\) \|\| ''/,
+  )
+  assert.match(
+    citySemanticMediaVerifier,
+    /data-kg-rich-media-selectable-surface/,
+  )
+  assert.match(
+    citySemanticMediaVerifier,
+    /surface\?\.hasAttribute\('aria-hidden'\) === true/,
+  )
+  assert.match(
+    citySemanticMediaVerifier,
+    /surface\.querySelectorAll\('canvas\.maplibregl-canvas'\)/,
+  )
+  assert.match(
+    citySemanticMediaVerifier,
+    /document\.elementFromPoint\(/,
+  )
+  assert.match(
+    citySemanticMediaVerifier,
+    /centerHit === mapCanvas[\s\S]*mapInteractiveRoot\?\.contains\(centerHit\)/,
+  )
   for (const cityProofRequirement of [
     'data-kg-floating-panel-view-trigger="cityBuilder"',
     'data-kg-city-sim-open="1"',
@@ -213,12 +245,22 @@ test('Flight browser proof activates only after applying the authored source', (
     'mapLibreCanvasCount',
     'threeCanvasOwnerCount',
     'citySemanticSurfaceActive',
+    'citySemanticSurfaceNodeName',
+    'citySemanticSurfaceAccessibleName',
+    'citySemanticSurfaceSelectableMarker',
+    'citySemanticSurfaceAriaHidden',
+    'citySemanticSurfaceVisibleMapLibreCanvasCount',
+    'citySemanticSurfaceCenterMapLibreOwned',
     'cityMapLibreOwnerCount',
     'flightLayersReady',
     'overlayPhase',
     'overlayRoutePointCount',
     'sourceKinds',
     'environmentSourceFeatures',
+    'environmentPoiIds',
+    'renderedEnvironmentPoiIds',
+    'environmentSourceExactlyMatchesOverlay',
+    'cityGeoXrLayerOrderExact',
     'renderedEnvironmentFeatureCount',
   ]) {
     assert.ok(

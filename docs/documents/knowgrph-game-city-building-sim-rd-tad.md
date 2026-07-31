@@ -77,9 +77,10 @@ state and that a recommendation is bounded and non-mutating until approved.
 2. Open the city workspace seed in Explorer -> Source Files and apply it.
 3. Geo+XR opens with one native MapLibre map, the source-authored City parcel
    polygons, and the semantic City media `figure`.
-4. An independent reused overlay shows the source-authored aerial route and
-   stopped aircraft with presentation owner `city`; Flight bootstrap, camera,
-   gameplay, environment, and readiness remain inactive.
+4. The selected Singapore environment renders source-authored major POIs as native
+   MapLibre extrusions below the parcels. A reused overlay shows the authored
+   route and stopped aircraft with owner `city`; Flight bootstrap, camera,
+   gameplay, and readiness remain inactive.
 5. Select `r00c02`, zone it residential, and Start.
 6. One tick commits; Stop fences later ticks.
 7. Request Advice and inspect the ranked, zero-cost proposals.
@@ -110,9 +111,9 @@ state and that a recommendation is bounded and non-mutating until approved.
   conditionally selectable without blocking native MapLibre gestures;
 - visible-aperture City framing that responds to map/panel resize, preserves
   the map style, and restores prior map padding when City releases ownership;
-- one deterministic read-only stopped aircraft/route projection through the
-  reused overlay renderer with presentation owner `city`, independently of
-  Flight bootstrap, camera, gameplay, environment, and readiness;
+- one deterministic stopped aircraft/route projection through the reused overlay
+  with owner `city`, plus shared environment layers below the parcels, independently
+  of Flight bootstrap, camera, gameplay, and readiness;
 - `cityBuilder` plus city projections in Media, Animation, Motion Control,
   Game Mode, Flight Sim, and Camera;
 - source-neutral exact-SHA browser proof.
@@ -199,16 +200,15 @@ authority. `projectCitySimToGeospatialOverlay` combines that profile with the
 live City parcel state and selection. The City MapLibre controller projects
 one geographic Polygon per parcel through
 `kg-city-sim:geo-overlay`, with fill, extrusion, outline, and selected-parcel
-layers below the aircraft/route overlay. It updates only its own source and
-layers and never replaces the provider style.
+layers above the shared environment and below the aircraft/route overlay. It
+updates only its own source and layers and never replaces the provider style.
 
-The independent City aerial adapter publishes the source-authored route and
-aircraft with phase `stopped`, presentation owner `city`, run id `0`, tick `0`,
-ready-frame request `null`, and environment `null`. Reuse is limited to the
-existing aircraft/route payload and painter; City does not enter Flight
-bootstrap, camera, lifecycle, controls, mission advance, environment, or
-readiness. City parcel state remains represented only by the City source and
-layers.
+The City aerial adapter publishes the authored route and aircraft with phase
+`stopped`, owner `city`, run id `0`, tick `0`, ready-frame request `null`, and the
+selected environment. It projects major POIs through MapLibre fill-extrusion
+layers without owning XR selection, physics, or a Three renderer. Reused painters
+do not enter Flight bootstrap, camera, lifecycle, controls, mission advance, or
+readiness. City parcel state remains represented only by the City source/layers.
 
 ### City Builder
 
@@ -405,7 +405,7 @@ protected-integration, promotion, or delivery claim.
 | `TAD-CITY-SOURCE` | City authored-source parser | Parses and validates the initial grid and geographic profile from the applied source as the only initialization authority. | spec-complete | undocumented | 01, 02, 03, 07 |
 | `TAD-CITY-GEO-SURFACE` | `CitySimMediaFigure` + native MapLibre / semantic projection | Wraps the one native MapLibre Geo+XR owner in a selectable semantic `figure`; preserves gestures and mounts zero City Three.js/R3F content. | spec-complete | undocumented | 02, 07 |
 | `TAD-CITY-GEO` | `projectCitySimToGeospatialOverlay` + City MapLibre controller | Projects live parcels through one City source and four layers, frames the visible aperture, refits on resize, and restores prior padding without replacing style. | spec-complete | undocumented | 02, 07 |
-| `TAD-CITY-AERIAL` | City aerial adapter + reused aircraft/route overlay | Publishes the source-authored stopped route/aircraft with owner `city` and no Flight bootstrap, camera, gameplay, environment, or readiness. | spec-complete | undocumented | 02, 07 |
+| `TAD-CITY-AERIAL` | City aerial adapter + shared environment and reused aircraft/route overlays | Publishes the source-authored stopped route/aircraft with owner `city` and the selected read-only environment, while Flight bootstrap, camera, gameplay, and readiness remain inactive. | spec-complete | undocumented | 02, 07 |
 | `TAD-CITY-INVOKE` | parser / `executeCitySimInvocation` | Parser validates the exact native grammar before dispatch. | dev-proven | undocumented | 05, 07 |
 | `TAD-CITY-MCP` | embedded tools / inspect + control | Gateway exposes the same dispatcher at browser-local trust. | dev-proven | undocumented | 06, 07 |
 | `TAD-CITY-MIRROR` | approved package / batch publish | Absent target receives only an approved whole candidate. | undocumented | undocumented | — |
@@ -423,7 +423,7 @@ rungs are owned by the VCC register, not inferred from source paths.
 | Offline behavior | 0 required network/model calls | local pure functions + WorkspaceFs | 01, 03, 04 |
 | Observability | typed result for every operation; one zero Cost_Log/advice | shared immutable snapshot | 04 |
 | Device reach | pointer, keyboard, touch parity | copied normalized input snapshot | 01, 07 |
-| Visual ownership | 1 native map; 1 City source; 4 City layers; 0 City Three Canvases; Flight bootstrap/camera/readiness inactive | City parcel overlay + semantic figure + independent owner-`city` aircraft/route | 02, 07 |
+| Visual ownership | 1 native map; 1 City source; 4 City layers; shared environment layers; 0 City Three Canvases; Flight bootstrap/camera/readiness inactive | environment + City parcel overlay + semantic figure + independent owner-`city` aircraft/route | 02, 07 |
 
 ### Single-world rule
 
@@ -436,10 +436,12 @@ renderer. The source-authored geographic profile and live runtime state produce
 one City-owned parcel GeoJSON source and exactly four City layers on that map;
 they are the only City representation.
 
-The source-authored route and aircraft are an independent overlay with
-presentation owner `city`. Reusing their existing payload/painter does not make
-any Flight bootstrap, camera, environment, lifecycle, controls, mission step,
-or readiness path a City dependency. Opening another
+The source-authored route and aircraft are an independent overlay with owner
+`city`. The selected environment is a read-only shared MapLibre projection below
+City parcels; City gains no XR physics, placement, or Three-renderer authority.
+Reusing the environment and aircraft/route painters does not make Flight bootstrap,
+camera, lifecycle,
+controls, mission step, or readiness path a City dependency. Opening another
 exclusive gameplay surface exits City through the common lifecycle first;
 publication arbitration then removes the City parcel source/layers and clears
 or replaces the owner-`city` aircraft/route projection without leaving aliases
@@ -549,13 +551,13 @@ FloatingPanel routes.
 **Reason:** Existing panels retain ownership, city state stays centralized, and
 the change avoids six copies and dependency cycles.
 
-### ADR-6: Reuse aircraft/route rendering without Flight ownership
+### ADR-6: Reuse Geo+XR environment and aircraft rendering without Flight ownership
 
-**Decision:** Derive the deterministic stopped aircraft/route directly from the
-City source-authored geographic profile and publish it to the reused overlay
-payload/painter with presentation owner `city` and environment `null`. City
-calls no Flight bootstrap, camera, lifecycle, mission-advance, control,
-environment, or readiness API.
+**Decision:** Derive stopped aircraft/route from the City geographic profile and
+publish it to the reused painter with owner `city`. Project the selected environment
+through native MapLibre layers below City parcels. City calls no Flight bootstrap,
+camera, lifecycle, mission-advance, control, or readiness API and gains no XR
+physics or Three-renderer authority.
 
 **Reason:** Reusing the stable overlay owner supplies the requested aerial
 context while the City parcel source/layers remain the sole City-state

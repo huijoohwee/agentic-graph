@@ -81,14 +81,18 @@ export function useGeoXrOverlayPublisher(options: Readonly<{
             if (disposed || !publisherLease.isCurrent()) return
             const flight = readFlightSimSnapshot()
             const city = readCitySimSnapshot()
+            const motionRuntime = readXrMotionReferenceRuntime()
+            const environment = projectXrEnvironmentToFlightGeo(
+              motionRuntime.plan,
+            )
             publishGeoXrOverlayComposition({
               city,
+              environment,
               flight,
               projectCityAerial: projectCitySimAerialInspectionToGeospatialOverlay,
               projectCityOverlay: projectCitySimToGeospatialOverlay,
               projectFlight: flightSnapshot => {
                 const spatialProfile = readFlightSimSpatialProfile()
-                const motionRuntime = readXrMotionReferenceRuntime()
                 const timelinePose = useGraphStore.getState().timelineTransportPlaying
                   ? sampleXrMotionReferenceCameraPose(
                       motionRuntime.plan.camera,
@@ -113,7 +117,7 @@ export function useGeoXrOverlayPublisher(options: Readonly<{
                   },
                   readFlightSimTrainingSnapshot().night,
                   readCurrentFlightSimReadyFrameRequestId(),
-                  projectXrEnvironmentToFlightGeo(motionRuntime.plan),
+                  environment,
                 )
               },
               store: module,

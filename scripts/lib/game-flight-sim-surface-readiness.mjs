@@ -19,10 +19,10 @@ export async function assertFlightSimSurfaceReadiness({
     'completeFlightSimReadyFrame(presentation.runId, presentation.tick)',
   ], 'Flight Sim actor stage')
   if (
-    /<(?:Canvas|ambientLight|directionalLight|hemisphereLight|pointLight|spotLight|Environment|Sky|Stars|FlightSimHud)\b/.test(missionStageSource)
+    /<(?:Canvas|Environment|Sky|Stars|FlightSimHud)\b/.test(missionStageSource)
     || /\b(?:terrain|arena|fallback world)\b/i.test(missionStageSource)
   ) {
-    throw new Error('FlightSimMissionStage must render only Flight actors and objective overlays')
+    throw new Error('FlightSimMissionStage must not own a world renderer, terrain, or HUD')
   }
 
   const surfaceControlsSource = await readText(`${flightFeatureRoot}/useFlightSimSurfaceControls.ts`)
@@ -50,14 +50,18 @@ export async function assertFlightSimSurfaceReadiness({
   ) {
     throw new Error('FlightSimGeoSurfaceOverlay must not duplicate the mission controls or canonical Flight media subject')
   }
-  const environmentGeoButtonSource = await readText(`${flightFeatureRoot}/FlightSimEnvironmentGeoButton.tsx`)
+  const environmentGeoButtonSource = await readText('canvas/src/features/command-menu/XrEnvironmentGeoButton.tsx')
   requireSourceMarkers(environmentGeoButtonSource, [
-    'selectFlightSimGeoEnvironment(',
-    'geospatialComposite: true,',
-    'openPanel: false,',
-  ], 'Flight Sim local Geo handoff')
-  if (environmentGeoButtonSource.includes('setGeospatialViewMode(')) {
-    throw new Error('Flight environment handoff must preserve the selected Geo presentation')
+    'requestXrEnvironmentGeoHandoff(',
+    'await prepareBeforeRoute?.()',
+    "emitFloatingPanelOpen({ tab: 'geo', open: true })",
+    'data-kg-media-xr-environment-geo={stageId}',
+  ], 'shared XR environment Geo handoff')
+  if (
+    environmentGeoButtonSource.includes('setGeospatialViewMode(')
+    || environmentGeoButtonSource.includes('openFlightSimSurface(')
+  ) {
+    throw new Error('Environment selection must preserve Geo presentation without activating Flight gameplay')
   }
 
   const canvasViewportSource = await readText('canvas/src/components/CanvasViewport.tsx')
@@ -74,18 +78,31 @@ export async function assertFlightSimSurfaceReadiness({
     throw new Error('The deadline-critical Flight HUD must not suspend its MapLibre viewport owner')
   }
 
+  const geoXrPublisherSource = await readText(
+    'canvas/src/features/geospatial/useGeoXrOverlayPublisher.ts',
+  )
+  requireSourceMarkers(geoXrPublisherSource, [
+    'projectFlightSimToGeospatialOverlay',
+    'readCurrentFlightSimReadyFrameRequestId()',
+    'publishGeoXrOverlayComposition({',
+    'projectXrEnvironmentToFlightGeo(',
+  ], 'shared City/Flight Geo+XR publisher')
+  const geoXrCompositionSource = await readText(
+    'canvas/src/features/geospatial/geoXrFlightOverlayComposition.ts',
+  )
+  requireSourceMarkers(geoXrCompositionSource, [
+    'clearFlightOverlay: input.store.clearFlightGeoOverlay',
+    'setFlightOverlay: input.store.setFlightGeoOverlay',
+  ], 'shared City/Flight Geo+XR publication arbitration')
+
   const geospatialOverlaySource = await readText('canvas/src/components/CanvasViewportGeospatialOverlay.tsx')
   requireSourceMarkers(geospatialOverlaySource, [
-    'projectFlightSimToGeospatialOverlay',
-    'module.setFlightGeoOverlay?.(',
-    'module.clearFlightGeoOverlay?.()',
-    'readCurrentFlightSimReadyFrameRequestId()',
     'completeFlightSimMapLibreReadyFrame(',
     'completeFlightSimStagePreparation(requestId, {',
     'framePresented: true',
     'onFlightOverlayPresented={handleFlightOverlayPresented}',
     "data-kg-geo-xr-layer={composedWithXr ? 'geo-background' : undefined}",
-  ], 'Flight Sim Geo projection bridge')
+  ], 'Flight Sim Geo presentation bridge')
   if (geospatialOverlaySource.includes('shared-xr-stage')) {
     throw new Error('Geo+XR must retain the native MapLibre provider surface')
   }

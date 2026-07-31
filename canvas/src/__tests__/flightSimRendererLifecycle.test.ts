@@ -14,7 +14,6 @@ import {
   resolveCanvasGeospatialModeEnabled,
   shouldEnsureCanvasGeospatialMode,
 } from '@/features/canvas/useCanvasGeospatialRuntime'
-import { selectFlightSimGeoEnvironment } from '@/features/game-flight-sim/FlightSimEnvironmentGeoButton'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 type RendererTransitionPhase = ThreeRendererMountInput & Readonly<{
@@ -254,24 +253,4 @@ test('Three renderer lifecycle still rejects unsupported and empty non-XR surfac
     hasRenderableScene: false,
     webglSupported: true,
   }), false)
-})
-
-test('Flight environment handoff preserves the selected Geo presentation', () => {
-  const order: string[] = []
-  const result = selectFlightSimGeoEnvironment(
-    'singapore',
-    stageId => {
-      order.push(`stage:${stageId}`)
-      return { ok: true }
-    },
-  )
-  assert.deepEqual(result, { ok: true })
-  assert.deepEqual(order, ['stage:singapore'])
-
-  const blocked = selectFlightSimGeoEnvironment(
-    'street-grid',
-    () => ({ ok: false }),
-  )
-  assert.deepEqual(blocked, { ok: false })
-  assert.deepEqual(order, ['stage:singapore'])
 })

@@ -41,8 +41,10 @@ candidate SHA.
   extrusion, outline, selection, and mutation-driven updates.
 - [ ] Add a City-owned deterministic `stopped` aircraft/route adapter from the
   City geographic profile that publishes through the existing Flight source
-  and layers with atomic owner `city`, null environment, and no Flight
-  bootstrap, camera, gameplay, or readiness.
+  and layers with atomic owner `city`, the selected shared XR environment, and
+  no Flight bootstrap, camera, gameplay, or readiness.
+- [ ] Centralize Singapore major POI geometry so XR and MapLibre consume one
+  authored source; order native environment extrusions below City parcels.
 - [ ] Prove City creates one parcel source/layer family on the existing map and
   no duplicate map, source/layer ids, Three.js/R3F Canvas/stage/mesh/camera, or
   renderer.
@@ -75,9 +77,9 @@ candidate SHA.
   metrics, zone/tick/stop, save/read-back, all six projections, console
   cleanliness, and exit restore.
 - [ ] Browser proof captures sixteen City parcel features, a visible live
-  mutation/selection, and the stopped aircraft/route on the existing Flight
-  source/layers, with one map and inactive Flight bootstrap, camera,
-  environment, gameplay, and readiness.
+  mutation/selection, named Singapore POI extrusions, and the stopped
+  aircraft/route on the existing Flight source/layers, with one map and
+  inactive Flight bootstrap, camera, gameplay, and readiness.
 - [ ] Candidate is reviewed and integrated through the protected workflow.
 - [ ] Seed proof status and checklist are updated only from captured exact-SHA
   evidence.

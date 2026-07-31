@@ -108,6 +108,8 @@ export function withEnvironment(
         heightMeters: 0.08,
         id: 'stage-footprint',
         kind: 'stage-footprint',
+        label: 'Singapore stage footprint',
+        poiId: null,
         ring,
       }],
     },

@@ -21,6 +21,9 @@ import {
   clearFlightGeoEnvironmentFromMap,
 } from '../../flightGeoEnvironmentMapLibre.js'
 import {
+  CITY_GEO_OVERLAY_LAYER_IDS,
+} from '../../cityGeoOverlayMapLibre.js'
+import {
   canMapLibreFlightOverlayPresent,
   requestMapLibreFlightPresentationBootstrap,
   subscribeMapLibreFlightBootstrapSettled,
@@ -230,7 +233,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         if (visible) {
           root.dataset.kgFlightGeospatialOverlay = 'active'
           root.dataset.kgFlightGeospatialRevision = overlay.revision
-          if (presentationOwner === 'flight' && overlay.environment) {
+          if (overlay.environment) {
             root.dataset.kgFlightGeospatialEnvironment =
               overlay.environment.id
           } else {
@@ -280,9 +283,17 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       }
       if (flightGate && overlay.phase === 'stopped') flightGate.clearCanvas()
       if (!flightPresentation) {
-        clearFlightGeoEnvironmentFromMap(map)
+        if (overlay.environment) {
+          applyFlightGeoEnvironmentToMap(
+            map,
+            overlay,
+            options.viewMode,
+            { beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill },
+          )
+        } else {
+          clearFlightGeoEnvironmentFromMap(map)
+        }
         if (root) {
-          delete root.dataset.kgFlightGeospatialEnvironment
           delete root.dataset.kgFlightGeospatialCameraPadding
         }
         applyFlightGeoOverlayToMap(map, overlay)

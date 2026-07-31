@@ -164,7 +164,7 @@ function assertCoordinateApproximately(
   assertApproximately(actual[1], expected[1], `${message} latitude`)
 }
 
-test('Singapore XR environment projects its stage, structures, and selected asset to one geographic anchor', () => {
+test('Singapore XR environment projects its stage, named POIs, and selected asset to one geographic anchor', () => {
   const environment = projectXrEnvironmentToFlightGeo({
     stageId: 'singapore',
     subjects: [{
@@ -183,8 +183,12 @@ test('Singapore XR environment projects its stage, structures, and selected asse
   assert.deepEqual(environment.anchor, [103.851959, 1.29027])
   assert.equal(environment.stageFootprint.length, 5)
   assert.equal(
-    environment.surfaces.filter(surface => surface.kind === 'structure').length,
+    environment.surfaces.filter(surface => surface.kind === 'poi').length,
     9,
+  )
+  assert.equal(
+    environment.surfaces.some(surface => surface.kind === 'structure'),
+    false,
   )
   const helicopter = environment.surfaces.find(
     surface => surface.id === 'subject-helicopter',
@@ -252,20 +256,27 @@ test('Singapore XR environment projects its stage, structures, and selected asse
     'stage footprint keeps its authored 24 metre depth',
   )
   assert.deepEqual(environment.anchor, projectSingaporeLocalMeters(0, 0))
-  const skylineCenter = environment.surfaces.find(
-    surface => surface.id === 'skyline-center',
+  const marinaBaySandsCenter = environment.surfaces.find(
+    surface => surface.id === 'marina-bay-sands:tower-center',
   )
-  assert.equal(skylineCenter?.baseHeightMeters, 0)
-  assert.equal(skylineCenter?.heightMeters, 12)
+  assert.equal(marinaBaySandsCenter?.baseHeightMeters, 0)
+  assert.equal(marinaBaySandsCenter?.heightMeters, 3.6)
+  assert.equal(marinaBaySandsCenter?.poiId, 'marina-bay-sands')
   assertApproximately(
-    projectedDistanceMeters(skylineCenter!.ring[0], skylineCenter!.ring[1]),
-    4.4,
-    'skyline footprint keeps its authored metre width',
+    projectedDistanceMeters(
+      marinaBaySandsCenter!.ring[0],
+      marinaBaySandsCenter!.ring[1],
+    ),
+    1.42,
+    'Marina Bay Sands footprint keeps its authored metre width',
   )
   assertApproximately(
-    projectedDistanceMeters(skylineCenter!.ring[1], skylineCenter!.ring[2]),
-    4.4,
-    'skyline footprint keeps its authored metre depth',
+    projectedDistanceMeters(
+      marinaBaySandsCenter!.ring[1],
+      marinaBaySandsCenter!.ring[2],
+    ),
+    1.38,
+    'Marina Bay Sands footprint keeps its authored metre depth',
   )
 
   const recolored = projectXrEnvironmentToFlightGeo({
