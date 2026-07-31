@@ -280,10 +280,11 @@ test('Flight browser proof activates only after applying the authored source', (
     /centerHit === mapCanvas[\s\S]*mapInteractiveRoot\?\.contains\(centerHit\)/,
   )
   for (const cityProofRequirement of [
-    'data-kg-floating-panel-view-trigger="cityBuilder"',
-    'data-kg-city-sim-open="1"',
+    'CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME',
+    'FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME',
+    'name=f"File {city_source_basename}"',
+    'name=f"File {flight_source_basename}"',
     'data-kg-city-sim-exit="1"',
-    'data-kg-flight-sim-open="1"',
     'geospatialPreferenceEnabled',
     'mapLibreCanvasCount',
     'threeCanvasOwnerCount',
@@ -319,6 +320,14 @@ test('Flight browser proof activates only after applying the authored source', (
       `expected City handoff browser proof requirement: ${cityProofRequirement}`,
     )
   }
+  assert.doesNotMatch(
+    geoXrPresentationVerifier,
+    /data-kg-city-sim-open="1"/,
+  )
+  assert.doesNotMatch(
+    geoXrPresentationVerifier,
+    /data-kg-flight-sim-open="1"/,
+  )
   const selectGeoViewIndex = geoXrPresentationVerifier.indexOf(
     'select_geo_xr_view(page, button_label)',
   )

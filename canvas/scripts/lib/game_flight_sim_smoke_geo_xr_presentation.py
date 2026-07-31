@@ -122,22 +122,42 @@ def verify_flight_geo_xr_city_handoff(
         )
 
     _install_city_map_retention_audit(page)
-    city_trigger = page.locator(
-        '[data-kg-floating-panel-view-trigger="cityBuilder"]',
+    source_basenames = page.evaluate(
+        """
+        async () => {
+          const demos = await window.__kgFlightSimBrowserProof.importModule(
+            'workspaceRunReadyDemos',
+          )
+          return {
+            city: demos.CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+            flight: demos.FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+          }
+        }
+        """
+    )
+    city_source_basename = str(source_basenames.get("city") or "")
+    flight_source_basename = str(source_basenames.get("flight") or "")
+    if not city_source_basename or not flight_source_basename:
+        raise AssertionError(
+            "City handoff could not resolve the canonical source registry: "
+            f"{source_basenames}"
+        )
+    city_source_button = page.get_by_role(
+        "button",
+        name=f"File {city_source_basename}",
+        exact=True,
     ).first
-    city_trigger.wait_for(state="visible", timeout=30_000)
-    city_trigger.click(timeout=30_000)
+    city_source_button.wait_for(state="visible", timeout=30_000)
+    city_source_button.click(timeout=30_000)
     city_panel = page.locator('[data-kg-city-sim-floating-panel="1"]').first
     city_panel.wait_for(state="visible", timeout=30_000)
-    open_button = city_panel.locator('[data-kg-city-sim-open="1"]').first
-    open_button.wait_for(state="visible", timeout=30_000)
-    if open_button.is_disabled():
-        raise AssertionError("City Builder Open was disabled during Flight handoff")
-    open_button.click(timeout=30_000)
 
     city = _wait_for_browser_contract(
         page,
-        label="MapLibre-owned City Geo+XR surface after Flight Geo+XR",
+        label=(
+            "source-authored MapLibre-owned City Geo+XR surface after "
+            "Flight Geo+XR"
+        ),
         accepted=lambda value: (
             value.get("flightActive") is False
             and value.get("cityActive") is True
@@ -267,18 +287,13 @@ def verify_flight_geo_xr_city_handoff(
     )
     exited_regional_poi = require_city_regional_poi_teardown_contract(page)
 
-    flight_trigger = page.locator(
-        '[data-kg-floating-panel-view-trigger="flightSim"]',
+    flight_source_button = page.get_by_role(
+        "button",
+        name=f"File {flight_source_basename}",
+        exact=True,
     ).first
-    flight_trigger.wait_for(state="visible", timeout=30_000)
-    flight_trigger.click(timeout=30_000)
-    flight_panel = page.locator('[data-kg-flight-sim-floating-panel="1"]').first
-    flight_panel.wait_for(state="visible", timeout=30_000)
-    reopen_button = flight_panel.locator('[data-kg-flight-sim-open="1"]').first
-    reopen_button.wait_for(state="visible", timeout=30_000)
-    if reopen_button.is_disabled():
-        raise AssertionError("Flight Sim Open was disabled after City exit")
-    reopen_button.click(timeout=30_000)
+    flight_source_button.wait_for(state="visible", timeout=30_000)
+    flight_source_button.click(timeout=30_000)
     reopened = _wait_for_view(
         page,
         expected_provider_host=expected_provider_host,
