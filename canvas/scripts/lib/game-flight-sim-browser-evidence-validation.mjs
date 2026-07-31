@@ -117,12 +117,12 @@ function hasExactCityHandoffEvidence(handoff) {
     && hasExactCityMapRetentionEvidence(retention)
     && restored?.flightActive === false
     && restored?.cityActive === false
-    && restored?.cityPanelVisible === true
+    && restored?.cityPanelVisible === false
     && restored?.citySemanticSurfaceActive === false
     && restored?.cityMapLibreCanvasAriaLabelledBy === ''
     && restored?.cityMapLibreCanvasAccessibleName === 'Map'
     && restored?.floatingPanelOpen === true
-    && restored?.floatingPanelView === 'cityBuilder'
+    && restored?.floatingPanelView === 'flightSim'
     && restored?.renderMode === '3d'
     && restored?.canvas3dMode === 'xr'
     && restored?.geospatialEnabled === true

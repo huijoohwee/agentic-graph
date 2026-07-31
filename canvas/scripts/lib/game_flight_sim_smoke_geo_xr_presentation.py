@@ -259,16 +259,16 @@ def verify_flight_geo_xr_city_handoff(
     exit_button.click(timeout=30_000)
     restored = _wait_for_browser_contract(
         page,
-        label="awaited City Geo+XR preference restoration",
+        label="awaited City prior-surface restoration",
         accepted=lambda value: (
             value.get("flightActive") is False
             and value.get("cityActive") is False
-            and value.get("cityPanelVisible") is True
+            and value.get("cityPanelVisible") is False
             and value.get("citySemanticSurfaceActive") is False
             and value.get("cityMapLibreCanvasAriaLabelledBy") == ""
             and value.get("cityMapLibreCanvasAccessibleName") == "Map"
             and value.get("floatingPanelOpen") is True
-            and value.get("floatingPanelView") == "cityBuilder"
+            and value.get("floatingPanelView") == "flightSim"
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
             and value.get("geospatialEnabled") is True
