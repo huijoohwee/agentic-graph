@@ -1,5 +1,4 @@
 import { readWebglSupport } from '@/lib/three/webglSupport'
-import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import {
   commitCanvasGeospatialSurfaceOwnership,
   GeospatialSurfaceOwnershipRestorationError,
@@ -7,11 +6,14 @@ import {
 import { activateXrSceneSurface, registerXrSceneGameplayExitHandler } from '@/features/three/xrSceneSurfaceRuntime'
 import {
   CITY_SIM_FIXED_STEP_MS,
-  createDefaultCityGrid,
   freezeCityGrid,
   type CityGrid,
 } from './citySimModel'
-import { loadCityGridFromWorkspace, saveCityGridToWorkspace } from './citySimPersistence'
+import {
+  validateCitySimAuthoredSource,
+  type CitySimAuthoredSource,
+} from './citySimAuthoredSource'
+import { loadCityGridFromWorkspace } from './citySimPersistence'
 import {
   citySimSnapshot as snapshot,
   publishCitySimFailure as publishFailure,
@@ -26,6 +28,11 @@ import {
 } from './citySimRuntimeState'
 import { createCitySimSynchronousCommands } from './citySimSynchronousCommands'
 import {
+  createCitySimPersistenceCommands,
+  type CitySimMalformedDocument,
+  type CitySimWorkspaceOptions,
+} from './citySimPersistenceCommands'
+import {
   captureCitySimPreviousCanvasSurface,
   restoreCitySimPreviousCanvasSurface,
   type CitySimPreviousCanvasSurface,
@@ -34,8 +41,8 @@ import {
 export { readCitySimSnapshot, subscribeCitySimSnapshot }
 export type { CitySimOperationResult, CitySimPhase, CitySimSaveStatus, CitySimSnapshot } from './citySimRuntimeState'
 
-type CitySimWorkspaceOptions = Readonly<{ workspace?: WorkspaceFs }>
 export type CitySimOpenOptions = CitySimWorkspaceOptions & Readonly<{
+  authoredSource?: CitySimAuthoredSource
   openPanel?: boolean
   previousCanvasSurface?: CitySimPreviousCanvasSurface
   webglSupported?: boolean
@@ -44,14 +51,14 @@ export type CitySimOpenOptions = CitySimWorkspaceOptions & Readonly<{
 let timer: ReturnType<typeof setTimeout> | null = null
 let timerGeneration = 0
 let asyncGeneration = 0
-let persistenceTail: Promise<CitySimSnapshot> = Promise.resolve(snapshot)
 let previousCanvasSurface: CitySimPreviousCanvasSurface | null = null
 let citySimSurfaceOpenTail: Promise<void> | null = null
 let citySimSurfaceRestorationTail: Promise<string | null> = Promise.resolve(null)
 let citySimSurfaceRestoring: CitySimPreviousCanvasSurface | null = null
 let latestCitySimSurfaceIntent: 'idle' | 'open' | 'exit' = 'idle'
-let sessionStartCity = createDefaultCityGrid()
-let malformedDocument: Readonly<{ document: string; message: string }> | null = null
+let sessionStartCity: CityGrid | null = null
+let authoredSource: CitySimAuthoredSource | null = null
+let malformedDocument: CitySimMalformedDocument | null = null
 
 function fenceTimer(): void {
   timerGeneration += 1
@@ -69,6 +76,7 @@ const synchronousCommands = createCitySimSynchronousCommands({
     malformedDocument = null
   },
   readSessionStartCity: () => sessionStartCity,
+  readAuthoredSource: () => authoredSource,
   replaceSessionStartCity: city => {
     sessionStartCity = city
   },
@@ -109,6 +117,15 @@ function tickZero(city: CityGrid): CityGrid {
   return city.tick === 0 ? city : freezeCityGrid({ ...city, tick: 0 })
 }
 
+function authoredSourceIssue(source: CitySimAuthoredSource): string | null {
+  try {
+    const issues = validateCitySimAuthoredSource(source)
+    return issues.length > 0 ? issues[0] : null
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error)
+  }
+}
+
 function applyLoadedCity(
   city: CityGrid,
   saveStatus: Extract<CitySimSaveStatus, 'loaded' | 'not-loaded'>,
@@ -121,7 +138,7 @@ function applyLoadedCity(
     operation,
     saveStatus === 'loaded'
       ? `Loaded the canonical City Document at tick ${city.tick}.`
-      : 'No City Document exists; selected the authored Civic Seed.',
+      : 'No City Document exists; restored the applied source-authored City grid.',
     {
       city,
       phase: snapshot.active ? 'stopped' : 'idle',
@@ -132,13 +149,29 @@ function applyLoadedCity(
   )
 }
 
-function enqueuePersistence(
-  operation: () => Promise<CitySimSnapshot>,
-): Promise<CitySimSnapshot> {
-  const result = persistenceTail.catch(() => snapshot).then(operation)
-  persistenceTail = result.catch(() => snapshot)
-  return result
-}
+const persistenceCommands = createCitySimPersistenceCommands({
+  applyLoadedCity,
+  beginAsyncOperation: () => {
+    asyncGeneration += 1
+    return asyncGeneration
+  },
+  fenceTimer,
+  isAsyncOperationCurrent: generation => generation === asyncGeneration,
+  publish,
+  publishFailure,
+  publishSuccess,
+  readAuthoredSource: () => authoredSource,
+  readMalformedDocument: () => malformedDocument,
+  readSnapshot: () => snapshot,
+  setMalformedDocument: document => {
+    malformedDocument = document
+  },
+})
+
+export const {
+  loadCitySim,
+  saveCitySim,
+} = persistenceCommands
 
 function beginCitySimSurfaceRestoration(
   previous: CitySimPreviousCanvasSurface,
@@ -223,6 +256,19 @@ async function performOpenCitySimSurface(
       { webglSupported },
     )
   }
+  const requestedSource = options.authoredSource ?? null
+  if (requestedSource) {
+    const sourceIssue = authoredSourceIssue(requestedSource)
+    if (sourceIssue) {
+      return failSurfaceEntry(
+        previous,
+        'invalid-authored-source',
+        `City Simulation rejected its authored source: ${sourceIssue}`,
+        { geographicProfile: null },
+      )
+    }
+  }
+  const source = requestedSource ?? authoredSource
   if (snapshot.active) {
     try {
       await claimCityGeoXrSurface(generation)
@@ -248,13 +294,35 @@ async function performOpenCitySimSurface(
         ? {}
         : { panelView: 'cityBuilder' as const, openPanel: true }),
     })
-    return activated
-      ? publishSuccess('open', 'City Builder is open on the active city session.')
-      : publishFailure(
-          'open',
-          'surface-unavailable',
-          'City Builder could not claim the shared Geo+XR surface.',
-        )
+    if (!activated) {
+      return publishFailure(
+        'open',
+        'surface-unavailable',
+        'City Builder could not claim the shared Geo+XR surface.',
+      )
+    }
+    const sourceChanged = requestedSource !== null && requestedSource !== authoredSource
+    if (requestedSource) authoredSource = requestedSource
+    const restoreAuthoredGrid = sourceChanged && snapshot.saveStatus === 'not-loaded'
+    if (restoreAuthoredGrid && requestedSource) {
+      sessionStartCity = tickZero(requestedSource.city)
+    }
+    return publishSuccess(
+      'open',
+      sourceChanged
+        ? 'City Builder applied the current source-authored City session.'
+        : 'City Builder is open on the active city session.',
+      {
+        ...(restoreAuthoredGrid && requestedSource
+          ? {
+              city: requestedSource.city,
+              selectedParcelId: null,
+              advisor: null,
+            }
+          : {}),
+        geographicProfile: source?.geographicProfile ?? snapshot.geographicProfile,
+      },
+    )
   }
 
   publish({
@@ -289,7 +357,15 @@ async function performOpenCitySimSurface(
     )
   }
 
-  const city = loaded.status === 'loaded' ? loaded.city : createDefaultCityGrid()
+  if (!source) {
+    return failSurfaceEntry(
+      previous,
+      'authored-source-missing',
+      'City Simulation cannot open without the applied source-authored City geographic profile.',
+      { saveStatus: 'not-loaded', geographicProfile: null },
+    )
+  }
+  const city = loaded.status === 'loaded' ? loaded.city : source.city
   try {
     await claimCityGeoXrSurface(generation)
     if (generation !== asyncGeneration) {
@@ -317,17 +393,19 @@ async function performOpenCitySimSurface(
     }
     previousCanvasSurface = previous
     malformedDocument = null
+    if (requestedSource) authoredSource = requestedSource
     sessionStartCity = tickZero(city)
     return publishSuccess(
       'open',
       loaded.status === 'loaded'
         ? `City Simulation opened from the canonical City Document at tick ${city.tick}.`
-        : 'City Simulation opened with the authored Civic Seed.',
+        : 'City Simulation opened from the applied source-authored City grid.',
       {
         active: true,
         webglSupported,
         phase: 'stopped',
         city,
+        geographicProfile: source?.geographicProfile ?? null,
         selectedParcelId: null,
         advisor: null,
         saveStatus: loaded.status === 'loaded' ? 'loaded' : 'not-loaded',
@@ -410,87 +488,6 @@ export async function startCitySim(
   return running
 }
 
-export function saveCitySim(
-  options: CitySimWorkspaceOptions = {},
-): Promise<CitySimSnapshot> {
-  if (malformedDocument) {
-    return Promise.resolve(publishFailure(
-      'save',
-      'malformed-document',
-      'Save is blocked until Reset explicitly selects the authored seed in memory.',
-      { phase: 'error', saveStatus: 'malformed' },
-    ))
-  }
-  const cityToSave = snapshot.city
-  publish({ saveStatus: 'saving', message: `Saving committed city tick ${cityToSave.tick}…`, error: null })
-  return enqueuePersistence(async () => {
-    try {
-      await saveCityGridToWorkspace(cityToSave, options)
-      if (snapshot.city !== cityToSave) {
-        return publishFailure(
-          'save',
-          'stale-save',
-          `Saved tick ${cityToSave.tick}, but the current city changed during persistence; save again to commit the current snapshot.`,
-          { saveStatus: 'dirty' },
-        )
-      }
-      return publishSuccess(
-        'save',
-        `Saved and read back the canonical City Document for tick ${cityToSave.tick}.`,
-        { saveStatus: 'saved' },
-      )
-    } catch (error) {
-      return publishFailure(
-        'save',
-        'save-failed',
-        error instanceof Error ? error.message : String(error),
-        { saveStatus: 'error' },
-      )
-    }
-  })
-}
-
-export function loadCitySim(
-  options: CitySimWorkspaceOptions = {},
-): Promise<CitySimSnapshot> {
-  const generation = asyncGeneration + 1
-  asyncGeneration = generation
-  fenceTimer()
-  publish({ saveStatus: 'loading', message: 'Reading the canonical City Document…', error: null })
-  return enqueuePersistence(async () => {
-    if (generation !== asyncGeneration) return snapshot
-    try {
-      const loaded = await loadCityGridFromWorkspace(options)
-      if (generation !== asyncGeneration) return snapshot
-      if (loaded.status === 'malformed') {
-        malformedDocument = Object.freeze({
-          document: loaded.document,
-          message: loaded.error.message,
-        })
-        return publishFailure(
-          'load',
-          'malformed-document',
-          `City Document is malformed and was preserved: ${loaded.error.message}`,
-          { phase: 'error', saveStatus: 'malformed' },
-        )
-      }
-      return applyLoadedCity(
-        loaded.status === 'loaded' ? loaded.city : createDefaultCityGrid(),
-        loaded.status === 'loaded' ? 'loaded' : 'not-loaded',
-        'load',
-      )
-    } catch (error) {
-      if (generation !== asyncGeneration) return snapshot
-      return publishFailure(
-        'load',
-        'document-read-failed',
-        error instanceof Error ? error.message : String(error),
-        { phase: 'error', saveStatus: 'error' },
-      )
-    }
-  })
-}
-
 export function exitCitySimSurface(
   options: Readonly<{ restorePreviousSurface?: boolean }> = {},
 ): CitySimSnapshot {
@@ -552,7 +549,10 @@ registerXrSceneGameplayExitHandler('cityBuilder', () => {
 })
 
 export function resetCitySimRuntimeForTests(
-  options: Readonly<{ webglSupported?: boolean }> = {},
+  options: Readonly<{
+    authoredSource?: CitySimAuthoredSource
+    webglSupported?: boolean
+  }> = {},
 ): CitySimSnapshot {
   asyncGeneration += 1
   fenceTimer()
@@ -562,11 +562,17 @@ export function resetCitySimRuntimeForTests(
   citySimSurfaceRestoring = null
   latestCitySimSurfaceIntent = 'idle'
   malformedDocument = null
-  sessionStartCity = createDefaultCityGrid()
+  authoredSource = options.authoredSource ?? null
+  if (authoredSource) {
+    const sourceIssue = authoredSourceIssue(authoredSource)
+    if (sourceIssue) throw new Error(`Invalid City test source: ${sourceIssue}`)
+  }
+  sessionStartCity = authoredSource?.city ?? null
   const reset = resetCitySimSnapshotForTests(
     sessionStartCity,
+    authoredSource?.geographicProfile ?? null,
     options.webglSupported ?? readWebglSupport(),
   )
-  persistenceTail = Promise.resolve(reset)
+  persistenceCommands.resetQueue(reset)
   return reset
 }

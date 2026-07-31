@@ -22,6 +22,7 @@ export function flightOverlay(
     night: false,
     objective: null,
     phase: 'ready',
+    presentationOwner: 'flight',
     profileId: 'singapore',
     readyFrameRequestId: 1,
     revision: `ready:aircraft:${headingDegrees}`,

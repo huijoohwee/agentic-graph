@@ -1,11 +1,8 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import {
   adviseCityZoning,
 } from '@/features/game-city-sim/citySimAdvisor'
 import {
-  CITY_SIM_CSV_HEADER,
   parseCityGridDocument,
   serializeCityGridDocument,
   verifyCityGridRoundTrip,
@@ -13,58 +10,20 @@ import {
 import { advanceCityTick } from '@/features/game-city-sim/citySimEconomy'
 import { parseCitySimInvocation } from '@/features/game-city-sim/citySimInvocation'
 import {
-  createDefaultCityGrid,
   freezeCityGrid,
   zoneCityGridParcel,
 } from '@/features/game-city-sim/citySimModel'
+import { parseCitySimAuthoredSource } from '@/features/game-city-sim/citySimAuthoredSource'
+import {
+  readAuthoritativeCitySimDocument,
+  readAuthoritativeCitySimSource,
+} from './citySimAuthoritativeSource'
 
-const AUTHORED_CITY_CSV = [
-  CITY_SIM_CSV_HEADER,
-  'r00c00,0,0,residential,10000,10,0',
-  'r00c01,0,1,commercial,9000,5,0',
-  'r00c02,0,2,unzoned,5000,0,0',
-  'r00c03,0,3,unzoned,5000,0,0',
-  'r01c00,1,0,industrial,7000,0,2',
-  'r01c01,1,1,unzoned,5000,0,0',
-  'r01c02,1,2,unzoned,5000,0,0',
-  'r01c03,1,3,unzoned,5000,0,0',
-  'r02c00,2,0,unzoned,5000,0,0',
-  'r02c01,2,1,unzoned,5000,0,0',
-  'r02c02,2,2,unzoned,5000,0,0',
-  'r02c03,2,3,unzoned,5000,0,0',
-  'r03c00,3,0,unzoned,5000,0,0',
-  'r03c01,3,1,unzoned,5000,0,0',
-  'r03c02,3,2,unzoned,5000,0,0',
-  'r03c03,3,3,unzoned,5000,0,0',
-  '',
-].join('\n')
-
-function cityCsv(document: string): string {
-  const headerIndex = document.indexOf(CITY_SIM_CSV_HEADER)
-  assert.notEqual(headerIndex, -1, 'canonical city document must include the CSV header')
-  return document.slice(headerIndex)
-}
-
-function readAuthoredSeedCsv(): string {
-  const seed = readFileSync(
-    resolve(
-      process.cwd(),
-      '..',
-      'docs',
-      'workspace-seeds',
-      'knowgrph-game-city-building-sim-demo.md',
-    ),
-    'utf8',
-  )
-  const fixture = seed.match(
-    /## Authored default parcel fixture[\s\S]*?```csv\n([\s\S]*?)```/,
-  )?.[1]
-  assert.ok(fixture, 'city workspace seed must expose one authored CSV fixture')
-  return fixture
-}
-
-export function testCitySimAuthoredDefaultMatchesWorkspaceSeedFixture() {
-  const city = createDefaultCityGrid()
+export function testCitySimAuthoredSourceInitializesGridAndGeographicProfile() {
+  const document = readAuthoritativeCitySimDocument()
+  const parsed = parseCitySimAuthoredSource(document)
+  assert.equal(parsed.ok, true)
+  const { city, geographicProfile } = parsed.source
   assert.equal(city.rows, 4)
   assert.equal(city.columns, 4)
   assert.equal(city.parcels.length, 16)
@@ -72,12 +31,39 @@ export function testCitySimAuthoredDefaultMatchesWorkspaceSeedFixture() {
   assert.equal(city.treasuryCents, 100_000)
   assert.equal(city.taxRateBasisPoints, 1_000)
   assert.equal(city.population, 15)
-  assert.equal(cityCsv(serializeCityGridDocument(city)), AUTHORED_CITY_CSV)
-  assert.equal(readAuthoredSeedCsv(), AUTHORED_CITY_CSV)
+  assert.equal(geographicProfile.id, 'city-sim:civic-seed:geo/v1')
+  assert.equal(geographicProfile.anchor.every(Number.isFinite), true)
+  assert.equal(geographicProfile.parcelWidthMeters > 0, true)
+  assert.equal(geographicProfile.parcelDepthMeters > 0, true)
+  assert.equal(geographicProfile.parcelGapMeters >= 0, true)
+  assert.equal(geographicProfile.aerialInspection.routeCoordinates.length >= 2, true)
+  assert.deepEqual(
+    geographicProfile.aerialInspection.aircraft.coordinate,
+    geographicProfile.aerialInspection.routeCoordinates[0],
+  )
+  assert.equal(
+    serializeCityGridDocument(readAuthoritativeCitySimSource().city),
+    serializeCityGridDocument(city),
+  )
+  assert.equal(Object.isFrozen(city), true)
+  assert.equal(Object.isFrozen(geographicProfile), true)
+
+  for (const malformed of [
+    document.replace('  id: "city-sim"', '  id: "flight-sim"'),
+    document.replace(/^  anchor: \[[^\n]+\]\n/m, ''),
+    document.replace('  rows: 4', '  rows: 5'),
+    document.replace(
+      /^  aerial_aircraft_coordinate: \[[^\n]+\]$/m,
+      '  aerial_aircraft_coordinate: [203,0]',
+    ),
+  ]) {
+    const rejected = parseCitySimAuthoredSource(malformed)
+    assert.equal(rejected.ok, false)
+  }
 }
 
 export function testCitySimTickIsDeterministicAndAtomicOnOverflow() {
-  const source = createDefaultCityGrid()
+  const source = readAuthoritativeCitySimSource().city
   const sourceBytes = serializeCityGridDocument(source)
   const first = advanceCityTick(source)
   const second = advanceCityTick(source)
@@ -131,7 +117,7 @@ export function testCitySimTickIsDeterministicAndAtomicOnOverflow() {
 }
 
 export function testCitySimInvalidZoningDoesNotMutate() {
-  const source = createDefaultCityGrid()
+  const source = readAuthoritativeCitySimSource().city
   const sourceBytes = serializeCityGridDocument(source)
   const unsupported = zoneCityGridParcel(source, 'r00c02', 'unzoned')
   const unknown = zoneCityGridParcel(source, 'r99c99', 'residential')
@@ -145,7 +131,7 @@ export function testCitySimInvalidZoningDoesNotMutate() {
 }
 
 export function testCitySimCodecCanonicalRoundTripRejectsMalformedBytes() {
-  const source = createDefaultCityGrid()
+  const source = readAuthoritativeCitySimSource().city
   const canonical = serializeCityGridDocument(source)
   const roundTrip = verifyCityGridRoundTrip(source)
   assert.equal(roundTrip.ok, true)
@@ -178,7 +164,7 @@ export function testCitySimCodecCanonicalRoundTripRejectsMalformedBytes() {
 }
 
 export function testCitySimAdvisorIsBoundedZeroCostAndClarifiesWithoutMutation() {
-  const source = createDefaultCityGrid()
+  const source = readAuthoritativeCitySimSource().city
   const sourceBytes = serializeCityGridDocument(source)
   const advice = adviseCityZoning(source, {
     scope: 'district',

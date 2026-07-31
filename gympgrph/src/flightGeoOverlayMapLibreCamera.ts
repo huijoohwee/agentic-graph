@@ -1,8 +1,8 @@
 import type { FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
 import {
-  readFlightGeoMapViewportPadding,
-  type FlightGeoMapViewportPadding,
-} from './flightGeoMapViewport.js'
+  readGeoMapViewportPadding,
+  type GeoMapViewportPadding,
+} from './geoMapViewport.js'
 
 const FLIGHT_GEO_CAMERA_PRESETS = Object.freeze({
   chase: Object.freeze({ pitch: 48, zoom: 15.5 }),
@@ -22,7 +22,7 @@ export type FlightGeoOverlayCameraApplicationOptions = Readonly<{
 export type FlightGeoMapCamera = Readonly<{
   bearing: number
   center: readonly [number, number]
-  padding: FlightGeoMapViewportPadding
+  padding: GeoMapViewportPadding
   pitch: number
   zoom: number
 }>
@@ -73,9 +73,9 @@ function readCoordinate(value: unknown): readonly [number, number] | null {
     : null
 }
 
-function readPadding(value: unknown): FlightGeoMapViewportPadding | null {
+function readPadding(value: unknown): GeoMapViewportPadding | null {
   if (!value || typeof value !== 'object') return null
-  const candidate = value as Partial<FlightGeoMapViewportPadding>
+  const candidate = value as Partial<GeoMapViewportPadding>
   const bottom = Number(candidate.bottom)
   const left = Number(candidate.left)
   const right = Number(candidate.right)
@@ -88,7 +88,7 @@ function readPadding(value: unknown): FlightGeoMapViewportPadding | null {
 export function createFlightGeoOverlayMapLibreCamera(
   overlay: FlightGeoOverlaySnapshot,
   viewMode: string,
-  padding: FlightGeoMapViewportPadding,
+  padding: GeoMapViewportPadding,
 ): FlightGeoMapCamera | null {
   const mode3d = viewMode === '3d' || viewMode === '3d-modern'
   if (
@@ -177,7 +177,7 @@ export function applyFlightGeoOverlayCameraToMap(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
   viewMode: string = '3d',
-  padding: FlightGeoMapViewportPadding = readFlightGeoMapViewportPadding(map),
+  padding: GeoMapViewportPadding = readGeoMapViewportPadding(map),
   options: FlightGeoOverlayCameraApplicationOptions = {},
 ): boolean {
   if (typeof map?.jumpTo !== 'function') return false

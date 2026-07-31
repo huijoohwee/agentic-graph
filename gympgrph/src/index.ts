@@ -40,6 +40,7 @@ export type {
   FlightGeoEnvironmentProjection,
   FlightGeoEnvironmentSurface,
   FlightGeoOverlayPresentation,
+  FlightGeoOverlayPresentationOwner,
   FlightGeoOverlaySnapshot,
   FlightGeoRoutePoint,
 } from './flightGeoOverlay.js'
@@ -67,6 +68,44 @@ export {
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
 } from './flightGeoOverlayMapLibre.js'
+export type {
+  CityGeoOverlaySnapshot,
+  CityGeoParcelState,
+  CityGeoViewMode,
+  CityGeoZone,
+  CityGeoZoneStyle,
+  CityGeographicProfile,
+} from './cityGeoOverlay.js'
+export {
+  clearCityGeoOverlay,
+  createCityGeoOverlaySnapshot,
+  readCityGeoOverlay,
+  setCityGeoOverlay,
+  subscribeCityGeoOverlay,
+} from './cityGeoOverlay.js'
+export {
+  CITY_GEO_OVERLAY_LAYER_IDS,
+  CITY_GEO_OVERLAY_SOURCE_ID,
+  applyCityGeoOverlayToMap,
+  clearCityGeoOverlayFromMap,
+  mapHasExactCityGeoOverlay,
+} from './cityGeoOverlayMapLibre.js'
+export {
+  createCityGeoOverlayMapLibreController,
+  fitMapToCityGeoOverlay,
+} from './cityGeoOverlayMapLibreController.js'
+export {
+  cityGeoGridProjectedBounds,
+  cityGeoOverlayBounds,
+  cityGeoOverlayFeatureCollection,
+  cityGeoOverlayFramingKey,
+} from './cityGeoOverlayProjection.js'
+export type {
+  CityGeoBounds,
+  CityGeoGridFootprint,
+  CityGeoParcelFeatureCollection,
+  CityGeoParcelProperties,
+} from './cityGeoOverlayProjection.js'
 export {
   SINGAPORE_FLIGHT_GEO_REFERENCE,
   projectSingaporeLocalMeters,

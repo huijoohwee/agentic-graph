@@ -1,4 +1,4 @@
-export type FlightGeoOverlayPublisherLease = Readonly<{
+export type GeoXrOverlayPublisherLease = Readonly<{
   canClearAfterRelease: () => boolean
   isCurrent: () => boolean
   onBecameCurrent: (listener: () => void) => () => void
@@ -27,7 +27,7 @@ function notifyPublisherLeaseChange(): void {
   }
 }
 
-export function claimFlightGeoOverlayPublisherLease(): FlightGeoOverlayPublisherLease {
+export function claimGeoXrOverlayPublisherLease(): GeoXrOverlayPublisherLease {
   const entry: PublisherLeaseEntry = {
     listeners: new Set(),
     released: false,
@@ -63,44 +63,46 @@ export function claimFlightGeoOverlayPublisherLease(): FlightGeoOverlayPublisher
   })
 }
 
-export function claimActiveFlightGeoOverlayPublisherLease(
+export function claimActiveGeoXrOverlayPublisherLease(
   active: boolean,
   composedWithXr: boolean,
-): FlightGeoOverlayPublisherLease | null {
+): GeoXrOverlayPublisherLease | null {
   return active && composedWithXr
-    ? claimFlightGeoOverlayPublisherLease()
+    ? claimGeoXrOverlayPublisherLease()
     : null
 }
 
-export function canClearFlightGeoOverlayAfterPublisherRelease(
-  publisherLease: FlightGeoOverlayPublisherLease,
-  flightRuntimeActive: boolean,
+export function canClearGeoXrOverlaysAfterPublisherRelease(
+  publisherLease: GeoXrOverlayPublisherLease,
+  gameplayRuntimeActive: boolean,
 ): boolean {
-  return !flightRuntimeActive && publisherLease.canClearAfterRelease()
+  return !gameplayRuntimeActive && publisherLease.canClearAfterRelease()
 }
 
-export async function clearFlightGeoOverlayAfterPublisherRelease(
-  publisherLease: FlightGeoOverlayPublisherLease,
-  readFlightRuntimeActive: () => boolean,
-  subscribeFlightRuntime: (listener: () => void) => () => void,
+export async function clearGeoXrOverlaysAfterPublisherRelease(
+  publisherLease: GeoXrOverlayPublisherLease,
+  readGameplayRuntimeActive: () => boolean,
+  subscribeGameplayRuntime: (listener: () => void) => () => void,
   loadOverlayModule: () => Promise<Readonly<{
-    clearFlightGeoOverlay?: () => void
+    clearCityGeoOverlay: () => void
+    clearFlightGeoOverlay: () => void
   }>>,
 ): Promise<boolean> {
   const module = await loadOverlayModule()
   if (!publisherLease.canClearAfterRelease()) return false
-  if (!readFlightRuntimeActive()) {
-    module.clearFlightGeoOverlay?.()
+  if (!readGameplayRuntimeActive()) {
+    module.clearFlightGeoOverlay()
+    module.clearCityGeoOverlay()
     return true
   }
   return new Promise(resolve => {
     let settled = false
-    let unsubscribeFlightRuntime = () => void 0
+    let unsubscribeGameplayRuntime = () => void 0
     let unsubscribePublisherChanges = () => void 0
     const settle = (cleared: boolean) => {
       if (settled) return
       settled = true
-      unsubscribeFlightRuntime()
+      unsubscribeGameplayRuntime()
       unsubscribePublisherChanges()
       resolve(cleared)
     }
@@ -110,13 +112,14 @@ export async function clearFlightGeoOverlayAfterPublisherRelease(
         settle(false)
         return
       }
-      if (readFlightRuntimeActive()) return
-      module.clearFlightGeoOverlay?.()
+      if (readGameplayRuntimeActive()) return
+      module.clearFlightGeoOverlay()
+      module.clearCityGeoOverlay()
       settle(true)
     }
-    unsubscribeFlightRuntime = subscribeFlightRuntime(evaluate)
+    unsubscribeGameplayRuntime = subscribeGameplayRuntime(evaluate)
     if (settled) {
-      unsubscribeFlightRuntime()
+      unsubscribeGameplayRuntime()
       return
     }
     publisherLeaseChangeListeners.add(evaluate)

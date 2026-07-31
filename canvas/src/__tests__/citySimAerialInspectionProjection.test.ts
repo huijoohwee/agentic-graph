@@ -2,25 +2,19 @@ import assert from 'node:assert/strict'
 import {
   projectCitySimAerialInspectionToGeospatialOverlay,
 } from '@/features/game-city-sim/citySimAerialInspectionProjection'
-import {
-  createDefaultCityGrid,
-} from '@/features/game-city-sim/citySimModel'
-import type {
-  CitySimSnapshot,
-} from '@/features/game-city-sim/citySimRuntimeState'
-import {
-  readFlightSimXrSpatialProfile,
-} from '@/features/game-flight-sim/flightSimSpatialProfile'
+import type { CitySimSnapshot } from '@/features/game-city-sim/citySimRuntimeState'
+import { readAuthoritativeCitySimSource } from './citySimAuthoritativeSource'
 
 function activeCitySnapshot(): CitySimSnapshot {
-  const city = createDefaultCityGrid()
+  const source = readAuthoritativeCitySimSource()
   return Object.freeze({
     active: true,
     advisor: null,
-    city: Object.freeze({ ...city, tick: 17 }),
+    city: Object.freeze({ ...source.city, tick: 17 }),
     costLog: null,
     error: null,
     estimatedCostUsd: 0,
+    geographicProfile: source.geographicProfile,
     lastInput: null,
     lastResult: null,
     message: 'City Simulation is active.',
@@ -33,28 +27,27 @@ function activeCitySnapshot(): CitySimSnapshot {
   })
 }
 
-export function testCitySimAerialInspectionReusesFlightGeoOverlayProjection() {
+export function testCitySimAerialInspectionUsesAuthoredCityProfileWithoutFlightCamera() {
   const city = activeCitySnapshot()
-  const profile = readFlightSimXrSpatialProfile()
-
-  const overlay = projectCitySimAerialInspectionToGeospatialOverlay(
-    city,
-    profile,
-  )
+  const geographicProfile = city.geographicProfile!
+  const overlay = projectCitySimAerialInspectionToGeospatialOverlay(city)
 
   assert.equal(overlay.active, true)
   assert.equal(overlay.phase, 'stopped')
+  assert.equal(overlay.presentationOwner, 'city')
+  assert.equal(overlay.profileId, `city-inspection:${geographicProfile.id}`)
   assert.equal(overlay.runId, 0)
   assert.equal(overlay.tick, 0)
   assert.equal(overlay.readyFrameRequestId, null)
-  assert.equal(overlay.profileId, profile.id)
-  assert.equal(overlay.camera.source, 'fixed-follow')
-  assert.equal(overlay.camera.effectiveOwner, 'fixed-follow')
-  assert.equal(overlay.camera.view, 'survey')
-  assert.equal(overlay.night, false)
+  assert.equal(overlay.camera.source, 'free-orbit')
+  assert.equal(overlay.camera.effectiveOwner, 'free-orbit')
   assert.equal(overlay.environment, null)
-  assert.equal(overlay.route.length, profile.waypoints.length + 2)
-  assert.match(overlay.revision, /^city-aerial-inspection:/)
+  assert.equal(overlay.objective, null)
+  assert.deepEqual(
+    overlay.route.map(point => point.coordinate),
+    geographicProfile.aerialInspection.routeCoordinates,
+  )
+  assert.deepEqual(overlay.aircraft, geographicProfile.aerialInspection.aircraft)
   assert.equal(Object.isFrozen(overlay), true)
 
   const laterCityTick = projectCitySimAerialInspectionToGeospatialOverlay(
@@ -63,19 +56,15 @@ export function testCitySimAerialInspectionReusesFlightGeoOverlayProjection() {
       city: Object.freeze({ ...city.city, tick: city.city.tick + 1 }),
       revision: city.revision + 1,
     }),
-    profile,
   )
-  assert.equal(laterCityTick.tick, 0)
   assert.equal(laterCityTick.revision, overlay.revision)
   assert.deepEqual(laterCityTick.aircraft, overlay.aircraft)
   assert.deepEqual(laterCityTick.route, overlay.route)
 
   const inactive = projectCitySimAerialInspectionToGeospatialOverlay(
     Object.freeze({ ...city, active: false, revision: city.revision + 1 }),
-    profile,
   )
   assert.equal(inactive.active, false)
-  assert.equal(inactive.runId, 0)
-  assert.equal(inactive.tick, 0)
-  assert.equal(inactive.readyFrameRequestId, null)
+  assert.equal(inactive.presentationOwner, null)
+  assert.deepEqual(inactive.route, [])
 }

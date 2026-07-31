@@ -255,6 +255,7 @@ export const testGeospatialOverlayHostProvidesSvgFallbackBasemapAndDisablesDefau
 
 export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   const viewportPath = path.resolve(process.cwd(), 'src', 'components', 'CanvasViewportGeospatialOverlay.tsx')
+  const publisherPath = path.resolve(process.cwd(), 'src', 'features', 'geospatial', 'useGeoXrOverlayPublisher.ts')
   const hostPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'GeospatialHost.tsx')
   const presentationPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useFlightGeoOverlayMapLibrePresentation.ts')
   const presentationGatePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'flightGeoOverlayPresentationGate.ts')
@@ -264,6 +265,7 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   const flightCameraPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibreCamera.ts')
   const flightLayersPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibreLayers.ts')
   const viewportText = readUtf8(viewportPath)
+  const publisherText = readUtf8(publisherPath)
   const hostText = readUtf8(hostPath)
   const presentationText = readUtf8(presentationPath)
   const presentationGateText = readUtf8(presentationGatePath)
@@ -275,8 +277,8 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   if (viewportText.includes('shared-xr-stage') || hostText.includes('sharedXrStage')) {
     throw new Error('Expected Geo+XR to avoid the conflicting shared-R3F provider policy')
   }
-  if (!viewportText.includes('setFlightGeoOverlay')
-    || !viewportText.includes('projectFlightSimToGeospatialOverlay')) {
+  if (!publisherText.includes('publishGeoXrOverlayComposition({')
+    || !publisherText.includes('projectFlightSimToGeospatialOverlay(')) {
     throw new Error('Expected Geo+XR to publish the deterministic Flight projection to the Geo owner')
   }
   if (!hostText.includes('const mapLibreRuntimeEnabled = show2dMapLibre || show3d')
@@ -309,7 +311,7 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   }
   if (!presentationText.includes('scheduleFinalApply')
     || !presentationText.includes("map?.on?.('load', scheduleFinalApply)")
-    || !presentationText.includes('readFlightGeoMapViewportPadding(map)')
+    || !presentationText.includes('readGeoMapViewportPadding(map)')
     || !presentationText.includes('applyFlightGeoOverlayCameraToMap(')) {
     throw new Error('Expected MapLibre initialization to finish with the Flight camera owner')
   }

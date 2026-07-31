@@ -244,6 +244,9 @@ export async function testCitySimLaterSourceIntentRetainsMountedPreviousSurfaceO
     const launched = readCitySimSnapshot()
     assert.equal(launched.active, true, launched.message)
     assert.equal(launched.phase, 'stopped')
+    assert.equal(launched.city.cityName, 'Civic Seed')
+    assert.equal(launched.city.parcels.length, 16)
+    assert.equal(launched.geographicProfile?.id, 'city-sim:civic-seed:geo/v1')
     assert.equal(useGraphStore.getState().floatingPanelView, 'cityBuilder')
 
     await act(async () => {

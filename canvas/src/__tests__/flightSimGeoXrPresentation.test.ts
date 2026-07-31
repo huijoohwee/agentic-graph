@@ -134,10 +134,6 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     /\{ stageStopped: overlay\.phase === 'stopped' \}/,
   )
   assert.match(
-    mapLibrePresentation,
-    /if \(cameraApplied && options\.requiresFlightLifecyclePresentation\) \{[\s\S]*gate\.request\(overlay\)/,
-  )
-  assert.match(
     threeGraph,
     /style=\{geospatialComposite \? \{ pointerEvents: 'none' \} : undefined\}/,
   )
@@ -262,6 +258,7 @@ test('Flight local mission coordinates project deterministically around Singapor
   )
 
   assert.equal(overlay.active, true)
+  assert.equal(overlay.presentationOwner, 'flight')
   assert.equal(overlay.route.length, profile.waypoints.length + 2)
   assert.deepEqual(overlay.route[0]?.coordinate, [103.851959, 1.29027])
   assert.equal(overlay.route[0]?.kind, 'spawn')

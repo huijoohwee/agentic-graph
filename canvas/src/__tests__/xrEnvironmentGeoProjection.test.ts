@@ -17,7 +17,7 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
   const geoView = readSource('lib', 'toolbar', 'ToolbarToolMenuGeoView.tsx')
   const flightPanel = readSource('features', 'game-flight-sim', 'FlightSimFloatingPanelView.tsx')
   const xrStage = readSource('features', 'three', 'XrCanonicalPhysicsStage.tsx')
-  const geoOverlayBridge = readSource('components', 'CanvasViewportGeospatialOverlay.tsx')
+  const geoOverlayBridge = readSource('features', 'geospatial', 'useGeoXrOverlayPublisher.ts')
   const viewport = readSource('components', 'CanvasViewport.tsx')
   const geospatialPresentation = readFileSync(
     resolve(
@@ -61,10 +61,10 @@ export function testXrEnvironmentSelectionProjectsThroughGeoAndFlight() {
     || !flightPanel.includes('data-kg-flight-sim-environment={environment.id}')
     || !flightPanel.includes('data-kg-flight-sim-geography-boundary="not-rendered"')
     || !xrStage.includes('environmentVisible={!geospatialComposite}')
-    || !geoOverlayBridge.includes('setFlightGeoOverlay')
+    || !geoOverlayBridge.includes('publishGeoXrOverlayComposition')
     || !geoOverlayBridge.includes('projectFlightSimToGeospatialOverlay')
     || !geospatialPresentation.includes('applyFlightGeoOverlayToMap(map, overlay)')
-    || !geospatialHost.includes("data-kg-flight-sim-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}")
+    || !geospatialHost.includes("data-kg-geo-xr-aerial-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}")
     || !viewport.includes('<FlightSimGeoSurfaceOverlayLazy />')) {
     throw new Error('expected one canonical Media aircraft, settled source persistence, native MapLibre projection, and transparent Flight composition')
   }

@@ -2,15 +2,15 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { JSDOM } from 'jsdom'
 import {
-  observeFlightGeoMapOcclusionChanges,
-  readFlightGeoMapViewportPadding,
-} from '../../../gympgrph/src/flightGeoMapViewport'
+  observeGeoMapOcclusionChanges,
+  readGeoMapViewportPadding,
+} from '../../../gympgrph/src/geoMapViewport'
 
 async function flushMutations(window: Window): Promise<void> {
   await new Promise<void>(resolve => window.setTimeout(resolve, 0))
 }
 
-test('Flight camera remeasures late-mounted workspace occlusion', async () => {
+test('Geo map viewport remeasures late-mounted workspace occlusion', async () => {
   const dom = new JSDOM('<main><section id="map"></section></main>')
   const mapContainer = dom.window.document.querySelector('#map') as HTMLElement
   const observed = new Set<Element>()
@@ -45,7 +45,7 @@ test('Flight camera remeasures late-mounted workspace occlusion', async () => {
   } as DOMRect)
   const map = { getContainer: () => mapContainer }
   let changes = 0
-  const stopObserving = observeFlightGeoMapOcclusionChanges(
+  const stopObserving = observeGeoMapOcclusionChanges(
     mapContainer,
     () => {
       changes += 1
@@ -54,7 +54,7 @@ test('Flight camera remeasures late-mounted workspace occlusion', async () => {
 
   try {
     assert.deepEqual(
-      readFlightGeoMapViewportPadding(map),
+      readGeoMapViewportPadding(map),
       { bottom: 112, left: 44, right: 44, top: 88 },
     )
 
@@ -78,7 +78,7 @@ test('Flight camera remeasures late-mounted workspace occlusion', async () => {
     assert.equal(changes, 1)
     assert.equal(observed.has(panel), true)
     assert.deepEqual(
-      readFlightGeoMapViewportPadding(map),
+      readGeoMapViewportPadding(map),
       { bottom: 112, left: 44, right: 369, top: 88 },
     )
 
@@ -89,7 +89,7 @@ test('Flight camera remeasures late-mounted workspace occlusion', async () => {
 
     assert.equal(changes, 2)
     assert.deepEqual(
-      readFlightGeoMapViewportPadding(map),
+      readGeoMapViewportPadding(map),
       { bottom: 112, left: 44, right: 416, top: 88 },
     )
 
@@ -99,7 +99,7 @@ test('Flight camera remeasures late-mounted workspace occlusion', async () => {
     assert.equal(changes, 3)
     assert.equal(observed.has(panel), false)
     assert.deepEqual(
-      readFlightGeoMapViewportPadding(map),
+      readGeoMapViewportPadding(map),
       { bottom: 112, left: 44, right: 44, top: 88 },
     )
   } finally {

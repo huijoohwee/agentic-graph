@@ -1,10 +1,12 @@
 import { readWebglSupport } from '@/lib/three/webglSupport'
 import {
-  createDefaultCityGrid,
+  CITY_SIM_SCHEMA_ID,
+  freezeCityGrid,
   type CityAdvisorResult,
   type CityCostLog,
   type CityGrid,
 } from './citySimModel'
+import type { CitySimGeographicProfile } from './citySimAuthoredSource'
 import type { CityInputSnapshot } from './citySimInputModel'
 
 export type CitySimPhase = 'idle' | 'running' | 'stopped' | 'error'
@@ -30,6 +32,7 @@ export type CitySimSnapshot = Readonly<{
   webglSupported: boolean
   phase: CitySimPhase
   city: CityGrid
+  geographicProfile: CitySimGeographicProfile | null
   selectedParcelId: string | null
   lastInput: CityInputSnapshot | null
   advisor: CityAdvisorResult | null
@@ -53,11 +56,24 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 let stagedCityInput: CityInputSnapshot | null = null
 
+const UNINITIALIZED_CITY_GRID = freezeCityGrid({
+  schemaId: CITY_SIM_SCHEMA_ID,
+  cityName: 'City source unavailable',
+  rows: 0,
+  columns: 0,
+  tick: 0,
+  treasuryCents: 0,
+  taxRateBasisPoints: 0,
+  population: 0,
+  parcels: Object.freeze([]),
+})
+
 export let citySimSnapshot: CitySimSnapshot = Object.freeze({
   active: false,
   webglSupported: readWebglSupport(),
   phase: 'idle',
-  city: createDefaultCityGrid(),
+  city: UNINITIALIZED_CITY_GRID,
+  geographicProfile: null,
   selectedParcelId: null,
   lastInput: null,
   advisor: null,
@@ -150,7 +166,8 @@ export function subscribeCitySimSnapshot(listener: Listener): () => void {
 }
 
 export function resetCitySimSnapshotForTests(
-  city: CityGrid,
+  city: CityGrid | null,
+  geographicProfile: CitySimGeographicProfile | null,
   webglSupported: boolean,
 ): CitySimSnapshot {
   stagedCityInput = null
@@ -158,7 +175,8 @@ export function resetCitySimSnapshotForTests(
     active: false,
     webglSupported,
     phase: 'idle',
-    city,
+    city: city ?? UNINITIALIZED_CITY_GRID,
+    geographicProfile,
     selectedParcelId: null,
     lastInput: null,
     advisor: null,

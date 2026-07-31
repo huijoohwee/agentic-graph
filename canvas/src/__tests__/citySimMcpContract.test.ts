@@ -21,8 +21,8 @@ import {
 import { serializeCityGridDocument } from '@/features/game-city-sim/citySimCodec'
 import {
   readCitySimSnapshot,
-  resetCitySimRuntimeForTests,
 } from '@/features/game-city-sim/citySimRuntime'
+import { resetCitySimRuntimeForTests } from './citySimAuthoritativeSource'
 
 const CITY_TOOL_IDS = [
   'inspect_local_city_sim',

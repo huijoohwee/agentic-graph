@@ -18,6 +18,12 @@ import {
   type MapLibreFlightProviderPromotionState,
 } from '../../../gympgrph/src/features/geospatial/mapLibreFlightProviderPromotion.js'
 import {
+  canMapLibreFlightOverlayPresent,
+  markMapLibreFlightBootstrapApplied,
+} from '../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap.js'
+import type { FlightGeoOverlayPresentation } from '../../../gympgrph/src/flightGeoOverlay.js'
+import { resolveGeoXrGameplayPresentationOwner } from '@/features/geospatial/geoXrFlightOverlayComposition'
+import {
   acquireFlightSimGeospatialBootstrapRequest,
   readFlightSimGeospatialBootstrapRequested,
   subscribeFlightSimGeospatialBootstrapRequest,
@@ -85,46 +91,33 @@ test('Flight surface opening retains local bootstrap intent until every request 
   unsubscribe()
 })
 
-test('Flight threads surface-open bootstrap intent into the native map host', () => {
-  const overlay = readFileSync(
-    new URL(
-      '../components/CanvasViewportGeospatialOverlay.tsx',
-      import.meta.url,
-    ),
-    'utf8',
-  )
-  const host = readFileSync(
-    new URL('../../../gympgrph/src/GeospatialHost.tsx', import.meta.url),
-    'utf8',
-  )
-
-  assert.match(
-    overlay,
-    /flightBootstrapRequested=\{flightBootstrapRequested\}/,
-  )
-  assert.match(
-    host,
-    /flightOverlayActive\s*\|\|\s*props\.flightBootstrapRequested === true/,
-  )
+test('render-time owner preserves Flight preactivation without crossing active City', () => {
+  const owner = resolveGeoXrGameplayPresentationOwner
+  assert.equal(owner({ cityActive: false, flightActive: false, flightBootstrapRequested: true }), 'flight')
+  assert.equal(owner({ cityActive: true, flightActive: false, flightBootstrapRequested: true }), 'city')
 })
 
-test('City aerial inspection keeps the provider basemap outside Flight bootstrap', () => {
-  const host = readFileSync(
-    new URL('../../../gympgrph/src/GeospatialHost.tsx', import.meta.url),
-    'utf8',
-  )
-  const basemap = readFileSync(
-    new URL(
-      '../../../gympgrph/src/features/geospatial/useMapLibreBasemap.ts',
-      import.meta.url,
-    ),
-    'utf8',
-  )
+test('City presentation cannot claim a settled Flight bootstrap lifecycle', () => {
+  const map = {}
+  const flightPresentation = {
+    phase: 'stopped',
+    presentationOwner: 'flight',
+    profileId: 'singapore',
+    readyFrameRequestId: null,
+    revision: 'stopped:singapore',
+    runId: 0,
+    tick: 0,
+  } satisfies FlightGeoOverlayPresentation
+  markMapLibreFlightBootstrapApplied(map)
 
-  assert.match(host, /city-aerial-inspection:/)
-  assert.match(host, /flightBootstrapEnabled: !cityAerialInspectionOverlay/)
-  assert.match(host, /requiresFlightLifecyclePresentation: !cityAerialInspectionOverlay/)
-  assert.match(basemap, /flightBootstrapEnabledRef\.current/)
+  assert.equal(canMapLibreFlightOverlayPresent(map, flightPresentation), true)
+  assert.equal(
+    canMapLibreFlightOverlayPresent(map, {
+      ...flightPresentation,
+      presentationOwner: 'city',
+    }),
+    false,
+  )
 })
 
 test('runtime basemap fallbacks cannot bypass exact Flight style retention', () => {
@@ -142,7 +135,7 @@ test('runtime basemap fallbacks cannot bypass exact Flight style retention', () 
   )
   assert.match(
     basemap,
-    /const readLiveFlightBootstrapStyle[\s\S]*?initialStyleOverrideRef\.current[\s\S]*?ownerScope === NATIVE_GEOSPATIAL_MAPLIBRE_OWNER[\s\S]*?readFlightGeoOverlay\(\)\.active[\s\S]*?\?\s*FLIGHT_GEO_BOOTSTRAP_STYLE\s*:\s*null/,
+    /const readLiveFlightBootstrapStyle[\s\S]*?=> initialStyleOverrideRef\.current/,
   )
   assert.match(
     basemap,

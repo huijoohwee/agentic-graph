@@ -12,7 +12,7 @@ import {
   readMapLibreStyleSource,
   setGeoJsonSourceData,
 } from './maplibreLayers.js'
-import { readFlightGeoMapViewportPadding, type FlightGeoMapViewportPadding } from './flightGeoMapViewport.js'
+import { readGeoMapViewportPadding, type GeoMapViewportPadding } from './geoMapViewport.js'
 import {
   flightGeoEnvironmentMapLibreFeatureCollection,
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
@@ -476,7 +476,7 @@ function keepFlightGeoOverlayAboveHostLayers(
 export function fitMapToFlightGeoOverlay(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
-  padding: FlightGeoMapViewportPadding = readFlightGeoMapViewportPadding(map),
+  padding: GeoMapViewportPadding = readGeoMapViewportPadding(map),
 ): boolean {
   try {
     if (!map || !overlay.active || overlay.route.length < 2) return false

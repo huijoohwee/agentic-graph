@@ -58,6 +58,7 @@ export function flightOverlay(
       label: 'LAND',
     },
     phase,
+    presentationOwner: 'flight',
     profileId: 'singapore',
     readyFrameRequestId,
     revision,

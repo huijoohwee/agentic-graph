@@ -11,6 +11,7 @@ function source(path: string): string {
 
 test('ready publication reserves native MapLibre before ordinary React followers', () => {
   const bridge = source('canvas/src/components/CanvasViewportGeospatialOverlay.tsx')
+  const publisher = source('canvas/src/features/geospatial/useGeoXrOverlayPublisher.ts')
   const deadline = source('canvas/src/features/game-flight-sim/flightSimDeadlineRuntime.ts')
   const defaults = source('canvas/src/features/game-flight-sim/flightSimDefaultRuntime.ts')
   const geoSurface = source('canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx')
@@ -23,8 +24,8 @@ test('ready publication reserves native MapLibre before ordinary React followers
     /claimFlightSimReadyPresenter\('maplibre'\)/,
   )
   assert.match(
-    bridge,
-    /subscribeFlightSimPresentation\(\s*'maplibre',\s*publish,\s*\)/,
+    publisher,
+    /subscribeFlightSimPresentation\(\s*'maplibre',\s*publish\s*\)/,
   )
   assert.match(runtime, /subscribeFlightSimPresentation\('surface', listener\)/)
   assert.match(geoSurface, /subscribeFlightSimPresentation\('surface', listener\)/)

@@ -41,6 +41,7 @@ export function readyFlightOverlay(
       label: 'LAND',
     },
     phase: 'ready',
+    presentationOwner: 'flight',
     profileId: 'singapore',
     readyFrameRequestId,
     revision,
@@ -64,4 +65,3 @@ export function readyFlightOverlay(
     tick: 0,
   }
 }
-

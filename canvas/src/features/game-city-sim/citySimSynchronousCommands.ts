@@ -1,7 +1,7 @@
 import { adviseCityZoning } from './citySimAdvisor'
 import { advanceCityTick } from './citySimEconomy'
+import type { CitySimAuthoredSource } from './citySimAuthoredSource'
 import {
-  createDefaultCityGrid,
   findCityParcel,
   zoneCityGridParcel,
   type CityAdviceScope,
@@ -23,7 +23,8 @@ type CitySimSynchronousCommandDependencies = Readonly<{
   invalidateAsyncOperations: () => void
   readMalformedDocument: () => MalformedCityDocument | null
   clearMalformedDocument: () => void
-  readSessionStartCity: () => CityGrid
+  readSessionStartCity: () => CityGrid | null
+  readAuthoredSource: () => CitySimAuthoredSource | null
   replaceSessionStartCity: (city: CityGrid) => void
 }>
 
@@ -91,6 +92,14 @@ export function createCitySimSynchronousCommands(
       )
     }
     const sessionStartCity = dependencies.readSessionStartCity()
+    if (!sessionStartCity) {
+      return publishFailure(
+        'restart',
+        'source-unavailable',
+        'Restart requires a saved or source-authored City session.',
+        { phase: 'error' },
+      )
+    }
     const cityChanged = snapshot.city !== sessionStartCity
     return publishSuccess(
       'restart',
@@ -110,13 +119,23 @@ export function createCitySimSynchronousCommands(
     dependencies.invalidateAsyncOperations()
     dependencies.fenceTimer()
     dependencies.clearMalformedDocument()
-    const city = createDefaultCityGrid()
+    const source = dependencies.readAuthoredSource()
+    if (!source) {
+      return publishFailure(
+        'reset',
+        'authored-source-missing',
+        'Reset requires the applied source-authored City document.',
+        { phase: 'error' },
+      )
+    }
+    const city = source.city
     dependencies.replaceSessionStartCity(city)
     return publishSuccess(
       'reset',
-      'Selected the authored Civic Seed in memory; the City Document was not changed.',
+      'Restored the applied source-authored City grid in memory; the City Document was not changed.',
       {
         city,
+        geographicProfile: source.geographicProfile,
         phase: snapshot.active ? 'stopped' : 'idle',
         selectedParcelId: null,
         advisor: null,

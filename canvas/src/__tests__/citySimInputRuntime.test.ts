@@ -13,9 +13,9 @@ import {
 import type { CityZoningType } from '@/features/game-city-sim/citySimModel'
 import {
   readCitySimSnapshot,
-  resetCitySimRuntimeForTests,
   subscribeCitySimSnapshot,
 } from '@/features/game-city-sim/citySimRuntime'
+import { resetCitySimRuntimeForTests } from './citySimAuthoritativeSource'
 
 function readCanvasSource(relativePath: string): string {
   return readFileSync(resolve(process.cwd(), 'src', relativePath), 'utf8')

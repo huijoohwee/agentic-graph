@@ -55,6 +55,7 @@ export type FlightSimGeospatialOverlay = Readonly<{
     label: string
   }> | null
   phase: FlightSimSnapshot['phase']
+  presentationOwner: 'city' | 'flight' | null
   profileId: string
   readyFrameRequestId: number | null
   revision: string
@@ -192,6 +193,7 @@ export function projectFlightSimToGeospatialOverlay(
     night,
     objective,
     phase: flight.phase,
+    presentationOwner: 'flight',
     profileId: profile.id,
     readyFrameRequestId,
     revision: [

@@ -7,8 +7,8 @@ import {
   mapHasExactFlightGeoOverlay,
 } from '../../flightGeoOverlayMapLibre.js'
 import type {
-  FlightGeoMapViewportPadding,
-} from '../../flightGeoMapViewport.js'
+  GeoMapViewportPadding,
+} from '../../geoMapViewport.js'
 import {
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
@@ -26,7 +26,7 @@ export type PresentedFlightOverlay = {
 
 export type SavedMapPadding = Readonly<{
   map: any | null
-  padding: FlightGeoMapViewportPadding | null
+  padding: GeoMapViewportPadding | null
 }>
 
 export type FlightOverlayPresentationGateOptions = Readonly<{

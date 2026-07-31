@@ -86,6 +86,7 @@ function environmentOverlay(): FlightGeoOverlaySnapshot {
     night: false,
     objective: null,
     phase: 'ready',
+    presentationOwner: 'flight',
     profileId: 'singapore',
     readyFrameRequestId: 1,
     revision: 'ready:singapore:environment:exact',
