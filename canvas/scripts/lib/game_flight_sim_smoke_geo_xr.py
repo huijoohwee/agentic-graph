@@ -201,6 +201,10 @@ def _read_view(page: Page) -> dict[str, Any]:
               (latitudeB - latitudeA) * 111_320,
             )
           }
+          const finiteNumberOrNull = value => {
+            const number = Number(value)
+            return Number.isFinite(number) ? number : null
+          }
           const environmentSurfaceMeters = environmentFeatures.map(feature => {
             const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
               ? feature.geometry.coordinates[0]
@@ -235,10 +239,14 @@ def _read_view(page: Page) -> dict[str, Any]:
                 && point.y <= mapHeight
               ))
             return {
-              baseHeightMeters: Number(feature?.properties?.kgBaseHeightMeters),
+              baseHeightMeters: finiteNumberOrNull(
+                feature?.properties?.kgBaseHeightMeters,
+              ),
               edgeDepthMeters: measureEdgeMeters(coordinates[1], coordinates[2]),
               edgeWidthMeters: measureEdgeMeters(coordinates[0], coordinates[1]),
-              heightMeters: Number(feature?.properties?.kgHeightMeters),
+              heightMeters: finiteNumberOrNull(
+                feature?.properties?.kgHeightMeters,
+              ),
               id: String(feature?.properties?.kgSurfaceId || ''),
               kind: String(feature?.properties?.kgSurfaceKind || ''),
               label: String(feature?.properties?.kgSurfaceLabel || ''),
@@ -296,12 +304,18 @@ def _read_view(page: Page) -> dict[str, Any]:
               widthMeters: measureEdgeMeters(ring?.[0], ring?.[1]),
             }
           })
-          const cityExpectedParcelCount =
-            Number(cityOverlay?.rows) * Number(cityOverlay?.columns)
+          const cityExpectedRows = finiteNumberOrNull(cityOverlay?.rows)
+          const cityExpectedColumns = finiteNumberOrNull(cityOverlay?.columns)
+          const cityExpectedParcelCount = Number.isSafeInteger(cityExpectedRows)
+            && Number.isSafeInteger(cityExpectedColumns)
+            && cityExpectedRows > 0
+            && cityExpectedColumns > 0
+            ? cityExpectedRows * cityExpectedColumns
+            : null
           const cityExpectedParcelWidthMeters =
-            Number(cityOverlay?.profile?.parcelWidthMeters)
+            finiteNumberOrNull(cityOverlay?.profile?.parcelWidthMeters)
           const cityExpectedParcelDepthMeters =
-            Number(cityOverlay?.profile?.parcelDepthMeters)
+            finiteNumberOrNull(cityOverlay?.profile?.parcelDepthMeters)
           const cityParcelsUseAuthoredMeters =
             Number.isSafeInteger(cityExpectedParcelCount)
             && cityExpectedParcelCount > 0

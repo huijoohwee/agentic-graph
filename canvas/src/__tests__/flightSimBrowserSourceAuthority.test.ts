@@ -65,6 +65,10 @@ test('Flight browser proof activates only after applying the authored source', (
     /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/,
   )
   assert.match(
+    verifier,
+    /json\.dumps\(evidence, indent=2, allow_nan=False\)/,
+  )
+  assert.match(
     mainEntry,
     /VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF === '1'/,
   )

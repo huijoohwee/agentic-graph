@@ -479,7 +479,7 @@ def main() -> None:
                 "screenshot": str(SCREENSHOT_PATH),
             }
             EVIDENCE_PATH.write_text(
-                json.dumps(evidence, indent=2) + "\n",
+                json.dumps(evidence, indent=2, allow_nan=False) + "\n",
                 encoding="utf-8",
             )
             print(f"OK game-flight-sim-browser-smoke {target_url}")
