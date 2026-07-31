@@ -7,6 +7,7 @@ import { installSourceCatalogFetchMock } from '@/__tests__/knowledgeGraphSkillsC
 import { ToastHost } from '@/components/ui/ToastHost'
 import {
   registerMarkdownWorkspaceActionBridge,
+  type WorkspaceKnowledgeGraphImportProgress,
   type WorkspaceKnowledgeGraphImportResult,
   type WorkspaceKnowledgeGraphInvocation,
 } from '@/features/markdown-explorer/workspaceActionBridge'
@@ -69,6 +70,23 @@ const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {
   },
 }
 
+const KNOWLEDGE_GRAPH_PROGRESS: WorkspaceKnowledgeGraphImportProgress = {
+  schema: 'knowgrph-knowledge-graph-import-progress/v1',
+  kind: 'source-parsed',
+  graphId: KNOWLEDGE_GRAPH_RESULT.graphId,
+  parserRegistryDigest: KNOWLEDGE_GRAPH_RESULT.parserRegistryDigest,
+  sourcePath: 'src/index.ts',
+  sourceIndex: 1,
+  sourceTotal: 2,
+  truncated: false,
+  graphData: {
+    context: 'knowgrph-knowledge-graph-projection',
+    type: 'Graph',
+    nodes: [KNOWLEDGE_GRAPH_RESULT.projection.graphData.nodes[0]!],
+    edges: [],
+  },
+}
+
 export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonicalGraph() {
   const fetchMock = installSourceCatalogFetchMock()
   const { dom, restore } = initJsdomHarness()
@@ -78,13 +96,15 @@ export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonical
   const repositoryCalls: Array<{ url: string; invocation: WorkspaceKnowledgeGraphInvocation | undefined }> = []
   let closeCalls = 0
   let releaseImport: (() => void) | undefined
+  let emitProgress: ((progress: WorkspaceKnowledgeGraphImportProgress) => void) | undefined
   const pendingImport = new Promise<WorkspaceKnowledgeGraphImportResult>(resolve => {
     releaseImport = () => resolve(KNOWLEDGE_GRAPH_RESULT)
   })
   const unregister = registerMarkdownWorkspaceActionBridge('knowledge-graph-launch-input-interaction-test', {
     knowledgeGraph: {
-      importRepositoryUrl: async (url, _opts, invocation) => {
+      importRepositoryUrl: async (url, _opts, invocation, onProgress) => {
         repositoryCalls.push({ url, invocation })
+        emitProgress = onProgress
         return pendingImport
       },
     },
@@ -186,6 +206,26 @@ export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonical
     assert.match(dom.window.document.body.textContent || '', /Parsing the repository into a local knowledge graph/)
 
     await act(async () => {
+      emitProgress?.(KNOWLEDGE_GRAPH_PROGRESS)
+      for (let attempt = 0; attempt < 16 && useGraphStore.getState().graphData.nodes.length === 0; attempt += 1) {
+        await waitForTasks(1)
+      }
+    })
+    assert.equal(useGraphStore.getState().canvasRenderMode, '2d')
+    assert.equal(useGraphStore.getState().canvas2dRenderer, 'd3')
+    assert.equal(useGraphStore.getState().graphData.nodes.length, 1)
+    assert.equal(
+      (useGraphStore.getState().graphData.metadata?.knowledgeGraphPreview as { complete?: unknown } | undefined)?.complete,
+      false,
+      'the parsing-time Canvas graph must remain an explicitly incomplete preview',
+    )
+    assert.equal(
+      useGraphStore.getState().uiToasts.find(toast => toast.id === 'launch:import:knowledge-graph-url')?.busy,
+      true,
+      'the progress preview must not complete the import toast',
+    )
+
+    await act(async () => {
       releaseImport?.()
       for (let attempt = 0; attempt < 16 && useGraphStore.getState().canvas2dRenderer !== 'd3'; attempt += 1) {
         await waitForTasks(1)
@@ -209,6 +249,53 @@ export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonical
     useGraphStore.getState().resetAll()
     restore()
     fetchMock.restore()
+  }
+}
+
+export async function testKnowledgeGraphRepositoryProgressPreviewRollsBackOnFailure() {
+  const graphBefore = useGraphStore.getState().graphData
+  try {
+    useGraphStore.getState().resetAll()
+    useGraphStore.getState().setCanvasRenderMode('3d')
+    useGraphStore.getState().setCanvas2dRenderer('storyboard')
+    const baseline = useGraphStore.getState().graphData
+    let previewSeen = false
+    await assert.rejects(
+      runLaunchImportUrl({
+        urlRaw: REPOSITORY_URL,
+        forceKnowledgeGraphRepository: true,
+        bridge: {
+          knowledgeGraph: {
+            importRepositoryUrl: async (_url, _opts, _invocation, onProgress) => {
+              onProgress?.(KNOWLEDGE_GRAPH_PROGRESS)
+              previewSeen = (useGraphStore.getState().graphData.metadata?.knowledgeGraphPreview as { complete?: unknown } | undefined)?.complete === false
+              throw new Error('synthetic repository failure')
+            },
+          },
+        },
+        fallback: async () => undefined,
+        resolveMcpInvocation: async () => ({
+          invocation: {
+            schema: 'knowgrph-knowledge-graph-invocation/v1',
+            tool: 'knowgrph.knowledge_graph.ingest',
+            action: '/knowledge.graph.ingest',
+            semantics: ['#knowledge-graph'],
+            bindings: ['@working-directory'],
+            sourceRevision: 'a'.repeat(40),
+            catalogDigest: 'b'.repeat(64),
+            routingSchema: 'agentic-canvas-os-docs-routing/v1',
+            routingDigest: 'c'.repeat(64),
+          },
+        }),
+      }),
+    )
+    if (!previewSeen) throw new Error('expected the repository import to publish a parsing-time Canvas preview')
+    assert.equal(useGraphStore.getState().graphData, baseline)
+    assert.equal(useGraphStore.getState().canvasRenderMode, '3d')
+    assert.equal(useGraphStore.getState().canvas2dRenderer, 'storyboard')
+  } finally {
+    useGraphStore.getState().resetAll()
+    if (graphBefore) useGraphStore.getState().setGraphData(graphBefore)
   }
 }
 

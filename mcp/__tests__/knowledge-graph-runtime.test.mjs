@@ -237,6 +237,41 @@ test("ingest writes content-addressed shards and returns only opaque graph ident
   assert.equal(fixture.pdfCalls(), 1);
 });
 
+test("ingest emits deterministic persisted-source progress fragments", async (t) => {
+  const fixture = await createFixture(t);
+  const progress = [];
+  const result = await fixture.runtime.run(KNOWLEDGE_GRAPH_TOOL_NAMES.ingest, {
+    rootPath: fixture.corpusRoot,
+    strict: true,
+  }, {
+    onProgress: (frame) => progress.push(frame),
+  });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(progress.length, result.counts.sources);
+  assert.deepEqual(progress.map((frame) => frame.sourceIndex), progress.map((_, index) => index + 1));
+  assert.ok(progress.every((frame) => (
+    frame.schema === "knowgrph-knowledge-graph-import-progress/v1"
+    && frame.kind === "source-parsed"
+    && frame.graphId === result.graphId
+    && frame.parserRegistryDigest === result.parserRegistryDigest
+    && frame.sourceTotal === result.counts.sources
+    && typeof frame.sourcePath === "string"
+    && !frame.sourcePath.startsWith("/")
+    && !frame.sourcePath.includes("..")
+    && Array.isArray(frame.fragment?.nodes)
+    && Array.isArray(frame.fragment?.edges)
+  )));
+  assert.deepEqual(
+    progress.map((frame) => frame.sourcePath),
+    progress.map((frame) => frame.sourcePath).slice().sort(),
+  );
+  for (const frame of progress) {
+    for (const edge of frame.fragment.edges) {
+      for (const field of EVIDENCE_FIELDS) assert.notEqual(edge.properties[field], undefined, `${edge.id} ${field}`);
+    }
+  }
+});
+
 test("generated parser registry is verified and fences discovery, snapshot identity, and cache reuse", async (t) => {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-kg-generated-parser-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));

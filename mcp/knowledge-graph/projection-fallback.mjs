@@ -1,0 +1,22 @@
+import { sha256 } from "./contract.mjs";
+
+export function unavailableProjection(snapshot, limitRaw) {
+  const numericLimit = Number(limitRaw);
+  const limit = Number.isFinite(numericLimit)
+    ? Math.max(1, Math.min(1000, Math.floor(numericLimit)))
+    : 200;
+  return {
+    token: `kg:projection:${sha256(`${snapshot.pointer.snapshotDigest}\0${limit}`).slice(0, 24)}`,
+    readOnly: true,
+    graphData: {
+      context: "knowgrph-knowledge-graph-projection",
+      type: "Graph",
+      nodes: [],
+      edges: [],
+    },
+    complete: false,
+    truncated: true,
+    limit,
+    reason: "projection_unavailable",
+  };
+}

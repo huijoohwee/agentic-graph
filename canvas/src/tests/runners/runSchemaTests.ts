@@ -40,6 +40,7 @@ const modWorkspaceImportXrSpatialCaptureLaunchUrl = () => import('@/__tests__/wo
 const modWorkspaceImportXrSpatialCaptureRuntime = () => import('@/__tests__/workspaceImportXrSpatialCaptureRuntime.test')
 const modKnowledgeGraphLaunchIntegration = () => import('@/__tests__/knowledgeGraphLaunchIntegration.test')
 const modKnowledgeGraphHostAdapter = () => import('@/__tests__/knowledgeGraphHostAdapter.test')
+const modKnowledgeGraphHostAdapterProgress = () => import('@/__tests__/knowledgeGraphHostAdapterProgress.test')
 const modModelAssetRenderPayloadCache = () => import('@/__tests__/modelAssetRenderPayloadCache.test')
 const modSpatialCaptureRenderPerformance = () => import('@/__tests__/spatialCaptureRenderPerformance.test')
 const modGaussianSplatEditorModel = () => import('@/__tests__/gaussianSplatEditorModel.test')
@@ -368,6 +369,10 @@ export const runSchemaTests = async (results: TestResult[]) => {
   await execTest(results, 'workspace.import.knowledgeGraph.hostStreamsFolder', async () => {
     const mod = await modKnowledgeGraphHostAdapter()
     await mod.testKnowledgeGraphBrowserAdapterStreamsFolderAndSkipsGeneratedTrees()
+  })
+  await execTest(results, 'workspace.import.knowledgeGraph.hostStreamsRepositoryProgress', async () => {
+    const mod = await modKnowledgeGraphHostAdapterProgress()
+    await mod.testKnowledgeGraphBrowserAdapterStreamsRepositoryProgress()
   })
   await execTest(results, 'workspace.import.knowledgeGraph.hostRepositoryBoundary', async () => {
     const mod = await modKnowledgeGraphHostAdapter()

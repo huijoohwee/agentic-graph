@@ -8,6 +8,14 @@ type ProjectionMetadata = {
   projectionToken?: unknown
 }
 
+type PreviewMetadata = {
+  owner?: unknown
+  readOnly?: unknown
+  graphId?: unknown
+  parserRegistryDigest?: unknown
+  complete?: unknown
+}
+
 function readProjectionMetadata(
   graphData: GraphData | null | undefined,
 ): ProjectionMetadata | null {
@@ -19,13 +27,30 @@ function readProjectionMetadata(
     : null
 }
 
+function readPreviewMetadata(
+  graphData: GraphData | null | undefined,
+): PreviewMetadata | null {
+  const metadata = graphData?.metadata
+  if (!metadata || metadata.kind !== 'knowledge-graph') return null
+  const preview = metadata.knowledgeGraphPreview as PreviewMetadata | undefined
+  return preview?.owner === 'knowledge-graph-runtime-preview' && preview.readOnly === true
+    ? preview
+    : null
+}
+
 export function isReadOnlyKnowledgeGraphProjection(
   graphData: GraphData | null | undefined,
 ): boolean {
   const projection = readProjectionMetadata(graphData)
-  return projection !== null
-    && typeof projection.graphId === 'string'
-    && typeof projection.snapshotDigest === 'string'
+  if (projection !== null) {
+    return typeof projection.graphId === 'string'
+      && typeof projection.snapshotDigest === 'string'
+  }
+  const preview = readPreviewMetadata(graphData)
+  return preview !== null
+    && typeof preview.graphId === 'string'
+    && typeof preview.parserRegistryDigest === 'string'
+    && preview.complete === false
 }
 
 export function hasSameReadOnlyKnowledgeGraphProjectionIdentity(

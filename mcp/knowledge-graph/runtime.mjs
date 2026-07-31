@@ -27,6 +27,7 @@ import {
   projectKnowledgeGraphSnapshot,
   queryKnowledgeGraphSnapshot,
 } from "./query.mjs";
+import { unavailableProjection } from "./projection-fallback.mjs";
 import { buildRepositoryScopedResolutionEdges } from "./resolution.mjs";
 import {
   createResolutionRetentionBudget,
@@ -140,6 +141,8 @@ function createPeriodicCheckpoint(abortSignal, deadline, stage) {
   return checkpoint;
 }
 
+async function reportIngestProgress(onProgress, value) { if (typeof onProgress === "function") await onProgress(value); }
+
 function createOperationAbortSignal(deadline, externalSignal) {
   const controller = new AbortController();
   const onExternalAbort = () => controller.abort(externalSignal?.reason);
@@ -156,27 +159,6 @@ function createOperationAbortSignal(deadline, externalSignal) {
       clearTimeout(timer);
       externalSignal?.removeEventListener("abort", onExternalAbort);
     },
-  };
-}
-
-function unavailableProjection(snapshot, limitRaw) {
-  const numericLimit = Number(limitRaw);
-  const limit = Number.isFinite(numericLimit)
-    ? Math.max(1, Math.min(1000, Math.floor(numericLimit)))
-    : 200;
-  return {
-    token: `kg:projection:${sha256(`${snapshot.pointer.snapshotDigest}\0${limit}`).slice(0, 24)}`,
-    readOnly: true,
-    graphData: {
-      context: "knowgrph-knowledge-graph-projection",
-      type: "Graph",
-      nodes: [],
-      edges: [],
-    },
-    complete: false,
-    truncated: true,
-    limit,
-    reason: "projection_unavailable",
   };
 }
 
@@ -199,6 +181,7 @@ async function ingestResolvedTransaction(
   resolved,
   parserRegistry,
   objectTransaction,
+  onProgress,
 ) {
   const budget = { abortSignal, deadline };
   checkKnowledgeGraphBudget({ ...budget, stage: "ingest-start" });
@@ -266,6 +249,7 @@ async function ingestResolvedTransaction(
   });
   let parsed = 0;
   let reused = 0;
+  let sourceIndex = 0;
   const parserCheckpoint = createPeriodicCheckpoint(abortSignal, deadline, "source-parsing");
   for (const source of discovered.sources) {
     parserCheckpoint.force();
@@ -339,6 +323,20 @@ async function ingestResolvedTransaction(
     sourceEntries.push(persisted.sourceEntry);
     if (reusable) reused += 1;
     else parsed += 1;
+    sourceIndex += 1;
+    await reportIngestProgress(onProgress, {
+      schema: "knowgrph-knowledge-graph-import-progress/v1",
+      kind: "source-parsed",
+      graphId: resolved.graphId,
+      parserRegistryDigest: parserRegistry.digest,
+      sourcePath: source.relativePath,
+      sourceIndex,
+      sourceTotal: discovered.sources.length,
+      fragment: {
+        nodes: annotated.nodes,
+        edges: annotated.edges,
+      },
+    });
   }
 
   const incomplete = [...fragments.entries()]
@@ -448,12 +446,12 @@ async function ingestResolvedTransaction(
   });
 }
 
-async function ingestResolved(args, deps, abortSignal, deadline, resolved, parserRegistry) {
+async function ingestResolved(args, deps, abortSignal, deadline, resolved, parserRegistry, onProgress) {
   return runKnowledgeGraphObjectTransaction(
     graphPointerPath(resolved.outputRoot, resolved.graphId),
     { abortSignal, allowedRoot: resolved.outputRoot, deadline },
     (objectTransaction) => ingestResolvedTransaction(
-      args, deps, abortSignal, deadline, resolved, parserRegistry, objectTransaction,
+      args, deps, abortSignal, deadline, resolved, parserRegistry, objectTransaction, onProgress,
     ),
   );
 }
@@ -474,6 +472,7 @@ export async function ingestKnowledgeGraph(args, deps = {}, options = {}) {
         deadline,
         resolved,
         parserRegistry,
+        options.onProgress,
       ),
       { abortSignal: operationAbort.signal, deadline },
     );

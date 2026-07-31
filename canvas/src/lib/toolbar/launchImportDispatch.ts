@@ -6,7 +6,10 @@ import type {
   WorkspaceKnowledgeGraphInvocation,
   WorkspaceImportUrlOpts,
 } from '@/features/markdown-explorer/workspaceActionBridge'
-import { applyKnowledgeGraphCanvasProjection } from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
+import {
+  applyKnowledgeGraphCanvasProjection,
+  createKnowledgeGraphCanvasPreviewSession,
+} from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
 import {
   normalizeKnowledgeGraphRepositoryRemoteUrl,
   parseKnowledgeGraphRepositoryUrl,
@@ -228,18 +231,33 @@ export async function runLaunchImportUrl(args: {
     if (existingOperation) {
       result = await existingOperation
     } else {
-      const operation = importRepositoryUrl(repositoryUrl, args.opts, resolved.invocation)
-      inFlightRepositoryImports.set(operationKey, operation)
+      const preview = createKnowledgeGraphCanvasPreviewSession()
+      const operation = Promise.resolve().then(() => importRepositoryUrl(
+        repositoryUrl,
+        args.opts,
+        resolved.invocation,
+        preview.apply,
+      ))
+      const completedOperation = operation
+        .then(importResult => {
+          preview.commit(importResult)
+          return importResult
+        })
+        .catch(error => {
+          preview.rollback()
+          throw error
+        })
+      inFlightRepositoryImports.set(operationKey, completedOperation)
       try {
-        result = await operation
+        result = await completedOperation
       } finally {
-        if (inFlightRepositoryImports.get(operationKey) === operation) {
+        if (inFlightRepositoryImports.get(operationKey) === completedOperation) {
           inFlightRepositoryImports.delete(operationKey)
         }
       }
     }
     reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'projecting')
-    return finishKnowledgeGraphImport(result)
+    return result
   }
   const bridgeImport = args.bridge.importUrl
   if (typeof bridgeImport === 'function') {
