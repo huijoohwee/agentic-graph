@@ -153,7 +153,11 @@ function SingaporeFlyer() {
           rotation={[0, 0, support.rotationZ]}
           castShadow
         >
-          <boxGeometry args={support.size} />
+          <boxGeometry args={[
+            support.size[0],
+            support.size[1],
+            support.size[2],
+          ]} />
           <SurfaceMaterial color="#dce8ea" metalness={0.16} roughness={0.48} />
         </mesh>
       ))}

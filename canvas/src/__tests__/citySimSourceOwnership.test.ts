@@ -87,7 +87,7 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
     'the shared Canvas is a presentation layer, not a second Geo+XR surface owner',
   )
   assert.ok(
-    viewportOverlay.includes(
+    geospatialOverlay.includes(
       "data-kg-geo-xr-surface={active && composedWithXr ? 'active' : undefined}",
     ),
     'the retained geographic wrapper must remain the sole Geo+XR surface owner',
