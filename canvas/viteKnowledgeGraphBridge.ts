@@ -8,6 +8,7 @@ import {
   KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA,
   KNOWLEDGE_GRAPH_HOST_ROUTE,
 } from './src/features/knowledge-graph/knowledgeGraphHostAdapter'
+import { runKnowledgeGraphTool } from '../mcp/knowledge-graph-host.js'
 import { SOURCE_PARSER_STRUCTURAL_INCLUDE_PATTERNS } from '../mcp/knowledge-graph/source-parser-registry.mjs'
 
 const INGEST_TOOL_NAME = 'knowgrph.knowledge_graph.ingest'
@@ -28,6 +29,13 @@ type RuntimeIngest = (context: {
   env: NodeJS.ProcessEnv
   abortSignal: AbortSignal
 }) => Promise<unknown>
+
+type HostBridgeInternalErrorDiagnostic = {
+  stage: string
+  name: string
+  code: string
+  fingerprint: string
+}
 
 type CompletedFile = {
   digest: string
@@ -55,6 +63,7 @@ type BridgeOptions = {
   env?: NodeJS.ProcessEnv
   now?: () => number
   runIngest?: RuntimeIngest
+  onInternalError?: (diagnostic: HostBridgeInternalErrorDiagnostic) => void
 }
 
 class HostBridgeError extends Error {
@@ -81,7 +90,48 @@ function sendJson(response: ServerResponse, status: number, value: unknown) {
   response.end(body)
 }
 
-function sendFailure(response: ServerResponse, error: unknown) {
+function internalErrorDiagnostic(error: unknown, stage: string): HostBridgeInternalErrorDiagnostic {
+  const candidate = error && typeof error === 'object'
+    ? error as { name?: unknown; code?: unknown; message?: unknown; stack?: unknown }
+    : {}
+  const readField = (key: keyof typeof candidate) => {
+    try {
+      return String(candidate[key] || '')
+    } catch {
+      return ''
+    }
+  }
+  const safeToken = (value: unknown, fallback: string) => {
+    const normalized = String(value || '').trim()
+    return /^[A-Za-z0-9._-]{1,120}$/.test(normalized) ? normalized : fallback
+  }
+  const name = readField('name')
+  const code = readField('code')
+  const message = readField('message')
+  const stack = readField('stack')
+  return {
+    stage: safeToken(stage, 'request'),
+    name: safeToken(name, 'Error'),
+    code: safeToken(code, 'unknown'),
+    fingerprint: sha256(`${name}\0${code}\0${message}\0${stack}`).slice(0, 24),
+  }
+}
+
+function sendFailure(
+  response: ServerResponse,
+  error: unknown,
+  stage: string,
+  onInternalError: BridgeOptions['onInternalError'],
+) {
+  if (!(error instanceof HostBridgeError)) {
+    const diagnostic = internalErrorDiagnostic(error, stage)
+    try {
+      if (onInternalError) onInternalError(diagnostic)
+      else console.error('[knowgrph] knowledge graph host internal error', diagnostic)
+    } catch {
+      // A diagnostic sink must never replace the fail-closed host response.
+    }
+  }
   const known = error instanceof HostBridgeError
     ? error
     : new HostBridgeError('host-internal-error', 'The local knowledge graph host request failed.', 500)
@@ -260,8 +310,7 @@ function sanitizeImportResult(value: unknown): Record<string, unknown> {
 }
 
 async function defaultRuntimeIngest(context: Parameters<RuntimeIngest>[0]): Promise<unknown> {
-  const module = await import('../mcp/knowledge-graph-host.js')
-  return module.runKnowledgeGraphTool(INGEST_TOOL_NAME, context.args, {
+  return runKnowledgeGraphTool(INGEST_TOOL_NAME, context.args, {
     rootDir: context.rootDir,
     env: context.env,
     abortSignal: context.abortSignal,
@@ -414,14 +463,18 @@ export function createKnowledgeGraphBridgeRequestHandler(options: BridgeOptions)
   }
 
   async function handle(request: IncomingMessage, response: ServerResponse) {
+    let stage = 'request'
     try {
       const url = new URL(request.url || '/', `http://${request.headers.host || '127.0.0.1'}`)
       if (!url.pathname.startsWith(KNOWLEDGE_GRAPH_HOST_ROUTE)) return false
       assertSameOrigin(request)
+      stage = 'host-initialize'
       await initialize
+      stage = 'grant-expiration'
       await expireGrants()
       const route = url.pathname.slice(KNOWLEDGE_GRAPH_HOST_ROUTE.length) || '/'
       if (request.method === 'GET' && route === '/capability') {
+        stage = 'host-capability'
         sendJson(response, 200, {
           schema: KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA,
           available: true,
@@ -435,6 +488,7 @@ export function createKnowledgeGraphBridgeRequestHandler(options: BridgeOptions)
         return true
       }
       if (request.method === 'POST' && route === '/grants') {
+        stage = 'grant-create'
         await readJson(request)
         const id = randomUUID()
         const root = path.join(uploadRoot, id)
@@ -453,12 +507,14 @@ export function createKnowledgeGraphBridgeRequestHandler(options: BridgeOptions)
       }
       const fileMatch = /^\/grants\/([^/]+)\/files$/.exec(route)
       if (request.method === 'PUT' && fileMatch) {
+        stage = 'grant-upload'
         const result = await withGrant(fileMatch[1], grant => uploadChunk(request, grant, url))
         sendJson(response, 200, result)
         return true
       }
       const commitMatch = /^\/grants\/([^/]+)\/commit$/.exec(route)
       if (request.method === 'POST' && commitMatch) {
+        stage = 'grant-commit'
         const abortController = new AbortController()
         response.once('close', () => {
           if (!response.writableEnded) abortController.abort()
@@ -472,6 +528,7 @@ export function createKnowledgeGraphBridgeRequestHandler(options: BridgeOptions)
       }
       const grantMatch = /^\/grants\/([^/]+)$/.exec(route)
       if (request.method === 'DELETE' && grantMatch) {
+        stage = 'grant-delete'
         await withGrant(grantMatch[1], async grant => {
           grants.delete(grant.id)
           await fs.rm(grant.root, { recursive: true, force: true })
@@ -480,24 +537,29 @@ export function createKnowledgeGraphBridgeRequestHandler(options: BridgeOptions)
         return true
       }
       if (request.method === 'POST' && route === '/repositories') {
+        stage = 'repository-request'
         const body = await readJson(request)
         const repositoryUrl = parseCanonicalRepositoryUrl(body.repositoryUrl)
         const abortController = new AbortController()
         response.once('close', () => {
           if (!response.writableEnded) abortController.abort()
         })
-        const result = sanitizeImportResult(await runIngest({
+        stage = 'repository-runtime'
+        const runtimeResult = await runIngest({
           args: ingestArguments({ repositoryUrl }, body.invocation),
           rootDir: repoRoot,
           env: runtimeEnv,
           abortSignal: abortController.signal,
-        }))
+        })
+        stage = 'repository-result'
+        const result = sanitizeImportResult(runtimeResult)
         sendJson(response, 200, result)
         return true
       }
+      stage = 'route'
       throw new HostBridgeError('route-not-found', 'The knowledge graph host route was not found.', 404)
     } catch (error) {
-      sendFailure(response, error)
+      sendFailure(response, error, stage, options.onInternalError)
       return true
     }
   }

@@ -208,5 +208,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["workspace.import.knowledgeGraph.skillsCommandsFailureVisible","@/__tests__/knowledgeGraphSkillsCommandsLaunch.test","testKnowledgeGraphLaunchSkillsCommandsFailureIsVisibleAndScoped"],
   ["workspace.import.knowledgeGraph.skillsCommandsStoreExitClears","@/__tests__/knowledgeGraphSkillsCommandsLaunch.test","testKnowledgeGraphSkillsCommandsTargetClearsAcrossStoreOwnedShellExits"],
   ["workspace.import.knowledgeGraph.projectionFailureNoFallback","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphProjectionFailureNeverFallsBackAfterCanonicalResult"],
+  ["workspace.import.knowledgeGraph.viteHostDefaultRuntime","@/__tests__/knowledgeGraphViteHostRuntime.test","testKnowledgeGraphViteHostUsesStartupBoundDefaultRuntime"],
+  ["workspace.import.knowledgeGraph.viteHostFailureServerOnly","@/__tests__/knowledgeGraphViteHostRuntime.test","testKnowledgeGraphViteHostKeepsUnknownFailureDetailsServerOnly"],
   ["ui.panels.ktv.tailwindSharedSource","@/__tests__/tailwindSharedKtvSourceContract.test","testTailwindScansSharedKtvClassOwners"],
 ]
