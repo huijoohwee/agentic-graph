@@ -68,6 +68,19 @@ test('Flight browser proof activates only after applying the authored source', (
     verifier,
     /json\.dumps\(evidence, indent=2, allow_nan=False\)/,
   )
+  for (const removedContradictoryRendererField of [
+    'mapLibreOwnsVisualProjection',
+    'r3fFlightVisualsSuppressed',
+  ]) {
+    assert.doesNotMatch(
+      verifier,
+      new RegExp(removedContradictoryRendererField),
+    )
+    assert.doesNotMatch(
+      evidenceValidator,
+      new RegExp(removedContradictoryRendererField),
+    )
+  }
   assert.match(
     mainEntry,
     /VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF === '1'/,
@@ -337,6 +350,12 @@ test('Flight browser proof activates only after applying the authored source', (
     geoXrPresentationVerifier,
     /\{"aircraft", "objective-guide", "route", "route-point"\}/,
   )
+  const cityEvidenceValidator = evidenceValidator.slice(
+    evidenceValidator.indexOf(
+      'export function hasExactCityMapLibreSurfaceEvidence',
+    ),
+    evidenceValidator.indexOf('function hasExactCityHandoffEvidence'),
+  )
   for (const retainedCityRendererEvidence of [
     'city?.threeCanvasOwnerCount === 1',
     'city?.canvasStable === true',
@@ -345,16 +364,16 @@ test('Flight browser proof activates only after applying the authored source', (
     'city?.flightR3fVisualCount === 0',
   ]) {
     assert.ok(
-      evidenceValidator.includes(retainedCityRendererEvidence),
+      cityEvidenceValidator.includes(retainedCityRendererEvidence),
       `expected retained inactive City renderer evidence: ${retainedCityRendererEvidence}`,
     )
   }
   assert.match(
-    evidenceValidator,
+    cityEvidenceValidator,
     /JSON\.stringify\(\['aircraft', 'route', 'route-point'\]\)/,
   )
   assert.doesNotMatch(
-    evidenceValidator,
+    cityEvidenceValidator,
     /JSON\.stringify\(\['aircraft', 'objective-guide', 'route', 'route-point'\]\)/,
   )
   assert.doesNotMatch(

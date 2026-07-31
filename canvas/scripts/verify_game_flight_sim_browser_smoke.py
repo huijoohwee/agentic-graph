@@ -371,12 +371,8 @@ def main() -> None:
                         active_scene["canvasStable"],
                     "transparentFlightRuntimeCanvas":
                         active_scene["rendererAlpha"],
-                    "mapLibreOwnsVisualProjection":
-                        active_scene["visualProjection"] == "maplibre",
                     "nativeXrVisualsSuppressed":
                         active_scene["nativeVisualCount"] == 0,
-                    "r3fFlightVisualsSuppressed":
-                        active_scene["flightVisualCount"] == 0,
                     "physicsSourceSha256":
                         source_state["physicsBaseline"]["sourceSha256"],
                     "visibleSceneSignature":

@@ -474,9 +474,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     || evidence?.renderer?.mapLibreCanvasCount !== 1
     || evidence?.renderer?.visibleMapLibreCanvasCount !== 1
     || evidence?.renderer?.transparentFlightRuntimeCanvas !== true
-    || evidence?.renderer?.mapLibreOwnsVisualProjection !== true
     || evidence?.renderer?.nativeXrVisualsSuppressed !== true
-    || evidence?.renderer?.r3fFlightVisualsSuppressed !== true
     || !geoXrPresentationPassed
     || !Array.isArray(evidence?.geoProviderRequests)
     || evidence.geoProviderRequests.length === 0
