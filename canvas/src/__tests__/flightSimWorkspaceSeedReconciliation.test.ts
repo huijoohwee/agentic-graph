@@ -5,7 +5,7 @@ import {
   readCanonicalWorkspaceSeedBundleEntries,
 } from '@/features/workspace-fs/workspaceCanonicalSeedBundle'
 import {
-  overlayCanonicalLocalWorkspaceSeedEntries,
+  overlayCanonicalWorkspaceSeedEntries,
   type WorkspaceDocsMirrorAuthority,
 } from '@/features/workspace-fs/workspaceSeedInventoryAuthority'
 
@@ -67,7 +67,7 @@ test('Flight bundled Geo+XR source replaces a stale draft workspace seed', async
     },
   ]
 
-  const reconciled = overlayCanonicalLocalWorkspaceSeedEntries(
+  const reconciled = overlayCanonicalWorkspaceSeedEntries(
     publishedEntries,
     bundledEntries,
   )

@@ -140,6 +140,25 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     storyboardWidgetPanelsActive,
     threeOverlayComposed,
   } = props
+  const stableSemanticMediaOwner = React.useMemo(
+    (): MapLibreCanvasSemanticOwner | null => {
+      if (!semanticMediaOwner) return null
+      return Object.freeze({
+        captionId: semanticMediaOwner.captionId,
+        label: semanticMediaOwner.label,
+        selectionAttribute: Object.freeze({
+          name: semanticMediaOwner.selectionAttribute.name,
+          value: semanticMediaOwner.selectionAttribute.value,
+        }),
+      })
+    },
+    [
+      semanticMediaOwner?.captionId,
+      semanticMediaOwner?.label,
+      semanticMediaOwner?.selectionAttribute.name,
+      semanticMediaOwner?.selectionAttribute.value,
+    ],
+  )
   const flightBootstrapRequested = React.useSyncExternalStore(
     subscribeFlightSimGeospatialBootstrapRequest,
     readFlightSimGeospatialBootstrapRequested,
@@ -472,7 +491,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       <GeospatialOverlayHostLazy
         active={active}
         gameplayPresentationOwner={gameplayPresentationOwner}
-        semanticMediaOwner={semanticMediaOwner}
+        semanticMediaOwner={stableSemanticMediaOwner}
         snapshot={snapshot}
         handlers={handlers}
         onFlightOverlayPresented={handleFlightOverlayPresented}

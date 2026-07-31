@@ -262,6 +262,13 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   const xrStagePath = path.resolve(process.cwd(), 'src', 'features', 'three', 'XrCanonicalPhysicsStage.tsx')
   const threeGraphPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGraph.impl.tsx')
   const gameplayOverlayPath = path.resolve(process.cwd(), 'src', 'lib', 'three', 'ThreeGameplayOverlay.tsx')
+  const flightMissionStagePath = path.resolve(
+    process.cwd(),
+    'src',
+    'features',
+    'game-flight-sim',
+    'FlightSimMissionStage.tsx',
+  )
   const flightCameraPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibreCamera.ts')
   const flightLayersPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'flightGeoOverlayMapLibreLayers.ts')
   const viewportText = readUtf8(viewportPath)
@@ -272,6 +279,7 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   const xrStageText = readUtf8(xrStagePath)
   const threeGraphText = readUtf8(threeGraphPath)
   const gameplayOverlayText = readUtf8(gameplayOverlayPath)
+  const flightMissionStageText = readUtf8(flightMissionStagePath)
   const flightCameraText = readUtf8(flightCameraPath)
   const flightLayersText = readUtf8(flightLayersPath)
   if (viewportText.includes('shared-xr-stage') || hostText.includes('sharedXrStage')) {
@@ -347,6 +355,10 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   if (!gameplayOverlayText.includes('actorsVisible')
     || gameplayOverlayText.includes('actorsVisible={!props.geospatialComposite}')) {
     throw new Error('Expected Geo+XR to retain the actor-only R3F Media Airplane above MapLibre')
+  }
+  if (!flightMissionStageText.includes('if (!actorsVisible || geospatialComposite)')
+    || !flightMissionStageText.includes('completeFlightSimStagePreparation(stagePreparationRequestId)')) {
+    throw new Error('Expected MapLibre to remain the sole Geo+XR Flight preparation owner')
   }
   for (const layer of ['route', 'routePoints', 'aircraft', 'aircraftOutline']) {
     if (!flightLayersText.includes(`${layer}:`)) {

@@ -105,10 +105,36 @@ export {
   readCityGeoXrLayerOrder,
 } from './geoXrOverlayLayerOrder.js'
 export {
+  readGeoMapViewportPadding,
+} from './geoMapViewport.js'
+export {
+  REGIONAL_POI_LAYER_IDS,
+  REGIONAL_POI_LAYER_ORDER,
+  REGIONAL_POI_SOURCE_ID,
+  applyRegionalPoiProfileToMap,
+  clearRegionalPoiProfileFromMap,
+  mapHasExactRegionalPoiProfile,
+  mapHasExactRegionalPoiSource,
+  regionalPoiFeatureCollection,
+  regionalPoiProfileBounds,
+} from './regionalPoiMapLibre.js'
+export type {
+  RegionalPoiBounds,
+  RegionalPoiFeatureCollection,
+  RegionalPoiFeatureProperties,
+  RegionalPoiMapLibreOptions,
+  RegionalPoiViewMode,
+} from './regionalPoiMapLibre.js'
+export type {
+  RegionalPoiProfile,
+  RegionalPoiSurface,
+} from 'grph-shared/geospatial/regionalPoiGeo'
+export {
   cityGeoGridProjectedBounds,
   cityGeoOverlayBounds,
   cityGeoOverlayFeatureCollection,
   cityGeoOverlayFramingKey,
+  cityGeoPresentationBounds,
 } from './cityGeoOverlayProjection.js'
 export type {
   CityGeoBounds,

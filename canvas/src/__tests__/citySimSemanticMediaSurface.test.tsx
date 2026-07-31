@@ -121,6 +121,25 @@ export function testCitySimSemanticMediaSurfaceResolvesMapLibreHitTarget() {
     false,
   )
 
+  mapCanvas.removeAttribute('aria-label')
+  const releaseFromUnlabelledCanvas = bindMapLibreCanvasSemanticOwner(
+    { getCanvas: () => mapCanvas },
+    {
+      captionId,
+      label: CITY_SIM_MEDIA_STAGE_LABEL,
+      selectionAttribute: {
+        name: MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
+        value: MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
+      },
+    },
+  )
+  releaseFromUnlabelledCanvas?.()
+  assert.equal(
+    mapCanvas.getAttribute('aria-label'),
+    'Map',
+    'City release must restore a neutral accessible name even if the retained MapLibre canvas arrived unlabelled',
+  )
+
   const inactiveMarkup = renderCityMediaFigure(false)
   assert.doesNotMatch(
     inactiveMarkup,

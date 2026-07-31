@@ -70,7 +70,11 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.activeMapPresent === true
     && city?.mapLibreCanvasCount === 1
     && city?.visibleMapLibreCanvasCount === 1
-    && city?.threeCanvasOwnerCount === 0
+    && city?.threeCanvasOwnerCount === 1
+    && city?.canvasStable === true
+    && city?.rendererPointerTransparent === true
+    && city?.rendererSurfaceVisible === false
+    && city?.flightR3fVisualCount === 0
     && city?.hudVisible === false
     && city?.flightHudCount === 0
     && city?.flightSourceFeatures >= 7
@@ -81,7 +85,7 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.overlayPhase === 'stopped'
     && city?.overlayRoutePointCount >= 2
     && JSON.stringify(city?.sourceKinds)
-      === JSON.stringify(['aircraft', 'objective-guide', 'route', 'route-point'])
+      === JSON.stringify(['aircraft', 'route', 'route-point'])
     && city?.environmentId === ''
     && city?.environmentSourceFeatures === 0
     && city?.environmentLayerCount === 0
@@ -117,12 +121,12 @@ function hasExactCityHandoffEvidence(handoff) {
     && hasExactCityMapRetentionEvidence(retention)
     && restored?.flightActive === false
     && restored?.cityActive === false
-    && restored?.cityPanelVisible === true
+    && restored?.cityPanelVisible === false
     && restored?.citySemanticSurfaceActive === false
     && restored?.cityMapLibreCanvasAriaLabelledBy === ''
     && restored?.cityMapLibreCanvasAccessibleName === 'Map'
     && restored?.floatingPanelOpen === true
-    && restored?.floatingPanelView === 'cityBuilder'
+    && restored?.floatingPanelView === 'flightSim'
     && restored?.renderMode === '3d'
     && restored?.canvas3dMode === 'xr'
     && restored?.geospatialEnabled === true
@@ -308,8 +312,14 @@ export async function readValidatedFlightSimBrowserRunEvidence({
         && view?.rendererCanvasCount === 1
         && view?.rendererAlpha === true
         && view?.nativeVisualCount === 0
-        && view?.flightR3fVisualCount === 0
-        && view?.visualProjection === 'maplibre'
+        && view?.flightR3fVisualCount === 4
+        && JSON.stringify(view?.flightR3fVisualNames) === JSON.stringify([
+          'kg_flight_sim_aircraft',
+          'kg_flight_sim_aircraft_model_orientation',
+          'kg_flight_sim_geospatial_actor_lighting',
+          'kg_flight_sim_mission',
+        ])
+        && view?.visualProjection === 'r3f'
         && view?.rendererPointerTransparent === true
         && view?.exclusivePlainGeoOverlayCount === 0
         && view?.flightLayersReady === true
@@ -464,9 +474,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     || evidence?.renderer?.mapLibreCanvasCount !== 1
     || evidence?.renderer?.visibleMapLibreCanvasCount !== 1
     || evidence?.renderer?.transparentFlightRuntimeCanvas !== true
-    || evidence?.renderer?.mapLibreOwnsVisualProjection !== true
     || evidence?.renderer?.nativeXrVisualsSuppressed !== true
-    || evidence?.renderer?.r3fFlightVisualsSuppressed !== true
     || !geoXrPresentationPassed
     || !Array.isArray(evidence?.geoProviderRequests)
     || evidence.geoProviderRequests.length === 0

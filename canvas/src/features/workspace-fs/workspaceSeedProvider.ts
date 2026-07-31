@@ -9,7 +9,11 @@ import {
 import { reportRuntimeTrace } from '@/lib/debug/runtimeTrace'
 import { readCachedWorkspaceDocsMirrorEntries, readFirstKnowgrphStorageDocText, readWorkspaceDocsMirrorTextViaFetch as readTextViaFetch } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { importNodeFsPromises, importNodePath } from '@/features/workspace-fs/workspaceSeedNodeModules'
-import { isWorkspaceDocsMirrorGitHubSourceUrl, readCanonicalPublishedNonAgenticDocsMirrorEntries } from '@/features/workspace-fs/workspaceGithubDocsMirror'
+import {
+  isWorkspaceDocsMirrorGitHubSourceUrl,
+  readCanonicalKnowgrphWorkspaceSeedsMirrorEntries,
+  readCanonicalPublishedNonAgenticDocsMirrorEntries,
+} from '@/features/workspace-fs/workspaceGithubDocsMirror'
 import { isWorkspaceSourceMirrorFileName, shouldEncodeWorkspaceSourceMirrorAsBase64 } from '@/features/workspace-fs/workspaceSourceMirrorFormats'
 import { readWorkspaceMirrorRootEntries } from '@/features/workspace-fs/workspaceMirrorRootEntries'
 import { resolveWorkspaceDocsMirrorLocalRootRequests } from '@/features/workspace-fs/workspaceDocsMirrorLocalRoots'
@@ -19,7 +23,7 @@ import {
   readKnowgrphWorkspaceSeedsReadAbsRoot,
 } from './workspaceSeedLocalMirrorAuthority'
 import {
-  overlayCanonicalLocalWorkspaceSeedEntries,
+  overlayCanonicalWorkspaceSeedEntries,
   type WorkspaceDocsMirrorAuthority,
 } from './workspaceSeedInventoryAuthority'
 import {
@@ -1341,9 +1345,9 @@ const chooseBestWorkspaceDocsMirrorDataset = (
   return best
 }
 
-export const readCanonicalLocalWorkspaceSeedMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
+export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
   const absRoot = readKnowgrphWorkspaceSeedsReadAbsRoot()
-  if (!absRoot) return []
+  if (!absRoot) return readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
   const entries = await readWorkspaceMirrorRootEntries({
     absRoot,
     workspaceRootName: 'workspace-seeds',
@@ -1509,17 +1513,17 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
   })
   // #endregion
   if (!repoLocalRunReady) {
-    const [publishedEntries, publishedAgenticEntries, localSeedEntries] = await Promise.all([
+    const [publishedEntries, publishedAgenticEntries, workspaceSeedEntries] = await Promise.all([
       readCanonicalPublishedNonAgenticDocsMirrorEntries({
         maxFiles: WORKSPACE_DOCS_MIRROR_MAX_FILES,
         maxFileBytes: WORKSPACE_DOCS_MIRROR_MAX_FILE_BYTES,
       }),
       import('@/features/workspace-fs/workspacePublishedAgenticDocsSource').then(module => module.readPublishedAgenticDocsMirrorEntries()),
-      readCanonicalLocalWorkspaceSeedMirrorEntries(),
+      readCanonicalWorkspaceSeedMirrorEntries(),
     ])
     const canonicalEntries = [...publishedEntries, ...publishedAgenticEntries]
     if (canonicalEntries.length > 0) {
-      return overlayCanonicalLocalWorkspaceSeedEntries(canonicalEntries, localSeedEntries)
+      return overlayCanonicalWorkspaceSeedEntries(canonicalEntries, workspaceSeedEntries)
     }
   }
   const sourceFilesSelection = await resolveWorkspaceDocsRootFromSourceFilesSelection()

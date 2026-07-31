@@ -51,6 +51,13 @@ def _read_view(page: Page) -> dict[str, Any]:
           const blob = await graphState.captureThreeGltfSnapshot()
           const gltf = blob ? JSON.parse(await blob.text()) : null
           const nodes = Array.isArray(gltf?.nodes) ? gltf.nodes : []
+          const flightR3fVisualNames = nodes
+            .map(node => String(node?.name || ''))
+            .filter(name => (
+              name.startsWith('kg_flight_sim_')
+              || name.startsWith('kg_flight-sim_')
+            ))
+            .sort()
           const host = document.querySelector(
             '[data-kg-flight-geospatial-overlay="active"]',
           )
@@ -180,19 +187,23 @@ def _read_view(page: Page) -> dict[str, Any]:
             }
           }) : []
           const measureEdgeMeters = (from, to) => {
-            if (!Array.isArray(from) || !Array.isArray(to)) return NaN
+            if (!Array.isArray(from) || !Array.isArray(to)) return null
             const longitudeA = Number(from[0])
             const latitudeA = Number(from[1])
             const longitudeB = Number(to[0])
             const latitudeB = Number(to[1])
             if (![longitudeA, latitudeA, longitudeB, latitudeB].every(Number.isFinite)) {
-              return NaN
+              return null
             }
             const latitude = (latitudeA + latitudeB) / 2
             return Math.hypot(
               (longitudeB - longitudeA) * 111_320 * Math.cos(latitude * Math.PI / 180),
               (latitudeB - latitudeA) * 111_320,
             )
+          }
+          const finiteNumberOrNull = value => {
+            const number = Number(value)
+            return Number.isFinite(number) ? number : null
           }
           const environmentSurfaceMeters = environmentFeatures.map(feature => {
             const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
@@ -209,7 +220,7 @@ def _read_view(page: Page) -> dict[str, Any]:
             const latitude = coordinates.length > 0
               ? coordinates.reduce((sum, coordinate) => sum + coordinate[1], 0)
                 / coordinates.length
-              : NaN
+              : null
             const metersPerLongitudeDegree = 111_320
               * Math.cos(latitude * Math.PI / 180)
             const longitudes = coordinates.map(coordinate => coordinate[0])
@@ -228,21 +239,25 @@ def _read_view(page: Page) -> dict[str, Any]:
                 && point.y <= mapHeight
               ))
             return {
-              baseHeightMeters: Number(feature?.properties?.kgBaseHeightMeters),
+              baseHeightMeters: finiteNumberOrNull(
+                feature?.properties?.kgBaseHeightMeters,
+              ),
               edgeDepthMeters: measureEdgeMeters(coordinates[1], coordinates[2]),
               edgeWidthMeters: measureEdgeMeters(coordinates[0], coordinates[1]),
-              heightMeters: Number(feature?.properties?.kgHeightMeters),
+              heightMeters: finiteNumberOrNull(
+                feature?.properties?.kgHeightMeters,
+              ),
               id: String(feature?.properties?.kgSurfaceId || ''),
               kind: String(feature?.properties?.kgSurfaceKind || ''),
               label: String(feature?.properties?.kgSurfaceLabel || ''),
               poiId: String(feature?.properties?.kgPoiId || ''),
               depthMeters: latitudes.length > 0
                 ? (Math.max(...latitudes) - Math.min(...latitudes)) * 111_320
-                : NaN,
+                : null,
               widthMeters: longitudes.length > 0
                 ? (Math.max(...longitudes) - Math.min(...longitudes))
                   * metersPerLongitudeDegree
-                : NaN,
+                : null,
               viewportBounded,
             }
           })
@@ -289,12 +304,18 @@ def _read_view(page: Page) -> dict[str, Any]:
               widthMeters: measureEdgeMeters(ring?.[0], ring?.[1]),
             }
           })
-          const cityExpectedParcelCount =
-            Number(cityOverlay?.rows) * Number(cityOverlay?.columns)
+          const cityExpectedRows = finiteNumberOrNull(cityOverlay?.rows)
+          const cityExpectedColumns = finiteNumberOrNull(cityOverlay?.columns)
+          const cityExpectedParcelCount = Number.isSafeInteger(cityExpectedRows)
+            && Number.isSafeInteger(cityExpectedColumns)
+            && cityExpectedRows > 0
+            && cityExpectedColumns > 0
+            ? cityExpectedRows * cityExpectedColumns
+            : null
           const cityExpectedParcelWidthMeters =
-            Number(cityOverlay?.profile?.parcelWidthMeters)
+            finiteNumberOrNull(cityOverlay?.profile?.parcelWidthMeters)
           const cityExpectedParcelDepthMeters =
-            Number(cityOverlay?.profile?.parcelDepthMeters)
+            finiteNumberOrNull(cityOverlay?.profile?.parcelDepthMeters)
           const cityParcelsUseAuthoredMeters =
             Number.isSafeInteger(cityExpectedParcelCount)
             && cityExpectedParcelCount > 0
@@ -392,6 +413,9 @@ def _read_view(page: Page) -> dict[str, Any]:
           const cityPanel = document.querySelector(
             '[data-kg-city-sim-floating-panel="1"]',
           )
+          const cityError = cityPanel?.querySelector(
+            '[data-kg-city-sim-error="1"]',
+          )
           const citySemanticSurface = document.querySelector(
             '[data-kg-city-sim-semantic-media="active"]',
           )
@@ -426,6 +450,7 @@ def _read_view(page: Page) -> dict[str, Any]:
               === '1',
             cityPanelVisible: isVisible(cityPanel),
             cityPhase: cityPanel?.getAttribute('data-kg-city-sim-phase') || '',
+            cityError: cityError?.textContent?.trim() || '',
             citySemanticSurfaceActive: Boolean(citySemanticSurface),
             cityMapLibreOwnerCount: document.querySelectorAll(
               '[data-kg-city-maplibre-owner="1"]',
@@ -531,16 +556,14 @@ def _read_view(page: Page) -> dict[str, Any]:
                 || name.startsWith('kg_xr_stage_preset_')
                 || name.startsWith('kg_xr_playground_')
             }).length,
-            flightR3fVisualCount: nodes.filter(node => {
-              const name = String(node?.name || '')
-              return name.startsWith('kg_flight_sim_')
-                || name.startsWith('kg_flight-sim_')
-            }).length,
+            flightR3fVisualCount: flightR3fVisualNames.length,
+            flightR3fVisualNames,
             visualProjection:
               rendererCanvas?.dataset.kgFlightSimVisualProjection || '',
             rendererPointerTransparent:
               Boolean(rendererPointerRoot)
               && getComputedStyle(rendererPointerRoot).pointerEvents === 'none',
+            rendererSurfaceVisible: isVisible(rendererPointerRoot),
             exclusivePlainGeoOverlayCount: document.querySelectorAll(
               '[data-kg-flight-sim-geo-overlay="1"]',
             ).length,
@@ -651,7 +674,14 @@ def wait_for_canvas_view_geo_xr_handoff(page: Page, source_case: GeoXrViewCase) 
             "renderMode": "3d", "canvas3dMode": "xr", "hudVisible": True,
             "geoXrSurfaceActive": True, "rendererCanvasCount": 1,
             "canvasStable": True, "rendererAlpha": True,
-            "flightR3fVisualCount": 0, "visualProjection": "maplibre",
+            "flightR3fVisualCount": 4,
+            "flightR3fVisualNames": [
+                "kg_flight_sim_aircraft",
+                "kg_flight_sim_aircraft_model_orientation",
+                "kg_flight_sim_geospatial_actor_lighting",
+                "kg_flight_sim_mission",
+            ],
+            "visualProjection": "r3f",
             "rendererPointerTransparent": True, "flightActive": True,
             "exclusivePlainGeoOverlayCount": 0, "flightRuntimeError": "",
         }, require_revision_sync=True,

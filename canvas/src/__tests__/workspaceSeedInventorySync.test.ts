@@ -5,6 +5,7 @@ import { createPersistedCollectionDb } from '@/lib/storage/persistedCollectionSt
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import {
+  readCanonicalWorkspaceSeedMirrorEntries,
   readWorkspaceInitializationDocsMirrorEntries,
   type WorkspaceDocsMirrorEntry,
 } from '@/features/workspace-fs/workspaceSeedProvider'
@@ -101,6 +102,45 @@ export async function testProductionFallbackRestoresBundledWorkspaceSeedInventor
     restoreEnv(DOCS_ROOT_ENV, previousDocsRoot)
     restoreEnv(SEEDS_READ_ROOT_ENV, previousSeedsRoot)
     restoreEnv(AGENTIC_DOCS_ROOT_ENV, previousAgenticRoot)
+  }
+}
+
+export async function testRepoLocalProductionUsesBundledCanonicalWorkspaceSeedInventory() {
+  const repoRoot = path.resolve(process.cwd(), '..')
+  const seedsRoot = path.join(repoRoot, 'docs', 'workspace-seeds')
+  const previousRepoLocal = process.env[REPO_LOCAL_ENV]
+  const previousSeedsRoot = process.env[SEEDS_READ_ROOT_ENV]
+  const previousFetch = globalThis.fetch
+  try {
+    process.env[REPO_LOCAL_ENV] = '1'
+    delete process.env[SEEDS_READ_ROOT_ENV]
+    globalThis.fetch = (async () => {
+      throw new Error('repo-local production seed projection must not depend on a runtime request')
+    }) as typeof fetch
+
+    const mirrored = await readCanonicalWorkspaceSeedMirrorEntries()
+    const actualBasenames = mirrored
+      .map(entry => entry.relPath.replace(/^workspace-seeds\//, ''))
+      .sort((left, right) => left.localeCompare(right))
+    const expectedBasenames = [...CANONICAL_WORKSPACE_SEED_BASENAMES]
+      .sort((left, right) => left.localeCompare(right))
+    if (JSON.stringify(actualBasenames) !== JSON.stringify(expectedBasenames)) {
+      throw new Error(`expected repo-local production inventory ${JSON.stringify(expectedBasenames)}, got ${JSON.stringify(actualBasenames)}`)
+    }
+    if (mirrored.some(entry => entry.authority !== 'knowgrph-workspace-seeds-bundled')) {
+      throw new Error(`expected revision-pinned bundled authority, got ${JSON.stringify(mirrored)}`)
+    }
+    for (const entry of mirrored) {
+      const basename = entry.relPath.replace(/^workspace-seeds\//, '')
+      const authoredText = await fsPromises.readFile(path.join(seedsRoot, basename), 'utf8')
+      if (entry.text !== authoredText) {
+        throw new Error(`expected repo-local production ${basename} bytes to match the authored source`)
+      }
+    }
+  } finally {
+    globalThis.fetch = previousFetch
+    restoreEnv(REPO_LOCAL_ENV, previousRepoLocal)
+    restoreEnv(SEEDS_READ_ROOT_ENV, previousSeedsRoot)
   }
 }
 

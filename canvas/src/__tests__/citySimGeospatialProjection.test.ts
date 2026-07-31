@@ -5,6 +5,7 @@ import type { CitySimSnapshot } from '@/features/game-city-sim/citySimRuntimeSta
 import {
   cityGeoOverlayBounds,
   cityGeoOverlayFeatureCollection,
+  cityGeoPresentationBounds,
 } from '../../../gympgrph/src/cityGeoOverlayProjection'
 import {
   readAuthoritativeCitySimDocument,
@@ -40,6 +41,19 @@ export function testCitySimGeospatialProjectionTracksLiveParcelsAndSelection() {
 
   assert.equal(overlay.active, true)
   assert.equal(overlay.profile?.id, snapshot.geographicProfile?.id)
+  assert.equal(
+    overlay.profile?.regionalPoiProfile.id,
+    snapshot.geographicProfile?.regionalPoiProfileId,
+  )
+  assert.equal(overlay.profile?.regionalPoiProfile.surfaces.length, 9)
+  assert.deepEqual(
+    [...new Set(
+      overlay.profile?.regionalPoiProfile.surfaces.map(
+        surface => surface.poiId,
+      ),
+    )].sort(),
+    ['gardens-by-the-bay', 'marina-bay-sands', 'singapore-flyer'],
+  )
   assert.deepEqual(overlay.profile?.center, snapshot.geographicProfile?.anchor)
   assert.equal(
     overlay.profile?.bearingDegrees,
@@ -54,6 +68,12 @@ export function testCitySimGeospatialProjectionTracksLiveParcelsAndSelection() {
   ]
   assert.ok(Math.abs(boundsCenter[0] - snapshot.geographicProfile!.anchor[0]) < 1e-12)
   assert.ok(Math.abs(boundsCenter[1] - snapshot.geographicProfile!.anchor[1]) < 1e-12)
+  const presentationBounds = cityGeoPresentationBounds(overlay)
+  assert.ok(presentationBounds)
+  assert.ok(presentationBounds[0][0] <= bounds[0][0])
+  assert.ok(presentationBounds[0][1] < bounds[0][1])
+  assert.ok(presentationBounds[1][0] > bounds[1][0])
+  assert.ok(presentationBounds[1][1] >= bounds[1][1])
   const firstParcelRing = collection.features[0].geometry.coordinates[0]
   assert.ok(firstParcelRing[1][0] > firstParcelRing[0][0])
   assert.ok(
@@ -106,5 +126,17 @@ export function testCitySimGeospatialProjectionTracksLiveParcelsAndSelection() {
   if (invalidLatitude.ok === false) {
     assert.equal(invalidLatitude.error.code, 'invalid-geographic-profile')
     assert.match(invalidLatitude.error.message, /outside MapLibre projection bounds/)
+  }
+
+  const unknownPoiProfile = parseCitySimAuthoredSource(
+    readAuthoritativeCitySimDocument().replace(
+      'regional_poi_profile_id: "adm0:SGP:major-pois/v1"',
+      'regional_poi_profile_id: "unknown:regional-pois"',
+    ),
+  )
+  assert.equal(unknownPoiProfile.ok, false)
+  if (unknownPoiProfile.ok === false) {
+    assert.equal(unknownPoiProfile.error.code, 'invalid-geographic-profile')
+    assert.match(unknownPoiProfile.error.message, /Unknown regional POI profile/)
   }
 }

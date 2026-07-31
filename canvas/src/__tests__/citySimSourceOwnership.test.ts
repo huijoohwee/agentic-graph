@@ -24,7 +24,7 @@ function collectTextFiles(path: string): readonly string[] {
     .filter(file => /\.(?:md|ts|tsx|mjs)$/.test(file) || file.endsWith('.kiro'))
 }
 
-export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
+export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInactiveThreeOwner() {
   const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
   const threeGraph = readCanvasSource('lib/three/ThreeGraph.impl.tsx')
   const mediaFigure = readCanvasSource('lib/cards/SemanticMediaFigure.tsx')
@@ -53,15 +53,56 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
     ),
     'the semantic City wrapper must own the native MapLibre surface',
   )
+  assert.equal(
+    viewport.match(/<SemanticMediaFigure\b/g)?.length,
+    1,
+    'the viewport must mount one shared semantic MapLibre wrapper',
+  )
+  assert.equal(
+    viewport.match(/<CanvasViewportGeospatialOverlayLazy\b/g)?.length,
+    1,
+    'the viewport must mount one shared native Geo owner',
+  )
   assert.ok(
     viewport.includes(
-      'threeOverlayComposed={false}',
+      "active={activeSurface === 'geo' || activeSurface === 'geo-xr'}",
     ),
-    'City must not compose a Three overlay above the MapLibre owner',
+    'document switching must not deactivate and dispose the retained native Geo owner',
+  )
+  assert.ok(
+    viewport.includes(
+      'threeOverlayComposed={cityMapLibreSurfaceRequested ? false : geospatialXrModeEnabled}',
+    ),
+    'City source intent must not compose a Three overlay above the MapLibre owner',
+  )
+  assert.doesNotMatch(
+    viewport,
+    /cityMapLibreSurfaceRequested\s*\?\s*\(\s*<SemanticMediaFigure/,
+    'City activation must not replace the shared semantic MapLibre owner',
+  )
+  assert.ok(
+    viewport.includes(
+      '{geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (',
+    ),
+    'document switching must retain the one geospatial owner beneath the transition notice',
+  )
+  assert.doesNotMatch(
+    viewport,
+    /!documentSwitchOwnsViewport\s*&&\s*geospatialCompositionEnabled\s*&&\s*!heavyRuntimeIntentBlocked/,
+    'document switching must not unmount the geospatial owner',
   )
   assert.ok(
     !/citySim|CitySim|MapLibre/.test(rendererLifecycle),
     'Three lifecycle ownership must remain independent from the City MapLibre surface',
+  )
+  assert.ok(
+    rendererLifecycle.includes(
+      '(!input.geospatialOverlayOwnsViewport || input.rendererPreviouslyMounted)',
+    )
+      && rendererLifecycle.includes(
+        '&& !input.geospatialOverlayOwnsViewport',
+      ),
+    'an existing shared renderer must remain mounted but inactive while MapLibre owns the viewport',
   )
   assert.deepEqual(resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
@@ -99,6 +140,15 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   assert.ok(viewport.includes('label: CITY_SIM_MEDIA_STAGE_LABEL'))
   assert.ok(viewport.includes('selectionTarget="descendant"'))
   assert.ok(viewport.includes('MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR'))
+  assert.ok(
+    geospatialOverlay.includes(
+      'const stableSemanticMediaOwner = React.useMemo',
+    )
+      && geospatialOverlay.includes(
+        'semanticMediaOwner={stableSemanticMediaOwner}',
+      ),
+    'the live MapLibre canvas semantic owner must not churn on City updates',
+  )
   assert.ok(
     xrPhysicsRuntime.includes(
       'const { citySimActive, flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()',

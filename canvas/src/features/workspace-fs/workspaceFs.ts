@@ -482,8 +482,8 @@ export async function getWorkspaceSeedFiles(): Promise<WorkspaceSeedFile[]> {
   const loaded = await Promise.all(
     WORKSPACE_SEED_SPECS.map(async seed => {
       if (seed.sourceLoader) {
-        const text = String(await seed.sourceLoader() || '').trim()
-        return text ? { path: seed.path, text, isFallback: false } : null
+        const text = String(await seed.sourceLoader() || '')
+        return text.trim() ? { path: seed.path, text, isFallback: false } : null
       }
       return {
         path: seed.path,

@@ -20,11 +20,10 @@ def read_city_semantic_media_contract(page: Page) -> dict[str, Any]:
               && style?.visibility !== 'hidden'
               && Number(style?.opacity || '1') > 0
           }
-          const visibleMapCanvases = surface
-            ? Array.from(
-                surface.querySelectorAll('canvas.maplibregl-canvas'),
-              ).filter(isVisible)
-            : []
+          const mapCanvasScope = surface || document
+          const visibleMapCanvases = Array.from(
+            mapCanvasScope.querySelectorAll('canvas.maplibregl-canvas'),
+          ).filter(isVisible)
           const mapCanvas = visibleMapCanvases[0] || null
           const selectableOwner = mapCanvas?.closest(
             '[data-kg-rich-media-selectable-surface="1"]',

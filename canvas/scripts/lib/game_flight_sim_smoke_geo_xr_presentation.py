@@ -13,8 +13,13 @@ from lib.game_flight_sim_smoke_geo_xr import _read_view, _wait_for_view
 from lib.game_flight_sim_smoke_geo_xr_layout import (
     prepare_reported_singapore_geo_handoff,
 )
+from lib.game_flight_sim_smoke_city_regional_poi import (
+    require_city_regional_poi_contract,
+    require_city_regional_poi_teardown_contract,
+)
 from lib.game_flight_sim_smoke_source_selection import (
     close_source_files_selection_surface,
+    prepare_source_files_selection_surface,
 )
 
 
@@ -118,22 +123,43 @@ def verify_flight_geo_xr_city_handoff(
         )
 
     _install_city_map_retention_audit(page)
-    city_trigger = page.locator(
-        '[data-kg-floating-panel-view-trigger="cityBuilder"]',
+    source_basenames = page.evaluate(
+        """
+        async () => {
+          const demos = await window.__kgFlightSimBrowserProof.importModule(
+            'workspaceRunReadyDemos',
+          )
+          return {
+            city: demos.CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+            flight: demos.FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME,
+          }
+        }
+        """
+    )
+    city_source_basename = str(source_basenames.get("city") or "")
+    flight_source_basename = str(source_basenames.get("flight") or "")
+    if not city_source_basename or not flight_source_basename:
+        raise AssertionError(
+            "City handoff could not resolve the canonical source registry: "
+            f"{source_basenames}"
+        )
+    city_source_button = page.get_by_role(
+        "button",
+        name=f"File {city_source_basename}",
+        exact=True,
     ).first
-    city_trigger.wait_for(state="visible", timeout=30_000)
-    city_trigger.click(timeout=30_000)
+    city_source_button.wait_for(state="visible", timeout=30_000)
+    city_source_button.click(timeout=30_000)
+    city_source_surface_transition = close_source_files_selection_surface(page)
     city_panel = page.locator('[data-kg-city-sim-floating-panel="1"]').first
     city_panel.wait_for(state="visible", timeout=30_000)
-    open_button = city_panel.locator('[data-kg-city-sim-open="1"]').first
-    open_button.wait_for(state="visible", timeout=30_000)
-    if open_button.is_disabled():
-        raise AssertionError("City Builder Open was disabled during Flight handoff")
-    open_button.click(timeout=30_000)
 
     city = _wait_for_browser_contract(
         page,
-        label="MapLibre-owned City Geo+XR surface after Flight Geo+XR",
+        label=(
+            "source-authored MapLibre-owned City Geo+XR surface after "
+            "Flight Geo+XR"
+        ),
         accepted=lambda value: (
             value.get("flightActive") is False
             and value.get("cityActive") is True
@@ -169,7 +195,11 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("activeMapPresent") is True
             and value.get("mapLibreCanvasCount") == 1
             and value.get("visibleMapLibreCanvasCount") == 1
-            and value.get("threeCanvasOwnerCount") == 0
+            and value.get("threeCanvasOwnerCount") == 1
+            and value.get("canvasStable") is True
+            and value.get("rendererPointerTransparent") is True
+            and value.get("rendererSurfaceVisible") is False
+            and value.get("flightR3fVisualCount") == 0
             and value.get("hudVisible") is False
             and value.get("flightHudCount") == 0
             and value.get("flightSourceFeatures") >= 7
@@ -180,7 +210,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("overlayPhase") == "stopped"
             and value.get("overlayRoutePointCount") >= 2
             and set(value.get("sourceKinds") or [])
-            == {"aircraft", "objective-guide", "route", "route-point"}
+            == {"aircraft", "route", "route-point"}
             and value.get("environmentId") == ""
             and value.get("environmentSourceFeatures") == 0
             and value.get("environmentLayerCount") == 0
@@ -200,6 +230,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
+    regional_poi = require_city_regional_poi_contract(page)
     retention = page.evaluate(
         """
         async () => {
@@ -232,16 +263,16 @@ def verify_flight_geo_xr_city_handoff(
     exit_button.click(timeout=30_000)
     restored = _wait_for_browser_contract(
         page,
-        label="awaited City Geo+XR preference restoration",
+        label="awaited City prior-surface restoration",
         accepted=lambda value: (
             value.get("flightActive") is False
             and value.get("cityActive") is False
-            and value.get("cityPanelVisible") is True
+            and value.get("cityPanelVisible") is False
             and value.get("citySemanticSurfaceActive") is False
             and value.get("cityMapLibreCanvasAriaLabelledBy") == ""
             and value.get("cityMapLibreCanvasAccessibleName") == "Map"
             and value.get("floatingPanelOpen") is True
-            and value.get("floatingPanelView") == "cityBuilder"
+            and value.get("floatingPanelView") == "flightSim"
             and value.get("renderMode") == "3d"
             and value.get("canvas3dMode") == "xr"
             and value.get("geospatialEnabled") is True
@@ -260,19 +291,16 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
+    exited_regional_poi = require_city_regional_poi_teardown_contract(page)
 
-    flight_trigger = page.locator(
-        '[data-kg-floating-panel-view-trigger="flightSim"]',
+    prepare_source_files_selection_surface(page)
+    flight_source_button = page.get_by_role(
+        "button",
+        name=f"File {flight_source_basename}",
+        exact=True,
     ).first
-    flight_trigger.wait_for(state="visible", timeout=30_000)
-    flight_trigger.click(timeout=30_000)
-    flight_panel = page.locator('[data-kg-flight-sim-floating-panel="1"]').first
-    flight_panel.wait_for(state="visible", timeout=30_000)
-    reopen_button = flight_panel.locator('[data-kg-flight-sim-open="1"]').first
-    reopen_button.wait_for(state="visible", timeout=30_000)
-    if reopen_button.is_disabled():
-        raise AssertionError("Flight Sim Open was disabled after City exit")
-    reopen_button.click(timeout=30_000)
+    flight_source_button.wait_for(state="visible", timeout=30_000)
+    flight_source_button.click(timeout=30_000)
     reopened = _wait_for_view(
         page,
         expected_provider_host=expected_provider_host,
@@ -292,12 +320,17 @@ def verify_flight_geo_xr_city_handoff(
             "normal Flight reopen did not restore the Flight-only Geo+XR view: "
             f"{reopened}"
         )
+    reopened_regional_poi = require_city_regional_poi_teardown_contract(page)
     return {
         "before": before,
         "city": city,
+        "regionalPoi": regional_poi,
+        "regionalPoiAfterCityExit": exited_regional_poi,
+        "regionalPoiAfterFlightReopen": reopened_regional_poi,
         "mapRetention": retention,
         "restored": restored,
         "reopened": reopened,
+        "citySourceSurfaceTransition": city_source_surface_transition,
     }
 
 
@@ -420,8 +453,14 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 "rendererAlpha": True,
                 "terrainCount": 0,
                 "nativeVisualCount": 0,
-                "flightR3fVisualCount": 0,
-                "visualProjection": "maplibre",
+                "flightR3fVisualCount": 4,
+                "flightR3fVisualNames": [
+                    "kg_flight_sim_aircraft",
+                    "kg_flight_sim_aircraft_model_orientation",
+                    "kg_flight_sim_geospatial_actor_lighting",
+                    "kg_flight_sim_mission",
+                ],
+                "visualProjection": "r3f",
                 "rendererPointerTransparent": True,
                 "exclusivePlainGeoOverlayCount": 0,
                 "cameraPreference": baseline_camera["cameraPreference"],

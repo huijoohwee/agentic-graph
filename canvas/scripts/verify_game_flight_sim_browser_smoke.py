@@ -18,6 +18,7 @@ from lib.game_flight_sim_smoke_ledger import (
 )
 from lib.game_flight_sim_smoke_network import (
     assert_transport_ownership,
+    assert_workspace_seed_list_authority,
     request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
@@ -270,15 +271,6 @@ def main() -> None:
                 / "docs"
                 / "workspace-seeds"
             ).resolve()
-            invalid_fs_list_requests = [
-                request
-                for request in fs_list_requests
-                if (
-                    request["method"] != "POST"
-                    or not request["path"]
-                    or Path(request["path"]).resolve() != expected_seed_root
-                )
-            ]
             websocket_attempts = summarize_websocket_attempts(
                 websocket_probe_url,
                 websocket_events,
@@ -297,12 +289,10 @@ def main() -> None:
                 )
 
             def verify_workspace_seed_authority() -> None:
-                if not fs_list_requests or invalid_fs_list_requests:
-                    raise AssertionError(
-                        "Flight bootstrap scanned an unrelated docs mirror: "
-                        f"requests={fs_list_requests}, "
-                        f"invalid={invalid_fs_list_requests}"
-                    )
+                assert_workspace_seed_list_authority(
+                    requests=fs_list_requests,
+                    expected_seed_root=expected_seed_root,
+                )
 
             def verify_browser_error_surface() -> None:
                 if console_errors or page_errors or failed_responses:
@@ -381,12 +371,8 @@ def main() -> None:
                         active_scene["canvasStable"],
                     "transparentFlightRuntimeCanvas":
                         active_scene["rendererAlpha"],
-                    "mapLibreOwnsVisualProjection":
-                        active_scene["visualProjection"] == "maplibre",
                     "nativeXrVisualsSuppressed":
                         active_scene["nativeVisualCount"] == 0,
-                    "r3fFlightVisualsSuppressed":
-                        active_scene["flightVisualCount"] == 0,
                     "physicsSourceSha256":
                         source_state["physicsBaseline"]["sourceSha256"],
                     "visibleSceneSignature":
@@ -489,7 +475,7 @@ def main() -> None:
                 "screenshot": str(SCREENSHOT_PATH),
             }
             EVIDENCE_PATH.write_text(
-                json.dumps(evidence, indent=2) + "\n",
+                json.dumps(evidence, indent=2, allow_nan=False) + "\n",
                 encoding="utf-8",
             )
             print(f"OK game-flight-sim-browser-smoke {target_url}")

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  SINGAPORE_MAJOR_POI_GEO_PROFILE,
+} from 'grph-shared/geospatial/singaporeMajorPoiGeo'
+import {
   CITY_GEO_OVERLAY_LAYER_DEFINITIONS,
   CITY_GEO_OVERLAY_LAYER_IDS,
 } from '../../../gympgrph/src/cityGeoOverlayMapLibre'
@@ -21,6 +24,12 @@ import {
   applyCityGeoXrAerialOverlayToMap,
 } from '../../../gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation'
 import {
+  REGIONAL_POI_SOURCE_ID,
+  applyRegionalPoiProfileToMap,
+  mapHasExactRegionalPoiProfile,
+  type RegionalPoiFeatureCollection,
+} from '../../../gympgrph/src/regionalPoiMapLibre'
+import {
   flightOverlay,
   withEnvironment,
 } from './helpers/flightSimMapLibrePresentationHarness'
@@ -28,7 +37,7 @@ import {
   TestMapLibreMap,
 } from './helpers/cityGeoOverlayMapLibreHarness'
 
-test('City keeps parcels and aircraft in one exact Geo+XR stack without a local XR environment', () => {
+test('City keeps regional POIs, parcels, and aircraft in one Geo+XR stack without a local XR environment', () => {
   const overlay = {
     ...flightOverlay('stopped', 'city:stack'),
     presentationOwner: 'city' as const,
@@ -49,6 +58,14 @@ test('City keeps parcels and aircraft in one exact Geo+XR stack without a local 
   for (const layer of CITY_GEO_OVERLAY_LAYER_DEFINITIONS) {
     map.addLayer(layer, FLIGHT_GEO_OVERLAY_LAYER_IDS.route)
   }
+  assert.equal(applyRegionalPoiProfileToMap(
+    map,
+    SINGAPORE_MAJOR_POI_GEO_PROFILE,
+    {
+      beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill,
+      viewMode: '3d',
+    },
+  ), true)
   assert.equal(applyCityGeoXrAerialOverlayToMap(map, overlay), true)
 
   const styleLayerIds = map.getStyle().layers.map(layer => String(layer.id))
@@ -57,6 +74,31 @@ test('City keeps parcels and aircraft in one exact Geo+XR stack without a local 
     Object.values(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS)
       .some(layerId => map.getLayer(layerId)),
     false,
+  )
+  assert.equal(mapHasExactRegionalPoiProfile(
+    map,
+    SINGAPORE_MAJOR_POI_GEO_PROFILE,
+    {
+      beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill,
+      viewMode: '3d',
+    },
+  ), true)
+  const regionalSource = map.getSource(REGIONAL_POI_SOURCE_ID)?.serialize()
+  const regionalFeatures = (
+    regionalSource?.data as RegionalPoiFeatureCollection
+  ).features
+  assert.equal(regionalFeatures.length, 9)
+  assert.deepEqual(
+    [...new Set(regionalFeatures.map(
+      feature => feature.properties.kgRegionalPoiId,
+    ))].sort(),
+    ['gardens-by-the-bay', 'marina-bay-sands', 'singapore-flyer'],
+  )
+  assert.equal(
+    Math.max(...regionalFeatures.map(
+      feature => feature.properties.kgRegionalPoiHeightMeters,
+    )),
+    207,
   )
   assert.equal(hasExactCityGeoXrLayerOrder(styleLayerIds), true)
   assert.deepEqual(

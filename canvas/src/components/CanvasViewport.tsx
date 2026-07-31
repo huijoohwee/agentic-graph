@@ -304,11 +304,14 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const heavyRuntimeIntentBlocked = heavyRuntimeIntentSurface !== null && activatedHeavyRuntimeSurfaces[heavyRuntimeIntentSurface] !== true
   const threeCanvasSourceAdmissionRef = React.useRef(false)
   threeCanvasSourceAdmissionRef.current = retainThreeCanvasSourceAdmission(threeCanvasSourceAdmissionRef.current, sourceFilesBootstrapReady)
+  const threeCanvasSurfaceMountedRef = React.useRef(false)
   const threeCanvasSurface = resolveThreeCanvasSurfaceLifecycle({
     sourceFilesBootstrapAdmitted: threeCanvasSourceAdmissionRef.current, sourceFilesBootstrapReady,
+    rendererPreviouslyMounted: threeCanvasSurfaceMountedRef.current,
     geospatialOverlayOwnsViewport, liveCanvasHeroVisible, canvasRenderMode,
     heavyRuntimeIntentBlocked, activeSurface, documentSwitchOwnsViewport,
   })
+  threeCanvasSurfaceMountedRef.current = threeCanvasSurface.mounted
   const activateHeavyRuntimeIntentSurface = React.useCallback(() => {
     if (!heavyRuntimeIntentSurface) return
     setActivatedHeavyRuntimeSurfaces(previous => {
@@ -498,43 +501,32 @@ export function CanvasViewport(props: CanvasViewportProps) {
           </section>
         ) : null}
 
-        {!documentSwitchOwnsViewport && geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (
-          cityMapLibreSurfaceRequested ? (
-            <SemanticMediaFigure
-              active={citySimActive}
-              activeDataAttributes={CITY_SIM_MEDIA_STAGE_DATA_ATTRIBUTES}
-              label={CITY_SIM_MEDIA_STAGE_LABEL}
-              selectionTarget="descendant"
-            >
-              {captionId => (
-                <CanvasViewportGeospatialOverlayLazy
-                  active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
-                  composedWithXr={geospatialXrModeEnabled}
-                  geospatialModeEnabled={geospatialCompositionEnabled}
-                  graphData={safeGraphData}
-                  semanticMediaOwner={citySimActive ? {
-                    captionId,
-                    label: CITY_SIM_MEDIA_STAGE_LABEL,
-                    selectionAttribute: {
-                      name: MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
-                      value: MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
-                    },
-                  } : undefined}
-                  storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
-                  threeOverlayComposed={false}
-                />
-              )}
-            </SemanticMediaFigure>
-          ) : (
-            <CanvasViewportGeospatialOverlayLazy
-              active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
-              composedWithXr={geospatialXrModeEnabled}
-              geospatialModeEnabled={geospatialCompositionEnabled}
-              graphData={safeGraphData}
-              storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
-              threeOverlayComposed={geospatialXrModeEnabled}
-            />
-          )
+        {geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (
+          <SemanticMediaFigure
+            active={citySimActive}
+            activeDataAttributes={CITY_SIM_MEDIA_STAGE_DATA_ATTRIBUTES}
+            label={CITY_SIM_MEDIA_STAGE_LABEL}
+            selectionTarget="descendant"
+          >
+            {captionId => (
+              <CanvasViewportGeospatialOverlayLazy
+                active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
+                composedWithXr={geospatialXrModeEnabled}
+                geospatialModeEnabled={geospatialCompositionEnabled}
+                graphData={safeGraphData}
+                semanticMediaOwner={citySimActive ? {
+                  captionId,
+                  label: CITY_SIM_MEDIA_STAGE_LABEL,
+                  selectionAttribute: {
+                    name: MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
+                    value: MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
+                  },
+                } : undefined}
+                storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
+                threeOverlayComposed={cityMapLibreSurfaceRequested ? false : geospatialXrModeEnabled}
+              />
+            )}
+          </SemanticMediaFigure>
         ) : null}
         {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && flightSimHudVisible ? <FlightSimGeoSurfaceOverlayLazy /> : null}
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (
@@ -632,7 +624,9 @@ export function CanvasViewport(props: CanvasViewportProps) {
       </React.Suspense>
       {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
-      {flightSimHudVisible ? <FlightSimHud /> : null}
+      {flightSimHudVisible ? (
+        <FlightSimHud geospatialComposite={geospatialXrModeEnabled} />
+      ) : null}
       {variant === 'workspace' ? <CanvasEmbedCodePanelHost /> : null}
     </section>
   )

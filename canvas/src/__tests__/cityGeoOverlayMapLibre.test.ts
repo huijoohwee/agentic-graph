@@ -2,6 +2,9 @@ import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
+  SINGAPORE_MAJOR_POI_GEO_PROFILE,
+} from 'grph-shared/geospatial/singaporeMajorPoiGeo'
+import {
   CITY_GEO_ZONES,
   clearCityGeoOverlay,
   createCityGeoOverlaySnapshot,
@@ -28,6 +31,11 @@ import {
   createCityGeoOverlayMapLibreController,
   fitMapToCityGeoOverlay,
 } from '../../../gympgrph/src/cityGeoOverlayMapLibreController.js'
+import {
+  REGIONAL_POI_LAYER_ORDER,
+  REGIONAL_POI_SOURCE_ID,
+  mapHasExactRegionalPoiProfile,
+} from '../../../gympgrph/src/regionalPoiMapLibre.js'
 import { useCityGeoOverlayMapLibrePresentation } from '../../../gympgrph/src/features/geospatial/useCityGeoOverlayMapLibrePresentation.js'
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import {
@@ -50,7 +58,7 @@ const zoneStyle = (
 function createSyntheticGeographicProfile(): CityGeographicProfile {
   return {
     bearingDegrees: 0,
-    center: [12.4, 41.9],
+    center: [103.851959, 1.29027],
     columnGapMeters: 4,
     framing: {
       '2d': {
@@ -69,6 +77,7 @@ function createSyntheticGeographicProfile(): CityGeographicProfile {
     id: 'synthetic-city-profile',
     parcelDepthMeters: 30,
     parcelWidthMeters: 20,
+    regionalPoiProfile: SINGAPORE_MAJOR_POI_GEO_PROFILE,
     revision: 'profile-revision-a',
     rowGapMeters: 6,
     selectedOutlineColor: '#f8fafc',
@@ -248,6 +257,7 @@ function testMapLibreApplyRepairAndClearOwnOnlyCityState(): void {
   assert.equal(map.getLayer(TEST_LAYER_ANCHOR)?.type, 'background')
   assert.equal(clearCityGeoOverlayFromMap(map), true)
   assert.equal(map.getSource(CITY_GEO_OVERLAY_SOURCE_ID), undefined)
+  assert.equal(map.getSource(REGIONAL_POI_SOURCE_ID), undefined)
   assert.equal(
     CITY_GEO_OVERLAY_LAYER_ORDER.every(id => !map.getLayer(id)),
     true,
@@ -255,7 +265,7 @@ function testMapLibreApplyRepairAndClearOwnOnlyCityState(): void {
   assert.equal(map.getLayer(TEST_LAYER_ANCHOR)?.type, 'background')
 }
 
-function testControllerReplaysStyleAndFramesOnlyCityGeometry(): void {
+function testControllerReplaysStyleAndFramesRegionalCityGeometry(): void {
   const map = new TestMapLibreMap()
   let current = createSyntheticSnapshot()
   let selectedParcelId: string | null = null
@@ -274,15 +284,23 @@ function testControllerReplaysStyleAndFramesOnlyCityGeometry(): void {
     viewMode: '3d',
   })
   assert.equal(map.fitBoundsCalls.length, 1)
+  assert.deepEqual(
+    map.getStyle().layers.map(layer => layer.id),
+    [
+      ...REGIONAL_POI_LAYER_ORDER,
+      ...CITY_GEO_OVERLAY_LAYER_ORDER,
+      TEST_LAYER_ANCHOR,
+    ],
+  )
   assert.deepEqual(map.fitBoundsCalls[0].options, {
     bearing: 24,
     duration: 0,
     maxZoom: 17,
     padding: {
-      bottom: 36,
-      left: 36,
-      right: 36,
-      top: 36,
+      bottom: 52,
+      left: 52,
+      right: 52,
+      top: 52,
     },
     pitch: 52,
   })
@@ -311,6 +329,14 @@ function testControllerReplaysStyleAndFramesOnlyCityGeometry(): void {
     beforeLayerId: TEST_LAYER_ANCHOR,
     viewMode: '2d',
   }), true)
+  assert.equal(mapHasExactRegionalPoiProfile(
+    map,
+    current.profile!.regionalPoiProfile,
+    {
+      beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill,
+      viewMode: '2d',
+    },
+  ), true)
   assert.equal(map.setStyleCount, 0)
   map.queryFeatures = [{
     properties: {
@@ -337,6 +363,7 @@ function testControllerReplaysStyleAndFramesOnlyCityGeometry(): void {
   assert.equal(map.styleListeners.get('sourcedataloading')?.size, 0)
   assert.equal(map.styleListeners.get('sourcedata')?.size, 0)
   assert.equal(map.getSource(CITY_GEO_OVERLAY_SOURCE_ID), undefined)
+  assert.equal(map.getSource(REGIONAL_POI_SOURCE_ID), undefined)
   assert.equal(map.getLayer(TEST_LAYER_ANCHOR)?.type, 'background')
   assert.deepEqual(map.setPaddingCalls.at(-1), {
     bottom: 6,
@@ -418,10 +445,28 @@ function testControllerWaitsForOwnedSourceSettlementAndRefitsOnResize(): void {
       sourceDataType: 'content',
       sourceId: CITY_GEO_OVERLAY_SOURCE_ID,
     })
+    assert.equal(
+      viewport.dataset.kgCityGeospatialOverlay,
+      undefined,
+      'regional and City GeoJSON payloads must both settle',
+    )
+    map.markRegionalPoiSourceLoaded()
+    map.emit('sourcedata', {
+      sourceDataType: 'content',
+      sourceId: REGIONAL_POI_SOURCE_ID,
+    })
     assert.equal(viewport.dataset.kgCityGeospatialOverlay, 'active')
     assert.equal(
       viewport.dataset.kgCityGeospatialFeatureCount,
       String(snapshot.parcels.length),
+    )
+    assert.equal(
+      viewport.dataset.kgCityGeospatialPoiFeatureCount,
+      String(snapshot.profile?.regionalPoiProfile.surfaces.length),
+    )
+    assert.equal(
+      viewport.dataset.kgCityGeospatialPoiProfileId,
+      snapshot.profile?.regionalPoiProfile.id,
     )
     map.emit('load')
     assert.equal(
@@ -430,6 +475,12 @@ function testControllerWaitsForOwnedSourceSettlementAndRefitsOnResize(): void {
       'the final map load must not discard an already settled owned source',
     )
     assert.equal(map.fitBoundsCalls.length, 1)
+    assert.deepEqual(map.fitBoundsCalls[0].options.padding, {
+      bottom: 148,
+      left: 108,
+      right: 108,
+      top: 124,
+    })
     size.width = 1_200
     map.emit('resize')
     assert.equal(
@@ -492,7 +543,7 @@ async function testPresentationHookKeepsControllerAcrossCallbackAndViewChanges()
       }))
       await Promise.resolve()
     })
-    assert.equal(map.sourceAddCount, 1)
+    assert.equal(map.sourceAddCount, 2)
     assert.equal(map.sourceRemoveCount, 0)
     assert.equal(map.fitBoundsCalls.length, 1)
 
@@ -505,7 +556,7 @@ async function testPresentationHookKeepsControllerAcrossCallbackAndViewChanges()
       }))
       await Promise.resolve()
     })
-    assert.equal(map.sourceAddCount, 1)
+    assert.equal(map.sourceAddCount, 2)
     assert.equal(map.sourceRemoveCount, 0)
     assert.equal(map.fitBoundsCalls.length, 1)
     map.queryFeatures = [{
@@ -527,7 +578,7 @@ async function testPresentationHookKeepsControllerAcrossCallbackAndViewChanges()
       }))
       await Promise.resolve()
     })
-    assert.equal(map.sourceAddCount, 1)
+    assert.equal(map.sourceAddCount, 2)
     assert.equal(map.sourceRemoveCount, 0)
     assert.equal(map.fitBoundsCalls.length, 2)
     assert.equal(
@@ -547,7 +598,7 @@ async function testPresentationHookKeepsControllerAcrossCallbackAndViewChanges()
 export async function testCityGeoOverlayMapLibreRuntime(): Promise<void> {
   testProjectionUsesAuthoredGeographyAndLiveParcels()
   testMapLibreApplyRepairAndClearOwnOnlyCityState()
-  testControllerReplaysStyleAndFramesOnlyCityGeometry()
+  testControllerReplaysStyleAndFramesRegionalCityGeometry()
   testFramingRestoresPaddingAfterFitFailure()
   testControllerWaitsForOwnedSourceSettlementAndRefitsOnResize()
   await testPresentationHookKeepsControllerAcrossCallbackAndViewChanges()

@@ -122,7 +122,9 @@ export function FlightSimMissionStage({
       ? 'r3f'
       : 'maplibre'
     const removeAfterRender = addAfterEffect(() => {
-      if (!actorsVisible) {
+      // Geo+XR keeps this actor visible, but its exact readiness proof belongs
+      // to the composed MapLibre environment, route, and aircraft frame.
+      if (!actorsVisible || geospatialComposite) {
         delete canvas.dataset.kgFlightSimFirstFrame
         return
       }
@@ -159,7 +161,15 @@ export function FlightSimMissionStage({
       delete canvas.dataset.kgFlightSimVisualProjection
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [actorsVisible, assetCatalog, gl, invalidate, profile.id, runtimeController])
+  }, [
+    actorsVisible,
+    assetCatalog,
+    geospatialComposite,
+    gl,
+    invalidate,
+    profile.id,
+    runtimeController,
+  ])
 
   React.useEffect(() => {
     const canvas = gl.domElement
@@ -240,89 +250,91 @@ export function FlightSimMissionStage({
         scale={coordinateScale}
         visible={actorsVisible}
         userData={{
-          actorOnly: true,
+          actorOnly: geospatialComposite,
           coordinateScale,
           mapProjectionOnly: !actorsVisible,
           spatialProfile: profile.id,
           visualProjection: actorsVisible ? 'r3f' : 'maplibre',
         }}
       >
-      <group
-        ref={actorRef}
-        name="kg_flight_sim_aircraft"
-        position={snapshotRef.current.aircraft.position}
-        userData={{
-          assetId: assetCatalog.aircraft.assetSpec.id,
-          representation: assetCatalog.aircraft.assetSpec.representation,
-        }}
-      >
         <group
-          name={FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE}
-          rotation={[...FLIGHT_SIM_AIRCRAFT_MODEL_ROTATION]}
+          ref={actorRef}
+          name="kg_flight_sim_aircraft"
+          position={snapshotRef.current.aircraft.position}
           userData={{
-            flightForward: FLIGHT_SIM_AIRCRAFT_FORWARD,
-            proceduralForward: FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
+            assetId: assetCatalog.aircraft.assetSpec.id,
+            representation: assetCatalog.aircraft.assetSpec.representation,
           }}
         >
-          <XrSceneLibraryAssetGeometry
-            assetId={assetCatalog.aircraft.assetSpec.id}
-            color={assetCatalog.aircraft.assetSpec.defaultColor}
-          />
+          <group
+            name={FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE}
+            rotation={[...FLIGHT_SIM_AIRCRAFT_MODEL_ROTATION]}
+            userData={{
+              flightForward: FLIGHT_SIM_AIRCRAFT_FORWARD,
+              proceduralForward: FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
+            }}
+          >
+            <XrSceneLibraryAssetGeometry
+              assetId={assetCatalog.aircraft.assetSpec.id}
+              color={assetCatalog.aircraft.assetSpec.defaultColor}
+            />
+          </group>
         </group>
-      </group>
-      {optionalBeaconScene ? (
-        <primitive
-          object={optionalBeaconScene}
-          position={[
-            profile.landingPad.position[0] + 8,
-            profile.landingPad.position[1] + 0.25,
-            profile.landingPad.position[2] + 8,
-          ]}
-          scale={4}
-        />
-      ) : null}
-      {profile.waypoints.map((waypoint, index) => (
-        <mesh
-          key={waypoint.id}
-          ref={mesh => {
-            if (mesh) waypointRefs.current.set(waypoint.id, mesh)
-            else waypointRefs.current.delete(waypoint.id)
-          }}
-          name={`kg_${waypoint.id.replaceAll(':', '_')}`}
-          position={waypoint.position}
-          rotation={[Math.PI / 2, 0, 0]}
-          userData={{ waypointId: waypoint.id, waypointIndex: index }}
-        >
-          <torusGeometry args={[waypoint.radiusMeters, 0.14, 10, 32]} />
-          <meshStandardMaterial
-            color={index === snapshotRef.current.waypointIndex ? '#22d3ee' : '#f8fafc'}
-            emissive="#0891b2"
-            emissiveIntensity={0.42}
-            transparent
-            opacity={0.82}
+        {!geospatialComposite && optionalBeaconScene ? (
+          <primitive
+            object={optionalBeaconScene}
+            position={[
+              profile.landingPad.position[0] + 8,
+              profile.landingPad.position[1] + 0.25,
+              profile.landingPad.position[2] + 8,
+            ]}
+            scale={4}
           />
-        </mesh>
-      ))}
-      <mesh
-        ref={landingPadRef}
-        name="kg_flight_sim_landing_pad"
-        position={profile.landingPad.position}
-        rotation={[-Math.PI / 2, 0, 0]}
-        visible={snapshotRef.current.waypointIndex >= profile.waypoints.length}
-        userData={{
-          landingPadId: profile.landingPad.id,
-          captureRadiusMeters: profile.landingPad.radiusMeters,
-        }}
-      >
-        <ringGeometry args={[2.4, 3.2, 40]} />
-        <meshStandardMaterial
-          color="#facc15"
-          emissive="#ca8a04"
-          emissiveIntensity={0.5}
-          transparent
-          opacity={0.9}
-        />
-      </mesh>
+        ) : null}
+        {!geospatialComposite ? profile.waypoints.map((waypoint, index) => (
+          <mesh
+            key={waypoint.id}
+            ref={mesh => {
+              if (mesh) waypointRefs.current.set(waypoint.id, mesh)
+              else waypointRefs.current.delete(waypoint.id)
+            }}
+            name={`kg_${waypoint.id.replaceAll(':', '_')}`}
+            position={waypoint.position}
+            rotation={[Math.PI / 2, 0, 0]}
+            userData={{ waypointId: waypoint.id, waypointIndex: index }}
+          >
+            <torusGeometry args={[waypoint.radiusMeters, 0.14, 10, 32]} />
+            <meshStandardMaterial
+              color={index === snapshotRef.current.waypointIndex ? '#22d3ee' : '#f8fafc'}
+              emissive="#0891b2"
+              emissiveIntensity={0.42}
+              transparent
+              opacity={0.82}
+            />
+          </mesh>
+        )) : null}
+        {!geospatialComposite ? (
+          <mesh
+            ref={landingPadRef}
+            name="kg_flight_sim_landing_pad"
+            position={profile.landingPad.position}
+            rotation={[-Math.PI / 2, 0, 0]}
+            visible={snapshotRef.current.waypointIndex >= profile.waypoints.length}
+            userData={{
+              landingPadId: profile.landingPad.id,
+              captureRadiusMeters: profile.landingPad.radiusMeters,
+            }}
+          >
+            <ringGeometry args={[2.4, 3.2, 40]} />
+            <meshStandardMaterial
+              color="#facc15"
+              emissive="#ca8a04"
+              emissiveIntensity={0.5}
+              transparent
+              opacity={0.9}
+            />
+          </mesh>
+        ) : null}
       </group>
     </>
   )

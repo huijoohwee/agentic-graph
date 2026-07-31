@@ -8,6 +8,8 @@ const SOURCE_PATHS = Object.freeze({
     'canvas/src/features/testing/flightSimBrowserProofBridge.ts',
   citySemanticMediaVerifier:
     'canvas/scripts/lib/game_flight_sim_smoke_city_semantic_media.py',
+  cityRegionalPoiVerifier:
+    'canvas/scripts/lib/game_flight_sim_smoke_city_regional_poi.py',
   cameraTrackingVerifier:
     'canvas/scripts/lib/game_flight_sim_smoke_camera_tracking.py',
   cameraVerifier:

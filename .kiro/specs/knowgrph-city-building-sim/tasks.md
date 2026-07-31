@@ -6,8 +6,9 @@ candidate SHA.
 
 ## 1. Pure city domain
 
-- [ ] Parse the typed authored initial grid and geographic profile from the
-  applied source; keep no runtime default-grid fixture.
+- [ ] Parse the typed authored initial grid, geographic profile, and exact
+  regional-context profile reference from the applied source; keep no runtime
+  default-grid or copied regional fixture.
 - [ ] Add atomic deterministic tick with safe-integer rejection and replay
   tests.
 - [ ] Add canonical KGC plus CSV codec and byte-identical round-trip tests.
@@ -22,8 +23,10 @@ candidate SHA.
   `/game-city-sim/city-grid.md`, including malformed-byte preservation.
 - [ ] Register exactly the inspect/control MCP tools through existing
   transports and the existing approval owner.
-- [ ] Add gameplay-overlay mutual exclusion, City aerial publication cleanup,
-  and exact-once prior FloatingPanel/Canvas surface restoration.
+- [ ] Add gameplay-overlay mutual exclusion, City parcel source/layer removal,
+  City aerial and selected regional publication cleanup, and exact-once prior
+  regional, FloatingPanel/Canvas surface restoration without mutating
+  companion facts.
 
 ## 3. Native MapLibre Geo surface and FloatingPanel
 
@@ -41,6 +44,11 @@ candidate SHA.
 - [ ] Project every live parcel to the City GeoJSON source with zone fill,
   extrusion, outline, selection, and mutation-driven updates by converting the
   source-authored meter geometry exactly once.
+- [ ] Resolve the exact companion-owned regional-context profile and project
+  its immutable geographic rings, real-metre base/height values, accuracy, and
+  provenance through one stable MapLibre source/layer family below City
+  parcels. Add no copied regional facts, Three.js/R3F presentation, or HTML
+  marker layer.
 - [ ] Add a City-owned deterministic `stopped` aircraft/route adapter from the
   City geographic profile that publishes through the existing Flight source
   and layers with atomic owner `city`, `environment: null`, and no Flight
@@ -48,15 +56,18 @@ candidate SHA.
 - [ ] Prove `environment: null` makes the shared projection owner remove any
   retained local Flight XR environment layers and source before City
   presentation; City owns no environment source/layer and creates no
-  environment definition.
+  environment definition. The independent regional geographic MapLibre band
+  must remain present and must not be treated as a Flight-local XR
+  environment.
   Keep locale-specific content solely in the selected ADM0 companion without
   copying it into the City contract.
 - [ ] Prove City creates one parcel source/layer family on the existing map and
   no duplicate map, source/layer ids, Three.js/R3F Canvas/stage/mesh/camera, or
   renderer.
-- [ ] Fit authored City bounds into the real visible aperture on mount and
-  resize, avoid cumulative MapLibre padding, and restore prior map plus
-  FloatingPanel/Canvas state exactly once on exit.
+- [ ] Fit the union of admitted regional geographic feature bounds and authored
+  City parcel bounds into the real visible aperture on mount and resize, avoid
+  cumulative MapLibre padding, and restore prior map plus FloatingPanel/Canvas
+  state exactly once on exit.
 - [ ] Add `cityBuilder` as the complete control/status view.
 - [ ] Compose one snapshot-backed projection into Media, Animation, Motion
   Control, Game Mode, Flight Sim, and Camera.
@@ -81,23 +92,35 @@ candidate SHA.
   sole selection-marker owner with the same accessible name and caption link,
   native camera and viewport gestures, City Builder coordinate input, zero
   City Three.js/R3F Canvas/stage/mesh/camera, absence of the native physics
-  playground, authored metrics, zone/tick/stop, save/read-back, all six
-  projections, console cleanliness, and exit restore.
+  playground, parallel HTML POI markers, authored metrics, zone/tick/stop,
+  save/read-back, all six projections, console cleanliness, and exit restore.
+- [ ] Browser proof captures the companion-selected regional-context feature
+  collection with exact source rings, real-metre heights,
+  accuracy/provenance, stable source/layer identities, and composite framing
+  with City parcel bounds. It renders below City parcels and stopped Flight
+  route/aircraft while the Flight-local XR environment remains absent.
+- [ ] Neutral baseline shows the City parcel and regional source/layers absent
+  before source application; Exit removes the City parcel source/layers,
+  clears the City-selected regional presentation, and restores any captured
+  prior regional presentation exactly once.
 - [ ] Browser proof captures `rows × columns` City parcel features, deriving
   rows, columns, parcel width, and parcel depth from the applied source and
   projecting those source-authored meter edges once at map scale; it also
   captures a visible live mutation/selection, `environment: null`, zero local
   Flight XR environment source/layers/features, and the stopped
-  aircraft/route on the existing Flight source/layers, with one map and
-  inactive Flight bootstrap, camera, gameplay, and readiness.
+  aircraft/route on the existing Flight source/layers above the regional and
+  City bands, with one map and inactive Flight bootstrap, camera, gameplay,
+  and readiness.
 - [ ] Candidate is reviewed and integrated through the protected workflow.
 - [ ] Seed proof status and checklist are updated only from captured exact-SHA
-  evidence.
+  evidence, including equal regional feature/provenance digests across neutral
+  reapplication.
 
 ## Explicit exclusions
 
 - No second world, map, duplicate source/layer family, Canvas, renderer,
-  persistence owner, camera catalog, transport, or network service.
+  persistence owner, camera catalog, HTML POI marker layer, transport, or
+  network service.
 - No Flight gameplay activation, Flight control path, mission advance, or
   Flight readiness claim.
 - No autosave, multiplayer, cloud sync, traffic simulation, or model-backed

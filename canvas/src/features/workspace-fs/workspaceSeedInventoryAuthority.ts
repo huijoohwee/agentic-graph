@@ -27,13 +27,13 @@ export const isCanonicalWorkspaceSeedAuthority = (
   || authority === 'knowgrph-workspace-seeds-local'
 )
 
-export const overlayCanonicalLocalWorkspaceSeedEntries = <Entry extends WorkspaceSeedMirrorEntry>(
+export const overlayCanonicalWorkspaceSeedEntries = <Entry extends WorkspaceSeedMirrorEntry>(
   publishedEntries: ReadonlyArray<Entry>,
-  localSeedEntries: ReadonlyArray<Entry>,
+  workspaceSeedEntries: ReadonlyArray<Entry>,
 ): Entry[] => {
-  if (localSeedEntries.length === 0) return [...publishedEntries]
+  if (workspaceSeedEntries.length === 0) return [...publishedEntries]
   return [
     ...publishedEntries.filter(entry => !isCanonicalWorkspaceSeedMirrorEntry(entry)),
-    ...localSeedEntries,
+    ...workspaceSeedEntries,
   ]
 }

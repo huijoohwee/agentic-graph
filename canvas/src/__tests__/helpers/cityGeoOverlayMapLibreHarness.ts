@@ -3,6 +3,10 @@ import {
   CITY_GEO_OVERLAY_LAYER_ORDER,
   CITY_GEO_OVERLAY_SOURCE_ID,
 } from '../../../../gympgrph/src/cityGeoOverlayMapLibre.js'
+import {
+  REGIONAL_POI_LAYER_ORDER,
+  REGIONAL_POI_SOURCE_ID,
+} from '../../../../gympgrph/src/regionalPoiMapLibre.js'
 
 export const TEST_LAYER_ANCHOR = 'test-overlay-anchor'
 
@@ -240,14 +244,22 @@ export class TestMapLibreMap {
     this.sources.get(CITY_GEO_OVERLAY_SOURCE_ID)?.markLoaded()
   }
 
+  markRegionalPoiSourceLoaded(): void {
+    this.sources.get(REGIONAL_POI_SOURCE_ID)?.markLoaded()
+  }
+
   moveCityLayerAboveAnchor(layerId: string): void {
     this.moveLayer(layerId)
   }
 
   dropCityStyleOwnership(): void {
+    for (const layerId of [...REGIONAL_POI_LAYER_ORDER].reverse()) {
+      this.removeLayer(layerId)
+    }
     for (const layerId of [...CITY_GEO_OVERLAY_LAYER_ORDER].reverse()) {
       this.removeLayer(layerId)
     }
+    this.sources.delete(REGIONAL_POI_SOURCE_ID)
     this.sources.delete(CITY_GEO_OVERLAY_SOURCE_ID)
   }
 }

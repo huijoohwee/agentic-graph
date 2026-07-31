@@ -8,6 +8,9 @@ import {
   type CityGeoZoneStyle,
   type CityGeographicProfile,
 } from './cityGeoOverlay.js'
+import {
+  regionalPoiProfileBounds,
+} from './regionalPoiMapLibre.js'
 
 const METERS_PER_LATITUDE_DEGREE = 111_320
 
@@ -292,12 +295,34 @@ export function cityGeoOverlayBounds(
   })
 }
 
+export function cityGeoPresentationBounds(
+  snapshot: CityGeoOverlaySnapshot,
+): CityGeoBounds | null {
+  const validated = createCityGeoOverlaySnapshot(snapshot)
+  if (!validated.active || !validated.profile) return null
+  const parcelBounds = cityGeoOverlayBounds(validated)
+  const poiBounds = regionalPoiProfileBounds(
+    validated.profile.regionalPoiProfile,
+  )
+  if (!parcelBounds) return poiBounds
+  return Object.freeze([
+    Object.freeze([
+      Math.min(parcelBounds[0][0], poiBounds[0][0]),
+      Math.min(parcelBounds[0][1], poiBounds[0][1]),
+    ] as const),
+    Object.freeze([
+      Math.max(parcelBounds[1][0], poiBounds[1][0]),
+      Math.max(parcelBounds[1][1], poiBounds[1][1]),
+    ] as const),
+  ] as const)
+}
+
 export function cityGeoOverlayFramingKey(
   snapshot: CityGeoOverlaySnapshot,
   viewMode: CityGeoViewMode,
 ): string | null {
   if (!snapshot.active || !snapshot.profile) return null
-  const bounds = cityGeoOverlayBounds(snapshot)
+  const bounds = cityGeoPresentationBounds(snapshot)
   if (!bounds) return null
   const framing = snapshot.profile.framing[viewMode]
   return [

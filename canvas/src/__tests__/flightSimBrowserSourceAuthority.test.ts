@@ -10,6 +10,7 @@ test('Flight browser proof activates only after applying the authored source', (
     browserProofBridge,
     cameraTrackingVerifier,
     cameraVerifier,
+    cityRegionalPoiVerifier,
     citySemanticMediaVerifier,
     deadlineVerifier,
     evidenceValidator,
@@ -64,6 +65,23 @@ test('Flight browser proof activates only after applying the authored source', (
     /target_url = f"\{BASE_URL\}\/\?kgFlightSimBrowserProof=1"/,
   )
   assert.match(
+    verifier,
+    /json\.dumps\(evidence, indent=2, allow_nan=False\)/,
+  )
+  for (const removedContradictoryRendererField of [
+    'mapLibreOwnsVisualProjection',
+    'r3fFlightVisualsSuppressed',
+  ]) {
+    assert.doesNotMatch(
+      verifier,
+      new RegExp(removedContradictoryRendererField),
+    )
+    assert.doesNotMatch(
+      evidenceValidator,
+      new RegExp(removedContradictoryRendererField),
+    )
+  }
+  assert.match(
     mainEntry,
     /VITE_KNOWGRPH_FLIGHT_SIM_BROWSER_PROOF === '1'/,
   )
@@ -98,7 +116,7 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(browserProofBridge, /gympgrphStore: \(\) => import\('@\/lib\/gympgrph\/api'\)/)
   assert.match(
     gympgrphApi,
-    /CITY_GEO_XR_LAYER_ORDER[\s\S]*hasExactCityGeoXrLayerOrder[\s\S]*readCityGeoOverlay[\s\S]*readCityGeoXrLayerOrder/,
+    /CITY_GEO_XR_LAYER_ORDER[\s\S]*REGIONAL_POI_LAYER_IDS[\s\S]*hasExactCityGeoXrLayerOrder[\s\S]*mapHasExactRegionalPoiProfile[\s\S]*readCityGeoOverlay[\s\S]*readCityGeoXrLayerOrder[\s\S]*readGeoMapViewportPadding/,
   )
   assert.match(sourceSelection, /get_by_role\(\s*["']button["']/)
   assert.match(sourceSelection, /name=["']Workspace View["'],\s*exact=True/)
@@ -172,6 +190,11 @@ test('Flight browser proof activates only after applying the authored source', (
     assert.match(sourceReader, /source\?\.serialize\?\.\(\)\?\.data/)
     assert.doesNotMatch(sourceReader, /source\?\._data\?\.features/)
   }
+  assert.doesNotMatch(
+    geoXrVerifier,
+    /\bNaN\b/,
+    'browser evidence diagnostics must remain valid JSON when a measurement is unavailable',
+  )
   assert.match(
     geoXrVerifier,
     /layout_occlusion = read_geo_xr_layout_occlusion\(page\)/,
@@ -196,6 +219,18 @@ test('Flight browser proof activates only after applying the authored source', (
     /proof\.id === 'marina-bay-sands:tower-center'/,
   )
   assert.match(
+    geoXrLayoutVerifier,
+    /flight_panel\.locator\(\s*'\[data-kg-flight-sim-open="1"\]'/,
+  )
+  assert.match(
+    geoXrLayoutVerifier,
+    /open_button\.click\(timeout=30_000\)/,
+  )
+  assert.match(
+    geoXrLayoutVerifier,
+    /flight\.readFlightSimSnapshot\(\)\.active/,
+  )
+  assert.match(
     geoXrPresentationVerifier,
     /def restore_flight_sim_panel\(page: Page\) -> None:/,
   )
@@ -211,6 +246,33 @@ test('Flight browser proof activates only after applying the authored source', (
     geoXrPresentationVerifier,
     /def verify_flight_geo_xr_city_handoff\(/,
   )
+  assert.match(
+    geoXrPresentationVerifier,
+    /regional_poi = require_city_regional_poi_contract\(page\)/,
+  )
+  for (const regionalPoiProofRequirement of [
+    'REGIONAL_POI_SOURCE_ID',
+    'REGIONAL_POI_LAYER_IDS',
+    'mapHasExactRegionalPoiProfile',
+    'kgCityGeospatialPoiFeatureCount',
+    'kgCityGeospatialPoiProfileId',
+    'readGeoMapViewportPadding',
+    'boundsInsideAperture',
+    'renderedIdentityAtAnchor',
+    'visiblePoiAnchors',
+    'exactFeatures',
+    'exactPresentation',
+    'require_city_regional_poi_teardown_contract',
+    'presentEvidenceKeys',
+    'presentLayerIds',
+    'sourcePresent',
+  ]) {
+    assert.ok(
+      cityRegionalPoiVerifier.includes(regionalPoiProofRequirement),
+      `expected regional POI browser proof requirement: ${regionalPoiProofRequirement}`,
+    )
+  }
+  assert.doesNotMatch(cityRegionalPoiVerifier, /renderedPois/)
   assert.match(
     citySemanticMediaVerifier,
     /surface\?\.tagName \|\| ''/,
@@ -229,7 +291,7 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     citySemanticMediaVerifier,
-    /surface\.querySelectorAll\('canvas\.maplibregl-canvas'\)/,
+    /const mapCanvasScope = surface \|\| document[\s\S]*mapCanvasScope\.querySelectorAll\('canvas\.maplibregl-canvas'\)/,
   )
   assert.match(
     citySemanticMediaVerifier,
@@ -240,10 +302,11 @@ test('Flight browser proof activates only after applying the authored source', (
     /centerHit === mapCanvas[\s\S]*mapInteractiveRoot\?\.contains\(centerHit\)/,
   )
   for (const cityProofRequirement of [
-    'data-kg-floating-panel-view-trigger="cityBuilder"',
-    'data-kg-city-sim-open="1"',
+    'CITY_SIM_DEMO_WORKSPACE_SEED_BASENAME',
+    'FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME',
+    'name=f"File {city_source_basename}"',
+    'name=f"File {flight_source_basename}"',
     'data-kg-city-sim-exit="1"',
-    'data-kg-flight-sim-open="1"',
     'geospatialPreferenceEnabled',
     'mapLibreCanvasCount',
     'threeCanvasOwnerCount',
@@ -271,12 +334,56 @@ test('Flight browser proof activates only after applying the authored source', (
     'cityParcelsUseAuthoredMeters',
     'cityGeoXrLayerOrderExact',
     'renderedEnvironmentFeatureCount',
+    'regionalPoiAfterCityExit',
+    'regionalPoiAfterFlightReopen',
   ]) {
     assert.ok(
       geoXrPresentationVerifier.includes(cityProofRequirement),
       `expected City handoff browser proof requirement: ${cityProofRequirement}`,
     )
   }
+  assert.match(
+    geoXrPresentationVerifier,
+    /\{"aircraft", "route", "route-point"\}/,
+  )
+  assert.doesNotMatch(
+    geoXrPresentationVerifier,
+    /\{"aircraft", "objective-guide", "route", "route-point"\}/,
+  )
+  const cityEvidenceValidator = evidenceValidator.slice(
+    evidenceValidator.indexOf(
+      'export function hasExactCityMapLibreSurfaceEvidence',
+    ),
+    evidenceValidator.indexOf('function hasExactCityHandoffEvidence'),
+  )
+  for (const retainedCityRendererEvidence of [
+    'city?.threeCanvasOwnerCount === 1',
+    'city?.canvasStable === true',
+    'city?.rendererPointerTransparent === true',
+    'city?.rendererSurfaceVisible === false',
+    'city?.flightR3fVisualCount === 0',
+  ]) {
+    assert.ok(
+      cityEvidenceValidator.includes(retainedCityRendererEvidence),
+      `expected retained inactive City renderer evidence: ${retainedCityRendererEvidence}`,
+    )
+  }
+  assert.match(
+    cityEvidenceValidator,
+    /JSON\.stringify\(\['aircraft', 'route', 'route-point'\]\)/,
+  )
+  assert.doesNotMatch(
+    cityEvidenceValidator,
+    /JSON\.stringify\(\['aircraft', 'objective-guide', 'route', 'route-point'\]\)/,
+  )
+  assert.doesNotMatch(
+    geoXrPresentationVerifier,
+    /data-kg-city-sim-open="1"/,
+  )
+  assert.doesNotMatch(
+    geoXrPresentationVerifier,
+    /data-kg-flight-sim-open="1"/,
+  )
   const selectGeoViewIndex = geoXrPresentationVerifier.indexOf(
     'select_geo_xr_view(page, button_label)',
   )
@@ -529,7 +636,14 @@ test('Flight browser proof activates only after applying the authored source', (
     sceneVerifier,
     /map_overlay\.get\("pendingWaypointCount"\)/,
   )
-  assert.match(sceneVerifier, /scene\.get\("flightVisualCount"\) != 0/)
+  assert.match(
+    sceneVerifier,
+    /flight_visual_names != FLIGHT_GEO_XR_VISUAL_NODES/,
+  )
+  assert.match(
+    sceneVerifier,
+    /airplane_node_counts != FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS/,
+  )
   assert.match(
     serverOwner,
     /refusing responsive pre-existing server/,
