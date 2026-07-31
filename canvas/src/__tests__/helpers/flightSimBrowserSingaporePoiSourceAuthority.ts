@@ -20,6 +20,10 @@ export function assertFlightSimBrowserSingaporePoiSourceAuthority({
     /environment\.majorPoiGeographicMeters/,
   )
   assert.match(geoXrRequirementsVerifier, /environment\.majorPoiIds/)
+  assert.match(
+    geoXrRequirementsVerifier,
+    /environment\.renderedMajorPoiSubset/,
+  )
   assert.match(geoXrRequirementsVerifier, /height_meters=0\.08/)
   assert.match(geoXrRequirementsVerifier, /width_meters=32/)
   assert.match(geoXrRequirementsVerifier, /height_meters=193/)
@@ -112,6 +116,9 @@ export function assertFlightSimBrowserSingaporePoiSourceAuthority({
   ]) assert.ok(cityHandoffEvidence.includes(requirement))
   assert.ok(evidenceValidator.includes(
     'hasExactGeoXrRendererEvidence(view, true)',
+  ))
+  assert.ok(evidenceValidator.includes(
+    'hasViewportScopedRegionalPoiRendering(view)',
   ))
   assert.ok(evidenceValidator.includes(
     'evidence?.geoXrPresentation?.restoredView, true',

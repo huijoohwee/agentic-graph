@@ -48,6 +48,22 @@ def _has_authored_environment_surface(
     )
 
 
+def _has_viewport_scoped_regional_poi_rendering(last: dict[str, Any]) -> bool:
+    source_ids = last.get("environmentPoiIds") or []
+    rendered_ids = last.get("renderedEnvironmentPoiIds") or []
+    if not isinstance(source_ids, list) or not isinstance(rendered_ids, list):
+        return False
+    source_set = set(source_ids)
+    rendered_set = set(rendered_ids)
+    return (
+        len(source_set) == len(source_ids)
+        and len(rendered_set) == len(rendered_ids)
+        and bool(source_set)
+        and bool(rendered_set)
+        and rendered_set.issubset(source_set)
+    )
+
+
 def unmet_view_requirements(
     last: dict[str, Any],
     *,
@@ -153,8 +169,9 @@ def unmet_view_requirements(
         ),
         "environment.majorPoiIds": last.get("environmentPoiIds")
         == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"],
-        "environment.renderedMajorPoiIds": last.get("renderedEnvironmentPoiIds")
-        == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"],
+        "environment.renderedMajorPoiSubset": (
+            _has_viewport_scoped_regional_poi_rendering(last)
+        ),
         "environment.selectedSubjectsDirectMeters": last.get(
             "selectedEnvironmentSubjectsExact"
         )

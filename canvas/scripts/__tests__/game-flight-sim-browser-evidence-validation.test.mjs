@@ -9,6 +9,9 @@ import {
   hasExactCityRegionalPoiTeardownEvidence,
   hasExactGeoXrRendererEvidence,
 } from '../lib/game-flight-sim-browser-evidence-validation.mjs'
+import {
+  hasViewportScopedRegionalPoiRendering,
+} from '../lib/regional-poi-browser-evidence.mjs'
 
 const exactPoiIds = Object.freeze([
   'gardens-by-the-bay',
@@ -41,6 +44,26 @@ test('saved Geo+XR evidence requires one active wrapper and one visible Three la
       `${field} drift must fail closed`,
     )
   }
+})
+
+test('Flight follow-camera evidence accepts only a non-empty POI subset from the source', () => {
+  const source = {
+    environmentPoiIds: [...exactPoiIds],
+    renderedEnvironmentPoiIds: ['marina-bay-sands'],
+  }
+  assert.equal(hasViewportScopedRegionalPoiRendering(source), true)
+  assert.equal(hasViewportScopedRegionalPoiRendering({
+    ...source,
+    renderedEnvironmentPoiIds: [],
+  }), false)
+  assert.equal(hasViewportScopedRegionalPoiRendering({
+    ...source,
+    renderedEnvironmentPoiIds: ['legacy-local-poi'],
+  }), false)
+  assert.equal(hasViewportScopedRegionalPoiRendering({
+    ...source,
+    renderedEnvironmentPoiIds: ['marina-bay-sands', 'marina-bay-sands'],
+  }), false)
 })
 
 function exactRegionalPoiEvidence() {

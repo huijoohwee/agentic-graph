@@ -8,6 +8,7 @@ import {
 import {
   FLIGHT_SIM_OPTIONAL_GLB_PATH,
 } from '../../../scripts/lib/game-flight-sim-asset-readiness.mjs'
+import { hasViewportScopedRegionalPoiRendering } from './regional-poi-browser-evidence.mjs'
 
 function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex')
@@ -460,12 +461,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
             'marina-bay-sands',
             'singapore-flyer',
           ])
-        && JSON.stringify(view?.renderedEnvironmentPoiIds)
-          === JSON.stringify([
-            'gardens-by-the-bay',
-            'marina-bay-sands',
-            'singapore-flyer',
-          ])
+        && hasViewportScopedRegionalPoiRendering(view)
         && view?.selectedEnvironmentSubjectsExact === true
         && view?.environmentSourceExactlyMatchesOverlay === true
         && ['poi', 'stage-footprint', 'subject'].every(kind =>
