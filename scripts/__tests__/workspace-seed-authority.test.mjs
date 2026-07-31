@@ -266,6 +266,8 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
       'stage_id: "singapore"',
       'stage_id: "invalid"',
     ],
+    ['incomplete Singapore POI inventory', 'major_poi_ids: ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]', 'major_poi_ids: ["marina-bay-sands", "singapore-flyer"]'],
+    ['wrong Geo+XR layer order', 'layer_order: ["environment", "city", "flight"]', 'layer_order: ["city", "environment", "flight"]'],
     [
       'wrong environment owner',
       'environment_owner: "city_geo_xr.environment"',
