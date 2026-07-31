@@ -7,6 +7,8 @@ type MapLibreCanvasOwner = {
   getCanvas?: () => MapLibreCanvasElement | null
 }
 
+const MAPLIBRE_CANVAS_NEUTRAL_LABEL = 'Map'
+
 export type MapLibreCanvasSemanticOwner = Readonly<{
   captionId: string
   label: string
@@ -43,6 +45,9 @@ export function bindMapLibreCanvasSemanticOwner(
   const selectionAttributeValue = String(
     owner?.selectionAttribute.value || '',
   ).trim()
+  if (canvas && !String(canvas.getAttribute('aria-label') || '').trim()) {
+    canvas.setAttribute('aria-label', MAPLIBRE_CANVAS_NEUTRAL_LABEL)
+  }
   if (
     !canvas
     || !captionId
