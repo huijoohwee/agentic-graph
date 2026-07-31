@@ -4,12 +4,13 @@ import {
   readKnowledgeGraphResolutionShards,
   readKnowledgeGraphSourceParts,
 } from "./store.mjs";
-import { materializeKnowledgeGraphRepository } from "./materialize.mjs";
 import {
   explainKnowledgeGraphEdgeFromArtifact,
   queryKnowledgeGraph,
   selectPairedSearchEdges,
 } from "./query-core.mjs";
+import { iterateKnowledgeGraphSnapshotShards } from "./query-shards.mjs";
+import { queryKnowledgeGraphSnapshotTraversal } from "./query-traversal.mjs";
 
 export { explainKnowledgeGraphEdgeFromArtifact, queryKnowledgeGraph };
 
@@ -136,25 +137,6 @@ function evidenceForEdge(edge) {
   };
 }
 
-async function* snapshotShards(snapshot, options = {}) {
-  for (const repository of snapshot.manifest.repositories || []) {
-    options.checkpoint?.();
-    const index = await readKnowledgeGraphRepositoryIndex(snapshot, repository);
-    options.checkpoint?.();
-    for (const entry of index.sources || []) {
-      options.checkpoint?.();
-      for await (const shard of readKnowledgeGraphSourceParts(snapshot, entry)) {
-        options.checkpoint?.();
-        yield { repository, shard };
-      }
-    }
-    for await (const shard of readKnowledgeGraphResolutionShards(snapshot, index)) {
-      options.checkpoint?.();
-      yield { repository, shard };
-    }
-  }
-}
-
 function retainBest(entries, entry, limit, compare) {
   entries.push(entry);
   entries.sort(compare);
@@ -166,7 +148,10 @@ export async function projectKnowledgeGraphSnapshot(snapshot, limitRaw = 200, op
   const limit = boundedInteger(limitRaw, 200, 1, 1000);
   const candidateNodes = [];
   const candidateEdges = [];
-  for await (const { shard } of snapshotShards(snapshot, { checkpoint })) {
+  for await (const { shard } of iterateKnowledgeGraphSnapshotShards(snapshot, {
+    ...options,
+    checkpoint,
+  })) {
     for (const node of shard.nodes || []) {
       checkpoint();
       retainBest(candidateNodes, node, limit, (left, right) => compareStableStrings(left.id, right.id));
@@ -187,7 +172,10 @@ export async function projectKnowledgeGraphSnapshot(snapshot, limitRaw = 200, op
     endpointIds.add(edge.target);
   }
   const nodeById = new Map();
-  for await (const { shard } of snapshotShards(snapshot, { checkpoint })) {
+  for await (const { shard } of iterateKnowledgeGraphSnapshotShards(snapshot, {
+    ...options,
+    checkpoint,
+  })) {
     for (const node of shard.nodes || []) {
       checkpoint();
       if (endpointIds.has(node.id)) nodeById.set(node.id, node);
@@ -227,7 +215,10 @@ async function resolveSnapshotNode(snapshot, selector, options = {}) {
   let exactCount = 0;
   const ranked = [];
   const terms = tokenize(value);
-  for await (const { repository, shard } of snapshotShards(snapshot, { checkpoint })) {
+  for await (const { repository, shard } of iterateKnowledgeGraphSnapshotShards(snapshot, {
+    ...options,
+    checkpoint,
+  })) {
     for (const node of shard.nodes || []) {
       checkpoint();
       if (node.id === value) return { node, repositoryId: repository.repositoryId, candidates: [node.id], basis: "id" };
@@ -413,15 +404,17 @@ export async function queryKnowledgeGraphSnapshot(snapshot, args = {}, options =
   if (mode === "search") {
     return withCorpusCompleteness(snapshot, await searchSnapshot(snapshot, args, { checkpoint }));
   }
+  if (!["path", "neighbors", "impact"].includes(mode)) {
+    throw new KnowledgeGraphError("query_mode_invalid", `Unsupported knowledge graph query mode: ${mode}`);
+  }
   const start = await resolveSnapshotNode(
     snapshot,
     args.nodeId || args.from || args.query,
-    { checkpoint },
+    { ...options, checkpoint },
   );
-  const artifact = await materializeKnowledgeGraphRepository(snapshot, start.repositoryId, options);
-  const adjusted = { ...args, ...(mode === "path" ? { from: start.node.id } : { nodeId: start.node.id }) };
+  let target;
   if (mode === "path") {
-    const target = await resolveSnapshotNode(snapshot, args.to, { checkpoint });
+    target = await resolveSnapshotNode(snapshot, args.to, { ...options, checkpoint });
     if (target.repositoryId !== start.repositoryId) {
       return withCorpusCompleteness(snapshot, {
         mode,
@@ -438,7 +431,16 @@ export async function queryKnowledgeGraphSnapshot(snapshot, args = {}, options =
         completeness: { complete: true, truncated: false, reason: "repository_boundary" },
       });
     }
-    adjusted.to = target.node.id;
   }
-  return withCorpusCompleteness(snapshot, queryKnowledgeGraph(artifact, adjusted, { checkpoint }));
+  return withCorpusCompleteness(snapshot, await queryKnowledgeGraphSnapshotTraversal(
+    snapshot,
+    {
+      mode,
+      repositoryId: start.repositoryId,
+      start,
+      target,
+      args,
+    },
+    { ...options, checkpoint },
+  ));
 }

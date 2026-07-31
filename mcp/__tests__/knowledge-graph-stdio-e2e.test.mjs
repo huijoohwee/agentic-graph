@@ -13,6 +13,7 @@ import {
   KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
 } from "../knowledge-graph-tool-contract.js";
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
+import { SOURCE_PARSER_DESCRIPTORS } from "../knowledge-graph/source-parser-registry.mjs";
 import { minimalTextPdf } from "./fixtures/minimal-text-pdf.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -69,6 +70,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     const listed = await client.listTools(undefined, { timeout: 10_000 });
     const names = listed.tools.map((tool) => tool.name);
     for (const name of [
+      KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
       KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
       KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
       KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
@@ -83,15 +85,31 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
       );
     }
 
+    const parserGenerateResult = await client.callTool({
+      name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
+      arguments: {
+        descriptors: SOURCE_PARSER_DESCRIPTORS,
+      },
+    }, undefined, { timeout: 10_000 });
+    assert.equal(parserGenerateResult.isError, false, stderrText);
+    const generated = parserGenerateResult.structuredContent;
+    assert.equal(generated?.ok, true, JSON.stringify(generated));
+    assert.equal(generated?.operation, "parser_generate");
+    assert.equal(generated?.parserRegistry?.digest, generated?.parserRegistryDigest);
+    assert.deepEqual(
+      Object.keys(generated?.parserRegistry || {}).sort(),
+      ["descriptors", "digest", "schema"],
+    );
+    assert.equal(JSON.stringify(generated).includes("modulePath"), false);
+    assert.equal(JSON.stringify(generated).includes("executable"), false);
+
     const ingestResult = await client.callTool({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
       arguments: {
         rootPath: corpusRoot,
         strict: true,
-        invocation: invocationProof(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
-          "corpus-build",
-        ),
+        parserRegistry: generated.parserRegistry,
+        expectedParserRegistryDigest: generated.parserRegistryDigest,
       },
     }, undefined, { timeout: 30_000 });
     assert.equal(ingestResult.isError, false, stderrText);
@@ -102,6 +120,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     assert.ok(ingest?.parserCoverage?.["local-pdf-markdown-adapter"] > 0);
     assert.match(ingest?.graphId || "", /^kg:graph:[a-f0-9]{32}$/);
     assert.match(ingest?.snapshotDigest || "", /^[a-f0-9]{64}$/);
+    assert.equal(ingest?.parserRegistryDigest, generated.parserRegistryDigest);
     assert.equal(ingest?.projection?.readOnly, true);
     assert.equal(JSON.stringify(ingest).includes("artifactPath"), false);
     const edge = ingest.projection.graphData.edges.find((candidate) => candidate.label === "resolvesToSource")
@@ -116,10 +135,6 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
         mode: "search",
         query: "value",
         maxDurationMs: 1000,
-        invocation: invocationProof(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
-          "graph-lookup",
-        ),
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(queryResult.isError, false, stderrText);
@@ -135,10 +150,6 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
         expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "search",
         query: "Stdio PDF evidence",
-        invocation: invocationProof(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
-          "graph-lookup",
-        ),
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(pdfBodyQueryResult.isError, false, stderrText);
@@ -154,10 +165,6 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
         expectedSnapshotDigest: ingest.snapshotDigest,
         edgeId: edge.id,
         maxDurationMs: 1000,
-        invocation: invocationProof(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
-          "edge-proof",
-        ),
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(explainResult.isError, false, stderrText);
@@ -220,10 +227,6 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
         expectedSnapshotDigest: ingest.snapshotDigest,
         mode: "summary",
         unexpected: true,
-        invocation: invocationProof(
-          KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
-          "graph-lookup",
-        ),
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(invalidArguments.isError, true);

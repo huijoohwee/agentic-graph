@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronDown, Download, Globe, Link, Palette, Sparkles, Workflow } from 'lucide-react'
+import { ChevronDown, Download, GitBranch, Globe, Link, Palette, Sparkles, Workflow } from 'lucide-react'
 import type { UiToastInput } from '@/hooks/store/types'
 import { WORKSPACE_IMPORT_IMAGE_URL_TEST, WORKSPACE_IMPORT_URL_TEST } from '@/lib/config'
 import { readEnvString } from '@/lib/config.env'
@@ -27,10 +27,12 @@ import {
 } from './ImportUrlRendererSelect'
 import { loadLaunchDropdownFallbackModule } from '@/features/toolbar/launchDropdownFallbackModule'
 import {
+  isLaunchKnowledgeGraphRepositoryUrl,
   runLaunchImportUrl,
   type LaunchKnowledgeGraphImportProgressStage,
 } from './launchImportDispatch'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
+import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
 import { targetSkillsCommandsMcpInvocation } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
@@ -61,6 +63,7 @@ export function LaunchDropdownImportUrlItem(props: {
   const { onClose, pushUiToast } = props
   const [urlDraft, setUrlDraft] = React.useState('')
   const [urlInputOpen, setUrlInputOpen] = React.useState(false)
+  const [knowledgeGraphRepositoryMode, setKnowledgeGraphRepositoryMode] = React.useState(false)
   const [importUrlRenderer, setImportUrlRenderer] = React.useState<ImportUrlRendererSelection>('default')
   const [downloadOptionsOpen, setDownloadOptionsOpen] = React.useState(false)
   const [downloadOptions, setDownloadOptions] = React.useState<VideoDownloadOptions>(DEFAULT_VIDEO_DOWNLOAD_OPTIONS)
@@ -69,12 +72,12 @@ export function LaunchDropdownImportUrlItem(props: {
   const activeGraphData = useActiveGraphRenderData(true)
   const importUrlControlsId = React.useId()
   const endpointWarningShownRef = React.useRef(false)
-  const targetSkillsCommands = React.useCallback(() => {
+  const targetSkillsCommands = React.useCallback((mcpTool = IMPORT_URL_AGENT_READY_MCP_TOOL_NAME) => {
     const state = useGraphStore.getState()
     state.setFloatingPanelView('skillsCommands')
     state.setFloatingPanelOpen(true)
-    void targetSkillsCommandsMcpInvocation(
-      IMPORT_URL_AGENT_READY_MCP_TOOL_NAME,
+    return targetSkillsCommandsMcpInvocation(
+      mcpTool,
     ).catch(error => {
       pushUiToast({
         id: 'launch:import-url:skills-commands-resolution',
@@ -83,6 +86,7 @@ export function LaunchDropdownImportUrlItem(props: {
         ttlMs: UI_TOAST_TTL_MS.warningExtended,
         dismissible: true,
       })
+      throw error
     })
   }, [pushUiToast])
 
@@ -106,6 +110,7 @@ export function LaunchDropdownImportUrlItem(props: {
       setDownloadOptions(DEFAULT_VIDEO_DOWNLOAD_OPTIONS)
       setIsDownloading(false)
       setValidationConfigOpen(false)
+      setKnowledgeGraphRepositoryMode(false)
       endpointWarningShownRef.current = false
       return
     }
@@ -114,6 +119,7 @@ export function LaunchDropdownImportUrlItem(props: {
     setDownloadOptionsOpen(false)
     setDownloadOptions(DEFAULT_VIDEO_DOWNLOAD_OPTIONS)
     setIsDownloading(false)
+    setKnowledgeGraphRepositoryMode(false)
     endpointWarningShownRef.current = false
   }, [props.canvas2dRenderer, props.open])
 
@@ -151,6 +157,11 @@ export function LaunchDropdownImportUrlItem(props: {
     async (nextUrlRaw: string) => {
       const nextUrl = String(nextUrlRaw || '').trim()
       if (!nextUrl) return
+      const isKnowledgeGraphRepository = knowledgeGraphRepositoryMode
+        || isLaunchKnowledgeGraphRepositoryUrl(nextUrl)
+      const sharedResolution = isKnowledgeGraphRepository
+        ? targetSkillsCommands(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
+        : null
       onClose()
       const launchBridge = getMarkdownWorkspaceActionBridge()
       const opts = selectedImportOpts()
@@ -161,6 +172,15 @@ export function LaunchDropdownImportUrlItem(props: {
           opts,
           bridge: launchBridge,
           fallback: importUrlFallback,
+          forceKnowledgeGraphRepository: knowledgeGraphRepositoryMode,
+          resolveMcpInvocation: sharedResolution
+            ? async (mcpTool) => {
+              if (mcpTool !== KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest) {
+                throw new Error('The shared Skills & Commands resolution is bound to another MCP tool.')
+              }
+              return sharedResolution
+            }
+            : undefined,
           onKnowledgeGraphProgress: stage => {
             pushUiToast({
               id: KNOWLEDGE_GRAPH_IMPORT_TOAST_ID,
@@ -192,7 +212,7 @@ export function LaunchDropdownImportUrlItem(props: {
         })
       }
     },
-    [importUrlFallback, onClose, pushUiToast, selectedImportOpts],
+    [importUrlFallback, knowledgeGraphRepositoryMode, onClose, pushUiToast, selectedImportOpts, targetSkillsCommands],
   )
 
   const runImportUrlDeerFlow = React.useCallback(
@@ -255,7 +275,7 @@ export function LaunchDropdownImportUrlItem(props: {
             if (WORKSPACE_IMPORT_URL_TEST) setUrlDraft(WORKSPACE_IMPORT_URL_TEST)
             else if (WORKSPACE_IMPORT_IMAGE_URL_TEST) setUrlDraft(WORKSPACE_IMPORT_IMAGE_URL_TEST)
           }
-          targetSkillsCommands()
+          void targetSkillsCommands().catch(() => undefined)
           setUrlInputOpen(true)
         }}
         aria-expanded={urlInputOpen}
@@ -278,6 +298,23 @@ export function LaunchDropdownImportUrlItem(props: {
             onConfirm={runImportUrl}
             rightAddon={
               <section className="flex min-w-0 flex-1 items-stretch gap-1">
+                <button
+                  type="button"
+                  className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', knowledgeGraphRepositoryMode ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)}
+                  title="Import as repository knowledge graph"
+                  aria-label="Import as repository knowledge graph"
+                  aria-pressed={knowledgeGraphRepositoryMode}
+                  data-kg-launch-import-url-repository-mode="true"
+                  onClick={() => {
+                    const next = !knowledgeGraphRepositoryMode
+                    setKnowledgeGraphRepositoryMode(next)
+                    void targetSkillsCommands(next
+                      ? KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest
+                      : IMPORT_URL_AGENT_READY_MCP_TOOL_NAME).catch(() => undefined)
+                  }}
+                >
+                  <GitBranch className={props.menuIconClass} strokeWidth={1.6} aria-hidden />
+                </button>
                 <button type="button" className={cn(UI_RESPONSIVE_IMPORT_URL_ADDON_ACTION_CLASSNAME, 'rounded border', importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION ? cn(UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText) : UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.input.border, UI_THEME_TOKENS.button.hoverBg)} title="Design renderer" aria-label="Design renderer" aria-pressed={importUrlRenderer === DESIGN_IMPORT_URL_RENDERER_SELECTION} onClick={() => setImportUrlRenderer(prev => (prev === DESIGN_IMPORT_URL_RENDERER_SELECTION ? 'default' : DESIGN_IMPORT_URL_RENDERER_SELECTION))}>
                   <Palette className={props.menuIconClass} strokeWidth={1.6} aria-hidden={true} />
                 </button>

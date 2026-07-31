@@ -1,11 +1,19 @@
 import { spawn } from "node:child_process";
+import dns from "node:dns/promises";
 import fs from "node:fs/promises";
+import net from "node:net";
 import path from "node:path";
 
-import { KnowledgeGraphError, sha256, throwIfAborted } from "./contract.mjs";
+import {
+  compareStableStrings,
+  KnowledgeGraphError,
+  sha256,
+  throwIfAborted,
+} from "./contract.mjs";
 
-const OWNER_REPO = /^[A-Za-z0-9_.-]{1,100}$/;
+const REPOSITORY_PATH_SEGMENT = /^[A-Za-z0-9](?:[A-Za-z0-9._~-]{0,199})$/;
 const COMMIT_SHA = /^[a-f0-9]{40}$/;
+const MAX_REPOSITORY_PATH_SEGMENTS = 32;
 
 function pathIsInside(candidatePath, rootPath) {
   const relative = path.relative(rootPath, candidatePath);
@@ -37,13 +45,146 @@ async function ensureRepositoryCacheRoot(cacheRootRaw, allowedRootRaw) {
   return real;
 }
 
-function parseRepositoryUrl(valueRaw) {
+function isLocalNetworkHostname(hostname) {
+  const normalized = String(hostname || "").toLowerCase();
+  if (!normalized || normalized === "localhost" || normalized.endsWith(".localhost")
+    || normalized.endsWith(".local") || normalized.endsWith(".home.arpa")) return true;
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(normalized)) {
+    const octets = normalized.split(".").map(Number);
+    return octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)
+      || octets[0] === 0
+      || octets[0] === 10
+      || octets[0] === 127
+      || (octets[0] === 169 && octets[1] === 254)
+      || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)
+      || (octets[0] === 192 && octets[1] === 168)
+      || octets[0] >= 224;
+  }
+  return normalized.includes(":");
+}
+
+function normalizeAllowedRepositoryHosts(values) {
+  if (!Array.isArray(values)) return new Set();
+  return new Set(values.map((value) => String(value || "").trim().toLowerCase()).filter(Boolean));
+}
+
+function isPublicNetworkAddress(addressRaw) {
+  const address = String(addressRaw || "").trim().toLowerCase().replace(/^\[|\]$/g, "");
+  const version = net.isIP(address);
+  if (version === 4) {
+    const octets = address.split(".").map(Number);
+    return !(octets[0] === 0
+      || octets[0] === 10
+      || octets[0] === 127
+      || (octets[0] === 100 && octets[1] >= 64 && octets[1] <= 127)
+      || (octets[0] === 169 && octets[1] === 254)
+      || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)
+      || (octets[0] === 192 && (
+        octets[1] === 0
+        || octets[1] === 168
+      ))
+      || (octets[0] === 198 && (
+        octets[1] === 18
+        || octets[1] === 19
+        || octets[1] === 51
+      ))
+      || (octets[0] === 203 && octets[1] === 0 && octets[2] === 113)
+      || octets[0] >= 224);
+  }
+  if (version === 6) {
+    if (address.startsWith("::ffff:")) {
+      return isPublicNetworkAddress(address.slice("::ffff:".length));
+    }
+    return !(address === "::"
+      || address === "::1"
+      || /^f[cd]/.test(address)
+      || /^fe[89ab]/.test(address)
+      || address.startsWith("ff")
+      || address.startsWith("2001:db8:"));
+  }
+  return false;
+}
+
+function curlResolveAddress(addressRaw) {
+  const address = String(addressRaw || "").replace(/^\[|\]$/g, "");
+  return net.isIP(address) === 6 ? `[${address}]` : address;
+}
+
+export async function resolveRepositoryNetworkPin(
+  parsed,
+  {
+    allowedHosts = [],
+    allowPrivateNetwork = false,
+    lookupHost = dns.lookup,
+  } = {},
+) {
+  const hostname = String(parsed?.hostname || "").toLowerCase();
+  const hostAllowlist = normalizeAllowedRepositoryHosts(allowedHosts);
+  const privateNetworkAllowed = allowPrivateNetwork === true && hostAllowlist.has(hostname);
+  const literalAddress = hostname.replace(/^\[|\]$/g, "");
+  let addresses;
+  if (net.isIP(literalAddress)) {
+    addresses = [{ address: literalAddress, family: net.isIP(literalAddress) }];
+  } else {
+    try {
+      addresses = await lookupHost(hostname, { all: true, verbatim: true });
+    } catch (error) {
+      throw new KnowledgeGraphError(
+        "repository_host_resolution_failed",
+        "repositoryUrl host could not be resolved under the local source policy.",
+        { causeCode: String(error?.code || "lookup_failed"), hostname },
+      );
+    }
+  }
+  const normalized = (Array.isArray(addresses) ? addresses : [addresses])
+    .map((entry) => ({
+      address: String(entry?.address || "").replace(/^\[|\]$/g, ""),
+      family: Number(entry?.family || net.isIP(String(entry?.address || ""))),
+    }))
+    .filter((entry) => net.isIP(entry.address) === entry.family)
+    .sort((left, right) => (
+      left.family - right.family
+      || compareStableStrings(left.address, right.address)
+    ));
+  if (!normalized.length) {
+    throw new KnowledgeGraphError(
+      "repository_host_resolution_failed",
+      "repositoryUrl host resolved without a usable network address.",
+      { hostname },
+    );
+  }
+  if (!privateNetworkAllowed && normalized.some((entry) => !isPublicNetworkAddress(entry.address))) {
+    throw new KnowledgeGraphError(
+      "repository_host_not_allowed",
+      "repositoryUrl host resolved to a non-public network address.",
+      { hostname },
+    );
+  }
+  return Object.freeze({
+    hostname,
+    address: normalized[0].address,
+    curlResolve: `${hostname}:443:${curlResolveAddress(normalized[0].address)}`,
+  });
+}
+
+export function parseRepositoryUrl(
+  valueRaw,
+  { allowedHosts = [], allowPrivateNetwork = false } = {},
+) {
   let url;
   try { url = new URL(String(valueRaw || "")); } catch {
     throw new KnowledgeGraphError("repository_url_invalid", "repositoryUrl must be a valid HTTPS URL.");
   }
-  if (url.protocol !== "https:" || url.hostname !== "github.com" || url.username || url.password || url.port || url.search || url.hash) {
-    throw new KnowledgeGraphError("repository_url_invalid", "repositoryUrl must be credential-free HTTPS on github.com.");
+  if (url.protocol !== "https:" || url.username || url.password || url.port || url.search || url.hash) {
+    throw new KnowledgeGraphError("repository_url_invalid", "repositoryUrl must be credential-free HTTPS without a port, query, or fragment.");
+  }
+  const hostname = url.hostname.toLowerCase();
+  const hostAllowlist = normalizeAllowedRepositoryHosts(allowedHosts);
+  const hostExplicitlyAllowed = hostAllowlist.has(hostname);
+  if ((hostAllowlist.size && !hostExplicitlyAllowed)
+    || (isLocalNetworkHostname(hostname)
+      && !(allowPrivateNetwork === true && hostExplicitlyAllowed))) {
+    throw new KnowledgeGraphError("repository_host_not_allowed", "repositoryUrl host is not allowed by the local repository-source policy.");
   }
   let parts;
   try {
@@ -51,30 +192,61 @@ function parseRepositoryUrl(valueRaw) {
   } catch {
     throw new KnowledgeGraphError("repository_url_invalid", "repositoryUrl contains invalid path encoding.");
   }
-  const owner = parts[0];
-  const repository = String(parts[1] || "").replace(/\.git$/i, "");
-  if (!OWNER_REPO.test(owner || "") || !OWNER_REPO.test(repository) || (parts.length > 2 && parts[2] !== "tree")) {
-    throw new KnowledgeGraphError("repository_url_invalid", "repositoryUrl must identify owner/repository or owner/repository/tree/ref/path.");
+  if (!parts.length || parts.length > MAX_REPOSITORY_PATH_SEGMENTS) {
+    throw new KnowledgeGraphError("repository_url_invalid", "repositoryUrl must contain a bounded repository path.");
   }
-  if (parts[2] === "tree" && parts.length < 4) {
-    throw new KnowledgeGraphError("repository_url_invalid", "A repository tree URL must include a ref.");
+  const submittedRepository = String(parts.at(-1) || "");
+  const explicitGitSuffix = /\.git$/i.test(submittedRepository);
+  const repository = submittedRepository.replace(/\.git$/i, "");
+  const canonicalParts = [...parts.slice(0, -1), repository];
+  if (!repository || canonicalParts.some((part) => (
+    part === "."
+    || part === ".."
+    || !REPOSITORY_PATH_SEGMENT.test(part)
+  ))) {
+    throw new KnowledgeGraphError("repository_url_invalid", "repositoryUrl contains an unsafe repository path segment.");
   }
+  const encodedPath = canonicalParts.map((part) => encodeURIComponent(part)).join("/");
+  const displayUrl = `https://${hostname}/${encodedPath}`;
   return {
-    owner,
+    hostname,
     repository,
-    remoteUrl: `https://github.com/${owner}/${repository}.git`,
-    displayUrl: `https://github.com/${owner}/${repository}`,
-    treeParts: parts[2] === "tree" ? parts.slice(3) : [],
+    repositoryPath: canonicalParts.join("/"),
+    remoteUrl: explicitGitSuffix ? `${displayUrl}.git` : displayUrl,
+    displayUrl,
+    cacheKey: sha256(displayUrl).slice(0, 24),
   };
 }
 
-function runGit(args, { cwd, abortSignal, timeoutMs = 120_000 } = {}) {
+export function repositoryCacheEntryName(identity) {
+  const cacheKey = String(identity?.cacheKey || "");
+  const repository = String(identity?.repository || "");
+  const commitSha = String(identity?.sha || "");
+  if (!/^[a-f0-9]{24}$/u.test(cacheKey) || !repository || !COMMIT_SHA.test(commitSha)) {
+    throw new KnowledgeGraphError(
+      "repository_cache_invalid",
+      "Repository acquisition cache identity is invalid.",
+    );
+  }
+  return `${cacheKey}-${sha256(repository).slice(0, 16)}-${commitSha}`;
+}
+
+function runGit(args, {
+  cwd,
+  abortSignal,
+  timeoutMs = 120_000,
+  networkPin = null,
+} = {}) {
   return new Promise((resolve, reject) => {
     throwIfAborted(abortSignal);
     const child = spawn("git", [
       "-c", "credential.helper=",
       "-c", "core.fsmonitor=false",
       "-c", "core.hooksPath=/dev/null",
+      ...(networkPin ? [
+        "-c", "http.followRedirects=false",
+        "-c", `http.curloptResolve=${networkPin.curlResolve}`,
+      ] : []),
       ...args,
     ], {
       cwd,
@@ -150,31 +322,18 @@ function parseRemoteRefs(output) {
   return { refs, headRef };
 }
 
-function resolveTreeIdentity(parsed, remote, requestedRef) {
-  const parts = parsed.treeParts;
+function resolveRepositoryIdentity(remote, requestedRef) {
   if (requestedRef) {
-    if (parts.length) {
-      throw new KnowledgeGraphError("repository_ref_conflict", "repositoryRef cannot be combined with a repository tree URL.");
-    }
     const ref = String(requestedRef);
     const sha = COMMIT_SHA.test(ref)
       ? ref
       : remote.refs.get(`refs/heads/${ref}`) || remote.refs.get(`refs/tags/${ref}`) || remote.refs.get(ref);
     if (!sha) throw new KnowledgeGraphError("repository_ref_not_found", `Repository ref was not found: ${ref}`);
-    return { sha, ref, subpath: parts.length ? parts.join("/") : "" };
+    return { sha, ref, subpath: "" };
   }
-  if (!parts.length) {
-    const sha = remote.refs.get("HEAD") || remote.refs.get(remote.headRef);
-    if (!sha) throw new KnowledgeGraphError("repository_ref_not_found", "Repository default branch could not be resolved.");
-    return { sha, ref: remote.headRef || "HEAD", subpath: "" };
-  }
-  if (COMMIT_SHA.test(parts[0])) return { sha: parts[0], ref: parts[0], subpath: parts.slice(1).join("/") };
-  for (let length = parts.length; length > 0; length -= 1) {
-    const candidate = parts.slice(0, length).join("/");
-    const sha = remote.refs.get(`refs/heads/${candidate}`) || remote.refs.get(`refs/tags/${candidate}`);
-    if (sha) return { sha, ref: candidate, subpath: parts.slice(length).join("/") };
-  }
-  throw new KnowledgeGraphError("repository_ref_not_found", "Repository tree ref could not be resolved exactly.");
+  const sha = remote.refs.get("HEAD") || remote.refs.get(remote.headRef);
+  if (!sha) throw new KnowledgeGraphError("repository_ref_not_found", "Repository default branch could not be resolved.");
+  return { sha, ref: remote.headRef || "HEAD", subpath: "" };
 }
 
 export async function verifyRepositoryCacheEntry(target, expectedSha, allowedRoot = "", options = {}) {
@@ -224,7 +383,7 @@ export async function verifyRepositoryCacheEntry(target, expectedSha, allowedRoo
 
 async function verifiedCacheRoot(cacheRoot, identity, allowedRoot) {
   const canonicalCacheRoot = await ensureRepositoryCacheRoot(cacheRoot, allowedRoot);
-  const target = path.join(canonicalCacheRoot, `${identity.owner}-${identity.repository}-${identity.sha}`);
+  const target = path.join(canonicalCacheRoot, repositoryCacheEntryName(identity));
   const verificationOptions = {
     abortSignal: identity.abortSignal,
     timeoutMs: identity.timeoutMs,
@@ -241,7 +400,12 @@ async function verifiedCacheRoot(cacheRoot, identity, allowedRoot) {
   try {
     await runGit(["init", "--quiet"], { cwd: temporary, abortSignal: identity.abortSignal });
     await runGit(["remote", "add", "origin", identity.remoteUrl], { cwd: temporary, abortSignal: identity.abortSignal });
-    await runGit(["fetch", "--quiet", "--depth=1", "origin", identity.sha], { cwd: temporary, abortSignal: identity.abortSignal, timeoutMs: identity.timeoutMs });
+    await runGit(["fetch", "--quiet", "--depth=1", "origin", identity.sha], {
+      cwd: temporary,
+      abortSignal: identity.abortSignal,
+      timeoutMs: identity.timeoutMs,
+      networkPin: identity.networkPin,
+    });
     await runGit(["checkout", "--quiet", "--detach", "FETCH_HEAD"], { cwd: temporary, abortSignal: identity.abortSignal });
     if (!(await verifyRepositoryCacheEntry(temporary, identity.sha, canonicalCacheRoot, verificationOptions))) {
       throw new KnowledgeGraphError("repository_commit_mismatch", "Acquired repository did not match the resolved commit.");
@@ -265,13 +429,25 @@ export async function acquireRepositoryUrl({
   allowedRoot,
   abortSignal,
   timeoutMs,
+  allowedHosts,
+  allowPrivateNetwork = false,
+  lookupHost,
 }) {
-  const parsed = parseRepositoryUrl(repositoryUrl);
-  const remoteOutput = await runGit(["ls-remote", "--symref", parsed.remoteUrl], { abortSignal, timeoutMs });
-  const resolved = resolveTreeIdentity(parsed, parseRemoteRefs(remoteOutput), repositoryRef);
+  const networkPolicy = { allowedHosts, allowPrivateNetwork };
+  const parsed = parseRepositoryUrl(repositoryUrl, networkPolicy);
+  const networkPin = await resolveRepositoryNetworkPin(parsed, {
+    ...networkPolicy,
+    lookupHost,
+  });
+  const remoteOutput = await runGit(["ls-remote", "--symref", parsed.remoteUrl], {
+    abortSignal,
+    timeoutMs,
+    networkPin,
+  });
+  const resolved = resolveRepositoryIdentity(parseRemoteRefs(remoteOutput), repositoryRef);
   const cache = await verifiedCacheRoot(
     cacheRoot,
-    { ...parsed, ...resolved, abortSignal, timeoutMs },
+    { ...parsed, ...resolved, abortSignal, timeoutMs, networkPin },
     allowedRoot,
   );
   const candidate = resolved.subpath ? path.resolve(cache.target, resolved.subpath) : cache.target;

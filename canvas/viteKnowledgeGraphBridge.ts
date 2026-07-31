@@ -8,8 +8,12 @@ import {
   KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA,
   KNOWLEDGE_GRAPH_HOST_ROUTE,
 } from './src/features/knowledge-graph/knowledgeGraphHostAdapter'
+import {
+  KnowledgeGraphRepositoryUrlError,
+  normalizeKnowledgeGraphRepositoryRemoteUrl,
+} from './src/features/knowledge-graph/knowledgeGraphRepositoryUrl'
 import { runKnowledgeGraphTool } from '../mcp/knowledge-graph-host.js'
-import { SOURCE_PARSER_STRUCTURAL_INCLUDE_PATTERNS } from '../mcp/knowledge-graph/source-parser-registry.mjs'
+import { SOURCE_PARSER_REGISTRY } from '../mcp/knowledge-graph/source-parser-registry.mjs'
 
 const INGEST_TOOL_NAME = 'knowgrph.knowledge_graph.ingest'
 const MAX_CHUNK_BYTES = 4 * 1024 * 1024
@@ -205,40 +209,20 @@ function resolveInside(root: string, relativePath: string): string {
 }
 
 function parseCanonicalRepositoryUrl(value: unknown): string {
-  let url: URL
   try {
-    url = new URL(String(value || '').trim())
-  } catch {
-    throw new HostBridgeError('invalid-repository-url', 'repositoryUrl must be a canonical HTTPS GitHub URL.')
+    return normalizeKnowledgeGraphRepositoryRemoteUrl(value)
+  } catch (error) {
+    if (error instanceof KnowledgeGraphRepositoryUrlError) {
+      throw new HostBridgeError('invalid-repository-url', error.message)
+    }
+    throw error
   }
-  if (
-    url.protocol !== 'https:'
-    || url.hostname !== 'github.com'
-    || url.port
-    || url.username
-    || url.password
-    || url.search
-    || url.hash
-    || url.pathname.includes('%')
-  ) {
-    throw new HostBridgeError('invalid-repository-url', 'repositoryUrl must be credential-free HTTPS on github.com.')
-  }
-  const parts = url.pathname.split('/').filter(Boolean)
-  const segment = /^[A-Za-z0-9_.-]{1,100}$/
-  const owner = parts[0] || ''
-  const repository = String(parts[1] || '').replace(/\.git$/i, '')
-  const validTree = parts.length === 2 || (
-    parts[2] === 'tree'
-    && parts.length >= 4
-    && parts.slice(3).every(part => segment.test(part))
-  )
-  if (!segment.test(owner) || !segment.test(repository) || !validTree) {
-    throw new HostBridgeError('invalid-repository-url', 'repositoryUrl does not identify one canonical GitHub repository.')
-  }
-  return `https://github.com/${owner}/${repository}${parts[2] === 'tree' ? `/tree/${parts.slice(3).join('/')}` : ''}`
 }
 
-function sanitizeImportResult(value: unknown): Record<string, unknown> {
+function sanitizeImportResult(
+  value: unknown,
+  expectedParserRegistryDigest = SOURCE_PARSER_REGISTRY.digest,
+): Record<string, unknown> {
   const result = value as Record<string, unknown> | null
   if (!result || result.ok !== true) {
     const error = result?.error as { code?: unknown; message?: unknown } | undefined
@@ -250,12 +234,15 @@ function sanitizeImportResult(value: unknown): Record<string, unknown> {
   }
   const graphId = String(result.graphId || '')
   const snapshotDigest = String(result.snapshotDigest || '')
+  const parserRegistryDigest = String(result.parserRegistryDigest || '')
   const counts = result.counts as Record<string, unknown> | undefined
   const projection = result.projection as Record<string, unknown> | undefined
   const graphData = projection?.graphData as Record<string, unknown> | undefined
   if (
     !/^kg:graph:[0-9a-f]{32}$/.test(graphId)
     || !/^[0-9a-f]{64}$/.test(snapshotDigest)
+    || !/^[0-9a-f]{64}$/.test(parserRegistryDigest)
+    || parserRegistryDigest !== expectedParserRegistryDigest
     || typeof result.complete !== 'boolean'
     || !counts
     || !projection
@@ -303,6 +290,7 @@ function sanitizeImportResult(value: unknown): Record<string, unknown> {
     kind: 'knowledge-graph',
     graphId,
     snapshotDigest,
+    parserRegistryDigest,
     complete: result.complete,
     counts: { sources: sourceCount, nodes: nodeCount, edges: edgeCount },
     projection: safeProjection,
@@ -324,7 +312,6 @@ function ingestArguments(
   return {
     ...source,
     ...(invocation === undefined ? {} : { invocation }),
-    include: SOURCE_PARSER_STRUCTURAL_INCLUDE_PATTERNS,
     maxFiles: MAX_FILES,
     maxFileBytes: MAX_FILE_BYTES,
     maxTotalBytes: MAX_TOTAL_BYTES,

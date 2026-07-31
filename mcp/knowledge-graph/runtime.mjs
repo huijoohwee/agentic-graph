@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -13,9 +12,10 @@ import {
 import {
   discoverKnowledgeSources,
   hydrateKnowledgeSource,
-  resolveRealDirectory,
 } from "./discovery.mjs";
+import { pathIsInside, resolveIngestSource, resolveOutputRoot } from "./ingest-source.mjs";
 import {
+  createKnowledgeGraphParserDispatch,
   parseKnowledgeSource,
   parserDescriptorForSource,
   parserLimitFragmentForSource,
@@ -27,14 +27,17 @@ import {
   projectKnowledgeGraphSnapshot,
   queryKnowledgeGraphSnapshot,
 } from "./query.mjs";
-import { acquireRepositoryUrl } from "./repository-acquisition.mjs";
 import { buildRepositoryScopedResolutionEdges } from "./resolution.mjs";
 import {
   createResolutionRetentionBudget,
   fragmentForResolution,
   retainResolutionFragment,
 } from "./resolution-retention.mjs";
-import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
+import {
+  generateKnowledgeGraphParser,
+  parserRegistryForIngest,
+} from "./parser-runtime.mjs";
+export { generateKnowledgeGraphParser };
 import { persistKnowledgeGraphSource } from "./source-persistence.mjs";
 import {
   sourceArtifactByteLimit,
@@ -42,7 +45,6 @@ import {
   sourcePartCountLimit,
 } from "./source-sharding.mjs";
 import {
-  ensureKnowledgeGraphStorageRoot,
   knowledgeGraphSourceShardByteLimit,
   listKnowledgeGraphSourceEntries,
   readKnowledgeGraphSnapshot,
@@ -52,12 +54,14 @@ import {
 } from "./store.mjs";
 
 export const KNOWLEDGE_GRAPH_TOOL_NAMES = Object.freeze({
+  parserGenerate: "knowgrph.knowledge_graph.parser_generate",
   ingest: "knowgrph.knowledge_graph.ingest",
   query: "knowgrph.knowledge_graph.query",
   explainEdge: "knowgrph.knowledge_graph.explain_edge",
 });
 
 const RESULT_SCHEMAS = Object.freeze({
+  parser_generate: "knowgrph-knowledge-graph-parser-generate/v1",
   ingest: "knowgrph-knowledge-graph-ingest/v1",
   query: "knowgrph-knowledge-graph-query/v1",
   explain_edge: "knowgrph-knowledge-graph-explain-edge/v1",
@@ -68,100 +72,7 @@ const ingestTails = new Map();
 const success = (operation, payload) => ({ schema: RESULT_SCHEMAS[operation], ok: true, operation, ...payload });
 const failure = (operation, error) => ({ schema: RESULT_SCHEMAS[operation], operation, ...knowledgeGraphFailure(error) });
 
-function pathIsInside(candidatePath, rootPath) {
-  const relative = path.relative(rootPath, candidatePath);
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-}
-
-async function resolveAllowedRoots(deps, budget = {}) {
-  const roots = [deps.knowgrphRoot, ...(Array.isArray(deps.allowedRoots) ? deps.allowedRoots : [])].filter(Boolean);
-  const resolved = [];
-  for (const root of roots) {
-    checkKnowledgeGraphBudget({ ...budget, stage: "allowed-root-resolution" });
-    const real = await resolveRealDirectory(root, { ...budget, stage: "allowed-root-resolution" });
-    if (!resolved.includes(real)) resolved.push(real);
-  }
-  if (!resolved.length) throw new KnowledgeGraphError("allowed_roots_required", "At least one host-owned allowed root is required.");
-  return resolved;
-}
-
-async function assertLocalRootAllowed(rootPathRaw, deps, budget = {}) {
-  const rootPath = await resolveRealDirectory(rootPathRaw, { ...budget, stage: "input-root-resolution" });
-  const allowedRoots = await resolveAllowedRoots(deps, budget);
-  if (!allowedRoots.some((allowed) => pathIsInside(rootPath, allowed))) {
-    throw new KnowledgeGraphError("root_outside_allowed_roots", "rootPath is outside the host-owned allowed roots.");
-  }
-  return rootPath;
-}
-
-async function resolveOutputRoot(deps, budget = {}) {
-  const configured = path.resolve(deps.outputRoot || path.join(deps.knowgrphRoot, "data", "outputs", "knowledge-graph"));
-  let ancestor = configured;
-  const tail = [];
-  while (true) {
-    checkKnowledgeGraphBudget({ ...budget, stage: "output-root-resolution" });
-    try {
-      const real = await fs.realpath(ancestor);
-      checkKnowledgeGraphBudget({ ...budget, stage: "output-root-resolution" });
-      const resolved = path.resolve(real, ...tail);
-      if (!pathIsInside(resolved, real)) throw new KnowledgeGraphError("output_outside_output_root", "Output root is invalid.");
-      return resolved;
-    } catch (error) {
-      if (error instanceof KnowledgeGraphError) throw error;
-    }
-    const parent = path.dirname(ancestor);
-    if (parent === ancestor) return configured;
-    tail.unshift(path.basename(ancestor));
-    ancestor = parent;
-  }
-}
-
-const graphIdFor = (identity) => `kg:graph:${sha256(identity).slice(0, 32)}`;
 const graphPointerPath = (outputRoot, graphId) => path.join(outputRoot, "graphs", `${graphId.slice("kg:graph:".length)}.json`);
-
-async function resolveIngestSource(args, deps, abortSignal, deadline) {
-  const budget = { abortSignal, deadline };
-  checkKnowledgeGraphBudget({ ...budget, stage: "source-resolution" });
-  const hasRoot = Boolean(String(args.rootPath || "").trim());
-  const hasUrl = Boolean(String(args.repositoryUrl || "").trim());
-  if (hasRoot === hasUrl) {
-    throw new KnowledgeGraphError("source_identity_required", "Provide exactly one of rootPath or repositoryUrl.");
-  }
-  const outputRoot = await resolveOutputRoot(deps, budget);
-  if (hasUrl) {
-    const canonicalOutputRoot = await ensureKnowledgeGraphStorageRoot(outputRoot);
-    checkKnowledgeGraphBudget({ ...budget, stage: "repository-acquisition-root" });
-    const requestedTimeout = Number(args.acquisitionTimeoutMs);
-    const remaining = Math.max(1, remainingKnowledgeGraphDuration(deadline));
-    const acquired = await acquireRepositoryUrl({
-      repositoryUrl: args.repositoryUrl,
-      repositoryRef: args.repositoryRef,
-      cacheRoot: path.join(canonicalOutputRoot, "acquisitions"),
-      allowedRoot: canonicalOutputRoot,
-      abortSignal,
-      timeoutMs: Number.isFinite(requestedTimeout) && requestedTimeout > 0
-        ? Math.min(requestedTimeout, remaining)
-        : remaining,
-    });
-    checkKnowledgeGraphBudget({ ...budget, stage: "repository-acquisition" });
-    return {
-      rootPath: acquired.rootPath,
-      outputRoot: canonicalOutputRoot,
-      graphId: graphIdFor(`repository-url\0${acquired.identity.repositoryUrl}\0${acquired.identity.ref}\0${acquired.identity.subpath}`),
-      acquisition: acquired.identity,
-    };
-  }
-  const rootPath = await assertLocalRootAllowed(args.rootPath, deps, budget);
-  if (rootPath === outputRoot) {
-    throw new KnowledgeGraphError("output_root_matches_input_root", "The generated-output root must not equal the indexed corpus root.");
-  }
-  return {
-    rootPath,
-    outputRoot,
-    graphId: graphIdFor(`local-directory\0${rootPath}`),
-    acquisition: { mode: "local-directory", networkRequests: 0, complete: true },
-  };
-}
 
 async function serializeIngest(graphId, operation, budget = {}) {
   const previous = ingestTails.get(graphId);
@@ -286,6 +197,7 @@ async function ingestResolvedTransaction(
   abortSignal,
   deadline,
   resolved,
+  parserRegistry,
   objectTransaction,
 ) {
   const budget = { abortSignal, deadline };
@@ -301,8 +213,11 @@ async function ingestResolvedTransaction(
     })
     : null;
   checkKnowledgeGraphBudget({ ...budget, stage: "previous-snapshot-read" });
+  const registryMatchesPrevious = previousSnapshot?.manifest?.parserRegistryDigest === parserRegistry.digest;
   const previousEntries = new Map(
-    (previousSnapshot ? await listKnowledgeGraphSourceEntries(previousSnapshot) : [])
+    (previousSnapshot && registryMatchesPrevious
+      ? await listKnowledgeGraphSourceEntries(previousSnapshot)
+      : [])
       .map((entry) => [entry.sourcePath, entry]),
   );
   checkKnowledgeGraphBudget({ ...budget, stage: "previous-source-index-read" });
@@ -319,15 +234,20 @@ async function ingestResolvedTransaction(
     maxDurationMs: args.maxDurationMs,
     abortSignal,
     deadline,
+    parserRegistry,
   });
-  let parserDeps = deps;
-  if (discovered.sources.some((source) => source.kind === "python")) {
+  let parserDeps = {
+    ...deps,
+    parserRegistry,
+    parserDispatch: createKnowledgeGraphParserDispatch(parserRegistry),
+  };
+  if (discovered.sources.some((source) => source.parserAdapter === "python")) {
     try {
       const pythonRuntime = await probePythonParserRuntime({
         ...deps,
         ...budget,
       });
-      parserDeps = { ...deps, ...pythonRuntime };
+      parserDeps = { ...parserDeps, ...pythonRuntime };
     } catch (error) {
       if (error instanceof KnowledgeGraphError
         && ["aborted", "max_duration_exceeded"].includes(error.code)) throw error;
@@ -460,9 +380,12 @@ async function ingestResolvedTransaction(
     { ...budget, retentionBudget: resolutionRetention },
   );
   parserCheckpoint.force();
-  const rootContentHash = sha256(sourceEntries.map((entry) => (
-    `${entry.sourcePath}\0${entry.contentHash}\0${entry.parserId}\0${entry.parserVersion}`
-  )).sort(compareStableStrings).join("\n"));
+  const rootContentHash = sha256([
+    `parser-registry\0${parserRegistry.digest}`,
+    ...sourceEntries.map((entry) => (
+      `${entry.sourcePath}\0${entry.contentHash}\0${entry.parserId}\0${entry.parserVersion}`
+    )).sort(compareStableStrings),
+  ].join("\n"));
   const currentPaths = new Set(discovered.sources.map((source) => source.relativePath));
   const deletedPaths = [...previousEntries.keys()]
     .filter((sourcePath) => !currentPaths.has(sourcePath))
@@ -479,7 +402,7 @@ async function ingestResolvedTransaction(
     rootContentHash,
     admission: discovered.admission,
     completeness,
-    parserRegistryDigest: SOURCE_PARSER_REGISTRY.digest,
+    parserRegistryDigest: parserRegistry.digest,
   }, {
     allowedRoot: resolved.outputRoot,
     objectTransaction,
@@ -498,6 +421,7 @@ async function ingestResolvedTransaction(
   return success("ingest", {
     graphId: resolved.graphId,
     snapshotDigest: snapshot.pointer.snapshotDigest,
+    parserRegistryDigest: parserRegistry.digest,
     complete,
     counts: {
       repositories: snapshot.manifest.repositories.length,
@@ -524,12 +448,12 @@ async function ingestResolvedTransaction(
   });
 }
 
-async function ingestResolved(args, deps, abortSignal, deadline, resolved) {
+async function ingestResolved(args, deps, abortSignal, deadline, resolved, parserRegistry) {
   return runKnowledgeGraphObjectTransaction(
     graphPointerPath(resolved.outputRoot, resolved.graphId),
     { abortSignal, allowedRoot: resolved.outputRoot, deadline },
     (objectTransaction) => ingestResolvedTransaction(
-      args, deps, abortSignal, deadline, resolved, objectTransaction,
+      args, deps, abortSignal, deadline, resolved, parserRegistry, objectTransaction,
     ),
   );
 }
@@ -539,10 +463,18 @@ export async function ingestKnowledgeGraph(args, deps = {}, options = {}) {
   const deadline = createKnowledgeGraphDeadline(normalized.maxDurationMs, { now: deps.now });
   const operationAbort = createOperationAbortSignal(deadline, options.abortSignal);
   try {
+    const parserRegistry = parserRegistryForIngest(normalized);
     const resolved = await resolveIngestSource(normalized, deps, operationAbort.signal, deadline);
     return await serializeIngest(
       resolved.graphId,
-      () => ingestResolved(normalized, deps, operationAbort.signal, deadline, resolved),
+      () => ingestResolved(
+        normalized,
+        deps,
+        operationAbort.signal,
+        deadline,
+        resolved,
+        parserRegistry,
+      ),
       { abortSignal: operationAbort.signal, deadline },
     );
   } catch (error) {
@@ -613,6 +545,8 @@ export async function explainKnowledgeGraphEdge(args, deps = {}, options = {}) {
 export function createKnowledgeGraphRuntime({
   knowgrphRoot,
   allowedRoots,
+  repositoryHosts,
+  allowPrivateRepositoryNetwork = false,
   outputRoot,
   pdfConverter = null,
   pdfConverterVersion = "pending",
@@ -631,6 +565,8 @@ export function createKnowledgeGraphRuntime({
   const deps = {
     knowgrphRoot: path.resolve(knowgrphRoot),
     allowedRoots,
+    repositoryHosts,
+    allowPrivateRepositoryNetwork: allowPrivateRepositoryNetwork === true,
     outputRoot,
     pdfConverter,
     pdfConverterVersion,
@@ -647,10 +583,14 @@ export function createKnowledgeGraphRuntime({
     maxSnapshotSourceParts,
   };
   return Object.freeze({
+    generateKnowledgeGraphParser: (args) => generateKnowledgeGraphParser(args),
     ingest: (args, options) => ingestKnowledgeGraph(args, deps, options),
     query: (args, options) => queryKnowledgeGraphArtifact(args, deps, options),
     explainEdge: (args, options) => explainKnowledgeGraphEdge(args, deps, options),
     run: async (toolName, args = {}, options = {}) => {
+      if (toolName === KNOWLEDGE_GRAPH_TOOL_NAMES.parserGenerate) {
+        return generateKnowledgeGraphParser(args);
+      }
       if (toolName === KNOWLEDGE_GRAPH_TOOL_NAMES.ingest) return ingestKnowledgeGraph(args, deps, options);
       if (toolName === KNOWLEDGE_GRAPH_TOOL_NAMES.query) return queryKnowledgeGraphArtifact(args, deps, options);
       if (toolName === KNOWLEDGE_GRAPH_TOOL_NAMES.explainEdge) return explainKnowledgeGraphEdge(args, deps, options);

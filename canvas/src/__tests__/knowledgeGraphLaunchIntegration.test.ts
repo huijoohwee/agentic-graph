@@ -16,6 +16,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
 
 const SNAPSHOT_DIGEST = 'a'.repeat(64)
+const PARSER_REGISTRY_DIGEST = 'f'.repeat(64)
 const GRAPH_ID = `kg:graph:${'1'.repeat(32)}`
 const FOLDER_GRAPH_ID = `kg:graph:${'2'.repeat(32)}`
 const PROJECTION_TOKEN = `kg:projection:${'1'.repeat(24)}`
@@ -39,6 +40,7 @@ function knowledgeGraphResult(
     kind: 'knowledge-graph',
     graphId: GRAPH_ID,
     snapshotDigest: SNAPSHOT_DIGEST,
+    parserRegistryDigest: PARSER_REGISTRY_DIGEST,
     complete: true,
     counts: { sources: 2, nodes: 2, edges: 1 },
     projection: {
@@ -108,6 +110,7 @@ export async function testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreserv
     useGraphStore.getState().setCanvasRenderMode('3d')
     const result = await runLaunchImportUrl({
       urlRaw: 'https://github.com/example/sample',
+      forceKnowledgeGraphRepository: true,
       bridge: {
         importUrl: async () => {
           calls.push('legacy-bridge')
@@ -161,8 +164,28 @@ export async function testKnowledgeGraphRepositoryUrlUsesCanonicalHostAndPreserv
       metadata?.owner !== 'knowledge-graph-runtime'
       || metadata?.readOnly !== true
       || metadata?.snapshotDigest !== SNAPSHOT_DIGEST
+      || metadata?.parserRegistryDigest !== PARSER_REGISTRY_DIGEST
     ) {
       throw new Error(`expected read-only snapshot-bound projection metadata, got ${JSON.stringify(metadata)}`)
+    }
+    let neutralRepositoryUrl = ''
+    await runLaunchImportUrl({
+      urlRaw: 'https://code.example.test/group/sample.git',
+      bridge: {
+        knowledgeGraph: {
+          importRepositoryUrl: async url => {
+            neutralRepositoryUrl = url
+            return knowledgeGraphResult()
+          },
+        },
+      },
+      fallback: async () => {
+        throw new Error('explicit HTTPS Git repository URL must not use the webpage fallback')
+      },
+      resolveMcpInvocation: async () => ({ invocation: SOURCE_BACKED_INVOCATION }),
+    })
+    if (neutralRepositoryUrl !== 'https://code.example.test/group/sample.git') {
+      throw new Error(`expected a provider-neutral submitted repository remote, got ${neutralRepositoryUrl}`)
     }
   } finally {
     restore()
@@ -270,6 +293,7 @@ export async function testKnowledgeGraphRepositoryUrlFailsClosedWithoutCanonical
   try {
     await runLaunchImportUrl({
       urlRaw: 'https://github.com/example/sample',
+      forceKnowledgeGraphRepository: true,
       bridge: {},
       fallback: async () => {
         legacyFallbackCalls += 1
@@ -301,6 +325,7 @@ export async function testKnowledgeGraphRepositoryUrlRejectsUnsafeVariants() {
     try {
       await runLaunchImportUrl({
         urlRaw,
+        forceKnowledgeGraphRepository: true,
         bridge: {
           knowledgeGraph: {
             importRepositoryUrl: async () => {
@@ -328,6 +353,7 @@ export async function testKnowledgeGraphIncompleteRepositoryImportFailsClosed() 
   try {
     await runLaunchImportUrl({
       urlRaw: 'https://github.com/example/sample',
+      forceKnowledgeGraphRepository: true,
       bridge: {
         knowledgeGraph: {
           importRepositoryUrl: async () => knowledgeGraphResult({ complete: false }),

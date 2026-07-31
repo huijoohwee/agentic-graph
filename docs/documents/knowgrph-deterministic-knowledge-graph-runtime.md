@@ -2,10 +2,10 @@
 title: "Knowgrph Deterministic Knowledge-Graph Runtime"
 doc_type: "Runtime Contract"
 id: "knowgrph-deterministic-knowledge-graph-runtime"
-version: "1.0.0"
+version: "1.1.0"
 status: "active"
 created: "2026-07-22"
-updated: "2026-07-30"
+updated: "2026-07-31"
 author: "airvio / joohwee"
 domain: "knowgrph"
 lang: "en-US"
@@ -39,7 +39,7 @@ related:
 
 This document is the focused contract for Knowgrph's deterministic local knowledge-graph runtime. The earlier [Queryable Corpus Graph PRD/TAD](knowgrph-query-prd-tad.md) remains authoritative for the 2026-05-29 browser, Source Files, Canvas, and FloatingPanel Chat implementation history.
 
-The 2026-07-22 runtime extension narrowly supersedes that PRD's Phase 1 no-CLI/MCP non-goal. It adds local stdio ingest, query, and edge-explanation access over Knowgrph-owned corpus graph state. It does not authorize a remote service, hosted graph API, second graph store, MCP-only materialization pipeline, model-backed retrieval path, or deployment.
+The 2026-07-22 runtime extension narrowly supersedes that PRD's Phase 1 no-CLI/MCP non-goal. The 2026-07-31 extension adds independently invocable parser generation and provider-neutral repository acquisition to the same local owner. It does not authorize a remote service, hosted graph API, second graph store, MCP-only materialization pipeline, model-backed retrieval path, or deployment.
 
 ## Independent Implementation Boundary
 
@@ -47,10 +47,11 @@ Knowgrph's contracts, tool names, evidence model, parser registry, implementatio
 
 ## Local Invocation Surface
 
-The capability has exactly three local stdio MCP tool identities:
+The capability has exactly four local stdio MCP tool identities:
 
 | Tool | Purpose |
 |---|---|
+| `knowgrph.knowledge_graph.parser_generate` | Compile bounded inert matchers and an optional declarative grammar into one canonical digest-bound parser registry. |
 | `knowgrph.knowledge_graph.ingest` | Build or refresh deterministic graph evidence for a supported local corpus. |
 | `knowgrph.knowledge_graph.query` | Retrieve graph evidence using lexical matching and graph traversal. |
 | `knowgrph.knowledge_graph.explain_edge` | Explain one stored edge from its source evidence and extraction basis. |
@@ -59,6 +60,7 @@ The matching Agentic Canvas OS aliases are:
 
 | MCP tool | Exact Agentic Canvas OS invocation |
 |---|---|
+| `knowgrph.knowledge_graph.parser_generate` | `/knowledge.graph.parser.generate #knowledge-graph #parser-generation #mcp @parser-specification @runtime-proof` |
 | `knowgrph.knowledge_graph.ingest` | `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof` |
 | `knowgrph.knowledge_graph.query` | `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
 | `knowgrph.knowledge_graph.explain_edge` | `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
@@ -70,13 +72,13 @@ A stdio MCP client calls the tool identity directly. An ACOS-capable host resolv
 The runtime follows one Knowgrph-owned path:
 
 ```text
-local corpus or acquired immutable repository -> deterministic structural adapters -> sharded explained-edge snapshot -> lexical graph traversal -> MCP evidence
+local corpus or acquired immutable repository -> verified parser-registry v2 -> deterministic AST/structural/inventory adapters -> sharded explained-edge snapshot -> lexical graph traversal -> MCP evidence
 ```
 
 - Existing corpus, GraphData, evidence, and local MCP owners remain authoritative.
 - The MCP surface is an adapter over shared graph contracts, not a new graph owner.
 - The deterministic runtime does not require Neo4j, a vector database, an embedding index, or an external parsing service.
-- Optional FloatingPanel Chat answer synthesis remains a separate downstream harness concern and is not part of these three tools.
+- Optional FloatingPanel Chat answer synthesis remains a separate downstream harness concern and is not part of these four tools.
 
 ## Deterministic Coverage Contract
 
@@ -89,9 +91,10 @@ Coverage is capability-driven. A filename or extension never implies a successfu
 | Supported SQL schemas | Extract only locally observable schema structure and relationships. |
 | Supported configuration | Extract structural keys, sections, and non-secret references without executing the configuration. |
 | Supported PDFs | Extract locally available text and document structure without remote OCR or model fallback. |
-| Unsupported input | Return a bounded diagnostic and omit unsupported facts. |
+| Generated language grammar | Compile bounded inert tokens and production rules, then emit a deterministic AST whose edges retain exact source spans and grammar identity. |
+| Unknown or binary input | Preserve a deterministic inventory node so the source remains discoverable without inventing unsupported structural facts. |
 
-Unknown languages, unavailable parsers, malformed or unreadable files, encrypted or image-only PDFs, unsupported syntax, and unresolved references must stay visible as unsupported or unresolved diagnostics. The runtime must not silently substitute a model, remote parser, embedding model, or guessed relationship. An explicit `repositoryUrl` ingest may use the network only to resolve and acquire one canonical credential-free HTTPS repository revision; parsing, storage, query, and explanation remain local and network-free.
+Unknown formats remain visible through inventory evidence. Unavailable parsers, malformed or unreadable files, encrypted or image-only PDFs, unsupported syntax, and unresolved references must stay visible as limited, unsupported, or unresolved diagnostics. The runtime must not silently substitute a model, remote parser, embedding model, or guessed relationship. An explicit `repositoryUrl` ingest may use the network only to resolve and acquire one canonical credential-free HTTPS repository revision; parsing, storage, query, and explanation remain local and network-free.
 
 ## Every-Edge Explanation Contract
 
@@ -146,8 +149,9 @@ The query path must:
 
 The runtime is ready only when all of the following hold:
 
-- the local stdio inventory exposes the three declared knowledge-graph tool identities
+- the local stdio inventory exposes the four declared knowledge-graph tool identities
 - the `/`, `#`, and `@` mappings exactly match this contract
+- parser generation emits only a canonical v2 registry; declarative grammars are finite JSON data with hard token, rule, repetition, byte, recursion, and operation bounds
 - supported code uses deterministic AST parsing and supported non-code inputs use deterministic structural extraction
 - every returned edge has a source-backed deterministic explanation
 - query uses lexical graph traversal with no vector store
