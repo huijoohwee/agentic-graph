@@ -194,7 +194,7 @@ export function FloatingPanelSkillsCommandsView() {
             {mcpTarget.error || 'Source-backed MCP command resolution failed.'}
           </p>
         ) : null}
-        <MotionCapturePlatformProjection variant="skills" />
+        {targetingMcpInvocation ? null : <MotionCapturePlatformProjection variant="skills" />}
         <SkillsCommandsView
           collapsedGroupKeys={collapsedGroupKeys}
           grammarGroupBy={grammarGroupBy}

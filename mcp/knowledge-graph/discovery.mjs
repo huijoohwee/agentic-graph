@@ -10,6 +10,8 @@ import {
   sha256,
 } from "./contract.mjs";
 import {
+  collectTrackedSourceOmissions,
+  isTrackedGitlink,
   readGitSourceInventory,
   sameGitSourceInventory,
 } from "./git-source-inventory.mjs";
@@ -160,8 +162,8 @@ function isTrackedByRepositoryScope(relativePath, entry, scope) {
     : scope.inventory.trackedFiles.has(scopedPath);
 }
 
-export function inferKnowledgeSourceKind(relativePath) {
-  return SOURCE_PARSER_REGISTRY.match(relativePath)?.kind || "unsupported";
+export function inferKnowledgeSourceKind(relativePath, parserRegistry = SOURCE_PARSER_REGISTRY) {
+  return parserRegistry.match(relativePath)?.kind || "inventory";
 }
 
 function looksBinary(bytes) {
@@ -195,7 +197,9 @@ export async function hydrateKnowledgeSource(source, {
       sourcePath: source.relativePath,
     });
   }
-  return source.kind === "pdf"
+  return source.parserAdapter === "pdf" || (
+    !source.parserAdapter && source.kind === "pdf"
+  )
     ? { ...source, bytes: opened.bytes }
     : { ...source, text: opened.bytes.toString("utf8") };
 }
@@ -228,6 +232,13 @@ export async function isPathWithinAllowedRoots(candidatePath, allowedRoots) {
 }
 
 export async function discoverKnowledgeSources(args) {
+  const parserRegistry = args.parserRegistry || SOURCE_PARSER_REGISTRY;
+  if (!parserRegistry?.digest || typeof parserRegistry.match !== "function") {
+    throw new KnowledgeGraphError(
+      "parser_registry_invalid",
+      "Source discovery requires a verified compiled parser registry.",
+    );
+  }
   const deadline = args.deadline || createKnowledgeGraphDeadline(args.maxDurationMs, { now: args.now });
   const rootPath = await resolveRealDirectory(args.rootPath, {
     abortSignal: args.abortSignal,
@@ -264,6 +275,7 @@ export async function discoverKnowledgeSources(args) {
   const diagnostics = [];
   const repositories = new Map();
   const repositoryPolicies = new Map();
+  const trackedOmissions = new Map();
   const directorySnapshots = new Map();
   const visitedDirectories = new Set();
   const counts = {
@@ -276,6 +288,8 @@ export async function discoverKnowledgeSources(args) {
     filesUnsupported: 0,
     bytesVisited: 0,
     bytesAdmitted: 0,
+    trackedSymlinksOmitted: 0,
+    trackedGitlinksOmitted: 0,
   };
 
   const checkBudget = () => {
@@ -285,6 +299,27 @@ export async function discoverKnowledgeSources(args) {
       stage: "source-discovery",
       details: { counts: { ...counts } },
     });
+  };
+
+  const recordTrackedOmissions = (scope) => {
+    for (const candidate of collectTrackedSourceOmissions(
+      scope.inventory,
+      scope.repositoryPath,
+    )) {
+      const { sourcePath } = candidate;
+      if (exactExcludedPaths.has(sourcePath)
+        || hasExcludedSegment(sourcePath, HARD_EXCLUDED_SEGMENTS)
+        || matchesAny(sourcePath, exclude)
+        || (include.length && candidate.kind === "symlink" && !matchesAny(sourcePath, include))) {
+        continue;
+      }
+      const key = `${candidate.code}:${sourcePath}`;
+      if (trackedOmissions.has(key)) continue;
+      trackedOmissions.set(key, { ...candidate, sourcePath });
+      if (candidate.kind === "symlink") counts.trackedSymlinksOmitted += 1;
+      else counts.trackedGitlinksOmitted += 1;
+      diagnostics.push({ code: candidate.code, sourcePath, message: candidate.message });
+    }
   };
 
   async function walk(
@@ -328,6 +363,7 @@ export async function discoverKnowledgeSources(args) {
         repositoryPath = candidateRepositoryPath;
         repositoryScope = { inventory, repositoryPath, repositoryRootPath: directoryPath };
         repositoryPolicies.set(repositoryPath, repositoryScope);
+        recordTrackedOmissions(repositoryScope);
         if (!directoryRelative) workspaceGitignoreApplies = false;
       }
     }
@@ -361,6 +397,13 @@ export async function discoverKnowledgeSources(args) {
         continue;
       }
       if (entry.isDirectory()) {
+        if (repositoryScope && isTrackedGitlink(
+          repositoryScope.inventory,
+          repositoryRelativePath(relativePath, repositoryScope.repositoryPath),
+        )) {
+          counts.ignoredEntries += 1;
+          continue;
+        }
         await walk(absolutePath, relativePath, repositoryPath, repositoryScope);
         continue;
       }
@@ -393,7 +436,19 @@ export async function discoverKnowledgeSources(args) {
           complete: false,
         });
       }
-      const kind = inferKnowledgeSourceKind(relativePath);
+      const parserDescriptor = parserRegistry.match(relativePath);
+      const kind = parserDescriptor?.kind || "inventory";
+      const parserRoute = parserDescriptor ? {
+        parserAdapter: parserDescriptor.adapter,
+        parserDescriptorId: parserDescriptor.id,
+        parserFidelity: parserDescriptor.fidelity,
+        parserRegistryDigest: parserRegistry.digest,
+      } : {
+        parserAdapter: "inventory",
+        parserDescriptorId: "inventory-fallback",
+        parserFidelity: "inventory-only",
+        parserRegistryDigest: parserRegistry.digest,
+      };
       const sourceRepository = repositoryIdentity(repositoryPath);
       if (!opened.bytes) {
         const diagnostic = { code: "file_too_large", sourcePath: relativePath, message: `Skipped ${relativePath}; ${stat.size} bytes exceeds ${maxFileBytes}.` };
@@ -407,6 +462,7 @@ export async function discoverKnowledgeSources(args) {
           byteSize: stat.size,
           contentHash: sha256(`skipped\0${relativePath}\0${stat.size}`),
           kind,
+          ...parserRoute,
           status: "skipped",
           ...sourceRepository,
           diagnostics: [diagnostic],
@@ -416,8 +472,9 @@ export async function discoverKnowledgeSources(args) {
       const bytes = opened.bytes;
       const contentHash = sha256(bytes);
       const binary = looksBinary(bytes);
-      const isPdf = kind === "pdf";
-      if (binary && !isPdf) {
+      const isPdf = parserDescriptor?.adapter === "pdf";
+      const inventoryOnly = !parserDescriptor || parserDescriptor.adapter === "inventory";
+      if (binary && !isPdf && !inventoryOnly) {
         const diagnostic = { code: "binary_unsupported", sourcePath: relativePath, message: `Recorded binary file ${relativePath} without content extraction.` };
         diagnostics.push(diagnostic);
         counts.filesAdmitted += 1;
@@ -429,6 +486,7 @@ export async function discoverKnowledgeSources(args) {
           byteSize: bytes.length,
           contentHash,
           kind: "unsupported",
+          ...parserRoute,
           status: "unsupported",
           ...sourceRepository,
           diagnostics: [diagnostic],
@@ -437,23 +495,18 @@ export async function discoverKnowledgeSources(args) {
       }
       counts.filesAdmitted += 1;
       counts.bytesAdmitted += bytes.length;
-      const unsupportedDiagnostic = kind === "unsupported"
-        ? { code: "parser_unsupported", sourcePath: relativePath, message: `No structural parser is registered for ${relativePath}.` }
-        : null;
-      if (unsupportedDiagnostic) {
-        counts.filesUnsupported += 1;
-        diagnostics.push(unsupportedDiagnostic);
-      } else counts.filesReady += 1;
+      counts.filesReady += 1;
       sources.push({
         relativePath,
         absolutePath,
         byteSize: bytes.length,
         contentHash,
         kind,
-        status: kind === "unsupported" ? "unsupported" : "ready",
+        ...parserRoute,
+        status: "ready",
         ...sourceRepository,
         ...(args.retainContent === true ? (isPdf ? { bytes } : { text: bytes.toString("utf8") }) : {}),
-        diagnostics: unsupportedDiagnostic ? [unsupportedDiagnostic] : [],
+        diagnostics: [],
       });
     }
   }
@@ -461,13 +514,17 @@ export async function discoverKnowledgeSources(args) {
   await walk(rootPath);
   checkBudget();
   sources.sort((left, right) => compareStableStrings(left.relativePath, right.relativePath));
-  const incompleteSources = sources
-    .filter((source) => source.status !== "ready")
-    .map((source) => source.relativePath)
-    .sort(compareStableStrings);
+  const incompleteSources = [...new Set([
+    ...sources
+      .filter((source) => source.status !== "ready")
+      .map((source) => source.relativePath),
+    ...[...trackedOmissions.values()].map((omission) => omission.sourcePath),
+  ])].sort(compareStableStrings);
   const incompleteReasons = [
     ...(counts.filesSkipped ? ["source_skipped"] : []),
     ...(counts.filesUnsupported ? ["source_unsupported"] : []),
+    ...(counts.trackedSymlinksOmitted ? ["tracked_symlink_omitted"] : []),
+    ...(counts.trackedGitlinksOmitted ? ["tracked_gitlink_omitted"] : []),
   ];
   const revalidateAdmission = async () => {
     checkBudget();

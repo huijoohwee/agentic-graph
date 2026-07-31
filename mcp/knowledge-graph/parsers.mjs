@@ -19,11 +19,13 @@ import {
   parseBraceCodeSource,
 } from "./brace-code-parser.mjs";
 import { compactJsonConfigSource } from "./json-config-compaction.mjs";
+import { createDeclarativeGrammarSourceParser } from "./declarative-grammar-source.mjs";
 import {
   runIsolatedJsonParser,
   shouldIsolateJsonSource,
 } from "./isolated-json-parser.mjs";
-import { compileParserDispatch } from "./parser-generator.mjs";
+import { createParserDispatch, parseSourceWithDispatch } from "./parser-dispatch.mjs";
+import { createSourceOnlyFragment, resolveParserDescriptorForSource } from "./parser-routing.mjs";
 import { parseSqlSource, SQL_PARSER_ID, SQL_PARSER_VERSION } from "./sql-parser.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
 import {
@@ -50,6 +52,8 @@ export const SOURCE_INVENTORY_PARSER_ID = "local-source-inventory";
 export const SOURCE_INVENTORY_PARSER_VERSION = "1.0.0";
 export const PDF_PARSER_ID = "local-pdf-markdown-adapter";
 export const PDF_PARSER_VERSION = "1.2.0";
+export const DECLARATIVE_GRAMMAR_PARSER_ID = "local-declarative-grammar";
+export const DECLARATIVE_GRAMMAR_PARSER_VERSION = "1.0.0";
 const MAX_PARSER_NODES = 100_000;
 const MAX_PARSER_EDGES = 200_000;
 const MAX_PARSER_RECORDS = 250_000;
@@ -184,25 +188,21 @@ function sourceNodeFor(source, parserId, parserVersion, parserFidelity, extraPro
       "corpus:parserVersion": parserVersion,
       "corpus:parserFidelity": parserFidelity,
       "corpus:sourceStatus": source.status,
+      ...(source.parserDescriptorId ? {
+        "corpus:parserDescriptorId": source.parserDescriptorId,
+      } : {}),
+      ...(source.parserAdapter ? {
+        "corpus:parserAdapter": source.parserAdapter,
+      } : {}),
+      ...(source.parserRegistryDigest ? {
+        "corpus:parserRegistryDigest": source.parserRegistryDigest,
+      } : {}),
       ...extraProperties,
     },
   });
 }
 
-function sourceOnlyFragment(source, descriptor, diagnostics = source.diagnostics || []) {
-  const inventoryOnly = descriptor.parserId === SOURCE_INVENTORY_PARSER_ID;
-  const normalizedDiagnostics = diagnostics.length || !inventoryOnly
-    ? diagnostics
-    : [{ code: "parser_unsupported", sourcePath: source.relativePath, message: `No structural parser is registered for ${source.relativePath}.` }];
-  return {
-    parserId: descriptor.parserId,
-    parserVersion: descriptor.parserVersion,
-    nodes: [sourceNodeFor(source, descriptor.parserId, descriptor.parserVersion, descriptor.fidelity)],
-    edges: [],
-    diagnostics: normalizedDiagnostics,
-    status: inventoryOnly ? "unsupported" : source.status === "ready" ? "partial" : source.status,
-  };
-}
+const sourceOnlyFragment = createSourceOnlyFragment({ inventoryParserId: SOURCE_INVENTORY_PARSER_ID, sourceNodeFor });
 
 export function parserLimitFragmentForSource(source, options = {}, limitError = null) {
   const descriptor = parserDescriptorForSource(source, options);
@@ -240,26 +240,17 @@ export function sourceArtifactLimitFragmentForSource(source, options = {}) {
   };
 }
 
+const PARSER_IDENTITIES = Object.freeze({
+  typescript: { parserId: TYPESCRIPT_PARSER_ID, parserVersion: TYPESCRIPT_PARSER_VERSION, fidelity: "ast" }, python: { parserId: PYTHON_PARSER_ID, parserVersion: PYTHON_PARSER_VERSION, fidelity: "ast" },
+  sql: { parserId: SQL_PARSER_ID, parserVersion: SQL_PARSER_VERSION, fidelity: "structural-parser" }, markdown: { parserId: MARKDOWN_PARSER_ID, parserVersion: MARKDOWN_PARSER_VERSION, fidelity: "structural-parser" },
+  "json-config": { parserId: JSON_CONFIG_PARSER_ID, parserVersion: JSON_CONFIG_PARSER_VERSION, fidelity: "ast" },
+  "structural-config": { parserId: STRUCTURAL_CONFIG_PARSER_ID, parserVersion: STRUCTURAL_CONFIG_PARSER_VERSION, fidelity: "structural-parser" },
+  "brace-code": { parserId: BRACE_CODE_PARSER_ID, parserVersion: BRACE_CODE_PARSER_VERSION, fidelity: "structural-parser" }, "declarative-grammar": { parserId: DECLARATIVE_GRAMMAR_PARSER_ID, parserVersion: DECLARATIVE_GRAMMAR_PARSER_VERSION, fidelity: "ast" },
+  pdf: { parserId: PDF_PARSER_ID, parserVersion: PDF_PARSER_VERSION, fidelity: "pending" }, inventory: { parserId: SOURCE_INVENTORY_PARSER_ID, parserVersion: SOURCE_INVENTORY_PARSER_VERSION, fidelity: "inventory-only" },
+});
+
 export function parserDescriptorForSource(source, options = {}) {
-  if (source.kind === "typescript") return { parserId: TYPESCRIPT_PARSER_ID, parserVersion: TYPESCRIPT_PARSER_VERSION, fidelity: "ast" };
-  if (source.kind === "python") {
-    const probedVersion = String(options.pythonParserVersion || "").trim();
-    const parserVersion = probedVersion.startsWith(`${PYTHON_PARSER_VERSION}.sys-`)
-      && /^[A-Za-z0-9._+-]+$/.test(probedVersion)
-      ? probedVersion
-      : PYTHON_PARSER_VERSION;
-    return { parserId: PYTHON_PARSER_ID, parserVersion, fidelity: "ast" };
-  }
-  if (source.kind === "sql") return { parserId: SQL_PARSER_ID, parserVersion: SQL_PARSER_VERSION, fidelity: "structural-parser" };
-  if (source.kind === "markdown") return { parserId: MARKDOWN_PARSER_ID, parserVersion: MARKDOWN_PARSER_VERSION, fidelity: "structural-parser" };
-  if (source.kind === "json-config") return { parserId: JSON_CONFIG_PARSER_ID, parserVersion: JSON_CONFIG_PARSER_VERSION, fidelity: "ast" };
-  if (source.kind === "structural-config") return { parserId: STRUCTURAL_CONFIG_PARSER_ID, parserVersion: STRUCTURAL_CONFIG_PARSER_VERSION, fidelity: "structural-parser" };
-  if (source.kind === "brace-code") return { parserId: BRACE_CODE_PARSER_ID, parserVersion: BRACE_CODE_PARSER_VERSION, fidelity: "structural-parser" };
-  if (source.kind === "pdf") {
-    const converterVersion = String(options.pdfConverterVersion || "pending").replace(/[^A-Za-z0-9._-]+/g, "-");
-    return { parserId: PDF_PARSER_ID, parserVersion: `${PDF_PARSER_VERSION}+${converterVersion}`, fidelity: options.pdfConverter ? "native-converted-structure" : "pending" };
-  }
-  return { parserId: SOURCE_INVENTORY_PARSER_ID, parserVersion: SOURCE_INVENTORY_PARSER_VERSION, fidelity: "inventory-only" };
+  return resolveParserDescriptorForSource(source, options, PARSER_IDENTITIES);
 }
 
 function createRetainedGraph(options, sourceNode, stagePrefix) {
@@ -883,7 +874,13 @@ async function parsePdfSource(source, options) {
   }
 }
 
-const PARSER_DISPATCH = compileParserDispatch(SOURCE_PARSER_REGISTRY, {
+const parseDeclarativeGrammarSource = createDeclarativeGrammarSourceParser({
+  parserDescriptorForSource,
+  sourceNodeFor,
+  sourceOnlyFragment,
+});
+
+const NATIVE_PARSER_ADAPTERS = Object.freeze({
   typescript: (source, options) => parseTypeScriptSource({ sourcePath: source.relativePath, text: source.text || "", contentHash: source.contentHash, byteSize: source.byteSize }, options),
   python: parsePythonSource,
   sql: (source, options) => parseSqlSource({ sourcePath: source.relativePath, text: source.text || "", contentHash: source.contentHash, byteSize: source.byteSize }, options),
@@ -899,21 +896,24 @@ const PARSER_DISPATCH = compileParserDispatch(SOURCE_PARSER_REGISTRY, {
     limits: options.limits,
     retainRecord: options.retainRecord,
   }),
+  "declarative-grammar": parseDeclarativeGrammarSource,
   pdf: parsePdfSource,
   inventory: (source, options) => sourceOnlyFragment(source, parserDescriptorForSource(source, options)),
 });
 
+export function createKnowledgeGraphParserDispatch(parserRegistry = SOURCE_PARSER_REGISTRY) {
+  return createParserDispatch(parserRegistry, NATIVE_PARSER_ADAPTERS);
+}
+
+const PARSER_DISPATCH = createKnowledgeGraphParserDispatch(SOURCE_PARSER_REGISTRY);
+
 export async function parseKnowledgeSource(source, options = {}) {
-  const boundedOptions = boundedParserOptions(source, options);
-  checkKnowledgeGraphBudget({ ...boundedOptions, stage: "source-parser-start" });
-  if (source.status === "skipped" || source.status === "unsupported") {
-    return assertParserFragmentBounds(
-      source,
-      sourceOnlyFragment(source, parserDescriptorForSource(source, boundedOptions)),
-      boundedOptions,
-    );
-  }
-  const fragment = await PARSER_DISPATCH.parse(source, boundedOptions);
-  checkKnowledgeGraphBudget({ ...boundedOptions, stage: "source-parser-complete" });
-  return assertParserFragmentBounds(source, fragment, boundedOptions);
+  return parseSourceWithDispatch(source, options, {
+    adapters: NATIVE_PARSER_ADAPTERS,
+    assertParserFragmentBounds,
+    boundedParserOptions,
+    defaultDispatch: PARSER_DISPATCH,
+    parserDescriptorForSource,
+    sourceOnlyFragment,
+  });
 }

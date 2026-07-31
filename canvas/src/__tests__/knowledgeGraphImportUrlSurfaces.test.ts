@@ -61,6 +61,7 @@ const knowledgeGraphResult: WorkspaceKnowledgeGraphImportResult = {
   kind: 'knowledge-graph',
   graphId: GRAPH_ID,
   snapshotDigest: SNAPSHOT_DIGEST,
+  parserRegistryDigest: 'f'.repeat(64),
   complete: true,
   counts: { sources: 1, nodes: 2, edges: 1 },
   projection: {
@@ -128,6 +129,7 @@ const assertKnowledgeGraphLaunchResult = (value: unknown) => {
     result.kind !== 'knowledge-graph'
     || result.graphId !== GRAPH_ID
     || result.snapshotDigest !== SNAPSHOT_DIGEST
+    || result.parserRegistryDigest !== knowledgeGraphResult.parserRegistryDigest
     || result.complete !== true
     || counts?.nodes !== 2
     || counts?.edges !== 1
@@ -216,6 +218,7 @@ export async function testKnowledgeGraphCanonicalRepositoryRunsThroughNativeAndW
     const url = 'https://github.com/example/repository'
     const launchResult = await runLaunchImportUrl({
       urlRaw: url,
+      forceKnowledgeGraphRepository: true,
       bridge: getMarkdownWorkspaceActionBridge(),
       fallback: async () => {
         throw new Error('canonical repository ingest must not use the legacy URL fallback')

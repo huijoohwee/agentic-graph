@@ -13,8 +13,12 @@ import {
   AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID,
   KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
 } from "../knowledge-graph-tool-contract.js";
+import {
+  KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID,
+} from "../knowledge-graph-parser-contract.js";
 
 const expected = [
+  KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
   KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
   KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery,
   KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge,
@@ -39,8 +43,12 @@ test("local MCP exposes one deterministic knowledge-graph tool family", () => {
   for (const name of expected) assert.ok(byName.has(name), `missing ${name}`);
 
   const ingest = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest);
+  const parserGenerate = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate);
   const query = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery);
   const explain = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge);
+  assert.equal(parserGenerate.annotations.readOnlyHint, true);
+  assert.equal(parserGenerate.annotations.destructiveHint, false);
+  assert.equal(parserGenerate.inputSchema.required.includes("descriptors"), true);
   assert.equal(ingest.annotations.idempotentHint, true);
   assert.equal(ingest.annotations.destructiveHint, true);
   assert.equal(ingest.annotations.openWorldHint, false);
@@ -49,6 +57,10 @@ test("local MCP exposes one deterministic knowledge-graph tool family", () => {
   assert.equal(ingest.inputSchema.oneOf.length, 2);
   assert.equal(ingest.inputSchema.properties.maxResolutionRecords.default, 1_000_000);
   assert.equal(ingest.inputSchema.properties.maxResolutionBytes.default, 256_000_000);
+  assert.deepEqual(ingest.inputSchema.dependencies, {
+    parserRegistry: ["expectedParserRegistryDigest"],
+    expectedParserRegistryDigest: ["parserRegistry"],
+  });
   assert.deepEqual(query.inputSchema.required, ["graphId", "expectedSnapshotDigest", "mode"]);
   assert.deepEqual(explain.inputSchema.required, ["graphId", "expectedSnapshotDigest", "edgeId"]);
   assert.equal(query.inputSchema.properties.maxDurationMs.default, 300000);
@@ -64,6 +76,7 @@ test("tool descriptions and invocation proof schemas keep aliases source-backed 
   assert.doesNotMatch(contractText, /\/knowledge\.graph\./);
   assert.equal(KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID, "knowgrph-knowledge-graph-invocation/v1");
   assert.equal(AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID, "agentic-canvas-os-docs-routing/v1");
+  assert.equal(KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID, "knowgrph-knowledge-graph-parser-registry/v2");
   for (const definition of definitions) {
     const proof = definition.inputSchema.properties.invocation;
     assert.equal(proof.properties.tool.const, definition.name);
@@ -85,14 +98,45 @@ test("schemas require digest fencing, source-backed invocation proofs, and typed
   const ajv = new Ajv({ strict: false });
   const byName = new Map(buildKnowgrphLocalMcpToolDefinitions().map((tool) => [tool.name, tool]));
   const ingest = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest);
+  const parserGenerate = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate);
   const query = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphQuery);
+  const validateParserGenerate = ajv.compile(parserGenerate.inputSchema);
+  const descriptor = {
+    id: "custom-json",
+    kind: "custom-json",
+    adapter: "json-config",
+    fidelity: "ast",
+    extensions: [".schema.json"],
+    basenames: [],
+    basenameFamilies: [],
+    priority: 1,
+  };
+  assert.equal(validateParserGenerate({ descriptors: [descriptor] }), true, JSON.stringify(validateParserGenerate.errors));
+  assert.equal(validateParserGenerate({
+    descriptors: [{ ...descriptor, adapter: "unregistered-adapter" }],
+  }), false);
+  const registry = {
+    schema: KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID,
+    digest: "b".repeat(64),
+    descriptors: [descriptor],
+  };
   const validateIngest = ajv.compile(ingest.inputSchema);
   assert.equal(validateIngest({ rootPath: "/workspace" }), true, JSON.stringify(validateIngest.errors));
   assert.equal(validateIngest({ rootPath: "/workspace", maxResolutionRecords: 1, maxResolutionBytes: 1 }), true);
   assert.equal(validateIngest({ rootPath: "/workspace", maxResolutionRecords: 1_000_001 }), false);
   assert.equal(validateIngest({ rootPath: "/workspace", maxResolutionBytes: 256_000_001 }), false);
-  assert.equal(validateIngest({ repositoryUrl: "https://github.com/example/project" }), true, JSON.stringify(validateIngest.errors));
-  assert.equal(validateIngest({ rootPath: "/workspace", repositoryUrl: "https://github.com/example/project" }), false);
+  assert.equal(validateIngest({ repositoryUrl: "https://code.example/research/project" }), true, JSON.stringify(validateIngest.errors));
+  assert.equal(validateIngest({ rootPath: "/workspace", repositoryUrl: "https://code.example/research/project" }), false);
+  assert.equal(validateIngest({
+    rootPath: "/workspace",
+    parserRegistry: registry,
+    expectedParserRegistryDigest: registry.digest,
+  }), true, JSON.stringify(validateIngest.errors));
+  assert.equal(validateIngest({ rootPath: "/workspace", parserRegistry: registry }), false);
+  assert.equal(validateIngest({
+    rootPath: "/workspace",
+    expectedParserRegistryDigest: registry.digest,
+  }), false);
   const validateInput = ajv.compile(query.inputSchema);
   const validInput = {
     graphId: `kg:graph:${"a".repeat(32)}`,

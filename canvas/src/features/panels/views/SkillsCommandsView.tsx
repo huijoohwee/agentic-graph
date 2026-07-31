@@ -193,6 +193,15 @@ export default function SkillsCommandsView({
     if (!insertionText) return false
     return insertTextIntoActiveCardInlineTextEditor(insertionText)
   }, [])
+  const catalogVerified = grammarCatalog.hydration.status === 'fresh'
+    && grammarCatalog.routingVerified
+    && /^[0-9a-f]{40}$/.test(grammarCatalog.sourceRevision)
+    && /^[0-9a-f]{64}$/.test(grammarCatalog.catalogDigest)
+  const catalogStatusText = catalogVerified
+    ? `Verified source catalog · /${grammarCatalog.counts.slash} #${grammarCatalog.counts.hash} @${grammarCatalog.counts.at} · ${grammarCatalog.sourceRevision.slice(0, 12)}`
+    : grammarCatalog.hydration.status === 'loading' || grammarCatalog.hydration.status === 'idle'
+      ? 'Verifying the source-backed invocation catalog…'
+      : grammarCatalog.hydration.error || 'Source-backed invocation catalog verification is blocked.'
 
   return (
     <section
@@ -208,6 +217,13 @@ export default function SkillsCommandsView({
       data-kg-floating-panel-skills-commands-catalog-counts={`${grammarCatalog.counts.slash}/${grammarCatalog.counts.hash}/${grammarCatalog.counts.at}`}
       aria-label="Skills & Commands"
     >
+      <p
+        className={cn('mb-1 text-[10px]', catalogVerified ? UI_THEME_TOKENS.text.tertiary : UI_THEME_TOKENS.text.secondary)}
+        role={catalogVerified || grammarCatalog.hydration.status === 'loading' || grammarCatalog.hydration.status === 'idle' ? 'status' : 'alert'}
+        data-kg-floating-panel-skills-commands-catalog-proof={catalogVerified ? 'verified' : grammarCatalog.hydration.status}
+      >
+        {catalogStatusText}
+      </p>
       <section className="grid min-w-0 gap-1" data-kg-floating-panel-catalog-list-rows={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}>
         {entryGroups.map((group, index) => {
           const groupCollapsed = collapsedGroupKeys.has(group.key)

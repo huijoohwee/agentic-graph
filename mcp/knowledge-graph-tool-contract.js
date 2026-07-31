@@ -1,7 +1,17 @@
+import {
+  KNOWLEDGE_GRAPH_PARSER_GENERATE_INPUT_SCHEMA,
+  KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA,
+} from "./knowledge-graph-parser-contract.js";
+export {
+  KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID,
+  NATIVE_KNOWLEDGE_GRAPH_PARSER_ADAPTER_IDENTITIES,
+} from "./knowledge-graph-parser-contract.js";
+
 export const KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID = "knowgrph-knowledge-graph-invocation/v1";
 export const AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID = "agentic-canvas-os-docs-routing/v1";
 
 const TOOL_BY_OPERATION = Object.freeze({
+  parserGenerate: "knowgrph.knowledge_graph.parser_generate",
   ingest: "knowgrph.knowledge_graph.ingest",
   query: "knowgrph.knowledge_graph.query",
   explain: "knowgrph.knowledge_graph.explain_edge",
@@ -73,7 +83,7 @@ const GRAPH_DATA_SCHEMA = {
 
 const commonOutputSchema = (operation) => ({
   type: "object",
-  additionalProperties: true,
+  additionalProperties: operation !== "parser_generate",
   required: ["schema", "ok", "operation"],
   properties: {
     schema: { type: "string", pattern: "^knowgrph-knowledge-graph(?:-[a-z-]+)?/v[0-9]+$" },
@@ -81,6 +91,8 @@ const commonOutputSchema = (operation) => ({
     operation: { const: operation },
     graphId: GRAPH_ID_SCHEMA,
     snapshotDigest: SNAPSHOT_DIGEST_SCHEMA,
+    parserRegistryDigest: SNAPSHOT_DIGEST_SCHEMA,
+    parserRegistry: KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA,
     error: {
       type: "object",
       additionalProperties: false,
@@ -100,7 +112,12 @@ const commonOutputSchema = (operation) => ({
     {
       properties: {
         ok: { const: true },
+        ...(operation === "parser_generate" ? {
+          parserRegistryDigest: SNAPSHOT_DIGEST_SCHEMA,
+          parserRegistry: KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA,
+        } : {}),
         ...(operation === "ingest" ? {
+          parserRegistryDigest: SNAPSHOT_DIGEST_SCHEMA,
           complete: { type: "boolean" },
           counts: { type: "object", additionalProperties: { type: "number" } },
           projection: {
@@ -119,11 +136,21 @@ const commonOutputSchema = (operation) => ({
           },
         } : {}),
       },
-      required: operation === "ingest"
-        ? ["graphId", "snapshotDigest", "complete", "counts", "projection"]
-        : ["graphId", "snapshotDigest"],
+      required: operation === "parser_generate"
+        ? ["parserRegistryDigest", "parserRegistry"]
+        : operation === "ingest"
+          ? ["graphId", "snapshotDigest", "parserRegistryDigest", "complete", "counts", "projection"]
+          : ["graphId", "snapshotDigest"],
     },
   ],
+});
+
+const PARSER_GENERATE_INPUT_SCHEMA = Object.freeze({
+  ...KNOWLEDGE_GRAPH_PARSER_GENERATE_INPUT_SCHEMA,
+  properties: {
+    ...KNOWLEDGE_GRAPH_PARSER_GENERATE_INPUT_SCHEMA.properties,
+    invocation: invocationSchema(TOOL_BY_OPERATION.parserGenerate),
+  },
 });
 
 const INGEST_INPUT_SCHEMA = Object.freeze({
@@ -144,9 +171,10 @@ const INGEST_INPUT_SCHEMA = Object.freeze({
       type: "string",
       minLength: 1,
       maxLength: 2048,
-      pattern: "^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?(?:/tree/.+)?$",
+      pattern:
+        "^https://[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?/[A-Za-z0-9._~%-]+(?:/[A-Za-z0-9._~%-]+){0,31}$",
       description:
-        "Optional credential-free GitHub repository or tree URL. The host resolves one immutable commit into its private local acquisition cache before deterministic parsing.",
+        "Credential-free HTTPS repository URL with a bounded host and path. The host applies its canonical repository-source policy and resolves one immutable commit into a private local acquisition cache before deterministic parsing.",
     },
     repositoryRef: { type: "string", minLength: 1, maxLength: 512 },
     acquisitionTimeoutMs: { type: "integer", minimum: 1000, maximum: 600000, default: 120000 },
@@ -166,7 +194,21 @@ const INGEST_INPUT_SCHEMA = Object.freeze({
       description:
         "Require explained, source-backed edges and refuse replacement after parser errors, partial syntax extraction, or invalid output. Typed unsupported and size-limited omissions remain in the manifest.",
     },
+    parserRegistry: {
+      ...KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA,
+      description:
+        "Canonical inert registry returned by the parser generator tool. The runtime recomputes and verifies its digest before discovery or acquisition.",
+    },
+    expectedParserRegistryDigest: {
+      ...SNAPSHOT_DIGEST_SCHEMA,
+      description:
+        "Exact generated registry digest. It is required with parserRegistry and is echoed by successful ingestion.",
+    },
     invocation: invocationSchema(TOOL_BY_OPERATION.ingest),
+  },
+  dependencies: {
+    parserRegistry: ["expectedParserRegistryDigest"],
+    expectedParserRegistryDigest: ["parserRegistry"],
   },
 });
 
@@ -187,6 +229,14 @@ const QUERY_INPUT_SCHEMA = Object.freeze({
     direction: { enum: ["outgoing", "incoming", "both"], default: "both" },
     edgeLabels: stringArray("Optional exact edge-label allowlist for traversal.", 64),
     maxDepth: { type: "integer", minimum: 0, maximum: 12, default: 3 },
+    maxTraversalNodes: {
+      type: "integer",
+      minimum: 1,
+      maximum: 1000000,
+      default: 250000,
+      description:
+        "Maximum compact node identities retained while resolving a path; exceeding it returns a typed truncated result.",
+    },
     limit: { type: "integer", minimum: 1, maximum: 200, default: 20 },
     maxDurationMs: { type: "integer", minimum: 100, maximum: 3600000, default: 300000 },
     invocation: invocationSchema(TOOL_BY_OPERATION.query),
@@ -210,6 +260,7 @@ const EXPLAIN_INPUT_SCHEMA = Object.freeze({
 });
 
 export const KNOWLEDGE_GRAPH_INPUT_SCHEMAS = Object.freeze({
+  parser_generate: PARSER_GENERATE_INPUT_SCHEMA,
   ingest: INGEST_INPUT_SCHEMA,
   query: QUERY_INPUT_SCHEMA,
   explain_edge: EXPLAIN_INPUT_SCHEMA,
@@ -217,6 +268,14 @@ export const KNOWLEDGE_GRAPH_INPUT_SCHEMAS = Object.freeze({
 
 export function buildKnowledgeGraphToolDefinitions({ toolNames, withDefaults, readOnlyAnnotations, processAnnotations }) {
   return [
+    withDefaults({
+      name: toolNames.knowledgeGraphParserGenerate,
+      title: "Generate deterministic parser registry",
+      description:
+        "Use this when a local MCP host needs to compile bounded inert source matchers and optional finite declarative grammar data into a canonical v2 digest-bound parser registry. It returns data only, never executable code or filesystem paths, and performs no network or model access and uses no vector store.",
+      inputSchema: PARSER_GENERATE_INPUT_SCHEMA,
+      outputSchema: commonOutputSchema("parser_generate"),
+    }, readOnlyAnnotations),
     withDefaults({
       name: toolNames.knowledgeGraphIngest,
       title: "Ingest deterministic knowledge graph",

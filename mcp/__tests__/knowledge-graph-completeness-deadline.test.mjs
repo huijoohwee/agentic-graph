@@ -85,7 +85,7 @@ test("aggregate resolution limits roll back streamed shards without publishing a
   assert.equal(await fs.readFile(graphPointer, "utf8"), before);
 });
 
-test("skipped and unsupported admitted sources remain incomplete in ingest, manifest, and summary", async (t) => {
+test("skipped sources remain incomplete while verified inventory fallback stays queryable", async (t) => {
   const value = await fixture(t);
   await fs.writeFile(path.join(value.corpusRoot, "ok.md"), "# OK\n");
   await fs.writeFile(path.join(value.corpusRoot, "large.md"), `# Large\n${"x".repeat(64)}\n`);
@@ -100,8 +100,8 @@ test("skipped and unsupported admitted sources remain incomplete in ingest, mani
   assert.equal(ingest.complete, false);
   assert.equal(ingest.completeness.complete, false);
   assert.equal(ingest.counts.skipped, 1);
-  assert.equal(ingest.counts.unsupported, 1);
-  assert.deepEqual(ingest.completeness.incompleteSources, ["large.md", "unknown.zzz"]);
+  assert.equal(ingest.counts.unsupported, 0);
+  assert.deepEqual(ingest.completeness.incompleteSources, ["large.md"]);
   assert.equal(ingest.projection.complete, false);
   assert.equal(ingest.projection.truncated, false);
   assert.equal(ingest.projection.reason, "ingest_incomplete");
@@ -111,7 +111,7 @@ test("skipped and unsupported admitted sources remain incomplete in ingest, mani
     expectedGraphId: ingest.graphId,
   });
   assert.equal(snapshot.manifest.completeness.complete, false);
-  assert.deepEqual(snapshot.manifest.completeness.incompleteSources, ["large.md", "unknown.zzz"]);
+  assert.deepEqual(snapshot.manifest.completeness.incompleteSources, ["large.md"]);
 
   const summary = await value.runtime.query({
     graphId: ingest.graphId,
@@ -164,7 +164,7 @@ test("skipped and unsupported admitted sources remain incomplete in ingest, mani
   });
   assert.equal(strict.ok, false);
   assert.equal(strict.error.code, "strict_ingest_incomplete");
-  assert.deepEqual(strict.error.details.sources, ["large.md", "unknown.zzz"]);
+  assert.deepEqual(strict.error.details.sources, ["large.md"]);
   assert.equal(await fs.readFile(pointerPath(value, ingest.graphId), "utf8"), before);
 });
 

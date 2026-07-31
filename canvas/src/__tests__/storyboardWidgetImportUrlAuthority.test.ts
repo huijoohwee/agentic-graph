@@ -116,6 +116,7 @@ export async function testStoryboardImportUrlRendersKnowledgeGraphSuccessWithout
     kind: 'knowledge-graph',
     graphId: 'kg:graph:0123456789abcdef0123456789abcdef',
     snapshotDigest: 'a'.repeat(64),
+    parserRegistryDigest: 'f'.repeat(64),
     complete: true,
     counts: { sources: 1, nodes: 2, edges: 1 },
     projection: {

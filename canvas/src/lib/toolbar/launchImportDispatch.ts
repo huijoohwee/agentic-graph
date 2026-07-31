@@ -6,8 +6,11 @@ import type {
   WorkspaceKnowledgeGraphInvocation,
   WorkspaceImportUrlOpts,
 } from '@/features/markdown-explorer/workspaceActionBridge'
-import { parseGitHubRepoUrl } from '@/features/markdown-workspace/githubRepoApi'
 import { applyKnowledgeGraphCanvasProjection } from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
+import {
+  normalizeKnowledgeGraphRepositoryRemoteUrl,
+  parseKnowledgeGraphRepositoryUrl,
+} from '@/features/knowledge-graph/knowledgeGraphRepositoryUrl'
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
 
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
@@ -62,22 +65,25 @@ function reportKnowledgeGraphImportProgress(
   }
 }
 
-function canonicalGitHubRepositoryUrl(value: string): string | null {
+export function canonicalLaunchRepositoryUrl(
+  value: string,
+  options: { forceRepository?: boolean } = {},
+): string | null {
+  if (!options.forceRepository) {
+    try {
+      if (!/\.git\/?$/i.test(new URL(value).pathname)) return null
+    } catch {
+      return null
+    }
+  }
+  return normalizeKnowledgeGraphRepositoryRemoteUrl(value)
+}
+
+export function isLaunchKnowledgeGraphRepositoryUrl(value: string): boolean {
   try {
-    const url = new URL(value)
-    if (
-      url.protocol !== 'https:'
-      || url.hostname !== 'github.com'
-      || url.username
-      || url.password
-      || url.port
-      || url.search
-      || url.hash
-    ) return null
-    if (!parseGitHubRepoUrl(url.href)) return null
-    return `https://github.com${url.pathname.replace(/\/+$/, '')}`
+    return parseKnowledgeGraphRepositoryUrl(value).explicitGitSuffix
   } catch {
-    return null
+    return false
   }
 }
 
@@ -162,15 +168,15 @@ export async function runLaunchImportUrl(args: {
   opts?: WorkspaceImportUrlOpts
   bridge: MarkdownWorkspaceActionBridge
   fallback: (urlRaw: string, opts?: WorkspaceImportUrlOpts) => Promise<void | WorkspaceBridgeImportResult>
+  forceKnowledgeGraphRepository?: boolean
   resolveMcpInvocation?: (mcpTool: string) => Promise<{ invocation: WorkspaceKnowledgeGraphInvocation }>
   onKnowledgeGraphProgress?: (stage: LaunchKnowledgeGraphImportProgressStage) => void
 }): Promise<void | WorkspaceBridgeImportResult | WorkspaceKnowledgeGraphImportResult> {
   const url = String(args.urlRaw || '').trim()
   if (!url) return
-  const repositoryUrl = canonicalGitHubRepositoryUrl(url)
-  if (!repositoryUrl && parseGitHubRepoUrl(url)) {
-    throw new Error('Repository URL must use canonical credential-free HTTPS without a port, query, or fragment.')
-  }
+  const repositoryUrl = canonicalLaunchRepositoryUrl(url, {
+    forceRepository: args.forceKnowledgeGraphRepository,
+  })
   if (repositoryUrl) {
     const importRepositoryUrl = args.bridge.knowledgeGraph?.importRepositoryUrl
     if (typeof importRepositoryUrl !== 'function') {

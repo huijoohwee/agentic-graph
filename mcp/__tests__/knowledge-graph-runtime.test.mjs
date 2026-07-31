@@ -110,6 +110,8 @@ async function createFixture(t, { withPdfConverter = true } = {}) {
   await writeFile(corpusRoot, "config.json", '{"constructor":{"toString":"kept"},"credentials":{"value":"secret"}}\n');
   await writeFile(corpusRoot, "wrangler.toml", 'name = "fixture"\n[credentials]\nvalue = "secret"\n');
   await writeFile(corpusRoot, "paper.pdf", Buffer.from("%PDF-1.4\nlocal fixture\n%%EOF\n"));
+  await writeFile(corpusRoot, "README.rst", "Corpus inventory fallback\n");
+  await writeFile(corpusRoot, "assets/opaque.bin", Buffer.from([0, 1, 2, 3]));
   await initializeRepository(path.join(corpusRoot, "nested"));
   await writeFile(corpusRoot, "nested/schema.sql", "CREATE TABLE accounts (id INTEGER PRIMARY KEY);\n");
   let pdfCalls = 0;
@@ -170,6 +172,7 @@ test("ingest writes content-addressed shards and returns only opaque graph ident
   const first = await ingestFixture(fixture, { projectionLimit: 5 });
   assert.match(first.graphId, /^kg:graph:[a-f0-9]{32}$/);
   assert.match(first.snapshotDigest, /^[a-f0-9]{64}$/);
+  assert.match(first.parserRegistryDigest, /^[a-f0-9]{64}$/);
   assert.equal(first.complete, true);
   assert.equal(first.acquisition.networkRequests, 0);
   assert.equal(first.retrieval.vectorStore, false);
@@ -200,6 +203,12 @@ test("ingest writes content-addressed shards and returns only opaque graph ident
   assert.ok(graph.nodes.some((node) => node.type === "ConfigKey" && node.label === "constructor.toString"));
   assert.ok(graph.nodes.some((node) => node.type === "SqlTable" && node.label === "accounts"));
   assert.ok(graph.nodes.some((node) => node.type === "DocumentText" && node.label.includes("PDF evidence")));
+  for (const sourcePath of ["README.rst", "assets/opaque.bin"]) {
+    const inventory = graph.nodes.find((node) => node.type === "SourceFile"
+      && node.properties["corpus:sourcePath"] === sourcePath);
+    assert.equal(inventory?.properties["corpus:parserFidelity"], "inventory-only");
+    assert.equal(inventory?.properties["corpus:sourceStatus"], "ready");
+  }
   const importResolutions = graph.edges.filter((edge) => edge.label === "resolvesToSource"
     && edge.properties["evidence:ruleId"] === "resolve.relative-code-import.repository");
   assert.equal(importResolutions.length, 2);
@@ -226,6 +235,100 @@ test("ingest writes content-addressed shards and returns only opaque graph ident
   assert.equal(second.counts.parsed, 0);
   assert.equal(second.counts.reused, second.counts.sources);
   assert.equal(fixture.pdfCalls(), 1);
+});
+
+test("generated parser registry is verified and fences discovery, snapshot identity, and cache reuse", async (t) => {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-kg-generated-parser-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const knowgrphRoot = path.join(base, "host");
+  const corpusRoot = path.join(base, "corpus");
+  const outputRoot = path.join(knowgrphRoot, "outputs");
+  await fs.mkdir(knowgrphRoot, { recursive: true });
+  await initializeRepository(corpusRoot);
+  await writeFile(corpusRoot, "config/app.schema.json", '{"title":"App"}\n');
+  await writeFile(corpusRoot, "config/app.json", '{"enabled":true}\n');
+  const runtime = createKnowledgeGraphRuntime({
+    knowgrphRoot,
+    allowedRoots: [corpusRoot],
+    outputRoot,
+  });
+  const descriptors = (suffix) => [
+    {
+      id: `general-json-${suffix}`,
+      kind: `general-json-${suffix}`,
+      adapter: "json-config",
+      fidelity: "ast",
+      extensions: [".json"],
+      basenames: [],
+      basenameFamilies: [],
+      priority: 100,
+    },
+    {
+      id: `schema-json-${suffix}`,
+      kind: `schema-json-${suffix}`,
+      adapter: "json-config",
+      fidelity: "ast",
+      extensions: [".schema.json"],
+      basenames: [],
+      basenameFamilies: [],
+      priority: 1,
+    },
+  ];
+  const generatedA = runtime.generateKnowledgeGraphParser({ descriptors: descriptors("a") });
+  assert.equal(generatedA.ok, true, JSON.stringify(generatedA));
+  const ingestWith = (generated) => runtime.ingest({
+    rootPath: corpusRoot,
+    strict: true,
+    useCache: true,
+    parserRegistry: generated.parserRegistry,
+    expectedParserRegistryDigest: generated.parserRegistryDigest,
+  });
+  const first = await ingestWith(generatedA);
+  assert.equal(first.ok, true, JSON.stringify(first));
+  assert.equal(first.parserRegistryDigest, generatedA.parserRegistryDigest);
+  assert.equal(first.counts.parsed, 2);
+  assert.equal(first.counts.reused, 0);
+  const firstGraph = await materializeFixture({ outputRoot }, first);
+  assert.equal(firstGraph.snapshot.manifest.parserRegistryDigest, generatedA.parserRegistryDigest);
+  assert.ok(firstGraph.nodes.some((node) => (
+    node.type === "SourceFile"
+    && node.label === "config/app.schema.json"
+    && node.properties["corpus:parserDescriptorId"] === "schema-json-a"
+    && node.properties["corpus:parserRegistryDigest"] === generatedA.parserRegistryDigest
+  )));
+
+  const warm = await ingestWith(generatedA);
+  assert.equal(warm.ok, true, JSON.stringify(warm));
+  assert.equal(warm.snapshotDigest, first.snapshotDigest);
+  assert.equal(warm.counts.parsed, 0);
+  assert.equal(warm.counts.reused, 2);
+
+  const generatedB = runtime.generateKnowledgeGraphParser({ descriptors: descriptors("b") });
+  assert.equal(generatedB.ok, true, JSON.stringify(generatedB));
+  assert.notEqual(generatedB.parserRegistryDigest, generatedA.parserRegistryDigest);
+  const changedRegistry = await ingestWith(generatedB);
+  assert.equal(changedRegistry.ok, true, JSON.stringify(changedRegistry));
+  assert.equal(changedRegistry.graphId, first.graphId);
+  assert.notEqual(changedRegistry.snapshotDigest, first.snapshotDigest);
+  assert.equal(changedRegistry.counts.parsed, 2);
+  assert.equal(changedRegistry.counts.reused, 0);
+
+  const tampered = await runtime.ingest({
+    rootPath: corpusRoot,
+    strict: true,
+    parserRegistry: {
+      ...generatedB.parserRegistry,
+      digest: "0".repeat(64),
+    },
+    expectedParserRegistryDigest: generatedB.parserRegistryDigest,
+  });
+  assert.equal(tampered.ok, false);
+  assert.equal(tampered.error.code, "parser_registry_digest_mismatch");
+  const currentPointer = JSON.parse(await fs.readFile(
+    pointerPathFor({ outputRoot }, changedRegistry.graphId),
+    "utf8",
+  ));
+  assert.equal(currentPointer.snapshotDigest, changedRegistry.snapshotDigest);
 });
 
 test("Python runtime identity fences cache reuse and invalidates exact-version changes", async (t) => {
@@ -411,17 +514,20 @@ test("pointer tampering, root escape, symlinks, and incomplete PDFs fail closed"
   assert.equal(pending.error.code, "strict_ingest_incomplete");
 });
 
-test("repository URL acquisition rejects non-canonical or credential-bearing identities before network access", async (t) => {
+test("repository URL acquisition rejects unsafe or credential-bearing identities before network access", async (t) => {
   const fixture = await createFixture(t);
   for (const repositoryUrl of [
-    "http://github.com/example/project",
-    "https://user:secret@github.com/example/project",
-    "https://example.com/example/project",
-    "https://github.com/example/project?token=secret",
+    "http://code.example.test/example/project",
+    "https://user:secret@code.example.test/example/project",
+    "https://localhost/example/project",
+    "https://code.example.test/example/project?token=secret",
   ]) {
     const result = await fixture.runtime.ingest({ repositoryUrl, strict: true });
     assert.equal(result.ok, false);
-    assert.equal(result.error.code, "repository_url_invalid");
+    assert.ok(
+      ["repository_url_invalid", "repository_host_not_allowed"].includes(result.error.code),
+      JSON.stringify(result),
+    );
   }
 });
 

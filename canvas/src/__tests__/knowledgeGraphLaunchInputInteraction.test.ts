@@ -23,6 +23,7 @@ const KNOWLEDGE_GRAPH_RESULT: WorkspaceKnowledgeGraphImportResult = {
   kind: 'knowledge-graph',
   graphId: `kg:graph:${'1'.repeat(32)}`,
   snapshotDigest: 'a'.repeat(64),
+  parserRegistryDigest: 'f'.repeat(64),
   complete: true,
   counts: { sources: 2, nodes: 2, edges: 1 },
   projection: {
@@ -139,6 +140,15 @@ export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonical
     })
     assert.equal(input.value, REPOSITORY_URL)
     assert.equal(confirm.disabled, false)
+    const repositoryMode = container.querySelector(
+      '[data-kg-launch-import-url-repository-mode="true"]',
+    )
+    assert.ok(repositoryMode instanceof dom.window.HTMLButtonElement)
+    await act(async () => {
+      repositoryMode.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+      await waitForTasks(1)
+    })
+    assert.equal(repositoryMode.getAttribute('aria-pressed'), 'true')
 
     await act(async () => {
       confirm.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
@@ -150,6 +160,11 @@ export async function testKnowledgeGraphLaunchImportUrlInputRunsVisibleCanonical
     assert.equal(confirm.isConnected, false, 'the Launch shell must close after starting the import')
     assert.equal(repositoryCalls.length, 1)
     assert.equal(repositoryCalls[0]?.url, REPOSITORY_URL)
+    assert.equal(
+      fetchMock.exactInvocationRequests.filter(tokens => tokens[0] === fetchMock.sourceCommand).length,
+      1,
+      'the panel and repository dispatch must share one source-bound MCP resolution',
+    )
     assert.deepEqual(repositoryCalls[0]?.invocation, {
       schema: 'knowgrph-knowledge-graph-invocation/v1',
       tool: 'knowgrph.knowledge_graph.ingest',
@@ -229,6 +244,7 @@ export async function testKnowledgeGraphRepositoryImportDedupeIsExactProofBoundA
   }
   const run = (proof: WorkspaceKnowledgeGraphInvocation) => runLaunchImportUrl({
     urlRaw: REPOSITORY_URL,
+    forceKnowledgeGraphRepository: true,
     bridge,
     fallback: async () => undefined,
     resolveMcpInvocation: async () => ({ invocation: proof }),

@@ -293,10 +293,15 @@ export function buildKnowledgeGraphCanvasProjection(
   }
   const graphId = cleanString(result.graphId)
   const snapshotDigest = cleanString(result.snapshotDigest)
-  if (!/^kg:graph:[0-9a-f]{32}$/.test(graphId) || !/^[0-9a-f]{64}$/.test(snapshotDigest)) {
+  const parserRegistryDigest = cleanString(result.parserRegistryDigest)
+  if (
+    !/^kg:graph:[0-9a-f]{32}$/.test(graphId)
+    || !/^[0-9a-f]{64}$/.test(snapshotDigest)
+    || !/^[0-9a-f]{64}$/.test(parserRegistryDigest)
+  ) {
     throw new KnowledgeGraphProjectionError(
       'invalid-snapshot-identity',
-      'Knowledge graph import returned an invalid graph or snapshot identity.',
+      'Knowledge graph import returned an invalid graph, snapshot, or parser-registry identity.',
     )
   }
   if (result.complete !== true) {
@@ -335,6 +340,7 @@ export function buildKnowledgeGraphCanvasProjection(
         readOnly: true,
         graphId,
         snapshotDigest: snapshotDigest.toLowerCase(),
+        parserRegistryDigest: parserRegistryDigest.toLowerCase(),
         projectionToken,
         complete: result.complete,
         projectionComplete: result.projection.complete,

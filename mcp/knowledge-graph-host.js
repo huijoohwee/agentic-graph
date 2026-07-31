@@ -10,14 +10,17 @@ import {
   createKnowledgeGraphRuntime,
   KNOWLEDGE_GRAPH_TOOL_NAMES,
 } from "./knowledge-graph/runtime.mjs";
+import { verifyKnowledgeGraphInvocation } from "./knowledge-graph-invocation-proof.js";
 
 const TOOL_OPERATION = Object.freeze({
+  [KNOWLEDGE_GRAPH_TOOL_NAMES.parserGenerate]: "parser_generate",
   [KNOWLEDGE_GRAPH_TOOL_NAMES.ingest]: "ingest",
   [KNOWLEDGE_GRAPH_TOOL_NAMES.query]: "query",
   [KNOWLEDGE_GRAPH_TOOL_NAMES.explainEdge]: "explain_edge",
 });
 
 const RESULT_SCHEMA = Object.freeze({
+  parser_generate: "knowgrph-knowledge-graph-parser-generate/v1",
   ingest: "knowgrph-knowledge-graph-ingest/v1",
   query: "knowgrph-knowledge-graph-query/v1",
   explain_edge: "knowgrph-knowledge-graph-explain-edge/v1",
@@ -66,6 +69,8 @@ function runtimeKey(rootDir, env) {
     env.KNOWGRPH_KNOWLEDGE_GRAPH_OUTPUT_ROOT || "",
     env.KNOWGRPH_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS || "",
     env.KNOWGRPH_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES || "",
+    env.KNOWGRPH_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS || "",
+    env.KNOWGRPH_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK || "",
     env.KNOWGRPH_PYTHON || "",
   ]);
 }
@@ -88,9 +93,16 @@ function getRuntime({ rootDir, env }) {
     timeoutMs: env.KNOWGRPH_KNOWLEDGE_GRAPH_PDF_TIMEOUT_MS,
     maxOutputBytes: env.KNOWGRPH_KNOWLEDGE_GRAPH_PDF_MAX_OUTPUT_BYTES,
   });
+  const repositoryHosts = String(env.KNOWGRPH_KNOWLEDGE_GRAPH_REPOSITORY_HOSTS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
   const runtime = createKnowledgeGraphRuntime({
     knowgrphRoot: absoluteRoot,
     allowedRoots: configuredAllowedRoots,
+    repositoryHosts,
+    allowPrivateRepositoryNetwork:
+      env.KNOWGRPH_KNOWLEDGE_GRAPH_ALLOW_PRIVATE_REPOSITORY_NETWORK === "1",
     outputRoot,
     pdfConverter,
     pdfConverterVersion: "knowgrph-native-pdf-v3",
@@ -106,11 +118,18 @@ export async function runKnowledgeGraphTool(toolName, args, {
   rootDir,
   env = process.env,
   abortSignal,
+  docsResolver,
 } = {}) {
   const operation = TOOL_OPERATION[toolName];
   if (!operation) return failure("query", "unknown_tool", `Unknown knowledge graph tool: ${String(toolName || "")}`);
   const invocationError = validateInvocation(toolName, args?.invocation);
   if (invocationError) return failure(operation, "invalid_invocation", invocationError);
+  const sourceInvocationError = await verifyKnowledgeGraphInvocation(toolName, args?.invocation, {
+    rootDir,
+    env,
+    docsResolver,
+  });
+  if (sourceInvocationError) return failure(operation, "invalid_invocation", sourceInvocationError);
   const argumentsError = validateArguments(operation, args);
   if (argumentsError) return failure(operation, "invalid_arguments", `Knowledge graph arguments failed validation: ${argumentsError}`);
   const { invocation: _invocation, ...runtimeArgs } = args || {};
