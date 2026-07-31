@@ -380,8 +380,9 @@ advisories separately.
 Knowgrph realizes the contract through:
 
 - City domain modules in `canvas/src/features/game-city-sim/`;
-- `CitySimMediaFigure` as the semantic React wrapper around the retained
-  MapLibre geographic host;
+- shared `SemanticMediaFigure` as the sole selectable React wrapper around the
+  retained MapLibre geographic host, with the native canvas referencing its
+  caption through the neutral MapLibre semantic-owner binding;
 - City parcel adapters in `gympgrph/src/cityGeoOverlay*.ts`;
 - the current City/Flight MapLibre publisher specialization in
   `canvas/src/features/geospatial/`;

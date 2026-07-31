@@ -69,6 +69,7 @@ function readCitySimActive(): boolean {
 type GeospatialOverlayHostProps = {
   active?: boolean
   gameplayPresentationOwner: FlightGeoOverlayPresentationOwner
+  semanticMediaCaptionId?: string | null
   snapshot?: unknown
   handlers?: unknown
   onFlightOverlayPresented?: (
@@ -92,6 +93,7 @@ export type CanvasViewportGeospatialOverlayProps = {
   composedWithXr: boolean
   geospatialModeEnabled: boolean
   graphData: GraphData
+  semanticMediaCaptionId?: string | null
   storyboardWidgetPanelsActive: boolean
   threeOverlayComposed: boolean
 }
@@ -133,6 +135,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
     composedWithXr,
     geospatialModeEnabled,
     graphData,
+    semanticMediaCaptionId,
     storyboardWidgetPanelsActive,
     threeOverlayComposed,
   } = props
@@ -468,6 +471,7 @@ export const CanvasViewportGeospatialOverlay = React.memo(function CanvasViewpor
       <GeospatialOverlayHostLazy
         active={active}
         gameplayPresentationOwner={gameplayPresentationOwner}
+        semanticMediaCaptionId={semanticMediaCaptionId}
         snapshot={snapshot}
         handlers={handlers}
         onFlightOverlayPresented={handleFlightOverlayPresented}

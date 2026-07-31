@@ -59,6 +59,7 @@ import { applyGeospatialFitRequest } from './geospatialFitRuntime.js'
 type GeospatialOverlayHostProps = {
   active?: boolean
   gameplayPresentationOwner: FlightGeoOverlayPresentationOwner
+  semanticMediaCaptionId?: string | null
   snapshot?: unknown
   handlers?: unknown
   onFlightOverlayPresented?: (
@@ -825,6 +826,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     enabled: show2dMapLibre && mapLibreRuntimeEnabled,
     rootRef,
     containerRef: map2dContainerRef,
+    semanticMediaCaptionId: props.semanticMediaCaptionId,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
     ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
@@ -839,6 +841,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     enabled: show3d && mapLibreRuntimeEnabled,
     rootRef,
     containerRef: map3dContainerRef,
+    semanticMediaCaptionId: props.semanticMediaCaptionId,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
     ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,

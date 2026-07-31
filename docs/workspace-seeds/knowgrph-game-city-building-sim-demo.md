@@ -42,7 +42,7 @@ run_ready_demo:
 city_runtime:
   schema_id: "knowgrph-city-grid/v1"
   runtime_owner: "one browser-local City Runtime"
-  surface_owner: "native MapLibre Geo+XR surface wrapped by CitySimMediaFigure"
+  surface_owner: "native MapLibre Geo+XR surface wrapped by SemanticMediaFigure"
   fixed_step_ms: 1000
   world_ownership: "overlay-only"
   renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"
@@ -87,8 +87,9 @@ city_parcel_projection:
   camera_policy: "fit source-authored parcel bounds into the visible panel-adjusted aperture and restore prior padding"
   duplicate_source_or_layer_ids_forbidden: true
 city_semantic_media:
-  owner: "canvas/src/features/game-city-sim/CitySimMediaFigure.tsx"
+  owner: "canvas/src/lib/cards/SemanticMediaFigure.tsx"
   child_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
+  native_canvas_semantic_owner: "gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts"
   element: "figure"
   accessible_name: "Interactive City simulation media stage"
   selection_marker_owner: "canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts"
@@ -178,7 +179,7 @@ mcp:
 proof_contract:
   start: "neutral browser with the canonical Singapore environment and no persisted city state"
   activation: "apply this Source File after Source Files bootstrap is ready"
-  assertions: ["Geo+XR Mode", "one native MapLibre Geo host wrapped by CitySimMediaFigure", "source-authored Singapore major-POI extrusions", "sixteen live City parcel features", "visible City zone and selection layers", "environment then City then Flight layer order", "panel-adjusted MapLibre framing and gestures", "zero City Three Canvas, stage, mesh, or camera", "stopped aircraft and route through independent existing Flight Geo layers", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
+  assertions: ["Geo+XR Mode", "one native MapLibre Geo host wrapped by SemanticMediaFigure", "source-authored Singapore major-POI extrusions", "sixteen live City parcel features", "visible City zone and selection layers", "environment then City then Flight layer order", "panel-adjusted MapLibre framing and gestures", "zero City Three Canvas, stage, mesh, or camera", "stopped aircraft and route through independent existing Flight Geo layers", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
   actions: ["Zone", "one Tick", "Stop fence", "Advice", "Save and read-back", "six panel projections", "Exit restore"]
   exact_sha_required: true
   repeatability: "repeat from neutral state and compare initial serialized bytes"
@@ -224,7 +225,7 @@ flow:
 This Source Files document is the derived local activation and proof projection
 for a deterministic city simulation. Applying it requests `cityBuilder` and
 Geo+XR Mode. The existing native MapLibre Geo host owns the geographic visual
-renderer, camera, and viewport gestures. `CitySimMediaFigure` wraps that
+renderer, camera, and viewport gestures. `SemanticMediaFigure` wraps that
 geospatial projection directly as a labeled semantic City media stage; City
 mounts zero Three.js/React Three Fiber Canvas, stage, mesh, camera, or pointer
 handler. MapLibre parcel clicks and City Builder coordinate controls dispatch
@@ -340,7 +341,7 @@ restores a Three camera.
 - [ ] Neutral proof records City Builder closed and the City media figure
   presentational/inactive before applying this Source File.
 - [ ] Source application alone selects Geo+XR, retains one native MapLibre host
-  wrapped by `CitySimMediaFigure`, and loads the authored grid in City
+  wrapped by `SemanticMediaFigure`, and loads the authored grid in City
   Builder.
 - [ ] Sixteen live parcel features render through the City source/layers;
   MapLibre clicks and City Builder controls share parcel selection; one zone

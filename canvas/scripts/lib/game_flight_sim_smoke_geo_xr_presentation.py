@@ -146,6 +146,15 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("citySemanticSurfaceAriaHidden") is False
             and value.get("citySemanticSurfaceVisibleMapLibreCanvasCount") == 1
             and value.get("citySemanticSurfaceCenterMapLibreOwned") is True
+            and value.get("citySemanticSurfaceCaptionId")
+            == value.get("cityMapLibreCanvasAriaLabelledBy")
+            and value.get("cityMapLibreCanvasAccessibleName")
+            == "Interactive City simulation media stage"
+            and value.get("cityMapLibreCanvasAriaHidden") is False
+            and value.get("cityMapLibreCanvasSelectableMarker") == ""
+            and value.get("cityMapLibreCanvasSelectableOwnerIsSurface") is True
+            and value.get("cityMapLibreCanvasSelectableOwnerNodeName")
+            == "FIGURE"
             and value.get("cityMapLibreOwnerCount") == 1
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "cityBuilder"
@@ -221,6 +230,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("cityActive") is False
             and value.get("cityPanelVisible") is True
             and value.get("citySemanticSurfaceActive") is False
+            and value.get("cityMapLibreCanvasAriaLabelledBy") == ""
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "cityBuilder"
             and value.get("renderMode") == "3d"
@@ -265,6 +275,7 @@ def verify_flight_geo_xr_city_handoff(
     if (
         reopened.get("cityActive") is not False
         or reopened.get("citySemanticSurfaceActive") is not False
+        or reopened.get("cityMapLibreCanvasAriaLabelledBy") != ""
         or reopened.get("hudVisible") is not True
     ):
         raise AssertionError(

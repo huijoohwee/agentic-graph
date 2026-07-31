@@ -63,6 +63,7 @@ import {
   resolveMapLibreFlightProviderStyle,
   shouldPreflightInitialMapLibreStyle,
 } from './mapLibreProviderStyle.js'
+import { bindMapLibreCanvasSemanticOwner } from './mapLibreCanvasSemanticOwner.js'
 
 export {
   loadMapLibreProviderStyleDocument,
@@ -273,6 +274,7 @@ export function useMapLibreBasemap(args: {
   enabled: boolean
   rootRef: React.RefObject<HTMLElement | null>
   containerRef: React.RefObject<HTMLElement | null>
+  semanticMediaCaptionId?: string | null
   targetStyleUrl?: string | null
   initialStyleOverride?: Readonly<Record<string, unknown>> | null
   ownerScope?: MapLibreMapOwnerScope
@@ -287,6 +289,7 @@ export function useMapLibreBasemap(args: {
     enabled,
     rootRef,
     containerRef,
+    semanticMediaCaptionId,
     targetStyleUrl,
     initialStyleOverride,
     ownerScope = 'embedded-preview',
@@ -1220,6 +1223,11 @@ export function useMapLibreBasemap(args: {
     // clear it while handing the same Geo surface back; remounting here would
     // destroy the provider map instead of retaining its owner and camera.
   }, [enabled, rootRef, containerRef, targetStyleUrl, ownerScope, canvasRenderMode, runtimeProjectionMode, viewportSizingMode, vectorFallbackMs, computeProbe, debug, setProbe])
+
+  React.useEffect(
+    () => bindMapLibreCanvasSemanticOwner(state.map, semanticMediaCaptionId),
+    [semanticMediaCaptionId, state.map],
+  )
 
   React.useEffect(() => {
     const map = state.map

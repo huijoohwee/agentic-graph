@@ -27,8 +27,9 @@ function collectTextFiles(path: string): readonly string[] {
 export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
   const threeGraph = readCanvasSource('lib/three/ThreeGraph.impl.tsx')
-  const mediaFigure = readCanvasSource(
-    'features/game-city-sim/CitySimMediaFigure.tsx',
+  const mediaFigure = readCanvasSource('lib/cards/SemanticMediaFigure.tsx')
+  const mediaSurface = readCanvasSource(
+    'features/game-city-sim/citySimMediaSurface.ts',
   )
   const viewport = readCanvasSource('components/CanvasViewport.tsx')
   const rendererLifecycle = readCanvasSource(
@@ -48,7 +49,7 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   assert.doesNotMatch(threeGraph, /citySim|CitySim/)
   assert.ok(
     viewport.includes(
-      '<CitySimMediaFigure citySimActive={citySimActive}>',
+      '<SemanticMediaFigure',
     ),
     'the semantic City wrapper must own the native MapLibre surface',
   )
@@ -89,8 +90,10 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   )
   assert.ok(mediaFigure.includes('<figure'))
   assert.ok(mediaFigure.includes('<figcaption'))
-  assert.ok(mediaFigure.includes('resolveMediaPreviewSelectableDataAttr(citySimActive)'))
+  assert.ok(mediaFigure.includes('resolveMediaPreviewSelectableDataAttr(active)'))
   assert.equal(/<(?:div)\b|aria-hidden|on(?:Click|Mouse|Pointer)/.test(mediaFigure), false)
+  assert.ok(mediaSurface.includes('CITY_SIM_MEDIA_STAGE_LABEL'))
+  assert.ok(viewport.includes('semanticMediaCaptionId={citySimActive ? captionId : undefined}'))
   assert.ok(
     xrPhysicsRuntime.includes(
       'const { citySimActive, flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()',
