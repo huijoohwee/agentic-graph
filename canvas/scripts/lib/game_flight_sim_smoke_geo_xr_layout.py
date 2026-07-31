@@ -210,6 +210,7 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
             activeEnvironmentLayer, 'visibility',
           ) !== 'none'
           let mapPointerHit = null
+          const mapPointerSamples = []
           if (mapCanvas && mapRect) {
             for (const ratioX of [0.18, 0.36, 0.5, 0.64, 0.82]) {
               for (const ratioY of [0.28, 0.5, 0.72]) {
@@ -218,7 +219,21 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
                   y: mapRect.top + mapRect.height * ratioY,
                 }
                 if (!exposed(point)) continue
-                if (document.elementFromPoint(point.x, point.y) === mapCanvas) {
+                const hit = document.elementFromPoint(point.x, point.y)
+                const ancestors = []
+                let current = hit
+                while (current && ancestors.length < 6) {
+                  ancestors.push({
+                    ariaLabel: current.getAttribute?.('aria-label') || '',
+                    className: String(current.className || ''),
+                    engine: current.getAttribute?.('data-engine') || '',
+                    geoXrLayer: current.getAttribute?.('data-kg-geo-xr-layer') || '',
+                    tagName: String(current.tagName || '').toLowerCase(),
+                  })
+                  current = current.parentElement
+                }
+                mapPointerSamples.push({ ancestors, point })
+                if (hit === mapCanvas) {
                   mapPointerHit = point
                   break
                 }
@@ -252,6 +267,7 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
               '[data-kg-flight-sim-geography-boundary]',
             )?.getAttribute('data-kg-flight-sim-geography-boundary') || '',
             mapPointerHit,
+            mapPointerSamples,
             occluders,
             routeUnoccluded: routeSamples.length > 1
               && routeSamples.every(point => point && exposed(point)),
