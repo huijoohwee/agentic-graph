@@ -18,6 +18,7 @@ from lib.game_flight_sim_smoke_ledger import (
 )
 from lib.game_flight_sim_smoke_network import (
     assert_transport_ownership,
+    assert_workspace_seed_list_authority,
     request_is_geo_provider_read,
     request_is_proof_local_read,
     summarize_websocket_attempts,
@@ -270,15 +271,6 @@ def main() -> None:
                 / "docs"
                 / "workspace-seeds"
             ).resolve()
-            invalid_fs_list_requests = [
-                request
-                for request in fs_list_requests
-                if (
-                    request["method"] != "POST"
-                    or not request["path"]
-                    or Path(request["path"]).resolve() != expected_seed_root
-                )
-            ]
             websocket_attempts = summarize_websocket_attempts(
                 websocket_probe_url,
                 websocket_events,
@@ -297,12 +289,10 @@ def main() -> None:
                 )
 
             def verify_workspace_seed_authority() -> None:
-                if not fs_list_requests or invalid_fs_list_requests:
-                    raise AssertionError(
-                        "Flight bootstrap scanned an unrelated docs mirror: "
-                        f"requests={fs_list_requests}, "
-                        f"invalid={invalid_fs_list_requests}"
-                    )
+                assert_workspace_seed_list_authority(
+                    requests=fs_list_requests,
+                    expected_seed_root=expected_seed_root,
+                )
 
             def verify_browser_error_surface() -> None:
                 if console_errors or page_errors or failed_responses:

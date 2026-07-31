@@ -12,6 +12,7 @@ import {
   FLIGHT_SIM_DEMO_REPO_REL_PATH,
   XR_PHYSICS_DEMO_REPO_REL_PATH,
 } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { getWorkspaceSeedFiles } from '@/features/workspace-fs/workspaceFs'
 
 const repoRoot = resolve(process.cwd(), '..')
 const seedPath = resolve(repoRoot, FLIGHT_SIM_DEMO_REPO_REL_PATH)
@@ -20,6 +21,23 @@ const physicsSeedSource = readFileSync(
   resolve(repoRoot, XR_PHYSICS_DEMO_REPO_REL_PATH),
   'utf8',
 )
+
+test('Flight production bootstrap preserves exact authored Physics seed bytes', async () => {
+  const previousRepoLocal = process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+  process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '1'
+  try {
+    const physicsSeed = (await getWorkspaceSeedFiles()).find(
+      seed => seed.path.endsWith(XR_PHYSICS_DEMO_REPO_REL_PATH),
+    )
+    assert.equal(physicsSeed?.text, physicsSeedSource)
+  } finally {
+    if (previousRepoLocal === undefined) {
+      delete process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+    } else {
+      process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    }
+  }
+})
 
 function frontmatter(source: string): Record<string, unknown> {
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/)

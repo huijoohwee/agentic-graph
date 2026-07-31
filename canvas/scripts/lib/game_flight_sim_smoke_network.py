@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, unquote, urlparse
 
@@ -257,4 +258,25 @@ def assert_transport_ownership(
     if failures:
         raise AssertionError(
             "Flight/Geo transport ownership failed: " + "; ".join(failures)
+        )
+
+
+def assert_workspace_seed_list_authority(
+    *,
+    requests: list[dict[str, Any]],
+    expected_seed_root: Path,
+) -> None:
+    invalid_requests = [
+        request
+        for request in requests
+        if (
+            request["method"] != "POST"
+            or not request["path"]
+            or Path(request["path"]).resolve() != expected_seed_root.resolve()
+        )
+    ]
+    if invalid_requests:
+        raise AssertionError(
+            "Flight bootstrap scanned an unrelated docs mirror: "
+            f"requests={requests}, invalid={invalid_requests}"
         )
