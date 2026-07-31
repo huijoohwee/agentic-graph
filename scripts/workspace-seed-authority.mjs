@@ -45,9 +45,9 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
       'kg-geo-xr:regional-poi:label',
     ]),
     featureContract:
-      'nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three order-independent identity Point locators',
+      'nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three topology-aware representative Point locators',
     presentationPolicy:
-      'read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-independent labels',
+      'read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-aware variable-anchor labels',
     storagePolicy: 'checked-in',
   }),
   cameraFraming:

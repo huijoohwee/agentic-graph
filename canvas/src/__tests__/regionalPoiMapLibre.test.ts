@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {
   createRegionalPoiProfile,
+  deriveRegionalPoiLocators,
   type RegionalPoiProfile,
   type RegionalPoiSourceReference,
 } from 'grph-shared/geospatial/regionalPoiGeo'
@@ -216,26 +217,18 @@ function testProjectionPreservesGeographyAndProvenance(): void {
   assert.deepEqual(
     locatorFeatures.map(feature => ({
       coordinates: feature.geometry.type === 'Point'
-        ? feature.geometry.coordinates.map(value => Number(value.toFixed(6)))
+        ? feature.geometry.coordinates
         : null,
       id: feature.id,
       label: feature.properties.kgRegionalPoiLabel,
       poiId: feature.properties.kgRegionalPoiId,
     })),
-    [
-      {
-        coordinates: [12.005, 41.005],
-        id: `${profile.id}:locator:structure-a`,
-        label: 'Structure A',
-        poiId: 'structure-a',
-      },
-      {
-        coordinates: [12.025, 41.025],
-        id: `${profile.id}:locator:structure-b`,
-        label: 'Structure B',
-        poiId: 'structure-b',
-      },
-    ],
+    deriveRegionalPoiLocators(profile).map(locator => ({
+      coordinates: locator.coordinate,
+      id: `${profile.id}:locator:${locator.poiId}`,
+      label: locator.label,
+      poiId: locator.poiId,
+    })),
   )
   const firstProperties = surfaceFeatures[0]?.properties
   assert.ok(firstProperties)
@@ -345,8 +338,19 @@ function testMapLibreApplyRepairModesAndClear(): void {
     locatorFilter,
     ['!=', ['get', 'kgRegionalPoiLabel'], ''],
   ])
-  assert.equal(labelLayer?.layout['text-allow-overlap'], true)
-  assert.equal(labelLayer?.layout['text-ignore-placement'], true)
+  assert.deepEqual(labelLayer?.layout['text-variable-anchor'], [
+    'bottom',
+    'left',
+    'right',
+    'top',
+  ])
+  assert.equal(labelLayer?.layout['text-radial-offset'], 0.8)
+  assert.equal(labelLayer?.layout['text-justify'], 'auto')
+  assert.equal(labelLayer?.layout['text-max-width'], 10)
+  assert.equal('text-anchor' in (labelLayer?.layout || {}), false)
+  assert.equal('text-offset' in (labelLayer?.layout || {}), false)
+  assert.equal('text-allow-overlap' in (labelLayer?.layout || {}), false)
+  assert.equal('text-ignore-placement' in (labelLayer?.layout || {}), false)
   assert.equal(labelLayer?.paint['text-halo-width'], 2)
 
   const source = map.getSource(REGIONAL_POI_SOURCE_ID)
@@ -404,6 +408,15 @@ function testMapLibreApplyRepairModesAndClear(): void {
   const staleLocatorLayer = map.getLayer(REGIONAL_POI_LAYER_IDS.locator)
   assert.ok(staleLocatorLayer)
   staleLocatorLayer.paint['circle-radius'] = 99
+  const staleLabelLayer = map.getLayer(REGIONAL_POI_LAYER_IDS.label)
+  assert.ok(staleLabelLayer)
+  delete staleLabelLayer.layout['text-variable-anchor']
+  delete staleLabelLayer.layout['text-radial-offset']
+  delete staleLabelLayer.layout['text-justify']
+  staleLabelLayer.layout['text-anchor'] = 'bottom'
+  staleLabelLayer.layout['text-offset'] = [0, -0.8]
+  staleLabelLayer.layout['text-allow-overlap'] = true
+  staleLabelLayer.layout['text-ignore-placement'] = true
   map.moveLayer(REGIONAL_POI_LAYER_IDS.label)
   assert.equal(mapHasExactRegionalPoiProfile(map, profile, {
     beforeLayerId: TEST_LAYER_ANCHOR,

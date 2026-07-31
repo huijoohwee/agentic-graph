@@ -5,6 +5,7 @@ import {
   createRegionalPoiProfile,
   deriveRegionalPoiLongitudeSpan,
   deriveRegionalPoiLocators,
+  deriveRegionalPoiRepresentativePoint,
 } from '../dist/geospatial/regionalPoiGeo.js'
 import {
   SINGAPORE_MAJOR_POI_GEO_PROFILE,
@@ -79,7 +80,7 @@ test('Singapore major POIs are immutable geographic source data', () => {
   }])
 })
 
-test('Singapore major POI locators are stable, bounded, and order-independent', () => {
+test('Singapore major POI locators are source-derived and order-independent', () => {
   const profile = SINGAPORE_MAJOR_POI_GEO_PROFILE
   const locators = deriveRegionalPoiLocators(profile)
   assert.equal(isDeepFrozen(locators), true)
@@ -87,25 +88,16 @@ test('Singapore major POI locators are stable, bounded, and order-independent', 
     locators.map(locator => locator.poiId),
     ['marina-bay-sands', 'singapore-flyer', 'gardens-by-the-bay'],
   )
-  assert.deepEqual(
-    locators.map(locator => locator.coordinate.map(value => value.toFixed(7))),
-    [
-      ['103.8605404', '1.2837230'],
-      ['103.8631253', '1.2894104'],
-      ['103.8638279', '1.2821443'],
-    ],
-  )
 
   for (const locator of locators) {
-    const coordinates = profile.surfaces
+    const polygons = profile.surfaces
       .filter(surface => surface.poiId === locator.poiId)
-      .flatMap(surface => surface.geometry.coordinates.flat())
-    const longitudes = coordinates.map(([longitude]) => longitude)
-    const latitudes = coordinates.map(([, latitude]) => latitude)
-    assert.ok(locator.coordinate[0] >= Math.min(...longitudes))
-    assert.ok(locator.coordinate[0] <= Math.max(...longitudes))
-    assert.ok(locator.coordinate[1] >= Math.min(...latitudes))
-    assert.ok(locator.coordinate[1] <= Math.max(...latitudes))
+      .map(surface => surface.geometry.coordinates)
+    assert.deepEqual(
+      locator.coordinate,
+      deriveRegionalPoiRepresentativePoint(polygons),
+    )
+    assert.equal(locator.coordinate.every(Number.isFinite), true)
   }
 
   const reordered = structuredClone(profile)

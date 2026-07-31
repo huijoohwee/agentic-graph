@@ -140,8 +140,8 @@ regional_geographic_poi_projection:
   profile_fact_authority: "/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md"
   source_id: "kg-geo-xr:regional-poi"
   layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:locator", "kg-geo-xr:regional-poi:label"]
-  feature_contract: "nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three order-independent identity Point locators"
-  presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-independent labels"
+  feature_contract: "nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three topology-aware representative Point locators"
+  presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-aware variable-anchor labels"
   storage_policy: "checked-in"
   runtime_network_required: false
   city_fact_ownership: false

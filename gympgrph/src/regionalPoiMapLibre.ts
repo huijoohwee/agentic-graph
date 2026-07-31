@@ -41,6 +41,16 @@ const REGIONAL_POI_LOCATOR_FILTER = Object.freeze([
   ['get', 'kgRegionalPoiFeatureKind'],
   'locator',
 ])
+const REGIONAL_POI_LABEL_MAX_WIDTH_EM = 10
+const REGIONAL_POI_LABEL_PADDING_PIXELS = 2
+const REGIONAL_POI_LABEL_RADIAL_OFFSET_EM = 0.8
+const REGIONAL_POI_LABEL_TEXT_SIZE_PIXELS = 13
+export const REGIONAL_POI_LABEL_OCCLUSION_CLEARANCE_PIXELS = Math.ceil(
+  REGIONAL_POI_LABEL_TEXT_SIZE_PIXELS * (
+    REGIONAL_POI_LABEL_MAX_WIDTH_EM / 2
+    + REGIONAL_POI_LABEL_RADIAL_OFFSET_EM
+  ) + REGIONAL_POI_LABEL_PADDING_PIXELS,
+)
 const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
   Object.freeze({
     id: REGIONAL_POI_LAYER_IDS.fill,
@@ -107,14 +117,14 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
     ]),
     layout: Object.freeze({
       'symbol-placement': 'point',
-      'text-anchor': 'bottom',
-      'text-allow-overlap': true,
       'text-field': ['get', 'kgRegionalPoiLabel'],
       'text-font': ['Noto Sans Regular'],
-      'text-ignore-placement': true,
-      'text-offset': [0, -0.8],
-      'text-padding': 2,
-      'text-size': 13,
+      'text-justify': 'auto',
+      'text-max-width': REGIONAL_POI_LABEL_MAX_WIDTH_EM,
+      'text-padding': REGIONAL_POI_LABEL_PADDING_PIXELS,
+      'text-radial-offset': REGIONAL_POI_LABEL_RADIAL_OFFSET_EM,
+      'text-size': REGIONAL_POI_LABEL_TEXT_SIZE_PIXELS,
+      'text-variable-anchor': ['bottom', 'left', 'right', 'top'],
     }),
     paint: Object.freeze({
       'text-color': '#082f49',

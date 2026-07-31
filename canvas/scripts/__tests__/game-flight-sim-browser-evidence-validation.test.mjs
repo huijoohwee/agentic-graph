@@ -7,8 +7,10 @@ import {
   hasExactCityMapRetentionEvidence,
   hasExactCityRegionalPoiEvidence,
   hasExactCityRegionalPoiTeardownEvidence,
-  hasExactGeoXrRendererEvidence,
 } from '../lib/game-flight-sim-browser-evidence-validation.mjs'
+import {
+  hasExactGeoXrRendererLifecycleEvidence,
+} from '../lib/geo-xr-renderer-browser-evidence.mjs'
 import {
   hasViewportScopedRegionalPoiRendering,
 } from '../lib/regional-poi-browser-evidence.mjs'
@@ -19,7 +21,7 @@ const exactPoiIds = Object.freeze([
   'singapore-flyer',
 ])
 
-test('saved Geo+XR evidence requires one active wrapper and one visible Three layer', () => {
+test('saved Geo+XR evidence distinguishes active, retained, and absent Three ownership', () => {
   const exact = {
     geoXrSurfaceActive: true,
     geoXrSurfaceCount: 1,
@@ -29,7 +31,10 @@ test('saved Geo+XR evidence requires one active wrapper and one visible Three la
     threeCanvasInactiveCount: 0,
     threeCanvasOwnerCount: 1,
   }
-  assert.equal(hasExactGeoXrRendererEvidence(exact, true), true)
+  assert.equal(
+    hasExactGeoXrRendererLifecycleEvidence(exact, 'active'),
+    true,
+  )
   for (const [field, value] of [
     ['geoXrSurfaceCount', 2],
     ['rendererPointerTransparent', false],
@@ -39,11 +44,28 @@ test('saved Geo+XR evidence requires one active wrapper and one visible Three la
     ['threeCanvasOwnerCount', 2],
   ]) {
     assert.equal(
-      hasExactGeoXrRendererEvidence({ ...exact, [field]: value }, true),
+      hasExactGeoXrRendererLifecycleEvidence(
+        { ...exact, [field]: value },
+        'active',
+      ),
       false,
       `${field} drift must fail closed`,
     )
   }
+  assert.equal(hasExactGeoXrRendererLifecycleEvidence({
+    ...exact,
+    rendererSurfaceVisible: false,
+    threeCanvasActiveCount: 0,
+    threeCanvasInactiveCount: 1,
+  }, 'retained-inactive'), true)
+  assert.equal(hasExactGeoXrRendererLifecycleEvidence({
+    ...exact,
+    rendererSurfaceVisible: false,
+    threeCanvasActiveCount: 0,
+    threeCanvasInactiveCount: 0,
+    threeCanvasOwnerCount: 0,
+  }, 'absent'), true)
+  assert.equal(hasExactGeoXrRendererLifecycleEvidence(exact, 'legacy'), false)
 })
 
 test('Flight follow-camera evidence accepts only a viewport POI subset from the source', () => {
@@ -195,9 +217,9 @@ function exactCityMapLibreSurfaceEvidence() {
     sourceKinds: ['aircraft', 'route', 'route-point'],
     cityLayerCount: 4,
     cityLayersReady: true,
-    cityExpectedParcelCount: 12,
+    cityExpectedParcelCount: 16,
     cityParcelsUseAuthoredMeters: true,
-    citySourceFeatures: 12,
+    citySourceFeatures: 16,
     citySourcePresent: true,
     cityGeoXrLayerOrderExact: true,
     canvasStable: true,
@@ -337,6 +359,11 @@ test('City uses one semantic MapLibre surface with stopped Flight route and airc
   const city = exactCityMapLibreSurfaceEvidence()
 
   assert.equal(hasExactCityMapLibreSurfaceEvidence(city), true)
+  assert.equal(hasExactCityMapLibreSurfaceEvidence({
+    ...city,
+    threeCanvasInactiveCount: 0,
+    threeCanvasOwnerCount: 0,
+  }), true, 'direct City activation owns no Three canvas')
   for (const [field, value] of [
     ['citySemanticSurfaceActive', false],
     ['cityMapLibreCanvasAccessibleName', 'Map'],

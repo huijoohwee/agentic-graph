@@ -87,7 +87,8 @@ export function assertFlightSimBrowserSingaporePoiSourceAuthority({
     evidenceValidator.indexOf('function hasExactCityHandoffEvidence'),
   )
   for (const requirement of [
-    'hasExactGeoXrRendererEvidence(city, false)',
+    "hasExactGeoXrRendererLifecycleEvidence(city, 'retained-inactive')",
+    "hasExactGeoXrRendererLifecycleEvidence(city, 'absent')",
     'city?.canvasStable === true',
     'city?.flightR3fVisualCount === 0',
   ]) {
@@ -96,31 +97,19 @@ export function assertFlightSimBrowserSingaporePoiSourceAuthority({
       `expected retained inactive City renderer evidence: ${requirement}`,
     )
   }
-  const rendererEvidenceValidator = evidenceValidator.slice(
-    evidenceValidator.indexOf('function hasExactGeoXrRendererEvidence'),
-    evidenceValidator.indexOf('const CITY_REGIONAL_POI_PROFILE_ID'),
-  )
   for (const requirement of [
-    'view?.geoXrSurfaceCount === 1',
-    'view?.threeCanvasOwnerCount === 1',
-    'view?.threeCanvasActiveCount === (active ? 1 : 0)',
-    'view?.threeCanvasInactiveCount === (active ? 0 : 1)',
-    'view?.rendererPointerTransparent === true',
-    'view?.rendererSurfaceVisible === active',
-  ]) assert.ok(rendererEvidenceValidator.includes(requirement))
-  for (const requirement of [
-    'hasExactGeoXrRendererEvidence(before, true)',
-    'hasExactGeoXrRendererEvidence(restored, true)',
-    'hasExactGeoXrRendererEvidence(reopened, true)',
+    "hasExactGeoXrRendererLifecycleEvidence(before, 'active')",
+    "hasExactGeoXrRendererLifecycleEvidence(restored, 'active')",
+    "hasExactGeoXrRendererLifecycleEvidence(reopened, 'active')",
   ]) assert.ok(cityHandoffEvidence.includes(requirement))
   assert.ok(evidenceValidator.includes(
-    'hasExactGeoXrRendererEvidence(view, true)',
+    "hasExactGeoXrRendererLifecycleEvidence(view, 'active')",
   ))
   assert.ok(evidenceValidator.includes(
     'hasViewportScopedRegionalPoiRendering(view)',
   ))
   assert.ok(evidenceValidator.includes(
-    'evidence?.geoXrPresentation?.restoredView, true',
+    "evidence?.geoXrPresentation?.restoredView,\n      'active'",
   ))
   for (const checkpoint of ['restored', 'reopened']) {
     for (const requirement of [

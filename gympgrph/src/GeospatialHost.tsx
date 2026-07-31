@@ -9,8 +9,9 @@ import {
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { useGympgrphStore } from './store.js'
 import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
-import type {
-  MapLibreCanvasSemanticOwner,
+import {
+  bindMapLibreCanvasSemanticOwner,
+  type MapLibreCanvasSemanticOwner,
 } from './features/geospatial/mapLibreCanvasSemanticOwner.js'
 import { NATIVE_GEOSPATIAL_MAPLIBRE_OWNER } from './features/geospatial/mapLibreHostLease.js'
 import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
@@ -234,6 +235,7 @@ function SvgGeospatialFallback(args: {
   selectedFeatureCollection: FeatureCollection
   className: string
   insetPadding?: { top?: number; right?: number; bottom?: number; left?: number }
+  semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   style?: React.CSSProperties
 }): React.ReactElement {
   const width = SVG_FALLBACK_VIEWBOX_WIDTH
@@ -324,17 +326,21 @@ function SvgGeospatialFallback(args: {
     const sy = safeImageBounds.height / HIGH_FIDELITY_WORLD_SVG_HEIGHT
     return `translate(${safeImageBounds.x} ${safeImageBounds.y}) scale(${sx} ${sy})`
   }, [safeImageBounds.height, safeImageBounds.valid, safeImageBounds.width, safeImageBounds.x, safeImageBounds.y])
+  const semanticSurfaceRef = React.useRef<SVGSVGElement | null>(null)
+  React.useEffect(() => bindMapLibreCanvasSemanticOwner(
+    { getCanvas: () => semanticSurfaceRef.current },
+    args.semanticMediaOwner,
+  ), [args.semanticMediaOwner])
   return (
-    <figure
+    <svg
+      ref={semanticSurfaceRef}
+      viewBox={`0 0 ${width} ${height}`}
       className={args.className}
+      role="img"
       style={args.style}
+      aria-label="Fallback geospatial basemap"
     >
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-full"
-        aria-label="Fallback geospatial basemap"
-      >
-        <defs>
+      <defs>
           <linearGradient id="kg-geo-fallback-bg" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={SVG_FALLBACK_STYLE.oceanGradientStops[0]} />
             <stop offset="44%" stopColor={SVG_FALLBACK_STYLE.oceanGradientStops[1]} />
@@ -387,42 +393,41 @@ function SvgGeospatialFallback(args: {
               stroke-linejoin: bevel;
             }
           `}</style>
-        </defs>
-        <rect x="0" y="0" width={width} height={height} fill="url(#kg-geo-fallback-bg)" />
-        <path d={spherePath} fill="url(#kg-geo-fallback-ocean-sheen)" stroke="rgba(255,255,255,0.32)" strokeWidth="3.4" filter="url(#kg-geo-fallback-sphere-shadow)" />
-        <g clipPath="url(#kg-geo-fallback-sphere-clip)" opacity="0.98">
-          {safeImageBounds.valid ? (
-            <>
-              <g
-                className="kg-geo-fallback-terrain"
-                transform={terrainTransform}
-                filter="url(#kg-geo-fallback-map-filter)"
-                opacity="0.98"
-                dangerouslySetInnerHTML={{ __html: HIGH_FIDELITY_WORLD_SVG_INNER }}
-              />
-              <rect
-                x={safeImageBounds.x}
-                y={safeImageBounds.y}
-                width={safeImageBounds.width}
-                height={safeImageBounds.height}
-                fill="url(#kg-geo-fallback-land-wash)"
-                opacity="0.36"
-              />
-            </>
-          ) : null}
-        </g>
-        <path d={spherePath} fill="none" stroke="url(#kg-geo-fallback-frame-stroke)" strokeWidth="1.2" />
-        <path d={spherePath} fill="none" stroke="rgba(15,23,42,0.28)" strokeWidth="1.75" />
-        <path d={minorGraticulePath} fill="none" stroke={SVG_FALLBACK_STYLE.minorGridLight} strokeWidth="0.55" />
-        <path d={minorGraticulePath} fill="none" stroke={SVG_FALLBACK_STYLE.minorGridDark} strokeWidth="0.95" />
-        <path d={majorGraticulePath} fill="none" stroke={SVG_FALLBACK_STYLE.majorGridLight} strokeWidth="0.95" />
-        <path d={majorGraticulePath} fill="none" stroke={SVG_FALLBACK_STYLE.majorGridDark} strokeWidth="1.55" />
-        <path d={pointsPath} fill={SVG_FALLBACK_STYLE.pointFill} stroke={SVG_FALLBACK_STYLE.pointOutline} strokeWidth="2.2" filter="url(#kg-geo-fallback-point-shadow)" />
-        <path d={pointsPath} fill="none" stroke={SVG_FALLBACK_STYLE.pointStroke} strokeWidth="0.95" />
-        <path d={selectedPath} fill={SVG_FALLBACK_STYLE.selectedFill} stroke={SVG_FALLBACK_STYLE.selectedOutline} strokeWidth="3" filter="url(#kg-geo-fallback-point-shadow)" />
-        <path d={selectedPath} fill="none" stroke={SVG_FALLBACK_STYLE.selectedStroke} strokeWidth="1.25" />
-      </svg>
-    </figure>
+      </defs>
+      <rect x="0" y="0" width={width} height={height} fill="url(#kg-geo-fallback-bg)" />
+      <path d={spherePath} fill="url(#kg-geo-fallback-ocean-sheen)" stroke="rgba(255,255,255,0.32)" strokeWidth="3.4" filter="url(#kg-geo-fallback-sphere-shadow)" />
+      <g clipPath="url(#kg-geo-fallback-sphere-clip)" opacity="0.98">
+        {safeImageBounds.valid ? (
+          <>
+            <g
+              className="kg-geo-fallback-terrain"
+              transform={terrainTransform}
+              filter="url(#kg-geo-fallback-map-filter)"
+              opacity="0.98"
+              dangerouslySetInnerHTML={{ __html: HIGH_FIDELITY_WORLD_SVG_INNER }}
+            />
+            <rect
+              x={safeImageBounds.x}
+              y={safeImageBounds.y}
+              width={safeImageBounds.width}
+              height={safeImageBounds.height}
+              fill="url(#kg-geo-fallback-land-wash)"
+              opacity="0.36"
+            />
+          </>
+        ) : null}
+      </g>
+      <path d={spherePath} fill="none" stroke="url(#kg-geo-fallback-frame-stroke)" strokeWidth="1.2" />
+      <path d={spherePath} fill="none" stroke="rgba(15,23,42,0.28)" strokeWidth="1.75" />
+      <path d={minorGraticulePath} fill="none" stroke={SVG_FALLBACK_STYLE.minorGridLight} strokeWidth="0.55" />
+      <path d={minorGraticulePath} fill="none" stroke={SVG_FALLBACK_STYLE.minorGridDark} strokeWidth="0.95" />
+      <path d={majorGraticulePath} fill="none" stroke={SVG_FALLBACK_STYLE.majorGridLight} strokeWidth="0.95" />
+      <path d={majorGraticulePath} fill="none" stroke={SVG_FALLBACK_STYLE.majorGridDark} strokeWidth="1.55" />
+      <path d={pointsPath} fill={SVG_FALLBACK_STYLE.pointFill} stroke={SVG_FALLBACK_STYLE.pointOutline} strokeWidth="2.2" filter="url(#kg-geo-fallback-point-shadow)" />
+      <path d={pointsPath} fill="none" stroke={SVG_FALLBACK_STYLE.pointStroke} strokeWidth="0.95" />
+      <path d={selectedPath} fill={SVG_FALLBACK_STYLE.selectedFill} stroke={SVG_FALLBACK_STYLE.selectedOutline} strokeWidth="3" filter="url(#kg-geo-fallback-point-shadow)" />
+      <path d={selectedPath} fill="none" stroke={SVG_FALLBACK_STYLE.selectedStroke} strokeWidth="1.25" />
+    </svg>
   )
 }
 
@@ -602,8 +607,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   const clearGeospatialFitRequest = useGympgrphStore(s => s.clearGeospatialFitRequest)
   const setGeospatialCursorLngLat = useGympgrphStore(s => s.setGeospatialCursorLngLat)
   const rootRef = React.useRef<HTMLElement | null>(null)
-  const map2dContainerRef = React.useRef<HTMLElement | null>(null)
-  const map3dContainerRef = React.useRef<HTMLElement | null>(null)
+  const mapContainerRef = React.useRef<HTMLElement | null>(null)
   const [targetStyleUrl, setTargetStyleUrl] = React.useState<string | null>(() => readStyleUrl())
   const [pointStyleConfig, setPointStyleConfig] = React.useState(() => readGeospatialPointStyleConfig())
   const [geospatialViewMode, setGeospatialViewMode] = React.useState<GeospatialViewMode>(
@@ -825,41 +829,24 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     })
   }, [props.handlers, props.snapshot])
 
-  const basemap2d = useMapLibreBasemap({
-    enabled: show2dMapLibre && mapLibreRuntimeEnabled,
+  const basemap = useMapLibreBasemap({
+    enabled: mapLibreRuntimeEnabled,
     rootRef,
-    containerRef: map2dContainerRef,
-    semanticMediaOwner: props.semanticMediaOwner,
+    containerRef: mapContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
     ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
-    canvasRenderMode: '2d',
-    projectionMode: 'mercator',
+    canvasRenderMode: show3d ? '3d' : '2d',
+    projectionMode: show3d ? 'globe' : 'mercator',
     viewportSizingMode: 'fit',
     vectorFallbackMs: 2_000,
     onGrabMapsFallback: notifyGrabMapsFallback,
     onPoiClick: handlePoiClick,
   })
-  const basemap3d = useMapLibreBasemap({
-    enabled: show3d && mapLibreRuntimeEnabled,
-    rootRef,
-    containerRef: map3dContainerRef,
-    semanticMediaOwner: props.semanticMediaOwner,
-    targetStyleUrl: effectiveTargetStyleUrl,
-    initialStyleOverride: flightBootstrapStyle,
-    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
-    canvasRenderMode: '3d',
-    projectionMode: 'globe',
-    viewportSizingMode: 'fit',
-    vectorFallbackMs: 2_000,
-    onGrabMapsFallback: notifyGrabMapsFallback,
-    onPoiClick: handlePoiClick,
-  })
-  const activeBasemap = show3d ? basemap3d : basemap2d
   const enhancedLayerBounds = useEnhancedGeospatialHostLayers({
     enabled: active && mapLibreRuntimeEnabled,
-    map: activeBasemap.map,
-    styleRevision: activeBasemap.styleRevision,
+    map: basemap.map,
+    styleRevision: basemap.styleRevision,
     snapshot: props.snapshot,
     handlers: props.handlers,
     autoFitEnabled: geospatialAutoFitEnabled && !flightOverlayActive,
@@ -878,7 +865,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
 
   useCityGeoOverlayMapLibrePresentation({
     active,
-    map: activeBasemap.map,
+    map: basemap.map,
     mapLibreRuntimeEnabled,
     onParcelSelect: handleCityParcelSelect,
     viewMode: show3d ? '3d' : '2d',
@@ -888,11 +875,11 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     active,
     enhancedLayerBounds,
     graphRevision: basemapGraphRevision,
-    map: activeBasemap.map,
+    map: basemap.map,
     mapLibreRuntimeEnabled,
     onPresented: props.onFlightOverlayPresented,
     rootRef,
-    styleRevision: activeBasemap.styleRevision,
+    styleRevision: basemap.styleRevision,
     viewMode: geospatialViewMode,
   })
 
@@ -953,17 +940,16 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   )
 
   React.useEffect(() => {
-    if (!show2dMapLibre) return
-    applyFeatureCollectionToBasemap({ basemapMap: basemap2d.map, styleRevision: basemap2d.styleRevision, viewMode: 'map2d' })
-  }, [applyFeatureCollectionToBasemap, basemap2d.map, basemap2d.styleRevision, show2dMapLibre])
+    if (!mapLibreRuntimeEnabled) return
+    applyFeatureCollectionToBasemap({
+      basemapMap: basemap.map,
+      styleRevision: basemap.styleRevision,
+      viewMode: show3d ? 'map3d' : 'map2d',
+    })
+  }, [applyFeatureCollectionToBasemap, basemap.map, basemap.styleRevision, mapLibreRuntimeEnabled, show3d])
 
   React.useEffect(() => {
-    if (!show3d) return
-    applyFeatureCollectionToBasemap({ basemapMap: basemap3d.map, styleRevision: basemap3d.styleRevision, viewMode: 'map3d' })
-  }, [applyFeatureCollectionToBasemap, basemap3d.map, basemap3d.styleRevision, show3d])
-
-  React.useEffect(() => {
-    const map = activeBasemap.map
+    const map = basemap.map
     if (!map || !active) return
     if (typeof map.on !== 'function' || typeof map.off !== 'function' || typeof map.queryRenderedFeatures !== 'function') return
     const overlayHandlers = getOverlayHandlers(props.snapshot, props.handlers)
@@ -1045,7 +1031,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     }
   }, [
     active,
-    activeBasemap.map,
+    basemap.map,
     graphFeatureCollection,
     graphSourceIdClustered,
     graphSourceIdUnclustered,
@@ -1056,9 +1042,9 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   ])
 
   const basemapGraphDebug = React.useMemo(() => {
-    const basemapMap = activeBasemap.map
+    const basemapMap = basemap.map
     if (!basemapMap) return null
-    const styleReady = activeBasemap.styleRevision > 0 || isMapLibreStyleReady(basemapMap)
+    const styleReady = basemap.styleRevision > 0 || isMapLibreStyleReady(basemapMap)
     const featureCount = Array.isArray(graphFeatureCollection.features) ? graphFeatureCollection.features.length : 0
     const cluster = active && !show3d && isPointOnlyFeatureCollection(graphFeatureCollection, 500) && featureCount >= 200
     const activeSourceId = cluster ? graphSourceIdClustered : graphSourceIdUnclustered
@@ -1091,19 +1077,19 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       routesLayer: hasLayer(`${activeSourceId}:routes`),
       clusterLayer: hasLayer(`${activeSourceId}:cluster-bubbles`),
     }
-  }, [active, activeBasemap.map, basemapGraphRevision, graphFeatureCollection, graphSourceIdClustered, graphSourceIdUnclustered, show3d])
+  }, [active, basemap.map, basemap.styleRevision, basemapGraphRevision, graphFeatureCollection, graphSourceIdClustered, graphSourceIdUnclustered, show3d])
 
   React.useEffect(() => {
     if (!show2dMapLibre) return
-    if (!basemap2d.map) return
+    if (!basemap.map) return
     const featureCount = Array.isArray(graphFeatureCollection.features) ? graphFeatureCollection.features.length : 0
     if (featureCount <= 0) return
     if (basemapGraphDebug?.pointsLayer || basemapGraphDebug?.routesLayer || basemapGraphDebug?.clusterLayer) return
-    applyFeatureCollectionToBasemap({ basemapMap: basemap2d.map, styleRevision: basemap2d.styleRevision, viewMode: 'map2d' })
+    applyFeatureCollectionToBasemap({ basemapMap: basemap.map, styleRevision: basemap.styleRevision, viewMode: 'map2d' })
   }, [
     applyFeatureCollectionToBasemap,
-    basemap2d.map,
-    basemap2d.styleRevision,
+    basemap.map,
+    basemap.styleRevision,
     basemapGraphDebug?.clusterLayer,
     basemapGraphDebug?.pointsLayer,
     basemapGraphDebug?.routesLayer,
@@ -1116,21 +1102,28 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     if (!show2dMapLibre) return false
     // Only overlay the SVG basemap when MapLibre itself is unavailable/failed.
     // Avoid masking a healthy basemap during transient layer sync windows.
-    const hasRenderableMapLibreBasemap = !!activeBasemap.map && !activeBasemap.basemapUnavailable && activeBasemap.probe.tilesLoaded
+    const hasRenderableMapLibreBasemap = !!basemap.map && !basemap.basemapUnavailable && basemap.probe.tilesLoaded
     const hasHardMapUnavailable =
-      !activeBasemap.map
-      || activeBasemap.basemapUnavailable
-      || (!hasRenderableMapLibreBasemap && !!String(activeBasemap.mapError || '').trim())
+      !basemap.map
+      || basemap.basemapUnavailable
+      || (!hasRenderableMapLibreBasemap && !!String(basemap.mapError || '').trim())
     if (!hasHardMapUnavailable) return false
     if (!basemapGraphDebug?.styleReady) return true
     return !basemapGraphDebug.pointsLayer && !basemapGraphDebug.routesLayer && !basemapGraphDebug.clusterLayer
-  }, [active, activeBasemap.basemapUnavailable, activeBasemap.map, activeBasemap.mapError, activeBasemap.probe.tilesLoaded, basemapGraphDebug, show2dMapLibre])
+  }, [active, basemap.basemapUnavailable, basemap.map, basemap.mapError, basemap.probe.tilesLoaded, basemapGraphDebug, show2dMapLibre])
+
+  const showSvgFallback = show2dSvgFallback || shouldOverlaySvgFallbackBasemap
+
+  React.useEffect(() => {
+    if (!mapLibreRuntimeEnabled || showSvgFallback) return
+    return bindMapLibreCanvasSemanticOwner(basemap.map, props.semanticMediaOwner)
+  }, [basemap.map, mapLibreRuntimeEnabled, props.semanticMediaOwner, showSvgFallback])
 
   const shouldShowMapLibreErrorOverlay = React.useMemo(() => {
-    if (!activeBasemap.mapError) return false
+    if (!basemap.mapError) return false
     if (!show2dMapLibre && !show3d) return true
-    return !activeBasemap.map || activeBasemap.basemapUnavailable || !activeBasemap.probe.tilesLoaded
-  }, [activeBasemap.basemapUnavailable, activeBasemap.map, activeBasemap.mapError, activeBasemap.probe.tilesLoaded, show2dMapLibre, show3d])
+    return !basemap.map || basemap.basemapUnavailable || !basemap.probe.tilesLoaded
+  }, [basemap.basemapUnavailable, basemap.map, basemap.mapError, basemap.probe.tilesLoaded, show2dMapLibre, show3d])
 
   const [svgOverlayInsetRight, setSvgOverlayInsetRight] = React.useState(12)
   React.useEffect(() => {
@@ -1150,14 +1143,12 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
   }, [])
 
   const svgFallbackClassName = shouldOverlaySvgFallbackBasemap
-    ? 'absolute inset-0 z-[5] pointer-events-none opacity-100'
-    : show2dSvgFallback
-      ? 'absolute inset-0 pointer-events-none opacity-100'
-      : 'absolute inset-0 pointer-events-none opacity-0'
+    ? 'absolute inset-0 z-[5] h-full w-full pointer-events-auto'
+    : 'absolute inset-0 h-full w-full pointer-events-auto'
 
   const autoFitAppliedForDataKeyRef = React.useRef<string>('')
   React.useEffect(() => {
-    const map = activeBasemap.map
+    const map = basemap.map
     if (!map) return
     if (!active) return
     if (flightOverlayActive) return
@@ -1173,11 +1164,11 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     } catch {
       void 0
     }
-  }, [active, activeBasemap.map, fitPadding, flightOverlayActive, geospatialAutoFitEnabled, graphBounds, graphDataKey, show3d])
+  }, [active, basemap.map, fitPadding, flightOverlayActive, geospatialAutoFitEnabled, graphBounds, graphDataKey, show3d])
 
   const initialDataFitDoneRef = React.useRef<boolean>(false)
   React.useEffect(() => {
-    const map = activeBasemap.map
+    const map = basemap.map
     if (!map) return
     if (!active) return
     if (flightOverlayActive) return
@@ -1195,10 +1186,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     } catch {
       void 0
     }
-  }, [active, activeBasemap.map, fitPadding, flightOverlayActive, graphBounds, graphFeatureCollection.features, show3d])
+  }, [active, basemap.map, fitPadding, flightOverlayActive, graphBounds, graphFeatureCollection.features, show3d])
 
   React.useEffect(() => {
-    const map = activeBasemap.map
+    const map = basemap.map
     if (!map || !active) {
       setGeospatialCursorLngLat(null)
       return
@@ -1232,9 +1223,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       const x = Number(clientX)
       const y = Number(clientY)
       if (!Number.isFinite(x) || !Number.isFinite(y)) return
-      const container =
-        (show3d ? map3dContainerRef.current : map2dContainerRef.current)
-        || rootRef.current
+      const container = mapContainerRef.current || rootRef.current
       if (!container) return
       let rect: DOMRect | null = null
       try {
@@ -1286,10 +1275,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       }
       setGeospatialCursorLngLat(null)
     }
-  }, [active, activeBasemap.map, setGeospatialCursorLngLat, show3d])
+  }, [active, basemap.map, setGeospatialCursorLngLat])
 
   React.useEffect(() => {
-    const map = activeBasemap.map
+    const map = basemap.map
     if (!map || !active || !geospatialFitRequest) return
     applyGeospatialFitRequest({
       map,
@@ -1300,7 +1289,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       padding: fitPadding,
     })
     clearGeospatialFitRequest()
-  }, [active, activeBasemap.map, clearGeospatialFitRequest, enhancedLayerBounds, fitPadding, geospatialFitRequest, graphBounds, selectedBounds])
+  }, [active, basemap.map, clearGeospatialFitRequest, enhancedLayerBounds, fitPadding, geospatialFitRequest, graphBounds, selectedBounds])
 
   const debug = React.useMemo(() => {
     if (typeof window === 'undefined') return false
@@ -1342,26 +1331,25 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       style={{ width: '100%', height: '100%' }}
       data-kg-geo-xr-aerial-geography-boundary={flightOverlayActive ? 'not-rendered' : undefined}
     >
-      <SvgGeospatialFallback
-        featureCollection={graphFeatureCollection}
-        selectedFeatureCollection={selectedFeatureCollection}
-        className={svgFallbackClassName}
-        insetPadding={shouldOverlaySvgFallbackBasemap ? { top: 12, right: Math.max(220, svgOverlayInsetRight), bottom: 12, left: 12 } : undefined}
-        style={shouldOverlaySvgFallbackBasemap ? { transform: 'translateX(-220px)' } : undefined}
-      />
-      <section
-        ref={map2dContainerRef}
-        className={show2dMapLibre ? 'absolute inset-0 pointer-events-auto opacity-100' : 'absolute inset-0 pointer-events-none opacity-0'}
-        style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        aria-label="2D geospatial map host"
-      />
-
-      <section
-        ref={map3dContainerRef}
-        className={show3d ? 'absolute inset-0 pointer-events-auto opacity-100' : 'absolute inset-0 pointer-events-none opacity-0'}
-        style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        aria-label="3D geospatial map host"
-      />
+      {showSvgFallback ? (
+        <SvgGeospatialFallback
+          featureCollection={graphFeatureCollection}
+          selectedFeatureCollection={selectedFeatureCollection}
+          className={svgFallbackClassName}
+          insetPadding={shouldOverlaySvgFallbackBasemap ? { top: 12, right: Math.max(220, svgOverlayInsetRight), bottom: 12, left: 12 } : undefined}
+          semanticMediaOwner={props.semanticMediaOwner}
+          style={shouldOverlaySvgFallbackBasemap ? { transform: 'translateX(-220px)' } : undefined}
+        />
+      ) : null}
+      {mapLibreRuntimeEnabled ? (
+        <section
+          ref={mapContainerRef}
+          className="absolute inset-0 pointer-events-auto opacity-100"
+          style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          aria-label={`${show3d ? '3D' : '2D'} geospatial map host`}
+          data-kg-geospatial-map-host={show3d ? '3d' : '2d'}
+        />
+      ) : null}
       <GeospatialPointLegend
         visible={(show2dMapLibre || show3d) && Array.isArray(graphFeatureCollection.features) && graphFeatureCollection.features.length > 0}
         colors={{
@@ -1376,14 +1364,14 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
           className={`absolute top-2 right-2 z-20 pointer-events-none rounded-md border px-2 py-1 text-[11px] ${UI_THEME_TOKENS.panel.border} ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.text.secondary}`}
           aria-label="Geospatial debug status"
         >
-          <p>map: {activeBasemap.map ? 'yes' : 'no'}</p>
+          <p>map: {basemap.map ? 'yes' : 'no'}</p>
           <p>view: {geospatialViewMode} provider: {providerLabel}</p>
           <p>
-            canvas: {activeBasemap.probe.canvasW}×{activeBasemap.probe.canvasH} tilesLoaded: {activeBasemap.probe.tilesLoaded ? 'yes' : 'no'}
+            canvas: {basemap.probe.canvasW}×{basemap.probe.canvasH} tilesLoaded: {basemap.probe.tilesLoaded ? 'yes' : 'no'}
           </p>
-          <p>basemapUnavailable: {activeBasemap.basemapUnavailable ? 'yes' : 'no'}</p>
+          <p>basemapUnavailable: {basemap.basemapUnavailable ? 'yes' : 'no'}</p>
           <p>
-            zoom: {activeBasemap.probe.zoom.toFixed(2)} center: {activeBasemap.probe.lng.toFixed(4)},{activeBasemap.probe.lat.toFixed(4)}
+            zoom: {basemap.probe.zoom.toFixed(2)} center: {basemap.probe.lng.toFixed(4)},{basemap.probe.lat.toFixed(4)}
           </p>
           <p>features: {Array.isArray(graphFeatureCollection.features) ? graphFeatureCollection.features.length : 0}</p>
           <p>enhancedBounds: {enhancedLayerBounds ? enhancedLayerBounds.map(value => value.toFixed(3)).join(',') : 'none'}</p>
@@ -1394,12 +1382,12 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
               <p>layers: points={basemapGraphDebug.pointsLayer ? 'yes' : 'no'} routes={basemapGraphDebug.routesLayer ? 'yes' : 'no'} clusters={basemapGraphDebug.clusterLayer ? 'yes' : 'no'}</p>
             </>
           ) : null}
-          {activeBasemap.mapError ? <p className="text-red-700 dark:text-red-300">err: {activeBasemap.mapError}</p> : null}
+          {basemap.mapError ? <p className="text-red-700 dark:text-red-300">err: {basemap.mapError}</p> : null}
         </aside>
       ) : null}
       {!debug && shouldShowMapLibreErrorOverlay ? (
         <output className={`absolute inset-0 flex items-center justify-center text-xs ${UI_THEME_TOKENS.panel.overlayBg} ${UI_THEME_TOKENS.text.secondary}`} aria-label="Geospatial map error">
-          {activeBasemap.mapError}
+          {basemap.mapError}
         </output>
       ) : null}
     </main>

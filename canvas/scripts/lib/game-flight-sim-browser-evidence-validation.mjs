@@ -5,9 +5,8 @@ import {
   assertExactFlightSimBrowserVerificationLedger,
   assertExactFlightSimOptionalBeaconAdmission,
 } from '../../../scripts/lib/game-flight-sim-browser-evidence.mjs'
-import {
-  FLIGHT_SIM_OPTIONAL_GLB_PATH,
-} from '../../../scripts/lib/game-flight-sim-asset-readiness.mjs'
+import { FLIGHT_SIM_OPTIONAL_GLB_PATH } from '../../../scripts/lib/game-flight-sim-asset-readiness.mjs'
+import { hasExactGeoXrRendererLifecycleEvidence } from './geo-xr-renderer-browser-evidence.mjs'
 import { hasViewportScopedRegionalPoiRendering } from './regional-poi-browser-evidence.mjs'
 
 function sha256(bytes) {
@@ -34,13 +33,6 @@ function hasMeterSurface(view, expected) {
 export function hasExactCityMapRetentionEvidence(retention) {
   return retention?.sameMap === true && retention?.removeCalls === 0
 }
-export function hasExactGeoXrRendererEvidence(view, active) {
-  return view?.geoXrSurfaceActive === true && view?.geoXrSurfaceCount === 1
-    && view?.threeCanvasOwnerCount === 1 && view?.threeCanvasActiveCount === (active ? 1 : 0)
-    && view?.threeCanvasInactiveCount === (active ? 0 : 1)
-    && view?.rendererPointerTransparent === true && view?.rendererSurfaceVisible === active
-}
-
 const CITY_REGIONAL_POI_PROFILE_ID = 'adm0:SGP:major-pois/v1'
 const CITY_REGIONAL_POI_PROFILE_REVISION = '2026-07-31.1'
 const CITY_REGIONAL_POI_IDS = Object.freeze([
@@ -147,7 +139,10 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.geospatialEnabled === true
     && city?.geospatialPreferenceEnabled === true
     && city?.geoXrSurfaceActive === true
-    && hasExactGeoXrRendererEvidence(city, false)
+    && (
+      hasExactGeoXrRendererLifecycleEvidence(city, 'retained-inactive')
+      || hasExactGeoXrRendererLifecycleEvidence(city, 'absent')
+    )
     && city?.geoXrLayerCount === 1
     && city?.activeMapPresent === true
     && city?.mapLibreCanvasCount === 1
@@ -201,8 +196,9 @@ export function hasExactCityHandoffEvidence(handoff) {
     && before?.geospatialEnabled === true
     && before?.geospatialPreferenceEnabled === true
     && before?.activeMapPresent === true
-    && hasExactGeoXrRendererEvidence(before, true)
+    && hasExactGeoXrRendererLifecycleEvidence(before, 'active')
     && hasExactCityMapLibreSurfaceEvidence(city)
+    && hasExactGeoXrRendererLifecycleEvidence(city, 'retained-inactive')
     && hasExactCityRegionalPoiEvidence(regionalPoi)
     && hasExactCityRegionalPoiTeardownEvidence(regionalPoiAfterCityExit)
     && hasExactCityRegionalPoiTeardownEvidence(
@@ -231,7 +227,7 @@ export function hasExactCityHandoffEvidence(handoff) {
     && restored?.activeMapPresent === true
     && restored?.mapLibreCanvasCount === 1
     && restored?.visibleMapLibreCanvasCount === 1
-    && hasExactGeoXrRendererEvidence(restored, true)
+    && hasExactGeoXrRendererLifecycleEvidence(restored, 'active')
     && restored?.hudVisible === false
     && restored?.flightHudCount === 0
     && restored?.flightSourceFeatures === 0
@@ -260,7 +256,7 @@ export function hasExactCityHandoffEvidence(handoff) {
     && reopened?.activeMapPresent === true
     && reopened?.mapLibreCanvasCount === 1
     && reopened?.visibleMapLibreCanvasCount === 1
-    && hasExactGeoXrRendererEvidence(reopened, true)
+    && hasExactGeoXrRendererLifecycleEvidence(reopened, 'active')
     && reopened?.flightSourceFeatures >= 7
     && reopened?.environmentSourceFeatures >= 10
     && reopened?.renderedFeatureCount >= 4
@@ -408,7 +404,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     && geoXrViews.every((view, index) => {
       const expected = expectedGeoXrViews[index]
       return (
-        hasExactGeoXrRendererEvidence(view, true)
+        hasExactGeoXrRendererLifecycleEvidence(view, 'active')
         && view?.viewMode === expected.viewMode
         && view?.projection === expected.projection
         && view?.styleUrl === expected.styleUrl
@@ -506,7 +502,10 @@ export async function readValidatedFlightSimBrowserRunEvidence({
       === evidence?.geoXrPresentation?.restoredView?.viewMode
     && evidence?.geoXrPresentation?.sourceStyleUrl
       === evidence?.geoXrPresentation?.restoredView?.styleUrl
-    && hasExactGeoXrRendererEvidence(evidence?.geoXrPresentation?.restoredView, true)
+    && hasExactGeoXrRendererLifecycleEvidence(
+      evidence?.geoXrPresentation?.restoredView,
+      'active',
+    )
     && hasExactCityHandoffEvidence(
       evidence?.geoXrPresentation?.cityHandoff,
     )

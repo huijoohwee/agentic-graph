@@ -1,10 +1,12 @@
 import {
   assertValidRegionalPoiPolygon,
   deriveRegionalPoiLongitudeSpan,
+  deriveRegionalPoiRepresentativePoint,
 } from './regionalPoiGeometry.js'
 
 export {
   deriveRegionalPoiLongitudeSpan,
+  deriveRegionalPoiRepresentativePoint,
   normalizeRegionalPoiLongitude,
   unwrapRegionalPoiLongitude,
 } from './regionalPoiGeometry.js'
@@ -408,36 +410,30 @@ export function createRegionalPoiProfile(
 
 /**
  * Derives one stable geographic focus point per semantic POI without changing
- * or scaling its source polygons. Longitude uses the minimum circular span so
- * a POI crossing the antimeridian remains centered on that POI.
+ * or scaling its source polygons. Surface area and topology determine the
+ * representative point from per-polygon antimeridian-aware coordinate frames.
  */
 export function deriveRegionalPoiLocators(
   input: RegionalPoiProfile,
 ): readonly RegionalPoiLocator[] {
   const profile = createRegionalPoiProfile(input)
-  const coordinatesByPoi = new Map<string, RegionalPoiCoordinate[]>()
+  const polygonsByPoi = new Map<
+    string,
+    RegionalPoiPolygon['coordinates'][]
+  >()
   for (const surface of profile.surfaces) {
-    const coordinates = coordinatesByPoi.get(surface.poiId) || []
-    for (const ring of surface.geometry.coordinates) {
-      coordinates.push(...ring)
-    }
-    coordinatesByPoi.set(surface.poiId, coordinates)
+    const polygons = polygonsByPoi.get(surface.poiId) || []
+    polygons.push(surface.geometry.coordinates)
+    polygonsByPoi.set(surface.poiId, polygons)
   }
 
   return Object.freeze(profile.pois.map(poi => {
-    const coordinates = coordinatesByPoi.get(poi.id)
-    if (!coordinates?.length) {
-      throw new TypeError(`POI ${poi.id} requires at least one coordinate`)
+    const polygons = polygonsByPoi.get(poi.id)
+    if (!polygons?.length) {
+      throw new TypeError(`POI ${poi.id} requires at least one polygon`)
     }
-    const latitudes = coordinates.map(([, latitude]) => latitude)
-    const coordinate = Object.freeze([
-      deriveRegionalPoiLongitudeSpan(
-        coordinates.map(([longitude]) => longitude),
-      ).center,
-      (Math.min(...latitudes) + Math.max(...latitudes)) / 2,
-    ] as const)
     return Object.freeze({
-      coordinate,
+      coordinate: deriveRegionalPoiRepresentativePoint(polygons),
       label: poi.label,
       poiId: poi.id,
     })

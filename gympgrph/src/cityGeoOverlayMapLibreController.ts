@@ -27,11 +27,13 @@ import {
   mapHasExactRegionalPoiProfile,
   mapHasExactRegionalPoiSource,
   regionalPoiFeatureCollection,
+  REGIONAL_POI_LABEL_OCCLUSION_CLEARANCE_PIXELS,
   REGIONAL_POI_SOURCE_ID,
 } from './regionalPoiMapLibre.js'
 import {
   geoMapViewportPaddingKey,
   observeGeoMapOcclusionChanges,
+  readGeoMapOcclusionPadding,
   readGeoMapViewportPadding,
 } from './geoMapViewport.js'
 
@@ -85,12 +87,24 @@ function cityViewportPadding(
   viewMode: CityGeoViewMode,
 ): CityMapPadding {
   const viewport = readGeoMapViewportPadding(map)
+  const occlusion = readGeoMapOcclusionPadding(
+    map?.getContainer?.() as HTMLElement | null,
+  )
   const framingClearance =
     snapshot.profile?.framing[viewMode].paddingPixels ?? 0
+  const labelClearance = snapshot.profile?.regionalPoiProfile.pois.length
+    ? REGIONAL_POI_LABEL_OCCLUSION_CLEARANCE_PIXELS
+    : 0
   return Object.freeze({
     bottom: viewport.bottom + framingClearance,
-    left: viewport.left + framingClearance,
-    right: viewport.right + framingClearance,
+    left: viewport.left + Math.max(
+      framingClearance,
+      occlusion.left > 0 ? labelClearance : 0,
+    ),
+    right: viewport.right + Math.max(
+      framingClearance,
+      occlusion.right > 0 ? labelClearance : 0,
+    ),
     top: viewport.top + framingClearance,
   })
 }
