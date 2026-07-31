@@ -97,7 +97,7 @@ const SOURCE_CATALOG = [
 ]
 const SOURCE_CATALOG_METADATA = buildAgenticOsTestCatalogMetadata(SOURCE_CATALOG)
 
-function installSourceCatalogFetchMock({ includeRoutingProof = true } = {}) {
+export function installSourceCatalogFetchMock({ includeRoutingProof = true } = {}) {
   const originalFetch = globalThis.fetch
   const exactInvocationRequests: string[][] = []
   const payloadMetadata = includeRoutingProof
@@ -155,6 +155,11 @@ function installSourceCatalogFetchMock({ includeRoutingProof = true } = {}) {
   }) as typeof fetch
   return {
     exactInvocationRequests,
+    sourceRevision: SOURCE_REVISION,
+    sourceCommand: SOURCE_COMMAND,
+    sourceSemantic: SOURCE_SEMANTIC,
+    sourceBinding: SOURCE_BINDING,
+    catalogMetadata: SOURCE_CATALOG_METADATA,
     restore: () => {
       globalThis.fetch = originalFetch
       resetSkillsCommandsMcpTargetForTests()

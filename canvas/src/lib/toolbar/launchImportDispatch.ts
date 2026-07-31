@@ -13,6 +13,55 @@ import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLo
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
 export const LAUNCH_FOLDER_PREVIEW_MAX_BYTES = 25 * 1024 * 1024
 
+export type LaunchKnowledgeGraphImportProgressStage = 'resolving' | 'ingesting' | 'projecting'
+
+const repositoryImporterIds = new WeakMap<object, number>()
+const inFlightRepositoryImports = new Map<string, Promise<WorkspaceKnowledgeGraphImportResult>>()
+let nextRepositoryImporterId = 1
+
+function repositoryImporterId(importer: object): number {
+  const existing = repositoryImporterIds.get(importer)
+  if (existing) return existing
+  const next = nextRepositoryImporterId
+  nextRepositoryImporterId += 1
+  repositoryImporterIds.set(importer, next)
+  return next
+}
+
+function repositoryImportOperationKey(args: {
+  repositoryUrl: string
+  opts?: WorkspaceImportUrlOpts
+  invocation: WorkspaceKnowledgeGraphInvocation
+  importer: object
+}): string {
+  return JSON.stringify([
+    args.repositoryUrl,
+    String(args.opts?.canvas2dRenderer || ''),
+    String(args.opts?.documentSemanticMode || ''),
+    repositoryImporterId(args.importer),
+    args.invocation.schema,
+    args.invocation.tool,
+    args.invocation.action,
+    args.invocation.semantics,
+    args.invocation.bindings,
+    args.invocation.sourceRevision,
+    args.invocation.catalogDigest,
+    args.invocation.routingSchema,
+    args.invocation.routingDigest,
+  ])
+}
+
+function reportKnowledgeGraphImportProgress(
+  callback: ((stage: LaunchKnowledgeGraphImportProgressStage) => void) | undefined,
+  stage: LaunchKnowledgeGraphImportProgressStage,
+): void {
+  try {
+    callback?.(stage)
+  } catch {
+    void 0
+  }
+}
+
 function canonicalGitHubRepositoryUrl(value: string): string | null {
   try {
     const url = new URL(value)
@@ -114,6 +163,7 @@ export async function runLaunchImportUrl(args: {
   bridge: MarkdownWorkspaceActionBridge
   fallback: (urlRaw: string, opts?: WorkspaceImportUrlOpts) => Promise<void | WorkspaceBridgeImportResult>
   resolveMcpInvocation?: (mcpTool: string) => Promise<{ invocation: WorkspaceKnowledgeGraphInvocation }>
+  onKnowledgeGraphProgress?: (stage: LaunchKnowledgeGraphImportProgressStage) => void
 }): Promise<void | WorkspaceBridgeImportResult | WorkspaceKnowledgeGraphImportResult> {
   const url = String(args.urlRaw || '').trim()
   if (!url) return
@@ -126,6 +176,7 @@ export async function runLaunchImportUrl(args: {
     if (typeof importRepositoryUrl !== 'function') {
       throw new Error('Canonical repository knowledge graph import is unavailable.')
     }
+    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'resolving')
     const resolved = args.resolveMcpInvocation
       ? await args.resolveMcpInvocation(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest)
       : await import('@/features/agentic-os/agenticOsMcpInvocationResolver').then(
@@ -133,7 +184,30 @@ export async function runLaunchImportUrl(args: {
           KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphIngest,
         ),
       )
-    return finishKnowledgeGraphImport(await importRepositoryUrl(repositoryUrl, args.opts, resolved.invocation))
+    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'ingesting')
+    const operationKey = repositoryImportOperationKey({
+      repositoryUrl,
+      opts: args.opts,
+      invocation: resolved.invocation,
+      importer: importRepositoryUrl as unknown as object,
+    })
+    const existingOperation = inFlightRepositoryImports.get(operationKey)
+    let result: WorkspaceKnowledgeGraphImportResult
+    if (existingOperation) {
+      result = await existingOperation
+    } else {
+      const operation = importRepositoryUrl(repositoryUrl, args.opts, resolved.invocation)
+      inFlightRepositoryImports.set(operationKey, operation)
+      try {
+        result = await operation
+      } finally {
+        if (inFlightRepositoryImports.get(operationKey) === operation) {
+          inFlightRepositoryImports.delete(operationKey)
+        }
+      }
+    }
+    reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'projecting')
+    return finishKnowledgeGraphImport(result)
   }
   const bridgeImport = args.bridge.importUrl
   if (typeof bridgeImport === 'function') {
