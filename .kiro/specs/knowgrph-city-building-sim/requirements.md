@@ -3,9 +3,16 @@
 ## Authority and scope
 
 This file is the normative requirements source of truth for the Knowgrph City
-Simulation. The PRD/TAD explains product intent and architecture, `design.md`
-maps these requirements to repository owners, `tasks.md` sequences delivery,
-and the workspace seed is a derived activation and proof projection.
+Simulation. The PRD/TAD/ADR explains product intent, architecture, and
+decisions, `design.md` maps these requirements to repository owners, `tasks.md`
+sequences delivery, and the workspace seed is a derived activation and proof
+projection.
+
+The product contract is
+`docs/documents/knowgrph-game-city-building-sim-prd-tad-ard.md`. Generic
+surface composition belongs to
+`docs/documents/knowgrph-geo-xr-mode-prd-tad-ard.md`; regional values belong
+only to the selected ADM0 companion.
 
 The increment is a local-first, single-operator city simulation projected
 through the existing Geo+XR surface and FloatingPanel. The real native
@@ -335,8 +342,8 @@ runtime state so that preselected demo state cannot masquerade as activation.
 1. Browser proof shall start from a Neutral Browser Start at the exact
    candidate SHA.
 2. Before applying the source, proof shall record that City Builder is closed,
-   the city overlay is inactive, and the shared environment selection is
-   Singapore without any City-owned selector state.
+   the city overlay is inactive, and the shared environment selection matches
+   its ADM0 companion without any City-owned selector state.
 3. Proof shall open the authored seed through Explorer -> Source Files and
    apply it only after Source Files bootstrap reports ready.
 4. After application, proof shall assert Surface Mode `geo-xr`, `cityBuilder`,
@@ -347,10 +354,10 @@ runtime state so that preselected demo state cannot masquerade as activation.
 5. Proof shall exercise zone, one tick, stop fencing, save/read-back, all six
    existing Panel Projections, and exit restoration.
 6. Proof shall assert sixteen City parcel features in the City source/layers,
-   a visible zone/selection mutation, named Singapore POI features in the
-   shared environment extrusion layer, one stopped aircraft and its route in
-   the independent Flight source/layers, one map, and inactive Flight
-   bootstrap, camera, gameplay, and readiness paths.
+   a visible zone/selection mutation, the companion-authored major-POI
+   features in the shared environment extrusion layer, one stopped aircraft
+   and its route in the independent Flight source/layers, one map, and inactive
+   Flight bootstrap, camera, gameplay, and readiness paths.
 7. Exit proof shall verify both City and aerial overlay sources clear, prior map
    padding is restored, and the prior FloatingPanel and Canvas surface state
    restores exactly once.

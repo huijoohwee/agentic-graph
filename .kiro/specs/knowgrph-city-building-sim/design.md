@@ -37,7 +37,7 @@ Canvas/stage/mesh/camera, Flight bootstrap/camera, or Flight gameplay runtime.
 | `CitySimMediaFigure` | Semantic `figure`, active-only selection marker, and caption around the native MapLibre Geo+XR projection | Map lifecycle, Three.js/R3F content, pointer capture, generic `div`, `aria-hidden` decoration |
 | `citySimGeospatialProjection` | Project the live City snapshot and authored geographic profile to the City overlay contract | Map lifecycle, Flight state, hardcoded parcel fixture |
 | City Geo overlay owners | Own `kg-city-sim:geo-overlay`, parcel GeoJSON, layers, selection, and responsive bounds framing on the existing map | Basemap replacement, Flight camera, second map |
-| `xrSingaporeEnvironmentSource` | Own named Singapore major POI surfaces consumed by XR and MapLibre | Duplicate renderer-local landmark coordinates |
+| Regional environment source | Own companion-authored major-POI surfaces consumed by spatial and geographic adapters | Duplicate renderer-local landmark coordinates |
 | `citySimAerialInspectionProjection` | Derive one `stopped` aircraft/route overlay from the City geographic profile with atomic owner `city` and the selected shared environment | Flight lifecycle, bootstrap, camera, controls, readiness |
 | Existing Flight Geo overlay store | Publish/read one aerial snapshot via `gympgrph/src/flightGeoOverlay.ts` | City state, Flight gameplay activation |
 | Existing Flight MapLibre projection | Apply the shared source/layer ids via `gympgrph/src/flightGeoOverlayMapLibre.ts` | A second map, duplicate source/layers |
@@ -237,7 +237,7 @@ City source identity remains part of the broader native-XR catalog, but it is
 not an XR physics-runtime owner. `isXrPhysicsRuntimeRunReadyDemoActive`
 admits only the dedicated physics and Flight sources. `ThreeGraph` excludes
 the authored/native graph for City source intent, preventing a
-Singapore-physics flash or retained Three world from sharing the native
+regional-physics flash or retained Three world from sharing the native
 MapLibre visual. The read-only selected environment projection does not grant
 City XR selection, physics, placement, or Three-renderer ownership.
 
@@ -253,8 +253,9 @@ presentational without introducing a second renderer.
 same City geographic profile to one stopped aircraft/route snapshot. It sets
 atomic presentation owner `city`, the selected shared environment, phase
 `stopped`, run id `0`, tick `0`, and ready-frame request `null`. The existing
-environment source renders named Singapore POIs below City parcels; the
-existing Flight source and layers render the aircraft and route above them.
+environment source renders the companion-authored major POIs below City
+parcels; the existing Flight source and layers render the aircraft and route
+above them.
 Owner `city` remains excluded from Flight bootstrap, camera/padding, lifecycle,
 mission, controls, and readiness. No revision-prefix alias is consulted.
 
@@ -419,8 +420,8 @@ Focused source proof:
 
 Neutral browser proof:
 
-1. launch the exact candidate with shared Singapore selected and no City-owned
-   environment selector;
+1. launch the exact candidate with the companion-authored regional environment
+   selected and no City-owned environment selector;
 2. clear persisted workspace state and confirm city inactive;
 3. open Explorer -> Source Files after bootstrap readiness;
 4. apply the authored seed;
@@ -433,7 +434,8 @@ Neutral browser proof:
 8. visit Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera,
    confirming one shared revision and the specified projection;
 9. assert sixteen live City parcel features and a visible zone/selection
-   mutation in the City layers, named Singapore POI extrusions below them, and
+   mutation in the City layers, companion-authored major-POI extrusions below
+   them, and
    the stopped aircraft/route above them;
 10. assert one map and no Flight bootstrap style, camera, gameplay, readiness,
    duplicate ids, or City Three Canvas;

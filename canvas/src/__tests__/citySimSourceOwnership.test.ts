@@ -234,7 +234,7 @@ export function testCitySimOwnedFilesRetainCleanRoomIdentityBoundary() {
       repositoryRoot,
       'docs',
       'documents',
-      'knowgrph-game-city-building-sim-rd-tad.md',
+      'knowgrph-game-city-building-sim-prd-tad-ard.md',
     ),
     resolve(
       repositoryRoot,
