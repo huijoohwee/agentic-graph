@@ -63,7 +63,10 @@ import {
   resolveMapLibreFlightProviderStyle,
   shouldPreflightInitialMapLibreStyle,
 } from './mapLibreProviderStyle.js'
-import { bindMapLibreCanvasSemanticOwner } from './mapLibreCanvasSemanticOwner.js'
+import {
+  bindMapLibreCanvasSemanticOwner,
+  type MapLibreCanvasSemanticOwner,
+} from './mapLibreCanvasSemanticOwner.js'
 
 export {
   loadMapLibreProviderStyleDocument,
@@ -274,7 +277,7 @@ export function useMapLibreBasemap(args: {
   enabled: boolean
   rootRef: React.RefObject<HTMLElement | null>
   containerRef: React.RefObject<HTMLElement | null>
-  semanticMediaCaptionId?: string | null
+  semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   targetStyleUrl?: string | null
   initialStyleOverride?: Readonly<Record<string, unknown>> | null
   ownerScope?: MapLibreMapOwnerScope
@@ -289,7 +292,7 @@ export function useMapLibreBasemap(args: {
     enabled,
     rootRef,
     containerRef,
-    semanticMediaCaptionId,
+    semanticMediaOwner,
     targetStyleUrl,
     initialStyleOverride,
     ownerScope = 'embedded-preview',
@@ -1225,8 +1228,8 @@ export function useMapLibreBasemap(args: {
   }, [enabled, rootRef, containerRef, targetStyleUrl, ownerScope, canvasRenderMode, runtimeProjectionMode, viewportSizingMode, vectorFallbackMs, computeProbe, debug, setProbe])
 
   React.useEffect(
-    () => bindMapLibreCanvasSemanticOwner(state.map, semanticMediaCaptionId),
-    [semanticMediaCaptionId, state.map],
+    () => bindMapLibreCanvasSemanticOwner(state.map, semanticMediaOwner),
+    [semanticMediaOwner, state.map],
   )
 
   React.useEffect(() => {

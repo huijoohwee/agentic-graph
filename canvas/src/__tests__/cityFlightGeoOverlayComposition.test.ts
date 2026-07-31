@@ -76,15 +76,9 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
   let cityAerialProjectionCount = 0
   let cityOverlayProjectionCount = 0
   let flightProjectionCount = 0
-  const projectCityAerial = (
-    snapshot: CitySimSnapshot,
-    selectedEnvironment: typeof environment,
-  ) => {
+  const projectCityAerial = (snapshot: CitySimSnapshot) => {
     cityAerialProjectionCount += 1
-    return projectCitySimAerialInspectionToGeospatialOverlay(
-      snapshot,
-      selectedEnvironment,
-    )
+    return projectCitySimAerialInspectionToGeospatialOverlay(snapshot)
   }
   const projectCityOverlay = (snapshot: CitySimSnapshot) => {
     cityOverlayProjectionCount += 1
@@ -115,7 +109,6 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
   const publish = (nextCity: CitySimSnapshot, nextFlight: FlightSimSnapshot) => (
     publishGeoXrOverlayComposition({
       city: nextCity,
-      environment,
       flight: nextFlight,
       projectCityAerial,
       projectCityOverlay,
@@ -142,7 +135,7 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
     assert.equal(flightProjectionCount, 1)
     assert.equal(published[0]?.phase, 'stopped')
     assert.equal(published[0]?.readyFrameRequestId, null)
-    assert.strictEqual(published[0]?.environment, environment)
+    assert.equal(published[0]?.environment, null)
     assert.equal(published[1]?.phase, 'ready')
     assert.equal(published[1]?.readyFrameRequestId, readyFrameBefore)
     assert.strictEqual(published[1]?.environment, environment)

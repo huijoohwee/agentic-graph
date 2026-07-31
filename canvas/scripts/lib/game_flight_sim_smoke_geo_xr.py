@@ -77,13 +77,20 @@ def _read_view(page: Page) -> dict[str, Any]:
           const visibleMapCanvases = mapCanvases.filter(isVisible)
           const map = gympgrph.readActiveMapLibreMap?.() || null
           const overlay = gympgrph.readFlightGeoOverlay?.() || null
+          const cityOverlay = gympgrph.readCityGeoOverlay?.() || null
           const sourceId = gympgrph.FLIGHT_GEO_OVERLAY_SOURCE_ID
             || 'kg-flight-sim:geo-overlay'
+          const citySourceId = gympgrph.CITY_GEO_OVERLAY_SOURCE_ID
+            || 'kg-city-sim:geo-overlay'
+          const cityLayerIds = Object.values(
+            gympgrph.CITY_GEO_OVERLAY_LAYER_IDS || {},
+          )
           const environmentSourceId = gympgrph.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID
             || 'kg-flight-geo-environment'
           const environmentLayerIds = gympgrph.FLIGHT_GEO_ENVIRONMENT_LAYER_IDS
           const aircraftImageIds = gympgrph.FLIGHT_GEO_AIRCRAFT_IMAGE_IDS
           const environmentSource = map?.getSource?.(environmentSourceId) || null
+          const citySource = map?.getSource?.(citySourceId) || null
           const layerIds = [
             `${sourceId}:route`,
             `${sourceId}:objective-guide`,
@@ -105,11 +112,15 @@ def _read_view(page: Page) -> dict[str, Any]:
           }
           const sourceData = await readSourceData(source)
           const environmentData = await readSourceData(environmentSource)
+          const citySourceData = await readSourceData(citySource)
           const sourceFeatures = Array.isArray(sourceData?.features)
             ? sourceData.features
             : []
           const environmentFeatures = Array.isArray(environmentData?.features)
             ? environmentData.features
+            : []
+          const citySourceFeatures = Array.isArray(citySourceData?.features)
+            ? citySourceData.features
             : []
           const mapStyle = map?.getStyle?.() || null
           const styleLayerIds = Array.isArray(mapStyle?.layers)
@@ -244,9 +255,10 @@ def _read_view(page: Page) -> dict[str, Any]:
             ? overlay.environment.surfaces
             : []
           const environmentSourceExactlyMatchesOverlay = Boolean(
-            overlay?.environment
-            && environmentSurfaces.length === environmentFeatures.length
-            && environmentSurfaces.every((surface, index) => {
+            !overlay?.environment
+              ? environmentFeatures.length === 0
+              : environmentSurfaces.length === environmentFeatures.length
+                && environmentSurfaces.every((surface, index) => {
               const feature = environmentFeatures[index]
               const ring = Array.isArray(feature?.geometry?.coordinates?.[0])
                 ? feature.geometry.coordinates[0]
@@ -267,8 +279,45 @@ def _read_view(page: Page) -> dict[str, Any]:
                   && coordinate[1] === surface.ring[coordinateIndex]?.[1]
                 ))
               )
-            })
+                })
           )
+          const cityParcelEdgeMeters = citySourceFeatures.map(feature => {
+            const ring = feature?.geometry?.coordinates?.[0]
+            return {
+              depthMeters: measureEdgeMeters(ring?.[1], ring?.[2]),
+              id: String(feature?.properties?.parcelId || ''),
+              widthMeters: measureEdgeMeters(ring?.[0], ring?.[1]),
+            }
+          })
+          const cityExpectedParcelCount =
+            Number(cityOverlay?.rows) * Number(cityOverlay?.columns)
+          const cityExpectedParcelWidthMeters =
+            Number(cityOverlay?.profile?.parcelWidthMeters)
+          const cityExpectedParcelDepthMeters =
+            Number(cityOverlay?.profile?.parcelDepthMeters)
+          const cityParcelsUseAuthoredMeters =
+            Number.isSafeInteger(cityExpectedParcelCount)
+            && cityExpectedParcelCount > 0
+            && Number.isFinite(cityExpectedParcelWidthMeters)
+            && cityExpectedParcelWidthMeters > 0
+            && Number.isFinite(cityExpectedParcelDepthMeters)
+            && cityExpectedParcelDepthMeters > 0
+            && citySourceFeatures.length === cityExpectedParcelCount
+            && cityParcelEdgeMeters.length === cityExpectedParcelCount
+            && cityParcelEdgeMeters.every(parcel => (
+              parcel.id
+              && close(
+                parcel.widthMeters,
+                cityExpectedParcelWidthMeters,
+              )
+              && close(
+                parcel.depthMeters,
+                cityExpectedParcelDepthMeters,
+              )
+            ))
+          const environmentLayerCount = Object.values(
+            environmentLayerIds || {},
+          ).filter(layerId => Boolean(map?.getLayer?.(layerId))).length
           const selectedEnvironmentSubjectsExact = authoredEnvironmentSubjects.length
             === environmentSurfaces.filter(surface => surface.kind === 'subject').length
             && authoredEnvironmentSubjects.every(expected => {
@@ -414,10 +463,20 @@ def _read_view(page: Page) -> dict[str, Any]:
               overlay?.environment?.presentationBounds || null,
             environmentLayersReady: Object.values(environmentLayerIds || {})
               .every(id => Boolean(map?.getLayer?.(id))),
+            environmentLayerCount,
             environmentSourceFeatures:
               environmentFeatures.length,
             environmentSourcePresent: Boolean(environmentSource),
             environmentSourceExactlyMatchesOverlay,
+            cityExpectedParcelCount,
+            cityExpectedParcelDepthMeters,
+            cityExpectedParcelWidthMeters,
+            citySourceFeatures: citySourceFeatures.length,
+            citySourcePresent: Boolean(citySource),
+            cityLayersReady: cityLayerIds.length > 0
+              && cityLayerIds.every(id => Boolean(map?.getLayer?.(id))),
+            cityParcelEdgeMeters,
+            cityParcelsUseAuthoredMeters,
             environmentPoiIds: Array.from(new Set(environmentFeatures
               .filter(feature => feature?.properties?.kgSurfaceKind === 'poi')
                 .map(feature => feature?.properties?.kgPoiId || '')

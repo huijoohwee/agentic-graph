@@ -6,11 +6,13 @@ export function SemanticMediaFigure({
   activeDataAttributes,
   children,
   label,
+  selectionTarget,
 }: Readonly<{
   active: boolean
   activeDataAttributes?: Readonly<Record<string, string>>
   children: (captionId: string) => React.ReactNode
   label: string
+  selectionTarget: 'descendant' | 'figure'
 }>) {
   const captionId = React.useId()
 
@@ -21,7 +23,9 @@ export function SemanticMediaFigure({
       role={active ? undefined : 'presentation'}
       {...(active ? activeDataAttributes : undefined)}
       data-kg-rich-media-selectable-surface={
-        resolveMediaPreviewSelectableDataAttr(active)
+        resolveMediaPreviewSelectableDataAttr(
+          active && selectionTarget === 'figure',
+        )
       }
     >
       {children(captionId)}

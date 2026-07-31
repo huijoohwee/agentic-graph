@@ -82,16 +82,15 @@ export function useGeoXrOverlayPublisher(options: Readonly<{
             const flight = readFlightSimSnapshot()
             const city = readCitySimSnapshot()
             const motionRuntime = readXrMotionReferenceRuntime()
-            const environment = projectXrEnvironmentToFlightGeo(
-              motionRuntime.plan,
-            )
             publishGeoXrOverlayComposition({
               city,
-              environment,
               flight,
               projectCityAerial: projectCitySimAerialInspectionToGeospatialOverlay,
               projectCityOverlay: projectCitySimToGeospatialOverlay,
               projectFlight: flightSnapshot => {
+                const environment = projectXrEnvironmentToFlightGeo(
+                  motionRuntime.plan,
+                )
                 const spatialProfile = readFlightSimSpatialProfile()
                 const timelinePose = useGraphStore.getState().timelineTransportPlaying
                   ? sampleXrMotionReferenceCameraPose(

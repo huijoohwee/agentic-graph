@@ -24,25 +24,17 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   rendererRule: 'reuse one native MapLibre map; mount zero City Three Canvas',
   surfaceOwner: 'native MapLibre Geo+XR surface wrapped by SemanticMediaFigure',
   citySurfaceOwner: 'native MapLibre Geo+XR host wrapped by the City semantic media figure',
-  composition: 'one native MapLibre map with the shared Singapore environment below City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas',
-  environmentMajorPoiIds: Object.freeze([
-    'gardens-by-the-bay',
-    'marina-bay-sands',
-    'singapore-flyer',
-  ]),
-  environmentMapLibreSourceId: 'kg-flight-geo-environment',
-  environmentProjectionOwner:
-    'canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts',
-  environmentSourceOwner:
-    'canvas/src/features/three/xrSingaporeEnvironmentSource.ts',
-  environmentStageId: 'singapore',
-  layerOrder: Object.freeze(['environment', 'city', 'flight']),
+  basemapOwner: 'one real native MapLibre basemap',
+  composition: 'one real native MapLibre basemap with source-authored meter-scaled City parcel layers below independent Flight aircraft and route layers; zero local XR environment sources or features; zero City Three Canvas',
+  layerOrder: Object.freeze(['city', 'flight']),
+  parcelScalePolicy:
+    'project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor',
   semanticMediaCanvasOwner:
     'gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts',
   semanticMediaChildOwner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
   semanticMediaOwner: 'canvas/src/lib/cards/SemanticMediaFigure.tsx',
   semanticMediaSelectionOwner: 'canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts',
-  semanticMediaSelectionWhen: 'City runtime active only',
+  semanticMediaSelectionTarget: 'live MapLibre canvas while City runtime active',
   worldOwnership: 'overlay-only',
 })
 export const DRAFT_WORKSPACE_SEED_BASENAMES = Object.freeze([

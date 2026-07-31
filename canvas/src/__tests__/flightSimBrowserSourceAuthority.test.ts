@@ -96,7 +96,10 @@ test('Flight browser proof activates only after applying the authored source', (
     /flightSimRuntime: \(\) => import\('@\/features\/game-flight-sim\/flightSimRuntime'\)/,
   )
   assert.match(browserProofBridge, /gympgrphStore: \(\) => import\('@\/lib\/gympgrph\/api'\)/)
-  assert.match(gympgrphApi, /CITY_GEO_XR_LAYER_ORDER[\s\S]*hasExactCityGeoXrLayerOrder[\s\S]*readCityGeoXrLayerOrder/)
+  assert.match(
+    gympgrphApi,
+    /CITY_GEO_XR_LAYER_ORDER[\s\S]*hasExactCityGeoXrLayerOrder[\s\S]*readCityGeoOverlay[\s\S]*readCityGeoXrLayerOrder/,
+  )
   assert.match(sourceSelection, /get_by_role\(\s*["']button["']/)
   assert.match(sourceSelection, /name=["']Workspace View["'],\s*exact=True/)
   assert.match(sourceSelection, /name=["']Editor Workspace["'],\s*exact=True/)
@@ -251,6 +254,9 @@ test('Flight browser proof activates only after applying the authored source', (
     'citySemanticSurfaceAriaHidden',
     'citySemanticSurfaceVisibleMapLibreCanvasCount',
     'citySemanticSurfaceCenterMapLibreOwned',
+    'cityMapLibreCanvasAriaLabelledByName',
+    'cityMapLibreCanvasSelectableMarker',
+    'cityMapLibreCanvasSelectableOwnerIsCanvas',
     'cityMapLibreOwnerCount',
     'flightLayersReady',
     'overlayPhase',
@@ -260,6 +266,9 @@ test('Flight browser proof activates only after applying the authored source', (
     'environmentPoiIds',
     'renderedEnvironmentPoiIds',
     'environmentSourceExactlyMatchesOverlay',
+    'environmentLayerCount',
+    'citySourceFeatures',
+    'cityParcelsUseAuthoredMeters',
     'cityGeoXrLayerOrderExact',
     'renderedEnvironmentFeatureCount',
   ]) {

@@ -255,10 +255,11 @@ function is3dViewMode(viewMode: string): boolean {
 }
 
 function removeEnvironmentLayers(map: any): boolean {
-  if (typeof map.removeLayer !== 'function') return false
   for (const layerId of [...FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER].reverse()) {
-    if (map.getLayer?.(layerId)) map.removeLayer(layerId)
-    if (map.getLayer?.(layerId)) return false
+    if (!readEnvironmentStyleLayer(map, layerId)) continue
+    if (typeof map.removeLayer !== 'function') return false
+    map.removeLayer(layerId)
+    if (readEnvironmentStyleLayer(map, layerId)) return false
   }
   return true
 }
@@ -533,6 +534,35 @@ export function clearFlightGeoEnvironmentFromMap(map: any): boolean {
       type: 'FeatureCollection',
       features: [],
     })
+  } catch {
+    return false
+  }
+}
+
+export function removeFlightGeoEnvironmentFromMap(map: any): boolean {
+  if (!map) return false
+  if (!isMapLibreStyleReady(map)) {
+    // A retained provider style can still paint its previous frame while the
+    // replacement style loads. Hide best-effort now, then let style.load retry
+    // the destructive layer/source teardown once MapLibre permits mutation.
+    hideEnvironmentLayers(map)
+    return false
+  }
+  try {
+    if (!removeEnvironmentLayers(map)) return false
+    const source = map.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
+    const styleSource = readMapLibreStyleSource(
+      map,
+      FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+    )
+    if (!source && styleSource === undefined) return true
+    if (typeof map.removeSource !== 'function') return false
+    map.removeSource(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
+    return !map.getSource?.(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID)
+      && readMapLibreStyleSource(
+        map,
+        FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+      ) === undefined
   } catch {
     return false
   }

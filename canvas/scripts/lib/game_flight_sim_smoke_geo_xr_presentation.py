@@ -142,19 +142,21 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("citySemanticSurfaceNodeName") == "FIGURE"
             and value.get("citySemanticSurfaceAccessibleName")
             == "Interactive City simulation media stage"
-            and value.get("citySemanticSurfaceSelectableMarker") == "1"
+            and value.get("citySemanticSurfaceSelectableMarker") == ""
             and value.get("citySemanticSurfaceAriaHidden") is False
             and value.get("citySemanticSurfaceVisibleMapLibreCanvasCount") == 1
             and value.get("citySemanticSurfaceCenterMapLibreOwned") is True
             and value.get("citySemanticSurfaceCaptionId")
             == value.get("cityMapLibreCanvasAriaLabelledBy")
+            and value.get("cityMapLibreCanvasAriaLabelledByName")
+            == "Interactive City simulation media stage"
             and value.get("cityMapLibreCanvasAccessibleName")
             == "Interactive City simulation media stage"
             and value.get("cityMapLibreCanvasAriaHidden") is False
-            and value.get("cityMapLibreCanvasSelectableMarker") == ""
-            and value.get("cityMapLibreCanvasSelectableOwnerIsSurface") is True
+            and value.get("cityMapLibreCanvasSelectableMarker") == "1"
+            and value.get("cityMapLibreCanvasSelectableOwnerIsCanvas") is True
             and value.get("cityMapLibreCanvasSelectableOwnerNodeName")
-            == "FIGURE"
+            == "CANVAS"
             and value.get("cityMapLibreOwnerCount") == 1
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "cityBuilder"
@@ -179,17 +181,23 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("overlayRoutePointCount") >= 2
             and set(value.get("sourceKinds") or [])
             == {"aircraft", "objective-guide", "route", "route-point"}
-            and value.get("environmentSourceFeatures") >= 9
-            and value.get("environmentLayersReady") is True
-            and value.get("environmentPoiIds")
-            == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]
-            and value.get("renderedEnvironmentPoiIds")
-            == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]
+            and value.get("environmentId") == ""
+            and value.get("environmentSourceFeatures") == 0
+            and value.get("environmentLayerCount") == 0
+            and value.get("environmentPoiIds") == []
+            and value.get("renderedEnvironmentPoiIds") == []
             and value.get("environmentSourceExactlyMatchesOverlay") is True
+            and value.get("environmentSourcePresent") is False
+            and value.get("citySourcePresent") is True
+            and isinstance(value.get("cityExpectedParcelCount"), int)
+            and value.get("cityExpectedParcelCount") > 0
+            and value.get("citySourceFeatures")
+            == value.get("cityExpectedParcelCount")
+            and value.get("cityLayersReady") is True
+            and value.get("cityParcelsUseAuthoredMeters") is True
             and value.get("cityGeoXrLayerOrderExact") is True
-            and "poi" in set(value.get("renderedEnvironmentKinds") or [])
             and value.get("renderedFeatureCount") >= 4
-            and value.get("renderedEnvironmentFeatureCount") >= 1
+            and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
     retention = page.evaluate(
@@ -231,6 +239,7 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("cityPanelVisible") is True
             and value.get("citySemanticSurfaceActive") is False
             and value.get("cityMapLibreCanvasAriaLabelledBy") == ""
+            and value.get("cityMapLibreCanvasAccessibleName") == "Map"
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "cityBuilder"
             and value.get("renderMode") == "3d"
@@ -276,6 +285,7 @@ def verify_flight_geo_xr_city_handoff(
         reopened.get("cityActive") is not False
         or reopened.get("citySemanticSurfaceActive") is not False
         or reopened.get("cityMapLibreCanvasAriaLabelledBy") != ""
+        or reopened.get("cityMapLibreCanvasAccessibleName") != "Map"
         or reopened.get("hudVisible") is not True
     ):
         raise AssertionError(

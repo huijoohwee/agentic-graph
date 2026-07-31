@@ -9,6 +9,9 @@ import {
 import { UI_THEME_TOKENS } from 'grph-shared/ui/themeTokens'
 import { useGympgrphStore } from './store.js'
 import { useMapLibreBasemap } from './features/geospatial/useMapLibreBasemap.js'
+import type {
+  MapLibreCanvasSemanticOwner,
+} from './features/geospatial/mapLibreCanvasSemanticOwner.js'
 import { NATIVE_GEOSPATIAL_MAPLIBRE_OWNER } from './features/geospatial/mapLibreHostLease.js'
 import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
 import { useCityGeoOverlayMapLibrePresentation } from './features/geospatial/useCityGeoOverlayMapLibrePresentation.js'
@@ -59,7 +62,7 @@ import { applyGeospatialFitRequest } from './geospatialFitRuntime.js'
 type GeospatialOverlayHostProps = {
   active?: boolean
   gameplayPresentationOwner: FlightGeoOverlayPresentationOwner
-  semanticMediaCaptionId?: string | null
+  semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   snapshot?: unknown
   handlers?: unknown
   onFlightOverlayPresented?: (
@@ -826,7 +829,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     enabled: show2dMapLibre && mapLibreRuntimeEnabled,
     rootRef,
     containerRef: map2dContainerRef,
-    semanticMediaCaptionId: props.semanticMediaCaptionId,
+    semanticMediaOwner: props.semanticMediaOwner,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
     ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
@@ -841,7 +844,7 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     enabled: show3d && mapLibreRuntimeEnabled,
     rootRef,
     containerRef: map3dContainerRef,
-    semanticMediaCaptionId: props.semanticMediaCaptionId,
+    semanticMediaOwner: props.semanticMediaOwner,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
     ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,

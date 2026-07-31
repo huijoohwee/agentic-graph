@@ -4,6 +4,7 @@ import {
   subscribeFlightGeoOverlay,
   type FlightGeoOverlayPresentation,
   type FlightGeoOverlayPresentationOwner,
+  type FlightGeoOverlaySnapshot,
 } from '../../flightGeoOverlay.js'
 import {
   applyFlightGeoOverlayCameraToMap,
@@ -19,10 +20,8 @@ import {
 import {
   applyFlightGeoEnvironmentToMap,
   clearFlightGeoEnvironmentFromMap,
+  removeFlightGeoEnvironmentFromMap,
 } from '../../flightGeoEnvironmentMapLibre.js'
-import {
-  CITY_GEO_OVERLAY_LAYER_IDS,
-} from '../../cityGeoOverlayMapLibre.js'
 import {
   canMapLibreFlightOverlayPresent,
   requestMapLibreFlightPresentationBootstrap,
@@ -72,6 +71,18 @@ export function deferFlightGeoPresentationForBootstrapRecovery(
   ) return false
   requestMapLibreFlightPresentationBootstrap(map, overlay)
   return true
+}
+
+export function applyCityGeoXrAerialOverlayToMap(
+  map: any,
+  overlay: FlightGeoOverlaySnapshot,
+): boolean {
+  if (
+    overlay.presentationOwner !== 'city'
+    || overlay.environment !== null
+    || !removeFlightGeoEnvironmentFromMap(map)
+  ) return false
+  return applyFlightGeoOverlayToMap(map, overlay)
 }
 
 export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
@@ -283,20 +294,10 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
       }
       if (flightGate && overlay.phase === 'stopped') flightGate.clearCanvas()
       if (!flightPresentation) {
-        if (overlay.environment) {
-          applyFlightGeoEnvironmentToMap(
-            map,
-            overlay,
-            options.viewMode,
-            { beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill },
-          )
-        } else {
-          clearFlightGeoEnvironmentFromMap(map)
-        }
+        if (!applyCityGeoXrAerialOverlayToMap(map, overlay)) return
         if (root) {
           delete root.dataset.kgFlightGeospatialCameraPadding
         }
-        applyFlightGeoOverlayToMap(map, overlay)
         return
       }
       const environmentApplied = applyFlightGeoEnvironmentToMap(

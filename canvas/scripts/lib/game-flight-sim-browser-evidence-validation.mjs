@@ -44,18 +44,20 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.citySemanticSurfaceNodeName === 'FIGURE'
     && city?.citySemanticSurfaceAccessibleName
       === 'Interactive City simulation media stage'
-    && city?.citySemanticSurfaceSelectableMarker === '1'
+    && city?.citySemanticSurfaceSelectableMarker === ''
     && city?.citySemanticSurfaceAriaHidden === false
     && city?.citySemanticSurfaceVisibleMapLibreCanvasCount === 1
     && city?.citySemanticSurfaceCenterMapLibreOwned === true
     && city?.citySemanticSurfaceCaptionId
       === city?.cityMapLibreCanvasAriaLabelledBy
+    && city?.cityMapLibreCanvasAriaLabelledByName
+      === 'Interactive City simulation media stage'
     && city?.cityMapLibreCanvasAccessibleName
       === 'Interactive City simulation media stage'
     && city?.cityMapLibreCanvasAriaHidden === false
-    && city?.cityMapLibreCanvasSelectableMarker === ''
-    && city?.cityMapLibreCanvasSelectableOwnerIsSurface === true
-    && city?.cityMapLibreCanvasSelectableOwnerNodeName === 'FIGURE'
+    && city?.cityMapLibreCanvasSelectableMarker === '1'
+    && city?.cityMapLibreCanvasSelectableOwnerIsCanvas === true
+    && city?.cityMapLibreCanvasSelectableOwnerNodeName === 'CANVAS'
     && city?.cityMapLibreOwnerCount === 1
     && city?.floatingPanelOpen === true
     && city?.floatingPanelView === 'cityBuilder'
@@ -80,25 +82,22 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.overlayRoutePointCount >= 2
     && JSON.stringify(city?.sourceKinds)
       === JSON.stringify(['aircraft', 'objective-guide', 'route', 'route-point'])
-    && city?.environmentSourceFeatures >= 9
-    && city?.environmentLayersReady === true
-    && JSON.stringify(city?.environmentPoiIds)
-      === JSON.stringify([
-        'gardens-by-the-bay',
-        'marina-bay-sands',
-        'singapore-flyer',
-      ])
-    && JSON.stringify(city?.renderedEnvironmentPoiIds)
-      === JSON.stringify([
-        'gardens-by-the-bay',
-        'marina-bay-sands',
-        'singapore-flyer',
-      ])
+    && city?.environmentId === ''
+    && city?.environmentSourceFeatures === 0
+    && city?.environmentLayerCount === 0
+    && JSON.stringify(city?.environmentPoiIds) === '[]'
+    && JSON.stringify(city?.renderedEnvironmentPoiIds) === '[]'
     && city?.environmentSourceExactlyMatchesOverlay === true
+    && city?.environmentSourcePresent === false
+    && city?.citySourcePresent === true
+    && Number.isSafeInteger(city?.cityExpectedParcelCount)
+    && city?.cityExpectedParcelCount > 0
+    && city?.citySourceFeatures === city?.cityExpectedParcelCount
+    && city?.cityLayersReady === true
+    && city?.cityParcelsUseAuthoredMeters === true
     && city?.cityGeoXrLayerOrderExact === true
-    && city?.renderedEnvironmentKinds?.includes('poi')
     && city?.renderedFeatureCount >= 4
-    && city?.renderedEnvironmentFeatureCount >= 1
+    && city?.renderedEnvironmentFeatureCount === 0
   )
 }
 
@@ -121,6 +120,7 @@ function hasExactCityHandoffEvidence(handoff) {
     && restored?.cityPanelVisible === true
     && restored?.citySemanticSurfaceActive === false
     && restored?.cityMapLibreCanvasAriaLabelledBy === ''
+    && restored?.cityMapLibreCanvasAccessibleName === 'Map'
     && restored?.floatingPanelOpen === true
     && restored?.floatingPanelView === 'cityBuilder'
     && restored?.renderMode === '3d'
@@ -143,6 +143,7 @@ function hasExactCityHandoffEvidence(handoff) {
     && reopened?.cityActive === false
     && reopened?.citySemanticSurfaceActive === false
     && reopened?.cityMapLibreCanvasAriaLabelledBy === ''
+    && reopened?.cityMapLibreCanvasAccessibleName === 'Map'
     && reopened?.hudVisible === true
     && reopened?.activeMapPresent === true
     && reopened?.mapLibreCanvasCount === 1
