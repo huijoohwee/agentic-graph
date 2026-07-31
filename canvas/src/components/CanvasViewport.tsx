@@ -304,11 +304,14 @@ export function CanvasViewport(props: CanvasViewportProps) {
   const heavyRuntimeIntentBlocked = heavyRuntimeIntentSurface !== null && activatedHeavyRuntimeSurfaces[heavyRuntimeIntentSurface] !== true
   const threeCanvasSourceAdmissionRef = React.useRef(false)
   threeCanvasSourceAdmissionRef.current = retainThreeCanvasSourceAdmission(threeCanvasSourceAdmissionRef.current, sourceFilesBootstrapReady)
+  const threeCanvasSurfaceMountedRef = React.useRef(false)
   const threeCanvasSurface = resolveThreeCanvasSurfaceLifecycle({
     sourceFilesBootstrapAdmitted: threeCanvasSourceAdmissionRef.current, sourceFilesBootstrapReady,
+    rendererPreviouslyMounted: threeCanvasSurfaceMountedRef.current,
     geospatialOverlayOwnsViewport, liveCanvasHeroVisible, canvasRenderMode,
     heavyRuntimeIntentBlocked, activeSurface, documentSwitchOwnsViewport,
   })
+  threeCanvasSurfaceMountedRef.current = threeCanvasSurface.mounted
   const activateHeavyRuntimeIntentSurface = React.useCallback(() => {
     if (!heavyRuntimeIntentSurface) return
     setActivatedHeavyRuntimeSurfaces(previous => {

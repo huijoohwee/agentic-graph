@@ -195,7 +195,11 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("activeMapPresent") is True
             and value.get("mapLibreCanvasCount") == 1
             and value.get("visibleMapLibreCanvasCount") == 1
-            and value.get("threeCanvasOwnerCount") == 0
+            and value.get("threeCanvasOwnerCount") == 1
+            and value.get("canvasStable") is True
+            and value.get("rendererPointerTransparent") is True
+            and value.get("rendererSurfaceVisible") is False
+            and value.get("flightR3fVisualCount") == 0
             and value.get("hudVisible") is False
             and value.get("flightHudCount") == 0
             and value.get("flightSourceFeatures") >= 7

@@ -269,7 +269,7 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     citySemanticMediaVerifier,
-    /surface\.querySelectorAll\('canvas\.maplibregl-canvas'\)/,
+    /const mapCanvasScope = surface \|\| document[\s\S]*mapCanvasScope\.querySelectorAll\('canvas\.maplibregl-canvas'\)/,
   )
   assert.match(
     citySemanticMediaVerifier,

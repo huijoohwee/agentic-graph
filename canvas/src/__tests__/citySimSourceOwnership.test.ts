@@ -24,7 +24,7 @@ function collectTextFiles(path: string): readonly string[] {
     .filter(file => /\.(?:md|ts|tsx|mjs)$/.test(file) || file.endsWith('.kiro'))
 }
 
-export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
+export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInactiveThreeOwner() {
   const overlay = readCanvasSource('lib/three/ThreeGameplayOverlay.tsx')
   const threeGraph = readCanvasSource('lib/three/ThreeGraph.impl.tsx')
   const mediaFigure = readCanvasSource('lib/cards/SemanticMediaFigure.tsx')
@@ -94,6 +94,15 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   assert.ok(
     !/citySim|CitySim|MapLibre/.test(rendererLifecycle),
     'Three lifecycle ownership must remain independent from the City MapLibre surface',
+  )
+  assert.ok(
+    rendererLifecycle.includes(
+      '(!input.geospatialOverlayOwnsViewport || input.rendererPreviouslyMounted)',
+    )
+      && rendererLifecycle.includes(
+        '&& !input.geospatialOverlayOwnsViewport',
+      ),
+    'an existing shared renderer must remain mounted but inactive while MapLibre owns the viewport',
   )
   assert.deepEqual(resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',

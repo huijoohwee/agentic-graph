@@ -65,7 +65,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["city.sim.runtime.geoClaimRollbackFailure","@/__tests__/citySimGeoRetention.test","testCitySimSurfacesSupersededGeoRollbackFailure"],
   ["city.sim.mcp.exactTwo","@/__tests__/citySimMcpContract.test","testCitySimMcpPublishesExactlyTwoCanonicalTools"],
   ["city.sim.mcp.inspectPurity","@/__tests__/citySimMcpContract.test","testCitySimMcpInspectIsPureAndReportsZeroCostRuntime"],
-  ["city.sim.source.maplibreSemanticOwner","@/__tests__/citySimSourceOwnership.test","testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree"],
+  ["city.sim.source.maplibreSemanticOwner","@/__tests__/citySimSourceOwnership.test","testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInactiveThreeOwner"],
   ["city.sim.source.sixProjections","@/__tests__/citySimSourceOwnership.test","testCitySimRouterComposesAllSixExistingPanelProjections"],
   ["city.sim.source.cleanRoom","@/__tests__/citySimSourceOwnership.test","testCitySimOwnedFilesRetainCleanRoomIdentityBoundary"],
   ["city.sim.source.explicitGameplayClaims","@/__tests__/citySimSourceOwnership.test","testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims"],

@@ -400,14 +400,19 @@ Knowgrph realizes the contract through:
 
 MapLibre remains the sole City geographic renderer, camera mechanism, and
 viewport-gesture owner. City mounts no Three.js or React Three Fiber visual
-world. City projects no selected Flight-local XR environment, local stage
+world. A shared Three canvas that already existed before City activation may
+remain mounted only as the same inactive, transparent, pointer-inert lifecycle
+owner; City does not create it, activate it, or retain any R3F Flight visuals.
+This preserves exact renderer identity across a Flight-to-City-to-Flight
+handoff without admitting a second visible presentation. City projects no
+selected Flight-local XR environment, local stage
 footprint, or local schematic POI into geographic space. Instead, the selected
 regional companion supplies a separate checked-in geographic-context
 publication with exact rings, real-metre heights, accuracy, and provenance.
 That regional band renders below source-authored City parcels; the stopped
 Flight route and aircraft render above both. The MapLibre camera frames the
 union of the admitted regional features and City parcel bounds inside the
-visible aperture. The composition mounts no Three.js/R3F presentation and no
+visible aperture. The composition activates no Three.js/R3F presentation and no
 parallel HTML marker layer.
 
 `SemanticMediaFigure` remains the semantic ancestor, and its live MapLibre

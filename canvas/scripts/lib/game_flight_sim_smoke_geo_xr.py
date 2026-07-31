@@ -549,6 +549,7 @@ def _read_view(page: Page) -> dict[str, Any]:
             rendererPointerTransparent:
               Boolean(rendererPointerRoot)
               && getComputedStyle(rendererPointerRoot).pointerEvents === 'none',
+            rendererSurfaceVisible: isVisible(rendererPointerRoot),
             exclusivePlainGeoOverlayCount: document.querySelectorAll(
               '[data-kg-flight-sim-geo-overlay="1"]',
             ).length,

@@ -481,7 +481,10 @@ The current Knowgrph mapping specializes this contract as follows:
 
 MapLibre is the retained native geographic host in this reference
 implementation. Three.js and React Three Fiber remain outside the active City
-geographic presentation. The City specialization resolves one companion-owned
+geographic presentation. If a shared Three renderer was already mounted before
+City activation, its exact canvas may remain mounted only as an inactive,
+transparent, pointer-inert lifecycle owner; a direct City entry creates no
+Three owner. The City specialization resolves one companion-owned
 regional-context profile and presents its exact rings, real-metre heights,
 accuracy, and provenance below City parcels and stopped Flight route/aircraft.
 Its Flight-local XR environment publication remains explicitly absent.

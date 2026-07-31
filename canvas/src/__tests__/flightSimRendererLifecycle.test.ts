@@ -17,40 +17,59 @@ import {
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 
 type RendererTransitionPhase = ThreeRendererMountInput & Readonly<{
-  name: 'physics' | 'document-transition' | 'flight'
+  name: 'physics' | 'document-transition' | 'city' | 'flight'
+  activeSurface: '3d' | 'geo-xr'
   documentSwitchOwnsViewport: boolean
+  geospatialOverlayOwnsViewport: boolean
   sourceFilesBootstrapReady: boolean
 }>
 
 const XR_RENDERER_TRANSITION: readonly RendererTransitionPhase[] = [
   {
     name: 'physics',
+    activeSurface: '3d',
     mode: 'xr',
     hasRenderableScene: true,
     webglSupported: true,
     documentSwitchOwnsViewport: false,
+    geospatialOverlayOwnsViewport: false,
     sourceFilesBootstrapReady: true,
   },
   {
     name: 'document-transition',
+    activeSurface: '3d',
     mode: 'xr',
     hasRenderableScene: false,
     webglSupported: true,
     documentSwitchOwnsViewport: true,
+    geospatialOverlayOwnsViewport: false,
     sourceFilesBootstrapReady: false,
   },
   {
+    name: 'city',
+    activeSurface: 'geo-xr',
+    mode: 'xr',
+    hasRenderableScene: false,
+    webglSupported: true,
+    documentSwitchOwnsViewport: false,
+    geospatialOverlayOwnsViewport: true,
+    sourceFilesBootstrapReady: true,
+  },
+  {
     name: 'flight',
+    activeSurface: 'geo-xr',
     mode: 'xr',
     hasRenderableScene: true,
     webglSupported: true,
     documentSwitchOwnsViewport: false,
+    geospatialOverlayOwnsViewport: false,
     sourceFilesBootstrapReady: true,
   },
 ]
 
 function RendererBoundary(props: { phase: RendererTransitionPhase }): React.ReactNode {
   const sourceAdmissionRef = React.useRef(false)
+  const surfaceMountedRef = React.useRef(false)
   sourceAdmissionRef.current = retainThreeCanvasSourceAdmission(
     sourceAdmissionRef.current,
     props.phase.sourceFilesBootstrapReady,
@@ -58,13 +77,15 @@ function RendererBoundary(props: { phase: RendererTransitionPhase }): React.Reac
   const surface = resolveThreeCanvasSurfaceLifecycle({
     sourceFilesBootstrapAdmitted: sourceAdmissionRef.current,
     sourceFilesBootstrapReady: props.phase.sourceFilesBootstrapReady,
-    geospatialOverlayOwnsViewport: false,
+    rendererPreviouslyMounted: surfaceMountedRef.current,
+    geospatialOverlayOwnsViewport: props.phase.geospatialOverlayOwnsViewport,
     liveCanvasHeroVisible: false,
     canvasRenderMode: '3d',
     heavyRuntimeIntentBlocked: false,
-    activeSurface: '3d',
+    activeSurface: props.phase.activeSurface,
     documentSwitchOwnsViewport: props.phase.documentSwitchOwnsViewport,
   })
+  surfaceMountedRef.current = surface.mounted
   if (!surface.mounted || !shouldMountThreeRenderer(props.phase)) {
     return React.createElement('section', {
       'data-renderer-phase': props.phase.name,
@@ -78,7 +99,7 @@ function RendererBoundary(props: { phase: RendererTransitionPhase }): React.Reac
   })
 }
 
-test('Flight Sim keeps one XR renderer through the document transition', async () => {
+test('Flight Sim keeps one XR renderer through Flight to City to Flight', async () => {
   const harness = initJsdomHarness('<!doctype html><html><body><main id="root"></main></body></html>')
   const container = harness.dom.window.document.getElementById('root')
   if (!container) throw new Error('missing renderer lifecycle test root')
@@ -95,7 +116,7 @@ test('Flight Sim keeps one XR renderer through the document transition', async (
       if (renderer) assert.strictEqual(currentRenderer, renderer)
       assert.equal(
         currentRenderer.getAttribute('data-renderer-active'),
-        phase.documentSwitchOwnsViewport ? '0' : '1',
+        phase.documentSwitchOwnsViewport || phase.geospatialOverlayOwnsViewport ? '0' : '1',
       )
       renderer = currentRenderer
     }
@@ -136,6 +157,7 @@ test('Flight Sim keeps exclusive Geo available without mounting a competing XR v
   const surface = resolveThreeCanvasSurfaceLifecycle({
     sourceFilesBootstrapAdmitted: true,
     sourceFilesBootstrapReady: true,
+    rendererPreviouslyMounted: false,
     geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
     liveCanvasHeroVisible: false,
     canvasRenderMode: '3d',
@@ -192,6 +214,7 @@ test('Geo+XR mounts one transparent shared XR viewport over the Geo owner', () =
   assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
     sourceFilesBootstrapAdmitted: true,
     sourceFilesBootstrapReady: true,
+    rendererPreviouslyMounted: false,
     geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
     liveCanvasHeroVisible: false,
     canvasRenderMode: '3d',
@@ -219,6 +242,7 @@ test('City intent fails closed to MapLibre before Geo+XR commits', () => {
   assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
     sourceFilesBootstrapAdmitted: true,
     sourceFilesBootstrapReady: true,
+    rendererPreviouslyMounted: false,
     geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
     liveCanvasHeroVisible: false,
     canvasRenderMode: '3d',
@@ -226,6 +250,18 @@ test('City intent fails closed to MapLibre before Geo+XR commits', () => {
     activeSurface: ownership.activeSurface,
     documentSwitchOwnsViewport: false,
   }), { mounted: false, active: false })
+
+  assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
+    sourceFilesBootstrapAdmitted: true,
+    sourceFilesBootstrapReady: true,
+    rendererPreviouslyMounted: true,
+    geospatialOverlayOwnsViewport: ownership.geospatialOverlayOwnsViewport,
+    liveCanvasHeroVisible: false,
+    canvasRenderMode: '3d',
+    heavyRuntimeIntentBlocked: false,
+    activeSurface: ownership.activeSurface,
+    documentSwitchOwnsViewport: false,
+  }), { mounted: true, active: false })
 
   assert.deepEqual(resolveCanvasSurfaceOwnership({
     canvasRenderMode: '3d',
@@ -240,6 +276,32 @@ test('City intent fails closed to MapLibre before Geo+XR commits', () => {
     activeSurface: '3d',
     geospatialOverlayOwnsViewport: false,
   }, 'an acknowledged City exit must restore the prior non-Geo surface')
+})
+
+test('a deliberate canvas departure clears retained Three ownership', () => {
+  assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
+    sourceFilesBootstrapAdmitted: true,
+    sourceFilesBootstrapReady: true,
+    rendererPreviouslyMounted: true,
+    geospatialOverlayOwnsViewport: false,
+    liveCanvasHeroVisible: false,
+    canvasRenderMode: '2d',
+    heavyRuntimeIntentBlocked: false,
+    activeSurface: '2d',
+    documentSwitchOwnsViewport: false,
+  }), { mounted: false, active: false })
+
+  assert.deepEqual(resolveThreeCanvasSurfaceLifecycle({
+    sourceFilesBootstrapAdmitted: true,
+    sourceFilesBootstrapReady: true,
+    rendererPreviouslyMounted: false,
+    geospatialOverlayOwnsViewport: true,
+    liveCanvasHeroVisible: false,
+    canvasRenderMode: '3d',
+    heavyRuntimeIntentBlocked: false,
+    activeSurface: 'geo-xr',
+    documentSwitchOwnsViewport: false,
+  }), { mounted: false, active: false })
 })
 
 test('Three renderer lifecycle still rejects unsupported and empty non-XR surfaces', () => {

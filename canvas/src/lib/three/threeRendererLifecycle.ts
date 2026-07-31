@@ -2,6 +2,7 @@ import type { Canvas3dModeId } from '@/lib/config.render'
 
 export type ThreeCanvasSurfaceMountInput = Readonly<{
   sourceFilesBootstrapAdmitted: boolean
+  rendererPreviouslyMounted: boolean
   geospatialOverlayOwnsViewport: boolean
   liveCanvasHeroVisible: boolean
   canvasRenderMode: '2d' | '3d'
@@ -22,7 +23,7 @@ export type ThreeCanvasSurfaceLifecycleInput = ThreeCanvasSurfaceMountInput & Re
 
 export function shouldMountThreeCanvasSurface(input: ThreeCanvasSurfaceMountInput): boolean {
   return input.sourceFilesBootstrapAdmitted
-    && !input.geospatialOverlayOwnsViewport
+    && (!input.geospatialOverlayOwnsViewport || input.rendererPreviouslyMounted)
     && !input.liveCanvasHeroVisible
     && input.canvasRenderMode === '3d'
     && !input.heavyRuntimeIntentBlocked
@@ -31,11 +32,13 @@ export function shouldMountThreeCanvasSurface(input: ThreeCanvasSurfaceMountInpu
 export function shouldActivateThreeCanvasSurface(input: Readonly<{
   surfaceMounted: boolean
   sourceFilesBootstrapReady: boolean
+  geospatialOverlayOwnsViewport: boolean
   activeSurface: '2d' | '3d' | 'geo' | 'geo-xr'
   documentSwitchOwnsViewport: boolean
 }>): boolean {
   return input.surfaceMounted
     && input.sourceFilesBootstrapReady
+    && !input.geospatialOverlayOwnsViewport
     && (input.activeSurface === '3d' || input.activeSurface === 'geo-xr')
     && !input.documentSwitchOwnsViewport
 }
@@ -50,6 +53,7 @@ export function resolveThreeCanvasSurfaceLifecycle(input: ThreeCanvasSurfaceLife
     active: shouldActivateThreeCanvasSurface({
       surfaceMounted: mounted,
       sourceFilesBootstrapReady: input.sourceFilesBootstrapReady,
+      geospatialOverlayOwnsViewport: input.geospatialOverlayOwnsViewport,
       activeSurface: input.activeSurface,
       documentSwitchOwnsViewport: input.documentSwitchOwnsViewport,
     }),
