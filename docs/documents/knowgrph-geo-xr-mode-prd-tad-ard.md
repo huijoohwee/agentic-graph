@@ -74,7 +74,7 @@ and exit to the exact prior surface state.
 |---|---|---|---|
 | `PRD-GXR-01` | As a spatial operator, I want one composed surface so that geographic truth remains visible. | Given a ready geographic host, when `geo-xr` activates, then exactly one visible geographic renderer, camera, and viewport-gesture owner remains. | Verify one host owns rendering, camera, and gestures; no alternate world is mounted. |
 | `PRD-GXR-02` | As a domain author, I want ordered projection bands so that capabilities compose without hardcoded peer precedence. | Given valid publishers, when snapshots are admitted, then environment, domain, and dynamic-subject bands render in stable order and each publisher owns one lease. | Verify band order is stable and a publisher cannot mutate another lease. |
-| `PRD-GXR-03` | As a reviewer, I want a semantic media stage so that selection tooling can identify the composed surface. | Given an active mode, when the surface renders, then one labeled `figure` with a caption exposes conditional selection without intercepting viewport gestures, and a renderer-owned direct hit target references that caption without becoming a second selectable owner. | Verify the semantic element, accessible name, caption, unique selection marker, descendant label reference, exact closest owner, and absence of capture handlers. |
+| `PRD-GXR-03` | As a reviewer, I want a semantic media stage so that selection tooling can identify the composed surface. | Given an active mode, when the surface renders, then one labeled `figure` with a caption wraps the renderer without intercepting viewport gestures, and the renderer-owned direct hit target references that caption, exposes the same direct accessible name, and owns the sole conditional selection marker. | Verify the semantic element, accessible name, caption, unique direct-hit selection marker, descendant label reference, exact closest owner, and absence of capture handlers. |
 | `PRD-GXR-04` | As a regional data steward, I want profiles outside the mode contract so that regions remain substitutable. | Given two conforming regional profiles, when either is selected, then activation and overlay arbitration are unchanged. | Verify profile substitution changes authored data only, not mode or publisher contracts. |
 | `PRD-GXR-05` | As an operator, I want failure to preserve my prior surface so that partial activation cannot corrupt the workspace. | Given any activation or publication failure, when rollback runs, then the captured prior owner, padding, and panel state are restored exactly once. | Verify typed failure plus one idempotent restoration and zero stale projections. |
 | `PRD-GXR-06` | As a mobile or offline user, I want the core composition to remain usable so that network loss does not destroy local context. | Given cached or local profile data, when connectivity is absent at a supported viewport, then local projections, selection, and exit remain available. | Verify a 375 by 812 viewport and offline replay preserve interaction and cleanup. |
@@ -134,9 +134,9 @@ context port, projection registry, semantic media adapter, and operator.
    panel state.
 3. The geographic host confirms readiness before spatial projections publish.
 4. The registry admits one lease per publisher and orders snapshots by band.
-5. The semantic adapter exposes one labeled `figure`; interactive renderer
-   descendants reference its caption while the `figure` remains the sole
-   selectable owner.
+5. The semantic adapter exposes one labeled `figure`; the interactive renderer
+   hit target references its caption, carries the same direct accessible name,
+   and owns the sole conditional selection marker.
 6. Exit clears leases, releases the composed owner, and restores captured state.
 
 **Alternate path:** a profile supplies no optional spatial projection; the
@@ -394,10 +394,10 @@ peer-specific specialization remains a gap until replaced at its root owner.
 media to accessibility and selection tooling.
 
 **Decision:** expose the active surface through one labeled `figure` with a
-caption and conditional selection marker. A renderer-owned interactive
-descendant references that caption with `aria-labelledby`, retains its native
-input semantics, and carries no duplicate selection marker. The `figure` adds
-no gesture-capture handler.
+caption. Its renderer-owned interactive hit target references that caption
+with `aria-labelledby`, carries the same direct accessible name and the sole
+conditional selection marker, and retains its native input semantics. The
+`figure` carries no duplicate marker and adds no gesture-capture handler.
 
 **Alternatives considered:** a generic container requires parallel semantics;
 a FOSS custom-element wrapper adds lifecycle complexity without more value.
@@ -409,8 +409,9 @@ a FOSS custom-element wrapper adds lifecycle complexity without more value.
 | 12-month cash TCO | $0 | $0 | $0 |
 | Accessibility risk | low | medium | high |
 
-**Consequences:** direct browser hits and ancestor-based selection resolve the
-same accessible media identity, while the renderer retains viewport ownership.
+**Consequences:** direct browser hits and the semantic ancestor resolve the
+same accessible media identity, while selection tooling lands on the real
+interactive media target and the renderer retains viewport ownership.
 
 ## 17. ADR-4: regional facts live in companions
 

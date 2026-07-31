@@ -90,10 +90,15 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithoutThree() {
   )
   assert.ok(mediaFigure.includes('<figure'))
   assert.ok(mediaFigure.includes('<figcaption'))
-  assert.ok(mediaFigure.includes('resolveMediaPreviewSelectableDataAttr(active)'))
+  assert.ok(mediaFigure.includes(
+    "active && selectionTarget === 'figure'",
+  ))
   assert.equal(/<(?:div)\b|aria-hidden|on(?:Click|Mouse|Pointer)/.test(mediaFigure), false)
   assert.ok(mediaSurface.includes('CITY_SIM_MEDIA_STAGE_LABEL'))
-  assert.ok(viewport.includes('semanticMediaCaptionId={citySimActive ? captionId : undefined}'))
+  assert.ok(viewport.includes('semanticMediaOwner={citySimActive ? {'))
+  assert.ok(viewport.includes('label: CITY_SIM_MEDIA_STAGE_LABEL'))
+  assert.ok(viewport.includes('selectionTarget="descendant"'))
+  assert.ok(viewport.includes('MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR'))
   assert.ok(
     xrPhysicsRuntime.includes(
       'const { citySimActive, flightSimActive, gameFpsActive } = useCanvasGameplayOverlayState()',
@@ -192,8 +197,8 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
   )
   assert.ok(
     aerialProjection.includes("presentationOwner: 'city'")
-      && aerialProjection.includes('environment,'),
-    'the independent aerial projection must publish atomic City ownership with the selected shared XR environment',
+      && aerialProjection.includes('environment: null'),
+    'the independent aerial projection must publish atomic City ownership without a local XR environment',
   )
   assert.ok(xrPhysics.includes('citySimActive || flightSimActive || gameFpsActive'))
 }

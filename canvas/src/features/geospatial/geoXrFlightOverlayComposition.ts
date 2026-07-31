@@ -28,12 +28,8 @@ export function resolveGeoXrGameplayPresentationOwner(input: Readonly<{
 function publishAerialOverlay(input: Readonly<{
   city: CitySimSnapshot
   clearFlightOverlay: () => void
-  environment: NonNullable<FlightSimGeospatialOverlay['environment']>
   flight: FlightSimSnapshot
-  projectCityAerial: (
-    city: CitySimSnapshot,
-    environment: NonNullable<FlightSimGeospatialOverlay['environment']>,
-  ) => FlightSimGeospatialOverlay
+  projectCityAerial: (city: CitySimSnapshot) => FlightSimGeospatialOverlay
   projectFlight: (flight: FlightSimSnapshot) => FlightSimGeospatialOverlay
   setFlightOverlay: (overlay: FlightSimGeospatialOverlay) => void
 }>): GeoXrOverlayPublication {
@@ -42,10 +38,7 @@ function publishAerialOverlay(input: Readonly<{
     return 'flight'
   }
   if (input.city.active) {
-    input.setFlightOverlay(input.projectCityAerial(
-      input.city,
-      input.environment,
-    ))
+    input.setFlightOverlay(input.projectCityAerial(input.city))
     return 'city'
   }
   input.clearFlightOverlay()
@@ -59,12 +52,8 @@ function publishAerialOverlay(input: Readonly<{
  */
 export function publishGeoXrOverlayComposition(input: Readonly<{
   city: CitySimSnapshot
-  environment: NonNullable<FlightSimGeospatialOverlay['environment']>
   flight: FlightSimSnapshot
-  projectCityAerial: (
-    city: CitySimSnapshot,
-    environment: NonNullable<FlightSimGeospatialOverlay['environment']>,
-  ) => FlightSimGeospatialOverlay
+  projectCityAerial: (city: CitySimSnapshot) => FlightSimGeospatialOverlay
   projectCityOverlay: (city: CitySimSnapshot) => CityGeoOverlaySnapshot
   projectFlight: (flight: FlightSimSnapshot) => FlightSimGeospatialOverlay
   store: GeoXrOverlayStoreModule
@@ -72,7 +61,6 @@ export function publishGeoXrOverlayComposition(input: Readonly<{
   const aerialInput = {
     city: input.city,
     clearFlightOverlay: input.store.clearFlightGeoOverlay,
-    environment: input.environment,
     flight: input.flight,
     projectCityAerial: input.projectCityAerial,
     projectFlight: input.projectFlight,

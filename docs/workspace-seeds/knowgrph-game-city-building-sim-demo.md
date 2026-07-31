@@ -65,15 +65,11 @@ city_geo_xr:
   geo_host_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   city_surface_owner: "native MapLibre Geo+XR host wrapped by the City semantic media figure"
+  basemap_owner: "one real native MapLibre basemap"
   parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
-  composition: "one native MapLibre map with the shared Singapore environment below City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas"
-  environment:
-    stage_id: "singapore"
-    source_owner: "canvas/src/features/three/xrSingaporeEnvironmentSource.ts"
-    projection_owner: "canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts"
-    maplibre_source_id: "kg-flight-geo-environment"
-    major_poi_ids: ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]
-  layer_order: ["environment", "city", "flight"]
+  parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"
+  composition: "one real native MapLibre basemap with source-authored meter-scaled City parcel layers below independent Flight aircraft and route layers; zero local XR environment sources or features; zero City Three Canvas"
+  layer_order: ["city", "flight"]
   native_xr_physics_stage_active: false
   authored_graph_scene_active: false
   duplicate_map_or_canvas_forbidden: true
@@ -93,14 +89,15 @@ city_semantic_media:
   element: "figure"
   accessible_name: "Interactive City simulation media stage"
   selection_marker_owner: "canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts"
-  selection_marker_when: "City runtime active only"
+  selection_target: "live MapLibre canvas while City runtime active"
+  direct_canvas_accessible_name_required: true
+  figure_selection_marker_forbidden: true
   pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder coordinate controls own parcel selection"
   wrapper_added_generic_div_or_aria_hidden_forbidden: true
 city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
   spatial_source: "this source document's typed city_geo_xr geographic profile"
-  environment_owner: "city_geo_xr.environment"
   adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
   adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
   presentation_owner: "city"
@@ -177,9 +174,9 @@ mcp:
   tool_count: 2
   transport: "existing local discovery and approval-gated control owners"
 proof_contract:
-  start: "neutral browser with the canonical Singapore environment and no persisted city state"
+  start: "neutral browser with the native MapLibre basemap and no persisted city state"
   activation: "apply this Source File after Source Files bootstrap is ready"
-  assertions: ["Geo+XR Mode", "one native MapLibre Geo host wrapped by SemanticMediaFigure", "source-authored Singapore major-POI extrusions", "sixteen live City parcel features", "visible City zone and selection layers", "environment then City then Flight layer order", "panel-adjusted MapLibre framing and gestures", "zero City Three Canvas, stage, mesh, or camera", "stopped aircraft and route through independent existing Flight Geo layers", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
+  assertions: ["Geo+XR Mode", "one real native MapLibre basemap wrapped by SemanticMediaFigure", "live MapLibre canvas has the direct City accessible name and selection marker", "source-authored rows times columns correctly meter-scaled City parcel features", "visible City zone and selection layers", "no local XR environment source, layers, or features", "City then Flight layer order", "panel-adjusted MapLibre framing and gestures", "zero City Three Canvas, stage, mesh, or camera", "stopped aircraft and route through independent existing Flight Geo layers", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
   actions: ["Zone", "one Tick", "Stop fence", "Advice", "Save and read-back", "six panel projections", "Exit restore"]
   exact_sha_required: true
   repeatability: "repeat from neutral state and compare initial serialized bytes"
@@ -239,22 +236,27 @@ economy ticks, and selection update that source from the same runtime revision.
 City also uses `projectCitySimAerialInspectionToGeospatialOverlay` to derive one
 deterministic route and one stopped aircraft from the typed `city_geo_xr`
 profile authored in this document. The shared `CanvasViewport` geospatial
-publisher sends that result with atomic presentation owner `city`, the selected
-shared Singapore environment, and free-orbit metadata through the existing
-Flight overlay store and MapLibre sources/layers. Its named Marina Bay Sands,
-Singapore Flyer, and Gardens by the Bay surfaces render as native MapLibre
-extrusions below City parcels; the stopped aircraft and route remain above the
-City stack. That presentation path cannot install the Flight bootstrap style,
-camera, padding, gameplay, controls, mission, or readiness. City creates no
-duplicate map, source/layer ids, Canvas, or renderer.
+publisher sends that result with atomic presentation owner `city` and
+free-orbit metadata through the existing Flight overlay store and MapLibre
+sources/layers. It does not project the selected local XR environment, its
+source, or its features into the City presentation. Geographic context remains
+owned by the real native MapLibre basemap; source-authored City parcel
+dimensions and gaps are converted from meters to geographic coordinates
+exactly once. The City parcel stack renders above the basemap, and the stopped
+aircraft and route remain above the City stack. That presentation path cannot
+install the Flight bootstrap style, camera, padding, gameplay, controls,
+mission, or readiness. City creates no duplicate map, source/layer ids, Canvas,
+or renderer.
 
 City never starts or retains the native XR physics playground. The Three
 renderer excludes the authored/native graph for City source intent, and City
 mounts no Three scene. One labeled semantic `figure` wraps the native MapLibre
-Geo+XR host directly and exposes the existing media-selection marker only while
-City is active. It has a `figcaption` and no pointer capture, and its wrapper
-adds no generic `div` or `aria-hidden`, so selection tooling can find the stage
-without stealing MapLibre gestures or City Builder parcel input.
+Geo+XR host directly. Its live MapLibre `canvas` carries the direct City
+accessible name and the sole media-selection marker while City is active; the
+figure keeps its `figcaption` but carries no competing selection marker. Neither
+wrapper nor canvas adds `aria-hidden` or captures pointer input, so selection
+tooling can identify the stage without stealing MapLibre gestures or City
+Builder parcel input.
 
 The normative requirements live at
 `.kiro/specs/knowgrph-city-building-sim/requirements.md`. This document does
@@ -290,16 +292,17 @@ r03c03,3,3,unzoned,5000,0,0
 ## Local use
 
 1. Run the repository-owned development command.
-2. Start from a browser with the canonical Singapore environment, no persisted
-   city state, no URL selection, and no previously open city runtime.
+2. Start from a browser with the native MapLibre basemap, no persisted city
+   state, no URL selection, and no previously open city runtime.
 3. Confirm City Builder is closed, the City media figure is presentational and
    inactive, and Flight gameplay is inactive.
 4. Open Explorer -> Source Files and wait for bootstrap readiness.
 5. Open this document and apply it.
-6. Confirm Geo+XR Mode shows the shared Singapore major-POI extrusions below
-   the source-authored 4 by 4 parcel grid, with the stopped aircraft and route
-   above it, then confirm City Builder opens with tick `0`, treasury `100000`
-   cents, and population `15`.
+6. Confirm Geo+XR Mode shows the source-authored, meter-scaled 4 by 4 parcel
+   grid on the real native MapLibre basemap, with no local XR environment source
+   or features and with the stopped aircraft and route above it. Then confirm
+   City Builder opens with tick `0`, treasury `100000` cents, and population
+   `15`.
 7. Confirm the existing Flight Geo layers show this document's authored City
    route and stopped aircraft without opening Flight gameplay or
    readiness.
@@ -347,15 +350,16 @@ restores a Three camera.
   MapLibre clicks and City Builder controls share parcel selection; one zone
   and selection mutation is visible; and zero City Three.js/R3F
   Canvas/stage/mesh/camera mounts.
-- [ ] The shared environment source renders the authored Marina Bay Sands,
-  Singapore Flyer, and Gardens by the Bay surfaces as native MapLibre
-  extrusions below City parcels; the independent existing Flight source/layers
-  show the deterministic stopped aircraft/route above them without Flight
-  bootstrap, camera, padding, gameplay, readiness, or duplicate map/source/layer
-  ids.
-- [ ] The native XR physics playground and authored graph scene remain absent,
-  and the active City media `figure` is named and selectable without
-  intercepting MapLibre gestures.
+- [ ] The real native MapLibre basemap remains the only geographic environment;
+  no selected local XR environment source or features exist in the City
+  presentation. Source-authored City parcels project their meter dimensions and
+  gaps once, and the independent existing Flight source/layers show the
+  deterministic stopped aircraft/route above them without Flight bootstrap,
+  camera, padding, gameplay, readiness, or duplicate map/source/layer ids.
+- [ ] The native XR physics playground and authored graph scene remain absent;
+  the active City media `figure` retains its caption, and the live MapLibre
+  `canvas` carries the direct City accessible name and sole selection marker
+  without intercepting MapLibre gestures.
 - [ ] Zone, one Tick, Stop fencing, Advice, and Save/read-back pass.
 - [ ] Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera show
   one shared revision and their contracted projections.

@@ -5,8 +5,10 @@ import {
   applyFlightGeoEnvironmentToMap,
   clearFlightGeoEnvironmentFromMap,
   FLIGHT_GEO_ENVIRONMENT_LAYER_IDS,
+  FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
   FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
   mapHasExactFlightGeoEnvironment,
+  removeFlightGeoEnvironmentFromMap,
 } from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
 
 type EnvironmentSourceFeature = {
@@ -114,6 +116,7 @@ function environmentMapHarness() {
   let addSourceCalls = 0
   let setDataCalls = 0
   let setLayoutPropertyCalls = 0
+  const removalOrder: string[] = []
   const style = { _loaded: false }
   const map = {
     style,
@@ -177,6 +180,19 @@ function environmentMapHarness() {
       const index = layerOrder.indexOf(layerId)
       if (index >= 0) layerOrder.splice(index, 1)
       visibility.delete(layerId)
+      removalOrder.push(layerId)
+    },
+    removeSource: (sourceId: string) => {
+      const retainedLayer = [...layers.values()].find(layer => (
+        layer.source === sourceId
+      ))
+      if (retainedLayer) {
+        throw new Error(
+          `Source "${sourceId}" is still owned by layer "${retainedLayer.id}".`,
+        )
+      }
+      sources.delete(sourceId)
+      removalOrder.push(sourceId)
     },
     setLayoutProperty: (
       layerId: string,
@@ -199,6 +215,7 @@ function environmentMapHarness() {
     },
     layers,
     layerOrder,
+    removalOrder,
     map,
     resetStyle: (loaded: boolean) => {
       layers.clear()
@@ -451,6 +468,66 @@ test('XR environment clear never probes MapLibre before its style attaches', () 
   }
 })
 
+test('XR environment removal waits for a ready style and accepts owned-resource absence', () => {
+  const preparingMap = {
+    style: { _loaded: false },
+    getLayer: () => {
+      throw new Error('getLayer must remain fenced until style readiness')
+    },
+    getSource: () => {
+      throw new Error('getSource must remain fenced until style readiness')
+    },
+  }
+  assert.doesNotThrow(() => removeFlightGeoEnvironmentFromMap(preparingMap))
+  assert.equal(removeFlightGeoEnvironmentFromMap(preparingMap), false)
+
+  const harness = environmentMapHarness()
+  harness.setStyleReady(true)
+  assert.equal(removeFlightGeoEnvironmentFromMap(harness.map), true)
+  assert.deepEqual(harness.removalOrder, [])
+})
+
+test('XR environment removal clears serialized resources before live handles settle', () => {
+  const serializedLayers = FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER.map(layerId => ({
+    id: layerId,
+    source: FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+  }))
+  let serializedSourcePresent = true
+  const removalOrder: string[] = []
+  const map = {
+    style: { _loaded: true },
+    getLayer: () => undefined,
+    getSource: () => undefined,
+    getStyle: () => ({
+      layers: serializedLayers,
+      sources: serializedSourcePresent
+        ? {
+            [FLIGHT_GEO_ENVIRONMENT_SOURCE_ID]: {
+              type: 'geojson',
+              data: { type: 'FeatureCollection', features: [] },
+            },
+          }
+        : {},
+    }),
+    removeLayer: (layerId: string) => {
+      const index = serializedLayers.findIndex(layer => layer.id === layerId)
+      if (index >= 0) serializedLayers.splice(index, 1)
+      removalOrder.push(layerId)
+    },
+    removeSource: (sourceId: string) => {
+      assert.equal(serializedLayers.length, 0)
+      serializedSourcePresent = false
+      removalOrder.push(sourceId)
+    },
+  }
+
+  assert.equal(removeFlightGeoEnvironmentFromMap(map), true)
+  assert.deepEqual(removalOrder, [
+    ...[...FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER].reverse(),
+    FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+  ])
+})
+
 test('XR environment exactness rejects mutated or retained MapLibre source payloads', () => {
   const overlay = environmentOverlay()
   const harness = environmentMapHarness()
@@ -553,11 +630,25 @@ test('XR environment exactness rejects mutated or retained MapLibre source paylo
   assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
 })
 
-test('City keeps Singapore environment layers below its parcel stack', () => {
-  const overlay = environmentOverlay()
+test('City removes a retained Flight environment before presenting its parcel stack', () => {
+  const flightOverlay = environmentOverlay()
+  const cityOverlay: FlightGeoOverlaySnapshot = {
+    ...flightOverlay,
+    presentationOwner: 'city',
+    revision: 'city:stale-local-environment',
+  }
+  const expectedCityOverlay: FlightGeoOverlaySnapshot = {
+    ...cityOverlay,
+    environment: null,
+  }
   const harness = environmentMapHarness()
   const cityFillLayerId = 'kg-city-sim:geo-overlay:fill'
   harness.setStyleReady(true)
+  assert.equal(
+    applyFlightGeoEnvironmentToMap(harness.map, flightOverlay, '3d'),
+    true,
+  )
+  assert.equal(harness.completeSourceUpdate(), true)
   harness.map.addLayer({
     id: cityFillLayerId,
     source: 'kg-city-sim:geo-overlay',
@@ -565,25 +656,23 @@ test('City keeps Singapore environment layers below its parcel stack', () => {
   })
 
   assert.equal(
-    applyFlightGeoEnvironmentToMap(
-      harness.map,
-      overlay,
-      '3d',
-      { beforeLayerId: cityFillLayerId },
-    ),
+    removeFlightGeoEnvironmentFromMap(harness.map),
     true,
   )
-  assert.deepEqual(
-    harness.layerOrder.slice(-4),
-    [
-      FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d,
-      FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
-      FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline,
-      cityFillLayerId,
-    ],
+  assert.equal(
+    harness.map.getSource(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID),
+    undefined,
   )
-  assert.notEqual(
-    harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d),
-    'none',
+  for (const layerId of FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER) {
+    assert.equal(harness.map.getLayer(layerId), undefined)
+  }
+  assert.ok(harness.map.getLayer(cityFillLayerId))
+  assert.deepEqual(harness.removalOrder, [
+    ...[...FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER].reverse(),
+    FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
+  ])
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(harness.map, expectedCityOverlay),
+    true,
   )
 })

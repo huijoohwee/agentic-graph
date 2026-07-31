@@ -121,15 +121,11 @@ city_geo_xr:
   geo_host_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   city_surface_owner: "native MapLibre Geo+XR host wrapped by the City semantic media figure"
+  basemap_owner: "one real native MapLibre basemap"
   parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
-  composition: "one native MapLibre map with the shared Singapore environment below City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas"
-  environment:
-    stage_id: "singapore"
-    source_owner: "canvas/src/features/three/xrSingaporeEnvironmentSource.ts"
-    projection_owner: "canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts"
-    maplibre_source_id: "kg-flight-geo-environment"
-    major_poi_ids: ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]
-  layer_order: ["environment", "city", "flight"]
+  parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"
+  composition: "one real native MapLibre basemap with source-authored meter-scaled City parcel layers below independent Flight aircraft and route layers; zero local XR environment sources or features; zero City Three Canvas"
+  layer_order: ["city", "flight"]
   duplicate_map_or_canvas_forbidden: true
 city_parcel_projection:
   source_owner: "gympgrph/src/cityGeoOverlay.ts"
@@ -144,14 +140,15 @@ city_semantic_media:
   element: "figure"
   accessible_name: "Interactive City simulation media stage"
   selection_marker_owner: "canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts"
-  selection_marker_when: "City runtime active only"
+  selection_target: "live MapLibre canvas while City runtime active"
+  direct_canvas_accessible_name_required: true
+  figure_selection_marker_forbidden: true
   pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder coordinate controls own parcel selection"
   wrapper_added_generic_div_or_aria_hidden_forbidden: true
 city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
   spatial_source: "this source document's typed city_geo_xr geographic profile"
-  environment_owner: "city_geo_xr.environment"
   adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
   adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
   presentation_owner: "city"
@@ -259,8 +256,8 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
     ],
     [
       'wrong selection condition',
-      'selection_marker_when: "City runtime active only"',
-      'selection_marker_when: "invalid"',
+      'selection_target: "live MapLibre canvas while City runtime active"',
+      'selection_target: "invalid"',
     ],
     [
       'private overlay store',
@@ -268,17 +265,18 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
       'overlay_store_owner: "invalid"',
     ],
     [
-      'wrong environment stage',
-      'stage_id: "singapore"',
-      'stage_id: "invalid"',
+      'wrong basemap owner',
+      'basemap_owner: "one real native MapLibre basemap"',
+      'basemap_owner: "invalid"',
     ],
-    ['incomplete Singapore POI inventory', 'major_poi_ids: ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]', 'major_poi_ids: ["marina-bay-sands", "singapore-flyer"]'],
-    ['wrong Geo+XR layer order', 'layer_order: ["environment", "city", "flight"]', 'layer_order: ["city", "environment", "flight"]'],
     [
-      'wrong environment owner',
-      'environment_owner: "city_geo_xr.environment"',
-      'environment_owner: "invalid"',
+      'wrong parcel scale policy',
+      'parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"',
+      'parcel_scale_policy: "invalid"',
     ],
+    ['wrong Geo+XR layer order', 'layer_order: ["city", "flight"]', 'layer_order: ["flight", "city"]'],
+    ['missing direct canvas name', 'direct_canvas_accessible_name_required: true', 'direct_canvas_accessible_name_required: false'],
+    ['figure owns competing selection marker', 'figure_selection_marker_forbidden: true', 'figure_selection_marker_forbidden: false'],
     ['active Flight gameplay', 'flight_gameplay_active: false', 'flight_gameplay_active: true'],
     ['claimed Flight readiness', 'flight_readiness_claimed: false', 'flight_readiness_claimed: true'],
   ]
@@ -298,7 +296,7 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
   }
 })
 
-test('rejects removed City Three stage and captured-camera authority fields', async t => {
+test('rejects removed City environment, Three stage, and captured-camera authority fields', async t => {
   const legacyFields = [
     [
       'runtime stage owner',
@@ -311,6 +309,18 @@ test('rejects removed City Three stage and captured-camera authority fields', as
       '  duplicate_map_or_canvas_forbidden: true',
       '  duplicate_map_or_canvas_forbidden: true\n  city_stage_owner: "legacy"',
       'city_geo_xr.city_stage_owner',
+    ],
+    [
+      'Geo+XR local environment',
+      '  layer_order: ["city", "flight"]',
+      '  environment:\n    stage_id: "local-xr-stage"\n  layer_order: ["city", "flight"]',
+      'city_geo_xr.environment',
+    ],
+    [
+      'aerial environment owner',
+      `  spatial_source: "this source document's typed city_geo_xr geographic profile"`,
+      `  spatial_source: "this source document's typed city_geo_xr geographic profile"\n  environment_owner: "city_geo_xr.environment"`,
+      'city_aerial_projection.environment_owner',
     ],
     [
       'removed camera exit rule',

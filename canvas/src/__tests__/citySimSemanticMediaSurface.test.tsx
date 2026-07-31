@@ -8,6 +8,10 @@ import {
   CITY_SIM_MEDIA_STAGE_LABEL,
 } from '@/features/game-city-sim/citySimMediaSurface'
 import { SemanticMediaFigure } from '@/lib/cards/SemanticMediaFigure'
+import {
+  MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
+  MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
+} from '@/lib/cards/mediaPreviewSurfaceSelection'
 
 function renderCityMediaFigure(citySimActive: boolean): string {
   return renderToStaticMarkup(
@@ -15,6 +19,7 @@ function renderCityMediaFigure(citySimActive: boolean): string {
       active={citySimActive}
       activeDataAttributes={CITY_SIM_MEDIA_STAGE_DATA_ATTRIBUTES}
       label={CITY_SIM_MEDIA_STAGE_LABEL}
+      selectionTarget="descendant"
     >
       {captionId => (
         <section
@@ -32,7 +37,10 @@ export function testCitySimSemanticMediaSurfaceResolvesMapLibreHitTarget() {
   assert.match(activeMarkup, new RegExp(`aria-label="${CITY_SIM_MEDIA_STAGE_LABEL}"`))
   assert.match(activeMarkup, /class="pointer-events-auto absolute inset-0 m-0"/)
   assert.match(activeMarkup, /data-kg-city-sim-semantic-media="active"/)
-  assert.match(activeMarkup, /data-kg-rich-media-selectable-surface="1"/)
+  assert.doesNotMatch(
+    activeMarkup,
+    /<figure[^>]*data-kg-rich-media-selectable-surface/,
+  )
   assert.match(
     activeMarkup,
     new RegExp(
@@ -76,19 +84,28 @@ export function testCitySimSemanticMediaSurfaceResolvesMapLibreHitTarget() {
 
   const releaseSemanticOwner = bindMapLibreCanvasSemanticOwner(
     { getCanvas: () => mapCanvas },
-    captionId,
+    {
+      captionId,
+      label: CITY_SIM_MEDIA_STAGE_LABEL,
+      selectionAttribute: {
+        name: MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
+        value: MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
+      },
+    },
   )
   assert.equal(mapCanvas.getAttribute('aria-labelledby'), captionId)
-  assert.equal(mapCanvas.getAttribute('aria-label'), 'Map')
+  assert.equal(
+    mapCanvas.getAttribute('aria-label'),
+    CITY_SIM_MEDIA_STAGE_LABEL,
+  )
   assert.equal(mapCanvas.getAttribute('role'), 'region')
   assert.equal(mapCanvas.hasAttribute('aria-hidden'), false)
-  assert.equal(
-    mapCanvas.hasAttribute('data-kg-rich-media-selectable-surface'),
-    false,
-  )
+  assert.equal(mapCanvas.getAttribute(
+    MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
+  ), MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE)
   assert.equal(
     mapCanvas.closest('[data-kg-rich-media-selectable-surface="1"]'),
-    surface,
+    mapCanvas,
   )
   assert.equal(
     document.getElementById(
@@ -98,6 +115,11 @@ export function testCitySimSemanticMediaSurfaceResolvesMapLibreHitTarget() {
   )
   releaseSemanticOwner?.()
   assert.equal(mapCanvas.hasAttribute('aria-labelledby'), false)
+  assert.equal(mapCanvas.getAttribute('aria-label'), 'Map')
+  assert.equal(
+    mapCanvas.hasAttribute(MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR),
+    false,
+  )
 
   const inactiveMarkup = renderCityMediaFigure(false)
   assert.doesNotMatch(
