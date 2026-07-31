@@ -26,6 +26,16 @@ def read_city_semantic_media_contract(page: Page) -> dict[str, Any]:
               ).filter(isVisible)
             : []
           const mapCanvas = visibleMapCanvases[0] || null
+          const selectableOwner = mapCanvas?.closest(
+            '[data-kg-rich-media-selectable-surface="1"]',
+          ) || null
+          const caption = surface?.querySelector('figcaption[id]') || null
+          const mapCanvasLabelledBy =
+            mapCanvas?.getAttribute('aria-labelledby') || ''
+          const mapCanvasLabel = mapCanvasLabelledBy
+            ? document.getElementById(mapCanvasLabelledBy)
+                ?.textContent?.trim() || ''
+            : mapCanvas?.getAttribute('aria-label') || ''
           const mapInteractiveRoot = mapCanvas?.closest(
             '.maplibregl-interactive',
           ) || null
@@ -49,6 +59,7 @@ def read_city_semantic_media_contract(page: Page) -> dict[str, Any]:
                 || mapInteractiveRoot?.contains(centerHit)
               )
             ),
+            citySemanticSurfaceCaptionId: caption?.id || '',
             citySemanticSurfaceNodeName: surface?.tagName || '',
             citySemanticSurfaceSelectableMarker:
               surface?.getAttribute(
@@ -56,6 +67,18 @@ def read_city_semantic_media_contract(page: Page) -> dict[str, Any]:
               ) || '',
             citySemanticSurfaceVisibleMapLibreCanvasCount:
               visibleMapCanvases.length,
+            cityMapLibreCanvasAccessibleName: mapCanvasLabel,
+            cityMapLibreCanvasAriaHidden:
+              mapCanvas?.hasAttribute('aria-hidden') === true,
+            cityMapLibreCanvasAriaLabelledBy: mapCanvasLabelledBy,
+            cityMapLibreCanvasSelectableMarker:
+              mapCanvas?.getAttribute(
+                'data-kg-rich-media-selectable-surface',
+              ) || '',
+            cityMapLibreCanvasSelectableOwnerIsSurface:
+              selectableOwner === surface,
+            cityMapLibreCanvasSelectableOwnerNodeName:
+              selectableOwner?.tagName || '',
           }
         }
         """

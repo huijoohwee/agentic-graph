@@ -1,8 +1,8 @@
 ---
 title: "Reference implementation: PRD/TAD/ADR Conformance Report"
 doc_type: "Conformance Report"
-version: "1.0.0"
-date: "2026-07-30"
+version: "1.1.0"
+date: "2026-07-31"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.conformance.audit"
@@ -85,15 +85,67 @@ Rule IDs use checkbox ordinals within the guideline's
 Coverage is **18 linked artifact-bearing rules / 18 artifact-bearing rules =
 100%**. Advisory count is **4**.
 
+## Reference implementation: 2026-07-31 split conformance
+
+This addendum covers the Geo+XR contract, the rewritten City contract with its
+VCC companion, and the ADM0 regional companion. It is a selected structural
+profile, not a full guideline-set alignment claim. A distinct read-only
+evaluator reported the findings below across two passes. The authoring
+mechanism repaired the source artifacts; runtime and delivery evidence remain
+outside this structural inventory.
+
+| Rule ID | Geo+XR artifact | City artifact family | Regional companion artifact |
+|---|---|---|---|
+| `validation-checklist#1` | frontmatter | frontmatter | frontmatter |
+| `validation-checklist#2` | §3 journey | §3 journey | §3.3 journey |
+| `validation-checklist#3` | §§6–8 workflows | §§6–8 workflows | §§5.2–5.3 workflows |
+| `validation-checklist#4` | §7 typed data flow | §7 typed data flow | §5.2 typed data flow |
+| `validation-checklist#5` | §4 stories | §4 stories | §3.4 stories |
+| `validation-checklist#6` | §4 Given/When/Then | §4 Given/When/Then | §3.7 Given/When/Then |
+| `validation-checklist#7` | §§4, 12 VCC mapping | §4 plus VCC companion §13 | §7 VCC register |
+| `validation-checklist#8` | §5 priority and ROI | §5 priority and ROI | §§3.5–3.6 priority and ROI |
+| `validation-checklist#9` | §5 minimum scope | §5 minimum scope | §3.5 minimum scope |
+| `validation-checklist#14` | §5 TTV | §5 TTV | §3.6 TTV |
+| `validation-checklist#15` | §8 harness | §8 harness | §5.3 harness |
+| `validation-checklist#17` | §9 topology | §9 topology | §5.4 versioned topology |
+| `validation-checklist#18` | §10 component readiness | §10 component readiness | §5.5 component readiness |
+| `validation-checklist#21` | §§14–17 ADR/FOSS/TCO | §§12–16 ADR/FOSS/TCO | §6 ADR/FOSS/TCO |
+| `validation-checklist#23` | §10 component inventory | §10 component inventory | §5.5 component inventory |
+| `validation-checklist#24` | §12 PRD-to-TAD trace | VCC companion §14 | §9 PRD-to-TAD trace |
+| `validation-checklist#25` | §§10, 12 component-to-VCC trace | §10 plus VCC companion §14 | §§5.5, 9 component-to-VCC trace |
+| `validation-checklist#42` | §12 readiness gaps | §17 plus VCC companion §15 | §8 readiness gaps |
+| `validation-checklist#57` | §13 lanes and boundaries | §9 plus VCC companion §16 | §5.4 lanes and boundaries |
+
+Coverage for this selected profile is **19 linked artifact-bearing rules / 19
+selected artifact-bearing rules = 100%**. Advisory count inside the selected
+profile is **0**. This ratio does not claim full-guideline coverage.
+
+| Finding Type | Severity | Rule anchor | Artifact reference | Evidence excerpt | Remediation |
+|---|---|---|---|---|---|
+| `unimplemented-guideline` | major | `validation-checklist#48` | split conformance addendum | `18 linked guideline rules out of 18` without a current inventory | Documentation change: add and qualify the selected Rule-ID inventory. |
+| `unresolvable-reference` | major | `validation-checklist#24` | City VCC companion §14 predecessor-ID row | `source ownership and honest evidence` | Documentation change: remap the companion to current requirement and component IDs. |
+| `unimplemented-guideline` | major | `validation-checklist#18` | all three component inventories | `Component ID | Responsibility | Dependencies | Configuration | VCCs` | Specification change: add separate local and delivered rung fields. |
+| `missing-economics-metric` | major | `validation-checklist#34` | regional companion §3.6 | `Measure | Target` | Documentation change: add baseline and timeline to every measure. |
+| `incomplete-topology-node` | major | `validation-checklist#38` | regional companion §5.4 | `Topology and lane boundaries` without a version note | Documentation change: add the explicit v1.0 topology note. |
+| `status-conflict` | major | `validation-checklist#51` | City parent §10 and VCC companion §15 | `spec-complete` and `dev-proven` for the same current capability | Specification change: derive current v2 component rungs only from current evidence. |
+| `vendor-coupling` | major | `validation-checklist#53` | generic and regional coverage citations | `./knowgrph-prd-tad-adr-conformance-report.md` outside a labelled block | Documentation change: move each citation into a labelled reference-implementation block and remove regional frontmatter paths. |
+
+The distinct read-only evaluator's final pass recorded zero remaining blocker,
+major, or minor findings in this selected profile. The prior canonical-core
+18-rule denominator above remains historical and is not reused here.
+
 ## Reference implementation: Initial six-field finding register
 
 This immutable baseline records the evaluator's pre-repair result. Evidence
 excerpts are bounded. Each remediation is one allowed documentation or
-specification change.
+specification change. Artifact references follow the current document lineage
+after a source rename. Original line numbers identify the predecessor snapshot,
+not the rewritten document; the finding content and evidence excerpts remain
+unchanged.
 
 | Finding Type | Severity | Rule anchor | Artifact reference | Evidence excerpt | Remediation |
 |---|---|---|---|---|---|
-| `missing-lane` | blocker | `validation-checklist#57` | `knowgrph-game-city-building-sim-rd-tad.md:9` | `lane: "authoring"` with no Mirror or Delivery register | Documentation change: add three lanes and two complete named closed boundaries. |
+| `missing-lane` | blocker | `validation-checklist#57` | City Simulation predecessor, original line 9 | `lane: "authoring"` with no Mirror or Delivery register | Documentation change: add three lanes and two complete named closed boundaries. |
 | `missing-lane` | blocker | `validation-checklist#57` | `knowgrph-game-mmorpg-prd-tad.md:350` | `## Release Boundary` without lane topology | Documentation change: add three lanes and two complete named closed boundaries. |
 | `incomplete-lane-transition` | major | `validation-checklist#57` | `knowgrph-codebase-responsibility-flow-prd-tad.md:553` | `requires separate owner authority` | Documentation change: add stable boundary names, evidence, instruction, rollback, and state. |
 | `incomplete-lane-transition` | major | `validation-checklist#57` | `knowgrph-exa-mcp-prd-tad.md:244` | `authorizes no publication` without a complete register | Documentation change: add both complete named closed boundaries. |
@@ -104,22 +156,22 @@ specification change.
 | `incomplete-lane-transition` | major | `validation-checklist#57` | `knowgrph-videodb-mcp-prd-tad.md:248` | `closed` without provider evidence and rollback | Documentation change: add both complete named closed boundaries. |
 | `vendor-coupling` | major | `validation-checklist#53` | `knowgrph-agent-ready-prd-tad.runtime.md:47` | `MCP/WebMCP-capable client` before the labelled block | Documentation change: replace early concrete protocol names with functional terms. |
 | `vendor-coupling` | major | `validation-checklist#53` | `knowgrph-game-mmorpg-prd-tad.md:2` | `Reference design` | Documentation change: use the exact reference-implementation label. |
-| `orphan-route` | major | `validation-checklist#60` | `knowgrph-game-city-building-sim-rd-tad.md:89` | `/game.city @canvas #civic` | Documentation change: add a sole Invocation Register with schema, trust, and cost. |
+| `orphan-route` | major | `validation-checklist#60` | City Simulation predecessor, original line 89 | `/game.city @canvas #civic` | Documentation change: add a sole Invocation Register with schema, trust, and cost. |
 | `orphan-route` | major | `validation-checklist#60` | `knowgrph-game-mmorpg-prd-tad.md:76` | `/mmorpg @canvas #world` | Documentation change: add a planned Invocation Register and absence disposition. |
-| `unfederated-tool` | major | `validation-checklist#56` | `knowgrph-game-city-building-sim-rd-tad.md:275` | `knowgrph.inspect_local_city_sim` | Specification change: record both embedded tools in the federation disposition. |
+| `unfederated-tool` | major | `validation-checklist#56` | City Simulation predecessor, original line 275 | `knowgrph.inspect_local_city_sim` | Specification change: record both embedded tools in the federation disposition. |
 | `unfederated-tool` | major | `validation-checklist#56` | `knowgrph-game-mmorpg-prd-tad.md:348` | planned tools are not registered | Specification change: keep identities explicitly planned and non-federated until implemented. |
 | `uncatalogued-tool` | major | `validation-checklist#56` | `knowgrph-game-mmorpg-prd-tad.md:348` | planned tools are not registered | Specification change: record non-catalogued disposition and promotion VCC. |
-| `unimplemented-guideline` | major | `validation-checklist#24` | `knowgrph-game-city-building-sim-rd-tad.md:362` | numeric requirements mapped only to a design owner | Documentation change: add stable requirement-to-component/interface trace rows. |
-| `unimplemented-guideline` | major | `validation-checklist#25` | `knowgrph-game-city-building-sim-rd-tad.md:341` | VCCs lacked component mapping | Documentation change: bind each VCC to a component and interface. |
+| `unimplemented-guideline` | major | `validation-checklist#24` | City Simulation predecessor, original line 362 | numeric requirements mapped only to a design owner | Documentation change: add stable requirement-to-component/interface trace rows. |
+| `unimplemented-guideline` | major | `validation-checklist#25` | City Simulation predecessor, original line 341 | VCCs lacked component mapping | Documentation change: bind each VCC to a component and interface. |
 | `unimplemented-guideline` | major | `validation-checklist#24` | `knowgrph-game-mmorpg-prd-tad.md:129` | criteria and ownership lacked a trace register | Documentation change: add bidirectional requirement-to-component/interface trace rows. |
 | `unimplemented-guideline` | major | `validation-checklist#25` | `knowgrph-game-mmorpg-prd-tad.md:210` | components lacked VCC mappings | Documentation change: bind component specifications to VCCs. |
-| `unimplemented-guideline` | major | `validation-checklist#42` | `knowgrph-game-city-building-sim-rd-tad.md:9` | readiness below runtime-ready without a gap matrix | Documentation change: add separate-rung gaps, priorities, and exit VCCs. |
+| `unimplemented-guideline` | major | `validation-checklist#42` | City Simulation predecessor, original line 9 | readiness below runtime-ready without a gap matrix | Documentation change: add separate-rung gaps, priorities, and exit VCCs. |
 | `unimplemented-guideline` | major | `validation-checklist#42` | `knowgrph-game-mmorpg-prd-tad.md:342` | readiness dimensions lacked a gap matrix | Documentation change: add separate-rung gaps, priorities, and exit VCCs. |
-| `incomplete-topology-node` | major | `validation-checklist#17` | `knowgrph-game-city-building-sim-rd-tad.md:240` | topology lacked boundary and residency fields | Documentation change: add versioned lane subgraphs, connections, roles, and residency. |
+| `incomplete-topology-node` | major | `validation-checklist#17` | City Simulation predecessor, original line 240 | topology lacked boundary and residency fields | Documentation change: add versioned lane subgraphs, connections, roles, and residency. |
 | `incomplete-topology-node` | major | `validation-checklist#17` | `knowgrph-game-mmorpg-prd-tad.md:227` | topology lacked boundary and residency fields | Documentation change: add versioned lane subgraphs, connections, roles, and residency. |
-| `missing-economics-metric` | major | `validation-checklist#54` | `knowgrph-game-city-building-sim-rd-tad.md:105` | no quantified ROI or twelve-month TCO | Documentation change: add ROI, TTV, and deployment-model TCO. |
+| `missing-economics-metric` | major | `validation-checklist#54` | City Simulation predecessor, original line 105 | no quantified ROI or twelve-month TCO | Documentation change: add ROI, TTV, and deployment-model TCO. |
 | `missing-economics-metric` | major | `validation-checklist#54` | `knowgrph-game-mmorpg-prd-tad.md:184` | TCO-zero was narrative only | Documentation change: add ROI, TTV, and deployment-model TCO. |
-| `missing-foss-comparison` | major | `validation-checklist#21` | `knowgrph-game-city-building-sim-rd-tad.md:284` | ADRs had decision and reason only | Documentation change: add per-decision FOSS alternatives and TCO. |
+| `missing-foss-comparison` | major | `validation-checklist#21` | City Simulation predecessor, original line 284 | ADRs had decision and reason only | Documentation change: add per-decision FOSS alternatives and TCO. |
 | `missing-foss-comparison` | major | `validation-checklist#21` | `knowgrph-game-mmorpg-prd-tad.md:287` | ADRs lacked FOSS and TCO comparison | Documentation change: add per-decision FOSS alternatives and TCO. |
 | `unknown-status` | minor | `validation-checklist#44` | `knowgrph-game-mmorpg-prd-tad.md:21` | `pending`; `not authorized` | Documentation change: remove the redundant non-ladder readiness block. |
 | `unknown-status` | minor | `validation-checklist#44` | `knowgrph-pipeline-document.md:508` | `Status` values were `unverified` | Documentation change: rename them as non-readiness evidence results. |

@@ -193,6 +193,11 @@ export function requireCitySimRuntimeIdentity({
   )
   requireValue('city_semantic_media.owner', citySemanticMedia.owner, authority.semanticMediaOwner)
   requireValue('city_semantic_media.child_owner', citySemanticMedia.child_owner, authority.semanticMediaChildOwner)
+  requireValue(
+    'city_semantic_media.native_canvas_semantic_owner',
+    citySemanticMedia.native_canvas_semantic_owner,
+    authority.semanticMediaCanvasOwner,
+  )
   requireValue('city_semantic_media.element', citySemanticMedia.element, 'figure')
   requireValue('city_semantic_media.accessible_name', citySemanticMedia.accessible_name, 'Interactive City simulation media stage')
   requireValue(

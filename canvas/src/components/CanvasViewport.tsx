@@ -36,7 +36,11 @@ import {
 import { loadCanvasViewportGeospatialOverlay } from '@/components/canvasViewportGeospatialOverlayLoader'
 import { CanvasEmbedCodePanelHost } from '@/components/CanvasEmbedCodePanelHost'
 import { CanvasSourceInitializationError } from '@/components/CanvasSourceInitializationError'
-import { CitySimMediaFigure } from '@/features/game-city-sim/CitySimMediaFigure'
+import {
+  CITY_SIM_MEDIA_STAGE_DATA_ATTRIBUTES,
+  CITY_SIM_MEDIA_STAGE_LABEL,
+} from '@/features/game-city-sim/citySimMediaSurface'
+import { SemanticMediaFigure } from '@/lib/cards/SemanticMediaFigure'
 import {
   createEmbeddedCanvasChatSubmitMessage,
   deliverEmbeddedCanvasChatSubmit,
@@ -492,16 +496,23 @@ export function CanvasViewport(props: CanvasViewportProps) {
 
         {!documentSwitchOwnsViewport && geospatialCompositionEnabled && !heavyRuntimeIntentBlocked ? (
           cityMapLibreSurfaceRequested ? (
-            <CitySimMediaFigure citySimActive={citySimActive}>
-              <CanvasViewportGeospatialOverlayLazy
-                active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
-                composedWithXr={geospatialXrModeEnabled}
-                geospatialModeEnabled={geospatialCompositionEnabled}
-                graphData={safeGraphData}
-                storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
-                threeOverlayComposed={false}
-              />
-            </CitySimMediaFigure>
+            <SemanticMediaFigure
+              active={citySimActive}
+              activeDataAttributes={CITY_SIM_MEDIA_STAGE_DATA_ATTRIBUTES}
+              label={CITY_SIM_MEDIA_STAGE_LABEL}
+            >
+              {captionId => (
+                <CanvasViewportGeospatialOverlayLazy
+                  active={activeSurface === 'geo' || activeSurface === 'geo-xr'}
+                  composedWithXr={geospatialXrModeEnabled}
+                  geospatialModeEnabled={geospatialCompositionEnabled}
+                  graphData={safeGraphData}
+                  semanticMediaCaptionId={citySimActive ? captionId : undefined}
+                  storyboardWidgetPanelsActive={geospatialCompositionEnabled && active2dSurface === 'storyboard'}
+                  threeOverlayComposed={false}
+                />
+              )}
+            </SemanticMediaFigure>
           ) : (
             <CanvasViewportGeospatialOverlayLazy
               active={activeSurface === 'geo' || activeSurface === 'geo-xr'}

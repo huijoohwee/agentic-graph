@@ -41,6 +41,21 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.cityActive === true
     && city?.cityPanelVisible === true
     && city?.citySemanticSurfaceActive === true
+    && city?.citySemanticSurfaceNodeName === 'FIGURE'
+    && city?.citySemanticSurfaceAccessibleName
+      === 'Interactive City simulation media stage'
+    && city?.citySemanticSurfaceSelectableMarker === '1'
+    && city?.citySemanticSurfaceAriaHidden === false
+    && city?.citySemanticSurfaceVisibleMapLibreCanvasCount === 1
+    && city?.citySemanticSurfaceCenterMapLibreOwned === true
+    && city?.citySemanticSurfaceCaptionId
+      === city?.cityMapLibreCanvasAriaLabelledBy
+    && city?.cityMapLibreCanvasAccessibleName
+      === 'Interactive City simulation media stage'
+    && city?.cityMapLibreCanvasAriaHidden === false
+    && city?.cityMapLibreCanvasSelectableMarker === ''
+    && city?.cityMapLibreCanvasSelectableOwnerIsSurface === true
+    && city?.cityMapLibreCanvasSelectableOwnerNodeName === 'FIGURE'
     && city?.cityMapLibreOwnerCount === 1
     && city?.floatingPanelOpen === true
     && city?.floatingPanelView === 'cityBuilder'
@@ -105,6 +120,7 @@ function hasExactCityHandoffEvidence(handoff) {
     && restored?.cityActive === false
     && restored?.cityPanelVisible === true
     && restored?.citySemanticSurfaceActive === false
+    && restored?.cityMapLibreCanvasAriaLabelledBy === ''
     && restored?.floatingPanelOpen === true
     && restored?.floatingPanelView === 'cityBuilder'
     && restored?.renderMode === '3d'
@@ -126,6 +142,7 @@ function hasExactCityHandoffEvidence(handoff) {
     && reopened?.flightActive === true
     && reopened?.cityActive === false
     && reopened?.citySemanticSurfaceActive === false
+    && reopened?.cityMapLibreCanvasAriaLabelledBy === ''
     && reopened?.hudVisible === true
     && reopened?.activeMapPresent === true
     && reopened?.mapLibreCanvasCount === 1

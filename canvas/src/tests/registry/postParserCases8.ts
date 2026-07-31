@@ -45,7 +45,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["city.sim.ui.coordinateControls","@/__tests__/citySimUiAccessibility.test","testCitySimCoordinateControlsStayLinearAndNormalizeInput"],
   ["city.sim.ui.operationStatus","@/__tests__/citySimUiAccessibility.test","testCitySimOperationStatusIsPoliteWithoutTickFlooding"],
   ["city.sim.ui.mediaScroll","@/__tests__/citySimUiAccessibility.test","testCitySimMediaProjectionRetainsVerticalScrollOwnership"],
-  ["city.sim.ui.semanticMediaSurface","@/__tests__/citySimSemanticMediaSurface.test","testCitySimMediaFigureIsSemanticAndConditionallySelectable"],
+  ["city.sim.ui.semanticMediaSurface","@/__tests__/citySimSemanticMediaSurface.test","testCitySimSemanticMediaSurfaceResolvesMapLibreHitTarget"],
   ["city.sim.geo.aerialInspectionProjection","@/__tests__/citySimAerialInspectionProjection.test","testCitySimAerialInspectionUsesAuthoredCityProfileWithoutFlightCamera"],
   ["city.sim.geo.liveParcelProjection","@/__tests__/citySimGeospatialProjection.test","testCitySimGeospatialProjectionTracksLiveParcelsAndSelection"],
   ["city.sim.geo.maplibreOverlay","@/__tests__/cityGeoOverlayMapLibre.test","testCityGeoOverlayMapLibreRuntime"],

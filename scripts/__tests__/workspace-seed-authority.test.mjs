@@ -110,7 +110,7 @@ run_ready_demo:
 city_runtime:
   schema_id: "knowgrph-city-grid/v1"
   world_ownership: "overlay-only"
-  surface_owner: "native MapLibre Geo+XR surface wrapped by CitySimMediaFigure"
+  surface_owner: "native MapLibre Geo+XR surface wrapped by SemanticMediaFigure"
   renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"
   runtime_dependencies_added: 0
 city_geo_xr:
@@ -138,8 +138,9 @@ city_parcel_projection:
   framing_owner: "gympgrph/src/cityGeoOverlayMapLibreController.ts"
   duplicate_source_or_layer_ids_forbidden: true
 city_semantic_media:
-  owner: "canvas/src/features/game-city-sim/CitySimMediaFigure.tsx"
+  owner: "canvas/src/lib/cards/SemanticMediaFigure.tsx"
   child_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
+  native_canvas_semantic_owner: "gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts"
   element: "figure"
   accessible_name: "Interactive City simulation media stage"
   selection_marker_owner: "canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts"
@@ -233,7 +234,7 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
     ],
     [
       'private semantic surface',
-      'surface_owner: "native MapLibre Geo+XR surface wrapped by CitySimMediaFigure"',
+      'surface_owner: "native MapLibre Geo+XR surface wrapped by SemanticMediaFigure"',
       'surface_owner: "invalid"',
     ],
     [
@@ -243,8 +244,13 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
     ],
     [
       'wrong semantic owner',
-      'owner: "canvas/src/features/game-city-sim/CitySimMediaFigure.tsx"',
+      'owner: "canvas/src/lib/cards/SemanticMediaFigure.tsx"',
       'owner: "invalid"',
+    ],
+    [
+      'wrong native canvas semantic owner',
+      'native_canvas_semantic_owner: "gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts"',
+      'native_canvas_semantic_owner: "invalid"',
     ],
     [
       'wrong semantic child owner',

@@ -22,7 +22,7 @@ export const CITY_SIM_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_
 export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   id: 'city-sim',
   rendererRule: 'reuse one native MapLibre map; mount zero City Three Canvas',
-  surfaceOwner: 'native MapLibre Geo+XR surface wrapped by CitySimMediaFigure',
+  surfaceOwner: 'native MapLibre Geo+XR surface wrapped by SemanticMediaFigure',
   citySurfaceOwner: 'native MapLibre Geo+XR host wrapped by the City semantic media figure',
   composition: 'one native MapLibre map with the shared Singapore environment below City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas',
   environmentMajorPoiIds: Object.freeze([
@@ -37,8 +37,10 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
     'canvas/src/features/three/xrSingaporeEnvironmentSource.ts',
   environmentStageId: 'singapore',
   layerOrder: Object.freeze(['environment', 'city', 'flight']),
+  semanticMediaCanvasOwner:
+    'gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts',
   semanticMediaChildOwner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
-  semanticMediaOwner: 'canvas/src/features/game-city-sim/CitySimMediaFigure.tsx',
+  semanticMediaOwner: 'canvas/src/lib/cards/SemanticMediaFigure.tsx',
   semanticMediaSelectionOwner: 'canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts',
   semanticMediaSelectionWhen: 'City runtime active only',
   worldOwnership: 'overlay-only',

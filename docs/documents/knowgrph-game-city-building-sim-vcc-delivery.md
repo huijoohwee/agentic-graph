@@ -1,8 +1,8 @@
 ---
-title: "Knowgrph City Simulation VCC and delivery register"
+title: "Reference implementation: Knowgrph City Simulation VCC and delivery register"
 id: "md:knowgrph-game-city-building-sim-vcc-delivery"
 doc_type: "VCC/Delivery"
-version: "1.8.0"
+version: "2.0.0"
 date: "2026-07-31"
 lang: "en-US"
 owner: "docs.game.city-simulation"
@@ -11,29 +11,30 @@ delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: false
 frontmatter_contract: "required"
-parent_document: "/docs/documents/knowgrph-game-city-building-sim-rd-tad.md"
+parent_document: "/docs/documents/knowgrph-game-city-building-sim-prd-tad-ard.md"
 ---
 
-# Knowgrph City Simulation VCC and delivery register
+# Reference implementation: Knowgrph City Simulation VCC and delivery register
 
 This companion owns the evidence, traceability, readiness-gap, and delivery
-registers for the [City Simulation PRD/TAD](./knowgrph-game-city-building-sim-rd-tad.md).
+registers for the [City Simulation PRD/TAD/ADR](./knowgrph-game-city-building-sim-prd-tad-ard.md).
 The parent remains the product and technical architecture document; neither
 document may claim proof without candidate-bound evidence.
 
 ## 13. VCC and Evidence Reference register
 
-VCCs 01 and 03–06 retain historical authoring results. The v1.8 authored-source,
-City parcel source/layer, visible-aperture framing, independent aerial overlay,
-and semantic-media changes have no candidate-bound exact-head browser result;
-VCC-07 remains unrecorded. The documents therefore remain `spec-complete` and
-`undocumented` for delivery. Prior evidence does not prove the new composition,
-protected integration, runtime readiness, or delivery.
+VCCs 01 and 03–06 retain historical authoring results. The v2 documentation
+split does not manufacture new runtime evidence. The neutral Geo+XR registry,
+current semantic-media composition, and clean-browser VCCs have no result bound
+to this documentation revision; VCC-02 and VCC-07 therefore remain unrecorded.
+The documents remain `spec-complete` locally and `undocumented` for delivery.
+Prior source evidence does not prove universal overlay arbitration, current
+browser behavior, production integration, or delivery.
 
 | VCC | Evaluator-checkable end state and constraint | Stated check | Evidence Reference |
 |---|---|---|---|
 | `VCC-CITY-01` | Two equal applied City sources and input traces yield byte-identical valid city states; the applied source is the only initializer and no clock, random, network, or model participates. | Registered authored-source, city model, economy, input, and lifecycle cases exit 0 with non-zero totals. | 2026-07-30 historical authoring: `npm --prefix canvas run test:ci:unit -- city.sim`; 31/31 passed before the v1.8 authored-source contract |
-| `VCC-CITY-02` | Geo+XR retains one native MapLibre visual/renderer/camera/gesture owner wrapped by one semantic/selectable `CitySimMediaFigure`; one City parcel source and four City layers represent live parcels; visible-aperture framing refits on resize and restores prior padding; zero City Three.js/R3F mounts; the reused stopped aircraft/route has owner `city` while Flight bootstrap/camera/gameplay/environment/readiness stay inactive. | Registered source/projection/layer/framing/ownership/semantic-media cases and candidate-bound browser assertions exit 0. | none recorded for v1.8; prior runs did not cover this contract |
+| `VCC-CITY-02` | Geo+XR retains one native MapLibre visual/renderer/camera/gesture owner wrapped by one semantic/selectable `SemanticMediaFigure`; its native canvas references the figure caption and resolves the figure as its unique closest selectable owner; one City parcel source and four City layers represent live parcels; visible-aperture framing refits on resize and restores prior padding; zero City Three.js/R3F mounts; the selected shared environment remains active below City parcels; and the reused stopped aircraft/route has owner `city` while Flight bootstrap/camera/gameplay/readiness stay inactive. | Registered source/projection/layer/framing/ownership/semantic-media cases and candidate-bound browser assertions exit 0. | none recorded for v2; prior runs did not cover the complete current contract |
 | `VCC-CITY-03` | Save writes only the canonical path, verifies byte and semantic read-back, preserves malformed prior bytes, and restores the source-authored initial grid when persistence is absent. | Registered authored-source, codec, and persistence cases exit 0. | 2026-07-30 historical codec/persistence cases passed before the v1.8 source fallback contract |
 | `VCC-CITY-04` | Advisor returns at most two deterministic rounds and one zero-token cost record without mutating a zone. | Registered Advisor cases exit 0 and surface round/cost assertions. | same authoring run; Advisor case passed |
 | `VCC-CITY-05` | Parser accepts only the exact tuple and typed operations; every invalid input leaves the revision unchanged. | Registered invocation cases exit 0 with accepted/rejected counts. | same authoring run; invocation case passed |
@@ -44,14 +45,14 @@ protected integration, runtime readiness, or delivery.
 
 | PRD requirement | Product outcome | TAD component / interface | VCC |
 |---|---|---|---|
-| `PRD-CITY-R1/R12` | source ownership and honest evidence | `TAD-CITY-SOURCE` + `TAD-CITY-RUNTIME` / evidence boundary | 01, 03, 07 |
-| `PRD-CITY-R2/R11` | activation and seven-view proof | `TAD-CITY-GEO-SURFACE` + `TAD-CITY-GEO` / immutable projections | 02, 07 |
-| `PRD-CITY-R3/R10` | sole MapLibre ownership, City parcel layers, semantic figure, independent aerial overlay, visible-aperture and surface restoration | `TAD-CITY-GEO-SURFACE` + `TAD-CITY-GEO` + `TAD-CITY-AERIAL` | 02, 07 |
-| `PRD-CITY-R4/R5` | deterministic economy and lifecycle | `TAD-CITY-RUNTIME` / dispatch; `TAD-CITY-MODEL` / tick | 01 |
-| `PRD-CITY-R6` | canonical save and read-back | `TAD-CITY-PERSIST` / WorkspaceFs adapter | 03 |
-| `PRD-CITY-R7` | bounded local advice | `TAD-CITY-MODEL` / advise | 04 |
-| `PRD-CITY-R8` | strict native invocation | `TAD-CITY-INVOKE` / parse + execute | 05 |
-| `PRD-CITY-R9` | two browser-local tools | `TAD-CITY-MCP` / inspect + control | 06 |
+| `PRD-CITY-01` | source ownership and fail-closed activation | `TAD-CITY-SOURCE` + `TAD-CITY-RUNTIME` / parse and dispatch | 01, 03, 07 |
+| `PRD-CITY-02` | deterministic lifecycle and replay | `TAD-CITY-RUNTIME` + `TAD-CITY-MODEL` / dispatch and tick | 01, 07 |
+| `PRD-CITY-03` | bounded non-mutating advice | `TAD-CITY-MODEL` / advise | 04 |
+| `PRD-CITY-04` | canonical save and read-back | `TAD-CITY-PERSIST` / workspace adapter | 03 |
+| `PRD-CITY-05` | input parity and typed rejection | `TAD-CITY-RUNTIME` + `TAD-CITY-INVOKE` + `TAD-CITY-PANELS` / normalized operation | 05, 07 |
+| `PRD-CITY-06` | one composed semantic presentation | `TAD-CITY-GEOXR` / neutral surface ports | 02, 07 |
+| `PRD-CITY-07` | trust-separated local inspect and control | `TAD-CITY-TOOLS` + `TAD-CITY-INVOKE` / shared dispatcher | 06, 07 |
+| `PRD-CITY-08` | mobile and offline first value | `TAD-CITY-PANELS` + `TAD-CITY-PERSIST` / responsive projection and local save | 03, 07 |
 
 The parent component inventory provides the reverse component-to-VCC mapping;
 no component or requirement is intentionally orphaned.
@@ -60,9 +61,9 @@ no component or requirement is intentionally orphaned.
 
 | Workstream | Local rung | Delivered rung | Gap | Priority | Exit criteria (VCC) |
 |---|---|---|---|---|---|
-| deterministic runtime and Advisor | dev-proven | undocumented | clean-browser proof incomplete | major | 01, 04, 07 |
-| authored City grid/geographic profile, MapLibre parcel layers, semantic media figure, visible-aperture framing, independent aerial projection, and persistence | spec-complete | undocumented | v1.8 exact-SHA clean-browser proof absent | major | 01, 02, 03, 07 |
-| invocation and embedded tools | dev-proven | undocumented | no delivery proof | major | 05, 06, 07 |
+| deterministic runtime and Advisor | spec-complete | undocumented | historical evidence is not bound to v2; clean-browser proof incomplete | major | 01, 04, 07 |
+| authored City grid/geographic profile, MapLibre parcel layers, semantic media figure, visible-aperture framing, independent aerial projection, and persistence | spec-complete | undocumented | v2 exact-SHA clean-browser proof absent | major | 01, 02, 03, 07 |
+| invocation and embedded tools | spec-complete | undocumented | historical evidence is not bound to v2; no delivery proof | major | 05, 06, 07 |
 | clean browser first value | spec-complete | undocumented | exact-SHA proof absent | major | 07 |
 | Mirror and Delivery | undocumented | undocumented | targets absent and promotion not requested | none | separate promotion VCC required |
 
@@ -71,7 +72,7 @@ no component or requirement is intentionally orphaned.
 | Dimension | Tier | Order | Local rung | Delivered rung | VCC / disposition |
 |---|---|---:|---|---|---|
 | Agentic OS-ready | Won't this increment | — | undocumented | undocumented | no OS Status Surface declared |
-| AI Agent-ready | Must | 1 | dev-proven | undocumented | 06, 07; embedded discovery only |
+| AI Agent-ready | Must | 1 | spec-complete | undocumented | 06, 07; embedded discovery only |
 | MCP Gateway-ready | Won't this increment | — | undocumented | undocumented | remote gateway excluded; embedded tool disposition is recorded |
 
 No follow-on work starts before VCC-06 is satisfied. Discovery and reads stay
