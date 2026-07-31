@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createRegionalPoiProfile } from 'grph-shared/geospatial/regionalPoiGeo'
 import { parseCitySimAuthoredSource } from '@/features/game-city-sim/citySimAuthoredSource'
 import { projectCitySimToGeospatialOverlay } from '@/features/game-city-sim/citySimGeospatialProjection'
 import type { CitySimSnapshot } from '@/features/game-city-sim/citySimRuntimeState'
@@ -74,6 +75,50 @@ export function testCitySimGeospatialProjectionTracksLiveParcelsAndSelection() {
   assert.ok(presentationBounds[0][1] < bounds[0][1])
   assert.ok(presentationBounds[1][0] > bounds[1][0])
   assert.ok(presentationBounds[1][1] >= bounds[1][1])
+
+  const sourceRegionalProfile = overlay.profile!.regionalPoiProfile
+  const sourceSurface = sourceRegionalProfile.surfaces[0]
+  const antimeridianRegionalProfile = createRegionalPoiProfile({
+    ...sourceRegionalProfile,
+    id: 'adm0:TST:antimeridian-pois/v1',
+    pois: [{ id: 'crossing-poi', label: 'Crossing POI' }],
+    revision: 'fixture-antimeridian-pois-2026-07-31',
+    surfaces: [{
+      ...sourceSurface,
+      geometry: {
+        coordinates: [[
+          [179, 10],
+          [-179, 10],
+          [-179, 12],
+          [179, 12],
+          [179, 10],
+        ]],
+        type: 'Polygon',
+      },
+      id: 'crossing-poi:surface',
+      label: 'Crossing POI surface',
+      poiId: 'crossing-poi',
+    }],
+  })
+  const antimeridianOverlay = {
+    ...overlay,
+    profile: {
+      ...overlay.profile!,
+      center: [179.99995, 11] as const,
+      regionalPoiProfile: antimeridianRegionalProfile,
+    },
+  }
+  const antimeridianParcelBounds = cityGeoOverlayBounds(antimeridianOverlay)
+  assert.ok(antimeridianParcelBounds)
+  assert.ok(antimeridianParcelBounds[0][0] > 179)
+  assert.ok(antimeridianParcelBounds[1][0] > 180)
+  assert.ok(
+    antimeridianParcelBounds[1][0] - antimeridianParcelBounds[0][0] < 0.01,
+  )
+  assert.deepEqual(cityGeoPresentationBounds(antimeridianOverlay), [
+    [179, 10],
+    [181, 12],
+  ])
   const firstParcelRing = collection.features[0].geometry.coordinates[0]
   assert.ok(firstParcelRing[1][0] > firstParcelRing[0][0])
   assert.ok(

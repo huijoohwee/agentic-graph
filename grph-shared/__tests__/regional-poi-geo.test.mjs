@@ -3,10 +3,15 @@ import { createHash } from 'node:crypto'
 import test from 'node:test'
 import {
   createRegionalPoiProfile,
+  deriveRegionalPoiLongitudeSpan,
+  deriveRegionalPoiLocators,
 } from '../dist/geospatial/regionalPoiGeo.js'
 import {
   SINGAPORE_MAJOR_POI_GEO_PROFILE,
 } from '../dist/geospatial/singaporeMajorPoiGeo.js'
+import {
+  SINGAPORE_MAJOR_POI_IDENTITIES,
+} from '../dist/geospatial/singaporeMajorPoiIdentity.js'
 
 const EXPECTED_SURFACE_IDS = [
   'marina-bay-sands:tower-1',
@@ -37,6 +42,7 @@ test('Singapore major POIs are immutable geographic source data', () => {
     profile.pois.map(poi => poi.id),
     ['marina-bay-sands', 'singapore-flyer', 'gardens-by-the-bay'],
   )
+  assert.deepEqual(profile.pois, SINGAPORE_MAJOR_POI_IDENTITIES)
   assert.deepEqual(
     profile.surfaces.map(surface => surface.id),
     EXPECTED_SURFACE_IDS,
@@ -71,6 +77,99 @@ test('Singapore major POIs are immutable geographic source data', () => {
     licenseName: 'Open Data Commons Open Database License 1.0',
     licenseUrl: 'https://opendatacommons.org/licenses/odbl/1-0/',
   }])
+})
+
+test('Singapore major POI locators are stable, bounded, and order-independent', () => {
+  const profile = SINGAPORE_MAJOR_POI_GEO_PROFILE
+  const locators = deriveRegionalPoiLocators(profile)
+  assert.equal(isDeepFrozen(locators), true)
+  assert.deepEqual(
+    locators.map(locator => locator.poiId),
+    ['marina-bay-sands', 'singapore-flyer', 'gardens-by-the-bay'],
+  )
+  assert.deepEqual(
+    locators.map(locator => locator.coordinate.map(value => value.toFixed(7))),
+    [
+      ['103.8605404', '1.2837230'],
+      ['103.8631253', '1.2894104'],
+      ['103.8638279', '1.2821443'],
+    ],
+  )
+
+  for (const locator of locators) {
+    const coordinates = profile.surfaces
+      .filter(surface => surface.poiId === locator.poiId)
+      .flatMap(surface => surface.geometry.coordinates.flat())
+    const longitudes = coordinates.map(([longitude]) => longitude)
+    const latitudes = coordinates.map(([, latitude]) => latitude)
+    assert.ok(locator.coordinate[0] >= Math.min(...longitudes))
+    assert.ok(locator.coordinate[0] <= Math.max(...longitudes))
+    assert.ok(locator.coordinate[1] >= Math.min(...latitudes))
+    assert.ok(locator.coordinate[1] <= Math.max(...latitudes))
+  }
+
+  const reordered = structuredClone(profile)
+  reordered.surfaces.reverse()
+  assert.deepEqual(deriveRegionalPoiLocators(reordered), locators)
+})
+
+test('regional POI locators center the minimum antimeridian-crossing span', () => {
+  const profile = structuredClone(SINGAPORE_MAJOR_POI_GEO_PROFILE)
+  profile.id = 'adm0:TST:antimeridian-poi/v1'
+  profile.region = { code: 'TST', label: 'Antimeridian Test Region' }
+  profile.pois = [{ id: 'crossing-poi', label: 'Crossing POI' }]
+  profile.surfaces = [{
+    ...profile.surfaces[0],
+    id: 'crossing-poi:surface',
+    poiId: 'crossing-poi',
+    label: 'Crossing POI surface',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [179, 10],
+        [-179, 10],
+        [-179, 12],
+        [179, 12],
+        [179, 10],
+      ]],
+    },
+  }]
+
+  assert.deepEqual(deriveRegionalPoiLocators(profile), [{
+    coordinate: [-180, 11],
+    label: 'Crossing POI',
+    poiId: 'crossing-poi',
+  }])
+})
+
+test('regional longitude spans preserve the minimum wrapped interval', () => {
+  const expected = {
+    center: -180,
+    east: 181,
+    spanDegrees: 2,
+    west: 179,
+  }
+  assert.deepEqual(
+    deriveRegionalPoiLongitudeSpan([179, -179]),
+    expected,
+  )
+  assert.deepEqual(
+    deriveRegionalPoiLongitudeSpan([-179, 179, 179]),
+    expected,
+  )
+  assert.deepEqual(
+    deriveRegionalPoiLongitudeSpan([45]),
+    {
+      center: 45,
+      east: 45,
+      spanDegrees: 0,
+      west: 45,
+    },
+  )
+  assert.throws(
+    () => deriveRegionalPoiLongitudeSpan([]),
+    /at least one longitude/,
+  )
 })
 
 test('Singapore surface heights and provenance match the dated authorities', () => {
@@ -224,11 +323,105 @@ test('regional POI validation rejects stale aliases and invalid geometry', () =>
     /must be closed/,
   )
 
+  const degenerateRing = structuredClone(SINGAPORE_MAJOR_POI_GEO_PROFILE)
+  degenerateRing.surfaces[0].geometry.coordinates = [[
+    [103.86, 1.28],
+    [103.861, 1.28],
+    [103.862, 1.28],
+    [103.86, 1.28],
+  ]]
+  assert.throws(
+    () => createRegionalPoiProfile(degenerateRing),
+    /self-intersect|non-zero area/,
+  )
+
+  const selfIntersectingRing = structuredClone(
+    SINGAPORE_MAJOR_POI_GEO_PROFILE,
+  )
+  selfIntersectingRing.surfaces[0].geometry.coordinates = [[
+    [103.86, 1.28],
+    [103.862, 1.282],
+    [103.86, 1.282],
+    [103.862, 1.28],
+    [103.86, 1.28],
+  ]]
+  assert.throws(
+    () => createRegionalPoiProfile(selfIntersectingRing),
+    /must not self-intersect/,
+  )
+
+  const outsideHole = structuredClone(SINGAPORE_MAJOR_POI_GEO_PROFILE)
+  outsideHole.surfaces[0].geometry.coordinates = [[
+    [103.86, 1.28],
+    [103.864, 1.28],
+    [103.864, 1.284],
+    [103.86, 1.284],
+    [103.86, 1.28],
+  ], [
+    [103.865, 1.281],
+    [103.866, 1.281],
+    [103.866, 1.282],
+    [103.865, 1.282],
+    [103.865, 1.281],
+  ]]
+  assert.throws(
+    () => createRegionalPoiProfile(outsideHole),
+    /strictly inside its outer ring/,
+  )
+
+  const overlappingHoles = structuredClone(SINGAPORE_MAJOR_POI_GEO_PROFILE)
+  overlappingHoles.surfaces[0].geometry.coordinates = [[
+    [103.86, 1.28],
+    [103.866, 1.28],
+    [103.866, 1.286],
+    [103.86, 1.286],
+    [103.86, 1.28],
+  ], [
+    [103.861, 1.281],
+    [103.864, 1.281],
+    [103.864, 1.284],
+    [103.861, 1.284],
+    [103.861, 1.281],
+  ], [
+    [103.863, 1.283],
+    [103.865, 1.283],
+    [103.865, 1.285],
+    [103.863, 1.285],
+    [103.863, 1.283],
+  ]]
+  assert.throws(
+    () => createRegionalPoiProfile(overlappingHoles),
+    /holes must not intersect or contain one another/,
+  )
+
+  const validHole = structuredClone(SINGAPORE_MAJOR_POI_GEO_PROFILE)
+  validHole.surfaces[0].geometry.coordinates = [[
+    [103.86, 1.28],
+    [103.864, 1.28],
+    [103.864, 1.284],
+    [103.86, 1.284],
+    [103.86, 1.28],
+  ], [
+    [103.861, 1.281],
+    [103.863, 1.281],
+    [103.863, 1.283],
+    [103.861, 1.283],
+    [103.861, 1.281],
+  ]]
+  assert.doesNotThrow(() => createRegionalPoiProfile(validHole))
+
   const unknownPoi = structuredClone(SINGAPORE_MAJOR_POI_GEO_PROFILE)
   unknownPoi.surfaces[0].poiId = 'not-declared'
   assert.throws(
     () => createRegionalPoiProfile(unknownPoi),
     /references an unknown POI/,
+  )
+
+  const orphanPoi = structuredClone(SINGAPORE_MAJOR_POI_GEO_PROFILE)
+  orphanPoi.pois.push({ id: 'orphan-poi', label: 'Orphan POI' })
+  assert.throws(
+    () => createRegionalPoiProfile(orphanPoi),
+    /POI orphan-poi requires at least one surface/,
   )
 })
 

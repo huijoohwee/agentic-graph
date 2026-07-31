@@ -417,7 +417,6 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ref={containerRef}
       className="absolute inset-0 w-full h-full z-0"
       data-kg-xr-document-loaded={mode === 'xr' ? (xrDocumentLoaded ? '1' : '0') : undefined}
-      data-kg-geo-xr-surface={geospatialComposite ? 'active' : undefined}
       data-kg-xr-scene-authority={xrSceneAuthority}
       data-kg-xr-exclusive-stage={mode === 'xr' && (immersiveMediaStageActive || hasGraph || hasXrEmptyWorld) ? '1' : undefined}
       data-kg-xr-empty-world={hasXrEmptyWorld ? '1' : undefined}

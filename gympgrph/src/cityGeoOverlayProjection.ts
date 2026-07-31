@@ -1,5 +1,9 @@
 import type { Feature, FeatureCollection, Polygon } from 'geojson'
 import {
+  deriveRegionalPoiLongitudeSpan,
+  normalizeRegionalPoiLongitude,
+} from 'grph-shared/geospatial/regionalPoiGeo'
+import {
   createCityGeoOverlaySnapshot,
   type CityGeoCoordinate,
   type CityGeoOverlaySnapshot,
@@ -88,13 +92,13 @@ function geographicCoordinate(
     - eastMeters * Math.sin(bearingRadians)
   )
   const coordinate: [number, number] = [
-    profile.center[0] + rotatedEastMeters / longitudeMetersPerDegree,
+    normalizeRegionalPoiLongitude(
+      profile.center[0] + rotatedEastMeters / longitudeMetersPerDegree,
+    ),
     profile.center[1] + rotatedNorthMeters / METERS_PER_LATITUDE_DEGREE,
   ]
   if (
     !coordinate.every(Number.isFinite)
-    || coordinate[0] < -180
-    || coordinate[0] > 180
     || coordinate[1] < -85
     || coordinate[1] > 85
   ) {
@@ -142,13 +146,14 @@ export function cityGeoGridProjectedBounds(
   ))
   const longitudes = coordinates.map(coordinate => coordinate[0])
   const latitudes = coordinates.map(coordinate => coordinate[1])
+  const longitudeSpan = deriveRegionalPoiLongitudeSpan(longitudes)
   return Object.freeze([
     Object.freeze([
-      Math.min(...longitudes),
+      longitudeSpan.west,
       Math.min(...latitudes),
     ] as const),
     Object.freeze([
-      Math.max(...longitudes),
+      longitudeSpan.east,
       Math.max(...latitudes),
     ] as const),
   ] as const)
@@ -305,13 +310,22 @@ export function cityGeoPresentationBounds(
     validated.profile.regionalPoiProfile,
   )
   if (!parcelBounds) return poiBounds
+  const longitudeSpan = deriveRegionalPoiLongitudeSpan([
+    parcelBounds[0][0],
+    parcelBounds[1][0],
+    ...validated.profile.regionalPoiProfile.surfaces.flatMap(surface => (
+      surface.geometry.coordinates.flatMap(ring => (
+        ring.map(([longitude]) => longitude)
+      ))
+    )),
+  ])
   return Object.freeze([
     Object.freeze([
-      Math.min(parcelBounds[0][0], poiBounds[0][0]),
+      longitudeSpan.west,
       Math.min(parcelBounds[0][1], poiBounds[0][1]),
     ] as const),
     Object.freeze([
-      Math.max(parcelBounds[1][0], poiBounds[1][0]),
+      longitudeSpan.east,
       Math.max(parcelBounds[1][1], poiBounds[1][1]),
     ] as const),
   ] as const)

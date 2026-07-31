@@ -21,11 +21,11 @@ export const CITY_SIM_SEED_BASENAME = 'knowgrph-game-city-building-sim-demo.md'
 export const CITY_SIM_SEED_RELATIVE_PATH = `${WORKSPACE_SEED_DIRECTORY_RELATIVE_PATH}/${CITY_SIM_SEED_BASENAME}`
 export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   id: 'city-sim',
-  rendererRule: 'reuse one native MapLibre map; mount zero City Three Canvas',
+  rendererRule: 'reuse one native MapLibre map; create or activate zero City Three presentation; any retained shared Canvas remains inactive, invisible, and pointer-transparent',
   surfaceOwner: 'native MapLibre Geo+XR surface wrapped by SemanticMediaFigure',
   citySurfaceOwner: 'native MapLibre Geo+XR host wrapped by the City semantic media figure',
   basemapOwner: 'one real native MapLibre basemap',
-  composition: 'one real native MapLibre basemap with companion-owned regional geographic POI layers, source-authored meter-scaled City parcel layers, and independent Flight aircraft/route layers; zero Flight-local XR environment sources or features; zero City Three Canvas or HTML POI markers',
+  composition: 'one real native MapLibre basemap with companion-owned regional geographic POI layers, source-authored meter-scaled City parcel layers, and independent Flight aircraft/route layers; zero Flight-local XR environment sources or features; zero City-created, active, or visible Three presentation; zero HTML POI markers',
   layerOrder: Object.freeze(['regional-context', 'city', 'flight']),
   parcelScalePolicy:
     'project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor',
@@ -41,12 +41,13 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
       'kg-geo-xr:regional-poi:fill',
       'kg-geo-xr:regional-poi:extrusion',
       'kg-geo-xr:regional-poi:outline',
+      'kg-geo-xr:regional-poi:locator',
       'kg-geo-xr:regional-poi:label',
     ]),
     featureContract:
-      'companion-authored exact geographic Polygon rings, real-metre base/height, accuracy, and provenance',
+      'nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three order-independent identity Point locators',
     presentationPolicy:
-      'read-only MapLibre regional-context band below City parcels and Flight route/aircraft',
+      'read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-independent labels',
     storagePolicy: 'checked-in',
   }),
   cameraFraming:

@@ -4,6 +4,7 @@ import {
   resolveXrSingaporeMajorPoi,
   type XrSingaporePoiSurface,
 } from './xrSingaporeEnvironmentSource'
+import { deriveXrObservationWheelSupports } from './xrObservationWheelPresentation'
 import {
   resolveXrTerrainPerimeter,
   type XrTerrainPerimeterEdge,
@@ -123,6 +124,7 @@ function SingaporeFlyer() {
   const wheel = poi.surfaces[0]
   if (!wheel) throw new Error('Singapore Flyer requires one authored wheel surface')
   const radius = wheel.size[1] * 0.48
+  const supports = deriveXrObservationWheelSupports(wheel)
   return (
     <group name="kg_xr_singapore_flyer" position={wheel.position}>
       <mesh castShadow>
@@ -144,9 +146,14 @@ function SingaporeFlyer() {
           </React.Fragment>
         )
       })}
-      {[-1, 1].map(side => (
-        <mesh key={side} position={[side * 1.05, -2.68, 0]} rotation={[0, 0, side * -0.33]} castShadow>
-          <boxGeometry args={[0.16, 2.4, 0.2]} />
+      {supports.map((support, index) => (
+        <mesh
+          key={index}
+          position={support.position}
+          rotation={[0, 0, support.rotationZ]}
+          castShadow
+        >
+          <boxGeometry args={support.size} />
           <SurfaceMaterial color="#dce8ea" metalness={0.16} roughness={0.48} />
         </mesh>
       ))}

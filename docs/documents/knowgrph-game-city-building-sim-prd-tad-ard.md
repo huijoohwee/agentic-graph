@@ -405,10 +405,11 @@ remain mounted only as the same inactive, transparent, pointer-inert lifecycle
 owner; City does not create it, activate it, or retain any R3F Flight visuals.
 This preserves exact renderer identity across a Flight-to-City-to-Flight
 handoff without admitting a second visible presentation. City projects no
-selected Flight-local XR environment, local stage
-footprint, or local schematic POI into geographic space. Instead, the selected
-regional companion supplies a separate checked-in geographic-context
-publication with exact rings, real-metre heights, accuracy, and provenance.
+selected Flight-local XR environment, local stage footprint, or derived local
+POI presentation into geographic space. Instead, the selected regional
+companion supplies the checked-in geographic authority with nine exact Polygon
+surfaces, their complete ring sets, real-metre heights, accuracy, provenance,
+and three identity locators.
 That regional band renders below source-authored City parcels; the stopped
 Flight route and aircraft render above both. The MapLibre camera frames the
 union of the admitted regional features and City parcel bounds inside the

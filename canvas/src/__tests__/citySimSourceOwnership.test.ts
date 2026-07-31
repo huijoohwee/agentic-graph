@@ -75,6 +75,23 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
     ),
     'City source intent must not compose a Three overlay above the MapLibre owner',
   )
+  assert.ok(
+    viewport.includes(
+      "data-kg-three-canvas-active={threeCanvasSurface.active ? '1' : '0'}",
+    ),
+    'the retained shared Canvas must expose its inactive lifecycle state',
+  )
+  assert.doesNotMatch(
+    threeGraph,
+    /data-kg-geo-xr-surface/,
+    'the shared Canvas is a presentation layer, not a second Geo+XR surface owner',
+  )
+  assert.ok(
+    viewportOverlay.includes(
+      "data-kg-geo-xr-surface={active && composedWithXr ? 'active' : undefined}",
+    ),
+    'the retained geographic wrapper must remain the sole Geo+XR surface owner',
+  )
   assert.doesNotMatch(
     viewport,
     /cityMapLibreSurfaceRequested\s*\?\s*\(\s*<SemanticMediaFigure/,

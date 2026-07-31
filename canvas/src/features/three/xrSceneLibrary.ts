@@ -1,6 +1,13 @@
 import {
+  XR_SINGAPORE_STAGE_SIZE_METERS,
   XR_SINGAPORE_MAJOR_POI_SURFACES,
+  XR_SINGAPORE_REGIONAL_POI_PRESENTATION_POLICY,
 } from './xrSingaporeEnvironmentSource'
+import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
+import type { RegionalPoiProfile } from 'grph-shared/geospatial/regionalPoiGeo'
+import type {
+  RegionalPoiPresentationPolicy,
+} from '@/features/geospatial/regionalPoiPresentationStyle'
 
 export type XrMotionReferenceVector = readonly [number, number, number]
 
@@ -35,6 +42,8 @@ export type XrMotionReferenceStagePreset = Readonly<{
   label: string
   description: string
   environmentKind: 'terrain' | 'environment'
+  regionalPoiProfile?: RegionalPoiProfile
+  regionalPoiPresentationPolicy?: RegionalPoiPresentationPolicy
   sizeMeters: readonly [number, number]
   structures: readonly XrGreyBoxStructure[]
 }>
@@ -47,7 +56,10 @@ export const XR_MOTION_REFERENCE_STAGE_PRESETS: readonly XrMotionReferenceStageP
     label: 'Singapore',
     description: 'Default tropical-city terrain with a waterfront edge, transit spine, garden deck, and compact skyline.',
     environmentKind: 'terrain',
-    sizeMeters: [32, 24],
+    regionalPoiProfile: SINGAPORE_MAJOR_POI_GEO_PROFILE,
+    regionalPoiPresentationPolicy:
+      XR_SINGAPORE_REGIONAL_POI_PRESENTATION_POLICY,
+    sizeMeters: XR_SINGAPORE_STAGE_SIZE_METERS,
     structures: XR_SINGAPORE_MAJOR_POI_SURFACES,
   },
   {

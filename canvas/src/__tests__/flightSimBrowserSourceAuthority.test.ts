@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import test from 'node:test'
 import { readFlightSimBrowserAuthoritySources } from './helpers/flightSimBrowserSourceAuthorityFiles'
+import { assertFlightSimBrowserSingaporePoiSourceAuthority } from './helpers/flightSimBrowserSingaporePoiSourceAuthority'
 const repoRoot = resolve(process.cwd(), '..')
 test('Flight browser proof activates only after applying the authored source', () => {
   const {
@@ -204,20 +205,11 @@ test('Flight browser proof activates only after applying the authored source', (
     /view\["mapPointerHit"\] = layout_occlusion\.get\("mapPointerHit"\)/,
   )
   assert.doesNotMatch(geoXrVerifier, /const candidates = \[/)
-  assert.match(
-    geoXrRequirementsVerifier,
-    /environment\.stageFootprintAuthoredMeters/,
-  )
-  assert.match(geoXrRequirementsVerifier, /environment\.majorPoiAuthoredMeters/)
-  assert.match(geoXrRequirementsVerifier, /environment\.majorPoiIds/)
-  assert.match(geoXrRequirementsVerifier, /height_meters=0\.08/)
-  assert.match(geoXrRequirementsVerifier, /width_meters=32/)
-  assert.match(geoXrRequirementsVerifier, /height_meters=3\.6/)
-  assert.doesNotMatch(geoXrLayoutVerifier, /heightMeters >= 20/)
-  assert.match(
+  assertFlightSimBrowserSingaporePoiSourceAuthority({
+    evidenceValidator,
     geoXrLayoutVerifier,
-    /proof\.id === 'marina-bay-sands:tower-center'/,
-  )
+    geoXrRequirementsVerifier,
+  })
   assert.match(
     geoXrLayoutVerifier,
     /flight_panel\.locator\(\s*'\[data-kg-flight-sim-open="1"\]'/,
@@ -308,8 +300,11 @@ test('Flight browser proof activates only after applying the authored source', (
     'name=f"File {flight_source_basename}"',
     'data-kg-city-sim-exit="1"',
     'geospatialPreferenceEnabled',
+    'geoXrSurfaceCount',
     'mapLibreCanvasCount',
     'threeCanvasOwnerCount',
+    'threeCanvasActiveCount',
+    'threeCanvasInactiveCount',
     'citySemanticSurfaceActive',
     'citySemanticSurfaceNodeName',
     'citySemanticSurfaceAccessibleName',
@@ -320,6 +315,7 @@ test('Flight browser proof activates only after applying the authored source', (
     'cityMapLibreCanvasAriaLabelledByName',
     'cityMapLibreCanvasSelectableMarker',
     'cityMapLibreCanvasSelectableOwnerIsCanvas',
+    'cityMapLibreCanvasSelectableOwnerNodeName',
     'cityMapLibreOwnerCount',
     'flightLayersReady',
     'overlayPhase',
@@ -330,7 +326,10 @@ test('Flight browser proof activates only after applying the authored source', (
     'renderedEnvironmentPoiIds',
     'environmentSourceExactlyMatchesOverlay',
     'environmentLayerCount',
+    'citySourcePresent',
     'citySourceFeatures',
+    'cityLayerCount',
+    'cityLayersReady',
     'cityParcelsUseAuthoredMeters',
     'cityGeoXrLayerOrderExact',
     'renderedEnvironmentFeatureCount',
@@ -356,18 +355,6 @@ test('Flight browser proof activates only after applying the authored source', (
     ),
     evidenceValidator.indexOf('function hasExactCityHandoffEvidence'),
   )
-  for (const retainedCityRendererEvidence of [
-    'city?.threeCanvasOwnerCount === 1',
-    'city?.canvasStable === true',
-    'city?.rendererPointerTransparent === true',
-    'city?.rendererSurfaceVisible === false',
-    'city?.flightR3fVisualCount === 0',
-  ]) {
-    assert.ok(
-      cityEvidenceValidator.includes(retainedCityRendererEvidence),
-      `expected retained inactive City renderer evidence: ${retainedCityRendererEvidence}`,
-    )
-  }
   assert.match(
     cityEvidenceValidator,
     /JSON\.stringify\(\['aircraft', 'route', 'route-point'\]\)/,

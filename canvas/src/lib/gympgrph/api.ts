@@ -20,6 +20,7 @@ export {
   hasExactCityGeoXrLayerOrder,
   mapHasExactRegionalPoiProfile,
   mapHasExactRegionalPoiSource,
+  regionalPoiFeatureCollection,
   SINGAPORE_FLIGHT_GEO_REFERENCE,
   projectSingaporeLocalMeters,
   projectSingaporeLocalRectangle,

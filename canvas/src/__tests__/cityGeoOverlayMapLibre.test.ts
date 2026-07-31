@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import {
-  SINGAPORE_MAJOR_POI_GEO_PROFILE,
-} from 'grph-shared/geospatial/singaporeMajorPoiGeo'
+import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 import {
   CITY_GEO_ZONES,
   clearCityGeoOverlay,
@@ -462,7 +460,8 @@ function testControllerWaitsForOwnedSourceSettlementAndRefitsOnResize(): void {
     )
     assert.equal(
       viewport.dataset.kgCityGeospatialPoiFeatureCount,
-      String(snapshot.profile?.regionalPoiProfile.surfaces.length),
+      String(snapshot.profile!.regionalPoiProfile.surfaces.length
+        + snapshot.profile!.regionalPoiProfile.pois.length),
     )
     assert.equal(
       viewport.dataset.kgCityGeospatialPoiProfileId,

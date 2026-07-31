@@ -114,7 +114,13 @@ def unmet_view_requirements(
         "mapLibreCanvasCount": last.get("mapLibreCanvasCount", 0) == 1,
         "visibleMapLibreCanvasCount": last.get("visibleMapLibreCanvasCount", 0)
         == 1,
+        "geoXrSurfaceCount": last.get("geoXrSurfaceCount") == 1,
         "threeCanvasOwnerCount": last.get("threeCanvasOwnerCount", 0) == 1,
+        "threeCanvasActiveCount": last.get("threeCanvasActiveCount") == 1,
+        "threeCanvasInactiveCount": last.get("threeCanvasInactiveCount") == 0,
+        "rendererPointerTransparent": last.get("rendererPointerTransparent")
+        is True,
+        "rendererSurfaceVisible": last.get("rendererSurfaceVisible") is True,
         "flightLayersReady": last.get("flightLayersReady") is True,
         "flightLayersTopmost": last.get("flightLayersTopmost") is True,
         "aircraftLayerType": last.get("aircraftLayerType") == "symbol",
@@ -137,13 +143,13 @@ def unmet_view_requirements(
             depth_meters=24,
             require_viewport_bounds=True,
         ),
-        "environment.majorPoiAuthoredMeters": _has_authored_environment_surface(
+        "environment.majorPoiGeographicMeters": _has_authored_environment_surface(
             last,
-            surface_id="marina-bay-sands:tower-center",
+            surface_id="marina-bay-sands:tower-2",
             base_height_meters=0,
-            height_meters=3.6,
-            width_meters=1.42,
-            depth_meters=1.38,
+            height_meters=193,
+            width_meters=71.82,
+            depth_meters=76.45,
         ),
         "environment.majorPoiIds": last.get("environmentPoiIds")
         == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"],

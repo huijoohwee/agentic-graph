@@ -87,7 +87,15 @@ test('City keeps regional POIs, parcels, and aircraft in one Geo+XR stack withou
   const regionalFeatures = (
     regionalSource?.data as RegionalPoiFeatureCollection
   ).features
-  assert.equal(regionalFeatures.length, 9)
+  const regionalSurfaces = regionalFeatures.filter(
+    feature => feature.properties.kgRegionalPoiFeatureKind === 'surface',
+  )
+  const regionalLocators = regionalFeatures.filter(
+    feature => feature.properties.kgRegionalPoiFeatureKind === 'locator',
+  )
+  assert.equal(regionalFeatures.length, 12)
+  assert.equal(regionalSurfaces.length, 9)
+  assert.equal(regionalLocators.length, 3)
   assert.deepEqual(
     [...new Set(regionalFeatures.map(
       feature => feature.properties.kgRegionalPoiId,
@@ -95,9 +103,11 @@ test('City keeps regional POIs, parcels, and aircraft in one Geo+XR stack withou
     ['gardens-by-the-bay', 'marina-bay-sands', 'singapore-flyer'],
   )
   assert.equal(
-    Math.max(...regionalFeatures.map(
-      feature => feature.properties.kgRegionalPoiHeightMeters,
-    )),
+    Math.max(...regionalSurfaces.map(feature => (
+      feature.properties.kgRegionalPoiFeatureKind === 'surface'
+        ? feature.properties.kgRegionalPoiHeightMeters
+        : Number.NEGATIVE_INFINITY
+    ))),
     207,
   )
   assert.equal(hasExactCityGeoXrLayerOrder(styleLayerIds), true)
