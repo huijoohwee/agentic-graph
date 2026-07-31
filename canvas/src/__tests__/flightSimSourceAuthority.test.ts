@@ -284,17 +284,17 @@ test('Flight surface opening preloads the existing lazy mission stage before act
     afterRenderStart,
     afterRenderCleanup,
   )
-  const hiddenProjectionGate = stagePreparationAfterRender.indexOf(
-    'if (!actorsVisible)',
+  const r3fPreparationAuthorityGate = stagePreparationAfterRender.indexOf(
+    'if (!actorsVisible || geospatialComposite)',
   )
   const r3fPreparationCompletion = stagePreparationAfterRender.indexOf(
     'completeFlightSimStagePreparation(stagePreparationRequestId)',
   )
-  assert.ok(hiddenProjectionGate >= 0)
-  assert.ok(r3fPreparationCompletion > hiddenProjectionGate)
+  assert.ok(r3fPreparationAuthorityGate >= 0)
+  assert.ok(r3fPreparationCompletion > r3fPreparationAuthorityGate)
   assert.match(
     stagePreparationAfterRender.slice(
-      hiddenProjectionGate,
+      r3fPreparationAuthorityGate,
       r3fPreparationCompletion,
     ),
     /delete canvas\.dataset\.kgFlightSimFirstFrame[\s\S]*return/,

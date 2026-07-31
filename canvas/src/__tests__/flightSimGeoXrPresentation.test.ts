@@ -157,6 +157,10 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
     flightMissionStage,
     /preservesTransparentBackground: true/,
   )
+  assert.match(
+    flightMissionStage,
+    /if \(!actorsVisible \|\| geospatialComposite\) \{[\s\S]*delete canvas\.dataset\.kgFlightSimFirstFrame[\s\S]*return[\s\S]*\}[\s\S]*completeFlightSimStagePreparation\(stagePreparationRequestId\)/,
+  )
   assert.doesNotMatch(
     flightMissionStage,
     /<color attach="background"|<fog/,

@@ -122,7 +122,9 @@ export function FlightSimMissionStage({
       ? 'r3f'
       : 'maplibre'
     const removeAfterRender = addAfterEffect(() => {
-      if (!actorsVisible) {
+      // Geo+XR keeps this actor visible, but its exact readiness proof belongs
+      // to the composed MapLibre environment, route, and aircraft frame.
+      if (!actorsVisible || geospatialComposite) {
         delete canvas.dataset.kgFlightSimFirstFrame
         return
       }
@@ -159,7 +161,15 @@ export function FlightSimMissionStage({
       delete canvas.dataset.kgFlightSimVisualProjection
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [actorsVisible, assetCatalog, gl, invalidate, profile.id, runtimeController])
+  }, [
+    actorsVisible,
+    assetCatalog,
+    geospatialComposite,
+    gl,
+    invalidate,
+    profile.id,
+    runtimeController,
+  ])
 
   React.useEffect(() => {
     const canvas = gl.domElement
