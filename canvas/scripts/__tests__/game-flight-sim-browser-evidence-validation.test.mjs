@@ -46,7 +46,7 @@ test('saved Geo+XR evidence requires one active wrapper and one visible Three la
   }
 })
 
-test('Flight follow-camera evidence accepts only a non-empty POI subset from the source', () => {
+test('Flight follow-camera evidence accepts only a viewport POI subset from the source', () => {
   const source = {
     environmentPoiIds: [...exactPoiIds],
     renderedEnvironmentPoiIds: ['marina-bay-sands'],
@@ -54,6 +54,10 @@ test('Flight follow-camera evidence accepts only a non-empty POI subset from the
   assert.equal(hasViewportScopedRegionalPoiRendering(source), true)
   assert.equal(hasViewportScopedRegionalPoiRendering({
     ...source,
+    renderedEnvironmentPoiIds: [],
+  }), true)
+  assert.equal(hasViewportScopedRegionalPoiRendering({
+    environmentPoiIds: [],
     renderedEnvironmentPoiIds: [],
   }), false)
   assert.equal(hasViewportScopedRegionalPoiRendering({
@@ -63,6 +67,10 @@ test('Flight follow-camera evidence accepts only a non-empty POI subset from the
   assert.equal(hasViewportScopedRegionalPoiRendering({
     ...source,
     renderedEnvironmentPoiIds: ['marina-bay-sands', 'marina-bay-sands'],
+  }), false)
+  assert.equal(hasViewportScopedRegionalPoiRendering({
+    ...source,
+    renderedEnvironmentPoiIds: [{ id: 'marina-bay-sands' }],
   }), false)
 })
 

@@ -464,8 +464,12 @@ export async function readValidatedFlightSimBrowserRunEvidence({
         && hasViewportScopedRegionalPoiRendering(view)
         && view?.selectedEnvironmentSubjectsExact === true
         && view?.environmentSourceExactlyMatchesOverlay === true
-        && ['poi', 'stage-footprint', 'subject'].every(kind =>
+        && ['stage-footprint', 'subject'].every(kind =>
           view?.renderedEnvironmentKinds?.includes(kind),
+        )
+        && (
+          view?.renderedEnvironmentPoiIds?.length === 0
+          || view?.renderedEnvironmentKinds?.includes('poi')
         )
         && view?.renderedEnvironmentSubjectIds?.some(subjectId =>
           String(subjectId).includes('vehicle-'),

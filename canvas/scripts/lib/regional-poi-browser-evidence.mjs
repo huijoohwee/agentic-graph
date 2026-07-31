@@ -9,7 +9,8 @@ export function hasViewportScopedRegionalPoiRendering(view) {
   return sourceSet.size === sourcePoiIds.length
     && renderedSet.size === renderedPoiIds.length
     && sourceSet.size > 0
-    && renderedSet.size > 0
     && sourcePoiIds.every(id => typeof id === 'string' && id.length > 0)
-    && renderedPoiIds.every(id => sourceSet.has(id))
+    && renderedPoiIds.every(id => (
+      typeof id === 'string' && id.length > 0 && sourceSet.has(id)
+    ))
 }

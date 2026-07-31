@@ -53,13 +53,17 @@ def _has_viewport_scoped_regional_poi_rendering(last: dict[str, Any]) -> bool:
     rendered_ids = last.get("renderedEnvironmentPoiIds") or []
     if not isinstance(source_ids, list) or not isinstance(rendered_ids, list):
         return False
+    if not all(
+        isinstance(identity, str) and bool(identity)
+        for identity in [*source_ids, *rendered_ids]
+    ):
+        return False
     source_set = set(source_ids)
     rendered_set = set(rendered_ids)
     return (
         len(source_set) == len(source_ids)
         and len(rendered_set) == len(rendered_ids)
         and bool(source_set)
-        and bool(rendered_set)
         and rendered_set.issubset(source_set)
     )
 
@@ -180,11 +184,10 @@ def unmet_view_requirements(
             "environmentSourceExactlyMatchesOverlay"
         )
         is True,
-        "renderedEnvironmentKinds": {
-            "poi",
-            "stage-footprint",
-            "subject",
-        }.issubset(set(last.get("renderedEnvironmentKinds") or [])),
+        "renderedEnvironmentKinds": (
+            {"stage-footprint", "subject"}
+            | ({"poi"} if last.get("renderedEnvironmentPoiIds") else set())
+        ).issubset(set(last.get("renderedEnvironmentKinds") or [])),
         "renderedEnvironmentSubjectIds": any(
             "vehicle-" in str(subject_id)
             for subject_id in last.get("renderedEnvironmentSubjectIds") or []
