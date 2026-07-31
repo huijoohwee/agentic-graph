@@ -5,6 +5,7 @@ import { flightSimPropertyParameters } from './helpers/flightSimPropertyHarness'
 import {
   FLIGHT_SIM_AIRCRAFT_ASSET_SPEC,
   readFlightSimAircraftAssetSpec,
+  type FlightSimAircraftAssetSpec,
 } from '@/features/game-flight-sim/assetSpec/flightSimAssetSpec'
 import {
   FLIGHT_SIM_FALLBACK_DIRECTORY,
@@ -18,26 +19,19 @@ import {
 } from '@/features/game-flight-sim/assetSpec/flightSimAssetLoader'
 
 const identifierArbitrary = fc.stringMatching(/^[a-z][a-z0-9-]{0,20}$/)
-const labelArbitrary = fc.stringMatching(/^[A-Z][A-Za-z0-9_-]{0,20}$/)
-const positiveDimensionArbitrary = fc.integer({ min: 1, max: 100_000 })
-  .map(value => value / 1_000)
-const vectorArbitrary = fc.tuple(
-  positiveDimensionArbitrary,
-  positiveDimensionArbitrary,
-  positiveDimensionArbitrary,
+const canonicalAssetSpecEntries = Object.entries(
+  FLIGHT_SIM_AIRCRAFT_ASSET_SPEC,
 )
-const colorArbitrary = fc.integer({ min: 0, max: 0xffffff })
-  .map(value => `#${value.toString(16).padStart(6, '0')}`)
-
-const validAssetSpecArbitrary = fc.record({
-  label: labelArbitrary,
-  dimensionsMeters: vectorArbitrary,
-  collisionHalfSizeMeters: vectorArbitrary,
-  defaultColor: colorArbitrary,
-}).map(fields => ({
-  ...FLIGHT_SIM_AIRCRAFT_ASSET_SPEC,
-  ...fields,
-}))
+const canonicalAssetSpecArbitrary = fc.shuffledSubarray(
+  canonicalAssetSpecEntries,
+  {
+    minLength: canonicalAssetSpecEntries.length,
+    maxLength: canonicalAssetSpecEntries.length,
+  },
+).map(entries => Object.fromEntries(entries.map(([key, value]) => [
+  key,
+  Array.isArray(value) ? [...value] : value,
+])) as unknown as FlightSimAircraftAssetSpec)
 
 const localFallbackPathArbitrary = identifierArbitrary.map(
   identifier => `${FLIGHT_SIM_FALLBACK_DIRECTORY}property-${identifier}.glb`,
@@ -55,7 +49,7 @@ type InvalidAssetSpecCase = Readonly<{
 }>
 
 const missingFieldArbitrary = fc.tuple(
-  validAssetSpecArbitrary,
+  canonicalAssetSpecArbitrary,
   fc.constantFrom(
     'schema',
     'id',
@@ -77,7 +71,7 @@ const missingFieldArbitrary = fc.tuple(
 })
 
 const nonPositiveSizeArbitrary = fc.tuple(
-  validAssetSpecArbitrary,
+  canonicalAssetSpecArbitrary,
   fc.constantFrom('dimensionsMeters', 'collisionHalfSizeMeters'),
   fc.integer({ min: 0, max: 2 }),
   fc.constantFrom(0, -1, -0.001),
@@ -90,13 +84,13 @@ const nonPositiveSizeArbitrary = fc.tuple(
   } as InvalidAssetSpecCase
 })
 
-const nonNullOpaqueFallbackArbitrary = validAssetSpecArbitrary.map(assetSpec => ({
+const nonNullOpaqueFallbackArbitrary = canonicalAssetSpecArbitrary.map(assetSpec => ({
   assetSpecPresent: true,
   assetSpec: { ...assetSpec, opaqueBinaryFallback: { opaque: true } },
 }) as InvalidAssetSpecCase)
 
 const unknownFieldArbitrary = fc.tuple(
-  validAssetSpecArbitrary,
+  canonicalAssetSpecArbitrary,
   identifierArbitrary,
 ).map(([assetSpec, value]) => ({
   assetSpecPresent: true,
@@ -104,7 +98,7 @@ const unknownFieldArbitrary = fc.tuple(
 }) as InvalidAssetSpecCase)
 
 const mismatchedIdentityArbitrary = fc.tuple(
-  validAssetSpecArbitrary,
+  canonicalAssetSpecArbitrary,
   fc.constantFrom('id', 'shape', 'renderer'),
 ).map(([assetSpec, field]) => ({
   assetSpecPresent: true,
@@ -176,7 +170,7 @@ test('Feature: knowgrph-game-flight-sim, Property 18 - Asset_Spec preference ove
   try {
     fc.assert(
       fc.property(
-        validAssetSpecArbitrary,
+        canonicalAssetSpecArbitrary,
         aircraftFallbackArbitrary,
         (assetSpec, glbFallback) => {
           let localReadCount = 0
@@ -196,6 +190,12 @@ test('Feature: knowgrph-game-flight-sim, Property 18 - Asset_Spec preference ove
           assert.equal(report.loaded.length, 1)
           assert.equal(report.loaded[0]?.kind, 'asset-spec')
           assert.equal(report.loaded[0]?.subjectId, FLIGHT_SIM_REQUIRED_AIRCRAFT_SUBJECT_ID)
+          assert.deepEqual(
+            report.loaded[0]?.kind === 'asset-spec'
+              ? report.loaded[0].assetSpec
+              : null,
+            FLIGHT_SIM_AIRCRAFT_ASSET_SPEC,
+          )
           assert.equal(report.glbFallbackCount, 0)
           assert.equal(report.requiredAircraftGlbFallbackCount, 0)
         },
@@ -212,7 +212,7 @@ test('Feature: knowgrph-game-flight-sim, Property 19 - Valid Asset_Spec resolves
   const fetchProbe = installFetchProbe()
   try {
     fc.assert(
-      fc.property(validAssetSpecArbitrary, assetSpec => {
+      fc.property(canonicalAssetSpecArbitrary, assetSpec => {
         let localReadCount = 0
         const validated = readFlightSimAircraftAssetSpec(assetSpec)
         const report = loadFlightSimAssets([{
@@ -226,6 +226,7 @@ test('Feature: knowgrph-game-flight-sim, Property 19 - Valid Asset_Spec resolves
         })
         assert.equal(localReadCount, 0)
         assert.equal(fetchProbe.calls(), 0)
+        assert.deepEqual(validated, FLIGHT_SIM_AIRCRAFT_ASSET_SPEC)
         assert.equal(validated.id, FLIGHT_SIM_REQUIRED_AIRCRAFT_SUBJECT_ID)
         assert.equal(validated.renderer, 'xr-procedural-vehicle')
         assert.equal(validated.shape, 'airplane')

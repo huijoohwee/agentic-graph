@@ -306,16 +306,31 @@ test('Flight local mission coordinates project deterministically around Singapor
   assert.equal(footprint.baseHeightMeters, 0)
   assert.equal(footprint.heightMeters, 0.08)
 
-  const skyline = environment.surfaces.find(
-    surface => surface.id === 'skyline-center',
+  const skypark = environment.surfaces.find(
+    surface => surface.id === 'marina-bay-sands:skypark',
   )
-  assert.ok(skyline)
-  assert.equal(skyline.baseHeightMeters, 0)
-  assert.equal(skyline.heightMeters, 12)
-  const skylineMeters = projectedRingSizeMeters(skyline.ring)
-  assertApproximatelyEqual(skylineMeters.width, 4.4, 'skyline width')
-  assertApproximatelyEqual(skylineMeters.depth, 4.4, 'skyline depth')
+  assert.ok(skypark)
+  assert.equal(skypark.kind, 'poi')
+  assert.equal(skypark.poiId, 'marina-bay-sands')
+  assert.equal(skypark.label, 'Marina Bay Sands SkyPark')
+  assert.equal(skypark.baseHeightMeters, 3.57)
+  assertApproximatelyEqual(skypark.heightMeters, 3.99, 'SkyPark height')
+  const skyparkMeters = projectedRingSizeMeters(skypark.ring)
+  assertApproximatelyEqual(skyparkMeters.width, 7.2, 'SkyPark width')
+  assertApproximatelyEqual(skyparkMeters.depth, 1.34, 'SkyPark depth')
 
+  assert.deepEqual(
+    [...new Set(
+      environment.surfaces
+        .filter(surface => surface.kind === 'poi')
+        .map(surface => surface.poiId),
+    )],
+    [
+      'marina-bay-sands',
+      'singapore-flyer',
+      'gardens-by-the-bay',
+    ],
+  )
   const helicopter = environment.surfaces.find(
     surface => surface.id === 'helicopter',
   )

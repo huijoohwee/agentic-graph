@@ -34,10 +34,12 @@ export type FlightGeoEnvironmentFeatureProperties = Readonly<{
   kgEnvironmentId: string
   kgEnvironmentRevision: string
   kgHeightMeters: number
+  kgPoiId: string
   kgRenderBaseHeightMeters: number
   kgRenderHeightMeters: number
   kgSurfaceId: string
   kgSurfaceKind: string
+  kgSurfaceLabel: string
 }>
 
 const GLOBE_GROUND_CLEARANCE_METERS = 0.15
@@ -47,10 +49,12 @@ const ENVIRONMENT_PROPERTY_KEYS = Object.freeze([
   'kgEnvironmentId',
   'kgEnvironmentRevision',
   'kgHeightMeters',
+  'kgPoiId',
   'kgRenderBaseHeightMeters',
   'kgRenderHeightMeters',
   'kgSurfaceId',
   'kgSurfaceKind',
+  'kgSurfaceLabel',
 ] as const)
 export const FLIGHT_GEO_ENVIRONMENT_LAYER_DEFINITIONS = Object.freeze([
   Object.freeze({
@@ -131,10 +135,12 @@ function environmentFeatureCollection(
         kgEnvironmentId: environment.id,
         kgEnvironmentRevision: environment.revision,
         kgHeightMeters: surface.heightMeters,
+        kgPoiId: surface.poiId || '',
         kgRenderBaseHeightMeters: renderBaseHeightMeters,
         kgRenderHeightMeters: renderHeightMeters,
         kgSurfaceId: surface.id,
         kgSurfaceKind: surface.kind,
+        kgSurfaceLabel: surface.label,
       },
     } satisfies Feature<Polygon, FlightGeoEnvironmentFeatureProperties>
   })
@@ -201,6 +207,7 @@ function hasExactEnvironmentFeature(
   }
   const properties = actual.properties
   return isPlainRecord(properties)
+    && Object.keys(properties).length === ENVIRONMENT_PROPERTY_KEYS.length
     && ENVIRONMENT_PROPERTY_KEYS.every(key => (
       Object.is(properties[key], expected.properties[key])
     ))
@@ -360,6 +367,7 @@ function mapHasExactEnvironmentLayerDefinition(
 function ensureEnvironmentLayer(
   map: any,
   expected: typeof FLIGHT_GEO_ENVIRONMENT_LAYER_DEFINITIONS[number],
+  beforeLayerId: string | null,
 ): boolean {
   if (map.getLayer?.(expected.id)) {
     if (mapHasExactEnvironmentLayerDefinition(map, expected)) return true
@@ -368,14 +376,48 @@ function ensureEnvironmentLayer(
     if (map.getLayer?.(expected.id)) return false
   }
   if (typeof map.addLayer !== 'function') return false
-  map.addLayer(expected)
+  map.addLayer(expected, beforeLayerId || undefined)
   return mapHasExactEnvironmentLayerDefinition(map, expected)
 }
 
-function ensureEnvironmentLayers(map: any): boolean {
-  return FLIGHT_GEO_ENVIRONMENT_LAYER_DEFINITIONS.every(expected => (
-    ensureEnvironmentLayer(map, expected)
+function hasExactEnvironmentLayerOrder(
+  map: any,
+  beforeLayerId: string | null,
+): boolean {
+  if (!beforeLayerId || !map.getLayer?.(beforeLayerId)) return true
+  const layers = map?.getStyle?.()?.layers
+  if (!Array.isArray(layers)) return false
+  const layerIds = layers.map(layer => String(layer?.id || ''))
+  const environmentIndexes = FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER.map(layerId => (
+    layerIds.indexOf(layerId)
   ))
+  if (environmentIndexes.some(index => index < 0)) return false
+  if (!environmentIndexes.every((index, position) => (
+    position === 0 || index === environmentIndexes[position - 1] + 1
+  ))) return false
+  return environmentIndexes[environmentIndexes.length - 1] + 1
+    === layerIds.indexOf(beforeLayerId)
+}
+
+function positionEnvironmentLayers(
+  map: any,
+  beforeLayerId: string | null,
+): boolean {
+  if (hasExactEnvironmentLayerOrder(map, beforeLayerId)) return true
+  if (!beforeLayerId || typeof map?.moveLayer !== 'function') return false
+  for (const layerId of FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER) {
+    if (map.getLayer?.(layerId)) map.moveLayer(layerId, beforeLayerId)
+  }
+  return hasExactEnvironmentLayerOrder(map, beforeLayerId)
+}
+
+function ensureEnvironmentLayers(
+  map: any,
+  beforeLayerId: string | null,
+): boolean {
+  return FLIGHT_GEO_ENVIRONMENT_LAYER_DEFINITIONS.every(expected => (
+    ensureEnvironmentLayer(map, expected, beforeLayerId)
+  )) && positionEnvironmentLayers(map, beforeLayerId)
 }
 
 export function hasExactFlightGeoEnvironmentStyleLayerDefinitions(
@@ -437,6 +479,7 @@ export function applyFlightGeoEnvironmentToMap(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
   viewMode: string,
+  options: Readonly<{ beforeLayerId?: string | null }> = {},
 ): boolean {
   if (!map || !isMapLibreStyleReady(map)) return false
   if (!overlay.environment) {
@@ -447,7 +490,11 @@ export function applyFlightGeoEnvironmentToMap(
     if (!ensureEnvironmentSource(map, expected)) {
       throw new Error('MapLibre did not register the XR environment source.')
     }
-    if (!ensureEnvironmentLayers(map)) {
+    const beforeLayerId = options.beforeLayerId
+      && map.getLayer?.(options.beforeLayerId)
+      ? options.beforeLayerId
+      : null
+    if (!ensureEnvironmentLayers(map, beforeLayerId)) {
       throw new Error('MapLibre did not register every XR environment layer.')
     }
     applyModeVisibility(map, viewMode)

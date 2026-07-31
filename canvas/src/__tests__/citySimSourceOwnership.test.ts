@@ -189,8 +189,8 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
   )
   assert.ok(
     aerialProjection.includes("presentationOwner: 'city'")
-      && aerialProjection.includes('environment: null'),
-    'the independent aerial projection must publish atomic City ownership with no Flight environment',
+      && aerialProjection.includes('environment,'),
+    'the independent aerial projection must publish atomic City ownership with the selected shared XR environment',
   )
   assert.ok(xrPhysics.includes('citySimActive || flightSimActive || gameFpsActive'))
 }

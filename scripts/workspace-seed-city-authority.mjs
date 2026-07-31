@@ -23,6 +23,9 @@ export function requireCitySimRuntimeIdentity({
   const cityGeoXr = isRecord(frontmatter.city_geo_xr)
     ? frontmatter.city_geo_xr
     : {}
+  const cityEnvironment = isRecord(cityGeoXr.environment)
+    ? cityGeoXr.environment
+    : {}
   const citySemanticMedia = isRecord(frontmatter.city_semantic_media)
     ? frontmatter.city_semantic_media
     : {}
@@ -145,6 +148,36 @@ export function requireCitySimRuntimeIdentity({
   )
   requireValue('city_geo_xr.composition', cityGeoXr.composition, authority.composition)
   requireValue(
+    'city_geo_xr.environment.stage_id',
+    cityEnvironment.stage_id,
+    authority.environmentStageId,
+  )
+  requireValue(
+    'city_geo_xr.environment.source_owner',
+    cityEnvironment.source_owner,
+    authority.environmentSourceOwner,
+  )
+  requireValue(
+    'city_geo_xr.environment.projection_owner',
+    cityEnvironment.projection_owner,
+    authority.environmentProjectionOwner,
+  )
+  requireValue(
+    'city_geo_xr.environment.maplibre_source_id',
+    cityEnvironment.maplibre_source_id,
+    authority.environmentMapLibreSourceId,
+  )
+  requireValue(
+    'city_geo_xr.environment.major_poi_ids',
+    JSON.stringify(cityEnvironment.major_poi_ids),
+    JSON.stringify(authority.environmentMajorPoiIds),
+  )
+  requireValue(
+    'city_geo_xr.layer_order',
+    JSON.stringify(cityGeoXr.layer_order),
+    JSON.stringify(authority.layerOrder),
+  )
+  requireValue(
     'city_geo_xr.duplicate_map_or_canvas_forbidden',
     readBooleanPreset(cityGeoXr.duplicate_map_or_canvas_forbidden),
     true,
@@ -189,7 +222,11 @@ export function requireCitySimRuntimeIdentity({
     cityAerialProjection.spatial_source,
     "this source document's typed city_geo_xr geographic profile",
   )
-  requireValue('city_aerial_projection.environment', cityAerialProjection.environment, null)
+  requireValue(
+    'city_aerial_projection.environment_owner',
+    cityAerialProjection.environment_owner,
+    'city_geo_xr.environment',
+  )
   requireValue(
     'city_aerial_projection.adapter_owner',
     cityAerialProjection.adapter_owner,
@@ -228,6 +265,9 @@ export function requireCitySimRuntimeIdentity({
     Object.hasOwn(cityGeoXr, 'city_stage_owner') ? 'city_geo_xr.city_stage_owner' : null,
     Object.hasOwn(cityAerialProjection, 'flight_projection_owner')
       ? 'city_aerial_projection.flight_projection_owner'
+      : null,
+    Object.hasOwn(cityAerialProjection, 'environment')
+      ? 'city_aerial_projection.environment'
       : null,
     Object.hasOwn(cityCamera, 'exit_rule') ? 'city_camera.exit_rule' : null,
     Object.hasOwn(cityCamera, 'captured_camera') ? 'city_camera.captured_camera' : null,

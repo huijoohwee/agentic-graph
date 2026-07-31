@@ -6,6 +6,8 @@ const SOURCE_PATHS = Object.freeze({
     'canvas/scripts/lib/game_flight_sim_smoke_bootstrap.py',
   browserProofBridge:
     'canvas/src/features/testing/flightSimBrowserProofBridge.ts',
+  citySemanticMediaVerifier:
+    'canvas/scripts/lib/game_flight_sim_smoke_city_semantic_media.py',
   cameraTrackingVerifier:
     'canvas/scripts/lib/game_flight_sim_smoke_camera_tracking.py',
   cameraVerifier:
@@ -22,6 +24,8 @@ const SOURCE_PATHS = Object.freeze({
     'canvas/scripts/lib/game_flight_sim_smoke_geo_xr_requirements.py',
   geoXrVerifier:
     'canvas/scripts/lib/game_flight_sim_smoke_geo_xr.py',
+  gympgrphApi:
+    'canvas/src/lib/gympgrph/api.ts',
   launcherRegression:
     'canvas/scripts/__tests__/game-flight-sim-browser-smoke-launcher.test.mjs',
   mainEntry:

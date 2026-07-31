@@ -59,6 +59,8 @@ function environmentOverlay(): FlightGeoOverlaySnapshot {
           heightMeters: 0.2,
           id: 'stage',
           kind: 'stage-footprint',
+          label: 'Singapore stage footprint',
+          poiId: null,
           ring: [
             [103.8518, 1.2901],
             [103.8521, 1.2901],
@@ -73,6 +75,8 @@ function environmentOverlay(): FlightGeoOverlaySnapshot {
           heightMeters: 12.5,
           id: 'helicopter',
           kind: 'subject',
+          label: 'Helicopter',
+          poiId: null,
           ring: [
             [103.85194, 1.29025],
             [103.85198, 1.29025],
@@ -98,6 +102,7 @@ function environmentOverlay(): FlightGeoOverlaySnapshot {
 
 function environmentMapHarness() {
   const layers = new Map<string, Record<string, unknown>>()
+  const layerOrder: string[] = []
   const sources = new Map<string, {
     data: unknown
     complete: () => void
@@ -112,9 +117,18 @@ function environmentMapHarness() {
   const style = { _loaded: false }
   const map = {
     style,
-    addLayer: (layer: Record<string, unknown>) => {
+    addLayer: (
+      layer: Record<string, unknown>,
+      beforeLayerId?: string,
+    ) => {
       if (!style._loaded) throw new Error('Style is not done loading.')
-      layers.set(String(layer.id), layer)
+      const layerId = String(layer.id)
+      layers.set(layerId, layer)
+      const beforeIndex = beforeLayerId
+        ? layerOrder.indexOf(beforeLayerId)
+        : -1
+      if (beforeIndex >= 0) layerOrder.splice(beforeIndex, 0, layerId)
+      else layerOrder.push(layerId)
     },
     addSource: (sourceId: string, source: { data: unknown }) => {
       addSourceCalls += 1
@@ -136,6 +150,9 @@ function environmentMapHarness() {
       sources.set(sourceId, stored)
     },
     getLayer: (layerId: string) => layers.get(layerId),
+    getStyle: () => ({
+      layers: layerOrder.map(layerId => layers.get(layerId)),
+    }),
     getLayoutProperty: (layerId: string, property: string) => (
       property === 'visibility' ? visibility.get(layerId) : undefined
     ),
@@ -146,8 +163,19 @@ function environmentMapHarness() {
         : undefined
     },
     getSource: (sourceId: string) => sources.get(sourceId),
+    moveLayer: (layerId: string, beforeLayerId?: string) => {
+      const currentIndex = layerOrder.indexOf(layerId)
+      if (currentIndex >= 0) layerOrder.splice(currentIndex, 1)
+      const beforeIndex = beforeLayerId
+        ? layerOrder.indexOf(beforeLayerId)
+        : -1
+      if (beforeIndex >= 0) layerOrder.splice(beforeIndex, 0, layerId)
+      else layerOrder.push(layerId)
+    },
     removeLayer: (layerId: string) => {
       layers.delete(layerId)
+      const index = layerOrder.indexOf(layerId)
+      if (index >= 0) layerOrder.splice(index, 1)
       visibility.delete(layerId)
     },
     setLayoutProperty: (
@@ -170,9 +198,11 @@ function environmentMapHarness() {
       return true
     },
     layers,
+    layerOrder,
     map,
     resetStyle: (loaded: boolean) => {
       layers.clear()
+      layerOrder.splice(0)
       sources.clear()
       visibility.clear()
       style._loaded = loaded
@@ -385,6 +415,7 @@ test('XR environment rebuilds retained layers with mutated extrusion contracts',
     mapHasExactFlightGeoEnvironment(
       {
         ...harness.map,
+        getStyle: undefined,
         getLayer: (layerId: string) => {
           const layer = harness.layers.get(layerId)
           return layer
@@ -520,4 +551,39 @@ test('XR environment exactness rejects mutated or retained MapLibre source paylo
   )
   assert.equal(harness.completeSourceUpdate(), true)
   assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
+})
+
+test('City keeps Singapore environment layers below its parcel stack', () => {
+  const overlay = environmentOverlay()
+  const harness = environmentMapHarness()
+  const cityFillLayerId = 'kg-city-sim:geo-overlay:fill'
+  harness.setStyleReady(true)
+  harness.map.addLayer({
+    id: cityFillLayerId,
+    source: 'kg-city-sim:geo-overlay',
+    type: 'fill',
+  })
+
+  assert.equal(
+    applyFlightGeoEnvironmentToMap(
+      harness.map,
+      overlay,
+      '3d',
+      { beforeLayerId: cityFillLayerId },
+    ),
+    true,
+  )
+  assert.deepEqual(
+    harness.layerOrder.slice(-4),
+    [
+      FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.fill2d,
+      FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
+      FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline,
+      cityFillLayerId,
+    ],
+  )
+  assert.notEqual(
+    harness.visibility.get(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d),
+    'none',
+  )
 })

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import React from 'react'
+import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   getAgenticOsRemoteGrammarCatalogSnapshot,
@@ -17,6 +17,7 @@ import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import {
   mountReactRoot,
   unmountReactRoot,
+  waitForTasks,
 } from '@/tests/lib/reactRootHarness'
 import { QUERY_PARAM_RUNTIME_IDENTITY_PROOF } from '@/lib/routing/queryParams'
 import { buildAgenticOsTestCatalogMetadata } from '@/__tests__/helpers/agenticOsCatalogDigest'
@@ -240,6 +241,14 @@ test('runtime identity proof explicitly hydrates grammar for an offline native X
       window: dom.window as unknown as Window,
       frames: 3,
       tasks: 8,
+    })
+    await act(async () => {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (getAgenticOsRemoteGrammarCatalogSnapshot().hydration.status !== 'loading') {
+          break
+        }
+        await waitForTasks(1)
+      }
     })
     assert.deepEqual(methods, ['initialize', 'tools/call', 'tools/call', 'tools/call'])
     assert.equal(getAgenticOsRemoteGrammarCatalogSnapshot().hydration.status, 'fresh')

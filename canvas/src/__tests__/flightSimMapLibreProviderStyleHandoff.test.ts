@@ -55,10 +55,12 @@ function exactOverlay(): FlightGeoOverlaySnapshot {
       stageFootprint: ring,
       surfaces: [{
         baseHeightMeters: 0,
-        color: '#64748b',
-        heightMeters: 12,
-        id: 'skyline-center',
-        kind: 'structure',
+        color: '#d8e2e8',
+        heightMeters: 3.6,
+        id: 'marina-bay-sands:tower-center',
+        kind: 'poi',
+        label: 'Marina Bay Sands center tower',
+        poiId: 'marina-bay-sands',
         ring,
       }],
     },
@@ -167,8 +169,8 @@ test('provider-style handoff retains the complete Flight environment below its r
   )
   assert.equal(
     promoted.sources[FLIGHT_GEO_ENVIRONMENT_SOURCE_ID].data.features[0].properties.kgHeightMeters,
-    12,
-    'the authored 12m skyline survives the handoff unchanged',
+    3.6,
+    'the authored Marina Bay Sands tower survives the handoff unchanged',
   )
 })
 

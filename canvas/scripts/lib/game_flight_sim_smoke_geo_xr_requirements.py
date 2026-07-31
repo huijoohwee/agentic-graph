@@ -81,8 +81,8 @@ def unmet_view_requirements(
         "layout.routeUnoccluded": layout.get("routeUnoccluded") is True,
         "layout.aircraftUnoccluded": layout.get("aircraftUnoccluded") is True,
         "layout.environmentUnoccludedKinds": {
+            "poi",
             "stage-footprint",
-            "structure",
             "subject",
         }.issubset(set(layout.get("environmentUnoccludedKinds") or [])),
         "layout.environmentExtrusionVisible": layout.get(
@@ -137,14 +137,18 @@ def unmet_view_requirements(
             depth_meters=24,
             require_viewport_bounds=True,
         ),
-        "environment.skylineAuthoredMeters": _has_authored_environment_surface(
+        "environment.majorPoiAuthoredMeters": _has_authored_environment_surface(
             last,
-            surface_id="skyline-center",
+            surface_id="marina-bay-sands:tower-center",
             base_height_meters=0,
-            height_meters=12,
-            width_meters=4.4,
-            depth_meters=4.4,
+            height_meters=3.6,
+            width_meters=1.42,
+            depth_meters=1.38,
         ),
+        "environment.majorPoiIds": last.get("environmentPoiIds")
+        == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"],
+        "environment.renderedMajorPoiIds": last.get("renderedEnvironmentPoiIds")
+        == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"],
         "environment.selectedSubjectsDirectMeters": last.get(
             "selectedEnvironmentSubjectsExact"
         )
@@ -154,8 +158,8 @@ def unmet_view_requirements(
         )
         is True,
         "renderedEnvironmentKinds": {
+            "poi",
             "stage-footprint",
-            "structure",
             "subject",
         }.issubset(set(last.get("renderedEnvironmentKinds") or [])),
         "renderedEnvironmentSubjectIds": any(

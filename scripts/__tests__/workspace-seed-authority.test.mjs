@@ -122,7 +122,14 @@ city_geo_xr:
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   city_surface_owner: "native MapLibre Geo+XR host wrapped by the City semantic media figure"
   parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
-  composition: "one native MapLibre map with City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas"
+  composition: "one native MapLibre map with the shared Singapore environment below City parcel layers below independent Flight aircraft and route layers; zero City Three Canvas"
+  environment:
+    stage_id: "singapore"
+    source_owner: "canvas/src/features/three/xrSingaporeEnvironmentSource.ts"
+    projection_owner: "canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts"
+    maplibre_source_id: "kg-flight-geo-environment"
+    major_poi_ids: ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]
+  layer_order: ["environment", "city", "flight"]
   duplicate_map_or_canvas_forbidden: true
 city_parcel_projection:
   source_owner: "gympgrph/src/cityGeoOverlay.ts"
@@ -143,7 +150,7 @@ city_aerial_projection:
   behavior: "deterministic read-only stopped aircraft and route"
   phase: "stopped"
   spatial_source: "this source document's typed city_geo_xr geographic profile"
-  environment: null
+  environment_owner: "city_geo_xr.environment"
   adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
   adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
   presentation_owner: "city"
@@ -254,7 +261,18 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
       'overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"',
       'overlay_store_owner: "invalid"',
     ],
-    ['projected environment', 'environment: null', 'environment: "invalid"'],
+    [
+      'wrong environment stage',
+      'stage_id: "singapore"',
+      'stage_id: "invalid"',
+    ],
+    ['incomplete Singapore POI inventory', 'major_poi_ids: ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"]', 'major_poi_ids: ["marina-bay-sands", "singapore-flyer"]'],
+    ['wrong Geo+XR layer order', 'layer_order: ["environment", "city", "flight"]', 'layer_order: ["city", "environment", "flight"]'],
+    [
+      'wrong environment owner',
+      'environment_owner: "city_geo_xr.environment"',
+      'environment_owner: "invalid"',
+    ],
     ['active Flight gameplay', 'flight_gameplay_active: false', 'flight_gameplay_active: true'],
     ['claimed Flight readiness', 'flight_readiness_claimed: false', 'flight_readiness_claimed: true'],
   ]

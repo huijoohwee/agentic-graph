@@ -11,9 +11,7 @@ import {
   projectFlightSimMissionPositionToGeospatial,
   type FlightSimGeospatialCoordinate,
 } from './flightSimGeospatialCoordinates'
-import type {
-  FlightSimGeoEnvironmentProjection,
-} from './flightSimGeoEnvironmentProjection'
+import type { FlightGeoEnvironmentProjection } from '@/lib/gympgrph/api'
 
 export type { FlightSimGeospatialCoordinate } from './flightSimGeospatialCoordinates'
 
@@ -43,7 +41,7 @@ export type FlightSimGeospatialOverlay = Readonly<{
     timeline: FlightSimGeospatialTimelineCamera | null
     view: 'chase' | 'cockpit' | 'survey'
   }>
-  environment: FlightSimGeoEnvironmentProjection | null
+  environment: FlightGeoEnvironmentProjection | null
   night: boolean
   objective: Readonly<{
     bearingDegrees: number
@@ -126,7 +124,7 @@ export function projectFlightSimToGeospatialOverlay(
   camera: FlightSimGeospatialCameraInput,
   night: boolean,
   readyFrameRequestId: number | null = null,
-  environment: FlightSimGeoEnvironmentProjection | null = null,
+  environment: FlightGeoEnvironmentProjection | null = null,
 ): FlightSimGeospatialOverlay {
   const guidance = projectFlightSimRouteGuidance(flight, profile)
   const fixedFollow = resolveFlightSimFollowTarget(flight, 1, camera.view)

@@ -17,7 +17,9 @@ export type FlightGeoEnvironmentSurface = Readonly<{
   color: string
   heightMeters: number
   id: string
-  kind: 'stage-footprint' | 'structure' | 'subject'
+  kind: 'poi' | 'stage-footprint' | 'structure' | 'subject'
+  label: string
+  poiId: string | null
   ring: readonly FlightGeoCoordinate[]
 }>
 

@@ -241,8 +241,8 @@ def read_geo_xr_layout_occlusion(page: Page) -> dict[str, Any]:
               && activeEnvironmentVisible
               && environmentScreenProof.some(proof => (
                 proof.visible
-                && proof.id === 'skyline-center'
-                && Math.abs(proof.heightMeters - 12) <= 0.01
+                && proof.id === 'marina-bay-sands:tower-center'
+                && Math.abs(proof.heightMeters - 3.6) <= 0.01
               ))
             ),
             environmentUnoccludedKinds,

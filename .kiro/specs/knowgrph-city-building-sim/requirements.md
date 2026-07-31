@@ -45,8 +45,9 @@ publish-mirror release work requires a separate explicit instruction.
   and its fill, extrusion, outline, and selection layers.
 - **City Aerial Projection**: Deterministic, read-only, stopped aircraft and
   route snapshot derived from the City Geographic Profile and published
-  through the existing Flight MapLibre overlay without Flight gameplay,
-  bootstrap style, camera ownership, readiness, or XR environment.
+  through the existing Flight MapLibre overlay together with the selected
+  shared XR environment, but without Flight gameplay, bootstrap style, camera
+  ownership, or readiness.
 - **City Builder**: FloatingPanel view id `cityBuilder`; the complete editing
   and lifecycle control surface.
 - **Panel Projection**: Compact city context rendered in an existing
@@ -147,13 +148,14 @@ or camera behavior.
    second parcel state or local Three hit-test surface.
 6. City shall publish one optional deterministic route and stopped aircraft
    from the same City Geographic Profile through the existing Flight overlay
-   source/layers. Its atomic presentation owner shall be `city`; it shall never
-   install Flight's bootstrap style, environment, camera/padding, lifecycle,
-   mission, controls, or readiness path.
+   source/layers. Its atomic presentation owner shall be `city`; the selected
+   shared XR environment shall use the existing environment source/layers
+   below City parcels, while Flight's bootstrap style, camera/padding,
+   lifecycle, mission, controls, and readiness paths remain inactive.
 7. City entry shall create no additional MapLibre map, Three.js or React Three
    Fiber Canvas, or duplicate source/layer ids. City and Flight sources may
-   coexist on the one native map, with City parcels below the independent
-   aircraft/route presentation.
+   coexist on the one native map in the order basemap, selected environment,
+   City parcels, then independent aircraft/route presentation.
 8. Native MapLibre shall remain the sole City camera and responsive viewport
    owner. City framing shall use the source-authored parcel bounds and the
    visible aperture around workspace panels, restore prior map padding on
@@ -165,8 +167,9 @@ or camera behavior.
     cannot restore the prior Geo owner, City shall return the typed
     `surface-restoration-failed` result instead of reporting a successful Exit.
 11. City source admission shall not start or retain the native XR physics
-    playground or authored Three graph. City shall derive no XR scene
-    authority, placement, or rendering.
+    playground or authored Three graph. City may consume the selected
+    environment's read-only MapLibre projection, but shall own no XR scene
+    selection, placement, physics, or Three rendering.
 12. While City is active, the native MapLibre Geo projection shall have one
     labeled semantic `figure` ancestor using the existing conditional media-
     selection marker. The wrapper shall contain a `figcaption` and shall add no
@@ -332,7 +335,8 @@ runtime state so that preselected demo state cannot masquerade as activation.
 1. Browser proof shall start from a Neutral Browser Start at the exact
    candidate SHA.
 2. Before applying the source, proof shall record that City Builder is closed,
-   the city overlay is inactive, and no city environment selector chose it.
+   the city overlay is inactive, and the shared environment selection is
+   Singapore without any City-owned selector state.
 3. Proof shall open the authored seed through Explorer -> Source Files and
    apply it only after Source Files bootstrap reports ready.
 4. After application, proof shall assert Surface Mode `geo-xr`, `cityBuilder`,
@@ -343,9 +347,10 @@ runtime state so that preselected demo state cannot masquerade as activation.
 5. Proof shall exercise zone, one tick, stop fencing, save/read-back, all six
    existing Panel Projections, and exit restoration.
 6. Proof shall assert sixteen City parcel features in the City source/layers,
-   a visible zone/selection mutation, one stopped aircraft and its route in the
-   independent Flight source/layers, one map, and inactive Flight bootstrap,
-   camera, gameplay, environment, and readiness paths.
+   a visible zone/selection mutation, named Singapore POI features in the
+   shared environment extrusion layer, one stopped aircraft and its route in
+   the independent Flight source/layers, one map, and inactive Flight
+   bootstrap, camera, gameplay, and readiness paths.
 7. Exit proof shall verify both City and aerial overlay sources clear, prior map
    padding is restored, and the prior FloatingPanel and Canvas surface state
    restores exactly once.
