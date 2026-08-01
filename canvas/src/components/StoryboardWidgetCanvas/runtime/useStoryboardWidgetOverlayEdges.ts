@@ -57,6 +57,7 @@ import { FRONTMATTER_COLLECTIVE_ROLE_INDEX_KEY, buildFrontmatterOverlayNodeLooku
 import { resolveStoryboardWidgetFocusedEdgeIds } from '@/lib/storyboardWidget/storyboardWidgetPortRows'
 import { FLOW_PORT_HANDLE_PREVIEW_EVENT, type FlowPortHandlePreviewDetail } from '@/components/StoryboardWidget/flowPortHandlePointerDrag'
 import { resolveStoryboardWidgetOverlayEdgeGraphAuthority } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetOverlayEdgeGraphAuthority'
+import { applyEdgeMarkerAttributes, ensureEdgeMarkerRegistry } from '@/lib/graph/edgeMarkers'
 import { readWorkflowMaterializationProjectionSourceNodeId } from '@/lib/storyboardWidget/runMaterializationProjection'
 
 function removeAllPaths(ref: React.MutableRefObject<Map<string, SVGPathElement>>) {
@@ -351,6 +352,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
         'stroke-linejoin': pathEl.getAttribute('stroke-linejoin') || '',
         'stroke-linecap': pathEl.getAttribute('stroke-linecap') || '',
         'stroke-dasharray': pathEl.getAttribute('stroke-dasharray') || '',
+        'marker-start': pathEl.getAttribute('marker-start') || '', 'marker-end': pathEl.getAttribute('marker-end') || '',
         opacity: pathEl.getAttribute('opacity') || '',
         'pointer-events': pathEl.getAttribute('pointer-events') || '',
       }
@@ -459,7 +461,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
     const rootRect = root ? root.getBoundingClientRect() : null
     const svgRect = svg ? svg.getBoundingClientRect() : null
     const samplePaths = svg
-      ? Array.from(svg.querySelectorAll('path')).slice(0, 3).map((path, index) => {
+      ? Array.from(svg.querySelectorAll<SVGPathElement>('path[data-kg-overlay-edge-id], path[data-kg-overlay-pending-edge]')).slice(0, 3).map((path, index) => {
           const computed = getComputedStyle(path)
           let bbox: { x: number; y: number; width: number; height: number } | null = null
           try {
@@ -493,7 +495,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
       svgViewBox: svg?.getAttribute('viewBox') || '',
       svgClientWidth: svgRect ? Math.round(svgRect.width) : 0,
       svgClientHeight: svgRect ? Math.round(svgRect.height) : 0,
-      svgPathCount: svg ? svg.querySelectorAll('path').length : 0,
+      svgPathCount: svg ? svg.querySelectorAll('path[data-kg-overlay-edge-id], path[data-kg-overlay-pending-edge]').length : 0,
       svgZIndex: svgStyle?.zIndex || '',
       svgVisibility: svgStyle?.visibility || '',
       svgOpacity: svgStyle?.opacity || '',
@@ -571,6 +573,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
       return
     }
     args.overlayEdgesEnabledRef.current = true
+    ensureEdgeMarkerRegistry(node)
     overlayEdgeReadinessRetryRef.current = null
     overlayEdgeLayoutSigRef.current = ''
     // Contract marker: const restoredFrozenPathCount = restoreFrozenOverlayEdgePaths(node)
@@ -1096,7 +1099,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
       if (svg.getAttribute('height') !== String(svgHeight)) svg.setAttribute('height', String(svgHeight))
       if (svg.getAttribute('viewBox') !== svgViewBox) svg.setAttribute('viewBox', svgViewBox)
       if (svg.getAttribute('preserveAspectRatio') !== 'none') svg.setAttribute('preserveAspectRatio', 'none')
-      const round2 = roundOverlayEdgeGeometryValue
+      const edgeMarkerRegistry = ensureEdgeMarkerRegistry(svg); const round2 = roundOverlayEdgeGeometryValue
       const buildRectAnchorCacheKey = (nodeId: string, dir: 'in' | 'out', portKey: string, rect: DOMRect, scrollSignature: string): string => [
         nodeId,
         dir,
@@ -1284,7 +1287,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
               pathEl.style.animation = edgeAnimated ? 'kg-edge-dash-flow 1.25s linear infinite' : ''
               pathEl.setAttribute('opacity', '0.75')
               pathEl.setAttribute('pointer-events', 'none')
-              pathEl.setAttribute('data-kg-overlay-pending-edge', 'true')
+              pathEl.setAttribute('data-kg-overlay-pending-edge', 'true'); pathEl.setAttribute('marker-end', edgeMarkerRegistry.urlFor('arrow-open', 'medium'))
               svg.appendChild(pathEl)
               overlayPendingEdgePathRef.current = pathEl
             }
@@ -1292,6 +1295,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
             if (pathEl.getAttribute('stroke') !== globalEdgeColor) pathEl.setAttribute('stroke', globalEdgeColor)
             if (pathEl.getAttribute('stroke-width') !== String(globalEdgeThickness)) pathEl.setAttribute('stroke-width', String(globalEdgeThickness))
             if (pathEl.getAttribute('stroke-dasharray') !== pendingDash) pathEl.setAttribute('stroke-dasharray', pendingDash)
+            if (pathEl.getAttribute('marker-end') !== edgeMarkerRegistry.urlFor('arrow-open', 'medium')) pathEl.setAttribute('marker-end', edgeMarkerRegistry.urlFor('arrow-open', 'medium'))
             pathEl.style.animation = edgeAnimated ? 'kg-edge-dash-flow 1.25s linear infinite' : ''
             if (pathEl.getAttribute('d') !== d) pathEl.setAttribute('d', d)
           }
@@ -1409,6 +1413,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
         const edgeDash = edgeAnimated ? '7 5' : ''
         if (pathEl.getAttribute('stroke-dasharray') !== edgeDash) pathEl.setAttribute('stroke-dasharray', edgeDash)
         pathEl.style.animation = edgeAnimated ? 'kg-edge-dash-flow 1.25s linear infinite' : ''
+        if (rawEdge) applyEdgeMarkerAttributes(pathEl, rawEdge, schema, edgeMarkerRegistry)
         if (pathEl.getAttribute('d') !== d) pathEl.setAttribute('d', d)
       }
 
@@ -1457,7 +1462,7 @@ export function useStoryboardWidgetOverlayEdges(args: {
         svgWidthAttr: svg.getAttribute('width') || '',
         svgHeightAttr: svg.getAttribute('height') || '',
         svgViewBox: svg.getAttribute('viewBox') || '',
-        svgPathCount: svg.querySelectorAll('path').length,
+        svgPathCount: svg.querySelectorAll('path[data-kg-overlay-edge-id], path[data-kg-overlay-pending-edge]').length,
         rootWidth: Math.round(rootRect.width),
         rootHeight: Math.round(rootRect.height),
       })

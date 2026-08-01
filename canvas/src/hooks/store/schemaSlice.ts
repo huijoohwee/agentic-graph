@@ -228,7 +228,7 @@ export const createSchemaSlice = (set: SetGraph, get: GetGraph) => {
     const next = { ...schema, nodeStyles: { ...schema.nodeStyles, [type]: { ...schema.nodeStyles[type], ...style } } };
     setSchemaState(next);
   },
-  updateEdgeStyle: (label: string, style: Partial<{ color: string; width: number }>) => {
+  updateEdgeStyle: (label: string, style: Partial<GraphSchema['edgeStyles'][string]>) => {
     const { schema } = get();
     const next = { ...schema, edgeStyles: { ...schema.edgeStyles, [label]: { ...schema.edgeStyles[label], ...style } } };
     setSchemaState(next);
@@ -359,7 +359,13 @@ export const createSchemaSlice = (set: SetGraph, get: GetGraph) => {
   setEdgeArrow: (label: string, arrow: boolean) => {
     const { schema } = get();
     const cur = schema.edgeStyles[label] || {};
-    const next: GraphSchema = { ...schema, edgeStyles: { ...schema.edgeStyles, [label]: { ...cur, arrow: !!arrow } } };
+    const next: GraphSchema = {
+      ...schema,
+      edgeStyles: {
+        ...schema.edgeStyles,
+        [label]: { ...cur, arrow: !!arrow, markerEnd: arrow ? 'arrow' : 'none' },
+      },
+    };
     setSchemaState(next);
   },
   setSelectMode: (mode: 'single' | 'multi' | 'lasso') => {

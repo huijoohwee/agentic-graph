@@ -6,8 +6,11 @@ import type { TempLinkSelection } from '@/features/edge-creation';
 import type { HoverInfo } from '@/components/GraphHoverTooltip';
 import { getEdgeBaseStroke, getEdgeStrokeWidth } from '@/components/GraphCanvas/helpers';
 import { attachEdgeInteractionHandlers } from '@/components/GraphCanvas/layers/edgeInteractions'
-import { shouldShowEdgeArrow } from '@/components/GraphCanvas/edgeDisplay'
 import { edgeDragBehavior } from '@/components/GraphCanvas/utils';
+import {
+  applyEdgeMarkerAttributes,
+  type EdgeMarkerRegistry,
+} from '@/lib/graph/edgeMarkers'
 import {
   buildEdgePathD,
   ensureEdgeAnimationStyleElement,
@@ -244,8 +247,9 @@ export const createLinksLayer = (args: {
   edgesForDisplay: GraphEdge[]
   schema: GraphSchema
   nodeById?: Map<string, GraphNode> | null
+  edgeMarkerRegistry: EdgeMarkerRegistry
 }): d3.Selection<SVGElement, GraphEdge, SVGGElement, unknown> => {
-  const { g, edgesForDisplay, schema, nodeById } = args
+  const { g, edgesForDisplay, schema, nodeById, edgeMarkerRegistry } = args
   const edgeAnimationEnabled = readGlobalEdgeAnimationEnabled(schema)
   if (edgeAnimationEnabled) ensureEdgeAnimationStyleElement(typeof document !== 'undefined' ? document : null)
   const nodeLookup = buildNodeLookup(nodeById)
@@ -340,9 +344,10 @@ export const createLinksLayer = (args: {
     .style('pointer-events', 'none')
 
   ;(link as d3.Selection<SVGElement, GraphEdge, SVGGElement, unknown>)
-    .attr('marker-end', (d: GraphEdge) => {
-      if (readEdgeVisualArrowD(d)) return null
-      return shouldShowEdgeArrow(d, schema) ? 'url(#arrowhead)' : null
+    .each(function (d: GraphEdge) {
+      applyEdgeMarkerAttributes(this, d, schema, edgeMarkerRegistry, {
+        suppressEnd: !!readEdgeVisualArrowD(d),
+      })
     })
 
   return link as unknown as d3.Selection<SVGElement, GraphEdge, SVGGElement, unknown>

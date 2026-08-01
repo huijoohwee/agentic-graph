@@ -1,6 +1,7 @@
 import type { GraphEdge } from '@/lib/graph/types'
 import type { GraphSchema } from '@/lib/graph/schema'
 import { readFlowEdgeDisplayLabel } from '@/lib/graph/flowPorts'
+import { readEdgeMarkerPresentation } from '@/lib/graph/edgeMarkers'
 
 function readStringEdgeProp(e: GraphEdge, key: string): string {
   const props = (e.properties || {}) as Record<string, unknown>
@@ -34,12 +35,7 @@ export const isKeywordEdge = (e: GraphEdge): boolean => {
 }
 
 export const shouldShowEdgeArrow = (e: GraphEdge, schema: GraphSchema): boolean => {
-  if (schema.edgeStyles[e.label]?.arrow) return true
-  if (!isKeywordEdge(e)) return false
-  const props = (e.properties || {}) as Record<string, unknown>
-  const directed = props['keyword:directed']
-  if (typeof directed === 'boolean') return directed
-  return true
+  return readEdgeMarkerPresentation(e, schema).end !== 'none'
 }
 
 export const getEdgeLabelForDisplay = (e: GraphEdge): string => {

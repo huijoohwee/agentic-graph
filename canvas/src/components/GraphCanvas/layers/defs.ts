@@ -1,21 +1,11 @@
 import * as d3 from 'd3';
+import { ensureEdgeMarkerRegistry } from '@/lib/graph/edgeMarkers'
 
 type SvgSelection = d3.Selection<SVGSVGElement, unknown, null, undefined>;
 
 export const createDefs = (svg: SvgSelection) => {
+  const markerRegistry = ensureEdgeMarkerRegistry(svg.node() as SVGSVGElement)
   const defs = svg.append('defs');
-  defs
-    .append('marker')
-    .attr('id', 'arrowhead')
-    .attr('viewBox', '0 0 10 10')
-    .attr('refX', 8)
-    .attr('refY', 5)
-    .attr('markerWidth', 6)
-    .attr('markerHeight', 6)
-    .attr('orient', 'auto-start-reverse')
-    .append('path')
-    .attr('d', 'M 0 0 L 10 5 L 0 10 z')
-    .attr('fill', 'var(--kg-canvas-edge-stroke)');
   defs
     .append('clipPath')
     .attr('id', 'node-media-circle-clip')
@@ -35,4 +25,5 @@ export const createDefs = (svg: SvgSelection) => {
     .attr('height', 0.9)
     .attr('rx', 0.08)
     .attr('ry', 0.08);
+  return markerRegistry
 };

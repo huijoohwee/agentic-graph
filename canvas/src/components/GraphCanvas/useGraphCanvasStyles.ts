@@ -17,6 +17,10 @@ import { readEdgeOpacity2d } from '@/lib/graph/layoutDefaults'
 import { readLabelPresentation2d } from '@/lib/canvas/labelPresentation2d'
 import { isFlowchartCrossEdge } from '@/lib/flowchart/source'
 import { readNodeLabelFontSize2d } from '@/components/GraphCanvas/labelLayout2d'
+import {
+  applyEdgeMarkerAttributes,
+  ensureEdgeMarkerRegistry,
+} from '@/lib/graph/edgeMarkers'
 
 type UseGraphCanvasStylesProps = {
   gRef?: MutableRefObject<d3.Selection<SVGGElement, unknown, null, undefined> | null>;
@@ -133,15 +137,16 @@ export function applyGraphCanvasStyles2d({
     linksSelRef.current.attr('stroke-width', (d: GraphEdge) => {
       return getEdgeStrokeWidth(d as EdgeWithRuntime, schema);
     });
-    linksSelRef.current.attr(
-      'marker-end',
-      (d: GraphEdge) => {
-        const label = d && typeof d === 'object' && typeof (d as { label?: unknown }).label === 'string'
-          ? (d as { label: string }).label
-          : ''
-        return schema.edgeStyles[label]?.arrow ? 'url(#arrowhead)' : null
-      },
-    );
+    const ownerSvg = linksSelRef.current.node()?.ownerSVGElement || null
+    if (ownerSvg) {
+      const markerRegistry = ensureEdgeMarkerRegistry(ownerSvg)
+      linksSelRef.current.each(function (d: GraphEdge) {
+        const props = (d && typeof d === 'object' ? d.properties : null) as Record<string, unknown> | null
+        applyEdgeMarkerAttributes(this, d, schema, markerRegistry, {
+          suppressEnd: typeof props?.['visual:arrowD'] === 'string' && props['visual:arrowD'].trim().length > 0,
+        })
+      })
+    }
   }
 
   if (labelsSelRef.current) {
