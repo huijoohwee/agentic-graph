@@ -4,10 +4,11 @@ import {
   makeEdge,
   makeNode,
   stableEntityId,
+  versionKnowledgeGraphParserOutput,
 } from "./contract.mjs";
 
 export const BRACE_CODE_PARSER_ID = "local-brace-code-structure";
-export const BRACE_CODE_PARSER_VERSION = "1.0.0";
+export const BRACE_CODE_PARSER_VERSION = versionKnowledgeGraphParserOutput("1.0.0");
 
 const CONTROL_WORDS = new Set(["catch", "do", "else", "for", "if", "lock", "switch", "try", "while"]);
 const CHECKPOINT_INTERVAL = 1_024;

@@ -324,8 +324,8 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
   )
 
   const revealWorkspacePath = React.useCallback(
-    (path: WorkspacePath, opts?: { activate?: boolean }) => {
-      setSelectionPathSafe(path)
+    async (path: WorkspacePath, opts?: { activate?: boolean }) => {
+      await setSelectionPathSafe(path)
       if (opts?.activate !== false) setActivePathSafe(path)
       setExpandedPaths(prev => {
         const next = new Set(prev)
@@ -339,9 +339,10 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
   const focusAfterImport = React.useCallback(
     async (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; jsonSourceText?: string | null; applyToGraph?: boolean; jobId?: number }) => {
       if (opts?.jobId != null && importJobRef.current !== opts.jobId) return
-      revealWorkspacePath(createdPath, { activate: true })
       try {
+        await revealWorkspacePath(createdPath, { activate: false })
         await syncFocusedWorkspacePath(createdPath, opts)
+        setActivePathSafe(createdPath)
       } catch (e) {
         if (opts?.applyToGraph) {
           status.setStatusError(`Apply failed: ${String((e as { message?: unknown })?.message ?? e)}`)
@@ -352,6 +353,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
     },
     [
       revealWorkspacePath,
+      setActivePathSafe,
       status,
       syncFocusedWorkspacePath,
     ],
@@ -401,7 +403,7 @@ export function useWorkspaceFileActionsCore(args: UseWorkspaceFileActionsArgs): 
             return await fs.createFolder({ parentPath, name: 'folder' })
           },
         })
-        revealWorkspacePath(path, { activate: false })
+        void revealWorkspacePath(path, { activate: false })
         status.setStatusInfo('Created')
       } catch (e) {
         status.setStatusError(`Failed: ${String((e as { message?: unknown })?.message ?? e)}`)

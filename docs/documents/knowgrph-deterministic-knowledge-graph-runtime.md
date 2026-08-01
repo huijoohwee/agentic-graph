@@ -126,6 +126,11 @@ The query path must:
 - return evidence rather than an uncited synthesized answer
 - make zero embedding, vector-store, model, and network calls
 
+Read-only graph projections remain transport-bounded rather than snapshot-bounded. The runtime fits
+projection nodes and edges deterministically inside one shared byte ceiling, retains endpoint
+closure for surviving edges, and reports `projection_byte_limit` when byte trimming rather than
+result-count trimming makes the projection incomplete.
+
 ## Security Bounds
 
 - Canonicalized source paths and resolved symlink targets remain inside the host-owned allowed root.
@@ -137,6 +142,11 @@ The query path must:
 - Configuration structure may be indexed, but secret values must not be returned as graph evidence.
 - Source-controlled labels and evidence are sanitized before MCP output.
 - Local-directory ingest, parsing, storage, query, and explanation make no model call, network request, embedding request, or vector-store write. Explicit repository acquisition is the only network-capable phase.
+
+When the installed local Python runtime predates a known grammar feature at the exact syntax-error
+line, the parser may lower only a conservative validated subset of newer syntax and retain
+deterministic lexical declarations/imports with explicit recovery diagnostics. Unvalidated or
+unrelated malformed syntax still fails honestly and cannot be upgraded into a successful parse.
 
 ## Honest Diagnostic Contract
 

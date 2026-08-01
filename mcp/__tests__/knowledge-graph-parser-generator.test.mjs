@@ -8,7 +8,11 @@ import {
   KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
   KNOWLEDGE_GRAPH_DECLARATIVE_GRAMMAR_SCHEMA_ID,
 } from "../knowledge-graph-parser-contract.js";
-import { EVIDENCE_FIELDS, sha256 } from "../knowledge-graph/contract.mjs";
+import {
+  EVIDENCE_FIELDS,
+  KNOWLEDGE_GRAPH_CANONICAL_NODE_OUTPUT_REVISION,
+  sha256,
+} from "../knowledge-graph/contract.mjs";
 import {
   compileDeclarativeGrammar,
 } from "../knowledge-graph/declarative-grammar-parser.mjs";
@@ -295,7 +299,10 @@ test("generated declarative grammar ingests unknown syntax as a deterministic ex
     assert.equal(edge.properties["evidence:sourcePath"], "model.entity");
     assert.equal(edge.properties["evidence:sourceDigest"], sha256("entity Account = 1\nentity Invoice = 2\n"));
     assert.equal(edge.properties["evidence:parserId"], "local-declarative-grammar");
-    assert.match(edge.properties["evidence:parserVersion"], /^1\.0\.0\+grammar-[a-f0-9]{16}$/);
+    assert.match(
+      edge.properties["evidence:parserVersion"],
+      new RegExp(`^1\\.0\\.0\\+${KNOWLEDGE_GRAPH_CANONICAL_NODE_OUTPUT_REVISION}\\+grammar-[a-f0-9]{16}$`),
+    );
     assert.ok(edge.properties["evidence:explanation"]);
   }
 

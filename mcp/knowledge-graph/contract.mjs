@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 
 export const KNOWLEDGE_GRAPH_SCHEMA_VERSION = "knowgrph-knowledge-graph/v1";
 export const KNOWLEDGE_GRAPH_CONTRACT_VERSION = "1.0.0";
+export const KNOWLEDGE_GRAPH_CANONICAL_NODE_OUTPUT_REVISION = "canonical-node-output-v1";
+export const MAX_KNOWLEDGE_GRAPH_LABEL_LENGTH = 16_384;
 export const EVIDENCE_FIELDS = Object.freeze([
   "evidence:kind",
   "evidence:ruleId",
@@ -121,6 +123,29 @@ export function normalizeRelativePath(value) {
   return normalized;
 }
 
+const scalarLabelText = (value) => (
+  ["string", "number", "boolean", "bigint"].includes(typeof value)
+    ? String(value)
+    : ""
+);
+
+/** Converts display text to the bounded, transport-safe graph-label contract. */
+export function canonicalGraphLabel(value, fallback = "") {
+  const normalize = (candidate) => scalarLabelText(candidate)
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/gu, "")
+    .trim()
+    .slice(0, MAX_KNOWLEDGE_GRAPH_LABEL_LENGTH)
+    .trimEnd();
+  return normalize(value) || normalize(fallback) || "node";
+}
+
+/** Changes source-cache identity when the canonical node-output contract changes. */
+export function versionKnowledgeGraphParserOutput(version) {
+  const base = String(version ?? "").trim();
+  if (!base) throw new KnowledgeGraphError("parser_version_invalid", "Parser versions must be nonempty.");
+  return `${base}+${KNOWLEDGE_GRAPH_CANONICAL_NODE_OUTPUT_REVISION}`;
+}
+
 export function stableEntityId(type, sourcePath, localKey) {
   const path = normalizeRelativePath(sourcePath);
   const digest = sha256(`${String(type)}\0${path}\0${String(localKey)}`).slice(0, 24);
@@ -209,10 +234,11 @@ export function buildEvidence(args) {
 
 export function makeNode({ id, label, type, sourcePath, properties = {}, metadata = undefined }) {
   const path = normalizeRelativePath(sourcePath);
+  const canonicalId = String(id ?? "").trim();
   return {
-    id: String(id),
-    label: String(label || id),
-    type: String(type || "Entity"),
+    id: canonicalId,
+    label: canonicalGraphLabel(label, canonicalId),
+    type: String(type ?? "Entity").trim() || "Entity",
     properties: {
       "corpus:sourcePath": path,
       ...properties,
@@ -223,21 +249,25 @@ export function makeNode({ id, label, type, sourcePath, properties = {}, metadat
 
 export function makeEdge({ source, target, label, type = undefined, evidence, properties = {}, metadata = undefined, anchor = "" }) {
   const normalized = buildEvidence(evidence);
+  const canonicalSource = String(source ?? "").trim();
+  const canonicalTarget = String(target ?? "").trim();
+  const canonicalLabel = canonicalGraphLabel(label, "related");
+  const canonicalType = type === undefined ? "" : String(type).trim();
   if (!normalized.ruleId || !normalized.explanation || !normalized.parserId || !normalized.parserVersion) {
-    throw new KnowledgeGraphError("invalid_edge_evidence", `Edge ${String(label)} is missing required explanation provenance.`);
+    throw new KnowledgeGraphError("invalid_edge_evidence", `Edge ${canonicalLabel} is missing required explanation provenance.`);
   }
   const edge = {
     id: stableEdgeId({
-      label,
-      source,
-      target,
+      label: canonicalLabel,
+      source: canonicalSource,
+      target: canonicalTarget,
       ruleId: normalized.ruleId,
       sourcePath: normalized.sourcePath,
       anchor: anchor || `${normalized.lineStart}:${normalized.columnStart}`,
     }),
-    source: String(source),
-    target: String(target),
-    label: String(label),
+    source: canonicalSource,
+    target: canonicalTarget,
+    label: canonicalLabel,
     properties: {
       ...properties,
       "evidence:kind": normalized.kind,
@@ -260,7 +290,7 @@ export function makeEdge({ source, target, label, type = undefined, evidence, pr
       ...(normalized.candidateCount === undefined ? {} : { "evidence:candidateCount": normalized.candidateCount }),
       ...(normalized.candidateIds ? { "evidence:candidateIds": normalized.candidateIds } : {}),
     },
-    ...(type ? { type: String(type) } : {}),
+    ...(canonicalType ? { type: canonicalType } : {}),
     ...(metadata ? { metadata } : {}),
   };
   return edge;

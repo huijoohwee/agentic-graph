@@ -13,6 +13,10 @@ import {
   discoverKnowledgeSources,
   hydrateKnowledgeSource,
 } from "./discovery.mjs";
+import {
+  strictIngestIncompleteMessage,
+  summarizeKnowledgeGraphCompleteness,
+} from "./ingest-completeness.mjs";
 import { pathIsInside, resolveIngestSource, resolveOutputRoot } from "./ingest-source.mjs";
 import {
   createKnowledgeGraphParserDispatch,
@@ -339,34 +343,22 @@ async function ingestResolvedTransaction(
     });
   }
 
-  const incomplete = [...fragments.entries()]
-    .filter(([, fragment]) => fragment.status !== "parsed");
-  const incompleteSources = [...new Set([
-    ...(discovered.admission.incompleteSources || []),
-    ...incomplete.map(([sourcePath]) => sourcePath),
-  ])].sort(compareStableStrings);
-  const completenessReasons = [...new Set([
-    ...(discovered.admission.reasons || []),
-    ...incomplete.map(([, fragment]) => `parser_${String(fragment.status || "unknown")}`),
-    ...(resolved.acquisition?.complete === false ? ["acquisition_incomplete"] : []),
-  ])].sort(compareStableStrings);
-  const complete = discovered.admission.complete === true
-    && resolved.acquisition?.complete !== false
-    && incompleteSources.length === 0;
-  const completeness = {
-    complete,
+  const completeness = summarizeKnowledgeGraphCompleteness({
     admission: discovered.admission,
-    incompleteSources,
-    reasons: completenessReasons,
-  };
-  if (strict && !complete) {
+    fragments,
+    acquisitionComplete: resolved.acquisition?.complete,
+  });
+  if (strict && !completeness.complete) {
     throw new KnowledgeGraphError(
       "strict_ingest_incomplete",
-      "Strict ingestion preserved the previous ready snapshot because source parsing was incomplete.",
+      strictIngestIncompleteMessage({
+        ...completeness,
+        previousReadySnapshotPreserved: Boolean(previousSnapshot),
+      }),
       {
         complete: false,
-        sources: incompleteSources,
-        reasons: completenessReasons,
+        sources: completeness.incompleteSources,
+        reasons: completeness.reasons,
         previousReadySnapshotPreserved: Boolean(previousSnapshot),
       },
     );
@@ -414,13 +406,13 @@ async function ingestResolvedTransaction(
   try {
     projection = await projectKnowledgeGraphSnapshot(snapshot, args.projectionLimit, budget);
   } catch (error) {
-    projection = unavailableProjection(snapshot, args.projectionLimit, error);
+    projection = unavailableProjection(snapshot, args.projectionLimit);
   }
   return success("ingest", {
     graphId: resolved.graphId,
     snapshotDigest: snapshot.pointer.snapshotDigest,
     parserRegistryDigest: parserRegistry.digest,
-    complete,
+    complete: completeness.complete,
     counts: {
       repositories: snapshot.manifest.repositories.length,
       sources: sourceEntries.length,

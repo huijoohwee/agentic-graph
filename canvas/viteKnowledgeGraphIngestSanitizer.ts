@@ -1,6 +1,11 @@
 import { SOURCE_PARSER_REGISTRY } from '../mcp/knowledge-graph/source-parser-registry.mjs'
+import {
+  fitKnowledgeGraphProjectionRecords,
+  KNOWLEDGE_GRAPH_PROJECTION_GRAPH_DATA_MAX_BYTES,
+  KNOWLEDGE_GRAPH_PROJECTION_MAX_BYTES,
+} from '../mcp/knowledge-graph/projection-budget.mjs'
 
-const MAX_PROJECTION_BYTES = 2 * 1024 * 1024
+const MAX_PROJECTION_BYTES = KNOWLEDGE_GRAPH_PROJECTION_MAX_BYTES
 const MAX_PROJECTION_NODES = 2_000
 const MAX_PROJECTION_EDGES = 5_000
 const KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA = 'knowgrph-knowledge-graph-import-progress/v1'
@@ -282,26 +287,17 @@ export function sanitizeKnowledgeGraphImportProgress(
     edges = edges.slice(0, MAX_PROJECTION_EDGES)
     truncated = true
   }
-  const graphData = () => ({
-    context: 'knowgrph-knowledge-graph-projection',
-    type: 'Graph',
+  const byteBounded = fitKnowledgeGraphProjectionRecords({
     nodes,
     edges,
+    maxBytes: KNOWLEDGE_GRAPH_PROJECTION_GRAPH_DATA_MAX_BYTES,
   })
-  while (Buffer.byteLength(JSON.stringify(graphData())) > MAX_PROJECTION_BYTES) {
-    truncated = true
-    if (edges.length) {
-      edges = edges.slice(0, -1)
-      continue
-    }
-    if (nodes.length) {
-      nodes = nodes.slice(0, -1)
-      const retainedNodeIds = new Set(nodes.map(node => node.id))
-      edges = edges.filter(edge => retainedNodeIds.has(edge.source) && retainedNodeIds.has(edge.target))
-      continue
-    }
+  if (byteBounded.byteLength > KNOWLEDGE_GRAPH_PROJECTION_GRAPH_DATA_MAX_BYTES) {
     return invalidProgress(options, 'The canonical runtime returned an oversized empty progress frame.')
   }
+  nodes = byteBounded.nodes as Array<Record<string, unknown> & { id: string }>
+  edges = byteBounded.edges as Array<Record<string, unknown> & { id: string; source: string; target: string }>
+  truncated = truncated || byteBounded.truncated
   return {
     schema: KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA,
     kind: 'source-parsed',
@@ -311,6 +307,11 @@ export function sanitizeKnowledgeGraphImportProgress(
     sourceIndex: Number(progress.sourceIndex),
     sourceTotal: Number(progress.sourceTotal),
     truncated,
-    graphData: graphData(),
+    graphData: {
+      context: 'knowgrph-knowledge-graph-projection',
+      type: 'Graph',
+      nodes,
+      edges,
+    },
   }
 }

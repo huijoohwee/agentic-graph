@@ -11,6 +11,10 @@ import {
 } from "./query-core.mjs";
 import { iterateKnowledgeGraphSnapshotShards } from "./query-shards.mjs";
 import { queryKnowledgeGraphSnapshotTraversal } from "./query-traversal.mjs";
+import {
+  fitKnowledgeGraphProjectionRecords,
+  normalizeKnowledgeGraphProjectionByteLimit,
+} from "./projection-budget.mjs";
 
 export { explainKnowledgeGraphEdgeFromArtifact, queryKnowledgeGraph };
 
@@ -149,6 +153,7 @@ function retainBest(entries, entry, limit, compare) {
 export async function projectKnowledgeGraphSnapshot(snapshot, limitRaw = 200, options = {}) {
   const checkpoint = createQueryCheckpoint(options, "snapshot-projection");
   const limit = boundedInteger(limitRaw, 200, 1, 1000);
+  const projectionByteLimit = normalizeKnowledgeGraphProjectionByteLimit(options.projectionByteLimit);
   const candidateNodes = [];
   const candidateEdges = [];
   for await (const { shard } of iterateKnowledgeGraphSnapshotShards(snapshot, {
@@ -191,22 +196,34 @@ export async function projectKnowledgeGraphSnapshot(snapshot, limitRaw = 200, op
   const nodes = [...nodeById.values()].sort((left, right) => compareStableStrings(left.id, right.id));
   const projectedEdges = edges.filter((edge) => nodeById.has(edge.source) && nodeById.has(edge.target));
   const graph = snapshot.manifest.graph;
-  const truncated = graph.nodes > nodes.length || graph.edges > projectedEdges.length;
+  const byteBounded = fitKnowledgeGraphProjectionRecords({
+    nodes,
+    edges: projectedEdges,
+    maxBytes: projectionByteLimit,
+  });
+  const countTruncated = graph.nodes > nodes.length || graph.edges > projectedEdges.length;
+  const truncated = countTruncated || byteBounded.truncated;
   const corpusComplete = (snapshot.manifest.completeness?.complete
     ?? snapshot.manifest.admission?.complete) === true;
   return {
-    token: `kg:projection:${sha256(`${snapshot.pointer.snapshotDigest}\0${limit}`).slice(0, 24)}`,
+    token: `kg:projection:${sha256(`${snapshot.pointer.snapshotDigest}\0${limit}\0${projectionByteLimit}`).slice(0, 24)}`,
     readOnly: true,
     graphData: {
       context: "knowgrph-knowledge-graph-projection",
       type: "Graph",
-      nodes,
-      edges: projectedEdges,
+      nodes: byteBounded.nodes,
+      edges: byteBounded.edges,
     },
     complete: corpusComplete && !truncated,
     truncated,
     limit,
-    reason: !corpusComplete ? "ingest_incomplete" : truncated ? "projection_limit" : "full_projection",
+    reason: !corpusComplete
+      ? "ingest_incomplete"
+      : byteBounded.truncated
+        ? "projection_byte_limit"
+        : countTruncated
+          ? "projection_limit"
+          : "full_projection",
   };
 }
 

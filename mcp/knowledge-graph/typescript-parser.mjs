@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 
-import { makeEdge, makeNode, stableEntityId } from "./contract.mjs";
+import { makeEdge, makeNode, stableEntityId, versionKnowledgeGraphParserOutput } from "./contract.mjs";
 
 const require = createRequire(import.meta.url);
 let typescript = null;
@@ -14,7 +14,9 @@ try {
 export const TYPESCRIPT_PARSER_ID = "local-typescript-ast";
 const TYPESCRIPT_WRAPPER_VERSION = "1.1.0";
 const TYPESCRIPT_RUNTIME_VERSION = String(typescript?.version || "unavailable").replace(/[^A-Za-z0-9._-]+/g, "-");
-export const TYPESCRIPT_PARSER_VERSION = `${TYPESCRIPT_WRAPPER_VERSION}+typescript-${TYPESCRIPT_RUNTIME_VERSION}`;
+export const TYPESCRIPT_PARSER_VERSION = versionKnowledgeGraphParserOutput(
+  `${TYPESCRIPT_WRAPPER_VERSION}+typescript-${TYPESCRIPT_RUNTIME_VERSION}`,
+);
 
 const scriptKindForPath = (sourcePath) => {
   const extension = path.posix.extname(sourcePath).toLowerCase();

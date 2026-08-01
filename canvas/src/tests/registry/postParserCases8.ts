@@ -219,6 +219,7 @@ export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
   ["workspace.import.knowledgeGraph.incompleteSkipsSourceFilesArtifact","@/__tests__/knowledgeGraphWorkspaceArtifact.test","testIncompleteKnowledgeGraphRepositoryDoesNotMaterializeSourceFilesArtifact"],
   ["workspace.import.knowledgeGraph.projectionMultilineLabels","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphCanvasProjectionAcceptsBoundedMultilineLabels"],
   ["workspace.import.knowledgeGraph.projectionLockedViewAtomic","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphCanvasProjectionKeepsLockedViewAtomic"],
+  ["workspace.import.knowledgeGraph.previewAggregateByteBudget","@/__tests__/knowledgeGraphCanvasPreviewBudget.test","testKnowledgeGraphCanvasPreviewFitsAggregateProgressWithinDecoratedByteBudget"],
   ["workspace.import.knowledgeGraph.projectionFailureNoFallback","@/__tests__/knowledgeGraphLaunchIntegration.test","testKnowledgeGraphProjectionFailureNeverFallsBackAfterCanonicalResult"],
   ["workspace.import.knowledgeGraph.viteHostDefaultRuntime","@/__tests__/knowledgeGraphViteHostRuntime.test","testKnowledgeGraphViteHostUsesStartupBoundDefaultRuntime"],
   ["workspace.import.knowledgeGraph.viteHostProgressStream","@/__tests__/knowledgeGraphViteHostRuntime.test","testKnowledgeGraphViteHostStreamsSanitizedSourceProgress"],

@@ -21,7 +21,7 @@ export function buildMarkdownWorkspaceFileActionsArgs(args: {
   lastLoadedRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
   setExpandedPaths: React.Dispatch<React.SetStateAction<Set<string>>>
   setActivePathSafe: (path: WorkspacePath) => void
-  setSelectionPathSafe: (path: WorkspacePath) => void
+  setSelectionPathSafe: (path: WorkspacePath) => void | Promise<void>
   setActiveMarkdownDocument: UseWorkspaceFileActionsArgs['setActiveMarkdownDocument']
   applyMarkdownDocumentToGraph: UseWorkspaceFileActionsArgs['applyMarkdownDocumentToGraph']
 }): UseWorkspaceFileActionsArgs {
@@ -58,7 +58,11 @@ export function buildMarkdownWorkspaceActionBridge(args: {
     importWebsite: args.fileActions.handleImportWebsite,
     createNewFolder: () => void args.fileActions.createNewFolder({ parentPath: args.createParentPath }),
     save: args.saveEnabled ? () => void args.saveActiveFileNow() : undefined,
-    materializeKnowledgeGraphImport: materializeKnowledgeGraphWorkspaceArtifact,
+    materializeKnowledgeGraphImport: async request => {
+      const artifact = await materializeKnowledgeGraphWorkspaceArtifact(request)
+      await args.fileActions.focusAfterImport(artifact.path as WorkspacePath, { applyToGraph: false })
+      return artifact
+    },
   }
 }
 

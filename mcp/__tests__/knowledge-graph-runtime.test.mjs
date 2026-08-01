@@ -538,6 +538,9 @@ test("strict failure and admission limits preserve the previous ready pointer", 
   const failed = await fixture.runtime.ingest({ rootPath: fixture.corpusRoot, strict: true });
   assert.equal(failed.ok, false);
   assert.equal(failed.error.code, "strict_ingest_incomplete");
+  assert.match(failed.error.message, /local parser returned an incomplete result/i);
+  assert.match(failed.error.message, /lib\.py/);
+  assert.doesNotMatch(failed.error.message, /source parsing was incomplete/i);
   assert.equal(failed.error.details.previousReadySnapshotPreserved, true);
   assert.equal(await fs.readFile(pointerPath, "utf8"), before);
   const limited = await fixture.runtime.ingest({ rootPath: fixture.corpusRoot, maxFiles: 1, strict: true });

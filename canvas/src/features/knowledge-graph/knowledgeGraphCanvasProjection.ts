@@ -5,12 +5,19 @@ import type {
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
+import {
+  fitKnowledgeGraphProjectionRecords,
+  knowledgeGraphProjectionByteLength,
+  KNOWLEDGE_GRAPH_PROJECTION_GRAPH_DATA_MAX_BYTES,
+  KNOWLEDGE_GRAPH_PROJECTION_MAX_BYTES,
+  retainBoundedKnowledgeGraphProjectionRecord,
+} from '../../../../mcp/knowledge-graph/projection-budget.mjs'
 
 export const KNOWLEDGE_GRAPH_CANVAS_PROJECTION_SCHEMA = 'knowgrph-canvas-knowledge-graph-projection/v1'
 export const KNOWLEDGE_GRAPH_CANVAS_PREVIEW_SCHEMA = 'knowgrph-canvas-knowledge-graph-preview/v1'
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_NODES = 2_000
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_EDGES = 5_000
-export const KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES = 2 * 1024 * 1024
+export const KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES = KNOWLEDGE_GRAPH_PROJECTION_MAX_BYTES
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_RECORD_BYTES = 64 * 1024
 
 const MAX_JSON_DEPTH = 8
@@ -57,13 +64,7 @@ const isPositiveInteger = (value: unknown): value is number => (
   typeof value === 'number' && Number.isInteger(value) && value > 0
 )
 
-const byteLength = (value: unknown): number => {
-  try {
-    return new TextEncoder().encode(JSON.stringify(value)).byteLength
-  } catch {
-    return Number.POSITIVE_INFINITY
-  }
-}
+const byteLength = knowledgeGraphProjectionByteLength
 
 const hasForbiddenControlCharacter = (value: string, allowLineWhitespace = false): boolean => {
   for (const character of value) {
@@ -175,7 +176,11 @@ function validateCounts(counts: WorkspaceKnowledgeGraphCounts | undefined): Work
   return counts
 }
 
-function validateGraphData(graphData: GraphData | undefined, counts: WorkspaceKnowledgeGraphCounts): GraphData {
+function validateGraphData(
+  graphData: GraphData | undefined,
+  counts: WorkspaceKnowledgeGraphCounts,
+  maxBytes = KNOWLEDGE_GRAPH_PROJECTION_GRAPH_DATA_MAX_BYTES,
+): GraphData {
   if (!graphData || !Array.isArray(graphData.nodes) || !Array.isArray(graphData.edges)) {
     throw new KnowledgeGraphProjectionError(
       'invalid-projection',
@@ -210,7 +215,7 @@ function validateGraphData(graphData: GraphData | undefined, counts: WorkspaceKn
       'Knowledge graph projection contains more records than the canonical snapshot counts.',
     )
   }
-  if (byteLength(graphData) > KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES) {
+  if (byteLength(graphData) > maxBytes) {
     throw new KnowledgeGraphProjectionError(
       'projection-byte-limit',
       `Knowledge graph Canvas projection exceeds ${KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES} bytes.`,
@@ -397,30 +402,6 @@ function validateKnowledgeGraphProgress(
   }
 }
 
-function retainBoundedCanonicalRecord<T extends { id: string }>(
-  records: Map<string, T>,
-  value: T,
-  limit: number,
-): boolean {
-  if (records.has(value.id)) return false
-  if (records.size < limit) {
-    records.set(value.id, value)
-    return false
-  }
-  let greatestId = ''
-  for (const id of records.keys()) {
-    if (!greatestId || id > greatestId) greatestId = id
-  }
-  if (!greatestId || value.id > greatestId) return true
-  records.delete(greatestId)
-  records.set(value.id, value)
-  return true
-}
-
-function sortCanonicalRecords<T extends { id: string }>(records: Iterable<T>): T[] {
-  return [...records].sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0))
-}
-
 function isKnowledgeGraphPreview(graphData: GraphData | null | undefined, sessionId: string): boolean {
   const preview = graphData?.metadata?.knowledgeGraphPreview as Record<string, unknown> | undefined
   return preview?.owner === 'knowledge-graph-runtime-preview'
@@ -474,23 +455,9 @@ export function createKnowledgeGraphCanvasPreviewSession(): KnowledgeGraphCanvas
   let complete = false
 
   const buildPreviewGraph = (): GraphData => {
-    const previewNodes = sortCanonicalRecords(nodes.values())
-    const nodeIds = new Set(previewNodes.map(node => node.id))
-    const previewEdges = sortCanonicalRecords(edges.values()).filter(edge => (
-      nodeIds.has(edge.source) && nodeIds.has(edge.target)
-    ))
-    const baseGraph = validateGraphData({
+    const buildGraph = (previewNodes: GraphNode[], previewEdges: GraphEdge[], previewTruncated: boolean): GraphData => ({
       context: 'knowgrph-knowledge-graph-projection',
       type: 'Graph',
-      nodes: previewNodes,
-      edges: previewEdges,
-    }, {
-      sources: sourceIndex,
-      nodes: previewNodes.length,
-      edges: previewEdges.length,
-    })
-    return {
-      ...baseGraph,
       metadata: {
         kind: 'knowledge-graph',
         source: graphId,
@@ -504,12 +471,30 @@ export function createKnowledgeGraphCanvasPreviewSession(): KnowledgeGraphCanvas
           complete: false,
           sourceIndex,
           sourceTotal,
-          truncated,
+          truncated: previewTruncated,
         },
       },
-      nodes: previewNodes.map(cloneNode),
-      edges: previewEdges.map(cloneEdge),
-    }
+      nodes: previewNodes,
+      edges: previewEdges,
+    })
+    const fitted = fitKnowledgeGraphProjectionRecords({
+      nodes: nodes.values(),
+      edges: edges.values(),
+      maxBytes: KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES,
+      buildGraphData: (previewNodes: GraphNode[], previewEdges: GraphEdge[]) => (
+        buildGraph(previewNodes, previewEdges, false)
+      ),
+    })
+    truncated = truncated || fitted.truncated
+    nodes.clear()
+    edges.clear()
+    for (const node of fitted.nodes as GraphNode[]) nodes.set(node.id, node)
+    for (const edge of fitted.edges as GraphEdge[]) edges.set(edge.id, edge)
+    return validateGraphData(buildGraph(fitted.nodes as GraphNode[], fitted.edges as GraphEdge[], truncated), {
+      sources: sourceIndex,
+      nodes: fitted.nodes.length,
+      edges: fitted.edges.length,
+    }, KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES)
   }
 
   const publishPreview = (graphData: GraphData): void => {
@@ -545,10 +530,10 @@ export function createKnowledgeGraphCanvasPreviewSession(): KnowledgeGraphCanvas
       sourceTotal = validated.sourceTotal
       truncated = truncated || validated.truncated
       for (const node of validated.graphData.nodes) {
-        truncated = retainBoundedCanonicalRecord(nodes, node, KNOWLEDGE_GRAPH_CANVAS_MAX_NODES) || truncated
+        truncated = retainBoundedKnowledgeGraphProjectionRecord(nodes, node, KNOWLEDGE_GRAPH_CANVAS_MAX_NODES) || truncated
       }
       for (const edge of validated.graphData.edges) {
-        truncated = retainBoundedCanonicalRecord(edges, edge, KNOWLEDGE_GRAPH_CANVAS_MAX_EDGES) || truncated
+        truncated = retainBoundedKnowledgeGraphProjectionRecord(edges, edge, KNOWLEDGE_GRAPH_CANVAS_MAX_EDGES) || truncated
       }
       const graphData = buildPreviewGraph()
       if (graphData.nodes.length || graphData.edges.length) publishPreview(graphData)

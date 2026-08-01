@@ -77,6 +77,14 @@ invocation:
 - Continue on per-file failures (record them) instead of failing the whole import.
 - Emit progress toasts and bounded progress logs into MainPanel History → Log.
 
+**Repository Graph Receipt Rule**: When the repository import path produces a completed canonical
+knowledge graph, Source Files must also materialize one timestamped Markdown receipt under
+`/docs/codebase-graph/codebase-graph_YYYYMMDDTHHmmssZ.md`. The receipt records bounded graph
+provenance and declares `kgCanvasGraphApply: false` so selection/focus may move to the generated
+document without replacing the authoritative canonical graph already on Canvas. A repeated import in
+the same UTC second upserts that receipt; a later completed import creates a new timestamped
+receipt instead of mutating prior evidence.
+
 **Folder Mode Contract Rule**: When the user selects a workspace folder that contains `repo.sitemap.md` / `repo.user-journey.md`, the explorer row must show a right-side dropdown (same UI as File Mode Contract) that switches the Editor SSOT between Sitemap and User Journey.
 
 **Sitemap LOD Rule**: `repo.sitemap.md` must include (bounded) Repository Statistics, a Directory Structure tree, extracted README feature groups with per-section “Section Statistics”, a Template Showcase grid + table, and a Core Entry Points section that derives function/class/method tables from key source files when available.

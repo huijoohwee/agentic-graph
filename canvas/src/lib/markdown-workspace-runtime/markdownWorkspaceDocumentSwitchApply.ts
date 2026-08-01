@@ -10,6 +10,7 @@ import {
   parseCanvasWorkspaceFrontmatterPreset,
   type CanvasWorkspaceFrontmatterPreset,
 } from '@/lib/markdown/frontmatter'
+import { isWorkspaceDocumentCanvasGraphApplyDisabled } from '@/lib/markdown/workspaceDocumentCanvasApplyPolicy'
 import { resolveWorkspaceDocumentCanvasPreset } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 
 export function resolveWorkspaceDocumentSwitchCanvasPreset(args: {
@@ -90,12 +91,19 @@ export function shouldPrimeWorkspaceDocumentSwitchCanvas(args: {
   activeEntryKind: string
   activeDocumentKey?: string | null
   inlineText: string
+  markdownDocumentName?: string | null
+  markdownDocumentText?: string | null
 }): boolean {
   const activePath = normalizeMarkdownWorkspaceSelectionPath(args.activePath)
   const pendingSwitchPath = normalizeMarkdownWorkspaceSelectionPath(args.pendingSwitchPath)
   if (!activePath || pendingSwitchPath !== activePath) return false
   if (args.activeEntryKind !== 'file') return false
-  if (!String(args.activeDocumentKey || '').trim()) return false
+  const activeDocumentKey = String(args.activeDocumentKey || '').trim()
+  if (!activeDocumentKey) return false
+  if (
+    String(args.markdownDocumentName || '').trim() === activeDocumentKey
+    && String(args.markdownDocumentText || '').trim()
+  ) return false
   return !String(args.inlineText || '').trim()
 }
 
@@ -142,6 +150,7 @@ export function shouldApplyStableWorkspaceSelectionToCanvas(args: {
   canvas2dRenderer?: string | null
 }): boolean {
   if (args.userEditedActiveText === true) return false
+  if (isWorkspaceDocumentCanvasGraphApplyDisabled(args.nextText)) return false
   if (!shouldAcceptWorkspaceDocumentSelectionText({
     activePath: args.activePath,
     activeEntryKind: args.activeEntryKind,
@@ -199,6 +208,7 @@ export function isWorkspaceDocumentSwitchApplySettled(args: {
   if (!activeDocumentKey) return false
   if (String(args.markdownDocumentName || '').trim() !== activeDocumentKey) return false
   if (String(args.markdownDocumentText || '') !== String(args.text || '')) return false
+  if (isWorkspaceDocumentCanvasGraphApplyDisabled(args.text)) return true
   return !isWorkspaceGraphSourceStaleForDocument({
     activeDocumentKey,
     graphDataSource: args.graphDataSource,
@@ -274,6 +284,7 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
     markdownDocumentText: string
     canvas2dRenderer?: string | null
   }): Promise<WorkspaceDocumentSwitchApplyStatus> => {
+    const canvasGraphApplyDisabled = isWorkspaceDocumentCanvasGraphApplyDisabled(applyArgs.text)
     const forcePendingSwitchGraphApply = shouldForceWorkspaceDocumentSwitchGraphApply({
       activeDocumentKey: applyArgs.activeDocumentKey,
       pendingSwitchPath: args.readPendingSwitchNextPath(),
@@ -287,6 +298,21 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
       canvas2dRenderer: applyArgs.canvas2dRenderer,
     })) {
       return 'settled'
+    }
+    if (canvasGraphApplyDisabled) {
+      const applied = await applyActiveMarkdownDocumentPayload({
+        setActiveMarkdownDocument: args.setActiveMarkdownDocument,
+        name: applyArgs.activeDocumentKey,
+        text: applyArgs.text,
+        canonicalMarkdownText: args.canonicalMarkdownText,
+        sourceUrl: applyArgs.sourceUrl,
+        autoEnableFrontmatter: false,
+        applyViewPreset: false,
+        applyToGraph: false,
+        forceApplyToGraph: false,
+        normalizeWebpageFrontmatterToMarkdown: false,
+      })
+      return applied === true ? 'applied' : 'deferred'
     }
     const nextSig = buildWorkspaceDocumentSwitchSignature({
       activeDocumentKey: applyArgs.activeDocumentKey,
@@ -357,6 +383,8 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
       activeEntryKind: prime.activeEntryKind,
       activeDocumentKey: prime.activeDocumentKey,
       inlineText: prime.inlineText,
+      markdownDocumentName: prime.markdownDocumentName,
+      markdownDocumentText: prime.markdownDocumentText,
     })) return
     primedSwitchPathRef.current = pendingSwitchPath
     void applySelectedWorkspaceDocumentToCanvas({
