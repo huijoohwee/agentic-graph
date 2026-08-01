@@ -286,6 +286,26 @@ export const responseFor = ({ challengeDigest, candidateDigest }) => digest({
   candidateDigest,
 })
 
+export const readAuthorizationRuntime = async ({
+  agenticCanvasOsRoot,
+  repositoryRoot,
+  loadRuntimeModule = specifier => import(specifier),
+}) => {
+  const runtimeModuleUrl = pathToFileURL(path.join(
+    agenticCanvasOsRoot,
+    'scripts',
+    'local-runtime-lib.mjs',
+  )).href
+  const runtimeModule = await loadRuntimeModule(runtimeModuleUrl)
+  if (typeof runtimeModule.readLocalRuntimeStatus !== 'function') {
+    throw new Error('Agentic Canvas OS local runtime module lacks readLocalRuntimeStatus')
+  }
+  return runtimeModule.readLocalRuntimeStatus({
+    repository: repositoryRoot,
+    agenticCanvasOsRoot,
+  })
+}
+
 const main = async () => {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error('Production authorization requires an interactive terminal; non-interactive confirmation is forbidden')
@@ -334,16 +354,7 @@ const main = async () => {
       releaseCandidate.agenticCanvasOs.revision,
       'Agentic Canvas OS',
     )
-    const runtime = runCommandJson('npm', [
-      '--prefix',
-      agenticCanvasOsRoot,
-      'run',
-      '--silent',
-      'runtime:local:status',
-      '--',
-      `--repository=${repositoryRoot}`,
-      '--json',
-    ])
+    const runtime = await readAuthorizationRuntime({ agenticCanvasOsRoot, repositoryRoot })
     const promptContract = await import(pathToFileURL(path.join(
       agenticCanvasOsRoot,
       'scripts',
@@ -424,10 +435,6 @@ const runGhText = (argumentsList, input) => execFileSync('gh', argumentsList, {
 }).trim()
 
 const runGhJson = argumentsList => JSON.parse(runGhText(argumentsList))
-const runCommandJson = (command, argumentsList) => JSON.parse(execFileSync(command, argumentsList, {
-  encoding: 'utf8',
-  stdio: ['ignore', 'pipe', 'pipe'],
-}).trim())
 const readJson = filePath => JSON.parse(fs.readFileSync(filePath, 'utf8'))
 
 const requireCanonicalRevision = (repositoryRoot, expectedRevision, label) => {

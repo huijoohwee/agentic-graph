@@ -7,6 +7,7 @@ import {
   formatTerminalAuthorizationComment,
   GITHUB_APPROVAL_COMMENT_MAX_BYTES,
   parseTerminalAuthorizationComment,
+  readAuthorizationRuntime,
   responseFor,
   selectLifecycleCandidateArtifact,
   selectPendingProductionDeployment,
@@ -14,6 +15,32 @@ import {
   validateReleaseRun,
   validateTerminalAuthorizationEvidence,
 } from '../production-terminal-authorization.mjs'
+
+test('authorization runtime retains the ownership digest from the in-process runtime contract', async () => {
+  const expectedRuntime = { status: 'runtime-ready', ownershipTokenDigest: 'e'.repeat(64) }
+  let requestedModuleUrl = ''
+  let requestedOptions = null
+  const runtime = await readAuthorizationRuntime({
+    agenticCanvasOsRoot: '/workspace/agentic-canvas-os',
+    repositoryRoot: '/workspace/knowgrph',
+    loadRuntimeModule: async moduleUrl => {
+      requestedModuleUrl = moduleUrl
+      return {
+        readLocalRuntimeStatus: async options => {
+          requestedOptions = options
+          return expectedRuntime
+        },
+      }
+    },
+  })
+
+  assert.equal(runtime, expectedRuntime)
+  assert.match(requestedModuleUrl, /agentic-canvas-os\/scripts\/local-runtime-lib\.mjs$/)
+  assert.deepEqual(requestedOptions, {
+    repository: '/workspace/knowgrph',
+    agenticCanvasOsRoot: '/workspace/agentic-canvas-os',
+  })
+})
 
 const run = {
   id: 123,
