@@ -20,11 +20,13 @@ import {
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import {
-  cityParcelId,
   type CityAdvisorProposal,
   type CityZone,
   type CityZoningType,
 } from './citySimModel'
+import {
+  resolveRegionalPoiProfile,
+} from '@/features/geospatial/regionalPoiProfileCatalog'
 import {
   cityInputSourceFromActivation,
   cityInputSourceFromPointerType,
@@ -32,7 +34,7 @@ import {
   enqueueCityInput,
   type CityInputSource,
 } from './citySimInputRuntime'
-import { CityParcelCoordinateControls } from './CityParcelCoordinateControls'
+import { CityPoiZoningControls } from './CityPoiZoningControls'
 import {
   applyCityAdvice,
   openCitySimSurface,
@@ -196,6 +198,12 @@ export function CitySimFloatingPanelView() {
     () => city.parcels.find(parcel => parcel.id === snapshot.selectedParcelId) ?? null,
     [city.parcels, snapshot.selectedParcelId],
   )
+  const regionalPois = React.useMemo(
+    () => city.regionalPoiProfileId
+      ? resolveRegionalPoiProfile(city.regionalPoiProfileId).pois
+      : Object.freeze([]),
+    [city.regionalPoiProfileId],
+  )
   const proposals = snapshot.advisor?.proposals ?? []
   const busy = pendingAction !== null
     || snapshot.saveStatus === 'saving'
@@ -229,14 +237,13 @@ export function CitySimFloatingPanelView() {
     }))
   }, [runAction, snapshot.selectedParcelId])
 
-  const selectParcelCoordinate = React.useCallback((
-    row: number,
-    column: number,
+  const selectPoi = React.useCallback((
+    poiId: string,
     source: CityInputSource,
   ) => {
     void runAction('select', () => enqueueCityInput({
       source,
-      selectParcelId: cityParcelId(row, column),
+      selectParcelId: poiId,
       requestedZone: null,
     }))
   }, [runAction])
@@ -271,7 +278,7 @@ export function CitySimFloatingPanelView() {
     >
       <FloatingPanelCatalogHeader
         title="City-Building Sim"
-        subtitle="Deterministic local civic grid"
+        subtitle="Deterministic regional POI zoning"
         actionsLabel="City simulation actions"
         actions={snapshot.active ? (
           <>
@@ -319,7 +326,7 @@ export function CitySimFloatingPanelView() {
           <span><b>Tick</b><br />{formatMetric(city.tick)}</span>
           <span><b>Treasury</b><br />{formatTreasuryCents(city.treasuryCents)}</span>
           <span><b>Population</b><br />{formatMetric(city.population)}</span>
-          <span><b>Active parcels</b><br />{activeParcelCount}/{city.parcels.length}</span>
+          <span><b>Zoned POIs</b><br />{activeParcelCount}/{city.parcels.length}</span>
           <span><b>Tax rate</b><br />{(city.taxRateBasisPoints / 100).toFixed(2)}%</span>
           <span><b>Clarify</b><br />{clarificationCount} pending</span>
         </section>
@@ -384,12 +391,12 @@ export function CitySimFloatingPanelView() {
             UI_THEME_TOKENS.panel.border,
             UI_THEME_TOKENS.panel.bg,
           )}
-          aria-label="Selected city parcel"
+          aria-label="Selected regional POI"
         >
           <header className="flex items-center justify-between gap-2 text-[11px]">
             <b className="flex items-center gap-1">
               <MapPinned className="h-3.5 w-3.5" aria-hidden="true" />
-              Selected parcel
+              Selected POI
             </b>
             <span>{selectedParcel?.id ?? 'None'}</span>
           </header>
@@ -401,7 +408,7 @@ export function CitySimFloatingPanelView() {
             </p>
           ) : (
             <p className={cn('text-[10px]', UI_THEME_TOKENS.text.tertiary)}>
-              Select a parcel with the City Builder coordinate controls before assigning a zone.
+              Select a regional POI before assigning a zone.
             </p>
           )}
           {snapshot.lastInput ? (
@@ -412,13 +419,11 @@ export function CitySimFloatingPanelView() {
               {describeCityInputSnapshot(snapshot.lastInput)}
             </p>
           ) : null}
-          <CityParcelCoordinateControls
+          <CityPoiZoningControls
             busy={busy}
-            columns={city.columns}
-            onSelect={selectParcelCoordinate}
-            rows={city.rows}
-            selectedColumn={selectedParcel?.column ?? null}
-            selectedRow={selectedParcel?.row ?? null}
+            onSelect={selectPoi}
+            pois={regionalPois}
+            selectedPoiId={selectedParcel?.id ?? null}
           />
           <div className="grid grid-cols-3 gap-1" aria-label="Zone selected parcel">
             {(['residential', 'commercial', 'industrial'] as const).map(zone => (

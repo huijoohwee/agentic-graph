@@ -37,7 +37,7 @@ import { FloatingPanelSkillsCommandsView } from '@/features/toolbar/FloatingPane
 import { clearSkillsCommandsMcpTarget } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { DesignFloatingPanelView } from '@/features/design/DesignFloatingPanelView'
 import type { ToolbarToolMenuProps } from '@/features/toolbar/ToolbarToolMenuTypes'
-import { requestGeospatialTraversalRun, setGeospatialModeEnabled as enableGeospatialMode } from '@/features/geospatial/gympgrphBridge'
+import { setGeospatialModeEnabled as enableGeospatialMode } from '@/features/geospatial/gympgrphBridge'
 import { onGeospatialModeChanged } from '@/features/geospatial/events'
 import { readGeospatialOverlayEnabledPreference } from '@/lib/geospatial/geospatialModePreference'
 import { openOrchestratorWorkflowWorkspaceFile } from '@/features/panels/utils/orchestratorWorkspaceFiles'
@@ -536,15 +536,6 @@ export function ToolbarToolMenu({
                       onClick={() => openOrchestratorWorkflowWorkspaceFile()}
                     >
                       Open `orchestrator/graphrag-workflow.jsonld`
-                    </button>
-                    <button
-                      type="button"
-                      className={cn('App-toolbar__btn', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg)}
-                      onClick={() => {
-                        void requestGeospatialTraversalRun().catch(() => void 0)
-                      }}
-                    >
-                      Run airplane on selected edge
                     </button>
                   </nav>
                   <p className={`${uiPanelMicroLabelTextSizeClass} ${UI_THEME_TOKENS.text.tertiary}`}>Geospatial</p>

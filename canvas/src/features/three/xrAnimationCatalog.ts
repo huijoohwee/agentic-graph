@@ -12,7 +12,6 @@ export const XR_CHARACTER_MOTION_PRESET_IDS = [
 ] as const
 
 export const XR_ACTION_PATH_PRESET_IDS = [
-  'plane-landing',
   'helicopter-orbit',
   'car-chase',
   'collapsing-debris',
@@ -86,7 +85,6 @@ export const XR_ANIMATION_PRESETS: readonly XrAnimationPreset[] = Object.freeze(
   { id: 'jump', kind: 'character-motion', label: 'Jump', description: 'Crouch, takeoff, airborne apex, landing, and recovery.', cycleSeconds: 1.8, loop: true, compatibleCategories: PEOPLE, compatibleAssetIds: [], keywords: ['jump', 'takeoff', 'airborne', 'land'] },
   { id: 'play-cards', kind: 'character-motion', label: 'Play cards', description: 'Seated card handling, deal, inspect, and table-return beats.', cycleSeconds: 3.6, loop: true, compatibleCategories: PEOPLE, compatibleAssetIds: [], keywords: ['cards', 'deal', 'table', 'seated'] },
   { id: 'squirt-gun', kind: 'character-motion', label: 'Squirt gun', description: 'Ready, aim, squeeze, recoil, and reset with a procedural prop cue.', cycleSeconds: 2.2, loop: true, compatibleCategories: PEOPLE, compatibleAssetIds: [], keywords: ['squirt gun', 'water', 'aim', 'recoil'] },
-  { id: 'plane-landing', kind: 'action-path', label: 'Plane landing', description: 'Descending final approach, flare, touchdown, and runway rollout.', cycleSeconds: 8, loop: false, compatibleCategories: VEHICLES, compatibleAssetIds: ['vehicle-airplane'], keywords: ['plane', 'aircraft', 'landing', 'runway', 'approach'] },
   { id: 'helicopter-orbit', kind: 'action-path', label: 'Helicopter orbit', description: 'Constant-altitude establishing orbit with a complete facing path.', cycleSeconds: 8, loop: true, compatibleCategories: VEHICLES, compatibleAssetIds: ['vehicle-helicopter'], keywords: ['helicopter', 'orbit', 'aerial', 'circle'] },
   { id: 'car-chase', kind: 'action-path', label: 'Car chase', description: 'Acceleration, lane changes, corner pressure, and escape-line finish.', cycleSeconds: 7, loop: false, compatibleCategories: VEHICLES, compatibleAssetIds: ['vehicle-sedan', 'vehicle-van'], keywords: ['car', 'chase', 'lane change', 'pursuit'] },
   { id: 'collapsing-debris', kind: 'action-path', label: 'Collapsing debris', description: 'Suspended mass, staged fall, impact, bounce, and final settle.', cycleSeconds: 4, loop: false, compatibleCategories: PROPS, compatibleAssetIds: ['prop-debris-cluster'], keywords: ['debris', 'collapse', 'fall', 'impact', 'bounce'] },
@@ -204,13 +202,6 @@ export function buildXrAnimationActionPath(args: {
     transition: XrChoreographyEasing = 'ease-in-out',
     gait: XrChoreographyGait = defaultGait,
   ): XrAnimationPathMark => ({ timeSeconds: round(duration * progress, 3), position: boundedPosition(position, args.stageSizeMeters), transition, gait })
-  if (args.presetId === 'plane-landing') return [
-    mark(0, [-width * 0.44, Math.max(7, args.origin[1]), depth * 0.28]),
-    mark(0.38, [-width * 0.12, 3.8, depth * 0.12]),
-    mark(0.62, [width * 0.12, 0.35, 0]),
-    mark(0.76, [width * 0.24, 0, -depth * 0.05], 'ease-out', 'wheeled'),
-    mark(1, [width * 0.43, 0, -depth * 0.08], 'hold', 'hold'),
-  ]
   if (args.presetId === 'helicopter-orbit') {
     const radiusX = Math.max(2.5, width * 0.28)
     const radiusZ = Math.max(2.5, depth * 0.28)

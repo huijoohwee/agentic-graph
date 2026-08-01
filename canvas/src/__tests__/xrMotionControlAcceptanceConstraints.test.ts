@@ -152,17 +152,17 @@ function assertSceneControlRejectedAtomically(
   assert(afterPersisted === beforePersisted, `${label}: expected no partial graph-metadata persistence`)
 }
 
-function testAssetOnlyAirplaneSwapRejectsOverlap(): void {
-  assertSceneControlRejectedAtomically('asset-only-airplane-overlap', {
+function testAssetOnlyLargeVehicleSwapRejectsOverlap(): void {
+  assertSceneControlRejectedAtomically('asset-only-large-vehicle-overlap', {
     stageId: 'tropical-playground',
     subjects: [
-      { id: 'swap-target', assetId: 'prop-crate', label: 'Swap target', position: [-3, 0, 0] },
-      { id: 'swap-peer', assetId: 'prop-crate', label: 'Swap peer', position: [3, 0, 0] },
+      { id: 'swap-target', assetId: 'prop-crate', label: 'Swap target', position: [-2, 0, 0] },
+      { id: 'swap-peer', assetId: 'prop-crate', label: 'Swap peer', position: [2, 0, 0] },
     ],
   }, {
     action: 'transform',
     subjectId: 'swap-target',
-    assetId: 'vehicle-airplane',
+    assetId: 'vehicle-helicopter',
   })
 }
 
@@ -388,7 +388,7 @@ export function testXrMotionControlAcceptanceConstraints(): void {
     selectedNodeId: previous.selectedNodeId,
   }
   const cases: readonly [string, () => void][] = [
-    ['asset-only airplane swap', testAssetOnlyAirplaneSwapRejectsOverlap],
+    ['asset-only large vehicle swap', testAssetOnlyLargeVehicleSwapRejectsOverlap],
     ['combined asset and transform', testCombinedAssetTransformRejectsAtomically],
     ['stage rebuild', testStageRebuildFailsClosed],
     ['duration rebuild', testDurationRebuildFailsClosed],

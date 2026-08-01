@@ -167,14 +167,14 @@ export async function testCitySimMcpInspectIsPureAndReportsZeroCostRuntime() {
 
   resetCitySimRuntimeForTests({ webglSupported: true })
   const native = await controlLocalCitySim({
-    invocation: '/game.city @canvas #civic operation=zone parcel=r00c02 type=residential',
+    invocation: '/game.city @canvas #civic operation=zone parcel=gardens-by-the-bay type=residential',
   })
   assert.equal(native.ok, true)
   const nativeCity = serializeCityGridDocument(readCitySimSnapshot().city)
   resetCitySimRuntimeForTests({ webglSupported: true })
   const structured = await controlLocalCitySim({
     operation: 'zone',
-    parcel: 'r00c02',
+    parcel: 'gardens-by-the-bay',
     type: 'residential',
   })
   assert.equal(structured.ok, true)

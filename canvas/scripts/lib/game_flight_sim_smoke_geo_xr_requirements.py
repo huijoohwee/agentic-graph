@@ -139,7 +139,7 @@ def unmet_view_requirements(
         "flightLayersReady": last.get("flightLayersReady") is True,
         "flightLayersTopmost": last.get("flightLayersTopmost") is True,
         "aircraftLayerType": last.get("aircraftLayerType") == "symbol",
-        "aircraftGeometryType": last.get("aircraftGeometryType") == "Polygon",
+        "aircraftGeometryType": last.get("aircraftGeometryType") == "Point",
         "aircraftImagesReady": last.get("aircraftImagesReady") is True,
         "aircraftImagePixelWidth": (last.get("aircraftImagePixelWidth") or 0)
         >= 40,
@@ -166,8 +166,16 @@ def unmet_view_requirements(
             width_meters=71.82,
             depth_meters=76.45,
         ),
-        "environment.majorPoiIds": last.get("environmentPoiIds")
-        == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"],
+        "environment.majorPoiIds": (
+            isinstance(last.get("environmentPoiIds"), list)
+            and bool(last.get("environmentPoiIds"))
+            and last.get("environmentPoiIds")
+            == sorted(set(last.get("environmentPoiIds")))
+            and all(
+                isinstance(poi_id, str) and bool(poi_id.strip())
+                for poi_id in last.get("environmentPoiIds")
+            )
+        ),
         "environment.renderedMajorPoiSubset": (
             _has_viewport_scoped_regional_poi_rendering(last)
         ),

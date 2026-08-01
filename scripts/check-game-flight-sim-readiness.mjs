@@ -3,7 +3,6 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { assertFlightSimCameraReadiness } from './game-flight-sim-camera-readiness.mjs'
-import { assertFlightSimAssetReadiness } from './lib/game-flight-sim-asset-readiness.mjs'
 import { assertFlightSimKiroReadiness } from './lib/game-flight-sim-kiro-readiness.mjs'
 import { assertFlightSimFeatureNetworkBoundary } from './lib/game-flight-sim-network-readiness.mjs'
 import { assertFlightSimPropertyReadiness } from './lib/game-flight-sim-property-readiness.mjs'
@@ -28,15 +27,9 @@ const requiredPaths = [
   `${kiroSpecRoot}/tasks.md`,
   `${flightFeatureRoot}/FlightSimFloatingPanelView.tsx`,
   `${flightFeatureRoot}/FlightSimHud.tsx`,
-  `${flightFeatureRoot}/FlightSimGeoSurfaceOverlay.tsx`,
   `${flightFeatureRoot}/FlightSimMissionStage.tsx`,
   `${flightFeatureRoot}/FlightSimTrainingSurfaceProjection.tsx`,
   `${flightFeatureRoot}/FlightSimWebglUnsupportedState.tsx`,
-  `${flightFeatureRoot}/assetSpec/fallbacks/optionalBeaconGlb.generated.ts`,
-  `${flightFeatureRoot}/assetSpec/flightSimAssetLoader.ts`,
-  `${flightFeatureRoot}/assetSpec/flightSimDefaultAssets.ts`,
-  `${flightFeatureRoot}/assetSpec/flightSimAssetSpec.ts`,
-  `${flightFeatureRoot}/assetSpec/vehicle-airplane.scene.json`,
   `${flightFeatureRoot}/flightModel.ts`,
   `${flightFeatureRoot}/flightSimFollowTarget.ts`,
   `${flightFeatureRoot}/flightSimGeospatialProjection.ts`,
@@ -83,7 +76,7 @@ const requiredPaths = [
   'gympgrph/src/geoMapViewport.ts',
   'gympgrph/src/flightGeoOverlayMapLibre.ts',
   'gympgrph/src/flightGeoOverlayMapLibreCamera.ts',
-  'gympgrph/src/flightGeoOverlayMapLibrePayload.ts',
+  'gympgrph/src/flightGeoOverlayMapLibreLayers.ts',
   'gympgrph/src/features/geospatial/useFlightGeoOverlayMapLibrePresentation.ts',
   'gympgrph/src/GeospatialHost.tsx',
   'canvas/src/__tests__/flightSimCore.test.ts',
@@ -103,15 +96,9 @@ const requiredPaths = [
   physicsSeedPath,
   'scripts/game-flight-sim-camera-readiness.mjs',
   'scripts/check-game-flight-sim-boundary.mjs',
-  'scripts/generate-game-flight-sim-optional-prop-glb.mjs',
-  'scripts/lib/game-flight-sim-asset-readiness.mjs',
   'scripts/lib/game-flight-sim-boundary.mjs',
   'scripts/lib/game-flight-sim-kiro-readiness.mjs',
   'scripts/lib/game-flight-sim-network-readiness.mjs',
-  'scripts/lib/game-flight-sim-offline-author-contract.mjs',
-  'scripts/lib/game-flight-sim-offline-author-worker.mjs',
-  'scripts/lib/game-flight-sim-offline-authoring.mjs',
-  'scripts/lib/game-flight-sim-optional-prop-author.mjs',
   'scripts/lib/game-flight-sim-seed-readiness.mjs',
   'scripts/lib/game-flight-sim-surface-readiness.mjs',
   'scripts/lib/game-flight-sim-verification-readiness.mjs',
@@ -209,9 +196,6 @@ requireMarkers(featureIndexSource, [
   "export * from './flightSimMission'",
   "export * from './flightSimInput'",
   "export * from './flightSimRuntime'",
-  "export * from './assetSpec/flightSimAssetSpec'",
-  "export * from './assetSpec/flightSimAssetLoader'",
-  "export * from './assetSpec/flightSimDefaultAssets'",
   "export { FlightSimMissionStage } from './FlightSimMissionStage'",
   "export { FlightSimHud } from './FlightSimHud'",
 ], 'Flight Sim public feature surface')
@@ -255,8 +239,6 @@ requireMarkers(gameplayOverlaySource, [
   "from './flightSimMissionStageLoader'",
   'if (props.flightSimActive)',
   '<FlightSimMissionStageLazy',
-  'actorsVisible',
-  'coordinateScale={props.coordinateScale}',
   'geospatialComposite={props.geospatialComposite}',
 ], 'shared Three gameplay overlay')
 const threeGraphSource = await readText('canvas/src/lib/three/ThreeGraph.impl.tsx')
@@ -370,7 +352,6 @@ requireMarkers(runtimeSource, [
   'tickQueue.then(() => advanceCurrentMission(request))',
   'await priorRestoration', 'flightSimSurfaceOpenTail.then(performOpen)',
   'performFlightSimSurfaceOpen(operationOptions, expectedGeneration)',
-  'readFlightSimDefaultAssetLoadReport()',
   'suspendAuthoredRuntime()',
   'restoreDurableChatStreamTransportOwnership()',
   'restoreWorkspaceSeedSyncOwnership()',
@@ -461,20 +442,6 @@ if (
   || projectionInventory.includes('FLIGHT_SEED_BASENAME')
 ) {
   throw new Error('Flight Sim must remain local-only until a separate protected Agentic projection')
-}
-
-const assetReadiness = await assertFlightSimAssetReadiness({ repositoryRoot })
-const assetReadinessSource = await readText('scripts/lib/game-flight-sim-asset-readiness.mjs')
-requireMarkers(assetReadinessSource, [
-  'export async function assertTrackedFlightSimAsset(repositoryRoot, relativePath)',
-  'throw new Error(`${relativePath} must be git-tracked`)',
-  'export async function assertFlightSimAssetReadiness({ repositoryRoot })',
-], 'Flight Sim committed-local asset tracking gate')
-if (
-  assetReadinessSource.includes('KG_FLIGHT_SIM_ALLOW_UNTRACKED_ASSET_CANDIDATE')
-  || assetReadinessSource.includes('allowUntracked')
-) {
-  throw new Error('Flight Sim runtime readiness must not permit an untracked asset bypass')
 }
 
 const decisionStoreSource = await readText(`${flightFeatureRoot}/flightSimDecisionStore.ts`)
@@ -622,5 +589,5 @@ if (sourceTestPaths.length < 3) {
 const propertyReadiness = await assertFlightSimPropertyReadiness({ readText, listFiles })
 
 console.log(
-  `OK flight-sim source readiness (${featurePaths.length} feature files, ${sourceTestPaths.length} focused test files, ${propertyReadiness.propertyCount} properties/${propertyReadiness.generatedCaseCount} generated cases, ${assetReadiness.dependencies.externalClosureCount} licensed Flight dependencies, Kiro ${kiroReadiness.files.length}-file SHA-256 ${kiroReadiness.sha256} with workspace projection ${kiroReadiness.projection.checked ? 'byte-matched' : 'absent (portable)'}, 1 optional local GLB, browser-only MCP pair)`,
+  `OK flight-sim source readiness (${featurePaths.length} feature files, ${sourceTestPaths.length} focused test files, ${propertyReadiness.propertyCount} properties/${propertyReadiness.generatedCaseCount} generated cases, canonical MapLibre Point/symbol aircraft, Kiro ${kiroReadiness.files.length}-file SHA-256 ${kiroReadiness.sha256} with workspace projection ${kiroReadiness.projection.checked ? 'byte-matched' : 'absent (portable)'}, browser-only MCP pair)`,
 )

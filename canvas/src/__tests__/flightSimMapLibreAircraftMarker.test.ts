@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   applyFlightGeoOverlayToMap,
-  flightGeoOverlayMapLibreFeatureCollection,
+  flightGeoOverlayFeatureCollection,
   FLIGHT_GEO_AIRCRAFT_IMAGE_IDS,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
@@ -122,7 +122,10 @@ function mapHarness(failure?: LayerFailure) {
   }
 }
 
-function readAircraftRing(sourceData: unknown): number[][] {
+function readAircraftPoint(sourceData: unknown): Readonly<{
+  coordinate: number[]
+  headingDegrees: number
+}> {
   const features = (sourceData as {
     features?: {
       geometry?: { coordinates?: unknown; type?: unknown }
@@ -132,13 +135,16 @@ function readAircraftRing(sourceData: unknown): number[][] {
   const aircraftShape = features?.find(
     feature => feature.properties?.kgFlightOverlayKind === 'aircraft',
   )
-  assert.equal(aircraftShape?.geometry?.type, 'Polygon')
-  const coordinates = aircraftShape?.geometry?.coordinates as number[][][]
-  assert.ok(Array.isArray(coordinates?.[0]))
-  return coordinates[0]
+  assert.equal(aircraftShape?.geometry?.type, 'Point')
+  const coordinate = aircraftShape?.geometry?.coordinates as number[]
+  assert.equal(coordinate.length, 2)
+  return {
+    coordinate,
+    headingDegrees: Number(aircraftShape?.properties?.headingDegrees),
+  }
 }
 
-test('MapLibre aircraft uses pose-derived native geometry without fonts', () => {
+test('MapLibre aircraft uses canonical Point data and a fixed-pixel native symbol', () => {
   const harness = mapHarness()
   const northbound = flightOverlay(0)
 
@@ -158,11 +164,9 @@ test('MapLibre aircraft uses pose-derived native geometry without fonts', () => 
     ).length,
     1,
   )
-  const northboundRing = readAircraftRing(sourceData)
-  assert.equal(northboundRing.length, 13)
-  assert.deepEqual(northboundRing.at(-1), northboundRing[0])
-  assert.equal(northboundRing[0][0], northbound.aircraft.coordinate[0])
-  assert.ok(northboundRing[0][1] > northbound.aircraft.coordinate[1])
+  const northboundPoint = readAircraftPoint(sourceData)
+  assert.deepEqual(northboundPoint.coordinate, northbound.aircraft.coordinate)
+  assert.equal(northboundPoint.headingDegrees, northbound.aircraft.headingDegrees)
 
   const aircraftLayer = harness.layers.get(
     FLIGHT_GEO_OVERLAY_LAYER_IDS.aircraft,
@@ -217,11 +221,9 @@ test('MapLibre aircraft uses pose-derived native geometry without fonts', () => 
 
   const eastbound = flightOverlay(90)
   assert.equal(applyFlightGeoOverlayToMap(harness.map, eastbound), true)
-  const eastboundRing = readAircraftRing(harness.readSourceData())
-  assert.ok(eastboundRing[0][0] > eastbound.aircraft.coordinate[0])
-  assert.ok(
-    Math.abs(eastboundRing[0][1] - eastbound.aircraft.coordinate[1]) < 1e-10,
-  )
+  const eastboundPoint = readAircraftPoint(harness.readSourceData())
+  assert.deepEqual(eastboundPoint.coordinate, eastbound.aircraft.coordinate)
+  assert.equal(eastboundPoint.headingDegrees, 90)
 })
 
 test('an exact Flight Geo overlay replay does not restart its GeoJSON source', () => {
@@ -275,8 +277,8 @@ test('Ready reuses the loaded stopped Flight payload when its pixels are unchang
 
   assert.equal(applyFlightGeoOverlayToMap(harness.map, stopped), true)
   assert.deepEqual(
-    flightGeoOverlayMapLibreFeatureCollection(stopped),
-    flightGeoOverlayMapLibreFeatureCollection(ready),
+    flightGeoOverlayFeatureCollection(stopped),
+    flightGeoOverlayFeatureCollection(ready),
     'stopped and first-ready GeoJSON stay byte-equivalent for unchanged pixels',
   )
   assert.equal(applyFlightGeoOverlayToMap(harness.map, ready), true)
@@ -346,8 +348,8 @@ test('the authored stopped Flight snapshot projects to the exact Float32 tick-ze
   assert.deepEqual(stopped.aircraft.coordinate, ready.aircraft.coordinate)
   assert.deepEqual(stopped.camera.centerCoordinate, ready.camera.centerCoordinate)
   assert.deepEqual(
-    flightGeoOverlayMapLibreFeatureCollection(stopped),
-    flightGeoOverlayMapLibreFeatureCollection(ready),
+    flightGeoOverlayFeatureCollection(stopped),
+    flightGeoOverlayFeatureCollection(ready),
     'stopped and initial Ready must retain the exact GeoJSON worker payload',
   )
 })

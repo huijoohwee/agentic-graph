@@ -22,7 +22,6 @@ import {
 } from '../lib/game-flight-sim-browser-evidence-publication.mjs'
 import {
   assertExactFlightSimBrowserVerificationLedger,
-  assertExactFlightSimOptionalBeaconAdmission,
   readFlightSimBrowserVerificationNames,
 } from '../lib/game-flight-sim-browser-evidence.mjs'
 import {
@@ -495,38 +494,4 @@ test('browser evidence rejects a non-empty all-passed verification subset', asyn
     ]),
     /unexpected green check/,
   )
-})
-
-test('browser evidence requires the exact rendered optional-beacon identity', () => {
-  const expected = {
-    assetKind: 'glb-fallback',
-    assetPath: 'canvas/src/features/game-flight-sim/assetSpec/fallbacks/optional-beacon.glb',
-    assetSha256: 'a'.repeat(64),
-    meshDescendantCount: 1,
-    opaque: true,
-    partNames: ['kg_flight_sim_optional_beacon_part_1'],
-  }
-  assert.equal(
-    assertExactFlightSimOptionalBeaconAdmission(expected, {
-      expectedPath: expected.assetPath,
-      expectedSha256: expected.assetSha256,
-    }),
-    expected,
-  )
-  for (const mutation of [
-    { meshDescendantCount: 2 },
-    { opaque: false },
-    { partNames: ['kg_flight_sim_optional_beacon_part_2'] },
-  ]) {
-    assert.throws(
-      () => assertExactFlightSimOptionalBeaconAdmission(
-        { ...expected, ...mutation },
-        {
-          expectedPath: expected.assetPath,
-          expectedSha256: expected.assetSha256,
-        },
-      ),
-      /exact admitted optional beacon path, SHA-256, opacity, and mesh identity/,
-    )
-  }
 })

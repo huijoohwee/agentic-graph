@@ -16,13 +16,15 @@ import {
 import { NATIVE_GEOSPATIAL_MAPLIBRE_OWNER } from './features/geospatial/mapLibreHostLease.js'
 import { useFlightGeoOverlayMapLibrePresentation } from './features/geospatial/useFlightGeoOverlayMapLibrePresentation.js'
 import { useCityGeoOverlayMapLibrePresentation } from './features/geospatial/useCityGeoOverlayMapLibrePresentation.js'
+import { useGeospatialPresentationCameraOwner } from './features/geospatial/useGeospatialPresentationCameraOwner.js'
+import { useGeospatialCameraFitRuntime } from './features/geospatial/useGeospatialCameraFitRuntime.js'
 import { readGeoMapOcclusionPadding } from './geoMapViewport.js'
 import {
   readFlightGeoOverlay,
   subscribeFlightGeoOverlay,
   type FlightGeoOverlayPresentation,
-  type FlightGeoOverlayPresentationOwner,
 } from './flightGeoOverlay.js'
+import type { GeospatialPresentationCameraOwner } from './features/geospatial/geospatialPresentationCameraOwner.js'
 import { LS_KEYS } from './lib/config.js'
 import { onGeospatialModeChanged, type GeospatialViewMode } from 'grph-shared/geospatial/events'
 import { GEOSPATIAL_POINT_STYLE_CHANGED_EVENT, GEOSPATIAL_STYLE_URL_CHANGED_EVENT } from 'grph-shared/geospatial/constants'
@@ -58,11 +60,10 @@ import {
   HIGH_FIDELITY_WORLD_SVG_WIDTH,
 } from './features/geospatial/worldSvgBasemap.js'
 import { useEnhancedGeospatialHostLayers } from './useEnhancedGeospatialHostLayers.js'
-import { applyGeospatialFitRequest } from './geospatialFitRuntime.js'
 
 type GeospatialOverlayHostProps = {
   active?: boolean
-  gameplayPresentationOwner: FlightGeoOverlayPresentationOwner
+  gameplayPresentationOwner: GeospatialPresentationCameraOwner
   semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   snapshot?: unknown
   handlers?: unknown
@@ -601,6 +602,10 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     readFlightGeoOverlay,
   )
   const flightOverlayActive = flightOverlay.active
+  const presentationCamera = useGeospatialPresentationCameraOwner(
+    active,
+    props.gameplayPresentationOwner,
+  )
   const storeGeospatialViewMode = useGympgrphStore(s => s.geospatialViewMode)
   const geospatialAutoFitEnabled = useGympgrphStore(s => s.geospatialAutoFitEnabled)
   const geospatialFitRequest = useGympgrphStore(s => s.geospatialFitRequest)
@@ -835,6 +840,8 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     containerRef: mapContainerRef,
     targetStyleUrl: effectiveTargetStyleUrl,
     initialStyleOverride: flightBootstrapStyle,
+    gameplayPresentationOwner:
+      active ? props.gameplayPresentationOwner : undefined,
     ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
     canvasRenderMode: show3d ? '3d' : '2d',
     projectionMode: show3d ? 'globe' : 'mercator',
@@ -849,7 +856,8 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     styleRevision: basemap.styleRevision,
     snapshot: props.snapshot,
     handlers: props.handlers,
-    autoFitEnabled: geospatialAutoFitEnabled && !flightOverlayActive,
+    autoFitEnabled: geospatialAutoFitEnabled,
+    hasPresentationCameraClaim: presentationCamera.hasClaim,
     show3d,
     fitPadding,
     selectedBounds,
@@ -1146,47 +1154,21 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
     ? 'absolute inset-0 z-[5] h-full w-full pointer-events-auto'
     : 'absolute inset-0 h-full w-full pointer-events-auto'
 
-  const autoFitAppliedForDataKeyRef = React.useRef<string>('')
-  React.useEffect(() => {
-    const map = basemap.map
-    if (!map) return
-    if (!active) return
-    if (flightOverlayActive) return
-    if (show3d) return
-    if (!geospatialAutoFitEnabled) return
-    if (!graphBounds) return
-    const modeKey = show3d ? '3d' : '2d'
-    const autoFitKey = `${modeKey}:${graphDataKey}`
-    if (autoFitAppliedForDataKeyRef.current === autoFitKey) return
-    autoFitAppliedForDataKeyRef.current = autoFitKey
-    try {
-      map.fitBounds(graphBounds, { padding: fitPadding, duration: 0 })
-    } catch {
-      void 0
-    }
-  }, [active, basemap.map, fitPadding, flightOverlayActive, geospatialAutoFitEnabled, graphBounds, graphDataKey, show3d])
-
-  const initialDataFitDoneRef = React.useRef<boolean>(false)
-  React.useEffect(() => {
-    const map = basemap.map
-    if (!map) return
-    if (!active) return
-    if (flightOverlayActive) return
-    if (show3d) return
-    const featureCount = Array.isArray(graphFeatureCollection.features) ? graphFeatureCollection.features.length : 0
-    if (featureCount <= 0) {
-      initialDataFitDoneRef.current = false
-      return
-    }
-    if (!graphBounds) return
-    if (initialDataFitDoneRef.current) return
-    initialDataFitDoneRef.current = true
-    try {
-      map.fitBounds(graphBounds, { padding: fitPadding, duration: 0 })
-    } catch {
-      void 0
-    }
-  }, [active, basemap.map, fitPadding, flightOverlayActive, graphBounds, graphFeatureCollection.features, show3d])
+  useGeospatialCameraFitRuntime({
+    active,
+    autoFitEnabled: geospatialAutoFitEnabled,
+    clearFitRequest: clearGeospatialFitRequest,
+    enhancedBounds: enhancedLayerBounds,
+    fitPadding,
+    graphBounds,
+    graphDataKey,
+    graphFeatureCount: graphFeatureCollection.features.length,
+    map: basemap.map,
+    presentationCamera,
+    request: geospatialFitRequest,
+    selectedBounds,
+    show3d,
+  })
 
   React.useEffect(() => {
     const map = basemap.map
@@ -1276,20 +1258,6 @@ export function GeospatialOverlayHost(props: GeospatialOverlayHostProps): React.
       setGeospatialCursorLngLat(null)
     }
   }, [active, basemap.map, setGeospatialCursorLngLat])
-
-  React.useEffect(() => {
-    const map = basemap.map
-    if (!map || !active || !geospatialFitRequest) return
-    applyGeospatialFitRequest({
-      map,
-      request: geospatialFitRequest,
-      selectedBounds,
-      graphBounds,
-      enhancedBounds: enhancedLayerBounds,
-      padding: fitPadding,
-    })
-    clearGeospatialFitRequest()
-  }, [active, basemap.map, clearGeospatialFitRequest, enhancedLayerBounds, fitPadding, geospatialFitRequest, graphBounds, selectedBounds])
 
   const debug = React.useMemo(() => {
     if (typeof window === 'undefined') return false

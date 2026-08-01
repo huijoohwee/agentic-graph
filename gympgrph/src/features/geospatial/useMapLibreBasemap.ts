@@ -46,6 +46,10 @@ import {
   createMapLibreInitialCameraAlignment,
 } from './mapLibreInitialCameraAlignment.js'
 import {
+  hasGeospatialPresentationCameraClaim,
+  type GeospatialPresentationCameraOwner,
+} from './geospatialPresentationCameraOwner.js'
+import {
   createMapLibreFlightRuntimeFallbackRequester,
 } from './mapLibreFlightRuntimeFallback.js'
 import {
@@ -280,6 +284,7 @@ export function useMapLibreBasemap(args: {
   semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   targetStyleUrl?: string | null
   initialStyleOverride?: Readonly<Record<string, unknown>> | null
+  gameplayPresentationOwner?: GeospatialPresentationCameraOwner
   ownerScope?: MapLibreMapOwnerScope
   canvasRenderMode: '2d' | '3d'
   projectionMode: 'mercator' | 'globe'
@@ -295,6 +300,7 @@ export function useMapLibreBasemap(args: {
     semanticMediaOwner,
     targetStyleUrl,
     initialStyleOverride,
+    gameplayPresentationOwner,
     ownerScope = 'embedded-preview',
     canvasRenderMode,
     projectionMode,
@@ -307,15 +313,13 @@ export function useMapLibreBasemap(args: {
   const singaporeInitialCamera =
     createSingaporeMapInitialCameraOptions(singaporeCamera)
   const mountedMapRef = React.useRef<any | null>(null)
-  // The mount effect intentionally does not depend on the bootstrap override:
-  // Flight takes over the retained map in place. Load and resize callbacks
-  // therefore need the latest ownership rather than their mount-time value.
+  // Read presentation ownership live so retained maps never remount.
   const initialStyleOverrideRef = React.useRef(initialStyleOverride ?? null)
   initialStyleOverrideRef.current = initialStyleOverride ?? null
-  const readLiveFlightBootstrapStyle = React.useCallback(
-    (): Readonly<Record<string, unknown>> | null => initialStyleOverrideRef.current,
-    [],
-  )
+  const readLiveFlightBootstrapStyle = React.useCallback(() => initialStyleOverrideRef.current, [])
+  const gameplayPresentationOwnerRef = React.useRef(gameplayPresentationOwner)
+  gameplayPresentationOwnerRef.current = gameplayPresentationOwner
+  const hasLivePresentationCameraClaim = React.useCallback(() => hasGeospatialPresentationCameraClaim(gameplayPresentationOwnerRef.current), [])
   const initialStylePreflightAbortRef =
     React.useRef<AbortController | null>(null)
   // Toast handlers close over the live Canvas snapshot. Their identity can
@@ -1064,11 +1068,7 @@ export function useMapLibreBasemap(args: {
 
         const align3dViewportCenter = createMapLibreInitialCameraAlignment({
           canvasRenderMode,
-          // Flight's local bootstrap has camera ownership before the first
-          // native MapLibre frame. A late generic Singapore fit would overwrite
-          // its stopped fixed-follow camera and strand the presentation gate.
-          flightBootstrapActive: () =>
-            Boolean(readLiveFlightBootstrapStyle()),
+          hasPresentationCameraClaim: hasLivePresentationCameraClaim,
           isCurrent: () => !cancelled,
           map: () => map,
           requestFrame: typeof window === 'undefined'

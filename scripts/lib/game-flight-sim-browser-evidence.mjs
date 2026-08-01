@@ -54,38 +54,3 @@ export async function assertExactFlightSimBrowserVerificationLedger(
   }
   return expectedNames
 }
-
-export function assertExactFlightSimOptionalBeaconAdmission(
-  optionalBeacon,
-  { expectedPath, expectedSha256 },
-) {
-  const expectedKeys = [
-    'assetKind',
-    'assetPath',
-    'assetSha256',
-    'meshDescendantCount',
-    'opaque',
-    'partNames',
-  ]
-  const actualKeys = optionalBeacon && typeof optionalBeacon === 'object'
-    ? Object.keys(optionalBeacon).sort()
-    : []
-  if (
-    JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys)
-    || optionalBeacon.assetKind !== 'glb-fallback'
-    || optionalBeacon.assetPath !== expectedPath
-    || optionalBeacon.assetSha256 !== expectedSha256
-    || optionalBeacon.opaque !== true
-    || optionalBeacon.meshDescendantCount !== 1
-    || JSON.stringify(optionalBeacon.partNames)
-      !== JSON.stringify(['kg_flight_sim_optional_beacon_part_1'])
-  ) {
-    throw new Error(
-      'Flight browser evidence did not retain the exact admitted optional '
-      + `beacon path, SHA-256, opacity, and mesh identity: ${
-        JSON.stringify(optionalBeacon)
-      }`,
-    )
-  }
-  return optionalBeacon
-}

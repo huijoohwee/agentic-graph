@@ -1,10 +1,7 @@
 import React from 'react'
-import { Plane } from 'lucide-react'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { subscribeGlobalCancelEvents } from '@/lib/browser/globalCancelEvents'
-import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
 import { resolveFloatingPanelRightClearanceCss } from '@/lib/ui/floatingPanelGeometry'
-import { FLIGHT_SIM_AIRCRAFT_ASSET_SPEC } from './assetSpec/flightSimAssetSpec'
 import {
   flightSimInputFromHeldTouches,
   releaseFlightSimHeldTouch,
@@ -63,19 +60,9 @@ function envelopeClassName(severity: 'nominal' | 'caution' | 'warning'): string 
   return 'border-cyan-300/50 bg-slate-950/80 text-cyan-50'
 }
 
-export type FlightSimHudProps = Readonly<{
-  geospatialComposite?: boolean
-}>
-
-export function FlightSimHud({
-  geospatialComposite = false,
-}: FlightSimHudProps) {
-  const mediaPointerClassName = geospatialComposite
-    ? 'pointer-events-none'
-    : 'pointer-events-auto'
+export function FlightSimHud() {
   const floatingPanelOpen = useGraphStore(state => state.floatingPanelOpen === true)
   const floatingPanelWidthRatio = useGraphStore(state => state.floatingPanelWidthRatio)
-  const [aircraftSelected, setAircraftSelected] = React.useState(false)
   const flight = React.useSyncExternalStore(
     subscribeFlightSimHudSnapshot,
     readFlightSimSnapshot,
@@ -174,11 +161,6 @@ export function FlightSimHud({
   const hudPanelClassName = training.night
     ? 'border-violet-300/35 bg-indigo-950/80'
     : 'border-white/20 bg-slate-950/75'
-  const selectableSurfaceDataAttr = resolveMediaPreviewSelectableDataAttr(true)
-  const selectAircraft = React.useCallback(() => {
-    setAircraftSelected(true)
-    requestFlightSimPointerCapture()
-  }, [])
   React.useLayoutEffect(
     () => registerFlightSimHudDeadlineOwner(mountedRevision.current),
     [],
@@ -232,48 +214,6 @@ export function FlightSimHud({
       data-kg-flight-sim-panel-clearance={floatingPanelOpen ? 'reserved' : 'none'}
       style={floatingPanelClearanceVariables}
     >
-      <figure
-        className={`${mediaPointerClassName} absolute inset-[8%_8%_13%_8%] m-0`}
-        aria-label="Flight Sim media surface"
-        data-kg-flight-sim-media-surface="1"
-        data-kg-flight-sim-media-pointer-owner={
-          geospatialComposite ? 'geo' : 'flight'
-        }
-        data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
-      >
-        <figcaption
-          className={`${mediaPointerClassName} absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-cyan-200/35 bg-slate-950/45 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-cyan-50 backdrop-blur`}
-          data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
-        >
-          Flight Sim media · {camera.view} · {flight.phase}
-        </figcaption>
-        <button
-          type="button"
-          className={`${mediaPointerClassName} absolute left-1/2 top-1/2 grid h-28 w-[min(72%,34rem)] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[50%] border bg-transparent text-cyan-50 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300 ${
-            aircraftSelected
-              ? 'border-cyan-200/70'
-              : 'border-cyan-100/20 hover:border-cyan-200/55'
-          }`}
-          aria-label={`Select ${FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.label} Flight media subject`}
-          aria-pressed={aircraftSelected}
-          onClick={selectAircraft}
-          data-kg-flight-sim-aircraft-media={FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.id}
-          data-kg-flight-sim-aircraft-selection={aircraftSelected ? 'selected' : 'available'}
-          data-kg-media-xr-asset={FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.id}
-          data-kg-media-xr-asset-category="vehicles"
-          data-kg-media-xr-thumbnail="flight-subject"
-          data-kg-rich-media-selectable-surface={selectableSurfaceDataAttr}
-        >
-          <span className="absolute -top-3 inline-flex items-center gap-1 rounded-full border border-cyan-200/45 bg-slate-950/75 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] shadow-lg backdrop-blur">
-            <Plane
-              className="size-3.5"
-              role="img"
-              aria-label={`${FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.label} media icon`}
-            />
-            {FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.label} · Media
-          </span>
-        </button>
-      </figure>
       <header
         className={`absolute left-3 right-3 top-3 grid grid-cols-1 gap-2 pt-[env(safe-area-inset-top)] ${floatingPanelOpen ? 'sm:right-[var(--kg-flight-sim-panel-clearance)]' : 'sm:flex sm:items-start sm:justify-between sm:gap-3'}`}
       >

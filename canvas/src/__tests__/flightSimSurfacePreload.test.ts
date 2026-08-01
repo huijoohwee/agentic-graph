@@ -37,7 +37,7 @@ const EMPTY_WORKSPACE = {
   readFileText: async () => null,
 } as unknown as WorkspaceFs
 const MissionStage = (() => null) as ComponentType<{
-  coordinateScale?: number
+  geospatialComposite?: boolean
 }>
 const missionStageModule = {
   createFlightSimMissionStage: () => MissionStage,

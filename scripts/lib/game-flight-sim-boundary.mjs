@@ -17,10 +17,6 @@ const FLIGHT_PRESENTATION_PATHS = new Set([
 ])
 
 const EXTERNAL_LOCATOR_PATTERN = /(?:https?:\/\/|git\+|github:|gitlab:|bitbucket:)/gi
-const ADMITTED_OPAQUE_ASSET_PATHS = new Set([
-  'canvas/src/features/game-flight-sim/assetSpec/fallbacks/optional-beacon.glb',
-])
-
 function isFlightOwnedPath(relativePath) {
   return (
     POLICY_DOCUMENT_PATHS.has(relativePath)
@@ -82,7 +78,7 @@ export function findFlightSimBoundaryViolations(entries) {
         reason: 'Flight-owned path creates a vendored external-project surface',
       })
     }
-    if (isBinary(bytes) && !ADMITTED_OPAQUE_ASSET_PATHS.has(relativePath)) {
+    if (isBinary(bytes)) {
       violations.push({
         relativePath,
         identifiers: ['binary'],

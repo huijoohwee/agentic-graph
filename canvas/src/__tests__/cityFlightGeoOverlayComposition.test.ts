@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict'
 import type { CitySimSnapshot } from '@/features/game-city-sim/citySimRuntimeState'
 import {
-  projectCitySimAerialInspectionToGeospatialOverlay,
-} from '@/features/game-city-sim/citySimAerialInspectionProjection'
-import {
   projectCitySimToGeospatialOverlay,
 } from '@/features/game-city-sim/citySimGeospatialProjection'
 import {
@@ -73,13 +70,8 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
   )
   const events: string[] = []
   const published: FlightSimGeospatialOverlay[] = []
-  let cityAerialProjectionCount = 0
   let cityOverlayProjectionCount = 0
   let flightProjectionCount = 0
-  const projectCityAerial = (snapshot: CitySimSnapshot) => {
-    cityAerialProjectionCount += 1
-    return projectCitySimAerialInspectionToGeospatialOverlay(snapshot)
-  }
   const projectCityOverlay = (snapshot: CitySimSnapshot) => {
     cityOverlayProjectionCount += 1
     return projectCitySimToGeospatialOverlay(snapshot)
@@ -110,7 +102,6 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
     publishGeoXrOverlayComposition({
       city: nextCity,
       flight: nextFlight,
-      projectCityAerial,
       projectCityOverlay,
       projectFlight,
       store,
@@ -119,26 +110,22 @@ export function testCityFlightGeoOverlayCompositionIsDeterministic() {
 
   try {
     assert.equal(publish(city, inactiveFlight), 'city')
-    assert.deepEqual(events.splice(0), ['flight:city', 'city:active'])
+    assert.deepEqual(events.splice(0), ['flight:clear', 'city:active'])
 
     assert.equal(publish(city, activeFlight), 'flight')
     assert.deepEqual(events.splice(0), ['city:hard-clear', 'flight:flight'])
 
     assert.equal(publish(city, inactiveFlight), 'city')
-    assert.deepEqual(events.splice(0), ['flight:city', 'city:active'])
+    assert.deepEqual(events.splice(0), ['flight:clear', 'city:active'])
 
     assert.equal(publish(inactiveCity, inactiveFlight), 'clear')
     assert.deepEqual(events.splice(0), ['flight:clear', 'city:clear'])
 
-    assert.equal(cityAerialProjectionCount, 2)
     assert.equal(cityOverlayProjectionCount, 3)
     assert.equal(flightProjectionCount, 1)
-    assert.equal(published[0]?.phase, 'stopped')
-    assert.equal(published[0]?.readyFrameRequestId, null)
-    assert.equal(published[0]?.environment, null)
-    assert.equal(published[1]?.phase, 'ready')
-    assert.equal(published[1]?.readyFrameRequestId, readyFrameBefore)
-    assert.strictEqual(published[1]?.environment, environment)
+    assert.equal(published[0]?.phase, 'ready')
+    assert.equal(published[0]?.readyFrameRequestId, readyFrameBefore)
+    assert.strictEqual(published[0]?.environment, environment)
     assert.deepEqual(activeFlight, flightBefore)
     assert.equal(
       readCurrentFlightSimReadyFrameRequestId(),

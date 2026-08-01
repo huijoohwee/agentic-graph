@@ -19,6 +19,7 @@ export function useEnhancedGeospatialHostLayers(args: {
   snapshot: unknown
   handlers: unknown
   autoFitEnabled: boolean
+  hasPresentationCameraClaim: () => boolean
   show3d: boolean
   fitPadding: number
   selectedBounds: GeospatialBounds | null
@@ -42,7 +43,13 @@ export function useEnhancedGeospatialHostLayers(args: {
     notify,
   })
   React.useEffect(() => {
-    if (!args.map || !args.enabled || !args.show3d || !args.autoFitEnabled) return
+    if (
+      !args.map
+      || !args.enabled
+      || !args.show3d
+      || !args.autoFitEnabled
+      || args.hasPresentationCameraClaim()
+    ) return
     const targetBounds = args.selectedBounds || args.graphBounds || enhancedBounds
     if (!targetBounds) return
     try {
@@ -55,6 +62,7 @@ export function useEnhancedGeospatialHostLayers(args: {
     args.enabled,
     args.fitPadding,
     args.graphBounds,
+    args.hasPresentationCameraClaim,
     args.map,
     args.selectedBounds,
     args.show3d,

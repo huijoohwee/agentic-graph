@@ -67,14 +67,14 @@ export function assertXrSceneCatalogAndVehiclePlacements(): void {
   const featuredAssets = XR_SCENE_LIBRARY_FEATURED_ASSET_IDS.map(assetId => XR_SCENE_LIBRARY_ASSETS.find(asset => asset.id === assetId))
   if (XR_SCENE_LIBRARY_DEFAULT_ASSET_ID !== 'vehicle-helicopter'
     || featuredAssets.some(asset => !asset)
-    || featuredAssets.map(asset => asset!.label).join('|') !== 'Helicopter|Airplane|Car|Ball'
+    || featuredAssets.map(asset => asset!.label).join('|') !== 'Helicopter|Car|Ball'
     || new Set(XR_SCENE_LIBRARY_ASSETS.map(asset => asset.id)).size !== XR_SCENE_LIBRARY_ASSETS.length) {
-    throw new Error(`expected unique default Helicopter, Airplane, Car, and Ball asset provisions, got ${JSON.stringify(featuredAssets)}`)
+    throw new Error(`expected unique default Helicopter, Car, and Ball asset provisions, got ${JSON.stringify(featuredAssets)}`)
   }
   hydrateXrMotionReferenceRuntime({ sceneKey: 'vehicle-packing-scene', nodes: [], persistedValue: null })
-  for (const assetId of ['vehicle-helicopter', 'vehicle-airplane', 'vehicle-sedan']) addXrMotionReferenceSubject({ assetId })
+  for (const assetId of ['vehicle-helicopter', 'vehicle-sedan']) addXrMotionReferenceSubject({ assetId })
   const packedVehicles = readXrMotionReferenceRuntime().plan.subjects
-  if (packedVehicles.length !== 3) throw new Error(`expected all showcase vehicles to place, got ${JSON.stringify(packedVehicles)}`)
+  if (packedVehicles.length !== 2) throw new Error(`expected all showcase vehicles to place, got ${JSON.stringify(packedVehicles)}`)
   const stage = XR_MOTION_REFERENCE_STAGE_PRESETS.find(candidate => candidate.id === 'singapore')!
   for (let leftIndex = 0; leftIndex < packedVehicles.length; leftIndex += 1) {
     const left = packedVehicles[leftIndex]!

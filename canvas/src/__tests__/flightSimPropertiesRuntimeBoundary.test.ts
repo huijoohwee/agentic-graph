@@ -9,8 +9,8 @@ import {
   type XrNativeControllerInputSource,
 } from '@/features/three/xrNativeControllerInput'
 
-// Feature: knowgrph-game-flight-sim, Property 28 - Motion_Control is optional input only
-test('Feature: knowgrph-game-flight-sim, Property 28 - Motion_Control is optional input only', () => {
+// Feature: knowgrph-game-flight-sim, Property 23 - Motion_Control is optional input only
+test('Feature: knowgrph-game-flight-sim, Property 23 - Motion_Control is optional input only', () => {
   fc.assert(
     fc.property(
       fc.double({ min: -2, max: 2, noNaN: true, noDefaultInfinity: true }),
@@ -61,6 +61,6 @@ test('Feature: knowgrph-game-flight-sim, Property 28 - Motion_Control is optiona
         )
       },
     ),
-    flightSimPropertyParameters(28),
+    flightSimPropertyParameters(23),
   )
 })

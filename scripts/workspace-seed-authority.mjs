@@ -25,15 +25,17 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
   surfaceOwner: 'native MapLibre Geo+XR surface wrapped by SemanticMediaFigure',
   citySurfaceOwner: 'native MapLibre Geo+XR host wrapped by the City semantic media figure',
   basemapOwner: 'one real native MapLibre basemap',
-  composition: 'one real native MapLibre basemap with companion-owned regional geographic POI layers, source-authored meter-scaled City parcel layers, and independent Flight aircraft/route layers; zero Flight-local XR environment sources or features; zero City-created, active, or visible Three presentation; zero HTML POI markers',
+  composition: 'one real native MapLibre basemap with companion-owned regional geographic POI surfaces carrying read-only City zoning state; existing Flight aircraft and route layers remain independently owned; zero City-authored geometry, Flight data, Three presentation, or HTML POI markers',
   layerOrder: Object.freeze(['regional-context', 'city', 'flight']),
-  parcelScalePolicy:
-    'project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor',
+  parcelIdentityPolicy:
+    'each parcel_id exactly equals one RegionalPoiIdentity.id from the selected profile; one-to-one coverage; no alias or remap',
+  orderingPolicy:
+    'row and column are deterministic UI ordering only and never geometry',
   parcelCameraPolicy:
-    'fit the union of admitted regional geographic POI bounds and source-authored parcel bounds into the visible panel-adjusted aperture and restore prior padding',
+    'fit the selected regional POI profile bounds into the visible panel-adjusted aperture and restore prior padding',
   regionalPoi: Object.freeze({
     profileId: 'adm0:SGP:major-pois/v1',
-    profileIdentitySource: 'city_geo_xr.regional_poi_profile_id',
+    profileIdentitySource: 'city_initial.regional_poi_profile_id',
     profileFactAuthority:
       '/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md',
     sourceId: 'kg-geo-xr:regional-poi',
@@ -45,13 +47,13 @@ export const CITY_SIM_OVERLAY_AUTHORITY = Object.freeze({
       'kg-geo-xr:regional-poi:label',
     ]),
     featureContract:
-      'nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three topology-aware representative Point locators',
+      'companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus one topology-aware representative Point locator per POI',
     presentationPolicy:
       'read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-aware variable-anchor labels',
     storagePolicy: 'checked-in',
   }),
   cameraFraming:
-    'union of admitted regional geographic POI bounds and source-authored City parcel bounds in the visible MapLibre aperture',
+    'selected regional geographic POI bounds in the visible MapLibre aperture',
   semanticMediaCanvasOwner:
     'gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts',
   semanticMediaChildOwner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',

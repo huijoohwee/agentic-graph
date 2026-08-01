@@ -60,7 +60,7 @@ native_controller_demo:
     available: ["singapore", "tropical-playground"]
   asset_library:
     default: "vehicle-helicopter"
-    featured: ["vehicle-helicopter", "vehicle-airplane", "vehicle-sedan", "prop-ball"]
+    featured: ["vehicle-helicopter", "vehicle-sedan", "prop-ball"]
   objective: "collect key then unlock treasure"
   interactive_props: ["barrels", "bowling pins", "cannonballs"]
   controllers:
@@ -136,13 +136,6 @@ kgXrMotionReference:
       position: [7.2, 0.55, 2.1]
       rotationYDegrees: -31.5
       scale: 0.42
-    - id: "xr-subject:vehicle-airplane:1"
-      assetId: "vehicle-airplane"
-      label: "Airplane"
-      color: "#cbd5e1"
-      position: [-7.4, 4.8, -3.8]
-      rotationYDegrees: 17
-      scale: 0.28
     - id: "xr-subject:vehicle-sedan:1"
       assetId: "vehicle-sedan"
       label: "Car"
@@ -157,14 +150,6 @@ kgXrMotionReference:
       marks:
         - timeSeconds: 0
           position: [7.2, 0.55, 2.1]
-          transition: "hold"
-          gait: "flight"
-    - actorId: "xr-subject:vehicle-airplane:1"
-      label: "Airplane"
-      animation: null
-      marks:
-        - timeSeconds: 0
-          position: [-7.4, 4.8, -3.8]
           transition: "hold"
           gait: "flight"
     - actorId: "xr-subject:vehicle-sedan:1"

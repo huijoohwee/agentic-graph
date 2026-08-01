@@ -34,8 +34,6 @@ from lib.game_flight_sim_smoke_navigation import (
 )
 from lib.game_flight_sim_smoke_mission import complete_authored_flight_mission
 from lib.game_flight_sim_smoke_scene import (
-    FLIGHT_OPTIONAL_BEACON_PATH,
-    FLIGHT_OPTIONAL_BEACON_SHA256,
     assert_active_flight_scene,
     read_flight_scene,
 )
@@ -279,18 +277,6 @@ def run_flight_runtime_verifications(
                     "routeFeatureCount"
                 )
                 == 1
-                and (value.get("optionalBeacon") or {}).get("assetPath")
-                == FLIGHT_OPTIONAL_BEACON_PATH
-                and (value.get("optionalBeacon") or {}).get("assetSha256")
-                == FLIGHT_OPTIONAL_BEACON_SHA256
-                and (value.get("optionalBeacon") or {}).get("opaque") is True
-                and int(
-                    (value.get("optionalBeacon") or {}).get(
-                        "meshDescendantCount"
-                    )
-                    or 0
-                )
-                >= 1
             ),
             label="MapLibre Flight projection and transparent runtime Canvas",
             timeout_ms=120_000,

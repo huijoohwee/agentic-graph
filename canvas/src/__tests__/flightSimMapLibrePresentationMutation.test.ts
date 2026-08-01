@@ -4,7 +4,6 @@ import assert from 'node:assert/strict'
 import {
   clearFlightGeoOverlay,
   markFlightGeoOverlayReadyFramePresented,
-  readFlightGeoOverlayReadyFramePresented,
   setFlightGeoOverlay,
   type FlightGeoOverlaySnapshot,
 } from '../../../gympgrph/src/flightGeoOverlay'
@@ -31,38 +30,6 @@ import {
   presentationHarness,
   withEnvironment,
 } from './helpers/flightSimMapLibrePresentationHarness'
-
-test('City overlay never enters the Flight readiness presentation gate', () => {
-  const cityOverlay = {
-    ...flightOverlay('stopped', 'city:overlay', null),
-    presentationOwner: 'city' as const,
-  }
-  const harness = presentationHarness(cityOverlay)
-  harness.setWidth(100)
-
-  harness.gate.request(cityOverlay)
-  harness.emitRender()
-
-  assert.equal(harness.listenerCount(), 0)
-  assert.equal(harness.repaintCount(), 0)
-  assert.deepEqual(harness.presentations, [])
-})
-
-test('City overlay cannot publish Flight ready-frame proof', context => {
-  const cityOverlay = {
-    ...flightOverlay('ready', 'city:ready', 7),
-    presentationOwner: 'city' as const,
-  }
-  clearFlightGeoOverlay()
-  context.after(clearFlightGeoOverlay)
-  setFlightGeoOverlay(cityOverlay)
-
-  assert.equal(
-    markFlightGeoOverlayReadyFramePresented(cityOverlay.revision, 7),
-    false,
-  )
-  assert.equal(readFlightGeoOverlayReadyFramePresented(), false)
-})
 
 test('a style reload invalidates a stopped frame before Ready can reuse it', () => {
   const stopped = flightOverlay('stopped', 'stopped:style-reload', null)

@@ -117,7 +117,7 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.match(browserProofBridge, /gympgrphStore: \(\) => import\('@\/lib\/gympgrph\/api'\)/)
   assert.match(
     gympgrphApi,
-    /CITY_GEO_XR_LAYER_ORDER[\s\S]*REGIONAL_POI_LAYER_IDS[\s\S]*hasExactCityGeoXrLayerOrder[\s\S]*mapHasExactRegionalPoiProfile[\s\S]*readCityGeoOverlay[\s\S]*readCityGeoXrLayerOrder[\s\S]*readGeoMapViewportPadding/,
+    /REGIONAL_POI_LAYER_IDS[\s\S]*cityGeoPresentationStateEntries[\s\S]*mapHasExactCityGeoPresentation[\s\S]*mapHasExactRegionalPoiProfile[\s\S]*readCityGeoOverlay[\s\S]*readGeoMapViewportPadding/,
   )
   assert.match(sourceSelection, /get_by_role\(\s*["']button["']/)
   assert.match(sourceSelection, /name=["']Workspace View["'],\s*exact=True/)
@@ -248,8 +248,8 @@ test('Flight browser proof activates only after applying the authored source', (
     'mapHasExactRegionalPoiProfile',
     'kgCityGeospatialPoiFeatureCount',
     'kgCityGeospatialPoiProfileId',
-    'readGeoMapViewportPadding',
-    'boundsInsideAperture',
+    'readGeoMapViewportPadding', 'boundsInsideAperture',
+    'visibleAperture', 'contentAperture', 'regionalBoundsApertureCoverage',
     'renderedIdentityAtAnchor',
     'visiblePoiAnchors',
     'exactFeatures',
@@ -326,12 +326,10 @@ test('Flight browser proof activates only after applying the authored source', (
     'renderedEnvironmentPoiIds',
     'environmentSourceExactlyMatchesOverlay',
     'environmentLayerCount',
-    'citySourcePresent',
-    'citySourceFeatures',
-    'cityLayerCount',
-    'cityLayersReady',
-    'cityParcelsUseAuthoredMeters',
-    'cityGeoXrLayerOrderExact',
+    'cityOwnedSourceCount',
+    'cityOwnedLayerCount',
+    'cityPresentationExact',
+    'cityPresentationStateCount',
     'renderedEnvironmentFeatureCount',
     'regionalPoiAfterCityExit',
     'regionalPoiAfterFlightReopen',
@@ -343,11 +341,7 @@ test('Flight browser proof activates only after applying the authored source', (
   }
   assert.match(
     geoXrPresentationVerifier,
-    /\{"aircraft", "route", "route-point"\}/,
-  )
-  assert.doesNotMatch(
-    geoXrPresentationVerifier,
-    /\{"aircraft", "objective-guide", "route", "route-point"\}/,
+    /value\.get\("sourceKinds"\) == \[\]/,
   )
   const cityEvidenceValidator = evidenceValidator.slice(
     evidenceValidator.indexOf(
@@ -357,11 +351,7 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     cityEvidenceValidator,
-    /JSON\.stringify\(\['aircraft', 'route', 'route-point'\]\)/,
-  )
-  assert.doesNotMatch(
-    cityEvidenceValidator,
-    /JSON\.stringify\(\['aircraft', 'objective-guide', 'route', 'route-point'\]\)/,
+    /JSON\.stringify\(city\?\.sourceKinds\) === '\[\]'/,
   )
   assert.doesNotMatch(
     geoXrPresentationVerifier,
@@ -532,8 +522,8 @@ test('Flight browser proof activates only after applying the authored source', (
   assert.doesNotMatch(verifier, /page\.route_web_socket\(websocket_probe_url/)
   assert.doesNotMatch(verifier, /\.connect_to_server\(/)
   assert.match(verifier, /"webSocketAttempts": \{/)
-  assert.match(verifier, /"optionalBeacon": active_scene\["optionalBeacon"\]/)
-  assert.match(evidenceValidator, /assertExactFlightSimOptionalBeaconAdmission\(/)
+  assert.doesNotMatch(verifier, /optionalBeacon/)
+  assert.doesNotMatch(evidenceValidator, /OptionalBeacon|optionalBeacon/)
   assert.match(touchVerifier, /chromium-cdp-emulated-touch/)
   assert.match(touchVerifier, /pointer_down\.get\("isTrusted"\) is not True/)
   assert.match(missionVerifier, /accelerated-public-production-runtime/)
@@ -625,12 +615,9 @@ test('Flight browser proof activates only after applying the authored source', (
   )
   assert.match(
     sceneVerifier,
-    /flight_visual_names != FLIGHT_GEO_XR_VISUAL_NODES/,
+    /if flight_visual_names:/,
   )
-  assert.match(
-    sceneVerifier,
-    /airplane_node_counts != FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS/,
-  )
+  assert.doesNotMatch(sceneVerifier, /AIRPLANE_NODE_COUNTS/)
   assert.match(
     serverOwner,
     /refusing responsive pre-existing server/,

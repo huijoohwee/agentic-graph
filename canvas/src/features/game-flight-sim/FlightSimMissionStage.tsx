@@ -1,18 +1,6 @@
 import React from 'react'
 import { addAfterEffect, invalidate, useFrame, useThree } from '@react-three/fiber'
-import { type Group, type Mesh } from 'three'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { XrSceneLibraryAssetGeometry } from '@/features/three/XrSceneLibrarySubject'
-import { readFlightSimDefaultAssetLoadReport } from './assetSpec/flightSimDefaultAssets'
-import {
-  FLIGHT_SIM_AIRCRAFT_FORWARD,
-  FLIGHT_SIM_AIRCRAFT_MODEL_ROTATION,
-  FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE,
-  FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
-} from './flightSimAircraftPresentation'
-import type {
-  FlightSimStageRuntimeController,
-} from './flightSimStageRuntimeController'
+import type { FlightSimStageRuntimeController } from './flightSimStageRuntimeController'
 import { completeFlightSimReadyFrame } from './flightSimDeadlineRuntime'
 import {
   completeFlightSimStagePreparation,
@@ -21,74 +9,25 @@ import {
 import { useFlightSimSurfaceControls } from './useFlightSimSurfaceControls'
 
 export type FlightSimMissionStageProps = Readonly<{
-  actorsVisible?: boolean
-  coordinateScale?: number
   geospatialComposite?: boolean
   runtimeController: FlightSimStageRuntimeController
 }>
 
+/**
+ * Retains the Flight simulation's input and frame-lifecycle follower inside the
+ * shared Three renderer. All Flight visuals belong to the MapLibre overlay.
+ */
 export function FlightSimMissionStage({
-  actorsVisible = true,
-  coordinateScale = 1,
   geospatialComposite = false,
   runtimeController,
 }: FlightSimMissionStageProps) {
   const { gl } = useThree()
-  const actorRef = React.useRef<Group | null>(null)
-  const waypointRefs = React.useRef(new Map<string, Mesh>())
-  const landingPadRef = React.useRef<Mesh | null>(null)
-  const snapshotRef = React.useRef(runtimeController.readSnapshot())
   const framePresentationRef = React.useRef({
     playable: false,
     readyAtTickZero: false,
     runId: 0,
     tick: 0,
   })
-  const profile = React.useMemo(
-    () => runtimeController.readSpatialProfile(),
-    [runtimeController],
-  )
-  const assetCatalog = React.useMemo(readFlightSimDefaultAssetLoadReport, [])
-  const [optionalBeaconScene, setOptionalBeaconScene] =
-    React.useState<Group | null>(null)
-
-  React.useEffect(() => {
-    let retained = true
-    const bytes = Uint8Array.from(assetCatalog.optionalBeacon.bytes)
-    new GLTFLoader().parse(
-      bytes.buffer,
-      '',
-      gltf => {
-        if (!retained) return
-        const scene = gltf.scene.clone(true)
-        let partIndex = 0
-        scene.name = 'kg_flight_sim_optional_beacon'
-        scene.traverse(object => {
-          if (object === scene) return
-          partIndex += 1
-          object.name = `kg_flight_sim_optional_beacon_part_${partIndex}`
-        })
-        scene.userData = {
-          assetKind: assetCatalog.optionalBeacon.kind,
-          assetPath: assetCatalog.optionalBeacon.path,
-          assetSha256: assetCatalog.optionalBeacon.sha256,
-          opaque: assetCatalog.optionalBeacon.opaque,
-        }
-        setOptionalBeaconScene(scene)
-      },
-      error => {
-        if (!retained) return
-        runtimeController.reportRenderFailure(new Error(
-          `Flight Sim optional beacon GLB could not render: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        ))
-      },
-    )
-    return () => {
-      retained = false
-    }
-  }, [assetCatalog, runtimeController])
 
   useFlightSimSurfaceControls({
     inputElement: gl.domElement,
@@ -97,34 +36,16 @@ export function FlightSimMissionStage({
   })
 
   React.useEffect(() => {
-    const syncRuntimeSnapshot = () => {
-      snapshotRef.current = runtimeController.readSnapshot()
-      // The shared XR Canvas pauses on a demand loop while authored controls are
-      // suspended. Request a committed frame so stage readiness is observable.
-      invalidate()
-    }
+    const syncRuntimeSnapshot = () => invalidate()
     syncRuntimeSnapshot()
     return runtimeController.subscribe(syncRuntimeSnapshot)
   }, [invalidate, runtimeController])
 
   React.useEffect(() => {
     const canvas = gl.domElement
-    const aircraftAsset = assetCatalog.aircraft.assetSpec
-    canvas.dataset.kgFlightSimAircraftAsset = JSON.stringify({
-      assetId: aircraftAsset.id,
-      defaultColor: aircraftAsset.defaultColor,
-      dimensionsMeters: aircraftAsset.dimensionsMeters,
-      label: aircraftAsset.label,
-      representation: aircraftAsset.representation,
-    })
-    canvas.dataset.kgFlightSimSpatialProfile = profile.id
-    canvas.dataset.kgFlightSimVisualProjection = actorsVisible
-      ? 'r3f'
-      : 'maplibre'
+    canvas.dataset.kgFlightSimLifecycleFollower = '1'
     const removeAfterRender = addAfterEffect(() => {
-      // Geo+XR keeps this actor visible, but its exact readiness proof belongs
-      // to the composed MapLibre environment, route, and aircraft frame.
-      if (!actorsVisible || geospatialComposite) {
+      if (geospatialComposite) {
         delete canvas.dataset.kgFlightSimFirstFrame
         return
       }
@@ -137,7 +58,6 @@ export function FlightSimMissionStage({
         && snapshot.phase === 'stopped'
         && !runtimeController.isHydrationPending()
         && !snapshot.runtimeError
-        && actorRef.current
       ) {
         completeFlightSimStagePreparation(stagePreparationRequestId)
       }
@@ -151,75 +71,16 @@ export function FlightSimMissionStage({
         completeFlightSimReadyFrame(presentation.runId, presentation.tick)
       }
     })
-    // Stage readiness belongs to the committed mission render, while desktop
-    // input ownership is an independent claim that may still be changing hands.
     invalidate()
     return () => {
       removeAfterRender()
-      delete canvas.dataset.kgFlightSimAircraftAsset
-      delete canvas.dataset.kgFlightSimSpatialProfile
-      delete canvas.dataset.kgFlightSimVisualProjection
+      delete canvas.dataset.kgFlightSimLifecycleFollower
       delete canvas.dataset.kgFlightSimFirstFrame
     }
-  }, [
-    actorsVisible,
-    assetCatalog,
-    geospatialComposite,
-    gl,
-    invalidate,
-    profile.id,
-    runtimeController,
-  ])
-
-  React.useEffect(() => {
-    const canvas = gl.domElement
-    if (!optionalBeaconScene) {
-      delete canvas.dataset.kgFlightSimOptionalBeacon
-      return
-    }
-    const partNames: string[] = []
-    let meshDescendantCount = 0
-    optionalBeaconScene.traverse(object => {
-      if (object === optionalBeaconScene) return
-      if (object.name) partNames.push(object.name)
-      if ('isMesh' in object && object.isMesh === true) meshDescendantCount += 1
-    })
-    canvas.dataset.kgFlightSimOptionalBeacon = JSON.stringify({
-      assetKind: assetCatalog.optionalBeacon.kind,
-      assetPath: assetCatalog.optionalBeacon.path,
-      assetSha256: assetCatalog.optionalBeacon.sha256,
-      meshDescendantCount,
-      opaque: assetCatalog.optionalBeacon.opaque,
-      partNames: partNames.sort(),
-    })
-    return () => {
-      delete canvas.dataset.kgFlightSimOptionalBeacon
-    }
-  }, [assetCatalog, gl, optionalBeaconScene])
+  }, [geospatialComposite, gl, invalidate, runtimeController])
 
   useFrame(() => {
     const snapshot = runtimeController.readSnapshot()
-    snapshotRef.current = snapshot
-    const actor = actorRef.current
-    if (actor) {
-      actor.position.set(...snapshot.aircraft.position)
-      actor.rotation.set(
-        snapshot.aircraft.pitch,
-        snapshot.aircraft.yaw,
-        -snapshot.aircraft.roll,
-        'YXZ',
-      )
-      actor.visible = snapshot.active
-    }
-    for (let index = 0; index < profile.waypoints.length; index += 1) {
-      const waypoint = profile.waypoints[index]!
-      const mesh = waypointRefs.current.get(waypoint.id)
-      if (mesh) mesh.visible = snapshot.active && index >= snapshot.waypointIndex
-    }
-    if (landingPadRef.current) {
-      landingPadRef.current.visible = snapshot.active
-        && snapshot.waypointIndex >= profile.waypoints.length
-    }
     const playable = (snapshot.phase === 'ready' || snapshot.phase === 'flying')
       && snapshot.runId > 0
       && !runtimeController.isHydrationPending()
@@ -233,120 +94,12 @@ export function FlightSimMissionStage({
     presentation.tick = snapshot.tick
   })
 
-  return (
-    <>
-      {geospatialComposite ? (
-        <group
-          name="kg_flight_sim_geospatial_actor_lighting"
-          userData={{ actorOnly: true, preservesTransparentBackground: true }}
-        >
-          <ambientLight intensity={0.9} />
-          <hemisphereLight args={['#ffffff', '#cbd5e1', 0.6]} />
-          <pointLight position={[120, 120, 120]} intensity={0.9} />
-        </group>
-      ) : null}
-      <group
-        name="kg_flight_sim_mission"
-        scale={coordinateScale}
-        visible={actorsVisible}
-        userData={{
-          actorOnly: geospatialComposite,
-          coordinateScale,
-          mapProjectionOnly: !actorsVisible,
-          spatialProfile: profile.id,
-          visualProjection: actorsVisible ? 'r3f' : 'maplibre',
-        }}
-      >
-        <group
-          ref={actorRef}
-          name="kg_flight_sim_aircraft"
-          position={snapshotRef.current.aircraft.position}
-          userData={{
-            assetId: assetCatalog.aircraft.assetSpec.id,
-            representation: assetCatalog.aircraft.assetSpec.representation,
-          }}
-        >
-          <group
-            name={FLIGHT_SIM_AIRCRAFT_ORIENTATION_NODE}
-            rotation={[...FLIGHT_SIM_AIRCRAFT_MODEL_ROTATION]}
-            userData={{
-              flightForward: FLIGHT_SIM_AIRCRAFT_FORWARD,
-              proceduralForward: FLIGHT_SIM_PROCEDURAL_AIRCRAFT_FORWARD,
-            }}
-          >
-            <XrSceneLibraryAssetGeometry
-              assetId={assetCatalog.aircraft.assetSpec.id}
-              color={assetCatalog.aircraft.assetSpec.defaultColor}
-            />
-          </group>
-        </group>
-        {!geospatialComposite && optionalBeaconScene ? (
-          <primitive
-            object={optionalBeaconScene}
-            position={[
-              profile.landingPad.position[0] + 8,
-              profile.landingPad.position[1] + 0.25,
-              profile.landingPad.position[2] + 8,
-            ]}
-            scale={4}
-          />
-        ) : null}
-        {!geospatialComposite ? profile.waypoints.map((waypoint, index) => (
-          <mesh
-            key={waypoint.id}
-            ref={mesh => {
-              if (mesh) waypointRefs.current.set(waypoint.id, mesh)
-              else waypointRefs.current.delete(waypoint.id)
-            }}
-            name={`kg_${waypoint.id.replaceAll(':', '_')}`}
-            position={waypoint.position}
-            rotation={[Math.PI / 2, 0, 0]}
-            userData={{ waypointId: waypoint.id, waypointIndex: index }}
-          >
-            <torusGeometry args={[waypoint.radiusMeters, 0.14, 10, 32]} />
-            <meshStandardMaterial
-              color={index === snapshotRef.current.waypointIndex ? '#22d3ee' : '#f8fafc'}
-              emissive="#0891b2"
-              emissiveIntensity={0.42}
-              transparent
-              opacity={0.82}
-            />
-          </mesh>
-        )) : null}
-        {!geospatialComposite ? (
-          <mesh
-            ref={landingPadRef}
-            name="kg_flight_sim_landing_pad"
-            position={profile.landingPad.position}
-            rotation={[-Math.PI / 2, 0, 0]}
-            visible={snapshotRef.current.waypointIndex >= profile.waypoints.length}
-            userData={{
-              landingPadId: profile.landingPad.id,
-              captureRadiusMeters: profile.landingPad.radiusMeters,
-            }}
-          >
-            <ringGeometry args={[2.4, 3.2, 40]} />
-            <meshStandardMaterial
-              color="#facc15"
-              emissive="#ca8a04"
-              emissiveIntensity={0.5}
-              transparent
-              opacity={0.9}
-            />
-          </mesh>
-        ) : null}
-      </group>
-    </>
-  )
+  return null
 }
 
 export function createFlightSimMissionStage(
   runtimeController: FlightSimStageRuntimeController,
-): React.ComponentType<{
-  actorsVisible?: boolean
-  coordinateScale?: number
-  geospatialComposite?: boolean
-}> {
+): React.ComponentType<{ geospatialComposite?: boolean }> {
   return function BoundFlightSimMissionStage(props) {
     return (
       <FlightSimMissionStage

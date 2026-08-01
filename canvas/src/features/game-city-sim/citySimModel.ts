@@ -1,6 +1,10 @@
-export const CITY_SIM_SCHEMA_ID = 'knowgrph-city-grid/v1' as const
+import {
+  resolveRegionalPoiProfile,
+} from '@/features/geospatial/regionalPoiProfileCatalog'
+
+export const CITY_SIM_SCHEMA_ID = 'knowgrph-city-poi-zoning/v1' as const
 export const CITY_SIM_FIXED_STEP_MS = 1_000
-export const CITY_SIM_DOCUMENT_PATH = '/game-city-sim/city-grid.md' as const
+export const CITY_SIM_DOCUMENT_PATH = '/game-city-sim/city-poi-zoning.md' as const
 
 export const CITY_ZONES = [
   'unzoned',
@@ -32,6 +36,7 @@ export type CityParcel = Readonly<{
 export type CityGrid = Readonly<{
   schemaId: typeof CITY_SIM_SCHEMA_ID
   cityName: string
+  regionalPoiProfileId: string
   rows: number
   columns: number
   tick: number
@@ -87,7 +92,7 @@ export type CityMutationResult =
 
 const CITY_ZONE_SET = new Set<string>(CITY_ZONES)
 const CITY_ZONING_TYPE_SET = new Set<string>(CITY_ZONING_TYPES)
-const PARCEL_ID_PATTERN = /^r(\d{2})c(\d{2})$/
+const REGIONAL_POI_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 export function isCityZone(value: unknown): value is CityZone {
   return typeof value === 'string' && CITY_ZONE_SET.has(value)
@@ -97,26 +102,8 @@ export function isCityZoningType(value: unknown): value is CityZoningType {
   return typeof value === 'string' && CITY_ZONING_TYPE_SET.has(value)
 }
 
-export function cityParcelId(row: number, column: number): string {
-  if (
-    !Number.isInteger(row)
-    || !Number.isInteger(column)
-    || row < 0
-    || row > 99
-    || column < 0
-    || column > 99
-  ) {
-    throw new Error('City parcel coordinates must be integers between 0 and 99')
-  }
-  return `r${String(row).padStart(2, '0')}c${String(column).padStart(2, '0')}`
-}
-
-export function parseCityParcelId(
-  parcelId: string,
-): Readonly<{ row: number; column: number }> | null {
-  const match = PARCEL_ID_PATTERN.exec(parcelId)
-  if (!match) return null
-  return Object.freeze({ row: Number(match[1]), column: Number(match[2]) })
+export function isCanonicalRegionalPoiIdentityId(value: unknown): value is string {
+  return typeof value === 'string' && REGIONAL_POI_ID_PATTERN.test(value)
 }
 
 function freezeParcel(parcel: CityParcel): CityParcel {
@@ -140,6 +127,18 @@ export function validateCityGrid(city: CityGrid): readonly string[] {
     issues.push(`Unsupported city schema ${String(city.schemaId)}`)
   }
   if (!city.cityName.trim()) issues.push('City name must not be empty')
+  let regionalPoiIds: readonly string[] = []
+  try {
+    regionalPoiIds = resolveRegionalPoiProfile(city.regionalPoiProfileId)
+      .pois
+      .map(poi => poi.id)
+  } catch (error) {
+    issues.push(
+      error instanceof Error
+        ? error.message
+        : 'Regional POI profile must resolve exactly',
+    )
+  }
   if (!Number.isSafeInteger(city.rows) || city.rows < 1 || city.rows > 100) {
     issues.push('City rows must be an integer between 1 and 100')
   }
@@ -159,31 +158,40 @@ export function validateCityGrid(city: CityGrid): readonly string[] {
     issues.push('City tax rate must be between 0 and 10000 basis points')
   }
   if (city.population < 0) issues.push('City population must not be negative')
-  if (city.parcels.length !== city.rows * city.columns) {
-    issues.push(`City parcel count must equal ${city.rows * city.columns}`)
+  if (city.parcels.length !== regionalPoiIds.length) {
+    issues.push(
+      `City parcel count must equal the ${regionalPoiIds.length} identities in regional profile ${city.regionalPoiProfileId}`,
+    )
+  }
+  if (city.rows * city.columns !== city.parcels.length) {
+    issues.push('City row and column ordering slots must equal the parcel count')
   }
 
   const ids = new Set<string>()
-  let expectedPreviousId = ''
   let aggregatePopulation = 0
-  for (const parcel of city.parcels) {
+  city.parcels.forEach((parcel, index) => {
     if (ids.has(parcel.id)) issues.push(`Duplicate parcel id ${parcel.id}`)
     ids.add(parcel.id)
-    if (expectedPreviousId && parcel.id <= expectedPreviousId) {
-      issues.push('City parcels must be sorted by ascending parcel id')
+    if (!isCanonicalRegionalPoiIdentityId(parcel.id)) {
+      issues.push(`Parcel ${parcel.id || '(empty)'} must use a canonical RegionalPoiIdentity id`)
     }
-    expectedPreviousId = parcel.id
+    const expectedPoiId = regionalPoiIds[index]
+    if (expectedPoiId && parcel.id !== expectedPoiId) {
+      issues.push(
+        `Parcel ordering slot ${index + 1} must use RegionalPoiIdentity id ${expectedPoiId}`,
+      )
+    }
+    const expectedRow = Math.floor(index / city.columns)
+    const expectedColumn = index % city.columns
     if (
       !Number.isSafeInteger(parcel.row)
       || !Number.isSafeInteger(parcel.column)
-      || parcel.row < 0
-      || parcel.row >= city.rows
-      || parcel.column < 0
-      || parcel.column >= city.columns
+      || parcel.row !== expectedRow
+      || parcel.column !== expectedColumn
     ) {
-      issues.push(`Parcel ${parcel.id} is outside the rectangular grid`)
-    } else if (parcel.id !== cityParcelId(parcel.row, parcel.column)) {
-      issues.push(`Parcel ${parcel.id} does not match its row and column`)
+      issues.push(
+        `Parcel ${parcel.id} must use deterministic UI ordering row ${expectedRow}, column ${expectedColumn}`,
+      )
     }
     if (!isCityZone(parcel.zone)) {
       issues.push(`Parcel ${parcel.id} has unsupported zone ${String(parcel.zone)}`)
@@ -198,7 +206,7 @@ export function validateCityGrid(city: CityGrid): readonly string[] {
     if (parcel.population < 0) issues.push(`Parcel ${parcel.id} population must not be negative`)
     if (parcel.pollution < 0) issues.push(`Parcel ${parcel.id} pollution must not be negative`)
     aggregatePopulation += parcel.population
-  }
+  })
   if (!Number.isSafeInteger(aggregatePopulation) || aggregatePopulation !== city.population) {
     issues.push('City population must equal the sum of parcel populations')
   }

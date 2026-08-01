@@ -35,10 +35,11 @@ export function assertFlightSimBrowserSingaporePoiSourceAuthority({
   assert.doesNotMatch(geoXrLayoutVerifier, /marina-bay-sands:tower-2/)
 
   for (const requirement of [
-    "CITY_REGIONAL_POI_PROFILE_ID = 'adm0:SGP:major-pois/v1'",
-    "CITY_REGIONAL_POI_PROFILE_REVISION = '2026-07-31.1'",
-    'CITY_REGIONAL_POI_SURFACE_COUNT = 9',
-    'CITY_REGIONAL_POI_LOCATOR_COUNT = 3',
+    "from 'grph-shared/geospatial/singaporeMajorPoiGeo'",
+    'SINGAPORE_MAJOR_POI_GEO_PROFILE.id',
+    'SINGAPORE_MAJOR_POI_GEO_PROFILE.revision',
+    'SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.length',
+    'SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.length',
     'CITY_REGIONAL_POI_LAYER_COUNT = 5',
     'regionalPoi?.profileRevision === CITY_REGIONAL_POI_PROFILE_REVISION',
     'regionalPoi?.datasetProfileRevision',
@@ -46,6 +47,10 @@ export function assertFlightSimBrowserSingaporePoiSourceAuthority({
     'regionalPoi?.featureCount === CITY_REGIONAL_POI_FEATURE_COUNT',
     'regionalPoi?.datasetFeatureCount === CITY_REGIONAL_POI_FEATURE_COUNT',
     'regionalPoi?.locatorCount === CITY_REGIONAL_POI_LOCATOR_COUNT',
+    "typeof regionalPoi?.regionalBoundsApertureCoverage === 'number'",
+    'Number.isFinite(regionalPoi.regionalBoundsApertureCoverage)',
+    'regionalPoi.regionalBoundsApertureCoverage >= 0.45',
+    'regionalPoi.regionalBoundsApertureCoverage <= 1',
     'hasExactCityRegionalPoiIds(regionalPoi?.locatorPois)',
     'hasExactCityRegionalPoiVisualProof(regionalPoi?.poiVisualProof)',
   ]) {
@@ -121,10 +126,8 @@ export function assertFlightSimBrowserSingaporePoiSourceAuthority({
       'cityMapLibreCanvasSelectableOwnerIsCanvas === false',
       "cityMapLibreCanvasSelectableOwnerNodeName === ''",
       'cityMapLibreOwnerCount === 0',
-      'citySourcePresent === false',
-      'citySourceFeatures === 0',
-      'cityLayerCount === 0',
-      'cityLayersReady === false',
+      'cityOwnedSourceCount === 0',
+      'cityOwnedLayerCount === 0',
     ]) {
       assert.ok(
         cityHandoffEvidence.includes(`${checkpoint}?.${requirement}`),

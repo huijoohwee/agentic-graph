@@ -24,34 +24,31 @@ import {
 } from '../../../gympgrph/src/features/geospatial/flightGeoMapLibreDisposal'
 
 test('Flight overlay disposal clear is idempotent and never creates a missing source', () => {
-  let sourceData: Readonly<{
-    type: 'FeatureCollection'
-    features: readonly unknown[]
-  }> = {
-    type: 'FeatureCollection',
-    features: [{ type: 'Feature' }],
-  }
-  let sourceWrites = 0
+  const layers = new Set(FLIGHT_GEO_OVERLAY_LAYER_ORDER)
+  let sourcePresent = true
+  let sourceRemovals = 0
   let sourceAdds = 0
-  const source = {
-    serialize: () => ({ data: sourceData }),
-    setData: (data: typeof sourceData) => {
-      sourceWrites += 1
-      sourceData = data
-    },
-  }
   const map = {
     style: { _loaded: true },
     addSource: () => {
       sourceAdds += 1
     },
-    getSource: () => source,
+    getLayer: (layerId: string) => layers.has(layerId),
+    getSource: () => sourcePresent ? {} : null,
+    removeLayer: (layerId: string) => {
+      layers.delete(layerId)
+    },
+    removeSource: () => {
+      sourcePresent = false
+      sourceRemovals += 1
+    },
   }
 
   assert.equal(clearFlightGeoOverlayFromMap(map), true)
-  assert.equal(sourceWrites, 1)
+  assert.equal(layers.size, 0)
+  assert.equal(sourceRemovals, 1)
   assert.equal(clearFlightGeoOverlayFromMap(map), true)
-  assert.equal(sourceWrites, 1, 'an empty source must not be dirtied again')
+  assert.equal(sourceRemovals, 1, 'an absent source must not be removed again')
 
   assert.equal(
     clearFlightGeoOverlayFromMap({

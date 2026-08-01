@@ -61,7 +61,6 @@ export async function testCitySimRuntimeFailsClosedWithoutSavedOrAuthoredSource(
   try {
     prepareCitySurface()
     const neutral = resetCitySimRuntimeWithoutSource({ webglSupported: true })
-    assert.equal(neutral.geographicProfile, null)
     const opened = await openCitySimSurface({
       workspace: createCityWorkspace(),
       webglSupported: true,
@@ -69,7 +68,6 @@ export async function testCitySimRuntimeFailsClosedWithoutSavedOrAuthoredSource(
     assert.equal(opened.active, false)
     assert.equal(opened.phase, 'error')
     assert.equal(opened.lastResult?.code, 'authored-source-missing')
-    assert.equal(opened.geographicProfile, null)
     const loaded = await loadCitySim({ workspace: createCityWorkspace() })
     assert.equal(loaded.lastResult?.code, 'authored-source-missing')
     const saved = await saveCitySim({ workspace: createCityWorkspace() })
@@ -97,7 +95,7 @@ export async function testCitySimRuntimeFencesStoppedTicksAndRestartsSession() {
     const opened = await openCitySimSurface({ workspace, webglSupported: true })
     assert.equal(opened.active, true)
     assert.equal(opened.phase, 'stopped')
-    assert.equal(opened.geographicProfile?.id, 'city-sim:civic-seed:geo/v1')
+    assert.equal(opened.city.regionalPoiProfileId, 'adm0:SGP:major-pois/v1')
     assert.equal(useGraphStore.getState().floatingPanelView, 'cityBuilder')
 
     globalThis.setTimeout = ((callback: TimerHandler) => {
@@ -171,7 +169,7 @@ export async function testCitySimWorkspaceSaveReadBackAndMalformedBlock() {
     resetCitySimRuntimeForTests({ webglSupported: true })
     const workspace = createCityWorkspace()
     await openCitySimSurface({ workspace, webglSupported: true })
-    const zoned = zoneCityParcel('r00c02', 'residential')
+    const zoned = zoneCityParcel('gardens-by-the-bay', 'residential')
     assert.equal(zoned.lastResult?.ok, true)
     const expectedDocument = serializeCityGridDocument(zoned.city)
     const saved = await saveCitySim({ workspace })
@@ -191,7 +189,7 @@ export async function testCitySimWorkspaceSaveReadBackAndMalformedBlock() {
     assert.equal(serializeCityGridDocument(loaded.city), expectedDocument)
     exitCitySimSurface({ restorePreviousSurface: false })
 
-    const malformedBytes = '---\nschema_id: knowgrph-city-grid/v1\ninvalid\n'
+    const malformedBytes = '---\nschema_id: knowgrph-city-poi-zoning/v1\ninvalid\n'
     const malformedWorkspace = createCityWorkspace(malformedBytes)
     resetCitySimRuntimeForTests({ webglSupported: true })
     const blockedOpen = await openCitySimSurface({
@@ -253,11 +251,11 @@ export async function testCitySimPersistenceFencesStaleSaveAndLoadCompletions() 
     }
 
     await openCitySimSurface({ workspace: writeWorkspace, webglSupported: true })
-    const firstCity = zoneCityParcel('r00c02', 'residential').city
+    const firstCity = zoneCityParcel('gardens-by-the-bay', 'residential').city
     assert.equal(readCitySimSnapshot().saveStatus, 'dirty')
     const pendingSave = saveCitySim({ workspace: writeWorkspace })
     await writeStarted
-    const currentCity = zoneCityParcel('r00c03', 'commercial').city
+    const currentCity = zoneCityParcel('the-fullerton-hotel', 'commercial').city
     releaseWrite()
     const staleSave = await pendingSave
     assert.equal(staleSave.lastResult?.code, 'stale-save')
@@ -273,7 +271,7 @@ export async function testCitySimPersistenceFencesStaleSaveAndLoadCompletions() 
 
     const savedCurrent = await saveCitySim({ workspace: writeWorkspace })
     assert.equal(savedCurrent.saveStatus, 'saved')
-    const sameZone = zoneCityParcel('r00c03', 'commercial')
+    const sameZone = zoneCityParcel('the-fullerton-hotel', 'commercial')
     assert.equal(sameZone.saveStatus, 'saved')
 
     let releaseRead = () => undefined

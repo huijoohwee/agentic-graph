@@ -14,12 +14,19 @@ import {
 import {
   hasViewportScopedRegionalPoiRendering,
 } from '../lib/regional-poi-browser-evidence.mjs'
+import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 
-const exactPoiIds = Object.freeze([
-  'gardens-by-the-bay',
-  'marina-bay-sands',
-  'singapore-flyer',
-])
+const exactPoiIds = Object.freeze(
+  SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.map(poi => poi.id).sort(),
+)
+const surfaceCountByPoiId = Object.freeze(Object.fromEntries(
+  exactPoiIds.map(poiId => [
+    poiId,
+    SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.filter(
+      surface => surface.poiId === poiId,
+    ).length,
+  ]),
+))
 
 test('saved Geo+XR evidence distinguishes active, retained, and absent Three ownership', () => {
   const exact = {
@@ -97,55 +104,37 @@ test('Flight follow-camera evidence accepts only a viewport POI subset from the 
 })
 
 function exactRegionalPoiEvidence() {
+  const surfaceCount = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.length
+  const locatorCount = SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.length
   return {
-    datasetFeatureCount: 12,
-    datasetProfileId: 'adm0:SGP:major-pois/v1',
-    datasetProfileRevision: '2026-07-31.1',
+    datasetFeatureCount: surfaceCount + locatorCount,
+    datasetProfileId: SINGAPORE_MAJOR_POI_GEO_PROFILE.id,
+    datasetProfileRevision: SINGAPORE_MAJOR_POI_GEO_PROFILE.revision,
+    cityParcelIds: [...exactPoiIds],
+    cityPresentationStateCount: surfaceCount,
+    exactCityPresentation: true,
     exactFeatures: true,
     exactPresentation: true,
     expectedPois: [...exactPoiIds],
-    featureCount: 12,
+    featureCount: surfaceCount + locatorCount,
     layerCount: 5,
-    locatorCount: 3,
+    locatorCount,
     locatorPois: [...exactPoiIds],
-    poiVisualProof: [
-      {
-        anchor: { x: 120, y: 210 },
-        boundsInsideAperture: true,
-        labelRendered: true,
-        locatorAnchor: { x: 121, y: 209 },
-        locatorInsideAperture: true,
-        locatorRenderedAtAnchor: true,
-        poiId: 'gardens-by-the-bay',
-        renderedIdentityAtAnchor: true,
-        surfaceCount: 4,
-      },
-      {
-        anchor: { x: 220, y: 180 },
-        boundsInsideAperture: true,
-        labelRendered: true,
-        locatorAnchor: { x: 221, y: 179 },
-        locatorInsideAperture: true,
-        locatorRenderedAtAnchor: true,
-        poiId: 'marina-bay-sands',
-        renderedIdentityAtAnchor: true,
-        surfaceCount: 4,
-      },
-      {
-        anchor: { x: 290, y: 130 },
-        boundsInsideAperture: true,
-        labelRendered: true,
-        locatorAnchor: { x: 291, y: 129 },
-        locatorInsideAperture: true,
-        locatorRenderedAtAnchor: true,
-        poiId: 'singapore-flyer',
-        renderedIdentityAtAnchor: true,
-        surfaceCount: 1,
-      },
-    ],
-    profileFeatureCount: 9,
-    profileId: 'adm0:SGP:major-pois/v1',
-    profileRevision: '2026-07-31.1',
+    poiVisualProof: exactPoiIds.map((poiId, index) => ({
+      anchor: { x: 120 + index * 20, y: 210 - index * 10 },
+      boundsInsideAperture: true,
+      labelRendered: true,
+      locatorAnchor: { x: 121 + index * 20, y: 209 - index * 10 },
+      locatorInsideAperture: true,
+      locatorRenderedAtAnchor: true,
+      poiId,
+      renderedIdentityAtAnchor: true,
+      surfaceCount: surfaceCountByPoiId[poiId],
+    })),
+    profileFeatureCount: surfaceCount,
+    profileId: SINGAPORE_MAJOR_POI_GEO_PROFILE.id,
+    profileRevision: SINGAPORE_MAJOR_POI_GEO_PROFILE.revision,
+    regionalBoundsApertureCoverage: 0.72,
     sourcePois: [...exactPoiIds],
     visiblePoiAnchors: [...exactPoiIds],
   }
@@ -163,8 +152,8 @@ function exactRegionalPoiTeardownEvidence() {
 function exactCityMapLibreSurfaceEvidence() {
   return {
     activeMapPresent: true,
-    aircraftGeometryType: 'Polygon',
-    aircraftLayerType: 'symbol',
+    aircraftGeometryType: '',
+    aircraftLayerType: '',
     canvas3dMode: 'xr',
     cityActive: true,
     cityMapLibreOwnerCount: 1,
@@ -195,9 +184,9 @@ function exactCityMapLibreSurfaceEvidence() {
     environmentSourcePresent: false,
     flightActive: false,
     flightHudCount: 0,
-    flightLayersReady: true,
-    flightSourceFeatures: 7,
-    flightSourcePresent: true,
+    flightLayersReady: false,
+    flightSourceFeatures: 0,
+    flightSourcePresent: false,
     floatingPanelOpen: true,
     floatingPanelView: 'cityBuilder',
     geoXrLayerCount: 1,
@@ -208,20 +197,19 @@ function exactCityMapLibreSurfaceEvidence() {
     hudVisible: false,
     mapLibreCanvasCount: 1,
     overlayPhase: 'stopped',
-    overlayRoutePointCount: 5,
+    overlayRoutePointCount: 0,
     renderMode: '3d',
     renderedEnvironmentFeatureCount: 0,
     renderedEnvironmentKinds: [],
     renderedEnvironmentPoiIds: [],
-    renderedFeatureCount: 4,
-    sourceKinds: ['aircraft', 'route', 'route-point'],
-    cityLayerCount: 4,
-    cityLayersReady: true,
-    cityExpectedParcelCount: 16,
-    cityParcelsUseAuthoredMeters: true,
-    citySourceFeatures: 16,
-    citySourcePresent: true,
-    cityGeoXrLayerOrderExact: true,
+    renderedFeatureCount: 0,
+    sourceKinds: [],
+    cityExpectedParcelCount: exactPoiIds.length,
+    cityOwnedLayerCount: 0,
+    cityOwnedSourceCount: 0,
+    cityPresentationExact: true,
+    cityPresentationStateCount:
+      SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.length,
     canvasStable: true,
     flightR3fVisualCount: 0,
     rendererPointerTransparent: true,
@@ -265,13 +253,12 @@ function exactCityHandoffEvidence() {
       cityMapLibreCanvasSelectableOwnerNodeName: '',
       cityMapLibreOwnerCount: 0,
       citySemanticSurfaceActive: false,
-      cityLayerCount: 0,
-      cityLayersReady: false,
-      citySourceFeatures: 0,
-      citySourcePresent: false,
+      cityOwnedLayerCount: 0,
+      cityOwnedSourceCount: 0,
       environmentSourceFeatures: 10,
       flightActive: true,
       flightSourceFeatures: 7,
+      aircraftGeometryType: 'Point',
       hudVisible: true,
       mapLibreCanvasCount: 1,
       renderedEnvironmentFeatureCount: 3,
@@ -298,10 +285,8 @@ function exactCityHandoffEvidence() {
       cityMapLibreOwnerCount: 0,
       cityPanelVisible: false,
       citySemanticSurfaceActive: false,
-      cityLayerCount: 0,
-      cityLayersReady: false,
-      citySourceFeatures: 0,
-      citySourcePresent: false,
+      cityOwnedLayerCount: 0,
+      cityOwnedSourceCount: 0,
       environmentSourceFeatures: 0,
       flightActive: false,
       flightHudCount: 0,
@@ -355,7 +340,7 @@ test('City retains the exact MapLibre owner throughout the handoff', () => {
   )
 })
 
-test('City uses one semantic MapLibre surface with stopped Flight route and aircraft layers', () => {
+test('City uses one semantic MapLibre surface with POI feature state and no Flight layers', () => {
   const city = exactCityMapLibreSurfaceEvidence()
 
   assert.equal(hasExactCityMapLibreSurfaceEvidence(city), true)
@@ -379,13 +364,15 @@ test('City uses one semantic MapLibre surface with stopped Flight route and airc
     ['threeCanvasActiveCount', 1],
     ['threeCanvasInactiveCount', 0],
     ['threeCanvasOwnerCount', 0],
-    ['flightLayersReady', false],
+    ['flightLayersReady', true],
     ['environmentSourcePresent', true],
     ['environmentLayerCount', 1],
-    ['cityLayerCount', 3],
-    ['citySourceFeatures', 11],
+    ['cityOwnedLayerCount', 1],
+    ['cityOwnedSourceCount', 1],
+    ['cityPresentationExact', false],
+    ['cityPresentationStateCount', 0],
     ['overlayPhase', 'ready'],
-    ['sourceKinds', ['aircraft', 'objective-guide', 'route', 'route-point']],
+    ['sourceKinds', ['aircraft']],
   ]) {
     assert.equal(
       hasExactCityMapLibreSurfaceEvidence({ ...city, [field]: value }),
@@ -410,11 +397,20 @@ test('City saved evidence requires the exact Singapore regional POI profile and 
     ['layerCount', 4],
     ['locatorCount', 2],
     ['expectedPois', exactPoiIds.slice(1)],
+    ['cityParcelIds', exactPoiIds.slice(1)],
+    ['cityPresentationStateCount', 1],
     ['sourcePois', [...exactPoiIds].reverse()],
-    ['locatorPois', ['marina-bay-sands', 'singapore-flyer']],
+    ['locatorPois', exactPoiIds.slice(0, 2)],
     ['visiblePoiAnchors', exactPoiIds.slice(0, 2)],
+    ['regionalBoundsApertureCoverage', 0.04],
+    ['regionalBoundsApertureCoverage', '0.72'],
+    ['regionalBoundsApertureCoverage', true],
+    ['regionalBoundsApertureCoverage', Number.POSITIVE_INFINITY],
+    ['regionalBoundsApertureCoverage', Number.NaN],
+    ['regionalBoundsApertureCoverage', 1.01],
     ['exactFeatures', false],
     ['exactPresentation', false],
+    ['exactCityPresentation', false],
   ]) {
     assert.equal(
       hasExactCityRegionalPoiEvidence({ ...regionalPoi, [field]: value }),
@@ -503,10 +499,8 @@ test('City saved evidence requires both exact regional POI teardowns', () => {
       ['cityMapLibreCanvasSelectableOwnerIsCanvas', true],
       ['cityMapLibreCanvasSelectableOwnerNodeName', 'CANVAS'],
       ['cityMapLibreOwnerCount', 1],
-      ['citySourcePresent', true],
-      ['citySourceFeatures', 1],
-      ['cityLayerCount', 1],
-      ['cityLayersReady', true],
+      ['cityOwnedSourceCount', 1],
+      ['cityOwnedLayerCount', 1],
       ['geoXrSurfaceCount', 2],
       ['threeCanvasActiveCount', 0],
       ['threeCanvasInactiveCount', 1],

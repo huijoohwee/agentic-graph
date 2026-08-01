@@ -53,7 +53,7 @@ export type FlightSimGeospatialOverlay = Readonly<{
     label: string
   }> | null
   phase: FlightSimSnapshot['phase']
-  presentationOwner: 'city' | 'flight' | null
+  presentationOwner: 'flight' | null
   profileId: string
   readyFrameRequestId: number | null
   revision: string

@@ -7,7 +7,7 @@ import {
   setFlightGeoOverlay,
 } from '../../../gympgrph/src/flightGeoOverlay.js'
 import {
-  flightGeoOverlayMapLibreFeatureCollection,
+  flightGeoOverlayFeatureCollection,
   FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
   retainFlightGeoOverlayDuringStyleSwap,
@@ -486,7 +486,7 @@ test('a delayed provider load admits the exact latest tick of its presented run'
         sources: {
           [FLIGHT_GEO_OVERLAY_SOURCE_ID]: {
             type: 'geojson',
-            data: flightGeoOverlayMapLibreFeatureCollection(current),
+            data: flightGeoOverlayFeatureCollection(current),
           },
         },
         layers: FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS.map(layer => ({
@@ -565,7 +565,7 @@ test('a delayed provider load admits the exact latest tick of its presented run'
   ])
   assert.deepEqual(
     retainedFlightData,
-    flightGeoOverlayMapLibreFeatureCollection(latestOverlay),
+    flightGeoOverlayFeatureCollection(latestOverlay),
     'provider handoff must retain the latest admitted tick, not Ready tick zero',
   )
   disposeMapLibreFlightBootstrap(map)

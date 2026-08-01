@@ -473,7 +473,8 @@ The current Knowgrph mapping specializes this contract as follows:
   `canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts` and
   `canvas/src/features/game-city-sim/citySimMediaSurface.ts`;
 - native canvas semantic binding:
-  `gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts`;
+  `gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts` and
+  `canvas/src/lib/three/threeCanvasSemanticOwner.ts`;
 - regional profile:
   [ADM0 Singapore companion](./knowgrph-adm0-singapore-prd-tad-ard.companion.md);
 - domain consumer:
@@ -485,8 +486,8 @@ geographic presentation. If a shared Three renderer was already mounted before
 City activation, its exact canvas may remain mounted only as an inactive,
 transparent, pointer-inert lifecycle owner; a direct City entry creates no
 Three owner. The City specialization resolves one companion-owned
-regional-context profile and presents its nine exact surfaces, real-metre
-heights, accuracy, provenance, and three derived fixed-pixel identity locators
+regional-context profile and presents every exact admitted surface, real-metre
+height, accuracy, provenance, and one derived fixed-pixel locator per identity
 below City parcels and stopped Flight route/aircraft.
 Its Flight-local XR environment publication remains explicitly absent.
 MapLibre frames regional and domain bounds through its native camera and its
@@ -495,6 +496,12 @@ selectable wrapper, or `aria-hidden` surface competes with it. The current
 overlay composer still hardcodes City and Flight identities and precedence, so
 it is evidence for a working specialization only—not evidence that ADR-2's
 neutral registry is implemented.
+
+The standalone XR/Physics presentation reuses the same semantic figure
+contract. Its renderer-created WebGL `canvas` receives the caption relation,
+accessible region name, and sole conditional selection marker directly; the
+React Three Fiber wrapper remains unmarked and never substitutes a generic
+selection owner.
 
 Current focused source suites include
 `geoXrSurfaceActivation.test.ts`,

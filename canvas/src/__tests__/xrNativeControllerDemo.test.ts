@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 import {
   createXrNativeControllerInput,
   mergeXrNativeControllerInputs,
@@ -41,6 +42,7 @@ import {
   normalizeXrPhysicsControl,
   parseXrInteractiveInvocation,
 } from '@/features/three/xrSceneInteractiveInvocation'
+import { XR_SINGAPORE_POI_SURFACE_RENDER_PLAN } from '@/features/three/XrSingaporeTerrainGeometry'
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
@@ -277,7 +279,7 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   assert(stage.includes('closest(INTERACTIVE_TARGET_SELECTOR)') && stage.includes('frame.bodyRotations'), 'stage must preserve native button activation and consume deterministic prop presentation state')
   assert(stage.includes('<XrNativeControllerAuthoredSubjects')
     && authoredSubjects.includes('runtime.plan.subjects.map')
-    && authoredSubjects.includes('<XrSceneLibrarySubject'), 'native controller ownership must keep authored Helicopter/Airplane/Car subjects visible through the shared subject renderer')
+    && authoredSubjects.includes('<XrSceneLibrarySubject'), 'native controller ownership must keep authored Helicopter/Car subjects visible through the shared subject renderer')
   assert(camera.includes('controls.target.lerp')
     && camera.includes('follow.fovDegrees')
     && camera.includes('cameraViewRevisionRef.current !== follow.cameraViewRevision')
@@ -311,8 +313,24 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
     assert(environment.includes(landmark), `procedural playground must include ${landmark}`)
   }
   assert(environment.includes('<XrNativeControllerDemoAerialSetpieces'), 'playground environment must mount its clean-room aerial composition')
-  for (const landmark of ['kg_xr_singapore_marina_bay_sands', 'kg_xr_singapore_flyer', 'kg_xr_singapore_gardens_by_the_bay', 'kg_xr_singapore_perimeter_water', 'kg_xr_singapore_seawall', 'kg_xr_singapore_boundary_']) {
-    assert(singaporeTerrain.includes(landmark), `procedural Singapore terrain must include ${landmark}`)
+  assert(singaporeTerrain.includes('XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.map')
+    && singaporeTerrain.includes('<XrRegionalPoiSurfaceGeometry'), 'procedural Singapore terrain must render the source-derived regional POI plan')
+  const regionalPoiEntries = XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.flatMap(
+    poi => [...poi.surfaces],
+  )
+  const regionalPoiSourceIds = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.map(
+    surface => surface.id,
+  )
+  assert(JSON.stringify(regionalPoiEntries.map(entry => entry.surface.id)) === JSON.stringify(regionalPoiSourceIds)
+    && new Set(regionalPoiEntries.map(entry => entry.surface.id)).size === regionalPoiSourceIds.length,
+  'procedural Singapore terrain must render every source surface exactly once in source order')
+  for (const entry of regionalPoiEntries) {
+    const expectedRenderer = entry.surface.presentation === 'observation-wheel'
+      || entry.surface.presentation === 'supertree'
+      ? entry.surface.presentation
+      : 'polygon-extrusion'
+    assert(entry.renderer === expectedRenderer, `source presentation ${entry.surface.presentation} must use ${expectedRenderer}`)
+    assert(entry.renderer !== 'polygon-extrusion' || entry.surface.rings.length > 0, `polygon surface ${entry.surface.id} must retain source rings`)
   }
   assert(singaporeTerrain.includes('resolveXrTerrainPerimeter')
     && terrainColliders.includes('resolveXrTerrainPerimeter')
@@ -320,7 +338,7 @@ export function testXrNativeControllerDemoUsesCanonicalSurfaceAndMcpRoute() {
   assert(singaporeTerrain.includes('selectable: false')
     && !singaporeTerrain.includes('XrSceneLibraryAssetGeometry')
     && !singaporeTerrain.includes('showcaseSubjects'), 'fixed Singapore terrain must leave mobile assets to canonical Media CRUD')
-  for (const marker of ['kg_xr_procedural_car', 'kg_xr_procedural_airplane', 'kg_xr_procedural_helicopter', 'rotation={[0, 0, Math.PI / 2]}', 'kg_xr_helicopter_mast']) {
+  for (const marker of ['kg_xr_procedural_car', 'kg_xr_procedural_helicopter', 'rotation={[0, 0, Math.PI / 2]}', 'kg_xr_helicopter_mast']) {
     assert(vehicleGeometry.includes(marker), `shared vehicle geometry must expose corrected ${marker}`)
   }
   for (const landmark of ['kg_xr_playground_north_horizon', 'kg_xr_playground_east_shore_ship', 'kg_xr_playground_deterministic_tentacles']) {

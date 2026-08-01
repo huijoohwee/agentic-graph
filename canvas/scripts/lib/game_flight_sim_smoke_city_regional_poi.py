@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import time
 from typing import Any
 
@@ -53,6 +54,12 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
           const expectedPois = Array.isArray(profile?.pois)
             ? profile.pois.map(poi => String(poi.id)).sort()
             : []
+          const cityParcelIds = Array.isArray(city?.parcels)
+            ? city.parcels.map(parcel => String(parcel.id)).sort()
+            : []
+          const cityPresentationStateEntries = city
+            ? gympgrph.cityGeoPresentationStateEntries?.(city) || []
+            : []
           const sourcePois = Array.from(new Set(features.map(
             feature => String(feature?.properties?.kgRegionalPoiId || ''),
           ).filter(Boolean))).sort()
@@ -97,7 +104,13 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
               Number(mapPadding.top) || 0,
             ),
           }
-          const aperture = {
+          const visibleAperture = {
+            bottom: height - framingPadding.bottom,
+            left: framingPadding.left,
+            right: width - framingPadding.right,
+            top: framingPadding.top,
+          }
+          const contentAperture = {
             bottom: height - effectivePadding.bottom,
             left: effectivePadding.left,
             right: width - effectivePadding.right,
@@ -153,10 +166,10 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
               : null
           }
           const insideAperture = point => Boolean(point)
-            && point.x >= aperture.left + 2
-            && point.x <= aperture.right - 2
-            && point.y >= aperture.top + 2
-            && point.y <= aperture.bottom - 2
+            && point.x >= contentAperture.left + 2
+            && point.x <= contentAperture.right - 2
+            && point.y >= contentAperture.top + 2
+            && point.y <= contentAperture.bottom - 2
           const hitMapCanvas = point => Boolean(canvasRect && point)
             && document.elementFromPoint(
               canvasRect.left + point.x,
@@ -194,8 +207,8 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             try {
               return Array.from(new Set(map?.queryRenderedFeatures?.(
                 [
-                  [aperture.left, aperture.top],
-                  [aperture.right, aperture.bottom],
+                  [contentAperture.left, contentAperture.top],
+                  [contentAperture.right, contentAperture.bottom],
                 ],
                 { layers: [gympgrph.REGIONAL_POI_LAYER_IDS?.label] },
               ).map(feature => String(
@@ -205,6 +218,26 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
               return []
             }
           })()
+          const projectedSurfacePoints = surfaceFeatures.flatMap(feature => (
+            pairsInGeometry(feature?.geometry).flat().map(project).filter(Boolean)
+          ))
+          const projectedSurfaceXs = projectedSurfacePoints.map(point => point.x)
+          const projectedSurfaceYs = projectedSurfacePoints.map(point => point.y)
+          const regionalBoundsApertureCoverage = projectedSurfaceXs.length
+            && projectedSurfaceYs.length
+            ? Math.max(
+                (Math.max(...projectedSurfaceXs) - Math.min(...projectedSurfaceXs))
+                  / Math.max(
+                    1,
+                    visibleAperture.right - visibleAperture.left,
+                  ),
+                (Math.max(...projectedSurfaceYs) - Math.min(...projectedSurfaceYs))
+                  / Math.max(
+                    1,
+                    visibleAperture.bottom - visibleAperture.top,
+                  ),
+              )
+            : 0
           const poiVisualProof = expectedPois.map(poiId => {
             const poiFeatures = surfaceFeatures.filter(feature => (
               String(
@@ -226,10 +259,10 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
                 }
               : null
             const boundsInsideAperture = Boolean(bounds)
-              && bounds.left >= aperture.left
-              && bounds.right <= aperture.right
-              && bounds.top >= aperture.top
-              && bounds.bottom <= aperture.bottom
+              && bounds.left >= contentAperture.left
+              && bounds.right <= contentAperture.right
+              && bounds.top >= contentAperture.top
+              && bounds.bottom <= contentAperture.bottom
             const anchor = rings.flatMap(sampleRing)
               .map(project)
               .find(point => renderedPoiAt(point, poiId)) || null
@@ -258,19 +291,19 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
           )).map(proof => proof.poiId).sort()
           const container = map?.getContainer?.() || null
           return {
-            aperture,
+            aperture: contentAperture,
             exactFeatures,
             exactPresentation: Boolean(profile)
               && gympgrph.mapHasExactRegionalPoiProfile?.(
                 map,
                 profile,
-                {
-                  beforeLayerId:
-                    gympgrph.CITY_GEO_OVERLAY_LAYER_IDS?.fill,
-                  viewMode,
-                },
+                { viewMode },
               ) === true,
+            exactCityPresentation: Boolean(city)
+              && gympgrph.mapHasExactCityGeoPresentation?.(map, city) === true,
             expectedPois,
+            cityParcelIds,
+            cityPresentationStateCount: cityPresentationStateEntries.length,
             featureCount: features.length,
             layerCount: layerIds.filter(
               layerId => Boolean(map?.getLayer?.(layerId)),
@@ -281,6 +314,7 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             profileFeatureCount: Number(profile?.surfaces?.length || 0),
             profileId: String(profile?.id || ''),
             profileRevision: String(profile?.revision || ''),
+            regionalBoundsApertureCoverage,
             sourcePois,
             datasetFeatureCount: Number(
               container?.dataset?.kgCityGeospatialPoiFeatureCount || 0,
@@ -295,6 +329,15 @@ def read_city_regional_poi_contract(page: Page) -> dict[str, Any]:
           }
         }
         """,
+    )
+
+
+def _has_valid_regional_bounds_aperture_coverage(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and 0.45 <= value <= 1
     )
 
 
@@ -316,11 +359,18 @@ def require_city_regional_poi_contract(page: Page) -> dict[str, Any]:
             and observed.get("datasetProfileRevision")
             == observed.get("profileRevision")
             and observed.get("sourcePois") == expected_pois
+            and observed.get("cityParcelIds") == expected_pois
+            and observed.get("cityPresentationStateCount")
+            == observed.get("profileFeatureCount")
             and observed.get("layerCount") == 5
             and observed.get("locatorCount") == len(expected_pois)
             and observed.get("locatorPois") == expected_pois
             and observed.get("exactFeatures") is True
             and observed.get("exactPresentation") is True
+            and observed.get("exactCityPresentation") is True
+            and _has_valid_regional_bounds_aperture_coverage(
+                observed.get("regionalBoundsApertureCoverage")
+            )
             and observed.get("visiblePoiAnchors") == expected_pois
             and len(observed.get("poiVisualProof") or []) == len(expected_pois)
             and all(

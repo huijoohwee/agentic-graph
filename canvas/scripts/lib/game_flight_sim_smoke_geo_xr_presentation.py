@@ -23,9 +23,6 @@ from lib.game_flight_sim_smoke_source_selection import (
 )
 
 
-CITY_GEO_OVERLAY_LAYER_COUNT = 4
-
-
 def restore_flight_sim_panel(page: Page) -> None:
     page.evaluate(
         """
@@ -208,15 +205,14 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("flightR3fVisualCount") == 0
             and value.get("hudVisible") is False
             and value.get("flightHudCount") == 0
-            and value.get("flightSourceFeatures") >= 7
-            and value.get("flightSourcePresent") is True
-            and value.get("flightLayersReady") is True
-            and value.get("aircraftLayerType") == "symbol"
-            and value.get("aircraftGeometryType") == "Polygon"
+            and value.get("flightSourceFeatures") == 0
+            and value.get("flightSourcePresent") is False
+            and value.get("flightLayersReady") is False
+            and value.get("aircraftLayerType") == ""
+            and value.get("aircraftGeometryType") == ""
             and value.get("overlayPhase") == "stopped"
-            and value.get("overlayRoutePointCount") >= 2
-            and set(value.get("sourceKinds") or [])
-            == {"aircraft", "route", "route-point"}
+            and value.get("overlayRoutePointCount") == 0
+            and value.get("sourceKinds") == []
             and value.get("environmentId") == ""
             and value.get("environmentSourceFeatures") == 0
             and value.get("environmentLayerCount") == 0
@@ -224,16 +220,13 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("renderedEnvironmentPoiIds") == []
             and value.get("environmentSourceExactlyMatchesOverlay") is True
             and value.get("environmentSourcePresent") is False
-            and value.get("citySourcePresent") is True
             and isinstance(value.get("cityExpectedParcelCount"), int)
             and value.get("cityExpectedParcelCount") > 0
-            and value.get("citySourceFeatures")
-            == value.get("cityExpectedParcelCount")
-            and value.get("cityLayerCount") == CITY_GEO_OVERLAY_LAYER_COUNT
-            and value.get("cityLayersReady") is True
-            and value.get("cityParcelsUseAuthoredMeters") is True
-            and value.get("cityGeoXrLayerOrderExact") is True
-            and value.get("renderedFeatureCount") >= 4
+            and value.get("cityPresentationStateCount") > 0
+            and value.get("cityPresentationExact") is True
+            and value.get("cityOwnedSourceCount") == 0
+            and value.get("cityOwnedLayerCount") == 0
+            and value.get("renderedFeatureCount") == 0
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
@@ -306,10 +299,8 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("flightHudCount") == 0
             and value.get("flightSourceFeatures") == 0
             and value.get("environmentSourceFeatures") == 0
-            and value.get("citySourcePresent") is False
-            and value.get("citySourceFeatures") == 0
-            and value.get("cityLayerCount") == 0
-            and value.get("cityLayersReady") is False
+            and value.get("cityOwnedSourceCount") == 0
+            and value.get("cityOwnedLayerCount") == 0
             and value.get("renderedFeatureCount") == 0
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
@@ -344,10 +335,8 @@ def verify_flight_geo_xr_city_handoff(
         ) is not False
         or reopened.get("cityMapLibreCanvasSelectableOwnerNodeName") != ""
         or reopened.get("cityMapLibreOwnerCount") != 0
-        or reopened.get("citySourcePresent") is not False
-        or reopened.get("citySourceFeatures") != 0
-        or reopened.get("cityLayerCount") != 0
-        or reopened.get("cityLayersReady") is not False
+        or reopened.get("cityOwnedSourceCount") != 0
+        or reopened.get("cityOwnedLayerCount") != 0
         or reopened.get("hudVisible") is not True
     ):
         raise AssertionError(
@@ -487,14 +476,9 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 "rendererAlpha": True,
                 "terrainCount": 0,
                 "nativeVisualCount": 0,
-                "flightR3fVisualCount": 4,
-                "flightR3fVisualNames": [
-                    "kg_flight_sim_aircraft",
-                    "kg_flight_sim_aircraft_model_orientation",
-                    "kg_flight_sim_geospatial_actor_lighting",
-                    "kg_flight_sim_mission",
-                ],
-                "visualProjection": "r3f",
+                "flightR3fVisualCount": 0,
+                "flightR3fVisualNames": [],
+                "visualProjection": "",
                 "rendererPointerTransparent": True,
                 "exclusivePlainGeoOverlayCount": 0,
                 "cameraPreference": baseline_camera["cameraPreference"],

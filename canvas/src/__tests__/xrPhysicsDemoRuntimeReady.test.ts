@@ -173,7 +173,6 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
   const sourcePlan = readXrMotionReferencePlan(sourceSeedValue, parsed.graphData.nodes)
   const selectableVehicleIds = [
     'xr-subject:vehicle-helicopter:1',
-    'xr-subject:vehicle-airplane:1',
     'xr-subject:vehicle-sedan:1',
   ]
   if (sourcePlan.stageId !== 'singapore'
@@ -209,7 +208,6 @@ export async function testXrPhysicsDemoRunReadyModeLoadsNativeInRepoSeed() {
     'procedural Singapore waterfront terrain',
     'catalog-driven stable terrain IDs',
     'vehicle-helicopter',
-    'vehicle-airplane',
     'vehicle-sedan',
     'prop-ball',
     'Marina Bay towers',

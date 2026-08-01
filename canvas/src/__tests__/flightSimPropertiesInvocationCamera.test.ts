@@ -88,8 +88,8 @@ const restoreCameraStoreFields = (
   useGraphStore.setState(fields as never)
 }
 
-// Feature: knowgrph-game-flight-sim, Property 23 - Invocation grammar strictness
-test('Feature: knowgrph-game-flight-sim, Property 23 - Invocation grammar strictness', async () => {
+// Feature: knowgrph-game-flight-sim, Property 18 - Invocation grammar strictness
+test('Feature: knowgrph-game-flight-sim, Property 18 - Invocation grammar strictness', async () => {
   const violationArbitrary = fc.constantFrom(
     {
       input: { invocation: '@canvas #flight operation=open' },
@@ -134,12 +134,12 @@ test('Feature: knowgrph-game-flight-sim, Property 23 - Invocation grammar strict
       assert.ok(result.field || result.token)
       assert.equal(JSON.stringify(readFlightSimSnapshot()), before)
     }),
-    flightSimPropertyParameters(23),
+    flightSimPropertyParameters(18),
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 24 - Supported lifecycle operation is applied exactly once
-test('Feature: knowgrph-game-flight-sim, Property 24 - Supported lifecycle operation is applied exactly once', async () => {
+// Feature: knowgrph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once
+test('Feature: knowgrph-game-flight-sim, Property 19 - Supported lifecycle operation is applied exactly once', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.constantFrom<FlightSimOperation>(...SUPPORTED_OPERATIONS),
@@ -183,12 +183,12 @@ test('Feature: knowgrph-game-flight-sim, Property 24 - Supported lifecycle opera
         assert.deepEqual(executions, [operation])
       },
     ),
-    flightSimPropertyParameters(24),
+    flightSimPropertyParameters(19),
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 25 - Unsupported operation is rejected without state change
-test('Feature: knowgrph-game-flight-sim, Property 25 - Unsupported operation is rejected without state change', async () => {
+// Feature: knowgrph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change
+test('Feature: knowgrph-game-flight-sim, Property 20 - Unsupported operation is rejected without state change', async () => {
   await fc.assert(
     fc.asyncProperty(
       unsupportedOperationArbitrary,
@@ -206,12 +206,12 @@ test('Feature: knowgrph-game-flight-sim, Property 25 - Unsupported operation is 
         assert.equal(JSON.stringify(readFlightSimSnapshot()), before)
       },
     ),
-    flightSimPropertyParameters(25),
+    flightSimPropertyParameters(20),
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 26 - Inspect is read-only
-test('Feature: knowgrph-game-flight-sim, Property 26 - Inspect is read-only', async () => {
+// Feature: knowgrph-game-flight-sim, Property 21 - Inspect is read-only
+test('Feature: knowgrph-game-flight-sim, Property 21 - Inspect is read-only', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.boolean(),
@@ -244,12 +244,12 @@ test('Feature: knowgrph-game-flight-sim, Property 26 - Inspect is read-only', as
         assert.equal(JSON.stringify(readFlightSimSnapshot()), runtimeBefore)
       },
     ),
-    flightSimPropertyParameters(26),
+    flightSimPropertyParameters(21),
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 41 - Valid framing selection applied independently of aircraft
-test('Feature: knowgrph-game-flight-sim, Property 41 - Valid framing selection applied independently of aircraft', () => {
+// Feature: knowgrph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft
+test('Feature: knowgrph-game-flight-sim, Property 36 - Valid framing selection applied independently of aircraft', () => {
   const priorStore = saveCameraStoreFields()
   const priorCameraMode = readXrNativeControllerCamera().mode
   try {
@@ -286,7 +286,7 @@ test('Feature: knowgrph-game-flight-sim, Property 41 - Valid framing selection a
           assert.ok(typeof result.elapsedMs === 'number' && result.elapsedMs <= 1_000)
         },
       ),
-      flightSimPropertyParameters(41),
+      flightSimPropertyParameters(36),
     )
   } finally {
     selectXrNativeControllerCameraMode(priorCameraMode)
@@ -294,8 +294,8 @@ test('Feature: knowgrph-game-flight-sim, Property 41 - Valid framing selection a
   }
 })
 
-// Feature: knowgrph-game-flight-sim, Property 42 - Timeline camera-mark framing ownership round-trip
-test('Feature: knowgrph-game-flight-sim, Property 42 - Timeline camera-mark framing ownership round-trip', () => {
+// Feature: knowgrph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip
+test('Feature: knowgrph-game-flight-sim, Property 37 - Timeline camera-mark framing ownership round-trip', () => {
   const priorStore = saveCameraStoreFields()
   const priorCameraMode = readXrNativeControllerCamera().mode
   const priorMotion = readXrMotionReferenceRuntime()
@@ -341,7 +341,7 @@ test('Feature: knowgrph-game-flight-sim, Property 42 - Timeline camera-mark fram
           assert.equal(afterPlayback.effectiveOwner, expectedMode)
         },
       ),
-      flightSimPropertyParameters(42),
+      flightSimPropertyParameters(37),
     )
   } finally {
     restoreXrMotionReferenceRuntimeSnapshot(priorMotion)
@@ -350,8 +350,8 @@ test('Feature: knowgrph-game-flight-sim, Property 42 - Timeline camera-mark fram
   }
 })
 
-// Feature: knowgrph-game-flight-sim, Property 43 - Invalid camera value is rejected
-test('Feature: knowgrph-game-flight-sim, Property 43 - Invalid camera value is rejected', () => {
+// Feature: knowgrph-game-flight-sim, Property 38 - Invalid camera value is rejected
+test('Feature: knowgrph-game-flight-sim, Property 38 - Invalid camera value is rejected', () => {
   const priorCameraMode = readXrNativeControllerCamera().mode
   try {
     fc.assert(
@@ -371,7 +371,7 @@ test('Feature: knowgrph-game-flight-sim, Property 43 - Invalid camera value is r
           assert.equal(JSON.stringify(readXrNativeControllerCamera()), before)
         },
       ),
-      flightSimPropertyParameters(43),
+      flightSimPropertyParameters(38),
     )
   } finally {
     selectXrNativeControllerCameraMode(priorCameraMode)
