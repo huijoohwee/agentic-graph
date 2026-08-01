@@ -17,6 +17,7 @@ export function ImportUrlPrompt(props: {
   onCancel?: () => void
   confirmLabel?: string
   autoFocus?: boolean
+  disabled?: boolean
   rightAddon?: React.ReactNode
 }) {
   const inputRef = React.useRef<HTMLInputElement | null>(null)
@@ -26,6 +27,7 @@ export function ImportUrlPrompt(props: {
   const onCancel = props.onCancel
   const confirmLabel = String(props.confirmLabel || '').trim() || 'Run'
   const autoFocus = props.autoFocus === true
+  const disabled = props.disabled === true
 
   React.useEffect(() => {
     if (!autoFocus) return
@@ -90,6 +92,7 @@ export function ImportUrlPrompt(props: {
           )}
           placeholder={SOURCE_FILES_COPY.urlPlaceholder}
           value={normalizedDraft}
+          disabled={disabled}
           onChange={e => onChange(e.target.value)}
           onKeyDown={e => {
             if (e.key === 'Escape') {
@@ -118,7 +121,7 @@ export function ImportUrlPrompt(props: {
             if (!next) return
             onConfirm(next)
           }}
-          disabled={!String(normalizedDraft || '').trim()}
+          disabled={disabled || !String(normalizedDraft || '').trim()}
         >
           {confirmLabel}
         </button>

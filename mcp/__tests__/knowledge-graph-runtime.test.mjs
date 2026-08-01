@@ -237,6 +237,41 @@ test("ingest writes content-addressed shards and returns only opaque graph ident
   assert.equal(fixture.pdfCalls(), 1);
 });
 
+test("ingest emits deterministic persisted-source progress fragments", async (t) => {
+  const fixture = await createFixture(t);
+  const progress = [];
+  const result = await fixture.runtime.run(KNOWLEDGE_GRAPH_TOOL_NAMES.ingest, {
+    rootPath: fixture.corpusRoot,
+    strict: true,
+  }, {
+    onProgress: (frame) => progress.push(frame),
+  });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(progress.length, result.counts.sources);
+  assert.deepEqual(progress.map((frame) => frame.sourceIndex), progress.map((_, index) => index + 1));
+  assert.ok(progress.every((frame) => (
+    frame.schema === "knowgrph-knowledge-graph-import-progress/v1"
+    && frame.kind === "source-parsed"
+    && frame.graphId === result.graphId
+    && frame.parserRegistryDigest === result.parserRegistryDigest
+    && frame.sourceTotal === result.counts.sources
+    && typeof frame.sourcePath === "string"
+    && !frame.sourcePath.startsWith("/")
+    && !frame.sourcePath.includes("..")
+    && Array.isArray(frame.fragment?.nodes)
+    && Array.isArray(frame.fragment?.edges)
+  )));
+  assert.deepEqual(
+    progress.map((frame) => frame.sourcePath),
+    progress.map((frame) => frame.sourcePath).slice().sort(),
+  );
+  for (const frame of progress) {
+    for (const edge of frame.fragment.edges) {
+      for (const field of EVIDENCE_FIELDS) assert.notEqual(edge.properties[field], undefined, `${edge.id} ${field}`);
+    }
+  }
+});
+
 test("generated parser registry is verified and fences discovery, snapshot identity, and cache reuse", async (t) => {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "knowgrph-kg-generated-parser-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
@@ -452,6 +487,10 @@ test("query, traversal, summaries, and explanations are digest-fenced and bounde
     maxDepth: 3,
   });
   assert.equal(pathResult.found, true, JSON.stringify(pathResult));
+  const resolutionCitation = pathResult.citations.find((citation) => (
+    citation.ruleId === "resolve.relative-code-import.repository"
+  ));
+  assert.ok(resolutionCitation, JSON.stringify(pathResult));
   const summary = await fixture.runtime.query({ ...common, mode: "summary" });
   assert.equal(summary.ok, true);
   assert.equal(summary.completeness.complete, true);
@@ -464,6 +503,26 @@ test("query, traversal, summaries, and explanations are digest-fenced and bounde
   assert.match(explanation.evidence.explanation, /references table/i);
   assert.match(explanation.evidence.sourceDigest, /^[a-f0-9]{64}$/);
   assert.match(explanation.evidence.parserDigest, /^[a-f0-9]{64}$/);
+  assert.deepEqual(explanation.evidence.premiseEdgeIds, []);
+  assert.equal(explanation.evidence.candidateCount, 1);
+  assert.deepEqual(explanation.evidence.candidateIds, []);
+  const resolutionExplanation = await fixture.runtime.explainEdge({
+    ...common,
+    edgeId: resolutionCitation.edgeId,
+  });
+  assert.equal(resolutionExplanation.ok, true);
+  assert.deepEqual(
+    {
+      premiseEdgeIds: resolutionCitation.premiseEdgeIds,
+      candidateCount: resolutionCitation.candidateCount,
+      candidateIds: resolutionCitation.candidateIds,
+    },
+    {
+      premiseEdgeIds: resolutionExplanation.evidence.premiseEdgeIds,
+      candidateCount: resolutionExplanation.evidence.candidateCount,
+      candidateIds: resolutionExplanation.evidence.candidateIds,
+    },
+  );
   const stale = await fixture.runtime.query({ ...common, expectedSnapshotDigest: "0".repeat(64), mode: "summary" });
   assert.equal(stale.error.code, "stale_snapshot_digest");
   const missing = await fixture.runtime.query({ graphId: ingest.graphId, mode: "summary" });
@@ -479,6 +538,9 @@ test("strict failure and admission limits preserve the previous ready pointer", 
   const failed = await fixture.runtime.ingest({ rootPath: fixture.corpusRoot, strict: true });
   assert.equal(failed.ok, false);
   assert.equal(failed.error.code, "strict_ingest_incomplete");
+  assert.match(failed.error.message, /local parser returned an incomplete result/i);
+  assert.match(failed.error.message, /lib\.py/);
+  assert.doesNotMatch(failed.error.message, /source parsing was incomplete/i);
   assert.equal(failed.error.details.previousReadySnapshotPreserved, true);
   assert.equal(await fs.readFile(pointerPath, "utf8"), before);
   const limited = await fixture.runtime.ingest({ rootPath: fixture.corpusRoot, maxFiles: 1, strict: true });

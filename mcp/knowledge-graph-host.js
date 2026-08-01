@@ -119,6 +119,7 @@ export async function runKnowledgeGraphTool(toolName, args, {
   env = process.env,
   abortSignal,
   docsResolver,
+  onProgress,
 } = {}) {
   const operation = TOOL_OPERATION[toolName];
   if (!operation) return failure("query", "unknown_tool", `Unknown knowledge graph tool: ${String(toolName || "")}`);
@@ -133,5 +134,5 @@ export async function runKnowledgeGraphTool(toolName, args, {
   const argumentsError = validateArguments(operation, args);
   if (argumentsError) return failure(operation, "invalid_arguments", `Knowledge graph arguments failed validation: ${argumentsError}`);
   const { invocation: _invocation, ...runtimeArgs } = args || {};
-  return getRuntime({ rootDir, env }).run(toolName, runtimeArgs, { abortSignal });
+  return getRuntime({ rootDir, env }).run(toolName, runtimeArgs, { abortSignal, onProgress });
 }

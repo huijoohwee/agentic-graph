@@ -51,7 +51,7 @@ The capability has exactly four local stdio MCP tool identities:
 
 | Tool | Purpose |
 |---|---|
-| `knowgrph.knowledge_graph.parser_generate` | Compile bounded inert matchers and an optional declarative grammar into one canonical digest-bound parser registry. |
+| `knowgrph.knowledge_graph.parser_generate` | Return the `default-source` built-in local registry or compile bounded inert custom matchers and an optional declarative grammar into one canonical digest-bound parser registry. |
 | `knowgrph.knowledge_graph.ingest` | Build or refresh deterministic graph evidence for a supported local corpus. |
 | `knowgrph.knowledge_graph.query` | Retrieve graph evidence using lexical matching and graph traversal. |
 | `knowgrph.knowledge_graph.explain_edge` | Explain one stored edge from its source evidence and extraction basis. |
@@ -65,7 +65,7 @@ The matching Agentic Canvas OS aliases are:
 | `knowgrph.knowledge_graph.query` | `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
 | `knowgrph.knowledge_graph.explain_edge` | `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
 
-A stdio MCP client calls the tool identity directly. An ACOS-capable host resolves and validates the matching exact tuple above, then explicitly calls that tool; dictionary lookup alone never executes it. Callers use the input schema advertised by the running local server; authored docs do not duplicate that schema.
+A stdio MCP client calls the tool identity directly. `parser_generate` accepts exactly one selection: `profile: "default-source"` returns the existing built-in digest-pinned registry, while custom descriptors support bounded declared coverage. An ACOS-capable host resolves and validates the matching exact tuple above, then explicitly calls that tool; dictionary lookup alone never executes it. Callers use the input schema advertised by the running local server; authored docs do not duplicate that schema.
 
 ## Architecture and Ownership
 
@@ -126,6 +126,11 @@ The query path must:
 - return evidence rather than an uncited synthesized answer
 - make zero embedding, vector-store, model, and network calls
 
+Read-only graph projections remain transport-bounded rather than snapshot-bounded. The runtime fits
+projection nodes and edges deterministically inside one shared byte ceiling, retains endpoint
+closure for surviving edges, and reports `projection_byte_limit` when byte trimming rather than
+result-count trimming makes the projection incomplete.
+
 ## Security Bounds
 
 - Canonicalized source paths and resolved symlink targets remain inside the host-owned allowed root.
@@ -137,6 +142,11 @@ The query path must:
 - Configuration structure may be indexed, but secret values must not be returned as graph evidence.
 - Source-controlled labels and evidence are sanitized before MCP output.
 - Local-directory ingest, parsing, storage, query, and explanation make no model call, network request, embedding request, or vector-store write. Explicit repository acquisition is the only network-capable phase.
+
+When the installed local Python runtime predates a known grammar feature at the exact syntax-error
+line, the parser may lower only a conservative validated subset of newer syntax and retain
+deterministic lexical declarations/imports with explicit recovery diagnostics. Unvalidated or
+unrelated malformed syntax still fails honestly and cannot be upgraded into a successful parse.
 
 ## Honest Diagnostic Contract
 

@@ -6,12 +6,16 @@ import type {
   WorkspaceKnowledgeGraphInvocation,
   WorkspaceImportUrlOpts,
 } from '@/features/markdown-explorer/workspaceActionBridge'
-import { applyKnowledgeGraphCanvasProjection } from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
+import {
+  applyKnowledgeGraphCanvasProjection,
+  createKnowledgeGraphCanvasPreviewSession,
+} from '@/features/knowledge-graph/knowledgeGraphCanvasProjection'
 import {
   normalizeKnowledgeGraphRepositoryRemoteUrl,
   parseKnowledgeGraphRepositoryUrl,
 } from '@/features/knowledge-graph/knowledgeGraphRepositoryUrl'
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from '@/features/agent-ready/knowgrphLocalMcpToolNames.mjs'
+import { isRemoteRateLimitFailureMessage } from '@/lib/net/fetchRemoteTextFailure'
 
 export const LAUNCH_FOLDER_PREVIEW_MAX_FILES = 100
 export const LAUNCH_FOLDER_PREVIEW_MAX_BYTES = 25 * 1024 * 1024
@@ -87,6 +91,31 @@ export function isLaunchKnowledgeGraphRepositoryUrl(value: string): boolean {
   }
 }
 
+function launchImportErrorMessage(value: unknown): string | null {
+  if (!value || typeof value !== 'object' || !('error' in value)) return null
+  const message = String((value as { error?: unknown }).error || '').trim()
+  return message || null
+}
+
+/**
+ * Only a source-classified repository import may offer this recovery. A raw
+ * rate-limit message from an arbitrary document URL is not enough to change
+ * its import semantics.
+ */
+export function isLaunchImportRepositoryRateLimitFailure(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+  const recovery = (value as { recovery?: unknown }).recovery
+  if (!recovery || typeof recovery !== 'object' || (recovery as { kind?: unknown }).kind !== 'repository-graph') {
+    return false
+  }
+  const message = launchImportErrorMessage(value)
+  return !!message && isRemoteRateLimitFailureMessage(message)
+}
+
+export function canRecoverLaunchImportAsKnowledgeGraphRepository(value: string): boolean {
+  return canonicalLaunchRepositoryUrl(value, { forceRepository: true }) !== null
+}
+
 function isKnowledgeGraphImportResult(value: unknown): value is WorkspaceKnowledgeGraphImportResult {
   return !!value && typeof value === 'object' && (value as { kind?: unknown }).kind === 'knowledge-graph'
 }
@@ -103,6 +132,21 @@ function finishKnowledgeGraphImport(
 ): WorkspaceKnowledgeGraphImportResult {
   applyKnowledgeGraphCanvasProjection(result)
   return result
+}
+
+async function materializeRepositoryKnowledgeGraphArtifact(args: {
+  bridge: MarkdownWorkspaceActionBridge
+  repositoryUrl: string
+  invocation: WorkspaceKnowledgeGraphInvocation
+  result: WorkspaceKnowledgeGraphImportResult
+}): Promise<void> {
+  const materialize = args.bridge.materializeKnowledgeGraphImport
+  if (typeof materialize !== 'function') return
+  await materialize({
+    repositoryUrl: args.repositoryUrl,
+    invocation: args.invocation,
+    result: args.result,
+  })
 }
 
 export async function runLaunchImportLocalFiles(args: {
@@ -202,18 +246,39 @@ export async function runLaunchImportUrl(args: {
     if (existingOperation) {
       result = await existingOperation
     } else {
-      const operation = importRepositoryUrl(repositoryUrl, args.opts, resolved.invocation)
-      inFlightRepositoryImports.set(operationKey, operation)
+      const preview = createKnowledgeGraphCanvasPreviewSession()
+      const operation = Promise.resolve().then(() => importRepositoryUrl(
+        repositoryUrl,
+        args.opts,
+        resolved.invocation,
+        preview.apply,
+      ))
+      const completedOperation = operation
+        .then(async importResult => {
+          preview.commit(importResult)
+          await materializeRepositoryKnowledgeGraphArtifact({
+            bridge: args.bridge,
+            repositoryUrl,
+            invocation: resolved.invocation,
+            result: importResult,
+          })
+          return importResult
+        })
+        .catch(error => {
+          preview.rollback()
+          throw error
+        })
+      inFlightRepositoryImports.set(operationKey, completedOperation)
       try {
-        result = await operation
+        result = await completedOperation
       } finally {
-        if (inFlightRepositoryImports.get(operationKey) === operation) {
+        if (inFlightRepositoryImports.get(operationKey) === completedOperation) {
           inFlightRepositoryImports.delete(operationKey)
         }
       }
     }
     reportKnowledgeGraphImportProgress(args.onKnowledgeGraphProgress, 'projecting')
-    return finishKnowledgeGraphImport(result)
+    return result
   }
   const bridgeImport = args.bridge.importUrl
   if (typeof bridgeImport === 'function') {

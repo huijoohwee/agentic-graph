@@ -68,6 +68,7 @@ export function useWorkspaceFileActions(args: UseWorkspaceFileActionsArgs): Work
   })
 
   return {
+    focusAfterImport: core.focusAfterImport,
     createNewFile: core.createNewFile,
     createNewFolder: core.createNewFolder,
     handleImportLocalFiles: importActions.handleImportLocalFiles,

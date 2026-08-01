@@ -272,7 +272,7 @@ export function buildKnowledgeGraphToolDefinitions({ toolNames, withDefaults, re
       name: toolNames.knowledgeGraphParserGenerate,
       title: "Generate deterministic parser registry",
       description:
-        "Use this when a local MCP host needs to compile bounded inert source matchers and optional finite declarative grammar data into a canonical v2 digest-bound parser registry. It returns data only, never executable code or filesystem paths, and performs no network or model access and uses no vector store.",
+        "Use this when a local MCP host needs the digest-pinned default-source local registry or needs to compile bounded inert custom source matchers and optional finite declarative grammar data into a canonical v2 digest-bound parser registry. It returns data only, never executable code or filesystem paths, and performs no network or model access and uses no vector store.",
       inputSchema: PARSER_GENERATE_INPUT_SCHEMA,
       outputSchema: commonOutputSchema("parser_generate"),
     }, readOnlyAnnotations),

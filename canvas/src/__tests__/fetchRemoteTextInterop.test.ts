@@ -201,3 +201,44 @@ export const testFetchRemoteTextAutoFallsBackToProxyOnPrivateLanOrigin = async (
     g.window = prevWindow
   }
 }
+
+export const testFetchRemoteTextDoesNotReplayRateLimitedHttpAcrossTransports = async () => {
+  const g = globalThis as unknown as GlobalWithFetch
+  const prevFetch = g.fetch
+  const prevWindow = g.window
+  const calls: string[] = []
+
+  g.window = { location: { origin: 'http://localhost:5173' } }
+  g.fetch = (async (input: unknown) => {
+    const url = typeof input === 'string' ? input : ''
+    calls.push(url)
+    const response: FetchStubResponse = {
+      ok: false,
+      status: 403,
+      headers: { get: () => null },
+      body: null,
+      text: async () => '{"message":"request rate limit exceeded"}',
+    }
+    return response as unknown as Response
+  }) as unknown as typeof fetch
+
+  try {
+    const result = await fetchRemoteTextDetailed('https://code.example.test/organization/project', {
+      preferProxy: true,
+    })
+    if (!('kind' in result)) throw new Error('Expected a rate-limit HTTP failure')
+    if (result.kind !== 'http' || result.status !== 403) {
+      throw new Error(`Expected the original HTTP 403, got ${result.kind} ${String(result.status)}`)
+    }
+    if (result.errorText !== '{"message":"request rate limit exceeded"}') {
+      throw new Error(`Expected bounded remote error evidence, got ${String(result.errorText)}`)
+    }
+    if (calls.length !== 1) throw new Error(`Expected one proxy attempt for an authoritative HTTP response, got ${calls.length}`)
+    if (!calls[0]?.startsWith('/__fetch_remote?url=')) {
+      throw new Error(`Expected the preferred proxy attempt first, got ${calls[0] || '<none>'}`)
+    }
+  } finally {
+    g.fetch = prevFetch
+    g.window = prevWindow
+  }
+}

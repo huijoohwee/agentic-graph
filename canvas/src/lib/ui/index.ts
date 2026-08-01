@@ -4,6 +4,7 @@ export * from './icons';
 export * from './text';
 export * from './pinToggle'
 export * from './focusRing'
+export * from './copyText'
 export * from './surfaceClasses'
 export * from './tableClasses'
 export * from './responsiveViewportFitGrid'

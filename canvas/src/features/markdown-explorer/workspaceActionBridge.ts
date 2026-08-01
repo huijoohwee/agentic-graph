@@ -40,6 +40,10 @@ export type WorkspaceFileSelection = FileList | ReadonlyArray<File> | null
 export type WorkspaceBridgeImportResult = {
   handled?: boolean
   error?: string
+  /** An explicit, source-classified recovery route; never inferred from a raw URL error. */
+  recovery?: {
+    kind: 'repository-graph'
+  }
   createdPaths?: string[]
   removedPaths?: string[]
   websiteImportSummary?: WorkspaceWebsiteImportSummary
@@ -62,6 +66,23 @@ export type WorkspaceKnowledgeGraphProjection = {
   reason?: string
 }
 
+/**
+ * A bounded, source-local fragment emitted while a repository graph is being
+ * built. It is deliberately not a snapshot: callers must treat it as a
+ * read-only visual preview until the canonical import result arrives.
+ */
+export type WorkspaceKnowledgeGraphImportProgress = {
+  schema: 'knowgrph-knowledge-graph-import-progress/v1'
+  kind: 'source-parsed'
+  graphId: string
+  parserRegistryDigest: string
+  sourcePath: string
+  sourceIndex: number
+  sourceTotal: number
+  truncated: boolean
+  graphData: GraphData
+}
+
 export type WorkspaceKnowledgeGraphImportResult = {
   handled: true
   kind: 'knowledge-graph'
@@ -71,6 +92,16 @@ export type WorkspaceKnowledgeGraphImportResult = {
   complete: boolean
   counts: WorkspaceKnowledgeGraphCounts
   projection: WorkspaceKnowledgeGraphProjection
+}
+
+export type WorkspaceKnowledgeGraphArtifactRequest = {
+  repositoryUrl: string
+  invocation: WorkspaceKnowledgeGraphInvocation
+  result: WorkspaceKnowledgeGraphImportResult
+}
+
+export type WorkspaceKnowledgeGraphArtifactResult = {
+  path: string
 }
 
 export type WorkspaceKnowledgeGraphInvocation = {
@@ -101,6 +132,7 @@ export type WorkspaceKnowledgeGraphBridge = {
     url: string,
     opts?: WorkspaceImportUrlOpts,
     invocation?: WorkspaceKnowledgeGraphInvocation,
+    onProgress?: (progress: WorkspaceKnowledgeGraphImportProgress) => void,
   ) => Promise<WorkspaceKnowledgeGraphImportResult>
 }
 
@@ -113,6 +145,9 @@ export type MarkdownWorkspaceActionBridge = {
   downloadVideo?: (url: string, options: VideoDownloadOptions) => Promise<VideoDownloadResult>
   createNewFolder?: () => void
   save?: () => void
+  materializeKnowledgeGraphImport?: (
+    args: WorkspaceKnowledgeGraphArtifactRequest,
+  ) => Promise<WorkspaceKnowledgeGraphArtifactResult>
   knowledgeGraph?: WorkspaceKnowledgeGraphBridge
 
   export?: {
@@ -153,6 +188,9 @@ export function getMarkdownWorkspaceActionBridge(): MarkdownWorkspaceActionBridg
     if (bridge.downloadVideo) merged.downloadVideo = bridge.downloadVideo
     if (bridge.createNewFolder) merged.createNewFolder = bridge.createNewFolder
     if (bridge.save) merged.save = bridge.save
+    if (bridge.materializeKnowledgeGraphImport) {
+      merged.materializeKnowledgeGraphImport = bridge.materializeKnowledgeGraphImport
+    }
     if (bridge.knowledgeGraph) {
       merged.knowledgeGraph = {
         ...(merged.knowledgeGraph || {}),

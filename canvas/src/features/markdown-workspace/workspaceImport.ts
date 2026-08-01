@@ -24,6 +24,6 @@ export {
   buildWebsiteImportWebpageDocFromUpstreamMarkdown,
 } from './workspaceImport/webpageEntryText'
 
-export { importWorkspaceUrl } from './workspaceImport/urlImport'
+export { importWorkspaceUrl, isWorkspaceRepositoryImportUrl } from './workspaceImport/urlImport'
 
 export { importWorkspaceUrlViaDeerFlow } from './workspaceImport/deerflowUrlImport'

@@ -12,6 +12,7 @@ import {
   stableEntityId,
   throwIfAborted,
   remainingKnowledgeGraphDuration,
+  versionKnowledgeGraphParserOutput,
 } from "./contract.mjs";
 import {
   BRACE_CODE_PARSER_ID,
@@ -26,6 +27,10 @@ import {
 } from "./isolated-json-parser.mjs";
 import { createParserDispatch, parseSourceWithDispatch } from "./parser-dispatch.mjs";
 import { createSourceOnlyFragment, resolveParserDescriptorForSource } from "./parser-routing.mjs";
+import {
+  pythonRuntimeGrammarValidationSource,
+  recoverPythonRuntimeGrammar,
+} from "./python-syntax-recovery.mjs";
 import { parseSqlSource, SQL_PARSER_ID, SQL_PARSER_VERSION } from "./sql-parser.mjs";
 import { SOURCE_PARSER_REGISTRY } from "./source-parser-registry.mjs";
 import {
@@ -40,20 +45,20 @@ try { typescript = require("typescript"); } catch { typescript = null; }
 
 const PYTHON_HELPER_PATH = fileURLToPath(new URL("./python-ast-helper.py", import.meta.url));
 export const PYTHON_PARSER_ID = "local-python-stdlib-ast";
-export const PYTHON_PARSER_VERSION = "1.0.0+python-runtime-probed";
+export const PYTHON_PARSER_VERSION = versionKnowledgeGraphParserOutput("1.0.0+python-runtime-probed");
 export const MARKDOWN_PARSER_ID = "local-markdown-structure";
-export const MARKDOWN_PARSER_VERSION = "1.0.0";
+export const MARKDOWN_PARSER_VERSION = versionKnowledgeGraphParserOutput("1.0.0");
 export const JSON_CONFIG_PARSER_ID = "local-json-config-ast";
 const JSON_TYPESCRIPT_VERSION = String(typescript?.version || "unavailable").replace(/[^A-Za-z0-9._-]+/g, "-");
-export const JSON_CONFIG_PARSER_VERSION = `1.3.0+typescript-${JSON_TYPESCRIPT_VERSION}`;
+export const JSON_CONFIG_PARSER_VERSION = versionKnowledgeGraphParserOutput(`1.3.0+typescript-${JSON_TYPESCRIPT_VERSION}`);
 export const STRUCTURAL_CONFIG_PARSER_ID = "local-config-structure";
-export const STRUCTURAL_CONFIG_PARSER_VERSION = "1.0.0";
+export const STRUCTURAL_CONFIG_PARSER_VERSION = versionKnowledgeGraphParserOutput("1.0.0");
 export const SOURCE_INVENTORY_PARSER_ID = "local-source-inventory";
-export const SOURCE_INVENTORY_PARSER_VERSION = "1.0.0";
+export const SOURCE_INVENTORY_PARSER_VERSION = versionKnowledgeGraphParserOutput("1.0.0");
 export const PDF_PARSER_ID = "local-pdf-markdown-adapter";
-export const PDF_PARSER_VERSION = "1.2.0";
+export const PDF_PARSER_VERSION = versionKnowledgeGraphParserOutput("1.2.0");
 export const DECLARATIVE_GRAMMAR_PARSER_ID = "local-declarative-grammar";
-export const DECLARATIVE_GRAMMAR_PARSER_VERSION = "1.0.0";
+export const DECLARATIVE_GRAMMAR_PARSER_VERSION = versionKnowledgeGraphParserOutput("1.0.0");
 const MAX_PARSER_NODES = 100_000;
 const MAX_PARSER_EDGES = 200_000;
 const MAX_PARSER_RECORDS = 250_000;
@@ -379,6 +384,40 @@ async function parsePythonSource(source, options) {
     };
   }
   const parsedDescriptor = { ...descriptor, parserVersion: runtimeParserVersion };
+  const validationSource = pythonRuntimeGrammarValidationSource({
+    source,
+    diagnostics: facts.diagnostics,
+    pythonVersionInfo: versionInfo,
+  });
+  let syntaxValidated = false;
+  if (validationSource) {
+    try {
+      options.checkpoint?.("python.recovery.validation");
+      const validationFacts = await runPythonAstFacts({
+        pythonBin: options.pythonBin || "python3",
+        sourcePath: source.relativePath,
+        text: validationSource,
+        timeoutMs: Math.max(1, Math.min(
+          Number(options.pythonTimeoutMs) || 10_000,
+          remainingKnowledgeGraphDuration(options.deadline),
+        )),
+        abortSignal: options.abortSignal,
+      });
+      syntaxValidated = (validationFacts.diagnostics || []).length === 0;
+    } catch (error) {
+      if (error instanceof KnowledgeGraphError && ["aborted", "max_duration_exceeded"].includes(error.code)) throw error;
+    }
+  }
+  const recovered = recoverPythonRuntimeGrammar({
+    source,
+    descriptor: parsedDescriptor,
+    diagnostics: facts.diagnostics,
+    options,
+    pythonVersionInfo: versionInfo,
+    syntaxValidated,
+    sourceOnlyFragment,
+  });
+  if (recovered) return recovered;
   const sourceNode = sourceNodeFor(source, parsedDescriptor.parserId, parsedDescriptor.parserVersion, parsedDescriptor.fidelity, {
     "code:pythonVersionInfo": versionInfo,
   });

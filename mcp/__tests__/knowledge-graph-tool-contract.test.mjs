@@ -14,6 +14,7 @@ import {
   KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
 } from "../knowledge-graph-tool-contract.js";
 import {
+  KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
   KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID,
 } from "../knowledge-graph-parser-contract.js";
 
@@ -48,7 +49,11 @@ test("local MCP exposes one deterministic knowledge-graph tool family", () => {
   const explain = byName.get(KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphExplainEdge);
   assert.equal(parserGenerate.annotations.readOnlyHint, true);
   assert.equal(parserGenerate.annotations.destructiveHint, false);
-  assert.equal(parserGenerate.inputSchema.required.includes("descriptors"), true);
+  assert.equal(parserGenerate.inputSchema.oneOf.length, 2);
+  assert.equal(
+    parserGenerate.inputSchema.properties.profile.const,
+    KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
+  );
   assert.equal(ingest.annotations.idempotentHint, true);
   assert.equal(ingest.annotations.destructiveHint, true);
   assert.equal(ingest.annotations.openWorldHint, false);
@@ -112,8 +117,24 @@ test("schemas require digest fencing, source-backed invocation proofs, and typed
     priority: 1,
   };
   assert.equal(validateParserGenerate({ descriptors: [descriptor] }), true, JSON.stringify(validateParserGenerate.errors));
+  assert.equal(
+    validateParserGenerate({ profile: KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE }),
+    true,
+    JSON.stringify(validateParserGenerate.errors),
+  );
+  assert.equal(validateParserGenerate({ profile: "other-source" }), false);
+  assert.equal(validateParserGenerate({
+    profile: KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
+    descriptors: [descriptor],
+  }), false);
   assert.equal(validateParserGenerate({
     descriptors: [{ ...descriptor, adapter: "unregistered-adapter" }],
+  }), false);
+  assert.equal(validateParserGenerate({
+    descriptors: [{ ...descriptor, fidelity: "structural-parser" }],
+  }), false);
+  assert.equal(validateParserGenerate({
+    descriptors: [{ ...descriptor, extensions: [], basenames: [], basenameFamilies: [] }],
   }), false);
   const registry = {
     schema: KNOWLEDGE_GRAPH_PARSER_REGISTRY_SCHEMA_ID,
@@ -183,4 +204,17 @@ test("package manifests contain no vector-store runtime dependency", () => {
   }
   const forbidden = /(?:chromadb|pinecone|weaviate|qdrant|milvus|lancedb|pgvector|faiss)/i;
   assert.deepEqual([...names].filter((name) => forbidden.test(name)), []);
+});
+
+test("knowledge-graph docs retain the complete local tool catalog", () => {
+  const documents = [
+    "README.md",
+    "mcp/README.md",
+    "docs/documents/knowgrph-deterministic-knowledge-graph-runtime.md",
+  ].map((file) => readFileSync(path.join(repoRoot, file), "utf8"));
+  for (const document of documents) {
+    for (const tool of expected) assert.match(document, new RegExp(tool.replaceAll(".", "\\.")));
+    assert.match(document, /default-source/);
+  }
+  assert.doesNotMatch(documents[0], /three direct tool identities/i);
 });
