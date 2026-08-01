@@ -377,7 +377,6 @@ def main() -> None:
                         source_state["physicsBaseline"]["sourceSha256"],
                     "visibleSceneSignature":
                         active_scene["visibleSceneSignature"],
-                    "optionalBeacon": active_scene["optionalBeacon"],
                 },
                 "geoXrPresentation": state["geoXrPresentation"],
                 "playableFrame": {

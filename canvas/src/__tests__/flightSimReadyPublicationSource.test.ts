@@ -14,7 +14,7 @@ test('ready publication reserves native MapLibre before ordinary React followers
   const publisher = source('canvas/src/features/geospatial/useGeoXrOverlayPublisher.ts')
   const deadline = source('canvas/src/features/game-flight-sim/flightSimDeadlineRuntime.ts')
   const defaults = source('canvas/src/features/game-flight-sim/flightSimDefaultRuntime.ts')
-  const geoSurface = source('canvas/src/features/game-flight-sim/FlightSimGeoSurfaceOverlay.tsx')
+  const missionStage = source('canvas/src/features/game-flight-sim/FlightSimMissionStage.tsx')
   const hud = source('canvas/src/features/game-flight-sim/FlightSimHud.tsx')
   const runtime = source('canvas/src/features/game-flight-sim/flightSimRuntime.ts')
   const runtimeCore = source('canvas/src/features/game-flight-sim/flightSimRuntimeCore.ts')
@@ -28,7 +28,8 @@ test('ready publication reserves native MapLibre before ordinary React followers
     /subscribeFlightSimPresentation\(\s*'maplibre',\s*publish\s*\)/,
   )
   assert.match(runtime, /subscribeFlightSimPresentation\('surface', listener\)/)
-  assert.match(geoSurface, /subscribeFlightSimPresentation\('surface', listener\)/)
+  assert.match(missionStage, /runtimeController\.subscribe\(syncRuntimeSnapshot\)/)
+  assert.match(missionStage, /return null/)
   assert.match(
     defaults,
     /cancelReadyPublication: cancelCurrentFlightSimReadyFrame[\s\S]*coordinateReadyPublication: coordinateFlightSimReadyPublication/,

@@ -1,18 +1,11 @@
-import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-
 import {
   assertExactFlightSimBrowserVerificationLedger,
-  assertExactFlightSimOptionalBeaconAdmission,
 } from '../../../scripts/lib/game-flight-sim-browser-evidence.mjs'
-import {
-  FLIGHT_SIM_OPTIONAL_GLB_PATH,
-} from '../../../scripts/lib/game-flight-sim-asset-readiness.mjs'
-
-function sha256(bytes) {
-  return createHash('sha256').update(bytes).digest('hex')
-}
+import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
+import { hasExactGeoXrRendererLifecycleEvidence } from './geo-xr-renderer-browser-evidence.mjs'
+import { hasViewportScopedRegionalPoiRendering } from './regional-poi-browser-evidence.mjs'
 
 function hasMeterSurface(view, expected) {
   const surface = view?.environmentSurfaceMeters?.find(
@@ -33,6 +26,86 @@ function hasMeterSurface(view, expected) {
 
 export function hasExactCityMapRetentionEvidence(retention) {
   return retention?.sameMap === true && retention?.removeCalls === 0
+}
+const CITY_REGIONAL_POI_PROFILE_ID = SINGAPORE_MAJOR_POI_GEO_PROFILE.id
+const CITY_REGIONAL_POI_PROFILE_REVISION = SINGAPORE_MAJOR_POI_GEO_PROFILE.revision
+const CITY_REGIONAL_POI_IDS = Object.freeze(
+  SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.map(poi => poi.id).sort(),
+)
+const CITY_REGIONAL_POI_SURFACE_COUNTS = Object.freeze(Object.fromEntries(
+  CITY_REGIONAL_POI_IDS.map(poiId => [
+    poiId,
+    SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.filter(surface => (
+      surface.poiId === poiId
+    )).length,
+  ]),
+))
+const CITY_REGIONAL_POI_SURFACE_COUNT = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.length
+const CITY_REGIONAL_POI_LOCATOR_COUNT = SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.length
+const CITY_REGIONAL_POI_FEATURE_COUNT = CITY_REGIONAL_POI_SURFACE_COUNT + CITY_REGIONAL_POI_LOCATOR_COUNT
+const CITY_REGIONAL_POI_LAYER_COUNT = 5
+function hasExactCityRegionalPoiIds(value) {
+  return JSON.stringify(value) === JSON.stringify(CITY_REGIONAL_POI_IDS)
+}
+
+function hasExactCityRegionalPoiVisualProof(value) {
+  if (!Array.isArray(value) || value.length !== CITY_REGIONAL_POI_IDS.length) {
+    return false
+  }
+  const proofByPoiId = new Map(value.map(proof => [proof?.poiId, proof]))
+  if (proofByPoiId.size !== CITY_REGIONAL_POI_IDS.length) return false
+  return CITY_REGIONAL_POI_IDS.every(poiId => {
+    const proof = proofByPoiId.get(poiId)
+    return proof?.boundsInsideAperture === true
+      && proof?.renderedIdentityAtAnchor === true
+      && proof?.labelRendered === true
+      && proof?.locatorInsideAperture === true
+      && proof?.locatorRenderedAtAnchor === true
+      && proof?.surfaceCount === CITY_REGIONAL_POI_SURFACE_COUNTS[poiId]
+      && Number.isFinite(proof?.anchor?.x)
+      && Number.isFinite(proof?.anchor?.y)
+      && Number.isFinite(proof?.locatorAnchor?.x)
+      && Number.isFinite(proof?.locatorAnchor?.y)
+  })
+}
+
+export function hasExactCityRegionalPoiEvidence(regionalPoi) {
+  return (
+    regionalPoi?.profileId === CITY_REGIONAL_POI_PROFILE_ID
+    && regionalPoi?.profileRevision === CITY_REGIONAL_POI_PROFILE_REVISION
+    && regionalPoi?.datasetProfileId === CITY_REGIONAL_POI_PROFILE_ID
+    && regionalPoi?.datasetProfileRevision
+      === CITY_REGIONAL_POI_PROFILE_REVISION
+    && regionalPoi?.profileFeatureCount === CITY_REGIONAL_POI_SURFACE_COUNT
+    && regionalPoi?.featureCount === CITY_REGIONAL_POI_FEATURE_COUNT
+    && regionalPoi?.datasetFeatureCount === CITY_REGIONAL_POI_FEATURE_COUNT
+    && regionalPoi?.layerCount === CITY_REGIONAL_POI_LAYER_COUNT
+    && regionalPoi?.locatorCount === CITY_REGIONAL_POI_LOCATOR_COUNT
+    && typeof regionalPoi?.regionalBoundsApertureCoverage === 'number'
+    && Number.isFinite(regionalPoi.regionalBoundsApertureCoverage)
+    && regionalPoi.regionalBoundsApertureCoverage >= 0.45
+    && regionalPoi.regionalBoundsApertureCoverage <= 1
+    && hasExactCityRegionalPoiIds(regionalPoi?.expectedPois)
+    && hasExactCityRegionalPoiIds(regionalPoi?.cityParcelIds)
+    && hasExactCityRegionalPoiIds(regionalPoi?.sourcePois)
+    && hasExactCityRegionalPoiIds(regionalPoi?.locatorPois)
+    && hasExactCityRegionalPoiIds(regionalPoi?.visiblePoiAnchors)
+    && regionalPoi?.exactFeatures === true
+    && regionalPoi?.exactPresentation === true
+    && regionalPoi?.exactCityPresentation === true
+    && regionalPoi?.cityPresentationStateCount
+      === CITY_REGIONAL_POI_SURFACE_COUNT
+    && hasExactCityRegionalPoiVisualProof(regionalPoi?.poiVisualProof)
+  )
+}
+
+export function hasExactCityRegionalPoiTeardownEvidence(regionalPoi) {
+  return regionalPoi?.expectedLayerCount === CITY_REGIONAL_POI_LAYER_COUNT
+    && regionalPoi?.sourcePresent === false
+    && Array.isArray(regionalPoi?.presentLayerIds)
+    && regionalPoi.presentLayerIds.length === 0
+    && Array.isArray(regionalPoi?.presentEvidenceKeys)
+    && regionalPoi.presentEvidenceKeys.length === 0
 }
 
 export function hasExactCityMapLibreSurfaceEvidence(city) {
@@ -66,26 +139,26 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && city?.geospatialEnabled === true
     && city?.geospatialPreferenceEnabled === true
     && city?.geoXrSurfaceActive === true
+    && (
+      hasExactGeoXrRendererLifecycleEvidence(city, 'retained-inactive')
+      || hasExactGeoXrRendererLifecycleEvidence(city, 'absent')
+    )
     && city?.geoXrLayerCount === 1
     && city?.activeMapPresent === true
     && city?.mapLibreCanvasCount === 1
     && city?.visibleMapLibreCanvasCount === 1
-    && city?.threeCanvasOwnerCount === 1
     && city?.canvasStable === true
-    && city?.rendererPointerTransparent === true
-    && city?.rendererSurfaceVisible === false
     && city?.flightR3fVisualCount === 0
     && city?.hudVisible === false
     && city?.flightHudCount === 0
-    && city?.flightSourceFeatures >= 7
-    && city?.flightSourcePresent === true
-    && city?.flightLayersReady === true
-    && city?.aircraftLayerType === 'symbol'
-    && city?.aircraftGeometryType === 'Polygon'
+    && city?.flightSourceFeatures === 0
+    && city?.flightSourcePresent === false
+    && city?.flightLayersReady === false
+    && city?.aircraftLayerType === ''
+    && city?.aircraftGeometryType === ''
     && city?.overlayPhase === 'stopped'
-    && city?.overlayRoutePointCount >= 2
-    && JSON.stringify(city?.sourceKinds)
-      === JSON.stringify(['aircraft', 'route', 'route-point'])
+    && city?.overlayRoutePointCount === 0
+    && JSON.stringify(city?.sourceKinds) === '[]'
     && city?.environmentId === ''
     && city?.environmentSourceFeatures === 0
     && city?.environmentLayerCount === 0
@@ -93,21 +166,24 @@ export function hasExactCityMapLibreSurfaceEvidence(city) {
     && JSON.stringify(city?.renderedEnvironmentPoiIds) === '[]'
     && city?.environmentSourceExactlyMatchesOverlay === true
     && city?.environmentSourcePresent === false
-    && city?.citySourcePresent === true
     && Number.isSafeInteger(city?.cityExpectedParcelCount)
     && city?.cityExpectedParcelCount > 0
-    && city?.citySourceFeatures === city?.cityExpectedParcelCount
-    && city?.cityLayersReady === true
-    && city?.cityParcelsUseAuthoredMeters === true
-    && city?.cityGeoXrLayerOrderExact === true
-    && city?.renderedFeatureCount >= 4
+    && city?.cityPresentationStateCount > 0
+    && city?.cityPresentationExact === true
+    && city?.cityOwnedSourceCount === 0
+    && city?.cityOwnedLayerCount === 0
+    && city?.renderedFeatureCount === 0
     && city?.renderedEnvironmentFeatureCount === 0
   )
 }
 
-function hasExactCityHandoffEvidence(handoff) {
+export function hasExactCityHandoffEvidence(handoff) {
   const before = handoff?.before
   const city = handoff?.city
+  const regionalPoi = handoff?.regionalPoi
+  const regionalPoiAfterCityExit = handoff?.regionalPoiAfterCityExit
+  const regionalPoiAfterFlightReopen =
+    handoff?.regionalPoiAfterFlightReopen
   const retention = handoff?.mapRetention
   const restored = handoff?.restored
   const reopened = handoff?.reopened
@@ -117,7 +193,14 @@ function hasExactCityHandoffEvidence(handoff) {
     && before?.geospatialEnabled === true
     && before?.geospatialPreferenceEnabled === true
     && before?.activeMapPresent === true
+    && hasExactGeoXrRendererLifecycleEvidence(before, 'active')
     && hasExactCityMapLibreSurfaceEvidence(city)
+    && hasExactGeoXrRendererLifecycleEvidence(city, 'retained-inactive')
+    && hasExactCityRegionalPoiEvidence(regionalPoi)
+    && hasExactCityRegionalPoiTeardownEvidence(regionalPoiAfterCityExit)
+    && hasExactCityRegionalPoiTeardownEvidence(
+      regionalPoiAfterFlightReopen,
+    )
     && hasExactCityMapRetentionEvidence(retention)
     && restored?.flightActive === false
     && restored?.cityActive === false
@@ -125,6 +208,11 @@ function hasExactCityHandoffEvidence(handoff) {
     && restored?.citySemanticSurfaceActive === false
     && restored?.cityMapLibreCanvasAriaLabelledBy === ''
     && restored?.cityMapLibreCanvasAccessibleName === 'Map'
+    && restored?.cityMapLibreCanvasAriaHidden === false
+    && restored?.cityMapLibreCanvasSelectableMarker === ''
+    && restored?.cityMapLibreCanvasSelectableOwnerIsCanvas === false
+    && restored?.cityMapLibreCanvasSelectableOwnerNodeName === ''
+    && restored?.cityMapLibreOwnerCount === 0
     && restored?.floatingPanelOpen === true
     && restored?.floatingPanelView === 'flightSim'
     && restored?.renderMode === '3d'
@@ -136,11 +224,13 @@ function hasExactCityHandoffEvidence(handoff) {
     && restored?.activeMapPresent === true
     && restored?.mapLibreCanvasCount === 1
     && restored?.visibleMapLibreCanvasCount === 1
-    && restored?.threeCanvasOwnerCount === 1
+    && hasExactGeoXrRendererLifecycleEvidence(restored, 'active')
     && restored?.hudVisible === false
     && restored?.flightHudCount === 0
     && restored?.flightSourceFeatures === 0
     && restored?.environmentSourceFeatures === 0
+    && restored?.cityOwnedSourceCount === 0
+    && restored?.cityOwnedLayerCount === 0
     && restored?.renderedFeatureCount === 0
     && restored?.renderedEnvironmentFeatureCount === 0
     && reopened?.flightActive === true
@@ -148,12 +238,20 @@ function hasExactCityHandoffEvidence(handoff) {
     && reopened?.citySemanticSurfaceActive === false
     && reopened?.cityMapLibreCanvasAriaLabelledBy === ''
     && reopened?.cityMapLibreCanvasAccessibleName === 'Map'
+    && reopened?.cityMapLibreCanvasAriaHidden === false
+    && reopened?.cityMapLibreCanvasSelectableMarker === ''
+    && reopened?.cityMapLibreCanvasSelectableOwnerIsCanvas === false
+    && reopened?.cityMapLibreCanvasSelectableOwnerNodeName === ''
+    && reopened?.cityMapLibreOwnerCount === 0
+    && reopened?.cityOwnedSourceCount === 0
+    && reopened?.cityOwnedLayerCount === 0
     && reopened?.hudVisible === true
     && reopened?.activeMapPresent === true
     && reopened?.mapLibreCanvasCount === 1
     && reopened?.visibleMapLibreCanvasCount === 1
-    && reopened?.threeCanvasOwnerCount === 1
+    && hasExactGeoXrRendererLifecycleEvidence(reopened, 'active')
     && reopened?.flightSourceFeatures >= 7
+    && reopened?.aircraftGeometryType === 'Point'
     && reopened?.environmentSourceFeatures >= 10
     && reopened?.renderedFeatureCount >= 4
     && reopened?.renderedEnvironmentFeatureCount >= 3
@@ -180,8 +278,6 @@ function hasExactInitialReadyFrameEvidence(initialReadyFrame) {
     && /^\d+$/.test(String(presentation?.attempts || ''))
   )
 }
-
-
 export async function readValidatedFlightSimBrowserRunEvidence({
   candidateBranch,
   candidateHead,
@@ -302,7 +398,8 @@ export async function readValidatedFlightSimBrowserRunEvidence({
     && geoXrViews.every((view, index) => {
       const expected = expectedGeoXrViews[index]
       return (
-        view?.viewMode === expected.viewMode
+        hasExactGeoXrRendererLifecycleEvidence(view, 'active')
+        && view?.viewMode === expected.viewMode
         && view?.projection === expected.projection
         && view?.styleUrl === expected.styleUrl
         && view?.hostActive === true
@@ -312,20 +409,15 @@ export async function readValidatedFlightSimBrowserRunEvidence({
         && view?.rendererCanvasCount === 1
         && view?.rendererAlpha === true
         && view?.nativeVisualCount === 0
-        && view?.flightR3fVisualCount === 4
-        && JSON.stringify(view?.flightR3fVisualNames) === JSON.stringify([
-          'kg_flight_sim_aircraft',
-          'kg_flight_sim_aircraft_model_orientation',
-          'kg_flight_sim_geospatial_actor_lighting',
-          'kg_flight_sim_mission',
-        ])
-        && view?.visualProjection === 'r3f'
+        && view?.flightR3fVisualCount === 0
+        && JSON.stringify(view?.flightR3fVisualNames) === '[]'
+        && view?.visualProjection === ''
         && view?.rendererPointerTransparent === true
         && view?.exclusivePlainGeoOverlayCount === 0
         && view?.flightLayersReady === true
         && view?.flightLayersTopmost === true
         && view?.aircraftLayerType === 'symbol'
-        && view?.aircraftGeometryType === 'Polygon'
+        && view?.aircraftGeometryType === 'Point'
         && view?.aircraftImagesReady === true
         && Number(view?.aircraftImagePixelWidth || 0) >= 40
         && view?.environmentId === 'singapore'
@@ -342,28 +434,23 @@ export async function readValidatedFlightSimBrowserRunEvidence({
           viewportBounded: true,
         })
         && hasMeterSurface(view, {
-          id: 'marina-bay-sands:tower-center',
+          id: 'marina-bay-sands:tower-2',
           baseHeightMeters: 0,
-          heightMeters: 3.6,
-          widthMeters: 1.42,
-          depthMeters: 1.38,
+          heightMeters: 193,
+          widthMeters: 71.82,
+          depthMeters: 76.45,
         })
         && JSON.stringify(view?.environmentPoiIds)
-          === JSON.stringify([
-            'gardens-by-the-bay',
-            'marina-bay-sands',
-            'singapore-flyer',
-          ])
-        && JSON.stringify(view?.renderedEnvironmentPoiIds)
-          === JSON.stringify([
-            'gardens-by-the-bay',
-            'marina-bay-sands',
-            'singapore-flyer',
-          ])
+          === JSON.stringify(CITY_REGIONAL_POI_IDS)
+        && hasViewportScopedRegionalPoiRendering(view)
         && view?.selectedEnvironmentSubjectsExact === true
         && view?.environmentSourceExactlyMatchesOverlay === true
-        && ['poi', 'stage-footprint', 'subject'].every(kind =>
+        && ['stage-footprint', 'subject'].every(kind =>
           view?.renderedEnvironmentKinds?.includes(kind),
+        )
+        && (
+          view?.renderedEnvironmentPoiIds?.length === 0
+          || view?.renderedEnvironmentKinds?.includes('poi')
         )
         && view?.renderedEnvironmentSubjectIds?.some(subjectId =>
           String(subjectId).includes('vehicle-'),
@@ -400,6 +487,10 @@ export async function readValidatedFlightSimBrowserRunEvidence({
       === evidence?.geoXrPresentation?.restoredView?.viewMode
     && evidence?.geoXrPresentation?.sourceStyleUrl
       === evidence?.geoXrPresentation?.restoredView?.styleUrl
+    && hasExactGeoXrRendererLifecycleEvidence(
+      evidence?.geoXrPresentation?.restoredView,
+      'active',
+    )
     && hasExactCityHandoffEvidence(
       evidence?.geoXrPresentation?.cityHandoff,
     )
@@ -415,15 +506,6 @@ export async function readValidatedFlightSimBrowserRunEvidence({
   )
   await assertExactFlightSimBrowserVerificationLedger(
     evidence?.verificationLedger,
-  )
-  assertExactFlightSimOptionalBeaconAdmission(
-    evidence?.renderer?.optionalBeacon,
-    {
-      expectedPath: FLIGHT_SIM_OPTIONAL_GLB_PATH,
-      expectedSha256: sha256(await readFile(
-        path.join(repoRoot, FLIGHT_SIM_OPTIONAL_GLB_PATH),
-      )),
-    },
   )
   if (
     evidence?.schema !== 'knowgrph-flight-sim-browser-run/v5'

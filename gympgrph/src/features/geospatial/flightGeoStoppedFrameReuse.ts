@@ -5,9 +5,9 @@ import {
   type FlightGeoEnvironmentFeatureCollection,
 } from '../../flightGeoEnvironmentMapLibre.js'
 import {
-  flightGeoOverlayMapLibreFeatureCollection,
+  flightGeoOverlayFeatureCollection,
   hasExactFlightGeoOverlayFeatureCollection,
-} from '../../flightGeoOverlayMapLibrePayload.js'
+} from '../../flightGeoOverlay.js'
 
 /**
  * A stopped Flight frame is eligible to satisfy the first Ready request only
@@ -25,7 +25,7 @@ export type FlightGeoStoppedFrameProof = Readonly<{
   cameraSignature: string | null
   environmentPayload: FlightGeoEnvironmentFeatureCollection
   map: any
-  overlayPayload: ReturnType<typeof flightGeoOverlayMapLibreFeatureCollection>
+  overlayPayload: ReturnType<typeof flightGeoOverlayFeatureCollection>
   profileId: string
   styleSignature: string
   viewMode: string
@@ -78,7 +78,7 @@ export function createFlightGeoStoppedFrameProof(
     cameraSignature,
     environmentPayload: flightGeoEnvironmentMapLibreFeatureCollection(overlay),
     map,
-    overlayPayload: flightGeoOverlayMapLibreFeatureCollection(overlay),
+    overlayPayload: flightGeoOverlayFeatureCollection(overlay),
     profileId: overlay.profileId,
     styleSignature,
     viewMode,
@@ -112,7 +112,7 @@ export function hasEquivalentStoppedFrameVisuals(
   ) return false
   return hasExactFlightGeoOverlayFeatureCollection(
     proof.overlayPayload,
-    flightGeoOverlayMapLibreFeatureCollection(overlay),
+    flightGeoOverlayFeatureCollection(overlay),
   ) && hasExactFlightGeoEnvironmentFeatureCollection(
     proof.environmentPayload,
     flightGeoEnvironmentMapLibreFeatureCollection(overlay),

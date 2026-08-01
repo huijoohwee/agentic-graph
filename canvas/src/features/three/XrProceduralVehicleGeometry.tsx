@@ -74,65 +74,6 @@ function CarGeometry({ color, size }: { color: string; size: VehicleSize }) {
   )
 }
 
-function AirplaneGeometry({ color, size }: { color: string; size: VehicleSize }) {
-  const [width, height, depth] = size
-  const fuselageRadius = height * 0.14
-  return (
-    <group name="kg_xr_procedural_airplane" userData={{ vehicleKind: 'airplane' }}>
-      <mesh name="kg_xr_airplane_fuselage" position={[0, 0, height * 0.48]} castShadow>
-        <cylinderGeometry args={[fuselageRadius * 0.82, fuselageRadius, depth * 0.82, 20]} />
-        <Paint color={color} metalness={0.18} roughness={0.38} />
-      </mesh>
-      <mesh position={[0, -depth * 0.48, height * 0.48]} rotation={[0, 0, Math.PI]} castShadow>
-        <coneGeometry args={[fuselageRadius * 0.84, depth * 0.18, 20]} />
-        <Paint color={color} metalness={0.18} roughness={0.34} />
-      </mesh>
-      <mesh name="kg_xr_airplane_cockpit" position={[0, -depth * 0.36, height * 0.6]} scale={[fuselageRadius * 0.75, depth * 0.055, height * 0.12]}>
-        <sphereGeometry args={[1, 16, 10]} />
-        <meshStandardMaterial color="#173b57" roughness={0.18} metalness={0.22} />
-      </mesh>
-      {[-1, 1].map(side => (
-        <mesh
-          key={side}
-          name="kg_xr_airplane_wing"
-          position={[side * width * 0.22, depth * 0.015, height * 0.44]}
-          rotation={[0, 0, side * 0.12]}
-          castShadow
-        >
-          <boxGeometry args={[width * 0.48, depth * 0.24, height * 0.055]} />
-          <Paint color={color} metalness={0.14} roughness={0.42} />
-        </mesh>
-      ))}
-      {[-1, 1].map(side => (
-        <group key={side} position={[side * width * 0.22, -depth * 0.08, height * 0.29]}>
-          <mesh name="kg_xr_airplane_engine" castShadow>
-            <cylinderGeometry args={[height * 0.11, height * 0.13, depth * 0.25, 18]} />
-            <Paint color="#64748b" metalness={0.42} roughness={0.34} />
-          </mesh>
-          <mesh position={[0, -depth * 0.128, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[height * 0.055, height * 0.105, 18]} />
-            <meshStandardMaterial color="#111827" roughness={0.4} side={2} />
-          </mesh>
-        </group>
-      ))}
-      <mesh name="kg_xr_airplane_tailplane" position={[0, depth * 0.37, height * 0.55]} castShadow>
-        <boxGeometry args={[width * 0.34, depth * 0.16, height * 0.05]} />
-        <Paint color={color} metalness={0.14} roughness={0.42} />
-      </mesh>
-      <mesh name="kg_xr_airplane_tail_fin" position={[0, depth * 0.38, height * 0.76]} rotation={[-0.12, 0, 0]} castShadow>
-        <boxGeometry args={[width * 0.035, depth * 0.14, height * 0.47]} />
-        <Paint color="#0ea5e9" metalness={0.12} roughness={0.44} />
-      </mesh>
-      {[-1, 1].map(side => (
-        <mesh key={side} position={[side * width * 0.46, depth * 0.03, height * 0.48]}>
-          <sphereGeometry args={[height * 0.045, 10, 7]} />
-          <meshStandardMaterial color={side < 0 ? '#fb7185' : '#4ade80'} emissive={side < 0 ? '#be123c' : '#15803d'} emissiveIntensity={0.45} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
 function HelicopterGeometry({ color, size }: { color: string; size: VehicleSize }) {
   const [width, height, depth] = size
   const cabinWidth = Math.min(width * 0.4, depth * 0.34)
@@ -203,10 +144,9 @@ export function XrProceduralVehicleGeometry({
   size,
 }: {
   color: string
-  kind: 'airplane' | 'car' | 'helicopter'
+  kind: 'car' | 'helicopter'
   size: VehicleSize
 }) {
   if (kind === 'car') return <CarGeometry color={color} size={size} />
-  if (kind === 'airplane') return <AirplaneGeometry color={color} size={size} />
   return <HelicopterGeometry color={color} size={size} />
 }

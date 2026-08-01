@@ -9,12 +9,6 @@ import {
 import { snapshotWorld } from '../../../ecs/world.js'
 import { flightSimPropertyParameters } from './helpers/flightSimPropertyHarness'
 import {
-  FLIGHT_SIM_DEFAULT_ASSET_CANDIDATES,
-  FLIGHT_SIM_REQUIRED_AIRCRAFT_SUBJECT_ID,
-  loadFlightSimAssets,
-  readBundledFlightSimCommittedLocalAsset,
-} from '@/features/game-flight-sim/assetSpec/flightSimAssetLoader'
-import {
   FLIGHT_SIM_SAVE_PATH,
   loadFlightSimSavedDecisions,
   persistPendingFlightSimDecisions,
@@ -66,7 +60,6 @@ const activeInputArbitrary = fc.record({
 type CoreAction =
   | Readonly<{ kind: 'input'; input: FlightSimTickInput }>
   | Readonly<{ kind: 'advance'; steps: number }>
-  | Readonly<{ kind: 'asset' }>
   | Readonly<{ kind: 'open' }>
   | Readonly<{ kind: 'start' }>
   | Readonly<{ kind: 'stop' }>
@@ -76,7 +69,6 @@ type CoreAction =
 const coreActionArbitrary: fc.Arbitrary<CoreAction> = fc.oneof(
   normalizedInputArbitrary.map(input => Object.freeze({ kind: 'input', input })),
   fc.integer({ min: 1, max: 5 }).map(steps => Object.freeze({ kind: 'advance', steps })),
-  fc.constant(Object.freeze({ kind: 'asset' })),
   fc.constant(Object.freeze({ kind: 'open' })),
   fc.constant(Object.freeze({ kind: 'start' })),
   fc.constant(Object.freeze({ kind: 'stop' })),
@@ -205,27 +197,6 @@ test('Feature: knowgrph-game-flight-sim, Property 1 - Zero external calls during
           inferenceExecutor: probe.executor('inference'),
         })
         const runtime = createFlightSimRuntime({ profile })
-        let localAssetReadCount = 0
-        let assetLoadCount = 0
-        const loadCommittedAssets = () => {
-          assetLoadCount += 1
-          const report = loadFlightSimAssets(FLIGHT_SIM_DEFAULT_ASSET_CANDIDATES, {
-            readCommittedLocalAsset: path => {
-              localAssetReadCount += 1
-              return readBundledFlightSimCommittedLocalAsset(path)
-            },
-          })
-          assert.deepEqual(report.errors, [])
-          assert.equal(report.loaded.length, FLIGHT_SIM_DEFAULT_ASSET_CANDIDATES.length)
-          const aircraft = report.loaded.find(
-            asset => asset.subjectId === FLIGHT_SIM_REQUIRED_AIRCRAFT_SUBJECT_ID,
-          )
-          assert.equal(aircraft?.kind, 'asset-spec')
-          if (aircraft?.kind === 'asset-spec') {
-            assert.equal(aircraft.assetSpec.runtimeModelCalls, 0)
-            assert.equal(aircraft.assetSpec.runtimeNetworkCalls, 0)
-          }
-        }
         try {
           runtime.start()
           const missionInputs: FlightSimTickInput[] = []
@@ -235,8 +206,6 @@ test('Feature: knowgrph-game-flight-sim, Property 1 - Zero external calls during
               missionInputs.push(action.input)
             } else if (action.kind === 'advance') {
               await runtime.advanceBy(FLIGHT_SIM_FIXED_STEP_SECONDS * action.steps)
-            } else if (action.kind === 'asset') {
-              loadCommittedAssets()
             } else if (action.kind === 'open') {
               runtime.open(true)
             } else if (action.kind === 'start') {
@@ -249,7 +218,6 @@ test('Feature: knowgrph-game-flight-sim, Property 1 - Zero external calls during
               runtime.exit()
             }
           }
-          loadCommittedAssets()
           for (const input of missionInputs.length > 0
             ? missionInputs
             : [FLIGHT_SIM_NEUTRAL_INPUT]) {
@@ -270,7 +238,6 @@ test('Feature: knowgrph-game-flight-sim, Property 1 - Zero external calls during
               ),
             )
           }
-          assert.equal(localAssetReadCount, assetLoadCount)
           assert.deepEqual(probe.counts, {
             network: 0,
             inference: 0,

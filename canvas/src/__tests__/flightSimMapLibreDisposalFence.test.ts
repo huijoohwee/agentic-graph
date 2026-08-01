@@ -81,6 +81,67 @@ test('MapLibre disposal release resumes a fenced presentation subscriber', conte
   )
 })
 
+test('exclusive Canvas handoff directly disposes the canonical MapLibre lease', async context => {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const documentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  const ownedCanvas = { isConnected: true } as HTMLCanvasElement
+  let frameSequence = 0
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      cancelAnimationFrame: () => void 0,
+      clearTimeout,
+      dispatchEvent: () => true,
+      requestAnimationFrame: (callback: FrameRequestCallback) => {
+        const frameId = ++frameSequence
+        setImmediate(() => callback(Date.now()))
+        return frameId
+      },
+      setTimeout,
+    },
+  })
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: {
+      querySelector: () => ownedCanvas.isConnected ? ownedCanvas : null,
+    },
+  })
+  let disposalCount = 0
+  let releaseLease = () => void 0
+  releaseLease = claimMapLibreMapLease({
+    dispose: () => {
+      disposalCount += 1
+      Object.assign(ownedCanvas, { isConnected: false })
+      releaseLease()
+    },
+    isPreparedForDisposal: () => true,
+    map: { getCanvas: () => ownedCanvas },
+    ownerScope: NATIVE_GEOSPATIAL_MAPLIBRE_OWNER,
+    prepareForDisposal: () => true,
+    root: null,
+  })
+  context.after(() => {
+    releaseLease()
+    setGeospatialModeEnabled(false)
+    if (windowDescriptor) {
+      Object.defineProperty(globalThis, 'window', windowDescriptor)
+    } else {
+      delete (globalThis as { window?: unknown }).window
+    }
+    if (documentDescriptor) {
+      Object.defineProperty(globalThis, 'document', documentDescriptor)
+    } else {
+      delete (globalThis as { document?: unknown }).document
+    }
+  })
+  setGeospatialModeEnabled(true)
+
+  await commitCanvasGeospatialSurfaceOwnership(false)
+
+  assert.equal(disposalCount, 1)
+  assert.equal(isGeospatialModeEnabled(), false)
+})
+
 test('failed exclusive preparation cancels the claimed MapLibre fence', async context => {
   const map = {}
   let cancellationCount = 0

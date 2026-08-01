@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -84,101 +84,10 @@ note_kind: "projection-contract"
 run_ready_demo_id: "flight-sim"
 ---
 `
-const cityRuntimeSeed = `---
-status: "proof-pending"
-runtime_status: "proof-pending"
-publish_scope: "local-only"
-kgCanvasSurfaceMode: "geo-xr"
-kgCanvasRenderMode: "3d"
-kgCanvas3dMode: "xr"
-kgFloatingPanelOpen: true
-kgFloatingPanelView: "cityBuilder"
-run_ready_demo:
-  id: "city-sim"
-  activation: "applied-source-document"
-  identity_authority: "source-authored run_ready_demo.id"
-  identity_conflict: "fail closed when a known path and source identity disagree"
-  canonical_source_file: "/docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md"
-  source_root: "knowgrph/docs"
-  source_backed: true
-  native_runtime: true
-  presentation: "native-maplibre-geo-xr-city-surface"
-  auto_start: false
-  external_dependencies: []
-  forbid_external_copy_or_dependency: true
-  canonical_consumers: ["workspace", "geo-xr-mode", "city-builder", "city-maplibre-overlay", "flight-aerial-overlay"]
-city_runtime:
-  schema_id: "knowgrph-city-grid/v1"
-  world_ownership: "overlay-only"
-  surface_owner: "native MapLibre Geo+XR surface wrapped by SemanticMediaFigure"
-  renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"
-  runtime_dependencies_added: 0
-city_geo_xr:
-  profile_id: "city-sim:civic-seed:geo/v1"
-  regional_poi_profile_id: "adm0:SGP:major-pois/v1"
-  parcel_gap_meters: 6
-  parcel_bearing_degrees: 18
-  surface_owner: "Geo+XR Mode"
-  geo_host_owner: "native MapLibre Geo host"
-  geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  city_surface_owner: "native MapLibre Geo+XR host wrapped by the City semantic media figure"
-  basemap_owner: "one real native MapLibre basemap"
-  parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
-  parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"
-  composition: "one real native MapLibre basemap with companion-owned regional geographic POI layers, source-authored meter-scaled City parcel layers, and independent Flight aircraft/route layers; zero Flight-local XR environment sources or features; zero City Three Canvas or HTML POI markers"
-  layer_order: ["regional-context", "city", "flight"]
-  duplicate_map_or_canvas_forbidden: true
-city_parcel_projection:
-  source_owner: "gympgrph/src/cityGeoOverlay.ts"
-  source_id: "kg-city-sim:geo-overlay"
-  layer_owner: "gympgrph/src/cityGeoOverlayMapLibre.ts"
-  framing_owner: "gympgrph/src/cityGeoOverlayMapLibreController.ts"
-  camera_policy: "fit the union of admitted regional geographic POI bounds and source-authored parcel bounds into the visible panel-adjusted aperture and restore prior padding"
-  duplicate_source_or_layer_ids_forbidden: true
-regional_geographic_poi_projection:
-  profile_identity_source: "city_geo_xr.regional_poi_profile_id"
-  profile_fact_authority: "/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md"
-  source_id: "kg-geo-xr:regional-poi"
-  layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:label"]
-  feature_contract: "companion-authored exact geographic Polygon rings, real-metre base/height, accuracy, and provenance"
-  presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft"
-  storage_policy: "checked-in"
-  runtime_network_required: false
-  city_fact_ownership: false
-  local_xr_environment_identity: false
-  three_r3f_or_html_marker_forbidden: true
-city_semantic_media:
-  owner: "canvas/src/lib/cards/SemanticMediaFigure.tsx"
-  child_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  native_canvas_semantic_owner: "gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts"
-  element: "figure"
-  accessible_name: "Interactive City simulation media stage"
-  selection_marker_owner: "canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts"
-  selection_target: "live MapLibre canvas while City runtime active"
-  direct_canvas_accessible_name_required: true
-  figure_selection_marker_forbidden: true
-  pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder coordinate controls own parcel selection"
-  wrapper_added_generic_div_or_aria_hidden_forbidden: true
-city_aerial_projection:
-  behavior: "deterministic read-only stopped aircraft and route"
-  phase: "stopped"
-  spatial_source: "this source document's typed city_geo_xr geographic profile"
-  adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
-  adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
-  presentation_owner: "city"
-  overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"
-  maplibre_projection_owner: "gympgrph/src/flightGeoOverlayMapLibre.ts"
-  shared_publisher_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  flight_gameplay_active: false
-  flight_readiness_claimed: false
-  duplicate_source_or_layers_forbidden: true
-city_camera:
-  framing: "union of admitted regional geographic POI bounds and source-authored City parcel bounds in the visible MapLibre aperture"
-  projection: "MapLibre"
-  canvas_mode: "geo-xr"
-  owner: "native MapLibre Geo host"
----
-`
+const cityRuntimeSeed = await readFile(
+  new URL('../../docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md', import.meta.url),
+  'utf8',
+)
 const safeDraftPresentation = [
   'runtime_claim: "planned-contract-only"',
   'kgCanvasSurfaceMode: "2d"',
@@ -235,7 +144,7 @@ test('accepts the exact authored and projection inventories', async t => {
   await assert.doesNotReject(() => verifyWorkspaceSeedAuthority(roots))
 })
 
-test('rejects City drift from the Geo+XR and stopped aerial ownership contract', async t => {
+test('rejects City drift from the canonical regional POI zoning contract', async t => {
   const mutations = [
     ['wrong surface', 'kgCanvasSurfaceMode: "geo-xr"', 'kgCanvasSurfaceMode: "invalid"'],
     [
@@ -250,7 +159,7 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
     ],
     [
       'wrong renderer',
-      'renderer_rule: "reuse one native MapLibre map; mount zero City Three Canvas"',
+      'renderer_rule: "reuse one native MapLibre map; create or activate zero City Three presentation; any retained shared Canvas remains inactive, invisible, and pointer-transparent"',
       'renderer_rule: "invalid"',
     ],
     [
@@ -274,19 +183,19 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
       'selection_target: "invalid"',
     ],
     [
-      'private overlay store',
-      'overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"',
-      'overlay_store_owner: "invalid"',
-    ],
-    [
       'wrong basemap owner',
       'basemap_owner: "one real native MapLibre basemap"',
       'basemap_owner: "invalid"',
     ],
     [
-      'wrong parcel scale policy',
-      'parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"',
-      'parcel_scale_policy: "invalid"',
+      'wrong parcel identity policy',
+      'parcel_identity_policy: "each parcel_id exactly equals one RegionalPoiIdentity.id from the selected profile; one-to-one coverage; no alias or remap"',
+      'parcel_identity_policy: "invalid"',
+    ],
+    [
+      'geometry-bearing ordering policy',
+      'ordering_policy: "row and column are deterministic UI ordering only and never geometry"',
+      'ordering_policy: "row and column generate geometry"',
     ],
     [
       'wrong regional profile identity',
@@ -299,13 +208,13 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
       'layer_order: ["city", "regional-context", "flight"]',
     ],
     [
-      'parcel-only framing policy',
-      'camera_policy: "fit the union of admitted regional geographic POI bounds and source-authored parcel bounds into the visible panel-adjusted aperture and restore prior padding"',
-      'camera_policy: "fit source-authored parcel bounds only"',
+      'wrong profile framing policy',
+      'camera_policy: "fit the selected regional POI profile bounds into the visible panel-adjusted aperture and restore prior padding"',
+      'camera_policy: "fit source-authored parcel bounds"',
     ],
     [
-      'parcel-only camera framing',
-      'framing: "union of admitted regional geographic POI bounds and source-authored City parcel bounds in the visible MapLibre aperture"',
+      'wrong camera framing',
+      'framing: "selected regional geographic POI bounds in the visible MapLibre aperture"',
       'framing: "source-authored City bounds in the visible MapLibre aperture"',
     ],
     [
@@ -320,7 +229,7 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
     ],
     [
       'legacy regional layer ids',
-      'layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:label"]',
+      'layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:locator", "kg-geo-xr:regional-poi:label"]',
       'layers: ["fill", "extrusion", "outline", "label"]',
     ],
     [
@@ -345,8 +254,11 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
     ],
     ['missing direct canvas name', 'direct_canvas_accessible_name_required: true', 'direct_canvas_accessible_name_required: false'],
     ['figure owns competing selection marker', 'figure_selection_marker_forbidden: true', 'figure_selection_marker_forbidden: false'],
-    ['active Flight gameplay', 'flight_gameplay_active: false', 'flight_gameplay_active: true'],
-    ['claimed Flight readiness', 'flight_readiness_claimed: false', 'flight_readiness_claimed: true'],
+    [
+      'legacy row-column parcel identity',
+      'marina-bay-sands,0,0,residential,10000,10,0',
+      'r00c00,0,0,residential,10000,10,0',
+    ],
   ]
   for (const [label, from, to] of mutations) {
     await t.test(label, async t => {
@@ -364,7 +276,7 @@ test('rejects City drift from the Geo+XR and stopped aerial ownership contract',
   }
 })
 
-test('rejects removed City environment, Three stage, and captured-camera authority fields', async t => {
+test('rejects removed City geometry, aerial, stage, and camera authority fields', async t => {
   const legacyFields = [
     [
       'runtime stage owner',
@@ -373,22 +285,22 @@ test('rejects removed City environment, Three stage, and captured-camera authori
       'city_runtime.stage_owner',
     ],
     [
-      'Geo+XR City stage owner',
-      '  duplicate_map_or_canvas_forbidden: true',
-      '  duplicate_map_or_canvas_forbidden: true\n  city_stage_owner: "legacy"',
-      'city_geo_xr.city_stage_owner',
+      'legacy City Geo+XR section',
+      'city_regional_poi_zoning:',
+      'city_geo_xr:\n  anchor: [103.8,1.2]\ncity_regional_poi_zoning:',
+      'city_geo_xr',
     ],
     [
-      'Geo+XR local environment',
-      '  layer_order: ["regional-context", "city", "flight"]',
-      '  environment:\n    stage_id: "local-xr-stage"\n  layer_order: ["regional-context", "city", "flight"]',
-      'city_geo_xr.environment',
+      'City-authored anchor',
+      '  profile_identity_source: "city_initial.regional_poi_profile_id"',
+      '  profile_identity_source: "city_initial.regional_poi_profile_id"\n  anchor: [103.8,1.2]',
+      'city_regional_poi_zoning.anchor',
     ],
     [
-      'regional inline profile alias',
-      '  regional_poi_profile_id: "adm0:SGP:major-pois/v1"',
-      '  regional_poi_profile_id: "adm0:SGP:major-pois/v1"\n  regional_poi_profile:\n    id: "legacy-inline"',
-      'city_geo_xr.regional_poi_profile',
+      'City-authored parcel dimensions',
+      '  ordering_policy: "row and column are deterministic UI ordering only and never geometry"',
+      '  ordering_policy: "row and column are deterministic UI ordering only and never geometry"\n  parcel_dimensions_meters: [48,48]',
+      'city_regional_poi_zoning.parcel_dimensions_meters',
     ],
     [
       'regional HTML marker owner',
@@ -403,10 +315,10 @@ test('rejects removed City environment, Three stage, and captured-camera authori
       'regional_geographic_poi_projection.three_stage_owner',
     ],
     [
-      'aerial environment owner',
-      `  spatial_source: "this source document's typed city_geo_xr geographic profile"`,
-      `  spatial_source: "this source document's typed city_geo_xr geographic profile"\n  environment_owner: "city_geo_xr.environment"`,
-      'city_aerial_projection.environment_owner',
+      'City-authored aerial field',
+      '  ordering_policy: "row and column are deterministic UI ordering only and never geometry"',
+      '  ordering_policy: "row and column are deterministic UI ordering only and never geometry"\n  aerial_aircraft_altitude_meters: 140',
+      'city_regional_poi_zoning.aerial_aircraft_altitude_meters',
     ],
     [
       'removed camera exit rule',

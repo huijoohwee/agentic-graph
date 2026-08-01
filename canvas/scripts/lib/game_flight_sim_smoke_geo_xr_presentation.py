@@ -191,26 +191,28 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("geospatialEnabled") is True
             and value.get("geospatialPreferenceEnabled") is True
             and value.get("geoXrSurfaceActive") is True
+            and value.get("geoXrSurfaceCount") == 1
             and value.get("geoXrLayerCount") == 1
             and value.get("activeMapPresent") is True
             and value.get("mapLibreCanvasCount") == 1
             and value.get("visibleMapLibreCanvasCount") == 1
             and value.get("threeCanvasOwnerCount") == 1
+            and value.get("threeCanvasActiveCount") == 0
+            and value.get("threeCanvasInactiveCount") == 1
             and value.get("canvasStable") is True
             and value.get("rendererPointerTransparent") is True
             and value.get("rendererSurfaceVisible") is False
             and value.get("flightR3fVisualCount") == 0
             and value.get("hudVisible") is False
             and value.get("flightHudCount") == 0
-            and value.get("flightSourceFeatures") >= 7
-            and value.get("flightSourcePresent") is True
-            and value.get("flightLayersReady") is True
-            and value.get("aircraftLayerType") == "symbol"
-            and value.get("aircraftGeometryType") == "Polygon"
+            and value.get("flightSourceFeatures") == 0
+            and value.get("flightSourcePresent") is False
+            and value.get("flightLayersReady") is False
+            and value.get("aircraftLayerType") == ""
+            and value.get("aircraftGeometryType") == ""
             and value.get("overlayPhase") == "stopped"
-            and value.get("overlayRoutePointCount") >= 2
-            and set(value.get("sourceKinds") or [])
-            == {"aircraft", "route", "route-point"}
+            and value.get("overlayRoutePointCount") == 0
+            and value.get("sourceKinds") == []
             and value.get("environmentId") == ""
             and value.get("environmentSourceFeatures") == 0
             and value.get("environmentLayerCount") == 0
@@ -218,15 +220,13 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("renderedEnvironmentPoiIds") == []
             and value.get("environmentSourceExactlyMatchesOverlay") is True
             and value.get("environmentSourcePresent") is False
-            and value.get("citySourcePresent") is True
             and isinstance(value.get("cityExpectedParcelCount"), int)
             and value.get("cityExpectedParcelCount") > 0
-            and value.get("citySourceFeatures")
-            == value.get("cityExpectedParcelCount")
-            and value.get("cityLayersReady") is True
-            and value.get("cityParcelsUseAuthoredMeters") is True
-            and value.get("cityGeoXrLayerOrderExact") is True
-            and value.get("renderedFeatureCount") >= 4
+            and value.get("cityPresentationStateCount") > 0
+            and value.get("cityPresentationExact") is True
+            and value.get("cityOwnedSourceCount") == 0
+            and value.get("cityOwnedLayerCount") == 0
+            and value.get("renderedFeatureCount") == 0
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
     )
@@ -271,6 +271,13 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("citySemanticSurfaceActive") is False
             and value.get("cityMapLibreCanvasAriaLabelledBy") == ""
             and value.get("cityMapLibreCanvasAccessibleName") == "Map"
+            and value.get("cityMapLibreCanvasAriaHidden") is False
+            and value.get("cityMapLibreCanvasSelectableMarker") == ""
+            and value.get(
+                "cityMapLibreCanvasSelectableOwnerIsCanvas"
+            ) is False
+            and value.get("cityMapLibreCanvasSelectableOwnerNodeName") == ""
+            and value.get("cityMapLibreOwnerCount") == 0
             and value.get("floatingPanelOpen") is True
             and value.get("floatingPanelView") == "flightSim"
             and value.get("renderMode") == "3d"
@@ -278,15 +285,22 @@ def verify_flight_geo_xr_city_handoff(
             and value.get("geospatialEnabled") is True
             and value.get("geospatialPreferenceEnabled") is True
             and value.get("geoXrSurfaceActive") is True
+            and value.get("geoXrSurfaceCount") == 1
             and value.get("geoXrLayerCount") == 1
             and value.get("activeMapPresent") is True
             and value.get("mapLibreCanvasCount") == 1
             and value.get("visibleMapLibreCanvasCount") == 1
             and value.get("threeCanvasOwnerCount") == 1
+            and value.get("threeCanvasActiveCount") == 1
+            and value.get("threeCanvasInactiveCount") == 0
+            and value.get("rendererPointerTransparent") is True
+            and value.get("rendererSurfaceVisible") is True
             and value.get("hudVisible") is False
             and value.get("flightHudCount") == 0
             and value.get("flightSourceFeatures") == 0
             and value.get("environmentSourceFeatures") == 0
+            and value.get("cityOwnedSourceCount") == 0
+            and value.get("cityOwnedLayerCount") == 0
             and value.get("renderedFeatureCount") == 0
             and value.get("renderedEnvironmentFeatureCount") == 0
         ),
@@ -314,6 +328,15 @@ def verify_flight_geo_xr_city_handoff(
         or reopened.get("citySemanticSurfaceActive") is not False
         or reopened.get("cityMapLibreCanvasAriaLabelledBy") != ""
         or reopened.get("cityMapLibreCanvasAccessibleName") != "Map"
+        or reopened.get("cityMapLibreCanvasAriaHidden") is not False
+        or reopened.get("cityMapLibreCanvasSelectableMarker") != ""
+        or reopened.get(
+            "cityMapLibreCanvasSelectableOwnerIsCanvas"
+        ) is not False
+        or reopened.get("cityMapLibreCanvasSelectableOwnerNodeName") != ""
+        or reopened.get("cityMapLibreOwnerCount") != 0
+        or reopened.get("cityOwnedSourceCount") != 0
+        or reopened.get("cityOwnedLayerCount") != 0
         or reopened.get("hudVisible") is not True
     ):
         raise AssertionError(
@@ -453,14 +476,9 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
                 "rendererAlpha": True,
                 "terrainCount": 0,
                 "nativeVisualCount": 0,
-                "flightR3fVisualCount": 4,
-                "flightR3fVisualNames": [
-                    "kg_flight_sim_aircraft",
-                    "kg_flight_sim_aircraft_model_orientation",
-                    "kg_flight_sim_geospatial_actor_lighting",
-                    "kg_flight_sim_mission",
-                ],
-                "visualProjection": "r3f",
+                "flightR3fVisualCount": 0,
+                "flightR3fVisualNames": [],
+                "visualProjection": "",
                 "rendererPointerTransparent": True,
                 "exclusivePlainGeoOverlayCount": 0,
                 "cameraPreference": baseline_camera["cameraPreference"],

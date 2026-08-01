@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import type { FlightGeoOverlaySnapshot } from '../../../gympgrph/src/flightGeoOverlay'
+import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 import {
   applyFlightGeoEnvironmentToMap,
   clearFlightGeoEnvironmentFromMap,
@@ -10,6 +10,10 @@ import {
   mapHasExactFlightGeoEnvironment,
   removeFlightGeoEnvironmentFromMap,
 } from '../../../gympgrph/src/flightGeoEnvironmentMapLibre'
+import type {
+  FlightGeoOverlaySnapshot,
+} from '../../../gympgrph/src/flightGeoOverlay'
+import { environmentOverlay } from './helpers/flightSimMapLibreEnvironmentFixture'
 
 type EnvironmentSourceFeature = {
   geometry?: { coordinates?: number[][][] }
@@ -20,86 +24,6 @@ type EnvironmentSourceFeature = {
 type EnvironmentSourceData = {
   features?: EnvironmentSourceFeature[]
   type?: string
-}
-
-function environmentOverlay(): FlightGeoOverlaySnapshot {
-  return {
-    active: true,
-    aircraft: {
-      coordinate: [103.851959, 1.29027],
-      altitudeMeters: 120,
-      headingDegrees: 0,
-    },
-    camera: {
-      centerCoordinate: [103.851959, 1.29027],
-      cockpitClearance: { forwardMeters: 2, verticalMeters: 1 },
-      effectiveOwner: 'fixed-follow',
-      source: 'fixed-follow',
-      timeline: null,
-      view: 'chase',
-    },
-    environment: {
-      anchor: [103.851959, 1.29027],
-      id: 'singapore',
-      label: 'Singapore',
-      presentationBounds: [
-        [103.605, 1.158],
-        [104.09, 1.48],
-      ],
-      revision: 'singapore:environment:exact',
-      stageFootprint: [
-        [103.8518, 1.2901],
-        [103.8521, 1.2901],
-        [103.8521, 1.2904],
-        [103.8518, 1.2904],
-        [103.8518, 1.2901],
-      ],
-      surfaces: [
-        {
-          baseHeightMeters: 0,
-          color: '#15803d',
-          heightMeters: 0.2,
-          id: 'stage',
-          kind: 'stage-footprint',
-          label: 'Singapore stage footprint',
-          poiId: null,
-          ring: [
-            [103.8518, 1.2901],
-            [103.8521, 1.2901],
-            [103.8521, 1.2904],
-            [103.8518, 1.2904],
-            [103.8518, 1.2901],
-          ],
-        },
-        {
-          baseHeightMeters: 0.5,
-          color: '#f59e0b',
-          heightMeters: 12.5,
-          id: 'helicopter',
-          kind: 'subject',
-          label: 'Helicopter',
-          poiId: null,
-          ring: [
-            [103.85194, 1.29025],
-            [103.85198, 1.29025],
-            [103.85198, 1.29029],
-            [103.85194, 1.29029],
-            [103.85194, 1.29025],
-          ],
-        },
-      ],
-    },
-    night: false,
-    objective: null,
-    phase: 'ready',
-    presentationOwner: 'flight',
-    profileId: 'singapore',
-    readyFrameRequestId: 1,
-    revision: 'ready:singapore:environment:exact',
-    route: [],
-    runId: 1,
-    tick: 0,
-  }
 }
 
 function environmentMapHarness() {
@@ -306,11 +230,46 @@ test('XR environment defers until each MapLibre style is ready', () => {
     assert.equal(projectedStage?.properties?.kgHeightMeters, 0.2)
     assert.equal(projectedStage?.properties?.kgRenderBaseHeightMeters, 0.15)
     assert.equal(projectedStage?.properties?.kgRenderHeightMeters, 0.35)
+    assert.equal(projectedStage?.geometry?.coordinates?.length, 2)
+    assert.deepEqual(
+      projectedStage?.geometry?.coordinates,
+      overlay.environment?.surfaces[0]?.rings,
+      'the complete authored Polygon, including interior rings, reaches MapLibre',
+    )
     const projectedSubject = harness.sourceData()?.features?.find(
       feature => feature.properties?.kgSurfaceId === 'helicopter',
     )
     assert.equal(projectedSubject?.properties?.kgRenderBaseHeightMeters, 0.5)
     assert.equal(projectedSubject?.properties?.kgRenderHeightMeters, 12.5)
+    const canonicalSkypark = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.find(
+      surface => surface.id === 'marina-bay-sands:skypark',
+    )
+    assert.ok(canonicalSkypark)
+    const projectedSkypark = harness.sourceData()?.features?.find(
+      feature => feature.properties?.kgSurfaceId === canonicalSkypark.id,
+    )
+    assert.deepEqual(
+      projectedSkypark?.geometry?.coordinates,
+      canonicalSkypark.geometry.coordinates,
+    )
+    assert.equal(
+      projectedSkypark?.properties?.kgRegionalPoiAccuracyStatement,
+      canonicalSkypark.accuracy.statement,
+    )
+    assert.equal(
+      projectedSkypark?.properties?.kgRegionalPoiGeometrySourceId,
+      canonicalSkypark.provenance.geometry.sourceId,
+    )
+    assert.equal(
+      projectedSkypark?.properties?.kgRegionalPoiHeightSourceUrl,
+      canonicalSkypark.provenance.height.sourceUrl,
+    )
+    assert.deepEqual(
+      JSON.parse(String(
+        projectedSkypark?.properties?.kgRegionalPoiContextProvenance,
+      )),
+      canonicalSkypark.provenance.context,
+    )
     const planarPayload = JSON.parse(JSON.stringify(harness.sourceData()))
     const extrusionLayer = harness.layers.get(
       FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.extrusion3d,
@@ -552,13 +511,13 @@ test('XR environment exactness rejects mutated or retained MapLibre source paylo
   const projectedStage = harness.sourceData()?.features?.find(
     feature => feature.properties?.kgSurfaceId === 'stage',
   )
-  const firstCoordinate = projectedStage?.geometry?.coordinates?.[0]?.[0]
+  const firstCoordinate = projectedStage?.geometry?.coordinates?.[1]?.[0]
   assert.ok(firstCoordinate)
   firstCoordinate[0] += 0.000001
   assert.equal(
     mapHasExactFlightGeoEnvironment(harness.map, overlay),
     false,
-    'a stale coordinate must not pass environment identity checks',
+    'a stale interior-ring coordinate must not pass environment identity checks',
   )
 
   assert.equal(
@@ -577,6 +536,24 @@ test('XR environment exactness rejects mutated or retained MapLibre source paylo
     mapHasExactFlightGeoEnvironment(harness.map, overlay),
     false,
     'a stale extrusion height must not pass environment identity checks',
+  )
+
+  assert.equal(
+    applyFlightGeoEnvironmentToMap(harness.map, overlay, '2d'),
+    true,
+  )
+  assert.equal(harness.completeSourceUpdate(), true)
+  assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
+  const reprojectedSkypark = harness.sourceData()?.features?.find(
+    feature => feature.properties?.kgSurfaceId
+      === 'marina-bay-sands:skypark',
+  )
+  assert.ok(reprojectedSkypark?.properties)
+  reprojectedSkypark.properties.kgRegionalPoiGeometrySourceId = 'stale-source'
+  assert.equal(
+    mapHasExactFlightGeoEnvironment(harness.map, overlay),
+    false,
+    'mutated regional POI provenance must not pass exact presentation',
   )
 
   assert.equal(
@@ -628,51 +605,4 @@ test('XR environment exactness rejects mutated or retained MapLibre source paylo
   )
   assert.equal(harness.completeSourceUpdate(), true)
   assert.equal(mapHasExactFlightGeoEnvironment(harness.map, overlay), true)
-})
-
-test('City removes a retained Flight environment before presenting its parcel stack', () => {
-  const flightOverlay = environmentOverlay()
-  const cityOverlay: FlightGeoOverlaySnapshot = {
-    ...flightOverlay,
-    presentationOwner: 'city',
-    revision: 'city:stale-local-environment',
-  }
-  const expectedCityOverlay: FlightGeoOverlaySnapshot = {
-    ...cityOverlay,
-    environment: null,
-  }
-  const harness = environmentMapHarness()
-  const cityFillLayerId = 'kg-city-sim:geo-overlay:fill'
-  harness.setStyleReady(true)
-  assert.equal(
-    applyFlightGeoEnvironmentToMap(harness.map, flightOverlay, '3d'),
-    true,
-  )
-  assert.equal(harness.completeSourceUpdate(), true)
-  harness.map.addLayer({
-    id: cityFillLayerId,
-    source: 'kg-city-sim:geo-overlay',
-    type: 'fill',
-  })
-
-  assert.equal(
-    removeFlightGeoEnvironmentFromMap(harness.map),
-    true,
-  )
-  assert.equal(
-    harness.map.getSource(FLIGHT_GEO_ENVIRONMENT_SOURCE_ID),
-    undefined,
-  )
-  for (const layerId of FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER) {
-    assert.equal(harness.map.getLayer(layerId), undefined)
-  }
-  assert.ok(harness.map.getLayer(cityFillLayerId))
-  assert.deepEqual(harness.removalOrder, [
-    ...[...FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER].reverse(),
-    FLIGHT_GEO_ENVIRONMENT_SOURCE_ID,
-  ])
-  assert.equal(
-    mapHasExactFlightGeoEnvironment(harness.map, expectedCityOverlay),
-    true,
-  )
 })

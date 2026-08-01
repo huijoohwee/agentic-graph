@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import net from 'node:net'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -29,6 +29,23 @@ test('Flight browser smoke owns build output from the Canvas package root', () =
     paths.distIndexPath,
     join(canvasRoot, 'scripts', 'dist', 'index.html'),
   )
+})
+
+test('Flight browser smoke loads compiled evidence only after the isolated build', async () => {
+  const source = await readFile(join(
+    canvasRoot,
+    'scripts',
+    'run_game_flight_sim_browser_smoke.mjs',
+  ), 'utf8')
+  const buildIndex = source.indexOf(
+    'await buildExactProductionPreview(candidate)',
+  )
+  const evidenceImportIndex = source.indexOf(
+    "await import('./lib/game-flight-sim-browser-evidence-validation.mjs')",
+  )
+
+  assert.ok(buildIndex >= 0)
+  assert.ok(evidenceImportIndex > buildIndex)
 })
 
 test('Flight browser smoke normalizes detached Git identity without weakening named branches', () => {

@@ -1,7 +1,4 @@
-import type {
-  FitBoundsOptions,
-  LngLatBoundsLike,
-} from 'maplibre-gl'
+import type { FitBoundsOptions, LngLatBoundsLike } from 'maplibre-gl'
 import {
   readCityGeoOverlay,
   subscribeCityGeoOverlay,
@@ -10,22 +7,19 @@ import {
   type CityGeoViewMode,
 } from './cityGeoOverlay.js'
 import {
-  cityGeoOverlayFramingKey,
-  cityGeoPresentationBounds,
-} from './cityGeoOverlayProjection.js'
-import {
-  applyCityGeoOverlayToMap,
-  clearCityGeoOverlayFromMap,
-  CITY_GEO_OVERLAY_LAYER_IDS,
-  CITY_GEO_OVERLAY_SOURCE_ID,
-  mapHasExactCityGeoOverlay,
-  mapHasExactCityGeoOverlaySource,
-} from './cityGeoOverlayMapLibre.js'
+  applyCityGeoPresentationToMap,
+  cityGeoPresentationStateEntries,
+  clearCityGeoPresentationFromMap,
+  mapHasExactCityGeoPresentation,
+} from './cityGeoPresentationMapLibre.js'
 import {
   applyRegionalPoiProfileToMap,
   clearRegionalPoiProfileFromMap,
   mapHasExactRegionalPoiProfile,
   mapHasExactRegionalPoiSource,
+  regionalPoiFeatureCollection,
+  regionalPoiProfileBounds,
+  REGIONAL_POI_LAYER_IDS,
   REGIONAL_POI_SOURCE_ID,
 } from './regionalPoiMapLibre.js'
 import {
@@ -41,9 +35,7 @@ export type CityGeoOverlayMapLibreControllerOptions = Readonly<{
   map: any
   onParcelSelect?: (parcelId: string) => void
   readSnapshot?: () => CityGeoOverlaySnapshot
-  subscribe?: (
-    listener: CityGeoOverlayListener,
-  ) => () => void
+  subscribe?: (listener: CityGeoOverlayListener) => () => void
   viewMode: CityGeoViewMode
 }>
 
@@ -67,6 +59,7 @@ const ZERO_PADDING: CityMapPadding = Object.freeze({
   right: 0,
   top: 0,
 })
+const CITY_FRAMING_CLEARANCE_APERTURE_FRACTION = 0.1
 
 function readMapPadding(map: any): CityMapPadding {
   const padding = map?.getPadding?.()
@@ -84,30 +77,52 @@ function cityViewportPadding(
   viewMode: CityGeoViewMode,
 ): CityMapPadding {
   const viewport = readGeoMapViewportPadding(map)
-  const framingClearance =
-    snapshot.profile?.framing[viewMode].paddingPixels ?? 0
+  const requestedClearance = snapshot.profile?.framing[viewMode].paddingPixels ?? 0
+  const mapViewport = map?.getContainer?.() as HTMLElement | null | undefined
+  const width = Math.max(
+    0,
+    Number(mapViewport?.clientWidth) || Number(map?.transform?.width) || 0,
+  )
+  const height = Math.max(
+    0,
+    Number(mapViewport?.clientHeight) || Number(map?.transform?.height) || 0,
+  )
+  const horizontalAperture = Math.max(
+    0,
+    width - viewport.left - viewport.right,
+  )
+  const verticalAperture = Math.max(
+    0,
+    height - viewport.top - viewport.bottom,
+  )
+  const horizontalClearance = horizontalAperture > 0
+    ? Math.min(
+        requestedClearance,
+        horizontalAperture * CITY_FRAMING_CLEARANCE_APERTURE_FRACTION,
+      )
+    : requestedClearance
+  const verticalClearance = verticalAperture > 0
+    ? Math.min(
+        requestedClearance,
+        verticalAperture * CITY_FRAMING_CLEARANCE_APERTURE_FRACTION,
+      )
+    : requestedClearance
   return Object.freeze({
-    bottom: viewport.bottom + framingClearance,
-    left: viewport.left + framingClearance,
-    right: viewport.right + framingClearance,
-    top: viewport.top + framingClearance,
+    bottom: viewport.bottom + verticalClearance,
+    left: viewport.left + horizontalClearance,
+    right: viewport.right + horizontalClearance,
+    top: viewport.top + verticalClearance,
   })
 }
 
 function cityViewportSizeKey(map: any): string {
   const viewport = map?.getContainer?.()
-  const width = Math.max(
-    0,
-    Number(viewport?.clientWidth) || Number(map?.transform?.width) || 0,
-  )
-  const height = Math.max(
-    0,
-    Number(viewport?.clientHeight) || Number(map?.transform?.height) || 0,
-  )
-  return `${width}x${height}`
+  const width = Number(viewport?.clientWidth) || Number(map?.transform?.width) || 0
+  const height = Number(viewport?.clientHeight) || Number(map?.transform?.height) || 0
+  return `${Math.max(0, width)}x${Math.max(0, height)}`
 }
 
-export function fitMapToCityGeoOverlay(
+export function fitMapToCityPresentation(
   map: any,
   snapshot: CityGeoOverlaySnapshot,
   viewMode: CityGeoViewMode,
@@ -117,13 +132,9 @@ export function fitMapToCityGeoOverlay(
   try {
     if (!snapshot.active || !snapshot.profile) return false
     if (typeof map?.fitBounds !== 'function') return false
-    const bounds = cityGeoPresentationBounds(snapshot)
-    if (!bounds) return false
+    const bounds = regionalPoiProfileBounds(snapshot.profile.regionalPoiProfile)
     const framing = snapshot.profile.framing[viewMode]
-    const mapBounds: LngLatBoundsLike = [
-      [...bounds[0]],
-      [...bounds[1]],
-    ]
+    const mapBounds: LngLatBoundsLike = [[...bounds[0]], [...bounds[1]]]
     const options: FitBoundsOptions = {
       bearing: framing.bearingDegrees,
       duration: 0,
@@ -131,24 +142,39 @@ export function fitMapToCityGeoOverlay(
       padding,
       pitch: framing.pitchDegrees,
     }
-    // MapLibre combines the transform's current padding with fit options.
-    // City owns one absolute viewport aperture, so clear its previous fit
-    // before calculating the next one instead of accumulating panel insets.
     previousPadding = readMapPadding(map)
     map.setPadding?.(ZERO_PADDING)
     map.fitBounds(mapBounds, options)
     return true
   } catch (error) {
     if (previousPadding) {
-      try {
-        map?.setPadding?.(previousPadding)
-      } catch {
-        void 0
-      }
+      try { map?.setPadding?.(previousPadding) } catch { void 0 }
     }
     console.error('[kg-city] MapLibre City Geo framing failed.', error)
     return false
   }
+}
+
+function framingKey(
+  snapshot: CityGeoOverlaySnapshot,
+  viewMode: CityGeoViewMode,
+): string | null {
+  if (!snapshot.active || !snapshot.profile) return null
+  const regionalProfile = snapshot.profile.regionalPoiProfile
+  const bounds = regionalPoiProfileBounds(regionalProfile)
+  const framing = snapshot.profile.framing[viewMode]
+  return [
+    snapshot.profile.revision,
+    regionalProfile.id,
+    regionalProfile.revision,
+    viewMode,
+    ...bounds[0],
+    ...bounds[1],
+    framing.bearingDegrees,
+    framing.pitchDegrees,
+    framing.maxZoom,
+    framing.paddingPixels,
+  ].join(':')
 }
 
 function requireViewMode(viewMode: CityGeoViewMode): CityGeoViewMode {
@@ -158,10 +184,6 @@ function requireViewMode(viewMode: CityGeoViewMode): CityGeoViewMode {
   return viewMode
 }
 
-/**
- * Owns the City parcels, their regional POI band, and authored framing.
- * It never replaces the basemap style or imports/claims the Flight camera.
- */
 export function createCityGeoOverlayMapLibreController(
   options: CityGeoOverlayMapLibreControllerOptions,
 ): CityGeoOverlayMapLibreController {
@@ -174,7 +196,6 @@ export function createCityGeoOverlayMapLibreController(
   let lastFramingKey: string | null = null
   let disposed = false
   let originalPadding: CityMapPadding | null = null
-  let settledCitySource: unknown = null
   let settledRegionalPoiSource: unknown = null
 
   const clearPresentationEvidence = (): void => {
@@ -186,18 +207,18 @@ export function createCityGeoOverlayMapLibreController(
     delete viewport.dataset.kgCityGeospatialPoiRevision
     delete viewport.dataset.kgCityGeospatialProfileId
     delete viewport.dataset.kgCityGeospatialRevision
+    delete viewport.dataset.kgCityGeospatialStateFeatureCount
   }
 
-  const publishPresentationEvidence = (
-    snapshot: CityGeoOverlaySnapshot,
-  ): void => {
+  const publishPresentationEvidence = (snapshot: CityGeoOverlaySnapshot): void => {
     if (!viewport || !snapshot.active || !snapshot.profile) return
-    viewport.dataset.kgCityGeospatialFeatureCount = String(
-      snapshot.parcels.length,
-    )
+    viewport.dataset.kgCityGeospatialFeatureCount = '0'
     viewport.dataset.kgCityGeospatialOverlay = 'active'
+    viewport.dataset.kgCityGeospatialStateFeatureCount = String(
+      cityGeoPresentationStateEntries(snapshot).length,
+    )
     viewport.dataset.kgCityGeospatialPoiFeatureCount = String(
-      snapshot.profile.regionalPoiProfile.surfaces.length,
+      regionalPoiFeatureCollection(snapshot.profile.regionalPoiProfile).features.length,
     )
     viewport.dataset.kgCityGeospatialPoiProfileId =
       snapshot.profile.regionalPoiProfile.id
@@ -216,87 +237,54 @@ export function createCityGeoOverlayMapLibreController(
   const apply = (): boolean => {
     if (disposed) return false
     const snapshot = readSnapshot()
-    if (
-      !snapshot.active
-      || !mapHasExactCityGeoOverlaySource(map, snapshot)
-    ) {
-      settledCitySource = null
-    }
-    if (
-      !snapshot.active
-      || !snapshot.profile
-      || !mapHasExactRegionalPoiSource(
-        map,
-        snapshot.profile.regionalPoiProfile,
-      )
-    ) {
-      settledRegionalPoiSource = null
-    }
-    const cityApplied = applyCityGeoOverlayToMap(map, snapshot, {
-      beforeLayerId,
-      viewMode,
-    })
-    const regionalPoiApplied = snapshot.active && snapshot.profile
-      ? applyRegionalPoiProfileToMap(
-          map,
-          snapshot.profile.regionalPoiProfile,
-          {
-            beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill,
-            viewMode,
-          },
-        )
-      : clearRegionalPoiProfileFromMap(map)
-    const applied = cityApplied && regionalPoiApplied
     if (!snapshot.active || !snapshot.profile) {
+      const stateCleared = clearCityGeoPresentationFromMap(map)
+      const profileCleared = clearRegionalPoiProfileFromMap(map)
       lastFramingKey = null
-      settledCitySource = null
       settledRegionalPoiSource = null
       clearPresentationEvidence()
       restoreOriginalPadding()
-      return applied
+      return stateCleared && profileCleared
     }
+    if (!mapHasExactRegionalPoiSource(
+      map,
+      snapshot.profile.regionalPoiProfile,
+    )) settledRegionalPoiSource = null
+    const regionalPoiApplied = applyRegionalPoiProfileToMap(
+      map,
+      snapshot.profile.regionalPoiProfile,
+      { beforeLayerId, viewMode },
+    )
+    const stateApplied = regionalPoiApplied
+      && applyCityGeoPresentationToMap(map, snapshot)
+    const applied = regionalPoiApplied && stateApplied
     const exactPresentation = applied
-      && settledCitySource === map?.getSource?.(CITY_GEO_OVERLAY_SOURCE_ID)
-      && settledRegionalPoiSource === map?.getSource?.(
-        REGIONAL_POI_SOURCE_ID,
-      )
-      && mapHasExactCityGeoOverlay(map, snapshot, {
-        beforeLayerId,
-        viewMode,
-      })
+      && settledRegionalPoiSource === map?.getSource?.(REGIONAL_POI_SOURCE_ID)
       && mapHasExactRegionalPoiProfile(
         map,
         snapshot.profile.regionalPoiProfile,
-        {
-          beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill,
-          viewMode,
-        },
+        { beforeLayerId, viewMode },
       )
+      && mapHasExactCityGeoPresentation(map, snapshot)
     if (exactPresentation) publishPresentationEvidence(snapshot)
     else clearPresentationEvidence()
     if (!applied || options.frameCity === false) return applied
     const padding = cityViewportPadding(map, snapshot, viewMode)
-    const sourceFramingKey = cityGeoOverlayFramingKey(snapshot, viewMode)
-    const framingKey = sourceFramingKey
-      ? [
-          sourceFramingKey,
-          geoMapViewportPaddingKey(padding),
-          cityViewportSizeKey(map),
-        ].join(':')
+    const sourceKey = framingKey(snapshot, viewMode)
+    const nextFramingKey = sourceKey
+      ? [sourceKey, geoMapViewportPaddingKey(padding), cityViewportSizeKey(map)].join(':')
       : null
-    if (!framingKey || framingKey === lastFramingKey) return applied
+    if (!nextFramingKey || nextFramingKey === lastFramingKey) return applied
     if (!originalPadding) originalPadding = readMapPadding(map)
-    if (fitMapToCityGeoOverlay(map, snapshot, viewMode, padding)) {
-      lastFramingKey = framingKey
+    if (fitMapToCityPresentation(map, snapshot, viewMode, padding)) {
+      lastFramingKey = nextFramingKey
     }
     return applied
   }
 
   const handleMapStyleReady = (): void => {
-    apply()
-  }
-  const unsubscribe = subscribe(handleMapStyleReady)
-  const handleMapResize = (): void => {
+    settledRegionalPoiSource = null
+    clearCityGeoPresentationFromMap(map)
     apply()
   }
   const handleMapClick = (event: unknown): void => {
@@ -306,27 +294,24 @@ export function createCityGeoOverlayMapLibreController(
     const point = (event as { point?: unknown } | null)?.point
     if (!point || typeof map?.queryRenderedFeatures !== 'function') return
     const layers = [
-      CITY_GEO_OVERLAY_LAYER_IDS.selectedParcel,
-      CITY_GEO_OVERLAY_LAYER_IDS.outline,
-      CITY_GEO_OVERLAY_LAYER_IDS.extrusion,
-      CITY_GEO_OVERLAY_LAYER_IDS.fill,
+      REGIONAL_POI_LAYER_IDS.outline,
+      REGIONAL_POI_LAYER_IDS.extrusion,
+      REGIONAL_POI_LAYER_IDS.fill,
     ].filter(layerId => map.getLayer?.(layerId))
-    if (layers.length === 0) return
-    const features = map.queryRenderedFeatures(point, { layers })
     const liveParcelIds = new Set(snapshot.parcels.map(parcel => parcel.id))
+    const features = map.queryRenderedFeatures(point, { layers })
     const parcelId = Array.isArray(features)
       ? features.map(feature => {
-          if (feature?.properties?.kgCityOverlayKind !== 'parcel') return ''
-          const candidate = String(feature?.properties?.parcelId || '').trim()
+          if (feature?.properties?.kgRegionalPoiFeatureKind !== 'surface') return ''
+          const candidate = String(feature.properties.kgRegionalPoiId || '').trim()
           return liveParcelIds.has(candidate) ? candidate : ''
         }).find(Boolean)
       : null
     if (parcelId) options.onParcelSelect(parcelId)
   }
-  const readOwnedSourcePayloadEvent = (event: unknown): Readonly<{
+  const readRegionalPoiPayloadEvent = (event: unknown): Readonly<{
     sourceDataType?: unknown
-    sourceId: typeof CITY_GEO_OVERLAY_SOURCE_ID
-      | typeof REGIONAL_POI_SOURCE_ID
+    sourceId: typeof REGIONAL_POI_SOURCE_ID
   }> | null => {
     if (!event || typeof event !== 'object') return null
     const sourceEvent = event as Readonly<{
@@ -336,72 +321,54 @@ export function createCityGeoOverlayMapLibreController(
       tile?: unknown
     }>
     if (
-      sourceEvent.sourceId !== CITY_GEO_OVERLAY_SOURCE_ID
-      && sourceEvent.sourceId !== REGIONAL_POI_SOURCE_ID
+      sourceEvent.sourceId !== REGIONAL_POI_SOURCE_ID
+      || sourceEvent.coord !== undefined
+      || sourceEvent.tile !== undefined
     ) return null
-    // Tile events share the GeoJSON source ID but describe painter work, not a
-    // new worker payload. They cannot invalidate or settle City evidence.
-    if (sourceEvent.coord !== undefined || sourceEvent.tile !== undefined) {
-      return null
-    }
     return sourceEvent as Readonly<{
       sourceDataType?: unknown
-      sourceId: typeof CITY_GEO_OVERLAY_SOURCE_ID
-        | typeof REGIONAL_POI_SOURCE_ID
+      sourceId: typeof REGIONAL_POI_SOURCE_ID
     }>
   }
-  const handleCitySourceLoading = (event: unknown): void => {
-    const sourceEvent = readOwnedSourcePayloadEvent(event)
-    if (!sourceEvent) return
-    if (sourceEvent.sourceId === CITY_GEO_OVERLAY_SOURCE_ID) {
-      settledCitySource = null
-    } else {
-      settledRegionalPoiSource = null
-    }
+  const handleRegionalPoiSourceLoading = (event: unknown): void => {
+    if (!readRegionalPoiPayloadEvent(event)) return
+    settledRegionalPoiSource = null
+    clearCityGeoPresentationFromMap(map)
     clearPresentationEvidence()
   }
-  const handleCitySourceData = (event: unknown): void => {
-    const sourceEvent = readOwnedSourcePayloadEvent(event)
-    if (!sourceEvent) return
+  const handleRegionalPoiSourceData = (event: unknown): void => {
+    const sourceEvent = readRegionalPoiPayloadEvent(event)
     if (
-      sourceEvent.sourceDataType !== 'metadata'
-      && sourceEvent.sourceDataType !== 'content'
+      !sourceEvent
+      || (sourceEvent.sourceDataType !== 'metadata'
+        && sourceEvent.sourceDataType !== 'content')
     ) return
     if (!apply()) return
     const snapshot = readSnapshot()
-    if (!snapshot.active || !snapshot.profile) return
-    if (sourceEvent.sourceId === CITY_GEO_OVERLAY_SOURCE_ID) {
-      if (!mapHasExactCityGeoOverlay(map, snapshot, {
-        beforeLayerId,
-        viewMode,
-      })) return
-      settledCitySource =
-        map?.getSource?.(CITY_GEO_OVERLAY_SOURCE_ID) || null
-    } else {
-      if (!mapHasExactRegionalPoiProfile(
+    if (
+      !snapshot.active
+      || !snapshot.profile
+      || !mapHasExactRegionalPoiProfile(
         map,
         snapshot.profile.regionalPoiProfile,
-        {
-          beforeLayerId: CITY_GEO_OVERLAY_LAYER_IDS.fill,
-          viewMode,
-        },
-      )) return
-      settledRegionalPoiSource =
-        map?.getSource?.(REGIONAL_POI_SOURCE_ID) || null
-    }
+        { beforeLayerId, viewMode },
+      )
+    ) return
+    settledRegionalPoiSource = map?.getSource?.(REGIONAL_POI_SOURCE_ID) || null
     apply()
   }
+  const unsubscribe = subscribe(apply)
   if (typeof map?.on === 'function') {
     map.on('load', handleMapStyleReady)
     map.on('style.load', handleMapStyleReady)
-    map.on('resize', handleMapResize)
+    map.on('resize', apply)
     map.on('click', handleMapClick)
-    map.on('sourcedataloading', handleCitySourceLoading)
-    map.on('sourcedata', handleCitySourceData)
+    map.on('sourcedataloading', handleRegionalPoiSourceLoading)
+    map.on('sourcedata', handleRegionalPoiSourceData)
   }
   const stopObservingOcclusion = observeGeoMapOcclusionChanges(
     viewport || null,
-    handleMapResize,
+    apply,
   )
   apply()
 
@@ -414,14 +381,14 @@ export function createCityGeoOverlayMapLibreController(
       if (typeof map?.off === 'function') {
         map.off('load', handleMapStyleReady)
         map.off('style.load', handleMapStyleReady)
-        map.off('resize', handleMapResize)
+        map.off('resize', apply)
         map.off('click', handleMapClick)
-        map.off('sourcedataloading', handleCitySourceLoading)
-        map.off('sourcedata', handleCitySourceData)
+        map.off('sourcedataloading', handleRegionalPoiSourceLoading)
+        map.off('sourcedata', handleRegionalPoiSourceData)
       }
       stopObservingOcclusion()
       if (options.clearOnDispose !== false) {
-        clearCityGeoOverlayFromMap(map)
+        clearCityGeoPresentationFromMap(map)
         clearRegionalPoiProfileFromMap(map)
       }
       clearPresentationEvidence()

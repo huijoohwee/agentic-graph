@@ -245,8 +245,8 @@ export async function testCitySimLaterSourceIntentRetainsMountedPreviousSurfaceO
     assert.equal(launched.active, true, launched.message)
     assert.equal(launched.phase, 'stopped')
     assert.equal(launched.city.cityName, 'Civic Seed')
-    assert.equal(launched.city.parcels.length, 16)
-    assert.equal(launched.geographicProfile?.id, 'city-sim:civic-seed:geo/v1')
+    assert.equal(launched.city.parcels.length, 6)
+    assert.equal(launched.city.regionalPoiProfileId, 'adm0:SGP:major-pois/v1')
     assert.equal(useGraphStore.getState().floatingPanelView, 'cityBuilder')
 
     await act(async () => {

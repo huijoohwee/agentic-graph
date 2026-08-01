@@ -112,8 +112,8 @@ const settleClockStep = (
   return { clock, completed }
 }
 
-// Feature: knowgrph-game-flight-sim, Property 37 - Fail-closed admission keeps mission stopped
-test('Feature: knowgrph-game-flight-sim, Property 37 - Fail-closed admission keeps mission stopped', async () => {
+// Feature: knowgrph-game-flight-sim, Property 32 - Fail-closed admission keeps mission stopped
+test('Feature: knowgrph-game-flight-sim, Property 32 - Fail-closed admission keeps mission stopped', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.constantFrom('webgl-unavailable', 'unreadable-save'),
@@ -163,12 +163,12 @@ test('Feature: knowgrph-game-flight-sim, Property 37 - Fail-closed admission kee
         }
       },
     ),
-    flightSimPropertyParameters(37),
+    flightSimPropertyParameters(32),
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 38 - Hold at tick zero until first input
-test('Feature: knowgrph-game-flight-sim, Property 38 - Hold at tick zero until first input', async () => {
+// Feature: knowgrph-game-flight-sim, Property 33 - Hold at tick zero until first input
+test('Feature: knowgrph-game-flight-sim, Property 33 - Hold at tick zero until first input', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.oneof(
@@ -198,12 +198,12 @@ test('Feature: knowgrph-game-flight-sim, Property 38 - Hold at tick zero until f
         }
       },
     ),
-    flightSimPropertyParameters(38),
+    flightSimPropertyParameters(33),
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 39 - Focus-loss pauses the clock; Free_Orbit pointer-lock exit does not
-test('Feature: knowgrph-game-flight-sim, Property 39 - Focus-loss pauses the clock; Free_Orbit pointer-lock exit does not', async () => {
+// Feature: knowgrph-game-flight-sim, Property 34 - Focus-loss pauses the clock; Free_Orbit pointer-lock exit does not
+test('Feature: knowgrph-game-flight-sim, Property 34 - Focus-loss pauses the clock; Free_Orbit pointer-lock exit does not', async () => {
   const dom = new JSDOM('<!doctype html><html><body><canvas></canvas></body></html>', {
     url: 'http://localhost',
   })
@@ -319,7 +319,7 @@ test('Feature: knowgrph-game-flight-sim, Property 39 - Focus-loss pauses the clo
           }
         },
       ),
-      flightSimPropertyParameters(39),
+      flightSimPropertyParameters(34),
     )
   } finally {
     selectXrNativeControllerCameraMode(previousCameraMode)
@@ -328,8 +328,8 @@ test('Feature: knowgrph-game-flight-sim, Property 39 - Focus-loss pauses the clo
   }
 })
 
-// Feature: knowgrph-game-flight-sim, Property 40 - Stop-then-Start resumes exact state
-test('Feature: knowgrph-game-flight-sim, Property 40 - Stop-then-Start resumes exact state', async () => {
+// Feature: knowgrph-game-flight-sim, Property 35 - Stop-then-Start resumes exact state
+test('Feature: knowgrph-game-flight-sim, Property 35 - Stop-then-Start resumes exact state', async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.integer({ min: 1, max: 5 }),
@@ -360,6 +360,6 @@ test('Feature: knowgrph-game-flight-sim, Property 40 - Stop-then-Start resumes e
         }
       },
     ),
-    flightSimPropertyParameters(40),
+    flightSimPropertyParameters(35),
   )
 })

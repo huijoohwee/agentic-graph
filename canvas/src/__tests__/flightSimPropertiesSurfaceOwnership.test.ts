@@ -275,8 +275,8 @@ async function assertExitRestorationFailureIsLocal(
   }
 }
 
-// Feature: knowgrph-game-flight-sim, Property 44 - Canvas ownership preserved across enter/exit and failures
-test('Feature: knowgrph-game-flight-sim, Property 44 - Canvas ownership preserved across enter/exit and failures', async () => {
+// Feature: knowgrph-game-flight-sim, Property 39 - Canvas ownership preserved across enter/exit and failures
+test('Feature: knowgrph-game-flight-sim, Property 39 - Canvas ownership preserved across enter/exit and failures', async () => {
   const dom = new JSDOM(
     '<!doctype html><html><body><canvas id="shared-xr-canvas"></canvas></body></html>',
     { url: 'http://127.0.0.1/' },
@@ -312,7 +312,7 @@ test('Feature: knowgrph-game-flight-sim, Property 44 - Canvas ownership preserve
           useGraphStore.getState().resetAll()
         }
       }),
-      flightSimPropertyParameters(44),
+      flightSimPropertyParameters(39),
     )
   } finally {
     Object.assign(globalThis, previousGlobals)

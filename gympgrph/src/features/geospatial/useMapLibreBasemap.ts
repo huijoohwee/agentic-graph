@@ -46,6 +46,10 @@ import {
   createMapLibreInitialCameraAlignment,
 } from './mapLibreInitialCameraAlignment.js'
 import {
+  hasGeospatialPresentationCameraClaim,
+  type GeospatialPresentationCameraOwner,
+} from './geospatialPresentationCameraOwner.js'
+import {
   createMapLibreFlightRuntimeFallbackRequester,
 } from './mapLibreFlightRuntimeFallback.js'
 import {
@@ -280,6 +284,7 @@ export function useMapLibreBasemap(args: {
   semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   targetStyleUrl?: string | null
   initialStyleOverride?: Readonly<Record<string, unknown>> | null
+  gameplayPresentationOwner?: GeospatialPresentationCameraOwner
   ownerScope?: MapLibreMapOwnerScope
   canvasRenderMode: '2d' | '3d'
   projectionMode: 'mercator' | 'globe'
@@ -295,6 +300,7 @@ export function useMapLibreBasemap(args: {
     semanticMediaOwner,
     targetStyleUrl,
     initialStyleOverride,
+    gameplayPresentationOwner,
     ownerScope = 'embedded-preview',
     canvasRenderMode,
     projectionMode,
@@ -307,15 +313,13 @@ export function useMapLibreBasemap(args: {
   const singaporeInitialCamera =
     createSingaporeMapInitialCameraOptions(singaporeCamera)
   const mountedMapRef = React.useRef<any | null>(null)
-  // The mount effect intentionally does not depend on the bootstrap override:
-  // Flight takes over the retained map in place. Load and resize callbacks
-  // therefore need the latest ownership rather than their mount-time value.
+  // Read presentation ownership live so retained maps never remount.
   const initialStyleOverrideRef = React.useRef(initialStyleOverride ?? null)
   initialStyleOverrideRef.current = initialStyleOverride ?? null
-  const readLiveFlightBootstrapStyle = React.useCallback(
-    (): Readonly<Record<string, unknown>> | null => initialStyleOverrideRef.current,
-    [],
-  )
+  const readLiveFlightBootstrapStyle = React.useCallback(() => initialStyleOverrideRef.current, [])
+  const gameplayPresentationOwnerRef = React.useRef(gameplayPresentationOwner)
+  gameplayPresentationOwnerRef.current = gameplayPresentationOwner
+  const hasLivePresentationCameraClaim = React.useCallback(() => hasGeospatialPresentationCameraClaim(gameplayPresentationOwnerRef.current), [])
   const initialStylePreflightAbortRef =
     React.useRef<AbortController | null>(null)
   // Toast handlers close over the live Canvas snapshot. Their identity can
@@ -339,15 +343,7 @@ export function useMapLibreBasemap(args: {
   }, [initialStyleOverride])
 
   React.useEffect(() => {
-    if (!enabled) {
-      setRuntimeProjectionMode(projectionMode)
-      return
-    }
-    if (projectionMode === 'mercator') {
-      setRuntimeProjectionMode('mercator')
-      return
-    }
-    setRuntimeProjectionMode(prev => (prev === 'mercator' ? prev : projectionMode))
+    setRuntimeProjectionMode(projectionMode)
   }, [enabled, projectionMode])
 
   const setProbe = React.useCallback((next: BasemapProbe) => {
@@ -448,6 +444,57 @@ export function useMapLibreBasemap(args: {
     const isMapPreparedForDisposal = (): boolean => (
       !map || isFlightGeoMapLibreDisposalPrepared(map)
     )
+    const disposeMountedMap = (): void => {
+      cancelled = true
+      runtimeFallbackRequester.dispose()
+      initialStylePreflightAbortRef.current?.abort()
+      initialStylePreflightAbortRef.current = null
+      if (mountRetryTimer) {
+        clearTimeout(mountRetryTimer)
+        mountRetryTimer = null
+      }
+      clearBasemapVisibilityTimer()
+      if (probeInterval) {
+        clearInterval(probeInterval)
+        probeInterval = null
+      }
+      if (resizeObserver) {
+        try {
+          resizeObserver.disconnect()
+        } catch {
+          void 0
+        }
+        resizeObserver = null
+      }
+      if (abortNoiseCleanup) {
+        try {
+          abortNoiseCleanup()
+        } catch {
+          void 0
+        }
+        abortNoiseCleanup = null
+      }
+      if (removePoiClickBinding) {
+        try {
+          removePoiClickBinding()
+        } catch {
+          void 0
+        }
+        removePoiClickBinding = null
+      }
+      prepareMapForDisposal()
+      releaseMapLease?.()
+      releaseMapLease = null
+      if (mountedMapRef.current === map) mountedMapRef.current = null
+      disposeMapLibreFlightBootstrap(map)
+      try {
+        map?.remove?.()
+      } catch {
+        void 0
+      }
+      cancelMapDisposalPreparation()
+      map = null
+    }
     const mapHasExactCurrentFlightPresentation = (
       candidate: any,
     ): boolean => {
@@ -837,6 +884,7 @@ export function useMapLibreBasemap(args: {
         }
         releaseMapLease = claimMapLibreMapLease({
           cancelDisposalPreparation: cancelMapDisposalPreparation,
+          dispose: disposeMountedMap,
           isPreparedForDisposal: isMapPreparedForDisposal,
           map,
           ownerScope,
@@ -1064,11 +1112,7 @@ export function useMapLibreBasemap(args: {
 
         const align3dViewportCenter = createMapLibreInitialCameraAlignment({
           canvasRenderMode,
-          // Flight's local bootstrap has camera ownership before the first
-          // native MapLibre frame. A late generic Singapore fit would overwrite
-          // its stopped fixed-follow camera and strand the presentation gate.
-          flightBootstrapActive: () =>
-            Boolean(readLiveFlightBootstrapStyle()),
+          hasPresentationCameraClaim: hasLivePresentationCameraClaim,
           isCurrent: () => !cancelled,
           map: () => map,
           requestFrame: typeof window === 'undefined'
@@ -1168,60 +1212,7 @@ export function useMapLibreBasemap(args: {
 
     void mount()
 
-    return () => {
-      cancelled = true
-      runtimeFallbackRequester.dispose()
-      initialStylePreflightAbortRef.current?.abort()
-      initialStylePreflightAbortRef.current = null
-      if (mountRetryTimer) {
-        clearTimeout(mountRetryTimer)
-        mountRetryTimer = null
-      }
-      clearBasemapVisibilityTimer()
-      if (probeInterval) {
-        clearInterval(probeInterval)
-        probeInterval = null
-      }
-      if (resizeObserver) {
-        try {
-          resizeObserver.disconnect()
-        } catch {
-          void 0
-        }
-        resizeObserver = null
-      }
-      if (abortNoiseCleanup) {
-        try {
-          abortNoiseCleanup()
-        } catch {
-          void 0
-        }
-        abortNoiseCleanup = null
-      }
-      if (removePoiClickBinding) {
-        try {
-          removePoiClickBinding()
-        } catch {
-          void 0
-        }
-        removePoiClickBinding = null
-      }
-      // Flight owns two GeoJSON sources on this native map. Clear them while
-      // MapLibre is still live so a City-exclusive XR handoff cannot retain
-      // prior Flight geometry beneath the replacement canvas.
-      prepareMapForDisposal()
-      releaseMapLease?.()
-      releaseMapLease = null
-      if (mountedMapRef.current === map) mountedMapRef.current = null
-      disposeMapLibreFlightBootstrap(map)
-      try {
-        map?.remove?.()
-      } catch {
-        void 0
-      }
-      cancelMapDisposalPreparation()
-      map = null
-    }
+    return disposeMountedMap
     // The override is an activation bootstrap, not live map state. Flight may
     // clear it while handing the same Geo surface back; remounting here would
     // destroy the provider map instead of retaining its owner and camera.

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
+import { SINGAPORE_MAJOR_POI_GEO_PROFILE } from 'grph-shared/geospatial/singaporeMajorPoiGeo'
 import { projectFlightSimToGeospatialOverlay } from '@/features/game-flight-sim/flightSimGeospatialProjection'
 import { projectXrEnvironmentToFlightGeo } from '@/features/game-flight-sim/flightSimGeoEnvironmentProjection'
 import { createFlightSimRuntime } from '@/features/game-flight-sim/flightSimRuntimeCore'
@@ -139,11 +140,11 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
   )
   assert.match(
     gameplayOverlay,
-    /if \(props\.flightSimActive\)[\s\S]*<FlightSimMissionStageLazy[\s\S]*actorsVisible/,
+    /if \(props\.flightSimActive\)[\s\S]*<FlightSimMissionStageLazy[\s\S]*geospatialComposite=\{props\.geospatialComposite\}/,
   )
   assert.doesNotMatch(
     gameplayOverlay,
-    /actorsVisible=\{!props\.geospatialComposite\}/,
+    /actorsVisible/,
   )
   assert.match(
     gameplayOverlay,
@@ -151,27 +152,27 @@ test('Geo+XR keeps native MapLibre below one transparent Flight canvas', () => {
   )
   assert.match(
     flightMissionStage,
-    /geospatialComposite \? \([\s\S]*name="kg_flight_sim_geospatial_actor_lighting"[\s\S]*<ambientLight intensity=\{0\.9\} \/>[\s\S]*<hemisphereLight args=\{\['#ffffff', '#cbd5e1', 0\.6\]\} \/>[\s\S]*<pointLight position=\{\[120, 120, 120\]\} intensity=\{0\.9\} \/>/,
+    /All Flight visuals belong to the MapLibre overlay/,
   )
   assert.match(
     flightMissionStage,
-    /preservesTransparentBackground: true/,
+    /canvas\.dataset\.kgFlightSimLifecycleFollower = '1'/,
+  )
+  assert.doesNotMatch(
+    flightMissionStage,
+    /<mesh|<group|<ambientLight|<hemisphereLight|<pointLight|optionalBeacon|aircraft/i,
   )
   assert.match(
     flightMissionStage,
-    /\{!geospatialComposite && optionalBeaconScene \? \(/,
+    /if \(geospatialComposite\) \{[\s\S]*delete canvas\.dataset\.kgFlightSimFirstFrame[\s\S]*return/,
   )
   assert.match(
     flightMissionStage,
-    /\{!geospatialComposite \? profile\.waypoints\.map\(/,
+    /completeFlightSimStagePreparation\(stagePreparationRequestId\)/,
   )
   assert.match(
     flightMissionStage,
-    /\{!geospatialComposite \? \([\s\S]*<mesh[\s\S]*ref=\{landingPadRef\}/,
-  )
-  assert.match(
-    flightMissionStage,
-    /if \(!actorsVisible \|\| geospatialComposite\) \{[\s\S]*delete canvas\.dataset\.kgFlightSimFirstFrame[\s\S]*return[\s\S]*\}[\s\S]*completeFlightSimStagePreparation\(stagePreparationRequestId\)/,
+    /return null/,
   )
   assert.doesNotMatch(
     flightMissionStage,
@@ -205,7 +206,7 @@ test('Flight Geo bootstrap retains one map owner and stages pre-document ownersh
   )
   assert.match(
     basemapHook,
-    /flightBootstrapActive:\s*\(\)\s*=>\s*Boolean\(readLiveFlightBootstrapStyle\(\)\)/,
+    /hasPresentationCameraClaim:\s*hasLivePresentationCameraClaim/,
   )
   assert.doesNotMatch(basemapHook, /onGrabMapsFallback\?\.\(\)/)
   const bootstrapReconciliationDependencies = basemapHook.match(
@@ -329,11 +330,32 @@ test('Flight local mission coordinates project deterministically around Singapor
   assert.equal(skypark.kind, 'poi')
   assert.equal(skypark.poiId, 'marina-bay-sands')
   assert.equal(skypark.label, 'Marina Bay Sands SkyPark')
-  assert.equal(skypark.baseHeightMeters, 3.57)
-  assertApproximatelyEqual(skypark.heightMeters, 3.99, 'SkyPark height')
-  const skyparkMeters = projectedRingSizeMeters(skypark.ring)
-  assertApproximatelyEqual(skyparkMeters.width, 7.2, 'SkyPark width')
-  assertApproximatelyEqual(skyparkMeters.depth, 1.34, 'SkyPark depth')
+  const expectedSkypark = SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.find(
+    surface => surface.id === 'marina-bay-sands:skypark',
+  )
+  assert.ok(expectedSkypark)
+  assert.equal(skypark.baseHeightMeters, expectedSkypark.baseHeightMeters)
+  assert.equal(skypark.heightMeters, expectedSkypark.heightMeters)
+  assert.deepEqual(skypark.rings, expectedSkypark.geometry.coordinates)
+  assert.deepEqual(skypark.regionalPoiSourceFacts, {
+    accuracy: expectedSkypark.accuracy,
+    category: expectedSkypark.category,
+    provenance: expectedSkypark.provenance,
+  })
+  const skyparkMeters = projectedRingSizeMeters(skypark.rings[0])
+  const expectedSkyparkMeters = projectedRingSizeMeters(
+    expectedSkypark.geometry.coordinates[0],
+  )
+  assertApproximatelyEqual(
+    skyparkMeters.width,
+    expectedSkyparkMeters.width,
+    'SkyPark width',
+  )
+  assertApproximatelyEqual(
+    skyparkMeters.depth,
+    expectedSkyparkMeters.depth,
+    'SkyPark depth',
+  )
 
   assert.deepEqual(
     [...new Set(
@@ -341,11 +363,7 @@ test('Flight local mission coordinates project deterministically around Singapor
         .filter(surface => surface.kind === 'poi')
         .map(surface => surface.poiId),
     )],
-    [
-      'marina-bay-sands',
-      'singapore-flyer',
-      'gardens-by-the-bay',
-    ],
+    SINGAPORE_MAJOR_POI_GEO_PROFILE.pois.map(poi => poi.id),
   )
   const helicopter = environment.surfaces.find(
     surface => surface.id === 'helicopter',
@@ -353,7 +371,9 @@ test('Flight local mission coordinates project deterministically around Singapor
   assert.ok(helicopter)
   assert.equal(helicopter.baseHeightMeters, 2)
   assert.equal(helicopter.heightMeters, 5.4)
-  const helicopterMeters = projectedRingSizeMeters(helicopter.ring)
+  assert.equal(helicopter.regionalPoiSourceFacts, null)
+  assert.equal(helicopter.rings.length, 1)
+  const helicopterMeters = projectedRingSizeMeters(helicopter.rings[0])
   assertApproximatelyEqual(helicopterMeters.width, 7.4, 'helicopter width')
   assertApproximatelyEqual(helicopterMeters.depth, 9, 'helicopter depth')
 

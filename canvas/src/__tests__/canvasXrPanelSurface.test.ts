@@ -17,9 +17,8 @@ import { FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID } from '@/lib/storyboardWidget/richM
 import { sampleXrAnimationPose } from '@/features/three/xrAnimationCatalog'
 import { resolveMotionControlSubjectPose } from '@/features/three/useMotionControlAnimationPose'
 import { buildMotionControlAnimationTarget, buildMotionControlObjectIdentification } from '@/features/three/motionControlTargetRuntime'
-function readSource(...parts: string[]): string {
-  return readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8')
-}
+import { assertSingaporeEnvironmentCardSemantics } from './helpers/xrEnvironmentCardSemantics'
+function readSource(...parts: string[]): string { return readFileSync(resolve(process.cwd(), 'src', ...parts), 'utf8') }
 export function testXrModeUsesCanonicalFloatingPanel() {
   const spatialAssetTools = readSource('features', 'three', 'SpatialAssetToolsPanel.tsx')
   const mediaCatalog = readSource('features', 'command-menu', 'MediaCatalogPanelView.tsx')
@@ -318,8 +317,8 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   const featuredLabels = XR_SCENE_LIBRARY_FEATURED_ASSET_IDS.map(assetId => XR_SCENE_LIBRARY_ASSETS.find(asset => asset.id === assetId)?.label)
   if (XR_MOTION_REFERENCE_DEFAULT_STAGE_ID !== 'singapore'
     || XR_SCENE_LIBRARY_DEFAULT_ASSET_ID !== 'vehicle-helicopter'
-    || featuredLabels.join('|') !== 'Helicopter|Airplane|Car|Ball') {
-    throw new Error(`expected Singapore and default Helicopter/Airplane/Car/Ball to use explicit catalog defaults, got ${featuredLabels.join('|')}`)
+    || featuredLabels.join('|') !== 'Helicopter|Car|Ball') {
+    throw new Error(`expected Singapore and default Helicopter/Car/Ball to use explicit catalog defaults, got ${featuredLabels.join('|')}`)
   }
   const objectIdentification = buildMotionControlObjectIdentification({
     subjects: [
@@ -385,6 +384,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   ) {
     throw new Error('expected Environment Kits and Subjects & Props to reuse the Media three-row card layout owner')
   }
+  assertSingaporeEnvironmentCardSemantics(xrMediaLibrary)
   if (xrMediaLibrary.includes('sm:grid-cols-2')) throw new Error('expected Environment Kits to remove the stale two-column tile layout')
   for (const marker of [
     "runControl({ action: 'transform'",
@@ -476,11 +476,11 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   for (const marker of ['<XrSingaporeTerrainGeometry', 'stage={stage}', "stage.id === 'singapore'"]) {
     if (!xrStagePresetGeometry.includes(marker)) throw new Error(`expected canonical stage geometry to project Singapore through ${marker}`)
   }
-  for (const marker of ['kg_xr_singapore_marina_bay_sands', 'kg_xr_singapore_flyer', 'kg_xr_singapore_gardens_by_the_bay', 'kg_xr_singapore_perimeter_water', 'kg_xr_singapore_seawall', 'resolveXrTerrainPerimeter', 'selectable: false']) {
+  for (const marker of ['XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.map', '<XrRegionalPoiSurfaceGeometry', 'resolveXrTerrainPerimeter', 'selectable: false']) {
     if (!xrSingaporeTerrain.includes(marker)) throw new Error(`expected native Singapore presentation to expose ${marker}`)
   }
   if (xrSingaporeTerrain.includes('XrSceneLibraryAssetGeometry') || xrSingaporeTerrain.includes('showcaseSubjects')) {
-    throw new Error('expected fixed Singapore terrain to leave mobile Helicopter/Airplane/Car assets to canonical Media CRUD')
+    throw new Error('expected fixed Singapore terrain to leave mobile Helicopter/Car assets to canonical Media CRUD')
   }
   for (const marker of ['XR_TERRAIN_BOUNDARY_THICKNESS_METERS', "edge('west'", "edge('east'", "edge('north'", "edge('south'"]) {
     if (!xrTerrainPerimeter.includes(marker)) throw new Error(`expected canonical terrain perimeter to expose ${marker}`)
@@ -488,7 +488,7 @@ export function testXrModeUsesCanonicalFloatingPanel() {
   if (!xrSceneLibrarySubject.includes('export function XrSceneLibraryAssetGeometry') || !xrSceneLibrarySubject.includes('<XrSceneLibraryAssetGeometry')) {
     throw new Error('expected XR Mode and Rich Media previews to share the canonical procedural subject/prop geometry')
   }
-  for (const marker of ['kg_xr_procedural_car', 'kg_xr_procedural_airplane', 'kg_xr_procedural_helicopter', 'kg_xr_car_wheel', 'kg_xr_helicopter_main_rotor']) {
+  for (const marker of ['kg_xr_procedural_car', 'kg_xr_procedural_helicopter', 'kg_xr_car_wheel', 'kg_xr_helicopter_main_rotor']) {
     if (!xrProceduralVehicle.includes(marker)) throw new Error(`expected one shared procedural vehicle owner to expose ${marker}`)
   }
   if (!xrNativeAuthoredSubjects.includes('runtime.plan.subjects.map') || !xrNativeAuthoredSubjects.includes('<XrSceneLibrarySubject')) {

@@ -13,6 +13,11 @@ export const FLIGHT_SIM_ROUTE_WAYPOINT_COUNT = 3
 export const FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS = 50
 export const FLIGHT_SIM_MAX_CAPTURE_RADIUS_METERS = 200
 export const FLIGHT_SIM_COLLISION_SEPARATION_METERS = 0.001
+export const FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS = Object.freeze([
+  6,
+  1.7,
+  5.5,
+] as const) satisfies SpatialVector
 export const FLIGHT_SIM_TIMEOUT_COLLIDER_ID = 'flight-sim:mission-timeout'
 export const FLIGHT_SIM_AIRCRAFT_ENTITY_REF = 'flight-sim:aircraft'
 export const FLIGHT_SIM_MISSION_ENTITY_REF = `flight-sim:mission:${FLIGHT_SIM_MISSION_ID}`

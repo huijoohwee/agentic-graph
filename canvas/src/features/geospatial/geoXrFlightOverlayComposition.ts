@@ -1,6 +1,6 @@
 import type {
   CityGeoOverlaySnapshot,
-  FlightGeoOverlayPresentationOwner,
+  GeospatialPresentationCameraOwner,
 } from 'gympgrph'
 import type { CitySimSnapshot } from '@/features/game-city-sim/citySimRuntimeState'
 import type { FlightSimSnapshot } from '@/features/game-flight-sim/flightSimModel'
@@ -19,17 +19,15 @@ export function resolveGeoXrGameplayPresentationOwner(input: Readonly<{
   cityActive: boolean
   flightActive: boolean
   flightBootstrapRequested: boolean
-}>): FlightGeoOverlayPresentationOwner {
+}>): GeospatialPresentationCameraOwner {
   if (input.flightActive) return 'flight'
   if (input.cityActive) return 'city'
   return input.flightBootstrapRequested ? 'flight' : null
 }
 
-function publishAerialOverlay(input: Readonly<{
-  city: CitySimSnapshot
+function publishFlightOverlay(input: Readonly<{
   clearFlightOverlay: () => void
   flight: FlightSimSnapshot
-  projectCityAerial: (city: CitySimSnapshot) => FlightSimGeospatialOverlay
   projectFlight: (flight: FlightSimSnapshot) => FlightSimGeospatialOverlay
   setFlightOverlay: (overlay: FlightSimGeospatialOverlay) => void
 }>): GeoXrOverlayPublication {
@@ -37,40 +35,29 @@ function publishAerialOverlay(input: Readonly<{
     input.setFlightOverlay(input.projectFlight(input.flight))
     return 'flight'
   }
-  if (input.city.active) {
-    input.setFlightOverlay(input.projectCityAerial(input.city))
-    return 'city'
-  }
   input.clearFlightOverlay()
   return 'clear'
 }
 
-/**
- * Publishes City parcels and the independent aircraft/route overlay as one
- * ordered handoff. The outgoing owner restores map padding before the incoming
- * owner frames the retained MapLibre map.
- */
+/** Publishes exactly one gameplay overlay branch; City always clears Flight. */
 export function publishGeoXrOverlayComposition(input: Readonly<{
   city: CitySimSnapshot
   flight: FlightSimSnapshot
-  projectCityAerial: (city: CitySimSnapshot) => FlightSimGeospatialOverlay
   projectCityOverlay: (city: CitySimSnapshot) => CityGeoOverlaySnapshot
   projectFlight: (flight: FlightSimSnapshot) => FlightSimGeospatialOverlay
   store: GeoXrOverlayStoreModule
 }>): GeoXrOverlayPublication {
-  const aerialInput = {
-    city: input.city,
+  const flightInput = {
     clearFlightOverlay: input.store.clearFlightGeoOverlay,
     flight: input.flight,
-    projectCityAerial: input.projectCityAerial,
     projectFlight: input.projectFlight,
     setFlightOverlay: input.store.setFlightGeoOverlay,
   }
   if (input.flight.active) {
     input.store.clearCityGeoOverlay()
-    return publishAerialOverlay(aerialInput)
+    return publishFlightOverlay(flightInput)
   }
-  const publication = publishAerialOverlay(aerialInput)
+  publishFlightOverlay(flightInput)
   input.store.setCityGeoOverlay(input.projectCityOverlay(input.city))
-  return publication
+  return input.city.active ? 'city' : 'clear'
 }

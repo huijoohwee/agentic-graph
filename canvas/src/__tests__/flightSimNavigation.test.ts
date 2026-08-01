@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { FLIGHT_SIM_AIRCRAFT_ASSET_SPEC } from '@/features/game-flight-sim/assetSpec/flightSimAssetSpec'
 import {
   cycleFlightSimCameraView,
   FLIGHT_SIM_CAMERA_VIEW_OPTIONS,
@@ -13,6 +12,7 @@ import { resolveFlightSimFollowTarget } from '@/features/game-flight-sim/flightS
 import { isFlightSimCameraCycleCode } from '@/features/game-flight-sim/flightSimInput'
 import {
   FLIGHT_SIM_ZERO_COST_LOG,
+  FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS,
   type FlightSimSnapshot,
   type FlightSimSpatialProfile,
 } from '@/features/game-flight-sim/flightSimModel'
@@ -102,13 +102,13 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
   })
   assert.equal(
     (chase.position[2] - chase.target[2]) / 2,
-    FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2]
-      + FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[0] * 2,
+    FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[2]
+      + FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[0] * 2,
   )
   assert.ok(
     Math.abs(
       (chase.target[1] - flight.aircraft.position[1] * 2) / 2
-        - FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1],
+        - FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[1],
     ) < 1e-12,
   )
   const cockpit = resolveFlightSimFollowTarget(flight, 2, 'cockpit')
@@ -121,12 +121,12 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
   })
   assert.ok(
     Math.abs(cockpit.position[2] - flight.aircraft.position[2] * 2)
-      > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2] * 2,
+      > FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[2] * 2,
     'cockpit eye must remain beyond the scaled forward collision envelope',
   )
   assert.ok(
     cockpit.position[1] - flight.aircraft.position[1] * 2
-      > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1] * 2,
+      > FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[1] * 2,
     'cockpit eye must remain above the scaled vertical collision envelope',
   )
   for (const pitch of [-0.28 * Math.PI, -0.1, 0, 0.1, 0.28 * Math.PI]) {
@@ -152,11 +152,11 @@ test('Flight camera views remain pure scaled descriptors for the shared camera o
       + eyeOffset[2]! * yawForward[2]!
     assert.ok(
       horizontalForwardClearance
-        > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2] * 2,
+        > FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[2] * 2,
     )
     assert.ok(
       eyeOffset[1]!
-        > FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1] * 2,
+        > FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[1] * 2,
     )
   }
   assert.deepEqual(resolveFlightSimFollowTarget(flight, 2, 'survey'), {

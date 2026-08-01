@@ -9,20 +9,18 @@ export async function assertFlightSimSurfaceReadiness({
     'export function FlightSimMissionStage',
     'runtimeController.readSnapshot',
     'runtimeController.subscribe',
-    'readFlightSimDefaultAssetLoadReport',
-    'kg_flight_sim_optional_beacon',
     'useFlightSimSurfaceControls({',
-    "snapshot.phase === 'ready' || snapshot.phase === 'flying'",
     'const removeAfterRender = addAfterEffect(() => {',
-    'if (!actorsVisible) {',
+    'if (geospatialComposite) {',
     "canvas.dataset.kgFlightSimFirstFrame = '1'",
     'completeFlightSimReadyFrame(presentation.runId, presentation.tick)',
+    'return null',
   ], 'Flight Sim actor stage')
   if (
-    /<(?:Canvas|Environment|Sky|Stars|FlightSimHud)\b/.test(missionStageSource)
-    || /\b(?:terrain|arena|fallback world)\b/i.test(missionStageSource)
+    /<(?:Canvas|Environment|Sky|Stars|FlightSimHud|group|mesh|primitive)\b/.test(missionStageSource)
+    || /\b(?:assetSpec|terrain|arena|fallback world|procedural vehicle)\b/i.test(missionStageSource)
   ) {
-    throw new Error('FlightSimMissionStage must not own a world renderer, terrain, or HUD')
+    throw new Error('FlightSimMissionStage must remain a visual-free simulation and frame-lifecycle follower')
   }
 
   const surfaceControlsSource = await readText(`${flightFeatureRoot}/useFlightSimSurfaceControls.ts`)
@@ -36,20 +34,6 @@ export async function assertFlightSimSurfaceReadiness({
     'runFlightSimStageSimulationStep({',
   ], 'shared Flight Sim surface controls')
 
-  const geoSurfaceSource = await readText(`${flightFeatureRoot}/FlightSimGeoSurfaceOverlay.tsx`)
-  requireSourceMarkers(geoSurfaceSource, [
-    'export function FlightSimGeoSurfaceOverlay',
-    'projectFlightSimNavigation(',
-    'completeFlightSimStagePreparation(requestId)',
-    'completeFlightSimReadyFrame(flight.runId, flight.tick)',
-    'data-kg-flight-sim-geo-overlay="1"',
-  ], 'Flight Sim Geo surface overlay')
-  if (
-    geoSurfaceSource.includes('useFlightSimSurfaceControls')
-    || geoSurfaceSource.includes('data-kg-flight-sim-geo-aircraft')
-  ) {
-    throw new Error('FlightSimGeoSurfaceOverlay must not duplicate the mission controls or canonical Flight media subject')
-  }
   const environmentGeoButtonSource = await readText('canvas/src/features/command-menu/XrEnvironmentGeoButton.tsx')
   requireSourceMarkers(environmentGeoButtonSource, [
     'requestXrEnvironmentGeoHandoff(',
@@ -68,9 +52,11 @@ export async function assertFlightSimSurfaceReadiness({
   requireSourceMarkers(canvasViewportSource, [
     'flightSimActive,',
     '<CanvasViewportGeospatialOverlayLazy',
-    '<FlightSimGeoSurfaceOverlayLazy />',
     '<FlightSimHud />',
   ], 'Flight Sim Geo viewport composition')
+  if (canvasViewportSource.includes('FlightSimGeoSurfaceOverlay')) {
+    throw new Error('CanvasViewport must not retain a second Flight Geo renderer')
+  }
   if (
     canvasViewportSource.includes('FlightSimHudLazy')
     || canvasViewportSource.includes('loadFlightSimHud')
@@ -187,9 +173,16 @@ export async function assertFlightSimSurfaceReadiness({
   requireSourceMarkers(flightHudSource, [
     'subscribeFlightSimHudSnapshot',
     'completeFlightSimHudStagePreparation(requestId, flight.revision)',
-    'data-kg-flight-sim-aircraft-media={FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.id}',
-    'requestFlightSimPointerCapture()',
+    'onClick={requestFlightSimPointerCapture}',
   ], 'Flight Sim deadline-critical HUD ownership')
+  if (
+    flightHudSource.includes('FLIGHT_SIM_AIRCRAFT_ASSET_SPEC')
+    || flightHudSource.includes('data-kg-flight-sim-aircraft-media')
+    || flightHudSource.includes('data-kg-media-xr-asset')
+    || /<Plane\b/.test(flightHudSource)
+  ) {
+    throw new Error('Flight HUD must not duplicate the canonical MapLibre aircraft subject')
+  }
   if (
     geospatialHostSource.includes('shared-xr-stage')
     || geospatialPresentationSource.includes('shared-xr-stage')
@@ -205,8 +198,6 @@ export async function assertFlightSimSurfaceReadiness({
   requireSourceMarkers(threeGameplayOverlaySource, [
     'const FlightSimMissionStageLazy = React.lazy(loadFlightSimMissionStage)',
     '<FlightSimMissionStageLazy',
-    'actorsVisible',
-    'coordinateScale={props.coordinateScale}',
     'geospatialComposite={props.geospatialComposite}',
   ], 'Flight Sim transparent runtime layer')
 

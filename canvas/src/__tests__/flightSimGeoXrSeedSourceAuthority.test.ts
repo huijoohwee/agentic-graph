@@ -143,7 +143,7 @@ test('Flight Sim source declares the canonical Geo+XR composition', () => {
     renderer_owner: 'native MapLibre Geo host',
     geo_policy_owner: 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx',
     presentation_owner: 'gympgrph/src/GeospatialHost.tsx',
-    render_policy: 'native MapLibre under transparent Flight R3F overlay',
+    render_policy: 'native MapLibre owns every visible Flight route and aircraft mark',
     maplibre_views: ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
     basemap: 'selected native MapLibre provider view',
     maplibre_runtime_started: true,
@@ -181,7 +181,7 @@ test('Flight resolves subjects from its declared Physics authority without a cop
   assert.equal(plan.stageId, 'singapore')
   assert.deepEqual(
     plan.subjects.map(subject => subject.assetId),
-    ['vehicle-helicopter', 'vehicle-airplane', 'vehicle-sedan'],
+    ['vehicle-helicopter', 'vehicle-sedan'],
   )
 
   const explicitEmptyPlan = {
@@ -332,12 +332,6 @@ test('canonical XR controls preserve the verified Flight Physics subjects', asyn
           properties: {},
         },
         {
-          id: 'flight_asset_spec',
-          label: 'Asset Spec (img2threejs-style)',
-          type: 'FlightDemoAssetSpec',
-          properties: {},
-        },
-        {
           id: 'flight_runtime_gate',
           label: 'Runtime Readiness',
           type: 'FlightDemoValidation',
@@ -365,13 +359,11 @@ test('canonical XR controls preserve the verified Flight Physics subjects', asyn
     assert.equal(await hydrateFlightSimSharedXrSceneSource(), true)
     const expectedAssetIds = [
       'vehicle-helicopter',
-      'vehicle-airplane',
       'vehicle-sedan',
     ]
     const expectedGraphActorIds = [
       'flight_demo_entry',
       'flight_aircraft',
-      'flight_asset_spec',
       'flight_runtime_gate',
     ]
     const expectedCastActorIds = [

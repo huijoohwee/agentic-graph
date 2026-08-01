@@ -45,6 +45,7 @@ import {
   MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR,
   MEDIA_PREVIEW_SELECTABLE_SURFACE_VALUE,
 } from '@/lib/cards/mediaPreviewSurfaceSelection'
+import { XrPhysicsSemanticMediaSurface } from '@/features/three/XrPhysicsSemanticMediaSurface'
 import {
   createEmbeddedCanvasChatSubmitMessage,
   deliverEmbeddedCanvasChatSubmit,
@@ -68,9 +69,7 @@ const StoryboardWidgetCanvasLazy = React.lazy(() => importWithRetry(() => import
 const StoryboardWidgetDropBridgeLazy = React.lazy(() => importWithRetry(() => import('@/components/StoryboardWidgetDropBridge'), { retries: 2, retryDelayMs: 50 }))
 const MarkdownMetricsDevOverlayLazy = React.lazy(() => import('@/components/CanvasViewportMarkdownMetricsDevOverlay').then(mod => ({ default: mod.CanvasViewportMarkdownMetricsDevOverlay })))
 const DesignCanvasLazy = React.lazy(() => import('@/components/DesignCanvas'))
-const ThreeGraphLazy = React.lazy(() => import('@/lib/three/ThreeGraph.impl'))
 const GameFpsHudLazy = React.lazy(() => import('@/features/game-fps/GameFpsHud').then(mod => ({ default: mod.GameFpsHud })))
-const FlightSimGeoSurfaceOverlayLazy = React.lazy(() => import('@/features/game-flight-sim/FlightSimGeoSurfaceOverlay').then(mod => ({ default: mod.FlightSimGeoSurfaceOverlay })))
 const MinimapLazy = React.lazy(() => import('@/features/minimap/Minimap'))
 const StrybldrTimelineBottomPanelLazy = React.lazy(() => import('@/features/strybldr/StrybldrTimelineBottomPanel').then(mod => ({ default: mod.StrybldrTimelineBottomPanel })))
 const LaunchSpotlightLazy = React.lazy(() => import('@/features/spotlight/LaunchSpotlight'))
@@ -487,13 +486,12 @@ export function CanvasViewport(props: CanvasViewportProps) {
           </section>
         ) : null}
         {threeCanvasSurface.mounted ? (
-          <section className={`absolute inset-0 z-[10] ${
-            threeCanvasSurface.active
-              ? `${geospatialXrModeEnabled ? 'pointer-events-none' : 'pointer-events-auto'} opacity-100`
-              : 'pointer-events-none opacity-0'
-          }`}>
-            <ThreeGraphLazy active={threeCanvasSurface.active} geospatialComposite={geospatialXrModeEnabled} mode={effectiveCanvas3dMode} />
-          </section>
+          <XrPhysicsSemanticMediaSurface
+            active={threeCanvasSurface.active}
+            geospatialComposite={geospatialXrModeEnabled}
+            mode={effectiveCanvas3dMode}
+            physicsRunReady={xrPhysicsRuntimeRunReadyDemo}
+          />
         ) : null}
         {!documentSwitchOwnsViewport && geospatialCompositionEnabled && active2dSurface === 'storyboard' ? (
           <section className="absolute inset-0 z-[30] pointer-events-none" aria-hidden="true">
@@ -528,7 +526,6 @@ export function CanvasViewport(props: CanvasViewportProps) {
             )}
           </SemanticMediaFigure>
         ) : null}
-        {!documentSwitchOwnsViewport && geospatialOverlayOwnsViewport && flightSimHudVisible ? <FlightSimGeoSurfaceOverlayLazy /> : null}
         {!documentSwitchOwnsViewport && heavyRuntimeIntentSurface && heavyRuntimeIntentBlocked ? (
           <section
             className="absolute inset-0 z-[35] flex items-center justify-center bg-[var(--kg-canvas-bg)]/96 px-4"
@@ -625,7 +622,7 @@ export function CanvasViewport(props: CanvasViewportProps) {
       {sourceFilesBootstrapReady && xrPhysicsRunReadyDemo && !gameplayOverlayActive && !liveCanvasHeroVisible ? <XrNativeControllerDemoHud /> : null}
       {gameFpsHudVisible ? <GameFpsHudLazy /> : null}
       {flightSimHudVisible ? (
-        <FlightSimHud geospatialComposite={geospatialXrModeEnabled} />
+        <FlightSimHud />
       ) : null}
       {variant === 'workspace' ? <CanvasEmbedCodePanelHost /> : null}
     </section>

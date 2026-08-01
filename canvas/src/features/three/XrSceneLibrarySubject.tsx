@@ -219,7 +219,6 @@ export function XrSceneLibraryAssetGeometry({
   if (asset.shape === 'quadruped') return <Quadruped color={effectiveColor} size={size} />
   if (asset.shape === 'car') return <XrProceduralVehicleGeometry kind="car" color={effectiveColor} size={size} />
   if (asset.shape === 'bicycle') return <Bicycle color={effectiveColor} size={size} />
-  if (asset.shape === 'airplane') return <XrProceduralVehicleGeometry kind="airplane" color={effectiveColor} size={size} />
   if (asset.shape === 'helicopter') return <XrProceduralVehicleGeometry kind="helicopter" color={effectiveColor} size={size} />
   if (asset.shape === 'ball') return <XrProceduralBallGeometry diameterMeters={Math.max(...size)} accentColor={effectiveColor} />
   if (asset.shape === 'debris') return <Debris color={effectiveColor} size={size} />

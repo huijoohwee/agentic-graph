@@ -47,6 +47,7 @@ import {
 } from '@/lib/three/threeGraphSceneLayout'
 import { resolveThreeRendererLifecycleKey, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
 import { resolveThreeGraphXrSceneAuthority, ThreeGraphImmersiveMediaHud, ThreeGraphImmersiveMediaStage, useThreeGraphImmersiveMediaStageActive } from '@/lib/three/ThreeGraphImmersiveMedia'
+import { type ThreeCanvasSemanticMediaOwner, useThreeCanvasSemanticOwner } from '@/lib/three/threeCanvasSemanticOwner'
 const SceneLazy = React.lazy(() =>
   import('@/lib/three/Scene.impl').then(mod => ({
     default: mod.Scene,
@@ -75,7 +76,12 @@ function XrWorldPlacement({
     </XrArPlacementStage>
   ) : <>{children}</>
 }
-export default function ThreeGraph({ active = true, geospatialComposite = false, mode = '3d' }: { active?: boolean; geospatialComposite?: boolean; mode?: Canvas3dModeId }) {
+type ThreeGraphProps = Readonly<{
+  active?: boolean; geospatialComposite?: boolean
+  mode?: Canvas3dModeId
+  semanticMediaOwner?: ThreeCanvasSemanticMediaOwner
+}>
+export default function ThreeGraph({ active = true, geospatialComposite = false, mode = '3d', semanticMediaOwner }: ThreeGraphProps) {
   const { schema, selectNode, selectEdge, setSelectionSource } = useGraphStore()
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
@@ -91,7 +97,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const registerCanvasSnapshotFns = useGraphStore(s => s.registerCanvasSnapshotFns)
   const registerThreeGlbSnapshotFns = useGraphStore(s => s.registerThreeGlbSnapshotFns)
   const registerThreeLayoutSnapshotFns = useGraphStore(s => s.registerThreeLayoutSnapshotFns)
-  const glCanvasRef = React.useRef<HTMLCanvasElement | null>(null)
+  const { bindCanvas: applySemanticCanvasOwner, canvasRef: glCanvasRef } = useThreeCanvasSemanticOwner(semanticMediaOwner)
   const threeSceneRef = React.useRef<ThreeScene | null>(null)
   const threeCameraRef = React.useRef<Camera | null>(null)
   const threeGlRef = React.useRef<WebGLRenderer | null>(null)
@@ -417,7 +423,6 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
       ref={containerRef}
       className="absolute inset-0 w-full h-full z-0"
       data-kg-xr-document-loaded={mode === 'xr' ? (xrDocumentLoaded ? '1' : '0') : undefined}
-      data-kg-geo-xr-surface={geospatialComposite ? 'active' : undefined}
       data-kg-xr-scene-authority={xrSceneAuthority}
       data-kg-xr-exclusive-stage={mode === 'xr' && (immersiveMediaStageActive || hasGraph || hasXrEmptyWorld) ? '1' : undefined}
       data-kg-xr-empty-world={hasXrEmptyWorld ? '1' : undefined}
@@ -458,8 +463,10 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
           }
           try {
             glCanvasRef.current = gl.domElement as HTMLCanvasElement
+            applySemanticCanvasOwner(glCanvasRef.current)
           } catch {
             glCanvasRef.current = null
+            applySemanticCanvasOwner(null)
           }
           threeGlRef.current = gl
           threeCameraRef.current = camera || null

@@ -12,73 +12,16 @@ const hudSource = readFileSync(
   'utf8',
 )
 
-test('Flight reuses the shared bounded semantic media surface in every presentation', () => {
-  assert.match(
-    hudSource,
-    /resolveMediaPreviewSelectableDataAttr/,
-  )
-  assert.match(
-    hudSource,
-    /<figure[\s\S]*className=\{`\$\{mediaPointerClassName\} absolute inset-\[8%_8%_13%_8%\] m-0`\}/,
-  )
-  assert.match(
-    hudSource,
-    /<figure[\s\S]*aria-label="Flight Sim media surface"/,
-  )
-  assert.match(
-    hudSource,
-    /data-kg-flight-sim-media-surface="1"/,
-  )
-  assert.match(
-    hudSource,
-    /data-kg-rich-media-selectable-surface=\{selectableSurfaceDataAttr\}/,
-  )
-  assert.match(hudSource, /<figcaption/)
-  assert.match(
-    hudSource,
-    /Flight Sim media · \{camera\.view\} · \{flight\.phase\}/,
-  )
-  assert.match(hudSource, /FLIGHT_SIM_AIRCRAFT_ASSET_SPEC/)
-  assert.match(
-    hudSource,
-    /<button[\s\S]*aria-label=\{`Select \$\{FLIGHT_SIM_AIRCRAFT_ASSET_SPEC\.label\} Flight media subject`\}/,
-  )
-  assert.match(hudSource, /aria-pressed=\{aircraftSelected\}/)
-  assert.match(
-    hudSource,
-    /data-kg-flight-sim-aircraft-media=\{FLIGHT_SIM_AIRCRAFT_ASSET_SPEC\.id\}/,
-  )
-  assert.match(
-    hudSource,
-    /data-kg-media-xr-asset=\{FLIGHT_SIM_AIRCRAFT_ASSET_SPEC\.id\}/,
-  )
-  assert.match(hudSource, /data-kg-media-xr-asset-category="vehicles"/)
-  assert.match(hudSource, /data-kg-media-xr-thumbnail="flight-subject"/)
-  assert.match(hudSource, /requestFlightSimPointerCapture\(\)/)
-  assert.match(hudSource, /<Plane[\s\S]*role="img"/)
+test('Flight HUD remains semantic controls without owning a second aircraft presentation', () => {
+  assert.match(hudSource, /<section[\s\S]*aria-label="Flight Sim HUD"/)
+  assert.match(hudSource, /<FlightSimNavigationInset/)
+  assert.match(hudSource, /aria-label="Capture flight pointer"/)
+  assert.match(hudSource, /requestFlightSimPointerCapture/)
+  assert.doesNotMatch(hudSource, /FLIGHT_SIM_AIRCRAFT_ASSET_SPEC/)
+  assert.doesNotMatch(hudSource, /data-kg-flight-sim-aircraft-media/)
+  assert.doesNotMatch(hudSource, /data-kg-media-xr-asset/)
+  assert.doesNotMatch(hudSource, /<figure\b/)
+  assert.doesNotMatch(hudSource, /<Plane\b/)
   assert.doesNotMatch(hudSource, /<div\b/)
   assert.doesNotMatch(hudSource, /aria-hidden/)
-})
-
-test('Geo+XR retains semantic Flight selection without intercepting the MapLibre owner', () => {
-  assert.match(
-    hudSource,
-    /export type FlightSimHudProps = Readonly<\{[\s\S]*geospatialComposite\?: boolean/,
-  )
-  assert.match(
-    hudSource,
-    /data-kg-flight-sim-media-pointer-owner=\{[\s\S]*geospatialComposite \? 'geo' : 'flight'/,
-  )
-  assert.match(
-    hudSource,
-    /const mediaPointerClassName = geospatialComposite[\s\S]*\? 'pointer-events-none'[\s\S]*: 'pointer-events-auto'/,
-  )
-  assert.match(
-    hudSource,
-    /<figcaption[\s\S]*className=\{`\$\{mediaPointerClassName\}/,
-  )
-  assert.match(
-    hudSource,
-    /<button[\s\S]*className=\{`\$\{mediaPointerClassName\}/,
-  )
 })

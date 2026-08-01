@@ -1,8 +1,5 @@
 import React from 'react'
 import { UI_RESPONSIVE_PASSIVE_FILL_SURFACE_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
-import FlowCanvas from '@/components/FlowCanvas'
-import { StoryboardCardOverlayLayer2d } from '@/components/StoryboardWidgetCanvas/StoryboardCardOverlayLayer2d'
-import { StoryboardGroupPanelLayer2d } from '@/components/StoryboardWidgetCanvas/StoryboardGroupPanelLayer2d'
 import { applyFixedStoryboardCardPlacementsToGraphData2d, readStoryboardWidgetPlacementSize2d } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
 import { readResolvedStoryboardWidgetDropTransform } from '@/components/StoryboardWidgetCanvas/storyboardWidgetCanvasShared'
 import { buildStoryboardBoardModel } from '@/components/StoryboardCanvas/storyboardModel'
@@ -39,7 +36,12 @@ import { isRichMediaPanelNode } from '@/lib/render/richMediaPanelNode'
 import { readFlowEdgePortKey } from '@/lib/graph/flowPorts'
 import { readFiniteRuntimeZoomTransform } from '@/components/StoryboardWidgetCanvas/runtime/useStoryboardWidgetRuntimeScene'
 import { buildCollectiveCameraFollowBaselineKey, resolveCollectiveCameraFollowBaselineRef } from '@/lib/canvas/overlayWidgetZoom'
-import { StoryboardEdgeNodeInsertionMenu } from '@/components/StoryboardWidgetCanvas/runtime/StoryboardEdgeNodeInsertionMenu'
+import {
+  DeferredFlowCanvas,
+  DeferredStoryboardCardOverlayLayer2d,
+  DeferredStoryboardEdgeNodeInsertionMenu,
+  DeferredStoryboardGroupPanelLayer2d,
+} from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetCanvasSurfaceDeferred'
 import { buildStoryboardOverlayAabbByNodeId } from '@/components/StoryboardWidgetCanvas/runtime/storyboardOverlayAabb'
 import { readSubgraphs, subgraphGroupId } from '@/lib/graph/subgraphs'
 
@@ -68,6 +70,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
   noGraphLoaded: boolean
   toolMode: 'select' | 'addEdge'
   pendingEdgeSourceId: string | null
+  pendingEdgeSourceIds: ReadonlyArray<string>
   beginAddEdgeFromNode: (nodeId: string, portKey?: string | null) => void
   cancelPendingEdge: () => void
   finalizePendingEdge: (nodeId: string, portKey?: string | null, source?: { nodeId: string; portKey: string | null }) => void
@@ -471,6 +474,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         active={props.canEdit}
         graphData={storyboardEdgeGraphData}
         pendingEdgeSourceId={props.pendingEdgeSourceId}
+        pendingEdgeSourceIds={props.pendingEdgeSourceIds}
         registryEntries={props.widgetRegistry}
         schema={schema}
         toolMode={props.toolMode}
@@ -478,8 +482,9 @@ export default function StoryboardWidgetCanvasSurface(props: {
         cancelEdge={props.cancelPendingEdge}
         finalizeEdge={props.finalizePendingEdge}
       >
+      <React.Suspense fallback={null}>
       {!props.noGraphLoaded && (
-        <FlowCanvas
+        <DeferredFlowCanvas
           active={props.active}
           storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
           allowNodeDragOverride={props.canInteract}
@@ -519,7 +524,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         />
       )}
 
-      <StoryboardEdgeNodeInsertionMenu
+      <DeferredStoryboardEdgeNodeInsertionMenu
         active={props.active}
         canEdit={props.canEdit}
         rootRef={props.rootRef}
@@ -530,7 +535,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
       />
 
       {props.overlayEditorElements}
-      <StoryboardGroupPanelLayer2d
+      <DeferredStoryboardGroupPanelLayer2d
         active={storyboardSharedSurfaceActive}
         fallbackNodePositions={stableStoryboardCardPlacements}
         flowWidgetPinnedByNodeId={effectiveFlowWidgetPinnedByNodeId}
@@ -540,7 +545,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         onNodeChange={props.patchNodeById}
         storyboardWidgetSurfaceId={props.storyboardWidgetSurfaceId}
       />
-      <StoryboardCardOverlayLayer2d
+      <DeferredStoryboardCardOverlayLayer2d
         active={storyboardCardsActive}
         commitGraphData={props.commitStoryboardCardMediaGraph}
         flowWidgetPinnedByNodeId={effectiveFlowWidgetPinnedByNodeId}
@@ -561,6 +566,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         widgetRegistry={props.widgetRegistry}
         registerInteractionFrameProjectionScheduler={registerCardOverlayInteractionFrameScheduler}
       />
+      </React.Suspense>
 
       {props.noGraphLoaded && !props.geospatialWidgetPanelMode && (
         <aside className="absolute top-3 left-3 z-[220]" aria-label="Storyboard Status">
@@ -574,7 +580,11 @@ export default function StoryboardWidgetCanvasSurface(props: {
         <aside className="absolute top-16 left-3 z-[220]" aria-label="Add edge hint">
           <section className={`rounded-lg border px-3 py-2 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border}`}>
             <p className={`text-xs ${UI_THEME_TOKENS.text.secondary}`}>
-              {props.pendingEdgeSourceId ? `Select target node (from ${props.pendingEdgeSourceId}).` : 'Select source node.'}
+              {props.pendingEdgeSourceId
+                ? props.pendingEdgeSourceIds.length > 1
+                  ? `Multi-connect ${props.pendingEdgeSourceIds.length} sources: choose an input to connect the group. Click canvas or press Escape to finish.`
+                  : `Multi-connect from ${props.pendingEdgeSourceId}: choose inputs for fan-out or another output for fan-in. Click canvas or press Escape to finish.`
+                : 'Select source node.'}
             </p>
           </section>
         </aside>

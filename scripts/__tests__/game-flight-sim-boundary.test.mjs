@@ -87,10 +87,3 @@ test('rejects opaque binary content under Flight-owned source paths', () => {
     bytes: Buffer.from([0, 1, 2, 3]),
   }]), /opaque binary/)
 })
-
-test('permits only the separately hash-and-license-gated optional opaque asset path', () => {
-  assert.doesNotThrow(() => assertFlightSimBoundary([{
-    relativePath: 'canvas/src/features/game-flight-sim/assetSpec/fallbacks/optional-beacon.glb',
-    bytes: Buffer.from([0, 1, 2, 3]),
-  }]))
-})

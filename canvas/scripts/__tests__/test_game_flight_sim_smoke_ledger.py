@@ -221,21 +221,12 @@ class BrowserVerificationLedgerTest(unittest.TestCase):
                 0.62,
             )
 
-    def test_optional_beacon_reader_uses_active_runtime_canvas_metadata(
-        self,
-    ) -> None:
+    def test_scene_reader_has_no_legacy_optional_beacon_subject(self) -> None:
         scene_source = (
             SCRIPTS_ROOT / "lib" / "game_flight_sim_smoke_scene.py"
         ).read_text(encoding="utf-8")
-        baseline_source, active_reader_source = scene_source.split(
-            "def read_flight_scene", maxsplit=1
-        )
-        lookup = (
-            "rendererCanvas?.dataset.kgFlightSimOptionalBeacon || 'null'"
-        )
-        self.assertNotIn(lookup, baseline_source)
-        self.assertEqual(active_reader_source.count(lookup), 1)
-        self.assertNotIn("const optionalBeaconNode = descendants.find", scene_source)
+        self.assertNotIn("OptionalBeacon", scene_source)
+        self.assertNotIn("optionalBeacon", scene_source)
 
     def test_exact_required_inventory_rejects_an_all_passed_subset(self) -> None:
         complete = BrowserVerificationLedger()

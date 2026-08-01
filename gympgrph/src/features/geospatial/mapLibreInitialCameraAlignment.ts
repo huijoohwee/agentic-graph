@@ -7,10 +7,10 @@ type FrameScheduler = (callback: () => void) => unknown
 
 export type MapLibreInitialCameraAlignmentOptions = Readonly<{
   canvasRenderMode: '2d' | '3d'
-  // This must be read at each load/resize/rAF boundary. A Flight bootstrap
-  // can claim the already-mounted map while its initial provider style is
-  // still loading, so a construction-time boolean would be stale.
-  flightBootstrapActive: () => boolean
+  // This must be read at each load/resize/rAF boundary. Gameplay can claim an
+  // already-mounted map while its presentation is still loading, so a
+  // construction-time boolean would be stale.
+  hasPresentationCameraClaim: () => boolean
   isCurrent: () => boolean
   map: () => any | null
   requestFrame?: FrameScheduler
@@ -18,9 +18,9 @@ export type MapLibreInitialCameraAlignmentOptions = Readonly<{
 }>
 
 /**
- * The generic Singapore camera belongs to a non-Flight map's first paint.
- * Flight's bootstrap owns the camera from creation through stopped staging, so
- * it must never be realigned by a late load, resize, or queued frame.
+ * The generic Singapore camera belongs only to an unclaimed map's first paint.
+ * A gameplay presentation owns its authored camera from activation, so a late
+ * load, resize, or queued frame must not overwrite City or Flight framing.
  */
 export function createMapLibreInitialCameraAlignment(
   options: MapLibreInitialCameraAlignmentOptions,
@@ -30,7 +30,7 @@ export function createMapLibreInitialCameraAlignment(
   return () => {
     if (
       aligned
-      || options.flightBootstrapActive()
+      || options.hasPresentationCameraClaim()
       || options.canvasRenderMode !== '3d'
       || !options.isCurrent()
     ) return false
@@ -42,7 +42,7 @@ export function createMapLibreInitialCameraAlignment(
     if (!applied || !requestFrame) return applied
     requestFrame(() => {
       if (
-        options.flightBootstrapActive()
+        options.hasPresentationCameraClaim()
         || !options.isCurrent()
         || options.map() !== map
       ) return

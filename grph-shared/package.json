@@ -253,6 +253,11 @@
       "import": "./dist/geospatial/regionalPoiGeo.js",
       "default": "./dist/geospatial/regionalPoiGeo.js"
     },
+    "./geospatial/singaporeMajorPoiIdentity": {
+      "types": "./dist/geospatial/singaporeMajorPoiIdentity.d.ts",
+      "import": "./dist/geospatial/singaporeMajorPoiIdentity.js",
+      "default": "./dist/geospatial/singaporeMajorPoiIdentity.js"
+    },
     "./geospatial/singaporeMajorPoiGeo": {
       "types": "./dist/geospatial/singaporeMajorPoiGeo.d.ts",
       "import": "./dist/geospatial/singaporeMajorPoiGeo.js",

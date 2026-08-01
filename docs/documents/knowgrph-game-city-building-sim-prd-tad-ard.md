@@ -2,14 +2,14 @@
 title: "Reference implementation: Knowgrph City-Building Simulation PRD/TAD/ADR"
 id: "md:knowgrph-game-city-building-sim-prd-tad-ard"
 doc_type: "PRD/TAD/ADR"
-version: "2.0.0"
+version: "2.1.0"
 date: "2026-07-31"
 lang: "en-US"
 owner: "City Simulation Product Architecture"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
-universal_scope: false
+universal_scope: true
 guideline_version: "1.7.0"
 frontmatter_contract: "required"
 requirements_authority: "/.kiro/specs/knowgrph-city-building-sim/requirements.md"
@@ -22,7 +22,7 @@ evidence_companion: "/docs/documents/knowgrph-game-city-building-sim-vcc-deliver
 
 ## 1. Authority and contract boundaries
 
-This document owns the City simulation product contract: parcel state,
+This document owns the locale-agnostic City simulation product contract: POI-keyed parcel state,
 selection, zoning, deterministic ticks, economy, bounded advice, persistence,
 City Builder interactions, and read-only projections into existing panels. The
 normative requirements file owns detailed acceptance criteria. The evidence
@@ -30,7 +30,7 @@ companion owns VCC results, traceability, readiness gaps, and deploy boundaries.
 
 The City simulation consumes, but does not redefine, the Geo+XR composition
 contract. It selects one companion-owned regional-context profile and
-publishes domain and dynamic-subject snapshots through the composed-surface
+publishes domain-state snapshots through the composed-surface
 ports. It owns no geographic renderer, provider, camera, viewport gesture,
 regional profile, or spatial-engine lifecycle. Regional identity, exact
 geographic rings, real-metre heights, accuracy, provenance, framing inputs,
@@ -46,7 +46,7 @@ the source.
 Abstract graph operations are difficult to demonstrate as a visible causal
 loop. A compact civic simulation makes a decision observable:
 
-1. select a parcel;
+1. select a regional POI parcel;
 2. assign a zone or request advice;
 3. advance one deterministic tick;
 4. observe population, land value, pollution, and treasury;
@@ -71,7 +71,7 @@ projection, and exits without leaving a second state owner.
 | Stage | Action | Touchpoint | Friction | Opportunity |
 |---|---|---|---|---|
 | Trigger | Apply an authored City source | Source Files | Stale state may prelaunch a demo | Admit one exact source identity |
-| Discover | Inspect current metrics and grid | City Builder | No parcel may be selected yet | Explain the next valid action |
+| Discover | Inspect current metrics and POI zoning | City Builder | No POI may be selected yet | Explain the next valid action |
 | Engage | Select, zone, advise, start, or stop | City Builder and geographic surface | Inputs can fork if each surface owns state | Normalize all inputs to one dispatcher |
 | Complete | Observe and save a committed tick | Metrics and workspace document | A UI success can precede durable bytes | Read back and compare bytes plus semantics |
 | Return | Switch panels or exit | Shared surface lifecycle | Hidden state may survive | Project one revision and restore exactly once |
@@ -80,12 +80,12 @@ projection, and exits without leaving a second state owner.
 
 | ID | Story | Given / When / Then | VCC translation |
 |---|---|---|---|
-| `PRD-CITY-01` | As an operator, I want source activation to initialize one City so that stale state cannot choose the demo. | Given bootstrap-ready Source Files, when the authored source is applied, then one validated initial grid, geographic profile, and regional-context profile reference initialize the runtime. | Verify source identity, grid, geographic profile, and exact regional-profile reference are the only initializer and malformed input leaves City closed. |
+| `PRD-CITY-01` | As an operator, I want source activation to initialize one City so that stale state cannot choose the demo. | Given bootstrap-ready Source Files, when the authored source is applied, then one validated POI-zoning state and one regional-profile identity initialize the runtime. | Verify every parcel id exactly equals one identity in the selected profile, coverage is one-to-one, and malformed or incomplete input leaves City closed. |
 | `PRD-CITY-02` | As an operator, I want deterministic lifecycle controls so that equal inputs replay equally. | Given equal admitted state and input frames, when Start advances ticks and Stop fences them, then serialized states are byte-identical. | Verify lifecycle/model cases exit 0 with equal state digests and no clock, random, network, or model input. |
 | `PRD-CITY-03` | As a planner, I want parcel zoning and advice so that I can compare bounded proposals before committing. | Given a selected parcel or district, when advice runs, then at most two deterministic rounds return a proposal without mutating a zone. | Verify bounded rounds, clarify behavior, tie break, zero-token cost record, and no zone mutation. |
 | `PRD-CITY-04` | As a reviewer, I want one canonical save so that runtime success is distinguishable from persistence. | Given valid state, when Save runs, then one canonical document is written, read back, byte-compared, parsed, and semantically compared. | Verify canonical path, stable ordering, malformed-byte preservation, and exact read-back. |
-| `PRD-CITY-05` | As a multimodal operator, I want input parity so that pointer, keyboard, touch, and coordinate controls select the same parcel. | Given equivalent inputs, when selection or zoning is requested, then all paths dispatch one normalized action and invalid input changes no revision. | Verify equivalent snapshots and typed rejection with unchanged state. |
-| `PRD-CITY-06` | As a reviewer, I want one composed presentation so that City never creates a parallel world. | Given active Geo+XR, when City presents companion-owned regional geographic context, parcels, and optional aerial context, then it uses the composed-surface ports, semantic media contract, and lease order without taking host ownership. | Verify regional context renders below parcels and dynamic subjects on one geographic host, the optional Flight-local XR environment remains absent, City has zero renderer/camera/gesture owners, and exit fully cleans up. |
+| `PRD-CITY-05` | As a multimodal operator, I want input parity so that pointer, keyboard, touch, and POI controls select the same parcel. | Given equivalent inputs, when selection or zoning is requested, then all paths dispatch one normalized POI identity and invalid input changes no revision. | Verify equivalent snapshots, exact profile membership, and typed rejection with unchanged state. |
+| `PRD-CITY-06` | As a reviewer, I want one composed presentation so that City never creates a parallel world. | Given active Geo+XR, when City presents zoning, then it projects state directly onto companion-owned POI surfaces through the semantic media and lease contracts without taking host or geometry ownership. | Verify City authors no anchor, dimensions, gaps, bearing, height, route, or aircraft; the existing Flight overlay remains independent; and exit fully cleans up. |
 | `PRD-CITY-07` | As an agent host, I want local inspect and explicit control surfaces so that read and mutation trust boundaries remain distinct. | Given the embedded catalog, when inspect or approved control is called, then both delegate to the same dispatcher and add no remote or delivery authority. | Verify exactly two catalogued local tools, one dispatcher, and zero remote surfaces. |
 | `PRD-CITY-08` | As a mobile/offline operator, I want the core loop to remain usable so that loss of connectivity does not block first value. | Given a local source at 375 by 812, when I select, zone, tick, save, and exit, then the loop remains reachable with zero required network or model calls. | Verify responsive controls, no page overflow, local persistence, and zero paid calls. |
 
@@ -93,7 +93,7 @@ projection, and exits without leaving a second state owner.
 
 | Capability | Tier | Impact | Sessions/month | Build hours | Monthly cash/token cost | ROI score | Rationale |
 |---|---|---:|---:|---:|---:|---:|---|
-| Deterministic grid, lifecycle, and save | Must | 4 | 12 | 40 | $0 | 1.20 | Smallest complete observable loop |
+| Deterministic POI zoning, lifecycle, and save | Must | 4 | 12 | 40 | $0 | 1.20 | Smallest complete observable loop |
 | Local Advisor and shared projections | Must | 3 | 12 | 30 | $0 | 1.20 | Explains state without a model |
 | Input and device parity | Should | 3 | 8 | 24 | $0 | 1.00 | Preserves reach without another state path |
 | Model narration | Won't | 2 | 4 | 24 | $5 | 0.28 | Breaks deterministic zero-token scope |
@@ -113,7 +113,7 @@ The Must threshold is `1.0`.
 | Advisor rounds | 2 | at most 2 | continuous |
 | Local / delivered rung | spec-complete / undocumented | runtime-ready / undocumented | after all local VCCs |
 
-**Min-viable scope:** one authored grid, three zone choices, integer economy,
+**Min-viable scope:** one authored POI-zoning state, three zone choices, integer economy,
 fixed tick, bounded local advice, one canonical save/read-back, one City
 Builder, read-only panel projections, one companion-selected regional-context
 publication, and one Geo+XR domain publication.
@@ -144,7 +144,7 @@ Advisor, workspace adapter, composed-surface ports, and operator.
 
 **Happy path:**
 
-1. The parser validates source identity, initial grid, and geographic profile.
+1. The parser validates source identity, the selected regional profile, and exact one-to-one POI parcel coverage.
 2. The runtime opens with one immutable revision and projects it to City Builder.
 3. Inputs normalize to one selection or operation.
 4. Start commits fixed ticks; Stop fences later scheduled work.
@@ -153,7 +153,7 @@ Advisor, workspace adapter, composed-surface ports, and operator.
 7. Exit clears City publications and restores the prior surface state.
 
 **Alternate path:** no persistence document exists; Open uses the admitted
-source's initial grid without writing it.
+source's initial POI zoning without writing it.
 
 **Error path:** malformed source, invalid operation, unsafe integer, read-back
 mismatch, or failed surface restoration returns a typed error and preserves the
@@ -190,7 +190,7 @@ sequenceDiagram
 | Transform | Advisor | snapshot + scope | proposal or clarify result + zero cost log | none | at most two rounds |
 | Store | workspace adapter | canonical serialized state | read-back bytes + parsed state | one device-local document | preserve malformed prior bytes |
 | Serve | panel projectors | immutable snapshot | read-only view models | none | expose typed unavailable state |
-| Serve | composed-surface adapter | snapshot + geographic profile + read-only regional profile | ordered regional-context, domain, and dynamic-subject publications | volatile host state | clear only City leases; never mutate the regional source |
+| Serve | composed-surface adapter | snapshot + read-only regional profile | regional POI feature-state publication | volatile host state | clear only City state; never mutate regional geometry or Flight state |
 
 The workspace document is explicit-save only. Runtime ticks never auto-save.
 Open, Restart, and Reset have no initializer other than the admitted source.
@@ -271,17 +271,17 @@ City contract. City now owns only domain behavior and port-bound projections.
 
 | Contract | Required fields | Failure rule |
 |---|---|---|
-| `CityInitialState` | version, stable parcels, integer metrics | reject incomplete or duplicate parcel identity |
+| `CityInitialState` | schema id, regional-profile id, stable POI parcels, UI ordering, integer metrics | reject any parcel id outside the selected profile, duplicate, omission, alias, or ordering drift |
 | `CityOperation` | operation plus only its typed arguments | reject unknown or repeated fields before mutation |
 | `CitySnapshot` | revision, lifecycle, selection, ordered parcels, metrics | publish immutable complete snapshots only |
 | `CityAdviceResult` | rounds, proposals, clarify flag, tie metadata, cost log | cap at two rounds and never auto-zone |
 | `CityPersistenceDocument` | ordered metadata and canonical parcel table | one path, LF endings, one final newline |
-| `CitySurfaceSnapshot` | regional-profile identity, domain features, optional dynamic subject, owner lease | no copied regional facts, renderer, camera, gesture, or regional mutation |
+| `CitySurfaceSnapshot` | regional-profile identity, directly keyed parcel state, owner lease | no copied geometry, dynamic subject, renderer, camera, gesture, Flight mutation, or regional mutation |
 
 ## 11. Domain rules and failure policy
 
 Money and land value use cents; tax uses basis points; population and pollution
-use whole safe integers. Each fixed tick visits parcels in stable id order.
+use whole safe integers. Each fixed tick visits parcels in selected-profile order.
 Zone coefficients and treasury rules remain versioned in the normative
 requirements and source schema, not duplicated as renderer configuration.
 
@@ -298,12 +298,12 @@ Advisor, or hidden live overlay.
 
 | Attribute | Bound | Pattern | VCC |
 |---|---|---|---|
-| Determinism | fixed tick; at most 64 by 64 parcels | safe integers, stable order, atomic candidate | 02 |
+| Determinism | fixed tick; exactly one parcel per selected-profile POI | safe integers, profile order, atomic candidate | 01, 02 |
 | Performance | one fixed tick commits within its interval | pure bounded functions | 02 |
 | Security | mutation only through explicit typed control | strict parser and trust-separated tools | 05, 07 |
 | Offline behavior | zero required network/model calls | local functions and workspace adapter | 02, 03, 04, 08 |
 | Observability | typed result per operation; one zero-cost advice record | immutable snapshot and result log | 03 |
-| Accessibility | pointer, keyboard, touch, and coordinate parity | normalized action boundary | 05, 08 |
+| Accessibility | pointer, keyboard, touch, and POI-control parity | normalized action boundary | 05, 08 |
 | Visual ownership | City owns data publications only | Geo+XR port adapter | 06 |
 
 ## 12. ADR-1: source-authored initialization only
@@ -355,14 +355,17 @@ nondeterminism.
 
 **Status:** Accepted
 **Date:** 2026-07-31
-**Decision:** select one companion-owned regional-context profile and publish
-City domain plus optional dynamic-subject data through the shared band/lease
-interfaces; City owns no regional facts or visual host.
+**Decision:** select one companion-owned regional profile and publish City
+state directly by canonical `RegionalPoiIdentity.id` through the shared
+band/lease interfaces. Coverage is exactly one-to-one. Row and column, when
+present, are UI order only. City owns no geometry, height, anchor, dimensions,
+gaps, bearing, route, aircraft, regional fact, or visual host.
 **FOSS alternative:** a standalone scene renderer duplicates world, camera, and
 input ownership.
 **TCO:** chosen $0 + 8 h/year; alternative $0 + 24 h/year.
-**Consequence:** generic surface arbitration and regional data can change
-without changing City mechanics.
+**Consequence:** generic surface arbitration, locale data, and independent
+Flight overlays can change without changing City mechanics or requiring an
+alias/remap layer.
 
 ## 17. Evidence, readiness, and delivery delegation
 
@@ -389,7 +392,7 @@ Knowgrph realizes the contract through:
   retained MapLibre geographic host, with the native canvas referencing its
   caption, carrying the same direct accessible name, and owning the sole
   selection marker through the neutral MapLibre semantic-owner binding;
-- City parcel adapters in `gympgrph/src/cityGeoOverlay*.ts`;
+- City POI feature-state adapters in `gympgrph/src/cityGeo*.ts`;
 - the regional geographic-context adapter named in the selected regional
   companion;
 - the current City/Flight MapLibre publisher specialization in
@@ -405,21 +408,23 @@ remain mounted only as the same inactive, transparent, pointer-inert lifecycle
 owner; City does not create it, activate it, or retain any R3F Flight visuals.
 This preserves exact renderer identity across a Flight-to-City-to-Flight
 handoff without admitting a second visible presentation. City projects no
-selected Flight-local XR environment, local stage
-footprint, or local schematic POI into geographic space. Instead, the selected
-regional companion supplies a separate checked-in geographic-context
-publication with exact rings, real-metre heights, accuracy, and provenance.
-That regional band renders below source-authored City parcels; the stopped
-Flight route and aircraft render above both. The MapLibre camera frames the
-union of the admitted regional features and City parcel bounds inside the
-visible aperture. The composition activates no Three.js/R3F presentation and no
+selected Flight-local XR environment, local stage footprint, or derived local
+POI presentation into geographic space. Instead, the selected regional
+companion supplies the checked-in geographic authority with every admitted
+Polygon surface, its complete ring sets, real-metre height, accuracy,
+provenance, and one identity locator per POI.
+City zoning is keyed directly to the selected profile's POI identities and
+projects onto those exact companion-owned surfaces. MapLibre frames the
+selected regional profile bounds. Any Flight route or aircraft shown above the
+regional band remains independently owned; City supplies no aerial fields or
+adapter. The composition activates no Three.js/R3F presentation and no
 parallel HTML marker layer.
 
 `SemanticMediaFigure` remains the semantic ancestor, and its live MapLibre
 canvas remains the sole direct selection owner with the caption relationship
 and City accessible name. No generic replacement wrapper or `aria-hidden`
 decoration is admitted. Flight bootstrap, camera, gameplay, and readiness
-remain inactive for the City-owned stopped aircraft/route publication.
+remain outside City ownership.
 
 The current native invocation grammar is:
 

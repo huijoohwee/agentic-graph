@@ -53,6 +53,7 @@ export const FLOW_PORT_HANDLE_PREVIEW_EVENT = 'kg-flow-port-handle-preview'
 
 export const FLOW_PORT_HANDLE_SELECTOR = 'button[data-kg-port-handle="1"]'
 const PORT_HANDLE_DROP_RADIUS_PX = 36
+const PORT_HANDLE_CLICK_MOVEMENT_TOLERANCE_PX = 6
 
 type FlowPortHandleDragSession = {
   id: number
@@ -203,6 +204,18 @@ function consumeFlowPortHandleDragEvent(event: Event): void {
   }
 }
 
+function movedBeyondClickTolerance(args: {
+  startClientX: number
+  startClientY: number
+  clientX: number
+  clientY: number
+}): boolean {
+  return Math.hypot(
+    args.clientX - args.startClientX,
+    args.clientY - args.startClientY,
+  ) > PORT_HANDLE_CLICK_MOVEMENT_TOLERANCE_PX
+}
+
 export function startFlowPortHandlePointerDrag(args: FlowPortHandlePointerDragArgs): boolean {
   if (typeof document === 'undefined' || args.event.button !== 0) return false
   const pointerId = args.event.pointerId
@@ -214,7 +227,14 @@ export function startFlowPortHandlePointerDrag(args: FlowPortHandlePointerDragAr
   args.event.preventDefault()
   dispatchFlowPortHandlePreview({ phase: 'start', sourceNodeId, sourcePortKey, clientX: args.event.clientX, clientY: args.event.clientY })
 
+  const startClientX = args.event.clientX
+  const startClientY = args.event.clientY
+  let didDrag = false
   let finishFrame = 0
+  const trackMovement = (clientX: number, clientY: number) => {
+    if (didDrag) return
+    didDrag = movedBeyondClickTolerance({ startClientX, startClientY, clientX, clientY })
+  }
 
   const cleanup = () => {
     document.removeEventListener('pointermove', move, true)
@@ -227,10 +247,14 @@ export function startFlowPortHandlePointerDrag(args: FlowPortHandlePointerDragAr
   }
   const move = (event: PointerEvent) => {
     consumeFlowPortHandleDragEvent(event)
-    if (event.pointerId === pointerId) dispatchFlowPortHandlePreview({ phase: 'move', sourceNodeId, sourcePortKey, clientX: event.clientX, clientY: event.clientY })
+    if (event.pointerId === pointerId) {
+      trackMovement(event.clientX, event.clientY)
+      dispatchFlowPortHandlePreview({ phase: 'move', sourceNodeId, sourcePortKey, clientX: event.clientX, clientY: event.clientY })
+    }
   }
   const moveMouse = (event: MouseEvent) => {
     consumeFlowPortHandleDragEvent(event)
+    trackMovement(event.clientX, event.clientY)
     dispatchFlowPortHandlePreview({ phase: 'move', sourceNodeId, sourcePortKey, clientX: event.clientX, clientY: event.clientY })
   }
   const cancel = (event: PointerEvent) => {
@@ -240,13 +264,14 @@ export function startFlowPortHandlePointerDrag(args: FlowPortHandlePointerDragAr
     cleanup()
   }
   const finishAt = (clientX: number, clientY: number) => {
+    trackMovement(clientX, clientY)
     cleanup()
     dispatchFlowPortHandlePreview({ phase: 'move', sourceNodeId, sourcePortKey, clientX, clientY })
     finishFrame = scheduleAfterHandleStateCommit(() => {
       finishFrame = 0
       if (!finalizeSemanticInputHandleAt({ clientX, clientY, sourceNodeId, sourcePortKey })) {
         dispatchFlowPortHandlePreview({ phase: 'cancel', sourceNodeId, sourcePortKey, clientX, clientY })
-        dispatchFlowPortHandleCancel({ sourceNodeId, sourcePortKey, clientX, clientY })
+        if (didDrag) dispatchFlowPortHandleCancel({ sourceNodeId, sourcePortKey, clientX, clientY })
       }
     })
   }
@@ -278,8 +303,16 @@ export function startFlowPortHandleMouseDrag(args: FlowPortHandleMouseDragArgs):
   args.event.preventDefault()
   dispatchFlowPortHandlePreview({ phase: 'start', sourceNodeId, sourcePortKey, clientX: args.event.clientX, clientY: args.event.clientY })
 
+  const startClientX = args.event.clientX
+  const startClientY = args.event.clientY
+  let didDrag = false
+  const trackMovement = (clientX: number, clientY: number) => {
+    if (didDrag) return
+    didDrag = movedBeyondClickTolerance({ startClientX, startClientY, clientX, clientY })
+  }
   const move = (event: MouseEvent) => {
     consumeFlowPortHandleDragEvent(event)
+    trackMovement(event.clientX, event.clientY)
     dispatchFlowPortHandlePreview({ phase: 'move', sourceNodeId, sourcePortKey, clientX: event.clientX, clientY: event.clientY })
   }
   const finish = (event: MouseEvent) => {
@@ -289,11 +322,12 @@ export function startFlowPortHandleMouseDrag(args: FlowPortHandleMouseDragArgs):
     clearFlowPortHandleDragSession(session)
     const clientX = event.clientX
     const clientY = event.clientY
+    trackMovement(clientX, clientY)
     dispatchFlowPortHandlePreview({ phase: 'move', sourceNodeId, sourcePortKey, clientX, clientY })
     scheduleAfterHandleStateCommit(() => {
       if (!finalizeSemanticInputHandleAt({ clientX, clientY, sourceNodeId, sourcePortKey })) {
         dispatchFlowPortHandlePreview({ phase: 'cancel', sourceNodeId, sourcePortKey, clientX, clientY })
-        dispatchFlowPortHandleCancel({ sourceNodeId, sourcePortKey, clientX, clientY })
+        if (didDrag) dispatchFlowPortHandleCancel({ sourceNodeId, sourcePortKey, clientX, clientY })
       }
     })
   }

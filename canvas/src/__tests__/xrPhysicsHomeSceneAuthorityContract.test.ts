@@ -94,6 +94,11 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   const bridgeSource = readSource('features', 'three', 'XrMotionReferenceRuntimeBridge.tsx')
   const startupRuntimesSource = readSource('features', 'canvas', 'CanvasStartupRuntimes.tsx')
   const canvasViewportSource = readSource('components', 'CanvasViewport.tsx')
+  const xrPhysicsSemanticMediaSurfaceSource = readSource(
+    'features',
+    'three',
+    'XrPhysicsSemanticMediaSurface.tsx',
+  )
   const threeRendererLifecycleSource = readSource('lib', 'three', 'threeRendererLifecycle.ts')
   const canonicalPhysicsStageSource = readSource('features', 'three', 'XrCanonicalPhysicsStage.tsx')
   const motionReferenceGraphStageSource = readSource('features', 'three', 'XrMotionReferenceGraphStage.tsx')
@@ -171,8 +176,13 @@ export function testXrPhysicsHomeSceneAuthorityRejectsFallbackVariants(): void {
   requireCentralizedBootstrapActivation(
     canvasViewportSource,
     threeRendererLifecycleSource,
-    '<ThreeGraphLazy',
+    '<XrPhysicsSemanticMediaSurface',
     'ThreeGraph source authority',
+  )
+  requireSourceMarker(
+    xrPhysicsSemanticMediaSurfaceSource,
+    '<ThreeGraphLazy',
+    'ThreeGraph semantic surface delegation',
   )
   requireBootstrapGuardBeforeMount(
     canvasViewportSource,

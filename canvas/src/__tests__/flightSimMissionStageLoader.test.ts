@@ -9,7 +9,7 @@ import type {
 } from '@/features/game-flight-sim/flightSimStageRuntimeController'
 
 const MissionStage = (() => null) as ComponentType<{
-  coordinateScale?: number
+  geospatialComposite?: boolean
 }>
 const runtimeController = {} as FlightSimStageRuntimeController
 

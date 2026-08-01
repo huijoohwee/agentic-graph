@@ -2,12 +2,6 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { JSDOM } from 'jsdom'
 import {
-  FLIGHT_SIM_AIRCRAFT_ASSET_SPEC,
-  FLIGHT_SIM_REQUIRED_AIRCRAFT_GLB_FALLBACK_COUNT,
-  readFlightSimAircraftAssetSpec,
-} from '../features/game-flight-sim/assetSpec/flightSimAssetSpec'
-import { resolveXrSceneLibraryAsset } from '../features/three/xrSceneLibrary'
-import {
   captureFlightSimMission,
   createFlightSimMission,
   tickFlightSimMission,
@@ -159,29 +153,6 @@ function completedDecision(spatial: FlightSimSpatialProfile, tick: number) {
     producedAt: flightSimDecisionProducedAt(tick, 'mission_completed'),
   }
 }
-
-test('source-authored aircraft JSON is validated as the local spec-primary asset', () => {
-  const mediaAirplane = resolveXrSceneLibraryAsset('vehicle-airplane')
-  assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.id, 'vehicle-airplane')
-  assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.label, mediaAirplane.label)
-  assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.defaultColor, mediaAirplane.defaultColor)
-  assert.deepEqual(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.dimensionsMeters, mediaAirplane.dimensionsMeters)
-  assert.deepEqual(
-    FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters,
-    mediaAirplane.dimensionsMeters.map(value => value / 2),
-  )
-  assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.representation, 'typescript-json')
-  assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.runtimeModelCalls, 0)
-  assert.equal(FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.runtimeNetworkCalls, 0)
-  assert.equal(FLIGHT_SIM_REQUIRED_AIRCRAFT_GLB_FALLBACK_COUNT, 0)
-  assert.throws(
-    () => readFlightSimAircraftAssetSpec({
-      ...FLIGHT_SIM_AIRCRAFT_ASSET_SPEC,
-      opaqueBinaryFallback: '/remote/airplane.glb',
-    }),
-    /no opaque binary fallback/,
-  )
-})
 
 test('Flight supplies a pure scaled follow target to the shared controller camera', () => {
   const snapshot: FlightSimSnapshot = Object.freeze({

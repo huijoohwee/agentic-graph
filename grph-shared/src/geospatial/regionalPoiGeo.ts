@@ -1,3 +1,19 @@
+import {
+  assertValidRegionalPoiPolygon,
+  deriveRegionalPoiLongitudeSpan,
+  deriveRegionalPoiRepresentativePoint,
+} from './regionalPoiGeometry.js'
+
+export {
+  deriveRegionalPoiLongitudeSpan,
+  deriveRegionalPoiRepresentativePoint,
+  normalizeRegionalPoiLongitude,
+  unwrapRegionalPoiLongitude,
+} from './regionalPoiGeometry.js'
+export type {
+  RegionalPoiLongitudeSpan,
+} from './regionalPoiGeometry.js'
+
 export type RegionalPoiCoordinate = readonly [
   longitude: number,
   latitude: number,
@@ -45,6 +61,12 @@ export type RegionalPoiSurface = Readonly<{
 export type RegionalPoiIdentity = Readonly<{
   id: string
   label: string
+}>
+
+export type RegionalPoiLocator = Readonly<{
+  coordinate: RegionalPoiCoordinate
+  label: string
+  poiId: string
 }>
 
 export type RegionalPoiAttribution = Readonly<{
@@ -238,6 +260,7 @@ function cloneSurface(
       `${label}.geometry.coordinates[${ringIndex}]`,
     ),
   ))
+  assertValidRegionalPoiPolygon(coordinates, `${label}.geometry.coordinates`)
   if (!Number.isFinite(input.baseHeightMeters) || input.baseHeightMeters < 0) {
     throw new RangeError(`${label}.baseHeightMeters must be finite and non-negative`)
   }
@@ -366,6 +389,12 @@ export function createRegionalPoiProfile(
       throw new TypeError(`surface ${surface.id} references an unknown POI`)
     }
   }
+  const surfacedPoiIds = new Set(surfaces.map(surface => surface.poiId))
+  for (const poi of pois) {
+    if (!surfacedPoiIds.has(poi.id)) {
+      throw new TypeError(`POI ${poi.id} requires at least one surface`)
+    }
+  }
 
   return Object.freeze({
     schema: input.schema,
@@ -377,4 +406,36 @@ export function createRegionalPoiProfile(
     pois,
     surfaces,
   })
+}
+
+/**
+ * Derives one stable geographic focus point per semantic POI without changing
+ * or scaling its source polygons. Surface area and topology determine the
+ * representative point from per-polygon antimeridian-aware coordinate frames.
+ */
+export function deriveRegionalPoiLocators(
+  input: RegionalPoiProfile,
+): readonly RegionalPoiLocator[] {
+  const profile = createRegionalPoiProfile(input)
+  const polygonsByPoi = new Map<
+    string,
+    RegionalPoiPolygon['coordinates'][]
+  >()
+  for (const surface of profile.surfaces) {
+    const polygons = polygonsByPoi.get(surface.poiId) || []
+    polygons.push(surface.geometry.coordinates)
+    polygonsByPoi.set(surface.poiId, polygons)
+  }
+
+  return Object.freeze(profile.pois.map(poi => {
+    const polygons = polygonsByPoi.get(poi.id)
+    if (!polygons?.length) {
+      throw new TypeError(`POI ${poi.id} requires at least one polygon`)
+    }
+    return Object.freeze({
+      coordinate: deriveRegionalPoiRepresentativePoint(polygons),
+      label: poi.label,
+      poiId: poi.id,
+    })
+  }))
 }

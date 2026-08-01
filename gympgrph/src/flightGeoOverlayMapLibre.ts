@@ -1,11 +1,10 @@
-import type { FlightGeoOverlaySnapshot } from './flightGeoOverlay.js'
 import {
-  FLIGHT_GEO_AIRCRAFT_SHAPE_METERS,
-  flightGeoOverlayMapLibreFeatureCollection,
+  flightGeoOverlayFeatureCollection,
   hasExactFlightGeoOverlayFeatureCollection,
-} from './flightGeoOverlayMapLibrePayload.js'
+  type FlightGeoOverlaySnapshot,
+} from './flightGeoOverlay.js'
+import { deriveRegionalPoiLongitudeSpan } from 'grph-shared/geospatial/regionalPoiGeo'
 import {
-  clearGeoJsonSourceData,
   hasExactGeoJsonStyleSource,
   isMapLibreStyleReady,
   readGeoJsonSourceData,
@@ -45,9 +44,7 @@ export {
   type FlightGeoMapCamera,
   type FlightGeoOverlayCameraApplicationOptions,
 } from './flightGeoOverlayMapLibreCamera.js'
-
-export { flightGeoOverlayMapLibreFeatureCollection }
-
+export { flightGeoOverlayFeatureCollection }
 // This is both the painter order and the exactness contract for the Flight
 // overlay. Keep it public so presentation gates do not accidentally infer a
 // different order from the object declaration above.
@@ -64,25 +61,22 @@ const FLIGHT_GEO_OVERLAY_LAYER_ID_SET = new Set<string>(
 const FLIGHT_GEO_ENVIRONMENT_LAYER_ID_SET = new Set<string>(
   FLIGHT_GEO_ENVIRONMENT_LAYER_ORDER,
 )
-
 const FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE = 40
-
-type FlightGeoAircraftImage = Readonly<{
-  data: Uint8Array
-  height: number
-  width: number
-}>
-
+const FLIGHT_GEO_AIRCRAFT_ICON_SHAPE = Object.freeze([
+  [0, 30], [5, 7], [28, -5], [7, -9], [10, -22], [3, -20],
+  [0, -26], [-3, -20], [-10, -22], [-7, -9], [-28, -5], [-5, 7],
+])
+type FlightGeoAircraftImage = Readonly<{ data: Uint8Array; height: number; width: number }>
 function isPointInsideAircraftShape(x: number, y: number): boolean {
   let inside = false
   for (
-    let index = 0, previous = FLIGHT_GEO_AIRCRAFT_SHAPE_METERS.length - 1;
-    index < FLIGHT_GEO_AIRCRAFT_SHAPE_METERS.length;
+    let index = 0, previous = FLIGHT_GEO_AIRCRAFT_ICON_SHAPE.length - 1;
+    index < FLIGHT_GEO_AIRCRAFT_ICON_SHAPE.length;
     previous = index, index += 1
   ) {
-    const [currentX, currentY] = FLIGHT_GEO_AIRCRAFT_SHAPE_METERS[index]
+    const [currentX, currentY] = FLIGHT_GEO_AIRCRAFT_ICON_SHAPE[index]
     const [previousX, previousY] =
-      FLIGHT_GEO_AIRCRAFT_SHAPE_METERS[previous]
+      FLIGHT_GEO_AIRCRAFT_ICON_SHAPE[previous]
     if (
       (currentY > y) !== (previousY > y)
       && x < (
@@ -96,7 +90,6 @@ function isPointInsideAircraftShape(x: number, y: number): boolean {
   }
   return inside
 }
-
 function createFlightGeoAircraftImage(
   fill: readonly [number, number, number],
   outline: readonly [number, number, number],
@@ -137,14 +130,12 @@ function createFlightGeoAircraftImage(
     width: FLIGHT_GEO_AIRCRAFT_IMAGE_SIZE,
   })
 }
-
 const FLIGHT_GEO_AIRCRAFT_IMAGES = Object.freeze({
   day: createFlightGeoAircraftImage([34, 211, 238], [248, 250, 252]),
   night: createFlightGeoAircraftImage([196, 181, 253], [30, 27, 75]),
   outlineDay: createFlightGeoAircraftImage([15, 23, 42], [15, 23, 42]),
   outlineNight: createFlightGeoAircraftImage([30, 27, 75], [30, 27, 75]),
 })
-
 function ensureFlightGeoAircraftImages(map: any): boolean {
   try {
     for (
@@ -180,7 +171,6 @@ function ensureFlightGeoAircraftImages(map: any): boolean {
     return false
   }
 }
-
 function mapHasFlightGeoAircraftImages(map: any): boolean {
   try {
     return Object.values(FLIGHT_GEO_AIRCRAFT_IMAGE_IDS).every(imageId => (
@@ -192,7 +182,6 @@ function mapHasFlightGeoAircraftImages(map: any): boolean {
     return false
   }
 }
-
 /**
  * A Flight phase or ready-frame token is runtime metadata, not painted GeoJSON.
  * Compare the complete visual payload instead of forcing a source-worker update
@@ -208,7 +197,7 @@ export function mapHasExactFlightGeoOverlay(
       && source.loaded() === true
     if (!sourceLoaded) return false
     return hasExactFlightGeoOverlayFeatureCollection(
-      flightGeoOverlayMapLibreFeatureCollection(overlay),
+      flightGeoOverlayFeatureCollection(overlay),
       readGeoJsonSourceData(source),
     )
       && Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
@@ -219,11 +208,9 @@ export function mapHasExactFlightGeoOverlay(
     return false
   }
 }
-
 function isStyleLayer(layer: unknown): layer is Record<string, unknown> {
   return layer !== null && typeof layer === 'object' && !Array.isArray(layer)
 }
-
 function layerVisibility(layer: unknown): 'none' | 'visible' {
   if (!isStyleLayer(layer)) return 'visible'
   const layout = (layer as Record<string, unknown>).layout
@@ -234,7 +221,6 @@ function layerVisibility(layer: unknown): 'none' | 'visible' {
     && (layout as Record<string, unknown>).visibility === 'none'
   ) ? 'none' : 'visible'
 }
-
 function hasExactRetainedFlightLayerState(
   layers: readonly unknown[],
   overlay: FlightGeoOverlaySnapshot,
@@ -274,7 +260,6 @@ function hasExactRetainedFlightLayerState(
       findLayer(FLIGHT_GEO_ENVIRONMENT_LAYER_IDS.outline),
     ) === 'visible'
 }
-
 export function mapHasExactFlightGeoStyleSources(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
@@ -285,7 +270,7 @@ export function mapHasExactFlightGeoStyleSources(
   )
   if (!hasExactGeoJsonStyleSource(
     overlaySource,
-    flightGeoOverlayMapLibreFeatureCollection(overlay),
+    flightGeoOverlayFeatureCollection(overlay),
     hasExactFlightGeoOverlayFeatureCollection,
   )) return false
   const environmentSource = readMapLibreStyleSource(
@@ -299,7 +284,6 @@ export function mapHasExactFlightGeoStyleSources(
     hasExactFlightGeoEnvironmentFeatureCollection,
   )
 }
-
 export function retainFlightGeoOverlayDuringStyleSwap(
   previousStyle: Readonly<Record<string, any>> | undefined,
   nextStyle: Readonly<Record<string, any>>,
@@ -324,7 +308,7 @@ export function retainFlightGeoOverlayDuringStyleSwap(
   const hasExactOverlay = (
     hasExactGeoJsonStyleSource(
       retainedOverlaySource,
-      flightGeoOverlayMapLibreFeatureCollection(expectedOverlay),
+      flightGeoOverlayFeatureCollection(expectedOverlay),
       hasExactFlightGeoOverlayFeatureCollection,
     )
     && retainedOverlayLayers.length === FLIGHT_GEO_OVERLAY_LAYER_ORDER.length
@@ -387,7 +371,6 @@ export function retainFlightGeoOverlayDuringStyleSwap(
     ],
   }
 }
-
 function readFlightGeoOverlayStyleLayer(
   map: any,
   layerId: string,
@@ -400,7 +383,6 @@ function readFlightGeoOverlayStyleLayer(
   const layer = map?.getLayer?.(layerId)
   return layer && typeof layer === 'object' ? layer : null
 }
-
 function ensureFlightGeoOverlayLayer(
   map: any,
   layer: typeof FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS[number],
@@ -445,7 +427,6 @@ function ensureFlightGeoOverlayLayer(
     return false
   }
 }
-
 function keepFlightGeoOverlayAboveHostLayers(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
@@ -471,7 +452,6 @@ function keepFlightGeoOverlayAboveHostLayers(
     if (map.getLayer?.(layerId)) map.moveLayer?.(layerId)
   }
 }
-
 export function fitMapToFlightGeoOverlay(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
@@ -482,16 +462,17 @@ export function fitMapToFlightGeoOverlay(
     const coordinates = [
       ...overlay.route.map(point => point.coordinate),
       overlay.aircraft.coordinate,
-      ...(overlay.environment?.surfaces.flatMap(surface => surface.ring) || []),
+      ...(overlay.environment?.surfaces.flatMap(surface => (
+        surface.rings.flat()
+      )) || []),
     ]
-    let minLongitude = Number.POSITIVE_INFINITY
+    const longitude = deriveRegionalPoiLongitudeSpan(coordinates.map(([value]) => value))
+    let minLongitude = longitude.west
     let minLatitude = Number.POSITIVE_INFINITY
-    let maxLongitude = Number.NEGATIVE_INFINITY
+    let maxLongitude = longitude.east
     let maxLatitude = Number.NEGATIVE_INFINITY
-    for (const [longitude, latitude] of coordinates) {
-      minLongitude = Math.min(minLongitude, longitude)
+    for (const [, latitude] of coordinates) {
       minLatitude = Math.min(minLatitude, latitude)
-      maxLongitude = Math.max(maxLongitude, longitude)
       maxLatitude = Math.max(maxLatitude, latitude)
     }
     if (![minLongitude, minLatitude, maxLongitude, maxLatitude].every(Number.isFinite)) {
@@ -521,7 +502,6 @@ export function fitMapToFlightGeoOverlay(
     return false
   }
 }
-
 export function applyFlightGeoOverlayToMap(
   map: any,
   overlay: FlightGeoOverlaySnapshot,
@@ -532,7 +512,7 @@ export function applyFlightGeoOverlayToMap(
       return clearFlightGeoOverlayFromMap(map)
     }
     if (!ensureFlightGeoAircraftImages(map)) return false
-    const expected = flightGeoOverlayMapLibreFeatureCollection(overlay)
+    const expected = flightGeoOverlayFeatureCollection(overlay)
     const styleSource = readMapLibreStyleSource(
       map,
       FLIGHT_GEO_OVERLAY_SOURCE_ID,
@@ -579,17 +559,25 @@ export function applyFlightGeoOverlayToMap(
     return false
   }
 }
-
 export function clearFlightGeoOverlayFromMap(map: any): boolean {
   try {
     if (!map || !isMapLibreStyleReady(map)) return false
-    const source = map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)
-    if (!source) return true
-    const sourceData = readGeoJsonSourceData(source)
-    if (!sourceData) return false
-    if (sourceData.features.length === 0) return true
-    clearGeoJsonSourceData(map, FLIGHT_GEO_OVERLAY_SOURCE_ID)
-    return true
+    if (typeof map.removeLayer !== 'function') return false
+    if (typeof map.removeSource !== 'function') return false
+    for (const layerId of [...FLIGHT_GEO_OVERLAY_LAYER_ORDER].reverse()) {
+      if (map.getLayer?.(layerId)) map.removeLayer(layerId)
+      if (map.getLayer?.(layerId)) return false
+    }
+    if (map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)) {
+      map.removeSource(FLIGHT_GEO_OVERLAY_SOURCE_ID)
+      if (map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)) return false
+    }
+    for (const imageId of Object.values(FLIGHT_GEO_AIRCRAFT_IMAGE_IDS)) {
+      if (map.hasImage?.(imageId)) map.removeImage?.(imageId)
+    }
+    return Object.values(FLIGHT_GEO_OVERLAY_LAYER_IDS)
+      .every(layerId => !map.getLayer?.(layerId))
+      && !map.getSource?.(FLIGHT_GEO_OVERLAY_SOURCE_ID)
   } catch {
     return false
   }

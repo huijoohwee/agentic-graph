@@ -53,7 +53,7 @@ geo_flight_overlay:
   renderer_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   presentation_owner: "gympgrph/src/GeospatialHost.tsx"
-  render_policy: "native MapLibre under transparent Flight R3F overlay"
+  render_policy: "native MapLibre owns every visible Flight route and aircraft mark"
   maplibre_views: ["2d-classic", "2d-modern", "3d-classic", "3d-modern"]
   basemap: "selected native MapLibre provider view"
   maplibre_runtime_started: true
@@ -64,9 +64,11 @@ geo_flight_overlay:
   xr_canvas_mounted: true
   duplicate_r3f_environment_mounted: false
   composition: "MapLibre owns the geospatial world plus all visible Flight route/waypoint/aircraft geometry; the existing transparent R3F Canvas retains simulation/input/readiness and paints no Flight or XR geometry"
+clean_room_policy:
+  boundary: "External references inform conceptual principles only. Maintainers attest that implementation and instructional content are source-authored. Copying or deriving source, prose, prompts, schemas, algorithms, tests, binaries, or assets is forbidden. External project identity and URL are forbidden in product source and runtime metadata. There is no external project dependency. The deterministic locator gate cannot prove the absence of arbitrary derived code."
 native_flight_demo:
   runtime_owner: "Flight Sim projection on the active shared XR or Geo Canvas surface"
-  default_aircraft: "vehicle-airplane"
+  aircraft_visual_owner: "one MapLibre Point feature plus fixed-pixel symbol stack"
   deterministic_step: true
   fixed_step: "exactly 1/60 second (approximately 16.667 ms, 60 Hz)"
   max_catch_up_ticks_per_advance: 5
@@ -110,7 +112,7 @@ native_flight_demo:
   landing_pad_count: 1
   capture_radius_meters: 50
   out_of_order_waypoint_behavior: "no route progression"
-  interactive_props: ["three waypoint rings", "marked landing pad", "optional beacon"]
+  interactive_props: ["three route waypoints", "marked landing objective"]
   input:
     keyboard:
       pitch_roll: ["W", "A", "S", "D", "ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"]
@@ -125,30 +127,6 @@ native_flight_demo:
       throttle: "standard triggers"
     multi_device_conflict: "select the largest absolute value independently per axis"
   lifecycle: ["develop-and-run", "pause", "resume", "reset", "exit"]
-asset_pipeline:
-  primary: "img2threejs-style TypeScript + JSON Must-aircraft scene spec (small, diffable, committed in-repo, offline-loadable)"
-  admission: "the required vehicle-airplane is admitted only through the exact TypeScript+JSON Asset_Spec; the optional beacon has no Asset_Spec and is the only admitted opaque fallback"
-  required_aircraft_asset_spec_count: 1
-  required_aircraft_glb_fallback_count: 0
-  opaque_binary_fallback: "one committed-local optional-beacon GLB is admitted, marked opaque, and never substitutes for the required aircraft"
-  optional_prop_glb_fallback_count: 1
-  glb_fallback_count: 1
-  optional_glb_path: "canvas/src/features/game-flight-sim/assetSpec/fallbacks/optional-beacon.glb"
-  optional_glb_sha256: "be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd"
-  optional_glb_license: "CC0-1.0"
-  fallback_rejection: "remote, absolute, traversal, missing, unreadable, invalid, or unlicensed GLB references fail closed without fetch"
-  runtime_model_calls: 0
-  runtime_network_calls: 0
-  authoring_step: "offline only; no image-to-3D model, network fetch, or Cloudflare resource is invoked at runtime to obtain any asset"
-  diffability: "the required aircraft is TypeScript+JSON; the single optional opaque GLB is generated deterministically and pinned by exact bytes and SHA-256"
-  text_gate: "every committed Asset_Spec is strict UTF-8 and at most 1 MB"
-  dependency_license_gate: "fixed 21-package Flight runtime closure; OSI-approved licenses only"
-  native_in_repo: true
-  forbid_external_copy_or_dependency: true
-  external_reference_policy: "conceptual principles only; external project identity and URL are prohibited in product source and runtime metadata; no external project dependency"
-  no_copy_scan_scope: "Flight-owned tracked paths for external repository locators, vendored paths, opaque source binaries, and missing policy markers"
-  provenance_attestation: "Knowgrph contributors attest that the Flight Sim implementation, instructional content, and assets are source-authored"
-  no_copy_gate_limitation: "the deterministic clean-room scanner cannot prove the absence of arbitrary derived code"
 flight_training:
   missions: ["circuit-foundation", "night-circuit", "systems-recovery"]
   mission_outcomes: ["route progress", "stable attitude", "energy envelope", "failure recovery", "terminal result"]
@@ -226,18 +204,12 @@ flight_sim:
 runtime_validation:
   mode_activation: ["xr surface", "3d renderer", "xr stage"]
   required_states: ["ready", "flying", "stopped"]
-  aircraft_parity: ["vehicle-airplane"]
   replayable: true
   local_assets_only: true
   required_external_calls: false
   automatic_remote_grammar_hydration: "deferred until Source Files identity is ready and disabled for active Flight/Physics offline XR sources"
-  asset_spec_primary: true
-  required_aircraft_glb_fallback_count: 0
-  optional_prop_glb_fallback_count: 1
-  glb_fallback_count: 1
-  glb_fallback_runtime: "one committed-local, CC0-1.0, SHA-pinned optional beacon; remote or unavailable fallbacks fail closed"
   first_playable_frame_limit_ms: 3000
-  property_proof: "45 named fast-check properties at 100 runs each (4,500 generated cases)"
+  property_proof: "40 named fast-check properties at 100 runs each (4,000 generated cases)"
   focused_source_tests_minimum: 127
   browser_proof: "two fresh serial runs; each evidence record binds clean branch, HEAD, tree, authored seed SHA-256, and source path before launch"
   browser_evidence: ["data/outputs/game-flight-sim-browser-smoke-run-1.json", "data/outputs/game-flight-sim-browser-smoke-run-2.json"]
@@ -271,26 +243,18 @@ flow:
       type: {key: type, type: string, value: "FlightDemoAircraft"}
       label: {key: label, type: string, value: "Airplane"}
       position: {key: position, type: object, value: {"x":0,"y":-120}}
-      aircraftId: {key: aircraftId, type: string, value: "vehicle-airplane"}
+      aircraftId: {key: aircraftId, type: string, value: "flight-sim:aircraft"}
       "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:flight_aircraft"}
       "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
       output: {key: output, type: string, value: "Fly with deterministic throttle, pitch, roll, and yaw under bounded in-repo dynamics."}
       role: {key: role, type: string, value: "controller"}
-    - id: {key: id, type: string, value: "flight_asset_spec"}
-      type: {key: type, type: string, value: "FlightDemoAssetSpec"}
-      label: {key: label, type: string, value: "Asset Spec (img2threejs-style)"}
-      position: {key: position, type: object, value: {"x":0,"y":120}}
-      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:flight_asset_spec"}
-      "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
-      output: {key: output, type: string, value: "Load the committed diffable TypeScript+JSON aircraft spec; the optional beacon alone uses one committed-local, SHA-pinned opaque GLB."}
-      role: {key: role, type: string, value: "asset"}
     - id: {key: id, type: string, value: "flight_runtime_gate"}
       type: {key: type, type: string, value: "FlightDemoValidation"}
       label: {key: label, type: string, value: "Runtime Readiness"}
       position: {key: position, type: object, value: {"x":0,"y":360}}
       "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:flight_runtime_gate"}
       "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
-      output: {key: output, type: string, value: "Repository gates cover deterministic stepping, collision, input, Decisions-only persistence, strict invocation, and spec-primary loading."}
+      output: {key: output, type: string, value: "Repository gates cover deterministic stepping, collision, input, Decisions-only persistence, strict invocation, and canonical MapLibre presentation."}
       role: {key: role, type: string, value: "validation"}
       state: {key: state, type: string, value: "ready"}
   edges:
@@ -330,10 +294,6 @@ The mission uses the fixed `flight-meters-20` transform: one authored Singapore 
 
 Four meaningful systems run in stable transactional order: `InputIntegrationSystem`, `FlightModelSystem`, `CollisionResolverSystem`, and `ObjectiveSystem`. The Agentic ECS harness emits the one post-systems Cost_Log, and immutable render/HUD projection is captured only after the World commits. A failing system rolls back itself while retaining prior same-tick commits. Replay validates source, mission seed, input count/order/bytes, halts on the first divergence, and retains the last byte-equivalent committed World. Exit disposes the ECS World and unsaved in-memory mission state, restores the complete pre-document surface including Geo ownership, and does not acknowledge a prior non-Geo surface until MapLibre has released its active map and canvas for two committed frames.
 
-## Asset pipeline
-
-The required aircraft loads from committed img2threejs-style TypeScript plus `vehicle-airplane.scene.json`: small, diffable, human-auditable, strict UTF-8, at most 1 MB, and offline. Its GLB fallback count is exactly zero. One optional beacon without an Asset_Spec uses the committed-local opaque `optional-beacon.glb`, licensed CC0-1.0 and pinned to SHA-256 `be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd`, so the complete default load has one fallback. Remote, absolute, traversal, missing, unreadable, invalid, or unlicensed fallback references fail closed without fetching. Runtime code performs no image-to-3D model call, asset fetch, automatic grammar hydration, or Cloudflare request during Flight/Physics core play. The fixed 21-package Flight runtime closure is license-gated. External references inform conceptual principles only. Knowgrph contributors attest that the implementation, instructional content, and assets are source-authored; external project identity and URL are prohibited in product source and runtime metadata; and there is no external project dependency. The deterministic clean-room scanner cannot prove the absence of arbitrary derived code.
-
 ## Runtime-readiness gates
 
 - [x] Source identity is `flight-sim`, independent of import path, with conflict rejection.
@@ -341,7 +301,7 @@ The required aircraft loads from committed img2threejs-style TypeScript plus `ve
 - [x] Fixed Follow and Free Orbit come from the shared Camera catalog; Fixed Follow drives visible MapLibre Chase/Cockpit/Survey framing and Free Orbit yields MapLibre pan/zoom.
 - [x] Chase, Cockpit, and Survey vary only Flight's pure framing descriptor; Cockpit projects a collision-clear forward look-ahead and the north-up route inset derives entirely from authored local mission state with zero map or token dependency.
 - [x] The default load is spec-primary for the required aircraft and contains exactly one committed-local optional opaque GLB; remote and unavailable fallbacks fail closed.
-- [x] Exactly 45 named fast-check properties are registered for at least 100 cases each (4,500 generated cases), alongside at least 127 focused source checks.
+- [x] Exactly 40 named fast-check properties are registered for at least 100 cases each (4,000 generated cases), alongside focused source checks.
 - [x] Browser proof enforces a clean exact branch/HEAD/tree and authored-seed SHA-256 before each of two fresh serial runs, including visible MapLibre plus Flight overlay, ≤3 s first-frame, 375×812 HUD, lifecycle, camera, persistence-failure, pointer-lock contract, and provider-attributed transport.
 - [x] Runtime and browser verification execute in child-owned exact local workspaces; failed tracked/untracked mutations are discarded, cleanup precedes browser evidence publication, and publication failure restores prior evidence bytes.
 - [x] `npm run game-flight-sim:runtime-ready` is the mandatory aggregate gate for the clean final candidate.

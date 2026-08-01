@@ -5,19 +5,6 @@ from typing import Any
 from playwright.sync_api import Page
 
 
-FLIGHT_MISSION_NODE = "kg_flight_sim_mission"
-FLIGHT_AIRCRAFT_NODE = "kg_flight_sim_aircraft"
-FLIGHT_AIRCRAFT_ORIENTATION_NODE = "kg_flight_sim_aircraft_model_orientation"
-FLIGHT_ASSET_NODE = "kg_xr_procedural_airplane"
-FLIGHT_GEO_XR_LIGHTING_NODE = "kg_flight_sim_geospatial_actor_lighting"
-FLIGHT_OPTIONAL_BEACON_NODE = "kg_flight_sim_optional_beacon"
-FLIGHT_OPTIONAL_BEACON_PATH = (
-    "canvas/src/features/game-flight-sim/assetSpec/fallbacks/"
-    "optional-beacon.glb"
-)
-FLIGHT_OPTIONAL_BEACON_SHA256 = (
-    "be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd"
-)
 AUTHORED_XR_NODES = {
     "kg_graph_xr_stage",
     "kg_xr_native_controller_demo",
@@ -26,23 +13,6 @@ AUTHORED_XR_NODES = {
 }
 CANONICAL_XR_TERRAIN_NODE = "kg_xr_native_terrain_singapore"
 FORBIDDEN_SCENE_PREFIXES = ("kg_game_fps", "kg_xr_empty_world")
-FLIGHT_GEO_XR_VISUAL_NODES = {
-    FLIGHT_MISSION_NODE,
-    FLIGHT_AIRCRAFT_NODE,
-    FLIGHT_AIRCRAFT_ORIENTATION_NODE,
-    FLIGHT_GEO_XR_LIGHTING_NODE,
-}
-FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS = {
-    FLIGHT_ASSET_NODE: 1,
-    "kg_xr_airplane_cockpit": 1,
-    "kg_xr_airplane_engine": 2,
-    "kg_xr_airplane_fuselage": 1,
-    "kg_xr_airplane_tail_fin": 1,
-    "kg_xr_airplane_tailplane": 1,
-    "kg_xr_airplane_wing": 2,
-}
-
-
 def read_and_pin_authored_physics_baseline(
     page: Page,
     expected_source_sha256: str,
@@ -283,14 +253,6 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
               ?.getContext('webgl')
               ?.getContextAttributes?.()
             || null
-          let optionalBeacon = null
-          try {
-            optionalBeacon = JSON.parse(
-              rendererCanvas?.dataset.kgFlightSimOptionalBeacon || 'null',
-            )
-          } catch {
-            optionalBeacon = null
-          }
           const map = gympgrph.readActiveMapLibreMap?.() || null
           const sourceId = 'kg-flight-sim:geo-overlay'
           const source = map?.getSource?.(sourceId) || null
@@ -412,7 +374,6 @@ def read_flight_scene(page: Page) -> dict[str, Any]:
                 && baselineIdentity.controllerAuthoritySignature
                   === controllerAuthoritySignature,
             },
-            optionalBeacon,
           }
         }
         """
@@ -440,8 +401,8 @@ def assert_authored_scene(scene: dict[str, Any]) -> None:
         raise AssertionError("Flight Sim replaced the retained runtime Canvas")
     if scene.get("rendererAlpha") is not True:
         raise AssertionError("Flight runtime Canvas was not transparent")
-    if scene.get("visualProjection") != "r3f":
-        raise AssertionError("Flight runtime Canvas did not retain the Media Airplane")
+    if scene.get("visualProjection") != "":
+        raise AssertionError("Flight runtime Canvas published a parallel visual owner")
     camera = scene.get("camera") or {}
     if camera.get("authorityStable") is not True:
         raise AssertionError("Flight Sim replaced the Physics camera catalog")
@@ -453,20 +414,10 @@ def assert_authored_scene(scene: dict[str, Any]) -> None:
             f"native XR visuals remained visible: {scene.get('nativeVisualNames')}"
         )
     flight_visual_names = set(scene.get("flightVisualNames") or [])
-    if flight_visual_names != FLIGHT_GEO_XR_VISUAL_NODES:
+    if flight_visual_names:
         raise AssertionError(
-            "Geo+XR did not retain exactly the actor-only R3F Flight surface: "
+            "Geo+XR retained parallel Flight visuals outside MapLibre: "
             f"{sorted(flight_visual_names)}"
-        )
-    named_node_counts = scene.get("namedNodeCounts") or {}
-    airplane_node_counts = {
-        name: int(named_node_counts.get(name) or 0)
-        for name in FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS
-    }
-    if airplane_node_counts != FLIGHT_GEO_XR_AIRPLANE_NODE_COUNTS:
-        raise AssertionError(
-            "Geo+XR Media Airplane geometry was incomplete or duplicated: "
-            f"{airplane_node_counts}"
         )
     map_overlay = scene.get("mapOverlay") or {}
     if (
@@ -505,20 +456,6 @@ def assert_active_flight_scene(
         "emptyWorld": "",
     }:
         raise AssertionError(f"Flight Sim XR surface contract was not active: {root}")
-    optional_beacon = scene.get("optionalBeacon") or {}
-    if (
-        optional_beacon.get("assetKind") != "glb-fallback"
-        or optional_beacon.get("assetPath") != FLIGHT_OPTIONAL_BEACON_PATH
-        or optional_beacon.get("assetSha256")
-        != FLIGHT_OPTIONAL_BEACON_SHA256
-        or optional_beacon.get("opaque") is not True
-        or int(optional_beacon.get("meshDescendantCount") or 0) < 1
-        or not optional_beacon.get("partNames")
-    ):
-        raise AssertionError(
-            "Flight optional beacon did not retain its admitted local GLB "
-            f"identity: {optional_beacon}"
-        )
     map_overlay = scene.get("mapOverlay") or {}
     expected_landing_state = (
         "visited"

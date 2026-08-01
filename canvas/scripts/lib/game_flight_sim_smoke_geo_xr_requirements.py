@@ -48,6 +48,26 @@ def _has_authored_environment_surface(
     )
 
 
+def _has_viewport_scoped_regional_poi_rendering(last: dict[str, Any]) -> bool:
+    source_ids = last.get("environmentPoiIds") or []
+    rendered_ids = last.get("renderedEnvironmentPoiIds") or []
+    if not isinstance(source_ids, list) or not isinstance(rendered_ids, list):
+        return False
+    if not all(
+        isinstance(identity, str) and bool(identity)
+        for identity in [*source_ids, *rendered_ids]
+    ):
+        return False
+    source_set = set(source_ids)
+    rendered_set = set(rendered_ids)
+    return (
+        len(source_set) == len(source_ids)
+        and len(rendered_set) == len(rendered_ids)
+        and bool(source_set)
+        and rendered_set.issubset(source_set)
+    )
+
+
 def unmet_view_requirements(
     last: dict[str, Any],
     *,
@@ -81,14 +101,9 @@ def unmet_view_requirements(
         "layout.routeUnoccluded": layout.get("routeUnoccluded") is True,
         "layout.aircraftUnoccluded": layout.get("aircraftUnoccluded") is True,
         "layout.environmentUnoccludedKinds": {
-            "poi",
             "stage-footprint",
             "subject",
         }.issubset(set(layout.get("environmentUnoccludedKinds") or [])),
-        "layout.environmentExtrusionVisible": layout.get(
-            "environmentExtrusionVisible",
-        )
-        is True,
         "layout.environmentExtrusionContractExact": layout.get(
             "environmentExtrusionContractExact",
         )
@@ -114,11 +129,17 @@ def unmet_view_requirements(
         "mapLibreCanvasCount": last.get("mapLibreCanvasCount", 0) == 1,
         "visibleMapLibreCanvasCount": last.get("visibleMapLibreCanvasCount", 0)
         == 1,
+        "geoXrSurfaceCount": last.get("geoXrSurfaceCount") == 1,
         "threeCanvasOwnerCount": last.get("threeCanvasOwnerCount", 0) == 1,
+        "threeCanvasActiveCount": last.get("threeCanvasActiveCount") == 1,
+        "threeCanvasInactiveCount": last.get("threeCanvasInactiveCount") == 0,
+        "rendererPointerTransparent": last.get("rendererPointerTransparent")
+        is True,
+        "rendererSurfaceVisible": last.get("rendererSurfaceVisible") is True,
         "flightLayersReady": last.get("flightLayersReady") is True,
         "flightLayersTopmost": last.get("flightLayersTopmost") is True,
         "aircraftLayerType": last.get("aircraftLayerType") == "symbol",
-        "aircraftGeometryType": last.get("aircraftGeometryType") == "Polygon",
+        "aircraftGeometryType": last.get("aircraftGeometryType") == "Point",
         "aircraftImagesReady": last.get("aircraftImagesReady") is True,
         "aircraftImagePixelWidth": (last.get("aircraftImagePixelWidth") or 0)
         >= 40,
@@ -137,18 +158,27 @@ def unmet_view_requirements(
             depth_meters=24,
             require_viewport_bounds=True,
         ),
-        "environment.majorPoiAuthoredMeters": _has_authored_environment_surface(
+        "environment.majorPoiGeographicMeters": _has_authored_environment_surface(
             last,
-            surface_id="marina-bay-sands:tower-center",
+            surface_id="marina-bay-sands:tower-2",
             base_height_meters=0,
-            height_meters=3.6,
-            width_meters=1.42,
-            depth_meters=1.38,
+            height_meters=193,
+            width_meters=71.82,
+            depth_meters=76.45,
         ),
-        "environment.majorPoiIds": last.get("environmentPoiIds")
-        == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"],
-        "environment.renderedMajorPoiIds": last.get("renderedEnvironmentPoiIds")
-        == ["gardens-by-the-bay", "marina-bay-sands", "singapore-flyer"],
+        "environment.majorPoiIds": (
+            isinstance(last.get("environmentPoiIds"), list)
+            and bool(last.get("environmentPoiIds"))
+            and last.get("environmentPoiIds")
+            == sorted(set(last.get("environmentPoiIds")))
+            and all(
+                isinstance(poi_id, str) and bool(poi_id.strip())
+                for poi_id in last.get("environmentPoiIds")
+            )
+        ),
+        "environment.renderedMajorPoiSubset": (
+            _has_viewport_scoped_regional_poi_rendering(last)
+        ),
         "environment.selectedSubjectsDirectMeters": last.get(
             "selectedEnvironmentSubjectsExact"
         )
@@ -157,11 +187,10 @@ def unmet_view_requirements(
             "environmentSourceExactlyMatchesOverlay"
         )
         is True,
-        "renderedEnvironmentKinds": {
-            "poi",
-            "stage-footprint",
-            "subject",
-        }.issubset(set(last.get("renderedEnvironmentKinds") or [])),
+        "renderedEnvironmentKinds": (
+            {"stage-footprint", "subject"}
+            | ({"poi"} if last.get("renderedEnvironmentPoiIds") else set())
+        ).issubset(set(last.get("renderedEnvironmentKinds") or [])),
         "renderedEnvironmentSubjectIds": any(
             "vehicle-" in str(subject_id)
             for subject_id in last.get("renderedEnvironmentSubjectIds") or []

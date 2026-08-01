@@ -65,7 +65,6 @@ def wait_for_surface_contract(
     expected: dict[str, Any],
     label: str,
     read_view: Callable[[Page], dict[str, Any]],
-    require_flight_visuals: bool = False,
     require_revision_sync: bool = False,
 ) -> dict[str, Any]:
     deadline = time.monotonic() + 30
@@ -74,8 +73,6 @@ def wait_for_surface_contract(
         last = read_view(page)
         if (
             all(last.get(key) == value for key, value in expected.items())
-            and (not require_flight_visuals
-                 or last.get("flightR3fVisualCount", 0) > 0)
             and (not require_revision_sync or bool(last.get("hostRevision"))
                  and last.get("hostRevision") == last.get("overlayRevision"))
         ):

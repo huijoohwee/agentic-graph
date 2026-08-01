@@ -2,7 +2,7 @@
 title: "Geo+XR Mode Product, Technical Architecture, and Decision Contract"
 id: "md:geo-xr-mode-prd-tad-adr"
 doc_type: "PRD/TAD/ADR"
-version: "1.1.0"
+version: "1.2.0"
 date: "2026-07-31"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -255,7 +255,7 @@ universal proof.
 | `GeoHostPort` | acquire, project, frame, restore, release | one epoch has one host token |
 | `SpatialRuntimePort` | resolve profile, publish snapshot, clear publisher | no renderer or camera mutation |
 | `EnvironmentProfile` | stable id, coordinate reference, bounded extent, provenance | invalid or unbounded profile is rejected |
-| `RegionalContextFeature` | stable id, exact geographic geometry, real-metre base/height, accuracy, provenance | invalid rings, non-finite heights, missing provenance, or presentation-owned camera values are rejected |
+| `RegionalContextFeature` | stable id, complete geographic Polygon ring set, real-metre base/height, accuracy, provenance | open, zero-area, self-intersecting, crossing, outside, overlapping, or nested rings; non-finite heights; missing provenance; or presentation-owned camera values are rejected |
 | `OverlayPublication` | publisher id, lease token, band, revision, features | duplicate, stale, or cross-lease write is rejected |
 | `SemanticMediaContract` | accessible name, caption, selectable state, gesture policy | generic or `aria-hidden` selectable wrappers, parallel HTML markers, and duplicate selection owners are invalid |
 | `ViewportContract` | visible aperture, padding token, resize request, restore | restoration is idempotent and exact |
@@ -295,7 +295,7 @@ camera, unleased publisher, or hidden semantic wrapper.
 | `VCC-GXR-01` | one host owns renderer, camera, and gestures; alternate world count is zero | focused activation and shared-ownership checks exit 0 | none recorded for the universal contract |
 | `VCC-GXR-02` | neutral regional-context, optional local-environment, domain, and dynamic-subject bands accept arbitrary valid publisher identities through leases | registry conformance checks exit 0 | none; current specialization is not a neutral registry |
 | `VCC-GXR-03` | one labeled `figure` exposes a caption while the live geographic renderer hit target owns the sole conditional selection marker without capture handlers, parallel HTML markers, a generic replacement wrapper, or `aria-hidden` | semantic document-tree and direct-hit checks exit 0 | none recorded for the universal contract |
-| `VCC-GXR-04` | two regional profiles substitute without mode or arbitration changes | profile-substitution checks exit 0 | none recorded |
+| `VCC-GXR-04` | two regional profiles substitute without mode or arbitration changes; complete Polygon rings and source facts pass unchanged through geographic ports; framing uses the minimum circular-longitude interval | profile-substitution, topology, antimeridian, and exact pass-through checks exit 0 | none recorded |
 | `VCC-GXR-05` | every injected failure restores prior owner, padding, and projections exactly once | failure-matrix checks exit 0 | none recorded |
 | `VCC-GXR-06` | local/offline desktop and mobile paths activate, interact, and exit | clean-workspace browser proof records actions and viewport | none recorded |
 
@@ -473,7 +473,8 @@ The current Knowgrph mapping specializes this contract as follows:
   `canvas/src/lib/cards/mediaPreviewSurfaceSelection.ts` and
   `canvas/src/features/game-city-sim/citySimMediaSurface.ts`;
 - native canvas semantic binding:
-  `gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts`;
+  `gympgrph/src/features/geospatial/mapLibreCanvasSemanticOwner.ts` and
+  `canvas/src/lib/three/threeCanvasSemanticOwner.ts`;
 - regional profile:
   [ADM0 Singapore companion](./knowgrph-adm0-singapore-prd-tad-ard.companion.md);
 - domain consumer:
@@ -485,8 +486,9 @@ geographic presentation. If a shared Three renderer was already mounted before
 City activation, its exact canvas may remain mounted only as an inactive,
 transparent, pointer-inert lifecycle owner; a direct City entry creates no
 Three owner. The City specialization resolves one companion-owned
-regional-context profile and presents its exact rings, real-metre heights,
-accuracy, and provenance below City parcels and stopped Flight route/aircraft.
+regional-context profile and presents every exact admitted surface, real-metre
+height, accuracy, provenance, and one derived fixed-pixel locator per identity
+below City parcels and stopped Flight route/aircraft.
 Its Flight-local XR environment publication remains explicitly absent.
 MapLibre frames regional and domain bounds through its native camera and its
 live canvas remains the sole selection owner; no HTML marker, generic
@@ -494,6 +496,12 @@ selectable wrapper, or `aria-hidden` surface competes with it. The current
 overlay composer still hardcodes City and Flight identities and precedence, so
 it is evidence for a working specialization only—not evidence that ADR-2's
 neutral registry is implemented.
+
+The standalone XR/Physics presentation reuses the same semantic figure
+contract. Its renderer-created WebGL `canvas` receives the caption relation,
+accessible region name, and sole conditional selection marker directly; the
+React Three Fiber wrapper remains unmarked and never substitutes a generic
+selection owner.
 
 Current focused source suites include
 `geoXrSurfaceActivation.test.ts`,

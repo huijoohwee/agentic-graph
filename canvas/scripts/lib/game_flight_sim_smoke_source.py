@@ -20,7 +20,6 @@ SOURCE_DEMO_ID = "flight-sim"
 PHYSICS_SOURCE_BASENAME = "knowgrph-physics-playground-demo.md"
 EXPECTED_SOURCE_NODE_IDS = {
     "flight_aircraft",
-    "flight_asset_spec",
     "flight_demo_entry",
     "flight_runtime_gate",
 }

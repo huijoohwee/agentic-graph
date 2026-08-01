@@ -6,19 +6,21 @@ export function SemanticMediaFigure({
   activeDataAttributes,
   children,
   label,
+  pointerEvents = 'auto',
   selectionTarget,
 }: Readonly<{
   active: boolean
   activeDataAttributes?: Readonly<Record<string, string>>
   children: (captionId: string) => React.ReactNode
   label: string
+  pointerEvents?: 'auto' | 'none'
   selectionTarget: 'descendant' | 'figure'
 }>) {
   const captionId = React.useId()
 
   return (
     <figure
-      className="pointer-events-auto absolute inset-0 m-0"
+      className={`${pointerEvents === 'auto' ? 'pointer-events-auto' : 'pointer-events-none'} absolute inset-0 m-0`}
       aria-label={active ? label : undefined}
       role={active ? undefined : 'presentation'}
       {...(active ? activeDataAttributes : undefined)}

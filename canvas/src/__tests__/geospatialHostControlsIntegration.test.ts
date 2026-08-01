@@ -200,8 +200,10 @@ export const testGympgrphMapLibreBasemapSupportsGlobeProjection = () => {
   const hookPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
   const text = readUtf8(hookPath)
   if (!text.includes("projectionMode: 'mercator' | 'globe'")) throw new Error('Expected basemap hook to support mercator and globe projection modes')
+  if (!text.includes('setRuntimeProjectionMode(projectionMode)')) throw new Error('Expected view changes to restore the requested MapLibre projection')
+  if (text.includes("prev === 'mercator' ? prev : projectionMode")) throw new Error('Expected mercator fallback state not to pin later 3D globe views')
   if (!text.includes("map.setProjection?.({ type: 'globe' })")) throw new Error('Expected basemap hook to set globe projection in 3D mode')
-  if (!text.includes("canvasRenderMode === '3d'")) throw new Error('Expected basemap hook to apply 3D camera defaults')
+  if (!text.includes('readSingaporeCanvasCameraPolicy(canvasRenderMode)')) throw new Error('Expected basemap hook to share the canonical 2D/3D camera policy')
 }
 
 export const testGympgrphMapLibreBasemapBlankDefaultStaysOffForSvgFallback = () => {

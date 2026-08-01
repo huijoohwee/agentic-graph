@@ -132,10 +132,9 @@ export function createCitySimSynchronousCommands(
     dependencies.replaceSessionStartCity(city)
     return publishSuccess(
       'reset',
-      'Restored the applied source-authored City grid in memory; the City Document was not changed.',
+      'Restored the applied source-authored City POI zoning in memory; the City Document was not changed.',
       {
         city,
-        geographicProfile: source.geographicProfile,
         phase: snapshot.active ? 'stopped' : 'idle',
         selectedParcelId: null,
         advisor: null,

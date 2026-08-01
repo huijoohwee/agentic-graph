@@ -12,10 +12,6 @@ export const CITY_GEO_ZONES = Object.freeze([
 
 export type CityGeoZone = (typeof CITY_GEO_ZONES)[number]
 export type CityGeoViewMode = '2d' | '3d'
-export type CityGeoCoordinate = readonly [
-  longitude: number,
-  latitude: number,
-]
 
 export type CityGeoParcelState = Readonly<{
   column: number
@@ -28,12 +24,8 @@ export type CityGeoParcelState = Readonly<{
 }>
 
 export type CityGeoZoneStyle = Readonly<{
-  baseHeightMeters: number
   fillColor: string
-  landValueCentsPerHeightMeter: number | null
-  maxHeightMeters: number
   outlineColor: string
-  populationPerHeightMeter: number | null
 }>
 
 export type CityGeoFraming = Readonly<{
@@ -44,16 +36,10 @@ export type CityGeoFraming = Readonly<{
 }>
 
 export type CityGeographicProfile = Readonly<{
-  bearingDegrees: number
-  center: CityGeoCoordinate
-  columnGapMeters: number
   framing: Readonly<Record<CityGeoViewMode, CityGeoFraming>>
   id: string
-  parcelDepthMeters: number
-  parcelWidthMeters: number
   regionalPoiProfile: RegionalPoiProfile
   revision: string
-  rowGapMeters: number
   selectedOutlineColor: string
   zoneStyles: Readonly<Record<CityGeoZone, CityGeoZoneStyle>>
 }>
@@ -136,23 +122,6 @@ function freezeZoneStyle(
   style: CityGeoZoneStyle,
   zone: CityGeoZone,
 ): CityGeoZoneStyle {
-  requireNonNegativeNumber(style.baseHeightMeters, `${zone} base height`)
-  requireNonNegativeNumber(style.maxHeightMeters, `${zone} max height`)
-  if (style.maxHeightMeters < style.baseHeightMeters) {
-    throw new Error(`${zone} max height must include its base height.`)
-  }
-  if (style.landValueCentsPerHeightMeter !== null) {
-    requirePositiveNumber(
-      style.landValueCentsPerHeightMeter,
-      `${zone} land-value height divisor`,
-    )
-  }
-  if (style.populationPerHeightMeter !== null) {
-    requirePositiveNumber(
-      style.populationPerHeightMeter,
-      `${zone} population height divisor`,
-    )
-  }
   requireNonEmptyString(style.fillColor, `${zone} fill color`)
   requireNonEmptyString(style.outlineColor, `${zone} outline color`)
   return Object.freeze({ ...style })
@@ -161,22 +130,8 @@ function freezeZoneStyle(
 function freezeGeographicProfile(
   profile: CityGeographicProfile,
 ): CityGeographicProfile {
-  const [longitude, latitude] = profile.center
-  requireFiniteNumber(longitude, 'City geographic center longitude')
-  requireFiniteNumber(latitude, 'City geographic center latitude')
-  if (longitude < -180 || longitude > 180) {
-    throw new Error('City geographic center longitude must be within [-180, 180].')
-  }
-  if (latitude < -85 || latitude > 85) {
-    throw new Error('City geographic center latitude must be within [-85, 85].')
-  }
   requireNonEmptyString(profile.id, 'City geographic profile id')
   requireNonEmptyString(profile.revision, 'City geographic profile revision')
-  requireFiniteNumber(profile.bearingDegrees, 'City geographic profile bearing')
-  requirePositiveNumber(profile.parcelDepthMeters, 'City parcel depth')
-  requirePositiveNumber(profile.parcelWidthMeters, 'City parcel width')
-  requireNonNegativeNumber(profile.columnGapMeters, 'City column gap')
-  requireNonNegativeNumber(profile.rowGapMeters, 'City row gap')
   requireNonEmptyString(
     profile.selectedOutlineColor,
     'City selected-parcel outline color',
@@ -190,7 +145,6 @@ function freezeGeographicProfile(
   }
   return Object.freeze({
     ...profile,
-    center: Object.freeze([longitude, latitude] as const),
     framing: Object.freeze({
       '2d': freezeFraming(profile.framing['2d'], 'City 2D framing'),
       '3d': freezeFraming(profile.framing['3d'], 'City 3D framing'),
@@ -267,6 +221,18 @@ export function createCityGeoOverlaySnapshot(
   if (parcelIds.size !== parcels.length || parcelCells.size !== parcels.length) {
     throw new Error('City Geo overlay parcels must have unique ids and grid cells.')
   }
+  const profile = freezeGeographicProfile(input.profile)
+  const regionalPoiIds = new Set(
+    profile.regionalPoiProfile.pois.map(poi => poi.id),
+  )
+  if (
+    parcels.length !== regionalPoiIds.size
+    || parcels.some(parcel => !regionalPoiIds.has(parcel.id))
+  ) {
+    throw new Error(
+      'City Geo overlay requires one directly keyed parcel per regional POI.',
+    )
+  }
   if (
     input.selectedParcelId !== null
     && !parcelIds.has(input.selectedParcelId)
@@ -277,7 +243,7 @@ export function createCityGeoOverlaySnapshot(
     active: true,
     columns: input.columns,
     parcels: Object.freeze(parcels),
-    profile: freezeGeographicProfile(input.profile),
+    profile,
     revision: input.revision,
     rows: input.rows,
     selectedParcelId: input.selectedParcelId,

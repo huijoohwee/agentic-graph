@@ -1,8 +1,9 @@
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson'
+import type { RegionalPoiSurface } from 'grph-shared/geospatial/regionalPoiGeo'
 
 export type FlightGeoCoordinate = readonly [longitude: number, latitude: number]
 
-export type FlightGeoOverlayPresentationOwner = 'city' | 'flight' | null
+export type FlightGeoOverlayPresentationOwner = 'flight' | null
 
 export type FlightGeoRoutePoint = Readonly<{
   id: string
@@ -12,6 +13,11 @@ export type FlightGeoRoutePoint = Readonly<{
   state: 'active' | 'pending' | 'visited'
 }>
 
+export type FlightGeoRegionalPoiSourceFacts = Readonly<Pick<
+  RegionalPoiSurface,
+  'accuracy' | 'category' | 'provenance'
+>>
+
 export type FlightGeoEnvironmentSurface = Readonly<{
   baseHeightMeters: number
   color: string
@@ -20,7 +26,8 @@ export type FlightGeoEnvironmentSurface = Readonly<{
   kind: 'poi' | 'stage-footprint' | 'structure' | 'subject'
   label: string
   poiId: string | null
-  ring: readonly FlightGeoCoordinate[]
+  regionalPoiSourceFacts: FlightGeoRegionalPoiSourceFacts | null
+  rings: readonly (readonly FlightGeoCoordinate[])[]
 }>
 
 export type FlightGeoEnvironmentProjection = Readonly<{
@@ -263,4 +270,38 @@ export function flightGeoOverlayFeatureCollection(
       aircraft,
     ],
   }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasExactFlightGeoOverlayValue(
+  expected: unknown,
+  actual: unknown,
+): boolean {
+  if (Object.is(expected, actual)) return true
+  if (Array.isArray(expected)) {
+    return Array.isArray(actual)
+      && expected.length === actual.length
+      && expected.every((value, index) => (
+        hasExactFlightGeoOverlayValue(value, actual[index])
+      ))
+  }
+  if (!isPlainRecord(expected) || !isPlainRecord(actual)) return false
+  const expectedKeys = Object.keys(expected)
+  const actualKeys = Object.keys(actual)
+  return expectedKeys.length === actualKeys.length
+    && expectedKeys.every(key => (
+      Object.prototype.hasOwnProperty.call(actual, key)
+      && hasExactFlightGeoOverlayValue(expected[key], actual[key])
+    ))
+}
+
+/** Prevent redundant GeoJSON worker updates without changing the canonical Point payload. */
+export function hasExactFlightGeoOverlayFeatureCollection(
+  expected: FeatureCollection,
+  actual: unknown,
+): boolean {
+  return hasExactFlightGeoOverlayValue(expected, actual)
 }

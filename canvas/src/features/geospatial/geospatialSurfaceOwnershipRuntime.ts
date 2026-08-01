@@ -231,6 +231,7 @@ async function performCanvasGeospatialSurfaceOwnershipCommit(
       throw new SupersededGeospatialSurfaceOwnershipError()
     }
     if (!enabled) {
+      ownedLease?.dispose()
       await waitForGeospatialSurfaceDisposal(
         ownedLease,
         ownedCanvas,

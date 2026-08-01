@@ -4,7 +4,6 @@ import {
   readCitySimSnapshot,
   subscribeCitySimSnapshot,
 } from '@/features/game-city-sim/citySimRuntime'
-import { projectCitySimAerialInspectionToGeospatialOverlay } from '@/features/game-city-sim/citySimAerialInspectionProjection'
 import { projectCitySimToGeospatialOverlay } from '@/features/game-city-sim/citySimGeospatialProjection'
 import {
   readFlightSimSnapshot,
@@ -85,7 +84,6 @@ export function useGeoXrOverlayPublisher(options: Readonly<{
             publishGeoXrOverlayComposition({
               city,
               flight,
-              projectCityAerial: projectCitySimAerialInspectionToGeospatialOverlay,
               projectCityOverlay: projectCitySimToGeospatialOverlay,
               projectFlight: flightSnapshot => {
                 const environment = projectXrEnvironmentToFlightGeo(

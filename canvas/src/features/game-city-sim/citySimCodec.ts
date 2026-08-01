@@ -26,7 +26,9 @@ function encodeFrontmatterString(value: string): string {
 }
 
 function canonicalParcels(city: CityGrid): readonly CityParcel[] {
-  return [...city.parcels].sort((left, right) => left.id.localeCompare(right.id))
+  return [...city.parcels].sort((left, right) => (
+    left.row - right.row || left.column - right.column
+  ))
 }
 
 function parcelRow(parcel: CityParcel): string {
@@ -47,6 +49,7 @@ export function serializeCityGridDocument(city: CityGrid): string {
     '---',
     `schema_id: ${CITY_SIM_SCHEMA_ID}`,
     `city_name: ${encodeFrontmatterString(city.cityName)}`,
+    `regional_poi_profile_id: ${encodeFrontmatterString(city.regionalPoiProfileId)}`,
     `tick: ${city.tick}`,
     `treasury_cents: ${city.treasuryCents}`,
     `tax_rate_basis_points: ${city.taxRateBasisPoints}`,
@@ -82,16 +85,18 @@ function parseFrontmatterString(value: string, label: string): string {
 function parseFrontmatter(lines: readonly string[]): Readonly<{
   schemaId: string
   cityName: string
+  regionalPoiProfileId: string
   tick: number
   treasuryCents: number
   taxRateBasisPoints: number
 }> {
-  if (lines.length !== 7 || lines[0] !== '---' || lines[6] !== '---') {
+  if (lines.length !== 8 || lines[0] !== '---' || lines[7] !== '---') {
     throw new Error('City document must contain the ordered KGC frontmatter block')
   }
   const expectedKeys = [
     'schema_id',
     'city_name',
+    'regional_poi_profile_id',
     'tick',
     'treasury_cents',
     'tax_rate_basis_points',
@@ -108,6 +113,10 @@ function parseFrontmatter(lines: readonly string[]): Readonly<{
   return Object.freeze({
     schemaId: String(values.get('schema_id') || ''),
     cityName: parseFrontmatterString(String(values.get('city_name') || ''), 'City name'),
+    regionalPoiProfileId: parseFrontmatterString(
+      String(values.get('regional_poi_profile_id') || ''),
+      'Regional POI profile id',
+    ),
     tick: parseCanonicalInteger(String(values.get('tick') || ''), 'City tick'),
     treasuryCents: parseCanonicalInteger(
       String(values.get('treasury_cents') || ''),
@@ -161,17 +170,17 @@ function parseDocument(document: string): CityGrid {
   }
   const lines = document.slice(0, -1).split('\n')
   const separatorIndex = lines.indexOf('')
-  if (separatorIndex !== 7 || lines.slice(8).includes('')) {
+  if (separatorIndex !== 8 || lines.slice(9).includes('')) {
     throw new Error('City document must contain one blank line before its CSV table')
   }
-  const frontmatter = parseFrontmatter(lines.slice(0, 7))
+  const frontmatter = parseFrontmatter(lines.slice(0, 8))
   if (frontmatter.schemaId !== CITY_SIM_SCHEMA_ID) {
     throw new Error(`Unsupported city schema ${frontmatter.schemaId}`)
   }
-  if (lines[8] !== CITY_SIM_CSV_HEADER) {
+  if (lines[9] !== CITY_SIM_CSV_HEADER) {
     throw new Error(`City CSV header must be ${CITY_SIM_CSV_HEADER}`)
   }
-  const parcels = lines.slice(9).map(parseParcel)
+  const parcels = lines.slice(10).map(parseParcel)
   if (parcels.length === 0) throw new Error('City document must contain at least one parcel')
   const rows = Math.max(...parcels.map(parcel => parcel.row)) + 1
   const columns = Math.max(...parcels.map(parcel => parcel.column)) + 1
@@ -180,6 +189,7 @@ function parseDocument(document: string): CityGrid {
   const city = freezeCityGrid({
     schemaId: CITY_SIM_SCHEMA_ID,
     cityName: frontmatter.cityName,
+    regionalPoiProfileId: frontmatter.regionalPoiProfileId,
     rows,
     columns,
     tick: frontmatter.tick,

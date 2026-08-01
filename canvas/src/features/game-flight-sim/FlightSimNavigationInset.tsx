@@ -103,14 +103,13 @@ export function FlightSimNavigationInset({
             data-kg-flight-sim-route-state={point.state}
           />
         ))}
-        <path
-          d="M0 -4 L2.8 3.5 L0 2.4 L-2.8 3.5 Z"
-          fill="#f8fafc"
-          stroke="#0e7490"
-          strokeWidth="0.8"
+        <g
           transform={`translate(${projection.aircraft.x * 100} ${projection.aircraft.y * 100}) rotate(${projection.aircraft.headingDegrees})`}
-          data-kg-flight-sim-navigation-aircraft="1"
-        />
+          data-kg-flight-sim-navigation-heading="1"
+        >
+          <circle r="2.6" fill="#0e7490" stroke="#f8fafc" strokeWidth="0.8" />
+          <line x1="0" y1="0" x2="0" y2="-5" stroke="#f8fafc" strokeLinecap="round" strokeWidth="1.2" />
+        </g>
       </svg>
     </section>
   )
