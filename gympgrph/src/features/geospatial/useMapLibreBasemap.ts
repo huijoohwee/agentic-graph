@@ -343,15 +343,7 @@ export function useMapLibreBasemap(args: {
   }, [initialStyleOverride])
 
   React.useEffect(() => {
-    if (!enabled) {
-      setRuntimeProjectionMode(projectionMode)
-      return
-    }
-    if (projectionMode === 'mercator') {
-      setRuntimeProjectionMode('mercator')
-      return
-    }
-    setRuntimeProjectionMode(prev => (prev === 'mercator' ? prev : projectionMode))
+    setRuntimeProjectionMode(projectionMode)
   }, [enabled, projectionMode])
 
   const setProbe = React.useCallback((next: BasemapProbe) => {
