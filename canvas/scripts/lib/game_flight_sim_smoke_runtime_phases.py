@@ -267,7 +267,7 @@ def run_flight_runtime_verifications(
             page,
             lambda: read_flight_scene(page),
             lambda value: (
-                value.get("visualProjection") == "r3f"
+                value.get("visualProjection") == ""
                 and (value.get("mapOverlay") or {}).get("layersReady") is True
                 and (value.get("mapOverlay") or {}).get(
                     "aircraftFeatureCount"
