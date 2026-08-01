@@ -19,6 +19,8 @@ import {
   buildFloatingPropsPanelAddedNode,
   commitFloatingPropsPanelAddedNode,
 } from '@/lib/toolbar/floatingPropsPanelAddNode'
+import { continueStoryboardWidgetMultiConnectSession } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetMultiConnectSession'
+import { resolveStoryboardWidgetMultiSourceIds } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetMultiSourceEdgeSession'
 
 function readDraftRevisionFloor(graphData: GraphData | null | undefined): number {
   const raw = (graphData?.metadata || {}) as Record<string, unknown>
@@ -103,8 +105,10 @@ export function useStoryboardWidgetGraphActions(args: {
   baseGraphData: GraphData | null
   schema: GraphSchema
   selectedNodeId: string | null
+  selectedNodeIds: ReadonlyArray<string>
   toolMode: ToolMode
   pendingEdgeSourceId: string | null
+  pendingEdgeSourceIds: ReadonlyArray<string>
   pendingEdgeSourcePortKey: string | null
   extraGraphNodesById?: Readonly<Record<string, GraphNode>> | null
   pendingSelectNodeIdRef: React.MutableRefObject<string | null>
@@ -116,6 +120,7 @@ export function useStoryboardWidgetGraphActions(args: {
   persistDraftGraphData?: (graphData: GraphData) => void
   setToolMode: React.Dispatch<React.SetStateAction<ToolMode>>
   setPendingEdgeSourceId: React.Dispatch<React.SetStateAction<string | null>>
+  setPendingEdgeSourceIds: React.Dispatch<React.SetStateAction<string[]>>
   setPendingEdgeSourcePortKey: React.Dispatch<React.SetStateAction<string | null>>
   upsertUiToast: (args: { id: string; kind: 'neutral' | 'warning' | 'success' | 'error'; message: string; ttlMs?: number }) => void
 }) {
@@ -232,11 +237,17 @@ export function useStoryboardWidgetGraphActions(args: {
       const node = nodeById.get(id) || null
       const explicit = typeof portKey === 'string' && portKey.trim() ? portKey.trim() : null
       const defaultPortKey = explicit || pickDefaultFlowPortKey(node, 'out') || null
+      const sourceNodeIds = resolveStoryboardWidgetMultiSourceIds({
+        graphData: authoringGraphData,
+        selectedNodeIds: args.selectedNodeIds,
+        primarySourceNodeId: id,
+      })
       args.setSelectionSource('canvas')
       args.selectEdge(null)
       args.selectNode(id)
       args.setToolMode('addEdge')
       args.setPendingEdgeSourceId(id)
+      args.setPendingEdgeSourceIds(sourceNodeIds)
       args.setPendingEdgeSourcePortKey(defaultPortKey)
     },
     [args, readAuthoringGraphData],
@@ -255,67 +266,114 @@ export function useStoryboardWidgetGraphActions(args: {
       if (!requestedSourceId) {
         if (args.toolMode !== 'addEdge') return
         args.setPendingEdgeSourceId(id)
+        args.setPendingEdgeSourceIds([id])
         args.setPendingEdgeSourcePortKey(null)
         return
       }
-      if (requestedSourceId === id) return
-
-      const nodeById = new Map((authoringGraphData.nodes || []).map(node => [String(node.id || ''), node] as const))
-      const sourceNode = nodeById.get(requestedSourceId) || null
-      const targetNode = nodeById.get(id) || null
-      const explicitSource = requestedSourcePortKey
-      const sourcePort = explicitSource || pickDefaultFlowPortKey(sourceNode, 'out') || null
-      const explicitTarget = typeof portKey === 'string' && portKey.trim() ? portKey.trim() : null
-      const targetPort = explicitTarget || pickDefaultFlowPortKey(targetNode, 'in') || null
-
-      const result = finalizeEdgeAuthoring({
-        mode: 'create',
-        data: authoringGraphData,
-        schema: args.schema,
-        label: 'linksTo',
-        selectedEdgeId: null,
-        from: { nodeId: requestedSourceId, portKey: sourcePort },
-        to: { nodeId: id, portKey: targetPort },
+      const sourceNodeIds = resolveStoryboardWidgetMultiSourceIds({
+        graphData: authoringGraphData,
+        selectedNodeIds: args.pendingEdgeSourceIds,
+        primarySourceNodeId: requestedSourceId,
+        targetNodeId: id,
       })
+      if (sourceNodeIds.length === 0) return
+      const explicitTarget = typeof portKey === 'string' && portKey.trim() ? portKey.trim() : null
+      let lastSuccessfulEdgeId = ''
+      let successfulSourceCount = 0
+      let blockedSourceCount = 0
+      let primarySourcePort = requestedSourcePortKey
+      let firstBlockedMessage = ''
 
-      if (result.kind === 'blocked') {
-        const message =
-          result.reason === 'socket'
-            ? `Incompatible port types: ${result.outType || '∅'} → ${result.inType || '∅'}.`
-            : result.reason === 'schema'
-              ? 'Edge blocked by schema rules.'
-              : null
-        if (message) {
-          args.upsertUiToast({ id: 'storyboard-widget-edge-denied', kind: 'warning', message, ttlMs: 2200 })
+      for (const sourceNodeId of sourceNodeIds) {
+        const currentGraphData = readAuthoringGraphData()
+        if (!currentGraphData) continue
+        const nodeById = new Map((currentGraphData.nodes || []).map(node => [String(node.id || ''), node] as const))
+        const sourceNode = nodeById.get(sourceNodeId) || null
+        const targetNode = nodeById.get(id) || null
+        const sourcePort = (
+          sourceNodeId === requestedSourceId ? requestedSourcePortKey : null
+        ) || pickDefaultFlowPortKey(sourceNode, 'out') || null
+        const targetPort = explicitTarget || pickDefaultFlowPortKey(targetNode, 'in') || null
+        if (sourceNodeId === requestedSourceId) primarySourcePort = sourcePort
+        const result = finalizeEdgeAuthoring({
+          mode: 'create',
+          data: currentGraphData,
+          schema: args.schema,
+          label: 'linksTo',
+          selectedEdgeId: null,
+          from: { nodeId: sourceNodeId, portKey: sourcePort },
+          to: { nodeId: id, portKey: targetPort },
+        })
+        if (result.kind === 'blocked') {
+          blockedSourceCount += 1
+          if (!firstBlockedMessage) {
+            firstBlockedMessage =
+              result.reason === 'socket'
+                ? `Incompatible port types: ${result.outType || '∅'} → ${result.inType || '∅'}.`
+                : result.reason === 'schema'
+                  ? 'Edge blocked by schema rules.'
+                  : ''
+          }
+          continue
+        }
+        if (result.kind === 'select-existing') {
+          lastSuccessfulEdgeId = String(result.edgeId || '')
+          successfulSourceCount += 1
+          continue
+        }
+        if (result.kind === 'create') {
+          const sourceId = String(sourceNode?.id || '')
+          const targetId = String(targetNode?.id || '')
+          if (sourceNode && !baseNodeIds.has(sourceId)) {
+            args.addNode(sourceNode)
+            baseNodeIds.add(sourceId)
+          }
+          if (targetNode && !baseNodeIds.has(targetId)) {
+            args.addNode(targetNode)
+            baseNodeIds.add(targetId)
+          }
+          if (!publishDraftEdge(currentGraphData, result.edge)) continue
+          materializeConnectedMediaValue({ sourceNode, targetNode, sourcePort, targetPort })
+          lastSuccessfulEdgeId = String(result.edge.id || '')
+          successfulSourceCount += 1
+          continue
+        }
+      }
+
+      if (!lastSuccessfulEdgeId) {
+        if (firstBlockedMessage) {
+          args.upsertUiToast({
+            id: 'storyboard-widget-edge-denied',
+            kind: 'warning',
+            message: firstBlockedMessage,
+            ttlMs: 2200,
+          })
         }
         return
       }
-
-      if (result.kind === 'select-existing') {
-        disableAutoZoomModesForUserGesture(useGraphStore.getState())
-        args.setSelectionSource('canvas')
-        args.selectEdge(String(result.edgeId || ''))
-        args.selectNode(null)
-        args.setPendingEdgeSourceId(null)
-        args.setPendingEdgeSourcePortKey(null)
-        args.setToolMode('select')
-        return
-      }
-
-      if (result.kind === 'create') {
-        const sourceNode = nodeById.get(requestedSourceId) || null
-        const targetNode = nodeById.get(id) || null
-        if (sourceNode && !baseNodeIds.has(String(sourceNode.id || ''))) args.addNode(sourceNode)
-        if (targetNode && !baseNodeIds.has(String(targetNode.id || ''))) args.addNode(targetNode)
-        publishDraftEdge(authoringGraphData, result.edge)
-        materializeConnectedMediaValue({ sourceNode, targetNode, sourcePort, targetPort })
-        disableAutoZoomModesForUserGesture(useGraphStore.getState())
-        args.setSelectionSource('canvas')
-        args.selectEdge(String(result.edge.id || ''))
-        args.selectNode(null)
-        args.setPendingEdgeSourceId(null)
-        args.setPendingEdgeSourcePortKey(null)
-        args.setToolMode('select')
+      disableAutoZoomModesForUserGesture(useGraphStore.getState())
+      continueStoryboardWidgetMultiConnectSession({
+        edgeId: lastSuccessfulEdgeId,
+        sourceNodeId: requestedSourceId,
+        sourceNodeIds,
+        sourcePortKey: primarySourcePort,
+        setSelectionSource: args.setSelectionSource,
+        selectEdge: args.selectEdge,
+        selectNode: args.selectNode,
+        setPendingEdgeSourceId: args.setPendingEdgeSourceId,
+        setPendingEdgeSourceIds: args.setPendingEdgeSourceIds,
+        setPendingEdgeSourcePortKey: args.setPendingEdgeSourcePortKey,
+        setToolMode: args.setToolMode,
+      })
+      if (sourceNodeIds.length > 1) {
+        args.upsertUiToast({
+          id: 'storyboard-widget-multi-source-edge-result',
+          kind: blockedSourceCount > 0 ? 'warning' : 'success',
+          message: blockedSourceCount > 0
+            ? `Connected ${successfulSourceCount} of ${sourceNodeIds.length} sources; ${blockedSourceCount} incompatible.`
+            : `Connected ${successfulSourceCount} sources to one input.`,
+          ttlMs: 2200,
+        })
       }
     },
     [args, materializeConnectedMediaValue, publishDraftEdge, readAuthoringGraphData, readCommittedNodeIds],
@@ -324,6 +382,7 @@ export function useStoryboardWidgetGraphActions(args: {
   const cancelPendingEdge = React.useCallback(() => {
     if (!args.active) return
     args.setPendingEdgeSourceId(null)
+    args.setPendingEdgeSourceIds([])
     args.setPendingEdgeSourcePortKey(null)
     args.setToolMode('select')
   }, [args])

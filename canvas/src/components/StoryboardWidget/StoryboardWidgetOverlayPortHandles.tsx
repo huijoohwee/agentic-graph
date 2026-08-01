@@ -21,6 +21,7 @@ type PortHandleInteractionContextValue = {
   active: boolean
   graphData: GraphData | null
   pendingEdgeSourceId: string | null
+  pendingEdgeSourceIds: ReadonlyArray<string>
   registryEntries: ReadonlyArray<WidgetRegistryEntry>
   schema: GraphSchema | null
   toolMode: 'select' | 'addEdge'
@@ -100,19 +101,25 @@ export function StoryboardWidgetOverlayPortHandles(props: {
   const nodeId = String(props.node?.id || props.nodeId || '').trim()
   const node = props.node || resolveGraphNodeByCanonicalId(interaction?.graphData, nodeId)
   const pendingSourceId = String(interaction?.pendingEdgeSourceId || '').trim()
+  const pendingSourceIds = interaction?.pendingEdgeSourceIds?.length
+    ? interaction.pendingEdgeSourceIds
+    : pendingSourceId ? [pendingSourceId] : []
+  const isPendingSource = interaction?.toolMode === 'addEdge'
+    && pendingSourceIds.some(sourceId => isCanonicalNodeIdEqual(sourceId, nodeId))
   const isPendingTarget = interaction?.toolMode === 'addEdge'
-    && Boolean(pendingSourceId)
-    && !isCanonicalNodeIdEqual(pendingSourceId, nodeId)
+    && pendingSourceIds.length > 0
+    && !isPendingSource
   const hasPersistentProvenanceOutput = hasOutgoingTextSelectionWidgetEdge({
     graphData: interaction?.graphData,
     sourceNodeId: nodeId,
   })
-  const isUnselectedAndNotPendingTarget = (!props.selected && !isPendingTarget)
-  const persistentOutputOnly = isUnselectedAndNotPendingTarget && hasPersistentProvenanceOutput
+  const isUnselectedAndNotPendingEndpoint = !props.selected && !isPendingSource && !isPendingTarget
+  const persistentOutputOnly = isUnselectedAndNotPendingEndpoint && hasPersistentProvenanceOutput
+  const pendingSourceOutputOnly = isPendingSource && !props.selected
   if (
     !interaction
     || !interaction.active
-    || (isUnselectedAndNotPendingTarget && !hasPersistentProvenanceOutput)
+    || (isUnselectedAndNotPendingEndpoint && !hasPersistentProvenanceOutput)
     || !node
   ) return null
 
@@ -124,8 +131,7 @@ export function StoryboardWidgetOverlayPortHandles(props: {
       registryEntries={interaction.registryEntries}
       edges={interaction.graphData?.edges || []}
       forceEnabled
-      inputOnly={isPendingTarget && !props.selected}
-      outputOnly={persistentOutputOnly}
+      outputOnly={persistentOutputOnly || pendingSourceOutputOnly}
       toolMode={interaction.toolMode}
       pendingEdgeSourceId={interaction.pendingEdgeSourceId}
       onBeginAddEdgeFromNode={interaction.beginEdge}

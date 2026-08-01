@@ -70,6 +70,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
   noGraphLoaded: boolean
   toolMode: 'select' | 'addEdge'
   pendingEdgeSourceId: string | null
+  pendingEdgeSourceIds: ReadonlyArray<string>
   beginAddEdgeFromNode: (nodeId: string, portKey?: string | null) => void
   cancelPendingEdge: () => void
   finalizePendingEdge: (nodeId: string, portKey?: string | null, source?: { nodeId: string; portKey: string | null }) => void
@@ -473,6 +474,7 @@ export default function StoryboardWidgetCanvasSurface(props: {
         active={props.canEdit}
         graphData={storyboardEdgeGraphData}
         pendingEdgeSourceId={props.pendingEdgeSourceId}
+        pendingEdgeSourceIds={props.pendingEdgeSourceIds}
         registryEntries={props.widgetRegistry}
         schema={schema}
         toolMode={props.toolMode}
@@ -578,7 +580,11 @@ export default function StoryboardWidgetCanvasSurface(props: {
         <aside className="absolute top-16 left-3 z-[220]" aria-label="Add edge hint">
           <section className={`rounded-lg border px-3 py-2 ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border}`}>
             <p className={`text-xs ${UI_THEME_TOKENS.text.secondary}`}>
-              {props.pendingEdgeSourceId ? `Select target node (from ${props.pendingEdgeSourceId}).` : 'Select source node.'}
+              {props.pendingEdgeSourceId
+                ? props.pendingEdgeSourceIds.length > 1
+                  ? `Multi-connect ${props.pendingEdgeSourceIds.length} sources: choose an input to connect the group. Click canvas or press Escape to finish.`
+                  : `Multi-connect from ${props.pendingEdgeSourceId}: choose inputs for fan-out or another output for fan-in. Click canvas or press Escape to finish.`
+                : 'Select source node.'}
             </p>
           </section>
         </aside>
