@@ -444,6 +444,57 @@ export function useMapLibreBasemap(args: {
     const isMapPreparedForDisposal = (): boolean => (
       !map || isFlightGeoMapLibreDisposalPrepared(map)
     )
+    const disposeMountedMap = (): void => {
+      cancelled = true
+      runtimeFallbackRequester.dispose()
+      initialStylePreflightAbortRef.current?.abort()
+      initialStylePreflightAbortRef.current = null
+      if (mountRetryTimer) {
+        clearTimeout(mountRetryTimer)
+        mountRetryTimer = null
+      }
+      clearBasemapVisibilityTimer()
+      if (probeInterval) {
+        clearInterval(probeInterval)
+        probeInterval = null
+      }
+      if (resizeObserver) {
+        try {
+          resizeObserver.disconnect()
+        } catch {
+          void 0
+        }
+        resizeObserver = null
+      }
+      if (abortNoiseCleanup) {
+        try {
+          abortNoiseCleanup()
+        } catch {
+          void 0
+        }
+        abortNoiseCleanup = null
+      }
+      if (removePoiClickBinding) {
+        try {
+          removePoiClickBinding()
+        } catch {
+          void 0
+        }
+        removePoiClickBinding = null
+      }
+      prepareMapForDisposal()
+      releaseMapLease?.()
+      releaseMapLease = null
+      if (mountedMapRef.current === map) mountedMapRef.current = null
+      disposeMapLibreFlightBootstrap(map)
+      try {
+        map?.remove?.()
+      } catch {
+        void 0
+      }
+      cancelMapDisposalPreparation()
+      map = null
+    }
     const mapHasExactCurrentFlightPresentation = (
       candidate: any,
     ): boolean => {
@@ -833,6 +884,7 @@ export function useMapLibreBasemap(args: {
         }
         releaseMapLease = claimMapLibreMapLease({
           cancelDisposalPreparation: cancelMapDisposalPreparation,
+          dispose: disposeMountedMap,
           isPreparedForDisposal: isMapPreparedForDisposal,
           map,
           ownerScope,
@@ -1160,60 +1212,7 @@ export function useMapLibreBasemap(args: {
 
     void mount()
 
-    return () => {
-      cancelled = true
-      runtimeFallbackRequester.dispose()
-      initialStylePreflightAbortRef.current?.abort()
-      initialStylePreflightAbortRef.current = null
-      if (mountRetryTimer) {
-        clearTimeout(mountRetryTimer)
-        mountRetryTimer = null
-      }
-      clearBasemapVisibilityTimer()
-      if (probeInterval) {
-        clearInterval(probeInterval)
-        probeInterval = null
-      }
-      if (resizeObserver) {
-        try {
-          resizeObserver.disconnect()
-        } catch {
-          void 0
-        }
-        resizeObserver = null
-      }
-      if (abortNoiseCleanup) {
-        try {
-          abortNoiseCleanup()
-        } catch {
-          void 0
-        }
-        abortNoiseCleanup = null
-      }
-      if (removePoiClickBinding) {
-        try {
-          removePoiClickBinding()
-        } catch {
-          void 0
-        }
-        removePoiClickBinding = null
-      }
-      // Flight owns two GeoJSON sources on this native map. Clear them while
-      // MapLibre is still live so a City-exclusive XR handoff cannot retain
-      // prior Flight geometry beneath the replacement canvas.
-      prepareMapForDisposal()
-      releaseMapLease?.()
-      releaseMapLease = null
-      if (mountedMapRef.current === map) mountedMapRef.current = null
-      disposeMapLibreFlightBootstrap(map)
-      try {
-        map?.remove?.()
-      } catch {
-        void 0
-      }
-      cancelMapDisposalPreparation()
-      map = null
-    }
+    return disposeMountedMap
     // The override is an activation bootstrap, not live map state. Flight may
     // clear it while handing the same Geo surface back; remounting here would
     // destroy the provider map instead of retaining its owner and camera.
