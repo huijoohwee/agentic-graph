@@ -406,7 +406,7 @@ async function ingestResolvedTransaction(
   try {
     projection = await projectKnowledgeGraphSnapshot(snapshot, args.projectionLimit, budget);
   } catch (error) {
-    projection = unavailableProjection(snapshot, args.projectionLimit);
+    projection = unavailableProjection(snapshot, args.projectionLimit, args.projectionByteLimit);
   }
   return success("ingest", {
     graphId: resolved.graphId,
