@@ -24,6 +24,13 @@ export type {
 } from './regionalPoiMapLibreProjection.js'
 
 export const REGIONAL_POI_SOURCE_ID = 'kg-geo-xr:regional-poi'
+export const REGIONAL_POI_PRESENTATION_STATE_KEYS = Object.freeze({
+  fillColor: 'kgRegionalPoiPresentationFillColor',
+  outlineColor: 'kgRegionalPoiPresentationOutlineColor',
+  selected: 'kgRegionalPoiPresentationSelected',
+  selectedOutlineColor: 'kgRegionalPoiPresentationSelectedOutlineColor',
+  variant: 'kgRegionalPoiPresentationVariant',
+} as const)
 export const REGIONAL_POI_LAYER_IDS = Object.freeze({
   fill: `${REGIONAL_POI_SOURCE_ID}:fill`,
   extrusion: `${REGIONAL_POI_SOURCE_ID}:extrusion`,
@@ -58,7 +65,11 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
     source: REGIONAL_POI_SOURCE_ID,
     filter: REGIONAL_POI_SURFACE_FILTER,
     paint: Object.freeze({
-      'fill-color': '#0ea5e9',
+      'fill-color': [
+        'coalesce',
+        ['feature-state', REGIONAL_POI_PRESENTATION_STATE_KEYS.fillColor],
+        '#0ea5e9',
+      ],
       'fill-opacity': 0.42,
     }),
   }),
@@ -69,7 +80,11 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
     filter: REGIONAL_POI_SURFACE_FILTER,
     paint: Object.freeze({
       'fill-extrusion-base': ['get', 'kgRegionalPoiBaseHeightMeters'],
-      'fill-extrusion-color': '#0ea5e9',
+      'fill-extrusion-color': [
+        'coalesce',
+        ['feature-state', REGIONAL_POI_PRESENTATION_STATE_KEYS.fillColor],
+        '#0ea5e9',
+      ],
       'fill-extrusion-height': ['get', 'kgRegionalPoiHeightMeters'],
       'fill-extrusion-opacity': 0.82,
       'fill-extrusion-vertical-gradient': true,
@@ -85,9 +100,31 @@ const REGIONAL_POI_LAYER_DEFINITIONS = Object.freeze([
       'line-join': 'round',
     }),
     paint: Object.freeze({
-      'line-color': '#0369a1',
+      'line-color': [
+        'case',
+        ['boolean', [
+          'feature-state',
+          REGIONAL_POI_PRESENTATION_STATE_KEYS.selected,
+        ], false],
+        ['coalesce', [
+          'feature-state',
+          REGIONAL_POI_PRESENTATION_STATE_KEYS.selectedOutlineColor,
+        ], '#f8fafc'],
+        ['coalesce', [
+          'feature-state',
+          REGIONAL_POI_PRESENTATION_STATE_KEYS.outlineColor,
+        ], '#0369a1'],
+      ],
       'line-opacity': 0.94,
-      'line-width': 1.5,
+      'line-width': [
+        'case',
+        ['boolean', [
+          'feature-state',
+          REGIONAL_POI_PRESENTATION_STATE_KEYS.selected,
+        ], false],
+        4,
+        1.5,
+      ],
     }),
   }),
   Object.freeze({

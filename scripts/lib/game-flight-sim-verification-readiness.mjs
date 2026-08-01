@@ -43,7 +43,7 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'source authority',
     'native Agentic ECS integration',
     'focused Flight Sim source tests',
-    'negative authoring, dependency, license, and clean-room gates',
+    'negative network, provenance, and source-authority gates',
     'verification aggregation contracts',
     'Canvas TypeScript',
     'production build',
@@ -74,101 +74,15 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'export async function assertGitVerificationWorkspace({',
   ], 'Flight Sim exact local verification isolation')
 
-  const offlineAuthoringSource = await readText(
-    'scripts/lib/game-flight-sim-offline-authoring.mjs',
-  )
-  requireMarkers(offlineAuthoringSource, [
-    "'image-to-3d-model-call'",
-    "'network-fetch'",
-    "'cloudflare-resource-request'",
-    'blocked disallowed operation before commit',
-    'export const FLIGHT_SIM_OPTIONAL_PROP_OUTPUT_PATHS = Object.freeze({',
-    'function runOfflineAuthorWorker()',
-    'export async function writeFlightSimOfflineAuthoredOutput(...options)',
-    'accepts no caller-controlled author, path, or commit callback',
-    'const outputs = await readFlightSimOfflineAuthoredOutput()',
-    'await commitCanonicalOutputs(outputs)',
-    'await rename(output.stagedPath, output.targetPath)',
-    'restoreCommittedOutputs(committedOutputs)',
-  ], 'Flight Sim offline authoring transaction')
-  forbidMarkers(offlineAuthoringSource, [
-    'options.commit',
-    'await commit(',
-    'authorModuleUrl: pathToFileURL',
-  ], 'Flight Sim offline authoring transaction')
-  const offlineAuthorContractSource = await readText(
-    'scripts/lib/game-flight-sim-offline-author-contract.mjs',
-  )
-  requireMarkers(offlineAuthorContractSource, [
-    'FLIGHT_SIM_OPTIONAL_PROP_AUTHOR_URL',
-    'FLIGHT_SIM_OPTIONAL_PROP_AUTHOR_EXPORT',
-    'CANONICAL_STATIC_IMPORT',
-    'AUTHORITY_BYPASS_PATTERN',
-    'REEXPORT_BYPASS_PATTERN',
-    "JSON.stringify(imports) !== JSON.stringify(['node:crypto'])",
-    'rejected a non-canonical author authority',
-    'rejected an unaudited import or dynamic execution seam',
-  ], 'Flight Sim fixed offline author authority')
-  const offlineAuthorWorkerSource = await readText(
-    'scripts/lib/game-flight-sim-offline-author-worker.mjs',
-  )
-  requireMarkers(offlineAuthorWorkerSource, [
-    'installNetworkFence()',
-    'syncBuiltinESMExports()',
-    'assertFlightSimOfflineAuthorSource({',
-    'workerData.authorModuleUrl',
-    'workerData.authorExport',
-    'offline-author-worker=1',
-    'await settleDeferredWork()',
-    "block('network-fetch')",
-    "block('image-to-3d-model-call')",
-    "block('cloudflare-resource-request')",
-  ], 'Flight Sim isolated offline author worker')
-  const optionalPropAuthorSource = await readText(
-    'scripts/lib/game-flight-sim-optional-prop-author.mjs',
-  )
-  requireMarkers(optionalPropAuthorSource, [
-    "import { createHash } from 'node:crypto'",
-    'export function authorFlightSimOptionalProp()',
-    "generator: 'knowgrph-offline-flight-sim-fallback/v1'",
-  ], 'Flight Sim fixed optional-prop author')
-  const generatorSource = await readText(
-    'scripts/generate-game-flight-sim-optional-prop-glb.mjs',
-  )
-  requireMarkers(generatorSource, [
-    'FLIGHT_SIM_OPTIONAL_PROP_OUTPUT_PATHS',
-    'readFlightSimOfflineAuthoredOutput',
-    'writeFlightSimOfflineAuthoredOutput',
-    'await readFlightSimOfflineAuthoredOutput()',
-    'await writeFlightSimOfflineAuthoredOutput()',
-  ], 'Flight Sim offline GLB generator')
-  forbidMarkers(generatorSource, [
-    'writeFile',
-    'commit:',
-    'game-flight-sim-optional-prop-author.mjs',
-    'authorFlightSimOptionalProp',
-  ], 'Flight Sim offline GLB generator')
-
   const negativeGateTests = await readText(
     'scripts/__tests__/game-flight-sim-negative-gates.test.mjs',
   )
   requireMarkers(negativeGateTests, [
-    'observes each real disallowed operation before commit and preserves bytes',
-    "const capturedTransport = globalThis[key]",
-    "import { get } from 'node:http'",
-    "setTimeout(() => globalThis[key]",
-    "import{writeFileSync}from'node:fs'",
-    "process.getBuiltinModule('node:fs')",
-    "process['getBuiltinModule']('node:fs')",
-    'createRequire loader',
-    "export*from'./side-effecting-helper.mjs'",
-    'canonical offline writer preflights its exact output pair before atomic rename',
-    'writeFlightSimOfflineAuthoredOutput({',
-    'malicious-author-ran',
-    'names a crafted unauthorized runtime package',
-    'names a crafted non-OSI license',
+    'gameplay guard exposes no browser transport ownership',
     'reports a crafted external-project boundary violation',
-  ], 'Flight Sim crafted negative gates')
+    'covers the canonical native MapLibre Flight camera owner',
+    'rejects a missing course-director authority field',
+  ], 'Flight Sim network, provenance, and source-authority negative gates')
 
   const deadlineSource = await readText(
     'canvas/src/features/game-flight-sim/flightSimDeadlineRuntime.ts',
@@ -357,7 +271,6 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'gameplayWebSocketTransportObserved === false',
     'gameplayWebSocketRouteHits?.length === 0',
     'assertExactFlightSimBrowserVerificationLedger(',
-    'assertExactFlightSimOptionalBeaconAdmission(',
   ], 'Flight Sim exact browser evidence validation')
   forbidMarkers(browserAggregateSource, [
     'const canvasRoot = path.dirname(scriptPath)',
@@ -473,25 +386,18 @@ export async function assertFlightSimVerificationReadiness({ readText }) {
     'canvas/scripts/lib/game_flight_sim_smoke_scene.py',
   )
   requireMarkers(browserSceneSource, [
-    'FLIGHT_OPTIONAL_BEACON_PATH',
-    'FLIGHT_OPTIONAL_BEACON_SHA256',
-    'rendererCanvas?.dataset.kgFlightSimOptionalBeacon',
     'kgFlightOverlayKind',
     '"pendingWaypointCount"',
     '"landingStates"',
     'expected_landing_state',
     'flightVisualNames,',
-    '"meshDescendantCount"',
-    'Flight optional beacon did not retain its admitted local GLB',
-  ], 'Flight Sim rendered fallback identity proof')
+    '"nativeVisualCount"',
+  ], 'Flight Sim native MapLibre identity proof')
   const browserEvidenceSource = await readText(
     'scripts/lib/game-flight-sim-browser-evidence.mjs',
   )
   requireMarkers(browserEvidenceSource, [
     'game-flight-sim-browser-verifications.json',
     'assertExactFlightSimBrowserVerificationLedger',
-    'assertExactFlightSimOptionalBeaconAdmission',
-    'beacon path, SHA-256, opacity, and mesh identity',
-    'did not retain the exact admitted optional',
   ], 'Flight Sim exact browser verification inventory')
 }

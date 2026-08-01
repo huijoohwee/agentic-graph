@@ -2,7 +2,7 @@
 title: "Singapore ADM0 Environment Companion PRD/TAD/ADR"
 id: "md:adm0-singapore-environment-companion"
 doc_type: "PRD/TAD/ADR Companion"
-version: "1.4.0"
+version: "1.5.0"
 date: "2026-07-31"
 lang: "en-US"
 owner: "geospatial-environment-data-steward"
@@ -26,12 +26,12 @@ This companion is the sole document authority for the Singapore-specific environ
 - planar and oblique initial camera policies;
 - the selected Singapore terrain dimensions;
 - the named major-POI roster and its deterministic XR presentation policy;
-- regional geographic POI profile `adm0:SGP:major-pois/v1`, revision `2026-07-31.1`;
+- regional geographic POI profile `adm0:SGP:major-pois/v1`, revision `2026-07-31.2`;
 - the exact checked-in geographic rings, real-metre base/top heights, accuracy statements, OpenStreetMap snapshot provenance, official height context, attribution, and no-runtime-network policy for that profile; and
 - the distinction among an ADM0 identity, presentation framing, a local stage
   footprint, and authoritative geographic boundaries.
 
-The generic mode document owns surface composition, renderer and input arbitration, semantic media wrappers, overlay slots, lifecycle, and provider adapters. The City document owns parcels, zoning, economy, advice, persistence, and City actions. Flight and other applications own their own simulation state. This companion supplies locale data to those owners and does not redefine, specialize, or alias their contracts.
+The generic mode document owns surface composition, renderer and input arbitration, semantic media wrappers, overlay slots, lifecycle, and provider adapters. The City document owns POI-keyed zoning state, economy, advice, persistence, and City actions. Its records use the exact `RegionalPoiIdentity.id` values selected by this companion and own no geographic geometry or aerial data. Flight and other applications own their own simulation state. This companion supplies locale data to those owners and does not redefine, specialize, or alias their contracts.
 
 No polygon in this companion is asserted to be an administrative, legal, surveyed, cadastral, navigational, or emergency-response boundary. The viewport extent frames a presentation. The dated regional profile is the sole POI geometry and height authority. Its exact OpenStreetMap rings and real-metre heights project directly to geographic consumers and derive a uniformly fitted, non-collidable presentation for the 32 by 24 metre XR stage. The XR projection is not a second source and is never projected back onto a basemap.
 
@@ -69,7 +69,7 @@ The outcome is one source-authored Singapore POI profile with exact rings, real-
 | Inspect | Review ADM0 identity and scope | Expose `SGP`, Singapore, and boundary disclaimers | No presentation rectangle is labelled as an ADM0 polygon |
 | Select | Select Singapore context | Resolve one locale revision and one consumer projection | One exact profile identity across ports |
 | Project | Enter local XR or geographic MapLibre presentation | Fit exact regional POIs into the bounded XR stage or preserve their rings and heights directly for Geo | No local-to-geographic POI remap or duplicate authority |
-| Verify | Inspect the three named major POIs | Surface stable identities, explicit accuracy, provenance, and projection class | Nine source surfaces and three derived identity locators remain exact |
+| Verify | Inspect the six named major POIs | Surface stable identities, explicit accuracy, provenance, and projection class | Twelve source surfaces and six derived identity locators remain exact |
 | Exit | Leave or replace the environment | Release only locale data | Consumer lifecycle and prior surface remain consumer-owned |
 
 ### 3.4 User stories
@@ -78,8 +78,8 @@ The outcome is one source-authored Singapore POI profile with exact rings, real-
 - `PRD-SG-02` — As a reviewer, I can distinguish the presentation extent from an administrative boundary and the stage footprint from either.
 - `PRD-SG-03` — As an operator, I receive a north-up planar initial view and an oblique volumetric initial view from one Singapore camera policy.
 - `PRD-SG-04` — As a consumer, I can project local metres through one anchor and axis convention without a second geography or compatibility alias.
-- `PRD-SG-05` — As an operator, I can identify Marina Bay Sands, Singapore Flyer, and Gardens by the Bay through stable semantic POI identities.
-- `PRD-SG-06` — As a reviewer, I can verify that the nine non-collidable XR presentation surfaces are derived from the same nine regional geographic surfaces and that only the geographic source can enter a basemap projection.
+- `PRD-SG-05` — As an operator, I can identify Marina Bay Sands, Singapore Flyer, Gardens by the Bay, Esplanade — Theatres on the Bay, The Fullerton Hotel, and Raffles Hotel through stable semantic POI identities.
+- `PRD-SG-06` — As a reviewer, I can verify that the twelve non-collidable XR presentation surfaces are derived from the same twelve regional geographic surfaces and that only the geographic source can enter a basemap projection.
 - `PRD-SG-07` — As a maintainer, I can validate exact geographic rings, real-metre heights, dated provenance, and attribution locally without a model, token, account, runtime network call, remote asset, or new runtime dependency.
 - `PRD-SG-08` — As a delivery owner, I can see that mirror and delivery lanes are closed until a separate authorized contract opens them.
 
@@ -87,7 +87,7 @@ The outcome is one source-authored Singapore POI profile with exact rings, real-
 
 | Priority | Scope |
 |---|---|
-| Must | One ADM0 identity; one anchor; one axis convention; one presentation center and extent; two camera-policy classes; one local XR stage; three POI identities; one nine-surface geographic authority; deterministic local-XR derivation; one locator per POI; exact geographic rings; real-metre heights; dated geometry/height provenance; ODbL attribution; explicit accuracy and non-boundary disclaimers; VCC coverage. |
+| Must | One ADM0 identity; one anchor; one axis convention; one presentation center and extent; two camera-policy classes; one local XR stage; six POI identities; one twelve-surface geographic authority; deterministic local-XR derivation; one locator per POI; exact geographic rings; real-metre heights; dated geometry/height provenance; ODbL attribution; explicit accuracy and non-boundary disclaimers; VCC coverage. |
 | Should | Human-readable labels, stable revisions, accessible inspection metadata, exact source-to-presentation equality checks, and failure on unknown POI identity. |
 | Could | A future separately sourced official ADM0 polygon or additional Singapore profile variants, each admitted by a new requirement and VCC. |
 | Will not | Own a generic mode, map provider, renderer, camera mechanism, application state, City logic, Flight logic, legal boundary, navigation product, hosted API, account, model, release lane, OS Status Surface, Agent Discovery Surface, or Gateway Federation Contract. |
@@ -106,10 +106,10 @@ The outcome is one source-authored Singapore POI profile with exact rings, real-
 | Locale choices required after selecting Singapore | no candidate-bound observation | 0 | first satisfying VCC run |
 | ADM0 identities in this package | unvalidated | exactly 1 | authoring gate |
 | Geographic anchors | unvalidated | exactly 1 | authoring gate |
-| Named major POIs | unvalidated | exactly 3 | authoring gate |
-| Derived XR POI presentation surfaces | unvalidated | exactly 9 from the geographic profile | authoring gate |
-| Regional geographic POI surfaces | unvalidated | exactly 9 | authoring gate |
-| Regional geographic POI locators | unvalidated | exactly 3 topology-aware representative points derived from source surfaces | authoring gate |
+| Named major POIs | unvalidated | exactly 6 | authoring gate |
+| Derived XR POI presentation surfaces | unvalidated | exactly 12 from the geographic profile | authoring gate |
+| Regional geographic POI surfaces | unvalidated | exactly 12 | authoring gate |
+| Regional geographic POI locators | unvalidated | exactly 6 topology-aware representative points derived from source surfaces | authoring gate |
 | Runtime network calls for regional POI data | unvalidated | exactly 0 | every run |
 | Required model or token calls | unvalidated | 0 | every run |
 | Required remote locale or asset calls | unvalidated | 0 | every run |
@@ -134,9 +134,9 @@ The Must threshold is `2.0`, using `(impact × sessions) / (build hours + monthl
 
 **AC-SG-03 — Camera policy.** Given a planar view, when Singapore is framed, then bearing and pitch are zero. Given a volumetric view, when Singapore is framed, then the declared oblique bearing and pitch are used. Both policies use the same center and presentation extent and do not create a camera owner.
 
-**AC-SG-04 — Major POIs.** Given Singapore context, when its profile resolves, then the roster is exactly Marina Bay Sands, Singapore Flyer, and Gardens by the Bay. The geographic profile retains nine stable surfaces with complete exact Polygon ring sets, real-metre base/top heights, accuracy, and provenance. Every outer ring is simple and non-zero-area; every optional inner ring is simple, strictly contained, and non-overlapping. Its XR adapter derives nine stable non-collidable presentation surfaces without a second geometry fixture.
+**AC-SG-04 — Major POIs.** Given Singapore context, when its profile resolves, then the roster is exactly Marina Bay Sands, Singapore Flyer, Gardens by the Bay, Esplanade — Theatres on the Bay, The Fullerton Hotel, and Raffles Hotel. The geographic profile retains twelve stable surfaces with complete exact Polygon ring sets, real-metre base/top heights, accuracy, and provenance. Every outer ring is simple and non-zero-area; every optional inner ring is simple, strictly contained, and non-overlapping. Its XR adapter derives twelve stable non-collidable presentation surfaces and their complete projected rings without a second geometry fixture.
 
-**AC-SG-05 — Consumer projection.** Given the locale package and a conforming consumer, when local XR is requested, then the checked-in profile is uniformly fitted into the selected stage without changing identity or relative geography. When regional geographic context is requested, then the exact source rings and real-metre heights remain unchanged. City may frame the regional features with parcels but cannot consume the derived local XR presentation.
+**AC-SG-05 — Consumer projection.** Given the locale package and a conforming consumer, when local XR is requested, then the checked-in profile is uniformly fitted into the selected stage without changing identity or relative geography. When regional geographic context is requested, then the exact source rings and real-metre heights remain unchanged. City may attach read-only state directly to the six canonical POI identities but cannot author geometry, framing inputs, aerial data, or a derived local XR presentation.
 
 **AC-SG-06 — Ownership and offline boundary.** Given environment selection, when the package is read and projected, then it mounts no renderer, owns no input or simulation state, persists nothing, and performs no model, token, account, remote-locale, remote-asset, or runtime geodata call. The checked-in OpenStreetMap snapshot retains attribution and ODbL identity.
 
@@ -168,19 +168,19 @@ These values are initial presentation data. The generic surface retains camera m
 
 ### 4.3 Derived local XR presentation
 
-The 32 by 24 metre XR stage contains no separately authored POI positions, sizes, or heights. Its adapter validates the regional profile, unwraps the minimum longitude arc, projects rings to a latitude-adjusted local metre frame, uniformly fits their union within the stage padding, and derives each surface bounding volume and height with the same scale. IDs, labels, parents, categories, surface order, and relative geography remain source-derived.
+The 32 by 24 metre XR stage contains no separately authored POI positions, sizes, rings, or heights. Its adapter validates the regional profile, unwraps the minimum longitude arc, projects every complete ring to a latitude-adjusted local metre frame, uniformly fits their union within the stage padding, and derives each surface base/top height with the same scale. IDs, labels, parents, categories, surface order, complete topology, and relative geography remain source-derived.
 
-All nine derived surfaces are `kind=poi` and `collidable=false`. Category-to-material and landmark morphology are presentation policy only; they cannot modify source identity, rings, height, accuracy, or provenance. The derived local values may be consumed by the standalone XR renderer. They are forbidden as input to MapLibre or any other geographic projection.
+All twelve derived surfaces are `kind=poi` and `collidable=false`. Category-to-material and landmark morphology are presentation policy only; they cannot modify source identity, rings, height, accuracy, or provenance. The derived local rings feed one shared XR extrusion boundary consumed by the standalone XR, Media preview, and Physics presentations. They are forbidden as input to MapLibre or any other geographic projection.
 
 ### 4.4 Regional geographic MapLibre POI profile
 
 | Field | Normative value |
 |---|---|
-| Schema / profile / revision | `knowgrph.regional-poi-profile/v1` / `adm0:SGP:major-pois/v1` / `2026-07-31.1` |
+| Schema / profile / revision | `knowgrph.regional-poi-profile/v1` / `adm0:SGP:major-pois/v1` / `2026-07-31.2` |
 | Snapshot | `2026-07-31T00:00:00Z` |
 | Policy | `storage=checked-in`; `runtimeNetwork=forbidden` |
 | Attribution | `© OpenStreetMap contributors`; `https://www.openstreetmap.org/copyright`; `Open Data Commons Open Database License 1.0`; `https://opendatacommons.org/licenses/odbl/1-0/` |
-| Presentation | one MapLibre `regional-context` band below City parcels and stopped Flight route/aircraft; no active or visible Three.js/R3F presentation and no HTML marker |
+| Presentation | one MapLibre `regional-context` band; City state styles the same canonical POI surfaces without adding geometry, while an independent Flight route or aircraft overlay remains separately owned; no active or visible Three.js/R3F presentation and no HTML marker |
 
 `base` and `top` below are metres above the profile ground plane. For dated OpenStreetMap ways, the snapshot polygon and recorded heights are render authority; official references are accuracy context. The Flyer is the explicit exception only for height: OSM way `230082125` v19 is exact geometry authority, while the official source supplies its 165 metre top height. Its thin MapLibre fill extrusion is geographic massing, not wheel morphology or a podium footprint.
 
@@ -195,6 +195,9 @@ All nine derived surfaces are `kind=poi` and `collidable=false`. Category-to-mat
 | `gardens-by-the-bay:supertree-572839881` | OSM way `572839881` v6 | `0 / 46` | `source-polygon / source-recorded` | same |
 | `gardens-by-the-bay:supertree-572839873` | OSM way `572839873` v6 | `33 / 36` | `source-polygon / source-recorded` | same |
 | `gardens-by-the-bay:supertree-681695795` | OSM way `681695795` v4 | `27 / 33` | `source-polygon / source-recorded` | same |
+| `esplanade-theatres-on-the-bay:main-building` | OSM way `97582570` v33 at `2024-04-14T16:45:20Z` | `0 / 13` | `source-polygon / source-recorded` | no separate context source |
+| `the-fullerton-hotel:main-building` | OSM way `46595395` v27 at `2024-04-12T11:55:48Z` | `0 / 25` | `source-polygon / source-recorded` | explicit `height=25` is render authority; conflicting `building:height=37` is not substituted |
+| `raffles-hotel:main-building` | OSM way `254815862` v8 at `2023-12-05T10:20:00Z` | `0 / 14` | `source-polygon / source-recorded` | no separate context source |
 
 Exact closed outer rings are ordered `[longitude,latitude]`:
 
@@ -207,6 +210,9 @@ Exact closed outer rings are ordered `[longitude,latitude]`:
 - `gardens-by-the-bay:supertree-572839881`: `[[103.8640295,1.2818615],[103.8640131,1.2818452],[103.8639941,1.2818322],[103.863973,1.2818229],[103.8639505,1.2818176],[103.8639275,1.2818165],[103.8639046,1.2818197],[103.8638827,1.281827],[103.8638625,1.2818383],[103.8638447,1.281853],[103.86383,1.2818708],[103.8638188,1.2818909],[103.8638114,1.2819128],[103.8638083,1.2819357],[103.8638093,1.2819587],[103.8638146,1.2819812],[103.8638239,1.2820023],[103.863837,1.2820214],[103.8638533,1.2820377],[103.8638724,1.2820507],[103.8638935,1.2820601],[103.8639159,1.2820653],[103.863939,1.2820664],[103.8639619,1.2820632],[103.8639838,1.2820559],[103.8640039,1.2820446],[103.8640217,1.2820299],[103.8640365,1.2820121],[103.8640477,1.2819919],[103.864055,1.28197],[103.8640582,1.2819472],[103.8640571,1.2819242],[103.8640519,1.2819017],[103.8640425,1.2818806],[103.8640295,1.2818615]]`
 - `gardens-by-the-bay:supertree-572839873`: `[[103.8642248,1.2823002],[103.8642124,1.2822805],[103.8641962,1.2822674],[103.8641768,1.2822599],[103.864156,1.2822587],[103.8641358,1.2822639],[103.8641182,1.282275],[103.8641049,1.282291],[103.8640971,1.2823103],[103.8640956,1.2823311],[103.8641006,1.2823513],[103.8641131,1.2823709],[103.8641316,1.282385],[103.8641537,1.282392],[103.864177,1.282391],[103.8641985,1.2823822],[103.8642157,1.2823665],[103.8642265,1.282346],[103.8642296,1.2823229],[103.8642248,1.2823002]]`
 - `gardens-by-the-bay:supertree-681695795`: `[[103.8638425,1.2823918],[103.8638272,1.2823942],[103.8638139,1.2824022],[103.8638046,1.2824146],[103.8638008,1.2824296],[103.8638028,1.2824449],[103.8638106,1.2824583],[103.8638128,1.2824608],[103.8638258,1.2824692],[103.863841,1.2824722],[103.8638562,1.2824692],[103.8638691,1.2824606],[103.8638779,1.2824478],[103.8638811,1.2824327],[103.8638784,1.2824174],[103.8638701,1.2824044],[103.8638576,1.2823954],[103.8638425,1.2823918]]`
+- `esplanade-theatres-on-the-bay:main-building`: `[[103.8563507,1.2892255],[103.8563712,1.2892234],[103.8563807,1.2894071],[103.856396,1.2897006],[103.8563981,1.2897383],[103.8564013,1.2897951],[103.8564262,1.2897979],[103.8564188,1.2898683],[103.8563899,1.289964],[103.8563511,1.2900244],[103.8563087,1.2900692],[103.8562842,1.2900885],[103.8562259,1.2901344],[103.8561394,1.2901713],[103.8561231,1.29014],[103.8560876,1.2901534],[103.8560365,1.2901727],[103.8559812,1.2901722],[103.855937,1.2903079],[103.8558132,1.2902671],[103.8558897,1.2899639],[103.8558885,1.2899067],[103.8558706,1.2898647],[103.8558452,1.2898379],[103.8557637,1.2897819],[103.8556784,1.289745],[103.8555778,1.2897246],[103.8554989,1.2897348],[103.8554428,1.2897705],[103.8554174,1.2898163],[103.8552459,1.2902159],[103.8551766,1.2901515],[103.8551064,1.2900765],[103.8550396,1.2899725],[103.8549994,1.2898938],[103.8549855,1.2898587],[103.8549508,1.2897439],[103.8549423,1.2895978],[103.8553728,1.2897017],[103.8554416,1.289703],[103.8554899,1.2896775],[103.8555409,1.2896101],[103.8555778,1.2895375],[103.8556135,1.2894217],[103.8556147,1.289358],[103.8555905,1.2892868],[103.8555511,1.2892422],[103.8553086,1.2891493],[103.855323,1.2891293],[103.8552845,1.2891011],[103.8553352,1.2890498],[103.8553654,1.2890802],[103.855401,1.2890545],[103.8554232,1.2890431],[103.8554516,1.2890317],[103.8554825,1.2890218],[103.8555134,1.289018],[103.8555515,1.2890191],[103.8555808,1.2890228],[103.8556079,1.2890284],[103.8556361,1.2890395],[103.8556602,1.2890505],[103.855677,1.2890606],[103.8556937,1.2890726],[103.8557276,1.2891073],[103.8557447,1.2891274],[103.8557599,1.2891485],[103.855772,1.2891759],[103.8557827,1.2892077],[103.855791,1.2892384],[103.8557952,1.2892752],[103.8558947,1.289269],[103.8559682,1.2893539],[103.8559501,1.2893648],[103.8559396,1.289375],[103.8559331,1.2893852],[103.8559268,1.2894001],[103.8559211,1.2894144],[103.855918,1.2894303],[103.8559193,1.2894503],[103.8559222,1.2894688],[103.8559298,1.2894878],[103.8559369,1.2895022],[103.855946,1.2895134],[103.8559551,1.2895227],[103.8559663,1.2895299],[103.8559789,1.2895374],[103.8559941,1.2895435],[103.8560124,1.289548],[103.8560285,1.2895488],[103.8560451,1.289546],[103.856061,1.2895424],[103.8560738,1.2895374],[103.8560877,1.2895289],[103.8561004,1.2895168],[103.8561101,1.2895052],[103.8561166,1.2894965],[103.856122,1.2894868],[103.8561271,1.2894717],[103.8561302,1.2894499],[103.8561307,1.2894367],[103.8561291,1.2894236],[103.8561239,1.2894029],[103.8561146,1.2893874],[103.8561007,1.289367],[103.8560845,1.2893537],[103.8560714,1.2893466],[103.8561369,1.2892427],[103.8563507,1.2892255]]`
+- `the-fullerton-hotel:main-building`: `[[103.8527136,1.2862226],[103.8527127,1.2862881],[103.8527118,1.2863536],[103.8527497,1.2864132],[103.8528883,1.2866487],[103.8529382,1.2867335],[103.852989,1.2867908],[103.853154,1.2867855],[103.8532303,1.2867407],[103.8532314,1.2866979],[103.853254,1.286693],[103.8532611,1.2864877],[103.8533104,1.286488],[103.8533096,1.2864372],[103.8533837,1.2864362],[103.8534137,1.2863679],[103.8534236,1.2862849],[103.8534191,1.2861811],[103.853384,1.2860833],[103.8533059,1.2860838],[103.8533044,1.2860351],[103.8532499,1.2860352],[103.8532311,1.2857608],[103.853208,1.2857594],[103.8532041,1.2857133],[103.8531708,1.2857124],[103.8531787,1.2856683],[103.8530893,1.2856502],[103.8530004,1.2856321],[103.8529923,1.2856769],[103.8529561,1.2856689],[103.8529021,1.2857877],[103.8528783,1.2857767],[103.8527173,1.2861348],[103.8527517,1.2861548],[103.8527136,1.2862226]]`
+- `raffles-hotel:main-building`: `[[103.8543832,1.2945481],[103.8546251,1.2943649],[103.8545623,1.2942821],[103.854507,1.2942091],[103.8542652,1.2943923],[103.8542779,1.2944091],[103.8543684,1.2945285],[103.8543832,1.2945481]]`
 
 Official context references are `https://www.marinabaysands.com/guides/exceptional-experiences/marina-bay-sands-architecture.html`, `https://www.singaporeflyer.com/en/fun-facts`, and `https://www.gardensbythebay.com.sg/en/about-us/media-room/2007.html`, each recorded as accessed at the snapshot timestamp. They contextualize accuracy; only the source identified per surface is render authority.
 
@@ -223,7 +229,7 @@ Official context references are `https://www.marinabaysands.com/guides/exception
 | `DerivedXrPoiSurface` | `id`, `poiId`, `label`, `presentation`, `position`, `size`, `color`, `collidable` | source-derived IDs and fitted dimensions; non-collidable; never geographic input |
 | `RegionalPoiSourceReference` | `authority`, `sourceId`, `sourceUrl`, `sourceVersion`, `snapshotAt` | exact HTTPS source and UTC snapshot; no missing provenance |
 | `RegionalPoiSurface` | `id`, `poiId`, `label`, `category`, geographic Polygon, base/top metres, accuracy, provenance | complete closed exact rings; simple non-zero-area outer ring; strictly contained, non-crossing, non-overlapping holes; top exceeds base; no local-stage coordinates |
-| `RegionalPoiProfile` | schema, identity, region, revision, data policy, attribution, POIs, surfaces | checked-in; runtime network forbidden; exact three identities and nine surfaces |
+| `RegionalPoiProfile` | schema, identity, region, revision, data policy, attribution, POIs, surfaces | checked-in; runtime network forbidden; exact six identities and twelve surfaces |
 | `RegionalPoiLocator` | `poiId`, `label`, geographic point | exactly one immutable, surface-order-independent representative point per identity; antimeridian-aware area weighting with a deterministic point-on-surface fallback |
 | `EnvironmentProjection` | `id`, `label`, `anchor`, `presentationBounds`, `stageFootprint`, `surfaces`, `revision` | regional POIs preserve exact rings/heights; local stage and subjects remain separately typed |
 
@@ -238,7 +244,7 @@ Unknown identities, orphan POIs, non-finite distances, non-positive dimensions, 
 | 3a. Project local XR | admitted geographic profile plus stage dimensions | Uniformly fit the geographic union into local stage metres | derived local presentation snapshot | unsupported category or invalid stage fails |
 | 3b. Publish regional context | admitted geographic surfaces and locators | Preserve exact rings and real-metre heights; add one derived fixed-pixel identity locator and collision-aware label | regional-context snapshot | local-stage input is never accepted |
 | 4. Present | typed snapshot plus consumer view class | Use the compatible renderer port without rewriting source values | one aligned presentation | no second surface or HTML marker is created |
-| 5. Frame City | regional bounds plus parcel bounds | Let native MapLibre frame the union inside the visible aperture | one composite camera request | locale package owns no camera |
+| 5. Frame City | admitted regional profile | Let native MapLibre frame the six canonical POIs inside the visible aperture | one camera request over source-authoritative regional bounds | locale package and City own no camera |
 | 6. Release | environment replacement or exit | Drop locale snapshot only | consumer-controlled restoration | no locale-owned cleanup side effect |
 
 Data direction is one way:
@@ -454,7 +460,7 @@ consumer remains responsible for its overlay and camera behavior.
 morphology, dated OSM polygons, and official height context carry different
 accuracy semantics.
 
-**Decision:** Three named POIs keep stable semantic identities. Their nine
+**Decision:** Six named POIs keep stable semantic identities. Their twelve
 regional surfaces carry per-surface footprint and height accuracy plus exact
 geometry, height, context, version, and snapshot provenance. XR morphology is
 explicitly presentation-only and non-collidable. Official values are render
@@ -509,8 +515,8 @@ license, accuracy statement, and VCC rather than a hidden dependency.
 | `VCC-SG-01` | Exactly one `SGP` identity, one anchor, one center, and one presentation extent exist; framing and stage are never classified as an ADM0 polygon. | Focused locale-contract test plus terminology scan exits 0 and surfaces values. | No inferred filename identity or unsourced boundary. | none recorded |
 | `VCC-SG-02` | Planar policy is north-up; volumetric policy uses the declared oblique values; both share center and extent. | Focused camera-policy test surfaces the four view-class results. | Locale owns values, not camera lifecycle. | none recorded |
 | `VCC-SG-03` | Equal finite local inputs project equally with `+X east`, `-Z north`, `+Y up`; invalid inputs fail. | Focused projection test surfaces equal coordinate digests and rejection cases. | No second anchor or unit scale. | none recorded |
-| `VCC-SG-04` | The exact three POIs retain nine immutable regional-geographic surfaces, nine source-derived XR presentation surfaces, and three topology-aware representative-point locators; every identity, complete Polygon ring set, base/top height, accuracy value, and provenance reference matches this companion. | Focused profile/source tests surface the unchanged geographic digest, valid topology and invalid-ring rejection, derived XR identity equality, locator invariance across concave, holed, disjoint, reordered, and antimeridian cases, and Geo rejection of local values. | No second POI geometry fixture, remote asset, or opaque POI geometry. | none recorded |
-| `VCC-SG-05` | The regional profile projects through source `kg-geo-xr:regional-poi` and layers `kg-geo-xr:regional-poi:fill`, `kg-geo-xr:regional-poi:extrusion`, `kg-geo-xr:regional-poi:outline`, `kg-geo-xr:regional-poi:locator`, and `kg-geo-xr:regional-poi:label` below City parcels and stopped Flight route/aircraft; MapLibre frames all three POIs and uses collision-aware variable label anchors while its live canvas remains the sole semantic selection owner. | Focused MapLibre and neutral browser checks compare nine exact surfaces, complete ring/source-fact pass-through in City and Flight, three locators, five-layer order, circular-longitude composite bounds, direct canvas semantics, and rendered visibility inside the unobscured aperture. | Derived XR presentation remains absent from City; no active or visible City-created Three.js/R3F presentation, HTML marker, generic selectable wrapper, or `aria-hidden`. | none recorded |
+| `VCC-SG-04` | The exact six POIs retain twelve immutable regional-geographic surfaces, twelve source-derived XR presentation surfaces, and six topology-aware representative-point locators; every identity, complete Polygon ring set, base/top height, accuracy value, and provenance reference matches this companion. | Focused profile/source tests surface the unchanged geographic digest, valid topology and invalid-ring rejection, derived XR ring and identity equality, source-to-render completeness, locator invariance across concave, holed, disjoint, reordered, and antimeridian cases, and Geo rejection of local values. | No second POI geometry fixture, remote asset, or opaque POI geometry. | none recorded |
+| `VCC-SG-05` | The regional profile projects through source `kg-geo-xr:regional-poi` and layers `kg-geo-xr:regional-poi:fill`, `kg-geo-xr:regional-poi:extrusion`, `kg-geo-xr:regional-poi:outline`, `kg-geo-xr:regional-poi:locator`, and `kg-geo-xr:regional-poi:label`; City state attaches one-to-one through the six exact `RegionalPoiIdentity.id` values, an independent Flight route or aircraft overlay remains separately owned, and MapLibre frames all six POIs while its live canvas remains the sole semantic selection owner. | Focused MapLibre and neutral browser checks compare twelve exact surfaces, complete ring/source-fact pass-through, six locators, five-layer order, direct canonical City identity joins, source-authoritative framing, direct canvas semantics, and a regional-feature union spanning at least 45% of one unobscured aperture axis. | City owns no geometry, dimensions, gaps, bearings, anchor, route, aircraft, derived XR presentation, active or visible Three.js/R3F presentation, HTML marker, generic selectable wrapper, or `aria-hidden`. | none recorded |
 | `VCC-SG-06` | Locale selection and projection perform zero model, token, account, remote-locale, remote-asset, runtime-geodata, persistence, or new-dependency operations while retaining ODbL attribution. | Focused offline boundary and exact-property tests surface forbidden-call counts of zero. | Provider transport remains separately owned. | none recorded |
 | `VCC-SG-07` | Generic Geo+XR and City documents contain no copied Singapore facts and reference this companion for locale data. | Document contract scan exits 0 and surfaces allowed references. | No compatibility alias or duplicate locale authority. | none recorded |
 | `VCC-SG-08` | Mirror and delivery targets are absent and no source check is interpreted as delivery proof. | Lane contract check surfaces zero targets and `delivered_rung=undocumented`. | Promotion requires a separate authorized contract. | none recorded |
@@ -567,12 +573,12 @@ remain neutral and are not inferred from these paths.
 | Exact Flight Geo environment projection | `canvas/src/features/game-flight-sim/flightSimGeoEnvironmentProjection.ts` | `projectXrEnvironmentToFlightGeo`; regional POIs bypass local-stage projection and retain exact rings/metres |
 | Flight MapLibre environment projection | `gympgrph/src/flightGeoEnvironmentMapLibreProjection.ts`, `gympgrph/src/flightGeoEnvironmentMapLibre.ts` | exact full Polygon rings and typed accuracy/provenance plus independently typed local stage/subject features for Flight only |
 | Regional profile admission | `canvas/src/features/geospatial/regionalPoiProfileCatalog.ts` | exact profile-id resolution; unknown identity fails |
-| Regional MapLibre source projection | `gympgrph/src/regionalPoiMapLibreProjection.ts` | nine exact Polygon features plus three derived Point locators |
+| Regional MapLibre source projection | `gympgrph/src/regionalPoiMapLibreProjection.ts` | twelve exact Polygon features plus six derived Point locators |
 | Regional MapLibre presentation | `gympgrph/src/regionalPoiMapLibre.ts` | source `kg-geo-xr:regional-poi`; surface fill, extrusion, outline, fixed-pixel locator, and collision-aware variable-anchor label layers |
-| City composite projection and framing | `canvas/src/features/game-city-sim/citySimGeospatialProjection.ts`, `gympgrph/src/cityGeoOverlayMapLibreController.ts` | regional-context below parcels and Flight; bounds union without camera ownership |
+| City state projection and framing | `canvas/src/features/game-city-sim/citySimGeospatialProjection.ts`, `gympgrph/src/cityGeoOverlayMapLibreController.ts` | exact canonical POI identity joins on the shared regional source; source-authoritative profile framing without City geometry or camera ownership |
 | Existing focused POI proof source | `grph-shared/__tests__/regional-poi-geo.test.mjs`, `canvas/src/__tests__/flightSimSingaporePoiExtrusion.test.ts`, `canvas/src/__tests__/regionalPoiMapLibre.test.ts` | unchanged source digest, locator invariance, derived-XR identity, exact Flight Geo rings/heights, five-layer repair, and stale-property rejection |
 | Generic mode authority | `docs/documents/knowgrph-geo-xr-mode-prd-tad-ard.md` | shared surface, semantic wrapper, lifecycle, input, camera, and overlay ownership |
-| City product authority | `docs/documents/knowgrph-game-city-building-sim-prd-tad-ard.md` | parcels, zoning, economy, advice, persistence, and City actions |
+| City product authority | `docs/documents/knowgrph-game-city-building-sim-prd-tad-ard.md` | POI-keyed zoning state, economy, advice, persistence, and City actions |
 
 The current renderer libraries are implementation choices inside the generic
 surface owner. This companion has no direct dependency on MapLibre, React,

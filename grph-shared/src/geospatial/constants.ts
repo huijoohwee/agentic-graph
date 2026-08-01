@@ -28,8 +28,6 @@ export const GEOSPATIAL_LS_KEYS = {
   geospatialGraphEdgeSelectedColor: 'kg:ui:geospatial:graphEdgeSelectedColor',
   geospatialGlobeAutoRotate: 'kg:ui:geospatial:globeAutoRotate',
   geospatialGlobeAutoRotateSpeed: 'kg:ui:geospatial:globeAutoRotateSpeed',
-  geospatialTraversalAirplaneEnabled: 'kg:ui:geospatial:traversalAirplaneEnabled',
-  geospatialTraversalAirplaneSpeed: 'kg:ui:geospatial:traversalAirplaneSpeed',
   geospatialClusterEnabled: 'kg:ui:geospatial:clusterEnabled',
   geospatialClusterRadius: 'kg:ui:geospatial:clusterRadius',
   geospatialClusterMaxZoom: 'kg:ui:geospatial:clusterMaxZoom',

@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Simulate } from 'react-dom/test-utils'
-import { CityParcelCoordinateControls } from '@/features/game-city-sim/CityParcelCoordinateControls'
+import { CityPoiZoningControls } from '@/features/game-city-sim/CityPoiZoningControls'
 import { CitySimFloatingPanelView } from '@/features/game-city-sim/CitySimFloatingPanelView'
 import { resetCityInputQueueForTests, type CityInputSource } from '@/features/game-city-sim/citySimInputRuntime'
 import { resetCitySimRuntimeForTests } from './citySimAuthoritativeSource'
@@ -16,57 +16,54 @@ import {
 import { initJsdomHarness } from '@/tests/lib/jsdomHarness'
 import { mountReactRoot, unmountReactRoot } from '@/tests/lib/reactRootHarness'
 
-export async function testCitySimCoordinateControlsStayLinearAndNormalizeInput() {
+export async function testCitySimPoiControlsExposeCanonicalIdentityAndNormalizeInput() {
   const { dom, restore } = initJsdomHarness()
   const container = dom.window.document.createElement('section')
   dom.window.document.body.appendChild(container)
   const root = createRoot(container)
-  const selections: Array<readonly [number, number, CityInputSource]> = []
+  const selections: Array<readonly [string, CityInputSource]> = []
 
   function Harness() {
-    const [selected, setSelected] = React.useState<readonly [number, number] | null>(null)
+    const [selected, setSelected] = React.useState<string | null>(null)
     return (
-      <CityParcelCoordinateControls
+      <CityPoiZoningControls
         busy={false}
-        columns={64}
-        onSelect={(row, column, source) => {
-          selections.push([row, column, source])
-          setSelected([row, column])
+        onSelect={(poiId, source) => {
+          selections.push([poiId, source])
+          setSelected(poiId)
         }}
-        rows={64}
-        selectedColumn={selected?.[1] ?? null}
-        selectedRow={selected?.[0] ?? null}
+        pois={[
+          { id: 'marina-bay-sands', label: 'Marina Bay Sands' },
+          { id: 'singapore-flyer', label: 'Singapore Flyer' },
+          { id: 'gardens-by-the-bay', label: 'Gardens by the Bay' },
+        ]}
+        selectedPoiId={selected}
       />
     )
   }
 
   try {
     await mountReactRoot(root, <Harness />)
-    const rowSelect = container.querySelector(
-      '[data-kg-city-sim-parcel-row="1"]',
+    const poiSelect = container.querySelector(
+      '[data-kg-city-sim-poi-id="1"]',
     ) as HTMLSelectElement | null
-    const columnSelect = container.querySelector(
-      '[data-kg-city-sim-parcel-column="1"]',
-    ) as HTMLSelectElement | null
-    assert.ok(rowSelect)
-    assert.ok(columnSelect)
-    assert.equal(rowSelect.options.length, 65)
-    assert.equal(columnSelect.options.length, 65)
-    assert.equal(container.querySelectorAll('option').length, 130)
+    assert.ok(poiSelect)
+    assert.equal(poiSelect.options.length, 4)
+    assert.equal(container.textContent?.includes('POI zoning target'), true)
 
     await act(async () => {
-      Simulate.keyDown(rowSelect)
-      rowSelect.value = '63'
-      Simulate.change(rowSelect)
+      Simulate.keyDown(poiSelect)
+      poiSelect.value = 'singapore-flyer'
+      Simulate.change(poiSelect)
     })
-    assert.deepEqual(selections.at(-1), [63, 0, 'keyboard'])
+    assert.deepEqual(selections.at(-1), ['singapore-flyer', 'keyboard'])
 
     await act(async () => {
-      Simulate.touchStart(columnSelect)
-      columnSelect.value = '63'
-      Simulate.change(columnSelect)
+      Simulate.touchStart(poiSelect)
+      poiSelect.value = 'gardens-by-the-bay'
+      Simulate.change(poiSelect)
     })
-    assert.deepEqual(selections.at(-1), [63, 63, 'touch'])
+    assert.deepEqual(selections.at(-1), ['gardens-by-the-bay', 'touch'])
   } finally {
     await unmountReactRoot(root)
     container.remove()

@@ -40,13 +40,14 @@ const GARDENS_BY_THE_BAY_OFFICIAL_CONTEXT = Object.freeze({
 function osmWayReference(
   wayId: number,
   version: number,
+  snapshotAt = SNAPSHOT_AT,
 ): RegionalPoiSourceReference {
   return Object.freeze({
     authority: 'OpenStreetMap contributors',
     sourceId: `openstreetmap:way/${wayId}`,
     sourceUrl: `https://www.openstreetmap.org/way/${wayId}`,
     sourceVersion: String(version),
-    snapshotAt: SNAPSHOT_AT,
+    snapshotAt,
   })
 }
 
@@ -57,13 +58,18 @@ function osmSurface(input: {
   category: string
   wayId: number
   wayVersion: number
+  sourceTimestamp?: string
   ring: readonly RegionalPoiCoordinate[]
   baseHeightMeters?: number
   heightMeters: number
   statement: string
   context?: readonly RegionalPoiSourceReference[]
 }): RegionalPoiSurface {
-  const source = osmWayReference(input.wayId, input.wayVersion)
+  const source = osmWayReference(
+    input.wayId,
+    input.wayVersion,
+    input.sourceTimestamp,
+  )
   return {
     id: input.id,
     poiId: input.poiId,
@@ -192,6 +198,92 @@ const SUPERTREE_681695795_RING = [
   [103.8638779, 1.2824478], [103.8638811, 1.2824327],
   [103.8638784, 1.2824174], [103.8638701, 1.2824044],
   [103.8638576, 1.2823954], [103.8638425, 1.2823918],
+] as const
+
+const ESPLANADE_THEATRES_ON_THE_BAY_RING = [
+  [103.8563507, 1.2892255], [103.8563712, 1.2892234],
+  [103.8563807, 1.2894071], [103.856396, 1.2897006],
+  [103.8563981, 1.2897383], [103.8564013, 1.2897951],
+  [103.8564262, 1.2897979], [103.8564188, 1.2898683],
+  [103.8563899, 1.289964], [103.8563511, 1.2900244],
+  [103.8563087, 1.2900692], [103.8562842, 1.2900885],
+  [103.8562259, 1.2901344], [103.8561394, 1.2901713],
+  [103.8561231, 1.29014], [103.8560876, 1.2901534],
+  [103.8560365, 1.2901727], [103.8559812, 1.2901722],
+  [103.855937, 1.2903079], [103.8558132, 1.2902671],
+  [103.8558897, 1.2899639], [103.8558885, 1.2899067],
+  [103.8558706, 1.2898647], [103.8558452, 1.2898379],
+  [103.8557637, 1.2897819], [103.8556784, 1.289745],
+  [103.8555778, 1.2897246], [103.8554989, 1.2897348],
+  [103.8554428, 1.2897705], [103.8554174, 1.2898163],
+  [103.8552459, 1.2902159], [103.8551766, 1.2901515],
+  [103.8551064, 1.2900765], [103.8550396, 1.2899725],
+  [103.8549994, 1.2898938], [103.8549855, 1.2898587],
+  [103.8549508, 1.2897439], [103.8549423, 1.2895978],
+  [103.8553728, 1.2897017], [103.8554416, 1.289703],
+  [103.8554899, 1.2896775], [103.8555409, 1.2896101],
+  [103.8555778, 1.2895375], [103.8556135, 1.2894217],
+  [103.8556147, 1.289358], [103.8555905, 1.2892868],
+  [103.8555511, 1.2892422], [103.8553086, 1.2891493],
+  [103.855323, 1.2891293], [103.8552845, 1.2891011],
+  [103.8553352, 1.2890498], [103.8553654, 1.2890802],
+  [103.855401, 1.2890545], [103.8554232, 1.2890431],
+  [103.8554516, 1.2890317], [103.8554825, 1.2890218],
+  [103.8555134, 1.289018], [103.8555515, 1.2890191],
+  [103.8555808, 1.2890228], [103.8556079, 1.2890284],
+  [103.8556361, 1.2890395], [103.8556602, 1.2890505],
+  [103.855677, 1.2890606], [103.8556937, 1.2890726],
+  [103.8557276, 1.2891073], [103.8557447, 1.2891274],
+  [103.8557599, 1.2891485], [103.855772, 1.2891759],
+  [103.8557827, 1.2892077], [103.855791, 1.2892384],
+  [103.8557952, 1.2892752], [103.8558947, 1.289269],
+  [103.8559682, 1.2893539], [103.8559501, 1.2893648],
+  [103.8559396, 1.289375], [103.8559331, 1.2893852],
+  [103.8559268, 1.2894001], [103.8559211, 1.2894144],
+  [103.855918, 1.2894303], [103.8559193, 1.2894503],
+  [103.8559222, 1.2894688], [103.8559298, 1.2894878],
+  [103.8559369, 1.2895022], [103.855946, 1.2895134],
+  [103.8559551, 1.2895227], [103.8559663, 1.2895299],
+  [103.8559789, 1.2895374], [103.8559941, 1.2895435],
+  [103.8560124, 1.289548], [103.8560285, 1.2895488],
+  [103.8560451, 1.289546], [103.856061, 1.2895424],
+  [103.8560738, 1.2895374], [103.8560877, 1.2895289],
+  [103.8561004, 1.2895168], [103.8561101, 1.2895052],
+  [103.8561166, 1.2894965], [103.856122, 1.2894868],
+  [103.8561271, 1.2894717], [103.8561302, 1.2894499],
+  [103.8561307, 1.2894367], [103.8561291, 1.2894236],
+  [103.8561239, 1.2894029], [103.8561146, 1.2893874],
+  [103.8561007, 1.289367], [103.8560845, 1.2893537],
+  [103.8560714, 1.2893466], [103.8561369, 1.2892427],
+  [103.8563507, 1.2892255],
+] as const
+
+const FULLERTON_HOTEL_RING = [
+  [103.8527136, 1.2862226], [103.8527127, 1.2862881],
+  [103.8527118, 1.2863536], [103.8527497, 1.2864132],
+  [103.8528883, 1.2866487], [103.8529382, 1.2867335],
+  [103.852989, 1.2867908], [103.853154, 1.2867855],
+  [103.8532303, 1.2867407], [103.8532314, 1.2866979],
+  [103.853254, 1.286693], [103.8532611, 1.2864877],
+  [103.8533104, 1.286488], [103.8533096, 1.2864372],
+  [103.8533837, 1.2864362], [103.8534137, 1.2863679],
+  [103.8534236, 1.2862849], [103.8534191, 1.2861811],
+  [103.853384, 1.2860833], [103.8533059, 1.2860838],
+  [103.8533044, 1.2860351], [103.8532499, 1.2860352],
+  [103.8532311, 1.2857608], [103.853208, 1.2857594],
+  [103.8532041, 1.2857133], [103.8531708, 1.2857124],
+  [103.8531787, 1.2856683], [103.8530893, 1.2856502],
+  [103.8530004, 1.2856321], [103.8529923, 1.2856769],
+  [103.8529561, 1.2856689], [103.8529021, 1.2857877],
+  [103.8528783, 1.2857767], [103.8527173, 1.2861348],
+  [103.8527517, 1.2861548], [103.8527136, 1.2862226],
+] as const
+
+const RAFFLES_HOTEL_RING = [
+  [103.8543832, 1.2945481], [103.8546251, 1.2943649],
+  [103.8545623, 1.2942821], [103.854507, 1.2942091],
+  [103.8542652, 1.2943923], [103.8542779, 1.2944091],
+  [103.8543684, 1.2945285], [103.8543832, 1.2945481],
 ] as const
 
 const MBS_OFFICIAL_CONTEXT_STATEMENT =
@@ -328,6 +420,45 @@ const surfaces: readonly RegionalPoiSurface[] = [
       `Footprint, 27 metre minimum height, and 33 metre top height reproduce the dated OpenStreetMap way. ${SUPERTREE_OFFICIAL_CONTEXT_STATEMENT}`,
     context: [GARDENS_BY_THE_BAY_OFFICIAL_CONTEXT],
   }),
+  osmSurface({
+    id: 'esplanade-theatres-on-the-bay:main-building',
+    poiId: 'esplanade-theatres-on-the-bay',
+    label: 'Esplanade — Theatres on the Bay',
+    category: 'theatre',
+    wayId: 97582570,
+    wayVersion: 33,
+    sourceTimestamp: '2024-04-14T16:45:20Z',
+    ring: ESPLANADE_THEATRES_ON_THE_BAY_RING,
+    heightMeters: 13,
+    statement:
+      'The exact closed footprint and 13 metre top height reproduce OpenStreetMap way 97582570 version 33 at its source timestamp.',
+  }),
+  osmSurface({
+    id: 'the-fullerton-hotel:main-building',
+    poiId: 'the-fullerton-hotel',
+    label: 'The Fullerton Hotel',
+    category: 'heritage-hotel',
+    wayId: 46595395,
+    wayVersion: 27,
+    sourceTimestamp: '2024-04-12T11:55:48Z',
+    ring: FULLERTON_HOTEL_RING,
+    heightMeters: 25,
+    statement:
+      'The exact closed footprint and explicit 25 metre height tag reproduce OpenStreetMap way 46595395 version 27 at its source timestamp. The generic extrusion contract consumes the current height tag and does not substitute its conflicting building:height value.',
+  }),
+  osmSurface({
+    id: 'raffles-hotel:main-building',
+    poiId: 'raffles-hotel',
+    label: 'Raffles Hotel',
+    category: 'heritage-hotel',
+    wayId: 254815862,
+    wayVersion: 8,
+    sourceTimestamp: '2023-12-05T10:20:00Z',
+    ring: RAFFLES_HOTEL_RING,
+    heightMeters: 14,
+    statement:
+      'The exact closed footprint, 14 metre top height, and Raffles Hotel identity reproduce OpenStreetMap way 254815862 version 8 at its source timestamp.',
+  }),
 ]
 
 export const SINGAPORE_MAJOR_POI_GEO_PROFILE: RegionalPoiProfile =
@@ -338,7 +469,7 @@ export const SINGAPORE_MAJOR_POI_GEO_PROFILE: RegionalPoiProfile =
       code: 'SGP',
       label: 'Singapore',
     },
-    revision: '2026-07-31.1',
+    revision: '2026-07-31.2',
     dataPolicy: {
       storage: 'checked-in',
       runtimeNetwork: 'forbidden',

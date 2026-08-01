@@ -8,7 +8,6 @@ import {
   preloadFlightSimMissionStage,
   resetFlightSimMissionStageLoaderForTests,
 } from '@/lib/three/flightSimMissionStageLoader'
-import { readFlightSimDefaultAssetLoadReport } from './assetSpec/flightSimDefaultAssets'
 import {
   loadFlightSimSavedDecisions, persistPendingFlightSimDecisions,
   queueFlightSimDecisions, readFlightSimDecisionStore,
@@ -94,18 +93,6 @@ function hasFlightSimBrowserPresentationRuntime(): boolean {
   return typeof window !== 'undefined'
     && typeof document !== 'undefined'
     && typeof window.requestAnimationFrame === 'function'
-}
-
-function admitDefaultAssets(): void {
-  const { report } = readFlightSimDefaultAssetLoadReport()
-  if (
-    report.errors.length !== 0
-    || report.loaded.length !== 2
-    || report.glbFallbackCount !== 1
-    || report.requiredAircraftGlbFallbackCount !== 0
-  ) {
-    throw new Error('Flight Sim default asset admission returned a non-canonical catalog')
-  }
 }
 
 function captureAuthoredRuntimeOwnership(): void {
@@ -297,7 +284,6 @@ async function performFlightSimSurfaceOpen(
       releaseFlightSimDurableChatStreamTransportSuspension =
         acquireDurableChatStreamTransportSuspension()
     }
-    admitDefaultAssets()
     const [decisions] = await Promise.all([
       loadFlightSimSavedDecisions(options),
       preloadFlightSimSurfacePresentation(options),

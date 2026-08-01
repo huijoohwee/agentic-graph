@@ -497,7 +497,7 @@ export const GRABMAPS_DOC_ROWS: ReadonlyArray<GrabMapsApiDocRow> = [
     key: 'maplibre.geo_xr.regional_poi',
     typeLabel: 'projection',
     value: 'Checked-in regional geographic POI profile',
-    keyDescription: 'Regional POI projection -> resolve one exact profile identity into nine immutable geographic Polygon surfaces plus one topology-aware representative Point locator per POI -> render one neutral MapLibre fill/extrusion/outline/locator/label band without a second canvas.',
+    keyDescription: 'Regional POI projection -> resolve one exact profile identity into its immutable geographic Polygon surfaces plus one topology-aware representative Point locator per POI -> render one neutral MapLibre fill/extrusion/outline/locator/label band without a second canvas.',
     valueDescription: 'Default: checked-in storage, runtime network forbidden, exact profile resolution, 2D planar fill or 3D extrusion, fixed-pixel viewport-aligned locators, collision-aware variable-anchor labels, and one contiguous five-layer band below dynamic application layers. Local XR coordinates, provider discovery, HTML markers, alias remapping, and locale-specific facts outside the companion profile are forbidden.',
     ssot: 'https://maplibre.org/maplibre-style-spec/layers/#fill-extrusion',
     module: ['grph-shared/src/geospatial/regionalPoiGeo.ts', 'gympgrph/src/regionalPoiMapLibreProjection.ts', 'gympgrph/src/regionalPoiMapLibre.ts', 'canvas/src/features/geospatial/regionalPoiProfileCatalog.ts'],

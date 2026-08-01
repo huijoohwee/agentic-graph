@@ -16,7 +16,7 @@ import {
 } from './citySimModel'
 
 const CITY_SIM_DOCUMENT_FOLDER = '/game-city-sim'
-const CITY_SIM_DOCUMENT_NAME = 'city-grid.md'
+const CITY_SIM_DOCUMENT_NAME = 'city-poi-zoning.md'
 
 export class CitySimPersistenceError extends Error {
   readonly code: 'workspace-read' | 'workspace-write' | 'read-back-mismatch'

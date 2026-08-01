@@ -88,17 +88,11 @@ def _read_view(page: Page) -> dict[str, Any]:
           const cityOverlay = gympgrph.readCityGeoOverlay?.() || null
           const sourceId = gympgrph.FLIGHT_GEO_OVERLAY_SOURCE_ID
             || 'kg-flight-sim:geo-overlay'
-          const citySourceId = gympgrph.CITY_GEO_OVERLAY_SOURCE_ID
-            || 'kg-city-sim:geo-overlay'
-          const cityLayerIds = Object.values(
-            gympgrph.CITY_GEO_OVERLAY_LAYER_IDS || {},
-          )
           const environmentSourceId = gympgrph.FLIGHT_GEO_ENVIRONMENT_SOURCE_ID
             || 'kg-flight-geo-environment'
           const environmentLayerIds = gympgrph.FLIGHT_GEO_ENVIRONMENT_LAYER_IDS
           const aircraftImageIds = gympgrph.FLIGHT_GEO_AIRCRAFT_IMAGE_IDS
           const environmentSource = map?.getSource?.(environmentSourceId) || null
-          const citySource = map?.getSource?.(citySourceId) || null
           const layerIds = [
             `${sourceId}:route`,
             `${sourceId}:objective-guide`,
@@ -120,26 +114,25 @@ def _read_view(page: Page) -> dict[str, Any]:
           }
           const sourceData = await readSourceData(source)
           const environmentData = await readSourceData(environmentSource)
-          const citySourceData = await readSourceData(citySource)
           const sourceFeatures = Array.isArray(sourceData?.features)
             ? sourceData.features
             : []
           const environmentFeatures = Array.isArray(environmentData?.features)
             ? environmentData.features
             : []
-          const citySourceFeatures = Array.isArray(citySourceData?.features)
-            ? citySourceData.features
-            : []
           const mapStyle = map?.getStyle?.() || null
           const styleLayerIds = Array.isArray(mapStyle?.layers)
             ? mapStyle.layers.map(layer => String(layer?.id || ''))
             : []
+          const cityOwnedSourceIds = Object.keys(mapStyle?.sources || {})
+            .filter(id => id.startsWith('kg-city-sim:'))
+          const cityOwnedLayerIds = styleLayerIds.filter(
+            id => id.startsWith('kg-city-sim:'),
+          )
           const flightLayerOrder = styleLayerIds.filter(
             id => layerIds.includes(id),
           )
           const topLayerOrder = styleLayerIds.slice(-layerIds.length)
-          const cityGeoXrLayerOrder =
-            gympgrph.readCityGeoXrLayerOrder?.(styleLayerIds) || []
           let renderedFeatures = []
           try {
             renderedFeatures = map?.queryRenderedFeatures?.({
@@ -290,46 +283,18 @@ def _read_view(page: Page) -> dict[str, Any]:
               )
                 })
           )
-          const cityParcelEdgeMeters = citySourceFeatures.map(feature => {
-            const ring = feature?.geometry?.coordinates?.[0]
-            return {
-              depthMeters: measureEdgeMeters(ring?.[1], ring?.[2]),
-              id: String(feature?.properties?.parcelId || ''),
-              widthMeters: measureEdgeMeters(ring?.[0], ring?.[1]),
-            }
-          })
-          const cityExpectedRows = finiteNumberOrNull(cityOverlay?.rows)
-          const cityExpectedColumns = finiteNumberOrNull(cityOverlay?.columns)
-          const cityExpectedParcelCount = Number.isSafeInteger(cityExpectedRows)
-            && Number.isSafeInteger(cityExpectedColumns)
-            && cityExpectedRows > 0
-            && cityExpectedColumns > 0
-            ? cityExpectedRows * cityExpectedColumns
-            : null
-          const cityExpectedParcelWidthMeters =
-            finiteNumberOrNull(cityOverlay?.profile?.parcelWidthMeters)
-          const cityExpectedParcelDepthMeters =
-            finiteNumberOrNull(cityOverlay?.profile?.parcelDepthMeters)
-          const cityParcelsUseAuthoredMeters =
-            Number.isSafeInteger(cityExpectedParcelCount)
-            && cityExpectedParcelCount > 0
-            && Number.isFinite(cityExpectedParcelWidthMeters)
-            && cityExpectedParcelWidthMeters > 0
-            && Number.isFinite(cityExpectedParcelDepthMeters)
-            && cityExpectedParcelDepthMeters > 0
-            && citySourceFeatures.length === cityExpectedParcelCount
-            && cityParcelEdgeMeters.length === cityExpectedParcelCount
-            && cityParcelEdgeMeters.every(parcel => (
-              parcel.id
-              && close(
-                parcel.widthMeters,
-                cityExpectedParcelWidthMeters,
-              )
-              && close(
-                parcel.depthMeters,
-                cityExpectedParcelDepthMeters,
-              )
-            ))
+          const cityParcelIds = Array.isArray(cityOverlay?.parcels)
+            ? cityOverlay.parcels.map(parcel => String(parcel.id)).sort()
+            : []
+          const cityExpectedParcelCount = cityParcelIds.length
+          const cityPresentationStateCount = cityOverlay
+            ? gympgrph.cityGeoPresentationStateEntries?.(cityOverlay).length || 0
+            : 0
+          const cityPresentationExact = Boolean(cityOverlay)
+            && gympgrph.mapHasExactCityGeoPresentation?.(
+              map,
+              cityOverlay,
+            ) === true
           const environmentLayerCount = Object.values(
             environmentLayerIds || {},
           ).filter(layerId => Boolean(map?.getLayer?.(layerId))).length
@@ -489,15 +454,11 @@ def _read_view(page: Page) -> dict[str, Any]:
             environmentSourcePresent: Boolean(environmentSource),
             environmentSourceExactlyMatchesOverlay,
             cityExpectedParcelCount,
-            cityExpectedParcelDepthMeters,
-            cityExpectedParcelWidthMeters,
-            citySourceFeatures: citySourceFeatures.length,
-            citySourcePresent: Boolean(citySource),
-            cityLayerCount: cityLayerIds.filter(id => map?.getLayer?.(id)).length,
-            cityLayersReady: cityLayerIds.length > 0
-              && cityLayerIds.every(id => Boolean(map?.getLayer?.(id))),
-            cityParcelEdgeMeters,
-            cityParcelsUseAuthoredMeters,
+            cityParcelIds,
+            cityPresentationExact,
+            cityPresentationStateCount,
+            cityOwnedSourceCount: cityOwnedSourceIds.length,
+            cityOwnedLayerCount: cityOwnedLayerIds.length,
             environmentPoiIds: Array.from(new Set(environmentFeatures
               .filter(feature => feature?.properties?.kgSurfaceKind === 'poi')
                 .map(feature => feature?.properties?.kgPoiId || '')
@@ -517,9 +478,6 @@ def _read_view(page: Page) -> dict[str, Any]:
               .filter(feature => feature?.properties?.kgSurfaceKind === 'poi')
                 .map(feature => feature?.properties?.kgPoiId || '')
                 .filter(Boolean))).sort(),
-            cityGeoXrLayerOrder,
-            cityGeoXrLayerOrderExact:
-              gympgrph.hasExactCityGeoXrLayerOrder?.(styleLayerIds) === true,
             renderedEnvironmentSubjectIds: renderedEnvironment
               .filter(feature => feature?.properties?.kgSurfaceKind === 'subject')
               .map(feature => feature?.properties?.kgSurfaceId || '').sort(),
@@ -650,10 +608,10 @@ def prepare_canvas_view_standalone_flight_xr(page: Page) -> tuple[dict[str, Any]
             "renderMode": "3d", "canvas3dMode": "xr", "hudVisible": True,
             "geoXrSurfaceActive": False, "rendererCanvasCount": 1,
             "canvasStable": True, "rendererAlpha": True,
-            "visualProjection": "r3f", "rendererPointerTransparent": False,
+            "visualProjection": "", "rendererPointerTransparent": False,
             "exclusivePlainGeoOverlayCount": 0, "flightActive": True,
             "flightPhase": "ready", "flightRuntimeError": "",
-        }, require_flight_visuals=True,
+        },
     )
     return baseline, source_case, standalone
 
@@ -672,14 +630,9 @@ def wait_for_canvas_view_geo_xr_handoff(page: Page, source_case: GeoXrViewCase) 
             "renderMode": "3d", "canvas3dMode": "xr", "hudVisible": True,
             "geoXrSurfaceActive": True, "rendererCanvasCount": 1,
             "canvasStable": True, "rendererAlpha": True,
-            "flightR3fVisualCount": 4,
-            "flightR3fVisualNames": [
-                "kg_flight_sim_aircraft",
-                "kg_flight_sim_aircraft_model_orientation",
-                "kg_flight_sim_geospatial_actor_lighting",
-                "kg_flight_sim_mission",
-            ],
-            "visualProjection": "r3f",
+            "flightR3fVisualCount": 0,
+            "flightR3fVisualNames": [],
+            "visualProjection": "",
             "rendererPointerTransparent": True, "flightActive": True,
             "exclusivePlainGeoOverlayCount": 0, "flightRuntimeError": "",
         }, require_revision_sync=True,

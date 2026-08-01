@@ -97,7 +97,7 @@ test('render-time owner preserves Flight preactivation without crossing active C
   assert.equal(owner({ cityActive: true, flightActive: false, flightBootstrapRequested: true }), 'city')
 })
 
-test('City presentation cannot claim a settled Flight bootstrap lifecycle', () => {
+test('inactive presentation cannot claim a settled Flight bootstrap lifecycle', () => {
   const map = {}
   const flightPresentation = {
     phase: 'stopped',
@@ -114,7 +114,7 @@ test('City presentation cannot claim a settled Flight bootstrap lifecycle', () =
   assert.equal(
     canMapLibreFlightOverlayPresent(map, {
       ...flightPresentation,
-      presentationOwner: 'city',
+      presentationOwner: null,
     }),
     false,
   )
@@ -143,7 +143,7 @@ test('runtime basemap fallbacks cannot bypass exact Flight style retention', () 
   )
   assert.match(
     basemap,
-    /flightBootstrapActive:\s*\(\)\s*=>\s*Boolean\(readLiveFlightBootstrapStyle\(\)\)/,
+    /hasPresentationCameraClaim:\s*hasLivePresentationCameraClaim/,
   )
   assert.match(
     basemap,

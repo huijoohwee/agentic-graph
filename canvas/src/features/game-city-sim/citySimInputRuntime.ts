@@ -1,6 +1,7 @@
 import {
+  findCityParcel,
+  isCanonicalRegionalPoiIdentityId,
   isCityZoningType,
-  parseCityParcelId,
 } from './citySimModel'
 import type {
   CityInputRequest,
@@ -46,8 +47,16 @@ function copyCityInputSynchronously(input: CityInputRequest): CityInputSnapshot 
     : String(input.selectParcelId || '')
   const selectParcelId = requestedParcelId
     ?? (requestedZone ? readCitySimSnapshot().selectedParcelId : null)
-  if (selectParcelId !== null && !parseCityParcelId(selectParcelId)) {
-    throw new Error(`City input parcel ${selectParcelId || '(empty)'} must use rNNcNN.`)
+  if (
+    selectParcelId !== null
+    && (
+      !isCanonicalRegionalPoiIdentityId(selectParcelId)
+      || !findCityParcel(readCitySimSnapshot().city, selectParcelId)
+    )
+  ) {
+    throw new Error(
+      `City input parcel ${selectParcelId || '(empty)'} must be an identity in the active regional POI profile.`,
+    )
   }
   if (selectParcelId === null && requestedZone === null) {
     throw new Error('City input must select a parcel or request a zone.')

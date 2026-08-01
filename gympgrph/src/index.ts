@@ -22,6 +22,9 @@ import { bindMapLibreCanvasSemanticOwner } from './features/geospatial/mapLibreC
 export type {
   MapLibreCanvasSemanticOwner,
 } from './features/geospatial/mapLibreCanvasSemanticOwner.js'
+export type {
+  GeospatialPresentationCameraOwner,
+} from './features/geospatial/geospatialPresentationCameraOwner.js'
 import { GeospatialOverlayHost as GeospatialOverlayHostComponent } from './GeospatialHost.js'
 import { GeospatialPanelHost } from './GeospatialPanelHost.js'
 import { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection } from './geospatialFit.js'
@@ -90,27 +93,26 @@ export {
   subscribeCityGeoOverlay,
 } from './cityGeoOverlay.js'
 export {
-  CITY_GEO_OVERLAY_LAYER_IDS,
-  CITY_GEO_OVERLAY_SOURCE_ID,
-  applyCityGeoOverlayToMap,
-  clearCityGeoOverlayFromMap,
-  mapHasExactCityGeoOverlay,
-} from './cityGeoOverlayMapLibre.js'
+  applyCityGeoPresentationToMap,
+  cityGeoPresentationStateEntries,
+  clearCityGeoPresentationFromMap,
+  mapHasExactCityGeoPresentation,
+} from './cityGeoPresentationMapLibre.js'
+export type {
+  CityGeoPresentationFeatureState,
+  CityGeoPresentationStateEntry,
+} from './cityGeoPresentationMapLibre.js'
 export {
   createCityGeoOverlayMapLibreController,
-  fitMapToCityGeoOverlay,
+  fitMapToCityPresentation,
 } from './cityGeoOverlayMapLibreController.js'
-export {
-  CITY_GEO_XR_LAYER_ORDER,
-  hasExactCityGeoXrLayerOrder,
-  readCityGeoXrLayerOrder,
-} from './geoXrOverlayLayerOrder.js'
 export {
   readGeoMapViewportPadding,
 } from './geoMapViewport.js'
 export {
   REGIONAL_POI_LAYER_IDS,
   REGIONAL_POI_LAYER_ORDER,
+  REGIONAL_POI_PRESENTATION_STATE_KEYS,
   REGIONAL_POI_SOURCE_ID,
   applyRegionalPoiProfileToMap,
   clearRegionalPoiProfileFromMap,
@@ -130,19 +132,6 @@ export type {
   RegionalPoiProfile,
   RegionalPoiSurface,
 } from 'grph-shared/geospatial/regionalPoiGeo'
-export {
-  cityGeoGridProjectedBounds,
-  cityGeoOverlayBounds,
-  cityGeoOverlayFeatureCollection,
-  cityGeoOverlayFramingKey,
-  cityGeoPresentationBounds,
-} from './cityGeoOverlayProjection.js'
-export type {
-  CityGeoBounds,
-  CityGeoGridFootprint,
-  CityGeoParcelFeatureCollection,
-  CityGeoParcelProperties,
-} from './cityGeoOverlayProjection.js'
 export {
   SINGAPORE_FLIGHT_GEO_REFERENCE,
   projectSingaporeLocalMeters,
@@ -199,10 +188,6 @@ export function setGeospatialModeEnabled(enabled: boolean): void {
 
 export function setGeospatialAutoFitEnabled(enabled: boolean): void {
   useGympgrphStore.getState().setGeospatialAutoFitEnabled(enabled)
-}
-
-export function requestGeospatialTraversalRun(_args?: { edgeIds?: string[] | null }): void {
-  void 0
 }
 
 export { requestGeospatialCurrentLocation, requestGeospatialFitToData, requestGeospatialFitToSelection }

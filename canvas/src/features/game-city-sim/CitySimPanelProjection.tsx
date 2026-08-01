@@ -34,14 +34,14 @@ const SURFACE_COPY: Readonly<Record<CitySimProjectionSurface, {
 }>> = Object.freeze({
   media: {
     title: 'City appearance',
-    ownership: 'Zone colors are a read-only projection of parcel state.',
+    ownership: 'Zone colors are a read-only projection of regional POI state.',
   },
   animation: {
     title: 'City tick playback',
     ownership: 'Animation follows the fixed simulation tick; it does not own state.',
   },
   motionControl: {
-    title: 'City parcel input',
+    title: 'City POI input',
     ownership: 'Pointer, keyboard, and touch input share one copied FIFO queue.',
   },
   gameMode: {
@@ -49,8 +49,8 @@ const SURFACE_COPY: Readonly<Record<CitySimProjectionSurface, {
     ownership: 'City claims the shared Geo+XR surface while MapLibre owns visuals and gestures.',
   },
   flightSim: {
-    title: 'City aerial inspection',
-    ownership: 'Flight can inspect the grid without becoming its simulation owner.',
+    title: 'Existing Flight overlay',
+    ownership: 'Flight route and aircraft remain independently owned; City supplies no aerial data.',
   },
   camera: {
     title: 'City framing',
@@ -79,7 +79,7 @@ function projectionStatus(
   const city = snapshot.city
   if (surface === 'media') {
     const zonedCount = city.parcels.filter(parcel => parcel.zone !== 'unzoned').length
-    return `${zonedCount}/${city.parcels.length} parcels use the local zone palette.`
+    return `${zonedCount}/${city.parcels.length} regional POIs use the local zone palette.`
   }
   if (surface === 'animation') {
     return `Tick ${city.tick} · ${snapshot.phase}.`
@@ -95,9 +95,7 @@ function projectionStatus(
       : 'The shared gameplay surface is ready for a city handoff.'
   }
   if (surface === 'flightSim') {
-    return snapshot.active
-      ? 'The active city grid is available as a read-only aerial context.'
-      : 'Open the city before handing its grid to aerial inspection.'
+    return 'City does not author or activate Flight route, aircraft, camera, or gameplay state.'
   }
   return snapshot.active
     ? snapshot.selectedParcelId

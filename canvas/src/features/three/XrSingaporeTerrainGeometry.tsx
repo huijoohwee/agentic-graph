@@ -1,10 +1,13 @@
-import React from 'react'
 import type { XrMotionReferenceStagePreset } from './xrSceneLibrary'
 import {
-  resolveXrSingaporeMajorPoi,
-  type XrSingaporePoiSurface,
+  XR_SINGAPORE_MAJOR_POIS,
 } from './xrSingaporeEnvironmentSource'
-import { deriveXrObservationWheelSupports } from './xrObservationWheelPresentation'
+import {
+  XrRegionalPoiSurfaceGeometry,
+} from './XrRegionalPoiSurfaceGeometry'
+import {
+  createXrRegionalPoiSurfaceRenderPlan,
+} from './xrRegionalPoiSurfaceRenderPlan'
 import {
   resolveXrTerrainPerimeter,
   type XrTerrainPerimeterEdge,
@@ -16,188 +19,23 @@ const FIXED_TERRAIN_USER_DATA = Object.freeze({
   selectable: false,
 })
 
+export const XR_SINGAPORE_POI_SURFACE_RENDER_PLAN = Object.freeze(
+  XR_SINGAPORE_MAJOR_POIS.map(poi => Object.freeze({
+    poi,
+    surfaces: createXrRegionalPoiSurfaceRenderPlan(poi.surfaces),
+  })),
+)
+
+function sceneName(value: string): string {
+  return value.replaceAll('-', '_')
+}
+
 function SurfaceMaterial({ color, metalness = 0, roughness = 0.78 }: {
   color: string
   metalness?: number
   roughness?: number
 }) {
   return <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} />
-}
-
-function CityTower({
-  color,
-  height,
-  position,
-  width = 1.7,
-}: {
-  color: string
-  height: number
-  position: readonly [number, number]
-  width?: number
-}) {
-  return (
-    <group position={[position[0], 0, position[1]]}>
-      <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[width, height, width * 0.72]} />
-        <SurfaceMaterial color={color} metalness={0.12} roughness={0.42} />
-      </mesh>
-      {Array.from({ length: Math.max(2, Math.floor(height / 1.2)) }, (_, index) => (
-        <mesh key={index} position={[0, 0.72 + index * 1.05, width * 0.37]}>
-          <boxGeometry args={[width * 0.72, 0.16, 0.025]} />
-          <meshStandardMaterial color="#b9ebff" emissive="#67c7e8" emissiveIntensity={0.12} roughness={0.2} />
-        </mesh>
-      ))}
-      <mesh position={[0, height + 0.13, 0]}>
-        <boxGeometry args={[width * 1.06, 0.26, width * 0.78]} />
-        <SurfaceMaterial color="#e2e8f0" metalness={0.3} roughness={0.36} />
-      </mesh>
-    </group>
-  )
-}
-
-function MarinaBaySands() {
-  const poi = resolveXrSingaporeMajorPoi('marina-bay-sands')
-  const towers = poi.surfaces.filter(surface => surface.presentation === 'tower')
-  const skypark = poi.surfaces.find(surface => surface.presentation === 'skypark')
-  if (!skypark) throw new Error('Marina Bay Sands requires one authored SkyPark surface')
-  return (
-    <group name="kg_xr_singapore_marina_bay_sands">
-      {towers.map((surface, index) => {
-        const [width, height, depth] = surface.size
-        const [x, centerY, z] = surface.position
-        return (
-          <group
-            key={surface.id}
-            position={[x, centerY - height / 2, z]}
-            rotation={[0, index === 1 ? 0 : index === 0 ? -0.04 : 0.04, 0]}
-          >
-          <mesh position={[0, height / 2, 0]} castShadow receiveShadow>
-            <boxGeometry args={[width, height, depth]} />
-            <SurfaceMaterial color={surface.color} metalness={0.12} roughness={0.38} />
-          </mesh>
-          {Array.from({ length: Math.max(4, Math.floor(height / 0.82)) }, (_, floor) => (
-            <mesh key={floor} position={[0, 0.55 + floor * 0.68, depth / 2 + 0.01]}>
-              <boxGeometry args={[width * 0.79, 0.09, 0.025]} />
-              <meshStandardMaterial color="#7fc8e8" emissive="#3b82a0" emissiveIntensity={0.1} roughness={0.22} />
-            </mesh>
-          ))}
-        </group>
-        )
-      })}
-      <mesh name="kg_xr_singapore_skypark" position={skypark.position} castShadow>
-        <boxGeometry args={[
-          skypark.size[0],
-          skypark.size[1],
-          skypark.size[2],
-        ]} />
-        <SurfaceMaterial color={skypark.color} metalness={0.12} roughness={0.42} />
-      </mesh>
-      <mesh
-        position={[
-          skypark.position[0] + 0.55,
-          skypark.position[1] + skypark.size[1] / 2 + 0.05,
-          skypark.position[2],
-        ]}
-        castShadow
-      >
-        <boxGeometry args={[skypark.size[0] - 0.85, 0.13, skypark.size[2] - 0.5]} />
-        <SurfaceMaterial color="#3d8f77" roughness={0.68} />
-      </mesh>
-      <mesh
-        position={[
-          skypark.position[0] - skypark.size[0] / 2 + 0.22,
-          skypark.position[1] + 0.14,
-          skypark.position[2],
-        ]}
-        rotation={[0, 0, -0.22]}
-        castShadow
-      >
-        <boxGeometry args={[0.9, 0.26, skypark.size[2] + 0.02]} />
-        <SurfaceMaterial color={skypark.color} />
-      </mesh>
-    </group>
-  )
-}
-
-function SingaporeFlyer() {
-  const poi = resolveXrSingaporeMajorPoi('singapore-flyer')
-  const wheel = poi.surfaces[0]
-  if (!wheel) throw new Error('Singapore Flyer requires one authored wheel surface')
-  const radius = wheel.size[1] * 0.48
-  const supports = deriveXrObservationWheelSupports(wheel)
-  return (
-    <group name="kg_xr_singapore_flyer" position={wheel.position}>
-      <mesh castShadow>
-        <torusGeometry args={[radius, 0.11, 10, 48]} />
-        <SurfaceMaterial color={wheel.color} metalness={0.32} roughness={0.36} />
-      </mesh>
-      {Array.from({ length: 12 }, (_, index) => {
-        const angle = index * Math.PI * 2 / 12
-        return (
-          <React.Fragment key={index}>
-            <mesh rotation={[0, 0, angle]} position={[Math.cos(angle) * radius / 2, Math.sin(angle) * radius / 2, 0]}>
-              <boxGeometry args={[radius, 0.035, 0.035]} />
-              <SurfaceMaterial color="#b8d3dc" metalness={0.24} roughness={0.44} />
-            </mesh>
-            <mesh position={[Math.cos(angle) * radius, Math.sin(angle) * radius, 0]}>
-              <sphereGeometry args={[0.18, 10, 7]} />
-              <SurfaceMaterial color="#d9f3fb" metalness={0.18} roughness={0.28} />
-            </mesh>
-          </React.Fragment>
-        )
-      })}
-      {supports.map((support, index) => (
-        <mesh
-          key={index}
-          position={support.position}
-          rotation={[0, 0, support.rotationZ]}
-          castShadow
-        >
-          <boxGeometry args={[
-            support.size[0],
-            support.size[1],
-            support.size[2],
-          ]} />
-          <SurfaceMaterial color="#dce8ea" metalness={0.16} roughness={0.48} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
-function Supertree({ surface }: {
-  surface: XrSingaporePoiSurface
-}) {
-  const scale = surface.size[1] / 3.4
-  return (
-    <group
-      position={[
-        surface.position[0],
-        surface.position[1] - surface.size[1] / 2,
-        surface.position[2],
-      ]}
-      scale={scale}
-    >
-      <mesh position={[0, 1.5, 0]} castShadow>
-        <cylinderGeometry args={[0.22, 0.54, 3, 12]} />
-        <SurfaceMaterial color="#835b46" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 2.65, 0]} castShadow>
-        <coneGeometry args={[1.35, 1.35, 14, 1, true]} />
-        <meshStandardMaterial color="#2f855a" roughness={0.82} side={2} />
-      </mesh>
-      <mesh position={[0, 2.86, 0]}>
-        <torusGeometry args={[0.78, 0.12, 8, 18]} />
-        <SurfaceMaterial color="#69b578" roughness={0.74} />
-      </mesh>
-      {Array.from({ length: 6 }, (_, index) => (
-        <mesh key={index} position={[Math.cos(index * Math.PI / 3) * 0.83, 2.78, Math.sin(index * Math.PI / 3) * 0.83]}>
-          <sphereGeometry args={[0.33, 10, 8]} />
-          <SurfaceMaterial color={index % 2 ? '#7ccf87' : '#4ea86b'} />
-        </mesh>
-      ))}
-    </group>
-  )
 }
 
 function PerimeterBoundary({
@@ -337,17 +175,21 @@ export function XrSingaporeTerrainGeometry({
           <SurfaceMaterial color="#8bc68d" />
         </mesh>
       ))}
-      <MarinaBaySands />
-      <SingaporeFlyer />
-      <group name="kg_xr_singapore_gardens_by_the_bay">
-        {resolveXrSingaporeMajorPoi('gardens-by-the-bay').surfaces.map(surface => (
-          <Supertree key={surface.id} surface={surface} />
-        ))}
-      </group>
-      <CityTower position={[-11.8, -8.65]} height={4.8} width={1.6} color="#ef9f7d" />
-      <CityTower position={[11.8, -8.75]} height={5.4} width={1.65} color="#8097b0" />
-      <CityTower position={[-12.1, -5.35]} height={3.4} width={1.35} color="#e4b86f" />
-      <CityTower position={[12.1, -5.15]} height={3.9} width={1.4} color="#769aad" />
+      {XR_SINGAPORE_POI_SURFACE_RENDER_PLAN.map(({ poi, surfaces }) => (
+        <group
+          key={poi.id}
+          name={`kg_xr_singapore_${sceneName(poi.id)}`}
+          userData={{ poiId: poi.id, poiLabel: poi.label }}
+        >
+          {surfaces.map(entry => (
+            <XrRegionalPoiSurfaceGeometry
+              key={entry.surface.id}
+              entry={entry}
+              shadows={shadows}
+            />
+          ))}
+        </group>
+      ))}
       <Helipad />
     </group>
   )

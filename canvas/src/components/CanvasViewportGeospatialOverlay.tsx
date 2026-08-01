@@ -2,7 +2,7 @@ import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type {
   FlightGeoOverlayPresentation,
-  FlightGeoOverlayPresentationOwner,
+  GeospatialPresentationCameraOwner,
   MapLibreCanvasSemanticOwner,
 } from 'gympgrph'
 import type { GraphData } from '@/lib/graph/types'
@@ -69,7 +69,7 @@ function readCitySimActive(): boolean {
 
 type GeospatialOverlayHostProps = {
   active?: boolean
-  gameplayPresentationOwner: FlightGeoOverlayPresentationOwner
+  gameplayPresentationOwner: GeospatialPresentationCameraOwner
   semanticMediaOwner?: MapLibreCanvasSemanticOwner | null
   snapshot?: unknown
   handlers?: unknown

@@ -20,7 +20,6 @@ import {
 import {
   applyFlightGeoEnvironmentToMap,
   clearFlightGeoEnvironmentFromMap,
-  removeFlightGeoEnvironmentFromMap,
 } from '../../flightGeoEnvironmentMapLibre.js'
 import {
   canMapLibreFlightOverlayPresent,
@@ -71,18 +70,6 @@ export function deferFlightGeoPresentationForBootstrapRecovery(
   ) return false
   requestMapLibreFlightPresentationBootstrap(map, overlay)
   return true
-}
-
-export function applyCityGeoXrAerialOverlayToMap(
-  map: any,
-  overlay: FlightGeoOverlaySnapshot,
-): boolean {
-  if (
-    overlay.presentationOwner !== 'city'
-    || overlay.environment !== null
-    || !removeFlightGeoEnvironmentFromMap(map)
-  ) return false
-  return applyFlightGeoOverlayToMap(map, overlay)
 }
 
 export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
@@ -274,9 +261,7 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         return
       }
       transitionPresentationOwner(presentationOwner)
-      const flightPresentation = presentationOwner === 'flight'
-      const flightGate = flightPresentation ? ensureGate() : null
-      if (!flightPresentation) disposeGate()
+      const flightGate = ensureGate()
       // A retained provider map stays mounted while Flight installs its local
       // bootstrap style. Only the settled bootstrap may receive the stopped
       // preparation payload; `style.load` replays this apply after handoff.
@@ -293,13 +278,6 @@ export function useFlightGeoOverlayMapLibrePresentation(options: Readonly<{
         return
       }
       if (flightGate && overlay.phase === 'stopped') flightGate.clearCanvas()
-      if (!flightPresentation) {
-        if (!applyCityGeoXrAerialOverlayToMap(map, overlay)) return
-        if (root) {
-          delete root.dataset.kgFlightGeospatialCameraPadding
-        }
-        return
-      }
       const environmentApplied = applyFlightGeoEnvironmentToMap(
         map,
         overlay,

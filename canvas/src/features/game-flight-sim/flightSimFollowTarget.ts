@@ -1,6 +1,8 @@
-import { FLIGHT_SIM_AIRCRAFT_ASSET_SPEC } from './assetSpec/flightSimAssetSpec'
 import type { FlightSimCameraView } from './flightSimCameraRuntime'
-import type { FlightSimSnapshot } from './flightSimModel'
+import {
+  FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS,
+  type FlightSimSnapshot,
+} from './flightSimModel'
 import { flightSimForwardVector } from './flightModel'
 
 const COCKPIT_FORWARD_CLEARANCE_METERS = 0.55
@@ -42,7 +44,7 @@ export function resolveFlightSimFollowTarget(
     aircraftHalfWidth,
     aircraftHalfHeight,
     aircraftHalfDepth,
-  ] = FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters
+  ] = FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS
   const vector = (forwardDistance: number, height: number) => Object.freeze([
     aircraft[0] + forward[0] * forwardDistance * scale,
     aircraft[1] + forward[1] * forwardDistance * scale + height * scale,
@@ -53,7 +55,7 @@ export function resolveFlightSimFollowTarget(
     aircraftHalfHeight,
   )
   // Keep the camera behind the aircraft's aft envelope plus two half-spans.
-  // That fits the full Media Airplane inside the 58-degree chase frustum.
+  // That fits the canonical aircraft collision envelope inside the chase frustum.
   const chaseDistance = Math.max(
     CHASE_MIN_DISTANCE_METERS,
     aircraftHalfDepth + aircraftHalfWidth * CHASE_WING_HALF_SPAN_CLEARANCE,
@@ -64,9 +66,9 @@ export function resolveFlightSimFollowTarget(
     chaseTarget[1] - forward[1] * 2 * scale + CHASE_HEIGHT_METERS * scale,
     chaseTarget[2] - forward[2] * chaseDistance * scale,
   ] as const)
-  const cockpitForwardDistance = FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[2]
+  const cockpitForwardDistance = FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[2]
     + COCKPIT_FORWARD_CLEARANCE_METERS
-  const cockpitHeight = FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters[1]
+  const cockpitHeight = FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS[1]
     + COCKPIT_VERTICAL_CLEARANCE_METERS
   const horizontalForwardLength = Math.max(
     0.000001,

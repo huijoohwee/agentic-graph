@@ -22,9 +22,6 @@ import {
   assertGitVerificationWorkspace,
 } from '../../scripts/lib/git-verification-workspace.mjs'
 import {
-  readValidatedFlightSimBrowserRunEvidence,
-} from './lib/game-flight-sim-browser-evidence-validation.mjs'
-import {
   normalizeGameFlightSimCandidateBranch,
   resolveGameFlightSimBrowserPaths,
 } from './lib/game-flight-sim-browser-paths.mjs'
@@ -192,6 +189,9 @@ async function runCandidateProof() {
   }
   process.env.KNOWGRPH_SOURCE_REVISION = candidateHead
   const productionBuild = await buildExactProductionPreview(candidate)
+  const {
+    readValidatedFlightSimBrowserRunEvidence,
+  } = await import('./lib/game-flight-sim-browser-evidence-validation.mjs')
 
   const runs = await runSerialBrowserProof({
     assertExactCandidate: () => assertCandidateState(candidate),

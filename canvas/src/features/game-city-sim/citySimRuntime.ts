@@ -264,7 +264,6 @@ async function performOpenCitySimSurface(
         previous,
         'invalid-authored-source',
         `City Simulation rejected its authored source: ${sourceIssue}`,
-        { geographicProfile: null },
       )
     }
   }
@@ -320,7 +319,6 @@ async function performOpenCitySimSurface(
               advisor: null,
             }
           : {}),
-        geographicProfile: source?.geographicProfile ?? snapshot.geographicProfile,
       },
     )
   }
@@ -361,8 +359,8 @@ async function performOpenCitySimSurface(
     return failSurfaceEntry(
       previous,
       'authored-source-missing',
-      'City Simulation cannot open without the applied source-authored City geographic profile.',
-      { saveStatus: 'not-loaded', geographicProfile: null },
+      'City Simulation cannot open without the applied source-authored POI zoning document.',
+      { saveStatus: 'not-loaded' },
     )
   }
   const city = loaded.status === 'loaded' ? loaded.city : source.city
@@ -405,7 +403,6 @@ async function performOpenCitySimSurface(
         webglSupported,
         phase: 'stopped',
         city,
-        geographicProfile: source?.geographicProfile ?? null,
         selectedParcelId: null,
         advisor: null,
         saveStatus: loaded.status === 'loaded' ? 'loaded' : 'not-loaded',
@@ -570,7 +567,6 @@ export function resetCitySimRuntimeForTests(
   sessionStartCity = authoredSource?.city ?? null
   const reset = resetCitySimSnapshotForTests(
     sessionStartCity,
-    authoredSource?.geographicProfile ?? null,
     options.webglSupported ?? readWebglSupport(),
   )
   persistenceCommands.resetQueue(reset)

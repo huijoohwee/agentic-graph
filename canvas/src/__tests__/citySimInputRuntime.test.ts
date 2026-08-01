@@ -30,7 +30,7 @@ export function testCitySimInputQueueCopiesFrozenSnapshotsInFifoOrder() {
     requestedZone: CityZoningType | null
   } = {
     source: 'pointer',
-    selectParcelId: 'r00c02',
+    selectParcelId: 'gardens-by-the-bay',
     requestedZone: 'residential',
   }
   const observedSequences: number[] = []
@@ -45,11 +45,11 @@ export function testCitySimInputQueueCopiesFrozenSnapshotsInFifoOrder() {
     }
     if (lastInput?.sequence === 1 && !queuedReentrantInput) {
       queuedReentrantInput = true
-      firstInput.selectParcelId = 'r03c03'
+      firstInput.selectParcelId = 'raffles-hotel'
       firstInput.requestedZone = 'industrial'
       secondSnapshot = enqueueCityInput({
         source: 'touch',
-        selectParcelId: 'r00c03',
+        selectParcelId: 'esplanade-theatres-on-the-bay',
         requestedZone: 'commercial',
       })
     }
@@ -61,7 +61,7 @@ export function testCitySimInputQueueCopiesFrozenSnapshotsInFifoOrder() {
     assert.equal(Object.isFrozen(firstSnapshot), true)
     assert.deepEqual(firstSnapshot, {
       source: 'pointer',
-      selectParcelId: 'r00c02',
+      selectParcelId: 'gardens-by-the-bay',
       requestedZone: 'residential',
       sequence: 1,
     })
@@ -69,22 +69,22 @@ export function testCitySimInputQueueCopiesFrozenSnapshotsInFifoOrder() {
     assert.equal(Object.isFrozen(secondSnapshot), true)
     assert.deepEqual(secondSnapshot, {
       source: 'touch',
-      selectParcelId: 'r00c03',
+      selectParcelId: 'esplanade-theatres-on-the-bay',
       requestedZone: 'commercial',
       sequence: 2,
     })
     assert.deepEqual(observedSequences, [1, 2])
     assert.equal(readCitySimSnapshot().revision, revisionBefore + 2)
     assert.equal(
-      readCitySimSnapshot().city.parcels.find(parcel => parcel.id === 'r00c02')?.zone,
+      readCitySimSnapshot().city.parcels.find(parcel => parcel.id === 'gardens-by-the-bay')?.zone,
       'residential',
     )
     assert.equal(
-      readCitySimSnapshot().city.parcels.find(parcel => parcel.id === 'r00c03')?.zone,
+      readCitySimSnapshot().city.parcels.find(parcel => parcel.id === 'esplanade-theatres-on-the-bay')?.zone,
       'commercial',
     )
     assert.equal(
-      readCitySimSnapshot().city.parcels.find(parcel => parcel.id === 'r03c03')?.zone,
+      readCitySimSnapshot().city.parcels.find(parcel => parcel.id === 'raffles-hotel')?.zone,
       'unzoned',
     )
 
@@ -100,7 +100,7 @@ export function testCitySimInputQueueCopiesFrozenSnapshotsInFifoOrder() {
     assert.equal(JSON.stringify(readCitySimSnapshot()), beforeNoop)
     const next = enqueueCityInput({
       source: 'keyboard',
-      selectParcelId: 'r01c01',
+      selectParcelId: 'the-fullerton-hotel',
       requestedZone: null,
     })
     assert.equal(next.sequence, 3, 'rejected no-op input must not consume a sequence')
@@ -121,7 +121,7 @@ export function testCitySimInputSourceAndSequenceProjectThroughSharedSnapshot() 
   )
   const pointer = enqueueCityInput({
     source: 'pointer',
-    selectParcelId: 'r00c00',
+    selectParcelId: 'marina-bay-sands',
     requestedZone: null,
   })
   const keyboard = enqueueCityInput({
@@ -131,22 +131,22 @@ export function testCitySimInputSourceAndSequenceProjectThroughSharedSnapshot() 
   })
   const touch = enqueueCityInput({
     source: 'touch',
-    selectParcelId: 'r00c01',
+    selectParcelId: 'singapore-flyer',
     requestedZone: null,
   })
   assert.deepEqual(
     [pointer, keyboard, touch].map(input => [input.source, input.sequence]),
     [['pointer', 1], ['keyboard', 2], ['touch', 3]],
   )
-  assert.equal(keyboard.selectParcelId, 'r00c00')
+  assert.equal(keyboard.selectParcelId, 'marina-bay-sands')
   assert.equal(
-    readCitySimSnapshot().city.parcels.find(parcel => parcel.id === 'r00c00')?.zone,
+    readCitySimSnapshot().city.parcels.find(parcel => parcel.id === 'marina-bay-sands')?.zone,
     'commercial',
   )
   assert.equal(readCitySimSnapshot().lastInput, touch)
   assert.equal(
     describeCityInputSnapshot(touch),
-    'Input #3 · touch · r00c01',
+    'Input #3 · touch · singapore-flyer',
   )
 
   const inputRuntime = readCanvasSource(
@@ -155,8 +155,8 @@ export function testCitySimInputSourceAndSequenceProjectThroughSharedSnapshot() 
   const panel = readCanvasSource(
     'features/game-city-sim/CitySimFloatingPanelView.tsx',
   )
-  const coordinateControls = readCanvasSource(
-    'features/game-city-sim/CityParcelCoordinateControls.tsx',
+  const poiControls = readCanvasSource(
+    'features/game-city-sim/CityPoiZoningControls.tsx',
   )
   const projection = readCanvasSource(
     'features/game-city-sim/CitySimPanelProjection.tsx',
@@ -165,9 +165,9 @@ export function testCitySimInputSourceAndSequenceProjectThroughSharedSnapshot() 
   assert.equal(inputRuntime.includes('const listeners'), false)
   assert.equal(inputRuntime.includes('subscribeCityInput'), false)
   assert.ok(inputRuntime.includes('stageCitySimInputForNextPublish(snapshot)'))
-  assert.ok(panel.includes('<CityParcelCoordinateControls'))
-  assert.ok(coordinateControls.includes("inputSourceRef.current = 'keyboard'"))
-  assert.ok(coordinateControls.includes('cityInputSourceFromPointerType(event.pointerType)'))
+  assert.ok(panel.includes('<CityPoiZoningControls'))
+  assert.ok(poiControls.includes("inputSourceRef.current = 'keyboard'"))
+  assert.ok(poiControls.includes('cityInputSourceFromPointerType(event.pointerType)'))
   assert.ok(projection.includes('snapshot.lastInput?.source'))
   assert.ok(projection.includes('snapshot.lastInput?.sequence'))
 }

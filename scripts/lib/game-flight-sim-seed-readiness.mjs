@@ -25,7 +25,6 @@ export async function assertFlightSimSeedReadiness({
   const runReadyDemo = seed.run_ready_demo
   const sharedScene = seed.shared_xr_scene
   const geoFlightOverlay = seed.geo_flight_overlay
-  const assetPipeline = seed.asset_pipeline
   const flightSim = seed.flight_sim
   const training = seed.flight_training
   if (
@@ -61,7 +60,7 @@ export async function assertFlightSimSeedReadiness({
     || geoFlightOverlay.renderer_owner !== 'native MapLibre Geo host'
     || geoFlightOverlay.geo_policy_owner !== 'canvas/src/components/CanvasViewportGeospatialOverlay.tsx'
     || geoFlightOverlay.presentation_owner !== 'gympgrph/src/GeospatialHost.tsx'
-    || geoFlightOverlay.render_policy !== 'native MapLibre under transparent Flight R3F overlay'
+    || geoFlightOverlay.render_policy !== 'native MapLibre owns every visible Flight route and aircraft mark'
     || !exactArray(
       geoFlightOverlay.maplibre_views,
       ['2d-classic', '2d-modern', '3d-classic', '3d-modern'],
@@ -82,26 +81,6 @@ export async function assertFlightSimSeedReadiness({
   ) {
     throw new Error('Flight Sim seed must remain a source-authored composition on the canonical Geo+XR surface')
   }
-  if (
-    !assetPipeline
-    || !String(assetPipeline.primary || '').includes('TypeScript + JSON')
-    || !String(assetPipeline.admission || '').includes('required vehicle-airplane')
-    || !String(assetPipeline.opaque_binary_fallback || '').includes('optional-beacon')
-    || assetPipeline.required_aircraft_glb_fallback_count !== 0
-    || assetPipeline.optional_prop_glb_fallback_count !== 1
-    || assetPipeline.glb_fallback_count !== 1
-    || assetPipeline.optional_glb_sha256 !== 'be41f87bb745ba35c439336d932dd69c34223d26e117443a3c8556e44fce70cd'
-    || assetPipeline.optional_glb_license !== 'CC0-1.0'
-    || assetPipeline.runtime_model_calls !== 0
-    || assetPipeline.runtime_network_calls !== 0
-    || assetPipeline.external_reference_policy !== 'conceptual principles only; external project identity and URL are prohibited in product source and runtime metadata; no external project dependency'
-    || assetPipeline.no_copy_scan_scope !== 'Flight-owned tracked paths for external repository locators, vendored paths, opaque source binaries, and missing policy markers'
-    || assetPipeline.provenance_attestation !== 'Knowgrph contributors attest that the Flight Sim implementation, instructional content, and assets are source-authored'
-    || assetPipeline.no_copy_gate_limitation !== 'the deterministic clean-room scanner cannot prove the absence of arbitrary derived code'
-  ) {
-    throw new Error('Flight Sim seed must retain tracked local asset authority and honest clean-room proof boundaries')
-  }
-
   if (
     !training
     || !exactArray(
@@ -135,6 +114,7 @@ export async function assertFlightSimSeedReadiness({
   const nativeFlightDemo = seed.native_flight_demo
   if (
     !nativeFlightDemo
+    || nativeFlightDemo.aircraft_visual_owner !== 'one MapLibre Point feature plus fixed-pixel symbol stack'
     || nativeFlightDemo.deterministic_step !== true
     || nativeFlightDemo.fixed_step !== 'exactly 1/60 second (approximately 16.667 ms, 60 Hz)'
     || nativeFlightDemo.max_catch_up_ticks_per_advance !== 5
@@ -235,7 +215,7 @@ export async function assertFlightSimSeedReadiness({
     || runtimeValidation.local_assets_only !== true
     || runtimeValidation.required_external_calls !== false
     || runtimeValidation.first_playable_frame_limit_ms !== 3000
-    || runtimeValidation.property_proof !== '45 named fast-check properties at 100 runs each (4,500 generated cases)'
+    || runtimeValidation.property_proof !== '40 named fast-check properties at 100 runs each (4,000 generated cases)'
     || runtimeValidation.focused_source_tests_minimum !== 127
     || typeof runtimeValidation.browser_proof !== 'string'
     || !runtimeValidation.browser_proof.includes('two fresh serial runs')

@@ -38,6 +38,9 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
   const mediaSurface = readCanvasSource(
     'features/game-city-sim/citySimMediaSurface.ts',
   )
+  const xrPhysicsMediaSurface = readCanvasSource(
+    'features/three/XrPhysicsSemanticMediaSurface.tsx',
+  )
   const viewport = readCanvasSource('components/CanvasViewport.tsx')
   const rendererLifecycle = readCanvasSource(
     'lib/three/threeRendererLifecycle.ts',
@@ -62,10 +65,14 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
     'the semantic City wrapper must own the native MapLibre surface',
   )
   assert.equal(
-    viewport.match(/<SemanticMediaFigure\b/g)?.length,
-    1,
-    'the viewport must mount one shared semantic MapLibre wrapper',
+    (viewport.match(/<SemanticMediaFigure\b/g)?.length ?? 0)
+      + (xrPhysicsMediaSurface.match(/<SemanticMediaFigure\b/g)?.length ?? 0),
+    2,
+    'the viewport surfaces must reuse semantic figures for the direct Three and MapLibre media owners',
   )
+  assert.ok(xrPhysicsMediaSurface.includes(
+    'const semanticActive = active && physicsRunReady',
+  ))
   assert.equal(
     viewport.match(/<CanvasViewportGeospatialOverlayLazy\b/g)?.length,
     1,
@@ -84,8 +91,8 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
     'City source intent must not compose a Three overlay above the MapLibre owner',
   )
   assert.ok(
-    viewport.includes(
-      "data-kg-three-canvas-active={threeCanvasSurface.active ? '1' : '0'}",
+    xrPhysicsMediaSurface.includes(
+      "data-kg-three-canvas-active={active ? '1' : '0'}",
     ),
     'the retained shared Canvas must expose its inactive lifecycle state',
   )
@@ -161,8 +168,8 @@ export function testCitySimGeoXrUsesOneSemanticMapLibreSurfaceWithRetainedInacti
   ))
   assert.equal(/<(?:div)\b|aria-hidden|on(?:Click|Mouse|Pointer)/.test(mediaFigure), false)
   assert.ok(mediaSurface.includes('CITY_SIM_MEDIA_STAGE_LABEL'))
-  assert.ok(viewport.includes('semanticMediaOwner={citySimActive ? {'))
-  assert.ok(viewport.includes('label: CITY_SIM_MEDIA_STAGE_LABEL'))
+  assert.ok(xrPhysicsMediaSurface.includes('semanticMediaOwner={semanticActive ? {'))
+  assert.ok(xrPhysicsMediaSurface.includes('label: XR_PHYSICS_MEDIA_STAGE_LABEL'))
   assert.ok(viewport.includes('selectionTarget="descendant"'))
   assert.ok(viewport.includes('MEDIA_PREVIEW_SELECTABLE_SURFACE_ATTR'))
   assert.ok(
@@ -261,9 +268,6 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
   const geospatialPublisher = readCanvasSource(
     'features/geospatial/useGeoXrOverlayPublisher.ts',
   )
-  const aerialProjection = readCanvasSource(
-    'features/game-city-sim/citySimAerialInspectionProjection.ts',
-  )
   const xrPhysics = readCanvasSource('features/canvas/XrPhysicsRunReadyDemoRuntime.tsx')
   assert.ok(gameMode.includes("gameplaySurface: 'gameMode'"))
   assert.ok(flightSim.includes("gameplaySurface: 'flightSim'"))
@@ -282,11 +286,10 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
     citySim.includes('geospatialComposite: true'),
     'City must activate the shared XR surface as a Geo+XR composition',
   )
-  assert.ok(
-    geospatialPublisher.includes(
-      'projectCityAerial: projectCitySimAerialInspectionToGeospatialOverlay',
-    ),
-    'the shared geospatial publisher must project City through the existing aerial-inspection overlay',
+  assert.doesNotMatch(
+    geospatialPublisher,
+    /projectCityAerial|projectCitySimAerialInspectionToGeospatialOverlay/,
+    'City must not publish aircraft or route data through the Flight overlay',
   )
   assert.ok(
     geospatialPublisher.includes('publishGeoXrOverlayComposition({'),
@@ -301,17 +304,7 @@ export function testCitySimCompetingGameplayRuntimesUseExplicitSurfaceClaims() {
     viewport.includes(
       'if (!active || !composedWithXr || !flightSimActive) return',
     ),
-    'City aerial inspection must not claim the Flight MapLibre readiness presenter',
-  )
-  assert.doesNotMatch(
-    aerialProjection,
-    /\b(?:open|start|restart)FlightSim\b|claimFlightSimReadyPresenter|readFlightSimXrSpatialProfile|projectFlightSimToGeospatialOverlay/,
-    'the City aerial projector must consume only the authored City profile and invoke no Flight runtime path',
-  )
-  assert.ok(
-    aerialProjection.includes("presentationOwner: 'city'")
-      && aerialProjection.includes('environment: null'),
-    'the independent aerial projection must publish atomic City ownership without a local XR environment',
+    'City must not claim the Flight MapLibre readiness presenter',
   )
   assert.ok(xrPhysics.includes('citySimActive || flightSimActive || gameFpsActive'))
 }

@@ -354,8 +354,8 @@ test('Feature: knowgrph-game-flight-sim, Property 17 - Start-of-tick penetration
   )
 })
 
-// Feature: knowgrph-game-flight-sim, Property 27 - Normalized input frame composition
-test('Feature: knowgrph-game-flight-sim, Property 27 - Normalized input frame composition', () => {
+// Feature: knowgrph-game-flight-sim, Property 22 - Normalized input frame composition
+test('Feature: knowgrph-game-flight-sim, Property 22 - Normalized input frame composition', () => {
   fc.assert(
     fc.property(
       fc.tuple(inputArbitrary, inputArbitrary, inputArbitrary, inputArbitrary),
@@ -388,7 +388,7 @@ test('Feature: knowgrph-game-flight-sim, Property 27 - Normalized input frame co
         }
       },
     ),
-    flightSimPropertyParameters(27),
+    flightSimPropertyParameters(22),
   )
 })
 
@@ -404,8 +404,8 @@ const routeArbitrary = fc.record({
   outOfOrderIndex: fc.integer({ min: 1, max: 2 }),
 })
 
-// Feature: knowgrph-game-flight-sim, Property 29 - Ordered waypoint progression to terminal success
-test('Feature: knowgrph-game-flight-sim, Property 29 - Ordered waypoint progression to terminal success', async () => {
+// Feature: knowgrph-game-flight-sim, Property 24 - Ordered waypoint progression to terminal success
+test('Feature: knowgrph-game-flight-sim, Property 24 - Ordered waypoint progression to terminal success', async () => {
   await fc.assert(
     fc.asyncProperty(routeArbitrary, async route => {
       const spatial = routeProfile(route)
@@ -465,6 +465,6 @@ test('Feature: knowgrph-game-flight-sim, Property 29 - Ordered waypoint progress
         disposeFlightSimMission(mission)
       }
     }),
-    flightSimPropertyParameters(29),
+    flightSimPropertyParameters(24),
   )
 })

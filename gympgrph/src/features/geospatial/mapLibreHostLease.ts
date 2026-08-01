@@ -7,6 +7,7 @@ export type MapLibreMapOwnerScope =
 export type NativeGeospatialMapLibreLease = Readonly<{
   cancelDisposalPreparation: () => void
   canvas: HTMLCanvasElement | null
+  dispose: () => void
   id: number
   isCurrent: () => boolean
   isPreparedForDisposal: () => boolean
@@ -90,6 +91,7 @@ function readMapCanvas(map: any): HTMLCanvasElement | null {
 
 export function claimMapLibreMapLease(options: Readonly<{
   cancelDisposalPreparation?: () => void
+  dispose?: () => void
   isPreparedForDisposal?: () => boolean
   map: any
   ownerScope: MapLibreMapOwnerScope
@@ -107,6 +109,7 @@ export function claimMapLibreMapLease(options: Readonly<{
     cancelDisposalPreparation:
       options.cancelDisposalPreparation ?? (() => void 0),
     canvas: readMapCanvas(options.map),
+    dispose: options.dispose ?? (() => void 0),
     id: leaseId,
     isCurrent: () => activeNativeLease === lease,
     isPreparedForDisposal:

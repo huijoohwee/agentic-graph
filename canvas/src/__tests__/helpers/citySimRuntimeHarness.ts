@@ -28,7 +28,7 @@ export function createCityWorkspace(initialDocument?: string): WorkspaceFs {
       path: CITY_SIM_DOCUMENT_PATH,
       parentPath: '/game-city-sim',
       kind: 'file',
-      name: 'city-grid.md',
+      name: 'city-poi-zoning.md',
       text: initialDocument,
       updatedAtMs: 0,
     })

@@ -352,12 +352,14 @@ export const testGeoXrComposesNativeMapLibreBelowTransparentFlight = () => {
   if (!/const rendererDefaultClearAlpha\s*=\s*geospatialComposite\s*\?\s*0/.test(threeGraphText)) {
     throw new Error('Expected the Flight R3F canvas to stay transparent above MapLibre')
   }
-  if (!gameplayOverlayText.includes('actorsVisible')
-    || gameplayOverlayText.includes('actorsVisible={!props.geospatialComposite}')) {
-    throw new Error('Expected Geo+XR to retain the actor-only R3F Media Airplane above MapLibre')
+  if (gameplayOverlayText.includes('actorsVisible')
+    || /XrSceneLibraryAssetGeometry|XrProceduralVehicleGeometry/.test(gameplayOverlayText)) {
+    throw new Error('Expected the shared R3F layer to retain only Flight simulation and input ownership')
   }
-  if (!flightMissionStageText.includes('if (!actorsVisible || geospatialComposite)')
-    || !flightMissionStageText.includes('completeFlightSimStagePreparation(stagePreparationRequestId)')) {
+  if (!flightMissionStageText.includes('if (geospatialComposite)')
+    || !flightMissionStageText.includes('completeFlightSimStagePreparation(stagePreparationRequestId)')
+    || !flightMissionStageText.includes('return null')
+    || /<mesh\b|<group\b|<primitive\b/.test(flightMissionStageText)) {
     throw new Error('Expected MapLibre to remain the sole Geo+XR Flight preparation owner')
   }
   for (const layer of ['route', 'routePoints', 'aircraft', 'aircraftOutline']) {

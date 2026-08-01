@@ -14,7 +14,6 @@ import { buildScopedGraphSemanticKey } from '@/lib/graph/semanticKey'
 import { getThreeConfig, getThreeSelectionConfig } from '@/lib/graph/schema'
 import { lsInt } from '@/lib/persistence'
 import { LS_KEYS, buildNumericTooltip } from '@/lib/config'
-import { requestGeospatialTraversalRun } from '@/features/geospatial/gympgrphBridge'
 import { hashScopedStringArraySignature, hashSignatureParts } from '@/lib/hash/signature'
 
 export type GraphRagTraversalSummary = {
@@ -384,7 +383,6 @@ export function buildGraphRagTraversalSummary(
 
 export function runEdgeTraversalSequenceGlobal(edgeIds: string[], startNodeId?: string | null): void {
   if (!Array.isArray(edgeIds) || edgeIds.length === 0) return
-  void requestGeospatialTraversalRun({ edgeIds }).catch(() => void 0)
   const state = useGraphStore.getState()
   state.setAiKgTraversalRan(true)
   if (traversalTimeoutId != null) {
@@ -470,7 +468,6 @@ export function runEdgeTraversalSequenceGlobal(edgeIds: string[], startNodeId?: 
     if (index >= edgeIds.length) {
       if (typeof window !== 'undefined') {
         traversalTimeoutId = window.setTimeout(() => {
-          void requestGeospatialTraversalRun({ edgeIds: null }).catch(() => void 0)
           state.selectEdge(null)
           state.setThreeConfig({
             edgeOpacityByLabel: prevEdgeOpacityByLabel,

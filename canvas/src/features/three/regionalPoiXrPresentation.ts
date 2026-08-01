@@ -2,8 +2,10 @@ import {
   createRegionalPoiProfile,
   deriveRegionalPoiLongitudeSpan,
   type RegionalPoiCoordinate,
+  type RegionalPoiAccuracy,
   type RegionalPoiLongitudeSpan,
   type RegionalPoiProfile,
+  type RegionalPoiProvenance,
   type RegionalPoiSurface,
   unwrapRegionalPoiLongitude,
 } from 'grph-shared/geospatial/regionalPoiGeo'
@@ -15,17 +17,30 @@ export type XrRegionalPoiSurfacePresentation = string
 
 export type XrRegionalPoiSurfaceStyle = RegionalPoiPresentationStyle
 
+export type XrRegionalPoiRing = readonly (
+  readonly [x: number, z: number]
+)[]
+
 export type XrRegionalPoiSurface = Readonly<{
+  accuracy: RegionalPoiAccuracy
+  baseHeight: number
+  baseHeightMeters: number
+  category: string
   collidable: false
   color: string
+  heightMeters: number
   id: string
   kind: 'poi'
   label: string
   poiId: string
+  poiLabel: string
   position: readonly [number, number, number]
   presentation: XrRegionalPoiSurfacePresentation
+  provenance: RegionalPoiProvenance
+  rings: readonly XrRegionalPoiRing[]
   size: readonly [number, number, number]
   tone: 'light' | 'mid' | 'dark' | 'accent'
+  topHeight: number
 }>
 
 export type XrRegionalPoi = Readonly<{
@@ -130,11 +145,13 @@ function presentationForSurface(
 function projectSurface(
   surface: RegionalPoiSurface,
   frame: GeographicFrame,
+  poiLabelById: ReadonlyMap<string, string>,
   styleByCategory: Readonly<Record<string, XrRegionalPoiSurfaceStyle>>,
 ): XrRegionalPoiSurface {
-  const coordinates = surface.geometry.coordinates.flatMap(ring => (
-    ring.map(coordinate => localCoordinate(coordinate, frame))
-  ))
+  const rings = Object.freeze(surface.geometry.coordinates.map(ring => (
+    Object.freeze(ring.map(coordinate => localCoordinate(coordinate, frame)))
+  )))
+  const coordinates = rings.flatMap(ring => [...ring])
   const west = Math.min(...coordinates.map(coordinate => coordinate[0]))
   const east = Math.max(...coordinates.map(coordinate => coordinate[0]))
   const north = Math.min(...coordinates.map(coordinate => coordinate[1]))
@@ -142,25 +159,38 @@ function projectSurface(
   const baseHeight = surface.baseHeightMeters * frame.scale
   const topHeight = surface.heightMeters * frame.scale
   const presentation = presentationForSurface(surface, styleByCategory)
+  const poiLabel = poiLabelById.get(surface.poiId)
+  if (!poiLabel) {
+    throw new TypeError(`Regional POI surface ${surface.id} has no POI label`)
+  }
   return Object.freeze({
+    accuracy: surface.accuracy,
+    baseHeight,
+    baseHeightMeters: surface.baseHeightMeters,
+    category: surface.category,
     collidable: false,
     color: presentation.color,
+    heightMeters: surface.heightMeters,
     id: surface.id,
     kind: 'poi',
     label: surface.label,
     poiId: surface.poiId,
+    poiLabel,
     position: Object.freeze([
       (west + east) / 2,
       (baseHeight + topHeight) / 2,
       (north + south) / 2,
     ]) as readonly [number, number, number],
     presentation: presentation.presentation,
+    provenance: surface.provenance,
+    rings,
     size: Object.freeze([
       Math.max(Number.EPSILON, east - west),
       topHeight - baseHeight,
       Math.max(Number.EPSILON, south - north),
     ]) as readonly [number, number, number],
     tone: presentation.tone,
+    topHeight,
   })
 }
 
@@ -183,10 +213,12 @@ export function createRegionalPoiXrPresentation(input: Readonly<{
     throw new RangeError('XR presentation paddingRatio must be within [0, 0.5)')
   }
   const frame = geographicFrame(profile, sizeMeters, paddingRatio)
+  const poiLabelById = new Map(profile.pois.map(poi => [poi.id, poi.label]))
   const surfaces = Object.freeze(
     profile.surfaces.map(surface => projectSurface(
       surface,
       frame,
+      poiLabelById,
       input.styleByCategory,
     )),
   )

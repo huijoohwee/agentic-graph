@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  flightGeoOverlayMapLibreFeatureCollection,
+  flightGeoOverlayFeatureCollection,
   FLIGHT_GEO_OVERLAY_LAYER_DEFINITIONS,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_LAYER_ORDER,
@@ -123,7 +123,7 @@ test('provider-style handoff retains the complete Flight environment below its r
     type: 'geojson',
   }
   const overlaySource = {
-    data: flightGeoOverlayMapLibreFeatureCollection(overlay),
+    data: flightGeoOverlayFeatureCollection(overlay),
     type: 'geojson',
   }
   const environmentLayers = exactEnvironmentLayers()
@@ -185,7 +185,7 @@ test('provider promotion atomically applies the exact full Flight style and reje
         type: 'geojson',
       },
       [FLIGHT_GEO_OVERLAY_SOURCE_ID]: {
-        data: flightGeoOverlayMapLibreFeatureCollection(overlay),
+        data: flightGeoOverlayFeatureCollection(overlay),
         type: 'geojson',
       },
     },
@@ -295,7 +295,7 @@ test('provider-style handoff refuses mutated extrusion and polygon-outline layer
     },
     [FLIGHT_GEO_OVERLAY_SOURCE_ID]: {
       type: 'geojson',
-      data: flightGeoOverlayMapLibreFeatureCollection(overlay),
+      data: flightGeoOverlayFeatureCollection(overlay),
     },
   }
   const mutatedEnvironmentLayers = exactEnvironmentLayers().map(layer => (
@@ -339,7 +339,7 @@ test('provider-style handoff refuses same-identity source payload mutations', ()
   const overlay = exactOverlay()
   const exactEnvironment =
     flightGeoEnvironmentMapLibreFeatureCollection(overlay)
-  const exactFlight = flightGeoOverlayMapLibreFeatureCollection(overlay)
+  const exactFlight = flightGeoOverlayFeatureCollection(overlay)
   const nextStyle = {
     version: 8,
     sources: { provider: { type: 'vector' } },
@@ -426,7 +426,7 @@ test('provider-style handoff refuses mutated source options and layer visibility
     },
     [FLIGHT_GEO_OVERLAY_SOURCE_ID]: {
       type: 'geojson',
-      data: flightGeoOverlayMapLibreFeatureCollection(overlay),
+      data: flightGeoOverlayFeatureCollection(overlay),
     },
   }
   const exactLayers = [

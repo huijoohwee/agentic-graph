@@ -12,7 +12,7 @@ import {
 } from '../../../../gympgrph/src/features/geospatial/mapLibreFlightBootstrap'
 import {
   applyFlightGeoOverlayToMap,
-  flightGeoOverlayMapLibreFeatureCollection,
+  flightGeoOverlayFeatureCollection,
   FLIGHT_GEO_OVERLAY_LAYER_IDS,
   FLIGHT_GEO_OVERLAY_SOURCE_ID,
 } from '../../../../gympgrph/src/flightGeoOverlayMapLibre'
@@ -133,7 +133,7 @@ export function presentationHarness(
   let overlaySourceLoaded = options?.overlaySourceLoaded ?? true
   let width = 0
   let repaintCount = 0
-  let sourceData = flightGeoOverlayMapLibreFeatureCollection(initial)
+  let sourceData = flightGeoOverlayFeatureCollection(initial)
   let environmentSourceData = initial.environment
     ? flightGeoEnvironmentMapLibreFeatureCollection(initial)
     : null
@@ -224,7 +224,7 @@ export function presentationHarness(
             id,
             loaded: () => overlaySourceLoaded,
             serialize: () => ({ data: sourceData }),
-            setData: (data: ReturnType<typeof flightGeoOverlayMapLibreFeatureCollection>) => {
+            setData: (data: ReturnType<typeof flightGeoOverlayFeatureCollection>) => {
               sourceDataWrites += 1
               sourceData = data
             },
@@ -381,12 +381,12 @@ export function presentationHarness(
     jumpToCount: () => jumpToCount,
     replaceSourceData: (next: FlightGeoOverlaySnapshot | null) => {
       sourceData = next
-        ? flightGeoOverlayMapLibreFeatureCollection(next)
+        ? flightGeoOverlayFeatureCollection(next)
         : { type: 'FeatureCollection', features: [] }
     },
     setCurrent: (next: FlightGeoOverlaySnapshot) => {
       current = next
-      sourceData = flightGeoOverlayMapLibreFeatureCollection(next)
+      sourceData = flightGeoOverlayFeatureCollection(next)
       environmentSourceData = next.environment
         ? flightGeoEnvironmentMapLibreFeatureCollection(next)
         : null

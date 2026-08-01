@@ -40,7 +40,7 @@ export const FLIGHT_SIM_RUNTIME_VERIFICATIONS = Object.freeze([
     args: ['-C', 'canvas', 'run', 'test:smoke:game-flight-sim:source'],
   }),
   Object.freeze({
-    name: 'negative authoring, dependency, license, and clean-room gates',
+    name: 'negative network, provenance, and source-authority gates',
     command: 'npm',
     args: ['run', 'game-flight-sim:negative-gates:test'],
   }),

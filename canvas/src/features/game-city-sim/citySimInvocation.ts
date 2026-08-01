@@ -1,6 +1,6 @@
 import {
+  isCanonicalRegionalPoiIdentityId,
   isCityZoningType,
-  parseCityParcelId,
   type CityAdviceScope,
   type CityZoningType,
 } from './citySimModel'
@@ -153,10 +153,10 @@ export function parseCitySimInvocation(raw: string): CitySimInvocationResult {
   const zoningTypeValue = args.get('type') ?? null
   const scopeValue = args.get('scope') ?? null
 
-  if (parcelId && !parseCityParcelId(parcelId)) {
+  if (parcelId && !isCanonicalRegionalPoiIdentityId(parcelId)) {
     return failure(
       'invalid-parcel',
-      `City parcel ${parcelId} must use the rNNcNN form.`,
+      `City parcel ${parcelId} must use a canonical RegionalPoiIdentity id.`,
     )
   }
   if (zoningTypeValue && !isCityZoningType(zoningTypeValue)) {
@@ -175,7 +175,12 @@ export function parseCitySimInvocation(raw: string): CitySimInvocationResult {
   if (operation === 'zone') {
     const unexpected = rejectUnexpectedArguments(operation, args, ['parcel', 'type'])
     if (unexpected) return unexpected
-    if (!parcelId) return failure('missing-argument', 'operation=zone requires parcel=<rNNcNN>.')
+    if (!parcelId) {
+      return failure(
+        'missing-argument',
+        'operation=zone requires parcel=<regional-poi-identity-id>.',
+      )
+    }
     if (!zoningTypeValue) {
       return failure(
         'missing-argument',

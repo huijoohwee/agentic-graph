@@ -9,10 +9,10 @@ import {
 test('a render failure stops Flight Sim and publishes the local diagnostic', () => {
   resetFlightSimRuntimeForTests()
   const failed = reportFlightSimRenderFailure(
-    new Error('optional beacon GLB parse sentinel'),
+    new Error('MapLibre presentation sentinel'),
   )
 
   assert.equal(failed.phase, 'stopped')
-  assert.match(failed.runtimeError || '', /optional beacon GLB parse sentinel/)
+  assert.match(failed.runtimeError || '', /MapLibre presentation sentinel/)
   assert.equal(readFlightSimSnapshot(), failed)
 })

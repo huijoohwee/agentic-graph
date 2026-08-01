@@ -14,6 +14,7 @@ import {
 
 export type XrSingaporePoiSurfacePresentation =
   | 'observation-wheel'
+  | 'polygon-extrusion'
   | 'skypark'
   | 'supertree'
   | 'tower'
@@ -36,7 +37,10 @@ export const XR_SINGAPORE_STAGE_SIZE_METERS = Object.freeze([
   24,
 ] as const)
 
-const XR_SINGAPORE_REGIONAL_POI_STYLES = Object.freeze({
+const XR_SINGAPORE_SPECIALIZED_POI_STYLES: Readonly<Record<
+  string,
+  RegionalPoiPresentationStyle
+>> = Object.freeze({
   'observation-wheel': Object.freeze({
     color: '#eef7f7',
     presentation: 'observation-wheel',
@@ -57,10 +61,23 @@ const XR_SINGAPORE_REGIONAL_POI_STYLES = Object.freeze({
     presentation: 'tower',
     tone: 'light',
   }),
-} as const satisfies Readonly<Record<
-  XrSingaporePoiSurfacePresentation,
-  RegionalPoiPresentationStyle
->>)
+})
+
+const XR_SINGAPORE_POLYGON_EXTRUSION_STYLE = Object.freeze({
+  color: '#d6c7ac',
+  presentation: 'polygon-extrusion',
+  tone: 'mid',
+} as const satisfies RegionalPoiPresentationStyle)
+
+const XR_SINGAPORE_REGIONAL_POI_STYLES = Object.freeze(Object.fromEntries(
+  [...new Set(SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.map(
+    surface => surface.category,
+  ))].map(category => [
+    category,
+    XR_SINGAPORE_SPECIALIZED_POI_STYLES[category]
+      ?? XR_SINGAPORE_POLYGON_EXTRUSION_STYLE,
+  ]),
+))
 
 export const XR_SINGAPORE_REGIONAL_POI_PRESENTATION_POLICY =
   createRegionalPoiPresentationPolicy({

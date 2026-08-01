@@ -155,11 +155,11 @@ export function testXrSubjectMotionIsFootprintCollisionAndPhysicsAware(): void {
       + XR_SUBJECT_STAGE_EDGE_GAP_METERS <= slideFacingStage.sizeMeters[1] / 2
   const slideSweepPlan = readXrMotionReferencePlan({
     stageId: 'aerial-sky',
-    subjects: [{ id: 'slide-sweep-plane', assetId: 'vehicle-airplane', position: [9, 0, 4] }, { id: 'slide-sweep-peer', assetId: 'prop-crate', position: [0, 0, -4.1] }],
-    cast: [{ actorId: 'slide-sweep-plane', marks: [{ timeSeconds: 0, position: [9, 0, -5] }, { timeSeconds: 1, position: [9, 0, 4] }] }],
+    subjects: [{ id: 'slide-sweep-helicopter', assetId: 'vehicle-helicopter', position: [9, 0, 4] }, { id: 'slide-sweep-peer', assetId: 'prop-crate', position: [0, 0, -4.1] }],
+    cast: [{ actorId: 'slide-sweep-helicopter', marks: [{ timeSeconds: 0, position: [9, 0, -5] }, { timeSeconds: 1, position: [9, 0, 4] }] }],
   })
   const slideSweepMark = slideSweepPlan.cast[0]!.marks[1]!
-  const slideSweepLimited = resolveXrSubjectMotion({ actorId: 'slide-sweep-plane', desiredPosition: [-9, 0, -5], markId: slideSweepMark.id,
+  const slideSweepLimited = resolveXrSubjectMotion({ actorId: 'slide-sweep-helicopter', desiredPosition: [-9, 0, -5], markId: slideSweepMark.id,
     physics: stoppedPhysics, plan: slideSweepPlan, position: slideSweepMark.position, startTimeSeconds: 0, timeSeconds: 1 })
   const relativeSweepPlan = readXrMotionReferencePlan({
     stageId: 'neutral-volume',

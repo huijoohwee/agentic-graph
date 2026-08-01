@@ -6,9 +6,6 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import test from 'node:test'
 import {
-  assertTrackedFlightSimAsset,
-} from '../lib/game-flight-sim-asset-readiness.mjs'
-import {
   assertFlightSimKiroReadiness,
   FLIGHT_SIM_KIRO_ROOT,
   FLIGHT_SIM_KIRO_TRACKED_REFERENCES,
@@ -134,31 +131,5 @@ test('tracked Kiro authority has one exact four-file inventory and stable hashes
   await assert.rejects(
     assertFlightSimKiroReadiness({ repositoryRoot }),
     /projection hash .* does not match tracked authority/,
-  )
-})
-
-test('asset tracking cannot be bypassed by the legacy environment variable', async t => {
-  const { repositoryRoot, workspaceRoot } = await createRepository()
-  t.after(() => rm(workspaceRoot, { recursive: true, force: true }))
-  const relativePath = 'candidate/optional-beacon.glb'
-  await write(repositoryRoot, relativePath, 'candidate')
-
-  const previousValue = process.env.KG_FLIGHT_SIM_ALLOW_UNTRACKED_ASSET_CANDIDATE
-  process.env.KG_FLIGHT_SIM_ALLOW_UNTRACKED_ASSET_CANDIDATE = '1'
-  t.after(() => {
-    if (previousValue === undefined) {
-      delete process.env.KG_FLIGHT_SIM_ALLOW_UNTRACKED_ASSET_CANDIDATE
-    } else {
-      process.env.KG_FLIGHT_SIM_ALLOW_UNTRACKED_ASSET_CANDIDATE = previousValue
-    }
-  })
-
-  await assert.rejects(
-    assertTrackedFlightSimAsset(repositoryRoot, relativePath),
-    /must be git-tracked/,
-  )
-  await execFileAsync('git', ['add', '--', relativePath], { cwd: repositoryRoot })
-  await assert.doesNotReject(
-    assertTrackedFlightSimAsset(repositoryRoot, relativePath),
   )
 })

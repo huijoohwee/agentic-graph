@@ -3,7 +3,7 @@ import type { RegionalPoiSurface } from 'grph-shared/geospatial/regionalPoiGeo'
 
 export type FlightGeoCoordinate = readonly [longitude: number, latitude: number]
 
-export type FlightGeoOverlayPresentationOwner = 'city' | 'flight' | null
+export type FlightGeoOverlayPresentationOwner = 'flight' | null
 
 export type FlightGeoRoutePoint = Readonly<{
   id: string
@@ -270,4 +270,38 @@ export function flightGeoOverlayFeatureCollection(
       aircraft,
     ],
   }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function hasExactFlightGeoOverlayValue(
+  expected: unknown,
+  actual: unknown,
+): boolean {
+  if (Object.is(expected, actual)) return true
+  if (Array.isArray(expected)) {
+    return Array.isArray(actual)
+      && expected.length === actual.length
+      && expected.every((value, index) => (
+        hasExactFlightGeoOverlayValue(value, actual[index])
+      ))
+  }
+  if (!isPlainRecord(expected) || !isPlainRecord(actual)) return false
+  const expectedKeys = Object.keys(expected)
+  const actualKeys = Object.keys(actual)
+  return expectedKeys.length === actualKeys.length
+    && expectedKeys.every(key => (
+      Object.prototype.hasOwnProperty.call(actual, key)
+      && hasExactFlightGeoOverlayValue(expected[key], actual[key])
+    ))
+}
+
+/** Prevent redundant GeoJSON worker updates without changing the canonical Point payload. */
+export function hasExactFlightGeoOverlayFeatureCollection(
+  expected: FeatureCollection,
+  actual: unknown,
+): boolean {
+  return hasExactFlightGeoOverlayValue(expected, actual)
 }

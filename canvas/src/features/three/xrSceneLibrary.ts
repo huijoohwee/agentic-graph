@@ -223,7 +223,7 @@ export const XR_MOTION_REFERENCE_TERRAIN_PRESETS: readonly XrMotionReferenceStag
 )
 
 export type XrSceneLibraryCategory = 'people' | 'animals' | 'vehicles' | 'furniture' | 'props'
-export type XrSceneLibraryShape = 'humanoid' | 'quadruped' | 'car' | 'bicycle' | 'airplane' | 'helicopter' | 'ball' | 'debris' | 'chair' | 'table' | 'sofa' | 'cart' | 'tree' | 'lamp' | 'crate' | 'umbrella'
+export type XrSceneLibraryShape = 'humanoid' | 'quadruped' | 'car' | 'bicycle' | 'helicopter' | 'ball' | 'debris' | 'chair' | 'table' | 'sofa' | 'cart' | 'tree' | 'lamp' | 'crate' | 'umbrella'
 
 export type XrSceneLibraryAsset = Readonly<{
   id: string
@@ -248,7 +248,6 @@ export const XR_SCENE_LIBRARY_CATEGORY_LABELS: Readonly<Record<XrSceneLibraryCat
 export const XR_SCENE_LIBRARY_DEFAULT_ASSET_ID = 'vehicle-helicopter' as const
 export const XR_SCENE_LIBRARY_FEATURED_ASSET_IDS = Object.freeze([
   XR_SCENE_LIBRARY_DEFAULT_ASSET_ID,
-  'vehicle-airplane',
   'vehicle-sedan',
   'prop-ball',
 ] as const)
@@ -261,7 +260,6 @@ export const XR_SCENE_LIBRARY_ASSETS: readonly XrSceneLibraryAsset[] = [
   { id: 'vehicle-sedan', label: 'Car', category: 'vehicles', description: 'Four-seat road car at practical scale.', shape: 'car', dimensionsMeters: [1.82, 1.45, 4.55], defaultColor: '#60a5fa', mobile: true, keywords: ['car', 'sedan', 'traffic'] },
   { id: 'vehicle-van', label: 'Van', category: 'vehicles', description: 'Tall cargo or passenger vehicle.', shape: 'car', dimensionsMeters: [2, 2.35, 5.1], defaultColor: '#f8fafc', mobile: true, keywords: ['car', 'traffic', 'delivery'] },
   { id: 'vehicle-bicycle', label: 'Bicycle', category: 'vehicles', description: 'Two-wheel silhouette for rider and street marks.', shape: 'bicycle', dimensionsMeters: [0.55, 1.1, 1.8], defaultColor: '#22c55e', mobile: true, keywords: ['bike', 'cycle'] },
-  { id: 'vehicle-airplane', label: 'Airplane', category: 'vehicles', description: 'Twin-engine procedural aircraft for approach and landing paths.', shape: 'airplane', dimensionsMeters: [12, 3.4, 11], defaultColor: '#cbd5e1', mobile: true, keywords: ['plane', 'aircraft', 'aerial', 'landing'] },
   { id: 'vehicle-helicopter', label: 'Helicopter', category: 'vehicles', description: 'Detailed procedural rotorcraft for hover and orbit choreography.', shape: 'helicopter', dimensionsMeters: [7.4, 3.4, 9], defaultColor: '#f59e0b', mobile: true, keywords: ['helicopter', 'rotorcraft', 'aerial', 'orbit'] },
   { id: 'prop-ball', label: 'Ball', category: 'props', description: 'Procedural segmented ball for rolling, bounce, and impact choreography.', shape: 'ball', dimensionsMeters: [1.2, 1.2, 1.2], defaultColor: '#2e8ee6', mobile: true, keywords: ['ball', 'sphere', 'rolling', 'bounce', 'physics'] },
   { id: 'furniture-chair', label: 'Chair', category: 'furniture', description: 'Single upright chair with readable seat direction.', shape: 'chair', dimensionsMeters: [0.52, 0.92, 0.55], defaultColor: '#c084fc', mobile: false, keywords: ['seat', 'interior'] },

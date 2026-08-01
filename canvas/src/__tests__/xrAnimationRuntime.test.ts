@@ -83,19 +83,19 @@ function resetToNativeAnimationGrammar(): void {
 
 export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   const expectedCharacterMotions = ['fight', 'dance', 'sit', 'drink', 'jump', 'play-cards', 'squirt-gun']
-  const expectedActionPaths = ['plane-landing', 'helicopter-orbit', 'car-chase', 'collapsing-debris']
+  const expectedActionPaths = ['helicopter-orbit', 'car-chase', 'collapsing-debris']
   if (XR_CHARACTER_MOTION_PRESET_IDS.join('|') !== expectedCharacterMotions.join('|')) {
     throw new Error(`expected all requested native character motions, got ${XR_CHARACTER_MOTION_PRESET_IDS.join(', ')}`)
   }
-  if (XR_ACTION_PATH_PRESET_IDS.join('|') !== expectedActionPaths.join('|') || XR_ANIMATION_PRESETS.length !== 11) {
+  if (XR_ACTION_PATH_PRESET_IDS.join('|') !== expectedActionPaths.join('|') || XR_ANIMATION_PRESETS.length !== 10) {
     throw new Error(`expected all requested native action paths, got ${XR_ACTION_PATH_PRESET_IDS.join(', ')}`)
   }
 
   const fight = resolveXrAnimationPreset('fight')
-  const landing = resolveXrAnimationPreset('plane-landing')
+  const landing = resolveXrAnimationPreset('helicopter-orbit')
   if (!xrAnimationPresetCompatible({ preset: fight, graphActor: true })
     || xrAnimationPresetCompatible({ preset: landing, graphActor: true })
-    || !xrAnimationPresetCompatible({ preset: landing, assetId: 'vehicle-airplane', category: 'vehicles' })) {
+    || !xrAnimationPresetCompatible({ preset: landing, assetId: 'vehicle-helicopter', category: 'vehicles' })) {
     throw new Error('expected typed animation compatibility to separate character motions from asset-specific action paths')
   }
   const drinkAssignment = { kind: 'character-motion', presetId: 'drink', startTimeSeconds: 0, loop: true } as const
@@ -109,7 +109,6 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   }
 
   const pathCounts = new Map([
-    ['plane-landing', 5],
     ['helicopter-orbit', 9],
     ['car-chase', 6],
     ['collapsing-debris', 5],
@@ -133,31 +132,31 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   }
 
   const incompatibleGraphPlan = readXrMotionReferencePlan({
-    cast: [{ actorId: 'actor-a', animation: { kind: 'action-path', presetId: 'plane-landing' } }],
+    cast: [{ actorId: 'actor-a', animation: { kind: 'action-path', presetId: 'helicopter-orbit' } }],
   }, buildAnimationGraph().nodes)
   const compatibleGraphPlan = readXrMotionReferencePlan({
     cast: [{ actorId: 'actor-a', animation: { kind: 'action-path', presetId: 'dance' } }],
   }, buildAnimationGraph().nodes)
-  const airplanePlan = readXrMotionReferencePlan({
+  const helicopterPlan = readXrMotionReferencePlan({
     stageId: 'neutral-volume',
     durationSeconds: 8,
-    subjects: [{ id: 'plane-a', assetId: 'vehicle-airplane', label: 'Plane' }],
+    subjects: [{ id: 'helicopter-a', assetId: 'vehicle-helicopter', label: 'Helicopter' }],
     cast: [{
-      actorId: 'plane-a',
-      animation: { kind: 'character-motion', presetId: 'plane-landing' },
+      actorId: 'helicopter-a',
+      animation: { kind: 'character-motion', presetId: 'helicopter-orbit' },
       marks: [{ timeSeconds: 0, position: [4, 2, 3], transition: 'hold' }],
     }],
   })
-  const incompatibleAirplanePlan = readXrMotionReferencePlan({
-    subjects: [{ id: 'plane-a', assetId: 'vehicle-airplane', label: 'Plane' }],
-    cast: [{ actorId: 'plane-a', animation: { kind: 'action-path', presetId: 'car-chase' } }],
+  const incompatibleHelicopterPlan = readXrMotionReferencePlan({
+    subjects: [{ id: 'helicopter-a', assetId: 'vehicle-helicopter', label: 'Helicopter' }],
+    cast: [{ actorId: 'helicopter-a', animation: { kind: 'action-path', presetId: 'car-chase' } }],
   })
   if (incompatibleGraphPlan.cast[0]?.animation !== null
     || compatibleGraphPlan.cast[0]?.animation?.presetId !== 'dance'
-    || incompatibleAirplanePlan.cast[0]?.animation !== null
-    || airplanePlan.cast[0]?.animation?.kind !== 'action-path'
-    || airplanePlan.cast[0]?.marks.length !== 5
-    || airplanePlan.cast[0]?.marks.at(-1)?.timeSeconds !== 8) {
+    || incompatibleHelicopterPlan.cast[0]?.animation !== null
+    || helicopterPlan.cast[0]?.animation?.kind !== 'action-path'
+    || helicopterPlan.cast[0]?.marks.length !== 9
+    || helicopterPlan.cast[0]?.marks.at(-1)?.timeSeconds !== 8) {
     throw new Error('expected persisted animation hydration to reject incompatible assignments and rebuild valid action paths canonically')
   }
 
@@ -219,16 +218,16 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   }
 
   hydrateXrMotionReferenceRuntime({ sceneKey: 'animation-action-path', nodes: [], persistedValue: null })
-  addXrMotionReferenceSubject({ assetId: 'vehicle-airplane', label: 'Picture plane' })
-  const airplane = readXrMotionReferenceRuntime().plan.subjects.find(subject => subject.assetId === 'vehicle-airplane')
-  if (!airplane) throw new Error('expected the native scene library to place a procedural airplane')
-  if (!applyXrConstrainedCastActionPath(airplane.id, 'plane-landing').applied) {
-    throw new Error('expected the shared constrained owner to assign the plane-landing path')
+  addXrMotionReferenceSubject({ assetId: 'vehicle-helicopter', label: 'Picture helicopter' })
+  const helicopter = readXrMotionReferenceRuntime().plan.subjects.find(subject => subject.assetId === 'vehicle-helicopter')
+  if (!helicopter) throw new Error('expected the native scene library to place a procedural helicopter')
+  if (!applyXrConstrainedCastActionPath(helicopter.id, 'helicopter-orbit').applied) {
+    throw new Error('expected the shared constrained owner to assign the helicopter-orbit path')
   }
   plan = readXrMotionReferenceRuntime().plan
-  const airplaneTrack = plan.cast.find(track => track.actorId === airplane.id)
-  if (airplaneTrack?.animation?.presetId !== 'plane-landing' || airplaneTrack.marks.length !== 5 || airplaneTrack.marks.at(-1)?.transition !== 'hold') {
-    throw new Error(`expected plane landing to replace the cast path with deterministic arrival marks, got ${JSON.stringify(airplaneTrack)}`)
+  const helicopterTrack = plan.cast.find(track => track.actorId === helicopter.id)
+  if (helicopterTrack?.animation?.presetId !== 'helicopter-orbit' || helicopterTrack.marks.length !== 9 || helicopterTrack.marks.at(-1)?.transition !== 'linear') {
+    throw new Error(`expected helicopter orbit to replace the cast path with deterministic orbit marks, got ${JSON.stringify(helicopterTrack)}`)
   }
   const bundle = buildXrMotionReferencePackage({ plan, graphData, documentName: 'Animation reference.md' })
   const manifest = JSON.parse(bundle.files.find(file => file.path === 'reference/manifest.json')?.text || '{}') as { animationTracks?: number; interpolation?: string; speedWarnings?: number }
@@ -238,9 +237,9 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
     || manifest.interpolation !== 'per-mark-easing-with-gait-profiles'
     || typeof manifest.speedWarnings !== 'number'
     || !bundle.files.some(file => file.path === 'reference/choreography-diagnostics.json')
-    || !samplesText.includes('plane-landing')
+    || !samplesText.includes('helicopter-orbit')
     || !samplesText.includes('rootRotationDegrees')
-    || !brief.includes('Plane landing [action-path]')
+    || !brief.includes('Helicopter orbit [action-path]')
     || !brief.includes('easing=')
     || !brief.includes('gait=flight')) {
     throw new Error('expected the motion-reference package to carry animation assignments, poses, paths, and generator briefing')
@@ -248,42 +247,42 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
   setXrMotionReferenceDuration(20)
   setXrMotionReferenceStage('backyard-pool')
   const resizedStage = resolveXrMotionReferenceStage('backyard-pool')
-  const rebuiltPath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)
+  const rebuiltPath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)
   if (rebuiltPath?.marks.at(-1)?.timeSeconds !== 20
     || rebuiltPath.marks.some(mark => Math.abs(mark.position[0]) > resizedStage.sizeMeters[0] * 0.48 || Math.abs(mark.position[2]) > resizedStage.sizeMeters[1] * 0.48)) {
     throw new Error(`expected duration and stage changes to rebuild assigned action paths inside current bounds, got ${JSON.stringify({ stageId: readXrMotionReferenceRuntime().plan.stageId, rebuiltPath })}`)
   }
-  clearXrMotionReferenceCastAnimation(airplane.id)
-  const clearedPath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)
+  clearXrMotionReferenceCastAnimation(helicopter.id)
+  const clearedPath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)
   if (clearedPath?.animation !== null || clearedPath.marks.length !== 1 || clearedPath.marks[0]?.transition !== 'hold') {
     throw new Error('expected clearing an action path to stop its baked motion marks')
   }
-  applyXrConstrainedCastActionPath(airplane.id, 'plane-landing')
-  const assignedPath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)
-  if (!assignedPath) throw new Error('expected an assigned airplane action path')
-  removeXrMotionReferenceCastMark(airplane.id, 'missing-mark')
-  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)?.animation?.presetId !== 'plane-landing') {
+  applyXrConstrainedCastActionPath(helicopter.id, 'helicopter-orbit')
+  const assignedPath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)
+  if (!assignedPath) throw new Error('expected an assigned helicopter action path')
+  removeXrMotionReferenceCastMark(helicopter.id, 'missing-mark')
+  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)?.animation?.presetId !== 'helicopter-orbit') {
     throw new Error('expected an invalid manual mark removal to leave the assigned action path unchanged')
   }
-  retimeXrMotionReferenceCastMark(airplane.id, assignedPath.marks[1]!.id, 1.75)
-  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)?.animation !== null) {
+  retimeXrMotionReferenceCastMark(helicopter.id, assignedPath.marks[1]!.id, 1.75)
+  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)?.animation !== null) {
     throw new Error('expected manual mark retiming to clear a stale action-path assignment')
   }
-  applyXrConstrainedCastActionPath(airplane.id, 'plane-landing')
-  const removablePath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)
-  removeXrMotionReferenceCastMark(airplane.id, removablePath!.marks[1]!.id)
-  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)?.animation !== null) {
+  applyXrConstrainedCastActionPath(helicopter.id, 'helicopter-orbit')
+  const removablePath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)
+  removeXrMotionReferenceCastMark(helicopter.id, removablePath!.marks[1]!.id)
+  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)?.animation !== null) {
     throw new Error('expected manual mark removal to clear a stale action-path assignment')
   }
-  applyXrConstrainedCastActionPath(airplane.id, 'plane-landing')
-  setXrMotionReferenceCastMark({ actorId: airplane.id, timeSeconds: 0.123, position: [0, 1, 0] })
-  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)?.animation !== null) {
+  applyXrConstrainedCastActionPath(helicopter.id, 'helicopter-orbit')
+  setXrMotionReferenceCastMark({ actorId: helicopter.id, timeSeconds: 0.123, position: [0, 1, 0] })
+  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)?.animation !== null) {
     throw new Error('expected manual mark placement to clear a stale action-path assignment')
   }
-  applyXrConstrainedCastActionPath(airplane.id, 'plane-landing')
-  const editablePath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)
-  setXrMotionReferenceCastMarkChoreography({ actorId: airplane.id, markId: editablePath!.marks[0]!.id, easing: 'ease-in-out', gait: 'flight' })
-  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === airplane.id)?.animation !== null) {
+  applyXrConstrainedCastActionPath(helicopter.id, 'helicopter-orbit')
+  const editablePath = readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)
+  setXrMotionReferenceCastMarkChoreography({ actorId: helicopter.id, markId: editablePath!.marks[0]!.id, easing: 'ease-in-out', gait: 'flight' })
+  if (readXrMotionReferenceRuntime().plan.cast.find(track => track.actorId === helicopter.id)?.animation !== null) {
     throw new Error('expected manual per-mark choreography edits to clear a stale action-path assignment')
   }
 

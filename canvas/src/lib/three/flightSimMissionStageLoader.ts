@@ -6,8 +6,6 @@ import { importWithRetry } from '@/lib/react/importWithRetry'
 
 export type FlightSimMissionStageLazyModule = Readonly<{
   default: ComponentType<{
-    actorsVisible?: boolean
-    coordinateScale?: number
     geospatialComposite?: boolean
   }>
 }>
@@ -16,8 +14,6 @@ type FlightSimMissionStageModule = Readonly<{
   createFlightSimMissionStage: (
     runtimeController: FlightSimStageRuntimeController,
   ) => ComponentType<{
-    actorsVisible?: boolean
-    coordinateScale?: number
     geospatialComposite?: boolean
   }>
 }>

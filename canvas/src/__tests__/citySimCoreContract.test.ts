@@ -19,47 +19,39 @@ import {
   readAuthoritativeCitySimSource,
 } from './citySimAuthoritativeSource'
 
-export function testCitySimAuthoredSourceInitializesGridAndGeographicProfile() {
+export function testCitySimAuthoredSourceInitializesCanonicalPoiZoning() {
   const document = readAuthoritativeCitySimDocument()
   const parsed = parseCitySimAuthoredSource(document)
   assert.equal(parsed.ok, true)
-  const { city, geographicProfile } = parsed.source
-  assert.equal(city.rows, 4)
-  assert.equal(city.columns, 4)
-  assert.equal(city.parcels.length, 16)
+  const { city } = parsed.source
+  assert.equal(city.regionalPoiProfileId, 'adm0:SGP:major-pois/v1')
+  assert.equal(city.rows, 2)
+  assert.equal(city.columns, 3)
+  assert.equal(city.parcels.length, 6)
+  assert.deepEqual(city.parcels.map(parcel => parcel.id), [
+    'marina-bay-sands',
+    'singapore-flyer',
+    'gardens-by-the-bay',
+    'esplanade-theatres-on-the-bay',
+    'the-fullerton-hotel',
+    'raffles-hotel',
+  ])
   assert.equal(city.tick, 0)
   assert.equal(city.treasuryCents, 100_000)
   assert.equal(city.taxRateBasisPoints, 1_000)
   assert.equal(city.population, 15)
-  assert.equal(geographicProfile.id, 'city-sim:civic-seed:geo/v1')
-  assert.equal(
-    geographicProfile.regionalPoiProfileId,
-    'adm0:SGP:major-pois/v1',
-  )
-  assert.equal(geographicProfile.anchor.every(Number.isFinite), true)
-  assert.equal(geographicProfile.parcelWidthMeters > 0, true)
-  assert.equal(geographicProfile.parcelDepthMeters > 0, true)
-  assert.equal(geographicProfile.parcelGapMeters >= 0, true)
-  assert.equal(geographicProfile.aerialInspection.routeCoordinates.length >= 2, true)
-  assert.deepEqual(
-    geographicProfile.aerialInspection.aircraft.coordinate,
-    geographicProfile.aerialInspection.routeCoordinates[0],
-  )
   assert.equal(
     serializeCityGridDocument(readAuthoritativeCitySimSource().city),
     serializeCityGridDocument(city),
   )
   assert.equal(Object.isFrozen(city), true)
-  assert.equal(Object.isFrozen(geographicProfile), true)
 
   for (const malformed of [
     document.replace('  id: "city-sim"', '  id: "flight-sim"'),
-    document.replace(/^  anchor: \[[^\n]+\]\n/m, ''),
-    document.replace('  rows: 4', '  rows: 5'),
-    document.replace(
-      /^  aerial_aircraft_coordinate: \[[^\n]+\]$/m,
-      '  aerial_aircraft_coordinate: [203,0]',
-    ),
+    document.replace(/^  regional_poi_profile_id: [^\n]+\n/m, ''),
+    document.replace('  rows: 2', '  rows: 3'),
+    document.replace('marina-bay-sands,0,0', 'r00c00,0,0'),
+    document.replace('singapore-flyer,0,1', 'marina-bay-sands,0,1'),
   ]) {
     const rejected = parseCitySimAuthoredSource(malformed)
     assert.equal(rejected.ok, false)
@@ -92,11 +84,11 @@ export function testCitySimTickIsDeterministicAndAtomicOnOverflow() {
       pollution: parcel.pollution,
     })),
     [
-      { id: 'r00c00', landValueCents: 10_200, population: 12, pollution: 0 },
-      { id: 'r00c01', landValueCents: 9_100, population: 6, pollution: 0 },
-      { id: 'r00c02', landValueCents: 5_000, population: 0, pollution: 0 },
-      { id: 'r00c03', landValueCents: 5_000, population: 0, pollution: 0 },
-      { id: 'r01c00', landValueCents: 6_950, population: 0, pollution: 3 },
+      { id: 'marina-bay-sands', landValueCents: 10_200, population: 12, pollution: 0 },
+      { id: 'singapore-flyer', landValueCents: 9_100, population: 6, pollution: 0 },
+      { id: 'gardens-by-the-bay', landValueCents: 5_000, population: 0, pollution: 0 },
+      { id: 'esplanade-theatres-on-the-bay', landValueCents: 6_950, population: 0, pollution: 3 },
+      { id: 'the-fullerton-hotel', landValueCents: 5_000, population: 0, pollution: 0 },
     ],
   )
   assert.deepEqual(first.costLog, {
@@ -123,8 +115,8 @@ export function testCitySimTickIsDeterministicAndAtomicOnOverflow() {
 export function testCitySimInvalidZoningDoesNotMutate() {
   const source = readAuthoritativeCitySimSource().city
   const sourceBytes = serializeCityGridDocument(source)
-  const unsupported = zoneCityGridParcel(source, 'r00c02', 'unzoned')
-  const unknown = zoneCityGridParcel(source, 'r99c99', 'residential')
+  const unsupported = zoneCityGridParcel(source, 'gardens-by-the-bay', 'unzoned')
+  const unknown = zoneCityGridParcel(source, 'unknown-poi', 'residential')
   assert.equal(unsupported.ok, false)
   assert.equal(unknown.ok, false)
   assert.equal(unsupported.city, source)
@@ -148,15 +140,15 @@ export function testCitySimCodecCanonicalRoundTripRejectsMalformedBytes() {
     canonical.replace(/\n/g, '\r\n'),
     `${canonical}\n`,
     canonical.replace('tick: 0\ntreasury_cents:', 'treasury_cents: 100000\ntick:'),
-    canonical.replace('schema_id: knowgrph-city-grid/v1', 'schema_id: unsupported/v2'),
+    canonical.replace('schema_id: knowgrph-city-poi-zoning/v1', 'schema_id: unsupported/v2'),
     canonical.replace('tick: 0', 'tick: 00'),
     canonical.replace(
-      'r00c00,0,0,residential,10000,10,0',
-      'r00c00,0,0,residential,10000,10',
+      'marina-bay-sands,0,0,residential,10000,10,0',
+      'marina-bay-sands,0,0,residential,10000,10',
     ),
     canonical.replace(
-      'r00c00,0,0,residential,10000,10,0',
-      'r00c00,0,0,residential,10000,10,0\nr00c00,0,0,residential,10000,10,0',
+      'marina-bay-sands,0,0,residential,10000,10,0',
+      'marina-bay-sands,0,0,residential,10000,10,0\nmarina-bay-sands,0,0,residential,10000,10,0',
     ),
   ]
   for (const malformed of malformedDocuments) {
@@ -198,13 +190,13 @@ export function testCitySimAdvisorIsBoundedZeroCostAndClarifiesWithoutMutation()
 
 export function testCitySimInvocationStrictlyRejectsAdversarialPayloads() {
   const accepted = parseCitySimInvocation(
-    '/game.city @canvas #civic operation=zone parcel=r00c02 type=residential',
+    '/game.city @canvas #civic operation=zone parcel=gardens-by-the-bay type=residential',
   )
   assert.equal(accepted.ok, true)
   if (accepted.ok) {
     assert.deepEqual(accepted.invocation, {
       operation: 'zone',
-      parcelId: 'r00c02',
+      parcelId: 'gardens-by-the-bay',
       zoningType: 'residential',
       scope: null,
     })
@@ -219,12 +211,12 @@ export function testCitySimInvocationStrictlyRejectsAdversarialPayloads() {
     ['/game.city @canvas #civic operation==open', 'malformed-argument'],
     ['/game.city @canvas #civic operation=open extra=value', 'unknown-argument'],
     ['/game.city @canvas #civic operation=unknown', 'unsupported-operation'],
-    ['/game.city @canvas #civic operation=zone parcel=r1c1 type=residential', 'invalid-parcel'],
-    ['/game.city @canvas #civic operation=zone parcel=r00c02 type=unzoned', 'unsupported-zone'],
-    ['/game.city @canvas #civic operation=zone parcel=r00c02', 'missing-argument'],
+    ['/game.city @canvas #civic operation=zone parcel=Gardens-by-the-bay type=residential', 'invalid-parcel'],
+    ['/game.city @canvas #civic operation=zone parcel=gardens-by-the-bay type=unzoned', 'unsupported-zone'],
+    ['/game.city @canvas #civic operation=zone parcel=gardens-by-the-bay', 'missing-argument'],
     ['/game.city @canvas #civic operation=advise', 'missing-argument'],
     ['/game.city @canvas #civic operation=advise scope=region', 'unsupported-scope'],
-    ['/game.city @canvas #civic operation=open parcel=r00c00', 'unexpected-argument'],
+    ['/game.city @canvas #civic operation=open parcel=marina-bay-sands', 'unexpected-argument'],
   ] as const
   for (const [input, expectedCode] of adversarialCases) {
     const result = parseCitySimInvocation(input)

@@ -12,8 +12,8 @@ import {
   type XrCanonicalSceneSpatialSource,
 } from '@/features/three/xrCanonicalSceneSpatialSource'
 import { readXrMotionReferenceRuntime } from '@/features/three/xrMotionReferenceRuntime'
-import { FLIGHT_SIM_AIRCRAFT_ASSET_SPEC } from './assetSpec/flightSimAssetSpec'
 import {
+  FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS,
   FLIGHT_SIM_COLLISION_SEPARATION_METERS,
   FLIGHT_SIM_MIN_CAPTURE_RADIUS_METERS,
   freezeFlightSimAircraftState,
@@ -150,7 +150,7 @@ export function createFlightSimSpatialProfile(
   return Object.freeze({
     id: `flight-sim:${source.projection}:${source.stage.id}:${FLIGHT_SIM_SPATIAL_SCALE_ID}`,
     sourceKey: `${source.projection}:${source.stage.id}:${FLIGHT_SIM_SPATIAL_SCALE_ID}`,
-    aircraftHalfSize: FLIGHT_SIM_AIRCRAFT_ASSET_SPEC.collisionHalfSizeMeters,
+    aircraftHalfSize: FLIGHT_SIM_AIRCRAFT_COLLISION_HALF_SIZE_METERS,
     spawn,
     blockers,
     waypoints,

@@ -25,7 +25,7 @@ run_ready_demo:
   identity_authority: "source-authored run_ready_demo.id"
   imported_path_alias_required: false
   identity_conflict: "fail closed when a known path and source identity disagree"
-  canonical_consumers: ["workspace", "geo-xr-mode", "city-builder", "city-maplibre-overlay", "flight-aerial-overlay"]
+  canonical_consumers: ["workspace", "geo-xr-mode", "city-builder", "city-maplibre-overlay"]
   dev_command: "npm run dev"
   canonical_source_file: "/docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md"
   env_selector: "VITE_KNOWGRPH_RUN_READY_DEMO=city-sim"
@@ -40,7 +40,7 @@ run_ready_demo:
   external_dependencies: []
   forbid_external_copy_or_dependency: true
 city_runtime:
-  schema_id: "knowgrph-city-grid/v1"
+  schema_id: "knowgrph-city-poi-zoning/v1"
   runtime_owner: "one browser-local City Runtime"
   surface_owner: "native MapLibre Geo+XR surface wrapped by SemanticMediaFigure"
   fixed_step_ms: 1000
@@ -51,44 +51,36 @@ city_runtime:
   zone_types: ["unzoned", "residential", "commercial", "industrial"]
   source_authored_only: true
   runtime_dependencies_added: 0
-city_geo_xr:
-  profile_id: "city-sim:civic-seed:geo/v1"
-  regional_poi_profile_id: "adm0:SGP:major-pois/v1"
-  anchor: [103.851959,1.29027]
-  parcel_dimensions_meters: [48,48]
-  parcel_gap_meters: 6
-  parcel_bearing_degrees: 18
-  aerial_route_coordinates: [[103.851959,1.28967],[103.85132,1.2903],[103.85195,1.29087],[103.85261,1.29028],[103.851959,1.28967]]
-  aerial_aircraft_coordinate: [103.851959,1.28967]
-  aerial_aircraft_heading_degrees: 304
-  aerial_aircraft_altitude_meters: 140
+city_regional_poi_zoning:
+  profile_identity_source: "city_initial.regional_poi_profile_id"
   surface_owner: "Geo+XR Mode"
   geo_host_owner: "native MapLibre Geo host"
   geo_policy_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
   city_surface_owner: "native MapLibre Geo+XR host wrapped by the City semantic media figure"
   basemap_owner: "one real native MapLibre basemap"
-  parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre parcel clicks and City Builder coordinate controls"
-  parcel_scale_policy: "project source-authored meter dimensions and gaps once into geographic coordinates at the authored anchor"
-  composition: "one real native MapLibre basemap with companion-owned regional geographic POI layers, source-authored meter-scaled City parcel layers, and independent Flight aircraft/route layers; zero Flight-local XR environment sources or features; zero City-created, active, or visible Three presentation; zero HTML POI markers"
+  parcel_input_owner: "one City Runtime selectedParcelId shared by MapLibre POI clicks and City Builder POI controls"
+  parcel_identity_policy: "each parcel_id exactly equals one RegionalPoiIdentity.id from the selected profile; one-to-one coverage; no alias or remap"
+  ordering_policy: "row and column are deterministic UI ordering only and never geometry"
+  composition: "one real native MapLibre basemap with companion-owned regional geographic POI surfaces carrying read-only City zoning state; existing Flight aircraft and route layers remain independently owned; zero City-authored geometry, Flight data, Three presentation, or HTML POI markers"
   layer_order: ["regional-context", "city", "flight"]
   native_xr_physics_stage_active: false
   authored_graph_scene_active: false
   duplicate_map_or_canvas_forbidden: true
-city_parcel_projection:
+city_poi_zoning_projection:
   source_owner: "gympgrph/src/cityGeoOverlay.ts"
   source_id: "kg-city-sim:geo-overlay"
   layer_owner: "gympgrph/src/cityGeoOverlayMapLibre.ts"
-  layers: ["fill", "extrusion", "outline", "selected-parcel"]
+  layers: ["fill", "extrusion", "outline", "selected-poi"]
   state_owner: "one live City Runtime snapshot"
   framing_owner: "gympgrph/src/cityGeoOverlayMapLibreController.ts"
-  camera_policy: "fit the union of admitted regional geographic POI bounds and source-authored parcel bounds into the visible panel-adjusted aperture and restore prior padding"
+  camera_policy: "fit the selected regional POI profile bounds into the visible panel-adjusted aperture and restore prior padding"
   duplicate_source_or_layer_ids_forbidden: true
 regional_geographic_poi_projection:
-  profile_identity_source: "city_geo_xr.regional_poi_profile_id"
+  profile_identity_source: "city_initial.regional_poi_profile_id"
   profile_fact_authority: "/docs/documents/knowgrph-adm0-singapore-prd-tad-ard.companion.md"
   source_id: "kg-geo-xr:regional-poi"
   layers: ["kg-geo-xr:regional-poi:fill", "kg-geo-xr:regional-poi:extrusion", "kg-geo-xr:regional-poi:outline", "kg-geo-xr:regional-poi:locator", "kg-geo-xr:regional-poi:label"]
-  feature_contract: "nine companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus three topology-aware representative Point locators"
+  feature_contract: "companion-authored exact geographic Polygon rings with real-metre base/height, accuracy, and provenance plus one topology-aware representative Point locator per POI"
   presentation_policy: "read-only MapLibre regional-context band below City parcels and Flight route/aircraft; surface-only massing plus fixed-pixel locators and collision-aware variable-anchor labels"
   storage_policy: "checked-in"
   runtime_network_required: false
@@ -105,31 +97,19 @@ city_semantic_media:
   selection_target: "live MapLibre canvas while City runtime active"
   direct_canvas_accessible_name_required: true
   figure_selection_marker_forbidden: true
-  pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder coordinate controls own parcel selection"
+  pointer_capture_owner: "none; MapLibre owns Geo+XR viewport gestures and City Builder POI controls own parcel selection"
   wrapper_added_generic_div_or_aria_hidden_forbidden: true
-city_aerial_projection:
-  behavior: "deterministic read-only stopped aircraft and route"
-  phase: "stopped"
-  spatial_source: "this source document's typed city_geo_xr geographic profile"
-  adapter_owner: "canvas/src/features/game-city-sim/citySimAerialInspectionProjection.ts"
-  adapter_function: "projectCitySimAerialInspectionToGeospatialOverlay"
-  presentation_owner: "city"
-  overlay_store_owner: "gympgrph/src/flightGeoOverlay.ts"
-  maplibre_projection_owner: "gympgrph/src/flightGeoOverlayMapLibre.ts"
-  shared_publisher_owner: "canvas/src/components/CanvasViewportGeospatialOverlay.tsx"
-  flight_gameplay_active: false
-  flight_readiness_claimed: false
-  duplicate_source_or_layers_forbidden: true
 city_camera:
-  framing: "union of admitted regional geographic POI bounds and source-authored City parcel bounds in the visible MapLibre aperture"
+  framing: "selected regional geographic POI bounds in the visible MapLibre aperture"
   projection: "MapLibre"
   canvas_mode: "geo-xr"
   owner: "native MapLibre Geo host"
   resize_rule: "observe the map and occluding workspace panels, refit without cumulative padding, restore prior padding on handoff"
 city_initial:
   city_name: "Civic Seed"
-  rows: 4
-  columns: 4
+  regional_poi_profile_id: "adm0:SGP:major-pois/v1"
+  rows: 2
+  columns: 3
   tick: 0
   treasury_cents: 100000
   tax_rate_basis_points: 1000
@@ -148,11 +128,11 @@ floating_panel:
   primary_controls: ["Open", "Start", "Stop", "Restart", "Zone", "Advise", "Save", "Reset", "Exit"]
   shared_snapshot: "all projections subscribe to one immutable City Runtime revision"
   projections:
-    media: "palette and parcel appearance; handoff to City Builder"
+    media: "palette and regional POI zoning appearance; handoff to City Builder"
     animation: "fixed-step playback and Start or Stop delegation"
-    motionControl: "normalized input and selected parcel"
+    motionControl: "normalized input and selected regional POI"
     gameMode: "exclusive city-overlay state and enter or exit handoff"
-    flightSim: "read-only aerial-inspection handoff; no second city world"
+    flightSim: "independently owned existing Flight overlay status; no City-authored aircraft or route"
     camera: "native MapLibre framing"
 advisor:
   implementation: "deterministic browser-local heuristic"
@@ -167,8 +147,8 @@ advisor:
   estimated_cost_usd: 0
 persistence:
   owner: "existing WorkspaceFs"
-  path: "/game-city-sim/city-grid.md"
-  schema_id: "knowgrph-city-grid/v1"
+  path: "/game-city-sim/city-poi-zoning.md"
+  schema_id: "knowgrph-city-poi-zoning/v1"
   format: "ordered KGC frontmatter plus canonical CSV parcel table"
   save_policy: "explicit Save only"
   verification: "write, read same path, compare bytes, parse, compare committed state"
@@ -177,7 +157,7 @@ invocation:
   prefix: "/game.city @canvas #civic"
   keys: ["operation", "parcel", "type", "scope"]
   operations: ["open", "start", "stop", "restart", "zone", "advise", "save", "reset", "exit"]
-  zone: "/game.city @canvas #civic operation=zone parcel=<rNNcNN> type=residential|commercial|industrial"
+  zone: "/game.city @canvas #civic operation=zone parcel=<regional-poi-identity-id> type=residential|commercial|industrial"
   advise: "/game.city @canvas #civic operation=advise scope=parcel|district"
   rejection: "typed diagnostic and no state mutation"
 mcp:
@@ -189,10 +169,10 @@ mcp:
 proof_contract:
   start: "neutral browser with the native MapLibre basemap, no persisted city state, no Flight-local XR environment source/layers, no kg-city-sim:geo-overlay source/layers, and no kg-geo-xr:regional-poi source/layers"
   activation: "apply this Source File after Source Files bootstrap is ready"
-  assertions: ["Geo+XR Mode", "one real native MapLibre basemap wrapped by SemanticMediaFigure", "live MapLibre canvas has the direct City accessible name and sole selection marker", "nine exact companion-selected regional geographic POI surfaces plus three visible fixed-pixel identity locators and labels", "source-authored rows times columns correctly meter-scaled City parcel features", "visible City zone and selection layers", "no Flight-local XR environment source, layers, or features", "regional-context then City then Flight layer order", "composite regional-plus-parcel MapLibre framing and gestures", "zero City-created, active, or visible Three stage, mesh, camera, or pointer owner; retained shared canvas is inactive and pointer-transparent", "zero HTML POI marker, generic selectable wrapper, or aria-hidden decoration", "stopped aircraft and route through independent existing Flight Geo layers", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
-  actions: ["Zone", "one Tick", "Stop fence", "Advice", "Save and read-back", "six panel projections", "Exit removes City parcel source/layers, clears City-selected regional presentation, and restores prior regional/FloatingPanel/Canvas state exactly once"]
+  assertions: ["Geo+XR Mode", "one real native MapLibre basemap wrapped by SemanticMediaFigure", "live MapLibre canvas has the direct City accessible name and sole selection marker", "all exact companion-selected regional geographic POI surfaces plus one visible fixed-pixel identity locator and label per POI", "six City parcels keyed one-to-one by canonical RegionalPoiIdentity ids", "visible City zone and selection layers on companion-owned POI geometry", "no City-authored geographic or Flight fields", "regional-context then City then independently owned Flight layer order", "regional POI MapLibre framing and gestures", "zero City-created, active, or visible Three stage, mesh, camera, or pointer owner; retained shared canvas is inactive and pointer-transparent", "zero HTML POI marker, generic selectable wrapper, or aria-hidden decoration", "Flight bootstrap, camera, gameplay, and readiness inactive", "no duplicate map or source/layer ids", "authored metrics", "clean console"]
+  actions: ["Select POI", "Zone", "one Tick", "Stop fence", "Advice", "Save and read-back", "six panel projections", "Exit clears City-selected regional presentation and restores prior regional/FloatingPanel/Canvas state exactly once"]
   exact_sha_required: true
-  repeatability: "repeat from neutral state and compare initial serialized bytes, regional feature/provenance digest, and aerial projection"
+  repeatability: "repeat from neutral state and compare initial serialized bytes and regional feature/provenance digest"
 release_boundary:
   development_only: true
   protected_integration_is_separate: true
@@ -211,13 +191,13 @@ flow:
       "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
       output: {key: output, type: string, value: "Apply this source from a neutral workspace to request City Builder activation."}
       state: {key: state, type: string, value: "proof-pending"}
-    - id: {key: id, type: string, value: "city_grid"}
-      type: {key: type, type: string, value: "CityGrid"}
-      label: {key: label, type: string, value: "Deterministic Parcel Grid"}
+    - id: {key: id, type: string, value: "city_poi_zoning"}
+      type: {key: type, type: string, value: "CityPoiZoning"}
+      label: {key: label, type: string, value: "Deterministic POI Zoning"}
       position: {key: position, type: object, value: {"x":0,"y":40}}
-      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:city_grid"}
+      "flow:widgetFormId": {key: "flow:widgetFormId", type: string, value: "fm:city_poi_zoning"}
       "frontmatter:primitive": {key: "frontmatter:primitive", type: string, value: "node"}
-      output: {key: output, type: string, value: "Zone a parcel, commit one deterministic economy tick, and inspect the shared revision."}
+      output: {key: output, type: string, value: "Zone a canonical regional POI, commit one deterministic economy tick, and inspect the shared revision."}
       state: {key: state, type: string, value: "proof-pending"}
     - id: {key: id, type: string, value: "city_save"}
       type: {key: type, type: string, value: "CitySaveReadback"}
@@ -239,37 +219,25 @@ renderer, camera, and viewport gestures. `SemanticMediaFigure` wraps that
 geospatial projection directly as a labeled semantic City media stage; City
 creates and activates zero Three.js/React Three Fiber stage, mesh, camera, or
 pointer owner. Any retained shared Canvas remains invisible, inactive, and
-pointer-transparent. MapLibre parcel clicks and City Builder controls dispatch
+pointer-transparent. MapLibre POI clicks and City Builder controls dispatch
 to the same City Runtime selection owner.
 
-The source parser initializes the City grid and geographic profile from this
-document. `kg-city-sim:geo-overlay` projects all live parcels into the retained
-map as zone fill, extrusion, outline, and selected-parcel layers; zoning,
-economy ticks, and selection update that source from the same runtime revision.
-The `regional_poi_profile_id` resolves one immutable geographic profile whose
-locale facts remain solely in the selected companion. Its exact geographic
-rings, real-metre heights, accuracy, and provenance project through nine
-surface features plus three topology-aware representative identity locators in
-`kg-geo-xr:regional-poi`. Its five MapLibre layers keep massing below City
-parcels and make each POI visible through a fixed-pixel locator and
-collision-aware variable-anchor label. City does not copy or mutate that
-profile.
+The source parser initializes one POI-zoning state from this document. Its
+`regional_poi_profile_id` resolves one immutable geographic profile whose
+identities, exact rings, real-metre heights, accuracy, and provenance remain
+solely in the selected companion. Every City `parcel_id` must equal exactly one
+`RegionalPoiIdentity.id`, and the six rows must cover that selected profile
+one-to-one in profile order. Row and column fields are deterministic UI order
+only; they never generate, position, scale, rotate, or otherwise modify
+geometry. `kg-city-sim:geo-overlay` projects only live zone and selection state
+onto the companion-owned surfaces. City authors no geographic anchor,
+dimensions, gaps, bearing, route, aircraft, or height.
 
-City also uses `projectCitySimAerialInspectionToGeospatialOverlay` to derive one
-deterministic route and one stopped aircraft from the typed `city_geo_xr`
-profile authored in this document. The shared `CanvasViewport` geospatial
-publisher sends that result with atomic presentation owner `city` and
-free-orbit metadata through the existing Flight overlay store and MapLibre
-sources/layers. It does not project the selected Flight-local XR environment,
-its local stage, derived XR POI presentation, source, or features into the City
-presentation. That absence does not suppress the separate regional geographic
-POI band. Geographic context remains owned by the real native MapLibre
-basemap; source-authored City parcel dimensions and gaps are converted from
-meters to geographic coordinates exactly once. Regional geographic POIs render
-below the City parcel stack, and the stopped aircraft and route remain above
-both. The native MapLibre camera frames the union of regional POI and parcel
-bounds inside the visible aperture. That presentation path cannot install the
-Flight bootstrap style, camera, padding, gameplay, controls, mission, or
+The existing MapLibre host and regional POI utilities own geographic context
+and camera framing. Existing Flight route and aircraft overlays remain
+independently owned and may compose above City without City copying, adapting,
+or activating Flight data. City does not project a Flight-local XR environment
+or install Flight bootstrap, camera, padding, gameplay, controls, mission, or
 readiness. City creates no duplicate map, source/layer ids, Canvas, renderer,
 or parallel HTML POI marker layer.
 
@@ -282,7 +250,7 @@ accessible name and the sole media-selection marker while City is active; the
 figure keeps its `figcaption` but carries no competing selection marker. Neither
 wrapper nor canvas adds `aria-hidden` or captures pointer input, so selection
 tooling can identify the stage without stealing MapLibre gestures or City
-Builder parcel input. No generic replacement wrapper or regional HTML marker
+Builder POI input. No generic replacement wrapper or regional HTML marker
 creates a competing selection target.
 
 The normative requirements live at
@@ -291,29 +259,19 @@ not establish runtime readiness by declaration. Its status stays
 `proof-pending` until focused tests and neutral browser evidence pass at the
 exact candidate SHA.
 
-## Authored initial parcel grid
+## Authored initial POI zoning
 
-The source parser must initialize the City Runtime from exactly this parcel
+The source parser must initialize the City Runtime from exactly this POI-zoning
 table and the `city_initial` metadata in frontmatter:
 
 ```csv
 parcel_id,row,column,zone,land_value_cents,population,pollution
-r00c00,0,0,residential,10000,10,0
-r00c01,0,1,commercial,9000,5,0
-r00c02,0,2,unzoned,5000,0,0
-r00c03,0,3,unzoned,5000,0,0
-r01c00,1,0,industrial,7000,0,2
-r01c01,1,1,unzoned,5000,0,0
-r01c02,1,2,unzoned,5000,0,0
-r01c03,1,3,unzoned,5000,0,0
-r02c00,2,0,unzoned,5000,0,0
-r02c01,2,1,unzoned,5000,0,0
-r02c02,2,2,unzoned,5000,0,0
-r02c03,2,3,unzoned,5000,0,0
-r03c00,3,0,unzoned,5000,0,0
-r03c01,3,1,unzoned,5000,0,0
-r03c02,3,2,unzoned,5000,0,0
-r03c03,3,3,unzoned,5000,0,0
+marina-bay-sands,0,0,residential,10000,10,0
+singapore-flyer,0,1,commercial,9000,5,0
+gardens-by-the-bay,0,2,unzoned,5000,0,0
+esplanade-theatres-on-the-bay,1,0,industrial,7000,0,2
+the-fullerton-hotel,1,1,unzoned,5000,0,0
+raffles-hotel,1,2,unzoned,5000,0,0
 ```
 
 ## Local use
@@ -325,42 +283,41 @@ r03c03,3,3,unzoned,5000,0,0
    inactive, and Flight gameplay is inactive.
 4. Open Explorer -> Source Files and wait for bootstrap readiness.
 5. Open this document and apply it.
-6. Confirm Geo+XR Mode shows nine companion-selected regional geographic POI
-   surfaces at their exact rings and real-metre heights plus three visible
-   fixed-pixel identity locators and labels, with the source-authored,
-   meter-scaled 4 by 4 parcel grid above them and the stopped aircraft and route
-   above both on the real native MapLibre basemap. Confirm no Flight-local XR
-   environment source or features exist and the camera frames the regional
-   features plus parcels. Then confirm City Builder opens with tick `0`,
+6. Confirm Geo+XR Mode shows every companion-selected regional geographic POI
+   surface at its exact rings and real-metre height plus one visible fixed-pixel
+   identity locator and label per POI, with the six source-authored zoning
+   states projected onto those exact surfaces. Confirm no City-authored
+   geographic or Flight data exists and the camera frames the regional
+   features. Then confirm City Builder opens with tick `0`,
    treasury `100000` cents, and population `15`.
-7. Confirm the existing Flight Geo layers show this document's authored City
-   route and stopped aircraft without opening Flight gameplay or
-   readiness.
+7. If the existing Flight Geo overlay is present, confirm it remains
+   independently owned and no City source field controls its route or aircraft.
 
 The simulation does not auto-start and does not auto-save.
 
 ## Core loop
 
-Select `r00c02`, assign a zone, Start, observe one committed tick, then Stop.
+Select `gardens-by-the-bay`, assign a zone, Start, observe one committed tick,
+then Stop.
 The next tick uses the exact v1 coefficients in frontmatter. Stop must fence
 queued ticks. Advice returns at most two local heuristic rounds and never
 changes a parcel by itself.
 
-Save writes only `/game-city-sim/city-grid.md`, reads that path back, compares
+Save writes only `/game-city-sim/city-poi-zoning.md`, reads that path back, compares
 bytes and parsed state, and reports success only after both comparisons pass.
 Malformed existing bytes remain untouched and block Start/Restart; Reset
-restores this authored grid in memory without overwriting the path.
+restores this authored POI zoning in memory without overwriting the path.
 
 ## FloatingPanel checks
 
 All projections must report the same runtime revision:
 
-- Media: palette and parcel appearance;
+- Media: palette and regional POI zoning appearance;
 - Animation: fixed-step playback;
-- Motion Control: normalized input and selected parcel;
+- Motion Control: normalized input and selected regional POI;
 - Game Mode: exclusive city-overlay state;
-- Flight Sim: read-only City aerial handoff with no Flight gameplay or second
-  city world;
+- Flight Sim: independently owned existing Flight overlay status with no
+  City-authored aircraft or route;
 - Camera: native MapLibre framing.
 
 City Builder remains the complete editing surface. Exit restores the prior
@@ -377,23 +334,23 @@ restores a Three camera.
   `kg-city-sim:geo-overlay` source/layers, and no `kg-geo-xr:regional-poi`
   source/layers.
 - [ ] Source application alone selects Geo+XR, retains one native MapLibre host
-  wrapped by `SemanticMediaFigure`, and loads the authored grid in City
+  wrapped by `SemanticMediaFigure`, and loads the authored POI zoning in City
   Builder.
-- [ ] Sixteen live parcel features render through the City source/layers;
-  MapLibre clicks and City Builder controls share parcel selection; one zone
+- [ ] Six live POI zoning features render through the City source/layers;
+  MapLibre clicks and City Builder controls share POI selection; one zone
   and selection mutation is visible; and zero City-created, active, or visible
   Three.js/R3F stage/mesh/camera mounts. Any retained shared canvas is inactive
   and pointer-transparent.
 - [ ] The real native MapLibre basemap remains the only geographic renderer.
   The companion-selected regional geographic POI collection preserves its
-  nine exact rings, real-metre heights, accuracy, and provenance below City
-  parcels, plus three visible identity locators and labels; the MapLibre camera
-  frames the POIs plus parcel bounds. No selected
+  exact rings, real-metre heights, accuracy, and provenance below City parcels,
+  plus one visible identity locator and label per POI; the MapLibre camera
+  frames the selected POI profile. No selected
   Flight-local XR environment source or features exist in the City
-  presentation. Source-authored City parcels project their meter dimensions
-  and gaps once, and the independent existing Flight source/layers show the
-  deterministic stopped aircraft/route above both lower bands without Flight
-  bootstrap, camera, padding, gameplay, readiness, or duplicate
+  presentation. City authors no geometry, height, anchor, dimensions, gaps,
+  bearing, route, or aircraft; independent existing Flight source/layers may
+  compose above City without Flight bootstrap, camera, padding, gameplay,
+  readiness, or duplicate
   map/source/layer ids.
 - [ ] The native XR physics playground and authored graph scene remain inactive;
   the active City media `figure` retains its caption, and the live MapLibre
@@ -406,11 +363,11 @@ restores a Three camera.
 - [ ] Media, Animation, Motion Control, Game Mode, Flight Sim, and Camera show
   one shared revision and their contracted projections.
 - [ ] Browser console remains free of runtime errors.
-- [ ] Exit removes the City parcel source/layers, clears the City-selected
+- [ ] Exit removes the City zoning source/layers, clears the City-selected
   regional presentation without mutating its companion facts, and restores
   prior regional, FloatingPanel, and Canvas state exactly once.
 - [ ] A second neutral run produces byte-identical initial serialization and
-  equal regional feature/provenance and aerial-projection digests.
+  an equal regional feature/provenance digest.
 - [ ] Protected integration completes for the verified candidate.
 
 No box may be checked from source inspection alone. Protected integration,
