@@ -6,17 +6,8 @@ import { isPlainObject } from '@/lib/graph/value'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const EDGE_MARKER_NAMESPACE_ATTR = 'data-kg-edge-marker-namespace'
 const EDGE_MARKER_DEFS_ATTR = 'data-kg-edge-marker-defs'
-
-export const EDGE_MARKER_SHAPES: readonly EdgeMarkerShape[] = [
-  'none',
-  'arrow',
-  'arrow-open',
-  'circle',
-  'diamond',
-  'bar',
-]
-
-export const EDGE_MARKER_SIZES: readonly EdgeMarkerSize[] = ['small', 'medium', 'large']
+const EDGE_MARKER_RENDER_SHAPES: ReadonlyArray<Exclude<EdgeMarkerShape, 'none'>> = ['arrow', 'arrow-open', 'circle', 'diamond', 'bar']
+const EDGE_MARKER_RENDER_SIZES: ReadonlyArray<EdgeMarkerSize> = ['small', 'medium', 'large']
 
 export type EdgeMarkerPresentation = {
   start: EdgeMarkerShape
@@ -31,17 +22,32 @@ export type EdgeMarkerRegistry = {
 
 let edgeMarkerNamespaceCounter = 0
 
-const isEdgeMarkerShape = (value: unknown): value is EdgeMarkerShape =>
-  typeof value === 'string' && EDGE_MARKER_SHAPES.includes(value.trim() as EdgeMarkerShape)
+const readMarkerShape = (value: unknown): EdgeMarkerShape | null => {
+  const normalized = typeof value === 'string' ? value.trim() : ''
+  switch (normalized) {
+    case 'none':
+    case 'arrow':
+    case 'arrow-open':
+    case 'circle':
+    case 'diamond':
+    case 'bar':
+      return normalized
+    default:
+      return null
+  }
+}
 
-const isEdgeMarkerSize = (value: unknown): value is EdgeMarkerSize =>
-  typeof value === 'string' && EDGE_MARKER_SIZES.includes(value.trim() as EdgeMarkerSize)
-
-const readMarkerShape = (value: unknown): EdgeMarkerShape | null =>
-  isEdgeMarkerShape(value) ? value.trim() as EdgeMarkerShape : null
-
-const readMarkerSize = (value: unknown): EdgeMarkerSize | null =>
-  isEdgeMarkerSize(value) ? value.trim() as EdgeMarkerSize : null
+const readMarkerSize = (value: unknown): EdgeMarkerSize | null => {
+  const normalized = typeof value === 'string' ? value.trim() : ''
+  switch (normalized) {
+    case 'small':
+    case 'medium':
+    case 'large':
+      return normalized
+    default:
+      return null
+  }
+}
 
 const readEdgeProperties = (edge: GraphEdge): Record<string, unknown> =>
   isPlainObject(edge?.properties) ? edge.properties as Record<string, unknown> : {}
@@ -53,10 +59,7 @@ const shouldUseLegacyDirectedMarker = (
 ): boolean => {
   const label = String(edge?.label || '')
   if (schema.edgeStyles?.[label]?.arrow === true) return true
-  const keywordKind = typeof properties['keyword:kind'] === 'string'
-    ? properties['keyword:kind'].trim()
-    : ''
-  if (!keywordKind) return false
+  if (typeof properties['keyword:kind'] !== 'string' || !properties['keyword:kind'].trim()) return false
   const directed = properties['keyword:directed']
   return typeof directed === 'boolean' ? directed : true
 }
@@ -77,11 +80,6 @@ export const readEdgeMarkerPresentation = (
     ?? readMarkerSize(style.markerSize)
     ?? 'medium'
   return { start, end, size }
-}
-
-export const edgeHasDirectionalMarker = (edge: GraphEdge, schema: GraphSchema): boolean => {
-  const marker = readEdgeMarkerPresentation(edge, schema)
-  return marker.start !== 'none' || marker.end !== 'none'
 }
 
 export const edgeUsesAuthoredArrowPath = (edge: GraphEdge): boolean => {
@@ -128,25 +126,21 @@ const appendMarkerGeometry = (
   marker.appendChild(path)
 }
 
-const markerDimensionBySize: Record<EdgeMarkerSize, string> = {
-  small: '5.5',
-  medium: '7',
-  large: '9',
+const readMarkerDimension = (size: EdgeMarkerSize): string => {
+  switch (size) {
+    case 'small':
+      return '5.5'
+    case 'large':
+      return '9'
+    default:
+      return '7'
+  }
 }
 
-const markerRefXByShape: Record<Exclude<EdgeMarkerShape, 'none'>, string> = {
-  arrow: '11',
-  'arrow-open': '11',
-  circle: '6',
-  diamond: '6',
-  bar: '6',
-}
+const readMarkerRefX = (shape: Exclude<EdgeMarkerShape, 'none'>): string => shape.startsWith('arrow') ? '11' : '6'
 
-const markerId = (
-  namespace: string,
-  shape: Exclude<EdgeMarkerShape, 'none'>,
-  size: EdgeMarkerSize,
-): string => `${namespace}-${shape}-${size}`
+const markerId = (namespace: string, shape: Exclude<EdgeMarkerShape, 'none'>, size: EdgeMarkerSize): string =>
+  `${namespace}-${shape}-${size}`
 
 const appendMarkerDefinition = (
   defs: SVGDefsElement,
@@ -157,15 +151,15 @@ const appendMarkerDefinition = (
   const marker = defs.ownerDocument.createElementNS(SVG_NS, 'marker')
   marker.setAttribute('id', markerId(namespace, shape, size))
   marker.setAttribute('viewBox', '0 0 12 12')
-  marker.setAttribute('refX', markerRefXByShape[shape])
+  marker.setAttribute('refX', readMarkerRefX(shape))
   marker.setAttribute('refY', '6')
-  marker.setAttribute('markerWidth', markerDimensionBySize[size])
-  marker.setAttribute('markerHeight', markerDimensionBySize[size])
+  const markerDimension = readMarkerDimension(size)
+  marker.setAttribute('markerWidth', markerDimension)
+  marker.setAttribute('markerHeight', markerDimension)
   marker.setAttribute('markerUnits', 'strokeWidth')
   marker.setAttribute('orient', 'auto-start-reverse')
   marker.setAttribute('overflow', 'visible')
   marker.setAttribute('data-kg-edge-marker-shape', shape)
-  marker.setAttribute('data-kg-edge-marker-size', size)
   appendMarkerGeometry(marker, shape)
   defs.appendChild(marker)
 }
@@ -182,9 +176,8 @@ export const ensureEdgeMarkerRegistry = (svg: SVGSVGElement): EdgeMarkerRegistry
   if (!defs) {
     defs = svg.ownerDocument.createElementNS(SVG_NS, 'defs')
     defs.setAttribute(EDGE_MARKER_DEFS_ATTR, namespace)
-    for (const shape of EDGE_MARKER_SHAPES) {
-      if (shape === 'none') continue
-      for (const size of EDGE_MARKER_SIZES) appendMarkerDefinition(defs, namespace, shape, size)
+    for (const shape of EDGE_MARKER_RENDER_SHAPES) {
+      for (const size of EDGE_MARKER_RENDER_SIZES) appendMarkerDefinition(defs, namespace, shape, size)
     }
     svg.insertBefore(defs, svg.firstChild)
   }
