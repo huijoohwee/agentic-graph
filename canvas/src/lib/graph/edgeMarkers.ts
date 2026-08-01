@@ -82,11 +82,6 @@ export const readEdgeMarkerPresentation = (
   return { start, end, size }
 }
 
-export const edgeUsesAuthoredArrowPath = (edge: GraphEdge): boolean => {
-  const raw = readEdgeProperties(edge)['visual:arrowD']
-  return typeof raw === 'string' && raw.trim().length > 0
-}
-
 const appendMarkerGeometry = (
   marker: SVGMarkerElement,
   shape: Exclude<EdgeMarkerShape, 'none'>,
@@ -126,19 +121,6 @@ const appendMarkerGeometry = (
   marker.appendChild(path)
 }
 
-const readMarkerDimension = (size: EdgeMarkerSize): string => {
-  switch (size) {
-    case 'small':
-      return '5.5'
-    case 'large':
-      return '9'
-    default:
-      return '7'
-  }
-}
-
-const readMarkerRefX = (shape: Exclude<EdgeMarkerShape, 'none'>): string => shape.startsWith('arrow') ? '11' : '6'
-
 const markerId = (namespace: string, shape: Exclude<EdgeMarkerShape, 'none'>, size: EdgeMarkerSize): string =>
   `${namespace}-${shape}-${size}`
 
@@ -151,9 +133,9 @@ const appendMarkerDefinition = (
   const marker = defs.ownerDocument.createElementNS(SVG_NS, 'marker')
   marker.setAttribute('id', markerId(namespace, shape, size))
   marker.setAttribute('viewBox', '0 0 12 12')
-  marker.setAttribute('refX', readMarkerRefX(shape))
+  marker.setAttribute('refX', shape === 'arrow' || shape === 'arrow-open' ? '11' : '6')
   marker.setAttribute('refY', '6')
-  const markerDimension = readMarkerDimension(size)
+  const markerDimension = size === 'small' ? '5.5' : size === 'large' ? '9' : '7'
   marker.setAttribute('markerWidth', markerDimension)
   marker.setAttribute('markerHeight', markerDimension)
   marker.setAttribute('markerUnits', 'strokeWidth')

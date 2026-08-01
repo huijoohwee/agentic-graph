@@ -19,7 +19,6 @@ import { isFlowchartCrossEdge } from '@/lib/flowchart/source'
 import { readNodeLabelFontSize2d } from '@/components/GraphCanvas/labelLayout2d'
 import {
   applyEdgeMarkerAttributes,
-  edgeUsesAuthoredArrowPath,
   ensureEdgeMarkerRegistry,
 } from '@/lib/graph/edgeMarkers'
 
@@ -142,8 +141,9 @@ export function applyGraphCanvasStyles2d({
     if (ownerSvg) {
       const markerRegistry = ensureEdgeMarkerRegistry(ownerSvg)
       linksSelRef.current.each(function (d: GraphEdge) {
+        const props = (d && typeof d === 'object' ? d.properties : null) as Record<string, unknown> | null
         applyEdgeMarkerAttributes(this, d, schema, markerRegistry, {
-          suppressEnd: edgeUsesAuthoredArrowPath(d),
+          suppressEnd: typeof props?.['visual:arrowD'] === 'string' && props['visual:arrowD'].trim().length > 0,
         })
       })
     }
