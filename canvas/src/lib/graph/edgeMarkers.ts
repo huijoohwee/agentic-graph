@@ -4,8 +4,8 @@ import type { GraphEdge } from '@/lib/graph/types'
 import { isPlainObject } from '@/lib/graph/value'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
-const EDGE_MARKER_NAMESPACE_ATTR = 'data-kg-edge-marker-namespace'
-const EDGE_MARKER_DEFS_ATTR = 'data-kg-edge-marker-defs'
+const EDGE_MARKER_NAMESPACE_ATTR = 'data-kg-em-ns'
+const EDGE_MARKER_DEFS_ATTR = 'data-kg-em-defs'
 const EDGE_MARKER_RENDER_SHAPES: ReadonlyArray<Exclude<EdgeMarkerShape, 'none'>> = ['arrow', 'arrow-open', 'circle', 'diamond', 'bar']
 const EDGE_MARKER_RENDER_SIZES: ReadonlyArray<EdgeMarkerSize> = ['small', 'medium', 'large']
 
@@ -141,7 +141,7 @@ const appendMarkerDefinition = (
   marker.setAttribute('markerUnits', 'strokeWidth')
   marker.setAttribute('orient', 'auto-start-reverse')
   marker.setAttribute('overflow', 'visible')
-  marker.setAttribute('data-kg-edge-marker-shape', shape)
+  marker.setAttribute('data-kg-em-shape', shape)
   appendMarkerGeometry(marker, shape)
   defs.appendChild(marker)
 }

@@ -82,7 +82,7 @@ export function testEdgeMarkerRegistryIsSvgScopedAndContextColored() {
   if (registryA.namespace !== registryAReplay.namespace) throw new Error('expected stable per-SVG marker namespace')
   if (registryA.namespace === registryB.namespace) throw new Error('expected marker namespaces to avoid cross-SVG collisions')
 
-  const markers = svgA.querySelectorAll('marker[data-kg-edge-marker-shape]')
+  const markers = svgA.querySelectorAll('marker[data-kg-em-shape]')
   if (markers.length !== 15) throw new Error(`expected 5 shapes across 3 sizes, got ${markers.length}`)
   const contextColored = svgA.querySelectorAll('[fill="context-stroke"], [stroke="context-stroke"]')
   if (contextColored.length !== 15) {
