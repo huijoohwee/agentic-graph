@@ -15,11 +15,18 @@ import { buildWebsiteCrawlTablePanelMarkdown, isWebsiteCrawlTablePanelMarkdown }
 import { safeWebsitePathSegment } from '@/lib/websites/websitePathUtils'
 import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 
+export const NATIVE_CRAWLER_COMMAND = '/crawler-agent' as const
+export const NATIVE_CRAWLER_SEMANTIC = '#canvas' as const
+export const NATIVE_CRAWLER_POLICY = '@reference-policy' as const
+export const NATIVE_CRAWLER_BINDING = '@url:' as const
+export const NATIVE_CRAWLER_INVOCATION_TEMPLATE =
+  `${NATIVE_CRAWLER_COMMAND} ${NATIVE_CRAWLER_BINDING}https://example.com ${NATIVE_CRAWLER_POLICY} ${NATIVE_CRAWLER_SEMANTIC}` as const
+
 export type NativeCrawlerInvocation = {
-  command: '/crawler-agent' | '/reference.expand'
+  command: typeof NATIVE_CRAWLER_COMMAND | '/reference.expand'
   url: string
-  semantic: '#canvas'
-  policy: '@reference-policy'
+  semantic: typeof NATIVE_CRAWLER_SEMANTIC
+  policy: typeof NATIVE_CRAWLER_POLICY
 }
 
 export type NativeCrawlerInvocationRunResult = {
@@ -121,17 +128,17 @@ export const parseNativeCrawlerInvocation = (input: unknown): NativeCrawlerInvoc
   const tokens = new Set(splitInvocationTokenSegments(text)
     .filter(segment => segment.kind === 'token')
     .map(segment => segment.value.toLowerCase()))
-  const command = tokens.has('/crawler-agent')
-    ? '/crawler-agent'
+  const command = tokens.has(NATIVE_CRAWLER_COMMAND)
+    ? NATIVE_CRAWLER_COMMAND
     : tokens.has('/reference.expand')
       ? '/reference.expand'
       : null
-  if (!command || !tokens.has('#canvas') || !tokens.has('@reference-policy')) return null
+  if (!command || !tokens.has(NATIVE_CRAWLER_SEMANTIC) || !tokens.has(NATIVE_CRAWLER_POLICY)) return null
   const rawUrl = /(?:^|\s)@url\s*:\s*(https?:\/\/\S+)/i.exec(text)?.[1]?.replace(/[),.;]+$/, '') || ''
   try {
     const url = new URL(rawUrl)
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null
-    return { command, url: url.toString(), semantic: '#canvas', policy: '@reference-policy' }
+    return { command, url: url.toString(), semantic: NATIVE_CRAWLER_SEMANTIC, policy: NATIVE_CRAWLER_POLICY }
   } catch {
     return null
   }

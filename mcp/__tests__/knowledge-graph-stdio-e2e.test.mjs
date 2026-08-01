@@ -12,8 +12,8 @@ import {
   AGENTIC_CANVAS_OS_ROUTING_SCHEMA_ID,
   KNOWLEDGE_GRAPH_INVOCATION_SCHEMA_ID,
 } from "../knowledge-graph-tool-contract.js";
+import { KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE } from "../knowledge-graph-parser-contract.js";
 import { KNOWGRPH_LOCAL_MCP_TOOL_NAMES } from "../local-tool-contract.js";
-import { SOURCE_PARSER_DESCRIPTORS } from "../knowledge-graph/source-parser-registry.mjs";
 import { minimalTextPdf } from "./fixtures/minimal-text-pdf.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -88,7 +88,7 @@ test("official SDK ingests, queries, and explains one local graph over stdio", a
     const parserGenerateResult = await client.callTool({
       name: KNOWGRPH_LOCAL_MCP_TOOL_NAMES.knowledgeGraphParserGenerate,
       arguments: {
-        descriptors: SOURCE_PARSER_DESCRIPTORS,
+        profile: KNOWLEDGE_GRAPH_DEFAULT_PARSER_PROFILE,
       },
     }, undefined, { timeout: 10_000 });
     assert.equal(parserGenerateResult.isError, false, stderrText);

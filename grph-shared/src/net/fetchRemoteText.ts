@@ -173,6 +173,16 @@ async function fetchVia(url: string, options: FetchRemoteTextDetailedOptions, us
   }
 }
 
+/**
+ * An alternate transport only helps when the first transport itself was
+ * unavailable. A response from the remote source is authoritative: replaying
+ * an authorization, rate-limit, server, or content-size response through the
+ * other transport adds traffic without changing its meaning.
+ */
+function canRetryAlternateTransport(result: FetchRemoteTextResult): boolean {
+  return !result.ok && (result.kind === 'network' || result.kind === 'timeout')
+}
+
 export async function fetchRemoteTextDetailed(rawUrl: string, options: FetchRemoteTextDetailedOptions = {}): Promise<FetchRemoteTextResult> {
   const url = coerceFetchUrl(rawUrl)
   if (!url) return { ok: false, kind: 'network', url: rawUrl, usedProxy: false }
@@ -187,11 +197,13 @@ export async function fetchRemoteTextDetailed(rawUrl: string, options: FetchRemo
   if (options.preferProxy) {
     const proxied = await fetchVia(url, options, true)
     if (proxied.ok) return proxied
+    if (!canRetryAlternateTransport(proxied)) return proxied
     return fetchVia(url, options, false)
   }
 
   const direct = await fetchVia(url, options, false)
   if (direct.ok) return direct
+  if (!canRetryAlternateTransport(direct)) return direct
   return fetchVia(url, options, true)
 }
 

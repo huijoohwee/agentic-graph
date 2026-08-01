@@ -117,9 +117,9 @@ def main() -> int:
                 "code": "python_syntax_error",
                 "message": str(error.msg or "Python syntax error"),
                 "lineStart": int(error.lineno or 1),
-                "lineEnd": int(error.end_lineno or error.lineno or 1),
+                "lineEnd": int(getattr(error, "end_lineno", None) or error.lineno or 1),
                 "columnStart": int(error.offset or 1),
-                "columnEnd": int(error.end_offset or error.offset or 1),
+                "columnEnd": int(getattr(error, "end_offset", None) or error.offset or 1),
             }],
         }, sys.stdout, sort_keys=True)
         return 0

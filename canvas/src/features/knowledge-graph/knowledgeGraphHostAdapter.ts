@@ -1,5 +1,6 @@
 import type {
   WorkspaceKnowledgeGraphBridge,
+  WorkspaceKnowledgeGraphImportProgress,
   WorkspaceKnowledgeGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import type { GraphData } from '@/lib/graph/types'
@@ -11,6 +12,9 @@ import {
 
 export const KNOWLEDGE_GRAPH_HOST_ROUTE = '/__knowgrph_knowledge_graph'
 export const KNOWLEDGE_GRAPH_HOST_CAPABILITY_SCHEMA = 'knowgrph-knowledge-graph-host-capability/v1'
+export const KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA = 'knowgrph-knowledge-graph-import-progress/v1'
+
+const MAX_PROGRESS_LINE_CHARACTERS = 2_200_000
 
 const DEFAULT_IGNORED_DIRECTORY_NAMES = new Set([
   '.git',
@@ -175,6 +179,45 @@ export function validateKnowledgeGraphHostResult(value: unknown): WorkspaceKnowl
   }
 }
 
+function isLogicalRelativePath(value: string): boolean {
+  if (!value || value === '.') return true
+  const normalized = value.replaceAll('\\', '/')
+  return !normalized.startsWith('/')
+    && !/^[a-zA-Z]:\//.test(normalized)
+    && !normalized.startsWith('file:')
+    && !normalized.split('/').includes('..')
+}
+
+export function validateKnowledgeGraphHostProgress(value: unknown): WorkspaceKnowledgeGraphImportProgress {
+  const progress = value as Partial<WorkspaceKnowledgeGraphImportProgress> | null
+  if (
+    progress?.schema !== KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA
+    || progress.kind !== 'source-parsed'
+    || !/^kg:graph:[0-9a-f]{32}$/.test(String(progress.graphId || ''))
+    || !/^[0-9a-f]{64}$/.test(String(progress.parserRegistryDigest || ''))
+    || typeof progress.sourcePath !== 'string'
+    || !progress.sourcePath
+    || !isLogicalRelativePath(progress.sourcePath)
+    || !isPositiveInteger(progress.sourceIndex)
+    || !isPositiveInteger(progress.sourceTotal)
+    || progress.sourceIndex > progress.sourceTotal
+    || typeof progress.truncated !== 'boolean'
+  ) {
+    throw new KnowledgeGraphHostError('invalid-progress-frame', 'The canonical knowledge graph host returned invalid progress.')
+  }
+  return {
+    schema: KNOWLEDGE_GRAPH_IMPORT_PROGRESS_SCHEMA,
+    kind: 'source-parsed',
+    graphId: progress.graphId,
+    parserRegistryDigest: progress.parserRegistryDigest,
+    sourcePath: progress.sourcePath,
+    sourceIndex: progress.sourceIndex,
+    sourceTotal: progress.sourceTotal,
+    truncated: progress.truncated,
+    graphData: validateGraphData(progress.graphData),
+  }
+}
+
 async function readHostJson(response: Response): Promise<unknown> {
   let value: unknown = null
   try {
@@ -212,6 +255,103 @@ async function requestJson(fetchImpl: FetchLike, path: string, init?: RequestIni
     )
   }
   return readHostJson(response)
+}
+
+async function requestRepositoryProgressStream(args: {
+  fetchImpl: FetchLike
+  repositoryUrl: string
+  invocation: import('@/features/markdown-explorer/workspaceActionBridge').WorkspaceKnowledgeGraphInvocation | undefined
+  onProgress: (progress: WorkspaceKnowledgeGraphImportProgress) => void
+}): Promise<WorkspaceKnowledgeGraphImportResult> {
+  let response: Response
+  try {
+    response = await args.fetchImpl(`${KNOWLEDGE_GRAPH_HOST_ROUTE}/repositories/stream`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/x-ndjson',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ repositoryUrl: args.repositoryUrl, invocation: args.invocation }),
+    })
+  } catch {
+    throw new KnowledgeGraphHostError(
+      'host-unavailable',
+      'The canonical local knowledge graph host capability is unavailable.',
+    )
+  }
+  if (!response.ok) {
+    await readHostJson(response)
+    throw new KnowledgeGraphHostError('host-request-failed', 'The local knowledge graph host request failed.')
+  }
+  if (!response.headers.get('Content-Type')?.toLowerCase().includes('application/x-ndjson') || !response.body) {
+    throw new KnowledgeGraphHostError('invalid-host-response', 'The local knowledge graph host did not return a progress stream.')
+  }
+
+  let finalResult: WorkspaceKnowledgeGraphImportResult | null = null
+  let buffer = ''
+  const consumeLine = (rawLine: string): void => {
+    const line = rawLine.trim()
+    if (!line) return
+    if (line.length > MAX_PROGRESS_LINE_CHARACTERS) {
+      throw new KnowledgeGraphHostError('invalid-progress-frame', 'The local knowledge graph host returned an oversized progress frame.')
+    }
+    let frame: { type?: unknown; progress?: unknown; result?: unknown; error?: { code?: unknown; message?: unknown } }
+    try {
+      frame = JSON.parse(line) as typeof frame
+    } catch {
+      throw new KnowledgeGraphHostError('invalid-host-response', 'The local knowledge graph host returned invalid progress JSON.')
+    }
+    if (frame.type === 'progress') {
+      if (finalResult) {
+        throw new KnowledgeGraphHostError('invalid-progress-frame', 'The local knowledge graph host sent progress after its result.')
+      }
+      args.onProgress(validateKnowledgeGraphHostProgress(frame.progress))
+      return
+    }
+    if (frame.type === 'result') {
+      if (finalResult) {
+        throw new KnowledgeGraphHostError('invalid-progress-frame', 'The local knowledge graph host sent more than one result.')
+      }
+      finalResult = validateKnowledgeGraphHostResult(frame.result)
+      return
+    }
+    if (frame.type === 'error') {
+      throw new KnowledgeGraphHostError(
+        String(frame.error?.code || 'host-request-failed'),
+        String(frame.error?.message || 'The local knowledge graph host request failed.'),
+      )
+    }
+    throw new KnowledgeGraphHostError('invalid-progress-frame', 'The local knowledge graph host sent an unknown progress frame.')
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      while (true) {
+        const newline = buffer.indexOf('\n')
+        if (newline < 0) break
+        consumeLine(buffer.slice(0, newline))
+        buffer = buffer.slice(newline + 1)
+      }
+      if (buffer.length > MAX_PROGRESS_LINE_CHARACTERS) {
+        throw new KnowledgeGraphHostError('invalid-progress-frame', 'The local knowledge graph host returned an oversized progress frame.')
+      }
+    }
+    buffer += decoder.decode()
+    consumeLine(buffer)
+  } finally {
+    reader.releaseLock()
+  }
+  if (!finalResult) {
+    throw new KnowledgeGraphHostError('invalid-host-response', 'The local knowledge graph host ended before returning an import result.')
+  }
+  return finalResult
 }
 
 async function listDirectoryEntries(handle: FileSystemDirectoryHandle): Promise<DirectoryEntryHandle[]> {
@@ -327,9 +467,17 @@ export function createKnowledgeGraphHostAdapter({
         throw error
       }
     },
-    importRepositoryUrl: async (url, _opts, invocation) => {
+    importRepositoryUrl: async (url, _opts, invocation, onProgress) => {
       await capability()
       const repositoryUrl = normalizeKnowledgeGraphRepositoryRemoteUrl(url)
+      if (onProgress) {
+        return requestRepositoryProgressStream({
+          fetchImpl,
+          repositoryUrl,
+          invocation,
+          onProgress,
+        })
+      }
       return validateKnowledgeGraphHostResult(await requestJson(fetchImpl, '/repositories', {
         method: 'POST',
         body: JSON.stringify({ repositoryUrl, invocation }),

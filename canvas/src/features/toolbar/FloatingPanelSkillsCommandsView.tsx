@@ -50,8 +50,7 @@ export function FloatingPanelSkillsCommandsView() {
     grammarGroupBy,
     prefixFilter,
     searchQuery: search.searchQuery,
-    tokenFilter: targetTokens,
-  }), [grammarGroupBy, prefixFilter, search.searchQuery, targetTokens])
+  }), [grammarGroupBy, prefixFilter, search.searchQuery])
   const visibleGroupKeyValues = React.useMemo(() => visibleGroupKeys.map(group => group.key), [visibleGroupKeys])
   const {
     allCollapsed: allGroupsCollapsed,
@@ -68,6 +67,8 @@ export function FloatingPanelSkillsCommandsView() {
       data-kg-floating-panel-catalog-layout="media-reuse"
       data-kg-floating-panel-skills-commands-media-layout="reuse"
       data-kg-floating-panel-skills-commands-mcp-target={mcpTarget.mcpTool || undefined}
+      data-kg-floating-panel-skills-commands-invocation-target={mcpTarget.target || undefined}
+      data-kg-floating-panel-skills-commands-invocation-target-kind={mcpTarget.targetKind}
       data-kg-floating-panel-skills-commands-mcp-target-status={mcpTarget.status}
       data-kg-floating-panel-skills-commands-mcp-target-action={mcpTarget.resolution?.invocation.action || undefined}
       data-kg-floating-panel-skills-commands-mcp-target-tokens={targetTokens?.join(' ') || undefined}
@@ -186,12 +187,17 @@ export function FloatingPanelSkillsCommandsView() {
       <section className={floatingPanelCatalogBodyClassName()} tabIndex={-1} data-kg-floating-panel-catalog-body="skills-commands" data-kg-floating-panel-skills-commands-list="1" aria-label="Skills & Commands catalog">
         {mcpTarget.status === 'loading' ? (
           <p role="status" data-kg-floating-panel-skills-commands-mcp-feedback="loading">
-            Resolving source-backed MCP command…
+            Resolving source-backed invocation…
           </p>
         ) : null}
         {mcpTarget.status === 'blocked' ? (
           <p role="alert" data-kg-floating-panel-skills-commands-mcp-feedback="blocked">
-            {mcpTarget.error || 'Source-backed MCP command resolution failed.'}
+            {mcpTarget.error || 'Source-backed invocation resolution failed.'}
+          </p>
+        ) : null}
+        {mcpTarget.status === 'ready' && targetTokens?.length ? (
+          <p role="status" data-kg-floating-panel-skills-commands-mcp-feedback="ready">
+            Source-backed invocation selected: {targetTokens.join(' ')}
           </p>
         ) : null}
         {targetingMcpInvocation ? null : <MotionCapturePlatformProjection variant="skills" />}
@@ -201,7 +207,7 @@ export function FloatingPanelSkillsCommandsView() {
           onCollapsedGroupKeysChange={setCollapsedGroupKeys}
           prefixFilter={prefixFilter}
           searchQuery={search.searchQuery}
-          tokenFilter={targetTokens}
+          highlightedTokens={targetTokens}
         />
       </section>
     </section>

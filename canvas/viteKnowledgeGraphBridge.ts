@@ -12,8 +12,11 @@ import {
   KnowledgeGraphRepositoryUrlError,
   normalizeKnowledgeGraphRepositoryRemoteUrl,
 } from './src/features/knowledge-graph/knowledgeGraphRepositoryUrl'
+import {
+  sanitizeKnowledgeGraphImportProgress,
+  sanitizeKnowledgeGraphImportResult,
+} from './viteKnowledgeGraphIngestSanitizer'
 import { runKnowledgeGraphTool } from '../mcp/knowledge-graph-host.js'
-import { SOURCE_PARSER_REGISTRY } from '../mcp/knowledge-graph/source-parser-registry.mjs'
 
 const INGEST_TOOL_NAME = 'knowgrph.knowledge_graph.ingest'
 const MAX_CHUNK_BYTES = 4 * 1024 * 1024
@@ -21,9 +24,6 @@ const MAX_FILES = 250_000
 const MAX_FILE_BYTES = 100_000_000
 const MAX_TOTAL_BYTES = 4_000_000_000
 const MAX_JSON_BYTES = 16 * 1024
-const MAX_PROJECTION_BYTES = 2 * 1024 * 1024
-const MAX_PROJECTION_NODES = 2_000
-const MAX_PROJECTION_EDGES = 5_000
 const GRANT_TTL_MS = 30 * 60 * 1000
 const GRANT_ID = /^[0-9a-f-]{36}$/
 
@@ -32,6 +32,7 @@ type RuntimeIngest = (context: {
   rootDir: string
   env: NodeJS.ProcessEnv
   abortSignal: AbortSignal
+  onProgress?: (progress: unknown) => void | Promise<void>
 }) => Promise<unknown>
 
 type HostBridgeInternalErrorDiagnostic = {
@@ -81,6 +82,22 @@ class HostBridgeError extends Error {
     this.status = status
   }
 }
+
+const sanitizeImportResult = (value: unknown): Record<string, unknown> => (
+  sanitizeKnowledgeGraphImportResult(value, {
+    fail: (code, message, status = 502) => {
+      throw new HostBridgeError(code, message, status)
+    },
+  })
+)
+
+const sanitizeImportProgress = (value: unknown): Record<string, unknown> => (
+  sanitizeKnowledgeGraphImportProgress(value, {
+    fail: (code, message, status = 502) => {
+      throw new HostBridgeError(code, message, status)
+    },
+  })
+)
 
 const sha256 = (value: string | Uint8Array): string => createHash('sha256').update(value).digest('hex')
 
@@ -143,6 +160,44 @@ function sendFailure(
     ok: false,
     error: { code: known.code, message: known.message },
   })
+}
+
+function beginProgressStream(response: ServerResponse): void {
+  response.statusCode = 200
+  response.setHeader('Cache-Control', 'no-store')
+  response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8')
+  response.setHeader('X-Content-Type-Options', 'nosniff')
+  response.flushHeaders()
+}
+
+function writeProgressStreamFrame(response: ServerResponse, value: unknown): void {
+  if (response.writableEnded || response.destroyed) return
+  response.write(`${JSON.stringify(value)}\n`)
+}
+
+function finishProgressStreamFailure(
+  response: ServerResponse,
+  error: unknown,
+  stage: string,
+  onInternalError: BridgeOptions['onInternalError'],
+): void {
+  if (!(error instanceof HostBridgeError)) {
+    const diagnostic = internalErrorDiagnostic(error, stage)
+    try {
+      if (onInternalError) onInternalError(diagnostic)
+      else console.error('[knowgrph] knowledge graph host internal error', diagnostic)
+    } catch {
+      // A diagnostic sink must never replace the fail-closed host response.
+    }
+  }
+  const known = error instanceof HostBridgeError
+    ? error
+    : new HostBridgeError('host-internal-error', 'The local knowledge graph host request failed.', 500)
+  writeProgressStreamFrame(response, {
+    type: 'error',
+    error: { code: known.code, message: known.message },
+  })
+  response.end()
 }
 
 function assertSameOrigin(request: IncomingMessage) {
@@ -219,89 +274,12 @@ function parseCanonicalRepositoryUrl(value: unknown): string {
   }
 }
 
-function sanitizeImportResult(
-  value: unknown,
-  expectedParserRegistryDigest = SOURCE_PARSER_REGISTRY.digest,
-): Record<string, unknown> {
-  const result = value as Record<string, unknown> | null
-  if (!result || result.ok !== true) {
-    const error = result?.error as { code?: unknown; message?: unknown } | undefined
-    throw new HostBridgeError(
-      String(error?.code || 'ingest-failed'),
-      String(error?.message || 'Knowledge graph ingestion failed.'),
-      422,
-    )
-  }
-  const graphId = String(result.graphId || '')
-  const snapshotDigest = String(result.snapshotDigest || '')
-  const parserRegistryDigest = String(result.parserRegistryDigest || '')
-  const counts = result.counts as Record<string, unknown> | undefined
-  const projection = result.projection as Record<string, unknown> | undefined
-  const graphData = projection?.graphData as Record<string, unknown> | undefined
-  if (
-    !/^kg:graph:[0-9a-f]{32}$/.test(graphId)
-    || !/^[0-9a-f]{64}$/.test(snapshotDigest)
-    || !/^[0-9a-f]{64}$/.test(parserRegistryDigest)
-    || parserRegistryDigest !== expectedParserRegistryDigest
-    || typeof result.complete !== 'boolean'
-    || !counts
-    || !projection
-    || projection.readOnly !== true
-    || !/^kg:projection:[0-9a-f]{24}$/.test(String(projection.token || ''))
-    || typeof projection.complete !== 'boolean'
-    || typeof projection.truncated !== 'boolean'
-    || !Number.isInteger(Number(projection.limit))
-    || Number(projection.limit) < 1
-    || Number(projection.limit) > 1_000
-    || (projection.reason !== undefined && typeof projection.reason !== 'string')
-    || graphData?.type !== 'Graph'
-    || !Array.isArray(graphData.nodes)
-    || !Array.isArray(graphData.edges)
-    || graphData.nodes.length > MAX_PROJECTION_NODES
-    || graphData.edges.length > MAX_PROJECTION_EDGES
-  ) {
-    throw new HostBridgeError('invalid-runtime-result', 'The canonical runtime returned an invalid ingest result.', 502)
-  }
-  const sourceCount = Number(counts.sources)
-  const nodeCount = Number(counts.nodes)
-  const edgeCount = Number(counts.edges)
-  if (![sourceCount, nodeCount, edgeCount].every(value => Number.isInteger(value) && value >= 0)) {
-    throw new HostBridgeError('invalid-runtime-result', 'The canonical runtime returned invalid graph counts.', 502)
-  }
-  const safeProjection = {
-    token: String(projection.token),
-    readOnly: true,
-    graphData: {
-      context: graphData.context,
-      type: 'Graph',
-      nodes: graphData.nodes,
-      edges: graphData.edges,
-    },
-    complete: projection.complete,
-    truncated: projection.truncated,
-    limit: Number(projection.limit),
-    ...(projection.reason ? { reason: String(projection.reason).slice(0, 200) } : {}),
-  }
-  if (Buffer.byteLength(JSON.stringify(safeProjection)) > MAX_PROJECTION_BYTES) {
-    throw new HostBridgeError('invalid-runtime-result', 'The canonical runtime projection exceeded its browser byte limit.', 502)
-  }
-  return {
-    handled: true,
-    kind: 'knowledge-graph',
-    graphId,
-    snapshotDigest,
-    parserRegistryDigest,
-    complete: result.complete,
-    counts: { sources: sourceCount, nodes: nodeCount, edges: edgeCount },
-    projection: safeProjection,
-  }
-}
-
 async function defaultRuntimeIngest(context: Parameters<RuntimeIngest>[0]): Promise<unknown> {
   return runKnowledgeGraphTool(INGEST_TOOL_NAME, context.args, {
     rootDir: context.rootDir,
     env: context.env,
     abortSignal: context.abortSignal,
+    onProgress: context.onProgress,
   })
 }
 
@@ -521,6 +499,41 @@ export function createKnowledgeGraphBridgeRequestHandler(options: BridgeOptions)
           await fs.rm(grant.root, { recursive: true, force: true })
         })
         sendJson(response, 200, { ok: true })
+        return true
+      }
+      if (request.method === 'POST' && route === '/repositories/stream') {
+        stage = 'repository-request'
+        const body = await readJson(request)
+        const repositoryUrl = parseCanonicalRepositoryUrl(body.repositoryUrl)
+        const abortController = new AbortController()
+        response.once('close', () => {
+          if (!response.writableEnded) abortController.abort()
+        })
+        beginProgressStream(response)
+        try {
+          stage = 'repository-runtime'
+          const runtimeResult = await runIngest({
+            args: ingestArguments({ repositoryUrl }, body.invocation),
+            rootDir: repoRoot,
+            env: runtimeEnv,
+            abortSignal: abortController.signal,
+            onProgress: progress => {
+              stage = 'repository-progress'
+              writeProgressStreamFrame(response, {
+                type: 'progress',
+                progress: sanitizeImportProgress(progress),
+              })
+            },
+          })
+          stage = 'repository-result'
+          writeProgressStreamFrame(response, {
+            type: 'result',
+            result: sanitizeImportResult(runtimeResult),
+          })
+          response.end()
+        } catch (error) {
+          finishProgressStreamFailure(response, error, stage, options.onInternalError)
+        }
         return true
       }
       if (request.method === 'POST' && route === '/repositories') {

@@ -36,6 +36,7 @@ type SkillsCommandsViewProps = {
   onCollapsedGroupKeysChange?: React.Dispatch<React.SetStateAction<ReadonlySet<string>>>
   prefixFilter?: SkillsCommandsPrefixFilter
   searchQuery?: string
+  highlightedTokens?: readonly string[]
   tokenFilter?: readonly string[]
 }
 
@@ -157,6 +158,7 @@ export default function SkillsCommandsView({
   onCollapsedGroupKeysChange,
   prefixFilter = 'all',
   searchQuery = '',
+  highlightedTokens,
   tokenFilter,
 }: SkillsCommandsViewProps) {
   const grammarCatalog = useAgenticOsRemoteGrammarCatalog({ sigils: ['/', '#', '@'] })
@@ -173,6 +175,10 @@ export default function SkillsCommandsView({
     [grammarCatalog.version, prefixFilter, searchQuery, tokenFilter],
   )
   const entryGroups = React.useMemo(() => groupSkillsCommandsRenderEntries(renderEntries, grammarGroupBy), [grammarGroupBy, renderEntries])
+  const highlightedTokenSet = React.useMemo(
+    () => new Set((highlightedTokens || []).map(token => token.toLowerCase())),
+    [highlightedTokens],
+  )
   const [uncontrolledCollapsedGroupKeys, setUncontrolledCollapsedGroupKeys] = React.useState<ReadonlySet<string>>(() => new Set())
   const collapsedGroupKeys = controlledCollapsedGroupKeys ?? uncontrolledCollapsedGroupKeys
   const setCollapsedGroupKeys = onCollapsedGroupKeysChange ?? setUncontrolledCollapsedGroupKeys
@@ -254,15 +260,20 @@ export default function SkillsCommandsView({
                   {group.entries.map(({ grammar, option }) => {
                     const iconKey = resolveMainPanelInvocationSubjectIconKey(option)
                     const metaLabel = [option.group, option.summary, option.sourcePath].filter(Boolean).join(' | ')
+                    const highlighted = highlightedTokenSet.has(option.token.toLowerCase())
                     return (
                       <article
                         key={option.id}
-                        className={floatingPanelCatalogCompactRowClassName()}
+                        className={cn(
+                          floatingPanelCatalogCompactRowClassName(),
+                          highlighted && 'ring-1 ring-sky-400/70 dark:ring-sky-300/70',
+                        )}
                         data-kg-floating-panel-catalog-row="skills-commands"
                         data-kg-floating-panel-catalog-row-layout={FLOATING_PANEL_CATALOG_COMPACT_ROW_LAYOUT}
                         data-kg-skill-command-row={option.id}
                         data-kg-skill-command-kind={option.kind}
                         data-kg-skill-command-token={option.token}
+                        data-kg-skill-command-targeted={highlighted ? 'true' : 'false'}
                         data-kg-skill-command-icon-key={iconKey}
                         data-kg-skill-command-grammar-subject={grammar.subject.key}
                         data-kg-skill-command-grammar-verb={grammar.verb.key}

@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import { createKnowledgeGraphBridgeRequestHandler } from '../../viteKnowledgeGraphBridge'
+import { SOURCE_PARSER_REGISTRY } from '../../../mcp/knowledge-graph/source-parser-registry.mjs'
 
 async function listen(server: Server): Promise<number> {
   await new Promise<void>((resolve, reject) => {
@@ -104,6 +105,87 @@ export async function testKnowledgeGraphViteHostUsesStartupBoundDefaultRuntime()
       || diagnostics.length
     ) {
       throw new Error(`expected a complete explained default-runtime graph, got ${JSON.stringify(result)}`)
+    }
+  } finally {
+    await close(server).catch(() => undefined)
+    await fs.rm(temporaryRoot, { recursive: true, force: true })
+  }
+}
+
+export async function testKnowledgeGraphViteHostStreamsSanitizedSourceProgress() {
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'knowgrph-vite-host-progress-'))
+  const graphId = `kg:graph:${'1'.repeat(32)}`
+  const runtimeResult = {
+    schema: 'knowgrph-knowledge-graph-ingest/v1',
+    ok: true,
+    operation: 'ingest',
+    graphId,
+    snapshotDigest: '2'.repeat(64),
+    parserRegistryDigest: SOURCE_PARSER_REGISTRY.digest,
+    complete: true,
+    counts: { sources: 1, nodes: 1, edges: 0 },
+    projection: {
+      token: `kg:projection:${'3'.repeat(24)}`,
+      readOnly: true,
+      complete: true,
+      truncated: false,
+      limit: 1_000,
+      graphData: {
+        context: 'knowgrph-knowledge-graph-projection',
+        type: 'Graph',
+        nodes: [{ id: 'node:source', label: 'src/index.ts', type: 'SourceFile', properties: {} }],
+        edges: [],
+      },
+    },
+  }
+  const handler = createKnowledgeGraphBridgeRequestHandler({
+    repoRoot: path.resolve(process.cwd(), '..'),
+    hostDataRoot: path.join(temporaryRoot, 'host'),
+    runIngest: async context => {
+      await context.onProgress?.({
+        schema: 'knowgrph-knowledge-graph-import-progress/v1',
+        kind: 'source-parsed',
+        graphId,
+        parserRegistryDigest: SOURCE_PARSER_REGISTRY.digest,
+        sourcePath: 'src/index.ts',
+        sourceIndex: 1,
+        sourceTotal: 1,
+        fragment: {
+          nodes: [{ id: 'node:source', label: 'src/index.ts', type: 'SourceFile', properties: {} }],
+          edges: [],
+        },
+      })
+      return runtimeResult
+    },
+  })
+  const server = createServer((request, response) => {
+    void handler(request, response)
+  })
+  try {
+    const port = await listen(server)
+    const response = await fetch(
+      `http://127.0.0.1:${port}/__knowgrph_knowledge_graph/repositories/stream`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/x-ndjson' },
+        body: JSON.stringify({ repositoryUrl: 'https://github.com/example/repository' }),
+      },
+    )
+    const frames = (await response.text()).trim().split('\n').map(line => JSON.parse(line) as Record<string, unknown>)
+    const progress = frames[0]?.progress as Record<string, unknown> | undefined
+    const result = frames[1]?.result as Record<string, unknown> | undefined
+    if (
+      response.status !== 200
+      || !response.headers.get('content-type')?.includes('application/x-ndjson')
+      || frames.length !== 2
+      || frames[0]?.type !== 'progress'
+      || progress?.sourcePath !== 'src/index.ts'
+      || progress?.truncated !== false
+      || JSON.stringify(progress).includes(temporaryRoot)
+      || frames[1]?.type !== 'result'
+      || result?.graphId !== graphId
+    ) {
+      throw new Error(`expected an ordered sanitized progress stream, got ${JSON.stringify({ status: response.status, frames })}`)
     }
   } finally {
     await close(server).catch(() => undefined)

@@ -166,10 +166,19 @@ export function inferKnowledgeSourceKind(relativePath, parserRegistry = SOURCE_P
   return parserRegistry.match(relativePath)?.kind || "inventory";
 }
 
-function looksBinary(bytes) {
+const EMBEDDED_NUL_TEXT_ADAPTERS = new Set(["brace-code", "python", "sql", "typescript"]);
+
+function looksBinary(bytes, { allowEmbeddedNulText = false } = {}) {
   const limit = Math.min(bytes.length, 8192);
-  for (let index = 0; index < limit; index += 1) if (bytes[index] === 0) return true;
-  return false;
+  const prefix = bytes.subarray(0, limit);
+  if (!prefix.includes(0)) return false;
+  if (!allowEmbeddedNulText) return true;
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 const repositoryIdentity = (repositoryPath) => ({
@@ -471,7 +480,9 @@ export async function discoverKnowledgeSources(args) {
       }
       const bytes = opened.bytes;
       const contentHash = sha256(bytes);
-      const binary = looksBinary(bytes);
+      const binary = looksBinary(bytes, {
+        allowEmbeddedNulText: EMBEDDED_NUL_TEXT_ADAPTERS.has(parserDescriptor?.adapter),
+      });
       const isPdf = parserDescriptor?.adapter === "pdf";
       const inventoryOnly = !parserDescriptor || parserDescriptor.adapter === "inventory";
       if (binary && !isPdf && !inventoryOnly) {

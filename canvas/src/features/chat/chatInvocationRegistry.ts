@@ -36,6 +36,10 @@ import {
   NATIVE_IMPORT_URL_COMMAND,
   NATIVE_IMPORT_URL_INVOCATION_TEMPLATE,
 } from './nativeImportUrlInvocation'
+import {
+  NATIVE_CRAWLER_COMMAND,
+  NATIVE_CRAWLER_INVOCATION_TEMPLATE,
+} from './nativeCrawlerInvocation'
 import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 import type { PromptPreset } from './promptPresetCatalog'
 
@@ -177,6 +181,18 @@ const NATIVE_IMPORT_URL_CATALOG_ENTRY: ChatInvocationCatalogEntry = {
   mcpTool: IMPORT_URL_AGENT_READY_MCP_TOOL_NAME,
 }
 
+const NATIVE_CRAWLER_CATALOG_ENTRY: ChatInvocationCatalogEntry = {
+  id: 'native:website.crawl',
+  label: 'Crawl website headlessly',
+  token: NATIVE_CRAWLER_COMMAND,
+  summary: 'Crawl an approved HTTP(S) website through the native headless website importer and Canvas output owners.',
+  group: 'Native workspace action',
+  kind: 'skill',
+  sourcePath: 'agentic-canvas-os/docs/DICTIONARY-COMMAND.md',
+  keywords: ['crawl website', 'headless', '@url:', '@reference-policy', '#canvas', 'website import', 'canvas'],
+  insertionText: NATIVE_CRAWLER_INVOCATION_TEMPLATE,
+}
+
 const BASE_CHAT_INVOCATION_OPTIONS: readonly ChatInvocationOption[] = [
   ...GENERATION_SPECIFICATION_INVOCATIONS.map(option => ({ id: `generation.${option.specification}`, token: option.token, label: `${option.label} specification`, summary: option.summary, keywords: ['generation', 'specification', option.specification], slashCommand: '/video-agent' })),
   ...GENERATION_THINKING_INVOCATIONS.map(option => ({ id: `generation.thinking.${option.thinkingType}`, token: option.token, label: `${option.label} thinking`, summary: option.summary, keywords: ['generation', 'thinking', option.thinkingType], slashCommand: '/video-agent' })),
@@ -301,6 +317,7 @@ export const buildChatInvocationCatalog = (): readonly ChatInvocationCatalogEntr
     keywords: option.keywords,
   })),
   NATIVE_IMPORT_URL_CATALOG_ENTRY,
+  NATIVE_CRAWLER_CATALOG_ENTRY,
   IMAGE_TO_THREEJS_PROMPT_PRESET_COMMAND_ENTRY,
   IMAGE_TO_GLB_PROMPT_PRESET_COMMAND_ENTRY,
   ...getAgenticOsCommandInvocations().map(invocation => ({

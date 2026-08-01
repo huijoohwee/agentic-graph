@@ -1,14 +1,23 @@
 import type {
   WorkspaceKnowledgeGraphCounts,
+  WorkspaceKnowledgeGraphImportProgress,
   WorkspaceKnowledgeGraphImportResult,
 } from '@/features/markdown-explorer/workspaceActionBridge'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
+import {
+  fitKnowledgeGraphProjectionRecords,
+  knowledgeGraphProjectionByteLength,
+  KNOWLEDGE_GRAPH_PROJECTION_GRAPH_DATA_MAX_BYTES,
+  KNOWLEDGE_GRAPH_PROJECTION_MAX_BYTES,
+  retainBoundedKnowledgeGraphProjectionRecord,
+} from '../../../../mcp/knowledge-graph/projection-budget.mjs'
 
 export const KNOWLEDGE_GRAPH_CANVAS_PROJECTION_SCHEMA = 'knowgrph-canvas-knowledge-graph-projection/v1'
+export const KNOWLEDGE_GRAPH_CANVAS_PREVIEW_SCHEMA = 'knowgrph-canvas-knowledge-graph-preview/v1'
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_NODES = 2_000
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_EDGES = 5_000
-export const KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES = 2 * 1024 * 1024
+export const KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES = KNOWLEDGE_GRAPH_PROJECTION_MAX_BYTES
 export const KNOWLEDGE_GRAPH_CANVAS_MAX_RECORD_BYTES = 64 * 1024
 
 const MAX_JSON_DEPTH = 8
@@ -29,6 +38,7 @@ const REQUIRED_EDGE_EVIDENCE = [
   'evidence:parserDigest',
   'evidence:ruleId',
 ] as const
+let nextKnowledgeGraphPreviewSessionId = 1
 
 export class KnowledgeGraphProjectionError extends Error {
   readonly code: string
@@ -54,13 +64,7 @@ const isPositiveInteger = (value: unknown): value is number => (
   typeof value === 'number' && Number.isInteger(value) && value > 0
 )
 
-const byteLength = (value: unknown): number => {
-  try {
-    return new TextEncoder().encode(JSON.stringify(value)).byteLength
-  } catch {
-    return Number.POSITIVE_INFINITY
-  }
-}
+const byteLength = knowledgeGraphProjectionByteLength
 
 const hasForbiddenControlCharacter = (value: string, allowLineWhitespace = false): boolean => {
   for (const character of value) {
@@ -172,7 +176,11 @@ function validateCounts(counts: WorkspaceKnowledgeGraphCounts | undefined): Work
   return counts
 }
 
-function validateGraphData(graphData: GraphData | undefined, counts: WorkspaceKnowledgeGraphCounts): GraphData {
+function validateGraphData(
+  graphData: GraphData | undefined,
+  counts: WorkspaceKnowledgeGraphCounts,
+  maxBytes = KNOWLEDGE_GRAPH_PROJECTION_GRAPH_DATA_MAX_BYTES,
+): GraphData {
   if (!graphData || !Array.isArray(graphData.nodes) || !Array.isArray(graphData.edges)) {
     throw new KnowledgeGraphProjectionError(
       'invalid-projection',
@@ -207,7 +215,7 @@ function validateGraphData(graphData: GraphData | undefined, counts: WorkspaceKn
       'Knowledge graph projection contains more records than the canonical snapshot counts.',
     )
   }
-  if (byteLength(graphData) > KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES) {
+  if (byteLength(graphData) > maxBytes) {
     throw new KnowledgeGraphProjectionError(
       'projection-byte-limit',
       `Knowledge graph Canvas projection exceeds ${KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES} bytes.`,
@@ -359,30 +367,215 @@ export function buildKnowledgeGraphCanvasProjection(
   }
 }
 
+type ValidatedKnowledgeGraphProgress = Omit<WorkspaceKnowledgeGraphImportProgress, 'graphData'> & { graphData: GraphData }
+
+function validateKnowledgeGraphProgress(
+  progress: WorkspaceKnowledgeGraphImportProgress,
+): ValidatedKnowledgeGraphProgress {
+  if (
+    !progress
+    || progress.schema !== 'knowgrph-knowledge-graph-import-progress/v1'
+    || progress.kind !== 'source-parsed'
+    || !/^kg:graph:[0-9a-f]{32}$/.test(cleanString(progress.graphId))
+    || !/^[0-9a-f]{64}$/.test(cleanString(progress.parserRegistryDigest))
+    || !cleanString(progress.sourcePath)
+    || !isLogicalRelativePath(cleanString(progress.sourcePath))
+    || !isPositiveInteger(progress.sourceIndex)
+    || !isPositiveInteger(progress.sourceTotal)
+    || progress.sourceIndex > progress.sourceTotal
+    || typeof progress.truncated !== 'boolean'
+  ) {
+    throw new KnowledgeGraphProjectionError('invalid-progress-frame', 'Knowledge graph import progress did not return a valid source fragment.')
+  }
+  const graphData = validateGraphData(progress.graphData, {
+    sources: progress.sourceIndex,
+    nodes: Array.isArray(progress.graphData?.nodes) ? progress.graphData.nodes.length : 0,
+    edges: Array.isArray(progress.graphData?.edges) ? progress.graphData.edges.length : 0,
+  })
+  return {
+    ...progress,
+    graphData: {
+      ...graphData,
+      nodes: graphData.nodes.map(cloneNode),
+      edges: graphData.edges.map(cloneEdge),
+    },
+  }
+}
+
+function isKnowledgeGraphPreview(graphData: GraphData | null | undefined, sessionId: string): boolean {
+  const preview = graphData?.metadata?.knowledgeGraphPreview as Record<string, unknown> | undefined
+  return preview?.owner === 'knowledge-graph-runtime-preview'
+    && preview.sessionId === sessionId
+}
+
+export function prepareKnowledgeGraphCanvasView(): void {
+  const initialState = useGraphStore.getState()
+  if (
+    initialState.documentStructureBaselineLock === true
+    && initialState.canvas2dRenderer !== 'd3'
+  ) {
+    throw new KnowledgeGraphProjectionError(
+      'graph-view-unavailable',
+      'Knowledge graph import cannot change the renderer while the document baseline is locked.',
+    )
+  }
+  if (initialState.canvasRenderMode !== '2d') initialState.setCanvasRenderMode('2d')
+  const modeState = useGraphStore.getState()
+  if (modeState.canvas2dRenderer !== 'd3') modeState.setCanvas2dRenderer('d3')
+  const graphViewState = useGraphStore.getState()
+  if (graphViewState.canvasRenderMode !== '2d' || graphViewState.canvas2dRenderer !== 'd3') {
+    throw new KnowledgeGraphProjectionError(
+      'graph-view-unavailable',
+      'Knowledge graph import could not open the required 2D Graph view.',
+    )
+  }
+}
+
+export type KnowledgeGraphCanvasPreviewSession = { apply: (progress: WorkspaceKnowledgeGraphImportProgress) => GraphData; commit: (result: WorkspaceKnowledgeGraphImportResult) => GraphData; rollback: () => void }
+
+/** Keeps a bounded verified visual preview; the final immutable snapshot replaces it atomically. */
+export function createKnowledgeGraphCanvasPreviewSession(): KnowledgeGraphCanvasPreviewSession {
+  const baseline = useGraphStore.getState()
+  const baselineGraphData = baseline.graphData
+  const baselineGraphDataRevision = baseline.graphDataRevision
+  const baselineGraphContentRevision = baseline.graphContentRevision
+  const baselineDocLocationRevision = baseline.docLocationRevision
+  const baselineCanvasRenderMode = baseline.canvasRenderMode
+  const baselineCanvas2dRenderer = baseline.canvas2dRenderer
+  const sessionId = `knowledge-graph-preview-${nextKnowledgeGraphPreviewSessionId}`
+  nextKnowledgeGraphPreviewSessionId += 1
+  const nodes = new Map<string, GraphNode>()
+  const edges = new Map<string, GraphEdge>()
+  let graphId = ''
+  let parserRegistryDigest = ''
+  let sourceIndex = 0
+  let sourceTotal = 0
+  let truncated = false
+  let previewPublished = false
+  let complete = false
+
+  const buildPreviewGraph = (): GraphData => {
+    const buildGraph = (previewNodes: GraphNode[], previewEdges: GraphEdge[], previewTruncated: boolean): GraphData => ({
+      context: 'knowgrph-knowledge-graph-projection',
+      type: 'Graph',
+      metadata: {
+        kind: 'knowledge-graph',
+        source: graphId,
+        knowledgeGraphPreview: {
+          schema: KNOWLEDGE_GRAPH_CANVAS_PREVIEW_SCHEMA,
+          owner: 'knowledge-graph-runtime-preview',
+          readOnly: true,
+          sessionId,
+          graphId,
+          parserRegistryDigest,
+          complete: false,
+          sourceIndex,
+          sourceTotal,
+          truncated: previewTruncated,
+        },
+      },
+      nodes: previewNodes,
+      edges: previewEdges,
+    })
+    const fitted = fitKnowledgeGraphProjectionRecords({
+      nodes: nodes.values(),
+      edges: edges.values(),
+      maxBytes: KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES,
+      buildGraphData: (previewNodes: GraphNode[], previewEdges: GraphEdge[]) => (
+        buildGraph(previewNodes, previewEdges, false)
+      ),
+    })
+    truncated = truncated || fitted.truncated
+    nodes.clear()
+    edges.clear()
+    for (const node of fitted.nodes as GraphNode[]) nodes.set(node.id, node)
+    for (const edge of fitted.edges as GraphEdge[]) edges.set(edge.id, edge)
+    return validateGraphData(buildGraph(fitted.nodes as GraphNode[], fitted.edges as GraphEdge[], truncated), {
+      sources: sourceIndex,
+      nodes: fitted.nodes.length,
+      edges: fitted.edges.length,
+    }, KNOWLEDGE_GRAPH_CANVAS_MAX_BYTES)
+  }
+
+  const publishPreview = (graphData: GraphData): void => {
+    prepareKnowledgeGraphCanvasView()
+    useGraphStore.setState(state => ({
+      graphData,
+      graphDataRevision: (state.graphDataRevision || 0) + 1,
+      graphContentRevision: (state.graphContentRevision || 0) + 1,
+      docLocationRevision: (state.docLocationRevision || 0) + 1,
+      graphValidationStatus: null,
+      graphValidationTimestamp: null,
+      lifecycleStage: 'committed',
+    }))
+    previewPublished = true
+  }
+
+  return {
+    apply(progress) {
+      if (complete) {
+        throw new KnowledgeGraphProjectionError('progress-after-complete', 'Knowledge graph preview received progress after completion.')
+      }
+      const validated = validateKnowledgeGraphProgress(progress)
+      if (!graphId) {
+        graphId = validated.graphId
+        parserRegistryDigest = validated.parserRegistryDigest
+      } else if (graphId !== validated.graphId || parserRegistryDigest !== validated.parserRegistryDigest) {
+        throw new KnowledgeGraphProjectionError('progress-identity-mismatch', 'Knowledge graph preview changed graph identity mid-import.')
+      }
+      if (validated.sourceIndex !== sourceIndex + 1 || (sourceTotal && sourceTotal !== validated.sourceTotal)) {
+        throw new KnowledgeGraphProjectionError('progress-order-invalid', 'Knowledge graph preview received out-of-order source progress.')
+      }
+      sourceIndex = validated.sourceIndex
+      sourceTotal = validated.sourceTotal
+      truncated = truncated || validated.truncated
+      for (const node of validated.graphData.nodes) {
+        truncated = retainBoundedKnowledgeGraphProjectionRecord(nodes, node, KNOWLEDGE_GRAPH_CANVAS_MAX_NODES) || truncated
+      }
+      for (const edge of validated.graphData.edges) {
+        truncated = retainBoundedKnowledgeGraphProjectionRecord(edges, edge, KNOWLEDGE_GRAPH_CANVAS_MAX_EDGES) || truncated
+      }
+      const graphData = buildPreviewGraph()
+      if (graphData.nodes.length || graphData.edges.length) publishPreview(graphData)
+      return graphData
+    },
+    commit(result) {
+      const graphData = applyKnowledgeGraphCanvasProjection(result)
+      complete = true
+      previewPublished = false
+      return graphData
+    },
+    rollback() {
+      if (!previewPublished || complete) return
+      const current = useGraphStore.getState()
+      if (!isKnowledgeGraphPreview(current.graphData, sessionId)) return
+      useGraphStore.setState({
+        graphData: baselineGraphData,
+        graphDataRevision: baselineGraphDataRevision,
+        graphContentRevision: baselineGraphContentRevision,
+        docLocationRevision: baselineDocLocationRevision,
+        graphValidationStatus: null,
+        graphValidationTimestamp: null,
+        lifecycleStage: 'committed',
+      })
+      const restored = useGraphStore.getState()
+      if (restored.canvasRenderMode !== baselineCanvasRenderMode) {
+        restored.setCanvasRenderMode(baselineCanvasRenderMode)
+      }
+      const rendererState = useGraphStore.getState()
+      if (rendererState.canvas2dRenderer !== baselineCanvas2dRenderer) {
+        rendererState.setCanvas2dRenderer(baselineCanvas2dRenderer)
+      }
+      previewPublished = false
+    },
+  }
+}
+
 export function applyKnowledgeGraphCanvasProjection(
   result: WorkspaceKnowledgeGraphImportResult,
   setGraphData: (graphData: GraphData) => void = graphData => {
-    const initialState = useGraphStore.getState()
-    if (
-      initialState.documentStructureBaselineLock === true
-      && initialState.canvas2dRenderer !== 'd3'
-    ) {
-      throw new KnowledgeGraphProjectionError(
-        'graph-view-unavailable',
-        'Knowledge graph import cannot change the renderer while the document baseline is locked.',
-      )
-    }
-    if (initialState.canvasRenderMode !== '2d') initialState.setCanvasRenderMode('2d')
-    const modeState = useGraphStore.getState()
-    if (modeState.canvas2dRenderer !== 'd3') modeState.setCanvas2dRenderer('d3')
-    const graphViewState = useGraphStore.getState()
-    if (graphViewState.canvasRenderMode !== '2d' || graphViewState.canvas2dRenderer !== 'd3') {
-      throw new KnowledgeGraphProjectionError(
-        'graph-view-unavailable',
-        'Knowledge graph import could not open the required 2D Graph view.',
-      )
-    }
-    graphViewState.setGraphData(graphData)
+    prepareKnowledgeGraphCanvasView()
+    useGraphStore.getState().setGraphData(graphData)
   },
 ): GraphData {
   const graphData = buildKnowledgeGraphCanvasProjection(result)

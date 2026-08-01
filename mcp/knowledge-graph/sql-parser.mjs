@@ -1,7 +1,7 @@
-import { buildEvidence, makeEdge, makeNode, spanFromOffsets, stableEntityId } from "./contract.mjs";
+import { buildEvidence, makeEdge, makeNode, spanFromOffsets, stableEntityId, versionKnowledgeGraphParserOutput } from "./contract.mjs";
 
 export const SQL_PARSER_ID = "local-sql-structure";
-export const SQL_PARSER_VERSION = "1.0.0";
+export const SQL_PARSER_VERSION = versionKnowledgeGraphParserOutput("1.0.0");
 
 function tokenizeSql(text, checkpoint = () => {}) {
   const tokens = [];

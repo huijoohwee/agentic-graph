@@ -16,6 +16,7 @@ import { useApiGraphFlowchartGraphData } from '@/lib/flowchart'
 import type { Canvas2dRendererId } from '@/lib/config'
 import { isFrontmatterOnlyPolicyActive } from '@/lib/config.render'
 import { isFrontmatterFlowGraph } from '@/lib/graph/frontmatterMode'
+import { isWorkspaceDocumentCanvasGraphApplyDisabled } from '@/lib/markdown/workspaceDocumentCanvasApplyPolicy'
 import {
   buildKeywordSourceTextFromBaselineGraph,
   collectKeywordSourceMarkdownAnnotationsFromBaselineGraph,
@@ -33,6 +34,8 @@ import {
   parseWorkspaceJsonGraphDataCached,
   WORKSPACE_STRUCTURED_PARSE_DEBOUNCE_MS,
 } from './workspaceStructuredGraph'
+import { INACTIVE_GRAPH_SLICE } from './activeGraphDataDefaults'
+import { readKeywordGraphNodeBudget, readKeywordSourceNodeBudget } from './keywordGraphBudget'
 
 const keywordSourceTextCache = new LRUCache<string, {
   text: string
@@ -54,39 +57,6 @@ const hashKeywordAnnotations = (annotations: MarkdownAnnotation[]): string => {
     ].join('|')),
   ])
 }
-
-const readKeywordGraphNodeBudget = (args: { edgesPerNode: number; maxEdgesCap: number }): number => {
-  const rawEdgesPerNode = Number(args.edgesPerNode)
-  const rawEdgeCap = Number(args.maxEdgesCap)
-  const edgesPerNode = Number.isFinite(rawEdgesPerNode) ? Math.max(1, Math.min(60, Math.floor(rawEdgesPerNode))) : 6
-  const edgeCap = Number.isFinite(rawEdgeCap) ? Math.max(0, Math.min(25_000, Math.floor(rawEdgeCap))) : 2400
-  return Math.max(80, Math.min(220, Math.floor(edgeCap / edgesPerNode)))
-}
-
-const readKeywordSourceNodeBudget = (args: { mentionEdgesPerSourceNode: number; maxEdgesCap: number }): number => {
-  const rawMentionEdges = Number(args.mentionEdgesPerSourceNode)
-  const rawEdgeCap = Number(args.maxEdgesCap)
-  const mentionEdges = Number.isFinite(rawMentionEdges) ? Math.max(1, Math.min(30, Math.floor(rawMentionEdges))) : 6
-  const edgeCap = Number.isFinite(rawEdgeCap) ? Math.max(0, Math.min(25_000, Math.floor(rawEdgeCap))) : 2400
-  return Math.max(24, Math.min(96, Math.floor(edgeCap / (mentionEdges * 3))))
-}
-
-const INACTIVE_GRAPH_SLICE = {
-  baseGraphDataRaw: null as GraphData | null,
-  mode: 'document' as 'document' | 'keyword',
-  markdownName: null as string | null,
-  markdownText: null as string | null,
-  canvasRenderMode: '2d' as '2d' | '3d',
-  canvas2dRenderer: 'd3' as Canvas2dRendererId,
-  keywordSourceMaxLines: 8000,
-  keywordSourceMaxChars: 120_000,
-  keywordGraphPreviewDebounceMs: 200,
-  keywordGraphFullDebounceMs: 800,
-  keywordGraphEdgesPerNode: 6,
-  keywordGraphMaxEdgesCap: 2400,
-  keywordGraphMentionEdgesPerSourceNode: 6,
-  revision: 0,
-} as const
 
 function buildPendingActiveMarkdownGraph(args: {
   markdownName: string | null
@@ -116,6 +86,7 @@ export function resolveActiveMarkdownBaseGraph(args: {
   const markdownName = String(args.markdownName || '').trim()
   const markdownText = String(args.markdownText || '')
   if (!markdownName || !markdownText.trim()) return base
+  if (isWorkspaceDocumentCanvasGraphApplyDisabled(markdownText)) return base
   const metadata = base.metadata && typeof base.metadata === 'object' && !Array.isArray(base.metadata)
     ? (base.metadata as Record<string, unknown>)
     : null
@@ -168,6 +139,7 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
     return isFrontmatterOnlyPolicyActive({ canvasRenderMode, canvas2dRenderer })
   }, [canvas2dRenderer, canvasRenderMode])
   const effectiveMode: 'document' | 'keyword' = frontmatterOnlyPolicyActive ? 'document' : mode
+  const workspaceDocumentCanvasGraphApplyDisabled = isWorkspaceDocumentCanvasGraphApplyDisabled(markdownText || '')
 
   const wantsApiGraphFlowchart = false
   const debouncedStructuredMarkdownText = useDebouncedValue(
@@ -220,6 +192,7 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
     [baseGraphDataRaw, markdownName, markdownText],
   )
   const baseGraphData = React.useMemo(() => {
+    if (workspaceDocumentCanvasGraphApplyDisabled) return activeMarkdownBaseGraph
     if (canvas2dRenderer === 'storyboard') {
       return workspaceStrybldrStoryboardGraphData || workspaceFrontmatterFlowGraphData || workspaceJsonGraphData || workspaceKgcSemanticGraphData || workspaceFrontmatterMermaidGraphData || activeMarkdownBaseGraph
     }
@@ -240,10 +213,11 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
     workspaceFrontmatterMermaidGraphData,
     workspaceJsonGraphData,
     workspaceKgcSemanticGraphData,
+    workspaceDocumentCanvasGraphApplyDisabled,
   ])
-  const hasStructuredWorkspaceGraph = frontmatterOnlyPolicyActive
+  const hasStructuredWorkspaceGraph = !workspaceDocumentCanvasGraphApplyDisabled && (frontmatterOnlyPolicyActive
     ? !!workspaceStrybldrStoryboardGraphData || !!workspaceFrontmatterFlowGraphData
-    : !!workspaceJsonGraphData || !!workspaceStrybldrStoryboardGraphData || !!workspaceFrontmatterFlowGraphData || !!workspaceKgcSemanticGraphData || !!workspaceFrontmatterMermaidGraphData
+    : !!workspaceJsonGraphData || !!workspaceStrybldrStoryboardGraphData || !!workspaceFrontmatterFlowGraphData || !!workspaceKgcSemanticGraphData || !!workspaceFrontmatterMermaidGraphData)
   const { graphData: apiGraphFlowchart } = useApiGraphFlowchartGraphData(wantsApiGraphFlowchart)
 
   const lastRef = React.useRef<GraphData | null>(null)
@@ -262,6 +236,7 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
 
   const keywordDeriveInputs = React.useMemo(() => {
     if (wantsApiGraphFlowchart) return null
+    if (workspaceDocumentCanvasGraphApplyDisabled) return null
     if (hasStructuredWorkspaceGraph) return null
     if (!baseGraphData) return null
     if (effectiveMode !== 'keyword') return null
@@ -360,6 +335,7 @@ export function useActiveGraphData(enabled: boolean = true): GraphData | null {
     effectiveMode,
     revision,
     wantsApiGraphFlowchart,
+    workspaceDocumentCanvasGraphApplyDisabled,
   ])
 
   const debouncedKeywordPreviewInputs = useDebouncedValue(

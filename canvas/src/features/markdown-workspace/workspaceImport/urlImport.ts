@@ -25,6 +25,15 @@ import { materializeVideoSequenceTimelineImportDocument } from './videoSequenceT
 import { materializeVideoAgentUrlImportDocument } from './videoAgentUrlImport'
 import { getYouTubeId } from 'grph-shared/rich-media/providers'
 
+/**
+ * This describes the existing repository-aware workspace import route without
+ * exposing the provider-specific parser to callers that only need its source
+ * classification.
+ */
+export function isWorkspaceRepositoryImportUrl(rawUrl: string): boolean {
+  return parseGitHubRepoUrl(String(rawUrl || '').trim()) !== null
+}
+
 export async function importWorkspaceUrl(args: {
   fs: WorkspaceFs
   urlRaw: string

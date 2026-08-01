@@ -95,6 +95,7 @@ Provider-neutral agent and LLM applications use the exact host invocation `/appl
 
 The local stdio knowledge-graph capability is intentionally limited to these tool identities:
 
+- `knowgrph.knowledge_graph.parser_generate` — returns the digest-pinned built-in local registry with `profile: "default-source"`, or compiles bounded custom inert descriptors and optional finite declarative grammar data
 - `knowgrph.knowledge_graph.ingest` — indexes supported local corpus structure through Knowgrph-owned deterministic adapters
 - `knowgrph.knowledge_graph.query` — retrieves matching graph evidence through lexical matching and graph traversal
 - `knowgrph.knowledge_graph.explain_edge` — explains a stored relationship from its source evidence and extraction basis
@@ -103,6 +104,7 @@ The matching Agentic Canvas OS invocation tokens are:
 
 | MCP tool | Exact Agentic Canvas OS invocation |
 |---|---|
+| `knowgrph.knowledge_graph.parser_generate` | `/knowledge.graph.parser.generate #knowledge-graph #parser-generation #mcp @parser-specification @runtime-proof` |
 | `knowgrph.knowledge_graph.ingest` | `/knowledge.graph.ingest #knowledge-graph #mcp #runtime-ready @working-directory @knowledge-graph @operator @runtime-proof` |
 | `knowgrph.knowledge_graph.query` | `/knowledge.graph.query #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |
 | `knowgrph.knowledge_graph.explain_edge` | `/knowledge.graph.explain #knowledge-graph #mcp #vcc @knowledge-graph @runtime-proof` |

@@ -31,7 +31,7 @@ export type UseWorkspaceFileActionsArgs = {
 
   setExpandedPaths: React.Dispatch<React.SetStateAction<Set<string>>>
   setActivePathSafe: (path: WorkspacePath) => void
-  setSelectionPathSafe: (path: WorkspacePath) => void
+  setSelectionPathSafe: (path: WorkspacePath) => void | Promise<void>
 
   setActiveMarkdownDocument: (args: {
     name: string
@@ -76,6 +76,7 @@ export type WorkspaceMutationActionsCtx = Pick<
 >
 
 export type WorkspaceFileActions = {
+  focusAfterImport: (createdPath: WorkspacePath, opts?: { sourceUrl?: string | null; jsonSourceText?: string | null; applyToGraph?: boolean; jobId?: number }) => Promise<void>
   createNewFile: (opts?: { parentPath?: WorkspacePath }) => Promise<void>
   createNewFolder: (opts?: { parentPath?: WorkspacePath }) => Promise<void>
   handleImportLocalFiles: (files: WorkspaceFileSelection) => Promise<void | WorkspaceBridgeImportResult>
