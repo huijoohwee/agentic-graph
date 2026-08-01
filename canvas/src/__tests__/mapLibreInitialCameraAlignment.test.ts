@@ -5,9 +5,9 @@ import { readGeospatialPresentationCameraOwner } from '../../../gympgrph/src/fea
 import { readSingaporeCanvasCameraPolicy } from '../../../gympgrph/src/features/geospatial/singaporeMapPolicy'
 import { createCityGeoOverlayMapLibreController } from '../../../gympgrph/src/cityGeoOverlayMapLibreController'
 import {
-  readFlightGeoOverlay,
-  setFlightGeoOverlay,
-} from '../../../gympgrph/src/flightGeoOverlay'
+  readCityGeoOverlay,
+  setCityGeoOverlay,
+} from '../../../gympgrph/src/cityGeoOverlay'
 import {
   createSyntheticCityGeoOverlaySnapshot,
   TEST_LAYER_ANCHOR,
@@ -96,7 +96,7 @@ test('a City presentation claim before load suppresses the stale generic alignme
 
 test('a synchronous overlay publication claims the camera before the React owner prop commits', () => {
   const harness = createMapHarness()
-  const previousOverlay = readFlightGeoOverlay()
+  const previousOverlay = readCityGeoOverlay()
   const pendingReactOwner = null
   const align = createMapLibreInitialCameraAlignment({
     canvasRenderMode: '3d',
@@ -109,17 +109,15 @@ test('a synchronous overlay publication claims the camera before the React owner
   })
 
   try {
-    setFlightGeoOverlay({
-      ...previousOverlay,
-      active: true,
-      presentationOwner: 'city',
+    setCityGeoOverlay({
+      ...createSyntheticCityGeoOverlaySnapshot(),
       revision: 'city-published-before-react-commit',
     })
 
     align() // delayed load observes the store, while the prop is still null
     assert.equal(harness.fitBoundsCalls.length, 0)
   } finally {
-    setFlightGeoOverlay(previousOverlay)
+    setCityGeoOverlay(previousOverlay)
   }
 })
 

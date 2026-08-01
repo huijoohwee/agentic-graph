@@ -65,16 +65,16 @@ test('City presents canonical regional POI geometry without City or Flight layer
   const regionalFeatures = (
     regionalSource?.data as RegionalPoiFeatureCollection
   ).features
-  const regionalSurfaces = regionalFeatures.filter(feature => (
-    feature.properties.kgRegionalPoiFeatureKind === 'surface'
-  ))
   assert.deepEqual(
-    regionalSurfaces.map(feature => ({
-      baseHeightMeters: feature.properties.kgRegionalPoiBaseHeightMeters,
-      heightMeters: feature.properties.kgRegionalPoiHeightMeters,
-      id: feature.id,
-      poiId: feature.properties.kgRegionalPoiId,
-    })),
+    regionalFeatures.flatMap(feature => {
+      if (feature.properties.kgRegionalPoiFeatureKind !== 'surface') return []
+      return [{
+        baseHeightMeters: feature.properties.kgRegionalPoiBaseHeightMeters,
+        heightMeters: feature.properties.kgRegionalPoiHeightMeters,
+        id: feature.id,
+        poiId: feature.properties.kgRegionalPoiId,
+      }]
+    }),
     SINGAPORE_MAJOR_POI_GEO_PROFILE.surfaces.map(surface => ({
       baseHeightMeters: surface.baseHeightMeters,
       heightMeters: surface.heightMeters,

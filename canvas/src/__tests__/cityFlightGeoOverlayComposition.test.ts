@@ -34,7 +34,6 @@ function activeCitySnapshot(): CitySimSnapshot {
     costLog: null,
     error: null,
     estimatedCostUsd: 0,
-    geographicProfile: source.geographicProfile,
     lastInput: null,
     lastResult: null,
     message: 'City Simulation is active.',

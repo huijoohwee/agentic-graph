@@ -24,7 +24,7 @@ import {
 } from '../../../gympgrph/src/features/geospatial/flightGeoMapLibreDisposal'
 
 test('Flight overlay disposal clear is idempotent and never creates a missing source', () => {
-  const layers = new Set(FLIGHT_GEO_OVERLAY_LAYER_ORDER)
+  const layers = new Set<string>(FLIGHT_GEO_OVERLAY_LAYER_ORDER)
   let sourcePresent = true
   let sourceRemovals = 0
   let sourceAdds = 0
