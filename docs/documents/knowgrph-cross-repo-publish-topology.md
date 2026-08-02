@@ -58,21 +58,22 @@ browser cache while preserving immutable caching for verified asset bytes.
 
 ### 2026-08-02 Canonical Main Advance Release Record
 
+- Source repo `knowgrph` shipped commit `d9578e8810e94565028386b19ac5e95668e91207` (`docs(release): record canonical main advance release (#642)`).
+- An earlier protected `Production Release` dispatch for `86496f495dede69256053d308cc222ddf5ae6daa` failed closed as run `30749177437` because protected `main` advanced before delivery could prove the exact requested commit; the stale candidate was retired instead of reused.
+- The protected `Production Release` workflow run `30750323434` then verified the exact reviewed localhost candidate for `d9578e8810e94565028386b19ac5e95668e91207` and the pinned Agentic Canvas OS docs revision `0ba0d131c6df4a41666bd4f8b4eb6f7c549c42c2`.
+- Interactive terminal authorization approved the exact production candidate digest `b3466a2b799826f497595ddb505e1cd4d8f4fe61f84f387f3abbe501528324bc` before mutation, then consumed the lifecycle candidate digest `680255babe4f08f6c2bdcaa16cba00f24af6aa31c0f957f80ff6b1440b44c3d1` for delivery.
+- Cloudflare Pages deployed the exact candidate to `https://40cc85aa.joohwee.pages.dev`, captured deployment id `40cc85aa-e472-406c-b2c4-f76abdd23a18`, re-proved browser-fidelity and deployment markers for the same source revision, and completed returning-user service-worker convergence before publication.
+- Publish repo `huijoohwee` shipped commit `8ed1e4ad6fbf1f5127c179b577824ca61c9afbb7` (`chore(release): promote knowgrph d9578e8810e9`).
+- The protected release completed without rollback and re-proved the public route at `https://airvio.co/knowgrph/` through the verified deployment path.
+
+### 2026-08-02 Earlier Canonical Main Advance Release Record
+
 - Source repo `knowgrph` shipped commit `027cd892b57e4247c1e8edb4c144b216c398379c` (`chore(release): promote Agentic Canvas OS runtime pin (#637)`).
 - An earlier protected `Production Release` dispatch for `4be31c4879d1ada8e8060ba2ce51e68987d6107f` failed closed as run `30747314671` because protected `main` advanced before verify could prove the exact requested commit; the stale candidate was retired instead of reused.
 - The protected `Production Release` workflow run `30747479760` then verified the exact reviewed localhost candidate for `027cd892b57e4247c1e8edb4c144b216c398379c` and the pinned Agentic Canvas OS docs revision `abeb1ae8bfb6fb89d7c4449bd1c7c1a9a8790175`.
 - Cloudflare Pages deployed the exact candidate to `https://1fa1b6dd.joohwee.pages.dev`, re-proved browser-fidelity and deployment markers for the same source revision, and completed returning-user service-worker convergence before publication.
 - Publish repo `huijoohwee` shipped commit `dec0a40bb6718d70b6bdfd6d3196ec5bc6342df4` (`chore(release): promote knowgrph 027cd892b57e`).
 - A duplicate waiting release run `30747485249` for the same `main` candidate was cancelled after the successful publication so no second authorization or publish path remained open for that SHA.
-- The protected release completed without rollback and re-proved the public route at `https://airvio.co/knowgrph/` through the verified deployment path.
-
-### 2026-08-02 Protected Release Record
-
-- Source repo `knowgrph` shipped commit `027cd892b57e4247c1e8edb4c144b216c398379c` (`chore(release): promote Agentic Canvas OS runtime pin (#637)`).
-- The protected `Production Release` workflow run `30747479760` verified the exact reviewed localhost candidate for that source revision and the pinned Agentic Canvas OS docs revision `abeb1ae8bfb6fb89d7c4449bd1c7c1a9a8790175`.
-- Interactive terminal authorization approved the exact production candidate digest `db9bd64ab301dfffe0ab2c61a73e7053b0f1ee8b747ca78830735ff0baff01c2` before mutation, then consumed the lifecycle candidate digest `b00f3a1a029079a108b9858bd25b443aa6c0f793c477a25e4978168c432b3673` for delivery.
-- Cloudflare Pages deployed the exact candidate to `https://1fa1b6dd.joohwee.pages.dev`, captured deployment id `1fa1b6dd-dad2-40d0-a81f-9d5b8fecd454`, reconciled canonical docs into D1, and completed live runtime, browser-fidelity, and returning-user service-worker verification before publication.
-- Publish repo `huijoohwee` shipped commit `dec0a405fed5bdbaf00e7168c928498f71a18b41` (`chore(release): promote knowgrph 027cd892b57e`).
 - The protected release completed without rollback and re-proved the public route at `https://airvio.co/knowgrph/` through the verified deployment path.
 
 ### 2026-08-02 Earlier Protected Release Record
@@ -84,7 +85,7 @@ browser cache while preserving immutable caching for verified asset bytes.
 - Publish repo `huijoohwee` shipped commit `154fb68b1bab81401f277ece6083200714f6f23f` (`chore(release): promote knowgrph 7f097dbabb72`).
 - The protected release completed without rollback and re-proved the public route at `https://airvio.co/knowgrph/` through the verified deployment path.
 
-### 2026-08-02 Earlier Protected Release Record
+### 2026-08-02 Even Earlier Protected Release Record
 
 - Source repo `knowgrph` shipped commit `af26f37477cb92e1a8306931262bb25dd4944f00` (`Promote Agentic Canvas OS ba45470e0365 (#622)`).
 - The protected `Production Release` workflow run `30735517980` verified the exact reviewed localhost candidate for that source revision and the pinned Agentic Canvas OS docs revision `ba45470e036599d0f42add7236bac1f4a5b03cab`.
