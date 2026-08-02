@@ -1262,15 +1262,13 @@ export async function testWorkspaceSeedProviderPrefersSelectedLocalFolderHandleO
   const previousCacheId = store.localMarkdownFolderCacheId
   const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
   const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
-  type MockFsEntry =
-    | (FileSystemDirectoryHandle & {
-        kind: 'directory'
-        name: string
-      })
-    | (FileSystemFileHandle & {
-        kind: 'file'
-        name: string
-      })
+  type MockFsEntry = {
+    kind: 'file' | 'directory'
+    name: string
+    entries?: () => AsyncIterable<[string, MockFsEntry]>
+    getDirectoryHandle?: (name: string) => Promise<MockFsEntry>
+    getFile?: () => Promise<File>
+  }
   const makeDirectoryEntry = (name: string, children: Record<string, MockFsEntry>): MockFsEntry => ({
     kind: 'directory',
     name,
