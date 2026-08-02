@@ -13,6 +13,7 @@ import {
   readWorkspaceInitializationDocsMirrorEntries,
   readWorkspaceInitializationSeedText,
 } from '@/features/workspace-fs/workspaceSeedProvider'
+import { CANONICAL_WORKSPACE_SEED_BASENAMES } from '@/features/workspace-fs/workspaceCanonicalSeedBundle'
 import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 import { mergeWorkspaceEntriesIntoSourceFiles } from '@/features/workspace-fs/syncToSourceFiles'
@@ -421,6 +422,56 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesPublish
       }
       if (capturedUrls.includes('/docs/workspace-readme.md')) {
         throw new Error(`expected authoritative configured docs root to avoid published canonical fallback, got ${JSON.stringify(capturedUrls)}`)
+      }
+    })
+  })
+}
+
+export async function testWorkspaceSeedProviderCompleteSourceFilesBootstrapOverlaysCanonicalSeedInventory() {
+  await withFetchAndEnv({
+    VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: undefined,
+    VITE_KNOWGRPH_STORAGE_BASE_URL: undefined,
+  }, (async () => new Response('', { status: 404 })) as typeof fetch, async () => {
+    await withStoreMirrorState(async () => {
+      const store = useGraphStore.getState()
+      store.setLocalMarkdownFolderHandle(null)
+      store.setLocalMarkdownFolderCacheId(null, null)
+      store.setLocalMarkdownSelectedFolderPath('/virtual/workspace/docs')
+      store.setSourceFiles([
+        {
+          id: 'sf-seed-physics',
+          name: 'knowgrph-physics-playground-demo.md',
+          text: '# physics seed\n',
+          enabled: true,
+          status: 'idle',
+          source: {
+            kind: 'local',
+            path: '/virtual/workspace/docs/workspace-seeds/knowgrph-physics-playground-demo.md',
+          },
+        },
+        {
+          id: 'sf-doc-agent-definitions',
+          name: 'AGENT-DEFINITIONS.md',
+          text: '# source definitions\n',
+          enabled: true,
+          status: 'idle',
+          source: {
+            kind: 'local',
+            path: '/virtual/workspace/docs/AGENT-DEFINITIONS.md',
+          },
+        },
+      ])
+
+      const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+      const seedInventory = mirrored
+        .filter(entry => entry.relPath.startsWith('workspace-seeds/'))
+        .map(entry => entry.relPath.replace(/^workspace-seeds\//, ''))
+        .sort((left, right) => left.localeCompare(right))
+      const expectedSeedInventory = [...CANONICAL_WORKSPACE_SEED_BASENAMES]
+        .sort((left, right) => left.localeCompare(right))
+
+      if (JSON.stringify(seedInventory) !== JSON.stringify(expectedSeedInventory)) {
+        throw new Error(`expected complete canonical seed inventory overlay, got ${JSON.stringify(seedInventory)}`)
       }
     })
   })
