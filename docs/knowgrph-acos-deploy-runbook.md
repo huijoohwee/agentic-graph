@@ -2,7 +2,7 @@
 title: "Reference implementation: Knowgrph Protected Release Runbook"
 id: "md:knowgrph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.0.1"
+version: "2.0.2"
 date: "2026-08-02"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -67,12 +67,12 @@ boundary.
 
 | Reference | Named check | Recorded result | Surface | Meaning |
 |---|---|---|---|---|
-| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `af26f37477cb92e1a8306931262bb25dd4944f00` | run `30735517980` `Verify Release Candidate` passed; local review candidate digest `bafe95d8d0bde9ff908acda5e14167faec379445d7cebd9024ea0ef7dab6f5b3`, immutable manifest digest `fcde567a80d33411d27ba440482050a635be978b3d0ef7c549b291671d7e336a`, production candidate digest `14302fd17936483e523a52b472c88b30009bc605c5eb5522a792f916c0a877b6` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
-| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30735517980` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://9cd7a7fc.joohwee.pages.dev`, deployment id `9cd7a7fc-869f-4e07-a7d3-fd0616557eb2`, published mirror commit `41043c2ff3bb8b49d0f54850dd2c83f4778cd44f` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
+| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `7f097dbabb7285cf4a18a66a0e37170158b5a610` | run `30738439105` `Verify Release Candidate` passed; local review candidate digest `30b9287241822362c5a591bb35d575ce04529751e324e6c0d9e55f8e8214f9eb`, immutable manifest digest `77f01de7f8235b10f7611e69c8e957c7d27dedc6d8b7a4f5f4a433ce81627ba0`, production candidate digest `a78cbb84bdf56e6cd722b9647f2e623b020ea05725fd73188133e4d8a12ad8cf` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
+| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30738439105` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://b1a0cc37.joohwee.pages.dev`, deployment id `b1a0cc37-01f9-4ff2-aeb6-ce2dc57a7899`, published mirror commit `154fb68b1bab81401f277ece6083200714f6f23f` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
 
 `OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. For the
-recorded 2026-08-02 release, those instructions were satisfied only for workflow run
-`30735517980`; outside that exact run and candidate pair, both boundaries remain closed.
+latest recorded 2026-08-02 release, those instructions were satisfied only for workflow run
+`30738439105`; outside that exact run and candidate pair, both boundaries remain closed.
 
 ## Preconditions
 
