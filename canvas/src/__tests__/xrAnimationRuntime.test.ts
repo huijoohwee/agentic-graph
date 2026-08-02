@@ -460,7 +460,7 @@ export function testXrAnimationRuntimeIsNativeInvocableAndExportable() {
       || !exported.package?.files.some(file => file.path === 'reference/frame-samples.json')
       || inspection.schema !== 'knowgrph-xr-animation-mcp/v1'
       || !inspection.catalog.canonical
-      || inspection.presets.length !== 11
+      || inspection.presets.length !== XR_ANIMATION_PRESETS.length
       || inspection.runtime.cast.find(track => track.actorId === 'actor-a')?.marks[0]?.transition !== 'ease-in-out'
       || !closeTo(inspection.runtime.cast.find(track => track.actorId === 'actor-a')?.marks[0]?.position[0], 2 + Math.SQRT1_2, 0.0001)
       || !inspection.invocationGrammar?.moveObject.includes('operation=move-object')
