@@ -210,6 +210,16 @@ function distanceSquared(left: XrMotionReferenceVector, right: XrMotionReference
   return (left[0] - right[0]) ** 2 + (left[1] - right[1]) ** 2 + (left[2] - right[2]) ** 2
 }
 
+function planarDirectionAlignment(
+  left: readonly [number, number],
+  right: readonly [number, number],
+): number {
+  const leftLength = Math.hypot(left[0], left[1])
+  const rightLength = Math.hypot(right[0], right[1])
+  if (leftLength <= 1e-9 || rightLength <= 1e-9) return 0
+  return Math.abs((left[0] * right[0] + left[1] * right[1]) / (leftLength * rightLength))
+}
+
 function resolvedMotionStatus(
   start: XrMotionReferenceVector,
   requested: XrMotionReferenceVector,
@@ -390,6 +400,12 @@ export function resolveXrSubjectMotion(input: Readonly<{
       : undefined),
   )
   const currentFootprint = footprintAt(input.position)
+  const priorTrajectoryPosition = input.markId && startTimeSeconds !== input.timeSeconds
+    ? subjectPositionAtTime(input.plan, subject.id, input.position, startTimeSeconds)
+    : null
+  const priorTrajectoryDelta = priorTrajectoryPosition
+    ? [input.position[0] - priorTrajectoryPosition[0], input.position[2] - priorTrajectoryPosition[2]] as const
+    : null
   const endpoints = [
     desired,
     [desired[0], input.position[1], input.position[2]],
@@ -402,10 +418,21 @@ export function resolveXrSubjectMotion(input: Readonly<{
     const status = resolvedMotionStatus(input.position, input.desiredPosition, desired)
     return Object.freeze({ position: desired, status })
   }
-  const candidates = sweptCandidates.map(candidate => candidate.position).filter(candidate => {
-    const candidateFootprint = footprintAt(candidate)
-    return motionCandidateIsValid(candidate, candidateFootprint, peers, stage.sizeMeters)
-  }).sort((left, right) => distanceSquared(input.position, right) - distanceSquared(input.position, left))
+  const candidates = sweptCandidates
+    .map((candidate, index) => ({ index, position: candidate.position }))
+    .filter(candidate => {
+      const candidateFootprint = footprintAt(candidate.position)
+      return motionCandidateIsValid(candidate.position, candidateFootprint, peers, stage.sizeMeters)
+    })
+    .sort((left, right) => {
+      const leftDelta = [left.position[0] - input.position[0], left.position[2] - input.position[2]] as const
+      const rightDelta = [right.position[0] - input.position[0], right.position[2] - input.position[2]] as const
+      const leftAlignment = priorTrajectoryDelta ? planarDirectionAlignment(leftDelta, priorTrajectoryDelta) : 0
+      const rightAlignment = priorTrajectoryDelta ? planarDirectionAlignment(rightDelta, priorTrajectoryDelta) : 0
+      if (rightAlignment !== leftAlignment) return rightAlignment - leftAlignment
+      return distanceSquared(input.position, right.position) - distanceSquared(input.position, left.position)
+    })
+    .map(candidate => candidate.position)
   const position = Object.freeze([...(candidates[0] || input.position)] as [number, number, number])
   const status = resolvedMotionStatus(input.position, input.desiredPosition, position)
   return Object.freeze({ position, status })

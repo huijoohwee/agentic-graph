@@ -11,12 +11,7 @@ const escapeMarkdownTableCell = (raw: string): string => {
     .trim()
 }
 
-const buildSeparatorCell = (name: string): string => {
-  const trimmed = String(name || '').trim()
-  if (!trimmed) return '---'
-  if (trimmed.length <= 3) return '---'
-  return '-'.repeat(Math.min(12, Math.max(3, trimmed.length)))
-}
+const buildSeparatorCell = (): string => '---'
 
 export type MarkdownPipeTableScalar = string | number | boolean | null | undefined
 export type MarkdownPipeTableAlignment = 'left' | 'center' | 'right' | null | undefined
@@ -61,7 +56,7 @@ export const serializeMarkdownPipeTable = (input: MarkdownPipeTableInput): strin
 
   const header = `| ${columns.map(escapeMarkdownTableCell).join(' | ')} |`
   const sep = `| ${columns.map((column, index) => {
-    const base = buildSeparatorCell(column)
+    const base = buildSeparatorCell()
     const alignment = input.alignments?.[index]
     if (alignment === 'right') return `${base}:`
     if (alignment === 'center') return `:${base}:`

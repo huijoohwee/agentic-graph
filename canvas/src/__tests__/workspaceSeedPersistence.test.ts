@@ -1252,6 +1252,126 @@ export async function testWorkspaceSeedProviderReadsDocsMirrorFromSelectedLocalF
   }
 }
 
+export async function testWorkspaceSeedProviderPrefersSelectedLocalFolderHandleOverStorageExportInFullBootstrap() {
+  const previousBaseUrl = process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+  const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+  const previousFetch = globalThis.fetch
+  const { restore } = initJsdomHarness()
+  const store = useGraphStore.getState()
+  const previousHandle = store.localMarkdownFolderHandle
+  const previousCacheId = store.localMarkdownFolderCacheId
+  const previousSelectedFolderPath = store.localMarkdownSelectedFolderPath
+  const previousSourceFiles = Array.isArray(store.sourceFiles) ? store.sourceFiles.slice() : []
+  type MockFsEntry = {
+    kind: 'file' | 'directory'
+    name: string
+    entries?: () => AsyncIterable<[string, MockFsEntry]>
+    getDirectoryHandle?: (name: string) => Promise<MockFsEntry>
+    getFile?: () => Promise<File>
+  }
+  const makeDirectoryEntry = (name: string, children: Record<string, MockFsEntry>): MockFsEntry => ({
+    kind: 'directory',
+    name,
+    async *entries() {
+      const keys = Object.keys(children)
+      for (let i = 0; i < keys.length; i += 1) {
+        const key = keys[i]!
+        const child = children[key]
+        if (!child) continue
+        yield [key, child]
+      }
+    },
+    getDirectoryHandle: async (childName: string) => {
+      const child = children[String(childName || '').trim()]
+      if (!child || child.kind !== 'directory') throw new Error(`missing directory ${childName}`)
+      return child
+    },
+  })
+  const makeFileEntry = (name: string, text: string, lastModified: number): MockFsEntry => ({
+    kind: 'file',
+    name,
+    getFile: async () => new File([text], name, { lastModified }),
+  })
+  const docsDir = makeDirectoryEntry('docs', {
+    'workspace-readme.md': makeFileEntry('workspace-readme.md', '# local handle workspace readme', 1710000008000),
+  })
+  process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = 'https://airvio.co'
+  process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = KG_HUIJOOHWEE_DOCS_ROOT
+  ;(globalThis as unknown as { fetch: typeof fetch }).fetch = (async (input: RequestInfo | URL) => {
+    const url = String(typeof input === 'string' ? input : (input as URL).toString())
+    if (!url.includes('/api/storage/export/')) return new Response('', { status: 404 })
+    return new Response(JSON.stringify({
+      ok: true,
+      apiVersion: '2026-05-04',
+      workspaceId: 'kgws:test',
+      exportedAtMs: 1710000009000,
+      documents: [
+        {
+          id: 'sf:maps',
+          workspaceId: 'kgws:test',
+          canonicalPath: `${KG_HUIJOOHWEE_DOCS_ROOT}/workspace-readme.md`,
+          title: 'workspace-readme.md',
+          docType: 'markdown',
+          lang: null,
+          graphId: null,
+          sourceKind: 'markdown',
+          contentMd: '# stale export workspace readme',
+          contentHash: 'maps',
+          parserVersion: 'source-files',
+          revision: 1,
+          updatedAtMs: 1710000008900,
+          deleted: false,
+        },
+        {
+          id: 'sf:video',
+          workspaceId: 'kgws:test',
+          canonicalPath: `${KG_HUIJOOHWEE_DOCS_ROOT}/knowgrph-video-demo.md`,
+          title: 'knowgrph-video-demo.md',
+          docType: 'markdown',
+          lang: null,
+          graphId: null,
+          sourceKind: 'markdown',
+          contentMd: '# stale export video',
+          contentHash: 'video',
+          parserVersion: 'source-files',
+          revision: 1,
+          updatedAtMs: 1710000009000,
+          deleted: false,
+        },
+      ],
+      documentChunks: [],
+      graphSnapshots: [],
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }) as typeof fetch
+  try {
+    store.setLocalMarkdownFolderCacheId(null, null)
+    store.setLocalMarkdownFolderHandle(docsDir as unknown as FileSystemDirectoryHandle, { accessMode: 'fs-access', name: 'docs' })
+    store.setLocalMarkdownSelectedFolderPath('docs')
+    store.setSourceFiles([])
+    const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+    if (mirrored.length !== 1 || mirrored[0]?.relPath !== 'workspace-readme.md') {
+      throw new Error(`expected selected local folder handle to stay authoritative in full bootstrap, got ${JSON.stringify(mirrored)}`)
+    }
+    if (String(mirrored[0]?.text || '').trim() !== '# local handle workspace readme') {
+      throw new Error(`expected selected local folder handle text to beat storage export fallback, got ${JSON.stringify(mirrored)}`)
+    }
+  } finally {
+    store.setSourceFiles(previousSourceFiles)
+    store.setLocalMarkdownFolderHandle(previousHandle as FileSystemDirectoryHandle | null)
+    store.setLocalMarkdownFolderCacheId(previousCacheId, null)
+    store.setLocalMarkdownSelectedFolderPath(previousSelectedFolderPath)
+    restore()
+    ;(globalThis as unknown as { fetch: typeof fetch }).fetch = previousFetch
+    if (typeof previousBaseUrl === 'string') process.env.VITE_KNOWGRPH_STORAGE_BASE_URL = previousBaseUrl
+    else delete process.env.VITE_KNOWGRPH_STORAGE_BASE_URL
+    if (typeof previousDocsAbsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT = previousDocsAbsRoot
+    else delete process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
+  }
+}
+
 export async function testWorkspaceSeedProviderKeepsEmptyAndModelAssetDocsMirrorFiles() {
   const previousDocsAbsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT
   const tmpRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'kg-docs-mirror-'))

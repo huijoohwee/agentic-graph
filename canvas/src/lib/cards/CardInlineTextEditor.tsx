@@ -242,10 +242,10 @@ export const CardInlineTextEditor = React.memo(function CardInlineTextEditor(pro
     value,
   }
   const closeCommandDraft = React.useCallback(() => {
-    setEditing(false)
+    if (!useViewerEditSurface) setEditing(false)
     setCommandMode(null)
     setCommandQuery('')
-  }, [])
+  }, [useViewerEditSurface])
   const cancel = React.useCallback(() => {
     updateDraft(normalizeEditorValue(value))
     setEditing(false)
@@ -276,8 +276,14 @@ export const CardInlineTextEditor = React.memo(function CardInlineTextEditor(pro
     const key = readTextareaInvocationMediaReferenceKey(value)
     const chip = key ? displayMediaCandidateByKey.get(key) : null
     if (!chip) return null
-    return <CardInlineTextProjectedMediaChip chip={chip} index={0} />
-  }, [displayMediaCandidateByKey])
+    const preservesAuthoredReferencePrefix = value.startsWith('@') && displayProjectionSourceValue.includes(value)
+    return preservesAuthoredReferencePrefix ? (
+      <>
+        @
+        <CardInlineTextProjectedMediaChip chip={chip} index={0} />
+      </>
+    ) : <CardInlineTextProjectedMediaChip chip={chip} index={0} />
+  }, [displayMediaCandidateByKey, displayProjectionSourceValue])
   const displayProjectionText = multiline && projectedMediaAttachments?.length
     ? buildFloatingPanelChatComposerDisplayText(displayProjectionSourceValue, { mediaAttachments: projectedMediaAttachments })
     : displaySourceValue
@@ -394,7 +400,11 @@ export const CardInlineTextEditor = React.memo(function CardInlineTextEditor(pro
         })
         updateDraft(next)
         latest.persistCommandDraft(next)
-        focusInputSelectionSoon(input, hasProjectedInvocationOverlay ? mapFloatingPanelChatComposerRawIndexToDisplayIndex(next, cursor, { mediaAttachments: EDITOR_PROJECTED_MEDIA_ATTACHMENTS }) : cursor)
+        const nextDisplayCursor = hasProjectedInvocationOverlay
+          ? mapFloatingPanelChatComposerRawIndexToDisplayIndex(next, cursor, { mediaAttachments: EDITOR_PROJECTED_MEDIA_ATTACHMENTS })
+          : cursor
+        if (useViewerEditSurface) focusViewerCommandSelection(nextDisplayCursor)
+        else focusInputSelectionSoon(input, nextDisplayCursor)
         return true
       }
       const current = normalizeEditorValue(latest.editing ? latest.draft : latest.value)

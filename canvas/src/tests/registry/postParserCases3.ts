@@ -621,6 +621,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["workspaceFs.activeDocument.blankPersistedTextFallsBackToDocsMirror","@/__tests__/workspaceGithubDocsMirrorSync.test","testWorkspaceActiveDocumentFallsBackToDocsMirrorWhenPersistedTextIsBlank"],
   ["workspaceFs.seedProvider.incompleteSourceFilesStorageFallbackNoCrash","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderIncompleteSourceFilesStorageFallbackDoesNotCrashWhenStorageExportMisses"],
   ["workspaceFs.seedProvider.configuredDocsRootPrecedesStorageFallback","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderConfiguredDocsRootPrecedesStorageFallback"],
+  ["workspaceFs.seedProvider.configuredDocsRootPrecedesPublishedCanonicalDatasetInFullBootstrap","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderConfiguredDocsRootPrecedesPublishedCanonicalDatasetInFullBootstrap"],
   ["workspaceFs.seedProvider.configuredDocsRootDedupesBurstReads","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderConfiguredDocsRootDedupesBurstReads"],
   ["workspaceFs.seedProvider.publishedDocsSeedRejectsHtmlFallback","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderPublishedDocsSeedRejectsHtmlFallback"],
   ["workspaceFs.seedProvider.storageExportDoesNotReuseStaleMirror","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderStorageExportDoesNotReuseStaleMirror"],

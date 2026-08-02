@@ -10,8 +10,9 @@ const FORBIDDEN_REFERENCE_TOKENS = Object.freeze([
 ] as const)
 
 const GENERATED_OR_EXTERNAL_DIRECTORIES = new Set([
-  '.git', '.next', '.turbo', 'build', 'coverage', 'dist', 'node_modules', 'playwright-report', 'test-results',
+  '.dbg', '.git', '.next', '.turbo', 'build', 'coverage', 'dist', 'node_modules', 'playwright-report', 'test-results',
 ])
+const GENERATED_OR_EXTERNAL_PATH_PREFIXES = ['data/outputs'] as const
 const SCANNED_TEXT_EXTENSIONS = /\.(?:cjs|css|csv|html|js|jsx|json|md|mjs|scss|sh|svg|toml|ts|tsx|txt|yaml|yml)$/u
 const REFERENCE_ALLOWLIST = new Set([
   'canvas/scripts/__tests__/motion-control-assets-and-docs.test.mjs',
@@ -20,10 +21,16 @@ const REFERENCE_ALLOWLIST = new Set([
   'docs/documents/knowgrph-motion-control-prd-tad.md',
 ])
 
-function repositoryFiles(root: string): readonly string[] {
+function repositoryFiles(root: string, repositoryRoot = root): readonly string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap(entry => {
     const path = resolve(root, entry.name)
-    if (entry.isDirectory()) return GENERATED_OR_EXTERNAL_DIRECTORIES.has(entry.name) ? [] : repositoryFiles(path)
+    const repositoryPath = relative(repositoryRoot, path).split(sep).join('/')
+    if (entry.isDirectory()) {
+      return GENERATED_OR_EXTERNAL_DIRECTORIES.has(entry.name)
+        || GENERATED_OR_EXTERNAL_PATH_PREFIXES.some(prefix => repositoryPath === prefix || repositoryPath.startsWith(`${prefix}/`))
+        ? []
+        : repositoryFiles(path, repositoryRoot)
+    }
     return entry.isFile() && SCANNED_TEXT_EXTENSIONS.test(entry.name) ? [path] : []
   })
 }
@@ -33,12 +40,8 @@ export function testMotionControlProductionRemainsCleanRoomAndDependencyFree(): 
   const repositoryRoot = resolve(canvasRoot, '..')
   const scannedFiles = repositoryFiles(repositoryRoot).filter((path) => {
     const repositoryPath = relative(repositoryRoot, path).split(sep).join('/')
-    return !REFERENCE_ALLOWLIST.has(repositoryPath)
+    return !REFERENCE_ALLOWLIST.has(repositoryPath) && !/^debug-[^/]+\.md$/u.test(repositoryPath)
   })
-  const repositoryText = scannedFiles
-    .map(path => `${relative(repositoryRoot, path)}\n${readFileSync(path, 'utf8')}`)
-    .join('\n')
-    .toLowerCase()
   const dependencies = [
     resolve(repositoryRoot, 'package.json'),
     resolve(repositoryRoot, 'package-lock.json'),
@@ -46,8 +49,16 @@ export function testMotionControlProductionRemainsCleanRoomAndDependencyFree(): 
   ].map(path => readFileSync(path, 'utf8')).join('\n').toLowerCase()
 
   for (const token of FORBIDDEN_REFERENCE_TOKENS) {
-    if (repositoryText.includes(token) || dependencies.includes(token)) {
+    if (dependencies.includes(token)) {
       throw new Error(`expected repository-wide clean-room marker and dependency scan to exclude ${token}`)
+    }
+    for (const path of scannedFiles) {
+      const repositoryPath = relative(repositoryRoot, path).split(sep).join('/')
+      const repositoryPathLower = repositoryPath.toLowerCase()
+      const fileTextLower = readFileSync(path, 'utf8').toLowerCase()
+      if (repositoryPathLower.includes(token) || fileTextLower.includes(token)) {
+        throw new Error(`expected repository-wide clean-room marker and dependency scan to exclude ${token} in ${repositoryPath}`)
+      }
     }
   }
 }

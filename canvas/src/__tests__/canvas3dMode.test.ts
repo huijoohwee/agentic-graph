@@ -177,7 +177,7 @@ export function testXrModeRendersGlbAssetDocumentsWithoutWebxrSessionGate() {
   if (!threeGraph.includes('parseGlbAssetDocument(canvasMarkdownDocument.text)')) {
     throw new Error('Expected ThreeGraph to detect model asset documents from the Canvas-applied markdown render context')
   }
-  if (!threeGraph.includes('const hasRenderableScene = gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld')) {
+  if (!/const hasRenderableScene = [^\n]*hasGraph[^\n]*hasGlbAsset[^\n]*hasSpatialCaptureManifest[^\n]*hasXrEmptyWorld/.test(threeGraph)) {
     throw new Error('Expected ThreeGraph to keep the canvas mounted for model asset documents without graph nodes')
   }
   if (!threeGraph.includes('const sceneGraphForRender = useMemo<GraphData | null>(() => {') || !threeGraph.includes(': { ...sceneGraph, edges: [] }')) {
@@ -201,7 +201,7 @@ export function testXrModeRendersGlbAssetDocumentsWithoutWebxrSessionGate() {
 export function testXrModeGraphSceneUsesDistinctSpatialStageInsteadOfPlain3dGlobe() {
   const scene = readFileSync(resolve(process.cwd(), 'src/lib/three/Scene.impl.tsx'), 'utf8')
   const stage = readFileSync(resolve(process.cwd(), 'src/features/three/XrMotionReferenceGraphStage.tsx'), 'utf8') + readFileSync(resolve(process.cwd(), 'src/features/three/XrSceneStage.tsx'), 'utf8')
-  if (!scene.includes('<XrSceneStage authority={xrGraphStageAuthority} data={data} paused={Boolean(paused)} />') || !stage.includes('<XrMotionReferenceGraphStageLazy data={data} paused={paused} />')) {
+  if (!/<XrSceneStage authority=\{xrGraphStageAuthority\} data=\{data\}(?: geospatialComposite=\{geospatialComposite\})? paused=\{Boolean\(paused\)\} \/>/.test(scene) || !stage.includes('<XrMotionReferenceGraphStageLazy data={data} paused={paused} />')) {
     throw new Error('Expected XR Mode graph scenes to mount the native motion-reference stage')
   }
   if (!scene.includes("mode === '3d' ? (\n          <GlobeEffects")) {

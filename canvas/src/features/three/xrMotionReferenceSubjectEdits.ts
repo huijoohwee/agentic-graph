@@ -39,7 +39,7 @@ export function buildXrMotionReferenceSubjectAddEdit(
   subjects.push({ id, assetId: asset.id, label, color: asset.defaultColor, position: [...position], rotationYDegrees: 0, scale: 1 })
   const cast = Array.isArray(plan.cast) ? plan.cast.slice() : []
   if (asset.mobile && cast.length < XR_MOTION_REFERENCE_MAX_CAST_TRACKS) {
-    cast.push({ actorId: id, label, animation: null, marks: [{ timeSeconds: 0, position: [...position], transition: 'linear', gait: defaultXrChoreographyGait(asset.category) }] })
+    cast.push({ actorId: id, label, animation: null, marks: [{ timeSeconds: 0, position: [...position], transition: 'linear', gait: defaultXrChoreographyGait(asset) }] })
   }
   return { value: { ...plan, subjects, cast } }
 }
@@ -77,8 +77,8 @@ export function buildXrMotionReferenceSubjectAssetEdit(
   const existingTrack = planValue.cast.find(track => track.actorId === subjectId)
   if (nextAsset.mobile && !existingTrack && planValue.cast.length >= XR_MOTION_REFERENCE_MAX_CAST_TRACKS) return null
 
-  const previousDefaultGait = defaultXrChoreographyGait(previousAsset.category)
-  const nextDefaultGait = defaultXrChoreographyGait(nextAsset.category)
+  const previousDefaultGait = defaultXrChoreographyGait(previousAsset)
+  const nextDefaultGait = defaultXrChoreographyGait(nextAsset)
   const nextLabel = subject.label === previousAsset.label ? nextAsset.label : subject.label
   const nextColor = subject.color.toLowerCase() === previousAsset.defaultColor.toLowerCase()
     ? nextAsset.defaultColor

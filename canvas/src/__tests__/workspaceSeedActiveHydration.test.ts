@@ -375,6 +375,57 @@ export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesStorage
   })
 }
 
+export async function testWorkspaceSeedProviderConfiguredDocsRootPrecedesPublishedCanonicalDatasetInFullBootstrap() {
+  const capturedUrls: string[] = []
+  const docsRootRelPath = 'configured-full-bootstrap.md'
+  await withFetchAndEnv({
+    VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT: '/virtual/workspace/full-bootstrap',
+    VITE_KNOWGRPH_STORAGE_BASE_URL: undefined,
+  }, (async (input, init) => {
+    const url = String(typeof input === 'string' ? input : (input as URL).toString())
+    capturedUrls.push(url)
+    if (url === '/__kg_fs_list') {
+      const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
+      if (String(body.path || '').trim() !== '/virtual/workspace/full-bootstrap') {
+        return new Response(JSON.stringify({ ok: true, files: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      return new Response(JSON.stringify({
+        ok: true,
+        files: [{
+          relPath: docsRootRelPath,
+          text: '# configured full bootstrap docs',
+          updatedAtMs: 1710000009001,
+        }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } })
+    }
+    if (url === '/docs/workspace-readme.md') {
+      return new Response('# published canonical fallback', {
+        status: 200,
+        headers: { 'content-type': 'text/markdown; charset=utf-8' },
+      })
+    }
+    return new Response('', { status: 404 })
+  }) as typeof fetch, async () => {
+    await withStoreMirrorState(async () => {
+      const store = useGraphStore.getState()
+      store.setLocalMarkdownFolderHandle(null)
+      store.setLocalMarkdownFolderCacheId(null, null)
+      store.setLocalMarkdownSelectedFolderPath('/virtual/workspace/full-bootstrap')
+      store.setSourceFiles([])
+      const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+      if (mirrored.length !== 1 || mirrored[0]?.relPath !== docsRootRelPath) {
+        throw new Error(`expected configured docs root to stay authoritative during full bootstrap, got ${JSON.stringify(mirrored)}`)
+      }
+      if (capturedUrls[0] !== '/__kg_fs_list') {
+        throw new Error(`expected configured docs root to resolve before published canonical fallback, got ${JSON.stringify(capturedUrls)}`)
+      }
+      if (capturedUrls.includes('/docs/workspace-readme.md')) {
+        throw new Error(`expected authoritative configured docs root to avoid published canonical fallback, got ${JSON.stringify(capturedUrls)}`)
+      }
+    })
+  })
+}
+
 export async function testWorkspaceSeedProviderStorageExportDoesNotReuseStaleMirror() {
   let exportFetches = 0
   await withFetchAndEnv({
