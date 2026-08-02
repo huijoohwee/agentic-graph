@@ -56,6 +56,15 @@ asset; a transient missing asset or HTML SPA fallback is returned as `503` with 
 short retry signal. This keeps partial deployment propagation from mutating a release URL in the
 browser cache while preserving immutable caching for verified asset bytes.
 
+### 2026-08-02 Protected Release Record
+
+- Source repo `knowgrph` shipped commit `af26f37477cb92e1a8306931262bb25dd4944f00` (`Promote Agentic Canvas OS ba45470e0365 (#622)`).
+- The protected `Production Release` workflow run `30735517980` verified the exact reviewed localhost candidate for that source revision and the pinned Agentic Canvas OS docs revision `ba45470e036599d0f42add7236bac1f4a5b03cab`.
+- Interactive terminal authorization approved the exact production candidate digest `14302fd17936483e523a52b472c88b30009bc605c5eb5522a792f916c0a877b6` before mutation.
+- Cloudflare Pages deployed the exact candidate to `https://9cd7a7fc.joohwee.pages.dev`, captured deployment id `9cd7a7fc-869f-4e07-a7d3-fd0616557eb2`, reconciled canonical docs into D1, and completed live runtime, browser-fidelity, and returning-user service-worker verification before publication.
+- Publish repo `huijoohwee` shipped commit `41043c2ff3bb8b49d0f54850dd2c83f4778cd44f` (`chore(release): promote knowgrph af26f37477cb`).
+- The protected release completed without rollback and re-proved the public route at `https://airvio.co/knowgrph/` through the verified deployment path.
+
 ### 2026-07-11 Root Live Canvas Hero Release Record
 
 - Source repo `knowgrph` shipped `a86bdbc9` (`restore source-backed apex FlowCanvas hero`) and `ada81a16` (`isolate apex hero from unloaded persisted source text`).
