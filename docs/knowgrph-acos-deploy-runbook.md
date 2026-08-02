@@ -2,8 +2,8 @@
 title: "Reference implementation: Knowgrph Protected Release Runbook"
 id: "md:knowgrph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.0.0"
-date: "2026-07-30"
+version: "2.0.1"
+date: "2026-08-02"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.release.runbook"
@@ -67,11 +67,12 @@ boundary.
 
 | Reference | Named check | Recorded result | Surface | Meaning |
 |---|---|---|---|---|
-| `ER-REL-B1` | `.github/workflows/release.yml` verify job for an exact `source_sha` | not recorded for this revision | Mirror | no immutable candidate is qualified by this runbook |
-| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | not recorded for this revision | Delivery | no public delivery is proven by this runbook |
+| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `af26f37477cb92e1a8306931262bb25dd4944f00` | run `30735517980` `Verify Release Candidate` passed; local review candidate digest `bafe95d8d0bde9ff908acda5e14167faec379445d7cebd9024ea0ef7dab6f5b3`, immutable manifest digest `fcde567a80d33411d27ba440482050a635be978b3d0ef7c549b291671d7e336a`, production candidate digest `14302fd17936483e523a52b472c88b30009bc605c5eb5522a792f916c0a877b6` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
+| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30735517980` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://9cd7a7fc.joohwee.pages.dev`, deployment id `9cd7a7fc-869f-4e07-a7d3-fd0616557eb2`, published mirror commit `41043c2ff3bb8b49d0f54850dd2c83f4778cd44f` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
 
-`OI-REL-B1` and `OI-REL-B2` describe how a future operator supplies an instruction; they are not
-an instruction instance for this revision. Both boundaries therefore remain closed.
+`OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. For the
+recorded 2026-08-02 release, those instructions were satisfied only for workflow run
+`30735517980`; outside that exact run and candidate pair, both boundaries remain closed.
 
 ## Preconditions
 
@@ -221,6 +222,23 @@ Retain:
 - rollback result when applicable.
 
 Only this revision-bound evidence may advance the delivered rung.
+
+### 2026-08-02 Recorded Receipt
+
+- Workflow run: `30735517980` (`Production Release`)
+- Source revision: `af26f37477cb92e1a8306931262bb25dd4944f00`
+- Source tree: `3e7c65dfd91e537008c354f19cc31a9e123abe2b`
+- Agentic Canvas OS docs revision: `ba45470e036599d0f42add7236bac1f4a5b03cab`
+- Local review candidate digest: `bafe95d8d0bde9ff908acda5e14167faec379445d7cebd9024ea0ef7dab6f5b3`
+- Immutable manifest digest: `fcde567a80d33411d27ba440482050a635be978b3d0ef7c549b291671d7e336a`
+- Production candidate digest: `14302fd17936483e523a52b472c88b30009bc605c5eb5522a792f916c0a877b6`
+- Lifecycle candidate digest: `ce37e17ac99b0f6e116792a2b47b034af6bbedcf0fe460ce9ae172a0b457f512`
+- Human authorization decision ref: `https://github.com/huijoohwee/knowgrph/actions/runs/30735517980#environment-production`
+- Authorization interaction evidence digest: `6ca1074057d6c3523af9a8a773881fea56af4ea23cea3753219e8978b20ae948`
+- Candidate deployment origin: `https://9cd7a7fc.joohwee.pages.dev`
+- Candidate deployment id: `9cd7a7fc-869f-4e07-a7d3-fd0616557eb2`
+- Published mirror revision: `41043c2ff3bb8b49d0f54850dd2c83f4778cd44f`
+- Rollback result: not invoked
 
 ## Separate Worker and DNS boundaries
 
