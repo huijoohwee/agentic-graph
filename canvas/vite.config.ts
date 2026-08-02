@@ -7002,10 +7002,10 @@ export default defineConfig(({ command, mode }) => {
                 if (moduleId.includes('/node_modules/maplibre-gl/')) return 'maplibre'
                 if (moduleId.includes('/node_modules/@huggingface/transformers/')) return 'transformers'
                 if (moduleId.includes('/src/features/panels/views/settingsMcpDocEntries.ts')) {
-                  return 'settings-mcp-docs'
+                  return 'settings-mcp-core'
                 }
                 const settingsMcpDocModuleMatch = moduleId.match(
-                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs)\.ts$/,
+                  /\/src\/features\/panels\/views\/(apiNativeBrowserMcpApiDocs|byteplusModelArkMcpApiDocs|cloudflareAiGatewayMcpApiDocs|crawlerAccessMcpApiDocs|exaMcpApiDocs|externalMcpToolServerDocs|feishuBaseMcpApiDocs|grabmapsMcpApiDocs|knowgrphToolServerDocs|larkAppMcpApiDocs|miromindMcpApiDocs|openaiMcpApiDocs|operatorDeployMcpApiDocs|sealionMcpApiDocs|stripeMcpApiDocs|vdeoxplnMcpApiDocs|videodbMcpApiDocs)\.ts$/,
                 )
                 if (settingsMcpDocModuleMatch) {
                   return `settings-${settingsMcpDocModuleMatch[1]}`
