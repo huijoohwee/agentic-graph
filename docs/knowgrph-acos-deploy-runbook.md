@@ -73,12 +73,12 @@ boundary.
 
 | Reference | Named check | Recorded result | Surface | Meaning |
 |---|---|---|---|---|
-| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `027cd892b57e4247c1e8edb4c144b216c398379c` | run `30747479760` `Verify Release Candidate` passed; local review candidate digest `c536eb898e11337c64032751645d6c417fb64f88264e8ff0822d51a946c65a90`, immutable manifest digest `41ad94826111728a42e370e841c3fe7dc3bd8423372a9f5b09f674fa43cc0f76`, production candidate digest `db9bd64ab301dfffe0ab2c61a73e7053b0f1ee8b747ca78830735ff0baff01c2` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
-| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30747479760` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://1fa1b6dd.joohwee.pages.dev`, deployment id `1fa1b6dd-dad2-40d0-a81f-9d5b8fecd454`, published mirror commit `dec0a405fed5bdbaf00e7168c928498f71a18b41` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
+| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `d9578e8810e94565028386b19ac5e95668e91207` | run `30750323434` `Verify Release Candidate` passed; local review candidate digest `cbec1294bfecb670431fad6f794655d6b8366ea41a27edc797b67a9ad7445395`, immutable manifest digest `8131b985777b94e7f2f5426f7f6fedd3a99d31672f0f0f2216b78d3befbf0d78`, production candidate digest `b3466a2b799826f497595ddb505e1cd4d8f4fe61f84f387f3abbe501528324bc` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
+| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30750323434` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://40cc85aa.joohwee.pages.dev`, deployment id `40cc85aa-e472-406c-b2c4-f76abdd23a18`, published mirror commit `8ed1e4ad6fbf1f5127c179b577824ca61c9afbb7` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
 
 `OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. For the
 latest recorded 2026-08-02 release, those instructions were satisfied only for workflow run
-`30747479760`; outside that exact run and candidate pair, both boundaries remain closed.
+`30750323434`; outside that exact run and candidate pair, both boundaries remain closed.
 
 ## Preconditions
 
@@ -240,6 +240,24 @@ Only this revision-bound evidence may advance the delivered rung.
 
 ### 2026-08-02 Recorded Receipt
 
+- Earlier stale dispatch: run `30749177437` for source revision `86496f495dede69256053d308cc222ddf5ae6daa` failed closed because protected `refs/heads/main` had already advanced to `d9578e8810e94565028386b19ac5e95668e91207`
+- Workflow run: `30750323434` (`Production Release`)
+- Source revision: `d9578e8810e94565028386b19ac5e95668e91207`
+- Source tree: `ca06e5b31887302cf941ecc72fa3f3d8475378ad`
+- Agentic Canvas OS docs revision: `0ba0d131c6df4a41666bd4f8b4eb6f7c549c42c2`
+- Local review candidate digest: `cbec1294bfecb670431fad6f794655d6b8366ea41a27edc797b67a9ad7445395`
+- Immutable manifest digest: `8131b985777b94e7f2f5426f7f6fedd3a99d31672f0f0f2216b78d3befbf0d78`
+- Production candidate digest: `b3466a2b799826f497595ddb505e1cd4d8f4fe61f84f387f3abbe501528324bc`
+- Lifecycle candidate digest: `680255babe4f08f6c2bdcaa16cba00f24af6aa31c0f957f80ff6b1440b44c3d1`
+- Human authorization decision ref: `https://github.com/huijoohwee/knowgrph/actions/runs/30750323434#environment-production`
+- Authorization interaction evidence digest: `ce15de59cc32a661274973f68d633e1f8eb9d9d05c40b8fff9659a6145bf7b2b`
+- Candidate deployment origin: `https://40cc85aa.joohwee.pages.dev`
+- Candidate deployment id: `40cc85aa-e472-406c-b2c4-f76abdd23a18`
+- Published mirror revision: `8ed1e4ad6fbf1f5127c179b577824ca61c9afbb7`
+- Rollback result: not invoked
+
+### 2026-08-02 Earlier Recorded Receipt
+
 - Workflow run: `30747479760` (`Production Release`)
 - Source revision: `027cd892b57e4247c1e8edb4c144b216c398379c`
 - Source tree: `de0875017e2c270803dec577203d112010ed1ba1`
@@ -255,7 +273,7 @@ Only this revision-bound evidence may advance the delivered rung.
 - Published mirror revision: `dec0a405fed5bdbaf00e7168c928498f71a18b41`
 - Rollback result: not invoked
 
-### 2026-08-02 Earlier Recorded Receipt
+### 2026-08-02 Even Earlier Recorded Receipt
 
 - Workflow run: `30735517980` (`Production Release`)
 - Source revision: `af26f37477cb92e1a8306931262bb25dd4944f00`
