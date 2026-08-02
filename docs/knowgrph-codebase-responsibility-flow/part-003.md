@@ -1,7 +1,7 @@
 # Settings Registry Responsibility Flow — Part 3
 
 | Area | Responsibility | Modules | Classes/Objects | Functions/Methods | Key | Imports | Notes | Line Range |
-| ---- | ------------ | ------- | ------------ | ------------ | --- | ------- | ----- | ---------- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Search | auth boundary | `canvas/src/features/settings/registry-feishu-base-mcp.ts` | `` | `` | `search.feishuBase.mcp.authBoundary` | `localStorage` |  | `canvas/src/features/settings/registry-feishu-base-mcp.ts:L28` |
 | Search | connection mode | `canvas/src/features/settings/registry-feishu-base-mcp.ts` | `` | `` | `search.feishuBase.mcp.connectionMode` | `localStorage` |  | `canvas/src/features/settings/registry-feishu-base-mcp.ts:L22` |
 | Search | docs url | `canvas/src/features/settings/registry-feishu-base-mcp.ts` | `` | `` | `search.feishuBase.mcp.docsUrl` | `localStorage` |  | `canvas/src/features/settings/registry-feishu-base-mcp.ts:L34` |

@@ -1,7 +1,7 @@
 # Settings Registry Responsibility Flow — Part 2
 
 | Area | Responsibility | Modules | Classes/Objects | Functions/Methods | Key | Imports | Notes | Line Range |
-| ---- | ------------ | ------- | ------------ | ------------ | --- | ------- | ----- | ---------- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Editor: Monaco | Enable Monaco copy with syntax highlighting | `canvas/src/features/settings/registry-ui.monaco.ts` | `` | `setMonacoCopyWithSyntaxHighlightingEnabled` | `monacoCopyWithSyntaxHighlightingEnabled` | `zustand` |  | `canvas/src/features/settings/registry-ui.monaco.ts:L480` |
 | Editor: Monaco | Enable Monaco cursor blinking | `canvas/src/features/settings/registry-ui.monaco.ts` | `` | `setMonacoCursorBlinkingEnabled` | `monacoCursorBlinkingEnabled` | `zustand` |  | `canvas/src/features/settings/registry-ui.monaco.ts:L372` |
 | Editor: Monaco | Enable taller Monaco cursor height | `canvas/src/features/settings/registry-ui.monaco.ts` | `` | `setMonacoCursorHeightEnabled` | `monacoCursorHeightEnabled` | `zustand` |  | `canvas/src/features/settings/registry-ui.monaco.ts:L453` |

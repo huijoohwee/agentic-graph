@@ -1,7 +1,7 @@
 # Settings Registry Responsibility Flow — Part 1
 
 | Area | Responsibility | Modules | Classes/Objects | Functions/Methods | Key | Imports | Notes | Line Range |
-| ---- | ------------ | ------- | ------------ | ------------ | --- | ------- | ----- | ---------- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Config Constants | Toolbar badge click URL | `canvas/src/features/settings/registry-presets.ts` | `` | `` | `CLICK_URL` | `import.meta.env` |  | `canvas/src/features/settings/registry-presets.ts:L45` |
 | Pipeline Env | Pipeline input path | `canvas/src/features/settings/registry-presets.ts` | `` | `` | `KG_INPUT_PATH` | `window.__ENV__` |  | `canvas/src/features/settings/registry-presets.ts:L59` |
 | Pipeline Env | Pipeline output directory | `canvas/src/features/settings/registry-presets.ts` | `` | `` | `KG_OUTPUT_DIR` | `window.__ENV__` |  | `canvas/src/features/settings/registry-presets.ts:L66` |
