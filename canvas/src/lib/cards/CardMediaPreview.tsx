@@ -11,7 +11,6 @@ import {
   type CardMediaSkeletonVariant,
 } from '@/lib/cards/cardMediaPreviewUtils'
 import { resolveMediaPreviewSelectableDataAttr } from '@/lib/cards/mediaPreviewSurfaceSelection'
-import { ImageThreeJsSurface } from '@/features/image-to-threejs/ImageThreeJsSurface'
 import type { ImageToThreeJsRenderMode } from '@/features/image-to-threejs/imageToThreeJsContract'
 
 type SkeletonBlock = {
@@ -26,6 +25,9 @@ const CARD_MEDIA_SKELETON_STYLE_ID = 'kg-card-media-skeleton-style'
 const CARD_MEDIA_LOW_PRIORITY_IMAGE_PROPS = {
   fetchpriority: 'low',
 } as unknown as React.ImgHTMLAttributes<HTMLImageElement>
+const ImageThreeJsSurfaceLazy = React.lazy(() =>
+  import('@/features/image-to-threejs/ImageThreeJsSurface').then(mod => ({ default: mod.ImageThreeJsSurface })),
+)
 
 const stopInteractiveCardMediaEvent = (event: React.SyntheticEvent) => {
   try {
@@ -416,15 +418,17 @@ export function CardMediaPreview({
         style={style}
         {...mediaEventProps}
       >
-        <ImageThreeJsSurface
-          sourceUrl={src}
-          title={title}
-          mediaClassName={mediaClassName}
-          mediaStyle={{ ...mediaPointerStyle, ...(mediaStyle || null) }}
-          interactive={interactive}
-          onReady={onReady}
-          onError={onError}
-        />
+        <React.Suspense fallback={<CardMediaLoadingSkeleton label="Converting image to Three.js..." variant="image" />}>
+          <ImageThreeJsSurfaceLazy
+            sourceUrl={src}
+            title={title}
+            mediaClassName={mediaClassName}
+            mediaStyle={{ ...mediaPointerStyle, ...(mediaStyle || null) }}
+            interactive={interactive}
+            onReady={onReady}
+            onError={onError}
+          />
+        </React.Suspense>
       </section>
     )
   }

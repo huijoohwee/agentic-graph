@@ -25,6 +25,28 @@ const shouldRunNodeOnlyUiTestsForFocusedFilter = () => {
   return NODE_ONLY_UI_TEST_FILTER_HINTS.some(prefix => filterLower.includes(prefix))
 }
 
+const importNodeOnlyUiTestModule = async <T>(importPath: string): Promise<T> => {
+  const globalWithWindow = globalThis as typeof globalThis & {
+    window?: Window & { __KG_TEST_WINDOW_STUB__?: boolean }
+  }
+  const stubWindow = globalWithWindow.window
+  const shouldDropStubWindow = Boolean(stubWindow?.__KG_TEST_WINDOW_STUB__ === true && typeof document === 'undefined')
+  if (shouldDropStubWindow) {
+    try {
+      delete globalWithWindow.window
+    } catch {
+      globalWithWindow.window = undefined
+    }
+  }
+  try {
+    return (await import(importPath)) as T
+  } finally {
+    if (shouldDropStubWindow && !globalWithWindow.window) {
+      globalWithWindow.window = stubWindow
+    }
+  }
+}
+
 const execTuple = async (results: TestResult[], tuple: TestCaseTuple) => {
   const [name, importPath, exportName] = tuple
   await execTest(results, name, async () => {
@@ -44,44 +66,36 @@ const execTuple = async (results: TestResult[], tuple: TestCaseTuple) => {
 const runNodeOnlyUiTests = async (results: TestResult[]) => {
   if (!(typeof window === 'undefined' || typeof document === 'undefined')) return
 
-  const bootstrap =
-    typeof document === 'undefined' ? (await import('@/tests/lib/jsdomHarness')).initJsdomHarness() : null
-  if (bootstrap) {
-    const w = bootstrap.dom.window as unknown as { URL?: { createObjectURL?: unknown } }
-    if (w.URL && typeof w.URL.createObjectURL !== 'function') {
-      ;(w.URL as unknown as { createObjectURL: () => string }).createObjectURL = () => 'blob:kg-test'
-    }
-  }
-
-  try {
-    const modShowOnCanvas = await import('../__tests__/markdownPreviewShowOnCanvas.test')
-    await execTest(results, 'ui.markdown.preview.showOnCanvas', modShowOnCanvas.testMarkdownPreviewShowOnCanvasSelectsExpectedNode)
-    await execTest(results, 'ui.markdown.preview.nativeContextMenuNoLegacyBubble', modShowOnCanvas.testMarkdownPreviewUsesNativeContextMenuWithoutLegacySelectionBubble)
-    await execTest(
-      results,
-      'ui.markdown.preview.tokenCacheDoesNotCrossDocPath',
-      modShowOnCanvas.testMarkdownPreviewTokenCacheDoesNotCrossDocumentPath,
-    )
-    await execTest(
-      results,
-      'ui.markdown.preview.viewModeSwitchDoesNotCrossDocPath',
-      modShowOnCanvas.testMarkdownPreviewViewModeSwitchDoesNotCrossDocumentPath,
-    )
-    await execTest(
-      results,
-      'ui.markdown.preview.selectionHighlightsOtherSameText',
-      modShowOnCanvas.testMarkdownPreviewSelectionHighlightsOtherSameText,
-    )
-    await execTest(
-      results,
-      'ui.markdown.preview.selectionHighlightsOtherSameSentence',
-      modShowOnCanvas.testMarkdownPreviewSelectionHighlightsOtherSameSentence,
-    )
-    await execTest(
-      results,
-      'ui.markdown.preview.sentenceDragSelectionSurvivesPeerHighlightRender',
-      modShowOnCanvas.testMarkdownPreviewSentenceDragSelectionSurvivesPeerHighlightRender,
-    )
+  const modShowOnCanvas = await importNodeOnlyUiTestModule<typeof import('../__tests__/markdownPreviewShowOnCanvas.test')>(
+    '../__tests__/markdownPreviewShowOnCanvas.test',
+  )
+  await execTest(results, 'ui.markdown.preview.showOnCanvas', modShowOnCanvas.testMarkdownPreviewShowOnCanvasSelectsExpectedNode)
+  await execTest(results, 'ui.markdown.preview.nativeContextMenuNoLegacyBubble', modShowOnCanvas.testMarkdownPreviewUsesNativeContextMenuWithoutLegacySelectionBubble)
+  await execTest(
+    results,
+    'ui.markdown.preview.tokenCacheDoesNotCrossDocPath',
+    modShowOnCanvas.testMarkdownPreviewTokenCacheDoesNotCrossDocumentPath,
+  )
+  await execTest(
+    results,
+    'ui.markdown.preview.viewModeSwitchDoesNotCrossDocPath',
+    modShowOnCanvas.testMarkdownPreviewViewModeSwitchDoesNotCrossDocumentPath,
+  )
+  await execTest(
+    results,
+    'ui.markdown.preview.selectionHighlightsOtherSameText',
+    modShowOnCanvas.testMarkdownPreviewSelectionHighlightsOtherSameText,
+  )
+  await execTest(
+    results,
+    'ui.markdown.preview.selectionHighlightsOtherSameSentence',
+    modShowOnCanvas.testMarkdownPreviewSelectionHighlightsOtherSameSentence,
+  )
+  await execTest(
+    results,
+    'ui.markdown.preview.sentenceDragSelectionSurvivesPeerHighlightRender',
+    modShowOnCanvas.testMarkdownPreviewSentenceDragSelectionSurvivesPeerHighlightRender,
+  )
 
     const modSelectionScrollHighlight = await import('../__tests__/markdownSelectionScrollHighlight.test')
     await execTest(
@@ -423,9 +437,6 @@ const runNodeOnlyUiTests = async (results: TestResult[]) => {
       'agentReady.webMcpHtmlFallback.lateBinding.sameOriginStoragePaths',
       modAgentReadyHtmlFallback.testAgentReadyHtmlWebMcpFallbackLateBindsAndUsesSameOriginStoragePaths,
     )
-  } finally {
-    bootstrap?.restore()
-  }
 }
 
 export const runAllTests = async () => {
