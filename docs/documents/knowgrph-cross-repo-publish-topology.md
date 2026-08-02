@@ -56,6 +56,16 @@ asset; a transient missing asset or HTML SPA fallback is returned as `503` with 
 short retry signal. This keeps partial deployment propagation from mutating a release URL in the
 browser cache while preserving immutable caching for verified asset bytes.
 
+### 2026-08-02 Canonical Main Advance Release Record
+
+- Source repo `knowgrph` shipped commit `027cd892b57e4247c1e8edb4c144b216c398379c` (`chore(release): promote Agentic Canvas OS runtime pin (#637)`).
+- An earlier protected `Production Release` dispatch for `4be31c4879d1ada8e8060ba2ce51e68987d6107f` failed closed as run `30747314671` because protected `main` advanced before verify could prove the exact requested commit; the stale candidate was retired instead of reused.
+- The protected `Production Release` workflow run `30747479760` then verified the exact reviewed localhost candidate for `027cd892b57e4247c1e8edb4c144b216c398379c` and the pinned Agentic Canvas OS docs revision `abeb1ae8bfb6fb89d7c4449bd1c7c1a9a8790175`.
+- Cloudflare Pages deployed the exact candidate to `https://1fa1b6dd.joohwee.pages.dev`, re-proved browser-fidelity and deployment markers for the same source revision, and completed returning-user service-worker convergence before publication.
+- Publish repo `huijoohwee` shipped commit `dec0a40bb6718d70b6bdfd6d3196ec5bc6342df4` (`chore(release): promote knowgrph 027cd892b57e`).
+- A duplicate waiting release run `30747485249` for the same `main` candidate was cancelled after the successful publication so no second authorization or publish path remained open for that SHA.
+- The protected release completed without rollback and re-proved the public route at `https://airvio.co/knowgrph/` through the verified deployment path.
+
 ### 2026-08-02 Protected Release Record
 
 - Source repo `knowgrph` shipped commit `7f097dbabb7285cf4a18a66a0e37170158b5a610` (`Promote Agentic Canvas OS runtime pin (#625)`).
