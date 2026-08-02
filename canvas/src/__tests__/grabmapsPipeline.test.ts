@@ -328,7 +328,9 @@ export const testGrabMapsReferenceDemoDeclaresCanonicalGeospatialSeedPreset = ()
 
 export const testGrabMapsFallbackDoesNotTreatAuthErrorsAsUnavailable = () => {
   const basemapPath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'features', 'geospatial', 'useMapLibreBasemap.ts')
+  const libraryPath = path.resolve(process.cwd(), '..', 'grph-shared', 'src', 'geospatial', 'grabMapsLibrary.ts')
   const text = readUtf8(basemapPath)
+  const libraryText = readUtf8(libraryPath)
   if (!text.includes('const isGrabMapsServiceUnavailable')) {
     throw new Error('Expected MapLibre basemap hook to use a dedicated GrabMaps service-unavailable classifier')
   }
@@ -382,6 +384,18 @@ export const testGrabMapsFallbackDoesNotTreatAuthErrorsAsUnavailable = () => {
   }
   if (!text.includes('const hydratedStyle = await hydrateGrabMapsSourceUrls(normalizedStyle, headers)')) {
     throw new Error('Expected GrabMaps style preflight to inline normalized source TileJSON before MapLibre mounts')
+  }
+  if (!text.includes('isCurrent: () => !cancelled')) {
+    throw new Error('Expected GrabMaps fallback creation to bind late async map mounting to the current basemap owner')
+  }
+  if (!text.includes('if (cancelled) {\n            disposeMapLibreBasemap(fallbackMap)\n            return\n          }')) {
+    throw new Error('Expected cancelled GrabMaps fallback maps to dispose immediately instead of claiming a stale surface')
+  }
+  if (!libraryText.includes('isCurrent?: () => boolean')) {
+    throw new Error('Expected shared GrabMaps library helper to accept an optional owner-current predicate')
+  }
+  if (!libraryText.includes('if (args.isCurrent?.() === false) return null')) {
+    throw new Error('Expected shared GrabMaps library helper to stop before mounting stale async fallback maps')
   }
 }
 
