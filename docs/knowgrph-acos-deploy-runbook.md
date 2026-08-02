@@ -2,7 +2,7 @@
 title: "Reference implementation: Knowgrph Protected Release Runbook"
 id: "md:knowgrph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.0.2"
+version: "2.0.3"
 date: "2026-08-02"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -29,6 +29,12 @@ browser-approval step, and a browser-only approval is invalid.
 This runbook does not authorize a release. It replaces the obsolete AWS Agent API,
 AgentCore, and Vercel instructions formerly at this path; those source trees and commands do
 not exist in the current product topology.
+
+If protected `main` advances after a verify job seals a candidate but before the protected
+`production` approval is submitted or consumed, that waiting run is stale. Retire it, refresh
+the clean canonical `main` checkouts to the new exact fetched revision, reseal a fresh
+localhost-review candidate, and dispatch a new verify job. Do not authorize, resume, or deploy
+the older run after the newer protected revision exists.
 
 The protected production workflow currently:
 
@@ -154,6 +160,8 @@ Review the verify job and wait until the production deployment is pending. Then 
 interactive terminal command above; it is the only valid way to submit this workflow's
 protected-environment approval. Do not click a separate browser approval. The authorization
 is specific to the candidate and does not authorize later revisions, Workers, or DNS changes.
+If a newer protected `main` revision or newer candidate run appears while this run is waiting,
+stop and retire the waiting run instead of authorizing it.
 
 ## Expected protected workflow sequence
 
@@ -175,6 +183,7 @@ Failure here leaves Delivery unchanged.
 After the terminal command records the evidence-bearing environment approval, confirm:
 
 - the candidate authorization is revalidated immediately before mutation;
+- no newer protected `main` revision or replacement candidate has superseded the waiting run;
 - the exact candidate is deployed to Pages;
 - canonical documentation seeding completes;
 - live smoke, exact marker/browser fidelity, and returning-user service-worker convergence
