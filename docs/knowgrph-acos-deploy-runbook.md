@@ -2,7 +2,7 @@
 title: "Reference implementation: Knowgrph Protected Release Runbook"
 id: "md:knowgrph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.0.3"
+version: "2.0.4"
 date: "2026-08-02"
 lang: "en-US"
 guideline_version: "1.7.0"
@@ -73,12 +73,12 @@ boundary.
 
 | Reference | Named check | Recorded result | Surface | Meaning |
 |---|---|---|---|---|
-| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `7f097dbabb7285cf4a18a66a0e37170158b5a610` | run `30738439105` `Verify Release Candidate` passed; local review candidate digest `30b9287241822362c5a591bb35d575ce04529751e324e6c0d9e55f8e8214f9eb`, immutable manifest digest `77f01de7f8235b10f7611e69c8e957c7d27dedc6d8b7a4f5f4a433ce81627ba0`, production candidate digest `a78cbb84bdf56e6cd722b9647f2e623b020ea05725fd73188133e4d8a12ad8cf` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
-| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30738439105` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://b1a0cc37.joohwee.pages.dev`, deployment id `b1a0cc37-01f9-4ff2-aeb6-ce2dc57a7899`, published mirror commit `154fb68b1bab81401f277ece6083200714f6f23f` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
+| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `027cd892b57e4247c1e8edb4c144b216c398379c` | run `30747479760` `Verify Release Candidate` passed; local review candidate digest `c536eb898e11337c64032751645d6c417fb64f88264e8ff0822d51a946c65a90`, immutable manifest digest `41ad94826111728a42e370e841c3fe7dc3bd8423372a9f5b09f674fa43cc0f76`, production candidate digest `db9bd64ab301dfffe0ab2c61a73e7053b0f1ee8b747ca78830735ff0baff01c2` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
+| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30747479760` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://1fa1b6dd.joohwee.pages.dev`, deployment id `1fa1b6dd-dad2-40d0-a81f-9d5b8fecd454`, published mirror commit `dec0a405fed5bdbaf00e7168c928498f71a18b41` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
 
 `OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. For the
 latest recorded 2026-08-02 release, those instructions were satisfied only for workflow run
-`30738439105`; outside that exact run and candidate pair, both boundaries remain closed.
+`30747479760`; outside that exact run and candidate pair, both boundaries remain closed.
 
 ## Preconditions
 
@@ -233,6 +233,23 @@ Retain:
 Only this revision-bound evidence may advance the delivered rung.
 
 ### 2026-08-02 Recorded Receipt
+
+- Workflow run: `30747479760` (`Production Release`)
+- Source revision: `027cd892b57e4247c1e8edb4c144b216c398379c`
+- Source tree: `de0875017e2c270803dec577203d112010ed1ba1`
+- Agentic Canvas OS docs revision: `abeb1ae8bfb6fb89d7c4449bd1c7c1a9a8790175`
+- Local review candidate digest: `c536eb898e11337c64032751645d6c417fb64f88264e8ff0822d51a946c65a90`
+- Immutable manifest digest: `41ad94826111728a42e370e841c3fe7dc3bd8423372a9f5b09f674fa43cc0f76`
+- Production candidate digest: `db9bd64ab301dfffe0ab2c61a73e7053b0f1ee8b747ca78830735ff0baff01c2`
+- Lifecycle candidate digest: `b00f3a1a029079a108b9858bd25b443aa6c0f793c477a25e4978168c432b3673`
+- Human authorization decision ref: `https://github.com/huijoohwee/knowgrph/actions/runs/30747479760#environment-production`
+- Authorization interaction evidence digest: `3ecd199fd9a39f1dd19fb721ac8f6c4ae6da0123d530b1d3f72163a2149d3d10`
+- Candidate deployment origin: `https://1fa1b6dd.joohwee.pages.dev`
+- Candidate deployment id: `1fa1b6dd-dad2-40d0-a81f-9d5b8fecd454`
+- Published mirror revision: `dec0a405fed5bdbaf00e7168c928498f71a18b41`
+- Rollback result: not invoked
+
+### 2026-08-02 Earlier Recorded Receipt
 
 - Workflow run: `30735517980` (`Production Release`)
 - Source revision: `af26f37477cb92e1a8306931262bb25dd4944f00`
