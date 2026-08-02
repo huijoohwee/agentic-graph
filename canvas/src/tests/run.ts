@@ -9,6 +9,22 @@ import { TEST_CASES_PRE_PARSER } from './registry/preParserCases'
 import { ALL_POST_PARSER_CASES } from './registry/postParserCases'
 import type { TestCaseTuple } from './runner/testRunnerTypes'
 
+const NODE_ONLY_UI_TEST_FILTER_HINTS = Object.freeze([
+  'ui.',
+  'layout.',
+  'util.',
+  'workspace.',
+  'agentready.',
+  'canvas.viewport.',
+])
+
+const shouldRunNodeOnlyUiTestsForFocusedFilter = () => {
+  const filter = process.argv.slice(2).find(arg => !arg.startsWith('-'))
+  const filterLower = typeof filter === 'string' ? filter.trim().toLowerCase() : ''
+  if (!filterLower) return true
+  return NODE_ONLY_UI_TEST_FILTER_HINTS.some(prefix => filterLower.includes(prefix))
+}
+
 const execTuple = async (results: TestResult[], tuple: TestCaseTuple) => {
   const [name, importPath, exportName] = tuple
   await execTest(results, name, async () => {
@@ -560,7 +576,10 @@ export const runAllTests = async () => {
 
   for (const tuple of ALL_POST_PARSER_CASES) {
     await execTuple(results, tuple)
-    if (tuple[0] === 'graph.subgraph.crud.clusterKindDerivesStyle') {
+    if (
+      tuple[0] === 'graph.subgraph.crud.clusterKindDerivesStyle'
+      && shouldRunNodeOnlyUiTestsForFocusedFilter()
+    ) {
       await runNodeOnlyUiTests(results)
     }
   }
