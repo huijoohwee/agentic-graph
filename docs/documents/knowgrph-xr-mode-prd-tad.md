@@ -58,7 +58,7 @@ The min-viable-max-value scope is not a new immersive product shell. It is a fir
 **Governing decision**: XR Mode must be useful before a headset session starts. A user should be able to import a `.glb`, `.gltf`, `.svg`, or `.png`, open the XR spatial inspection stage in the browser canvas, and only then enter WebXR when supported by the device and user consent.
 
 The first phone-first capture and viewer fallback slice is specified separately
-in `docs/knowgrph-ar-vr-xr-prd-tad-adr.md`. That document owns capability
+in `docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md`. That document owns capability
 detection, monocular camera fallback, and deterministic viewer handoff so XR
 Mode can stay browser-native and device-appropriate before any immersive
 session begins.

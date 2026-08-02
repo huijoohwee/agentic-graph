@@ -270,22 +270,65 @@ def main() -> None:
             expect(touch_forward).to_be_visible()
             touch_before_x = numeric_attribute(hud, "data-kg-game-fps-player-x")
             touch_before_z = numeric_attribute(hud, "data-kg-game-fps-player-z")
-            touch_forward.dispatch_event("pointerdown", {"pointerId": 41, "pointerType": "touch"})
-            page.wait_for_timeout(300)
-            touch_moved_x = numeric_attribute(hud, "data-kg-game-fps-player-x")
-            touch_moved_z = numeric_attribute(hud, "data-kg-game-fps-player-z")
-            if abs(touch_moved_x - touch_before_x) < 0.001 and abs(touch_moved_z - touch_before_z) < 0.001:
-                raise AssertionError("touch forward input did not move the player")
-            touch_forward.dispatch_event("pointerup", {"pointerId": 41, "pointerType": "touch"})
-            page.wait_for_timeout(150)
-            touch_released_x = numeric_attribute(hud, "data-kg-game-fps-player-x")
-            touch_released_z = numeric_attribute(hud, "data-kg-game-fps-player-z")
-            page.wait_for_timeout(250)
-            if (
-                abs(numeric_attribute(hud, "data-kg-game-fps-player-x") - touch_released_x) > 0.02
-                or abs(numeric_attribute(hud, "data-kg-game-fps-player-z") - touch_released_z) > 0.02
-            ):
-                raise AssertionError("touch release did not neutralize mobile movement")
+            touch_session = page.context.new_cdp_session(page)
+            touch_active = False
+            try:
+                touch_session.send(
+                    "Emulation.setTouchEmulationEnabled",
+                    {"enabled": True, "maxTouchPoints": 1},
+                )
+                page.wait_for_timeout(50)
+                touch_box = touch_forward.bounding_box()
+                if not touch_box:
+                    raise AssertionError("touch forward control had no touchable bounds")
+                touch_point = {
+                    "x": touch_box["x"] + touch_box["width"] / 2,
+                    "y": touch_box["y"] + touch_box["height"] / 2,
+                    "radiusX": 4,
+                    "radiusY": 4,
+                    "force": 1,
+                    "id": 41,
+                }
+                touch_session.send(
+                    "Input.dispatchTouchEvent",
+                    {"type": "touchStart", "touchPoints": [touch_point]},
+                )
+                touch_active = True
+                touch_moved_x = touch_before_x
+                touch_moved_z = touch_before_z
+                for _ in range(12):
+                    page.wait_for_timeout(25)
+                    touch_moved_x = numeric_attribute(hud, "data-kg-game-fps-player-x")
+                    touch_moved_z = numeric_attribute(hud, "data-kg-game-fps-player-z")
+                    if abs(touch_moved_x - touch_before_x) >= 0.001 or abs(touch_moved_z - touch_before_z) >= 0.001:
+                        break
+                else:
+                    raise AssertionError("touch forward input did not move the player")
+                touch_session.send(
+                    "Input.dispatchTouchEvent",
+                    {"type": "touchEnd", "touchPoints": []},
+                )
+                touch_active = False
+                page.wait_for_timeout(150)
+                touch_released_x = numeric_attribute(hud, "data-kg-game-fps-player-x")
+                touch_released_z = numeric_attribute(hud, "data-kg-game-fps-player-z")
+                page.wait_for_timeout(250)
+                if (
+                    abs(numeric_attribute(hud, "data-kg-game-fps-player-x") - touch_released_x) > 0.02
+                    or abs(numeric_attribute(hud, "data-kg-game-fps-player-z") - touch_released_z) > 0.02
+                ):
+                    raise AssertionError("touch release did not neutralize mobile movement")
+            finally:
+                if touch_active:
+                    touch_session.send(
+                        "Input.dispatchTouchEvent",
+                        {"type": "touchEnd", "touchPoints": []},
+                    )
+                touch_session.send(
+                    "Emulation.setTouchEmulationEnabled",
+                    {"enabled": False},
+                )
+                touch_session.detach()
 
             restart = page.locator('[data-kg-game-fps-action="restart"]').first
             restart.click()

@@ -165,9 +165,15 @@ test('Game Mode freeze contract retains authored presentation and removes every 
     const mount = threeGraph.match(new RegExp(`<${component}\\b[\\s\\S]*?\\n\\s*/>`))?.[0] || ''
     assert.ok(mount.includes('paused={authoredWorldPaused}'), `${component} must use the one authored-world pause owner`)
   }
-  assert.ok(scene.includes('<XrSceneStage authority={xrGraphStageAuthority} data={data} paused={Boolean(paused)}'))
+  assert.match(
+    scene,
+    /<XrSceneStage authority=\{xrGraphStageAuthority\} data=\{data\}[\s\S]*paused=\{Boolean\(paused\)\}/,
+  )
   assert.ok(xrSceneStage.includes('<XrMotionReferenceGraphStageLazy data={data} paused={paused}'))
-  assert.ok(xrSceneStage.includes('<XrCanonicalPhysicsStage paused={paused}'))
+  assert.match(
+    xrSceneStage,
+    /<XrCanonicalPhysicsStage[\s\S]*paused=\{paused\}/,
+  )
   assert.ok(!motionGraphStage.includes('gameModeRuntime'))
   assert.ok(!canonicalPhysicsStage.includes('gameModeRuntime'))
   assert.ok(motionGraphStage.includes('paused={paused}'))

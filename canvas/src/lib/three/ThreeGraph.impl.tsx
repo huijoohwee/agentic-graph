@@ -111,12 +111,18 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     readXrStageMetersPerUnit,
     readXrStageMetersPerUnit,
   )
-  const xrDocumentLoaded = mode !== 'xr' || Boolean(
-    String(markdownDocumentName || '').trim()
-    && String(markdownDocumentText || '').trim(),
-  )
   const s = schema as GraphSchema | null
   const effectiveSchema = useMemo<GraphSchema>(() => s || defaultSchema, [s])
+  const canvasMarkdownDocument = useCanvasAppliedMarkdownDocument({
+    name: markdownDocumentName,
+    sourceUrl: markdownDocumentSourceUrl,
+    text: markdownDocumentText,
+    applyViewPreset: markdownDocumentApplyViewPreset !== false,
+  })
+  const xrDocumentLoaded = mode !== 'xr' || xrPhysicsRuntimeRunReadyDemo || Boolean(
+    String(canvasMarkdownDocument.name || '').trim()
+    && String(canvasMarkdownDocument.text || '').trim(),
+  )
   const renderGraphRef = useRef<GraphData | null>(null)
   const renderGraph = useMemo(() => {
     if (!xrDocumentLoaded) {
@@ -127,12 +133,6 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     renderGraphRef.current = graph
     return graph
   }, [graph, paused, xrDocumentLoaded])
-  const canvasMarkdownDocument = useCanvasAppliedMarkdownDocument({
-    name: markdownDocumentName,
-    sourceUrl: markdownDocumentSourceUrl,
-    text: markdownDocumentText,
-    applyViewPreset: markdownDocumentApplyViewPreset !== false,
-  })
   const glbAsset = useMemo(() => parseGlbAssetDocument(canvasMarkdownDocument.text), [canvasMarkdownDocument.text])
   const spatialCaptureManifest = useMemo(() => parseStandaloneSpatialCaptureManifest(canvasMarkdownDocument.text), [canvasMarkdownDocument.text])
   const shouldRenderGlbAsset = useMemo(

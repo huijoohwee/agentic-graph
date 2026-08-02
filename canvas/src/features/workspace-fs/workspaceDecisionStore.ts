@@ -67,10 +67,24 @@ function errorMessage(error: unknown): string {
     : String(error || 'Decision save failed')
 }
 
-class WorkspaceDecisionDocumentError extends Error {
+class WorkspaceDecisionLoadError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'WorkspaceDecisionLoadError'
+  }
+}
+
+class WorkspaceDecisionDocumentError extends WorkspaceDecisionLoadError {
   constructor(savePath: WorkspacePath) {
     super(`Unreadable ${savePath}: local Decision document is invalid.`)
     this.name = 'WorkspaceDecisionDocumentError'
+  }
+}
+
+class WorkspaceDecisionValidationError extends WorkspaceDecisionLoadError {
+  constructor(savePath: WorkspacePath, message: string) {
+    super(`Unreadable ${savePath}: ${message}`)
+    this.name = 'WorkspaceDecisionValidationError'
   }
 }
 
@@ -78,6 +92,13 @@ function createDecisionLoadError(
   savePath: WorkspacePath,
 ): WorkspaceDecisionDocumentError {
   return new WorkspaceDecisionDocumentError(savePath)
+}
+
+function createDecisionValidationError(
+  savePath: WorkspacePath,
+  error: unknown,
+): WorkspaceDecisionValidationError {
+  return new WorkspaceDecisionValidationError(savePath, errorMessage(error))
 }
 
 function operationAbortError(signal?: AbortSignal): Error {
@@ -165,12 +186,15 @@ export function createWorkspaceDecisionStore<TDecision extends WorkspaceDecision
     return () => listeners.delete(listener)
   }
 
-  function reportLoadFailure(_error: unknown): WorkspaceDecisionStoreSnapshot {
+    function reportLoadFailure(error: unknown): WorkspaceDecisionStoreSnapshot {
+      const loadError = error instanceof WorkspaceDecisionLoadError
+        ? error
+        : createDecisionValidationError(savePath, error)
     return publish({
       status: 'error',
       errorKind: 'load',
       hydrationBlocked: true,
-      error: createDecisionLoadError(savePath).message,
+        error: loadError.message,
     })
   }
 
@@ -190,19 +214,23 @@ export function createWorkspaceDecisionStore<TDecision extends WorkspaceDecision
   }
 
   function readValidatedDecisionDocument(text: string): TDecision[] {
+      const decisions: TDecision[] = []
     try {
       const { nodes } = readKgcNodeState(text)
-      const decisions: TDecision[] = []
       nodes.forEach((node: unknown, index: number) => {
         if ((node as { type?: unknown } | null)?.type !== ECS_DECISION_NODE_TYPE) return
         decisions.push(normalizeDecisionNode(node, index) as TDecision)
       })
-      const normalized = normalizeDecisionBatch(decisions) as TDecision[]
-      config.validateDecisions(normalized)
-      return normalized
     } catch {
       throw createDecisionLoadError(savePath)
     }
+      try {
+        const normalized = normalizeDecisionBatch(decisions) as TDecision[]
+        config.validateDecisions(normalized)
+        return normalized
+      } catch (error) {
+        throw createDecisionValidationError(savePath, error)
+      }
   }
 
   async function load(options: WorkspaceDecisionStoreOptions = {}): Promise<TDecision[]> {
@@ -233,7 +261,9 @@ export function createWorkspaceDecisionStore<TDecision extends WorkspaceDecision
       return normalizedDecisions
     } catch (error) {
       if (options.signal?.aborted) throw operationAbortError(options.signal)
-      const loadError = createDecisionLoadError(savePath)
+        const loadError = error instanceof WorkspaceDecisionLoadError
+          ? error
+          : createDecisionValidationError(savePath, error)
       reportLoadFailure(loadError)
       throw loadError
     }
@@ -387,7 +417,9 @@ export function createWorkspaceDecisionStore<TDecision extends WorkspaceDecision
         error: null,
       })
     } catch (error) {
-      const documentInvalid = error instanceof WorkspaceDecisionDocumentError
+      const loadFailure = error instanceof WorkspaceDecisionLoadError
+        ? error
+        : null
       let rollbackError: unknown = null
       if (workspace && previousTextKnown) {
         try {
@@ -404,12 +436,12 @@ export function createWorkspaceDecisionStore<TDecision extends WorkspaceDecision
         }
         throw operationAbortError(options.signal)
       }
-      if (documentInvalid) {
+      if (loadFailure) {
         return publish({
           status: 'error',
           errorKind: 'load',
           hydrationBlocked: true,
-          error: createDecisionLoadError(savePath).message,
+          error: loadFailure.message,
         })
       }
       if (rollbackError) {

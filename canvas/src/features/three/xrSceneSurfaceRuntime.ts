@@ -32,7 +32,6 @@ const XR_GAMEPLAY_SURFACE_IDS = new Set<XrGameplaySurfaceId>([
   'flightSim',
   'cityBuilder',
 ])
-const XR_GAMEPLAY_COMPANION_PANEL_VIEWS = new Set<XrSceneFloatingPanelView>(['camera'])
 
 export function isXrGameplaySurfaceView(value: string): value is XrGameplaySurfaceId {
   return XR_GAMEPLAY_SURFACE_IDS.has(value as XrGameplaySurfaceId)
@@ -66,30 +65,40 @@ type GameplayExitRegistration = Readonly<{
 }>
 
 const gameplayExitHandlers = new Map<XrGameplaySurfaceId, GameplayExitRegistration>()
+let lastActivatedGameplaySurface: XrGameplaySurfaceId | null = null
 
 function exitInactiveGameplaySurfaces(
   selected: XrGameplaySurfaceId | undefined,
   panelView: XrSceneFloatingPanelView | undefined,
   explicitGameplayActivation: boolean,
 ): void {
-  for (const [surfaceId, registration] of gameplayExitHandlers) {
-    if (surfaceId === selected) continue
-    if (
-      !explicitGameplayActivation
-      && panelView
-      && registration.preserveWhenPanelOnly.has(panelView)
-    ) {
-      continue
-    }
-    registration.exit()
+  const activeSurface = lastActivatedGameplaySurface
+  if (!activeSurface || activeSurface === selected) {
+    if (selected) lastActivatedGameplaySurface = selected
+    return
   }
+  const registration = gameplayExitHandlers.get(activeSurface)
+  if (!registration) {
+    lastActivatedGameplaySurface = selected ?? null
+    return
+  }
+  if (
+    !explicitGameplayActivation
+    && panelView
+    && registration.preserveWhenPanelOnly.has(panelView)
+  ) {
+    return
+  }
+  registration.exit()
+  lastActivatedGameplaySurface = selected ?? null
 }
 
-registerSharedXrDepartureHandler(() => exitInactiveGameplaySurfaces(
-  undefined,
-  undefined,
-  true,
-))
+registerSharedXrDepartureHandler(() => {
+  const activeSurface = lastActivatedGameplaySurface
+  if (!activeSurface) return
+  gameplayExitHandlers.get(activeSurface)?.exit()
+  lastActivatedGameplaySurface = null
+})
 
 export function registerXrSceneGameplayExitHandler(
   surfaceId: XrGameplaySurfaceId,
@@ -111,6 +120,9 @@ export function registerXrSceneGameplayExitHandler(
   return () => {
     if (gameplayExitHandlers.get(surfaceId) === registration) {
       gameplayExitHandlers.delete(surfaceId)
+        if (lastActivatedGameplaySurface === surfaceId) {
+          lastActivatedGameplaySurface = null
+        }
     }
   }
 }
@@ -165,16 +177,14 @@ export function activateXrSceneSurface(
         ? activation.panelView
         : undefined
     )
-  if (!activation.preserveGameplay && (
-    explicitGameplayActivation
-    || !activation.panelView
-    || !XR_GAMEPLAY_COMPANION_PANEL_VIEWS.has(activation.panelView)
-  )) {
+    if (!activation.preserveGameplay) {
     exitInactiveGameplaySurfaces(
       selectedGameplaySurface,
       activation.panelView,
       explicitGameplayActivation,
     )
+    } else if (selectedGameplaySurface) {
+      lastActivatedGameplaySurface = selectedGameplaySurface
   }
   if (activation.panelView === 'media') setMediaCatalogMode('xr-3d')
   if (activation.panelView) activeState.setFloatingPanelView(activation.panelView)
