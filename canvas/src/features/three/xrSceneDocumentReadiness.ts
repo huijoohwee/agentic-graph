@@ -1,4 +1,5 @@
 import { readSourceFilesBootstrapReady } from '@/features/source-files/sourceFilesBootstrapReadiness'
+import { isXrPhysicsRuntimeRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 export type XrSceneDocumentReadinessInput = Readonly<{
@@ -9,11 +10,17 @@ export type XrSceneDocumentReadinessInput = Readonly<{
 }>
 
 export function resolveXrSceneDocumentReady(input: XrSceneDocumentReadinessInput): boolean {
+  const explicitXrRunReadyDemo = isXrPhysicsRuntimeRunReadyDemoActive('', '')
   return Boolean(
     input.sourceFilesBootstrapReady
-    && input.graphData
-    && String(input.markdownDocumentName || '').trim()
-    && String(input.markdownDocumentText || '').trim(),
+    && (
+      explicitXrRunReadyDemo
+      || (
+        input.graphData
+        && String(input.markdownDocumentName || '').trim()
+        && String(input.markdownDocumentText || '').trim()
+      )
+    ),
   )
 }
 

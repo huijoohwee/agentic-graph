@@ -205,6 +205,47 @@ export async function testWorkspaceSeedProviderProjectsCanonicalLocalInventoryEx
   }
 }
 
+export async function testRepoLocalBrowserBootstrapUsesBundledSeedInventoryWithoutMirrorProxy() {
+  const previousRepoLocal = process.env[REPO_LOCAL_ENV]
+  const previousDocsRoot = process.env[DOCS_ROOT_ENV]
+  const previousSeedsRoot = process.env[SEEDS_READ_ROOT_ENV]
+  const previousFetch = globalThis.fetch
+  const { restore } = initWindowHarness({ storage: new MemoryStorage() })
+  const requestedRuntimePaths: string[] = []
+  try {
+    process.env[REPO_LOCAL_ENV] = '1'
+    process.env[DOCS_ROOT_ENV] = '/repo-local/docs'
+    process.env[SEEDS_READ_ROOT_ENV] = '/repo-local/docs/workspace-seeds'
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const rawUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      requestedRuntimePaths.push(rawUrl)
+      throw new Error(`repo-local browser bootstrap must not fetch workspace mirror data: ${rawUrl}`)
+    }) as typeof fetch
+
+    const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
+    const actualBasenames = mirrored
+      .map(entry => entry.relPath.replace(/^workspace-seeds\//, ''))
+      .sort((left, right) => left.localeCompare(right))
+    const expectedBasenames = [...CANONICAL_WORKSPACE_SEED_BASENAMES]
+      .sort((left, right) => left.localeCompare(right))
+    if (JSON.stringify(actualBasenames) !== JSON.stringify(expectedBasenames)) {
+      throw new Error(`expected repo-local browser bootstrap to use bundled seed inventory ${JSON.stringify(expectedBasenames)}, got ${JSON.stringify(actualBasenames)}`)
+    }
+    if (mirrored.some(entry => entry.authority !== 'knowgrph-workspace-seeds-bundled')) {
+      throw new Error(`expected repo-local browser bootstrap to stay on bundled seed authority, got ${JSON.stringify(mirrored)}`)
+    }
+    if (requestedRuntimePaths.length !== 0) {
+      throw new Error(`expected repo-local browser bootstrap to avoid workspace mirror proxy requests, got ${JSON.stringify(requestedRuntimePaths)}`)
+    }
+  } finally {
+    globalThis.fetch = previousFetch
+    restore()
+    restoreEnv(REPO_LOCAL_ENV, previousRepoLocal)
+    restoreEnv(DOCS_ROOT_ENV, previousDocsRoot)
+    restoreEnv(SEEDS_READ_ROOT_ENV, previousSeedsRoot)
+  }
+}
+
 export async function testRepoLocalPersistedBootstrapReconcilesCanonicalSeedInventory() {
   const repoRoot = path.resolve(process.cwd(), '..')
   const docsRoot = path.join(repoRoot, 'docs')

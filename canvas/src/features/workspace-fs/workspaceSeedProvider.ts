@@ -1369,9 +1369,8 @@ export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<Workspa
   }))
 }
 
-const readWorkspaceDocsMirrorEntriesViaProxy = async (
-  docsAbsRoot: string,
-): Promise<WorkspaceDocsMirrorEntry[]> => {
+const readWorkspaceDocsMirrorEntriesViaProxy = async (docsAbsRoot: string): Promise<WorkspaceDocsMirrorEntry[]> => {
+  if (isWorkspaceRepoLocalRunReadyBootstrap()) return []
   if (typeof window === 'undefined' || typeof fetch !== 'function') return []
   return readCachedConfiguredDocsMirrorEntries({
     cacheKey: docsAbsRoot,
@@ -1501,12 +1500,11 @@ const readWorkspaceDocsMirrorEntriesFromDefaultSourceUrl = async (
   }
 }
 
-export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
-  preferCompleteDataset?: boolean
-}): Promise<WorkspaceDocsMirrorEntry[]> {
+export async function readWorkspaceInitializationDocsMirrorEntries(args?: { preferCompleteDataset?: boolean }): Promise<WorkspaceDocsMirrorEntry[]> {
   const preferCompleteDataset = args?.preferCompleteDataset === true, traceId = nextWorkspaceMirrorTraceId('bootstrap')
   const completeDatasetCandidates: WorkspaceDocsMirrorEntry[][] = [], defaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
   const defaultSourceUrlIsGitHub = isWorkspaceDocsMirrorGitHubSourceUrl(defaultSourceUrl), repoLocalRunReady = isWorkspaceRepoLocalRunReadyBootstrap()
+  if (repoLocalRunReady && typeof window !== 'undefined') return readCanonicalWorkspaceSeedMirrorEntries()
   const shouldOverlayCanonicalWorkspaceSeedInventory = (): boolean => (
     preferCompleteDataset
     && (sourceFilesSelection?.selectedFolderPath || '') === ''
