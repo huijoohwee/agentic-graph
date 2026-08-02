@@ -10,6 +10,9 @@ from lib.game_flight_sim_smoke_geo_view_cases import (
     select_geo_xr_view,
 )
 from lib.game_flight_sim_smoke_geo_xr import _read_view, _wait_for_view
+from lib.game_flight_sim_smoke_geo_xr_ui import (
+    activate_geo_xr_from_toolbar,
+)
 from lib.game_flight_sim_smoke_geo_xr_layout import (
     prepare_reported_singapore_geo_handoff,
 )
@@ -388,6 +391,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
     reported_handoff: dict[str, Any] | None = None
     city_handoff: dict[str, Any] | None = None
     restored_view: dict[str, Any] = {}
+    ui_path: dict[str, Any] = {}
 
     def restore_baseline() -> None:
         nonlocal restored_view, source_files_transition
@@ -444,6 +448,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
     primary_error: BaseException | None = None
     try:
         reported_handoff = prepare_reported_singapore_geo_handoff(page)
+        ui_path = activate_geo_xr_from_toolbar(page)
         source_files_opened = True
         for (
             view_mode,
@@ -568,6 +573,7 @@ def verify_geo_xr_four_view_presentation(page: Page) -> dict[str, Any]:
         "sourceFilesTransition": source_files_transition,
         "sourceView": baseline_camera["geospatialViewMode"],
         "sourceStyleUrl": baseline_camera["geospatialStyleUrl"],
+        "uiPath": ui_path,
         "restoredView": restored_view,
         "liveMovement": {
             "before": before_movement,

@@ -7,6 +7,7 @@ import {
   hasExactCityMapRetentionEvidence,
   hasExactCityRegionalPoiEvidence,
   hasExactCityRegionalPoiTeardownEvidence,
+  hasExactGeoXrUiPathEvidence,
 } from '../lib/game-flight-sim-browser-evidence-validation.mjs'
 import {
   hasExactGeoXrRendererLifecycleEvidence,
@@ -73,6 +74,28 @@ test('saved Geo+XR evidence distinguishes active, retained, and absent Three own
     threeCanvasOwnerCount: 0,
   }, 'absent'), true)
   assert.equal(hasExactGeoXrRendererLifecycleEvidence(exact, 'legacy'), false)
+})
+
+test('Geo+XR evidence requires the trusted toolbar and panel path', () => {
+  const exact = {
+    cameraPrestateClicked: true,
+    modeTriggerClicked: true,
+    surfaceModeClicked: true,
+    geoXrModeClicked: true,
+    cameraResetClicked: true,
+    geoTriggerClicked: true,
+    geoXrOpenedGeoPanel: true,
+    geoTriggerOpenedGeoPanel: true,
+  }
+  assert.equal(hasExactGeoXrUiPathEvidence(exact), true)
+  assert.equal(hasExactGeoXrUiPathEvidence({
+    ...exact,
+    geoTriggerClicked: false,
+  }), false)
+  assert.equal(hasExactGeoXrUiPathEvidence({
+    ...exact,
+    geoXrOpenedGeoPanel: undefined,
+  }), false)
 })
 
 test('Flight follow-camera evidence accepts only a viewport POI subset from the source', () => {
