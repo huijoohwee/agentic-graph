@@ -1,10 +1,12 @@
 import React from 'react'
-import RichMediaPanel, { type RichMediaKind } from '@/components/RichMediaPanel'
+import type { RichMediaKind } from '@/components/RichMediaPanel.types'
 import { CardPreviewInlineMediaPill } from '@/lib/cards/CardPreviewInlineMediaPill'
 import {
   collectInlineMediaCommandCandidates,
   type InlineMediaCommandCandidate,
 } from '@/lib/command-menu/inlineCommandMenuCatalog'
+
+const RichMediaPanelLazy = React.lazy(() => import('@/components/RichMediaPanel'))
 
 const safeImageSrc = (raw: string): string | null => {
   const value = String(raw || '').trim()
@@ -255,17 +257,19 @@ const renderRichMediaCell = (args: {
     ['--kg-media-panel-radius' as never]: '6px',
   } as React.CSSProperties
   const panel = (
-    <RichMediaPanel
-      title={args.title}
-      url={args.url}
-      openUrl={args.url}
-      srcDoc={args.srcDoc}
-      kind={args.kind}
-      videoControls
-      videoPoster={args.poster}
-      interactive={false}
-      style={panelStyle}
-    />
+    <React.Suspense fallback={<span aria-hidden="true" className="block" style={panelStyle} />}>
+      <RichMediaPanelLazy
+        title={args.title}
+        url={args.url}
+        openUrl={args.url}
+        srcDoc={args.srcDoc}
+        kind={args.kind}
+        videoControls
+        videoPoster={args.poster}
+        interactive={false}
+        style={panelStyle}
+      />
+    </React.Suspense>
   )
   if (args.presentation === 'chip') {
     const thumbnailKind = args.kind === 'audio' || args.kind === 'video' || args.kind === 'image'

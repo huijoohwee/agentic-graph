@@ -137,6 +137,7 @@ type WindowStub = Pick<
   'addEventListener' | 'removeEventListener' | 'dispatchEvent' | 'setTimeout' | 'clearTimeout'
 > & {
   HTMLIFrameElement?: typeof HTMLIFrameElement
+  __KG_TEST_WINDOW_STUB__?: boolean
 }
 
 type GlobalWithWindowStub = typeof globalThis & { window?: WindowStub; navigator?: Navigator }
@@ -255,6 +256,7 @@ if (!g.window) {
   } catch {
     stub.HTMLIFrameElement = class {} as typeof HTMLIFrameElement
   }
+  stub.__KG_TEST_WINDOW_STUB__ = true
   g.window = stub as Window & typeof globalThis & WindowStub
 } else if (!g.window.HTMLIFrameElement) {
   try {
