@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import IconButton from '@/components/IconButton'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_COPY } from '@/lib/config'
-import { getIconSizeClass } from '@/lib/ui'
+import { getIconSizeClass } from '@/lib/ui/icons'
 import {
   UI_RESPONSIVE_PANEL_HEADER_ACTIONS_CLASSNAME,
   UI_RESPONSIVE_PANEL_HEADER_ROW_CLASSNAME,

@@ -160,6 +160,18 @@ async function bootstrapLocalCollaborationAuth(config, log) {
   ], config.repoRoot);
 }
 
+async function prepareCanvasDevPrerequisites(config, log) {
+  emit(log, "\n[collaboration-readiness] preparing canvas dev prerequisites\n");
+  for (const args of [
+    ["--prefix", "canvas", "run", "prepare:linked-packages"],
+    ["--prefix", "canvas", "run", "prepare:litert-assets"],
+    ["--prefix", "canvas", "run", "fix:entities-sourcemaps"],
+    ["--prefix", "canvas", "run", "build:settings"],
+  ]) {
+    await runCommand(config.npmCommand, args, config.repoRoot, config.env);
+  }
+}
+
 function formatBrowserStackError(results, services) {
   const failures = results.filter((result) => !result.ok);
   const lines = [
@@ -367,13 +379,18 @@ export function buildLocalCollaborationPersistenceArgs(config) {
 
 export async function ensureLocalCollaborationStack(config, { log } = {}) {
   emit(log, "\n[collaboration-readiness] browser smoke stack\n");
+  await bootstrapLocalCollaborationAuth(config, log);
   const results = await Promise.all(config.services.map(async (service) => {
     const status = await isServerReady(service.readyUrl, 1500, service.readyOptions);
+    const reusedLocalWorker = !status.ok
+      && service.kind === "worker"
+      && service.local
+      && /^unexpected HTTP 40[13]$/.test(String(status.reason || ""));
     return {
       ...service,
-      ok: status.ok,
-      reason: status.reason,
-      reused: status.ok,
+      ok: status.ok || reusedLocalWorker,
+      reason: reusedLocalWorker ? `${status.reason} [reachable local worker]` : status.reason,
+      reused: status.ok || reusedLocalWorker,
       started: false,
       child: null,
     };
@@ -383,11 +400,7 @@ export async function ensureLocalCollaborationStack(config, { log } = {}) {
   }
   const missingViteServices = results.filter((result) => !result.ok && result.kind === "vite" && result.local);
   if (missingViteServices.length > 0) {
-    emit(log, "\n[collaboration-readiness] preparing canvas dev prerequisites\n");
-    await runCommand(config.npmCommand, ["--prefix", "canvas", "run", "predev"], config.repoRoot, config.env);
-  }
-  if (results.some((result) => !result.ok && result.local)) {
-    await bootstrapLocalCollaborationAuth(config, log);
+    await prepareCanvasDevPrerequisites(config, log);
   }
   const startedChildren = [];
   for (const result of results) {
