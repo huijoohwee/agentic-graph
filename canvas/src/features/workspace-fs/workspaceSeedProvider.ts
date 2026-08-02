@@ -1507,6 +1507,21 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
   const preferCompleteDataset = args?.preferCompleteDataset === true, traceId = nextWorkspaceMirrorTraceId('bootstrap')
   const completeDatasetCandidates: WorkspaceDocsMirrorEntry[][] = [], defaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
   const defaultSourceUrlIsGitHub = isWorkspaceDocsMirrorGitHubSourceUrl(defaultSourceUrl), repoLocalRunReady = isWorkspaceRepoLocalRunReadyBootstrap()
+  const shouldOverlayCanonicalWorkspaceSeedInventory = (): boolean => (
+    preferCompleteDataset
+    && (sourceFilesSelection?.selectedFolderPath || '') === ''
+    && Array.isArray(sourceFilesSelection?.sourceFiles)
+    && sourceFilesSelection.sourceFiles.length > 0
+  )
+  const overlayCanonicalWorkspaceSeedsIfNeeded = async (
+    entries: WorkspaceDocsMirrorEntry[],
+  ): Promise<WorkspaceDocsMirrorEntry[]> => {
+    if (!shouldOverlayCanonicalWorkspaceSeedInventory() || entries.length === 0) return entries
+    return overlayCanonicalWorkspaceSeedEntries(
+      entries,
+      await readCanonicalWorkspaceSeedMirrorEntries(),
+    )
+  }
   const readPublishedCanonicalDocsMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
     if (repoLocalRunReady) return []
     const [publishedEntries, publishedAgenticEntries, workspaceSeedEntries] = await Promise.all([
@@ -1643,11 +1658,14 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
   const publishedCanonicalEntries = await readPublishedCanonicalDocsMirrorEntries()
   if (publishedCanonicalEntries.length > 0) {
     if (!preferCompleteDataset) return publishedCanonicalEntries
-    if (completeDatasetCandidates.length === 0) return publishedCanonicalEntries
+    if (completeDatasetCandidates.length === 0) {
+      return overlayCanonicalWorkspaceSeedsIfNeeded(publishedCanonicalEntries)
+    }
   }
-  return preferCompleteDataset
+  const bestDataset = preferCompleteDataset
     ? chooseBestWorkspaceDocsMirrorDataset(completeDatasetCandidates)
     : []
+  return overlayCanonicalWorkspaceSeedsIfNeeded(bestDataset)
 }
 
 export async function upsertWorkspaceInitializationSeedText(args: {

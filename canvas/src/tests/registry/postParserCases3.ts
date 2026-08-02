@@ -622,6 +622,7 @@ export const TEST_CASES_POST_PARSER_3: TestCaseTuple[] = [
   ["workspaceFs.seedProvider.incompleteSourceFilesStorageFallbackNoCrash","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderIncompleteSourceFilesStorageFallbackDoesNotCrashWhenStorageExportMisses"],
   ["workspaceFs.seedProvider.configuredDocsRootPrecedesStorageFallback","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderConfiguredDocsRootPrecedesStorageFallback"],
   ["workspaceFs.seedProvider.configuredDocsRootPrecedesPublishedCanonicalDatasetInFullBootstrap","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderConfiguredDocsRootPrecedesPublishedCanonicalDatasetInFullBootstrap"],
+  ["workspaceFs.seedProvider.completeSourceFilesBootstrapOverlaysCanonicalSeedInventory","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderCompleteSourceFilesBootstrapOverlaysCanonicalSeedInventory"],
   ["workspaceFs.seedProvider.configuredDocsRootDedupesBurstReads","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderConfiguredDocsRootDedupesBurstReads"],
   ["workspaceFs.seedProvider.publishedDocsSeedRejectsHtmlFallback","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderPublishedDocsSeedRejectsHtmlFallback"],
   ["workspaceFs.seedProvider.storageExportDoesNotReuseStaleMirror","@/__tests__/workspaceSeedActiveHydration.test","testWorkspaceSeedProviderStorageExportDoesNotReuseStaleMirror"],
