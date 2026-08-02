@@ -324,6 +324,10 @@ const readCanonicalPathCandidatesForSourcePath = (sourcePathRaw: string): string
   const normalizeCanonicalPath = (value: string): string => {
     let next = normalizeMirrorRelPath(value)
     if (!next) return ''
+    const docsAbsRoot = normalizeRelPath(readWorkspaceInitializationDocsAbsRoot())
+    if (docsAbsRoot && next.startsWith(`${docsAbsRoot}/`)) {
+      next = `docs/${next.slice(docsAbsRoot.length + 1)}`
+    }
     const collapsePrefix = (path: string, prefix: string): string => {
       const normalizedPath = normalizeMirrorRelPath(path)
       const normalizedPrefix = normalizeMirrorRelPath(prefix)
@@ -555,6 +559,11 @@ const resolveSelectedFolderRelativeMirrorPath = (fullPath: string, selectedFolde
   const normalizedSelectedFolderPath = normalizeSelectedFolderMirrorPath(selectedFolderPath)
   if (!normalizedFullPath) return ''
   if (!normalizedSelectedFolderPath) {
+    const docsAbsRoot = readWorkspaceInitializationDocsAbsRoot()
+    const normalizedAbsoluteFullPath = normalizeAbsRoot(String(fullPath || '').replace(/^workspace:/, ''))
+    if (docsAbsRoot && normalizedAbsoluteFullPath.startsWith(`${docsAbsRoot}/`)) {
+      return normalizeMirrorRelPath(normalizedAbsoluteFullPath.slice(docsAbsRoot.length + 1))
+    }
     const trimmed = stripWorkspaceDocsMirrorRootPrefix(normalizedFullPath)
     return trimmed
   }
@@ -1498,6 +1507,20 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
   const preferCompleteDataset = args?.preferCompleteDataset === true, traceId = nextWorkspaceMirrorTraceId('bootstrap')
   const completeDatasetCandidates: WorkspaceDocsMirrorEntry[][] = [], defaultSourceUrl = readWorkspaceImportDefaultSourceUrlSetting()
   const defaultSourceUrlIsGitHub = isWorkspaceDocsMirrorGitHubSourceUrl(defaultSourceUrl), repoLocalRunReady = isWorkspaceRepoLocalRunReadyBootstrap()
+  const readPublishedCanonicalDocsMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
+    if (repoLocalRunReady) return []
+    const [publishedEntries, publishedAgenticEntries, workspaceSeedEntries] = await Promise.all([
+      readCanonicalPublishedNonAgenticDocsMirrorEntries({
+        maxFiles: WORKSPACE_DOCS_MIRROR_MAX_FILES,
+        maxFileBytes: WORKSPACE_DOCS_MIRROR_MAX_FILE_BYTES,
+      }),
+      import('@/features/workspace-fs/workspacePublishedAgenticDocsSource').then(module => module.readPublishedAgenticDocsMirrorEntries()),
+      readCanonicalWorkspaceSeedMirrorEntries(),
+    ])
+    const canonicalEntries = [...publishedEntries, ...publishedAgenticEntries]
+    if (canonicalEntries.length === 0) return []
+    return overlayCanonicalWorkspaceSeedEntries(canonicalEntries, workspaceSeedEntries)
+  }
   // #region debug-point A:workspace-mirror-bootstrap-entry
   reportWorkspaceMirrorTrace({
     hypothesisId: 'A',
@@ -1512,23 +1535,10 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
     },
   })
   // #endregion
-  if (!repoLocalRunReady) {
-    const [publishedEntries, publishedAgenticEntries, workspaceSeedEntries] = await Promise.all([
-      readCanonicalPublishedNonAgenticDocsMirrorEntries({
-        maxFiles: WORKSPACE_DOCS_MIRROR_MAX_FILES,
-        maxFileBytes: WORKSPACE_DOCS_MIRROR_MAX_FILE_BYTES,
-      }),
-      import('@/features/workspace-fs/workspacePublishedAgenticDocsSource').then(module => module.readPublishedAgenticDocsMirrorEntries()),
-      readCanonicalWorkspaceSeedMirrorEntries(),
-    ])
-    const canonicalEntries = [...publishedEntries, ...publishedAgenticEntries]
-    if (canonicalEntries.length > 0) {
-      return overlayCanonicalWorkspaceSeedEntries(canonicalEntries, workspaceSeedEntries)
-    }
-  }
   const sourceFilesSelection = await resolveWorkspaceDocsRootFromSourceFilesSelection()
   const knowgrphStorageBaseUrl = readWorkspaceDocsMirrorStorageFallbackEnabled() ? readWorkspaceInitializationKnowgrphStorageBaseUrl() : ''
   const knowgrphStorageWorkspaceId = knowgrphStorageBaseUrl && sourceFilesSelection ? buildKnowgrphWorkspaceIdFromSourceFilesWorkspaceState({ folderName: sourceFilesSelection.folderName, accessMode: sourceFilesSelection.accessMode as 'fs-access' | 'opfs' | 'file-input' | null, folderCacheId: sourceFilesSelection.localMarkdownFolderCacheId, selectedFolderPath: sourceFilesSelection.selectedFolderPath || null }) : ''
+  const storageDatasets: WorkspaceDocsMirrorEntry[][] = []
   const localRootRequests = resolveWorkspaceDocsMirrorLocalRootRequests({ docsAbsRoot: readWorkspaceInitializationDocsAbsRoot(), outputDocsAbsRoot: readWorkspaceInitializationOutputDocsAbsRoot(), agenticDocsAbsRoot: readWorkspaceInitializationAgenticOsDocsAbsRoot(), workspaceSeedsReadAbsRoot: readKnowgrphWorkspaceSeedsReadAbsRoot() })
   const rootMirrorEntries = (await Promise.all(localRootRequests.map(async request => {
     const entries = await readWorkspaceMirrorRootEntries({
@@ -1543,40 +1553,18 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
     }))
   }))).flat()
   if (rootMirrorEntries.length > 0) {
-    if (!preferCompleteDataset) return rootMirrorEntries
-    completeDatasetCandidates.push(rootMirrorEntries)
+    return rootMirrorEntries
   }
-  if (knowgrphStorageBaseUrl && sourceFilesSelection) {
-    if (knowgrphStorageWorkspaceId) {
-      const storageDatasets: WorkspaceDocsMirrorEntry[][] = []
-      const viaKnowgrphStorageDb = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDbCache({
-        workspaceId: knowgrphStorageWorkspaceId,
-        selectedFolderPath: sourceFilesSelection.selectedFolderPath,
-      })
-      if (viaKnowgrphStorageDb.length > 0) storageDatasets.push(viaKnowgrphStorageDb)
-      if (sourceFilesSelection.sourceFiles.length > 0) {
-        const viaKnowgrphDocView = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDocsBySourceFiles({
-          baseUrl: knowgrphStorageBaseUrl,
-          workspaceId: knowgrphStorageWorkspaceId,
-          selectedFolderPath: sourceFilesSelection.selectedFolderPath,
-          sourceFiles: sourceFilesSelection.sourceFiles,
-        })
-        if (viaKnowgrphDocView.length > 0) {
-          if (!preferCompleteDataset) return viaKnowgrphDocView
-          storageDatasets.push(viaKnowgrphDocView)
-        }
-      }
-      const viaKnowgrphStorage = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageExport({
-        baseUrl: knowgrphStorageBaseUrl,
-        workspaceId: knowgrphStorageWorkspaceId,
-        selectedFolderPath: sourceFilesSelection.selectedFolderPath,
-      })
-      if (viaKnowgrphStorage.length > 0) storageDatasets.push(viaKnowgrphStorage)
-      const bestStorageDataset = chooseBestWorkspaceDocsMirrorDataset(storageDatasets)
-      if (bestStorageDataset.length > 0) {
-        if (!preferCompleteDataset) return bestStorageDataset
-        completeDatasetCandidates.push(bestStorageDataset)
-      }
+  if (knowgrphStorageBaseUrl && sourceFilesSelection && knowgrphStorageWorkspaceId && sourceFilesSelection.sourceFiles.length > 0) {
+    const viaKnowgrphDocView = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDocsBySourceFiles({
+      baseUrl: knowgrphStorageBaseUrl,
+      workspaceId: knowgrphStorageWorkspaceId,
+      selectedFolderPath: sourceFilesSelection.selectedFolderPath,
+      sourceFiles: sourceFilesSelection.sourceFiles,
+    })
+    if (viaKnowgrphDocView.length > 0) {
+      if (!preferCompleteDataset) return viaKnowgrphDocView
+      storageDatasets.push(viaKnowgrphDocView)
     }
   }
   if (sourceFilesSelection?.sourceFiles?.length) {
@@ -1611,8 +1599,7 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
       selectedFolderPath: sourceFilesSelection.selectedFolderPath,
     })
     if (viaHandle.length > 0) {
-      if (!preferCompleteDataset) return viaHandle
-      completeDatasetCandidates.push(viaHandle)
+      return viaHandle
     }
   }
   if (sourceFilesSelection?.localMarkdownFolderCacheId) {
@@ -1621,8 +1608,27 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
       selectedFolderPath: sourceFilesSelection.selectedFolderPath,
     })
     if (viaCache.length > 0) {
-      if (!preferCompleteDataset) return viaCache
-      completeDatasetCandidates.push(viaCache)
+      return viaCache
+    }
+  }
+  if (knowgrphStorageBaseUrl && sourceFilesSelection) {
+    if (knowgrphStorageWorkspaceId) {
+      const viaKnowgrphStorageDb = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageDbCache({
+        workspaceId: knowgrphStorageWorkspaceId,
+        selectedFolderPath: sourceFilesSelection.selectedFolderPath,
+      })
+      if (viaKnowgrphStorageDb.length > 0) storageDatasets.push(viaKnowgrphStorageDb)
+      const viaKnowgrphStorage = await readWorkspaceDocsMirrorEntriesFromKnowgrphStorageExport({
+        baseUrl: knowgrphStorageBaseUrl,
+        workspaceId: knowgrphStorageWorkspaceId,
+        selectedFolderPath: sourceFilesSelection.selectedFolderPath,
+      })
+      if (viaKnowgrphStorage.length > 0) storageDatasets.push(viaKnowgrphStorage)
+      const bestStorageDataset = chooseBestWorkspaceDocsMirrorDataset(storageDatasets)
+      if (bestStorageDataset.length > 0) {
+        if (!preferCompleteDataset) return bestStorageDataset
+        completeDatasetCandidates.push(bestStorageDataset)
+      }
     }
   }
   if (!knowgrphStorageBaseUrl) {
@@ -1633,6 +1639,11 @@ export async function readWorkspaceInitializationDocsMirrorEntries(args?: {
         completeDatasetCandidates.push(viaUrl)
       }
     }
+  }
+  const publishedCanonicalEntries = await readPublishedCanonicalDocsMirrorEntries()
+  if (publishedCanonicalEntries.length > 0) {
+    if (!preferCompleteDataset) return publishedCanonicalEntries
+    if (completeDatasetCandidates.length === 0) return publishedCanonicalEntries
   }
   return preferCompleteDataset
     ? chooseBestWorkspaceDocsMirrorDataset(completeDatasetCandidates)

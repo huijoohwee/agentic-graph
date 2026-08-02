@@ -326,6 +326,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["workspaceFs.seedProvider.prefersConfiguredAbsoluteDocsRoot","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersConfiguredAbsoluteDocsRoot"],
   ["workspaceFs.seedProvider.usesDeclaredReadRootWithoutDocsFallback","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderUsesDeclaredReadRootWithoutDocsFallback"],
   ["workspaceFs.seedProvider.prefersSourceFilesDocViewOverLargerStorageExportDataset","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersSourceFilesDocViewOverLargerStorageExportDataset"],
+  ["workspaceFs.seedProvider.prefersSelectedLocalFolderHandleOverStorageExportInFullBootstrap","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersSelectedLocalFolderHandleOverStorageExportInFullBootstrap"],
   ["workspaceFs.seedProvider.prefersCompleteStorageExportDatasetForSync","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderPrefersCompleteStorageExportDatasetForSync"],
   ["workspaceFs.seedProvider.keepsEmptyAndModelAssetDocsMirrorFiles","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderKeepsEmptyAndModelAssetDocsMirrorFiles"],
   ["workspaceFs.sourceRootSnapshot.keepsFullDocsTreeForSourceFilesSync","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSourceRootSnapshotKeepsFullDocsTreeForSourceFilesSync"],

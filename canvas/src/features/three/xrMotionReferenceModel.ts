@@ -374,7 +374,7 @@ function resolveCast(
       label: String(actor.label || saved.label || actorId).trim().slice(0, 80) || actorId,
       color: CAST_COLORS[index % CAST_COLORS.length],
       animation: normalizeAnimationAssignment(saved.animation, durationSeconds, subject),
-      marks: normalizeMarks(saved.marks, actorId, durationSeconds, fallbackPosition, defaultXrChoreographyGait(subject?.category)),
+      marks: normalizeMarks(saved.marks, actorId, durationSeconds, fallbackPosition, defaultXrChoreographyGait(subject || undefined)),
     })
   }))
 }

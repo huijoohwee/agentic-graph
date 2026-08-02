@@ -379,7 +379,7 @@ export function setXrMotionReferenceCastMark(args: {
     timeSeconds: args.timeSeconds,
     position: [...args.position],
     transition: args.transition || 'linear',
-    gait: args.gait || sourceTrack.marks[0]?.gait || defaultXrChoreographyGait(subject?.category),
+    gait: args.gait || sourceTrack.marks[0]?.gait || defaultXrChoreographyGait(subject || undefined),
   })
   track.marks = marks
   if ((track.animation as { kind?: unknown } | null)?.kind === 'action-path') track.animation = null

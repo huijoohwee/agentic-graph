@@ -19,6 +19,14 @@ export const XR_CHOREOGRAPHY_GAITS = [
 export type XrChoreographyEasing = (typeof XR_CHOREOGRAPHY_EASINGS)[number]
 export type XrChoreographyGait = (typeof XR_CHOREOGRAPHY_GAITS)[number]
 
+type XrDefaultGaitInput =
+  | string
+  | Readonly<{
+      category?: string
+      assetId?: string
+      shape?: string
+    }>
+
 export function readXrChoreographyEasing(value: unknown): XrChoreographyEasing {
   const normalized = String(value || '').trim().toLowerCase()
   return XR_CHOREOGRAPHY_EASINGS.includes(normalized as XrChoreographyEasing)
@@ -33,8 +41,13 @@ export function readXrChoreographyGait(value: unknown, fallback: XrChoreographyG
     : fallback
 }
 
-export function defaultXrChoreographyGait(category?: string): XrChoreographyGait {
+export function defaultXrChoreographyGait(input?: XrDefaultGaitInput): XrChoreographyGait {
+  const category = typeof input === 'string' ? input : String(input?.category || '').trim()
+  const assetId = typeof input === 'string' ? '' : String(input?.assetId || '').trim()
+  const shape = typeof input === 'string' ? '' : String(input?.shape || '').trim()
+  if (assetId === 'vehicle-helicopter' || shape === 'helicopter') return 'flight'
   if (category === 'vehicles') return 'wheeled'
+  if (assetId === 'prop-ball' || shape === 'ball') return 'wheeled'
   if (category === 'props') return 'hold'
   return 'walk'
 }
