@@ -5,6 +5,7 @@ import {
   XR_SESSION_REFERENCE_SPACE_ORDER,
   buildXrSessionInit,
   chooseXrSessionMode,
+  resolveXrCapabilitySnapshot,
   requestPreferredXrReferenceSpace,
 } from '@/lib/three/ThreeGraphXrSessionPolicy'
 
@@ -23,6 +24,46 @@ export async function testXrSessionPolicyPrefersNativeArWithoutProviderDependenc
   }
   if (chooseXrSessionMode({ 'immersive-ar': false, 'immersive-vr': false }) !== null) {
     throw new Error('expected XR session selection to return null when no native XR session is supported')
+  }
+  const inlineSnapshot = resolveXrCapabilitySnapshot({
+    surfaceKind: 'graph',
+    sessionSupport: { 'immersive-ar': false, 'immersive-vr': false },
+    inlineViewer: true,
+    monocularCapture: false,
+    captureMotion: false,
+    nativeHandoff: true,
+  })
+  if (inlineSnapshot.schema !== 'knowgrph-xr-capability-snapshot/v1'
+    || inlineSnapshot.recommended_entry_mode !== 'inline-viewer'
+    || inlineSnapshot.immersive_viewer !== false
+    || inlineSnapshot.native_handoff !== true
+    || !inlineSnapshot.reason_codes.includes('immersive_viewer_unavailable')) {
+    throw new Error(`expected graph capability snapshot to degrade to inline-viewer with exact reason codes, got ${JSON.stringify(inlineSnapshot)}`)
+  }
+  const spatialCaptureSnapshot = resolveXrCapabilitySnapshot({
+    surfaceKind: 'spatial-capture',
+    sessionSupport: { 'immersive-ar': false, 'immersive-vr': false },
+    inlineViewer: true,
+    monocularCapture: true,
+    captureMotion: true,
+    nativeHandoff: true,
+  })
+  if (spatialCaptureSnapshot.recommended_entry_mode !== 'monocular-capture'
+    || spatialCaptureSnapshot.monocular_capture !== true
+    || spatialCaptureSnapshot.capture_motion !== true) {
+    throw new Error(`expected spatial-capture snapshot to recommend monocular capture fallback, got ${JSON.stringify(spatialCaptureSnapshot)}`)
+  }
+  const immersiveSnapshot = resolveXrCapabilitySnapshot({
+    surfaceKind: 'graph',
+    sessionSupport: { 'immersive-ar': true, 'immersive-vr': true },
+    inlineViewer: true,
+    monocularCapture: true,
+    captureMotion: true,
+    nativeHandoff: true,
+  })
+  if (immersiveSnapshot.recommended_entry_mode !== 'immersive-session'
+    || immersiveSnapshot.immersive_viewer !== true) {
+    throw new Error(`expected immersive-capable snapshot to prefer immersive-session, got ${JSON.stringify(immersiveSnapshot)}`)
   }
   if (XR_SESSION_REFERENCE_SPACE_ORDER.join('|') !== 'local-floor|local') {
     throw new Error(`expected XR reference spaces to prefer local-floor before local, got ${XR_SESSION_REFERENCE_SPACE_ORDER.join('|')}`)
@@ -80,6 +121,16 @@ export async function testXrSessionPolicyPrefersNativeArWithoutProviderDependenc
   }
   if (!source.includes('Promise.all(') || !source.includes('XR_SESSION_MODE_ORDER.map')) {
     throw new Error('expected XR support detection to check native AR/VR modes in parallel through the shared order')
+  }
+  for (const marker of [
+    'resolveXrCapabilitySnapshot({',
+    'data-kg-canvas-xr-capability-schema',
+    'data-kg-canvas-xr-entry-mode',
+    'data-kg-canvas-xr-recommended-entry-mode',
+    'data-kg-canvas-xr-monocular-capture',
+    'data-kg-canvas-xr-capability-reasons',
+  ]) {
+    if (!source.includes(marker)) throw new Error(`expected XR entry surface to expose capability marker ${marker}`)
   }
   if (!source.includes('requestSession(sessionMode, buildXrSessionInit(sessionMode, resolveXrDomOverlayRoot(renderer)))')) {
     throw new Error('expected XR session entry to use the shared native WebXR session-init policy')

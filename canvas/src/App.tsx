@@ -27,6 +27,9 @@ const MobileKeyboardBrowserSmokePageLazy = lazy(async () => ({
 const StoryboardRichMediaDropSmokePageLazy = lazy(async () => ({
   default: (await import('@/features/testing/StoryboardRichMediaDropSmokePage')).StoryboardRichMediaDropSmokePage,
 }))
+const XrSpatialCaptureFallbackSmokePageLazy = lazy(async () => ({
+  default: (await import('@/features/testing/XrSpatialCaptureFallbackSmokePage')).XrSpatialCaptureFallbackSmokePage,
+}))
 
 function AppThemeRuntime() {
   useLayoutEffect(() => {
@@ -64,6 +67,13 @@ export default function App() {
     const kgPath = String(params.get('kgPath') || '')
     return pathname === '/__smoke__/storyboard-rich-media-drop' || kgPath === '/__smoke__/storyboard-rich-media-drop'
   }, [])
+    const xrSpatialCaptureFallbackSmokeRequested = useMemo(() => {
+      if (!import.meta.env.DEV || typeof window === 'undefined') return false
+      const params = new URLSearchParams(window.location.search)
+      const pathname = String(window.location.pathname || '')
+      const kgPath = String(params.get('kgPath') || '')
+      return pathname === '/__smoke__/xr-spatial-capture-fallback' || kgPath === '/__smoke__/xr-spatial-capture-fallback'
+    }, [])
   useEffect(() => {
     let cancelled = false
     let cleanupTheme = () => void 0
@@ -218,6 +228,10 @@ export default function App() {
                   <Suspense fallback={null}>
                     <StoryboardRichMediaDropSmokePageLazy />
                   </Suspense>
+                  ) : xrSpatialCaptureFallbackSmokeRequested ? (
+                    <Suspense fallback={null}>
+                      <XrSpatialCaptureFallbackSmokePageLazy />
+                    </Suspense>
                 ) : <Canvas />}
               />
             </Routes>
