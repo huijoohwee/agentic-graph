@@ -868,7 +868,11 @@ export function useMapLibreBasemap(args: {
             isCurrent: () => !cancelled,
           })
           if (cancelled) {
-            disposeMapLibreBasemap(fallbackMap)
+            try {
+              fallbackMap?.remove?.()
+            } catch {
+              void 0
+            }
             return
           }
           if (!fallbackMap) throw err
