@@ -2,12 +2,18 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  assertCanonicalReleaseOwnerStable,
   buildTerminalAuthorizationEvidence,
   challengeFor,
+  extractAuthorizationReplyFromPromptText,
+  finalizeAuthorizationPromptInteraction,
   formatTerminalAuthorizationComment,
   GITHUB_APPROVAL_COMMENT_MAX_BYTES,
   parseTerminalAuthorizationComment,
+  prepareAuthorizationPromptInteraction,
   readAuthorizationRuntime,
+  readCanonicalReleaseOwnerState,
+  validateCanonicalReleaseOwnerState,
   responseFor,
   selectLifecycleCandidateArtifact,
   selectPendingProductionDeployment,
@@ -164,5 +170,133 @@ test('candidate artifact and pending environment selection are exact and singula
       current_user_can_approve: true,
     }]),
     /one approvable production deployment/,
+  )
+})
+
+test('canonical release owner state requires clean exact main at the reviewed revision', () => {
+  const execGit = argumentsList => {
+    const key = argumentsList.join(' ')
+    return ({
+      'branch --show-current': 'main',
+      'rev-parse HEAD': run.head_sha,
+      'rev-parse origin/main': run.head_sha,
+      'status --porcelain': '',
+    })[key]
+  }
+  const state = readCanonicalReleaseOwnerState({
+    repositoryRoot: '/workspace/knowgrph',
+    execGit,
+  })
+  assert.deepEqual(state, {
+    branch: 'main',
+    head: run.head_sha,
+    originMain: run.head_sha,
+    status: '',
+  })
+  assert.equal(
+    validateCanonicalReleaseOwnerState({
+      state,
+      expectedRevision: run.head_sha,
+      label: 'Knowgrph',
+    }),
+    state,
+  )
+  assert.throws(
+    () => validateCanonicalReleaseOwnerState({
+      state: { ...state, branch: 'agent/device/scope' },
+      expectedRevision: run.head_sha,
+      label: 'Knowgrph',
+    }),
+    /canonical main drifted/,
+  )
+})
+
+test('authorization prompt interaction captures the printed exact reply and requires prompt stability', () => {
+  const promptText = [
+    'The release is verified and awaiting fresh human authorization.',
+    '',
+    `Candidate: \`${candidateDigest}\``,
+    '',
+    'Reply exactly:',
+    '',
+    `\`authorize ${candidateDigest}\``,
+  ].join('\n')
+  assert.equal(
+    extractAuthorizationReplyFromPromptText(promptText),
+    `authorize ${candidateDigest}`,
+  )
+  assert.throws(
+    () => extractAuthorizationReplyFromPromptText('Reply exactly:\n\n`authorize not-a-digest`'),
+    /did not print one exact candidate-bound reply/,
+  )
+  const interaction = prepareAuthorizationPromptInteraction({
+    prompt: { authorizationReply: `authorize ${candidateDigest}` },
+    promptText,
+    repositoryRoot: '/workspace/knowgrph',
+    expectedRevision: run.head_sha,
+    label: 'Knowgrph',
+    readCanonicalState: () => ({
+      branch: 'main',
+      head: run.head_sha,
+      originMain: run.head_sha,
+      status: '',
+    }),
+  })
+  assert.equal(interaction.printedReply, `authorize ${candidateDigest}`)
+  assert.equal(
+    finalizeAuthorizationPromptInteraction({
+      interaction,
+      answer: `authorize ${candidateDigest}`,
+      repositoryRoot: '/workspace/knowgrph',
+      readCanonicalState: () => ({
+        branch: 'main',
+        head: run.head_sha,
+        originMain: run.head_sha,
+        status: '',
+      }),
+    }),
+    `authorize ${candidateDigest}`,
+  )
+})
+
+test('authorization prompt interaction fails closed on branch flip, local drift, or out-of-order reply', () => {
+  const before = {
+    branch: 'main',
+    head: run.head_sha,
+    originMain: run.head_sha,
+    status: '',
+  }
+  const interaction = {
+    before,
+    expectedRevision: run.head_sha,
+    label: 'Knowgrph',
+    printedReply: `authorize ${candidateDigest}`,
+  }
+  assert.throws(
+    () => assertCanonicalReleaseOwnerStable({
+      before,
+      after: { ...before, branch: 'agent/huis-macbook-pro-3.local/release-receipt' },
+      expectedRevision: run.head_sha,
+      label: 'Knowgrph',
+    }),
+    /canonical main drifted/,
+  )
+  assert.throws(
+    () => finalizeAuthorizationPromptInteraction({
+      interaction,
+      answer: `authorize ${candidateDigest}`,
+      repositoryRoot: '/workspace/knowgrph',
+      readCanonicalState: () => ({ ...before, head: 'f'.repeat(40), originMain: 'f'.repeat(40) }),
+    }),
+    /canonical main drifted/,
+  )
+  assert.throws(
+    () => finalizeAuthorizationPromptInteraction({
+      interaction,
+      answer: `authorize ${'f'.repeat(64)}`,
+      repositoryRoot: '/workspace/knowgrph',
+      readCanonicalState: () => before,
+    }),
+    /did not match the printed exact reply/,
   )
 })
