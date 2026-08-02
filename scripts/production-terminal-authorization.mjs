@@ -17,6 +17,7 @@ export const GITHUB_APPROVAL_COMMENT_MAX_BYTES = 1024
 const digestPattern = /^[0-9a-f]{64}$/
 const shaPattern = /^[0-9a-f]{40}$/
 const repositoryPattern = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
+const authorizationReplyLinePattern = /^`(authorize [0-9a-f]{64})`$/m
 const compressedEvidencePrefix = 'z.'
 const maximumDecodedEvidenceBytes = 16 * 1024
 const evidenceFields = [
@@ -306,6 +307,97 @@ export const readAuthorizationRuntime = async ({
   })
 }
 
+export const readCanonicalReleaseOwnerState = ({
+  repositoryRoot,
+  execGit = createGitExecutor(repositoryRoot),
+}) => ({
+  branch: execGit(['branch', '--show-current']),
+  head: execGit(['rev-parse', 'HEAD']),
+  originMain: execGit(['rev-parse', 'origin/main']),
+  status: execGit(['status', '--porcelain']),
+})
+
+export const validateCanonicalReleaseOwnerState = ({
+  state,
+  expectedRevision,
+  label,
+}) => {
+  if (!shaPattern.test(String(expectedRevision || ''))) {
+    throw new Error(`${label} expected revision must be an exact commit SHA`)
+  }
+  if (state?.branch !== 'main' ||
+      state?.head !== expectedRevision ||
+      state?.originMain !== expectedRevision ||
+      state?.status !== '') {
+    throw new Error(`${label} canonical main drifted from the authorized release input`)
+  }
+  return state
+}
+
+export const assertCanonicalReleaseOwnerStable = ({
+  before,
+  after,
+  expectedRevision,
+  label,
+}) => {
+  validateCanonicalReleaseOwnerState({ state: before, expectedRevision, label })
+  validateCanonicalReleaseOwnerState({ state: after, expectedRevision, label })
+  if (JSON.stringify(before) !== JSON.stringify(after)) {
+    throw new Error(`${label} canonical main drifted during the authorization prompt`)
+  }
+  return after
+}
+
+export const extractAuthorizationReplyFromPromptText = promptText => {
+  const match = String(promptText || '').match(authorizationReplyLinePattern)
+  if (!match) throw new Error('Production authorization prompt did not print one exact candidate-bound reply')
+  return match[1]
+}
+
+export const prepareAuthorizationPromptInteraction = ({
+  prompt,
+  promptText,
+  repositoryRoot,
+  expectedRevision,
+  label,
+  readCanonicalState = options => readCanonicalReleaseOwnerState(options),
+}) => {
+  const printedReply = extractAuthorizationReplyFromPromptText(promptText)
+  if (printedReply !== prompt?.authorizationReply) {
+    throw new Error('Production authorization prompt reply drifted from the formatted prompt text')
+  }
+  const before = readCanonicalState({ repositoryRoot })
+  validateCanonicalReleaseOwnerState({ state: before, expectedRevision, label })
+  return Object.freeze({
+    prompt,
+    promptText,
+    expectedRevision,
+    label,
+    printedReply,
+    before,
+  })
+}
+
+export const finalizeAuthorizationPromptInteraction = ({
+  interaction,
+  answer,
+  repositoryRoot,
+  readCanonicalState = options => readCanonicalReleaseOwnerState(options),
+}) => {
+  const trimmedAnswer = String(answer || '').trim()
+  const after = readCanonicalState({ repositoryRoot })
+  assertCanonicalReleaseOwnerStable({
+    before: interaction.before,
+    after,
+    expectedRevision: interaction.expectedRevision,
+    label: interaction.label,
+  })
+  if (trimmedAnswer !== interaction.printedReply) {
+    throw new Error('Production authorization challenge response did not match the printed exact reply')
+  }
+  return interaction.printedReply
+}
+
 const main = async () => {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     throw new Error('Production authorization requires an interactive terminal; non-interactive confirmation is forbidden')
@@ -367,14 +459,24 @@ const main = async () => {
       releaseCandidate,
       { runRef: `run:${run.id}` },
     )
-    process.stderr.write(`${promptContract.formatProductionAuthorizationPrompt(prompt)}\n`)
+    const promptText = promptContract.formatProductionAuthorizationPrompt(prompt)
+    const interaction = prepareAuthorizationPromptInteraction({
+      prompt,
+      promptText,
+      repositoryRoot,
+      expectedRevision: run.head_sha,
+      label: 'Knowgrph',
+    })
+    process.stderr.write(`${interaction.promptText}\n`)
     const challengeDigest = challengeFor({ repository, run, releaseCandidate, lifecycleCandidate })
     const terminal = readline.createInterface({ input: process.stdin, output: process.stdout })
     const answer = (await terminal.question('> ')).trim()
     terminal.close()
-    if (answer !== prompt.authorizationReply) {
-      throw new Error('Production authorization challenge response did not match')
-    }
+    finalizeAuthorizationPromptInteraction({
+      interaction,
+      answer,
+      repositoryRoot,
+    })
     const evidence = buildTerminalAuthorizationEvidence({
       repository,
       runId: String(run.id),
@@ -437,19 +539,17 @@ const runGhText = (argumentsList, input) => execFileSync('gh', argumentsList, {
 const runGhJson = argumentsList => JSON.parse(runGhText(argumentsList))
 const readJson = filePath => JSON.parse(fs.readFileSync(filePath, 'utf8'))
 
-const requireCanonicalRevision = (repositoryRoot, expectedRevision, label) => {
-  const git = argumentsList => execFileSync('git', argumentsList, {
-    cwd: repositoryRoot,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim()
-  if (git(['branch', '--show-current']) !== 'main' ||
-      git(['rev-parse', 'HEAD']) !== expectedRevision ||
-      git(['rev-parse', 'origin/main']) !== expectedRevision ||
-      git(['status', '--porcelain'])) {
-    throw new Error(`${label} canonical main drifted from the authorized release input`)
-  }
-}
+const createGitExecutor = repositoryRoot => argumentsList => execFileSync('git', argumentsList, {
+  cwd: repositoryRoot,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'pipe'],
+}).trim()
+
+const requireCanonicalRevision = (repositoryRoot, expectedRevision, label) => validateCanonicalReleaseOwnerState({
+  state: readCanonicalReleaseOwnerState({ repositoryRoot }),
+  expectedRevision,
+  label,
+})
 
 const required = (value, label) => {
   if (!String(value || '').trim()) throw new Error(`${label} is required`)

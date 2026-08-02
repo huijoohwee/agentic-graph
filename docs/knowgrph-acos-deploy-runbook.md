@@ -110,9 +110,15 @@ npm run production:authorize -- --repository huijoohwee/knowgrph --run-id <workf
 The command independently downloads and verifies the candidate artifacts, rejects either
 canonical checkout unless it is clean `main` at the exact fetched candidate revision,
 rechecks canonical runtime state, displays the exact challenge, and accepts only the
-generated candidate-bound reply. It then submits the protected-environment approval with the
-terminal evidence comment. It cannot run non-interactively. An example reply, a browser-only
-approval, or a remembered candidate digest is not authorization for a later run.
+generated candidate-bound reply. From prompt preparation through reply acceptance, the
+Knowgrph canonical release-owner checkout must remain the same clean `main` checkout at that
+exact reviewed revision; a local branch flip, repurposed root checkout, or local-ref drift
+fails closed and requires a fresh revalidation. Terminal automation must also follow the
+repository-owned sequential handshake: capture the printed exact `authorize ...` reply,
+wait for the live `>` prompt, and only then submit that exact captured reply. It then
+submits the protected-environment approval with the terminal evidence comment. It cannot run
+non-interactively. An example reply, a browser-only approval, or a remembered candidate
+digest is not authorization for a later run.
 
 ## Authoring verification
 
