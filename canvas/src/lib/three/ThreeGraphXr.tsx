@@ -13,8 +13,13 @@ import {
   XR_SESSION_MODE_ORDER,
   buildXrSessionInit,
   chooseXrSessionMode,
+  detectBrowserCameraCaptureAvailable,
+  detectBrowserMotionCaptureAvailable,
+  detectBrowserNativeHandoffAvailable,
   requestPreferredXrReferenceSpace,
+  resolveXrCapabilitySnapshot,
   resolveXrDomOverlayRoot,
+  type XrCapabilityEntryMode,
   type XrSessionReferenceSpaceKind,
   type XrSessionMode,
   type XrSessionSupport,
@@ -119,6 +124,31 @@ export function CanvasXrEntryPanel({
   const sessionEndListenerRef = React.useRef<(() => void) | null>(null)
   const pendingSessionEndListenerRef = React.useRef<(() => void) | null>(null)
   const [placementCommitted, setPlacementCommitted] = React.useState(false)
+  const capabilitySnapshot = React.useMemo(
+    () => resolveXrCapabilitySnapshot({
+      surfaceKind,
+      sessionSupport,
+      inlineViewer: active,
+      monocularCapture: detectBrowserCameraCaptureAvailable(),
+      captureMotion: detectBrowserMotionCaptureAvailable(),
+      nativeHandoff: detectBrowserNativeHandoffAvailable(),
+    }),
+    [active, sessionSupport, surfaceKind],
+  )
+  const selectedEntryMode: XrCapabilityEntryMode = status === 'active' || status === 'requesting' || status === 'ending'
+    ? 'immersive-session'
+    : capabilitySnapshot.recommended_entry_mode
+  const capabilityDataAttributes = {
+    'data-kg-canvas-xr-capability-schema': capabilitySnapshot.schema,
+    'data-kg-canvas-xr-entry-mode': selectedEntryMode,
+    'data-kg-canvas-xr-recommended-entry-mode': capabilitySnapshot.recommended_entry_mode,
+    'data-kg-canvas-xr-inline-viewer': capabilitySnapshot.inline_viewer ? '1' : '0',
+    'data-kg-canvas-xr-immersive-viewer': capabilitySnapshot.immersive_viewer ? '1' : '0',
+    'data-kg-canvas-xr-monocular-capture': capabilitySnapshot.monocular_capture ? '1' : '0',
+    'data-kg-canvas-xr-capture-motion': capabilitySnapshot.capture_motion ? '1' : '0',
+    'data-kg-canvas-xr-native-handoff': capabilitySnapshot.native_handoff ? '1' : '0',
+    'data-kg-canvas-xr-capability-reasons': capabilitySnapshot.reason_codes.join(' ') || 'none',
+  } as const
 
   React.useEffect(() => {
     const controls = controlsRef.current
@@ -366,6 +396,7 @@ export function CanvasXrEntryPanel({
         data-kg-canvas-xr-mode="1"
         data-kg-canvas-xr-surface-kind="spatial-capture"
         data-kg-canvas-xr-status={status}
+          {...capabilityDataAttributes}
         data-kg-canvas-xr-spatial-fidelity={spatialRuntimeFidelity}
         data-kg-canvas-xr-spatial-runtime={spatialRuntimeStatus}
         className="absolute left-1/2 top-14 z-[90] -translate-x-1/2 rounded-md bg-slate-900/82 px-4 py-1 text-xs font-medium text-slate-100 shadow-sm backdrop-blur"
@@ -395,6 +426,7 @@ export function CanvasXrEntryPanel({
         data-kg-canvas-xr-mode="1"
         data-kg-canvas-xr-surface-kind={surfaceKind}
         data-kg-canvas-xr-status={status}
+          {...capabilityDataAttributes}
         data-kg-canvas-xr-session-mode={sessionMode}
         data-kg-canvas-xr-ar-supported={sessionSupport['immersive-ar'] === true ? '1' : '0'}
         data-kg-canvas-xr-vr-supported={sessionSupport['immersive-vr'] === true ? '1' : '0'}

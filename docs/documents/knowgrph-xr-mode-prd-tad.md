@@ -2,9 +2,9 @@
 title: "Knowgrph XR Mode PRD & TAD"
 doc_type: "PRD+TAD"
 doc_id: "KXR-001"
-version: "0.5.1"
-status: "Accepted; native physics ownership corrected"
-date: "2026-06-17"
+version: "0.5.2"
+status: "Accepted; browser-native capability slice added"
+date: "2026-08-02"
 authors:
   - "airvio"
 schema: "kgc-computing-flow/v1"
@@ -56,6 +56,18 @@ Knowgrph XR Mode is a renderer and asset-pipeline extension that lets users insp
 The min-viable-max-value scope is not a new immersive product shell. It is a first-class `xr` 3D mode that reuses the current Three.js / React Three Fiber renderer, GLB/GLTF workspace manifests, rich-media overlay ownership, and Source Files import path. Asset conversion defaults to deterministic FOSS tooling: `png -> svg` through VTracer or Potrace, then `svg -> glb` through the Dev headless GLB compiler, with optional Three.js/Blender exporters and glTF Transform optimization reserved for higher-fidelity follow-up profiles.
 
 **Governing decision**: XR Mode must be useful before a headset session starts. A user should be able to import a `.glb`, `.gltf`, `.svg`, or `.png`, open the XR spatial inspection stage in the browser canvas, and only then enter WebXR when supported by the device and user consent.
+
+The first phone-first capture and viewer fallback slice is specified separately
+in `docs/knowgrph-ar-vr-xr-prd-tad-adr.md`. That document owns capability
+detection, monocular camera fallback, and deterministic viewer handoff so XR
+Mode can stay browser-native and device-appropriate before any immersive
+session begins.
+
+The current local acceptance path for that slice is documented in
+`docs/documents/knowgrph-xr-spatial-capture-fallback-readiness.md` and runs
+through `npm run xr:runtime-ready`. The repo-owned source proof owner for that
+same slice is `npm run xr:source-runner:test`, and the one-command review path
+is `npm run xr:review-ready`.
 
 **Current implementation baseline**:
 
@@ -112,6 +124,8 @@ If Knowgrph exposes XR Mode as a first-class Canvas surface and adds a determini
 ### In Scope
 
 - First-class `xr` surface mode in Canvas View and frontmatter.
+- Capability-detected XR entry with explicit inline-viewer, immersive-session,
+  monocular-capture, and native-handoff outcomes.
 - GLB/GLTF model asset manifests that open directly in XR Mode.
 - Distinct graph XR spatial stage using the current display graph, not a separate derivation pipeline.
 - Deterministic FOSS `png -> svg` vectorization harness with VTracer default and Potrace fallback.
@@ -124,6 +138,8 @@ If Knowgrph exposes XR Mode as a first-class Canvas surface and adds a determini
 
 - Proprietary image tracing, proprietary 3D SaaS conversion, or paid model hosting.
 - Mandatory headset support before browser canvas preview works.
+- Dedicated stereo hardware or platform-locked native AR SDK ownership for the
+  first shipped capture flow.
 - Runtime conversion on every render frame.
 - A separate XR graph derivation pipeline.
 - Multi-user XR collaboration.

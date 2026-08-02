@@ -11,6 +11,8 @@
     "prepare:litert-assets": "node ./scripts/prepare-litert-assets.mjs",
     "test:smoke:motion-control-litert:browser": "npm run prepare:litert-assets && node ./scripts/run_motion_control_litert_browser_smoke.mjs",
     "test:smoke:motion-control-live-camera:browser": "npm run prepare:litert-assets && node ./scripts/run_motion_control_live_camera_browser_smoke.mjs",
+    "test:smoke:xr-spatial-capture-fallback:source": "node ../scripts/run-xr-spatial-capture-fallback-source-smoke.mjs",
+    "test:smoke:xr-spatial-capture-fallback:browser": "node ./scripts/run_xr_spatial_capture_fallback_browser_smoke.mjs",
     "build:settings": "tsx src/cli/extract-settings-schema.ts",
     "test:responsibility-flow": "node --import tsx --test src/cli/__tests__/settingsResponsibilityFlow.test.ts src/features/settings/__tests__/flowDetailsRuntime.test.ts",
     "doc:generate-byteplus-chat-reference": "tsx src/cli/generate-byteplus-chat-reference.ts",

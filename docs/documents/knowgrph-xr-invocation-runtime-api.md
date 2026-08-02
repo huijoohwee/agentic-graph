@@ -3,8 +3,8 @@ title: "Knowgrph XR Invocation Runtime API"
 id: "md:knowgrph-xr-invocation-runtime-api"
 doc_type: "API Contract And Runtime Evidence"
 date: "2026-07-22"
-updated: "2026-07-24"
-version: "1.1.0"
+updated: "2026-08-02"
+version: "1.2.0"
 status: "runtime-ready"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -54,6 +54,52 @@ The strict native invocation is:
 
 The implementation is an active draft candidate in PR `#406`. TypeScript and focused source/runtime tests are evidence for the candidate; canonical browser proof, protected integration, and any production release remain separate gates.
 
+## Capability-detected capture and viewer contract
+
+The browser-native capability slice is defined in
+`docs/knowgrph-ar-vr-xr-prd-tad-adr.md`. Runtime surfaces that expose XR entry,
+camera capture, or viewer promotion must resolve one capability snapshot before
+opening a viewer or recording capture state.
+
+| Contract | Purpose | Required outcome |
+|---|---|---|
+| `knowgrph-xr-capability-snapshot/v1` | Declares what the current browser can do | one exact `recommended_entry_mode` plus downgrade `reason_codes` |
+| `knowgrph-xr-capture-draft/v1` | Records the first-slice phone capture intent | first slice admits `capture_mode: monocular-camera` only |
+| `knowgrph-xr-viewer-handoff/v1` | Records how the source opened | exact `selected_mode`, `fallback_mode`, and `target_route` |
+
+Runtime projections should expose the selected entry mode and capability booleans
+as readable data attributes so browser and harness checks can verify fallback
+behavior without reverse-engineering UI state.
+
+The current repo-owned acceptance command for this slice is:
+
+```bash
+npm run xr:runtime-ready
+```
+
+The repo-owned source proof command for the same slice is:
+
+```bash
+npm run xr:source-runner:test
+```
+
+The one-command review path for the same slice is:
+
+```bash
+npm run xr:review-ready
+```
+
+The proof boundary and local acceptance contract are documented in
+`docs/documents/knowgrph-xr-spatial-capture-fallback-readiness.md`.
+
+That command is intentionally scoped to the native XR session policy source
+bundle `test:smoke:xr-spatial-capture-fallback:source` and the dedicated Dev
+browser smoke `test:smoke:xr-spatial-capture-fallback:browser` for
+`monocular-capture` fallback. The source bundle covers
+`scripts/run-xr-spatial-capture-fallback-source-smoke.mjs`, which runs
+`canvas.xrMode.nativeSessionPolicy` and
+`xr.spatialCaptureFallback.browserSmokeContract`.
+
 ## Integrated readiness contract
 
 - The `/`, `@`, and `#` catalog reconciles as one exact-revision transaction. A response is admitted only when its top-level `sourceRevision` matches the configured revision; an epoch change retries only sigils resolved by the losing revision and ends in `fresh`, `stale`, or `blocked`.
@@ -64,6 +110,10 @@ The implementation is an active draft candidate in PR `#406`. TypeScript and foc
 - Placement labels are URI-encoded in `/xr.place` and decoded before bounded scene mutation.
 - `/xr.transform` retains the selected asset, position, yaw, scale, and color.
 - Static placements retain `transition=hold`.
+- Capability detection runs before XR viewer entry or browser-local capture and
+  must settle to one explicit `recommended_entry_mode`.
+- Monocular phone capture is the first admitted capture fallback when immersive
+  viewer support is absent; native handoff remains explicit and typed.
 - Camera WebMCP framing preserves an already-open Media or Skills & Commands panel; Camera opens only when no operator panel is open.
 - Surface Mode to XR Mode preserves an already-open Media scene panel and an already-open Skills & Commands operator panel. Closed, unrelated, or Game Mode panels enter through Motion Control.
 
