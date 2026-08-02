@@ -2,8 +2,8 @@
 title: "Reference implementation: Knowgrph Protected Release Runbook"
 id: "md:knowgrph-acos-deploy-runbook"
 doc_type: "Release Runbook"
-version: "2.0.4"
-date: "2026-08-02"
+version: "2.0.5"
+date: "2026-08-03"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.release.runbook"
@@ -73,12 +73,12 @@ boundary.
 
 | Reference | Named check | Recorded result | Surface | Meaning |
 |---|---|---|---|---|
-| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `d9578e8810e94565028386b19ac5e95668e91207` | run `30750323434` `Verify Release Candidate` passed; local review candidate digest `cbec1294bfecb670431fad6f794655d6b8366ea41a27edc797b67a9ad7445395`, immutable manifest digest `8131b985777b94e7f2f5426f7f6fedd3a99d31672f0f0f2216b78d3befbf0d78`, production candidate digest `b3466a2b799826f497595ddb505e1cd4d8f4fe61f84f387f3abbe501528324bc` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
-| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30750323434` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://40cc85aa.joohwee.pages.dev`, deployment id `40cc85aa-e472-406c-b2c4-f76abdd23a18`, published mirror commit `8ed1e4ad6fbf1f5127c179b577824ca61c9afbb7` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
+| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `32d2cfca34f7d5bf484b4a8f449083954a476bd8` | run `30771408324` `Verify Release Candidate` passed; local review candidate digest `17053ac576ff09d05dd368611d09dc27062c7cc442bca80db4437d2830f39d54`, immutable manifest digest `d81c47b5978bf28a89360df1520391d8b63c7dc304d703aecb7eb798ae2ac715`, production candidate digest `6b27c7e8e5ed48297b81e17a731f25dcfd07744e31df33ed7fd3f7654fdc0f9e` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
+| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30771408324` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://fbd0fd41.joohwee.pages.dev`, deployment id `fbd0fd41-6cc9-4373-a9b1-f8560fda58e0`, published mirror commit `5f9eff39339e1f1f0ea86ddaa11e48e49f1811cc` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
 
 `OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. For the
 latest recorded 2026-08-02 release, those instructions were satisfied only for workflow run
-`30750323434`; outside that exact run and candidate pair, both boundaries remain closed.
+`30771408324`; outside that exact run and candidate pair, both boundaries remain closed.
 
 ## Preconditions
 
@@ -238,7 +238,27 @@ Retain:
 
 Only this revision-bound evidence may advance the delivered rung.
 
-### 2026-08-02 Recorded Receipt
+### 2026-08-02 Latest Recorded Receipt
+
+- Earlier recovery dispatch: run `30771075357` for source revision `32d2cfca34f7d5bf484b4a8f449083954a476bd8` failed closed because the dispatch passed the full runtime-readiness envelope instead of the exact nested `agentic-local-review-candidate/v1` JSON required by the protected verify job.
+- Earlier recovery dispatch: run `30771147307` for source revision `32d2cfca34f7d5bf484b4a8f449083954a476bd8` failed closed at source-to-mirror parity because `huijoohwee.github.io/schema/AgenticRAG/knowgrph-documents-map.graph.jsonld` was missing the relocated XR document node.
+- Workflow run: `30771408324` (`Production Release`)
+- Source revision: `32d2cfca34f7d5bf484b4a8f449083954a476bd8`
+- Source tree: `ad66dc3d12f7207a8c1573a9d51f8febc0a7976a`
+- Agentic Canvas OS docs revision: `e3c1cfbbd0182d7a91379576b8502be12562407b`
+- Local review candidate digest: `17053ac576ff09d05dd368611d09dc27062c7cc442bca80db4437d2830f39d54`
+- Immutable manifest digest: `d81c47b5978bf28a89360df1520391d8b63c7dc304d703aecb7eb798ae2ac715`
+- Production candidate digest: `6b27c7e8e5ed48297b81e17a731f25dcfd07744e31df33ed7fd3f7654fdc0f9e`
+- Lifecycle candidate digest: `588ec101fa2273a918f09594a24c5af05a60761c4d26d9a32736330cbcf6f883`
+- Human authorization decision ref: `https://github.com/huijoohwee/knowgrph/actions/runs/30771408324#environment-production`
+- Authorization interaction evidence digest: `995bde94e2b651f6986530edf5ea79c62ccf69db09ec4a94c39a610a378c39e7`
+- Previous rollback target: `40cc85aa-e472-406c-b2c4-f76abdd23a18`
+- Candidate deployment origin: `https://fbd0fd41.joohwee.pages.dev`
+- Candidate deployment id: `fbd0fd41-6cc9-4373-a9b1-f8560fda58e0`
+- Published mirror revision: `5f9eff39339e1f1f0ea86ddaa11e48e49f1811cc`
+- Rollback result: not invoked
+
+### 2026-08-02 Prior Recorded Receipt
 
 - Earlier stale dispatch: run `30749177437` for source revision `86496f495dede69256053d308cc222ddf5ae6daa` failed closed because protected `refs/heads/main` had already advanced to `d9578e8810e94565028386b19ac5e95668e91207`
 - Workflow run: `30750323434` (`Production Release`)
