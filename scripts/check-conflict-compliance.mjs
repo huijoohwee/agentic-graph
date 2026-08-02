@@ -14,6 +14,7 @@ const ignoredDirNames = new Set([
   '.git',
   '.idea',
   '.next',
+  '.wrangler',
   '.turbo',
   '.vscode',
   'build',

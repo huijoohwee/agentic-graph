@@ -15,7 +15,7 @@ import {
 import ExpandCollapseAllButton from '@/features/panels/ui/ExpandCollapseAllButton'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_SECTION_CHIP_CHROME_CLASS_NAME, getUiSectionChipClassName } from '@/lib/ui/sectionChipChrome'
-import { getIconSizeClass } from '@/lib/ui'
+import { getIconSizeClass } from '@/lib/ui/icons'
 import { uiToolbarToggleActiveClassName } from '@/features/toolbar/ui/toolbarStyles'
 import { useP2PCollaborationStore } from '@/features/collaboration/p2pCollaborationStore'
 import { MainPanelTypeIcon, type MainPanelTypeIconKey } from '@/features/panels/ui/mainPanelHelpIconLibrary'
