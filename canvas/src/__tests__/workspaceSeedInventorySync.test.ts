@@ -1,5 +1,6 @@
 import fsPromises from 'node:fs/promises'
 import path from 'node:path'
+import fs from 'node:fs'
 
 import { createPersistedCollectionDb } from '@/lib/storage/persistedCollectionStore'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
@@ -60,6 +61,26 @@ export async function testBundledWorkspaceSeedInventoryMatchesAuthoredSourceExac
     if (entry.text !== authoredText) {
       throw new Error(`expected bundled ${basename} bytes to match the authored source`)
     }
+  }
+}
+
+export function testBundledWorkspaceSeedInventoryUsesEagerRawGlobInBuilds(): void {
+  const bundlePath = path.resolve(
+    process.cwd(),
+    'src',
+    'features',
+    'workspace-fs',
+    'workspaceCanonicalSeedBundle.ts',
+  )
+  const text = fs.readFileSync(bundlePath, 'utf8')
+  if (!text.includes("import.meta.glob('../../../../docs/workspace-seeds/*.md'")) {
+    throw new Error('expected canonical workspace seed bundle to load the authored inventory through one raw glob')
+  }
+  if (!text.includes("query: '?raw'")) {
+    throw new Error('expected canonical workspace seed bundle glob to request raw markdown bytes')
+  }
+  if (!text.includes('eager: true')) {
+    throw new Error('expected canonical workspace seed bundle glob to stay eager for production builds')
   }
 }
 

@@ -25,24 +25,33 @@ type RawSourceModule = {
 
 const WORKSPACE_SEED_REPO_REL_ROOT = 'docs/workspace-seeds'
 
-const BUNDLED_SOURCE_LOADERS: Record<
-  CanonicalWorkspaceSeedBasename,
-  () => Promise<RawSourceModule>
-> = {
-  'README.md': () => import('../../../../docs/workspace-seeds/README.md?raw'),
-  'knowgrph-game-city-building-sim-demo.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md?raw'),
-  'knowgrph-game-flight-sim-demo.companion.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-flight-sim-demo.companion.md?raw'),
-  'knowgrph-game-flight-sim-demo.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-flight-sim-demo.md?raw'),
-  'knowgrph-game-mmorpg-demo.companion.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-mmorpg-demo.companion.md?raw'),
-  'knowgrph-game-mmorpg-demo.md': () => import('../../../../docs/workspace-seeds/knowgrph-game-mmorpg-demo.md?raw'),
-  'knowgrph-physics-playground-demo.md': () => import('../../../../docs/workspace-seeds/knowgrph-physics-playground-demo.md?raw'),
-}
-
 let bundlePromise: Promise<CanonicalWorkspaceSeedBundleEntry[]> | null = null
 
 const normalizeSource = (value: unknown): string => {
   const text = typeof value === 'string' ? value : ''
   return text.trim() ? text : ''
+}
+
+const BUNDLED_SOURCE_MODULES = (() => {
+  try {
+    return import.meta.glob('../../../../docs/workspace-seeds/*.md', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }) as Record<string, string | RawSourceModule>
+  } catch {
+    return {} as Record<string, string | RawSourceModule>
+  }
+})()
+
+const readBundledSource = (basename: CanonicalWorkspaceSeedBasename): string => {
+  const expectedSuffix = `/docs/workspace-seeds/${basename}`
+  for (const [modulePath, rawModule] of Object.entries(BUNDLED_SOURCE_MODULES)) {
+    if (!modulePath.endsWith(expectedSuffix)) continue
+    if (typeof rawModule === 'string') return normalizeSource(rawModule)
+    return normalizeSource(rawModule?.default)
+  }
+  return ''
 }
 
 const readStableUpdatedAtMs = (relPath: string, text: string): number => {
@@ -79,13 +88,8 @@ const readNodeSource = async (basename: CanonicalWorkspaceSeedBasename): Promise
 const readCanonicalSource = async (
   basename: CanonicalWorkspaceSeedBasename,
 ): Promise<string> => {
-  try {
-    const module = await BUNDLED_SOURCE_LOADERS[basename]()
-    const bundled = normalizeSource(module.default)
-    if (bundled) return bundled
-  } catch {
-    // Vite owns raw imports; source-level Node tests read the exact authored file below.
-  }
+  const bundled = readBundledSource(basename)
+  if (bundled) return bundled
   return readNodeSource(basename)
 }
 
