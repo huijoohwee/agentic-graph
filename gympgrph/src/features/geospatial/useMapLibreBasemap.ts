@@ -865,7 +865,12 @@ export function useMapLibreBasemap(args: {
             enableLabels: true,
             enableBuildings: true,
             enableAttribution: true,
+            isCurrent: () => !cancelled,
           })
+          if (cancelled) {
+            disposeMapLibreBasemap(fallbackMap)
+            return
+          }
           if (!fallbackMap) throw err
           map = fallbackMap
           }

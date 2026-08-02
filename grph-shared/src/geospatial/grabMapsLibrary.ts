@@ -76,10 +76,13 @@ export const tryCreateGrabMapsLibraryMap = async (args: {
   enableLabels?: boolean
   enableBuildings?: boolean
   enableAttribution?: boolean
+  isCurrent?: () => boolean
 }): Promise<any | null> => {
   const apiKey = readGrabMapsLibraryApiKey()
   if (!apiKey) return null
+  if (args.isCurrent?.() === false) return null
   const GrabMaps = await ensureGrabMapsLibraryLoaded()
+  if (args.isCurrent?.() === false) return null
   const containerId = ensureChildContainerId(args.containerEl)
   const client = new GrabMaps.GrabMapsBuilder().setBaseUrl(GRABMAPS_BASE_URL).setApiKey(apiKey).build()
   const builder = new GrabMaps.MapBuilder(client)
