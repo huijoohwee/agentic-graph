@@ -334,6 +334,7 @@ export const TEST_CASES_POST_PARSER_4: TestCaseTuple[] = [
   ["workspaceFs.seedProvider.browserUpsertDocsMirrorWritesViaKgFsProxy","@/__tests__/workspaceSeedPersistence.test","testWorkspaceSeedProviderBrowserUpsertDocsMirrorWritesViaKgFsProxy"],
   ["workspaceFs.seedProvider.enforcesCanonicalWorkspaceSeedsMutations","@/__tests__/workspaceSeedStorageAuthority.test","testWorkspaceSeedProviderEnforcesCanonicalWorkspaceSeedsMutations"],
   ["workspaceFs.seedProvider.bundlesCanonicalWorkspaceSeedInventory","@/__tests__/workspaceSeedInventorySync.test","testBundledWorkspaceSeedInventoryMatchesAuthoredSourceExactly"],
+  ["workspaceFs.seedProvider.bundlesCanonicalWorkspaceSeedInventory.eagerRawGlob","@/__tests__/workspaceSeedInventorySync.test","testBundledWorkspaceSeedInventoryUsesEagerRawGlobInBuilds"],
   ["workspaceFs.seedProvider.productionFallbackRestoresCanonicalWorkspaceSeedInventory","@/__tests__/workspaceSeedInventorySync.test","testProductionFallbackRestoresBundledWorkspaceSeedInventory"],
   ["workspaceFs.seedProvider.repoLocalProductionUsesBundledCanonicalWorkspaceSeedInventory","@/__tests__/workspaceSeedInventorySync.test","testRepoLocalProductionUsesBundledCanonicalWorkspaceSeedInventory"],
   ["workspaceFs.seedProvider.projectsCanonicalWorkspaceSeedInventory","@/__tests__/workspaceSeedInventorySync.test","testWorkspaceSeedProviderProjectsCanonicalLocalInventoryExactly"],
