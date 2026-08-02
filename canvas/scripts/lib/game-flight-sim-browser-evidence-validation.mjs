@@ -27,6 +27,20 @@ function hasMeterSurface(view, expected) {
 export function hasExactCityMapRetentionEvidence(retention) {
   return retention?.sameMap === true && retention?.removeCalls === 0
 }
+
+export function hasExactGeoXrUiPathEvidence(uiPath) {
+  return [
+    'cameraPrestateClicked',
+    'modeTriggerClicked',
+    'surfaceModeClicked',
+    'geoXrModeClicked',
+    'cameraResetClicked',
+    'geoTriggerClicked',
+    'geoXrOpenedGeoPanel',
+    'geoTriggerOpenedGeoPanel',
+  ].every(key => uiPath?.[key] === true)
+}
+
 const CITY_REGIONAL_POI_PROFILE_ID = SINGAPORE_MAJOR_POI_GEO_PROFILE.id
 const CITY_REGIONAL_POI_PROFILE_REVISION = SINGAPORE_MAJOR_POI_GEO_PROFILE.revision
 const CITY_REGIONAL_POI_IDS = Object.freeze(
@@ -487,6 +501,7 @@ export async function readValidatedFlightSimBrowserRunEvidence({
       === evidence?.geoXrPresentation?.restoredView?.viewMode
     && evidence?.geoXrPresentation?.sourceStyleUrl
       === evidence?.geoXrPresentation?.restoredView?.styleUrl
+    && hasExactGeoXrUiPathEvidence(evidence?.geoXrPresentation?.uiPath)
     && hasExactGeoXrRendererLifecycleEvidence(
       evidence?.geoXrPresentation?.restoredView,
       'active',
