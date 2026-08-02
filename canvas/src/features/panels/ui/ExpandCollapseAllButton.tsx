@@ -2,7 +2,7 @@ import React from 'react'
 import { ChevronsDown, ChevronsUp } from 'lucide-react'
 import IconButton from '@/components/IconButton'
 import { useGraphStore } from '@/hooks/useGraphStore'
-import { getIconSizeClass } from '@/lib/ui'
+import { getIconSizeClass } from '@/lib/ui/icons'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_SMALL_ICON_ACTION_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
 

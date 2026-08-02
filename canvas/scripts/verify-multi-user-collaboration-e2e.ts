@@ -37,6 +37,7 @@ const OWNER_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.owner.png`
 const GUEST_SCREENSHOT_PATH = `${SCREENSHOT_PREFIX}.guest.png`
 const RESULT_PATH = String(process.env.KG_COLLABORATION_E2E_RESULT_PATH || '').trim()
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
+const MAX_BOOTSTRAP_NAVIGATION_ATTEMPTS = 3
 const MACOS_BROWSER_CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/Applications/Chromium.app/Contents/MacOS/Chromium',
@@ -133,6 +134,47 @@ function buildWorkspaceUrl(rawUrl: string): string {
     url.searchParams.set(LOCAL_DOC_PARAM, DOC_PATH)
   }
   return url.toString()
+}
+
+function isTransientViteBootstrapError(value: unknown): boolean {
+  const message = String(value || '').toLowerCase()
+  return message.includes('server is being restarted or closed')
+    || message.includes('request is outdated')
+    || message.includes('failed to fetch dynamically imported module')
+    || message.includes('importing a module script failed')
+    || message.includes('the network connection was lost')
+}
+
+async function navigateToWorkspace(page: Page, label: string, rawUrl: string, pageErrors: string[]): Promise<void> {
+  const targetUrl = buildWorkspaceUrl(rawUrl)
+  let lastError: Error | null = null
+  for (let attempt = 1; attempt <= MAX_BOOTSTRAP_NAVIGATION_ATTEMPTS; attempt += 1) {
+    const errorStartIndex = pageErrors.length
+    try {
+      if (attempt > 1) {
+        await page.goto('about:blank', { waitUntil: 'load', timeout: 15_000 }).catch(() => undefined)
+      }
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+      await page.waitForFunction(() => window.__KG_MAIN_PANEL_OPEN_READY__ === true, null, { timeout: 60_000 })
+      const bootstrapErrors = pageErrors.slice(errorStartIndex)
+      const transientBootstrapError = bootstrapErrors.find(isTransientViteBootstrapError)
+      if (transientBootstrapError) {
+        throw new Error(`${label} bootstrap saw transient Vite restart: ${transientBootstrapError}`)
+      }
+      return
+    } catch (error) {
+      const bootstrapErrors = pageErrors.slice(errorStartIndex)
+      const retryable = attempt < MAX_BOOTSTRAP_NAVIGATION_ATTEMPTS
+        && (
+          bootstrapErrors.some(isTransientViteBootstrapError)
+          || isTransientViteBootstrapError(error instanceof Error ? error.message : error)
+        )
+      lastError = error instanceof Error ? error : new Error(String(error))
+      if (!retryable) break
+      await page.waitForTimeout(1_000 * attempt)
+    }
+  }
+  throw lastError ?? new Error(`${label} workspace navigation failed`)
 }
 
 async function failWithScreenshots(ownerPage: Page | null, guestPage: Page | null, message: string): Promise<never> {
@@ -459,8 +501,10 @@ async function main(): Promise<void> {
     await assertSession(WORKER_URL, OWNER_TOKEN, 'owner')
     await assertSession(WORKER_URL, GUEST_TOKEN, 'guest')
 
-    await ownerPage.goto(buildWorkspaceUrl(OWNER_APP_URL), { waitUntil: 'domcontentloaded', timeout: 60_000 })
-    await guestPage.goto(buildWorkspaceUrl(GUEST_APP_URL), { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await Promise.all([
+      navigateToWorkspace(ownerPage, 'owner', OWNER_APP_URL, pageErrors),
+      navigateToWorkspace(guestPage, 'guest', GUEST_APP_URL, pageErrors),
+    ])
 
     const {
       owner: ownerIdentityProof,
