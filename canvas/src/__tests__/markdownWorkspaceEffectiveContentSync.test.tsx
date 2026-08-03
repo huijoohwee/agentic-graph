@@ -54,12 +54,14 @@ export async function testMarkdownWorkspaceEffectiveContentPrefersCanonicalWrite
 
     function Harness() {
       const [activeText, setActiveText] = React.useState('stale workspace text')
+      const activeTextRef = React.useRef(activeText)
       const userEditedActiveTextRef = React.useRef(false)
       const effective = useMarkdownWorkspaceEffectiveContent({
         activePath: '/docs/demo.md' as never,
         activeDocumentKey: 'docs/demo.md',
         activeEntryKind: 'file',
         activeText,
+        activeTextRef,
         setActiveText,
         markdownDocumentName: '/docs/demo.md',
         markdownDocumentText: canonicalText,
@@ -133,12 +135,14 @@ export async function testMarkdownWorkspaceEffectiveContentPreservesUnsavedEdito
 
     function Harness() {
       const [activeText, setActiveText] = React.useState(draftText)
+      const activeTextRef = React.useRef(activeText)
       const userEditedActiveTextRef = React.useRef(true)
       const effective = useMarkdownWorkspaceEffectiveContent({
         activePath: '/docs/demo.md' as never,
         activeDocumentKey: 'docs/demo.md',
         activeEntryKind: 'file',
         activeText,
+        activeTextRef,
         setActiveText,
         markdownDocumentName: '/docs/demo.md',
         markdownDocumentText: canonicalText,
@@ -206,12 +210,14 @@ export async function testMarkdownWorkspaceEffectiveContentKeepsNonMarkdownSourc
 
     function Harness() {
       const [activeText, setActiveText] = React.useState(jsonSourceText)
+      const activeTextRef = React.useRef(activeText)
       const userEditedActiveTextRef = React.useRef(false)
       const effective = useMarkdownWorkspaceEffectiveContent({
         activePath: '/docs/data.json' as never,
         activeDocumentKey: 'docs/data.json',
         activeEntryKind: 'file',
         activeText,
+        activeTextRef,
         setActiveText,
         markdownDocumentName: '/docs/data.json',
         markdownDocumentText: derivedMarkdownText,
@@ -282,12 +288,14 @@ export async function testMarkdownWorkspaceEffectiveContentRejectsViteDevIndexHt
     try {
     function Harness() {
       const [activeText, setActiveText] = React.useState('')
+      const activeTextRef = React.useRef(activeText)
       const userEditedActiveTextRef = React.useRef(false)
       const effective = useMarkdownWorkspaceEffectiveContent({
         activePath: path as never,
         activeDocumentKey: path,
         activeEntryKind: 'file',
         activeText,
+        activeTextRef,
         setActiveText,
         markdownDocumentName: path,
         markdownDocumentText: VITE_DEV_INDEX_HTML,
@@ -389,12 +397,14 @@ export async function testMarkdownWorkspaceEffectiveContentKeepsProgrammaticStre
 
     function Harness() {
       const [activeText, setActiveText] = React.useState('## Executive Summary')
+      const activeTextRef = React.useRef(activeText)
       const userEditedActiveTextRef = React.useRef(true)
       const effective = useMarkdownWorkspaceEffectiveContent({
         activePath: streamingPath as never,
         activeDocumentKey: 'chat-log/20260605T232226Z/kgc-trace_20260605T232226Z.md',
         activeEntryKind: 'file',
         activeText,
+        activeTextRef,
         setActiveText,
         markdownDocumentName: '/chat-log/20260605T232226Z/kgc-trace_20260605T232226Z.md',
         markdownDocumentText: activeText,

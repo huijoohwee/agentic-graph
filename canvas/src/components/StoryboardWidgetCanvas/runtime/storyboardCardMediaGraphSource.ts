@@ -1,4 +1,5 @@
 import { syncActiveMarkdownDocumentTextFromParsedGraph, writeActiveMarkdownDocumentTextIfPresent } from '@/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
+import { publishWorkspaceSourceTextRevision } from '@/features/workspace-fs/workspaceSourceTextTransaction'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
 import {
@@ -23,7 +24,14 @@ export function resolveStoryboardCardMediaGraphPersistenceText(args: {
     : String(args.activeText || '')
 }
 
-export async function persistStoryboardCardMediaGraphSource(graphData: GraphData, options?: StoryboardCardMediaGraphPersistenceOptions): Promise<boolean> {
+export type StoryboardCardMediaGraphSourceSynchronization = {
+  ownerPath: string
+  persistenceState: ReturnType<typeof useGraphStore.getState>
+  sourceFiles: ReturnType<typeof useGraphStore.getState>['sourceFiles']
+  text: string
+}
+
+export function synchronizeStoryboardCardMediaGraphSource(graphData: GraphData, options?: StoryboardCardMediaGraphPersistenceOptions): StoryboardCardMediaGraphSourceSynchronization | null {
   const ownerResolution = resolveStoryboardCardMediaGraphSourceOwner({
     state: useGraphStore.getState(),
     sourceOwner: options?.sourceOwner,
@@ -39,7 +47,7 @@ export async function persistStoryboardCardMediaGraphSource(graphData: GraphData
     sourceFiles: state.sourceFiles || [],
     parsedGraphData: sourceGraphData,
   })
-  if (!sourceSync.accepted) return false
+  if (!sourceSync.accepted) return null
   const persistenceText = resolveStoryboardCardMediaGraphPersistenceText({
     activeText: String(state.markdownDocumentText || ''),
     synchronizedText: sourceSync.markdownDocumentText,
@@ -51,6 +59,7 @@ export async function persistStoryboardCardMediaGraphSource(graphData: GraphData
     markdownDocumentText: persistenceText,
   }
   if (typeof sourceSync.markdownDocumentText === 'string') {
+    publishWorkspaceSourceTextRevision(ownerResolution.ownerPath)
     useGraphStore.setState(current => {
       if (!shouldUpdateStoryboardCardMediaGraphActiveDocument({
         currentDocumentName: current.markdownDocumentName,
@@ -69,13 +78,31 @@ export async function persistStoryboardCardMediaGraphSource(graphData: GraphData
       }
     })
   }
-  const persisted = await writeActiveMarkdownDocumentTextIfPresent({
-    state: persistenceState,
+  return {
+    ownerPath: ownerResolution.ownerPath,
+    persistenceState,
     sourceFiles: sourceSync.sourceFiles,
     text: persistenceText,
+  }
+}
+
+export async function persistStoryboardCardMediaGraphSourceSynchronization(
+  synchronization: StoryboardCardMediaGraphSourceSynchronization,
+  options?: StoryboardCardMediaGraphPersistenceOptions,
+): Promise<boolean> {
+  const persisted = await writeActiveMarkdownDocumentTextIfPresent({
+    state: synchronization.persistenceState,
+    sourceFiles: synchronization.sourceFiles,
+    text: synchronization.text,
     label: options?.label || 'Storyboard media graph',
     source: options?.source,
   })
   if (!persisted) throw new Error('Unable to persist the generated Canvas document to the workspace.')
   return true
+}
+
+export async function persistStoryboardCardMediaGraphSource(graphData: GraphData, options?: StoryboardCardMediaGraphPersistenceOptions): Promise<boolean> {
+  const synchronized = synchronizeStoryboardCardMediaGraphSource(graphData, options)
+  if (!synchronized) return false
+  return persistStoryboardCardMediaGraphSourceSynchronization(synchronized, options)
 }

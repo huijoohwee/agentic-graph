@@ -41,6 +41,7 @@ import {
 } from '@/features/agentic-os/skillsCommandsMcpTarget'
 import { NATIVE_CRAWLER_COMMAND } from '@/features/chat/nativeCrawlerInvocation'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { WorkspaceLaunchRowValue } from './WorkspaceLaunchRowValue'
 
 const DEFAULT_VIDEO_DOWNLOAD_OPTIONS: VideoDownloadOptions = {
   format: 'best',
@@ -321,6 +322,7 @@ export function LaunchDropdownImportUrlItem(props: {
       <button
         type="button"
         className={props.menuItemClass}
+        aria-label="Import URL"
         onClick={() => {
           const draft = String(urlDraft || '').trim()
           if (urlInputOpen) {
@@ -344,6 +346,7 @@ export function LaunchDropdownImportUrlItem(props: {
       >
         <Link className={props.menuIconClass} strokeWidth={1.6} />
         <span className="truncate">Import URL</span>
+        <WorkspaceLaunchRowValue label="Import URL" value="Configure" optionId="importUrl:configure" />
         <ChevronDown className={`ml-auto ${props.menuIconClass} transition-transform ${urlInputOpen ? 'rotate-180' : ''}`} strokeWidth={1.6} aria-hidden="true" />
       </button>
       {urlInputOpen ? (

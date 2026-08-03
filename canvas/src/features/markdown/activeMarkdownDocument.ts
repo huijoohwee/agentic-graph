@@ -12,6 +12,8 @@ export type ActiveMarkdownDocumentPayload = {
   sourceUrl?: string | null
   jsonSourceText?: string | null
   canonicalMarkdownText?: string | null
+  expectedCurrentDocumentName?: string | null
+  expectedCurrentDocumentText?: string | null
   autoEnableFrontmatter?: boolean
   applyViewPreset?: boolean
   recent?: Omit<RecentFileEntry, 'id' | 'timestamp'> | null
@@ -26,6 +28,8 @@ export function buildActiveMarkdownDocumentPayload(args: {
   sourceUrl?: string | null
   jsonSourceText?: string | null
   canonicalMarkdownText?: string | null
+  expectedCurrentDocumentName?: string | null
+  expectedCurrentDocumentText?: string | null
   autoEnableFrontmatter?: boolean
   applyViewPreset?: boolean
   recent?: Omit<RecentFileEntry, 'id' | 'timestamp'> | null
@@ -51,6 +55,8 @@ export function buildActiveMarkdownDocumentPayload(args: {
     ...(args.sourceUrl === null || typeof args.sourceUrl === 'string' ? { sourceUrl: args.sourceUrl ?? null } : {}),
     ...(args.jsonSourceText === null || typeof args.jsonSourceText === 'string' ? { jsonSourceText: args.jsonSourceText ?? null } : {}),
     ...(args.canonicalMarkdownText === null || typeof args.canonicalMarkdownText === 'string' ? { canonicalMarkdownText: args.canonicalMarkdownText ?? null } : {}),
+    ...(args.expectedCurrentDocumentName === null || typeof args.expectedCurrentDocumentName === 'string' ? { expectedCurrentDocumentName: args.expectedCurrentDocumentName ?? null } : {}),
+    ...(args.expectedCurrentDocumentText === null || typeof args.expectedCurrentDocumentText === 'string' ? { expectedCurrentDocumentText: args.expectedCurrentDocumentText ?? null } : {}),
     ...(typeof args.autoEnableFrontmatter === 'boolean' ? { autoEnableFrontmatter: args.autoEnableFrontmatter } : {}),
     ...(typeof args.applyViewPreset === 'boolean' ? { applyViewPreset: args.applyViewPreset } : {}),
     ...(args.recent ? { recent: args.recent } : {}),
@@ -67,6 +73,8 @@ export function applyActiveMarkdownDocumentPayload(args: {
   sourceUrl?: string | null
   jsonSourceText?: string | null
   canonicalMarkdownText?: string | null
+  expectedCurrentDocumentName?: string | null
+  expectedCurrentDocumentText?: string | null
   autoEnableFrontmatter?: boolean
   applyViewPreset?: boolean
   recent?: Omit<RecentFileEntry, 'id' | 'timestamp'> | null

@@ -9,6 +9,7 @@ import { normalized as normalizeText } from '@/features/panels/utils/json'
 import { UI_LABELS } from '@/lib/config'
 import { getIconSizeClass } from '@/lib/ui'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 export default function HistoryPanel({ onClose }: { onClose?: () => void }) {
   const { history, historyIndex, addHistory, undoHistory, redoHistory, restoreHistory, uiIconScale, uiIconStrokeWidth } = useGraphStore()
@@ -68,7 +69,7 @@ export default function HistoryPanel({ onClose }: { onClose?: () => void }) {
         ) : (
           <section>
             {filtered.map((h, idx) => (
-              <section key={h.id} className={`px-3 py-2 text-sm flex items-center justify-between ${idx === historyIndex ? 'bg-blue-50' : ''}`}>
+              <section key={h.id} className={`px-3 py-2 text-sm flex items-center justify-between ${uiSelectedRowStateClassName(idx === historyIndex)}`}>
                 <section>
                   <section className={UI_THEME_TOKENS.text.primary}>{h.label}</section>
                   <section className={`text-xs ${UI_THEME_TOKENS.text.tertiary}`}>{formatTimestamp(h.timestamp)}</section>

@@ -1,5 +1,8 @@
 import { load as parseYaml } from 'js-yaml'
-import { readWorkspaceInitializationDocsMirrorEntries } from '@/features/workspace-fs/workspaceSeedProvider'
+import {
+  readCanonicalAgenticDocsMirrorEntries,
+  readWorkspaceInitializationDocsMirrorEntries,
+} from '@/features/workspace-fs/workspaceSeedProvider'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import type { WorkspaceFs } from '@/features/workspace-fs/types'
 import { parseChatSkillSlashInvocation } from './chatSkillRegistry'
@@ -176,6 +179,9 @@ const readRepoLocalCatalogText = async (
 ): Promise<string> => {
   const relPath = PROMPT_PRESET_CATALOG_WORKSPACE_PATH.replace(/^\//, '')
   if (preferAuthoritativeMirror) {
+    const canonicalEntries = await readCanonicalAgenticDocsMirrorEntries()
+    const canonicalText = String(canonicalEntries.find(entry => entry.relPath === relPath)?.text || '')
+    if (canonicalText) return canonicalText
     const entries = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
     const authoritativeText = String(entries.find(entry => entry.relPath === relPath)?.text || '')
     if (authoritativeText) return authoritativeText

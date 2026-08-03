@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { UI_LABELS } from '@/lib/config'
 import { DESIGN_SYSTEM_SHELL_GRID_CLASS_NAME } from '@/features/design-system/designSystemResponsiveClasses'
 import { THEME_MODE_OPTIONS, type ThemeMode } from '@/lib/ui/theme'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 const NAV_ITEMS: Array<{ id: DesignSystemPageId; label: string }> = [
   { id: 'hub', label: 'Hub' },
@@ -90,7 +91,7 @@ export function DesignSystemPanel({
                       UI_THEME_TOKENS.text.primary,
                       UI_FOCUS_RING,
                       isActive
-                        ? cn(UI_THEME_TOKENS.button.activeBg, 'border', UI_THEME_TOKENS.button.activeBorder)
+                        ? uiSelectedRowStateClassName(true)
                         : UI_THEME_TOKENS.button.hoverBg,
                     )}
                     onClick={() => onNavigate(item.id)}

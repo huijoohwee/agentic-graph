@@ -99,6 +99,7 @@ export interface GraphStatePanelsMarkdown {
   launchSpotlightMode: 'tour' | 'stats';
   enableLaunchSpotlight: boolean;
   statusPanelPinned: boolean;
+  workspaceAutosaveEnabled: boolean;
   frontmatterModeEnabled: boolean;
   multiDimTableModeEnabled: boolean;
   schemaDeriveCacheCapacity: number;
@@ -211,6 +212,7 @@ export interface GraphStatePanelsMarkdown {
   setLaunchSpotlightMode: (mode: 'tour' | 'stats') => void;
   setEnableLaunchSpotlight: (v: boolean) => void;
   setStatusPanelPinned: (v: boolean) => void;
+  setWorkspaceAutosaveEnabled: (v: boolean) => void;
   setFrontmatterModeEnabled: (enabled: boolean) => void;
   setMultiDimTableModeEnabled: (enabled: boolean) => void;
   setSchemaDeriveCacheCapacity: (n: number) => void;
@@ -262,6 +264,8 @@ export interface GraphStatePanelsMarkdown {
     sourceUrl?: string | null
     jsonSourceText?: string | null
     canonicalMarkdownText?: string | null
+    expectedCurrentDocumentName?: string | null
+    expectedCurrentDocumentText?: string | null
     autoEnableFrontmatter?: boolean
     applyViewPreset?: boolean
     recent?: Omit<RecentFileEntry, 'id' | 'timestamp'> | null

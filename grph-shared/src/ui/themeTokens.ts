@@ -59,7 +59,7 @@ export const UI_THEME_TOKENS = {
     neutralSubtle: 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200',
     neutralMuted: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200',
     primarySolid: `${UI_INTENT_TOKENS.primary.solidBg} ${UI_INTENT_TOKENS.primary.solidText}`,
-    primaryChipActive: `${UI_INTENT_TOKENS.primary.bg} ${UI_INTENT_TOKENS.primary.text} ${UI_INTENT_TOKENS.primary.softBorder}`,
+    activeSoft: `${UI_INTENT_TOKENS.primary.bg} ${UI_INTENT_TOKENS.primary.text} ${UI_INTENT_TOKENS.primary.softBorder}`,
     primaryOutline: `${UI_INTENT_TOKENS.primary.border} ${UI_INTENT_TOKENS.primary.text} hover:bg-[var(--kg-panel-action-bg-hover)]`,
     primaryLinkHoverText: UI_INTENT_TOKENS.primary.hoverText,
     hintHoverEmphasis: 'hover:bg-[var(--kg-panel-action-bg-hover)] hover:border-blue-200 dark:hover:border-blue-700',

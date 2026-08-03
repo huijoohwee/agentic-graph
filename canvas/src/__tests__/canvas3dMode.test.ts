@@ -534,6 +534,27 @@ export function testCanvasViewMenuKeepsMobileFirstGroupedOrder() {
   for (const option of options) {
     if (!option.children?.length) throw new Error(`Expected ${option.title} to expand into child controls`)
   }
+  const semanticGroupValues = new Map(options.map(option => [option.id, option.valueLabel]))
+  const expectedSemanticGroupValues = new Map<CanvasViewOptionId, string>([
+    ['renderer:menu', 'D3'],
+    ['layout:menu', 'Block'],
+    ['document:menu', 'Document Structure'],
+    ['surface:menu', '2D'],
+    ['animation:menu', 'Orbit'],
+  ])
+  for (const [id, value] of expectedSemanticGroupValues) {
+    if (semanticGroupValues.get(id) !== value) {
+      throw new Error(`Expected ${id} to expose semantic current value ${value}, got ${String(semanticGroupValues.get(id))}`)
+    }
+  }
+  const documentMode = options.find(option => option.id === 'document:menu')
+  const documentValues = new Map(documentMode?.children?.map(option => [option.id, option.valueLabel]))
+  if (documentValues.get('document:documentStructure') !== 'On'
+    || documentValues.get('document:keyword') !== 'Off'
+    || documentValues.get('document:frontmatter') !== 'Off'
+    || documentValues.get('document:multiDimTable') !== 'Off') {
+    throw new Error(`Expected Document Modes to expose semantic On/Off row values, got ${JSON.stringify(Object.fromEntries(documentValues))}`)
+  }
   const surfaceMode = options.find(option => option.id === 'surface:menu')
   const surfaceChildIds = surfaceMode?.children?.map(child => child.id).join('|')
   const expectedSurfaceChildIds = 'surface:2d|surface:3d|surface:xr|surface:geo-xr|surface:voxel|surface:geospatial'

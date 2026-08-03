@@ -41,6 +41,28 @@ export type KnowgrphStorageChatRelayDecision =
       policy: KnowgrphStorageChatPolicyRecord
     }
 
+export const readKnowgrphCollaborationSaveSessionToken = (
+  explicitToken?: string | null,
+): string | null => {
+  const token = normalizeString(
+    explicitToken == null
+      ? readKnowgrphStorageChatRelayConfig()?.sessionToken
+        || readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', '')
+      : explicitToken,
+  )
+  return token && token.length <= 8_192 && !/\s/.test(token) ? token : null
+}
+
+export const requireKnowgrphCollaborationSaveSessionToken = (
+  explicitToken?: string | null,
+): string => {
+  const token = readKnowgrphCollaborationSaveSessionToken(explicitToken)
+  if (!token) {
+    throw new Error('Authenticated storage session is required for collaboration save.')
+  }
+  return token
+}
+
 export const toKnowgrphStorageChatProviderId = (
   value: unknown,
 ): KnowgrphStorageChatProviderId | null => {

@@ -11,11 +11,20 @@ import { buildCanvasViewOptions, getCanvasViewRendererOptions, getCanvasViewTrig
 import { applyCanvasViewSelection } from '@/components/toolbar/canvasViewActions'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { UI_RESPONSIVE_EXTRA_WIDE_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME } from '@/lib/ui/responsiveElementClasses'
+import { SelectableRowValue } from '@/components/ui/SelectableRowValue'
 import { useMinimapCollapsed } from '@/features/minimap/minimapVisibility'
 import {
   activateXrSceneSurface,
   resolveXrSurfaceEntryPanelView,
 } from '@/features/three/xrSceneSurfaceRuntime'
+import {
+  CANVAS_VIEW_BINDING_TOKEN,
+  CANVAS_VIEW_COMMAND_TOKEN,
+  CANVAS_VIEW_MCP_TOOL_NAME,
+  CANVAS_VIEW_SEMANTIC_TOKEN,
+  buildCanvasViewInvocation,
+} from '@/lib/canvas/canvasViewInvocationContract.mjs'
+import { registerCanvasViewControlHandler } from '@/lib/canvas/canvasViewControlRuntime'
 
 type Canvas2dRendererSelectProps = {
   iconSizeClass: string
@@ -130,6 +139,94 @@ export function Canvas2dRendererSelect({
   const rendererOptions = React.useMemo(() => getCanvasViewRendererOptions(), [])
   const options = React.useMemo(() => buildCanvasViewOptions(modelState, rendererOptions), [modelState, rendererOptions])
   const triggerState = React.useMemo(() => getCanvasViewTriggerState(modelState, rendererOptions), [modelState, rendererOptions])
+  const applyCanvasViewOption = React.useCallback((id: CanvasViewOptionId, baselineGuard = ensureBaselineUnlocked) => {
+    applyCanvasViewSelection({
+      id,
+      ensureBaselineUnlocked: baselineGuard,
+      geospatialEnabled,
+      onOpenGeospatialMode,
+      onExitGeospatialMode,
+      onOpenShared3dPanel: mode => {
+        if (mode === 'geo-xr') {
+          onActivateGeoXrMode()
+          return
+        }
+        if (mode === 'xr') {
+          const current = useGraphStore.getState()
+          const panelView = resolveXrSurfaceEntryPanelView(current)
+          if (!activateXrSceneSurface({ panelView, openPanel: true, timeline: true })) {
+            current.pushUiToast({
+              id: 'canvas-view:xr:unavailable',
+              kind: 'error',
+              message: 'The shared XR Mode surface is unavailable for this document.',
+            })
+          }
+          return
+        }
+        if (!state.floatingPanelOpen) {
+          state.setFloatingPanelView('camera')
+          state.setFloatingPanelOpen(true)
+        }
+      },
+      canvas2dRenderer: state.canvas2dRenderer,
+      canvas3dMode: state.canvas3dMode,
+      canvasRenderMode: state.canvasRenderMode,
+      documentSemanticMode: state.documentSemanticMode,
+      frontmatterModeEnabled: state.frontmatterModeEnabled,
+      multiDimTableModeEnabled: state.multiDimTableModeEnabled,
+      renderMediaAsNodes: state.renderMediaAsNodes,
+      timelineEnabled: state.timelineEnabled,
+      bottomSurfaceCollapsed: state.bottomSurfaceCollapsed,
+      bottomSurfaceTab: state.bottomSurfaceTab,
+      minimapCollapsed,
+      schema: state.schema,
+      setCanvas2dRenderer: state.setCanvas2dRenderer,
+      setCanvasRenderMode: state.setCanvasRenderMode,
+      setCanvas3dMode: state.setCanvas3dMode,
+      setSchema: state.setSchema,
+      setBehavior: state.setBehavior,
+      setRenderMediaAsNodes: state.setRenderMediaAsNodes,
+      setTimelineEnabled: state.setTimelineEnabled,
+      setBottomSurfaceCollapsed: state.setBottomSurfaceCollapsed,
+      setBottomSurfaceTab: state.setBottomSurfaceTab,
+      setMinimapCollapsed,
+      aspectRatioMode: state.aspectRatioMode,
+      setAspectRatioMode: state.setAspectRatioMode,
+      boardLayoutMode: state.boardLayoutMode,
+      setBoardLayoutMode: state.setBoardLayoutMode,
+      storyboardDisplayMode: state.storyboardDisplayMode,
+      setStoryboardDisplayMode: state.setStoryboardDisplayMode,
+      setDocumentSemanticMode: state.setDocumentSemanticMode,
+      setFrontmatterModeEnabled: state.setFrontmatterModeEnabled,
+      setMultiDimTableModeEnabled: state.setMultiDimTableModeEnabled,
+      requestStoryboardWidgetLayoutRebalance: state.requestStoryboardWidgetLayoutRebalance,
+    })
+  }, [
+    ensureBaselineUnlocked,
+    geospatialEnabled,
+    minimapCollapsed,
+    onActivateGeoXrMode,
+    onExitGeospatialMode,
+    onOpenGeospatialMode,
+    setMinimapCollapsed,
+    state,
+  ])
+  React.useEffect(() => registerCanvasViewControlHandler(optionId => {
+    const option = options.flatMap(parent => parent.children?.length ? parent.children : [parent])
+      .find(candidate => candidate.id === optionId)
+    if (!option || option.disabled || option.children?.length) {
+      throw new Error(`Canvas View option ${optionId} is unavailable in the current document.`)
+    }
+    if (!ensureBaselineUnlocked()) {
+      throw new Error('Canvas View control is locked by the active baseline.')
+    }
+    applyCanvasViewOption(optionId, () => true)
+  }), [applyCanvasViewOption, ensureBaselineUnlocked, options])
+
+  const resolveInvocationOptionId = React.useCallback((option: (typeof options)[number]): CanvasViewOptionId | null => {
+    if (!option.children?.length) return option.id
+    return option.children.find(child => child.isActive)?.id || null
+  }, [])
 
   return (
     <ToolbarDropdownSelect
@@ -138,76 +235,14 @@ export function Canvas2dRendererSelect({
       title={`${UI_COPY.canvasViewModeTitle}: ${triggerState.title}`}
       tooltipContent={UI_COPY.canvasViewModeTooltip}
       disabled={false}
-      onSelect={id =>
-        applyCanvasViewSelection({
-          id: id as CanvasViewOptionId,
-          ensureBaselineUnlocked,
-          geospatialEnabled,
-          onOpenGeospatialMode,
-          onExitGeospatialMode,
-          onOpenShared3dPanel: mode => {
-            if (mode === 'geo-xr') {
-              onActivateGeoXrMode()
-              return
-            }
-            if (mode === 'xr') {
-              const current = useGraphStore.getState()
-              const panelView = resolveXrSurfaceEntryPanelView(current)
-              if (!activateXrSceneSurface({ panelView, openPanel: true, timeline: true })) {
-                current.pushUiToast({
-                  id: 'canvas-view:xr:unavailable',
-                  kind: 'error',
-                  message: 'The shared XR Mode surface is unavailable for this document.',
-                })
-              }
-              return
-            }
-            if (!state.floatingPanelOpen) {
-              state.setFloatingPanelView('camera')
-              state.setFloatingPanelOpen(true)
-            }
-          },
-          canvas2dRenderer: state.canvas2dRenderer,
-          canvas3dMode: state.canvas3dMode,
-          canvasRenderMode: state.canvasRenderMode,
-          documentSemanticMode: state.documentSemanticMode,
-          frontmatterModeEnabled: state.frontmatterModeEnabled,
-          multiDimTableModeEnabled: state.multiDimTableModeEnabled,
-          renderMediaAsNodes: state.renderMediaAsNodes,
-          timelineEnabled: state.timelineEnabled,
-          bottomSurfaceCollapsed: state.bottomSurfaceCollapsed,
-          bottomSurfaceTab: state.bottomSurfaceTab,
-          minimapCollapsed,
-          schema: state.schema,
-          setCanvas2dRenderer: state.setCanvas2dRenderer,
-          setCanvasRenderMode: state.setCanvasRenderMode,
-          setCanvas3dMode: state.setCanvas3dMode,
-          setSchema: state.setSchema,
-          setBehavior: state.setBehavior,
-          setRenderMediaAsNodes: state.setRenderMediaAsNodes,
-          setTimelineEnabled: state.setTimelineEnabled,
-          setBottomSurfaceCollapsed: state.setBottomSurfaceCollapsed,
-          setBottomSurfaceTab: state.setBottomSurfaceTab,
-          setMinimapCollapsed,
-          aspectRatioMode: state.aspectRatioMode,
-          setAspectRatioMode: state.setAspectRatioMode,
-          boardLayoutMode: state.boardLayoutMode,
-          setBoardLayoutMode: state.setBoardLayoutMode,
-          storyboardDisplayMode: state.storyboardDisplayMode,
-          setStoryboardDisplayMode: state.setStoryboardDisplayMode,
-          setDocumentSemanticMode: state.setDocumentSemanticMode,
-          setFrontmatterModeEnabled: state.setFrontmatterModeEnabled,
-          setMultiDimTableModeEnabled: state.setMultiDimTableModeEnabled,
-          requestStoryboardWidgetLayoutRebalance: state.requestStoryboardWidgetLayoutRebalance,
-        })
-      }
+      onSelect={id => applyCanvasViewOption(id as CanvasViewOptionId)}
       renderButtonContent={() => <Eye className={iconSizeClass} strokeWidth={iconStrokeWidth} />}
       renderOptionContent={option => (
         <>
           <option.Icon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
           <span className="kg-toolbar-dropdown-option-copy min-w-0 flex-1 text-left">
             <span className={`block ${option.description || option.badges?.length ? 'break-words leading-4' : 'truncate'}`}>
-              {option.title}
+              {option.rowLabel || option.title}
             </span>
             {option.description || option.badges?.length ? (
               <span className="mt-0.5 block min-w-0">
@@ -228,6 +263,18 @@ export function Canvas2dRendererSelect({
               </span>
             ) : null}
           </span>
+          {option.valueLabel ? (() => {
+            const invocationOptionId = resolveInvocationOptionId(option)
+            return <SelectableRowValue
+              label={option.rowLabel || option.title}
+              value={option.valueLabel}
+              invocation={invocationOptionId ? buildCanvasViewInvocation(invocationOptionId) : undefined}
+              mcpTool={invocationOptionId ? CANVAS_VIEW_MCP_TOOL_NAME : undefined}
+              commandToken={invocationOptionId ? CANVAS_VIEW_COMMAND_TOKEN : undefined}
+              semanticToken={invocationOptionId ? CANVAS_VIEW_SEMANTIC_TOKEN : undefined}
+              bindingToken={invocationOptionId ? CANVAS_VIEW_BINDING_TOKEN : undefined}
+            />
+          })() : null}
         </>
       )}
       menuWidthClass={UI_RESPONSIVE_EXTRA_WIDE_TOOLBAR_DROPDOWN_WIDTH_CLASSNAME}

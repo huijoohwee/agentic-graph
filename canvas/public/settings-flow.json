@@ -251,7 +251,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L475"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L484"
   },
   "byteplusImageGuidanceScale": {
     "area": "BytePlus Image",
@@ -265,7 +265,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L521"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L530"
   },
   "byteplusImageModel": {
     "area": "BytePlus Image",
@@ -279,7 +279,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L406"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L415"
   },
   "byteplusImageOptimizePromptOptions": {
     "area": "BytePlus Image",
@@ -293,7 +293,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L461"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L470"
   },
   "byteplusImageOutputFormat": {
     "area": "BytePlus Image",
@@ -307,7 +307,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L433"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L442"
   },
   "byteplusImageResponseFormat": {
     "area": "BytePlus Image",
@@ -321,7 +321,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L447"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L456"
   },
   "byteplusImageSeed": {
     "area": "BytePlus Image",
@@ -335,7 +335,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L510"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L519"
   },
   "byteplusImageSize": {
     "area": "BytePlus Image",
@@ -349,7 +349,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L419"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L428"
   },
   "byteplusImageStream": {
     "area": "BytePlus Image",
@@ -363,7 +363,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L488"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L497"
   },
   "byteplusImageWatermark": {
     "area": "BytePlus Image",
@@ -377,7 +377,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L499"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L508"
   },
   "byteplusVideoCameraFixed": {
     "area": "BytePlus Video",
@@ -391,7 +391,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L623"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L632"
   },
   "byteplusVideoContentJson": {
     "area": "BytePlus Video",
@@ -405,7 +405,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L546"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L555"
   },
   "byteplusVideoDraft": {
     "area": "BytePlus Video",
@@ -419,7 +419,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L612"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L621"
   },
   "byteplusVideoDuration": {
     "area": "BytePlus Video",
@@ -433,7 +433,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L590"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L599"
   },
   "byteplusVideoGenerateAudio": {
     "area": "BytePlus Video",
@@ -447,7 +447,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L601"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L610"
   },
   "byteplusVideoImageUrlUrl": {
     "area": "BytePlus Video",
@@ -461,7 +461,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L634"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L643"
   },
   "byteplusVideoModel": {
     "area": "BytePlus Video",
@@ -475,7 +475,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L533"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L542"
   },
   "byteplusVideoRatio": {
     "area": "BytePlus Video",
@@ -489,7 +489,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L571"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L580"
   },
   "byteplusVideoResolution": {
     "area": "BytePlus Video",
@@ -503,7 +503,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L557"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L566"
   },
   "canvas3dMode": {
     "area": "Canvas Rendering",
@@ -791,7 +791,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L397"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L406"
   },
   "chatAuthMode": {
     "area": "Chat",
@@ -807,7 +807,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L378"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L387"
   },
   "chatContextScope": {
     "area": "Chat",
@@ -823,7 +823,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L1007"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L1016"
   },
   "chatEndpointUrl": {
     "area": "Chat",
@@ -839,7 +839,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L388"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L397"
   },
   "chatFrequencyPenalty": {
     "area": "Chat",
@@ -855,7 +855,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L797"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L806"
   },
   "chatGraphSummaryMaxTokens": {
     "area": "Chat",
@@ -871,7 +871,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L905"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L914"
   },
   "chatGuidelineDigestMaxTokens": {
     "area": "Chat",
@@ -887,7 +887,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L914"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L923"
   },
   "chatHistoryCloudUrl": {
     "area": "Chat",
@@ -903,7 +903,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L998"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L1007"
   },
   "chatHistoryStorageMode": {
     "area": "Chat",
@@ -919,7 +919,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L979"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L988"
   },
   "chatHistoryWorkspacePath": {
     "area": "Chat",
@@ -935,7 +935,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L989"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L998"
   },
   "chatKnowgrphCloudUrl": {
     "area": "Chat",
@@ -951,7 +951,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L970"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L979"
   },
   "chatKnowgrphStorageMode": {
     "area": "Chat",
@@ -967,7 +967,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L951"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L960"
   },
   "chatKnowgrphWorkspacePath": {
     "area": "Chat",
@@ -983,7 +983,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L961"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L970"
   },
   "chatLocalStorageRootPath": {
     "area": "Chat",
@@ -999,7 +999,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L942"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L951"
   },
   "chatLogitBiasJson": {
     "area": "Chat",
@@ -1015,7 +1015,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L878"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L887"
   },
   "chatLogprobs": {
     "area": "Chat",
@@ -1031,7 +1031,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L824"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L833"
   },
   "chatMaxCompletionTokens": {
     "area": "Chat",
@@ -1047,7 +1047,7 @@
       "localStorage"
     ],
     "notes": "Used for max_tokens/max_completion_tokens depending on provider/model. Defaults to 2× the prior baseline.",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L731"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L740"
   },
   "chatMessagesJson": {
     "area": "Chat",
@@ -1063,7 +1063,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L759"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L768"
   },
   "chatModel": {
     "area": "Chat",
@@ -1079,7 +1079,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L712"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L721"
   },
   "chatParallelToolCalls": {
     "area": "Chat",
@@ -1095,7 +1095,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L842"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L851"
   },
   "chatPresencePenalty": {
     "area": "Chat",
@@ -1111,7 +1111,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L806"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L815"
   },
   "chatProvider": {
     "area": "Chat",
@@ -1127,7 +1127,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L368"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L377"
   },
   "chatReasoningEffort": {
     "area": "Chat",
@@ -1143,7 +1143,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L768"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L777"
   },
   "chatResponseFormatJson": {
     "area": "Chat",
@@ -1159,7 +1159,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L869"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L878"
   },
   "chatServiceTier": {
     "area": "Chat",
@@ -1175,7 +1175,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L740"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L749"
   },
   "chatStopJson": {
     "area": "Chat",
@@ -1191,7 +1191,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L851"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L860"
   },
   "chatStorageTarget": {
     "area": "Chat",
@@ -1207,7 +1207,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L932"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L941"
   },
   "chatStream": {
     "area": "Chat",
@@ -1223,7 +1223,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L750"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L759"
   },
   "chatStreamOptionsJson": {
     "area": "Chat",
@@ -1239,7 +1239,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L860"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L869"
   },
   "chatSystemPrompt": {
     "area": "Chat",
@@ -1255,7 +1255,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L923"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L932"
   },
   "chatTemperature": {
     "area": "Chat",
@@ -1271,7 +1271,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L722"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L731"
   },
   "chatThinkingJson": {
     "area": "Chat",
@@ -1287,7 +1287,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L788"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L797"
   },
   "chatThinkingType": {
     "area": "Chat",
@@ -1303,7 +1303,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L778"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L787"
   },
   "chatToolChoiceJson": {
     "area": "Chat",
@@ -1319,7 +1319,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L896"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L905"
   },
   "chatToolsJson": {
     "area": "Chat",
@@ -1335,7 +1335,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L887"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L896"
   },
   "chatTopLogprobs": {
     "area": "Chat",
@@ -1351,7 +1351,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L833"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L842"
   },
   "chatTopP": {
     "area": "Chat",
@@ -1367,7 +1367,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L815"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L824"
   },
   "codeHighlightDurationMs": {
     "area": "Editor Behavior & Timing",
@@ -1829,7 +1829,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L660"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L669"
   },
   "geminiVideoDurationSeconds": {
     "area": "UI",
@@ -1843,7 +1843,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L686"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L695"
   },
   "geminiVideoModel": {
     "area": "UI",
@@ -1857,7 +1857,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L647"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L656"
   },
   "geminiVideoPersonGeneration": {
     "area": "UI",
@@ -1871,7 +1871,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L699"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L708"
   },
   "geminiVideoResolution": {
     "area": "UI",
@@ -1885,7 +1885,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L673"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L682"
   },
   "graph.behavior.createMode": {
     "area": "Canvas Interaction",
@@ -2123,7 +2123,7 @@
       "localStorage"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L1024"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L1033"
   },
   "keyword.graph.edgesPerNode": {
     "area": "Keyword",
@@ -6303,7 +6303,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L350"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L359"
   },
   "spotlight.nearTopThreshold": {
     "area": "Launch Spotlight Layout",
@@ -6319,7 +6319,7 @@
       "zustand"
     ],
     "notes": "",
-    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L359"
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L368"
   },
   "startup.openWorkflowPanel": {
     "area": "Startup",
@@ -9006,6 +9006,22 @@
     ],
     "notes": "Default automated paths are the configured docs mirror plus the configured chat workspace root; Import local files remains manual-only.",
     "lineRange": "canvas/src/features/settings/registry-ui.workspace.ts:L113"
+  },
+  "workspaceAutosaveEnabled": {
+    "area": "UI",
+    "modules": [
+      "canvas/src/features/settings/registry-ui.ui.ts"
+    ],
+    "classes": [],
+    "functions": [
+      "setWorkspaceAutosaveEnabled"
+    ],
+    "responsibility": "workspace autosave enabled",
+    "imports": [
+      "zustand"
+    ],
+    "notes": "",
+    "lineRange": "canvas/src/features/settings/registry-ui.ui.ts:L350"
   },
   "youtubeTranscriptOutputDir": {
     "area": "Import Youtube",

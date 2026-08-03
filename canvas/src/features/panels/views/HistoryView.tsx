@@ -23,6 +23,7 @@ import { normalized as normalizeText } from '@/features/panels/utils/json'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import { getIconSizeClass } from '@/lib/ui'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import type { ChatExchangeLogEntry, GraphState, RecentFileEntry, UiLogEntry } from '@/hooks/store/types'
 import { downloadBlob } from '@/lib/graph/save'
 import { useShallow } from 'zustand/react/shallow'
@@ -421,7 +422,7 @@ export default function HistoryView({ searchQuery }: { searchQuery: string }) {
                 <li
                   key={h.id}
                   className={`group px-3 py-2 text-sm flex items-center justify-between rounded ${
-                    isSelected ? UI_THEME_TOKENS.table.rowSelected : `hover:${UI_THEME_TOKENS.table.rowHover}`
+                    isSelected ? uiSelectedRowStateClassName(true) : `hover:${UI_THEME_TOKENS.table.rowHover}`
                   }`}
                 >
                   <button

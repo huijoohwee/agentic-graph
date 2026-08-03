@@ -15,6 +15,8 @@ export function useLiveCardInlineTextDraft(initialValue: string) {
 export function useRegisteredOpenCardInlineTextEditor(args: {
   commit: (forcedValue?: string) => void
   editing: boolean
+  getOwnerDocument?: () => Document | null
+  isEditingTarget?: (target: EventTarget | null) => boolean
   ownerKey: string
   readValue: () => string | null
 }) {
@@ -28,12 +30,32 @@ export function useRegisteredOpenCardInlineTextEditor(args: {
     readValueRef.current = args.readValue
   }, [args.readValue])
 
+  const isEditingTargetRef = React.useRef(args.isEditingTarget)
+  React.useLayoutEffect(() => {
+    isEditingTargetRef.current = args.isEditingTarget
+  }, [args.isEditingTarget])
+
   React.useLayoutEffect(() => {
     if (!args.editing) return
-    return registerOpenCardInlineTextEditor(
+    const unregister = registerOpenCardInlineTextEditor(
       args.ownerKey,
       nextValue => commitRef.current(nextValue),
       () => readValueRef.current(),
     )
-  }, [args.editing, args.ownerKey])
+    const ownerDocument = args.getOwnerDocument?.() || (typeof document !== 'undefined' ? document : null)
+    const eventSource = ownerDocument?.defaultView || ownerDocument
+    if (!eventSource) return unregister
+    const commitBeforeExternalPointerTransition = (event: Event) => {
+      if (isEditingTargetRef.current?.(event.target)) return
+      const nextValue = readValueRef.current()
+      commitRef.current(typeof nextValue === 'string' ? nextValue : undefined)
+    }
+    eventSource.addEventListener('pointerdown', commitBeforeExternalPointerTransition, true)
+    return () => {
+      eventSource.removeEventListener('pointerdown', commitBeforeExternalPointerTransition, true)
+      const nextValue = readValueRef.current()
+      commitRef.current(typeof nextValue === 'string' ? nextValue : undefined)
+      unregister()
+    }
+  }, [args.editing, args.getOwnerDocument, args.ownerKey])
 }

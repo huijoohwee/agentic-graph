@@ -700,12 +700,12 @@ export function testWorkspaceViewUpdateSchedulesFrontmatterMediaOverlayLayoutRef
   if (!runtimeText.includes('const workspaceOverlayStabilizedRef = React.useRef(false)')) {
     throw new Error('expected Flow runtime workspace-open recovery to track stabilized transform authority after THEN-layout convergence')
   }
-  if (!runtimeText.includes('const initializedStoryboardZoomViewKeys = new Set<string>()')
-    || !runtimeText.includes('const storyboardCameraViewKey = React.useMemo(() => {')
+  if (!runtimeText.includes('const storyboardCameraViewKey = React.useMemo(() => {')
     || !runtimeText.includes('buildFlowZoomGraphMetaKey({')
     || !runtimeText.includes('hasInitializedStoryboardZoomView(lastInitTransformZoomViewKeyRef.current, initKey)')
-    || !runtimeText.includes('rememberInitializedStoryboardZoomView(initKey)')) {
-    throw new Error('expected Storyboard camera initialization authority to survive same-page Flow renderer remounts for the stable view key')
+    || !runtimeText.includes('const workspaceOverlayOpenPrevRef = React.useRef(workspaceEditorOverlayOpen === true)')
+    || runtimeText.includes('initializedStoryboardZoomViewKeys')) {
+    throw new Error('expected Storyboard camera initialization authority to remain runtime-scoped so remounts restore or fit the active document instead of preserving identity')
   }
   if (!runtimeText.includes('const workspaceOverlayZoomViewKeyRef = React.useRef<string | null>(null)')) {
     throw new Error('expected Flow runtime workspace-open recovery to track active zoom view key for transform-authority resets')
@@ -772,7 +772,7 @@ export function testWorkspaceViewUpdateSchedulesFrontmatterMediaOverlayLayoutRef
   if (!runtimeText.includes('if (prev != null && prev !== storyboardCameraViewKey) {')) {
     throw new Error('expected Flow runtime workspace-open recovery to reset stabilized/user-controlled authority when active view key changes')
   }
-  if (!runtimeTextIncludesAll('if (open && !prev) {', 'lastInitTransformZoomViewKeyRef.current = storyboardCameraViewKey', 'rememberInitializedStoryboardZoomView(storyboardCameraViewKey)')
+  if (!runtimeTextIncludesAll('if (open && !prev) {', 'lastInitTransformZoomViewKeyRef.current = storyboardCameraViewKey')
     || runtimeText.includes('if (lastInitTransformZoomViewKeyRef.current !== storyboardCameraViewKey) lastInitTransformZoomViewKeyRef.current = null')
     || runtimeText.includes('lastOffscreenOverlayRecoveryKeyRef.current = null')) {
     throw new Error('expected Flow runtime workspace reopen edge to claim the rendered document camera without clearing initialized transform authority')
@@ -790,11 +790,9 @@ export function testWorkspaceViewUpdateSchedulesFrontmatterMediaOverlayLayoutRef
     throw new Error('expected Flow runtime workspace-open init-preserve guard to preserve established identity before skipping re-fit')
   }
   const overlayOpenCameraClaimIndex = runtimeText.indexOf('lastInitTransformZoomViewKeyRef.current = storyboardCameraViewKey')
-  const overlayOpenCameraRememberIndex = runtimeText.indexOf('rememberInitializedStoryboardZoomView(storyboardCameraViewKey)')
   const overlayOpenTimestampIndex = runtimeText.indexOf('workspaceOverlayOpenedAtMsRef.current = Date.now()')
   if (overlayOpenCameraClaimIndex < 0
-    || overlayOpenCameraRememberIndex < overlayOpenCameraClaimIndex
-    || overlayOpenTimestampIndex < overlayOpenCameraRememberIndex) {
+    || overlayOpenTimestampIndex < overlayOpenCameraClaimIndex) {
     throw new Error('expected workspace overlay startup to claim the already-rendered document camera before a blocked init effect can miss it')
   }
   if (!runtimeText.includes('const deriveExpectedOverlayCollectiveIds = React.useCallback((graphData: any): string[] => {')

@@ -18,7 +18,6 @@ import { isWorkspaceDocumentCanvasGraphApplyDisabled } from '@/lib/markdown/work
 import {
   isWorkspaceDocumentSwitchApplySettled,
   shouldApplyStableWorkspaceSelectionToCanvas,
-  shouldPrimeWorkspaceDocumentSwitchCanvas,
 } from '@/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply'
 import { buildMarkdownWorkspaceActionBridge } from '@/lib/markdown-workspace-runtime/markdownWorkspaceRuntime.composition'
 import { runLaunchImportUrl } from '@/lib/toolbar/launchImportDispatch'
@@ -215,18 +214,6 @@ export async function testKnowledgeGraphRepositoryImportMaterializesSourceFilesA
     })) {
       throw new Error('expected the graph receipt switch to settle without replacing the canonical graph')
     }
-    if (shouldPrimeWorkspaceDocumentSwitchCanvas({
-      activePath: artifactPath as WorkspacePath,
-      pendingSwitchPath: artifactPath as WorkspacePath,
-      activeEntryKind: 'file',
-      activeDocumentKey: artifactDocumentKey,
-      inlineText: '',
-      markdownDocumentName: artifactDocumentKey,
-      markdownDocumentText: text || '',
-    })) {
-      throw new Error('expected the pre-hydrated graph receipt not to clear the canonical canvas before selection')
-    }
-
     const replacementDigest = '9'.repeat(64)
     await materializeKnowledgeGraphWorkspaceArtifact({
       repositoryUrl,

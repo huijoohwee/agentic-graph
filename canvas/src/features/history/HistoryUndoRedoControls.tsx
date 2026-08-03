@@ -3,6 +3,7 @@ import { Redo, Undo } from 'lucide-react'
 import IconButton from '@/components/IconButton'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_LABELS } from '@/lib/config'
+import { toolbarActionAffordance } from '@/lib/toolbar/toolbarActionAffordance'
 
 export const canUndoGraphHistory = (historyIndex: number): boolean => historyIndex > 0
 
@@ -33,6 +34,7 @@ export function HistoryUndoRedoControls({
         disabled={!canUndo}
         onClick={undoHistory}
         data-kg-history-action="undo"
+        {...toolbarActionAffordance('history:undo')}
         showTooltip
       >
         <Undo className={iconSizeClass} strokeWidth={iconStrokeWidth} />
@@ -44,6 +46,7 @@ export function HistoryUndoRedoControls({
         disabled={!canRedo}
         onClick={redoHistory}
         data-kg-history-action="redo"
+        {...toolbarActionAffordance('history:redo')}
         showTooltip
       >
         <Redo className={iconSizeClass} strokeWidth={iconStrokeWidth} />

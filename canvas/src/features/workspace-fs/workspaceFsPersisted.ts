@@ -39,6 +39,7 @@ import {
   resetWorkspaceDocsMirrorSyncForPersistedFs,
   syncWorkspaceDocsMirrorEntries,
   toWorkspaceDocsMirrorPath,
+  upgradeAuthoredMarkdownNoteInitialDocuments,
 } from './workspaceFsPersistedReconciliation'
 import { LS_KEYS } from '@/lib/config'
 import { lsBool, lsJson, lsRemove, lsSetBool } from '@/lib/persistence'
@@ -186,6 +187,7 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
     let changed = false
     if (await removeLegacyWorkspaceSourceEntries(collections)) changed = true
     if (await migrateLegacyAuthoredMarkdownNotes(collections)) changed = true
+    if (await upgradeAuthoredMarkdownNoteInitialDocuments(collections)) changed = true
     const docsOnlyMode = readWorkspaceSourceFilesDocsOnlySetting()
     const sourceDocsMirrorEntries = !docsOnlyMode
       ? []
@@ -196,6 +198,9 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
       ? sourceDocsMirrorEntries.every(entry => entry.authority === 'agentic-canvas-os-storage')
         ? sourceDocsMirrorEntries
         : await mergeCanonicalXrPhysicsWorkspaceSeedIntoDocsMirror(sourceDocsMirrorEntries)
+      : []
+    const canonicalWorkspaceSeedEntries = !docsOnlyMode && isWorkspaceRepoLocalRunReadyBootstrap()
+      ? await readCanonicalWorkspaceSeedMirrorEntries()
       : []
     const hasDocsMirrorFiles = sourceDocsMirrorEntries.length > 0
     const hasAnyFilesNow = await collections.entries.find({ selector: { kind: 'file' } }).exec().then(rows => rows.length > 0)
@@ -359,6 +364,12 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
         if (seededTextChanged) changed = true
       }
       if (hasDocsMirrorFiles && await syncWorkspaceDocsMirrorEntries(collections, docsMirrorEntries)) changed = true
+      if (
+        canonicalWorkspaceSeedEntries.length > 0
+        && await syncWorkspaceDocsMirrorEntries(collections, canonicalWorkspaceSeedEntries, {
+          scope: 'canonical-workspace-seeds',
+        })
+      ) changed = true
       if (canonicalXrDocsMirrorEnabled && await clearStaleXrPhysicsSourcesIfCanonicalMaterialized(collections)) changed = true
       if (!seeded) lsSetBool(LS_KEYS.markdownWorkspaceSeeded, true)
       if (userClearedAll && !await hasOnlyCanonicalXrPhysicsFile(collections)) {
@@ -389,6 +400,12 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
       if (canonicalXrSeed && await clearStaleXrPhysicsSourcesIfCanonicalMaterialized(collections)) changed = true
     }
     if (hasDocsMirrorFiles && await syncWorkspaceDocsMirrorEntries(collections, docsMirrorEntries)) changed = true
+    if (
+      canonicalWorkspaceSeedEntries.length > 0
+      && await syncWorkspaceDocsMirrorEntries(collections, canonicalWorkspaceSeedEntries, {
+        scope: 'canonical-workspace-seeds',
+      })
+    ) changed = true
     if (canonicalXrDocsMirrorEnabled && await clearStaleXrPhysicsSourcesIfCanonicalMaterialized(collections)) changed = true
     lsSetBool(LS_KEYS.markdownWorkspaceSeeded, true)
     return changed

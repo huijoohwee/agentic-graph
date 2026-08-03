@@ -5,6 +5,7 @@ import {
   buildExpectedMockAgentSurfaceInspection,
   createMockResponse,
 } from '@/__tests__/helpers/webMcpRuntimeFixture'
+import { createBrowserSafeFunctionSourceFromText } from '@/features/agent-ready/browserFunctionSource.mjs'
 import { PUBLISHED_AGENT_READY_TOOL_EXECUTORS_BROWSER_SOURCE } from '@/features/agent-ready/publishedToolExecutors.mjs'
 import { WEB_MCP_LIFECYCLE_CONTROLLER_BROWSER_SOURCE } from '@/features/agent-ready/webMcpLifecycleBrowserSource.mjs'
 import { webMcpScript } from '../../../cloudflare/pages/knowgrph-agent-ready.mjs'
@@ -72,6 +73,16 @@ export async function testAgentReadyHtmlWebMcpFallbackLateBindsAndUsesSameOrigin
   const nativeRegistrationSignals: AbortSignal[] = []
 
   try {
+    const arbitraryHelperSource = createBrowserSafeFunctionSourceFromText(`(args = {}) => {
+      const normalizeString = r((value) => String(value || '').trim(), "normalizeString")
+      return normalizeString(args.value)
+    }`)
+    const arbitraryHelperFactory = new Function(`return (${arbitraryHelperSource})`)() as (
+      args?: { value?: string },
+    ) => string
+    if (arbitraryHelperFactory({ value: ' ready ' }) !== 'ready') {
+      throw new Error('expected browser function source to neutralize the bundle-derived name helper alias')
+    }
     if (!webMcpScript.includes(`const createWebMcpLifecycleController = ${WEB_MCP_LIFECYCLE_CONTROLLER_BROWSER_SOURCE};`)
       || !WEB_MCP_LIFECYCLE_CONTROLLER_BROWSER_SOURCE.includes('fallbackModelContextBindings')
       || !WEB_MCP_LIFECYCLE_CONTROLLER_BROWSER_SOURCE.includes('dispose')) {

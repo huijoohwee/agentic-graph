@@ -112,6 +112,7 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["ui.floatingPanelChat.videoPreset.failsClosedWithoutSource","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatVideoPresetFailsClosedWithoutSource"],
   ["ui.floatingPanelChat.promptPreset.chatAndMcpCatalog","@/__tests__/floatingPanelPromptPresetCatalog.test","testFloatingPanelChatPromptPresetCatalogLoadsChatAndMcpPresets"],
   ["ui.home.promptPreset.canonicalPublishedStorage","@/__tests__/floatingPanelPromptPresetCatalog.test","testHomePromptPresetCatalogUsesCanonicalPublishedStorage"],
+  ["ui.home.promptPreset.canonicalRepoLocalDocsSource","@/__tests__/floatingPanelPromptPresetCatalog.test","testHomePromptPresetCatalogUsesCanonicalRepoLocalDocsSource"],
   ["ui.floatingPanelChat.promptPreset.invocationRouteDriftFailsClosed","@/__tests__/floatingPanelPromptPresetCatalog.test","testFloatingPanelChatPromptPresetCatalogRejectsInvocationRouteDrift"],
   ["ui.floatingPanelChat.promptPreset.invalidCatalogFailsClosed","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatPromptPresetCatalogFailsClosedOnMissingEntry"],
   ["ui.floatingPanelChat.videoPreset.rendersAfterNewChat","@/__tests__/floatingPanelChatVideoPreset.test","testFloatingPanelChatVideoPresetRendersAfterNewChat"],
@@ -294,5 +295,9 @@ export const TEST_CASES_POST_PARSER_6: TestCaseTuple[] = [
   ["strybldr.runAll.videoSourceUsesWorkspaceImportUrlBridge","@/__tests__/strybldrWorkspaceParserFallback.test","testStrybldrRunAllVideoSourceUsesWorkspaceImportUrlBridge"],
   ["strybldr.runAll.videoSourceFallsBackToLaunchImportUrl","@/__tests__/strybldrWorkspaceParserFallback.test","testStrybldrRunAllVideoSourceFallsBackToLaunchImportUrl"],
   ["agentReady.webMcpRuntime.importUrlControl","@/__tests__/importUrlWebMcpTools.test","testImportUrlWebMcpControlUsesCanonicalStructuredExecutor"],
+  ["agentReady.webMcpRuntime.canvasViewControl","@/__tests__/canvasViewWebMcpTools.test","testCanvasViewRowsUseSourceBackedWebMcpInvocation"],
+  ["agentReady.webMcpRuntime.canvasInteractionControl","@/__tests__/canvasInteractionWebMcpTools.test","testInteractionRowsUseSourceBackedWebMcpInvocation"],
+  ["agentReady.webMcpRuntime.workspaceLaunchControl","@/__tests__/workspaceLaunchWebMcpTools.test","testLaunchRowsUseSourceBackedWebMcpInvocation"],
+  ["agentReady.webMcpRuntime.toolbarActionControl","@/__tests__/toolbarActionWebMcpTools.test","testMainToolbarActionsUseSourceBackedWebMcpInvocation"],
   ["graph.data.preserveLayout.probeTreeOutputContentCommit","@/__tests__/graphDataPreservingLayoutSync.test","testSetGraphDataPreservingLayoutCommitsProbeTreeOutputWithoutTopologyChange"],
 ]

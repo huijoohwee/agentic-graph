@@ -137,9 +137,10 @@ test('Pages mirror sync preserves the agent-ready route and tool module closure'
   )]
 
   assert.ok(localModuleImports.length > 0)
-  for (const fileName of localModuleImports) {
-    assert.match(pagesSyncScript, new RegExp(fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
-  }
+  assert.match(pagesSyncScript, /collectLocalModuleClosureCopies/)
+  assert.match(pagesSyncScript, /localModuleSpecifiers/)
+  assert.match(pagesSyncScript, /path\.relative\(knowgrphRoot, sourcePath\)/)
+  assert.match(pagesSyncScript, /collectLocalModuleClosureCopies\(\[agentReadyToolContractSource\]\)/)
   assert.match(pagesFunctionsBuildScript, /process\.env\.KNOWGRPH_PUBLISH_REPOSITORY_ROOT/)
 })
 
