@@ -2,9 +2,15 @@
 title: "Knowgrph XR Mode PRD & TAD"
 doc_type: "PRD+TAD"
 doc_id: "KXR-001"
-version: "0.6.0"
+version: "0.6.1"
 status: "Harmonized with current Dev implementation"
 date: "2026-08-03"
+local_rung: "runtime-ready-dev"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: "false"
+runtime_owner: "canvas/src/lib/three/ThreeGraph.impl.tsx; canvas/src/lib/three/ThreeGraphXr.tsx; canvas/src/features/three/xrArPlacementRuntime.ts; canvas/src/features/three/SpatialCaptureManifestStage.tsx; canvas/src/features/three/xrAssetConversion.ts"
+runtime_proof: "scripts/run-xr-mode-source-smoke.mjs; scripts/__tests__/xr-mode-source-smoke.test.mjs; canvas/src/__tests__/workspaceImportXrSpatialCaptureIngestion.test.ts; canvas/src/__tests__/canvasXrSessionPolicy.test.ts; canvas/src/__tests__/xrSpatialCaptureFallbackReadiness.test.ts"
 authors:
   - "airvio"
 schema: "kgc-computing-flow/v1"
@@ -405,13 +411,18 @@ forbidden.
 Run:
 
 ```sh
-npm run xr:source-runner:test
-npm -C canvas run test:smoke:xr-spatial-capture-fallback:source
-npm run xr:runtime-ready
+npm run xr-mode:source-runner:test
+npm run xr-mode:source-ready
+npm run xr-mode:runtime-ready
 ```
 
-`npm run xr:review-ready` chains the repository-owned review path. Canonical
-evidence wording and limitations remain in
+`npm run xr-mode:runtime-ready` is the root XR Mode enforcement boundary. It
+must execute the complete E1-E4 source ledger and the fresh local-browser
+fallback smoke. Individual renderer, asset, session, or fallback tests are
+supporting evidence only and cannot independently promote XR Mode to
+runtime-ready. The command remains provider-neutral and local-only; its
+contract forbids deployment and documentation-update mutations. Canonical
+fallback evidence wording and limitations remain in
 `docs/documents/knowgrph-xr-spatial-capture-fallback-readiness.md`.
 
 The local browser proof covers one non-immersive, camera-API-capable Chromium
@@ -427,6 +438,8 @@ SPZ rendering, phone-video asset publication, Production, or Cloudflare.
 - [x] Asset conversion matches the actual plane compiler.
 - [x] Standalone SPZ is documented as recognized and unsupported.
 - [x] The second renderer/camera/physics/timeline path is excluded.
+- [x] Aggregate XR Mode readiness fails closed if any E1-E4 or browser stage
+  fails or if the root command is narrowed.
 - [x] Both XR documents remain below 600 lines.
 - [ ] Physical mobile and immersive-device evidence.
 - [ ] Native SPZ runtime.
