@@ -30,6 +30,9 @@ const StoryboardRichMediaDropSmokePageLazy = lazy(async () => ({
 const XrSpatialCaptureFallbackSmokePageLazy = lazy(async () => ({
   default: (await import('@/features/testing/XrSpatialCaptureFallbackSmokePage')).XrSpatialCaptureFallbackSmokePage,
 }))
+const XrV2RuntimeSmokePageLazy = lazy(async () => ({
+  default: (await import('@/features/testing/XrV2RuntimeSmokePage')).XrV2RuntimeSmokePage,
+}))
 
 function AppThemeRuntime() {
   useLayoutEffect(() => {
@@ -67,13 +70,20 @@ export default function App() {
     const kgPath = String(params.get('kgPath') || '')
     return pathname === '/__smoke__/storyboard-rich-media-drop' || kgPath === '/__smoke__/storyboard-rich-media-drop'
   }, [])
-    const xrSpatialCaptureFallbackSmokeRequested = useMemo(() => {
-      if (!import.meta.env.DEV || typeof window === 'undefined') return false
-      const params = new URLSearchParams(window.location.search)
-      const pathname = String(window.location.pathname || '')
-      const kgPath = String(params.get('kgPath') || '')
-      return pathname === '/__smoke__/xr-spatial-capture-fallback' || kgPath === '/__smoke__/xr-spatial-capture-fallback'
-    }, [])
+  const xrSpatialCaptureFallbackSmokeRequested = useMemo(() => {
+    if (!import.meta.env.DEV || typeof window === 'undefined') return false
+    const params = new URLSearchParams(window.location.search)
+    const pathname = String(window.location.pathname || '')
+    const kgPath = String(params.get('kgPath') || '')
+    return pathname === '/__smoke__/xr-spatial-capture-fallback' || kgPath === '/__smoke__/xr-spatial-capture-fallback'
+  }, [])
+  const xrV2RuntimeSmokeRequested = useMemo(() => {
+    if (!import.meta.env.DEV || typeof window === 'undefined') return false
+    const params = new URLSearchParams(window.location.search)
+    const pathname = String(window.location.pathname || '')
+    const kgPath = String(params.get('kgPath') || '')
+    return pathname === '/__smoke__/xr-v2-runtime' || kgPath === '/__smoke__/xr-v2-runtime'
+  }, [])
   useEffect(() => {
     let cancelled = false
     let cleanupTheme = () => void 0
@@ -228,10 +238,14 @@ export default function App() {
                   <Suspense fallback={null}>
                     <StoryboardRichMediaDropSmokePageLazy />
                   </Suspense>
-                  ) : xrSpatialCaptureFallbackSmokeRequested ? (
-                    <Suspense fallback={null}>
-                      <XrSpatialCaptureFallbackSmokePageLazy />
-                    </Suspense>
+                ) : xrSpatialCaptureFallbackSmokeRequested ? (
+                  <Suspense fallback={null}>
+                    <XrSpatialCaptureFallbackSmokePageLazy />
+                  </Suspense>
+                ) : xrV2RuntimeSmokeRequested ? (
+                  <Suspense fallback={null}>
+                    <XrV2RuntimeSmokePageLazy />
+                  </Suspense>
                 ) : <Canvas />}
               />
             </Routes>

@@ -18,6 +18,7 @@ import {
 import type { XrSceneControlInput } from '@/features/three/xrSceneMcpRuntime'
 import type { XrPhysicsControlInput } from '@/features/three/xrSceneInteractiveInvocation'
 import { selectBoundXrShotTarget } from '@/features/three/xrSelectedActorBinding'
+import { XrV2AuthoringStatusPanel } from '@/features/xr-v2/XrV2AuthoringStatusPanel'
 import { XrNativeControllerDemoControls } from './XrNativeControllerDemoControls'
 
 type XrSimulationWorkbenchProps = Readonly<{
@@ -266,6 +267,7 @@ export function XrSimulationWorkbench({ sceneReady, runControl }: XrSimulationWo
       </header>
 
       <XrNativeControllerDemoControls sceneReady={sceneReady} runControl={runControl} />
+      <XrV2AuthoringStatusPanel sceneReady={sceneReady} />
 
       {!sceneReady ? (
         <p className="m-0 rounded bg-amber-100 px-2 py-1 text-[10px] text-amber-900 dark:bg-amber-950/60 dark:text-amber-100">
