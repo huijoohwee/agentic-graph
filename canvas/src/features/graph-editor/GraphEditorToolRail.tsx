@@ -9,6 +9,7 @@ import {
 import { UI_TEXT_TRUNCATE } from '@/lib/ui/textLayout'
 import { exportGraphEditorJson, importGraphEditorJsonLocal } from '@/features/graph-editor/editorIo'
 import { listGraphEditorPluginTools } from '@/features/graph-editor/plugins/toolRegistry'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 export type GraphEditorToolId = 'select' | 'pan' | 'node' | 'edge' | 'subgraph'
 
@@ -50,7 +51,7 @@ export function GraphEditorToolRail(props: {
             <button
               key={t.id}
               type="button"
-              className={`${UI_RESPONSIVE_MENU_ROW_CLASSNAME} gap-2 rounded-lg px-2 py-2 text-xs transition ${isActive ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}` : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
+              className={`${UI_RESPONSIVE_MENU_ROW_CLASSNAME} gap-2 rounded-lg px-2 py-2 text-xs transition ${isActive ? uiSelectedRowStateClassName(true) : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
               onClick={() => onSelectTool(t.id)}
               aria-label={`Tool: ${t.label} (${t.hotkey})`}
               disabled={disabled}
@@ -74,7 +75,7 @@ export function GraphEditorToolRail(props: {
                 <button
                   key={t.id}
                   type="button"
-                  className={`${UI_RESPONSIVE_MENU_ROW_CLASSNAME} gap-2 rounded-lg px-2 py-2 text-xs transition ${isActive ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}` : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
+                  className={`${UI_RESPONSIVE_MENU_ROW_CLASSNAME} gap-2 rounded-lg px-2 py-2 text-xs transition ${isActive ? uiSelectedRowStateClassName(true) : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
                   onClick={() => onSelectTool(t.id as GraphEditorToolId)}
                   aria-label={`Tool: ${t.label}${t.hotkey ? ` (${t.hotkey})` : ''}`}
                   disabled={disabled}

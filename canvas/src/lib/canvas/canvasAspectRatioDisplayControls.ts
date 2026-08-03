@@ -1,3 +1,5 @@
+import { uiCurrentChoiceRowIsSelected } from 'grph-shared/ui/selectedRowClasses'
+
 export type CanvasAspectRatioMode = '16:9' | '9:16'
 
 export const CANVAS_ASPECT_RATIO_MODE_DEFAULT: CanvasAspectRatioMode = '16:9'
@@ -72,10 +74,13 @@ export const toggleCanvasAspectRatioMode = (mode: unknown): CanvasAspectRatioMod
   readCanvasAspectRatioMode(mode) === '16:9' ? '9:16' : '16:9'
 
 export const readCanvasAspectRatioDisplayControlActive = (mode: unknown): boolean =>
-  readCanvasAspectRatioMode(mode) === '9:16'
+  uiCurrentChoiceRowIsSelected(readCanvasAspectRatioMode(mode))
 
 export const readCanvasAspectRatioDisplayControlTitle = (mode: unknown): string => {
   const current = readCanvasAspectRatioMode(mode)
   const option = CANVAS_ASPECT_RATIO_OPTIONS.find(candidate => candidate.value === current)
   return option ? `${CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_TITLE}: ${option.label}` : CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_TITLE
 }
+
+export const readCanvasAspectRatioDisplayControlValue = (mode: unknown): string =>
+  CANVAS_ASPECT_RATIO_OPTIONS.find(candidate => candidate.value === readCanvasAspectRatioMode(mode))?.label || CANVAS_ASPECT_RATIO_MODE_DEFAULT

@@ -20,6 +20,7 @@ import {
   preserveAuthoredMarkdownNoteSource,
   resolveAuthoredMarkdownNotePath,
 } from './workspaceAuthoredNotes'
+import { upgradeAuthoredMarkdownNoteInitialDocument } from './workspaceAuthoredNoteDocument'
 import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from './workspaceSourceRoots'
 
 export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry[] }): WorkspaceFs {
@@ -149,11 +150,27 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
     return true
   }
 
+  const upgradeAuthoredMarkdownNoteInitialDocuments = (): boolean => {
+    let changed = false
+    for (const [path, entry] of entriesByPath) {
+      if (entry.kind !== 'file') continue
+      const nextText = upgradeAuthoredMarkdownNoteInitialDocument({
+        documentName: path,
+        rawText: String(entry.text ?? ''),
+      })
+      if (nextText === entry.text) continue
+      entriesByPath.set(path, { ...entry, text: nextText, updatedAtMs: Date.now() })
+      changed = true
+    }
+    return changed
+  }
+
   const ensureSeed = async (): Promise<boolean> => {
     ensureRoot()
     let changed = false
     if (removeLegacyWorkspaceSourceEntries()) changed = true
     if (migrateLegacyAuthoredMarkdownNotes()) changed = true
+    if (upgradeAuthoredMarkdownNoteInitialDocuments()) changed = true
 
     const hasAnyFilesNow = [...entriesByPath.values()].some(e => e.kind === 'file')
     if (CUSTOM_TEST_VALIDATION_WORKSPACE_SEED_ACTIVE && !hasAnyFilesNow) {

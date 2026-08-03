@@ -7,6 +7,7 @@ import { setPipelinePerfEnabled } from '@/lib/pipelinePerf'
 import type { PipelinePerfDetail } from '@/lib/pipelinePerf'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import CollapsibleSection from '@/features/panels/ui/CollapsibleSection'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 type PerfStageEntry = { key: string; label: string; durationMs: number }
 
@@ -112,7 +113,7 @@ export function CanvasPerformancePanel() {
         <section className="mt-2 space-y-2">
           <button
             type="button"
-            className={`w-full rounded-md border px-2 py-1.5 text-xs transition ${UI_THEME_TOKENS.input.border} ${perfOpen ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}` : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
+            className={`w-full rounded-md px-2 py-1.5 text-xs transition ${perfOpen ? uiSelectedRowStateClassName(true) : `border ${UI_THEME_TOKENS.input.border} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
             onClick={() => setPerfOpen(v => !v)}
           >
             {perfEnabled ? 'Hide Perf Overlay' : 'Show Perf Overlay'}

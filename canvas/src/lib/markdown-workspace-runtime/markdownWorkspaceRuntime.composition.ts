@@ -21,7 +21,7 @@ export function buildMarkdownWorkspaceFileActionsArgs(args: {
   lastLoadedRef: React.MutableRefObject<{ path: WorkspacePath; text: string } | null>
   setExpandedPaths: React.Dispatch<React.SetStateAction<Set<string>>>
   setActivePathSafe: (path: WorkspacePath) => void
-  setSelectionPathSafe: (path: WorkspacePath) => void | Promise<void>
+  setSelectionPathSafe: (path: WorkspacePath) => void | Promise<boolean>
   setActiveMarkdownDocument: UseWorkspaceFileActionsArgs['setActiveMarkdownDocument']
   applyMarkdownDocumentToGraph: UseWorkspaceFileActionsArgs['applyMarkdownDocumentToGraph']
 }): UseWorkspaceFileActionsArgs {

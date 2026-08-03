@@ -76,7 +76,7 @@ export const createUiInitialState = (
       })
     },
 
-    floatingPanelView: 'geo' as GraphState['floatingPanelView'],
+    floatingPanelView: 'propsPanel' as GraphState['floatingPanelView'],
     setFloatingPanelView: (view: GraphState['floatingPanelView']) => {
       const next =
         view === 'skillsCommands' || view === 'promptPresets'
@@ -553,6 +553,7 @@ export const createUiInitialState = (
       return getInitialLaunchSpotlightEnabled(storage, false);
     })(),
     statusPanelPinned: lsBool(LS_KEYS.statusPanelPinned, false),
+    workspaceAutosaveEnabled: lsBool(LS_KEYS.workspaceAutosaveEnabled, true),
 
   }
 }

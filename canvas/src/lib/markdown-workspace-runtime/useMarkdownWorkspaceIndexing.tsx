@@ -198,6 +198,14 @@ export function useMarkdownWorkspaceIndexing(args: MarkdownWorkspaceIndexingArgs
             applyLoadFailedStatus('Missing file contents', { fallbackMessage: 'Missing file contents' })
             return
           }
+          if (resolveWorkspaceDirtyState({
+            path,
+            lastLoadedRef: args.lastLoadedRef,
+            activeTextRef: args.activeTextRef,
+            userEditedActiveTextRef: args.userEditedActiveTextRef,
+          })) {
+            return
+          }
 
           const rawNext = String(text)
           const sanitized = (() => {

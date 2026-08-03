@@ -3,7 +3,8 @@ import { ChevronDown } from 'lucide-react'
 import IconButton from '@/components/IconButton'
 import { DropdownPanel } from '@/lib/ui/overlay'
 import { emitToolbarDropdownOpen, subscribeToolbarDropdownOpen } from '@/components/toolbar/dropdownOpenEvents'
-import { uiPrimaryChipActiveClassName, uiPrimaryIconActiveClassName, uiPrimaryIconInactiveClassName } from '@/features/toolbar/ui/toolbarStyles'
+import { uiPrimaryIconActiveClassName, uiPrimaryIconInactiveClassName } from '@/features/toolbar/ui/toolbarStyles'
+import { uiSelectableRowClassName } from 'grph-shared/ui/selectedRowClasses'
 import {
   UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME,
   UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_HINT_CLASSNAME,
@@ -11,12 +12,15 @@ import {
   UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { SelectableRowValue } from '@/components/ui/SelectableRowValue'
 
 const toolbarDropdownChevronClassName = `${UI_RESPONSIVE_COMPACT_GLYPH_CLASSNAME} ml-auto opacity-70 transition-transform`
 
 type ToolbarDropdownOptionBase = {
   id: string
   title: string
+  rowLabel?: string
+  valueLabel?: string
   children?: readonly ToolbarDropdownOptionBase[]
   isActive?: boolean
   dividerBefore?: boolean
@@ -212,8 +216,9 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                         optionButtonRefs.current[index] = el
                       }}
                       type="button"
-                      className={`kg-toolbar-dropdown-section-toggle ${UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg} disabled:opacity-50 disabled:cursor-not-allowed ${isActive ? uiPrimaryChipActiveClassName : ''}`}
+                      className={`kg-toolbar-dropdown-section-toggle ${UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME} disabled:opacity-50 disabled:cursor-not-allowed ${uiSelectableRowClassName(isActive)}`}
                       disabled={option.disabled}
+                      aria-label={option.title}
                       aria-expanded={hasChildren ? isExpanded : undefined}
                       aria-controls={childrenId}
                       onClick={() => {
@@ -235,7 +240,10 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                       {renderOptionContent ? (
                         renderOptionContent(option)
                       ) : (
-                        <span className="truncate">{option.title}</span>
+                        <>
+                          <span className="truncate">{option.rowLabel || option.title}</span>
+                          {option.valueLabel ? <SelectableRowValue label={option.rowLabel || option.title} value={option.valueLabel} /> : null}
+                        </>
                       )}
                       {option.disabled && (option.disabledReason || option.enableHint) ? (
                         <span className={`${UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME} ml-auto text-[10px] text-amber-500/90 text-right`}>
@@ -263,8 +271,9 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                             <li key={child.id} className="list-none">
                               <button
                                 type="button"
-                                className={`${UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg} disabled:opacity-50 disabled:cursor-not-allowed ${isChildActive ? uiPrimaryChipActiveClassName : ''}`}
+                                className={`${UI_RESPONSIVE_TOUCH_MENU_OPTION_ROW_CLASSNAME} disabled:opacity-50 disabled:cursor-not-allowed ${uiSelectableRowClassName(isChildActive)}`}
                                 disabled={child.disabled}
+                                aria-label={child.title}
                                 onClick={() => {
                                   if (child.disabled) return
                                   closeMenuNow()
@@ -280,7 +289,10 @@ export function ToolbarDropdownSelect<T extends ToolbarDropdownOptionBase>({
                                 {renderOptionContent ? (
                                   renderOptionContent(child)
                                 ) : (
-                                  <span className="truncate">{child.title}</span>
+                                  <>
+                                    <span className="truncate">{child.rowLabel || child.title}</span>
+                                    {child.valueLabel ? <SelectableRowValue label={child.rowLabel || child.title} value={child.valueLabel} /> : null}
+                                  </>
                                 )}
                                 {child.disabled && (child.disabledReason || child.enableHint) ? (
                                   <span className={`${UI_RESPONSIVE_TOOLBAR_DROPDOWN_OPTION_META_CLASSNAME} ml-auto text-[10px] text-amber-500/90 text-right`}>

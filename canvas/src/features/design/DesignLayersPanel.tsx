@@ -19,6 +19,7 @@ import {
   UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { cn } from '@/lib/utils'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { readMarkdownSigilDisplayText } from '@/lib/markdown/markdownSigil'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
 
@@ -238,7 +239,7 @@ export default function DesignLayersPanel({ active }: { active: boolean }) {
               const label = readMarkdownSigilDisplayText(n.label)
               return (
                 <li key={n.id} className={cn('border-b last:border-b-0', UI_THEME_TOKENS.panel.border)}>
-                  <section className={cn(UI_RESPONSIVE_DESIGN_PANEL_LIST_ROW_CLASSNAME, selected ? 'bg-blue-50 dark:bg-blue-900/20' : '')}>
+                  <section className={cn(UI_RESPONSIVE_DESIGN_PANEL_LIST_ROW_CLASSNAME, uiSelectedRowStateClassName(selected))}>
                     <button
                       type="button"
                       className={cn('App-toolbar__btn', UI_THEME_TOKENS.button.text, UI_THEME_TOKENS.button.hoverBg, 'p-1.5')}

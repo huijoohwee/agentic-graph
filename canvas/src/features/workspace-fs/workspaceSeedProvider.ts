@@ -1355,6 +1355,9 @@ const chooseBestWorkspaceDocsMirrorDataset = (
 }
 
 export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
+  if (isWorkspaceRepoLocalRunReadyBootstrap() && typeof window !== 'undefined') {
+    return readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
+  }
   const absRoot = readKnowgrphWorkspaceSeedsReadAbsRoot()
   if (!absRoot) return readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
   const entries = await readWorkspaceMirrorRootEntries({
@@ -1369,8 +1372,11 @@ export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<Workspa
   }))
 }
 
-const readWorkspaceDocsMirrorEntriesViaProxy = async (docsAbsRoot: string): Promise<WorkspaceDocsMirrorEntry[]> => {
-  if (isWorkspaceRepoLocalRunReadyBootstrap()) return []
+const readWorkspaceDocsMirrorEntriesViaProxy = async (
+  docsAbsRoot: string,
+  options?: { allowRepoLocal?: boolean },
+): Promise<WorkspaceDocsMirrorEntry[]> => {
+  if (isWorkspaceRepoLocalRunReadyBootstrap() && !options?.allowRepoLocal) return []
   if (typeof window === 'undefined' || typeof fetch !== 'function') return []
   return readCachedConfiguredDocsMirrorEntries({
     cacheKey: docsAbsRoot,
@@ -1479,6 +1485,17 @@ const readWorkspaceDocsMirrorEntriesViaProxy = async (docsAbsRoot: string): Prom
         return []
       }
     },
+  })
+}
+
+export const readCanonicalAgenticDocsMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
+  const absRoot = readWorkspaceInitializationAgenticOsDocsAbsRoot()
+  if (!absRoot) return []
+  return readWorkspaceMirrorRootEntries({
+    absRoot,
+    workspaceRootName: 'agentic-canvas-os/docs',
+    readViaProxy: root => readWorkspaceDocsMirrorEntriesViaProxy(root, { allowRepoLocal: true }),
+    readViaNodeFs: readWorkspaceDocsMirrorEntriesViaNodeFs,
   })
 }
 

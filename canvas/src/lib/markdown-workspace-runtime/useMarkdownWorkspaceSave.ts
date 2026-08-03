@@ -13,6 +13,18 @@ import { resolveAuthoritativeWorkspaceText, syncWorkspaceTextState, writeWorkspa
 import { clearRuntimeTimeout, scheduleRuntimeTimeout, type RuntimeTimeoutHandle } from './markdownWorkspaceRuntime.shared'
 import type { MarkdownWorkspaceRuntimeProgressStatusBindings } from './markdownWorkspaceRuntimeStatus'
 import type { MarkdownWorkspaceRuntimeGetFs, MarkdownWorkspaceRuntimeSetActiveDocument } from './markdownWorkspaceRuntime.types'
+import {
+  captureWorkspaceSourceTextRevision,
+  type WorkspaceSourceTextRevision,
+} from '@/features/workspace-fs/workspaceSourceTextTransaction'
+import { useGraphStore } from '@/hooks/useGraphStore'
+
+type PendingWorkspaceAutosave = {
+  path: WorkspacePath
+  text: string
+  expectedSourceRevision: WorkspaceSourceTextRevision
+  expectedWorkspaceText: string
+}
 
 export type MarkdownWorkspaceSaveArgs = MarkdownWorkspaceRuntimeProgressStatusBindings & {
   active: boolean
@@ -20,6 +32,7 @@ export type MarkdownWorkspaceSaveArgs = MarkdownWorkspaceRuntimeProgressStatusBi
   activePath: WorkspacePath | null
   activeEntryKind: string | null
   activeText: string
+  activeTextRef: React.MutableRefObject<string>
   debouncedText: string
   activeDocumentKey: string
   activeDocumentSourceUrl: string | null
@@ -41,8 +54,9 @@ export type MarkdownWorkspaceSaveArgs = MarkdownWorkspaceRuntimeProgressStatusBi
 }
 
 export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
+  const workspaceAutosaveEnabled = useGraphStore(state => state.workspaceAutosaveEnabled)
   const autosaveInFlightRef = React.useRef(false)
-  const autosavePendingRef = React.useRef<{ path: WorkspacePath; text: string } | null>(null)
+  const autosavePendingRef = React.useRef<PendingWorkspaceAutosave | null>(null)
   const autosaveStatusTimerRef = React.useRef<RuntimeTimeoutHandle | null>(null)
 
   const applySaveSuccessStatus = React.useCallback(
@@ -61,6 +75,18 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
       applyMarkdownWorkspaceErrorStatus({
         setStatusError: args.setStatusError,
         prefix: 'Save failed',
+        error,
+        fallbackMessage: 'Request failed',
+      })
+    },
+    [args.setStatusError],
+  )
+
+  const applyAutosaveErrorStatus = React.useCallback(
+    (error: unknown) => {
+      applyMarkdownWorkspaceErrorStatus({
+        setStatusError: args.setStatusError,
+        prefix: 'Autosave failed',
         error,
         fallbackMessage: 'Request failed',
       })
@@ -88,7 +114,7 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
       } catch {
         void 0
       }
-      await writeWorkspaceFileAndSync({
+      const saved = await writeWorkspaceFileAndSync({
         path,
         text: textToSave,
         getFs: args.getFs,
@@ -100,6 +126,9 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
         setGraphRagWorkflowJsonText: args.setGraphRagWorkflowJsonText,
         resetParsedState: true,
       })
+      if (!saved) {
+        throw new Error('The source changed before Save could commit the current editor text.')
+      }
       await args.saveCollaborationSnapshot?.({
         path,
         text: textToSave,
@@ -173,36 +202,83 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
     }
   }, [applySaveErrorStatus, applySaveSuccessStatus, args])
 
+  const commitActiveTextBeforeSelection = React.useCallback(async (): Promise<boolean> => {
+    const path = args.activePath
+    if (!path || args.activeEntryKind === 'folder' || args.viewerInlineEditActive) return true
+    const lastLoaded = args.lastLoadedRef.current
+    const activeText = String(args.activeTextRef.current || '')
+    const hasUnsavedActiveText = !!(
+      lastLoaded?.path === path
+      && String(lastLoaded.text || '') !== activeText
+    )
+    if (!hasUnsavedActiveText) return true
+    cancelMarkdownWorkspaceAutosaveSync(path)
+    try {
+      const saved = await writeWorkspaceFileAndSync({
+        path,
+        text: activeText,
+        getFs: args.getFs,
+        lastLoadedRef: args.lastLoadedRef,
+        patchWorkspaceEntryInlineText: args.patchWorkspaceEntryInlineText,
+        activeDocumentKey: args.activeDocumentKey,
+        activeDocumentSourceUrl: args.activeDocumentSourceUrl,
+        setActiveMarkdownDocument: args.setActiveMarkdownDocument,
+        setGraphRagWorkflowJsonText: args.setGraphRagWorkflowJsonText,
+        setActiveText: args.setActiveTextProgrammatic,
+        expectedSourceRevision: captureWorkspaceSourceTextRevision(path),
+        expectedWorkspaceText: lastLoaded.text,
+        resetParsedState: false,
+      })
+      if (!saved) {
+        applySaveErrorStatus(new Error('The source changed before the pending editor text could be saved.'))
+        return false
+      }
+      await args.saveCollaborationSnapshot?.({
+        path,
+        text: activeText,
+        saveBoundary: 'autosave',
+      })
+      return true
+    } catch (error) {
+      applySaveErrorStatus(error)
+      return false
+    }
+  }, [applySaveErrorStatus, args])
+
   React.useEffect(() => {
-    if (!args.active || args.viewerInlineEditActive) return
+    if (!workspaceAutosaveEnabled || !args.active || args.viewerInlineEditActive) return
     const path = args.activePath
     if (!path || args.activeEntryKind === 'folder') return
     const last = args.lastLoadedRef.current
     if (!args.userEditedActiveTextRef.current) return
-    if (!shouldAutosaveWorkspaceFile({ path, lastLoaded: last, activeText: args.activeText, debouncedText: args.debouncedText })) {
+    if (!shouldAutosaveWorkspaceFile({ enabled: workspaceAutosaveEnabled, path, lastLoaded: last, activeText: args.activeText, debouncedText: args.debouncedText })) {
       return
+    }
+    const autosaveRequest: PendingWorkspaceAutosave = {
+      path,
+      text: args.debouncedText,
+      expectedSourceRevision: captureWorkspaceSourceTextRevision(path),
+      expectedWorkspaceText: String(last?.text || ''),
     }
     scheduleMarkdownWorkspaceAutosaveSync(() => {
       if (autosaveInFlightRef.current) {
-        autosavePendingRef.current = { path, text: args.debouncedText }
+        autosavePendingRef.current = autosaveRequest
         return
       }
       autosaveInFlightRef.current = true
       void (async () => {
-        let nextTextToSave = args.debouncedText
+        let nextRequest = autosaveRequest
         try {
           while (true) {
-            let savingShown = false
             autosaveStatusTimerRef.current = scheduleRuntimeTimeout(() => {
               args.setStatusProgress('Saving', undefined, undefined, undefined, undefined, {
                 ttlMs: UI_TOAST_TTL_MS.progressExtended,
               })
-              savingShown = true
             }, 220)
             try {
-              await writeWorkspaceFileAndSync({
-                path,
-                text: nextTextToSave,
+              const saved = await writeWorkspaceFileAndSync({
+                path: nextRequest.path,
+                text: nextRequest.text,
                 getFs: args.getFs,
                 lastLoadedRef: args.lastLoadedRef,
                 patchWorkspaceEntryInlineText: args.patchWorkspaceEntryInlineText,
@@ -210,14 +286,19 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
                 activeDocumentSourceUrl: args.activeDocumentSourceUrl,
                 setActiveMarkdownDocument: args.setActiveMarkdownDocument,
                 setGraphRagWorkflowJsonText: args.setGraphRagWorkflowJsonText,
+                expectedSourceRevision: nextRequest.expectedSourceRevision,
+                expectedWorkspaceText: nextRequest.expectedWorkspaceText,
                 resetParsedState: false,
               })
+              if (!saved) {
+                throw new Error('The source changed before autosave could commit the current editor text.')
+              }
               await args.saveCollaborationSnapshot?.({
-                path,
-                text: nextTextToSave,
+                path: nextRequest.path,
+                text: nextRequest.text,
                 saveBoundary: 'autosave',
               })
-              if (savingShown) applySaveSuccessStatus('Saved')
+              applySaveSuccessStatus('Autosaved', UI_TOAST_TTL_MS.statusAutoCloseFast)
             } finally {
               const timer = autosaveStatusTimerRef.current
               clearRuntimeTimeout(timer)
@@ -225,15 +306,21 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
             }
 
             const pending = autosavePendingRef.current
-            if (!pending || pending.path !== path || pending.text === nextTextToSave) {
+            const pendingMatchesCurrent = !!(
+              pending
+              && pending.path === nextRequest.path
+              && pending.text === nextRequest.text
+              && pending.expectedSourceRevision.revision === nextRequest.expectedSourceRevision.revision
+            )
+            if (!pending || pending.path !== path || pendingMatchesCurrent) {
               if (pending && pending.path !== path) autosavePendingRef.current = pending
               break
             }
             autosavePendingRef.current = null
-            nextTextToSave = pending.text
+            nextRequest = pending
           }
         } catch (e) {
-          applySaveErrorStatus(e)
+          applyAutosaveErrorStatus(e)
         } finally {
           autosaveInFlightRef.current = false
         }
@@ -242,7 +329,7 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
     return () => {
       cancelMarkdownWorkspaceAutosaveSync(path)
     }
-  }, [applySaveErrorStatus, applySaveSuccessStatus, args])
+  }, [applyAutosaveErrorStatus, applySaveSuccessStatus, args, workspaceAutosaveEnabled])
 
   React.useEffect(() => {
     return () => {
@@ -255,6 +342,7 @@ export function useMarkdownWorkspaceSave(args: MarkdownWorkspaceSaveArgs) {
   }, [])
 
   return {
+    commitActiveTextBeforeSelection,
     saveActiveFileNow,
     saveAsActiveFileNow,
   }

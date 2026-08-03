@@ -16,6 +16,7 @@ import {
   XR_MOTION_REFERENCE_CAMERA_RIGS,
   type XrMotionReferenceCameraRig,
 } from '@/features/three/xrMotionReferenceModel'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import {
   readXrMotionReferenceRuntime,
   setXrMotionReferenceCameraMark,
@@ -200,7 +201,7 @@ export function XrShootCameraSection() {
 
       <button
         type="button"
-        className={cn('App-toolbar__btn flex w-full items-center justify-center gap-2', runtime.castMarkArmed ? UI_THEME_TOKENS.button.activeBg : '')}
+        className={cn('App-toolbar__btn flex w-full items-center justify-center gap-2', uiSelectedRowStateClassName(runtime.castMarkArmed))}
         aria-pressed={runtime.castMarkArmed}
         disabled={!selectedTrack}
         onClick={() => toggleXrMotionReferenceCastMarkArmed()}

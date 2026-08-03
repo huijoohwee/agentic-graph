@@ -14,6 +14,10 @@ import { buildCitySimAgentReadyToolContracts, CITY_SIM_AGENT_READY_TOOL_IDS } fr
 import { buildStorageSyncAgentReadyToolContracts, STORAGE_SYNC_AGENT_READY_TOOL_IDS } from './storageSyncAgentReadyContract.mjs'
 import { buildGroupPanelAgentReadyToolContracts, GROUP_PANEL_AGENT_READY_TOOL_IDS } from '../group-panel/groupPanelContract.mjs'
 import { buildImportUrlAgentReadyToolContracts, IMPORT_URL_AGENT_READY_TOOL_IDS } from './importUrlAgentReadyContract.mjs'
+import { buildCanvasViewAgentReadyToolContracts, CANVAS_VIEW_AGENT_READY_TOOL_IDS } from './canvasViewAgentReadyContract.mjs'
+import { buildCanvasInteractionAgentReadyToolContracts, CANVAS_INTERACTION_AGENT_READY_TOOL_IDS } from './canvasInteractionAgentReadyContract.mjs'
+import { buildWorkspaceLaunchAgentReadyToolContracts, WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS } from './workspaceLaunchAgentReadyContract.mjs'
+import { buildToolbarActionAgentReadyToolContracts, TOOLBAR_ACTION_AGENT_READY_TOOL_IDS } from './toolbarActionAgentReadyContract.mjs'
 import { FETCH_OUTPUT_SCHEMA, RUNTIME_IDENTITY_OUTPUT_SCHEMA, SEARCH_OUTPUT_SCHEMA } from './knowgrphAgentReadyOutputSchemas.mjs'
 export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
   search: 'search',
@@ -43,6 +47,10 @@ export const KNOWGRPH_AGENT_READY_TOOL_IDS = Object.freeze({
   ...STORAGE_SYNC_AGENT_READY_TOOL_IDS,
   ...GROUP_PANEL_AGENT_READY_TOOL_IDS,
   ...IMPORT_URL_AGENT_READY_TOOL_IDS,
+  ...CANVAS_VIEW_AGENT_READY_TOOL_IDS,
+  ...CANVAS_INTERACTION_AGENT_READY_TOOL_IDS,
+  ...WORKSPACE_LAUNCH_AGENT_READY_TOOL_IDS,
+  ...TOOLBAR_ACTION_AGENT_READY_TOOL_IDS,
   inspectLocal3dLayoutPositions: 'inspect_local_3d_layout_positions',
   inspectLocalXrSceneAssets: XR_SCENE_WEB_MCP_TOOL_IDS.inspect,
   controlLocalXrScene: XR_SCENE_WEB_MCP_TOOL_IDS.control,
@@ -446,7 +454,7 @@ export const buildKnowgrphAgentReadyToolContracts = (args = {}) => {
           description: 'Inspect the active browser-local Knowgrph workspace markdown document structure without reading published storage routes.',
           inputSchema: { type: 'object', additionalProperties: false, properties: {} },
           annotations: READ_ONLY_TOOL_ANNOTATIONS,
-        }, ...buildImportUrlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), {
+        }, ...buildImportUrlAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildCanvasViewAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildCanvasInteractionAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildWorkspaceLaunchAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), ...buildToolbarActionAgentReadyToolContracts({ buildWebName: buildKnowgrphWebMcpToolName }), {
           name: KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology,
           webName: buildKnowgrphWebMcpToolName(KNOWGRPH_AGENT_READY_TOOL_IDS.inspectLocalCanvasTopology),
           title: 'Inspect Local Canvas Topology',

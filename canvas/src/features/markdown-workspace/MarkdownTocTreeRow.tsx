@@ -8,6 +8,7 @@ import {
   UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { renderMarkdownSigilInlineText } from '@/lib/ui/MarkdownSigilText'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 type MarkdownTocTreeRowProps = {
   itemId: string
@@ -52,7 +53,7 @@ export function MarkdownTocTreeRow(props: MarkdownTocTreeRowProps) {
       <button
         type="button"
         data-toc-id={itemId}
-        className={`flex-1 min-w-0 flex items-center gap-1 rounded ${UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME} ${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${uiPanelTextFontClass} ${isDragging ? 'opacity-50' : ''} ${isActive ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}` : ''}`}
+        className={`flex-1 min-w-0 flex items-center gap-1 rounded ${UI_RESPONSIVE_COMPACT_LIST_ROW_CLASSNAME} ${uiPanelKeyValueTextSizeClass} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg} ${uiPanelTextFontClass} ${isDragging ? 'opacity-50' : ''} ${uiSelectedRowStateClassName(isActive)}`}
         style={{ paddingLeft: 6 + indent }}
         onClick={onClick}
         aria-label={`Heading ${displayText}`}

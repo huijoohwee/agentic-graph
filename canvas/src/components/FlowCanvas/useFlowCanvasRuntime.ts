@@ -58,22 +58,8 @@ import {
 } from '@/components/FlowCanvas/workspaceVisibleViewportRecovery'
 import { readStoryboardCardSize2d } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
 
-const STORYBOARD_INITIALIZED_VIEW_HISTORY_LIMIT = 64
-const initializedStoryboardZoomViewKeys = new Set<string>()
-
 const hasInitializedStoryboardZoomView = (refKey: string | null, zoomViewKey: string): boolean =>
-  refKey === zoomViewKey || initializedStoryboardZoomViewKeys.has(zoomViewKey)
-
-const rememberInitializedStoryboardZoomView = (zoomViewKey: string): void => {
-  const key = String(zoomViewKey || '').trim()
-  if (!key || initializedStoryboardZoomViewKeys.has(key)) return
-  initializedStoryboardZoomViewKeys.add(key)
-  while (initializedStoryboardZoomViewKeys.size > STORYBOARD_INITIALIZED_VIEW_HISTORY_LIMIT) {
-    const oldest = initializedStoryboardZoomViewKeys.values().next().value
-    if (typeof oldest !== 'string') break
-    initializedStoryboardZoomViewKeys.delete(oldest)
-  }
-}
+  refKey === zoomViewKey
 
 export function useFlowCanvasRuntime(args: {
   active: boolean
@@ -360,7 +346,7 @@ export function useFlowCanvasRuntime(args: {
     })
   }, [])
   const [workspaceOverlayInteractionFrameTick, setWorkspaceOverlayInteractionFrameTick] = React.useState(0)
-  const workspaceOverlayOpenPrevRef = React.useRef(false)
+  const workspaceOverlayOpenPrevRef = React.useRef(workspaceEditorOverlayOpen === true)
   const workspaceOverlayOpenedAtMsRef = React.useRef(0)
   const workspaceOverlayUserControlledRef = React.useRef(false)
   const workspaceOverlayStabilizedRef = React.useRef(false)
@@ -452,7 +438,6 @@ export function useFlowCanvasRuntime(args: {
       // mutation temporarily suppresses the init effect during overlay startup.
       // Otherwise the first same-document topology change can re-arm initial fit.
       lastInitTransformZoomViewKeyRef.current = storyboardCameraViewKey
-      rememberInitializedStoryboardZoomView(storyboardCameraViewKey)
       workspaceOverlayOpenedAtMsRef.current = Date.now()
       workspaceOverlayUserControlledRef.current = false
       workspaceOverlayStabilizedRef.current = false
@@ -798,7 +783,6 @@ export function useFlowCanvasRuntime(args: {
         : 'workspace-open-initialized-init-preserve-current'
       syncFlowCanvasDebugToast({ enabled: true })
       lastInitTransformZoomViewKeyRef.current = initKey
-      rememberInitializedStoryboardZoomView(initKey)
       return
     }
     if (
@@ -809,12 +793,11 @@ export function useFlowCanvasRuntime(args: {
 
     const state = useGraphStore.getState()
     if (storyboardWidgetMode && isWorkspaceGraphMutationBlocked(state)) {
-      if (workspaceEditorOverlayOpen === true) {
+      if (workspaceEditorOverlayOpen === true && (alreadyInitializedForKey || hasNonIdentityTransform)) {
         // A mutation lock suppresses camera writes, but the document already on
-        // screen still owns the current transform. Remember that authority so
-        // the first post-lock topology revision cannot re-arm initial fit.
+        // screen still owns an established transform. A fresh remount at identity
+        // has no camera authority yet and must initialize after the lock releases.
         lastInitTransformZoomViewKeyRef.current = initKey
-        rememberInitializedStoryboardZoomView(initKey)
       }
       return
     }
@@ -966,7 +949,6 @@ export function useFlowCanvasRuntime(args: {
         : d3.zoomIdentity.translate(fitSeed.x, fitSeed.y).scale(fitSeed.k)
     const next = d3.zoomIdentity.translate(seed.x, seed.y).scale(seed.k)
     lastInitTransformZoomViewKeyRef.current = initKey
-    if (storyboardWidgetMode) rememberInitializedStoryboardZoomView(initKey)
     if (Math.abs(current.k - next.k) > 1e-9 || Math.abs(current.x - next.x) > 1e-6 || Math.abs(current.y - next.y) > 1e-6) {
       cancelFlowZoomRequestAnim(runtime)
       setFlowNativeTransform(runtime, next)
