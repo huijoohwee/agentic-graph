@@ -19,6 +19,7 @@ import {
   preserveAuthoredMarkdownNoteSource,
   resolveAuthoredMarkdownNotePath,
 } from './workspaceAuthoredNotes'
+import { upgradeAuthoredMarkdownNoteInitialDocument } from './workspaceAuthoredNoteDocument'
 import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from './workspaceSourceRoots'
 import {
   isCanonicalWorkspaceSeedAuthority,
@@ -182,6 +183,28 @@ export const migrateLegacyAuthoredMarkdownNotes = async (
   return true
 }
 
+export const upgradeAuthoredMarkdownNoteInitialDocuments = async (
+  collections: WorkspaceCollections,
+): Promise<boolean> => {
+  const rows = await collections.entries.find({ selector: { kind: 'file' } }).exec()
+  let changed = false
+  for (const row of rows) {
+    const path = normalizeWorkspacePath(String(row.get('path') || ''))
+    const currentText = String(row.get('text') ?? '')
+    const nextText = upgradeAuthoredMarkdownNoteInitialDocument({
+      documentName: path,
+      rawText: currentText,
+    })
+    if (nextText === currentText) continue
+    await row.incrementalPatch({
+      text: nextText,
+      updatedAtMs: normalizeUpdatedAtMs(Date.now()),
+    })
+    changed = true
+  }
+  return changed
+}
+
 export const removeNoncanonicalXrPhysicsFiles = async (
   collections: WorkspaceCollections,
 ): Promise<boolean> => {
@@ -252,11 +275,13 @@ export const resetWorkspaceDocsMirrorSyncForPersistedFs = (): void => {
 export const syncWorkspaceDocsMirrorEntries = async (
   collections: WorkspaceCollections,
   docsEntriesInput?: ReadonlyArray<WorkspaceDocsMirrorEntry>,
+  options?: { scope?: 'all' | 'canonical-workspace-seeds' },
 ): Promise<boolean> => {
   const docsEntries = Array.isArray(docsEntriesInput)
     ? [...docsEntriesInput]
     : await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
   if (docsEntries.length === 0) return false
+  const canonicalWorkspaceSeedsOnly = options?.scope === 'canonical-workspace-seeds'
   const docsMirrorSignature = buildDocsMirrorSyncSignature(docsEntries)
   if (docsMirrorSignature && docsMirrorSignature === lastDocsMirrorSyncSignature) return false
   const desiredEntriesByPath = new Map<WorkspacePath, WorkspaceEntry>()
@@ -302,6 +327,14 @@ export const syncWorkspaceDocsMirrorEntries = async (
     const underRuntimeDocs = existingPath.startsWith(`${WORKSPACE_AGENTIC_DOCS_MIRROR_ROOT_PATH}/`)
     const underOutputDocs = existingPath.startsWith(`${WORKSPACE_OUTPUT_DOCS_MIRROR_ROOT_PATH}/`)
     if (!underVisibleDocs && !underRuntimeDocs && !underOutputDocs) continue
+    if (
+      canonicalWorkspaceSeedsOnly
+      && existingPath !== WORKSPACE_DOCS_MIRROR_ROOT_PATH
+      && !isKnowgrphWorkspaceSeedsPath(existingPath)
+    ) {
+      desiredEntriesByPath.delete(existingPath)
+      continue
+    }
     if (isMigratedAuthoredMarkdownNoteMirrorPath(existingPath, workspaceSourceIndex)) {
       await row.remove()
       changed = true

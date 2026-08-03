@@ -378,6 +378,7 @@ export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory(
     '/docs/workspace-seeds/knowgrph-game-mmorpg-demo.md',
   ]
   const unrelatedPath = '/docs/private-note.md'
+  const unmanagedPath = '/docs/unmanaged-note.md'
   const previousSourceIndex = loadWorkspaceSourceIndex()
   const previousDesiredSource = previousSourceIndex[desiredPath] || null
   const previousRestoredSources = new Map(restoredPaths.map(restoredPath => [
@@ -399,6 +400,7 @@ export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory(
       { path: '/docs/workspace-seeds', parentPath: '/docs', kind: 'folder', name: 'workspace-seeds', updatedAtMs: now },
       { path: desiredPath, parentPath: '/docs/workspace-seeds', kind: 'file', name: 'knowgrph-physics-playground-demo.md', text: '# Stale text\n', updatedAtMs: now },
       { path: unrelatedPath, parentPath: '/docs', kind: 'file', name: 'private-note.md', text: '# Private\n', updatedAtMs: now },
+      { path: unmanagedPath, parentPath: '/docs', kind: 'file', name: 'unmanaged-note.md', text: '# Unmanaged\n', updatedAtMs: now },
     ]
     for (const entry of initialEntries) await db.collections.entries.incrementalUpsert(entry)
     setWorkspaceEntrySource(desiredPath, { kind: 'local', originalName: 'knowgrph-physics-playground-demo.md' }, { persist: 'sync' })
@@ -432,7 +434,9 @@ export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory(
       })),
     ]
     resetWorkspaceDocsMirrorSyncForPersistedFs()
-    const changed = await syncWorkspaceDocsMirrorEntries(db.collections, authoritativeEntries)
+    const changed = await syncWorkspaceDocsMirrorEntries(db.collections, authoritativeEntries, {
+      scope: 'canonical-workspace-seeds',
+    })
     const entries = (await db.collections.entries.find().exec()).map(row => row.toJSON())
     const seedFiles = entries
       .filter(entry => entry.kind === 'file' && entry.path.startsWith('/docs/workspace-seeds/'))
@@ -456,6 +460,9 @@ export async function testWorkspaceSeedReconciliationRestoresCanonicalInventory(
     }
     if (!entries.some(entry => entry.path === unrelatedPath && entry.text === '# Private\n')) {
       throw new Error('expected reconciliation to preserve unrelated source-owned documents')
+    }
+    if (!entries.some(entry => entry.path === unmanagedPath && entry.text === '# Unmanaged\n')) {
+      throw new Error('expected seed-only reconciliation to preserve unrelated unowned documents')
     }
     const sourceIndex = loadWorkspaceSourceIndex()
     const canonicalOwnership = restoredPaths.filter(restoredPath => sourceIndex[restoredPath])

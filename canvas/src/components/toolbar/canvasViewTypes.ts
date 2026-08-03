@@ -47,6 +47,8 @@ export type CanvasViewOptionId =
 export type CanvasViewOption = {
   id: CanvasViewOptionId
   title: string
+  rowLabel?: string
+  valueLabel?: string
   label: string
   description?: string
   badges?: readonly string[]
@@ -62,6 +64,7 @@ export type CanvasViewOption = {
 export type CanvasViewRendererOption = {
   id: Canvas2dRendererId
   title: string
+  valueLabel: string
   Icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>
   label: string
   description: string

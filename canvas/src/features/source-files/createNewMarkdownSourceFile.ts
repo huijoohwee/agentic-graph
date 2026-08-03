@@ -11,6 +11,7 @@ import {
   resolveWorkspaceDocumentCanvasPreset,
 } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 import { applyCanvasFrontmatterPreset } from '@/features/parsers/canvasFrontmatterPreset'
+import { waitForCanvasFrontmatterSurfaceTransition } from '@/features/parsers/canvasFrontmatterSurfaceTransition'
 import { upsertWorkspaceMarkdownSourceFile } from './upsertWorkspaceMarkdownSourceFile'
 
 export type CreateNewMarkdownSourceFileArgs = {
@@ -79,7 +80,10 @@ export async function createNewMarkdownSourceFile(args?: CreateNewMarkdownSource
     documentName: createdPath,
     rawText: created.text,
   })
-  if (canvasPreset) applyCanvasFrontmatterPreset({ preset: canvasPreset })
+  if (canvasPreset) {
+    applyCanvasFrontmatterPreset({ preset: canvasPreset })
+    await waitForCanvasFrontmatterSurfaceTransition()
+  }
   openMarkdownWorkspaceEditorPane(useGraphStore.getState())
   useMarkdownExplorerStore.getState().setActivePath(createdPath)
   return createdPath

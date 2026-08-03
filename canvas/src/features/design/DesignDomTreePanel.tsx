@@ -19,6 +19,7 @@ import {
   UI_RESPONSIVE_FLOATING_PANEL_SUBPANEL_CLASSNAME,
 } from '@/lib/ui/responsiveElementClasses'
 import { cn } from '@/lib/utils'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 import type { GraphNode, JSONValue } from '@/lib/graph/types'
 
@@ -238,7 +239,7 @@ export default function DesignDomTreePanel({ active }: { active: boolean }) {
                   return (
                     <li key={id} className={cn('border-b last:border-b-0', UI_THEME_TOKENS.panel.border)}>
                       <section
-                        className={cn(UI_RESPONSIVE_DESIGN_PANEL_TREE_ROW_CLASSNAME, selected ? 'bg-blue-50 dark:bg-blue-900/20' : '')}
+                        className={cn(UI_RESPONSIVE_DESIGN_PANEL_TREE_ROW_CLASSNAME, uiSelectedRowStateClassName(selected))}
                         style={{ paddingLeft: 8 + depth * 12 }}
                       >
                         <button

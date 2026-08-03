@@ -19,6 +19,7 @@ import {
 } from '@/features/source-files/sourceFilesPocketBaseYjsRoom'
 import { normalizeWorkspacePath, workspaceDocumentKey } from '@/features/workspace-fs/path'
 import type { WorkspacePath } from '@/features/workspace-fs/types'
+import { readKnowgrphCollaborationSaveSessionToken } from '@/lib/storage/knowgrphStorageChatClient'
 
 type SaveBoundary = 'explicit' | 'autosave'
 
@@ -216,6 +217,7 @@ export function useSourceFilesPocketBaseYjsCollaborationRuntime(args: {
   const saveSnapshot = React.useCallback(async (saveArgs?: { path?: WorkspacePath | null; saveBoundary?: SaveBoundary; text?: string | null }) => {
     const room = roomRef.current
     if (!room) return
+    if (!readKnowgrphCollaborationSaveSessionToken()) return
     const snapshot = room.readSnapshot()
     if (!shouldSavePocketBaseYjsSnapshotForWorkspacePath({
       activeDocumentKey: liveDocumentKey,

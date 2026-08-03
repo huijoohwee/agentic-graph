@@ -1,5 +1,6 @@
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
+import { uiSelectableRowClassName } from 'grph-shared/ui/selectedRowClasses'
 
 export type UiMenuButtonVariant = 'default' | 'selected'
 
@@ -13,10 +14,7 @@ export function uiMenuDividerClassName(extra?: string): string {
 
 export function uiMenuItemButtonClassName(variant: UiMenuButtonVariant, extra?: string): string {
   const base = 'w-full text-left px-2 py-1.5 rounded text-xs'
-  if (variant === 'selected') {
-    return cn(base, UI_THEME_TOKENS.button.activeBg, UI_THEME_TOKENS.button.activeText, extra)
-  }
-  return cn(base, UI_THEME_TOKENS.button.hoverBg, extra)
+  return cn(base, uiSelectableRowClassName(variant === 'selected'), extra)
 }
 
 export function uiMenuPillButtonClassName(selected: boolean, extra?: string): string {

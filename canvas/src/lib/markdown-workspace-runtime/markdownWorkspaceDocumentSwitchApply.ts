@@ -12,6 +12,7 @@ import {
 } from '@/lib/markdown/frontmatter'
 import { isWorkspaceDocumentCanvasGraphApplyDisabled } from '@/lib/markdown/workspaceDocumentCanvasApplyPolicy'
 import { resolveWorkspaceDocumentCanvasPreset } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
+import type { WorkspaceSourceTextSnapshot } from '@/features/workspace-fs/workspaceSourceTextTransaction'
 
 export function resolveWorkspaceDocumentSwitchCanvasPreset(args: {
   activeDocumentKey: string
@@ -85,26 +86,24 @@ export function shouldHydrateStableWorkspaceSelectionText(args: {
   return String(args.currentText || '') !== String(args.nextText || '')
 }
 
-export function shouldPrimeWorkspaceDocumentSwitchCanvas(args: {
+export function shouldApplyWorkspaceDocumentSwitchSnapshot(args: {
   activePath: WorkspacePath | null
   pendingSwitchPath: WorkspacePath | null
   activeEntryKind: string
   activeDocumentKey?: string | null
-  inlineText: string
-  markdownDocumentName?: string | null
-  markdownDocumentText?: string | null
+  snapshot: WorkspaceSourceTextSnapshot<string>
 }): boolean {
   const activePath = normalizeMarkdownWorkspaceSelectionPath(args.activePath)
   const pendingSwitchPath = normalizeMarkdownWorkspaceSelectionPath(args.pendingSwitchPath)
-  if (!activePath || pendingSwitchPath !== activePath) return false
-  if (args.activeEntryKind !== 'file') return false
-  const activeDocumentKey = String(args.activeDocumentKey || '').trim()
-  if (!activeDocumentKey) return false
-  if (
-    String(args.markdownDocumentName || '').trim() === activeDocumentKey
-    && String(args.markdownDocumentText || '').trim()
-  ) return false
-  return !String(args.inlineText || '').trim()
+  const snapshotPath = normalizeMarkdownWorkspaceSelectionPath(args.snapshot.revision.path)
+  if (!activePath || pendingSwitchPath !== activePath || snapshotPath !== activePath) return false
+  if (!args.snapshot.current) return false
+  return shouldAcceptWorkspaceDocumentSelectionText({
+    activePath,
+    activeEntryKind: args.activeEntryKind,
+    activeDocumentKey: args.activeDocumentKey,
+    text: args.snapshot.value,
+  })
 }
 
 export function isWorkspaceGraphSourceStaleForDocument(args: {
@@ -228,26 +227,13 @@ export type WorkspaceDocumentSwitchApplyStatus = 'applied' | 'settled' | 'deferr
 
 export function useMarkdownWorkspaceDocumentSwitchApply(args: {
   activePath: WorkspacePath | null
-  canonicalMarkdownText: string
   readPendingSwitchNextPath: () => WorkspacePath | null
   setActiveMarkdownDocument: MarkdownWorkspaceRuntimeSetActiveDocument
-  prime?: {
-    activeEntryKind: string
-    activeDocumentKey: string
-    activeDocumentSourceUrl: string | null
-    inlineText: string
-    updatedAtMs: unknown
-    graphDataSource?: string | null
-    markdownDocumentName: string
-    markdownDocumentText: string
-    canvas2dRenderer?: string | null
-  }
 }) {
   const lastDocumentSwitchApplySigRef = React.useRef<string>('')
   const documentSwitchApplyInFlightSigRef = React.useRef<string>('')
   const lastDocumentSwitchApplyAttemptRef = React.useRef<{ sig: string; atMs: number }>({ sig: '', atMs: 0 })
   const documentSwitchApplyRetryTimerRef = React.useRef<number | null>(null)
-  const primedSwitchPathRef = React.useRef<WorkspacePath | null>(null)
   const [documentSwitchApplyRetryTick, setDocumentSwitchApplyRetryTick] = React.useState(0)
 
   const clearDocumentSwitchApplyRetry = React.useCallback(() => {
@@ -304,7 +290,9 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
         setActiveMarkdownDocument: args.setActiveMarkdownDocument,
         name: applyArgs.activeDocumentKey,
         text: applyArgs.text,
-        canonicalMarkdownText: args.canonicalMarkdownText,
+        canonicalMarkdownText: applyArgs.markdownDocumentText,
+        expectedCurrentDocumentName: applyArgs.markdownDocumentName,
+        expectedCurrentDocumentText: applyArgs.markdownDocumentText,
         sourceUrl: applyArgs.sourceUrl,
         autoEnableFrontmatter: false,
         applyViewPreset: false,
@@ -345,7 +333,9 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
         setActiveMarkdownDocument: args.setActiveMarkdownDocument,
         name: applyArgs.activeDocumentKey,
         text: applyArgs.text,
-        canonicalMarkdownText: args.canonicalMarkdownText,
+        canonicalMarkdownText: applyArgs.markdownDocumentText,
+        expectedCurrentDocumentName: applyArgs.markdownDocumentName,
+        expectedCurrentDocumentText: applyArgs.markdownDocumentText,
         sourceUrl: applyArgs.sourceUrl,
         autoEnableFrontmatter: true,
         applyViewPreset: true,
@@ -367,37 +357,7 @@ export function useMarkdownWorkspaceDocumentSwitchApply(args: {
         documentSwitchApplyInFlightSigRef.current = ''
       }
     }
-  }, [args.canonicalMarkdownText, args.setActiveMarkdownDocument])
-
-  React.useLayoutEffect(() => {
-    const prime = args.prime
-    const pendingSwitchPath = args.readPendingSwitchNextPath()
-    if (!pendingSwitchPath) {
-      primedSwitchPathRef.current = null
-      return
-    }
-    if (primedSwitchPathRef.current === pendingSwitchPath) return
-    if (!prime || !shouldPrimeWorkspaceDocumentSwitchCanvas({
-      activePath: args.activePath,
-      pendingSwitchPath,
-      activeEntryKind: prime.activeEntryKind,
-      activeDocumentKey: prime.activeDocumentKey,
-      inlineText: prime.inlineText,
-      markdownDocumentName: prime.markdownDocumentName,
-      markdownDocumentText: prime.markdownDocumentText,
-    })) return
-    primedSwitchPathRef.current = pendingSwitchPath
-    void applySelectedWorkspaceDocumentToCanvas({
-      activeDocumentKey: prime.activeDocumentKey,
-      text: '',
-      sourceUrl: prime.activeDocumentSourceUrl,
-      updatedAtMs: prime.updatedAtMs,
-      graphDataSource: prime.graphDataSource,
-      markdownDocumentName: prime.markdownDocumentName,
-      markdownDocumentText: prime.markdownDocumentText,
-      canvas2dRenderer: prime.canvas2dRenderer,
-    })
-  }, [args.activePath, args.prime, args.readPendingSwitchNextPath, applySelectedWorkspaceDocumentToCanvas])
+  }, [args.setActiveMarkdownDocument])
 
   return {
     applySelectedWorkspaceDocumentToCanvas,

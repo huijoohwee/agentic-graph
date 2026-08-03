@@ -74,9 +74,20 @@ export function useMarkdownWorkspaceBootstrapState(args: {
   const presentationApiRef = React.useRef<MarkdownPresentationApi | null>(null)
   const [highlightedLineRange, setHighlightedLineRange] = React.useState<HighlightedLineRange>(null)
   const lastLoadedRef = React.useRef<{ path: WorkspacePath; text: string } | null>(null)
-  const [activeText, setActiveText] = React.useState('')
   const activeTextRef = React.useRef('')
-  activeTextRef.current = activeText
+  const [activeText, setActiveTextState] = React.useState('')
+  const setActiveText = React.useCallback<React.Dispatch<React.SetStateAction<string>>>(next => {
+    if (typeof next === 'string') {
+      activeTextRef.current = next
+      setActiveTextState(next)
+      return
+    }
+    setActiveTextState(previous => {
+      const resolved = next(previous)
+      activeTextRef.current = resolved
+      return resolved
+    })
+  }, [])
   const [viewerInlineEditActive, setViewerInlineEditActive] = React.useState(false)
   const viewerInlineEditActiveRef = React.useRef(false)
   viewerInlineEditActiveRef.current = viewerInlineEditActive

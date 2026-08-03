@@ -1,5 +1,4 @@
 import type { WorkspaceEntry, WorkspacePath } from '@/features/workspace-fs/types'
-import { readEnvString } from '@/lib/config.env'
 import { normalizeWorkspacePath, workspaceExtLower } from '@/features/workspace-fs/path'
 import { getWorkspaceFs } from '@/features/workspace-fs/workspaceFs'
 import {
@@ -26,7 +25,7 @@ import {
 } from 'grph-shared/collaboration/documentRepositoryAuthority'
 import { KNOWGRPH_STORAGE_SYNC_BOUNDS } from '@/lib/storage/knowgrphStorageBounds'
 import {
-  readKnowgrphStorageChatRelayConfig,
+  requireKnowgrphCollaborationSaveSessionToken,
 } from '@/lib/storage/knowgrphStorageChatClient'
 
 type FetchLike = NonNullable<KnowgrphStorageSyncNowArgs['fetchImpl']>
@@ -34,21 +33,6 @@ type FetchLike = NonNullable<KnowgrphStorageSyncNowArgs['fetchImpl']>
 const SUPPORTED_MARKDOWN_EXTENSIONS = new Set(['md', 'markdown', 'mdx'])
 
 const normalizeString = (value: unknown): string => String(value || '').trim()
-
-const resolveCollaborationSaveSessionToken = (
-  explicitToken?: string | null,
-): string => {
-  const token = explicitToken == null
-    ? String(
-        readKnowgrphStorageChatRelayConfig()?.sessionToken
-        || readEnvString('VITE_KNOWGRPH_STORAGE_CHAT_SESSION_TOKEN', ''),
-      )
-    : String(explicitToken)
-  if (!token || token.length > 8_192 || /\s/.test(token)) {
-    throw new Error('Authenticated storage session is required for collaboration save.')
-  }
-  return token
-}
 
 export type SourceFileCanonicalCloudTarget = {
   workspacePath: WorkspacePath
@@ -225,7 +209,7 @@ export const syncWorkspaceEntryToCanonicalCloud = async (args: {
   const baseUrl = resolveMutatingKnowgrphStorageBaseUrl(
     normalizeString(args.baseUrl) || readKnowgrphStorageBaseUrl(),
   )
-  const sessionToken = resolveCollaborationSaveSessionToken(args.sessionToken)
+  const sessionToken = requireKnowgrphCollaborationSaveSessionToken(args.sessionToken)
   const fetchImpl = getFetch(args.fetchImpl)
   const fs = await getWorkspaceFs()
   const text = String((await fs.readFileText(target.workspacePath)) ?? args.entry.text ?? '')

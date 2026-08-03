@@ -9,6 +9,7 @@ import {
   StoryboardWidgetInspectorJsonButton,
   type StoryboardWidgetInspectorJsonTarget,
 } from './StoryboardWidgetInspectorJsonButton'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 export function StoryboardWidgetInspectorWorkflowTab(props: {
   active: boolean
@@ -63,7 +64,7 @@ export function StoryboardWidgetInspectorWorkflowTab(props: {
               const isSelected = !!id && id === String(workflowSelectedNodeId || '')
               return (
                 <li key={id}>
-                  <article className={`w-full rounded-lg border px-2 py-2 ${isSelected ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.input.border}` : `${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border}`}`}>
+                  <article className={`w-full rounded-lg px-2 py-2 ${isSelected ? uiSelectedRowStateClassName(true) : `border ${UI_THEME_TOKENS.panel.bg} ${UI_THEME_TOKENS.input.border}`}`}>
                     <header className="flex items-center justify-between gap-2">
                       <button
                         type="button"

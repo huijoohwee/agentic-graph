@@ -135,6 +135,43 @@ export async function testHomePromptPresetCatalogUsesCanonicalPublishedStorage()
   }
 }
 
+export async function testHomePromptPresetCatalogUsesCanonicalRepoLocalDocsSource() {
+  const { restore } = initJsdomHarness()
+  const globals = globalThis as typeof globalThis & { fetch?: typeof fetch }
+  const originalFetch = globals.fetch
+  const previousRepoLocal = process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+  const previousAgenticDocsRoot = process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT
+  const agenticDocsRoot = `/canonical-agentic-docs-${Date.now()}`
+  const requestedRoots: string[] = []
+  try {
+    process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = '1'
+    process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT = agenticDocsRoot
+    globals.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      if (url !== '/__kg_fs_list') return new Response('', { status: 404 })
+      const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
+      requestedRoots.push(String(body.path || ''))
+      return Response.json({
+        ok: true,
+        files: [{ relPath: 'PROMPT-PRESETS.md', text: promptCatalogMarkdown, updatedAtMs: 1 }],
+      })
+    }) as typeof fetch
+
+    const catalog = await loadPromptPresetCatalog()
+    if (isPromptPresetCatalogError(catalog)) throw new Error(catalog.error)
+    if (requestedRoots.length !== 1 || requestedRoots[0] !== agenticDocsRoot) {
+      throw new Error(`expected canonical repo-local docs root, got ${JSON.stringify(requestedRoots)}`)
+    }
+  } finally {
+    globals.fetch = originalFetch
+    if (typeof previousRepoLocal === 'string') process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL = previousRepoLocal
+    else delete process.env.VITE_KNOWGRPH_RUN_READY_REPO_LOCAL
+    if (typeof previousAgenticDocsRoot === 'string') process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT = previousAgenticDocsRoot
+    else delete process.env.VITE_WORKSPACE_INITIALIZATION_AGENTIC_CANVAS_OS_DOCS_ABS_ROOT
+    restore()
+  }
+}
+
 export async function testFloatingPanelChatPromptPresetCatalogRejectsInvocationRouteDrift() {
   const driftedCatalogs = [
     promptCatalogMarkdown.replace(

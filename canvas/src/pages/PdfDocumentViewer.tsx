@@ -15,6 +15,7 @@ import {
   PDF_DOCUMENT_VIEWER_READING_CONTAINER_CLASS_NAME,
   PDF_DOCUMENT_VIEWER_TOC_CLASS_NAME,
 } from '@/pages/pageResponsiveClasses'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 type LayoutPreset = 'reading' | 'paged'
 
@@ -228,7 +229,7 @@ export default function PdfDocumentViewer() {
                       type="button"
                       className={
                         activeAnchorId === n.id
-                          ? `w-full text-left px-2 py-1 rounded border ${UI_THEME_TOKENS.button.activeBorder} ${UI_THEME_TOKENS.button.activeBg} hover:opacity-90`
+                          ? `w-full text-left px-2 py-1 rounded ${uiSelectedRowStateClassName(true)} hover:opacity-90`
                           : 'w-full text-left px-2 py-1 rounded hover:opacity-90'
                       }
                       onClick={() => {

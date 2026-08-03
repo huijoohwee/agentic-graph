@@ -6,6 +6,7 @@ import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import type { GraphData } from '@/lib/graph/types'
 import { createSubgraph, readSubgraphs, removeSubgraph, subgraphGroupId, updateSubgraph, writeSubgraphs, type UserSubgraph } from '@/lib/graph/subgraphs'
 import { TwoColumnEditorGrid } from '@/features/panels/ui/TwoColumnEditorGrid'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 const toggleInSet = (set: Set<string>, id: string): Set<string> => {
   const next = new Set(set)
@@ -148,7 +149,7 @@ export function GraphEditorOutlineTab() {
                   <section className="flex items-center justify-between gap-2">
                     <button
                       type="button"
-                      className={`flex-1 truncate rounded-md px-2 py-1 text-left text-xs ${isSelected ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}` : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
+                      className={`flex-1 truncate rounded-md px-2 py-1 text-left text-xs ${isSelected ? uiSelectedRowStateClassName(true) : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
                       onClick={() => {
                         setSelectionSource('editor')
                         selectEdge(null)
@@ -246,7 +247,7 @@ export function GraphEditorOutlineTab() {
             const isSel = id && id === selectedNodeId
             const isChecked = checked.has(id)
             return (
-              <section key={id} className={`flex items-center gap-2 rounded-md px-2 py-1 ${isSel ? UI_THEME_TOKENS.button.activeBg : ''}`}>
+              <section key={id} className={`flex items-center gap-2 rounded-md px-2 py-1 ${uiSelectedRowStateClassName(Boolean(isSel))}`}>
                 <input
                   type="checkbox"
                   checked={isChecked}
@@ -255,7 +256,7 @@ export function GraphEditorOutlineTab() {
                 />
                 <button
                   type="button"
-                  className={`flex-1 truncate text-left text-xs ${isSel ? UI_THEME_TOKENS.button.activeText : UI_THEME_TOKENS.button.text}`}
+                  className={`flex-1 truncate text-left text-xs ${isSel ? '' : UI_THEME_TOKENS.button.text}`}
                   onClick={() => {
                     setSelectionSource('editor')
                     selectGroup(null)

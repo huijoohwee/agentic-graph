@@ -580,3 +580,126 @@ export async function testCardInlineTextEditorViewerSurfaceKeepsFocusedDomWhenRe
     restore()
   }
 }
+
+export async function testCardInlineTextEditorViewerSurfaceCommitsBeforeExternalPointerTransition() {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  const committedValues: string[] = []
+  function Harness() {
+    const [mounted, setMounted] = React.useState(true)
+    return React.createElement('section', {
+      onPointerDown: () => setMounted(false),
+    }, [
+      mounted
+        ? React.createElement(CardInlineTextEditor, {
+          key: 'editor',
+          value: 'Initial summary',
+          ariaLabel: 'Summary for pointer transition',
+          placeholder: 'Add summary',
+          canEdit: true,
+          editActivation: 'click',
+          editorSurface: 'viewer',
+          inlineChipDensity: 'compact',
+          multiline: true,
+          onCommit: value => committedValues.push(value),
+        })
+        : null,
+      React.createElement('button', { key: 'external', type: 'button', 'data-external-transition': '1' }, 'Continue'),
+    ])
+  }
+  try {
+    await act(async () => {
+      root.render(React.createElement(Harness))
+      await waitForFrames(dom.window, 8)
+    })
+    const display = container.querySelector('[aria-label="Summary for pointer transition"][data-kg-card-inline-edit="1"]')
+    if (!(display instanceof dom.window.HTMLElement)) throw new Error('expected click-activated Viewer summary display')
+    await act(async () => {
+      display.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }))
+      display.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))
+      await waitForFrames(dom.window, 8)
+    })
+    const editor = container.querySelector('[data-kg-card-inline-viewer-edit-surface="1"][contenteditable="true"]')
+    if (!(editor instanceof dom.window.HTMLElement)) throw new Error('expected Viewer summary editor')
+    await act(async () => {
+      editor.textContent = 'Persisted before transition'
+      Simulate.input(editor)
+      await waitForFrames(dom.window, 4)
+    })
+    const externalTransition = container.querySelector('[data-external-transition="1"]')
+    if (!(externalTransition instanceof dom.window.HTMLButtonElement)) throw new Error('expected an external transition target')
+    await act(async () => {
+      externalTransition.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }))
+      await waitForFrames(dom.window, 4)
+    })
+    if (committedValues.at(-1) !== 'Persisted before transition') {
+      throw new Error(`expected Viewer summary draft to commit before an external pointer transition can unmount it, got ${JSON.stringify(committedValues)}`)
+    }
+    if (container.querySelector('[data-kg-card-inline-viewer-edit-surface="1"]')) {
+      throw new Error('expected external transition harness to unmount the Viewer editor after the capture-phase commit')
+    }
+  } finally {
+    await act(async () => {
+      root.unmount()
+    })
+    restore()
+  }
+}
+
+export async function testCardInlineTextEditorViewerSurfaceCommitsDuringUnmountWithoutBlur() {
+  const { dom, restore } = initJsdomHarness()
+  const container = dom.window.document.createElement('section')
+  dom.window.document.body.appendChild(container)
+  const root = createRoot(container)
+  const committedValues: string[] = []
+  let unmountEditor: (() => void) | null = null
+  function Harness() {
+    const [mounted, setMounted] = React.useState(true)
+    unmountEditor = () => setMounted(false)
+    return mounted ? React.createElement(CardInlineTextEditor, {
+      value: 'Initial summary',
+      ariaLabel: 'Summary for unmount transition',
+      placeholder: 'Add summary',
+      canEdit: true,
+      editActivation: 'click',
+      editorSurface: 'viewer',
+      inlineChipDensity: 'compact',
+      multiline: true,
+      onCommit: value => committedValues.push(value),
+    }) : null
+  }
+  try {
+    await act(async () => {
+      root.render(React.createElement(Harness))
+      await waitForFrames(dom.window, 8)
+    })
+    const display = container.querySelector('[aria-label="Summary for unmount transition"][data-kg-card-inline-edit="1"]')
+    if (!(display instanceof dom.window.HTMLElement)) throw new Error('expected click-activated Viewer summary display')
+    await act(async () => {
+      display.dispatchEvent(new dom.window.MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }))
+      display.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))
+      await waitForFrames(dom.window, 8)
+    })
+    const editor = container.querySelector('[data-kg-card-inline-viewer-edit-surface="1"][contenteditable="true"]')
+    if (!(editor instanceof dom.window.HTMLElement)) throw new Error('expected Viewer summary editor')
+    await act(async () => {
+      editor.textContent = 'Persisted during unmount'
+      Simulate.input(editor)
+      await waitForFrames(dom.window, 4)
+    })
+    await act(async () => {
+      unmountEditor?.()
+      await waitForFrames(dom.window, 4)
+    })
+    if (committedValues.at(-1) !== 'Persisted during unmount') {
+      throw new Error(`expected Viewer summary draft to commit during a non-blur unmount, got ${JSON.stringify(committedValues)}`)
+    }
+  } finally {
+    await act(async () => {
+      root.unmount()
+    })
+    restore()
+  }
+}

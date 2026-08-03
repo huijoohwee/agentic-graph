@@ -1,6 +1,7 @@
 import React from 'react'
 import { ChevronDown, Download } from 'lucide-react'
 import { WORKSPACE_EXPORT_MENU_ITEMS, type ExportMenuActionKey } from '@/lib/toolbar/exportMenuSsot'
+import { WorkspaceLaunchRowValue } from './WorkspaceLaunchRowValue'
 
 export type LaunchDropdownExportActions = Partial<Record<ExportMenuActionKey, () => void>>
 
@@ -71,6 +72,7 @@ export function LaunchDropdownExportMenu({
         <button
           type="button"
           className={menuItemClass}
+          aria-label="Export"
           disabled={!canExport}
           aria-expanded={canExport ? exportMenuOpen : undefined}
           aria-controls={canExport ? exportMenuId : undefined}
@@ -82,6 +84,7 @@ export function LaunchDropdownExportMenu({
         >
           <Download className={menuIconClass} strokeWidth={1.6} />
           <span className="truncate">Export</span>
+          <WorkspaceLaunchRowValue label="Export" value="Configure" optionId="export:configure" />
           <ChevronDown className={`ml-auto ${menuIconClass} transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} strokeWidth={1.6} aria-hidden="true" />
         </button>
         {exportMenuOpen ? (

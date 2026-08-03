@@ -7,6 +7,7 @@ import { StoryboardWidgetOverlayPortHandles } from '@/components/StoryboardWidge
 import { StoryboardCardMediaDropSlot2d } from '@/components/StoryboardWidgetCanvas/StoryboardCardMediaDropSlot2d'
 import { StoryboardCardOutputEditSurface, StoryboardCardTextEditSurface } from '@/components/StoryboardWidgetCanvas/StoryboardCardTextEditSurface'
 import { commitStoryboardCardCanonicalText2d } from '@/components/StoryboardWidgetCanvas/storyboardCardCanonicalTextCommit2d'
+import { resolveStoryboardCardEditGraphAuthority } from '@/components/StoryboardWidgetCanvas/storyboardCardEditGraphAuthority'
 import { buildStoryboardCardTextModel } from '@/components/StoryboardWidgetCanvas/storyboardCardTextModel'
 import { readStoryboardCardCenter2d, readStoryboardCardSize2d, type StoryboardCardPlacement } from '@/components/StoryboardWidgetCanvas/storyboardCardPlacements2d'
 import { isStoryboardHeaderDragBlockedTarget, StoryboardCardResizeHandle, useStoryboardCardOverlayInteractions2d, useStoryboardCardOverlayWheelForwarding } from '@/components/StoryboardWidgetCanvas/storyboardCardOverlayInteractions2d'
@@ -386,10 +387,12 @@ export function StoryboardCardOverlayLayer2d(props: {
   const readLatestNode = React.useCallback((id: string): GraphNode | null => {
     const key = String(id || '').trim()
     if (!key) return null
+    const renderedNode = nodeById.get(key) || resolveGraphNodeByCanonicalId(graphData, key)
+    if (renderedNode) return renderedNode
     const latestGraphData = useGraphStore.getState().graphData
     const latestNode = resolveGraphNodeByCanonicalId(latestGraphData, key)
     if (latestNode) return latestNode
-    return nodeById.get(key) || resolveGraphNodeByCanonicalId(graphData, key) || null
+    return null
   }, [graphData, nodeById])
   const commitNodePatch = React.useCallback((card: StoryboardCardModel, patch: Partial<GraphNode>, historyLabel: string) => {
     const id = String(card.id || '').trim()
@@ -404,8 +407,13 @@ export function StoryboardCardOverlayLayer2d(props: {
     preserveFormatting?: boolean
     propertyKeys: readonly string[]
   }) => {
-    const liveGraphData = useGraphStore.getState().graphData || graphData
-    const node = readLatestNode(card.id)
+    const authority = resolveStoryboardCardEditGraphAuthority({
+      cardId: card.id,
+      renderedGraphData: graphData,
+      storeGraphData: useGraphStore.getState().graphData,
+    })
+    const liveGraphData = authority.graphData
+    const node = authority.node || readLatestNode(card.id)
     commitStoryboardCardCanonicalText2d({
       ...args,
       addHistory,

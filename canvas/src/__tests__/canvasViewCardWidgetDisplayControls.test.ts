@@ -85,6 +85,8 @@ export function testCardWidgetDisplayControlsAreRendererNeutral() {
   }
   if (
     cardControl.title !== 'Display: Card (Default)'
+    || cardControl.rowLabel !== 'Display'
+    || cardControl.valueLabel !== 'Card (Default)'
     || cardControl.label !== 'Card'
     || cardControl.description !== 'Card presentation'
   ) {
@@ -92,6 +94,8 @@ export function testCardWidgetDisplayControlsAreRendererNeutral() {
   }
   if (
     widgetControl.title !== 'Display: Widget'
+    || widgetControl.rowLabel !== 'Display'
+    || widgetControl.valueLabel !== 'Widget'
     || widgetControl.label !== 'Widget'
     || widgetControl.description !== 'Widget presentation'
   ) {

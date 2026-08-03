@@ -20,6 +20,11 @@ import {
 } from '@/features/workspace-fs/workspaceInlineText'
 import { recordDocumentVersionSnapshot } from '@/features/document-versioning/documentVersioning'
 import { preferCanonicalYamlFrontmatterFencedText } from '@/lib/markdown/frontmatter'
+import {
+  enqueueWorkspaceSourceTextTransaction,
+  isWorkspaceSourceTextRevisionCurrent,
+  type WorkspaceSourceTextRevision,
+} from '@/features/workspace-fs/workspaceSourceTextTransaction'
 
 export const pushWorkspaceTextToActiveMarkdownDocument = (args: {
   activeDocumentKey: string
@@ -203,8 +208,10 @@ export const writeWorkspaceFileAndSync = async (args: {
   jsonSourceText?: string | null
   setActiveMarkdownDocument?: MarkdownWorkspaceRuntimeSetActiveDocument
   setGraphRagWorkflowJsonText?: (text: string) => void
+  expectedSourceRevision?: WorkspaceSourceTextRevision
+  expectedWorkspaceText?: string | null
   resetParsedState: boolean
-}): Promise<void> => {
+}): Promise<boolean> => {
   const lastLoaded = args.lastLoadedRef.current
   const textToWrite = lastLoaded && lastLoaded.path === args.path
     ? preferCanonicalYamlFrontmatterFencedText({
@@ -212,10 +219,24 @@ export const writeWorkspaceFileAndSync = async (args: {
         canonicalText: lastLoaded.text,
       })
     : args.text
-  if (args.skipWrite !== true) {
-    const fs = await args.getFs()
-    await fs.writeFileText(args.path, textToWrite)
-  }
+  const hasExpectedWorkspaceText = Object.prototype.hasOwnProperty.call(args, 'expectedWorkspaceText')
+  const transaction = await enqueueWorkspaceSourceTextTransaction({
+    path: args.path,
+    text: textToWrite,
+    expectedRevision: args.expectedSourceRevision,
+    write: async ({ path, text }) => {
+      if (args.skipWrite === true) return true
+      const fs = await args.getFs()
+      if (hasExpectedWorkspaceText) {
+        const currentText = String(await fs.readFileText(path) ?? '')
+        const expectedWorkspaceText = String(args.expectedWorkspaceText ?? '')
+        if (currentText !== expectedWorkspaceText && currentText !== text) return false
+        if (currentText === text) return true
+      }
+      await fs.writeFileText(path, text)
+    },
+  })
+  if (!transaction.accepted || !isWorkspaceSourceTextRevisionCurrent(transaction.revision)) return false
   recordDocumentVersionSnapshot({
     path: args.path,
     text: textToWrite,
@@ -238,6 +259,7 @@ export const writeWorkspaceFileAndSync = async (args: {
       setGraphRagWorkflowJsonText: args.setGraphRagWorkflowJsonText,
     })
   }
+  return true
 }
 
 export const resolveAuthoritativeWorkspaceText = async (args: {

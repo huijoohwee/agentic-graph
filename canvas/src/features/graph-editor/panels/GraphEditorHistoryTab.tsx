@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 
 export function GraphEditorHistoryTab() {
   const { history, historyIndex, restoreHistory } = useGraphStore(
@@ -29,7 +30,7 @@ export function GraphEditorHistoryTab() {
             <button
               key={h.id}
               type="button"
-              className={`w-full rounded-md px-2 py-2 text-left text-xs ${isActive ? `${UI_THEME_TOKENS.button.activeBg} ${UI_THEME_TOKENS.button.activeText}` : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
+              className={`w-full rounded-md px-2 py-2 text-left text-xs ${isActive ? uiSelectedRowStateClassName(true) : `${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.button.hoverBg}`}`}
               onClick={() => restoreHistory(idx)}
               aria-label={`Restore ${h.label}`}
             >
@@ -41,4 +42,3 @@ export function GraphEditorHistoryTab() {
     </section>
   )
 }
-
