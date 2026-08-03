@@ -58,6 +58,8 @@ async function main() {
     })
     const spatialCaptureChrome = page.locator('[data-kg-canvas-xr-surface-kind="spatial-capture"]').first()
     await spatialCaptureChrome.waitFor({ state: 'attached', timeout: 30_000 })
+    const fallbackAction = page.locator('[data-kg-canvas-xr-fallback-action="open-motion-control"]').first()
+    await fallbackAction.waitFor({ state: 'visible', timeout: 30_000 })
     await page.waitForFunction(
       () => {
         const node = document.querySelector('[data-kg-canvas-xr-surface-kind="spatial-capture"]')
@@ -77,6 +79,10 @@ async function main() {
       reasonCodes: node.getAttribute('data-kg-canvas-xr-capability-reasons'),
       surfaceKind: node.getAttribute('data-kg-canvas-xr-surface-kind'),
     }))
+    const fallbackEvidence = await fallbackAction.evaluate(node => ({
+      fallbackAction: node.getAttribute('data-kg-canvas-xr-fallback-action'),
+      fallbackLabel: node.textContent?.trim() || '',
+    }))
     assert.equal(evidence.surfaceKind, 'spatial-capture')
     assert.equal(evidence.entryMode, 'monocular-capture')
     assert.equal(evidence.recommendedEntryMode, 'monocular-capture')
@@ -84,11 +90,28 @@ async function main() {
     assert.equal(evidence.inlineViewer, '1')
     assert.equal(evidence.monocularCapture, '1')
     assert.match(String(evidence.reasonCodes || ''), /\bimmersive_viewer_unavailable\b/)
+    assert.equal(fallbackEvidence.fallbackAction, 'open-motion-control')
+    assert.equal(fallbackEvidence.fallbackLabel, 'Open camera capture')
+    await fallbackAction.click()
+    const routedOwnerEvidence = await page.evaluate(async () => {
+      const [{ readSpatialCapturePrimaryMode }, { motionControlCaptureSurfaceCurrentlyOpen }] = await Promise.all([
+        import('/src/features/three/xrSpatialCaptureTools.ts'),
+        import('/src/features/three/motionControlSurfaceRuntime.ts'),
+      ])
+      return {
+        primaryModeAfterAction: readSpatialCapturePrimaryMode(),
+        motionControlSurfaceOpen: motionControlCaptureSurfaceCurrentlyOpen(),
+      }
+    })
+    assert.equal(routedOwnerEvidence.primaryModeAfterAction, 'capture')
+    assert.equal(routedOwnerEvidence.motionControlSurfaceOpen, true)
     const fullEvidence = {
       schema: 'knowgrph-xr-spatial-capture-browser-smoke/v1',
       route: smokeUrl,
       ...readSourceEvidence(),
       ...evidence,
+      ...fallbackEvidence,
+      ...routedOwnerEvidence,
     }
     await mkdir(outputDirectory, { recursive: true })
     await writeFile(evidencePath, `${JSON.stringify(fullEvidence, null, 2)}\n`, 'utf8')

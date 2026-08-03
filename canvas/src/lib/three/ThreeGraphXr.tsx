@@ -4,6 +4,7 @@ import type { WebGLRenderer } from 'three'
 import {
   readSpatialCaptureTool,
   readSpatialCaptureToolLabel,
+  setSpatialCapturePrimaryMode,
   subscribeSpatialCaptureTool,
 } from '@/features/three/xrSpatialCaptureTools'
 import type { SpatialCaptureToolId } from '@/features/three/xrSpatialCaptureTools'
@@ -35,6 +36,7 @@ import {
   type XrArSpaceLike,
 } from '@/features/three/xrArPlacementRuntime'
 import { isXrPhysicsRunReadyDemoActive } from '@/features/workspace-fs/workspaceRunReadyDemos'
+import { openMotionControlSurface } from '@/features/three/motionControlSurfaceRuntime'
 import { useGraphStore } from '@/hooks/useGraphStore'
 
 export function OverlayFrameSync({ enabled, scheduleRef }: { enabled: boolean; scheduleRef: React.MutableRefObject<(() => void) | null> }) {
@@ -389,6 +391,30 @@ export function CanvasXrEntryPanel({
   }, [rendererRef, sessionMode])
 
   if (!active || isXrPhysicsRunReadyDemoActive(markdownDocumentName, markdownDocumentText)) return null
+  const spatialCaptureFallback = surfaceKind === 'spatial-capture'
+    && status === 'unsupported'
+    && capabilitySnapshot.recommended_entry_mode === 'monocular-capture' ? (
+      <section
+        aria-label="XR camera fallback"
+        data-kg-canvas-xr-fallback="monocular-capture"
+        className="absolute right-3 top-3 z-[90] pointer-events-auto rounded-md border border-[var(--kg-border)] bg-[var(--kg-surface)]/90 p-2 shadow-sm backdrop-blur"
+      >
+        <p className="max-w-48 text-[11px] text-[var(--kg-text-secondary)]">
+          Immersive XR is unavailable. Continue through the existing local camera and Motion Control owner.
+        </p>
+        <button
+          type="button"
+          data-kg-canvas-xr-fallback-action="open-motion-control"
+          className="mt-2 rounded px-2 py-1 text-xs font-medium text-[var(--kg-text)] hover:bg-[var(--kg-surface-muted)]"
+          onClick={() => {
+            setSpatialCapturePrimaryMode('capture')
+            openMotionControlSurface('motion-control')
+          }}
+        >
+          Open camera capture
+        </button>
+      </section>
+    ) : null
   const spatialChrome = surfaceKind === 'spatial-capture' ? (
     <>
       <section
@@ -411,6 +437,7 @@ export function CanvasXrEntryPanel({
       >
         <MinimapSpatialViewCube />
       </aside>
+      {spatialCaptureFallback}
     </>
   ) : null
   if (status === 'checking' || status === 'unsupported') return spatialChrome
