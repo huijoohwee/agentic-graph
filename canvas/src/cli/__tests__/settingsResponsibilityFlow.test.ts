@@ -93,7 +93,11 @@ test('responsibility flow generation is complete, traceable, and deterministic',
     assert.equal(artifact.content.split('\n').length <= 600, true, artifact.relativePath)
   })
   const markdownIndex = markdownArtifacts[0]?.content ?? ''
-  assert.match(markdownIndex, /covers the 593 entries declared by `settingsRegistry`/)
+  const registryEntryCount = Object.keys(first.schema).length
+  assert.match(
+    markdownIndex,
+    new RegExp('covers the ' + registryEntryCount + ' entries declared by `settingsRegistry`'),
+  )
   assert.match(markdownIndex, /does not claim coverage of runtime flags/)
   assert.match(markdownIndex, /\]\(knowgrph-codebase-responsibility-flow\/part-001\.md\)/)
 })
