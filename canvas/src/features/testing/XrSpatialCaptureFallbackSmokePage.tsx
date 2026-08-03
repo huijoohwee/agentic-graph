@@ -15,7 +15,8 @@ export function XrSpatialCaptureFallbackSmokePage() {
         <h1 className="text-2xl font-semibold">XR Spatial Capture Fallback Browser Smoke</h1>
         <p className="max-w-3xl text-sm text-[var(--kg-text-secondary)]">
           Dev-only runtime harness for verifying the browser-native XR spatial-capture
-          capability contract, including monocular fallback and readable entry-mode markers.
+          capability contract, including monocular fallback, its existing-owner camera route,
+          and readable entry-mode markers.
         </p>
       </header>
       <section

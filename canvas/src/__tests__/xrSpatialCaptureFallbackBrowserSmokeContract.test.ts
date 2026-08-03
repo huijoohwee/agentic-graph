@@ -63,7 +63,12 @@ export function testXrSpatialCaptureFallbackBrowserSmokeContract() {
     "data-kg-xr-spatial-capture-smoke-page",
     "data-kg-canvas-xr-surface-kind=\"spatial-capture\"",
     "data-kg-canvas-xr-entry-mode",
+    "data-kg-canvas-xr-fallback-action=\"open-motion-control\"",
     "entryMode, 'monocular-capture'",
+    "fallbackAction, 'open-motion-control'",
+    'await fallbackAction.click()',
+    "primaryModeAfterAction, 'capture'",
+    'motionControlSurfaceOpen, true',
   ]) {
     if (!verifierSource.includes(snippet)) {
       throw new Error(`expected XR spatial capture fallback verifier to read the rendered browser contract: ${snippet}`)

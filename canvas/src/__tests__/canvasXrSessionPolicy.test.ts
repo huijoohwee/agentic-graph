@@ -129,6 +129,11 @@ export async function testXrSessionPolicyPrefersNativeArWithoutProviderDependenc
     'data-kg-canvas-xr-recommended-entry-mode',
     'data-kg-canvas-xr-monocular-capture',
     'data-kg-canvas-xr-capability-reasons',
+    'data-kg-canvas-xr-fallback="monocular-capture"',
+    'data-kg-canvas-xr-fallback-action="open-motion-control"',
+    "if (status === 'checking' || status === 'unsupported') return spatialChrome",
+    "setSpatialCapturePrimaryMode('capture')",
+    "openMotionControlSurface('motion-control')",
   ]) {
     if (!source.includes(marker)) throw new Error(`expected XR entry surface to expose capability marker ${marker}`)
   }

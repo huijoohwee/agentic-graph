@@ -12,7 +12,7 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
   const readinessDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-xr-spatial-capture-fallback-readiness.md')
   const runtimeApiDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-xr-invocation-runtime-api.md')
   const xrModeDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-xr-mode-prd-tad.md')
-  const capabilitySliceDocumentation = readSource('..', 'docs', 'knowgrph-ar-vr-xr-prd-tad-adr.md')
+  const capabilitySliceDocumentation = readSource('..', 'docs', 'documents', 'knowgrph-ar-vr-xr-prd-tad-adr.md')
 
   if (!canvasManifest.includes('"test:smoke:xr-spatial-capture-fallback:source": "node ../scripts/run-xr-spatial-capture-fallback-source-smoke.mjs"')) {
     throw new Error('expected canvas manifest to keep XR source smoke bound to the repo-owned source runner')
@@ -85,5 +85,43 @@ export function testXrSpatialCaptureFallbackReadinessKeepsCanonicalAcceptanceBou
     if (!documentation.includes('scripts/run-xr-spatial-capture-fallback-source-smoke.mjs')) {
       throw new Error('expected XR acceptance docs to name the repo-owned XR source runner')
     }
+  }
+
+  for (const snippet of [
+    'knowgrph-xr-capability-snapshot/v1',
+    '`immersive-session`',
+    '`inline-viewer`',
+    '`monocular-capture`',
+    '`native-handoff`',
+    '`unsupported`',
+    'Open camera capture',
+    'ThreeGraphXrSessionPolicy.ts',
+    'ThreeGraphXr.tsx',
+  ]) {
+    if (!capabilitySliceDocumentation.includes(snippet)) {
+      throw new Error(`expected the harmonized capability document to preserve runtime truth: ${snippet}`)
+    }
+  }
+
+  for (const forbiddenSnippet of [
+    'webxr-ar',
+    'webxr-vr',
+    'pseudo-ar-depth-parallax',
+    'flat-fallback',
+    'kgAsset3dPipeline',
+    'canvas.xrPipeline.',
+    '/xr.capture',
+  ]) {
+    if (capabilitySliceDocumentation.includes(forbiddenSnippet) || xrModeDocumentation.includes(forbiddenSnippet)) {
+      throw new Error(`expected harmonized XR documents to remove unowned contract ${forbiddenSnippet}`)
+    }
+  }
+
+  for (const [name, documentation] of [
+    ['capability', capabilitySliceDocumentation],
+    ['XR mode', xrModeDocumentation],
+  ] as const) {
+    const lineCount = documentation.split(/\r?\n/u).length
+    if (lineCount > 600) throw new Error(`expected harmonized ${name} document to stay below 600 lines, got ${lineCount}`)
   }
 }
