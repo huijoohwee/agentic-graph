@@ -22,28 +22,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deployment_authority:
-    name: Reconcile Cloudflare Deployment Authority
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
-
-    steps:
-      - name: Checkout exact protected main commit
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ inputs.source_sha }}
-          fetch-depth: 1
-
-      - name: Disable competing Pages Git deployments before candidate sealing
-        run: node ./scripts/pages-production-deployment.mjs enforce-direct-upload-owner
-
   verify:
     name: Verify Release Candidate
-    needs: deployment_authority
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs:
