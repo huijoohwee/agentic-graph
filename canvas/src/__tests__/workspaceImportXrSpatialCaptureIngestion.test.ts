@@ -276,10 +276,14 @@ export function testWorkspaceImportXrStandalonePlyUsesSpatialRendererInsteadOfGr
   const modelAssetCameraPose = readFileSync(resolve(process.cwd(), 'src', 'features', 'three', 'modelAssetCameraPose.ts'), 'utf8')
   const stage = [readFileSync(resolve(process.cwd(), 'src', 'features', 'three', 'SpatialCaptureManifestStage.tsx'), 'utf8'), readFileSync(resolve(process.cwd(), 'src', 'features', 'three', 'spatialCaptureGeometryRuntime.ts'), 'utf8')].join('\n')
   const gaussianMaterial = readFileSync(resolve(process.cwd(), 'src', 'features', 'three', 'spatialCaptureGaussianMaterial.ts'), 'utf8')
+  const sceneAdmission = threeGraph.match(/const hasRenderableScene = ([^\n]+)/u)?.[1]
+  const sceneAdmissionTerms = sceneAdmission?.split('||').map(term => term.trim()) || []
+  if (!sceneAdmissionTerms.includes('hasSpatialCaptureManifest')) {
+    throw new Error(`expected standalone spatial capture to remain a semantic scene-admission term, got ${sceneAdmission || 'missing admission owner'}`)
+  }
   for (const marker of [
     'parseStandaloneSpatialCaptureManifest(canvasMarkdownDocument.text)',
     'if (spatialCaptureManifest) return null',
-    'const hasRenderableScene = gameFpsActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld',
     '<SpatialCaptureManifestStage',
     "surfaceKind={spatialCaptureManifest ? 'spatial-capture' : 'graph'}",
     'spatialRuntimeStatus={spatialRuntimeStatus}',
