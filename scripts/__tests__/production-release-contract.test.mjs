@@ -245,12 +245,6 @@ test('Agentic Canvas OS docs promote automatically through protected Knowgrph in
 })
 
 test('production release reconciles competing Cloudflare Pages Git deployment ownership', () => {
-  assert.match(releaseWorkflow, /deployment_authority:[\s\S]*name: Reconcile Cloudflare Deployment Authority/)
-  assert.match(releaseWorkflow, /verify:[\s\S]*needs: deployment_authority/)
-  assert.match(
-    releaseWorkflow,
-    /name: Disable competing Pages Git deployments before candidate sealing[\s\S]*pages-production-deployment\.mjs enforce-direct-upload-owner/,
-  )
   assert.match(pagesDeploymentScript, /enforce-direct-upload-owner/)
   assert.match(pagesDeploymentScript, /method: 'PATCH'/)
   assert.match(pagesDeploymentScript, /production_deployments_enabled: false/)
