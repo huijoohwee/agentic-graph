@@ -411,6 +411,36 @@ const fileExists = async (filePath) => {
   }
 }
 
+const localModuleSpecifiers = source => [
+  ...source.matchAll(/(?:import|export)\s+(?:[^'\"]*?\s+from\s+)?['\"](\.{1,2}\/[^'\"]+)['\"]/g),
+  ...source.matchAll(/\bimport\s*\(\s*['\"](\.{1,2}\/[^'\"]+)['\"]\s*\)/g),
+].map(([, specifier]) => specifier)
+
+const collectLocalModuleClosureCopies = async entrySources => {
+  const queue = [...entrySources]
+  const visited = new Set(entrySources)
+  const copies = []
+  while (queue.length > 0) {
+    const importer = queue.shift()
+    const source = await fs.readFile(importer, 'utf8')
+    for (const specifier of localModuleSpecifiers(source)) {
+      const sourcePath = path.resolve(path.dirname(importer), specifier)
+      const relativePath = path.relative(knowgrphRoot, sourcePath)
+      if (relativePath.startsWith(`..${path.sep}`) || path.isAbsolute(relativePath)) {
+        throw new Error(`Local module import escapes the Knowgrph source root: ${specifier}`)
+      }
+      if (!await fileExists(sourcePath)) {
+        throw new Error(`Missing local module import ${specifier} from ${path.relative(knowgrphRoot, importer)}`)
+      }
+      if (visited.has(sourcePath)) continue
+      visited.add(sourcePath)
+      queue.push(sourcePath)
+      copies.push([sourcePath, path.resolve(mirrorRoot, relativePath)])
+    }
+  }
+  return copies.sort(([left], [right]) => left.localeCompare(right))
+}
+
 const agentReadyRuntimeCopies = [
   [agentReadyCommerceSource, agentReadyCommerceTarget], [agentReadyAppShellSource, agentReadyAppShellTarget], [webMcpHtmlInjectionSource, webMcpHtmlInjectionTarget], [semanticKeyContractSource, semanticKeyContractTarget],
   [xrSceneMcpContractSource, xrSceneMcpContractTarget], [xrAnimationMcpContractSource, xrAnimationMcpContractTarget], [motionControlMcpContractSource, motionControlMcpContractTarget], [gameModeMcpContractSource, gameModeMcpContractTarget], [flightSimMcpContractSource, flightSimMcpContractTarget], [immersiveMediaMcpContractSource, immersiveMediaMcpContractTarget], [citySimMcpContractSource, citySimMcpContractTarget], [path.resolve(knowgrphRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs'), path.resolve(mirrorRoot, 'canvas/src/features/strybldr/cameraMcpContract.mjs')],
@@ -419,6 +449,7 @@ const agentReadyRuntimeCopies = [
   [storageEngineMcpContractSource, storageEngineMcpContractTarget],
   ...agentReadyBrowserRuntimeFilenames.map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
   ...['knowgrphAgentReadyOutputSchemas.mjs', 'mcpAppsContractText.mjs', 'mcpAppsOnboarding.mjs', 'motionControlAgentReadyContract.mjs', 'gameModeAgentReadyContract.mjs', 'flightSimAgentReadyContract.mjs', 'immersiveMediaAgentReadyContract.mjs', 'citySimAgentReadyContract.mjs', 'storageSyncAgentReadyContract.mjs', 'importUrlAgentReadyContract.mjs', 'probeTreeUserInputRelevance.mjs', 'knowgrphVdeoxplnRegistryData.mjs', 'knowgrphApplicationCompositionVdeoxpln.mjs'].map(filename => [agentReadyFeatureSource(filename), agentReadyFeatureTarget(filename)]),
+  ...(await collectLocalModuleClosureCopies([agentReadyToolContractSource])),
   ...(await collectGrphSharedRuntimeCopies(agentReadyRuntimeSharedEntries)),
 ]
 const removeEmptyDirs = async (rootDir) => {
