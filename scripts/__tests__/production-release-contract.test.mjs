@@ -4,6 +4,7 @@ import path from 'node:path'
 import test from 'node:test'
 import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs'
 import { classifyServiceWorkerReleaseTransition } from '../service-worker-release-transition.mjs'
+import { seedReturningUserCacheProof } from '../service-worker-upgrade-cache-proof.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const integrationWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'integration.yml'), 'utf8')
@@ -472,6 +473,20 @@ test('service worker release transition distinguishes upgrade from recovery', ()
     () => classifyServiceWorkerReleaseTransition({ previousRevision: 'main', expectedRevision }),
     /previous revision must be an exact source revision/,
   )
+})
+
+test('returning-user cache proof forwards the requested stale revision', async () => {
+  const staleRevision = '3'.repeat(40)
+  const page = {
+    evaluate: async (_callback, payload) => payload,
+  }
+
+  assert.deepEqual(await seedReturningUserCacheProof(page, staleRevision), {
+    revision: staleRevision,
+  })
+  assert.deepEqual(await seedReturningUserCacheProof(page), {
+    revision: '',
+  })
 })
 
 test('deploy dependency bootstrap retries bounded transient registry failures', () => {

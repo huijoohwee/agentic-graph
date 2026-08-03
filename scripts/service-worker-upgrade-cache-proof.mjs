@@ -53,5 +53,5 @@ export const seedReturningUserCacheProof = async (page, staleRevision = '') => p
       siblingHtmlPaths,
     }
   },
-  { revision: previousRevision },
+  { revision: staleRevision },
 )
