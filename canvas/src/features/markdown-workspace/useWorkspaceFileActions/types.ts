@@ -31,7 +31,7 @@ export type UseWorkspaceFileActionsArgs = {
 
   setExpandedPaths: React.Dispatch<React.SetStateAction<Set<string>>>
   setActivePathSafe: (path: WorkspacePath) => void
-  setSelectionPathSafe: (path: WorkspacePath) => void | Promise<void>
+  setSelectionPathSafe: (path: WorkspacePath) => void | Promise<boolean>
 
   setActiveMarkdownDocument: (args: {
     name: string

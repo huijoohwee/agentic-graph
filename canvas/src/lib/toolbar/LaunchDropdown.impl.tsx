@@ -27,6 +27,13 @@ import {
 } from './launchImportDispatch'
 import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
 import { AIRVIO_HOME_URL } from '@/lib/routing/airvioHome'
+import { WorkspaceLaunchRowValue } from './WorkspaceLaunchRowValue'
+import {
+  registerWorkspaceLaunchControlHandler,
+  type WorkspaceLaunchOptionId,
+} from './workspaceLaunchControlRuntime'
+import { targetSkillsCommandsMcpInvocation } from '@/features/agentic-os/skillsCommandsMcpTarget'
+import { IMPORT_URL_AGENT_READY_MCP_TOOL_NAME } from '@/features/agent-ready/importUrlAgentReadyContract.mjs'
 
 const WORKSPACE_IMPORT_ACCEPT = [...SOURCE_FILES_FORMATS.import, '.mdx'].join(',')
 const WORKSPACE_IMPORT_IMAGE_ACCEPT = '.png,.jpg,.jpeg,.webp,.gif,.avif,image/png,image/jpeg,image/webp,image/gif,image/avif'
@@ -89,20 +96,21 @@ export function LaunchDropdown({
   }, [])
 
   const openFilePicker = React.useCallback((el: HTMLInputElement | null) => {
-    if (!el) return
+    if (!el) return false
     try {
       const anyEl = el as unknown as { showPicker?: () => void }
       if (typeof anyEl.showPicker === 'function') {
         anyEl.showPicker()
-        return
+        return true
       }
     } catch {
       void 0
     }
     try {
       el.click()
+      return true
     } catch {
-      void 0
+      return false
     }
   }, [])
 
@@ -180,6 +188,133 @@ export function LaunchDropdown({
     [bridge.export, fallbackExportActions],
   )
   const canExport = hasLaunchDropdownExportActions(exportActions)
+
+  const openWorkflowManager = React.useCallback(() => {
+    onClose()
+    const state = useGraphStore.getState()
+    state.setStatusPanelPinned(false)
+    state.setEnableLaunchSpotlight(false)
+    onOpenWorkflowPanel()
+  }, [onClose, onOpenWorkflowPanel])
+
+  const fetchApiDataSource = React.useCallback(() => {
+    onClose()
+    setCanvasRenderMode('2d')
+    setCanvas2dRenderer('flowchart')
+    setFlowchartDataSource('api')
+    pushUiToast({
+      id: 'launch:fetch-api-data-source',
+      kind: 'neutral',
+      message: 'Fetching API data source…',
+      ttlMs: 2500,
+    })
+  }, [onClose, pushUiToast, setCanvas2dRenderer, setCanvasRenderMode, setFlowchartDataSource])
+
+  const importFolder = React.useCallback(async () => {
+    const launchBridge = getMarkdownWorkspaceActionBridge()
+    if (!hasLaunchKnowledgeGraphFolderImporter(launchBridge)) {
+      if (!openFilePicker(folderInputRef.current)) throw new Error('The browser folder chooser is unavailable.')
+      return { status: 'requested-user-input' as const, message: 'Choose a local folder in the browser picker.' }
+    }
+    onClose()
+    const result = await runLaunchImportKnowledgeGraphFolder({ bridge: launchBridge })
+    pushUiToast({
+      id: 'launch:import:knowledge-graph-folder',
+      kind: 'success',
+      message: `Loaded knowledge graph projection (${result.projection.graphData.nodes.length} nodes, ${result.projection.graphData.edges.length} edges)`,
+      ttlMs: UI_TOAST_TTL_MS.actionFeedback,
+    })
+    return { status: 'applied' as const, message: 'Imported the selected knowledge graph folder.' }
+  }, [onClose, openFilePicker, pushUiToast])
+
+  const createNewFolder = React.useCallback(async () => {
+    onClose()
+    const launchBridge = getMarkdownWorkspaceActionBridge()
+    if (typeof launchBridge.createNewFolder === 'function') {
+      launchBridge.createNewFolder()
+      return
+    }
+    await createNewFolderFallback()
+  }, [createNewFolderFallback, onClose])
+
+  const saveCurrentWorkspace = React.useCallback(() => {
+    const launchBridge = getMarkdownWorkspaceActionBridge()
+    if (typeof launchBridge.save !== 'function') throw new Error('Open a writable Workspace before saving.')
+    onClose()
+    launchBridge.save()
+  }, [onClose])
+
+  React.useEffect(() => registerWorkspaceLaunchControlHandler(async (optionId: WorkspaceLaunchOptionId) => {
+    if (optionId === 'home:open') {
+      window.location.assign(AIRVIO_HOME_URL)
+      return { status: 'applied', message: 'Opened Home.' }
+    }
+    if (optionId === 'spotlight:open') {
+      if (typeof onLaunchSpotlight !== 'function') throw new Error('Launch Spotlight is unavailable.')
+      onClose()
+      onCloseMainPanel?.()
+      onLaunchSpotlight()
+      return { status: 'applied', message: 'Opened Spotlight.' }
+    }
+    if (optionId === 'workflowManager:open') {
+      openWorkflowManager()
+      return { status: 'applied', message: 'Opened Workflow Manager.' }
+    }
+    if (optionId === 'importLocalFiles:choose' || optionId === 'importImage:choose') {
+      const input = optionId === 'importLocalFiles:choose' ? fileInputRef.current : imageInputRef.current
+      if (!openFilePicker(input)) throw new Error('The browser file chooser is unavailable.')
+      return { status: 'requested-user-input', message: 'Choose local files in the browser picker.' }
+    }
+    if (optionId === 'fetchApiDataSource:open') {
+      fetchApiDataSource()
+      return { status: 'applied', message: 'Opened the API data-source flow.' }
+    }
+    if (optionId === 'importFolder:choose') return importFolder()
+    if (optionId === 'importUrl:configure') {
+      const state = useGraphStore.getState()
+      state.setFloatingPanelView('skillsCommands')
+      state.setFloatingPanelOpen(true)
+      await targetSkillsCommandsMcpInvocation(IMPORT_URL_AGENT_READY_MCP_TOOL_NAME)
+      return { status: 'requested-user-input', message: 'Opened the Import URL command; provide a URL to continue.' }
+    }
+    if (optionId === 'newMarkdown:create') {
+      await createNewMarkdownFile()
+      return { status: 'applied', message: 'Created a new Markdown document.' }
+    }
+    if (optionId === 'newFolder:create') {
+      await createNewFolder()
+      return { status: 'applied', message: 'Created a new workspace folder.' }
+    }
+    if (optionId === 'save:current') {
+      saveCurrentWorkspace()
+      return { status: 'applied', message: 'Saved the current workspace.' }
+    }
+    if (optionId === 'export:configure') {
+      if (!open || !canExport) throw new Error('Open Launch with an export-capable Workspace before choosing an export format.')
+      openExportMenu()
+      return { status: 'requested-user-input', message: 'Choose an export format from the open Launch menu.' }
+    }
+    if (typeof onLaunchStatus !== 'function') throw new Error('Launch Status is unavailable.')
+    onClose()
+    onCloseMainPanel?.()
+    onLaunchStatus()
+    return { status: 'applied', message: 'Opened Status.' }
+  }), [
+    canExport,
+    createNewFolder,
+    createNewMarkdownFile,
+    fetchApiDataSource,
+    importFolder,
+    onClose,
+    onCloseMainPanel,
+    onLaunchSpotlight,
+    onLaunchStatus,
+    open,
+    openExportMenu,
+    openFilePicker,
+    openWorkflowManager,
+    saveCurrentWorkspace,
+  ])
 
   const runExportAction = React.useCallback(
     (label: string, action: (() => void) | undefined) => {
@@ -281,10 +416,12 @@ export function LaunchDropdown({
               href={AIRVIO_HOME_URL}
               className={menuItemClass}
               onClick={onClose}
+              aria-label="Home"
               data-kg-launch-home="true"
             >
               <Home className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">Home</span>
+              <WorkspaceLaunchRowValue label="Home" value="Open" optionId="home:open" />
             </a>
           </li>
 
@@ -295,6 +432,7 @@ export function LaunchDropdown({
               <button
                 type="button"
                 className={menuItemClass}
+                aria-label="Spotlight"
                 onClick={() => {
                   onClose()
                   if (typeof onCloseMainPanel === 'function') onCloseMainPanel()
@@ -303,6 +441,7 @@ export function LaunchDropdown({
               >
                 <Sparkles className={menuIconClass} strokeWidth={1.6} />
                 <span className="truncate">Spotlight</span>
+                <WorkspaceLaunchRowValue label="Spotlight" value="Open" optionId="spotlight:open" />
               </button>
             </li>
           ) : null}
@@ -311,20 +450,12 @@ export function LaunchDropdown({
             <button
               type="button"
               className={menuItemClass}
-              onClick={() => {
-                onClose()
-                try {
-                  const state = useGraphStore.getState()
-                  state.setStatusPanelPinned(false)
-                  state.setEnableLaunchSpotlight(false)
-                } catch {
-                  void 0
-                }
-                onOpenWorkflowPanel()
-              }}
+              aria-label="Workflow Manager"
+              onClick={openWorkflowManager}
             >
               <Workflow className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">Workflow Manager</span>
+              <WorkspaceLaunchRowValue label="Workflow Manager" value="Open" optionId="workflowManager:open" />
             </button>
           </li>
 
@@ -334,19 +465,22 @@ export function LaunchDropdown({
             <button
               type="button"
               className={menuItemClass}
+              aria-label="Import local files"
               onClick={() => {
                 openFilePicker(fileInputRef.current)
               }}
             >
               <Upload className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">Import local files</span>
+              <WorkspaceLaunchRowValue label="Import local files" value="Choose files" optionId="importLocalFiles:choose" />
             </button>
           </li>
 
           <li className="list-none">
-            <button type="button" className={menuItemClass} onClick={() => openFilePicker(imageInputRef.current)}>
+            <button type="button" className={menuItemClass} aria-label="Import Image" onClick={() => openFilePicker(imageInputRef.current)}>
               <ImageIcon className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">Import Image</span>
+              <WorkspaceLaunchRowValue label="Import Image" value="Choose images" optionId="importImage:choose" />
             </button>
           </li>
 
@@ -354,21 +488,12 @@ export function LaunchDropdown({
             <button
               type="button"
               className={menuItemClass}
-              onClick={() => {
-                onClose()
-                setCanvasRenderMode('2d')
-                setCanvas2dRenderer('flowchart')
-                setFlowchartDataSource('api')
-                pushUiToast({
-                  id: 'launch:fetch-api-data-source',
-                  kind: 'neutral',
-                  message: 'Fetching API data source…',
-                  ttlMs: 2500,
-                })
-              }}
+              aria-label="Fetch API Data Source"
+              onClick={fetchApiDataSource}
             >
               <CloudDownload className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">Fetch API Data Source</span>
+              <WorkspaceLaunchRowValue label="Fetch API Data Source" value="Open" optionId="fetchApiDataSource:open" />
             </button>
           </li>
 
@@ -376,35 +501,12 @@ export function LaunchDropdown({
             <button
               type="button"
               className={menuItemClass}
-              onClick={() => {
-                const launchBridge = getMarkdownWorkspaceActionBridge()
-                if (hasLaunchKnowledgeGraphFolderImporter(launchBridge)) {
-                  onClose()
-                  void runLaunchImportKnowledgeGraphFolder({ bridge: launchBridge })
-                    .then(result => {
-                      pushUiToast({
-                        id: 'launch:import:knowledge-graph-folder',
-                        kind: 'success',
-                        message: `Loaded knowledge graph projection (${result.projection.graphData.nodes.length} nodes, ${result.projection.graphData.edges.length} edges)`,
-                        ttlMs: UI_TOAST_TTL_MS.actionFeedback,
-                      })
-                    })
-                    .catch(error => {
-                      pushUiToast({
-                        id: 'launch:import:knowledge-graph-folder',
-                        kind: 'error',
-                        message: String((error as { message?: unknown })?.message || 'Knowledge graph folder import failed.'),
-                        ttlMs: UI_TOAST_TTL_MS.warningExtended,
-                        dismissible: true,
-                      })
-                    })
-                  return
-                }
-                openFilePicker(folderInputRef.current)
-              }}
+              aria-label="Import folder"
+              onClick={() => { void importFolder().catch(error => pushUiToast({ id: 'launch:import:knowledge-graph-folder', kind: 'error', message: String((error as { message?: unknown })?.message || 'Knowledge graph folder import failed.'), ttlMs: UI_TOAST_TTL_MS.warningExtended, dismissible: true })) }}
             >
               <FolderOpen className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">Import folder</span>
+              <WorkspaceLaunchRowValue label="Import folder" value="Choose folder" optionId="importFolder:choose" />
             </button>
           </li>
 
@@ -421,12 +523,14 @@ export function LaunchDropdown({
             <button
               type="button"
               className={menuItemClass}
+              aria-label="New .md"
               onClick={() => {
                 void createNewMarkdownFile()
               }}
             >
               <FilePlus2 className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">New .md</span>
+              <WorkspaceLaunchRowValue label="New .md" value="Create" optionId="newMarkdown:create" />
             </button>
           </li>
 
@@ -434,17 +538,12 @@ export function LaunchDropdown({
             <button
               type="button"
               className={menuItemClass}
-              onClick={() => {
-                onClose()
-                if (typeof bridge.createNewFolder === 'function') {
-                  bridge.createNewFolder()
-                  return
-                }
-                void createNewFolderFallback()
-              }}
+              aria-label="New folder"
+              onClick={() => { void createNewFolder() }}
             >
               <FolderPlus className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">New folder</span>
+              <WorkspaceLaunchRowValue label="New folder" value="Create" optionId="newFolder:create" />
             </button>
           </li>
 
@@ -452,15 +551,13 @@ export function LaunchDropdown({
             <button
               type="button"
               className={menuItemClass}
-              onClick={() => {
-                if (typeof bridge.save !== 'function') return
-                onClose()
-                bridge.save()
-              }}
+              aria-label="Save"
+              onClick={() => saveCurrentWorkspace()}
               disabled={typeof bridge.save !== 'function'}
             >
               <Save className={menuIconClass} strokeWidth={1.6} />
               <span className="truncate">Save</span>
+              <WorkspaceLaunchRowValue label="Save" value="Current" optionId="save:current" />
             </button>
           </li>
 
@@ -487,6 +584,7 @@ export function LaunchDropdown({
               <button
                 type="button"
                 className={menuItemClass}
+                aria-label="Status"
                 onClick={() => {
                   onClose()
                   if (typeof onCloseMainPanel === 'function') onCloseMainPanel()
@@ -495,6 +593,7 @@ export function LaunchDropdown({
               >
                 <BarChart3 className={menuIconClass} strokeWidth={1.6} />
                 <span className="truncate">Status</span>
+                <WorkspaceLaunchRowValue label="Status" value="Open" optionId="status:open" />
               </button>
             </li>
           ) : null}

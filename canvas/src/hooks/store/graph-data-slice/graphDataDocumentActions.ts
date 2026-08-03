@@ -232,6 +232,8 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
     sourceUrl?: string | null
     jsonSourceText?: string | null
     canonicalMarkdownText?: string | null
+    expectedCurrentDocumentName?: string | null
+    expectedCurrentDocumentText?: string | null
     autoEnableFrontmatter?: boolean
     applyViewPreset?: boolean
     recent?: Omit<import('@/hooks/store/types').RecentFileEntry, 'id' | 'timestamp'> | null
@@ -245,6 +247,20 @@ export function createGraphDataDocumentActions(set: SetGraph, get: GetGraph) {
     const rawText = String(args?.text || '')
     const normalizedText = args?.normalizeMermaidMmd === false ? rawText : normalizeMermaidMmdToMarkdown(name, rawText)
     const previousState = get()
+    const hasExpectedCurrentDocumentName = Object.prototype.hasOwnProperty.call(args || {}, 'expectedCurrentDocumentName')
+    const hasExpectedCurrentDocumentText = Object.prototype.hasOwnProperty.call(args || {}, 'expectedCurrentDocumentText')
+    if (hasExpectedCurrentDocumentName || hasExpectedCurrentDocumentText) {
+      const currentDocumentName = String(previousState.markdownDocumentName || '').trim()
+      const currentDocumentText = String(previousState.markdownDocumentText || '')
+      const expectedDocumentName = String(args.expectedCurrentDocumentName || '').trim()
+      const expectedDocumentText = String(args.expectedCurrentDocumentText || '')
+      const currentDocumentMatchesExpectation = (
+        (!hasExpectedCurrentDocumentName || currentDocumentName === expectedDocumentName)
+        && (!hasExpectedCurrentDocumentText || currentDocumentText === expectedDocumentText)
+      )
+      const incomingDocumentIsCurrent = currentDocumentName === name && currentDocumentText === normalizedText
+      if (!currentDocumentMatchesExpectation && !incomingDocumentIsCurrent) return false
+    }
     const didSwitchActiveDocument = previousState.markdownDocumentName !== name
     const canonicalText = typeof args?.canonicalMarkdownText === 'string'
       ? args.canonicalMarkdownText

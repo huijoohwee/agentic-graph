@@ -35,19 +35,40 @@ export function testMarkdownWorkspaceSelectionUsesActiveInlineEditCommitBoundary
     resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'useMarkdownWorkspaceViewShell.tsx'),
     'utf8',
   )
+  const effectiveContentText = readFileSync(
+    resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'useMarkdownWorkspaceEffectiveContent.ts'),
+    'utf8',
+  )
+  const saveText = readFileSync(
+    resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'useMarkdownWorkspaceSave.ts'),
+    'utf8',
+  )
+  const indexingText = readFileSync(
+    resolve(process.cwd(), 'src', 'lib', 'markdown-workspace-runtime', 'useMarkdownWorkspaceIndexing.tsx'),
+    'utf8',
+  )
   const commitIndex = selectionText.indexOf('const pendingEditorCommit = commitActiveMarkdownBlockEditors()')
+  const workspaceEditorCommitIndex = selectionText.indexOf('const commitActiveTextBeforeSelection = args.commitActiveTextBeforeSelectionRef.current')
   const sourceWriteFenceIndex = selectionText.indexOf('const pendingSourceWrites = settleWorkspaceSourceTextWrites()')
-  const applyIndex = selectionText.indexOf(']).then(applySelection)')
+  const sourceWriteAwaitIndex = selectionText.indexOf('await settleWorkspaceSourceTextWrites()')
+  const applyIndex = selectionText.indexOf('applySelection()', sourceWriteAwaitIndex)
+  const durableDifferenceIndex = saveText.indexOf("String(lastLoaded.text || '') !== activeText")
   const guardedSelectionIndex = viewShellText.indexOf('const pendingSelection = setSelectionPathSafe(normalized)')
-  const activePathHandoffIndex = viewShellText.indexOf('void pendingSelection.then(applyActivePath, applyActivePath)')
+  const activePathHandoffIndex = viewShellText.indexOf('void pendingSelection.then(applied => {')
   if (
     !editorText.includes('return registerActiveMarkdownBlockEditor(commit)')
     || commitIndex < 0
-    || sourceWriteFenceIndex < commitIndex
-    || applyIndex < sourceWriteFenceIndex
+    || workspaceEditorCommitIndex < commitIndex
+    || sourceWriteFenceIndex >= 0
+    || sourceWriteAwaitIndex < workspaceEditorCommitIndex
+    || applyIndex < sourceWriteAwaitIndex
+    || durableDifferenceIndex < 0
     || guardedSelectionIndex < 0
     || activePathHandoffIndex < guardedSelectionIndex
+    || !viewShellText.includes('if (applied) applyActivePath()')
+    || !effectiveContentText.includes('activeTextRef.current = nextText')
+    || indexingText.indexOf('if (resolveWorkspaceDirtyState({', indexingText.indexOf('if (text == null)')) < 0
   ) {
-    throw new Error('expected Source Files selection to await the shared active markdown block commit before applying the next selection and active document path')
+    throw new Error('expected Source Files selection to durably commit active inline and workspace editor text before applying the next document path')
   }
 }

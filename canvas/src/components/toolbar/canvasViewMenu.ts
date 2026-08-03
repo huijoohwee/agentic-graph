@@ -6,6 +6,7 @@ import {
   getCanvas2dRendererMenuBadges,
   getCanvas2dRendererMenuDescription,
   getCanvas2dRendererMenuLabel,
+  getCanvas2dRendererLabel,
   isD3Like2dRenderer,
   supportsCanvas2dMinimap,
 } from '@/lib/config.render'
@@ -33,6 +34,7 @@ import {
   CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_LABEL,
   readCanvasAspectRatioDisplayControlActive,
   readCanvasAspectRatioDisplayControlTitle,
+  readCanvasAspectRatioDisplayControlValue,
 } from '@/lib/canvas/canvasAspectRatioDisplayControls'
 import {
   CANVAS_BOARD_LAYOUT_DISPLAY_CONTROL_DESCRIPTION,
@@ -40,12 +42,14 @@ import {
   CANVAS_BOARD_LAYOUT_DISPLAY_CONTROL_LABEL,
   readCanvasBoardLayoutDisplayControlActive,
   readCanvasBoardLayoutDisplayControlTitle,
+  readCanvasBoardLayoutDisplayControlValue,
 } from '@/lib/canvas/canvasBoardLayoutDisplayControls'
 import {
   CANVAS_CARD_DISPLAY_CONTROL_ID,
   CANVAS_WIDGET_DISPLAY_CONTROL_ID,
   readCanvasCardWidgetDisplayControlActive,
   readCanvasCardWidgetDisplayControlTitle,
+  readCanvasCardWidgetDisplayControlValue,
 } from '@/lib/canvas/canvasCardWidgetDisplayControls'
 import {
   getCanvasSurfaceModeDisabledCopy,
@@ -54,6 +58,7 @@ import {
   type CanvasSurfaceModeId,
 } from '@/lib/canvas/canvas3dMode'
 import { isRichMediaPanelDisplayEnabled } from '@/lib/render/richMediaSsot'
+import { uiBooleanRowValue, uiCurrentChoiceRowIsSelected } from 'grph-shared/ui/selectedRowClasses'
 
 const isAnimationApplicable = (state: CanvasViewModelState) => {
   if (
@@ -117,6 +122,7 @@ export const getCanvasViewRendererOptions = (): CanvasViewRendererOption[] =>
     title: CANVAS_VIEW_RENDERER_OPTION_TITLE[id],
     Icon: CANVAS_VIEW_RENDERER_OPTION_ICON[id],
     label: getCanvas2dRendererMenuLabel(id),
+    valueLabel: getCanvas2dRendererLabel(id),
     description: getCanvas2dRendererMenuDescription(id),
     badges: getCanvas2dRendererMenuBadges(id),
   }))
@@ -125,7 +131,9 @@ export const buildCanvasViewOptions = (
   state: CanvasViewModelState,
   rendererOptions: CanvasViewRendererOption[],
 ): CanvasViewOption[] => {
+  const activeRenderer = rendererOptions.find(option => option.id === state.canvas2dRenderer) || rendererOptions[0]
   const animationApplicable = isAnimationApplicable(state)
+  const orbitAnimationEnabled = state.schema.layout?.forces?.radialOrbitEnabled !== false
   const bottomSurfaceOpen = state.bottomSurfaceCollapsed !== true
   const timelineBottomPanelVisible = bottomSurfaceOpen && state.bottomSurfaceTab === 'timeline'
   const flowchartBottomPanelVisible = bottomSurfaceOpen && state.bottomSurfaceTab === 'flowchart'
@@ -145,13 +153,22 @@ export const buildCanvasViewOptions = (
     schema: state.schema,
   }
   const getSurfaceModeDisabledCopy = (mode: CanvasSurfaceModeId) => getCanvasSurfaceModeDisabledCopy(surfaceModeArgs, mode)
+  const activeSurfaceMode: CanvasSurfaceModeId = state.geospatialEnabled
+    ? state.canvasRenderMode === '3d' && state.canvas3dMode === 'xr' ? 'geo-xr' : 'geospatial'
+    : state.canvasRenderMode === '3d'
+      ? state.canvas3dMode === 'voxel' ? 'voxel' : state.canvas3dMode === 'xr' ? 'xr' : '3d'
+      : '2d'
+  const activeSurfaceSpec = getCanvasSurfaceModeSpec(activeSurfaceMode)
   const surfaceModeChildren = listCanvasSurfaceModeSpecs().map(spec => {
     const disabledCopy = spec.id === 'geospatial' ? null : getSurfaceModeDisabledCopy(spec.id)
     return {
       id: `surface:${spec.id}` as const,
       title: spec.title,
+      rowLabel: 'Surface',
+      valueLabel: spec.label,
       label: spec.label,
       Icon: CANVAS_VIEW_SURFACE_MODE_ICON[spec.id],
+      isActive: spec.id === activeSurfaceMode,
       disabled: !!disabledCopy,
       disabledReason: disabledCopy?.reason,
       enableHint: disabledCopy?.hint,
@@ -183,6 +200,17 @@ export const buildCanvasViewOptions = (
         : nodeShapeMode === 'hex'
           ? 'Node Shape: Hex'
           : 'Node Shape: Circle'
+  const nodeShapeValue = nodeShapeMode === 'rect' ? 'Rect' : nodeShapeMode === 'diamond' ? 'Diamond' : nodeShapeMode === 'hex' ? 'Hex' : 'Circle'
+  const clusterShapeTitle = state.schema.layout?.groups?.shape === 'rect' ? UI_LABELS.groupShapeRect : UI_LABELS.groupShapePolygon
+  const clusterShapeValue = state.schema.layout?.groups?.shape === 'rect' ? 'Rect' : 'Polygon'
+  const activeLayoutValue = state.layoutMode === 'radial' ? 'Radial' : 'Block'
+  const activeDocumentValue = state.multiDimTableModeEnabled
+    ? 'Multi-dimensional Table'
+    : state.frontmatterModeEnabled
+      ? 'Frontmatter'
+      : state.documentSemanticMode === 'keyword'
+        ? 'Keyword'
+        : 'Document Structure'
   const storyboardWidgetLayoutChildren: readonly CanvasViewOption[] = [
     {
       id: 'layout:storyboardWidgetRebalance',
@@ -198,8 +226,11 @@ export const buildCanvasViewOptions = (
     {
       id: 'layout:block',
       title: 'Block layout',
+      rowLabel: 'Layout',
+      valueLabel: 'Block',
       label: 'Block',
       Icon: Columns2,
+      isActive: state.layoutMode !== 'radial',
       disabled: state.geospatialEnabled || !state.isD3Like2dLayoutToggle,
       disabledReason: state.geospatialEnabled
         ? 'Disabled in Geospatial Mode'
@@ -215,8 +246,11 @@ export const buildCanvasViewOptions = (
     {
       id: 'layout:radial',
       title: 'Radial layout',
+      rowLabel: 'Layout',
+      valueLabel: 'Radial',
       label: 'Radial',
       Icon: CircleDot,
+      isActive: state.layoutMode === 'radial',
       disabled: state.geospatialEnabled || !state.isD3Like2dLayoutToggle,
       disabledReason: state.geospatialEnabled
         ? 'Disabled in Geospatial Mode'
@@ -239,10 +273,13 @@ export const buildCanvasViewOptions = (
     return {
       id: `renderer:${option.id}` as const,
       title: option.title,
+      rowLabel: '2D Renderer',
+      valueLabel: option.valueLabel,
       label: option.label,
       description: option.description,
       badges: option.badges,
       Icon: option.Icon,
+      isActive: option.id === state.canvas2dRenderer,
       disabled: disabledOption,
       disabledReason: disabledForGeospatial
         ? 'Disabled in Geospatial Mode'
@@ -261,6 +298,8 @@ export const buildCanvasViewOptions = (
     {
       id: 'renderer:menu',
       title: '2D Renderer',
+      rowLabel: '2D Renderer',
+      valueLabel: activeRenderer?.valueLabel || state.canvas2dRenderer,
       label: '2D',
       Icon: CircleDot,
       children: optionsWithDisabled,
@@ -268,6 +307,8 @@ export const buildCanvasViewOptions = (
     {
       id: 'layout:menu',
       title: 'Layout Mode',
+      rowLabel: 'Layout Mode',
+      valueLabel: activeLayoutValue,
       label: 'Layout',
       Icon: Columns2,
       dividerBefore: true,
@@ -276,6 +317,8 @@ export const buildCanvasViewOptions = (
     {
       id: 'document:menu',
       title: 'Document Modes',
+      rowLabel: 'Document Modes',
+      valueLabel: activeDocumentValue,
       label: 'Docs',
       Icon: FileText,
       dividerBefore: true,
@@ -283,32 +326,44 @@ export const buildCanvasViewOptions = (
         {
           id: 'document:documentStructure',
           title: UI_LABELS.documentStructureMode,
+          rowLabel: UI_LABELS.documentStructureMode,
+          valueLabel: uiBooleanRowValue(!state.frontmatterModeEnabled && !state.multiDimTableModeEnabled && state.documentSemanticMode !== 'keyword'),
           label: 'Doc',
           Icon: FileText,
+          isActive: !state.frontmatterModeEnabled && !state.multiDimTableModeEnabled && state.documentSemanticMode !== 'keyword',
           disabled: state.geospatialEnabled || state.frontmatterOnlyAllowed,
           disabledReason: state.geospatialEnabled ? 'Disabled in Geospatial Mode' : state.frontmatterOnlyAllowed ? UI_COPY.frontmatterModeTooltip : undefined,
         },
         {
           id: 'document:keyword',
           title: UI_LABELS.keywordMode,
+          rowLabel: UI_LABELS.keywordMode,
+          valueLabel: uiBooleanRowValue(!state.frontmatterModeEnabled && !state.multiDimTableModeEnabled && state.documentSemanticMode === 'keyword'),
           label: 'Key',
           Icon: Tags,
+          isActive: !state.frontmatterModeEnabled && !state.multiDimTableModeEnabled && state.documentSemanticMode === 'keyword',
           disabled: state.geospatialEnabled || state.frontmatterOnlyAllowed,
           disabledReason: state.geospatialEnabled ? 'Disabled in Geospatial Mode' : state.frontmatterOnlyAllowed ? UI_COPY.frontmatterModeTooltip : undefined,
         },
         {
           id: 'document:frontmatter',
           title: UI_LABELS.frontmatterMode,
+          rowLabel: UI_LABELS.frontmatterMode,
+          valueLabel: uiBooleanRowValue(state.frontmatterModeEnabled),
           label: 'Front',
           Icon: GitMerge,
+          isActive: state.frontmatterModeEnabled,
           disabled: state.geospatialEnabled,
           disabledReason: state.geospatialEnabled ? 'Disabled in Geospatial Mode' : undefined,
         },
         {
           id: 'document:multiDimTable',
           title: UI_LABELS.multiDimTableMode,
+          rowLabel: UI_LABELS.multiDimTableMode,
+          valueLabel: uiBooleanRowValue(state.multiDimTableModeEnabled),
           label: 'Table',
           Icon: Table,
+          isActive: state.multiDimTableModeEnabled,
           disabled: state.geospatialEnabled || state.frontmatterOnlyAllowed,
           disabledReason: state.geospatialEnabled ? 'Disabled in Geospatial Mode' : state.frontmatterOnlyAllowed ? UI_COPY.frontmatterModeTooltip : undefined,
         },
@@ -317,6 +372,8 @@ export const buildCanvasViewOptions = (
     {
       id: 'surface:menu',
       title: 'Surface Mode',
+      rowLabel: 'Surface Mode',
+      valueLabel: activeSurfaceSpec.label,
       label: 'Surface',
       Icon: Box,
       dividerBefore: true,
@@ -325,6 +382,8 @@ export const buildCanvasViewOptions = (
     {
       id: 'animation:menu',
       title: 'Animation Mode',
+      rowLabel: 'Animation Mode',
+      valueLabel: orbitAnimationEnabled ? 'Orbit' : 'Force',
       label: 'Anim',
       Icon: GitMerge,
       dividerBefore: true,
@@ -332,8 +391,11 @@ export const buildCanvasViewOptions = (
         {
           id: 'animation:force',
           title: 'Force-directed Graph',
+          rowLabel: 'Animation',
+          valueLabel: 'Force',
           label: 'Force',
           Icon: GitMerge,
+          isActive: !orbitAnimationEnabled,
           disabled: state.geospatialEnabled || !animationApplicable,
           disabledReason: state.geospatialEnabled ? 'Disabled in Geospatial Mode' : 'Animation is not applicable in current view',
           enableHint: state.geospatialEnabled ? 'Switch to Document Mode to enable' : undefined,
@@ -341,8 +403,11 @@ export const buildCanvasViewOptions = (
         {
           id: 'animation:orbit',
           title: 'Orbit-style nested radial',
+          rowLabel: 'Animation',
+          valueLabel: 'Orbit',
           label: 'Orbit',
           Icon: GitMerge,
+          isActive: orbitAnimationEnabled,
           disabled: state.geospatialEnabled || !animationApplicable,
           disabledReason: state.geospatialEnabled ? 'Disabled in Geospatial Mode' : 'Animation is not applicable in current view',
           enableHint: state.geospatialEnabled ? 'Switch to Document Mode to enable' : undefined,
@@ -359,6 +424,8 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:richMedia',
           title: UI_LABELS.renderMediaAsNodes,
+          rowLabel: UI_LABELS.renderMediaAsNodes,
+          valueLabel: uiBooleanRowValue(richMediaDisplayEnabled),
           label: 'Media',
           Icon: ImageIcon,
           isActive: richMediaDisplayEnabled,
@@ -366,18 +433,26 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:nodeShape',
           title: nodeShapeTitle,
+          rowLabel: 'Node Shape',
+          valueLabel: nodeShapeValue,
           label: 'Node',
           Icon: nodeShapeIcon,
+          isActive: uiCurrentChoiceRowIsSelected(nodeShapeMode),
         },
         {
           id: 'control:clusterShape',
-          title: state.schema.layout?.groups?.shape === 'rect' ? UI_LABELS.groupShapeRect : UI_LABELS.groupShapePolygon,
+          title: clusterShapeTitle,
+          rowLabel: 'Cluster Shape',
+          valueLabel: clusterShapeValue,
           label: 'Group',
           Icon: state.schema.layout?.groups?.shape === 'rect' ? Square : Hexagon,
+          isActive: uiCurrentChoiceRowIsSelected(state.schema.layout?.groups?.shape),
         },
         {
           id: 'control:portHandles',
           title: UI_LABELS.portHandles,
+          rowLabel: UI_LABELS.portHandles,
+          valueLabel: uiBooleanRowValue(state.schema.behavior?.portHandles?.enabled === true),
           label: 'Ports',
           Icon: Share2,
           isActive: state.schema.behavior?.portHandles?.enabled === true,
@@ -385,6 +460,8 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:minimap',
           title: 'Minimap',
+          rowLabel: 'Minimap',
+          valueLabel: uiBooleanRowValue(minimapVisible),
           label: 'Minimap',
           Icon: Map,
           isActive: minimapVisible,
@@ -403,6 +480,8 @@ export const buildCanvasViewOptions = (
         {
           id: CANVAS_GRID_DISPLAY_CONTROL_ID,
           title: CANVAS_GRID_DISPLAY_CONTROL_TITLE,
+          rowLabel: CANVAS_GRID_DISPLAY_CONTROL_TITLE,
+          valueLabel: uiBooleanRowValue(readCanvasGridDisplayControlActive(state.schema)),
           label: CANVAS_GRID_DISPLAY_CONTROL_LABEL,
           Icon: Grid3x3,
           description: CANVAS_GRID_DISPLAY_CONTROL_DESCRIPTION,
@@ -411,6 +490,8 @@ export const buildCanvasViewOptions = (
         {
           id: SNAP_GRID_DISPLAY_CONTROL_ID,
           title: SNAP_GRID_DISPLAY_CONTROL_TITLE,
+          rowLabel: SNAP_GRID_DISPLAY_CONTROL_TITLE,
+          valueLabel: uiBooleanRowValue(readSnapGridDisplayControlActive(state.schema)),
           label: SNAP_GRID_DISPLAY_CONTROL_LABEL,
           Icon: Magnet,
           description: SNAP_GRID_DISPLAY_CONTROL_DESCRIPTION,
@@ -419,6 +500,8 @@ export const buildCanvasViewOptions = (
         {
           id: HELPER_LINES_DISPLAY_CONTROL_ID,
           title: HELPER_LINES_DISPLAY_CONTROL_TITLE,
+          rowLabel: HELPER_LINES_DISPLAY_CONTROL_TITLE,
+          valueLabel: uiBooleanRowValue(readHelperLinesDisplayControlActive(state.schema)),
           label: HELPER_LINES_DISPLAY_CONTROL_LABEL,
           Icon: AlignCenter,
           description: HELPER_LINES_DISPLAY_CONTROL_DESCRIPTION,
@@ -427,6 +510,8 @@ export const buildCanvasViewOptions = (
         {
           id: CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_ID,
           title: readCanvasAspectRatioDisplayControlTitle(state.aspectRatioMode),
+          rowLabel: CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_LABEL,
+          valueLabel: readCanvasAspectRatioDisplayControlValue(state.aspectRatioMode),
           label: CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_LABEL,
           Icon: Frame,
           description: CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_DESCRIPTION,
@@ -435,6 +520,8 @@ export const buildCanvasViewOptions = (
         {
           id: CANVAS_BOARD_LAYOUT_DISPLAY_CONTROL_ID,
           title: readCanvasBoardLayoutDisplayControlTitle(state.boardLayoutMode),
+          rowLabel: CANVAS_BOARD_LAYOUT_DISPLAY_CONTROL_LABEL,
+          valueLabel: readCanvasBoardLayoutDisplayControlValue(state.boardLayoutMode),
           label: CANVAS_BOARD_LAYOUT_DISPLAY_CONTROL_LABEL,
           Icon: LayoutPanelTop,
           description: CANVAS_BOARD_LAYOUT_DISPLAY_CONTROL_DESCRIPTION,
@@ -443,6 +530,8 @@ export const buildCanvasViewOptions = (
         {
           id: CANVAS_CARD_DISPLAY_CONTROL_ID,
           title: readCanvasCardWidgetDisplayControlTitle('card'),
+          rowLabel: 'Display',
+          valueLabel: readCanvasCardWidgetDisplayControlValue('card'),
           label: 'Card',
           Icon: PanelsTopLeft,
           description: 'Card presentation',
@@ -453,6 +542,8 @@ export const buildCanvasViewOptions = (
         {
           id: CANVAS_WIDGET_DISPLAY_CONTROL_ID,
           title: readCanvasCardWidgetDisplayControlTitle('widget'),
+          rowLabel: 'Display',
+          valueLabel: readCanvasCardWidgetDisplayControlValue('widget'),
           label: 'Widget',
           Icon: Pencil,
           description: 'Widget presentation',
@@ -463,6 +554,8 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:timeline',
           title: 'Timeline',
+          rowLabel: 'Timeline',
+          valueLabel: uiBooleanRowValue(timelineBottomPanelVisible),
           label: 'Time',
           Icon: History,
           isActive: timelineBottomPanelVisible,
@@ -472,6 +565,8 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:flowchart',
           title: 'Flowchart',
+          rowLabel: 'Flowchart',
+          valueLabel: uiBooleanRowValue(flowchartBottomPanelVisible),
           label: 'Flow',
           Icon: Columns2,
           isActive: flowchartBottomPanelVisible,
@@ -481,6 +576,8 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:gitGraph',
           title: 'GitGraph',
+          rowLabel: 'GitGraph',
+          valueLabel: uiBooleanRowValue(gitGraphBottomPanelVisible),
           label: 'Git',
           Icon: GitGraph,
           isActive: gitGraphBottomPanelVisible,
@@ -490,6 +587,8 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:gantt',
           title: 'Gantt-Timeline',
+          rowLabel: 'Gantt-Timeline',
+          valueLabel: uiBooleanRowValue(ganttBottomPanelVisible),
           label: 'Gantt',
           Icon: ChartGantt,
           isActive: ganttBottomPanelVisible,
@@ -499,6 +598,8 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:architecture',
           title: 'Architecture',
+          rowLabel: 'Architecture',
+          valueLabel: uiBooleanRowValue(architectureBottomPanelVisible),
           label: 'Arch',
           Icon: Network,
           isActive: architectureBottomPanelVisible,
@@ -508,6 +609,8 @@ export const buildCanvasViewOptions = (
         {
           id: 'control:eventModeling',
           title: 'Event Model',
+          rowLabel: 'Event Model',
+          valueLabel: uiBooleanRowValue(eventModelingBottomPanelVisible),
           label: 'Event',
           Icon: Workflow,
           isActive: eventModelingBottomPanelVisible,

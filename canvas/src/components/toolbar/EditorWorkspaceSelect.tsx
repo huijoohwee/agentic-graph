@@ -1,6 +1,6 @@
 import React from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Database, FileCode, Link2 } from 'lucide-react'
+import { Database, FileCode, Link2, SaveAll } from 'lucide-react'
 import { UI_COPY, UI_LABELS } from '@/lib/config'
 import { useGraphStore } from '@/hooks/useGraphStore'
 import { ToolbarDropdownSelect } from '@/components/toolbar/ToolbarDropdownSelect'
@@ -19,6 +19,9 @@ import {
   subscribeWorkspaceStoreSyncSettingsChanged,
   writeWorkspaceSeedSyncEnabledSetting,
 } from '@/lib/workspace/workspaceStoreSyncSettings'
+import { UI_TOAST_TTL_MS } from '@/lib/ui/toastTiming'
+import { uiAutomaticRowValue, uiBooleanRowValue, uiSelectableRowClassName } from 'grph-shared/ui/selectedRowClasses'
+import { SelectableRowValue } from '@/components/ui/SelectableRowValue'
 
 type EditorWorkspaceSelectProps = {
   iconSizeClass: string
@@ -42,12 +45,18 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
     editorWorkspacePane,
     canvasWorkspaceSyncMode,
     setCanvasWorkspaceSyncMode,
+    workspaceAutosaveEnabled,
+    setWorkspaceAutosaveEnabled,
+    pushUiToast,
   } = useGraphStore(
     useShallow(s => ({
       workspaceViewMode: s.workspaceViewMode,
       editorWorkspacePane: s.editorWorkspacePane,
       canvasWorkspaceSyncMode: s.canvasWorkspaceSyncMode,
       setCanvasWorkspaceSyncMode: s.setCanvasWorkspaceSyncMode,
+      workspaceAutosaveEnabled: s.workspaceAutosaveEnabled,
+      setWorkspaceAutosaveEnabled: s.setWorkspaceAutosaveEnabled,
+      pushUiToast: s.pushUiToast,
     })),
   )
 
@@ -138,12 +147,29 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
     const next = !readWorkspaceSeedSyncEnabledSetting()
     writeWorkspaceSeedSyncEnabledSetting(next)
     setStorageSyncEnabled(next)
-  }, [])
+    pushUiToast({
+      id: 'workspace:storage-sync-policy',
+      kind: next ? 'success' : 'neutral',
+      message: next ? 'Storage Sync enabled' : 'Storage Sync disabled',
+      ttlMs: UI_TOAST_TTL_MS.actionFeedback,
+      dismissible: false,
+    })
+  }, [pushUiToast])
 
-  const syncLabel =
-    canvasWorkspaceSyncMode === 'realtime'
-      ? UI_COPY.canvasWorkspaceSyncRealtimeLabel
-      : UI_COPY.canvasWorkspaceSyncManualLabel
+  const toggleAutosave = React.useCallback(() => {
+    const next = !workspaceAutosaveEnabled
+    setWorkspaceAutosaveEnabled(next)
+    pushUiToast({
+      id: 'workspace:autosave-policy',
+      kind: next ? 'success' : 'neutral',
+      message: next ? 'Autosave enabled' : 'Autosave disabled; use Save to persist changes.',
+      ttlMs: UI_TOAST_TTL_MS.actionFeedback,
+      dismissible: false,
+    })
+  }, [pushUiToast, setWorkspaceAutosaveEnabled, workspaceAutosaveEnabled])
+
+  const workspaceSyncAutomatic = canvasWorkspaceSyncMode === 'realtime'
+  const syncIndicatorLabel = uiAutomaticRowValue(workspaceSyncAutomatic)
   const storageSyncLabel = storageSyncEnabled ? UI_COPY.storageSyncOnLabel : UI_COPY.storageSyncOffLabel
 
   return (
@@ -177,8 +203,10 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
           <li className="list-none">
             <button
               type="button"
-              className={`${UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg}`}
+              className={`${UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME} ${uiSelectableRowClassName(workspaceSyncAutomatic)}`}
               onClick={toggleWorkspaceSyncMode}
+              aria-pressed={workspaceSyncAutomatic}
+              aria-label={`${UI_LABELS.workspaceSyncMode}: ${syncIndicatorLabel}`}
               title={
                 canvasWorkspaceSyncMode === 'realtime'
                   ? UI_COPY.canvasWorkspaceSyncRealtimeTooltip
@@ -186,14 +214,31 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
               }
             >
               <Link2 className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
-              <span className="truncate">{`${UI_LABELS.workspaceSyncMode}: ${syncLabel}`}</span>
+              <span className="truncate">{UI_LABELS.workspaceSyncMode}</span>
+              <SelectableRowValue label={UI_LABELS.workspaceSyncMode} value={syncIndicatorLabel} />
             </button>
           </li>
           <li className="list-none">
             <button
               type="button"
-              className={`${UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME} ${UI_THEME_TOKENS.text.primary} ${UI_THEME_TOKENS.button.hoverBg}`}
+              className={`${UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME} ${uiSelectableRowClassName(workspaceAutosaveEnabled)}`}
+              onClick={toggleAutosave}
+              aria-pressed={workspaceAutosaveEnabled}
+              aria-label={`Autosave: ${uiBooleanRowValue(workspaceAutosaveEnabled)}`}
+              title={workspaceAutosaveEnabled ? 'Autosave is enabled.' : 'Autosave is disabled; use Save to persist changes.'}
+            >
+              <SaveAll className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
+              <span className="truncate">Autosave</span>
+              <SelectableRowValue label="Autosave" value={uiBooleanRowValue(workspaceAutosaveEnabled)} />
+            </button>
+          </li>
+          <li className="list-none">
+            <button
+              type="button"
+              className={`${UI_RESPONSIVE_MENU_OPTION_ROW_CLASSNAME} ${uiSelectableRowClassName(storageSyncEnabled)}`}
               onClick={toggleStorageSync}
+              aria-pressed={storageSyncEnabled}
+              aria-label={`${UI_LABELS.storageSync}: ${storageSyncLabel}`}
               title={
                 storageSyncEnabled
                   ? UI_COPY.storageSyncOnTooltip
@@ -201,7 +246,8 @@ export function EditorWorkspaceSelect({ iconSizeClass, iconStrokeWidth, ensureBa
               }
             >
               <Database className={`${iconSizeClass} shrink-0`} strokeWidth={iconStrokeWidth} />
-              <span className="truncate">{`${UI_LABELS.storageSync}: ${storageSyncLabel}`}</span>
+              <span className="truncate">{UI_LABELS.storageSync}</span>
+              <SelectableRowValue label={UI_LABELS.storageSync} value={storageSyncLabel} />
             </button>
           </li>
         </>

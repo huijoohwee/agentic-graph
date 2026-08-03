@@ -4,7 +4,8 @@ import { unwrapGraphCellValue } from '@/lib/graph/nodeProperties'
 function normalizeEdgeEndpointId(raw: string): string {
   const value = raw.trim()
   if (!value) return ''
-  const dot = value.indexOf('.')
+  if (/[\\/]|%2f|%5c/i.test(value)) return value
+  const dot = value.lastIndexOf('.')
   return dot > 0 ? value.slice(0, dot).trim() : value
 }
 

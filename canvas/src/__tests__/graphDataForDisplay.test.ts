@@ -168,6 +168,91 @@ export const testGraphDataForDisplayKeepsEdgesBetweenTypedFrontmatterNodeIds = (
   }
 }
 
+export const testGraphDataForDisplayKeepsSemanticDocumentEndpointsInFrontmatterMode = () => {
+  const documentNodeId = 'doc:md:%2Fnotes%2Fnote_20260803T040623Z.md'
+  const graphData: GraphData = {
+    type: 'Graph',
+    context: 'frontmatter-flow',
+    metadata: {
+      kind: 'frontmatter-flow',
+      'kg:activeDocumentViewMode': 'frontmatter',
+    },
+    nodes: [
+      { id: documentNodeId, type: 'Document', label: 'Authored input', properties: { summary: 'keep this input' }, metadata: {} },
+      { id: 'section', type: 'Section', label: 'Structure only', properties: { level: 1 }, metadata: {} },
+      { id: 'ledger', type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID, label: 'Generated outputs', properties: {}, metadata: {} },
+      {
+        id: 'generated-card',
+        type: 'TextGeneration',
+        label: 'Generated branch',
+        properties: { workflowMaterializationParentNodeId: 'ledger' },
+        metadata: {},
+      },
+    ],
+    edges: [
+      { id: 'structure-edge', source: documentNodeId, target: 'section', label: 'hasSection', properties: {}, metadata: {} },
+      { id: 'workflow-edge', source: documentNodeId, target: 'ledger', label: 'output', properties: { workflowOutputEdge: true }, metadata: {} },
+      { id: 'candidate-edge', source: documentNodeId, target: 'generated-card', label: 'candidateOption', properties: {}, metadata: {} },
+    ],
+  }
+
+  const display = getGraphDataForDisplay({ graphData })
+  const nodeIds = new Set((display.nodes || []).map(n => String((n as { id?: unknown }).id)))
+  if (!nodeIds.has(documentNodeId)) throw new Error('expected authored Document endpoint to remain visible when it owns semantic workflow edges')
+  if (!nodeIds.has('ledger') || !nodeIds.has('generated-card')) throw new Error('expected generated workflow endpoints to remain visible')
+  if (nodeIds.has('section')) throw new Error('expected structure-only Section scaffold to remain suppressed in frontmatter mode')
+  const documentNode = display.nodes.find(node => String(node.id) === documentNodeId)
+  if ((documentNode?.properties as Record<string, unknown> | undefined)?.summary !== 'keep this input') {
+    throw new Error('expected authored input summary to survive display projection unchanged')
+  }
+  const edgeIds = new Set((display.edges || []).map(edge => String(edge.id)))
+  if (!edgeIds.has('workflow-edge') || !edgeIds.has('candidate-edge')) {
+    throw new Error('expected semantic workflow edges to remain visible with their authored source endpoint')
+  }
+  if (edgeIds.has('structure-edge')) throw new Error('expected structure-only edge to remain suppressed in frontmatter mode')
+}
+
+export const testStoryboardWidgetOverlayEdgeGraphKeepsDeclaredPathIdentityEndpoints = () => {
+  const documentNodeId = 'doc:md:%2Fnotes%2Fnote_20260803T040623Z.md'
+  const graphData: GraphData = {
+    type: 'Graph',
+    context: 'test',
+    metadata: {},
+    nodes: [
+      { id: documentNodeId, type: 'Document', label: 'Authored input', properties: {}, metadata: {} },
+      { id: 'ledger', type: FLOW_RICH_MEDIA_PANEL_NODE_TYPE_ID, label: 'Generated outputs', properties: {}, metadata: {} },
+      {
+        id: 'generated-card',
+        type: 'TextGeneration',
+        label: 'Generated branch',
+        properties: { workflowMaterializationParentNodeId: 'ledger' },
+        metadata: {},
+      },
+    ],
+    edges: [
+      { id: 'output-edge', source: documentNodeId, target: 'ledger', label: 'output', properties: {}, metadata: {} },
+      { id: 'candidate-edge', source: documentNodeId, target: 'generated-card', label: 'candidateOption', properties: {}, metadata: {} },
+    ],
+  }
+
+  const overlay = getCachedStoryboardWidgetOverlayEdgeGraph({
+    graphData,
+    graphRevision: 2,
+    overlayNodeIds: [documentNodeId, 'ledger', 'generated-card'],
+    preferCurrentGraphDataRefs: true,
+  })
+  const edgeSignatures = (overlay?.edges || [])
+    .map(edge => `${edge.source}->${edge.target}`)
+    .sort()
+  const expected = [
+    `${documentNodeId}->ledger`,
+    'ledger->generated-card',
+  ].sort()
+  if (edgeSignatures.join('|') !== expected.join('|')) {
+    throw new Error(`expected authored path identity and generated presentation edge to remain visible, got ${JSON.stringify(edgeSignatures)}`)
+  }
+}
+
 export const testGraphDataForDisplaySuppressesDocumentStructureScaffoldOutsideDocumentStructureMode = () => {
   const graphData: GraphData = {
     type: 'Graph',

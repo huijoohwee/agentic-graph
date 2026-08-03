@@ -347,6 +347,15 @@ export const uiUiSettingsRegistry: SettingMeta[] = [
     default: () => false,
   },
   {
+    key: 'workspaceAutosaveEnabled',
+    type: 'boolean',
+    source: 'store',
+    read: () => s().workspaceAutosaveEnabled,
+    write: (v) => s().setWorkspaceAutosaveEnabled(Boolean(v)),
+    docKey: 'workspaceAutosaveEnabled',
+    default: () => true,
+  },
+  {
     key: 'spotlight.margin',
     type: 'number',
     source: 'store',

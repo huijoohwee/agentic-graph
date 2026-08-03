@@ -254,7 +254,7 @@ export function testStoryboardCardPromptCommitUpdatesDurableDraftBeforeRun() {
     edges: [],
   }
   let committedGraph: GraphData | null = null
-  let canonicalStoreProperties: Record<string, unknown> | null = null
+  let downstreamNodePatchCount = 0
   commitStoryboardCardCanonicalText2d({
     addHistory: () => void 0,
     canonicalKey: 'prompt',
@@ -266,14 +266,68 @@ export function testStoryboardCardPromptCommitUpdatesDurableDraftBeforeRun() {
     nextValue: '/crawler-agent @url:https://example.com @reference-policy #canvas',
     preserveFormatting: true,
     propertyKeys: ['prompt', 'imagePrompt'],
-    updateNode: (_id, patch) => { canonicalStoreProperties = (patch.properties || {}) as Record<string, unknown> },
+    updateNode: () => { downstreamNodePatchCount += 1 },
   })
   const committedNode = committedGraph?.nodes?.[0]
   assert(committedNode?.properties?.prompt === '/crawler-agent @url:https://example.com @reference-policy #canvas', `expected the durable draft graph to receive the prompt before Run, got ${JSON.stringify(committedNode?.properties)}`)
   assert(!('imagePrompt' in (committedNode?.properties || {})), 'expected durable prompt commit to neutralize the stale alias')
   assert(committedNode?.properties?.keep === 'yes', 'expected durable prompt commit to retain sibling properties')
-  assert(canonicalStoreProperties?.prompt === '/crawler-agent @url:https://example.com @reference-policy #canvas', 'expected prompt commit to mirror the durable draft into the canonical graph store before Run')
-  assert(!('imagePrompt' in (canonicalStoreProperties || {})), 'expected the canonical graph store mirror to neutralize the stale prompt alias')
+  assert(downstreamNodePatchCount === 0, 'expected the durable graph publication to remain the sole commit authority instead of applying a second downstream node patch')
+}
+
+export function testStoryboardCardSummaryCommitUsesSingleSourceBackedPublication() {
+  const graphData: GraphData = {
+    type: 'flow',
+    nodes: [{ id: 'frontmatter::n1', type: 'StoryboardCard', label: 'Widget Card', properties: { summary: '', keep: 'yes' } }],
+    edges: [],
+  }
+  let committedGraph: GraphData | null = null
+  let downstreamNodePatchCount = 0
+  commitStoryboardCardCanonicalText2d({
+    addHistory: () => void 0,
+    canonicalKey: 'summary',
+    cardId: 'n1',
+    commitGraphData: next => { committedGraph = next },
+    currentProperties: {},
+    graphData,
+    historyLabel: 'Storyboard summary',
+    nextValue: 'Keep this authored Summary after blur.',
+    preserveFormatting: true,
+    propertyKeys: ['summary', 'description'],
+    updateNode: () => { downstreamNodePatchCount += 1 },
+  })
+  const committedNode = committedGraph?.nodes?.[0]
+  assert(committedNode?.properties?.summary === 'Keep this authored Summary after blur.', `expected Summary blur to publish through the source-backed graph, got ${JSON.stringify(committedNode?.properties)}`)
+  assert(committedNode?.properties?.keep === 'yes', 'expected Summary publication to retain sibling properties')
+  assert(downstreamNodePatchCount === 0, 'expected Summary blur not to apply a competing downstream node patch')
+}
+
+export function testStoryboardCardSummaryCommitScopesLegacyDocumentIdsToOneSourceLayer() {
+  const graphData: GraphData = {
+    type: 'flow',
+    nodes: [
+      { id: 'first-note::document', type: 'Document', label: 'First note', properties: { summary: 'First source summary.' } },
+      { id: 'second-note::document', type: 'Document', label: 'Second note', properties: { summary: 'Second source summary.' } },
+    ],
+    edges: [],
+  }
+  let committedGraph: GraphData | null = null
+  commitStoryboardCardCanonicalText2d({
+    addHistory: () => void 0,
+    canonicalKey: 'summary',
+    cardId: 'first-note::document',
+    commitGraphData: next => { committedGraph = next },
+    currentProperties: {},
+    graphData,
+    historyLabel: 'Storyboard summary',
+    nextValue: 'First source summary survives blur.',
+    propertyKeys: ['summary', 'description'],
+    updateNode: () => { throw new Error('expected source-backed graph commit to remain authoritative') },
+  })
+  const firstSummary = committedGraph?.nodes.find(node => node.id === 'first-note::document')?.properties?.summary
+  const secondSummary = committedGraph?.nodes.find(node => node.id === 'second-note::document')?.properties?.summary
+  assert(firstSummary === 'First source summary survives blur.', `expected the resolved source layer to receive the authored Summary, got ${JSON.stringify(committedGraph)}`)
+  assert(secondSummary === 'Second source summary.', `expected the other legacy document layer to remain unchanged, got ${JSON.stringify(committedGraph)}`)
 }
 
 export function testStoryboardCardSequentialPromptCommitsUseLiveGraphState() {

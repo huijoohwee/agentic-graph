@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { HelpCircle, Settings, Search as SearchIcon, History as HistoryIcon, SunMoon, Plus, Link2, MessageCircle, Play, Download, RotateCcw } from 'lucide-react';
 import IconButton from '@/components/IconButton';
 import { DropdownPanel } from '@/lib/ui/overlay';
-import { UI_LABELS } from '@/lib/config';
+import { UI_COPY, UI_LABELS } from '@/lib/config';
 import {
   uiPrimaryIconActiveClassName,
   uiPrimaryIconInactiveClassName,
@@ -35,6 +35,12 @@ import {
 import { ZoomModeSelect } from '@/components/toolbar/ZoomModeSelect';
 import { useMediaQuery } from '@/lib/ui/useMediaQuery'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
+import { toolbarActionAffordance } from '@/lib/toolbar/toolbarActionAffordance'
+import {
+  registerToolbarActionControlHandler,
+  type ToolbarActionId,
+  type ToolbarActionHandlerResult,
+} from '@/lib/toolbar/toolbarActionControlRuntime'
 
 interface ToolbarProps {
   onZoomSelection?: () => void;
@@ -178,6 +184,49 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
     && schema.behavior?.allowEdgeCreation !== false
     && Boolean(selectedNodeId)
 
+  const invokeToolbarAction = React.useCallback(async (actionId: ToolbarActionId): Promise<ToolbarActionHandlerResult> => {
+    if (actionId === 'settings:open') actions.handleOpenSettings()
+    else if (actionId === 'history:open') actions.handleOpenHistory()
+    else if (actionId === 'help:open') actions.handleOpenHelp()
+    else if (actionId === 'node:create') actions.handleOpenPropsPanel()
+    else if (actionId === 'edge:start') {
+      const state = useGraphStore.getState()
+      const fromId = String(state.selectedNodeId || '').trim()
+      if (state.workspaceViewMode !== 'editor' || state.canvas2dRenderer !== 'd3' || state.schema.behavior?.allowEdgeCreation === false || !fromId) {
+        return { status: 'blocked', message: 'Select a node in the D3 Editor Workspace before creating an edge.' }
+      }
+      if (!ensureBaselineUnlocked()) return { status: 'blocked', message: UI_COPY.baselineLockedToast }
+      requestStartEdgeFromNodeId(fromId, state.requestEdgeCreation, state.setSelectionSource)
+    } else if (actionId === 'workflow:runAll') {
+      if (!canRunAll) return { status: 'blocked', message: 'Open Storyboard to run all.' }
+      if (shouldRouteToStrybldrRunAll) await runStrybldrToolbarRunAll()
+      else {
+        primeStoryboardWidgetRunAllLayoutLockFromToolbar()
+        emitToolbarRunAll()
+      }
+    } else if (actionId === 'workflow:resetAll') {
+      if (!canResetAll) return { status: 'blocked', message: 'Open Storyboard Widget to reset workflow outputs.' }
+      emitToolbarResetAll()
+    } else if (actionId === 'history:undo') {
+      const state = useGraphStore.getState()
+      if (state.historyIndex <= 0) return { status: 'blocked', message: 'No earlier graph history state is available.' }
+      state.undoHistory()
+    } else if (actionId === 'history:redo') {
+      const state = useGraphStore.getState()
+      if (state.historyIndex < 0 || state.historyIndex >= state.history.length - 1) return { status: 'blocked', message: 'No later graph history state is available.' }
+      state.redoHistory()
+    } else if (actionId === 'search:toggle') setIsSearchOpen(value => !value)
+    else if (actionId === 'chat:open') actions.handleOpenChat()
+    else if (actionId === 'theme:cycle') actions.handleToggleTheme()
+    else if (actionId === 'pwa:install') {
+      if (getDeferredInstallPrompt() === null) return { status: 'blocked', message: 'The app install prompt is unavailable.' }
+      promptPwaInstall()
+    }
+    return { status: 'applied', message: `Main Toolbar action applied: ${actionId}.` }
+  }, [actions, canResetAll, canRunAll, ensureBaselineUnlocked, primeStoryboardWidgetRunAllLayoutLockFromToolbar, runStrybldrToolbarRunAll, shouldRouteToStrybldrRunAll])
+
+  useEffect(() => registerToolbarActionControlHandler(invokeToolbarAction), [invokeToolbarAction])
+
   useEffect(() => {
     if (!isMainPanelOpen) return
     if (!isNarrowViewport) return
@@ -233,6 +282,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         title={UI_LABELS.settings}
         tooltipContent={UI_LABELS.settings}
         onClick={actions.handleOpenSettings}
+        {...toolbarActionAffordance('settings:open')}
         showTooltip
       >
         <Settings className={iconSizeClass} strokeWidth={iconStrokeWidth} />
@@ -311,11 +361,11 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         </section>
       )}
 
-      <IconButton className="App-toolbar__btn" title={UI_LABELS.history} onClick={actions.handleOpenHistory} showTooltip>
+      <IconButton className="App-toolbar__btn" title={UI_LABELS.history} onClick={actions.handleOpenHistory} {...toolbarActionAffordance('history:open')} showTooltip>
         <HistoryIcon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
       </IconButton>
 
-      <IconButton className="App-toolbar__btn" title={UI_LABELS.help} onClick={actions.handleOpenHelp} showTooltip>
+      <IconButton className="App-toolbar__btn" title={UI_LABELS.help} onClick={actions.handleOpenHelp} {...toolbarActionAffordance('help:open')} showTooltip>
         <HelpCircle className={iconSizeClass} strokeWidth={iconStrokeWidth} />
       </IconButton>
 
@@ -325,6 +375,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         title={UI_LABELS.createNode}
         tooltipContent={UI_LABELS.createNode}
         onClick={actions.handleOpenPropsPanel}
+        {...toolbarActionAffordance('node:create')}
         showTooltip
       >
         <Plus className={iconSizeClass} strokeWidth={iconStrokeWidth} />
@@ -336,6 +387,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
           tooltipContent={canStartEdge ? 'Create edge from selected node' : 'Select a node to create an edge'}
           disabled={!canStartEdge}
           data-kg-edge-creation-action="true"
+          {...toolbarActionAffordance('edge:start')}
           onClick={() => {
             const fromId = String(selectedNodeId || '').trim()
             if (!fromId || !ensureBaselineUnlocked()) return
@@ -353,6 +405,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         onPointerDownCapture={() => {
           primeStoryboardWidgetRunAllLayoutLockFromToolbar()
         }}
+        {...toolbarActionAffordance('workflow:runAll')}
         onClick={() => {
           if (!canRunAll) {
             pushUiToast({ id: 'toolbar-run-all-disabled', kind: 'neutral', message: 'Open Storyboard to run all.', ttlMs: 2200 })
@@ -380,6 +433,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
           }
           emitToolbarResetAll()
         }}
+        {...toolbarActionAffordance('workflow:resetAll')}
         showTooltip
       >
         <RotateCcw className={iconSizeClass} strokeWidth={iconStrokeWidth} />
@@ -391,6 +445,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         className="App-toolbar__btn"
         ref={searchBtnRef}
         title={UI_LABELS.search}
+        {...toolbarActionAffordance('search:toggle')}
         onClick={() => setIsSearchOpen(v => !v)}
         showTooltip
       >
@@ -413,6 +468,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         title={UI_LABELS.chat}
         tooltipContent={UI_LABELS.chat}
         onClick={actions.handleOpenChat}
+        {...toolbarActionAffordance('chat:open')}
         showTooltip
       >
         <MessageCircle className={iconSizeClass} strokeWidth={iconStrokeWidth} />
@@ -427,6 +483,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
         onClick={actions.handleToggleTheme}
         data-kg-theme-mode-control="toggle"
         data-kg-theme-mode-current={themeMode}
+        {...toolbarActionAffordance('theme:cycle')}
         showTooltip
       >
         <SunMoon className={iconSizeClass} strokeWidth={iconStrokeWidth} />
@@ -439,6 +496,7 @@ export default function Toolbar({ onZoomSelection }: ToolbarProps) {
           onClick={() => {
             promptPwaInstall()
           }}
+          {...toolbarActionAffordance('pwa:install')}
           showTooltip
         >
           <Download className={iconSizeClass} strokeWidth={iconStrokeWidth} />

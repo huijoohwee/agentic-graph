@@ -207,6 +207,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     activePath,
     isMarkdownPath,
   })
+  const commitActiveTextBeforeSelectionRef = React.useRef<(() => Promise<boolean>) | null>(null)
   const explorerState = useMarkdownWorkspaceExplorerState({
     active,
     activePathRef,
@@ -261,6 +262,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
       canvas2dRenderer,
       lastSetActivePath,
       lastRequestedActivePathRef,
+      commitActiveTextBeforeSelectionRef,
       patchWorkspaceEntryInlineText,
       clearStatus: status.clearStatus,
       setHighlightedLineRange: () => setHighlightedLineRange(null),
@@ -318,6 +320,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
     activeDocumentKey: selectionState.activeDocumentKey,
     activeEntryKind: selectionState.activeEntryKind,
     activeText,
+    activeTextRef,
     setActiveText,
     markdownDocumentName,
     markdownDocumentText,
@@ -374,6 +377,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
       activePath,
       activeEntryKind: selectionState.activeEntryKind,
       activeText,
+      activeTextRef,
       debouncedText,
       activeDocumentKey: selectionState.activeDocumentKey,
       activeDocumentSourceUrl: selectionState.activeDocumentSourceUrl,
@@ -392,6 +396,7 @@ export function MarkdownWorkspace(props: { active?: boolean } = {}) {
         pocketBaseYjsCollaborationRuntime.saveSnapshot({ path, text, saveBoundary }),
     }),
   )
+  commitActiveTextBeforeSelectionRef.current = saveState.commitActiveTextBeforeSelection
   const interactionState = useMarkdownWorkspaceInteractions({
     active,
     entries,

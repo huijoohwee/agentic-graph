@@ -222,12 +222,12 @@ export const testMarkdownWorkspaceRuntimeGraphWritebackRefreshesActiveEditorText
   }
 }
 
-export const testMarkdownWorkspaceSelectionClearsStaleEditorTextBeforeSsotDocumentSwitch = () => {
+export const testMarkdownWorkspaceSelectionPreservesEditorTextUntilSwitchSnapshot = () => {
   const text = readUtf8(markdownWorkspaceSelectionPath())
   if (
     !text.includes("import { settleWorkspaceSourceTextWrites } from '@/hooks/store/graph-data-slice/workspaceSourceTextWriteQueue'")
-    || !text.includes('const pendingSourceWrites = settleWorkspaceSourceTextWrites()')
-    || !text.includes('Promise.allSettled([')
+    || !text.includes('await settleWorkspaceSourceTextWrites()')
+    || !text.includes('const pendingEditorCommit = commitActiveMarkdownBlockEditors()')
   ) {
     throw new Error('Expected file selection to settle generated Canvas source writes and their durable mirror before changing document ownership')
   }
@@ -238,13 +238,13 @@ export const testMarkdownWorkspaceSelectionClearsStaleEditorTextBeforeSsotDocume
   const ssotSyncStart = text.indexOf('  useMarkdownEditorSsotSync({', clearEffectStart)
   const clearEffectSection = clearEffectStart >= 0 && ssotSyncStart > clearEffectStart ? text.slice(clearEffectStart, ssotSyncStart) : ''
   if (!clearEffectSection.includes('if (!nextPath || !prevPath || prevPath === nextPath || activeEntryKind === \'folder\' || !args.activeRef.current) return')) {
-    throw new Error('Expected markdown workspace selection to clear stale text only for real file-to-file transitions')
+    throw new Error('Expected markdown workspace selection to track real file-to-file transitions')
   }
-  if (!clearEffectSection.includes("args.setActiveTextProgrammatic('')")) {
-    throw new Error('Expected markdown workspace selection to blank stale editor text before SSOT sync can publish the previous file under the next document key')
+  if (clearEffectSection.includes("args.setActiveTextProgrammatic('')")) {
+    throw new Error('Expected markdown workspace selection to preserve current editor text until the next authoritative source snapshot resolves')
   }
   if (!clearEffectSection.includes('args.setHighlightedLineRange(null)') || !clearEffectSection.includes('args.clearStatus()')) {
-    throw new Error('Expected markdown workspace selection to clear transient line focus and status when switching files with stale editor text')
+    throw new Error('Expected markdown workspace selection to clear transient line focus and status when switching files')
   }
   if (!clearEffectSection.includes('const switchedActivePathRef = React.useRef<{ prev: WorkspacePath; next: WorkspacePath } | null>(null)')) {
     throw new Error('Expected markdown workspace selection to track explicit switched active path pair for deterministic same-tick switch hydration')

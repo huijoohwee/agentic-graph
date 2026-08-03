@@ -14,4 +14,7 @@ export type MarkdownWorkspaceRuntimeSetActiveDocument = (args: {
   canvasWorkspacePreset?: CanvasWorkspaceFrontmatterPreset | null
   sourceUrl?: string | null
   jsonSourceText?: string | null
+  canonicalMarkdownText?: string | null
+  expectedCurrentDocumentName?: string | null
+  expectedCurrentDocumentText?: string | null
 }) => Promise<boolean>

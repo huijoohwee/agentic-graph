@@ -24,8 +24,10 @@ export function testToolbarInteractionPanelIncludesRunModeControl() {
   }
   expectSource(toolbarSelect, 'Run Mode: Manual', 'Toolbar Interaction run mode manual row')
   expectSource(toolbarSelect, 'Run Mode: Auto', 'Toolbar Interaction run mode auto row')
-  expectSource(toolbarSelect, "setCanvasRunMode(canvasRunMode === 'auto' ? 'manual' : 'auto')", 'Toolbar Interaction run mode toggle')
+  expectSource(toolbarSelect, "setCanvasRunMode(optionId === 'runMode:auto' ? 'auto' : 'manual')", 'Toolbar Interaction explicit run mode target')
   expectSource(toolbarSelect, "option.key === 'runMode'", 'Toolbar Interaction run mode option')
+  expectSource(toolbarSelect, 'registerCanvasInteractionControlHandler', 'Toolbar Interaction browser-local MCP owner')
+  expectSource(toolbarSelect, 'buildCanvasInteractionInvocation', 'Toolbar Interaction semantic row invocation')
 }
 
 export function testCanvasRunModeUsesPersistedManualDefault() {

@@ -370,9 +370,9 @@ export function testRunAllLayoutLockSuppressesAutoZoomUntilMutationGuardReleases
     throw new Error('expected native FlowCanvas runtime fit to import the shared workspace graph mutation guard')
   }
   if (!flowRuntimeText.includes('if (storyboardWidgetMode && isWorkspaceGraphMutationBlocked(state)) {')
-    || !flowRuntimeText.includes('lastInitTransformZoomViewKeyRef.current = initKey')
-    || !flowRuntimeText.includes('rememberInitializedStoryboardZoomView(initKey)')) {
-    throw new Error('expected native FlowCanvas runtime fit to stop while preserving current document camera authority during the shared graph mutation guard')
+    || !flowRuntimeText.includes('workspaceEditorOverlayOpen === true && (alreadyInitializedForKey || hasNonIdentityTransform)')
+    || !flowRuntimeText.includes('lastInitTransformZoomViewKeyRef.current = initKey')) {
+    throw new Error('expected native FlowCanvas runtime fit to stop while preserving only established current-document camera authority during the shared graph mutation guard')
   }
   if (!flowRuntimeText.includes('const initKey = storyboardCameraViewKey') || flowRuntimeText.includes('`storyboardWidget:${zoomViewKey}`')) {
     throw new Error('expected Storyboard Widget init fit and preservation guards to share one stable document/view identity')

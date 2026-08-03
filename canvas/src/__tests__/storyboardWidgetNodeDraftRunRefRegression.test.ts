@@ -57,6 +57,45 @@ export function testStoryboardWidgetCommittedNodePropertiesPersistBeforeDocument
   }
 }
 
+export function testStoryboardCanvasWorkflowRunPublishesBeforeSingleDurableSourceWrite() {
+  const storyboardCanvasText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardCanvas.tsx'), 'utf8')
+  const sourceSyncText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'storyboardCardMediaGraphSource.ts'), 'utf8')
+  const sharedCommitText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardCardMediaGraphCommit.ts'), 'utf8')
+  const runtimeText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas.runtime.tsx'), 'utf8')
+  const synchronizedPublish = 'publishedSynchronizationsRef.current.set(nextDraft, synchronization)'
+  const synchronizedPersist = 'persistStoryboardCardMediaGraphSourceSynchronization(synchronization, persistenceOptions)'
+  const publishStart = storyboardCanvasText.indexOf('const commitStoryboardPublishedGraphData = React.useCallback((nextGraphData: GraphData) => {')
+  const publishEnd = storyboardCanvasText.indexOf('  const materializeStoryboardProbeTree', publishStart)
+  const storyboardPublishBlock = storyboardCanvasText.slice(publishStart, publishEnd)
+
+  if (publishStart < 0
+    || publishEnd < publishStart
+    || storyboardPublishBlock.includes('persistStoryboardCardMediaGraphSource(')
+    || !storyboardPublishBlock.includes('synchronizeStoryboardCardMediaGraphSource(committedGraphData, {')
+    || !storyboardPublishBlock.includes('setGraphDataPreservingLayout(committedGraphData)')
+    || storyboardPublishBlock.indexOf('synchronizeStoryboardCardMediaGraphSource(committedGraphData, {') > storyboardPublishBlock.indexOf('setGraphDataPreservingLayout(committedGraphData)')
+    || !storyboardCanvasText.includes('persistDraftGraphData: async (nextGraphData, options) => { await persistStoryboardCardMediaGraphSource(nextGraphData,')) {
+    throw new Error('expected Storyboard workflow publications to synchronize the source revision before publishing the graph, then perform one awaited durable source write after the run completes')
+  }
+  if (!sourceSyncText.includes('export function synchronizeStoryboardCardMediaGraphSource(')
+    || !sourceSyncText.includes('const synchronized = synchronizeStoryboardCardMediaGraphSource(graphData, options)')) {
+    throw new Error('expected Storyboard source synchronization to be a shared upstream primitive used by both publish and persistence paths')
+  }
+  if (!sharedCommitText.includes('synchronizeStoryboardCardMediaGraphSource(nextDraft, { sourceOwner })')
+    || sharedCommitText.indexOf('synchronizeStoryboardCardMediaGraphSource(nextDraft, { sourceOwner })') > sharedCommitText.indexOf('setGraphDataPreservingLayout(nextDraft)')) {
+    throw new Error('expected every Storyboard Widget surface to synchronize its Markdown source before publishing a graph projection')
+  }
+  if (!sourceSyncText.includes('export async function persistStoryboardCardMediaGraphSourceSynchronization(')
+    || !sharedCommitText.includes(synchronizedPublish)
+    || !sharedCommitText.includes(synchronizedPersist)) {
+    throw new Error('expected published Storyboard graphs to persist their original source synchronization rather than serialize a second source snapshot')
+  }
+  if (!runtimeText.includes('commitPublishedGraphData: publishStoryboardCardMediaGraph,')
+    || !runtimeText.includes('persistDraftGraphData: commitStoryboardCardMediaGraph,')) {
+    throw new Error('expected Storyboard Canvas to use the same publish-then-persist workflow contract as the Widget surface')
+  }
+}
+
 export function testStoryboardWidgetAutoRunSchedulesAfterWidgetPropertyCommit() {
   const actionsText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas', 'runtime', 'useStoryboardWidgetNodeDraftActions.ts'), 'utf8')
   const runtimeText = readFileSync(resolve(process.cwd(), 'src', 'components', 'StoryboardWidgetCanvas.runtime.tsx'), 'utf8')

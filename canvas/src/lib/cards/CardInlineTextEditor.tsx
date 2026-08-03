@@ -122,6 +122,7 @@ export const CardInlineTextEditor = React.memo(function CardInlineTextEditor(pro
   const initialViewerSelectionPointRef = React.useRef<MarkdownContentEditablePoint | null>(null)
   const lastEditRequestKeyRef = React.useRef<string | number | null>(null)
   const lastEditingRef = React.useRef(editing)
+  const committedEditValueRef = React.useRef<string | null>(null)
   const commandSelectionRef = React.useRef<{ start: number; end: number }>({ start: 0, end: 0 })
   const externalCommandStateRef = React.useRef<CardInlineTextCommandExternalState>({ canEdit, draft, editing, multiline, onCommit, onMediaCommandSelect, persistCommandDraft: (_nextValue: string) => void 0, value })
   const editorDensity = useWorkspaceDataViewFloatingDensity()
@@ -158,6 +159,7 @@ export const CardInlineTextEditor = React.memo(function CardInlineTextEditor(pro
     if (Object.is(lastEditRequestKeyRef.current, editRequestKey)) return
     lastEditRequestKeyRef.current = editRequestKey
     commitOpenCardInlineTextEditorsExcept(ownerKey)
+    committedEditValueRef.current = null
     updateDraft(beginViewerDraft(value))
     setEditing(true)
   }, [beginViewerDraft, canEdit, editRequestKey, ownerKey, updateDraft, value])
@@ -199,6 +201,8 @@ export const CardInlineTextEditor = React.memo(function CardInlineTextEditor(pro
     setCommandMode(null)
     setCommandQuery('')
     const next = normalizeCommittedValueForSurface(rawNext)
+    if (committedEditValueRef.current === next) return
+    committedEditValueRef.current = next
     if (next === normalizeEditorValue(value)) return
     onCommit?.(next)
   }, [draft, normalizeCommittedValueForSurface, onCommit, readDraft, readProjectedEditorRawValue, useViewerEditSurface, value])
@@ -207,20 +211,20 @@ export const CardInlineTextEditor = React.memo(function CardInlineTextEditor(pro
     const inputValue = inputRef.current?.value
     return typeof inputValue === 'string' ? inputValue : null
   }, [readDraft, useViewerEditSurface])
-  useRegisteredOpenCardInlineTextEditor({ commit, editing, ownerKey, readValue: readOpenEditorValue })
-  React.useEffect(() => {
-    if (!editing || !commandMode) return
-    const ownerDocument = inputRef.current?.ownerDocument || (typeof document !== 'undefined' ? document : null)
-    if (!ownerDocument) return
-    const onDocumentPointerDown = (event: PointerEvent) => {
-      if (isCommandMenuTarget(event.target)) return
-      commit()
-    }
-    ownerDocument.addEventListener('pointerdown', onDocumentPointerDown, true)
-    return () => {
-      ownerDocument.removeEventListener('pointerdown', onDocumentPointerDown, true)
-    }
-  }, [commandMode, commit, editing, isCommandMenuTarget])
+  const getEditorOwnerDocument = React.useCallback(() => (
+    commandRootRef.current?.ownerDocument
+    || inputRef.current?.ownerDocument
+    || viewerEditorRef.current?.ownerDocument
+    || (typeof document !== 'undefined' ? document : null)
+  ), [])
+  useRegisteredOpenCardInlineTextEditor({
+    commit,
+    editing,
+    getOwnerDocument: getEditorOwnerDocument,
+    isEditingTarget: isCommandMenuTarget,
+    ownerKey,
+    readValue: readOpenEditorValue,
+  })
   const persistCommandDraft = React.useCallback((nextValue: string) => {
     const next = normalizeCommittedValueForSurface(nextValue)
     const input = inputRef.current
@@ -263,6 +267,7 @@ export const CardInlineTextEditor = React.memo(function CardInlineTextEditor(pro
       ? { x: event.clientX, y: event.clientY }
       : null
     commitOpenCardInlineTextEditorsExcept(ownerKey)
+    committedEditValueRef.current = null
     updateDraft(beginViewerDraft(value))
     setEditing(true)
     return true

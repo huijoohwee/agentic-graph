@@ -11,6 +11,13 @@ const NOTE_CANVAS_FRONTMATTER_LINES = [
   'kgCanvasRenderMode: "2d"',
 ] as const
 
+const AUTHORED_NOTE_DOCUMENT_NODE_ID_PREFIX = 'doc:md:'
+const LEGACY_AUTHORED_NOTE_DOCUMENT_NODE_ID = 'document'
+
+export function resolveAuthoredMarkdownNoteDocumentNodeId(documentName: string): string {
+  return `${AUTHORED_NOTE_DOCUMENT_NODE_ID_PREFIX}${encodeURIComponent(normalizeWorkspacePath(documentName))}`
+}
+
 export function isWorkspaceAuthoredMarkdownNotePath(path: string): boolean {
   const normalized = normalizeWorkspacePath(path)
   return normalized.startsWith(`${WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH}/`)
@@ -30,7 +37,35 @@ function buildAuthoredMarkdownNoteDefaultLines(documentName: string, rawText = '
   ]
 }
 
+function buildAuthoredMarkdownNoteFlowLines(
+  documentName: string,
+  nodeId: string,
+  serializeNodeId: (value: string) => string = JSON.stringify,
+): string[] {
+  const title = resolveAuthoredMarkdownNoteTitle(documentName)
+  return [
+    'flow:',
+    '  nodes:',
+    `    - id: {key: id, type: string, value: ${serializeNodeId(nodeId)}}`,
+    '      type: {key: type, type: string, value: Document}',
+    `      label: {key: label, type: string, value: ${JSON.stringify(title)}}`,
+    '      summary: {key: summary, type: string, value: ""}',
+    '  edges: []',
+  ]
+}
+
 export function buildAuthoredMarkdownNoteInitialText(documentName: string): string {
+  if (!isWorkspaceAuthoredMarkdownNotePath(documentName)) return ''
+  return [
+    '---',
+    ...buildAuthoredMarkdownNoteDefaultLines(documentName),
+    ...buildAuthoredMarkdownNoteFlowLines(documentName, resolveAuthoredMarkdownNoteDocumentNodeId(documentName)),
+    '---',
+    '',
+  ].join('\n')
+}
+
+function buildLegacyAuthoredMarkdownNoteWithoutFlowInitialText(documentName: string): string {
   if (!isWorkspaceAuthoredMarkdownNotePath(documentName)) return ''
   return [
     '---',
@@ -40,14 +75,46 @@ export function buildAuthoredMarkdownNoteInitialText(documentName: string): stri
   ].join('\n')
 }
 
+function buildLegacyAuthoredMarkdownNoteGenericFlowInitialText(documentName: string): string {
+  if (!isWorkspaceAuthoredMarkdownNotePath(documentName)) return ''
+  return [
+    '---',
+    ...buildAuthoredMarkdownNoteDefaultLines(documentName),
+    ...buildAuthoredMarkdownNoteFlowLines(
+      documentName,
+      LEGACY_AUTHORED_NOTE_DOCUMENT_NODE_ID,
+      value => value,
+    ),
+    '---',
+    '',
+  ].join('\n')
+}
+
+function normalizeAuthoredMarkdownNoteText(value: string): string {
+  return String(value || '').replace(/\r\n?/g, '\n').trimEnd()
+}
+
 export function isAuthoredMarkdownNoteInitialDocument(args: {
   documentName: string
   rawText: string
 }): boolean {
   const expected = buildAuthoredMarkdownNoteInitialText(args.documentName)
   if (!expected) return false
-  const normalize = (value: string): string => String(value || '').replace(/\r\n?/g, '\n').trimEnd()
-  return normalize(args.rawText) === normalize(expected)
+  return normalizeAuthoredMarkdownNoteText(args.rawText) === normalizeAuthoredMarkdownNoteText(expected)
+}
+
+export function upgradeAuthoredMarkdownNoteInitialDocument(args: {
+  documentName: string
+  rawText: string
+}): string {
+  const legacyInitialTexts = [
+    buildLegacyAuthoredMarkdownNoteWithoutFlowInitialText(args.documentName),
+    buildLegacyAuthoredMarkdownNoteGenericFlowInitialText(args.documentName),
+  ].filter(Boolean)
+  const normalizedRawText = normalizeAuthoredMarkdownNoteText(args.rawText)
+  return legacyInitialTexts.some(text => normalizedRawText === normalizeAuthoredMarkdownNoteText(text))
+    ? buildAuthoredMarkdownNoteInitialText(args.documentName)
+    : args.rawText
 }
 
 export function resolveWorkspaceDocumentCanvasPreset(args: {
