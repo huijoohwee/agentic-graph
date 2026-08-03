@@ -3,10 +3,11 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from 'playwright'
 import { isAcceptedWorkerScriptUrl } from './production-service-worker-registration-proof.mjs'
-import { seedStaleRuntimeCacheProof } from './service-worker-upgrade-cache-proof.mjs'
+import { classifyServiceWorkerReleaseTransition } from './service-worker-release-transition.mjs'
+import { seedReturningUserCacheProof } from './service-worker-upgrade-cache-proof.mjs'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
-const EVIDENCE_SCHEMA = 'knowgrph-production-service-worker-upgrade/v2'
+const EVIDENCE_SCHEMA = 'knowgrph-production-service-worker-transition/v3'
 const SENTINEL_KEY = 'kg:production-service-worker-upgrade-sentinel'
 const SENTINEL_DATABASE = 'kg-production-service-worker-upgrade-proof'
 const CHAT_RUNTIME_SCHEMA = 'knowgrph-chat-stream-worker/v2'
@@ -394,6 +395,11 @@ const launchProfile = () => chromium.launchPersistentContext(profileDirectory, {
 const prewarm = async () => {
   await fs.mkdir(profileDirectory, { recursive: false })
   const previousRevision = await readRuntimeRevision()
+  const expectedRevision = String(process.env.RELEASE_SHA || '').trim()
+  const transitionKind = classifyServiceWorkerReleaseTransition({
+    previousRevision,
+    expectedRevision,
+  })
   const sentinel = `${previousRevision}:${Date.now()}`
   const context = await launchProfile()
   try {
@@ -418,7 +424,10 @@ const prewarm = async () => {
     })
     assert.ok(reloadNavigationResponse, 'prewarm requires a controlled reload response')
     const scriptPaths = await waitForDocumentRevision(page, previousRevision)
-    const seededCachePaths = await seedStaleRuntimeCacheProof(page, previousRevision)
+    const seededCachePaths = await seedReturningUserCacheProof(
+      page,
+      transitionKind === 'revision-upgrade' ? previousRevision : '',
+    )
     const serviceWorker = await waitForServiceWorkerRevision(page, previousRevision)
     await writeSentinels(page, sentinel)
     assert.deepEqual(
@@ -439,6 +448,8 @@ const prewarm = async () => {
       schema: EVIDENCE_SCHEMA,
       profileOrigin,
       previousRevision,
+      expectedRevision,
+      transitionKind,
       sentinel,
       scriptPaths,
       navigation,
@@ -449,6 +460,8 @@ const prewarm = async () => {
       status: 'prewarmed',
       profileOrigin,
       previousRevision,
+      expectedRevision,
+      transitionKind,
       navigation,
       seededCachePaths,
       serviceWorker,
@@ -465,21 +478,33 @@ const verify = async () => {
   assert.equal(evidence.schema, EVIDENCE_SCHEMA)
   assert.equal(evidence.profileOrigin, profileOrigin)
   assert.match(evidence.previousRevision, SHA_PATTERN)
-  assert.notEqual(evidence.previousRevision, expectedRevision, 'upgrade proof requires two distinct production revisions')
+  assert.equal(evidence.expectedRevision, expectedRevision)
+  const transitionKind = classifyServiceWorkerReleaseTransition({
+    previousRevision: evidence.previousRevision,
+    expectedRevision,
+  })
+  assert.equal(evidence.transitionKind, transitionKind)
   assert.equal(typeof evidence.navigation?.initialFromServiceWorker, 'boolean')
   assert.equal(typeof evidence.navigation?.reloadFromServiceWorker, 'boolean')
-  assert.equal(
-    evidence.seededCachePaths?.assetPath,
-    `/knowgrph/assets/${evidence.previousRevision}/service-worker-upgrade-stale-runtime-proof.js`,
-  )
-  assert.deepEqual(
-    evidence.seededCachePaths?.htmlPaths,
-    [
-      `/knowgrph?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
-      `/knowgrph/deep-link?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
-      `/favicon.ico?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
-    ],
-  )
+  if (transitionKind === 'revision-upgrade') {
+    assert.notEqual(evidence.previousRevision, expectedRevision)
+    assert.equal(
+      evidence.seededCachePaths?.assetPath,
+      `/knowgrph/assets/${evidence.previousRevision}/service-worker-upgrade-stale-runtime-proof.js`,
+    )
+    assert.deepEqual(
+      evidence.seededCachePaths?.htmlPaths,
+      [
+        `/knowgrph?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
+        `/knowgrph/deep-link?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
+        `/favicon.ico?kgSwUpgradeStaleHtmlProof=${evidence.previousRevision}`,
+      ],
+    )
+  } else {
+    assert.equal(evidence.previousRevision, expectedRevision)
+    assert.equal(evidence.seededCachePaths?.assetPath, null)
+    assert.deepEqual(evidence.seededCachePaths?.htmlPaths, [])
+  }
   assert.equal(
     evidence.seededCachePaths?.siblingCacheName,
     'singabldr-pwa:static:20260504-2',
@@ -581,6 +606,7 @@ const verify = async () => {
     )
     process.stdout.write(`${JSON.stringify({
       status: 'passed',
+      transitionKind,
       profileOrigin,
       previousRevision: evidence.previousRevision,
       sourceRevision: expectedRevision,

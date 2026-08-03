@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { assertRemoteRevisionAuthority } from '../immutable-release-manifest.mjs'
+import { classifyServiceWorkerReleaseTransition } from '../service-worker-release-transition.mjs'
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const integrationWorkflow = fs.readFileSync(path.resolve(repoRoot, '.github', 'workflows', 'integration.yml'), 'utf8')
@@ -23,6 +24,7 @@ const productionFidelityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts
 const productionServiceWorkerUpgradeScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'verify-production-service-worker-upgrade.mjs'), 'utf8')
 const productionServiceWorkerRegistrationProof = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-service-worker-registration-proof.mjs'), 'utf8')
 const serviceWorkerUpgradeCacheProofScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'service-worker-upgrade-cache-proof.mjs'), 'utf8')
+const serviceWorkerReleaseTransitionScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'service-worker-release-transition.mjs'), 'utf8')
 const productionMirrorArtifactScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'production-mirror-artifact.mjs'), 'utf8')
 const gameModeSourceAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'check-game-fps-readiness.mjs'), 'utf8')
 const protectedMainAuthorityScript = fs.readFileSync(path.resolve(repoRoot, 'scripts', 'assert-protected-main-release-authority.mjs'), 'utf8')
@@ -243,6 +245,12 @@ test('Agentic Canvas OS docs promote automatically through protected Knowgrph in
 })
 
 test('production release reconciles competing Cloudflare Pages Git deployment ownership', () => {
+  assert.match(releaseWorkflow, /deployment_authority:[\s\S]*name: Reconcile Cloudflare Deployment Authority/)
+  assert.match(releaseWorkflow, /verify:[\s\S]*needs: deployment_authority/)
+  assert.match(
+    releaseWorkflow,
+    /name: Disable competing Pages Git deployments before candidate sealing[\s\S]*pages-production-deployment\.mjs enforce-direct-upload-owner/,
+  )
   assert.match(pagesDeploymentScript, /enforce-direct-upload-owner/)
   assert.match(pagesDeploymentScript, /method: 'PATCH'/)
   assert.match(pagesDeploymentScript, /production_deployments_enabled: false/)
@@ -356,9 +364,9 @@ test('verified production mirror is published only after live smoke', () => {
   assert.match(productionServiceWorkerUpgradeScript, /chromium\.launchPersistentContext\(profileDirectory/)
   assert.match(productionServiceWorkerUpgradeScript, /PRODUCTION_SW_PROFILE_ORIGIN is required/)
   assert.match(productionServiceWorkerUpgradeScript, /const profileOrigin = normalizeOrigin\(profileOriginInput\)/)
-  assert.match(productionServiceWorkerUpgradeScript, /knowgrph-production-service-worker-upgrade\/v2/)
+  assert.match(productionServiceWorkerUpgradeScript, /knowgrph-production-service-worker-transition\/v3/)
   assert.match(productionServiceWorkerUpgradeScript, /assert\.equal\(evidence\.profileOrigin, profileOrigin\)/)
-  assert.doesNotMatch(productionServiceWorkerUpgradeScript, /knowgrph-production-service-worker-upgrade\/v1/)
+  assert.doesNotMatch(productionServiceWorkerUpgradeScript, /knowgrph-production-service-worker-upgrade\/v[12]/)
   assert.doesNotMatch(productionServiceWorkerUpgradeScript, /PRODUCTION_PUBLIC_ORIGIN/)
   assert.doesNotMatch(productionServiceWorkerUpgradeScript, /https:\/\/airvio\.co/)
   assert.match(productionServiceWorkerUpgradeScript, /serviceWorkers: 'allow'/)
@@ -391,7 +399,9 @@ test('verified production mirror is published only after live smoke', () => {
   assert.match(productionServiceWorkerUpgradeScript, /service worker convergence must preserve sibling application HTML caches/)
   assert.match(productionServiceWorkerUpgradeScript, /precacheHtmlPaths/)
   assert.match(productionServiceWorkerUpgradeScript, /evidence\.precacheHtmlPaths\.length === 0/)
-  assert.match(productionServiceWorkerUpgradeScript, /seedStaleRuntimeCacheProof/)
+  assert.match(productionServiceWorkerUpgradeScript, /seedReturningUserCacheProof/)
+  assert.match(serviceWorkerReleaseTransitionScript, /same-revision-recovery/)
+  assert.match(serviceWorkerReleaseTransitionScript, /revision-upgrade/)
   assert.match(serviceWorkerUpgradeCacheProofScript, /service-worker-upgrade-stale-runtime-proof\.js/)
   assert.match(serviceWorkerUpgradeCacheProofScript, /kgSwUpgradeStaleHtmlProof/)
   assert.match(serviceWorkerUpgradeCacheProofScript, /caches\.open\('kg-static'\)/)
@@ -454,6 +464,20 @@ test('verified production mirror is published only after live smoke', () => {
   assert.doesNotMatch(verifyJob, /HUIJOOHWEE_PUSH_TOKEN/)
   assert.match(deployJob, /git push origin HEAD:main/)
   assert.match(deployJob, /HUIJOOHWEE_PUSH_TOKEN/)
+})
+
+test('service worker release transition distinguishes upgrade from recovery', () => {
+  const previousRevision = '1'.repeat(40)
+  const expectedRevision = '2'.repeat(40)
+  assert.equal(classifyServiceWorkerReleaseTransition({ previousRevision, expectedRevision }), 'revision-upgrade')
+  assert.equal(classifyServiceWorkerReleaseTransition({
+    previousRevision: expectedRevision,
+    expectedRevision,
+  }), 'same-revision-recovery')
+  assert.throws(
+    () => classifyServiceWorkerReleaseTransition({ previousRevision: 'main', expectedRevision }),
+    /previous revision must be an exact source revision/,
+  )
 })
 
 test('deploy dependency bootstrap retries bounded transient registry failures', () => {
