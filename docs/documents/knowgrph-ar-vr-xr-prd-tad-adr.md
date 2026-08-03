@@ -1,7 +1,7 @@
 ---
 title: "Knowgrph AR/VR/XR — Capability, Session, and Camera Fallback"
 doc_type: "PRD/TAD/ADR"
-version: "1.1.0"
+version: "1.1.1"
 date: "2026-08-03"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -12,7 +12,7 @@ delivered_rung: "undocumented"
 lane: "authoring"
 universal_scope: "false"
 runtime_owner: "canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts; canvas/src/lib/three/ThreeGraphXr.tsx; canvas/src/features/three/xrArPlacementRuntime.ts; canvas/src/features/three/motionControlSurfaceRuntime.ts"
-runtime_proof: "canvas/src/__tests__/canvasXrSessionPolicy.test.ts; canvas/src/__tests__/xrSpatialCaptureFallbackReadiness.test.ts; canvas/src/__tests__/xrSpatialCaptureFallbackBrowserSmokeContract.test.ts"
+runtime_proof: "scripts/run-xr-mode-source-smoke.mjs; scripts/__tests__/xr-mode-source-smoke.test.mjs; canvas/src/__tests__/canvasXrSessionPolicy.test.ts; canvas/src/__tests__/workspaceImportXrSpatialCaptureIngestion.test.ts; canvas/src/__tests__/xrSpatialCaptureFallbackReadiness.test.ts; canvas/src/__tests__/xrSpatialCaptureFallbackBrowserSmokeContract.test.ts"
 ---
 
 # Knowgrph AR/VR/XR — Capability, Session, and Camera Fallback
@@ -307,13 +307,18 @@ Physical-device validation remains an operator cost and a separate gate.
 Run from the repository root:
 
 ```sh
-npm run xr:source-runner:test
-npm -C canvas run test:smoke:xr-spatial-capture-fallback:source
-npm run xr:runtime-ready
+npm run xr-mode:source-runner:test
+npm run xr-mode:source-ready
+npm run xr-mode:runtime-ready
 ```
 
-`npm run xr:review-ready` is the one-command local reviewer path. The exact
-boundary and artifact location are owned by
+`npm run xr-mode:runtime-ready` is the root XR Mode readiness boundary. It
+aggregates the E1-E4 surface, ownership, scene, placement, GLB/glTF, spatial
+ingest, deterministic conversion, native-session, fallback-source, and fresh
+local-browser evidence. A narrower `xr:*` fallback command or an individual
+downstream test cannot substitute for this aggregate result. The command is
+local-only and its contract rejects deployment or documentation-update
+mutations. Fallback-specific artifact limits remain owned by
 `docs/documents/knowgrph-xr-spatial-capture-fallback-readiness.md`.
 
 | Capability | Source state | Focused evidence | Honest rung |
@@ -335,7 +340,8 @@ boundary and artifact location are owned by
 - [x] The camera CTA reuses established owners.
 - [x] The camera stays permission-gated behind a separate user action.
 - [x] Source and browser evidence have separate boundaries.
-- [x] The canonical readiness commands and document are linked.
+- [x] The aggregate `xr-mode:runtime-ready` root command and its complete
+  source ledger are linked.
 - [x] Speculative depth, reconstruction, native-viewer, and Production claims
   are excluded.
 - [ ] Physical mobile camera proof.
