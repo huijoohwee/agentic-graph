@@ -1,6 +1,13 @@
 import type { TestCaseTuple } from '../runner/testRunnerTypes'
 
 export const TEST_CASES_POST_PARSER_8: TestCaseTuple[] = [
+  ["markdown.workspace.sourceRevision.readRetriesAfterPublication","@/__tests__/workspaceSourceTextTransaction.test.ts","testWorkspaceSourceTextSnapshotRetriesAfterConcurrentPublication"],
+  ["markdown.workspace.sourceRevision.readWaitsForReservedWrite","@/__tests__/workspaceSourceTextTransaction.test.ts","testWorkspaceSourceTextSnapshotWaitsForReservedWrite"],
+  ["markdown.workspace.sourceRevision.readIgnoresUnrelatedWrite","@/__tests__/workspaceSourceTextTransaction.test.ts","testWorkspaceSourceTextSnapshotDoesNotWaitForUnrelatedPath"],
+  ["markdown.workspace.sourceRevision.rejectsStaleWrite","@/__tests__/workspaceSourceTextTransaction.test.ts","testWorkspaceSourceTextTransactionRejectsStaleExpectedRevision"],
+  ["markdown.workspace.sourceRevision.autosaveRejectsChangedBase","@/__tests__/workspaceSourceTextTransaction.test.ts","testWorkspaceAutosaveWriteRejectsChangedDurableSourceBase"],
+  ["markdown.workspace.sourceRevision.activeDocumentRejectsStale","@/__tests__/workspaceSourceTextTransaction.test.ts","testActiveMarkdownDocumentRejectsStaleSameDocumentRevision"],
+  ["markdown.workspace.sourceRevision.documentSwitchAllowsExpected","@/__tests__/workspaceSourceTextTransaction.test.ts","testActiveMarkdownDocumentAllowsExpectedDocumentSwitchRevision"],
   ["markdown.workspace.runOutputSwitch.prefersAuthoredNoteFs","@/__tests__/workspaceRunOutputSwitchPersistence.test.ts","testWorkspaceRunOutputSwitchPrefersAuthoredNoteFsOverStaleDocsMirror"],
   ["markdown.workspace.runOutputSwitch.refreshesSettledPathRead","@/__tests__/workspaceRunOutputSwitchPersistence.test.ts","testWorkspaceRunOutputSwitchRefreshesSettledPathReadAfterFsWrite"],
   ["markdown.workspace.runOutputSwitch.waitsForRunPublication","@/__tests__/workspaceRunOutputSwitchPersistence.test.ts","testWorkspaceRunOutputSwitchWaitsForRunPublication"],

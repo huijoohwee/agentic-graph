@@ -21,3 +21,36 @@ export function testCanonicalNodePropertyAuthorityPreservesScopedLayout() {
     throw new Error('expected canonical property projection to apply authoritative node properties')
   }
 }
+
+export function testCanonicalNodePropertyAuthorityRejectsDifferentSourceRevision() {
+  const sourceGraph: GraphData = {
+    type: 'Graph',
+    metadata: {
+      source: 'markdown:notes/authored.md',
+      sourceLayerHash: 'authored-source-revision',
+      graphDataRevision: 2,
+    },
+    nodes: [{ id: 'document', label: 'Authored document', type: 'Document', properties: { summary: 'Keep authored input' } }],
+    edges: [],
+  }
+  const staleCanonicalGraph: GraphData = {
+    type: 'Graph',
+    metadata: {
+      source: 'markdown:notes/authored.md',
+      sourceLayerHash: 'stale-source-revision',
+      graphDataRevision: 13,
+    },
+    nodes: [{ id: 'document', label: 'Authored document', type: 'Document', properties: { summary: '' } }],
+    edges: [],
+  }
+  const resolved = applyCanonicalNodePropertyAuthority({
+    graphData: sourceGraph,
+    propertyAuthorityGraphData: staleCanonicalGraph,
+  })
+  if (resolved !== sourceGraph) {
+    throw new Error('expected a different source-layer revision to remain isolated from canonical property projection')
+  }
+  if (resolved?.nodes[0]?.properties?.summary !== 'Keep authored input') {
+    throw new Error('expected the authored source value to survive a higher but semantically stale UI revision')
+  }
+}

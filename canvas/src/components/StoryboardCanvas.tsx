@@ -101,7 +101,7 @@ import { GRAPH_KEYWORD_LANE_PROPERTY_KEYS, collectGraphKeywordTermStats } from '
 import { WorkspaceDataViewNewRecordButton } from '@/features/markdown-workspace/main/viewer/WorkspaceDataViewNewRecordButton'
 import { UI_COPY } from '@/lib/config'
 import { createUniqueId } from '@/lib/ids'
-import { persistStoryboardCardMediaGraphSource } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSource'
+import { persistStoryboardCardMediaGraphSource, synchronizeStoryboardCardMediaGraphSource } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSource'
 import { createStoryboardWidgetWorkflowNodeRunner, resolveStoryboardWidgetBaseGraphKind } from '@/components/StoryboardWidgetCanvas/runtime/storyboardWidgetWorkflowRunAction'
 import { buildStoryboardRunExecutionAnchorCapture } from '@/components/StoryboardCanvas/captureStoryboardRunExecutionAnchor'
 import { readStoryboardNodeProperties, readStoryboardNumber, readStoryboardScalar, readStoryboardStringList } from '@/components/StoryboardCanvas/storyboardValueReaders'
@@ -699,9 +699,11 @@ export default function StoryboardCanvas({
     const committedGraphData = bumpStoryboardWidgetDraftGraphDataRevision(nextGraphData, {
       revisionFloor: graphRevision,
     })
+    synchronizeStoryboardCardMediaGraphSource(committedGraphData, {
+      sourceOwner: { documentName: markdownDocumentName, documentText: markdownDocumentText },
+    })
     storyboardRunGraphRef.current = committedGraphData
     setGraphDataPreservingLayout(committedGraphData)
-    void persistStoryboardCardMediaGraphSource(committedGraphData, { sourceOwner: { documentName: markdownDocumentName, documentText: markdownDocumentText } })
   }, [graphRevision, markdownDocumentName, markdownDocumentText, setGraphDataPreservingLayout])
   const materializeStoryboardProbeTree = React.useCallback((card: StoryboardCardModel) => invokeProbeTreeFromStoryboardToolbar({
     card,

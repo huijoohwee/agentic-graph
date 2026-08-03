@@ -122,6 +122,8 @@ export function testDashboardRendererGridToggleUsesSharedDisplayControl() {
   const gridToggle = displayControls?.children?.find(child => child.id === 'control:grid')
   const snapGridToggle = displayControls?.children?.find(child => child.id === 'control:snapGrid')
   const helperLinesToggle = displayControls?.children?.find(child => child.id === 'control:helperLines')
+  const nodeShapeChoice = displayControls?.children?.find(child => child.id === 'control:nodeShape')
+  const clusterShapeChoice = displayControls?.children?.find(child => child.id === 'control:clusterShape')
   const minimapToggle = displayControls?.children?.find(child => child.id === 'control:minimap')
   if (!gridToggle || gridToggle.disabled || gridToggle.isActive === true || gridToggle.children?.length) {
     throw new Error('Expected Dashboard Display Controls to expose Grid as an inactive single-action toggle')
@@ -131,6 +133,12 @@ export function testDashboardRendererGridToggleUsesSharedDisplayControl() {
   }
   if (!helperLinesToggle || helperLinesToggle.disabled || helperLinesToggle.isActive !== true || helperLinesToggle.children?.length || helperLinesToggle.title !== 'Helper Lines') {
     throw new Error('Expected Dashboard Display Controls to expose Helper Lines as an active single-action toggle')
+  }
+  if (nodeShapeChoice?.isActive !== true || clusterShapeChoice?.isActive !== true
+    || nodeShapeChoice.rowLabel !== 'Node Shape' || nodeShapeChoice.valueLabel !== 'Circle'
+    || clusterShapeChoice.rowLabel !== 'Cluster Shape' || !['Rect', 'Polygon'].includes(String(clusterShapeChoice.valueLabel || ''))
+    || !clusterShapeChoice.title.endsWith(String(clusterShapeChoice.valueLabel || ''))) {
+    throw new Error('Expected current Node and Cluster shape choices, including defaults, to reuse selected-row state')
   }
   if (!minimapToggle?.disabled) {
     throw new Error('Expected Dashboard renderer to avoid enabling the D3 minimap path')
@@ -513,8 +521,8 @@ export function testAll2dRenderersExposeSharedAspectRatioDisplayControl() {
       getCanvasViewRendererOptions(),
     ).find(option => option.id === 'control:menu')
     const aspectToggle = displayControls?.children?.find(child => child.id === CANVAS_ASPECT_RATIO_DISPLAY_CONTROL_ID)
-    if (!aspectToggle || aspectToggle.title !== 'Aspect: 16:9' || aspectToggle.label !== 'Aspect' || aspectToggle.disabled || aspectToggle.children?.length || aspectToggle.isActive === true) {
-      throw new Error(`Expected ${renderer} Display Controls to expose shared inactive Aspect toggle`)
+    if (!aspectToggle || aspectToggle.title !== 'Aspect: 16:9' || aspectToggle.label !== 'Aspect' || aspectToggle.valueLabel !== '16:9' || aspectToggle.disabled || aspectToggle.children?.length || aspectToggle.isActive !== true) {
+      throw new Error(`Expected ${renderer} Display Controls to style the current default Aspect choice as selected`)
     }
 
     const unexpectedViewMutations: string[] = []

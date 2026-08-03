@@ -13,7 +13,7 @@ type GetGraph = StoreApi<GraphState>['getState']
 
 const UI_STARTUP_PANEL_DEFAULTS = {
   floatingPanelOpen: false,
-  floatingPanelView: 'geo' as const,
+  floatingPanelView: 'propsPanel' as const,
 }
 
 export const createUiSlice = (set: SetGraph, get: GetGraph) => {

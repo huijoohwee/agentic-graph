@@ -43,6 +43,7 @@ export function useMarkdownWorkspaceEffectiveContent(args: {
   activeDocumentKey: string
   activeEntryKind: WorkspaceEntry['kind'] | null
   activeText: string
+  activeTextRef: React.MutableRefObject<string>
   setActiveText: React.Dispatch<React.SetStateAction<string>>
   markdownDocumentName: string
   markdownDocumentText: string
@@ -62,6 +63,7 @@ export function useMarkdownWorkspaceEffectiveContent(args: {
     activeDocumentKey,
     activeEntryKind,
     activeText,
+    activeTextRef,
     setActiveText,
     markdownDocumentName,
     markdownDocumentText,
@@ -147,10 +149,12 @@ export function useMarkdownWorkspaceEffectiveContent(args: {
   const effectiveSetActiveText = React.useCallback(
     (next: string) => {
       if (contentMode === 'widget') return
+      const nextText = shouldRejectMarkdownDocumentPayload(next) ? '' : next
+      activeTextRef.current = nextText
       userEditedActiveTextRef.current = true
-      setActiveText(shouldRejectMarkdownDocumentPayload(next) ? '' : next)
+      setActiveText(nextText)
     },
-    [contentMode, setActiveText, userEditedActiveTextRef],
+    [activeTextRef, contentMode, setActiveText, userEditedActiveTextRef],
   )
 
   const effectiveViewerTextOverride = contentMode === 'widget' && widgetFormat === 'json' ? widgetViewerText : null

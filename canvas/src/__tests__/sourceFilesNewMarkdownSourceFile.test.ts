@@ -4,6 +4,8 @@ import {
   createNewMarkdownSourceFile,
 } from '@/features/source-files/createNewMarkdownSourceFile'
 import { getWorkspaceFs, resetWorkspaceFsForTests } from '@/features/workspace-fs/workspaceFs'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
+import { resolveAuthoredMarkdownNoteDocumentNodeId } from '@/features/workspace-fs/workspaceAuthoredNoteDocument'
 import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import { resolveWorkspaceSourceRootPaths } from '@/features/workspace-fs/workspaceSourceRoots'
 import { LS_KEYS } from '@/lib/config'
@@ -11,6 +13,8 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { MemoryStorage } from '@/tests/lib/memoryStorage'
 import { initWindowHarness } from '@/tests/lib/windowHarness'
 import { parseCanvasWorkspaceFrontmatterPreset, extractYamlFrontmatterBlock } from '@/lib/markdown/frontmatter'
+import { tryParseMarkdownFrontmatterFlowGraph } from '@/features/parsers/markdownFrontmatterFlowGraph'
+import { syncActiveMarkdownDocumentTextFromParsedGraph } from '@/hooks/store/graph-data-slice/graphDataFrontmatterFlowSync'
 import {
   readGeospatialOverlayEnabledPreference,
   writeGeospatialOverlayEnabledPreference,
@@ -89,6 +93,135 @@ export async function testCreateNewMarkdownSourceFileDefaultsToAuthoredNotesRoot
     useMarkdownExplorerStore.getState().setActivePath(null)
     useGraphStore.getState().resetAll()
     resetWorkspaceFsForTests()
+  }
+}
+
+export async function testCreateNewMarkdownSourceFileAuthorsWritableDocumentFlow() {
+  resetWorkspaceFsForTests()
+  useGraphStore.getState().resetAll()
+  useMarkdownExplorerStore.getState().setActivePath(null)
+  try {
+    const createdPath = await createNewMarkdownSourceFile({
+      timestampMs: Date.UTC(2026, 7, 3, 2, 9, 49),
+    })
+    const fs = await getWorkspaceFs()
+    const documentText = String(await fs.readFileText(createdPath) || '')
+    const parsed = tryParseMarkdownFrontmatterFlowGraph(createdPath, documentText)
+    const documentNode = parsed?.graphData.nodes.find(node => node.type === 'Document')
+    const expectedNodeId = resolveAuthoredMarkdownNoteDocumentNodeId(createdPath)
+    const secondPath = await createNewMarkdownSourceFile({
+      timestampMs: Date.UTC(2026, 7, 3, 2, 9, 50),
+    })
+    const secondText = String(await fs.readFileText(secondPath) || '')
+    const secondParsed = tryParseMarkdownFrontmatterFlowGraph(secondPath, secondText)
+    const secondDocumentNode = secondParsed?.graphData.nodes.find(node => node.type === 'Document')
+    const expectedSecondNodeId = resolveAuthoredMarkdownNoteDocumentNodeId(secondPath)
+    if (
+      !parsed
+      || parsed.graphData.context !== 'frontmatter-flow'
+      || documentNode?.id !== expectedNodeId
+      || !secondParsed
+      || secondParsed.graphData.context !== 'frontmatter-flow'
+      || secondDocumentNode?.id !== expectedSecondNodeId
+      || documentNode?.id === secondDocumentNode?.id
+    ) {
+      throw new Error(`expected New .md to author a writable Document flow node, got ${documentText}`)
+    }
+
+    const editedGraph = {
+      ...parsed.graphData,
+      nodes: parsed.graphData.nodes.map(node => node.id === documentNode.id
+        ? { ...node, properties: { ...node.properties, summary: 'Persisted source summary.' } }
+        : node),
+    }
+    const sourceFiles = [{
+      id: 'authored-note',
+      enabled: true,
+      status: 'idle' as const,
+      name: createdPath.split('/').pop() || 'note.md',
+      text: documentText,
+      source: { kind: 'local' as const, path: createdPath },
+    }]
+    const synced = syncActiveMarkdownDocumentTextFromParsedGraph({
+      state: {
+        markdownDocumentName: createdPath,
+        markdownDocumentText: documentText,
+        sourceFiles,
+      } as never,
+      sourceFiles,
+      parsedGraphData: editedGraph,
+    })
+    const synchronizedText = String(synced.markdownDocumentText || '')
+    if (!synced.accepted || !synchronizedText.includes('Persisted source summary.')) {
+      throw new Error(`expected a new authored note summary to round-trip through its source flow, got ${JSON.stringify(synced)}`)
+    }
+  } finally {
+    useMarkdownExplorerStore.getState().setActivePath(null)
+    useGraphStore.getState().resetAll()
+    resetWorkspaceFsForTests()
+  }
+}
+
+export async function testAuthoredMarkdownNoteInitialDocumentMigrationPreservesAuthoredContent() {
+  const notePath = '/notes/note_20260803T020949Z.md'
+  const legacyText = [
+    '---',
+    'title: "note_20260803T020949Z"',
+    'kgCanvasSurfaceMode: "2d"',
+    'kgCanvasRenderMode: "2d"',
+    '---',
+    '',
+  ].join('\n')
+  const createFs = (text: string) => createMemoryWorkspaceFs({
+    initialEntries: [
+      { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+      { path: '/notes', parentPath: '/', kind: 'folder', name: 'notes', updatedAtMs: 1 },
+      { path: notePath, parentPath: '/notes', kind: 'file', name: 'note_20260803T020949Z.md', text, updatedAtMs: 1 },
+    ],
+  })
+
+  const legacyFs = createFs(legacyText)
+  const legacyChanged = await legacyFs.ensureSeed()
+  const migratedText = String(await legacyFs.readFileText(notePath) || '')
+  const expectedNodeId = resolveAuthoredMarkdownNoteDocumentNodeId(notePath)
+  if (!legacyChanged || !migratedText.includes('flow:') || !migratedText.includes(expectedNodeId) || migratedText.includes('value: document')) {
+    throw new Error(`expected untouched legacy New .md source to upgrade into a writable flow, got ${migratedText}`)
+  }
+
+  const legacyGenericFlowText = [
+    '---',
+    'title: "note_20260803T020949Z"',
+    'kgCanvasSurfaceMode: "2d"',
+    'kgCanvasRenderMode: "2d"',
+    'flow:',
+    '  nodes:',
+    '    - id: {key: id, type: string, value: document}',
+    '      type: {key: type, type: string, value: Document}',
+    '      label: {key: label, type: string, value: "note_20260803T020949Z"}',
+    '      summary: {key: summary, type: string, value: ""}',
+    '  edges: []',
+    '---',
+    '',
+  ].join('\n')
+  const genericFlowFs = createFs(legacyGenericFlowText)
+  const genericFlowChanged = await genericFlowFs.ensureSeed()
+  const migratedGenericFlowText = String(await genericFlowFs.readFileText(notePath) || '')
+  if (!genericFlowChanged || !migratedGenericFlowText.includes(expectedNodeId) || migratedGenericFlowText.includes('value: document')) {
+    throw new Error(`expected untouched generic document identity to upgrade to its source-owned identity, got ${migratedGenericFlowText}`)
+  }
+
+  const authoredGenericFlowText = legacyGenericFlowText.replace('value: ""}', 'value: "Keep this authored Summary."}')
+  const authoredGenericFlowFs = createFs(authoredGenericFlowText)
+  await authoredGenericFlowFs.ensureSeed()
+  if (await authoredGenericFlowFs.readFileText(notePath) !== authoredGenericFlowText) {
+    throw new Error('expected migration to leave authored generic document content unchanged')
+  }
+
+  const authoredText = `${legacyText}\n# Keep this authored body`
+  const authoredFs = createFs(authoredText)
+  await authoredFs.ensureSeed()
+  if (await authoredFs.readFileText(notePath) !== authoredText) {
+    throw new Error('expected migration to leave authored note content unchanged')
   }
 }
 

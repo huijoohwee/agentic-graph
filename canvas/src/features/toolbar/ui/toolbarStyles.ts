@@ -29,8 +29,6 @@ export const uiDangerButtonClassName = `App-toolbar__btn border ${UI_COLOR_DANGE
 
 export const uiPrimaryPillActiveClassName = `${UI_COLOR_PRIMARY_BLUE_BG} ${UI_THEME_TOKENS.button.activeText}`
 
-export const uiPrimaryChipActiveClassName = `border ${UI_THEME_TOKENS.button.primaryChipActive}`
-
 export const uiToolbarButtonNeutralClassName = `${UI_THEME_TOKENS.button.neutralSubtle} ${UI_THEME_TOKENS.button.hoverBg}`
 
 export const uiToolbarButtonMutedClassName = `${UI_THEME_TOKENS.button.neutralMuted} ${UI_THEME_TOKENS.button.hoverBg}`

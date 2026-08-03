@@ -13,8 +13,8 @@ export async function testImportUrlWebMcpControlUsesCanonicalStructuredExecutor(
   })
   const readOnlyCount = contracts.filter(contract => contract.annotations?.readOnlyHint === true).length
   const guardedControlCount = contracts.filter(contract => contract.annotations?.readOnlyHint === false).length
-  if (contracts.length !== 42 || readOnlyCount !== 30 || guardedControlCount !== 12) {
-    throw new Error(`expected 42 WebMCP tools split 30/12, got ${contracts.length} split ${readOnlyCount}/${guardedControlCount}`)
+  if (contracts.length !== 46 || readOnlyCount !== 30 || guardedControlCount !== 16) {
+    throw new Error(`expected 46 WebMCP tools split 30/16, got ${contracts.length} split ${readOnlyCount}/${guardedControlCount}`)
   }
 
   const toolId = KNOWGRPH_AGENT_READY_TOOL_IDS.controlLocalImportUrl

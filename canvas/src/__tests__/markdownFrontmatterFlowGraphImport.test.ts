@@ -1501,6 +1501,34 @@ export function testMarkdownFrontmatterFlowGraphFlowBlockParsesDottedEdgeEndpoin
   if (String(edge.label || '') !== 'responds') throw new Error('expected label from dotted flow edge declaration')
 }
 
+export function testMarkdownFrontmatterFlowGraphPreservesDeclaredPathIdentityWithFileExtension() {
+  const sourceNodeId = 'doc:md:%2Fnotes%2Fnote_20260803T040623Z.md'
+  const md = [
+    '---',
+    'flow:',
+    '  nodes:',
+    `    - id: ${JSON.stringify(sourceNodeId)}`,
+    '      type: Document',
+    '      "flow:widgetFormId": "fm:authored-document"',
+    '      summary: "Keep authored input"',
+    '    - id: generated-card',
+    '      type: TextGeneration',
+    '  edges:',
+    `    - source: ${JSON.stringify(sourceNodeId)}`,
+    '      target: generated-card',
+    '      label: candidateOption',
+    '---',
+    '',
+  ].join('\n')
+
+  const res = tryParseMarkdownFrontmatterFlowGraph('authored-path-identity.md', md)
+  if (!res) throw new Error('expected frontmatter flow parse result')
+  const edge = res.graphData.edges[0]
+  if (edge?.source !== sourceNodeId || edge.target !== 'generated-card') {
+    throw new Error(`expected declared path identity to remain atomic instead of treating .md as a port, got ${JSON.stringify(edge)}`)
+  }
+}
+
 export function testMarkdownFrontmatterFlowGraphChatKnowgrphKeepsOutputSourceHandlesForWidgetEdgeAnchors() {
   const md = [
     '---',
