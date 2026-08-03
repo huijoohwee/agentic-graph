@@ -37,6 +37,7 @@ export const LS_KEYS = {
   markdownViewerWidthMode: 'kg:ui:markdown:viewerWidthMode',
   markdownViewerMediaMode: 'kg:ui:markdown:viewerMediaMode',
   markdownDerivedViewerKind: 'kg:ui:markdown:viewer:kind',
+  workspaceAutosaveEnabled: 'kg:ui:workspace:autosaveEnabled',
   workspaceEditorMode: 'kg:ui:workspace:editorMode',
   workspaceSurfacePadTopRem: 'kg:ui:workspace:surface:padTopRem',
   workspaceSurfacePadRightRem: 'kg:ui:workspace:surface:padRightRem',

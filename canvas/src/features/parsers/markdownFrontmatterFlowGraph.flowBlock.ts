@@ -635,9 +635,18 @@ function coerceFlowNodePorts(raw: unknown): Array<Record<string, unknown>> {
   return out
 }
 
-function parseFlowEdgeEndpoint(rawNode: unknown, rawHandle: unknown, defaultPortKey: string): { nodeId: string; portKey: string } | null {
+function parseFlowEdgeEndpoint(
+  rawNode: unknown,
+  rawHandle: unknown,
+  defaultPortKey: string,
+  declaredNodeIds: ReadonlySet<string>,
+): { nodeId: string; portKey: string } | null {
   const nodeIdRaw = asString(rawNode)
   const handleRaw = asString(rawHandle)
+  if (nodeIdRaw && declaredNodeIds.has(nodeIdRaw)) {
+    const portKey = handleRaw || defaultPortKey
+    return portKey ? { nodeId: nodeIdRaw, portKey } : null
+  }
   if (nodeIdRaw && handleRaw) return { nodeId: nodeIdRaw, portKey: handleRaw }
   const dot = nodeIdRaw.lastIndexOf('.')
   if (dot < 0) return nodeIdRaw && defaultPortKey ? { nodeId: nodeIdRaw, portKey: defaultPortKey } : null
@@ -816,6 +825,7 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
     normalizedNodes.push(next)
   }
   const flowVars = buildFlowTemplateVars(vars, normalizedNodes)
+  const declaredFlowNodeIds = new Set(normalizedNodes.map(node => asString(node.id)).filter(Boolean))
 
   const flowEdgesValue = readFlowValue('flow.edges', flow.edges, 'edges')
   const rawEdges = Array.isArray(flowEdgesValue) ? (flowEdgesValue as unknown[]) : []
@@ -829,8 +839,8 @@ export function normalizeMetaWithFlowBlock(meta: Record<string, unknown>): Recor
       warnings: flowWarnings,
     })
     const edgeSocketType = asString(normalizedRawEdge.type)
-    const sourceEp = parseFlowEdgeEndpoint(normalizedRawEdge.source, normalizedRawEdge.sourceHandle, buildImplicitFlowEdgePortKey({ socketType: edgeSocketType, side: 'source' }))
-    const targetEp = parseFlowEdgeEndpoint(normalizedRawEdge.target, normalizedRawEdge.targetHandle, buildImplicitFlowEdgePortKey({ socketType: edgeSocketType, side: 'target' }))
+    const sourceEp = parseFlowEdgeEndpoint(normalizedRawEdge.source, normalizedRawEdge.sourceHandle, buildImplicitFlowEdgePortKey({ socketType: edgeSocketType, side: 'source' }), declaredFlowNodeIds)
+    const targetEp = parseFlowEdgeEndpoint(normalizedRawEdge.target, normalizedRawEdge.targetHandle, buildImplicitFlowEdgePortKey({ socketType: edgeSocketType, side: 'target' }), declaredFlowNodeIds)
     if (!sourceEp || !targetEp) continue
     const labelRaw = asString(normalizedRawEdge.label), layoutRoute = asString(normalizedRawEdge.layoutRoute), layoutLane = asFiniteNumber(normalizedRawEdge.layoutLane)
     const label = labelRaw ? resolveTemplateString(labelRaw, flowVars, pathCache, declarationCache, resolvedStringCache) : ''

@@ -413,6 +413,11 @@
       "import": "./dist/ui/themeTokens.js",
       "default": "./dist/ui/themeTokens.js"
     },
+    "./ui/selectedRowClasses": {
+      "types": "./dist/ui/selectedRowClasses.d.ts",
+      "import": "./dist/ui/selectedRowClasses.js",
+      "default": "./dist/ui/selectedRowClasses.js"
+    },
     "./ui/intentTokens": {
       "types": "./dist/ui/intentTokens.d.ts",
       "import": "./dist/ui/intentTokens.js",

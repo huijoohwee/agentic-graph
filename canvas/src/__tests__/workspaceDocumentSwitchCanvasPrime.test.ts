@@ -1,40 +1,39 @@
-import { shouldPrimeWorkspaceDocumentSwitchCanvas } from '@/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply'
 import { useGraphStore } from '@/hooks/useGraphStore'
+import { shouldApplyWorkspaceDocumentSwitchSnapshot } from '@/lib/markdown-workspace-runtime/markdownWorkspaceDocumentSwitchApply'
 
-export function testWorkspaceDocumentSwitchPrimesCanvasForUnhydratedFile() {
-  const accepted = shouldPrimeWorkspaceDocumentSwitchCanvas({
-    activePath: '/notes/empty.md' as never,
-    pendingSwitchPath: '/notes/empty.md' as never,
-    activeEntryKind: 'file',
-    activeDocumentKey: '/notes/empty.md',
-    inlineText: '',
-  })
-  if (accepted !== true) throw new Error(`expected an unhydrated file switch to clear stale Canvas content before storage resolves, got ${String(accepted)}`)
-}
-
-export function testWorkspaceDocumentSwitchDoesNotPrimeCanvasForHydratedFile() {
-  const accepted = shouldPrimeWorkspaceDocumentSwitchCanvas({
+export function testWorkspaceDocumentSwitchDefersUnhydratedFileUntilSourceSnapshot() {
+  const base = {
     activePath: '/notes/ready.md' as never,
     pendingSwitchPath: '/notes/ready.md' as never,
     activeEntryKind: 'file',
     activeDocumentKey: '/notes/ready.md',
-    inlineText: '# Ready',
-  })
-  if (accepted !== false) throw new Error(`expected a hydrated file switch to proceed directly to its selected content, got ${String(accepted)}`)
+  }
+  const matchingSnapshot = {
+    current: true,
+    revision: { path: '/notes/ready.md' as never, revision: 4 },
+    value: '# Ready',
+  }
+  if (!shouldApplyWorkspaceDocumentSwitchSnapshot({ ...base, snapshot: matchingSnapshot })) {
+    throw new Error('expected a current selected-path snapshot to publish document authority')
+  }
+  if (shouldApplyWorkspaceDocumentSwitchSnapshot({
+    ...base,
+    snapshot: { ...matchingSnapshot, current: false },
+  })) {
+    throw new Error('expected an invalidated source revision not to publish document authority')
+  }
+  if (shouldApplyWorkspaceDocumentSwitchSnapshot({
+    ...base,
+    snapshot: {
+      ...matchingSnapshot,
+      revision: { path: '/notes/previous.md' as never, revision: 4 },
+    },
+  })) {
+    throw new Error('expected a snapshot owned by another path not to publish document authority')
+  }
 }
 
-export function testWorkspaceDocumentSwitchDoesNotPrimeCanvasForStalePendingPath() {
-  const accepted = shouldPrimeWorkspaceDocumentSwitchCanvas({
-    activePath: '/notes/current.md' as never,
-    pendingSwitchPath: '/notes/previous.md' as never,
-    activeEntryKind: 'file',
-    activeDocumentKey: '/notes/current.md',
-    inlineText: '',
-  })
-  if (accepted !== false) throw new Error(`expected a superseded switch not to clear the current Canvas, got ${String(accepted)}`)
-}
-
-export async function testWorkspaceDocumentSwitchBlankPrimeClearsStaleGraph() {
+export async function testWorkspaceDocumentSwitchResolvedBlankClearsStaleGraph() {
   const state = useGraphStore.getState()
   state.resetAll()
   state.setGraphData({
@@ -55,6 +54,6 @@ export async function testWorkspaceDocumentSwitchBlankPrimeClearsStaleGraph() {
   const graph = useGraphStore.getState().graphData
   const metadata = (graph?.metadata || {}) as Record<string, unknown>
   if ((graph?.nodes || []).length !== 0 || metadata.pending !== true || metadata.source !== 'markdown:/notes/empty.md') {
-    throw new Error(`expected blank switch priming to replace stale graph content, got ${JSON.stringify(graph)}`)
+    throw new Error(`expected an authoritative resolved blank document to replace stale graph content, got ${JSON.stringify(graph)}`)
   }
 }

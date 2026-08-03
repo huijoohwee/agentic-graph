@@ -105,13 +105,6 @@ export const getGraphDataForDisplay = (args: { graphData: GraphData; edges?: Gra
   })
   const nodeById = nodeLookup?.nodeById || new Map<string, GraphNode>()
 
-  const preferredNodes = allNodes.filter(n => {
-    if (frontmatterMode && isParagraphOrListNode(n)) return false
-    if (hideDocumentStructureScaffold && isDocumentStructureScaffoldNode(n)) return false
-    return isDisplayNode(n)
-  })
-  const baseNodes = preferredNodes.length > 0 ? preferredNodes : allNodes
-  const baseNodeIdSet = new Set<string>(baseNodes.map(readDisplayNodeId).filter(Boolean))
   const filteredEdgesSource = hideDocumentStructureScaffold
     ? edgesSource.filter(e => {
         const label = String(e.label || '').trim()
@@ -124,6 +117,22 @@ export const getGraphDataForDisplay = (args: { graphData: GraphData; edges?: Gra
         return true
       })
     : edgesSource
+  const semanticEdgeEndpointNodeIds = new Set<string>()
+  for (let i = 0; i < filteredEdgesSource.length; i += 1) {
+    const { src, tgt } = readGraphEdgeEndpoints(filteredEdgesSource[i])
+    if (src) semanticEdgeEndpointNodeIds.add(src)
+    if (tgt) semanticEdgeEndpointNodeIds.add(tgt)
+  }
+  const preferredNodes = allNodes.filter(n => {
+    if (frontmatterMode && isParagraphOrListNode(n)) return false
+    if (hideDocumentStructureScaffold && isDocumentStructureScaffoldNode(n)) {
+      const nodeId = readDisplayNodeId(n)
+      return Boolean(nodeId && semanticEdgeEndpointNodeIds.has(nodeId))
+    }
+    return isDisplayNode(n)
+  })
+  const baseNodes = preferredNodes.length > 0 ? preferredNodes : allNodes
+  const baseNodeIdSet = new Set<string>(baseNodes.map(readDisplayNodeId).filter(Boolean))
   const edgesForBase = getDisplayEdges({ edges: filteredEdgesSource, displayNodeIdSet: baseNodeIdSet })
 
   if (preferredNodes.length > 0 && filteredEdgesSource.length > 0 && edgesForBase.length === 0) {
@@ -135,10 +144,10 @@ export const getGraphDataForDisplay = (args: { graphData: GraphData; edges?: Gra
       if (tgt) required.add(tgt)
     }
     const connectedNodes = allNodes.filter(n => {
-      const id = String(n.id)
+      const id = readDisplayNodeId(n)
       if (!required.has(id)) return false
-      if (hideDocumentStructureScaffold && isDocumentStructureScaffoldNode(n)) return false
       if (frontmatterMode && isParagraphOrListNode(n)) return false
+      if (hideDocumentStructureScaffold && isDocumentStructureScaffoldNode(n) && !semanticEdgeEndpointNodeIds.has(id)) return false
       return true
     })
     const connectedNodeIdSet = new Set<string>(connectedNodes.map(readDisplayNodeId).filter(Boolean))

@@ -143,6 +143,7 @@ export const testGrabMapsStyleDoesNotLeakIntoOtherMapLibreModes = () => {
 
 export const testCanvasStartupDefaultsPreferStoryboardFrontmatterAndUnlockedView = () => {
   const uiSlicePath = path.resolve(process.cwd(), 'src', 'hooks', 'store', 'uiSlice.ts')
+  const uiSliceInitialStatePath = path.resolve(process.cwd(), 'src', 'hooks', 'store', 'uiSliceInitialState.ts')
   const uiSettingsSlicePath = path.resolve(process.cwd(), 'src', 'hooks', 'store', 'uiSettingsSlice.ts')
   const configRenderPath = path.resolve(process.cwd(), 'src', 'lib', 'config.render.ts')
   const geospatialSlicePath = path.resolve(process.cwd(), '..', 'gympgrph', 'src', 'hooks', 'store', 'geospatialSlice.ts')
@@ -154,6 +155,7 @@ export const testCanvasStartupDefaultsPreferStoryboardFrontmatterAndUnlockedView
   const sharedGeospatialConstantsPath = path.resolve(process.cwd(), '..', 'grph-shared', 'src', 'geospatial', 'constants.ts')
 
   const uiSliceText = readUtf8(uiSlicePath)
+  const uiSliceInitialStateText = readUtf8(uiSliceInitialStatePath)
   const uiSettingsSliceText = readUtf8(uiSettingsSlicePath)
   const configRenderText = readUtf8(configRenderPath)
   const geospatialSliceText = readUtf8(geospatialSlicePath)
@@ -176,8 +178,11 @@ export const testCanvasStartupDefaultsPreferStoryboardFrontmatterAndUnlockedView
   if (!uiSliceText.includes('floatingPanelOpen: false')) {
     throw new Error('Expected startup floating panel open state to default OFF at the shared UI slice')
   }
-  if (!uiSliceText.includes("floatingPanelView: 'geo'")) {
-    throw new Error("Expected startup floating panel view to default to 'geo' at the shared UI slice")
+  if (
+    !uiSliceText.includes("floatingPanelView: 'propsPanel'")
+    || !uiSliceInitialStateText.includes("floatingPanelView: 'propsPanel' as GraphState['floatingPanelView']")
+  ) {
+    throw new Error("Expected startup floating panel view to remain neutral until an explicit tool selects Geo")
   }
   if (!uiSliceText.includes('documentStructureBaselineLock: lsBool(LS_KEYS.documentStructureBaselineLock, false)')) {
     throw new Error('Expected View Lock startup default to be OFF at the shared UI slice')

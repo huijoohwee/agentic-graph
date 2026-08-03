@@ -18,6 +18,7 @@ import {
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import { useStoryboardWidgetDiagramSelectionBridge } from './useStoryboardWidgetDiagramSelectionBridge'
+import { uiSelectedRowStateClassName } from 'grph-shared/ui/selectedRowClasses'
 import { useMermaidGitGraphDocument } from './useMermaidGitGraphDocument'
 import { HistoryUndoRedoControls } from '@/features/history/HistoryUndoRedoControls'
 import { getIconSizeClass } from '@/lib/ui'
@@ -180,7 +181,7 @@ export function GitGraphFloatingPanelView() {
                   type="button"
                   className={cn(
                     'flex w-full items-center justify-between gap-2 border-b border-[var(--kg-border)] px-2 py-1.5 text-left text-xs last:border-b-0',
-                    index === historyIndex ? UI_THEME_TOKENS.button.activeBg : UI_THEME_TOKENS.button.hoverBg,
+                    index === historyIndex ? uiSelectedRowStateClassName(true) : UI_THEME_TOKENS.button.hoverBg,
                   )}
                   aria-current={index === historyIndex ? 'step' : undefined}
                   onClick={() => restoreHistory(index)}

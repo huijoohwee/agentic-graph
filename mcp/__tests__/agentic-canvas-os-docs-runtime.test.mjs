@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -335,6 +335,78 @@ test("docs catalog preserves the canonical trailing-colon Import URL binding", (
   assert.deepEqual(command?.bindings, ["@url:", "@reference-policy"]);
   assert.equal(catalog.some((entry) => entry.token === "@url:"), true);
   assert.equal(catalog.some((entry) => entry.token === "@url"), false);
+});
+
+test("docs catalog derives the canonical Canvas View command tuple and MCP owner", { skip: !DOCS_AVAILABLE }, () => {
+  const docsContentByFileName = Object.fromEntries([
+    "FACTS.md",
+    "DICTIONARY-COMMAND.md",
+    "DICTIONARY-SEMANTIC.md",
+    "DICTIONARY-BINDING.md",
+  ].map(fileName => [fileName, readFileSync(path.join(DOCS_ROOT, fileName), "utf8")]));
+  const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName);
+  const command = catalog.find(entry => entry.token === "/canvas.view.set");
+
+  assert.equal(command?.mcpTool, "knowgrph.control_local_canvas_view");
+  assert.deepEqual(command?.mcpTools, ["knowgrph.control_local_canvas_view"]);
+  assert.deepEqual(command?.semantics, ["#canvas-view"]);
+  assert.deepEqual(command?.bindings, ["@canvas-view"]);
+  assert.equal(catalog.some(entry => entry.token === "#canvas-view"), true);
+  assert.equal(catalog.some(entry => entry.token === "@canvas-view"), true);
+});
+
+test("docs catalog derives the canonical Canvas Interaction command tuple and MCP owner", { skip: !DOCS_AVAILABLE }, () => {
+  const docsContentByFileName = Object.fromEntries([
+    "FACTS.md",
+    "DICTIONARY-COMMAND.md",
+    "DICTIONARY-SEMANTIC.md",
+    "DICTIONARY-BINDING.md",
+  ].map(fileName => [fileName, readFileSync(path.join(DOCS_ROOT, fileName), "utf8")]));
+  const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName);
+  const command = catalog.find(entry => entry.token === "/canvas.interaction.tune");
+
+  assert.equal(command?.mcpTool, "knowgrph.control_local_canvas_interaction");
+  assert.deepEqual(command?.mcpTools, ["knowgrph.control_local_canvas_interaction"]);
+  assert.equal(command?.semantics.includes("#canvas-interaction"), true);
+  assert.equal(command?.bindings.includes("@canvas"), true);
+  assert.equal(catalog.some(entry => entry.token === "#canvas-interaction"), true);
+  assert.equal(catalog.some(entry => entry.token === "@canvas"), true);
+});
+
+test("docs catalog derives the canonical Workspace Launch command tuple and MCP owner", { skip: !DOCS_AVAILABLE }, () => {
+  const docsContentByFileName = Object.fromEntries([
+    "FACTS.md",
+    "DICTIONARY-COMMAND.md",
+    "DICTIONARY-SEMANTIC.md",
+    "DICTIONARY-BINDING.md",
+  ].map(fileName => [fileName, readFileSync(path.join(DOCS_ROOT, fileName), "utf8")]));
+  const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName);
+  const command = catalog.find(entry => entry.token === "/workspace.launch");
+
+  assert.equal(command?.mcpTool, "knowgrph.control_local_workspace_launch");
+  assert.deepEqual(command?.mcpTools, ["knowgrph.control_local_workspace_launch"]);
+  assert.deepEqual(command?.semantics, ["#workspace-launch"]);
+  assert.deepEqual(command?.bindings, ["@canvas"]);
+  assert.equal(catalog.some(entry => entry.token === "#workspace-launch"), true);
+  assert.equal(catalog.some(entry => entry.token === "@canvas"), true);
+});
+
+test("docs catalog derives the canonical Main Toolbar command tuple and MCP owner", { skip: !DOCS_AVAILABLE }, () => {
+  const docsContentByFileName = Object.fromEntries([
+    "FACTS.md",
+    "DICTIONARY-COMMAND.md",
+    "DICTIONARY-SEMANTIC.md",
+    "DICTIONARY-BINDING.md",
+  ].map(fileName => [fileName, readFileSync(path.join(DOCS_ROOT, fileName), "utf8")]));
+  const catalog = buildAgenticCanvasOsDocsCatalog(docsContentByFileName);
+  const command = catalog.find(entry => entry.token === "/toolbar.invoke");
+
+  assert.equal(command?.mcpTool, "knowgrph.control_local_toolbar_action");
+  assert.deepEqual(command?.mcpTools, ["knowgrph.control_local_toolbar_action"]);
+  assert.deepEqual(command?.semantics, ["#toolbar-action"]);
+  assert.deepEqual(command?.bindings, ["@canvas"]);
+  assert.equal(catalog.some(entry => entry.token === "#toolbar-action"), true);
+  assert.equal(catalog.some(entry => entry.token === "@canvas"), true);
 });
 
 test("catalog digest is deterministic, order independent, and sensitive to source metadata", () => {

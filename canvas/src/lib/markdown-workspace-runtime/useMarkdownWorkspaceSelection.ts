@@ -25,6 +25,10 @@ import {
 import { buildWorkspaceEntriesIndex } from './workspaceEntriesIndex'
 import type { MarkdownWorkspaceRuntimeGetFs } from './markdownWorkspaceRuntime.types'
 import {
+  readWorkspaceSourceTextSnapshot,
+} from '@/features/workspace-fs/workspaceSourceTextTransaction'
+import {
+  shouldApplyWorkspaceDocumentSwitchSnapshot,
   shouldAcceptWorkspaceDocumentSelectionText,
   resolveStableWorkspaceSelectionSyncDecision,
   useMarkdownWorkspaceDocumentSwitchApply,
@@ -74,6 +78,7 @@ export type MarkdownWorkspaceSelectionArgs = {
   canvas2dRenderer: string
   lastSetActivePath: { path: WorkspacePath; atMs: number } | null
   lastRequestedActivePathRef: React.MutableRefObject<{ path: WorkspacePath; atMs: number } | null>
+  commitActiveTextBeforeSelectionRef: React.MutableRefObject<(() => Promise<boolean>) | null>
   patchWorkspaceEntryInlineText: (path: WorkspacePath, text: string) => void
   clearStatus: () => void
   setHighlightedLineRange: (value: null) => void
@@ -104,21 +109,27 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     if (selectionPathRef.current === normalized) return
     const requestId = selectionCommitRequestRef.current + 1
     selectionCommitRequestRef.current = requestId
-    const applySelection = () => {
-      if (selectionCommitRequestRef.current !== requestId) return
+    const applySelection = (): boolean => {
+      if (selectionCommitRequestRef.current !== requestId) return false
       pendingSelectionPathRef.current = normalized
       selectionPathRef.current = normalized
       setSelectionPath(normalized)
+      return true
     }
-    const pendingEditorCommit = commitActiveMarkdownBlockEditors()
-    // A Canvas Run publishes into the active document before its serialized
-    // Workspace FS and mirror writes settle. Preserve that owner at the same
-    // boundary that already fences active block-editor commits.
-    const pendingSourceWrites = settleWorkspaceSourceTextWrites()
-    return Promise.allSettled([
-      ...(pendingEditorCommit ? [pendingEditorCommit] : []),
-      pendingSourceWrites,
-    ]).then(applySelection)
+    return (async (): Promise<boolean> => {
+      const pendingEditorCommit = commitActiveMarkdownBlockEditors()
+      if (pendingEditorCommit) await Promise.allSettled([pendingEditorCommit])
+      const commitActiveTextBeforeSelection = args.commitActiveTextBeforeSelectionRef.current
+      if (commitActiveTextBeforeSelection) {
+        const committed = await commitActiveTextBeforeSelection()
+        if (!committed) return false
+      }
+      // A Canvas Run publishes into the active document before its serialized
+      // Workspace FS and mirror writes settle. Preserve that owner at the same
+      // boundary that fences both inline-card and workspace-editor commits.
+      await settleWorkspaceSourceTextWrites()
+      return applySelection()
+    })()
   }, [])
 
   const entriesIndex = React.useMemo(() => buildWorkspaceEntriesIndex(args.entries), [args.entries])
@@ -185,21 +196,13 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
       switchedActivePathRef.current = { prev: prevPath, next: nextPath }
     }
     if (!nextPath || !prevPath || prevPath === nextPath || activeEntryKind === 'folder' || !args.activeRef.current) return
-    const currentText = String(args.activeTextRef.current || '')
-    if (!currentText) return
-    const lastLoaded = args.lastLoadedRef.current
-    if (lastLoaded?.path === nextPath && String(lastLoaded.text || '') === currentText) return
-    args.setActiveTextProgrammatic('')
     args.setHighlightedLineRange(null)
     args.clearStatus()
   }, [
     activeEntryKind,
     args.activePath,
     args.activeRef,
-    args.activeTextRef,
     args.clearStatus,
-    args.lastLoadedRef,
-    args.setActiveTextProgrammatic,
     args.setHighlightedLineRange,
   ])
 
@@ -211,24 +214,31 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     if (activeEntryKind === 'folder') return
     let cancelled = false
     const run = async () => {
-      const fs = await args.getFs()
-      if (cancelled || switchedActivePathRef.current?.next !== nextPath || args.activePath !== nextPath) return
-      const nextText = await readCachedWorkspaceSelectionResolvedTextForActivePath({
-        activePath: nextPath,
-        activeEntry,
-        fs,
-        storageFallbackByPath: storageFallbackByPathRef.current,
-        preferPathResolvedText: true,
-        cacheRef: resolvedTextCacheRef,
+      const snapshot = await readWorkspaceSourceTextSnapshot({
+        path: nextPath,
+        read: async () => {
+          const fs = await args.getFs()
+          if (cancelled || switchedActivePathRef.current?.next !== nextPath || args.activePath !== nextPath) return ''
+          return readCachedWorkspaceSelectionResolvedTextForActivePath({
+            activePath: nextPath,
+            activeEntry,
+            fs,
+            storageFallbackByPath: storageFallbackByPathRef.current,
+            preferPathResolvedText: true,
+            cacheRef: resolvedTextCacheRef,
+          })
+        },
       })
-      if (!shouldAcceptWorkspaceDocumentSelectionText({
-        activePath: nextPath,
+      if (!shouldApplyWorkspaceDocumentSwitchSnapshot({
+        activePath: args.activePath,
+        pendingSwitchPath: switchedActivePathRef.current?.next || null,
         activeEntryKind,
         activeDocumentKey,
-        text: nextText,
+        snapshot,
       })) {
         return
       }
+      const nextText = snapshot.value
       if (cancelled || switchedActivePathRef.current?.next !== nextPath || args.activePath !== nextPath) return
       const currentText = String(args.activeTextRef.current || '')
       if (currentText !== nextText) {
@@ -264,15 +274,8 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     scheduleDocumentSwitchApplyRetry,
   } = useMarkdownWorkspaceDocumentSwitchApply({
     activePath: args.activePath,
-    canonicalMarkdownText: args.markdownDocumentText,
     readPendingSwitchNextPath,
     setActiveMarkdownDocument: args.setActiveMarkdownDocument,
-    prime: {
-      activeEntryKind, activeDocumentKey, activeDocumentSourceUrl, inlineText: activeEntryText,
-      updatedAtMs: activeEntry?.updatedAtMs, graphDataSource: args.graphDataSource,
-      markdownDocumentName: args.markdownDocumentName, markdownDocumentText: args.markdownDocumentText,
-      canvas2dRenderer: args.canvas2dRenderer,
-    },
   })
 
   React.useEffect(() => {
@@ -283,24 +286,31 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     if (!activeDocumentKey) return
     let cancelled = false
     void (async () => {
-      const fs = await args.getFs()
-      if (cancelled || switchedActivePathRef.current?.next !== switched.next || args.activePath !== switched.next) return
-      const nextText = await readCachedWorkspaceSelectionResolvedTextForActivePath({
-        activePath: switched.next,
-        activeEntry,
-        fs,
-        storageFallbackByPath: storageFallbackByPathRef.current,
-        preferPathResolvedText: true,
-        cacheRef: resolvedTextCacheRef,
+      const snapshot = await readWorkspaceSourceTextSnapshot({
+        path: switched.next,
+        read: async () => {
+          const fs = await args.getFs()
+          if (cancelled || switchedActivePathRef.current?.next !== switched.next || args.activePath !== switched.next) return ''
+          return readCachedWorkspaceSelectionResolvedTextForActivePath({
+            activePath: switched.next,
+            activeEntry,
+            fs,
+            storageFallbackByPath: storageFallbackByPathRef.current,
+            preferPathResolvedText: true,
+            cacheRef: resolvedTextCacheRef,
+          })
+        },
       })
-      if (!shouldAcceptWorkspaceDocumentSelectionText({
-        activePath: switched.next,
+      if (!shouldApplyWorkspaceDocumentSwitchSnapshot({
+        activePath: args.activePath,
+        pendingSwitchPath: switchedActivePathRef.current?.next || null,
         activeEntryKind,
         activeDocumentKey,
-        text: nextText,
+        snapshot,
       })) {
         return
       }
+      const nextText = snapshot.value
       if (cancelled || switchedActivePathRef.current?.next !== switched.next || args.activePath !== switched.next) return
 
       args.lastLoadedRef.current = { path: switched.next, text: nextText }
@@ -354,16 +364,23 @@ export function useMarkdownWorkspaceSelection(args: MarkdownWorkspaceSelectionAr
     if (switchedActivePathRef.current?.next === path) return
     let cancelled = false
     const run = async () => {
-      const fs = await args.getFs()
-      if (cancelled || args.activePath !== path) return
-      const nextText = await readCachedWorkspaceSelectionResolvedTextForActivePath({
-        activePath: path,
-        activeEntry,
-        fs,
-        storageFallbackByPath: storageFallbackByPathRef.current,
-        preferPathResolvedText: true,
-        cacheRef: resolvedTextCacheRef,
+      const snapshot = await readWorkspaceSourceTextSnapshot({
+        path,
+        read: async () => {
+          const fs = await args.getFs()
+          if (cancelled || args.activePath !== path) return ''
+          return readCachedWorkspaceSelectionResolvedTextForActivePath({
+            activePath: path,
+            activeEntry,
+            fs,
+            storageFallbackByPath: storageFallbackByPathRef.current,
+            preferPathResolvedText: true,
+            cacheRef: resolvedTextCacheRef,
+          })
+        },
       })
+      if (!snapshot.current) return
+      const nextText = snapshot.value
       const syncDecision = resolveStableWorkspaceSelectionSyncDecision({
         activePath: path,
         activeEntryKind,

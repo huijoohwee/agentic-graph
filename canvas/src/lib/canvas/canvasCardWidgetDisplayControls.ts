@@ -17,6 +17,9 @@ export const readCanvasCardWidgetDisplayControlTitle = (mode: CanvasCardWidgetDi
   return mode === 'widget' ? 'Display: Widget' : 'Display: Card (Default)'
 }
 
+export const readCanvasCardWidgetDisplayControlValue = (mode: CanvasCardWidgetDisplayMode): string =>
+  mode === 'widget' ? 'Widget' : 'Card (Default)'
+
 export const readCanvasCardWidgetDisplayControlActive = (
   displayMode: CanvasCardWidgetDisplayMode | null | undefined,
   mode: CanvasCardWidgetDisplayMode,

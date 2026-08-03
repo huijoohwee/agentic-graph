@@ -6,6 +6,7 @@ import {
   shouldUpdateStoryboardCardMediaGraphActiveDocument,
 } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSourceOwner'
 import { resolveStoryboardCardMediaGraphPersistenceText } from '@/components/StoryboardWidgetCanvas/runtime/storyboardCardMediaGraphSource'
+import { commitStoryboardCardCanonicalText2d } from '@/components/StoryboardWidgetCanvas/storyboardCardCanonicalTextCommit2d'
 import { readSubgraphs } from '@/lib/graph/subgraphs'
 
 const OWNER_PATH = '/docs/workflow.md'
@@ -198,5 +199,143 @@ export function testStoryboardCardMediaGraphPersistenceWritesAlreadySynchronized
   })
   if (persistenceText !== synchronizedText) {
     throw new Error('expected persistence to write active text even when graph serialization produces no state delta')
+  }
+}
+
+export function testStoryboardDocumentCardSummarySerializesToMarkdownSource() {
+  const documentText = [
+    '---',
+    'title: "note_20260803T020301Z"',
+    'kgCanvasSurfaceMode: "2d"',
+    'kgCanvasRenderMode: "2d"',
+    '---',
+  ].join('\n')
+  const graphData: GraphData = {
+    type: 'Graph',
+    context: 'markdown',
+    nodes: [{
+      id: 'doc:md:note-20260803t020301z',
+      type: 'Document',
+      label: 'note_20260803T020301Z',
+      properties: { summary: 'Keep this authored Summary after blur.' },
+    }],
+    edges: [],
+  }
+  const sourceFiles = [{
+    id: 'note-source',
+    enabled: true,
+    name: 'note_20260803T020301Z.md',
+    text: documentText,
+    source: { kind: 'local', path: '/notes/note_20260803T020301Z.md' },
+  }]
+  const ownerResolution = resolveStoryboardCardMediaGraphSourceOwner({
+    state: {
+      markdownDocumentName: '/notes/note_20260803T020301Z.md',
+      markdownDocumentText: documentText,
+      sourceFiles,
+    } as never,
+    sourceOwner: { documentName: '/notes/note_20260803T020301Z.md', documentText },
+  })
+  const sourceGraph = resolveStoryboardCardMediaGraphSourceGraph({
+    graphData,
+    ownerFile: ownerResolution.ownerFile,
+    ownerText: documentText,
+  })
+  const synced = syncActiveMarkdownDocumentTextFromParsedGraph({
+    state: ownerResolution.state,
+    sourceFiles: ownerResolution.state.sourceFiles,
+    parsedGraphData: sourceGraph,
+  })
+  const synchronizedText = String(synced.markdownDocumentText || '')
+  if (
+    !synced.accepted
+    || sourceGraph.context !== 'frontmatter-flow'
+    || String((sourceGraph.metadata as Record<string, unknown>)?.kind || '') !== 'frontmatter-flow'
+    || !synchronizedText.includes('flow:')
+    || !synchronizedText.includes('Keep this authored Summary after blur.')
+  ) {
+    throw new Error(`expected a document-derived Storyboard Summary to serialize into its Markdown source, got ${JSON.stringify({ sourceGraph, synced })}`)
+  }
+}
+
+export function testStoryboardLegacyDocumentSummaryCommitPreservesOtherSourceLayers() {
+  const firstPath = '/notes/first.md'
+  const secondPath = '/notes/second.md'
+  const firstText = [
+    '---',
+    'flow:',
+    '  nodes:',
+    '    - id: {key: id, type: string, value: document}',
+    '      type: {key: type, type: string, value: Document}',
+    '      label: {key: label, type: string, value: First}',
+    '      summary: {key: summary, type: string, value: "First source summary."}',
+    '  edges: []',
+    '---',
+  ].join('\n')
+  const secondText = firstText
+    .replace('value: First', 'value: Second')
+    .replace('First source summary.', 'Second source summary.')
+  const firstGraph: GraphData = {
+    type: 'Graph',
+    nodes: [{ id: 'document', type: 'Document', label: 'First', properties: { summary: 'First source summary.' } }],
+    edges: [],
+  }
+  const secondGraph: GraphData = {
+    type: 'Graph',
+    nodes: [{ id: 'document', type: 'Document', label: 'Second', properties: { summary: 'Second source summary.' } }],
+    edges: [],
+  }
+  const sourceFiles = [
+    { id: 'first-note', enabled: true, name: 'first.md', text: firstText, source: { kind: 'local' as const, path: firstPath }, parsedGraphData: firstGraph },
+    { id: 'second-note', enabled: true, name: 'second.md', text: secondText, source: { kind: 'local' as const, path: secondPath }, parsedGraphData: secondGraph },
+  ]
+  const composedGraph: GraphData = {
+    type: 'Graph',
+    nodes: [
+      { id: 'first-note::document', type: 'Document', label: 'First', properties: { summary: 'First source summary.' }, metadata: { sourceLayerId: 'first-note' } },
+      { id: 'second-note::document', type: 'Document', label: 'Second', properties: { summary: 'Second source summary.' }, metadata: { sourceLayerId: 'second-note' } },
+    ],
+    edges: [],
+    metadata: { sourceLayerComposition: 'compose' },
+  }
+  let committedGraph: GraphData | null = null
+  commitStoryboardCardCanonicalText2d({
+    addHistory: () => void 0,
+    canonicalKey: 'summary',
+    cardId: 'first-note::document',
+    commitGraphData: next => { committedGraph = next },
+    currentProperties: {},
+    graphData: composedGraph,
+    historyLabel: 'Storyboard summary',
+    nextValue: 'First source summary survives blur.',
+    propertyKeys: ['summary', 'description'],
+    updateNode: () => { throw new Error('expected source-backed graph commit to remain authoritative') },
+  })
+  const ownerResolution = resolveStoryboardCardMediaGraphSourceOwner({
+    state: {
+      markdownDocumentName: firstPath,
+      markdownDocumentText: firstText,
+      sourceFiles,
+    } as never,
+    sourceOwner: { documentName: firstPath, documentText: firstText },
+  })
+  const sourceGraph = resolveStoryboardCardMediaGraphSourceGraph({
+    graphData: committedGraph || composedGraph,
+    ownerFile: ownerResolution.ownerFile,
+    ownerText: firstText,
+  })
+  const synced = syncActiveMarkdownDocumentTextFromParsedGraph({
+    state: ownerResolution.state,
+    sourceFiles: ownerResolution.state.sourceFiles,
+    parsedGraphData: sourceGraph,
+  })
+  const synchronizedFirstText = String(synced.sourceFiles.find(file => file.id === 'first-note')?.text || '')
+  const synchronizedSecondText = String(synced.sourceFiles.find(file => file.id === 'second-note')?.text || '')
+  if (
+    !synced.accepted
+    || !synchronizedFirstText.includes('First source summary survives blur.')
+    || synchronizedSecondText !== secondText
+  ) {
+    throw new Error(`expected a legacy generic document edit to persist only to its source owner, got ${JSON.stringify({ sourceGraph, synced })}`)
   }
 }

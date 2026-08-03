@@ -147,4 +147,5 @@ export const createUiIntegrationActions = (set: SetGraph)=> ({
       set({ enableLaunchSpotlight: next });
     },
     setStatusPanelPinned: (v: boolean) => set({ statusPanelPinned: lsSetBool(LS_KEYS.statusPanelPinned, v) }),
+    setWorkspaceAutosaveEnabled: (v: boolean) => set({ workspaceAutosaveEnabled: lsSetBool(LS_KEYS.workspaceAutosaveEnabled, v) }),
 })

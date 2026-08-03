@@ -22,7 +22,7 @@ export function useMarkdownWorkspaceViewShell(args: {
   selectionPath: WorkspacePath | null
   selectionEntryKind: WorkspaceEntry['kind'] | null
   setActivePathSafe: (path: WorkspacePath) => void
-  setSelectionPathSafe: (path: WorkspacePath) => void | Promise<void>
+  setSelectionPathSafe: (path: WorkspacePath) => void | Promise<boolean>
   setSelectionSource: (source: null | 'canvas' | 'menu' | 'toolbar' | 'editor' | 'unknown') => void
   setExpandedPaths: React.Dispatch<React.SetStateAction<Set<string>>>
   resolveFolderContractDocPath: (folderPath: WorkspacePath, mode: FolderModeContract) => WorkspacePath
@@ -86,7 +86,9 @@ export function useMarkdownWorkspaceViewShell(args: {
       const applyActivePath = () => setActivePathSafe(normalized)
       const pendingSelection = setSelectionPathSafe(normalized)
       if (pendingSelection) {
-        void pendingSelection.then(applyActivePath, applyActivePath)
+        void pendingSelection.then(applied => {
+          if (applied) applyActivePath()
+        })
         return
       }
       applyActivePath()

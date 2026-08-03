@@ -36,8 +36,6 @@ export const uiSecondaryToggleActiveClassName =
 
 export const uiPrimaryPillActiveClassName = `${UI_COLOR_PRIMARY_BLUE_BG} ${UI_THEME_TOKENS.button.activeText}`
 
-export const uiPrimaryChipActiveClassName = `border ${UI_THEME_TOKENS.button.primaryChipActive}`
-
 export const uiPrimaryIconActiveClassName = `${UI_COLOR_PRIMARY_BLUE} ${UI_COLOR_PRIMARY_BLUE_BG}`
 
 export const uiPrimaryIconInactiveClassName = UI_THEME_TOKENS.icon.color
@@ -50,7 +48,7 @@ export const uiPrimaryLinkButtonClassName = `underline ${UI_COLOR_PRIMARY_BLUE} 
 
 export const graphDataTableToolbarButtonClassName = (active: boolean) =>
   `inline-flex items-center justify-center whitespace-nowrap font-normal transition-colors focus-visible:outline-none ${UI_THEME_TOKENS.focus.primaryRing} disabled:pointer-events-none disabled:opacity-50 border ${UI_RESPONSIVE_GRAPH_DATA_TABLE_TOOLBAR_BUTTON_CLASSNAME} ${UI_THEME_TOKENS.button.text} ${UI_THEME_TOKENS.panel.bg} shadow-sm ${UI_THEME_TOKENS.button.hoverBg} rounded-md shrink-0 truncate ${
-    active ? `${UI_THEME_TOKENS.button.primaryChipActive}` : `${UI_THEME_TOKENS.panel.border}`
+    active ? `${UI_THEME_TOKENS.button.activeSoft}` : `${UI_THEME_TOKENS.panel.border}`
   }`
 
 export const GRAPH_DATA_TABLE_TOOLBAR_ACTIVE_CLASS = `!${UI_THEME_TOKENS.panel.bg} !${UI_THEME_TOKENS.button.activeText} !${UI_COLOR_PRIMARY_BLUE_BORDER}`
