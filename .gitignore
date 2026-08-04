@@ -56,6 +56,10 @@ credentials.json
 secrets.json
 
 # Local / generated outputs
+/collaboration-contract-report.json
+/collaboration-contract-report-proof/
+/collaboration-validation-result.json
+/collaboration-validation-result-proof/
 .tmp/
 .tmp-*.png
 .dbg/
