@@ -1,92 +1,95 @@
 # Testing
 
-## XR v2 authoring and edited-media delivery
+## XR v2 pinned runtime-readiness contract
 
-XR v2 uses separate unit, source, clean-room, browser, and aggregate gates.
-All checks are Dev-only and grant no integration, release, or deployment
+The XR v2 gates trace the v2.0.0 authority pinned at
+`5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`. They cover AC-1 through AC-12
+with deterministic, source, clean-room, and local-browser evidence. All checks
+are Dev-only and grant no integration, release, Production, or deployment
 authority.
 
-Run the XR v2 unit suite:
+Run focused unit suites:
 
 ```bash
 npm run xr-v2:unit
 npm run video-editor:unit
 ```
 
-Validate the source-runner ledger and its failure aggregation:
+Validate the source-runner ledger and positive/tamper contracts:
 
 ```bash
 node --test scripts/__tests__/xr-v2-source-smoke.test.mjs
-```
-
-Validate the public adapter surface, canonical five-mode policy, authored-file
-budgets, browser-smoke source, target PRD/TAD/ADR, and readiness docs:
-
-```bash
 node scripts/run-xr-v2-source-smoke.mjs
 ```
 
-Validate the no-copy policy, exact attribution channel, identifiable external
-lineage, vendor/generated paths, and direct or transitive editor dependencies:
+The source gate requires:
+
+- the exact pinned revision and complete AC-1–AC-12 conformance ledger;
+- the canonical five-mode policy: `immersive-session`, `inline-viewer`,
+  `monocular-capture`, `native-handoff`, and `unsupported`;
+- retained existing owners instead of a second renderer, ECS, camera,
+  Timeline, transport, or muxer;
+- bounded evidence and explicit blockers; and
+- every maintained authored file to remain below 600 lines.
+
+Validate the independent editor implementation and dependency boundary:
 
 ```bash
 node --test scripts/__tests__/video-editor-source-smoke.test.mjs
 node scripts/run-video-editor-source-smoke.mjs
 ```
 
-After the source ledgers pass, run fresh local Chromium evidence:
+Historical candidate ADRs and illustrative invocations are requirements
+lineage. These checks do not install Rete.js, three.quarks, Theatre.js, a depth
+model, or a custom muxer, and do not restore `/xr.capture`, `/xr.author`, or
+`kgc-behavior-graph/v1` as runtime owners.
+
+After source checks pass, run fresh local Chromium evidence:
 
 ```bash
 node canvas/scripts/run_xr_v2_browser_smoke.mjs
 ```
 
-The runner forbids existing-server reuse and opens the dedicated test route. It
-exercises the focused XR authoring adapters and real mounted Timeline control,
-invokes the existing Timeline exporter over the committed same-origin media
-fixture, attaches the
-non-empty result to a video element, waits for decoded metadata/readiness, and
-performs bounded playback. It writes
+The runner forbids existing-server reuse and opens the dedicated smoke route.
+It executes the admitted pinned conformance probes plus the existing XR
+authoring/Timeline/media path, then writes
 `data/outputs/xr-v2-browser-smoke.json` with schema
 `knowgrph-xr-v2-browser-smoke/v1`.
 
-The artifact requires a clean exact task commit and must bind:
+The artifact binds clean exact-commit source identity and records:
 
-- branch, task revision, commit-tree identity, deterministic worktree-state
-  digest/dirty count, and the locally observed `origin/main` remote-tracking
-  revision (not a fetch-freshness receipt);
-- `knowgrph-xr-v2-readiness/v1`;
-- `knowgrph-xr-v2-dev-runtime-evidence/v1`;
-- the canonical entry mode;
-- ECS/material/Timeline authoring observations;
-- output byte size and MIME type;
-- decoded video width, height, duration, and playback observation;
-- retained model-asset/reference-device and physical-device blockers; and
+- `knowgrph-xr-v2-pinned-contract-conformance/v1` lineage and AC results;
+- `knowgrph-xr-v2-readiness/v1` for the contained existing slice;
+- `knowgrph-xr-v2-dev-runtime-evidence/v1` browser observations;
+- canonical entry and pinned capability projection results;
+- capture/fallback and AC-8–AC-10 deterministic observations;
+- ECS, material, Timeline, and process-local preview observations;
+- edited-media bytes/type, decoded dimensions/duration, bounded playback, and
+  resource cleanup; and
 - empty page, console, and media error arrays.
 
-Run the focused aggregate:
+Run the joined reviewer gates:
 
 ```bash
 npm run xr-v2:review-candidate
 npm run xr-v2:review-ready
-```
-
-The candidate aggregate includes the repository TypeScript check; the review
-aggregate adds both source-runner contract suites. Neither promotes the
-source-ready runtime snapshot.
-
-The established camera-fallback compatibility aggregate remains:
-
-```bash
 npm run xr:review-ready
 ```
 
-The five canonical entry modes are `immersive-session`, `inline-viewer`,
-`monocular-capture`, `native-handoff`, and `unsupported`.
+`npm run xr-v2:review-candidate` includes TypeScript, focused unit/source,
+clean-room, and fresh clean-commit Chromium evidence. `npm run
+xr-v2:review-ready` adds the source-runner contract suite and is the affected
+scope’s review gate. `npm run xr:review-ready` retains established
+camera-fallback compatibility.
 
-Passing the aggregate establishes clean exact-commit review evidence only for
-XR authoring and edited-media delivery. Canonical runtime readiness still
-requires protected integration and canonical-main proof. Live depth remains
-blocked until a same-origin model-asset and named reference-device frame-budget
-proof are admitted.
-Physical XR/camera behavior remains blocked until named physical-device proof
-exists. Production and deployment remain blocked.
+Passing those gates establishes source-backed and specific browser-backed
+review evidence. Full pinned AC-1–AC-12 runtime readiness remains blocked until
+all of the following exist:
+
+- admitted immutable model bytes and named reference-device frame-budget proof;
+- named physical camera/headset permission, session, interruption, and teardown
+  proof;
+- track-preserving mux proof for already-encoded input tracks/codecs; and
+- connected live-transport latency and no-full-page-reload proof.
+
+No local gate may erase those blockers or promote its own observation.
