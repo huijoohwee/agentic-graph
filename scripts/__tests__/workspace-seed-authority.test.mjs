@@ -19,6 +19,7 @@ const canonicalSeed = `---
 canonical_source_file: "/docs/workspace-seeds/knowgrph-physics-playground-demo.md"
 source_root: "knowgrph/docs"
 source_backed: true
+kgBottomPanelOpen: false
 native_controller_demo:
   camera_mode: "fixed-follow"
   camera:
@@ -27,7 +28,92 @@ native_controller_demo:
     available: ["fixed-follow", "free-orbit"]
     invocation: "/camera.select @camera #camera camera=fixed-follow|free-orbit"
     timeline_override: "camera-mark playback temporarily owns framing"
+runtime_validation:
+  xr_authoring_edited_media_delivery:
+    scope: "xr-authoring-edited-media-delivery"
+    projection_role: "downstream scoped evidence; not a second XR readiness authority"
+    prd: "/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
+    runtime_owner: "canvas/src/components/timeline; canvas/src/features/gitgraph"
+    source_snapshot_schema: "knowgrph-xr-v2-readiness/v1"
+    source_snapshot_status: "source-ready"
+    canonical_delivery_status: "runtime-ready"
+    canonical_delivery_limit: "XR authoring and native edited-media delivery only"
+    reviewed_feature_commit: "fcd69c6b2d42a00779f55be8c1d57a0ab468339b"
+    pull_request: 674
+    protected_refresh_chain:
+      - "48c58307481c96e5c73c9f4d2f53eb2c2f1c8549"
+      - "fea5e37b9bf0d648284330cfbc3dcca03890def0"
+      - "a6de5722e550e633d0d73f59f187a09ec7388879"
+    canonical_main_commit: "a3ddfef7cc55c38385520173273abd66010e9747"
+    canonical_main_tree: "76c8e22da9c9284f01c2627c8ace9c9d3abcd682"
+    canonical_main_proof:
+      workflow: "Integration"
+      run_id: 30895597328
+      check: "Integration Gate"
+      conclusion: "success"
+      completed_at: "2026-08-04T09:26:58Z"
+      affected_scope: "xr_v2_video_editor"
+      focused_gate: "npm run xr-v2:review-ready"
+      browser_observation_schema: "knowgrph-xr-v2-browser-smoke/v1"
+      browser_observation: "pass"
+    canonical_runtime_reconciliation:
+      integration_result_schema: "agentic-device-integration-result/v1"
+      integration_status: "runtime_ready"
+      readiness_schema: "agentic-local-runtime-readiness/v1"
+      feature_runtime_source_revision: "a3ddfef7cc55c38385520173273abd66010e9747"
+      feature_runtime_agentic_canvas_os_revision: "217a8a42d6497e059839a6a1f809c2459530ca54"
+      feature_runtime_evidence_digest: "fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23"
+      feature_runtime_verified_at: "2026-08-04T09:29:02.924Z"
+    proven:
+      - "canonical ECS projection including entity zero"
+      - "real standalone Three.js material application"
+      - "mounted canonical Timeline command routing"
+      - "same-origin browser-native edited-media export"
+      - "non-empty Blob, decoded metadata, and bounded playback"
+      - "media teardown and object-URL revocation without observed page or media errors"
+      - "clean-room dependency and source enforcement"
+    external_dependencies: []
+    no_deployment: true
+    deploy_boundary: "Dev-only"
+    broader_xr_status: "blocked"
+    blocked_claims:
+      - "mounted-renderer material wiring"
+      - "live depth model and quality"
+      - "reference-device frame budget"
+      - "camera permission and lifecycle on named physical devices"
+      - "physical-headset XR behavior"
+      - "Production availability"
+      - "deployment authority"
+flow:
+  nodes:
+    - id: "xr_demo_entry"
+      type: "XrDemoControl"
+      label: "Develop and Run"
+      pos: {x: -420, y: 0}
+      properties:
+        role: "lifecycle"
+        state: "runtime-ready"
+        output: "Apply this Source Files document to launch the native demo, then switch controllers without resetting motion."
+    - id: "xr_edited_media_proof"
+      type: "XrDemoValidation"
+      label: "Scoped Edited-media Proof"
+      pos: {x: 880, y: 300}
+      properties:
+        role: "downstream canonical-main evidence projection"
+        scope: "xr-authoring-edited-media-delivery"
+        sourceSnapshotState: "source-ready"
+        canonicalDeliveryState: "runtime-ready"
+        broaderXrState: "blocked"
+        output: "Inspect the protected-main XR v2 review gate and canonical runtime receipt; applying this seed does not rerun the browser smoke."
+  connections:
+    - from: "xr_demo_entry"
+      to: "xr_edited_media_proof"
+      label: "inspect scoped proof"
 ---
+
+## Scoped XR edited-media evidence
+
+It does not load a video sequence, run the dedicated smoke route.
 `
 const flightRuntimeSeed = `---
 status: "runtime-ready"
@@ -142,6 +228,89 @@ test('accepts the exact authored and projection inventories', async t => {
   const roots = await fixture()
   t.after(() => rm(roots.root, { recursive: true, force: true }))
   await assert.doesNotReject(() => verifyWorkspaceSeedAuthority(roots))
+})
+
+test('rejects drift in the scoped XR edited-media evidence projection', async t => {
+  const mutations = [
+    ['opened XR bottom panel', 'kgBottomPanelOpen: false', 'kgBottomPanelOpen: true'],
+    ['promoted source snapshot', 'source_snapshot_status: "source-ready"', 'source_snapshot_status: "runtime-ready"'],
+    ['wrong canonical status', 'canonical_delivery_status: "runtime-ready"', 'canonical_delivery_status: "source-ready"'],
+    ['wrong runtime owner', 'runtime_owner: "canvas/src/components/timeline; canvas/src/features/gitgraph"', 'runtime_owner: "alternate/runtime"'],
+    ['broadened canonical delivery limit', 'canonical_delivery_limit: "XR authoring and native edited-media delivery only"', 'canonical_delivery_limit: "all XR runtime behavior"'],
+    ['wrong workflow', 'workflow: "Integration"', 'workflow: "Deploy"'],
+    ['wrong completion timestamp', 'completed_at: "2026-08-04T09:26:58Z"', 'completed_at: "2026-08-04T09:27:00Z"'],
+    ['wrong affected scope', 'affected_scope: "xr_v2_video_editor"', 'affected_scope: "all_xr"'],
+    ['wrong browser observation schema', 'browser_observation_schema: "knowgrph-xr-v2-browser-smoke/v1"', 'browser_observation_schema: "generic-browser-smoke/v1"'],
+    ['external dependency', 'external_dependencies: []', 'external_dependencies: ["remote-editor"]'],
+    ['deployment enabled', 'no_deployment: true', 'no_deployment: false'],
+    ['Production deploy boundary', 'deploy_boundary: "Dev-only"', 'deploy_boundary: "Production"'],
+    ['wrong runtime digest', 'fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23', '0'.repeat(64)],
+    ['removed deployment blocker', '      - "deployment authority"', '      - "deployment allowed"'],
+    [
+      'extra evidence key',
+      '    scope: "xr-authoring-edited-media-delivery"',
+      '    scope: "xr-authoring-edited-media-delivery"\n    extra_evidence: true',
+    ],
+    [
+      'extra canonical-main proof key',
+      '      workflow: "Integration"',
+      '      workflow: "Integration"\n      deployment_run: false',
+    ],
+    [
+      'extra runtime reconciliation key',
+      '      integration_result_schema: "agentic-device-integration-result/v1"',
+      '      integration_result_schema: "agentic-device-integration-result/v1"\n      deployment_receipt: null',
+    ],
+    [
+      'extra proof node key',
+      '    - id: "xr_edited_media_proof"\n      type: "XrDemoValidation"',
+      '    - id: "xr_edited_media_proof"\n      extraNodeState: "forbidden"\n      type: "XrDemoValidation"',
+    ],
+    [
+      'extra proof position key',
+      '      pos: {x: 880, y: 300}',
+      '      pos: {x: 880, y: 300, z: 0}',
+    ],
+    [
+      'extra proof properties key',
+      '        role: "downstream canonical-main evidence projection"',
+      '        role: "downstream canonical-main evidence projection"\n        deploymentState: "none"',
+    ],
+    [
+      'extra proof edge key',
+      '    - from: "xr_demo_entry"\n      to: "xr_edited_media_proof"',
+      '    - from: "xr_demo_entry"\n      extraEdgeState: "forbidden"\n      to: "xr_edited_media_proof"',
+    ],
+    [
+      'duplicate proof node',
+      '  connections:\n    - from: "xr_demo_entry"',
+      '    - id: "xr_edited_media_proof"\n      type: "Duplicate"\n  connections:\n    - from: "xr_demo_entry"',
+    ],
+    [
+      'extra incident proof edge',
+      '      label: "inspect scoped proof"\n---',
+      '      label: "inspect scoped proof"\n    - from: "xr_edited_media_proof"\n      to: "xr_demo_entry"\n      label: "return"\n---',
+    ],
+    [
+      'wrong proof topology',
+      '    - from: "xr_demo_entry"\n      to: "xr_edited_media_proof"\n      label: "inspect scoped proof"',
+      '    - from: "xr_runtime_gate"\n      to: "xr_edited_media_proof"\n      label: "inspect scoped proof"',
+    ],
+  ]
+  for (const [label, from, to] of mutations) {
+    await t.test(label, async t => {
+      const roots = await fixture()
+      t.after(() => rm(roots.root, { recursive: true, force: true }))
+      const canonicalPath = path.join(roots.knowgrphRoot, PHYSICS_SEED_RELATIVE_PATH)
+      const source = await readFile(canonicalPath, 'utf8')
+      assert.notEqual(source, source.replace(from, to), `fixture is missing ${from}`)
+      await writeFile(canonicalPath, source.replace(from, to))
+      await assert.rejects(
+        () => verifyWorkspaceSeedAuthority(roots),
+        /canonical XR edited-media evidence is invalid/,
+      )
+    })
+  }
 })
 
 test('rejects City drift from the canonical regional POI zoning contract', async t => {

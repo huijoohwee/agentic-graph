@@ -1,16 +1,18 @@
 ---
 title: "Knowgrph AR/VR/XR — Native Authoring and Edited-Media Delivery"
 doc_type: "PRD/TAD/ADR"
-version: "1.2.0"
+version: "1.3.0"
 date: "2026-08-04"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Knowgrph XR runtime and canonical Timeline editor"
-status: "review-candidate; canonical runtime, live depth, and physical-device proof blocked"
-local_rung: "dev-proven"
+status: "runtime-ready"
+local_rung: "runtime-ready"
+readiness_scope: "xr-authoring-edited-media-delivery"
 delivered_rung: "undocumented"
-lane: "authoring"
+lane: "delivery"
 universal_scope: "false"
+deployment: "not authorized"
 deploy_boundary: "Dev-only"
 runtime_owner: "canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts; canvas/src/features/xr-v2; canvas/src/components/timeline; canvas/src/features/gitgraph"
 runtime_proof: "scripts/run-xr-v2-source-smoke.mjs; scripts/run-video-editor-source-smoke.mjs; canvas/scripts/run_xr_v2_browser_smoke.mjs"
@@ -26,10 +28,17 @@ typed adapters at those owners. It does not introduce a parallel editor,
 renderer, scene store, camera lifecycle, collaboration transport, or media
 registry.
 
-The implemented review candidate is **XR authoring plus native edited-media
-delivery**. Its machine-readable scope is
-`xr-authoring-edited-media-delivery`. The following are executable as focused
-source, unit, and isolated local-browser checks from this repository:
+The implemented source snapshot remains a review candidate for **XR authoring
+plus native edited-media delivery**. Its machine-readable scope is
+`xr-authoring-edited-media-delivery`. Protected PR #674 integrated that exact
+scope at canonical `main` commit
+`a3ddfef7cc55c38385520173273abd66010e9747`; Integration run `30895597328`
+passed the focused gate, and Agentic Canvas OS revision
+`217a8a42d6497e059839a6a1f809c2459530ca54` reconciled the exact source into an
+`agentic-local-runtime-readiness/v1` receipt at
+`2026-08-04T09:29:02.924Z`. The scoped delivery is therefore runtime-ready.
+The following remain executable as focused source, unit, and isolated
+local-browser checks from this repository:
 
 - the canonical five-mode XR capability decision;
 - canonical-ECS projection including entity identifier zero;
@@ -41,8 +50,18 @@ source, unit, and isolated local-browser checks from this repository:
 - clean-room dependency/source enforcement; and
 - affected-scope CI that selects the aggregate review command.
 
-This evidence does **not** claim canonical runtime readiness, a loaded depth
-model, depth quality, phone-video
+The admitted lineage is reviewed feature commit
+`fcd69c6b2d42a00779f55be8c1d57a0ab468339b`, final protected-refresh head
+`a6de5722e550e633d0d73f59f187a09ec7388879`, and PR #674 merge
+`a3ddfef7cc55c38385520173273abd66010e9747`. The
+`agentic-device-integration-result/v1` result reported `runtime_ready`; its
+outer runtime evidence digest is
+`fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23`.
+This is historical evidence for the exact source and Agentic Canvas OS tuple,
+not a deployment or future-revision claim.
+
+This evidence claims canonical runtime readiness only for the named edited-media
+scope. It does **not** claim a loaded depth model, depth quality, phone-video
 reconstruction, named-device frame-budget proof, camera permission, physical
 headset execution, Production availability, or deployment authority. Those
 claims remain blocked until their own evidence gates close.
@@ -51,8 +70,8 @@ The readiness schema is `knowgrph-xr-v2-readiness/v1` and remains
 `source-ready` in a task lane. The browser observation schema is
 `knowgrph-xr-v2-browser-smoke/v1`; its bounded observation envelope is
 `knowgrph-xr-v2-dev-runtime-evidence/v1`. Shape-valid observations cannot
-promote readiness. Only protected integration followed by canonical-main
-runtime proof may establish a runtime-ready state.
+promote readiness. The later `agentic-device-integration-result/v1` and outer
+canonical runtime receipt establish the separate scope-limited result.
 
 ## Authority map
 
@@ -284,8 +303,9 @@ Markdown document or execute both ownership paths.
 8. The route validates those observations as
    `knowgrph-xr-v2-dev-runtime-evidence/v1`; validation cannot promote the
    source-ready snapshot.
-9. The Node verifier accepts only a clean exact-commit worktree, records the
-   result as review-candidate evidence, and makes no canonical-runtime claim.
+9. The Node verifier accepts only a clean exact-commit worktree and records the
+   result as review-candidate evidence; the verifier alone makes no
+   canonical-runtime claim.
 10. Component cleanup revokes the object URL and export cleanup stops owned
    media resources.
 
@@ -297,8 +317,8 @@ Markdown document or execute both ownership paths.
 | Canonical ECS projection | focused-test-backed | Entity zero and query projection are executed in tests |
 | Material application | focused-test/browser observation | Compiled graph updates a real standalone material; mounted-renderer wiring is not claimed |
 | Timeline command seam | focused-test/browser observation | Default, handled, rejected, and real mounted-panel paths are exercised |
-| Edited-video output/playback | review-candidate observation | Fresh local Chromium records and decodes output from a clean exact commit |
-| Canonical-main runtime | blocked | Protected integration and canonical runtime proof are absent |
+| Edited-video output/playback | canonical-runtime-proven for the scoped delivery | Protected Chromium evidence records and decodes output from a clean exact commit |
+| Canonical-main runtime | runtime-ready for `xr-authoring-edited-media-delivery` only | PR #674, canonical `a3ddfef7cc55c38385520173273abd66010e9747`, Integration run `30895597328`, and the exact runtime receipt are joined |
 | Live depth synthesis | blocked | Same-origin model-asset admission and reference-device proof are absent |
 | Physical XR/camera | blocked | Named physical-device evidence is absent |
 | Production | blocked | Dev-only; release authority is separate |
@@ -385,14 +405,15 @@ Edited-media delivery uses the checked-in Timeline export path and browser
 capability negotiation. Unsupported recording or decode capability fails with
 a typed error; no third-party editor/media runtime is introduced.
 
-### ADR-9 — Keep task-lane proof below runtime-ready
+### ADR-9 — Separate source evidence from canonical delivery readiness
 
 Status: Accepted.
 
-The task lane may produce clean exact-commit review-candidate evidence for XR
-authoring and edited-media delivery. It remains `source-ready`; canonical
-runtime, live-depth, and physical-device claims stay blocked even when the
-aggregate review gate passes.
+The source snapshot and task lane may produce clean exact-commit
+review-candidate evidence and remain `source-ready`. Protected integration plus
+canonical runtime reconciliation may establish `runtime-ready` for the exact
+`xr-authoring-edited-media-delivery` scope without promoting live-depth,
+physical-device, Production, release, or deployment claims.
 
 ## Part IV — Verification and delivery
 
@@ -427,8 +448,7 @@ The following remain required before broader claims:
 3. validate camera permission, interruption, track end, visibility changes,
    and teardown on named physical mobile devices;
 4. validate immersive entry, tracking, placement, and exit on named headsets;
-5. pass protected integration and produce canonical-main runtime proof; and
-6. pass separately authorized release workflows.
+5. pass separately authorized release workflows.
 
 ## Validation checklist
 
@@ -439,6 +459,7 @@ The following remain required before broader claims:
 - [x] Browser-native edited output is decoded in fresh Chromium evidence.
 - [x] The upstream workflow reference is attribution-only with no copy or dependency allowance.
 - [x] Affected CI selects the aggregate review command.
+- [x] Protected PR #674 and canonical runtime reconciliation prove the exact edited-media scope.
 - [x] Dev-only and blocked claims are explicit.
 - [ ] Same-origin depth model admission.
 - [ ] Named reference-device frame-budget proof.
