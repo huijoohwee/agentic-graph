@@ -106,6 +106,71 @@ const XR_EDITED_MEDIA_BLOCKED = Object.freeze([
   'Production availability',
   'deployment authority',
 ])
+const XR_EDITED_MEDIA_EVIDENCE_KEYS = Object.freeze([
+  'scope',
+  'projection_role',
+  'prd',
+  'runtime_owner',
+  'source_snapshot_schema',
+  'source_snapshot_status',
+  'canonical_delivery_status',
+  'canonical_delivery_limit',
+  'reviewed_feature_commit',
+  'pull_request',
+  'protected_refresh_chain',
+  'canonical_main_commit',
+  'canonical_main_tree',
+  'canonical_main_proof',
+  'canonical_runtime_reconciliation',
+  'proven',
+  'external_dependencies',
+  'no_deployment',
+  'deploy_boundary',
+  'broader_xr_status',
+  'blocked_claims',
+])
+const XR_EDITED_MEDIA_MAIN_PROOF_KEYS = Object.freeze([
+  'workflow',
+  'run_id',
+  'check',
+  'conclusion',
+  'completed_at',
+  'affected_scope',
+  'focused_gate',
+  'browser_observation_schema',
+  'browser_observation',
+])
+const XR_EDITED_MEDIA_RUNTIME_RECONCILIATION_KEYS = Object.freeze([
+  'integration_result_schema',
+  'integration_status',
+  'readiness_schema',
+  'feature_runtime_source_revision',
+  'feature_runtime_agentic_canvas_os_revision',
+  'feature_runtime_evidence_digest',
+  'feature_runtime_verified_at',
+])
+const XR_EDITED_MEDIA_PROOF_NODE_ID = 'xr_edited_media_proof'
+const XR_EDITED_MEDIA_PROOF_NODE_KEYS = Object.freeze([
+  'id',
+  'type',
+  'label',
+  'pos',
+  'properties',
+])
+const XR_EDITED_MEDIA_PROOF_POSITION_KEYS = Object.freeze(['x', 'y'])
+const XR_EDITED_MEDIA_PROOF_PROPERTIES_KEYS = Object.freeze([
+  'role',
+  'scope',
+  'sourceSnapshotState',
+  'canonicalDeliveryState',
+  'broaderXrState',
+  'output',
+])
+const XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS = Object.freeze([
+  'from',
+  'to',
+  'label',
+])
 
 export const resolveWorkspaceSeedSiblingRootsFromGitCommonDir = gitCommonDirRaw => {
   const gitCommonDir = path.resolve(String(gitCommonDirRaw || '').trim())
@@ -182,26 +247,57 @@ const requirePhysicsEditedMediaEvidence = source => {
   const runtime = isRecord(evidence.canonical_runtime_reconciliation)
     ? evidence.canonical_runtime_reconciliation
     : {}
+  const flow = isRecord(frontmatter.flow) ? frontmatter.flow : {}
+  const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
+  const connections = Array.isArray(flow.connections) ? flow.connections : []
   const missing = []
   const requireValue = (label, actual, expected) => {
     if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
   }
+  const requireExactKeys = (label, actual, expectedKeys) => {
+    if (!isRecord(actual)) {
+      missing.push(`${label}=object with exact keys ${JSON.stringify(expectedKeys)}`)
+      return
+    }
+    const actualKeys = Object.keys(actual).sort()
+    const expected = [...expectedKeys].sort()
+    if (JSON.stringify(actualKeys) !== JSON.stringify(expected)) {
+      missing.push(`${label}.keys=${JSON.stringify(expected)}`)
+    }
+  }
 
   requireValue('kgBottomPanelOpen', readBooleanPreset(frontmatter.kgBottomPanelOpen), false)
+  requireExactKeys('evidence', evidence, XR_EDITED_MEDIA_EVIDENCE_KEYS)
+  requireExactKeys('canonical_main_proof', mainProof, XR_EDITED_MEDIA_MAIN_PROOF_KEYS)
+  requireExactKeys(
+    'canonical_runtime_reconciliation',
+    runtime,
+    XR_EDITED_MEDIA_RUNTIME_RECONCILIATION_KEYS,
+  )
   requireValue('scope', evidence.scope, 'xr-authoring-edited-media-delivery')
   requireValue('projection_role', evidence.projection_role, 'downstream scoped evidence; not a second XR readiness authority')
   requireValue('prd', evidence.prd, '/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md')
+  requireValue('runtime_owner', evidence.runtime_owner, 'canvas/src/components/timeline; canvas/src/features/gitgraph')
   requireValue('source_snapshot_schema', evidence.source_snapshot_schema, 'knowgrph-xr-v2-readiness/v1')
   requireValue('source_snapshot_status', evidence.source_snapshot_status, 'source-ready')
   requireValue('canonical_delivery_status', evidence.canonical_delivery_status, 'runtime-ready')
+  requireValue('canonical_delivery_limit', evidence.canonical_delivery_limit, 'XR authoring and native edited-media delivery only')
   requireValue('reviewed_feature_commit', evidence.reviewed_feature_commit, 'fcd69c6b2d42a00779f55be8c1d57a0ab468339b')
   requireValue('pull_request', evidence.pull_request, 674)
   requireValue('canonical_main_commit', evidence.canonical_main_commit, 'a3ddfef7cc55c38385520173273abd66010e9747')
   requireValue('canonical_main_tree', evidence.canonical_main_tree, '76c8e22da9c9284f01c2627c8ace9c9d3abcd682')
+  requireValue('canonical_main_proof.workflow', mainProof.workflow, 'Integration')
   requireValue('canonical_main_proof.run_id', mainProof.run_id, 30895597328)
   requireValue('canonical_main_proof.check', mainProof.check, 'Integration Gate')
   requireValue('canonical_main_proof.conclusion', mainProof.conclusion, 'success')
+  requireValue('canonical_main_proof.completed_at', mainProof.completed_at, '2026-08-04T09:26:58Z')
+  requireValue('canonical_main_proof.affected_scope', mainProof.affected_scope, 'xr_v2_video_editor')
   requireValue('canonical_main_proof.focused_gate', mainProof.focused_gate, 'npm run xr-v2:review-ready')
+  requireValue(
+    'canonical_main_proof.browser_observation_schema',
+    mainProof.browser_observation_schema,
+    'knowgrph-xr-v2-browser-smoke/v1',
+  )
   requireValue('canonical_main_proof.browser_observation', mainProof.browser_observation, 'pass')
   requireValue('runtime.integration_result_schema', runtime.integration_result_schema, 'agentic-device-integration-result/v1')
   requireValue('runtime.integration_status', runtime.integration_status, 'runtime_ready')
@@ -210,7 +306,7 @@ const requirePhysicsEditedMediaEvidence = source => {
   requireValue('runtime.feature_runtime_agentic_canvas_os_revision', runtime.feature_runtime_agentic_canvas_os_revision, '217a8a42d6497e059839a6a1f809c2459530ca54')
   requireValue('runtime.feature_runtime_evidence_digest', runtime.feature_runtime_evidence_digest, 'fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23')
   requireValue('runtime.feature_runtime_verified_at', runtime.feature_runtime_verified_at, '2026-08-04T09:29:02.924Z')
-  requireValue('no_deployment', readBooleanPreset(evidence.no_deployment), true)
+  requireValue('no_deployment', evidence.no_deployment, true)
   requireValue('deploy_boundary', evidence.deploy_boundary, 'Dev-only')
   requireValue('broader_xr_status', evidence.broader_xr_status, 'blocked')
   if (JSON.stringify(evidence.protected_refresh_chain) !== JSON.stringify([
@@ -227,9 +323,69 @@ const requirePhysicsEditedMediaEvidence = source => {
   if (JSON.stringify(evidence.blocked_claims) !== JSON.stringify(XR_EDITED_MEDIA_BLOCKED)) {
     missing.push('blocked_claims=exact broader-XR blocker set')
   }
+  if (!Array.isArray(flow.nodes)) missing.push('flow.nodes=array')
+  if (!Array.isArray(flow.connections)) missing.push('flow.connections=array')
+  const proofNodes = nodes.filter(node => (
+    isRecord(node) && node.id === XR_EDITED_MEDIA_PROOF_NODE_ID
+  ))
+  if (proofNodes.length !== 1) {
+    missing.push(`flow.nodes=exactly one ${XR_EDITED_MEDIA_PROOF_NODE_ID}`)
+  } else {
+    const proofNode = proofNodes[0]
+    const position = isRecord(proofNode.pos) ? proofNode.pos : {}
+    const properties = isRecord(proofNode.properties) ? proofNode.properties : {}
+    requireExactKeys('proof_node', proofNode, XR_EDITED_MEDIA_PROOF_NODE_KEYS)
+    requireExactKeys('proof_node.pos', position, XR_EDITED_MEDIA_PROOF_POSITION_KEYS)
+    requireExactKeys(
+      'proof_node.properties',
+      properties,
+      XR_EDITED_MEDIA_PROOF_PROPERTIES_KEYS,
+    )
+    requireValue('proof_node.id', proofNode.id, XR_EDITED_MEDIA_PROOF_NODE_ID)
+    requireValue('proof_node.type', proofNode.type, 'XrDemoValidation')
+    requireValue('proof_node.label', proofNode.label, 'Scoped Edited-media Proof')
+    requireValue('proof_node.pos.x', position.x, 880)
+    requireValue('proof_node.pos.y', position.y, 300)
+    requireValue(
+      'proof_node.properties.role',
+      properties.role,
+      'downstream canonical-main evidence projection',
+    )
+    requireValue(
+      'proof_node.properties.scope',
+      properties.scope,
+      'xr-authoring-edited-media-delivery',
+    )
+    requireValue('proof_node.properties.sourceSnapshotState', properties.sourceSnapshotState, 'source-ready')
+    requireValue('proof_node.properties.canonicalDeliveryState', properties.canonicalDeliveryState, 'runtime-ready')
+    requireValue('proof_node.properties.broaderXrState', properties.broaderXrState, 'blocked')
+    requireValue(
+      'proof_node.properties.output',
+      properties.output,
+      'Inspect the protected-main XR v2 review gate and canonical runtime receipt; applying this seed does not rerun the browser smoke.',
+    )
+  }
+  const proofConnections = connections.filter(connection => (
+    isRecord(connection)
+    && (
+      connection.from === XR_EDITED_MEDIA_PROOF_NODE_ID
+      || connection.to === XR_EDITED_MEDIA_PROOF_NODE_ID
+    )
+  ))
+  if (proofConnections.length !== 1) {
+    missing.push(`flow.connections=exactly one incident ${XR_EDITED_MEDIA_PROOF_NODE_ID} edge`)
+  } else {
+    const proofConnection = proofConnections[0]
+    requireExactKeys(
+      'proof_connection',
+      proofConnection,
+      XR_EDITED_MEDIA_PROOF_CONNECTION_KEYS,
+    )
+    requireValue('proof_connection.from', proofConnection.from, 'xr_demo_entry')
+    requireValue('proof_connection.to', proofConnection.to, XR_EDITED_MEDIA_PROOF_NODE_ID)
+    requireValue('proof_connection.label', proofConnection.label, 'inspect scoped proof')
+  }
   for (const marker of [
-    'id: "xr_edited_media_proof"',
-    'applying this seed does not rerun the browser smoke',
     '## Scoped XR edited-media evidence',
     'It does not load a video sequence, run the dedicated smoke route',
   ]) {
