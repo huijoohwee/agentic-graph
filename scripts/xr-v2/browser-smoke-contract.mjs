@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 
@@ -14,6 +15,9 @@ const REQUIRED_MARKERS = Object.freeze([
   '/__smoke__/xr-v2-runtime',
   'data-kg-xr-v2-runtime-smoke',
   'data-kg-xr-v2-browser-observation-state',
+  'data-kg-xr-v2-pinned-conformance-artifact',
+  'data-kg-xr-v2-pinned-conformance-evidence',
+  'data-kg-xr-v2-pinned-conformance-validation',
   'data-kg-xr-v2-readiness-schema',
   'data-kg-xr-v2-readiness-scope',
   'data-kg-xr-v2-readiness-status',
@@ -48,6 +52,11 @@ const REQUIRED_MARKERS = Object.freeze([
   'XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA',
   'type XrV2DevRuntimeEvidence',
   'validateXrV2DevRuntimeEvidence',
+  'runXrV2PinnedContractConformanceProbe',
+  'validateXrV2PinnedContractConformanceEvidence',
+  'type XrV2PinnedContractConformanceEvidence',
+  'assertPinnedXrV2ContractConformance',
+  'pinnedContractConformance',
   'projectCanonicalAuthoringEcsWorld',
   'bindMaterialGraphToMeshStandardMaterial',
   'GanttTimelineTransportPanel',
@@ -89,12 +98,20 @@ const REQUIRED_MARKERS = Object.freeze([
   'knowgrph-xr-v2-browser-smoke/v1',
   'knowgrph-xr-v2-dev-runtime-evidence/v1',
   'mediaErrors',
-  'assertObservedMediaErrors',
-  'assertExactRawObservation',
+  'assertObservedXrV2MediaErrors',
+  'assertExactXrV2RawObservation',
   'playbackObservation',
   'mediaCleanupObservation',
   'sourceHeadTree',
   'proofSourceTree',
+  'sourceLane',
+  'sourceUpstreamRef',
+  'sourceUpstreamRevision',
+  'sourceAheadCount',
+  'sourceBehindCount',
+  'sourceDescendsFromUpstream',
+  'sourceDescendsFromOriginMain',
+  'upstreamSynchronized',
   'observedOriginMainRevision',
   'sourceEvidenceBefore',
   'source or worktree state changed during the browser observation',
@@ -115,6 +132,15 @@ const REQUIRED_MARKERS = Object.freeze([
   'untrackedPathCount',
   'readinessSchema',
   'readinessScope',
+  'observedAt',
+  'browserProvenance',
+  'navigator.userAgent',
+  'navigator.platform',
+  'process.platform',
+  'process.arch',
+  'knowgrph-xr-v2-browser-smoke-artifact/v1',
+  'contentDigest',
+  'contentByteSize',
   'await page.close()',
   'await context.close()',
   'await browser.close()',
@@ -132,6 +158,146 @@ const FORBIDDEN_MARKERS = Object.freeze([
   '/xr.capture',
   '/xr.author',
 ])
+
+function assertExactKeys(value, expectedKeys, label) {
+  assert.ok(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`)
+  assert.deepEqual(Object.keys(value).sort(), [...expectedKeys].sort(), `${label} keys must be exact`)
+}
+
+export function assertExactXrV2RawObservation(observation) {
+  assertExactKeys(observation, ['authoringAdapters', 'editedMedia', 'schema'], 'rawObservation')
+  assert.equal(observation.schema, 'knowgrph-xr-v2-dev-runtime-evidence/v1')
+  assertExactKeys(
+    observation.authoringAdapters,
+    ['canonicalEcsEntityZero', 'materialApplied', 'timelineCommandRouted'],
+    'rawObservation.authoringAdapters',
+  )
+  assert.deepEqual(observation.authoringAdapters, {
+    canonicalEcsEntityZero: true,
+    materialApplied: true,
+    timelineCommandRouted: true,
+  })
+  assertExactKeys(
+    observation.editedMedia,
+    [
+      'byteSize',
+      'decodedHeight',
+      'decodedWidth',
+      'durationSeconds',
+      'mimeType',
+      'playbackObserved',
+      'unboundedDuration',
+    ],
+    'rawObservation.editedMedia',
+  )
+  const media = observation.editedMedia
+  const boundedDuration = Number.isFinite(media.durationSeconds)
+    && media.durationSeconds > 0
+    && media.unboundedDuration === false
+  const unboundedDuration = media.durationSeconds === null && media.unboundedDuration === true
+  assert.ok(Number.isSafeInteger(media.byteSize) && media.byteSize > 0)
+  assert.match(media.mimeType, /^video\/[a-z0-9][a-z0-9!#$&^_.+-]*(?:\s*;[^\r\n]+)?$/iu)
+  assert.ok(Number.isSafeInteger(media.decodedWidth) && media.decodedWidth > 0)
+  assert.ok(Number.isSafeInteger(media.decodedHeight) && media.decodedHeight > 0)
+  assert.ok(boundedDuration || unboundedDuration)
+  assert.equal(media.playbackObserved, true)
+}
+
+export function parseXrV2MediaErrors(serialized) {
+  const mediaErrors = JSON.parse(String(serialized || 'null'))
+  assert.ok(Array.isArray(mediaErrors), 'media errors must be a JSON array')
+  for (const [index, mediaError] of mediaErrors.entries()) {
+    assertExactKeys(mediaError, ['code', 'message'], `mediaErrors[${index}]`)
+    assert.ok(Number.isSafeInteger(mediaError.code) && mediaError.code >= 0)
+    assert.equal(typeof mediaError.message, 'string')
+  }
+  return mediaErrors
+}
+
+export function assertObservedXrV2MediaErrors(mediaErrors) {
+  for (const [index, mediaError] of mediaErrors.entries()) {
+    assertExactKeys(
+      mediaError,
+      ['code', 'message', 'networkState', 'readyState', 'sourceKind', 'tagName'],
+      `observedMediaErrors[${index}]`,
+    )
+    assert.ok(Number.isSafeInteger(mediaError.code) && mediaError.code >= 0)
+    assert.ok(Number.isSafeInteger(mediaError.networkState) && mediaError.networkState >= 0)
+    assert.ok(Number.isSafeInteger(mediaError.readyState) && mediaError.readyState >= 0)
+    assert.equal(typeof mediaError.message, 'string')
+    assert.match(mediaError.sourceKind, /^(?:blob|none|other)$/u)
+    assert.match(mediaError.tagName, /^(?:AUDIO|VIDEO)$/u)
+  }
+}
+
+export function assertPinnedXrV2ContractConformance(evidence) {
+  assertExactKeys(
+    evidence,
+    [
+      'acceptanceCriteria',
+      'contractVersion',
+      'deterministic',
+      'overall',
+      'pinnedSourceRevision',
+      'runtimeObservations',
+      'schema',
+    ],
+    'pinnedContractConformance',
+  )
+  assert.equal(evidence.schema, 'knowgrph-xr-v2-pinned-contract-conformance/v1')
+  assert.equal(evidence.pinnedSourceRevision, '5679d4101f5470fb85816b6df4f2ec0af6ca4eb7')
+  assert.equal(evidence.contractVersion, '2.0.0')
+  assert.equal(evidence.overall, 'partial')
+  const deterministicKeys = [
+    'behaviorExactOnce', 'behaviorUnwiredNoop', 'capabilityMatrixComplete', 'captureFrameCount',
+    'ecsQueryCorrect', 'fallbackWithinConfiguredBreaches', 'materialGraphCompiled',
+    'particleCeilingRespected', 'postProcessJobQueued', 'processLocalPreviewPropagated',
+    'rawFramesUnique', 'stereoCoverage', 'stereoFrameCount', 'timelineInterpolationMatched',
+  ]
+  assertExactKeys(evidence.deterministic, deterministicKeys, 'pinnedContractConformance.deterministic')
+  for (const key of deterministicKeys.filter(key => !key.endsWith('Count') && key !== 'stereoCoverage')) {
+    assert.equal(evidence.deterministic[key], true, `deterministic ${key} must be observed`)
+  }
+  assert.ok(Number.isSafeInteger(evidence.deterministic.captureFrameCount))
+  assert.ok(Number.isSafeInteger(evidence.deterministic.stereoFrameCount))
+  assert.ok(evidence.deterministic.captureFrameCount > 0)
+  assert.ok(evidence.deterministic.stereoFrameCount > 0)
+  assert.ok(evidence.deterministic.stereoCoverage >= 0.9)
+  assertExactKeys(evidence.runtimeObservations, [
+    'compiledShaderMeshRender', 'connectedPreviewTransport', 'liveDepthModel',
+    'mountedEcsRendering', 'physicalDeviceMatrix', 'progressiveViewerMatrix',
+    'referenceFrameBudget', 'trackPreservingContainerMux',
+  ], 'pinnedContractConformance.runtimeObservations')
+  for (const value of Object.values(evidence.runtimeObservations)) assert.equal(value, 'not-observed')
+  assert.ok(Array.isArray(evidence.acceptanceCriteria))
+  const expectedCriteria = [
+    ['AC-1', ['capabilityMatrixComplete'], ['physicalDeviceMatrix']],
+    ['AC-2', ['stereoCoverage', 'rawFramesUnique'], ['liveDepthModel', 'referenceFrameBudget']],
+    ['AC-3', ['fallbackWithinConfiguredBreaches', 'postProcessJobQueued'], []],
+    ['AC-4', ['capabilityMatrixComplete'], ['progressiveViewerMatrix']],
+    ['AC-5', ['capabilityMatrixComplete'], ['physicalDeviceMatrix']],
+    ['AC-6', ['ecsQueryCorrect'], ['mountedEcsRendering']],
+    ['AC-7', ['materialGraphCompiled'], ['compiledShaderMeshRender']],
+    ['AC-8', ['behaviorExactOnce', 'behaviorUnwiredNoop'], []],
+    ['AC-9', ['particleCeilingRespected'], []],
+    ['AC-10', ['timelineInterpolationMatched'], []],
+    ['AC-11', [], ['trackPreservingContainerMux']],
+    ['AC-12', ['processLocalPreviewPropagated'], ['connectedPreviewTransport']],
+  ]
+  assert.equal(evidence.acceptanceCriteria.length, expectedCriteria.length)
+  for (const [index, [criterion, deterministicEvidence, blockedBy]] of expectedCriteria.entries()) {
+    const entry = evidence.acceptanceCriteria[index]
+    assertExactKeys(
+      entry,
+      ['blockedBy', 'criterion', 'deterministicEvidence', 'status'],
+      `pinnedContractConformance.acceptanceCriteria[${index}]`,
+    )
+    assert.equal(entry.criterion, criterion)
+    assert.deepEqual(entry.deterministicEvidence, deterministicEvidence)
+    assert.deepEqual(entry.blockedBy, blockedBy)
+    assert.equal(entry.status, blockedBy.length ? 'partial' : 'deterministic-proven')
+  }
+}
 
 export function verifyXrV2BrowserSmokeSourceContract(repositoryRoot) {
   const sources = SOURCE_PATHS.map(parts => {

@@ -1,427 +1,206 @@
 ---
-title: "Knowgrph AR/VR/XR — Native Authoring and Edited-Media Delivery"
+title: "Knowgrph AR/VR/XR — Pinned Runtime-Readiness Contract"
 doc_type: "PRD/TAD/ADR"
-version: "1.3.0"
-date: "2026-08-04"
+version: "2.1.0"
+date: "2026-08-05"
 lang: "en-US"
 frontmatter_contract: "required"
-owner: "Knowgrph XR runtime and canonical Timeline editor"
-status: "runtime-ready"
-local_rung: "runtime-ready"
-readiness_scope: "xr-authoring-edited-media-delivery"
-delivered_rung: "undocumented"
-lane: "delivery"
-universal_scope: "false"
+owner: "Knowgrph XR runtime and existing canvas owners"
+status: "review-candidate"
+local_rung: "source-ready"
+readiness_scope: "pinned-ac1-ac12-conformance"
+pinned_spec_version: "2.0.0"
+pinned_source_revision: "5679d4101f5470fb85816b6df4f2ec0af6ca4eb7"
 deployment: "not authorized"
 deploy_boundary: "Dev-only"
-runtime_owner: "canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts; canvas/src/features/xr-v2; canvas/src/components/timeline; canvas/src/features/gitgraph"
-runtime_proof: "scripts/run-xr-v2-source-smoke.mjs; scripts/run-video-editor-source-smoke.mjs; canvas/scripts/run_xr_v2_browser_smoke.mjs"
+runtime_owner: "canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts; canvas/src/features/xr-v2; root ecs; canvas/src/components/timeline; canvas/src/features/gitgraph"
+runtime_proof: "scripts/run-xr-v2-source-smoke.mjs; canvas/scripts/run_xr_v2_browser_smoke.mjs"
 ---
 
-# Knowgrph AR/VR/XR — Native Authoring and Edited-Media Delivery
+# Knowgrph AR/VR/XR — Pinned Runtime-Readiness Contract
 
-## Decision and readiness boundary
+## Source authority and decision
 
-Knowgrph retains one XR capability policy, one Three.js renderer, one canonical
-ECS, and one source-backed Gantt/video-sequence Timeline editor. XR v2 adds
-typed adapters at those owners. It does not introduce a parallel editor,
-renderer, scene store, camera lifecycle, collaboration transport, or media
-registry.
+The requirements authority for this increment is the historical v2.0.0 document
+at commit
+[`5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`](https://github.com/huijoohwee/knowgrph/blob/5679d4101f5470fb85816b6df4f2ec0af6ca4eb7/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md).
+This maintained document is its runtime-readiness overlay. It preserves and
+traces pinned AC-1 through AC-12 without restoring the stale 1,056-line copy or
+creating a second renderer, ECS, camera lifecycle, editor, transport, media
+registry, or command/schema owner.
 
-The implemented source snapshot remains a review candidate for **XR authoring
-plus native edited-media delivery**. Its machine-readable scope is
-`xr-authoring-edited-media-delivery`. Protected PR #674 integrated that exact
-scope at canonical `main` commit
-`a3ddfef7cc55c38385520173273abd66010e9747`; Integration run `30895597328`
-passed the focused gate, and Agentic Canvas OS revision
-`217a8a42d6497e059839a6a1f809c2459530ca54` reconciled the exact source into an
-`agentic-local-runtime-readiness/v1` receipt at
-`2026-08-04T09:29:02.924Z`. The scoped delivery is therefore runtime-ready.
-The following remain executable as focused source, unit, and isolated
-local-browser checks from this repository:
+The exact readiness boundary is deliberately narrower than the requirements
+authority:
 
-- the canonical five-mode XR capability decision;
-- canonical-ECS projection including entity identifier zero;
-- a material-graph adapter applied to an actual existing Three.js material;
-- the existing Timeline editor's default Markdown mutation path and its typed
-  externally-owned command seam;
-- browser-native edited-video recording through the existing export owner;
-- decoded browser playback of the resulting non-empty artifact;
-- clean-room dependency/source enforcement; and
-- affected-scope CI that selects the aggregate review command.
+- deterministic adapters, focused tests, source ledgers, and the admitted
+  local-browser observations are review-candidate evidence;
+- the existing `xr-authoring-edited-media-delivery` snapshot is one contained
+  evidence slice, not a replacement authority for pinned AC-1–AC-12;
+- full pinned runtime readiness remains **blocked** on admitted model bytes,
+  named reference/physical devices, a connected live transport, and
+  track-preserving mux proof; and
+- all evidence is Dev-only. It grants no integration, release, deployment, or
+  Production authority.
 
-The admitted lineage is reviewed feature commit
-`fcd69c6b2d42a00779f55be8c1d57a0ab468339b`, final protected-refresh head
-`a6de5722e550e633d0d73f59f187a09ec7388879`, and PR #674 merge
-`a3ddfef7cc55c38385520173273abd66010e9747`. The
-`agentic-device-integration-result/v1` result reported `runtime_ready`; its
-outer runtime evidence digest is
-`fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23`.
-This is historical evidence for the exact source and Agentic Canvas OS tuple,
-not a deployment or future-revision claim.
+## Canonical ownership
 
-This evidence claims canonical runtime readiness only for the named edited-media
-scope. It does **not** claim a loaded depth model, depth quality, phone-video
-reconstruction, named-device frame-budget proof, camera permission, physical
-headset execution, Production availability, or deployment authority. Those
-claims remain blocked until their own evidence gates close.
+| Concern | Canonical owner retained | XR v2 responsibility |
+|---|---|---|
+| Feature probes and entry decision | `canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts` | Project the result and provide pinned compatibility evidence |
+| Session binding and rendering | Existing mounted Three.js/R3F surface | No renderer, scene, or camera creation |
+| Camera permission and capture | Existing Spatial Capture and Motion Control owners | Pure capture state plus injected processing ports |
+| Scene data and query | Root `ecs` package | Read-only projection, including entity identifier zero |
+| Materials | Existing Three.js material owner | Validate and apply a closed graph to caller-owned material |
+| Timeline, preview, and export | `canvas/src/components/timeline` and `canvas/src/features/gitgraph` | Deterministic animation/preview adapters and typed command seam |
+| XR adapter surface | `canvas/src/features/xr-v2` | Pinned conformance ledger and bounded adapters |
+| Evidence | XR source runner and dedicated Chromium smoke | Reproducible source/browser observations, never self-promotion |
 
-The readiness schema is `knowgrph-xr-v2-readiness/v1` and remains
-`source-ready` in a task lane. The browser observation schema is
-`knowgrph-xr-v2-browser-smoke/v1`; its bounded observation envelope is
-`knowgrph-xr-v2-dev-runtime-evidence/v1`. Shape-valid observations cannot
-promote readiness. The later `agentic-device-integration-result/v1` and outer
-canonical runtime receipt establish the separate scope-limited result.
+The canonical entry-mode union remains `immersive-session`, `inline-viewer`,
+`monocular-capture`, `native-handoff`, and `unsupported`. A compatibility
+projection may express the pinned four-tier requirement, but does not replace
+that owner or infer device class from `navigator.userAgent`.
 
-## Authority map
+## Product requirements and acceptance trace
 
-| Concern | Existing owner retained |
-|---|---|
-| Feature probes, five-mode decision, native-session order | `canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts` |
-| WebXR session binding and teardown | Existing Three.js XR surface |
-| Camera permission and pose capture | Existing Motion Control runtime |
-| ECS allocation, query, and snapshot | Root `ecs` package |
-| Scene rendering and materials | Existing Three.js/R3F surface |
-| Timeline ruler, transport, edits, preview, and export | `canvas/src/components/timeline` and `canvas/src/features/gitgraph` |
-| XR v2 owner adapters | `canvas/src/features/xr-v2` |
-| Clean-room enforcement | `scripts/video-editor` |
-| Runtime proof | XR v2 source ledger and local Chromium smoke |
+The following table is the normative trace for all acceptance criteria in the
+pinned authority. “Backed” means that the checked-in deterministic or browser
+slice is executable; it does not erase the named blocker.
 
-## Part I — Product requirements
-
-### Problem
-
-Knowgrph already has XR entry, camera fallback, authoring surfaces, a
-source-backed Timeline, and browser-native edited-media export. The prior
-document described a speculative parallel stack instead of the checked-in
-runtime. The product needs an honest, executable contract that joins the
-existing owners and makes their evidence selectable in CI.
-
-### Personas
-
-- A mobile user needs inline viewing or an explicit camera route when immersive
-  entry is unavailable.
-- A headset user needs an explicit user-owned immersive session.
-- An author needs XR motion and media edits to use the same Timeline surface
-  and source authority as other Knowgrph work.
-- An automation client needs a typed edit-command boundary without bypassing
-  the document owner.
-- A reviewer needs local browser evidence and an explicit list of claims that
-  remain blocked.
-
-### Primary journey
-
-| Stage | User or runtime action | Result | Boundary |
+| Pinned criterion | Requirement preserved | Executable owner/evidence | Readiness boundary |
 |---|---|---|---|
-| Open | Open an XR or spatial document | Existing inline surface renders and feature probes begin | No permission prompt |
-| Decide | Capability probes settle | Exactly one canonical entry mode is projected | No device-name inference |
-| Author | Open the bottom Timeline | Existing Gantt/video-sequence editor renders | No parallel editor state |
-| Edit | Invoke a clip or XR-owned command | Default document owner handles it, or an explicit external adapter returns a typed result | Rejection never mutates the document |
-| Render | Apply an admitted material graph | Parameters update an actual caller-supplied Three.js material in the focused adapter proof | Normal mounted-renderer wiring is not claimed |
-| Deliver | Export a short edited sequence | Existing recorder/export owner emits browser-native media | Capability failures are explicit |
-| Verify | Attach output to a video element | Browser decodes metadata and playback without an observed error | Local Dev evidence only |
-| Exit | End session or close the surface | Existing owners release media/session resources | No hidden retained session |
+| **AC-1 — Capability detection** | Report exactly one of the pinned four tiers before capture/session action | Canonical feature policy plus pinned conformance projection and matrix tests | Deterministic/source-backed; physical device matrix blocked |
+| **AC-2 — Live capture default** | At sufficient budget, synthesize stereo for at least 90% of frames with no duplicate writes and expose live preview | Capture session, deterministic stereo synthesizer, pinned conformance probe | Synthetic/admitted-input proof only; model bytes, real camera, and named-device frame budget blocked |
+| **AC-3 — Automatic post-process fallback** | After N consecutive budget breaches, preserve raw capture and produce a typed post-process job without failing capture | Capture-session state machine and injected artifact/job ports | Deterministic/focused-test-backed; durable connected executor proof remains outside this adapter |
+| **AC-4 — Progressive-enhancement viewing** | Select the highest supported tier and retain a flat fallback | Canonical five-mode policy, compatibility projection, existing viewer route, browser probe | Selection/browser-route-backed; four-tier physical rendering matrix blocked |
+| **AC-5 — iOS engine reality** | iOS-class matrices must not project either pinned immersive tier | Feature-probe compatibility matrix; no user-agent branch | Deterministic/source-backed; named iOS browser/device pass blocked |
+| **AC-6 — ECS scene composition** | Component queries return the correct unique entities and applied components render | Root ECS projection tests and entity-zero browser observation | Query/focused-browser-backed; complete mounted scene-render wiring not promoted |
+| **AC-7 — Node-based material authoring** | A closed graph compiles and applies its evaluated output to a target mesh/material | Material graph compiler and real caller-owned `MeshStandardMaterial` observation | Real standalone material backed; texture/shader graph and canonical target-mesh rendering proof blocked |
+| **AC-8 — Visual behavior graph** | A wired trigger invokes its action exactly once; an unwired trigger invokes none | Exact-once behavior dispatcher and pinned probe | Deterministic/focused-test-backed; visual graph UI/schema publication is not claimed |
+| **AC-9 — Particle authoring** | Particle count never exceeds configured rate/lifetime/ceiling bounds | Bounded particle emitter and fixed-duration probe | Deterministic/focused-test-backed; mounted GPU authoring surface not claimed |
+| **AC-10 — Animation timeline** | Sampled bone/property interpolation matches keyframes within tolerance | Numeric/bone timeline interpolation and pinned probe | Deterministic/focused-test-backed; rigged mounted playback proof is separate |
+| **AC-11 — In-browser packaging** | Preserve input track count and codec in one browser-playable container | Existing browser-native edited-media exporter proves non-empty decode/playback | Browser playback backed; already-encoded **track-preserving mux proof is blocked** |
+| **AC-12 — Live edit-to-device preview** | Propagate an edit to a connected viewer within N ms with no build or reload | Bounded preview-delta channel and local probe | Process-local admission backed; **connected live transport** latency/no-reload proof is blocked |
 
-### Canonical entry modes
+### Pinned tier compatibility
 
-The closed entry-mode union is:
+The pinned vocabulary is retained verbatim for traceability:
 
-- `immersive-session`
-- `inline-viewer`
-- `monocular-capture`
-- `native-handoff`
-- `unsupported`
+- `webxr-ar`
+- `webxr-vr`
+- `pseudo-ar-depth-parallax`
+- `flat-fallback`
 
-Selection is based on exposed features and session-support results. A camera
-function proves only that a request path exists; it does not prove permission,
-capture quality, depth, or publication.
+Those values describe the v2.0.0 acceptance projection. They do not add an
+asset field or reopen a second capability policy. The maintained runtime first
+uses feature probes to obtain one canonical entry mode, then a bounded
+compatibility adapter may map that result plus admitted platform facts to
+exactly one pinned tier for conformance evidence. Platform facts are injected
+test inputs or a separate trusted owner’s output, never browser-identity
+classification in the XR adapter.
 
-### In scope
+### Runtime-ready user journeys
 
-- Canonical five-mode capability projection.
-- User-activated immersive-session request through the shared renderer.
-- Inline viewing and the established Motion Control camera fallback route.
-- XR v2 adapters over canonical ECS and the existing material owner.
-- Reuse and enhancement of the existing Timeline/video editor.
-- A typed optional external command adapter with the current Markdown actions
-  as the default.
-- Existing browser-native edited-video export and decoded playback proof.
-- Attribution-only upstream product-workflow observation with a strict
-  clean-room boundary.
-- Focused source, unit, browser, documentation, and affected-CI proof.
+1. A viewer opens an existing XR surface and receives one canonical entry
+   recommendation before choosing a permission-bearing action.
+2. A capture owner supplies raw frames to the bounded XR adapter. The adapter
+   writes each raw frame once, attempts admitted live processing, and switches
+   to raw/post-process mode when the configured consecutive-breach limit is
+   reached.
+3. An author uses the existing ECS, material, Timeline, preview, and export
+   owners. XR v2 validates and projects data but does not seize lifecycle
+   ownership.
+4. A reviewer runs source/unit checks and a clean exact-commit Chromium smoke.
+   The browser evidence remains an observation until a separate authority
+   admits it.
 
-### Out of scope
-
-- Admitting or downloading a depth model.
-- Claiming live depth inference or reconstruction quality.
-- A new scene graph, editor, recorder, camera owner, or network service.
-- Importing a third-party editor package or contacting one at build/test/runtime.
-- Physical headset/camera validation.
-- Production publication, Cloudflare promotion, or release authorization.
-
-## Acceptance criteria
-
-### KXR-CAP-1 — Deterministic capability projection
-
-Given a surface kind and feature matrix, when capability resolution runs, then
-it returns exactly one `knowgrph-xr-capability-snapshot/v1` and one of the five
-canonical entry modes.
-
-VCC: capability-policy unit matrix and XR mode source ledger.
-
-### KXR-CAP-2 — User-owned native entry
-
-Given immersive support, when the user explicitly selects entry, then the
-existing owner requests the session, binds it to the mounted renderer,
-negotiates reference space, and owns teardown.
-
-VCC: native-session policy/source tests.
-
-### KXR-CAP-3 — Honest camera fallback
-
-Given a spatial-capture surface without immersive support and with a camera
-request API, when probes settle, then `monocular-capture` routes to the existing
-Spatial Capture and Motion Control owners. Camera access remains behind their
-separate user action.
-
-VCC: fallback source and local-browser smoke.
-
-### KXR-AUTH-1 — One Timeline editor
-
-Given a video sequence or XR timeline, when the bottom panel renders, then it
-uses the existing Gantt/video-sequence editor, transport, ruler, preview, and
-export owners.
-
-VCC: editor source contract rejects an alternate editor dependency or runtime.
-
-### KXR-AUTH-2 — Explicit external command handling
-
-Given an externally-owned XR edit intent, when an optional command adapter is
-installed, then the editor delegates through a typed result. A handled result
-does not also execute the default Markdown mutation. A rejected or unavailable
-adapter leaves the document unchanged; absent adapters preserve current
-behavior.
-
-VCC: focused editor command-adapter tests.
-
-### KXR-AUTH-3 — Canonical ECS and material runtime
-
-Given the root ECS allocates its first entity, when XR v2 projects it, then
-entity identifier zero is retained. Given a valid closed material graph, when
-the material adapter applies it, then an actual caller-supplied Three.js
-material reflects the compiled values. Disposing the binding only unbinds the
-adapter; the caller retains sole authority to dispose its material. This
-focused proof does not establish wiring into the normal mounted renderer.
-
-VCC: focused XR v2 entity/material runtime tests.
-
-### KXR-DEL-1 — Edited-media browser delivery
-
-Given the committed same-origin media fixture and an admitted short edit plan,
-when the existing export owner runs in Chromium, then it emits a non-empty
-video blob with a supported media type. When that blob is attached to a video
-element, metadata decodes, dimensions are positive, duration is either finite
-and positive or explicitly browser-unbounded, bounded playback advances, and
-no media or page error is observed.
-
-VCC: `node canvas/scripts/run_xr_v2_browser_smoke.mjs`.
-
-### KXR-IP-1 — Clean-room independence
-
-Given product source, configuration, dependencies, lockfiles, tests, fixtures,
-assets, and generated artifacts, when the editor source ledger scans them, then
-no attributed upstream-editor dependency, import, vendored path, build/runtime
-request, or copied artifact marker is present. The approved ADR citation is the
-only upstream URL allowance.
-
-VCC: `node scripts/run-video-editor-source-smoke.mjs`.
-
-### KXR-CI-1 — Affected scope is executable
-
-Given any owned XR v2, Timeline-editor, smoke, guard, or readiness-document
-path changes, when affected CI resolves the contract, then it selects
-`npm run xr-v2:review-ready`.
-
-VCC: collaboration contract and affected-CI tests.
-
-## Part II — Technical architecture
-
-### Topology
+## Technical architecture
 
 ```mermaid
 flowchart LR
-  P["Canonical feature policy"] --> X["XR v2 owner adapters"]
-  E["Root ECS"] --> X
-  M["Existing Three.js material owner"] --> X
-  T["Existing Timeline editor"] --> C["Default or external command result"]
-  C --> T
-  T --> R["Existing preview and recorder/export"]
-  R --> B["Browser decode/playback evidence"]
+  F["Canonical feature policy"] --> P["Pinned compatibility projection"]
+  C["Existing camera/capture owner"] --> A["Bounded capture adapter"]
+  E["Root ECS"] --> X["XR v2 adapters"]
+  M["Existing Three.js material"] --> X
+  T["Existing Timeline/editor"] --> X
+  X --> B["Dedicated browser evidence route"]
+  A --> J["Injected artifact/job ports"]
+  X --> L["Pinned AC-1–AC-12 conformance ledger"]
 ```
 
-### Capability snapshot
+### Invariants
 
-```ts
-type XrCapabilitySnapshot = {
-  schema: 'knowgrph-xr-capability-snapshot/v1'
-  inline_viewer: boolean
-  immersive_viewer: boolean
-  monocular_capture: boolean
-  capture_motion: boolean
-  native_handoff: boolean
-  recommended_entry_mode:
-    | 'immersive-session'
-    | 'inline-viewer'
-    | 'monocular-capture'
-    | 'native-handoff'
-    | 'unsupported'
-  reason_codes: readonly string[]
-}
-```
+- One feature policy, renderer, camera lifecycle, ECS, editor, and export owner.
+- Raw capture is admitted before optional processing and never written twice.
+- Entity identifier zero is valid; negative, duplicate, unsafe, and unbounded
+  ECS input fails closed.
+- Graphs, particles, timelines, deltas, and evidence envelopes are bounded.
+- Callback failure cannot replay an accepted behavior revision.
+- Caller-owned Three.js resources are never disposed by an adapter binding.
+- Browser observations cannot promote their own readiness state.
+- No adapter performs user-agent classification, camera acquisition, session
+  entry, deployment, or network publication.
 
-### Editor ownership
+### Evidence schemas
 
-The Timeline panel remains a projection over its existing source document.
-Clip splitting, trimming, snapping, ripple edits, preview synchronization,
-session feedback, and export stay with their current modules. The optional
-command seam is dependency injection, not a new state store. It may translate
-an intent to an XR motion-plan owner, but it may not silently write the wrong
-Markdown document or execute both ownership paths.
+| Schema | Role |
+|---|---|
+| `knowgrph-xr-v2-pinned-contract-conformance/v1` | AC-1–AC-12 result ledger tied to the pinned revision |
+| `knowgrph-xr-v2-readiness/v1` | Existing source snapshot for the contained edited-media slice |
+| `knowgrph-xr-v2-dev-runtime-evidence/v1` | Validated bounded browser observation payload |
+| `knowgrph-xr-v2-browser-smoke/v1` | Clean exact-commit Chromium evidence artifact |
 
-### Edited-media evidence flow
+## Historical contract and ADR reconciliation
 
-1. The smoke route imports the public XR v2 owner and the existing Timeline
-   export owner.
-2. A bounded plan references the committed same-origin MP4 fixture.
-3. The existing exporter negotiates a browser-supported recording type.
-4. Canvas capture and the established media runtime emit one Blob.
-5. The route creates a local object URL and assigns it to a video element.
-6. Chromium waits for decoded metadata/readiness and performs bounded playback.
-7. The verifier writes `data/outputs/xr-v2-browser-smoke.json`, including
-   revision, commit-tree and worktree-state identity, blob bytes/type, decoded
-   dimensions/duration, playback state, and page errors.
-8. The route validates those observations as
-   `knowgrph-xr-v2-dev-runtime-evidence/v1`; validation cannot promote the
-   source-ready snapshot.
-9. The Node verifier accepts only a clean exact-commit worktree and records the
-   result as review-candidate evidence; the verifier alone makes no
-   canonical-runtime claim.
-10. Component cleanup revokes the object URL and export cleanup stops owned
-   media resources.
+The pinned document included illustrative invocation rows `/xr.capture` and
+`/xr.author`, an illustrative `kgc-behavior-graph/v1` contract, and proposed
+dependency/implementation ADRs involving Depth Anything V2, Rete.js,
+three.quarks, Theatre.js, and a custom muxer. They remain requirements lineage,
+not restored command routes, persisted schemas, packages, or duplicate runtime
+owners. A proposal becomes executable only after it is canonicalized at an
+existing owner with its own license, asset, security, lifecycle, and evidence
+review.
 
-### Evidence states
+The current decisions are:
 
-| Capability | State after this change | Meaning |
-|---|---|---|
-| Capability policy | source-backed | Closed five-mode policy remains canonical |
-| Canonical ECS projection | focused-test-backed | Entity zero and query projection are executed in tests |
-| Material application | focused-test/browser observation | Compiled graph updates a real standalone material; mounted-renderer wiring is not claimed |
-| Timeline command seam | focused-test/browser observation | Default, handled, rejected, and real mounted-panel paths are exercised |
-| Edited-video output/playback | canonical-runtime-proven for the scoped delivery | Protected Chromium evidence records and decodes output from a clean exact commit |
-| Canonical-main runtime | runtime-ready for `xr-authoring-edited-media-delivery` only | PR #674, canonical `a3ddfef7cc55c38385520173273abd66010e9747`, Integration run `30895597328`, and the exact runtime receipt are joined |
-| Live depth synthesis | blocked | Same-origin model-asset admission and reference-device proof are absent |
-| Physical XR/camera | blocked | Named physical-device evidence is absent |
-| Production | blocked | Dev-only; release authority is separate |
-
-## Part III — Architectural decisions
-
-### ADR-1 — Retain the shared Three.js XR owner
-
-Status: Accepted.
-
-Native sessions and production materials remain within the mounted renderer
-lifecycle. XR v2 supplies an adapter boundary only; the focused proof uses a
-standalone material and does not claim normal renderer-surface wiring. Binding
-cleanup never disposes the caller-owned material.
-
-### ADR-2 — Feature probes define entry
-
-Status: Accepted.
-
-Support is derived from exposed capabilities and session checks, not browser,
-operating-system, or model-name inference.
-
-### ADR-3 — Capability is not completion
-
-Status: Accepted.
-
-An API's presence does not prove permission, useful samples, reconstruction,
-or publication. Readiness records each missing evidence owner explicitly.
-
-### ADR-4 — Retain Motion Control for camera entry
-
-Status: Accepted.
-
-The fallback action routes to the established camera lifecycle and never starts
-permission implicitly.
-
-### ADR-5 — Canonical ECS and renderer adapters
-
-Status: Accepted.
-
-XR v2 consumes root-ECS rows, including entity zero, and compiles a closed graph
-to parameters applied to an existing material. It does not own a world or
-render loop.
-
-### ADR-6 — Enhance the in-repository Timeline editor
-
-Status: Accepted.
-
-The existing Gantt/video-sequence Timeline is the editor authority. Its
-optional typed command adapter supports externally-owned XR mutations while
-preserving the current source-backed path by default.
-
-### ADR-7 — Keep the workflow reference attribution-only
-
-Status: Accepted with a strict clean-room boundary.
+1. retain the shared Three.js/R3F renderer and feature-probed session policy;
+2. treat a depth model as an admitted, hashed, same-origin asset rather than an
+   assumed dependency;
+3. retain the root ECS and existing node/editor surfaces;
+4. implement deterministic adapters in-repository without silently adopting
+   the historical candidate packages;
+5. retain the existing Timeline and browser exporter; do not claim a custom
+   already-encoded-track muxer; and
+6. keep the preview adapter transport-neutral until connected transport proof
+   is admitted.
 
 [OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.
 
-The referenced repository's permissive license does not relax this project's
-stricter clean-room rule.
+That citation is documentation-only. It is not a dependency, compatibility
+target, source artifact, service, package, runtime request, or readiness proof.
+The editor implementation remains independently specified and checked in.
 
-Knowgrph contains no copied or adapted upstream code, prose, assets, UI text,
-schemas, identifiers, algorithms, shaders, tests, fixtures, snapshots,
-configuration, workflows, migrations, or generated artifacts. Knowgrph does
-not import, execute, vendor, fork, embed, fetch from, link to, or communicate
-with that project at build, test, or runtime. The canonical upstream URL may
-appear only in the exact attribution line above and its mechanical source
-ledger.
+## Readiness states
 
-Consequences: the referenced project is neither a library, compatibility
-target, service, nor readiness proof. All editor behavior is independently
-specified by Knowgrph acceptance criteria and implemented through existing
-owners.
+| Slice | State | Promotion condition |
+|---|---|---|
+| Pinned lineage and all AC rows | source-backed | Source guard passes against exact pinned SHA and all AC IDs |
+| Pure capability/capture/authoring probes | focused-test-backed | Unit and conformance suites pass |
+| Existing edited-media output/decode/playback | browser-backed | Clean exact-commit Chromium evidence passes |
+| Live monocular depth and frame budget | blocked | Admit model bytes, metadata, and named reference-device results |
+| Physical camera/headset behavior | blocked | Admit permission/session/lifecycle proof from named devices |
+| AC-11 track preservation | blocked | Verify input/output tracks and codecs through one browser-playable container |
+| AC-12 connected viewer | blocked | Verify connected transport latency and no full-page reload |
+| Full pinned AC-1–AC-12 runtime readiness | blocked | Every row above has admitted runtime evidence |
+| Production/deployment | blocked | Separate release authority and delivery gates pass |
 
-The mechanical ledger detects identifiable lineage, dependency, path, and
-runtime markers; it cannot by itself prove semantic authorship. Independent
-specification and code review therefore remain mandatory.
-
-### ADR-8 — Use the existing browser-native export owner
-
-Status: Accepted.
-
-Edited-media delivery uses the checked-in Timeline export path and browser
-capability negotiation. Unsupported recording or decode capability fails with
-a typed error; no third-party editor/media runtime is introduced.
-
-### ADR-9 — Separate source evidence from canonical delivery readiness
-
-Status: Accepted.
-
-The source snapshot and task lane may produce clean exact-commit
-review-candidate evidence and remain `source-ready`. Protected integration plus
-canonical runtime reconciliation may establish `runtime-ready` for the exact
-`xr-authoring-edited-media-delivery` scope without promoting live-depth,
-physical-device, Production, release, or deployment claims.
-
-## Part IV — Verification and delivery
+## Verification contract
 
 Run from the repository root:
 
 ```sh
 node --test scripts/__tests__/xr-v2-source-smoke.test.mjs
 node scripts/run-xr-v2-source-smoke.mjs
+npm run xr-v2:unit
 node --test scripts/__tests__/video-editor-source-smoke.test.mjs
 node scripts/run-video-editor-source-smoke.mjs
 node canvas/scripts/run_xr_v2_browser_smoke.mjs
@@ -430,39 +209,30 @@ npm run xr-v2:review-ready
 npm run xr:review-ready
 ```
 
-`npm run xr-v2:review-ready` is the focused aggregate for this document. It
-joins TypeScript, unit, source, clean-room, documentation, and fresh
-local-browser review-candidate proof from a clean exact commit.
-`npm run xr:review-ready` retains the established camera-fallback compatibility
-gate and aggregates the XR v2 slice. Neither command deploys or grants release
-authority.
+`npm run xr-v2:review-candidate` joins TypeScript, unit, source, clean-room, and
+fresh local-browser evidence. `npm run xr-v2:review-ready` adds the runner
+contract suites and is the affected-scope reviewer command. The wider
+`npm run xr:review-ready` retains existing camera-fallback compatibility.
+These commands are Dev-only, make no physical-device inference, and do not
+deploy.
 
 ## Promotion blockers
 
-The following remain required before broader claims:
+Full runtime readiness for the pinned authority requires all of the following:
 
-1. admit a versioned same-origin depth model with license, hash, input/output,
-   memory, and fallback metadata;
-2. publish frame-budget evidence on named reference hardware while raw capture
-   remains lossless across fallback;
-3. validate camera permission, interruption, track end, visibility changes,
-   and teardown on named physical mobile devices;
-4. validate immersive entry, tracking, placement, and exit on named headsets;
-5. pass separately authorized release workflows.
+1. admit immutable model bytes with license, digest, same-origin location,
+   input/output contract, memory budget, and fallback metadata;
+2. record live-preview quality and the AC-2 90% threshold on named reference
+   devices while preserving raw-frame correctness;
+3. record camera permission, interruption, lifecycle, and teardown on named
+   mobile devices, plus session entry/tracking/exit on named headsets;
+4. execute AC-11 over already-encoded input and prove track count, codec
+   preservation, decode, and playback;
+5. execute AC-12 through the canonical connected transport and prove bounded
+   latency with no build and no page reload; and
+6. obtain separately authorized integration, release, and deployment proof.
 
-## Validation checklist
-
-- [x] Canonical entry modes and owner map match checked-in source.
-- [x] The existing Timeline/video editor remains authoritative.
-- [x] External edit handling is typed and default behavior is retained.
-- [x] ECS entity zero and real material application have focused proof.
-- [x] Browser-native edited output is decoded in fresh Chromium evidence.
-- [x] The upstream workflow reference is attribution-only with no copy or dependency allowance.
-- [x] Affected CI selects the aggregate review command.
-- [x] Protected PR #674 and canonical runtime reconciliation prove the exact edited-media scope.
-- [x] Dev-only and blocked claims are explicit.
-- [ ] Same-origin depth model admission.
-- [ ] Named reference-device frame-budget proof.
-- [ ] Physical mobile camera proof.
-- [ ] Physical immersive-device proof.
-- [ ] Production release authorization.
+Until then, the honest result is: pinned AC-1–AC-12 are fully traced;
+deterministic/source and specific browser-backed slices may be ready; the full
+runtime, physical-device, connected-transport, track-preserving-mux, and
+Production claims remain blocked.

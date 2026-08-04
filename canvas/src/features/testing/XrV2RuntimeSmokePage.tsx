@@ -6,9 +6,12 @@ import {
   createXrV2ReadinessSnapshot,
   MATERIAL_GRAPH_SCHEMA,
   projectCanonicalAuthoringEcsWorld,
+  runXrV2PinnedContractConformanceProbe,
   validateXrV2DevRuntimeEvidence,
+  validateXrV2PinnedContractConformanceEvidence,
   XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA,
   type XrV2DevRuntimeEvidence,
+  type XrV2PinnedContractConformanceEvidence,
 } from '@/features/xr-v2'
 import { type GanttTimelineTransportCommandAdapter } from '@/features/gitgraph/ganttTimelineTransportCommandAdapter'
 import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
@@ -35,6 +38,8 @@ import { disposeWorld } from '../../../../ecs/world.js'
 type SmokeState = Readonly<{
   phase: 'running' | 'observed' | 'failed'
   snapshot: ReturnType<typeof createXrV2ReadinessSnapshot>
+  pinnedConformance: XrV2PinnedContractConformanceEvidence | null
+  pinnedConformanceValidation: 'not-run' | 'valid'
   rawObservation: XrV2DevRuntimeEvidence
   observationValidation: 'not-run' | 'valid'
   timelineCommandObservation: XrV2TimelineCommandObservation
@@ -67,6 +72,8 @@ const EMPTY_RAW_OBSERVATION: XrV2DevRuntimeEvidence = Object.freeze({
 const INITIAL_STATE: SmokeState = Object.freeze({
   phase: 'running',
   snapshot: SOURCE_READINESS_SNAPSHOT,
+  pinnedConformance: null,
+  pinnedConformanceValidation: 'not-run',
   rawObservation: EMPTY_RAW_OBSERVATION,
   observationValidation: 'not-run',
   timelineCommandObservation: Object.freeze({
@@ -211,6 +218,11 @@ export function XrV2RuntimeSmokePage() {
           signal: abortController.signal,
           wrapper: timelinePanelWrapper,
         })
+        const pinnedConformance = await runXrV2PinnedContractConformanceProbe()
+        const pinnedValidation = validateXrV2PinnedContractConformanceEvidence(pinnedConformance)
+        if (pinnedValidation.status !== 'valid' || pinnedConformance.overall !== 'partial') {
+          throw new Error('Pinned AC-1 through AC-12 conformance evidence exceeded partial authority.')
+        }
         const blob = await renderVideoSequenceExport({
           kind: 'video',
           plan: createXrV2EditedMediaPlan(),
@@ -292,6 +304,8 @@ export function XrV2RuntimeSmokePage() {
           setState(Object.freeze({
             phase: 'observed',
             snapshot: SOURCE_READINESS_SNAPSHOT,
+            pinnedConformance,
+            pinnedConformanceValidation: 'valid',
             rawObservation,
             observationValidation: 'valid',
             timelineCommandObservation: timelineCommandProbe.observation,
@@ -333,6 +347,9 @@ export function XrV2RuntimeSmokePage() {
 
   const { editedMedia } = state.rawObservation
   const durationValue = editedMedia.durationSeconds === null ? '' : String(editedMedia.durationSeconds)
+  const pinnedConformanceJson = state.pinnedConformance
+    ? JSON.stringify(state.pinnedConformance)
+    : ''
   return (
     <main
       className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100"
@@ -375,6 +392,7 @@ export function XrV2RuntimeSmokePage() {
       data-kg-xr-v2-object-url-revoked={String(state.mediaCleanup.objectUrlRevoked)}
       data-kg-xr-v2-revoked-object-url={state.mediaCleanup.revokedObjectUrl}
       data-kg-xr-v2-browser-quiescent={String(state.mediaCleanup.browserQuiescent)}
+      data-kg-xr-v2-pinned-conformance-validation={state.pinnedConformanceValidation}
       data-kg-xr-v2-observation-error={state.error}
     >
       <section className="mx-auto max-w-3xl rounded-3xl border border-slate-700 bg-slate-900/80 p-6 shadow-2xl">
@@ -412,6 +430,12 @@ export function XrV2RuntimeSmokePage() {
           playsInline
           preload="auto"
         />
+        <section
+          hidden
+          aria-hidden="true"
+          data-kg-xr-v2-pinned-conformance-artifact="1"
+          data-kg-xr-v2-pinned-conformance-evidence={pinnedConformanceJson}
+        />
         <ul className="mt-6 rounded-2xl border border-slate-700 bg-black/20 px-4 text-sm">
           <EvidenceRow label="Observation state" value={state.phase} />
           <EvidenceRow label="Page readiness" value={state.snapshot.overall} />
@@ -422,6 +446,7 @@ export function XrV2RuntimeSmokePage() {
           <EvidenceRow label="Edited-media bytes" value={String(editedMedia.byteSize)} />
           <EvidenceRow label="Media source attribute removed" value={String(state.mediaCleanup.videoSrcAttributeRemoved)} />
           <EvidenceRow label="Object URL revoked" value={String(state.mediaCleanup.objectUrlRevoked)} />
+          <EvidenceRow label="Pinned AC-1–AC-12 authority" value={state.pinnedConformance?.overall || 'not-observed'} />
           <EvidenceRow label="Depth model assets" value={state.snapshot.evidence.liveDepthSynthesis} />
           <EvidenceRow label="Physical device" value={state.snapshot.evidence.physicalDevice} />
         </ul>
