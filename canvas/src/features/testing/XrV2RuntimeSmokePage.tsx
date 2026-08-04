@@ -269,7 +269,7 @@ export function XrV2RuntimeSmokePage() {
           objectUrlRevoked: releasedMedia.objectUrlRevoked,
           revokedObjectUrl: releasedMedia.revokedObjectUrl,
           videoNetworkStateEmpty: video.networkState === HTMLMediaElement.NETWORK_EMPTY,
-          videoSrcCleared: releasedMedia.videoSrcCleared
+          videoSrcCleared: releasedMedia.videoSrcAttributeRemoved
             && !video.hasAttribute('src')
             && !video.currentSrc,
         })

@@ -182,7 +182,7 @@ export function releaseXrV2ObservedMedia(
 ): Readonly<{
   objectUrlRevoked: boolean
   revokedObjectUrl: string
-  videoSrcCleared: boolean
+  videoSrcAttributeRemoved: boolean
 }> {
   if (video) {
     video.pause()
@@ -194,7 +194,7 @@ export function releaseXrV2ObservedMedia(
   return Object.freeze({
     objectUrlRevoked: Boolean(revokedObjectUrl),
     revokedObjectUrl,
-    videoSrcCleared: Boolean(video && !video.hasAttribute('src') && !video.currentSrc),
+    videoSrcAttributeRemoved: Boolean(video && !video.hasAttribute('src')),
   })
 }
 
