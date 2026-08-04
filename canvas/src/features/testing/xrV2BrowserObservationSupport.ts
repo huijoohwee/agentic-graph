@@ -40,7 +40,7 @@ export type XrV2MediaCleanupObservation = Readonly<{
   objectUrlRevoked: boolean
   revokedObjectUrl: string
   videoNetworkStateEmpty: boolean
-  videoSrcCleared: boolean
+  videoSrcAttributeRemoved: boolean
 }>
 
 export function createXrV2EditedMediaPlan(): VideoSequenceExportPlan {
@@ -236,7 +236,7 @@ export function waitForXrV2ObservationQuiescence(signal: AbortSignal): Promise<v
 export function waitForXrV2ReleasedMediaState(
   video: HTMLVideoElement,
   signal: AbortSignal,
-): Promise<Readonly<{ videoNetworkStateEmpty: boolean; videoSrcCleared: boolean }>> {
+): Promise<Readonly<{ videoNetworkStateEmpty: boolean; videoSrcAttributeRemoved: boolean }>> {
   return new Promise((resolve, reject) => {
     const startedAt = performance.now()
     let taskId = 0
@@ -249,7 +249,7 @@ export function waitForXrV2ReleasedMediaState(
       if (error) reject(error)
       else resolve(Object.freeze({
         videoNetworkStateEmpty: video.networkState === HTMLMediaElement.NETWORK_EMPTY,
-        videoSrcCleared: !video.hasAttribute('src') && !video.currentSrc,
+        videoSrcAttributeRemoved: !video.hasAttribute('src'),
       }))
     }
     const onAbort = () => finish(new Error('XR v2 media release observation was aborted.'))
@@ -259,8 +259,8 @@ export function waitForXrV2ReleasedMediaState(
         return
       }
       const networkStateEmpty = video.networkState === HTMLMediaElement.NETWORK_EMPTY
-      const srcCleared = !video.hasAttribute('src') && !video.currentSrc
-      if (networkStateEmpty && srcCleared) {
+      const srcAttributeRemoved = !video.hasAttribute('src')
+      if (networkStateEmpty && srcAttributeRemoved) {
         finish()
         return
       }

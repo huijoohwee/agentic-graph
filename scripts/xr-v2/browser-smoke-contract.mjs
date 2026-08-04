@@ -39,7 +39,7 @@ const REQUIRED_MARKERS = Object.freeze([
   'data-kg-xr-v2-unbounded-duration',
   'data-kg-xr-v2-playback-observed',
   'data-kg-xr-v2-media-errors',
-  'data-kg-xr-v2-video-src-cleared',
+  'data-kg-xr-v2-video-src-attribute-removed',
   'data-kg-xr-v2-video-network-state-empty',
   'data-kg-xr-v2-object-url-revoked',
   'data-kg-xr-v2-revoked-object-url',

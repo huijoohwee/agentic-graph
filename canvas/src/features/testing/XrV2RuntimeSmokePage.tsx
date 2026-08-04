@@ -83,7 +83,7 @@ const INITIAL_STATE: SmokeState = Object.freeze({
     objectUrlRevoked: false,
     revokedObjectUrl: '',
     videoNetworkStateEmpty: false,
-    videoSrcCleared: false,
+    videoSrcAttributeRemoved: false,
   }),
   mediaErrors: Object.freeze([]),
   error: '',
@@ -274,14 +274,14 @@ export function XrV2RuntimeSmokePage() {
           objectUrlRevoked: releasedMedia.objectUrlRevoked,
           revokedObjectUrl: releasedMedia.revokedObjectUrl,
           videoNetworkStateEmpty: releasedMediaState.videoNetworkStateEmpty,
-          videoSrcCleared: releasedMedia.videoSrcAttributeRemoved
-            && releasedMediaState.videoSrcCleared,
+          videoSrcAttributeRemoved: releasedMedia.videoSrcAttributeRemoved
+            && releasedMediaState.videoSrcAttributeRemoved,
         })
         if (!mediaCleanup.browserQuiescent
           || !mediaCleanup.objectUrlRevoked
           || !mediaCleanup.revokedObjectUrl
           || !mediaCleanup.videoNetworkStateEmpty
-          || !mediaCleanup.videoSrcCleared) {
+          || !mediaCleanup.videoSrcAttributeRemoved) {
           throw new Error('Edited-media cleanup observation was incomplete.')
         }
         if (mediaErrors.length) throw new Error('Edited-media element emitted an error event.')
@@ -370,7 +370,7 @@ export function XrV2RuntimeSmokePage() {
       data-kg-xr-v2-playback-current-time={String(state.playbackCurrentTime)}
       data-kg-xr-v2-playback-ended={String(state.playbackEnded)}
       data-kg-xr-v2-media-errors={JSON.stringify(state.mediaErrors)}
-      data-kg-xr-v2-video-src-cleared={String(state.mediaCleanup.videoSrcCleared)}
+      data-kg-xr-v2-video-src-attribute-removed={String(state.mediaCleanup.videoSrcAttributeRemoved)}
       data-kg-xr-v2-video-network-state-empty={String(state.mediaCleanup.videoNetworkStateEmpty)}
       data-kg-xr-v2-object-url-revoked={String(state.mediaCleanup.objectUrlRevoked)}
       data-kg-xr-v2-revoked-object-url={state.mediaCleanup.revokedObjectUrl}
@@ -420,7 +420,7 @@ export function XrV2RuntimeSmokePage() {
           <EvidenceRow label="Three.js material applied" value={String(state.rawObservation.authoringAdapters.materialApplied)} />
           <EvidenceRow label="Timeline command routed" value={String(state.rawObservation.authoringAdapters.timelineCommandRouted)} />
           <EvidenceRow label="Edited-media bytes" value={String(editedMedia.byteSize)} />
-          <EvidenceRow label="Media source cleared" value={String(state.mediaCleanup.videoSrcCleared)} />
+          <EvidenceRow label="Media source attribute removed" value={String(state.mediaCleanup.videoSrcAttributeRemoved)} />
           <EvidenceRow label="Object URL revoked" value={String(state.mediaCleanup.objectUrlRevoked)} />
           <EvidenceRow label="Depth model assets" value={state.snapshot.evidence.liveDepthSynthesis} />
           <EvidenceRow label="Physical device" value={state.snapshot.evidence.physicalDevice} />

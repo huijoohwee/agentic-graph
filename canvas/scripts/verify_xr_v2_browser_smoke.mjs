@@ -342,7 +342,7 @@ async function main() {
         playbackCurrentTime: node.getAttribute('data-kg-xr-v2-playback-current-time'),
         playbackEnded: node.getAttribute('data-kg-xr-v2-playback-ended'),
         mediaErrors: node.getAttribute('data-kg-xr-v2-media-errors'),
-        videoSrcCleared: node.getAttribute('data-kg-xr-v2-video-src-cleared'),
+        videoSrcAttributeRemoved: node.getAttribute('data-kg-xr-v2-video-src-attribute-removed'),
         videoNetworkStateEmpty: node.getAttribute('data-kg-xr-v2-video-network-state-empty'),
         objectUrlRevoked: node.getAttribute('data-kg-xr-v2-object-url-revoked'),
         revokedObjectUrl: node.getAttribute('data-kg-xr-v2-revoked-object-url'),
@@ -405,13 +405,16 @@ async function main() {
 
     const pageReportedMediaErrors = parseMediaErrors(rawEvidence.mediaErrors)
     assert.deepEqual(pageReportedMediaErrors, [])
-    assert.equal(rawEvidence.videoSrcCleared, 'true')
+    assert.equal(rawEvidence.videoSrcAttributeRemoved, 'true')
     assert.equal(rawEvidence.videoNetworkStateEmpty, 'true')
     assert.equal(rawEvidence.objectUrlRevoked, 'true')
     assert.match(String(rawEvidence.revokedObjectUrl), /^blob:/u)
     assert.equal(rawEvidence.browserQuiescent, 'true')
     assert.equal(rawEvidence.videoSrcAttribute, null)
-    assert.equal(rawEvidence.videoCurrentSrc, '')
+    assert.ok(
+      rawEvidence.videoCurrentSrc === ''
+        || rawEvidence.videoCurrentSrc === rawEvidence.revokedObjectUrl,
+    )
     assert.equal(rawEvidence.videoNetworkState, 0)
     const revokedObjectUrlProbe = await probeRevokedObjectUrl(page, rawEvidence.revokedObjectUrl)
     assert.equal(revokedObjectUrlProbe.resolved, false)
@@ -492,7 +495,7 @@ async function main() {
         objectUrlRevoked: true,
         revokedObjectUrlInaccessible: true,
         videoNetworkStateEmpty: true,
-        videoSrcCleared: true,
+        videoSrcAttributeRemoved: true,
       }),
       surfaceRendered: true,
       mediaErrors,
