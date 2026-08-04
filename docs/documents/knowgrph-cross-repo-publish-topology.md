@@ -56,6 +56,15 @@ asset; a transient missing asset or HTML SPA fallback is returned as `503` with 
 short retry signal. This keeps partial deployment propagation from mutating a release URL in the
 browser cache while preserving immutable caching for verified asset bytes.
 
+### 2026-08-04 Canonical Main Advance Release Record
+
+- Source repo `knowgrph` shipped commit `467e88cdc1be7c56ac07a4d19db6e3f82eda600d` (`update runtime docs pin to current ACOS main`).
+- The protected `Production Release` workflow run `30871807035` verified the exact reviewed localhost candidate for `467e88cdc1be7c56ac07a4d19db6e3f82eda600d` and the pinned Agentic Canvas OS docs revision `bebda7bfdf3c9b8b2d8f98a2784a57487520abd6`.
+- Interactive terminal authorization approved the exact production candidate digest `6b84ac23e2b0c520f5a2ac0ad72c084fc2c8fe5cd821a8d3f44a69807acdf4c6` before mutation, then consumed the lifecycle candidate digest `e720857e8275dbdd4c5eafd4ff55a34dd1df8fc80ad4dc36bbcbd50829aaf4b1` for delivery.
+- Cloudflare Pages deployed the exact candidate to `https://50ba5ab2.joohwee.pages.dev`, captured deployment id `50ba5ab2-ea3b-4275-afbb-b9e379374636`, preserved rollback target `b6a090e7-2ea6-4426-90f5-45e39d934199`, re-proved browser fidelity and deployment markers for the same source revision, and completed returning-user service-worker convergence as a `revision-upgrade` from `af6a18aea23646115f9db3fd8435f10f1d8c7e35` before publication.
+- Publish repo `huijoohwee` shipped commit `7ddee18a8e6af3254e0efbf3a50420d604a486d6` (`chore(release): promote knowgrph 467e88cdc1be`).
+- Post-release operator follow-up re-proved the public custom domain at `https://airvio.co/knowgrph/` with `RELEASE_SHA=467e88cdc1be7c56ac07a4d19db6e3f82eda600d PRODUCTION_IMMUTABLE_MANIFEST_DIGEST=eb89fd1a9ef231b7d2a1d4dff3a19954eae5e8f634a5f5a9950fd8cf6f5176f5 npm run production:fidelity:check`, and reran the returning-user service-worker proof as `same-revision-recovery` from the already-published SHA on `https://airvio.co`.
+
 ### 2026-08-02 Canonical Main Advance Release Record
 
 - Source repo `knowgrph` shipped commit `32d2cfca34f7d5bf484b4a8f449083954a476bd8` (`chore(release): promote Agentic Canvas OS docs pin (#647)`).
