@@ -70,6 +70,7 @@ const REQUIRED_MARKERS = Object.freeze([
   'URL.revokeObjectURL',
   'HTMLMediaElement.NETWORK_EMPTY',
   'releaseXrV2ObservedMedia',
+  'waitForXrV2ReleasedMediaState',
   'waitForXrV2ObservationQuiescence',
   'waitForBrowserObservationQuiescence',
   'page.exposeBinding',

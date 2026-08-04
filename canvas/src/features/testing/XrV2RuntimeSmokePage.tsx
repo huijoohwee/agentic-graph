@@ -23,6 +23,7 @@ import {
   SMOKE_RUNTIME_DOCUMENT_KEY,
   waitForXrV2DecodedMetadata,
   waitForXrV2ObservationQuiescence,
+  waitForXrV2ReleasedMediaState,
   type XrV2ExternalTimelineOwnerState,
   type XrV2MediaCleanupObservation,
   type XrV2MediaErrorObservation,
@@ -263,15 +264,18 @@ export function XrV2RuntimeSmokePage() {
         }
 
         const releasedMedia = cleanupMedia()
+        const releasedMediaState = await waitForXrV2ReleasedMediaState(
+          video,
+          abortController.signal,
+        )
         await waitForXrV2ObservationQuiescence(abortController.signal)
         const mediaCleanup = Object.freeze({
           browserQuiescent: true,
           objectUrlRevoked: releasedMedia.objectUrlRevoked,
           revokedObjectUrl: releasedMedia.revokedObjectUrl,
-          videoNetworkStateEmpty: video.networkState === HTMLMediaElement.NETWORK_EMPTY,
+          videoNetworkStateEmpty: releasedMediaState.videoNetworkStateEmpty,
           videoSrcCleared: releasedMedia.videoSrcAttributeRemoved
-            && !video.hasAttribute('src')
-            && !video.currentSrc,
+            && releasedMediaState.videoSrcCleared,
         })
         if (!mediaCleanup.browserQuiescent
           || !mediaCleanup.objectUrlRevoked

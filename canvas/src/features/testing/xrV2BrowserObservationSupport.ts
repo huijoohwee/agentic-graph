@@ -5,6 +5,7 @@ const SMOKE_MEDIA_PATH = import.meta.env.BASE_URL === '/'
   ? '/demo/media-preview-metadata-ready.mp4'
   : SMOKE_MEDIA_CANONICAL_PATH
 const PLAYBACK_TIMEOUT_MS = 12_000
+const MEDIA_RELEASE_TIMEOUT_MS = 2_000
 
 export const SMOKE_RUNTIME_DOCUMENT_KEY = 'xr-v2-runtime-smoke.md'
 export const SMOKE_MEDIA_GANTT_CODE = [
@@ -229,6 +230,50 @@ export function waitForXrV2ObservationQuiescence(signal: AbortSignal): Promise<v
         })
       })
     }, 0)
+  })
+}
+
+export function waitForXrV2ReleasedMediaState(
+  video: HTMLVideoElement,
+  signal: AbortSignal,
+): Promise<Readonly<{ videoNetworkStateEmpty: boolean; videoSrcCleared: boolean }>> {
+  return new Promise((resolve, reject) => {
+    const startedAt = performance.now()
+    let taskId = 0
+    const cleanup = () => {
+      signal.removeEventListener('abort', onAbort)
+      if (taskId) window.clearTimeout(taskId)
+    }
+    const finish = (error?: Error) => {
+      cleanup()
+      if (error) reject(error)
+      else resolve(Object.freeze({
+        videoNetworkStateEmpty: video.networkState === HTMLMediaElement.NETWORK_EMPTY,
+        videoSrcCleared: !video.hasAttribute('src') && !video.currentSrc,
+      }))
+    }
+    const onAbort = () => finish(new Error('XR v2 media release observation was aborted.'))
+    const inspect = () => {
+      if (signal.aborted) {
+        onAbort()
+        return
+      }
+      const networkStateEmpty = video.networkState === HTMLMediaElement.NETWORK_EMPTY
+      const srcCleared = !video.hasAttribute('src') && !video.currentSrc
+      if (networkStateEmpty && srcCleared) {
+        finish()
+        return
+      }
+      if (performance.now() - startedAt >= MEDIA_RELEASE_TIMEOUT_MS) {
+        finish(new Error(
+          `Edited-media release did not settle (networkState=${video.networkState}, src=${video.getAttribute('src') || ''}, currentSrc=${video.currentSrc}).`,
+        ))
+        return
+      }
+      taskId = window.setTimeout(inspect, 16)
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    inspect()
   })
 }
 
