@@ -8,6 +8,22 @@ const supportedStartModes = new Set([
   'vite-preview-runner',
 ])
 
+export function resolveCiPlaywrightChromiumInstallCommand({
+  ci = process.env.CI,
+  canvasRoot = process.cwd(),
+  nodeExecutable = process.execPath,
+} = {}) {
+  if (ci !== 'true') return null
+  return Object.freeze({
+    command: nodeExecutable,
+    args: Object.freeze([
+      resolve(canvasRoot, '../node_modules/playwright/cli.js'),
+      'install',
+      'chromium',
+    ]),
+  })
+}
+
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -74,6 +90,15 @@ function runCommand(command, args, env) {
   })
 }
 
+async function prepareCiPlaywrightChromium(env) {
+  const installCommand = resolveCiPlaywrightChromiumInstallCommand({
+    ci: env.CI,
+  })
+  if (!installCommand) return
+  console.log('[browser-smoke] ensuring locked Playwright Chromium is installed')
+  await runCommand(installCommand.command, installCommand.args, env)
+}
+
 function startDevServer({
   devServerPort,
   devServerStartMode,
@@ -127,6 +152,7 @@ export async function runLocalViteBrowserSmoke({
   if (!supportedStartModes.has(devServerStartMode)) {
     throw new Error(`Unsupported devServerStartMode: ${devServerStartMode}`)
   }
+  await prepareCiPlaywrightChromium(process.env)
   const devServerBaseUrl = `http://localhost:${devServerPort}`
   const normalizedPath = devServerPath.startsWith('/') ? devServerPath : `/${devServerPath}`
   const devServerUrl = `${devServerBaseUrl}${normalizedPath}`
