@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 
 const DOCUMENT_PATHS = Object.freeze([
+  ['docs', 'documents', 'knowgrph-ar-vr-xr-prd-tad-adr.md'],
   ['docs', 'documents', 'knowgrph-xr-v2-runtime-readiness.md'],
   ['docs', 'TESTING.md'],
   ['docs', 'runtime-api.md'],
@@ -9,8 +10,17 @@ const DOCUMENT_PATHS = Object.freeze([
 const REQUIRED_SHARED_MARKERS = Object.freeze([
   'node scripts/run-xr-v2-source-smoke.mjs',
   'node canvas/scripts/run_xr_v2_browser_smoke.mjs',
+  'node scripts/run-video-editor-source-smoke.mjs',
+  'npm run xr-v2:review-candidate',
+  'npm run xr-v2:review-ready',
   'knowgrph-xr-v2-readiness/v1',
+  'knowgrph-xr-v2-dev-runtime-evidence/v1',
+  'knowgrph-xr-v2-browser-smoke/v1',
+  'review-candidate',
+  'xr-authoring-edited-media-delivery',
   'source-backed',
+  'browser-native',
+  'decoded',
   'physical-device',
   'model-asset',
   'blocked',
@@ -36,6 +46,11 @@ const FORBIDDEN_DOCUMENT_MARKERS = Object.freeze([
   'second ECS',
   'second timeline',
   'custom muxer',
+  'Theatre.js',
+  '@theatre',
+  'Rete.js',
+  'three.quarks',
+  'runtime-ready-dev',
 ])
 
 export function verifyXrV2ReadinessDocumentation(repositoryRoot) {

@@ -30,6 +30,7 @@ import { useGraphStore } from '@/hooks/useGraphStore'
 import { type GanttTimelineTransportAudioPlaybackBridgeModel } from './GanttTimelineTransportAudioPlaybackBridge'
 import { type GanttTimelineTransportMediaPlayerModel } from './GanttTimelineTransportMediaPlayer'
 import type { GanttTimelineTransportMode } from './ganttTimelineTransportMode'
+import type { GanttTimelineTransportCommandAdapter } from './ganttTimelineTransportCommandAdapter'
 
 export type GanttTimelineTransportSurfaceModel = {
   audioPlaybackBridgeModel: GanttTimelineTransportAudioPlaybackBridgeModel
@@ -101,6 +102,7 @@ export function useGanttTimelineTransportSurfaceModel(args: {
   code: string
   clockActive?: boolean
   compact: boolean
+  commandAdapter?: GanttTimelineTransportCommandAdapter
   editable?: boolean
   mode: GanttTimelineTransportMode
   publishPlaybackRequest?: boolean
@@ -321,12 +323,15 @@ export function useGanttTimelineTransportSurfaceModel(args: {
   ])
   const transportCommandModel = useGanttTimelineTransportCommandModel({
     code: args.code,
+    commandAdapter: args.commandAdapter,
+    documentKey: transportSession.documentKey,
     exportPlan: transportSession.exportPlan,
     markdownDocumentName: transportSession.markdownDocumentName,
     markdownText: transportSession.markdownText,
     maxMinutes: transportSession.maxMinutes,
     positionMinutes: transportSession.positionMinutes,
     selectedSpan: transportSession.selectedSpan,
+    selectedRowKey: transportSession.selectedRowKey,
     setSelectedRowKey: transportSession.setSelectedRowKey,
     setTransportPlaying: transportSession.setTransportPlaying,
   })

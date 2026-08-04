@@ -16,7 +16,10 @@
 ### Repo Policy
 
 - Enforced by the repo policy test `forbidPenpotRepoLiteral`.
-- Do not include upstream repo identifiers in any form (URL, SSH remote, or owner/repo string) anywhere in-repo.
+- Do not include upstream repo identifiers in source, dependencies, tests,
+  assets, generated output, or runtime requests. A separately approved
+  attribution-only decision ledger may contain its canonical citation without
+  granting implementation lineage.
 
 ## Renderer Variants (2D)
 
@@ -141,7 +144,8 @@
 
 ## Acceptance Criteria (Bounded)
 
-- No upstream design-tool repository URL literals exist in the repository.
+- No upstream design-tool repository URL literals exist outside an approved
+  attribution-only decision ledger.
 - 2D render variants share the same display-graph derivation and fit/zoom initialization contract.
 - Switching 2D variants preserves mental map: no chaotic clustering or excessive void-space regressions.
 - Design video export builds from source graph/tokens and reuses the HTML-video renderer runtime registry; focused `design.editor.agentVideo.*` tests guard semantic HTML, deterministic motion CSS, seekable timeline data attributes, MP4 preview state, and no copied design-engine/fallback path.

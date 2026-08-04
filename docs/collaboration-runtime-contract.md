@@ -2,7 +2,7 @@
 title: "Knowgrph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 26
+contract_version: 27
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 invocation:
@@ -68,6 +68,10 @@ ci_scopes:
     commands:
       - ["npm", "--prefix", "canvas", "run", "test:smoke:rich-media:timing-schema"]
       - ["npm", "--prefix", "canvas", "run", "test:ci:unit", "--", "richMedia.browserSmokeContract"]
+  xr_v2_video_editor:
+    roots: ["canvas/src/features/xr-v2/", "canvas/src/components/timeline/", "canvas/src/features/gitgraph/", "canvas/src/features/testing/XrV2RuntimeSmokePage.tsx", "canvas/src/features/testing/xrV2BrowserObservationSupport.ts", "canvas/scripts/run_xr_v2_browser_smoke.mjs", "canvas/scripts/verify_xr_v2_browser_smoke.mjs", "scripts/xr-v2/", "scripts/video-editor/", "scripts/run-xr-v2-source-smoke.mjs", "scripts/run-video-editor-source-smoke.mjs", "scripts/__tests__/xr-v2-source-smoke.test.mjs", "scripts/__tests__/video-editor-source-smoke.test.mjs", "docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md", "docs/documents/knowgrph-xr-v2-runtime-readiness.md", "docs/documents/knowgrph-2d-renderer-enhancement-design.md", "docs/TESTING.md", "docs/runtime-api.md"]
+    commands:
+      - ["npm", "run", "xr-v2:review-ready"]
   surface_policy:
     roots: ["config/surface-registry.json", "config/license-registry.json", "schemas/surface-registry.v1.schema.json", "scripts/surface/", "data/surface/", "docs/discoverability-ip-protection-runtime.md"]
     commands:
