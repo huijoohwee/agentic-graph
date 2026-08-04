@@ -3,11 +3,13 @@ import { GanttTimelineTransportSurface } from './GanttTimelineTransportSurface'
 import { useGanttTimelineTransportRouteModel } from './useGanttTimelineTransportRouteModel'
 import type { GanttTimelineTransportMode } from './ganttTimelineTransportMode'
 import type { VideoSequenceTimelineInsertedLane } from '@/components/timeline/VideoSequenceTimelineRuler'
+import type { GanttTimelineTransportCommandAdapter } from './ganttTimelineTransportCommandAdapter'
 
 export function GanttTimelineTransportPanel({
   code,
   clockActive = false,
   compact,
+  commandAdapter,
   editable = true,
   mode = 'media',
   publishPlaybackRequest = true,
@@ -23,6 +25,7 @@ export function GanttTimelineTransportPanel({
   code: string
   clockActive?: boolean
   compact: boolean
+  commandAdapter?: GanttTimelineTransportCommandAdapter
   editable?: boolean
   mode?: GanttTimelineTransportMode
   publishPlaybackRequest?: boolean
@@ -39,6 +42,7 @@ export function GanttTimelineTransportPanel({
     code,
     clockActive,
     compact,
+    commandAdapter,
     editable,
     mode,
     publishPlaybackRequest,

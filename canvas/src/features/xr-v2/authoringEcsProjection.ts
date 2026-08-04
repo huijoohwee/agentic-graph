@@ -79,7 +79,7 @@ export function projectAuthoringEcsRows(
   const grouped = new Map<number, Map<string, Readonly<Record<string, AuthoringEcsJsonValue>>>>()
 
   for (const row of rows) {
-    if (!Number.isSafeInteger(row.entityId) || row.entityId < 1) {
+    if (!Number.isSafeInteger(row.entityId) || row.entityId < 0) {
       return { status: 'invalid', reason: 'invalid-entity-id' }
     }
     if (!SAFE_COMPONENT_NAME.test(row.componentName)) {

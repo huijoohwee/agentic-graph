@@ -3,6 +3,7 @@ import {
   type GanttTimelineTransportSurfaceModel,
 } from './useGanttTimelineTransportSurfaceModel'
 import type { GanttTimelineTransportMode } from './ganttTimelineTransportMode'
+import type { GanttTimelineTransportCommandAdapter } from './ganttTimelineTransportCommandAdapter'
 
 export type GanttTimelineTransportRouteModel = {
   surfaceModel: GanttTimelineTransportSurfaceModel
@@ -12,6 +13,7 @@ export function useGanttTimelineTransportRouteModel(args: {
   code: string
   clockActive?: boolean
   compact: boolean
+  commandAdapter?: GanttTimelineTransportCommandAdapter
   editable?: boolean
   mode: GanttTimelineTransportMode
   publishPlaybackRequest?: boolean
@@ -24,6 +26,7 @@ export function useGanttTimelineTransportRouteModel(args: {
     code: args.code,
     clockActive: args.clockActive,
     compact: args.compact,
+    commandAdapter: args.commandAdapter,
     editable: args.editable,
     mode: args.mode,
     publishPlaybackRequest: args.publishPlaybackRequest,

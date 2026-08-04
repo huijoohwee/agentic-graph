@@ -18,12 +18,19 @@ const REQUIRED_ENTRY_MODES = Object.freeze([
 ])
 const REQUIRED_RUNTIME_MARKERS = Object.freeze([
   'knowgrph-xr-v2-readiness/v1',
+  'knowgrph-xr-v2-dev-runtime-evidence/v1',
   'XrCapabilityEntryMode',
   'capability',
   'capture',
   'authoring',
   'adapter',
   'source-backed',
+  'source-ready',
+  'xr-authoring-edited-media-delivery',
+  'canonicalEcsEntityZero',
+  'materialApplied',
+  'timelineCommandRouted',
+  'playbackObserved',
   'blocked',
 ])
 const FORBIDDEN_RUNTIME_MARKERS = Object.freeze([
@@ -43,6 +50,12 @@ const FORBIDDEN_RUNTIME_MARKERS = Object.freeze([
   'muxTracks(',
   'publishEdit(',
   'subscribeToEdits(',
+  'devRuntimeEvidence',
+  'depthModelLoaded',
+  'referenceDeviceProven',
+  'browserPlaybackProven',
+  'physicalDeviceProven',
+  'runtime-ready-dev',
   "from 'rete'",
   'from "rete"',
   "from '@theatre",
@@ -106,7 +119,9 @@ export function verifyXrV2RuntimeSourceContract(repositoryRoot) {
     'capabilityContract',
     'captureContracts',
     'XrV2AuthoringStatusPanel',
+    'XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA',
     'createXrV2ReadinessSnapshot',
+    'validateXrV2DevRuntimeEvidence',
   ]) {
     if (!indexSource.includes(marker)) {
       throw new Error(`expected public XR v2 index export marker ${marker}`)
