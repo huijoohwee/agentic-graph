@@ -73,12 +73,12 @@ boundary.
 
 | Reference | Named check | Recorded result | Surface | Meaning |
 |---|---|---|---|---|
-| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `32d2cfca34f7d5bf484b4a8f449083954a476bd8` | run `30771408324` `Verify Release Candidate` passed; local review candidate digest `17053ac576ff09d05dd368611d09dc27062c7cc442bca80db4437d2830f39d54`, immutable manifest digest `d81c47b5978bf28a89360df1520391d8b63c7dc304d703aecb7eb798ae2ac715`, production candidate digest `6b27c7e8e5ed48297b81e17a731f25dcfd07744e31df33ed7fd3f7654fdc0f9e` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
-| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30771408324` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://fbd0fd41.joohwee.pages.dev`, deployment id `fbd0fd41-6cc9-4373-a9b1-f8560fda58e0`, published mirror commit `5f9eff39339e1f1f0ea86ddaa11e48e49f1811cc` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
+| `ER-REL-B1` | `.github/workflows/release.yml` verify job for exact `source_sha` `467e88cdc1be7c56ac07a4d19db6e3f82eda600d` | run `30871807035` `Verify Release Candidate` passed; local review candidate digest `2f0b09e3b54c006fb347c0fde34eac98da25c3316397a67568a72f91f30aa640`, immutable manifest digest `eb89fd1a9ef231b7d2a1d4dff3a19954eae5e8f634a5f5a9950fd8cf6f5176f5`, production candidate digest `6b84ac23e2b0c520f5a2ac0ad72c084fc2c8fe5cd821a8d3f44a69807acdf4c6` | Mirror | this run qualified one immutable candidate for the protected source and docs pair |
+| `ER-REL-B2` | `.github/workflows/release.yml` protected deploy and live-verification jobs | run `30871807035` `Human-Authorized Deploy, Verify, And Publish Mirror` passed after terminal authorization; deployed candidate origin `https://50ba5ab2.joohwee.pages.dev`, deployment id `50ba5ab2-ea3b-4275-afbb-b9e379374636`, published mirror commit `7ddee18a8e6af3254e0efbf3a50420d604a486d6` | Delivery | this run proved one public delivery and publication for the exact authorized candidate |
 
 `OI-REL-B1` and `OI-REL-B2` still describe the only valid operator instructions. For the
-latest recorded 2026-08-02 release, those instructions were satisfied only for workflow run
-`30771408324`; outside that exact run and candidate pair, both boundaries remain closed.
+latest recorded 2026-08-04 release, those instructions were satisfied only for workflow run
+`30871807035`; outside that exact run and candidate pair, both boundaries remain closed.
 
 ## Preconditions
 
