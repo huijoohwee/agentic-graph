@@ -88,6 +88,24 @@ const DRAFT_IMPLEMENTED_RUNTIME_KEYS = Object.freeze([
   'runtime_validation',
   'mcp_control',
 ])
+const XR_EDITED_MEDIA_PROVEN = Object.freeze([
+  'canonical ECS projection including entity zero',
+  'real standalone Three.js material application',
+  'mounted canonical Timeline command routing',
+  'same-origin browser-native edited-media export',
+  'non-empty Blob, decoded metadata, and bounded playback',
+  'media teardown and object-URL revocation without observed page or media errors',
+  'clean-room dependency and source enforcement',
+])
+const XR_EDITED_MEDIA_BLOCKED = Object.freeze([
+  'mounted-renderer material wiring',
+  'live depth model and quality',
+  'reference-device frame budget',
+  'camera permission and lifecycle on named physical devices',
+  'physical-headset XR behavior',
+  'Production availability',
+  'deployment authority',
+])
 
 export const resolveWorkspaceSeedSiblingRootsFromGitCommonDir = gitCommonDirRaw => {
   const gitCommonDir = path.resolve(String(gitCommonDirRaw || '').trim())
@@ -147,6 +165,78 @@ const requireCanonicalIdentity = source => {
   const missing = requiredMarkers.filter(marker => !source.includes(marker))
   if (missing.length > 0) {
     throw new Error(`canonical workspace seed is missing identity markers: ${missing.join(', ')}`)
+  }
+}
+
+const requirePhysicsEditedMediaEvidence = source => {
+  const frontmatter = parseYamlFrontmatter(PHYSICS_SEED_BASENAME, source)
+  const runtimeValidation = isRecord(frontmatter.runtime_validation)
+    ? frontmatter.runtime_validation
+    : {}
+  const evidence = isRecord(runtimeValidation.xr_authoring_edited_media_delivery)
+    ? runtimeValidation.xr_authoring_edited_media_delivery
+    : {}
+  const mainProof = isRecord(evidence.canonical_main_proof)
+    ? evidence.canonical_main_proof
+    : {}
+  const runtime = isRecord(evidence.canonical_runtime_reconciliation)
+    ? evidence.canonical_runtime_reconciliation
+    : {}
+  const missing = []
+  const requireValue = (label, actual, expected) => {
+    if (actual !== expected) missing.push(`${label}=${JSON.stringify(expected)}`)
+  }
+
+  requireValue('kgBottomPanelOpen', readBooleanPreset(frontmatter.kgBottomPanelOpen), false)
+  requireValue('scope', evidence.scope, 'xr-authoring-edited-media-delivery')
+  requireValue('projection_role', evidence.projection_role, 'downstream scoped evidence; not a second XR readiness authority')
+  requireValue('prd', evidence.prd, '/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md')
+  requireValue('source_snapshot_schema', evidence.source_snapshot_schema, 'knowgrph-xr-v2-readiness/v1')
+  requireValue('source_snapshot_status', evidence.source_snapshot_status, 'source-ready')
+  requireValue('canonical_delivery_status', evidence.canonical_delivery_status, 'runtime-ready')
+  requireValue('reviewed_feature_commit', evidence.reviewed_feature_commit, 'fcd69c6b2d42a00779f55be8c1d57a0ab468339b')
+  requireValue('pull_request', evidence.pull_request, 674)
+  requireValue('canonical_main_commit', evidence.canonical_main_commit, 'a3ddfef7cc55c38385520173273abd66010e9747')
+  requireValue('canonical_main_tree', evidence.canonical_main_tree, '76c8e22da9c9284f01c2627c8ace9c9d3abcd682')
+  requireValue('canonical_main_proof.run_id', mainProof.run_id, 30895597328)
+  requireValue('canonical_main_proof.check', mainProof.check, 'Integration Gate')
+  requireValue('canonical_main_proof.conclusion', mainProof.conclusion, 'success')
+  requireValue('canonical_main_proof.focused_gate', mainProof.focused_gate, 'npm run xr-v2:review-ready')
+  requireValue('canonical_main_proof.browser_observation', mainProof.browser_observation, 'pass')
+  requireValue('runtime.integration_result_schema', runtime.integration_result_schema, 'agentic-device-integration-result/v1')
+  requireValue('runtime.integration_status', runtime.integration_status, 'runtime_ready')
+  requireValue('runtime.readiness_schema', runtime.readiness_schema, 'agentic-local-runtime-readiness/v1')
+  requireValue('runtime.feature_runtime_source_revision', runtime.feature_runtime_source_revision, 'a3ddfef7cc55c38385520173273abd66010e9747')
+  requireValue('runtime.feature_runtime_agentic_canvas_os_revision', runtime.feature_runtime_agentic_canvas_os_revision, '217a8a42d6497e059839a6a1f809c2459530ca54')
+  requireValue('runtime.feature_runtime_evidence_digest', runtime.feature_runtime_evidence_digest, 'fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23')
+  requireValue('runtime.feature_runtime_verified_at', runtime.feature_runtime_verified_at, '2026-08-04T09:29:02.924Z')
+  requireValue('no_deployment', readBooleanPreset(evidence.no_deployment), true)
+  requireValue('deploy_boundary', evidence.deploy_boundary, 'Dev-only')
+  requireValue('broader_xr_status', evidence.broader_xr_status, 'blocked')
+  if (JSON.stringify(evidence.protected_refresh_chain) !== JSON.stringify([
+    '48c58307481c96e5c73c9f4d2f53eb2c2f1c8549',
+    'fea5e37b9bf0d648284330cfbc3dcca03890def0',
+    'a6de5722e550e633d0d73f59f187a09ec7388879',
+  ])) missing.push('protected_refresh_chain=exact PR #674 chain')
+  if (!Array.isArray(evidence.external_dependencies) || evidence.external_dependencies.length !== 0) {
+    missing.push('external_dependencies=[]')
+  }
+  if (JSON.stringify(evidence.proven) !== JSON.stringify(XR_EDITED_MEDIA_PROVEN)) {
+    missing.push('proven=exact scoped proof set')
+  }
+  if (JSON.stringify(evidence.blocked_claims) !== JSON.stringify(XR_EDITED_MEDIA_BLOCKED)) {
+    missing.push('blocked_claims=exact broader-XR blocker set')
+  }
+  for (const marker of [
+    'id: "xr_edited_media_proof"',
+    'applying this seed does not rerun the browser smoke',
+    '## Scoped XR edited-media evidence',
+    'It does not load a video sequence, run the dedicated smoke route',
+  ]) {
+    if (!source.includes(marker)) missing.push(`source marker ${JSON.stringify(marker)}`)
+  }
+  if (missing.length > 0) {
+    throw new Error(`canonical XR edited-media evidence is invalid: ${missing.join(', ')}`)
   }
 }
 
@@ -354,6 +444,7 @@ export async function verifyWorkspaceSeedAuthority({
   if (!await isFile(canonicalPath)) throw new Error(`canonical workspace seed is missing: ${canonicalPath}`)
   const source = await readFile(canonicalPath, 'utf8')
   requireCanonicalIdentity(source)
+  requirePhysicsEditedMediaEvidence(source)
   const flightSource = await readFile(
     path.resolve(knowgrphRoot, FLIGHT_SEED_RELATIVE_PATH),
     'utf8',

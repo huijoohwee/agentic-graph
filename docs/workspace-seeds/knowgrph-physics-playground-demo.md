@@ -178,6 +178,61 @@ runtime_validation:
   dedicated_editor_chrome: false
   validation_input_locator_persisted: false
   external_proof: "operator-supplied public document bytes were read into the local exact-main runtime; no deploy or public mutation occurred"
+  xr_authoring_edited_media_delivery:
+    scope: "xr-authoring-edited-media-delivery"
+    projection_role: "downstream scoped evidence; not a second XR readiness authority"
+    prd: "/docs/documents/knowgrph-ar-vr-xr-prd-tad-adr.md"
+    runtime_owner: "canvas/src/components/timeline; canvas/src/features/gitgraph"
+    source_snapshot_schema: "knowgrph-xr-v2-readiness/v1"
+    source_snapshot_status: "source-ready"
+    canonical_delivery_status: "runtime-ready"
+    canonical_delivery_limit: "XR authoring and native edited-media delivery only"
+    reviewed_feature_commit: "fcd69c6b2d42a00779f55be8c1d57a0ab468339b"
+    pull_request: 674
+    protected_refresh_chain:
+      - "48c58307481c96e5c73c9f4d2f53eb2c2f1c8549"
+      - "fea5e37b9bf0d648284330cfbc3dcca03890def0"
+      - "a6de5722e550e633d0d73f59f187a09ec7388879"
+    canonical_main_commit: "a3ddfef7cc55c38385520173273abd66010e9747"
+    canonical_main_tree: "76c8e22da9c9284f01c2627c8ace9c9d3abcd682"
+    canonical_main_proof:
+      workflow: "Integration"
+      run_id: 30895597328
+      check: "Integration Gate"
+      conclusion: "success"
+      completed_at: "2026-08-04T09:26:58Z"
+      affected_scope: "xr_v2_video_editor"
+      focused_gate: "npm run xr-v2:review-ready"
+      browser_observation_schema: "knowgrph-xr-v2-browser-smoke/v1"
+      browser_observation: "pass"
+    canonical_runtime_reconciliation:
+      integration_result_schema: "agentic-device-integration-result/v1"
+      integration_status: "runtime_ready"
+      readiness_schema: "agentic-local-runtime-readiness/v1"
+      feature_runtime_source_revision: "a3ddfef7cc55c38385520173273abd66010e9747"
+      feature_runtime_agentic_canvas_os_revision: "217a8a42d6497e059839a6a1f809c2459530ca54"
+      feature_runtime_evidence_digest: "fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23"
+      feature_runtime_verified_at: "2026-08-04T09:29:02.924Z"
+    proven:
+      - "canonical ECS projection including entity zero"
+      - "real standalone Three.js material application"
+      - "mounted canonical Timeline command routing"
+      - "same-origin browser-native edited-media export"
+      - "non-empty Blob, decoded metadata, and bounded playback"
+      - "media teardown and object-URL revocation without observed page or media errors"
+      - "clean-room dependency and source enforcement"
+    external_dependencies: []
+    no_deployment: true
+    deploy_boundary: "Dev-only"
+    broader_xr_status: "blocked"
+    blocked_claims:
+      - "mounted-renderer material wiring"
+      - "live depth model and quality"
+      - "reference-device frame budget"
+      - "camera permission and lifecycle on named physical devices"
+      - "physical-headset XR behavior"
+      - "Production availability"
+      - "deployment authority"
 mcp_control:
   inspect_tool: "knowgrph.inspect_local_xr_scene_assets"
   control_tool: "knowgrph.control_local_xr_scene"
@@ -220,6 +275,17 @@ flow:
         role: "validation"
         state: "runtime-ready"
         output: "Verify deterministic stepping, controller switching, camera follow, keyboard input, and gamepad input."
+    - id: "xr_edited_media_proof"
+      type: "XrDemoValidation"
+      label: "Scoped Edited-media Proof"
+      pos: {x: 880, y: 300}
+      properties:
+        role: "downstream canonical-main evidence projection"
+        scope: "xr-authoring-edited-media-delivery"
+        sourceSnapshotState: "source-ready"
+        canonicalDeliveryState: "runtime-ready"
+        broaderXrState: "blocked"
+        output: "Inspect the protected-main XR v2 review gate and canonical runtime receipt; applying this seed does not rerun the browser smoke."
   connections:
     - from: "xr_demo_entry"
       to: "xr_ball_controller"
@@ -233,6 +299,9 @@ flow:
     - from: "xr_rocket_controller"
       to: "xr_runtime_gate"
       label: "validate"
+    - from: "xr_demo_entry"
+      to: "xr_edited_media_proof"
+      label: "inspect scoped proof"
 ---
 
 # Native XR Physics Playground
@@ -242,6 +311,16 @@ This Source Files document activates a playable XR physics playground inside the
 ## Run
 
 From the repository root, run `npm run dev`. In Knowgrph, open **Explorer → Source Files → docs → workspace-seeds → knowgrph-physics-playground-demo.md**. Applying this document starts the Beach Ball, playground, camera, and bottom vehicle switcher automatically while Explorer remains available.
+
+## Scoped XR edited-media evidence
+
+This document projects downstream evidence for `xr-authoring-edited-media-delivery`; applying it still starts only the native `xr-physics` playground. It does not load a video sequence, run the dedicated smoke route, or claim that opening the XR choreography Timeline reproduces the edited-media proof.
+
+The checked-in `knowgrph-xr-v2-readiness/v1` source snapshot remains `source-ready`. Separately, the protected delivery chain is `runtime-ready` for this scope only: reviewed feature commit `fcd69c6b2d42a00779f55be8c1d57a0ab468339b`, protected-refresh head `a6de5722e550e633d0d73f59f187a09ec7388879`, and canonical `main` commit `a3ddfef7cc55c38385520173273abd66010e9747` share the admitted feature lineage. Canonical push run `30895597328` passed **Integration Gate**, selected `npm run xr-v2:review-ready`, and passed the dedicated Chromium edited-media observation. Agentic Canvas OS then reconciled the clean canonical runtime at that exact Knowgrph commit under `agentic-local-runtime-readiness/v1` at revision `217a8a42d6497e059839a6a1f809c2459530ca54`.
+
+To reproduce the focused feature evidence from clean exact canonical Knowgrph `main`, run `npm run xr-v2:review-ready`. It uses the dedicated local XR v2 smoke route and committed same-origin fixture; it does not deploy.
+
+The evidence covers canonical Timeline command routing, browser-native edited-media export, non-empty output, decoded metadata, bounded playback, and resource teardown. It does not establish mounted-renderer material wiring, live depth, a named-device frame budget, camera lifecycle on physical devices, physical-headset behavior, Production availability, or deployment authority. The clean-room editor boundary remains dependency-free and attribution-only; no external editor code, package, generated asset, or runtime/build/test contact is admitted.
 
 ## Controls
 
