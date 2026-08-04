@@ -10,7 +10,9 @@ import {
   assertExactXrV2RawObservation,
   assertObservedXrV2MediaErrors,
   assertPinnedXrV2ContractConformance,
+  assertXrV2SourceCheckoutGraph,
   parseXrV2MediaErrors,
+  resolveXrV2SourceCheckoutContext,
 } from '../../scripts/xr-v2/browser-smoke-contract.mjs'
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
@@ -69,13 +71,20 @@ function updateDigestEntry(digest, label, content) {
 
 function readSourceEvidence() {
   const repositoryRoot = readGitText(process.cwd(), ['rev-parse', '--show-toplevel'])
-  const sourceBranch = readGitText(repositoryRoot, ['branch', '--show-current'])
-  const sourceUpstreamRef = readGitText(repositoryRoot, [
-    'rev-parse',
-    '--abbrev-ref',
-    '--symbolic-full-name',
-    '@{upstream}',
-  ])
+  const sourceRevision = readGitText(repositoryRoot, ['rev-parse', 'HEAD'])
+  const checkoutContext = resolveXrV2SourceCheckoutContext({
+    attachedBranch: readGitText(repositoryRoot, ['branch', '--show-current']),
+    environment: process.env,
+    headRevision: sourceRevision,
+  })
+  const sourceUpstreamRef = checkoutContext.sourceCheckoutState === 'attached'
+    ? readGitText(repositoryRoot, [
+      'rev-parse',
+      '--abbrev-ref',
+      '--symbolic-full-name',
+      '@{upstream}',
+    ])
+    : `origin/${checkoutContext.sourceBranch}`
   const trackedDiff = readGitBuffer(repositoryRoot, [
     'diff',
     '--binary',
@@ -112,24 +121,30 @@ function readSourceEvidence() {
     repositoryRoot,
     ['rev-parse', 'refs/remotes/origin/main'],
   )
+  const sourceUpstreamRevision = readGitText(repositoryRoot, ['rev-parse', sourceUpstreamRef])
+  const checkoutIdentity = assertXrV2SourceCheckoutGraph(checkoutContext, {
+    originMainRevision: observedOriginMainRevision,
+    parentRevisions: readGitText(repositoryRoot, ['rev-list', '--parents', '-n', '1', 'HEAD'])
+      .split(/\s+/u)
+      .slice(1),
+    remoteHeadRevision: sourceUpstreamRevision,
+  })
   return Object.freeze({
-    sourceRevision: readGitText(repositoryRoot, ['rev-parse', 'HEAD']),
+    sourceRevision,
     sourceHeadTree,
     proofSourceTree: worktreeDirty ? null : sourceHeadTree,
-    sourceBranch,
-    sourceLane: sourceBranch === 'main' ? 'canonical-main' : 'task-review',
+    ...checkoutIdentity,
     sourceUpstreamRef,
-    sourceUpstreamRevision: readGitText(repositoryRoot, ['rev-parse', '@{upstream}']),
-    sourceAheadCount: Number(readGitText(repositoryRoot, ['rev-list', '--count', '@{upstream}..HEAD'])),
-    sourceBehindCount: Number(readGitText(repositoryRoot, ['rev-list', '--count', 'HEAD..@{upstream}'])),
-    sourceDescendsFromUpstream: isGitAncestor(repositoryRoot, '@{upstream}', 'HEAD'),
+    sourceUpstreamRevision,
+    sourceAheadCount: Number(readGitText(repositoryRoot, ['rev-list', '--count', `${sourceUpstreamRef}..HEAD`])),
+    sourceBehindCount: Number(readGitText(repositoryRoot, ['rev-list', '--count', `HEAD..${sourceUpstreamRef}`])),
+    sourceDescendsFromUpstream: isGitAncestor(repositoryRoot, sourceUpstreamRef, 'HEAD'),
     sourceDescendsFromOriginMain: isGitAncestor(
       repositoryRoot,
       'refs/remotes/origin/main',
       'HEAD',
     ),
-    upstreamSynchronized: readGitText(repositoryRoot, ['rev-parse', '@{upstream}'])
-      === readGitText(repositoryRoot, ['rev-parse', 'HEAD']),
+    upstreamSynchronized: sourceUpstreamRevision === sourceRevision,
     // This is the checkout's observed remote-tracking ref. Fetch freshness is
     // owned by the surrounding collaboration workflow, not this smoke runner.
     observedOriginMainRevision,
@@ -147,6 +162,9 @@ function readSourceEvidence() {
 function assertCleanCommitSource(sourceEvidence) {
   assert.match(sourceEvidence.sourceRevision, /^[0-9a-f]{40}$/u)
   assert.match(sourceEvidence.sourceHeadTree, /^[0-9a-f]{40}$/u)
+  assert.match(sourceEvidence.sourceCandidateRevision, /^[0-9a-f]{40}$/u)
+  assert.ok(Array.isArray(sourceEvidence.sourceParentRevisions))
+  for (const revision of sourceEvidence.sourceParentRevisions) assert.match(revision, /^[0-9a-f]{40}$/u)
   assert.match(sourceEvidence.sourceUpstreamRevision, /^[0-9a-f]{40}$/u)
   assert.match(sourceEvidence.observedOriginMainRevision, /^[0-9a-f]{40}$/u)
   assert.match(sourceEvidence.worktreeState.digest, /^[0-9a-f]{64}$/u)
@@ -170,11 +188,24 @@ function assertCleanCommitSource(sourceEvidence) {
   assert.equal(sourceEvidence.sourceBehindCount, 0)
   assert.ok(Number.isSafeInteger(sourceEvidence.sourceAheadCount) && sourceEvidence.sourceAheadCount >= 0)
   assert.equal(sourceEvidence.upstreamSynchronized, sourceEvidence.sourceAheadCount === 0)
-  if (sourceEvidence.sourceLane === 'canonical-main') {
+  if (sourceEvidence.sourceCheckoutState === 'github-pull-request-merge') {
+    assert.equal(sourceEvidence.sourceLane, 'pull-request-integration')
+    assert.equal(sourceEvidence.sourceCandidateRevision, sourceEvidence.sourceUpstreamRevision)
+    assert.deepEqual(sourceEvidence.sourceParentRevisions, [
+      sourceEvidence.observedOriginMainRevision,
+      sourceEvidence.sourceCandidateRevision,
+    ])
+    assert.equal(sourceEvidence.sourceAheadCount, 1)
+    assert.equal(sourceEvidence.upstreamSynchronized, false)
+  } else if (sourceEvidence.sourceLane === 'canonical-main') {
+    assert.equal(sourceEvidence.sourceCheckoutState, 'attached')
+    assert.equal(sourceEvidence.sourceCandidateRevision, sourceEvidence.sourceRevision)
     assert.equal(sourceEvidence.sourceRevision, sourceEvidence.observedOriginMainRevision)
     assert.equal(sourceEvidence.upstreamSynchronized, true)
     assert.equal(sourceEvidence.sourceAheadCount, 0)
   } else {
+    assert.equal(sourceEvidence.sourceCheckoutState, 'attached')
+    assert.equal(sourceEvidence.sourceCandidateRevision, sourceEvidence.sourceRevision)
     assert.equal(sourceEvidence.sourceLane, 'task-review')
     assert.notEqual(sourceEvidence.sourceBranch, 'main')
   }

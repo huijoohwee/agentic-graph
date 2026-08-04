@@ -15,6 +15,10 @@ import { fileURLToPath } from 'node:url'
 
 import { NamedVerificationAggregateError } from '../lib/named-verification-runner.mjs'
 import {
+  assertXrV2SourceCheckoutGraph,
+  resolveXrV2SourceCheckoutContext,
+} from '../xr-v2/browser-smoke-contract.mjs'
+import {
   runXrV2SourceSmoke,
   XR_V2_SOURCE_VERIFICATIONS,
 } from '../run-xr-v2-source-smoke.mjs'
@@ -23,6 +27,29 @@ import { verifyXrV2RuntimeSourceContract } from '../xr-v2/runtime-source-contrac
 
 const QUIET_LOGGER = Object.freeze({ error() {}, info() {} })
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const MAIN_REVISION = '1'.repeat(40)
+const CANDIDATE_REVISION = '2'.repeat(40)
+const MERGE_REVISION = '3'.repeat(40)
+const TASK_BRANCH = 'agent/katrinas-macbook-pro.local/xr-pinned-runtime-readiness-ci-fix'
+
+function githubPullRequestEnvironment(overrides = {}) {
+  return {
+    GITHUB_ACTIONS: 'true',
+    GITHUB_BASE_REF: 'main',
+    GITHUB_EVENT_NAME: 'pull_request',
+    GITHUB_HEAD_REF: TASK_BRANCH,
+    GITHUB_REF: 'refs/pull/683/merge',
+    GITHUB_REPOSITORY: 'huijoohwee/knowgrph',
+    GITHUB_SHA: MERGE_REVISION,
+    KNOWGRPH_PR_BASE_REF: 'main',
+    KNOWGRPH_PR_HEAD_REF: TASK_BRANCH,
+    KNOWGRPH_PR_NUMBER: '683',
+    KNOWGRPH_REPOSITORY: 'huijoohwee/knowgrph',
+    KNOWGRPH_SOURCE_REVISION: CANDIDATE_REVISION,
+    KNOWGRPH_TARGET_REF: `refs/heads/${TASK_BRANCH}`,
+    ...overrides,
+  }
+}
 
 function createFixtureRoot(t) {
   const fixtureRoot = mkdtempSync(resolve(tmpdir(), 'knowgrph-xr-v2-source-'))
@@ -106,6 +133,85 @@ test('XR v2 source smoke passes the requested repository root to every stage', a
   })
   assert.equal(report.failures.length, 0)
   assert.deepEqual(seenRoots, XR_V2_SOURCE_VERIFICATIONS.map(() => repositoryRoot))
+})
+
+test('XR v2 source checkout keeps attached branch identity authoritative', () => {
+  const context = resolveXrV2SourceCheckoutContext({
+    attachedBranch: TASK_BRANCH,
+    environment: githubPullRequestEnvironment({ GITHUB_SHA: '0'.repeat(40) }),
+    headRevision: CANDIDATE_REVISION,
+  })
+  assert.deepEqual(context, {
+    sourceBranch: TASK_BRANCH,
+    sourceCandidateRevision: CANDIDATE_REVISION,
+    sourceCheckoutState: 'attached',
+    sourceLane: 'task-review',
+  })
+  assert.equal(resolveXrV2SourceCheckoutContext({
+    attachedBranch: 'main',
+    environment: {},
+    headRevision: MAIN_REVISION,
+  }).sourceLane, 'canonical-main')
+})
+
+test('XR v2 source checkout admits an exact GitHub pull-request merge', () => {
+  const context = resolveXrV2SourceCheckoutContext({
+    attachedBranch: '',
+    environment: githubPullRequestEnvironment(),
+    headRevision: MERGE_REVISION,
+  })
+  const observed = assertXrV2SourceCheckoutGraph(context, {
+    originMainRevision: MAIN_REVISION,
+    parentRevisions: [MAIN_REVISION, CANDIDATE_REVISION],
+    remoteHeadRevision: CANDIDATE_REVISION,
+  })
+  assert.equal(observed.sourceCheckoutState, 'github-pull-request-merge')
+  assert.equal(observed.sourceLane, 'pull-request-integration')
+  assert.equal(observed.sourceCandidateRevision, CANDIDATE_REVISION)
+  assert.deepEqual(observed.sourceParentRevisions, [MAIN_REVISION, CANDIDATE_REVISION])
+})
+
+test('XR v2 source checkout rejects partial or spoofed detached CI identity', () => {
+  for (const [field, value] of [
+    ['GITHUB_ACTIONS', 'false'],
+    ['GITHUB_EVENT_NAME', 'push'],
+    ['GITHUB_SHA', CANDIDATE_REVISION],
+    ['GITHUB_HEAD_REF', 'main'],
+    ['GITHUB_BASE_REF', 'release'],
+    ['GITHUB_REF', 'refs/heads/main'],
+    ['GITHUB_REPOSITORY', 'fork/knowgrph'],
+    ['KNOWGRPH_PR_BASE_REF', 'release'],
+    ['KNOWGRPH_PR_HEAD_REF', 'main'],
+    ['KNOWGRPH_PR_NUMBER', '0'],
+    ['KNOWGRPH_REPOSITORY', 'fork/knowgrph'],
+    ['KNOWGRPH_SOURCE_REVISION', 'not-a-sha'],
+    ['KNOWGRPH_TARGET_REF', 'refs/heads/main'],
+  ]) {
+    assert.throws(() => resolveXrV2SourceCheckoutContext({
+      attachedBranch: '',
+      environment: githubPullRequestEnvironment({ [field]: value }),
+      headRevision: MERGE_REVISION,
+    }), undefined, field)
+  }
+})
+
+test('XR v2 source checkout rejects remote or merge-parent drift', () => {
+  const context = resolveXrV2SourceCheckoutContext({
+    attachedBranch: '',
+    environment: githubPullRequestEnvironment(),
+    headRevision: MERGE_REVISION,
+  })
+  for (const input of [
+    { remoteHeadRevision: MAIN_REVISION, parentRevisions: [MAIN_REVISION, CANDIDATE_REVISION] },
+    { remoteHeadRevision: CANDIDATE_REVISION, parentRevisions: [CANDIDATE_REVISION, MAIN_REVISION] },
+    { remoteHeadRevision: CANDIDATE_REVISION, parentRevisions: [MAIN_REVISION] },
+    { remoteHeadRevision: CANDIDATE_REVISION, parentRevisions: [MAIN_REVISION, CANDIDATE_REVISION, MERGE_REVISION] },
+  ]) {
+    assert.throws(() => assertXrV2SourceCheckoutGraph(context, {
+      originMainRevision: MAIN_REVISION,
+      ...input,
+    }))
+  }
 })
 
 test('XR v2 readiness docs positively bind the pinned authority and all criteria', () => {

@@ -2,6 +2,67 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { relative, resolve } from 'node:path'
 
+const SHA_REVISION_PATTERN = /^[0-9a-f]{40}$/u
+const TASK_BRANCH_PATTERN = /^agent\/[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/u
+const ATTACHED_BRANCH_PATTERN = /^(?:main|agent\/[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)$/u
+
+export function resolveXrV2SourceCheckoutContext({
+  attachedBranch,
+  environment,
+  headRevision,
+}) {
+  assert.match(headRevision, SHA_REVISION_PATTERN)
+  if (attachedBranch) {
+    assert.match(attachedBranch, ATTACHED_BRANCH_PATTERN)
+    return Object.freeze({
+      sourceBranch: attachedBranch,
+      sourceCandidateRevision: headRevision,
+      sourceCheckoutState: 'attached',
+      sourceLane: attachedBranch === 'main' ? 'canonical-main' : 'task-review',
+    })
+  }
+
+  const env = environment || {}
+  const headRef = String(env.KNOWGRPH_PR_HEAD_REF || '')
+  const prNumber = String(env.KNOWGRPH_PR_NUMBER || '')
+  const candidateRevision = String(env.KNOWGRPH_SOURCE_REVISION || '')
+  assert.equal(env.GITHUB_ACTIONS, 'true', 'detached source proof is admitted only in GitHub Actions')
+  assert.equal(env.GITHUB_EVENT_NAME, 'pull_request')
+  assert.equal(env.GITHUB_SHA, headRevision)
+  assert.match(headRef, TASK_BRANCH_PATTERN)
+  assert.equal(env.GITHUB_HEAD_REF, headRef)
+  assert.equal(env.GITHUB_BASE_REF, 'main')
+  assert.equal(env.KNOWGRPH_PR_BASE_REF, 'main')
+  assert.match(prNumber, /^[1-9][0-9]*$/u)
+  assert.equal(env.GITHUB_REF, `refs/pull/${prNumber}/merge`)
+  assert.equal(env.GITHUB_REPOSITORY, 'huijoohwee/knowgrph')
+  assert.equal(env.KNOWGRPH_REPOSITORY, env.GITHUB_REPOSITORY)
+  assert.equal(env.KNOWGRPH_TARGET_REF, `refs/heads/${headRef}`)
+  assert.match(candidateRevision, SHA_REVISION_PATTERN)
+  return Object.freeze({
+    sourceBranch: headRef,
+    sourceCandidateRevision: candidateRevision,
+    sourceCheckoutState: 'github-pull-request-merge',
+    sourceLane: 'pull-request-integration',
+  })
+}
+
+export function assertXrV2SourceCheckoutGraph(context, {
+  originMainRevision,
+  parentRevisions,
+  remoteHeadRevision,
+}) {
+  assert.match(originMainRevision, SHA_REVISION_PATTERN)
+  assert.match(remoteHeadRevision, SHA_REVISION_PATTERN)
+  assert.ok(Array.isArray(parentRevisions))
+  for (const revision of parentRevisions) assert.match(revision, SHA_REVISION_PATTERN)
+  if (context.sourceCheckoutState === 'github-pull-request-merge') {
+    assert.equal(remoteHeadRevision, context.sourceCandidateRevision)
+    assert.deepEqual(parentRevisions, [originMainRevision, context.sourceCandidateRevision])
+  }
+  return Object.freeze({ ...context, sourceParentRevisions: Object.freeze([...parentRevisions]) })
+}
+
 const SOURCE_PATHS = Object.freeze([
   ['canvas', 'src', 'App.tsx'],
   ['canvas', 'src', 'features', 'testing', 'XrV2RuntimeSmokePage.tsx'],
@@ -104,6 +165,9 @@ const REQUIRED_MARKERS = Object.freeze([
   'mediaCleanupObservation',
   'sourceHeadTree',
   'proofSourceTree',
+  'sourceCheckoutState',
+  'sourceCandidateRevision',
+  'sourceParentRevisions',
   'sourceLane',
   'sourceUpstreamRef',
   'sourceUpstreamRevision',
@@ -116,6 +180,9 @@ const REQUIRED_MARKERS = Object.freeze([
   'sourceEvidenceBefore',
   'source or worktree state changed during the browser observation',
   'assertCleanCommitSource',
+  'resolveXrV2SourceCheckoutContext',
+  'assertXrV2SourceCheckoutGraph',
+  'github-pull-request-merge',
   'dirty task worktrees fail closed',
   'HEAD^{tree}',
   '--binary',
