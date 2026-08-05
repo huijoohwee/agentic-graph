@@ -176,7 +176,7 @@ export function assertXrV2ExtendedBrowserObservation(rawEvidence) {
 
   assert.equal(rawEvidence.mountedSchema, 'knowgrph-xr-v2-mounted-authoring-evidence/v1')
   assert.equal(rawEvidence.mountedStatus, 'ready')
-  assert.match(String(rawEvidence.mountedSourceDigest), /^[0-9a-f]{64}$/u)
+  assert.match(String(rawEvidence.mountedSourceDigest), /^fnv1a32:[0-9a-f]{8}$/u)
   assert.equal(rawEvidence.mountedEntityIds, '0,1')
   assert.equal(rawEvidence.mountedRenderQuery, '0')
   assert.equal(rawEvidence.mountedCanvasIdentity, rawEvidence.mountedCanvasIdentityBefore)
