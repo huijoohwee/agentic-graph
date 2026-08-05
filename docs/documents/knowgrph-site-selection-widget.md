@@ -3,7 +3,7 @@
 Status: Draft (MVP-first)  
 Last updated: 2026-04-25  
 
-> Legacy planning note: this draft still references an older RxDB-era local-first design. The active app runtime now uses D1 as canonical persistence with a minimal browser-local persisted cache.
+> Legacy planning note: this draft still references an older RxDB-era local-first design. The current authority is Git-backed authored Markdown/frontmatter; D1 and the browser-local store are structured and working projections.
 
 ## 0) Executive summary
 
