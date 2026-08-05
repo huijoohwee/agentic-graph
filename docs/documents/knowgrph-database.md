@@ -1,6 +1,6 @@
 # Legacy Knowgrph Database — From 0 to 1 (RxDB → PostgreSQL)
 
-> Legacy planning note: this document describes an older RxDB-to-PostgreSQL proposal. The active runtime uses Cloudflare D1 as canonical persistence with a minimal browser-local persisted cache. See `knowgrph-storage-sync-document.md` and `knowgrph-storage-schemas-document.md` for the current contract.
+> Legacy planning note: this document describes an older RxDB-to-PostgreSQL proposal. The current authority is Git-backed authored Markdown/frontmatter; Cloudflare D1 and the browser-local store are structured and working projections. See `knowgrph-storage-sync-document.md` and `knowgrph-storage-schemas-document.md` for the active contract.
 
 This document describes a **lean, MVP** database path for Knowgrph:
 
