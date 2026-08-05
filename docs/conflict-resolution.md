@@ -23,6 +23,12 @@ frontmatter_contract: "required"
 - The default rule is simple: merge at the highest upstream owner, regenerate downstream artifacts, and delete stale parallel paths.
 - `docs/collaboration-runtime-contract.md` is the machine SSOT for `/`, `#`, `@` task declarations, affected-scope CI commands, and the manual-only deployment boundary.
 
+## External Advisory Projections
+
+- Apply external Git guidance source-first: `huijoohwee.github.io/scripts/` owns its protected guideline and checker, while Knowgrph owns this collaboration contract and its executable runtime checks.
+- Never copy the external guideline, checker implementation, rule catalog, or fixtures into Knowgrph.
+- When the external guidance and Knowgrph behavior diverge, fix or clarify the responsible upstream owner and consume the resulting protected revision. Do not add a downstream patch, alias remapping, compatibility shim, or duplicate rule path to hide the disagreement.
+
 ---
 
 ## Context-Intent-Directive (CID) Framework

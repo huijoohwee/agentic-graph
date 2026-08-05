@@ -2,7 +2,7 @@
 title: "Knowgrph Collaboration Runtime Contract"
 doc_type: "Runtime Contract"
 status: "active"
-contract_version: 27
+contract_version: 28
 frontmatter_contract: "required"
 ci_command_timeout_ms: 300000
 invocation:
@@ -96,6 +96,8 @@ fallback_commands:
 ## Authority
 
 This opening YAML frontmatter is the machine source of truth for collaboration grammar, local source identity, deployment isolation, and affected-scope CI selection. Runtime scripts parse it directly; workflow files must not duplicate its source registry or path-to-command mapping.
+
+The protected Git guideline and checker under `huijoohwee.github.io/scripts/` are an external advisory projection. This contract and its repository-owned executable checks remain Knowgrph's collaboration source of truth. Knowgrph may consume the upstream rule intent and exact protected revision, but it must not copy that guideline, checker implementation, rule catalog, or fixtures into this repository.
 
 ## Invocation Grammar
 
