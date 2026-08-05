@@ -1,8 +1,8 @@
 ---
 title: "Source-Native Graph Workspace Architecture Decisions"
 doc_type: "Architecture Decision Record Set"
-version: "1.1.0"
-date: "2026-07-30"
+version: "1.2.0"
+date: "2026-08-05"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "architecture.decisions"
@@ -35,8 +35,10 @@ infrastructure or a proprietary file format.
 
 ### Decision
 
-Use one readable Markdown document with plain YAML metadata/graph fields as the authored authority.
-Runtime stores may cache, collaborate, or index, but must not silently replace that source.
+Use Git-backed Markdown documents with plain YAML frontmatter/graph fields as the portable authored
+authority. Git is the authority and audit mechanism; GitHub is the current protected forge and may
+be replaced or mirrored without changing the content contract. Runtime and collaboration stores
+may cache, edit, publish, or index projections, but must not silently replace that source.
 
 ### Alternatives considered
 
@@ -65,6 +67,18 @@ for humans and tools.
 - **Positive**: portable, diffable, and zero-infrastructure first value.
 - **Negative**: collaborative merge and large-document performance need explicit handling.
 - **Neutral**: caches and shared stores remain projections.
+
+### Knowledge-base authority boundary
+
+This ADR accepts only the portable authority principle. The detailed provider-role matrix,
+proposed projection envelope, current evidence gaps, and Lark candidate flow are owned by the
+[storage and synchronization contract](knowgrph-storage-sync-document.md); they are not repeated as
+a second normative source here.
+
+External collaboration edits must become reviewed source candidates rather than last-write-wins
+updates, and provider credentials must stay outside the browser. The minimum path remains
+deterministic and uses zero model tokens: inspect frontmatter and content digests first, fetch or
+chunk bodies only on demand, and reuse unchanged projections.
 
 ## ADR-002 — Reference implementation: Compose one client before adding service tiers
 
@@ -165,8 +179,10 @@ collaboration have different retention and consistency needs.
 
 ### Decision
 
-Keep authored source primary, a local working store recoverable, and shared structured/object/room
-stores optional projections with explicit identity, residency, retention, conflict, and auth rules.
+Keep Git-backed authored source primary, a local working store recoverable, and Lark plus shared
+structured/object/room stores optional projections with explicit source revision, content digest,
+identity, residency, retention, conflict, and auth rules. Provider mutations must enter through a
+host-owned adapter and reviewed candidate flow; browser code must not custody provider credentials.
 
 ### Alternatives considered
 

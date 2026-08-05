@@ -2,8 +2,8 @@
 title: "Reference implementation: Knowgrph Storage and Synchronization Owner Appendix"
 id: "md:knowgrph-storage-sync-document.companion"
 doc_type: "TAD Companion"
-version: "4.0.0"
-date: "2026-07-30"
+version: "4.1.0"
+date: "2026-08-05"
 lang: "en-US"
 guideline_version: "1.7.0"
 owner: "docs.storage.sync.companion"
@@ -13,7 +13,7 @@ lane: "authoring"
 universal_scope: false
 doc_path: "docs/documents/knowgrph-storage-sync-document.companion.md"
 parent: "docs/documents/knowgrph-storage-sync-document.md"
-parent_version: "4.0.0"
+parent_version: "4.1.0"
 invocation_authority: "The typed route-path source module owns runtime route identities; this appendix declares no invocation route."
 ---
 
@@ -33,6 +33,7 @@ not define a second product contract, invocation dictionary, topology, or readin
 | Local collections | IndexedDB/Dexie storage modules | documents, chunks, snapshots, outbox, cursor stay explicit |
 | Memory fallback | storage adapter selection | fallback is visible and not called durable |
 | Source authority | `canvas/src/features/source-files/` | local/shared records remain projections |
+| Proposed projection envelope | parent storage contract until a typed schema owner is admitted | target binds source repository/path/revision/content digest before provider identifiers; no current parity claim |
 | Workspace materialization | Source Files/workspace owners | one path applies source to graph/canvas |
 
 ## Shared-source ownership
@@ -46,6 +47,7 @@ not define a second product contract, invocation dictionary, topology, or readin
 | Media auth | `cloudflare/workers/knowgrph-storage/mediaAuth.ts` | current base64url token is not a signed entitlement |
 | Collaboration room | selected Source Files room adapter / Durable Object source | exactly one active room owner |
 | Git/file relay | storage-relay modules | bounded roots/hosts/auth and typed conflicts |
+| Lark projection/import | Feishu Base and Lark App contracts | host-owned permissions and tokens; external edits become reviewed candidates |
 
 ## Failure and recovery matrix
 
@@ -71,6 +73,8 @@ not define a second product contract, invocation dictionary, topology, or readin
 - Clean-environment TTV, scale, offline recovery, conflict replay, backup/restore, migration, and
   deletion evidence are not attached.
 - The protected Pages release does not deploy the storage Worker.
+- No remote Lark Base/Wiki/Docs discovery, event verification, or write-back adapter is evidenced.
+- No projection-envelope check currently proves source revision/digest parity across Lark and Cloudflare stores.
 
 ## Validation hosts
 
@@ -86,3 +90,6 @@ not define a second product contract, invocation dictionary, topology, or readin
 - Parent contract: `docs/documents/knowgrph-storage-sync-document.md`
 - Binary security contract: `docs/documents/knowgrph-artifact-media-storage-architecture.md`
 - Superseded ADR archive: `docs/documents/knowgrph-storage-sync-adrs-document.md`
+- Feishu Base contract: `docs/documents/knowgrph-mcp/knowgrph-feishu-base-mcp-prd-tad.md`
+- Lark App contract: `docs/documents/knowgrph-mcp/knowgrph-lark-app-mcp-prd-tad.md`
+- Lark Docs API overview: https://open.larksuite.com/document/ukTMukTMukTM/uczNzUjL3czM14yN3MTN
