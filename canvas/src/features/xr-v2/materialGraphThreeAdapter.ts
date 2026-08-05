@@ -1,4 +1,4 @@
-import { MeshStandardMaterial } from 'three'
+import { Mesh, MeshStandardMaterial, Texture } from 'three'
 
 import {
   compileMeshStandardMaterialGraph,
@@ -36,7 +36,7 @@ export type MaterialGraphApplyResult =
     }>
   | Readonly<{
       status: 'invalid'
-      reason: MaterialGraphCompileFailureReason | 'binding-disposed'
+      reason: MaterialGraphCompileFailureReason | 'binding-disposed' | 'texture-unavailable'
       state: MeshStandardMaterialRenderState
     }>
 
@@ -51,6 +51,24 @@ export type MeshStandardMaterialGraphBindingResult =
   | Readonly<{ status: 'ready'; binding: MeshStandardMaterialGraphBinding }>
   | Readonly<{ status: 'invalid'; reason: 'invalid-material' }>
 
+export type MaterialGraphTargetMeshState = Readonly<{
+  meshUuid: string
+  materialUuid: string
+  mapUuid: string | null
+  material: MeshStandardMaterialRenderState
+}>
+
+export type MaterialGraphTargetMeshBinding = Readonly<{
+  mesh: Mesh
+  apply(graph: MaterialGraph): MaterialGraphApplyResult & Readonly<{ target: MaterialGraphTargetMeshState }>
+  snapshot(): MaterialGraphTargetMeshState
+  dispose(): MaterialGraphTargetMeshState
+}>
+
+export type MaterialGraphTargetMeshBindingResult =
+  | Readonly<{ status: 'ready'; binding: MaterialGraphTargetMeshBinding }>
+  | Readonly<{ status: 'invalid'; reason: 'invalid-mesh' | 'invalid-material' }>
+
 function colorHex(materialColor: MeshStandardMaterial['color']): string {
   return `#${materialColor.getHexString()}`
 }
@@ -61,6 +79,7 @@ function colorHex(materialColor: MeshStandardMaterial['color']): string {
  */
 export function bindMaterialGraphToMeshStandardMaterial(
   candidate: unknown,
+  resolveTexture?: (assetId: string) => Texture | null,
 ): MeshStandardMaterialGraphBindingResult {
   if (!(candidate instanceof MeshStandardMaterial)) {
     return { status: 'invalid', reason: 'invalid-material' }
@@ -99,6 +118,16 @@ export function bindMaterialGraphToMeshStandardMaterial(
       return Object.freeze({ ...compiled, state: snapshot() })
     }
 
+    let resolvedMap: Texture | undefined
+    const mapAssetId = compiled.descriptor.textures?.map
+    if (mapAssetId !== undefined) {
+      const candidateTexture = resolveTexture?.(mapAssetId)
+      if (!(candidateTexture instanceof Texture)) {
+        return Object.freeze({ status: 'invalid', reason: 'texture-unavailable', state: snapshot() })
+      }
+      resolvedMap = candidateTexture
+    }
+
     const parameters = compiled.descriptor.parameters
     if (parameters.color !== undefined) material.color.set(parameters.color as string)
     if (parameters.emissive !== undefined) material.emissive.set(parameters.emissive as string)
@@ -111,6 +140,7 @@ export function bindMaterialGraphToMeshStandardMaterial(
     if (parameters.transparent !== undefined) material.transparent = parameters.transparent as boolean
     if (parameters.wireframe !== undefined) material.wireframe = parameters.wireframe as boolean
     if (parameters.depthWrite !== undefined) material.depthWrite = parameters.depthWrite as boolean
+    material.map = resolvedMap ?? null
     material.needsUpdate = true
 
     return Object.freeze({
@@ -131,5 +161,40 @@ export function bindMaterialGraphToMeshStandardMaterial(
   return Object.freeze({
     status: 'ready',
     binding: Object.freeze({ material, apply, snapshot, dispose }),
+  })
+}
+
+/** Atomically binds a closed graph, including its texture asset, to a caller-owned mesh. */
+export function bindMaterialGraphToTargetMesh(input: Readonly<{
+  mesh: unknown
+  resolveTexture: (assetId: string) => Texture | null
+}>): MaterialGraphTargetMeshBindingResult {
+  if (!(input.mesh instanceof Mesh)) return { status: 'invalid', reason: 'invalid-mesh' }
+  if (!(input.mesh.material instanceof MeshStandardMaterial)) return { status: 'invalid', reason: 'invalid-material' }
+  const mesh = input.mesh
+  const materialBinding = bindMaterialGraphToMeshStandardMaterial(mesh.material, input.resolveTexture)
+  if (materialBinding.status !== 'ready') return materialBinding
+
+  const snapshot = (): MaterialGraphTargetMeshState => Object.freeze({
+    meshUuid: mesh.uuid,
+    materialUuid: materialBinding.binding.material.uuid,
+    mapUuid: materialBinding.binding.material.map?.uuid ?? null,
+    material: materialBinding.binding.snapshot(),
+  })
+
+  return Object.freeze({
+    status: 'ready',
+    binding: Object.freeze({
+      mesh,
+      apply: (graph: MaterialGraph) => Object.freeze({
+        ...materialBinding.binding.apply(graph),
+        target: snapshot(),
+      }),
+      snapshot,
+      dispose: () => {
+        materialBinding.binding.dispose()
+        return snapshot()
+      },
+    }),
   })
 }

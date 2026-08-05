@@ -2,8 +2,11 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { XrCapabilitySnapshot } from '../../../lib/three/ThreeGraphXrSessionPolicy'
 import {
+  XR_V2_CAPABILITY_DECISION_SCHEMA,
   XR_V2_CAPABILITY_PROJECTION_SCHEMA,
+  XR_V2_CAPABILITY_TIERS,
   XR_V2_ENTRY_MODES,
+  resolveXrV2CapabilityDecision,
   resolveXrV2CapabilityProjection,
 } from '../capabilityContract'
 
@@ -70,4 +73,81 @@ test('capture projection degrades by injected readiness without changing entry m
   assert.equal(unavailable.capturePipeline, 'unavailable')
   assert.equal(unavailable.entryMode, 'inline-viewer')
   assert.equal(unavailable.cameraPermission, 'unavailable')
+})
+
+test('four-tier capability decision is closed and derives immersive tiers only from admitted features', () => {
+  assert.deepEqual(XR_V2_CAPABILITY_TIERS, [
+    'webxr-ar',
+    'webxr-vr',
+    'pseudo-ar-depth-parallax',
+    'flat-fallback',
+  ])
+  const matrix = [
+    resolveXrV2CapabilityDecision({
+      capability: capability('immersive-session'),
+      immersiveMode: 'immersive-ar',
+      depthParallaxAssetAdmitted: true,
+    }),
+    resolveXrV2CapabilityDecision({
+      capability: capability('immersive-session'),
+      immersiveMode: 'immersive-vr',
+      depthParallaxAssetAdmitted: false,
+    }),
+    resolveXrV2CapabilityDecision({
+      capability: capability('inline-viewer'),
+      immersiveMode: null,
+      depthParallaxAssetAdmitted: true,
+    }),
+    resolveXrV2CapabilityDecision({
+      capability: capability('inline-viewer'),
+      immersiveMode: null,
+      depthParallaxAssetAdmitted: false,
+    }),
+  ]
+
+  assert.deepEqual(matrix.map(decision => decision.tier), XR_V2_CAPABILITY_TIERS)
+  assert.equal(matrix.every(decision => decision.schema === XR_V2_CAPABILITY_DECISION_SCHEMA), true)
+  assert.equal(matrix.every(decision => XR_V2_CAPABILITY_TIERS.includes(decision.tier)), true)
+  assert.equal(matrix.every(Object.isFrozen), true)
+})
+
+test('iOS-class constraint is negative-only and never promotes an unavailable feature', () => {
+  for (const immersiveMode of ['immersive-ar', 'immersive-vr'] as const) {
+    const unconstrained = resolveXrV2CapabilityDecision({
+      capability: capability('immersive-session'),
+      immersiveMode,
+      depthParallaxAssetAdmitted: true,
+    })
+    const constrained = resolveXrV2CapabilityDecision({
+      capability: capability('immersive-session'),
+      immersiveMode,
+      negativePlatformConstraint: 'ios-webxr-unavailable',
+      depthParallaxAssetAdmitted: true,
+    })
+    assert.match(unconstrained.tier, /^webxr-/)
+    assert.equal(constrained.tier, 'pseudo-ar-depth-parallax')
+    assert.equal(constrained.demotedByPlatformConstraint, true)
+    assert.deepEqual(constrained.reasons, [
+      'ios-webxr-negative-constraint',
+      'depth-parallax-asset-admitted',
+    ])
+  }
+
+  const unavailable = capability('inline-viewer')
+  const unconstrained = resolveXrV2CapabilityDecision({
+    capability: unavailable,
+    immersiveMode: 'immersive-ar',
+    depthParallaxAssetAdmitted: false,
+  })
+  const constrained = resolveXrV2CapabilityDecision({
+    capability: unavailable,
+    immersiveMode: 'immersive-ar',
+    negativePlatformConstraint: 'ios-webxr-unavailable',
+    depthParallaxAssetAdmitted: false,
+  })
+  assert.equal(unconstrained.tier, 'flat-fallback')
+  assert.equal(constrained.tier, 'flat-fallback')
+  assert.equal(constrained.demotedByPlatformConstraint, false)
+  assert.equal(constrained.immersiveMode, null)
+  assert.deepEqual(constrained.reasons, ['flat-fallback-only'])
 })

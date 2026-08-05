@@ -13,21 +13,28 @@ import {
   type XrV2DevRuntimeEvidence,
   type XrV2PinnedContractConformanceEvidence,
 } from '@/features/xr-v2'
+import { XrV2MountedAuthoringSmokeSurface } from '@/features/xr-v2/XrV2MountedAuthoringSmokeSurface'
 import { type GanttTimelineTransportCommandAdapter } from '@/features/gitgraph/ganttTimelineTransportCommandAdapter'
 import { GanttTimelineTransportPanel } from '@/features/gitgraph/GanttTimelineTransportPanel'
 import { renderVideoSequenceExport } from '@/components/timeline/videoSequenceExport'
 import {
   createXrV2EditedMediaPlan,
+  createXrV2EncodedTrackWebmFixture,
   observeXrV2Playback,
+  probeXrV2ConnectedPreviewOverWebRtc,
   probeMountedXrV2TimelinePanel,
   readXrV2MediaError,
   releaseXrV2ObservedMedia,
+  seekXrV2Playback,
   SMOKE_MEDIA_GANTT_CODE,
   SMOKE_RUNTIME_DOCUMENT_KEY,
   waitForXrV2DecodedMetadata,
+  waitForXrV2MountedAuthoringBrowserEvidence,
   waitForXrV2ObservationQuiescence,
   waitForXrV2ReleasedMediaState,
   type XrV2ExternalTimelineOwnerState,
+  type XrV2ConnectedPreviewBrowserObservation,
+  type XrV2EncodedTrackBrowserObservation,
   type XrV2MediaCleanupObservation,
   type XrV2MediaErrorObservation,
   type XrV2TimelineCommandObservation,
@@ -47,6 +54,8 @@ type SmokeState = Readonly<{
   playbackEnded: boolean
   mediaCleanup: XrV2MediaCleanupObservation
   mediaErrors: readonly XrV2MediaErrorObservation[]
+  connectedPreview: XrV2ConnectedPreviewBrowserObservation | null
+  encodedTrackContainer: XrV2EncodedTrackBrowserObservation | null
   error: string
 }>
 
@@ -93,6 +102,8 @@ const INITIAL_STATE: SmokeState = Object.freeze({
     videoSrcAttributeRemoved: false,
   }),
   mediaErrors: Object.freeze([]),
+  connectedPreview: null,
+  encodedTrackContainer: null,
   error: '',
 })
 
@@ -108,6 +119,7 @@ function EvidenceRow({ label, value }: Readonly<{ label: string; value: string }
 export function XrV2RuntimeSmokePage() {
   const [state, setState] = React.useState<SmokeState>(INITIAL_STATE)
   const playbackVideoRef = React.useRef<HTMLVideoElement | null>(null)
+  const encodedTrackVideoRef = React.useRef<HTMLVideoElement | null>(null)
   const timelinePanelWrapperRef = React.useRef<HTMLElement | null>(null)
   const externalTimelineOwnerRef = React.useRef<XrV2ExternalTimelineOwnerState>({
     commandAction: '',
@@ -135,9 +147,11 @@ export function XrV2RuntimeSmokePage() {
     const abortController = new AbortController()
     let active = true
     let objectUrl = ''
+    let encodedTrackObjectUrl = ''
     let activeWorld: object | null = null
     let disposeMaterial: (() => unknown) | null = null
     const video = playbackVideoRef.current
+    const encodedTrackVideo = encodedTrackVideoRef.current
     const mediaErrors: XrV2MediaErrorObservation[] = []
 
     const onMediaError = () => {
@@ -159,6 +173,11 @@ export function XrV2RuntimeSmokePage() {
     const cleanupMedia = () => {
       const release = releaseXrV2ObservedMedia(video, objectUrl)
       objectUrl = ''
+      return release
+    }
+    const cleanupEncodedTrackMedia = () => {
+      const release = releaseXrV2ObservedMedia(encodedTrackVideo, encodedTrackObjectUrl)
+      encodedTrackObjectUrl = ''
       return release
     }
 
@@ -218,6 +237,83 @@ export function XrV2RuntimeSmokePage() {
           signal: abortController.signal,
           wrapper: timelinePanelWrapper,
         })
+        await waitForXrV2MountedAuthoringBrowserEvidence(abortController.signal)
+        const connectedPreview = await probeXrV2ConnectedPreviewOverWebRtc(abortController.signal)
+        if (!connectedPreview.withinCeiling
+          || !connectedPreview.editApplied
+          || connectedPreview.authorRevision !== connectedPreview.viewerRevision
+          || connectedPreview.navigationEntryCountAfter !== connectedPreview.navigationEntryCountBefore
+          || !connectedPreview.documentIdentityPreserved) {
+          throw new Error('Connected WebRTC preview observation did not satisfy the bounded no-reload contract.')
+        }
+        if (!encodedTrackVideo) throw new Error('Encoded-track WebM playback element is unavailable.')
+        const encodedTrackFixture = await createXrV2EncodedTrackWebmFixture(abortController.signal)
+        encodedTrackVideo.muted = true
+        encodedTrackVideo.playsInline = true
+        encodedTrackObjectUrl = URL.createObjectURL(encodedTrackFixture.blob)
+        encodedTrackVideo.src = encodedTrackObjectUrl
+        const encodedTrackDecoded = await waitForXrV2DecodedMetadata(
+          encodedTrackVideo,
+          abortController.signal,
+        )
+        if (!Number.isFinite(encodedTrackDecoded.duration) || encodedTrackDecoded.duration <= 0) {
+          throw new Error('Encoded-track WebM did not expose a finite duration.')
+        }
+        const seekTarget = Math.min(0.14, encodedTrackDecoded.duration * 0.55)
+        const seekTimeSeconds = await seekXrV2Playback(
+          encodedTrackVideo,
+          seekTarget,
+          abortController.signal,
+        )
+        await seekXrV2Playback(encodedTrackVideo, 0, abortController.signal)
+        const encodedTrackPlayback = await observeXrV2Playback(
+          encodedTrackVideo,
+          abortController.signal,
+          false,
+        )
+        const encodedTrackPlaybackObserved = encodedTrackPlayback.currentTime >= 0.05
+          || encodedTrackPlayback.ended
+        const releasedEncodedTrack = cleanupEncodedTrackMedia()
+        const releasedEncodedTrackState = await waitForXrV2ReleasedMediaState(
+          encodedTrackVideo,
+          abortController.signal,
+        )
+        const encodedTrackContainer = Object.freeze({
+          schema: 'knowgrph-xr-v2-encoded-track-browser-observation/v1' as const,
+          byteSize: encodedTrackFixture.blob.size,
+          trackCount: encodedTrackFixture.inventory.tracks.length,
+          sourceCodecs: encodedTrackFixture.sourceCodecs,
+          packagedCodecs: Object.freeze(encodedTrackFixture.inventory.tracks.map(track => track.codec)),
+          sourceSampleCounts: encodedTrackFixture.sourceSampleCounts,
+          decodedSourceFrameCounts: encodedTrackFixture.decodedSourceFrameCounts,
+          packagedSampleCounts: Object.freeze(encodedTrackFixture.inventory.tracks.map(track => track.sampleCount)),
+          exactPayloadsVerified: encodedTrackFixture.exactPayloadsVerified,
+          seekHeadEntryCount: encodedTrackFixture.inventory.seekHeadEntryCount,
+          cuePointCount: encodedTrackFixture.inventory.cuePointCount,
+          decodedWidth: encodedTrackDecoded.width,
+          decodedHeight: encodedTrackDecoded.height,
+          durationSeconds: encodedTrackDecoded.duration,
+          seekTimeSeconds,
+          playbackObserved: encodedTrackPlaybackObserved,
+          sourceReleased: releasedEncodedTrack.objectUrlRevoked
+            && releasedEncodedTrack.videoSrcAttributeRemoved
+            && releasedEncodedTrackState.videoNetworkStateEmpty
+            && releasedEncodedTrackState.videoSrcAttributeRemoved,
+        })
+        if (encodedTrackContainer.trackCount !== 2
+          || encodedTrackContainer.sourceCodecs.join(',') !== encodedTrackContainer.packagedCodecs.join(',')
+          || encodedTrackContainer.sourceSampleCounts.join(',') !== encodedTrackContainer.packagedSampleCounts.join(',')
+          || encodedTrackContainer.decodedSourceFrameCounts.join(',') !== encodedTrackContainer.sourceSampleCounts.join(',')
+          || !encodedTrackContainer.exactPayloadsVerified
+          || encodedTrackContainer.seekHeadEntryCount < 3
+          || encodedTrackContainer.cuePointCount < 2
+          || encodedTrackContainer.decodedWidth <= 0
+          || encodedTrackContainer.decodedHeight <= 0
+          || encodedTrackContainer.seekTimeSeconds < 0.05
+          || !encodedTrackContainer.playbackObserved
+          || !encodedTrackContainer.sourceReleased) {
+          throw new Error('Encoded-track WebM browser observation did not preserve, seek, play, and release its tracks.')
+        }
         const pinnedConformance = await runXrV2PinnedContractConformanceProbe()
         const pinnedValidation = validateXrV2PinnedContractConformanceEvidence(pinnedConformance)
         if (pinnedValidation.status !== 'valid' || pinnedConformance.overall !== 'partial') {
@@ -231,7 +327,6 @@ export function XrV2RuntimeSmokePage() {
         if (blob.size <= 0 || !blob.type.toLowerCase().startsWith('video/')) {
           throw new Error('Edited-media export returned an invalid video Blob.')
         }
-
         if (!video) throw new Error('Edited-media playback element is unavailable.')
         video.muted = true
         video.playsInline = true
@@ -313,11 +408,14 @@ export function XrV2RuntimeSmokePage() {
             playbackEnded: playback.ended,
             mediaCleanup,
             mediaErrors: Object.freeze([...mediaErrors]),
+            connectedPreview,
+            encodedTrackContainer,
             error: '',
           }))
         }
       } catch (error) {
         cleanupMedia()
+        cleanupEncodedTrackMedia()
         if (active && !abortController.signal.aborted) {
           setState(Object.freeze({
             ...INITIAL_STATE,
@@ -341,6 +439,7 @@ export function XrV2RuntimeSmokePage() {
       disposeMaterial?.()
       if (activeWorld) disposeWorld(activeWorld)
       cleanupMedia()
+      cleanupEncodedTrackMedia()
       video?.removeEventListener('error', onMediaError)
     }
   }, [])
@@ -393,6 +492,33 @@ export function XrV2RuntimeSmokePage() {
       data-kg-xr-v2-revoked-object-url={state.mediaCleanup.revokedObjectUrl}
       data-kg-xr-v2-browser-quiescent={String(state.mediaCleanup.browserQuiescent)}
       data-kg-xr-v2-pinned-conformance-validation={state.pinnedConformanceValidation}
+      data-kg-xr-v2-connected-preview-schema={state.connectedPreview?.schema || ''}
+      data-kg-xr-v2-connected-preview-transport={state.connectedPreview?.transport || ''}
+      data-kg-xr-v2-connected-preview-author-revision={String(state.connectedPreview?.authorRevision ?? 0)}
+      data-kg-xr-v2-connected-preview-viewer-revision={String(state.connectedPreview?.viewerRevision ?? 0)}
+      data-kg-xr-v2-connected-preview-applied={String(state.connectedPreview?.editApplied ?? false)}
+      data-kg-xr-v2-connected-preview-latency-ms={String(state.connectedPreview?.latencyMs ?? -1)}
+      data-kg-xr-v2-connected-preview-within-ceiling={String(state.connectedPreview?.withinCeiling ?? false)}
+      data-kg-xr-v2-connected-preview-navigation-before={String(state.connectedPreview?.navigationEntryCountBefore ?? -1)}
+      data-kg-xr-v2-connected-preview-navigation-after={String(state.connectedPreview?.navigationEntryCountAfter ?? -1)}
+      data-kg-xr-v2-connected-preview-document-preserved={String(state.connectedPreview?.documentIdentityPreserved ?? false)}
+      data-kg-xr-v2-encoded-track-schema={state.encodedTrackContainer?.schema || ''}
+      data-kg-xr-v2-encoded-track-byte-size={String(state.encodedTrackContainer?.byteSize ?? 0)}
+      data-kg-xr-v2-encoded-track-count={String(state.encodedTrackContainer?.trackCount ?? 0)}
+      data-kg-xr-v2-encoded-track-source-codecs={state.encodedTrackContainer?.sourceCodecs.join(',') || ''}
+      data-kg-xr-v2-encoded-track-packaged-codecs={state.encodedTrackContainer?.packagedCodecs.join(',') || ''}
+      data-kg-xr-v2-encoded-track-source-samples={state.encodedTrackContainer?.sourceSampleCounts.join(',') || ''}
+      data-kg-xr-v2-encoded-track-decoded-source-frames={state.encodedTrackContainer?.decodedSourceFrameCounts.join(',') || ''}
+      data-kg-xr-v2-encoded-track-packaged-samples={state.encodedTrackContainer?.packagedSampleCounts.join(',') || ''}
+      data-kg-xr-v2-encoded-track-payloads-verified={String(state.encodedTrackContainer?.exactPayloadsVerified ?? false)}
+      data-kg-xr-v2-encoded-track-seek-head-count={String(state.encodedTrackContainer?.seekHeadEntryCount ?? 0)}
+      data-kg-xr-v2-encoded-track-cue-count={String(state.encodedTrackContainer?.cuePointCount ?? 0)}
+      data-kg-xr-v2-encoded-track-decoded-width={String(state.encodedTrackContainer?.decodedWidth ?? 0)}
+      data-kg-xr-v2-encoded-track-decoded-height={String(state.encodedTrackContainer?.decodedHeight ?? 0)}
+      data-kg-xr-v2-encoded-track-duration={String(state.encodedTrackContainer?.durationSeconds ?? 0)}
+      data-kg-xr-v2-encoded-track-seek-time={String(state.encodedTrackContainer?.seekTimeSeconds ?? 0)}
+      data-kg-xr-v2-encoded-track-playback={String(state.encodedTrackContainer?.playbackObserved ?? false)}
+      data-kg-xr-v2-encoded-track-source-released={String(state.encodedTrackContainer?.sourceReleased ?? false)}
       data-kg-xr-v2-observation-error={state.error}
     >
       <section className="mx-auto max-w-3xl rounded-3xl border border-slate-700 bg-slate-900/80 p-6 shadow-2xl">
@@ -404,6 +530,7 @@ export function XrV2RuntimeSmokePage() {
             playback, and cleanup without promoting its source-ready readiness snapshot.
           </p>
         </header>
+        <XrV2MountedAuthoringSmokeSurface />
         <section
           ref={timelinePanelWrapperRef}
           className="mt-5 overflow-hidden rounded-xl border border-slate-700 bg-slate-950"
@@ -430,6 +557,14 @@ export function XrV2RuntimeSmokePage() {
           playsInline
           preload="auto"
         />
+        <video
+          ref={encodedTrackVideoRef}
+          className="mt-5 aspect-video w-full rounded-xl bg-black"
+          aria-label="XR v2 encoded-track WebM playback proof"
+          muted
+          playsInline
+          preload="auto"
+        />
         <section
           hidden
           aria-hidden="true"
@@ -443,6 +578,10 @@ export function XrV2RuntimeSmokePage() {
           <EvidenceRow label="Canonical ECS entity zero" value={String(state.rawObservation.authoringAdapters.canonicalEcsEntityZero)} />
           <EvidenceRow label="Three.js material applied" value={String(state.rawObservation.authoringAdapters.materialApplied)} />
           <EvidenceRow label="Timeline command routed" value={String(state.rawObservation.authoringAdapters.timelineCommandRouted)} />
+          <EvidenceRow label="Connected preview transport" value={state.connectedPreview?.transport || 'not-observed'} />
+          <EvidenceRow label="Connected preview latency" value={state.connectedPreview ? `${state.connectedPreview.latencyMs.toFixed(2)} ms` : 'not-observed'} />
+          <EvidenceRow label="Encoded tracks preserved" value={String(state.encodedTrackContainer?.exactPayloadsVerified ?? false)} />
+          <EvidenceRow label="Encoded-track browser playback" value={String(state.encodedTrackContainer?.playbackObserved ?? false)} />
           <EvidenceRow label="Edited-media bytes" value={String(editedMedia.byteSize)} />
           <EvidenceRow label="Media source attribute removed" value={String(state.mediaCleanup.videoSrcAttributeRemoved)} />
           <EvidenceRow label="Object URL revoked" value={String(state.mediaCleanup.objectUrlRevoked)} />

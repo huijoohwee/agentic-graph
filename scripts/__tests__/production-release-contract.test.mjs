@@ -147,6 +147,26 @@ test('Pages mirror sync preserves the agent-ready route and tool module closure'
   assert.match(pagesFunctionsBuildScript, /process\.env\.KNOWGRPH_PUBLISH_REPOSITORY_ROOT/)
 })
 
+test('Pages mirror sync scopes XR capture and spatial tracking permissions to Knowgrph', () => {
+  assert.match(pagesSyncScript, /GENERATED_XR_RUNTIME_HEADERS_START/)
+  assert.match(pagesSyncScript, /'\/knowgrph\/\*', '\/content\/knowgrph\/\*'/)
+  assert.match(pagesSyncScript, /'  ! Permissions-Policy'/)
+  for (const directive of [
+    'accelerometer=(self)',
+    'autoplay=(self)',
+    'camera=(self)',
+    'display-capture=(self)',
+    'gyroscope=(self)',
+    'microphone=(self)',
+    'xr-spatial-tracking=(self)',
+  ]) {
+    assert.ok(pagesSyncScript.includes(directive), `expected ${directive} in generated XR policy`)
+  }
+  for (const directive of ['clipboard-read=()', 'clipboard-write=()', 'geolocation=()', 'payment=()', 'usb=()']) {
+    assert.ok(pagesSyncScript.includes(directive), `expected ${directive} to remain denied`)
+  }
+})
+
 test('apex Home has one canonical shell and a real Pages not-found boundary', () => {
   assert.doesNotMatch(rootAgentReadyFunction, /rootHtmlResponse|rootNoscriptFallbackMarkup|loadWebMcpScript/)
   assert.doesNotMatch(rootAgentReadyFunction, /data-kg-live-canvas-launch|<iframe class="live-canvas"/)

@@ -48,6 +48,7 @@ import {
 import { resolveThreeRendererLifecycleKey, shouldMountThreeRenderer } from '@/lib/three/threeRendererLifecycle'
 import { resolveThreeGraphXrSceneAuthority, ThreeGraphImmersiveMediaHud, ThreeGraphImmersiveMediaStage, useThreeGraphImmersiveMediaStageActive } from '@/lib/three/ThreeGraphImmersiveMedia'
 import { type ThreeCanvasSemanticMediaOwner, useThreeCanvasSemanticOwner } from '@/lib/three/threeCanvasSemanticOwner'
+import { graphHasXrAuthoringSource } from '@/features/agentic-ecs/xrAuthoringEcsRuntime'
 const SceneLazy = React.lazy(() =>
   import('@/lib/three/Scene.impl').then(mod => ({
     default: mod.Scene,
@@ -85,6 +86,7 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const { schema, selectNode, selectEdge, setSelectionSource } = useGraphStore()
   const markdownDocumentName = useGraphStore(s => s.markdownDocumentName)
   const markdownDocumentText = useGraphStore(s => s.markdownDocumentText)
+  const xrAuthoringGraphData = useGraphStore(s => s.graphData)
   const xrPhysicsRuntimeRunReadyDemo = isXrPhysicsRuntimeRunReadyDemoActive(markdownDocumentName, markdownDocumentText)
   const { flightSim, flightSimActive, gameMode, gameFpsActive } = useCanvasGameplayOverlayState()
   const flightStageActive = mode === 'xr' && flightSimActive
@@ -205,8 +207,13 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
   const hasSpatialCaptureManifest = !!spatialCaptureManifest
   const hasXrEmptyWorld = mode === 'xr' && !xrDocumentLoaded && !xrPhysicsRuntimeRunReadyDemo && !immersiveMediaStageActive
   const hasRenderableScene = immersiveMediaStageActive || gameplayOverlayActive || hasGraph || hasGlbAsset || hasSpatialCaptureManifest || hasXrEmptyWorld
+  const xrAuthoringGraphActive = useMemo(() => (
+    xrAuthoringGraphData ? graphHasXrAuthoringSource(xrAuthoringGraphData) : false
+  ), [xrAuthoringGraphData])
   const xrGraphStageAuthority = mode === 'xr' && hasGraph
-    ? xrPhysicsRuntimeRunReadyDemo ? 'native-controller' : 'motion-reference'
+    ? xrAuthoringGraphActive
+      ? 'native-controller'
+      : xrPhysicsRuntimeRunReadyDemo ? 'native-controller' : 'motion-reference'
     : undefined
   const xrSceneAuthority = resolveThreeGraphXrSceneAuthority({ mode, immersiveMediaActive: immersiveMediaStageActive, xrGraphStageAuthority, hasGlbAsset, hasSpatialCaptureManifest, hasXrEmptyWorld })
   const xrStandaloneFit = hasSpatialCaptureManifest

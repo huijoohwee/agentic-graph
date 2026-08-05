@@ -12,6 +12,7 @@ import {
 import { XR_MOTION_STAGE_GROUND_Y } from '@/features/three/xrMotionReferenceCoordinates'
 import { resolveXrCanonicalSceneSpatialSource } from '@/features/three/xrCanonicalSceneSpatialSource'
 import { useXrStageMotionControlCleanup } from '@/features/three/useXrStageMotionControlCleanup'
+import { XrV2MountedAuthoringScene } from '@/features/xr-v2/XrV2MountedAuthoringScene'
 
 export function XrCanonicalPhysicsStage({ geospatialComposite = false, paused = false }: { geospatialComposite?: boolean; paused?: boolean }) {
   useXrStageMotionControlCleanup()
@@ -40,6 +41,7 @@ export function XrCanonicalPhysicsStage({ geospatialComposite = false, paused = 
           stage={stage}
           visualsVisible={!geospatialComposite}
         />
+        <XrV2MountedAuthoringScene paused={paused} />
       </group>
     </>
   )

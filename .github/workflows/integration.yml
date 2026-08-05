@@ -20,7 +20,7 @@ jobs:
   integration-gate:
     name: Integration Gate
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       NODE_OPTIONS: --max-old-space-size=4096
       KNOWGRPH_PR_BODY: ${{ github.event.pull_request.body || '' }}
@@ -160,3 +160,17 @@ jobs:
         env:
           KNOWGRPH_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run ci:integration
+
+      - name: Run XR v2 runtime review-candidate gate
+        working-directory: knowgrph
+        env:
+          KG_XR_V2_CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+        run: npm run xr-v2:unit && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser
+
+      - name: Upload XR v2 browser observation
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: xr-v2-browser-observation
+          path: knowgrph/data/outputs/xr-v2-browser-smoke.json
+          if-no-files-found: error
+          retention-days: 7

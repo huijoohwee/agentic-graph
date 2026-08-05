@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { MeshStandardMaterial } from 'three'
+import { BoxGeometry, DataTexture, Mesh, MeshBasicMaterial, MeshStandardMaterial } from 'three'
 
 import {
   MATERIAL_GRAPH_SCHEMA,
   compileMeshStandardMaterialGraph,
   type MaterialGraph,
 } from '../materialGraph'
-import { bindMaterialGraphToMeshStandardMaterial } from '../materialGraphThreeAdapter'
+import { bindMaterialGraphToMeshStandardMaterial, bindMaterialGraphToTargetMesh } from '../materialGraphThreeAdapter'
 
 function renderFacingGraph(): MaterialGraph {
   return {
@@ -174,4 +174,70 @@ test('material binding rejects invalid updates atomically and tracks disposal', 
     status: 'invalid',
     reason: 'invalid-material',
   })
+})
+
+test('texture graph binds color multiplied by a caller-owned map to the target mesh', () => {
+  const texture = new DataTexture(new Uint8Array([255, 128, 64, 255]), 1, 1)
+  texture.needsUpdate = true
+  const material = new MeshStandardMaterial({ color: '#ffffff' })
+  const mesh = new Mesh(new BoxGeometry(1, 1, 1), material)
+  const graph: MaterialGraph = {
+    schema: MATERIAL_GRAPH_SCHEMA,
+    nodes: [
+      { id: 'albedo', type: 'color', value: '#336699' },
+      { id: 'surface', type: 'texture-2d', assetId: 'textures/checker-v1' },
+      { id: 'output', type: 'mesh-standard-output', bindings: { color: 'albedo', map: 'surface' } },
+    ],
+  }
+  assert.deepEqual(compileMeshStandardMaterialGraph(graph), {
+    status: 'ready',
+    descriptor: {
+      target: 'MeshStandardMaterial',
+      parameters: { color: '#336699' },
+      textures: { map: 'textures/checker-v1' },
+    },
+  })
+
+  const result = bindMaterialGraphToTargetMesh({
+    mesh,
+    resolveTexture: assetId => assetId === 'textures/checker-v1' ? texture : null,
+  })
+  assert.equal(result.status, 'ready')
+  if (result.status !== 'ready') return
+  const applied = result.binding.apply(graph)
+  assert.equal(applied.status, 'ready')
+  assert.equal(material.map, texture)
+  assert.equal(material.color.getHexString(), '336699')
+  assert.equal(applied.target.meshUuid, mesh.uuid)
+  assert.equal(applied.target.mapUuid, texture.uuid)
+
+  const before = result.binding.snapshot()
+  const missingTexture = result.binding.apply({
+    ...graph,
+    nodes: graph.nodes.map(node => node.type === 'texture-2d' ? { ...node, assetId: 'textures/missing' } : node),
+  })
+  assert.equal(missingTexture.status, 'invalid')
+  assert.equal(missingTexture.reason, 'texture-unavailable')
+  assert.deepEqual(result.binding.snapshot(), before)
+
+  const mapless = result.binding.apply(renderFacingGraph())
+  assert.equal(mapless.status, 'ready')
+  assert.equal(material.map, null)
+  assert.equal(result.binding.snapshot().mapUuid, null)
+
+  result.binding.dispose()
+  assert.equal(texture.source.data, texture.image)
+  mesh.geometry.dispose()
+  material.dispose()
+  texture.dispose()
+
+  assert.deepEqual(bindMaterialGraphToTargetMesh({ mesh: {}, resolveTexture: () => null }), {
+    status: 'invalid', reason: 'invalid-mesh',
+  })
+  const wrongMaterialMesh = new Mesh(new BoxGeometry(), new MeshBasicMaterial())
+  assert.deepEqual(bindMaterialGraphToTargetMesh({ mesh: wrongMaterialMesh, resolveTexture: () => null }), {
+    status: 'invalid', reason: 'invalid-material',
+  })
+  wrongMaterialMesh.geometry.dispose()
+  ;(wrongMaterialMesh.material as MeshBasicMaterial).dispose()
 })

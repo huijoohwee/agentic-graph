@@ -1,4 +1,17 @@
 import { type VideoSequenceExportPlan } from '@/components/timeline/videoSequenceExport'
+import {
+  readMountedAuthoringEvidence,
+  subscribeMountedAuthoringEvidence,
+  type MountedAuthoringEvidenceSnapshot,
+} from '@/features/xr-v2/mountedAuthoringEvidence'
+
+export {
+  createXrV2EncodedTrackWebmFixture,
+  probeXrV2ConnectedPreviewOverWebRtc,
+  type XrV2ConnectedPreviewBrowserObservation,
+  type XrV2EncodedTrackBrowserObservation,
+  type XrV2EncodedTrackWebmFixture,
+} from '@/features/xr-v2/browserRuntimeEvidence'
 
 const SMOKE_MEDIA_CANONICAL_PATH = '/knowgrph/demo/media-preview-metadata-ready.mp4'
 const SMOKE_MEDIA_PATH = import.meta.env.BASE_URL === '/'
@@ -42,6 +55,38 @@ export type XrV2MediaCleanupObservation = Readonly<{
   videoNetworkStateEmpty: boolean
   videoSrcAttributeRemoved: boolean
 }>
+
+export function waitForXrV2MountedAuthoringBrowserEvidence(
+  signal: AbortSignal,
+): Promise<MountedAuthoringEvidenceSnapshot> {
+  if (signal.aborted) return Promise.reject(new Error('Mounted authoring observation was aborted.'))
+  return new Promise((resolve, reject) => {
+    let settled = false
+    let unsubscribe = () => undefined
+    const timeoutId = window.setTimeout(() => finish(
+      null,
+      new Error('Mounted authoring evidence did not become ready.'),
+    ), 15_000)
+    const finish = (value: MountedAuthoringEvidenceSnapshot | null, error?: Error) => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeoutId)
+      signal.removeEventListener('abort', onAbort)
+      unsubscribe()
+      if (error || !value) reject(error ?? new Error('Mounted authoring evidence is unavailable.'))
+      else resolve(value)
+    }
+    const inspect = () => {
+      const next = readMountedAuthoringEvidence()
+      if (next.status === 'invalid') finish(null, new Error(`Mounted authoring evidence is invalid: ${next.reason}`))
+      else if (next.status === 'ready') finish(next)
+    }
+    const onAbort = () => finish(null, new Error('Mounted authoring observation was aborted.'))
+    unsubscribe = subscribeMountedAuthoringEvidence(inspect)
+    signal.addEventListener('abort', onAbort, { once: true })
+    inspect()
+  })
+}
 
 export function createXrV2EditedMediaPlan(): VideoSequenceExportPlan {
   const source = {
@@ -167,6 +212,39 @@ export function observeXrV2Playback(
     void video.play().then(onProgress, error => fail(
       error instanceof Error ? error.message : 'Edited-media playback was rejected.',
     ))
+  })
+}
+
+export function seekXrV2Playback(
+  video: HTMLVideoElement,
+  targetSeconds: number,
+  signal: AbortSignal,
+): Promise<number> {
+  if (!Number.isFinite(targetSeconds) || targetSeconds < 0) {
+    return Promise.reject(new Error('XR v2 seek target is invalid.'))
+  }
+  if (signal.aborted) return Promise.reject(new Error('XR v2 WebM seek was aborted.'))
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(
+      () => finish(new Error('XR v2 WebM seek did not settle before the timeout.')),
+      PLAYBACK_TIMEOUT_MS,
+    )
+    const finish = (error?: Error) => {
+      window.clearTimeout(timeoutId)
+      signal.removeEventListener('abort', onAbort)
+      video.removeEventListener('seeked', onSeeked)
+      video.removeEventListener('error', onError)
+      if (error) reject(error)
+      else resolve(video.currentTime)
+    }
+    const onAbort = () => finish(new Error('XR v2 WebM seek was aborted.'))
+    const onSeeked = () => finish()
+    const onError = () => finish(new Error(`XR v2 WebM seek failed with code ${video.error?.code || 0}.`))
+    signal.addEventListener('abort', onAbort, { once: true })
+    video.addEventListener('seeked', onSeeked, { once: true })
+    video.addEventListener('error', onError, { once: true })
+    video.currentTime = targetSeconds
+    if (!video.seeking && Math.abs(video.currentTime - targetSeconds) <= 0.02) finish()
   })
 }
 

@@ -29,7 +29,7 @@ export function projectCanonicalAuthoringEcsWorld(
   includeComponents?: readonly string[],
 ): AuthoringEcsWorldProjectionResult {
   try {
-    const entityIds = new Set<number>(query(world, []))
+    const entityIds = new Set<number>(query(world, includeComponents ? [...includeComponents] : []))
     const snapshot = snapshotWorld(world) as CanonicalWorldSnapshot
     const rows: AuthoringEcsQueriedComponentRow[] = []
 

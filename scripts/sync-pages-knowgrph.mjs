@@ -237,6 +237,9 @@ const GENERATED_APP_SHELL_HEADERS_START = '# BEGIN knowgrph generated app-shell 
 const GENERATED_APP_SHELL_HEADERS_END = '# END knowgrph generated app-shell cache headers'
 const GENERATED_AGENT_HOMEPAGE_HEADERS_START = '# BEGIN knowgrph generated homepage discovery headers'
 const GENERATED_AGENT_HOMEPAGE_HEADERS_END = '# END knowgrph generated homepage discovery headers'
+const GENERATED_XR_RUNTIME_HEADERS_START = '# BEGIN knowgrph generated XR runtime permissions headers'
+const GENERATED_XR_RUNTIME_HEADERS_END = '# END knowgrph generated XR runtime permissions headers'
+const XR_RUNTIME_PERMISSIONS_POLICY = 'accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)'
 const agentReadyDocRouteBody = `import { onRequest as onKnowgrphAgentReadyRequest } from "../[[path]].js";
 
 export async function onRequest(context) {
@@ -523,6 +526,19 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
   const homepageHeaderBlockRegex = new RegExp(
     `${GENERATED_AGENT_HOMEPAGE_HEADERS_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${GENERATED_AGENT_HOMEPAGE_HEADERS_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
   )
+  const xrRuntimeHeaderLines = [
+    GENERATED_XR_RUNTIME_HEADERS_START,
+    ...['/knowgrph/*', '/content/knowgrph/*'].flatMap(route => [
+      route,
+      '  ! Permissions-Policy',
+      `  Permissions-Policy: ${XR_RUNTIME_PERMISSIONS_POLICY}`,
+    ]),
+    GENERATED_XR_RUNTIME_HEADERS_END,
+  ]
+  const xrRuntimeHeaderBlock = xrRuntimeHeaderLines.join('\n')
+  const xrRuntimeHeaderBlockRegex = new RegExp(
+    `${GENERATED_XR_RUNTIME_HEADERS_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${GENERATED_XR_RUNTIME_HEADERS_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+  )
   let next = existing.replace(
     /^\/content\/knowgrph\/index\.html\n  Cache-Control: .*?\n(?:\n)?^\/knowgrph\n  Cache-Control: .*?\n(?:\n)?^\/knowgrph\/\n  Cache-Control: .*?\n(?:\n)?^\/knowgrph\/index\.html\n  Cache-Control: .*?\n(?:\n)?/gm,
     '',
@@ -541,6 +557,12 @@ const buildAgentReadyHeaders = (existing, artifacts) => {
   } else {
     const trimmed = next.endsWith('\n') ? next.trimEnd() : next
     next = `${trimmed}\n\n${appShellHeaderBlock}\n`
+  }
+  if (xrRuntimeHeaderBlockRegex.test(next)) {
+    next = next.replace(xrRuntimeHeaderBlockRegex, xrRuntimeHeaderBlock)
+  } else {
+    const trimmed = next.endsWith('\n') ? next.trimEnd() : next
+    next = `${trimmed}\n\n${xrRuntimeHeaderBlock}\n`
   }
   if (homepageHeaderBlockRegex.test(next)) {
     return next.replace(homepageHeaderBlockRegex, homepageHeaderBlock)
