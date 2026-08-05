@@ -303,7 +303,7 @@ flowchart TB
 | Worker router | Storage API entrypoint | `cloudflare/workers/knowgrph-storage/index.ts` | Delegate crawler routes before generic storage handling | Implemented |
 | Crawler handler | Source Files index builder | `cloudflare/workers/knowgrph-storage/crawler.ts` | Read D1 documents and build markdown or text crawler responses | Implemented |
 | Operator readiness | MainPanel MCP crawler access | `canvas/src/features/panels/views/crawlerAccessMcpApiDocs.ts` | Surface storage route constants, Pay Per Crawl headers, read-only guard, and Stripe/MainPanel Commerce handoff | Implemented |
-| Persistence | Documents table | D1 `documents` | Store canonical Source Files metadata and markdown content | Implemented |
+| Persistence | Documents table | D1 `documents` | Store the published Source Files metadata and Markdown projection for runtime queries | Implemented |
 | Document content | Doc-view route | `/api/storage/doc/{workspaceId}/{canonicalPath}` | Serve latest markdown content for a canonical Source File | Implemented |
 | Verification | Storage contract tests | `canvas/src/__tests__/knowgrphStorageContracts.test.ts` | Guard centralized routes and Pay Per Crawl header names | Implemented |
 | Verification | Worker crawler tests | `canvas/src/__tests__/knowgrphStorageWorker.test.ts` | Prove index, LLM text, deleted suppression, headers, and doc links | Implemented |
