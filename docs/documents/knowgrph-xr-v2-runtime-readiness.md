@@ -1,171 +1,115 @@
 ---
-title: "Knowgrph XR v2 Runtime Readiness"
-doc_type: "Runtime Readiness Contract"
-version: "2.2.0"
-status: "runtime-ready"
-date: "2026-08-04"
-local_rung: "runtime-ready"
-readiness_scope: "xr-authoring-edited-media-delivery"
-delivered_rung: "undocumented"
-lane: "delivery"
-deployment: "not authorized"
+title: "Knowgrph XR v2 — Pinned Runtime-Readiness Evidence"
+doc_type: "runtime-readiness"
+version: "2.1.0"
+date: "2026-08-05"
+owner: "Knowgrph XR runtime"
+status: "review-candidate"
+local_rung: "source-ready"
+readiness_scope: "pinned-ac1-ac12-conformance"
+pinned_source_revision: "5679d4101f5470fb85816b6df4f2ec0af6ca4eb7"
 deploy_boundary: "Dev-only"
-runtime_owner: "canvas/src/features/xr-v2; canvas/src/components/timeline; canvas/src/features/gitgraph"
-runtime_proof: "scripts/run-xr-v2-source-smoke.mjs; scripts/run-video-editor-source-smoke.mjs; canvas/scripts/run_xr_v2_browser_smoke.mjs"
 ---
 
-# Knowgrph XR v2 Runtime Readiness
+# Knowgrph XR v2 — Pinned Runtime-Readiness Evidence
 
-## Decision
+## Result
 
-XR v2 retains a review-candidate source snapshot for **XR authoring and native
-edited-media delivery**. It supplies typed adapters around the canonical XR policy, ECS,
-Three.js material boundary, and existing Timeline/video editor. A focused
-Chromium check records an edited video through the existing browser-native
-exporter, decodes the result, performs bounded playback, and binds the
-observation to a clean exact task commit.
+This evidence contract implements traceability and executable conformance for
+the v2.0.0 requirements pinned at
+`5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`. It does not replace those
+requirements with the later `xr-authoring-edited-media-delivery` slice. That
+slice remains useful browser evidence, but the authority is pinned AC-1 through
+AC-12.
 
-The machine-readable readiness scope is
-`xr-authoring-edited-media-delivery`.
+Current result:
 
-The runtime schema is `knowgrph-xr-v2-readiness/v1` and remains
-`source-ready`. The browser artifact is `knowgrph-xr-v2-browser-smoke/v1`.
-`knowgrph-xr-v2-dev-runtime-evidence/v1` validates bounded observations only;
-it is not a readiness receipt, and caller-supplied values cannot promote the
-snapshot or erase blocked gates.
+- all twelve acceptance criteria have a checked-in owner, executable probe, or
+  explicit blocker;
+- deterministic/source-backed and specific browser-backed slices are eligible
+  for review-candidate evidence;
+- full pinned runtime readiness is **blocked** on admitted model bytes, named
+  reference/physical devices, connected live transport, and track-preserving
+  mux proof; and
+- the scope is Dev-only and carries no Production or deployment authority.
 
-Protected PR #674 and canonical `main` commit
-`a3ddfef7cc55c38385520173273abd66010e9747` subsequently passed Integration
-run `30895597328`, including `npm run xr-v2:review-ready`. Agentic Canvas OS
-revision `217a8a42d6497e059839a6a1f809c2459530ca54` then reconciled that exact
-source into an `agentic-local-runtime-readiness/v1` receipt at
-`2026-08-04T09:29:02.924Z`. The canonical delivery state is therefore
-`runtime-ready` for `xr-authoring-edited-media-delivery` only; the immutable
-source snapshot intentionally remains `source-ready`.
+## Evidence vocabulary
 
-The admitted lineage is reviewed feature commit
-`fcd69c6b2d42a00779f55be8c1d57a0ab468339b`, final protected-refresh head
-`a6de5722e550e633d0d73f59f187a09ec7388879`, and PR #674 merge
-`a3ddfef7cc55c38385520173273abd66010e9747`. The
-`agentic-device-integration-result/v1` result reported `runtime_ready`; its
-outer runtime evidence digest is
-`fc13db3e3184f69e42985dbec441bab163f52ba2d7e75b959e17194304f8fb23`.
-That digest is historical evidence bound to the exact Knowgrph/Agentic Canvas
-OS tuple above, not a promise that later documentation-only revisions retain
-the same digest.
+| State | Meaning |
+|---|---|
+| `source-backed` | Owner, contract, bounds, and focused source/unit checks exist |
+| `browser-backed` | A clean exact-commit browser route executes the stated behavior |
+| `blocked` | The requirement lacks admitted runtime evidence named in this document |
 
-Live depth synthesis remains blocked by model-asset admission and
-reference-device performance evidence. Physical XR/camera readiness remains
-blocked by missing physical-device proof. Production and deployment remain
-blocked by the Dev-only boundary.
+The schemas are `knowgrph-xr-v2-pinned-contract-conformance/v1`,
+`knowgrph-xr-v2-readiness/v1`,
+`knowgrph-xr-v2-dev-runtime-evidence/v1`, and
+`knowgrph-xr-v2-browser-smoke/v1`. Validating any payload shape cannot promote
+its readiness state.
 
-## Preserved entry policy
+## AC-1–AC-12 evidence ledger
 
-XR v2 projects the canonical feature-probed modes:
+| AC | Current evidence | State | Missing promotion proof |
+|---|---|---|---|
+| AC-1 | Canonical feature policy plus exact-one pinned tier projection | source-backed | Named physical matrix |
+| AC-2 | Bounded capture session, raw-first writes, stereo synthesis, ≥90% deterministic probe | source-backed | Admitted model asset and named reference-device live preview |
+| AC-3 | Consecutive-breach fallback and typed post-process job through injected ports | source-backed | Connected durable job execution |
+| AC-4 | Canonical entry route and four-tier compatibility/browser probe | browser-backed | Physical four-tier viewer matrix |
+| AC-5 | Feature-matrix iOS constraint with no user-agent branch | source-backed | Named iOS device/browser pass |
+| AC-6 | Root-ECS projection, component query, entity-zero observation | browser-backed | Complete mounted scene rendering proof |
+| AC-7 | Closed graph applied to a real caller-owned material | browser-backed | Texture/shader graph on canonical target mesh |
+| AC-8 | Wired exact-once and unwired no-callback probe | source-backed | Visual graph UI/schema publication, if later admitted |
+| AC-9 | Bounded fixed-duration emitter probe | source-backed | Mounted GPU authoring surface |
+| AC-10 | Numeric/bone interpolation tolerance probe | source-backed | Rigged mounted playback |
+| AC-11 | Existing edited-media output decodes and plays in Chromium | browser-backed | Already-encoded input track/codec preservation |
+| AC-12 | Bounded process-local delta delivery and no-reload observation | source-backed | Connected viewer transport and measured latency |
 
-| Entry mode | Existing owner retained | XR v2 role |
-|---|---|---|
-| `immersive-session` | WebXR session policy and shared renderer | Project the selected capability path |
-| `inline-viewer` | Shared Three.js/Viewer surface | Expose authoring without requesting a session |
-| `monocular-capture` | Spatial Capture and Motion Control | Preserve explicit-user-action camera entry |
-| `native-handoff` | Canonical handoff policy | Preserve the recommendation result |
-| `unsupported` | Canonical capability policy | Preserve a typed unavailable state |
+The pinned four-tier terms are a compatibility projection over the canonical
+five entry modes: `immersive-session`, `inline-viewer`, `monocular-capture`,
+`native-handoff`, and `unsupported`. The canonical policy remains the single
+decision owner.
 
-Capability selection does not infer device class from browser identity.
+## Runtime owner boundaries
 
-## Implemented runtime contracts
+- `canvas/src/lib/three/ThreeGraphXrSessionPolicy.ts` owns feature probes and
+  canonical entry selection.
+- Existing mounted Three.js/R3F owners retain renderer, session, camera, scene,
+  mesh, and GPU lifecycles.
+- Root `ecs` owns allocation, storage, query, and snapshots.
+- `canvas/src/features/xr-v2` owns bounded adapters and the pinned conformance
+  ledger; it does not acquire media or publish assets.
+- Existing Gantt/video-sequence Timeline and gitgraph modules own edit state,
+  preview, export, and typed external-command routing.
+- The existing collaboration owner must provide any future connected live
+  transport; the preview delta channel is process-local and transport-neutral.
 
-The public XR v2 surface is `canvas/src/features/xr-v2/index.ts`.
-
-- Capability projection retains the canonical entry-mode union.
-- Capture state and injected ports preserve raw input and bounded fallback.
-- Canonical-ECS projection accepts entity identifier zero and consumes
-  existing-owner query rows without owning another world.
-- The closed material graph compiles to bounded parameters and applies them to
-  an actual caller-supplied Three.js material in focused proof; normal mounted
-  renderer wiring is not claimed, and binding cleanup never disposes the
-  caller-owned material.
-- Behavior, particle, and interpolation modules remain deterministic adapters;
-  they do not claim a separate UI or renderer.
-- The canonical Gantt/video-sequence Timeline remains the editor. Its optional
-  typed command adapter permits an external XR owner to handle an edit without
-  also executing the default Markdown mutation.
-- The existing preview and exporter negotiate browser-native recording output.
-- The browser smoke attaches the emitted Blob to a video element and observes
-  nonzero bytes, supported type, decoded metadata, positive dimensions and
-  finite-positive or explicitly browser-unbounded duration semantics, bounded
-  playback, cleanup, and no observed page/media errors.
-- The editor clean-room ledger rejects external-lineage markers,
-  vendor/generated paths, symlink escapes, and runtime/dependency references;
-  the exact approved citation is documentation-only.
-
-No new command namespace, asset registry, camera lifecycle, transport, editor
-state store, or hosted service is introduced.
-
-## Evidence matrix
-
-| Evidence claim | State | Current proof or blocker |
-|---|---|---|
-| Capability adapter | source-backed | Public projection retains the closed canonical modes |
-| Capture fallback adapters | source-backed | Pure transitions and injected ports have focused tests |
-| Canonical ECS projection | focused-test-backed | Entity-zero projection and ECS integration tests pass |
-| Material application | focused-test/browser observation | A standalone real material receives compiled values; mounted-renderer wiring is unproven |
-| Timeline command ownership | focused-test/browser observation | Default, handled, rejected, and mounted-panel paths are exercised |
-| Edited-media browser delivery | canonical-runtime-proven for the scoped delivery | PR #674's protected gate records, decodes, plays, and tears down a non-empty artifact |
-| Canonical-main runtime | runtime-ready for `xr-authoring-edited-media-delivery` only | Canonical `a3ddfef7cc55c38385520173273abd66010e9747`, Integration run `30895597328`, and the exact local runtime receipt are joined |
-| Live depth synthesis | blocked | Same-origin model-asset and reference-device frame-budget proof are absent |
-| Physical XR/camera behavior | blocked | Named physical-device evidence is absent |
-| Production availability | blocked | No release or deployment authority is granted |
+Historical `/xr.capture`, `/xr.author`, and `kgc-behavior-graph/v1` rows and the
+Depth Anything V2, Rete.js, three.quarks, Theatre.js, and custom muxer ADRs are
+lineage only. They are not restored runtime routes, persisted contracts,
+packages, or owners by this change.
 
 ## Browser evidence contract
 
 `node canvas/scripts/run_xr_v2_browser_smoke.mjs` starts a fresh local Vite
-process with existing-server reuse forbidden. The dedicated test route:
+process and uses the dedicated route. Its clean exact-commit artifact records
+source identity, canonical capability output, pinned conformance observations,
+ECS/material/Timeline probes, edited-media bytes/type, decoded dimensions and
+duration semantics, bounded playback, cleanup, and empty page/media error
+arrays.
 
-1. imports the public XR v2 index and the existing Timeline export owner;
-2. exercises the focused authoring adapters and real mounted Timeline control;
-3. exports a short edit from the committed same-origin media fixture;
-4. creates and later revokes a local object URL;
-5. waits for decoded metadata/readiness and bounded playback; and
-6. writes `data/outputs/xr-v2-browser-smoke.json`.
+The artifact schema is `knowgrph-xr-v2-browser-smoke/v1`; its bounded runtime
+payload is `knowgrph-xr-v2-dev-runtime-evidence/v1`. The observation is local
+review evidence only. It does not claim real capture, live depth, a physical
+headset, connected transport, track-preserving mux, release, or deployment.
 
-The verifier joins:
-
-- exact branch, task revision, commit-tree identity, deterministic
-  worktree-state digest/dirty count, and the locally observed `origin/main`
-  remote-tracking revision (not a fetch-freshness receipt);
-- runtime and browser-evidence schemas;
-- canonical entry mode;
-- authoring adapter state;
-- output byte size and MIME type;
-- decoded width, height, and duration;
-- playback observation;
-- retained live-depth/physical-device blockers; and
-- observed page, console, and media errors.
-
-The output remains clean-commit review-candidate evidence rather than a
-readiness authority. The later protected integration and canonical runtime
-receipt establish the separate, scope-limited delivery result; neither is a
-committed media asset or release artifact.
-
-## Clean-room boundary
-
-The canonical policy is in the PRD/TAD/ADR. Product source, manifests,
-lockfiles, configuration, tests, assets, and generated output must contain no
-external editor import, package, vendored implementation, remote request, or
-adapted artifact. The source guard runs without network access and fails closed
-on identifiable direct and transitive dependency evidence. Its exact citation
-and source scans are mechanical enforcement, not a substitute for independent
-specification and code review. A permissive upstream license does not weaken
-the no-copy rule.
-
-## Focused verification
+## Reviewer commands
 
 Run from the repository root:
 
 ```sh
 node --test scripts/__tests__/xr-v2-source-smoke.test.mjs
 node scripts/run-xr-v2-source-smoke.mjs
+npm run xr-v2:unit
 node --test scripts/__tests__/video-editor-source-smoke.test.mjs
 node scripts/run-video-editor-source-smoke.mjs
 node canvas/scripts/run_xr_v2_browser_smoke.mjs
@@ -174,41 +118,22 @@ npm run xr-v2:review-ready
 npm run xr:review-ready
 ```
 
-`npm run xr-v2:review-candidate` joins the repository TypeScript check with
-focused unit, source, clean-room, and fresh browser observation. It requires a
-clean exact task commit and never promotes the runtime snapshot.
-`npm run xr-v2:review-ready` adds the runner ledgers and is the affected-CI
-command for the owned source/doc paths. The established
-`npm run xr:review-ready` retains camera-fallback compatibility and aggregates
-XR v2. On a protected exact commit these commands reproduce the focused
-feature evidence; none deploys.
+`npm run xr-v2:review-candidate` joins TypeScript, focused unit/source checks,
+the clean-room ledger, and fresh Chromium evidence. `npm run
+xr-v2:review-ready` adds runner contract tests and is the focused affected-CI
+gate. Neither command promotes a task-lane observation or deploys.
 
-## Affected-CI contract
+## Promotion register
 
-`docs/collaboration-runtime-contract.md` owns a dedicated XR v2/video-editor
-scope. Any change to the XR v2 adapters, canonical Timeline integration,
-browser smoke, source guards, or either readiness document selects:
+| Blocker | Required evidence |
+|---|---|
+| Model bytes | Version, immutable digest, license, same-origin asset path, input/output and memory budgets |
+| Reference/physical devices | Named hardware/browser, frame budget, permission/session lifecycle, interruption and teardown |
+| Track-preserving mux | Already-encoded input/output track counts and codecs plus standard-browser playback |
+| Connected live transport | Canonical transport, author/viewer sessions, bounded latency, no build, no full-page reload |
+| Production | Separately authorized integration, release, delivery, and rollback proof |
 
-```sh
-npm run xr-v2:review-ready
-```
-
-Documentation therefore no longer has an empty proof path for this feature.
-
-## Promotion gates
-
-Promotion beyond the scoped canonical delivery result remains blocked until
-each broader claim has an independent evidence owner:
-
-1. admit a versioned, same-origin depth model with license, hash, input/output,
-   memory, and fallback metadata;
-2. prove the frame budget on named reference hardware while raw capture remains
-   lossless across fallback;
-3. prove camera permission, interruption, lifecycle, and teardown on named
-   physical mobile devices;
-4. prove immersive entry, tracking, placement, and exit on named headsets; and
-5. pass separately authorized release workflows.
-
-Until those gates close, broader-XR, live-depth, physical-device, public, and
-deployed readiness claims remain blocked. The scoped canonical-runtime result
-does not promote any of them.
+Until every required row is admitted, pinned conformance remains `partial` and
+full runtime readiness remains blocked, even where individual deterministic or
+browser slices are ready. The contained existing readiness snapshot remains
+`source-ready`; it is not the state of the full pinned contract.

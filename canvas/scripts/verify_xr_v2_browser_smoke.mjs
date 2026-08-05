@@ -6,6 +6,14 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 import { chromium } from 'playwright'
+import {
+  assertExactXrV2RawObservation,
+  assertObservedXrV2MediaErrors,
+  assertPinnedXrV2ContractConformance,
+  assertXrV2SourceCheckoutGraph,
+  parseXrV2MediaErrors,
+  resolveXrV2SourceCheckoutContext,
+} from '../../scripts/xr-v2/browser-smoke-contract.mjs'
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const baseUrl = String(process.env.KG_XR_V2_SMOKE_BASE_URL || 'http://localhost:4193').replace(/\/+$/u, '')
@@ -38,6 +46,19 @@ function readGitPaths(repositoryRoot, args) {
     .sort()
 }
 
+function isGitAncestor(repositoryRoot, ancestor, descendant) {
+  try {
+    execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
+      cwd: repositoryRoot,
+      stdio: 'ignore',
+    })
+    return true
+  } catch (error) {
+    if (error && typeof error === 'object' && error.status === 1) return false
+    throw error
+  }
+}
+
 function updateDigestEntry(digest, label, content) {
   const bytes = Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf8')
   digest.update(label)
@@ -50,6 +71,20 @@ function updateDigestEntry(digest, label, content) {
 
 function readSourceEvidence() {
   const repositoryRoot = readGitText(process.cwd(), ['rev-parse', '--show-toplevel'])
+  const sourceRevision = readGitText(repositoryRoot, ['rev-parse', 'HEAD'])
+  const checkoutContext = resolveXrV2SourceCheckoutContext({
+    attachedBranch: readGitText(repositoryRoot, ['branch', '--show-current']),
+    environment: process.env,
+    headRevision: sourceRevision,
+  })
+  const sourceUpstreamRef = checkoutContext.sourceCheckoutState === 'attached'
+    ? readGitText(repositoryRoot, [
+      'rev-parse',
+      '--abbrev-ref',
+      '--symbolic-full-name',
+      '@{upstream}',
+    ])
+    : `origin/${checkoutContext.sourceBranch}`
   const trackedDiff = readGitBuffer(repositoryRoot, [
     'diff',
     '--binary',
@@ -82,17 +117,37 @@ function readSourceEvidence() {
   const dirtyPaths = [...new Set([...trackedPaths, ...untrackedPaths])].sort()
   const sourceHeadTree = readGitText(repositoryRoot, ['rev-parse', 'HEAD^{tree}'])
   const worktreeDirty = dirtyPaths.length > 0
+  const observedOriginMainRevision = readGitText(
+    repositoryRoot,
+    ['rev-parse', 'refs/remotes/origin/main'],
+  )
+  const sourceUpstreamRevision = readGitText(repositoryRoot, ['rev-parse', sourceUpstreamRef])
+  const checkoutIdentity = assertXrV2SourceCheckoutGraph(checkoutContext, {
+    originMainRevision: observedOriginMainRevision,
+    parentRevisions: readGitText(repositoryRoot, ['rev-list', '--parents', '-n', '1', 'HEAD'])
+      .split(/\s+/u)
+      .slice(1),
+    remoteHeadRevision: sourceUpstreamRevision,
+  })
   return Object.freeze({
-    sourceRevision: readGitText(repositoryRoot, ['rev-parse', 'HEAD']),
+    sourceRevision,
     sourceHeadTree,
     proofSourceTree: worktreeDirty ? null : sourceHeadTree,
-    sourceBranch: readGitText(repositoryRoot, ['branch', '--show-current']) || null,
+    ...checkoutIdentity,
+    sourceUpstreamRef,
+    sourceUpstreamRevision,
+    sourceAheadCount: Number(readGitText(repositoryRoot, ['rev-list', '--count', `${sourceUpstreamRef}..HEAD`])),
+    sourceBehindCount: Number(readGitText(repositoryRoot, ['rev-list', '--count', `HEAD..${sourceUpstreamRef}`])),
+    sourceDescendsFromUpstream: isGitAncestor(repositoryRoot, sourceUpstreamRef, 'HEAD'),
+    sourceDescendsFromOriginMain: isGitAncestor(
+      repositoryRoot,
+      'refs/remotes/origin/main',
+      'HEAD',
+    ),
+    upstreamSynchronized: sourceUpstreamRevision === sourceRevision,
     // This is the checkout's observed remote-tracking ref. Fetch freshness is
     // owned by the surrounding collaboration workflow, not this smoke runner.
-    observedOriginMainRevision: readGitText(
-      repositoryRoot,
-      ['rev-parse', 'refs/remotes/origin/main'],
-    ),
+    observedOriginMainRevision,
     worktreeState: Object.freeze({
       schema: 'knowgrph-git-worktree-state/v1',
       digest: digest.digest('hex'),
@@ -107,6 +162,10 @@ function readSourceEvidence() {
 function assertCleanCommitSource(sourceEvidence) {
   assert.match(sourceEvidence.sourceRevision, /^[0-9a-f]{40}$/u)
   assert.match(sourceEvidence.sourceHeadTree, /^[0-9a-f]{40}$/u)
+  assert.match(sourceEvidence.sourceCandidateRevision, /^[0-9a-f]{40}$/u)
+  assert.ok(Array.isArray(sourceEvidence.sourceParentRevisions))
+  for (const revision of sourceEvidence.sourceParentRevisions) assert.match(revision, /^[0-9a-f]{40}$/u)
+  assert.match(sourceEvidence.sourceUpstreamRevision, /^[0-9a-f]{40}$/u)
   assert.match(sourceEvidence.observedOriginMainRevision, /^[0-9a-f]{40}$/u)
   assert.match(sourceEvidence.worktreeState.digest, /^[0-9a-f]{64}$/u)
   assert.equal(
@@ -118,83 +177,44 @@ function assertCleanCommitSource(sourceEvidence) {
   assert.equal(sourceEvidence.worktreeState.trackedPathCount, 0)
   assert.equal(sourceEvidence.worktreeState.untrackedPathCount, 0)
   assert.equal(sourceEvidence.proofSourceTree, sourceEvidence.sourceHeadTree)
+  assert.match(
+    sourceEvidence.sourceBranch,
+    /^(?:main|agent\/[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)$/u,
+    'XR v2 browser observation requires canonical main or a contract-shaped task branch',
+  )
+  assert.equal(sourceEvidence.sourceUpstreamRef, `origin/${sourceEvidence.sourceBranch}`)
+  assert.equal(sourceEvidence.sourceDescendsFromUpstream, true)
+  assert.equal(sourceEvidence.sourceDescendsFromOriginMain, true)
+  assert.equal(sourceEvidence.sourceBehindCount, 0)
+  assert.ok(Number.isSafeInteger(sourceEvidence.sourceAheadCount) && sourceEvidence.sourceAheadCount >= 0)
+  assert.equal(sourceEvidence.upstreamSynchronized, sourceEvidence.sourceAheadCount === 0)
+  if (sourceEvidence.sourceCheckoutState === 'github-pull-request-merge') {
+    assert.equal(sourceEvidence.sourceLane, 'pull-request-integration')
+    assert.equal(sourceEvidence.sourceCandidateRevision, sourceEvidence.sourceUpstreamRevision)
+    assert.deepEqual(sourceEvidence.sourceParentRevisions, [
+      sourceEvidence.observedOriginMainRevision,
+      sourceEvidence.sourceCandidateRevision,
+    ])
+    assert.equal(sourceEvidence.sourceAheadCount, 1)
+    assert.equal(sourceEvidence.upstreamSynchronized, false)
+  } else if (sourceEvidence.sourceLane === 'canonical-main') {
+    assert.equal(sourceEvidence.sourceCheckoutState, 'attached')
+    assert.equal(sourceEvidence.sourceCandidateRevision, sourceEvidence.sourceRevision)
+    assert.equal(sourceEvidence.sourceRevision, sourceEvidence.observedOriginMainRevision)
+    assert.equal(sourceEvidence.upstreamSynchronized, true)
+    assert.equal(sourceEvidence.sourceAheadCount, 0)
+  } else {
+    assert.equal(sourceEvidence.sourceCheckoutState, 'attached')
+    assert.equal(sourceEvidence.sourceCandidateRevision, sourceEvidence.sourceRevision)
+    assert.equal(sourceEvidence.sourceLane, 'task-review')
+    assert.notEqual(sourceEvidence.sourceBranch, 'main')
+  }
 }
 
 function readNumber(value, label) {
   const number = Number(value)
   assert.ok(Number.isFinite(number), `${label} must be finite; received ${String(value)}`)
   return number
-}
-
-function assertExactKeys(value, expectedKeys, label) {
-  assert.ok(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`)
-  assert.deepEqual(Object.keys(value).sort(), [...expectedKeys].sort(), `${label} keys must be exact`)
-}
-
-function assertExactRawObservation(observation) {
-  assertExactKeys(observation, ['authoringAdapters', 'editedMedia', 'schema'], 'rawObservation')
-  assert.equal(observation.schema, 'knowgrph-xr-v2-dev-runtime-evidence/v1')
-  assertExactKeys(
-    observation.authoringAdapters,
-    ['canonicalEcsEntityZero', 'materialApplied', 'timelineCommandRouted'],
-    'rawObservation.authoringAdapters',
-  )
-  assert.deepEqual(observation.authoringAdapters, {
-    canonicalEcsEntityZero: true,
-    materialApplied: true,
-    timelineCommandRouted: true,
-  })
-  assertExactKeys(
-    observation.editedMedia,
-    [
-      'byteSize',
-      'decodedHeight',
-      'decodedWidth',
-      'durationSeconds',
-      'mimeType',
-      'playbackObserved',
-      'unboundedDuration',
-    ],
-    'rawObservation.editedMedia',
-  )
-  const media = observation.editedMedia
-  const boundedDuration = Number.isFinite(media.durationSeconds)
-    && media.durationSeconds > 0
-    && media.unboundedDuration === false
-  const unboundedDuration = media.durationSeconds === null && media.unboundedDuration === true
-  assert.ok(Number.isSafeInteger(media.byteSize) && media.byteSize > 0)
-  assert.match(media.mimeType, /^video\/[a-z0-9][a-z0-9!#$&^_.+-]*(?:\s*;[^\r\n]+)?$/iu)
-  assert.ok(Number.isSafeInteger(media.decodedWidth) && media.decodedWidth > 0)
-  assert.ok(Number.isSafeInteger(media.decodedHeight) && media.decodedHeight > 0)
-  assert.ok(boundedDuration || unboundedDuration)
-  assert.equal(media.playbackObserved, true)
-}
-
-function parseMediaErrors(serialized) {
-  const mediaErrors = JSON.parse(String(serialized || 'null'))
-  assert.ok(Array.isArray(mediaErrors), 'media errors must be a JSON array')
-  for (const [index, mediaError] of mediaErrors.entries()) {
-    assertExactKeys(mediaError, ['code', 'message'], `mediaErrors[${index}]`)
-    assert.ok(Number.isSafeInteger(mediaError.code) && mediaError.code >= 0)
-    assert.equal(typeof mediaError.message, 'string')
-  }
-  return mediaErrors
-}
-
-function assertObservedMediaErrors(mediaErrors) {
-  for (const [index, mediaError] of mediaErrors.entries()) {
-    assertExactKeys(
-      mediaError,
-      ['code', 'message', 'networkState', 'readyState', 'sourceKind', 'tagName'],
-      `observedMediaErrors[${index}]`,
-    )
-    assert.ok(Number.isSafeInteger(mediaError.code) && mediaError.code >= 0)
-    assert.ok(Number.isSafeInteger(mediaError.networkState) && mediaError.networkState >= 0)
-    assert.ok(Number.isSafeInteger(mediaError.readyState) && mediaError.readyState >= 0)
-    assert.equal(typeof mediaError.message, 'string')
-    assert.match(mediaError.sourceKind, /^(?:blob|none|other)$/u)
-    assert.match(mediaError.tagName, /^(?:AUDIO|VIDEO)$/u)
-  }
 }
 
 async function waitForBrowserObservationQuiescence(page, collectors) {
@@ -347,6 +367,9 @@ async function main() {
         objectUrlRevoked: node.getAttribute('data-kg-xr-v2-object-url-revoked'),
         revokedObjectUrl: node.getAttribute('data-kg-xr-v2-revoked-object-url'),
         browserQuiescent: node.getAttribute('data-kg-xr-v2-browser-quiescent'),
+        pinnedConformanceValidation: node.getAttribute('data-kg-xr-v2-pinned-conformance-validation'),
+        pinnedConformance: node.querySelector('[data-kg-xr-v2-pinned-conformance-artifact="1"]')
+          ?.getAttribute('data-kg-xr-v2-pinned-conformance-evidence'),
         videoSrcAttribute: video?.getAttribute('src') ?? null,
         videoCurrentSrc: video instanceof HTMLVideoElement ? video.currentSrc : null,
         videoNetworkState: video instanceof HTMLVideoElement ? video.networkState : null,
@@ -361,6 +384,9 @@ async function main() {
     assert.equal(rawEvidence.readinessStatus, 'source-ready')
     assert.equal(rawEvidence.rawObservationSchema, 'knowgrph-xr-v2-dev-runtime-evidence/v1')
     assert.equal(rawEvidence.rawObservationValidation, 'valid')
+    assert.equal(rawEvidence.pinnedConformanceValidation, 'valid')
+    const pinnedContractConformance = JSON.parse(String(rawEvidence.pinnedConformance || 'null'))
+    assertPinnedXrV2ContractConformance(pinnedContractConformance)
     assert.equal(rawEvidence.entryMode, 'monocular-capture')
     assert.equal(rawEvidence.capabilityStatus, 'source-backed')
     assert.equal(rawEvidence.captureStatus, 'source-backed')
@@ -403,7 +429,7 @@ async function main() {
     const playbackEnded = rawEvidence.playbackEnded === 'true'
     assert.ok(playbackCurrentTime >= 0.05 || playbackEnded)
 
-    const pageReportedMediaErrors = parseMediaErrors(rawEvidence.mediaErrors)
+    const pageReportedMediaErrors = parseXrV2MediaErrors(rawEvidence.mediaErrors)
     assert.deepEqual(pageReportedMediaErrors, [])
     assert.equal(rawEvidence.videoSrcAttributeRemoved, 'true')
     assert.equal(rawEvidence.videoNetworkStateEmpty, 'true')
@@ -438,7 +464,24 @@ async function main() {
         playbackObserved: true,
       }),
     })
-    assertExactRawObservation(rawObservation)
+    assertExactXrV2RawObservation(rawObservation)
+    const navigatorProvenance = await page.evaluate(() => ({
+      language: navigator.language,
+      platform: navigator.platform,
+      userAgent: navigator.userAgent,
+    }))
+    const browserProvenance = Object.freeze({
+      engine: 'chromium',
+      version: browser.version(),
+      userAgent: navigatorProvenance.userAgent,
+      navigatorLanguage: navigatorProvenance.language,
+      navigatorPlatform: navigatorProvenance.platform,
+      hostPlatform: process.platform,
+      hostArchitecture: process.arch,
+      headless: process.env.KG_XR_V2_HEADLESS !== '0',
+    })
+    assert.match(browserProvenance.version, /\d+(?:\.\d+)+/u)
+    assert.match(browserProvenance.userAgent, /Chrom(?:e|ium)\//u)
 
     await page.close()
     page = null
@@ -454,14 +497,16 @@ async function main() {
       'source or worktree state changed during the browser observation',
     )
     assertCleanCommitSource(sourceEvidence)
-    assertObservedMediaErrors(mediaErrors)
+    assertObservedXrV2MediaErrors(mediaErrors)
     assert.deepEqual(mediaErrors, [])
     assert.deepEqual(pageErrors, [])
 
-    const fullObservation = {
+    const observationContent = {
       schema: 'knowgrph-xr-v2-browser-smoke/v1',
       classification: 'review-candidate-observation',
       candidateScope: 'browser-observation-only',
+      observedAt: new Date().toISOString(),
+      browserProvenance,
       route: smokeUrl,
       ...sourceEvidence,
       pageReadiness: Object.freeze({
@@ -478,6 +523,7 @@ async function main() {
         blockedReasons: String(rawEvidence.blockedReasons || '').split('|').filter(Boolean),
       }),
       rawObservation,
+      pinnedContractConformance,
       timelineCommandObservation: Object.freeze({
         commandKind: rawEvidence.timelineCommandKind,
         commandAction: rawEvidence.timelineCommandAction,
@@ -501,6 +547,19 @@ async function main() {
       mediaErrors,
       pageErrors: [...pageErrors],
     }
+    const serializedContent = JSON.stringify(observationContent)
+    const fullObservation = {
+      ...observationContent,
+      artifact: Object.freeze({
+        schema: 'knowgrph-xr-v2-browser-smoke-artifact/v1',
+        digestAlgorithm: 'sha256',
+        digestScope: 'JSON.stringify(observationContent)',
+        contentByteSize: Buffer.byteLength(serializedContent),
+        contentDigest: createHash('sha256').update(serializedContent).digest('hex'),
+      }),
+    }
+    assert.match(fullObservation.observedAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u)
+    assert.match(fullObservation.artifact.contentDigest, /^[0-9a-f]{64}$/u)
     await mkdir(outputDirectory, { recursive: true })
     await writeFile(observationPath, `${JSON.stringify(fullObservation, null, 2)}\n`, 'utf8')
     console.log(`[xr-v2-browser-review-candidate] PASS ${observationPath}`)
