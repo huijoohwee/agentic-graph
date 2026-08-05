@@ -7145,6 +7145,18 @@ export default defineConfig(({ command, mode }) => {
         globIgnores: ['assets/**/monaco-*.js', 'assets/**/mermaid-*.js'],
         runtimeCaching: [
           {
+            urlPattern: ({ request, url }) =>
+              request.method === 'GET'
+              && url.origin === self.location.origin
+              && /\/xr-v2\/(?:models|wasm)\//u.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'kg-xr-v2-runtime', plugins: [nonHtmlRuntimeCachePlugin],
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
             urlPattern: ({ request }) =>
               request.destination === 'script'
               || request.destination === 'style'

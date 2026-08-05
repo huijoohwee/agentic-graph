@@ -12,6 +12,9 @@ export const XR_PHYSICS_RUN_READY_DEMO_ID = 'xr-physics'
 export const XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-physics-playground-demo.md'
 export const XR_PHYSICS_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${XR_PHYSICS_DEMO_WORKSPACE_SEED_BASENAME}`
 export const XR_PHYSICS_DEMO_PUBLISHED_CANONICAL_PATH = `agentic-canvas-os/${XR_PHYSICS_DEMO_REPO_REL_PATH}`
+export const XR_V2_RUN_READY_DEMO_ID = 'xr-v2'
+export const XR_V2_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-ar-vr-xr-runtime-readiness-demo.md'
+export const XR_V2_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${XR_V2_DEMO_WORKSPACE_SEED_BASENAME}`
 export const FLIGHT_SIM_RUN_READY_DEMO_ID = 'flight-sim'
 export const FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME = 'knowgrph-game-flight-sim-demo.md'
 export const FLIGHT_SIM_DEMO_REPO_REL_PATH = `docs/workspace-seeds/${FLIGHT_SIM_DEMO_WORKSPACE_SEED_BASENAME}`
@@ -75,6 +78,14 @@ export const WORKSPACE_RUN_READY_DEMO_SEEDS: readonly WorkspaceRunReadyDemoSeed[
       RISK_COPILOT_DEMO_WORKSPACE_SEED_BASENAME,
     ],
     sourceRoot: 'huijoohwee/docs',
+    cleanCanvasRecommended: true,
+  },
+  {
+    id: XR_V2_RUN_READY_DEMO_ID,
+    label: 'Knowgrph XR v2 Runtime-readiness Demo',
+    validationSeedRelPath: XR_V2_DEMO_WORKSPACE_SEED_BASENAME,
+    seedRelPathCandidates: [XR_V2_DEMO_REPO_REL_PATH],
+    sourceRoot: 'knowgrph/docs',
     cleanCanvasRecommended: true,
   },
   {
@@ -202,6 +213,15 @@ export const diagnoseWorkspaceRunReadyDemoActivation = (
         sourceId,
       })
     }
+    if (pathId === XR_V2_RUN_READY_DEMO_ID) {
+      return Object.freeze({
+        ok: false,
+        errorCode: 'RUN_READY_IDENTITY_UNREGISTERED',
+        message: 'XR v2 run-ready activation requires source-authored identity: xr-v2.',
+        pathId,
+        sourceId,
+      })
+    }
     return pathId
       ? Object.freeze({ ok: true, id: pathId, pathId, sourceId })
       : Object.freeze({
@@ -251,6 +271,16 @@ export const isXrPhysicsRunReadyDemoActive = (
 ): boolean => (
   readWorkspaceRunReadyDemoId(documentPath, documentText) === XR_PHYSICS_RUN_READY_DEMO_ID
 )
+
+export const isXrV2RunReadyDemoActive = (
+  documentPath?: string | null,
+  documentText?: string | null,
+): boolean => {
+  const diagnostic = diagnoseWorkspaceRunReadyDemoActivation(documentPath, documentText)
+  return diagnostic.ok
+    && diagnostic.id === XR_V2_RUN_READY_DEMO_ID
+    && diagnostic.sourceId === XR_V2_RUN_READY_DEMO_ID
+}
 
 export const isFlightSimRunReadyDemoActive = (
   documentPath?: string | null,
