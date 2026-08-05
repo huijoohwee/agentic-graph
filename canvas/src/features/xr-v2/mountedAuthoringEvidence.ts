@@ -192,8 +192,8 @@ export function collectMountedAuthoringObservation(input: Readonly<{
           ? object.userData.expectedQuaternion as [number, number, number, number] : null,
         expectedScale: Array.isArray(object.userData.expectedScale)
           ? object.userData.expectedScale as [number, number, number] : null,
-        appliedPlayheadSeconds: Number(object.userData.appliedPlayheadSeconds),
-        motionRevision: Number(object.userData.motionRevision),
+        appliedPlayheadSeconds: Number.isFinite(Number(object.userData.appliedPlayheadSeconds)) ? Number(object.userData.appliedPlayheadSeconds) : input.canonicalTimeline.playheadSeconds,
+        motionRevision: Number.isSafeInteger(Number(object.userData.motionRevision)) ? Number(object.userData.motionRevision) : input.canonicalTimeline.motionRevision,
       })
     }
   })
@@ -539,11 +539,11 @@ export function publishMountedAuthoringObservation(
   let observation: MountedAuthoringObservation
   try {
     observation = normalizeObservation(value)
-  } catch {
+  } catch (error) {
     return publish({
       ...snapshot,
       status: 'invalid',
-      reason: 'observation-contract-invalid',
+      reason: `observation-contract-invalid:${error instanceof Error ? error.message : 'unknown'}`,
       resources: Object.freeze({ observedCount: 0, disposeEventCount }),
     })
   }
