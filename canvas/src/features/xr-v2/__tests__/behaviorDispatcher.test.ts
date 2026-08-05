@@ -49,3 +49,47 @@ test('behavior dispatcher rejects gaps and commits failures without retrying act
   assert.equal(dispatcher.dispatch({ id: 'event-1', revision: 1, trigger: 'select', sourceEntityId: 1 }).status, 'stale')
   assert.equal(attempts, 2)
 })
+
+test('behavior dispatcher accepts entity zero and snapshots bounded parameters', () => {
+  const parameters = { nested: { label: 'before' } }
+  const entityZeroGraph: AuthoringBehaviorGraph = {
+    schema: BEHAVIOR_GRAPH_SCHEMA,
+    actions: [{ id: 'entity-zero-action', kind: 'set-visible', targetEntityId: 0, parameters }],
+    behaviors: [{ id: 'entity-zero-behavior', trigger: 'select', sourceEntityId: 0, actionIds: ['entity-zero-action'] }],
+  }
+  const observed: unknown[] = []
+  const dispatcher = createExactOnceBehaviorDispatcher(entityZeroGraph, invocation => observed.push(invocation.action.parameters))
+  parameters.nested.label = 'after'
+
+  const accepted = dispatcher.dispatch({ id: 'event-zero', revision: 1, trigger: 'select', sourceEntityId: 0 })
+  assert.equal(accepted.status, 'dispatched')
+  assert.equal(((observed[0] as { nested: { label: string } }).nested.label), 'before')
+  assert.equal(Object.getPrototypeOf(observed[0] as object), null)
+  assert.equal(Object.isFrozen((observed[0] as { nested: object }).nested), true)
+
+  const oversized = 'x'.repeat(16_385)
+  assert.throws(() => createExactOnceBehaviorDispatcher({
+    ...entityZeroGraph,
+    actions: [{ id: 'oversized', kind: 'set-visible', targetEntityId: 0, parameters: { oversized } }],
+    behaviors: [{ id: 'oversized-behavior', trigger: 'select', sourceEntityId: 0, actionIds: ['oversized'] }],
+  }, () => undefined), /encoded bytes/)
+})
+
+test('behavior dispatcher snapshots behavior wiring and rejects non-object parameters', () => {
+  const mutableGraph = structuredClone(behaviorGraph) as unknown as AuthoringBehaviorGraph
+  const invoked: string[] = []
+  const dispatcher = createExactOnceBehaviorDispatcher(mutableGraph, ({ action }) => invoked.push(action.id))
+  ;(mutableGraph.behaviors[0] as { sourceEntityId: number }).sourceEntityId = 99
+  ;(mutableGraph.behaviors[0].actionIds as string[]).splice(0)
+
+  assert.equal(dispatcher.dispatch({ id: 'snapshot-event', revision: 1, trigger: 'select', sourceEntityId: 1 }).status, 'dispatched')
+  assert.deepEqual(invoked, ['show-panel', 'emit-spark'])
+
+  for (const parameters of [null, [1, 2]]) {
+    assert.throws(() => createExactOnceBehaviorDispatcher({
+      schema: BEHAVIOR_GRAPH_SCHEMA,
+      actions: [{ id: 'invalid-parameters', kind: 'set-visible', targetEntityId: 0, parameters }],
+      behaviors: [{ id: 'invalid-parameters-behavior', trigger: 'select', sourceEntityId: 0, actionIds: ['invalid-parameters'] }],
+    } as unknown as AuthoringBehaviorGraph, () => undefined), /plain object/)
+  }
+})

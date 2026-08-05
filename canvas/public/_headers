@@ -10,6 +10,15 @@
   Content-Security-Policy: frame-ancestors 'self' https://*.vercel.app https://*.joohwee.pages.dev
   X-Content-Type-Options: nosniff
 
+# Keep powerful features same-origin and scoped to the Knowgrph application.
+# The published mirror has a global deny policy and uses the generated
+# path-specific detach/attach block in scripts/sync-pages-knowgrph.mjs.
+/knowgrph/*
+  Permissions-Policy: accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)
+
+/content/knowgrph/*
+  Permissions-Policy: accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)
+
 /knowgrph/doc-view
   Cache-Control: no-store, no-cache, must-revalidate
   Content-Security-Policy: frame-ancestors 'self' https://*.vercel.app https://*.joohwee.pages.dev

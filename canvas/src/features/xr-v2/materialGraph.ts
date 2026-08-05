@@ -6,6 +6,7 @@ export type MaterialNumberNode = Readonly<{ id: string; type: 'number'; value: n
 export type MaterialBooleanNode = Readonly<{ id: string; type: 'boolean'; value: boolean }>
 export type MaterialColorNode = Readonly<{ id: string; type: 'color'; value: string }>
 export type MaterialMultiplyNode = Readonly<{ id: string; type: 'multiply'; left: string; right: string }>
+export type MaterialTextureNode = Readonly<{ id: string; type: 'texture-2d'; assetId: string }>
 
 export type MeshStandardMaterialParameterName =
   | 'color'
@@ -17,11 +18,13 @@ export type MeshStandardMaterialParameterName =
   | 'transparent'
   | 'wireframe'
   | 'depthWrite'
+export type MeshStandardMaterialTextureName = 'map'
+export type MeshStandardMaterialBindingName = MeshStandardMaterialParameterName | MeshStandardMaterialTextureName
 
 export type MaterialOutputNode = Readonly<{
   id: string
   type: 'mesh-standard-output'
-  bindings: Readonly<Partial<Record<MeshStandardMaterialParameterName, string>>>
+  bindings: Readonly<Partial<Record<MeshStandardMaterialBindingName, string>>>
 }>
 
 export type MaterialGraphNode =
@@ -29,6 +32,7 @@ export type MaterialGraphNode =
   | MaterialBooleanNode
   | MaterialColorNode
   | MaterialMultiplyNode
+  | MaterialTextureNode
   | MaterialOutputNode
 
 export type MaterialGraph = Readonly<{
@@ -41,6 +45,7 @@ export type MeshStandardMaterialParameterDescriptor = Readonly<{
   parameters: Readonly<
     Partial<Record<MeshStandardMaterialParameterName, string | number | boolean>>
   >
+  textures?: Readonly<Partial<Record<MeshStandardMaterialTextureName, string>>>
 }>
 
 export type MaterialGraphCompileResult =
@@ -62,10 +67,12 @@ type EvaluatedValue = Readonly<
   | { type: 'number'; value: number }
   | { type: 'boolean'; value: boolean }
   | { type: 'color'; value: string }
+  | { type: 'texture-2d'; assetId: string }
 >
 
 const SAFE_NODE_ID = /^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/
 const SAFE_COLOR = /^#[0-9a-fA-F]{6}$/
+const SAFE_ASSET_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/
 const NUMBER_PARAMETERS = new Set<MeshStandardMaterialParameterName>([
   'roughness',
   'metalness',
@@ -78,6 +85,7 @@ const BOOLEAN_PARAMETERS = new Set<MeshStandardMaterialParameterName>([
   'depthWrite',
 ])
 const COLOR_PARAMETERS = new Set<MeshStandardMaterialParameterName>(['color', 'emissive'])
+const TEXTURE_PARAMETERS = new Set<MeshStandardMaterialTextureName>(['map'])
 
 function parameterInRange(parameter: MeshStandardMaterialParameterName, value: number): boolean {
   if (!Number.isFinite(value)) return false
@@ -90,12 +98,14 @@ function isValidNodeShape(node: MaterialGraphNode): boolean {
   if (node.type === 'number') return Number.isFinite(node.value)
   if (node.type === 'boolean') return typeof node.value === 'boolean'
   if (node.type === 'color') return SAFE_COLOR.test(node.value)
+  if (node.type === 'texture-2d') return SAFE_ASSET_ID.test(node.assetId)
   if (node.type === 'multiply') return SAFE_NODE_ID.test(node.left) && SAFE_NODE_ID.test(node.right)
   if (node.type !== 'mesh-standard-output' || !node.bindings || typeof node.bindings !== 'object') return false
   return Object.entries(node.bindings).every(([parameter, reference]) =>
     (NUMBER_PARAMETERS.has(parameter as MeshStandardMaterialParameterName)
       || BOOLEAN_PARAMETERS.has(parameter as MeshStandardMaterialParameterName)
-      || COLOR_PARAMETERS.has(parameter as MeshStandardMaterialParameterName))
+      || COLOR_PARAMETERS.has(parameter as MeshStandardMaterialParameterName)
+      || TEXTURE_PARAMETERS.has(parameter as MeshStandardMaterialTextureName))
     && typeof reference === 'string'
     && SAFE_NODE_ID.test(reference),
   )
@@ -144,6 +154,7 @@ export function compileMeshStandardMaterialGraph(graph: MaterialGraph): Material
     if (node.type === 'number') value = { type: 'number', value: node.value }
     if (node.type === 'boolean') value = { type: 'boolean', value: node.value }
     if (node.type === 'color') value = { type: 'color', value: node.value.toLowerCase() }
+    if (node.type === 'texture-2d') value = { type: 'texture-2d', assetId: node.assetId }
     if (node.type === 'multiply') {
       const left = evaluate(node.left, depth + 1)
       const right = evaluate(node.right, depth + 1)
@@ -163,23 +174,29 @@ export function compileMeshStandardMaterialGraph(graph: MaterialGraph): Material
   }
 
   const parameters: Partial<Record<MeshStandardMaterialParameterName, string | number | boolean>> = {}
-  for (const parameter of Object.keys(outputs[0].bindings).sort() as MeshStandardMaterialParameterName[]) {
+  const textures: Partial<Record<MeshStandardMaterialTextureName, string>> = {}
+  for (const parameter of Object.keys(outputs[0].bindings).sort() as MeshStandardMaterialBindingName[]) {
     const reference = outputs[0].bindings[parameter]
     if (!reference) return { status: 'invalid', reason: 'unknown-reference' }
     const value = evaluate(reference, 0)
     if (!value) return failure ?? { status: 'invalid', reason: 'unknown-reference' }
 
-    if (NUMBER_PARAMETERS.has(parameter)) {
+    if (NUMBER_PARAMETERS.has(parameter as MeshStandardMaterialParameterName)) {
       if (value.type !== 'number') return { status: 'invalid', reason: 'type-mismatch' }
-      if (!parameterInRange(parameter, value.value)) return { status: 'invalid', reason: 'unsafe-parameter-value' }
-    } else if (BOOLEAN_PARAMETERS.has(parameter)) {
+      if (!parameterInRange(parameter as MeshStandardMaterialParameterName, value.value)) return { status: 'invalid', reason: 'unsafe-parameter-value' }
+      parameters[parameter as MeshStandardMaterialParameterName] = value.value
+    } else if (BOOLEAN_PARAMETERS.has(parameter as MeshStandardMaterialParameterName)) {
       if (value.type !== 'boolean') return { status: 'invalid', reason: 'type-mismatch' }
-    } else if (COLOR_PARAMETERS.has(parameter)) {
+      parameters[parameter as MeshStandardMaterialParameterName] = value.value
+    } else if (COLOR_PARAMETERS.has(parameter as MeshStandardMaterialParameterName)) {
       if (value.type !== 'color') return { status: 'invalid', reason: 'type-mismatch' }
+      parameters[parameter as MeshStandardMaterialParameterName] = value.value
+    } else if (TEXTURE_PARAMETERS.has(parameter as MeshStandardMaterialTextureName)) {
+      if (value.type !== 'texture-2d') return { status: 'invalid', reason: 'type-mismatch' }
+      textures[parameter as MeshStandardMaterialTextureName] = value.assetId
     } else {
       return { status: 'invalid', reason: 'invalid-node' }
     }
-    parameters[parameter] = value.value
   }
 
   return {
@@ -187,6 +204,7 @@ export function compileMeshStandardMaterialGraph(graph: MaterialGraph): Material
     descriptor: Object.freeze({
       target: 'MeshStandardMaterial',
       parameters: Object.freeze(parameters),
+      ...(Object.keys(textures).length > 0 ? { textures: Object.freeze(textures) } : {}),
     }),
   }
 }

@@ -1,7 +1,7 @@
 ---
 title: "Knowgrph AR/VR/XR — Pinned Runtime-Readiness Contract"
 doc_type: "PRD/TAD/ADR"
-version: "2.1.0"
+version: "2.2.0"
 date: "2026-08-05"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -37,8 +37,8 @@ authority:
 - the existing `xr-authoring-edited-media-delivery` snapshot is one contained
   evidence slice, not a replacement authority for pinned AC-1–AC-12;
 - full pinned runtime readiness remains **blocked** on admitted model bytes,
-  named reference/physical devices, a connected live transport, and
-  track-preserving mux proof; and
+  named reference/physical devices, a physical progressive-viewer matrix, and
+  canonical cross-document connected-viewer proof; and
 - all evidence is Dev-only. It grants no integration, release, deployment, or
   Production authority.
 
@@ -51,7 +51,7 @@ authority:
 | Camera permission and capture | Existing Spatial Capture and Motion Control owners | Pure capture state plus injected processing ports |
 | Scene data and query | Root `ecs` package | Read-only projection, including entity identifier zero |
 | Materials | Existing Three.js material owner | Validate and apply a closed graph to caller-owned material |
-| Timeline, preview, and export | `canvas/src/components/timeline` and `canvas/src/features/gitgraph` | Deterministic animation/preview adapters and typed command seam |
+| Timeline, preview, collaboration, and export | Existing Timeline/Gantt owners plus the canonical P2P collaboration extension | Deterministic animation, single-viewer connected-preview adapter, and typed command seam |
 | XR adapter surface | `canvas/src/features/xr-v2` | Pinned conformance ledger and bounded adapters |
 | Evidence | XR source runner and dedicated Chromium smoke | Reproducible source/browser observations, never self-promotion |
 
@@ -73,13 +73,13 @@ slice is executable; it does not erase the named blocker.
 | **AC-3 — Automatic post-process fallback** | After N consecutive budget breaches, preserve raw capture and produce a typed post-process job without failing capture | Capture-session state machine and injected artifact/job ports | Deterministic/focused-test-backed; durable connected executor proof remains outside this adapter |
 | **AC-4 — Progressive-enhancement viewing** | Select the highest supported tier and retain a flat fallback | Canonical five-mode policy, compatibility projection, existing viewer route, browser probe | Selection/browser-route-backed; four-tier physical rendering matrix blocked |
 | **AC-5 — iOS engine reality** | iOS-class matrices must not project either pinned immersive tier | Feature-probe compatibility matrix; no user-agent branch | Deterministic/source-backed; named iOS browser/device pass blocked |
-| **AC-6 — ECS scene composition** | Component queries return the correct unique entities and applied components render | Root ECS projection tests and entity-zero browser observation | Query/focused-browser-backed; complete mounted scene-render wiring not promoted |
-| **AC-7 — Node-based material authoring** | A closed graph compiles and applies its evaluated output to a target mesh/material | Material graph compiler and real caller-owned `MeshStandardMaterial` observation | Real standalone material backed; texture/shader graph and canonical target-mesh rendering proof blocked |
-| **AC-8 — Visual behavior graph** | A wired trigger invokes its action exactly once; an unwired trigger invokes none | Exact-once behavior dispatcher and pinned probe | Deterministic/focused-test-backed; visual graph UI/schema publication is not claimed |
-| **AC-9 — Particle authoring** | Particle count never exceeds configured rate/lifetime/ceiling bounds | Bounded particle emitter and fixed-duration probe | Deterministic/focused-test-backed; mounted GPU authoring surface not claimed |
-| **AC-10 — Animation timeline** | Sampled bone/property interpolation matches keyframes within tolerance | Numeric/bone timeline interpolation and pinned probe | Deterministic/focused-test-backed; rigged mounted playback proof is separate |
-| **AC-11 — In-browser packaging** | Preserve input track count and codec in one browser-playable container | Existing browser-native edited-media exporter proves non-empty decode/playback | Browser playback backed; already-encoded **track-preserving mux proof is blocked** |
-| **AC-12 — Live edit-to-device preview** | Propagate an edit to a connected viewer within N ms with no build or reload | Bounded preview-delta channel and local probe | Process-local admission backed; **connected live transport** latency/no-reload proof is blocked |
+| **AC-6 — ECS scene composition** | Component queries return the correct unique entities and applied components render | Root ECS runtime owner plus mounted R3F scene and immutable Chromium evidence | Browser-backed for the committed two-entity fixture; broader authored-scene/device matrix blocked |
+| **AC-7 — Node-based material authoring** | A closed graph compiles and applies its evaluated output to a target mesh/material | Closed compiler, atomic target-mesh binding, real texture map UUID, renderer compile, and WebGL render evidence | Browser-backed for `MeshStandardMaterial`; broader node/shader catalog remains out of scope |
+| **AC-8 — Visual behavior graph** | A wired trigger invokes its action exactly once; an unwired trigger invokes none | Real canvas pointer dispatch through the exact-once behavior owner, with one action/effect delta | Deterministic and mounted-browser-backed; visual editing UI publication is not claimed |
+| **AC-9 — Particle authoring** | Particle count never exceeds configured rate/lifetime/ceiling bounds | Bounded emitter mounted as real GPU `Points`, with buffer-version, draw-range, live/high-water, and disposal evidence | Mounted-browser-backed at the admitted capacity; named GPU/thermal matrix blocked |
+| **AC-10 — Animation timeline** | Sampled bone/property interpolation matches keyframes within tolerance | Canonical playhead drives a real mounted `Bone`; sampled and observed poses are compared in immutable evidence | Mounted-browser-backed for the fixture; rig/import compatibility matrix blocked |
+| **AC-11 — In-browser packaging** | Preserve input track count and codec in one browser-playable container | Bounded CFR WebM mux, strict EBML inventory, VP8/VP9 byte equality, per-track `VideoDecoder`, and HTML media seek/playback | Browser-backed for admitted VP8/VP9 tracks; wider codec/profile matrix blocked |
+| **AC-12 — Live edit-to-device preview** | Propagate an edit to a connected viewer within N ms with no build or reload | Production single-viewer adapter over a real local `RTCDataChannel`, bounded ACK/retry/deadline, revision, and no-navigation evidence | Browser loopback-backed; canonical two-page/device session and viewer UI/store proof blocked |
 
 ### Pinned tier compatibility
 
@@ -138,7 +138,8 @@ flowchart LR
 - Caller-owned Three.js resources are never disposed by an adapter binding.
 - Browser observations cannot promote their own readiness state.
 - No adapter performs user-agent classification, camera acquisition, session
-  entry, deployment, or network publication.
+  entry, deployment, or direct network-stack ownership; connected preview is
+  published only through the canonical collaboration extension port.
 
 ### Evidence schemas
 
@@ -148,6 +149,9 @@ flowchart LR
 | `knowgrph-xr-v2-readiness/v1` | Existing source snapshot for the contained edited-media slice |
 | `knowgrph-xr-v2-dev-runtime-evidence/v1` | Validated bounded browser observation payload |
 | `knowgrph-xr-v2-browser-smoke/v1` | Clean exact-commit Chromium evidence artifact |
+| `knowgrph-xr-v2-mounted-authoring-evidence/v1` | Immutable mounted ECS/material/behavior/particle/Bone/renderer evidence |
+| `knowgrph-xr-v2-encoded-track-browser-observation/v1` | Dual-track packaging, exact payload, decode, seek, playback, and cleanup evidence |
+| `knowgrph-xr-v2-connected-preview-browser-observation/v1` | Bounded one-viewer WebRTC loopback observation |
 
 ## Historical contract and ADR reconciliation
 
@@ -168,10 +172,11 @@ The current decisions are:
 3. retain the root ECS and existing node/editor surfaces;
 4. implement deterministic adapters in-repository without silently adopting
    the historical candidate packages;
-5. retain the existing Timeline and browser exporter; do not claim a custom
-   already-encoded-track muxer; and
-6. keep the preview adapter transport-neutral until connected transport proof
-   is admitted.
+5. retain the existing Timeline and edited-media exporter, while admitting a
+   separate bounded already-encoded VP8/VP9 WebM packaging adapter; and
+6. bind connected preview to the canonical collaboration extension, require
+   exactly one viewer, retry bounded transient pressure, and latch revision
+   desynchronization closed until transport recreation.
 
 [OpenCut](https://github.com/opencut-app/opencut) is an attribution-only product-workflow reference.
 
@@ -188,8 +193,10 @@ The editor implementation remains independently specified and checked in.
 | Existing edited-media output/decode/playback | browser-backed | Clean exact-commit Chromium evidence passes |
 | Live monocular depth and frame budget | blocked | Admit model bytes, metadata, and named reference-device results |
 | Physical camera/headset behavior | blocked | Admit permission/session/lifecycle proof from named devices |
-| AC-11 track preservation | blocked | Verify input/output tracks and codecs through one browser-playable container |
-| AC-12 connected viewer | blocked | Verify connected transport latency and no full-page reload |
+| Mounted AC-6–AC-10 fixture | browser-backed | Clean Chromium click/scrub/render/disposal observation passes |
+| AC-11 VP8/VP9 track preservation | browser-backed | Strict mux inventory plus two `VideoDecoder` streams and HTML seek/playback pass |
+| AC-12 single-document WebRTC loopback | browser-backed | One-viewer ACK/revision/latency/no-navigation observation passes |
+| AC-12 canonical connected viewer | blocked | Prove two-page/device viewer UI/store application and stable canvas identity |
 | Full pinned AC-1–AC-12 runtime readiness | blocked | Every row above has admitted runtime evidence |
 | Production/deployment | blocked | Separate release authority and delivery gates pass |
 
@@ -226,13 +233,16 @@ Full runtime readiness for the pinned authority requires all of the following:
    devices while preserving raw-frame correctness;
 3. record camera permission, interruption, lifecycle, and teardown on named
    mobile devices, plus session entry/tracking/exit on named headsets;
-4. execute AC-11 over already-encoded input and prove track count, codec
-   preservation, decode, and playback;
-5. execute AC-12 through the canonical connected transport and prove bounded
-   latency with no build and no page reload; and
-6. obtain separately authorized integration, release, and deployment proof.
+4. extend AC-11 beyond the admitted CFR VP8/VP9 fixture when additional codec,
+   profile, variable-duration, or streaming requirements are accepted;
+5. execute AC-12 across canonical author/viewer documents or devices and prove
+   applied viewer UI/store state, stable canvas identity, bounded latency, no
+   build, and no page reload; and
+6. obtain separately authorized integration, release, Cloudflare deployment,
+   and post-deploy proof. Same-origin XR permission headers are checked in, but
+   this review candidate does not mutate Cloudflare or Production.
 
 Until then, the honest result is: pinned AC-1–AC-12 are fully traced;
-deterministic/source and specific browser-backed slices may be ready; the full
-runtime, physical-device, connected-transport, track-preserving-mux, and
-Production claims remain blocked.
+deterministic/source and the mounted authoring, VP8/VP9 mux, and one-document
+WebRTC browser slices may be ready; the full runtime, physical-device,
+canonical cross-document transport, and Production claims remain blocked.

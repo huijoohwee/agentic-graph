@@ -3,7 +3,9 @@ export const XR_V2_RUNTIME_KIND = 'existing-owner-adapter' as const
 
 export * from './authoringEcsProjection'
 export * from './authoringEcsWorldAdapter'
+export * from './authoringRenderPlan'
 export * from './behaviorDispatcher'
+export * from './browserRuntimeEvidence'
 export * from './capabilityContract'
 export * from './captureContracts'
 export * from './captureSession'
@@ -11,10 +13,18 @@ export * from './captureStateMachine'
 export * from './materialGraph'
 export * from './materialGraphThreeAdapter'
 export * from './mediaCapabilityNegotiation'
+export * from './mountedAuthoringEvidence'
 export * from './particleEmitter'
 export * from './previewDeltaChannel'
+export * from './progressiveViewerPlan'
+export * from './spatialCapturePostProcess'
+export * from './connectedPreviewTransport'
+export * from './containerTrackInventory'
+export * from './encodedTrackMuxContracts'
 export * from './stereoSynthesis'
 export * from './timelineInterpolation'
+export * from './timelineSequencer'
+export * from './webmEncodedTrackMuxer'
 export {
   XR_V2_PINNED_CAPABILITY_TIERS,
   XR_V2_PINNED_CONFORMANCE_SCHEMA,

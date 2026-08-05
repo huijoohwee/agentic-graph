@@ -4,7 +4,6 @@ import { createHash } from 'node:crypto'
 import { lstatSync, readFileSync, readlinkSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-
 import { chromium } from 'playwright'
 import {
   assertExactXrV2RawObservation,
@@ -14,6 +13,12 @@ import {
   parseXrV2MediaErrors,
   resolveXrV2SourceCheckoutContext,
 } from '../../scripts/xr-v2/browser-smoke-contract.mjs'
+import {
+  assertXrV2ExtendedBrowserObservation,
+  observeXrV2MountedAuthoringDisposal,
+  prepareXrV2MountedAuthoringObservation,
+  readXrV2ExtendedBrowserEvidence,
+} from '../../scripts/xr-v2/extended-browser-observation-contract.mjs'
 import { findLocalChromiumExecutable } from './lib/local-chromium-executable.mjs'
 
 const baseUrl = String(process.env.KG_XR_V2_SMOKE_BASE_URL || 'http://localhost:4193').replace(/\/+$/u, '')
@@ -22,7 +27,6 @@ const smokeUrl = `${baseUrl}/knowgrph/?kgPath=${encodeURIComponent(smokePath)}`
 const outputDirectory = resolve(process.cwd(), '../data/outputs')
 const observationPath = resolve(outputDirectory, 'xr-v2-browser-smoke.json')
 const GIT_MAX_BUFFER_BYTES = 64 * 1024 * 1024
-
 function readGitText(repositoryRoot, args) {
   return execFileSync('git', args, {
     cwd: repositoryRoot,
@@ -30,14 +34,12 @@ function readGitText(repositoryRoot, args) {
     maxBuffer: GIT_MAX_BUFFER_BYTES,
   }).trim()
 }
-
 function readGitBuffer(repositoryRoot, args) {
   return execFileSync('git', args, {
     cwd: repositoryRoot,
     maxBuffer: GIT_MAX_BUFFER_BYTES,
   })
 }
-
 function readGitPaths(repositoryRoot, args) {
   return readGitBuffer(repositoryRoot, args)
     .toString('utf8')
@@ -45,7 +47,6 @@ function readGitPaths(repositoryRoot, args) {
     .filter(Boolean)
     .sort()
 }
-
 function isGitAncestor(repositoryRoot, ancestor, descendant) {
   try {
     execFileSync('git', ['merge-base', '--is-ancestor', ancestor, descendant], {
@@ -58,7 +59,6 @@ function isGitAncestor(repositoryRoot, ancestor, descendant) {
     throw error
   }
 }
-
 function updateDigestEntry(digest, label, content) {
   const bytes = Buffer.isBuffer(content) ? content : Buffer.from(String(content), 'utf8')
   digest.update(label)
@@ -68,7 +68,6 @@ function updateDigestEntry(digest, label, content) {
   digest.update(bytes)
   digest.update('\0')
 }
-
 function readSourceEvidence() {
   const repositoryRoot = readGitText(process.cwd(), ['rev-parse', '--show-toplevel'])
   const sourceRevision = readGitText(repositoryRoot, ['rev-parse', 'HEAD'])
@@ -318,6 +317,7 @@ async function main() {
     await page.goto(smokeUrl, { waitUntil: 'domcontentloaded' })
     const surface = page.locator('[data-kg-xr-v2-runtime-smoke="1"]').first()
     await surface.waitFor({ state: 'visible', timeout: 30_000 })
+    const mountedPreparation = await prepareXrV2MountedAuthoringObservation(page, surface)
     await page.waitForFunction(() => {
       const node = document.querySelector('[data-kg-xr-v2-runtime-smoke="1"]')
       const state = node?.getAttribute('data-kg-xr-v2-browser-observation-state')
@@ -325,7 +325,7 @@ async function main() {
     }, undefined, { timeout: 45_000 })
     await waitForBrowserObservationQuiescence(page, { mediaErrors, pageErrors })
 
-    const rawEvidence = await surface.evaluate(node => {
+    const rawEvidenceBase = await surface.evaluate(node => {
       const video = node.querySelector('video[aria-label="XR v2 edited-media playback proof"]')
       return {
         observationState: node.getAttribute('data-kg-xr-v2-browser-observation-state'),
@@ -376,6 +376,11 @@ async function main() {
         observationError: node.getAttribute('data-kg-xr-v2-observation-error'),
       }
     })
+    const rawEvidence = Object.freeze({
+      ...rawEvidenceBase,
+      ...await readXrV2ExtendedBrowserEvidence(surface),
+      mountedCanvasIdentityBefore: mountedPreparation.canvasIdentityBefore,
+    })
 
     assert.equal(rawEvidence.observationState, 'observed', rawEvidence.observationError || 'XR v2 observation failed')
     assert.equal(rawEvidence.observationError, '')
@@ -412,6 +417,12 @@ async function main() {
       /^xr-v2-runtime-smoke\.md\|[^|]*xr_v2_runtime_smoke_media[^|]*\|0$/u,
     )
 
+    const {
+      connectedPreviewObservation,
+      encodedTrackContainerObservation,
+      mountedAuthoringObservation,
+    } = assertXrV2ExtendedBrowserObservation(rawEvidence)
+
     const blobByteSize = readNumber(rawEvidence.blobByteSize, 'edited-media Blob byte size')
     const decodedWidth = readNumber(rawEvidence.decodedWidth, 'decoded video width')
     const decodedHeight = readNumber(rawEvidence.decodedHeight, 'decoded video height')
@@ -446,6 +457,12 @@ async function main() {
     assert.equal(revokedObjectUrlProbe.resolved, false)
     assert.equal(typeof revokedObjectUrlProbe.errorName, 'string')
     await waitForBrowserObservationQuiescence(page, { mediaErrors, pageErrors })
+    const mountedDisposalObservation = await observeXrV2MountedAuthoringDisposal(
+      page,
+      surface,
+      mountedAuthoringObservation.disposeEventCountBeforeUnmount,
+    )
+    assert.ok(mountedDisposalObservation.disposedCount > 0)
 
     const rawObservation = Object.freeze({
       schema: rawEvidence.rawObservationSchema,
@@ -531,6 +548,12 @@ async function main() {
         panelMounted: rawEvidence.timelinePanelMount === 'mounted',
         panelRouteProven: rawEvidence.timelinePanelRouteProven === 'true',
         targetIdentity: rawEvidence.timelineCommandTargetIdentity,
+      }),
+      connectedPreviewObservation,
+      encodedTrackContainerObservation,
+      mountedAuthoringObservation: Object.freeze({
+        ...mountedAuthoringObservation,
+        disposal: mountedDisposalObservation,
       }),
       playbackObservation: Object.freeze({
         currentTime: playbackCurrentTime,

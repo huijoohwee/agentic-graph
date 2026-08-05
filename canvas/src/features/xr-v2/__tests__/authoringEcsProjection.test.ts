@@ -75,6 +75,18 @@ test('canonical ECS allocation starts at entity zero and projects without mutati
     assert.deepEqual({ ...result.projection.entities[0].components.Transform }, { x: 4, y: 8 })
     assert.deepEqual(Object.keys(result.projection.entities[0].components), ['Transform'])
     assert.deepEqual(snapshotWorld(world), before)
+
+    const intersection = projectCanonicalAuthoringEcsWorld(world, ['Transform', 'Visibility'])
+    assert.equal(intersection.status, 'ready')
+    if (intersection.status === 'ready') {
+      assert.deepEqual(intersection.projection.entities.map(entity => entity.entityId), [0])
+    }
+
+    const duplicateNameQuery = projectCanonicalAuthoringEcsWorld(world, ['Transform', 'Transform'])
+    assert.equal(duplicateNameQuery.status, 'ready')
+    if (duplicateNameQuery.status === 'ready') {
+      assert.deepEqual(duplicateNameQuery.projection.entities.map(entity => entity.entityId), [0, 1])
+    }
   } finally {
     disposeWorld(world)
   }
