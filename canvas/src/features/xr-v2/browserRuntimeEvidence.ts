@@ -352,17 +352,19 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
   let authorTransport: ReturnType<typeof createXrV2ConnectedPreviewTransport> | null = null
   let viewerTransport: ReturnType<typeof createXrV2ConnectedPreviewTransport> | null = null
   try {
-    const viewerChannelReady = waitForRemoteDataChannel(viewerPeer, probeSignal)
-    void viewerChannelReady.catch(() => undefined)
     await authorPeer.setLocalDescription(await authorPeer.createOffer())
     await waitForIceGatheringComplete(authorPeer, probeSignal)
     if (!authorPeer.localDescription) throw new Error('WebRTC author offer is unavailable.')
     await viewerPeer.setRemoteDescription(authorPeer.localDescription)
-    viewerChannel = await viewerChannelReady
     await viewerPeer.setLocalDescription(await viewerPeer.createAnswer())
     await waitForIceGatheringComplete(viewerPeer, probeSignal)
     if (!viewerPeer.localDescription) throw new Error('WebRTC viewer answer is unavailable.')
-    await authorPeer.setRemoteDescription(viewerPeer.localDescription)
+    const viewerChannelReady = waitForRemoteDataChannel(viewerPeer, probeSignal)
+    const [remoteChannel] = await Promise.all([
+      viewerChannelReady,
+      authorPeer.setRemoteDescription(viewerPeer.localDescription),
+    ])
+    viewerChannel = remoteChannel
     await Promise.all([
       waitForDataChannelOpen(authorChannel, probeSignal),
       waitForDataChannelOpen(viewerChannel, probeSignal),
