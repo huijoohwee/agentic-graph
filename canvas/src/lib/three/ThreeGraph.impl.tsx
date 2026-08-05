@@ -211,7 +211,9 @@ export default function ThreeGraph({ active = true, geospatialComposite = false,
     xrAuthoringGraphData ? graphHasXrAuthoringSource(xrAuthoringGraphData) : false
   ), [xrAuthoringGraphData])
   const xrGraphStageAuthority = mode === 'xr' && hasGraph
-    ? xrPhysicsRuntimeRunReadyDemo || xrAuthoringGraphActive ? 'native-controller' : 'motion-reference'
+    ? xrAuthoringGraphActive
+      ? 'native-controller'
+      : xrPhysicsRuntimeRunReadyDemo ? 'native-controller' : 'motion-reference'
     : undefined
   const xrSceneAuthority = resolveThreeGraphXrSceneAuthority({ mode, immersiveMediaActive: immersiveMediaStageActive, xrGraphStageAuthority, hasGlbAsset, hasSpatialCaptureManifest, hasXrEmptyWorld })
   const xrStandaloneFit = hasSpatialCaptureManifest
