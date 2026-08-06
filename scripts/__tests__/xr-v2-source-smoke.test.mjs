@@ -188,6 +188,7 @@ test('XR v2 workspace browser smoke selects the actual Explorer seed without an 
 
 test('XR v2 browser source rejects weakened explicit AC-11/AC-12 evidence flow', async t => {
   const verifierPath = 'canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs'
+  assert.doesNotThrow(() => verifyXrV2BrowserSmokeSourceContract(REPOSITORY_ROOT))
   const mutations = [
     ['initial cold navigation timeout', 'timeout: coldStartTimeoutMs,\n  })', 'timeout: 30_000,\n  })'],
     ['local-first scope', "'data-kg-xr-v2-saved-asset-scope'), 'local-first-explicit-existing-storage'", "'data-kg-xr-v2-saved-asset-scope'), 'cross-device'"],
