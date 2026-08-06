@@ -27,8 +27,24 @@ export * from './timelineSequencer'
 export * from './webmEncodedTrackMuxer'
 export * from './xrV2CapabilityRuntime'
 export * from './xrV2CaptureArtifactStore'
+export * from './xrV2ConnectedPreviewViewerRuntime'
+export * from './xrV2DeliveryObservationRuntime'
+export * from './xrV2CrossDeviceAssetAdapter'
+export * from './xrV2CrossDeviceFrameBundleCodec'
 export * from './xrV2DepthInferenceRuntime'
 export * from './xrV2InvocationRegistry'
+export * from './xrV2ImmersiveSessionRuntime'
+export * from './xrV2MountedAuthoringEditRuntime'
+export * from './xrV2PostProcessFallbackLifecycle'
+export * from './xrV2PostProcessFallbackRuntime'
+export * from './xrV2SavedAssetCatalog'
+export * from './xrV2SavedAssetTemporalPlayback'
+export * from './xrV2SavedAssetPresentationRuntime'
+export * from './xrV2SavedAssetPackagingRuntime'
+export * from './xrV2SavedAssetThreePresentation'
+export * from './xrV2SpatialAssetMetadata'
+export * from './xrV2SpatialCaptureRuntime'
+export * from './xrV2WorkspaceReadinessRuntime'
 export {
   XR_V2_PINNED_CAPABILITY_TIERS,
   XR_V2_PINNED_CONFORMANCE_SCHEMA,
@@ -45,6 +61,17 @@ export {
   type XrV2PinnedRuntimeObservation,
 } from './pinnedContractConformance'
 export { XrV2AuthoringStatusPanel } from './XrV2AuthoringStatusPanel'
+export { XrV2DeliveryValidationPanel } from './XrV2DeliveryValidationPanel'
+export { XrV2CrossDeviceAssetPanel } from './XrV2CrossDeviceAssetPanel'
+export * from './xrV2DeliveryValidationRuntime'
+export { XrV2SavedAssetCatalogViewer } from './XrV2SavedAssetCatalogViewer'
+export { XrV2SavedAssetImmersiveSurface } from './XrV2SavedAssetImmersiveSurface'
+export { XrV2PostProcessFallbackStatus } from './XrV2PostProcessFallbackStatus'
+export { XrV2SpatialCapturePanel } from './XrV2SpatialCapturePanel'
+export {
+  XrV2WorkspaceReadinessPanel,
+  XrV2WorkspaceReadinessPanelView,
+} from './XrV2WorkspaceReadinessPanel'
 export {
   XR_V2_DEV_RUNTIME_EVIDENCE_SCHEMA,
   createXrV2ReadinessSnapshot,

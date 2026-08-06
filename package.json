@@ -128,7 +128,7 @@
     "video-editor:source-ready": "node ./scripts/run-video-editor-source-smoke.mjs",
     "video-editor:compatibility": "npm -C canvas run test:ci:unit -- ui.videoSequence.export.compatibility && npm -C canvas run test:ci:unit -- ui.videoSequence.export.cleanup",
     "video-editor:unit": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test ./canvas/src/features/gitgraph/__tests__/ganttTimelineTransportCommandAdapter.test.ts ./canvas/src/components/timeline/__tests__/videoSequenceExportRecorderLifecycle.test.ts",
-    "xr-v2:unit": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test ./canvas/src/features/xr-v2/__tests__/*.ts",
+    "xr-v2:unit": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test ./canvas/src/features/xr-v2/__tests__/*.ts ./canvas/src/__tests__/xrV2WorkspaceSeedBrowserSourceAuthority.test.ts ./canvas/src/__tests__/xrV2WorkspaceSeedRuntime.test.tsx",
     "xr-v2:source-runner:test": "node --test ./scripts/__tests__/xr-v2-source-smoke.test.mjs",
     "xr-v2:source-ready": "node ./scripts/run-xr-v2-source-smoke.mjs",
     "xr-v2:review-candidate": "npm run check && npm run xr-v2:unit && npm run video-editor:unit && npm run video-editor:compatibility && npm run video-editor:source-ready && npm run xr-v2:source-ready && npm -C canvas run test:smoke:xr-v2:browser",

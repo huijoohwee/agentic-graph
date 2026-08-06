@@ -25,6 +25,10 @@ import {
   isCanonicalWorkspaceSeedAuthority,
   type WorkspaceDocsMirrorAuthority,
 } from './workspaceSeedInventoryAuthority'
+import {
+  hasExactCanonicalWorkspaceSeedInventory,
+  isCanonicalWorkspaceSeedPath,
+} from './workspaceCanonicalSeedBundle'
 
 type WorkspaceRecordMap = { entries: WorkspaceEntry }
 type WorkspaceCollections = PersistedCollectionMap<WorkspaceRecordMap>
@@ -114,7 +118,7 @@ const clearCanonicalWorkspaceSeedSources = (): boolean => {
   const sourceIndex = loadWorkspaceSourceIndex()
   let changed = false
   for (const path of Object.keys(sourceIndex)) {
-    if (!isKnowgrphWorkspaceSeedsPath(path)) continue
+    if (!isCanonicalWorkspaceSeedPath(path)) continue
     if (clearWorkspaceEntrySource(normalizeWorkspacePath(path))) changed = true
   }
   return changed
@@ -268,6 +272,27 @@ const buildDocsMirrorSyncSignature = (
   return rows.join('|')
 }
 
+export const buildWorkspaceDocsMirrorDesiredEntries = (
+  docsEntriesInput: ReadonlyArray<WorkspaceDocsMirrorEntry>,
+): Map<WorkspacePath, WorkspaceEntry> => {
+  const desiredEntriesByPath = new Map<WorkspacePath, WorkspaceEntry>()
+  const docsEntries = Array.isArray(docsEntriesInput) ? docsEntriesInput : []
+  for (let i = 0; i < docsEntries.length; i += 1) {
+    const entry = docsEntries[i]
+    if (!entry) continue
+    const expanded = expandWorkspaceSeedFileEntries(
+      toWorkspaceDocsMirrorPath(entry.relPath),
+      String(entry.text || ''),
+      Number.isFinite(entry.updatedAtMs) ? entry.updatedAtMs : Date.now(),
+    )
+    for (let j = 0; j < expanded.length; j += 1) {
+      const next = expanded[j]
+      if (next) desiredEntriesByPath.set(next.path, next)
+    }
+  }
+  return desiredEntriesByPath
+}
+
 export const resetWorkspaceDocsMirrorSyncForPersistedFs = (): void => {
   lastDocsMirrorSyncSignature = ''
 }
@@ -284,20 +309,7 @@ export const syncWorkspaceDocsMirrorEntries = async (
   const canonicalWorkspaceSeedsOnly = options?.scope === 'canonical-workspace-seeds'
   const docsMirrorSignature = buildDocsMirrorSyncSignature(docsEntries)
   if (docsMirrorSignature && docsMirrorSignature === lastDocsMirrorSyncSignature) return false
-  const desiredEntriesByPath = new Map<WorkspacePath, WorkspaceEntry>()
-  for (let i = 0; i < docsEntries.length; i += 1) {
-    const entry = docsEntries[i]
-    if (!entry) continue
-    const expanded = expandWorkspaceSeedFileEntries(
-      toWorkspaceDocsMirrorPath(entry.relPath),
-      String(entry.text || ''),
-      Number.isFinite(entry.updatedAtMs) ? entry.updatedAtMs : Date.now(),
-    )
-    for (let j = 0; j < expanded.length; j += 1) {
-      const next = expanded[j]
-      if (next) desiredEntriesByPath.set(next.path, next)
-    }
-  }
+  const desiredEntriesByPath = buildWorkspaceDocsMirrorDesiredEntries(docsEntries)
   if (desiredEntriesByPath.size === 0) return false
   const workspaceSourceIndex = loadWorkspaceSourceIndex()
   for (const desiredPath of desiredEntriesByPath.keys()) {
@@ -305,11 +317,19 @@ export const syncWorkspaceDocsMirrorEntries = async (
       desiredEntriesByPath.delete(desiredPath)
     }
   }
+  const canonicalWorkspaceSeedAuthorityClaimed = docsEntries.some(entry => (
+    isCanonicalWorkspaceSeedPath(entry.relPath)
+    && isCanonicalWorkspaceSeedAuthority(entry.authority)
+  ))
+  const canonicalWorkspaceSeedInventoryPresent = canonicalWorkspaceSeedAuthorityClaimed
+    && hasExactCanonicalWorkspaceSeedInventory(docsEntries)
+  if (canonicalWorkspaceSeedAuthorityClaimed && !canonicalWorkspaceSeedInventoryPresent) {
+    for (const desiredPath of desiredEntriesByPath.keys()) {
+      if (isCanonicalWorkspaceSeedPath(desiredPath)) desiredEntriesByPath.delete(desiredPath)
+    }
+  }
   const canonicalXrSeedDesired = CANONICAL_XR_PHYSICS_WORKSPACE_SEED_ENABLED
     && desiredEntriesByPath.get(XR_PHYSICS_WORKSPACE_SEED_PATH)?.kind === 'file'
-  const canonicalWorkspaceSeedInventoryPresent = docsEntries.some(entry => (
-    isCanonicalWorkspaceSeedAuthority(entry.authority)
-  ))
   const agenticRuntimeDesiredPaths = new Set(
     [...desiredEntriesByPath.keys()].filter(path => (
       path === WORKSPACE_AGENTIC_DOCS_MIRROR_ROOT_PATH
@@ -353,7 +373,7 @@ export const syncWorkspaceDocsMirrorEntries = async (
     const canonicalXrSeedMustWin = canonicalXrSeedDesired
       && existingPath === XR_PHYSICS_WORKSPACE_SEED_PATH
     const canonicalWorkspaceSeedMustWin = canonicalWorkspaceSeedInventoryPresent
-      && isKnowgrphWorkspaceSeedsPath(existingPath)
+      && isCanonicalWorkspaceSeedPath(existingPath)
     const runtimeTwinPath = underVisibleDocs
       ? normalizeWorkspacePath(`${WORKSPACE_AGENTIC_DOCS_MIRROR_ROOT_PATH}/${existingPath.slice(`${WORKSPACE_DOCS_MIRROR_ROOT_PATH}/`.length)}`)
       : null
@@ -361,8 +381,8 @@ export const syncWorkspaceDocsMirrorEntries = async (
     if (underOutputDocs && !desired) continue
     if (
       isKnowgrphWorkspaceSeedsPath(existingPath)
-      && !canonicalWorkspaceSeedInventoryPresent
       && !desired
+      && (!canonicalWorkspaceSeedInventoryPresent || !isCanonicalWorkspaceSeedPath(existingPath))
     ) {
       continue
     }

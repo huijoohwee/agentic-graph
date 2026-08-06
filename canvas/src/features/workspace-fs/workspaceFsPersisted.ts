@@ -56,6 +56,7 @@ import {
   cancelWorkspaceDocsMirrorTextUpsertsUnderPath,
   scheduleWorkspaceDocsMirrorTextUpsert,
 } from './workspaceDocsMirrorTextUpsertQueue'
+import { isCanonicalWorkspaceSeedAuthority } from './workspaceSeedInventoryAuthority'
 
 const DB_NAME = 'kg:workspace-fs'
 const docsMirrorFolderFlushTimers = new Map<WorkspacePath, number>()
@@ -255,10 +256,21 @@ export function createWorkspacePersistedFs(): WorkspaceFs {
         }
       }
     }
-    const fileCount = await collections.entries.find({ selector: { kind: 'file' } }).exec().then(rows => rows.length)
+    const fileRows = await collections.entries.find({ selector: { kind: 'file' } }).exec()
+    const fileCount = fileRows.length
     const seeded = lsBool(LS_KEYS.markdownWorkspaceSeeded, false)
     const userClearedAll = lsBool(LS_KEYS.markdownWorkspaceUserClearedAllFiles, false)
-    const clearedWorkspaceNeedsProtectedXrOnly = userClearedAll && (
+    const hasNoncanonicalFile = fileRows.some(row => (
+      !isKnowgrphWorkspaceSeedsPath(normalizeWorkspacePath(String(row.get('path') || '')))
+    ))
+    const canonicalWorkspaceSeedSyncSuppressed = userClearedAll && !hasNoncanonicalFile
+    const canonicalWorkspaceSeedInventoryAvailable = !canonicalWorkspaceSeedSyncSuppressed && (
+      canonicalWorkspaceSeedEntries.length > 0
+      || sourceDocsMirrorEntries.some(entry => isCanonicalWorkspaceSeedAuthority(entry.authority))
+    )
+    const clearedWorkspaceNeedsProtectedXrOnly = userClearedAll
+      && !canonicalWorkspaceSeedInventoryAvailable
+      && (
       fileCount === 0 || await hasOnlyCanonicalXrPhysicsFile(collections)
     )
     if (clearedWorkspaceNeedsProtectedXrOnly) {

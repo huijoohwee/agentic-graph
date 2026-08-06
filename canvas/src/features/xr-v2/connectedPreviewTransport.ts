@@ -111,7 +111,7 @@ function payloadBytes(value: unknown): number {
 }
 
 function messageId(): string {
-  const uuid = globalThis.crypto?.randomUUID?.().replaceAll('-', '')
+  const uuid = globalThis.crypto?.randomUUID?.().replace(/-/gu, '')
   if (uuid) return `xr_${uuid}`
   return `xr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`
 }
