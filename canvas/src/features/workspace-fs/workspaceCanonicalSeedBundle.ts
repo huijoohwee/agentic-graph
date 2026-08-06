@@ -3,6 +3,7 @@ import { importNodeFsPromises, importNodePath } from './workspaceSeedNodeModules
 
 export const CANONICAL_WORKSPACE_SEED_BASENAMES = [
   'README.md',
+  'knowgrph-ar-vr-xr-runtime-readiness-demo.md',
   'knowgrph-game-city-building-sim-demo.md',
   'knowgrph-game-flight-sim-demo.companion.md',
   'knowgrph-game-flight-sim-demo.md',

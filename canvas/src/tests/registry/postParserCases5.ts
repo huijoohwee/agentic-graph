@@ -324,4 +324,8 @@ export const TEST_CASES_POST_PARSER_5: TestCaseTuple[] = [
   ["ui.floatingPanel.media.xrEnvironmentGeoProjection","@/__tests__/xrEnvironmentGeoProjection.test","testXrEnvironmentSelectionProjectsThroughGeoAndFlight"],
   ["ui.floatingPanel.skillsCommands.xrInvocationInsertion","@/__tests__/xrSkillsCommandsInvocation.test","testSkillsCommandsXrGrammarInsertsExactTokens"],
   ["canvas.xrMode.cameraPanelContinuity","@/__tests__/cameraMcpPanelContinuity.test","testCameraPanelActivationPreservesOpenXrOperatorPanels"],
+  ["canvas.xrV2.permissionsPolicy.allResponsePaths","@/__tests__/knowgrphXrPermissionsPolicy.test","testKnowgrphXrPermissionsPolicyCoversEveryPagesResponsePath"],
+  ["canvas.xrV2.permissionsPolicy.staticAndIframe","@/__tests__/knowgrphXrPermissionsPolicy.test","testKnowgrphXrPermissionsPolicyMatchesStaticAndIframeDelegation"],
+  ["canvas.xrV2.deviceSensors.explicitAndCleanup","@/__tests__/motionControlDeviceSensorRuntime.test","testMotionControlDeviceSensorsRequireExplicitPermissionAndCleanUp"],
+  ["canvas.xrV2.deviceSensors.noPersistenceOrEgress","@/__tests__/motionControlDeviceSensorRuntime.test","testMotionControlDeviceSensorsHaveNoPersistenceOrEgressPath"],
 ]

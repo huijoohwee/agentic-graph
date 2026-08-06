@@ -34,6 +34,7 @@
     "demo:care-agent": "npm run dev:care-agent --workspace=@knowgrph/canvas --",
     "demo:risk-copilot": "npm run dev:risk-copilot --workspace=@knowgrph/canvas --",
     "demo:xr-physics": "npm run dev:xr-physics --workspace=@knowgrph/canvas --",
+    "demo:xr-v2": "npm run dev:xr-v2 --workspace=@knowgrph/canvas --",
     "dev:all": "bash scripts/dev-all.sh",
     "build": "npm run build --workspace=@knowgrph/canvas",
     "geospatial-mode:test": "TSX_TSCONFIG_PATH=canvas/tsconfig.json node --import tsx --test scripts/__tests__/geospatial-*.test.ts scripts/__tests__/geo-authoring-fallback-readiness.test.ts && node --test mcp/__tests__/geospatial-layer-runtime.test.mjs && npm -C canvas run test:ci:unit -- geospatial.invocation && npm -C canvas run test:ci:unit -- geospatial.panel.composition.srpAndCatalogSeam",

@@ -25,6 +25,10 @@ export * from './stereoSynthesis'
 export * from './timelineInterpolation'
 export * from './timelineSequencer'
 export * from './webmEncodedTrackMuxer'
+export * from './xrV2CapabilityRuntime'
+export * from './xrV2CaptureArtifactStore'
+export * from './xrV2DepthInferenceRuntime'
+export * from './xrV2InvocationRegistry'
 export {
   XR_V2_PINNED_CAPABILITY_TIERS,
   XR_V2_PINNED_CONFORMANCE_SCHEMA,
