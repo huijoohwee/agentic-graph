@@ -6,6 +6,7 @@ import {
   registerXrV2MountedAuthoringEditTarget,
   XR_V2_MOUNTED_AUTHORING_EDIT_SCHEMA,
 } from '../xrV2MountedAuthoringEditRuntime'
+import { waitForXrV2MountedAuthoringVisibilityCommit } from '../xrV2MountedAuthoringEditCommit'
 
 const SOURCE = Object.freeze({ sourceDigest: 'fnv1a32:12345678', graphDataRevision: 7 })
 
@@ -63,4 +64,52 @@ test('mounted authoring edits reject an already-aborted action without touching 
   }), { name: 'AbortError' })
   assert.equal(calls, 0)
   dispose()
+})
+
+test('mounted authoring visibility acknowledgement waits for a later rendered frame', async () => {
+  let actualVisible = true
+  let frameCount = 0
+  let markedRevision = 0
+  const result = await waitForXrV2MountedAuthoringVisibilityCommit({
+    visible: false,
+    revision: 3,
+    signal: new AbortController().signal,
+    readTarget: () => ({
+      attached: true,
+      visible: actualVisible,
+      markRendered: revision => { markedRevision = revision },
+    }),
+    options: {
+      deadlineMs: 100,
+      requestFrame: callback => {
+        const frame = ++frameCount
+        queueMicrotask(() => {
+          if (frame === 2) actualVisible = false
+          callback(frame * 16)
+        })
+        return frame
+      },
+      cancelFrame: () => undefined,
+      now: () => 48,
+    },
+  })
+  assert.equal(frameCount, 2)
+  assert.equal(markedRevision, 3)
+  assert.deepEqual(result, { visible: false, renderedAtMs: 48, attached: true })
+})
+
+test('mounted authoring visibility acknowledgement has its own hard deadline', async () => {
+  let cancelledFrame = 0
+  await assert.rejects(waitForXrV2MountedAuthoringVisibilityCommit({
+    visible: false,
+    revision: 1,
+    signal: new AbortController().signal,
+    readTarget: () => ({ attached: true, visible: true, markRendered: () => undefined }),
+    options: {
+      deadlineMs: 10,
+      requestFrame: () => 7,
+      cancelFrame: handle => { cancelledFrame = handle },
+    },
+  }), /did not reach the rendered scene/)
+  assert.equal(cancelledFrame, 7)
 })

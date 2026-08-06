@@ -1,3 +1,8 @@
+import React from 'react'
+import type { Group } from 'three'
+import type { XrAuthoringRenderPlan } from './authoringRenderPlan'
+import { waitForXrV2MountedAuthoringVisibilityCommit } from './xrV2MountedAuthoringEditCommit'
+
 export const XR_V2_MOUNTED_AUTHORING_EDIT_SCHEMA =
   'knowgrph-xr-v2-mounted-authoring-edit/v1' as const
 
@@ -104,35 +109,20 @@ export function useRegisterXrV2MountedAuthoringEditTarget(input: Readonly<{
       const entity = plan.entities.find(candidate => candidate.entityRef === entityRef)
       if (!entity?.renderable) return Promise.reject(new Error('Mounted authoring entity is not editable'))
       setVisibleByEntityId(current => ({ ...current, [entity.entityId]: visible }))
-      return new Promise((resolve, reject) => {
-        const requestFrame = globalThis.requestAnimationFrame
-          || ((callback: FrameRequestCallback) => setTimeout(() => callback(performance.now()), 0) as unknown as number)
-        const cancelFrame = globalThis.cancelAnimationFrame
-          || ((handle: number) => clearTimeout(handle as unknown as ReturnType<typeof setTimeout>))
-        let handle = 0
-        const cleanup = () => signal.removeEventListener('abort', onAbort)
-        const onAbort = () => {
-          cancelFrame(handle)
-          cleanup()
-          reject(new DOMException('Mounted authoring edit was cancelled', 'AbortError'))
-        }
-        signal.addEventListener('abort', onAbort, { once: true })
-        handle = requestFrame(() => {
-          cleanup()
-          if (signal.aborted) return reject(new DOMException('Mounted authoring edit was cancelled', 'AbortError'))
+      return waitForXrV2MountedAuthoringVisibilityCommit({
+        visible,
+        revision,
+        signal,
+        readTarget: () => {
           const root = rootRef.current
           const mesh = root?.getObjectByName(`kg_xr_v2_mesh:${entityRef}`)
-          if (!root?.parent || !mesh || mesh.visible !== visible) {
-            reject(new Error('Mounted authoring visibility edit did not reach the rendered scene'))
-            return
-          }
-          mesh.userData.xrAuthoringEditRevision = revision
-          resolve(Object.freeze({ visible, renderedAtMs: performance.now(), attached: true as const }))
-        })
+          return mesh ? Object.freeze({
+            attached: Boolean(root?.parent),
+            visible: mesh.visible,
+            markRendered: (nextRevision: number) => { mesh.userData.xrAuthoringEditRevision = nextRevision },
+          }) : null
+        },
       })
     },
   }), [plan, rootRef, setVisibleByEntityId])
 }
-import React from 'react'
-import type { Group } from 'three'
-import type { XrAuthoringRenderPlan } from './authoringRenderPlan'
