@@ -22,6 +22,7 @@ import {
 import { resetWorkspaceSeedProviderStorageCacheForTests } from '@/features/workspace-fs/workspaceSeedProviderStorageCache'
 import { loadWorkspaceSourceIndex, setWorkspaceEntrySource } from '@/features/workspace-fs/sourceIndex'
 import type { WorkspaceEntry } from '@/features/workspace-fs/types'
+import { createMemoryWorkspaceFs } from '@/features/workspace-fs/workspaceFsMemory'
 
 const REPO_LOCAL_ENV = 'VITE_KNOWGRPH_RUN_READY_REPO_LOCAL'
 const DOCS_ROOT_ENV = 'VITE_WORKSPACE_INITIALIZATION_DOCS_ABS_ROOT'
@@ -82,6 +83,9 @@ export function testBundledWorkspaceSeedInventoryUsesEagerRawGlobInBuilds(): voi
   if (!text.includes('eager: true')) {
     throw new Error('expected canonical workspace seed bundle glob to stay eager for production builds')
   }
+  if (text.includes('bundlePromise')) {
+    throw new Error('expected canonical workspace seed reads not to retain a stale process-lifetime promise')
+  }
 }
 
 export async function testProductionFallbackRestoresBundledWorkspaceSeedInventory() {
@@ -113,6 +117,41 @@ export async function testProductionFallbackRestoresBundledWorkspaceSeedInventor
     }
     if (seedEntries.some(entry => entry.authority !== 'knowgrph-workspace-seeds-bundled')) {
       throw new Error(`expected revision-pinned bundle authority, got ${JSON.stringify(seedEntries)}`)
+    }
+    const memoryFs = createMemoryWorkspaceFs({
+      initialEntries: [
+        { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+        { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+        { path: '/docs/workspace-seeds', parentPath: '/docs', kind: 'folder', name: 'workspace-seeds', updatedAtMs: 1 },
+        {
+          path: '/docs/workspace-seeds/stale-production-demo.md',
+          parentPath: '/docs/workspace-seeds',
+          kind: 'file',
+          name: 'stale-production-demo.md',
+          text: '# stale production seed\n',
+          updatedAtMs: 1,
+        },
+        {
+          path: '/notes/user-owned.md',
+          parentPath: '/notes',
+          kind: 'file',
+          name: 'user-owned.md',
+          text: '# user owned\n',
+          updatedAtMs: 1,
+        },
+      ],
+    })
+    await memoryFs.ensureSeed()
+    const memoryEntries = await memoryFs.listEntries()
+    const memorySeedBasenames = memoryEntries
+      .filter(entry => entry.kind === 'file' && entry.path.startsWith('/docs/workspace-seeds/'))
+      .map(entry => entry.name)
+      .sort((left, right) => left.localeCompare(right))
+    if (JSON.stringify(memorySeedBasenames) !== JSON.stringify(expectedBasenames)) {
+      throw new Error(`expected production memory fallback to restore exact bundled seed inventory, got ${JSON.stringify(memorySeedBasenames)}`)
+    }
+    if (!memoryEntries.some(entry => entry.path === '/notes/user-owned.md' && entry.kind === 'file')) {
+      throw new Error('expected production memory fallback to preserve user-owned noncanonical files')
     }
   } finally {
     resetCanonicalPublishedDocsMirrorCacheForTests()
@@ -203,41 +242,69 @@ export async function testWorkspaceSeedProviderProjectsCanonicalLocalInventoryEx
     restoreEnv(AGENTIC_DOCS_ROOT_ENV, previousAgenticRoot)
     if (previousWindow) globals.window = previousWindow
   }
+  await testRepoLocalBrowserBootstrapRefreshesLiveCanonicalSeedInventory()
 }
 
-export async function testRepoLocalBrowserBootstrapUsesBundledSeedInventoryWithoutMirrorProxy() {
+export async function testRepoLocalBrowserBootstrapRefreshesLiveCanonicalSeedInventory() {
   const previousRepoLocal = process.env[REPO_LOCAL_ENV]
   const previousDocsRoot = process.env[DOCS_ROOT_ENV]
   const previousSeedsRoot = process.env[SEEDS_READ_ROOT_ENV]
   const previousFetch = globalThis.fetch
+  const previousDateNow = Date.now
   const { restore } = initWindowHarness({ storage: new MemoryStorage() })
-  const requestedRuntimePaths: string[] = []
+  const seedsRoot = `/repo-local/docs/workspace-seeds-${previousDateNow()}`
+  let now = 1710000010000
+  let listCalls = 0
   try {
     process.env[REPO_LOCAL_ENV] = '1'
     process.env[DOCS_ROOT_ENV] = '/repo-local/docs'
-    process.env[SEEDS_READ_ROOT_ENV] = '/repo-local/docs/workspace-seeds'
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
+    process.env[SEEDS_READ_ROOT_ENV] = seedsRoot
+    Date.now = () => now
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const rawUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-      requestedRuntimePaths.push(rawUrl)
-      throw new Error(`repo-local browser bootstrap must not fetch workspace mirror data: ${rawUrl}`)
+      if (rawUrl !== '/__kg_fs_list') return new Response('', { status: 404 })
+      const body = JSON.parse(String(init?.body || '{}')) as { path?: unknown }
+      if (String(body.path || '') !== seedsRoot) return Response.json({ ok: true, files: [] })
+      listCalls += 1
+      const basenames = CANONICAL_WORKSPACE_SEED_BASENAMES.filter(basename => (
+        listCalls > 1 || basename !== 'knowgrph-ar-vr-xr-runtime-readiness-demo.md'
+      ))
+      return Response.json({
+        ok: true,
+        files: basenames.map((basename, index) => ({
+          relPath: basename,
+          text: `# ${basename}\n`,
+          updatedAtMs: now + index,
+        })),
+      })
     }) as typeof fetch
 
-    const mirrored = await readWorkspaceInitializationDocsMirrorEntries({ preferCompleteDataset: true })
-    const actualBasenames = mirrored
+    const first = await readCanonicalWorkspaceSeedMirrorEntries()
+    const firstBasenames = first
+      .map(entry => entry.relPath.replace(/^workspace-seeds\//, ''))
+      .sort((left, right) => left.localeCompare(right))
+    if (firstBasenames.includes('knowgrph-ar-vr-xr-runtime-readiness-demo.md')) {
+      throw new Error(`expected the first live inventory to model the pre-addition seven-file state, got ${JSON.stringify(firstBasenames)}`)
+    }
+
+    now += 1001
+    const refreshed = await readCanonicalWorkspaceSeedMirrorEntries()
+    const actualBasenames = refreshed
       .map(entry => entry.relPath.replace(/^workspace-seeds\//, ''))
       .sort((left, right) => left.localeCompare(right))
     const expectedBasenames = [...CANONICAL_WORKSPACE_SEED_BASENAMES]
       .sort((left, right) => left.localeCompare(right))
     if (JSON.stringify(actualBasenames) !== JSON.stringify(expectedBasenames)) {
-      throw new Error(`expected repo-local browser bootstrap to use bundled seed inventory ${JSON.stringify(expectedBasenames)}, got ${JSON.stringify(actualBasenames)}`)
+      throw new Error(`expected repo-local browser bootstrap to refresh to live seed inventory ${JSON.stringify(expectedBasenames)}, got ${JSON.stringify(actualBasenames)}`)
     }
-    if (mirrored.some(entry => entry.authority !== 'knowgrph-workspace-seeds-bundled')) {
-      throw new Error(`expected repo-local browser bootstrap to stay on bundled seed authority, got ${JSON.stringify(mirrored)}`)
+    if (refreshed.some(entry => entry.authority !== 'knowgrph-workspace-seeds-local')) {
+      throw new Error(`expected refreshed browser inventory to retain local canonical authority, got ${JSON.stringify(refreshed)}`)
     }
-    if (requestedRuntimePaths.length !== 0) {
-      throw new Error(`expected repo-local browser bootstrap to avoid workspace mirror proxy requests, got ${JSON.stringify(requestedRuntimePaths)}`)
+    if (listCalls !== 2) {
+      throw new Error(`expected one live inventory request per bounded refresh window, got ${listCalls}`)
     }
   } finally {
+    Date.now = previousDateNow
     globalThis.fetch = previousFetch
     restore()
     restoreEnv(REPO_LOCAL_ENV, previousRepoLocal)
@@ -245,6 +312,9 @@ export async function testRepoLocalBrowserBootstrapUsesBundledSeedInventoryWitho
     restoreEnv(SEEDS_READ_ROOT_ENV, previousSeedsRoot)
   }
 }
+
+export const testRepoLocalBrowserBootstrapUsesBundledSeedInventoryWithoutMirrorProxy =
+  testRepoLocalBrowserBootstrapRefreshesLiveCanonicalSeedInventory
 
 export async function testRepoLocalPersistedBootstrapReconcilesCanonicalSeedInventory() {
   const repoRoot = path.resolve(process.cwd(), '..')
@@ -280,6 +350,41 @@ export async function testRepoLocalPersistedBootstrapReconcilesCanonicalSeedInve
 
     if (JSON.stringify(actual) !== JSON.stringify(expected)) {
       throw new Error(`expected repo-local persisted Source Files seed inventory ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+    }
+    const memoryFs = createMemoryWorkspaceFs({
+      initialEntries: [
+        { path: '/', parentPath: null, kind: 'folder', name: '', updatedAtMs: 1 },
+        { path: '/docs', parentPath: '/', kind: 'folder', name: 'docs', updatedAtMs: 1 },
+        { path: '/docs/workspace-seeds', parentPath: '/docs', kind: 'folder', name: 'workspace-seeds', updatedAtMs: 1 },
+        {
+          path: '/docs/workspace-seeds/stale-demo.md',
+          parentPath: '/docs/workspace-seeds',
+          kind: 'file',
+          name: 'stale-demo.md',
+          text: '# stale\n',
+          updatedAtMs: 1,
+        },
+        {
+          path: '/docs/private-note.md',
+          parentPath: '/docs',
+          kind: 'file',
+          name: 'private-note.md',
+          text: '# private\n',
+          updatedAtMs: 1,
+        },
+      ],
+    })
+    await memoryFs.ensureSeed()
+    const memoryEntries = await memoryFs.listEntries()
+    const memorySeedPaths = memoryEntries
+      .filter(entry => entry.kind === 'file' && entry.path.startsWith('/docs/workspace-seeds/'))
+      .map(entry => entry.path)
+      .sort()
+    if (JSON.stringify(memorySeedPaths) !== JSON.stringify(expected)) {
+      throw new Error(`expected memory fallback to reconcile exact canonical seed inventory ${JSON.stringify(expected)}, got ${JSON.stringify(memorySeedPaths)}`)
+    }
+    if (!memoryEntries.some(entry => entry.path === '/docs/private-note.md' && entry.kind === 'file')) {
+      throw new Error('expected memory canonical-seed reconciliation to preserve unrelated workspace documents')
     }
     const citySeedPath = '/docs/workspace-seeds/knowgrph-game-city-building-sim-demo.md'
     const projectedCityText = await workspaceFs.readFileText(citySeedPath)

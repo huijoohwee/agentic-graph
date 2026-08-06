@@ -24,6 +24,10 @@ import {
 } from '../run-xr-v2-source-smoke.mjs'
 import { verifyXrV2ReadinessDocumentation } from '../xr-v2/readiness-doc-contract.mjs'
 import { verifyXrV2RuntimeSourceContract } from '../xr-v2/runtime-source-contract.mjs'
+import {
+  verifyWorkspaceSeedAuthority,
+  XR_V2_SEED_BASENAME,
+} from '../workspace-seed-authority.mjs'
 
 const QUIET_LOGGER = Object.freeze({ error() {}, info() {} })
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -107,6 +111,36 @@ test('XR v2 browser smoke omits a missing local Chromium executable', () => {
   assert.match(source, /const executablePath = findLocalChromiumExecutable\(\)/u)
   assert.match(source, /\.\.\.\(executablePath \? \{ executablePath \} : \{\}\)/u)
   assert.doesNotMatch(source, /executablePath: findLocalChromiumExecutable\(\)/u)
+})
+
+test('XR v2 workspace browser smoke selects the actual Explorer seed without an environment bypass', () => {
+  const runner = readFileSync(
+    resolve(REPOSITORY_ROOT, 'canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs'),
+    'utf8',
+  )
+  const verifier = readFileSync(
+    resolve(REPOSITORY_ROOT, 'canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs'),
+    'utf8',
+  )
+  assert.doesNotMatch(runner, /VITE_KNOWGRPH_RUN_READY_DEMO/u)
+  const selection = verifier.indexOf('await seedRow.click()')
+  const mountedRuntime = verifier.indexOf("const runtime = page.locator('[data-kg-xr-v2-authoring-runtime=\"1\"]')")
+  assert.match(verifier, /getByRole\('navigation', \{ name: 'Source files' \}\)/u)
+  assert.match(verifier, /Folder workspace-seeds/u)
+  assert.match(verifier, /File knowgrph-ar-vr-xr-runtime-readiness-demo\.md/u)
+  assert.ok(selection >= 0)
+  assert.ok(mountedRuntime > selection)
+  for (const marker of [
+    'data-kg-three-canvas-owner',
+    'data-kg-xr-document-loaded',
+    'data-kg-motion-control-runtime',
+    'data-kg-motion-control-device-sensors',
+  ]) assert.match(verifier, new RegExp(marker, 'u'))
+})
+
+test('XR v2 canonical workspace seed is required by authored inventory authority', async () => {
+  const result = await verifyWorkspaceSeedAuthority({ knowgrphRoot: REPOSITORY_ROOT })
+  assert.ok(result.knowgrphInventory.includes(XR_V2_SEED_BASENAME))
 })
 
 test('XR v2 clean bootstrap selects the canonical workspace-seed path', () => {

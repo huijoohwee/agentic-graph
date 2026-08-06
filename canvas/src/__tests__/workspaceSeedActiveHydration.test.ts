@@ -17,6 +17,7 @@ import { CANONICAL_WORKSPACE_SEED_BASENAMES } from '@/features/workspace-fs/work
 import { buildWorkspaceEntriesSemanticKey } from '@/features/workspace-fs/workspaceEntriesSemanticKey'
 import { applyWorkspaceImportToCanvas } from '@/features/workspace-fs/applyWorkspaceImportToCanvas'
 import { mergeWorkspaceEntriesIntoSourceFiles } from '@/features/workspace-fs/syncToSourceFiles'
+import { resolveDocumentRepositoryAuthority } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
 const createMinimalFs = (overrides: Partial<WorkspaceFs> = {}): WorkspaceFs => ({
   ensureSeed: async () => false,
@@ -80,7 +81,17 @@ export async function testMaterializeActiveWorkspaceEntryReadsActiveFileWithoutL
   const { restore } = initJsdomHarness()
   try {
     useGraphStore.getState().resetAll()
-    const activePath = '/docs/active-only.md'
+    const activePath = '/docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md'
+    const activeSourcePath = `workspace:${activePath}`
+    const activeText = [
+      '---',
+      'title: "Knowgrph AR/VR/XR runtime-readiness demo"',
+      'run_ready_demo:',
+      '  id: "xr-v2"',
+      `  canonical_source_file: "${activePath}"`,
+      '---',
+      '# XR v2 active seed',
+    ].join('\n')
     useMarkdownExplorerStore.getState().setActivePath(activePath)
     let listEntriesCalls = 0
     await materializeActiveWorkspaceEntryIntoSourceFiles({
@@ -90,15 +101,25 @@ export async function testMaterializeActiveWorkspaceEntryReadsActiveFileWithoutL
           listEntriesCalls += 1
           throw new Error('active materialization should not list the whole workspace')
         },
-        readFileText: async path => (String(path || '').trim() === activePath ? '# active only' : null),
+        readFileText: async path => (String(path || '').trim() === activePath ? activeText : null),
       }),
       applyToGraph: false,
     })
     const sourceFiles = useGraphStore.getState().sourceFiles || []
-    const active = sourceFiles.find(file => String(file.source?.path || '') === 'workspace:/docs/active-only.md') || null
+    const active = sourceFiles.find(file => String(file.source?.path || '') === activeSourcePath) || null
     if (listEntriesCalls !== 0) throw new Error(`expected active materialization not to list workspace entries, got ${listEntriesCalls}`)
-    if (!active || String(active.text || '').trim() !== '# active only') {
-      throw new Error(`expected active-only materialization to read only the active file, got ${JSON.stringify(sourceFiles)}`)
+    if (!active || String(active.text || '') !== activeText) {
+      throw new Error(`expected canonical XR active-only materialization to preserve ${activeSourcePath}, got ${JSON.stringify(sourceFiles)}`)
+    }
+    const repositoryAuthority = resolveDocumentRepositoryAuthority({
+      documentKey: activePath,
+      documentKind: 'markdown',
+    })
+    if (
+      repositoryAuthority?.repositoryTarget !== 'knowgrph-docs'
+      || repositoryAuthority.canonicalPath !== 'knowgrph/docs/workspace-seeds/knowgrph-ar-vr-xr-runtime-readiness-demo.md'
+    ) {
+      throw new Error(`expected active seed repository authority to remain rooted in knowgrph/docs, got ${JSON.stringify(repositoryAuthority)}`)
     }
   } finally {
     restore()

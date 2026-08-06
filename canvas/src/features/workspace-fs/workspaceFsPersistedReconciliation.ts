@@ -268,6 +268,27 @@ const buildDocsMirrorSyncSignature = (
   return rows.join('|')
 }
 
+export const buildWorkspaceDocsMirrorDesiredEntries = (
+  docsEntriesInput: ReadonlyArray<WorkspaceDocsMirrorEntry>,
+): Map<WorkspacePath, WorkspaceEntry> => {
+  const desiredEntriesByPath = new Map<WorkspacePath, WorkspaceEntry>()
+  const docsEntries = Array.isArray(docsEntriesInput) ? docsEntriesInput : []
+  for (let i = 0; i < docsEntries.length; i += 1) {
+    const entry = docsEntries[i]
+    if (!entry) continue
+    const expanded = expandWorkspaceSeedFileEntries(
+      toWorkspaceDocsMirrorPath(entry.relPath),
+      String(entry.text || ''),
+      Number.isFinite(entry.updatedAtMs) ? entry.updatedAtMs : Date.now(),
+    )
+    for (let j = 0; j < expanded.length; j += 1) {
+      const next = expanded[j]
+      if (next) desiredEntriesByPath.set(next.path, next)
+    }
+  }
+  return desiredEntriesByPath
+}
+
 export const resetWorkspaceDocsMirrorSyncForPersistedFs = (): void => {
   lastDocsMirrorSyncSignature = ''
 }
@@ -284,20 +305,7 @@ export const syncWorkspaceDocsMirrorEntries = async (
   const canonicalWorkspaceSeedsOnly = options?.scope === 'canonical-workspace-seeds'
   const docsMirrorSignature = buildDocsMirrorSyncSignature(docsEntries)
   if (docsMirrorSignature && docsMirrorSignature === lastDocsMirrorSyncSignature) return false
-  const desiredEntriesByPath = new Map<WorkspacePath, WorkspaceEntry>()
-  for (let i = 0; i < docsEntries.length; i += 1) {
-    const entry = docsEntries[i]
-    if (!entry) continue
-    const expanded = expandWorkspaceSeedFileEntries(
-      toWorkspaceDocsMirrorPath(entry.relPath),
-      String(entry.text || ''),
-      Number.isFinite(entry.updatedAtMs) ? entry.updatedAtMs : Date.now(),
-    )
-    for (let j = 0; j < expanded.length; j += 1) {
-      const next = expanded[j]
-      if (next) desiredEntriesByPath.set(next.path, next)
-    }
-  }
+  const desiredEntriesByPath = buildWorkspaceDocsMirrorDesiredEntries(docsEntries)
   if (desiredEntriesByPath.size === 0) return false
   const workspaceSourceIndex = loadWorkspaceSourceIndex()
   for (const desiredPath of desiredEntriesByPath.keys()) {

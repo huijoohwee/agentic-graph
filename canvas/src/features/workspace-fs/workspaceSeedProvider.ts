@@ -1355,21 +1355,22 @@ const chooseBestWorkspaceDocsMirrorDataset = (
 }
 
 export const readCanonicalWorkspaceSeedMirrorEntries = async (): Promise<WorkspaceDocsMirrorEntry[]> => {
-  if (isWorkspaceRepoLocalRunReadyBootstrap() && typeof window !== 'undefined') {
-    return readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
-  }
   const absRoot = readKnowgrphWorkspaceSeedsReadAbsRoot()
-  if (!absRoot) return readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
-  const entries = await readWorkspaceMirrorRootEntries({
-    absRoot,
-    workspaceRootName: 'workspace-seeds',
-    readViaProxy: readWorkspaceDocsMirrorEntriesViaProxy,
-    readViaNodeFs: readWorkspaceDocsMirrorEntriesViaNodeFs,
-  })
-  return entries.map(entry => ({
-    ...entry,
-    authority: 'knowgrph-workspace-seeds-local',
-  }))
+  if (absRoot) {
+    const entries = await readWorkspaceMirrorRootEntries({
+      absRoot,
+      workspaceRootName: 'workspace-seeds',
+      readViaProxy: root => readWorkspaceDocsMirrorEntriesViaProxy(root, { allowRepoLocal: true }),
+      readViaNodeFs: readWorkspaceDocsMirrorEntriesViaNodeFs,
+    })
+    if (entries.length > 0) {
+      return entries.map(entry => ({
+        ...entry,
+        authority: 'knowgrph-workspace-seeds-local',
+      }))
+    }
+  }
+  return readCanonicalKnowgrphWorkspaceSeedsMirrorEntries()
 }
 
 const readWorkspaceDocsMirrorEntriesViaProxy = async (
