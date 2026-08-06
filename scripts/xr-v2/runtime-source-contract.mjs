@@ -108,6 +108,14 @@ export function verifyXrV2RuntimeSourceContract(repositoryRoot) {
   const canonicalPolicySource = readFileSync(canonicalPolicy, 'utf8')
 
   for (const marker of REQUIRED_RUNTIME_MARKERS) assertContains(source, marker, 'XR v2 runtime')
+  for (const marker of [
+    PINNED_SOURCE_REVISION,
+    'knowgrph-xr-v2-pinned-contract-conformance/v1',
+    'XR_V2_PINNED_SOURCE_REVISION',
+    'XR_V2_PINNED_CONFORMANCE_SCHEMA',
+  ]) {
+    assertContains(pinnedSource, marker, 'pinned conformance owner')
+  }
   for (const criterion of Array.from({ length: 12 }, (_, index) => `AC-${index + 1}`)) {
     assertAcceptanceCriterion(pinnedSource, criterion, 'pinned conformance owner')
   }

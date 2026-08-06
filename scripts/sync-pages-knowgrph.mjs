@@ -239,7 +239,7 @@ const GENERATED_AGENT_HOMEPAGE_HEADERS_START = '# BEGIN knowgrph generated homep
 const GENERATED_AGENT_HOMEPAGE_HEADERS_END = '# END knowgrph generated homepage discovery headers'
 const GENERATED_XR_RUNTIME_HEADERS_START = '# BEGIN knowgrph generated XR runtime permissions headers'
 const GENERATED_XR_RUNTIME_HEADERS_END = '# END knowgrph generated XR runtime permissions headers'
-const XR_RUNTIME_PERMISSIONS_POLICY = 'accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)'
+const XR_RUNTIME_PERMISSIONS_POLICY = 'accelerometer=(self), autoplay=(self), camera=(self), clipboard-read=(), clipboard-write=(), display-capture=(self), geolocation=(), gyroscope=(self), magnetometer=(self), microphone=(self), payment=(), usb=(), xr-spatial-tracking=(self)'
 const agentReadyDocRouteBody = `import { onRequest as onKnowgrphAgentReadyRequest } from "../[[path]].js";
 
 export async function onRequest(context) {
