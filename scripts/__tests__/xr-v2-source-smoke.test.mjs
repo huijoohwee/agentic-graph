@@ -123,14 +123,19 @@ test('XR v2 source smoke exports the closed validation ledger', () => {
   )
 })
 
-test('XR v2 browser smoke omits a missing local Chromium executable', () => {
-  const source = readFileSync(
-    resolve(REPOSITORY_ROOT, 'canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs'),
-    'utf8',
-  )
-  assert.match(source, /const executablePath = findLocalChromiumExecutable\(\)/u)
-  assert.match(source, /\.\.\.\(executablePath \? \{ executablePath \} : \{\}\)/u)
-  assert.doesNotMatch(source, /executablePath: findLocalChromiumExecutable\(\)/u)
+test('XR v2 workspace browser smoke prefers explicit then bundled Chromium and omits a missing executable', () => {
+  for (const verifier of [
+    'canvas/scripts/verify_xr_v2_browser_smoke.mjs',
+    'canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs',
+  ]) {
+    const source = readFileSync(resolve(REPOSITORY_ROOT, verifier), 'utf8')
+    assert.match(
+      source,
+      /const executablePath = findLocalChromiumExecutable\(\s*process\.env\.KG_XR_V2_CHROMIUM_EXECUTABLE,\s*chromium\.executablePath\(\),?\s*\)/u,
+    )
+    assert.match(source, /\.\.\.\(executablePath \? \{ executablePath \} : \{\}\)/u)
+    assert.doesNotMatch(source, /executablePath: findLocalChromiumExecutable\(/u)
+  }
 })
 
 test('XR v2 workspace browser smoke selects the actual Explorer seed without an environment bypass', () => {

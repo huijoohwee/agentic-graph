@@ -87,6 +87,8 @@ const WORKSPACE_VERIFIER_PATH = Object.freeze([
   'verify_xr_v2_workspace_seed_browser_smoke.mjs',
 ])
 const WORKSPACE_EVIDENCE_FLOW = Object.freeze([
+  ['explicit Chromium override', /process\.env\.KG_XR_V2_CHROMIUM_EXECUTABLE/u],
+  ['bundled Chromium preference', /chromium\.executablePath\(\)/u],
   ['delivery validation owner', /const deliveryValidation = page\.locator\('\[data-kg-xr-v2-delivery-validation="1"\]'\)/u],
   ['AC-11 action owner', /const runPackaging = page\.locator\('\[data-kg-xr-v2-ac-11-run="1"\]'\)/u],
   ['AC-12 action owner', /const runConnectedPreview = page\.locator\('\[data-kg-xr-v2-ac-12-run="1"\]'\)/u],

@@ -142,7 +142,7 @@ async function installExistingStorageFixture(scope) {
 }
 
 const baseUrl = String(process.env.KG_XR_V2_WORKSPACE_SMOKE_BASE_URL || 'http://localhost:4194').replace(/\/+$/u, '')
-const executablePath = findLocalChromiumExecutable()
+const executablePath = findLocalChromiumExecutable(process.env.KG_XR_V2_CHROMIUM_EXECUTABLE, chromium.executablePath())
 const browser = await chromium.launch({
   headless: true,
   ...(executablePath ? { executablePath } : {}),
