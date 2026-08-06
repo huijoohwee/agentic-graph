@@ -293,6 +293,83 @@ function waitForDataChannelOpen(channel: RTCDataChannel, signal: AbortSignal): P
   })
 }
 
+const XR_V2_CONNECTED_PREVIEW_CHANNEL_READY_TIMEOUT_MS = 5_000
+
+/**
+ * A data channel can report `open` before its first SCTP application frame has
+ * completed a round trip. Confirm the already-open path before starting the
+ * edit propagation clock so connection establishment never masquerades as
+ * edit latency.
+ */
+export function confirmXrV2ConnectedPreviewChannelRoundTrip(
+  authorChannel: RTCDataChannel,
+  viewerChannel: RTCDataChannel,
+  signal: AbortSignal,
+  options: Readonly<{ challenge?: string; timeoutMs?: number }> = {},
+): Promise<void> {
+  const timeoutMs = options.timeoutMs ?? XR_V2_CONNECTED_PREVIEW_CHANNEL_READY_TIMEOUT_MS
+  const randomId = globalThis.crypto?.randomUUID?.().replace(/-/gu, '')
+    || `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`
+  const challenge = options.challenge ?? `kg-xr-v2-channel-ready:${randomId}`
+  const acknowledgement = `${challenge}:ack`
+  if (authorChannel.readyState !== 'open' || viewerChannel.readyState !== 'open') {
+    return Promise.reject(new Error('WebRTC connected-preview channels closed before readiness confirmation.'))
+  }
+  if (!/^kg-xr-v2-channel-ready:[A-Za-z0-9_-]{4,128}$/.test(challenge)
+    || !Number.isSafeInteger(timeoutMs) || timeoutMs < 10
+    || timeoutMs > XR_V2_CONNECTED_PREVIEW_CHANNEL_READY_TIMEOUT_MS) {
+    return Promise.reject(new Error('WebRTC connected-preview readiness confirmation is invalid.'))
+  }
+  if (signal.aborted) return Promise.reject(new Error('WebRTC preview observation was aborted.'))
+  return new Promise((resolve, reject) => {
+    let settled = false
+    let viewerObservedChallenge = false
+    let timeout: ReturnType<typeof setTimeout> | null = null
+    const cleanup = () => {
+      if (timeout !== null) clearTimeout(timeout)
+      signal.removeEventListener('abort', onAbort)
+      authorChannel.removeEventListener('message', onAuthorMessage)
+      viewerChannel.removeEventListener('message', onViewerMessage)
+      authorChannel.removeEventListener('close', onClose)
+      viewerChannel.removeEventListener('close', onClose)
+      authorChannel.removeEventListener('error', onError)
+      viewerChannel.removeEventListener('error', onError)
+    }
+    const finish = (error?: Error) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      if (error) reject(error)
+      else resolve()
+    }
+    const onAbort = () => finish(new Error('WebRTC preview observation was aborted.'))
+    const onClose = () => finish(new Error('WebRTC connected-preview channel closed during readiness confirmation.'))
+    const onError = () => finish(new Error('WebRTC connected-preview channel failed during readiness confirmation.'))
+    const onViewerMessage = (event: MessageEvent<unknown>) => {
+      if (event.data !== challenge) return
+      viewerObservedChallenge = true
+      try { viewerChannel.send(acknowledgement) }
+      catch { finish(new Error('WebRTC connected-preview readiness acknowledgement could not be sent.')) }
+    }
+    const onAuthorMessage = (event: MessageEvent<unknown>) => {
+      if (event.data === acknowledgement && viewerObservedChallenge) finish()
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    authorChannel.addEventListener('message', onAuthorMessage)
+    viewerChannel.addEventListener('message', onViewerMessage)
+    authorChannel.addEventListener('close', onClose, { once: true })
+    viewerChannel.addEventListener('close', onClose, { once: true })
+    authorChannel.addEventListener('error', onError, { once: true })
+    viewerChannel.addEventListener('error', onError, { once: true })
+    timeout = setTimeout(
+      () => finish(new Error('WebRTC connected-preview readiness round trip timed out.')),
+      timeoutMs,
+    )
+    try { authorChannel.send(challenge) }
+    catch { finish(new Error('WebRTC connected-preview readiness challenge could not be sent.')) }
+  })
+}
+
 function waitForRemoteDataChannel(
   connection: RTCPeerConnection,
   signal: AbortSignal,
@@ -408,6 +485,11 @@ export async function probeXrV2ConnectedPreviewOverWebRtc(
       waitForDataChannelOpen(authorChannel, probeSignal),
       waitForDataChannelOpen(viewerChannel, probeSignal),
     ])
+    await confirmXrV2ConnectedPreviewChannelRoundTrip(
+      authorChannel,
+      viewerChannel,
+      probeSignal,
+    )
 
     let viewerRevision = 0
     let editApplied = false
