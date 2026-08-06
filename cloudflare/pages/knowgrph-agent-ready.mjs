@@ -78,6 +78,7 @@ import {
   STORAGE_WORKSPACE_DOC_PATTERN,
   UPDATED_AT,
   withAgentReadyRouteHeaders,
+  withKnowgrphXrPermissionsPolicy,
   wantsMarkdown,
 } from "./knowgrph-agent-ready-shared.mjs";
 const AGENT_READY_TOOL_CONTRACTS = buildKnowgrphAgentReadyToolContracts({
@@ -1354,7 +1355,7 @@ const routeResponse = async (request) => {
       return null;
   }
 };
-export async function onRequest(context) {
+async function routeRequest(context) {
   const { env, request } = context;
   const method = String(request.method || "GET").toUpperCase();
   const url = new URL(request.url);
@@ -1406,4 +1407,27 @@ export async function onRequest(context) {
     nextResponse.headers.set("content-security-policy", "frame-ancestors *");
   }
   return withKnowgrphRouteHeaders(request, nextResponse);
+}
+
+export async function onRequest(context) {
+  try {
+    return withKnowgrphXrPermissionsPolicy(await routeRequest(context));
+  } catch (error) {
+    const requestUrl = context?.request?.url || "";
+    let pathname = "";
+    try {
+      pathname = requestUrl ? new URL(requestUrl).pathname : "";
+    } catch {
+      pathname = "";
+    }
+    console.error(JSON.stringify({
+      message: "Knowgrph Pages request failed",
+      pathname,
+      error: error instanceof Error ? error.message : String(error),
+    }));
+    return withKnowgrphXrPermissionsPolicy(jsonStatusResponse(500, {
+      ok: false,
+      error: "internal_error",
+    }));
+  }
 }

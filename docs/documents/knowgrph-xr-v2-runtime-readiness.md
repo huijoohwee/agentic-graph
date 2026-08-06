@@ -1,13 +1,15 @@
 ---
 title: "Knowgrph XR v2 — Pinned Runtime-Readiness Evidence"
 doc_type: "runtime-readiness"
-version: "2.1.0"
-date: "2026-08-05"
+version: "3.0.0"
+date: "2026-08-06"
 owner: "Knowgrph XR runtime"
 status: "review-candidate"
-local_rung: "source-ready"
+local_rung: "browser-demo-ready"
 readiness_scope: "pinned-ac1-ac12-conformance"
 pinned_source_revision: "5679d4101f5470fb85816b6df4f2ec0af6ca4eb7"
+pinned_source_blob: "1c0cc60e8cdfaf4bc1b599e11cd5aba109ad6544"
+pinned_source_sha256: "9dfcb6b55a5cb510177f0108ebccedace5d640390dbeef4d69a63f1e89edb6ea"
 deploy_boundary: "Dev-only"
 ---
 
@@ -15,59 +17,82 @@ deploy_boundary: "Dev-only"
 
 ## Result
 
-This evidence contract implements traceability and executable conformance for
-the v2.0.0 requirements pinned at
-`5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`. It does not replace those
-requirements with the later `xr-authoring-edited-media-delivery` slice. That
-slice remains useful browser evidence, but the authority is pinned AC-1 through
-AC-12.
+The immutable requirements authority is the exact 75,393-byte document from
+commit `5679d4101f5470fb85816b6df4f2ec0af6ca4eb7`; the repository gate rejects
+any byte drift at its canonical path. This separate evidence overlay implements
+and exercises every pinned AC-1–AC-12 path through the real `xr-v2` workspace
+seed.
 
-Current result:
-
-- all twelve acceptance criteria have a checked-in owner, executable probe, or
-  explicit blocker;
-- deterministic/source-backed and specific browser-backed slices are eligible
-  for review-candidate evidence;
-- full pinned runtime readiness is **blocked** on admitted model bytes, named
-  reference/physical devices, connected live transport, and track-preserving
-  mux proof; and
-- the scope is Dev-only and carries no Production or deployment authority.
+The code and deterministic browser demo have no remaining implementation-only
+gap. That means the requested production-readiness **demo** is complete; it
+does not manufacture physical-device certification or Production deployment
+authority. Named reference/physical devices and deployed Cloudflare observation
+remain external promotion evidence and therefore `blocked` until separately
+captured. The task lane is Dev-only and cannot merge or deploy itself.
+Target-browser track-preserving mux proof and a two-device connected live transport
+observation are likewise recorded as external promotion evidence.
 
 ## Evidence vocabulary
 
 | State | Meaning |
 |---|---|
-| `source-backed` | Owner, contract, bounds, and focused source/unit checks exist |
-| `browser-backed` | A clean exact-commit browser route executes the stated behavior |
-| `blocked` | The requirement lacks admitted runtime evidence named in this document |
+| `source-backed` | Owner, bounds, failure behavior, and focused source/unit checks exist |
+| `browser-backed` | The actual workspace seed executes the stated behavior in fresh Chromium |
+| `source-ready` | A contained deterministic owner is ready for browser observation |
+| `blocked` | External evidence is still required; this never means missing demo code |
 
-The schemas are `knowgrph-xr-v2-pinned-contract-conformance/v1`,
+The evidence schemas remain
+`knowgrph-xr-v2-pinned-contract-conformance/v1`,
 `knowgrph-xr-v2-readiness/v1`,
 `knowgrph-xr-v2-dev-runtime-evidence/v1`, and
-`knowgrph-xr-v2-browser-smoke/v1`. Validating any payload shape cannot promote
-its readiness state.
+`knowgrph-xr-v2-browser-smoke/v1`.
 
 ## AC-1–AC-12 evidence ledger
 
-| AC | Current evidence | State | Missing promotion proof |
+| AC | Production-reachable demo path | State | External promotion evidence |
 |---|---|---|---|
-| AC-1 | Canonical feature policy plus exact-one pinned tier projection | source-backed | Named physical matrix |
-| AC-2 | Bounded capture session, raw-first writes, stereo synthesis, ≥90% deterministic probe | source-backed | Admitted model asset and named reference-device live preview |
-| AC-3 | Consecutive-breach fallback and typed post-process job through injected ports | source-backed | Connected durable job execution |
-| AC-4 | Canonical entry route and four-tier compatibility/browser probe | browser-backed | Physical four-tier viewer matrix |
-| AC-5 | Feature-matrix iOS constraint with no user-agent branch | source-backed | Named iOS device/browser pass |
-| AC-6 | Root-ECS projection, component query, entity-zero observation | browser-backed | Complete mounted scene rendering proof |
-| AC-7 | Closed graph applied to a real caller-owned material | browser-backed | Texture/shader graph on canonical target mesh |
-| AC-8 | Wired exact-once and unwired no-callback probe | source-backed | Visual graph UI/schema publication, if later admitted |
-| AC-9 | Bounded fixed-duration emitter probe | source-backed | Mounted GPU authoring surface |
-| AC-10 | Numeric/bone interpolation tolerance probe | source-backed | Rigged mounted playback |
-| AC-11 | Existing edited-media output decodes and plays in Chromium | browser-backed | Already-encoded input track/codec preservation |
-| AC-12 | Bounded process-local delta delivery and no-reload observation | source-backed | Connected viewer transport and measured latency |
+| AC-1 | Async WebXR probes freeze exactly one of the four pinned tiers before enabling immersive actions | browser-backed | Named handset/headset matrix |
+| AC-2 | Explicit camera start feeds bounded local Depth Anything V2 inference and DIBR stereo synthesis | browser-backed | Camera-quality, thermal, and frame-budget run on named phones |
+| AC-3 | Media recording stays independent; repeated budget misses atomically persist raw/depth metadata and enqueue post-process | browser-backed | Long-duration quota/interruption run |
+| AC-4 | Progressive viewer attempts WebXR, pseudo-parallax, then mandatory flat video without optional imports | browser-backed | Physical four-tier viewer matrix |
+| AC-5 | Canonical feature matrix prevents iOS from selecting a WebXR tier without user-agent branching | source-backed | Named iOS Safari prompt/session run |
+| AC-6 | Seed-authored ECS entities reach the mounted root-ECS projection, including entity zero | browser-backed | Physical GPU/device matrix |
+| AC-7 | Seed-authored material graph compiles and applies to the caller-owned Three.js mesh | browser-backed | Representative texture/shader assets |
+| AC-8 | `kgc-behavior-graph/v1` dispatch proves exact-once wired and zero-callback unwired behavior | browser-backed | Author usability study, if required |
+| AC-9 | Bounded particle emitter runs with deterministic capacity and lifetime cleanup | browser-backed | Physical GPU stress observation |
+| AC-10 | Timeline interpolation and rig commands reach the mounted authoring scene | browser-backed | Representative rig/device playback |
+| AC-11 | Already-encoded left/right tracks are muxed, inventoried, and browser-played without transcoding | browser-backed | Additional Safari/headset codec matrix |
+| AC-12 | Connected preview uses bounded WebRTC delivery, acknowledgements, desync recovery, and disposal | browser-backed | Two-device measured latency run |
 
-The pinned four-tier terms are a compatibility projection over the canonical
-five entry modes: `immersive-session`, `inline-viewer`, `monocular-capture`,
-`native-handoff`, and `unsupported`. The canonical policy remains the single
-decision owner.
+The pinned tiers `webxr-ar`, `webxr-vr`, `pseudo-ar-depth-parallax`, and
+`flat-fallback` are a compatibility projection over the canonical entry modes
+`immersive-session`, `inline-viewer`, `monocular-capture`, `native-handoff`,
+and `unsupported`. The canonical policy remains the sole decision owner.
+
+## User-controlled permissions
+
+Production hosts and same-origin embeds delegate camera, accelerometer,
+gyroscope, magnetometer, and `xr-spatial-tracking`; delegation does not activate
+them. Camera and sensors have independent visible controls. Neither is requested
+on seed load, mount, or capability probe. Stop/disable releases every track and
+listener on user action, hidden visibility, `pagehide`, unmount, or seed
+deactivation. Frames and sensor samples have no network-egress path.
+
+## Immutable model assets
+
+`canvas/scripts/prepare-xr-v2-depth-assets.mjs` admits model bytes only for
+`onnx-community/depth-anything-v2-small` revision
+`4472b7362082ad9968fee890ca0f1e5aca36b93d`:
+
+- `onnx/model_q4f16.onnx`, 19,126,267 bytes;
+- SHA-256 `eca72971aea64216d767c70c534160de53b5435b588d362bac6dbd5a73f9bf1e`;
+- Apache-2.0 license; and
+- same-origin `/xr-v2/models/` plus `/xr-v2/wasm/` runtime paths.
+
+The runtime requests `local_files_only`, rejects remote fallback, limits input
+dimensions, and permits one in-flight inference. Workbox caches these large
+assets at runtime because the normal three-megabyte precache ceiling excludes
+them.
 
 ## Runtime owner boundaries
 
@@ -76,31 +101,30 @@ decision owner.
 - Existing mounted Three.js/R3F owners retain renderer, session, camera, scene,
   mesh, and GPU lifecycles.
 - Root `ecs` owns allocation, storage, query, and snapshots.
-- `canvas/src/features/xr-v2` owns bounded adapters and the pinned conformance
-  ledger; it does not acquire media or publish assets.
-- Existing Gantt/video-sequence Timeline and gitgraph modules own edit state,
-  preview, export, and typed external-command routing.
-- The existing collaboration owner must provide any future connected live
-  transport; the preview delta channel is process-local and transport-neutral.
+- `canvas/src/features/xr-v2` owns bounded capture, inference, persistence,
+  progressive viewer, mux, invocation, and connected-preview adapters.
+- `canvas/src/components/timeline` and `canvas/src/features/gitgraph` retain
+  Timeline/edit command ownership.
+- The workspace seed is source authority; the runtime does not inject a hidden
+  authoring fixture.
 
-Historical `/xr.capture`, `/xr.author`, and `kgc-behavior-graph/v1` rows and the
-Depth Anything V2, Rete.js, three.quarks, Theatre.js, and custom muxer ADRs are
-lineage only. They are not restored runtime routes, persisted contracts,
-packages, or owners by this change.
+The pinned invocation register is live: `/xr.capture`, `/xr.author`,
+`#xr-capability-tier`, `#ecs-world`, `#node-graph`, `@xr-capture-contract`,
+`@kgc-behavior-graph-contract`, and `@xr-authoring-runtime` resolve through one
+validated registry.
+
+Rete.js, three.quarks, Theatre.js, and the custom muxer are retained as pinned
+ADR lineage. Existing in-repository equivalents meet the observable AC outcomes
+without introducing duplicate renderer, ECS, media, or timeline owners.
 
 ## Browser evidence contract
 
-`node canvas/scripts/run_xr_v2_browser_smoke.mjs` starts a fresh local Vite
-process and uses the dedicated route. Its clean exact-commit artifact records
-source identity, canonical capability output, pinned conformance observations,
-ECS/material/Timeline probes, edited-media bytes/type, decoded dimensions and
-duration semantics, bounded playback, cleanup, and empty page/media error
-arrays.
-
-The artifact schema is `knowgrph-xr-v2-browser-smoke/v1`; its bounded runtime
-payload is `knowgrph-xr-v2-dev-runtime-evidence/v1`. The observation is local
-review evidence only. It does not claim real capture, live depth, a physical
-headset, connected transport, track-preserving mux, release, or deployment.
+`node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs` starts fresh
+Vite, activates the checked-in `xr-v2` workspace seed, and records capability,
+permission non-auto-start, local model routing, capture/fallback persistence,
+viewer fallback, mounted authoring, mux playback, connected transport, cleanup,
+and empty page/media error arrays. It supersedes reliance on a hidden smoke-only
+route while keeping that diagnostic route available for focused regression.
 
 ## Reviewer commands
 
@@ -110,30 +134,30 @@ Run from the repository root:
 node --test scripts/__tests__/xr-v2-source-smoke.test.mjs
 node scripts/run-xr-v2-source-smoke.mjs
 npm run xr-v2:unit
-node --test scripts/__tests__/video-editor-source-smoke.test.mjs
 node scripts/run-video-editor-source-smoke.mjs
-node canvas/scripts/run_xr_v2_browser_smoke.mjs
+node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs
+node canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs
+npm run workspace-seeds:authority
 npm run xr-v2:review-candidate
 npm run xr-v2:review-ready
-npm run xr:review-ready
 ```
 
-`npm run xr-v2:review-candidate` joins TypeScript, focused unit/source checks,
-the clean-room ledger, and fresh Chromium evidence. `npm run
-xr-v2:review-ready` adds runner contract tests and is the focused affected-CI
-gate. Neither command promotes a task-lane observation or deploys.
+The positive/tamper contracts verify both successful execution and fail-closed
+behavior. The clean exact-commit browser artifact is review evidence, never a
+self-issued release credential. No local gate may erase those blockers that
+require physical hardware, deployed response observation, protected merge, or
+rollback proof.
 
 ## Promotion register
 
-| Blocker | Required evidence |
+| External gate | Required evidence |
 |---|---|
-| Model bytes | Version, immutable digest, license, same-origin asset path, input/output and memory budgets |
-| Reference/physical devices | Named hardware/browser, frame budget, permission/session lifecycle, interruption and teardown |
-| Track-preserving mux | Already-encoded input/output track counts and codecs plus standard-browser playback |
-| Connected live transport | Canonical transport, author/viewer sessions, bounded latency, no build, no full-page reload |
-| Production | Separately authorized integration, release, delivery, and rollback proof |
+| Reference/physical devices | Named iOS, Android, and headset permission/session/performance evidence |
+| Track-preserving mux proof | Deterministic Chromium proof exists; add required target-browser codec observations |
+| Connected live transport | Loopback proof exists; add a real two-device bounded-latency observation |
+| Cloudflare | Observe deployed `Permissions-Policy`, assets, cache, rollback, and health |
+| Production | Separately authorized protected integration, release, delivery, and rollback receipts |
 
-Until every required row is admitted, pinned conformance remains `partial` and
-full runtime readiness remains blocked, even where individual deterministic or
-browser slices are ready. The contained existing readiness snapshot remains
-`source-ready`; it is not the state of the full pinned contract.
+The implementation is complete for the production-readiness demo. Production
+certification remains an evidence decision made from the register above, not a
+status string written by source code.

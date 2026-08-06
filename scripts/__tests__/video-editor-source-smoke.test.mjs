@@ -11,6 +11,8 @@ import {
   normalizeRepositoryPath,
   OFFICIAL_REFERENCE_STANZA,
   OFFICIAL_REFERENCE_URL,
+  PINNED_XR_AUTHORITY_BYTES,
+  PINNED_XR_AUTHORITY_SHA256,
   verifyVideoEditorIndependenceSourceContract,
   VideoEditorSourceContractError,
 } from '../video-editor/clean-room-source-contract.mjs'
@@ -139,6 +141,29 @@ test('the approved decision document requires one exact attribution stanza', asy
   assert.ok((await inspectVideoEditorIndependenceSourceContract(root)).violations.some(
     violation => violation.code === 'opencut-reference-outside-attribution-stanza',
   ))
+})
+
+test('the immutable pinned XR authority is admitted only at its exact bytes', async t => {
+  const root = await createFixture(t)
+  const pinnedSource = await readFile(
+    path.join(repositoryRoot, ALLOWED_REFERENCE_DOCUMENTS[0]),
+    'utf8',
+  )
+  assert.equal(Buffer.byteLength(pinnedSource, 'utf8'), PINNED_XR_AUTHORITY_BYTES)
+  const { createHash } = await import('node:crypto')
+  assert.equal(
+    createHash('sha256').update(pinnedSource, 'utf8').digest('hex'),
+    PINNED_XR_AUTHORITY_SHA256,
+  )
+  await writeFixture(root, ALLOWED_REFERENCE_DOCUMENTS[0], pinnedSource)
+  assert.equal((await verifyVideoEditorIndependenceSourceContract(root)).status, 'pass')
+
+  await writeFixture(root, ALLOWED_REFERENCE_DOCUMENTS[0], `${pinnedSource}\n`)
+  const drifted = await inspectVideoEditorIndependenceSourceContract(root)
+  assert.equal(drifted.status, 'fail')
+  assert.ok(drifted.violations.some(violation => (
+    violation.code === 'opencut-attribution-stanza-mismatch'
+  )))
 })
 
 test('design-reference citations outside the approved decision document fail closed', async t => {
