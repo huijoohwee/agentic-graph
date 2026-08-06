@@ -268,9 +268,12 @@ export const readWorkspaceRunReadyDemoId = (
 export const isXrPhysicsRunReadyDemoActive = (
   documentPath?: string | null,
   documentText?: string | null,
-): boolean => (
-  readWorkspaceRunReadyDemoId(documentPath, documentText) === XR_PHYSICS_RUN_READY_DEMO_ID
-)
+): boolean => {
+  const id = readWorkspaceRunReadyDemoId(documentPath, documentText)
+  // XR v2 shares the dedicated Physics-authored world/camera surface so the
+  // generic session panel cannot become a second immersive-session owner.
+  return id === XR_PHYSICS_RUN_READY_DEMO_ID || id === XR_V2_RUN_READY_DEMO_ID
+}
 
 export const isXrV2RunReadyDemoActive = (
   documentPath?: string | null,
@@ -292,10 +295,10 @@ export const isFlightSimRunReadyDemoActive = (
 export const isXrPhysicsRuntimeRunReadyDemoActive = (
   documentPath?: string | null,
   documentText?: string | null,
-): boolean => (
-  isXrPhysicsRunReadyDemoActive(documentPath, documentText)
-  || isFlightSimRunReadyDemoActive(documentPath, documentText)
-)
+): boolean => {
+  const id = readWorkspaceRunReadyDemoId(documentPath, documentText)
+  return id === XR_PHYSICS_RUN_READY_DEMO_ID || id === FLIGHT_SIM_RUN_READY_DEMO_ID
+}
 
 export const isCitySimRunReadyDemoActive = (
   documentPath?: string | null,
