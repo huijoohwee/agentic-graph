@@ -285,43 +285,58 @@ export async function runXrV2ConnectedPreviewAction(
     actionAbortController.abort()
   }
   const viewerSnapshot = options.viewerSession.snapshot()
-  if (evidence.transport !== 'webrtc-data-channel'
-    || evidence.schema !== 'knowgrph-xr-v2-connected-preview-browser-observation/v1'
-    || !evidence.editApplied
-    || !evidence.withinCeiling
-    || !Number.isFinite(evidence.latencyMs) || evidence.latencyMs < 0
-    || evidence.latencyMs > XR_V2_CONNECTED_PREVIEW_LATENCY_CEILING_MS
-    || !Number.isSafeInteger(evidence.authorRevision) || evidence.authorRevision < 1
-    || !Number.isSafeInteger(evidence.viewerRevision) || evidence.viewerRevision < 1
-    || evidence.authorRevision !== evidence.viewerRevision
-    || !evidence.viewerRenderedFrame
-    || !Number.isSafeInteger(evidence.viewerRenderRevision) || evidence.viewerRenderRevision < 1
-    || evidence.viewerRenderRevision !== evidence.viewerRevision
-    || !Number.isFinite(evidence.viewerRenderedAtMs) || evidence.viewerRenderedAtMs < 0
-    || !Number.isSafeInteger(evidence.authoringEditRevision) || evidence.authoringEditRevision < 1
-    || !Number.isFinite(evidence.authorRenderedAtMs) || evidence.authorRenderedAtMs < 0
-    || !Number.isSafeInteger(evidence.navigationEntryCountBefore)
-    || !Number.isSafeInteger(evidence.navigationEntryCountAfter)
-    || evidence.navigationEntryCountBefore < 0 || evidence.navigationEntryCountAfter < 0
-    || evidence.entityRef !== authoringEdit.entityRef
-    || evidence.sourceDigest !== authoringEdit.sourceDigest
-    || evidence.graphDataRevision !== authoringEdit.graphDataRevision
-    || evidence.authoringEditRevision !== authoringEdit.authoringEditRevision
-    || evidence.authorRenderedAtMs !== authoringEdit.authorRenderedAtMs
-    || evidence.requestedVisible !== authoringEdit.visible
-    || evidence.viewerVisible !== authoringEdit.visible
-    || evidence.navigationEntryCountBefore !== evidence.navigationEntryCountAfter
-    || !evidence.documentIdentityPreserved
-    || !viewerSnapshot || !viewerSnapshot.attached
-    || viewerSnapshot.entityRef !== evidence.entityRef
-    || viewerSnapshot.visible !== evidence.viewerVisible
-    || viewerSnapshot.sourceDigest !== evidence.sourceDigest
-    || viewerSnapshot.graphDataRevision !== evidence.graphDataRevision
-    || viewerSnapshot.authoringEditRevision !== evidence.authoringEditRevision
-    || viewerSnapshot.authorRenderedAtMs !== evidence.authorRenderedAtMs
-    || viewerSnapshot.revision !== evidence.viewerRevision
-    || viewerSnapshot.renderedAtMs !== evidence.viewerRenderedAtMs) {
-    throw new Error('XR connected-preview action did not satisfy edit, acknowledgement, latency, and no-reload evidence')
+  const checks: readonly (readonly [code: string, passed: boolean])[] = [
+    ['transport', evidence.transport === 'webrtc-data-channel'],
+    ['schema', evidence.schema === 'knowgrph-xr-v2-connected-preview-browser-observation/v1'],
+    ['edit-applied', evidence.editApplied === true],
+    ['within-ceiling', evidence.withinCeiling === true],
+    ['latency-finite-nonnegative', Number.isFinite(evidence.latencyMs) && evidence.latencyMs >= 0],
+    ['latency-at-or-below-ceiling', evidence.latencyMs <= XR_V2_CONNECTED_PREVIEW_LATENCY_CEILING_MS],
+    ['author-revision', Number.isSafeInteger(evidence.authorRevision) && evidence.authorRevision >= 1],
+    ['viewer-revision', Number.isSafeInteger(evidence.viewerRevision) && evidence.viewerRevision >= 1],
+    ['author-viewer-revision-match', evidence.authorRevision === evidence.viewerRevision],
+    ['viewer-rendered-frame', evidence.viewerRenderedFrame === true],
+    ['viewer-render-revision', Number.isSafeInteger(evidence.viewerRenderRevision) && evidence.viewerRenderRevision >= 1],
+    ['viewer-render-revision-match', evidence.viewerRenderRevision === evidence.viewerRevision],
+    ['viewer-render-time', Number.isFinite(evidence.viewerRenderedAtMs) && evidence.viewerRenderedAtMs >= 0],
+    ['authoring-edit-revision', Number.isSafeInteger(evidence.authoringEditRevision) && evidence.authoringEditRevision >= 1],
+    ['author-render-time', Number.isFinite(evidence.authorRenderedAtMs) && evidence.authorRenderedAtMs >= 0],
+    ['navigation-before', Number.isSafeInteger(evidence.navigationEntryCountBefore) && evidence.navigationEntryCountBefore >= 0],
+    ['navigation-after', Number.isSafeInteger(evidence.navigationEntryCountAfter) && evidence.navigationEntryCountAfter >= 0],
+    ['entity-identity', evidence.entityRef === authoringEdit.entityRef],
+    ['source-digest', evidence.sourceDigest === authoringEdit.sourceDigest],
+    ['graph-data-revision', evidence.graphDataRevision === authoringEdit.graphDataRevision],
+    ['authoring-edit-revision-match', evidence.authoringEditRevision === authoringEdit.authoringEditRevision],
+    ['author-render-time-match', evidence.authorRenderedAtMs === authoringEdit.authorRenderedAtMs],
+    ['requested-visible', evidence.requestedVisible === authoringEdit.visible],
+    ['viewer-visible', evidence.viewerVisible === authoringEdit.visible],
+    ['navigation-count-preserved', evidence.navigationEntryCountBefore === evidence.navigationEntryCountAfter],
+    ['document-identity-preserved', evidence.documentIdentityPreserved === true],
+    ['viewer-snapshot-attached', viewerSnapshot?.attached === true],
+    ['viewer-snapshot-entity', viewerSnapshot?.entityRef === evidence.entityRef],
+    ['viewer-snapshot-visible', viewerSnapshot?.visible === evidence.viewerVisible],
+    ['viewer-snapshot-source-digest', viewerSnapshot?.sourceDigest === evidence.sourceDigest],
+    ['viewer-snapshot-graph-revision', viewerSnapshot?.graphDataRevision === evidence.graphDataRevision],
+    ['viewer-snapshot-edit-revision', viewerSnapshot?.authoringEditRevision === evidence.authoringEditRevision],
+    ['viewer-snapshot-author-render-time', viewerSnapshot?.authorRenderedAtMs === evidence.authorRenderedAtMs],
+    ['viewer-snapshot-revision', viewerSnapshot?.revision === evidence.viewerRevision],
+    ['viewer-snapshot-render-time', viewerSnapshot?.renderedAtMs === evidence.viewerRenderedAtMs],
+  ]
+  const mismatches = checks.filter(([, passed]) => !passed).map(([code]) => code)
+  if (mismatches.length > 0) {
+    const diagnostic = JSON.stringify({
+      mismatches,
+      latencyMs: evidence.latencyMs,
+      latencyCeilingMs: XR_V2_CONNECTED_PREVIEW_LATENCY_CEILING_MS,
+      authorRevision: evidence.authorRevision,
+      viewerRevision: evidence.viewerRevision,
+      viewerRenderRevision: evidence.viewerRenderRevision,
+      authoringEditRevision: evidence.authoringEditRevision,
+      navigationEntryCountBefore: evidence.navigationEntryCountBefore,
+      navigationEntryCountAfter: evidence.navigationEntryCountAfter,
+      viewerSnapshotAttached: viewerSnapshot?.attached === true,
+    })
+    throw new Error(`XR connected-preview action did not satisfy edit, acknowledgement, latency, and no-reload evidence: ${diagnostic}`)
   }
   return evidence
 }

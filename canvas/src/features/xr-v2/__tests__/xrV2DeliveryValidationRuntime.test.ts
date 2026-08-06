@@ -209,7 +209,7 @@ test('connected preview accepts only applied acknowledged bounded no-reload evid
     new AbortController().signal,
     AUTHORING_EDIT,
     { viewerSession: viewerSession(), probe: connectedProbe({ navigationEntryCountAfter: 2 }) },
-  ), /did not satisfy edit, acknowledgement, latency, and no-reload evidence/)
+  ), /"mismatches":\["navigation-count-preserved"\]/)
   for (const drift of [
     { entityRef: 'scene.other' },
     { sourceDigest: 'fnv1a32:87654321' },
