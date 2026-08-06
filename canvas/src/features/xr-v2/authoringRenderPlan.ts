@@ -3,11 +3,13 @@ import { query } from '../../../../ecs/index.js'
 import type { GraphData, GraphEdge, GraphNode, JSONValue } from '@/lib/graph/types'
 
 import {
-  BEHAVIOR_GRAPH_SCHEMA,
+  BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
+  createKgcBehaviorGraphContract,
   createExactOnceBehaviorDispatcher,
   type AuthoringBehaviorAction,
   type AuthoringBehaviorGraph,
   type BehaviorTrigger,
+  type KgcBehaviorGraphContract,
 } from './behaviorDispatcher'
 import {
   compileMeshStandardMaterialGraph,
@@ -64,6 +66,7 @@ export type XrAuthoringRenderPlan = Readonly<{
   entities: readonly XrAuthoringRenderEntity[]
   materialGraphs: Readonly<Record<string, MaterialGraph>>
   behaviorGraph: AuthoringBehaviorGraph
+  behaviorContract: KgcBehaviorGraphContract
   timelines: readonly XrAuthoringTimelinePlan[]
 }>
 
@@ -175,7 +178,11 @@ function projectParticle(fields: Readonly<Record<string, unknown>>): NonNullable
 function projectBehaviorGraph(
   graphData: GraphData,
   entityIdByRef: ReadonlyMap<string, number>,
-): AuthoringBehaviorGraph {
+  graphId: string,
+): Readonly<{
+  dispatchGraph: AuthoringBehaviorGraph
+  contract: KgcBehaviorGraphContract
+}> {
   const actionNodes = graphData.nodes.filter(node => node.type === 'XrBehaviorAction')
   const triggerNodes = graphData.nodes.filter(node => node.type === 'XrBehaviorTrigger')
   const actions: AuthoringBehaviorAction[] = actionNodes.map((node): AuthoringBehaviorAction => {
@@ -218,12 +225,43 @@ function projectBehaviorGraph(
     })
   }).sort((left, right) => left.id.localeCompare(right.id))
   const behaviorGraph: AuthoringBehaviorGraph = Object.freeze({
-    schema: BEHAVIOR_GRAPH_SCHEMA,
+    schema: BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
     actions: Object.freeze(actions),
     behaviors: Object.freeze(behaviors),
   })
   createExactOnceBehaviorDispatcher(behaviorGraph, () => undefined)
-  return behaviorGraph
+  const boundEntityIds = new Set<number>()
+  for (const behavior of behaviors) boundEntityIds.add(behavior.sourceEntityId)
+  for (const action of actions) boundEntityIds.add(action.targetEntityId)
+  const behaviorContract = createKgcBehaviorGraphContract({
+    graphId,
+    nodes: Object.freeze([
+      ...behaviors.map(behavior => Object.freeze({
+        id: behavior.id,
+        type: 'trigger' as const,
+        config: Object.freeze({
+          trigger: behavior.trigger,
+          source_entity: String(behavior.sourceEntityId),
+        }),
+      })),
+      ...actions.map(action => Object.freeze({
+        id: action.id,
+        type: 'action' as const,
+        config: Object.freeze({
+          action: action.kind,
+          target_entity: String(action.targetEntityId),
+          ...(action.parameters === undefined ? {} : { parameters: action.parameters }),
+        }),
+      })),
+    ]),
+    edges: Object.freeze(behaviors.flatMap(behavior => (
+      behavior.actionIds.map(actionId => Object.freeze({ from: behavior.id, to: actionId }))
+    ))),
+    boundEntity: boundEntityIds.size === 1
+      ? String(boundEntityIds.values().next().value)
+      : null,
+  })
+  return Object.freeze({ dispatchGraph: behaviorGraph, contract: behaviorContract })
 }
 
 export function projectXrAuthoringRenderPlan(
@@ -324,7 +362,11 @@ export function projectXrAuthoringRenderPlan(
       })
     }).filter((entity): entity is XrAuthoringRenderEntity => entity !== null)
 
-    const behaviorGraph = projectBehaviorGraph(graphData, entityIdByRef)
+    const behaviorProjection = projectBehaviorGraph(
+      graphData,
+      entityIdByRef,
+      ('xr-v2:' + context.sourceDigest).replace(/[^A-Za-z0-9_.:-]/gu, '-').slice(0, 128),
+    )
     timelines.sort((left, right) => left.id.localeCompare(right.id))
     return Object.freeze({
       status: 'ready',
@@ -336,7 +378,8 @@ export function projectXrAuthoringRenderPlan(
         componentQueries,
         entities: Object.freeze(entities),
         materialGraphs: Object.freeze(materialGraphs),
-        behaviorGraph,
+        behaviorGraph: behaviorProjection.dispatchGraph,
+        behaviorContract: behaviorProjection.contract,
         timelines: Object.freeze(timelines),
       }),
     })

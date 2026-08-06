@@ -1,8 +1,62 @@
 export const BEHAVIOR_GRAPH_SCHEMA = 'kgc-behavior-graph/v1' as const
+export const BEHAVIOR_DISPATCH_GRAPH_SCHEMA =
+  'knowgrph-xr-v2-behavior-dispatch-graph/v1' as const
 export const BEHAVIOR_DISPATCH_MAX_ACTIONS_PER_EVENT = 128
 export const BEHAVIOR_GRAPH_MAX_ACTIONS = 256
 export const BEHAVIOR_GRAPH_MAX_BEHAVIORS = 256
 export const BEHAVIOR_PARAMETERS_MAX_BYTES = 16_384
+
+export type KgcBehaviorGraphNode = Readonly<{
+  id: string
+  type: 'trigger' | 'action' | 'logic'
+  config: Readonly<Record<string, unknown>>
+}>
+
+export type KgcBehaviorGraphEdge = Readonly<{
+  from: string
+  to: string
+}>
+
+/** Exact JSON/YAML payload owned by the pinned kgc-behavior-graph/v1 interface. */
+export type KgcBehaviorGraphContract = Readonly<{
+  graph_id: string
+  nodes: readonly KgcBehaviorGraphNode[]
+  edges: readonly KgcBehaviorGraphEdge[]
+  bound_entity: string | null
+}>
+
+export type KgcBehaviorGraphStorageAdapter = Readonly<{
+  put(graphId: string, serializedContract: string): Promise<void>
+  get(graphId: string): Promise<string | null>
+}>
+
+const BEHAVIOR_GRAPH_STORAGE_PREFIX = 'knowgrph:xr-v2:behavior-graph:'
+
+export function createKgcBehaviorGraphBrowserStorage(
+  storage: Storage | null = typeof localStorage === 'undefined' ? null : localStorage,
+): KgcBehaviorGraphStorageAdapter {
+  const key = (graphId: string) => `${BEHAVIOR_GRAPH_STORAGE_PREFIX}${graphId}`
+  return Object.freeze({
+    put: async (graphId, serializedContract) => {
+      if (!storage) throw new Error('behavior graph browser storage is unavailable')
+      if (!SAFE_ID.test(graphId)) throw new TypeError('behavior graph storage id must be safe')
+      try {
+        storage.setItem(key(graphId), serializedContract)
+      } catch (error) {
+        throw new Error('behavior graph browser storage write failed', { cause: error })
+      }
+    },
+    get: async graphId => {
+      if (!storage) throw new Error('behavior graph browser storage is unavailable')
+      if (!SAFE_ID.test(graphId)) throw new TypeError('behavior graph storage id must be safe')
+      try {
+        return storage.getItem(key(graphId))
+      } catch (error) {
+        throw new Error('behavior graph browser storage read failed', { cause: error })
+      }
+    },
+  })
+}
 
 export type BehaviorTrigger =
   | 'select'
@@ -27,7 +81,7 @@ export type AuthoringBehavior = Readonly<{
 }>
 
 export type AuthoringBehaviorGraph = Readonly<{
-  schema: typeof BEHAVIOR_GRAPH_SCHEMA
+  schema: typeof BEHAVIOR_DISPATCH_GRAPH_SCHEMA
   actions: readonly AuthoringBehaviorAction[]
   behaviors: readonly AuthoringBehavior[]
 }>
@@ -67,7 +121,7 @@ const TRIGGERS = new Set<BehaviorTrigger>([
 ])
 
 function validateGraph(graph: AuthoringBehaviorGraph): void {
-  if (!graph || graph.schema !== BEHAVIOR_GRAPH_SCHEMA) throw new TypeError('invalid behavior graph schema')
+  if (!graph || graph.schema !== BEHAVIOR_DISPATCH_GRAPH_SCHEMA) throw new TypeError('invalid behavior dispatch graph schema')
   if (!Array.isArray(graph.actions) || !Array.isArray(graph.behaviors)) throw new TypeError('invalid behavior graph')
   if (graph.actions.length > BEHAVIOR_GRAPH_MAX_ACTIONS
     || graph.behaviors.length > BEHAVIOR_GRAPH_MAX_BEHAVIORS) {
@@ -129,6 +183,101 @@ function cloneParameters(parameters: Readonly<Record<string, unknown>>): Readonl
     throw new TypeError('behavior parameters exceed maximum encoded bytes')
   }
   return cloned
+}
+
+function hasExactKeys(value: Readonly<Record<string, unknown>>, keys: readonly string[]): boolean {
+  return Object.keys(value).sort().join('|') === [...keys].sort().join('|')
+}
+
+export function createKgcBehaviorGraphContract(input: Readonly<{
+  graphId: string
+  nodes: readonly KgcBehaviorGraphNode[]
+  edges: readonly KgcBehaviorGraphEdge[]
+  boundEntity: string | null
+}>): KgcBehaviorGraphContract {
+  if (!SAFE_ID.test(input.graphId)) throw new TypeError('behavior graph_id must be safe')
+  if (!Array.isArray(input.nodes) || input.nodes.length > BEHAVIOR_GRAPH_MAX_ACTIONS + BEHAVIOR_GRAPH_MAX_BEHAVIORS) {
+    throw new TypeError('behavior graph nodes exceed bounded count')
+  }
+  if (!Array.isArray(input.edges) || input.edges.length > BEHAVIOR_GRAPH_MAX_ACTIONS * 2) {
+    throw new TypeError('behavior graph edges exceed bounded count')
+  }
+  if (input.boundEntity !== null && !SAFE_ID.test(input.boundEntity)) {
+    throw new TypeError('behavior bound_entity must be safe or null')
+  }
+  const nodeIds = new Set<string>()
+  const nodes = input.nodes.map(node => {
+    if (!node || !hasExactKeys(node as unknown as Record<string, unknown>, ['id', 'type', 'config'])
+      || !SAFE_ID.test(node.id) || nodeIds.has(node.id)
+      || !['trigger', 'action', 'logic'].includes(node.type)) {
+      throw new TypeError('malformed behavior graph node')
+    }
+    nodeIds.add(node.id)
+    return Object.freeze({
+      id: node.id,
+      type: node.type,
+      config: cloneParameters(node.config),
+    })
+  })
+  const edges = input.edges.map(edge => {
+    if (!edge || !hasExactKeys(edge as unknown as Record<string, unknown>, ['from', 'to'])
+      || !nodeIds.has(edge.from) || !nodeIds.has(edge.to)) {
+      throw new TypeError('malformed behavior graph edge')
+    }
+    return Object.freeze({ from: edge.from, to: edge.to })
+  })
+  return Object.freeze({
+    graph_id: input.graphId,
+    nodes: Object.freeze(nodes),
+    edges: Object.freeze(edges),
+    bound_entity: input.boundEntity,
+  })
+}
+
+export function parseKgcBehaviorGraphContract(serialized: string): KgcBehaviorGraphContract {
+  let value: unknown
+  try {
+    value = JSON.parse(serialized)
+  } catch {
+    throw new TypeError('malformed kgc-behavior-graph/v1 JSON')
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || !hasExactKeys(value as Record<string, unknown>, ['graph_id', 'nodes', 'edges', 'bound_entity'])) {
+    throw new TypeError('malformed kgc-behavior-graph/v1 contract')
+  }
+  const graph = value as {
+    graph_id?: unknown
+    nodes?: unknown
+    edges?: unknown
+    bound_entity?: unknown
+  }
+  if (typeof graph.graph_id !== 'string'
+    || !Array.isArray(graph.nodes)
+    || !Array.isArray(graph.edges)
+    || (graph.bound_entity !== null && typeof graph.bound_entity !== 'string')) {
+    throw new TypeError('malformed kgc-behavior-graph/v1 contract fields')
+  }
+  return createKgcBehaviorGraphContract({
+    graphId: graph.graph_id,
+    nodes: graph.nodes as KgcBehaviorGraphNode[],
+    edges: graph.edges as KgcBehaviorGraphEdge[],
+    boundEntity: graph.bound_entity,
+  })
+}
+
+export async function publishKgcBehaviorGraphContract(
+  contract: KgcBehaviorGraphContract,
+  storage: KgcBehaviorGraphStorageAdapter,
+): Promise<KgcBehaviorGraphContract> {
+  const validated = parseKgcBehaviorGraphContract(JSON.stringify(contract))
+  await storage.put(validated.graph_id, JSON.stringify(validated))
+  const persisted = await storage.get(validated.graph_id)
+  if (persisted === null) throw new Error('behavior graph storage did not publish the contract')
+  const readBack = parseKgcBehaviorGraphContract(persisted)
+  if (JSON.stringify(readBack) !== JSON.stringify(validated)) {
+    throw new Error('behavior graph storage read-back does not match the published contract')
+  }
+  return readBack
 }
 
 /**

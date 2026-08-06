@@ -34,7 +34,12 @@ import {
 import { useGraphStore } from '@/hooks/useGraphStore'
 import type { GraphData } from '@/lib/graph/types'
 
-import { createExactOnceBehaviorDispatcher, type BehaviorTrigger } from './behaviorDispatcher'
+import {
+  createExactOnceBehaviorDispatcher,
+  createKgcBehaviorGraphBrowserStorage,
+  publishKgcBehaviorGraphContract,
+  type BehaviorTrigger,
+} from './behaviorDispatcher'
 import { bindMaterialGraphToTargetMesh } from './materialGraphThreeAdapter'
 import {
   beginMountedAuthoringEvidence,
@@ -56,6 +61,7 @@ import type {
   XrAuthoringRenderPlan,
   XrAuthoringTimelinePlan,
 } from './authoringRenderPlan'
+import { registerXrV2ImmersiveRenderer } from './xrV2ImmersiveSessionRuntime'
 
 const EMPTY_GRAPH: GraphData = Object.freeze({ type: 'application/json', nodes: [], edges: [] }) as GraphData
 const DISPOSED_RESOURCES = new WeakSet<object>()
@@ -375,6 +381,21 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
   const { camera, gl, scene } = useThree()
   const [visibleByEntityId, setVisibleByEntityId] = React.useState<Readonly<Record<number, boolean>>>({})
   const [materialGraphByEntityId, setMaterialGraphByEntityId] = React.useState<Readonly<Record<number, string>>>({})
+  const [persistedBehaviorDigest, setPersistedBehaviorDigest] = React.useState<string | null>(null)
+  React.useLayoutEffect(() => registerXrV2ImmersiveRenderer(gl), [gl])
+  React.useEffect(() => {
+    let cancelled = false
+    setPersistedBehaviorDigest(null)
+    void publishKgcBehaviorGraphContract(
+      plan.behaviorContract,
+      createKgcBehaviorGraphBrowserStorage(),
+    ).then(() => {
+      if (!cancelled) setPersistedBehaviorDigest(plan.sourceDigest)
+    }).catch(() => {
+      if (!cancelled) resetMountedAuthoringEvidence(undefined, 'behavior-contract-storage-failed')
+    })
+    return () => { cancelled = true }
+  }, [plan.behaviorContract, plan.sourceDigest])
   if (planDigestRef.current !== plan.sourceDigest) {
     planDigestRef.current = plan.sourceDigest
     behaviorRevisionRef.current = 0
@@ -454,6 +475,10 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
   }, [gl.domElement])
 
   React.useLayoutEffect(() => {
+    if (persistedBehaviorDigest !== plan.sourceDigest) {
+      resetMountedAuthoringEvidence(undefined, 'behavior-contract-storage-pending')
+      return undefined
+    }
     const canvasIdentity = ensureMountedAuthoringCanvasIdentity(gl.domElement)
     const compileMethod = typeof gl.compileAsync === 'function'
       ? 'compileAsync' as const
@@ -495,7 +520,7 @@ function XrV2MountedPlan({ plan, paused }: Readonly<{ plan: XrAuthoringRenderPla
       if (evidenceLeaseRef.current === lease) evidenceLeaseRef.current = null
       resetMountedAuthoringEvidence(lease, 'plan-unmounted')
     }
-  }, [camera, gl, plan, publishEvidence, scene])
+  }, [camera, gl, persistedBehaviorDigest, plan, publishEvidence, scene])
 
   useFrame((_state, deltaSeconds) => {
     const lease = evidenceLeaseRef.current

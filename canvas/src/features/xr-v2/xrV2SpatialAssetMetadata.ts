@@ -16,6 +16,9 @@ export const XR_V2_SYNTHESIS_MODES = Object.freeze([
   'none',
 ] as const)
 
+export const XR_V2_PUBLISHED_SPATIAL_ASSET_SCHEMA =
+  'knowgrph-xr-v2-published-spatial-asset/v1' as const
+
 export type XrV2SynthesisMode = (typeof XR_V2_SYNTHESIS_MODES)[number]
 
 /** Exact additive asset-contract extension defined by the pinned v2 document. */
@@ -27,14 +30,87 @@ export type XrV2SpatialAssetMetadata = Readonly<{
 }>
 
 const MAX_DEPTH_METADATA_REFERENCE_LENGTH = 2_048
+const MAX_SPATIAL_ASSET_ID_LENGTH = 160
 
 function normalizeDepthMetadataReference(value: string | null): string | null {
   if (value === null) return null
-  const normalized = String(value).trim()
+  if (typeof value !== 'string') {
+    throw new Error('depth_metadata_ref must be null or a string')
+  }
+  const normalized = value.trim()
   if (!normalized || normalized.length > MAX_DEPTH_METADATA_REFERENCE_LENGTH) {
     throw new Error('depth_metadata_ref must be null or a bounded non-empty reference')
   }
   return normalized
+}
+
+export type XrV2PublishedSpatialAsset = Readonly<{
+  schema: typeof XR_V2_PUBLISHED_SPATIAL_ASSET_SCHEMA
+  asset_id: string
+  session_id: string
+  raw_clip_ref: string
+  metadata: XrV2SpatialAssetMetadata
+  created_at_ms: number
+}>
+
+function boundedValue(label: string, value: string, maxLength: number): string {
+  if (typeof value !== 'string') throw new Error(`${label} must be a string`)
+  const normalized = value.trim()
+  if (!normalized || normalized.length > maxLength) {
+    throw new Error(`${label} must be a bounded non-empty value`)
+  }
+  return normalized
+}
+
+export function createXrV2PublishedSpatialAsset(input: Readonly<{
+  assetId: string
+  sessionId: string
+  rawClipRef: string
+  metadata: XrV2SpatialAssetMetadata
+  createdAtMs: number
+}>): XrV2PublishedSpatialAsset {
+  if (!Number.isSafeInteger(input.createdAtMs) || input.createdAtMs < 0) {
+    throw new Error('created_at_ms must be a non-negative safe integer')
+  }
+  if (!isXrV2SpatialAssetMetadata(input.metadata)) {
+    throw new Error('published spatial asset metadata is malformed')
+  }
+  const metadata = createXrV2SpatialAssetMetadata({
+    tier: input.metadata.xr_capability_tier,
+    synthesisMode: input.metadata.synthesis_mode,
+    depthMetadataRef: input.metadata.depth_metadata_ref,
+    fallbackTriggered: input.metadata.fallback_triggered,
+  })
+  return Object.freeze({
+    schema: XR_V2_PUBLISHED_SPATIAL_ASSET_SCHEMA,
+    asset_id: boundedValue('asset_id', input.assetId, MAX_SPATIAL_ASSET_ID_LENGTH),
+    session_id: boundedValue('session_id', input.sessionId, MAX_SPATIAL_ASSET_ID_LENGTH),
+    raw_clip_ref: boundedValue('raw_clip_ref', input.rawClipRef, MAX_DEPTH_METADATA_REFERENCE_LENGTH),
+    metadata,
+    created_at_ms: input.createdAtMs,
+  })
+}
+
+export function isXrV2PublishedSpatialAsset(
+  candidate: unknown,
+): candidate is XrV2PublishedSpatialAsset {
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return false
+  const value = candidate as Record<string, unknown>
+  if (Object.keys(value).sort().join(',') !== [
+    'asset_id', 'created_at_ms', 'metadata', 'raw_clip_ref', 'schema', 'session_id',
+  ].sort().join(',')) return false
+  try {
+    createXrV2PublishedSpatialAsset({
+      assetId: value.asset_id as string,
+      sessionId: value.session_id as string,
+      rawClipRef: value.raw_clip_ref as string,
+      metadata: value.metadata as XrV2SpatialAssetMetadata,
+      createdAtMs: value.created_at_ms as number,
+    })
+    return value.schema === XR_V2_PUBLISHED_SPATIAL_ASSET_SCHEMA
+  } catch {
+    return false
+  }
 }
 
 export function createXrV2SpatialAssetMetadata(input: Readonly<{

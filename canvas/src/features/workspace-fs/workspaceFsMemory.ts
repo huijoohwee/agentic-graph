@@ -24,7 +24,10 @@ import { upgradeAuthoredMarkdownNoteInitialDocument } from './workspaceAuthoredN
 import { WORKSPACE_AUTHORED_NOTES_SOURCE_ROOT_PATH } from './workspaceSourceRoots'
 import { readCanonicalWorkspaceSeedMirrorEntries } from './workspaceSeedProvider'
 import { buildWorkspaceDocsMirrorDesiredEntries } from './workspaceFsPersistedReconciliation'
-import { CANONICAL_WORKSPACE_SEED_BASENAMES } from './workspaceCanonicalSeedBundle'
+import {
+  CANONICAL_WORKSPACE_SEED_BASENAMES,
+  hasExactCanonicalWorkspaceSeedInventory,
+} from './workspaceCanonicalSeedBundle'
 import { isKnowgrphWorkspaceSeedsPath } from 'grph-shared/collaboration/documentRepositoryAuthority'
 
 export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry[] }): WorkspaceFs {
@@ -176,16 +179,10 @@ export function createMemoryWorkspaceFs(args?: { initialEntries?: WorkspaceEntry
     ))
     if (userClearedAll && !hasNoncanonicalFile) return false
     const canonicalEntries = await readCanonicalWorkspaceSeedMirrorEntries()
-    if (canonicalEntries.length === 0) return false
+    if (!hasExactCanonicalWorkspaceSeedInventory(canonicalEntries)) return false
     const desiredEntriesByPath = buildWorkspaceDocsMirrorDesiredEntries(canonicalEntries)
     if (![...desiredEntriesByPath.keys()].some(isKnowgrphWorkspaceSeedsPath)) return false
     let changed = false
-    for (const path of [...entriesByPath.keys()]) {
-      if (!isKnowgrphWorkspaceSeedsPath(path) || desiredEntriesByPath.has(path)) continue
-      entriesByPath.delete(path)
-      if (clearWorkspaceEntrySource(normalizeWorkspacePath(path))) changed = true
-      changed = true
-    }
     for (const [path, desired] of desiredEntriesByPath) {
       if (path !== '/docs' && !isKnowgrphWorkspaceSeedsPath(path)) continue
       const existing = entriesByPath.get(path)

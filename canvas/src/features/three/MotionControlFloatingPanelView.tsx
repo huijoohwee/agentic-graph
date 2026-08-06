@@ -224,43 +224,37 @@ export function MotionControlFloatingPanelView() {
     const video = videoRef.current
     const releasePreview = bindMotionControlPreview(video)
     const canonicalStream = video?.srcObject
+    let releaseSpatialSource: () => void
     if (
       xrV2DemoActive
       && state.cameraActive
       && typeof MediaStream !== 'undefined'
       && canonicalStream instanceof MediaStream
     ) {
-      configureXrV2SpatialCaptureSource({
+      releaseSpatialSource = configureXrV2SpatialCaptureSource({
         video,
         stream: canonicalStream,
         createRecorder: createXrV2RawClipRecorder,
       })
     } else {
-      configureXrV2SpatialCaptureSource(null)
+      releaseSpatialSource = configureXrV2SpatialCaptureSource(null)
     }
     return () => {
+      releaseSpatialSource()
+      releasePreview()
       const spatial = readXrV2SpatialCapture()
       const spatialActive =
         spatial.phase === 'preparing'
         || spatial.phase === 'capturing-live'
         || spatial.phase === 'capturing-raw'
         || spatial.phase === 'stopping'
-      if (spatialActive) {
-        void cancelXrV2SpatialCapture().finally(() => {
-          configureXrV2SpatialCaptureSource(null)
-          releasePreview()
-        })
-      } else {
-        configureXrV2SpatialCaptureSource(null)
-        releasePreview()
-      }
+      if (spatialActive) void cancelXrV2SpatialCapture()
     }
   }, [state.cameraActive, xrV2DemoActive])
   React.useEffect(() => () => {
     disableMotionControlDeviceSensors('Device sensors stopped because the Motion Control surface closed.')
-    void cancelXrV2SpatialCapture().finally(() => (
-      stopMotionControl('Motion Control stopped because its control surface closed.')
-    ))
+    void cancelXrV2SpatialCapture()
+    void stopMotionControl('Motion Control stopped because its control surface closed.')
   }, [])
   React.useEffect(() => {
     const canvas = overlayRef.current
@@ -278,9 +272,7 @@ export function MotionControlFloatingPanelView() {
     const setOperationPending = operation === 'start' ? setStartPending : setStopPending
     setOperationPending(true)
     try {
-      if (operation === 'stop' && xrSpatialCaptureActive) {
-        await cancelXrV2SpatialCapture()
-      }
+      if (operation === 'stop' && xrSpatialCaptureActive) void cancelXrV2SpatialCapture()
       const result = await controlLocalMotionControl(operation === 'start' ? { operation, backend } : { operation })
       pushUiToast({
         id: `motion-control:${operation}:${result.ok ? 'ok' : 'error'}`,

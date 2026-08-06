@@ -1,5 +1,5 @@
 import React from 'react'
-import { Camera, Save, VideoOff } from 'lucide-react'
+import { Camera, VideoOff } from 'lucide-react'
 import { UI_THEME_TOKENS } from '@/lib/ui/theme-tokens'
 import { cn } from '@/lib/utils'
 import {
@@ -12,6 +12,7 @@ import {
   stopXrV2SpatialCapture,
   subscribeXrV2SpatialCapture,
 } from './xrV2SpatialCaptureRuntime'
+import { XrV2SavedAssetCatalogViewer } from './XrV2SavedAssetCatalogViewer'
 
 export function XrV2SpatialCapturePanel({
   actionsEnabled,
@@ -98,20 +99,12 @@ export function XrV2SpatialCapturePanel({
           Start the pose camera above first. XR capture never requests or stops the camera itself.
         </p>
       ) : null}
-      {capture.playbackUrl ? (
-        <section className="grid gap-1" data-kg-xr-v2-spatial-capture-saved="1">
-          <p className="m-0 flex items-center gap-1 text-[9px] font-semibold"><Save className="h-3 w-3" aria-hidden="true" /> Saved raw clip playback</p>
-          <video className="aspect-video w-full rounded bg-black" controls playsInline src={capture.playbackUrl} aria-label="Saved XR raw capture" />
-          <p className={cn('m-0 break-all text-[8px]', UI_THEME_TOKENS.text.tertiary)}>
-            {capture.rawClipRef}<br />{capture.depthMetadataRef}
-          </p>
-        </section>
-      ) : null}
       {capture.assetMetadata ? (
         <code className={cn('break-all text-[8px]', UI_THEME_TOKENS.text.tertiary)} data-kg-xr-v2-captured-asset-metadata="1">
           {JSON.stringify(capture.assetMetadata)}
         </code>
       ) : null}
+      <XrV2SavedAssetCatalogViewer refreshKey={capture.rawClipRef} />
     </section>
   )
 }

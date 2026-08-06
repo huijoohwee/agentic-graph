@@ -38,7 +38,8 @@ test('XR v2 workspace smoke activates only through the actual Explorer row', () 
   const runner = read('canvas/scripts/run_xr_v2_workspace_seed_browser_smoke.mjs')
   const verifier = read('canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs')
   assert.doesNotMatch(runner, /VITE_KNOWGRPH_RUN_READY_DEMO/u)
-  assert.match(verifier, /getByRole\('navigation', \{ name: 'Source files' \}\)/u)
+  assert.match(verifier, /openEditorWorkspace=1/u)
+  assert.match(verifier, /getByRole\('navigation', \{ name: 'Source files', exact: true \}\)/u)
   assert.match(verifier, /name: 'Folder docs'/u)
   assert.match(verifier, /name: 'Folder workspace-seeds'/u)
   assert.match(verifier, /name: 'File knowgrph-ar-vr-xr-runtime-readiness-demo\.md'/u)
@@ -54,6 +55,7 @@ test('XR v2 workspace smoke activates only through the actual Explorer row', () 
     'data-kg-motion-control-device-sensors',
     'data-kg-motion-control-start',
     'data-kg-motion-control-enable-sensors',
+    'data-kg-xr-v2-immersive-enter',
   ]) assert.match(verifier, new RegExp(marker, 'u'))
 })
 

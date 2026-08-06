@@ -3,12 +3,17 @@ import { test } from 'node:test'
 
 import {
   BEHAVIOR_GRAPH_SCHEMA,
+  BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
+  createKgcBehaviorGraphContract,
+  createKgcBehaviorGraphBrowserStorage,
   createExactOnceBehaviorDispatcher,
+  parseKgcBehaviorGraphContract,
+  publishKgcBehaviorGraphContract,
   type AuthoringBehaviorGraph,
 } from '../behaviorDispatcher'
 
 const behaviorGraph: AuthoringBehaviorGraph = {
-  schema: BEHAVIOR_GRAPH_SCHEMA,
+  schema: BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
   actions: [
     { id: 'show-panel', kind: 'set-visible', targetEntityId: 2 },
     { id: 'emit-spark', kind: 'particle-burst', targetEntityId: 3 },
@@ -53,7 +58,7 @@ test('behavior dispatcher rejects gaps and commits failures without retrying act
 test('behavior dispatcher accepts entity zero and snapshots bounded parameters', () => {
   const parameters = { nested: { label: 'before' } }
   const entityZeroGraph: AuthoringBehaviorGraph = {
-    schema: BEHAVIOR_GRAPH_SCHEMA,
+    schema: BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
     actions: [{ id: 'entity-zero-action', kind: 'set-visible', targetEntityId: 0, parameters }],
     behaviors: [{ id: 'entity-zero-behavior', trigger: 'select', sourceEntityId: 0, actionIds: ['entity-zero-action'] }],
   }
@@ -87,9 +92,58 @@ test('behavior dispatcher snapshots behavior wiring and rejects non-object param
 
   for (const parameters of [null, [1, 2]]) {
     assert.throws(() => createExactOnceBehaviorDispatcher({
-      schema: BEHAVIOR_GRAPH_SCHEMA,
+      schema: BEHAVIOR_DISPATCH_GRAPH_SCHEMA,
       actions: [{ id: 'invalid-parameters', kind: 'set-visible', targetEntityId: 0, parameters }],
       behaviors: [{ id: 'invalid-parameters-behavior', trigger: 'select', sourceEntityId: 0, actionIds: ['invalid-parameters'] }],
     } as unknown as AuthoringBehaviorGraph, () => undefined), /plain object/)
+  }
+})
+
+test('pinned behavior contract has exact keys and round-trips through storage', async () => {
+  assert.equal(BEHAVIOR_GRAPH_SCHEMA, 'kgc-behavior-graph/v1')
+  assert.notEqual(BEHAVIOR_DISPATCH_GRAPH_SCHEMA, BEHAVIOR_GRAPH_SCHEMA)
+  const contract = createKgcBehaviorGraphContract({
+    graphId: 'hero-graph',
+    nodes: [
+      { id: 'select-hero', type: 'trigger', config: { trigger: 'select' } },
+      { id: 'show-hero', type: 'action', config: { action: 'set-visible' } },
+    ],
+    edges: [{ from: 'select-hero', to: 'show-hero' }],
+    boundEntity: '0',
+  })
+  assert.deepEqual(Object.keys(contract), ['graph_id', 'nodes', 'edges', 'bound_entity'])
+  assert.deepEqual(Object.keys(contract.nodes[0]), ['id', 'type', 'config'])
+  assert.deepEqual(Object.keys(contract.edges[0]), ['from', 'to'])
+  assert.deepEqual(parseKgcBehaviorGraphContract(JSON.stringify(contract)), contract)
+
+  const persisted = new Map<string, string>()
+  const published = await publishKgcBehaviorGraphContract(contract, {
+    put: async (id, serialized) => { persisted.set(id, serialized) },
+    get: async id => persisted.get(id) ?? null,
+  })
+  assert.deepEqual(published, contract)
+  const browserValues = new Map<string, string>()
+  const browserStorage = createKgcBehaviorGraphBrowserStorage({
+    setItem: (key, value) => { browserValues.set(key, value) },
+    getItem: key => browserValues.get(key) ?? null,
+  } as Storage)
+  assert.deepEqual(await publishKgcBehaviorGraphContract(contract, browserStorage), contract)
+  assert.throws(
+    () => parseKgcBehaviorGraphContract(JSON.stringify({ ...contract, schema: BEHAVIOR_GRAPH_SCHEMA })),
+    /malformed kgc-behavior-graph/,
+  )
+})
+
+test('pinned behavior parser rejects wrong field types instead of normalizing them', () => {
+  for (const malformed of [
+    { graph_id: 'graph', nodes: {}, edges: [], bound_entity: null },
+    { graph_id: 'graph', nodes: [], edges: {}, bound_entity: null },
+    { graph_id: 1, nodes: [], edges: [], bound_entity: null },
+    { graph_id: 'graph', nodes: [], edges: [], bound_entity: 0 },
+  ]) {
+    assert.throws(
+      () => parseKgcBehaviorGraphContract(JSON.stringify(malformed)),
+      /malformed kgc-behavior-graph\/v1 contract fields/,
+    )
   }
 })

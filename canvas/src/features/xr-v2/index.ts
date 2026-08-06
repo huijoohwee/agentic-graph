@@ -29,6 +29,8 @@ export * from './xrV2CapabilityRuntime'
 export * from './xrV2CaptureArtifactStore'
 export * from './xrV2DepthInferenceRuntime'
 export * from './xrV2InvocationRegistry'
+export * from './xrV2ImmersiveSessionRuntime'
+export * from './xrV2SavedAssetCatalog'
 export * from './xrV2SpatialAssetMetadata'
 export * from './xrV2SpatialCaptureRuntime'
 export * from './xrV2WorkspaceReadinessRuntime'
@@ -48,6 +50,7 @@ export {
   type XrV2PinnedRuntimeObservation,
 } from './pinnedContractConformance'
 export { XrV2AuthoringStatusPanel } from './XrV2AuthoringStatusPanel'
+export { XrV2SavedAssetCatalogViewer } from './XrV2SavedAssetCatalogViewer'
 export { XrV2SpatialCapturePanel } from './XrV2SpatialCapturePanel'
 export {
   XrV2WorkspaceReadinessPanel,
